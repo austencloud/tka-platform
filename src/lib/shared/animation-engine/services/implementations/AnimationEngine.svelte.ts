@@ -87,6 +87,8 @@ import { WebGLLedRenderer } from "./led/WebGLLedRenderer";
 import type { ILedOverlayRenderer } from "../contracts/ILedOverlayRenderer";
 import type { ILedTipTracker } from "../contracts/ILedTipTracker";
 import { DEFAULT_LED_CONFIG, ledBrightnessToFloat, type LedOverlayConfig } from "../../domain/types/LedTypes";
+import { TrailOverlayCanvas } from "./TrailOverlayCanvas";
+import type { ITrailOverlayCanvas } from "../contracts/ITrailOverlayCanvas";
 import { sequenceLoopabilityChecker } from "$lib/features/compose/services/implementations/SequenceLoopabilityChecker";
 import { isBilateralProp } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";
 import { TrackingMode } from "../../domain/types/TrailTypes";
@@ -245,6 +247,7 @@ export class AnimationEngine {
   private ledTipTracker: ILedTipTracker | null = null;
   private ledConfig: LedOverlayConfig = { ...DEFAULT_LED_CONFIG };
   private ledInitPending = false;
+  private trailOverlay: ITrailOverlayCanvas | null = null;
 
   // ============================================================================
   // PRIVATE STATE
@@ -1171,6 +1174,10 @@ export class AnimationEngine {
     this.ledRenderer = null;
     this.ledTipTracker = null;
 
+    // Dispose trail overlay
+    this.trailOverlay?.dispose();
+    this.trailOverlay = null;
+
     // Clear trails
     this.trailCapturer?.clearTrails();
 
@@ -1397,6 +1404,10 @@ export class AnimationEngine {
       fireTipTracker: this.fireTipTracker,
       ledTipTracker: this.ledTipTracker,
     });
+
+    this.trailOverlay = new TrailOverlayCanvas();
+    this.trailOverlay.initialize(this.containerElement!, this.canvasSize, this.canvasSize);
+    this.renderLoopService.updateConfig({ trailOverlay: this.trailOverlay });
   }
 
   /**
@@ -1719,6 +1730,7 @@ export class AnimationEngine {
         this.renderLoopService?.updateConfig({ canvasSize: newSize });
         this.fireRenderer?.resize(newSize, newSize);
         this.ledRenderer?.resize(newSize, newSize);
+        this.trailOverlay?.resize(newSize, newSize);
         // Reset fire/LED tip trackers so positions recalculate at the new canvas size.
         // Without this, after HMR the tracker uses stale positions from the old size.
         this.fireTipTracker?.reset();

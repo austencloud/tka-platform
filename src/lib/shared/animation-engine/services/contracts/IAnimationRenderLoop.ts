@@ -17,6 +17,7 @@ import type { IFireTipTracker } from "./IFireTipTracker";
 import type { FireOverlayConfig, PropFlameColor } from "../../domain/types/FireTypes";
 import type { ILedOverlayRenderer } from "./ILedOverlayRenderer";
 import type { ILedTipTracker } from "./ILedTipTracker";
+import type { ITrailOverlayCanvas } from "./ITrailOverlayCanvas";
 import type { LedOverlayConfig } from "../../domain/types/LedTypes";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
@@ -42,6 +43,8 @@ export interface RenderLoopConfig {
   ledRenderer?: ILedOverlayRenderer | null;
   /** Optional LED tip position/color tracker */
   ledTipTracker?: ILedTipTracker | null;
+  /** Trail overlay canvas for persistent cross-sequence trails */
+  trailOverlay?: ITrailOverlayCanvas | null;
 }
 
 /**
