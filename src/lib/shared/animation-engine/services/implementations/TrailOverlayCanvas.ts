@@ -16,14 +16,21 @@ import type {
   TrailOverlayRenderParams,
 } from "../contracts/ITrailOverlayCanvas";
 import type { TrailPoint } from "../../domain/types/TrailTypes";
+import type { PropState } from "$lib/features/compose/shared/domain/types/PropState";
 import { Canvas2DTrailRenderer } from "$lib/features/compose/services/implementations/canvas2d/Canvas2DTrailRenderer";
+import { PropPositionCalculator } from "$lib/shared/animation-engine/services/implementations/PropPositionCalculator";
 
 export class TrailOverlayCanvas implements ITrailOverlayCanvas {
   private canvas: HTMLCanvasElement | null = null;
   private ctx: CanvasRenderingContext2D | null = null;
   private trailRenderer = new Canvas2DTrailRenderer();
+  private propPositionCalculator = new PropPositionCalculator();
   private width = 0;
   private height = 0;
+
+  // Track last known prop tip positions for gap-bridging
+  private lastBluePos: { x: number; y: number } | null = null;
+  private lastRedPos: { x: number; y: number } | null = null;
 
   initialize(container: HTMLElement, width: number, height: number): void {
     this.dispose();
@@ -52,9 +59,6 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
 
   resize(width: number, height: number): void {
     if (!this.canvas) return;
-
-    // Setting canvas dimensions clears content. That's fine — trails
-    // rebuild from the point cache on the next few frames.
     this.canvas.width = width;
     this.canvas.height = height;
     this.width = width;
@@ -74,15 +78,14 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
       hasBlue,
       hasRed,
       additionalLayers,
+      blueProp,
+      redProp,
     } = params;
+
+    const hasPoints = blueTrailPoints.length >= 2 || redTrailPoints.length >= 2;
 
     // ---------------------------------------------------------------
     // 1. Fade existing content using destination-out
-    //
-    // destination-out erases pixels proportional to the drawn alpha.
-    // By filling a rect with a small alpha each frame, existing trail
-    // pixels lose a little opacity every frame, creating smooth decay.
-    // The fill color is irrelevant — only the alpha channel matters.
     // ---------------------------------------------------------------
     const fadeAmount = this.computeFadeAmount(
       trailSettings.fadeDurationMs,
@@ -91,88 +94,148 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
 
     ctx.save();
     ctx.globalCompositeOperation = "destination-out";
-
-    // Pass 1: normal fade based on trail duration
     ctx.globalAlpha = fadeAmount;
     ctx.fillStyle = "black";
     ctx.fillRect(0, 0, this.width, this.height);
-
     ctx.restore();
 
-    // Kill ghost pixels: destination-out is multiplicative, so
-    // alpha=1 * (1-x) rounds back to 1 for any x < 0.5 in 8-bit color.
-    // No multiplier can fix this. Direct pixel manipulation is the only
-    // way to force near-zero alpha to actual zero.
-    this.killGhostPixels(ctx);
+    // Smooth ghost cleanup: subtract a constant 2 from every non-zero
+    // alpha pixel. Unlike the hard threshold approach, this creates a
+    // smooth linear fade at the tail instead of visible jumps.
+    this.smoothAlphaDecay(ctx);
 
     // ---------------------------------------------------------------
-    // 2. Draw new trail segments on top using source-over
-    //
-    // Canvas2DTrailRenderer handles spline interpolation, per-end
-    // coloring, taper, glow, and additional tunnel layers.
+    // 2. Draw new trail segments
     // ---------------------------------------------------------------
-    // Draw the leading edge of the trail using the full-quality renderer
-    // (Catmull-Rom splines, tapering) but with uniform opacity so the
-    // overlay's destination-out is the sole source of the fade gradient.
-    // Drawing the full window would compound brightness frame-over-frame.
-    const LEADING_EDGE = 20;
-    const blueLeading = this.sanitizeLeadingEdge(
-      blueTrailPoints.length > LEADING_EDGE
-        ? blueTrailPoints.slice(-LEADING_EDGE)
-        : blueTrailPoints,
-      canvasSize
-    );
-    const redLeading = this.sanitizeLeadingEdge(
-      redTrailPoints.length > LEADING_EDGE
-        ? redTrailPoints.slice(-LEADING_EDGE)
-        : redTrailPoints,
-      canvasSize
-    );
+    if (hasPoints) {
+      // Cache has trail points — use full-quality renderer
+      const LEADING_EDGE = 20;
+      const blueLeading = this.sanitizeLeadingEdge(
+        blueTrailPoints.length > LEADING_EDGE
+          ? blueTrailPoints.slice(-LEADING_EDGE)
+          : blueTrailPoints,
+        canvasSize
+      );
+      const redLeading = this.sanitizeLeadingEdge(
+        redTrailPoints.length > LEADING_EDGE
+          ? redTrailPoints.slice(-LEADING_EDGE)
+          : redTrailPoints,
+        canvasSize
+      );
 
-    const overlaySettings = {
-      ...trailSettings,
-      glowBlur: 0,        // overlay accumulation creates natural glow
-      minOpacity: 0.8,
-      maxOpacity: 1.0,
-    };
+      const overlaySettings = {
+        ...trailSettings,
+        glowBlur: 0,
+        lineWidth: Math.max(3.5, trailSettings.lineWidth),
+      };
 
-    ctx.save();
-    ctx.globalCompositeOperation = "source-over";
-    ctx.globalAlpha = 1.0;
-    this.trailRenderer.renderTrails(
-      ctx,
-      blueLeading,
-      redLeading,
-      overlaySettings,
-      performance.now(),
-      hasBlue,
-      hasRed,
-      canvasSize,
-      undefined,
-      additionalLayers?.map(layer => ({
-        ...layer,
-        blueTrailPoints: layer.blueTrailPoints.length > LEADING_EDGE
-          ? layer.blueTrailPoints.slice(-LEADING_EDGE)
-          : layer.blueTrailPoints,
-        redTrailPoints: layer.redTrailPoints.length > LEADING_EDGE
-          ? layer.redTrailPoints.slice(-LEADING_EDGE)
-          : layer.redTrailPoints,
-      }))
-    );
-    ctx.restore();
+      ctx.save();
+      ctx.globalCompositeOperation = "source-over";
+      ctx.globalAlpha = 1.0;
+      this.trailRenderer.renderTrails(
+        ctx,
+        blueLeading,
+        redLeading,
+        overlaySettings,
+        performance.now(),
+        hasBlue,
+        hasRed,
+        canvasSize,
+        undefined,
+        additionalLayers?.map(layer => ({
+          ...layer,
+          blueTrailPoints: layer.blueTrailPoints.length > LEADING_EDGE
+            ? layer.blueTrailPoints.slice(-LEADING_EDGE)
+            : layer.blueTrailPoints,
+          redTrailPoints: layer.redTrailPoints.length > LEADING_EDGE
+            ? layer.redTrailPoints.slice(-LEADING_EDGE)
+            : layer.redTrailPoints,
+        }))
+      );
+      ctx.restore();
+
+      // Update last known positions from trail points
+      if (blueLeading.length > 0) {
+        const last = blueLeading[blueLeading.length - 1]!;
+        this.lastBluePos = { x: last.x, y: last.y };
+      }
+      if (redLeading.length > 0) {
+        const last = redLeading[redLeading.length - 1]!;
+        this.lastRedPos = { x: last.x, y: last.y };
+      }
+    } else if (blueProp || redProp) {
+      // Cache is rebuilding — draw directly from prop positions to
+      // bridge the gap. This keeps trails continuous across sequence
+      // transitions instead of leaving an empty break.
+      ctx.save();
+      ctx.globalCompositeOperation = "source-over";
+      ctx.globalAlpha = 1.0;
+
+      const scale = canvasSize / 950;
+      const lineWidth = Math.max(3.5, trailSettings.lineWidth) * scale * 0.6;
+
+      if (blueProp && hasBlue) {
+        this.drawPropBridge(ctx, blueProp, this.lastBluePos, trailSettings.blueColor, lineWidth, canvasSize);
+        // Update last position from prop
+        const endpoint = this.propPositionCalculator.calculateEndpoint(
+          blueProp, { canvasSize, propDimensions: { width: 252.8, height: 77.8 } }, 1
+        );
+        this.lastBluePos = { x: endpoint.x, y: endpoint.y };
+      }
+      if (redProp && hasRed) {
+        this.drawPropBridge(ctx, redProp, this.lastRedPos, trailSettings.redColor, lineWidth, canvasSize);
+        const endpoint = this.propPositionCalculator.calculateEndpoint(
+          redProp, { canvasSize, propDimensions: { width: 252.8, height: 77.8 } }, 1
+        );
+        this.lastRedPos = { x: endpoint.x, y: endpoint.y };
+      }
+
+      ctx.restore();
+    }
   }
 
   clear(): void {
     if (!this.ctx) return;
     this.ctx.clearRect(0, 0, this.width, this.height);
+    this.lastBluePos = null;
+    this.lastRedPos = null;
   }
 
   /**
-   * Remove discontinuous points that would create artifacts.
-   * During sequence swaps, stale cache data can produce points at wrong
-   * positions. If two consecutive points are more than 30% of canvas size
-   * apart, they're from different contexts — drop the earlier ones.
+   * Draw a connecting line from last known position to current prop endpoint.
+   * Bridges the cache-rebuild gap during sequence transitions.
    */
+  private drawPropBridge(
+    ctx: CanvasRenderingContext2D,
+    prop: PropState,
+    lastPos: { x: number; y: number } | null,
+    color: string,
+    lineWidth: number,
+    canvasSize: number
+  ): void {
+    const endpoint = this.propPositionCalculator.calculateEndpoint(
+      prop, { canvasSize, propDimensions: { width: 252.8, height: 77.8 } }, 1
+    );
+
+    if (!lastPos) {
+      // No previous position — just record, don't draw
+      return;
+    }
+
+    // Skip if positions are too far apart (discontinuity)
+    const dx = endpoint.x - lastPos.x;
+    const dy = endpoint.y - lastPos.y;
+    if (dx * dx + dy * dy > (canvasSize * 0.3) ** 2) return;
+
+    ctx.strokeStyle = color;
+    ctx.lineWidth = lineWidth;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(lastPos.x, lastPos.y);
+    ctx.lineTo(endpoint.x, endpoint.y);
+    ctx.stroke();
+  }
+
   private sanitizeLeadingEdge(
     points: TrailPoint[],
     canvasSize: number
@@ -182,14 +245,12 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
     const maxGap = canvasSize * 0.3;
     const maxGapSq = maxGap * maxGap;
 
-    // Walk backward from the newest point and find where continuity breaks
     for (let i = points.length - 1; i > 0; i--) {
       const curr = points[i]!;
       const prev = points[i - 1]!;
       const dx = curr.x - prev.x;
       const dy = curr.y - prev.y;
       if (dx * dx + dy * dy > maxGapSq) {
-        // Discontinuity — keep only points from i onward
         return points.slice(i);
       }
     }
@@ -210,53 +271,40 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
     this.ctx = null;
     this.width = 0;
     this.height = 0;
+    this.lastBluePos = null;
+    this.lastRedPos = null;
   }
 
-  // -------------------------------------------------------------------
-  // Delta-time compensated fade
-  //
-  // We want the trail to be fully transparent after `fadeDurationMs`
-  // milliseconds. At 60 fps that's `fadeDurationMs / 16.67` frames.
-  // A base fade of `1.5 / framesForFullFade` per frame gives a smooth
-  // exponential decay. Delta-time compensation ensures consistent fade
-  // speed regardless of actual frame rate.
-  // -------------------------------------------------------------------
   private computeFadeAmount(fadeDurationMs: number, deltaTime: number): number {
-    // Guard against nonsensical values
     const safeDuration = Math.max(fadeDurationMs, 16.67);
     const framesForFullFade = safeDuration / 16.67;
-    // 3.5x multiplier ensures trails reach full transparency within the
-    // fade window. Lower values (e.g., 1.5) cause exponential decay to
-    // asymptote above zero, leaving permanent gray ghost artifacts.
     const baseFade = 3.5 / framesForFullFade;
-
-    // deltaTime is in seconds (e.g. 0.0167 for 60fps). Multiply by 60
-    // to normalize to "number of 60fps frames worth of time elapsed".
     return 1 - Math.pow(1 - baseFade, deltaTime * 60);
   }
 
   /**
-   * Zero out pixels with alpha below threshold.
-   * destination-out is multiplicative: alpha=1 * (1-x) rounds back to 1
-   * for any x < 0.5 in 8-bit color. No multiplier fixes this.
-   * Direct pixel manipulation is the only way to eliminate ghost artifacts.
+   * Subtract a constant from every non-zero alpha pixel.
+   * Unlike a hard threshold (which creates visible jumps when chunks of
+   * pixels cross the boundary simultaneously), constant subtraction creates
+   * a smooth linear fade at the tail. And unlike multiplicative destination-out
+   * (which can never reach zero due to 8-bit rounding), subtraction guarantees
+   * every pixel eventually reaches alpha 0.
    */
-  private killGhostPixels(ctx: CanvasRenderingContext2D): void {
+  private smoothAlphaDecay(ctx: CanvasRenderingContext2D): void {
     const w = this.width;
     const h = this.height;
     if (w === 0 || h === 0) return;
 
     const imageData = ctx.getImageData(0, 0, w, h);
     const data = imageData.data;
-
-    // With fade factor ~0.981, alpha * 0.981 rounds back to alpha for any
-    // value below 27 (because N * 0.019 < 0.5 rounds to 0). These pixels
-    // are permanently stuck and visible as gray on dark backgrounds.
-    const threshold = 28;
+    const DECAY = 2; // subtract 2 per frame — reaches zero in ~14 frames from alpha 28
     let dirty = false;
+
     for (let i = 3; i < data.length; i += 4) {
-      if (data[i]! > 0 && data[i]! < threshold) {
-        data[i] = 0;
+      const a = data[i]!;
+      if (a > 0 && a <= 28) {
+        // Only apply constant decay in the zone where destination-out stalls
+        data[i] = Math.max(0, a - DECAY);
         dirty = true;
       }
     }
