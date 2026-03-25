@@ -1,5 +1,6 @@
 import type { TrailPoint, TrailSettings } from "../../domain/types/TrailTypes";
 import type { AdditionalLayerRenderData } from "$lib/features/compose/services/contracts/IAnimationRenderer";
+import type { PropState } from "$lib/features/compose/shared/domain/types/PropState";
 
 export interface TrailOverlayRenderParams {
   blueTrailPoints: TrailPoint[];
@@ -10,6 +11,9 @@ export interface TrailOverlayRenderParams {
   hasBlue: boolean;
   hasRed: boolean;
   additionalLayers?: AdditionalLayerRenderData[];
+  /** Raw prop states for gap-bridging when cache is rebuilding */
+  blueProp?: PropState | null;
+  redProp?: PropState | null;
 }
 
 export interface ITrailOverlayCanvas {

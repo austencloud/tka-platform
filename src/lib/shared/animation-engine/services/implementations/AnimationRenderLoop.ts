@@ -378,6 +378,8 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
         hasBlue: !!params.props.blueProp && effectiveBlueMotionVisible,
         hasRed: !!params.props.redProp && effectiveRedMotionVisible,
         additionalLayers: additionalLayerRenderData.length > 0 ? additionalLayerRenderData : undefined,
+        blueProp: params.props.blueProp,
+        redProp: params.props.redProp,
       });
     }
 
@@ -710,8 +712,11 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
           this.reusableRedTrailPoints.length = redCount;
         }
       }
-    } else if (this.TrailCapturer) {
-      // Fallback to real-time capture - use zero-allocation fill method
+    } else if (this.TrailCapturer && !this.trailOverlay) {
+      // Fallback to real-time capture — only when NOT using the overlay.
+      // The overlay accumulates pixels, so during the brief cache-rebuild
+      // gap it's better to draw nothing (existing pixels fade naturally)
+      // than to draw broken real-time capture points as artifacts.
       this.TrailCapturer.fillTrailPointArrays(
         this.reusableBlueTrailPoints,
         this.reusableRedTrailPoints,
