@@ -1,15 +1,22 @@
 <!--
-  FuseTour - Fullscreen wizard walkthrough for the Fuse tab.
+  FuseTour - Content-only tour card for the Fuse tab walkthrough.
 
-  Takes over the entire layout. Each stop shows only what's relevant.
-  No overlays, no dimming — clean takeover.
+  Renders the icon, title, description, dots, and buttons for the current stop.
+  Does NOT render overlays or position itself — the parent (FuseLayout) handles that.
+
+  variant="fullscreen": large centered layout for when the tour takes over the screen.
+  variant="banner":     compact horizontal-ish layout for when the tour sits above content.
 -->
 <script lang="ts">
-  import {
-    fuseTourState,
-  } from "../../state/fuse-tour-state.svelte";
+  import { fuseTourState } from "../../state/fuse-tour-state.svelte";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
+
+  let {
+    variant = "fullscreen" as "fullscreen" | "banner",
+  }: {
+    variant?: "fullscreen" | "banner";
+  } = $props();
 
   interface StopContent {
     icon: string;
@@ -19,46 +26,50 @@
     buttonText: string;
   }
 
-  const STOPS: StopContent[] = [
+  const STOP_CONTENT: StopContent[] = [
     {
       icon: "fa-fire",
       iconColor: "#f97316",
       title: "Fuse",
-      description: "Combine a blue prop path and a red prop path into one complete sequence.",
+      description:
+        "Pick a blue prop path and a red prop path, then merge them into one complete sequence.",
       buttonText: "Show me",
     },
     {
-      icon: "fa-circle",
-      iconColor: "var(--prop-blue, #2196f3)",
-      title: "Blue Prop Path",
-      description: "This side shows one blue prop path. The notation grid shows the steps, and the animation below shows it in motion.",
-      buttonText: "Next",
-    },
-    {
-      icon: "fa-circle",
-      iconColor: "var(--prop-red, #f44336)",
-      title: "Red Prop Path",
-      description: "Same for red. Both sides step in sync so you can see how they'll fit together.",
+      icon: "fa-columns",
+      iconColor: "#f97316",
+      title: "Blue on the left, red on the right",
+      description:
+        "Both step in sync. The grid shows notation, the animation shows motion.",
       buttonText: "Next",
     },
     {
       icon: "fa-shuffle",
       iconColor: "#f97316",
-      title: "Try Shuffling",
-      description: "Tap a Shuffle button below to see a different prop path.",
+      title: "Try shuffling",
+      description: "Tap a Shuffle button to see a different prop path.",
       buttonText: "",
     },
     {
       icon: "fa-fire",
       iconColor: "#f97316",
-      title: "Fuse Them",
-      description: "When you like both sides, tap Fuse to merge them into one sequence.",
-      buttonText: "Got it",
+      title: "Fuse them together",
+      description: "When you like both sides, tap Fuse.",
+      buttonText: "",
     },
   ];
 
-  const current = $derived(STOPS[fuseTourState.currentStopIndex] ?? STOPS[0]!);
-  const isWaiting = $derived(fuseTourState.currentStop === "shuffle" && !fuseTourState.actionCompleted);
+  const current = $derived(
+    STOP_CONTENT[fuseTourState.currentStopIndex] ?? STOP_CONTENT[0]!
+  );
+
+  // Shuffle stop: user must shuffle to advance, not tap Next.
+  const isWaiting = $derived(
+    fuseTourState.currentStop === "shuffle" && !fuseTourState.actionCompleted
+  );
+
+  // Show Next button only when there's button text and we're not waiting for action.
+  const showNext = $derived(!!current.buttonText && !isWaiting);
 
   let hapticService: IHapticFeedback | null = null;
   try {
@@ -81,7 +92,10 @@
     if (event.key === "Escape") {
       event.preventDefault();
       handleSkip();
-    } else if (!isWaiting && (event.key === "Enter" || event.key === " " || event.key === "ArrowRight")) {
+    } else if (
+      showNext &&
+      (event.key === "Enter" || event.key === " " || event.key === "ArrowRight")
+    ) {
       event.preventDefault();
       handleNext();
     } else if (event.key === "ArrowLeft") {
@@ -94,71 +108,125 @@
 <svelte:window onkeydown={handleKeydown} />
 
 {#if fuseTourState.isActive}
-  <div class="tour-content">
-    <div class="tour-icon" style="--icon-color: {current.iconColor};">
+  <div class="tour-content {variant}">
+    <div
+      class="tour-icon"
+      class:icon-sm={variant === "banner"}
+      style="--icon-color: {current.iconColor};"
+    >
       <i class="fas {current.icon}" aria-hidden="true"></i>
     </div>
 
-    <h3 class="tour-title">{current.title}</h3>
-    <p class="tour-desc">{current.description}</p>
-
-    <div class="tour-dots">
-      {#each STOPS as _, i}
-        <div
-          class="dot"
-          class:active={i === fuseTourState.currentStopIndex}
-          class:completed={i < fuseTourState.currentStopIndex}
-        ></div>
-      {/each}
+    <div class="tour-text">
+      <h3 class="tour-title" class:title-sm={variant === "banner"}>
+        {current.title}
+      </h3>
+      <p class="tour-desc" class:desc-sm={variant === "banner"}>
+        {current.description}
+      </p>
     </div>
 
-    <div class="tour-actions">
-      <button class="skip-btn" onclick={handleSkip}>Skip</button>
-      {#if isWaiting}
-        <span class="waiting-hint">
-          <i class="fas fa-hand-pointer" aria-hidden="true"></i>
-          Shuffle to continue
-        </span>
-      {:else if current.buttonText}
-        <button class="next-btn" onclick={handleNext}>
-          {current.buttonText}
-        </button>
-      {/if}
+    <div class="tour-footer" class:footer-row={variant === "banner"}>
+      <div class="tour-dots">
+        {#each STOP_CONTENT as _, i}
+          <div
+            class="dot"
+            class:active={i === fuseTourState.currentStopIndex}
+            class:completed={i < fuseTourState.currentStopIndex}
+          ></div>
+        {/each}
+      </div>
+
+      <div class="tour-actions">
+        <button class="skip-btn" onclick={handleSkip}>Skip</button>
+
+        {#if isWaiting}
+          <span class="waiting-hint">
+            <i class="fas fa-hand-pointer" aria-hidden="true"></i>
+            Shuffle to continue
+          </span>
+        {:else if showNext}
+          <button class="next-btn" onclick={handleNext}>
+            {current.buttonText}
+          </button>
+        {/if}
+      </div>
     </div>
   </div>
 {/if}
 
 <style>
+  /* ── Base layout ─────────────────────────────────────────────────── */
+
   .tour-content {
     display: flex;
-    flex-direction: column;
     align-items: center;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* Fullscreen: tall centered column */
+  .tour-content.fullscreen {
+    flex-direction: column;
     justify-content: center;
-    gap: 14px;
+    gap: 20px;
     padding: 32px 24px;
     text-align: center;
     height: 100%;
-    width: 100%;
   }
+
+  /* Banner: compact column centred, sits above content */
+  .tour-content.banner {
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    text-align: center;
+  }
+
+  /* ── Icon ────────────────────────────────────────────────────────── */
 
   .tour-icon {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 64px;
-    height: 64px;
+    flex-shrink: 0;
     border-radius: 50%;
     background: color-mix(in srgb, var(--icon-color) 20%, transparent);
     border: 1.5px solid color-mix(in srgb, var(--icon-color) 35%, transparent);
     color: var(--icon-color);
-    font-size: 1.5rem;
+
+    /* Fullscreen size (default) */
+    width: 80px;
+    height: 80px;
+    font-size: 1.75rem;
+  }
+
+  .tour-icon.icon-sm {
+    width: 40px;
+    height: 40px;
+    font-size: 1rem;
+  }
+
+  /* ── Text block ──────────────────────────────────────────────────── */
+
+  .tour-text {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
   }
 
   .tour-title {
     margin: 0;
-    font-size: 1.3rem;
+    font-size: 2rem;
     font-weight: 700;
     color: white;
+    line-height: 1.2;
+  }
+
+  .tour-title.title-sm {
+    font-size: 1rem;
   }
 
   .tour-desc {
@@ -166,13 +234,42 @@
     font-size: var(--font-size-sm, 14px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.65));
     line-height: 1.6;
-    max-width: 300px;
+    max-width: 340px;
   }
+
+  .fullscreen .tour-desc {
+    align-self: center;
+  }
+
+  .tour-desc.desc-sm {
+    font-size: var(--font-size-compact, 12px);
+    max-width: 280px;
+    line-height: 1.45;
+  }
+
+  /* ── Footer (dots + actions) ─────────────────────────────────────── */
+
+  .tour-footer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  /* Banner collapses dots + actions into one row */
+  .tour-footer.footer-row {
+    flex-direction: row;
+    justify-content: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  /* ── Progress dots ───────────────────────────────────────────────── */
 
   .tour-dots {
     display: flex;
     gap: 6px;
-    margin-top: 4px;
+    align-items: center;
   }
 
   .dot {
@@ -180,7 +277,7 @@
     height: 8px;
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.15);
-    transition: all 0.2s ease;
+    transition: background 0.2s ease, transform 0.2s ease;
   }
 
   .dot.active {
@@ -192,11 +289,12 @@
     background: rgba(255, 255, 255, 0.4);
   }
 
+  /* ── Action buttons ──────────────────────────────────────────────── */
+
   .tour-actions {
     display: flex;
     align-items: center;
-    gap: 12px;
-    margin-top: 8px;
+    gap: 10px;
   }
 
   .skip-btn {
@@ -208,7 +306,7 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     font-size: var(--font-size-sm, 14px);
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
   }
 
   .skip-btn:hover {
@@ -227,7 +325,7 @@
     font-size: var(--font-size-sm, 14px);
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: filter 0.15s ease, transform 0.1s ease;
   }
 
   .next-btn:hover {
@@ -237,6 +335,8 @@
   .next-btn:active {
     transform: scale(0.97);
   }
+
+  /* ── Shuffle hint ────────────────────────────────────────────────── */
 
   .waiting-hint {
     display: flex;
@@ -255,10 +355,22 @@
     50% { opacity: 1; }
   }
 
+  /* ── Reduced motion ──────────────────────────────────────────────── */
+
   @media (prefers-reduced-motion: reduce) {
-    .dot { transition: none; }
-    .skip-btn, .next-btn { transition: none; }
-    .next-btn:active { transform: none; }
-    .waiting-hint { animation: none; opacity: 1; }
+    .dot {
+      transition: none;
+    }
+    .skip-btn,
+    .next-btn {
+      transition: none;
+    }
+    .next-btn:active {
+      transform: none;
+    }
+    .waiting-hint {
+      animation: none;
+      opacity: 1;
+    }
   }
 </style>
