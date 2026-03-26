@@ -3,14 +3,10 @@
 
   interface Props {
     workshop: WorkshopTemplate;
-    onedit: () => void;
-    ondelete: () => void;
-    oncopy: () => void;
+    onclick: () => void;
   }
 
-  let { workshop, onedit, ondelete, oncopy }: Props = $props();
-
-  let expanded = $state(false);
+  let { workshop, onclick }: Props = $props();
 
   const levelColors: Record<WorkshopLevel, string> = {
     introductory: "#a78bfa",
@@ -22,230 +18,276 @@
 
   const levelColor = $derived(levelColors[workshop.level] ?? "var(--theme-accent, #6366f1)");
 
-  function handleCopy() {
-    navigator.clipboard.writeText(workshop.description);
-    oncopy();
+  const PROP_ICONS: Record<string, string> = {
+    "double-staves": "fa-grip-lines-vertical",
+    "staves": "fa-grip-lines-vertical",
+    "staff": "fa-grip-lines-vertical",
+    "double staves": "fa-grip-lines-vertical",
+    "clubs": "fa-baseball-bat-ball",
+    "club": "fa-baseball-bat-ball",
+    "mixed-static-props": "fa-shapes",
+    "mixed props": "fa-shapes",
+    "mixed": "fa-shapes",
+    "contact-ball": "fa-circle",
+    "contact": "fa-circle",
+    "cj": "fa-circle",
+    "crystal ball": "fa-circle",
+    "balloons": "fa-wind",
+    "balloon": "fa-wind",
+    "poi": "fa-yin-yang",
+    "fans": "fa-fan",
+    "fan": "fa-fan",
+    "buugeng": "fa-infinity",
+    "s-staff": "fa-infinity",
+  };
+
+  function getPropIcon(prop: string): string {
+    return PROP_ICONS[prop.toLowerCase().trim()] ?? "fa-circle-dot";
   }
+
+  function hashCode(str: string): number {
+    let hash = 0;
+    for (let i = 0; i < Math.min(str.length, 8); i++) {
+      hash = ((hash << 5) - hash + str.charCodeAt(i)) | 0;
+    }
+    return Math.abs(hash);
+  }
+
+  interface PatternCircle {
+    size: number;
+    top: number;
+    left: number;
+  }
+
+  interface PatternLine {
+    width: number;
+    top: number;
+    left: number;
+    angle: number;
+  }
+
+  const patternSeed = $derived(hashCode(workshop.id));
+
+  const circles = $derived.by<PatternCircle[]>(() => {
+    const seed = patternSeed;
+    const count = (seed % 2) + 2;
+    return Array.from({ length: count }, (_, i) => ({
+      size: 30 + (((seed >> (i * 3)) % 7) * 10),
+      top: ((seed >> (i * 4 + 1)) % 80) - 10,
+      left: ((seed >> (i * 5 + 2)) % 90) - 5,
+    }));
+  });
+
+  const lines = $derived.by<PatternLine[]>(() => {
+    const seed = patternSeed;
+    const count = (seed % 2) + 2;
+    return Array.from({ length: count }, (_, i) => ({
+      width: 50 + (((seed >> (i * 3 + 7)) % 7) * 12),
+      top: 20 + (((seed >> (i * 4 + 8)) % 6) * 12),
+      left: ((seed >> (i * 5 + 9)) % 80) - 5,
+      angle: -40 + (((seed >> (i * 3 + 10)) % 9) * 10),
+    }));
+  });
 </script>
 
-<div class="workshop-card" style="--level-color: {levelColor}">
-  <div class="card-header-band">
-    <div class="header-content">
-      <h4 class="workshop-title">{workshop.title}</h4>
-      <span class="level-badge">
-        {workshop.level}
-      </span>
-    </div>
-    {#if workshop.solo}
-      <span class="solo-indicator">Solo</span>
-    {/if}
-  </div>
+<button
+  class="workshop-card level-{workshop.level}"
+  style="--level-color: {levelColor}"
+  onclick={onclick}
+  type="button"
+>
+  <div class="level-accent"></div>
 
-  <div class="card-content">
+  <div class="card-hero">
+    <div class="card-pattern">
+      {#each circles as circle}
+        <div
+          class="pattern-circle"
+          style="width:{circle.size}px;height:{circle.size}px;top:{circle.top}%;left:{circle.left}%"
+        ></div>
+      {/each}
+      {#each lines as line}
+        <div
+          class="pattern-line"
+          style="width:{line.width}px;top:{line.top}%;left:{line.left}%;transform:rotate({line.angle}deg)"
+        ></div>
+      {/each}
+    </div>
+
     {#if workshop.props.length > 0}
-      <div class="prop-chips">
+      <div class="card-props">
         {#each workshop.props as prop (prop)}
-          <span class="prop-chip">{prop}</span>
+          <span class="prop-icon" title={prop}>
+            <i class="fas {getPropIcon(prop)}" aria-hidden="true"></i>
+          </span>
         {/each}
       </div>
     {/if}
-
-    <div class="description-block">
-      <p class="description" class:truncated={!expanded}>
-        {workshop.description}
-      </p>
-      {#if workshop.description.length > 120}
-        <button class="show-more-btn" onclick={() => (expanded = !expanded)}>
-          {expanded ? "Show less" : "Show more"}
-        </button>
-      {/if}
-    </div>
-
-    <div class="action-row">
-      <button class="action-btn" onclick={handleCopy} title="Copy description to clipboard">
-        <i class="fas fa-copy" aria-hidden="true"></i>
-        Copy
-      </button>
-      <button class="action-btn" onclick={onedit} title="Edit workshop">
-        <i class="fas fa-pencil-alt" aria-hidden="true"></i>
-        Edit
-      </button>
-      <button class="action-btn danger" onclick={ondelete} title="Delete workshop">
-        <i class="fas fa-trash" aria-hidden="true"></i>
-        Delete
-      </button>
-    </div>
   </div>
-</div>
+
+  <div class="card-info">
+    <h4 class="card-title">{workshop.title}</h4>
+    {#if workshop.description}
+      <p class="card-teaser">{workshop.description}</p>
+    {/if}
+  </div>
+
+  <div class="card-meta">
+    <span class="level-dot"></span>
+    <span class="level-label">{workshop.level}</span>
+    <span class="solo-badge">{workshop.solo ? "Solo" : "Partner"}</span>
+  </div>
+</button>
 
 <style>
   .workshop-card {
+    all: unset;
+    display: flex;
+    flex-direction: column;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: var(--radius-lg, 12px);
     overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+    cursor: pointer;
+    transition: border-color var(--transition-fast, 0.15s),
+      transform var(--transition-fast, 0.15s),
+      box-shadow var(--transition-fast, 0.15s);
+    position: relative;
+    text-align: left;
   }
 
   .workshop-card:hover {
     border-color: color-mix(in srgb, var(--level-color) 40%, transparent);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+    transform: translateY(-3px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
   }
 
-  /* ── Colored header band ───────────────────────────── */
-
-  .card-header-band {
-    background: linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--level-color) 25%, transparent),
-      color-mix(in srgb, var(--level-color) 10%, transparent)
-    );
-    border-bottom: 1px solid color-mix(in srgb, var(--level-color) 20%, transparent);
-    padding: 14px 16px 12px;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
+  .workshop-card:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 2px;
   }
 
-  .header-content {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
+  .level-accent {
+    height: 3px;
+    background: linear-gradient(90deg, var(--level-color), color-mix(in srgb, var(--level-color) 50%, transparent));
   }
 
-  .workshop-title {
-    margin: 0;
-    font-size: var(--font-size-sm, 14px);
-    font-weight: 600;
-    color: var(--theme-text, #ffffff);
-    flex: 1;
-    min-width: 0;
-    line-height: 1.3;
-  }
-
-  .level-badge {
-    font-size: var(--font-size-xs, 11px);
-    font-weight: 600;
-    padding: 2px 10px;
-    border-radius: 10px;
-    background: color-mix(in srgb, var(--level-color) 20%, transparent);
-    color: var(--level-color);
-    border: 1px solid color-mix(in srgb, var(--level-color) 35%, transparent);
-    text-transform: capitalize;
-    white-space: nowrap;
-    flex-shrink: 0;
-  }
-
-  .solo-indicator {
-    font-size: var(--font-size-xs, 11px);
-    color: color-mix(in srgb, var(--level-color) 70%, white);
-    opacity: 0.8;
-    align-self: flex-start;
-  }
-
-  /* ── Card content ──────────────────────────────────── */
-
-  .card-content {
-    padding: 14px 16px 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .prop-chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-
-  .prop-chip {
-    font-size: var(--font-size-compact, 12px);
-    padding: 3px 10px;
-    background: color-mix(in srgb, var(--level-color) 8%, transparent);
-    border: 1px solid color-mix(in srgb, var(--level-color) 15%, transparent);
-    border-radius: 8px;
-    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.8));
-  }
-
-  .description-block {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .description {
-    margin: 0;
-    font-size: var(--font-size-sm, 14px);
-    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.7));
-    line-height: 1.5;
-  }
-
-  .description.truncated {
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    line-clamp: 3;
-    -webkit-box-orient: vertical;
+  .card-hero {
+    height: 120px;
+    position: relative;
     overflow: hidden;
   }
 
-  .show-more-btn {
-    background: none;
-    border: none;
+  .card-hero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 30% 20%, var(--level-color), transparent 70%);
+    opacity: 0.12;
+  }
+
+  .card-hero::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 70%;
+    background: linear-gradient(to top, var(--theme-card-bg, rgba(13, 13, 26, 0.95)), transparent);
+  }
+
+  .card-pattern {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    opacity: 0.15;
     color: var(--level-color);
-    font-size: var(--font-size-compact, 12px);
-    cursor: pointer;
-    padding: 0;
-    text-align: left;
   }
 
-  .show-more-btn:hover {
-    text-decoration: underline;
+  .pattern-circle {
+    position: absolute;
+    border-radius: 50%;
+    border: 2px solid currentColor;
   }
 
-  /* ── Actions ───────────────────────────────────────── */
+  .pattern-line {
+    position: absolute;
+    height: 1px;
+    background: currentColor;
+    transform-origin: left center;
+  }
 
-  .action-row {
+  .card-props {
+    position: absolute;
+    top: 10px;
+    right: 10px;
     display: flex;
-    gap: 8px;
-    padding-top: 8px;
-    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
-    margin-top: 2px;
+    gap: 6px;
+    z-index: 2;
   }
 
-  .action-btn {
+  .prop-icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(8px);
     display: flex;
     align-items: center;
-    gap: 5px;
-    padding: 6px 12px;
-    background: none;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 8px;
-    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.6));
+    justify-content: center;
     font-size: var(--font-size-compact, 12px);
-    cursor: pointer;
-    transition: color 0.15s, border-color 0.15s, background 0.15s;
+    color: rgba(255, 255, 255, 0.7);
   }
 
-  .action-btn:hover {
+  .card-info {
+    padding: 14px 14px 8px;
+  }
+
+  .card-title {
+    margin: 0;
+    font-size: var(--font-size-min, 14px);
+    font-weight: 600;
+    line-height: 1.3;
     color: var(--theme-text, #ffffff);
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
   }
 
-  .action-btn.danger:hover {
-    color: var(--semantic-error, #ef4444);
-    border-color: var(--semantic-error, #ef4444);
-    background: rgba(239, 68, 68, 0.08);
+  .card-teaser {
+    margin: 6px 0 0;
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.4));
+    line-height: 1.4;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
-  .action-btn i {
-    font-size: 11px;
+  .card-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 14px 12px;
   }
 
-  /* ── Reduced motion ────────────────────────────────── */
+  .level-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--level-color);
+    flex-shrink: 0;
+  }
+
+  .level-label {
+    font-size: var(--font-size-compact, 12px);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.35));
+  }
+
+  .solo-badge {
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.25));
+    margin-left: auto;
+  }
 
   @media (prefers-reduced-motion: reduce) {
     .workshop-card {
@@ -255,10 +297,6 @@
     .workshop-card:hover {
       transform: none;
       box-shadow: none;
-    }
-
-    .action-btn {
-      transition: none;
     }
   }
 </style>
