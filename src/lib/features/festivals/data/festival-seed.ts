@@ -190,7 +190,6 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     description:
       "Billed as the world's first Flow Arts and Sustainability festival. Held on a sustainable farm with flow workshops, permaculture classes, organic gardening, natural building, live music, and performances.",
     websiteUrl: "https://flowstormtx.com",
-    imageUrl: "https://images.unsplash.com/photo-1504196606672-aef5c9cefc92?w=640&q=80",
     socialLinks: {
       instagram: "@flowstormtx",
       facebook: "https://www.facebook.com/FlowstormTx/",
@@ -271,7 +270,6 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     description:
       "Michigan's premier multi-disciplinary fire and flow arts retreat. Now in its sixth installment. Four-day camping event with workshops, music, performances, art, nightly stage performances, and fire circles.",
     websiteUrl: "https://www.greatlakesflow.com",
-    imageUrl: "https://images.unsplash.com/photo-1504196606672-aef5c9cefc92?w=640&q=80",
     socialLinks: {
       instagram: "@glfproductions",
       facebook: "https://www.facebook.com/greatlakesflow/",
@@ -401,7 +399,6 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     description:
       "Three-night fire, flow, and wellness retreat in South Florida. Flow and fire workshops on various props, holistic wellness classes (breathwork, yoga, sound baths), and evening fire performances over the lagoon.",
     websiteUrl: "https://thirdeyeartcollective.com/zenflowhome",
-    imageUrl: "https://images.unsplash.com/photo-1439853949212-36589f9bfd3c?w=640&q=80",
     estimatedSize: toSize("small"),
     region: "north-america",
     tags: ["fire", "flow", "wellness", "yoga", "sound-bath", "camping"],
@@ -447,7 +444,6 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     description:
       "Free public festival with 20+ workshops in circus arts, dance, and yoga. Part of the Flow Fests touring series celebrating 15 years.",
     websiteUrl: "https://flowfests.com/dallas-2026/",
-    imageUrl: "https://images.unsplash.com/photo-1531218150217-54595bc2b934?w=640&q=80",
     estimatedSize: toSize("medium"),
     region: "north-america",
     tags: ["flow", "workshops", "free", "family-friendly", "circus-arts", "yoga"],
@@ -469,7 +465,6 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     description:
       "Free public festival with simultaneous workshops offering up to 8 flow arts opportunities at any given time. Object manipulation (hoop, juggling, poi, staff), yoga, acro yoga, and slackline.",
     websiteUrl: "https://flowfests.com",
-    imageUrl: "https://images.unsplash.com/photo-1546156929-a4c0ac411f47?w=640&q=80",
     estimatedSize: toSize("medium"),
     region: "north-america",
     tags: ["flow", "workshops", "free", "family-friendly", "object-manipulation", "yoga", "acro-yoga"],
@@ -492,7 +487,6 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     description:
       "Free public festival with master artist workshops by day, performances by night. Part of the Flow Fests touring series.",
     websiteUrl: "https://flowfests.com/indy_2026/",
-    imageUrl: "https://images.unsplash.com/photo-1575783970733-1aaedde1db74?w=640&q=80",
     estimatedSize: toSize("medium"),
     region: "north-america",
     tags: ["flow", "workshops", "free", "family-friendly"],
@@ -515,7 +509,6 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     description:
       "Full-day community fire jam and festival with 40+ workshops. Friday night features participatory fire jam.",
     websiteUrl: "https://flowfests.com/flow-fest-seattle-2026/",
-    imageUrl: "https://images.unsplash.com/photo-1542223616-9de9adb5e3e8?w=640&q=80",
     estimatedSize: toSize("medium"),
     region: "north-america",
     tags: ["flow", "workshops", "free", "family-friendly", "fire-jam"],
@@ -537,7 +530,6 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     description:
       "Free public festival celebrating 15 years. 50+ workshops in circus arts, dance, and yoga. Theme: Whimsy.",
     websiteUrl: "https://flowfests.com/ftl-2026/",
-    imageUrl: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=640&q=80",
     estimatedSize: toSize("medium"),
     region: "north-america",
     tags: ["flow", "workshops", "free", "family-friendly", "circus-arts"],
@@ -559,7 +551,6 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     description:
       "Free public participation festival with workshops in hoop, juggling, poi, staff, yoga and more. Part of the Flow Fests touring series.",
     websiteUrl: "https://flowfests.com",
-    imageUrl: "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=640&q=80",
     estimatedSize: toSize("medium"),
     region: "north-america",
     tags: ["flow", "workshops", "free", "hoop", "juggling", "poi", "staff", "yoga"],
@@ -581,7 +572,6 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     description:
       "Free public festival with optional master workshops for newcomers and experienced movers. Part of the Flow Fests touring series.",
     websiteUrl: "https://flowfests.com/philly-2026/",
-    imageUrl: "https://images.unsplash.com/photo-1569761316261-9a8696fa2ca3?w=640&q=80",
     estimatedSize: toSize("medium"),
     region: "north-america",
     tags: ["flow", "workshops", "free", "family-friendly"],
@@ -628,7 +618,6 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     seekingPerformers: false,
     description: "16th annual informal 3-day event at Catalina State Park. Camping-focused, operates by donation.",
     websiteUrl: "http://www.tucsonjuggling.org/festival",
-    imageUrl: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=640&q=80",
     estimatedSize: toSize("small"),
     region: "north-america",
     tags: ["juggling", "flow", "camping", "donation-based"],
@@ -694,7 +683,6 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     description:
       "34th annual festival spanning 30+ years. Features workshops, big show, renegade performances, and games.",
     websiteUrl: "https://www.portlandjugglers.org",
-    imageUrl: "https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?w=640&q=80",
     estimatedSize: toSize("medium"),
     region: "north-america",
     tags: ["juggling", "flow", "workshops", "shows", "renegade"],
@@ -736,7 +724,6 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     description:
       "Hoop convention founded by Madison Circus Space co-founder. First year drew participants from 30 states plus Canada and Germany.",
     websiteUrl: "https://www.cheeselandiahoopaffair.com",
-    imageUrl: "https://images.unsplash.com/photo-1519925610903-381054cc2a1c?w=640&q=80",
     estimatedSize: toSize("small"),
     region: "north-america",
     tags: ["hoop", "workshops", "midwest"],
@@ -923,7 +910,6 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     seekingInstructors: false,
     seekingPerformers: false,
     description: "Four fun and flaming days dedicated to creativity, movement, juggling, and play.",
-    imageUrl: "https://festivalsandretreats.com/wp-content/uploads/2022/01/ab-n-pott.jpeg",
     estimatedSize: toSize("medium"),
     region: "europe",
     tags: ["juggling", "flow", "workshops", "fire"],
@@ -942,7 +928,6 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     seekingInstructors: true,
     seekingPerformers: true,
     description: "Four days filled with many workshops, fire jam, gala show, and open stage in Salzburg.",
-    imageUrl: "https://www.soundofjuggling.com/wp-content/uploads/Kopie-von-SOJ24-91.webp",
     estimatedSize: toSize("medium"),
     region: "europe",
     tags: ["juggling", "flow", "fire-jam", "gala-show", "workshops"],
@@ -962,7 +947,6 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     seekingPerformers: false,
     description:
       "Hoop retreat in Portugal featuring workshops, silk veil fans, yoga, meditation, pool/sauna time, and vegetarian meals.",
-    imageUrl: "https://images.unsplash.com/photo-1555881400-74d7acaacd8b?w=640&q=80",
     estimatedSize: toSize("intimate"),
     region: "europe",
     tags: ["hoop", "workshops", "retreat", "yoga", "meditation"],
@@ -984,7 +968,6 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     description:
       "Family-friendly weekend at a permaculture farm in Sardinia with workshops, games, organic food, and evening entertainment.",
     websiteUrl: "https://eatplaylove-it.my.canva.site/en",
-    imageUrl: "https://images.unsplash.com/photo-1523906834658-6e24ef2386f9?w=640&q=80",
     estimatedSize: toSize("intimate"),
     region: "europe",
     tags: ["flow", "workshops", "family-friendly", "organic-food", "permaculture"],
@@ -1003,7 +986,6 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     seekingInstructors: true,
     seekingPerformers: false,
     description: "Gathering of hula hoopers near Zurich, Switzerland.",
-    imageUrl: "https://festivalsandretreats.com/wp-content/uploads/2022/01/Get-the-Ring-Hulahoop-Convention-Switzerland.jpg",
     estimatedSize: toSize("small"),
     region: "europe",
     tags: ["hoop", "workshops", "convention"],
@@ -1062,7 +1044,6 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     seekingPerformers: true,
     description:
       "The second biggest juggling convention in the world (after EJC) with around 2000 participants. Camping convention with vendors, 220+ workshops, fire show, renegades, juggle jam, and an International Gala with world-class performers. Volunteer-organized.",
-    imageUrl: "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=640&q=80",
     estimatedSize: toSize("large"),
     region: "asia",
     tags: ["juggling", "circus", "fire-show", "workshops", "camping", "gala"],
@@ -1083,7 +1064,6 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     description:
       "Immersive fire-themed intensive creating comfort and curiosity with the art of fire hooping and fire fans. Luxury retreat setting in Bali with world-class instruction.",
     websiteUrl: "https://thehulahoopinstitute.com/the-hoop-dream-retreat/ignite-2025/",
-    imageUrl: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=640&q=80",
     estimatedSize: toSize("intimate"),
     region: "asia",
     tags: ["fire", "hoop", "fans", "retreat", "luxury", "intensive"],
@@ -1104,7 +1084,6 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     description:
       "Luxury hoop gathering in Bali with terrific instructors, infinity pool overlooking the sea, and delicious cuisine. 7 or 15-day event.",
     websiteUrl: "https://thehulahoopinstitute.com/the-hoop-dream-retreat/bali-2025/",
-    imageUrl: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=640&q=80",
     estimatedSize: toSize("intimate"),
     region: "asia",
     tags: ["hoop", "retreat", "luxury", "bali"],
@@ -1221,7 +1200,6 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     seekingPerformers: false,
     description:
       "South Africa's first fire performance retreat at Porcupine Hills. Inspired by fire festivals in Europe and the USA.",
-    imageUrl: "https://images.unsplash.com/photo-1504450874802-0ba2bcd9b5ae?w=640&q=80",
     estimatedSize: toSize("intimate"),
     region: "africa",
     tags: ["fire", "performance", "retreat"],
