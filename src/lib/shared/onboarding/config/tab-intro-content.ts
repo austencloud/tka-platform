@@ -86,6 +86,25 @@ export const CREATE_TAB_INTROS: Record<string, TabIntroContent> = {
       },
     ],
   },
+
+  fuse: {
+    icon: "fa-fire",
+    color: "#f97316",
+    title: "Fuse",
+    pages: [
+      {
+        content: {
+          text: "Combine two prop paths into one sequence:",
+          points: [
+            "Each side shows a random blue or red prop path",
+            "Tap the shuffle button to cycle through options",
+            "Hit Fuse to merge them into a full sequence",
+          ],
+        },
+        tip: "Use the beat length selector at the bottom to match your target length",
+      },
+    ],
+  },
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
