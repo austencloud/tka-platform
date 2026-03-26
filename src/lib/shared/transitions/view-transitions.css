@@ -141,8 +141,76 @@
    Different modules can have unique transition styles
    ============================================================================ */
 ::view-transition-group(module-content) {
-  animation-duration: var(--transition-duration);
-  animation-timing-function: var(--transition-easing);
+  animation-duration: var(--duration-emphasis);
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ============================================================================
+   MODULE SLIDE TRANSITIONS
+   Directional slide when switching between modules via bottom nav / sidebar.
+   Classes are added to <html> by handleModuleChange() in navigation-coordinator.
+   ============================================================================ */
+
+/* Sliding LEFT (navigating to a module further right in the nav order) */
+.module-slide-left::view-transition-old(module-content) {
+  animation: module-exit-left var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.module-slide-left::view-transition-new(module-content) {
+  animation: module-enter-right var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+/* Sliding RIGHT (navigating to a module further left in the nav order) */
+.module-slide-right::view-transition-old(module-content) {
+  animation: module-exit-right var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.module-slide-right::view-transition-new(module-content) {
+  animation: module-enter-left var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+@keyframes module-exit-left {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-8%);
+  }
+}
+
+@keyframes module-enter-right {
+  from {
+    opacity: 0;
+    transform: translateX(8%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes module-exit-right {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(8%);
+  }
+}
+
+@keyframes module-enter-left {
+  from {
+    opacity: 0;
+    transform: translateX(-8%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 /* ============================================================================
@@ -166,6 +234,14 @@
 
   ::view-transition-new(root) {
     opacity: 1;
+  }
+
+  /* Module transitions: instant swap */
+  .module-slide-left::view-transition-old(module-content),
+  .module-slide-left::view-transition-new(module-content),
+  .module-slide-right::view-transition-old(module-content),
+  .module-slide-right::view-transition-new(module-content) {
+    animation: none !important;
   }
 }
 
