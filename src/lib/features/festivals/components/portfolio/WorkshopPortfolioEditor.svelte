@@ -293,9 +293,7 @@
           {#each festivalState.portfolio.classes as workshop (workshop.id)}
             <WorkshopTemplateCard
               {workshop}
-              onedit={() => openEditWorkshopForm(workshop)}
-              ondelete={() => deleteWorkshop(workshop.id)}
-              oncopy={() => {}}
+              onclick={() => openEditWorkshopForm(workshop)}
             />
           {/each}
         </div>
@@ -596,6 +594,27 @@
       </div>
 
       <div class="workshop-modal-footer">
+        {#if editingWorkshopId}
+          <button
+            class="modal-action-btn"
+            onclick={() => navigator.clipboard.writeText(wDescription)}
+            title="Copy description to clipboard"
+            type="button"
+          >
+            <i class="fas fa-copy" aria-hidden="true"></i>
+            Copy
+          </button>
+          <button
+            class="modal-action-btn danger"
+            onclick={() => { deleteWorkshop(editingWorkshopId!); cancelWorkshopForm(); }}
+            title="Delete this workshop"
+            type="button"
+          >
+            <i class="fas fa-trash" aria-hidden="true"></i>
+            Delete
+          </button>
+        {/if}
+        <div class="modal-footer-spacer"></div>
         <button class="cancel-btn" onclick={cancelWorkshopForm}>Cancel</button>
         <button class="save-btn" onclick={saveWorkshopForm} disabled={!wTitle.trim()}>
           {editingWorkshopId ? "Save Changes" : "Add Workshop"}
@@ -740,13 +759,14 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    padding: 6px 12px;
-    background: none;
-    border: 1px dashed var(--theme-stroke, rgba(255, 255, 255, 0.2));
-    border-radius: 5px;
+    padding: 6px 14px;
+    background: color-mix(in srgb, var(--theme-accent, #6366f1) 15%, transparent);
+    border: 1px solid color-mix(in srgb, var(--theme-accent, #6366f1) 30%, transparent);
+    border-radius: 8px;
     color: var(--theme-accent, #6366f1);
     font-size: var(--font-size-sm, 14px);
     cursor: pointer;
+    transition: background var(--transition-fast, 0.15s);
   }
 
   .add-btn:disabled {
@@ -755,7 +775,7 @@
   }
 
   .add-btn:not(:disabled):hover {
-    border-color: var(--theme-accent, #6366f1);
+    background: color-mix(in srgb, var(--theme-accent, #6366f1) 25%, transparent);
   }
 
   /* ─── Workshop modal ──────────────────────────────────────────────────────── */
@@ -830,10 +850,38 @@
 
   .workshop-modal-footer {
     display: flex;
-    justify-content: flex-end;
+    align-items: center;
     gap: 8px;
     padding: 16px 20px;
     border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+  }
+
+  .modal-footer-spacer {
+    flex: 1;
+  }
+
+  .modal-action-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 7px 14px;
+    background: none;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
+    border-radius: 5px;
+    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.6));
+    font-size: var(--font-size-compact, 12px);
+    cursor: pointer;
+    transition: color var(--transition-fast, 0.15s), border-color var(--transition-fast, 0.15s);
+  }
+
+  .modal-action-btn:hover {
+    color: var(--theme-text, #ffffff);
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.25));
+  }
+
+  .modal-action-btn.danger:hover {
+    color: var(--semantic-error, #ef4444);
+    border-color: var(--semantic-error, #ef4444);
   }
 
   .field-label {
@@ -977,8 +1025,8 @@
 
   .workshop-list {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(400px, 100%), 1fr));
-    gap: 1rem;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
   }
 
   /* ─── Editable string lists (credits, videos) ─────────────────────────────── */
