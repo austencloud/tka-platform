@@ -58,13 +58,14 @@
   </div>
 </div>
 
-{#if festivalState.selectedFestival}
-  <FestivalDetailView
-    festival={festivalState.selectedFestival}
-    tracker={festivalState.trackers.get(festivalState.selectedFestival.id)}
-    onclose={() => (festivalState.selectedFestival = null)}
-  />
-{/if}
+<FestivalDetailView
+  open={!!festivalState.selectedFestival}
+  festival={festivalState.selectedFestival}
+  tracker={festivalState.selectedFestival
+    ? festivalState.trackers.get(festivalState.selectedFestival.id)
+    : undefined}
+  onclose={() => (festivalState.selectedFestival = null)}
+/>
 
 <style>
   .festival-module {
