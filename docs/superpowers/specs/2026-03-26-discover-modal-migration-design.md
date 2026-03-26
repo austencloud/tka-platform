@@ -89,12 +89,12 @@ The parent currently controls visibility by conditionally rendering `<FestivalDe
 **Option A (preferred):** Parent passes `open` boolean. FestivalDetailView always exists but BaseModal controls visibility. This is cleaner for animations since BaseModal handles exit transitions before unmounting.
 
 ```svelte
-<!-- Parent: DiscoverTab.svelte -->
+<!-- Parent: FestivalModule.svelte (uses festivalState.selectedFestival from context) -->
 <FestivalDetailView
-  open={!!selectedFestival}
-  festival={selectedFestival}
+  open={!!festivalState.selectedFestival}
+  festival={festivalState.selectedFestival}
   tracker={selectedTracker}
-  onclose={() => (selectedFestival = null)}
+  onclose={() => (festivalState.selectedFestival = null)}
 />
 ```
 
@@ -125,7 +125,7 @@ These classes are fully replaced by BaseModal/ModalHeader:
 | `.backdrop` | BaseModal's native `::backdrop` replaces this |
 | `.modal` | The `<dialog>` element replaces this |
 | `.close-btn` (+ `:hover`, `:focus-visible`) | ModalHeader provides the close button |
-| `.region-badge` | Moves to ModalHeader subtitle instead |
+| `.region-badge` | Region info moves from hero overlay badge to ModalHeader subtitle. This is an intentional design change — the hero image displays without overlaid text. Remove .region-badge CSS. |
 | `@media (prefers-reduced-motion)` for `.close-btn` | ModalHeader handles this |
 
 Also remove:
@@ -149,11 +149,14 @@ All content-layout CSS stays (scoped to the component):
 | `.info-row`, `.info-chip`, `.info-chip.deadline` | Info chips row |
 | `.description` | Description paragraph |
 | `.bottom-row`, `.tags`, `.tag` | Tags and action links |
+| `.actions` | Flex container for Apply/Website/Contact buttons |
 | `.apply-btn`, `.link-btn` | External link buttons |
 | `.tracker-side`, `.tracker-heading` | Side panel for tracker |
 | Mobile `@media (max-width: 600px)` rules | Content-specific responsive adjustments |
 
 Rename `.modal-content` to `.detail-content` to avoid confusion with BaseModal's internal `.modal-content-wrapper`.
+
+Rename scrollbar pseudo-element selectors from `.modal-content` to `.detail-content`. BaseModal's `.modal-body` has its own scrollbar styling, but the content area may need custom scrollbar rules if it has its own overflow.
 
 ### Behavior to preserve
 
@@ -161,6 +164,14 @@ Rename `.modal-content` to `.detail-content` to avoid confusion with BaseModal's
 - **Hero image loading**: `imageLoaded` / `imageError` state and the fallback gradient stay unchanged.
 - **External links**: Apply, Website, Contact links stay in the body content.
 - **Attendance count**: Still derived from festival context.
+
+### Sticky header
+
+BaseModal's flex layout (header `flex-shrink:0`, body `overflow-y:auto`, footer `flex-shrink:0`) achieves the same effect as the current `position:sticky` header. The sticky header CSS can be removed.
+
+### Reduced-motion for kept elements
+
+After removing the modal-level `prefers-reduced-motion` block, add a new `prefers-reduced-motion` media query for the kept content elements (`.hero-img`, `.apply-btn`, `.link-btn`, `.app-toggle`) that still have CSS transitions.
 
 ---
 
@@ -276,6 +287,8 @@ Use `size="md"` (480px). The current modal uses `max-width: 560px`. BaseModal's 
 
 The current `.form-actions` div with Cancel + Submit buttons moves into a `ModalFooter` snippet. This gives consistent button styling (44px min-height, proper focus rings, scale-on-active) and a border separator from the form content. The submit button changes from `type="submit"` inside the form to `onclick={handleSubmit}` in the footer, since ModalFooter lives outside the `<form>` element.
 
+**Enter-to-submit regression:** Moving the submit button outside the `<form>` element breaks Enter-to-submit in form fields. Add an `onkeydown` handler on the form that calls `handleSubmit()` on Enter (when not in a textarea), or keep a hidden submit button inside the form.
+
 ### CSS to remove
 
 | Class | Reason |
@@ -285,7 +298,8 @@ The current `.form-actions` div with Cancel + Submit buttons moves into a `Modal
 | `.modal-header`, `.modal-header h2` | ModalHeader component |
 | `.close-btn` (+ `:hover`) | ModalHeader's close button |
 | `.form-actions` | ModalFooter component |
-| `.btn-secondary`, `.btn-primary` (+ `:hover`, `:disabled`) | ModalFooter's built-in button styles (`.primary`, `.secondary`) |
+| `.btn-secondary` (+ `:hover`, `:disabled`) | ModalFooter's built-in `.secondary` button style |
+| `.btn-primary` (form actions context only) | ModalFooter's built-in `.primary` button style. Keep `.btn-primary` CSS (or rename to `.done-btn`) for the success state Done button, since it renders outside the ModalFooter. |
 | `@keyframes fade-in` | BaseModal's `@starting-style` entry |
 | `@keyframes slide-up` | BaseModal's pop animation |
 | `@media (prefers-reduced-motion)` for `.modal-backdrop`, `.modal-content` | BaseModal handles this |
@@ -307,7 +321,7 @@ Also remove:
 | `input:focus`, `textarea:focus`, `input.error` | Focus/error states |
 | `.field-error` | Validation error text |
 | `.toggles-row`, `.toggle-btn` (+ `:hover`, `.active`) | Seeking toggles |
-| `.submit-error` | Error alert box |
+| `.submit-error` | Error alert box. The submit-error div stays inside the form body, after the toggles row, maintaining its current position and visibility. |
 | `.success-state`, `.success-icon`, `.success-state h2`, `.success-state p` | Success view |
 
 Rename `.modal-body` to `.form-body` to avoid collision with BaseModal's internal class.
@@ -327,7 +341,7 @@ Rename `.modal-body` to `.form-body` to avoid collision with BaseModal's interna
 |------|--------|
 | `src/lib/features/festivals/components/discover/FestivalDetailView.svelte` | Replace div-based modal with BaseModal + ModalHeader. Remove backdrop/modal CSS. Rename internal classes. |
 | `src/lib/features/festivals/components/submit/FestivalSubmissionForm.svelte` | Replace div-based modal with BaseModal + ModalHeader + ModalFooter. Remove backdrop/modal/animation CSS. Move footer buttons to ModalFooter snippet. |
-| Parent of FestivalDetailView (likely `DiscoverTab.svelte` or similar) | Change from conditional render to `open` prop pattern for exit animation support. |
+| `src/lib/features/festivals/FestivalModule.svelte` (parent of FestivalDetailView) | Change from conditional render to `open` prop pattern for exit animation support. Uses `festivalState.selectedFestival` from context. |
 | Parent of FestivalSubmissionForm (likely `DiscoverTab.svelte` or similar) | Same `open` prop pattern change. |
 
 No changes needed to BaseModal, ModalHeader, ModalFooter, or modal-tokens.css.
