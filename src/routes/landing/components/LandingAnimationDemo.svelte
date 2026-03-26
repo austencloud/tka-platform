@@ -85,7 +85,8 @@
 
   // Dynamic sequence loading - circular LOOPs from the database
   let currentSequence = $state<SequenceData | null>(null);
-  let currentPropType = $state<PropType>(RANDOM_PROPS[0]!);
+  // Always start with staff on the landing page — it's the canonical TKA prop
+  let currentPropType = $state<PropType>(PropType.STAFF);
 
   // Track beat for sequence completion detection
   let lastStep = $state(-1);

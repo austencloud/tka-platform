@@ -2,25 +2,32 @@
   /**
    * NotationShowcaseSection
    *
-   * Shows the infinite spinner animation with pictograph notation.
-   * Demonstrates that the movements have a written form.
+   * The live animation demo with notation alongside it.
+   * Framed educationally, not as a feature pitch.
    */
   import LazyLandingDemo from "./LazyLandingDemo.svelte";
 </script>
 
 <section class="notation-showcase" id="notation">
   <div class="container">
-    <h2>Notation in motion</h2>
+    <p class="section-label">A TKA sequence playing back</p>
+    <h2>The notation animates</h2>
 
     <div class="demo-wrapper">
       <LazyLandingDemo />
     </div>
+
+    <p class="demo-caption">
+      The pictographs on the right are the score. The figure on the left is the
+      performance. Every beat, every position, every transition, written and
+      readable.
+    </p>
   </div>
 </section>
 
 <style>
   .notation-showcase {
-    padding: 80px 24px 120px;
+    padding: 80px 24px 100px;
   }
 
   .container {
@@ -28,12 +35,23 @@
     margin: 0 auto;
   }
 
-  h2 {
-    font-size: clamp(1.5rem, 4vw, 2rem);
-    margin-bottom: 32px;
+  .section-label {
     text-align: center;
-    font-weight: 500;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
+    font-size: var(--font-size-compact, 12px);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--theme-accent, #6366f1);
+    margin-bottom: 8px;
+    font-weight: 600;
+  }
+
+  h2 {
+    font-family: "Instrument Serif", Georgia, serif;
+    font-size: clamp(1.5rem, 4vw, 2.2rem);
+    margin-bottom: 36px;
+    text-align: center;
+    font-weight: 400;
+    color: var(--theme-text, #fff);
   }
 
   .demo-wrapper {
@@ -41,9 +59,22 @@
     justify-content: center;
   }
 
+  .demo-caption {
+    text-align: center;
+    font-size: var(--font-size-sm, 0.875rem);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    max-width: 540px;
+    margin: 32px auto 0;
+    line-height: 1.7;
+  }
+
   @media (max-width: 600px) {
     .notation-showcase {
-      padding: 60px 16px 80px;
+      padding: 60px 16px 72px;
+    }
+
+    .demo-caption {
+      max-width: 100%;
     }
   }
 </style>
