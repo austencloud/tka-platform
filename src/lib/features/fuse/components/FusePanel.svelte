@@ -35,6 +35,7 @@
 
 	// Track what the browser is currently showing for the animation preview
 	let browsingItem = $state<SequenceData | null>(null);
+	let shuffleFn = $state<(() => void) | null>(null);
 
 	// Animation shows picked sequence if available, otherwise what's being browsed
 	const animSequence = $derived(selectedSequence ?? browsingItem);
@@ -51,7 +52,7 @@
 	</div>
 
 	<div class="panel-body">
-		<!-- ChoreoCard browser: notation view -->
+		<!-- ChoreoCard: notation view (no buttons — those go below animation) -->
 		<div class="card-section">
 			<FuseSequenceBrowser
 				{side}
@@ -59,6 +60,8 @@
 				onSelect={(item) => onSelect(item as any)}
 				picked={selectedSequence !== null}
 				onCurrentItemChange={(seq) => browsingItem = seq}
+				hideActions={true}
+				onShuffleReady={(fn) => shuffleFn = fn}
 			/>
 		</div>
 
@@ -79,6 +82,32 @@
 				<div class="animation-placeholder">
 					<i class="fas fa-play-circle" aria-hidden="true"></i>
 				</div>
+			{/if}
+		</div>
+
+		<!-- Shuffle/Pick at the bottom -->
+		<div class="panel-actions">
+			{#if selectedSequence}
+				<button class="picked-btn" disabled aria-label="Already picked">
+					<i class="fas fa-check-circle" aria-hidden="true"></i>
+					Picked
+				</button>
+			{:else}
+				<button
+					class="shuffle-btn"
+					onclick={() => shuffleFn?.()}
+					aria-label="Shuffle to next"
+				>
+					<i class="fas fa-shuffle" aria-hidden="true"></i>
+				</button>
+				<button
+					class="select-btn"
+					onclick={() => { if (browsingItem) onSelect(browsingItem); }}
+					aria-label="Pick this prop path"
+				>
+					<i class="fas fa-check" aria-hidden="true"></i>
+					Pick
+				</button>
 			{/if}
 		</div>
 	</div>
@@ -157,5 +186,64 @@
 		justify-content: center;
 		color: var(--theme-text-dim, rgba(255, 255, 255, 0.2));
 		font-size: 2rem;
+	}
+
+	.panel-actions {
+		flex-shrink: 0;
+		display: flex;
+		gap: var(--spacing-xs, 4px);
+		padding: var(--spacing-xs, 4px);
+	}
+
+	.shuffle-btn,
+	.select-btn {
+		flex: 1;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: var(--spacing-xs, 4px);
+		padding: 8px 12px;
+		border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+		border-radius: var(--radius-sm, 6px);
+		font-size: var(--font-size-compact, 12px);
+		font-weight: 500;
+		cursor: pointer;
+		min-height: 40px;
+	}
+
+	.shuffle-btn {
+		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+		color: var(--theme-text, #ffffff);
+	}
+
+	.shuffle-btn:hover {
+		border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+	}
+
+	.select-btn {
+		background: linear-gradient(135deg, #fb923c 0%, #f97316 50%, #ea580c 100%);
+		color: #ffffff;
+		border-color: transparent;
+	}
+
+	.select-btn:hover {
+		filter: brightness(1.1);
+	}
+
+	.picked-btn {
+		flex: 1;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: var(--spacing-xs, 4px);
+		padding: 8px 12px;
+		border: 1.5px solid rgba(34, 197, 94, 0.4);
+		border-radius: var(--radius-sm, 6px);
+		font-size: var(--font-size-compact, 12px);
+		font-weight: 600;
+		cursor: default;
+		min-height: 40px;
+		background: rgba(34, 197, 94, 0.15);
+		color: rgb(134, 239, 172);
 	}
 </style>

@@ -23,12 +23,16 @@
 		onSelect,
 		picked = false,
 		onCurrentItemChange,
+		hideActions = false,
+		onShuffleReady,
 	}: {
 		side: "left" | "right";
 		length?: number;
 		onSelect: (seq: SequenceData) => void;
 		picked?: boolean;
 		onCurrentItemChange?: (seq: SequenceData | null) => void;
+		hideActions?: boolean;
+		onShuffleReady?: (shuffleFn: () => void) => void;
 	} = $props();
 
 	const propColor = $derived<"blue" | "red">(side === "left" ? "blue" : "red");
@@ -77,6 +81,7 @@
 			poolIndex = 0;
 			currentItem = pool[0] ?? null;
 			onCurrentItemChange?.(currentItem);
+			onShuffleReady?.(shuffle);
 			if (pool.length > 0) {
 				fuseState.startClock();
 			}
@@ -182,37 +187,39 @@
 			</div>
 		</div>
 
-		<div class="card-actions">
-			{#if picked}
-				<button
-					class="picked-btn"
-					disabled
-					aria-label="Already picked"
-				>
-					<i class="fas fa-check-circle" aria-hidden="true"></i>
-					Picked
-				</button>
-			{:else}
-				<button
-					class="shuffle-btn"
-					onclick={shuffle}
-					aria-label="Shuffle to next"
-					disabled={pool.length <= 1}
-				>
-					<i class="fas fa-shuffle" aria-hidden="true"></i>
-					Shuffle
-				</button>
+		{#if !hideActions}
+			<div class="card-actions">
+				{#if picked}
+					<button
+						class="picked-btn"
+						disabled
+						aria-label="Already picked"
+					>
+						<i class="fas fa-check-circle" aria-hidden="true"></i>
+						Picked
+					</button>
+				{:else}
+					<button
+						class="shuffle-btn"
+						onclick={shuffle}
+						aria-label="Shuffle to next"
+						disabled={pool.length <= 1}
+					>
+						<i class="fas fa-shuffle" aria-hidden="true"></i>
+						Shuffle
+					</button>
 
-				<button
-					class="select-btn"
-					onclick={handlePick}
-					aria-label="Pick this {propColor} prop path"
-				>
-					<i class="fas fa-check" aria-hidden="true"></i>
-					Pick
-				</button>
-			{/if}
-		</div>
+					<button
+						class="select-btn"
+						onclick={handlePick}
+						aria-label="Pick this {propColor} prop path"
+					>
+						<i class="fas fa-check" aria-hidden="true"></i>
+						Pick
+					</button>
+				{/if}
+			</div>
+		{/if}
 	{/if}
 </div>
 
