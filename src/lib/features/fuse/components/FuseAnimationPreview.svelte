@@ -15,6 +15,7 @@
 	import type { ISequenceMotionLoader } from "$lib/shared/sequence-viewer/services/contracts/ISequenceMotionLoader";
 	import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
 	import { container } from "$lib/shared/di";
+	import { createPlaybackControllerFactory } from "$lib/shared/di/containers/animator-container";
 
 	const DEFAULT_BPM = 60;
 
@@ -62,7 +63,10 @@
 	onMount(async () => {
 		try {
 			motionLoader = container.items.sequenceMotionLoader;
-			controller = container.items.animationPlaybackController;
+			// Create an independent controller with its own AnimationLoop.
+			// The DI-cached controller shares a single AnimationLoop, so the
+			// second panel would overwrite the first's callback and pause it.
+			controller = createPlaybackControllerFactory();
 			loading = false;
 		} catch (err) {
 			console.error("Failed to initialize fuse animation preview:", err);
