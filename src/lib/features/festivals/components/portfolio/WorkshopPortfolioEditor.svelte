@@ -170,6 +170,14 @@
     festivalState.savePortfolio(uid, { ...portfolio, performanceVideos: videos });
   }
 
+  // ─── YouTube thumbnail helper ──────────────────────────────────────────────
+  function extractYouTubeId(url: string): string | null {
+    const match = url.match(/(?:youtu\.be\/|(?:v|embed|shorts)[=\/])([a-zA-Z0-9_-]{11})/);
+    return match?.[1] ?? null;
+  }
+
+  let failedThumbnails = $state<Set<string>>(new Set());
+
   // ─── Social links & About — debounced auto-save ─────────────────────────────
   let saveTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -374,28 +382,46 @@
       </div>
 
       {#if festivalState.portfolio.performanceVideos.length > 0}
-        <ul class="string-list" role="list">
+        <div class="video-grid">
           {#each festivalState.portfolio.performanceVideos as video, i (i)}
-            <li class="string-item">
-              <span class="string-value url">{video}</span>
-              <button
-                class="remove-btn"
-                onclick={() => removeVideo(i)}
-                aria-label="Remove video"
-              >
-                <i class="fas fa-times" aria-hidden="true"></i>
-              </button>
-            </li>
+            {@const videoId = extractYouTubeId(video)}
+            <div class="video-card">
+              {#if videoId && !failedThumbnails.has(videoId)}
+                <img
+                  class="video-thumbnail"
+                  src="https://img.youtube.com/vi/{videoId}/mqdefault.jpg"
+                  alt="Video thumbnail"
+                  onerror={() => {
+                    failedThumbnails = new Set([...failedThumbnails, videoId]);
+                  }}
+                />
+              {:else}
+                <div class="video-thumbnail-placeholder">
+                  <i class="fas fa-video" aria-hidden="true"></i>
+                </div>
+              {/if}
+              <div class="video-overlay">
+                <button
+                  class="video-remove-btn"
+                  onclick={() => removeVideo(i)}
+                  aria-label="Remove video"
+                  tabindex="0"
+                >
+                  <i class="fas fa-times" aria-hidden="true"></i>
+                </button>
+              </div>
+              <div class="video-url-label" title={video}>{video}</div>
+            </div>
           {/each}
-        </ul>
+        </div>
       {/if}
 
-      <div class="add-row">
+      <div class="video-add-row">
         <input
           class="add-input"
           type="url"
           bind:value={newVideo}
-          placeholder="YouTube URL..."
+          placeholder="Paste YouTube URL..."
           onkeydown={(e) => e.key === "Enter" && addVideo()}
         />
         <button class="add-inline-btn" onclick={addVideo} disabled={!newVideo.trim()}>
@@ -1005,6 +1031,113 @@
 
   @media (prefers-reduced-motion: reduce) {
     .credit-remove {
+      transition: none;
+    }
+  }
+
+  /* ─── Performance videos (thumbnail grid) ─────────────────────────────────── */
+
+  .video-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 12px;
+  }
+
+  .video-card {
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: var(--radius-lg, 12px);
+    overflow: hidden;
+    position: relative;
+  }
+
+  .video-thumbnail {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    display: block;
+  }
+
+  .video-thumbnail-placeholder {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.3));
+    font-size: 24px;
+  }
+
+  .video-overlay {
+    position: absolute;
+    inset: 0;
+    bottom: auto;
+    aspect-ratio: 16 / 9;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+
+  .video-card:hover .video-overlay,
+  .video-card:focus-within .video-overlay {
+    opacity: 1;
+  }
+
+  .video-remove-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    transition: background 0.15s, border-color 0.15s;
+  }
+
+  /* Overlay scrim colors are intentionally hardcoded -- they sit on
+     dynamic thumbnail backgrounds, not themed surfaces. */
+
+  .video-remove-btn:hover {
+    background: var(--semantic-error, #ef4444);
+    border-color: var(--semantic-error, #ef4444);
+  }
+
+  .video-url-label {
+    padding: 8px 10px;
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.5));
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .video-add-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  @media (max-width: 768px) {
+    .video-overlay {
+      opacity: 1;
+    }
+
+    .video-remove-btn {
+      min-width: 44px;
+      min-height: 44px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .video-overlay,
+    .video-remove-btn {
       transition: none;
     }
   }
