@@ -64,6 +64,7 @@ import { CardConfigurator } from "$lib/features/create/generate/shared/services/
 import { LOOPTypeResolver } from "$lib/features/create/generate/shared/services/implementations/LOOPTypeResolver";
 import { SequenceToEntryConverter } from "$lib/features/choreo-card/services/implementations/SequenceToEntryConverter";
 import { DeckLoader } from "$lib/features/choreo-card/services/implementations/DeckLoader";
+import { VtgFamilyAggregator } from "$lib/features/choreo-card/services/implementations/VtgFamilyAggregator";
 import { LOOPExplainer } from "$lib/features/choreo-card/services/implementations/LOOPExplainer";
 import { HandPathDataBuilder } from "$lib/features/choreo-card/services/implementations/HandPathDataBuilder";
 import { ArrowCollisionResolver } from "$lib/features/choreo-card/services/implementations/ArrowCollisionResolver";
@@ -287,6 +288,8 @@ export function createBuildContainer(deps: BuildContainerDependencies) {
 
       // === Layer 2: Services with external deps only ===
       .add((ctx) => ({
+        vtgFamilyAggregator: () => new VtgFamilyAggregator(ctx.deckLoader),
+
         // Orientation cycle extender - needs orientationCycleDetector (Layer 1) + orientationCalculator
         orientationCycleExtender: () =>
           new OrientationCycleExtender(ctx.orientationCycleDetector, deps.orientationCalculator),

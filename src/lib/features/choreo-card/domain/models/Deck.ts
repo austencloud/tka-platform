@@ -16,4 +16,6 @@ export interface Deck {
   readonly gridMode: GridMode;
   readonly level: number;
   readonly collection?: string;
+  readonly vtgRatio?: string;
+  readonly turns?: number;
 }
