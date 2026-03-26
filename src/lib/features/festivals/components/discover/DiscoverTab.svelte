@@ -4,7 +4,7 @@
   import { container } from "$lib/shared/di";
   import { Timestamp } from "firebase/firestore";
   import FestivalFilterBar from "./FestivalFilterBar.svelte";
-  import FestivalCard from "./FestivalCard.svelte";
+  import FestivalGridCard from "./FestivalGridCard.svelte";
   import FestivalSubmissionForm from "../submit/FestivalSubmissionForm.svelte";
   import ModerationQueue from "../moderation/ModerationQueue.svelte";
   import { FESTIVAL_SEEDS } from "../../data/festival-seed";
@@ -87,10 +87,10 @@
       <p class="empty-hint">Try adjusting the region or time window.</p>
     </div>
   {:else}
-    <div class="festival-list" role="list" aria-label="Festival results">
+    <div class="festival-grid" role="list" aria-label="Festival results">
       {#each festivalState.festivals as festival (festival.id)}
         <div role="listitem">
-          <FestivalCard
+          <FestivalGridCard
             {festival}
             tracker={festivalState.trackers.get(festival.id)}
             attendanceCount={festivalState.attendanceCounts.get(festival.id) ?? 0}
@@ -152,26 +152,27 @@
     overflow: hidden;
   }
 
-  .festival-list {
+  .festival-grid {
     flex: 1;
     overflow-y: auto;
-    padding: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+    padding: 1.25rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.25rem;
+    align-content: start;
     scrollbar-width: thin;
     scrollbar-color: var(--scrollbar-thumb, rgba(255, 255, 255, 0.2)) transparent;
   }
 
-  .festival-list::-webkit-scrollbar {
+  .festival-grid::-webkit-scrollbar {
     width: 6px;
   }
 
-  .festival-list::-webkit-scrollbar-track {
+  .festival-grid::-webkit-scrollbar-track {
     background: transparent;
   }
 
-  .festival-list::-webkit-scrollbar-thumb {
+  .festival-grid::-webkit-scrollbar-thumb {
     background: var(--scrollbar-thumb, rgba(255, 255, 255, 0.2));
     border-radius: 3px;
   }
