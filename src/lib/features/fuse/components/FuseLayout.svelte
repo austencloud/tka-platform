@@ -9,6 +9,7 @@
 	import { getFuseContext } from "../context/fuse-context";
 	import FusePanel from "./FusePanel.svelte";
 	import FuseTour from "$lib/shared/onboarding/components/fuse-tour/FuseTour.svelte";
+	import HelpButton from "$lib/shared/components/help/HelpButton.svelte";
 	import { fuseTourState } from "$lib/shared/onboarding/state/fuse-tour-state.svelte";
 	import { container } from "$lib/shared/di";
 	import { onMount } from "svelte";
@@ -166,6 +167,13 @@
 		class="fuse-bottom"
 		class:tour-dim={tourHighlight !== null && tourHighlight !== "all" && tourHighlight !== "controls" && tourHighlight !== "shuffle"}
 	>
+		<HelpButton
+			onclick={() => fuseTourState.restart()}
+			ariaLabel="Replay Fuse tour"
+			title="Replay tour"
+			size="compact"
+		/>
+
 		<div class="length-picker-wrap" class:tour-dim={tourHighlight === "controls"}>
 			<button
 				class="length-trigger"
