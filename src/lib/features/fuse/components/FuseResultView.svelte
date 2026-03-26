@@ -14,6 +14,7 @@
 	import { container } from "$lib/shared/di";
 	import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
 	import type { ISequenceMotionLoader } from "$lib/shared/sequence-viewer/services/contracts/ISequenceMotionLoader";
+	import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/implementations/SequenceViewerNavigator";
 
 	const { state: fuseState } = getFuseContext();
 
@@ -110,10 +111,13 @@
 		fuseState.reset();
 	}
 
-	function handleSeeRelated() {
-		// For now, just reset back to browse. A later task could navigate
-		// to the browse module filtered by similarity.
-		fuseState.reset();
+	function handleOpenInViewer() {
+		if (!sequence) return;
+		openSequenceViewer(sequence, {
+			returnPath: "/app/create",
+			returnLabel: "Fuse",
+			initialBpm: fuseState.bpm,
+		});
 	}
 
 	function handleKeydown(event: KeyboardEvent) {
@@ -201,9 +205,9 @@
 			<i class="fas fa-redo" aria-hidden="true"></i>
 			<span>Build Another</span>
 		</button>
-		<button class="action-btn action-related" onclick={handleSeeRelated}>
-			<i class="fas fa-search" aria-hidden="true"></i>
-			<span>See Related</span>
+		<button class="action-btn action-related" onclick={handleOpenInViewer}>
+			<i class="fas fa-expand" aria-hidden="true"></i>
+			<span>Open in Viewer</span>
 		</button>
 	</div>
 </div>
