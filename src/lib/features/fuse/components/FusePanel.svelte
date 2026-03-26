@@ -2,8 +2,8 @@
 	/**
 	 * Fuse Panel
 	 *
-	 * One side of the fuse split view. Shows ChoreoCard browser on top
-	 * and a live animation preview below, both driven by the shared clock.
+	 * One side of the fuse split view. ChoreoCard on top, animation below.
+	 * Shuffle button in the header. No pick step — Fuse uses whatever's showing.
 	 */
 
 	import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -13,64 +13,60 @@
 
 	let {
 		side,
-		selectedSequence,
-		onSelect,
-		onDeselect,
 		bpm,
 		onControllerReady,
+		onCurrentSequenceChange,
 		length = 8,
 		currentBeat = 0,
 	}: {
 		side: "left" | "right";
-		selectedSequence: SequenceData | null;
-		onSelect: (seq: SequenceData) => void;
-		onDeselect: () => void;
 		bpm: number;
 		onControllerReady?: (controller: IAnimationPlaybackController) => void;
+		onCurrentSequenceChange?: (seq: SequenceData | null) => void;
 		length?: number;
 		currentBeat?: number;
 	} = $props();
 
 	const label = $derived(side === "left" ? "Blue" : "Red");
 
-	// Track what the browser is currently showing for the animation preview
-	let browsingItem = $state<SequenceData | null>(null);
+	let currentSequence = $state<SequenceData | null>(null);
 	let shuffleFn = $state<(() => void) | null>(null);
 
-	// Animation shows picked sequence if available, otherwise what's being browsed
-	const animSequence = $derived(selectedSequence ?? browsingItem);
+	function handleCurrentItemChange(seq: SequenceData | null) {
+		currentSequence = seq;
+		onCurrentSequenceChange?.(seq);
+	}
 </script>
 
 <div class="fuse-panel" role="region" aria-label="{label} prop path">
 	<div class="panel-header">
 		<span class="panel-label">{label}</span>
-		{#if selectedSequence}
-			<button class="deselect-btn" onclick={onDeselect} aria-label="Clear selection">
-				<i class="fas fa-times" aria-hidden="true"></i>
-			</button>
-		{/if}
+		<button
+			class="shuffle-btn"
+			onclick={() => shuffleFn?.()}
+			aria-label="Shuffle to next sequence"
+		>
+			<i class="fas fa-shuffle" aria-hidden="true"></i>
+		</button>
 	</div>
 
 	<div class="panel-body">
-		<!-- ChoreoCard: notation view (no buttons — those go below animation) -->
 		<div class="card-section">
 			<FuseSequenceBrowser
 				{side}
 				{length}
-				onSelect={(item) => onSelect(item as any)}
-				picked={selectedSequence !== null}
-				onCurrentItemChange={(seq) => browsingItem = seq}
+				onSelect={() => {}}
 				hideActions={true}
+				onCurrentItemChange={handleCurrentItemChange}
 				onShuffleReady={(fn) => shuffleFn = fn}
 			/>
 		</div>
 
-		<!-- Animation preview: motion view -->
 		<div class="animation-section">
-			{#if animSequence}
-				{#key animSequence.id ?? animSequence.word}
+			{#if currentSequence}
+				{#key currentSequence.id ?? currentSequence.word}
 					<FuseAnimationPreview
-						sequence={animSequence}
+						sequence={currentSequence}
 						{bpm}
 						{onControllerReady}
 						propColor={side === "left" ? "blue" : "red"}
@@ -82,32 +78,6 @@
 				<div class="animation-placeholder">
 					<i class="fas fa-play-circle" aria-hidden="true"></i>
 				</div>
-			{/if}
-		</div>
-
-		<!-- Shuffle/Pick at the bottom -->
-		<div class="panel-actions">
-			{#if selectedSequence}
-				<button class="picked-btn" disabled aria-label="Already picked">
-					<i class="fas fa-check-circle" aria-hidden="true"></i>
-					Picked
-				</button>
-			{:else}
-				<button
-					class="shuffle-btn"
-					onclick={() => shuffleFn?.()}
-					aria-label="Shuffle to next"
-				>
-					<i class="fas fa-shuffle" aria-hidden="true"></i>
-				</button>
-				<button
-					class="select-btn"
-					onclick={() => { if (browsingItem) onSelect(browsingItem); }}
-					aria-label="Pick this prop path"
-				>
-					<i class="fas fa-check" aria-hidden="true"></i>
-					Pick
-				</button>
 			{/if}
 		</div>
 	</div>
@@ -140,21 +110,23 @@
 		letter-spacing: 0.05em;
 	}
 
-	.deselect-btn {
-		background: none;
-		border: none;
-		color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-		cursor: pointer;
-		padding: 4px 8px;
-		min-height: 36px;
-		min-width: 36px;
+	.shuffle-btn {
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		width: 36px;
+		height: 36px;
+		background: none;
+		border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
 		border-radius: var(--radius-sm, 6px);
+		color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+		cursor: pointer;
+		font-size: 14px;
+		transition: border-color 150ms ease, color 150ms ease;
 	}
 
-	.deselect-btn:hover {
+	.shuffle-btn:hover {
+		border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
 		color: var(--theme-text, #ffffff);
 	}
 
@@ -188,62 +160,9 @@
 		font-size: 2rem;
 	}
 
-	.panel-actions {
-		flex-shrink: 0;
-		display: flex;
-		gap: var(--spacing-xs, 4px);
-		padding: var(--spacing-xs, 4px);
-	}
-
-	.shuffle-btn,
-	.select-btn {
-		flex: 1;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: var(--spacing-xs, 4px);
-		padding: 8px 12px;
-		border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-		border-radius: var(--radius-sm, 6px);
-		font-size: var(--font-size-compact, 12px);
-		font-weight: 500;
-		cursor: pointer;
-		min-height: 40px;
-	}
-
-	.shuffle-btn {
-		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-		color: var(--theme-text, #ffffff);
-	}
-
-	.shuffle-btn:hover {
-		border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
-	}
-
-	.select-btn {
-		background: linear-gradient(135deg, #fb923c 0%, #f97316 50%, #ea580c 100%);
-		color: #ffffff;
-		border-color: transparent;
-	}
-
-	.select-btn:hover {
-		filter: brightness(1.1);
-	}
-
-	.picked-btn {
-		flex: 1;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: var(--spacing-xs, 4px);
-		padding: 8px 12px;
-		border: 1.5px solid rgba(34, 197, 94, 0.4);
-		border-radius: var(--radius-sm, 6px);
-		font-size: var(--font-size-compact, 12px);
-		font-weight: 600;
-		cursor: default;
-		min-height: 40px;
-		background: rgba(34, 197, 94, 0.15);
-		color: rgb(134, 239, 172);
+	@media (prefers-reduced-motion: reduce) {
+		.shuffle-btn {
+			transition: none;
+		}
 	}
 </style>
