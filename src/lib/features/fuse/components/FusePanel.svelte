@@ -39,18 +39,15 @@
 </script>
 
 <div class="fuse-panel" role="region" aria-label="{label} prop path">
-	<div class="panel-header">
-		<span class="panel-label">{label}</span>
+	<div class="panel-body">
+		<!-- Shuffle overlay button -->
 		<button
-			class="shuffle-btn"
+			class="shuffle-overlay"
 			onclick={() => shuffleFn?.()}
-			aria-label="Shuffle to next sequence"
+			aria-label="Shuffle {label} to next sequence"
 		>
 			<i class="fas fa-shuffle" aria-hidden="true"></i>
 		</button>
-	</div>
-
-	<div class="panel-body">
 		<div class="card-section">
 			<FuseSequenceBrowser
 				{side}
@@ -93,48 +90,36 @@
 		overflow: hidden;
 	}
 
-	.panel-header {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		padding: 2px var(--spacing-sm, 8px);
-		border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-		flex-shrink: 0;
-	}
-
-	.panel-label {
-		font-size: var(--font-size-sm, 14px);
-		font-weight: 600;
-		color: var(--theme-text, #ffffff);
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
-	}
-
-	.shuffle-btn {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 36px;
-		height: 36px;
-		background: none;
-		border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-		border-radius: var(--radius-sm, 6px);
-		color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-		cursor: pointer;
-		font-size: 14px;
-		transition: border-color 150ms ease, color 150ms ease;
-	}
-
-	.shuffle-btn:hover {
-		border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
-		color: var(--theme-text, #ffffff);
-	}
-
 	.panel-body {
 		flex: 1;
 		min-height: 0;
 		display: flex;
 		flex-direction: column;
+		position: relative;
+	}
+
+	.shuffle-overlay {
+		position: absolute;
+		top: var(--spacing-xs, 4px);
+		right: var(--spacing-xs, 4px);
+		z-index: 10;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 44px;
+		height: 44px;
+		background: rgba(0, 0, 0, 0.5);
+		border: none;
+		border-radius: var(--radius-sm, 6px);
+		color: rgba(255, 255, 255, 0.8);
+		cursor: pointer;
+		font-size: 14px;
+		transition: background 150ms ease;
+	}
+
+	.shuffle-overlay:hover {
+		background: rgba(0, 0, 0, 0.7);
+		color: #ffffff;
 	}
 
 	.card-section {

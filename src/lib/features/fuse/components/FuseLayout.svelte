@@ -77,21 +77,6 @@
 <svelte:window onkeydown={handleKeydown} />
 
 <div class="fuse-layout">
-	<!-- Beat length selector -->
-	<div class="fuse-config">
-		<div class="length-selector" role="radiogroup" aria-label="Beat length">
-			{#each LENGTHS as len}
-				<button
-					class="length-chip"
-					class:active={fuseLength === len}
-					role="radio"
-					aria-checked={fuseLength === len}
-					onclick={() => fuseLength = len}
-				>{len}</button>
-			{/each}
-		</div>
-	</div>
-
 	<!-- Two panels side by side -->
 	<div class="fuse-panels">
 		<div class="panel-wrap" bind:this={leftPanelEl}>
@@ -119,7 +104,7 @@
 	<!-- Invisible target for assembly animation -->
 	<div class="fuse-target" bind:this={fuseTargetEl} aria-hidden="true"></div>
 
-	<!-- Bottom bar: BPM, play/pause, fuse -->
+	<!-- Bottom bar: BPM, lengths, play/pause, fuse -->
 	<div class="fuse-bottom">
 		<div class="bpm-control">
 			<button class="bpm-btn" onclick={decrementBpm} aria-label="Decrease BPM">
@@ -129,6 +114,18 @@
 			<button class="bpm-btn" onclick={incrementBpm} aria-label="Increase BPM">
 				<i class="fas fa-plus" aria-hidden="true"></i>
 			</button>
+		</div>
+
+		<div class="length-selector" role="radiogroup" aria-label="Beat length">
+			{#each LENGTHS as len}
+				<button
+					class="length-chip"
+					class:active={fuseLength === len}
+					role="radio"
+					aria-checked={fuseLength === len}
+					onclick={() => fuseLength = len}
+				>{len}</button>
+			{/each}
 		</div>
 
 		<button
@@ -168,45 +165,6 @@
 		container-type: inline-size;
 		container-name: fuse-layout;
 		position: relative;
-	}
-
-	.fuse-config {
-		flex-shrink: 0;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		padding: var(--spacing-xs, 4px) var(--spacing-md, 16px);
-		border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
-	}
-
-	.length-selector {
-		display: flex;
-		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-		border-radius: var(--radius-md, 8px);
-		padding: 2px;
-		gap: 2px;
-	}
-
-	.length-chip {
-		padding: 6px 10px;
-		min-width: 32px;
-		min-height: 36px;
-		border: none;
-		border-radius: var(--radius-sm, 6px);
-		background: transparent;
-		color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
-		font-size: var(--font-size-compact, 12px);
-		font-weight: 500;
-		cursor: pointer;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		transition: background 150ms ease, color 150ms ease;
-	}
-
-	.length-chip.active {
-		background: var(--theme-accent, #6366f1);
-		color: #ffffff;
 	}
 
 	.fuse-panels {
@@ -266,8 +224,8 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		width: 36px;
-		height: 36px;
+		width: 44px;
+		height: 44px;
 		border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
 		border-radius: 50%;
 		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
@@ -280,6 +238,36 @@
 	.bpm-btn:hover {
 		border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
 		color: var(--theme-text, #ffffff);
+	}
+
+	.length-selector {
+		display: flex;
+		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+		border-radius: var(--radius-sm, 6px);
+		padding: 2px;
+		gap: 1px;
+	}
+
+	.length-chip {
+		padding: 4px 6px;
+		min-width: 44px;
+		min-height: 44px;
+		border: none;
+		border-radius: var(--radius-sm, 4px);
+		background: transparent;
+		color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
+		font-size: var(--font-size-compact, 12px);
+		font-weight: 500;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		transition: background 150ms ease, color 150ms ease;
+	}
+
+	.length-chip.active {
+		background: var(--theme-accent, #6366f1);
+		color: #ffffff;
 	}
 
 	.bpm-display {
