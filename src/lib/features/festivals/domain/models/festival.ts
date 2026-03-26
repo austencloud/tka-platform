@@ -28,6 +28,7 @@ export interface Festival {
   seekingPerformers: boolean;
   description: string;
   websiteUrl?: string;
+  imageUrl?: string;
   socialLinks?: { instagram?: string; facebook?: string };
   estimatedSize?: FestivalSize;
   region: FestivalRegion;

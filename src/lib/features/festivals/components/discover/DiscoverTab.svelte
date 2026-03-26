@@ -46,6 +46,7 @@
         if (seed.applicationUrl) doc.applicationUrl = seed.applicationUrl;
         if (seed.applicationContact) doc.applicationContact = seed.applicationContact;
         if (seed.websiteUrl) doc.websiteUrl = seed.websiteUrl;
+        if (seed.imageUrl) doc.imageUrl = seed.imageUrl;
         if (seed.socialLinks) doc.socialLinks = seed.socialLinks;
         if (seed.estimatedSize) doc.estimatedSize = seed.estimatedSize;
 
