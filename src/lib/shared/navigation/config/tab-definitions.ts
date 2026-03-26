@@ -599,9 +599,9 @@ export const FESTIVAL_TABS: Section[] = [
   },
   {
     id: "workshops",
-    label: "My Workshops",
-    icon: '<i class="fas fa-chalkboard-teacher" aria-hidden="true"></i>',
-    description: "Teaching portfolio and application materials",
+    label: "Portfolio",
+    icon: '<i class="fas fa-briefcase" aria-hidden="true"></i>',
+    description: "Workshops, acts, bios, and application materials",
     color: "#a855f7",
     gradient: "linear-gradient(135deg, #a855f7, #c084fc)",
   },
