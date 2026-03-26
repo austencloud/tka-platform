@@ -20,7 +20,7 @@
 
   setFestivalContext({ state: festivalState });
 
-  const VALID_TABS: FestivalTab[] = ["discover", "map", "calendar", "workshops"];
+  const VALID_TABS: FestivalTab[] = ["discover", "map", "calendar", "portfolio"];
 
   // Sync sidebar navigation state → internal festival tab state
   $effect(() => {
@@ -52,7 +52,7 @@
       <FestivalMap />
     {:else if festivalState.activeTab === "calendar"}
       <FestivalCalendar />
-    {:else if festivalState.activeTab === "workshops"}
+    {:else if festivalState.activeTab === "portfolio"}
       <WorkshopPortfolioEditor />
     {/if}
   </div>
