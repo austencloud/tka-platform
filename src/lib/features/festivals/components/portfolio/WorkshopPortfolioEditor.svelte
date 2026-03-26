@@ -590,41 +590,37 @@
             </div>
           {/each}
         </div>
-      </div>
-    </section>
-
-    <!-- ── Performance credits ───────────────────────────────────────────────── -->
-    <section class="section-card">
-      <div class="section-header">
-        <h3 class="section-title">Performance Credits</h3>
-      </div>
-
-      <div class="credits-flow">
-        {#each festivalState.portfolio.performanceCredits as credit, i (i)}
-          <div class="credit-pill">
-            <span>{credit}</span>
-            <button
-              class="credit-remove"
-              onclick={() => removeCredit(i)}
-              aria-label="Remove {credit}"
-              tabindex="0"
-            >
-              <i class="fas fa-times" aria-hidden="true"></i>
-            </button>
+        <!-- Performance Credits (inside profile) -->
+        <div class="profile-column profile-credits-column">
+          <div class="profile-column-title">Credits</div>
+          <div class="credits-flow">
+            {#each festivalState.portfolio.performanceCredits as credit, i (i)}
+              <div class="credit-pill">
+                <span>{credit}</span>
+                <button
+                  class="credit-remove"
+                  onclick={() => removeCredit(i)}
+                  aria-label="Remove {credit}"
+                  tabindex="0"
+                >
+                  <i class="fas fa-times" aria-hidden="true"></i>
+                </button>
+              </div>
+            {/each}
+            <input
+              class="credit-add-input"
+              type="text"
+              bind:value={newCredit}
+              placeholder="Add credit..."
+              onkeydown={(e) => e.key === "Enter" && addCredit()}
+            />
           </div>
-        {/each}
-        <input
-          class="credit-add-input"
-          type="text"
-          bind:value={newCredit}
-          placeholder="Add credit..."
-          onkeydown={(e) => e.key === "Enter" && addCredit()}
-        />
+        </div>
       </div>
     </section>
 
-    <!-- ── Performance videos ────────────────────────────────────────────────── -->
-    <section class="section-card">
+    <!-- ── Performance videos (full width) ───────────────────────────────────── -->
+    <section class="section-card videos-card">
       <div class="section-header">
         <h3 class="section-title">Performance Videos</h3>
       </div>
@@ -925,7 +921,8 @@
     gap: 14px;
   }
 
-  .workshops-card {
+  .workshops-card,
+  .videos-card {
     grid-column: 1 / -1;
   }
 
@@ -1402,9 +1399,14 @@
 
   .profile-layout {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 1fr 1fr;
     gap: 20px;
-    max-width: 600px;
+  }
+
+  @media (max-width: 900px) {
+    .profile-layout {
+      grid-template-columns: 1fr 1fr;
+    }
   }
 
   @media (max-width: 600px) {
