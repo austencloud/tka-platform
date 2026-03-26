@@ -2,13 +2,14 @@
 	/**
 	 * Fuse Panel
 	 *
-	 * One side of the fuse split view. Always shows ChoreoCard browser.
-	 * Pick button selects the current sequence for fusing.
+	 * One side of the fuse split view. Shows ChoreoCard browser on top
+	 * and a live animation preview below, both driven by the shared clock.
 	 */
 
 	import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 	import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
 	import FuseSequenceBrowser from "./FuseSequenceBrowser.svelte";
+	import FuseAnimationPreview from "./FuseAnimationPreview.svelte";
 
 	let {
 		side,
@@ -31,6 +32,12 @@
 	} = $props();
 
 	const label = $derived(side === "left" ? "Blue" : "Red");
+
+	// Track what the browser is currently showing for the animation preview
+	let browsingItem = $state<SequenceData | null>(null);
+
+	// Animation shows picked sequence if available, otherwise what's being browsed
+	const animSequence = $derived(selectedSequence ?? browsingItem);
 </script>
 
 <div class="fuse-panel" role="region" aria-label="{label} prop path">
@@ -43,13 +50,37 @@
 		{/if}
 	</div>
 
-	<div class="panel-content">
-		<FuseSequenceBrowser
-			{side}
-			{length}
-			onSelect={(item) => onSelect(item as any)}
-			picked={selectedSequence !== null}
-		/>
+	<div class="panel-body">
+		<!-- ChoreoCard browser: notation view -->
+		<div class="card-section">
+			<FuseSequenceBrowser
+				{side}
+				{length}
+				onSelect={(item) => onSelect(item as any)}
+				picked={selectedSequence !== null}
+				onCurrentItemChange={(seq) => browsingItem = seq}
+			/>
+		</div>
+
+		<!-- Animation preview: motion view -->
+		<div class="animation-section">
+			{#if animSequence}
+				{#key animSequence.id ?? animSequence.word}
+					<FuseAnimationPreview
+						sequence={animSequence}
+						{bpm}
+						{onControllerReady}
+						propColor={side === "left" ? "blue" : "red"}
+						{currentBeat}
+						showBackButton={false}
+					/>
+				{/key}
+			{:else}
+				<div class="animation-placeholder">
+					<i class="fas fa-play-circle" aria-hidden="true"></i>
+				</div>
+			{/if}
+		</div>
 	</div>
 </div>
 
@@ -98,9 +129,33 @@
 		color: var(--theme-text, #ffffff);
 	}
 
-	.panel-content {
+	.panel-body {
+		flex: 1;
+		min-height: 0;
+		display: flex;
+		flex-direction: column;
+	}
+
+	.card-section {
 		flex: 1;
 		min-height: 0;
 		overflow: hidden;
+	}
+
+	.animation-section {
+		flex-shrink: 0;
+		height: 200px;
+		border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+		position: relative;
+	}
+
+	.animation-placeholder {
+		width: 100%;
+		height: 100%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		color: var(--theme-text-dim, rgba(255, 255, 255, 0.2));
+		font-size: 2rem;
 	}
 </style>

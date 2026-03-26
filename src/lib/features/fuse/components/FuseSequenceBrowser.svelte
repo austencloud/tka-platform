@@ -22,11 +22,13 @@
 		length = 8,
 		onSelect,
 		picked = false,
+		onCurrentItemChange,
 	}: {
 		side: "left" | "right";
 		length?: number;
 		onSelect: (seq: SequenceData) => void;
 		picked?: boolean;
+		onCurrentItemChange?: (seq: SequenceData | null) => void;
 	} = $props();
 
 	const propColor = $derived<"blue" | "red">(side === "left" ? "blue" : "red");
@@ -74,6 +76,7 @@
 			pool = filtered;
 			poolIndex = 0;
 			currentItem = pool[0] ?? null;
+			onCurrentItemChange?.(currentItem);
 			if (pool.length > 0) {
 				fuseState.startClock();
 			}
@@ -102,7 +105,10 @@
 				// Replace in pool
 				const idx = pool.indexOf(item);
 				if (idx >= 0) pool[idx] = full;
-				if (currentItem === item) currentItem = full;
+				if (currentItem === item) {
+					currentItem = full;
+					onCurrentItemChange?.(full);
+				}
 			}
 		} catch {
 			// Keep metadata-only version
@@ -113,6 +119,7 @@
 		if (pool.length === 0) return;
 		poolIndex = (poolIndex + 1) % pool.length;
 		currentItem = pool[poolIndex] ?? null;
+		onCurrentItemChange?.(currentItem);
 		if (currentItem) loadFullData(currentItem);
 	}
 
