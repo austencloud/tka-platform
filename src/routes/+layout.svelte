@@ -131,6 +131,7 @@
    * Same logic as the original layout, but loaded dynamically.
    */
   async function initAppMode() {
+    console.log("[initAppMode] STARTED");
     // Progress: SvelteKit has hydrated and onMount is running
     if (typeof (window as any).__tkaLoadProgress === "function") {
       (window as any).__tkaLoadProgress(72, "Starting up...");
@@ -143,7 +144,9 @@
     }
 
     // Load DI container — this triggers all service registration
+    console.log("[initAppMode] Loading DI container...");
     const { container } = await import("$lib/shared/di");
+    console.log("[initAppMode] DI container loaded");
 
     // Populate the deferred container reference (context was set synchronously above)
     containerRef = container;
@@ -315,7 +318,9 @@
   }
 
   onMount(() => {
+    console.log("[Layout onMount] fired, pathname:", window.location.pathname);
     siteMode = detectSiteMode();
+    console.log("[Layout onMount] siteMode:", siteMode);
 
     // Standalone routes that bypass the full app bootstrap.
     // The /1995 retro route has its own boot sequence and doesn't need
