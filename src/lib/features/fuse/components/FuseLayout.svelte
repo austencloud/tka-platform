@@ -155,6 +155,13 @@
 	<div class="fuse-target" bind:this={fuseTargetEl} aria-hidden="true"></div>
 
 	<div class="fuse-tempo">
+		<button
+			class="play-pause-btn"
+			onclick={() => fuseState.toggleClock()}
+			aria-label={fuseState.clockRunning ? "Pause" : "Play"}
+		>
+			<i class="fas fa-{fuseState.clockRunning ? 'pause' : 'play'}" aria-hidden="true"></i>
+		</button>
 		<TempoControl
 			bpm={fuseState.bpm}
 			onBpmChange={fuseState.setBpm}
@@ -278,8 +285,29 @@
 	.fuse-tempo {
 		flex-shrink: 0;
 		display: flex;
+		align-items: center;
 		justify-content: center;
+		gap: var(--spacing-sm, 8px);
 		padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px);
+	}
+
+	.play-pause-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 44px;
+		height: 44px;
+		border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+		border-radius: var(--radius-md, 8px);
+		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+		color: var(--theme-text, #ffffff);
+		font-size: 1rem;
+		cursor: pointer;
+		transition: border-color 150ms ease;
+	}
+
+	.play-pause-btn:hover {
+		border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
 	}
 
 	.fuse-action {

@@ -198,6 +198,14 @@ export function createFuseState(deps: FuseStateDeps) {
 		rightController = null;
 	}
 
+	function toggleClock() {
+		if (clockRunning) {
+			stopClock();
+		} else {
+			startClock();
+		}
+	}
+
 	function dispose() {
 		stopClock();
 	}
@@ -264,6 +272,7 @@ export function createFuseState(deps: FuseStateDeps) {
 		get clockRunning() { return clockRunning; },
 		startClock,
 		stopClock,
+		toggleClock,
 		dispose,
 		selectLeft,
 		selectRight,
