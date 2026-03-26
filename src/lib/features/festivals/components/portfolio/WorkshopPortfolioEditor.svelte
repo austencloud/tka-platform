@@ -274,8 +274,9 @@
       </div>
     </div>
   {:else}
+    <div class="portfolio-grid">
     <!-- ── Workshops section ─────────────────────────────────────────────────── -->
-    <section class="section">
+    <section class="section-card workshops-card">
       <div class="section-header">
         <h3 class="section-title">Workshops</h3>
         <button
@@ -381,7 +382,7 @@
     </section>
 
     <!-- ── Bios section ──────────────────────────────────────────────────────── -->
-    <section class="section">
+    <section class="section-card">
       <div class="section-header">
         <h3 class="section-title">Bios</h3>
       </div>
@@ -389,7 +390,7 @@
     </section>
 
     <!-- ── Performance credits ───────────────────────────────────────────────── -->
-    <section class="section">
+    <section class="section-card">
       <div class="section-header">
         <h3 class="section-title">Performance Credits</h3>
       </div>
@@ -426,7 +427,7 @@
     </section>
 
     <!-- ── Performance videos ────────────────────────────────────────────────── -->
-    <section class="section">
+    <section class="section-card">
       <div class="section-header">
         <h3 class="section-title">Performance Videos</h3>
       </div>
@@ -463,7 +464,7 @@
     </section>
 
     <!-- ── Social links ──────────────────────────────────────────────────────── -->
-    <section class="section">
+    <section class="section-card">
       <div class="section-header">
         <h3 class="section-title">Social Links</h3>
       </div>
@@ -523,7 +524,7 @@
     </section>
 
     <!-- ── About ─────────────────────────────────────────────────────────────── -->
-    <section class="section">
+    <section class="section-card">
       <div class="section-header">
         <h3 class="section-title">About</h3>
       </div>
@@ -581,18 +582,23 @@
         </label>
       </div>
     </section>
+    </div>
   {/if}
 </div>
 
 <style>
   .portfolio-editor {
-    display: flex;
-    flex-direction: column;
-    gap: 0;
     height: 100%;
     overflow-y: auto;
     scrollbar-width: thin;
     scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+  }
+
+  .portfolio-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(400px, 100%), 1fr));
+    gap: 1.25rem;
+    padding: 1.25rem;
   }
 
   /* ─── Empty state ─────────────────────────────────────────────────────────── */
@@ -674,12 +680,18 @@
 
   /* ─── Sections ────────────────────────────────────────────────────────────── */
 
-  .section {
-    padding: 20px 20px 24px;
-    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+  .section-card {
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: var(--radius-lg, 12px);
+    padding: 1.25rem;
     display: flex;
     flex-direction: column;
     gap: 14px;
+  }
+
+  .workshops-card {
+    grid-column: 1 / -1;
   }
 
   .section-header {
