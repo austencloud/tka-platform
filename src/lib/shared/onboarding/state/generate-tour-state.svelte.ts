@@ -3,32 +3,18 @@
  *
  * Tracks the guided tour through generator settings cards.
  * Triggered when user taps the "?" help button.
+ *
+ * Stop list is derived from the card registry so the tour
+ * automatically includes any new cards added to the generator.
  */
+
+import { CARD_REGISTRY, type GeneratorCardId } from "$lib/features/create/generate/shared/domain/card-registry";
 
 const TOUR_COMPLETED_KEY = "tka-generate-tour-completed";
 
-export type GenerateTourStop =
-  | "word-input"
-  | "length"
-  | "level"
-  | "grid-mode"
-  | "turn-intensity"
-  | "customize"
-  | "loop"
-  | "slice-size"
-  | "generate-button";
+export type GenerateTourStop = GeneratorCardId;
 
-const STOPS: GenerateTourStop[] = [
-  "word-input",
-  "length",
-  "level",
-  "grid-mode",
-  "turn-intensity",
-  "customize",
-  "loop",
-  "slice-size",
-  "generate-button",
-];
+const STOPS: GeneratorCardId[] = CARD_REGISTRY.map((c) => c.id) as GeneratorCardId[];
 
 interface GenerateTourData {
   hasCompleted: boolean;

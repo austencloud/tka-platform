@@ -17,6 +17,7 @@ export type GeneratorHelpId =
   | "slice-size"
   | "duration-rhythm"
   | "start-end"
+  | "favorite"
   | "generate";
 
 export interface GeneratorHelpItem {
@@ -188,6 +189,23 @@ export const generatorHelpContent: GeneratorHelpItem[] = [
       "End Position: (Freeform only) Force the sequence to end at a specific position",
     ],
     tip: "Use this to practice transitioning into or out of specific positions.",
+  },
+
+  // === FAVORITES ===
+  {
+    id: "favorite",
+    icon: "fa-heart",
+    name: "Favorites",
+    color: "#e11d48",
+    shortDesc: "Save and load your settings",
+    fullDesc:
+      "Save your current generator settings as a favorite so you can reload them later with one tap. You can also browse favorites shared by other users.",
+    bullets: [
+      "Save: Stores your current Level, Length, Grid, LOOP, and other settings",
+      "Load: Tap a saved favorite to instantly apply all its settings",
+      "Community: Browse and try favorites shared by other users",
+    ],
+    tip: "Save a favorite once you find settings you like. Saves you from reconfiguring every time.",
   },
 
   // === GENERATE ACTION ===
