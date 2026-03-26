@@ -1,6 +1,6 @@
 <!--
   PictographContextMenuHost — Orchestrator for the pictograph right-click context menu.
-  Single entry: "Pictograph Settings..." → opens PictographSettingsModal.
+  Entries: "Pictograph Settings..." and optional arrow adjustment items (admin only).
 -->
 <script lang="ts">
   import ContextMenu from "$lib/shared/components/context-menu/ContextMenu.svelte";
@@ -9,9 +9,11 @@
 
   interface Props {
     onOpenSettings: () => void;
+    onAdjustArrow?: (color: "blue" | "red") => void;
+    showArrowAdjustment?: boolean;
   }
 
-  const { onOpenSettings }: Props = $props();
+  const { onOpenSettings, onAdjustArrow, showArrowAdjustment = false }: Props = $props();
 
   let menuState: ContextMenuState = $state({ open: false });
 
@@ -25,6 +27,11 @@
         closeContextMenu();
         onOpenSettings();
       },
+      onAdjustArrow: onAdjustArrow ? (color) => {
+        closeContextMenu();
+        onAdjustArrow(color);
+      } : undefined,
+      showArrowAdjustment,
     });
   });
 
