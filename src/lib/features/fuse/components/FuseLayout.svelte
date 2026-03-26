@@ -17,10 +17,13 @@
 
 	const { state: fuseState } = getFuseContext();
 
+	import type { FuseDisplayMode } from "./FusePanel.svelte";
+
 	type FuseMode = "soloProps" | "handPaths";
 
 	let fuseMode: FuseMode = $state("soloProps");
 	let fuseLength: number = $state(8);
+	let displayMode: FuseDisplayMode = $state("card");
 
 	const LENGTHS = [2, 4, 8, 12, 16, 24, 32];
 
@@ -87,6 +90,23 @@
 			>Hand Paths</button>
 		</div>
 
+		<div class="mode-toggle" role="radiogroup" aria-label="View mode">
+			<button
+				class="config-chip"
+				class:active={displayMode === "card"}
+				role="radio"
+				aria-checked={displayMode === "card"}
+				onclick={() => displayMode = "card"}
+			><i class="fas fa-th" aria-hidden="true"></i> Card</button>
+			<button
+				class="config-chip"
+				class:active={displayMode === "animation"}
+				role="radio"
+				aria-checked={displayMode === "animation"}
+				onclick={() => displayMode = "animation"}
+			><i class="fas fa-play" aria-hidden="true"></i> Animation</button>
+		</div>
+
 		<div class="length-selector" role="radiogroup" aria-label="Beat length">
 			{#each LENGTHS as len}
 				<button
@@ -113,6 +133,7 @@
 				mode={fuseMode}
 				length={fuseLength}
 				currentBeat={fuseState.currentBeat}
+				{displayMode}
 			/>
 		</div>
 		<div class="panel-wrap" bind:this={rightPanelEl}>
@@ -126,6 +147,7 @@
 				mode={fuseMode}
 				length={fuseLength}
 				currentBeat={fuseState.currentBeat}
+				{displayMode}
 			/>
 		</div>
 	</div>
