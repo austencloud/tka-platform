@@ -1,32 +1,19 @@
 <!--
-Gallery Layout - 3-Button Navigation System
+Gallery Layout - Browse Content Container
 
-Provides responsive layout with clean 3-button interface:
-- View Presets (All, Favorites, Easy, etc.)
-- Sort & Jump (Sort method + Quick navigation)
-- Advanced Filters
-- Auto-hides on scroll
-- Center panel for content (full width)
-- ViewModeToggle for props/hands x combined/solo filtering
+Provides responsive layout wrapper for the browse gallery content.
 -->
 <script lang="ts">
   import type { Snippet } from "svelte";
-  import type { BrowseViewMode } from "../domain/BrowseViewMode";
-  import ViewModeToggle from "./ViewModeToggle.svelte";
 
   interface Props {
     centerPanel: Snippet;
-    viewMode: BrowseViewMode;
-    onViewModeChange: (mode: BrowseViewMode) => void;
   }
 
-  const { centerPanel, viewMode, onViewModeChange }: Props = $props();
+  const { centerPanel }: Props = $props();
 </script>
 
 <div class="gallery-layout">
-  <!-- View mode controls above the gallery -->
-  <ViewModeToggle {viewMode} {onViewModeChange} />
-
   <!-- Main Content Area (Full Width) -->
   <div class="browse-content">
     <!-- Center Panel: Content -->

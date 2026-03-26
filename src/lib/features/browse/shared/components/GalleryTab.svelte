@@ -170,10 +170,7 @@
   }
 </script>
 
-<BrowseLayout
-  viewMode={galleryState.viewMode}
-  onViewModeChange={(mode) => galleryState.setViewMode(mode)}
->
+<BrowseLayout>
   {#snippet centerPanel()}
     <div class="sequences-main">
       <SequenceDisplayPanel
@@ -202,7 +199,6 @@
         onOpenLetterSheet={handleOpenLetterSheet}
         onOpenOptionsSheet={handleOpenOptionsSheet}
         getFilteredCount={galleryState.getFilteredCount}
-        viewMode={galleryState.viewMode}
         sequenceSections={galleryState.sequenceSections}
       />
     </div>
