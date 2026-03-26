@@ -2,9 +2,12 @@
   /**
    * HearthSection
    *
-   * The landing page hero. Title on the left, hero pictograph on the right.
-   * One composed scene — not separate stacked sections.
-   * The pictograph is the visual anchor, the title provides context.
+   * The landing page hero. One composed viewport:
+   * - Title centered at top
+   * - Large pictograph as the commanding centerpiece
+   * - Next section peeks in at the bottom edge
+   *
+   * Designed as a composition, not assembled from parts.
    */
   import { onMount } from "svelte";
   import { container } from "$lib/shared/di";
@@ -16,9 +19,6 @@
 
   let heroStep = $state<StepData | null>(null);
   let loaded = $state(false);
-
-  // Expose loaded sequence for the card section below
-  let sequence = $state<SequenceData | null>(null);
 
   interface Props {
     onSequenceLoaded?: (seq: SequenceData) => void;
@@ -32,8 +32,6 @@
       const full = await browseLoader.loadFullSequenceData("AABB");
 
       if (full && full.steps.length > 0) {
-        sequence = full;
-        // First step is letter A (alpha1 → alpha3)
         heroStep = full.steps[0] ?? null;
         onSequenceLoaded?.(full);
       }
@@ -46,48 +44,41 @@
 </script>
 
 <section class="hearth">
-  <div class="hearth-layout">
-    <!-- Left: Title and subtitle -->
-    <div class="text-column animate-in" style="--delay: 0.1s">
-      <h1>The Kinetic<br />Alphabet</h1>
-      <p class="subtitle">
-        A notation system for flow arts. Positions become symbols, transitions
-        become letters, sequences become words.
-      </p>
-      <p class="hint">
-        <span class="chevron">↓</span>
-        Scroll to explore
-      </p>
-    </div>
+  <!-- Title block -->
+  <div class="title-block fade-up" style="--delay: 0.15s">
+    <h1>The Kinetic Alphabet</h1>
+    <p class="subtitle">
+      A notation system for flow arts.
+    </p>
+  </div>
 
-    <!-- Right: Hero pictograph -->
-    <div class="pictograph-column">
-      <div class="pictograph-showcase" class:visible={heroStep}>
-        {#if heroStep}
-          <div class="pictograph-frame">
-            <PictographContainer
-              pictographData={{
-                id: heroStep.id ?? "hero-a",
-                letter: (heroStep.letter || undefined) as Letter | undefined,
-                startPosition: heroStep.startPosition,
-                endPosition: heroStep.endPosition,
-                motions: heroStep.motions ?? {},
-              }}
-              gridMode={GridMode.DIAMOND}
-            />
-          </div>
-          <div class="pictograph-label">
-            <span class="label-letter">A</span>
-            <span class="label-desc">One beat of movement, written down</span>
-          </div>
-        {:else if loaded}
-          <!-- Placeholder if AABB not found -->
-          <div class="pictograph-frame placeholder">
-            <div class="placeholder-glyph">A</div>
-          </div>
-        {/if}
-      </div>
+  <!-- The pictograph: the centerpiece. Frame is always visible for stable layout. -->
+  <div class="pictograph-stage fade-up" style="--delay: 0.4s">
+    <div class="pictograph-frame">
+      {#if heroStep}
+        <div class="pictograph-inner" class:visible={heroStep}>
+          <PictographContainer
+            pictographData={{
+              id: heroStep.id ?? "hero-a",
+              letter: (heroStep.letter || undefined) as Letter | undefined,
+              startPosition: heroStep.startPosition,
+              endPosition: heroStep.endPosition,
+              motions: heroStep.motions ?? {},
+            }}
+            gridMode={GridMode.DIAMOND}
+          />
+        </div>
+      {/if}
     </div>
+    <span class="pictograph-caption">
+      The letter A. One beat of movement, written down.
+    </span>
+  </div>
+
+  <!-- Scroll hint at the very bottom, pulling you down -->
+  <div class="scroll-cue fade-up" style="--delay: 1.2s">
+    <span class="cue-line"></span>
+    <span class="cue-text">Scroll</span>
   </div>
 </section>
 
@@ -95,219 +86,184 @@
   .hearth {
     min-height: 100vh;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 0 clamp(24px, 5vw, 80px);
+    padding: 80px 24px 0;
+    gap: 0;
+    position: relative;
   }
 
-  .hearth-layout {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: clamp(40px, 6vw, 100px);
-    max-width: 1100px;
-    width: 100%;
+  /* --- Entrance animation --- */
+  .fade-up {
+    opacity: 0;
+    transform: translateY(18px);
+    animation: fade-up 0.7s ease forwards;
+    animation-delay: var(--delay, 0s);
   }
 
-  /* --- Left column: text --- */
-  .text-column {
-    flex: 1;
-    max-width: 480px;
+  @keyframes fade-up {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* --- Title --- */
+  .title-block {
+    text-align: center;
+    margin-bottom: clamp(28px, 4vh, 48px);
   }
 
   h1 {
     font-family: "Instrument Serif", Georgia, serif;
-    font-size: clamp(2.8rem, 6vw, 4.5rem);
+    font-size: clamp(2.6rem, 7vw, 5rem);
     font-weight: 400;
     line-height: 1.05;
-    margin-bottom: 24px;
     color: var(--theme-text, #fff);
     letter-spacing: -0.02em;
+    margin: 0 0 12px;
   }
 
   .subtitle {
-    font-size: clamp(0.9rem, 1.5vw, 1.05rem);
-    line-height: 1.8;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
-    margin: 0 0 40px;
-    max-width: 380px;
+    font-size: clamp(0.9rem, 1.8vw, 1.1rem);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    margin: 0;
+    letter-spacing: 0.01em;
   }
 
-  .hint {
-    font-size: var(--font-size-compact, 12px);
-    text-transform: uppercase;
-    letter-spacing: 0.15em;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.3));
-    margin: 0;
+  /* --- Pictograph centerpiece --- */
+  .pictograph-stage {
     display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .pictograph-inner {
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    transition: opacity 0.6s ease;
+  }
+
+  .pictograph-inner.visible {
+    opacity: 1;
+  }
+
+  .pictograph-frame {
+    width: clamp(280px, 35vw, 400px);
+    aspect-ratio: 1;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 24px;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow:
+      0 32px 100px rgba(0, 0, 0, 0.5),
+      0 0 0 1px rgba(255, 255, 255, 0.03),
+      0 0 60px rgba(99, 102, 241, 0.06);
+    animation: breathe 5s ease-in-out infinite;
+  }
+
+  @keyframes breathe {
+    0%, 100% {
+      box-shadow:
+        0 32px 100px rgba(0, 0, 0, 0.5),
+        0 0 0 1px rgba(255, 255, 255, 0.03),
+        0 0 60px rgba(99, 102, 241, 0.04);
+    }
+    50% {
+      box-shadow:
+        0 32px 100px rgba(0, 0, 0, 0.5),
+        0 0 0 1px rgba(255, 255, 255, 0.06),
+        0 0 80px rgba(99, 102, 241, 0.1);
+    }
+  }
+
+  .pictograph-caption {
+    font-size: var(--font-size-sm, 0.875rem);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
+    text-align: center;
+    letter-spacing: 0.01em;
+  }
+
+  /* --- Scroll cue at bottom --- */
+  .scroll-cue {
+    position: absolute;
+    bottom: 32px;
+    display: flex;
+    flex-direction: column;
     align-items: center;
     gap: 8px;
   }
 
-  .chevron {
-    animation: float-down 2s ease-in-out infinite;
-    display: inline-block;
+  .cue-line {
+    width: 1px;
+    height: 32px;
+    background: linear-gradient(
+      to bottom,
+      transparent,
+      rgba(255, 255, 255, 0.25)
+    );
+    animation: pulse-line 2.5s ease-in-out infinite;
   }
 
-  @keyframes float-down {
-    0%, 100% { transform: translateY(0); opacity: 0.4; }
-    50% { transform: translateY(4px); opacity: 0.8; }
+  @keyframes pulse-line {
+    0%, 100% { opacity: 0.3; height: 32px; }
+    50% { opacity: 0.7; height: 40px; }
   }
 
-  /* Entrance animation */
-  .animate-in {
-    opacity: 0;
-    transform: translateY(20px);
-    animation: reveal 0.8s ease forwards;
-    animation-delay: var(--delay, 0s);
-  }
-
-  @keyframes reveal {
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  /* --- Right column: pictograph --- */
-  .pictograph-column {
-    flex: 0 0 auto;
-  }
-
-  .pictograph-showcase {
-    opacity: 0;
-    transform: translateY(12px);
-    transition: opacity 0.8s ease, transform 0.8s ease;
-  }
-
-  .pictograph-showcase.visible {
-    opacity: 1;
-    transform: translateY(0);
-  }
-
-  .pictograph-frame {
-    width: clamp(220px, 25vw, 340px);
-    aspect-ratio: 1;
-    background: rgba(0, 0, 0, 0.4);
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
-    border-radius: 20px;
-    padding: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.4),
-                0 0 0 1px rgba(255, 255, 255, 0.04);
-    animation: subtle-glow 4s ease-in-out infinite;
-  }
-
-  @keyframes subtle-glow {
-    0%, 100% {
-      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.4),
-                  0 0 0 1px rgba(255, 255, 255, 0.04);
-    }
-    50% {
-      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.4),
-                  0 0 0 1px rgba(255, 255, 255, 0.04),
-                  0 0 40px rgba(99, 102, 241, 0.08);
-    }
-  }
-
-  .pictograph-label {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    margin-top: 20px;
-    text-align: center;
-  }
-
-  .label-letter {
-    font-family: "Instrument Serif", Georgia, serif;
-    font-size: 1.5rem;
-    color: var(--theme-text, #fff);
-  }
-
-  .label-desc {
-    font-size: var(--font-size-compact, 12px);
+  .cue-text {
+    font-size: 10px;
     text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
+    letter-spacing: 0.2em;
+    color: rgba(255, 255, 255, 0.25);
   }
 
-  /* Placeholder fallback */
-  .placeholder {
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.3));
-  }
-
-  .placeholder-glyph {
-    font-family: "Instrument Serif", Georgia, serif;
-    font-size: 5rem;
-    opacity: 0.2;
-  }
-
-  /* --- Tablet: tighten up --- */
-  @media (max-width: 900px) {
+  /* --- Responsive --- */
+  @media (max-width: 768px) {
     .hearth {
-      padding: 100px 24px 60px;
-      min-height: auto;
-    }
-
-    .hearth-layout {
-      flex-direction: column;
-      gap: 48px;
-      text-align: center;
-    }
-
-    .text-column {
-      max-width: 100%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
-    .subtitle {
-      max-width: 420px;
+      padding: 60px 20px 0;
     }
 
     .pictograph-frame {
-      width: min(280px, 60vw);
-    }
-
-    .hint {
-      display: none;
+      width: min(300px, 70vw);
+      border-radius: 20px;
+      padding: 16px;
     }
   }
 
-  /* --- Mobile --- */
   @media (max-width: 480px) {
     .hearth {
-      padding: 80px 20px 40px;
+      padding: 48px 16px 0;
+      min-height: 100svh;
     }
 
     .pictograph-frame {
-      width: min(240px, 70vw);
+      width: min(260px, 75vw);
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .pictograph-showcase {
+    .fade-up {
+      opacity: 1;
+      transform: none;
+      animation: none;
+    }
+
+    .pictograph-stage {
       opacity: 1;
       transform: none;
       transition: none;
     }
 
-    .animate-in {
-      opacity: 1;
-      transform: none;
-      animation: none;
-    }
-
     .pictograph-frame {
       animation: none;
     }
 
-    .chevron {
+    .cue-line {
       animation: none;
+      opacity: 0.4;
     }
   }
 </style>
