@@ -64,7 +64,7 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     description:
       "One of the longest-running fire arts festivals in North America, now in its 22nd year. Features ~100 workshops, instructor showcase, firewalk, and nightly fire-dancing circles. Tickets almost always sell out.",
     websiteUrl: "https://firedrums.org",
-    imageUrl: "https://images.unsplash.com/photo-1504196606672-aef5c9cefc92?w=640&q=80",
+    imageUrl: "http://firedrums.org/wp-content/uploads/2021/03/FireDrums.png",
     socialLinks: {
       instagram: "@firedrumsfestival",
       facebook: "https://www.facebook.com/FireDrumsFestival/",
@@ -91,7 +91,7 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     description:
       "The largest fire festival in the Southeast US. Over 100 workshops covering a wide variety of props and skill levels, vendors, performances, and fire circles.",
     websiteUrl: "https://flamefestival.com",
-    imageUrl: "https://images.unsplash.com/photo-1519904981063-b0cf448d479e?w=640&q=80",
+    imageUrl: "https://flowartsinstitute.com/wp-content/uploads/2015/02/894733_523863547650762_2133203191_o.jpg",
     estimatedSize: toSize("large"),
     region: "north-america",
     tags: ["fire", "flow", "workshops", "camping", "southeast"],
@@ -113,7 +113,7 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     description:
       "Four-day fire and flow artist festival and retreat in the heart of the Midwest. Over 400 individual classes with workshop selection informed by community polling. Open-share communal environment.",
     websiteUrl: "https://kineticfire.org",
-    imageUrl: "https://images.unsplash.com/photo-1533105079780-92b9be482077?w=640&q=80",
+    imageUrl: "https://kineticfire.org/wp-content/uploads/2026/01/editedbanner1.png",
     socialLinks: {
       instagram: "@kineticfireretreat",
       facebook: "https://www.facebook.com/kineticfire/",
@@ -139,7 +139,7 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     description:
       "The East Coast's premier spinning and fire arts training camp. 100+ classes on poi, hoop, staves, dance, fire safety, and performance. Participation-based skill-share philosophy. Meals included with ticket.",
     websiteUrl: "https://www.wildfireretreat.org",
-    imageUrl: "https://images.unsplash.com/photo-1448375240586-882707db888b?w=640&q=80",
+    imageUrl: "https://tickets.wildfireretreat.org/media/pub/thumbs/4b683368116ca17eb4239dc43c24c6d4.1200.png",
     socialLinks: {
       facebook: "https://www.facebook.com/WildFireRetreat/",
     },
@@ -164,7 +164,7 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     description:
       "Fall edition of the East Coast's premier spinning and fire arts training camp. Same format as spring: 100+ classes, camping, meals included.",
     websiteUrl: "https://www.wildfireretreat.org",
-    imageUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=640&q=80",
+    imageUrl: "https://tickets.wildfireretreat.org/media/pub/thumbs/4b683368116ca17eb4239dc43c24c6d4.1200.png",
     socialLinks: {
       facebook: "https://www.facebook.com/WildFireRetreat/",
     },
@@ -190,7 +190,7 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     description:
       "Billed as the world's first Flow Arts and Sustainability festival. Held on a sustainable farm with flow workshops, permaculture classes, organic gardening, natural building, live music, and performances.",
     websiteUrl: "https://flowstormtx.com",
-    imageUrl: "https://images.unsplash.com/photo-1531366936337-7c912a4589a7?w=640&q=80",
+    imageUrl: "https://images.unsplash.com/photo-1504196606672-aef5c9cefc92?w=640&q=80",
     socialLinks: {
       instagram: "@flowstormtx",
       facebook: "https://www.facebook.com/FlowstormTx/",
@@ -217,7 +217,7 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     description:
       "One of the longest running flow and fire festivals in the US, established 2010. Classes include poi, staffs, hoops, clubs, buugeng, whips, fans, flow wand, fire breathing, fire safety, dance, aerials, stilts.",
     websiteUrl: "https://www.pacificfiregathering.com",
-    imageUrl: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=640&q=80",
+    imageUrl: "https://www.pacificfiregathering.com/wp-content/uploads/2018/05/pfg-triquetra-white.png",
     socialLinks: {
       instagram: "@pacificfiregathering",
       facebook: "https://www.facebook.com/PacificFireGathering/",
@@ -244,7 +244,7 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     description:
       "Annual fire and flow arts community gathering on the Oregon coast. 4 days and 3 nights of workshops, fire dancing, live music, and community building in a temperate rainforest campground at the edge of the Pacific.",
     websiteUrl: "https://kindlenw.org",
-    imageUrl: "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?w=640&q=80",
+    imageUrl: "https://kindlenw.org/wp-content/uploads/2024/02/lux_kindle-2023_0009-scaled.webp",
     socialLinks: {
       instagram: "@kindle_nw",
       facebook: "https://www.facebook.com/KindleNW/",
@@ -271,7 +271,7 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     description:
       "Michigan's premier multi-disciplinary fire and flow arts retreat. Now in its sixth installment. Four-day camping event with workshops, music, performances, art, nightly stage performances, and fire circles.",
     websiteUrl: "https://www.greatlakesflow.com",
-    imageUrl: "https://images.unsplash.com/photo-1518020382113-a7e8fc38eac9?w=640&q=80",
+    imageUrl: "https://images.unsplash.com/photo-1504196606672-aef5c9cefc92?w=640&q=80",
     socialLinks: {
       instagram: "@glfproductions",
       facebook: "https://www.facebook.com/greatlakesflow/",
@@ -298,7 +298,7 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     description:
       "4-day annual Mid-Atlantic fire and flow arts retreat. Unique workshops by day, curated live fire performance by night. Features effigy construction and destruction. Meals included.",
     websiteUrl: "https://flow-arts.com",
-    imageUrl: "https://images.unsplash.com/photo-1501854140801-50d01698950b?w=640&q=80",
+    imageUrl: "https://flow-arts.com/wp-content/uploads/2019/04/Fahrenheit-2018-133.jpg",
     socialLinks: {
       instagram: "@fahrenheitflowarts",
       facebook: "https://www.facebook.com/fahrenheit.flowarts.9/",
@@ -324,7 +324,7 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     description:
       "Transformational movement, music, and arts festival. 200+ playshops on movement, music, and healing. Alcohol- and substance-free, truly family-centric. Covers yoga, poi, hoops, staff, capoeira, aerials, dance, meditation, fire dancing, and more.",
     websiteUrl: "https://playthinkfestival.com",
-    imageUrl: "https://images.unsplash.com/photo-1499092346302-b8d7a599b3cd?w=640&q=80",
+    imageUrl: "https://www.playthinkfestival.com/wp-content/uploads/882ef70c-ab25-4f12-8d1a-354ea8527956.jpg",
     socialLinks: {
       facebook: "https://www.facebook.com/playthinkfest/",
     },
@@ -350,7 +350,7 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     description:
       "Family-friendly multi-day camping festival on 60 enchanted acres near Flagstaff. Features fire spinning, skill-sharing workshops, live music, aerial performances, and a geodesic dome venue. Workshops cover poi, juggling, dance, acrobatics, aerial, hoop, contact staff, yoga.",
     websiteUrl: "https://thesouthwestflowfestival.com",
-    imageUrl: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=640&q=80",
+    imageUrl: "https://img.evbuc.com/https%3A%2F%2Fcdn.evbuc.com%2Fimages%2F1047172813%2F2270966027383%2F1%2Foriginal.20250606-033117?w=640&auto=format,compress&q=75",
     socialLinks: {
       facebook: "https://www.facebook.com/southwestflowfestival/",
     },
@@ -376,7 +376,7 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     description:
       "3-day flow retreat blending workshops on prop skills with the science of flow states. Produced by SkyFire Arts, a 501c3 nonprofit. Includes fire and lightning performances, meals, community vendors, and VIP glamping options.",
     websiteUrl: "https://stormlightdreamfoundation.org/home/programs/",
-    imageUrl: "https://images.unsplash.com/photo-1562409822-ea14a0879613?w=640&q=80",
+    imageUrl: "https://stormlightdreamfoundation.org/wp-content/uploads/2024/08/ignightfans.jpg",
     socialLinks: {
       facebook: "https://www.facebook.com/Ignightflow/",
     },
@@ -603,7 +603,7 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     description:
       "79th annual festival of the International Jugglers' Association, founded 1947. Week-long event with shows, workshops, games, and competitions. Requires IJA membership for registration.",
     websiteUrl: "https://festival.juggle.org",
-    imageUrl: "https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=640&q=80",
+    imageUrl: "https://festival.juggle.org/wp-content/uploads/2025/11/Hero-update.svg",
     socialLinks: {
       facebook: "https://www.facebook.com/ijajugglers",
     },
@@ -651,7 +651,7 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     description:
       "37th annual festival. Largest annual Midwest gathering of jugglers, unicyclists, and yo-yo enthusiasts. Averages 500-700 participants with a public show.",
     websiteUrl: "https://www.mondofest.org",
-    imageUrl: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=640&q=80",
+    imageUrl: "https://www.mondofest.org/wordpress/wp-content/uploads/2018/01/MONDO_Banner2.jpg",
     estimatedSize: toSize("large"),
     region: "north-america",
     tags: ["juggling", "unicycle", "workshops", "shows", "midwest"],
@@ -672,7 +672,7 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     seekingPerformers: true,
     description:
       "All-levels gathering with workshops on various props. Saturday evening features an invitational revue. Supported by Fund the Flow Arts seed grant.",
-    imageUrl: "https://images.unsplash.com/photo-1508739773434-c26b3d09e071?w=640&q=80",
+    imageUrl: "https://www.cascadejugglingfestival.org/images/toss-up-newsite.webp",
     estimatedSize: toSize("small"),
     region: "north-america",
     tags: ["juggling", "flow", "workshops", "shows"],
@@ -714,7 +714,7 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     seekingInstructors: true,
     seekingPerformers: true,
     description: "The Mid-Atlantic's biggest hula hoop festival. Workshops, contests, performances, and raffles.",
-    imageUrl: "https://images.unsplash.com/photo-1569761316261-9a8696fa2ca3?w=640&q=80",
+    imageUrl: "https://img.evbuc.com/https%3A%2F%2Fcdn.evbuc.com%2Fimages%2F867968949%2F1802414002663%2F1%2Foriginal.20241006-215853?w=640&auto=format%2Ccompress&q=75",
     estimatedSize: toSize("small"),
     region: "north-america",
     tags: ["hoop", "workshops", "contests", "performance"],
@@ -759,7 +759,7 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     description:
       "13th year presenting flow arts in a dance-theater setting. Produced by Fund the Flow Arts nonprofit in San Francisco's Mission District.",
     websiteUrl: "https://fundtheflowarts.org",
-    imageUrl: "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=640&q=80",
+    imageUrl: "https://fundtheflowarts.org/wp-content/uploads/2023/08/fund-flow-arts-2023-home-flow-show-1.jpg",
     estimatedSize: toSize("small"),
     region: "north-america",
     tags: ["flow", "performance", "theater", "dance"],
@@ -780,7 +780,7 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     description:
       "The largest juggling convention in the world, regularly attracting several thousand participants. 48th edition. Embraces the full spectrum of contemporary circus: juggling, unicycling, acrobatics, fire, hula hooping, magic, and more. Includes open fire stage in the city center.",
     websiteUrl: "https://ejc2026.org",
-    imageUrl: "https://images.unsplash.com/photo-1555993539-1732b0258235?w=640&q=80",
+    imageUrl: "https://ejc2026.org/_astro/logo.AEPv0iu7_Z1V1QHE.webp",
     socialLinks: {
       facebook: "https://www.facebook.com/p/EJC-2026-PTUJ-61568400657093/",
     },
@@ -804,7 +804,7 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     description:
       "Community-driven, strictly non-profit flow arts and fire convention near Berlin. 14+ years running. Workshops, music, healing spaces, meditation, acro-yoga, OpenStage show, firejams from dusk till dawn, and a FlowMarkt. All participants pay the same price.",
     websiteUrl: "https://ostflimmern.org/en/",
-    imageUrl: "https://images.unsplash.com/photo-1528360983277-13d401cdc186?w=640&q=80",
+    imageUrl: "https://ostflimmern.org/wp-content/uploads/2021/12/Banner.jpg",
     estimatedSize: toSize("medium"),
     region: "europe",
     tags: ["fire", "flow", "workshops", "camping", "community-driven", "nonprofit", "healing", "acro-yoga"],
@@ -826,7 +826,7 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     description:
       "Billed as the largest fire gathering in the world. Community-owned (not a company or agency). Every ticket-holder commits to at least one volunteer shift. Dancing flames, community performances, music, storytelling. Camping with tents or caravans.",
     websiteUrl: "https://phoenix-convention.com",
-    imageUrl: "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=640&q=80",
+    imageUrl: "https://phoenix-convention.com/wp-content/uploads/2024/12/Phoenix-Font-1024x288.png",
     socialLinks: {
       facebook: "https://www.facebook.com/phoenixfireconvention/",
     },
@@ -851,7 +851,7 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     description:
       "Intimate gathering (70-80 participants) for fire performers and flow artists in the wild green heart of southern Italy. Since 2017. International masters in flow arts, circus, juggling, and aerials. Fire playground from dusk till dawn. Family-like atmosphere.",
     websiteUrl: "https://www.artemisiagathering.org",
-    imageUrl: "https://images.unsplash.com/photo-1516483638261-f4dbaf036963?w=640&q=80",
+    imageUrl: "https://www.artemisiagathering.org/wp-content/uploads/2025/12/Artemisia-2026-header-temporary.png",
     socialLinks: {
       facebook: "https://www.facebook.com/artemisiagathering/",
     },
@@ -876,7 +876,7 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     description:
       "International festival of circus and performance arts on a repurposed Soviet-era missile base. Founded 2013, up to 1200 visitors. 5-day festival with ~40 workshops daily, multiple full-length shows, 25+ DJs at 4 stages, 15+ live bands, and all-night fire jams.",
     websiteUrl: "https://roztocfest.com",
-    imageUrl: "https://images.unsplash.com/photo-1467269204594-9661b134dd2b?w=640&q=80",
+    imageUrl: "https://roztocfest.com/wp-content/uploads/2025/04/thumbnail3.png",
     socialLinks: {
       facebook: "https://www.facebook.com/roztocfest/",
     },
@@ -901,7 +901,7 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     description:
       "The UK's first-ever festival designed specifically for the fire and flow arts community. Multiple themed areas: ground workshops (acrostaff, hand-to-hand, clowning, choreography), aerial/slackline space, fire gala show, renegade stage, and chill zone with hot tubs, saunas, and healing sessions.",
     websiteUrl: "https://flowintheforest.com",
-    imageUrl: "https://images.unsplash.com/photo-1440342359743-84fcb8c21f21?w=640&q=80",
+    imageUrl: "https://flowintheforest.com/wp-content/uploads/2025/12/216a854e-7b1f-42c6-bbf0-ab48d69c3588-1024x683.jpg",
     socialLinks: {
       facebook: "https://www.facebook.com/people/Flow-in-the-Forest/61573130670439/",
     },
@@ -923,7 +923,7 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     seekingInstructors: false,
     seekingPerformers: false,
     description: "Four fun and flaming days dedicated to creativity, movement, juggling, and play.",
-    imageUrl: "https://images.unsplash.com/photo-1528360983277-13d401cdc186?w=640&q=80",
+    imageUrl: "https://festivalsandretreats.com/wp-content/uploads/2022/01/ab-n-pott.jpeg",
     estimatedSize: toSize("medium"),
     region: "europe",
     tags: ["juggling", "flow", "workshops", "fire"],
@@ -942,7 +942,7 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     seekingInstructors: true,
     seekingPerformers: true,
     description: "Four days filled with many workshops, fire jam, gala show, and open stage in Salzburg.",
-    imageUrl: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=640&q=80",
+    imageUrl: "https://www.soundofjuggling.com/wp-content/uploads/Kopie-von-SOJ24-91.webp",
     estimatedSize: toSize("medium"),
     region: "europe",
     tags: ["juggling", "flow", "fire-jam", "gala-show", "workshops"],
@@ -1003,7 +1003,7 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     seekingInstructors: true,
     seekingPerformers: false,
     description: "Gathering of hula hoopers near Zurich, Switzerland.",
-    imageUrl: "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=640&q=80",
+    imageUrl: "https://festivalsandretreats.com/wp-content/uploads/2022/01/Get-the-Ring-Hulahoop-Convention-Switzerland.jpg",
     estimatedSize: toSize("small"),
     region: "europe",
     tags: ["hoop", "workshops", "convention"],
@@ -1022,7 +1022,7 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     seekingInstructors: true,
     seekingPerformers: true,
     description: "South West Hoop Conference in Bristol. Hoop workshops, crafting, and shows.",
-    imageUrl: "https://images.unsplash.com/photo-1558459654-c430be5b0a5c?w=640&q=80",
+    imageUrl: "https://swhoop.hoopingmad.co.uk/wp-content/uploads/2025/10/2026-SWhoop-Banner.png",
     estimatedSize: toSize("small"),
     region: "europe",
     tags: ["hoop", "workshops", "crafting", "shows"],
@@ -1041,7 +1041,7 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     seekingInstructors: true,
     seekingPerformers: false,
     description: "All-inclusive week-long hoop intensive in Turkey.",
-    imageUrl: "https://images.unsplash.com/photo-1524231757912-21f4fe3a7200?w=640&q=80",
+    imageUrl: "https://hoop.tadah.eu/wp-content/uploads/2024/02/PXL_20231013_150109138.MP_-edited-scaled.jpg",
     estimatedSize: toSize("intimate"),
     region: "europe",
     tags: ["hoop", "intensive", "retreat", "all-inclusive"],
@@ -1104,7 +1104,7 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     description:
       "Luxury hoop gathering in Bali with terrific instructors, infinity pool overlooking the sea, and delicious cuisine. 7 or 15-day event.",
     websiteUrl: "https://thehulahoopinstitute.com/the-hoop-dream-retreat/bali-2025/",
-    imageUrl: "https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?w=640&q=80",
+    imageUrl: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=640&q=80",
     estimatedSize: toSize("intimate"),
     region: "asia",
     tags: ["hoop", "retreat", "luxury", "bali"],
@@ -1125,7 +1125,7 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     description:
       "Combines poi and staff with pristine nature and adventure expeditions. 7 or 15-day events suited for all levels. Multiple instructors teaching poi, buugeng, hula hoop, contact staff, and other flow arts.",
     websiteUrl: "https://flowartsretreats.com/bali/",
-    imageUrl: "https://images.unsplash.com/photo-1555400038-63f5ba517a47?w=640&q=80",
+    imageUrl: "https://flowartsretreats.com/wp-content/uploads/2024/10/Bali-Fire-Dance-Retreat51-1-scaled-thegem-portfolio-metro.jpg",
     estimatedSize: toSize("intimate"),
     region: "asia",
     tags: ["fire", "poi", "staff", "retreat", "bali", "adventure"],
@@ -1148,7 +1148,7 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     description:
       "Australia's premier flow arts workshop festival, 2.5 hours from Melbourne. World-class teachers from around Australia with international guests. Workshops include acrobatics, aerials, fire spinning, poi, staff, contact staff, dragon staff, juggling, hoops, dance, magic, and more. Fire jams, gala shows, and renegade nights.",
     websiteUrl: "https://www.spincircus.com/spin2026",
-    imageUrl: "https://images.unsplash.com/photo-1523482580672-f109ba8cb9be?w=640&q=80",
+    imageUrl: "https://images.squarespace-cdn.com/content/v1/59564ce0cd0f684157c12974/fbce343d-4287-4b99-838a-7146bde4770c/472690397_1741705349947238_8931819140022534324_n.jpg",
     socialLinks: {
       instagram: "@spin_circus_festival",
       facebook: "https://www.facebook.com/spincircusevents/",
@@ -1174,7 +1174,7 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     description:
       "One of Aotearoa's best-kept secrets. 4-day workshop-based music, workshop, and circus performance festival. DJs, aerialists, jugglers, fire spinners, acrobats, live music. Nightly fire spinning circle open to anyone after a fire safety briefing. Child-friendly, quality vegan food, renegade show.",
     websiteUrl: "https://www.circulation.co.nz",
-    imageUrl: "https://images.unsplash.com/photo-1469521669194-babb45599def?w=640&q=80",
+    imageUrl: "https://images.squarespace-cdn.com/content/v1/5eca6b8c80c0dd25fdcbe414/5ba4a538-11a7-4b5d-abae-2ab68efbf972/Circulation2024-52.jpg",
     estimatedSize: toSize("medium"),
     region: "oceania",
     tags: ["fire", "flow", "circus", "workshops", "music", "family-friendly", "vegan-food"],
@@ -1197,7 +1197,7 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     description:
       "South Africa's leading flow arts and movement festival. Creativity, community, and fire converge in a family-friendly weekend in nature. Flow workshops in hooping, poi, staff, fans, juggling. Live music, DJs, ecstatic dance, sunset drum circles, fire jams both nights, catered spit-roast dinner.",
     websiteUrl: "https://www.quicket.co.za/events/58931-animus-flow-festival/",
-    imageUrl: "https://images.unsplash.com/photo-1580060839134-75a5edca2e99?w=640&q=80",
+    imageUrl: "https://festival101.co.za/wp-content/uploads/2025/06/Banner-for-Flyer-min-1600x620.png",
     socialLinks: {
       facebook: "https://www.facebook.com/animusflowfest/",
     },
