@@ -7,8 +7,10 @@
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import PictographContextMenuHost from "$lib/shared/pictograph/shared/components/context-menu/PictographContextMenuHost.svelte";
   import PictographSettingsModal from "$lib/shared/pictograph/shared/components/PictographSettingsModal.svelte";
+  import ArrowLayerModal from "../../../components/arrow-adjustment/ArrowLayerModal.svelte";
   import { practiceAnimationStyle } from "../../../state/practice-animation-style.svelte";
   import { createStepCellAnimationManager } from "../services/implementations/StepCellAnimationManager";
+  import { isAdmin } from "$lib/shared/auth/state/authState.svelte";
 
 
   let {
@@ -107,6 +109,18 @@
   // Context menu and settings state
   let contextMenuHost: PictographContextMenuHost;
   let settingsOpen = $state(false);
+
+  // Arrow layer adjustment modal state
+  let arrowModalOpen = $state(false);
+  let arrowModalColor = $state<"blue" | "red">("blue");
+
+  // Show arrow adjustment in context menu for admin users on non-blank beats
+  const showArrowAdjustment = $derived(isAdmin() && !step.isBlank && step.stepNumber !== 0);
+
+  function handleAdjustArrow(color: "blue" | "red") {
+    arrowModalColor = color;
+    arrowModalOpen = true;
+  }
 
   // Sync animation manager with prop changes via effects
   $effect(() => {
@@ -338,12 +352,22 @@
 <PictographContextMenuHost
   bind:this={contextMenuHost}
   onOpenSettings={() => { settingsOpen = true; }}
+  onAdjustArrow={handleAdjustArrow}
+  {showArrowAdjustment}
 />
 
 <PictographSettingsModal
   bind:open={settingsOpen}
   stepData={step}
 />
+
+{#if arrowModalOpen}
+  <ArrowLayerModal
+    bind:open={arrowModalOpen}
+    stepData={step}
+    arrowColor={arrowModalColor}
+  />
+{/if}
 
 <style>
   .step-cell {

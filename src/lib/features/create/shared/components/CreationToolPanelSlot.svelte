@@ -213,6 +213,7 @@
     /* Use 'size' (not 'inline-size') to enable height queries */
     container-type: size;
     container-name: tool-panel;
+
   }
 
   /* Loading states */

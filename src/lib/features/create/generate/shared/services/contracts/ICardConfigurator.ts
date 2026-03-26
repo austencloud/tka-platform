@@ -10,14 +10,15 @@ import type {
 } from "../../../circular/domain/models/circular-models";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { StartEndOptions } from "$lib/features/create/shared/state/panel-coordination-state.svelte";
+import type { GeneratorCardId } from "../../domain/card-registry";
 
 /**
  * Card descriptor for rendering in the UI
  * Contains all necessary information to render a specific card component
  */
 export interface CardDescriptor {
-  /** Unique identifier for the card (used as key in Svelte's each block) */
-  id: string;
+  /** Must match a registered card ID from card-registry.ts */
+  id: GeneratorCardId;
   /** Props to pass to the card component */
   props: Record<string, unknown>;
   /** Number of grid columns this card should span (1-6) */

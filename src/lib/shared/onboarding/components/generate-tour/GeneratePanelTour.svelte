@@ -16,100 +16,38 @@
     generatorHelpContent,
     type GeneratorHelpItem,
   } from "$lib/features/create/generate/domain/generator-help-content";
-  import type { GeneratorHelpId } from "$lib/features/create/generate/domain/generator-help-content";
+  import { CARD_REGISTRY, type GeneratorCardId } from "$lib/features/create/generate/shared/domain/card-registry";
+  import { getCardColors } from "$lib/features/create/generate/shared/domain/card-colors";
+  import { BackgroundType } from "@austencloud/backgrounds";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
 
-  // Mini card definition — matches real card grid visuals
+  // Mini card definition — derived from the card registry
   interface MiniCard {
-    id: GenerateTourStop;
+    id: GeneratorCardId;
     header: string;
     value: string;
     gradient: string;
     span: number;
   }
 
-  // Gradients match card-colors.ts (DEFAULT_COLORS) exactly.
-  // LOOP uses theme accent (#6366f1 indigo) since it's a special animated card.
-  const MINI_CARDS: MiniCard[] = [
-    {
-      id: "word-input",
-      header: "WORD",
-      value: "A - Z",
-      gradient: "linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%)",
-      span: 4,
-    },
-    {
-      id: "length",
-      header: "LENGTH",
-      value: "16",
-      gradient: "linear-gradient(135deg, #3b82f6 0%, #2563eb 50%, #1d4ed8 100%)",
-      span: 2,
-    },
-    {
-      id: "level",
-      header: "LEVEL",
-      value: "2",
-      gradient: "linear-gradient(135deg, #64748b 0%, #475569 100%)",
-      span: 2,
-    },
-    {
-      id: "grid-mode",
-      header: "GRID",
-      value: "Diamond",
-      gradient: "linear-gradient(135deg, #14b8a6 0%, #0d9488 50%, #0f766e 100%)",
-      span: 2,
-    },
-    {
-      id: "turn-intensity",
-      header: "TURNS",
-      value: "≤1",
-      gradient: "linear-gradient(135deg, #22c55e 0%, #16a34a 50%, #15803d 100%)",
-      span: 2,
-    },
-    {
-      id: "customize",
-      header: "CUSTOMIZE",
-      value: "Default",
-      gradient: "linear-gradient(135deg, #06b6d4 0%, #0891b2 50%, #0e7490 100%)",
-      span: 2,
-    },
-    {
-      id: "loop",
-      header: "LOOP",
-      value: "Rotated",
-      gradient: "linear-gradient(135deg, #6366f1 0%, #818cf8 50%, #6366f1 100%)",
-      span: 2,
-    },
-    {
-      id: "slice-size",
-      header: "SLICE",
-      value: "Quartered",
-      gradient: "linear-gradient(135deg, #ec4899 0%, #db2777 50%, #be185d 100%)",
-      span: 2,
-    },
-    {
-      id: "generate-button",
-      header: "",
-      value: "Generate",
-      gradient: "linear-gradient(135deg, #22c55e 0%, #16a34a 50%, #15803d 100%)",
-      span: 6,
-    },
-  ];
+  // Derive mini cards from the shared registry so they stay in sync
+  // with the real generator panel automatically.
+  const defaultColors = getCardColors(BackgroundType.NIGHT_SKY);
+  const MINI_CARDS: MiniCard[] = CARD_REGISTRY.map((entry) => ({
+    id: entry.id,
+    header: entry.tourHeader,
+    value: entry.tourDefaultValue,
+    gradient: (defaultColors as unknown as Record<string, { color: string }>)[entry.colorKey]?.color ?? "",
+    span: entry.tourSpan,
+  }));
 
-  const stopToHelpId: Record<GenerateTourStop, GeneratorHelpId> = {
-    "word-input": "generation-mode",
-    "length": "length",
-    "level": "level",
-    "grid-mode": "grid-mode",
-    "turn-intensity": "turn-intensity",
-    "customize": "prop-continuity",
-    "loop": "loop-type",
-    "slice-size": "slice-size",
-    "generate-button": "generate",
-  };
+  // Help ID mapping also derived from registry
+  const stopToHelpId = Object.fromEntries(
+    CARD_REGISTRY.map((entry) => [entry.id, entry.helpId])
+  ) as Record<string, string>;
 
-  const tourOverrides: Partial<Record<GenerateTourStop, Partial<GeneratorHelpItem>>> = {
+  const tourOverrides: Partial<Record<string, Partial<GeneratorHelpItem>>> = {
     "word-input": {
       name: "Spell a Word",
       shortDesc: "Type a word or go random",
@@ -126,7 +64,7 @@
     },
     "loop": {
       name: "LOOP",
-      fullDesc: "A LOOP sequence ends where it started, so you can repeat it forever. Four base types — Rotated, Mirrored, Swapped, and Inverted — can be combined for even more variety.",
+      fullDesc: "A LOOP sequence ends where it started, so you can repeat it forever. Four base types -- Rotated, Mirrored, Swapped, and Inverted -- can be combined for even more variety.",
       bullets: undefined,
       images: undefined,
     },
