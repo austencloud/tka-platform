@@ -832,6 +832,8 @@
     grid-template-columns: repeat(auto-fill, minmax(min(400px, 100%), 1fr));
     gap: 1.25rem;
     padding: 1.25rem;
+    max-width: 1400px;
+    margin: 0 auto;
   }
 
   /* ─── Empty state ─────────────────────────────────────────────────────────── */
@@ -1172,7 +1174,7 @@
 
   .workshop-list {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     gap: 16px;
   }
 
