@@ -24,11 +24,15 @@
 		mode = "soloProps",
 		length = 8,
 		onSelect,
+		picked = false,
+		onBrowsingSequenceChange,
 	}: {
 		side: "left" | "right";
 		mode?: FuseMode;
 		length?: number;
 		onSelect: (seq: SequenceData) => void;
+		picked?: boolean;
+		onBrowsingSequenceChange?: (seq: SequenceData | null) => void;
 	} = $props();
 
 	const propColor = $derived<"blue" | "red">(side === "left" ? "blue" : "red");
@@ -76,6 +80,7 @@
 			pool = filtered;
 			poolIndex = 0;
 			currentItem = pool[0] ?? null;
+			onBrowsingSequenceChange?.(currentItem);
 
 			if (pool.length > 0) {
 				fuseState.startClock();
@@ -105,7 +110,10 @@
 				// Replace in pool
 				const idx = pool.indexOf(item);
 				if (idx >= 0) pool[idx] = full;
-				if (currentItem === item) currentItem = full;
+				if (currentItem === item) {
+					currentItem = full;
+					onBrowsingSequenceChange?.(full);
+				}
 			}
 		} catch {
 			// Keep metadata-only version
@@ -116,6 +124,7 @@
 		if (pool.length === 0) return;
 		poolIndex = (poolIndex + 1) % pool.length;
 		currentItem = pool[poolIndex] ?? null;
+		onBrowsingSequenceChange?.(currentItem);
 		if (currentItem) loadFullData(currentItem);
 	}
 
@@ -183,24 +192,35 @@
 		</div>
 
 		<div class="card-actions">
-			<button
-				class="shuffle-btn"
-				onclick={shuffle}
-				aria-label="Shuffle to next"
-				disabled={pool.length <= 1}
-			>
-				<i class="fas fa-shuffle" aria-hidden="true"></i>
-				Shuffle
-			</button>
+			{#if picked}
+				<button
+					class="picked-btn"
+					disabled
+					aria-label="Already picked"
+				>
+					<i class="fas fa-check-circle" aria-hidden="true"></i>
+					Picked
+				</button>
+			{:else}
+				<button
+					class="shuffle-btn"
+					onclick={shuffle}
+					aria-label="Shuffle to next"
+					disabled={pool.length <= 1}
+				>
+					<i class="fas fa-shuffle" aria-hidden="true"></i>
+					Shuffle
+				</button>
 
-			<button
-				class="select-btn"
-				onclick={handlePick}
-				aria-label="Pick this {propColor} prop path"
-			>
-				<i class="fas fa-check" aria-hidden="true"></i>
-				Pick
-			</button>
+				<button
+					class="select-btn"
+					onclick={handlePick}
+					aria-label="Pick this {propColor} prop path"
+				>
+					<i class="fas fa-check" aria-hidden="true"></i>
+					Pick
+				</button>
+			{/if}
 		</div>
 	{/if}
 </div>
@@ -310,6 +330,23 @@
 
 	.select-btn:hover {
 		filter: brightness(1.1);
+	}
+
+	.picked-btn {
+		flex: 1;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: var(--spacing-xs, 4px);
+		padding: 10px 16px;
+		border: 1.5px solid rgba(34, 197, 94, 0.4);
+		border-radius: var(--radius-md, 8px);
+		font-size: var(--font-size-min, 14px);
+		font-weight: 600;
+		cursor: default;
+		min-height: 48px;
+		background: rgba(34, 197, 94, 0.15);
+		color: rgb(134, 239, 172);
 	}
 
 	.state-msg {

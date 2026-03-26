@@ -2,8 +2,9 @@
 	/**
 	 * Fuse Panel
 	 *
-	 * One side of the fuse split view. Shows a shuffle card when no
-	 * item is selected, or a live animation preview when one is picked.
+	 * One side of the fuse split view. Display mode is controlled by the
+	 * parent (FuseLayout) toggle — both panels switch simultaneously.
+	 * "card" shows ChoreoCard browser, "animation" shows AnimationPreview.
 	 */
 
 	import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -11,9 +12,12 @@
 	import FuseSequenceBrowser from "./FuseSequenceBrowser.svelte";
 	import FuseAnimationPreview from "./FuseAnimationPreview.svelte";
 
+	export type FuseDisplayMode = "card" | "animation";
+
 	let {
 		side,
 		selectedSequence,
+		browsingSequence,
 		onSelect,
 		onDeselect,
 		bpm,
@@ -21,9 +25,11 @@
 		mode = "soloProps",
 		length = 8,
 		currentBeat = 0,
+		displayMode = "card",
 	}: {
 		side: "left" | "right";
 		selectedSequence: SequenceData | null;
+		browsingSequence?: SequenceData | null;
 		onSelect: (seq: SequenceData) => void;
 		onDeselect: () => void;
 		bpm: number;
@@ -31,9 +37,16 @@
 		mode?: "soloProps" | "handPaths";
 		length?: number;
 		currentBeat?: number;
+		displayMode?: FuseDisplayMode;
 	} = $props();
 
 	const label = $derived(side === "left" ? "Blue" : "Red");
+
+	// Track what the browser is currently showing (for animation mode without a pick)
+	let localBrowsingSeq = $state<SequenceData | null>(null);
+
+	// The sequence to show in animation mode: picked sequence if available, otherwise browsing
+	const animationSequence = $derived(selectedSequence ?? browsingSequence ?? localBrowsingSeq);
 </script>
 
 <div class="fuse-panel" role="region" aria-label="{label} {mode === 'soloProps' ? 'prop path' : 'hand path'}">
@@ -47,9 +60,9 @@
 	</div>
 
 	<div class="panel-content">
-		{#if selectedSequence}
+		{#if displayMode === "animation" && animationSequence}
 			<FuseAnimationPreview
-				sequence={selectedSequence}
+				sequence={animationSequence}
 				{bpm}
 				onBack={onDeselect}
 				{onControllerReady}
@@ -57,7 +70,14 @@
 				{currentBeat}
 			/>
 		{:else}
-			<FuseSequenceBrowser {side} {mode} {length} onSelect={(item) => onSelect(item as any)} />
+			<FuseSequenceBrowser
+				{side}
+				{mode}
+				{length}
+				onSelect={(item) => onSelect(item as any)}
+				picked={selectedSequence !== null}
+				onBrowsingSequenceChange={(seq) => localBrowsingSeq = seq}
+			/>
 		{/if}
 	</div>
 </div>
