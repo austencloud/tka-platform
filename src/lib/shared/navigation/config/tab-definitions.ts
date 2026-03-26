@@ -598,7 +598,7 @@ export const FESTIVAL_TABS: Section[] = [
     gradient: "linear-gradient(135deg, #6366f1, #818cf8)",
   },
   {
-    id: "workshops",
+    id: "portfolio",
     label: "Portfolio",
     icon: '<i class="fas fa-briefcase" aria-hidden="true"></i>',
     description: "Workshops, acts, bios, and application materials",

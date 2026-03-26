@@ -6,7 +6,7 @@ import type { IFestivalTrackerRepository } from "../services/contracts/IFestival
 import type { IFestivalAttendanceRepository } from "../services/contracts/IFestivalAttendanceRepository";
 import type { IWorkshopPortfolioRepository } from "../services/contracts/IWorkshopPortfolioRepository";
 
-export type FestivalTab = "discover" | "map" | "calendar" | "workshops";
+export type FestivalTab = "discover" | "map" | "calendar" | "portfolio";
 
 export function createFestivalState(
   loader: IFestivalLoader,
