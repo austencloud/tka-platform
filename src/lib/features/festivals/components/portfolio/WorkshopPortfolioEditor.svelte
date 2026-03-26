@@ -5,6 +5,7 @@
     TeachingPortfolio,
     WorkshopTemplate,
     WorkshopLevel,
+    BioVersion,
   } from "../../domain/models/teaching-portfolio";
   import { AUSTEN_PORTFOLIO_SEED } from "../../data/portfolio-seed";
   import WorkshopTemplateCard from "./WorkshopTemplateCard.svelte";
@@ -102,6 +103,25 @@
       classes: portfolio.classes.filter((c) => c.id !== workshopId),
     };
     festivalState.savePortfolio(uid, updated);
+  }
+
+  // ─── Bio management (add triggers modal in BioEditor) ──────────────────────
+  let editBioId = $state<string | null>(null);
+
+  function addBio() {
+    const uid = auth.currentUser?.uid;
+    if (!uid || !festivalState.portfolio) return;
+    const newBio: BioVersion = {
+      id: crypto.randomUUID(),
+      label: "New Bio",
+      text: "",
+    };
+    const updated: TeachingPortfolio = {
+      ...festivalState.portfolio,
+      bios: [...festivalState.portfolio.bios, newBio],
+    };
+    festivalState.savePortfolio(uid, updated);
+    editBioId = newBio.id;
   }
 
   // ─── Performance credits ────────────────────────────────────────────────────
@@ -309,8 +329,12 @@
     <section class="section-card">
       <div class="section-header">
         <h3 class="section-title">Bios</h3>
+        <button class="add-btn" onclick={addBio}>
+          <i class="fas fa-plus" aria-hidden="true"></i>
+          Add Bio
+        </button>
       </div>
-      <BioEditor />
+      <BioEditor bind:editBioId />
     </section>
 
     <!-- ── Performance credits ───────────────────────────────────────────────── -->
