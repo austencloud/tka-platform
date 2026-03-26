@@ -3,20 +3,26 @@
 	 * Fuse Layout
 	 *
 	 * Shuffle-to-discover: pick a beat length, shuffle cards on each side,
-	 * pick two you like, fuse them. Clean and minimal.
+	 * hit Fuse when you like what's showing. No pick step.
 	 */
 
 	import { getFuseContext } from "../context/fuse-context";
 	import FusePanel from "./FusePanel.svelte";
-	import FuseButton from "./FuseButton.svelte";
 	import { container } from "$lib/shared/di";
 	import type { IFuseAssemblyAnimator } from "../services/contracts/IFuseAssemblyAnimator";
+	import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
 	const { state: fuseState } = getFuseContext();
 
 	let fuseLength: number = $state(8);
 
 	const LENGTHS = [2, 4, 8, 12, 16, 24, 32];
+
+	// Track what each panel is currently showing (for fusing without pick)
+	let leftBrowsingSeq = $state<SequenceData | null>(null);
+	let rightBrowsingSeq = $state<SequenceData | null>(null);
+
+	const canFuse = $derived(leftBrowsingSeq !== null && rightBrowsingSeq !== null);
 
 	// DOM refs for assembly animation
 	let leftPanelEl: HTMLDivElement;
@@ -28,6 +34,14 @@
 		fuseAssemblyAnimator = container.items.fuseAssemblyAnimator;
 	} catch {
 		fuseAssemblyAnimator = { async animate() {} };
+	}
+
+	function handleFuse() {
+		if (!leftBrowsingSeq || !rightBrowsingSeq) return;
+		// Set the sequences on fuse state so startFuse can use them
+		fuseState.selectLeft(leftBrowsingSeq);
+		fuseState.selectRight(rightBrowsingSeq);
+		fuseState.startFuse();
 	}
 
 	// When state enters "fusing", trigger the assembly animation
@@ -45,15 +59,6 @@
 	});
 
 	function handleKeydown(event: KeyboardEvent) {
-		if (event.key === "Escape") {
-			if (fuseState.rightSequence) {
-				event.preventDefault();
-				fuseState.deselectRight();
-			} else if (fuseState.leftSequence) {
-				event.preventDefault();
-				fuseState.deselectLeft();
-			}
-		}
 		if (event.key === " ") {
 			event.preventDefault();
 			fuseState.toggleClock();
@@ -87,30 +92,26 @@
 		</div>
 	</div>
 
-	<!-- Two shuffle cards side by side -->
+	<!-- Two panels side by side -->
 	<div class="fuse-panels">
 		<div class="panel-wrap" bind:this={leftPanelEl}>
 			<FusePanel
 				side="left"
-				selectedSequence={fuseState.leftSequence}
-				onSelect={fuseState.selectLeft}
-				onDeselect={fuseState.deselectLeft}
 				bpm={fuseState.bpm}
 				onControllerReady={(ctrl) => fuseState.registerController("left", ctrl)}
 				length={fuseLength}
 				currentBeat={fuseState.currentBeat}
+				onCurrentSequenceChange={(seq) => leftBrowsingSeq = seq}
 			/>
 		</div>
 		<div class="panel-wrap" bind:this={rightPanelEl}>
 			<FusePanel
 				side="right"
-				selectedSequence={fuseState.rightSequence}
-				onSelect={fuseState.selectRight}
-				onDeselect={fuseState.deselectRight}
 				bpm={fuseState.bpm}
 				onControllerReady={(ctrl) => fuseState.registerController("right", ctrl)}
 				length={fuseLength}
 				currentBeat={fuseState.currentBeat}
+				onCurrentSequenceChange={(seq) => rightBrowsingSeq = seq}
 			/>
 		</div>
 	</div>
@@ -118,7 +119,7 @@
 	<!-- Invisible target for assembly animation -->
 	<div class="fuse-target" bind:this={fuseTargetEl} aria-hidden="true"></div>
 
-	<!-- Bottom bar: minimal BPM, play/pause, fuse -->
+	<!-- Bottom bar: BPM, play/pause, fuse -->
 	<div class="fuse-bottom">
 		<div class="bpm-control">
 			<button class="bpm-btn" onclick={decrementBpm} aria-label="Decrease BPM">
@@ -146,7 +147,14 @@
 			{/if}
 		</button>
 
-		<FuseButton />
+		<button
+			class="fuse-button"
+			disabled={!canFuse}
+			onclick={handleFuse}
+		>
+			<i class="fas fa-fire" aria-hidden="true"></i>
+			<span>Fuse</span>
+		</button>
 	</div>
 </div>
 
@@ -238,7 +246,6 @@
 		pointer-events: none;
 	}
 
-	/* Bottom bar: BPM + Play + Fuse in one centered row */
 	.fuse-bottom {
 		flex-shrink: 0;
 		display: flex;
@@ -319,10 +326,41 @@
 		transform: scale(0.98);
 	}
 
+	.fuse-button {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: var(--spacing-sm, 8px);
+		min-height: 48px;
+		padding: var(--spacing-sm, 8px) var(--spacing-xl, 32px);
+		border: none;
+		border-radius: var(--radius-md, 12px);
+		background: linear-gradient(135deg, #fb923c 0%, #f97316 50%, #ea580c 100%);
+		color: #ffffff;
+		font-size: var(--font-size-min, 14px);
+		font-weight: 700;
+		cursor: pointer;
+		transition: opacity 0.15s ease, transform 0.1s ease;
+	}
+
+	.fuse-button:hover:not(:disabled) {
+		opacity: 0.9;
+	}
+
+	.fuse-button:active:not(:disabled) {
+		transform: scale(0.98);
+	}
+
+	.fuse-button:disabled {
+		opacity: 0.35;
+		cursor: not-allowed;
+	}
+
 	@media (prefers-reduced-motion: reduce) {
 		.length-chip,
 		.bpm-btn,
-		.play-btn {
+		.play-btn,
+		.fuse-button {
 			transition: none;
 		}
 	}
