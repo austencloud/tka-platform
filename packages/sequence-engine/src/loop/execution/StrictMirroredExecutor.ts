@@ -11,9 +11,13 @@ import type { SequenceStep, MotionData } from "../../core/types/sequence-engine-
 import type { SliceSize } from "../loop-types.js";
 import {
   VERTICAL_MIRROR_POSITION_MAP,
-  VERTICAL_MIRROR_LOCATION_MAP,
   MIRRORED_LOOP_VALIDATION_SET,
 } from "../position-maps/strict-loop-position-maps.js";
+import {
+  getHandRotationDirection,
+  getLocationMapForHandRotation,
+  mirrorHandRotationDirection,
+} from "../position-maps/circular-position-maps.js";
 import { updateStepOrientations } from "./orientation-helpers.js";
 
 export class StrictMirroredExecutor implements ILOOPExecutor {
@@ -121,16 +125,31 @@ export class StrictMirroredExecutor implements ILOOPExecutor {
     matchingMotion: MotionData,
     previousMotion: MotionData
   ): MotionData {
-    const mirroredEndLocation =
-      VERTICAL_MIRROR_LOCATION_MAP[matchingMotion.endLocation] ||
-      matchingMotion.endLocation;
-
+    const startLocation = previousMotion.endLocation;
     const mirroredRotDir = flipRotationDirection(matchingMotion.rotationDirection);
+
+    // Calculate end location by preserving the MIRRORED hand path direction
+    // from the seed step, applied to the current start location.
+    // Previously this used a direct mirror of the seed's endLocation, which
+    // decoupled the end from the start and could produce opposite-point
+    // arc motions (e.g., pro e→w) — physically impossible in TKA.
+    let endLocation: string;
+    if (matchingMotion.startLocation === matchingMotion.endLocation) {
+      endLocation = startLocation;
+    } else {
+      const seedHandDir = getHandRotationDirection(
+        matchingMotion.startLocation,
+        matchingMotion.endLocation,
+      );
+      const mirroredDir = mirrorHandRotationDirection(seedHandDir);
+      const locationMap = getLocationMapForHandRotation(mirroredDir);
+      endLocation = locationMap[startLocation] || startLocation;
+    }
 
     return {
       ...matchingMotion,
-      startLocation: previousMotion.endLocation,
-      endLocation: mirroredEndLocation,
+      startLocation,
+      endLocation,
       rotationDirection: mirroredRotDir,
     };
   }

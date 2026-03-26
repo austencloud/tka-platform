@@ -16,10 +16,14 @@ import type { SequenceStep, MotionData } from "../../core/types/sequence-engine-
 import type { SliceSize } from "../loop-types.js";
 import {
   INVERTED_LOOP_VALIDATION_SET,
-  VERTICAL_MIRROR_LOCATION_MAP,
   VERTICAL_MIRROR_POSITION_MAP,
   getInvertedLetter,
 } from "../position-maps/strict-loop-position-maps.js";
+import {
+  getHandRotationDirection,
+  getLocationMapForHandRotation,
+  mirrorHandRotationDirection,
+} from "../position-maps/circular-position-maps.js";
 import { updateStepOrientations } from "./orientation-helpers.js";
 
 export class MirroredSwappedInvertedExecutor implements ILOOPExecutor {
@@ -89,10 +93,25 @@ export class MirroredSwappedInvertedExecutor implements ILOOPExecutor {
   private createMotion(previousMotion: MotionData, matchingMotion: MotionData): MotionData {
     const startLocation = previousMotion.endLocation;
     const invertedMotionType = invertMotionType(matchingMotion.motionType);
-    const endLocation =
-      invertedMotionType === "static"
-        ? startLocation
-        : (VERTICAL_MIRROR_LOCATION_MAP[matchingMotion.endLocation] || matchingMotion.endLocation);
+
+    // Derive end location from the seed's hand path direction, applied to
+    // the new start location. Mirror flips hand direction (CW↔CCW), and
+    // inversion also flips hand direction — they cancel out, so we preserve
+    // the original seed direction. Without this correction, the double-flip
+    // was being applied only once (mirror only), producing opposite-point
+    // arc motions (e.g., pro e→w) that are physically impossible.
+    let endLocation: string;
+    if (matchingMotion.startLocation === matchingMotion.endLocation) {
+      endLocation = startLocation;
+    } else {
+      const seedHandDir = getHandRotationDirection(
+        matchingMotion.startLocation,
+        matchingMotion.endLocation,
+      );
+      // Mirror + Invert both flip hand direction → they cancel → preserve original
+      const locationMap = getLocationMapForHandRotation(seedHandDir);
+      endLocation = locationMap[startLocation] || startLocation;
+    }
 
     // Rotation direction stays the SAME (SWAP + INVERTED + MIRRORED together preserve rotation)
     return {

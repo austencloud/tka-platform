@@ -11,10 +11,14 @@ import type { SequenceStep, MotionData } from "../../core/types/sequence-engine-
 import type { SliceSize } from "../loop-types.js";
 import {
   MIRRORED_INVERTED_VALIDATION_SET,
-  VERTICAL_MIRROR_LOCATION_MAP,
   VERTICAL_MIRROR_POSITION_MAP,
   getInvertedLetter,
 } from "../position-maps/strict-loop-position-maps.js";
+import {
+  getHandRotationDirection,
+  getLocationMapForHandRotation,
+  mirrorHandRotationDirection,
+} from "../position-maps/circular-position-maps.js";
 import { updateStepOrientations } from "./orientation-helpers.js";
 
 export class MirroredInvertedExecutor implements ILOOPExecutor {
@@ -81,17 +85,35 @@ export class MirroredInvertedExecutor implements ILOOPExecutor {
   }
 
   private createMotion(matchingMotion: MotionData, previousMotion: MotionData): MotionData {
-    const mirroredEndLocation =
-      VERTICAL_MIRROR_LOCATION_MAP[matchingMotion.endLocation] || matchingMotion.endLocation;
+    const startLocation = previousMotion.endLocation;
     const invertedMotionType = invertMotionType(matchingMotion.motionType);
     // Rotation direction stays the SAME (mirror flip + invert flip = cancel)
     const rotationDirection = matchingMotion.rotationDirection;
 
+    // Calculate end location by preserving the MIRRORED hand path direction
+    // from the seed step, applied to the current start location.
+    // Previously this used a direct mirror of the seed's endLocation, which
+    // decoupled the end from the start and could produce opposite-point
+    // arc motions (e.g., pro e→w) — physically impossible in TKA.
+    let endLocation: string;
+    if (matchingMotion.startLocation === matchingMotion.endLocation) {
+      // Static: end = start
+      endLocation = startLocation;
+    } else {
+      const seedHandDir = getHandRotationDirection(
+        matchingMotion.startLocation,
+        matchingMotion.endLocation,
+      );
+      const mirroredDir = mirrorHandRotationDirection(seedHandDir);
+      const locationMap = getLocationMapForHandRotation(mirroredDir);
+      endLocation = locationMap[startLocation] || startLocation;
+    }
+
     return {
       ...matchingMotion,
       motionType: invertedMotionType,
-      startLocation: previousMotion.endLocation,
-      endLocation: mirroredEndLocation,
+      startLocation,
+      endLocation,
       rotationDirection,
     };
   }

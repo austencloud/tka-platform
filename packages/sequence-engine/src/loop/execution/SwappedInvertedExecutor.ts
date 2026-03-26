@@ -14,6 +14,11 @@ import {
   SWAPPED_POSITION_MAP,
   getInvertedLetter,
 } from "../position-maps/strict-loop-position-maps.js";
+import {
+  getHandRotationDirection,
+  getLocationMapForHandRotation,
+  mirrorHandRotationDirection,
+} from "../position-maps/circular-position-maps.js";
 import { updateStepOrientations } from "./orientation-helpers.js";
 
 export class SwappedInvertedExecutor implements ILOOPExecutor {
@@ -82,9 +87,27 @@ export class SwappedInvertedExecutor implements ILOOPExecutor {
   private createMotion(previousMotion: MotionData, matchingMotion: MotionData): MotionData {
     const startLocation = previousMotion.endLocation;
     const invertedMotionType = invertMotionType(matchingMotion.motionType);
-    const endLocation =
-      invertedMotionType === "static" ? startLocation : matchingMotion.endLocation;
     const invertedRotDir = flipRotDir(matchingMotion.rotationDirection);
+
+    // Derive end location from the seed's hand path direction, applied to
+    // the new start location. Inversion flips rotation direction, which also
+    // flips the hand's travel direction around the grid. Without this,
+    // the swapped motion's end location comes from the other hand's geometry
+    // and can land at an opposite grid point (e.g. pro e→w), which is
+    // physically impossible for arc motions.
+    let endLocation: string;
+    if (matchingMotion.startLocation === matchingMotion.endLocation) {
+      endLocation = startLocation;
+    } else {
+      const seedHandDir = getHandRotationDirection(
+        matchingMotion.startLocation,
+        matchingMotion.endLocation,
+      );
+      // Inversion flips the hand path direction (CW↔CCW)
+      const invertedDir = mirrorHandRotationDirection(seedHandDir);
+      const locationMap = getLocationMapForHandRotation(invertedDir);
+      endLocation = locationMap[startLocation] || startLocation;
+    }
 
     return {
       ...matchingMotion,
