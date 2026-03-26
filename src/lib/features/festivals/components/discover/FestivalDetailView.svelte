@@ -227,8 +227,8 @@
     display: flex;
     flex-direction: column;
     width: 100%;
-    max-width: 860px;
-    max-height: 90vh;
+    max-width: 1200px;
+    max-height: 92vh;
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
     border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: var(--radius-lg, 12px);
@@ -271,7 +271,7 @@
   .hero-image {
     position: relative;
     width: 100%;
-    height: 220px;
+    height: 280px;
     overflow: hidden;
     background: var(--fallback-bg);
     flex-shrink: 0;
@@ -402,7 +402,6 @@
     border-radius: var(--radius-lg, 12px);
     padding: 1rem;
     align-self: start;
-    max-height: 400px;
     overflow-y: auto;
     scrollbar-width: thin;
     scrollbar-color: var(--scrollbar-thumb, rgba(255, 255, 255, 0.15)) transparent;
