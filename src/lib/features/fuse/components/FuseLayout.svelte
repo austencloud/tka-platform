@@ -97,21 +97,99 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-<div class="fuse-layout" class:tour-active={fuseTourState.isActive}>
-	<!-- Two panels side by side (tour card replaces hidden panel) -->
-	<div class="fuse-panels">
-		{#if tourHighlight === "right"}
-			<!-- Tour card takes the left slot, right panel highlighted -->
-			<div class="panel-wrap tour-card-slot">
+{#if fuseTourState.isActive}
+	<!-- TOUR MODE: fullscreen wizard, completely different layout per stop -->
+	<div class="fuse-layout tour-layout">
+		{#if tourHighlight === "all"}
+			<!-- Welcome: fullscreen tour card -->
+			<div class="tour-fullscreen">
 				<FuseTour />
 			</div>
-		{:else}
-			<div
-				class="panel-wrap"
-				class:tour-dim={tourHighlight === "controls" || tourHighlight === "all"}
-				class:tour-hidden={tourHighlight === "right"}
-				bind:this={leftPanelEl}
-			>
+
+		{:else if tourHighlight === "left"}
+			<!-- Blue panel: panel left, tour card right -->
+			<div class="fuse-panels">
+				<div class="panel-wrap" bind:this={leftPanelEl}>
+					<FusePanel
+						side="left"
+						bpm={fuseState.bpm}
+						onControllerReady={(ctrl) => fuseState.registerController("left", ctrl)}
+						length={fuseLength}
+						currentBeat={fuseState.currentBeat}
+						onCurrentSequenceChange={(seq) => leftBrowsingSeq = seq}
+					/>
+				</div>
+				<div class="panel-wrap tour-card-slot">
+					<FuseTour />
+				</div>
+			</div>
+
+		{:else if tourHighlight === "right"}
+			<!-- Red panel: tour card left, panel right -->
+			<div class="fuse-panels">
+				<div class="panel-wrap tour-card-slot">
+					<FuseTour />
+				</div>
+				<div class="panel-wrap" bind:this={rightPanelEl}>
+					<FusePanel
+						side="right"
+						bpm={fuseState.bpm}
+						onControllerReady={(ctrl) => fuseState.registerController("right", ctrl)}
+						length={fuseLength}
+						currentBeat={fuseState.currentBeat}
+						onCurrentSequenceChange={(seq) => rightBrowsingSeq = seq}
+					/>
+				</div>
+			</div>
+
+		{:else if tourHighlight === "shuffle"}
+			<!-- Shuffle: tour text on top, both panels with shuffle buttons below -->
+			<div class="tour-top-text">
+				<FuseTour />
+			</div>
+			<div class="fuse-panels">
+				<div class="panel-wrap" bind:this={leftPanelEl}>
+					<FusePanel
+						side="left"
+						bpm={fuseState.bpm}
+						onControllerReady={(ctrl) => fuseState.registerController("left", ctrl)}
+						length={fuseLength}
+						currentBeat={fuseState.currentBeat}
+						onCurrentSequenceChange={(seq) => leftBrowsingSeq = seq}
+					/>
+				</div>
+				<div class="panel-wrap" bind:this={rightPanelEl}>
+					<FusePanel
+						side="right"
+						bpm={fuseState.bpm}
+						onControllerReady={(ctrl) => fuseState.registerController("right", ctrl)}
+						length={fuseLength}
+						currentBeat={fuseState.currentBeat}
+						onCurrentSequenceChange={(seq) => rightBrowsingSeq = seq}
+					/>
+				</div>
+			</div>
+
+		{:else if tourHighlight === "controls"}
+			<!-- Controls: tour text on top, fuse button prominent below -->
+			<div class="tour-fullscreen tour-controls-stop">
+				<FuseTour />
+				<button
+					class="fuse-button tour-fuse-btn"
+					onclick={() => { fuseTourState.advance(); }}
+				>
+					<i class="fas fa-fire" aria-hidden="true"></i>
+					<span>Fuse</span>
+				</button>
+			</div>
+		{/if}
+	</div>
+
+{:else}
+	<!-- NORMAL MODE -->
+	<div class="fuse-layout">
+		<div class="fuse-panels">
+			<div class="panel-wrap" bind:this={leftPanelEl}>
 				<FusePanel
 					side="left"
 					bpm={fuseState.bpm}
@@ -121,25 +199,7 @@
 					onCurrentSequenceChange={(seq) => leftBrowsingSeq = seq}
 				/>
 			</div>
-		{/if}
-
-		{#if tourHighlight === "left"}
-			<!-- Tour card takes the right slot, left panel highlighted -->
-			<div class="panel-wrap tour-card-slot">
-				<FuseTour />
-			</div>
-		{:else if tourHighlight === "all"}
-			<!-- Welcome: tour card replaces right panel, left dimmed -->
-			<div class="panel-wrap tour-card-slot">
-				<FuseTour />
-			</div>
-		{:else}
-			<div
-				class="panel-wrap"
-				class:tour-dim={tourHighlight === "controls"}
-				class:tour-hidden={tourHighlight === "left"}
-				bind:this={rightPanelEl}
-			>
+			<div class="panel-wrap" bind:this={rightPanelEl}>
 				<FusePanel
 					side="right"
 					bpm={fuseState.bpm}
@@ -149,93 +209,82 @@
 					onCurrentSequenceChange={(seq) => rightBrowsingSeq = seq}
 				/>
 			</div>
-		{/if}
-	</div>
-
-	<!-- Tour overlay for shuffle and controls stops (card centered over both panels) -->
-	{#if tourHighlight === "shuffle" || tourHighlight === "controls"}
-		<div class="tour-overlay-wrap">
-			<FuseTour />
 		</div>
-	{/if}
 
-	<!-- Invisible target for assembly animation -->
-	<div class="fuse-target" bind:this={fuseTargetEl} aria-hidden="true"></div>
+		<!-- Invisible target for assembly animation -->
+		<div class="fuse-target" bind:this={fuseTargetEl} aria-hidden="true"></div>
 
-	<!-- Bottom bar: length picker, BPM, play/pause, fuse -->
-	<div
-		class="fuse-bottom"
-		class:tour-dim={tourHighlight !== null && tourHighlight !== "all" && tourHighlight !== "controls" && tourHighlight !== "shuffle"}
-	>
-		<HelpButton
-			onclick={() => fuseTourState.restart()}
-			ariaLabel="Replay Fuse tour"
-			title="Replay tour"
-			size="compact"
-		/>
+		<!-- Bottom bar -->
+		<div class="fuse-bottom">
+			<HelpButton
+				onclick={() => fuseTourState.restart()}
+				ariaLabel="Replay Fuse tour"
+				title="Replay tour"
+				size="compact"
+			/>
 
-		<div class="length-picker-wrap" class:tour-dim={tourHighlight === "controls"}>
+			<div class="length-picker-wrap">
+				<button
+					class="length-trigger"
+					onclick={() => showLengthPicker = !showLengthPicker}
+					aria-label="Change beat length (currently {fuseLength})"
+				>
+					<span class="length-value">{fuseLength}</span>
+					<span class="length-unit">beats</span>
+				</button>
+				{#if showLengthPicker}
+					<!-- svelte-ignore a11y_no_static_element_interactions -->
+					<div class="length-popover" role="radiogroup" aria-label="Beat length">
+						{#each LENGTHS as len}
+							<button
+								class="length-option"
+								class:active={fuseLength === len}
+								role="radio"
+								aria-checked={fuseLength === len}
+								onclick={() => selectLength(len)}
+							>{len}</button>
+						{/each}
+					</div>
+				{/if}
+			</div>
+
+			<div class="bpm-control">
+				<button class="bpm-btn" onclick={decrementBpm} aria-label="Decrease BPM">
+					<i class="fas fa-minus" aria-hidden="true"></i>
+				</button>
+				<span class="bpm-display">{fuseState.bpm}</span>
+				<button class="bpm-btn" onclick={incrementBpm} aria-label="Increase BPM">
+					<i class="fas fa-plus" aria-hidden="true"></i>
+				</button>
+			</div>
+
 			<button
-				class="length-trigger"
-				onclick={() => showLengthPicker = !showLengthPicker}
-				aria-label="Change beat length (currently {fuseLength})"
+				class="play-btn"
+				onclick={() => fuseState.toggleClock()}
+				aria-label={fuseState.clockRunning ? "Pause" : "Play"}
 			>
-				<span class="length-value">{fuseLength}</span>
-				<span class="length-unit">beats</span>
+				{#if fuseState.clockRunning}
+					<svg viewBox="0 0 24 24" fill="currentColor">
+						<path d="M6 4h4v16H6zm8 0h4v16h-4z" />
+					</svg>
+				{:else}
+					<svg viewBox="0 0 24 24" fill="currentColor">
+						<path d="M8 5v14l11-7z" />
+					</svg>
+				{/if}
 			</button>
-			{#if showLengthPicker}
-				<!-- svelte-ignore a11y_no_static_element_interactions -->
-				<div class="length-popover" role="radiogroup" aria-label="Beat length">
-					{#each LENGTHS as len}
-						<button
-							class="length-option"
-							class:active={fuseLength === len}
-							role="radio"
-							aria-checked={fuseLength === len}
-							onclick={() => selectLength(len)}
-						>{len}</button>
-					{/each}
-				</div>
-			{/if}
-		</div>
 
-		<div class="bpm-control" class:tour-dim={tourHighlight === "controls"}>
-			<button class="bpm-btn" onclick={decrementBpm} aria-label="Decrease BPM">
-				<i class="fas fa-minus" aria-hidden="true"></i>
-			</button>
-			<span class="bpm-display">{fuseState.bpm}</span>
-			<button class="bpm-btn" onclick={incrementBpm} aria-label="Increase BPM">
-				<i class="fas fa-plus" aria-hidden="true"></i>
+			<button
+				class="fuse-button"
+				disabled={!canFuse}
+				onclick={handleFuse}
+			>
+				<i class="fas fa-fire" aria-hidden="true"></i>
+				<span>Fuse</span>
 			</button>
 		</div>
-
-		<button
-			class="play-btn"
-			class:tour-dim={tourHighlight === "controls"}
-			onclick={() => fuseState.toggleClock()}
-			aria-label={fuseState.clockRunning ? "Pause" : "Play"}
-		>
-			{#if fuseState.clockRunning}
-				<svg viewBox="0 0 24 24" fill="currentColor">
-					<path d="M6 4h4v16H6zm8 0h4v16h-4z" />
-				</svg>
-			{:else}
-				<svg viewBox="0 0 24 24" fill="currentColor">
-					<path d="M8 5v14l11-7z" />
-				</svg>
-			{/if}
-		</button>
-
-		<button
-			class="fuse-button"
-			disabled={!canFuse}
-			onclick={handleFuse}
-		>
-			<i class="fas fa-fire" aria-hidden="true"></i>
-			<span>Fuse</span>
-		</button>
 	</div>
-</div>
+{/if}
 
 <style>
 	.fuse-layout {
@@ -470,7 +519,34 @@
 		cursor: not-allowed;
 	}
 
-	/* Tour: card slot replaces a panel during panel-specific stops */
+	/* Tour layout modes */
+	.tour-layout {
+		height: 100%;
+		width: 100%;
+	}
+
+	.tour-fullscreen {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		min-height: 0;
+	}
+
+	.tour-controls-stop {
+		gap: var(--spacing-lg, 24px);
+	}
+
+	.tour-fuse-btn {
+		animation: tourPulse 2s ease-in-out infinite;
+	}
+
+	@keyframes tourPulse {
+		0%, 100% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.4); }
+		50% { box-shadow: 0 0 0 12px rgba(249, 115, 22, 0); }
+	}
+
 	.tour-card-slot {
 		display: flex;
 		align-items: center;
@@ -480,36 +556,9 @@
 		border-radius: var(--radius-md, 12px);
 	}
 
-	/* Tour: centered overlay for shuffle/controls stops */
-	.tour-overlay-wrap {
-		position: absolute;
-		inset: 0;
-		z-index: 100;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		background: rgba(0, 0, 0, 0.3);
-		pointer-events: auto;
-	}
-
-	.tour-overlay-wrap :global(.tour-card) {
-		max-width: 360px;
-		width: calc(100% - 48px);
-		background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
-		border: 1px solid rgba(255, 255, 255, 0.15);
-		border-radius: 16px;
-		box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
-	}
-
-	/* Tour highlighting */
-	.tour-dim {
-		opacity: 0.25;
-		pointer-events: none;
-		transition: opacity 0.3s ease;
-	}
-
-	.tour-hidden {
-		display: none;
+	.tour-top-text {
+		flex-shrink: 0;
+		padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
 	}
 
 	@media (prefers-reduced-motion: reduce) {
