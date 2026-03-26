@@ -578,24 +578,32 @@ export const FESTIVAL_TABS: Section[] = [
     label: "Discover",
     icon: '<i class="fas fa-compass" aria-hidden="true"></i>',
     description: "Browse flow festivals worldwide",
+    color: "#10b981",
+    gradient: "linear-gradient(135deg, #10b981, #34d399)",
   },
   {
     id: "map",
     label: "Map",
     icon: '<i class="fas fa-globe" aria-hidden="true"></i>',
     description: "Festival locations worldwide",
+    color: "#f97316",
+    gradient: "linear-gradient(135deg, #f97316, #fb923c)",
   },
   {
     id: "calendar",
     label: "Calendar",
     icon: '<i class="fas fa-calendar-alt" aria-hidden="true"></i>',
     description: "Tracked festival dates and deadlines",
+    color: "#6366f1",
+    gradient: "linear-gradient(135deg, #6366f1, #818cf8)",
   },
   {
     id: "workshops",
     label: "My Workshops",
     icon: '<i class="fas fa-chalkboard-teacher" aria-hidden="true"></i>',
     description: "Teaching portfolio and application materials",
+    color: "#a855f7",
+    gradient: "linear-gradient(135deg, #a855f7, #c084fc)",
   },
 ];
 
