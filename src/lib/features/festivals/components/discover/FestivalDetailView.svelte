@@ -404,6 +404,10 @@
     border-radius: var(--radius-lg, 12px);
     padding: 1rem;
     align-self: start;
+    max-height: 400px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb, rgba(255, 255, 255, 0.15)) transparent;
   }
 
   @media (max-width: 768px) {
