@@ -380,6 +380,8 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
         additionalLayers: additionalLayerRenderData.length > 0 ? additionalLayerRenderData : undefined,
         blueProp: params.props.blueProp,
         redProp: params.props.redProp,
+        bluePropType: params.bluePropType,
+        redPropType: params.redPropType,
       });
     }
 

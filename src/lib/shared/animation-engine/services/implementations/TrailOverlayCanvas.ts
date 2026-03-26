@@ -1,11 +1,14 @@
 /**
  * Trail Overlay Canvas
  *
- * Dedicated Canvas2D overlay for trail rendering. Instead of clearing and
- * redrawing every trail point each frame (as the main canvas does), this
- * accumulates trail pixels and fades them with the `destination-out`
- * composite operation. The result is smooth, natural trail decay that
- * preserves trails across sequence boundaries.
+ * Dedicated Canvas2D overlay for trail rendering. Accumulates trail pixels
+ * and fades them with the `destination-out` composite operation, producing
+ * smooth trail decay that persists across sequence boundaries.
+ *
+ * Architecture follows the fire renderer pattern: reads prop tip positions
+ * directly from PropState each frame (via PropPositionCalculator), maintaining
+ * its own internal ring buffer. This makes it completely independent of the
+ * SequenceCache/TrailCapturer pipeline, so sequence transitions are seamless.
  *
  * Follows the same overlay pattern as WebGLFireRenderer and LedOverlayRenderer:
  * position: absolute, pointer-events: none, z-index: 1.
@@ -16,21 +19,45 @@ import type {
   TrailOverlayRenderParams,
 } from "../contracts/ITrailOverlayCanvas";
 import type { TrailPoint } from "../../domain/types/TrailTypes";
+import { TrackingMode } from "../../domain/types/TrailTypes";
 import type { PropState } from "$lib/features/compose/shared/domain/types/PropState";
 import { Canvas2DTrailRenderer } from "$lib/features/compose/services/implementations/canvas2d/Canvas2DTrailRenderer";
 import { PropPositionCalculator } from "$lib/shared/animation-engine/services/implementations/PropPositionCalculator";
+import { getTipPoints } from "../../domain/types/PropTipPoints";
+import { getTrailPointConfig } from "../../domain/types/TrailPointTypes";
+import { isBilateralProp } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";
+
+/** Max points stored in each color's ring buffer */
+const RING_BUFFER_SIZE = 120;
+
+/** Points fed to the tapered renderer each frame */
+const LEADING_EDGE = 20;
 
 export class TrailOverlayCanvas implements ITrailOverlayCanvas {
   private canvas: HTMLCanvasElement | null = null;
   private ctx: CanvasRenderingContext2D | null = null;
+  // Offscreen buffer for the tapered renderer — prevents polygon-edge
+  // seams from accumulating on the overlay.
+  private bufferCanvas: OffscreenCanvas | null = null;
+  private bufferCtx:
+    | CanvasRenderingContext2D
+    | OffscreenCanvasRenderingContext2D
+    | null = null;
   private trailRenderer = new Canvas2DTrailRenderer();
   private propPositionCalculator = new PropPositionCalculator();
   private width = 0;
   private height = 0;
 
-  // Track last known prop tip positions for gap-bridging
-  private lastBluePos: { x: number; y: number } | null = null;
-  private lastRedPos: { x: number; y: number } | null = null;
+  // Per-end ring buffers — separate buffers for left/right ends to prevent
+  // the renderer from zigzagging between endpoints. Filled from PropState
+  // each frame (fire-renderer pattern), independent of the SequenceCache.
+  private blueLeftRing: TrailPoint[] = [];
+  private blueRightRing: TrailPoint[] = [];
+  private redLeftRing: TrailPoint[] = [];
+  private redRightRing: TrailPoint[] = [];
+
+  // Track previous tracking mode to detect changes
+  private lastTrackingMode: TrackingMode | null = null;
 
   initialize(container: HTMLElement, width: number, height: number): void {
     this.dispose();
@@ -53,6 +80,8 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
 
     this.canvas = canvas;
     this.ctx = canvas.getContext("2d", { willReadFrequently: true });
+    this.bufferCanvas = new OffscreenCanvas(width, height);
+    this.bufferCtx = this.bufferCanvas.getContext("2d");
     this.width = width;
     this.height = height;
   }
@@ -61,6 +90,10 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
     if (!this.canvas) return;
     this.canvas.width = width;
     this.canvas.height = height;
+    if (this.bufferCanvas) {
+      this.bufferCanvas.width = width;
+      this.bufferCanvas.height = height;
+    }
     this.width = width;
     this.height = height;
   }
@@ -70,22 +103,54 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
     if (!ctx) return;
 
     const {
-      blueTrailPoints,
-      redTrailPoints,
       trailSettings,
       deltaTime,
       canvasSize,
       hasBlue,
       hasRed,
-      additionalLayers,
       blueProp,
       redProp,
+      bluePropType,
+      redPropType,
     } = params;
 
-    const hasPoints = blueTrailPoints.length >= 2 || redTrailPoints.length >= 2;
+    // ---------------------------------------------------------------
+    // 1. Capture current prop tip positions into ring buffers
+    //    (fire-renderer pattern: always read from PropState directly)
+    // ---------------------------------------------------------------
+    // Clear ring buffers when tracking mode changes so stale points
+    // don't create artifact lines. The overlay's painted pixels fade
+    // naturally via destination-out.
+    if (this.lastTrackingMode !== null && this.lastTrackingMode !== trailSettings.trackingMode) {
+      this.blueLeftRing = [];
+      this.blueRightRing = [];
+      this.redLeftRing = [];
+      this.redRightRing = [];
+    }
+    this.lastTrackingMode = trailSettings.trackingMode;
+
+    // Unilateral props (club, fan, etc.) only have one tip — force single-end
+    const blueIsBilateral = bluePropType ? isBilateralProp(bluePropType) : true;
+    const redIsBilateral = redPropType ? isBilateralProp(redPropType) : true;
+    const anyBilateral = blueIsBilateral || redIsBilateral;
+
+    const trackLeft = anyBilateral &&
+      (trailSettings.trackingMode === TrackingMode.LEFT_END ||
+       trailSettings.trackingMode === TrackingMode.BOTH_ENDS);
+    const trackRight =
+      trailSettings.trackingMode === TrackingMode.RIGHT_END ||
+      trailSettings.trackingMode === TrackingMode.BOTH_ENDS ||
+      !anyBilateral; // unilateral always tracks the single tip
+
+    if (blueProp && hasBlue) {
+      this.capturePropTips(blueProp, canvasSize, bluePropType, 0, trackLeft, trackRight);
+    }
+    if (redProp && hasRed) {
+      this.capturePropTips(redProp, canvasSize, redPropType, 1, trackLeft, trackRight);
+    }
 
     // ---------------------------------------------------------------
-    // 1. Fade existing content using destination-out
+    // 2. Fade existing content using destination-out
     // ---------------------------------------------------------------
     const fadeAmount = this.computeFadeAmount(
       trailSettings.fadeDurationMs,
@@ -99,163 +164,61 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
     ctx.fillRect(0, 0, this.width, this.height);
     ctx.restore();
 
-    // Smooth ghost cleanup: subtract a constant 2 from every non-zero
-    // alpha pixel. Unlike the hard threshold approach, this creates a
-    // smooth linear fade at the tail instead of visible jumps.
     this.smoothAlphaDecay(ctx);
 
     // ---------------------------------------------------------------
-    // 2. Draw new trail segments
+    // 3. Draw leading edge from internal ring buffers
+    //    Each end is drawn as a separate renderTrails pass to prevent
+    //    the tapered polygon from zigzagging between endpoints.
     // ---------------------------------------------------------------
-    if (hasPoints) {
-      // Cache has trail points — use full-quality renderer
-      const LEADING_EDGE = 20;
-      const blueLeading = this.sanitizeLeadingEdge(
-        blueTrailPoints.length > LEADING_EDGE
-          ? blueTrailPoints.slice(-LEADING_EDGE)
-          : blueTrailPoints,
-        canvasSize
-      );
-      const redLeading = this.sanitizeLeadingEdge(
-        redTrailPoints.length > LEADING_EDGE
-          ? redTrailPoints.slice(-LEADING_EDGE)
-          : redTrailPoints,
-        canvasSize
-      );
+    const overlaySettings = {
+      ...trailSettings,
+      glowBlur: 0,
+      lineWidth: Math.max(3.5, trailSettings.lineWidth),
+    };
 
-      const overlaySettings = {
-        ...trailSettings,
-        glowBlur: 0,
-        lineWidth: Math.max(3.5, trailSettings.lineWidth),
-      };
+    const bCtx = this.bufferCtx;
+    if (bCtx) {
+      bCtx.clearRect(0, 0, this.width, this.height);
+      let drew = false;
 
-      ctx.save();
-      ctx.globalCompositeOperation = "source-over";
-      ctx.globalAlpha = 1.0;
-      this.trailRenderer.renderTrails(
-        ctx,
-        blueLeading,
-        redLeading,
-        overlaySettings,
-        performance.now(),
-        hasBlue,
-        hasRed,
-        canvasSize,
-        undefined,
-        additionalLayers?.map(layer => ({
-          ...layer,
-          blueTrailPoints: layer.blueTrailPoints.length > LEADING_EDGE
-            ? layer.blueTrailPoints.slice(-LEADING_EDGE)
-            : layer.blueTrailPoints,
-          redTrailPoints: layer.redTrailPoints.length > LEADING_EDGE
-            ? layer.redTrailPoints.slice(-LEADING_EDGE)
-            : layer.redTrailPoints,
-        }))
-      );
-      ctx.restore();
-
-      // Update last known positions from trail points
-      if (blueLeading.length > 0) {
-        const last = blueLeading[blueLeading.length - 1]!;
-        this.lastBluePos = { x: last.x, y: last.y };
-      }
-      if (redLeading.length > 0) {
-        const last = redLeading[redLeading.length - 1]!;
-        this.lastRedPos = { x: last.x, y: last.y };
-      }
-    } else if (blueProp || redProp) {
-      // Cache is rebuilding — draw directly from prop positions to
-      // bridge the gap. This keeps trails continuous across sequence
-      // transitions instead of leaving an empty break.
-      ctx.save();
-      ctx.globalCompositeOperation = "source-over";
-      ctx.globalAlpha = 1.0;
-
-      const scale = canvasSize / 950;
-      const lineWidth = Math.max(3.5, trailSettings.lineWidth) * scale * 0.6;
-
-      if (blueProp && hasBlue) {
-        this.drawPropBridge(ctx, blueProp, this.lastBluePos, trailSettings.blueColor, lineWidth, canvasSize);
-        // Update last position from prop
-        const endpoint = this.propPositionCalculator.calculateEndpoint(
-          blueProp, { canvasSize, propDimensions: { width: 252.8, height: 77.8 } }, 1
-        );
-        this.lastBluePos = { x: endpoint.x, y: endpoint.y };
-      }
-      if (redProp && hasRed) {
-        this.drawPropBridge(ctx, redProp, this.lastRedPos, trailSettings.redColor, lineWidth, canvasSize);
-        const endpoint = this.propPositionCalculator.calculateEndpoint(
-          redProp, { canvasSize, propDimensions: { width: 252.8, height: 77.8 } }, 1
-        );
-        this.lastRedPos = { x: endpoint.x, y: endpoint.y };
+      // Draw each tracked end as a separate pass
+      const endRings = this.getActiveRings(hasBlue, hasRed);
+      for (const { blueRing, redRing } of endRings) {
+        const blueLeading = this.getLeadingEdge(blueRing, canvasSize);
+        const redLeading = this.getLeadingEdge(redRing, canvasSize);
+        if (blueLeading.length >= 2 || redLeading.length >= 2) {
+          this.trailRenderer.renderTrails(
+            bCtx as CanvasRenderingContext2D,
+            blueLeading,
+            redLeading,
+            overlaySettings,
+            performance.now(),
+            hasBlue && blueLeading.length >= 2,
+            hasRed && redLeading.length >= 2,
+            canvasSize
+          );
+          drew = true;
+        }
       }
 
-      ctx.restore();
+      if (drew) {
+        ctx.save();
+        ctx.globalCompositeOperation = "source-over";
+        ctx.globalAlpha = 1.0;
+        ctx.drawImage(this.bufferCanvas!, 0, 0);
+        ctx.restore();
+      }
     }
   }
 
   clear(): void {
     if (!this.ctx) return;
     this.ctx.clearRect(0, 0, this.width, this.height);
-    this.lastBluePos = null;
-    this.lastRedPos = null;
-  }
-
-  /**
-   * Draw a connecting line from last known position to current prop endpoint.
-   * Bridges the cache-rebuild gap during sequence transitions.
-   */
-  private drawPropBridge(
-    ctx: CanvasRenderingContext2D,
-    prop: PropState,
-    lastPos: { x: number; y: number } | null,
-    color: string,
-    lineWidth: number,
-    canvasSize: number
-  ): void {
-    const endpoint = this.propPositionCalculator.calculateEndpoint(
-      prop, { canvasSize, propDimensions: { width: 252.8, height: 77.8 } }, 1
-    );
-
-    if (!lastPos) {
-      // No previous position — just record, don't draw
-      return;
-    }
-
-    // Skip if positions are too far apart (discontinuity)
-    const dx = endpoint.x - lastPos.x;
-    const dy = endpoint.y - lastPos.y;
-    if (dx * dx + dy * dy > (canvasSize * 0.3) ** 2) return;
-
-    ctx.strokeStyle = color;
-    ctx.lineWidth = lineWidth;
-    ctx.lineCap = "round";
-    ctx.beginPath();
-    ctx.moveTo(lastPos.x, lastPos.y);
-    ctx.lineTo(endpoint.x, endpoint.y);
-    ctx.stroke();
-  }
-
-  private sanitizeLeadingEdge(
-    points: TrailPoint[],
-    canvasSize: number
-  ): TrailPoint[] {
-    if (points.length < 2) return points;
-
-    const maxGap = canvasSize * 0.3;
-    const maxGapSq = maxGap * maxGap;
-
-    for (let i = points.length - 1; i > 0; i--) {
-      const curr = points[i]!;
-      const prev = points[i - 1]!;
-      const dx = curr.x - prev.x;
-      const dy = curr.y - prev.y;
-      if (dx * dx + dy * dy > maxGapSq) {
-        return points.slice(i);
-      }
-    }
-
-    return points;
+    this.blueLeftRing = [];
+    this.blueRightRing = [];
+    this.redLeftRing = [];
+    this.redRightRing = [];
   }
 
   setVisible(visible: boolean): void {
@@ -269,13 +232,170 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
     }
     this.canvas = null;
     this.ctx = null;
+    this.bufferCanvas = null;
+    this.bufferCtx = null;
     this.width = 0;
     this.height = 0;
-    this.lastBluePos = null;
-    this.lastRedPos = null;
+    this.blueLeftRing = [];
+    this.blueRightRing = [];
+    this.redLeftRing = [];
+    this.redRightRing = [];
   }
 
-  private computeFadeAmount(fadeDurationMs: number, deltaTime: number): number {
+  // -------------------------------------------------------------------
+  // Internal helpers
+  // -------------------------------------------------------------------
+
+  /**
+   * Return the active ring buffer pairs based on which ends are being
+   * drawn. Each pair gets its own renderTrails pass.
+   */
+  private getActiveRings(
+    hasBlue: boolean,
+    hasRed: boolean
+  ): Array<{ blueRing: TrailPoint[]; redRing: TrailPoint[] }> {
+    const result: Array<{ blueRing: TrailPoint[]; redRing: TrailPoint[] }> = [];
+
+    // Left-end pass (if any left-end points exist)
+    if (
+      (hasBlue && this.blueLeftRing.length >= 2) ||
+      (hasRed && this.redLeftRing.length >= 2)
+    ) {
+      result.push({
+        blueRing: hasBlue ? this.blueLeftRing : [],
+        redRing: hasRed ? this.redLeftRing : [],
+      });
+    }
+
+    // Right-end pass
+    if (
+      (hasBlue && this.blueRightRing.length >= 2) ||
+      (hasRed && this.redRightRing.length >= 2)
+    ) {
+      result.push({
+        blueRing: hasBlue ? this.blueRightRing : [],
+        redRing: hasRed ? this.redRightRing : [],
+      });
+    }
+
+    return result;
+  }
+
+  /**
+   * Capture tip positions for a single prop into the appropriate ring
+   * buffers. Uses tip points directly (like FireTipTracker) and consults
+   * the trail point config for which tip index to use (user's "Tip 3"
+   * selection is honored via getTrailPointConfig).
+   */
+  private capturePropTips(
+    prop: PropState,
+    canvasSize: number,
+    propType: string | null | undefined,
+    propIndex: 0 | 1,
+    trackLeft: boolean,
+    trackRight: boolean
+  ): void {
+    const tipConfig = getTipPoints(propType);
+    const pts = tipConfig.points;
+    if (pts.length === 0) return;
+
+    // Check if user has configured specific tip indices via trail point config
+    const trailConfig = getTrailPointConfig(propType);
+
+    // Resolve which tip point index to use for each end
+    const leftTipIndex = trailConfig?.left?.type === "tip" ? trailConfig.left.index : 0;
+    const rightTipIndex = trailConfig?.right?.type === "tip"
+      ? trailConfig.right.index
+      : (pts.length >= 2 ? 1 : 0);
+
+    const center = this.propPositionCalculator.calculateCenter(
+      prop,
+      { canvasSize, propDimensions: { width: 252.8, height: 77.8 } }
+    );
+    const gridScaleFactor = canvasSize / 950;
+    const cosA = Math.cos(prop.staffRotationAngle);
+    const sinA = Math.sin(prop.staffRotationAngle);
+
+    if (trackLeft && leftTipIndex < pts.length) {
+      const tp = pts[leftTipIndex]!;
+      const leftRing = propIndex === 0 ? this.blueLeftRing : this.redLeftRing;
+      const worldX = center.x + (tp.dx * cosA - tp.dy * sinA) * gridScaleFactor;
+      const worldY = center.y + (tp.dx * sinA + tp.dy * cosA) * gridScaleFactor;
+      this.appendToRing(leftRing, worldX, worldY, canvasSize, propIndex, 0);
+    }
+    if (trackRight && rightTipIndex < pts.length) {
+      const tp = pts[rightTipIndex]!;
+      const rightRing = propIndex === 0 ? this.blueRightRing : this.redRightRing;
+      const worldX = center.x + (tp.dx * cosA - tp.dy * sinA) * gridScaleFactor;
+      const worldY = center.y + (tp.dx * sinA + tp.dy * cosA) * gridScaleFactor;
+      this.appendToRing(rightRing, worldX, worldY, canvasSize, propIndex, 1);
+    }
+  }
+
+  private appendToRing(
+    ring: TrailPoint[],
+    worldX: number,
+    worldY: number,
+    canvasSize: number,
+    propIndex: 0 | 1,
+    endType: 0 | 1
+  ): void {
+
+    // Skip discontinuities
+    if (ring.length > 0) {
+      const last = ring[ring.length - 1]!;
+      const dx = worldX - last.x;
+      const dy = worldY - last.y;
+      if (dx * dx + dy * dy > (canvasSize * 0.3) ** 2) {
+        ring.length = 0;
+      }
+    }
+
+    ring.push({
+      x: worldX,
+      y: worldY,
+      timestamp: performance.now(),
+      propIndex,
+      endType,
+    });
+
+    if (ring.length > RING_BUFFER_SIZE) {
+      ring.splice(0, ring.length - RING_BUFFER_SIZE);
+    }
+  }
+
+  /**
+   * Extract the leading edge from a ring buffer, sanitized for
+   * discontinuities. Returns at most LEADING_EDGE points.
+   */
+  private getLeadingEdge(
+    ring: TrailPoint[],
+    canvasSize: number
+  ): TrailPoint[] {
+    if (ring.length < 2) return ring;
+
+    const start = Math.max(0, ring.length - LEADING_EDGE);
+    const slice = ring.slice(start);
+
+    // Walk backward from the newest point, trimming at any large gap
+    const maxGapSq = (canvasSize * 0.3) ** 2;
+    for (let i = slice.length - 1; i > 0; i--) {
+      const curr = slice[i]!;
+      const prev = slice[i - 1]!;
+      const dx = curr.x - prev.x;
+      const dy = curr.y - prev.y;
+      if (dx * dx + dy * dy > maxGapSq) {
+        return slice.slice(i);
+      }
+    }
+
+    return slice;
+  }
+
+  private computeFadeAmount(
+    fadeDurationMs: number,
+    deltaTime: number
+  ): number {
     const safeDuration = Math.max(fadeDurationMs, 16.67);
     const framesForFullFade = safeDuration / 16.67;
     const baseFade = 3.5 / framesForFullFade;
@@ -283,12 +403,9 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
   }
 
   /**
-   * Subtract a constant from every non-zero alpha pixel.
-   * Unlike a hard threshold (which creates visible jumps when chunks of
-   * pixels cross the boundary simultaneously), constant subtraction creates
-   * a smooth linear fade at the tail. And unlike multiplicative destination-out
-   * (which can never reach zero due to 8-bit rounding), subtraction guarantees
-   * every pixel eventually reaches alpha 0.
+   * Subtract a constant from every non-zero alpha pixel in the stuck zone.
+   * Destination-out's multiplicative fade can never reach 0 due to 8-bit
+   * integer rounding. Constant subtraction guarantees every pixel reaches 0.
    */
   private smoothAlphaDecay(ctx: CanvasRenderingContext2D): void {
     const w = this.width;
@@ -297,13 +414,12 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
 
     const imageData = ctx.getImageData(0, 0, w, h);
     const data = imageData.data;
-    const DECAY = 2; // subtract 2 per frame — reaches zero in ~14 frames from alpha 28
+    const DECAY = 2;
     let dirty = false;
 
     for (let i = 3; i < data.length; i += 4) {
       const a = data[i]!;
       if (a > 0 && a <= 28) {
-        // Only apply constant decay in the zone where destination-out stalls
         data[i] = Math.max(0, a - DECAY);
         dirty = true;
       }

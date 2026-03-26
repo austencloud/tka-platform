@@ -11,6 +11,7 @@
 <script lang="ts">
   import type { EffectPointEditorState } from "../state/effect-point-editor-state.svelte";
   import type { TrailPointConfig, TrailPointSource } from "$lib/shared/animation-engine/domain/types/TrailPointTypes";
+  import { isUnilateralProp } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";
 
   interface Props {
     editorState: EffectPointEditorState;
@@ -18,6 +19,7 @@
 
   const { editorState }: Props = $props();
 
+  let isUnilateral = $derived(isUnilateralProp(editorState.selectedPropType));
   let leftSource = $derived(editorState.trailConfig?.left ?? null);
   let rightSource = $derived(editorState.trailConfig?.right ?? null);
 
@@ -55,10 +57,11 @@
     }
 
     if (newMode === "tip") {
-      // Default to tip 0 for both when entering tip mode
+      // Unilateral props have one end — both trail endpoints share the same tip
+      const defaultRight = isUnilateral ? 0 : (editorState.points.length > 1 ? 1 : 0);
       const config: TrailPointConfig = {
         left: { type: "tip", index: 0 },
-        right: { type: "tip", index: editorState.points.length > 1 ? 1 : 0 },
+        right: { type: "tip", index: defaultRight },
       };
       editorState.saveTrailConfig(config);
       return;
@@ -74,6 +77,13 @@
   }
 
   function selectTip(side: "left" | "right", tipIndex: number) {
+    // Unilateral props: both ends use the same tip point
+    if (isUnilateral) {
+      const source: TrailPointSource = { type: "tip", index: tipIndex };
+      editorState.saveTrailConfig({ left: source, right: { ...source } });
+      return;
+    }
+
     const otherSide = side === "left" ? rightSource : leftSource;
     const thisSide: TrailPointSource = { type: "tip", index: tipIndex };
 
@@ -103,6 +113,12 @@
       dy: field === "dy" ? rounded : currentSource.dy,
     };
 
+    // Unilateral props: both ends share the same custom offset
+    if (isUnilateral) {
+      editorState.saveTrailConfig({ left: updated, right: { ...updated } });
+      return;
+    }
+
     const other = side === "left" ? rightSource : leftSource;
     const otherValue: TrailPointSource = other ?? { type: "custom", dx: 0, dy: 0 };
 
@@ -120,7 +136,11 @@
     Trail Points
   </h3>
   <p class="section-desc">
-    Pick where trail lines emit from. Tip mode lets you assign each end separately.
+    {#if isUnilateral}
+      Pick which tip point the trail emits from.
+    {:else}
+      Pick where trail lines emit from. Tip mode lets you assign each end separately.
+    {/if}
   </p>
 
   <!-- Mode selector -->
@@ -166,39 +186,59 @@
     </button>
   </div>
 
-  <!-- Tip assignment rows (L / R) -->
+  <!-- Tip assignment rows -->
   {#if mode === "tip"}
     <div class="endpoint-rows">
-      <div class="endpoint-row">
-        <span class="endpoint-label">End 1</span>
-        <div class="chip-row" role="radiogroup" aria-label="Trail end 1">
-          {#each editorState.points as _, i}
-            <button
-              class="chip chip-tip"
-              class:active={leftTipIndex === i}
-              role="radio"
-              aria-checked={leftTipIndex === i}
-              onclick={() => selectTip("left", i)}
-              title="Tip {i + 1}: ({editorState.points[i].dx}, {editorState.points[i].dy})"
-            >{i + 1}</button>
-          {/each}
+      {#if isUnilateral}
+        <!-- Unilateral props have one end — single row -->
+        <div class="endpoint-row">
+          <span class="endpoint-label">Tip</span>
+          <div class="chip-row" role="radiogroup" aria-label="Trail tip point">
+            {#each editorState.points as _, i}
+              <button
+                class="chip chip-tip"
+                class:active={leftTipIndex === i}
+                role="radio"
+                aria-checked={leftTipIndex === i}
+                onclick={() => selectTip("left", i)}
+                title="Tip {i + 1}: ({editorState.points[i].dx}, {editorState.points[i].dy})"
+              >{i + 1}</button>
+            {/each}
+          </div>
         </div>
-      </div>
-      <div class="endpoint-row">
-        <span class="endpoint-label">End 2</span>
-        <div class="chip-row" role="radiogroup" aria-label="Trail end 2">
-          {#each editorState.points as _, i}
-            <button
-              class="chip chip-tip"
-              class:active={rightTipIndex === i}
-              role="radio"
-              aria-checked={rightTipIndex === i}
-              onclick={() => selectTip("right", i)}
-              title="Tip {i + 1}: ({editorState.points[i].dx}, {editorState.points[i].dy})"
-            >{i + 1}</button>
-          {/each}
+      {:else}
+        <!-- Bilateral props have two ends -->
+        <div class="endpoint-row">
+          <span class="endpoint-label">End 1</span>
+          <div class="chip-row" role="radiogroup" aria-label="Trail end 1">
+            {#each editorState.points as _, i}
+              <button
+                class="chip chip-tip"
+                class:active={leftTipIndex === i}
+                role="radio"
+                aria-checked={leftTipIndex === i}
+                onclick={() => selectTip("left", i)}
+                title="Tip {i + 1}: ({editorState.points[i].dx}, {editorState.points[i].dy})"
+              >{i + 1}</button>
+            {/each}
+          </div>
         </div>
-      </div>
+        <div class="endpoint-row">
+          <span class="endpoint-label">End 2</span>
+          <div class="chip-row" role="radiogroup" aria-label="Trail end 2">
+            {#each editorState.points as _, i}
+              <button
+                class="chip chip-tip"
+                class:active={rightTipIndex === i}
+                role="radio"
+                aria-checked={rightTipIndex === i}
+                onclick={() => selectTip("right", i)}
+                title="Tip {i + 1}: ({editorState.points[i].dx}, {editorState.points[i].dy})"
+              >{i + 1}</button>
+            {/each}
+          </div>
+        </div>
+      {/if}
     </div>
   {/if}
 
@@ -206,7 +246,7 @@
   {#if mode === "custom"}
     <div class="custom-section">
       <div class="endpoint-row">
-        <span class="endpoint-label">End 1</span>
+        <span class="endpoint-label">{isUnilateral ? "Tip" : "End 1"}</span>
         <div class="custom-coords">
           <label class="coord-field">
             <span class="coord-label">dx</span>
@@ -230,31 +270,33 @@
           </label>
         </div>
       </div>
-      <div class="endpoint-row">
-        <span class="endpoint-label">End 2</span>
-        <div class="custom-coords">
-          <label class="coord-field">
-            <span class="coord-label">dx</span>
-            <input
-              type="number"
-              class="coord-input"
-              step="0.1"
-              value={rightSource?.type === "custom" ? rightSource.dx : 0}
-              onchange={(e) => handleCustomDxDy("right", "dx", (e.target as HTMLInputElement).value)}
-            />
-          </label>
-          <label class="coord-field">
-            <span class="coord-label">dy</span>
-            <input
-              type="number"
-              class="coord-input"
-              step="0.1"
-              value={rightSource?.type === "custom" ? rightSource.dy : 0}
-              onchange={(e) => handleCustomDxDy("right", "dy", (e.target as HTMLInputElement).value)}
-            />
-          </label>
+      {#if !isUnilateral}
+        <div class="endpoint-row">
+          <span class="endpoint-label">End 2</span>
+          <div class="custom-coords">
+            <label class="coord-field">
+              <span class="coord-label">dx</span>
+              <input
+                type="number"
+                class="coord-input"
+                step="0.1"
+                value={rightSource?.type === "custom" ? rightSource.dx : 0}
+                onchange={(e) => handleCustomDxDy("right", "dx", (e.target as HTMLInputElement).value)}
+              />
+            </label>
+            <label class="coord-field">
+              <span class="coord-label">dy</span>
+              <input
+                type="number"
+                class="coord-input"
+                step="0.1"
+                value={rightSource?.type === "custom" ? rightSource.dy : 0}
+                onchange={(e) => handleCustomDxDy("right", "dy", (e.target as HTMLInputElement).value)}
+              />
+            </label>
+          </div>
         </div>
-      </div>
+      {/if}
     </div>
   {/if}
 </div>

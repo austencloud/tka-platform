@@ -11,9 +11,12 @@ export interface TrailOverlayRenderParams {
   hasBlue: boolean;
   hasRed: boolean;
   additionalLayers?: AdditionalLayerRenderData[];
-  /** Raw prop states for gap-bridging when cache is rebuilding */
+  /** Raw prop states — overlay reads positions directly (fire-renderer pattern) */
   blueProp?: PropState | null;
   redProp?: PropState | null;
+  /** Prop type names for correct trail endpoint resolution */
+  bluePropType?: string | null;
+  redPropType?: string | null;
 }
 
 export interface ITrailOverlayCanvas {

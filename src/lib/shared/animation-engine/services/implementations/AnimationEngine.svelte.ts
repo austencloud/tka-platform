@@ -12,6 +12,7 @@
  */
 
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import { animationSettings as animationSettingsState } from "../../state/animation-settings-state.svelte";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
@@ -440,7 +441,18 @@ export class AnimationEngine {
 
         // Trigger render when trails visibility changes
         if (state.trails !== this.prevTrailsVisible) {
+          const trailsTurnedOff = this.prevTrailsVisible && !state.trails;
           this.prevTrailsVisible = state.trails;
+
+          // When trails are turned off (e.g. switching to fire mode),
+          // clear and hide the overlay so stale trail pixels don't persist
+          if (trailsTurnedOff && this.trailOverlay) {
+            this.trailOverlay.clear();
+            this.trailOverlay.setVisible(false);
+          } else if (state.trails && this.trailOverlay) {
+            this.trailOverlay.setVisible(true);
+          }
+
           if (this.state.isInitialized) {
             this.renderLoopService?.triggerRender(() =>
               this.getFrameParams(this.lastPropsRef ?? DEFAULT_ENGINE_PROPS)
@@ -754,6 +766,9 @@ export class AnimationEngine {
         this.state.currentRedPropType = newRed;
         this.state.currentPropType = newBlue;
 
+        // Update global settings so UI (e.g. trail tracking labels) reflects current prop
+        animationSettingsState.setCurrentPropType(newBlue);
+
         // Invalidate path cache FIRST — it holds pre-computed endpoint positions
         // for the old prop geometry. If the render loop reads stale cache data
         // before the new textures load, it draws a jump line to the wrong position.
@@ -806,6 +821,9 @@ export class AnimationEngine {
             this.propTypeChangeService.state.redPropType;
           this.state.currentPropType =
             this.propTypeChangeService.state.legacyPropType;
+          animationSettingsState.setCurrentPropType(
+            this.propTypeChangeService.state.bluePropType
+          );
         }
 
         // Invalidate path cache FIRST — it holds pre-computed endpoint positions
@@ -969,8 +987,16 @@ export class AnimationEngine {
     // Handle cache clear signals (only process once per signal)
     const clearSignal = this.sequenceCacheService?.state.clearSignal ?? 0;
     if (clearSignal > this.lastClearSignal) {
+      console.log(`[trail-overlay] 🔄 Cache clear signal fired — clearing path caches`);
       this.precomputationService?.clearCaches();
-      this.trailCapturer?.clearTrails();
+      // When the trail overlay is active, DON'T clear the trail capturer
+      // buffer. Old trail points stay in the buffer and continue being
+      // drawn at their old positions (fading naturally via destination-out).
+      // When new points start accumulating, they push old ones out of the
+      // leading-edge window — smooth handoff, zero gap.
+      if (!this.trailOverlay) {
+        this.trailCapturer?.clearTrails();
+      }
       this.cacheSequenceId = null;
       this.lastClearSignal = clearSignal;
     }
@@ -1699,8 +1725,10 @@ export class AnimationEngine {
         this.state.currentBluePropType = pts.bluePropType;
       if (this.state.currentRedPropType !== pts.redPropType)
         this.state.currentRedPropType = pts.redPropType;
-      if (this.state.currentPropType !== pts.legacyPropType)
+      if (this.state.currentPropType !== pts.legacyPropType) {
         this.state.currentPropType = pts.legacyPropType;
+        animationSettingsState.setCurrentPropType(pts.bluePropType);
+      }
     }
 
     // Sync from prop texture service

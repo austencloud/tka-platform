@@ -609,13 +609,58 @@
     charcoalParams = { ...DEFAULT_CHARCOAL_PARAMS };
   }
 
-  // ─── Spacebar play/pause ──────────────────────────────────────────
+  // ─── Debug: copy current sequence data to clipboard ─────────────
+  let debugToast = $state<string | null>(null);
+  let debugToastTimer: ReturnType<typeof setTimeout> | null = null;
+
+  function captureSequenceDebugData() {
+    const seqData = animationState.sequenceData;
+    if (!seqData) {
+      showDebugToast("No sequence loaded");
+      return;
+    }
+
+    const debugPayload = {
+      word: seqData.word ?? seqData.name ?? "unknown",
+      stepCount: seqData.steps?.length ?? 0,
+      gridMode: seqData.gridMode,
+      startPosition: seqData.startPosition,
+      steps: seqData.steps?.map((step, i) => ({
+        beat: i,
+        letter: step.letter,
+        startPosition: step.startPosition,
+        endPosition: step.endPosition,
+        motions: step.motions,
+      })),
+    };
+
+    const json = JSON.stringify(debugPayload, null, 2);
+    navigator.clipboard.writeText(json).then(
+      () => showDebugToast(`Copied ${debugPayload.stepCount} steps`),
+      () => showDebugToast("Clipboard write failed"),
+    );
+  }
+
+  function showDebugToast(msg: string) {
+    debugToast = msg;
+    if (debugToastTimer) clearTimeout(debugToastTimer);
+    debugToastTimer = setTimeout(() => { debugToast = null; }, 2000);
+  }
+
+  // ─── Keyboard shortcuts ────────────────────────────────────────────
   function handleKeydown(e: KeyboardEvent) {
+    const tag = (e.target as HTMLElement)?.tagName;
+    if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+
     if (e.code === "Space" && !e.repeat) {
-      const tag = (e.target as HTMLElement)?.tagName;
-      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
       e.preventDefault();
       togglePlayback();
+    }
+
+    // Press D to capture current sequence data to clipboard for debugging
+    if (e.code === "KeyD" && !e.repeat) {
+      e.preventDefault();
+      captureSequenceDebugData();
     }
   }
 </script>
@@ -751,6 +796,11 @@
     </div>
   </div>
 </div>
+
+<!-- Debug toast -->
+{#if debugToast}
+  <div class="debug-toast">{debugToast}</div>
+{/if}
 
 <!-- Sequence Picker Modal -->
 <SequencePickerModal
@@ -896,5 +946,21 @@
     .canvas-area {
       min-height: 300px;
     }
+  }
+
+  .debug-toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.85);
+    color: #4fc3f7;
+    padding: 8px 20px;
+    border-radius: 8px;
+    font-size: var(--font-size-sm, 14px);
+    font-family: monospace;
+    z-index: 9999;
+    pointer-events: none;
+    border: 1px solid rgba(79, 195, 247, 0.3);
   }
 </style>

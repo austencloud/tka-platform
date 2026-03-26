@@ -8,8 +8,11 @@
 <script lang="ts">
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import { TrackingMode } from "$lib/shared/animation-engine/domain/types/TrailTypes";
+  import { isBilateralProp } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";
 
   let trail = $derived(animationSettings.trail);
+  let propType = $derived(animationSettings.currentPropType);
+  let bilateral = $derived(isBilateralProp(propType));
 
   // Local reactive copies for slider binding
   let fadeDuration = $state(animationSettings.trail.fadeDurationMs);
@@ -60,11 +63,32 @@
     animationSettings.setHideProps(hide);
   }
 
-  const TRACKING_OPTIONS: { mode: TrackingMode; label: string; aria: string }[] = [
-    { mode: TrackingMode.LEFT_END, label: "Left", aria: "Track left end only" },
-    { mode: TrackingMode.RIGHT_END, label: "Right", aria: "Track right end only" },
-    { mode: TrackingMode.BOTH_ENDS, label: "Both", aria: "Track both ends" },
-  ];
+  // Label the tracking buttons based on prop type:
+  // - "staff" (primary, has notched thumb end): Thumb / Pinky / Both
+  // - Other bilateral props: End 1 / End 2 / Both
+  let trackingOptions = $derived.by(() => {
+    const pt = propType?.toLowerCase() ?? "staff";
+
+    let leftLabel: string;
+    let rightLabel: string;
+
+    if (pt === "staff") {
+      leftLabel = "Pinky";
+      rightLabel = "Thumb";
+    } else if (pt === "bigclub") {
+      leftLabel = "Knob";
+      rightLabel = "Bulb";
+    } else {
+      leftLabel = "End 1";
+      rightLabel = "End 2";
+    }
+
+    return [
+      { mode: TrackingMode.LEFT_END, label: leftLabel, aria: `Track ${leftLabel.toLowerCase()} end only` },
+      { mode: TrackingMode.RIGHT_END, label: rightLabel, aria: `Track ${rightLabel.toLowerCase()} end only` },
+      { mode: TrackingMode.BOTH_ENDS, label: "Both", aria: "Track both ends" },
+    ];
+  });
 </script>
 
 <div class="trail-controls">
@@ -73,24 +97,26 @@
     Trail Effect
   </h3>
 
-  <!-- Tracking mode -->
-  <div class="renderer-toggle-section">
-    <span class="section-label">Track end</span>
-    <div class="renderer-toggle" role="radiogroup" aria-label="Tracking mode">
-      {#each TRACKING_OPTIONS as opt (opt.mode)}
-        <button
-          role="radio"
-          class="renderer-btn"
-          class:active={trail.trackingMode === opt.mode}
-          aria-checked={trail.trackingMode === opt.mode}
-          aria-label={opt.aria}
-          onclick={() => handleTrackingMode(opt.mode)}
-        >
-          {opt.label}
-        </button>
-      {/each}
+  <!-- Tracking mode (bilateral props only — unilateral props have one end) -->
+  {#if bilateral}
+    <div class="renderer-toggle-section">
+      <span class="section-label">Track end</span>
+      <div class="renderer-toggle" role="radiogroup" aria-label="Tracking mode">
+        {#each trackingOptions as opt (opt.mode)}
+          <button
+            role="radio"
+            class="renderer-btn"
+            class:active={trail.trackingMode === opt.mode}
+            aria-checked={trail.trackingMode === opt.mode}
+            aria-label={opt.aria}
+            onclick={() => handleTrackingMode(opt.mode)}
+          >
+            {opt.label}
+          </button>
+        {/each}
+      </div>
     </div>
-  </div>
+  {/if}
 
   <!-- Hide props toggle -->
   <div class="toggle-row">
