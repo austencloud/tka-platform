@@ -28,7 +28,9 @@ Each bio is a card with the full text visible plus Copy/Edit/Delete buttons on t
 
 **Add Bio:** Move the "Add Bio" button into the section header (next to the "Bios" title), using the existing `.add-btn` styling from `WorkshopPortfolioEditor.svelte`. Remove it from `BioEditor.svelte`. When clicked, create the new bio and immediately open the modal for it.
 
-**Character count badge:** Small pill in the top-right of each card. Uses `var(--font-size-compact, 12px)`, `var(--theme-text-secondary)` color, subtle background `var(--theme-card-bg)`.
+**Character count badge:** Small pill in the top-right of each card. Uses `var(--font-size-compact, 12px)`, `var(--theme-text-secondary)` color, subtle background `var(--theme-card-bg)`. No character limit enforced. Count shows "N chars" format as an informational indicator for festival application length awareness.
+
+**Copy button:** The Copy button in the modal footer copies the full bio text to clipboard via `navigator.clipboard.writeText()`.
 
 ### CSS Approach
 
@@ -125,7 +127,7 @@ Vertical `<ul>` list. Each credit is a `.string-item` row with the text and an X
   color: var(--theme-text-secondary, rgba(255, 255, 255, 0.5));
   cursor: pointer;
   border-radius: 50%;
-  font-size: 10px;
+  font-size: 10px; /* Font Awesome icon (fa-times) — 10px is within the 10-12px icon floor per styling rules */
   transition: opacity 0.15s, color 0.15s;
 }
 
@@ -172,7 +174,7 @@ Same vertical list as credits. Raw YouTube URLs displayed as text with X buttons
 
 ### Redesign
 
-**Thumbnail cards:** Each video is a small card showing the YouTube thumbnail image. Extract the video ID from the URL using a regex (`/(?:youtu\.be\/|v=)([a-zA-Z0-9_-]{11})/`). Display thumbnail via `https://img.youtube.com/vi/{VIDEO_ID}/mqdefault.jpg` (320x180). If the URL doesn't match YouTube format, show a generic video icon placeholder.
+**Thumbnail cards:** Each video is a small card showing the YouTube thumbnail image. Extract the video ID from the URL using a regex (`/(?:youtu\.be\/|(?:v|embed|shorts)[=\/])([a-zA-Z0-9_-]{11})/`) to handle standard, embed, shorts, and /v/ URLs. Display thumbnail via `https://img.youtube.com/vi/{VIDEO_ID}/mqdefault.jpg` (320x180). If the URL doesn't match YouTube format, show a generic video icon placeholder. The `img` element uses an `onerror` handler to swap to the placeholder div on load failure.
 
 **Card layout:** Horizontal scroll or wrap grid (2-3 cards per row depending on available space). Each card is ~160px wide with the thumbnail at top (aspect-ratio 16/9), and a truncated URL below for identification.
 
@@ -251,6 +253,9 @@ Same vertical list as credits. Raw YouTube URLs displayed as text with X buttons
   border-color: var(--semantic-error, #ef4444);
 }
 
+/* Overlay scrim colors (video-overlay, video-remove-btn) are intentionally
+   hardcoded as they sit on dynamic thumbnail backgrounds, not themed surfaces. */
+
 .video-url-label {
   padding: 8px 10px;
   font-size: var(--font-size-compact, 12px);
@@ -267,7 +272,7 @@ Add a `extractYouTubeId` function within the component script:
 
 ```typescript
 function extractYouTubeId(url: string): string | null {
-  const match = url.match(/(?:youtu\.be\/|v=)([a-zA-Z0-9_-]{11})/);
+  const match = url.match(/(?:youtu\.be\/|(?:v|embed|shorts)[=\/])([a-zA-Z0-9_-]{11})/);
   return match?.[1] ?? null;
 }
 ```
@@ -290,7 +295,9 @@ Two separate `.section-card` sections: "Social Links" with 5 form inputs (websit
 
 **Left column -- Social Links:** Each link is a row with a platform icon (Font Awesome brand icons: `fa-globe` for website, `fa-instagram`, `fa-facebook`, `fa-youtube`, `fa-tiktok`) followed by the current value. Display mode by default -- shows the value as text. If empty, shows dimmed placeholder text ("Not set"). Clicking a row switches it to inline edit mode (input replaces text, auto-focused, blur or Enter saves). Same debounced auto-save as current implementation.
 
-**Right column -- About Info:** Compact key/value pairs. Each pair is a row: label on the left (`var(--theme-text-secondary)`), value on the right (`var(--theme-text)`). Clicking a value switches to inline edit mode. Fields: Location (city + country combined as "City, Country"), Years Teaching, Years Performing, Insurance Provider.
+**Right column -- About Info:** Compact key/value pairs. Each pair is a row: label on the left (`var(--theme-text-secondary)`), value on the right (`var(--theme-text)`). Clicking a value switches to inline edit mode. Fields: City (`homeCity`), Country (`homeCountry`), Years Teaching, Years Performing, Insurance Provider.
+
+**Insurance note:** `policyExpiration` is not displayed in this redesign. Only the provider name is shown. Expiration tracking can be added later if needed.
 
 **Section title:** "Profile" with a `fa-user` icon in the section header.
 
@@ -399,6 +406,16 @@ Two separate `.section-card` sections: "Social Links" with 5 form inputs (websit
 
 Track which field is being edited with a `editingField` state variable (`$state<string | null>(null)`). On click, set `editingField` to the field key (e.g., `"instagram"`, `"homeCity"`). Render an input instead of the text span. On blur or Enter, clear `editingField` and trigger the debounced save.
 
+**Keyboard behavior:**
+- **Escape** discards changes and reverts to the pre-edit value.
+- **Tab** saves the current field and exits edit mode (does NOT chain to the next field).
+
+**Input types:**
+- Numeric fields (`yearsTeaching`, `yearsPerforming`) use `type="number"` inputs.
+- All other fields use `type="text"`.
+
+**Location fields:** `homeCity` and `homeCountry` are displayed as TWO separate rows in the About column, labeled "City" and "Country" respectively. They are not combined into a single "City, Country" display.
+
 ### Files
 
 - **Modify `WorkshopPortfolioEditor.svelte`:** Remove the separate "Social Links" and "About" section cards. Replace with a single "Profile" section card containing the two-column layout. Keep the existing `$state` fields and debounce logic -- just change the rendering from form grids to display-first rows with inline editing.
@@ -446,6 +463,15 @@ Delete these classes from `WorkshopPortfolioEditor.svelte` after the redesign:
 | `BaseModal.svelte` / `ModalHeader.svelte` / `ModalFooter.svelte` | Used as-is. No changes to the modal system. |
 | `festival-context.ts` / festival state | No state model changes. Same `savePortfolio` calls. |
 
+## Empty States
+
+- **Bios empty:** Show italic "No bios yet" text in the card area. The Add Bio button in the section header remains visible so users can add their first bio.
+- **Credits empty:** Show just the add input pill with placeholder "Add a credit..." No other text or prompts.
+- **Videos empty:** Show just the add input row with placeholder "Paste YouTube URL..." No other text or prompts.
+- **All social links empty:** The "Not set" italic display per row is intentional. No additional empty state needed since each row self-describes its empty status.
+
+---
+
 ## Accessibility Considerations
 
 - **Bio cards:** Add `role="button"` and `tabindex="0"` so they're keyboard-navigable. Handle Enter/Space to open the modal. Add `aria-label="Edit {bio.label}"`.
@@ -453,4 +479,4 @@ Delete these classes from `WorkshopPortfolioEditor.svelte` after the redesign:
 - **Video overlay:** Same pattern as pills. The remove button must be focusable and visible on `:focus-within`. Add `aria-label="Remove video"`.
 - **Inline edit fields (Profile):** When clicking a row to edit, auto-focus the input. On Escape, cancel the edit and return focus to the row. `aria-label` on each input matching the field name.
 - **Reduced motion:** All `transition` properties should respect `prefers-reduced-motion: reduce` by setting `transition: none` in a media query.
-- **Touch targets:** All interactive elements (pills, remove buttons, video cards) must meet 44px minimum touch target on mobile. The pill remove button is small (18px) but the entire pill hover area acts as the activation zone. On mobile (< 768px), show the X buttons permanently since hover doesn't exist.
+- **Touch targets:** All interactive elements (pills, remove buttons, video cards) must meet 44px minimum touch target on mobile. On mobile (< 768px), show the X buttons permanently since hover doesn't exist. For credit pills, the X button itself expands to 44px min touch target via padding. Clicking the pill body does NOT trigger removal -- only the X button removes.
