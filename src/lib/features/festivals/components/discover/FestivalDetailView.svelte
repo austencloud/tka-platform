@@ -17,6 +17,7 @@
 
   let imageLoaded = $state(false);
   let imageError = $state(false);
+  let showTracker = $state(false);
 
   const startDate = $derived(toDate(festival.dates.start));
   const endDate = $derived(toDate(festival.dates.end));
@@ -83,127 +84,120 @@
       <i class="fas fa-times" aria-hidden="true"></i>
     </button>
 
-    <!-- Hero image — compact banner, not tall crop -->
-    <div
-      class="hero-banner"
-      style="--fallback-bg: linear-gradient(135deg, hsl({nameHue}, 60%, 25%), hsl({nameHue}, 60%, 15%))"
-    >
-      {#if festival.imageUrl && !imageError}
-        <img
-          src={festival.imageUrl}
-          alt={festival.name}
-          class="hero-img"
-          class:loaded={imageLoaded}
-          onload={() => (imageLoaded = true)}
-          onerror={() => (imageError = true)}
-        />
-      {/if}
-
-      <div class="fallback-text" class:hidden={imageLoaded && !imageError}>
-        <span>{festival.name}</span>
-      </div>
-
-      <span class="region-badge">{regionLabels[festival.region] ?? festival.region}</span>
-    </div>
-
-    <!-- Scrollable content -->
-    <div class="modal-body">
-
-      <!-- Title + size -->
-      <div class="title-row">
-        <h2 class="festival-title">{festival.name}</h2>
-        <div class="title-badges">
-          {#if festival.estimatedSize}
-            <span class="size-badge">{festival.estimatedSize}</span>
+    <div class="modal-layout">
+      <!-- Left column: image + info -->
+      <div class="left-col">
+        <!-- Image -->
+        <div
+          class="festival-image"
+          style="--fallback-bg: linear-gradient(135deg, hsl({nameHue}, 60%, 25%), hsl({nameHue}, 60%, 15%))"
+        >
+          {#if festival.imageUrl && !imageError}
+            <img
+              src={festival.imageUrl}
+              alt={festival.name}
+              class="fest-img"
+              class:loaded={imageLoaded}
+              onload={() => (imageLoaded = true)}
+              onerror={() => (imageError = true)}
+            />
           {/if}
-          {#if attendanceCount > 0}
-            <span class="attendance-badge">
-              <i class="fas fa-user-check" aria-hidden="true"></i>
-              {attendanceCount} going
-            </span>
+
+          <div class="fallback-text" class:hidden={imageLoaded && !imageError}>
+            <span>{festival.name}</span>
+          </div>
+
+          <span class="region-badge">{regionLabels[festival.region] ?? festival.region}</span>
+        </div>
+
+        <!-- Info below image -->
+        <div class="info-section">
+          <div class="title-row">
+            <h2 class="festival-title">{festival.name}</h2>
+            <div class="title-badges">
+              {#if festival.estimatedSize}
+                <span class="size-badge">{festival.estimatedSize}</span>
+              {/if}
+              {#if attendanceCount > 0}
+                <span class="attendance-badge">
+                  <i class="fas fa-user-check" aria-hidden="true"></i>
+                  {attendanceCount}
+                </span>
+              {/if}
+            </div>
+          </div>
+
+          <dl class="info-grid">
+            <div class="info-item">
+              <dt><i class="fas fa-building" aria-hidden="true"></i></dt>
+              <dd>{festival.organization}</dd>
+            </div>
+            <div class="info-item">
+              <dt><i class="fas fa-calendar-alt" aria-hidden="true"></i></dt>
+              <dd>{dateRange}</dd>
+            </div>
+            <div class="info-item">
+              <dt><i class="fas fa-map-marker-alt" aria-hidden="true"></i></dt>
+              <dd>{locationFull}</dd>
+            </div>
+            {#if deadlineFormatted}
+              <div class="info-item deadline">
+                <dt><i class="fas fa-clock" aria-hidden="true"></i></dt>
+                <dd>Deadline: {deadlineFormatted}</dd>
+              </div>
+            {/if}
+          </dl>
+
+          {#if festival.description}
+            <p class="description">{festival.description}</p>
           {/if}
-        </div>
-      </div>
 
-      <!-- Metadata row — horizontal pills -->
-      <div class="meta-pills">
-        <div class="meta-pill">
-          <i class="fas fa-building" aria-hidden="true"></i>
-          <span>{festival.organization}</span>
-        </div>
-        <div class="meta-pill">
-          <i class="fas fa-calendar-alt" aria-hidden="true"></i>
-          <span>{dateRange}</span>
-        </div>
-        <div class="meta-pill">
-          <i class="fas fa-map-marker-alt" aria-hidden="true"></i>
-          <span>{locationFull}</span>
-        </div>
-        {#if deadlineFormatted}
-          <div class="meta-pill deadline">
-            <i class="fas fa-clock" aria-hidden="true"></i>
-            <span>Deadline: {deadlineFormatted}</span>
-          </div>
-        {/if}
-      </div>
+          {#if festival.tags.length > 0}
+            <div class="tags-row">
+              {#each festival.tags as tag}
+                <span class="tag">{tag}</span>
+              {/each}
+            </div>
+          {/if}
 
-      <!-- Description -->
-      {#if festival.description}
-        <p class="description">{festival.description}</p>
-      {/if}
-
-      <!-- Tags + Apply — side by side -->
-      <div class="tags-and-actions">
-        {#if festival.tags.length > 0}
-          <div class="tags-row">
-            {#each festival.tags as tag}
-              <span class="tag">{tag}</span>
-            {/each}
-          </div>
-        {/if}
-
-        {#if festival.applicationUrl || festival.websiteUrl}
           <div class="action-buttons">
             {#if festival.applicationUrl}
-              <a
-                href={festival.applicationUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                class="apply-btn"
-              >
-                <i class="fas fa-external-link-alt" aria-hidden="true"></i>
-                Apply Now
+              <a href={festival.applicationUrl} target="_blank" rel="noopener noreferrer" class="apply-btn">
+                <i class="fas fa-external-link-alt" aria-hidden="true"></i> Apply Now
               </a>
             {/if}
             {#if festival.websiteUrl}
-              <a
-                href={festival.websiteUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                class="link-btn"
-              >
-                <i class="fas fa-globe" aria-hidden="true"></i>
-                Website
+              <a href={festival.websiteUrl} target="_blank" rel="noopener noreferrer" class="link-btn">
+                <i class="fas fa-globe" aria-hidden="true"></i> Website
+              </a>
+            {/if}
+            {#if festival.applicationContact}
+              <a href="mailto:{festival.applicationContact}" class="link-btn">
+                <i class="fas fa-envelope" aria-hidden="true"></i> {festival.applicationContact}
               </a>
             {/if}
           </div>
+        </div>
+      </div>
+
+      <!-- Right column: application tracker (collapsed by default) -->
+      <div class="right-col">
+        <button
+          class="tracker-toggle"
+          onclick={() => (showTracker = !showTracker)}
+          aria-expanded={showTracker}
+        >
+          <i class="fas fa-clipboard-list" aria-hidden="true"></i>
+          <span>My Application</span>
+          <i class="fas fa-chevron-{showTracker ? 'up' : 'down'} toggle-icon" aria-hidden="true"></i>
+        </button>
+
+        {#if showTracker}
+          <div class="tracker-content">
+            <TrackerControls {festival} {tracker} />
+          </div>
         {/if}
       </div>
-
-      {#if festival.applicationContact}
-        <p class="contact-line">
-          <i class="fas fa-envelope" aria-hidden="true"></i>
-          <a href="mailto:{festival.applicationContact}" class="email-link">
-            {festival.applicationContact}
-          </a>
-        </p>
-      {/if}
-
-      <!-- Tracker — full width section -->
-      <div class="tracker-section">
-        <TrackerControls {festival} {tracker} />
-      </div>
-
     </div>
   </div>
 </div>
@@ -222,11 +216,9 @@
 
   .modal {
     position: relative;
-    display: flex;
-    flex-direction: column;
     width: 100%;
-    max-width: 900px;
-    max-height: 92vh;
+    max-width: 1100px;
+    max-height: 90vh;
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
     border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: var(--radius-lg, 12px);
@@ -264,29 +256,51 @@
     outline-offset: 2px;
   }
 
-  /* ── Hero banner — compact, not tall ───────────────── */
+  /* ── Two-column layout ─────────────────────────────── */
 
-  .hero-banner {
-    position: relative;
-    width: 100%;
-    height: 180px;
+  .modal-layout {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    max-height: 90vh;
     overflow: hidden;
-    background: var(--fallback-bg);
-    flex-shrink: 0;
   }
 
-  .hero-img {
+  /* ── Left column ───────────────────────────────────── */
+
+  .left-col {
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb, rgba(255, 255, 255, 0.15)) transparent;
+  }
+
+  .left-col::-webkit-scrollbar { width: 6px; }
+  .left-col::-webkit-scrollbar-track { background: transparent; }
+  .left-col::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb, rgba(255, 255, 255, 0.15));
+    border-radius: 3px;
+  }
+
+  /* ── Festival image ────────────────────────────────── */
+
+  .festival-image {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    background: var(--fallback-bg);
+  }
+
+  .fest-img {
     position: absolute;
     inset: 0;
     width: 100%;
     height: 100%;
     object-fit: cover;
-    object-position: center 30%;
     opacity: 0;
     transition: opacity 0.3s ease;
   }
 
-  .hero-img.loaded {
+  .fest-img.loaded {
     opacity: 1;
   }
 
@@ -322,33 +336,19 @@
     backdrop-filter: blur(4px);
   }
 
-  /* ── Modal body ────────────────────────────────────── */
+  /* ── Info section ──────────────────────────────────── */
 
-  .modal-body {
-    flex: 1;
-    overflow-y: auto;
-    padding: 1.5rem 2rem;
+  .info-section {
+    padding: 1.5rem;
     display: flex;
     flex-direction: column;
     gap: 1rem;
-    scrollbar-width: thin;
-    scrollbar-color: var(--scrollbar-thumb, rgba(255, 255, 255, 0.15)) transparent;
   }
-
-  .modal-body::-webkit-scrollbar { width: 6px; }
-  .modal-body::-webkit-scrollbar-track { background: transparent; }
-  .modal-body::-webkit-scrollbar-thumb {
-    background: var(--scrollbar-thumb, rgba(255, 255, 255, 0.15));
-    border-radius: 3px;
-  }
-
-  /* ── Title ─────────────────────────────────────────── */
 
   .title-row {
     display: flex;
     align-items: flex-start;
     gap: 12px;
-    flex-wrap: wrap;
   }
 
   .festival-title {
@@ -357,7 +357,6 @@
     font-weight: 700;
     color: var(--theme-text, #ffffff);
     flex: 1;
-    min-width: 200px;
     line-height: 1.2;
   }
 
@@ -392,71 +391,53 @@
     border: 1px solid rgba(34, 197, 94, 0.2);
   }
 
-  .attendance-badge i {
-    font-size: 11px;
+  .attendance-badge i { font-size: 11px; }
+
+  /* ── Info grid ─────────────────────────────────────── */
+
+  .info-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 0;
   }
 
-  /* ── Metadata pills ────────────────────────────────── */
-
-  .meta-pills {
+  .info-item {
     display: flex;
-    flex-wrap: wrap;
+    align-items: baseline;
     gap: 8px;
   }
 
-  .meta-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 14px;
-    border-radius: 10px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
-    font-size: var(--font-size-sm, 14px);
-    color: var(--theme-text, #ffffff);
-  }
-
-  .meta-pill i {
-    font-size: 12px;
-    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.5));
+  .info-item dt {
+    font-size: 13px;
+    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.4));
+    width: 16px;
+    text-align: center;
     flex-shrink: 0;
   }
 
-  .meta-pill.deadline {
-    background: rgba(234, 179, 8, 0.08);
-    border-color: rgba(234, 179, 8, 0.2);
-    color: #eab308;
+  .info-item dd {
+    margin: 0;
+    font-size: var(--font-size-sm, 14px);
+    color: var(--theme-text, #ffffff);
+    line-height: 1.4;
   }
 
-  .meta-pill.deadline i {
+  .info-item.deadline dd {
     color: #eab308;
   }
-
-  /* ── Description ───────────────────────────────────── */
 
   .description {
     margin: 0;
     font-size: var(--font-size-sm, 14px);
-    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.8));
+    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.75));
     line-height: 1.6;
-  }
-
-  /* ── Tags + actions row ────────────────────────────── */
-
-  .tags-and-actions {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 1rem;
-    flex-wrap: wrap;
   }
 
   .tags-row {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
-    flex: 1;
-    min-width: 0;
   }
 
   .tag {
@@ -470,8 +451,8 @@
 
   .action-buttons {
     display: flex;
+    flex-wrap: wrap;
     gap: 8px;
-    flex-shrink: 0;
   }
 
   .apply-btn {
@@ -490,9 +471,7 @@
     transition: opacity 0.15s ease;
   }
 
-  .apply-btn:hover {
-    opacity: 0.88;
-  }
+  .apply-btn:hover { opacity: 0.88; }
 
   .link-btn {
     display: inline-flex;
@@ -515,69 +494,74 @@
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.3));
   }
 
-  .contact-line {
+  /* ── Right column ──────────────────────────────────── */
+
+  .right-col {
+    border-left: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb, rgba(255, 255, 255, 0.15)) transparent;
+  }
+
+  .tracker-toggle {
     display: flex;
     align-items: center;
-    gap: 7px;
-    margin: 0;
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.6));
+    gap: 10px;
+    width: 100%;
+    padding: 16px 20px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: none;
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+    color: var(--theme-text, #ffffff);
+    font-size: var(--font-size-sm, 14px);
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease;
   }
 
-  .contact-line i {
+  .tracker-toggle:hover {
+    background: var(--theme-card-bg-hover, rgba(255, 255, 255, 0.06));
+  }
+
+  .tracker-toggle span {
+    flex: 1;
+    text-align: left;
+  }
+
+  .toggle-icon {
     font-size: 11px;
+    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.5));
   }
 
-  .email-link {
-    color: var(--theme-accent, #6366f1);
-    text-decoration: none;
-  }
-
-  .email-link:hover {
-    text-decoration: underline;
-  }
-
-  /* ── Tracker section — full width ──────────────────── */
-
-  .tracker-section {
-    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
-    padding-top: 1rem;
+  .tracker-content {
+    padding: 16px 20px;
   }
 
   /* ── Responsive ────────────────────────────────────── */
 
   @media (max-width: 768px) {
-    .backdrop {
-      padding: 1rem;
+    .backdrop { padding: 1rem; }
+
+    .modal-layout {
+      grid-template-columns: 1fr;
     }
 
-    .hero-banner {
-      height: 120px;
-    }
-
-    .fallback-text {
-      font-size: 1.25rem;
-    }
-
-    .modal-body {
-      padding: 1rem;
-    }
-
-    .tags-and-actions {
-      flex-direction: column;
+    .right-col {
+      border-left: none;
+      border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     }
   }
 
   /* ── Reduced motion ────────────────────────────────── */
 
   @media (prefers-reduced-motion: reduce) {
-    .hero-img {
-      transition: none;
-    }
-
+    .fest-img,
     .close-btn,
     .apply-btn,
-    .link-btn {
+    .link-btn,
+    .tracker-toggle {
       transition: none;
     }
   }
