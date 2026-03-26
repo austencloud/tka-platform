@@ -19,6 +19,7 @@
 		onCurrentSequenceChange,
 		length = 8,
 		currentBeat = 0,
+		tourShuffleGlow = false,
 	}: {
 		side: "left" | "right";
 		bpm: number;
@@ -26,6 +27,7 @@
 		onCurrentSequenceChange?: (seq: SequenceData | null) => void;
 		length?: number;
 		currentBeat?: number;
+		tourShuffleGlow?: boolean;
 	} = $props();
 
 	const label = $derived(side === "left" ? "Blue" : "Red");
