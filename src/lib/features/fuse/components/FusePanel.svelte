@@ -97,7 +97,7 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px);
+		padding: 2px var(--spacing-sm, 8px);
 		border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
 		flex-shrink: 0;
 	}
@@ -144,8 +144,8 @@
 	}
 
 	.animation-section {
-		flex-shrink: 0;
-		height: 200px;
+		flex: 1;
+		min-height: 120px;
 		border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
 		position: relative;
 	}
