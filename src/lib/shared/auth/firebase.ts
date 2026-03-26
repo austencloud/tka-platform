@@ -314,42 +314,51 @@ async function initializeFirestore(): Promise<Firestore> {
     return firestoreInstance;
   }
 
-  // PRODUCTION: Use persistent cache
+  // PRODUCTION: Use persistent cache with timeout fallback
   try {
     firestoreInstance = getFirestore(app);
     debug.success("Firestore instance retrieved");
     hmrManager.setFirestore(firestoreInstance);
     return firestoreInstance;
   } catch {
-    // Not yet initialized
+    // Not yet initialized — proceed to initFs
   }
+
+  // persistentMultipleTabManager can hang if BroadcastChannel/IndexedDB is stuck.
+  // Race against a 5s timeout that falls back to memory cache.
+  const FIRESTORE_INIT_TIMEOUT = 5000;
 
   try {
     const { persistentLocalCache, persistentMultipleTabManager } =
       await import("firebase/firestore");
 
-    firestoreInstance = initFs(app, {
-      localCache: persistentLocalCache({
-        tabManager: persistentMultipleTabManager(),
-      }),
-    });
-    debug.success("Firestore initialized with persistent cache");
+    firestoreInstance = await Promise.race([
+      (async () => {
+        const fs = initFs(app, {
+          localCache: persistentLocalCache({
+            tabManager: persistentMultipleTabManager(),
+          }),
+        });
+        debug.success("Firestore initialized with persistent cache");
+        return fs;
+      })(),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Firestore persistent cache timed out")), FIRESTORE_INIT_TIMEOUT)
+      ),
+    ]);
   } catch (error) {
+    debug.warn("Persistent cache failed, falling back to memory cache:", error);
     if (isFirestoreCorruptionError(error)) {
-      debug.warn("Persistent cache failed, falling back to memory cache");
       await clearFirestoreIndexedDB();
+    }
 
-      try {
-        firestoreInstance = initFs(app, { localCache: memoryLocalCache() });
-        usingMemoryCache = true;
-        debug.success("Firestore initialized with memory cache (fallback)");
-      } catch {
-        firestoreInstance = getFirestore(app);
-        debug.error("Memory cache failed, using bare Firestore");
-      }
-    } else {
-      firestoreInitPromise = null;
-      throw error;
+    try {
+      firestoreInstance = initFs(app, { localCache: memoryLocalCache() });
+      usingMemoryCache = true;
+      debug.success("Firestore initialized with memory cache (fallback)");
+    } catch {
+      firestoreInstance = getFirestore(app);
+      debug.error("Memory cache failed, using bare Firestore");
     }
   }
 
