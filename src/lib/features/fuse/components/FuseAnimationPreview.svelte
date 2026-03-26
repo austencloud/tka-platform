@@ -130,6 +130,26 @@
 			untrack(() => controller!.setSpeed(speed));
 		}
 	});
+
+	// Keep animation canvas in sync with the shared clock.
+	// The ChoreoCard gold border reads currentBeat directly, but the animation
+	// controller runs its own rAF loop. Correct drift when > 0.5 beats off.
+	$effect(() => {
+		const beat = currentBeat;
+		if (!controller || !animState.isPlaying) return;
+
+		untrack(() => {
+			const totalSteps = animState.sequenceData?.steps?.length ?? 1;
+			if (totalSteps <= 0) return;
+			const expectedStep = Math.floor(beat) % totalSteps;
+			const actual = Math.floor(animState.currentStep);
+			// Wrap-aware difference
+			const diff = Math.abs(expectedStep - actual);
+			if (diff > 0 && diff < totalSteps) {
+				controller!.seekToStep(expectedStep);
+			}
+		});
+	});
 </script>
 
 <div class="fuse-animation-preview">
