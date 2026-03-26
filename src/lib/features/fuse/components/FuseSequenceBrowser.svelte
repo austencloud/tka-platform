@@ -169,6 +169,7 @@
 							redPropType={getSettings().redPropType}
 							highlightedStepIndex={highlightedStep}
 							showHighlight={highlightedStep !== null}
+							hideSoloHeader={true}
 						/>
 					</div>
 				{:else}
@@ -179,13 +180,7 @@
 				{/if}
 			{/key}
 
-			<div class="card-info-row">
-				<span class="card-word">
-					{propColor === "blue" ? "Blue" : "Red"} Prop
-				</span>
-				<span class="card-counter">{poolIndex + 1} / {pool.length}</span>
 			</div>
-		</div>
 
 		{#if !hideActions}
 			<div class="card-actions">
@@ -228,26 +223,20 @@
 		display: flex;
 		flex-direction: column;
 		height: 100%;
-		padding: var(--spacing-sm, 8px);
-		gap: var(--spacing-sm, 8px);
 	}
 
 	.card-display {
 		flex: 1;
 		display: flex;
 		flex-direction: column;
-		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-		border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-		border-radius: var(--radius-md, 12px);
 		overflow: hidden;
-		min-height: 120px;
+		min-height: 0;
 	}
 
 	.choreo-card-wrap {
 		flex: 1;
 		min-height: 0;
 		overflow-y: auto;
-		padding: var(--spacing-xs, 4px);
 	}
 
 	.loading-steps {
@@ -259,27 +248,6 @@
 		gap: 8px;
 		color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
 		font-size: var(--font-size-sm, 14px);
-	}
-
-	.card-info-row {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px);
-		border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
-		flex-shrink: 0;
-	}
-
-	.card-word {
-		font-size: var(--font-size-compact, 12px);
-		font-weight: 600;
-		color: var(--theme-text, #ffffff);
-		letter-spacing: 0.05em;
-	}
-
-	.card-counter {
-		font-size: 11px;
-		color: var(--theme-text-dim, rgba(255, 255, 255, 0.35));
 	}
 
 	.card-actions {

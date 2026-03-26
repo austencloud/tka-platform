@@ -175,7 +175,7 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
+		padding: var(--spacing-xs, 4px) var(--spacing-md, 16px);
 		border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
 	}
 
@@ -215,8 +215,8 @@
 		display: grid;
 		grid-template-columns: 1fr 1fr;
 		grid-template-rows: 1fr;
-		gap: var(--spacing-sm, 8px);
-		padding: var(--spacing-sm, 8px);
+		gap: var(--spacing-xs, 4px);
+		padding: var(--spacing-xs, 4px);
 	}
 
 	@container fuse-layout (max-width: 700px) {
@@ -252,7 +252,7 @@
 		align-items: center;
 		justify-content: center;
 		gap: var(--spacing-md, 16px);
-		padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
+		padding: var(--spacing-xs, 4px) var(--spacing-md, 16px);
 		border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
 	}
 

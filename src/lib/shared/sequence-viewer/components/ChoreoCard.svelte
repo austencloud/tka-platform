@@ -134,6 +134,8 @@
     onRenderProgress?: (loaded: number, total: number) => void;
     // Context menu callback (right-click / long-press)
     onContextMenu?: (x: number, y: number) => void;
+    // Suppress solo mode header ("Blue Prop Path" / "Red Hand Path")
+    hideSoloHeader?: boolean;
   }
 
   const {
@@ -163,6 +165,7 @@
     fitWidth = false,
     onRenderProgress,
     onContextMenu,
+    hideSoloHeader = false,
   }: Props = $props();
 
   // Long-press for touch context menu (matches animation canvas pattern)
@@ -410,7 +413,7 @@
 
   // Show header when difficulty, LOOP glyph, or word is enabled
   const showHeader = $derived(
-    isSoloMode ||
+    (isSoloMode && !hideSoloHeader) ||
     showDifficultyLevel || (showLoopGlyph && loopComponents) || (showWord && sequence.word)
   );
 
