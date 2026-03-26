@@ -431,6 +431,7 @@
             festivalState.savePortfolio(uid, {
               userId: uid,
               classes: [],
+              acts: [],
               bios: [],
               performanceCredits: [],
               performanceVideos: [],

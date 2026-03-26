@@ -23,7 +23,10 @@ export class WorkshopPortfolioRepository implements IWorkshopPortfolioRepository
     const ref = doc(db, "userProfiles", userId, "workshopPortfolio", "data");
     const snap = await getDoc(ref);
     if (!snap.exists()) return null;
-    return snap.data() as TeachingPortfolio;
+    const data = snap.data() as TeachingPortfolio;
+    // Backwards compat: acts field added after initial release
+    if (!data.acts) data.acts = [];
+    return data;
   }
 
   async set(userId: string, portfolio: TeachingPortfolio): Promise<void> {
