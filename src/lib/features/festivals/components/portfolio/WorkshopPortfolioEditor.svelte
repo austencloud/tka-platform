@@ -441,91 +441,6 @@
       <BioEditor bind:editBioId />
     </section>
 
-    <!-- ── Performance credits ───────────────────────────────────────────────── -->
-    <section class="section-card">
-      <div class="section-header">
-        <h3 class="section-title">Performance Credits</h3>
-      </div>
-
-      <div class="credits-flow">
-        {#each festivalState.portfolio.performanceCredits as credit, i (i)}
-          <div class="credit-pill">
-            <span>{credit}</span>
-            <button
-              class="credit-remove"
-              onclick={() => removeCredit(i)}
-              aria-label="Remove {credit}"
-              tabindex="0"
-            >
-              <i class="fas fa-times" aria-hidden="true"></i>
-            </button>
-          </div>
-        {/each}
-        <input
-          class="credit-add-input"
-          type="text"
-          bind:value={newCredit}
-          placeholder="Add credit..."
-          onkeydown={(e) => e.key === "Enter" && addCredit()}
-        />
-      </div>
-    </section>
-
-    <!-- ── Performance videos ────────────────────────────────────────────────── -->
-    <section class="section-card">
-      <div class="section-header">
-        <h3 class="section-title">Performance Videos</h3>
-      </div>
-
-      {#if festivalState.portfolio.performanceVideos.length > 0}
-        <div class="video-grid">
-          {#each festivalState.portfolio.performanceVideos as video, i (i)}
-            {@const videoId = extractYouTubeId(video)}
-            <div class="video-card">
-              {#if videoId && !failedThumbnails.has(videoId)}
-                <img
-                  class="video-thumbnail"
-                  src="https://img.youtube.com/vi/{videoId}/mqdefault.jpg"
-                  alt="Video thumbnail"
-                  onerror={() => {
-                    failedThumbnails = new Set([...failedThumbnails, videoId]);
-                  }}
-                />
-              {:else}
-                <div class="video-thumbnail-placeholder">
-                  <i class="fas fa-video" aria-hidden="true"></i>
-                </div>
-              {/if}
-              <div class="video-overlay">
-                <button
-                  class="video-remove-btn"
-                  onclick={() => removeVideo(i)}
-                  aria-label="Remove video"
-                  tabindex="0"
-                >
-                  <i class="fas fa-times" aria-hidden="true"></i>
-                </button>
-              </div>
-              <div class="video-url-label" title={video}>{video}</div>
-            </div>
-          {/each}
-        </div>
-      {/if}
-
-      <div class="video-add-row">
-        <input
-          class="add-input"
-          type="url"
-          bind:value={newVideo}
-          placeholder="Paste YouTube URL..."
-          onkeydown={(e) => e.key === "Enter" && addVideo()}
-        />
-        <button class="add-inline-btn" onclick={addVideo} disabled={!newVideo.trim()}>
-          Add
-        </button>
-      </div>
-    </section>
-
     <!-- ── Profile (social links + about merged) ─────────────────────────────── -->
     <section class="section-card">
       <div class="section-header">
@@ -622,6 +537,91 @@
             </div>
           {/each}
         </div>
+      </div>
+    </section>
+
+    <!-- ── Performance credits ───────────────────────────────────────────────── -->
+    <section class="section-card">
+      <div class="section-header">
+        <h3 class="section-title">Performance Credits</h3>
+      </div>
+
+      <div class="credits-flow">
+        {#each festivalState.portfolio.performanceCredits as credit, i (i)}
+          <div class="credit-pill">
+            <span>{credit}</span>
+            <button
+              class="credit-remove"
+              onclick={() => removeCredit(i)}
+              aria-label="Remove {credit}"
+              tabindex="0"
+            >
+              <i class="fas fa-times" aria-hidden="true"></i>
+            </button>
+          </div>
+        {/each}
+        <input
+          class="credit-add-input"
+          type="text"
+          bind:value={newCredit}
+          placeholder="Add credit..."
+          onkeydown={(e) => e.key === "Enter" && addCredit()}
+        />
+      </div>
+    </section>
+
+    <!-- ── Performance videos ────────────────────────────────────────────────── -->
+    <section class="section-card">
+      <div class="section-header">
+        <h3 class="section-title">Performance Videos</h3>
+      </div>
+
+      {#if festivalState.portfolio.performanceVideos.length > 0}
+        <div class="video-grid">
+          {#each festivalState.portfolio.performanceVideos as video, i (i)}
+            {@const videoId = extractYouTubeId(video)}
+            <div class="video-card">
+              {#if videoId && !failedThumbnails.has(videoId)}
+                <img
+                  class="video-thumbnail"
+                  src="https://img.youtube.com/vi/{videoId}/mqdefault.jpg"
+                  alt="Video thumbnail"
+                  onerror={() => {
+                    failedThumbnails = new Set([...failedThumbnails, videoId]);
+                  }}
+                />
+              {:else}
+                <div class="video-thumbnail-placeholder">
+                  <i class="fas fa-video" aria-hidden="true"></i>
+                </div>
+              {/if}
+              <div class="video-overlay">
+                <button
+                  class="video-remove-btn"
+                  onclick={() => removeVideo(i)}
+                  aria-label="Remove video"
+                  tabindex="0"
+                >
+                  <i class="fas fa-times" aria-hidden="true"></i>
+                </button>
+              </div>
+              <div class="video-url-label" title={video}>{video}</div>
+            </div>
+          {/each}
+        </div>
+      {/if}
+
+      <div class="video-add-row">
+        <input
+          class="add-input"
+          type="url"
+          bind:value={newVideo}
+          placeholder="Paste YouTube URL..."
+          onkeydown={(e) => e.key === "Enter" && addVideo()}
+        />
+        <button class="add-inline-btn" onclick={addVideo} disabled={!newVideo.trim()}>
+          Add
+        </button>
       </div>
     </section>
     </div>
@@ -1217,67 +1217,7 @@
     }
   }
 
-  /* ─── Editable string lists (credits, videos) ─────────────────────────────── */
-
-  .string-list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .string-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 10px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
-    border-radius: 6px;
-  }
-
-  .string-value {
-    flex: 1;
-    font-size: var(--font-size-sm, 14px);
-    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.8));
-    min-width: 0;
-    word-break: break-all;
-  }
-
-  .string-value.url {
-    color: var(--theme-accent, #6366f1);
-    font-size: var(--font-size-compact, 12px);
-  }
-
-  .remove-btn {
-    flex-shrink: 0;
-    width: 24px;
-    height: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: none;
-    border: none;
-    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.4));
-    cursor: pointer;
-    border-radius: 4px;
-    transition: color 0.15s;
-  }
-
-  .remove-btn:hover {
-    color: var(--semantic-error, #ef4444);
-  }
-
-  .remove-btn i {
-    font-size: 11px;
-  }
-
-  .add-row {
-    display: flex;
-    gap: 8px;
-  }
+  /* ─── Video add row inputs ───────────────────────────────────────────────── */
 
   .add-input {
     flex: 1;
