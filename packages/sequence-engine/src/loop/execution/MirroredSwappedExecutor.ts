@@ -11,10 +11,14 @@ import type { SequenceStep, MotionData } from "../../core/types/sequence-engine-
 import type { SliceSize } from "../loop-types.js";
 import {
   VERTICAL_MIRROR_POSITION_MAP,
-  VERTICAL_MIRROR_LOCATION_MAP,
   SWAPPED_POSITION_MAP,
   MIRRORED_SWAPPED_VALIDATION_SET,
 } from "../position-maps/strict-loop-position-maps.js";
+import {
+  getHandRotationDirection,
+  getLocationMapForHandRotation,
+  mirrorHandRotationDirection,
+} from "../position-maps/circular-position-maps.js";
 import { updateStepOrientations } from "./orientation-helpers.js";
 
 export class MirroredSwappedExecutor implements ILOOPExecutor {
@@ -82,11 +86,26 @@ export class MirroredSwappedExecutor implements ILOOPExecutor {
 
   private createMotion(previousMotion: MotionData, matchingMotion: MotionData): MotionData {
     const startLocation = previousMotion.endLocation;
-    const endLocation =
-      matchingMotion.motionType === "static"
-        ? startLocation
-        : (VERTICAL_MIRROR_LOCATION_MAP[matchingMotion.endLocation] || matchingMotion.endLocation);
     const mirroredRotDir = flipRotDir(matchingMotion.rotationDirection);
+
+    // Calculate end location by preserving the MIRRORED hand path direction
+    // from the seed step, applied to the current start location.
+    // Previously this used a direct mirror of the seed's endLocation, which
+    // decoupled the end from the start and could produce opposite-point
+    // arc motions (e.g., pro e→w) — physically impossible in TKA.
+    let endLocation: string;
+    if (matchingMotion.startLocation === matchingMotion.endLocation) {
+      // Static: end = start
+      endLocation = startLocation;
+    } else {
+      const seedHandDir = getHandRotationDirection(
+        matchingMotion.startLocation,
+        matchingMotion.endLocation,
+      );
+      const mirroredDir = mirrorHandRotationDirection(seedHandDir);
+      const locationMap = getLocationMapForHandRotation(mirroredDir);
+      endLocation = locationMap[startLocation] || startLocation;
+    }
 
     return {
       ...matchingMotion,

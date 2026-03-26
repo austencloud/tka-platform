@@ -390,3 +390,15 @@ export function getLocationMapForHandRotation(
       throw new Error(`Unknown hand rotation direction: ${handRotationDir}`);
   }
 }
+
+/**
+ * Mirror a hand rotation direction across the vertical axis (E↔W flip).
+ * CW becomes CCW and vice versa. Dash and static are unchanged.
+ */
+export function mirrorHandRotationDirection(
+  dir: "cw" | "ccw" | "dash" | "static"
+): "cw" | "ccw" | "dash" | "static" {
+  if (dir === "cw") return "ccw";
+  if (dir === "ccw") return "cw";
+  return dir;
+}

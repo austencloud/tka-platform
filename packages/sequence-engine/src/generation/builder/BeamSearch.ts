@@ -391,18 +391,20 @@ export class BeamSearch {
       nonType6 = nonType6.filter((p) => !excluded.has(p.letter));
     }
 
-    // Apply blocked start positions filter
-    if (options?.blockedStartPositions && options.blockedStartPositions.size > 0) {
+    // blockedStartPositions only constrains which position the FIRST beat
+    // can start from. It must NOT filter the shared nonType6 pool — beats
+    // 2+ need variations at every position the sequence may travel to.
+    // If we filtered nonType6 globally, beat 2 would find zero candidates
+    // whenever beat 1 transitioned to a position that was "blocked."
+    let firstBeatCandidates: PictographData[];
+    if (startPosition) {
+      firstBeatCandidates = nonType6.filter((p) => p.startPosition === startPosition);
+    } else if (options?.blockedStartPositions && options.blockedStartPositions.size > 0) {
       const blocked = options.blockedStartPositions;
-      nonType6 = nonType6.filter((p) => !blocked.has(p.startPosition));
+      firstBeatCandidates = nonType6.filter((p) => !blocked.has(p.startPosition));
+    } else {
+      firstBeatCandidates = nonType6;
     }
-
-    // If a start position is given, filter first beat candidates to that position.
-    // When length is 1, also filter by required end position since the main loop
-    // won't run to enforce it.
-    let firstBeatCandidates = startPosition
-      ? nonType6.filter((p) => p.startPosition === startPosition)
-      : nonType6;
 
     if (length === 1 && requiredEndPositions && requiredEndPositions.size > 0) {
       const endSet = requiredEndPositions;
