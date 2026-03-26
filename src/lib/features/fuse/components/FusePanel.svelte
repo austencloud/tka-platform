@@ -77,12 +77,13 @@
 
 	<button
 		class="shuffle-btn"
+		class:glow={tourShuffleGlow}
 		onclick={() => {
 			shuffleFn?.();
 			if (fuseTourState.isActive && fuseTourState.currentStop === "shuffle") {
 				fuseTourState.completeAction();
-				// Auto-advance after a beat so they see the result
-				setTimeout(() => fuseTourState.advance(), 600);
+				// Auto-advance after 1.5s so they see the shuffled result
+				setTimeout(() => fuseTourState.advance(), 1500);
 			}
 		}}
 		aria-label="Shuffle {label} to next sequence"
@@ -155,6 +156,20 @@
 		background: color-mix(in srgb, var(--accent) 32%, transparent);
 	}
 
+	.shuffle-btn.glow {
+		box-shadow: 0 0 20px color-mix(in srgb, var(--accent) 40%, transparent);
+		animation: shuffleGlow 1.5s ease-in-out infinite;
+	}
+
+	@keyframes shuffleGlow {
+		0%, 100% {
+			box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 30%, transparent);
+		}
+		50% {
+			box-shadow: 0 0 24px color-mix(in srgb, var(--accent) 50%, transparent);
+		}
+	}
+
 	.shuffle-label {
 		letter-spacing: 0.03em;
 	}
@@ -168,6 +183,10 @@
 	@media (prefers-reduced-motion: reduce) {
 		.shuffle-btn {
 			transition: none;
+		}
+
+		.shuffle-btn.glow {
+			animation: none;
 		}
 	}
 </style>
