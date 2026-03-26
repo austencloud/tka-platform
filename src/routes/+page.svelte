@@ -3,45 +3,74 @@
   import BackgroundHost from "$lib/shared/background/shared/components/BackgroundHost.svelte";
   import { BackgroundType } from "@austencloud/backgrounds";
   import { applyThemeForBackground } from "$lib/shared/settings/utils/background-theme-calculator";
-  import HeroSection from "./landing/components/HeroSection.svelte";
+  import HearthSection from "./landing/components/HearthSection.svelte";
+  import NotationProgressionSection from "./landing/components/NotationProgressionSection.svelte";
   import NotationShowcaseSection from "./landing/components/NotationShowcaseSection.svelte";
+  import VideoPerformanceSection from "./landing/components/VideoPerformanceSection.svelte";
+  import WhatsHereSection from "./landing/components/WhatsHereSection.svelte";
   import GuidesSection from "./landing/components/GuidesSection.svelte";
   import LandingFooter from "./landing/components/LandingFooter.svelte";
-  import LandingBackgroundPicker from "./landing/components/LandingBackgroundPicker.svelte";
-  import { prefetchTreeImages } from "$lib/shared/background/shared/prefetch-tree-images";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
-  const STORAGE_KEY = "tka-landing-theme";
   const DEFAULT_BACKGROUND = BackgroundType.NIGHT_SKY;
-
-  let currentBackground = $state<BackgroundType>(DEFAULT_BACKGROUND);
   let mounted = $state(false);
+  let aabbSequence = $state<SequenceData | null>(null);
 
-  onMount(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved && Object.values(BackgroundType).includes(saved as BackgroundType)) {
-      currentBackground = saved as BackgroundType;
+  onMount(async () => {
+    // If user just completed OAuth and landed back on /, redirect to the app
+    try {
+      const { getAuth } = await import("firebase/auth");
+      const { app } = await import("$lib/shared/auth/firebase");
+      const auth = getAuth(app);
+      await auth.authStateReady();
+      if (auth.currentUser) {
+        window.location.href = "/create";
+        return;
+      }
+    } catch {
+      // Auth not available — continue showing landing page
     }
-    applyThemeForBackground(currentBackground);
 
-    // If user's saved background is Firefly Forest, prefetch tree images now
-    if (currentBackground === BackgroundType.FIREFLY_FOREST) {
-      prefetchTreeImages();
-    }
+    applyThemeForBackground(DEFAULT_BACKGROUND);
     mounted = true;
+
+    // Scroll-triggered reveal animations for all sections below the hero
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("revealed");
+            observer.unobserve(entry.target);
+          }
+        }
+      },
+      { threshold: 0.1, rootMargin: "0px 0px -40px 0px" }
+    );
+
+    // Observe all scroll-reveal elements
+    requestAnimationFrame(() => {
+      document.querySelectorAll(".scroll-reveal").forEach((el) => {
+        observer.observe(el);
+      });
+    });
+
+    return () => observer.disconnect();
   });
 
-  function handleBackgroundChange(type: BackgroundType) {
-    currentBackground = type;
-    applyThemeForBackground(type);
-    localStorage.setItem(STORAGE_KEY, type);
-
-    // Start prefetching tree images when user begins exploring backgrounds.
-    // By the time they cycle to Firefly Forest, images will be in browser cache.
-    prefetchTreeImages();
+  function handleSequenceLoaded(seq: SequenceData) {
+    aabbSequence = seq;
   }
 </script>
 
 <svelte:head>
+  <!-- Instrument Serif for landing page headings -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Instrument+Serif&display=swap"
+    rel="stylesheet"
+  />
+
   <title
     >TKA - The Kinetic Alphabet | Flow Arts Notation for Staff, Clubs, Fans,
     Hoops & More</title
@@ -126,7 +155,7 @@
 			"@type": "SearchAction",
 			"target": {
 				"@type": "EntryPoint",
-				"urlTemplate": "https://tkaflowarts.com/app?search={search_term_string}"
+				"urlTemplate": "https://tkaflowarts.com/create?search={search_term_string}"
 			},
 			"query-input": "required name=search_term_string"
 		}
@@ -164,7 +193,7 @@
 		"name": "TKA Composer",
 		"alternateName": "The Kinetic Alphabet Composer",
 		"description": "Create, animate, and share staff, clubs, fans, hoops, buugeng, and sword sequences. A notation system for flow arts.",
-		"url": "https://tkaflowarts.com/app",
+		"url": "https://tkaflowarts.com/create",
 		"applicationCategory": ["EducationalApplication", "EntertainmentApplication", "DesignApplication"],
 		"operatingSystem": "Any (Web Browser)",
 		"browserRequirements": "Requires JavaScript. Works on Chrome, Firefox, Safari, Edge.",
@@ -295,8 +324,8 @@
 				"@type": "HowToStep",
 				"position": 1,
 				"name": "Open TKA Composer",
-				"text": "Visit tkaflowarts.com/app to launch the free web application.",
-				"url": "https://tkaflowarts.com/app"
+				"text": "Visit tkaflowarts.com/create to launch the free web application.",
+				"url": "https://tkaflowarts.com/create"
 			},
 			{
 				"@type": "HowToStep",
@@ -331,9 +360,7 @@
   <!-- Background layer -->
   {#if mounted}
     <div class="background-layer">
-      <BackgroundHost
-        backgroundType={currentBackground}
-      />
+      <BackgroundHost backgroundType={DEFAULT_BACKGROUND} />
     </div>
   {/if}
 
@@ -341,19 +368,26 @@
   <a href="#main-content" class="skip-link">Skip to main content</a>
 
   <div class="content-layer">
-    <HeroSection />
+    <HearthSection onSequenceLoaded={handleSequenceLoaded} />
     <main id="main-content">
-      <NotationShowcaseSection />
-      <GuidesSection />
+      <div class="scroll-reveal">
+        <NotationProgressionSection sequence={aabbSequence} />
+      </div>
+      <div class="scroll-reveal">
+        <NotationShowcaseSection />
+      </div>
+      <div class="scroll-reveal">
+        <VideoPerformanceSection />
+      </div>
+      <div class="scroll-reveal">
+        <WhatsHereSection />
+      </div>
+      <div class="scroll-reveal">
+        <GuidesSection />
+      </div>
     </main>
     <LandingFooter />
   </div>
-
-  <!-- Background picker -->
-  <LandingBackgroundPicker
-    {currentBackground}
-    onSelect={handleBackgroundChange}
-  />
 </div>
 
 <style>
@@ -397,5 +431,25 @@
   .content-layer {
     position: relative;
     z-index: 1;
+  }
+
+  /* Scroll-triggered reveal animations */
+  :global(.scroll-reveal) {
+    opacity: 0;
+    transform: translateY(32px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+
+  :global(.scroll-reveal.revealed) {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    :global(.scroll-reveal) {
+      opacity: 1;
+      transform: none;
+      transition: none;
+    }
   }
 </style>
