@@ -1184,16 +1184,28 @@
     align-items: center;
   }
 
+  .profile-credits-column {
+    min-width: 0;
+    overflow: hidden;
+  }
+
   .credit-pill {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 6px 12px;
+    gap: 4px;
+    padding: 4px 10px;
     background: color-mix(in srgb, var(--theme-accent, #6366f1) 10%, transparent);
     border: 1px solid color-mix(in srgb, var(--theme-accent, #6366f1) 20%, transparent);
-    border-radius: 20px;
-    font-size: var(--font-size-sm, 14px);
+    border-radius: 16px;
+    font-size: var(--font-size-compact, 12px);
     color: var(--theme-text, #ffffff);
+    max-width: 100%;
+  }
+
+  .credit-pill span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .credit-remove {
@@ -1224,11 +1236,13 @@
   .credit-add-input {
     background: none;
     border: 1px dashed var(--theme-stroke, rgba(255, 255, 255, 0.15));
-    border-radius: 20px;
-    padding: 6px 12px;
-    font-size: var(--font-size-sm, 14px);
+    border-radius: 16px;
+    padding: 4px 10px;
+    font-size: var(--font-size-compact, 12px);
     color: var(--theme-text, #ffffff);
-    min-width: 140px;
+    min-width: 0;
+    width: 100%;
+    max-width: 160px;
   }
 
   .credit-add-input::placeholder {
