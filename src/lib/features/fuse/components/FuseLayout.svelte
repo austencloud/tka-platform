@@ -8,6 +8,7 @@
 
 	import { getFuseContext } from "../context/fuse-context";
 	import FusePanel from "./FusePanel.svelte";
+	import FuseAnimationPreview from "./FuseAnimationPreview.svelte";
 	import FuseTour from "$lib/shared/onboarding/components/fuse-tour/FuseTour.svelte";
 	import HelpButton from "$lib/shared/components/help/HelpButton.svelte";
 	import { fuseTourState } from "$lib/shared/onboarding/state/fuse-tour-state.svelte";
@@ -98,6 +99,17 @@
 	function incrementBpm() {
 		fuseState.setBpm(Math.min(300, fuseState.bpm + 5));
 	}
+
+	// Tour fuse result state
+	let tourFuseCompleted = $state(false);
+	let tourFusedWord = $state("");
+
+	async function handleTourFuse() {
+		await handleFuse();
+		tourFuseCompleted = true;
+		tourFusedWord = fuseState.fusedSequence?.word ??
+			fuseState.fusedSequence?.steps?.map(s => s.letter).filter(Boolean).join("") ?? "";
+	}
 </script>
 
 <svelte:window onkeydown={handleKeydown} />
@@ -174,42 +186,73 @@
 			</div>
 
 		{:else if fuseTourState.currentStop === "fuse"}
-			<!-- Stop 4: Fuse — panels dimmed, fuse button pulsing -->
+			<!-- Stop 4: Fuse — panels dimmed with fuse button, or result after fusing -->
 			<div class="tour-stop fuse-stop">
-				<div class="tour-banner-area">
-					<FuseTour variant="banner" />
-				</div>
-				<div class="tour-panels tour-panels-dimmed">
-					<div class="panel-wrap" bind:this={leftPanelEl}>
-						<FusePanel
-							side="left"
-							bpm={fuseState.bpm}
-							onControllerReady={(ctrl) => fuseState.registerController("left", ctrl)}
-							length={fuseLength}
-							currentBeat={fuseState.currentBeat}
-							onCurrentSequenceChange={(seq) => leftBrowsingSeq = seq}
-						/>
+				{#if !tourFuseCompleted}
+					<!-- Pre-fuse: panels dimmed, fuse button pulsing -->
+					<div class="tour-banner-area">
+						<FuseTour variant="banner" />
 					</div>
-					<div class="panel-wrap" bind:this={rightPanelEl}>
-						<FusePanel
-							side="right"
-							bpm={fuseState.bpm}
-							onControllerReady={(ctrl) => fuseState.registerController("right", ctrl)}
-							length={fuseLength}
-							currentBeat={fuseState.currentBeat}
-							onCurrentSequenceChange={(seq) => rightBrowsingSeq = seq}
-						/>
+					<div class="tour-panels tour-panels-dimmed">
+						<div class="panel-wrap" bind:this={leftPanelEl}>
+							<FusePanel
+								side="left"
+								bpm={fuseState.bpm}
+								onControllerReady={(ctrl) => fuseState.registerController("left", ctrl)}
+								length={fuseLength}
+								currentBeat={fuseState.currentBeat}
+								onCurrentSequenceChange={(seq) => leftBrowsingSeq = seq}
+							/>
+						</div>
+						<div class="panel-wrap" bind:this={rightPanelEl}>
+							<FusePanel
+								side="right"
+								bpm={fuseState.bpm}
+								onControllerReady={(ctrl) => fuseState.registerController("right", ctrl)}
+								length={fuseLength}
+								currentBeat={fuseState.currentBeat}
+								onCurrentSequenceChange={(seq) => rightBrowsingSeq = seq}
+							/>
+						</div>
 					</div>
-				</div>
-				<div class="tour-fuse-area">
-					<button
-						class="fuse-button tour-fuse-btn"
-						onclick={handleFuse}
-					>
-						<i class="fas fa-fire" aria-hidden="true"></i>
-						<span>Fuse</span>
-					</button>
-				</div>
+					<div class="tour-fuse-area">
+						<button
+							class="fuse-button tour-fuse-btn"
+							onclick={handleTourFuse}
+						>
+							<i class="fas fa-fire" aria-hidden="true"></i>
+							<span>Fuse</span>
+						</button>
+					</div>
+				{:else}
+					<!-- Post-fuse: result with derived word + "Let's go" button -->
+					<div class="tour-result">
+						<div class="tour-result-word">{tourFusedWord || "Fused!"}</div>
+						<p class="tour-result-subtitle">Your fused sequence</p>
+
+						{#if fuseState.fusedSequence}
+							<div class="tour-result-preview">
+								<FuseAnimationPreview
+									sequence={fuseState.fusedSequence}
+									bpm={fuseState.bpm}
+									currentBeat={fuseState.currentBeat}
+									showBackButton={false}
+								/>
+							</div>
+						{/if}
+
+						<button
+							class="fuse-button tour-finish-btn"
+							onclick={() => {
+								fuseTourState.complete();
+								tourFuseCompleted = false;
+								tourFusedWord = "";
+							}}
+						>
+							Let's go
+						</button>
+					</div>
+				{/if}
 			</div>
 		{/if}
 	</div>
@@ -606,6 +649,44 @@
 	@keyframes tourPulse {
 		0%, 100% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.4); }
 		50% { box-shadow: 0 0 0 12px rgba(249, 115, 22, 0); }
+	}
+
+	.tour-result {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 16px;
+		padding: var(--spacing-md, 16px);
+		min-height: 0;
+	}
+
+	.tour-result-word {
+		font-size: 2.5rem;
+		font-weight: 800;
+		color: white;
+		letter-spacing: 0.15em;
+		text-transform: uppercase;
+	}
+
+	.tour-result-subtitle {
+		margin: 0;
+		font-size: var(--font-size-sm, 14px);
+		color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+	}
+
+	.tour-result-preview {
+		width: 100%;
+		max-width: 400px;
+		aspect-ratio: 1;
+		border-radius: var(--radius-md, 12px);
+		overflow: hidden;
+		border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+	}
+
+	.tour-finish-btn {
+		margin-top: 8px;
 	}
 
 	@media (prefers-reduced-motion: reduce) {
