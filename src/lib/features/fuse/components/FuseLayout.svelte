@@ -97,41 +97,66 @@
 <svelte:window onkeydown={handleKeydown} />
 
 <div class="fuse-layout" class:tour-active={fuseTourState.isActive}>
-	<FuseTour />
-
-	<!-- Two panels side by side -->
+	<!-- Two panels side by side (tour card replaces hidden panel) -->
 	<div class="fuse-panels">
-		<div
-			class="panel-wrap"
-			class:tour-dim={tourHighlight !== null && tourHighlight !== "all" && tourHighlight !== "left" && tourHighlight !== "shuffle"}
-			class:tour-highlight={tourHighlight === "left" || tourHighlight === "shuffle"}
-			bind:this={leftPanelEl}
-		>
-			<FusePanel
-				side="left"
-				bpm={fuseState.bpm}
-				onControllerReady={(ctrl) => fuseState.registerController("left", ctrl)}
-				length={fuseLength}
-				currentBeat={fuseState.currentBeat}
-				onCurrentSequenceChange={(seq) => leftBrowsingSeq = seq}
-			/>
-		</div>
-		<div
-			class="panel-wrap"
-			class:tour-dim={tourHighlight !== null && tourHighlight !== "all" && tourHighlight !== "right" && tourHighlight !== "shuffle"}
-			class:tour-highlight={tourHighlight === "right" || tourHighlight === "shuffle"}
-			bind:this={rightPanelEl}
-		>
-			<FusePanel
-				side="right"
-				bpm={fuseState.bpm}
-				onControllerReady={(ctrl) => fuseState.registerController("right", ctrl)}
-				length={fuseLength}
-				currentBeat={fuseState.currentBeat}
-				onCurrentSequenceChange={(seq) => rightBrowsingSeq = seq}
-			/>
-		</div>
+		{#if tourHighlight === "right"}
+			<!-- Tour card takes the left slot, right panel highlighted -->
+			<div class="panel-wrap tour-card-slot">
+				<FuseTour />
+			</div>
+		{:else}
+			<div
+				class="panel-wrap"
+				class:tour-dim={tourHighlight === "controls"}
+				class:tour-hidden={tourHighlight === "right"}
+				bind:this={leftPanelEl}
+			>
+				<FusePanel
+					side="left"
+					bpm={fuseState.bpm}
+					onControllerReady={(ctrl) => fuseState.registerController("left", ctrl)}
+					length={fuseLength}
+					currentBeat={fuseState.currentBeat}
+					onCurrentSequenceChange={(seq) => leftBrowsingSeq = seq}
+				/>
+			</div>
+		{/if}
+
+		{#if tourHighlight === "left"}
+			<!-- Tour card takes the right slot, left panel highlighted -->
+			<div class="panel-wrap tour-card-slot">
+				<FuseTour />
+			</div>
+		{:else if tourHighlight === "welcome"}
+			<!-- Welcome: tour card replaces right panel, left dimmed -->
+			<div class="panel-wrap tour-card-slot">
+				<FuseTour />
+			</div>
+		{:else}
+			<div
+				class="panel-wrap"
+				class:tour-dim={tourHighlight === "controls"}
+				class:tour-hidden={tourHighlight === "left"}
+				bind:this={rightPanelEl}
+			>
+				<FusePanel
+					side="right"
+					bpm={fuseState.bpm}
+					onControllerReady={(ctrl) => fuseState.registerController("right", ctrl)}
+					length={fuseLength}
+					currentBeat={fuseState.currentBeat}
+					onCurrentSequenceChange={(seq) => rightBrowsingSeq = seq}
+				/>
+			</div>
+		{/if}
 	</div>
+
+	<!-- Tour overlay for shuffle and controls stops (card centered over both panels) -->
+	{#if tourHighlight === "shuffle" || tourHighlight === "controls"}
+		<div class="tour-overlay-wrap">
+			<FuseTour />
+		</div>
+	{/if}
 
 	<!-- Invisible target for assembly animation -->
 	<div class="fuse-target" bind:this={fuseTargetEl} aria-hidden="true"></div>
@@ -139,10 +164,9 @@
 	<!-- Bottom bar: length picker, BPM, play/pause, fuse -->
 	<div
 		class="fuse-bottom"
-		class:tour-dim={tourHighlight !== null && tourHighlight !== "all" && tourHighlight !== "controls"}
-		class:tour-highlight={tourHighlight === "controls"}
+		class:tour-dim={tourHighlight !== null && tourHighlight !== "all" && tourHighlight !== "controls" && tourHighlight !== "shuffle"}
 	>
-		<div class="length-picker-wrap">
+		<div class="length-picker-wrap" class:tour-dim={tourHighlight === "controls"}>
 			<button
 				class="length-trigger"
 				onclick={() => showLengthPicker = !showLengthPicker}
@@ -167,7 +191,7 @@
 			{/if}
 		</div>
 
-		<div class="bpm-control">
+		<div class="bpm-control" class:tour-dim={tourHighlight === "controls"}>
 			<button class="bpm-btn" onclick={decrementBpm} aria-label="Decrease BPM">
 				<i class="fas fa-minus" aria-hidden="true"></i>
 			</button>
@@ -179,6 +203,7 @@
 
 		<button
 			class="play-btn"
+			class:tour-dim={tourHighlight === "controls"}
 			onclick={() => fuseState.toggleClock()}
 			aria-label={fuseState.clockRunning ? "Pause" : "Play"}
 		>
@@ -437,6 +462,37 @@
 		cursor: not-allowed;
 	}
 
+	/* Tour: card slot replaces a panel during panel-specific stops */
+	.tour-card-slot {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+		border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+		border-radius: var(--radius-md, 12px);
+	}
+
+	/* Tour: centered overlay for shuffle/controls stops */
+	.tour-overlay-wrap {
+		position: absolute;
+		inset: 0;
+		z-index: 100;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: rgba(0, 0, 0, 0.3);
+		pointer-events: auto;
+	}
+
+	.tour-overlay-wrap :global(.tour-card) {
+		max-width: 360px;
+		width: calc(100% - 48px);
+		background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+		border: 1px solid rgba(255, 255, 255, 0.15);
+		border-radius: 16px;
+		box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+	}
+
 	/* Tour highlighting */
 	.tour-dim {
 		opacity: 0.25;
@@ -444,10 +500,8 @@
 		transition: opacity 0.3s ease;
 	}
 
-	.tour-highlight {
-		position: relative;
-		z-index: 50;
-		transition: opacity 0.3s ease;
+	.tour-hidden {
+		display: none;
 	}
 
 	@media (prefers-reduced-motion: reduce) {
