@@ -76,6 +76,10 @@
 			poolIndex = 0;
 			currentItem = pool[0] ?? null;
 
+			if (pool.length > 0) {
+				fuseState.startClock();
+			}
+
 			// Pre-load full step data for the first item
 			if (currentItem) {
 				loadFullData(currentItem);
