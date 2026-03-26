@@ -379,11 +379,8 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
   const seen = new Set();
 
   for (const seed of allSeeds) {
-    // Build a motion-type signature: each beat's blueMotion/redMotion pair
-    const motionSig = seed.edges
-      .map(e => `${e.blueMotionType}/${e.redMotionType}`)
-      .join("|");
-    const key = `${seed.startPos}|${seed.seedWord}|${motionSig}`;
+    // One representative per letter-triplet per start position
+    const key = `${seed.startPos}|${seed.seedWord}`;
     if (seen.has(key)) continue;
     seen.add(key);
     deduped.push(seed);
@@ -473,6 +470,351 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
   console.log(`  ├${"─".repeat(28)}┼${validStarts.map(() => "─".repeat(colWidth + 1)).join("┼")}┼${"─".repeat(7)}┤`);
   console.log(`  │ TOTAL${" ".repeat(22)}│${totalCols} │ ${String(deduped.length).padStart(5)} │`);
   console.log(`  └${"─".repeat(28)}┴${validStarts.map(() => "─".repeat(colWidth + 1)).join("┴")}┴${"─".repeat(7)}┘`);
+
+  // ---------------------------------------------------------------------------
+  // JSON Output
+  // ---------------------------------------------------------------------------
+
+  if (outPath) {
+    const output = {
+      metadata: {
+        loopType,
+        sliceSize: slice,
+        seedLength,
+        level,
+        gridMode,
+        totalSequences: deduped.length,
+        startPositions: validStarts,
+        generatedAt: new Date().toISOString(),
+      },
+      families: sortedGroups.map(([family, items]) => ({
+        name: family,
+        count: items.length,
+        sequences: items.map(item => ({
+          seedWord: item.seedWord,
+          startPosition: item.startPos,
+          handPathFamily: item.handPathFamily,
+          path: item.edges.map(e => e.startPos).concat(item.edges[item.edges.length - 1].endPos),
+          beats: item.edges.map(e => ({
+            letter: e.letter,
+            startPos: e.startPos,
+            endPos: e.endPos,
+            blueMotionType: e.blueMotionType,
+            blueRotDir: e.blueRotDir,
+            blueStartLoc: e.blueStartLoc,
+            blueEndLoc: e.blueEndLoc,
+            redMotionType: e.redMotionType,
+            redRotDir: e.redRotDir,
+            redStartLoc: e.redStartLoc,
+            redEndLoc: e.redEndLoc,
+          })),
+        })),
+      })),
+    };
+
+    fs.writeFileSync(outPath, JSON.stringify(output, null, 2));
+    console.log(`\nDeck written to ${outPath}`);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Firestore Seeding
+  // ---------------------------------------------------------------------------
+
+  if (seedFirestore) {
+    const admin = require("firebase-admin");
+    const { resolve } = require("path");
+    const serviceAccountPath = resolve(__dirname, "../serviceAccountKey.json");
+    let serviceAccount;
+    try {
+      serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, "utf8"));
+    } catch {
+      console.error("Missing serviceAccountKey.json in project root.");
+      process.exit(1);
+    }
+
+    if (!admin.apps.length) {
+      admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
+    }
+    const db = admin.firestore();
+
+    const totalBeats = seedLength * (slice === "quartered" ? 4 : 2);
+    const deckId = `l${level}-${slice}-${loopType.replace(/_/g, "-")}-${totalBeats}beat`;
+    const sliceLabel = slice === "quartered" ? "Quartered" : "Halved";
+    const loopLabel = loopType.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+
+    // Build family data for the deck document
+    const familyDocs = sortedGroups.map(([family, items], idx) => ({
+      id: `family-${idx}`,
+      label: family,
+      typeCombo: family,
+      sequenceIds: items.map(item => `${item.startPos}_${item.seedWord}`),
+    }));
+
+    // Write deck metadata document
+    const deckData = {
+      name: `Level ${level}: ${sliceLabel} ${loopLabel} LOOP`,
+      description: `Complete enumeration of all L${level} ${slice} ${loopLabel} LOOP sequences. ${deduped.length} sequences across ${sortedGroups.length} hand-path families.`,
+      families: familyDocs,
+      totalSequences: deduped.length,
+      gridMode,
+      level,
+    };
+
+    console.log(`\nSeeding deck "${deckId}" to Firestore...`);
+    await db.doc(`decks/${deckId}`).set(deckData);
+    console.log(`  Deck document written`);
+
+    // Execute LOOP on each seed to produce full circular sequences
+    const { loopExecutorSelector } = require("../packages/sequence-engine/dist/loop/execution/LOOPExecutorSelector.js");
+    const { calculateEndOrientation } = require("../packages/sequence-engine/dist/core/orientation/OrientationCalculator.js");
+    const executor = loopExecutorSelector.getExecutor(loopType);
+
+    /**
+     * Convert a raw CSV edge to the engine's SequenceStep format.
+     * Orientations are set by propagateOrientations() after construction.
+     */
+    function edgeToEngineStep(edge, beatIndex) {
+      return {
+        letter: edge.letter,
+        startPosition: edge.startPos,
+        endPosition: edge.endPos,
+        beatIndex,
+        stepNumber: beatIndex,
+        blueMotion: {
+          motionType: edge.blueMotionType,
+          rotationDirection: edge.blueRotDir,
+          startLocation: edge.blueStartLoc,
+          endLocation: edge.blueEndLoc,
+          startOrientation: "in",
+          endOrientation: "in",
+          turns: 0,
+          color: "blue",
+        },
+        redMotion: {
+          motionType: edge.redMotionType,
+          rotationDirection: edge.redRotDir,
+          startLocation: edge.redStartLoc,
+          endLocation: edge.redEndLoc,
+          startOrientation: "in",
+          endOrientation: "in",
+          turns: 0,
+          color: "red",
+        },
+      };
+    }
+
+    /**
+     * Propagate orientations through a sequence of steps.
+     * Each step's start orientation = previous step's end orientation.
+     * Each step's end orientation = calculated from motion type + turns + start.
+     */
+    function propagateOrientations(steps) {
+      for (let i = 1; i < steps.length; i++) {
+        const prev = steps[i - 1];
+        const step = steps[i];
+
+        // Chain: previous end → current start
+        step.blueMotion.startOrientation = prev.blueMotion.endOrientation;
+        step.redMotion.startOrientation = prev.redMotion.endOrientation;
+
+        // Calculate end orientations
+        step.blueMotion.endOrientation = calculateEndOrientation({
+          motionType: step.blueMotion.motionType,
+          turns: step.blueMotion.turns,
+          rotationDirection: step.blueMotion.rotationDirection,
+          startLocation: step.blueMotion.startLocation,
+          endLocation: step.blueMotion.endLocation,
+          startOrientation: step.blueMotion.startOrientation,
+        });
+
+        step.redMotion.endOrientation = calculateEndOrientation({
+          motionType: step.redMotion.motionType,
+          turns: step.redMotion.turns,
+          rotationDirection: step.redMotion.rotationDirection,
+          startLocation: step.redMotion.startLocation,
+          endLocation: step.redMotion.endLocation,
+          startOrientation: step.redMotion.startOrientation,
+        });
+      }
+      return steps;
+    }
+
+    /**
+     * Convert an engine SequenceStep to the Firestore step format
+     * (with motions.blue/red nested structure).
+     */
+    function engineStepToFirestore(step, beat) {
+      return {
+        beat,
+        letter: step.letter,
+        startPosition: step.startPosition,
+        endPosition: step.endPosition,
+        motions: {
+          blue: {
+            motionType: step.blueMotion.motionType,
+            rotationDirection: step.blueMotion.rotationDirection,
+            startLocation: step.blueMotion.startLocation,
+            endLocation: step.blueMotion.endLocation,
+            turns: step.blueMotion.turns ?? 0,
+            startOrientation: step.blueMotion.startOrientation ?? "in",
+            endOrientation: step.blueMotion.endOrientation ?? "in",
+            isVisible: true,
+            propType: "staff",
+            color: "blue",
+            gridMode,
+          },
+          red: {
+            motionType: step.redMotion.motionType,
+            rotationDirection: step.redMotion.rotationDirection,
+            startLocation: step.redMotion.startLocation,
+            endLocation: step.redMotion.endLocation,
+            turns: step.redMotion.turns ?? 0,
+            startOrientation: step.redMotion.startOrientation ?? "in",
+            endOrientation: step.redMotion.endOrientation ?? "in",
+            isVisible: true,
+            propType: "staff",
+            color: "red",
+            gridMode,
+          },
+        },
+      };
+    }
+
+    // Write sequence documents in batches of 500
+    const BATCH_SIZE = 500;
+    let batch = db.batch();
+    let batchCount = 0;
+    let totalWritten = 0;
+    let loopErrors = 0;
+
+    for (const item of deduped) {
+      const seqId = `${item.startPos}_${item.seedWord}`;
+      const seqRef = db.doc(`decks/${deckId}/sequences/${seqId}`);
+
+      // Build seed as engine SequenceStep array (start position + beats)
+      const firstEdge = item.edges[0];
+      const startStep = {
+        letter: item.startPos.startsWith("alpha") ? "α" : item.startPos.startsWith("beta") ? "β" : "γ",
+        startPosition: item.startPos,
+        endPosition: item.startPos,
+        beatIndex: 0,
+        stepNumber: 0,
+        blueMotion: {
+          motionType: "static",
+          rotationDirection: "noRotation",
+          startLocation: firstEdge.blueStartLoc,
+          endLocation: firstEdge.blueStartLoc,
+          startOrientation: "in",
+          endOrientation: "in",
+          turns: 0,
+          color: "blue",
+        },
+        redMotion: {
+          motionType: "static",
+          rotationDirection: "noRotation",
+          startLocation: firstEdge.redStartLoc,
+          endLocation: firstEdge.redStartLoc,
+          startOrientation: "in",
+          endOrientation: "in",
+          turns: 0,
+          color: "red",
+        },
+      };
+
+      const seedSteps = [startStep, ...item.edges.map((e, i) => edgeToEngineStep(e, i + 1))];
+
+      // Propagate orientations through the seed before LOOP extension
+      propagateOrientations(seedSteps);
+
+      // Execute LOOP to extend the seed into the full circular sequence
+      let fullSteps;
+      try {
+        fullSteps = executor.executeLOOP([...seedSteps], slice);
+      } catch (err) {
+        loopErrors++;
+        if (loopErrors <= 5) console.warn(`  LOOP error for ${seqId}: ${err.message}`);
+        continue;
+      }
+
+      // The executor returns the full sequence including start position as step 0
+      const sp = fullSteps[0];
+      const startPosition = {
+        isStartPosition: true,
+        id: `start-${seqId}`,
+        gridPosition: sp.startPosition,
+        gridMode,
+        motions: {
+          blue: {
+            motionType: sp.blueMotion.motionType,
+            rotationDirection: sp.blueMotion.rotationDirection,
+            startLocation: sp.blueMotion.startLocation,
+            endLocation: sp.blueMotion.endLocation,
+            turns: sp.blueMotion.turns ?? 0,
+            startOrientation: sp.blueMotion.startOrientation ?? "in",
+            endOrientation: sp.blueMotion.endOrientation ?? "in",
+            isVisible: true,
+            propType: "staff",
+            color: "blue",
+            gridMode,
+          },
+          red: {
+            motionType: sp.redMotion.motionType,
+            rotationDirection: sp.redMotion.rotationDirection,
+            startLocation: sp.redMotion.startLocation,
+            endLocation: sp.redMotion.endLocation,
+            turns: sp.redMotion.turns ?? 0,
+            startOrientation: sp.redMotion.startOrientation ?? "in",
+            endOrientation: sp.redMotion.endOrientation ?? "in",
+            isVisible: true,
+            propType: "staff",
+            color: "red",
+            gridMode,
+          },
+        },
+      };
+
+      // Steps are everything after the start position
+      const steps = fullSteps.slice(1).map((step, i) => engineStepToFirestore(step, i));
+      const fullWord = steps.map(s => s.letter).join("");
+
+      const seqData = {
+        id: seqId,
+        name: fullWord,
+        word: fullWord,
+        gridMode,
+        isCircular: true,
+        loopType: loopType,
+        sequenceLength: steps.length,
+        level,
+        isFavorite: false,
+        tags: [],
+        thumbnails: [],
+        steps,
+        startPosition,
+        metadata: { seedWord: item.seedWord, handPathFamily: item.handPathFamily },
+        author: "TKA Enumerator",
+        notes: "",
+      };
+
+      batch.set(seqRef, seqData);
+      batchCount++;
+      totalWritten++;
+
+      if (batchCount >= BATCH_SIZE) {
+        await batch.commit();
+        console.log(`  Written ${totalWritten}/${deduped.length} sequences...`);
+        batch = db.batch();
+        batchCount = 0;
+      }
+    }
+
+    // Flush remaining
+    if (batchCount > 0) {
+      await batch.commit();
+    }
+
+    console.log(`  Done! ${totalWritten} sequences written to decks/${deckId}/sequences/`);
+  }
 
   if (!outPath && !seedFirestore) {
     console.log("\nUse --out <path> to save as JSON or --seed-firestore to write to Firestore.");
