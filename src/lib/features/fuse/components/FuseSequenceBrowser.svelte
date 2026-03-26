@@ -12,6 +12,9 @@
 	import type { BrowseViewMode } from "$lib/features/browse/shared/domain/BrowseViewMode";
 	import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
 	import { container } from "$lib/shared/di";
+	import { getFuseContext } from "../context/fuse-context";
+
+	const { state: fuseState } = getFuseContext();
 
 	type FuseMode = "soloProps" | "handPaths";
 
@@ -34,6 +37,12 @@
 		subject: mode === "handPaths" ? "hands" : "props",
 		granularity: "solo",
 		color: propColor,
+	});
+
+	const highlightedStep = $derived.by(() => {
+		if (!currentItem?.steps?.length) return null;
+		const stepCount = currentItem.steps.length;
+		return Math.floor(fuseState.currentBeat) % stepCount;
 	});
 
 	let pool = $state<SequenceData[]>([]);
@@ -144,6 +153,8 @@
 							showBirthday={false}
 							showLoopGlyph={false}
 							darkMode={true}
+							highlightedStepIndex={highlightedStep}
+							showHighlight={highlightedStep !== null}
 						/>
 					</div>
 				{:else}
