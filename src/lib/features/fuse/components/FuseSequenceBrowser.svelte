@@ -17,29 +17,23 @@
 
 	const { state: fuseState } = getFuseContext();
 
-	type FuseMode = "soloProps" | "handPaths";
-
 	let {
 		side,
-		mode = "soloProps",
 		length = 8,
 		onSelect,
 		picked = false,
-		onBrowsingSequenceChange,
 	}: {
 		side: "left" | "right";
-		mode?: FuseMode;
 		length?: number;
 		onSelect: (seq: SequenceData) => void;
 		picked?: boolean;
-		onBrowsingSequenceChange?: (seq: SequenceData | null) => void;
 	} = $props();
 
 	const propColor = $derived<"blue" | "red">(side === "left" ? "blue" : "red");
 
-	// Build the view mode for single-prop rendering
+	// Build the view mode for single-prop rendering (always solo props)
 	const viewMode = $derived<BrowseViewMode>({
-		subject: mode === "handPaths" ? "hands" : "props",
+		subject: "props",
 		granularity: "solo",
 		color: propColor,
 	});
@@ -64,7 +58,7 @@
 
 			let filtered = allSequences;
 			if (length > 0) {
-				filtered = allSequences.filter(s => {
+				filtered = allSequences.filter((s: SequenceData) => {
 					const seqLen = s.sequenceLength ?? s.steps?.length ?? 0;
 					return seqLen === length;
 				});
@@ -80,8 +74,6 @@
 			pool = filtered;
 			poolIndex = 0;
 			currentItem = pool[0] ?? null;
-			onBrowsingSequenceChange?.(currentItem);
-
 			if (pool.length > 0) {
 				fuseState.startClock();
 			}
@@ -110,10 +102,7 @@
 				// Replace in pool
 				const idx = pool.indexOf(item);
 				if (idx >= 0) pool[idx] = full;
-				if (currentItem === item) {
-					currentItem = full;
-					onBrowsingSequenceChange?.(full);
-				}
+				if (currentItem === item) currentItem = full;
 			}
 		} catch {
 			// Keep metadata-only version
@@ -124,7 +113,6 @@
 		if (pool.length === 0) return;
 		poolIndex = (poolIndex + 1) % pool.length;
 		currentItem = pool[poolIndex] ?? null;
-		onBrowsingSequenceChange?.(currentItem);
 		if (currentItem) loadFullData(currentItem);
 	}
 
@@ -133,7 +121,6 @@
 	}
 
 	$effect(() => {
-		void mode;
 		void length;
 		loadPool();
 	});
@@ -158,7 +145,6 @@
 						<ChoreoCard
 							sequence={currentItem}
 							browseViewMode={viewMode}
-							handPathMode={mode === "handPaths"}
 							showWord={false}
 							showStepNumbers={true}
 							showDifficultyLevel={false}
@@ -183,9 +169,7 @@
 
 			<div class="card-info-row">
 				<span class="card-word">
-					{mode === "soloProps"
-						? `${propColor === "blue" ? "Blue" : "Red"} Prop`
-						: `${propColor === "blue" ? "Blue" : "Red"} Hand`}
+					{propColor === "blue" ? "Blue" : "Red"} Prop
 				</span>
 				<span class="card-counter">{poolIndex + 1} / {pool.length}</span>
 			</div>
