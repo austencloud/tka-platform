@@ -28,7 +28,7 @@
   function handleGoHome() {
     // Trigger navigation haptic feedback for home navigation
     hapticService?.trigger("selection");
-    window.location.href = "/app";
+    window.location.href = "/create";
   }
 
   // Extract error details if possible

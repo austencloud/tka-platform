@@ -16,21 +16,7 @@
   let mounted = $state(false);
   let aabbSequence = $state<SequenceData | null>(null);
 
-  onMount(async () => {
-    // If user just completed OAuth and landed back on /, redirect to the app
-    try {
-      const { getAuth } = await import("firebase/auth");
-      const { app } = await import("$lib/shared/auth/firebase");
-      const auth = getAuth(app);
-      await auth.authStateReady();
-      if (auth.currentUser) {
-        window.location.href = "/create";
-        return;
-      }
-    } catch {
-      // Auth not available — continue showing landing page
-    }
-
+  onMount(() => {
     applyThemeForBackground(DEFAULT_BACKGROUND);
     mounted = true;
 
@@ -47,7 +33,6 @@
       { threshold: 0.1, rootMargin: "0px 0px -40px 0px" }
     );
 
-    // Observe all scroll-reveal elements
     requestAnimationFrame(() => {
       document.querySelectorAll(".scroll-reveal").forEach((el) => {
         observer.observe(el);

@@ -276,7 +276,7 @@ export async function initializeModulePersistence(): Promise<void> {
       if (firstPart) {
         urlModule = firstPart.toLowerCase();
       }
-      // Tab can come from path (/admin/loop-labeler) OR query param (?section=loop-labeler)
+      // Tab can come from path (/app/admin/loop-labeler) OR query param (?section=loop-labeler)
       if (secondPart) {
         urlTab = secondPart.toLowerCase();
       } else {

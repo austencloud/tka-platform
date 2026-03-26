@@ -1,51 +1,17 @@
-import { APP_DOMAIN, LANDING_DOMAIN } from "../../config/domains";
+import { LANDING_DOMAIN } from "../../config/domains";
 import type { RequestHandler } from "./$types";
 
-// Pages for the app (tkaflowarts.com/app)
-const appPages = [
-  // Main Application - Home/Dashboard
-  {
-    url: "",
-    priority: "1.0",
-    changefreq: "weekly",
-  },
-  // Authentication
-  {
-    url: "auth/login",
-    priority: "0.6",
-    changefreq: "monthly",
-  },
-  // User Profile
-  {
-    url: "profile",
-    priority: "0.5",
-    changefreq: "monthly",
-  },
+const pages = [
+  // Landing page
+  { url: "", priority: "1.0", changefreq: "weekly" },
+  // App entry (default module)
+  { url: "create", priority: "0.9", changefreq: "weekly" },
+  // Public pages
+  { url: "profile", priority: "0.5", changefreq: "monthly" },
+  { url: "landing", priority: "0.8", changefreq: "weekly" },
 ];
 
-// Pages for the landing domain (tkaflowarts.com)
-const landingPages = [
-  // Landing page home
-  {
-    url: "",
-    priority: "1.0",
-    changefreq: "weekly",
-  },
-  // Landing page (if accessed directly)
-  {
-    url: "landing",
-    priority: "0.9",
-    changefreq: "weekly",
-  },
-];
-
-export const GET: RequestHandler = async ({ request }) => {
-  // Detect which context we're serving from based on path
-  const url = new URL(request.url);
-  const isApp = url.pathname.startsWith("/app");
-  const domain = isApp ? APP_DOMAIN : LANDING_DOMAIN;
-  const pages = isApp ? appPages : landingPages;
-
+export const GET: RequestHandler = async () => {
   const now = new Date().toISOString().split("T")[0];
 
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
@@ -54,7 +20,7 @@ export const GET: RequestHandler = async ({ request }) => {
     .map(
       (page) => `
   <url>
-    <loc>${domain}/${page.url}</loc>
+    <loc>${LANDING_DOMAIN}/${page.url}</loc>
     <lastmod>${now}</lastmod>
     <changefreq>${page.changefreq}</changefreq>
     <priority>${page.priority}</priority>
