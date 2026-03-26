@@ -13,7 +13,6 @@
 	import { setFuseContext } from "./context/fuse-context";
 	import FuseLayout from "./components/FuseLayout.svelte";
 	import FuseResultView from "./components/FuseResultView.svelte";
-	import TabIntro from "$lib/shared/onboarding/components/TabIntro.svelte";
 
 	function init(): { state: ReturnType<typeof createFuseState>; error: null } | { state: null; error: string } {
 		try {
@@ -40,7 +39,6 @@
 		<p class="error-detail">{initError}</p>
 	</div>
 {:else if fuseState}
-	<TabIntro moduleId="create" tabId="fuse" />
 	{#if fuseState.phase === "result"}
 		<FuseResultView />
 	{:else}

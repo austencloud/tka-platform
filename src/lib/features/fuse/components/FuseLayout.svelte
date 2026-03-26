@@ -8,7 +8,10 @@
 
 	import { getFuseContext } from "../context/fuse-context";
 	import FusePanel from "./FusePanel.svelte";
+	import FuseTour from "$lib/shared/onboarding/components/fuse-tour/FuseTour.svelte";
+	import { fuseTourState } from "$lib/shared/onboarding/state/fuse-tour-state.svelte";
 	import { container } from "$lib/shared/di";
+	import { onMount } from "svelte";
 	import type { IFuseAssemblyAnimator } from "../services/contracts/IFuseAssemblyAnimator";
 	import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
@@ -18,6 +21,17 @@
 	let showLengthPicker = $state(false);
 
 	const LENGTHS = [2, 4, 8, 12, 16, 24, 32];
+
+	onMount(() => {
+		fuseTourState.triggerIfFirstTime();
+	});
+
+	// Derive which section the tour wants highlighted
+	const tourHighlight = $derived(
+		fuseTourState.isActive
+			? (["all", "left", "right", "shuffle", "controls"] as const)[fuseTourState.currentStopIndex] ?? "all"
+			: null
+	);
 
 	function selectLength(len: number) {
 		fuseLength = len;
@@ -82,10 +96,17 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-<div class="fuse-layout">
+<div class="fuse-layout" class:tour-active={fuseTourState.isActive}>
+	<FuseTour />
+
 	<!-- Two panels side by side -->
 	<div class="fuse-panels">
-		<div class="panel-wrap" bind:this={leftPanelEl}>
+		<div
+			class="panel-wrap"
+			class:tour-dim={tourHighlight !== null && tourHighlight !== "all" && tourHighlight !== "left" && tourHighlight !== "shuffle"}
+			class:tour-highlight={tourHighlight === "left" || tourHighlight === "shuffle"}
+			bind:this={leftPanelEl}
+		>
 			<FusePanel
 				side="left"
 				bpm={fuseState.bpm}
@@ -95,7 +116,12 @@
 				onCurrentSequenceChange={(seq) => leftBrowsingSeq = seq}
 			/>
 		</div>
-		<div class="panel-wrap" bind:this={rightPanelEl}>
+		<div
+			class="panel-wrap"
+			class:tour-dim={tourHighlight !== null && tourHighlight !== "all" && tourHighlight !== "right" && tourHighlight !== "shuffle"}
+			class:tour-highlight={tourHighlight === "right" || tourHighlight === "shuffle"}
+			bind:this={rightPanelEl}
+		>
 			<FusePanel
 				side="right"
 				bpm={fuseState.bpm}
@@ -111,7 +137,11 @@
 	<div class="fuse-target" bind:this={fuseTargetEl} aria-hidden="true"></div>
 
 	<!-- Bottom bar: length picker, BPM, play/pause, fuse -->
-	<div class="fuse-bottom">
+	<div
+		class="fuse-bottom"
+		class:tour-dim={tourHighlight !== null && tourHighlight !== "all" && tourHighlight !== "controls"}
+		class:tour-highlight={tourHighlight === "controls"}
+	>
 		<div class="length-picker-wrap">
 			<button
 				class="length-trigger"
@@ -407,11 +437,26 @@
 		cursor: not-allowed;
 	}
 
+	/* Tour highlighting */
+	.tour-dim {
+		opacity: 0.25;
+		pointer-events: none;
+		transition: opacity 0.3s ease;
+	}
+
+	.tour-highlight {
+		position: relative;
+		z-index: 50;
+		transition: opacity 0.3s ease;
+	}
+
 	@media (prefers-reduced-motion: reduce) {
 		.length-chip,
 		.bpm-btn,
 		.play-btn,
-		.fuse-button {
+		.fuse-button,
+		.tour-dim,
+		.tour-highlight {
 			transition: none;
 		}
 	}

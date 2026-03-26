@@ -1,0 +1,114 @@
+/**
+ * Fuse Tour State
+ *
+ * Tracks whether the user has seen the Fuse tab walkthrough.
+ * Triggers automatically on first visit.
+ */
+
+const TOUR_COMPLETED_KEY = "tka-fuse-tour-completed";
+
+export type FuseTourStop =
+  | "welcome"
+  | "left-panel"
+  | "right-panel"
+  | "shuffle"
+  | "controls";
+
+const STOPS: FuseTourStop[] = [
+  "welcome",
+  "left-panel",
+  "right-panel",
+  "shuffle",
+  "controls",
+];
+
+interface FuseTourData {
+  hasCompleted: boolean;
+  isActive: boolean;
+  currentStopIndex: number;
+}
+
+function createFuseTourState() {
+  const isBrowser = typeof window !== "undefined";
+
+  const completed = isBrowser
+    ? localStorage.getItem(TOUR_COMPLETED_KEY) === "true"
+    : false;
+
+  const data = $state<FuseTourData>({
+    hasCompleted: completed,
+    isActive: false,
+    currentStopIndex: 0,
+  });
+
+  return {
+    get hasCompleted() {
+      return data.hasCompleted;
+    },
+    get isActive() {
+      return data.isActive;
+    },
+    get currentStopIndex() {
+      return data.currentStopIndex;
+    },
+    get currentStop(): FuseTourStop {
+      return STOPS[data.currentStopIndex] ?? "controls";
+    },
+    get totalStops() {
+      return STOPS.length;
+    },
+    get isLastStop() {
+      return data.currentStopIndex >= STOPS.length - 1;
+    },
+
+    triggerIfFirstTime(): boolean {
+      if (data.hasCompleted) return false;
+      data.isActive = true;
+      data.currentStopIndex = 0;
+      return true;
+    },
+
+    advance() {
+      if (data.currentStopIndex < STOPS.length - 1) {
+        data.currentStopIndex++;
+      } else {
+        this.complete();
+      }
+    },
+
+    goBack() {
+      if (data.currentStopIndex > 0) {
+        data.currentStopIndex--;
+      }
+    },
+
+    complete() {
+      if (!isBrowser) return;
+      data.isActive = false;
+      data.hasCompleted = true;
+      localStorage.setItem(TOUR_COMPLETED_KEY, "true");
+    },
+
+    skip() {
+      if (!isBrowser) return;
+      data.isActive = false;
+      data.hasCompleted = true;
+      localStorage.setItem(TOUR_COMPLETED_KEY, "true");
+    },
+
+    restart() {
+      data.isActive = true;
+      data.currentStopIndex = 0;
+    },
+
+    reset() {
+      if (!isBrowser) return;
+      data.hasCompleted = false;
+      data.isActive = false;
+      data.currentStopIndex = 0;
+      localStorage.removeItem(TOUR_COMPLETED_KEY);
+    },
+  };
+}
+
+export const fuseTourState = createFuseTourState();
