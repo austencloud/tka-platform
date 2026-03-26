@@ -129,8 +129,8 @@
 		padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
 		border: none;
 		border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
-		background: color-mix(in srgb, var(--accent) 12%, transparent);
-		color: var(--accent);
+		background: color-mix(in srgb, var(--accent) 18%, transparent);
+		color: var(--theme-text, #ffffff);
 		font-size: var(--font-size-sm, 14px);
 		font-weight: 600;
 		cursor: pointer;
@@ -138,11 +138,11 @@
 	}
 
 	.shuffle-btn:hover {
-		background: color-mix(in srgb, var(--accent) 20%, transparent);
+		background: color-mix(in srgb, var(--accent) 25%, transparent);
 	}
 
 	.shuffle-btn:active {
-		background: color-mix(in srgb, var(--accent) 28%, transparent);
+		background: color-mix(in srgb, var(--accent) 32%, transparent);
 	}
 
 	.shuffle-label {
