@@ -78,12 +78,13 @@
   onkeydown={handleKeydown}
   tabindex="-1"
 >
-  <div class="modal">
+  <div class="modal" class:expanded={showTracker}>
     <!-- Close button -->
     <button class="close-btn" onclick={onclose} aria-label="Close">
       <i class="fas fa-times" aria-hidden="true"></i>
     </button>
 
+    <div class="main-col">
     <!-- Hero image -->
     <div
       class="hero"
@@ -190,13 +191,16 @@
         </div>
       </div>
 
-      <!-- Application tracker (inline, expandable) -->
-      {#if showTracker}
-        <div class="tracker-panel">
-          <TrackerControls {festival} {tracker} />
-        </div>
-      {/if}
     </div>
+    </div>
+
+    <!-- Application tracker — side panel that widens the modal -->
+    {#if showTracker}
+      <div class="tracker-side">
+        <h3 class="tracker-heading">My Application</h3>
+        <TrackerControls {festival} {tracker} />
+      </div>
+    {/if}
   </div>
 </div>
 
@@ -215,15 +219,20 @@
   .modal {
     position: relative;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     width: 100%;
     max-width: 800px;
     max-height: 90vh;
+    transition: max-width 0.25s ease;
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
     border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: var(--radius-lg, 12px);
     overflow: hidden;
     box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
+  }
+
+  .modal.expanded {
+    max-width: 1140px;
   }
 
   .close-btn {
@@ -313,7 +322,15 @@
     backdrop-filter: blur(4px);
   }
 
-  /* ── Content ────────────────────────────────────────── */
+  /* ── Main content column ─────────────────────────────── */
+
+  .main-col {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
 
   .modal-content {
     flex: 1;
@@ -528,11 +545,30 @@
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.3));
   }
 
-  /* ── Tracker panel ──────────────────────────────────── */
+  /* ── Tracker side panel ──────────────────────────────── */
 
-  .tracker-panel {
-    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
-    padding-top: 1rem;
+  .tracker-side {
+    width: 340px;
+    flex-shrink: 0;
+    border-left: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.02));
+    overflow-y: auto;
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb, rgba(255, 255, 255, 0.15)) transparent;
+  }
+
+  .tracker-heading {
+    margin: 0 0 1rem;
+    font-size: var(--font-size-sm, 14px);
+    font-weight: 600;
+    color: var(--theme-text, #ffffff);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    opacity: 0.7;
   }
 
   /* ── Responsive ─────────────────────────────────────── */
