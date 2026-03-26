@@ -32,7 +32,11 @@
 
 <section class="guides" id="guides">
   <div class="container">
-    <h2>Learn TKA</h2>
+    <h2>Printable guides</h2>
+    <p class="section-intro">
+      Learn the notation at your own pace. Print these, stick them on your wall,
+      bring them to jams. Start with Level 1.
+    </p>
 
     <div class="guides-grid">
       {#each guides as guide}
@@ -48,7 +52,7 @@
             <span class="guide-level">Level {guide.level}</span>
             <h3>{guide.title}</h3>
             <p>{guide.description}</p>
-            <a href={guide.href} download class="download-btn">
+            <a href={guide.href} download class="download-link">
               <i class="fas fa-download" aria-hidden="true"></i>
               Download PDF
             </a>
@@ -72,11 +76,21 @@
   }
 
   h2 {
-    font-size: clamp(2rem, 5vw, 3rem);
-    margin-bottom: 3rem;
+    font-family: "Instrument Serif", Georgia, serif;
+    font-size: clamp(1.6rem, 4vw, 2.2rem);
+    margin-bottom: 12px;
     text-align: center;
-    font-weight: 600;
+    font-weight: 400;
     line-height: 1.2;
+  }
+
+  .section-intro {
+    text-align: center;
+    font-size: var(--font-size-sm, 0.875rem);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    max-width: 480px;
+    margin: 0 auto 3rem;
+    line-height: 1.7;
   }
 
   .guides-grid {
@@ -144,24 +158,25 @@
     flex: 1;
   }
 
-  .download-btn {
+  .download-link {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     margin-top: 8px;
-    padding: 10px 20px;
-    background: var(--accent);
-    color: #fff;
-    border-radius: 8px;
+    color: var(--accent);
     text-decoration: none;
     font-size: var(--font-size-sm, 0.875rem);
     font-weight: 600;
-    transition: opacity var(--duration-normal, 0.2s) ease;
+    transition: color var(--duration-normal, 0.2s) ease;
     align-self: flex-start;
   }
 
-  .download-btn:hover {
-    opacity: 0.85;
+  .download-link:hover {
+    color: var(--theme-text, #fff);
+  }
+
+  .download-link i {
+    font-size: 0.75rem;
   }
 
   .closing {
@@ -176,7 +191,7 @@
       transition: none;
     }
 
-    .download-btn {
+    .download-link {
       transition: none;
     }
   }
