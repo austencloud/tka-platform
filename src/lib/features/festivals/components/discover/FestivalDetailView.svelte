@@ -5,7 +5,6 @@
   import { toDate } from "../../domain/models/timestamp-utils";
   import { getFestivalContext } from "../../context/festival-context";
   import TrackerControls from "./TrackerControls.svelte";
-  import FestivalMaterialsPanel from "./FestivalMaterialsPanel.svelte";
 
   interface Props {
     festival: Festival;
@@ -205,7 +204,6 @@
         <!-- Right column: tracker & materials -->
         <div class="info-right">
           <TrackerControls {festival} {tracker} />
-          <FestivalMaterialsPanel />
         </div>
       </div>
     </div>
