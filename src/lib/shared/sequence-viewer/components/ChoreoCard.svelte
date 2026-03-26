@@ -1009,10 +1009,19 @@
     } finally {
       isRendering = false;
       suppressObserverUpdates = false;
+      // Suppress flip animations during the post-render dimension adjustment.
+      // Without this, updateContainedDimensions() resizes the grid, triggering
+      // animate:flip on all cells. If hasMounted becomes true in the same Svelte
+      // batch (via the .then() callback), flipDuration jumps from 0 to 250ms and
+      // the animation can be interrupted by a queued re-render, leaving transforms
+      // stuck at ~97% completion (visible as shrunken cells with black gaps).
+      suppressFlip = true;
       // Measurements were suppressed during rendering to prevent per-cell jumps.
       // Run them once now that all cells are loaded.
       updateCellWidth();
       updateContainedDimensions();
+      // Re-enable flip after the dimension adjustment settles
+      requestAnimationFrame(() => { suppressFlip = false; });
       // If a render was requested while we were busy, run it now
       if (renderQueued) {
         renderQueued = false;

@@ -12,10 +12,15 @@
    * - Handle HMR-related module loading failures gracefully
    */
   import { isModuleActive } from "../application/state/ui/ui-state.svelte";
+  import { getIsTransitioning } from "../application/state/ui/ui-state.svelte";
   import { registerModuleCacheClear } from "../hmr-helper";
   import type { Component } from "svelte";
   import { onMount, onDestroy } from "svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
+
+  // Only assign view-transition-name during module switches.
+  // If set permanently, ANY view transition on the page captures this element.
+  const vtName = $derived(getIsTransitioning() ? 'module-content' : undefined);
 
   interface Props {
     activeModule: string | null;
@@ -158,7 +163,7 @@
   <!-- Transition container for overlaying content -->
   <div class="transition-container">
     {#key activeModule}
-      <div class="module-content">
+      <div class="module-content" style:view-transition-name={vtName}>
         {#await modulePromise}
           <!-- Loading state while module chunk is being fetched -->
           <div

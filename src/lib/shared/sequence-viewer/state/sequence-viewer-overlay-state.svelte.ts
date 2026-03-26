@@ -28,6 +28,7 @@ let _initialStep = $state(0);
 let _dismissPath = $state<string | null>(null);
 let _viewingContext = $state<ViewingContext>('notation');
 
+
 // ============================================================================
 // PUBLIC API
 // ============================================================================

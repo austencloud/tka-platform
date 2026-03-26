@@ -216,16 +216,14 @@
           <i class="fas fa-floppy-disk" aria-hidden="true"></i>
         </button>
       {/if}
-      {#if isOwned && isSaved}
-        <button
-          type="button"
-          class="landscape-btn edit"
-          onclick={onEdit}
-          aria-label="Remix"
-        >
-          <i class="fas fa-pen-to-square" aria-hidden="true"></i>
-        </button>
-      {/if}
+      <button
+        type="button"
+        class="landscape-btn edit"
+        onclick={onEdit}
+        aria-label="Remix"
+      >
+        <i class="fas fa-pen-to-square" aria-hidden="true"></i>
+      </button>
     {/if}
     {#if isLoggedIn && onVideoUpload}
       <button
@@ -391,18 +389,16 @@
               </button>
             {/if}
 
-            <!-- Remix (owner only, when saved) -->
-            {#if isOwned && isSaved}
-              <button
-                type="button"
-                class="action-btn edit"
-                onclick={onEdit}
-                aria-label="Remix"
-              >
-                <i class="fas fa-pen-to-square" aria-hidden="true"></i>
-                <span>Remix</span>
-              </button>
-            {/if}
+            <!-- Remix -->
+            <button
+              type="button"
+              class="action-btn edit"
+              onclick={onEdit}
+              aria-label="Remix"
+            >
+              <i class="fas fa-pen-to-square" aria-hidden="true"></i>
+              <span>Remix</span>
+            </button>
           {:else}
             <button
               type="button"

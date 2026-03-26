@@ -332,8 +332,8 @@ export async function handleModuleChange(
 // Note: Compose module playback is an overlay, not a tab
 const TAB_ORDERS: Record<string, string[]> = {
   create: [
-    "construct",
     "assemble",
+    "construct",
     "generate",
     "fuse",
     "spell",
