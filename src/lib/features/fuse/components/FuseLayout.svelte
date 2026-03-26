@@ -108,7 +108,7 @@
 		{:else}
 			<div
 				class="panel-wrap"
-				class:tour-dim={tourHighlight === "controls"}
+				class:tour-dim={tourHighlight === "controls" || tourHighlight === "all"}
 				class:tour-hidden={tourHighlight === "right"}
 				bind:this={leftPanelEl}
 			>
@@ -128,7 +128,7 @@
 			<div class="panel-wrap tour-card-slot">
 				<FuseTour />
 			</div>
-		{:else if tourHighlight === "welcome"}
+		{:else if tourHighlight === "all"}
 			<!-- Welcome: tour card replaces right panel, left dimmed -->
 			<div class="panel-wrap tour-card-slot">
 				<FuseTour />
