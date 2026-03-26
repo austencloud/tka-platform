@@ -84,120 +84,118 @@
       <i class="fas fa-times" aria-hidden="true"></i>
     </button>
 
-    <div class="modal-layout">
-      <!-- Left column: image + info -->
-      <div class="left-col">
-        <!-- Image -->
-        <div
-          class="festival-image"
-          style="--fallback-bg: linear-gradient(135deg, hsl({nameHue}, 60%, 25%), hsl({nameHue}, 60%, 15%))"
-        >
-          {#if festival.imageUrl && !imageError}
-            <img
-              src={festival.imageUrl}
-              alt={festival.name}
-              class="fest-img"
-              class:loaded={imageLoaded}
-              onload={() => (imageLoaded = true)}
-              onerror={() => (imageError = true)}
-            />
+    <!-- Hero image -->
+    <div
+      class="hero"
+      style="--fallback-bg: linear-gradient(135deg, hsl({nameHue}, 60%, 25%), hsl({nameHue}, 60%, 15%))"
+    >
+      {#if festival.imageUrl && !imageError}
+        <img
+          src={festival.imageUrl}
+          alt={festival.name}
+          class="hero-img"
+          class:loaded={imageLoaded}
+          onload={() => (imageLoaded = true)}
+          onerror={() => (imageError = true)}
+        />
+      {/if}
+
+      <div class="fallback-text" class:hidden={imageLoaded && !imageError}>
+        <span>{festival.name}</span>
+      </div>
+
+      <span class="region-badge">{regionLabels[festival.region] ?? festival.region}</span>
+    </div>
+
+    <!-- Content -->
+    <div class="modal-content">
+      <!-- Title bar -->
+      <div class="title-bar">
+        <h2 class="festival-title">{festival.name}</h2>
+        <div class="title-actions">
+          {#if festival.estimatedSize}
+            <span class="size-badge">{festival.estimatedSize}</span>
           {/if}
-
-          <div class="fallback-text" class:hidden={imageLoaded && !imageError}>
-            <span>{festival.name}</span>
-          </div>
-
-          <span class="region-badge">{regionLabels[festival.region] ?? festival.region}</span>
-        </div>
-
-        <!-- Info below image -->
-        <div class="info-section">
-          <div class="title-row">
-            <h2 class="festival-title">{festival.name}</h2>
-            <div class="title-badges">
-              {#if festival.estimatedSize}
-                <span class="size-badge">{festival.estimatedSize}</span>
-              {/if}
-              {#if attendanceCount > 0}
-                <span class="attendance-badge">
-                  <i class="fas fa-user-check" aria-hidden="true"></i>
-                  {attendanceCount}
-                </span>
-              {/if}
-            </div>
-          </div>
-
-          <dl class="info-grid">
-            <div class="info-item">
-              <dt><i class="fas fa-building" aria-hidden="true"></i></dt>
-              <dd>{festival.organization}</dd>
-            </div>
-            <div class="info-item">
-              <dt><i class="fas fa-calendar-alt" aria-hidden="true"></i></dt>
-              <dd>{dateRange}</dd>
-            </div>
-            <div class="info-item">
-              <dt><i class="fas fa-map-marker-alt" aria-hidden="true"></i></dt>
-              <dd>{locationFull}</dd>
-            </div>
-            {#if deadlineFormatted}
-              <div class="info-item deadline">
-                <dt><i class="fas fa-clock" aria-hidden="true"></i></dt>
-                <dd>Deadline: {deadlineFormatted}</dd>
-              </div>
-            {/if}
-          </dl>
-
-          {#if festival.description}
-            <p class="description">{festival.description}</p>
+          {#if attendanceCount > 0}
+            <span class="attendance-badge">
+              <i class="fas fa-user-check" aria-hidden="true"></i>
+              {attendanceCount}
+            </span>
           {/if}
-
-          {#if festival.tags.length > 0}
-            <div class="tags-row">
-              {#each festival.tags as tag}
-                <span class="tag">{tag}</span>
-              {/each}
-            </div>
-          {/if}
-
-          <div class="action-buttons">
-            {#if festival.applicationUrl}
-              <a href={festival.applicationUrl} target="_blank" rel="noopener noreferrer" class="apply-btn">
-                <i class="fas fa-external-link-alt" aria-hidden="true"></i> Apply Now
-              </a>
-            {/if}
-            {#if festival.websiteUrl}
-              <a href={festival.websiteUrl} target="_blank" rel="noopener noreferrer" class="link-btn">
-                <i class="fas fa-globe" aria-hidden="true"></i> Website
-              </a>
-            {/if}
-            {#if festival.applicationContact}
-              <a href="mailto:{festival.applicationContact}" class="link-btn">
-                <i class="fas fa-envelope" aria-hidden="true"></i> {festival.applicationContact}
-              </a>
-            {/if}
-          </div>
+          <button
+            class="app-toggle"
+            class:active={showTracker}
+            onclick={() => (showTracker = !showTracker)}
+            aria-expanded={showTracker}
+          >
+            <i class="fas fa-clipboard-list" aria-hidden="true"></i>
+            My Application
+          </button>
         </div>
       </div>
 
-      <!-- Right column: application tracker (collapsed by default) -->
-      <div class="right-col">
-        <button
-          class="tracker-toggle"
-          onclick={() => (showTracker = !showTracker)}
-          aria-expanded={showTracker}
-        >
-          <i class="fas fa-clipboard-list" aria-hidden="true"></i>
-          <span>My Application</span>
-          <i class="fas fa-chevron-{showTracker ? 'up' : 'down'} toggle-icon" aria-hidden="true"></i>
-        </button>
-
-        {#if showTracker}
-          <div class="tracker-content">
-            <TrackerControls {festival} {tracker} />
-          </div>
+      <!-- Info row -->
+      <div class="info-row">
+        <span class="info-chip">
+          <i class="fas fa-building" aria-hidden="true"></i>
+          {festival.organization}
+        </span>
+        <span class="info-chip">
+          <i class="fas fa-calendar-alt" aria-hidden="true"></i>
+          {dateRange}
+        </span>
+        <span class="info-chip">
+          <i class="fas fa-map-marker-alt" aria-hidden="true"></i>
+          {locationFull}
+        </span>
+        {#if deadlineFormatted}
+          <span class="info-chip deadline">
+            <i class="fas fa-clock" aria-hidden="true"></i>
+            Deadline: {deadlineFormatted}
+          </span>
         {/if}
       </div>
+
+      <!-- Description -->
+      {#if festival.description}
+        <p class="description">{festival.description}</p>
+      {/if}
+
+      <!-- Tags + actions -->
+      <div class="bottom-row">
+        {#if festival.tags.length > 0}
+          <div class="tags">
+            {#each festival.tags as tag}
+              <span class="tag">{tag}</span>
+            {/each}
+          </div>
+        {/if}
+
+        <div class="actions">
+          {#if festival.applicationUrl}
+            <a href={festival.applicationUrl} target="_blank" rel="noopener noreferrer" class="apply-btn">
+              <i class="fas fa-external-link-alt" aria-hidden="true"></i> Apply
+            </a>
+          {/if}
+          {#if festival.websiteUrl}
+            <a href={festival.websiteUrl} target="_blank" rel="noopener noreferrer" class="link-btn">
+              <i class="fas fa-globe" aria-hidden="true"></i> Website
+            </a>
+          {/if}
+          {#if festival.applicationContact}
+            <a href="mailto:{festival.applicationContact}" class="link-btn">
+              <i class="fas fa-envelope" aria-hidden="true"></i> Contact
+            </a>
+          {/if}
+        </div>
+      </div>
+
+      <!-- Application tracker (inline, expandable) -->
+      {#if showTracker}
+        <div class="tracker-panel">
+          <TrackerControls {festival} {tracker} />
+        </div>
+      {/if}
     </div>
   </div>
 </div>
@@ -216,8 +214,10 @@
 
   .modal {
     position: relative;
+    display: flex;
+    flex-direction: column;
     width: 100%;
-    max-width: 1100px;
+    max-width: 800px;
     max-height: 90vh;
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
     border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
@@ -248,7 +248,7 @@
 
   .close-btn:hover {
     background: rgba(0, 0, 0, 0.75);
-    color: #ffffff;
+    color: #fff;
   }
 
   .close-btn:focus-visible {
@@ -256,41 +256,18 @@
     outline-offset: 2px;
   }
 
-  /* ── Two-column layout ─────────────────────────────── */
+  /* ── Hero ───────────────────────────────────────────── */
 
-  .modal-layout {
-    display: grid;
-    grid-template-columns: 1fr 340px;
-    max-height: 90vh;
-    overflow: hidden;
-  }
-
-  /* ── Left column ───────────────────────────────────── */
-
-  .left-col {
-    overflow-y: auto;
-    scrollbar-width: thin;
-    scrollbar-color: var(--scrollbar-thumb, rgba(255, 255, 255, 0.15)) transparent;
-  }
-
-  .left-col::-webkit-scrollbar { width: 6px; }
-  .left-col::-webkit-scrollbar-track { background: transparent; }
-  .left-col::-webkit-scrollbar-thumb {
-    background: var(--scrollbar-thumb, rgba(255, 255, 255, 0.15));
-    border-radius: 3px;
-  }
-
-  /* ── Festival image ────────────────────────────────── */
-
-  .festival-image {
+  .hero {
     position: relative;
     width: 100%;
-    aspect-ratio: 16 / 9;
+    aspect-ratio: 21 / 9;
     overflow: hidden;
     background: var(--fallback-bg);
+    flex-shrink: 0;
   }
 
-  .fest-img {
+  .hero-img {
     position: absolute;
     inset: 0;
     width: 100%;
@@ -300,7 +277,7 @@
     transition: opacity 0.3s ease;
   }
 
-  .fest-img.loaded {
+  .hero-img.loaded {
     opacity: 1;
   }
 
@@ -336,39 +313,55 @@
     backdrop-filter: blur(4px);
   }
 
-  /* ── Info section ──────────────────────────────────── */
+  /* ── Content ────────────────────────────────────────── */
 
-  .info-section {
-    padding: 1.5rem;
+  .modal-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.25rem 1.5rem 1.5rem;
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 0.875rem;
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb, rgba(255, 255, 255, 0.15)) transparent;
   }
 
-  .title-row {
+  .modal-content::-webkit-scrollbar { width: 6px; }
+  .modal-content::-webkit-scrollbar-track { background: transparent; }
+  .modal-content::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb, rgba(255, 255, 255, 0.15));
+    border-radius: 3px;
+  }
+
+  /* ── Title bar ──────────────────────────────────────── */
+
+  .title-bar {
     display: flex;
     align-items: flex-start;
     gap: 12px;
+    flex-wrap: wrap;
   }
 
   .festival-title {
     margin: 0;
-    font-size: 1.5rem;
+    font-size: 1.4rem;
     font-weight: 700;
     color: var(--theme-text, #ffffff);
     flex: 1;
+    min-width: 200px;
     line-height: 1.2;
   }
 
-  .title-badges {
+  .title-actions {
     display: flex;
     gap: 8px;
     align-items: center;
     flex-shrink: 0;
+    flex-wrap: wrap;
   }
 
   .size-badge {
-    padding: 3px 10px;
+    padding: 4px 10px;
     border-radius: 8px;
     font-size: var(--font-size-compact, 12px);
     font-weight: 500;
@@ -382,7 +375,7 @@
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    padding: 3px 10px;
+    padding: 4px 10px;
     border-radius: 8px;
     font-size: var(--font-size-compact, 12px);
     font-weight: 500;
@@ -393,39 +386,68 @@
 
   .attendance-badge i { font-size: 11px; }
 
-  /* ── Info grid ─────────────────────────────────────── */
-
-  .info-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin: 0;
+  .app-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    background: transparent;
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
+    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.7));
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
   }
 
-  .info-item {
+  .app-toggle:hover {
+    background: var(--theme-card-bg-hover, rgba(255, 255, 255, 0.06));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.25));
+    color: var(--theme-text, #ffffff);
+  }
+
+  .app-toggle.active {
+    background: color-mix(in srgb, var(--theme-accent, #6366f1) 15%, transparent);
+    border-color: var(--theme-accent, #6366f1);
+    color: var(--theme-accent, #6366f1);
+  }
+
+  /* ── Info chips ─────────────────────────────────────── */
+
+  .info-row {
     display: flex;
-    align-items: baseline;
+    flex-wrap: wrap;
     gap: 8px;
   }
 
-  .info-item dt {
-    font-size: 13px;
-    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.4));
-    width: 16px;
-    text-align: center;
+  .info-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 8px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+    font-size: var(--font-size-sm, 14px);
+    color: var(--theme-text, #ffffff);
+  }
+
+  .info-chip i {
+    font-size: 12px;
+    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.45));
     flex-shrink: 0;
   }
 
-  .info-item dd {
-    margin: 0;
-    font-size: var(--font-size-sm, 14px);
-    color: var(--theme-text, #ffffff);
-    line-height: 1.4;
-  }
-
-  .info-item.deadline dd {
+  .info-chip.deadline {
+    background: rgba(234, 179, 8, 0.08);
+    border-color: rgba(234, 179, 8, 0.2);
     color: #eab308;
   }
+
+  .info-chip.deadline i { color: #eab308; }
+
+  /* ── Description ────────────────────────────────────── */
 
   .description {
     margin: 0;
@@ -434,10 +456,22 @@
     line-height: 1.6;
   }
 
-  .tags-row {
+  /* ── Bottom row ─────────────────────────────────────── */
+
+  .bottom-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .tags {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
+    flex: 1;
+    min-width: 0;
   }
 
   .tag {
@@ -449,21 +483,21 @@
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
-  .action-buttons {
+  .actions {
     display: flex;
-    flex-wrap: wrap;
     gap: 8px;
+    flex-shrink: 0;
   }
 
   .apply-btn {
     display: inline-flex;
     align-items: center;
-    gap: 7px;
-    padding: 10px 20px;
+    gap: 6px;
+    padding: 8px 16px;
     background: var(--theme-accent, #6366f1);
     border: none;
-    border-radius: 10px;
-    color: #ffffff;
+    border-radius: 8px;
+    color: #fff;
     font-size: var(--font-size-sm, 14px);
     font-weight: 600;
     text-decoration: none;
@@ -476,11 +510,11 @@
   .link-btn {
     display: inline-flex;
     align-items: center;
-    gap: 7px;
-    padding: 10px 20px;
+    gap: 6px;
+    padding: 8px 16px;
     background: transparent;
     border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.2));
-    border-radius: 10px;
+    border-radius: 8px;
     color: var(--theme-text, #ffffff);
     font-size: var(--font-size-sm, 14px);
     font-weight: 500;
@@ -494,74 +528,31 @@
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.3));
   }
 
-  /* ── Right column ──────────────────────────────────── */
+  /* ── Tracker panel ──────────────────────────────────── */
 
-  .right-col {
-    border-left: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
-    display: flex;
-    flex-direction: column;
-    overflow-y: auto;
-    scrollbar-width: thin;
-    scrollbar-color: var(--scrollbar-thumb, rgba(255, 255, 255, 0.15)) transparent;
+  .tracker-panel {
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+    padding-top: 1rem;
   }
 
-  .tracker-toggle {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    width: 100%;
-    padding: 16px 20px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
-    border: none;
-    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
-    color: var(--theme-text, #ffffff);
-    font-size: var(--font-size-sm, 14px);
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.15s ease;
+  /* ── Responsive ─────────────────────────────────────── */
+
+  @media (max-width: 600px) {
+    .backdrop { padding: 0.75rem; }
+
+    .hero { aspect-ratio: 16 / 9; }
+
+    .fallback-text { font-size: 1.25rem; }
+
+    .modal-content { padding: 1rem; }
+
+    .bottom-row { flex-direction: column; }
   }
 
-  .tracker-toggle:hover {
-    background: var(--theme-card-bg-hover, rgba(255, 255, 255, 0.06));
-  }
-
-  .tracker-toggle span {
-    flex: 1;
-    text-align: left;
-  }
-
-  .toggle-icon {
-    font-size: 11px;
-    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.5));
-  }
-
-  .tracker-content {
-    padding: 16px 20px;
-  }
-
-  /* ── Responsive ────────────────────────────────────── */
-
-  @media (max-width: 768px) {
-    .backdrop { padding: 1rem; }
-
-    .modal-layout {
-      grid-template-columns: 1fr;
-    }
-
-    .right-col {
-      border-left: none;
-      border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
-    }
-  }
-
-  /* ── Reduced motion ────────────────────────────────── */
+  /* ── Reduced motion ─────────────────────────────────── */
 
   @media (prefers-reduced-motion: reduce) {
-    .fest-img,
-    .close-btn,
-    .apply-btn,
-    .link-btn,
-    .tracker-toggle {
+    .hero-img, .close-btn, .apply-btn, .link-btn, .app-toggle {
       transition: none;
     }
   }
