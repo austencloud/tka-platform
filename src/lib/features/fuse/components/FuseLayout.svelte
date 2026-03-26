@@ -291,6 +291,10 @@
 		padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px);
 	}
 
+	.fuse-tempo :global(.tempo-control) {
+		width: auto;
+	}
+
 	.play-pause-btn {
 		display: flex;
 		align-items: center;
