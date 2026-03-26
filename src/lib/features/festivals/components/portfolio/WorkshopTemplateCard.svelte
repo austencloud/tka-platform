@@ -99,20 +99,24 @@
   <div class="level-accent"></div>
 
   <div class="card-hero">
-    <div class="card-pattern">
-      {#each circles as circle}
-        <div
-          class="pattern-circle"
-          style="width:{circle.size}px;height:{circle.size}px;top:{circle.top}%;left:{circle.left}%"
-        ></div>
-      {/each}
-      {#each lines as line}
-        <div
-          class="pattern-line"
-          style="width:{line.width}px;top:{line.top}%;left:{line.left}%;transform:rotate({line.angle}deg)"
-        ></div>
-      {/each}
-    </div>
+    {#if workshop.imageUrl}
+      <img class="card-hero-image" src={workshop.imageUrl} alt="{workshop.title} cover" />
+    {:else}
+      <div class="card-pattern">
+        {#each circles as circle}
+          <div
+            class="pattern-circle"
+            style="width:{circle.size}px;height:{circle.size}px;top:{circle.top}%;left:{circle.left}%"
+          ></div>
+        {/each}
+        {#each lines as line}
+          <div
+            class="pattern-line"
+            style="width:{line.width}px;top:{line.top}%;left:{line.left}%;transform:rotate({line.angle}deg)"
+          ></div>
+        {/each}
+      </div>
+    {/if}
 
     {#if workshop.props.length > 0}
       <div class="card-props">
@@ -194,6 +198,14 @@
     right: 0;
     height: 70%;
     background: linear-gradient(to top, var(--theme-card-bg, rgba(13, 13, 26, 0.95)), transparent);
+  }
+
+  .card-hero-image {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
 
   .card-pattern {
