@@ -83,9 +83,9 @@
       <i class="fas fa-times" aria-hidden="true"></i>
     </button>
 
-    <!-- Hero image -->
+    <!-- Hero image — compact banner, not tall crop -->
     <div
-      class="hero-image"
+      class="hero-banner"
       style="--fallback-bg: linear-gradient(135deg, hsl({nameHue}, 60%, 25%), hsl({nameHue}, 60%, 15%))"
     >
       {#if festival.imageUrl && !imageError}
@@ -106,106 +106,104 @@
       <span class="region-badge">{regionLabels[festival.region] ?? festival.region}</span>
     </div>
 
-    <!-- Body -->
+    <!-- Scrollable content -->
     <div class="modal-body">
-      <!-- Title row -->
+
+      <!-- Title + size -->
       <div class="title-row">
         <h2 class="festival-title">{festival.name}</h2>
-        {#if festival.estimatedSize}
-          <span class="size-badge">{festival.estimatedSize}</span>
+        <div class="title-badges">
+          {#if festival.estimatedSize}
+            <span class="size-badge">{festival.estimatedSize}</span>
+          {/if}
+          {#if attendanceCount > 0}
+            <span class="attendance-badge">
+              <i class="fas fa-user-check" aria-hidden="true"></i>
+              {attendanceCount} going
+            </span>
+          {/if}
+        </div>
+      </div>
+
+      <!-- Metadata row — horizontal pills -->
+      <div class="meta-pills">
+        <div class="meta-pill">
+          <i class="fas fa-building" aria-hidden="true"></i>
+          <span>{festival.organization}</span>
+        </div>
+        <div class="meta-pill">
+          <i class="fas fa-calendar-alt" aria-hidden="true"></i>
+          <span>{dateRange}</span>
+        </div>
+        <div class="meta-pill">
+          <i class="fas fa-map-marker-alt" aria-hidden="true"></i>
+          <span>{locationFull}</span>
+        </div>
+        {#if deadlineFormatted}
+          <div class="meta-pill deadline">
+            <i class="fas fa-clock" aria-hidden="true"></i>
+            <span>Deadline: {deadlineFormatted}</span>
+          </div>
         {/if}
       </div>
 
-      <!-- Two-column info layout -->
-      <div class="info-columns">
-        <!-- Left column: festival details -->
-        <div class="info-left">
-          <dl class="info-grid">
-            <div class="info-row">
-              <dt><i class="fas fa-building" aria-hidden="true"></i> Organizer</dt>
-              <dd>{festival.organization}</dd>
-            </div>
-            <div class="info-row">
-              <dt><i class="fas fa-calendar-alt" aria-hidden="true"></i> Dates</dt>
-              <dd>{dateRange}</dd>
-            </div>
-            <div class="info-row">
-              <dt><i class="fas fa-map-marker-alt" aria-hidden="true"></i> Location</dt>
-              <dd>{locationFull}</dd>
-            </div>
-            {#if deadlineFormatted}
-              <div class="info-row">
-                <dt><i class="fas fa-clock" aria-hidden="true"></i> Deadline</dt>
-                <dd>{deadlineFormatted}</dd>
-              </div>
+      <!-- Description -->
+      {#if festival.description}
+        <p class="description">{festival.description}</p>
+      {/if}
+
+      <!-- Tags + Apply — side by side -->
+      <div class="tags-and-actions">
+        {#if festival.tags.length > 0}
+          <div class="tags-row">
+            {#each festival.tags as tag}
+              <span class="tag">{tag}</span>
+            {/each}
+          </div>
+        {/if}
+
+        {#if festival.applicationUrl || festival.websiteUrl}
+          <div class="action-buttons">
+            {#if festival.applicationUrl}
+              <a
+                href={festival.applicationUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="apply-btn"
+              >
+                <i class="fas fa-external-link-alt" aria-hidden="true"></i>
+                Apply Now
+              </a>
             {/if}
-          </dl>
-
-          {#if festival.description}
-            <p class="description">{festival.description}</p>
-          {/if}
-
-          {#if festival.tags.length > 0}
-            <div class="tags-row">
-              {#each festival.tags as tag}
-                <span class="tag">{tag}</span>
-              {/each}
-            </div>
-          {/if}
-
-          <!-- Apply actions -->
-          {#if festival.applicationUrl || festival.applicationContact || festival.websiteUrl}
-            <div class="apply-section">
-              <div class="apply-actions">
-                {#if festival.applicationUrl}
-                  <a
-                    href={festival.applicationUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="apply-btn"
-                  >
-                    <i class="fas fa-external-link-alt" aria-hidden="true"></i>
-                    Apply Now
-                  </a>
-                {/if}
-                {#if festival.websiteUrl}
-                  <a
-                    href={festival.websiteUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="link-btn"
-                  >
-                    <i class="fas fa-globe" aria-hidden="true"></i>
-                    Website
-                  </a>
-                {/if}
-              </div>
-              {#if festival.applicationContact}
-                <p class="contact-line">
-                  <i class="fas fa-envelope" aria-hidden="true"></i>
-                  <a href="mailto:{festival.applicationContact}" class="email-link">
-                    {festival.applicationContact}
-                  </a>
-                </p>
-              {/if}
-            </div>
-          {/if}
-
-          {#if attendanceCount > 0}
-            <div class="attendance-row">
-              <i class="fas fa-user-check" aria-hidden="true"></i>
-              <span>
-                {attendanceCount} {attendanceCount === 1 ? "person" : "people"} going
-              </span>
-            </div>
-          {/if}
-        </div>
-
-        <!-- Right column: tracker & materials -->
-        <div class="info-right">
-          <TrackerControls {festival} {tracker} />
-        </div>
+            {#if festival.websiteUrl}
+              <a
+                href={festival.websiteUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="link-btn"
+              >
+                <i class="fas fa-globe" aria-hidden="true"></i>
+                Website
+              </a>
+            {/if}
+          </div>
+        {/if}
       </div>
+
+      {#if festival.applicationContact}
+        <p class="contact-line">
+          <i class="fas fa-envelope" aria-hidden="true"></i>
+          <a href="mailto:{festival.applicationContact}" class="email-link">
+            {festival.applicationContact}
+          </a>
+        </p>
+      {/if}
+
+      <!-- Tracker — full width section -->
+      <div class="tracker-section">
+        <TrackerControls {festival} {tracker} />
+      </div>
+
     </div>
   </div>
 </div>
@@ -227,7 +225,7 @@
     display: flex;
     flex-direction: column;
     width: 100%;
-    max-width: 1200px;
+    max-width: 900px;
     max-height: 92vh;
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
     border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
@@ -266,12 +264,12 @@
     outline-offset: 2px;
   }
 
-  /* ── Hero image ────────────────────────────────────── */
+  /* ── Hero banner — compact, not tall ───────────────── */
 
-  .hero-image {
+  .hero-banner {
     position: relative;
     width: 100%;
-    height: 280px;
+    height: 180px;
     overflow: hidden;
     background: var(--fallback-bg);
     flex-shrink: 0;
@@ -283,6 +281,7 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
+    object-position: center 30%;
     opacity: 0;
     transition: opacity 0.3s ease;
   }
@@ -297,9 +296,9 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 2rem;
+    padding: 1.5rem;
     text-align: center;
-    font-size: 2rem;
+    font-size: 1.75rem;
     font-weight: 700;
     color: rgba(255, 255, 255, 0.8);
     text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
@@ -328,33 +327,28 @@
   .modal-body {
     flex: 1;
     overflow-y: auto;
-    padding: 1.5rem;
+    padding: 1.5rem 2rem;
     display: flex;
     flex-direction: column;
-    gap: 1.25rem;
+    gap: 1rem;
     scrollbar-width: thin;
     scrollbar-color: var(--scrollbar-thumb, rgba(255, 255, 255, 0.15)) transparent;
   }
 
-  .modal-body::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  .modal-body::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
+  .modal-body::-webkit-scrollbar { width: 6px; }
+  .modal-body::-webkit-scrollbar-track { background: transparent; }
   .modal-body::-webkit-scrollbar-thumb {
     background: var(--scrollbar-thumb, rgba(255, 255, 255, 0.15));
     border-radius: 3px;
   }
 
-  /* ── Title row ─────────────────────────────────────── */
+  /* ── Title ─────────────────────────────────────────── */
 
   .title-row {
     display: flex;
     align-items: flex-start;
     gap: 12px;
+    flex-wrap: wrap;
   }
 
   .festival-title {
@@ -363,7 +357,15 @@
     font-weight: 700;
     color: var(--theme-text, #ffffff);
     flex: 1;
+    min-width: 200px;
     line-height: 1.2;
+  }
+
+  .title-badges {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-shrink: 0;
   }
 
   .size-badge {
@@ -375,90 +377,62 @@
     background: rgba(255, 255, 255, 0.06);
     color: var(--theme-text-secondary, rgba(255, 255, 255, 0.6));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    white-space: nowrap;
+  }
+
+  .attendance-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 8px;
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 500;
+    background: rgba(34, 197, 94, 0.1);
+    color: var(--semantic-success, #22c55e);
+    border: 1px solid rgba(34, 197, 94, 0.2);
+  }
+
+  .attendance-badge i {
+    font-size: 11px;
+  }
+
+  /* ── Metadata pills ────────────────────────────────── */
+
+  .meta-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .meta-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 10px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+    font-size: var(--font-size-sm, 14px);
+    color: var(--theme-text, #ffffff);
+  }
+
+  .meta-pill i {
+    font-size: 12px;
+    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.5));
     flex-shrink: 0;
   }
 
-  /* ── Two-column layout ─────────────────────────────── */
-
-  .info-columns {
-    display: grid;
-    grid-template-columns: 1fr 320px;
-    gap: 1.5rem;
+  .meta-pill.deadline {
+    background: rgba(234, 179, 8, 0.08);
+    border-color: rgba(234, 179, 8, 0.2);
+    color: #eab308;
   }
 
-  .info-left {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
+  .meta-pill.deadline i {
+    color: #eab308;
   }
 
-  .info-right {
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
-    border-radius: var(--radius-lg, 12px);
-    padding: 1rem;
-    align-self: start;
-    overflow-y: auto;
-    scrollbar-width: thin;
-    scrollbar-color: var(--scrollbar-thumb, rgba(255, 255, 255, 0.15)) transparent;
-  }
-
-  @media (max-width: 768px) {
-    .info-columns {
-      grid-template-columns: 1fr;
-    }
-
-    .hero-image {
-      height: 160px;
-    }
-
-    .fallback-text {
-      font-size: 1.5rem;
-    }
-  }
-
-  /* ── Info grid ─────────────────────────────────────── */
-
-  .info-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    margin: 0;
-  }
-
-  .info-row {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-
-  .info-row dt {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.5));
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    font-weight: 500;
-  }
-
-  .info-row dt i {
-    font-size: 11px;
-    width: 12px;
-    text-align: center;
-  }
-
-  .info-row dd {
-    margin: 0 0 0 18px;
-    font-size: var(--font-size-sm, 14px);
-    color: var(--theme-text, #ffffff);
-    line-height: 1.4;
-  }
+  /* ── Description ───────────────────────────────────── */
 
   .description {
     margin: 0;
@@ -467,10 +441,22 @@
     line-height: 1.6;
   }
 
+  /* ── Tags + actions row ────────────────────────────── */
+
+  .tags-and-actions {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
   .tags-row {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
+    flex: 1;
+    min-width: 0;
   }
 
   .tag {
@@ -482,20 +468,10 @@
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
-  /* ── Apply section ─────────────────────────────────── */
-
-  .apply-section {
+  .action-buttons {
     display: flex;
-    flex-direction: column;
-    gap: 10px;
-    padding-top: 1rem;
-    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
-  }
-
-  .apply-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
+    gap: 8px;
+    flex-shrink: 0;
   }
 
   .apply-btn {
@@ -561,23 +537,35 @@
     text-decoration: underline;
   }
 
-  /* ── Attendance ────────────────────────────────────── */
+  /* ── Tracker section — full width ──────────────────── */
 
-  .attendance-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 12px 14px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
-    border-radius: 10px;
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.6));
+  .tracker-section {
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+    padding-top: 1rem;
   }
 
-  .attendance-row i {
-    color: var(--semantic-success, #22c55e);
-    font-size: 13px;
+  /* ── Responsive ────────────────────────────────────── */
+
+  @media (max-width: 768px) {
+    .backdrop {
+      padding: 1rem;
+    }
+
+    .hero-banner {
+      height: 120px;
+    }
+
+    .fallback-text {
+      font-size: 1.25rem;
+    }
+
+    .modal-body {
+      padding: 1rem;
+    }
+
+    .tags-and-actions {
+      flex-direction: column;
+    }
   }
 
   /* ── Reduced motion ────────────────────────────────── */
