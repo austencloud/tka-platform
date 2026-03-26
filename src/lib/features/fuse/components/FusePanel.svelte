@@ -20,6 +20,7 @@
 		onControllerReady,
 		mode = "soloProps",
 		length = 8,
+		currentBeat = 0,
 	}: {
 		side: "left" | "right";
 		selectedSequence: SequenceData | null;
@@ -29,6 +30,7 @@
 		onControllerReady?: (controller: IAnimationPlaybackController) => void;
 		mode?: "soloProps" | "handPaths";
 		length?: number;
+		currentBeat?: number;
 	} = $props();
 
 	const label = $derived(side === "left" ? "Blue" : "Red");
@@ -52,6 +54,7 @@
 				onBack={onDeselect}
 				{onControllerReady}
 				propColor={side === "left" ? "blue" : "red"}
+				{currentBeat}
 			/>
 		{:else}
 			<FuseSequenceBrowser {side} {mode} {length} onSelect={(item) => onSelect(item as any)} />
