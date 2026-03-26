@@ -193,10 +193,12 @@
     }
 
     // Analytics: PostHog
+    console.log("[App Init] 1/7 PostHog...");
     const { initPostHog } = await import("$lib/shared/analytics/services/posthog");
     initPostHog();
 
     // Attribution tracking
+    console.log("[App Init] 2/7 Attribution...");
     try {
       const persister = container?.items?.attributionPersister;
       if (persister) {
@@ -207,10 +209,12 @@
     }
 
     // i18n
+    console.log("[App Init] 3/7 i18n...");
     const { initI18n } = await import("$lib/shared/i18n/i18n.svelte.js");
     initI18n();
 
     // Modal URL state
+    console.log("[App Init] 4/7 Modal URL state...");
     const { initModalUrlState, cleanupModalUrlState } = await import("$lib/shared/application/state/ui/modal-url-state.svelte");
     initModalUrlState();
 
@@ -223,10 +227,12 @@
     window.addEventListener("resize", updateViewportHeight);
 
     // Cache clear shortcut
+    console.log("[App Init] 5/7 Cache buster...");
     const { registerCacheClearShortcut } = await import("$lib/shared/utils/cache-buster");
     registerCacheClearShortcut();
 
     // Cookie cleanup
+    console.log("[App Init] 6/7 Cookie cleanup...");
     try {
       const { cleanupOldCookies } = await import("$lib/shared/auth/utils/cookieCleanup");
       await cleanupOldCookies();
@@ -235,6 +241,7 @@
     }
 
     // Firestore + Auth
+    console.log("[App Init] 7/7 Firestore + Auth...");
     try {
       console.log("[App Init] Starting Firestore...");
       const { getFirestoreInstance } = await import("$lib/shared/auth/firebase");
