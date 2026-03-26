@@ -10,7 +10,6 @@
 	import { getFuseContext } from "../context/fuse-context";
 	import FusePanel from "./FusePanel.svelte";
 	import FuseButton from "./FuseButton.svelte";
-	import FuseLengthToggle from "./FuseLengthToggle.svelte";
 	import TempoControl from "$lib/shared/sequence-viewer/components/TempoControl.svelte";
 	import { container } from "$lib/shared/di";
 	import type { IFuseAssemblyAnimator } from "../services/contracts/IFuseAssemblyAnimator";
@@ -27,7 +26,7 @@
 
 	const LENGTHS = [2, 4, 8, 12, 16, 24, 32];
 
-	const showTempo = $derived(fuseState.leftSequence !== null || fuseState.rightSequence !== null);
+	// BPM is always visible — no conditional appearance that causes layout shift
 
 	// DOM refs for assembly animation
 	let leftPanelEl: HTMLDivElement;
@@ -155,21 +154,12 @@
 	<!-- Invisible target for assembly animation -->
 	<div class="fuse-target" bind:this={fuseTargetEl} aria-hidden="true"></div>
 
-	{#if showTempo}
-		<div class="fuse-tempo">
-			<TempoControl
-				bpm={fuseState.bpm}
-				onBpmChange={fuseState.setBpm}
-				showPresets={true}
-				showPractice={false}
-			/>
-		</div>
-	{/if}
-
-	<div class="fuse-controls">
-		<FuseLengthToggle
-			matchLengths={fuseState.matchLengths}
-			onChange={fuseState.setMatchLengths}
+	<div class="fuse-tempo">
+		<TempoControl
+			bpm={fuseState.bpm}
+			onBpmChange={fuseState.setBpm}
+			showPresets={true}
+			showPractice={false}
 		/>
 	</div>
 
@@ -286,11 +276,6 @@
 	}
 
 	.fuse-tempo {
-		flex-shrink: 0;
-		padding: 0 var(--spacing-sm, 8px);
-	}
-
-	.fuse-controls {
 		flex-shrink: 0;
 		display: flex;
 		justify-content: center;
