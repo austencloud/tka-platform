@@ -2,8 +2,8 @@
 	/**
 	 * Fuse Panel
 	 *
-	 * One side of the fuse split view. ChoreoCard on top, animation below.
-	 * Shuffle button in the header. No pick step — Fuse uses whatever's showing.
+	 * One side of the fuse split view. ChoreoCard on top, animation below,
+	 * big shuffle button at the bottom. No headers, no pick step.
 	 */
 
 	import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -28,9 +28,11 @@
 	} = $props();
 
 	const label = $derived(side === "left" ? "Blue" : "Red");
+	const accentColor = $derived(side === "left" ? "var(--prop-blue, #2196f3)" : "var(--prop-red, #f44336)");
 
 	let currentSequence = $state<SequenceData | null>(null);
 	let shuffleFn = $state<(() => void) | null>(null);
+	let counter = $state({ current: 0, total: 0 });
 
 	function handleCurrentItemChange(seq: SequenceData | null) {
 		currentSequence = seq;
@@ -39,45 +41,49 @@
 </script>
 
 <div class="fuse-panel" role="region" aria-label="{label} prop path">
-	<div class="panel-body">
-		<!-- Shuffle overlay button -->
-		<button
-			class="shuffle-overlay"
-			onclick={() => shuffleFn?.()}
-			aria-label="Shuffle {label} to next sequence"
-		>
-			<i class="fas fa-shuffle" aria-hidden="true"></i>
-		</button>
-		<div class="card-section">
-			<FuseSequenceBrowser
-				{side}
-				{length}
-				onSelect={() => {}}
-				hideActions={true}
-				onCurrentItemChange={handleCurrentItemChange}
-				onShuffleReady={(fn) => shuffleFn = fn}
-			/>
-		</div>
-
-		<div class="animation-section">
-			{#if currentSequence}
-				{#key currentSequence.id ?? currentSequence.word}
-					<FuseAnimationPreview
-						sequence={currentSequence}
-						{bpm}
-						{onControllerReady}
-						propColor={side === "left" ? "blue" : "red"}
-						{currentBeat}
-						showBackButton={false}
-					/>
-				{/key}
-			{:else}
-				<div class="animation-placeholder">
-					<i class="fas fa-play-circle" aria-hidden="true"></i>
-				</div>
-			{/if}
-		</div>
+	<div class="card-section">
+		<FuseSequenceBrowser
+			{side}
+			{length}
+			onSelect={() => {}}
+			hideActions={true}
+			onCurrentItemChange={handleCurrentItemChange}
+			onShuffleReady={(fn) => shuffleFn = fn}
+			onCounterChange={(c, t) => counter = { current: c, total: t }}
+		/>
 	</div>
+
+	<div class="animation-section">
+		{#if currentSequence}
+			{#key currentSequence.id ?? currentSequence.word}
+				<FuseAnimationPreview
+					sequence={currentSequence}
+					{bpm}
+					{onControllerReady}
+					propColor={side === "left" ? "blue" : "red"}
+					{currentBeat}
+					showBackButton={false}
+				/>
+			{/key}
+		{:else}
+			<div class="animation-placeholder">
+				<i class="fas fa-play-circle" aria-hidden="true"></i>
+			</div>
+		{/if}
+	</div>
+
+	<button
+		class="shuffle-btn"
+		onclick={() => shuffleFn?.()}
+		aria-label="Shuffle {label} to next sequence"
+		style="--accent: {accentColor};"
+	>
+		<i class="fas fa-shuffle" aria-hidden="true"></i>
+		<span class="shuffle-label">Shuffle</span>
+		{#if counter.total > 0}
+			<span class="shuffle-counter">{counter.current} / {counter.total}</span>
+		{/if}
+	</button>
 </div>
 
 <style>
@@ -90,38 +96,6 @@
 		overflow: hidden;
 	}
 
-	.panel-body {
-		flex: 1;
-		min-height: 0;
-		display: flex;
-		flex-direction: column;
-		position: relative;
-	}
-
-	.shuffle-overlay {
-		position: absolute;
-		top: var(--spacing-xs, 4px);
-		right: var(--spacing-xs, 4px);
-		z-index: 10;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 44px;
-		height: 44px;
-		background: rgba(0, 0, 0, 0.5);
-		border: none;
-		border-radius: var(--radius-sm, 6px);
-		color: rgba(255, 255, 255, 0.8);
-		cursor: pointer;
-		font-size: 14px;
-		transition: background 150ms ease;
-	}
-
-	.shuffle-overlay:hover {
-		background: rgba(0, 0, 0, 0.7);
-		color: #ffffff;
-	}
-
 	.card-section {
 		flex: 1;
 		min-height: 0;
@@ -130,7 +104,7 @@
 
 	.animation-section {
 		flex: 1;
-		min-height: 120px;
+		min-height: 100px;
 		border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
 		position: relative;
 	}
@@ -143,6 +117,42 @@
 		justify-content: center;
 		color: var(--theme-text-dim, rgba(255, 255, 255, 0.2));
 		font-size: 2rem;
+	}
+
+	.shuffle-btn {
+		flex-shrink: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: var(--spacing-sm, 8px);
+		min-height: 48px;
+		padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
+		border: none;
+		border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+		background: color-mix(in srgb, var(--accent) 12%, transparent);
+		color: var(--accent);
+		font-size: var(--font-size-sm, 14px);
+		font-weight: 600;
+		cursor: pointer;
+		transition: background 150ms ease;
+	}
+
+	.shuffle-btn:hover {
+		background: color-mix(in srgb, var(--accent) 20%, transparent);
+	}
+
+	.shuffle-btn:active {
+		background: color-mix(in srgb, var(--accent) 28%, transparent);
+	}
+
+	.shuffle-label {
+		letter-spacing: 0.03em;
+	}
+
+	.shuffle-counter {
+		font-size: var(--font-size-compact, 12px);
+		font-weight: 400;
+		opacity: 0.6;
 	}
 
 	@media (prefers-reduced-motion: reduce) {
