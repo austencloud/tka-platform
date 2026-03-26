@@ -1072,7 +1072,101 @@
     color: #fff;
   }
 
+  /* ─── Image upload area ──────────────────────────────────────────────────── */
 
+  .hidden-file-input {
+    display: none;
+  }
+
+  .image-upload-area {
+    all: unset;
+    position: relative;
+    width: 100%;
+    height: 120px;
+    border: 2px dashed var(--theme-stroke, rgba(255, 255, 255, 0.15));
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    overflow: hidden;
+    transition: border-color var(--transition-fast, 0.15s);
+    box-sizing: border-box;
+  }
+
+  .image-upload-area:hover {
+    border-color: var(--theme-accent, #6366f1);
+  }
+
+  .image-upload-area:disabled {
+    cursor: wait;
+    opacity: 0.7;
+  }
+
+  .image-upload-area.has-image {
+    border: none;
+  }
+
+  .image-upload-area img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .upload-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.35));
+    font-size: var(--font-size-compact, 12px);
+  }
+
+  .upload-placeholder i {
+    font-size: 20px;
+  }
+
+  .image-change-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    background: rgba(0, 0, 0, 0.5);
+    color: rgba(255, 255, 255, 0.8);
+    font-size: var(--font-size-compact, 12px);
+    opacity: 0;
+    transition: opacity var(--transition-fast, 0.15s);
+  }
+
+  .image-upload-area:hover .image-change-overlay {
+    opacity: 1;
+  }
+
+  .upload-progress-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: rgba(0, 0, 0, 0.3);
+  }
+
+  .upload-progress-bar {
+    height: 100%;
+    background: var(--theme-accent, #6366f1);
+    transition: width 0.2s;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .image-upload-area,
+    .image-change-overlay,
+    .upload-progress-bar {
+      transition: none;
+    }
+  }
 
   /* ─── Workshop list ───────────────────────────────────────────────────────── */
 

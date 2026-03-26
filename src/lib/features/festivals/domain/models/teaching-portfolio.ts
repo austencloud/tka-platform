@@ -10,6 +10,7 @@ export interface WorkshopTemplate {
   description: string;
   themes: string[];
   solo: boolean;
+  imageUrl?: string;
 }
 
 export interface BioVersion {
