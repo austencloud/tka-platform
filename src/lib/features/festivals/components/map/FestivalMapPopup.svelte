@@ -37,12 +37,50 @@
     toDate(festival.applicationDeadline) > now &&
     (festival.seekingInstructors || festival.seekingPerformers)
   );
+
+  let imageLoaded = $state(false);
+  let imageError = $state(false);
+
+  const nameHue = $derived(
+    festival.name.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0) % 360
+  );
+
+  const regionLabels: Record<string, string> = {
+    "north-america": "N. America",
+    "south-america": "S. America",
+    europe: "Europe",
+    asia: "Asia",
+    oceania: "Oceania",
+    africa: "Africa",
+  };
 </script>
 
 <div class="festival-popup">
   <button class="close-btn" onclick={onclose} aria-label="Close popup" type="button">
     <i class="fas fa-times" aria-hidden="true"></i>
   </button>
+
+  <div
+    class="popup-image"
+    style="--fallback-bg: linear-gradient(135deg, hsl({nameHue}, 60%, 25%), hsl({nameHue}, 60%, 15%))"
+  >
+    {#if festival.imageUrl && !imageError}
+      <img
+        src={festival.imageUrl}
+        alt={festival.name}
+        class="popup-img"
+        class:loaded={imageLoaded}
+        onload={() => (imageLoaded = true)}
+        onerror={() => (imageError = true)}
+      />
+    {/if}
+
+    <div class="fallback-text" class:hidden={imageLoaded && !imageError}>
+      <span>{festival.name}</span>
+    </div>
+
+    <span class="region-badge">{regionLabels[festival.region] ?? festival.region}</span>
+  </div>
 
   <div class="popup-body">
     <h3 class="festival-name">{festival.name}</h3>
@@ -78,14 +116,71 @@
     max-width: 320px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
     position: relative;
+    overflow: hidden;
+  }
+
+  .popup-image {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    background: var(--fallback-bg);
+    border-radius: 16px 16px 0 0;
+    margin: -20px -20px 0;
+  }
+
+  .popup-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .popup-img.loaded {
+    opacity: 1;
+  }
+
+  .fallback-text {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    text-align: center;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.85);
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  }
+
+  .fallback-text.hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .region-badge {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: var(--font-size-xs, 11px);
+    font-weight: 500;
+    background: rgba(0, 0, 0, 0.55);
+    color: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(4px);
   }
 
   .close-btn {
     position: absolute;
     top: 8px;
     right: 8px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(4px);
+    border: none;
     border-radius: 8px;
     width: var(--min-touch-target, 44px);
     height: var(--min-touch-target, 44px);
@@ -93,13 +188,13 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.7));
+    color: rgba(255, 255, 255, 0.85);
     transition: all 0.2s ease;
+    z-index: 1;
   }
 
   .close-btn:hover {
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
+    background: rgba(0, 0, 0, 0.7);
     color: var(--theme-text, #ffffff);
   }
 
@@ -112,8 +207,7 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
-    padding-right: 36px;
-    margin-bottom: 16px;
+    padding: 16px 0 16px 0;
   }
 
   .festival-name {
@@ -186,8 +280,13 @@
 
   @media (prefers-reduced-motion: reduce) {
     .close-btn,
-    .view-details-btn {
+    .view-details-btn,
+    .popup-img {
       transition: none;
+    }
+
+    .view-details-btn:hover {
+      transform: none;
     }
   }
 </style>
