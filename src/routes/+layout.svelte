@@ -236,15 +236,19 @@
 
     // Firestore + Auth
     try {
+      console.log("[App Init] Starting Firestore...");
       const { getFirestoreInstance } = await import("$lib/shared/auth/firebase");
       await getFirestoreInstance();
+      console.log("[App Init] Firestore ready");
       (window as any).__tkaLoadProgress?.(76, "Connecting to cloud...");
     } catch (error) {
       console.error("[App Init] Firestore initialization failed:", error);
     }
 
+    console.log("[App Init] Starting auth...");
     const { authState } = await import("$lib/shared/auth/state/authState.svelte");
     await authState.initialize();
+    console.log("[App Init] Auth ready");
     (window as any).__tkaLoadProgress?.(80, "Checking session...");
 
     // Web Vitals
