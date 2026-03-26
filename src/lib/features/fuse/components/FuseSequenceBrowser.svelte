@@ -12,6 +12,7 @@
 	import type { BrowseViewMode } from "$lib/features/browse/shared/domain/BrowseViewMode";
 	import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
 	import { container } from "$lib/shared/di";
+	import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 	import { getFuseContext } from "../context/fuse-context";
 
 	const { state: fuseState } = getFuseContext();
@@ -157,6 +158,8 @@
 							showBirthday={false}
 							showLoopGlyph={false}
 							darkMode={true}
+							bluePropType={getSettings().bluePropType}
+							redPropType={getSettings().redPropType}
 							highlightedStepIndex={highlightedStep}
 							showHighlight={highlightedStep !== null}
 						/>
