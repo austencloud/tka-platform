@@ -71,6 +71,41 @@ export function createFuseState(deps: FuseStateDeps) {
 	let leftController: IAnimationPlaybackController | null = null;
 	let rightController: IAnimationPlaybackController | null = null;
 
+	// Shared beat clock — single rAF loop drives all panels
+	let currentBeat = $state(0);
+	let clockRunning = $state(false);
+	let clockAnimFrameId: number | null = null;
+	let lastClockTimestamp: number | null = null;
+
+	function startClock() {
+		if (clockRunning) return;
+		clockRunning = true;
+		lastClockTimestamp = null;
+		tickClock();
+	}
+
+	function stopClock() {
+		clockRunning = false;
+		if (clockAnimFrameId !== null) {
+			cancelAnimationFrame(clockAnimFrameId);
+			clockAnimFrameId = null;
+		}
+		lastClockTimestamp = null;
+	}
+
+	function tickClock() {
+		if (!clockRunning) return;
+		clockAnimFrameId = requestAnimationFrame((now) => {
+			if (lastClockTimestamp !== null) {
+				const deltaMs = now - lastClockTimestamp;
+				const beatsPerMs = bpm / 60_000;
+				currentBeat += deltaMs * beatsPerMs;
+			}
+			lastClockTimestamp = now;
+			tickClock();
+		});
+	}
+
 	const canFuse = $derived(
 		phase === "both-selected" &&
 			leftSequence !== null &&
@@ -150,6 +185,8 @@ export function createFuseState(deps: FuseStateDeps) {
 	}
 
 	function reset() {
+		stopClock();
+		currentBeat = 0;
 		phase = "browse";
 		leftSequence = null;
 		rightSequence = null;
@@ -160,6 +197,10 @@ export function createFuseState(deps: FuseStateDeps) {
 		rightController?.dispose();
 		leftController = null;
 		rightController = null;
+	}
+
+	function dispose() {
+		stopClock();
 	}
 
 	function registerController(side: "left" | "right", controller: IAnimationPlaybackController) {
@@ -224,6 +265,11 @@ export function createFuseState(deps: FuseStateDeps) {
 		get canFuse() {
 			return canFuse;
 		},
+		get currentBeat() { return currentBeat; },
+		get clockRunning() { return clockRunning; },
+		startClock,
+		stopClock,
+		dispose,
 		selectLeft,
 		selectRight,
 		deselectLeft,
