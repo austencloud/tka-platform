@@ -246,6 +246,10 @@ export function createFuseState(deps: FuseStateDeps) {
 		rightController?.setSpeed(speed);
 	}
 
+	function setFusedSequence(seq: SequenceData) {
+		fusedSequence = seq;
+	}
+
 	return {
 		get phase() {
 			return phase;
@@ -284,6 +288,7 @@ export function createFuseState(deps: FuseStateDeps) {
 		setBpm,
 		registerController,
 		unregisterController,
+		setFusedSequence,
 	};
 }
 
