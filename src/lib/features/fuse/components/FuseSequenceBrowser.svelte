@@ -25,6 +25,7 @@
 		onCurrentItemChange,
 		hideActions = false,
 		onShuffleReady,
+		onCounterChange,
 	}: {
 		side: "left" | "right";
 		length?: number;
@@ -33,6 +34,7 @@
 		onCurrentItemChange?: (seq: SequenceData | null) => void;
 		hideActions?: boolean;
 		onShuffleReady?: (shuffleFn: () => void) => void;
+		onCounterChange?: (current: number, total: number) => void;
 	} = $props();
 
 	const propColor = $derived<"blue" | "red">(side === "left" ? "blue" : "red");
@@ -82,6 +84,7 @@
 			currentItem = pool[0] ?? null;
 			onCurrentItemChange?.(currentItem);
 			onShuffleReady?.(shuffle);
+			onCounterChange?.(poolIndex + 1, pool.length);
 			if (pool.length > 0) {
 				fuseState.startClock();
 			}
@@ -125,6 +128,7 @@
 		poolIndex = (poolIndex + 1) % pool.length;
 		currentItem = pool[poolIndex] ?? null;
 		onCurrentItemChange?.(currentItem);
+		onCounterChange?.(poolIndex + 1, pool.length);
 		if (currentItem) loadFullData(currentItem);
 	}
 

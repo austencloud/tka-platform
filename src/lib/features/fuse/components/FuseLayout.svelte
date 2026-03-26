@@ -15,8 +15,14 @@
 	const { state: fuseState } = getFuseContext();
 
 	let fuseLength: number = $state(8);
+	let showLengthPicker = $state(false);
 
 	const LENGTHS = [2, 4, 8, 12, 16, 24, 32];
+
+	function selectLength(len: number) {
+		fuseLength = len;
+		showLengthPicker = false;
+	}
 
 	// Track what each panel is currently showing (for fusing without pick)
 	let leftBrowsingSeq = $state<SequenceData | null>(null);
@@ -104,8 +110,33 @@
 	<!-- Invisible target for assembly animation -->
 	<div class="fuse-target" bind:this={fuseTargetEl} aria-hidden="true"></div>
 
-	<!-- Bottom bar: BPM, lengths, play/pause, fuse -->
+	<!-- Bottom bar: length picker, BPM, play/pause, fuse -->
 	<div class="fuse-bottom">
+		<div class="length-picker-wrap">
+			<button
+				class="length-trigger"
+				onclick={() => showLengthPicker = !showLengthPicker}
+				aria-label="Change beat length (currently {fuseLength})"
+			>
+				<span class="length-value">{fuseLength}</span>
+				<span class="length-unit">beats</span>
+			</button>
+			{#if showLengthPicker}
+				<!-- svelte-ignore a11y_no_static_element_interactions -->
+				<div class="length-popover" role="radiogroup" aria-label="Beat length">
+					{#each LENGTHS as len}
+						<button
+							class="length-option"
+							class:active={fuseLength === len}
+							role="radio"
+							aria-checked={fuseLength === len}
+							onclick={() => selectLength(len)}
+						>{len}</button>
+					{/each}
+				</div>
+			{/if}
+		</div>
+
 		<div class="bpm-control">
 			<button class="bpm-btn" onclick={decrementBpm} aria-label="Decrease BPM">
 				<i class="fas fa-minus" aria-hidden="true"></i>
@@ -114,18 +145,6 @@
 			<button class="bpm-btn" onclick={incrementBpm} aria-label="Increase BPM">
 				<i class="fas fa-plus" aria-hidden="true"></i>
 			</button>
-		</div>
-
-		<div class="length-selector" role="radiogroup" aria-label="Beat length">
-			{#each LENGTHS as len}
-				<button
-					class="length-chip"
-					class:active={fuseLength === len}
-					role="radio"
-					aria-checked={fuseLength === len}
-					onclick={() => fuseLength = len}
-				>{len}</button>
-			{/each}
 		</div>
 
 		<button
@@ -240,32 +259,76 @@
 		color: var(--theme-text, #ffffff);
 	}
 
-	.length-selector {
-		display: flex;
-		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-		border-radius: var(--radius-sm, 6px);
-		padding: 2px;
-		gap: 1px;
+	.length-picker-wrap {
+		position: relative;
 	}
 
-	.length-chip {
-		padding: 4px 6px;
+	.length-trigger {
+		display: flex;
+		align-items: center;
+		gap: 4px;
+		min-height: 44px;
+		padding: 6px 12px;
+		border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+		border-radius: var(--radius-sm, 6px);
+		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+		color: var(--theme-text, #ffffff);
+		cursor: pointer;
+		transition: border-color 150ms ease;
+	}
+
+	.length-trigger:hover {
+		border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+	}
+
+	.length-value {
+		font-size: var(--font-size-sm, 14px);
+		font-weight: 700;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.length-unit {
+		font-size: var(--font-size-compact, 12px);
+		color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+	}
+
+	.length-popover {
+		position: absolute;
+		bottom: 100%;
+		left: 50%;
+		transform: translateX(-50%);
+		margin-bottom: 6px;
+		display: flex;
+		gap: 2px;
+		padding: 4px;
+		background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+		border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
+		border-radius: var(--radius-md, 8px);
+		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+		z-index: 20;
+	}
+
+	.length-option {
 		min-width: 44px;
 		min-height: 44px;
 		border: none;
-		border-radius: var(--radius-sm, 4px);
+		border-radius: var(--radius-sm, 6px);
 		background: transparent;
-		color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
-		font-size: var(--font-size-compact, 12px);
+		color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+		font-size: var(--font-size-sm, 14px);
 		font-weight: 500;
 		cursor: pointer;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		transition: background 150ms ease, color 150ms ease;
+		transition: background 150ms ease;
 	}
 
-	.length-chip.active {
+	.length-option:hover {
+		background: rgba(255, 255, 255, 0.08);
+	}
+
+	.length-option.active {
 		background: var(--theme-accent, #6366f1);
 		color: #ffffff;
 	}
