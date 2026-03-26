@@ -1,6 +1,6 @@
 <script lang="ts">
   import { getFestivalContext } from "../../context/festival-context";
-  import { auth } from "$lib/shared/auth/firebase";
+  import { auth, getStorageInstance } from "$lib/shared/auth/firebase";
   import type {
     TeachingPortfolio,
     WorkshopTemplate,
@@ -26,6 +26,10 @@
   let wPropsRaw = $state("");
   let wDescription = $state("");
   let wSolo = $state(true);
+  let wImageUrl = $state<string | undefined>(undefined);
+  let wImageUploading = $state(false);
+  let wImageProgress = $state(0);
+  let imageFileInput: HTMLInputElement | undefined = $state(undefined);
 
   const LEVELS: WorkshopLevel[] = ["introductory", "beginner", "intermediate", "advanced", "mixed"];
 
@@ -36,6 +40,9 @@
     wPropsRaw = "";
     wDescription = "";
     wSolo = true;
+    wImageUrl = undefined;
+    wImageUploading = false;
+    wImageProgress = 0;
     showWorkshopForm = true;
   }
 
@@ -46,7 +53,52 @@
     wPropsRaw = workshop.props.join(", ");
     wDescription = workshop.description;
     wSolo = workshop.solo;
+    wImageUrl = workshop.imageUrl;
+    wImageUploading = false;
+    wImageProgress = 0;
     showWorkshopForm = true;
+  }
+
+  async function handleImageSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    const uid = auth.currentUser?.uid;
+    if (!uid) return;
+
+    // Use existing workshop ID or generate one for new workshops
+    const workshopId = editingWorkshopId ?? crypto.randomUUID();
+    if (!editingWorkshopId) {
+      editingWorkshopId = workshopId;
+    }
+
+    wImageUploading = true;
+    wImageProgress = 0;
+
+    try {
+      const { ref, uploadBytesResumable, getDownloadURL } = await import("firebase/storage");
+      const storage = await getStorageInstance();
+      const storageRef = ref(storage, `workshops/${uid}/${workshopId}/cover`);
+
+      const uploadTask = uploadBytesResumable(storageRef, file, {
+        contentType: file.type,
+      });
+
+      uploadTask.on("state_changed", (snapshot) => {
+        wImageProgress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+      });
+
+      await uploadTask;
+      const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
+      wImageUrl = downloadUrl;
+    } catch (error) {
+      console.error("Failed to upload workshop cover image:", error);
+    } finally {
+      wImageUploading = false;
+      // Reset input so re-selecting the same file triggers change
+      if (imageFileInput) imageFileInput.value = "";
+    }
   }
 
   function cancelWorkshopForm() {
@@ -69,7 +121,7 @@
         ...portfolio,
         classes: portfolio.classes.map((c) =>
           c.id === editingWorkshopId
-            ? { ...c, title: wTitle, level: wLevel, props, description: wDescription, solo: wSolo }
+            ? { ...c, title: wTitle, level: wLevel, props, description: wDescription, solo: wSolo, imageUrl: wImageUrl }
             : c
         ),
       };
@@ -83,6 +135,7 @@
         description: wDescription,
         themes: [],
         solo: wSolo,
+        imageUrl: wImageUrl,
       };
       const updated: TeachingPortfolio = {
         ...portfolio,
@@ -433,7 +486,7 @@
     <section class="section-card">
       <div class="section-header">
         <h3 class="section-title">Bios</h3>
-        <button class="add-btn" onclick={addBio}>
+        <button class="ghost-add-btn" onclick={addBio}>
           <i class="fas fa-plus" aria-hidden="true"></i>
           Add Bio
         </button>
@@ -644,6 +697,39 @@
   {/snippet}
 
   <div class="workshop-form-body" data-animate="3">
+    <input
+      type="file"
+      accept="image/*"
+      class="hidden-file-input"
+      bind:this={imageFileInput}
+      onchange={handleImageSelected}
+    />
+    <button
+      type="button"
+      class="image-upload-area"
+      class:has-image={!!wImageUrl}
+      onclick={() => imageFileInput?.click()}
+      disabled={wImageUploading}
+    >
+      {#if wImageUrl}
+        <img src={wImageUrl} alt="Workshop cover preview" />
+        <div class="image-change-overlay">
+          <i class="fas fa-camera" aria-hidden="true"></i>
+          <span>Change image</span>
+        </div>
+      {:else}
+        <div class="upload-placeholder">
+          <i class="fas fa-camera" aria-hidden="true"></i>
+          <span>Click to add a cover image</span>
+        </div>
+      {/if}
+      {#if wImageUploading}
+        <div class="upload-progress-overlay">
+          <div class="upload-progress-bar" style="width: {wImageProgress}%"></div>
+        </div>
+      {/if}
+    </button>
+
     <label class="field-label">
       Title
       <input
@@ -690,20 +776,11 @@
       ></textarea>
     </label>
 
-    <label class="field-label solo-label">
-      <div class="toggle-row">
-        <span>Solo workshop</span>
-        <button
-          class="toggle-indicator"
-          class:on={wSolo}
-          onclick={() => (wSolo = !wSolo)}
-          type="button"
-          role="switch"
-          aria-checked={wSolo}
-          aria-label="Solo workshop"
-        >
-          <span class="toggle-knob"></span>
-        </button>
+    <label class="field-label">
+      Format
+      <div class="level-toggle-row">
+        <button class="level-btn" class:active={wSolo} onclick={() => (wSolo = true)} type="button">Solo</button>
+        <button class="level-btn" class:active={!wSolo} onclick={() => (wSolo = false)} type="button">Partner</button>
       </div>
     </label>
   </div>
@@ -896,6 +973,23 @@
     background: color-mix(in srgb, var(--theme-accent, #6366f1) 25%, transparent);
   }
 
+  .ghost-add-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: none;
+    border: none;
+    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.4));
+    font-size: var(--font-size-compact, 12px);
+    cursor: pointer;
+    transition: color var(--transition-fast, 0.15s);
+  }
+
+  .ghost-add-btn:hover {
+    color: var(--theme-accent, #6366f1);
+  }
+
   /* ─── Workshop modal (uses BaseModal) ─────────────────────────────────────── */
 
   .workshop-form-body {
@@ -978,48 +1072,6 @@
     color: #fff;
   }
 
-  .toggle-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .solo-label {
-    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.6));
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 500;
-  }
-
-  .toggle-indicator {
-    width: 36px;
-    height: 20px;
-    border-radius: 10px;
-    border: none;
-    background: var(--theme-stroke, rgba(255, 255, 255, 0.15));
-    cursor: pointer;
-    position: relative;
-    transition: background 0.2s;
-    flex-shrink: 0;
-  }
-
-  .toggle-indicator.on {
-    background: var(--theme-accent, #6366f1);
-  }
-
-  .toggle-knob {
-    position: absolute;
-    top: 3px;
-    left: 3px;
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    background: #fff;
-    transition: transform 0.2s;
-  }
-
-  .toggle-indicator.on .toggle-knob {
-    transform: translateX(16px);
-  }
 
 
   /* ─── Workshop list ───────────────────────────────────────────────────────── */
@@ -1149,32 +1201,33 @@
     inset: 0;
     bottom: auto;
     aspect-ratio: 16 / 9;
-    background: rgba(0, 0, 0, 0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    transition: opacity 0.15s;
-  }
-
-  .video-card:hover .video-overlay,
-  .video-card:focus-within .video-overlay {
-    opacity: 1;
+    background: transparent;
+    pointer-events: none;
   }
 
   .video-remove-btn {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 24px;
+    height: 24px;
+    border-radius: 12px;
     background: rgba(0, 0, 0, 0.6);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: none;
     color: white;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 14px;
-    transition: background 0.15s, border-color 0.15s;
+    font-size: 12px;
+    opacity: 0;
+    pointer-events: auto;
+    transition: opacity 0.15s, background 0.15s;
+  }
+
+  .video-card:hover .video-remove-btn,
+  .video-card:focus-within .video-remove-btn {
+    opacity: 1;
   }
 
   /* Overlay scrim colors are intentionally hardcoded -- they sit on
@@ -1182,7 +1235,6 @@
 
   .video-remove-btn:hover {
     background: var(--semantic-error, #ef4444);
-    border-color: var(--semantic-error, #ef4444);
   }
 
   .video-url-label {
@@ -1200,18 +1252,14 @@
   }
 
   @media (max-width: 768px) {
-    .video-overlay {
-      opacity: 1;
-    }
-
     .video-remove-btn {
+      opacity: 1;
       min-width: 44px;
       min-height: 44px;
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .video-overlay,
     .video-remove-btn {
       transition: none;
     }
@@ -1260,6 +1308,7 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 20px;
+    max-width: 600px;
   }
 
   @media (max-width: 600px) {
@@ -1343,12 +1392,16 @@
   .about-label {
     font-size: var(--font-size-sm, 14px);
     color: var(--theme-text-secondary, rgba(255, 255, 255, 0.6));
+    flex-shrink: 0;
+    min-width: 0;
   }
 
   .about-value {
     font-size: var(--font-size-sm, 14px);
     color: var(--theme-text, #ffffff);
     font-weight: 500;
+    word-break: break-word;
+    text-align: right;
   }
 
   .about-value.empty {
