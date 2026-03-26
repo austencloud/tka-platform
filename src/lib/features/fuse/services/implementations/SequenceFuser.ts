@@ -5,6 +5,10 @@ import type { StepPairingData } from "$lib/shared/foundation/domain/models/StepP
 import { createSequenceData, type SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { MotionType, RotationDirection, Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { ISequenceFuser, FuseOptions } from "../contracts/ISequenceFuser";
 
 const DEFAULT_MAX_BEATS = 64;
@@ -44,6 +48,25 @@ function tile<T>(items: readonly T[], targetLength: number): T[] {
 		result.push(items[i % items.length]!);
 	}
 	return result;
+}
+
+function buildMotionFromSoloPropStep(
+	step: SoloPropStepData,
+	color: MotionColor,
+	gridMode: GridMode
+): ReturnType<typeof createMotionData> {
+	return createMotionData({
+		motionType: step.motionType,
+		rotationDirection: step.rotationDirection,
+		startLocation: step.startLocation,
+		endLocation: step.endLocation,
+		turns: step.turns,
+		startOrientation: step.startOrientation,
+		endOrientation: step.endOrientation,
+		color,
+		gridMode,
+		isVisible: true,
+	});
 }
 
 export class SequenceFuser implements ISequenceFuser {
@@ -121,10 +144,36 @@ export class SequenceFuser implements ISequenceFuser {
 				handPath: redHandPath,
 			};
 
+		// Determine grid mode from inputs
+		const gridMode = blueSoloProp.impliedGridMode ?? redSoloProp.impliedGridMode ?? GridMode.DIAMOND;
+
+		// Build proper steps with motion data so ensureMotionData short-circuits
+		const steps: StepData[] = [];
+		for (let i = 0; i < targetLength; i++) {
+			const blueStep = tiledBlueSteps[i]!;
+			const redStep = tiledRedSteps[i]!;
+			steps.push({
+				id: crypto.randomUUID(),
+				stepNumber: i + 1,
+				duration: blueStep.duration ?? 1,
+				blueReversal: stepPairings[i]!.blueReversal,
+				redReversal: stepPairings[i]!.redReversal,
+				isBlank: false,
+				letter: stepPairings[i]!.letter ?? null,
+				startPosition: null,
+				endPosition: null,
+				motions: {
+					blue: buildMotionFromSoloPropStep(blueStep, MotionColor.BLUE, gridMode),
+					red: buildMotionFromSoloPropStep(redStep, MotionColor.RED, gridMode),
+				},
+			});
+		}
+
 		return createSequenceData({
 			name: `${blueHandPath.name ?? "blue"} + ${redHandPath.name ?? "red"}`,
-			word: "",
-			steps: [],
+			displayName: `${blueHandPath.name ?? "blue"} + ${redHandPath.name ?? "red"}`,
+			word: "__fused__",
+			steps,
 			blueSoloProp,
 			redSoloProp,
 			stepPairings,
@@ -132,6 +181,7 @@ export class SequenceFuser implements ISequenceFuser {
 			isCircular: false,
 			isFavorite: false,
 			tags: [],
+			gridMode,
 			metadata: { fusedFrom: [blueHandPath.id, redHandPath.id] },
 		});
 	}
