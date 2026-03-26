@@ -46,6 +46,7 @@
   const STORAGE_KEY_SHOW_WORD = "choreoCard.showWord";
   const STORAGE_KEY_INCLUDE_START_POS = "choreoCard.includeStartPosition";
   const STORAGE_KEY_SELECTED_DECK = "choreoCard.selectedDeckId";
+  const STORAGE_KEY_SELECTED_COLLECTION = "choreoCard.selectedCollection";
 
   // Legacy keys for migration
   const LEGACY_KEYS: Record<string, string> = {
@@ -178,6 +179,7 @@
   // Deck state
   let decks = $state<Deck[]>([]);
   let selectedDeckId = $state<string | null>(getPersistedString(STORAGE_KEY_SELECTED_DECK));
+  let selectedCollection = $state<string | null>(getPersistedString(STORAGE_KEY_SELECTED_COLLECTION));
   let deckSequences = $state<SequenceData[]>([]);
   let isDeckLoading = $state(false);
 
@@ -281,12 +283,15 @@
     loaderService = container.items.browseLoader;
     await loadSequences();
 
-    // Restore deck state if a deck was selected before HMR/remount
-    if (selectedDeckId) {
+    // Restore deck list if a deck or collection was previously selected
+    if (selectedDeckId || selectedCollection) {
       if (decks.length === 0) {
         await loadDecks();
       }
-      await handleSelectDeck(selectedDeckId);
+      // If deck was selected, load its sequences
+      if (selectedDeckId) {
+        await handleSelectDeck(selectedDeckId);
+      }
     }
   });
 
@@ -361,13 +366,39 @@
     }
   }
 
+  function handleSelectCollection(collectionId: string) {
+    selectedCollection = collectionId;
+    persist(STORAGE_KEY_SELECTED_COLLECTION, collectionId);
+  }
+
+  function handleBackToCollections() {
+    selectedCollection = null;
+    selectedDeckId = null;
+    deckSequences = [];
+    persist(STORAGE_KEY_SELECTED_COLLECTION, null);
+    persist(STORAGE_KEY_SELECTED_DECK, null);
+  }
+
   async function handleSelectDeck(deckId: string) {
     selectedDeckId = deckId;
+    deckSequences = [];
     persist(STORAGE_KEY_SELECTED_DECK, deckId);
+
     const deckLoader = container.items.deckLoader as IDeckLoader;
+    const deck = decks.find((d) => d.id === deckId);
+    if (!deck) return;
+
+    isDeckLoading = true;
     try {
-      isDeckLoading = true;
-      deckSequences = await deckLoader.loadDeckSequences(deckId);
+      if (deck.totalSequences < 500) {
+        deckSequences = await deckLoader.loadDeckSequences(deckId);
+      } else {
+        // Large deck: load first family only
+        const firstFamily = deck.families[0];
+        if (firstFamily) {
+          deckSequences = await deckLoader.loadSequencesByIds(deckId, [...firstFamily.sequenceIds]);
+        }
+      }
     } catch (err) {
       console.error("Failed to load deck sequences:", err);
     } finally {
@@ -379,6 +410,24 @@
     selectedDeckId = null;
     deckSequences = [];
     persist(STORAGE_KEY_SELECTED_DECK, null);
+  }
+
+  async function handleLoadFamilySequences(familyIds: string[]) {
+    const deck = decks.find((d) => d.id === selectedDeckId);
+    if (!deck || !selectedDeckId) return;
+
+    const deckLoader = container.items.deckLoader as IDeckLoader;
+    isDeckLoading = true;
+    try {
+      const seqIds = deck.families
+        .filter((f) => familyIds.includes(f.id))
+        .flatMap((f) => [...f.sequenceIds]);
+      deckSequences = await deckLoader.loadSequencesByIds(selectedDeckId, seqIds);
+    } catch (err) {
+      console.error("Failed to load family sequences:", err);
+    } finally {
+      isDeckLoading = false;
+    }
   }
 
   // Derive the selected deck object for Print Prep tab
@@ -463,6 +512,7 @@
         <DeckBrowser
           {decks}
           {selectedDeckId}
+          {selectedCollection}
           {deckSequences}
           isLoading={isDeckLoading}
           {handPointsVisible}
@@ -470,9 +520,12 @@
           {showTKA}
           {showWord}
           {includeStartPosition}
+          onSelectCollection={handleSelectCollection}
+          onBackToCollections={handleBackToCollections}
           onSelectDeck={handleSelectDeck}
-          onBackToList={handleBackToDeckList}
+          onBackToDeckList={handleBackToDeckList}
           onSelectSequence={handleSelectSequence}
+          onLoadFamilySequences={handleLoadFamilySequences}
           onContextMenu={openCardContextMenu}
         />
       </main>
