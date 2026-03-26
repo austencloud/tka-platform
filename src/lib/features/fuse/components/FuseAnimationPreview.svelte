@@ -24,12 +24,14 @@
 		onBack,
 		onControllerReady,
 		propColor,
+		currentBeat = 0,
 	}: {
 		sequence: SequenceData;
 		bpm?: number;
 		onBack: () => void;
 		onControllerReady?: (controller: IAnimationPlaybackController) => void;
 		propColor?: "blue" | "red";
+		currentBeat?: number;
 	} = $props();
 
 	let controller = $state<IAnimationPlaybackController | null>(null);
@@ -105,8 +107,13 @@
 			const speed = bpm / DEFAULT_BPM;
 			controller!.setSpeed(speed);
 
-			// Start playback after a brief delay so the canvas renders first
-			setTimeout(() => controller?.togglePlayback(), 300);
+			// Sync to shared clock beat position, then start immediately
+			const stepCount = fullSeq.steps?.length ?? 1;
+			if (stepCount > 0 && currentBeat > 0) {
+				const wrappedBeat = Math.floor(currentBeat) % stepCount;
+				controller!.seekToStep(wrappedBeat);
+			}
+			controller!.togglePlayback();
 		});
 	});
 
