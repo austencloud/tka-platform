@@ -11,6 +11,7 @@
  */
 
 import {
+  addDoc,
   collection,
   doc,
   setDoc,
@@ -23,7 +24,10 @@ import {
   type Firestore,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import {
+  type SequenceData,
+  createSequenceData,
+} from "$lib/shared/foundation/domain/models/SequenceData";
 import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
 import type { ISequenceEncoder } from "$lib/shared/navigation/services/contracts/ISequenceEncoder";
 import type { IPublicSequenceHashMatcher } from "$lib/shared/sequence-viewer/services/contracts/IPublicSequenceHashMatcher";
@@ -165,16 +169,31 @@ export class ShortCodeManager implements IShortCodeManager {
       if (!docSnap.exists()) {
         const record: Record<string, unknown> = {
           sequence: fallbackId || "", // Keep word for backwards compat and debugging
-          sequenceId: sequence.id, // Unique ID for disambiguation on resolve
-          ownerId: sequence.ownerId, // Enables direct Firestore load for unpublished sequences
           createdAt: new Date().toISOString(),
           createdBy: "system",
           scanCount: 0,
           sequenceName: sequence.word || sequence.name,
         };
+        // Only set optional fields if defined (Firestore rejects undefined values)
+        if (sequence.id) record.sequenceId = sequence.id;
+        if (sequence.ownerId) record.ownerId = sequence.ownerId;
         // Store encoderHash for content-based dedup
         if (encoderHash) {
           record.encoderHash = encoderHash;
+        }
+
+        // Deck sequences have no ownerId, so the resolver can't look them up
+        // by owner path. Embed the essential sequence data directly in the
+        // shortcode record so we can hydrate without searching deck collections.
+        if (!sequence.ownerId && sequence.steps && sequence.steps.length > 0) {
+          record.sequenceData = {
+            word: sequence.word,
+            steps: sequence.steps,
+            startPosition: sequence.startPosition,
+            gridMode: sequence.gridMode,
+            isCircular: sequence.isCircular,
+            loopType: sequence.loopType,
+          };
         }
 
         await setDoc(docRef, record);
@@ -272,6 +291,7 @@ export class ShortCodeManager implements IShortCodeManager {
       createdAt: string;
       createdBy: string;
       scanCount: number;
+      sequenceData?: Record<string, unknown>;
     };
 
     console.log(`[ShortCode] Record for "${code}":`, {
@@ -336,6 +356,14 @@ export class ShortCodeManager implements IShortCodeManager {
       console.log(`[ShortCode] ✗ Skipping direct load — ownerId=${data.ownerId ?? "MISSING"}, sequenceId=${data.sequenceId ?? "MISSING"}`);
     }
 
+    // Strategy 4: Embedded sequence data (deck sequences without ownerId).
+    // When a shortcode was created for a deck sequence, the essential fields
+    // were stored inline so we can hydrate without searching deck collections.
+    if (data.sequenceData) {
+      console.log(`[ShortCode] ✓ Resolved "${code}" via embedded sequence data`);
+      return createSequenceData({ id: code, ...data.sequenceData });
+    }
+
     console.error(`[ShortCode] ✗ ALL strategies failed for code "${code}". Record:`, JSON.stringify(data));
 
     return null;
@@ -379,5 +407,30 @@ export class ShortCodeManager implements IShortCodeManager {
       scanCount: data.scanCount,
       sequenceName: data.sequenceName,
     };
+  }
+
+  async logScanEvent(
+    code: string,
+    event: {
+      printId: string | null;
+      country: string | null;
+      city: string | null;
+      userAgent: string;
+      screenWidth: number;
+      screenHeight: number;
+      referrer: string | null;
+      userId: string | null;
+    }
+  ): Promise<void> {
+    try {
+      const firestore = await this.ensureFirestore();
+      const eventsRef = collection(firestore, SHORTCODES_COLLECTION, code, "scanEvents");
+      await addDoc(eventsRef, {
+        ...event,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error("Failed to log scan event:", error);
+    }
   }
 }
