@@ -21,6 +21,7 @@
   import { onMount, onDestroy } from "svelte";
   import { fade } from "svelte/transition";
   import { container } from "$lib/shared/di";
+  import { captureEvent } from "$lib/shared/analytics/services/posthog";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { ILetterDeriver } from "$lib/shared/navigation/services/contracts/ILetterDeriver";
   import type { IPositionDeriver } from "$lib/shared/navigation/services/contracts/IPositionDeriver";
@@ -55,6 +56,21 @@
   import LoadingGate from "$lib/shared/components/loading/LoadingGate.svelte";
   import ChoreoCardContextMenuHost from "$lib/shared/sequence-viewer/components/choreo-card-context-menu/ChoreoCardContextMenuHost.svelte";
   import CardSettingsModal from "$lib/features/choreo-card/components/CardSettingsModal.svelte";
+
+  // ============================================================================
+  // PAGE DATA (from +page.server.ts — Cloudflare geo headers)
+  // ============================================================================
+
+  interface Props {
+    data: {
+      geo: {
+        country: string | null;
+        city: string | null;
+      };
+    };
+  }
+
+  const { data }: Props = $props();
 
   // ============================================================================
   // ROUTE-SPECIFIC STATE
@@ -207,6 +223,34 @@
           console.warn("Failed to increment scan count:", err);
         });
       }
+
+      // Fire scan analytics (fire-and-forget, never blocks the viewer)
+      captureEvent("qr_code_scanned", {
+        short_code: shortCode,
+        print_id: new URL(window.location.href).searchParams.get("pid") || null,
+        sequence_word: resolved.word,
+        sequence_id: resolved.id,
+        country: data?.geo?.country || null,
+        city: data?.geo?.city || null,
+        screen_width: window.screen.width,
+        screen_height: window.screen.height,
+        viewport_width: window.innerWidth,
+        viewport_height: window.innerHeight,
+        referrer: document.referrer || null,
+        is_deck_sequence: !resolved.ownerId,
+      });
+
+      // Log detailed scan event to Firestore subcollection
+      shortCodeManager.logScanEvent(shortCode, {
+        printId: new URL(window.location.href).searchParams.get("pid") || null,
+        country: data?.geo?.country || null,
+        city: data?.geo?.city || null,
+        userAgent: navigator.userAgent,
+        screenWidth: window.screen.width,
+        screenHeight: window.screen.height,
+        referrer: document.referrer || null,
+        userId: null,
+      }).catch(() => {}); // Silent failure — analytics should never break the viewer
 
       // Derive letters and positions if services are available
       const letterDeriver = container.items.letterDeriver as ILetterDeriver | null;

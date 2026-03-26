@@ -94,4 +94,25 @@ export interface IShortCodeManager {
    * @returns The short code record with scan count, or null
    */
   getAnalytics(code: string): Promise<ShortCodeRecord | null>;
+
+  /**
+   * Log a detailed scan event to the scanEvents subcollection.
+   * Append-only log for per-card analytics queries.
+   *
+   * @param code - The short code that was scanned
+   * @param event - Scan event metadata (geo, device, referrer, etc.)
+   */
+  logScanEvent(
+    code: string,
+    event: {
+      printId: string | null;
+      country: string | null;
+      city: string | null;
+      userAgent: string;
+      screenWidth: number;
+      screenHeight: number;
+      referrer: string | null;
+      userId: string | null;
+    }
+  ): Promise<void>;
 }

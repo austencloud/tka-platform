@@ -863,6 +863,13 @@ service cloud.firestore {
 
       // No deletion - short codes are permanent
       allow delete: if isAdmin();
+
+      // Scan event log — append-only analytics per QR scan
+      match /scanEvents/{eventId} {
+        allow read: if isAdmin();
+        allow create: if true;
+        allow update, delete: if false;
+      }
     }
 
     // ============================================================================
@@ -1211,7 +1218,7 @@ service cloud.firestore {
     }
 
     // Teaching portfolio (single doc per user)
-    match /userProfiles/{userId}/workshopPortfolio {
+    match /userProfiles/{userId}/workshopPortfolio/{docId} {
       allow read: if isOwner(userId);
       allow create, update: if isOwner(userId);
       allow delete: if isOwner(userId) || isAdmin();
