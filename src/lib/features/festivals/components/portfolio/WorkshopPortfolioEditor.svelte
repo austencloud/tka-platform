@@ -688,8 +688,8 @@
       <BioEditor bind:editBioId />
     </section>
 
-    <!-- ── Profile (social links + about merged) ─────────────────────────────── -->
-    <section class="section-card">
+    <!-- ── Profile (social links + about + credits) ──────────────────────────── -->
+    <section class="section-card profile-card">
       <div class="section-header">
         <h3 class="section-title">
           <i class="fas fa-user" aria-hidden="true" style="margin-right: 6px; opacity: 0.5;"></i>
@@ -1290,6 +1290,7 @@
 
   .workshops-card,
   .acts-card,
+  .profile-card,
   .videos-card {
     grid-column: 1 / -1;
   }
