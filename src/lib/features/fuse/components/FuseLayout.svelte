@@ -154,23 +154,28 @@
 	<!-- Invisible target for assembly animation -->
 	<div class="fuse-target" bind:this={fuseTargetEl} aria-hidden="true"></div>
 
-	<div class="fuse-tempo">
-		<button
-			class="play-pause-btn"
-			onclick={() => fuseState.toggleClock()}
-			aria-label={fuseState.clockRunning ? "Pause" : "Play"}
-		>
-			<i class="fas fa-{fuseState.clockRunning ? 'pause' : 'play'}" aria-hidden="true"></i>
-		</button>
+	<div class="fuse-playback">
 		<TempoControl
 			bpm={fuseState.bpm}
 			onBpmChange={fuseState.setBpm}
 			showPresets={true}
 			showPractice={false}
 		/>
-	</div>
-
-	<div class="fuse-action">
+		<button
+			class="play-btn"
+			onclick={() => fuseState.toggleClock()}
+			aria-label={fuseState.clockRunning ? "Pause" : "Play"}
+		>
+			{#if fuseState.clockRunning}
+				<svg viewBox="0 0 24 24" fill="currentColor">
+					<path d="M6 4h4v16H6zm8 0h4v16h-4z" />
+				</svg>
+			{:else}
+				<svg viewBox="0 0 24 24" fill="currentColor">
+					<path d="M8 5v14l11-7z" />
+				</svg>
+			{/if}
+		</button>
 		<FuseButton />
 	</div>
 </div>
@@ -282,43 +287,52 @@
 		pointer-events: none;
 	}
 
-	.fuse-tempo {
+	.fuse-playback {
 		flex-shrink: 0;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		gap: var(--spacing-sm, 8px);
-		padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px);
+		gap: var(--spacing-md, 16px);
+		padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
 	}
 
-	.fuse-tempo :global(.tempo-control) {
+	.fuse-playback :global(.tempo-control) {
 		width: auto;
 	}
 
-	.play-pause-btn {
+	.play-btn {
+		width: 52px;
+		height: 52px;
+		min-width: 52px;
+		min-height: 52px;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		width: 44px;
-		height: 44px;
-		border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-		border-radius: var(--radius-md, 8px);
-		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-		color: var(--theme-text, #ffffff);
-		font-size: 1rem;
+		background: linear-gradient(
+			135deg,
+			var(--theme-accent, #3b82f6) 0%,
+			color-mix(in srgb, var(--theme-accent, #3b82f6) 80%, black) 100%
+		);
+		border: none;
+		border-radius: 50%;
+		color: white;
 		cursor: pointer;
-		transition: border-color 150ms ease;
-	}
-
-	.play-pause-btn:hover {
-		border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
-	}
-
-	.fuse-action {
 		flex-shrink: 0;
-		display: flex;
-		justify-content: center;
-		padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
+		transition: transform 150ms ease, box-shadow 150ms ease;
+	}
+
+	.play-btn svg {
+		width: 24px;
+		height: 24px;
+	}
+
+	.play-btn:hover {
+		transform: scale(1.05);
+		box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+	}
+
+	.play-btn:active {
+		transform: scale(0.98);
 	}
 
 	@media (prefers-reduced-motion: reduce) {
