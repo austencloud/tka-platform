@@ -9,6 +9,9 @@
   import { AUSTEN_PORTFOLIO_SEED } from "../../data/portfolio-seed";
   import WorkshopTemplateCard from "./WorkshopTemplateCard.svelte";
   import BioEditor from "./BioEditor.svelte";
+  import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
+  import ModalHeader from "$lib/shared/foundation/ui/modal/ModalHeader.svelte";
+  import ModalFooter from "$lib/shared/foundation/ui/modal/ModalFooter.svelte";
 
   const { state: festivalState } = getFestivalContext();
 
@@ -507,96 +510,92 @@
   {/if}
 </div>
 
-{#if showWorkshopForm}
-  <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-  <div
-    class="workshop-modal-backdrop"
-    role="dialog"
-    aria-modal="true"
-    aria-label={editingWorkshopId ? "Edit Workshop" : "New Workshop"}
-    onclick={(e) => { if (e.target === e.currentTarget) cancelWorkshopForm(); }}
-    onkeydown={(e) => { if (e.key === "Escape") cancelWorkshopForm(); }}
-    tabindex="-1"
-  >
-    <div class="workshop-modal">
-      <div class="workshop-modal-header">
-        <h3 class="workshop-modal-title">
-          {editingWorkshopId ? "Edit Workshop" : "New Workshop"}
-        </h3>
-        <button class="workshop-modal-close" onclick={cancelWorkshopForm} aria-label="Close">
-          <i class="fas fa-times" aria-hidden="true"></i>
+<BaseModal
+  bind:open={showWorkshopForm}
+  onclose={() => cancelWorkshopForm()}
+  size="fit"
+  animation="pop"
+>
+  {#snippet header()}
+    <ModalHeader
+      title={editingWorkshopId ? "Edit Workshop" : "New Workshop"}
+      icon={editingWorkshopId ? "fa-pencil-alt" : "fa-plus"}
+      iconColor="var(--theme-accent, #6366f1)"
+      onClose={() => cancelWorkshopForm()}
+    />
+  {/snippet}
+
+  <div class="workshop-form-body" data-animate="3">
+    <label class="field-label">
+      Title
+      <input
+        class="field-input"
+        type="text"
+        bind:value={wTitle}
+        placeholder="Workshop title"
+      />
+    </label>
+
+    <label class="field-label">
+      Level
+      <div class="level-toggle-row">
+        {#each LEVELS as level (level)}
+          <button
+            class="level-btn"
+            class:active={wLevel === level}
+            onclick={() => (wLevel = level)}
+            type="button"
+          >
+            {level}
+          </button>
+        {/each}
+      </div>
+    </label>
+
+    <label class="field-label">
+      Props (comma-separated)
+      <input
+        class="field-input"
+        type="text"
+        bind:value={wPropsRaw}
+        placeholder="double-staves, clubs"
+      />
+    </label>
+
+    <label class="field-label">
+      Description
+      <textarea
+        class="field-textarea"
+        bind:value={wDescription}
+        rows={6}
+        placeholder="What you teach in this workshop..."
+      ></textarea>
+    </label>
+
+    <label class="field-label solo-label">
+      <div class="toggle-row">
+        <span>Solo workshop</span>
+        <button
+          class="toggle-indicator"
+          class:on={wSolo}
+          onclick={() => (wSolo = !wSolo)}
+          type="button"
+          role="switch"
+          aria-checked={wSolo}
+          aria-label="Solo workshop"
+        >
+          <span class="toggle-knob"></span>
         </button>
       </div>
+    </label>
+  </div>
 
-      <div class="workshop-modal-body">
-        <label class="field-label">
-          Title
-          <input
-            class="field-input"
-            type="text"
-            bind:value={wTitle}
-            placeholder="Workshop title"
-          />
-        </label>
-
-        <label class="field-label">
-          Level
-          <div class="level-toggle-row">
-            {#each LEVELS as level (level)}
-              <button
-                class="level-btn"
-                class:active={wLevel === level}
-                onclick={() => (wLevel = level)}
-                type="button"
-              >
-                {level}
-              </button>
-            {/each}
-          </div>
-        </label>
-
-        <label class="field-label">
-          Props (comma-separated)
-          <input
-            class="field-input"
-            type="text"
-            bind:value={wPropsRaw}
-            placeholder="double-staves, clubs"
-          />
-        </label>
-
-        <label class="field-label">
-          Description
-          <textarea
-            class="field-textarea"
-            bind:value={wDescription}
-            rows={6}
-            placeholder="What you teach in this workshop..."
-          ></textarea>
-        </label>
-
-        <label class="field-label solo-label">
-          <div class="toggle-row">
-            <span>Solo workshop</span>
-            <button
-              class="toggle-indicator"
-              class:on={wSolo}
-              onclick={() => (wSolo = !wSolo)}
-              type="button"
-              role="switch"
-              aria-checked={wSolo}
-              aria-label="Solo workshop"
-            >
-              <span class="toggle-knob"></span>
-            </button>
-          </div>
-        </label>
-      </div>
-
-      <div class="workshop-modal-footer">
+  {#snippet footer()}
+    <ModalFooter align="between">
+      <div class="modal-left-actions">
         {#if editingWorkshopId}
           <button
-            class="modal-action-btn"
+            class="ghost"
             onclick={() => navigator.clipboard.writeText(wDescription)}
             title="Copy description to clipboard"
             type="button"
@@ -605,7 +604,7 @@
             Copy
           </button>
           <button
-            class="modal-action-btn danger"
+            class="ghost danger-text"
             onclick={() => { deleteWorkshop(editingWorkshopId!); cancelWorkshopForm(); }}
             title="Delete this workshop"
             type="button"
@@ -614,15 +613,16 @@
             Delete
           </button>
         {/if}
-        <div class="modal-footer-spacer"></div>
-        <button class="cancel-btn" onclick={cancelWorkshopForm}>Cancel</button>
-        <button class="save-btn" onclick={saveWorkshopForm} disabled={!wTitle.trim()}>
+      </div>
+      <div class="modal-right-actions">
+        <button class="secondary" onclick={cancelWorkshopForm} type="button">Cancel</button>
+        <button class="primary" onclick={saveWorkshopForm} disabled={!wTitle.trim()} type="button">
           {editingWorkshopId ? "Save Changes" : "Add Workshop"}
         </button>
       </div>
-    </div>
-  </div>
-{/if}
+    </ModalFooter>
+  {/snippet}
+</BaseModal>
 
 <style>
   .portfolio-editor {
@@ -778,110 +778,31 @@
     background: color-mix(in srgb, var(--theme-accent, #6366f1) 25%, transparent);
   }
 
-  /* ─── Workshop modal ──────────────────────────────────────────────────────── */
+  /* ─── Workshop modal (uses BaseModal) ─────────────────────────────────────── */
 
-  .workshop-modal-backdrop {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.6);
-    z-index: 200;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 2rem;
-  }
-
-  .workshop-modal {
-    width: 100%;
-    max-width: 560px;
-    max-height: 90vh;
-    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: var(--radius-lg, 12px);
-    overflow: hidden;
-    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
-    display: flex;
-    flex-direction: column;
-  }
-
-  .workshop-modal-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 16px 20px;
-    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
-  }
-
-  .workshop-modal-title {
-    margin: 0;
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: var(--theme-text, #ffffff);
-  }
-
-  .workshop-modal-close {
-    width: 36px;
-    height: 36px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: none;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 8px;
-    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.6));
-    cursor: pointer;
-    font-size: 14px;
-    transition: background 0.15s, color 0.15s;
-  }
-
-  .workshop-modal-close:hover {
-    background: var(--theme-card-bg-hover, rgba(255, 255, 255, 0.08));
-    color: var(--theme-text, #ffffff);
-  }
-
-  .workshop-modal-body {
-    flex: 1;
-    overflow-y: auto;
+  .workshop-form-body {
     padding: 20px;
     display: flex;
     flex-direction: column;
     gap: 14px;
   }
 
-  .workshop-modal-footer {
+  .modal-left-actions {
     display: flex;
-    align-items: center;
     gap: 8px;
-    padding: 16px 20px;
-    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
   }
 
-  .modal-footer-spacer {
-    flex: 1;
-  }
-
-  .modal-action-btn {
+  .modal-right-actions {
     display: flex;
-    align-items: center;
-    gap: 5px;
-    padding: 7px 14px;
-    background: none;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
-    border-radius: 5px;
-    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.6));
-    font-size: var(--font-size-compact, 12px);
-    cursor: pointer;
-    transition: color var(--transition-fast, 0.15s), border-color var(--transition-fast, 0.15s);
+    gap: 8px;
   }
 
-  .modal-action-btn:hover {
-    color: var(--theme-text, #ffffff);
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.25));
+  .danger-text {
+    color: var(--semantic-error, #ef4444) !important;
   }
 
-  .modal-action-btn.danger:hover {
-    color: var(--semantic-error, #ef4444);
-    border-color: var(--semantic-error, #ef4444);
+  .danger-text:hover {
+    background: rgba(239, 68, 68, 0.1) !important;
   }
 
   .field-label {
@@ -982,44 +903,6 @@
     transform: translateX(16px);
   }
 
-  .form-actions {
-    display: flex;
-    gap: 8px;
-  }
-
-  .save-btn {
-    padding: 7px 18px;
-    background: var(--theme-accent, #6366f1);
-    border: none;
-    border-radius: 5px;
-    color: #fff;
-    font-size: var(--font-size-sm, 14px);
-    font-weight: 600;
-    cursor: pointer;
-  }
-
-  .save-btn:disabled {
-    opacity: 0.4;
-    cursor: default;
-  }
-
-  .save-btn:not(:disabled):hover {
-    opacity: 0.85;
-  }
-
-  .cancel-btn {
-    padding: 7px 18px;
-    background: none;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
-    border-radius: 5px;
-    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.7));
-    font-size: var(--font-size-sm, 14px);
-    cursor: pointer;
-  }
-
-  .cancel-btn:hover {
-    color: var(--theme-text, #ffffff);
-  }
 
   /* ─── Workshop list ───────────────────────────────────────────────────────── */
 
