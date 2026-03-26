@@ -343,34 +343,27 @@
         <h3 class="section-title">Performance Credits</h3>
       </div>
 
-      {#if festivalState.portfolio.performanceCredits.length > 0}
-        <ul class="string-list" role="list">
-          {#each festivalState.portfolio.performanceCredits as credit, i (i)}
-            <li class="string-item">
-              <span class="string-value">{credit}</span>
-              <button
-                class="remove-btn"
-                onclick={() => removeCredit(i)}
-                aria-label="Remove {credit}"
-              >
-                <i class="fas fa-times" aria-hidden="true"></i>
-              </button>
-            </li>
-          {/each}
-        </ul>
-      {/if}
-
-      <div class="add-row">
+      <div class="credits-flow">
+        {#each festivalState.portfolio.performanceCredits as credit, i (i)}
+          <div class="credit-pill">
+            <span>{credit}</span>
+            <button
+              class="credit-remove"
+              onclick={() => removeCredit(i)}
+              aria-label="Remove {credit}"
+              tabindex="0"
+            >
+              <i class="fas fa-times" aria-hidden="true"></i>
+            </button>
+          </div>
+        {/each}
         <input
-          class="add-input"
+          class="credit-add-input"
           type="text"
           bind:value={newCredit}
-          placeholder="Add performance credit..."
+          placeholder="Add credit..."
           onkeydown={(e) => e.key === "Enter" && addCredit()}
         />
-        <button class="add-inline-btn" onclick={addCredit} disabled={!newCredit.trim()}>
-          Add
-        </button>
       </div>
     </section>
 
@@ -934,6 +927,86 @@
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: 16px;
+  }
+
+  /* ─── Performance credits (pill flow) ─────────────────────────────────────── */
+
+  .credits-flow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .credit-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: color-mix(in srgb, var(--theme-accent, #6366f1) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--theme-accent, #6366f1) 20%, transparent);
+    border-radius: 20px;
+    font-size: var(--font-size-sm, 14px);
+    color: var(--theme-text, #ffffff);
+  }
+
+  .credit-remove {
+    opacity: 0;
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.5));
+    cursor: pointer;
+    border-radius: 50%;
+    font-size: 10px;
+    transition: opacity 0.15s, color 0.15s;
+  }
+
+  .credit-pill:hover .credit-remove,
+  .credit-pill:focus-within .credit-remove {
+    opacity: 1;
+  }
+
+  .credit-remove:hover {
+    color: var(--semantic-error, #ef4444);
+  }
+
+  .credit-add-input {
+    background: none;
+    border: 1px dashed var(--theme-stroke, rgba(255, 255, 255, 0.15));
+    border-radius: 20px;
+    padding: 6px 12px;
+    font-size: var(--font-size-sm, 14px);
+    color: var(--theme-text, #ffffff);
+    min-width: 140px;
+  }
+
+  .credit-add-input::placeholder {
+    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.4));
+  }
+
+  .credit-add-input:focus {
+    outline: none;
+    border-color: var(--theme-accent, #6366f1);
+    border-style: solid;
+  }
+
+  @media (max-width: 768px) {
+    .credit-remove {
+      opacity: 1;
+      min-width: 44px;
+      min-height: 44px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .credit-remove {
+      transition: none;
+    }
   }
 
   /* ─── Editable string lists (credits, videos) ─────────────────────────────── */
