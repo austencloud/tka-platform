@@ -282,88 +282,11 @@
         <button
           class="add-btn"
           onclick={openNewWorkshopForm}
-          disabled={showWorkshopForm && editingWorkshopId === null}
         >
           <i class="fas fa-plus" aria-hidden="true"></i>
           Add Workshop
         </button>
       </div>
-
-      {#if showWorkshopForm}
-        <div class="workshop-form">
-          <h4 class="form-heading">{editingWorkshopId ? "Edit Workshop" : "New Workshop"}</h4>
-
-          <label class="field-label">
-            Title
-            <input
-              class="field-input"
-              type="text"
-              bind:value={wTitle}
-              placeholder="Workshop title"
-            />
-          </label>
-
-          <label class="field-label">
-            Level
-            <div class="level-toggle-row">
-              {#each LEVELS as level (level)}
-                <button
-                  class="level-btn"
-                  class:active={wLevel === level}
-                  onclick={() => (wLevel = level)}
-                  type="button"
-                >
-                  {level}
-                </button>
-              {/each}
-            </div>
-          </label>
-
-          <label class="field-label">
-            Props (comma-separated)
-            <input
-              class="field-input"
-              type="text"
-              bind:value={wPropsRaw}
-              placeholder="double-staves, clubs"
-            />
-          </label>
-
-          <label class="field-label">
-            Description
-            <textarea
-              class="field-textarea"
-              bind:value={wDescription}
-              rows={4}
-              placeholder="What you teach in this workshop..."
-            ></textarea>
-          </label>
-
-          <label class="field-label solo-label">
-            <div class="toggle-row">
-              <span>Solo workshop</span>
-              <button
-                class="toggle-indicator"
-                class:on={wSolo}
-                onclick={() => (wSolo = !wSolo)}
-                type="button"
-                role="switch"
-                aria-checked={wSolo}
-                aria-label="Solo workshop"
-              >
-                <span class="toggle-knob"></span>
-              </button>
-            </div>
-          </label>
-
-          <div class="form-actions">
-            <button class="save-btn" onclick={saveWorkshopForm} disabled={!wTitle.trim()}>
-              Save
-            </button>
-            <button class="cancel-btn" onclick={cancelWorkshopForm}>Cancel</button>
-          </div>
-        </div>
-      {/if}
 
       {#if festivalState.portfolio.classes.length > 0}
         <div class="workshop-list">
@@ -586,6 +509,102 @@
   {/if}
 </div>
 
+{#if showWorkshopForm}
+  <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+  <div
+    class="workshop-modal-backdrop"
+    role="dialog"
+    aria-modal="true"
+    aria-label={editingWorkshopId ? "Edit Workshop" : "New Workshop"}
+    onclick={(e) => { if (e.target === e.currentTarget) cancelWorkshopForm(); }}
+    onkeydown={(e) => { if (e.key === "Escape") cancelWorkshopForm(); }}
+    tabindex="-1"
+  >
+    <div class="workshop-modal">
+      <div class="workshop-modal-header">
+        <h3 class="workshop-modal-title">
+          {editingWorkshopId ? "Edit Workshop" : "New Workshop"}
+        </h3>
+        <button class="workshop-modal-close" onclick={cancelWorkshopForm} aria-label="Close">
+          <i class="fas fa-times" aria-hidden="true"></i>
+        </button>
+      </div>
+
+      <div class="workshop-modal-body">
+        <label class="field-label">
+          Title
+          <input
+            class="field-input"
+            type="text"
+            bind:value={wTitle}
+            placeholder="Workshop title"
+          />
+        </label>
+
+        <label class="field-label">
+          Level
+          <div class="level-toggle-row">
+            {#each LEVELS as level (level)}
+              <button
+                class="level-btn"
+                class:active={wLevel === level}
+                onclick={() => (wLevel = level)}
+                type="button"
+              >
+                {level}
+              </button>
+            {/each}
+          </div>
+        </label>
+
+        <label class="field-label">
+          Props (comma-separated)
+          <input
+            class="field-input"
+            type="text"
+            bind:value={wPropsRaw}
+            placeholder="double-staves, clubs"
+          />
+        </label>
+
+        <label class="field-label">
+          Description
+          <textarea
+            class="field-textarea"
+            bind:value={wDescription}
+            rows={6}
+            placeholder="What you teach in this workshop..."
+          ></textarea>
+        </label>
+
+        <label class="field-label solo-label">
+          <div class="toggle-row">
+            <span>Solo workshop</span>
+            <button
+              class="toggle-indicator"
+              class:on={wSolo}
+              onclick={() => (wSolo = !wSolo)}
+              type="button"
+              role="switch"
+              aria-checked={wSolo}
+              aria-label="Solo workshop"
+            >
+              <span class="toggle-knob"></span>
+            </button>
+          </div>
+        </label>
+      </div>
+
+      <div class="workshop-modal-footer">
+        <button class="cancel-btn" onclick={cancelWorkshopForm}>Cancel</button>
+        <button class="save-btn" onclick={saveWorkshopForm} disabled={!wTitle.trim()}>
+          {editingWorkshopId ? "Save Changes" : "Add Workshop"}
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}
+
 <style>
   .portfolio-editor {
     height: 100%;
@@ -739,23 +758,82 @@
     border-color: var(--theme-accent, #6366f1);
   }
 
-  /* ─── Workshop form ───────────────────────────────────────────────────────── */
+  /* ─── Workshop modal ──────────────────────────────────────────────────────── */
 
-  .workshop-form {
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
-    border-radius: 8px;
-    padding: 16px;
+  .workshop-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 200;
     display: flex;
-    flex-direction: column;
-    gap: 12px;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
   }
 
-  .form-heading {
+  .workshop-modal {
+    width: 100%;
+    max-width: 560px;
+    max-height: 90vh;
+    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: var(--radius-lg, 12px);
+    overflow: hidden;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .workshop-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+  }
+
+  .workshop-modal-title {
     margin: 0;
-    font-size: var(--font-size-sm, 14px);
-    font-weight: 600;
+    font-size: 1.1rem;
+    font-weight: 700;
     color: var(--theme-text, #ffffff);
+  }
+
+  .workshop-modal-close {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 8px;
+    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.6));
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .workshop-modal-close:hover {
+    background: var(--theme-card-bg-hover, rgba(255, 255, 255, 0.08));
+    color: var(--theme-text, #ffffff);
+  }
+
+  .workshop-modal-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .workshop-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 16px 20px;
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
   }
 
   .field-label {
