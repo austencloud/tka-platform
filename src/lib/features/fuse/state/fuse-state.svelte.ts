@@ -57,14 +57,14 @@ export function createFuseState(deps: FuseStateDeps) {
 	let leftSequence = $state<SequenceData | null>(null);
 	let rightSequence = $state<SequenceData | null>(null);
 	let fusedSequence = $state<SequenceData | null>(null);
-	let matchLengths = $state(persisted.matchLengths ?? true);
+	const matchLengths = true;
 	let bpm = $state(persisted.bpm ?? 60);
 
 	const DEFAULT_BPM = 60;
 
-	// Persist bpm and matchLengths whenever they change
+	// Persist bpm whenever it changes
 	$effect(() => {
-		writePersistedState({ bpm, matchLengths });
+		writePersistedState({ bpm });
 	});
 
 	// Animation controller references for sync
@@ -191,7 +191,6 @@ export function createFuseState(deps: FuseStateDeps) {
 		leftSequence = null;
 		rightSequence = null;
 		fusedSequence = null;
-		matchLengths = true;
 		bpm = 60;
 		leftController?.dispose();
 		rightController?.dispose();
@@ -239,10 +238,6 @@ export function createFuseState(deps: FuseStateDeps) {
 		rightController?.setSpeed(speed);
 	}
 
-	function setMatchLengths(value: boolean) {
-		matchLengths = value;
-	}
-
 	return {
 		get phase() {
 			return phase;
@@ -278,7 +273,6 @@ export function createFuseState(deps: FuseStateDeps) {
 		completeFuse,
 		reset,
 		setBpm,
-		setMatchLengths,
 		registerController,
 		unregisterController,
 	};
