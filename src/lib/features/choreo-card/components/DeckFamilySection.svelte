@@ -27,6 +27,8 @@
     includeStartPosition?: boolean;
     /** Start expanded (used for the first family in a deck) */
     initiallyExpanded?: boolean;
+    /** Hide the collapsible header (when parent already shows the family identity) */
+    hideHeader?: boolean;
     onSelectSequence?: (sequence: SequenceData) => void;
     onContextMenu?: (x: number, y: number, rerender: () => void) => void;
   }
@@ -40,6 +42,7 @@
     showWord = true,
     includeStartPosition = true,
     initiallyExpanded = false,
+    hideHeader = false,
     onSelectSequence,
     onContextMenu,
   }: Props = $props();
@@ -115,8 +118,91 @@
     return Array.from(seen.values());
   });
 
+  /**
+   * Each motion type gets a short abbreviation and its canonical TKA hand colors.
+   * Dual types have two distinct colors (one per hand); single types repeat.
+   */
+  const MOTION_TYPE_INFO: Record<string, { abbrev: string; colors: [string, string] }> = {
+    "Dual-Shift": { abbrev: "DS", colors: ["#36c3ff", "#6F2DA8"] },
+    "Shift":      { abbrev: "Sh", colors: ["#6F2DA8", "#6F2DA8"] },
+    "Cross-Shift":{ abbrev: "CS", colors: ["#26e600", "#6F2DA8"] },
+    "Dash":       { abbrev: "D",  colors: ["#26e600", "#26e600"] },
+    "Dual-Dash":  { abbrev: "DD", colors: ["#00b3ff", "#26e600"] },
+    "Static":     { abbrev: "St", colors: ["#eb7d00", "#eb7d00"] },
+  };
+
+  interface PillData {
+    abbrev: string;
+    full: string;
+    colors: [string, string];
+    isDual: boolean;
+  }
+
+  /** Parses "Dual-Dash+Static+Dash" into pill data for each beat's motion type. */
+  function parseFamilyLabel(label: string): PillData[] {
+    return label.split("+").map((seg) => {
+      const name = (seg ?? "").trim();
+      const info = MOTION_TYPE_INFO[name];
+      const colors: [string, string] = info?.colors ?? ["#888", "#888"];
+      return {
+        abbrev: info?.abbrev ?? name,
+        full: name,
+        colors,
+        isDual: colors[0] !== colors[1],
+      };
+    });
+  }
+
+  const labelParts = $derived(parseFamilyLabel(family.label));
+
+  /**
+   * A halved loop is a 6-beat sequence with a detected LOOP pattern.
+   * These display better in landscape orientation (7:5) with the start
+   * position column on the left and 3 columns of beats.
+   */
+  function isHalvedLoop(seq: SequenceData): boolean {
+    return seq.steps.length === 6 && !!seq.loopType;
+  }
+
+  /**
+   * Pick the best start position layout for a sequence's beat count.
+   * - 4 beats: row on top → 2×2 beat grid fits portrait cards better
+   * - 6 beats (halved loop): column on left → 3×2 beat grid in landscape
+   * - Everything else: column (default portrait layout)
+   */
+  function getStartPositionLayout(seq: SequenceData): "row" | "column" {
+    if (seq.steps.length === 4) return "row";
+    if (seq.steps.length === 16) return "row";
+    return "column";
+  }
+
   function toggle() {
     expanded = !expanded;
+  }
+
+  // ── Lazy card rendering via IntersectionObserver ──
+  // Cards render as empty placeholders until they scroll into view (within 400px).
+  // Once visible, they stay mounted — no unloading on scroll-out.
+
+  let lazyVisible = $state<Set<string>>(new Set());
+
+  function lazyLoad(node: HTMLElement) {
+    const seqId = node.dataset.seqId;
+    if (!seqId) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            lazyVisible = new Set([...lazyVisible, seqId]);
+            observer.unobserve(node);
+          }
+        }
+      },
+      { rootMargin: "400px" }
+    );
+    observer.observe(node);
+    return { destroy() { observer.disconnect(); } };
   }
 
   /**
@@ -154,23 +240,38 @@
 </script>
 
 <section class="family-section">
-  <button
-    class="family-header"
-    onclick={toggle}
-    aria-expanded={expanded}
-    type="button"
-  >
-    <i
-      class="fas fa-chevron-down chevron"
-      class:collapsed={!expanded}
-      aria-hidden="true"
-    ></i>
-    <span class="family-label">{family.label}</span>
-    <span class="family-meta">
-      ({family.typeCombo}) &middot; {sequences.length}
-      {sequences.length === 1 ? "sequence" : "sequences"}
-    </span>
-  </button>
+  {#if !hideHeader}
+    <button
+      class="family-header"
+      onclick={toggle}
+      aria-expanded={expanded}
+      type="button"
+    >
+      <i
+        class="fas fa-chevron-down chevron"
+        class:collapsed={!expanded}
+        aria-hidden="true"
+      ></i>
+      <span class="family-label">
+        {#each labelParts as part, i}
+          {#if i > 0}
+            <span class="arrow" aria-hidden="true">›</span>
+          {/if}
+          <span
+            class="motion-pill"
+            class:dual={part.isDual}
+            style="--c1: {part.colors[0]}; --c2: {part.colors[1]}"
+            title={part.full}
+            data-abbrev={part.abbrev}
+          >{part.abbrev}</span>
+        {/each}
+      </span>
+      <span class="family-meta">
+        ({family.typeCombo}) &middot; {sequences.length}
+        {sequences.length === 1 ? "sequence" : "sequences"}
+      </span>
+    </button>
+  {/if}
 
   {#if expanded}
     <!-- Hand path cards — each backed by purpose-built PictographData (HAND props, float arrows) -->
@@ -180,40 +281,57 @@
       </span>
       <div class="card-grid">
         {#each handPathSequences as hpSeq (hpSeq.id)}
-          <div class="playing-card" use:detectOrientation>
-            <ChoreoCard
-              sequence={hpSeq}
-              printMode={true}
-              handPathMode={true}
-              {handPointsVisible}
-              {showGrid}
-              showTKA={false}
-              showWord={false}
-              {includeStartPosition}
-              onSelect={onSelectSequence}
-              {onContextMenu}
-            />
+          <div class="playing-card" data-seq-id={hpSeq.id} use:lazyLoad use:detectOrientation>
+            {#if lazyVisible.has(hpSeq.id)}
+              <ChoreoCard
+                sequence={hpSeq}
+                printMode={true}
+                handPathMode={true}
+                {handPointsVisible}
+                {showGrid}
+                showTKA={false}
+                showWord={false}
+                {includeStartPosition}
+                startPositionLayout="column"
+                onSelect={onSelectSequence}
+                {onContextMenu}
+              />
+            {:else}
+              <div class="card-placeholder"></div>
+            {/if}
           </div>
         {/each}
       </div>
     {/if}
 
-    <!-- Sequence cards -->
+    <!-- Sequence cards, sorted by first letter of the word -->
     <span class="section-label">Sequences</span>
     <div class="card-grid">
-      {#each sequences as sequence (sequence.id)}
-        <div class="playing-card" use:detectOrientation>
-          <ChoreoCard
-            {sequence}
-            printMode={true}
-            {handPointsVisible}
-            {showGrid}
-            {showTKA}
-            {showWord}
-            {includeStartPosition}
-            onSelect={onSelectSequence}
-            {onContextMenu}
-          />
+      {#each [...sequences].sort((a, b) => (a.word ?? "").localeCompare(b.word ?? "")) as sequence (sequence.id)}
+        {@const halvedLoop = isHalvedLoop(sequence)}
+        <div
+          class="playing-card"
+          class:halved-loop={halvedLoop}
+          data-seq-id={sequence.id}
+          use:lazyLoad
+          use:detectOrientation
+        >
+          {#if lazyVisible.has(sequence.id)}
+            <ChoreoCard
+              {sequence}
+              printMode={true}
+              {handPointsVisible}
+              {showGrid}
+              {showTKA}
+              {showWord}
+              {includeStartPosition}
+              startPositionLayout={getStartPositionLayout(sequence)}
+              onSelect={onSelectSequence}
+              {onContextMenu}
+            />
+          {:else}
+            <div class="card-placeholder"></div>
+          {/if}
         </div>
       {/each}
     </div>
@@ -264,9 +382,65 @@
   }
 
   .family-label {
-    font-size: var(--font-size-sm, 14px);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+
+  .motion-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 1px 7px;
+    border-radius: 10px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
-    color: var(--theme-text, #ffffff);
+    letter-spacing: 0.02em;
+    color: var(--c1);
+    background: color-mix(in srgb, var(--c1) 15%, transparent);
+    border: 1px solid color-mix(in srgb, var(--c1) 30%, transparent);
+    white-space: nowrap;
+    line-height: 1.4;
+  }
+
+  /* Dual types show both hand colors — gradient text + gradient background */
+  .motion-pill.dual {
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--c1) 18%, transparent),
+      color-mix(in srgb, var(--c2) 18%, transparent)
+    );
+    border-color: color-mix(in srgb, var(--c1) 30%, color-mix(in srgb, var(--c2) 30%, transparent));
+    color: var(--c1);
+    background-clip: padding-box, border-box;
+  }
+
+  .motion-pill.dual::after {
+    content: attr(data-abbrev);
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: inherit;
+    letter-spacing: inherit;
+    background: linear-gradient(90deg, var(--c1), var(--c2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .motion-pill.dual {
+    position: relative;
+    color: transparent;
+  }
+
+  .arrow {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.35));
+    font-size: 14px;
+    line-height: 1;
+    flex-shrink: 0;
   }
 
   .family-meta {
@@ -309,11 +483,24 @@
     aspect-ratio: 7 / 5;
   }
 
+  /* Halved loops (6-beat LOOP sequences) display horizontally with
+     start position as a top row and 3 columns of beats */
+  .playing-card.halved-loop {
+    aspect-ratio: 7 / 5;
+  }
+
   /* ChoreoCard inside the playing card frame fills the entire space */
   .playing-card :global(> button) {
     width: 100%;
     height: 100%;
     border-radius: 0;
+  }
+
+  .card-placeholder {
+    width: 100%;
+    height: 100%;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border-radius: 8px;
   }
 
   @media (prefers-reduced-motion: reduce) {

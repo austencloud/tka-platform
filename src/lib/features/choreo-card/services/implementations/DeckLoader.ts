@@ -1,4 +1,4 @@
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, query, where } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import type { IDeckLoader } from "../contracts/IDeckLoader";
 import type { Deck } from "../../domain/models/Deck";
@@ -66,24 +66,49 @@ export class DeckLoader implements IDeckLoader {
     const db = await getFirestoreInstance();
     const seqRef = collection(db, getSystemDeckSequencesPath(deckId));
     const snapshot = await getDocs(seqRef);
-    return snapshot.docs.map((d) => {
-      const raw = { id: d.id, ...d.data() };
-      const seq = createSequenceData(raw);
+    return snapshot.docs.map((d) => this.hydrateDoc(d));
+  }
 
-      // Hydrate startPosition: fill motion placement defaults + derive letter from grid position
-      const startPosition = seq.startPosition
-        ? {
-            ...seq.startPosition,
-            motions: hydrateMotions(seq.startPosition.motions),
-            letter: seq.startPosition.letter ?? letterFromGridPosition(seq.startPosition.gridPosition),
-          }
-        : undefined;
+  async loadSequencesByIds(deckId: string, sequenceIds: string[]): Promise<SequenceData[]> {
+    if (sequenceIds.length === 0) return [];
 
-      return {
-        ...seq,
-        steps: hydrateSteps(seq.steps),
-        ...(startPosition && { startPosition }),
-      };
-    });
+    const db = await getFirestoreInstance();
+    const results: SequenceData[] = [];
+
+    // Firestore `in` queries support max 30 items per batch
+    const BATCH_SIZE = 30;
+    for (let i = 0; i < sequenceIds.length; i += BATCH_SIZE) {
+      const batch = sequenceIds.slice(i, i + BATCH_SIZE);
+      const q = query(
+        collection(db, getSystemDeckSequencesPath(deckId)),
+        where("__name__", "in", batch)
+      );
+      const snapshot = await getDocs(q);
+      for (const d of snapshot.docs) {
+        results.push(this.hydrateDoc(d));
+      }
+    }
+
+    return results;
+  }
+
+  // Shared hydration logic for a single Firestore document
+  private hydrateDoc(d: import("firebase/firestore").QueryDocumentSnapshot): SequenceData {
+    const raw = { id: d.id, ...d.data() };
+    const seq = createSequenceData(raw);
+
+    const startPosition = seq.startPosition
+      ? {
+          ...seq.startPosition,
+          motions: hydrateMotions(seq.startPosition.motions),
+          letter: seq.startPosition.letter ?? letterFromGridPosition(seq.startPosition.gridPosition),
+        }
+      : undefined;
+
+    return {
+      ...seq,
+      steps: hydrateSteps(seq.steps),
+      ...(startPosition && { startPosition }),
+    };
   }
 }

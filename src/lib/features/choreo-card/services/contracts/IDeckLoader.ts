@@ -4,4 +4,5 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 export interface IDeckLoader {
   loadDecks(): Promise<Deck[]>;
   loadDeckSequences(deckId: string): Promise<SequenceData[]>;
+  loadSequencesByIds(deckId: string, sequenceIds: string[]): Promise<SequenceData[]>;
 }
