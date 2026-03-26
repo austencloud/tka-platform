@@ -273,34 +273,23 @@ Variation support:
     position: relative;
     border-radius: 8px;
     overflow: hidden;
-    background: var(--theme-card-bg);
-    border: 1px solid var(--theme-stroke);
+    background: transparent;
+    border: none;
     color: var(--theme-text);
     display: block;
-    box-shadow: 0 12px 40px var(--theme-shadow);
-    width: 100%; /* Fill grid cell width */
-    padding: 0; /* Remove default button padding */
-    margin: 0; /* Remove default button margin */
+    width: 100%;
+    padding: 0;
+    margin: 0;
 
-    /* Enable container queries */
     container-type: inline-size;
     container-name: choreo-card;
 
-    /* Make card clickable */
     cursor: pointer;
-    /* Target only specific properties for smoother, faster animations */
-    transition:
-      transform 0.15s cubic-bezier(0.4, 0, 0.2, 1),
-      box-shadow 0.15s cubic-bezier(0.4, 0, 0.2, 1),
-      border-color 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .choreo-card:hover {
-    /* Subtle scale instead of lift - more modern, less aggressive */
     transform: scale(1.02);
-    /* Slightly enhanced shadow - much more subtle */
-    box-shadow: 0 14px 50px var(--theme-shadow);
-    border-color: var(--theme-stroke-strong);
   }
 
   /* Active state - brief feedback on touch/mobile only */
@@ -317,21 +306,13 @@ Variation support:
   }
 
   .choreo-card.selected {
-    border-color: color-mix(in srgb, var(--semantic-info) 80%, transparent);
-    box-shadow: 0 0 0 2px
-      color-mix(in srgb, var(--semantic-info) 40%, transparent);
+    outline: 2px solid color-mix(in srgb, var(--semantic-info) 80%, transparent);
+    outline-offset: 2px;
   }
 
-  /* Light mode: use light background to match light-colored pictograph images */
+  /* Light mode: transparent background, images handle their own bg */
   .choreo-card.light-mode {
-    background: var(--theme-card-bg-light, #f5f5f7);
-    border-color: var(--theme-stroke-light, rgba(0, 0, 0, 0.12));
-    box-shadow: 0 4px 20px var(--theme-shadow-light, rgba(0, 0, 0, 0.08));
-  }
-
-  .choreo-card.light-mode:hover {
-    border-color: var(--theme-stroke-strong-light, rgba(0, 0, 0, 0.2));
-    box-shadow: 0 6px 24px var(--theme-shadow-light, rgba(0, 0, 0, 0.12));
+    background: transparent;
   }
 
   /* Thumbnail container for crossfade animation */

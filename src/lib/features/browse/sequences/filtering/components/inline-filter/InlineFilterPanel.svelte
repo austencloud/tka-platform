@@ -185,13 +185,6 @@ Orchestrates the chip row and active filter bar.
     padding: 8px 16px;
   }
 
-  /* Wide screen: filters are inline in top bar, hide this panel */
-  @container gallery (min-width: 900px) {
-    .inline-filter-panel {
-      display: none !important;
-    }
-  }
-
   @media (prefers-reduced-motion: reduce) {
     .inline-filter-panel {
       transition: none;

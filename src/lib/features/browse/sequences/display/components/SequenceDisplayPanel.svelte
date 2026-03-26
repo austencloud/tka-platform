@@ -5,7 +5,6 @@
   import type { BrowseFilterType } from "$lib/shared/persistence/domain/enums/FilteringEnums";
   import type { SequenceFilterType } from "../../../shared/state/sequence-controls-state.svelte";
   import type { ActiveFilter } from "../../../shared/domain/models/multi-filter-models";
-  import type { BrowseViewMode } from "../../../shared/domain/BrowseViewMode";
   import type { VirtualGridApi } from "./VirtualizedSequenceGrid.svelte";
   import { container } from "$lib/shared/di";
   import { onMount, onDestroy } from "svelte";
@@ -49,7 +48,6 @@
     onOpenLetterSheet,
     onOpenOptionsSheet,
     getFilteredCount,
-    viewMode,
     sequenceSections = [],
   } = $props<{
     sequences?: SequenceData[];
@@ -77,7 +75,6 @@
     onOpenLetterSheet?: () => void;
     onOpenOptionsSheet?: () => void;
     getFilteredCount?: (candidateType: BrowseFilterType, candidateValue: BrowseFilterValue) => number;
-    viewMode?: BrowseViewMode;
     sequenceSections?: SequenceSection[];
   }>();
 
@@ -138,8 +135,18 @@
     }
   });
 
+  const hasActiveFilters = $derived(activeFilterList.length > 0);
+
   const emptyMessage = $derived(
-    source === "my-library" ? t('browse_no_sequences_saved') : t('browse_no_sequences_found')
+    hasActiveFilters
+      ? t('browse_no_sequences')
+      : source === "my-library"
+        ? t('browse_no_sequences_saved')
+        : t('browse_no_sequences_found')
+  );
+
+  const emptyHint = $derived(
+    hasActiveFilters ? t('browse_try_different_filters') : null
   );
 
   function handleSequenceAction(action: string, sequence: SequenceData, variations?: SequenceData[]) {
@@ -189,7 +196,7 @@
   </div>
 
   {#if onFilterChange && onRemoveFilter && onOpenLetterSheet && onOpenOptionsSheet}
-    <InlineFilterPanel isOpen={isInlineFiltersOpen} {activeLevel} {activeLetter} {activeLength} {activeLoopType} {activeGridMode} {isFavoritesActive} {hasActivePositions} {availableLengths} {loopTypeCounts} {onFilterChange} {onRemoveFilter} {onOpenLetterSheet} {onOpenOptionsSheet} {getFilteredCount} {viewMode} />
+    <InlineFilterPanel isOpen={isInlineFiltersOpen} {activeLevel} {activeLetter} {activeLength} {activeLoopType} {activeGridMode} {isFavoritesActive} {hasActivePositions} {availableLengths} {loopTypeCounts} {onFilterChange} {onRemoveFilter} {onOpenLetterSheet} {onOpenOptionsSheet} {getFilteredCount} />
   {/if}
 
   {#if activeFilterList.length > 0 && onRemoveFilter && onClearAllFilters}
@@ -205,16 +212,28 @@
         <button onclick={handleRetry}>{t('browse_try_again')}</button>
       </div>
     {:else if isEmpty}
-      <div class="empty-state"><p>{emptyMessage}</p></div>
+      <div class="empty-state" role="status" aria-live="polite">
+        <i class="fas {hasActiveFilters ? 'fa-filter' : 'fa-inbox'} empty-icon" aria-hidden="true"></i>
+        <p class="empty-message">{emptyMessage}</p>
+        {#if emptyHint}
+          <p class="empty-hint">{emptyHint}</p>
+        {/if}
+        {#if hasActiveFilters && onClearAllFilters}
+          <button class="clear-filters-btn" onclick={onClearAllFilters} type="button">
+            <i class="fas fa-times" aria-hidden="true"></i>
+            Clear all filters
+          </button>
+        {/if}
+      </div>
     {:else}
       <div class="grid-with-sidebar">
+        {#if showSidebar}
+          <SectionIndexSidebar sections={sequenceSections} onScrollToSection={scrollToSection} {activeSection} />
+        {/if}
         {#if hasSequences}
           <div class="grid-area">
             <BrowseGrid {sequences} {sections} viewMode="grid" {showSections} {thumbnailService} onAction={handleSequenceAction} {isTransitioning} />
           </div>
-        {/if}
-        {#if showSidebar}
-          <SectionIndexSidebar sections={sequenceSections} onScrollToSection={scrollToSection} {activeSection} />
         {/if}
       </div>
       {#if showSkeleton}
@@ -243,6 +262,12 @@
   .error-message { margin: 0; text-align: center; }
   .error-state button { padding: var(--spacing-sm) var(--spacing-md); background: color-mix(in srgb, var(--semantic-error) 20%, transparent); border: 1px solid var(--semantic-error); border-radius: 6px; color: var(--semantic-error); cursor: pointer; transition: all var(--duration-normal); }
   .error-state button:hover { background: color-mix(in srgb, var(--semantic-error) 30%, transparent); }
-  .empty-state { display: flex; align-items: center; justify-content: center; height: 200px; color: var(--theme-text-dim); }
-  .empty-state p { margin: 0; font-size: var(--font-size-base); }
+  .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--spacing-sm, 8px); padding: var(--spacing-xl, 24px); min-height: 200px; color: var(--theme-text-dim); }
+  .empty-icon { font-size: 2rem; opacity: 0.5; margin-bottom: var(--spacing-sm, 8px); }
+  .empty-message { margin: 0; font-size: var(--font-size-base, 16px); color: var(--theme-text, #ffffff); font-weight: 500; }
+  .empty-hint { margin: 0; font-size: var(--font-size-sm, 14px); color: var(--theme-text-dim, rgba(255, 255, 255, 0.6)); }
+  .clear-filters-btn { display: inline-flex; align-items: center; gap: var(--spacing-xs, 4px); margin-top: var(--spacing-sm, 8px); padding: var(--spacing-sm, 8px) var(--spacing-md, 12px); background: color-mix(in srgb, var(--theme-accent, #6366f1) 15%, transparent); border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1)); border-radius: 6px; color: var(--theme-text, #ffffff); font-size: var(--font-size-sm, 14px); cursor: pointer; transition: border-color 0.15s ease; font: inherit; }
+  .clear-filters-btn:hover { border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15)); }
+  .clear-filters-btn:focus-visible { outline: 2px solid var(--theme-accent, #6366f1); outline-offset: 2px; }
+  @media (prefers-reduced-motion: reduce) { .clear-filters-btn { transition: none; } }
 </style>

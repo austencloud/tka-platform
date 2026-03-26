@@ -9,105 +9,136 @@
 
   const { sections, onScrollToSection, activeSection }: Props = $props();
 
-  const MAX_MARKERS = 26;
+  const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
   interface Marker {
     label: string;
     title: string;
-    startIndex: number;
   }
 
-  const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  interface YearGroup {
+    year: string;
+    markers: Marker[];
+  }
 
-  const markers = $derived.by(() => {
-    const raw: Marker[] = [];
-    const seen = new Set<string>();
-    let runningIndex = 0;
+  /** Does this section title describe a relative time (today, 3 days ago, etc.)? */
+  function isRelativeTime(title: string): boolean {
+    const core = title.replace(/^[^\w\d]*/u, "").replace(/\s*\([^)]*\)/gi, "").trim();
+    return /^(today|yesterday|\d+\s*(days?|weeks?|months?)\s*ago)$/i.test(core);
+  }
 
-    for (const section of sections) {
-      const label = extractLabel(section.title);
-      if (!seen.has(label)) {
-        seen.add(label);
-        raw.push({ label, title: section.title, startIndex: runningIndex });
+  /** Resolve a section title to { month, year } */
+  function resolveMonthYear(title: string): { month: string; year: string } {
+    const core = title.replace(/^[^\w\d]*/u, "").replace(/\s*\([^)]*\)/gi, "").trim();
+
+    // Exact date (M/D/YYYY)
+    const dateMatch = core.match(/^(\d{1,2})\/\d{1,2}\/(\d{4})$/);
+    if (dateMatch) {
+      const monthStr = dateMatch[1]!;
+      const yearStr = dateMatch[2]!;
+      const monthIdx = parseInt(monthStr, 10) - 1;
+      return { month: MONTH_NAMES[monthIdx] || monthStr, year: yearStr };
+    }
+
+    // Relative time → calculate actual month/year
+    const now = new Date();
+    let target = new Date(now);
+
+    if (/^today$/i.test(core)) {
+      // already now
+    } else if (/^yesterday$/i.test(core)) {
+      target = new Date(now.getTime() - 86400000);
+    } else {
+      const daysMatch = core.match(/^(\d+)\s*days?\s*ago$/i);
+      if (daysMatch) target = new Date(now.getTime() - parseInt(daysMatch[1]!, 10) * 86400000);
+      const weeksMatch = core.match(/^(\d+)\s*weeks?\s*ago$/i);
+      if (weeksMatch) target = new Date(now.getTime() - parseInt(weeksMatch[1]!, 10) * 7 * 86400000);
+      const monthsMatch = core.match(/^(\d+)\s*months?\s*ago$/i);
+      if (monthsMatch) {
+        target = new Date(now);
+        target.setMonth(target.getMonth() - parseInt(monthsMatch[1]!, 10));
       }
-      runningIndex += section.sequences.length;
     }
 
-    if (raw.length <= MAX_MARKERS) return raw;
+    return { month: MONTH_NAMES[target.getMonth()]!, year: target.getFullYear().toString() };
+  }
 
-    // Too many markers — try collapsing dates to months first
-    const monthly: Marker[] = [];
-    const seenMonths = new Set<string>();
-    runningIndex = 0;
-    let hasMonths = false;
-
-    for (const section of sections) {
-      const monthLabel = extractMonthLabel(section.title);
-      if (monthLabel) hasMonths = true;
-      const key = monthLabel || extractLabel(section.title);
-      if (!seenMonths.has(key)) {
-        seenMonths.add(key);
-        monthly.push({ label: key, title: section.title, startIndex: runningIndex });
-      }
-      runningIndex += section.sequences.length;
-    }
-
-    if (hasMonths && monthly.length <= MAX_MARKERS) return monthly;
-
-    // Still too many — drop pure-numeric entries (beat counts like "8 s", "12", "16")
-    // and keep letter-based markers (A, B, W-, Σ-, Φ, etc.)
-    const withoutBeats = raw.filter(m => !/^\d+/.test(m.label));
-    if (withoutBeats.length > 0 && withoutBeats.length <= MAX_MARKERS) return withoutBeats;
-
-    // Fallback: just show the first MAX_MARKERS
-    return raw.slice(0, MAX_MARKERS);
-  });
-
-  const activeLabel = $derived.by(() => {
-    if (!activeSection) return undefined;
-    if (markers.length < sections.length) {
-      return extractMonthLabel(activeSection) || extractLabel(activeSection);
-    }
-    return extractLabel(activeSection);
-  });
-
+  /** For non-date sort modes: extract a short label from the section title */
   function extractLabel(title: string): string {
-    const clean = title.replace(/^[^\w\d]*/u, "").trim();
-    const core = clean.replace(/\s*\([^)]*\)/gi, "").trim();
-
-    if (/^\d+\s*days?\s*ago$/i.test(core)) return `${core.match(/^(\d+)/)?.[1] ?? ""}d`;
-    if (/^\d+\s*weeks?\s*ago$/i.test(core)) return `${core.match(/^(\d+)/)?.[1] ?? ""}w`;
-    if (/^\d+\s*months?\s*ago$/i.test(core)) return `${core.match(/^(\d+)/)?.[1] ?? ""}mo`;
-    if (/^yesterday$/i.test(core)) return "Yd";
-    if (/^today$/i.test(core)) return "Td";
-
-    const dateMatch = core.match(/^(\d{1,2})\/(\d{1,2})\/\d{4}$/);
-    if (dateMatch?.[1]) return `${dateMatch[1]}/${dateMatch[2]}`;
+    const core = title.replace(/^[^\w\d]*/u, "").replace(/\s*\([^)]*\)/gi, "").trim();
 
     const beatMatch = core.match(/^(\d+)\s*beats?$/i);
     if (beatMatch?.[1]) return beatMatch[1];
 
-    if (core.length <= 3) return core;
-    return core.slice(0, 3);
+    if (core.length <= 4) return core;
+    return core.slice(0, 4);
   }
 
-  function extractMonthLabel(title: string): string | null {
-    const clean = title.replace(/^[^\w\d]*/u, "").trim();
-    const core = clean.replace(/\s*\([^)]*\)/gi, "").trim();
+  /** Is the sort mode date-based? Check if any section has a relative-time or date title */
+  const isDateSorted = $derived.by(() => {
+    return sections.some(s => {
+      const core = s.title.replace(/^[^\w\d]*/u, "").replace(/\s*\([^)]*\)/gi, "").trim();
+      return isRelativeTime(s.title) || /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(core);
+    });
+  });
 
-    if (/^(today|yesterday|\d+\s*(days?|weeks?|months?)\s*ago)$/i.test(core)) return null;
+  /** Date-sorted: group markers by year with months underneath */
+  const yearGroups = $derived.by((): YearGroup[] => {
+    if (!isDateSorted) return [];
 
-    const dateMatch = core.match(/^(\d{1,2})\/\d{1,2}\/(\d{4})$/);
-    if (dateMatch) {
-      const monthIdx = parseInt(dateMatch[1], 10) - 1;
-      const year = dateMatch[2];
-      const currentYear = new Date().getFullYear().toString();
-      const monthName = MONTH_NAMES[monthIdx] || dateMatch[1];
-      return year === currentYear ? monthName : `${monthName} '${year.slice(2)}`;
+    const groups: YearGroup[] = [];
+    const seenMonthKeys = new Set<string>();
+
+    for (const section of sections) {
+      const { month, year } = resolveMonthYear(section.title);
+      const key = `${year}-${month}`;
+      if (seenMonthKeys.has(key)) continue;
+      seenMonthKeys.add(key);
+
+      let group = groups.find(g => g.year === year);
+      if (!group) {
+        group = { year, markers: [] };
+        groups.push(group);
+      }
+      group.markers.push({ label: month, title: section.title });
     }
 
-    return null;
-  }
+    return groups;
+  });
+
+  /** Non-date-sorted: flat markers (letters, beat counts, levels) */
+  const flatMarkers = $derived.by((): Marker[] => {
+    if (isDateSorted) return [];
+
+    const result: Marker[] = [];
+    const seen = new Set<string>();
+
+    for (const section of sections) {
+      const label = extractLabel(section.title);
+      if (seen.has(label)) continue;
+      seen.add(label);
+      result.push({ label, title: section.title });
+    }
+
+    return result;
+  });
+
+  /** Which month label is currently active? */
+  const activeMonthLabel = $derived.by(() => {
+    if (!activeSection) return undefined;
+    if (isDateSorted) {
+      const { month } = resolveMonthYear(activeSection);
+      return month;
+    }
+    return extractLabel(activeSection);
+  });
+
+  /** Which year is the active section in? */
+  const activeYear = $derived.by(() => {
+    if (!activeSection || !isDateSorted) return undefined;
+    const { year } = resolveMonthYear(activeSection);
+    return year;
+  });
 
   function handleClick(title: string) {
     onScrollToSection(title);
@@ -115,15 +146,13 @@
 
   let trackEl: HTMLElement | undefined = $state(undefined);
 
-  // Scroll the active marker into view within the sidebar track ONLY —
-  // never use scrollIntoView here, it propagates to parent scroll containers.
+  // Scroll the active marker into view within the sidebar track
   $effect(() => {
-    if (!activeLabel || !trackEl) return;
-    const activeBtn = trackEl.querySelector(".marker.active") as HTMLElement;
+    if (!activeMonthLabel || !trackEl) return;
+    const activeBtn = trackEl.querySelector(".month-btn.active, .marker.active") as HTMLElement;
     if (activeBtn) {
       const trackRect = trackEl.getBoundingClientRect();
       const btnRect = activeBtn.getBoundingClientRect();
-      // Only scroll if the button is outside the visible track area
       if (btnRect.top < trackRect.top || btnRect.bottom > trackRect.bottom) {
         trackEl.scrollTop = activeBtn.offsetTop - trackEl.clientHeight / 2 + activeBtn.clientHeight / 2;
       }
@@ -133,32 +162,60 @@
 
 <nav class="section-sidebar" aria-label="Section navigation">
   <div class="track" bind:this={trackEl}>
-    {#each markers as { label, title, startIndex } (label)}
-      <button
-        class="marker"
-        class:active={activeLabel === label}
-        onclick={() => handleClick(title)}
-        title={title}
-        aria-label="Jump to {label}"
-      >
-        {label}
-      </button>
-    {/each}
+    {#if isDateSorted}
+      <!-- Date-sorted: Year headers with months grouped below -->
+      {#each yearGroups as group (group.year)}
+        <div class="year-group" class:active-year={activeYear === group.year}>
+          <div class="year-header">{group.year}</div>
+          <div class="month-list">
+            {#each group.markers as marker (marker.label)}
+              <button
+                class="month-btn"
+                class:active={activeYear === group.year && activeMonthLabel === marker.label}
+                onclick={() => handleClick(marker.title)}
+                title={marker.title}
+                aria-label="Jump to {marker.label} {group.year}"
+              >
+                {marker.label}
+              </button>
+            {/each}
+          </div>
+        </div>
+      {/each}
+    {:else}
+      <!-- Non-date sort: flat marker list (letters, beat counts, levels) -->
+      {#each flatMarkers as marker (marker.label)}
+        <button
+          class="marker"
+          class:active={activeMonthLabel === marker.label}
+          onclick={() => handleClick(marker.title)}
+          title={marker.title}
+          aria-label="Jump to {marker.label}"
+        >
+          {marker.label}
+        </button>
+      {/each}
+    {/if}
   </div>
+
+  <!-- Fade edges -->
+  <div class="fade-top" aria-hidden="true"></div>
+  <div class="fade-bottom" aria-hidden="true"></div>
 </nav>
 
 <style>
   .section-sidebar {
     display: none;
     flex-shrink: 0;
-    width: 48px;
+    width: 88px;
     position: sticky;
     top: 0;
     height: 100vh;
     max-height: 100vh;
     overflow: hidden;
-    border-left: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
-    background: color-mix(in srgb, var(--theme-panel-bg, #12121c) 40%, transparent);
+    border-right: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
+    background: var(--theme-panel-bg, #12121c);
+    isolation: isolate;
   }
 
   @media (min-width: 768px) {
@@ -168,15 +225,35 @@
     }
   }
 
+  /* Fade edges for scroll hints */
+  .fade-top,
+  .fade-bottom {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 20px;
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  .fade-top {
+    top: 0;
+    background: linear-gradient(180deg, var(--theme-panel-bg, #12121c) 0%, transparent 100%);
+  }
+
+  .fade-bottom {
+    bottom: 0;
+    background: linear-gradient(0deg, var(--theme-panel-bg, #12121c) 0%, transparent 100%);
+  }
+
   .track {
     flex: 1;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: flex-start;
+    align-items: stretch;
     overflow-y: auto;
-    padding: 12px 4px;
-    gap: 2px;
+    padding: 24px 0;
+    gap: 0;
     scrollbar-width: none;
   }
 
@@ -184,47 +261,152 @@
     display: none;
   }
 
+  /* ── Year groups (date-sorted mode) ── */
+
+  .year-group {
+    padding: 0 0 4px;
+  }
+
+  .year-group + .year-group {
+    margin-top: 4px;
+    border-top: 1px solid color-mix(in srgb, var(--theme-text, white) 6%, transparent);
+    padding-top: 8px;
+  }
+
+  .year-header {
+    padding: 6px 14px 4px;
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
+    user-select: none;
+  }
+
+  /* Highlight the year header when its year is active */
+  .year-group.active-year .year-header {
+    color: var(--theme-accent, #818cf8);
+  }
+
+  .month-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  .month-btn {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 7px 14px 7px 20px;
+    border: none;
+    background: transparent;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.45));
+    cursor: pointer;
+    font-size: var(--font-size-min, 14px);
+    font-weight: 500;
+    line-height: 1;
+    user-select: none;
+    white-space: nowrap;
+    position: relative;
+    transition:
+      color 180ms ease,
+      background 180ms ease;
+  }
+
+  .month-btn:hover {
+    color: var(--theme-text, #fff);
+    background: color-mix(in srgb, var(--theme-text, white) 5%, transparent);
+  }
+
+  .month-btn:active {
+    background: color-mix(in srgb, var(--theme-text, white) 8%, transparent);
+  }
+
+  .month-btn.active {
+    color: var(--theme-accent, #818cf8);
+    font-weight: 700;
+    background: color-mix(in srgb, var(--theme-accent, #6366f1) 10%, transparent);
+  }
+
+  /* Accent bar on the right edge of the active month (faces the content) */
+  .month-btn.active::before {
+    content: "";
+    position: absolute;
+    right: 0;
+    top: 2px;
+    bottom: 2px;
+    width: 3px;
+    border-radius: 3px 0 0 3px;
+    background: var(--theme-accent, #6366f1);
+    box-shadow: 0 0 8px color-mix(in srgb, var(--theme-accent, #6366f1) 40%, transparent);
+  }
+
+  .month-btn:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: -2px;
+  }
+
+  /* ── Flat markers (non-date sort modes) ── */
+
   .marker {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 52px;
-    min-height: 26px;
-    padding: 3px 4px;
+    width: 100%;
+    min-height: 32px;
+    padding: 4px 10px;
     border: none;
     background: transparent;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.45));
     cursor: pointer;
-    border-radius: 6px;
-    font-size: var(--font-size-compact, 12px);
+    border-radius: 0;
+    font-size: var(--font-size-min, 14px);
     font-weight: 500;
     line-height: 1;
-    letter-spacing: -0.01em;
     user-select: none;
     white-space: nowrap;
-    transition: all 0.15s ease;
     position: relative;
+    transition:
+      color 180ms ease,
+      background 180ms ease;
   }
 
   .marker:hover {
     color: var(--theme-text, #fff);
-    background: rgba(255, 255, 255, 0.08);
+    background: color-mix(in srgb, var(--theme-text, white) 5%, transparent);
+  }
+
+  .marker:active {
+    background: color-mix(in srgb, var(--theme-text, white) 8%, transparent);
   }
 
   .marker.active {
     color: var(--theme-accent, #818cf8);
-    background: color-mix(in srgb, var(--theme-accent, #6366f1) 12%, transparent);
     font-weight: 700;
+    background: color-mix(in srgb, var(--theme-accent, #6366f1) 10%, transparent);
+  }
+
+  .marker.active::before {
+    content: "";
+    position: absolute;
+    right: 0;
+    top: 2px;
+    bottom: 2px;
+    width: 3px;
+    border-radius: 3px 0 0 3px;
+    background: var(--theme-accent, #6366f1);
+    box-shadow: 0 0 8px color-mix(in srgb, var(--theme-accent, #6366f1) 40%, transparent);
   }
 
   .marker:focus-visible {
     outline: 2px solid var(--theme-accent, #6366f1);
-    outline-offset: 1px;
+    outline-offset: -2px;
   }
 
   @media (prefers-reduced-motion: reduce) {
+    .month-btn,
     .marker {
-      transition: none;
+      transition: none !important;
     }
   }
 </style>

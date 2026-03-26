@@ -25,16 +25,14 @@
 
   const sortOptions: SortOption[] = [
     { id: BrowseSortMethod.ALPHABETICAL, label: t('browse_sort_alphabetical'), icon: "fa-font" },
-    { id: BrowseSortMethod.DATE_ADDED, label: t('browse_sort_newest'), icon: "fa-clock" },
-    { id: BrowseSortMethod.DIFFICULTY_LEVEL, label: t('browse_sort_difficulty'), icon: "fa-signal" },
+    { id: BrowseSortMethod.DATE_ADDED, label: t('browse_sort_date_added'), icon: "fa-clock" },
     { id: BrowseSortMethod.SEQUENCE_LENGTH, label: t('browse_sort_length'), icon: "fa-ruler" },
   ];
 
   // Short labels for the chip display
   const chipLabels: Record<string, string> = {
     [BrowseSortMethod.ALPHABETICAL]: "A-Z",
-    [BrowseSortMethod.DATE_ADDED]: "New",
-    [BrowseSortMethod.DIFFICULTY_LEVEL]: "Level",
+    [BrowseSortMethod.DATE_ADDED]: "Date",
     [BrowseSortMethod.SEQUENCE_LENGTH]: "Length",
   };
 

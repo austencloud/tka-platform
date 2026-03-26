@@ -107,9 +107,8 @@
   .view-mode-toggle {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 6px 8px;
-    flex-wrap: wrap;
+    gap: 6px;
+    flex-wrap: nowrap;
   }
 
   .toggle-group {
@@ -122,9 +121,8 @@
   }
 
   .toggle-chip {
-    min-height: var(--min-touch-target, 44px);
-    min-width: var(--min-touch-target, 44px);
-    padding: 6px 14px;
+    min-height: 32px;
+    padding: 4px 12px;
     border: none;
     border-radius: 8px;
     background: transparent;

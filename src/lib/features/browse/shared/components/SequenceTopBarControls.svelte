@@ -210,7 +210,7 @@
         onSortChange={handleSortChange}
       />
 
-      <!-- Right actions: Search + Zoom + Filter Button -->
+      <!-- Right actions: Search + Filter Button -->
       <div class="actions-section">
         <ExpandableSearchBar
           onSearch={handleSearch}

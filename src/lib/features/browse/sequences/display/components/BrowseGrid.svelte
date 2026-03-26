@@ -223,7 +223,10 @@
             class:grid-view={viewMode === "grid"}
             class:is-transitioning={isTransitioning}
             style:grid-template-columns={viewMode === "grid"
-              ? `repeat(${columnCount}, 1fr)`
+              ? `repeat(${Math.min(columnCount, section.sequences.length)}, 1fr)`
+              : undefined}
+            style:max-width={viewMode === "grid" && section.sequences.length < columnCount
+              ? `${(section.sequences.length / columnCount) * 100}%`
               : undefined}
           >
             {#each section.sequences as sequence (sequence.id)}
