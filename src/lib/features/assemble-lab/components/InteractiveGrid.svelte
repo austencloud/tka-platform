@@ -666,6 +666,7 @@
 <style>
   .interactive-grid {
     width: 100%;
+    max-width: min(100%, 65vh);
     max-height: 100%;
     aspect-ratio: 1;
     border-radius: 20px;

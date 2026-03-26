@@ -1,9 +1,8 @@
 <!--
   AssembleToolPanel - Tool panel content for the Assemble tab.
 
-  Idle state (desktop): side-by-side layout with guidance panel on left, grid on right.
-  Idle state (mobile): guidance card above the grid.
-  Building state: grid fills entire panel, guidance panel disappears.
+  Idle: side-by-side guidance panel + grid, centered together.
+  Building: panel disappears, grid recenters via flex layout.
 -->
 <script lang="ts">
   import type { AssembleTabState } from "../../shared/state/assemble-tab-state.svelte";
@@ -19,10 +18,21 @@
 
   const builderState = $derived(tabState.assembleBuilderState);
 
-  // Whether the builder is in idle state (no steps, no prop placed)
-  const isIdle = $derived(
-    builderState.phase === "idle" && builderState.stepCount === 0
-  );
+  let isIdle = $state(true);
+  let prevPhaseIdle = true;
+
+  // Track idle→building transitions.
+  $effect.pre(() => {
+    const currentlyIdle = builderState.phase === "idle" && builderState.stepCount === 0;
+
+    if (prevPhaseIdle && !currentlyIdle) {
+      isIdle = false;
+    } else if (!prevPhaseIdle && currentlyIdle) {
+      isIdle = true;
+    }
+
+    prevPhaseIdle = currentlyIdle;
+  });
 
   // Load last-used grid preferences from settings
   let settingsState: ISettingsState | null = null;
@@ -50,31 +60,27 @@
   });
 </script>
 
-<div class="assemble-tool-panel" class:idle={isIdle}>
-  {#if isIdle}
-    <!-- Desktop: side-by-side. Mobile: stacked. -->
-    <div class="idle-layout">
-      <AssembleIdlePanel {builderState} />
-      <div class="grid-section idle-grid">
-        <InteractiveGrid {builderState} />
-        <BuilderControls {builderState} />
-      </div>
-    </div>
-  {:else}
-    <!-- Building state: standard layout -->
-    <div class="header-section">
-      <BuilderInstructionHeader {builderState} />
-    </div>
+<div class="assemble-tool-panel">
+  <div class="header-section" class:hidden={isIdle}>
+    <BuilderInstructionHeader {builderState} />
+  </div>
 
-    <div class="grid-section">
+  <div class="main-area">
+    {#if isIdle}
+      <div class="panel-slot">
+        <AssembleIdlePanel {builderState} />
+      </div>
+    {/if}
+
+    <div class="grid-slot">
       <InteractiveGrid {builderState} />
       <BuilderControls {builderState} />
     </div>
+  </div>
 
-    <div class="turn-bar-section">
-      <BuilderTurnBar {builderState} />
-    </div>
-  {/if}
+  <div class="turn-bar-section" class:hidden={isIdle}>
+    <BuilderTurnBar {builderState} />
+  </div>
 </div>
 
 <style>
@@ -88,42 +94,38 @@
     gap: 8px;
   }
 
-  /* ── Idle layout: side-by-side on desktop ── */
-  .idle-layout {
+  .header-section,
+  .turn-bar-section {
+    flex-shrink: 0;
+  }
+
+  .header-section.hidden,
+  .turn-bar-section.hidden {
+    display: none;
+  }
+
+  .main-area {
+    flex: 1;
+    min-height: 0;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 32px;
+  }
+
+  .panel-slot {
+    flex: 0 0 auto;
+  }
+
+  .grid-slot {
+    flex: 0 0 auto;
+    width: 65vh;
     height: 100%;
-    width: 100%;
-    min-height: 0;
-  }
-
-  .idle-grid {
-    height: 100%;
-    max-width: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  /* ── Building layout sections ── */
-  .header-section {
-    flex-shrink: 0;
-  }
-
-  .grid-section {
-    flex: 1;
-    min-height: 0;
-    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-  }
-
-  .turn-bar-section {
-    flex-shrink: 0;
+    view-transition-name: assemble-grid;
   }
 
   /* ── Mobile ── */
@@ -133,41 +135,39 @@
       gap: 0;
     }
 
-    /* Idle: stack vertically */
-    .idle-layout {
+    .main-area {
       flex-direction: column;
       gap: 0;
     }
 
-    /* Building: grid overlap layout */
-    .assemble-tool-panel:not(.idle) {
-      display: grid;
-      grid-template-rows: 1fr;
-      grid-template-columns: 1fr;
+    .grid-slot {
+      width: 100%;
     }
 
-    .assemble-tool-panel:not(.idle) .header-section,
-    .assemble-tool-panel:not(.idle) .grid-section,
-    .assemble-tool-panel:not(.idle) .turn-bar-section {
-      grid-row: 1;
-      grid-column: 1;
-    }
-
-    .assemble-tool-panel:not(.idle) .header-section {
-      align-self: start;
+    .header-section:not(.hidden) {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
       z-index: 5;
       pointer-events: none;
     }
 
-    .assemble-tool-panel:not(.idle) .grid-section {
-      align-self: stretch;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .assemble-tool-panel:not(.idle) .turn-bar-section {
+    .turn-bar-section {
       display: none;
+    }
+  }
+
+  /* View transition timing (used by tab-switching view transitions) */
+  :global(::view-transition-old(assemble-grid)),
+  :global(::view-transition-new(assemble-grid)) {
+    animation-duration: 0.4s;
+    animation-timing-function: ease;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .grid-slot {
+      view-transition-name: none;
     }
   }
 </style>

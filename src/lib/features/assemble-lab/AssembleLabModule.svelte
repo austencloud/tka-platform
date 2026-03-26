@@ -1,8 +1,5 @@
 <!--
   AssembleLabModule.svelte - Standalone assemble lab (accessed from Lab tab).
-
-  Idle: side-by-side guidance panel + grid.
-  Building: grid fills entire space.
 -->
 <script lang="ts">
   import { createAssembleState } from "./state/assemble-state.svelte";
@@ -17,9 +14,19 @@
 
   const builderState = createAssembleState();
 
-  const isIdle = $derived(
-    builderState.phase === "idle" && builderState.stepCount === 0
-  );
+  let isIdle = $state(true);
+  let prevPhaseIdle = true;
+
+  // Track idle→building transitions.
+  $effect.pre(() => {
+    const currentlyIdle = builderState.phase === "idle" && builderState.stepCount === 0;
+    if (prevPhaseIdle && !currentlyIdle) {
+      isIdle = false;
+    } else if (!prevPhaseIdle && currentlyIdle) {
+      isIdle = true;
+    }
+    prevPhaseIdle = currentlyIdle;
+  });
 
   // Load last-used grid preferences from settings
   let settingsState: ISettingsState | null = null;
@@ -36,7 +43,6 @@
     // Settings unavailable — use defaults
   }
 
-  // Persist grid mode changes for next session
   $effect(() => {
     const mode = builderState.gridMode;
     const center = builderState.showCenter;
@@ -47,26 +53,28 @@
   });
 </script>
 
-<div class="assemble" class:idle={isIdle}>
-  {#if isIdle}
-    <div class="idle-layout">
-      <AssembleIdlePanel {builderState} />
-      <div class="grid-container idle-grid">
-        <InteractiveGrid {builderState} />
-        <BuilderControls {builderState} />
-      </div>
-    </div>
-  {:else}
+<div class="assemble">
+  <div class="header-section" class:hidden={isIdle}>
     <BuilderInstructionHeader {builderState} />
+  </div>
 
-    <div class="grid-container">
+  <div class="main-area">
+    {#if isIdle}
+      <div class="panel-slot">
+        <AssembleIdlePanel {builderState} />
+      </div>
+    {/if}
+
+    <div class="grid-slot">
       <InteractiveGrid {builderState} />
       <BuilderControls {builderState} />
     </div>
+  </div>
 
+  <div class="footer-section" class:hidden={isIdle}>
     <BuilderTurnBar {builderState} />
     <StepStrip {builderState} />
-  {/if}
+  </div>
 </div>
 
 <style>
@@ -81,51 +89,72 @@
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
   }
 
-  /* ── Idle: side-by-side ── */
-  .idle-layout {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 32px;
-    height: 100%;
+  .header-section,
+  .footer-section {
+    flex-shrink: 0;
     width: 100%;
-    min-height: 0;
   }
 
-  .idle-grid {
-    height: 100%;
-    max-width: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  .header-section.hidden,
+  .footer-section.hidden {
+    display: none;
   }
 
-  /* ── Building: standard ── */
-  .grid-container {
+  .main-area {
     flex: 1;
     min-height: 0;
     width: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
-    position: relative;
+    gap: 32px;
   }
 
-  .grid-container :global(.interactive-grid) {
+  .panel-slot {
+    flex: 0 0 auto;
+  }
+
+  .grid-slot {
+    flex: 0 0 auto;
+    width: 65vh;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    view-transition-name: assemble-grid;
+  }
+
+  .grid-slot :global(.interactive-grid) {
     max-width: 100%;
     max-height: 100%;
   }
 
-  /* ── Mobile ── */
+  :global(::view-transition-old(assemble-grid)),
+  :global(::view-transition-new(assemble-grid)) {
+    animation-duration: 0.4s;
+    animation-timing-function: ease;
+  }
+
   @media (max-width: 768px) {
     .assemble {
       padding: 8px;
       gap: 8px;
     }
 
-    .idle-layout {
+    .main-area {
       flex-direction: column;
       gap: 0;
+    }
+
+    .grid-slot {
+      width: 100%;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .grid-slot {
+      view-transition-name: none;
     }
   }
 </style>
