@@ -124,6 +124,6 @@ export const PRODUCTION_MODULES: Record<ModuleId, boolean> = {
   watch: false, // Watch videos/performances (unreleased)
   moderation: false, // Content moderation (admin-only)
   arena: false, // Arena pairwise ranking (unreleased)
-  festivals: false, // Festival Hub (unreleased)
+  festivals: true, // Festival Hub (admin-only via feature flags)
   lab: false, // Experimental features lab (admin-only) - consolidates realm, mandala, skewlab, poi-lab, background-builder, landing-preview, terrain-research, ml-training, community, connect
 };
