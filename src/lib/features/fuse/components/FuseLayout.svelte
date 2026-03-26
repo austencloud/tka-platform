@@ -57,12 +57,23 @@
 		fuseAssemblyAnimator = { async animate() {} };
 	}
 
-	function handleFuse() {
+	async function handleFuse() {
 		if (!leftBrowsingSeq || !rightBrowsingSeq) return;
 		// Set the sequences on fuse state so startFuse can use them
 		fuseState.selectLeft(leftBrowsingSeq);
 		fuseState.selectRight(rightBrowsingSeq);
 		fuseState.startFuse();
+
+		// Derive letters on the fused sequence so it has a word
+		if (fuseState.fusedSequence) {
+			try {
+				const letterDeriver = container.items.letterDeriver;
+				const withLetters = await letterDeriver.deriveLettersForSequence(fuseState.fusedSequence);
+				fuseState.setFusedSequence(withLetters);
+			} catch {
+				// Letters are nice-to-have, don't block on failure
+			}
+		}
 	}
 
 	// When state enters "fusing", trigger the assembly animation
