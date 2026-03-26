@@ -2,148 +2,176 @@
   import { getFestivalContext } from "../../context/festival-context";
   import { auth } from "$lib/shared/auth/firebase";
   import type { BioVersion, TeachingPortfolio } from "../../domain/models/teaching-portfolio";
+  import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
+  import ModalHeader from "$lib/shared/foundation/ui/modal/ModalHeader.svelte";
+  import ModalFooter from "$lib/shared/foundation/ui/modal/ModalFooter.svelte";
+
+  interface Props {
+    editBioId?: string | null;
+  }
+
+  let { editBioId = $bindable(null) }: Props = $props();
 
   const { state: festivalState } = getFestivalContext();
 
-  // Which bio is in inline edit mode (by id)
-  let editingId = $state<string | null>(null);
-  let editingText = $state("");
+  // Modal state
+  let modalOpen = $state(false);
   let editingLabel = $state("");
-  // Confirm delete pending
-  let deletingId = $state<string | null>(null);
+  let editingText = $state("");
+  let editingBioId = $state<string | null>(null);
+  let confirmingDelete = $state(false);
 
-  function startEdit(bio: BioVersion) {
-    editingId = bio.id;
-    editingText = bio.text;
+  $effect(() => {
+    if (editBioId) {
+      const bio = festivalState.portfolio?.bios.find((b) => b.id === editBioId);
+      if (bio) {
+        openEditModal(bio);
+      }
+      editBioId = null;
+    }
+  });
+
+  function openEditModal(bio: BioVersion) {
+    editingBioId = bio.id;
     editingLabel = bio.label;
-    deletingId = null;
+    editingText = bio.text;
+    confirmingDelete = false;
+    modalOpen = true;
   }
 
-  function cancelEdit() {
-    editingId = null;
-    editingText = "";
+  function closeModal() {
+    modalOpen = false;
+    editingBioId = null;
     editingLabel = "";
+    editingText = "";
+    confirmingDelete = false;
   }
 
-  function saveEdit(bio: BioVersion) {
+  function saveEdit() {
     const uid = auth.currentUser?.uid;
-    if (!uid || !festivalState.portfolio) return;
+    if (!uid || !festivalState.portfolio || !editingBioId) return;
     const updated: TeachingPortfolio = {
       ...festivalState.portfolio,
       bios: festivalState.portfolio.bios.map((b) =>
-        b.id === bio.id ? { ...b, text: editingText, label: editingLabel } : b
+        b.id === editingBioId ? { ...b, text: editingText, label: editingLabel } : b
       ),
     };
     festivalState.savePortfolio(uid, updated);
-    cancelEdit();
+    closeModal();
   }
 
-  function deleteBio(bioId: string) {
+  function deleteBio() {
     const uid = auth.currentUser?.uid;
-    if (!uid || !festivalState.portfolio) return;
+    if (!uid || !festivalState.portfolio || !editingBioId) return;
     const updated: TeachingPortfolio = {
       ...festivalState.portfolio,
-      bios: festivalState.portfolio.bios.filter((b) => b.id !== bioId),
+      bios: festivalState.portfolio.bios.filter((b) => b.id !== editingBioId),
     };
     festivalState.savePortfolio(uid, updated);
-    deletingId = null;
+    closeModal();
   }
 
-  function addBio() {
-    const uid = auth.currentUser?.uid;
-    if (!uid || !festivalState.portfolio) return;
-    const newBio: BioVersion = {
-      id: crypto.randomUUID(),
-      label: "New Bio",
-      text: "",
-    };
-    const updated: TeachingPortfolio = {
-      ...festivalState.portfolio,
-      bios: [...festivalState.portfolio.bios, newBio],
-    };
-    festivalState.savePortfolio(uid, updated);
-    startEdit(newBio);
-  }
-
-  function copyBio(bio: BioVersion) {
-    navigator.clipboard.writeText(bio.text);
+  function copyBio() {
+    navigator.clipboard.writeText(editingText);
   }
 </script>
 
 <div class="bio-editor">
   {#if festivalState.portfolio && festivalState.portfolio.bios.length > 0}
-    <ul class="bio-list" role="list">
+    <div class="bio-cards">
       {#each festivalState.portfolio.bios as bio (bio.id)}
-        <li class="bio-item">
-          {#if editingId === bio.id}
-            <div class="bio-edit-form">
-              <input
-                class="label-input"
-                type="text"
-                value={editingLabel}
-                oninput={(e) => (editingLabel = (e.target as HTMLInputElement).value)}
-                placeholder="Label (e.g. Teaching Bio)"
-                aria-label="Bio label"
-              />
-              <textarea
-                class="bio-textarea"
-                value={editingText}
-                oninput={(e) => (editingText = (e.target as HTMLTextAreaElement).value)}
-                placeholder="Bio text..."
-                rows={6}
-                aria-label="Bio text"
-              ></textarea>
-              <div class="char-count">{editingText.length} characters</div>
-              <div class="edit-actions">
-                <button class="save-btn" onclick={() => saveEdit(bio)}>Save</button>
-                <button class="cancel-btn" onclick={cancelEdit}>Cancel</button>
-              </div>
-            </div>
+        <div
+          class="bio-card"
+          role="button"
+          tabindex="0"
+          aria-label="Edit {bio.label}"
+          onclick={() => openEditModal(bio)}
+          onkeydown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              openEditModal(bio);
+            }
+          }}
+        >
+          <span class="bio-char-badge">{bio.text.length} chars</span>
+          <h4 class="bio-card-label">{bio.label}</h4>
+          {#if bio.text}
+            <p class="bio-preview">{bio.text}</p>
           {:else}
-            <div class="bio-view">
-              <div class="bio-meta">
-                <span class="bio-label">{bio.label}</span>
-                <span class="bio-char-count">{bio.text.length} chars</span>
-              </div>
-              <p class="bio-text">{bio.text}</p>
-              <div class="bio-actions">
-                <button class="action-btn" onclick={() => copyBio(bio)} title="Copy bio text">
-                  <i class="fas fa-copy" aria-hidden="true"></i>
-                  Copy
-                </button>
-                <button class="action-btn" onclick={() => startEdit(bio)} title="Edit bio">
-                  <i class="fas fa-pencil-alt" aria-hidden="true"></i>
-                  Edit
-                </button>
-                {#if deletingId === bio.id}
-                  <span class="confirm-delete-label">Delete?</span>
-                  <button class="action-btn danger" onclick={() => deleteBio(bio.id)}>Yes</button>
-                  <button class="action-btn" onclick={() => (deletingId = null)}>No</button>
-                {:else}
-                  <button
-                    class="action-btn danger"
-                    onclick={() => (deletingId = bio.id)}
-                    title="Delete bio"
-                  >
-                    <i class="fas fa-trash" aria-hidden="true"></i>
-                    Delete
-                  </button>
-                {/if}
-              </div>
-            </div>
+            <p class="bio-preview empty">No text yet. Click to edit.</p>
           {/if}
-        </li>
+        </div>
       {/each}
-    </ul>
+    </div>
   {:else}
-    <p class="no-bios">No bios yet. Add one below.</p>
+    <p class="no-bios">No bios yet.</p>
   {/if}
-
-  <button class="add-btn" onclick={addBio}>
-    <i class="fas fa-plus" aria-hidden="true"></i>
-    Add Bio
-  </button>
 </div>
+
+<BaseModal bind:open={modalOpen} onclose={() => closeModal()} size="fit" animation="pop">
+  {#snippet header()}
+    <ModalHeader
+      title={editingLabel || "Edit Bio"}
+      icon="fa-pencil-alt"
+      iconColor="var(--theme-accent, #6366f1)"
+      onClose={() => closeModal()}
+    />
+  {/snippet}
+
+  <div class="bio-modal-body" data-animate="3">
+    <label class="field-label">
+      Label
+      <input
+        class="field-input"
+        type="text"
+        bind:value={editingLabel}
+        placeholder="e.g. Teaching Bio, Performance Bio"
+      />
+    </label>
+    <label class="field-label">
+      Bio Text
+      <textarea
+        class="field-textarea"
+        bind:value={editingText}
+        rows={8}
+        placeholder="Write your bio..."
+      ></textarea>
+    </label>
+    <div class="bio-modal-char-count">{editingText.length} characters</div>
+  </div>
+
+  {#snippet footer()}
+    <ModalFooter align="between">
+      <div class="modal-left-actions">
+        <button class="ghost" onclick={copyBio} type="button" title="Copy bio text">
+          <i class="fas fa-copy" aria-hidden="true"></i>
+          Copy
+        </button>
+        {#if confirmingDelete}
+          <span class="confirm-delete-label">Delete?</span>
+          <button class="ghost danger-text" onclick={deleteBio} type="button">Yes</button>
+          <button class="ghost" onclick={() => (confirmingDelete = false)} type="button">No</button>
+        {:else}
+          <button
+            class="ghost danger-text"
+            onclick={() => (confirmingDelete = true)}
+            type="button"
+            title="Delete this bio"
+          >
+            <i class="fas fa-trash" aria-hidden="true"></i>
+            Delete
+          </button>
+        {/if}
+      </div>
+      <div class="modal-right-actions">
+        <button class="secondary" onclick={() => closeModal()} type="button">Cancel</button>
+        <button class="primary" onclick={saveEdit} disabled={!editingLabel.trim()} type="button">
+          Save
+        </button>
+      </div>
+    </ModalFooter>
+  {/snippet}
+</BaseModal>
 
 <style>
   .bio-editor {
@@ -152,198 +180,146 @@
     gap: 12px;
   }
 
-  .bio-list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
+  .bio-cards {
     display: flex;
     flex-direction: column;
     gap: 10px;
   }
 
-  .bio-item {
+  .bio-card {
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 8px;
-    padding: 14px;
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: var(--radius-lg, 12px);
+    padding: 16px;
+    cursor: pointer;
+    transition: border-color 0.15s;
+    position: relative;
   }
 
-  .bio-view {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+  .bio-card:hover {
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
   }
 
-  .bio-meta {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
+  .bio-card:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 2px;
   }
 
-  .bio-label {
+  .bio-card-label {
+    margin: 0 0 8px;
     font-size: var(--font-size-sm, 14px);
     font-weight: 600;
     color: var(--theme-text, #ffffff);
+    padding-right: 80px; /* space for badge */
   }
 
-  .bio-char-count {
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.5));
-  }
-
-  .bio-text {
-    margin: 0;
+  .bio-preview {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
     font-size: var(--font-size-sm, 14px);
     color: var(--theme-text-secondary, rgba(255, 255, 255, 0.7));
     line-height: 1.6;
+    margin: 0;
   }
 
-  .bio-actions {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    align-items: center;
+  .bio-preview.empty {
+    font-style: italic;
+    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.4));
   }
 
-  .bio-edit-form {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .label-input {
-    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
-    border-radius: 5px;
-    color: var(--theme-text, #ffffff);
-    font-size: var(--font-size-sm, 14px);
-    padding: 6px 10px;
-    width: 100%;
-    box-sizing: border-box;
-  }
-
-  .label-input:focus {
-    outline: none;
-    border-color: var(--theme-accent, #6366f1);
-  }
-
-  .bio-textarea {
-    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
-    border-radius: 5px;
-    color: var(--theme-text, #ffffff);
-    font-size: var(--font-size-sm, 14px);
-    padding: 8px 10px;
-    width: 100%;
-    box-sizing: border-box;
-    resize: vertical;
-    line-height: 1.5;
-    font-family: inherit;
-  }
-
-  .bio-textarea:focus {
-    outline: none;
-    border-color: var(--theme-accent, #6366f1);
-  }
-
-  .char-count {
+  .bio-char-badge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
     font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-secondary, rgba(255, 255, 255, 0.5));
-    text-align: right;
-  }
-
-  .edit-actions {
-    display: flex;
-    gap: 8px;
-  }
-
-  .save-btn {
-    padding: 6px 14px;
-    background: var(--theme-accent, #6366f1);
-    border: none;
-    border-radius: 5px;
-    color: #fff;
-    font-size: var(--font-size-sm, 14px);
-    font-weight: 600;
-    cursor: pointer;
-  }
-
-  .save-btn:hover {
-    opacity: 0.85;
-  }
-
-  .cancel-btn {
-    padding: 6px 14px;
-    background: none;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
-    border-radius: 5px;
-    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.7));
-    font-size: var(--font-size-sm, 14px);
-    cursor: pointer;
-  }
-
-  .cancel-btn:hover {
-    color: var(--theme-text, #ffffff);
-  }
-
-  .action-btn {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    padding: 5px 10px;
-    background: none;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 5px;
-    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.7));
-    font-size: var(--font-size-compact, 12px);
-    cursor: pointer;
-    transition: color 0.15s, border-color 0.15s;
-  }
-
-  .action-btn:hover {
-    color: var(--theme-text, #ffffff);
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
-  }
-
-  .action-btn.danger:hover {
-    color: var(--semantic-error, #ef4444);
-    border-color: var(--semantic-error, #ef4444);
-  }
-
-  .action-btn i {
-    font-size: 11px;
-  }
-
-  .confirm-delete-label {
-    font-size: var(--font-size-compact, 12px);
-    color: var(--semantic-error, #ef4444);
-    align-self: center;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+    padding: 2px 8px;
+    border-radius: 10px;
   }
 
   .no-bios {
     margin: 0;
     font-size: var(--font-size-sm, 14px);
-    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.5));
+    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.45));
     font-style: italic;
   }
 
-  .add-btn {
+  /* ─── Modal body ──────────────────────────────────────────────────────────── */
+
+  .bio-modal-body {
+    padding: 20px;
     display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 14px;
-    background: none;
-    border: 1px dashed var(--theme-stroke, rgba(255, 255, 255, 0.2));
-    border-radius: 6px;
-    color: var(--theme-accent, #6366f1);
-    font-size: var(--font-size-sm, 14px);
-    cursor: pointer;
-    align-self: flex-start;
-    transition: border-color 0.15s;
+    flex-direction: column;
+    gap: 14px;
   }
 
-  .add-btn:hover {
+  .field-label {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.6));
+    font-weight: 500;
+  }
+
+  .field-input,
+  .field-textarea {
+    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
+    border-radius: 5px;
+    color: var(--theme-text, #ffffff);
+    font-size: var(--font-size-sm, 14px);
+    padding: 7px 10px;
+    font-family: inherit;
+  }
+
+  .field-input:focus,
+  .field-textarea:focus {
+    outline: none;
     border-color: var(--theme-accent, #6366f1);
+  }
+
+  .field-textarea {
+    resize: vertical;
+    line-height: 1.5;
+  }
+
+  .bio-modal-char-count {
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.5));
+    text-align: right;
+  }
+
+  .modal-left-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .modal-right-actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  .danger-text {
+    color: var(--semantic-error, #ef4444) !important;
+  }
+
+  .danger-text:hover {
+    background: rgba(239, 68, 68, 0.1) !important;
+  }
+
+  .confirm-delete-label {
+    font-size: var(--font-size-compact, 12px);
+    color: var(--semantic-error, #ef4444);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bio-card {
+      transition: none;
+    }
   }
 </style>
