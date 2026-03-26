@@ -248,6 +248,102 @@
     }));
   }
 
+  // ─── Inline edit state for Profile card ────────────────────────────────────
+  let editingField = $state<string | null>(null);
+  let editingFieldOriginal = $state<string | number>("");
+
+  function startFieldEdit(field: string) {
+    editingField = field;
+    switch (field) {
+      case "website": editingFieldOriginal = slWebsite; break;
+      case "instagram": editingFieldOriginal = slInstagram; break;
+      case "facebook": editingFieldOriginal = slFacebook; break;
+      case "youtube": editingFieldOriginal = slYoutube; break;
+      case "tiktok": editingFieldOriginal = slTiktok; break;
+      case "homeCity": editingFieldOriginal = aHomeCity; break;
+      case "homeCountry": editingFieldOriginal = aHomeCountry; break;
+      case "yearsTeaching": editingFieldOriginal = aYearsTeaching; break;
+      case "yearsPerforming": editingFieldOriginal = aYearsPerforming; break;
+      case "insuranceProvider": editingFieldOriginal = aInsuranceProvider; break;
+    }
+  }
+
+  function finishFieldEdit(field: string) {
+    editingField = null;
+    if (["website", "instagram", "facebook", "youtube", "tiktok"].includes(field)) {
+      handleSocialChange();
+    } else {
+      handleAboutChange();
+    }
+  }
+
+  function cancelFieldEdit(field: string) {
+    switch (field) {
+      case "website": slWebsite = editingFieldOriginal as string; break;
+      case "instagram": slInstagram = editingFieldOriginal as string; break;
+      case "facebook": slFacebook = editingFieldOriginal as string; break;
+      case "youtube": slYoutube = editingFieldOriginal as string; break;
+      case "tiktok": slTiktok = editingFieldOriginal as string; break;
+      case "homeCity": aHomeCity = editingFieldOriginal as string; break;
+      case "homeCountry": aHomeCountry = editingFieldOriginal as string; break;
+      case "yearsTeaching": aYearsTeaching = editingFieldOriginal as number; break;
+      case "yearsPerforming": aYearsPerforming = editingFieldOriginal as number; break;
+      case "insuranceProvider": aInsuranceProvider = editingFieldOriginal as string; break;
+    }
+    editingField = null;
+  }
+
+  function handleFieldKeydown(e: KeyboardEvent, field: string) {
+    if (e.key === "Enter" || e.key === "Tab") {
+      e.preventDefault();
+      finishFieldEdit(field);
+    } else if (e.key === "Escape") {
+      cancelFieldEdit(field);
+    }
+  }
+
+  function getSocialValue(key: string): string {
+    switch (key) {
+      case "website": return slWebsite;
+      case "instagram": return slInstagram;
+      case "facebook": return slFacebook;
+      case "youtube": return slYoutube;
+      case "tiktok": return slTiktok;
+      default: return "";
+    }
+  }
+
+  function setSocialValue(key: string, value: string) {
+    switch (key) {
+      case "website": slWebsite = value; break;
+      case "instagram": slInstagram = value; break;
+      case "facebook": slFacebook = value; break;
+      case "youtube": slYoutube = value; break;
+      case "tiktok": slTiktok = value; break;
+    }
+  }
+
+  function getAboutValue(key: string): string | number {
+    switch (key) {
+      case "homeCity": return aHomeCity;
+      case "homeCountry": return aHomeCountry;
+      case "yearsTeaching": return aYearsTeaching;
+      case "yearsPerforming": return aYearsPerforming;
+      case "insuranceProvider": return aInsuranceProvider;
+      default: return "";
+    }
+  }
+
+  function setAboutValue(key: string, value: string) {
+    switch (key) {
+      case "homeCity": aHomeCity = value; break;
+      case "homeCountry": aHomeCountry = value; break;
+      case "yearsTeaching": aYearsTeaching = Number(value) || 0; break;
+      case "yearsPerforming": aYearsPerforming = Number(value) || 0; break;
+      case "insuranceProvider": aInsuranceProvider = value; break;
+    }
+  }
+
   // ─── Empty state / seed import ───────────────────────────────────────────────
   function importSeed() {
     const uid = auth.currentUser?.uid;
@@ -430,123 +526,102 @@
       </div>
     </section>
 
-    <!-- ── Social links ──────────────────────────────────────────────────────── -->
+    <!-- ── Profile (social links + about merged) ─────────────────────────────── -->
     <section class="section-card">
       <div class="section-header">
-        <h3 class="section-title">Social Links</h3>
+        <h3 class="section-title">
+          <i class="fas fa-user" aria-hidden="true" style="margin-right: 6px; opacity: 0.5;"></i>
+          Profile
+        </h3>
       </div>
 
-      <div class="form-grid">
-        <label class="field-label">
-          Website
-          <input
-            class="field-input"
-            type="text"
-            bind:value={slWebsite}
-            oninput={handleSocialChange}
-            placeholder="yourwebsite.com"
-          />
-        </label>
-        <label class="field-label">
-          Instagram
-          <input
-            class="field-input"
-            type="text"
-            bind:value={slInstagram}
-            oninput={handleSocialChange}
-            placeholder="@handle"
-          />
-        </label>
-        <label class="field-label">
-          Facebook
-          <input
-            class="field-input"
-            type="text"
-            bind:value={slFacebook}
-            oninput={handleSocialChange}
-            placeholder="facebook.com/page"
-          />
-        </label>
-        <label class="field-label">
-          YouTube
-          <input
-            class="field-input"
-            type="text"
-            bind:value={slYoutube}
-            oninput={handleSocialChange}
-            placeholder="youtube.com/@channel"
-          />
-        </label>
-        <label class="field-label">
-          TikTok
-          <input
-            class="field-input"
-            type="text"
-            bind:value={slTiktok}
-            oninput={handleSocialChange}
-            placeholder="@handle"
-          />
-        </label>
-      </div>
-    </section>
+      <div class="profile-layout">
+        <!-- Social Links column -->
+        <div class="profile-column">
+          <div class="profile-column-title">Social Links</div>
+          {#each [
+            { key: "website", icon: "fa-globe", iconClass: "fas", placeholder: "yourwebsite.com" },
+            { key: "instagram", icon: "fa-instagram", iconClass: "fab", placeholder: "@handle" },
+            { key: "facebook", icon: "fa-facebook", iconClass: "fab", placeholder: "facebook.com/page" },
+            { key: "youtube", icon: "fa-youtube", iconClass: "fab", placeholder: "youtube.com/@channel" },
+            { key: "tiktok", icon: "fa-tiktok", iconClass: "fab", placeholder: "@handle" },
+          ] as link (link.key)}
+            <div
+              class="social-row"
+              onclick={() => editingField !== link.key && startFieldEdit(link.key)}
+            >
+              <i
+                class="{link.iconClass} {link.icon} social-icon"
+                aria-hidden="true"
+              ></i>
+              {#if editingField === link.key}
+                <!-- svelte-ignore a11y_autofocus -->
+                <input
+                  class="social-edit-input"
+                  type="text"
+                  value={getSocialValue(link.key)}
+                  oninput={(e) => setSocialValue(link.key, (e.target as HTMLInputElement).value)}
+                  placeholder={link.placeholder}
+                  onblur={() => finishFieldEdit(link.key)}
+                  onkeydown={(e) => handleFieldKeydown(e, link.key)}
+                  aria-label={link.key}
+                  autofocus
+                />
+              {:else}
+                {@const val = getSocialValue(link.key)}
+                <span class="social-value" class:empty={!val}>
+                  {val || "Not set"}
+                </span>
+              {/if}
+            </div>
+          {/each}
+        </div>
 
-    <!-- ── About ─────────────────────────────────────────────────────────────── -->
-    <section class="section-card">
-      <div class="section-header">
-        <h3 class="section-title">About</h3>
-      </div>
-
-      <div class="form-grid">
-        <label class="field-label">
-          Home City
-          <input
-            class="field-input"
-            type="text"
-            bind:value={aHomeCity}
-            oninput={handleAboutChange}
-            placeholder="Chicago"
-          />
-        </label>
-        <label class="field-label">
-          Home Country
-          <input
-            class="field-input"
-            type="text"
-            bind:value={aHomeCountry}
-            oninput={handleAboutChange}
-            placeholder="USA"
-          />
-        </label>
-        <label class="field-label">
-          Years Teaching
-          <input
-            class="field-input"
-            type="number"
-            bind:value={aYearsTeaching}
-            oninput={handleAboutChange}
-            min="0"
-          />
-        </label>
-        <label class="field-label">
-          Years Performing
-          <input
-            class="field-input"
-            type="number"
-            bind:value={aYearsPerforming}
-            oninput={handleAboutChange}
-            min="0"
-          />
-        </label>
-        <label class="field-label">
-          Insurance Provider
-          <input
-            class="field-input"
-            type="text"
-            bind:value={aInsuranceProvider}
-            oninput={handleAboutChange}
-            placeholder="e.g. Specialty Insurance Agency"
-          />
-        </label>
+        <!-- About column -->
+        <div class="profile-column">
+          <div class="profile-column-title">About</div>
+          {#each [
+            { key: "homeCity", label: "City", type: "text", placeholder: "Chicago" },
+            { key: "homeCountry", label: "Country", type: "text", placeholder: "USA" },
+            { key: "yearsTeaching", label: "Years Teaching", type: "number", placeholder: "" },
+            { key: "yearsPerforming", label: "Years Performing", type: "number", placeholder: "" },
+            { key: "insuranceProvider", label: "Insurance", type: "text", placeholder: "e.g. Specialty Insurance" },
+          ] as field (field.key)}
+            <div
+              class="about-row"
+              onclick={() => editingField !== field.key && startFieldEdit(field.key)}
+            >
+              <span class="about-label">{field.label}</span>
+              {#if editingField === field.key}
+                <!-- svelte-ignore a11y_autofocus -->
+                <input
+                  class="social-edit-input"
+                  type={field.type}
+                  value={getAboutValue(field.key)}
+                  oninput={(e) => setAboutValue(field.key, (e.target as HTMLInputElement).value)}
+                  placeholder={field.placeholder}
+                  min={field.type === "number" ? "0" : undefined}
+                  onblur={() => finishFieldEdit(field.key)}
+                  onkeydown={(e) => handleFieldKeydown(e, field.key)}
+                  aria-label={field.label}
+                  autofocus
+                />
+              {:else}
+                {@const val = getAboutValue(field.key)}
+                <span
+                  class="about-value"
+                  class:empty={!val && val !== 0}
+                >
+                  {#if val || val === 0}
+                    {val}
+                  {:else}
+                    Not set
+                  {/if}
+                </span>
+              {/if}
+            </div>
+          {/each}
+        </div>
       </div>
     </section>
     </div>
@@ -1239,11 +1314,106 @@
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.25));
   }
 
-  /* ─── Social links & About form ───────────────────────────────────────────── */
+  /* ─── Profile card (social + about) ──────────────────────────────────────── */
 
-  .form-grid {
+  .profile-layout {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-    gap: 12px;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  @media (max-width: 600px) {
+    .profile-layout {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .profile-column-title {
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.5));
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
+  }
+
+  .social-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
+    cursor: pointer;
+  }
+
+  .social-row:last-child {
+    border-bottom: none;
+  }
+
+  .social-icon {
+    width: 20px;
+    text-align: center;
+    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.5));
+    font-size: var(--font-size-sm, 14px);
+    flex-shrink: 0;
+  }
+
+  .social-value {
+    flex: 1;
+    font-size: var(--font-size-sm, 14px);
+    color: var(--theme-text, #ffffff);
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .social-value.empty {
+    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.3));
+    font-style: italic;
+  }
+
+  .social-edit-input {
+    flex: 1;
+    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+    border: 1px solid var(--theme-accent, #6366f1);
+    border-radius: 5px;
+    color: var(--theme-text, #ffffff);
+    font-size: var(--font-size-sm, 14px);
+    padding: 4px 8px;
+  }
+
+  .social-edit-input:focus {
+    outline: none;
+  }
+
+  .about-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
+    cursor: pointer;
+  }
+
+  .about-row:last-child {
+    border-bottom: none;
+  }
+
+  .about-label {
+    font-size: var(--font-size-sm, 14px);
+    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.6));
+  }
+
+  .about-value {
+    font-size: var(--font-size-sm, 14px);
+    color: var(--theme-text, #ffffff);
+    font-weight: 500;
+  }
+
+  .about-value.empty {
+    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.3));
+    font-style: italic;
+    font-weight: 400;
   }
 </style>
