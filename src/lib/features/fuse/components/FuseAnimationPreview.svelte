@@ -1,11 +1,9 @@
 <!--
   FuseAnimationPreview.svelte
 
-  Replaces the browser in a FusePanel when a sequence is selected.
-  Creates its own AnimationPlaybackController + AnimationPanelState,
-  initializes with the sequence, and starts looping playback on mount.
-
-  A back button overlays the animation so the user can deselect.
+  Shows a live animation preview driven entirely by the shared fuse clock.
+  Does NOT run its own playback loop — instead, reactively calls
+  calculateStateForBeat() when currentBeat changes.
 -->
 <script lang="ts">
 	import { onMount, onDestroy, untrack } from "svelte";
@@ -17,11 +15,9 @@
 	import { container } from "$lib/shared/di";
 	import { createPlaybackControllerFactory } from "$lib/shared/di/containers/animator-container";
 
-	const DEFAULT_BPM = 60;
-
 	let {
 		sequence,
-		bpm = DEFAULT_BPM,
+		bpm = 60,
 		onBack,
 		onControllerReady,
 		propColor,
@@ -40,12 +36,13 @@
 	let controller = $state<IAnimationPlaybackController | null>(null);
 	let motionLoader = $state<ISequenceMotionLoader | null>(null);
 	const animState = createAnimationPanelState();
+	let initialized = $state(false);
+	let totalSteps = $state(0);
 
 	let loading = $state(true);
 	let error = $state<string | null>(null);
 
 	// Derived state from animState for canvas props
-	const isPlaying = $derived(animState.isPlaying);
 	const currentStep = $derived(animState.currentStep);
 	const bluePropState = $derived(animState.bluePropState);
 	const redPropState = $derived(animState.redPropState);
@@ -65,9 +62,6 @@
 	onMount(async () => {
 		try {
 			motionLoader = container.items.sequenceMotionLoader;
-			// Create an independent controller with its own AnimationLoop.
-			// The DI-cached controller shares a single AnimationLoop, so the
-			// second panel would overwrite the first's callback and pause it.
 			controller = createPlaybackControllerFactory();
 			loading = false;
 		} catch (err) {
@@ -82,7 +76,7 @@
 		animState.dispose();
 	});
 
-	// Initialize playback when controller and sequence are ready
+	// Initialize controller with sequence (but do NOT start its playback loop)
 	$effect(() => {
 		void controller;
 		void motionLoader;
@@ -90,6 +84,7 @@
 		if (!controller || !motionLoader) return;
 
 		untrack(async () => {
+			// Stop any existing playback
 			if (animState.isPlaying) controller!.togglePlayback();
 			animState.reset();
 
@@ -106,48 +101,37 @@
 				return;
 			}
 
-			// Expose controller to parent for sync
+			totalSteps = fullSeq.steps?.length ?? 1;
+			initialized = true;
+
 			onControllerReady?.(controller!);
 
-			// Apply BPM
-			const speed = bpm / DEFAULT_BPM;
-			controller!.setSpeed(speed);
-
-			// Sync to shared clock beat position, then start immediately
-			const stepCount = fullSeq.steps?.length ?? 1;
+			// Do NOT call togglePlayback() — the shared clock drives this
+			// Just calculate initial state
+			const stepCount = totalSteps;
 			if (stepCount > 0 && currentBeat > 0) {
-				const wrappedBeat = Math.floor(currentBeat) % stepCount;
-				controller!.seekToStep(wrappedBeat);
+				const wrappedBeat = (Math.floor(currentBeat) % stepCount) + 1;
+				controller!.calculateStateForBeat(wrappedBeat);
+			} else {
+				controller!.calculateStateForBeat(0);
 			}
-			controller!.togglePlayback();
 		});
 	});
 
-	// Sync BPM changes to controller speed
-	$effect(() => {
-		const speed = bpm / DEFAULT_BPM;
-		if (controller) {
-			untrack(() => controller!.setSpeed(speed));
-		}
-	});
-
-	// Keep animation canvas in sync with the shared clock.
-	// The ChoreoCard gold border reads currentBeat directly, but the animation
-	// controller runs its own rAF loop. Correct drift when > 0.5 beats off.
+	// Drive animation from the shared clock — this is the only beat source.
+	// calculateStateForBeat computes interpolated prop states for the given beat
+	// without running an internal rAF loop.
 	$effect(() => {
 		const beat = currentBeat;
-		if (!controller || !animState.isPlaying) return;
+		if (!initialized || !controller || totalSteps <= 0) return;
 
 		untrack(() => {
-			const totalSteps = animState.sequenceData?.steps?.length ?? 1;
-			if (totalSteps <= 0) return;
-			const expectedStep = Math.floor(beat) % totalSteps;
-			const actual = Math.floor(animState.currentStep);
-			// Wrap-aware difference
-			const diff = Math.abs(expectedStep - actual);
-			if (diff > 0 && diff < totalSteps) {
-				controller!.seekToStep(expectedStep);
-			}
+			// The animation engine convention: beat 0 = start position, 1..N = motion steps.
+			// Shared clock beat is a continuous float. Wrap into sequence length,
+			// then add 1 to skip past the start position into motion space.
+			const wrappedWithFraction = (beat % totalSteps) + 1;
+			controller!.calculateStateForBeat(wrappedWithFraction);
+			animState.setCurrentStep(wrappedWithFraction);
 		});
 	});
 </script>
@@ -173,9 +157,9 @@
 				{stepData}
 				{sequenceData}
 				{currentStep}
-				{isPlaying}
+				isPlaying={true}
 				word={sequenceData?.word ?? sequence?.word ?? null}
-				hideProgressBar={false}
+				hideProgressBar={true}
 				hideTkaGlyph={true}
 				hideStepNumbers={true}
 				progressBarVariant="minimal"
