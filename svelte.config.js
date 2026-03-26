@@ -36,8 +36,12 @@ const config = {
 
     // 2026: Preload critical modules for better performance
     prerender: {
-      // Configure if you want static prerendering
       crawl: true,
+      handleHttpError: ({ path, message }) => {
+        // PWA splash screens and icons may not exist yet — ignore 404s for static assets
+        if (path.startsWith("/pwa/")) return;
+        throw new Error(message);
+      },
     },
   },
 
