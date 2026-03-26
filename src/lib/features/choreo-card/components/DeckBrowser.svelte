@@ -15,6 +15,8 @@
   import DeckListFilterPanel from "./filters/DeckListFilterPanel.svelte";
   import DeckInteriorFilterPanel from "./filters/DeckInteriorFilterPanel.svelte";
   import ChoreoCard from "./ChoreoCard.svelte";
+  import VtgCollectionView from "./VtgCollectionView.svelte";
+  import VtgFamilyDrillDown from "./VtgFamilyDrillDown.svelte";
 
   interface Props {
     decks: Deck[];
@@ -165,6 +167,12 @@
     if (info) return { icon: info.icon, color: info.color };
     return { icon: "layer-group", color: "#6366f1" };
   }
+
+  // ── VTG family navigation ──
+  let selectedVtgFamily = $state<string | null>(null);
+  const isVtgCollectionView = $derived(
+    selectedCollection === "VTG" && !selectedDeckId && !selectedVtgFamily,
+  );
 
   // ── Level 1: Deck List State ──
 
@@ -392,6 +400,47 @@
             </section>
           {/each}
         </div>
+      {/if}
+    </div>
+
+  {:else if selectedCollection === "VTG" && selectedVtgFamily}
+    <!-- ═══ Level 1.5: VTG Family Drill-Down ═══ -->
+    <div class="level-container level-deck-list">
+      <VtgFamilyDrillDown
+        familyId={selectedVtgFamily}
+        decks={getDecksForCollection("VTG")}
+        {handPointsVisible}
+        {showGrid}
+        {showTKA}
+        {showWord}
+        {includeStartPosition}
+        {onSelectSequence}
+        onBack={() => { selectedVtgFamily = null; }}
+      />
+    </div>
+
+  {:else if selectedCollection && isVtgCollectionView}
+    <!-- ═══ Level 1: VTG Collection View (Family/Ratio cards) ═══ -->
+    <div class="level-container level-deck-list">
+      <div class="top-bar">
+        <nav class="breadcrumb" aria-label="Deck navigation">
+          <button class="crumb" onclick={onBackToCollections} type="button">Collections</button>
+          <span class="crumb-sep" aria-hidden="true">›</span>
+          <span class="crumb current">VTG</span>
+        </nav>
+      </div>
+
+      {#if isLoading}
+        <div class="loading" role="status" aria-live="polite">
+          <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+          Loading decks...
+        </div>
+      {:else}
+        <VtgCollectionView
+          decks={getDecksForCollection("VTG")}
+          {onSelectDeck}
+          onSelectFamily={(familyId) => { selectedVtgFamily = familyId; }}
+        />
       {/if}
     </div>
 

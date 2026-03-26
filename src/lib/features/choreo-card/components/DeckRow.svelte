@@ -43,10 +43,10 @@
 
   <span class="meta">
     <span
-      class="badge level-badge"
+      class="level-badge"
       style="background: {levelStyle.cssBg}; border-color: {levelStyle.border}; color: {levelStyle.text};"
     >
-      L{deck.level}
+      {deck.level}
     </span>
     <span class="chip">{deck.gridMode}</span>
     <span class="chip">{deck.families.length} families</span>
@@ -112,7 +112,6 @@
     flex-shrink: 0;
   }
 
-  .badge,
   .chip {
     display: inline-flex;
     align-items: center;
@@ -124,9 +123,17 @@
   }
 
   .level-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
     border: 1px solid;
-    font-weight: 700;
-    letter-spacing: 0.02em;
+    font-family: Cambria, serif;
+    font-weight: bold;
+    font-size: var(--font-size-min, 14px);
+    flex-shrink: 0;
   }
 
   .chip {
