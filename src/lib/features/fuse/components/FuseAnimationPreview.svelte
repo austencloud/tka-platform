@@ -26,13 +26,15 @@
 		onControllerReady,
 		propColor,
 		currentBeat = 0,
+		showBackButton = true,
 	}: {
 		sequence: SequenceData;
 		bpm?: number;
-		onBack: () => void;
+		onBack?: () => void;
 		onControllerReady?: (controller: IAnimationPlaybackController) => void;
 		propColor?: "blue" | "red";
 		currentBeat?: number;
+		showBackButton?: boolean;
 	} = $props();
 
 	let controller = $state<IAnimationPlaybackController | null>(null);
@@ -160,13 +162,15 @@
 				fillContainer={true}
 			/>
 
-			<button
-				class="back-btn"
-				onclick={onBack}
-				aria-label="Deselect sequence"
-			>
-				<i class="fas fa-arrow-left" aria-hidden="true"></i>
-			</button>
+			{#if showBackButton && onBack}
+				<button
+					class="back-btn"
+					onclick={onBack}
+					aria-label="Deselect sequence"
+				>
+					<i class="fas fa-arrow-left" aria-hidden="true"></i>
+				</button>
+			{/if}
 		</div>
 	{/if}
 </div>
