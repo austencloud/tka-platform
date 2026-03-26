@@ -1,86 +1,129 @@
 <script lang="ts">
   import { getFestivalContext } from "../../context/festival-context";
   import { auth } from "$lib/shared/auth/firebase";
+  import type { FestivalRegion } from "../../domain/models/festival";
 
   const { state } = getFestivalContext();
 
-  function handleRegionChange(e: Event) {
-    const value = (e.target as HTMLSelectElement).value;
-    state.filters = {
-      ...state.filters,
-      region: value === "all" ? undefined : (value as typeof state.filters.region),
-    };
+  const REGIONS: { value: FestivalRegion | "all"; label: string }[] = [
+    { value: "all", label: "All Regions" },
+    { value: "north-america", label: "N. America" },
+    { value: "europe", label: "Europe" },
+    { value: "oceania", label: "Oceania" },
+    { value: "asia", label: "Asia" },
+    { value: "south-america", label: "S. America" },
+    { value: "africa", label: "Africa" },
+  ];
+
+  const TIME_WINDOWS: { value: string; label: string }[] = [
+    { value: "upcoming", label: "Upcoming" },
+    { value: "3months", label: "3 Months" },
+    { value: "6months", label: "6 Months" },
+    { value: "year", label: "This Year" },
+  ];
+
+  const SEEKING: { value: string; label: string; icon: string }[] = [
+    { value: "all", label: "All", icon: "fa-globe" },
+    { value: "applications-open", label: "Apps Open", icon: "fa-door-open" },
+    { value: "instructors", label: "Instructors", icon: "fa-chalkboard-teacher" },
+    { value: "performers", label: "Performers", icon: "fa-fire" },
+  ];
+
+  function applyFilters() {
     const uid = auth.currentUser?.uid;
     if (uid) state.loadFestivals(uid);
   }
 
-  function handleTimeChange(e: Event) {
-    const value = (e.target as HTMLSelectElement).value;
+  function setRegion(value: string) {
+    state.filters = {
+      ...state.filters,
+      region: value === "all" ? undefined : (value as FestivalRegion),
+    };
+    applyFilters();
+  }
+
+  function setTimeWindow(value: string) {
     state.filters = {
       ...state.filters,
       timeWindow: value === "upcoming" ? undefined : (value as typeof state.filters.timeWindow),
     };
-    const uid = auth.currentUser?.uid;
-    if (uid) state.loadFestivals(uid);
+    applyFilters();
   }
 
-  function handleSeekingChange(e: Event) {
-    const value = (e.target as HTMLSelectElement).value;
+  function setSeeking(value: string) {
     state.filters = {
       ...state.filters,
       seeking: value === "all" ? undefined : (value as typeof state.filters.seeking),
     };
-    const uid = auth.currentUser?.uid;
-    if (uid) state.loadFestivals(uid);
+    applyFilters();
   }
+
+  const activeRegion = $derived(state.filters.region ?? "all");
+  const activeTime = $derived(state.filters.timeWindow ?? "upcoming");
+  const activeSeeking = $derived(state.filters.seeking ?? "all");
 </script>
 
 <div class="filter-bar" role="search" aria-label="Festival filters">
-  <select
-    class="filter-select"
-    value={state.filters.region ?? "all"}
-    onchange={handleRegionChange}
-    aria-label="Filter by region"
-  >
-    <option value="all">All Regions</option>
-    <option value="north-america">North America</option>
-    <option value="europe">Europe</option>
-    <option value="oceania">Oceania</option>
-    <option value="asia">Asia</option>
-    <option value="south-america">South America</option>
-    <option value="africa">Africa</option>
-  </select>
+  <!-- Region chips -->
+  <div class="chip-group" role="radiogroup" aria-label="Filter by region">
+    {#each REGIONS as r (r.value)}
+      <button
+        class="chip"
+        class:active={activeRegion === r.value}
+        onclick={() => setRegion(r.value)}
+        role="radio"
+        aria-checked={activeRegion === r.value}
+        type="button"
+      >
+        {r.label}
+      </button>
+    {/each}
+  </div>
 
-  <select
-    class="filter-select"
-    value={state.filters.timeWindow ?? "upcoming"}
-    onchange={handleTimeChange}
-    aria-label="Filter by time window"
-  >
-    <option value="upcoming">Upcoming</option>
-    <option value="3months">Next 3 months</option>
-    <option value="6months">Next 6 months</option>
-    <option value="year">This year</option>
-  </select>
+  <div class="divider"></div>
 
-  <select
-    class="filter-select"
-    value={state.filters.seeking ?? "all"}
-    onchange={handleSeekingChange}
-    aria-label="Filter by seeking"
-  >
-    <option value="all">All Festivals</option>
-    <option value="applications-open">Applications Open</option>
-    <option value="instructors">Seeking Instructors</option>
-    <option value="performers">Seeking Performers</option>
-  </select>
+  <!-- Time window chips -->
+  <div class="chip-group" role="radiogroup" aria-label="Filter by time">
+    {#each TIME_WINDOWS as t (t.value)}
+      <button
+        class="chip"
+        class:active={activeTime === t.value}
+        onclick={() => setTimeWindow(t.value)}
+        role="radio"
+        aria-checked={activeTime === t.value}
+        type="button"
+      >
+        {t.label}
+      </button>
+    {/each}
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Seeking chips -->
+  <div class="chip-group" role="radiogroup" aria-label="Filter by type">
+    {#each SEEKING as s (s.value)}
+      <button
+        class="chip"
+        class:active={activeSeeking === s.value}
+        onclick={() => setSeeking(s.value)}
+        role="radio"
+        aria-checked={activeSeeking === s.value}
+        type="button"
+      >
+        <i class="fas {s.icon}" aria-hidden="true"></i>
+        {s.label}
+      </button>
+    {/each}
+  </div>
 </div>
 
 <style>
   .filter-bar {
     display: flex;
-    gap: 8px;
-    padding: 12px 16px;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
     overflow-x: auto;
     scrollbar-width: none;
     border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
@@ -91,35 +134,63 @@
     display: none;
   }
 
-  .filter-select {
-    appearance: none;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
-    border-radius: 20px;
-    color: var(--theme-text, #ffffff);
-    cursor: pointer;
-    font-size: var(--font-size-compact, 12px);
-    padding: 6px 28px 6px 12px;
-    white-space: nowrap;
+  .chip-group {
+    display: flex;
+    gap: 6px;
     flex-shrink: 0;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='rgba(255,255,255,0.5)' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 10px center;
-    transition: border-color 0.15s ease, background-color 0.15s ease;
   }
 
-  .filter-select:hover {
+  .chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+    padding: 8px 16px;
+    background: transparent;
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+    border-radius: 22px;
+    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.5));
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: border-color var(--transition-fast, 0.15s),
+      background var(--transition-fast, 0.15s),
+      color var(--transition-fast, 0.15s);
+  }
+
+  .chip:hover {
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
-    background-color: var(--theme-card-bg-hover, rgba(255, 255, 255, 0.08));
-  }
-
-  .filter-select:focus {
-    outline: none;
-    border-color: var(--theme-accent, #6366f1);
-  }
-
-  .filter-select option {
-    background: var(--theme-panel-bg, #12121c);
     color: var(--theme-text, #ffffff);
+  }
+
+  .chip:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 2px;
+  }
+
+  .chip.active {
+    background: color-mix(in srgb, var(--theme-accent, #6366f1) 15%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent, #6366f1) 40%, transparent);
+    color: var(--theme-accent, #6366f1);
+  }
+
+  .chip i {
+    font-size: 11px;
+  }
+
+  .divider {
+    width: 1px;
+    height: 24px;
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    flex-shrink: 0;
+  }
+
+  /* ── Reduced motion ──────────────────────────────── */
+
+  @media (prefers-reduced-motion: reduce) {
+    .chip {
+      transition: none;
+    }
   }
 </style>
