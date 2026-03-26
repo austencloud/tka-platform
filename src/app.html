@@ -11,7 +11,8 @@
     <!-- Landing visitors don't need Firebase/Google APIs — skip these to save ~500ms -->
     <script>
       (function() {
-        var isLanding = !window.location.pathname.startsWith('/app');
+        var p = window.location.pathname;
+        var isLanding = p === '/' || p === '/landing' || p.startsWith('/embed') || p.startsWith('/p/') || p.startsWith('/sequence/') || p.startsWith('/profile/') || p.startsWith('/demo') || p.startsWith('/1989') || p.startsWith('/1995') || p.startsWith('/1998') || p.startsWith('/2003');
         if (isLanding) {
           // Mark landing mode early for loading bar skip below
           window.__tkaIsLanding = true;
