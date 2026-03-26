@@ -606,14 +606,27 @@ export default defineConfig({
     __PWA_ENABLED__: process.env.DISABLE_PWA !== "true",
   },
   plugins: [
-    // realtime-bpm-analyzer is browser-only (AudioContext). Mark external
-    // during SSR so Node doesn't try to load it.
+    // realtime-bpm-analyzer is browser-only (AudioContext) and has broken
+    // package exports that Vite/Rollup can't resolve in some environments
+    // (especially pnpm on Cloudflare Pages). SSR: mark external.
+    // Client: locate the actual ESM file via fileURLToPath.
     {
       name: "fix-realtime-bpm-analyzer",
-      enforce: "pre",
+      enforce: "pre" as const,
       resolveId(id: string, _importer: string | undefined, options?: { ssr?: boolean }) {
-        if (id === "realtime-bpm-analyzer" && options?.ssr) {
-          return { id: "realtime-bpm-analyzer", external: true };
+        if (id === "realtime-bpm-analyzer") {
+          if (options?.ssr) {
+            return { id: "realtime-bpm-analyzer", external: true };
+          }
+          try {
+            // import.meta.resolve returns a file:// URL; convert to OS path
+            // @ts-expect-error -- import.meta.resolve is sync in Node 20+
+            const pkgUrl = import.meta.resolve("realtime-bpm-analyzer/package.json");
+            const pkgPath = fileURLToPath(pkgUrl);
+            return path.resolve(path.dirname(pkgPath), "dist", "index.esm.js");
+          } catch {
+            return path.resolve(dirname, "node_modules", "realtime-bpm-analyzer", "dist", "index.esm.js");
+          }
         }
       },
     },
