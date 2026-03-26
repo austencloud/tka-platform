@@ -142,6 +142,10 @@ export type AnimationSettingsState = {
   // Bulk operations
   updateSettings: (partial: Partial<AnimationSettings>) => void;
   resetToDefaults: () => void;
+
+  // Current prop type (set by AnimationEngine, used for UI labels)
+  readonly currentPropType: string;
+  setCurrentPropType: (propType: string) => void;
 };
 
 /**
@@ -150,6 +154,7 @@ export type AnimationSettingsState = {
  */
 export function createAnimationSettingsState(): AnimationSettingsState {
   let settings = $state<AnimationSettings>(loadSettings());
+  let propType = $state("staff");
 
   // Auto-save on any changes (using $effect.root for module-level usage)
   $effect.root(() => {
@@ -266,6 +271,14 @@ export function createAnimationSettingsState(): AnimationSettingsState {
 
     resetToDefaults: () => {
       settings = { ...DEFAULT_ANIMATION_SETTINGS };
+    },
+
+    // Current prop type (for UI labels like trail tracking mode)
+    get currentPropType() {
+      return propType;
+    },
+    setCurrentPropType: (pt: string) => {
+      propType = pt;
     },
   };
 }

@@ -88,7 +88,10 @@
   {#if sequence}
     <div class="sequence-info">
       <span class="seq-name">{simplifyAndTruncate(sequence.word || sequence.name || "Unnamed")}</span>
-      <span class="seq-beats">{sequence.steps?.length || 0} beats</span>
+      <span class="seq-meta">
+        <span class="seq-beats">{sequence.steps?.length || 0} beats</span>
+        <span class="seq-hint" title="Press D to copy sequence data to clipboard">D = copy</span>
+      </span>
     </div>
   {/if}
 </div>
@@ -211,9 +214,22 @@
     font-size: var(--font-size-min, 14px);
   }
 
+  .seq-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
   .seq-beats {
     font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+  }
+
+  .seq-hint {
+    font-size: var(--font-size-compact, 12px);
+    color: rgba(79, 195, 247, 0.5);
+    font-family: monospace;
+    cursor: default;
   }
 
   @media (prefers-reduced-motion: reduce) {
