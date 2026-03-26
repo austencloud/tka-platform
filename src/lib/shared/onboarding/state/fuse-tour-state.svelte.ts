@@ -9,17 +9,15 @@ const TOUR_COMPLETED_KEY = "tka-fuse-tour-completed";
 
 export type FuseTourStop =
   | "welcome"
-  | "left-panel"
-  | "right-panel"
+  | "panels"
   | "shuffle"
-  | "controls";
+  | "fuse";
 
 const STOPS: FuseTourStop[] = [
   "welcome",
-  "left-panel",
-  "right-panel",
+  "panels",
   "shuffle",
-  "controls",
+  "fuse",
 ];
 
 interface FuseTourData {
@@ -54,7 +52,7 @@ function createFuseTourState() {
       return data.currentStopIndex;
     },
     get currentStop(): FuseTourStop {
-      return STOPS[data.currentStopIndex] ?? "controls";
+      return STOPS[data.currentStopIndex] ?? "fuse";
     },
     get totalStops() {
       return STOPS.length;
