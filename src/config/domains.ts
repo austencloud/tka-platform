@@ -3,7 +3,7 @@
  *
  * Single-domain architecture:
  * - tkaflowarts.com: Brand home, landing page, marketing content
- * - tkaflowarts.com/app: The app (TKA Composer product)
+ * - tkaflowarts.com/create, /browse, etc.: The app (module paths at root)
  * - Future: tkaflowarts.com/embed, tkaflowarts.com/kiosk, etc.
  */
 
@@ -16,14 +16,33 @@ export type SiteMode = "loading" | "app" | "landing" | "embed" | "kiosk" | "edu"
 // Landing/brand domain
 export const LANDING_DOMAIN = "https://tkaflowarts.com";
 
-// App base URL
-export const APP_DOMAIN = "https://tkaflowarts.com/app";
+// App base URL (same domain, modules at root paths)
+export const APP_DOMAIN = "https://tkaflowarts.com";
 
 /**
  * Detect site mode from current pathname.
  * Returns "app" when under /app, "landing" otherwise.
  * Supports ?mode= override for local dev testing.
  */
+// Paths that are NOT the app — landing page and standalone public routes.
+// Everything else (including module paths like /festivals/map) is app mode.
+const LANDING_PATHS = new Set([
+  "/",
+  "/landing",
+]);
+
+const PUBLIC_PATH_PREFIXES = [
+  "/embed",
+  "/p/",
+  "/sequence/",
+  "/profile/",
+  "/demo",
+  "/1989",
+  "/1995",
+  "/1998",
+  "/2003",
+];
+
 export function detectSiteMode(): SiteMode {
   if (typeof window !== "undefined") {
     const params = new URLSearchParams(window.location.search);
@@ -31,9 +50,20 @@ export function detectSiteMode(): SiteMode {
     if (modeOverride && ["app", "landing"].includes(modeOverride)) {
       return modeOverride;
     }
-    if (window.location.pathname.startsWith("/app")) {
-      return "app";
+    const pathname = window.location.pathname;
+
+    // Exact landing paths
+    if (LANDING_PATHS.has(pathname)) {
+      return "landing";
     }
+
+    // Public routes that have their own bootstrap (no app shell)
+    if (PUBLIC_PATH_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
+      return "landing";
+    }
+
+    // Everything else is app mode (includes /app/*, /create/*, /festivals/*, etc.)
+    return "app";
   }
   return "landing";
 }
