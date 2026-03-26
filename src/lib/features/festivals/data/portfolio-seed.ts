@@ -73,6 +73,7 @@ export const AUSTEN_PORTFOLIO_SEED: Omit<TeachingPortfolio, "userId" | "createdA
       solo: true,
     },
   ],
+  acts: [],
   bios: [
     {
       id: "teaching-bio",

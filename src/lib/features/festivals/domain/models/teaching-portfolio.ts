@@ -19,9 +19,24 @@ export interface BioVersion {
   text: string;
 }
 
+export interface ActTemplate {
+  id: string;
+  title: string;
+  description: string;
+  duration: string;
+  performerCount: number;
+  solo: boolean;
+  props: string[];
+  fire: boolean;
+  requirements: string;
+  videoUrl?: string;
+  imageUrl?: string;
+}
+
 export interface TeachingPortfolio {
   userId: string;
   classes: WorkshopTemplate[];
+  acts: ActTemplate[];
   bios: BioVersion[];
   performanceCredits: string[];
   performanceVideos: string[];
