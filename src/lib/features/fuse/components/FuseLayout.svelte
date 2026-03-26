@@ -112,6 +112,7 @@
 				onControllerReady={(ctrl) => fuseState.registerController("left", ctrl)}
 				mode={fuseMode}
 				length={fuseLength}
+				currentBeat={fuseState.currentBeat}
 			/>
 		</div>
 		<div class="panel-wrap" bind:this={rightPanelEl}>
@@ -124,6 +125,7 @@
 				onControllerReady={(ctrl) => fuseState.registerController("right", ctrl)}
 				mode={fuseMode}
 				length={fuseLength}
+				currentBeat={fuseState.currentBeat}
 			/>
 		</div>
 	</div>
