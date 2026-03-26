@@ -3,15 +3,19 @@
   import { container } from "$lib/shared/di";
   import { auth } from "$lib/shared/auth/firebase";
   import { getFestivalContext } from "../../context/festival-context";
+  import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
+  import ModalHeader from "$lib/shared/foundation/ui/modal/ModalHeader.svelte";
+  import ModalFooter from "$lib/shared/foundation/ui/modal/ModalFooter.svelte";
 
   // Destructure as festivalState to avoid conflict with Svelte 5 $state rune
   const { state: festivalState } = getFestivalContext();
 
   interface Props {
+    open: boolean;
     onclose: () => void;
   }
 
-  const { onclose }: Props = $props();
+  const { open, onclose }: Props = $props();
 
   // Services
   const submissionReviewer = container.items.festivalSubmissionReviewer;
@@ -119,330 +123,243 @@
       isSubmitting = false;
     }
   }
-
-  function handleBackdropClick(event: MouseEvent) {
-    if (event.target === event.currentTarget) onclose();
-  }
-
-  function handleKeydown(event: KeyboardEvent) {
-    if (event.key === "Escape") onclose();
-  }
 </script>
 
-<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-<div
-  class="modal-backdrop"
-  role="dialog"
-  aria-modal="true"
-  aria-labelledby="submit-festival-title"
-  tabindex="-1"
-  onclick={handleBackdropClick}
-  onkeydown={handleKeydown}
+<BaseModal
+  {open}
+  onclose={() => onclose()}
+  size="fit"
+  animation="pop"
+  labelledBy="submit-festival-title"
 >
-  <div class="modal-content">
-    {#if submitSuccess}
-      <div class="success-state">
-        <div class="success-icon">
-          <i class="fas fa-check-circle" aria-hidden="true"></i>
-        </div>
-        <h2 id="submit-festival-title">Festival submitted</h2>
-        <p>Thanks — we'll review it and add it to the directory soon.</p>
-        <button type="button" class="btn-primary" onclick={onclose}>Done</button>
-      </div>
-    {:else}
-      <header class="modal-header">
-        <h2 id="submit-festival-title">Submit a festival</h2>
-        <button
-          type="button"
-          class="close-btn"
-          onclick={onclose}
-          aria-label="Close form"
-        >
-          <i class="fas fa-xmark" aria-hidden="true"></i>
-        </button>
-      </header>
-
-      <div class="modal-body">
-        <form onsubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
-
-          <!-- Name -->
-          <div class="field">
-            <label for="sf-name">Festival name <span class="required">*</span></label>
-            <input
-              id="sf-name"
-              type="text"
-              bind:value={name}
-              placeholder="e.g. Fire Groove Festival"
-              class:error={!!validationErrors.name}
-            />
-            {#if validationErrors.name}
-              <span class="field-error">{validationErrors.name}</span>
-            {/if}
-          </div>
-
-          <!-- City + Country -->
-          <div class="field-row">
-            <div class="field">
-              <label for="sf-city">City <span class="required">*</span></label>
-              <input
-                id="sf-city"
-                type="text"
-                bind:value={city}
-                placeholder="Portland"
-                class:error={!!validationErrors.city}
-              />
-              {#if validationErrors.city}
-                <span class="field-error">{validationErrors.city}</span>
-              {/if}
-            </div>
-
-            <div class="field">
-              <label for="sf-country">Country <span class="required">*</span></label>
-              <input
-                id="sf-country"
-                type="text"
-                bind:value={country}
-                placeholder="USA"
-                class:error={!!validationErrors.country}
-              />
-              {#if validationErrors.country}
-                <span class="field-error">{validationErrors.country}</span>
-              {/if}
-            </div>
-          </div>
-
-          <!-- Venue (optional) -->
-          <div class="field">
-            <label for="sf-venue">Venue <span class="optional">(optional)</span></label>
-            <input
-              id="sf-venue"
-              type="text"
-              bind:value={venue}
-              placeholder="e.g. Oaks Park"
-            />
-          </div>
-
-          <!-- Dates -->
-          <div class="field-row">
-            <div class="field">
-              <label for="sf-start">Start date <span class="required">*</span></label>
-              <input
-                id="sf-start"
-                type="date"
-                bind:value={startDate}
-                class:error={!!validationErrors.startDate}
-              />
-              {#if validationErrors.startDate}
-                <span class="field-error">{validationErrors.startDate}</span>
-              {/if}
-            </div>
-
-            <div class="field">
-              <label for="sf-end">End date <span class="required">*</span></label>
-              <input
-                id="sf-end"
-                type="date"
-                bind:value={endDate}
-                class:error={!!validationErrors.endDate}
-              />
-              {#if validationErrors.endDate}
-                <span class="field-error">{validationErrors.endDate}</span>
-              {/if}
-            </div>
-          </div>
-
-          <!-- Website URL -->
-          <div class="field">
-            <label for="sf-website">Website <span class="required">*</span></label>
-            <input
-              id="sf-website"
-              type="url"
-              bind:value={websiteUrl}
-              placeholder="https://myfestival.com"
-              class:error={!!validationErrors.websiteUrl}
-            />
-            {#if validationErrors.websiteUrl}
-              <span class="field-error">{validationErrors.websiteUrl}</span>
-            {/if}
-          </div>
-
-          <!-- Application URL (optional) -->
-          <div class="field">
-            <label for="sf-apply">Application URL <span class="optional">(optional)</span></label>
-            <input
-              id="sf-apply"
-              type="url"
-              bind:value={applicationUrl}
-              placeholder="https://myfestival.com/apply"
-              class:error={!!validationErrors.applicationUrl}
-            />
-            {#if validationErrors.applicationUrl}
-              <span class="field-error">{validationErrors.applicationUrl}</span>
-            {/if}
-          </div>
-
-          <!-- Description (optional) -->
-          <div class="field">
-            <label for="sf-desc">Description <span class="optional">(optional)</span></label>
-            <textarea
-              id="sf-desc"
-              bind:value={description}
-              rows="3"
-              placeholder="A few sentences about the event, vibe, what to expect..."
-            ></textarea>
-          </div>
-
-          <!-- Tags (optional) -->
-          <div class="field">
-            <label for="sf-tags">Tags <span class="optional">(optional, comma-separated)</span></label>
-            <input
-              id="sf-tags"
-              type="text"
-              bind:value={tagsInput}
-              placeholder="fire, flow arts, poi, staves"
-            />
-          </div>
-
-          <!-- Seeking toggles -->
-          <div class="toggles-row">
-            <button
-              type="button"
-              class="toggle-btn"
-              class:active={seekingInstructors}
-              onclick={() => (seekingInstructors = !seekingInstructors)}
-              aria-pressed={seekingInstructors}
-            >
-              <i class="fas fa-chalkboard-teacher" aria-hidden="true"></i>
-              Seeking instructors
-            </button>
-
-            <button
-              type="button"
-              class="toggle-btn"
-              class:active={seekingPerformers}
-              onclick={() => (seekingPerformers = !seekingPerformers)}
-              aria-pressed={seekingPerformers}
-            >
-              <i class="fas fa-fire" aria-hidden="true"></i>
-              Seeking performers
-            </button>
-          </div>
-
-          {#if submitError}
-            <div class="submit-error" role="alert">
-              <i class="fas fa-circle-exclamation" aria-hidden="true"></i>
-              {submitError}
-            </div>
-          {/if}
-
-          <div class="form-actions">
-            <button
-              type="button"
-              class="btn-secondary"
-              onclick={onclose}
-              disabled={isSubmitting}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              class="btn-primary"
-              disabled={isSubmitting}
-            >
-              {#if isSubmitting}
-                <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
-                Submitting…
-              {:else}
-                <i class="fas fa-paper-plane" aria-hidden="true"></i>
-                Submit festival
-              {/if}
-            </button>
-          </div>
-        </form>
-      </div>
+  {#snippet header()}
+    {#if !submitSuccess}
+      <ModalHeader
+        title="Submit a festival"
+        icon="fa-paper-plane"
+        iconColor="#22c55e"
+        onClose={() => onclose()}
+        id="submit-festival-title"
+      />
     {/if}
-  </div>
-</div>
+  {/snippet}
+
+  {#if submitSuccess}
+    <div class="success-state" data-animate="2">
+      <div class="success-icon">
+        <i class="fas fa-check-circle" aria-hidden="true"></i>
+      </div>
+      <h2>Festival submitted</h2>
+      <p>Thanks. We'll review it and add it to the directory soon.</p>
+      <button type="button" class="done-btn" onclick={onclose}>Done</button>
+    </div>
+  {:else}
+    <div class="form-body" data-animate="3">
+      <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+      <form onsubmit={(e) => e.preventDefault()} onkeydown={(e) => {
+        if (e.key === "Enter" && e.target instanceof HTMLInputElement) {
+          e.preventDefault();
+          handleSubmit();
+        }
+      }}>
+
+        <!-- Name -->
+        <div class="field">
+          <label for="sf-name">Festival name <span class="required">*</span></label>
+          <input
+            id="sf-name"
+            type="text"
+            bind:value={name}
+            placeholder="e.g. Fire Groove Festival"
+            class:error={!!validationErrors.name}
+          />
+          {#if validationErrors.name}
+            <span class="field-error">{validationErrors.name}</span>
+          {/if}
+        </div>
+
+        <!-- City + Country -->
+        <div class="field-row">
+          <div class="field">
+            <label for="sf-city">City <span class="required">*</span></label>
+            <input
+              id="sf-city"
+              type="text"
+              bind:value={city}
+              placeholder="Portland"
+              class:error={!!validationErrors.city}
+            />
+            {#if validationErrors.city}
+              <span class="field-error">{validationErrors.city}</span>
+            {/if}
+          </div>
+
+          <div class="field">
+            <label for="sf-country">Country <span class="required">*</span></label>
+            <input
+              id="sf-country"
+              type="text"
+              bind:value={country}
+              placeholder="USA"
+              class:error={!!validationErrors.country}
+            />
+            {#if validationErrors.country}
+              <span class="field-error">{validationErrors.country}</span>
+            {/if}
+          </div>
+        </div>
+
+        <!-- Venue (optional) -->
+        <div class="field">
+          <label for="sf-venue">Venue <span class="optional">(optional)</span></label>
+          <input
+            id="sf-venue"
+            type="text"
+            bind:value={venue}
+            placeholder="e.g. Oaks Park"
+          />
+        </div>
+
+        <!-- Dates -->
+        <div class="field-row">
+          <div class="field">
+            <label for="sf-start">Start date <span class="required">*</span></label>
+            <input
+              id="sf-start"
+              type="date"
+              bind:value={startDate}
+              class:error={!!validationErrors.startDate}
+            />
+            {#if validationErrors.startDate}
+              <span class="field-error">{validationErrors.startDate}</span>
+            {/if}
+          </div>
+
+          <div class="field">
+            <label for="sf-end">End date <span class="required">*</span></label>
+            <input
+              id="sf-end"
+              type="date"
+              bind:value={endDate}
+              class:error={!!validationErrors.endDate}
+            />
+            {#if validationErrors.endDate}
+              <span class="field-error">{validationErrors.endDate}</span>
+            {/if}
+          </div>
+        </div>
+
+        <!-- Website URL -->
+        <div class="field">
+          <label for="sf-website">Website <span class="required">*</span></label>
+          <input
+            id="sf-website"
+            type="url"
+            bind:value={websiteUrl}
+            placeholder="https://myfestival.com"
+            class:error={!!validationErrors.websiteUrl}
+          />
+          {#if validationErrors.websiteUrl}
+            <span class="field-error">{validationErrors.websiteUrl}</span>
+          {/if}
+        </div>
+
+        <!-- Application URL (optional) -->
+        <div class="field">
+          <label for="sf-apply">Application URL <span class="optional">(optional)</span></label>
+          <input
+            id="sf-apply"
+            type="url"
+            bind:value={applicationUrl}
+            placeholder="https://myfestival.com/apply"
+            class:error={!!validationErrors.applicationUrl}
+          />
+          {#if validationErrors.applicationUrl}
+            <span class="field-error">{validationErrors.applicationUrl}</span>
+          {/if}
+        </div>
+
+        <!-- Description (optional) -->
+        <div class="field">
+          <label for="sf-desc">Description <span class="optional">(optional)</span></label>
+          <textarea
+            id="sf-desc"
+            bind:value={description}
+            rows="3"
+            placeholder="A few sentences about the event, vibe, what to expect..."
+          ></textarea>
+        </div>
+
+        <!-- Tags (optional) -->
+        <div class="field">
+          <label for="sf-tags">Tags <span class="optional">(optional, comma-separated)</span></label>
+          <input
+            id="sf-tags"
+            type="text"
+            bind:value={tagsInput}
+            placeholder="fire, flow arts, poi, staves"
+          />
+        </div>
+
+        <!-- Seeking toggles -->
+        <div class="toggles-row">
+          <button
+            type="button"
+            class="toggle-btn"
+            class:active={seekingInstructors}
+            onclick={() => (seekingInstructors = !seekingInstructors)}
+            aria-pressed={seekingInstructors}
+          >
+            <i class="fas fa-chalkboard-teacher" aria-hidden="true"></i>
+            Seeking instructors
+          </button>
+
+          <button
+            type="button"
+            class="toggle-btn"
+            class:active={seekingPerformers}
+            onclick={() => (seekingPerformers = !seekingPerformers)}
+            aria-pressed={seekingPerformers}
+          >
+            <i class="fas fa-fire" aria-hidden="true"></i>
+            Seeking performers
+          </button>
+        </div>
+
+        {#if submitError}
+          <div class="submit-error" role="alert">
+            <i class="fas fa-circle-exclamation" aria-hidden="true"></i>
+            {submitError}
+          </div>
+        {/if}
+      </form>
+    </div>
+  {/if}
+
+  {#snippet footer()}
+    {#if !submitSuccess}
+      <ModalFooter align="end">
+        <button class="secondary" onclick={onclose} disabled={isSubmitting}>
+          Cancel
+        </button>
+        <button class="primary" onclick={handleSubmit} disabled={isSubmitting}>
+          {#if isSubmitting}
+            <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
+            Submitting...
+          {:else}
+            <i class="fas fa-paper-plane" aria-hidden="true"></i>
+            Submit festival
+          {/if}
+        </button>
+      </ModalFooter>
+    {/if}
+  {/snippet}
+</BaseModal>
 
 <style>
-  .modal-backdrop {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.75);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-    padding: 16px;
-    animation: fade-in 0.15s ease;
-  }
-
-  @keyframes fade-in {
-    from { opacity: 0; }
-    to   { opacity: 1; }
-  }
-
-  .modal-content {
-    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: var(--radius-lg, 12px);
-    width: 100%;
-    max-width: 560px;
-    max-height: 90vh;
-    overflow-y: auto;
-    animation: slide-up 0.2s ease;
-    scrollbar-width: thin;
-    scrollbar-color: var(--scrollbar-thumb, rgba(255, 255, 255, 0.2)) transparent;
-  }
-
-  @keyframes slide-up {
-    from { transform: translateY(16px); opacity: 0; }
-    to   { transform: translateY(0);    opacity: 1; }
-  }
-
-  /* ---- Header ---- */
-
-  .modal-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 16px 20px;
-    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    position: sticky;
-    top: 0;
-    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
-    z-index: 1;
-  }
-
-  .modal-header h2 {
-    margin: 0;
-    font-size: var(--font-size-lg, 18px);
-    font-weight: 600;
-    color: var(--theme-text, #ffffff);
-  }
-
-  .close-btn {
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: transparent;
-    border: none;
-    border-radius: var(--radius-sm, 6px);
-    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.6));
-    cursor: pointer;
-    transition: background-color 0.15s ease, color 0.15s ease;
-  }
-
-  .close-btn:hover {
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
-    color: var(--theme-text, #ffffff);
-  }
-
   /* ---- Body / form ---- */
 
-  .modal-body {
+  .form-body {
     padding: 20px;
   }
 
@@ -570,56 +487,6 @@
     font-size: var(--font-size-min, 14px);
   }
 
-  /* ---- Footer buttons ---- */
-
-  .form-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
-    padding-top: 4px;
-  }
-
-  .btn-secondary,
-  .btn-primary {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 9px 18px;
-    border-radius: var(--radius-md, 8px);
-    font-size: var(--font-size-min, 14px);
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.15s ease;
-    min-height: 40px;
-  }
-
-  .btn-secondary {
-    background: transparent;
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.2));
-    color: var(--theme-text, #ffffff);
-  }
-
-  .btn-secondary:hover:not(:disabled) {
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.3));
-  }
-
-  .btn-primary {
-    background: var(--theme-accent, #3b82f6);
-    border: none;
-    color: #ffffff;
-  }
-
-  .btn-primary:hover:not(:disabled) {
-    background: var(--theme-accent-hover, #2563eb);
-  }
-
-  .btn-secondary:disabled,
-  .btn-primary:disabled {
-    opacity: 0.45;
-    cursor: not-allowed;
-  }
-
   /* ---- Success state ---- */
 
   .success-state {
@@ -657,15 +524,36 @@
     max-width: 320px;
   }
 
+  /* ---- Done button (success state) ---- */
+
+  .done-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 18px;
+    border-radius: var(--radius-md, 8px);
+    font-size: var(--font-size-min, 14px);
+    font-weight: 500;
+    cursor: pointer;
+    min-height: 40px;
+    background: var(--theme-accent, #3b82f6);
+    border: none;
+    color: #ffffff;
+    transition: background 0.15s ease;
+  }
+
+  .done-btn:hover {
+    background: var(--theme-accent-hover, #2563eb);
+  }
+
+  /* ---- Reduced motion ---- */
+
   @media (prefers-reduced-motion: reduce) {
-    .modal-backdrop,
-    .modal-content {
-      animation: none;
-    }
-    *,
-    *::before,
-    *::after {
-      transition-duration: 0.01ms !important;
+    .toggle-btn,
+    .done-btn,
+    input,
+    textarea {
+      transition: none;
     }
   }
 </style>

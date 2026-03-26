@@ -140,9 +140,10 @@
   </div>
 </div>
 
-{#if showSubmitForm}
-  <FestivalSubmissionForm onclose={() => (showSubmitForm = false)} />
-{/if}
+<FestivalSubmissionForm
+  open={showSubmitForm}
+  onclose={() => (showSubmitForm = false)}
+/>
 
 <style>
   .discover-tab {
