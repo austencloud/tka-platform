@@ -7,6 +7,7 @@
 	 * appropriate view based on the current phase.
 	 */
 
+	import { onDestroy } from "svelte";
 	import { container } from "$lib/shared/di";
 	import { createFuseState } from "./state/fuse-state.svelte";
 	import { setFuseContext } from "./context/fuse-context";
@@ -26,6 +27,10 @@
 	}
 
 	const { state: fuseState, error: initError } = init();
+
+	onDestroy(() => {
+		fuseState?.dispose();
+	});
 </script>
 
 {#if initError}
