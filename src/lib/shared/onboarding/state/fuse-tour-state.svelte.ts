@@ -26,6 +26,7 @@ interface FuseTourData {
   hasCompleted: boolean;
   isActive: boolean;
   currentStopIndex: number;
+  actionCompleted: boolean;
 }
 
 function createFuseTourState() {
@@ -39,6 +40,7 @@ function createFuseTourState() {
     hasCompleted: completed,
     isActive: false,
     currentStopIndex: 0,
+    actionCompleted: false,
   });
 
   return {
@@ -60,6 +62,14 @@ function createFuseTourState() {
     get isLastStop() {
       return data.currentStopIndex >= STOPS.length - 1;
     },
+    get actionCompleted() {
+      return data.actionCompleted;
+    },
+
+    /** Signal that the user performed the required action (e.g. shuffled) */
+    completeAction() {
+      data.actionCompleted = true;
+    },
 
     triggerIfFirstTime(): boolean {
       if (data.hasCompleted) return false;
@@ -71,6 +81,7 @@ function createFuseTourState() {
     advance() {
       if (data.currentStopIndex < STOPS.length - 1) {
         data.currentStopIndex++;
+        data.actionCompleted = false;
       } else {
         this.complete();
       }
@@ -79,6 +90,7 @@ function createFuseTourState() {
     goBack() {
       if (data.currentStopIndex > 0) {
         data.currentStopIndex--;
+        data.actionCompleted = false;
       }
     },
 

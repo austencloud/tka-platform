@@ -1,8 +1,12 @@
 <!--
   FuseTour - Guided walkthrough for the Fuse tab.
 
-  Highlights each section in turn: panels, shuffle, controls.
-  Renders as a floating card overlay inside the fuse layout.
+  Tour card positioning:
+  - Welcome: centered overlay (both panels visible)
+  - Left panel: card replaces the right panel slot
+  - Right panel: card replaces the left panel slot
+  - Shuffle: card centered, both panels visible, waits for user to shuffle
+  - Controls: card centered, only fuse button highlighted
 -->
 <script lang="ts">
   import {
@@ -17,7 +21,10 @@
     icon: string;
     title: string;
     description: string;
-    highlight: "all" | "left" | "right" | "shuffle" | "controls";
+    /** Text for the action button — null means use default "Next" / "Got it" */
+    actionText?: string;
+    /** If true, the stop waits for an external signal (shuffle) before enabling Next */
+    waitForAction?: boolean;
   }
 
   const STOP_INFO: StopInfo[] = [
@@ -26,46 +33,46 @@
       icon: "fa-fire",
       title: "Fuse",
       description:
-        "Pick a blue prop path and a red prop path, then merge them into one complete sequence.",
-      highlight: "all",
+        "Combine two prop paths into one sequence. You'll pick a blue path and a red path, then merge them.",
     },
     {
       id: "left-panel",
-      icon: "fa-hand-point-left",
+      icon: "fa-circle",
       title: "Blue Prop Path",
       description:
-        "This side shows one blue prop path. The notation grid and animation below it both show the same path stepping in real time.",
-      highlight: "left",
+        "This shows one blue prop path. The notation grid shows the steps, and the animation below shows it in motion.",
     },
     {
       id: "right-panel",
-      icon: "fa-hand-point-right",
+      icon: "fa-circle",
       title: "Red Prop Path",
       description:
-        "Same idea for red. Both sides step together so you can see how the two paths line up.",
-      highlight: "right",
+        "Same for the red prop. Both sides step in sync so you can see how they'll fit together.",
     },
     {
       id: "shuffle",
       icon: "fa-shuffle",
-      title: "Shuffle",
+      title: "Try Shuffling",
       description:
-        "Tap the Shuffle button on either side to cycle through different prop paths until you find the combination you want.",
-      highlight: "shuffle",
+        "Tap one of the Shuffle buttons to see a different prop path. Keep shuffling until you find a combination you like.",
+      actionText: "Shuffle to continue",
+      waitForAction: true,
     },
     {
       id: "controls",
-      icon: "fa-sliders-h",
-      title: "Fuse It",
+      icon: "fa-fire",
+      title: "Fuse Them Together",
       description:
-        "When you like what you see, hit Fuse to combine them. You can also adjust the beat count and playback speed down here.",
-      highlight: "controls",
+        "When you're happy with both sides, tap the Fuse button to merge them into a single sequence.",
+      actionText: "Got it",
     },
   ];
 
   const currentStopInfo = $derived(
     STOP_INFO[fuseTourState.currentStopIndex] ?? STOP_INFO[0]!,
   );
+
+  const isWaiting = $derived(currentStopInfo.waitForAction && !fuseTourState.actionCompleted);
 
   let hapticService: IHapticFeedback | null = null;
   try {
@@ -75,6 +82,7 @@
   }
 
   function handleNext() {
+    if (isWaiting) return;
     hapticService?.trigger("selection");
     fuseTourState.advance();
   }
@@ -89,7 +97,7 @@
     if (event.key === "ArrowRight" || event.key === "Enter" || event.key === " ") {
       event.preventDefault();
       handleNext();
-    } else if (event.key === "ArrowLeft" && fuseTourState.currentStopIndex > 0) {
+    } else if (event.key === "ArrowLeft") {
       event.preventDefault();
       fuseTourState.goBack();
     } else if (event.key === "Escape") {
@@ -102,102 +110,89 @@
 <svelte:window onkeydown={handleKeydown} />
 
 {#if fuseTourState.isActive}
-  <div
-    class="tour-overlay"
-    role="dialog"
-    aria-label="Fuse tab tour"
-  >
-    <button
-      class="tour-backdrop"
-      onclick={handleSkip}
-      aria-label="Skip tour"
-      tabindex="-1"
-    ></button>
+  <div class="tour-card">
+    <div class="tour-icon" class:blue={currentStopInfo.id === "left-panel"} class:red={currentStopInfo.id === "right-panel"}>
+      <i class="fas {currentStopInfo.icon}" aria-hidden="true"></i>
+    </div>
 
-    <div class="tour-card">
-      <div class="tour-icon">
-        <i class="fas {currentStopInfo.icon}" aria-hidden="true"></i>
-      </div>
+    <h3 class="tour-title">{currentStopInfo.title}</h3>
+    <p class="tour-desc">{currentStopInfo.description}</p>
 
-      <h3 class="tour-title">{currentStopInfo.title}</h3>
-      <p class="tour-desc">{currentStopInfo.description}</p>
+    <div class="tour-dots">
+      {#each STOP_INFO as _, i}
+        <div
+          class="dot"
+          class:active={i === fuseTourState.currentStopIndex}
+          class:completed={i < fuseTourState.currentStopIndex}
+        ></div>
+      {/each}
+    </div>
 
-      <div class="tour-dots">
-        {#each STOP_INFO as _, i}
-          <div
-            class="dot"
-            class:active={i === fuseTourState.currentStopIndex}
-            class:completed={i < fuseTourState.currentStopIndex}
-          ></div>
-        {/each}
-      </div>
-
-      <div class="tour-actions">
-        <button class="skip-btn" onclick={handleSkip}>Skip</button>
+    <div class="tour-actions">
+      <button class="skip-btn" onclick={handleSkip}>Skip</button>
+      {#if isWaiting}
+        <span class="waiting-hint">
+          <i class="fas fa-hand-pointer" aria-hidden="true"></i>
+          {currentStopInfo.actionText}
+        </span>
+      {:else}
         <button class="next-btn" onclick={handleNext}>
-          {fuseTourState.isLastStop ? "Got it" : "Next"}
-          {#if !fuseTourState.isLastStop}
+          {currentStopInfo.actionText ?? (fuseTourState.isLastStop ? "Got it" : "Next")}
+          {#if !fuseTourState.isLastStop && !currentStopInfo.actionText}
             <i class="fas fa-arrow-right" aria-hidden="true"></i>
           {/if}
         </button>
-      </div>
+      {/if}
     </div>
   </div>
 {/if}
 
 <style>
-  .tour-overlay {
-    position: absolute;
-    inset: 0;
-    z-index: 100;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    pointer-events: auto;
-  }
-
-  .tour-backdrop {
-    position: absolute;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.4);
-    border: none;
-    cursor: pointer;
-    padding: 0;
-  }
-
   .tour-card {
-    position: relative;
-    z-index: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 10px;
-    max-width: 340px;
-    width: calc(100% - 32px);
-    padding: 24px;
-    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 16px;
+    justify-content: center;
+    gap: 12px;
+    padding: 28px 24px;
     text-align: center;
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+    height: 100%;
+    animation: tourFadeIn 0.3s ease;
+  }
+
+  @keyframes tourFadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 
   .tour-icon {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 48px;
-    height: 48px;
+    width: 56px;
+    height: 56px;
     border-radius: 50%;
     background: color-mix(in srgb, #f97316 25%, transparent);
-    border: 1px solid color-mix(in srgb, #f97316 40%, transparent);
+    border: 1.5px solid color-mix(in srgb, #f97316 40%, transparent);
     color: #f97316;
-    font-size: 1.2rem;
+    font-size: 1.4rem;
+  }
+
+  .tour-icon.blue {
+    background: color-mix(in srgb, var(--prop-blue, #2196f3) 25%, transparent);
+    border-color: color-mix(in srgb, var(--prop-blue, #2196f3) 40%, transparent);
+    color: var(--prop-blue, #2196f3);
+  }
+
+  .tour-icon.red {
+    background: color-mix(in srgb, var(--prop-red, #f44336) 25%, transparent);
+    border-color: color-mix(in srgb, var(--prop-red, #f44336) 40%, transparent);
+    color: var(--prop-red, #f44336);
   }
 
   .tour-title {
     margin: 0;
-    font-size: 1.1rem;
+    font-size: 1.2rem;
     font-weight: 700;
     color: white;
   }
@@ -206,7 +201,8 @@
     margin: 0;
     font-size: var(--font-size-sm, 14px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.65));
-    line-height: 1.55;
+    line-height: 1.6;
+    max-width: 280px;
   }
 
   .tour-dots {
@@ -236,9 +232,7 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    margin-top: 6px;
-    width: 100%;
-    justify-content: center;
+    margin-top: 8px;
   }
 
   .skip-btn {
@@ -288,19 +282,28 @@
     font-size: 0.75rem;
   }
 
+  .waiting-hint {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    min-height: 44px;
+    color: #f97316;
+    font-size: var(--font-size-sm, 14px);
+    font-weight: 500;
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+  }
+
   @media (prefers-reduced-motion: reduce) {
-    .tour-card {
-      transition: none;
-    }
-    .dot {
-      transition: none;
-    }
-    .skip-btn,
-    .next-btn {
-      transition: none;
-    }
-    .next-btn:active {
-      transform: none;
-    }
+    .tour-card { animation: none; }
+    .dot { transition: none; }
+    .skip-btn, .next-btn { transition: none; }
+    .next-btn:active { transform: none; }
+    .waiting-hint { animation: none; opacity: 1; }
   }
 </style>

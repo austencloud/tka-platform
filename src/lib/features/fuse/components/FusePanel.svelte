@@ -10,6 +10,7 @@
 	import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
 	import FuseSequenceBrowser from "./FuseSequenceBrowser.svelte";
 	import FuseAnimationPreview from "./FuseAnimationPreview.svelte";
+	import { fuseTourState } from "$lib/shared/onboarding/state/fuse-tour-state.svelte";
 
 	let {
 		side,
@@ -74,7 +75,14 @@
 
 	<button
 		class="shuffle-btn"
-		onclick={() => shuffleFn?.()}
+		onclick={() => {
+			shuffleFn?.();
+			if (fuseTourState.isActive && fuseTourState.currentStop === "shuffle") {
+				fuseTourState.completeAction();
+				// Auto-advance after a beat so they see the result
+				setTimeout(() => fuseTourState.advance(), 600);
+			}
+		}}
 		aria-label="Shuffle {label} to next sequence"
 		style="--accent: {accentColor};"
 	>
