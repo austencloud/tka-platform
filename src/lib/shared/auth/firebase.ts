@@ -492,7 +492,16 @@ if (typeof window !== "undefined") {
  */
 export async function ensureAuthPersistence(): Promise<void> {
   if (authPersistenceReady) {
-    await authPersistenceReady;
+    // Timeout after 5s — setPersistence can hang if IndexedDB is in a bad state
+    await Promise.race([
+      authPersistenceReady,
+      new Promise<void>((resolve) =>
+        setTimeout(() => {
+          console.warn("⚠️ [firebase] Auth persistence timed out after 5s — continuing without it");
+          resolve();
+        }, 5000)
+      ),
+    ]);
   }
 }
 
