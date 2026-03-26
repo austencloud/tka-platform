@@ -15,4 +15,5 @@ export interface Deck {
   readonly totalSequences: number;
   readonly gridMode: GridMode;
   readonly level: number;
+  readonly collection?: string;
 }

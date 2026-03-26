@@ -375,9 +375,10 @@
               <h3 class="section-header">{group.label} <span class="section-count">({group.sequences.length})</span></h3>
               <div class="sequence-grid">
                 {#each group.sequences as sequence (sequence.id)}
-                  <div class="card-wrapper">
+                  <div class="playing-card">
                     <ChoreoCard
                       {sequence}
+                      printMode={true}
                       {handPointsVisible}
                       {showGrid}
                       {showTKA}
@@ -497,6 +498,12 @@
   {:else}
     <!-- ═══ Level 0: Collection Picker ═══ -->
     <div class="level-container level-collections">
+      <div class="top-bar">
+        <nav class="breadcrumb" aria-label="Deck navigation">
+          <span class="crumb current">Collections</span>
+        </nav>
+      </div>
+
       {#if isLoading}
         <div class="loading" role="status" aria-live="polite">
           <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
@@ -526,12 +533,8 @@
                 <p class="hero-desc">{col.info.description}</p>
               </div>
               <div class="hero-stats">
-                <span class="hero-stat-value">{col.deckCount}</span>
-                <span class="hero-stat-label">{col.deckCount === 1 ? "deck" : "decks"}</span>
-                <span class="hero-stat-value">{formatCount(col.cardCount)}</span>
-                <span class="hero-stat-label">cards</span>
-                <span class="hero-stat-value">{col.levelRange}</span>
-                <span class="hero-stat-label">levels</span>
+                <span class="hero-stat"><span class="hero-stat-value">{col.deckCount}</span> {col.deckCount === 1 ? "deck" : "decks"}</span>
+                <span class="hero-stat"><span class="hero-stat-value">{formatCount(col.cardCount)}</span> cards</span>
               </div>
               <div class="hero-accent-line"></div>
             </button>
@@ -568,8 +571,8 @@
     gap: 16px;
   }
 
-  .level-collections { max-width: 800px; }
-  .level-deck-list { max-width: 900px; }
+  .level-collections,
+  .level-deck-list,
   .level-interior { max-width: 1400px; }
 
   /* ── Top Bar ── */
@@ -676,39 +679,54 @@
   .breadcrumb {
     display: flex;
     align-items: center;
-    gap: 6px;
-    font-size: var(--font-size-sm, 14px);
+    gap: 4px;
     flex-wrap: wrap;
   }
 
   .crumb {
-    background: none;
-    border: none;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 8px 14px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 8px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     font: inherit;
+    font-size: var(--font-size-sm, 14px);
+    font-weight: 500;
     cursor: pointer;
-    padding: 2px 0;
-    transition: color 0.1s;
+    transition: border-color 0.15s ease, color 0.15s ease;
   }
 
   .crumb:hover {
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
     color: var(--theme-text, #fff);
-    text-decoration: underline;
+    text-decoration: none;
+  }
+
+  .crumb:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 2px;
   }
 
   .crumb.current {
     color: var(--theme-text, #fff);
     cursor: default;
-    font-weight: 500;
+    font-weight: 600;
+    background: rgba(255, 255, 255, 0.08);
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
   }
 
   .crumb.current:hover {
-    text-decoration: none;
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
+    color: var(--theme-text, #fff);
   }
 
   .crumb-sep {
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.3));
-    font-size: 12px;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.25));
+    font-size: 14px;
+    padding: 0 2px;
   }
 
   /* ── Deck meta line ── */
@@ -757,30 +775,48 @@
 
   .sequence-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 12px;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 16px;
   }
 
-  .card-wrapper {
-    aspect-ratio: auto;
-    min-width: 0;
+  .playing-card {
+    aspect-ratio: 5 / 7;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow:
+      0 4px 20px rgba(0, 0, 0, 0.3),
+      0 1px 4px rgba(0, 0, 0, 0.15);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    background: #ffffff;
+  }
+
+  .playing-card :global(> button) {
+    width: 100%;
+    height: 100%;
+    border-radius: 0;
   }
 
   /* ── Collection Picker (Level 0) ── */
 
   .collection-stack {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+    max-width: 700px;
+    margin: 0 auto;
+    width: 100%;
   }
 
   .collection-hero {
     position: relative;
-    display: grid;
-    grid-template-columns: 64px 1fr auto;
+    display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 24px;
-    padding: 28px 32px;
+    justify-content: center;
+    text-align: center;
+    gap: 16px;
+    aspect-ratio: 1;
+    padding: 32px 24px;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: var(--border-radius-md, 8px);
@@ -810,12 +846,13 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 56px;
-    height: 56px;
-    border-radius: 12px;
-    background: color-mix(in srgb, var(--accent) 15%, transparent);
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+    border: 1.5px solid color-mix(in srgb, var(--accent) 25%, transparent);
     color: var(--accent);
-    font-size: 1.5rem;
+    font-size: 2rem;
   }
 
   .hero-body {
@@ -827,8 +864,9 @@
 
   .hero-name {
     margin: 0;
-    font-size: 1.15rem;
-    font-weight: 600;
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
   }
 
   .hero-desc {
@@ -841,22 +879,21 @@
   }
 
   .hero-stats {
-    display: grid;
-    grid-template-columns: auto auto auto;
-    gap: 2px 16px;
-    text-align: center;
+    display: flex;
+    align-items: center;
+    gap: 20px;
     flex-shrink: 0;
   }
 
-  .hero-stat-value {
-    font-size: 1.15rem;
-    font-weight: 600;
-    color: var(--accent);
-  }
-
-  .hero-stat-label {
+  .hero-stat {
     font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
+  }
+
+  .hero-stat-value {
+    font-size: var(--font-size-sm, 14px);
+    font-weight: 600;
+    color: var(--accent);
   }
 
   .hero-accent-line {
@@ -926,16 +963,12 @@
       padding: 16px;
     }
 
-    .collection-hero {
-      grid-template-columns: 48px 1fr;
-      padding: 20px;
-      gap: 16px;
+    .collection-stack {
+      grid-template-columns: 1fr;
     }
 
-    .hero-stats {
-      grid-column: 1 / -1;
-      grid-template-columns: repeat(3, 1fr);
-      margin-top: 8px;
+    .collection-hero {
+      padding: 20px;
     }
 
     .sequence-grid {
