@@ -42,7 +42,7 @@
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 20px;
-    max-width: 960px;
+    max-width: 1060px;
     margin: 0 auto;
   }
 

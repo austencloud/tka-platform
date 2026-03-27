@@ -30,8 +30,8 @@
       src={theme.svgPath}
       alt="{theme.element} element"
       class="element-icon"
-      width="48"
-      height="48"
+      width="64"
+      height="64"
     />
   </div>
 
@@ -48,8 +48,8 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 6px;
-    padding: 18px 16px 14px;
+    gap: 8px;
+    padding: 28px 20px 20px;
     background: linear-gradient(
       135deg,
       color-mix(in srgb, var(--accent) 8%, var(--theme-card-bg, rgba(255, 255, 255, 0.04))),
@@ -95,13 +95,13 @@
   }
 
   .element-icon {
-    width: 48px;
-    height: 48px;
+    width: 64px;
+    height: 64px;
     filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.3));
   }
 
   .family-name {
-    font-size: 17px;
+    font-size: 18px;
     font-weight: 700;
     color: var(--accent);
     line-height: 1.2;
