@@ -2,6 +2,7 @@
   import type { Deck } from "../domain/models/Deck";
   import VtgFamilyGrid from "./VtgFamilyGrid.svelte";
   import VtgRatioGrid from "./VtgRatioGrid.svelte";
+  import VtgReversalGrid from "./VtgReversalGrid.svelte";
 
   interface Props {
     decks: Deck[];
@@ -11,7 +12,11 @@
 
   const { decks, onSelectDeck, onSelectFamily }: Props = $props();
 
-  let activeView = $state<"family" | "ratio">("family");
+  let activeView = $state<"family" | "ratio" | "reversal">("family");
+
+  function handleSelectPattern(patternId: string): void {
+    console.log("Selected reversal pattern:", patternId);
+  }
 </script>
 
 <div class="vtg-collection-view">
@@ -27,6 +32,12 @@
     <section class="section">
       <h3 class="section-label">By Ratio</h3>
       <VtgRatioGrid {decks} {onSelectDeck} />
+    </section>
+
+    <hr class="divider" />
+
+    <section class="section">
+      <VtgReversalGrid {decks} onSelectPattern={handleSelectPattern} />
     </section>
   </div>
 
@@ -49,12 +60,22 @@
       >
         Ratio
       </button>
+      <button
+        type="button"
+        class="toggle-pill"
+        class:active={activeView === "reversal"}
+        onclick={() => (activeView = "reversal")}
+      >
+        Reversal
+      </button>
     </div>
 
     {#if activeView === "family"}
       <VtgFamilyGrid {decks} {onSelectFamily} />
-    {:else}
+    {:else if activeView === "ratio"}
       <VtgRatioGrid {decks} {onSelectDeck} />
+    {:else}
+      <VtgReversalGrid {decks} onSelectPattern={handleSelectPattern} />
     {/if}
   </div>
 </div>
