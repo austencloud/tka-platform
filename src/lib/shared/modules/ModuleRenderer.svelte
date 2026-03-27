@@ -67,8 +67,8 @@
     // library module retired - backwards compat redirects to browse
     library: () =>
       import("../../features/browse/shared/components/BrowseModule.svelte"),
-    // community module consolidated into Lab (Feb 2026)
-    community: () => import("../../features/lab/LabModule.svelte"),
+    // community graduated to Social module (Mar 2026)
+    community: () => import("../../features/social/SocialModule.svelte"),
     learn: () => import("../../features/learn/LearnTab.svelte"),
     premium: () => import("../../features/premium/PremiumModule.svelte"),
     // "animate" is a backwards-compat alias - deep links and old bookmarks may use it
@@ -99,8 +99,10 @@
     watch: () => import("../../features/watch/WatchModule.svelte"),
     // arena module - community pairwise ranking
     arena: () => import("../../features/arena/ArenaModule.svelte"),
-    // connect module consolidated into Lab (Feb 2026)
-    connect: () => import("../../features/lab/LabModule.svelte"),
+    // connect graduated to Social module (Mar 2026)
+    connect: () => import("../../features/social/SocialModule.svelte"),
+    // Social module - Community + Connect (graduated from Lab Mar 2026)
+    social: () => import("../../features/social/SocialModule.svelte"),
     // settings module - accessed via gear icon in sidebar footer
     settings: () => import("../../features/settings/SettingsModule.svelte"),
     // Tika module - AI tutor for TKA (standalone module)

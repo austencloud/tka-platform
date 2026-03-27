@@ -54,8 +54,8 @@ export type ModuleId =
   | "levels" // Level progression labs: L4-L7 + Poi
   | "hand-paths" // Hand path explorer and builder (graduated from Lab Mar 2026)
   | "video" // Video analysis, trails, effects, notation extraction (graduated from Lab Mar 2026)
+  | "social" // Social module: community map + nearby spinner sync (graduated from Lab Mar 2026)
   | "lab"; // Experimental features lab (all experiments consolidated here)
-  // Consolidated into Lab (Feb 2026): community, ml-training, connect
 
 /**
  * Module Definition

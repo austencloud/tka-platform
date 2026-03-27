@@ -130,5 +130,6 @@ export const PRODUCTION_MODULES: Record<ModuleId, boolean> = {
   levels: false, // Level progression labs (L4-L7 + Poi, graduated from Lab)
   "hand-paths": false, // Hand path explorer + builder (graduated from Lab)
   video: false, // Video analysis, trails, effects (graduated from Lab)
-  lab: false, // Experimental features lab (admin-only) - consolidates mandala, skewlab, poi-lab, background-builder, landing-preview, ml-training, community, connect
+  social: false, // Social module: community map + nearby spinner sync (graduated from Lab)
+  lab: false, // Experimental features lab (admin-only) - consolidates mandala, skewlab, poi-lab, background-builder, landing-preview, ml-training
 };
