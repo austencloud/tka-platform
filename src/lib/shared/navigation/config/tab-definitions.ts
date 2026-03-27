@@ -442,13 +442,6 @@ export const SETTINGS_TABS: Section[] = [
 ];
 
 // ============================================================================
-// DEPRECATED: Realm tabs configuration (now uses destination picker)
-// ============================================================================
-// Realm no longer uses tabs - it uses a visual destination picker instead.
-// Stage, Gallery (Museum), and Worlds are now accessed through the picker.
-// Kept for backwards compatibility only.
-export const REALM_TABS: Section[] = [];
-
 // Feedback tabs configuration
 // User-facing tabs first (submit, my-feedback), admin-only tabs last (tracker, manage)
 export const FEEDBACK_TABS: Section[] = [
@@ -604,6 +597,60 @@ export const FESTIVAL_TABS: Section[] = [
     description: "Workshops, acts, bios, and application materials",
     color: "#a855f7",
     gradient: "linear-gradient(135deg, #a855f7, #c084fc)",
+  },
+];
+
+export const RETRO_TABS: Section[] = [
+  {
+    id: "desktop",
+    label: "TKA-OS",
+    icon: '<i class="fas fa-desktop" aria-hidden="true"></i>',
+    description: "TKA-OS v1.0 (1995 parody)",
+    color: "#008080",
+    gradient: "linear-gradient(135deg, #008080 0%, #000080 100%)",
+  },
+  {
+    id: "ascii",
+    label: "ASCII Pictograph",
+    icon: '<i class="fas fa-terminal" aria-hidden="true"></i>',
+    description: "ASCII pictograph rendering for the DOS terminal",
+    color: "#33ff33",
+    gradient: "linear-gradient(135deg, #33ff33 0%, #1a8c1a 100%)",
+  },
+  {
+    id: "pixel",
+    label: "Pixel Pictograph",
+    icon: '<i class="fas fa-th" aria-hidden="true"></i>',
+    description: "Win95 pixel pictograph rendering (16-color dithered)",
+    color: "#6666ff",
+    gradient: "linear-gradient(135deg, #9999ff 0%, #6666ff 100%)",
+  },
+];
+
+export const REALM_TABS: Section[] = [
+  {
+    id: "realm-world",
+    label: "Realm",
+    icon: '<i class="fas fa-earth-americas" aria-hidden="true"></i>',
+    description: "Campground clearing with procedural forest",
+    color: "#10b981",
+    gradient: "linear-gradient(135deg, #34d399 0%, #10b981 100%)",
+  },
+  {
+    id: "museum",
+    label: "Museum",
+    icon: '<i class="fas fa-building-columns" aria-hidden="true"></i>',
+    description: "Curate your own open-air museum of sequences",
+    color: "#a78bfa",
+    gradient: "linear-gradient(135deg, #c4b5fd 0%, #a78bfa 100%)",
+  },
+  {
+    id: "3d-controls",
+    label: "3D Controls",
+    icon: '<i class="fas fa-cube" aria-hidden="true"></i>',
+    description: "Adjust grid positions, turns, planes, and motion types",
+    color: "#06b6d4",
+    gradient: "linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%)",
   },
 ];
 
