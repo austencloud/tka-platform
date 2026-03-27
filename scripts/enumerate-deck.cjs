@@ -854,7 +854,16 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
         const patternDef = REVERSAL_PATTERNS[reversalPattern];
         for (let i = 0; i < beatStepsForReversal.length; i++) {
           const step = beatStepsForReversal[i];
-          const symbol = patternDef.sequence[i % patternDef.sequence.length];
+
+          // Beat 1 (i=0) keeps its continuous motion — no reversal.
+          // Reversals begin on beat 2.
+          if (i === 0) {
+            step.blueReversal = false;
+            step.redReversal = false;
+            continue;
+          }
+
+          const symbol = patternDef.sequence[(i - 1) % patternDef.sequence.length];
           const blueReversed = symbol === 'P' || symbol === 'B';
           const redReversed  = symbol === 'P' || symbol === 'R';
 

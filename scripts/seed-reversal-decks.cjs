@@ -139,39 +139,76 @@ function lookupLetterForStep(step) {
 
 /**
  * Apply a reversal pattern to a sequence's steps (Firestore format).
- * Flips motion types, sets reversal flags, recomputes letters and orientations.
+ *
+ * The reversal is CUMULATIVE: each beat's motion state is derived from
+ * the PREVIOUS beat's state, not from the source. Beat 1 keeps its
+ * continuous motion. Beat 2+ reverses from the previous beat when the
+ * pattern says to reverse.
+ *
+ * For "book" (PPPP) on GGGG: G → H → G → H (alternates because each
+ * beat reverses from the previous one).
  */
 function applyReversalToSequence(steps, patternId) {
   const pattern = REVERSAL_PATTERNS[patternId];
   const seq = pattern.sequence;
 
-  // Steps array: index 0 = start position (no reversal), index 1+ = beats
+  // Track running motion state per hand (from the previous beat)
+  let prevBlueType = null;
+  let prevBlueRotDir = null;
+  let prevRedType = null;
+  let prevRedRotDir = null;
+
   let beatIndex = 0;
   for (let i = 0; i < steps.length; i++) {
     const step = steps[i];
-
-    // Skip start position step
     if (step.isStartPosition) continue;
 
-    const symbol = seq[beatIndex % seq.length];
+    const blue = step.motions?.blue;
+    const red = step.motions?.red;
+
+    // Beat 1 (beatIndex 0): no reversal, just record the state
+    if (beatIndex === 0) {
+      step.blueReversal = false;
+      step.redReversal = false;
+      if (blue) { prevBlueType = blue.motionType; prevBlueRotDir = blue.rotationDirection; }
+      if (red) { prevRedType = red.motionType; prevRedRotDir = red.rotationDirection; }
+      beatIndex++;
+      continue;
+    }
+
+    const symbol = seq[(beatIndex - 1) % seq.length];
     const blueReversed = symbol === "P" || symbol === "B";
     const redReversed = symbol === "P" || symbol === "R";
 
     step.blueReversal = blueReversed;
     step.redReversal = redReversed;
 
-    const blue = step.motions?.blue;
-    const red = step.motions?.red;
-
-    if (blue && blueReversed && (blue.motionType === "pro" || blue.motionType === "anti")) {
-      blue.motionType = blue.motionType === "pro" ? "anti" : "pro";
-      blue.rotationDirection = blue.rotationDirection === "cw" ? "ccw"
-        : blue.rotationDirection === "ccw" ? "cw" : blue.rotationDirection;
+    // Derive this beat's motion from the PREVIOUS beat's state
+    if (blue) {
+      if (blueReversed && (prevBlueType === "pro" || prevBlueType === "anti")) {
+        blue.motionType = prevBlueType === "pro" ? "anti" : "pro";
+        blue.rotationDirection = prevBlueRotDir === "cw" ? "ccw"
+          : prevBlueRotDir === "ccw" ? "cw" : prevBlueRotDir;
+      } else {
+        // No reversal — carry forward previous state
+        blue.motionType = prevBlueType;
+        blue.rotationDirection = prevBlueRotDir;
+      }
+      prevBlueType = blue.motionType;
+      prevBlueRotDir = blue.rotationDirection;
     }
-    if (red && redReversed && (red.motionType === "pro" || red.motionType === "anti")) {
-      red.motionType = red.motionType === "pro" ? "anti" : "pro";
-      red.rotationDirection = red.rotationDirection === "cw" ? "ccw"
-        : red.rotationDirection === "ccw" ? "cw" : red.rotationDirection;
+
+    if (red) {
+      if (redReversed && (prevRedType === "pro" || prevRedType === "anti")) {
+        red.motionType = prevRedType === "pro" ? "anti" : "pro";
+        red.rotationDirection = prevRedRotDir === "cw" ? "ccw"
+          : prevRedRotDir === "ccw" ? "cw" : prevRedRotDir;
+      } else {
+        red.motionType = prevRedType;
+        red.rotationDirection = prevRedRotDir;
+      }
+      prevRedType = red.motionType;
+      prevRedRotDir = red.rotationDirection;
     }
 
     // Re-derive letter
