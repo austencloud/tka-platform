@@ -1,8 +1,8 @@
 // tests/unit/video-trails/led-threshold-detector.test.ts
 
 import { describe, it, expect, beforeAll } from "vitest";
-import { LedThresholdDetector } from "$lib/features/lab/tabs/video-trails/services/implementations/LedThresholdDetector";
-import type { DetectionConfig } from "$lib/features/lab/tabs/video-trails/domain/types";
+import { LedThresholdDetector } from "$lib/features/video/video-trails/services/implementations/LedThresholdDetector";
+import type { DetectionConfig } from "$lib/features/video/video-trails/domain/types";
 
 // jsdom doesn't implement ImageData. Provide a minimal polyfill that stores
 // the pixel data exactly like the browser version so the detector can read it.

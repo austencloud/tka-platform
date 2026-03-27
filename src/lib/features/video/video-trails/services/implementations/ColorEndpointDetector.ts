@@ -1,4 +1,4 @@
-// src/lib/features/lab/tabs/video-trails/services/implementations/ColorEndpointDetector.ts
+// src/lib/features/video/video-trails/services/implementations/ColorEndpointDetector.ts
 
 import type { IEndpointDetector } from "../contracts/IEndpointDetector";
 import type { DetectedEndpoint, DetectionConfig, DetectorCapabilities } from "../../domain/types";

@@ -128,5 +128,7 @@ export const PRODUCTION_MODULES: Record<ModuleId, boolean> = {
   retro: false, // Retro module (graduated from Lab)
   realm: false, // 3D destinations (admin-only)
   levels: false, // Level progression labs (L4-L7 + Poi, graduated from Lab)
+  "hand-paths": false, // Hand path explorer + builder (graduated from Lab)
+  video: false, // Video analysis, trails, effects (graduated from Lab)
   lab: false, // Experimental features lab (admin-only) - consolidates mandala, skewlab, poi-lab, background-builder, landing-preview, ml-training, community, connect
 };

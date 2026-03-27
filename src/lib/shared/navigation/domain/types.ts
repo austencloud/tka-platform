@@ -52,6 +52,8 @@ export type ModuleId =
   | "realm" // 3D destinations: museum, stage, gallery, procedural worlds
   | "retro" // Retro module: TKA-OS desktop, ASCII pictograph, pixel pictograph
   | "levels" // Level progression labs: L4-L7 + Poi
+  | "hand-paths" // Hand path explorer and builder (graduated from Lab Mar 2026)
+  | "video" // Video analysis, trails, effects, notation extraction (graduated from Lab Mar 2026)
   | "lab"; // Experimental features lab (all experiments consolidated here)
   // Consolidated into Lab (Feb 2026): community, ml-training, connect
 
