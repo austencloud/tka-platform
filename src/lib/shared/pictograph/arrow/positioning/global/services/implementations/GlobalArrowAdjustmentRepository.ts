@@ -139,12 +139,12 @@ export class GlobalArrowAdjustmentRepository
   }
 
   /**
-   * Cascading lookup: Layer 3 → Layer 2 → Layer 1.
+   * Cascading lookup: Layer 3 → Layer 2 → Layer 1, with orientation fallback.
    *
-   * Searches for the most specific adjustment available:
-   * 1. First checks Layer 3 (combination-specific: this prop + other prop)
-   * 2. Then checks Layer 2 (prop-specific: just this prop type)
-   * 3. Finally checks Layer 1 (base: no prop types) — ONLY for staff props
+   * Within each prop-type layer, tries the specific oriKey first (e.g., "counter_counter"),
+   * then falls back to the legacy bucket oriKey (e.g., "from_layer2"). This lets new
+   * orientation-specific adjustments take priority while old bucket-based entries serve
+   * as the general fallback.
    *
    * Non-staff props never fall back to Layer 1. This prevents staff adjustments
    * from bleeding into other prop types when switching props.
@@ -152,11 +152,16 @@ export class GlobalArrowAdjustmentRepository
   getAdjustmentCascading(
     baseKey: GlobalAdjustmentKey,
     thisPropType: string,
-    otherPropType: string
+    otherPropType: string,
+    legacyOriKey?: string
   ): CascadingLookupResult | null {
-    // Normalize prop types to lowercase
     const normalizedThisProp = thisPropType.toLowerCase();
     const normalizedOtherProp = otherPropType.toLowerCase();
+
+    // Build the legacy fallback key (only if a legacy oriKey was provided and differs)
+    const fallbackKey = legacyOriKey && legacyOriKey !== baseKey.oriKey
+      ? { ...baseKey, oriKey: legacyOriKey }
+      : null;
 
     // Layer 3: Combination-specific (this prop + other prop)
     if (normalizedThisProp !== "staff" || normalizedOtherProp !== "staff") {
@@ -166,28 +171,47 @@ export class GlobalArrowAdjustmentRepository
         otherPropType: normalizedOtherProp,
       };
       const layer3 = this.getAdjustment(layer3Key);
-      if (layer3) {
-        return { adjustment: layer3, layer: 3 };
+      if (layer3) return { adjustment: layer3, layer: 3 };
+
+      // Fallback: try legacy oriKey at Layer 3
+      if (fallbackKey) {
+        const layer3Fallback: GlobalAdjustmentKey = {
+          ...fallbackKey,
+          propType: normalizedThisProp,
+          otherPropType: normalizedOtherProp,
+        };
+        const layer3fb = this.getAdjustment(layer3Fallback);
+        if (layer3fb) return { adjustment: layer3fb, layer: 3 };
       }
     }
 
     // Layer 2: Prop-specific (just this prop type)
-    // Check for ALL prop types including staff (staff adjustments now save at Layer 2)
     const layer2Key: GlobalAdjustmentKey = {
       ...baseKey,
       propType: normalizedThisProp,
     };
     const layer2 = this.getAdjustment(layer2Key);
-    if (layer2) {
-      return { adjustment: layer2, layer: 2 };
+    if (layer2) return { adjustment: layer2, layer: 2 };
+
+    // Fallback: try legacy oriKey at Layer 2
+    if (fallbackKey) {
+      const layer2Fallback: GlobalAdjustmentKey = {
+        ...fallbackKey,
+        propType: normalizedThisProp,
+      };
+      const layer2fb = this.getAdjustment(layer2Fallback);
+      if (layer2fb) return { adjustment: layer2fb, layer: 2 };
     }
 
     // Layer 1: Base (no prop types) — legacy fallback for staff ONLY.
-    // Non-staff props must not inherit staff adjustments.
     if (normalizedThisProp === "staff" && normalizedOtherProp === "staff") {
       const layer1 = this.getAdjustment(baseKey);
-      if (layer1) {
-        return { adjustment: layer1, layer: 1 };
+      if (layer1) return { adjustment: layer1, layer: 1 };
+
+      // Fallback: try legacy oriKey at Layer 1
+      if (fallbackKey) {
+        const layer1fb = this.getAdjustment(fallbackKey);
+        if (layer1fb) return { adjustment: layer1fb, layer: 1 };
       }
     }
 
