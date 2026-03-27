@@ -127,7 +127,8 @@
 	penumbra={0.6}
 	decay={1.5}
 	castShadow
-	target.position.x={position[0]}
-	target.position.y={groundY + pedestalHeight}
-	target.position.z={position[2]}
+	on:create={({ ref }) => {
+		ref.target.position.set(position[0], groundY + pedestalHeight, position[2]);
+		ref.target.updateMatrixWorld();
+	}}
 />
