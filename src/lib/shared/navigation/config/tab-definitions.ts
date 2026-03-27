@@ -658,14 +658,7 @@ export const REALM_TABS: Section[] = [
 // All experimental modules consolidated here instead of cluttering the sidebar
 export const LAB_TABS: Section[] = [
   // ascii-pictograph graduated to Retro module (Mar 2026)
-  {
-    id: "assemble-lab",
-    label: "Assemble Lab",
-    icon: '<i class="fas fa-hand-pointer" aria-hidden="true"></i>',
-    description: "Click grid points to build sequences",
-    color: "#06b6d4",
-    gradient: "linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%)",
-  },
+  // assemble-lab removed — functionality lives in Create module's Assemble tab
   {
     id: "attribution",
     label: "Attribution",
@@ -812,9 +805,9 @@ export const LAB_TABS: Section[] = [
   },
   {
     id: "mandala",
-    label: "Mandala",
+    label: "Arrow Mandalas",
     icon: '<i class="fas fa-dharmachakra" aria-hidden="true"></i>',
-    description: "Kaleidoscope art with TKA elements",
+    description: "Kaleidoscope art with arrow glyphs",
     color: "#f472b6",
     gradient: "linear-gradient(135deg, #f9a8d4 0%, #f472b6 100%)",
   },
