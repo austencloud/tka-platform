@@ -97,7 +97,7 @@ export function createMultiplayerState(
 	}
 
 	async function joinSession(sessionId: string): Promise<boolean> {
-		const { auth } = await import('../../../../shared/auth/firebase');
+		const { auth } = await import('$lib/shared/auth/firebase');
 		const user = auth.currentUser;
 		if (!user) return false;
 

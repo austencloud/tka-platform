@@ -13,7 +13,7 @@ import {
 	off,
 	serverTimestamp
 } from 'firebase/database';
-import { database, auth } from '../../../../../shared/auth/firebase';
+import { database, auth } from '$lib/shared/auth/firebase';
 import type { IGalleryPositionSyncer } from '../contracts/IGalleryPositionSyncer';
 import type {
 	LocalPlayerState,

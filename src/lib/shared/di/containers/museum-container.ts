@@ -1,6 +1,6 @@
 import { createContainer } from "iti";
-import { MuseumPersister } from "$lib/features/museum/services/implementations/MuseumPersister";
-import { InteractionDetector } from "$lib/features/museum/services/implementations/InteractionDetector";
+import { MuseumPersister } from "$lib/features/realm/destinations/museum/services/implementations/MuseumPersister";
+import { InteractionDetector } from "$lib/features/realm/destinations/museum/services/implementations/InteractionDetector";
 
 export function createMuseumContainer() {
   return createContainer()

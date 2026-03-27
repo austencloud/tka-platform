@@ -7,9 +7,9 @@
 
 import { createContainer } from "iti";
 import type { ILibraryRepository } from "$lib/features/library/services/contracts/ILibraryRepository";
-import { ExhibitLoader } from "$lib/features/gallery/services/implementations/ExhibitLoader";
-import { GallerySessionManager } from "$lib/features/gallery/multiplayer/services/implementations/GallerySessionManager";
-import { GalleryPositionSyncer } from "$lib/features/gallery/multiplayer/services/implementations/GalleryPositionSyncer";
+import { ExhibitLoader } from "$lib/features/realm/destinations/gallery/services/implementations/ExhibitLoader";
+import { GallerySessionManager } from "$lib/features/realm/destinations/gallery/multiplayer/services/implementations/GallerySessionManager";
+import { GalleryPositionSyncer } from "$lib/features/realm/destinations/gallery/multiplayer/services/implementations/GalleryPositionSyncer";
 
 /**
  * Creates the gallery container with required dependencies.

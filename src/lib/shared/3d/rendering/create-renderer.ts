@@ -6,7 +6,7 @@
  */
 
 import { WebGLRenderer } from "three";
-import type { RenderingBackend } from "$lib/features/gallery/state/gallery-settings.svelte";
+import type { RenderingBackend } from "$lib/features/realm/destinations/gallery/state/gallery-settings.svelte";
 
 /** Check if WebGPU is available in this browser */
 async function checkWebGPUSupport(): Promise<boolean> {
