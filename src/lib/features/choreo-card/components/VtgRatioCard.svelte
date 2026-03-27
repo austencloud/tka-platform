@@ -68,7 +68,7 @@
     flex-direction: column;
     align-items: center;
     gap: 8px;
-    padding: 16px 14px 12px;
+    padding: 24px 20px;
     background: linear-gradient(
       160deg,
       color-mix(in srgb, var(--tint) 8%, transparent) 0%,
@@ -131,7 +131,7 @@
 
   .turns-label {
     font-size: 13px;
-    color: rgba(255, 255, 255, 0.55);
+    color: rgba(255, 255, 255, 0.5);
   }
 
   .ratio-number {
@@ -151,6 +151,6 @@
 
   .stat {
     font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
   }
 </style>
