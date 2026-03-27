@@ -389,13 +389,11 @@
     .search-sort-row {
       flex-direction: column;
       gap: 8px;
-      /* Left: PanelContent mobile (16px) + virtual-row (4px) = 20px
-         Right: Same + scrollbar (8px) = 28px */
-      padding: 0 28px 0 20px;
+      padding: 0 16px;
     }
 
     .prop-filter-row-container {
-      padding: 0 28px 0 20px;
+      padding: 0 16px;
     }
 
     .search-sort-row :global(.panel-search) {

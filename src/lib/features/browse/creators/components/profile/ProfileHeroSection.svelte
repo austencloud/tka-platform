@@ -297,6 +297,7 @@
 
     .action-buttons {
       margin-top: 12px;
+      justify-content: center;
     }
 
     .follow-button {

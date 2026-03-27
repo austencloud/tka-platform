@@ -301,7 +301,9 @@ dialog.drawer-content {
   bottom: 0;
   right: auto; /* Override dialog UA default right: 0 */
   height: 100vh;
+  height: 100dvh;
   max-height: 100vh;
+  max-height: 100dvh;
   width: var(--sheet-width, min(600px, 90vw));
   border-right: var(
     --sheet-border-strong,

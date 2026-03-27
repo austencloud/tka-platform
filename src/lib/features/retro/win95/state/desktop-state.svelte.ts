@@ -73,6 +73,19 @@ class DesktopState {
 
 	/** Double-click speed in milliseconds. */
 	doubleClickSpeed = $state(500);
+
+	/* ------------------------------------------------------------------ */
+	/* Auth state                                                          */
+	/* ------------------------------------------------------------------ */
+
+	/** Whether the user has authenticated (gates the desktop). */
+	isAuthenticated = $state(false);
+
+	/** Display name of the authenticated user, or null. */
+	userDisplayName = $state<string | null>(null);
+
+	/** Email of the authenticated user, or null. */
+	userEmail = $state<string | null>(null);
 }
 
 export const desktopState = new DesktopState();
