@@ -43,7 +43,7 @@
 	}
 </script>
 
-<div class="fuse-panel" role="region" aria-label="{label} prop path">
+<div class="fuse-panel" role="region" aria-label="{label} prop path" style="--align: {side === 'left' ? 'flex-end' : 'flex-start'};">
 	<div class="card-section">
 		<FuseSequenceBrowser
 			{side}
@@ -56,7 +56,7 @@
 		/>
 	</div>
 
-	<div class="animation-section" style="--align: {side === 'left' ? 'flex-end' : 'flex-start'};">
+	<div class="animation-section">
 		{#if currentSequence}
 			<div class="animation-square">
 				{#key currentSequence.id ?? currentSequence.word}
@@ -113,6 +113,12 @@
 		flex: 1;
 		min-height: 0;
 		overflow: hidden;
+		display: flex;
+		justify-content: var(--align, center);
+	}
+
+	.card-section > :global(*) {
+		max-width: 100%;
 	}
 
 	.animation-section {
