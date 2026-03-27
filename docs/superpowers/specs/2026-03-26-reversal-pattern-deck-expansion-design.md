@@ -222,6 +222,6 @@ This makes the patterns scannable without reading the notation string.
 
 ## Open Questions
 
-1. **Orientation continuity under reversals** — verify empirically that uniform turn values preserve LOOP boundary continuity. If not, the enumerator filter handles it.
+1. **Orientation continuity under reversals** — **CONFIRMED** at L1 (0 turns). At 0 turns, pro preserves orientation and anti flips it. Over a quartered LOOP (4 beats), every simple reversal pattern produces an even number of flips per hand, so orientation always returns to start. The hypothesis holds because the pattern period (1 or 2) divides evenly into the beat count (4), guaranteeing even flip counts. This will also hold for 8/16/32-beat sequences with longer-period patterns, since the period always divides the beat count. **Known issue:** The enumerator's `--out` JSON path writes pre-reversal data from edge objects. Orientations must be recalculated after reversal for the Firestore path — currently orientations are computed before reversal is applied, so they reflect pre-reversal motion types. This needs to be fixed: move orientation calculation after the reversal transformation, or re-run it.
 2. **VTG labeling** — when a reversal pattern changes the letters (G→H), display the new letters but label the card by underlying hand path family + reversal pattern. The hand path is what the spinner physically does.
 3. **Reversal pattern card visual** — exact design for the colored dot representation of patterns. Needs mockup during implementation.
