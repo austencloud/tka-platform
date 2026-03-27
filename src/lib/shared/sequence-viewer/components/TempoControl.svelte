@@ -62,19 +62,6 @@
   let holdInterval: ReturnType<typeof setInterval> | null = null;
   let holdStartTime = 0;
 
-  // Mobile detection
-  let isMobile = $state(false);
-
-  $effect(() => {
-    if (typeof window !== "undefined") {
-      const check = () => { isMobile = window.innerWidth < 768; };
-      check();
-      window.addEventListener("resize", check);
-      return () => window.removeEventListener("resize", check);
-    }
-    return undefined;
-  });
-
   // BPM intensity color
   let bpmColor = $derived.by(() => {
     if (bpm <= 30) return "var(--semantic-success, #22c55e)";
@@ -177,7 +164,7 @@
   });
 </script>
 
-<div class="tempo-control" class:mobile={isMobile}>
+<div class="tempo-control">
   <!-- +/- with BPM display -->
   <div class="bpm-adjuster">
     <button
@@ -220,7 +207,7 @@
   </div>
 
   <!-- Semantic presets (hidden on mobile) -->
-  {#if showPresets && !isMobile}
+  {#if showPresets}
     <div class="presets">
       {#each PRESETS as preset}
         <button
@@ -257,10 +244,6 @@
     align-items: center;
     gap: 12px;
     width: 100%;
-  }
-
-  .tempo-control.mobile {
-    gap: 8px;
   }
 
   /* ===========================
