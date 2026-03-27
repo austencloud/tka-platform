@@ -4,15 +4,24 @@
   import VtgRatioGrid from "./VtgRatioGrid.svelte";
   import VtgReversalGrid from "./VtgReversalGrid.svelte";
 
+  type VtgView = "family" | "ratio" | "reversal";
+
   interface Props {
     decks: Deck[];
     onSelectDeck: (deckId: string) => void;
     onSelectFamily: (familyId: string) => void;
+    initialView?: VtgView;
+    onViewChange?: (view: VtgView) => void;
   }
 
-  const { decks, onSelectDeck, onSelectFamily }: Props = $props();
+  const { decks, onSelectDeck, onSelectFamily, initialView = "family", onViewChange }: Props = $props();
 
-  let activeView = $state<"family" | "ratio" | "reversal">("family");
+  let activeView = $state<VtgView>(initialView);
+
+  function setView(view: VtgView): void {
+    activeView = view;
+    onViewChange?.(view);
+  }
 
   // Family and Ratio views only show continuous decks.
   // Reversal variants are browsed via the BY REVERSAL view.
@@ -35,7 +44,7 @@
       type="button"
       class="toggle-pill"
       class:active={activeView === "family"}
-      onclick={() => (activeView = "family")}
+      onclick={() => setView("family")}
     >
       Family
     </button>
@@ -43,7 +52,7 @@
       type="button"
       class="toggle-pill"
       class:active={activeView === "ratio"}
-      onclick={() => (activeView = "ratio")}
+      onclick={() => setView("ratio")}
     >
       Ratio
     </button>
@@ -51,7 +60,7 @@
       type="button"
       class="toggle-pill"
       class:active={activeView === "reversal"}
-      onclick={() => (activeView = "reversal")}
+      onclick={() => setView("reversal")}
     >
       Reversal
     </button>

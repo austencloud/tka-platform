@@ -171,6 +171,7 @@
 
   // ── VTG family navigation ──
   let selectedVtgFamily = $state<string | null>(null);
+  let vtgActiveView = $state<"family" | "ratio" | "reversal">("family");
   const isVtgCollectionView = $derived(
     selectedCollection === "VTG" && !selectedDeckId && !selectedVtgFamily,
   );
@@ -443,6 +444,8 @@
           decks={getDecksForCollection("VTG")}
           {onSelectDeck}
           onSelectFamily={(familyId) => { selectedVtgFamily = familyId; }}
+          initialView={vtgActiveView}
+          onViewChange={(view) => { vtgActiveView = view; }}
         />
       {/if}
     </div>
