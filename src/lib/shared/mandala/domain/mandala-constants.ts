@@ -1,5 +1,5 @@
 /** Default inward offset from exact tip — creates visible lobes on 0-turn motions */
-export const DEFAULT_TIP_INSET_PX = 20;
+export const DEFAULT_TIP_INSET_PX = 15;
 
 /** Points sampled per beat per tip. Adaptive: multiplied by ceil(turns) for high-turn motions */
 export const BASE_SAMPLES_PER_BEAT = 64;
