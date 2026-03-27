@@ -8,6 +8,7 @@
 export interface ReversalPatternDef {
   readonly id: string;
   readonly label: string;
+  readonly description: string;
   readonly family: ReversalFamily;
   readonly sequence: string;
   readonly period: number;
@@ -19,6 +20,7 @@ export const REVERSAL_PATTERNS = [
   {
     id: 'continuous',
     label: 'Continuous',
+    description: 'No reversals. Props maintain rotation direction throughout.',
     family: 'simple',
     sequence: '----',
     period: 1,
@@ -27,6 +29,7 @@ export const REVERSAL_PATTERNS = [
   {
     id: 'book',
     label: 'Book',
+    description: 'Both props reverse every beat. "Opening and closing the book."',
     family: 'simple',
     sequence: 'PPPP',
     period: 1,
@@ -35,6 +38,7 @@ export const REVERSAL_PATTERNS = [
   {
     id: 'red-book',
     label: 'Red Book',
+    description: 'Red prop reverses every beat. Blue stays continuous.',
     family: 'simple',
     sequence: 'RRRR',
     period: 1,
@@ -43,6 +47,7 @@ export const REVERSAL_PATTERNS = [
   {
     id: 'blue-book',
     label: 'Blue Book',
+    description: 'Blue prop reverses every beat. Red stays continuous.',
     family: 'simple',
     sequence: 'BBBB',
     period: 1,
@@ -51,6 +56,7 @@ export const REVERSAL_PATTERNS = [
   {
     id: 'long-book',
     label: 'Long Book',
+    description: 'Both props reverse every other beat.',
     family: 'simple',
     sequence: 'P-P-',
     period: 2,
@@ -59,6 +65,7 @@ export const REVERSAL_PATTERNS = [
   {
     id: 'alternating',
     label: 'Alternating',
+    description: 'Red and blue take turns reversing. Never at the same time.',
     family: 'simple',
     sequence: 'RBRB',
     period: 2,
@@ -68,7 +75,8 @@ export const REVERSAL_PATTERNS = [
   // Solo family: single-hand reversals
   {
     id: 'solo-1',
-    label: 'Solo Pattern 1',
+    label: 'Solo 1',
+    description: 'One prop reverses per beat in an 8-beat rhythm. Never both, never neither.',
     family: 'solo',
     sequence: 'RBBRBRRB',
     period: 8,
@@ -76,7 +84,8 @@ export const REVERSAL_PATTERNS = [
   },
   {
     id: 'solo-2',
-    label: 'Solo Pattern 2',
+    label: 'Solo 2',
+    description: '16-beat solo rhythm. Base pattern + its red/blue mirror.',
     family: 'solo',
     sequence: 'RBBRBRRBBRRBRBBR',
     period: 16,
@@ -84,17 +93,19 @@ export const REVERSAL_PATTERNS = [
   },
   {
     id: 'solo-3',
-    label: 'Solo Pattern 3',
+    label: 'Solo 3',
+    description: '32-beat solo rhythm. Extended by chaining with complement.',
     family: 'solo',
     sequence: 'RBBRBRRBBRRBRBBRBRRBRBBRRBBRBRRB',
     period: 32,
     minBeats: 32,
   },
 
-  // Dense-weave family: tight two-prop interactions
+  // Dense Weave family: pair beats every other position
   {
     id: 'dense-weave-1',
     label: 'Dense Weave 1',
+    description: '8-beat weave. Solo and pair beats alternate every position.',
     family: 'dense-weave',
     sequence: 'RPBPRPBP',
     period: 8,
@@ -103,6 +114,7 @@ export const REVERSAL_PATTERNS = [
   {
     id: 'dense-weave-2',
     label: 'Dense Weave 2',
+    description: '16-beat dense weave. Base + complement.',
     family: 'dense-weave',
     sequence: 'RPBPRPBPBPRPBPRP',
     period: 16,
@@ -111,16 +123,18 @@ export const REVERSAL_PATTERNS = [
   {
     id: 'dense-weave-3',
     label: 'Dense Weave 3',
+    description: '32-beat dense weave. Extended by chaining with complement.',
     family: 'dense-weave',
     sequence: 'RPBPRPBPBPRPBPRPBPRPBPRPRPBPRPBP',
     period: 32,
     minBeats: 32,
   },
 
-  // Sparse-weave family: loose two-prop interactions
+  // Sparse Weave family: pair beats every 4th position
   {
     id: 'sparse-weave-1',
     label: 'Sparse Weave 1',
+    description: '8-beat weave. Pair beats every 4th position, solo beats between.',
     family: 'sparse-weave',
     sequence: 'RBRPBRBP',
     period: 8,
@@ -129,6 +143,7 @@ export const REVERSAL_PATTERNS = [
   {
     id: 'sparse-weave-2',
     label: 'Sparse Weave 2',
+    description: '16-beat sparse weave. Base + complement.',
     family: 'sparse-weave',
     sequence: 'RBRPBRBPBRBPRBRP',
     period: 16,
@@ -137,6 +152,7 @@ export const REVERSAL_PATTERNS = [
   {
     id: 'sparse-weave-3',
     label: 'Sparse Weave 3',
+    description: '32-beat sparse weave. Extended by chaining with complement.',
     family: 'sparse-weave',
     sequence: 'RBRPBRBPBRBPRBRPBRBPRBRPRBRPBRBP',
     period: 32,
