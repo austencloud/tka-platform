@@ -16,6 +16,9 @@ import {
   DifficultyLevel,
   GenerationMode,
 } from "$lib/features/create/generate/shared/domain/models/generate-models";
+import type { ILibraryRepository } from "$lib/features/library/services/contracts/ILibraryRepository";
+import type { LibrarySequence } from "$lib/features/library/domain/models/LibrarySequence";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import {
   GridLocation,
   GridMode,
@@ -47,6 +50,12 @@ export interface RetroGenerationResult {
   word: string;
   beats: { letter: string; pictograph: RetroPictographData }[];
   beatCount: number;
+  /**
+   * The raw SequenceData from the orchestrator, kept alongside the pixel
+   * renderer's beat list so the SCRIBE menu can pass it straight to
+   * ILibraryRepository without re-running generation.
+   */
+  sequenceData: SequenceData;
 }
 
 /**
@@ -162,5 +171,44 @@ export async function generateRetroSequence(
     word: sequenceData.word,
     beats,
     beatCount: beats.length,
+    sequenceData,
   };
+}
+
+/**
+ * Save a generated sequence to the user's library under the given name.
+ * Maps the 8.3 DOS filename to a human-readable library name by replacing
+ * underscores with spaces and title-casing the result.
+ */
+export async function saveRetroSequence(
+  sequenceData: SequenceData,
+  dosName: string,
+): Promise<LibrarySequence> {
+  const repo = container.items.libraryRepository as ILibraryRepository;
+
+  // Turn "FIRFLOWB" into "Firflowb" as a display-friendly name.
+  // The user chose the name in the DOS save dialog — keep it simple.
+  const humanName = dosName
+    .replace(/_/g, " ")
+    .toLowerCase()
+    .replace(/^\w/, (c) => c.toUpperCase());
+
+  return await repo.saveSequenceWithMetadata(sequenceData, {
+    name: humanName,
+    displayName: dosName,
+    visibility: "private",
+    tags: [],
+    notes: "",
+  });
+}
+
+/**
+ * Load a sequence from the user's library by its Firestore ID.
+ * Returns null when the sequence no longer exists.
+ */
+export async function loadRetroSequence(
+  sequenceId: string,
+): Promise<LibrarySequence | null> {
+  const repo = container.items.libraryRepository as ILibraryRepository;
+  return await repo.getSequence(sequenceId);
 }

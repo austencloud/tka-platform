@@ -19,6 +19,8 @@
   import RetroAssembleTab from "./RetroAssembleTab.svelte";
   import RetroSaveDialog from "./RetroSaveDialog.svelte";
   import { RETRO_ICONS } from "../../rendering/retro-icons";
+  import { saveRetroSequence } from "../../../adapters/notation-adapter";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
   /* ------------------------------------------------------------------ */
   /* Props                                                               */
@@ -42,6 +44,17 @@
   let beatCount = $state(0);
   let statusText = $state("Ready");
 
+  /**
+   * The most recently generated SequenceData. Populated whenever the Generate
+   * tab fires onsequencegenerated. Needed by File > Save / Save As so we can
+   * persist to the library without re-running generation.
+   */
+  let currentSequenceData = $state<SequenceData | null>(null);
+
+  /** True once the user has saved under a specific filename this session. */
+  let hasSavedOnce = $state(false);
+  let isSaving = $state(false);
+
   /* ------------------------------------------------------------------ */
   /* Tab definitions                                                     */
   /* ------------------------------------------------------------------ */
@@ -62,8 +75,19 @@
       items: [
         { label: "New", shortcut: "Ctrl+N", action: () => handleNew() },
         { label: "Open...", shortcut: "Ctrl+O", action: () => {} },
-        { label: "Save", shortcut: "Ctrl+S", action: () => handleSave() },
-        { label: "Save As...", action: () => (showSaveDialog = true) },
+        {
+          label: isSaving ? "Saving..." : "Save",
+          shortcut: "Ctrl+S",
+          disabled: isSaving || !currentSequenceData,
+          action: () => handleSave(),
+        },
+        {
+          label: "Save As...",
+          disabled: isSaving || !currentSequenceData,
+          action: () => {
+            if (currentSequenceData) showSaveDialog = true;
+          },
+        },
         { separator: true, label: "" },
         { label: "Exit", action: () => onclose?.() },
       ],
@@ -129,7 +153,12 @@
   const toolbarButtons = $derived([
     { icon: RETRO_ICONS.newDoc, tooltip: "New", action: () => handleNew() },
     { icon: RETRO_ICONS.folderOpen, tooltip: "Open", action: () => {} },
-    { icon: RETRO_ICONS.save, tooltip: "Save", action: () => handleSave() },
+    {
+      icon: RETRO_ICONS.save,
+      tooltip: isSaving ? "Saving..." : "Save",
+      disabled: isSaving || !currentSequenceData,
+      action: () => handleSave(),
+    },
     { separator: true, icon: "", tooltip: "", action: () => {} },
     {
       icon: RETRO_ICONS.play,
@@ -155,21 +184,69 @@
 
   function handleNew() {
     beatCount = 0;
+    currentSequenceData = null;
+    hasSavedOnce = false;
     statusText = "New sequence";
   }
 
-  function handleSave() {
-    statusText = "Saved.";
+  /**
+   * File > Save — saves immediately if a name was already set this session,
+   * otherwise falls through to Save As so the user can pick a name first.
+   */
+  async function handleSave() {
+    if (!currentSequenceData) {
+      statusText = "Nothing to save — generate a sequence first.";
+      return;
+    }
+    if (!hasSavedOnce) {
+      showSaveDialog = true;
+      return;
+    }
+    await persistSave(saveFilename);
   }
 
-  function handleSaveAs(name: string) {
+  /**
+   * Callback from RetroSaveDialog — user confirmed a filename.
+   */
+  async function handleSaveAs(name: string) {
     showSaveDialog = false;
     saveFilename = name;
-    statusText = `Saved to A:\\ \u2014 1 floppy disk(s) required.`;
+    await persistSave(name);
+  }
+
+  /**
+   * Core save logic shared by Save and Save As. Calls the real library repo
+   * via the notation adapter and updates the status bar with the result.
+   */
+  async function persistSave(name: string) {
+    if (!currentSequenceData || isSaving) return;
+
+    isSaving = true;
+    statusText = `Saving ${name}.SEQ...`;
+
+    try {
+      await saveRetroSequence(currentSequenceData, name);
+      hasSavedOnce = true;
+      statusText = `Saved: ${name}.SEQ`;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      statusText = `Save failed: ${message}`;
+      console.error("[RetroScribe] Save failed", error);
+    } finally {
+      isSaving = false;
+    }
+  }
+
+  function handleSequenceGenerated(sequenceData: SequenceData) {
+    currentSequenceData = sequenceData;
+    hasSavedOnce = false;
+    saveFilename = sequenceData.word.slice(0, 8).toUpperCase() || "UNTITLED";
   }
 
   function handleClear() {
     beatCount = 0;
+    currentSequenceData = null;
+    hasSavedOnce = false;
     statusText = "Cleared";
   }
 
@@ -206,7 +283,10 @@
     <RetroTabControl {tabs} bind:activeTab>
       {#snippet children()}
         {#if activeTab === "generate"}
-          <RetroGenerateTab onstatuschange={handleStatusChange} />
+          <RetroGenerateTab
+            onstatuschange={handleStatusChange}
+            onsequencegenerated={handleSequenceGenerated}
+          />
         {:else if activeTab === "construct"}
           <RetroConstructTab onstatuschange={handleStatusChange} />
         {:else if activeTab === "assemble"}
