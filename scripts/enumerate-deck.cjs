@@ -406,6 +406,54 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
   console.log(`After dedup: ${deduped.length} unique sequences (from ${totalRawSeeds} raw)`);
 
   // ---------------------------------------------------------------------------
+  // Apply reversal pattern to edge-level data (for --out JSON and console display).
+  // This flips motionType on the CSV edge objects and re-derives letters so that
+  // seedWord, display output, and JSON all reflect post-reversal state.
+  // The Firestore path does its own reversal on engine steps (for orientation calc).
+  // ---------------------------------------------------------------------------
+
+  if (reversalPattern && reversalPattern !== 'continuous') {
+    const patternDef = REVERSAL_PATTERNS[reversalPattern];
+    for (const entry of deduped) {
+      // Clone edges so mutations don't affect the global edges array or other entries
+      entry.edges = entry.edges.map(e => ({ ...e }));
+      for (let i = 0; i < entry.edges.length; i++) {
+        const e = entry.edges[i];
+        const symbol = patternDef.sequence[i % patternDef.sequence.length];
+        const blueReversed = symbol === 'P' || symbol === 'B';
+        const redReversed  = symbol === 'P' || symbol === 'R';
+
+        // Compute the reversed motion types WITHOUT mutating yet
+        const newBlue = blueReversed
+          ? (e.blueMotionType === 'pro' ? 'anti' : e.blueMotionType === 'anti' ? 'pro' : e.blueMotionType)
+          : e.blueMotionType;
+        const newRed = redReversed
+          ? (e.redMotionType === 'pro' ? 'anti' : e.redMotionType === 'anti' ? 'pro' : e.redMotionType)
+          : e.redMotionType;
+
+        // Look up the new letter from the UNMODIFIED global edges array
+        const match = edges.find(csvEdge =>
+          csvEdge.startPos === e.startPos &&
+          csvEdge.endPos === e.endPos &&
+          csvEdge.blueMotionType === newBlue &&
+          csvEdge.blueStartLoc === e.blueStartLoc &&
+          csvEdge.blueEndLoc === e.blueEndLoc &&
+          csvEdge.redMotionType === newRed &&
+          csvEdge.redStartLoc === e.redStartLoc &&
+          csvEdge.redEndLoc === e.redEndLoc
+        );
+
+        // NOW mutate
+        e.blueMotionType = newBlue;
+        e.redMotionType = newRed;
+        if (match) e.letter = match.letter;
+      }
+
+      entry.seedWord = entry.edges.map(e => e.letter).join('');
+    }
+  }
+
+  // ---------------------------------------------------------------------------
   // Group by hand-path family
   // ---------------------------------------------------------------------------
 
@@ -824,6 +872,11 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
           const newLetter = lookupLetterFromMotions(step);
           if (newLetter) step.letter = newLetter;
         }
+
+        // Recalculate orientations now that motion types have been flipped.
+        // The original propagation used pre-reversal motion types, so the
+        // endOrientation values are wrong for reversed beats.
+        propagateOrientations(fullSteps);
       }
 
       // The executor returns the full sequence including start position as step 0
