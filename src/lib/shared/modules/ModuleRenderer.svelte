@@ -116,7 +116,7 @@
     // ========================================================================
     skewlab: () => import("../../features/lab/LabModule.svelte"),
     "poi-lab": () => import("../../features/lab/LabModule.svelte"),
-    realm: () => import("../../features/lab/LabModule.svelte"),
+    realm: () => import("../../features/realm/RealmModule.svelte"),
     "terrain-research": () => import("../../features/lab/LabModule.svelte"),
     mandala: () => import("../../features/lab/LabModule.svelte"),
     "background-builder": () => import("../../features/lab/LabModule.svelte"),

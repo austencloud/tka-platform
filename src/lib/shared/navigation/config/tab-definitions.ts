@@ -611,14 +611,6 @@ export const FESTIVAL_TABS: Section[] = [
 // All experimental modules consolidated here instead of cluttering the sidebar
 export const LAB_TABS: Section[] = [
   {
-    id: "3d-controls",
-    label: "3D Controls",
-    icon: '<i class="fas fa-cube" aria-hidden="true"></i>',
-    description: "Archived 3D viewer controls: grid selectors, turn stepper, motion config, avatar switching",
-    color: "#06b6d4",
-    gradient: "linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%)",
-  },
-  {
     id: "ascii-pictograph",
     label: "ASCII Pictograph",
     icon: '<i class="fas fa-terminal" aria-hidden="true"></i>',
@@ -779,14 +771,6 @@ export const LAB_TABS: Section[] = [
     gradient: "linear-gradient(135deg, #34d399 0%, #10b981 100%)",
   },
   {
-    id: "level8",
-    label: "Level 8",
-    icon: '<i class="fas fa-vr-cardboard" aria-hidden="true"></i>',
-    description: "Atomics - multi-plane 3D motion",
-    color: "#06b6d4",
-    gradient: "linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%)",
-  },
-  {
     id: "mandala",
     label: "Mandala",
     icon: '<i class="fas fa-dharmachakra" aria-hidden="true"></i>',
@@ -809,14 +793,6 @@ export const LAB_TABS: Section[] = [
     description: "N-grid topology explorer (arbitrary arrangements)",
     color: "#0d9488",
     gradient: "linear-gradient(135deg, #2dd4bf 0%, #0d9488 100%)",
-  },
-  {
-    id: "museum",
-    label: "Museum",
-    icon: '<i class="fas fa-building-columns" aria-hidden="true"></i>',
-    description: "Walkable 3D museum with curated sequence exhibits",
-    color: "#a78bfa",
-    gradient: "linear-gradient(135deg, #c4b5fd 0%, #a78bfa 100%)",
   },
   {
     id: "hand-path-explorer",
