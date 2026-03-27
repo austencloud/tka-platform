@@ -167,7 +167,7 @@
             mode="card-back"
             style="stroke"
             show="both"
-            size={240}
+            size={380}
           />
         </div>
       {:else}
