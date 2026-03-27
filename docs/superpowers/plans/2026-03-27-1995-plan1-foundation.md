@@ -583,7 +583,7 @@ In `LibraryRepository.ts`:
 - `purgeSequence()`: Check `isDeleted === true`, then call existing `deleteSequence()`.
 - `getDeletedSequences()`: Query where `isDeleted == true`, ordered by `deletedAt desc`.
 - `emptyRecycleBin()`: Get all deleted, batch delete.
-- Update existing `getSequences()` to filter OUT soft-deleted by default (add `where("isDeleted", "!=", true)` or filter client-side).
+- Update existing `getSequences()` to filter OUT soft-deleted by default. **Firestore gotcha:** `where("isDeleted", "!=", true)` would exclude documents that lack the `isDeleted` field entirely (all existing sequences). Instead, filter client-side: `sequences.filter(s => !s.isDeleted)`. Or add a migration step that sets `isDeleted: false` on all existing docs. Client-side filtering is simpler and sufficient for library-sized collections.
 - Keep existing `deleteSequence()` as the hard-delete path (unchanged behavior for non-retro callers).
 
 - [ ] **Step 4: Update library adapter to use soft-delete**
