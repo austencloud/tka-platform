@@ -99,9 +99,9 @@ export const AUSTEN_PORTFOLIO_SEED: Omit<TeachingPortfolio, "userId" | "createdA
     "https://youtu.be/c1AzCYasT-g?si=johN0ahBg41Xpa1E&t=378",
   ],
   socialLinks: {
-    website: "thekineticalphabet.com",
-    instagram: "@thekineticalphabet",
-    facebook: "facebook.com/TheKineticAlphabet",
+    website: "tkaflowarts.com",
+    instagram: "@tkaflowarts",
+    facebook: "facebook.com/tkaflowarts",
   },
   insuranceInfo: {
     provider: "Specialty Insurance Agency",
