@@ -13,6 +13,7 @@
 
 const fs = require("fs");
 const path = require("path");
+const { REVERSAL_PATTERNS, applyReversalPattern } = require("./apply-reversal-pattern.cjs");
 
 // ---------------------------------------------------------------------------
 // CLI Argument Parsing
@@ -39,6 +40,7 @@ const dryRun = hasFlag("dry-run");
 const outPath = getArg("out");
 const seedFirestore = hasFlag("seed-firestore");
 const startPositionsArg = getArg("startPositions");
+const reversalPattern = getArg("reversalPattern");
 
 // ---------------------------------------------------------------------------
 // Validation
@@ -85,12 +87,27 @@ if (slice === "quartered" && !QUARTERED_CAPABLE.has(loopType)) {
   process.exit(1);
 }
 
+if (reversalPattern) {
+  if (!REVERSAL_PATTERNS[reversalPattern]) {
+    console.error(`Unknown reversal pattern: ${reversalPattern}`);
+    console.error(`Available: ${Object.keys(REVERSAL_PATTERNS).join(', ')}`);
+    process.exit(1);
+  }
+  const patternDef = REVERSAL_PATTERNS[reversalPattern];
+  const totalBeats = seedLength * (slice === 'quartered' ? 4 : 2);
+  if (totalBeats % patternDef.period !== 0) {
+    console.error(`Pattern "${reversalPattern}" (period ${patternDef.period}) incompatible with ${totalBeats}-beat sequences`);
+    process.exit(1);
+  }
+}
+
 console.log(`\nLOOP Deck Enumerator`);
 console.log(`  Type: ${loopType}`);
 console.log(`  Slice: ${slice}`);
 console.log(`  Seed length: ${seedLength} beats`);
 console.log(`  Level: ${level}`);
 console.log(`  Grid: ${gridMode}`);
+console.log(`  Reversal: ${reversalPattern || 'continuous'}`);
 console.log(`  Dry run: ${dryRun}`);
 if (outPath) console.log(`  Output: ${outPath}`);
 console.log("");
@@ -483,6 +500,7 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
         seedLength,
         level,
         gridMode,
+        reversalPattern: reversalPattern || 'continuous',
         totalSequences: deduped.length,
         startPositions: validStarts,
         generatedAt: new Date().toISOString(),
@@ -680,6 +698,39 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
       };
     }
 
+    /**
+     * Given an engine step (post-LOOP execution, post-reversal), find the
+     * matching CSV letter by matching start position, end position, and motion
+     * types for both hands. This is needed after reversal flips pro↔anti — the
+     * original letter is now wrong and must be re-derived from the mutated
+     * motion types.
+     *
+     * The edges array is the full CSV loaded at startup. We match on all six
+     * fields that uniquely identify a pictograph row: startPos, endPos,
+     * blueMotionType, blueStartLoc, blueEndLoc, redMotionType, redStartLoc,
+     * redEndLoc. Rotation direction is excluded because it can legitimately
+     * vary within a letter family and is not part of the letter identity.
+     *
+     * Returns null if no match is found (e.g. the reversal produced a
+     * physically invalid combination — caller should keep the original letter).
+     *
+     * @param {{ startPosition: string, endPosition: string, blueMotion: object, redMotion: object }} step
+     * @returns {string|null}
+     */
+    function lookupLetterFromMotions(step) {
+      const match = edges.find(e =>
+        e.startPos === step.startPosition &&
+        e.endPos   === step.endPosition &&
+        e.blueMotionType === step.blueMotion.motionType &&
+        e.blueStartLoc   === step.blueMotion.startLocation &&
+        e.blueEndLoc     === step.blueMotion.endLocation &&
+        e.redMotionType  === step.redMotion.motionType &&
+        e.redStartLoc    === step.redMotion.startLocation &&
+        e.redEndLoc      === step.redMotion.endLocation
+      );
+      return match ? match.letter : null;
+    }
+
     // Write sequence documents in batches of 500
     const BATCH_SIZE = 500;
     let batch = db.batch();
@@ -736,6 +787,45 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
         continue;
       }
 
+      // Apply reversal pattern to the beat steps (all steps after the start position).
+      // We mutate the engine step objects in-place before converting to Firestore
+      // format so that the letter re-lookup and Firestore conversion both see the
+      // same reversed motion types.
+      //
+      // applyReversalPattern expects steps with blueMotionType/redMotionType at
+      // the top level, but engine steps nest these inside blueMotion/redMotion.
+      // We apply the transformation manually here to avoid the mismatch.
+      const beatStepsForReversal = fullSteps.slice(1);
+      if (reversalPattern && reversalPattern !== 'continuous') {
+        const patternDef = REVERSAL_PATTERNS[reversalPattern];
+        for (let i = 0; i < beatStepsForReversal.length; i++) {
+          const step = beatStepsForReversal[i];
+          const symbol = patternDef.sequence[i % patternDef.sequence.length];
+          const blueReversed = symbol === 'P' || symbol === 'B';
+          const redReversed  = symbol === 'P' || symbol === 'R';
+
+          step.blueReversal = blueReversed;
+          step.redReversal  = redReversed;
+
+          if (blueReversed) {
+            step.blueMotion.motionType = step.blueMotion.motionType === 'pro' ? 'anti'
+              : step.blueMotion.motionType === 'anti' ? 'pro'
+              : step.blueMotion.motionType;
+          }
+          if (redReversed) {
+            step.redMotion.motionType = step.redMotion.motionType === 'pro' ? 'anti'
+              : step.redMotion.motionType === 'anti' ? 'pro'
+              : step.redMotion.motionType;
+          }
+
+          // Re-derive the letter from the reversed motion types via CSV lookup.
+          // If no match is found (reversal produced a combination not in the CSV),
+          // we keep the original letter so the sequence is still usable.
+          const newLetter = lookupLetterFromMotions(step);
+          if (newLetter) step.letter = newLetter;
+        }
+      }
+
       // The executor returns the full sequence including start position as step 0
       const sp = fullSteps[0];
       const startPosition = {
@@ -773,8 +863,10 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
         },
       };
 
-      // Steps are everything after the start position
-      const steps = fullSteps.slice(1).map((step, i) => engineStepToFirestore(step, i));
+      // Steps are everything after the start position.
+      // beatStepsForReversal already has reversed motion types and re-derived
+      // letters applied (if --reversalPattern was passed), so we use it directly.
+      const steps = beatStepsForReversal.map((step, i) => engineStepToFirestore(step, i));
       const fullWord = steps.map(s => s.letter).join("");
 
       const seqData = {
@@ -784,6 +876,7 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
         gridMode,
         isCircular: true,
         loopType: loopType,
+        reversalPattern: reversalPattern || 'continuous',
         sequenceLength: steps.length,
         level,
         isFavorite: false,
