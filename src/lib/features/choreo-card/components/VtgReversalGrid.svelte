@@ -55,9 +55,15 @@
 
   .reversal-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 12px;
-    max-width: 700px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    max-width: 960px;
     margin: 0 auto;
+  }
+
+  @media (max-width: 700px) {
+    .reversal-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
   }
 </style>

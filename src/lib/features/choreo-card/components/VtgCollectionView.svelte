@@ -14,116 +14,58 @@
 
   let activeView = $state<"family" | "ratio" | "reversal">("family");
 
+  // Family and Ratio views only show continuous decks.
+  // Reversal variants are browsed via the BY REVERSAL view.
+  const continuousDecks = $derived(
+    decks.filter(d => !d.reversalPattern || d.reversalPattern === 'continuous')
+  );
+
   function handleSelectPattern(patternId: string): void {
+    // TODO: drill down to filtered sequences for this reversal pattern
     console.log("Selected reversal pattern:", patternId);
   }
 </script>
 
 <div class="vtg-collection-view">
-  <!-- Wide screens: show both sections stacked with a divider -->
-  <div class="dual-layout">
-    <section class="section">
-      <h3 class="section-label">By Family</h3>
-      <VtgFamilyGrid {decks} {onSelectFamily} />
-    </section>
-
-    <hr class="divider" />
-
-    <section class="section">
-      <h3 class="section-label">By Ratio</h3>
-      <VtgRatioGrid {decks} {onSelectDeck} />
-    </section>
-
-    <hr class="divider" />
-
-    <section class="section">
-      <VtgReversalGrid {decks} onSelectPattern={handleSelectPattern} />
-    </section>
+  <div class="toggle-bar">
+    <button
+      type="button"
+      class="toggle-pill"
+      class:active={activeView === "family"}
+      onclick={() => (activeView = "family")}
+    >
+      Family
+    </button>
+    <button
+      type="button"
+      class="toggle-pill"
+      class:active={activeView === "ratio"}
+      onclick={() => (activeView = "ratio")}
+    >
+      Ratio
+    </button>
+    <button
+      type="button"
+      class="toggle-pill"
+      class:active={activeView === "reversal"}
+      onclick={() => (activeView = "reversal")}
+    >
+      Reversal
+    </button>
   </div>
 
-  <!-- Narrow screens: toggle between views -->
-  <div class="toggle-layout">
-    <div class="toggle-bar">
-      <button
-        type="button"
-        class="toggle-pill"
-        class:active={activeView === "family"}
-        onclick={() => (activeView = "family")}
-      >
-        Family
-      </button>
-      <button
-        type="button"
-        class="toggle-pill"
-        class:active={activeView === "ratio"}
-        onclick={() => (activeView = "ratio")}
-      >
-        Ratio
-      </button>
-      <button
-        type="button"
-        class="toggle-pill"
-        class:active={activeView === "reversal"}
-        onclick={() => (activeView = "reversal")}
-      >
-        Reversal
-      </button>
-    </div>
-
-    {#if activeView === "family"}
-      <VtgFamilyGrid {decks} {onSelectFamily} />
-    {:else if activeView === "ratio"}
-      <VtgRatioGrid {decks} {onSelectDeck} />
-    {:else}
-      <VtgReversalGrid {decks} onSelectPattern={handleSelectPattern} />
-    {/if}
-  </div>
+  {#if activeView === "family"}
+    <VtgFamilyGrid decks={continuousDecks} {onSelectFamily} />
+  {:else if activeView === "ratio"}
+    <VtgRatioGrid decks={continuousDecks} {onSelectDeck} />
+  {:else}
+    <VtgReversalGrid {decks} onSelectPattern={handleSelectPattern} />
+  {/if}
 </div>
 
 <style>
   .vtg-collection-view {
     width: 100%;
-  }
-
-  /* Wide screens: both sections visible */
-  .dual-layout {
-    display: block;
-  }
-
-  .toggle-layout {
-    display: none;
-  }
-
-  .section {
-    margin-bottom: 8px;
-  }
-
-  .section-label {
-    text-align: center;
-    font-size: var(--font-size-min, 14px);
-    font-weight: 600;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.45));
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    margin: 0 0 16px;
-  }
-
-  .divider {
-    border: none;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
-    margin: 28px auto;
-    max-width: 960px;
-  }
-
-  /* Narrow screens: toggle between views */
-  @media (max-width: 900px) {
-    .dual-layout {
-      display: none;
-    }
-
-    .toggle-layout {
-      display: block;
-    }
   }
 
   .toggle-bar {
@@ -150,8 +92,19 @@
     color: #63b7cd;
   }
 
+  .toggle-pill:not(.active):hover {
+    border-color: rgba(255, 255, 255, 0.3);
+    color: rgba(255, 255, 255, 0.8);
+  }
+
   .toggle-pill:focus-visible {
     outline: 2px solid var(--theme-accent, #6c8ee8);
     outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .toggle-pill {
+      transition: none;
+    }
   }
 </style>
