@@ -5,12 +5,18 @@
   with serial number, feature list, and three action buttons.
   Styled as a system dialog: gray background, etched border, centered.
 
+  Shows real premium status: unregistered nag for free users,
+  registration confirmation for premium/admin/tester users.
+
   Domain: Retro UPGRADE App
 -->
 <script lang="ts">
   import RetroButton from "../../primitives/RetroButton.svelte";
   import RetroStatusBar from "../../primitives/RetroStatusBar.svelte";
   import { RETRO_ICONS } from "../../rendering/retro-icons";
+  import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import { isPremiumOrAbove } from "$lib/shared/auth/domain/models/UserRole";
+  import { desktopState } from "../../../state/desktop-state.svelte";
 
   /* ------------------------------------------------------------------ */
   /* Props                                                               */
@@ -23,11 +29,38 @@
   } = $props();
 
   /* ------------------------------------------------------------------ */
+  /* Premium status                                                      */
+  /* ------------------------------------------------------------------ */
+
+  // Derive premium status from live auth role — reactive to role changes.
+  const isPremium = $derived(isPremiumOrAbove(authState.role));
+
+  // Display name: prefer Firebase user displayName, fall back to desktop state,
+  // then a generic placeholder if neither is available yet.
+  const licensedTo = $derived(
+    authState.user?.displayName ||
+    desktopState.userDisplayName ||
+    "Registered User"
+  );
+
+  // Format the first 16 chars of the user UID as a Win95-style reg key.
+  // Pattern: XXXX-XXXX-XXXX-XXXX
+  const registrationKey = $derived(() => {
+    const uid = authState.user?.uid ?? "0000000000000000";
+    const raw = uid.replace(/-/g, "").toUpperCase().slice(0, 16).padEnd(16, "0");
+    return `${raw.slice(0, 4)}-${raw.slice(4, 8)}-${raw.slice(8, 12)}-${raw.slice(12, 16)}`;
+  });
+
+  /* ------------------------------------------------------------------ */
   /* State                                                               */
   /* ------------------------------------------------------------------ */
 
-  let statusText = $state("Unregistered copy");
+  let statusText = $state<string | null>(null);
   let registering = $state(false);
+
+  const defaultStatusText = $derived(
+    isPremium ? "Registered copy — thank you!" : "Unregistered copy"
+  );
 
   /* ------------------------------------------------------------------ */
   /* Feature list                                                        */
@@ -66,71 +99,111 @@
   /* Status bar                                                          */
   /* ------------------------------------------------------------------ */
 
-  const statusPanels = $derived([{ text: statusText }]);
+  const statusPanels = $derived([{ text: statusText ?? defaultStatusText }]);
 </script>
 
 <div class="upgrade-shell">
   <div class="upgrade-content">
     <div class="upgrade-dialog">
-      <!-- Warning icon -->
-      <div class="upgrade-icon" aria-hidden="true">{@html RETRO_ICONS.warning}</div>
+      <!-- Icon: info for registered, warning for unregistered -->
+      <div class="upgrade-icon" aria-hidden="true">
+        {#if isPremium}
+          {@html RETRO_ICONS.info}
+        {:else}
+          {@html RETRO_ICONS.warning}
+        {/if}
+      </div>
 
       <!-- Text block -->
       <div class="upgrade-text">
-        <div class="upgrade-heading">UNREGISTERED COPY</div>
+        {#if isPremium}
+          <!-- -------------------------------------------------- -->
+          <!-- Registered view                                      -->
+          <!-- -------------------------------------------------- -->
+          <div class="upgrade-heading upgrade-heading--registered">REGISTERED COPY</div>
 
-        <p class="upgrade-para">
-          This copy of TKA-OS has been used 47 times
-          without registration.
-        </p>
+          <p class="upgrade-para">
+            Thank you for supporting TKA Notation System development.
+          </p>
 
-        <p class="upgrade-para">
-          To unlock all features, please send $29.95
-          (check or money order) to:
-        </p>
-
-        <div class="upgrade-address">
-          <div>Bellweather Technical Institute</div>
-          <div>Attn: Software Registration Dept.</div>
-          <div class="upgrade-redacted">[ADDRESS REDACTED BY ORDER OF THE INSTITUTE]</div>
-        </div>
-
-        <div class="upgrade-serial">
-          <span class="upgrade-serial-label">Include your Serial Number:</span>
-          <span class="upgrade-serial-value">BTI-1995-TKA-OS-001</span>
-        </div>
-
-        <div class="upgrade-features">
-          <div class="upgrade-features-label">
-            Features unlocked with registration:
+          <div class="upgrade-registration-info">
+            <div class="upgrade-reg-row">
+              <span class="upgrade-reg-label">Licensed to:</span>
+              <span class="upgrade-reg-value">{licensedTo}</span>
+            </div>
+            <div class="upgrade-reg-row">
+              <span class="upgrade-reg-label">Registration key:</span>
+              <span class="upgrade-serial-value">{registrationKey()}</span>
+            </div>
+            <div class="upgrade-reg-row">
+              <span class="upgrade-reg-label">Product:</span>
+              <span class="upgrade-reg-value">TKA Notation System v4.0</span>
+            </div>
           </div>
-          <ul class="upgrade-feature-list">
-            {#each FEATURES as feature}
-              <li class="upgrade-feature-item">
-                <span class="upgrade-check">\u2713</span> {feature}
-              </li>
-            {/each}
-          </ul>
-        </div>
+
+          <p class="upgrade-para upgrade-para--muted">
+            All features unlocked. This dialog may now be safely ignored.
+          </p>
+        {:else}
+          <!-- -------------------------------------------------- -->
+          <!-- Unregistered view                                    -->
+          <!-- -------------------------------------------------- -->
+          <div class="upgrade-heading">UNREGISTERED COPY</div>
+
+          <p class="upgrade-para">
+            This is an UNREGISTERED copy of TKA Notation System.
+            You have been using it without registration.
+          </p>
+
+          <p class="upgrade-para">
+            To unlock all features, please register at:
+          </p>
+
+          <div class="upgrade-address">
+            <div class="upgrade-url">tkacomposer.com</div>
+            <div class="upgrade-redacted">[or mail $29.95 to Bellweather Technical Institute, address redacted by order of the Institute]</div>
+          </div>
+
+          <div class="upgrade-features">
+            <div class="upgrade-features-label">
+              Features unlocked with registration:
+            </div>
+            <ul class="upgrade-feature-list">
+              {#each FEATURES as feature}
+                <li class="upgrade-feature-item">
+                  <span class="upgrade-check">\u2713</span> {feature}
+                </li>
+              {/each}
+            </ul>
+          </div>
+        {/if}
       </div>
     </div>
 
     <!-- Buttons -->
     <div class="upgrade-buttons">
-      <RetroButton
-        label="Register Now"
-        isDefault={true}
-        onclick={handleRegister}
-        disabled={registering}
-      />
-      <RetroButton
-        label="Remind Me Later"
-        onclick={handleRemindLater}
-      />
-      <RetroButton
-        label="Continue Unregistered"
-        onclick={handleContinue}
-      />
+      {#if isPremium}
+        <RetroButton
+          label="OK"
+          isDefault={true}
+          onclick={handleContinue}
+        />
+      {:else}
+        <RetroButton
+          label="Register Now"
+          isDefault={true}
+          onclick={handleRegister}
+          disabled={registering}
+        />
+        <RetroButton
+          label="Remind Me Later"
+          onclick={handleRemindLater}
+        />
+        <RetroButton
+          label="Continue Unregistered"
+          onclick={handleContinue}
+        />
+      {/if}
     </div>
   </div>
 
@@ -227,17 +300,6 @@
     font-style: italic;
   }
 
-  .upgrade-serial {
-    margin: 8px 0;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-
-  .upgrade-serial-label {
-    color: var(--retro-black, #000);
-  }
-
   .upgrade-serial-value {
     font-family: "Courier New", monospace;
     font-weight: bold;
@@ -275,6 +337,56 @@
     color: #008000;
     font-weight: bold;
     margin-right: 4px;
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Registered view                                                     */
+  /* ------------------------------------------------------------------ */
+  .upgrade-heading--registered {
+    color: var(--retro-navy, #000080);
+  }
+
+  .upgrade-registration-info {
+    margin: 8px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    border: 1px inset var(--retro-button-face, #c0c0c0);
+    padding: 8px;
+    background: var(--retro-window-bg, #ffffff);
+  }
+
+  .upgrade-reg-row {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  .upgrade-reg-label {
+    font-weight: bold;
+    font-size: 10px;
+    color: var(--retro-disabled-text, #808080);
+    text-transform: uppercase;
+  }
+
+  .upgrade-reg-value {
+    color: var(--retro-black, #000);
+  }
+
+  .upgrade-para--muted {
+    color: var(--retro-disabled-text, #808080);
+    font-style: italic;
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Unregistered view extras                                            */
+  /* ------------------------------------------------------------------ */
+  .upgrade-url {
+    font-family: "Courier New", monospace;
+    font-weight: bold;
+    color: var(--retro-navy, #000080);
+    text-decoration: underline;
+    font-size: 12px;
   }
 
   /* ------------------------------------------------------------------ */
