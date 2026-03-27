@@ -339,13 +339,14 @@
     align-items: center;
     justify-content: center;
     min-height: 0;
+    max-height: 320px;
+    padding: 4px 0;
   }
 
   .mandala-hero :global(svg) {
-    max-width: 100%;
-    max-height: 100%;
-    width: auto;
-    height: auto;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
   }
 
   .loop-explanation {
