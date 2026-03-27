@@ -91,25 +91,26 @@
 </script>
 
 <div class="loop-collection-view">
-  <!-- Loop type pill bar -->
-  <div class="pill-bar" role="tablist" aria-label="LOOP type filter">
-    {#each LOOP_TYPE_LABELS as { id, label } (id)}
-      {@const enabled = populatedLoopTypes.has(id)}
-      <button
-        type="button"
-        role="tab"
-        class="loop-pill"
-        class:active={activeLoopType === id}
-        class:disabled={!enabled}
-        disabled={!enabled}
-        aria-selected={activeLoopType === id}
-        aria-disabled={!enabled}
-        onclick={() => { if (enabled) activeLoopType = id; }}
-      >
-        {label}
-      </button>
-    {/each}
-  </div>
+  <!-- Only show loop type pills when more than one type has decks -->
+  {#if [...populatedLoopTypes].length > 1}
+    <div class="pill-bar" role="tablist" aria-label="LOOP type filter">
+      {#each LOOP_TYPE_LABELS as { id, label } (id)}
+        {@const enabled = populatedLoopTypes.has(id)}
+        {#if enabled}
+          <button
+            type="button"
+            role="tab"
+            class="loop-pill"
+            class:active={activeLoopType === id}
+            aria-selected={activeLoopType === id}
+            onclick={() => { activeLoopType = id; }}
+          >
+            {label}
+          </button>
+        {/if}
+      {/each}
+    </div>
+  {/if}
 
   <!-- Axis toggle -->
   <div class="axis-toggle" role="tablist" aria-label="Browse axis">
@@ -147,7 +148,6 @@
 
   <!-- Grid content or drill-down list — vertically centered in remaining space -->
   <div class="grid-content">
-    <div class="grid-inner">
     {#if drillFilter}
       <!-- Drill-down: filtered deck list -->
       <div class="drill-header">
@@ -178,18 +178,16 @@
     {:else}
       <LoopReversalGrid decks={filteredDecks} onSelectPattern={handleSelectPattern} />
     {/if}
-    </div>
   </div>
 </div>
 
 <style>
   .loop-collection-view {
     width: 100%;
-    flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 24px;
-    min-height: 0;
+    align-items: center;
+    gap: 20px;
   }
 
   /* Loop type pill bar */
@@ -283,15 +281,6 @@
   }
 
   .grid-content {
-    width: 100%;
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 0;
-  }
-
-  .grid-inner {
     width: 100%;
     max-width: 960px;
   }
