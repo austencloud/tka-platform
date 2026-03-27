@@ -371,7 +371,21 @@
             </button>
           {/if}
 
-          <!-- Overflow menu renders for all users — it self-hides when no items -->
+          <!-- Practice: always visible as icon-only button -->
+          {#if onPracticeStart || onPracticeStop}
+            <button
+              type="button"
+              class="mid-action-btn"
+              class:practice-active={practiceActive}
+              onclick={() => practiceActive ? onPracticeStop?.() : onPracticeStart?.()}
+              aria-label={practiceActive ? "Stop practice training" : "Start practice training"}
+              aria-pressed={practiceActive}
+            >
+              <i class="fas {practiceActive ? 'fa-stop' : 'fa-signal'}" aria-hidden="true"></i>
+            </button>
+          {/if}
+
+          <!-- Overflow menu for secondary actions — self-hides when no items -->
           <ViewerOverflowMenu
             {isPublished}
             onCopyLink={isLoggedIn ? onCopyLink : undefined}
@@ -380,9 +394,6 @@
             onPublish={isLoggedIn && isOwned && isSaved ? onPublish : undefined}
             onUnpublish={isLoggedIn && isOwned && isSaved ? onUnpublish : undefined}
             onDeleteRequest={isLoggedIn && isOwned && isSaved ? onDeleteRequest : undefined}
-            {practiceActive}
-            onPracticeStart={onPracticeStart}
-            onPracticeStop={onPracticeStop}
           />
         </div>
       </div>
@@ -857,6 +868,13 @@
   .mid-action-btn.favorited {
     color: var(--semantic-error);
     border-color: color-mix(in srgb, var(--semantic-error) 30%, transparent);
+  }
+
+  .mid-action-btn.practice-active {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.4);
+    color: #f87171;
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.2);
   }
 
   .mid-action-btn.video {
