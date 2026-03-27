@@ -155,6 +155,9 @@
 		border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
 		position: relative;
 		overflow: hidden;
+		/* Never taller than wide — keeps the canvas square */
+		aspect-ratio: 1;
+		max-height: 100%;
 	}
 
 	.animation-placeholder {
