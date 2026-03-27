@@ -122,14 +122,16 @@
 		position: relative;
 		display: flex;
 		justify-content: var(--align, center);
-		align-items: center;
+		align-items: stretch;
+		overflow: hidden;
 	}
 
 	.animation-square {
 		aspect-ratio: 1;
 		height: 100%;
-		max-width: 100%;
+		flex-shrink: 0;
 		position: relative;
+		overflow: hidden;
 	}
 
 	.animation-placeholder {
