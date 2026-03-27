@@ -43,6 +43,7 @@
     isClearingTikaCache: boolean;
     onClearThumbnailCache: () => void;
     isClearingThumbnailCache: boolean;
+    onShowPwaBanner: () => void;
     onClose: () => void;
   }
 
@@ -72,6 +73,7 @@
     isClearingTikaCache,
     onClearThumbnailCache,
     isClearingThumbnailCache,
+    onShowPwaBanner,
     onClose,
   }: Props = $props();
 
@@ -208,6 +210,11 @@
       <button type="button" class="action-card" onclick={onResetHelpDiscovery}>
         <i class="fas fa-circle-question" aria-hidden="true"></i>
         <span>Reset Help Discovery</span>
+      </button>
+
+      <button type="button" class="action-card" onclick={onShowPwaBanner}>
+        <i class="fas fa-mobile-screen" aria-hidden="true"></i>
+        <span>Show PWA Banner</span>
       </button>
 
       <button
