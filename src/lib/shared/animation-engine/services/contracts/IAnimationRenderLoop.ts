@@ -167,6 +167,11 @@ export interface IAnimationRenderLoop {
   setTargetFps(fps: number | null): void;
 
   /**
+   * Snapshot of render loop state for diagnostic reports.
+   */
+  getDiagnostics(): Record<string, unknown>;
+
+  /**
    * Clean up resources
    */
   dispose(): void;

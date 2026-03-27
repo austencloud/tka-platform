@@ -776,14 +776,7 @@ export const LAB_TABS: Section[] = [
     color: "#8b5cf6",
     gradient: "linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%)",
   },
-  {
-    id: "avatar",
-    label: "Avatar",
-    icon: '<i class="fas fa-user-circle" aria-hidden="true"></i>',
-    description: "Generated profile avatar designs",
-    color: "#a855f7",
-    gradient: "linear-gradient(135deg, #c084fc 0%, #a855f7 100%)",
-  },
+  // avatar removed (Mar 2026)
   {
     id: "backgrounds",
     label: "Backgrounds",
@@ -802,14 +795,7 @@ export const LAB_TABS: Section[] = [
     gradient: "linear-gradient(135deg, #818cf8 0%, #6366f1 100%)",
   },
   // connect graduated to Social module (Mar 2026)
-  {
-    id: "contact-ball",
-    label: "Contact Ball",
-    icon: '<i class="fas fa-circle" aria-hidden="true"></i>',
-    description: "Contact ball color fix + acrylic style prototypes",
-    color: "#6366f1",
-    gradient: "linear-gradient(135deg, #818cf8 0%, #6366f1 100%)",
-  },
+  // contact-ball removed (Mar 2026)
   {
     id: "disassemble",
     label: "Disassemble",
@@ -852,14 +838,7 @@ export const LAB_TABS: Section[] = [
     color: "#f472b6",
     gradient: "linear-gradient(135deg, #f9a8d4 0%, #f472b6 100%)",
   },
-  {
-    id: "ml-training",
-    label: "ML Training",
-    icon: '<i class="fas fa-brain" aria-hidden="true"></i>',
-    description: "Train prop detection models",
-    color: "#8b5cf6",
-    gradient: "linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%)",
-  },
+  // ml-training removed (Mar 2026)
   {
     id: "multi-grid",
     label: "Multi-Grid",
@@ -887,14 +866,7 @@ export const LAB_TABS: Section[] = [
     gradient: "linear-gradient(135deg, #fb923c 0%, #f97316 100%)",
   },
   // retro + retro-pictograph graduated to Retro module (Mar 2026)
-  {
-    id: "screenshot-gallery",
-    label: "Screenshots",
-    icon: '<i class="fas fa-camera" aria-hidden="true"></i>',
-    description: "Multi-device screenshot gallery",
-    color: "#22d3ee",
-    gradient: "linear-gradient(135deg, #67e8f9 0%, #22d3ee 100%)",
-  },
+  // screenshot-gallery removed (Mar 2026)
   // skel2tka graduated to Video module (Mar 2026)
   {
     id: "trigrid",

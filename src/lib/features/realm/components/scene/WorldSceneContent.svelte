@@ -56,6 +56,11 @@
   import { InteractionDetector } from "$lib/features/realm/destinations/museum/services/implementations/InteractionDetector";
   import { setActiveMuseumState } from "$lib/features/realm/destinations/museum/state/museum-state-bridge.svelte";
 
+  // Archive (The Kinetic Archive)
+  import DiscoveryChamber from "$lib/features/realm/destinations/archive/components/DiscoveryChamber.svelte";
+  import { createArchiveState } from "$lib/features/realm/destinations/archive/state/archive-state.svelte";
+  import { setActiveArchiveState } from "$lib/features/realm/destinations/archive/state/archive-state-bridge.svelte";
+
   import hannonsTerrainData from "../../data/hannons-camp-terrain.json";
 
   import {
@@ -229,6 +234,15 @@
   $effect(() => {
     setActiveMuseumState(isMuseumRealm ? museumState : null);
     return () => setActiveMuseumState(null);
+  });
+
+  // Archive state (The Kinetic Archive - narrative museum)
+  const isArchiveRealm = $derived(activeConfig.id === "archive-wing1");
+  const archiveState = createArchiveState();
+
+  $effect(() => {
+    setActiveArchiveState(isArchiveRealm ? archiveState : null);
+    return () => setActiveArchiveState(null);
   });
 
   // Sun light reference for shadow updates
@@ -1126,5 +1140,14 @@
     {museumState}
     groundY={(activeConfig.terrain.waterLevel ?? 5) + 3}
     {playerPosition}
+  />
+{/if}
+
+<!-- Archive: The Kinetic Archive (narrative museum rooms) -->
+{#if isArchiveRealm && isInitialized && isReadyToRender}
+  <DiscoveryChamber
+    groundY={(activeConfig.terrain.waterLevel ?? 5) + 3}
+    {playerPosition}
+    {archiveState}
   />
 {/if}

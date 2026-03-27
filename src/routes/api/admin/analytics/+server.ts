@@ -94,16 +94,21 @@ function buildEngagementQuery(userId: string): string {
 
 function buildActivityQuery(userId: string, period: TimePeriod): string {
   const interval = getPeriodInterval(period);
+  // Derive module from the first URL path segment of pageview events.
+  // Works with existing autocapture data without custom properties.
   return `
     SELECT
-      properties.module as module,
+      splitByChar('/', ifNull(path(properties."$current_url"), ''))[2] as module,
       count() as event_count
     FROM events
     WHERE distinct_id = '${userId}'
       AND timestamp > now() - interval ${interval}
-      AND properties.module IS NOT NULL
-    GROUP BY properties.module
+      AND event = '$pageview'
+      AND properties."$current_url" IS NOT NULL
+    GROUP BY module
+    HAVING module != ''
     ORDER BY event_count DESC
+    LIMIT 10
   `;
 }
 
@@ -126,18 +131,29 @@ function buildContentQuery(userId: string): string {
 }
 
 function buildSessionsQuery(userId: string, limit: number): string {
+  // Derive modules from pageview URLs instead of properties.module
   return `
     SELECT
-      $session_id as session_id,
+      "$session_id" as session_id,
       min(timestamp) as started_at,
       max(timestamp) as ended_at,
       dateDiff('millisecond', min(timestamp), max(timestamp)) as duration,
-      groupArray(distinct properties.module) as modules
+      arrayDistinct(
+        arrayFilter(
+          x -> x != '',
+          groupArray(
+            if(event = '$pageview',
+              splitByChar('/', ifNull(path(properties."$current_url"), ''))[2],
+              ''
+            )
+          )
+        )
+      ) as modules
     FROM events
     WHERE distinct_id = '${userId}'
-      AND $session_id IS NOT NULL
+      AND "$session_id" IS NOT NULL
       AND timestamp > now() - interval 30 day
-    GROUP BY $session_id
+    GROUP BY "$session_id"
     ORDER BY started_at DESC
     LIMIT ${Math.min(limit, 50)}
   `;
@@ -190,7 +206,7 @@ export const POST: RequestHandler = async (event) => {
       uid: caller.uid,
       action: "analytics_query",
       target: userId,
-      metadata: { queryType: type, period },
+      metadata: { queryType: type, ...(period != null && { period }) },
       ip: event.getClientAddress(),
     });
 

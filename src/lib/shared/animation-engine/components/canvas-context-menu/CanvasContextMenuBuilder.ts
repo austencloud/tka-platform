@@ -25,6 +25,8 @@ interface CanvasContextMenuDeps {
   onOpenSettings: () => void;
   disassembled?: boolean;
   onToggleDisassemble?: () => void;
+  /** Captures a diagnostic snapshot of the effect pipeline state */
+  captureEffectDiagnostics?: () => Record<string, unknown>;
 }
 
 type ActiveEffect = "fire" | "charcoal" | "led" | "trails" | "none";
@@ -173,6 +175,31 @@ export function buildCanvasContextMenuItems(
     icon: "fa-sliders",
     action: () => deps.onOpenSettings(),
   });
+
+  // Show "Report Effect Issue" when any effect is active
+  if (active !== "none" && deps.captureEffectDiagnostics) {
+    const captureFn = deps.captureEffectDiagnostics;
+    items.push(
+      { type: "separator" as const },
+      {
+        id: "report-effect-issue",
+        label: "Report Effect Issue",
+        icon: "fa-bug",
+        iconColor: "#ef4444",
+        action: async () => {
+          const snapshot = captureFn();
+          const json = JSON.stringify(snapshot, null, 2);
+          try {
+            await navigator.clipboard.writeText(json);
+            console.log("[EffectDiagnostics] Snapshot copied to clipboard:", snapshot);
+          } catch {
+            // Clipboard may fail in non-secure contexts
+            console.log("[EffectDiagnostics] Snapshot (copy failed, logged here):", json);
+          }
+        },
+      }
+    );
+  }
 
   return items;
 }

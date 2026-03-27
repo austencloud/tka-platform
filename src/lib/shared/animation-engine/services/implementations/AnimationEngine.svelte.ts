@@ -960,7 +960,9 @@ export class AnimationEngine {
         // the orchestrator above, so no warmup delay needed.
         this.trailOverlay?.clearBuffers();
         this.fireTipTracker?.reset();
-        console.log(`[TRAIL-DIAG] Cleared trail buffers + reset fire tip tracker`);
+        this.fireRenderer?.clearSimulation();
+        this.charcoalRenderer?.clearSimulation();
+        console.log(`[TRAIL-DIAG] Cleared trail buffers + reset fire tip tracker + cleared fire/charcoal simulations`);
 
         // Trigger path cache precomputation for smooth trails during stutters
         // This pre-computes the entire animation at 120fps so the render loop can
@@ -1170,6 +1172,50 @@ export class AnimationEngine {
    */
   invalidateFireCache(): void {
     this.fireRenderer?.clearSimulation();
+  }
+
+  /**
+   * Capture a diagnostic snapshot of the entire effect pipeline.
+   * Called from the canvas context menu when the user sees a visual glitch.
+   * Returns a JSON-serializable object with all relevant state.
+   */
+  captureEffectDiagnostics(): Record<string, unknown> {
+    const vm = getAnimationVisibilityManager();
+    const settings = vm.getSettings();
+    const lastProps = this.lastPropsRef;
+
+    return {
+      timestamp: new Date().toISOString(),
+      performanceNow: performance.now(),
+      instanceId: this.instanceId,
+      engineState: {
+        isInitialized: this.state.isInitialized,
+        isPlaying: lastProps?.isPlaying ?? false,
+        currentStep: lastProps?.currentStep ?? 0,
+        canvasSize: this.canvasSize,
+      },
+      visibility: {
+        fireEffect: settings.fireEffect,
+        charcoalEffect: settings.charcoalEffect,
+        ledEffect: settings.ledEffect,
+        trailStyle: settings.trailStyle,
+        effortPreset: settings.effortPreset,
+        pathShape: settings.pathShape,
+      },
+      fireConfig: this.fireConfig,
+      renderLoop: this.renderLoopService?.getDiagnostics() ?? null,
+      qualityHints: this.frameBudgetMonitor?.getQualityHints() ?? null,
+      sequenceInfo: this.prevSequenceData ? {
+        word: this.prevSequenceData.word,
+        stepCount: this.prevSequenceData.steps?.length ?? 0,
+        gridMode: this.prevSequenceData.gridMode,
+      } : null,
+      propTypes: {
+        blue: this.state.currentBluePropType,
+        red: this.state.currentRedPropType,
+      },
+      userAgent: typeof navigator !== "undefined" ? navigator.userAgent : null,
+    };
   }
 
   /**

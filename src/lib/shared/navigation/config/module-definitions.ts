@@ -44,8 +44,7 @@ const MODULE_ID_MIGRATIONS: Record<string, ModuleId> = {
   mandala: "lab",
   "background-builder": "lab",
   "landing-preview": "lab",
-  // Standalone modules consolidated into Lab (Feb 2026)
-  "ml-training": "lab",
+  // ml-training removed (Mar 2026)
   community: "social",
   connect: "social",
 };

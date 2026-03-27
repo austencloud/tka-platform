@@ -130,7 +130,7 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
     if (this.diagFrameCount <= 15) {
       const bp = params.blueProp;
       const rp = params.redProp;
-      console.log(`[TRAIL-DIAG] Frame ${this.diagFrameCount} | blue=(${bp?.x?.toFixed(0)},${bp?.y?.toFixed(0)}) rot=${bp?.staffRotationAngle?.toFixed(1)} | red=(${rp?.x?.toFixed(0)},${rp?.y?.toFixed(0)}) rot=${rp?.staffRotationAngle?.toFixed(1)} | rings: bL=${this.blueLeftRing.length} bR=${this.blueRightRing.length} rL=${this.redLeftRing.length} rR=${this.redRightRing.length}`);
+      console.log(`[TRAIL-DIAG] Frame ${this.diagFrameCount} | blue: path=${bp?.centerPathAngle?.toFixed(2)} staff=${bp?.staffRotationAngle?.toFixed(2)} xy=(${bp?.x},${bp?.y}) | red: path=${rp?.centerPathAngle?.toFixed(2)} staff=${rp?.staffRotationAngle?.toFixed(2)} xy=(${rp?.x},${rp?.y}) | rings: bL=${this.blueLeftRing.length} bR=${this.blueRightRing.length} rL=${this.redLeftRing.length} rR=${this.redRightRing.length}`);
     }
 
     const {
@@ -219,6 +219,10 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
         const blueLeading = this.getLeadingEdge(blueRing, canvasSize);
         const redLeading = this.getLeadingEdge(redRing, canvasSize);
         if (blueLeading.length >= 2 || redLeading.length >= 2) {
+          if (this.diagFrameCount <= 15) {
+            const fmt = (pts: TrailPoint[]) => pts.map(p => `(${p.x.toFixed(1)},${p.y.toFixed(1)})`).join('→');
+            console.log(`[TRAIL-DIAG] DRAW frame ${this.diagFrameCount} | blue[${blueLeading.length}]: ${fmt(blueLeading)} | red[${redLeading.length}]: ${fmt(redLeading)} | lineWidth=${overlaySettings.lineWidth.toFixed(1)} canvasSize=${canvasSize}`);
+          }
           this.trailRenderer.renderTrails(
             bCtx as CanvasRenderingContext2D,
             blueLeading,
@@ -387,13 +391,25 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
     endType: 0 | 1
   ): void {
 
-    // Skip discontinuities
     if (ring.length > 0) {
       const last = ring[ring.length - 1]!;
       const dx = worldX - last.x;
       const dy = worldY - last.y;
-      if (dx * dx + dy * dy > (canvasSize * 0.3) ** 2) {
+      const distSq = dx * dx + dy * dy;
+
+      // Skip discontinuities (teleports)
+      if (distSq > (canvasSize * 0.3) ** 2) {
         ring.length = 0;
+      }
+
+      // Skip near-duplicate points. When props are stationary, floating
+      // point jitter produces near-identical positions each frame. The
+      // tapered renderer computes direction from consecutive points — if
+      // they're sub-pixel apart, the direction is arbitrary and draws
+      // visible artifact lines in random directions.
+      // Minimum 0.5px movement required.
+      if (ring.length > 0 && distSq < 0.25) {
+        return;
       }
     }
 

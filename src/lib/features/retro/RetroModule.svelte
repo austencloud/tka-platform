@@ -1,106 +1,82 @@
 <!--
-  RetroModule.svelte — Top-level retro module with 3 tabs.
-
-  Graduated from Lab. Contains:
-  - TKA-OS: Win95 desktop parody
-  - ASCII Pictograph: DOS terminal pictograph renderer
-  - Pixel Pictograph: Win95 16-color dithered pictograph renderer
+  RetroModule.svelte — TKA-OS, ASCII, and Pixel pictograph rendering.
+  Tabs appear in the sidebar. Navigation handled by the nav system.
 -->
 <script lang="ts">
-  const tabs = [
-    { id: "desktop", label: "TKA-OS", icon: "fa-desktop" },
-    { id: "ascii", label: "ASCII Pictograph", icon: "fa-terminal" },
-    { id: "pixel", label: "Pixel Pictograph", icon: "fa-th" },
-  ] as const;
+  import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
+  import { RETRO_TABS } from "$lib/shared/navigation/config/tab-definitions";
 
-  type TabId = (typeof tabs)[number]["id"];
-
-  let activeTab = $state<TabId>("desktop");
-
-  const tabComponents: Record<TabId, () => Promise<{ default: any }>> = {
+  const tabComponents: Record<string, () => Promise<{ default: any }>> = {
     desktop: () => import("./win95/components/RetroLab.svelte"),
     ascii: () => import("./labs/AsciiPictographLab.svelte"),
     pixel: () => import("./labs/RetroPictographLab.svelte"),
   };
 
+  const activeTab = $derived(navigationState.activeTab || RETRO_TABS[0]?.id || "desktop");
+
   let TabComponent = $state<any>(null);
+  let loadError = $state<string | null>(null);
 
   $effect(() => {
     const loader = tabComponents[activeTab];
     if (loader) {
-      loader().then((mod) => {
-        TabComponent = mod.default;
-      });
+      loadError = null;
+      loader()
+        .then((mod: { default: any }) => {
+          TabComponent = mod.default;
+        })
+        .catch((err: Error) => {
+          console.error(`Failed to load retro tab "${activeTab}":`, err);
+          loadError = `Failed to load "${activeTab}" tab`;
+          TabComponent = null;
+        });
+    } else {
+      loadError = `Unknown tab: ${activeTab}`;
+      TabComponent = null;
     }
   });
 </script>
 
 <div class="retro-module">
-  <div class="tab-bar">
-    {#each tabs as tab}
-      <button
-        class="tab-btn"
-        class:active={activeTab === tab.id}
-        onclick={() => (activeTab = tab.id)}
-      >
-        <i class="fas {tab.icon}" aria-hidden="true"></i>
-        <span>{tab.label}</span>
-      </button>
-    {/each}
-  </div>
-
-  <div class="tab-content">
-    {#if TabComponent}
-      <TabComponent />
-    {/if}
-  </div>
+  {#if loadError}
+    <div class="load-error">
+      <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+      <span>{loadError}</span>
+    </div>
+  {:else if TabComponent}
+    <TabComponent />
+  {:else}
+    <div class="loading">
+      <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
+    </div>
+  {/if}
 </div>
 
 <style>
   .retro-module {
+    width: 100%;
+    height: 100%;
     display: flex;
     flex-direction: column;
-    height: 100%;
     overflow: hidden;
   }
 
-  .tab-bar {
-    display: flex;
-    gap: 2px;
-    padding: 0.5rem 0.75rem;
-    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
-    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    flex-shrink: 0;
-  }
-
-  .tab-btn {
+  .load-error {
     display: flex;
     align-items: center;
-    gap: 0.4rem;
-    padding: 0.5rem 0.75rem;
-    background: transparent;
-    border: none;
-    border-radius: 8px;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    justify-content: center;
+    gap: 0.5rem;
+    height: 100%;
+    color: var(--semantic-error, #ef4444);
     font-size: var(--font-size-sm, 0.875rem);
-    cursor: pointer;
-    min-height: 44px;
   }
 
-  .tab-btn:hover {
-    color: var(--theme-text, #fff);
-    background: rgba(255, 255, 255, 0.06);
-  }
-
-  .tab-btn.active {
-    color: #008080;
-    background: rgba(0, 128, 128, 0.15);
-    font-weight: 600;
-  }
-
-  .tab-content {
-    flex: 1;
-    min-height: 0;
-    overflow: hidden;
+  .loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    font-size: 1.5rem;
   }
 </style>
