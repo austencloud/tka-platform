@@ -24,6 +24,17 @@
     desktopState.startMenuOpen = !desktopState.startMenuOpen;
   }
 
+  let clockTooltipVisible = $state(false);
+  let clockTooltipTimer: ReturnType<typeof setTimeout> | undefined;
+
+  function handleClockClick() {
+    clockTooltipVisible = true;
+    clearTimeout(clockTooltipTimer);
+    clockTooltipTimer = setTimeout(() => {
+      clockTooltipVisible = false;
+    }, 3000);
+  }
+
   function handleTaskbarWindowClick(windowId: string) {
     /* Win95 behavior: clicking the active window's taskbar button
        minimizes it. Clicking an inactive one focuses it. */
@@ -82,8 +93,13 @@
   </div>
 
   <!-- Clock tray -->
-  <div class="taskbar-tray" aria-label="System tray">
-    <span class="tray-clock" aria-label="Time: 3:47 PM">3:47 PM</span>
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+  <div class="taskbar-tray" aria-label="System tray" onclick={handleClockClick}>
+    <span class="tray-clock" aria-label="Time: 3:47 PM" title="3:47 PM. Always.">3:47 PM</span>
+    {#if clockTooltipVisible}
+      <div class="clock-tooltip" role="tooltip">3:47 PM. Always.</div>
+    {/if}
   </div>
 </div>
 
@@ -228,6 +244,7 @@
   /* System tray / clock                                                 */
   /* ------------------------------------------------------------------ */
   .taskbar-tray {
+    position: relative;
     display: flex;
     align-items: center;
     height: 22px;
@@ -235,10 +252,31 @@
     border: 1px inset var(--retro-button-face, #c0c0c0);
     margin-left: 2px;
     flex-shrink: 0;
+    cursor: default;
   }
 
   .tray-clock {
     white-space: nowrap;
     color: var(--retro-black, #000);
+    cursor: default;
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Clock tooltip — appears above the tray on click                    */
+  /* ------------------------------------------------------------------ */
+  .clock-tooltip {
+    position: absolute;
+    bottom: 30px;
+    right: 0;
+    background: #ffffe1;
+    border: 1px solid #000;
+    padding: 2px 6px;
+    font-family: var(--retro-font-family, "Microsoft Sans Serif", Arial, sans-serif);
+    font-size: var(--retro-font-size, 11px);
+    color: #000;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 9999;
+    box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.3);
   }
 </style>
