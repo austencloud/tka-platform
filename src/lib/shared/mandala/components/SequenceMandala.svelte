@@ -43,10 +43,16 @@
 		return calculator.calculate(sequence.steps);
 	});
 
-	// Derive render options — card-back mode omits grid dots for a cleaner decorative look
+	// Derive render options — card-back mode omits grid dots and background for a clean embed
 	const renderOptions = $derived.by((): MandalaRenderOptions => {
-		const showGridDots = mode !== "card-back";
-		return { size, style, showGridDots, show };
+		const isCardBack = mode === "card-back";
+		return {
+			size,
+			style,
+			showGridDots: !isCardBack,
+			show,
+			transparentBackground: isCardBack,
+		};
 	});
 
 	// Generate SVG markup string from geometry + options

@@ -21,6 +21,8 @@ export interface MandalaRenderOptions {
 	show: "blue" | "red" | "both";
 	/** SVG stroke width */
 	strokeWidth?: number;
+	/** Transparent background (no dark rect) — use when embedding in themed containers */
+	transparentBackground?: boolean;
 }
 
 export type MandalaMode = "card-back" | "gallery" | "animated";

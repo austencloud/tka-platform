@@ -54,7 +54,7 @@ export class MandalaRenderer implements IMandalaRenderer {
 	 * ready to embed in HTML or save as a file.
 	 */
 	renderSVG(paths: MandalaPaths, options: MandalaRenderOptions): string {
-		const { size, style, showGridDots, show, strokeWidth = 2 } = options;
+		const { size, style, showGridDots, show, strokeWidth = 2, transparentBackground = false } = options;
 		const center = size / 2;
 
 		// Scale from mandala coordinate space to pixel space
@@ -62,10 +62,13 @@ export class MandalaRenderer implements IMandalaRenderer {
 
 		const parts: string[] = [];
 
-		parts.push(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">`);
+		// Use viewBox only (no width/height) so the SVG scales to its container
+		parts.push(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}">`);
 
-		// Dark background
-		parts.push(`  <rect width="${size}" height="${size}" fill="#0d0d1a" rx="12"/>`);
+		// Background — skip for card-back or other themed containers
+		if (!transparentBackground) {
+			parts.push(`  <rect width="${size}" height="${size}" fill="#0d0d1a" rx="12"/>`);
+		}
 
 		// All drawing happens in a group translated to the center
 		parts.push(`  <g transform="translate(${center}, ${center}) scale(${scale.toFixed(4)})">`);
