@@ -35,7 +35,6 @@ const MODULE_ID_MIGRATIONS: Record<string, ModuleId> = {
   // Experimental modules consolidated into Lab (Jan 2026)
   skewlab: "lab",
   "poi-lab": "lab",
-  realm: "lab",
   "terrain-research": "lab",
   mandala: "lab",
   "background-builder": "lab",
@@ -213,6 +212,15 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     description: "Discover and apply to flow festivals",
     isMain: true,
     sections: FESTIVAL_TABS,
+  },
+  {
+    id: "realm",
+    label: "Realm",
+    icon: '<i class="fas fa-vr-cardboard" style="color: #06b6d4;" aria-hidden="true"></i>',
+    color: "#06b6d4",
+    description: "3D destinations: museum, stage, gallery, procedural worlds",
+    isMain: true,
+    sections: [],
   },
   {
     id: "lab",

@@ -22,7 +22,6 @@
     poi: () => import("$lib/features/poi-lab/PoiLabModule.svelte"),
     avatar: () => import("./tabs/ProfileAvatarLab.svelte"),
     "photo-picker": () => import("./tabs/PhotoPickerLab.svelte"),
-    level8: () => import("$lib/features/realm/RealmModule.svelte"),
     terrain: () => import("$lib/features/terrain-research/TerrainResearchModule.svelte"),
     mandala: () =>
       import("$lib/features/mandala-generator/components/MandalaGeneratorModule.svelte"),
@@ -44,7 +43,6 @@
     "assemble-lab": () => import("$lib/features/assemble-lab/AssembleLabModule.svelte"),
     effects: () => import("$lib/features/effects-lab/EffectsLabModule.svelte"),
     disassemble: () => import("$lib/features/disassemble-lab/DisassembleLab.svelte"),
-    museum: () => import("$lib/features/realm/destinations/museum/MuseumDestination.svelte"),
     "prop-buttons": () => import("./tabs/PropButtonLab.svelte"),
     retro: () => import("$lib/features/retro/win95/components/RetroLab.svelte"),
     "contact-ball": () => import("./tabs/ContactBallLab.svelte"),
@@ -53,7 +51,6 @@
     effort: () => import("$lib/features/effort-lab/EffortLabModule.svelte"),
     "phrase-effort": () => import("$lib/features/phrase-effort-lab/PhraseEffortLabModule.svelte"),
     "audio-toolkit": () => import("./tabs/audio-lab/AudioToolkitLab.svelte"),
-    "3d-controls": () => import("./tabs/3d-controls-lab/ThreeDControlsLab.svelte"),
     "hand-path-explorer": () => import("$lib/features/hand-path-explorer/HandPathExplorerLab.svelte"),
     "hand-path-builder": () => import("$lib/features/hand-path-builder/HandPathBuilderLab.svelte"),
     "video-trails": () => import("./tabs/video-trails/VideoTrailsLab.svelte"),

@@ -49,6 +49,7 @@ export type ModuleId =
   | "moderation" // Content moderation (admin)
   | "arena" // Community pairwise ranking
   | "festivals" // Festival Hub — discover and apply to flow festivals
+  | "realm" // 3D destinations: museum, stage, gallery, procedural worlds
   | "lab"; // Experimental features lab (all experiments consolidated here)
   // Consolidated into Lab (Feb 2026): community, ml-training, connect
 
