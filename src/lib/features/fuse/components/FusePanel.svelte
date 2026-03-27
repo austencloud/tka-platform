@@ -3,7 +3,8 @@
 	 * Fuse Panel
 	 *
 	 * One side of the fuse split view. ChoreoCard on top, animation below,
-	 * big shuffle button at the bottom. No headers, no pick step.
+	 * shuffle button at the bottom. Content column is constrained and aligned
+	 * toward center so the two panels' content hugs the center gap.
 	 */
 
 	import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -43,22 +44,29 @@
 	}
 </script>
 
-<div class="fuse-panel" role="region" aria-label="{label} prop path" style="--align: {side === 'left' ? 'flex-end' : 'flex-start'};">
-	<div class="card-section">
-		<FuseSequenceBrowser
-			{side}
-			{length}
-			onSelect={() => {}}
-			hideActions={true}
-			onCurrentItemChange={handleCurrentItemChange}
-			onShuffleReady={(fn) => shuffleFn = fn}
-			onCounterChange={(c, t) => counter = { current: c, total: t }}
-		/>
-	</div>
+<div
+	class="fuse-panel"
+	class:align-end={side === "left"}
+	class:align-start={side === "right"}
+	role="region"
+	aria-label="{label} prop path"
+>
+	<!-- Single content column — constrained width, aligned toward center -->
+	<div class="content-column">
+		<div class="card-section">
+			<FuseSequenceBrowser
+				{side}
+				{length}
+				onSelect={() => {}}
+				hideActions={true}
+				onCurrentItemChange={handleCurrentItemChange}
+				onShuffleReady={(fn) => shuffleFn = fn}
+				onCounterChange={(c, t) => counter = { current: c, total: t }}
+			/>
+		</div>
 
-	<div class="animation-section">
-		{#if currentSequence}
-			<div class="animation-square">
+		<div class="animation-section">
+			{#if currentSequence}
 				{#key currentSequence.id ?? currentSequence.word}
 					<FuseAnimationPreview
 						sequence={currentSequence}
@@ -69,47 +77,70 @@
 						showBackButton={false}
 					/>
 				{/key}
-			</div>
-		{:else}
-			<div class="animation-placeholder">
-				<i class="fas fa-play-circle" aria-hidden="true"></i>
-			</div>
-		{/if}
-	</div>
+			{:else}
+				<div class="animation-placeholder">
+					<i class="fas fa-play-circle" aria-hidden="true"></i>
+				</div>
+			{/if}
+		</div>
 
-	<button
-		class="shuffle-btn"
-		class:glow={tourShuffleGlow}
-		onclick={() => {
-			shuffleFn?.();
-			if (fuseTourState.isActive && fuseTourState.currentStop === "shuffle") {
-				fuseTourState.completeAction();
-				// Auto-advance after 1.5s so they see the shuffled result
-				setTimeout(() => fuseTourState.advance(), 1500);
-			}
-		}}
-		aria-label="Shuffle {label} to next sequence"
-		style="--accent: {accentColor};"
-	>
-		<i class="fas fa-shuffle" aria-hidden="true"></i>
-		<span class="shuffle-label">Shuffle</span>
-		{#if counter.total > 0}
-			<span class="shuffle-counter">{counter.current} / {counter.total}</span>
-		{/if}
-	</button>
+		<button
+			class="shuffle-btn"
+			class:glow={tourShuffleGlow}
+			onclick={() => {
+				shuffleFn?.();
+				if (fuseTourState.isActive && fuseTourState.currentStop === "shuffle") {
+					fuseTourState.completeAction();
+					setTimeout(() => fuseTourState.advance(), 1500);
+				}
+			}}
+			aria-label="Shuffle {label} to next sequence"
+			style="--accent: {accentColor};"
+		>
+			<i class="fas fa-shuffle" aria-hidden="true"></i>
+			<span class="shuffle-label">Shuffle</span>
+			{#if counter.total > 0}
+				<span class="shuffle-counter">{counter.current} / {counter.total}</span>
+			{/if}
+		</button>
+	</div>
 </div>
 
 <style>
+	/* The panel fills its grid cell — background, border, rounded corners */
 	.fuse-panel {
 		display: flex;
-		flex-direction: column;
 		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
 		border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
 		border-radius: var(--radius-md, 12px);
 		overflow: hidden;
-		/* On wide screens, don't stretch full width — align toward center */
-		max-width: 600px;
-		align-self: var(--align, center);
+	}
+
+	/* Left panel pushes content right, right panel pushes content left */
+	.fuse-panel.align-end {
+		justify-content: flex-end;
+	}
+	.fuse-panel.align-start {
+		justify-content: flex-start;
+	}
+
+	/* Single column that holds card + animation + shuffle.
+	   Height fills the panel. Width defaults to 100% but on wide viewports
+	   is capped so the animation stays proportional. */
+	.content-column {
+		display: flex;
+		flex-direction: column;
+		height: 100%;
+		width: 100%;
+		max-width: 100%;
+	}
+
+	/* On wide screens, cap column width so panels don't stretch
+	   into massive horizontal bars. 500px fits a nice square canvas. */
+	@media (min-width: 1000px) {
+		.content-column {
+			max-width: 500px;
+		}
 	}
 
 	.card-section {
@@ -122,17 +153,6 @@
 		flex: 1;
 		min-height: 100px;
 		border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
-		position: relative;
-		display: flex;
-		justify-content: var(--align, center);
-		align-items: stretch;
-		overflow: hidden;
-	}
-
-	.animation-square {
-		aspect-ratio: 1;
-		height: 100%;
-		flex-shrink: 0;
 		position: relative;
 		overflow: hidden;
 	}
@@ -154,6 +174,7 @@
 		justify-content: center;
 		gap: var(--spacing-sm, 8px);
 		min-height: 48px;
+		width: 100%;
 		padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
 		border: none;
 		border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
