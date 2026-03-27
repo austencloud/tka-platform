@@ -17,6 +17,7 @@
   import ChoreoCard from "./ChoreoCard.svelte";
   import VtgCollectionView from "./VtgCollectionView.svelte";
   import VtgFamilyDrillDown from "./VtgFamilyDrillDown.svelte";
+  import LoopCollectionView from "./LoopCollectionView.svelte";
 
   interface Props {
     decks: Deck[];
@@ -393,6 +394,7 @@
                       {showWord}
                       {includeStartPosition}
                       onSelect={() => onSelectSequence(sequence)}
+                      {onContextMenu}
                     />
                   </div>
                 {/each}
@@ -415,6 +417,7 @@
         {showWord}
         {includeStartPosition}
         {onSelectSequence}
+        {onContextMenu}
         onBack={() => { selectedVtgFamily = null; }}
       />
     </div>
@@ -440,6 +443,30 @@
           decks={getDecksForCollection("VTG")}
           {onSelectDeck}
           onSelectFamily={(familyId) => { selectedVtgFamily = familyId; }}
+        />
+      {/if}
+    </div>
+
+  {:else if selectedCollection === 'LOOPs'}
+    <!-- ═══ Level 1: LOOPs Collection View ═══ -->
+    <div class="level-container level-deck-list">
+      <div class="top-bar">
+        <nav class="breadcrumb" aria-label="Deck navigation">
+          <button class="crumb" onclick={onBackToCollections} type="button">Collections</button>
+          <span class="crumb-sep" aria-hidden="true">›</span>
+          <span class="crumb current">LOOPs</span>
+        </nav>
+      </div>
+
+      {#if isLoading}
+        <div class="loading" role="status" aria-live="polite">
+          <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+          Loading decks...
+        </div>
+      {:else}
+        <LoopCollectionView
+          decks={filteredDecks}
+          onSelectDeck={(deck) => onSelectDeck(deck.id)}
         />
       {/if}
     </div>
