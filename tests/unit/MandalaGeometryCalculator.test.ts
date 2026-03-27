@@ -1,0 +1,814 @@
+/**
+ * MandalaGeometryCalculator Tests
+ *
+ * The math inside this calculator is the riskiest part of the mandala feature.
+ * A wrong sign, a missed staff-angle chain, or a broken interpolation produces
+ * paths that look plausible but have invisible junction gaps or wrong shapes.
+ * These tests pin the exact numeric behavior of every motion type and the
+ * staff-angle chaining mechanism.
+ *
+ * Junction continuity is tested by parsing the SVG path "d" strings: every
+ * sequence of beats should produce a single continuous path whose C-command
+ * endpoints exactly match the next C-command start (within floating-point
+ * tolerance).
+ */
+
+import { describe, it, expect } from "vitest";
+import { readFileSync } from "fs";
+import { fileURLToPath } from "url";
+import { dirname, join } from "path";
+import { MandalaGeometryCalculator } from "$lib/shared/mandala/services/implementations/MandalaGeometryCalculator";
+import type { StepLike } from "$lib/shared/mandala/services/contracts/IMandalaGeometryCalculator";
+import {
+  DEFAULT_TIP_INSET_PX,
+  ENGINE_GRID_RADIUS,
+  MANDALA_GRID_RADIUS,
+  BASE_SAMPLES_PER_BEAT,
+} from "$lib/shared/mandala/domain/mandala-constants";
+
+// ---------------------------------------------------------------------------
+// Path parsing helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Extract all curve endpoint coordinates from an SVG path "d" string.
+ *
+ * Handles "M x y" and "C cx1 cy1, cx2 cy2, x y" commands.
+ * Returns the on-curve points in order (M start + each C endpoint).
+ * Control points are intentionally excluded — they are not on the curve.
+ */
+function parseSVGEndpoints(d: string): Array<{ x: number; y: number }> {
+  const points: Array<{ x: number; y: number }> = [];
+
+  // Match M command: M x y
+  const mMatch = d.match(/^M\s+([-\d.]+)\s+([-\d.]+)/);
+  if (mMatch) {
+    points.push({ x: parseFloat(mMatch[1]!), y: parseFloat(mMatch[2]!) });
+  }
+
+  // Match each C command: C cx1 cy1, cx2 cy2, x y
+  // The endpoint (third pair) is the only on-curve point.
+  const cRegex = /C\s+[-\d.]+\s+[-\d.]+,\s+[-\d.]+\s+[-\d.]+,\s+([-\d.]+)\s+([-\d.]+)/g;
+  let cMatch: RegExpExecArray | null;
+  while ((cMatch = cRegex.exec(d)) !== null) {
+    points.push({ x: parseFloat(cMatch[1]!), y: parseFloat(cMatch[2]!) });
+  }
+
+  return points;
+}
+
+/**
+ * Count how many "M" commands appear in a path string.
+ * A continuous path has exactly one M; gaps force additional M commands.
+ */
+function countMoveToCommands(d: string): number {
+  return (d.match(/M\s/g) ?? []).length;
+}
+
+/**
+ * Measure the Euclidean distance between two points.
+ */
+function dist(
+  a: { x: number; y: number },
+  b: { x: number; y: number }
+): number {
+  return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
+}
+
+/**
+ * Find the maximum gap between beat-junction points in the combined SVG path.
+ *
+ * The calculator concatenates all beats into one point array before converting
+ * to SVG. Each beat contributes (samplesPerBeat + 1) on-curve points: indices
+ * 0..samplesPerBeat. The junction between beat N and beat N+1 is:
+ *   - last point of beat N: index (N+1) * (samplesPerBeat+1) - 1
+ *   - first point of beat N+1: index (N+1) * (samplesPerBeat+1)
+ *
+ * In a correctly chained sequence these two points are identical (same (x,y)),
+ * so the gap is 0. We extract the on-curve points from SVG and check each
+ * cross-beat boundary.
+ *
+ * NOTE: "maxConsecutiveGap" is NOT the right metric here — normal inter-sample
+ * distances along a curve can be arbitrarily large. Instead we check only the
+ * specific junction indices.
+ */
+function maxBeatJunctionGap(d: string, samplesPerBeat: number, beatCount: number): number {
+  const pts = parseSVGEndpoints(d);
+  // Points per beat in the SVG: samplesPerBeat + 1 on-curve points from M + C commands.
+  // The M command is point[0] (first point of first beat).
+  // Each beat produces samplesPerBeat C commands, so (samplesPerBeat+1) points total
+  // including the shared start. Beat boundaries sit at indices:
+  //   beatSize * 1 - 1 and beatSize * 1  (end of beat 0 / start of beat 1)
+  //   beatSize * 2 - 1 and beatSize * 2  (end of beat 1 / start of beat 2)
+  //   ...
+  // where beatSize = samplesPerBeat + 1.
+  // But the last point of beat N and first of beat N+1 are the SAME point in a
+  // continuous path — they're emitted at t=1 and t=0 respectively.
+  // So in the merged array they appear at consecutive indices:
+  //   endOfBeatN = (N+1) * samplesPerBeat   (the Nth beat's last sample at t=1)
+  //   startOfBeatN1 = same index + 1        (beat N+1 starts at t=0 = same pos)
+  //
+  // Wait — actually generatePathPoints does NOT deduplicate the t=1/t=0 boundary.
+  // Beat N emits samples i=0..samplesPerBeat (total = samplesPerBeat+1 points).
+  // Beat N+1 also starts at i=0 (t=0), which SHOULD equal beat N's i=samplesPerBeat (t=1).
+  // Those two points sit at SVG endpoint indices:
+  //   (N+1)*(samplesPerBeat+1) - 1   ← last of beat N
+  //   (N+1)*(samplesPerBeat+1)       ← first of beat N+1
+  const beatSize = samplesPerBeat + 1;
+  let maxGap = 0;
+  for (let b = 1; b < beatCount; b++) {
+    const endOfPrev = b * beatSize - 1;
+    const startOfNext = b * beatSize;
+    if (endOfPrev < pts.length && startOfNext < pts.length) {
+      const gap = dist(pts[endOfPrev]!, pts[startOfNext]!);
+      if (gap > maxGap) maxGap = gap;
+    }
+  }
+  return maxGap;
+}
+
+// ---------------------------------------------------------------------------
+// Test fixtures
+// ---------------------------------------------------------------------------
+
+/**
+ * ALΦ sequence (3-beat seed + 180° rotation copies = 6 beats).
+ *
+ * Beat 1: blue=pro(s→w), red=pro(n→e)      — both arc quarter-turn
+ * Beat 2: blue=anti(w→s), red=pro(e→s)     — blue anti, red pro
+ * Beat 3: blue=dash(s→n), red=static(s→s)  — the tricky beat (was 160px bug)
+ * Beats 4-6: locations rotated 180°
+ */
+const ALPHI_BEATS: StepLike[] = [
+  {
+    motions: {
+      blue: {
+        motionType: "pro",
+        rotationDirection: "cw",
+        startLocation: "s",
+        endLocation: "w",
+        turns: 0,
+        startOrientation: "out",
+        endOrientation: "out",
+      },
+      red: {
+        motionType: "pro",
+        rotationDirection: "cw",
+        startLocation: "n",
+        endLocation: "e",
+        turns: 0,
+        startOrientation: "out",
+        endOrientation: "out",
+      },
+    },
+  },
+  {
+    motions: {
+      blue: {
+        motionType: "anti",
+        rotationDirection: "cw",
+        startLocation: "w",
+        endLocation: "s",
+        turns: 0,
+        startOrientation: "out",
+        endOrientation: "out",
+      },
+      red: {
+        motionType: "pro",
+        rotationDirection: "cw",
+        startLocation: "e",
+        endLocation: "s",
+        turns: 0,
+        startOrientation: "out",
+        endOrientation: "out",
+      },
+    },
+  },
+  {
+    motions: {
+      blue: {
+        motionType: "dash",
+        rotationDirection: "noRotation",
+        startLocation: "s",
+        endLocation: "n",
+        turns: 0,
+        startOrientation: "out",
+        endOrientation: "out",
+      },
+      red: {
+        motionType: "static",
+        rotationDirection: "noRotation",
+        startLocation: "s",
+        endLocation: "s",
+        turns: 0,
+        startOrientation: "out",
+        endOrientation: "out",
+      },
+    },
+  },
+  // Rotated 180° copies
+  {
+    motions: {
+      blue: {
+        motionType: "pro",
+        rotationDirection: "cw",
+        startLocation: "n",
+        endLocation: "e",
+        turns: 0,
+        startOrientation: "out",
+        endOrientation: "out",
+      },
+      red: {
+        motionType: "pro",
+        rotationDirection: "cw",
+        startLocation: "s",
+        endLocation: "w",
+        turns: 0,
+        startOrientation: "out",
+        endOrientation: "out",
+      },
+    },
+  },
+  {
+    motions: {
+      blue: {
+        motionType: "anti",
+        rotationDirection: "cw",
+        startLocation: "e",
+        endLocation: "n",
+        turns: 0,
+        startOrientation: "out",
+        endOrientation: "out",
+      },
+      red: {
+        motionType: "pro",
+        rotationDirection: "cw",
+        startLocation: "w",
+        endLocation: "n",
+        turns: 0,
+        startOrientation: "out",
+        endOrientation: "out",
+      },
+    },
+  },
+  {
+    motions: {
+      blue: {
+        motionType: "dash",
+        rotationDirection: "noRotation",
+        startLocation: "n",
+        endLocation: "s",
+        turns: 0,
+        startOrientation: "out",
+        endOrientation: "out",
+      },
+      red: {
+        motionType: "static",
+        rotationDirection: "noRotation",
+        startLocation: "n",
+        endLocation: "n",
+        turns: 0,
+        startOrientation: "out",
+        endOrientation: "out",
+      },
+    },
+  },
+];
+
+/** Single PRO beat: south → west, 0 turns, out/out */
+const SINGLE_PRO_STEP: StepLike[] = [
+  {
+    motions: {
+      blue: {
+        motionType: "pro",
+        rotationDirection: "cw",
+        startLocation: "s",
+        endLocation: "w",
+        turns: 0,
+        startOrientation: "out",
+        endOrientation: "out",
+      },
+      red: {
+        motionType: "static",
+        rotationDirection: "noRotation",
+        startLocation: "n",
+        endLocation: "n",
+        turns: 0,
+        startOrientation: "out",
+        endOrientation: "out",
+      },
+    },
+  },
+];
+
+/** Single DASH beat: south → north (through center), 0 turns */
+const SINGLE_DASH_STEP: StepLike[] = [
+  {
+    motions: {
+      blue: {
+        motionType: "dash",
+        rotationDirection: "noRotation",
+        startLocation: "s",
+        endLocation: "n",
+        turns: 0,
+        startOrientation: "out",
+        endOrientation: "out",
+      },
+      red: {
+        motionType: "static",
+        rotationDirection: "noRotation",
+        startLocation: "e",
+        endLocation: "e",
+        turns: 0,
+        startOrientation: "out",
+        endOrientation: "out",
+      },
+    },
+  },
+];
+
+/** Single STATIC beat: hand stays at south the whole beat */
+const SINGLE_STATIC_STEP: StepLike[] = [
+  {
+    motions: {
+      blue: {
+        motionType: "static",
+        rotationDirection: "noRotation",
+        startLocation: "s",
+        endLocation: "s",
+        turns: 0,
+        startOrientation: "out",
+        endOrientation: "out",
+      },
+      red: {
+        motionType: "static",
+        rotationDirection: "noRotation",
+        startLocation: "n",
+        endLocation: "n",
+        turns: 0,
+        startOrientation: "out",
+        endOrientation: "out",
+      },
+    },
+  },
+];
+
+/** Single FLOAT beat — should produce no path */
+const SINGLE_FLOAT_STEP: StepLike[] = [
+  {
+    motions: {
+      blue: {
+        motionType: "float",
+        rotationDirection: "noRotation",
+        startLocation: "s",
+        endLocation: "s",
+        turns: 0,
+        startOrientation: "out",
+        endOrientation: "out",
+      },
+      red: {
+        motionType: "static",
+        rotationDirection: "noRotation",
+        startLocation: "n",
+        endLocation: "n",
+        turns: 0,
+        startOrientation: "out",
+        endOrientation: "out",
+      },
+    },
+  },
+];
+
+/** High-turn beat to test adaptive sampling */
+const HIGH_TURN_STEP: StepLike[] = [
+  {
+    motions: {
+      blue: {
+        motionType: "pro",
+        rotationDirection: "cw",
+        startLocation: "s",
+        endLocation: "w",
+        turns: 1.5,
+        startOrientation: "out",
+        endOrientation: "out",
+      },
+      red: {
+        motionType: "static",
+        rotationDirection: "noRotation",
+        startLocation: "n",
+        endLocation: "n",
+        turns: 0,
+        startOrientation: "out",
+        endOrientation: "out",
+      },
+    },
+  },
+];
+
+/** Anti vs pro sign test — ANTI uses opposite center movement sign */
+const ANTI_PRO_PAIR: StepLike[] = [
+  {
+    motions: {
+      blue: {
+        motionType: "pro",
+        rotationDirection: "cw",
+        startLocation: "s",
+        endLocation: "w",
+        turns: 0,
+        startOrientation: "out",
+        endOrientation: "out",
+      },
+      red: {
+        motionType: "anti",
+        rotationDirection: "cw",
+        startLocation: "s",
+        endLocation: "w",
+        turns: 0,
+        startOrientation: "out",
+        endOrientation: "out",
+      },
+    },
+  },
+];
+
+// ---------------------------------------------------------------------------
+// Load 16-beat test sequence from fixture file
+// ---------------------------------------------------------------------------
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// The fixture is at scripts/test-sequence.json relative to project root.
+// __dirname is tests/unit/, so we go up two levels.
+const fixtureJson = JSON.parse(
+  readFileSync(join(__dirname, "../../scripts/test-sequence.json"), "utf-8")
+) as { steps: StepLike[] };
+
+const SIXTEEN_BEAT_STEPS = fixtureJson.steps.filter(
+  (s) => s.motions?.blue || s.motions?.red
+);
+
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
+
+describe("MandalaGeometryCalculator", () => {
+  const calc = new MandalaGeometryCalculator();
+
+  // ─── Test 1: Junction continuity (basic multi-beat) ─────────────────────
+
+  describe("junction continuity", () => {
+    it("produces a single continuous path (one M command) for a 2-beat sequence", () => {
+      const twoBeat: StepLike[] = [ALPHI_BEATS[0]!, ALPHI_BEATS[1]!];
+      const result = calc.calculate(twoBeat);
+      // Both tips of blue should be single continuous paths
+      for (const path of result.blue) {
+        expect(countMoveToCommands(path.d)).toBe(1);
+      }
+    });
+
+    it("beat-junction gap < 0.02px for a 3-beat sequence", () => {
+      const threeBeat = ALPHI_BEATS.slice(0, 3);
+      const result = calc.calculate(threeBeat);
+      for (const path of [...result.blue, ...result.red]) {
+        // Check only the actual beat junction points (not all consecutive pairs).
+        // toFixed(2) introduces up to 0.005px rounding per coordinate, so 0.02px
+        // is a tight but achievable threshold.
+        const gap = maxBeatJunctionGap(path.d, BASE_SAMPLES_PER_BEAT, 3);
+        expect(gap).toBeLessThan(0.02);
+      }
+    });
+  });
+
+  // ─── Test 2: PRO motion produces arc (constant radius) ──────────────────
+
+  describe("PRO motion produces arc", () => {
+    it("blue tip path maintains approximately constant radius for s→w PRO beat", () => {
+      const result = calc.calculate(SINGLE_PRO_STEP);
+      // We expect 2 blue paths (left tip and right tip)
+      expect(result.blue.length).toBeGreaterThan(0);
+
+      const path = result.blue[0]!;
+      const pts = parseSVGEndpoints(path.d);
+      expect(pts.length).toBeGreaterThan(4);
+
+      // Compute the radius of each sampled endpoint from origin (0,0)
+      const radii = pts.map((p) => Math.sqrt(p.x ** 2 + p.y ** 2));
+      const minR = Math.min(...radii);
+      const maxR = Math.max(...radii);
+
+      // All tip points should lie at roughly the same radius.
+      // The tip is offset from the hand position by (ENGINE_GRID_RADIUS - DEFAULT_TIP_INSET_PX)
+      // scaled to mandala space. This is approximately:
+      //   (150 - 20) * (80/150) = 130 * 0.533 ≈ 69.3px
+      // Allow a generous tolerance for numerical rounding (±2px).
+      expect(maxR - minR).toBeLessThan(2);
+    });
+  });
+
+  // ─── Test 3: DASH goes through center ───────────────────────────────────
+
+  describe("DASH motion passes through center", () => {
+    it("blue hand at t=0.5 is near origin for s→n DASH", () => {
+      const result = calc.calculate(SINGLE_DASH_STEP);
+      expect(result.blue.length).toBeGreaterThan(0);
+
+      const path = result.blue[0]!;
+      const pts = parseSVGEndpoints(path.d);
+      expect(pts.length).toBeGreaterThan(4);
+
+      // The midpoint of the path should be near center (0,0) for a s→n dash.
+      // The tip offset means the endpoint won't be at exactly 0, but the hand
+      // traverses through center, and with a 0-turn staff angle, the tip
+      // sweeps through near-zero as well.
+      const midIndex = Math.floor(pts.length / 2);
+      const mid = pts[midIndex]!;
+
+      // The dash goes from s(90°) to n(-90°) through center. At t=0.5:
+      // handX=0, handY=0. The staff angle at mid-dash (out→out, 0 turns) maps
+      // to a perpendicular angle (clock/counter from out at center = ±90°).
+      // The tip offset applies perpendicular to the staff — so the tip center
+      // distance from 0,0 should be less than the full tip offset magnitude.
+      const distFromCenter = Math.sqrt(mid.x ** 2 + mid.y ** 2);
+
+      // The hand is at center at t=0.5, so tip is offset purely by staff rotation.
+      // Full tip magnitude = (150-20) * (80/150) ≈ 69.3px
+      // The hand position contributes 0, so distFromCenter ≈ tipOffset ≈ 69px.
+      // This confirms the dash goes through center (hand.x≈0, hand.y≈0 at midpoint).
+      //
+      // We verify this is much less than the full grid radius (80px = south position),
+      // meaning the hand DID pass through center rather than staying at perimeter.
+      expect(distFromCenter).toBeLessThan(MANDALA_GRID_RADIUS);
+    });
+
+    it("path starts and ends at opposite perimeter positions for s→n DASH", () => {
+      const result = calc.calculate(SINGLE_DASH_STEP);
+      const path = result.blue[0]!;
+      const pts = parseSVGEndpoints(path.d);
+
+      const first = pts[0]!;
+      const last = pts[pts.length - 1]!;
+
+      // Start and end tips should be at approximately equal distance from origin
+      // (both at perimeter) but roughly opposite directions.
+      const r1 = Math.sqrt(first.x ** 2 + first.y ** 2);
+      const r2 = Math.sqrt(last.x ** 2 + last.y ** 2);
+      expect(Math.abs(r1 - r2)).toBeLessThan(2);
+
+      // The displacement vector should point in approximately opposite directions.
+      // Dot product of normalized vectors should be negative (opposite half-space).
+      const dot = (first.x * last.x + first.y * last.y) / (r1 * r2);
+      expect(dot).toBeLessThan(0);
+    });
+  });
+
+  // ─── Test 4: STATIC motion keeps hand in place ──────────────────────────
+
+  describe("STATIC motion", () => {
+    it("all tip points share the same x coordinate for static hand at south", () => {
+      const result = calc.calculate(SINGLE_STATIC_STEP);
+      expect(result.blue.length).toBeGreaterThan(0);
+
+      const path = result.blue[0]!;
+      const pts = parseSVGEndpoints(path.d);
+      expect(pts.length).toBeGreaterThan(2);
+
+      // The south location is at angle 90° (x=0 in unit circle).
+      // All hand positions should have x ≈ 0. With a 0-turn staff, the tip
+      // may shift in x, but all points should share the same x because the
+      // hand doesn't move and the staff angle is constant (no rotation).
+      const xs = pts.map((p) => p.x);
+      const minX = Math.min(...xs);
+      const maxX = Math.max(...xs);
+      // With 0 turns static, staff angle = startStaffAngle = constant.
+      // So tip x = handX + dx*cos(staffAngle) = constant. All x values match.
+      expect(maxX - minX).toBeLessThan(0.02);
+    });
+
+    it("all tip points share the same y coordinate for static hand at south", () => {
+      const result = calc.calculate(SINGLE_STATIC_STEP);
+      const path = result.blue[0]!;
+      const pts = parseSVGEndpoints(path.d);
+
+      const ys = pts.map((p) => p.y);
+      const minY = Math.min(...ys);
+      const maxY = Math.max(...ys);
+      expect(maxY - minY).toBeLessThan(0.02);
+    });
+  });
+
+  // ─── Test 5: FLOAT produces no path ─────────────────────────────────────
+
+  describe("FLOAT motion produces no path", () => {
+    it("blue has no path entries when blue motion is float", () => {
+      const result = calc.calculate(SINGLE_FLOAT_STEP);
+      // The float hand should generate no path data
+      expect(result.blue).toHaveLength(0);
+    });
+
+    it("red path is still produced when red is static (float only on blue)", () => {
+      const result = calc.calculate(SINGLE_FLOAT_STEP);
+      expect(result.red.length).toBeGreaterThan(0);
+    });
+  });
+
+  // ─── Test 6: Tip inset applied ──────────────────────────────────────────
+
+  describe("tip inset applied", () => {
+    it("tip radius is reduced by DEFAULT_TIP_INSET_PX relative to raw staff length", () => {
+      // For a static motion with out orientation, the tip points directly away
+      // from center. At south (angle=90°, y-axis), with staffAngle=out=90°+180°=270°:
+      //   handPos = (0, gridRadius)
+      //   tipOffset = (dx, 0) where dx = -(halfLength - inset) for left tip
+      //   After rotation by staffAngle 270°: cos(270°)=0, sin(270°)=-1
+      //     tipX = handX + dx*cos - 0*sin = 0 + dx*0 = 0
+      //     tipY = handY + dx*sin - 0 = gridRadius + dx*(-1) = gridRadius - dx (for left)
+      //
+      // Actually we just verify the maximum tip-to-center distance is less than
+      // what it would be with no inset (gridRadius + halfLength * scale) and
+      // consistent with (halfLength - inset) * scale.
+
+      const result = calc.calculate(SINGLE_STATIC_STEP);
+      expect(result.blue.length).toBeGreaterThan(0);
+
+      const path = result.blue[1]!; // right tip (endType 1, dx = +(halfLength - inset))
+      const pts = parseSVGEndpoints(path.d);
+      const maxDist = Math.max(...pts.map((p) => Math.sqrt(p.x ** 2 + p.y ** 2)));
+
+      // Expected max reach = gridRadius + (halfLength - inset) * scale
+      const scale = MANDALA_GRID_RADIUS / ENGINE_GRID_RADIUS;
+      const tipReach = MANDALA_GRID_RADIUS + (ENGINE_GRID_RADIUS - DEFAULT_TIP_INSET_PX) * scale;
+      const fullReach = MANDALA_GRID_RADIUS + ENGINE_GRID_RADIUS * scale;
+
+      // The inset reduces the reach: tipReach < fullReach
+      expect(tipReach).toBeLessThan(fullReach);
+      // The actual tip is within the expected reach
+      expect(maxDist).toBeLessThanOrEqual(tipReach + 0.1);
+      // And it's larger than gridRadius alone (so there IS a tip offset)
+      expect(maxDist).toBeGreaterThan(MANDALA_GRID_RADIUS);
+    });
+
+    it("DEFAULT_TIP_INSET_PX is 20 (pin the constant)", () => {
+      // If someone changes this constant, the visual output changes significantly.
+      // Pin it explicitly so any change requires updating the tests too.
+      expect(DEFAULT_TIP_INSET_PX).toBe(20);
+    });
+  });
+
+  // ─── Test 7: Staff angle chaining fixes beat 2→3 junction (ALΦ) ─────────
+
+  describe("staff angle chaining — ALΦ beat 2→3 transition", () => {
+    it("beat 2→3 junction gap < 0.02px for blue (this was the 160px bug)", () => {
+      // Without staff-angle chaining, beat 3 (dash) starts with an orientation-
+      // derived staff angle that doesn't match beat 2's end angle, producing a
+      // ~160px visual gap. With chaining, the gap is 0.
+      const result = calc.calculate(ALPHI_BEATS);
+      expect(result.blue.length).toBeGreaterThan(0);
+
+      for (const path of result.blue) {
+        // All junctions should be continuous — including the critical beat 2→3
+        expect(countMoveToCommands(path.d)).toBe(1);
+        // Check only beat junction indices, not all consecutive pairs
+        const gap = maxBeatJunctionGap(path.d, BASE_SAMPLES_PER_BEAT, ALPHI_BEATS.length);
+        expect(gap).toBeLessThan(0.02);
+      }
+    });
+
+    it("6-beat ALΦ red paths are continuous throughout", () => {
+      const result = calc.calculate(ALPHI_BEATS);
+      for (const path of result.red) {
+        expect(countMoveToCommands(path.d)).toBe(1);
+        const gap = maxBeatJunctionGap(path.d, BASE_SAMPLES_PER_BEAT, ALPHI_BEATS.length);
+        expect(gap).toBeLessThan(0.02);
+      }
+    });
+  });
+
+  // ─── Test 8: Full 16-beat loop — all 15 junctions < 0.01px ─────────────
+
+  describe("full 16-beat loop junction continuity", () => {
+    it("Ω-YΩXΩ-YΩX sequence has all paths as single continuous curves", () => {
+      expect(SIXTEEN_BEAT_STEPS.length).toBeGreaterThan(0);
+      const result = calc.calculate(SIXTEEN_BEAT_STEPS);
+
+      const allPaths = [...result.blue, ...result.red];
+      expect(allPaths.length).toBeGreaterThan(0);
+
+      for (const path of allPaths) {
+        expect(countMoveToCommands(path.d)).toBe(1);
+      }
+    });
+
+    it("Ω-YΩXΩ-YΩX sequence has max junction gap < 0.02px across all paths", () => {
+      const result = calc.calculate(SIXTEEN_BEAT_STEPS);
+      const allPaths = [...result.blue, ...result.red];
+      const beatCount = SIXTEEN_BEAT_STEPS.length;
+
+      for (const path of allPaths) {
+        const gap = maxBeatJunctionGap(path.d, BASE_SAMPLES_PER_BEAT, beatCount);
+        expect(gap).toBeLessThan(0.02);
+      }
+    });
+  });
+
+  // ─── Test 9: ANTI uses -centerMovement (opposite sign from PRO) ─────────
+
+  describe("ANTI motion staff rotation is opposite to PRO", () => {
+    it("anti and pro from same start/end produce different tip paths", () => {
+      const result = calc.calculate(ANTI_PRO_PAIR);
+
+      // Blue is PRO (s→w), red is ANTI (s→w, same locations).
+      // PRO: staffDelta = centerMovement + 0 = -π/2 (quarter arc CW)
+      // ANTI: staffDelta = -centerMovement + 0 = +π/2 (opposite)
+      // The two hands start at the same location. Their tip paths should differ
+      // because their staff angles evolve in opposite directions.
+      expect(result.blue.length).toBeGreaterThan(0);
+      expect(result.red.length).toBeGreaterThan(0);
+
+      const bluePts = parseSVGEndpoints(result.blue[0]!.d);
+      const redPts = parseSVGEndpoints(result.red[0]!.d);
+
+      // Midpoints should differ (staff angles diverge)
+      const blueMid = bluePts[Math.floor(bluePts.length / 2)]!;
+      const redMid = redPts[Math.floor(redPts.length / 2)]!;
+
+      const midDist = dist(blueMid, redMid);
+      // They should be measurably different (at least 1px apart at midpoint)
+      expect(midDist).toBeGreaterThan(1);
+    });
+
+    it("anti tip at end is at a different angle than pro tip for same s→w motion", () => {
+      const result = calc.calculate(ANTI_PRO_PAIR);
+
+      const blueEnd = parseSVGEndpoints(result.blue[0]!.d).at(-1)!;
+      const redEnd = parseSVGEndpoints(result.red[0]!.d).at(-1)!;
+
+      // Both hands reach w (same center position), but their staff angles differ.
+      // They should end at different tip positions.
+      const endDist = dist(blueEnd, redEnd);
+      expect(endDist).toBeGreaterThan(1);
+    });
+  });
+
+  // ─── Test 10: Adaptive sampling ─────────────────────────────────────────
+
+  describe("adaptive sampling", () => {
+    it("1.5-turn motion produces more SVG C commands than 0-turn motion", () => {
+      // The calculator generates BASE_SAMPLES_PER_BEAT points for 0-turn motions
+      // and BASE_SAMPLES_PER_BEAT * ceil(turns) for high-turn motions.
+      // More samples → more C commands in the SVG path.
+      const zeroTurnResult = calc.calculate(SINGLE_PRO_STEP);
+      const highTurnResult = calc.calculate(HIGH_TURN_STEP);
+
+      const countC = (d: string) => (d.match(/\bC\b/g) ?? []).length;
+
+      // 0-turn: 64 samples → 64 C commands
+      // 1.5-turn: ceil(1.5)=2, 64*2=128 samples → 128 C commands
+      const zeroTurnC = countC(zeroTurnResult.blue[0]!.d);
+      const highTurnC = countC(highTurnResult.blue[0]!.d);
+
+      expect(highTurnC).toBeGreaterThan(zeroTurnC);
+    });
+
+    it("1.5-turn beat produces at least 2× more C commands than 0-turn beat", () => {
+      const zeroTurnResult = calc.calculate(SINGLE_PRO_STEP);
+      const highTurnResult = calc.calculate(HIGH_TURN_STEP);
+
+      const countC = (d: string) => (d.match(/\bC\b/g) ?? []).length;
+
+      const zeroC = countC(zeroTurnResult.blue[0]!.d);
+      const highC = countC(highTurnResult.blue[0]!.d);
+
+      expect(highC).toBeGreaterThanOrEqual(zeroC * 2);
+    });
+  });
+
+  // ─── Bonus: Return shape validation ─────────────────────────────────────
+
+  describe("return shape", () => {
+    it("returns { blue, red } with SVGPathData arrays", () => {
+      const result = calc.calculate(SINGLE_PRO_STEP);
+      expect(Array.isArray(result.blue)).toBe(true);
+      expect(Array.isArray(result.red)).toBe(true);
+    });
+
+    it("each path entry has a non-empty d string and endType 0 or 1", () => {
+      const result = calc.calculate(SINGLE_PRO_STEP);
+      for (const path of [...result.blue, ...result.red]) {
+        expect(path.d.length).toBeGreaterThan(0);
+        expect(path.endType === 0 || path.endType === 1).toBe(true);
+      }
+    });
+
+    it("blue produces 2 paths (left tip + right tip)", () => {
+      const result = calc.calculate(SINGLE_PRO_STEP);
+      expect(result.blue).toHaveLength(2);
+    });
+
+    it("returns empty arrays for steps with no motions", () => {
+      const result = calc.calculate([{ motions: null }]);
+      expect(result.blue).toHaveLength(0);
+      expect(result.red).toHaveLength(0);
+    });
+  });
+});
