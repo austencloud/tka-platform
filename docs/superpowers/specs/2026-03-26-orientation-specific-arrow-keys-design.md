@@ -20,12 +20,12 @@ This means adjusting an arrow when both props end in `counter` also changes the 
 
 The sequence IIII (vtg-2to1-tog-same-iiii) has 4 beats, all letter I with identical motion types and turns. The orientations cycle:
 
-| Beat | Blue End Ori | Red End Ori | Current oriKey |
-|------|-------------|-------------|----------------|
-| 1 | counter | counter | `from_layer2` |
-| 2 | out | out | `from_layer1` |
-| 3 | clock | clock | `from_layer2` |
-| 4 | in | in | `from_layer1` |
+| Beat | Blue Start Ori | Red Start Ori | Current oriKey |
+|------|---------------|---------------|----------------|
+| 1 | in | in | `from_layer1` |
+| 2 | counter | counter | `from_layer2` |
+| 3 | out | out | `from_layer1` |
+| 4 | clock | clock | `from_layer2` |
 
 Beats 1 and 3 share a key. Beats 2 and 4 share a key. Any WASD adjustment to beat 1's arrows is applied identically to beat 3, despite the fan SVGs requiring different positioning.
 
@@ -39,10 +39,10 @@ The current system generalizes at save time (collapsing `counter` to `from_layer
 
 ### New oriKey Format
 
-Instead of the 4-bucket system (`from_layer1`, `from_layer2`, `from_layer3_blue1_red2`, `from_layer3_blue2_red1`), the oriKey encodes the actual end orientations of both hands:
+Instead of the 4-bucket system (`from_layer1`, `from_layer2`, `from_layer3_blue1_red2`, `from_layer3_blue2_red1`), the oriKey encodes the actual start orientations of both hands:
 
 ```
-{blueEndOrientation}_{redEndOrientation}
+{blueStartOrientation}_{redStartOrientation}
 ```
 
 Examples:
@@ -79,7 +79,7 @@ Old entries are never deleted or modified. They naturally become the "general" f
 
 **Current behavior:** Maps `in`/`out` → layer 1, everything else → layer 2, then combines into `from_layer1`/`from_layer2`/`from_layer3_*`.
 
-**New behavior:** Returns `{blueEndOri}_{redEndOri}` directly (e.g., `counter_counter`, `in_out`).
+**New behavior:** Returns `{blueStartOri}_{redStartOri}` directly (e.g., `counter_counter`, `in_out`).
 
 Add a new method `mapToLegacyBucket()` that performs the old mapping, for use during fallback lookups.
 

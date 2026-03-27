@@ -28,6 +28,12 @@ import { GridMode } from "../../../../../grid/domain/enums/grid-enums";
 import { Point } from "fabric";
 import { getPropGeometryRepository } from "../../../prop-geometry/services/prop-geometry-singleton";
 import type { PropGeometryKey } from "../../../prop-geometry/domain/PropGeometryAdjustment";
+import type {
+  PipelineDiagnostics,
+  GlobalTierInfo,
+  SpecialJsonTierInfo,
+} from "../../domain/PipelineDiagnostics";
+import { getGlobalAdjustmentRepository } from "../../../global/services/global-adjustment-singleton";
 
 export class ArrowAdjustmentCalculator implements IArrowAdjustmentCalculator {
   /**
@@ -131,6 +137,228 @@ export class ArrowAdjustmentCalculator implements IArrowAdjustmentCalculator {
       );
       throw new Error(`Arrow adjustment calculation failed: ${error}`);
     }
+  }
+
+  /**
+   * Probe all 4 tiers of the arrow positioning pipeline without short-circuiting.
+   *
+   * Unlike getBaseAdjustment (which returns on first match), this method checks
+   * every tier independently and records the result at each one. This lets the
+   * WASD adjustment panel show the full pipeline state — which tier is active,
+   * what value each tier holds, and what the final rotated adjustment comes out to.
+   *
+   * Tier priority (mirrors getBaseAdjustment):
+   *   global > specialJson > propGeometry > default
+   */
+  async getDiagnostics(
+    pictographData: PictographData,
+    motionData: MotionData,
+    letter: string,
+    location: GridLocation,
+    arrowColor?: string
+  ): Promise<PipelineDiagnostics> {
+    const diagnostics: PipelineDiagnostics = {
+      activeTier: "default",
+      global: null,
+      specialJson: null,
+      propGeometry: null,
+      default: null,
+      baseAdjustment: { x: 0, y: 0 },
+      finalAdjustment: { x: 0, y: 0 },
+    };
+
+    // --- Tier 1: Global (Firestore override) ---
+    // Requires a letter to build a meaningful key. Same constraint as special placement.
+    if (letter) {
+      try {
+        const repo = getGlobalAdjustmentRepository();
+        if (repo?.isInitialized) {
+          const arrowKey = arrowColor || motionData.color || "blue";
+          const thisPropType = motionData.propType?.toLowerCase() || "staff";
+          const otherColor = arrowKey === "blue" ? "red" : "blue";
+          const otherMotion = pictographData.motions?.[otherColor];
+          const otherPropType = otherMotion?.propType?.toLowerCase() || "staff";
+
+          const oriKey = this.orientationKeyService.generateOrientationKey(
+            motionData,
+            pictographData
+          );
+          const gridMode =
+            motionData.gridMode ||
+            (pictographData.motions.blue && pictographData.motions.red
+              ? this.gridModeService.deriveGridMode(
+                  pictographData.motions.blue,
+                  pictographData.motions.red
+                )
+              : "diamond");
+
+          // The global key's turnsTuple must match the format SpecialPlacer uses when
+          // writing global overrides. We recover that string by asking the SpecialPlacer
+          // for the JSON-only result (which exposes its own turnsTupleKey). If that
+          // returns null (no JSON data for this letter), we fall back to the raw
+          // number-array joined form from turnsTupleService — it still lets the repo
+          // attempt the lookup with a consistent key.
+          let turnsTupleString: string;
+          try {
+            const [, , attrKey] = this.generateLookupKeys(
+              pictographData,
+              motionData
+            );
+            const jsonResult =
+              await this.SpecialPlacer.getSpecialJsonAdjustmentOnly(
+                motionData,
+                pictographData,
+                arrowColor,
+                attrKey
+              );
+            turnsTupleString = jsonResult?.turnsTupleKey
+              ? String(jsonResult.turnsTupleKey)
+              : this.turnsTupleService
+                  .generateTurnsTuple(pictographData)
+                  .join(",");
+          } catch {
+            turnsTupleString = this.turnsTupleService
+              .generateTurnsTuple(pictographData)
+              .join(",");
+          }
+
+          const legacyOriKey = this.orientationKeyService.mapToLegacyBucket(oriKey);
+          const baseKey = {
+            gridMode,
+            oriKey,
+            letter: pictographData.letter || "",
+            turnsTuple: turnsTupleString,
+            arrowKey,
+          };
+
+          const cascadingResult = repo.getAdjustmentCascading(
+            baseKey,
+            thisPropType,
+            otherPropType,
+            legacyOriKey
+          );
+          if (cascadingResult) {
+            const globalInfo: GlobalTierInfo = {
+              value: {
+                x: cascadingResult.adjustment.x,
+                y: cascadingResult.adjustment.y,
+              },
+              layer: cascadingResult.layer,
+            };
+            diagnostics.global = globalInfo;
+          }
+        }
+      } catch (error) {
+        console.warn("[getDiagnostics] Global tier probe failed:", error);
+      }
+    }
+
+    // --- Tier 2: Special JSON (static per-letter files) ---
+    if (letter) {
+      try {
+        const [, , attrKey] = this.generateLookupKeys(
+          pictographData,
+          motionData
+        );
+        const jsonResult =
+          await this.SpecialPlacer.getSpecialJsonAdjustmentOnly(
+            motionData,
+            pictographData,
+            arrowColor,
+            attrKey
+          );
+        if (jsonResult) {
+          const specialJsonInfo: SpecialJsonTierInfo = {
+            value: { x: jsonResult.adjustment.x, y: jsonResult.adjustment.y },
+            filePath: jsonResult.filePath,
+            turnsTupleKey: String(jsonResult.turnsTupleKey),
+          };
+          diagnostics.specialJson = specialJsonInfo;
+        }
+      } catch (error) {
+        console.warn("[getDiagnostics] Special JSON tier probe failed:", error);
+      }
+    }
+
+    // --- Tier 3: Prop Geometry (letter-free, prop-aware) ---
+    try {
+      const propGeoResult = this.lookupPropGeometryAdjustment(
+        pictographData,
+        motionData,
+        arrowColor
+      );
+      if (propGeoResult) {
+        diagnostics.propGeometry = {
+          value: { x: propGeoResult.x, y: propGeoResult.y },
+        };
+      }
+    } catch (error) {
+      console.warn("[getDiagnostics] Prop geometry tier probe failed:", error);
+    }
+
+    // --- Tier 4: Default (motion-type only) ---
+    try {
+      const defaultResult = await this.calculateDefaultAdjustment(
+        motionData,
+        pictographData
+      );
+      diagnostics.default = {
+        value: { x: defaultResult.x, y: defaultResult.y },
+      };
+    } catch (error) {
+      console.warn("[getDiagnostics] Default tier probe failed:", error);
+    }
+
+    // --- Determine active tier (same priority as getBaseAdjustment) ---
+    let basePoint: Point;
+    if (diagnostics.global) {
+      diagnostics.activeTier = "global";
+      basePoint = new Point(
+        diagnostics.global.value.x,
+        diagnostics.global.value.y
+      );
+    } else if (diagnostics.specialJson) {
+      diagnostics.activeTier = "special-json";
+      basePoint = new Point(
+        diagnostics.specialJson.value.x,
+        diagnostics.specialJson.value.y
+      );
+    } else if (diagnostics.propGeometry) {
+      diagnostics.activeTier = "prop-geometry";
+      basePoint = new Point(
+        diagnostics.propGeometry.value.x,
+        diagnostics.propGeometry.value.y
+      );
+    } else if (diagnostics.default) {
+      diagnostics.activeTier = "default";
+      basePoint = new Point(
+        diagnostics.default.value.x,
+        diagnostics.default.value.y
+      );
+    } else {
+      // Nothing found anywhere — use zero point so the panel can still render
+      basePoint = new Point(0, 0);
+    }
+
+    diagnostics.baseAdjustment = { x: basePoint.x, y: basePoint.y };
+
+    // --- Apply directional tuple rotation to produce finalAdjustment ---
+    try {
+      const finalPoint = this.tupleProcessor.processDirectionalTuples(
+        basePoint,
+        motionData,
+        location
+      );
+      diagnostics.finalAdjustment = { x: finalPoint.x, y: finalPoint.y };
+    } catch (error) {
+      console.warn(
+        "[getDiagnostics] Directional tuple processing failed:",
+        error
+      );
+      diagnostics.finalAdjustment = { x: basePoint.x, y: basePoint.y };
+    }
+
+    return diagnostics;
   }
 
   // === PRIVATE METHODS - Consolidated from ArrowAdjustmentLookup ===

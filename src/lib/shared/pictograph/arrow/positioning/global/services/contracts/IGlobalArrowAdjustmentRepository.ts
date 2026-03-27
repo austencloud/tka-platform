@@ -66,7 +66,8 @@ export interface IGlobalArrowAdjustmentRepository {
   getAdjustmentCascading(
     baseKey: GlobalAdjustmentKey,
     thisPropType: string,
-    otherPropType: string
+    otherPropType: string,
+    legacyOriKey?: string
   ): CascadingLookupResult | null;
 
   /**

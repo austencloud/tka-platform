@@ -90,6 +90,8 @@ export class SpecialPlacer implements ISpecialPlacer {
 
     // Step 0 (NEW): Check global adjustments first (Firestore-backed overrides)
     // Uses cascading lookup: Layer 3 (combination) → Layer 2 (prop-specific) → Layer 1 (base)
+    // Within each layer, tries specific oriKey first, then legacy bucket fallback
+    const legacyOriKey = this.oriKeyGenerator.mapToLegacyBucket(oriKey);
     const globalAdjustmentRepo = getGlobalAdjustmentRepository();
     if (globalAdjustmentRepo?.isInitialized) {
       const baseKey = {
@@ -102,7 +104,8 @@ export class SpecialPlacer implements ISpecialPlacer {
       const cascadingResult = globalAdjustmentRepo.getAdjustmentCascading(
         baseKey,
         thisPropType,
-        otherPropType
+        otherPropType,
+        legacyOriKey
       );
 
       if (cascadingResult) {
@@ -111,11 +114,19 @@ export class SpecialPlacer implements ISpecialPlacer {
     }
 
     // Step 4: Load letter data from static JSON
-    const letterData = await this.dataService.getLetterData(
+    // Try specific oriKey folder first, fall back to legacy bucket folder
+    let letterData = await this.dataService.getLetterData(
       gridMode,
       oriKey,
       letter
     );
+    if (!letterData || Object.keys(letterData).length === 0) {
+      letterData = await this.dataService.getLetterData(
+        gridMode,
+        legacyOriKey,
+        letter
+      );
+    }
 
     if (!letterData || Object.keys(letterData).length === 0) {
       return null;
@@ -169,6 +180,7 @@ export class SpecialPlacer implements ISpecialPlacer {
       motionData,
       pictographData
     );
+    const legacyOriKey = this.oriKeyGenerator.mapToLegacyBucket(oriKey);
 
     // Step 2: Determine grid mode
     const gridMode = this.getGridMode(pictographData);
@@ -177,23 +189,40 @@ export class SpecialPlacer implements ISpecialPlacer {
     const turnsTuple = this.tupleGenerator.generateTurnsTuple(pictographData);
 
     // Step 4: Check localStorage for user overrides (takes priority)
-    const localStorageOverride = this.checkLocalStorageOverride(
+    // Try specific oriKey first, then legacy bucket
+    let localStorageOverride = this.checkLocalStorageOverride(
       gridMode,
       oriKey,
       letter,
       turnsTuple,
       rotationOverrideKey
     );
+    if (localStorageOverride === null) {
+      localStorageOverride = this.checkLocalStorageOverride(
+        gridMode,
+        legacyOriKey,
+        letter,
+        turnsTuple,
+        rotationOverrideKey
+      );
+    }
     if (localStorageOverride !== null) {
       return localStorageOverride;
     }
 
-    // Step 5: Load letter data
-    const letterData = await this.dataService.getLetterData(
+    // Step 5: Load letter data — try specific oriKey folder, fall back to legacy
+    let letterData = await this.dataService.getLetterData(
       gridMode,
       oriKey,
       letter
     );
+    if (!letterData || Object.keys(letterData).length === 0) {
+      letterData = await this.dataService.getLetterData(
+        gridMode,
+        legacyOriKey,
+        letter
+      );
+    }
 
     if (!letterData || Object.keys(letterData).length === 0) {
       return false;
@@ -223,6 +252,83 @@ export class SpecialPlacer implements ISpecialPlacer {
     }
 
     return result;
+  }
+
+  /**
+   * Get the special adjustment from static JSON only, skipping all global Firestore overrides.
+   *
+   * Used by diagnostics to show what the static JSON file contains independently of any
+   * admin-set global overrides. Runs the same oriKey/gridMode/turnsTuple pipeline as
+   * getSpecialAdjustment but stops before the global adjustment repository check.
+   *
+   * @param motionData Motion data containing motion information
+   * @param pictographData Pictograph data containing letter and context
+   * @param arrowColor Color of the arrow ('red' or 'blue')
+   * @param attributeKey Optional attribute key for precise lookup
+   * @returns The raw JSON adjustment plus the file path and turns tuple key, or null if not found
+   */
+  async getSpecialJsonAdjustmentOnly(
+    motionData: MotionData,
+    pictographData: PictographData,
+    arrowColor?: string,
+    attributeKey?: string
+  ): Promise<{ adjustment: FabricPoint; filePath: string; turnsTupleKey: string } | null> {
+    if (!motionData || !pictographData.letter) {
+      return null;
+    }
+
+    const letter = pictographData.letter;
+
+    // Generate orientation key
+    const oriKey = this.oriKeyGenerator.generateOrientationKey(
+      motionData,
+      pictographData
+    );
+    const legacyOriKey = this.oriKeyGenerator.mapToLegacyBucket(oriKey);
+
+    // Determine grid mode
+    const gridMode = this.getGridMode(pictographData);
+
+    // Generate turns tuple
+    const turnsTupleKey = this.tupleGenerator.generateTurnsTuple(pictographData);
+
+    // Load letter data from static JSON — try specific oriKey, fall back to legacy
+    let usedOriKey = oriKey;
+    let letterData = await this.dataService.getLetterData(
+      gridMode,
+      oriKey,
+      letter
+    );
+    if (!letterData || Object.keys(letterData).length === 0) {
+      letterData = await this.dataService.getLetterData(
+        gridMode,
+        legacyOriKey,
+        letter
+      );
+      usedOriKey = legacyOriKey;
+    }
+
+    if (!letterData || Object.keys(letterData).length === 0) {
+      return null;
+    }
+
+    // Look up adjustment from static JSON via the lookup service
+    const adjustment = this.lookupService.lookupAdjustment(
+      letterData,
+      turnsTupleKey,
+      motionData,
+      pictographData,
+      arrowColor,
+      attributeKey
+    );
+
+    if (!adjustment) {
+      return null;
+    }
+
+    const filePath = `${gridMode}/special/${usedOriKey}/${letter}_placements.json`;
+
+    return { adjustment, filePath, turnsTupleKey };
   }
 
   /**

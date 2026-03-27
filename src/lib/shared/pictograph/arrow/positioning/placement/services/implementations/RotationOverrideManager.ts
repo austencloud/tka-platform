@@ -164,12 +164,25 @@ export class RotationOverrideManager implements IRotationOverrideManager {
       );
     const letter = pictographData.letter;
 
-    // Load overrides and check
+    // Load overrides and check — try specific oriKey first, then legacy bucket
     const overrides = this.loadOverrides();
-    return (
+    if (
       overrides[gridMode]?.[oriKey]?.[letter]?.[turnsTuple]?.[rotationKey] ===
       true
-    );
+    ) {
+      return true;
+    }
+
+    // Fallback: check legacy bucket oriKey for old entries
+    const legacyOriKey = this.oriKeyGenerator.mapToLegacyBucket(oriKey);
+    if (legacyOriKey !== oriKey) {
+      return (
+        overrides[gridMode]?.[legacyOriKey]?.[letter]?.[turnsTuple]?.[rotationKey] ===
+        true
+      );
+    }
+
+    return false;
   }
 
   clearAllOverrides(): void {
