@@ -64,12 +64,12 @@
 
   .section-header {
     font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.45));
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
     letter-spacing: 0.15em;
     text-align: center;
     text-transform: uppercase;
     font-weight: 600;
-    margin: 0 0 24px;
+    margin: 0 0 20px;
   }
 
   .family-section {
@@ -82,7 +82,7 @@
 
   .family-label {
     font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.45));
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
     text-transform: uppercase;
     letter-spacing: 0.1em;
     font-weight: 600;
@@ -92,9 +92,21 @@
 
   .pattern-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 12px;
-    max-width: 700px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    max-width: 960px;
     margin: 0 auto;
+  }
+
+  @media (max-width: 700px) {
+    .pattern-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 480px) {
+    .pattern-grid {
+      grid-template-columns: 1fr;
+    }
   }
 </style>
