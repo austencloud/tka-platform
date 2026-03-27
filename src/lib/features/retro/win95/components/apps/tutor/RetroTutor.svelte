@@ -16,6 +16,14 @@
   import RetroPictograph from "../../rendering/RetroPictograph.svelte";
   import { createMockPictographData } from "../../../../shared/data/mock-pictograph-data";
   import { RETRO_ICONS } from "../../rendering/retro-icons";
+  import {
+    loadConcepts,
+    loadQuizQuestions,
+    loadCodexLetters,
+    type RetroConcept,
+    type RetroQuizQuestion,
+    type RetroCodexLetter,
+  } from "../../../adapters/tutor-adapter";
 
   /* ------------------------------------------------------------------ */
   /* Props                                                               */
@@ -43,33 +51,12 @@
   /* Concepts tab state                                                  */
   /* ------------------------------------------------------------------ */
 
-  const CONCEPT_CARDS = [
-    {
-      title: "What is TKA?",
-      iconSvg: RETRO_ICONS.book,
-      body: "The Kinetic Alphabet (TKA) is a notation system for recording and sharing movement patterns. Each letter captures the spatial relationship between two hands and the motions they trace. With 26 letters and 6 types, TKA encodes any dual-prop movement into readable, reproducible text.",
-    },
-    {
-      title: "Letters & Types",
-      iconSvg: RETRO_ICONS.letters,
-      body: "Each letter represents a specific hand path. There are 6 Types, classified by motion family: Type 1 (both shift), Type 2 (shift + dash), Type 3 (shift + static), Type 4 (dash + static), Type 5 (both dash), and Type 6 (both static). The type tells you what kind of motions both hands perform.",
-    },
-    {
-      title: "Grid Positions",
-      iconSvg: RETRO_ICONS.mappin,
-      body: "Hands move between 8 cardinal and intercardinal positions on a diamond grid: North, South, East, West, and the four diagonals. The grid provides a spatial coordinate system so every hand placement can be precisely notated and reproduced by another performer.",
-    },
-    {
-      title: "Turns & Rotation",
-      iconSvg: RETRO_ICONS.rotate,
-      body: "Turns measure additional prop rotation. 1 turn = 180 degrees of rotation beyond the base path. A 0-turn motion follows the path with no extra spin. Half turns (0.5) and full turns (1.0) add increasing amounts of rotation, changing the visual texture of the movement.",
-    },
-    {
-      title: "Building Sequences",
-      iconSvg: RETRO_ICONS.musicnotes,
-      body: "A sequence is a series of beats, each beat containing one letter per hand. Reading a sequence left-to-right reconstructs the full movement phrase. Sequences can be spelled from words, generated algorithmically, or built beat-by-beat in the constructor.",
-    },
-  ];
+  const CONCEPT_CARDS: RetroConcept[] = loadConcepts();
+
+  // Map concept icon id to the RETRO_ICONS SVG strings
+  function getConceptIconSvg(icon: string): string {
+    return (RETRO_ICONS as Record<string, string>)[icon] ?? RETRO_ICONS.book;
+  }
 
   let conceptPage = $state(0);
   let showIndex = $state(false);
@@ -100,38 +87,13 @@
   /* Quiz tab state                                                      */
   /* ------------------------------------------------------------------ */
 
-  interface QuizQuestion {
-    question: string;
-    options: string[];
-    correctIndex: number;
-  }
-
-  const QUIZ_QUESTIONS: QuizQuestion[] = [
-    {
-      question: "How many degrees is 1 turn?",
-      options: ["90", "180", "360", "45"],
-      correctIndex: 1,
-    },
-    {
-      question: "What grid has cardinal + intercardinal points?",
-      options: ["Box", "Diamond", "Circular", "Hex"],
-      correctIndex: 0,
-    },
-    {
-      question: 'Type 1 means both hands do what?',
-      options: ["Shift", "Dash", "Static", "Float"],
-      correctIndex: 0,
-    },
-  ];
-
-  let quizAnswers: (number | null)[] = $state(
-    QUIZ_QUESTIONS.map(() => null),
-  );
+  let quizQuestions: RetroQuizQuestion[] = $state(loadQuizQuestions(5));
+  let quizAnswers: (number | null)[] = $state(quizQuestions.map(() => null));
   let quizChecked = $state(false);
 
   const quizScore = $derived(
     quizChecked
-      ? QUIZ_QUESTIONS.reduce(
+      ? quizQuestions.reduce(
           (acc, q, i) => acc + (quizAnswers[i] === q.correctIndex ? 1 : 0),
           0,
         )
@@ -139,7 +101,7 @@
   );
 
   function selectQuizAnswer(questionIndex: number, optionValue: string) {
-    const optIndex = QUIZ_QUESTIONS[questionIndex]!.options.indexOf(optionValue);
+    const optIndex = quizQuestions[questionIndex]!.options.indexOf(optionValue);
     quizAnswers[questionIndex] = optIndex;
     quizAnswers = [...quizAnswers];
   }
@@ -148,8 +110,9 @@
     quizChecked = true;
   }
 
-  function resetQuiz() {
-    quizAnswers = QUIZ_QUESTIONS.map(() => null);
+  function newQuiz() {
+    quizQuestions = loadQuizQuestions(5);
+    quizAnswers = quizQuestions.map(() => null);
     quizChecked = false;
   }
 
@@ -157,79 +120,33 @@
   /* Codex tab state                                                     */
   /* ------------------------------------------------------------------ */
 
-  interface CodexEntry {
-    name: string;
-    letterKey: string;
-    type: string;
-    description: string;
-  }
-
-  const CODEX_ENTRIES: CodexEntry[] = [
-    {
-      name: "Alpha",
-      letterKey: "A",
-      type: "Type 1 (Shift + Shift)",
-      description:
-        "Both hands shift in the same direction. The fundamental motion pattern. Hands start at opposite grid points and travel together through parallel paths.",
-    },
-    {
-      name: "Beta",
-      letterKey: "B",
-      type: "Type 1 (Shift + Shift)",
-      description:
-        "Both hands shift, ending at the same grid point. A convergence pattern where two parallel paths collapse into a single position.",
-    },
-    {
-      name: "Gamma",
-      letterKey: "G",
-      type: "Type 1 (Shift + Shift)",
-      description:
-        "Both hands shift with a right-angle relationship. The hands trace paths that create perpendicular geometries in the movement space.",
-    },
-    {
-      name: "Delta",
-      letterKey: "D",
-      type: "Type 2 (Shift + Dash)",
-      description:
-        "One hand shifts while the other dashes. Creates an asymmetric texture where linear and diagonal movements combine.",
-    },
-    {
-      name: "Epsilon",
-      letterKey: "E",
-      type: "Type 2 (Shift + Dash)",
-      description:
-        "A shift-dash pairing with distinct directional contrast. The dashing hand crosses the grid while the shifting hand traces an arc.",
-    },
-    {
-      name: "Zeta",
-      letterKey: "Z",
-      type: "Type 3 (Shift + Static)",
-      description:
-        "One hand shifts while the other holds position. The static hand becomes an anchor point as the moving hand traces its path around it.",
-    },
-    {
-      name: "Eta",
-      letterKey: "H",
-      type: "Type 4 (Dash + Static)",
-      description:
-        "One hand dashes while the other remains static. A punctuated movement where the dash creates a sharp linear motion against a fixed reference.",
-    },
-    {
-      name: "Theta",
-      letterKey: "T",
-      type: "Type 5 (Dash + Dash)",
-      description:
-        "Both hands dash simultaneously. Creates bold criss-crossing linear paths as both props cut through the grid space.",
-    },
-  ];
-
+  let codexLetters: RetroCodexLetter[] = $state([]);
+  let codexLoading = $state(true);
+  let codexError = $state(false);
   let codexSelectedIndex = $state(0);
 
-  const codexItems = CODEX_ENTRIES.map((e) => e.name);
+  // Load codex letters asynchronously on mount
+  loadCodexLetters().then((letters) => {
+    codexLetters = letters;
+    codexLoading = false;
+    if (letters.length === 0) codexError = true;
+  }).catch(() => {
+    codexLoading = false;
+    codexError = true;
+  });
 
-  const selectedCodexEntry = $derived(CODEX_ENTRIES[codexSelectedIndex]!);
+  const codexListItems = $derived(
+    codexLetters.map((e) => `${e.letter}  (${e.type})`),
+  );
+
+  const selectedCodexEntry = $derived(
+    codexLetters.length > 0 ? codexLetters[codexSelectedIndex] : null,
+  );
+
   const selectedCodexPictograph = $derived(
-    createMockPictographData(selectedCodexEntry.letterKey),
+    selectedCodexEntry
+      ? createMockPictographData(selectedCodexEntry.letter)
+      : null,
   );
 
   /* ------------------------------------------------------------------ */
@@ -246,12 +163,14 @@
         return quizChecked
           ? [
               {
-                text: `Score: ${quizScore}/${QUIZ_QUESTIONS.length} \u2014 ${Math.round((quizScore / QUIZ_QUESTIONS.length) * 100)}%`,
+                text: `Score: ${quizScore}/${quizQuestions.length} \u2014 ${Math.round((quizScore / quizQuestions.length) * 100)}%`,
               },
             ]
-          : [{ text: `Quiz: 0/${QUIZ_QUESTIONS.length}` }];
+          : [{ text: `Quiz: 0/${quizQuestions.length} answered` }];
       case "codex":
-        return [{ text: `Codex: ${CODEX_ENTRIES.length} entries` }];
+        return codexLoading
+          ? [{ text: "Loading codex..." }]
+          : [{ text: `Codex: ${codexLetters.length} letters` }];
       default:
         return [{ text: "Ready" }];
     }
@@ -285,7 +204,7 @@
             {:else}
               <!-- Card view -->
               <div class="concept-card sunken-panel">
-                <div class="concept-card-icon" aria-hidden="true">{@html currentCard.iconSvg}</div>
+                <div class="concept-card-icon" aria-hidden="true">{@html getConceptIconSvg(currentCard.icon)}</div>
                 <div class="concept-card-title">{currentCard.title}</div>
                 <div class="concept-card-body">{currentCard.body}</div>
               </div>
@@ -316,7 +235,7 @@
         {:else if activeTab === "quiz"}
           <div class="quiz-tab">
             <div class="quiz-questions">
-              {#each QUIZ_QUESTIONS as q, qi (qi)}
+              {#each quizQuestions as q, qi (qi)}
                 <fieldset class="quiz-question-group">
                   <legend class="quiz-question-text">
                     {qi + 1}. {q.question}
@@ -342,6 +261,9 @@
                       </div>
                     {/each}
                   </div>
+                  {#if quizChecked}
+                    <div class="quiz-explanation">{q.explanation}</div>
+                  {/if}
                 </fieldset>
               {/each}
             </div>
@@ -349,13 +271,13 @@
             <div class="quiz-controls">
               {#if quizChecked}
                 <div class="quiz-score">
-                  Score: {quizScore}/{QUIZ_QUESTIONS.length} &mdash;
-                  {Math.round((quizScore / QUIZ_QUESTIONS.length) * 100)}%
+                  Score: {quizScore}/{quizQuestions.length} &mdash;
+                  {Math.round((quizScore / quizQuestions.length) * 100)}%
                 </div>
-                <RetroButton label="Reset Quiz" onclick={resetQuiz} />
+                <RetroButton label="New Quiz" onclick={newQuiz} />
               {:else}
                 <RetroButton
-                  label="Check Answer"
+                  label="Check Answers"
                   isDefault={true}
                   onclick={checkQuiz}
                 />
@@ -368,33 +290,43 @@
         <!-- ====================================================== -->
         {:else if activeTab === "codex"}
           <div class="codex-tab">
-            <!-- Master list -->
-            <div class="codex-list">
-              <RetroListBox
-                items={codexItems}
-                bind:selectedIndex={codexSelectedIndex}
-                height={10}
-              />
-            </div>
+            {#if codexLoading}
+              <div class="codex-loading">Loading codex data...</div>
+            {:else if codexError || codexLetters.length === 0}
+              <div class="codex-loading">Could not load codex letters.</div>
+            {:else}
+              <!-- Master list -->
+              <div class="codex-list">
+                <RetroListBox
+                  items={codexListItems}
+                  bind:selectedIndex={codexSelectedIndex}
+                  height={10}
+                />
+              </div>
 
-            <!-- Detail panel -->
-            <div class="codex-detail sunken-panel">
-              <div class="codex-detail-header">
-                <div class="codex-pictograph">
-                  <RetroPictograph
-                    data={selectedCodexPictograph}
-                    size={64}
-                  />
-                </div>
-                <div class="codex-detail-meta">
-                  <div class="codex-detail-name">{selectedCodexEntry.name}</div>
-                  <div class="codex-detail-type">{selectedCodexEntry.type}</div>
-                </div>
+              <!-- Detail panel -->
+              <div class="codex-detail sunken-panel">
+                {#if selectedCodexEntry}
+                  <div class="codex-detail-header">
+                    {#if selectedCodexPictograph}
+                      <div class="codex-pictograph">
+                        <RetroPictograph
+                          data={selectedCodexPictograph}
+                          size={64}
+                        />
+                      </div>
+                    {/if}
+                    <div class="codex-detail-meta">
+                      <div class="codex-detail-name">{selectedCodexEntry.letter}</div>
+                      <div class="codex-detail-type">{selectedCodexEntry.type}</div>
+                    </div>
+                  </div>
+                  <div class="codex-detail-desc">
+                    {selectedCodexEntry.description}
+                  </div>
+                {/if}
               </div>
-              <div class="codex-detail-desc">
-                {selectedCodexEntry.description}
-              </div>
-            </div>
+            {/if}
           </div>
         {/if}
       {/snippet}
@@ -585,6 +517,17 @@
     background: #c0ffc0;
   }
 
+  .quiz-explanation {
+    margin-top: 4px;
+    padding: 4px 6px;
+    background: #ffffc0;
+    border: 1px solid var(--retro-button-shadow, #808080);
+    font-family: var(--retro-font-family, "Microsoft Sans Serif", Arial, sans-serif);
+    font-size: var(--retro-font-size, 11px);
+    color: var(--retro-black, #000);
+    font-style: italic;
+  }
+
   .quiz-controls {
     flex-shrink: 0;
     display: flex;
@@ -604,6 +547,15 @@
   /* ------------------------------------------------------------------ */
   /* Codex tab                                                           */
   /* ------------------------------------------------------------------ */
+  .codex-loading {
+    padding: 16px;
+    font-family: var(--retro-font-family, "Microsoft Sans Serif", Arial, sans-serif);
+    font-size: var(--retro-font-size, 11px);
+    color: var(--retro-disabled-text, #808080);
+    font-style: italic;
+    text-align: center;
+  }
+
   .codex-tab {
     display: flex;
     height: 100%;
