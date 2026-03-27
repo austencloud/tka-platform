@@ -8,6 +8,7 @@
 
   const tabComponents: Record<string, () => Promise<{ default: any }>> = {
     "realm-world": () => import("./RealmDestination.svelte"),
+    archive: () => import("./destinations/archive/ArchiveDestination.svelte"),
     museum: () => import("./destinations/museum/MuseumDestination.svelte"),
     "3d-controls": () => import("./tools/3d-controls/ThreeDControlsLab.svelte"),
   };

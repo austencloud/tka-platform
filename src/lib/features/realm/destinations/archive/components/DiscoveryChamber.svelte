@@ -6,7 +6,7 @@
 	 * Dark stone walls, flickering torchlight, dramatic exhibit spotlight.
 	 * The first room of The Kinetic Archive.
 	 */
-	import { T } from "@threlte/core";
+	import { T, useThrelte } from "@threlte/core";
 	import * as THREE from "three";
 	import {
 		getChamberWalls,
@@ -27,6 +27,18 @@
 	}
 
 	let { groundY, playerPosition, archiveState }: Props = $props();
+
+	// Set scene background to black (cave darkness)
+	const { scene } = useThrelte();
+	$effect(() => {
+		const threeScene = scene.current;
+		if (!threeScene) return;
+		const previousBackground = threeScene.background;
+		threeScene.background = new THREE.Color(0x050403);
+		return () => {
+			threeScene.background = previousBackground;
+		};
+	});
 
 	// Materials
 	const wallColor = new THREE.Color(0x2a2420); // Dark warm brown stone

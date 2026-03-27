@@ -317,7 +317,7 @@ export const ARCHIVE_WING1_CONFIG: RealmConfig = {
   terrain: {
     type: "procedural",
     seed: 0, // Flat terrain
-    waterLevel: -100, // No water visible
+    waterLevel: 5, // Standard level; room sits above at Y=8
   },
 
   chunks: {
@@ -333,7 +333,7 @@ export const ARCHIVE_WING1_CONFIG: RealmConfig = {
   },
 
   spawn: {
-    position: [0, 50, 3.5], // Inside room, facing north toward exhibit
+    position: [0, 50, 3.5], // Inside room; Y=50 is high, ground snap finds correct Y
     yaw: Math.PI, // Face north (toward exhibit at -Z)
   },
 

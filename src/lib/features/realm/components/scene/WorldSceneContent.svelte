@@ -305,60 +305,66 @@
     // Chunks render with vertex colors initially, textures applied when loaded
     initTerrainMaterial();
 
-    // Initialize vegetation manager with GLTF models
-    vegetationManager = new VegetationManager(rawScene, { useGLTFModels: true });
-    await vegetationManager.initWithModels();
+    // Skip outdoor environment systems for indoor scenes (archive cave)
+    if (!isArchiveRealm) {
+      // Initialize vegetation manager with GLTF models
+      vegetationManager = new VegetationManager(rawScene, { useGLTFModels: true });
+      await vegetationManager.initWithModels();
 
-    // Initialize atmosphere (sky, fog)
-    atmosphereManager = new AtmosphereManager(rawScene);
-    atmosphereManager.createSky();
-    atmosphereManager.setFog(stageMode ? "forest" : "plains");
+      // Initialize atmosphere (sky, fog)
+      atmosphereManager = new AtmosphereManager(rawScene);
+      atmosphereManager.createSky();
+      atmosphereManager.setFog(stageMode ? "forest" : "plains");
 
-    // Initialize water (flat plane that follows camera - legacy fallback)
-    waterManager = new WaterManager(rawScene, {
-      waterLevel: 5,
-      color: "#2a8faa",
-      opacity: 0.75,
-    });
-    waterManager.create();
+      // Initialize water (flat plane that follows camera - legacy fallback)
+      waterManager = new WaterManager(rawScene, {
+        waterLevel: 5,
+        color: "#2a8faa",
+        opacity: 0.75,
+      });
+      waterManager.create();
 
-    // Initialize drainage-based water (per-chunk water that follows terrain)
-    drainageWaterManager = new DrainageWaterManager(rawScene, {
-      oceanLevel: activeConfig.terrain.waterLevel ?? -10,
-      deepColor: "#1a5f7a",
-      shallowColor: "#4a9fb5",
-    });
-
-    // Initialize hybrid chunk manager
-    // GPU compute is disabled until Three.js WebGPU compute API stabilizes
-    // (readStorageBufferAsync API changed in recent versions)
-    chunkManager = createHybridChunkManager(worldSeed, {
-      chunkSize: activeConfig.chunks.size,
-      viewDistance: activeConfig.chunks.viewDistance,
-      lodDistances: activeConfig.chunks.lodDistances,
-      maxConcurrentLoads: 4,
-      resolution: 33,
-      useGPU: false, // Disabled - WebGPU compute API needs update
-    });
-
-    // T-junction stitching is implemented in the chunk worker (CPU-side).
-    // Edge vertices are adjusted to match coarser neighbor LODs during generation.
-    // No GPU vertex morphing needed - we use standard materials.
-
-    // CRITICAL: Set spawn clearing BEFORE any chunks are generated
-    // This must happen immediately after chunk manager is created
-    if (activeConfig.spawnClearing?.enabled) {
-      const clearing = activeConfig.spawnClearing;
-      const waterLvl = activeConfig.terrain.waterLevel ?? 5;
-      chunkManager.setSpawnClearing(
-        clearing.center,
-        clearing.radius,
-        clearing.blendWidth,
-        waterLvl,
-        clearing.campground
-      );
-      // Logging disabled - was contributing to console spam
+      // Initialize drainage-based water (per-chunk water that follows terrain)
+      drainageWaterManager = new DrainageWaterManager(rawScene, {
+        oceanLevel: activeConfig.terrain.waterLevel ?? -10,
+        deepColor: "#1a5f7a",
+        shallowColor: "#4a9fb5",
+      });
     }
+
+    // Skip terrain chunk generation for indoor scenes (archive cave)
+    // Indoor scenes only need the physics ground collider, not terrain meshes
+    if (!isArchiveRealm) {
+      // Initialize hybrid chunk manager
+      // GPU compute is disabled until Three.js WebGPU compute API stabilizes
+      // (readStorageBufferAsync API changed in recent versions)
+      chunkManager = createHybridChunkManager(worldSeed, {
+        chunkSize: activeConfig.chunks.size,
+        viewDistance: activeConfig.chunks.viewDistance,
+        lodDistances: activeConfig.chunks.lodDistances,
+        maxConcurrentLoads: 4,
+        resolution: 33,
+        useGPU: false, // Disabled - WebGPU compute API needs update
+      });
+
+      // T-junction stitching is implemented in the chunk worker (CPU-side).
+      // Edge vertices are adjusted to match coarser neighbor LODs during generation.
+      // No GPU vertex morphing needed - we use standard materials.
+
+      // CRITICAL: Set spawn clearing BEFORE any chunks are generated
+      // This must happen immediately after chunk manager is created
+      if (activeConfig.spawnClearing?.enabled) {
+        const clearing = activeConfig.spawnClearing;
+        const waterLvl = activeConfig.terrain.waterLevel ?? 5;
+        chunkManager.setSpawnClearing(
+          clearing.center,
+          clearing.radius,
+          clearing.blendWidth,
+          waterLvl,
+          clearing.campground
+        );
+        // Logging disabled - was contributing to console spam
+      }
 
     // Handle chunk loaded
     // Skip processing during disposal to prevent Rapier WASM errors
@@ -491,6 +497,7 @@
       // Remove drainage water
       drainageWaterManager?.removeChunkWater(chunkX, chunkZ);
     };
+    } // end: skip terrain chunks for archive
 
     isInitialized = true;
 
@@ -572,20 +579,26 @@
   // LIGHTING
   // ============================================================================
 
+  // Outdoor lighting references (disabled for indoor scenes like the archive)
+  let outdoorAmbient: AmbientLight | null = null;
+  let outdoorHemisphere: HemisphereLight | null = null;
+
   function setupLighting(): void {
     // Ambient light
-    const ambient = new AmbientLight(0x404060, 0.4);
+    const ambient = new AmbientLight(0x404060, isArchiveRealm ? 0 : 0.4);
     rawScene.add(ambient);
+    outdoorAmbient = ambient;
 
     // Hemisphere light (sky + ground)
-    const hemisphere = new HemisphereLight(0x87ceeb, 0x3d5c3d, 0.6);
+    const hemisphere = new HemisphereLight(0x87ceeb, 0x3d5c3d, isArchiveRealm ? 0 : 0.6);
     rawScene.add(hemisphere);
+    outdoorHemisphere = hemisphere;
 
     // Sun with standard directional light shadows
     // Shadow frustum follows player for infinite terrain coverage
-    const sun = new DirectionalLight(0xffffff, 1.0);
+    const sun = new DirectionalLight(0xffffff, isArchiveRealm ? 0 : 1.0);
     sun.position.set(100, 200, 100);
-    sun.castShadow = true;
+    sun.castShadow = !isArchiveRealm;
 
     // Shadow map settings - larger map for quality
     sun.shadow.mapSize.width = 2048;
