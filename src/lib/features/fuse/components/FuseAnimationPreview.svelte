@@ -153,12 +153,12 @@
 				redProp={propColor === "blue" ? null : redPropState}
 				gridVisible={true}
 				{gridMode}
-				{letter}
+				letter={null}
 				{stepData}
 				{sequenceData}
 				{currentStep}
 				isPlaying={true}
-				word={sequenceData?.word ?? sequence?.word ?? null}
+				word={null}
 				hideProgressBar={true}
 				hideTkaGlyph={true}
 				hideStepNumbers={true}
