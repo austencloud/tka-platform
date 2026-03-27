@@ -45,6 +45,8 @@
   import RetroDefrag from "../easter-eggs/RetroDefrag.svelte";
   import RetroScreensaver from "../easter-eggs/RetroScreensaver.svelte";
   import RetroClippy from "../easter-eggs/RetroClippy.svelte";
+  import RetroDoom from "../apps/doom/RetroDoom.svelte";
+  import RetroTaskManager from "../easter-eggs/RetroTaskManager.svelte";
   import CRTOverlay from "../effects/CRTOverlay.svelte";
   import RetroContextMenu from "./RetroContextMenu.svelte";
   import RetroMobileWarning from "./RetroMobileWarning.svelte";
@@ -133,6 +135,7 @@
   let showClippy = $state(false);
   let mobileWarningDismissed = $state(false);
   let windowWidth = $state(typeof window !== "undefined" ? window.innerWidth : 1024);
+  let lowMemoryWarningShown = $state(false);
 
   const isMobile = $derived(windowWidth < 768);
 
@@ -293,6 +296,7 @@
       cards: { width: 480, height: 380 },
       control: { width: 440, height: 420 },
       upgrade: { width: 380, height: 300 },
+      doom: { width: 640, height: 480 },
       defrag: { width: 440, height: 340 },
       readme: { width: 480, height: 360 },
       help: { width: 520, height: 400 },
@@ -378,6 +382,51 @@
         buttons: ["Return to TKA Composer", "Restart", "Cancel"],
       },
     ];
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* DOOM easter egg — type "DOOM" anywhere on the desktop               */
+  /* ------------------------------------------------------------------ */
+
+  let doomBuffer = "";
+
+  function handleGlobalKeydown(e: KeyboardEvent) {
+    /* Don't capture typing inside inputs or textareas */
+    if (
+      e.target instanceof HTMLInputElement ||
+      e.target instanceof HTMLTextAreaElement
+    ) {
+      return;
+    }
+
+    doomBuffer += e.key.toUpperCase();
+    if (doomBuffer.length > 10) doomBuffer = doomBuffer.slice(-10);
+
+    if (doomBuffer.includes("DOOM")) {
+      doomBuffer = "";
+      openDoom();
+    }
+  }
+
+  function openDoom() {
+    const offset = (windowCounter % 8) * 28;
+    windowCounter++;
+
+    windowManager.openWindow({
+      id: "doom",
+      title: "DOOM.EXE",
+      icon: "defrag" as RetroIconName,
+      x: 60 + offset,
+      y: 20 + offset,
+      width: 640,
+      height: 480,
+      minWidth: 320,
+      minHeight: 240,
+      isMinimized: false,
+      isMaximized: false,
+    });
+
+    retroSound.windowOpen();
   }
 
   /* ------------------------------------------------------------------ */
@@ -516,8 +565,50 @@
     desktopState.contextMenu = { x, y, items: iconMenuItems };
   }
 
+  /* ------------------------------------------------------------------ */
+  /* Keyboard shortcuts                                                  */
+  /* ------------------------------------------------------------------ */
+
+  function handleKeyboardShortcut(e: KeyboardEvent) {
+    // Don't capture when focused on input/textarea — let them handle their own keys
+    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
+    // Alt+F4: Close the active (focused) window
+    if (e.altKey && e.key === "F4") {
+      e.preventDefault();
+      if (desktopState.activeWindowId) {
+        closeWindowWithSound(desktopState.activeWindowId);
+      }
+      return;
+    }
+
+    // Ctrl+Escape: Toggle Start menu
+    if (e.ctrlKey && e.key === "Escape") {
+      e.preventDefault();
+      desktopState.startMenuOpen = !desktopState.startMenuOpen;
+      return;
+    }
+
+    // Escape: Close menus in priority order
+    if (e.key === "Escape") {
+      if (desktopState.startMenuOpen) {
+        desktopState.startMenuOpen = false;
+        return;
+      }
+      if (desktopState.contextMenu) {
+        desktopState.contextMenu = null;
+        return;
+      }
+    }
+
+    // DOOM easter egg: type "DOOM" anywhere on the desktop
+    handleGlobalKeydown(e);
+  }
+
   /* Boot completion is handled by RetroBootSequence via oncomplete */
 </script>
+
+<svelte:window onkeydown={handleKeyboardShortcut} />
 
 {#if isMobile && !mobileWarningDismissed}
   <div class="retro-desk">
@@ -630,6 +721,8 @@
                 <RetroHelp onclose={() => closeWindowWithSound(win.id)} />
               {:else if win.id === "defrag"}
                 <RetroDefrag onclose={() => closeWindowWithSound(win.id)} />
+              {:else if win.id === "doom"}
+                <RetroDoom onclose={() => closeWindowWithSound(win.id)} />
               {:else if win.id === "recyclebin"}
                 <RetroRecycleBin onclose={() => closeWindowWithSound(win.id)} />
               {:else}
