@@ -154,11 +154,8 @@
 			</div>
 
 		{:else if fuseTourState.currentStop === "shuffle"}
-			<!-- Stop 3: Shuffle — same layout as panels, shuffle buttons get glow -->
+			<!-- Stop 3: Shuffle — banner below panels, near the shuffle buttons -->
 			<div class="tour-stop shuffle-stop">
-				<div class="tour-banner-area">
-					<FuseTour variant="banner" />
-				</div>
 				<div class="tour-panels">
 					<div class="panel-wrap" bind:this={leftPanelEl}>
 						<FusePanel
@@ -182,6 +179,9 @@
 							tourShuffleGlow={true}
 						/>
 					</div>
+				</div>
+				<div class="tour-banner-area">
+					<FuseTour variant="banner" />
 				</div>
 			</div>
 
