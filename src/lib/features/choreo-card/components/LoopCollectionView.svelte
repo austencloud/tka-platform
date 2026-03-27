@@ -3,6 +3,7 @@
   import LoopBeatGrid from "./LoopBeatGrid.svelte";
   import LoopTurnsGrid from "./LoopTurnsGrid.svelte";
   import LoopReversalGrid from "./LoopReversalGrid.svelte";
+  import DeckRow from "./DeckRow.svelte";
 
   interface Props {
     decks: Deck[];
@@ -28,6 +29,9 @@
   type AxisView = 'beats' | 'turns' | 'reversal';
   let activeAxis = $state<AxisView>('beats');
 
+  // Drill-down filter: when set, shows a filtered list of decks
+  let drillFilter = $state<{ axis: AxisView; value: string | number } | null>(null);
+
   // Which loop types have any matching decks
   const populatedLoopTypes = $derived(
     new Set(decks.map(d => d.loopType || 'strict_rotated'))
@@ -38,16 +42,40 @@
     decks.filter(d => (d.loopType || 'strict_rotated') === activeLoopType)
   );
 
+  // Decks filtered by drill-down selection
+  const drilledDecks = $derived(
+    drillFilter
+      ? filteredDecks.filter(d => {
+          if (drillFilter!.axis === 'beats') return (d.beatCount || 0) === drillFilter!.value;
+          if (drillFilter!.axis === 'turns') return (d.turns ?? 0) === drillFilter!.value;
+          if (drillFilter!.axis === 'reversal') return (d.reversalPattern || 'continuous') === drillFilter!.value;
+          return true;
+        })
+      : []
+  );
+
+  const drillLabel = $derived(
+    drillFilter
+      ? drillFilter.axis === 'beats' ? `${drillFilter.value}-Beat`
+        : drillFilter.axis === 'turns' ? `${drillFilter.value} turns`
+        : String(drillFilter.value)
+      : ''
+  );
+
   function handleSelectBeatCount(beatCount: number): void {
-    console.log('Selected beat count:', beatCount);
+    drillFilter = { axis: 'beats', value: beatCount };
   }
 
   function handleSelectTurns(turns: number): void {
-    console.log('Selected turns:', turns);
+    drillFilter = { axis: 'turns', value: turns };
   }
 
   function handleSelectPattern(patternId: string): void {
-    console.log('Selected reversal pattern:', patternId);
+    drillFilter = { axis: 'reversal', value: patternId };
+  }
+
+  function clearDrill(): void {
+    drillFilter = null;
   }
 </script>
 
@@ -106,9 +134,32 @@
     </button>
   </div>
 
-  <!-- Grid content -->
+  <!-- Grid content or drill-down list -->
   <div class="grid-content">
-    {#if activeAxis === 'beats'}
+    {#if drillFilter}
+      <!-- Drill-down: filtered deck list -->
+      <div class="drill-header">
+        <button type="button" class="back-btn" onclick={clearDrill}>
+          <i class="fas fa-arrow-left" aria-hidden="true"></i>
+          Back
+        </button>
+        <span class="drill-label">{drillLabel}</span>
+        <span class="drill-count">{drilledDecks.length} {drilledDecks.length === 1 ? 'deck' : 'decks'}</span>
+      </div>
+      <div class="deck-list">
+        {#each drilledDecks as deck (deck.id)}
+          <DeckRow
+            {deck}
+            accentColor="#63b3ed"
+            accentIcon='<i class="fas fa-sync-alt" aria-hidden="true"></i>'
+            onSelect={() => onSelectDeck(deck)}
+          />
+        {/each}
+        {#if drilledDecks.length === 0}
+          <div class="empty-state">No decks match this filter.</div>
+        {/if}
+      </div>
+    {:else if activeAxis === 'beats'}
       <LoopBeatGrid decks={filteredDecks} onSelectBeatCount={handleSelectBeatCount} />
     {:else if activeAxis === 'turns'}
       <LoopTurnsGrid decks={filteredDecks} onSelectTurns={handleSelectTurns} />
@@ -218,5 +269,62 @@
 
   .grid-content {
     width: 100%;
+  }
+
+  /* Drill-down view */
+  .drill-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .back-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    background: transparent;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
+    font-size: var(--font-size-compact, 12px);
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .back-btn:hover {
+    color: var(--theme-text, #ffffff);
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
+  }
+
+  .drill-label {
+    font-size: var(--font-size-min, 14px);
+    font-weight: 600;
+    color: var(--theme-text, #ffffff);
+  }
+
+  .drill-count {
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
+  }
+
+  .deck-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 32px;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
+    font-size: var(--font-size-min, 14px);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .back-btn {
+      transition: none;
+    }
   }
 </style>
