@@ -699,6 +699,53 @@ export const LEVELS_TABS: Section[] = [
   },
 ];
 
+export const HAND_PATH_TABS: Section[] = [
+  {
+    id: "hand-path-explorer",
+    label: "Path Explorer",
+    icon: '<i class="fas fa-route" aria-hidden="true"></i>',
+    description: "Browse unique hand paths across your sequence library",
+    color: "#10b981",
+    gradient: "linear-gradient(135deg, #34d399 0%, #10b981 100%)",
+  },
+  {
+    id: "hand-path-builder",
+    label: "Hand Path Builder",
+    icon: '<i class="fas fa-draw-polygon" aria-hidden="true"></i>',
+    description: "Tap grid locations to draw spatial hand paths and save them to the library",
+    color: "#06b6d4",
+    gradient: "linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%)",
+  },
+];
+
+// Video module tabs (graduated from Lab Mar 2026)
+export const VIDEO_TABS: Section[] = [
+  {
+    id: "video-trails",
+    label: "Video Trails",
+    icon: '<i class="fas fa-magic-wand-sparkles" aria-hidden="true"></i>',
+    description: "Detect prop endpoints in video, apply fire/LED/trail effects, build training data",
+    color: "#f43f5e",
+    gradient: "linear-gradient(135deg, #fb7185 0%, #f43f5e 100%)",
+  },
+  {
+    id: "video-lab",
+    label: "Video Lab",
+    icon: '<i class="fas fa-film" aria-hidden="true"></i>',
+    description: "Beat mapping, BPM-synced playback, and video-to-notation alignment",
+    color: "#8b5cf6",
+    gradient: "linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%)",
+  },
+  {
+    id: "skel2tka",
+    label: "Skel2TKA",
+    icon: '<i class="fas fa-video" aria-hidden="true"></i>',
+    description: "Video-to-TKA notation pipeline",
+    color: "#f43f5e",
+    gradient: "linear-gradient(135deg, #fb7185 0%, #f43f5e 100%)",
+  },
+];
+
 export const LAB_TABS: Section[] = [
   // ascii-pictograph graduated to Retro module (Mar 2026)
   // assemble-lab removed — functionality lives in Create module's Assemble tab
@@ -782,14 +829,7 @@ export const LAB_TABS: Section[] = [
     color: "#8b5cf6",
     gradient: "linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%)",
   },
-  {
-    id: "hand-path-builder",
-    label: "Hand Path Builder",
-    icon: '<i class="fas fa-draw-polygon" aria-hidden="true"></i>',
-    description: "Tap grid locations to draw spatial hand paths and save them to the library",
-    color: "#06b6d4",
-    gradient: "linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%)",
-  },
+  // hand-path-builder graduated to Hand Paths module (Mar 2026)
   {
     id: "landing",
     label: "Landing",
@@ -823,14 +863,7 @@ export const LAB_TABS: Section[] = [
     color: "#0d9488",
     gradient: "linear-gradient(135deg, #2dd4bf 0%, #0d9488 100%)",
   },
-  {
-    id: "hand-path-explorer",
-    label: "Path Explorer",
-    icon: '<i class="fas fa-route" aria-hidden="true"></i>',
-    description: "Browse unique hand paths across your sequence library",
-    color: "#10b981",
-    gradient: "linear-gradient(135deg, #34d399 0%, #10b981 100%)",
-  },
+  // hand-path-explorer graduated to Hand Paths module (Mar 2026)
   {
     id: "phrase-effort",
     label: "Phrase Effort",
@@ -857,14 +890,7 @@ export const LAB_TABS: Section[] = [
     color: "#22d3ee",
     gradient: "linear-gradient(135deg, #67e8f9 0%, #22d3ee 100%)",
   },
-  {
-    id: "skel2tka",
-    label: "Skel2TKA",
-    icon: '<i class="fas fa-video" aria-hidden="true"></i>',
-    description: "Video-to-TKA notation pipeline",
-    color: "#f43f5e",
-    gradient: "linear-gradient(135deg, #fb7185 0%, #f43f5e 100%)",
-  },
+  // skel2tka graduated to Video module (Mar 2026)
   {
     id: "trigrid",
     label: "Trigrid",
@@ -873,22 +899,7 @@ export const LAB_TABS: Section[] = [
     color: "#d946ef",
     gradient: "linear-gradient(135deg, #e879f9 0%, #d946ef 100%)",
   },
-  {
-    id: "video-lab",
-    label: "Video Lab",
-    icon: '<i class="fas fa-film" aria-hidden="true"></i>',
-    description: "Beat mapping, BPM-synced playback, and video-to-notation alignment",
-    color: "#8b5cf6",
-    gradient: "linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%)",
-  },
-  {
-    id: "video-trails",
-    label: "Video Trails",
-    icon: '<i class="fas fa-magic-wand-sparkles" aria-hidden="true"></i>',
-    description: "Detect prop endpoints in video, apply fire/LED/trail effects, build training data",
-    color: "#f43f5e",
-    gradient: "linear-gradient(135deg, #fb7185 0%, #f43f5e 100%)",
-  },
+  // video-lab, video-trails graduated to Video module (Mar 2026)
   {
     id: "voice",
     label: "Voice",

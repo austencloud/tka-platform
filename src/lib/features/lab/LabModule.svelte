@@ -31,7 +31,7 @@
     voice: () => import("./tabs/VoiceControlLab.svelte"),
     vtg: () => import("$lib/features/vtg-lab/VtgLabModule.svelte"),
     "screenshot-gallery": () => import("./tabs/ScreenshotCaptureLab.svelte"),
-    skel2tka: () => import("$lib/features/skel2tka/Skel2TKALab.svelte"),
+    // skel2tka graduated to Video module (Mar 2026)
     trigrid: () => import("$lib/features/trigrid-lab/TriGridLabModule.svelte"),
     duration: () => import("$lib/features/duration-lab/DurationLabModule.svelte"),
     effects: () => import("$lib/features/effects-lab/EffectsLabModule.svelte"),
@@ -40,10 +40,8 @@
     // retro, ascii-pictograph, retro-pictograph graduated to Retro module (Mar 2026)
     "contact-ball": () => import("./tabs/ContactBallLab.svelte"),
     "phrase-effort": () => import("$lib/features/phrase-effort-lab/PhraseEffortLabModule.svelte"),
-    "hand-path-explorer": () => import("$lib/features/hand-path-explorer/HandPathExplorerLab.svelte"),
-    "hand-path-builder": () => import("$lib/features/hand-path-builder/HandPathBuilderLab.svelte"),
-    "video-trails": () => import("./tabs/video-trails/VideoTrailsLab.svelte"),
-    "video-lab": () => import("./tabs/video-lab/VideoLab.svelte"),
+    // hand-path-explorer, hand-path-builder graduated to Hand Paths module (Mar 2026)
+    // video-trails, video-lab graduated to Video module (Mar 2026)
   };
 
   // Get current tab, default to first tab

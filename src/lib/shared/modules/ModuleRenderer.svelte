@@ -111,6 +111,10 @@
     festivals: () => import("../../features/festivals/FestivalModule.svelte"),
     // Levels module - L4-L7 position labs + Poi (graduated from Lab Mar 2026)
     levels: () => import("../../features/levels/LevelsModule.svelte"),
+    // Hand Paths module - graduated from Lab (Mar 2026)
+    "hand-paths": () => import("../../features/hand-paths/HandPathModule.svelte"),
+    // Video module - Video Trails, Video Lab, Skel2TKA (graduated from Lab Mar 2026)
+    video: () => import("../../features/video/VideoModule.svelte"),
     // Lab module - ALL experiments consolidated here (Skew, Poi, Realm, Terrain, Mandala, Backgrounds, Landing)
     lab: () => import("../../features/lab/LabModule.svelte"),
     // ========================================================================

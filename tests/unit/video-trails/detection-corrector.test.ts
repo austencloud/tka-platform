@@ -1,8 +1,8 @@
 // tests/unit/video-trails/detection-corrector.test.ts
 
 import { describe, it, expect } from "vitest";
-import { DetectionCorrector } from "$lib/features/lab/tabs/video-trails/services/implementations/DetectionCorrector";
-import type { DetectedEndpoint, EndpointCorrection } from "$lib/features/lab/tabs/video-trails/domain/types";
+import { DetectionCorrector } from "$lib/features/video/video-trails/services/implementations/DetectionCorrector";
+import type { DetectedEndpoint, EndpointCorrection } from "$lib/features/video/video-trails/domain/types";
 
 function makeEndpoint(overrides: Partial<DetectedEndpoint> = {}): DetectedEndpoint {
   return { x: 100, y: 100, brightness: 1, confidence: 0.9, propIndex: 0, tipIndex: 0, frameIndex: 5, ...overrides };

@@ -23,6 +23,8 @@ import {
   RETRO_TABS,
   REALM_TABS,
   LEVELS_TABS,
+  HAND_PATH_TABS,
+  VIDEO_TABS,
 } from "./tab-definitions";
 
 /**
@@ -241,6 +243,24 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     description: "Level 4-7 position labs and poi constraints",
     isMain: true,
     sections: LEVELS_TABS,
+  },
+  {
+    id: "hand-paths",
+    label: "Hand Paths",
+    icon: '<i class="fas fa-route" style="color: #10b981;" aria-hidden="true"></i>',
+    color: "#10b981",
+    description: "Browse and build spatial hand paths",
+    isMain: true,
+    sections: HAND_PATH_TABS,
+  },
+  {
+    id: "video",
+    label: "Video",
+    icon: '<i class="fas fa-film" style="color: #f43f5e;" aria-hidden="true"></i>',
+    color: "#f43f5e",
+    description: "Video analysis, trails, effects, and notation extraction",
+    isMain: true,
+    sections: VIDEO_TABS,
   },
   {
     id: "lab",
