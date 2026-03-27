@@ -24,6 +24,7 @@
   import { getCardBackThemeVisuals } from "./card-back-theme-visuals";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import StartPositionMiniGrid from "./StartPositionMiniGrid.svelte";
+  import SequenceMandala from "$lib/shared/mandala/components/SequenceMandala.svelte";
 
   interface Props { sequence: SequenceData; }
   let { sequence }: Props = $props();
@@ -159,7 +160,19 @@
         <div class="pronunciation">{pronunciation}</div>
       {/if}
 
-      <div class="spacer"></div>
+      {#if d.hasLoop}
+        <div class="mandala-hero">
+          <SequenceMandala
+            {sequence}
+            mode="card-back"
+            style="stroke"
+            show="both"
+            size={280}
+          />
+        </div>
+      {:else}
+        <div class="spacer"></div>
+      {/if}
 
       <!-- LOOP explanation (if applicable) -->
       {#if d.hasLoop}
@@ -319,6 +332,21 @@
   }
 
   .spacer { flex: 1; }
+
+  .mandala-hero {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 0;
+  }
+
+  .mandala-hero :global(svg) {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+  }
 
   .loop-explanation {
     margin: 0;
