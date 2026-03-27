@@ -62,8 +62,7 @@ export class MandalaRenderer implements IMandalaRenderer {
 
 		const parts: string[] = [];
 
-		// Use viewBox only (no width/height) so the SVG scales to its container
-		parts.push(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}">`);
+		parts.push(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" width="100%" height="100%">`);
 
 		// Background — skip for card-back or other themed containers
 		if (!transparentBackground) {
