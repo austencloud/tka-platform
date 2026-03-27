@@ -77,6 +77,40 @@
       selectedIndex = Math.max(0, filteredSequences.length - 1);
   });
 
+  // Restore selected sequence from localStorage on initial load
+  let hasRestored = false;
+
+  $effect(() => {
+    // Only restore once, and only after sequences have loaded
+    if (hasRestored || sequences.length === 0) return;
+    hasRestored = true;
+
+    const restoredId = loadString(STORAGE_KEYS.sequenceId);
+    if (!restoredId) return;
+
+    // Try current filtered list first
+    let idx = filteredSequences.findIndex(s => s.id === restoredId);
+    if (idx >= 0) {
+      selectedIndex = idx;
+      return;
+    }
+
+    // Try unfiltered list — maybe the filter excludes it
+    idx = sequences.findIndex(s => s.id === restoredId);
+    if (idx >= 0) {
+      // Switch to "All" filter so we can show it
+      selectedLength = 0;
+      save(STORAGE_KEYS.length, 0);
+      // After filter change, find index in the now-unfiltered list
+      selectedIndex = idx;
+      return;
+    }
+
+    // Not found at all — deleted sequence
+    save(STORAGE_KEYS.sequenceId, null);
+    selectedIndex = 0;
+  });
+
   // ── Observer registrations ──────────────────────────────────────────
 
   const imageComposition = getImageCompositionManager();
