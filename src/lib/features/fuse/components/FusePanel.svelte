@@ -113,12 +113,6 @@
 		flex: 1;
 		min-height: 0;
 		overflow: hidden;
-		display: flex;
-		justify-content: var(--align, center);
-	}
-
-	.card-section > :global(*) {
-		max-width: 100%;
 	}
 
 	.animation-section {
