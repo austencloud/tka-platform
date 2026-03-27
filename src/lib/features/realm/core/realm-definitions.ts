@@ -298,6 +298,70 @@ export const MUSEUM_GROUNDS_CONFIG: RealmConfig = {
 };
 
 // ============================================================================
+// ARCHIVE - THE KINETIC ARCHIVE (Wing 1: Discovery Chamber)
+// ============================================================================
+
+/**
+ * Archive Wing 1 - Discovery Chamber
+ *
+ * Indoor cave room for the narrative museum experience.
+ * Flat terrain with massive clearing so the room sits on clean ground.
+ * No vegetation, no water, no campground objects.
+ * Player spawns inside the chamber facing the exhibit.
+ */
+export const ARCHIVE_WING1_CONFIG: RealmConfig = {
+  id: "archive-wing1",
+  name: "The Kinetic Archive",
+  description: "Wing 1: Ancient Origins - The Discovery Chamber",
+
+  terrain: {
+    type: "procedural",
+    seed: 0, // Flat terrain
+    waterLevel: -100, // No water visible
+  },
+
+  chunks: {
+    size: 32,
+    viewDistance: 64, // Minimal - indoor scene
+    lodDistances: [],
+  },
+
+  features: {
+    objectPlacement: false,
+    boundaryEditing: false,
+    satelliteImagery: false,
+  },
+
+  spawn: {
+    position: [0, 50, 3.5], // Inside room, facing north toward exhibit
+    yaw: Math.PI, // Face north (toward exhibit at -Z)
+  },
+
+  physics: {
+    walkSpeed: 2.5, // Slower walk for museum atmosphere
+    runSpeed: 4,
+    flySpeed: 20,
+    gravity: 9.81,
+    jumpForce: 4,
+    playerHeight: 1.7,
+  },
+
+  spawnClearing: {
+    enabled: true,
+    center: { x: 0, z: 0 },
+    radius: 60, // Large flat area
+    blendWidth: 20,
+    campground: {
+      enabled: false,
+      firePit: false,
+      tent: false,
+      seatingLogs: 0,
+      torches: 0,
+    },
+  },
+};
+
+// ============================================================================
 // REALM REGISTRY
 // ============================================================================
 
@@ -310,6 +374,7 @@ export const REALM_CONFIGS: Record<string, RealmConfig> = {
   procedural: PROCEDURAL_WORLD_CONFIG,
   "flat-testing": FLAT_TESTING_CONFIG,
   "museum-grounds": MUSEUM_GROUNDS_CONFIG,
+  "archive-wing1": ARCHIVE_WING1_CONFIG,
 };
 
 /**

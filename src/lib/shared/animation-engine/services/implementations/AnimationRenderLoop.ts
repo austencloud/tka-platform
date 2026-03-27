@@ -183,6 +183,32 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     // FPS setting only affects the exported video file.
   }
 
+  /** Snapshot of render loop state for diagnostic reports. */
+  getDiagnostics(): Record<string, unknown> {
+    return {
+      isRunning: this.rafId !== null,
+      isDisposed: this.isDisposed,
+      previousStep: this.previousStep,
+      loopDetectedThisFrame: this.loopDetectedThisFrame,
+      hasLoopedAtLeastOnce: this.hasLoopedAtLeastOnce,
+      loopStartTime: this.loopStartTime,
+      qualityTier: this.previousQualityTier,
+      consecutiveFireErrors: this.consecutiveFireErrors,
+      consecutiveLedErrors: this.consecutiveLedErrors,
+      fireDisabledByError: this.fireDisabledByError,
+      ledDisabledByError: this.ledDisabledByError,
+      consecutiveIdleFrames: this.consecutiveIdleFrames,
+      framesRenderedSinceStart: this.framesRenderedSinceStart,
+      canvasSize: this.canvasSize,
+      fireRendererInitialized: this.fireRenderer?.isInitialized() ?? false,
+      charcoalRendererInitialized: this.charcoalRenderer?.isInitialized() ?? false,
+      ledRendererInitialized: this.ledRenderer?.isInitialized() ?? false,
+      hasTrailOverlay: !!this.trailOverlay,
+      fireTipDiagnostics: (this.fireTipTracker as any)?.getDiagnostics?.() ?? null,
+      fireRendererDiagnostics: (this.fireRenderer as any)?.getDiagnostics?.() ?? null,
+    };
+  }
+
   dispose(): void {
     // Mark as disposed FIRST to stop any pending RAF callbacks
     this.isDisposed = true;
@@ -310,7 +336,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       const hasCharR = this.charcoalRenderer?.isInitialized();
       const hasTrailO = !!this.trailOverlay;
       const hasLed = this.ledRenderer?.isInitialized() && params.ledConfig?.enabled;
-      console.log(`[TRAIL-DIAG] RenderLoop frame ${this.diagFrameCount} | effects: trail=${hasTrailO} fire=${!!hasFireR} charcoal=${!!hasCharR} led=${!!hasLed} | blue=(${bp?.x?.toFixed(0)},${bp?.y?.toFixed(0)}) red=(${rp?.x?.toFixed(0)},${rp?.y?.toFixed(0)})`);
+      console.log(`[TRAIL-DIAG] RenderLoop frame ${this.diagFrameCount} | effects: trail=${hasTrailO} fire=${!!hasFireR} charcoal=${!!hasCharR} led=${!!hasLed} | blue: path=${bp?.centerPathAngle?.toFixed(2)} staff=${bp?.staffRotationAngle?.toFixed(2)} | red: path=${rp?.centerPathAngle?.toFixed(2)} staff=${rp?.staffRotationAngle?.toFixed(2)}`);
     }
 
     // Measure RAF-to-RAF gap (includes browser layout, GC, other JS, vsync wait)

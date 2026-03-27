@@ -103,7 +103,7 @@ export class FireTipTracker implements IFireTipTracker {
 
 		if (this.diagFrameCount <= 10) {
 			const validCount = this.prevTips.filter(t => t.valid).length;
-			console.log(`[TRAIL-DIAG] FireTipTracker frame ${this.diagFrameCount} | blue=(${blueProp?.x?.toFixed(0)},${blueProp?.y?.toFixed(0)}) red=(${redProp?.x?.toFixed(0)},${redProp?.y?.toFixed(0)}) | validPrev=${validCount} gap=${gapDetected}`);
+			console.log(`[TRAIL-DIAG] FireTipTracker frame ${this.diagFrameCount} | blue: path=${blueProp?.centerPathAngle?.toFixed(2)} staff=${blueProp?.staffRotationAngle?.toFixed(2)} | red: path=${redProp?.centerPathAngle?.toFixed(2)} staff=${redProp?.staffRotationAngle?.toFixed(2)} | validPrev=${validCount} gap=${gapDetected}`);
 		}
 
 		this.outputTips.length = 0;
@@ -318,5 +318,21 @@ export class FireTipTracker implements IFireTipTracker {
 		for (let i = start; i < end && i < this.prevTips.length; i++) {
 			this.prevTips[i]!.valid = false;
 		}
+	}
+
+	/** Snapshot of internal state for diagnostic reports. */
+	getDiagnostics(): Record<string, unknown> {
+		const validTips = this.prevTips.filter(t => t.valid);
+		return {
+			lastUpdateTime: this.lastUpdateTime,
+			validTipCount: validTips.length,
+			tipPositions: validTips.map(t => ({
+				x: Math.round(t.x),
+				y: Math.round(t.y),
+				vx: Math.round(t.velocityX),
+				vy: Math.round(t.velocityY),
+			})),
+			currentOutputCount: this.outputTips.length,
+		};
 	}
 }

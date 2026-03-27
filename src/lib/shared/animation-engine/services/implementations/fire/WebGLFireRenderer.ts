@@ -492,6 +492,25 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     return this.gl;
   }
 
+  /** Snapshot of internal state for diagnostic reports. */
+  getDiagnostics(): Record<string, unknown> {
+    return {
+      initialized: this.initialized,
+      simResolution: [this.simWidth, this.simHeight],
+      dpr: this.dpr,
+      activeTips: this.displayTipCount,
+      canvasSize: [this.displayCanvasWidth, this.displayCanvasHeight],
+      cacheState: this.frameCache
+        ? {
+            state: this.frameCache.isWarm() ? "warm" : this.frameCache.isRecording() ? "recording" : "idle",
+            totalFrames: (this.frameCache as any).totalFrames ?? 0,
+          }
+        : null,
+      contextLost: this.gl?.isContextLost() ?? null,
+      lastConfigHash: this.lastConfigHash,
+    };
+  }
+
   // ============================================================
   // Simulation pipeline
   // ============================================================

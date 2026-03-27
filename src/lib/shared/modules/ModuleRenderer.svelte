@@ -88,8 +88,7 @@
       import("../../features/feedback/components/FeedbackModule.svelte"),
     admin: () =>
       import("../../features/admin/components/AdminDashboard.svelte"),
-    // ml-training module consolidated into Lab (Feb 2026)
-    "ml-training": () => import("../../features/lab/LabModule.svelte"),
+    // ml-training removed (Mar 2026)
     // Prop Tracking Lab - Skel2TKA proof of concept (video → notation)
     "prop-tracking-lab": () =>
       import("../../features/train/prop-tracking-lab/components/PropTrackingLabModule.svelte"),

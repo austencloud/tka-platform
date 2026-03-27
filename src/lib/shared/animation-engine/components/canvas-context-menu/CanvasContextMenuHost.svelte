@@ -16,12 +16,14 @@
     onOpenSettings: () => void;
     disassembled?: boolean;
     onToggleDisassemble?: () => void;
+    captureEffectDiagnostics?: () => Record<string, unknown>;
   }
 
   const {
     onOpenSettings,
     disassembled = false,
     onToggleDisassemble,
+    captureEffectDiagnostics,
   }: Props = $props();
 
   let menuState: ContextMenuState = $state({ open: false });
@@ -55,6 +57,7 @@
       },
       disassembled,
       onToggleDisassemble,
+      captureEffectDiagnostics,
     });
   });
 

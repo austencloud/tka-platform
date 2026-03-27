@@ -1,62 +1,54 @@
+<!--
+  RealmModule.svelte — 3D destinations as sidebar tabs.
+  Each tab lazy-loads its destination component.
+-->
 <script lang="ts">
-  /**
-   * RealmModule - Unified 3D Destination Hub
-   *
-   * Visual destination picker for all 3D experiences (Stage, Gallery, Worlds, etc.).
-   * Shows grid of cards with live 3D previews.
-   * ESC returns to picker from any destination.
-   *
-   * Replaces the old tab-based navigation with a scalable destination system.
-   */
+  import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
+  import { REALM_TABS } from "$lib/shared/navigation/config/tab-definitions";
 
-  import { onMount } from "svelte";
-  import { destinationManager } from "$lib/shared/3d/destinations/destination-manager.svelte";
-  import { DESTINATIONS } from "$lib/shared/3d/destinations/definitions";
-  import DestinationPicker from "./components/picker/DestinationPicker.svelte";
-  import DestinationRenderer from "./components/picker/DestinationRenderer.svelte";
+  const tabComponents: Record<string, () => Promise<{ default: any }>> = {
+    "realm-world": () => import("./RealmDestination.svelte"),
+    museum: () => import("./destinations/museum/MuseumDestination.svelte"),
+    "3d-controls": () => import("./tools/3d-controls/ThreeDControlsLab.svelte"),
+  };
 
-  // Current destination state
-  const currentDestinationId = $derived(destinationManager.currentDestinationId);
-  const isPickerActive = $derived(destinationManager.isPickerActive());
+  const activeTab = $derived(navigationState.activeTab || REALM_TABS[0]?.id || "realm-world");
 
-  // Get enabled destinations
-  const enabledDestinations = $derived(
-    DESTINATIONS.filter((d) => d.enabled !== false)
-  );
+  let TabComponent = $state<any>(null);
+  let loadError = $state<string | null>(null);
 
-  // If only one destination is enabled, skip the picker and go straight to it
-  onMount(() => {
-    if (enabledDestinations.length === 1 && isPickerActive) {
-      const destination = enabledDestinations[0];
-      if (destination) {
-        destinationManager.navigateTo(destination.id);
-      }
+  $effect(() => {
+    const loader = tabComponents[activeTab];
+    if (loader) {
+      loadError = null;
+      loader()
+        .then((mod: { default: any }) => {
+          TabComponent = mod.default;
+        })
+        .catch((err: Error) => {
+          console.error(`Failed to load realm tab "${activeTab}":`, err);
+          loadError = `Failed to load "${activeTab}" tab`;
+          TabComponent = null;
+        });
+    } else {
+      loadError = `Unknown tab: ${activeTab}`;
+      TabComponent = null;
     }
   });
-
-  function handleDestinationSelect(destinationId: string) {
-    destinationManager.navigateTo(destinationId);
-  }
-
-  function handleReturn() {
-    // If only one destination is enabled, don't return to picker (nowhere else to go)
-    if (enabledDestinations.length === 1) {
-      return;
-    }
-    destinationManager.returnToPicker();
-  }
 </script>
 
 <div class="realm-module">
-  {#if isPickerActive}
-    <!-- Show destination picker -->
-    <DestinationPicker onSelect={handleDestinationSelect} />
-  {:else if currentDestinationId}
-    <!-- Show active destination -->
-    <DestinationRenderer
-      destinationId={currentDestinationId}
-      onReturn={handleReturn}
-    />
+  {#if loadError}
+    <div class="load-error">
+      <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+      <span>{loadError}</span>
+    </div>
+  {:else if TabComponent}
+    <TabComponent />
+  {:else}
+    <div class="loading">
+      <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
+    </div>
   {/if}
 </div>
 
@@ -67,5 +59,24 @@
     display: flex;
     flex-direction: column;
     background: var(--theme-panel-bg, #12121c);
+  }
+
+  .load-error {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    height: 100%;
+    color: var(--semantic-error, #ef4444);
+    font-size: var(--font-size-sm, 0.875rem);
+  }
+
+  .loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    font-size: 1.5rem;
   }
 </style>

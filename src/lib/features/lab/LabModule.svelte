@@ -17,19 +17,15 @@
   const tabComponents: Record<string, () => Promise<{ default: any }>> = {
     attribution: () => import("./tabs/AttributionLab.svelte"),
     // level4, level5, level6, level7, poi graduated to Levels module (Mar 2026)
-    avatar: () => import("./tabs/ProfileAvatarLab.svelte"),
     mandala: () =>
       import("$lib/features/mandala-generator/components/MandalaGeneratorModule.svelte"),
     backgrounds: () => import("$lib/features/background-builder/BackgroundBuilder.svelte"),
     landing: () => import("$lib/features/landing-preview/LandingPreviewModule.svelte"),
     composition: () => import("$lib/features/constraint-layout-lab/CompositionLab.svelte"),
     "multi-grid": () => import("$lib/features/multi-grid-lab/MultiGridLabModule.svelte"),
-    "ml-training": () =>
-      import("$lib/features/train/ml-training/components/MLTrainingModule.svelte"),
     // community, connect graduated to Social module (Mar 2026)
     voice: () => import("./tabs/VoiceControlLab.svelte"),
     vtg: () => import("$lib/features/vtg-lab/VtgLabModule.svelte"),
-    "screenshot-gallery": () => import("./tabs/ScreenshotCaptureLab.svelte"),
     // skel2tka graduated to Video module (Mar 2026)
     trigrid: () => import("$lib/features/trigrid-lab/TriGridLabModule.svelte"),
     duration: () => import("$lib/features/duration-lab/DurationLabModule.svelte"),
@@ -37,7 +33,6 @@
     disassemble: () => import("$lib/features/disassemble-lab/DisassembleLab.svelte"),
     "prop-buttons": () => import("./tabs/PropButtonLab.svelte"),
     // retro, ascii-pictograph, retro-pictograph graduated to Retro module (Mar 2026)
-    "contact-ball": () => import("./tabs/ContactBallLab.svelte"),
     "phrase-effort": () => import("$lib/features/phrase-effort-lab/PhraseEffortLabModule.svelte"),
     // hand-path-explorer, hand-path-builder graduated to Hand Paths module (Mar 2026)
     // video-trails, video-lab graduated to Video module (Mar 2026)

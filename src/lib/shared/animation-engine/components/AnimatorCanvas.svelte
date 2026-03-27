@@ -540,6 +540,7 @@ Last audit: 2025-12-27
       onOpenSettings={handleOpenSettings}
       disassembled={isDisassembledView}
       onToggleDisassemble={toggleDisassemble}
+      captureEffectDiagnostics={() => engine.captureEffectDiagnostics()}
     />
 
     <AnimationSettingsModal
