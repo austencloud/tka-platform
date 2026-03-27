@@ -334,19 +334,17 @@
   .spacer { flex: 1; }
 
   .mandala-hero {
-    flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 0;
-    max-height: 320px;
-    padding: 4px 0;
+    width: 260px;
+    height: 260px;
+    margin: 0 auto;
   }
 
   .mandala-hero :global(svg) {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
+    width: 260px;
+    height: 260px;
   }
 
   .loop-explanation {
