@@ -591,11 +591,12 @@
 		cursor: not-allowed;
 	}
 
-	/* Tour overlay — covers entire viewport including bottom nav */
+	/* Tour overlay — fills the sub-tab-content container (which has container-type: size,
+	   trapping position: fixed). Bottom nav is hidden separately via MainInterface. */
 	.tour-overlay {
-		position: fixed;
+		position: absolute;
 		inset: 0;
-		z-index: 1000;
+		z-index: 10;
 		background: linear-gradient(165deg, #1a1a2e 0%, #0f0f23 40%, #1a1025 100%);
 		display: flex;
 		flex-direction: column;
