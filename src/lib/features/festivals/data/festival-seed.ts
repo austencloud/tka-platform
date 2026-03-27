@@ -194,6 +194,7 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
       instagram: "@flowstormtx",
       facebook: "https://www.facebook.com/FlowstormTx/",
     },
+    imageUrl: "https://img.evbuc.com/https%3A%2F%2Fcdn.evbuc.com%2Fimages%2F839067789%2F246932043745%2F1%2Foriginal.20240901-193013?crop=focalpoint&fit=crop&w=940&auto=format%2Ccompress&q=75&sharp=10&fp-x=0.505685517282&fp-y=0.514283326295&s=106f080fea8757b3553b6d629026785a",
     estimatedSize: toSize("medium"),
     region: "north-america",
     tags: ["fire", "flow", "workshops", "camping", "sustainability", "permaculture"],
@@ -274,6 +275,7 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
       instagram: "@glfproductions",
       facebook: "https://www.facebook.com/greatlakesflow/",
     },
+    imageUrl: "/images/festivals/great-lakes-flow.jpg",
     estimatedSize: toSize("medium"),
     region: "north-america",
     tags: ["fire", "flow", "workshops", "camping", "midwest", "live-music"],
@@ -399,6 +401,7 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     description:
       "Three-night fire, flow, and wellness retreat in South Florida. Flow and fire workshops on various props, holistic wellness classes (breathwork, yoga, sound baths), and evening fire performances over the lagoon.",
     websiteUrl: "https://thirdeyeartcollective.com/zenflowhome",
+    imageUrl: "/images/festivals/zenflow.jpg",
     estimatedSize: toSize("small"),
     region: "north-america",
     tags: ["fire", "flow", "wellness", "yoga", "sound-bath", "camping"],
@@ -444,6 +447,7 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     description:
       "Free public festival with 20+ workshops in circus arts, dance, and yoga. Part of the Flow Fests touring series celebrating 15 years.",
     websiteUrl: "https://flowfests.com/dallas-2026/",
+    imageUrl: "/images/festivals/flowfests.jpg",
     estimatedSize: toSize("medium"),
     region: "north-america",
     tags: ["flow", "workshops", "free", "family-friendly", "circus-arts", "yoga"],
@@ -465,6 +469,7 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     description:
       "Free public festival with simultaneous workshops offering up to 8 flow arts opportunities at any given time. Object manipulation (hoop, juggling, poi, staff), yoga, acro yoga, and slackline.",
     websiteUrl: "https://flowfests.com",
+    imageUrl: "/images/festivals/flowfests.jpg",
     estimatedSize: toSize("medium"),
     region: "north-america",
     tags: ["flow", "workshops", "free", "family-friendly", "object-manipulation", "yoga", "acro-yoga"],
@@ -487,6 +492,7 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     description:
       "Free public festival with master artist workshops by day, performances by night. Part of the Flow Fests touring series.",
     websiteUrl: "https://flowfests.com/indy_2026/",
+    imageUrl: "/images/festivals/flowfests.jpg",
     estimatedSize: toSize("medium"),
     region: "north-america",
     tags: ["flow", "workshops", "free", "family-friendly"],
@@ -509,6 +515,7 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     description:
       "Full-day community fire jam and festival with 40+ workshops. Friday night features participatory fire jam.",
     websiteUrl: "https://flowfests.com/flow-fest-seattle-2026/",
+    imageUrl: "/images/festivals/flowfests.jpg",
     estimatedSize: toSize("medium"),
     region: "north-america",
     tags: ["flow", "workshops", "free", "family-friendly", "fire-jam"],
@@ -530,6 +537,7 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     description:
       "Free public festival celebrating 15 years. 50+ workshops in circus arts, dance, and yoga. Theme: Whimsy.",
     websiteUrl: "https://flowfests.com/ftl-2026/",
+    imageUrl: "/images/festivals/flowfests.jpg",
     estimatedSize: toSize("medium"),
     region: "north-america",
     tags: ["flow", "workshops", "free", "family-friendly", "circus-arts"],
@@ -551,6 +559,7 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     description:
       "Free public participation festival with workshops in hoop, juggling, poi, staff, yoga and more. Part of the Flow Fests touring series.",
     websiteUrl: "https://flowfests.com",
+    imageUrl: "/images/festivals/flowfests.jpg",
     estimatedSize: toSize("medium"),
     region: "north-america",
     tags: ["flow", "workshops", "free", "hoop", "juggling", "poi", "staff", "yoga"],
@@ -572,6 +581,7 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     description:
       "Free public festival with optional master workshops for newcomers and experienced movers. Part of the Flow Fests touring series.",
     websiteUrl: "https://flowfests.com/philly-2026/",
+    imageUrl: "/images/festivals/flowfests.jpg",
     estimatedSize: toSize("medium"),
     region: "north-america",
     tags: ["flow", "workshops", "free", "family-friendly"],
@@ -618,6 +628,7 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     seekingPerformers: false,
     description: "16th annual informal 3-day event at Catalina State Park. Camping-focused, operates by donation.",
     websiteUrl: "http://www.tucsonjuggling.org/festival",
+    imageUrl: "https://lh3.googleusercontent.com/sitesv/APaQ0STZa9JViCRIyK7JeS3xGJPs8imVkh3XsKU7AUjGHjV2a_C7hipwFv8vd2grzAIorfX3N-M2A-LJ42pJMfeVDZPIFfj5J6FGqrJWAvK7xt-Z0PLRz-0nWn4wDdmtxLg5balRLiqbBwX0gFmTRRCEJe3krUrszFXtpx-Vu2mKtAvyRFHx-9MD=w16383",
     estimatedSize: toSize("small"),
     region: "north-america",
     tags: ["juggling", "flow", "camping", "donation-based"],
@@ -683,6 +694,7 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     description:
       "34th annual festival spanning 30+ years. Features workshops, big show, renegade performances, and games.",
     websiteUrl: "https://www.portlandjugglers.org",
+    imageUrl: "/images/festivals/portland-juggling.jpg",
     estimatedSize: toSize("medium"),
     region: "north-america",
     tags: ["juggling", "flow", "workshops", "shows", "renegade"],
@@ -724,6 +736,7 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     description:
       "Hoop convention founded by Madison Circus Space co-founder. First year drew participants from 30 states plus Canada and Germany.",
     websiteUrl: "https://www.cheeselandiahoopaffair.com",
+    imageUrl: "/images/festivals/cheeslandia-hoop.jpg",
     estimatedSize: toSize("small"),
     region: "north-america",
     tags: ["hoop", "workshops", "midwest"],
@@ -910,6 +923,7 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     seekingInstructors: false,
     seekingPerformers: false,
     description: "Four fun and flaming days dedicated to creativity, movement, juggling, and play.",
+    imageUrl: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEggK3TCol86LlTzVDT8Nif7nRxGGowecoCfDX9JmODmha3N6XLEcA9FyWPpQ6zLchvymcdWQKoKbhza-UKd6eAUO0WI78f7n5u9Ll0Q5px4_obAuH5p_fLl8hZGetKF_m0Z4ortqIhmyBTBMdk3LKlncVZPlyydkBUOq6mKufjnTjky-MmDjSRphDIg9CMF/w1200-h630-p-k-no-nu/Ab%20in%20Pott%20-%20Logo%2026%20klein%20.png",
     estimatedSize: toSize("medium"),
     region: "europe",
     tags: ["juggling", "flow", "workshops", "fire"],
@@ -928,6 +942,7 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     seekingInstructors: true,
     seekingPerformers: true,
     description: "Four days filled with many workshops, fire jam, gala show, and open stage in Salzburg.",
+    imageUrl: "https://www.soundofjuggling.com/wp-content/uploads/Logo-Final-bunt-und-sw.png",
     estimatedSize: toSize("medium"),
     region: "europe",
     tags: ["juggling", "flow", "fire-jam", "gala-show", "workshops"],
@@ -968,6 +983,7 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     description:
       "Family-friendly weekend at a permaculture farm in Sardinia with workshops, games, organic food, and evening entertainment.",
     websiteUrl: "https://eatplaylove-it.my.canva.site/en",
+    imageUrl: "/images/festivals/eat-play-love.jpg",
     estimatedSize: toSize("intimate"),
     region: "europe",
     tags: ["flow", "workshops", "family-friendly", "organic-food", "permaculture"],
@@ -986,6 +1002,7 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     seekingInstructors: true,
     seekingPerformers: false,
     description: "Gathering of hula hoopers near Zurich, Switzerland.",
+    imageUrl: "https://festivalsandretreats.com/wp-content/uploads/2022/01/Get-the-Ring-Hulahoop-Convention-Switzerland.jpg",
     estimatedSize: toSize("small"),
     region: "europe",
     tags: ["hoop", "workshops", "convention"],
@@ -1044,6 +1061,7 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     seekingPerformers: true,
     description:
       "The second biggest juggling convention in the world (after EJC) with around 2000 participants. Camping convention with vendors, 220+ workshops, fire show, renegades, juggle jam, and an International Gala with world-class performers. Volunteer-organized.",
+    imageUrl: "https://www.ijc.co.il/wp-content/uploads/2025/12/IJC-simple-LOGO-e1765640801374.png",
     estimatedSize: toSize("large"),
     region: "asia",
     tags: ["juggling", "circus", "fire-show", "workshops", "camping", "gala"],
@@ -1064,6 +1082,7 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     description:
       "Immersive fire-themed intensive creating comfort and curiosity with the art of fire hooping and fire fans. Luxury retreat setting in Bali with world-class instruction.",
     websiteUrl: "https://thehulahoopinstitute.com/the-hoop-dream-retreat/ignite-2025/",
+    imageUrl: "/images/festivals/ignite-hoop.jpg",
     estimatedSize: toSize("intimate"),
     region: "asia",
     tags: ["fire", "hoop", "fans", "retreat", "luxury", "intensive"],
@@ -1084,6 +1103,7 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     description:
       "Luxury hoop gathering in Bali with terrific instructors, infinity pool overlooking the sea, and delicious cuisine. 7 or 15-day event.",
     websiteUrl: "https://thehulahoopinstitute.com/the-hoop-dream-retreat/bali-2025/",
+    imageUrl: "/images/festivals/hoop-dream-bali.jpg",
     estimatedSize: toSize("intimate"),
     region: "asia",
     tags: ["hoop", "retreat", "luxury", "bali"],
@@ -1200,8 +1220,340 @@ export const FESTIVAL_SEEDS: FestivalSeed[] = [
     seekingPerformers: false,
     description:
       "South Africa's first fire performance retreat at Porcupine Hills. Inspired by fire festivals in Europe and the USA.",
+    imageUrl: "https://www.firetribe.co.za/wp-content/uploads/2023/10/FireTribe-1788-copy.jpg",
     estimatedSize: toSize("intimate"),
     region: "africa",
     tags: ["fire", "performance", "retreat"],
+  },
+
+  // ── Flow Arts Institute Events ──────────────────────────────────────
+
+  // (FLAME already listed above under Flow Arts Movement Exchange)
+
+  // ── Additional US Flow Arts Festivals ───────────────────────────────
+
+  {
+    name: "Frozen Fire Festival 2026",
+    organizationId: toOrgId("Frozen Fire Festival"),
+    organization: "Frozen Fire Festival",
+    location: {
+      city: "Boston",
+      state: "Massachusetts",
+      country: "USA",
+      coordinates: { lat: 42.3601, lng: -71.0589 },
+    },
+    startDate: "2026-12-11",
+    endDate: "2026-12-13",
+    seekingInstructors: false,
+    seekingPerformers: true,
+    description:
+      "A winter fire experience with cirque-style fire performances, live ice sculpting, fire installations, holiday market, and headliner performers from around the world.",
+    websiteUrl: "https://frozenfirefestival.com",
+    imageUrl: "https://frozenfirefestival.com/wp-content/uploads/2024/10/firefest.jpg",
+    estimatedSize: toSize("large"),
+    region: "north-america",
+    tags: ["fire", "circus", "performance", "winter", "public-event"],
+  },
+  {
+    name: "Spinstock Flow Arts Festival 2026",
+    organizationId: toOrgId("Spinstock"),
+    organization: "Spinstock",
+    location: {
+      venue: "Coleman Memorial Park",
+      city: "Lebanon",
+      state: "Pennsylvania",
+      country: "USA",
+      coordinates: { lat: 40.3409, lng: -76.4114 },
+    },
+    startDate: "2026-06-13",
+    endDate: "2026-06-13",
+    seekingInstructors: true,
+    seekingPerformers: true,
+    description:
+      "Free, family-friendly outdoor flow arts festival now in its 12th year. Free workshops, kid's activities, vendor market, food trucks, live DJs, flow performances, and a fire show finale.",
+    websiteUrl: "https://www.spinstock.org",
+    imageUrl: "https://images.squarespace-cdn.com/content/v1/6139fbf52d21cf6c1c8b83cb/bd112f1e-c8d9-4acd-8330-23d4d2ed0501/Spinstock_white.png",
+    estimatedSize: toSize("medium"),
+    region: "north-america",
+    tags: ["flow", "fire", "free", "family-friendly", "workshops"],
+  },
+
+  // ── US Juggling Festivals ───────────────────────────────────────────
+
+  {
+    name: "Congress of Jugglers 2026",
+    organizationId: toOrgId("Congress of Jugglers"),
+    organization: "Congress of Jugglers",
+    location: {
+      venue: "Ritchie Coliseum, University of Maryland",
+      city: "College Park",
+      state: "Maryland",
+      country: "USA",
+      coordinates: { lat: 38.9897, lng: -76.9378 },
+    },
+    startDate: "2026-05-01",
+    endDate: "2026-05-03",
+    seekingInstructors: false,
+    seekingPerformers: true,
+    description:
+      "Annual mid-Atlantic juggling festival hosted by UMD Juggling Club. Three days of juggling, performances, games, raffles, and workshops. Over 30 years running.",
+    imageUrl: "https://se-images.campuslabs.com/clink/images/06ff11a6-5eee-447a-ab81-1b1966f423eca0f65a48-af6b-49bf-afb7-8360ab187e14.png",
+    estimatedSize: toSize("small"),
+    region: "north-america",
+    tags: ["juggling", "workshops", "university"],
+  },
+  {
+    name: "Philadelphia Juggling Festival 2026",
+    organizationId: toOrgId("Circus Campus Philadelphia"),
+    organization: "Circus Campus Philadelphia",
+    location: {
+      venue: "Circus Campus",
+      city: "Philadelphia",
+      state: "Pennsylvania",
+      country: "USA",
+      coordinates: { lat: 39.9526, lng: -75.1652 },
+    },
+    startDate: "2026-06-20",
+    endDate: "2026-06-21",
+    seekingInstructors: true,
+    seekingPerformers: true,
+    description:
+      "A full weekend of juggling at the 30,000 sq ft Circus Campus. Workshops, open gym, and performances. Home of Circadium, a 3-year full-time circus program.",
+    websiteUrl: "https://circuscampusphiladelphia.com/jugglingfestival/",
+    imageUrl: "https://phillyareajugglers.org/assets/images/festival/PhillyFest%202025%203.jpg",
+    estimatedSize: toSize("small"),
+    region: "north-america",
+    tags: ["juggling", "circus", "workshops"],
+  },
+
+  // ── Canada ──────────────────────────────────────────────────────────
+
+  {
+    name: "TriFlow Fest 2026",
+    organizationId: toOrgId("TriFlow Fest"),
+    organization: "TriFlow Fest",
+    location: {
+      city: "Saint-Fortunat",
+      state: "Quebec",
+      country: "Canada",
+      coordinates: { lat: 45.9518, lng: -71.4724 },
+    },
+    startDate: "2026-07-17",
+    endDate: "2026-07-19",
+    seekingInstructors: true,
+    seekingPerformers: true,
+    description:
+      "Quebec's first flow arts festival, won Best Canadian Flow Fest at 2019 Canspin Awards. 80 workshops covering flow arts, aerial arts, juggling, acroyoga, hand-to-hand, and fire safety. Bilingual French/English.",
+    websiteUrl: "https://triflowfest.com",
+    imageUrl: "https://triflowfest.com/wp-content/uploads/2020/04/TriFlow-Fest-logo-site-web_2020-1.png",
+    estimatedSize: toSize("small"),
+    region: "north-america",
+    tags: ["flow", "fire", "circus", "juggling", "aerial", "camping"],
+  },
+
+  // ── Central & South America ─────────────────────────────────────────
+
+  {
+    name: "GuateFlow Gathering 2026",
+    organizationId: toOrgId("Flow Arts Retreats"),
+    organization: "Flow Arts Retreats",
+    location: {
+      city: "San Marcos La Laguna",
+      state: "Sololá",
+      country: "Guatemala",
+      coordinates: { lat: 14.7261, lng: -91.2561 },
+    },
+    startDate: "2026-01-29",
+    endDate: "2026-02-08",
+    seekingInstructors: true,
+    seekingPerformers: false,
+    description:
+      "11-day flow arts retreat above Lake Atitlan with volcano views. Workshops in poi, hoop, contact staff, silk fans, double staff, belly dance, aerials, dragon staff and more. Fire jams, yoga, ecstatic dance.",
+    websiteUrl: "https://flowartsretreats.com/guateflow/",
+    imageUrl: "https://flowartsretreats.com/wp-content/uploads/2025/06/Logo-Guateflow-871x1024.png",
+    estimatedSize: toSize("small"),
+    region: "south-america",
+    tags: ["flow", "fire", "retreat", "yoga", "dance", "international"],
+  },
+  {
+    name: "Convenção Brasileira de Malabarismo e Circo 2026",
+    organizationId: toOrgId("CBMC"),
+    organization: "CBMC",
+    location: {
+      city: "Brasilia",
+      country: "Brazil",
+      coordinates: { lat: -15.7975, lng: -47.8919 },
+    },
+    startDate: "2026-07-11",
+    endDate: "2026-07-19",
+    seekingInstructors: true,
+    seekingPerformers: true,
+    description:
+      "Brazil's national juggling and circus convention, running since 1999. One of the largest circus arts events in Latin America. Week-long gathering with training, workshops, professional networking, and camping.",
+    imageUrl: "https://lh3.googleusercontent.com/sitesv/APaQ0SS_OTfVdmZVNAXem1wL9_O5dxhJA3tK7peh-mRrdsal-FyO8fFVyzUMLXcg-STYvge-qq_rNX0tVBQ3pBYQqOnOWl9F_QOSnocpYQxRIYaxNo0U5hwObrYnQWovsceoe31xyoTOR41eDxteTXOwZC1DVFOpH1Kxxrw=w16383",
+    estimatedSize: toSize("large"),
+    region: "south-america",
+    tags: ["juggling", "circus", "flow", "workshops", "camping"],
+  },
+
+  // ── European Juggling & Flow ────────────────────────────────────────
+
+  {
+    name: "British Juggling Convention 2026",
+    organizationId: toOrgId("BJC"),
+    organization: "BJC",
+    location: {
+      city: "Penwortham",
+      state: "Preston",
+      country: "UK",
+      coordinates: { lat: 53.7439, lng: -2.7282 },
+    },
+    startDate: "2026-04-03",
+    endDate: "2026-04-09",
+    seekingInstructors: true,
+    seekingPerformers: true,
+    description:
+      "One of the biggest and longest-running juggling and circus conventions in the world. 5-7 day event attracting 750-1,000 participants with workshops, shows, trading, and open juggling.",
+    imageUrl: "https://www.bjc2026.co.uk/images/BJC2026Logo.png",
+    estimatedSize: toSize("large"),
+    region: "europe",
+    tags: ["juggling", "circus", "workshops", "performance"],
+  },
+  {
+    name: "FS-Con (Fire Spinner Convention) 2026",
+    organizationId: toOrgId("FS-Con"),
+    organization: "FS-Con",
+    location: {
+      city: "Kassel",
+      country: "Germany",
+      coordinates: { lat: 51.3127, lng: 9.4797 },
+    },
+    startDate: "2026-04-09",
+    endDate: "2026-04-12",
+    seekingInstructors: true,
+    seekingPerformers: true,
+    description:
+      "A dedicated fire spinner convention with large outdoor fire spinning area, free fuel and DJs. Triple gymnasium as rain backup. Camping and indoor accommodation available.",
+    websiteUrl: "https://www.fs-con.org",
+    imageUrl: "https://www.fs-con.org/wp-content/uploads/2023/01/fs_con-logo.png",
+    estimatedSize: toSize("medium"),
+    region: "europe",
+    tags: ["fire", "flow", "workshops", "camping"],
+  },
+  {
+    name: "Chateau Flow Retreat 2026",
+    organizationId: toOrgId("Flow Arts Retreats"),
+    organization: "Flow Arts Retreats",
+    location: {
+      city: "Dordogne",
+      country: "France",
+      coordinates: { lat: 44.8603, lng: 0.5731 },
+    },
+    startDate: "2026-09-10",
+    endDate: "2026-09-17",
+    seekingInstructors: true,
+    seekingPerformers: false,
+    description:
+      "Intimate flow arts retreat at a chateau in the south of France. Instruction in poi, hoop, contact staff, silk fans, double staff, juggling, and belly dance. Pools, nature, and dedicated practice spaces.",
+    websiteUrl: "https://flowartsretreat.com/castle/",
+    imageUrl: "https://flowartsretreats.com/wp-content/uploads/2025/05/Chateau-Flow-Retreat-LOGO-HEX-GOLD-FRANCE-1-1024x871.png",
+    estimatedSize: toSize("small"),
+    region: "europe",
+    tags: ["flow", "fire", "retreat", "workshops", "international"],
+  },
+
+  // ── Asia & Southeast Asia ───────────────────────────────────────────
+
+  {
+    name: "Fai Jai Flow Fest 2026",
+    organizationId: toOrgId("Fai Jai Flow Fest"),
+    organization: "Fai Jai Flow Fest",
+    location: {
+      venue: "Dreamscape",
+      city: "Pai",
+      state: "Mae Hong Son",
+      country: "Thailand",
+      coordinates: { lat: 19.3622, lng: 98.4408 },
+    },
+    startDate: "2026-02-02",
+    endDate: "2026-02-04",
+    seekingInstructors: true,
+    seekingPerformers: true,
+    description:
+      "A movement and flow arts festival in Pai, northern Thailand. International performer lineup across three shows: opening ceremony, non-fire gala, and fire gala. Workshops, flow jams, and community.",
+    websiteUrl: "https://www.faijaiflowfest.com",
+    imageUrl: "https://cdn.flow.page/images/9325315b-a621-4c0d-8c3a-3cc65d4bbebc-profile-picture?m=1729073342",
+    estimatedSize: toSize("small"),
+    region: "asia",
+    tags: ["flow", "fire", "circus", "movement", "workshops"],
+  },
+  {
+    name: "Pirates Retreat 2026",
+    organizationId: toOrgId("Pirates Retreat"),
+    organization: "Pirates Retreat",
+    location: {
+      city: "Gili Air",
+      state: "Lombok",
+      country: "Indonesia",
+      coordinates: { lat: -8.3547, lng: 116.0813 },
+    },
+    startDate: "2026-04-06",
+    endDate: "2026-04-10",
+    seekingInstructors: true,
+    seekingPerformers: false,
+    description:
+      "Five days of flow arts, circus training, and community on a private island. Daily workshops in yoga, acro, and professional spinning/circus arts from world-class instructors. Fire jams at night. All-inclusive.",
+    imageUrl: "https://ekekocrafts.com/cdn/shop/articles/0710082f5ab6972f7546f7a6937fb806_912x.jpg?v=1678109479",
+    estimatedSize: toSize("small"),
+    region: "asia",
+    tags: ["flow", "fire", "circus", "retreat", "island"],
+  },
+  {
+    name: "Japan Juggling Festival 2026",
+    organizationId: toOrgId("Japan Juggling Association"),
+    organization: "Japan Juggling Association",
+    location: {
+      city: "Shibuya",
+      state: "Tokyo",
+      country: "Japan",
+      coordinates: { lat: 35.6595, lng: 139.7004 },
+    },
+    startDate: "2026-10-10",
+    endDate: "2026-10-12",
+    seekingInstructors: false,
+    seekingPerformers: true,
+    description:
+      "The largest juggling convention in Japan, organized by the Japan Juggling Association since 1999. Workshops, shows, and competitions. Different city each year.",
+    websiteUrl: "https://www.juggling.jp/jjf/",
+    imageUrl: "https://www.juggling.jp/image/logo.gif",
+    estimatedSize: toSize("medium"),
+    region: "asia",
+    tags: ["juggling", "workshops", "performance", "competition"],
+  },
+
+  // ── Australia & New Zealand ─────────────────────────────────────────
+
+  {
+    name: "Spin Circus Festival 2026",
+    organizationId: toOrgId("Spin Circus"),
+    organization: "Spin Circus",
+    location: {
+      venue: "Camp Cooriemungle",
+      city: "Cooriemungle",
+      state: "Victoria",
+      country: "Australia",
+      coordinates: { lat: -38.6233, lng: 143.2806 },
+    },
+    startDate: "2026-01-08",
+    endDate: "2026-01-12",
+    seekingInstructors: true,
+    seekingPerformers: true,
+    description:
+      "Australia's premier fire spinning and circus festival. Three full days of workshops in acrobatics, aerials, Cyr wheel, fire spinning, poi, staff, juggling, hoops, dance, fire eating, rope dart, and more. Epic Saturday fire jam night.",
+    websiteUrl: "https://www.spincircus.com",
+    imageUrl: "https://images.squarespace-cdn.com/content/v1/59564ce0cd0f684157c12974/1613265199413-FNOHFCAHC7Y8JIP5809G/Spin%2BCircus%2BSplash%2Bwith%2Btext.jpg",
+    estimatedSize: toSize("medium"),
+    region: "oceania",
+    tags: ["flow", "fire", "circus", "juggling", "workshops", "camping"],
   },
 ];

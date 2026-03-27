@@ -652,6 +652,9 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
   calculateStateForBeat(beat: number): void {
     if (!this.state) return;
 
+    // Sync currentStep so the live UI (GlyphOverlay, step numbers) tracks the beat
+    this.syncCurrentStep(beat);
+
     // Calculate state for the given beat
     this.animationEngine.calculateState(beat);
 

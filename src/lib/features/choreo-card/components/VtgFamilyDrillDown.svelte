@@ -16,6 +16,7 @@
     showWord?: boolean;
     includeStartPosition?: boolean;
     onSelectSequence: (sequence: SequenceData) => void;
+    onContextMenu?: (x: number, y: number, rerender: () => void) => void;
     onBack: () => void;
   }
 
@@ -28,6 +29,7 @@
     showWord = true,
     includeStartPosition = true,
     onSelectSequence,
+    onContextMenu,
     onBack,
   }: Props = $props();
 
@@ -60,6 +62,30 @@
         loading = false;
       });
   });
+
+  function detectOrientation(node: HTMLElement) {
+    const check = () => {
+      const img = node.querySelector("img") as HTMLImageElement | null;
+      if (img && img.naturalWidth > 0 && img.naturalHeight > 0) {
+        const aspect = img.naturalWidth / img.naturalHeight;
+        if (aspect > 1.3) {
+          node.classList.add("landscape");
+        } else {
+          node.classList.remove("landscape");
+        }
+      }
+    };
+    check();
+    const observer = new MutationObserver(check);
+    observer.observe(node, { childList: true, subtree: true });
+    node.addEventListener("load", check, true);
+    return {
+      destroy() {
+        observer.disconnect();
+        node.removeEventListener("load", check, true);
+      },
+    };
+  }
 
   function turnsLabel(turns: number): string {
     if (turns === 0) return "0 turns";
@@ -102,15 +128,19 @@
         </h3>
         <div class="sequence-grid">
           {#each group.sequences as sequence (sequence.id ?? sequence.word)}
-            <ChoreoCard
-              {sequence}
-              {handPointsVisible}
-              {showGrid}
-              {showTKA}
-              {showWord}
-              {includeStartPosition}
-              onSelect={() => onSelectSequence(sequence)}
-            />
+            <div class="playing-card" use:detectOrientation>
+              <ChoreoCard
+                {sequence}
+                printMode={true}
+                {handPointsVisible}
+                {showGrid}
+                {showTKA}
+                {showWord}
+                {includeStartPosition}
+                onSelect={() => onSelectSequence(sequence)}
+                {onContextMenu}
+              />
+            </div>
           {/each}
         </div>
       </section>
@@ -201,8 +231,27 @@
 
   .sequence-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: 12px;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 16px;
+  }
+
+  .playing-card {
+    aspect-ratio: 5 / 7;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3), 0 1px 4px rgba(0, 0, 0, 0.15);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    background: #ffffff;
+  }
+
+  .playing-card.landscape {
+    aspect-ratio: 7 / 5;
+  }
+
+  .playing-card :global(> button) {
+    width: 100%;
+    height: 100%;
+    border-radius: 0;
   }
 
   @media (max-width: 480px) {

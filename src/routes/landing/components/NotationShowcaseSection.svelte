@@ -5,7 +5,14 @@
    * The live animation demo with notation alongside it.
    * Framed educationally, not as a feature pitch.
    */
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import LazyLandingDemo from "./LazyLandingDemo.svelte";
+
+  interface Props {
+    onPropTypeChange?: (propType: PropType) => void;
+  }
+
+  let { onPropTypeChange }: Props = $props();
 </script>
 
 <section class="notation-showcase" id="notation">
@@ -14,7 +21,7 @@
     <h2>The notation animates</h2>
 
     <div class="demo-wrapper">
-      <LazyLandingDemo />
+      <LazyLandingDemo {onPropTypeChange} />
     </div>
 
     <p class="demo-caption">

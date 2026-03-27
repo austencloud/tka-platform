@@ -1,0 +1,561 @@
+/**
+ * Mandala Prototype — Proof of concept
+ *
+ * Replicates the animation engine's interpolation math headlessly
+ * to compute prop tip paths for a LOOP sequence, then outputs SVG.
+ *
+ * Usage: node scripts/mandala-prototype.cjs
+ */
+
+const fs = require("fs");
+
+// ─── Math constants (from math-constants.ts) ───────────────────────────────
+
+const PI = Math.PI;
+const TWO_PI = 2 * PI;
+const HALF_PI = PI / 2;
+
+// Grid location angles — canvas Y-axis points DOWN
+// E=0, S=90, W=180, N=270(-90)
+const LOCATION_ANGLES = {
+  e: 0,
+  s: HALF_PI,
+  w: PI,
+  n: -HALF_PI,
+  ne: -HALF_PI / 2,
+  se: HALF_PI / 2,
+  sw: PI - HALF_PI / 2,
+  nw: PI + HALF_PI / 2,
+  center: 0,
+};
+
+// ─── Angle math (from AngleCalculator.ts) ──────────────────────────────────
+
+function normalizeAnglePositive(angle) {
+  const norm = angle % TWO_PI;
+  return norm < 0 ? norm + TWO_PI : norm;
+}
+
+function normalizeAngleSigned(angle) {
+  const norm = normalizeAnglePositive(angle);
+  return norm > PI ? norm - TWO_PI : norm;
+}
+
+function lerpAngle(a, b, t) {
+  const d = normalizeAngleSigned(b - a);
+  return normalizeAnglePositive(a + d * t);
+}
+
+// Orientation → staff angle
+function mapOrientationToAngle(ori, centerPathAngle) {
+  switch (ori) {
+    case "in":
+      return normalizeAnglePositive(centerPathAngle + PI);
+    case "out":
+      return normalizeAnglePositive(centerPathAngle);
+    case "clock":
+      return normalizeAnglePositive(centerPathAngle + HALF_PI);
+    case "counter":
+      return normalizeAnglePositive(centerPathAngle - HALF_PI);
+    default:
+      return 0;
+  }
+}
+
+// ─── Endpoint calculation (from EndpointCalculator.ts) ─────────────────────
+
+function calculateMotionEndpoints(motion) {
+  const startCenterAngle = LOCATION_ANGLES[motion.startLoc] ?? 0;
+  const targetCenterAngle = LOCATION_ANGLES[motion.endLoc] ?? 0;
+
+  // Default orientation: "out" if not specified
+  const startOri = motion.startOrientation || "out";
+  const endOri = motion.endOrientation || "out";
+
+  const startStaffAngle = mapOrientationToAngle(startOri, startCenterAngle);
+  const targetStaffAngleFromOri = mapOrientationToAngle(endOri, targetCenterAngle);
+
+  const turns = motion.turns ?? 0;
+  const dir = motion.rotDir === "ccw" ? -1 : 1;
+
+  let staffRotationDelta;
+
+  switch (motion.motionType) {
+    case "pro": {
+      const centerMovement = normalizeAngleSigned(targetCenterAngle - startCenterAngle);
+      const propRotation = dir * turns * PI;
+      staffRotationDelta = centerMovement + propRotation; // PRO: same direction
+      break;
+    }
+    case "anti": {
+      const centerMovement = normalizeAngleSigned(targetCenterAngle - startCenterAngle);
+      const propRotation = dir * turns * PI;
+      staffRotationDelta = -centerMovement + propRotation; // ANTI: opposite direction
+      break;
+    }
+    case "static": {
+      if (turns > 0 && motion.rotDir !== "noRotation") {
+        staffRotationDelta = dir * turns * PI;
+      } else {
+        staffRotationDelta = normalizeAngleSigned(targetStaffAngleFromOri - startStaffAngle);
+      }
+      break;
+    }
+    case "dash": {
+      if (turns > 0) {
+        staffRotationDelta = dir * turns * PI;
+      } else {
+        staffRotationDelta = normalizeAngleSigned(targetStaffAngleFromOri - startStaffAngle);
+      }
+      break;
+    }
+    case "float": {
+      staffRotationDelta = 0;
+      break;
+    }
+    default:
+      staffRotationDelta = 0;
+  }
+
+  return {
+    startCenterAngle,
+    targetCenterAngle,
+    startStaffAngle,
+    staffRotationDelta,
+    motionType: motion.motionType,
+  };
+}
+
+// ─── Interpolation (from PropInterpolator.ts) ──────────────────────────────
+
+function interpolate(endpoints, t) {
+  const { startCenterAngle, targetCenterAngle, startStaffAngle, staffRotationDelta, motionType } = endpoints;
+
+  const staffAngle = normalizeAnglePositive(startStaffAngle + staffRotationDelta * t);
+
+  if (motionType === "dash") {
+    // Cartesian lerp (straight line through center)
+    const startX = Math.cos(startCenterAngle);
+    const startY = Math.sin(startCenterAngle);
+    const endX = Math.cos(targetCenterAngle);
+    const endY = Math.sin(targetCenterAngle);
+    const x = startX + (endX - startX) * t;
+    const y = startY + (endY - startY) * t;
+    return { x, y, staffAngle, isDash: true };
+  }
+
+  if (motionType === "static" || motionType === "float") {
+    // Hand stays at start position
+    const x = Math.cos(startCenterAngle);
+    const y = Math.sin(startCenterAngle);
+    return { x, y, staffAngle, isDash: false };
+  }
+
+  // Arc interpolation (PRO, ANTI)
+  const centerAngle = lerpAngle(startCenterAngle, targetCenterAngle, t);
+  const x = Math.cos(centerAngle);
+  const y = Math.sin(centerAngle);
+  return { x, y, staffAngle, isDash: false };
+}
+
+// ─── Tip position (from FireTipTracker / PropPositionCalculator) ───────────
+
+function computeTipPosition(handPos, staffAngle, tipOffset, gridRadius) {
+  const handX = handPos.x * gridRadius;
+  const handY = handPos.y * gridRadius;
+
+  const cosA = Math.cos(staffAngle);
+  const sinA = Math.sin(staffAngle);
+
+  // Scale tip offsets so the max tip extent fits within gridRadius.
+  // Staff tips are at dx=+-150 in a 950px viewbox where grid radius=150.
+  // For the mandala, we want hand path at gridRadius and tips proportional.
+  // Max tip reach from prop center = 150 (staff half-length).
+  // Scale so tip reach = gridRadius * tipRatio, where tipRatio preserves
+  // the visual proportion (staff length = 2x grid radius in the real engine).
+  const tipScale = gridRadius / 150;
+  const dx = tipOffset.dx * tipScale;
+  const dy = tipOffset.dy * tipScale;
+
+  const tipX = handX + (dx * cosA - dy * sinA);
+  const tipY = handY + (dx * sinA + dy * cosA);
+
+  return { x: tipX, y: tipY };
+}
+
+// ─── Mandala generator ─────────────────────────────────────────────────────
+
+function generateMandalaPath(beats, color, tipOffset, gridRadius, samplesPerBeat) {
+  const points = [];
+
+  for (const beat of beats) {
+    const motion = color === "blue"
+      ? {
+          motionType: beat.blueMotionType,
+          rotDir: beat.blueRotDir,
+          startLoc: beat.blueStartLoc,
+          endLoc: beat.blueEndLoc,
+          startOrientation: beat.blueStartOri || "out",
+          endOrientation: beat.blueEndOri || "out",
+          turns: beat.blueTurns ?? 0,
+        }
+      : {
+          motionType: beat.redMotionType,
+          rotDir: beat.redRotDir,
+          startLoc: beat.redStartLoc,
+          endLoc: beat.redEndLoc,
+          startOrientation: beat.redStartOri || "out",
+          endOrientation: beat.redEndOri || "out",
+          turns: beat.redTurns ?? 0,
+        };
+
+    // Skip float (no movement, no rotation = single point)
+    if (motion.motionType === "float") continue;
+
+    const endpoints = calculateMotionEndpoints(motion);
+
+    // Adaptive sampling: more samples for high-turn motions
+    const turnCount = motion.turns ?? 0;
+    const samples = Math.max(samplesPerBeat, samplesPerBeat * Math.ceil(Math.max(1, turnCount)));
+
+    for (let i = 0; i <= samples; i++) {
+      const t = i / samples;
+      const handPos = interpolate(endpoints, t);
+      const tip = computeTipPosition(handPos, handPos.staffAngle, tipOffset, gridRadius);
+      points.push(tip);
+    }
+  }
+
+  return points;
+}
+
+function pointsToSVGPath(points) {
+  if (points.length < 2) return "";
+
+  let d = `M ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)}`;
+
+  // Use Catmull-Rom to Bezier conversion for smooth curves
+  for (let i = 0; i < points.length - 1; i++) {
+    const p0 = points[Math.max(0, i - 1)];
+    const p1 = points[i];
+    const p2 = points[Math.min(points.length - 1, i + 1)];
+    const p3 = points[Math.min(points.length - 1, i + 2)];
+
+    // Catmull-Rom to cubic bezier control points
+    const cp1x = p1.x + (p2.x - p0.x) / 6;
+    const cp1y = p1.y + (p2.y - p0.y) / 6;
+    const cp2x = p2.x - (p3.x - p1.x) / 6;
+    const cp2y = p2.y - (p3.y - p1.y) / 6;
+
+    d += ` C ${cp1x.toFixed(2)} ${cp1y.toFixed(2)}, ${cp2x.toFixed(2)} ${cp2y.toFixed(2)}, ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`;
+  }
+
+  return d;
+}
+
+// ─── Generate SVG ──────────────────────────────────────────────────────────
+
+function generateMandalaSVG(sequence, options = {}) {
+  const {
+    size = 400,
+    gridRadius = 150,
+    strokeWidth = 1.5,
+    samplesPerBeat = 64,
+    showGridDots = true,
+    style = "stroke", // "stroke" or "filled"
+  } = options;
+
+  // Staff tip offsets (bilateral: 2 tips)
+  const tipLeft = { dx: -150, dy: 0 };
+  const tipRight = { dx: 150, dy: 0 };
+
+  const beats = sequence.beats;
+
+  // Generate paths for each hand + tip combination
+  const blueLeftPoints = generateMandalaPath(beats, "blue", tipLeft, gridRadius, samplesPerBeat);
+  const blueRightPoints = generateMandalaPath(beats, "blue", tipRight, gridRadius, samplesPerBeat);
+  const redLeftPoints = generateMandalaPath(beats, "red", tipLeft, gridRadius, samplesPerBeat);
+  const redRightPoints = generateMandalaPath(beats, "red", tipRight, gridRadius, samplesPerBeat);
+
+  const blueLeftD = pointsToSVGPath(blueLeftPoints);
+  const blueRightD = pointsToSVGPath(blueRightPoints);
+  const redLeftD = pointsToSVGPath(redLeftPoints);
+  const redRightD = pointsToSVGPath(redRightPoints);
+
+  const center = size / 2;
+
+  // Grid dot positions
+  const gridDots = showGridDots ? Object.entries(LOCATION_ANGLES).map(([loc, angle]) => {
+    if (loc === "center") return { x: 0, y: 0 };
+    return { x: Math.cos(angle) * gridRadius, y: Math.sin(angle) * gridRadius };
+  }) : [];
+
+  const blueColor = "#2e3192";
+  const redColor = "#ed1c24";
+
+  const fillBlue = style === "filled" ? `fill="rgba(46,49,146,0.15)" stroke="${blueColor}"` : `fill="none" stroke="${blueColor}"`;
+  const fillRed = style === "filled" ? `fill="rgba(237,28,36,0.15)" stroke="${redColor}"` : `fill="none" stroke="${redColor}"`;
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+  <rect width="${size}" height="${size}" fill="#0d0d1a" rx="8"/>
+  <g transform="translate(${center}, ${center})">
+    ${gridDots.map(d => `<circle cx="${d.x.toFixed(1)}" cy="${d.y.toFixed(1)}" r="3" fill="rgba(255,255,255,0.3)"/>`).join("\n    ")}
+    ${blueLeftD ? `<path d="${blueLeftD}" ${fillBlue} stroke-width="${strokeWidth}" stroke-linecap="round"/>` : ""}
+    ${blueRightD ? `<path d="${blueRightD}" ${fillBlue} stroke-width="${strokeWidth}" stroke-linecap="round"/>` : ""}
+    ${redLeftD ? `<path d="${redLeftD}" ${fillRed} stroke-width="${strokeWidth}" stroke-linecap="round"/>` : ""}
+    ${redRightD ? `<path d="${redRightD}" ${fillRed} stroke-width="${strokeWidth}" stroke-linecap="round"/>` : ""}
+  </g>
+</svg>`;
+}
+
+// ─── Expand seed beats into full LOOP cycle ────────────────────────────────
+
+// For a halved rotated LOOP: rotate all grid locations by 180° for the second half
+const ROTATION_180 = {
+  n: "s", s: "n", e: "w", w: "e",
+  ne: "sw", sw: "ne", nw: "se", se: "nw",
+  center: "center",
+};
+
+function rotateLoc(loc) {
+  return ROTATION_180[loc] || loc;
+}
+
+function expandHalvedRotatedLoop(seedBeats) {
+  // Full cycle = seed beats + same beats with all locations rotated 180°
+  const rotatedBeats = seedBeats.map(beat => ({
+    ...beat,
+    blueStartLoc: rotateLoc(beat.blueStartLoc),
+    blueEndLoc: rotateLoc(beat.blueEndLoc),
+    redStartLoc: rotateLoc(beat.redStartLoc),
+    redEndLoc: rotateLoc(beat.redEndLoc),
+  }));
+  return [...seedBeats, ...rotatedBeats];
+}
+
+// ─── Generate decomposed SVG (blue only, red only, or combined) ───────────
+
+function generateDecomposedSVG(sequence, options = {}) {
+  const {
+    size = 500,
+    gridRadius = 80,
+    strokeWidth = 2,
+    samplesPerBeat = 64,
+    showGridDots = true,
+    show = "both", // "blue", "red", or "both"
+  } = options;
+
+  const tipLeft = { dx: -150, dy: 0 };
+  const tipRight = { dx: 150, dy: 0 };
+  const beats = sequence.beats;
+  const center = size / 2;
+
+  const blueColor = "#2e3192";
+  const redColor = "#ed1c24";
+
+  // Generate paths
+  const paths = [];
+
+  if (show === "blue" || show === "both") {
+    const blueLeftPoints = generateMandalaPath(beats, "blue", tipLeft, gridRadius, samplesPerBeat);
+    const blueRightPoints = generateMandalaPath(beats, "blue", tipRight, gridRadius, samplesPerBeat);
+    const blueLeftD = pointsToSVGPath(blueLeftPoints);
+    const blueRightD = pointsToSVGPath(blueRightPoints);
+    if (blueLeftD) paths.push(`<path d="${blueLeftD}" fill="none" stroke="${blueColor}" stroke-width="${strokeWidth}" stroke-linecap="round" opacity="0.9"/>`);
+    if (blueRightD) paths.push(`<path d="${blueRightD}" fill="none" stroke="${blueColor}" stroke-width="${strokeWidth}" stroke-linecap="round" opacity="0.9"/>`);
+  }
+
+  if (show === "red" || show === "both") {
+    const redLeftPoints = generateMandalaPath(beats, "red", tipLeft, gridRadius, samplesPerBeat);
+    const redRightPoints = generateMandalaPath(beats, "red", tipRight, gridRadius, samplesPerBeat);
+    const redLeftD = pointsToSVGPath(redLeftPoints);
+    const redRightD = pointsToSVGPath(redRightPoints);
+    if (redLeftD) paths.push(`<path d="${redLeftD}" fill="none" stroke="${redColor}" stroke-width="${strokeWidth}" stroke-linecap="round" opacity="0.9"/>`);
+    if (redRightD) paths.push(`<path d="${redRightD}" fill="none" stroke="${redColor}" stroke-width="${strokeWidth}" stroke-linecap="round" opacity="0.9"/>`);
+  }
+
+  // Grid dots
+  const gridDots = showGridDots ? Object.entries(LOCATION_ANGLES).map(([loc, angle]) => {
+    if (loc === "center") return { x: 0, y: 0 };
+    return { x: Math.cos(angle) * gridRadius, y: Math.sin(angle) * gridRadius };
+  }) : [];
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+  <rect width="${size}" height="${size}" fill="#0d0d1a" rx="12"/>
+  <g transform="translate(${center}, ${center})">
+    ${gridDots.map(d => `<circle cx="${d.x.toFixed(1)}" cy="${d.y.toFixed(1)}" r="3.5" fill="rgba(255,255,255,0.25)"/>`).join("\n    ")}
+    ${paths.join("\n    ")}
+  </g>
+</svg>`;
+}
+
+// ─── Main ──────────────────────────────────────────────────────────────────
+
+// ─── Diagnostic: per-beat path with junction analysis ──────────────────────
+
+function generateBeatByBeatSVG(sequence, color, options = {}) {
+  const {
+    size = 500,
+    gridRadius = 80,
+    strokeWidth = 2,
+    samplesPerBeat = 64,
+    showGridDots = true,
+  } = options;
+
+  const tipLeft = { dx: -150, dy: 0 };
+  const tipRight = { dx: 150, dy: 0 };
+  const beats = sequence.beats;
+  const center = size / 2;
+
+  // Beat colors for visual distinction
+  const beatColors = ["#4488ff", "#22cc88", "#ff8844", "#cc44ff", "#ffcc22", "#44cccc"];
+
+  const paths = [];
+  const junctionPoints = [];
+  const diagnostics = [];
+
+  for (let b = 0; b < beats.length; b++) {
+    const beat = beats[b];
+    const motion = color === "blue"
+      ? {
+          motionType: beat.blueMotionType,
+          rotDir: beat.blueRotDir,
+          startLoc: beat.blueStartLoc,
+          endLoc: beat.blueEndLoc,
+          startOrientation: beat.blueStartOri || "out",
+          endOrientation: beat.blueEndOri || "out",
+          turns: beat.blueTurns ?? 0,
+        }
+      : {
+          motionType: beat.redMotionType,
+          rotDir: beat.redRotDir,
+          startLoc: beat.redStartLoc,
+          endLoc: beat.redEndLoc,
+          startOrientation: beat.redStartOri || "out",
+          endOrientation: beat.redEndOri || "out",
+          turns: beat.redTurns ?? 0,
+        };
+
+    if (motion.motionType === "float") continue;
+
+    const endpoints = calculateMotionEndpoints(motion);
+    const samples = Math.max(samplesPerBeat, samplesPerBeat * Math.ceil(Math.max(1, motion.turns ?? 0)));
+
+    const beatPoints = [];
+    for (let i = 0; i <= samples; i++) {
+      const t = i / samples;
+      const handPos = interpolate(endpoints, t);
+      // Right tip only for clarity
+      const tip = computeTipPosition(handPos, handPos.staffAngle, tipRight, gridRadius);
+      beatPoints.push(tip);
+    }
+
+    // Diagnostic: log start/end of each beat
+    const startPt = beatPoints[0];
+    const endPt = beatPoints[beatPoints.length - 1];
+    diagnostics.push({
+      beat: b + 1,
+      letter: beat.letter,
+      motionType: motion.motionType,
+      startLoc: motion.startLoc,
+      endLoc: motion.endLoc,
+      startTip: { x: startPt.x.toFixed(2), y: startPt.y.toFixed(2) },
+      endTip: { x: endPt.x.toFixed(2), y: endPt.y.toFixed(2) },
+      startStaffAngle: (endpoints.startStaffAngle * 180 / PI).toFixed(1),
+      endStaffAngle: ((endpoints.startStaffAngle + endpoints.staffRotationDelta) * 180 / PI).toFixed(1),
+    });
+
+    // Junction: mark start point of each beat
+    junctionPoints.push(startPt);
+
+    const d = pointsToSVGPath(beatPoints);
+    const col = beatColors[b % beatColors.length];
+    if (d) paths.push(`<path d="${d}" fill="none" stroke="${col}" stroke-width="${strokeWidth}" stroke-linecap="round" opacity="0.9"/>`);
+  }
+
+  // Grid dots
+  const gridDots = showGridDots ? Object.entries(LOCATION_ANGLES).map(([loc, angle]) => {
+    if (loc === "center") return { x: 0, y: 0 };
+    return { x: Math.cos(angle) * gridRadius, y: Math.sin(angle) * gridRadius };
+  }) : [];
+
+  // Junction markers (red circles)
+  const junctionMarkers = junctionPoints.map(p =>
+    `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="4" fill="#ff3333" stroke="white" stroke-width="1"/>`
+  );
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+  <rect width="${size}" height="${size}" fill="#0d0d1a" rx="12"/>
+  <g transform="translate(${center}, ${center})">
+    ${gridDots.map(d => `<circle cx="${d.x.toFixed(1)}" cy="${d.y.toFixed(1)}" r="3.5" fill="rgba(255,255,255,0.25)"/>`).join("\n    ")}
+    ${paths.join("\n    ")}
+    ${junctionMarkers.join("\n    ")}
+  </g>
+</svg>`;
+
+  return { svg, diagnostics };
+}
+
+// ─── Main ──────────────────────────────────────────────────────────────────
+
+const deckData = JSON.parse(fs.readFileSync("decks/strict_rotated_halved_L1_3beat.json", "utf-8"));
+const sequences = deckData.families[0].sequences;
+const rawSeq = sequences[0];
+
+// Expand the 3-beat seed into the full 6-beat LOOP cycle
+const fullBeats = expandHalvedRotatedLoop(rawSeq.beats);
+const seq = { ...rawSeq, beats: fullBeats };
+
+console.log(`Generating decomposed mandala for: ${seq.seedWord} (${seq.handPathFamily})`);
+console.log(`Seed: ${rawSeq.beats.length} beats → Full loop: ${fullBeats.length} beats`);
+
+const svgOpts = { size: 500, gridRadius: 80, strokeWidth: 2, samplesPerBeat: 64, showGridDots: true };
+
+const blueSvg = generateDecomposedSVG(seq, { ...svgOpts, show: "blue" });
+const redSvg = generateDecomposedSVG(seq, { ...svgOpts, show: "red" });
+const combinedSvg = generateDecomposedSVG(seq, { ...svgOpts, show: "both" });
+
+const html = `<!DOCTYPE html>
+<html>
+<head>
+<style>
+  body { background: #111; color: #eee; font-family: system-ui; padding: 40px 20px; margin: 0; }
+  h1 { text-align: center; color: #ccc; font-size: 28px; margin-bottom: 4px; }
+  .subtitle { text-align: center; color: #666; margin-bottom: 40px; font-size: 15px; }
+  .equation { display: flex; align-items: center; justify-content: center; gap: 24px; flex-wrap: wrap; }
+  .panel { text-align: center; }
+  .panel h3 { margin: 12px 0 4px; font-size: 18px; }
+  .panel p { margin: 0; color: #666; font-size: 13px; }
+  .blue-label { color: #4466cc; }
+  .red-label { color: #cc4444; }
+  .combined-label { color: #ccc; }
+  .operator { font-size: 48px; color: #444; font-weight: 300; line-height: 500px; }
+</style>
+</head>
+<body>
+<h1>${seq.seedWord}</h1>
+<p class="subtitle">${seq.handPathFamily} &mdash; prop tip paths through one LOOP cycle</p>
+<div class="equation">
+  <div class="panel">
+    ${blueSvg}
+    <h3 class="blue-label">Blue Hand</h3>
+    <p>Left + right staff tips</p>
+  </div>
+  <div class="operator">+</div>
+  <div class="panel">
+    ${redSvg}
+    <h3 class="red-label">Red Hand</h3>
+    <p>Left + right staff tips</p>
+  </div>
+  <div class="operator">=</div>
+  <div class="panel">
+    ${combinedSvg}
+    <h3 class="combined-label">Mandala</h3>
+    <p>Both hands overlaid</p>
+  </div>
+</div>
+</body>
+</html>`;
+
+fs.writeFileSync("scripts/mandala-output.html", html);
+console.log("\nOutput written to scripts/mandala-output.html");

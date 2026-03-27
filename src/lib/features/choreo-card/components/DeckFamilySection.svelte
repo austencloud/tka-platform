@@ -95,7 +95,7 @@
       word: handPathId,
       steps,
       thumbnails: [],
-      metadata: { handPathId },
+      metadata: { handPathId, isHandPathVisualization: true },
     });
   }
 

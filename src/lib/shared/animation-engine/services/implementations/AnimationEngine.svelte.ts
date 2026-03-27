@@ -951,6 +951,12 @@ export class AnimationEngine {
         this.orchestrator.initializeWithDomainData(props.sequenceData);
         this.lastSequenceContentHash = newHash;
 
+        // Flush stale trail data so old ring buffer points don't draw
+        // artifact lines to the new prop positions. Use clearBuffers()
+        // instead of clear() — props are already positioned correctly by
+        // the orchestrator above, so no warmup delay needed.
+        this.trailOverlay?.clearBuffers();
+
         // Trigger path cache precomputation for smooth trails during stutters
         // This pre-computes the entire animation at 120fps so the render loop can
         // retrieve smooth trail points even when frames are dropped

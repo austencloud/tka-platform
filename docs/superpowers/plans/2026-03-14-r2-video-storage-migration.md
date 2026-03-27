@@ -23,8 +23,8 @@
 [
   {
     "AllowedOrigins": [
-      "https://tkascribe.com",
-      "https://www.tkascribe.com",
+      "https://tkaflowarts.com",
+      "https://www.tkaflowarts.com",
       "http://localhost:5173",
       "http://localhost:5174"
     ],

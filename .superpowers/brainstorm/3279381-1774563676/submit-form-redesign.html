@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Submit Festival Form Redesign</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0d0d1a;
+    color: #e8e8f0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    padding: 24px;
+    min-height: 100vh;
+  }
+
+  .header {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+  .header h1 { font-size: 1.5rem; color: #a78bfa; margin-bottom: 6px; }
+  .header p { color: rgba(255,255,255,0.4); font-size: 0.85rem; }
+
+  .comparison {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    max-width: 1400px;
+    margin: 0 auto 50px;
+  }
+
+  .panel { border-radius: 16px; }
+  .panel h2 {
+    font-size: 0.8rem; text-transform: uppercase; letter-spacing: 2px;
+    padding: 10px 16px; background: rgba(255,255,255,0.03);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    border-radius: 16px 16px 0 0;
+  }
+  .panel.before h2 { color: #ef4444; }
+  .panel.after h2 { color: #22c55e; }
+
+  /* === BEFORE: Generic form === */
+  .old-modal {
+    background: rgba(18,18,28,0.98);
+    border: 1.5px solid rgba(255,255,255,0.1);
+    border-radius: 0 0 16px 16px;
+    padding: 0;
+    max-width: 520px;
+    margin: 0 auto;
+  }
+  .old-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .old-header .icon {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: #22c55e; display: flex; align-items: center;
+    justify-content: center; color: white; font-size: 0.75rem;
+  }
+  .old-header h3 { font-size: 0.9rem; font-weight: 600; }
+  .old-body {
+    padding: 16px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .old-field label {
+    display: block; font-size: 0.65rem; color: rgba(255,255,255,0.5);
+    margin-bottom: 3px;
+  }
+  .old-field label .req { color: #ef4444; }
+  .old-field label .opt { color: rgba(255,255,255,0.3); font-style: italic; }
+  .old-field input, .old-field textarea {
+    width: 100%; background: rgba(18,18,28,0.98);
+    border: 1px solid rgba(255,255,255,0.15); border-radius: 5px;
+    color: rgba(255,255,255,0.7); padding: 6px 8px; font-size: 0.7rem;
+    font-family: inherit;
+  }
+  .old-field textarea { resize: vertical; }
+  .old-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .old-toggles {
+    display: flex; gap: 8px; margin-top: 4px;
+  }
+  .old-toggle {
+    padding: 5px 12px; border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 6px; background: none; color: rgba(255,255,255,0.5);
+    font-size: 0.6rem; cursor: pointer; display: flex; align-items: center; gap: 5px;
+  }
+  .old-footer {
+    display: flex; justify-content: center; gap: 10px;
+    padding: 14px 16px; border-top: 1px solid rgba(255,255,255,0.08);
+  }
+  .old-footer .cancel {
+    padding: 6px 16px; background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15); border-radius: 8px;
+    color: rgba(255,255,255,0.7); font-size: 0.7rem; cursor: pointer;
+  }
+  .old-footer .submit {
+    padding: 6px 16px; background: #3b82f6; border: none;
+    border-radius: 8px; color: white; font-size: 0.7rem; cursor: pointer;
+    display: flex; align-items: center; gap: 5px;
+  }
+
+  /* === AFTER: Modern stepped form === */
+  .new-modal {
+    background: rgba(18,18,28,0.98);
+    border: 1.5px solid rgba(255,255,255,0.1);
+    border-radius: 0 0 16px 16px;
+    max-width: 520px;
+    margin: 0 auto;
+  }
+  .new-header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 16px 20px;
+    background: linear-gradient(180deg, rgba(34,197,94,0.08) 0%, transparent 100%);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .new-header .icon {
+    width: 40px; height: 40px; border-radius: 12px;
+    background: #22c55e; display: flex; align-items: center;
+    justify-content: center; color: white; font-size: 0.9rem;
+    box-shadow: 0 2px 8px rgba(34,197,94,0.3);
+  }
+  .new-header h3 { font-size: 1rem; font-weight: 600; }
+  .new-header .subtitle { font-size: 0.7rem; color: rgba(255,255,255,0.4); margin-top: 2px; }
+
+  .new-body {
+    padding: 20px;
+  }
+
+  /* Section grouping */
+  .form-section {
+    margin-bottom: 20px;
+  }
+  .form-section:last-child { margin-bottom: 0; }
+  .section-label {
+    font-size: 0.6rem; text-transform: uppercase; letter-spacing: 1.5px;
+    color: rgba(255,255,255,0.3); margin-bottom: 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .section-label::after {
+    content: ''; flex: 1; height: 1px;
+    background: rgba(255,255,255,0.06);
+  }
+
+  /* Modern field */
+  .new-field {
+    margin-bottom: 12px;
+  }
+  .new-field:last-child { margin-bottom: 0; }
+  .new-field label {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 0.7rem; color: rgba(255,255,255,0.6);
+    margin-bottom: 5px; font-weight: 500;
+  }
+  .new-field label .icon-sm {
+    color: rgba(255,255,255,0.25); font-size: 0.6rem; width: 14px; text-align: center;
+  }
+  .new-field label .req { color: rgba(34,197,94,0.6); font-size: 0.5rem; }
+  .new-field label .opt { color: rgba(255,255,255,0.2); font-size: 0.55rem; font-weight: 400; }
+  .new-field input, .new-field textarea {
+    width: 100%;
+    background: rgba(255,255,255,0.03);
+    border: 1.5px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    color: rgba(255,255,255,0.85);
+    padding: 10px 14px;
+    font-size: 0.75rem;
+    font-family: inherit;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .new-field input:focus, .new-field textarea:focus {
+    outline: none;
+    border-color: rgba(34,197,94,0.4);
+    box-shadow: 0 0 0 3px rgba(34,197,94,0.08);
+  }
+  .new-field input::placeholder, .new-field textarea::placeholder {
+    color: rgba(255,255,255,0.2);
+  }
+  .new-field textarea { resize: vertical; min-height: 72px; }
+  .new-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  /* Seeking toggles - modern chips */
+  .new-toggles {
+    display: flex; gap: 8px; flex-wrap: wrap;
+  }
+  .new-toggle {
+    padding: 8px 16px;
+    border: 1.5px solid rgba(255,255,255,0.08);
+    border-radius: 20px;
+    background: rgba(255,255,255,0.02);
+    color: rgba(255,255,255,0.5);
+    font-size: 0.7rem;
+    cursor: pointer;
+    display: flex; align-items: center; gap: 7px;
+    transition: all 0.15s;
+  }
+  .new-toggle.active {
+    background: rgba(34,197,94,0.1);
+    border-color: rgba(34,197,94,0.35);
+    color: #22c55e;
+  }
+  .new-toggle i { font-size: 0.65rem; }
+
+  /* Footer */
+  .new-footer {
+    display: flex; justify-content: center; gap: 10px;
+    padding: 16px 20px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+  }
+  .new-cancel {
+    padding: 10px 24px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    color: rgba(255,255,255,0.7);
+    font-size: 0.75rem; cursor: pointer;
+  }
+  .new-submit {
+    padding: 10px 24px;
+    background: #22c55e;
+    border: none; border-radius: 10px;
+    color: white; font-size: 0.75rem; font-weight: 600;
+    cursor: pointer;
+    display: flex; align-items: center; gap: 6px;
+    box-shadow: 0 2px 8px rgba(34,197,94,0.3);
+  }
+
+  /* Notes */
+  .notes {
+    max-width: 1400px; margin: 0 auto;
+    padding: 24px; background: rgba(167,139,250,0.05);
+    border: 1px solid rgba(167,139,250,0.15); border-radius: 16px;
+  }
+  .notes h2 { font-size: 1rem; color: #a78bfa; margin-bottom: 16px; }
+  .notes-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 14px;
+  }
+  .note {
+    padding: 12px; background: rgba(255,255,255,0.03);
+    border-radius: 8px; border-left: 3px solid rgba(167,139,250,0.4);
+  }
+  .note h4 { font-size: 0.75rem; color: #c4b5fd; margin-bottom: 4px; }
+  .note p { font-size: 0.65rem; color: rgba(255,255,255,0.5); line-height: 1.5; }
+  .old { text-decoration: line-through; color: rgba(239,68,68,0.5); }
+  .new { color: rgba(34,197,94,0.8); font-weight: 500; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Submit Festival Form Redesign</h1>
+  <p>From generic HTML form to polished 2026 experience</p>
+</div>
+
+<div class="comparison">
+  <!-- BEFORE -->
+  <div class="panel before">
+    <h2>Before — Generic Form</h2>
+    <div class="old-modal">
+      <div class="old-header">
+        <div class="icon"><i class="fas fa-paper-plane"></i></div>
+        <h3>Submit a festival</h3>
+      </div>
+      <div class="old-body">
+        <div class="old-field">
+          <label>Festival name <span class="req">*</span></label>
+          <input placeholder="e.g. Fire Groove Festival">
+        </div>
+        <div class="old-row">
+          <div class="old-field">
+            <label>City <span class="req">*</span></label>
+            <input placeholder="Portland">
+          </div>
+          <div class="old-field">
+            <label>Country <span class="req">*</span></label>
+            <input placeholder="USA">
+          </div>
+        </div>
+        <div class="old-field">
+          <label>Venue <span class="opt">(optional)</span></label>
+          <input placeholder="e.g. Oaks Park">
+        </div>
+        <div class="old-row">
+          <div class="old-field">
+            <label>Start date <span class="req">*</span></label>
+            <input type="date" style="color: rgba(255,255,255,0.4);">
+          </div>
+          <div class="old-field">
+            <label>End date <span class="req">*</span></label>
+            <input type="date" style="color: rgba(255,255,255,0.4);">
+          </div>
+        </div>
+        <div class="old-field">
+          <label>Website <span class="req">*</span></label>
+          <input placeholder="https://myfestival.com">
+        </div>
+        <div class="old-field">
+          <label>Application URL <span class="opt">(optional)</span></label>
+          <input placeholder="https://myfestival.com/apply">
+        </div>
+        <div class="old-field">
+          <label>Description <span class="opt">(optional)</span></label>
+          <textarea rows="2" placeholder="A few sentences about the event..."></textarea>
+        </div>
+        <div class="old-field">
+          <label>Tags <span class="opt">(optional, comma-separated)</span></label>
+          <input placeholder="fire, flow arts, poi, staves">
+        </div>
+        <div class="old-toggles">
+          <button class="old-toggle"><i class="fas fa-chalkboard-teacher"></i> Seeking instructors</button>
+          <button class="old-toggle"><i class="fas fa-fire"></i> Seeking performers</button>
+        </div>
+      </div>
+      <div class="old-footer">
+        <button class="cancel">Cancel</button>
+        <button class="submit"><i class="fas fa-paper-plane"></i> Submit festival</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- AFTER -->
+  <div class="panel after">
+    <h2>After — Polished & Grouped</h2>
+    <div class="new-modal">
+      <div class="new-header">
+        <div class="icon"><i class="fas fa-paper-plane"></i></div>
+        <div>
+          <h3>Submit a festival</h3>
+          <div class="subtitle">Help grow the flow arts directory</div>
+        </div>
+      </div>
+      <div class="new-body">
+
+        <!-- Basics section -->
+        <div class="form-section">
+          <div class="section-label">Basics</div>
+          <div class="new-field">
+            <label>
+              <span class="icon-sm"><i class="fas fa-fire-alt"></i></span>
+              Festival name <span class="req">*</span>
+            </label>
+            <input placeholder="e.g. Fire Groove Festival">
+          </div>
+          <div class="new-row">
+            <div class="new-field">
+              <label>
+                <span class="icon-sm"><i class="fas fa-map-marker-alt"></i></span>
+                City <span class="req">*</span>
+              </label>
+              <input placeholder="Portland">
+            </div>
+            <div class="new-field">
+              <label>
+                <span class="icon-sm"><i class="fas fa-flag"></i></span>
+                Country <span class="req">*</span>
+              </label>
+              <input placeholder="USA">
+            </div>
+          </div>
+          <div class="new-field">
+            <label>
+              <span class="icon-sm"><i class="fas fa-building"></i></span>
+              Venue <span class="opt">optional</span>
+            </label>
+            <input placeholder="e.g. Oaks Park">
+          </div>
+        </div>
+
+        <!-- Dates section -->
+        <div class="form-section">
+          <div class="section-label">Dates</div>
+          <div class="new-row">
+            <div class="new-field">
+              <label>
+                <span class="icon-sm"><i class="fas fa-calendar-alt"></i></span>
+                Start date <span class="req">*</span>
+              </label>
+              <input type="date" style="color: rgba(255,255,255,0.4);">
+            </div>
+            <div class="new-field">
+              <label>
+                <span class="icon-sm"><i class="fas fa-calendar-check"></i></span>
+                End date <span class="req">*</span>
+              </label>
+              <input type="date" style="color: rgba(255,255,255,0.4);">
+            </div>
+          </div>
+        </div>
+
+        <!-- Links section -->
+        <div class="form-section">
+          <div class="section-label">Links</div>
+          <div class="new-field">
+            <label>
+              <span class="icon-sm"><i class="fas fa-globe"></i></span>
+              Website <span class="req">*</span>
+            </label>
+            <input placeholder="https://myfestival.com">
+          </div>
+          <div class="new-field">
+            <label>
+              <span class="icon-sm"><i class="fas fa-clipboard-list"></i></span>
+              Application URL <span class="opt">optional</span>
+            </label>
+            <input placeholder="https://myfestival.com/apply">
+          </div>
+        </div>
+
+        <!-- Details section -->
+        <div class="form-section">
+          <div class="section-label">Details</div>
+          <div class="new-field">
+            <label>
+              <span class="icon-sm"><i class="fas fa-align-left"></i></span>
+              Description <span class="opt">optional</span>
+            </label>
+            <textarea placeholder="A few sentences about the event, vibe, what to expect..."></textarea>
+          </div>
+          <div class="new-field">
+            <label>
+              <span class="icon-sm"><i class="fas fa-tags"></i></span>
+              Tags <span class="opt">optional, comma-separated</span>
+            </label>
+            <input placeholder="fire, flow arts, poi, staves">
+          </div>
+          <div style="margin-top: 12px;">
+            <div class="new-toggles">
+              <button class="new-toggle active"><i class="fas fa-chalkboard-teacher"></i> Seeking instructors</button>
+              <button class="new-toggle"><i class="fas fa-fire"></i> Seeking performers</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="new-footer">
+        <button class="new-cancel">Cancel</button>
+        <button class="new-submit"><i class="fas fa-paper-plane"></i> Submit festival</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Notes -->
+<div class="notes">
+  <h2>What Changed</h2>
+  <div class="notes-grid">
+    <div class="note">
+      <h4>Grouped Sections</h4>
+      <p><span class="old">Flat list of 10+ fields</span><br>
+      <span class="new">4 logical groups: Basics, Dates, Links, Details</span><br>
+      Section dividers with labels break up the wall of inputs.</p>
+    </div>
+    <div class="note">
+      <h4>Field Icons</h4>
+      <p><span class="old">Plain text labels</span><br>
+      <span class="new">Small icons next to each label</span><br>
+      Visual anchors that help scan the form faster.</p>
+    </div>
+    <div class="note">
+      <h4>Input Styling</h4>
+      <p><span class="old">Sharp 5px radius, thin borders</span><br>
+      <span class="new">10px radius, subtle fill, green focus glow</span><br>
+      Softer, more modern. Focus ring matches the green accent.</p>
+    </div>
+    <div class="note">
+      <h4>Toggle Chips</h4>
+      <p><span class="old">Boxy toggle buttons</span><br>
+      <span class="new">Rounded pill toggles with green accent when active</span><br>
+      More tactile, clearer active state.</p>
+    </div>
+    <div class="note">
+      <h4>Header Subtitle</h4>
+      <p><span class="new">"Help grow the flow arts directory"</span><br>
+      Gives the form purpose. Not just a title.</p>
+    </div>
+    <div class="note">
+      <h4>Submit Button</h4>
+      <p><span class="old">Blue generic button</span><br>
+      <span class="new">Green with glow shadow, matches the header accent</span><br>
+      Consistent color story throughout the modal.</p>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

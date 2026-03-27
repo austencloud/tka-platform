@@ -5,7 +5,7 @@
  * Connects UnifiedCameraController to gallery's player position tracking.
  */
 
-import type { AvatarState } from "$lib/shared/3d-core/camera/types";
+import type { AvatarState } from "$lib/shared/3d-animation/camera/types";
 import type { GalleryState } from "./gallery-state.svelte";
 
 /**

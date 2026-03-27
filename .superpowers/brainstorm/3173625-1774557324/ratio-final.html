@@ -1,0 +1,141 @@
+<h2>VTG Ratio View — Final Layout (2-3-3)</h2>
+<p class="subtitle">0:1 (float) shares the top row with 1:1. Both are "zero" cases.</p>
+
+<style>
+  .toggle-bar {
+    display: flex; gap: 8px; padding: 0 0 24px 0; justify-content: center;
+  }
+  .toggle-btn {
+    padding: 6px 20px; border-radius: 20px; font-size: 13px; cursor: pointer;
+    transition: all 0.2s; border: 1px solid;
+  }
+  .toggle-btn.active { background: rgba(99,183,205,0.2); border-color: rgba(99,183,205,0.4); color: #63b7cd; }
+  .toggle-btn.inactive { background: transparent; border-color: rgba(255,255,255,0.15); color: rgba(255,255,255,0.5); }
+
+  .ratio-layout { max-width: 960px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+  .ratio-row { display: flex; gap: 20px; justify-content: center; }
+  .ratio-row .family-card { flex: 0 0 calc(33.333% - 14px); max-width: calc(33.333% - 14px); }
+
+  .family-card {
+    border-radius: 14px; overflow: hidden; cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.3s;
+  }
+  .family-card:hover { transform: translateY(-4px); }
+
+  .ratio-inner { padding: 24px 20px 16px; text-align: center; }
+  .ratio-big { font-size: 32px; font-weight: 800; margin-bottom: 4px; font-variant-numeric: tabular-nums; }
+  .ratio-turns { font-size: 13px; color: rgba(255,255,255,0.45); margin-bottom: 16px; }
+  .card-footer { padding: 10px 20px 14px; display: flex; justify-content: space-between; font-size: 12px; color: rgba(255,255,255,0.5); }
+
+  .level-dot {
+    width: 28px; height: 28px; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-family: Cambria, serif; font-weight: bold; font-size: 14px;
+    color: #000; border: 1px solid #000; margin: 0 auto 12px;
+  }
+  .level-1 { background: radial-gradient(ellipse at top left, rgb(224,242,254) 0%, rgb(198,232,253) 30%, rgb(164,218,250) 70%, rgb(130,202,245) 100%); }
+  .level-2 { background: linear-gradient(135deg, rgb(170,170,170) 0%, rgb(210,210,210) 15%, rgb(120,120,120) 30%, rgb(180,180,180) 40%, rgb(190,190,190) 55%, rgb(130,130,130) 75%, rgb(110,110,110) 100%); }
+  .level-3 { background: radial-gradient(ellipse at top left, rgb(254,240,138) 0%, rgb(253,224,71) 20%, rgb(250,204,21) 40%, rgb(234,179,8) 60%, rgb(202,138,4) 80%, rgb(161,98,7) 100%); }
+
+  .card-ratio-l1 { border: 1.5px solid rgba(130,202,245,0.35); background: linear-gradient(160deg, rgba(130,202,245,0.12) 0%, rgba(99,183,205,0.15) 50%, rgba(130,202,245,0.06) 100%); box-shadow: 0 4px 24px rgba(130,202,245,0.12), inset 0 1px 0 rgba(130,202,245,0.1); }
+  .card-ratio-l1:hover { box-shadow: 0 8px 32px rgba(130,202,245,0.25); }
+  .card-ratio-l1 .ratio-big { color: #82caf5; }
+  .card-ratio-l1 .card-footer { border-top: 1px solid rgba(130,202,245,0.12); }
+
+  .card-ratio-l2 { border: 1.5px solid rgba(170,170,170,0.3); background: linear-gradient(160deg, rgba(170,170,170,0.1) 0%, rgba(130,130,130,0.14) 50%, rgba(190,190,190,0.06) 100%); box-shadow: 0 4px 24px rgba(170,170,170,0.1), inset 0 1px 0 rgba(170,170,170,0.08); }
+  .card-ratio-l2:hover { box-shadow: 0 8px 32px rgba(170,170,170,0.2); }
+  .card-ratio-l2 .ratio-big { color: #bebebe; }
+  .card-ratio-l2 .card-footer { border-top: 1px solid rgba(170,170,170,0.1); }
+
+  .card-ratio-l3 { border: 1.5px solid rgba(250,204,21,0.3); background: linear-gradient(160deg, rgba(254,240,138,0.1) 0%, rgba(234,179,8,0.12) 50%, rgba(202,138,4,0.06) 100%); box-shadow: 0 4px 24px rgba(250,204,21,0.1), inset 0 1px 0 rgba(250,204,21,0.08); }
+  .card-ratio-l3:hover { box-shadow: 0 8px 32px rgba(250,204,21,0.2); }
+  .card-ratio-l3 .ratio-big { color: #f0c830; }
+  .card-ratio-l3 .card-footer { border-top: 1px solid rgba(250,204,21,0.1); }
+</style>
+
+<div class="toggle-bar">
+  <button class="toggle-btn active">Ratio</button>
+  <button class="toggle-btn inactive">Family</button>
+</div>
+
+<div class="ratio-layout">
+  <!-- Row 1: 1:1 (L1) + 0:1 (L3 float) — the two "zero" cases -->
+  <div class="ratio-row">
+    <div class="family-card card-ratio-l1">
+      <div class="ratio-inner">
+        <div class="level-dot level-1">1</div>
+        <div class="ratio-big">1:1</div>
+        <div class="ratio-turns">0 turns</div>
+      </div>
+      <div class="card-footer"><span>6 families</span><span>19 sequences</span></div>
+    </div>
+    <div class="family-card card-ratio-l3">
+      <div class="ratio-inner">
+        <div class="level-dot level-3">3</div>
+        <div class="ratio-big">0:1</div>
+        <div class="ratio-turns">float</div>
+      </div>
+      <div class="card-footer"><span>6 families</span><span>19 sequences</span></div>
+    </div>
+  </div>
+
+  <!-- Row 2: L2 — whole turns -->
+  <div class="ratio-row">
+    <div class="family-card card-ratio-l2">
+      <div class="ratio-inner">
+        <div class="level-dot level-2">2</div>
+        <div class="ratio-big">3:1</div>
+        <div class="ratio-turns">1 turn</div>
+      </div>
+      <div class="card-footer"><span>6 families</span><span>19 sequences</span></div>
+    </div>
+    <div class="family-card card-ratio-l2">
+      <div class="ratio-inner">
+        <div class="level-dot level-2">2</div>
+        <div class="ratio-big">5:1</div>
+        <div class="ratio-turns">2 turns</div>
+      </div>
+      <div class="card-footer"><span>6 families</span><span>19 sequences</span></div>
+    </div>
+    <div class="family-card card-ratio-l2">
+      <div class="ratio-inner">
+        <div class="level-dot level-2">2</div>
+        <div class="ratio-big">7:1</div>
+        <div class="ratio-turns">3 turns</div>
+      </div>
+      <div class="card-footer"><span>6 families</span><span>19 sequences</span></div>
+    </div>
+  </div>
+
+  <!-- Row 3: L3 — half turns -->
+  <div class="ratio-row">
+    <div class="family-card card-ratio-l3">
+      <div class="ratio-inner">
+        <div class="level-dot level-3">3</div>
+        <div class="ratio-big">2:1</div>
+        <div class="ratio-turns">0.5 turns</div>
+      </div>
+      <div class="card-footer"><span>6 families</span><span>19 sequences</span></div>
+    </div>
+    <div class="family-card card-ratio-l3">
+      <div class="ratio-inner">
+        <div class="level-dot level-3">3</div>
+        <div class="ratio-big">4:1</div>
+        <div class="ratio-turns">1.5 turns</div>
+      </div>
+      <div class="card-footer"><span>6 families</span><span>19 sequences</span></div>
+    </div>
+    <div class="family-card card-ratio-l3">
+      <div class="ratio-inner">
+        <div class="level-dot level-3">3</div>
+        <div class="ratio-big">6:1</div>
+        <div class="ratio-turns">2.5 turns</div>
+      </div>
+      <div class="card-footer"><span>6 families</span><span>19 sequences</span></div>
+    </div>
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top:24px;max-width:700px;margin-left:auto;margin-right:auto;">
+  2-3-3 layout. Top row pairs the two "zero" cases: 1:1 (0 turns, L1 blue) and 0:1 (float, L3 gold). The level badges tell the story — same row, different levels, different reasons. Middle row: whole turns (L2 silver). Bottom row: half turns (L3 gold).
+</p>

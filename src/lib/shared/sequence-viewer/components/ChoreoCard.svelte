@@ -580,7 +580,7 @@
 
   const badgeSize = $derived(scaledHeaderHeight * 0.9);
   const badgePadding = $derived(scaledHeaderHeight * 0.05);
-  const badgeNumberFontSize = $derived(Math.round(badgeSize * 0.5625));
+  const badgeNumberFontSize = $derived(Math.round(badgeSize * 0.65));
 
   // Word title font size: shrinks for longer words so the full title fits
   // between the difficulty badge and LOOP icon without clipping.
@@ -2132,7 +2132,6 @@
     justify-content: center;
     font-family: Cambria, serif;
     font-weight: bold;
-    padding-bottom: 1px;
     flex-shrink: 0;
   }
 

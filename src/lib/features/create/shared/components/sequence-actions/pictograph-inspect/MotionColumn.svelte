@@ -6,7 +6,10 @@
    * Reusable component for the pictograph inspector modal.
    */
   import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+  import type { PipelineDiagnostics } from "$lib/shared/pictograph/arrow/positioning/calculation/domain/PipelineDiagnostics";
+  import type { StepData } from "../../../domain/models/StepData";
   import { formatMotionText } from "./formatters";
+  import PipelineTraceSection from "./PipelineTraceSection.svelte";
 
   type MotionColor = "blue" | "red";
 
@@ -16,10 +19,19 @@
     rotationOverride: { hasOverride: boolean } | null;
     copiedSection: string | null;
     onCopy: (text: string, section: string) => void;
+    diagnostics: PipelineDiagnostics | null;
+    stepData: StepData;
+    onDiagnosticsChanged?: () => void;
   }
 
-  let { color, motion, rotationOverride, copiedSection, onCopy }: Props =
+  let { color, motion, rotationOverride, copiedSection, onCopy, diagnostics, stepData, onDiagnosticsChanged }: Props =
     $props();
+
+  let pipelineTraceRef: PipelineTraceSection | undefined = $state();
+
+  export function handleWASDKeydown(event: KeyboardEvent): boolean {
+    return pipelineTraceRef?.handleKeydown(event) ?? false;
+  }
 
   const colorClass = $derived(color === "blue" ? "blue-column" : "red-column");
   const dotClass = $derived(color === "blue" ? "blue" : "red");
@@ -121,6 +133,14 @@
         {/if}
       </div>
     </div>
+
+    <PipelineTraceSection
+      {diagnostics}
+      {color}
+      {stepData}
+      {onDiagnosticsChanged}
+      bind:this={pipelineTraceRef}
+    />
   {:else}
     <div class="empty-state">// no {color} motion</div>
   {/if}

@@ -1,0 +1,369 @@
+<h2>VTG Deck Browser — Both Views</h2>
+<p class="subtitle">Family is the default/primary view. Ratio gets the same card treatment.</p>
+
+<style>
+  .toggle-bar {
+    display: flex;
+    gap: 8px;
+    padding: 0 0 24px 0;
+    justify-content: center;
+  }
+  .toggle-btn {
+    padding: 6px 20px;
+    border-radius: 20px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid;
+  }
+  .toggle-btn.active {
+    background: rgba(99,183,205,0.2);
+    border-color: rgba(99,183,205,0.4);
+    color: #63b7cd;
+  }
+  .toggle-btn.inactive {
+    background: transparent;
+    border-color: rgba(255,255,255,0.15);
+    color: rgba(255,255,255,0.5);
+  }
+
+  .view-label {
+    text-align: center;
+    font-size: 13px;
+    color: rgba(255,255,255,0.35);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 16px;
+  }
+
+  .family-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    max-width: 960px;
+    margin: 0 auto;
+  }
+
+  .family-card {
+    border-radius: 14px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.3s;
+  }
+  .family-card:hover {
+    transform: translateY(-4px);
+  }
+
+  .card-inner {
+    padding: 28px 20px 16px;
+    text-align: center;
+  }
+
+  .icon-wrap {
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .icon-wrap svg {
+    width: 48px;
+    height: 48px;
+    filter: drop-shadow(0 2px 6px rgba(0,0,0,0.3));
+  }
+
+  .family-name {
+    font-size: 17px;
+    font-weight: 700;
+    margin-bottom: 3px;
+  }
+  .element-name {
+    font-size: 12px;
+    color: rgba(255,255,255,0.4);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 16px;
+  }
+
+  .card-footer {
+    padding: 10px 20px 14px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: rgba(255,255,255,0.5);
+  }
+
+  /* Ratio card styles */
+  .ratio-name {
+    font-size: 28px;
+    font-weight: 800;
+    margin-bottom: 4px;
+    font-variant-numeric: tabular-nums;
+  }
+  .ratio-subtitle {
+    font-size: 12px;
+    color: rgba(255,255,255,0.4);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 16px;
+  }
+  .ratio-inner {
+    padding: 28px 20px 16px;
+    text-align: center;
+  }
+  .turns-label {
+    font-size: 11px;
+    color: rgba(255,255,255,0.3);
+    margin-top: 4px;
+  }
+  .level-dot {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: radial-gradient(ellipse at top left, rgb(224,242,254), rgb(130,202,245));
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: Cambria, serif;
+    font-weight: bold;
+    font-size: 14px;
+    color: #000;
+    border: 1px solid #000;
+    margin: 0 auto 14px;
+  }
+
+  /* Water */
+  .card-water { border: 1.5px solid rgba(99,183,205,0.35); background: linear-gradient(160deg, rgba(99,183,205,0.14) 0%, rgba(0,56,121,0.18) 50%, rgba(8,76,161,0.1) 100%); box-shadow: 0 4px 24px rgba(99,183,205,0.12), inset 0 1px 0 rgba(99,183,205,0.1); }
+  .card-water:hover { box-shadow: 0 8px 32px rgba(99,183,205,0.25); }
+  .card-water .family-name { color: #63b7cd; }
+  .card-water .card-footer { border-top: 1px solid rgba(99,183,205,0.15); }
+
+  /* Earth */
+  .card-earth { border: 1.5px solid rgba(117,168,116,0.35); background: linear-gradient(160deg, rgba(117,168,116,0.14) 0%, rgba(40,91,46,0.18) 50%, rgba(102,183,100,0.08) 100%); box-shadow: 0 4px 24px rgba(117,168,116,0.12), inset 0 1px 0 rgba(117,168,116,0.1); }
+  .card-earth:hover { box-shadow: 0 8px 32px rgba(117,168,116,0.25); }
+  .card-earth .family-name { color: #75A874; }
+  .card-earth .card-footer { border-top: 1px solid rgba(117,168,116,0.15); }
+
+  /* Sun */
+  .card-sun { border: 1.5px solid rgba(255,222,23,0.3); background: linear-gradient(160deg, rgba(255,222,23,0.1) 0%, rgba(200,160,0,0.14) 50%, rgba(255,222,23,0.06) 100%); box-shadow: 0 4px 24px rgba(255,222,23,0.1), inset 0 1px 0 rgba(255,222,23,0.08); }
+  .card-sun:hover { box-shadow: 0 8px 32px rgba(255,222,23,0.2); }
+  .card-sun .family-name { color: #ffde17; }
+  .card-sun .card-footer { border-top: 1px solid rgba(255,222,23,0.12); }
+
+  /* Fire */
+  .card-fire { border: 1.5px solid rgba(242,103,58,0.35); background: linear-gradient(160deg, rgba(242,103,58,0.14) 0%, rgba(180,50,20,0.18) 50%, rgba(244,234,2,0.06) 100%); box-shadow: 0 4px 24px rgba(242,103,58,0.12), inset 0 1px 0 rgba(242,103,58,0.1); }
+  .card-fire:hover { box-shadow: 0 8px 32px rgba(242,103,58,0.25); }
+  .card-fire .family-name { color: #f2673a; }
+  .card-fire .card-footer { border-top: 1px solid rgba(242,103,58,0.15); }
+
+  /* Air */
+  .card-air { border: 1.5px solid rgba(120,183,227,0.35); background: linear-gradient(160deg, rgba(120,183,227,0.14) 0%, rgba(60,120,180,0.18) 50%, rgba(185,214,239,0.08) 100%); box-shadow: 0 4px 24px rgba(120,183,227,0.12), inset 0 1px 0 rgba(120,183,227,0.1); }
+  .card-air:hover { box-shadow: 0 8px 32px rgba(120,183,227,0.25); }
+  .card-air .family-name { color: #78b7e3; }
+  .card-air .card-footer { border-top: 1px solid rgba(120,183,227,0.15); }
+
+  /* Moon */
+  .card-moon { border: 1.5px solid rgba(106,65,153,0.4); background: linear-gradient(160deg, rgba(106,65,153,0.16) 0%, rgba(60,30,100,0.2) 50%, rgba(155,111,207,0.08) 100%); box-shadow: 0 4px 24px rgba(106,65,153,0.15), inset 0 1px 0 rgba(106,65,153,0.12); }
+  .card-moon:hover { box-shadow: 0 8px 32px rgba(106,65,153,0.3); }
+  .card-moon .family-name { color: #9b6fcf; }
+  .card-moon .card-footer { border-top: 1px solid rgba(106,65,153,0.15); }
+
+  /* Ratio theme — warm amber gradient */
+  .card-ratio {
+    border: 1.5px solid rgba(232,160,53,0.3);
+    background: linear-gradient(160deg, rgba(232,160,53,0.1) 0%, rgba(180,100,20,0.14) 50%, rgba(232,160,53,0.06) 100%);
+    box-shadow: 0 4px 24px rgba(232,160,53,0.1), inset 0 1px 0 rgba(232,160,53,0.08);
+  }
+  .card-ratio:hover { box-shadow: 0 8px 32px rgba(232,160,53,0.22); }
+  .card-ratio .ratio-name { color: #e8a035; }
+  .card-ratio .card-footer { border-top: 1px solid rgba(232,160,53,0.12); }
+
+  .divider {
+    border: none;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    margin: 48px auto;
+    max-width: 960px;
+  }
+</style>
+
+<!-- ===== FAMILY VIEW (PRIMARY) ===== -->
+<div class="view-label">Primary view — Family</div>
+
+<div class="toggle-bar">
+  <button class="toggle-btn inactive">Ratio</button>
+  <button class="toggle-btn active">Family</button>
+</div>
+
+<div class="family-grid">
+  <!-- Water / Split-Same -->
+  <div class="family-card card-water">
+    <div class="card-inner">
+      <div class="icon-wrap">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 84.2 125">
+          <path fill="#084ca1" d="m84.2,84.05c0,28.3-27.69,40.95-42.1,40.95S0,112.35,0,84.05,21.82,52.61,42.1,0c20.28,52.61,42.1,55.74,42.1,84.05Z"/>
+          <path fill="#63b7cd" d="m11.9,94.61s1.58-7.46,11.67-19.14,15.21-13.24,20.91-20.89c6.8-9.14,2.4-27.97-2.25-36.31-15.51,42.09-20.41,30.51-29.92,51.03-5.34,11.52-.41,25.31-.41,25.31Z"/>
+          <path fill="#003879" d="m76.82,72.46s2.68,18.46-6.74,31.1c-9.42,12.64-29.98,12.31-29.98,12.31,0,0,10.79-5.17,21.93-18.76,11.14-13.59,14.78-24.65,14.78-24.65Z"/>
+        </svg>
+      </div>
+      <div class="family-name">Split-Same</div>
+      <div class="element-name">Water</div>
+    </div>
+    <div class="card-footer"><span>7 ratios</span><span>21 sequences</span></div>
+  </div>
+
+  <!-- Earth / Tog-Same -->
+  <div class="family-card card-earth">
+    <div class="card-inner">
+      <div class="icon-wrap">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 90.3 125">
+          <path fill="#75A874" d="M46,1.7C19.9,11.6,1.7,34.1,1.7,60.3c0,25.2,16.9,47,41.4,57.4c0,2.4,0,4.7,0,6.6h5.9c0-2,0-4.2,0-6.6c24.5-10.4,41.4-32.2,41.4-57.4C90.3,34.1,72.1,11.6,46,1.7z"/>
+          <path fill="#7BC17A" d="M0,58.6c0,26.2,18.2,48.7,44.3,58.6V0C18.2,9.9,0,32.4,0,58.6z"/>
+          <path fill="#66B764" d="M88.6,58.6c0,26.2-18.2,48.7-44.3,58.6V0C70.4,9.9,88.6,32.4,88.6,58.6z"/>
+          <g fill="#285B2E"><path d="M47.2,124.9c0.1-0.5,0.1-1.2,0-2.3c0-28.2-2.3-107.4-2.9-110.6c-0.6,3.1-2.9,82.3-2.9,110.6c0,1.6,0,2.3,0,2.3z"/><path d="M45.4,54.9l-1.3-1.3c-5.8-5.8-23.2-21-24.1-21.4c0.4,0.9,15.6,18.3,21.4,24.2l1.3,1.3z"/><path d="M45.4,84.4l-1.3-1.3c-5.8-5.8-23.2-21-24.1-21.4c0.4,0.9,15.6,18.3,21.4,24.2l1.3,1.3z"/><path d="M43.7,54.9l1.3-1.3c5.8-5.8,23.2-21,24.1-21.4c-0.4,0.9-15.6,18.3-21.4,24.2l-1.3,1.3z"/><path d="M43.7,84.4l1.3-1.3c5.8-5.8,23.2-21,24.1-21.4c-0.4,0.9-15.6,18.3-21.4,24.2l-1.3,1.3z"/></g>
+        </svg>
+      </div>
+      <div class="family-name">Tog-Same</div>
+      <div class="element-name">Earth</div>
+    </div>
+    <div class="card-footer"><span>7 ratios</span><span>21 sequences</span></div>
+  </div>
+
+  <!-- Sun / Quarter-Same -->
+  <div class="family-card card-sun">
+    <div class="card-inner">
+      <div class="icon-wrap">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 132.65 132.65">
+          <circle fill="#ffde17" cx="66.33" cy="66.33" r="38.03"/><polygon fill="#ffde17" points="66.33 0 56.74 24.25 75.92 24.25"/><polygon fill="#ffde17" points="113.23 19.43 89.3 29.79 102.86 43.35"/><polygon fill="#ffde17" points="132.65 66.33 108.41 56.74 108.41 75.92"/><polygon fill="#ffde17" points="113.23 113.23 102.86 89.3 89.3 102.86"/><polygon fill="#ffde17" points="66.33 132.65 75.92 108.41 56.74 108.41"/><polygon fill="#ffde17" points="19.43 113.23 43.35 102.86 29.79 89.3"/><polygon fill="#ffde17" points="0 66.33 24.25 75.92 24.25 56.74"/><polygon fill="#ffde17" points="19.43 19.43 29.79 43.35 43.35 29.79"/>
+        </svg>
+      </div>
+      <div class="family-name">Quarter-Same</div>
+      <div class="element-name">Sun</div>
+    </div>
+    <div class="card-footer"><span>7 ratios</span><span>28 sequences</span></div>
+  </div>
+
+  <!-- Fire / Split-Opp -->
+  <div class="family-card card-fire">
+    <div class="card-inner">
+      <div class="icon-wrap">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 97.54 125">
+          <path fill="#f2673a" fill-rule="evenodd" d="m97.54,79.19c0,19.84-13.58,36.71-32.51,42.97-.41.16-.82.25-1.23.41.16-.08.33-.25.49-.33,11.19-8.23,19.67-28.81-2.8-36.8,7.82,16.63-9.47,21.07-16.13,10.62-4.69-7.33-3.87-20.25-2.47-26.75,2.47-11.44,5.84-20.66,5.27-34.16-2.14,24.12-45.6,54.49-8.81,88.49.16.16.25.25.41.41-.58-.08-1.15-.16-1.73-.33C16.22,119.19,0,101,0,79.27c0-12.68,4.53-22.39,14.49-30.95-.91,2.72-1.98,5.43-2.8,8.15-4.94,16.79,9.38,21.65,7.98,5.76C16.63,27.74,53.09,19.84,43.38,0c15.72,7.57,28.23,19.1,25.35,37.45-.74,4.86-3.79,13.91-2.39,18.44,2.63,8.4,16.63,8.31,17.12-7.33,5.52,4.45,10.04,11.52,12.18,18.11,1.4,3.7,1.89,7.9,1.89,12.51Z"/>
+          <path fill="#f4ea02" fill-rule="evenodd" d="m63.79,122.57c-8.4,2.63-15.72,3.13-24.04,1.48-37.37-34,5.93-64.78,8.4-88.9.58,13.5-2.8,22.72-5.27,34.16-1.4,6.5-2.22,19.43,2.47,26.75,6.67,10.45,23.95,6.01,16.13-10.62,22.97,7.82,13.91,28.81,2.3,37.12Z"/>
+        </svg>
+      </div>
+      <div class="family-name">Split-Opp</div>
+      <div class="element-name">Fire</div>
+    </div>
+    <div class="card-footer"><span>7 ratios</span><span>21 sequences</span></div>
+  </div>
+
+  <!-- Air / Tog-Opp -->
+  <div class="family-card card-air">
+    <div class="card-inner">
+      <div class="icon-wrap">
+        <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 127.18 112.5">
+          <defs><linearGradient id="a1" x1="0" y1="44" x2="125" y2="44" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#dce9f7"/><stop offset=".5" stop-color="#b9d6ef"/><stop offset="1" stop-color="#78b7e3"/></linearGradient><linearGradient id="a2" x1="30" y1="83" x2="127" y2="83" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#dce9f7"/><stop offset=".5" stop-color="#b9d6ef"/><stop offset="1" stop-color="#78b7e3"/></linearGradient><linearGradient id="a3" x1="19" y1="96" x2="127" y2="96" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#dce9f7"/><stop offset=".5" stop-color="#b9d6ef"/><stop offset="1" stop-color="#78b7e3"/></linearGradient></defs>
+          <path fill="url(#a1)" d="m38.19.19c-.32.07-1.32.32-2.19.53-4.16.99-9.01,5.08-11.33,9.59-2.14,4.09-2.99,7.54-3.01,12.09,0,6.27,1.9,11.63,5.82,16.36,2.17,2.61,2.17,3.24,0,.81-1.58-1.76-6.76-2.61-10.65-1.76C6.88,39.95,0,50.04,0,62.34c.03,7.76,2.43,14.45,6.97,19.42,2.22,2.43,6.15,4.97,9.1,5.85,2.87.85,7.73.56,10.54-.67,11.41-4.9,15.22-21.86,7.11-31.51-6.82-8.07-17.88-5.01-20.13,5.53-1.14,5.32.91,10.89,4.92,13.47,1.08.71,1.7.81,4.18.81,3.48,0,4.71-.6,6.99-3.49.88-1.06,1.2-1.34.82-.71-.94,1.62-2.6,3.31-4.13,4.16-1.9,1.06-5.77,1.02-7.7-.04-2.05-1.13-4.13-3.63-5.09-6.2-.73-1.87-.85-2.61-.82-5.18,0-4.27.79-6.52,3.31-9.55s4.33-3.91,8.02-4.12c4.04-.21,7.2,1.16,9.98,4.41,4.92,5.68,6.15,14.07,3.25,22.38-.18.49.23.39,1.96-.56,5.97-3.31,11.15-4.79,16.92-4.79,6.76,0,9.69.81,24.29,6.7,13.14,5.29,15.13,5.82,22.1,5.82,5.88,0,7.7-.39,11.47-2.47,3.86-2.12,6.26-4.55,8.31-8.35,3.07-5.75,3.1-12.83.09-18.15-1.23-2.15-2.43-3.31-4.74-4.62-1.4-.81-2.08-.95-4.16-.95s-2.75.14-4.13.92c-3.34,1.9-5.3,5.39-5.33,9.48,0,1.3.18,2.82.44,3.56.61,1.73,2.17,3.77,3.48,4.58,1.52.92,4.27.92,5.79-.04,3.6-2.19,3.75-7.9.26-9.48-1.17-.53-2.49-.11-3.51,1.16-.7.81-.82.92-.56.28.85-1.94,3.37-2.71,4.95-1.52,2.49,1.9,2.84,5.89.7,8.6-1.29,1.66-2.75,2.36-4.77,2.36-2.31,0-3.95-.92-5.53-3.07-3.63-5.01-2.14-12.8,3.16-16.39,1.67-1.16,2.84-2.89,4.1-6.2.61-1.62.79-2.68.88-5.39.2-5.32-.76-8.57-3.63-12.27-5.24-6.8-14.05-6.91-19.61-.25-1,1.2-2.08,2.82-2.43,3.67-.91,2.12-1,1.83-.18-.6,2.78-8.18.47-17.27-5.53-21.96-3.57-2.78-8.66-3.6-12.55-2.01-5.09,2.04-9.42,8.11-10.04,13.92-.2,2.01-.7,2.61-.7.88,0-1.59-1.11-5.64-2.25-8.14-1.61-3.49-4.98-7.33-8.02-9.09-3.37-1.97-7.7-2.96-10.36-2.33Z"/>
+          <path fill="url(#a2)" d="m126.43,69.25c-.97,2.75-3.57,7.23-5.59,9.73-5.77,7.01-13.96,10.43-22.07,9.17-3.92-.63-8.31-2.12-15.8-5.32-13.4-5.78-16.45-6.7-23.44-6.94-3.89-.14-5.65-.07-7.9.39-5.27,1.09-10.68,3.67-15.07,7.16-2.05,1.59-7.11,6.77-6.91,7.01.06.07,1.4-.63,3.01-1.62,6.2-3.74,11.18-5.11,18.55-5.11s9.95.78,21.25,6.2c10.54,5.04,14.31,6.52,19.58,7.54,3.07.6,8.55.67,11.27.14,10.54-2.01,19.43-10.96,22.65-22.7.56-2.04,1.38-6.98,1.2-7.19-.09-.07-.41.63-.73,1.55Z"/>
+          <path fill="url(#a3)" d="m125.69,81.69c-1.2,3.31-3.86,7.93-6.2,10.79-5.97,7.26-13.49,10.79-22.04,10.33-5.44-.28-10.01-1.66-20.11-6.1-15.13-6.66-20.75-8.14-29.06-7.79-4.83.21-8.17.92-12.2,2.54-5.47,2.22-11.27,6.38-15.22,10.93l-2.28,2.64,3.13-1.97c9.92-6.13,20.87-7.97,31.05-5.11,3.57,1.02,7.99,2.86,14.93,6.24,13.37,6.52,19.32,8.32,27.28,8.32,4.1-.04,6.35-.39,9.66-1.55,9.63-3.38,17.76-12.83,20.72-24.08.73-2.86,1.49-7.19,1.32-7.44-.06-.07-.5.95-.97,2.26Z"/>
+        </svg>
+      </div>
+      <div class="family-name">Tog-Opp</div>
+      <div class="element-name">Air</div>
+    </div>
+    <div class="card-footer"><span>7 ratios</span><span>21 sequences</span></div>
+  </div>
+
+  <!-- Moon / Quarter-Opp -->
+  <div class="family-card card-moon">
+    <div class="card-inner">
+      <div class="icon-wrap">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 109.73 111.78">
+          <path fill="#6a4199" d="m109.73,70.84c-6.54,23.61-28.18,40.94-53.85,40.94C25.01,111.78,0,86.75,0,55.88S25.01,0,55.88,0c4.19,0,8.26.46,12.18,1.34-23.63,1.62-42.29,21.29-42.29,45.33s20.35,45.46,45.45,45.46c16.24,0,30.47-8.51,38.51-21.29Z"/>
+        </svg>
+      </div>
+      <div class="family-name">Quarter-Opp</div>
+      <div class="element-name">Moon</div>
+    </div>
+    <div class="card-footer"><span>7 ratios</span><span>28 sequences</span></div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ===== RATIO VIEW ===== -->
+<div class="view-label">Alternate view — Ratio</div>
+
+<div class="toggle-bar">
+  <button class="toggle-btn active">Ratio</button>
+  <button class="toggle-btn inactive">Family</button>
+</div>
+
+<div class="family-grid">
+  <!-- 1:1 -->
+  <div class="family-card card-ratio">
+    <div class="ratio-inner">
+      <div class="level-dot">1</div>
+      <div class="ratio-name" style="color:#e8a035;">1:1</div>
+      <div class="ratio-subtitle">Even timing</div>
+      <div class="turns-label">0 turns</div>
+    </div>
+    <div class="card-footer"><span>6 families</span><span>19 sequences</span></div>
+  </div>
+
+  <!-- 2:1 -->
+  <div class="family-card card-ratio">
+    <div class="ratio-inner">
+      <div class="level-dot">1</div>
+      <div class="ratio-name" style="color:#e8a035;">2:1</div>
+      <div class="ratio-subtitle">Double time</div>
+      <div class="turns-label">0.5 turns</div>
+    </div>
+    <div class="card-footer"><span>6 families</span><span>19 sequences</span></div>
+  </div>
+
+  <!-- 3:1 -->
+  <div class="family-card card-ratio">
+    <div class="ratio-inner">
+      <div class="level-dot">1</div>
+      <div class="ratio-name" style="color:#e8a035;">3:1</div>
+      <div class="ratio-subtitle">Triple time</div>
+      <div class="turns-label">1 turn</div>
+    </div>
+    <div class="card-footer"><span>6 families</span><span>19 sequences</span></div>
+  </div>
+
+  <!-- 4:1 -->
+  <div class="family-card card-ratio">
+    <div class="ratio-inner">
+      <div class="level-dot">1</div>
+      <div class="ratio-name" style="color:#e8a035;">4:1</div>
+      <div class="ratio-subtitle">Quad time</div>
+      <div class="turns-label">1.5 turns</div>
+    </div>
+    <div class="card-footer"><span>6 families</span><span>19 sequences</span></div>
+  </div>
+
+  <!-- 5:1 -->
+  <div class="family-card card-ratio">
+    <div class="ratio-inner">
+      <div class="level-dot">1</div>
+      <div class="ratio-name" style="color:#e8a035;">5:1</div>
+      <div class="ratio-subtitle">Quint time</div>
+      <div class="turns-label">2 turns</div>
+    </div>
+    <div class="card-footer"><span>6 families</span><span>19 sequences</span></div>
+  </div>
+
+  <!-- 7:1 -->
+  <div class="family-card card-ratio">
+    <div class="ratio-inner">
+      <div class="level-dot">1</div>
+      <div class="ratio-name" style="color:#e8a035;">7:1</div>
+      <div class="ratio-subtitle">Sept time</div>
+      <div class="turns-label">3 turns</div>
+    </div>
+    <div class="card-footer"><span>6 families</span><span>19 sequences</span></div>
+  </div>
+</div>

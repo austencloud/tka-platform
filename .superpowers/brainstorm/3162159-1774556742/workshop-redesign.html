@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Workshop Portfolio Redesign</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0d0d1a;
+    color: #e8e8f0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    padding: 24px;
+    min-height: 100vh;
+  }
+
+  .design-header {
+    text-align: center;
+    margin-bottom: 40px;
+    padding: 20px;
+  }
+  .design-header h1 {
+    font-size: 1.6rem;
+    color: #a78bfa;
+    margin-bottom: 8px;
+  }
+  .design-header p {
+    color: rgba(255,255,255,0.5);
+    font-size: 0.9rem;
+  }
+
+  /* === BEFORE / AFTER SPLIT === */
+  .comparison {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    max-width: 1600px;
+    margin: 0 auto 60px;
+  }
+  .comparison-panel {
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  .comparison-panel h2 {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    padding: 12px 20px;
+    background: rgba(255,255,255,0.03);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .comparison-panel.before h2 { color: #ef4444; }
+  .comparison-panel.after h2 { color: #22c55e; }
+
+  /* === BEFORE (Current) === */
+  .before-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding: 16px;
+    background: rgba(255,255,255,0.02);
+    border-radius: 12px;
+  }
+  .before-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    overflow: hidden;
+    font-size: 0.65rem;
+  }
+  .before-card .band {
+    padding: 6px 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 600;
+    font-size: 0.6rem;
+  }
+  .before-card .band .badge {
+    font-size: 0.5rem;
+    padding: 1px 6px;
+    border-radius: 8px;
+    background: rgba(0,0,0,0.3);
+  }
+  .before-card .body {
+    padding: 8px 10px;
+  }
+  .before-card .chips {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 6px;
+    flex-wrap: wrap;
+  }
+  .before-card .chip {
+    font-size: 0.5rem;
+    padding: 1px 5px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 4px;
+    color: rgba(255,255,255,0.5);
+  }
+  .before-card .desc {
+    color: rgba(255,255,255,0.4);
+    line-height: 1.3;
+    margin-bottom: 6px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .before-card .show-more {
+    color: #22c55e;
+    font-size: 0.5rem;
+    margin-bottom: 6px;
+  }
+  .before-card .actions {
+    display: flex;
+    gap: 8px;
+    padding-top: 6px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+  }
+  .before-card .actions span {
+    font-size: 0.5rem;
+    color: rgba(255,255,255,0.35);
+  }
+  .before-card .actions span i { margin-right: 2px; }
+
+  /* === AFTER (Redesign) === */
+  .after-content {
+    padding: 16px;
+    background: rgba(255,255,255,0.02);
+    border-radius: 12px;
+  }
+
+  .portfolio-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  .portfolio-header h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #e8e8f0;
+  }
+  .add-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(167, 139, 250, 0.15);
+    color: #a78bfa;
+    border: 1px solid rgba(167, 139, 250, 0.3);
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .add-btn:hover {
+    background: rgba(167, 139, 250, 0.25);
+  }
+
+  .workshop-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 14px;
+  }
+
+  /* Portrait Workshop Card */
+  .workshop-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 14px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    position: relative;
+  }
+  .workshop-card:hover {
+    border-color: rgba(255,255,255,0.15);
+    transform: translateY(-3px);
+    box-shadow: 0 12px 32px rgba(0,0,0,0.4);
+  }
+
+  /* Gradient hero area */
+  .card-hero {
+    height: 120px;
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    padding: 12px;
+    overflow: hidden;
+  }
+  .card-hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0.12;
+  }
+  .card-hero::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 70%;
+    background: linear-gradient(to top, rgba(13,13,26,0.95), transparent);
+  }
+
+  /* Abstract geometric pattern in hero */
+  .card-pattern {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    opacity: 0.15;
+  }
+  .card-pattern .circle {
+    position: absolute;
+    border-radius: 50%;
+    border: 2px solid currentColor;
+  }
+  .card-pattern .line {
+    position: absolute;
+    height: 1px;
+    background: currentColor;
+    transform-origin: left center;
+  }
+
+  /* Level indicator - subtle accent line */
+  .level-accent {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+  }
+
+  /* Props icons area */
+  .card-props {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    display: flex;
+    gap: 6px;
+    z-index: 2;
+  }
+  .prop-icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.6rem;
+    color: rgba(255,255,255,0.7);
+  }
+
+  /* Card info area */
+  .card-info {
+    padding: 14px;
+  }
+  .card-title {
+    font-size: 0.8rem;
+    font-weight: 600;
+    line-height: 1.3;
+    margin-bottom: 6px;
+    color: #f0f0f8;
+  }
+  .card-teaser {
+    font-size: 0.65rem;
+    color: rgba(255,255,255,0.4);
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* Level + solo metadata footer */
+  .card-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 14px 12px;
+  }
+  .level-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+  }
+  .level-label {
+    font-size: 0.55rem;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: rgba(255,255,255,0.35);
+  }
+  .solo-badge {
+    font-size: 0.5rem;
+    color: rgba(255,255,255,0.25);
+    margin-left: auto;
+  }
+
+  /* Color themes by level */
+  .level-beginner .level-accent { background: linear-gradient(90deg, #22c55e, #22c55e88); }
+  .level-beginner .card-hero::before { background: radial-gradient(ellipse at 30% 20%, #22c55e, transparent 70%); }
+  .level-beginner .card-pattern { color: #22c55e; }
+  .level-beginner .level-dot { background: #22c55e; }
+
+  .level-intermediate .level-accent { background: linear-gradient(90deg, #eab308, #eab30888); }
+  .level-intermediate .card-hero::before { background: radial-gradient(ellipse at 30% 20%, #eab308, transparent 70%); }
+  .level-intermediate .card-pattern { color: #eab308; }
+  .level-intermediate .level-dot { background: #eab308; }
+
+  .level-advanced .level-accent { background: linear-gradient(90deg, #ef4444, #ef444488); }
+  .level-advanced .card-hero::before { background: radial-gradient(ellipse at 30% 20%, #ef4444, transparent 70%); }
+  .level-advanced .card-pattern { color: #ef4444; }
+  .level-advanced .level-dot { background: #ef4444; }
+
+  .level-mixed .level-accent { background: linear-gradient(90deg, #3b82f6, #3b82f688); }
+  .level-mixed .card-hero::before { background: radial-gradient(ellipse at 30% 20%, #3b82f6, transparent 70%); }
+  .level-mixed .card-pattern { color: #3b82f6; }
+  .level-mixed .level-dot { background: #3b82f6; }
+
+  /* === DESIGN NOTES === */
+  .design-notes {
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 32px;
+    background: rgba(167, 139, 250, 0.05);
+    border: 1px solid rgba(167, 139, 250, 0.15);
+    border-radius: 16px;
+  }
+  .design-notes h2 {
+    font-size: 1.1rem;
+    color: #a78bfa;
+    margin-bottom: 20px;
+  }
+  .notes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+  }
+  .note {
+    padding: 16px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 10px;
+    border-left: 3px solid rgba(167,139,250,0.4);
+  }
+  .note h4 {
+    font-size: 0.8rem;
+    color: #c4b5fd;
+    margin-bottom: 6px;
+  }
+  .note p {
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.5);
+    line-height: 1.5;
+  }
+  .note .old {
+    text-decoration: line-through;
+    color: rgba(239, 68, 68, 0.5);
+  }
+  .note .new {
+    color: rgba(34, 197, 94, 0.8);
+    font-weight: 500;
+  }
+</style>
+</head>
+<body>
+
+<div class="design-header">
+  <h1>Workshop Portfolio Redesign</h1>
+  <p>Before & After comparison with design rationale</p>
+</div>
+
+<!-- BEFORE / AFTER Comparison -->
+<div class="comparison">
+
+  <!-- BEFORE -->
+  <div class="comparison-panel before">
+    <h2>Before — Data Entry Vibes</h2>
+    <div class="before-grid">
+      <div class="before-card">
+        <div class="band" style="background: linear-gradient(135deg, #22c55e33, #22c55e11);">
+          TKA 1: Learning Letters
+          <span class="badge" style="border: 1px solid #22c55e;">Beginner</span>
+        </div>
+        <div class="body">
+          <div class="chips"><span class="chip">double-staves</span><span class="chip">clubs</span></div>
+          <div class="desc">Foundations of antispins and isolations using negative space and body turns...</div>
+          <div class="show-more">Show more</div>
+          <div class="actions">
+            <span><i class="fas fa-copy"></i> Copy</span>
+            <span><i class="fas fa-edit"></i> Edit</span>
+            <span style="color: rgba(239,68,68,0.5);"><i class="fas fa-trash"></i> Delete</span>
+          </div>
+        </div>
+      </div>
+      <div class="before-card">
+        <div class="band" style="background: linear-gradient(135deg, #eab30833, #eab30811);">
+          TKA 2: Writing Words
+          <span class="badge" style="border: 1px solid #eab308;">Intermediate</span>
+        </div>
+        <div class="body">
+          <div class="chips"><span class="chip">mixed-static-props</span></div>
+          <div class="desc">Dive into The Kinetic Alphabet pictographs to create and communicate...</div>
+          <div class="show-more">Show more</div>
+          <div class="actions">
+            <span><i class="fas fa-copy"></i> Copy</span>
+            <span><i class="fas fa-edit"></i> Edit</span>
+            <span style="color: rgba(239,68,68,0.5);"><i class="fas fa-trash"></i> Delete</span>
+          </div>
+        </div>
+      </div>
+      <div class="before-card">
+        <div class="band" style="background: linear-gradient(135deg, #ef444433, #ef444411);">
+          TKA 3: Speaking Sentences
+          <span class="badge" style="border: 1px solid #ef4444;">Advanced</span>
+        </div>
+        <div class="body">
+          <div class="chips"><span class="chip">double-staves</span><span class="chip">mixed-static-props</span></div>
+          <div class="desc">Builds on previous classes with complex variations using turns at different points...</div>
+          <div class="show-more">Show more</div>
+          <div class="actions">
+            <span><i class="fas fa-copy"></i> Copy</span>
+            <span><i class="fas fa-edit"></i> Edit</span>
+            <span style="color: rgba(239,68,68,0.5);"><i class="fas fa-trash"></i> Delete</span>
+          </div>
+        </div>
+      </div>
+      <div class="before-card">
+        <div class="band" style="background: linear-gradient(135deg, #22c55e33, #22c55e11);">
+          Balloon Animal Funtime
+          <span class="badge" style="border: 1px solid #22c55e;">Beginner</span>
+        </div>
+        <div class="body">
+          <div class="chips"><span class="chip">balloons</span></div>
+          <div class="desc">Balloon sculpting fundamentals: dog, cat, flower, hat, sword, giraffe...</div>
+          <div class="show-more">Show more</div>
+          <div class="actions">
+            <span><i class="fas fa-copy"></i> Copy</span>
+            <span><i class="fas fa-edit"></i> Edit</span>
+            <span style="color: rgba(239,68,68,0.5);"><i class="fas fa-trash"></i> Delete</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AFTER -->
+  <div class="comparison-panel after">
+    <h2>After — Portfolio Showcase</h2>
+    <div class="after-content">
+      <div class="portfolio-header">
+        <h3>Workshops</h3>
+        <button class="add-btn"><i class="fas fa-plus"></i> Add Workshop</button>
+      </div>
+      <div class="workshop-grid">
+
+        <!-- TKA 1 -->
+        <div class="workshop-card level-beginner">
+          <div class="level-accent"></div>
+          <div class="card-hero">
+            <div class="card-pattern">
+              <div class="circle" style="width:60px;height:60px;top:10px;left:15px;"></div>
+              <div class="circle" style="width:40px;height:40px;top:25px;left:80px;"></div>
+              <div class="circle" style="width:80px;height:80px;top:-10px;right:-10px;"></div>
+              <div class="line" style="width:100px;top:50px;left:20px;transform:rotate(25deg);"></div>
+              <div class="line" style="width:60px;top:70px;left:60px;transform:rotate(-15deg);"></div>
+            </div>
+            <div class="card-props">
+              <div class="prop-icon" title="Double Staves"><i class="fas fa-grip-lines-vertical"></i></div>
+              <div class="prop-icon" title="Clubs"><i class="fas fa-baseball-bat-ball"></i></div>
+            </div>
+          </div>
+          <div class="card-info">
+            <div class="card-title">TKA 1: Learning Letters</div>
+            <div class="card-teaser">Foundations of antispins and isolations using negative space and body turns</div>
+          </div>
+          <div class="card-meta">
+            <div class="level-dot"></div>
+            <span class="level-label">Beginner</span>
+            <span class="solo-badge">Solo</span>
+          </div>
+        </div>
+
+        <!-- TKA 2 -->
+        <div class="workshop-card level-intermediate">
+          <div class="level-accent"></div>
+          <div class="card-hero">
+            <div class="card-pattern">
+              <div class="circle" style="width:70px;height:70px;top:5px;right:10px;"></div>
+              <div class="circle" style="width:35px;height:35px;top:40px;left:20px;"></div>
+              <div class="line" style="width:90px;top:30px;left:10px;transform:rotate(40deg);"></div>
+              <div class="line" style="width:70px;top:60px;left:40px;transform:rotate(-20deg);"></div>
+              <div class="line" style="width:50px;top:45px;left:70px;transform:rotate(10deg);"></div>
+            </div>
+            <div class="card-props">
+              <div class="prop-icon" title="Mixed Static Props"><i class="fas fa-shapes"></i></div>
+            </div>
+          </div>
+          <div class="card-info">
+            <div class="card-title">TKA 2: Writing Words</div>
+            <div class="card-teaser">Pictographs to create and communicate sequences</div>
+          </div>
+          <div class="card-meta">
+            <div class="level-dot"></div>
+            <span class="level-label">Intermediate</span>
+            <span class="solo-badge">Solo</span>
+          </div>
+        </div>
+
+        <!-- TKA 3 -->
+        <div class="workshop-card level-advanced">
+          <div class="level-accent"></div>
+          <div class="card-hero">
+            <div class="card-pattern">
+              <div class="circle" style="width:50px;height:50px;top:15px;left:30px;"></div>
+              <div class="circle" style="width:90px;height:90px;top:-20px;right:-20px;"></div>
+              <div class="circle" style="width:30px;height:30px;top:50px;left:70px;"></div>
+              <div class="line" style="width:120px;top:40px;left:0;transform:rotate(30deg);"></div>
+            </div>
+            <div class="card-props">
+              <div class="prop-icon" title="Double Staves"><i class="fas fa-grip-lines-vertical"></i></div>
+              <div class="prop-icon" title="Mixed Props"><i class="fas fa-shapes"></i></div>
+            </div>
+          </div>
+          <div class="card-info">
+            <div class="card-title">TKA 3: Speaking Sentences</div>
+            <div class="card-teaser">Complex variations with turns, dashes, and static motions</div>
+          </div>
+          <div class="card-meta">
+            <div class="level-dot"></div>
+            <span class="level-label">Advanced</span>
+            <span class="solo-badge">Solo</span>
+          </div>
+        </div>
+
+        <!-- Contact Juggling -->
+        <div class="workshop-card level-beginner">
+          <div class="level-accent"></div>
+          <div class="card-hero">
+            <div class="card-pattern">
+              <div class="circle" style="width:80px;height:80px;top:10px;left:40px;"></div>
+              <div class="circle" style="width:45px;height:45px;top:30px;right:20px;"></div>
+              <div class="line" style="width:80px;top:55px;left:10px;transform:rotate(-10deg);"></div>
+            </div>
+            <div class="card-props">
+              <div class="prop-icon" title="Contact Ball"><i class="fas fa-circle"></i></div>
+            </div>
+          </div>
+          <div class="card-info">
+            <div class="card-title">Intro to Contact Juggling</div>
+            <div class="card-teaser">Three steps to unlocking a balance point using the cradle</div>
+          </div>
+          <div class="card-meta">
+            <div class="level-dot"></div>
+            <span class="level-label">Beginner</span>
+            <span class="solo-badge">Solo</span>
+          </div>
+        </div>
+
+        <!-- Balloons -->
+        <div class="workshop-card level-beginner">
+          <div class="level-accent"></div>
+          <div class="card-hero">
+            <div class="card-pattern">
+              <div class="circle" style="width:55px;height:55px;top:20px;left:10px;"></div>
+              <div class="circle" style="width:40px;height:40px;top:5px;left:80px;"></div>
+              <div class="circle" style="width:65px;height:65px;top:30px;right:5px;"></div>
+              <div class="line" style="width:60px;top:65px;left:20px;transform:rotate(35deg);"></div>
+            </div>
+            <div class="card-props">
+              <div class="prop-icon" title="Balloons"><i class="fas fa-wind"></i></div>
+            </div>
+          </div>
+          <div class="card-info">
+            <div class="card-title">Balloon Animal Funtime Hour</div>
+            <div class="card-teaser">Twist yourself a friend wherever you go</div>
+          </div>
+          <div class="card-meta">
+            <div class="level-dot"></div>
+            <span class="level-label">Beginner</span>
+            <span class="solo-badge">Solo</span>
+          </div>
+        </div>
+
+        <!-- Club Passing -->
+        <div class="workshop-card level-beginner">
+          <div class="level-accent"></div>
+          <div class="card-hero">
+            <div class="card-pattern">
+              <div class="circle" style="width:45px;height:45px;top:15px;left:50px;"></div>
+              <div class="line" style="width:100px;top:35px;left:5px;transform:rotate(45deg);"></div>
+              <div class="line" style="width:80px;top:35px;right:0;transform:rotate(-45deg);"></div>
+              <div class="line" style="width:60px;top:60px;left:30px;transform:rotate(15deg);"></div>
+            </div>
+            <div class="card-props">
+              <div class="prop-icon" title="Clubs"><i class="fas fa-baseball-bat-ball"></i></div>
+            </div>
+          </div>
+          <div class="card-info">
+            <div class="card-title">Intro to Club Passing</div>
+            <div class="card-teaser">Throw clubs at each other without flinching</div>
+          </div>
+          <div class="card-meta">
+            <div class="level-dot"></div>
+            <span class="level-label">Beginner</span>
+            <span class="solo-badge">Partner</span>
+          </div>
+        </div>
+
+        <!-- Poi -->
+        <div class="workshop-card level-mixed">
+          <div class="level-accent"></div>
+          <div class="card-hero">
+            <div class="card-pattern">
+              <div class="circle" style="width:70px;height:70px;top:0;left:20px;"></div>
+              <div class="circle" style="width:50px;height:50px;top:30px;right:15px;"></div>
+              <div class="line" style="width:110px;top:45px;left:10px;transform:rotate(20deg);"></div>
+              <div class="line" style="width:70px;top:25px;left:50px;transform:rotate(-30deg);"></div>
+            </div>
+            <div class="card-props">
+              <div class="prop-icon" title="Poi"><i class="fas fa-yin-yang"></i></div>
+            </div>
+          </div>
+          <div class="card-info">
+            <div class="card-title">Letting Go Of Your Poi</div>
+            <div class="card-teaser">Conquer the fear of releasing your poi with toss and catch drills</div>
+          </div>
+          <div class="card-meta">
+            <div class="level-dot"></div>
+            <span class="level-label">Mixed</span>
+            <span class="solo-badge">Solo</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Design Notes -->
+<div class="design-notes">
+  <h2>What Changed</h2>
+  <div class="notes-grid">
+    <div class="note">
+      <h4>Card Shape</h4>
+      <p><span class="old">Wide rectangular cards with text walls</span><br>
+      <span class="new">Tall portrait cards with abstract hero area</span><br>
+      Each workshop feels like a poster, not a form row.</p>
+    </div>
+    <div class="note">
+      <h4>Action Buttons</h4>
+      <p><span class="old">Copy / Edit / Delete on every card</span><br>
+      <span class="new">Removed entirely from card surface</span><br>
+      Click card to open modal. Edit/delete live there. The card is for showing, not managing.</p>
+    </div>
+    <div class="note">
+      <h4>Level Indicator</h4>
+      <p><span class="old">Loud colored banner across full header</span><br>
+      <span class="new">3px accent line + small dot + label at bottom</span><br>
+      Color is present but not screaming.</p>
+    </div>
+    <div class="note">
+      <h4>Props Display</h4>
+      <p><span class="old">Text chips: "double-staves", "clubs"</span><br>
+      <span class="new">Small circular icons in the hero area</span><br>
+      Visual personality without text clutter.</p>
+    </div>
+    <div class="note">
+      <h4>Description</h4>
+      <p><span class="old">3-line truncated paragraph with "Show more"</span><br>
+      <span class="new">Single line teaser, full details in modal</span><br>
+      Cards breathe. Content lives inside.</p>
+    </div>
+    <div class="note">
+      <h4>Add Workshop</h4>
+      <p><span class="old">Dashed border empty card in the grid</span><br>
+      <span class="new">Single button in the header area</span><br>
+      Doesn't break the showcase illusion.</p>
+    </div>
+    <div class="note">
+      <h4>Hero Area</h4>
+      <p><span class="new">Abstract geometric patterns (circles + lines) tinted by level color</span><br>
+      Gives each card visual weight without requiring photos. Patterns are decorative, not data.</p>
+    </div>
+    <div class="note">
+      <h4>Interaction Model</h4>
+      <p><span class="new">Click anywhere on card → opens detail/edit modal</span><br>
+      Hover lifts card with shadow. Entire card is the click target. No buttons competing for attention.</p>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

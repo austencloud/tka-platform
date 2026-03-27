@@ -46,6 +46,8 @@ export class VideoTipAdapter implements IVideoTipAdapter {
       return {
         x: ep.x,
         y: ep.y,
+        prevX: prev?.x ?? ep.x,
+        prevY: prev?.y ?? ep.y,
         velocityX: vx,
         velocityY: vy,
         speed: Math.sqrt(vx * vx + vy * vy),

@@ -18,12 +18,12 @@
   import DebugPanelTabs from "../debug/DebugPanelTabs.svelte";
   import VirtualJoystick from "$lib/shared/components/touch/VirtualJoystick.svelte";
 
-  import type { PhysicsWorldState, PlayerControllerState } from "$lib/shared/3d-core/physics/types";
-  import type { PhysicsProvider } from "$lib/shared/3d-core/camera/types";
-  import { TerrainPhysicsManager } from "$lib/shared/3d-core/physics/terrain-collider";
-  import { teleportPlayer } from "$lib/shared/3d-core/physics/player-controller";
-  import { CameraMode } from "$lib/shared/3d-core/camera/types";
-  import { cameraPreferences } from "$lib/shared/3d-core/camera/camera-preferences.svelte";
+  import type { PhysicsWorldState, PlayerControllerState } from "$lib/shared/3d-animation/physics/types";
+  import type { PhysicsProvider } from "$lib/shared/3d-animation/camera/types";
+  import { TerrainPhysicsManager } from "$lib/shared/3d-animation/physics/terrain-collider";
+  import { teleportPlayer } from "$lib/shared/3d-animation/physics/player-controller";
+  import { CameraMode } from "$lib/shared/3d-animation/camera/types";
+  import { cameraPreferences } from "$lib/shared/3d-animation/camera/camera-preferences.svelte";
 
   import { type HybridChunkManager } from "../../core/hybrid-chunk-manager";
   import { generateWorldSeed, encodeSeed, SeededNoise } from "../../generation/seed-generator";
@@ -271,7 +271,7 @@
     if (gameBridgeInitialized) return;
     gameBridgeInitialized = true;
 
-    import("$lib/shared/3d-core/debug/game-bridge").then(async ({ initGameBridge }) => {
+    import("$lib/shared/3d-animation/debug/game-bridge").then(async ({ initGameBridge }) => {
       const bridge = initGameBridge({
         physics: {
           getPlayerPosition: () => physicsProvider?.getPlayerPosition() ?? null,

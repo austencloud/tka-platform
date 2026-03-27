@@ -59,6 +59,14 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
   // Track previous tracking mode to detect changes
   private lastTrackingMode: TrackingMode | null = null;
 
+  // Skip trail capture for the first few frames after initialization so
+  // props can settle into their correct starting positions. Without this,
+  // the very first frame captures props at an intermediate location (e.g.
+  // origin or default coords) and the jump to the real position draws a
+  // brief straight-line artifact that fades out.
+  private warmupFramesRemaining = 0;
+  private static readonly WARMUP_FRAMES = 3;
+
   initialize(container: HTMLElement, width: number, height: number): void {
     this.dispose();
 
@@ -84,6 +92,7 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
     this.bufferCtx = this.bufferCanvas.getContext("2d");
     this.width = width;
     this.height = height;
+    this.warmupFramesRemaining = TrailOverlayCanvas.WARMUP_FRAMES;
   }
 
   resize(width: number, height: number): void {
@@ -101,6 +110,14 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
   renderFrame(params: TrailOverlayRenderParams): void {
     const ctx = this.ctx;
     if (!ctx) return;
+
+    // Let props settle before capturing trail data. The first few frames
+    // often have props at intermediate positions (default coords before the
+    // animation engine places them), which produces a straight-line artifact.
+    if (this.warmupFramesRemaining > 0) {
+      this.warmupFramesRemaining--;
+      return;
+    }
 
     const {
       trailSettings,
@@ -213,6 +230,19 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
   }
 
   clear(): void {
+    if (!this.ctx) return;
+    this.ctx.clearRect(0, 0, this.width, this.height);
+    this.blueLeftRing = [];
+    this.blueRightRing = [];
+    this.redLeftRing = [];
+    this.redRightRing = [];
+    this.warmupFramesRemaining = TrailOverlayCanvas.WARMUP_FRAMES;
+  }
+
+  /** Flush stale trail data without the warmup delay. Use when props are
+   *  already at their correct positions (e.g. sequence change after the
+   *  orchestrator has repositioned them). */
+  clearBuffers(): void {
     if (!this.ctx) return;
     this.ctx.clearRect(0, 0, this.width, this.height);
     this.blueLeftRing = [];

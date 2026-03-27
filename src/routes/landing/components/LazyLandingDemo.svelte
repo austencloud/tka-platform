@@ -8,7 +8,14 @@
    * bundle. A lightweight placeholder is shown until the real component loads.
    */
   import type { Component } from "svelte";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
+
+  interface Props {
+    onPropTypeChange?: (propType: PropType) => void;
+  }
+
+  let { onPropTypeChange }: Props = $props();
 
   let containerEl: HTMLElement | undefined = $state();
   let DemoComponent = $state<Component | null>(null);
@@ -42,7 +49,7 @@
 
 <div bind:this={containerEl} class="lazy-demo-container">
   {#if DemoComponent}
-    <DemoComponent />
+    <DemoComponent {onPropTypeChange} />
   {:else if loadFailed}
     <div class="demo-placeholder">
       <div class="placeholder-icon">🌀</div>

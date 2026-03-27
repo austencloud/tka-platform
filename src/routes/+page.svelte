@@ -11,10 +11,12 @@
   import GuidesSection from "./landing/components/GuidesSection.svelte";
   import LandingFooter from "./landing/components/LandingFooter.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 
   const DEFAULT_BACKGROUND = BackgroundType.NIGHT_SKY;
   let mounted = $state(false);
   let aabbSequence = $state<SequenceData | null>(null);
+  let landingPropType = $state<PropType>(PropType.STAFF);
 
   onMount(() => {
     applyThemeForBackground(DEFAULT_BACKGROUND);
@@ -353,13 +355,17 @@
   <a href="#main-content" class="skip-link">Skip to main content</a>
 
   <div class="content-layer">
-    <HearthSection onSequenceLoaded={handleSequenceLoaded} />
+    <HearthSection
+      onSequenceLoaded={handleSequenceLoaded}
+      propType={landingPropType}
+      onPropTypeChange={(pt) => { landingPropType = pt; }}
+    />
     <main id="main-content">
       <div class="scroll-reveal">
-        <NotationProgressionSection sequence={aabbSequence} />
+        <NotationProgressionSection sequence={aabbSequence} propType={landingPropType} />
       </div>
       <div class="scroll-reveal">
-        <NotationShowcaseSection />
+        <NotationShowcaseSection onPropTypeChange={(pt) => { landingPropType = pt; }} />
       </div>
       <div class="scroll-reveal">
         <VideoPerformanceSection />

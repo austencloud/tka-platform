@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fuse Tour — Interactive Prototype</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0d0d1a; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; overflow: hidden; height: 100vh; }
+
+  .tour-container {
+    width: 100%;
+    max-width: 706px;
+    height: 100vh;
+    max-height: 705px;
+    margin: 0 auto;
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(165deg, #1a1a2e 0%, #0f0f23 40%, #1a1025 100%);
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+
+  /* Stars background */
+  .stars { position: absolute; inset: 0; opacity: 0.25; pointer-events: none; }
+  .star { position: absolute; background: white; border-radius: 50%; }
+
+  /* Slides */
+  .slide {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    opacity: 0;
+    transform: translateX(60px);
+    transition: opacity 0.4s ease, transform 0.4s ease;
+    pointer-events: none;
+  }
+  .slide.active {
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: auto;
+  }
+  .slide.exit-left {
+    opacity: 0;
+    transform: translateX(-60px);
+  }
+
+  /* Welcome (Stop 1) */
+  .welcome {
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    padding: 40px;
+  }
+  .welcome-icon {
+    width: 80px; height: 80px; border-radius: 50%;
+    background: rgba(249,115,22,0.15); border: 2px solid rgba(249,115,22,0.3);
+    display: flex; align-items: center; justify-content: center; font-size: 2rem;
+  }
+  .welcome h1 { font-size: 2rem; font-weight: 800; color: white; }
+  .welcome p { font-size: 1rem; color: rgba(255,255,255,0.6); text-align: center; max-width: 340px; line-height: 1.65; }
+
+  /* Banner (Stops 2-4) */
+  .tour-banner {
+    flex-shrink: 0;
+    text-align: center;
+    padding: 14px 20px;
+    background: rgba(249,115,22,0.08);
+    border-bottom: 1px solid rgba(249,115,22,0.15);
+  }
+  .tour-banner h2 { font-size: 1rem; font-weight: 700; color: white; margin-bottom: 4px; }
+  .tour-banner p { font-size: 0.85rem; color: rgba(255,255,255,0.55); line-height: 1.5; }
+  .tour-banner .hint { font-size: 0.8rem; color: #f97316; margin-top: 6px; animation: pulse 1.5s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:0.5} 50%{opacity:1} }
+
+  /* Panels area */
+  .panels-area {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+    padding: 4px;
+    min-height: 0;
+  }
+  .panel-mock {
+    border: 1.5px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    background: rgba(255,255,255,0.02);
+  }
+  .panel-mock.blue { border-color: rgba(33,150,243,0.25); }
+  .panel-mock.red { border-color: rgba(244,67,54,0.25); }
+  .panel-mock.dimmed { opacity: 0.5; }
+
+  /* Mock choreo grid */
+  .mock-grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2px;
+    padding: 4px;
+    min-height: 0;
+  }
+  .mock-cell {
+    aspect-ratio: 1;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 4px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .mock-cell.highlighted {
+    border-color: rgba(251,191,36,0.7);
+    box-shadow: inset 0 0 8px rgba(251,191,36,0.3);
+  }
+  .mock-cell .dot {
+    width: 4px; height: 4px; border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    position: absolute;
+  }
+  .mock-cell .prop-line {
+    width: 20px; height: 3px; border-radius: 2px;
+    transform: rotate(-30deg);
+  }
+  .blue .prop-line { background: #2196f3; }
+  .red .prop-line { background: #f44336; }
+  .mock-cell-label {
+    position: absolute; bottom: 2px; left: 0; right: 0;
+    text-align: center; font-size: 0.5rem; color: rgba(255,255,255,0.3);
+  }
+
+  /* Mock animation canvas */
+  .mock-canvas {
+    height: 140px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    background: rgba(0,0,0,0.2);
+  }
+  .mock-canvas .grid-dots {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .canvas-dot {
+    position: absolute; width: 8px; height: 8px; border-radius: 50%;
+    background: rgba(255,255,255,0.15);
+  }
+  .canvas-dot.large { width: 14px; height: 14px; background: rgba(255,255,255,0.2); }
+  .mock-prop {
+    width: 40px; height: 5px; border-radius: 3px;
+    position: absolute;
+    box-shadow: 0 0 12px currentColor;
+  }
+  .mock-prop.blue-prop { background: #2196f3; color: #2196f3; transform: rotate(-45deg); }
+  .mock-prop.red-prop { background: #f44336; color: #f44336; transform: rotate(20deg); }
+
+  /* Shuffle button */
+  .mock-shuffle {
+    flex-shrink: 0;
+    padding: 12px;
+    text-align: center;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    color: white;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .mock-shuffle.blue-bg { background: rgba(33,150,243,0.12); }
+  .mock-shuffle.red-bg { background: rgba(244,67,54,0.12); }
+  .mock-shuffle.glow-blue { box-shadow: 0 0 20px rgba(33,150,243,0.3); background: rgba(33,150,243,0.2); }
+  .mock-shuffle.glow-red { box-shadow: 0 0 20px rgba(244,67,54,0.3); background: rgba(244,67,54,0.2); }
+  .mock-shuffle:hover { filter: brightness(1.3); }
+  .mock-shuffle .counter { font-weight: 400; opacity: 0.5; font-size: 0.75rem; }
+
+  /* Dots */
+  .dots { display: flex; gap: 8px; justify-content: center; }
+  .dot-indicator { width: 10px; height: 10px; border-radius: 50%; background: rgba(255,255,255,0.15); transition: all 0.3s ease; }
+  .dot-indicator.active { background: #f97316; transform: scale(1.25); }
+  .dot-indicator.done { background: rgba(255,255,255,0.4); }
+
+  /* Buttons */
+  .btn-row { display: flex; gap: 16px; justify-content: center; align-items: center; }
+  .btn-skip {
+    padding: 14px 28px; border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 12px; color: rgba(255,255,255,0.5); font-size: 1rem;
+    cursor: pointer; background: transparent;
+    transition: all 0.15s ease;
+  }
+  .btn-skip:hover { background: rgba(255,255,255,0.05); color: white; border-color: rgba(255,255,255,0.25); }
+  .btn-next {
+    padding: 14px 32px; background: linear-gradient(135deg, #fb923c 0%, #ea580c 100%);
+    border-radius: 12px; color: white; font-size: 1rem; font-weight: 700;
+    cursor: pointer; border: none;
+    transition: all 0.15s ease;
+  }
+  .btn-next:hover { filter: brightness(1.1); }
+  .btn-next:active { transform: scale(0.97); }
+  .btn-next.small { padding: 10px 24px; font-size: 0.85rem; }
+
+  /* Bottom bar for stop 2 */
+  .tour-bottom {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 8px 16px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+  }
+
+  /* Fuse button */
+  .fuse-btn {
+    padding: 14px 40px;
+    background: linear-gradient(135deg, #fb923c 0%, #f97316 50%, #ea580c 100%);
+    border-radius: 14px; color: white; font-size: 1.1rem; font-weight: 800;
+    cursor: pointer; border: none;
+    box-shadow: 0 0 24px rgba(249,115,22,0.4);
+    animation: fusePulse 2s ease-in-out infinite;
+    display: flex; align-items: center; gap: 10px;
+    transition: transform 0.15s ease;
+  }
+  .fuse-btn:hover { transform: scale(1.03); }
+  .fuse-btn:active { transform: scale(0.97); }
+  @keyframes fusePulse {
+    0%,100% { box-shadow: 0 0 24px rgba(249,115,22,0.4); }
+    50% { box-shadow: 0 0 40px rgba(249,115,22,0.6); }
+  }
+
+  /* Result screen */
+  .result-screen {
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    padding: 40px;
+  }
+  .result-screen h1 { font-size: 1.5rem; font-weight: 800; color: white; }
+  .result-screen p { font-size: 0.95rem; color: rgba(255,255,255,0.6); text-align: center; }
+  .checkmark {
+    width: 80px; height: 80px; border-radius: 50%;
+    background: rgba(34,197,94,0.15); border: 2px solid rgba(34,197,94,0.3);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2.5rem; color: #22c55e;
+  }
+</style>
+</head>
+<body>
+
+<div class="tour-container" id="container">
+  <!-- Stars -->
+  <div class="stars">
+    <div class="star" style="top:8%;left:15%;width:3px;height:3px;"></div>
+    <div class="star" style="top:25%;left:68%;width:2px;height:2px;"></div>
+    <div class="star" style="top:42%;left:5%;width:2px;height:2px;"></div>
+    <div class="star" style="top:60%;left:82%;width:3px;height:3px;"></div>
+    <div class="star" style="top:75%;left:35%;width:2px;height:2px;"></div>
+    <div class="star" style="top:18%;left:48%;width:2px;height:2px;"></div>
+    <div class="star" style="top:88%;left:62%;width:2px;height:2px;"></div>
+    <div class="star" style="top:50%;left:92%;width:3px;height:3px;"></div>
+  </div>
+
+  <!-- STOP 1: Welcome -->
+  <div class="slide welcome active" id="stop1">
+    <div class="welcome-icon">🔥</div>
+    <h1>Fuse</h1>
+    <p>Pick a blue prop path and a red prop path, then merge them into one complete sequence.</p>
+    <div class="dots">
+      <div class="dot-indicator active"></div>
+      <div class="dot-indicator"></div>
+      <div class="dot-indicator"></div>
+      <div class="dot-indicator"></div>
+    </div>
+    <div class="btn-row" style="margin-top: 8px;">
+      <button class="btn-skip" onclick="skipTour()">Skip</button>
+      <button class="btn-next" onclick="goToStop(2)">Show me</button>
+    </div>
+  </div>
+
+  <!-- STOP 2: Both Panels -->
+  <div class="slide" id="stop2">
+    <div class="tour-banner">
+      <h2>Blue on the left, red on the right</h2>
+      <p>Both step in sync. The grid shows notation, the animation below shows motion.</p>
+    </div>
+
+    <div class="panels-area">
+      <!-- Blue panel -->
+      <div class="panel-mock blue">
+        <div class="mock-grid">
+          <div class="mock-cell"><div class="prop-line"></div><div class="mock-cell-label">Start</div></div>
+          <div class="mock-cell"><div class="prop-line" style="transform:rotate(30deg)"></div><div class="mock-cell-label">W</div></div>
+          <div class="mock-cell highlighted"><div class="prop-line" style="transform:rotate(60deg)"></div><div class="mock-cell-label">N</div></div>
+          <div class="mock-cell"><div class="prop-line" style="transform:rotate(-60deg)"></div><div class="mock-cell-label">E</div></div>
+          <div class="mock-cell"><div class="prop-line" style="transform:rotate(0deg)"></div><div class="mock-cell-label">S</div></div>
+          <div class="mock-cell"><div class="prop-line" style="transform:rotate(45deg)"></div><div class="mock-cell-label">W</div></div>
+          <div class="mock-cell"><div class="prop-line" style="transform:rotate(-45deg)"></div><div class="mock-cell-label">N</div></div>
+          <div class="mock-cell"><div class="prop-line" style="transform:rotate(15deg)"></div><div class="mock-cell-label">S</div></div>
+        </div>
+        <div class="mock-canvas">
+          <div class="canvas-dot large" style="top:15%;left:46%;"></div>
+          <div class="canvas-dot" style="top:45%;left:20%;"></div>
+          <div class="canvas-dot" style="top:45%;left:72%;"></div>
+          <div class="canvas-dot large" style="top:75%;left:46%;"></div>
+          <div class="canvas-dot" style="top:45%;left:46%;width:4px;height:4px;"></div>
+          <div class="mock-prop blue-prop" style="top:40%;left:35%;"></div>
+        </div>
+        <div class="mock-shuffle blue-bg">🔀 Shuffle <span class="counter">1 / 98</span></div>
+      </div>
+
+      <!-- Red panel -->
+      <div class="panel-mock red">
+        <div class="mock-grid">
+          <div class="mock-cell"><div class="prop-line"></div><div class="mock-cell-label">Start</div></div>
+          <div class="mock-cell"><div class="prop-line" style="transform:rotate(-20deg)"></div><div class="mock-cell-label">N</div></div>
+          <div class="mock-cell highlighted"><div class="prop-line" style="transform:rotate(40deg)"></div><div class="mock-cell-label">E</div></div>
+          <div class="mock-cell"><div class="prop-line" style="transform:rotate(-40deg)"></div><div class="mock-cell-label">W</div></div>
+          <div class="mock-cell"><div class="prop-line" style="transform:rotate(70deg)"></div><div class="mock-cell-label">S</div></div>
+          <div class="mock-cell"><div class="prop-line" style="transform:rotate(-15deg)"></div><div class="mock-cell-label">N</div></div>
+          <div class="mock-cell"><div class="prop-line" style="transform:rotate(25deg)"></div><div class="mock-cell-label">W</div></div>
+          <div class="mock-cell"><div class="prop-line" style="transform:rotate(-55deg)"></div><div class="mock-cell-label">E</div></div>
+        </div>
+        <div class="mock-canvas">
+          <div class="canvas-dot large" style="top:15%;left:46%;"></div>
+          <div class="canvas-dot" style="top:45%;left:20%;"></div>
+          <div class="canvas-dot" style="top:45%;left:72%;"></div>
+          <div class="canvas-dot large" style="top:75%;left:46%;"></div>
+          <div class="canvas-dot" style="top:45%;left:46%;width:4px;height:4px;"></div>
+          <div class="mock-prop red-prop" style="top:38%;left:38%;"></div>
+        </div>
+        <div class="mock-shuffle red-bg">🔀 Shuffle <span class="counter">1 / 98</span></div>
+      </div>
+    </div>
+
+    <div class="tour-bottom">
+      <div class="dots">
+        <div class="dot-indicator done"></div>
+        <div class="dot-indicator active"></div>
+        <div class="dot-indicator"></div>
+        <div class="dot-indicator"></div>
+      </div>
+      <button class="btn-skip" style="padding:10px 20px;font-size:0.85rem;">Skip</button>
+      <button class="btn-next small" onclick="goToStop(3)">Next</button>
+    </div>
+  </div>
+
+  <!-- STOP 3: Shuffle -->
+  <div class="slide" id="stop3">
+    <div class="tour-banner">
+      <h2>Try shuffling</h2>
+      <p>Tap a Shuffle button to see a different prop path.</p>
+      <div class="hint" id="shuffleHint">👆 Shuffle to continue</div>
+    </div>
+
+    <div class="panels-area">
+      <div class="panel-mock blue">
+        <div class="mock-grid">
+          <div class="mock-cell"><div class="prop-line"></div></div>
+          <div class="mock-cell"><div class="prop-line" style="transform:rotate(30deg)"></div></div>
+          <div class="mock-cell"><div class="prop-line" style="transform:rotate(60deg)"></div></div>
+          <div class="mock-cell"><div class="prop-line" style="transform:rotate(-60deg)"></div></div>
+          <div class="mock-cell"><div class="prop-line" style="transform:rotate(0deg)"></div></div>
+          <div class="mock-cell"><div class="prop-line" style="transform:rotate(45deg)"></div></div>
+        </div>
+        <div class="mock-canvas">
+          <div class="canvas-dot large" style="top:15%;left:46%;"></div>
+          <div class="canvas-dot" style="top:45%;left:20%;"></div>
+          <div class="canvas-dot" style="top:45%;left:72%;"></div>
+          <div class="canvas-dot large" style="top:75%;left:46%;"></div>
+          <div class="mock-prop blue-prop" style="top:40%;left:35%;"></div>
+        </div>
+        <div class="mock-shuffle glow-blue" onclick="handleShuffle()" style="cursor:pointer;">
+          🔀 Shuffle <span class="counter">1 / 98</span>
+        </div>
+      </div>
+
+      <div class="panel-mock red">
+        <div class="mock-grid">
+          <div class="mock-cell"><div class="prop-line"></div></div>
+          <div class="mock-cell"><div class="prop-line" style="transform:rotate(-20deg)"></div></div>
+          <div class="mock-cell"><div class="prop-line" style="transform:rotate(40deg)"></div></div>
+          <div class="mock-cell"><div class="prop-line" style="transform:rotate(-40deg)"></div></div>
+          <div class="mock-cell"><div class="prop-line" style="transform:rotate(70deg)"></div></div>
+          <div class="mock-cell"><div class="prop-line" style="transform:rotate(-15deg)"></div></div>
+        </div>
+        <div class="mock-canvas">
+          <div class="canvas-dot large" style="top:15%;left:46%;"></div>
+          <div class="canvas-dot" style="top:45%;left:20%;"></div>
+          <div class="canvas-dot" style="top:45%;left:72%;"></div>
+          <div class="canvas-dot large" style="top:75%;left:46%;"></div>
+          <div class="mock-prop red-prop" style="top:38%;left:38%;"></div>
+        </div>
+        <div class="mock-shuffle glow-red" onclick="handleShuffle()" style="cursor:pointer;">
+          🔀 Shuffle <span class="counter">1 / 98</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STOP 4: Fuse -->
+  <div class="slide" id="stop4">
+    <div class="tour-banner">
+      <h2>Fuse them together</h2>
+      <p>When you like both sides, tap Fuse to merge them into one sequence.</p>
+    </div>
+
+    <div class="panels-area">
+      <div class="panel-mock blue dimmed">
+        <div class="mock-grid">
+          <div class="mock-cell"><div class="prop-line"></div></div>
+          <div class="mock-cell"><div class="prop-line" style="transform:rotate(30deg)"></div></div>
+          <div class="mock-cell"><div class="prop-line" style="transform:rotate(60deg)"></div></div>
+          <div class="mock-cell"><div class="prop-line" style="transform:rotate(-60deg)"></div></div>
+        </div>
+        <div class="mock-canvas">
+          <div class="mock-prop blue-prop" style="top:40%;left:35%;"></div>
+        </div>
+        <div class="mock-shuffle blue-bg" style="opacity:0.4;">🔀 Shuffle</div>
+      </div>
+
+      <div class="panel-mock red dimmed">
+        <div class="mock-grid">
+          <div class="mock-cell"><div class="prop-line"></div></div>
+          <div class="mock-cell"><div class="prop-line" style="transform:rotate(-20deg)"></div></div>
+          <div class="mock-cell"><div class="prop-line" style="transform:rotate(40deg)"></div></div>
+          <div class="mock-cell"><div class="prop-line" style="transform:rotate(-40deg)"></div></div>
+        </div>
+        <div class="mock-canvas">
+          <div class="mock-prop red-prop" style="top:38%;left:38%;"></div>
+        </div>
+        <div class="mock-shuffle red-bg" style="opacity:0.4;">🔀 Shuffle</div>
+      </div>
+    </div>
+
+    <div style="flex-shrink:0; display:flex; justify-content:center; padding: 16px;">
+      <button class="fuse-btn" onclick="goToStop(5)">🔥 Fuse</button>
+    </div>
+  </div>
+
+  <!-- RESULT -->
+  <div class="slide result-screen" id="stop5">
+    <div class="checkmark">✓</div>
+    <h1>Fused!</h1>
+    <p>Your two prop paths have been merged into one sequence.<br>You're ready to start creating.</p>
+    <button class="btn-next" onclick="skipTour()" style="margin-top: 8px;">Let's go</button>
+  </div>
+</div>
+
+<script>
+  let currentStop = 1;
+  let shuffled = false;
+
+  function goToStop(n) {
+    const current = document.getElementById('stop' + currentStop);
+    const next = document.getElementById('stop' + n);
+    if (!current || !next) return;
+
+    current.classList.remove('active');
+    current.classList.add('exit-left');
+
+    setTimeout(() => {
+      current.classList.remove('exit-left');
+      next.classList.add('active');
+      currentStop = n;
+    }, 250);
+  }
+
+  function handleShuffle() {
+    if (shuffled) return;
+    shuffled = true;
+
+    const hint = document.getElementById('shuffleHint');
+    if (hint) hint.textContent = '✓ Nice! Moving on...';
+    if (hint) hint.style.color = '#22c55e';
+    if (hint) hint.style.animation = 'none';
+
+    setTimeout(() => goToStop(4), 1500);
+  }
+
+  function skipTour() {
+    document.getElementById('container').innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:center;height:100%;flex-direction:column;gap:12px;">
+        <div style="font-size:1.2rem;color:white;font-weight:600;">Tour Complete</div>
+        <div style="font-size:0.9rem;color:rgba(255,255,255,0.5);">This is where the normal Fuse layout would appear.</div>
+        <button onclick="location.reload()" style="margin-top:16px;padding:12px 24px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:10px;color:white;cursor:pointer;font-size:0.9rem;">Replay Tour</button>
+      </div>
+    `;
+  }
+</script>
+
+</body>
+</html>

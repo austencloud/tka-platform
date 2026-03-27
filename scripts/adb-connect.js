@@ -289,16 +289,17 @@ async function watchForDevices() {
 async function run() {
   const result = await main();
 
-  // In watch mode, continue monitoring for devices
+  // In watch mode, continue monitoring for devices (never exits)
   if (WATCH_MODE) {
     // Add already-configured devices to our tracking
     if (result && result.devices) {
       result.devices.forEach((d) => configuredDevices.add(d));
     }
     await watchForDevices();
+    // watchForDevices runs forever — this line is never reached
   }
 
-  // Always exit successfully so the dev server can start
+  // Non-watch mode: exit successfully so chained commands can start
   process.exit(0);
 }
 

@@ -1,0 +1,1440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TKA — The Kinetic Alphabet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300;1,9..40,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+/* ===== RESET & BASE ===== */
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --bg-deep: #06060e;
+  --bg-base: #0a0a14;
+  --bg-elevated: #10101e;
+  --bg-card: #14142a;
+  --bg-card-hover: #1a1a36;
+  --accent: #6366f1;
+  --accent-glow: rgba(99, 102, 241, 0.3);
+  --accent-soft: rgba(99, 102, 241, 0.12);
+  --prop-blue: #3b82f6;
+  --prop-red: #ef4444;
+  --text-primary: rgba(255, 255, 255, 0.95);
+  --text-secondary: rgba(255, 255, 255, 0.6);
+  --text-tertiary: rgba(255, 255, 255, 0.35);
+  --border: rgba(255, 255, 255, 0.06);
+  --border-hover: rgba(255, 255, 255, 0.12);
+  --green: #22c55e;
+  --blue: #3b82f6;
+  --purple: #a855f7;
+  --font-heading: 'Cormorant Garamond', Georgia, serif;
+  --font-body: 'DM Sans', system-ui, sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  overflow-x: hidden;
+  line-height: 1.6;
+}
+
+/* ===== STARFIELD ===== */
+.starfield {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.star {
+  position: absolute;
+  border-radius: 50%;
+  background: white;
+  animation: drift linear infinite;
+}
+
+@keyframes drift {
+  0% { transform: translateY(0) translateX(0); opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { transform: translateY(-80px) translateX(20px); opacity: 0; }
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0.15; }
+  50% { opacity: 0.8; }
+}
+
+/* ===== SECTIONS COMMON ===== */
+section {
+  position: relative;
+  z-index: 1;
+}
+
+.container {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 32px;
+}
+
+.section-padding {
+  padding: 140px 0;
+}
+
+/* Scroll reveal */
+.reveal {
+  opacity: 0;
+  transform: translateY(40px);
+  transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.reveal-delay-1 { transition-delay: 0.15s; }
+.reveal-delay-2 { transition-delay: 0.3s; }
+.reveal-delay-3 { transition-delay: 0.45s; }
+.reveal-delay-4 { transition-delay: 0.6s; }
+
+/* ===== SECTION 1: THE COLD OPEN ===== */
+.hero {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-content {
+  display: flex;
+  align-items: center;
+  gap: 64px;
+  max-width: 1120px;
+  padding: 0 32px;
+  width: 100%;
+}
+
+/* Demo mockup */
+.demo-mockup {
+  flex: 1;
+  display: flex;
+  gap: 20px;
+  align-items: stretch;
+  min-height: 420px;
+}
+
+.demo-canvas {
+  flex: 1.3;
+  background: var(--bg-base);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  position: relative;
+  overflow: hidden;
+  min-height: 420px;
+}
+
+.demo-canvas::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 50%, rgba(99, 102, 241, 0.04) 0%, transparent 70%);
+}
+
+/* Grid dots */
+.grid-dots {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 200px;
+  height: 200px;
+}
+
+.grid-dot {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.grid-dot.active {
+  background: rgba(255, 255, 255, 0.35);
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.1);
+}
+
+/* Props (SVG figures) */
+.prop-figure {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.prop-line {
+  stroke-width: 3;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 6px currentColor);
+}
+
+.prop-blue { color: var(--prop-blue); }
+.prop-red { color: var(--prop-red); }
+
+/* Prop animation */
+@keyframes propRotateBlue {
+  0% { transform: translate(-50%, -50%) rotate(0deg); }
+  25% { transform: translate(-50%, -50%) rotate(45deg); }
+  50% { transform: translate(-50%, -50%) rotate(90deg); }
+  75% { transform: translate(-50%, -50%) rotate(45deg); }
+  100% { transform: translate(-50%, -50%) rotate(0deg); }
+}
+
+@keyframes propRotateRed {
+  0% { transform: translate(-50%, -50%) rotate(180deg); }
+  25% { transform: translate(-50%, -50%) rotate(225deg); }
+  50% { transform: translate(-50%, -50%) rotate(270deg); }
+  75% { transform: translate(-50%, -50%) rotate(225deg); }
+  100% { transform: translate(-50%, -50%) rotate(180deg); }
+}
+
+.prop-figure.blue-prop {
+  animation: propRotateBlue 6s ease-in-out infinite;
+}
+
+.prop-figure.red-prop {
+  animation: propRotateRed 6s ease-in-out infinite;
+}
+
+/* Hand dots on props */
+.hand-dot {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.hand-dot.blue { background: var(--prop-blue); box-shadow: 0 0 12px rgba(59, 130, 246, 0.5); }
+.hand-dot.red { background: var(--prop-red); box-shadow: 0 0 12px rgba(239, 68, 68, 0.5); }
+
+/* Beat indicator */
+.beat-indicator {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+}
+
+.beat-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  transition: background 0.3s, box-shadow 0.3s;
+}
+
+.beat-dot.active {
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+
+/* Notation card */
+.demo-card {
+  flex: 0.7;
+  background: var(--bg-base);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.demo-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.demo-card-word {
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--text-primary);
+}
+
+.demo-card-meta {
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+}
+
+/* Mini pictograph grid */
+.picto-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  flex: 1;
+}
+
+.picto-cell {
+  aspect-ratio: 1;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.picto-cell .mini-grid {
+  width: 60%;
+  height: 60%;
+  position: relative;
+}
+
+.mini-dot {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.mini-arrow {
+  position: absolute;
+  width: 2px;
+  border-radius: 1px;
+}
+
+.mini-arrow.blue { background: var(--prop-blue); }
+.mini-arrow.red { background: var(--prop-red); }
+
+.picto-cell-label {
+  position: absolute;
+  bottom: 3px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.55rem;
+  color: var(--text-tertiary);
+  font-family: var(--font-body);
+  font-weight: 500;
+}
+
+.picto-cell.active-beat {
+  border-color: var(--accent);
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+
+/* Tagline */
+.hero-tagline-area {
+  flex: 0.6;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 24px;
+}
+
+.hero-tagline {
+  font-family: var(--font-heading);
+  font-size: 3.2rem;
+  font-weight: 300;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 1.2s ease, transform 1.2s ease;
+}
+
+.hero-tagline.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.hero-tagline em {
+  font-style: italic;
+  color: var(--accent);
+}
+
+/* Chevron */
+.scroll-chevron {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  animation: pulse-down 2.5s ease-in-out infinite;
+  color: var(--text-tertiary);
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: color 0.3s;
+  z-index: 2;
+}
+
+.scroll-chevron:hover {
+  color: var(--text-secondary);
+}
+
+@keyframes pulse-down {
+  0%, 100% { transform: translateX(-50%) translateY(0); opacity: 0.4; }
+  50% { transform: translateX(-50%) translateY(10px); opacity: 1; }
+}
+
+/* ===== SECTION 2: THE REVEAL ===== */
+.reveal-section {
+  padding: 120px 0 140px;
+}
+
+.reveal-blocks {
+  display: flex;
+  flex-direction: column;
+  gap: 80px;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.reveal-block {
+  display: flex;
+  align-items: center;
+  gap: 40px;
+}
+
+.reveal-block-icon {
+  flex-shrink: 0;
+  width: 80px;
+  height: 80px;
+  border-radius: 20px;
+  background: var(--accent-soft);
+  border: 1px solid rgba(99, 102, 241, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.reveal-block-icon svg {
+  width: 36px;
+  height: 36px;
+}
+
+.reveal-block-icon .play-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.play-circle::after {
+  content: '';
+  display: block;
+  width: 0;
+  height: 0;
+  border-left: 12px solid var(--accent);
+  border-top: 7px solid transparent;
+  border-bottom: 7px solid transparent;
+  margin-left: 3px;
+}
+
+.reveal-block-text {
+  font-family: var(--font-heading);
+  font-size: 2rem;
+  font-weight: 400;
+  line-height: 1.3;
+  color: var(--text-primary);
+}
+
+/* Symbol row for second block */
+.symbol-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.symbol-cell {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.symbol-letter {
+  font-family: var(--font-heading);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--accent);
+  position: absolute;
+  bottom: 2px;
+  right: 4px;
+  font-size: 0.6rem;
+}
+
+.symbol-mini-arrow {
+  width: 2px;
+  height: 14px;
+  border-radius: 1px;
+  transform-origin: center;
+}
+
+.symbol-mini-arrow.blue { background: var(--prop-blue); }
+.symbol-mini-arrow.red { background: var(--prop-red); }
+
+/* ===== SECTION 3: THE BRIDGE ===== */
+.bridge-section {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 80px 32px;
+  position: relative;
+}
+
+.bridge-section::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 40%, rgba(99, 102, 241, 0.06) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.bridge-text-main {
+  font-family: var(--font-heading);
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  font-weight: 400;
+  line-height: 1.25;
+  max-width: 700px;
+  margin: 0 auto 48px;
+  color: var(--text-primary);
+}
+
+.bridge-text-sub {
+  font-family: var(--font-body);
+  font-size: clamp(1rem, 2vw, 1.2rem);
+  line-height: 1.7;
+  max-width: 540px;
+  margin: 0 auto;
+  color: var(--text-secondary);
+}
+
+/* ===== SECTION 4: REAL PERFORMANCES ===== */
+.performances-section {
+  padding: 140px 0;
+}
+
+.section-header {
+  text-align: center;
+  margin-bottom: 72px;
+}
+
+.section-header h2 {
+  font-family: var(--font-heading);
+  font-size: clamp(2rem, 4vw, 2.8rem);
+  font-weight: 400;
+  margin-bottom: 16px;
+  color: var(--text-primary);
+}
+
+.section-header p {
+  font-size: 1.05rem;
+  color: var(--text-secondary);
+  max-width: 520px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+.video-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  max-width: 960px;
+  margin: 0 auto 56px;
+}
+
+.video-card {
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  transition: border-color 0.4s, transform 0.4s, box-shadow 0.4s;
+  cursor: pointer;
+}
+
+.video-card:hover {
+  border-color: var(--border-hover);
+  transform: translateY(-4px);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+}
+
+.video-thumb {
+  aspect-ratio: 16/10;
+  background: var(--bg-elevated);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.video-thumb::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(168, 85, 247, 0.05));
+}
+
+.video-play-btn {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 1;
+  transition: background 0.3s, transform 0.3s;
+}
+
+.video-card:hover .video-play-btn {
+  background: rgba(99, 102, 241, 0.25);
+  transform: scale(1.1);
+}
+
+.video-play-btn::after {
+  content: '';
+  width: 0;
+  height: 0;
+  border-left: 16px solid white;
+  border-top: 10px solid transparent;
+  border-bottom: 10px solid transparent;
+  margin-left: 4px;
+}
+
+/* Prop silhouettes inside video thumbs */
+.thumb-silhouette {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.15;
+}
+
+.video-info {
+  padding: 16px 20px;
+}
+
+.video-performer {
+  font-weight: 500;
+  font-size: 0.95rem;
+  margin-bottom: 4px;
+}
+
+.video-prop {
+  font-size: 0.8rem;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* CTA button */
+.cta-center {
+  text-align: center;
+}
+
+.cta-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 36px;
+  border-radius: 12px;
+  background: var(--accent);
+  color: white;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  font-weight: 500;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: background 0.3s, transform 0.2s, box-shadow 0.3s;
+  box-shadow: 0 4px 24px var(--accent-glow);
+}
+
+.cta-btn:hover {
+  background: #5558e6;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(99, 102, 241, 0.4);
+}
+
+.cta-btn:active {
+  transform: translateY(0);
+}
+
+.cta-btn-secondary {
+  background: transparent;
+  border: 1px solid var(--border-hover);
+  box-shadow: none;
+  color: var(--text-primary);
+}
+
+.cta-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: none;
+}
+
+/* ===== SECTION 5: HOW DEEP ===== */
+.levels-section {
+  padding: 140px 0;
+  background: linear-gradient(180deg, transparent 0%, rgba(99, 102, 241, 0.02) 50%, transparent 100%);
+}
+
+.level-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.level-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 36px 28px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.4s, transform 0.3s;
+}
+
+.level-card:hover {
+  transform: translateY(-4px);
+}
+
+.level-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+}
+
+.level-card.green::before { background: linear-gradient(90deg, var(--green), transparent); }
+.level-card.blue::before { background: linear-gradient(90deg, var(--blue), transparent); }
+.level-card.purple::before { background: linear-gradient(90deg, var(--purple), transparent); }
+
+.level-card.green:hover { border-color: rgba(34, 197, 94, 0.2); }
+.level-card.blue:hover { border-color: rgba(59, 130, 246, 0.2); }
+.level-card.purple:hover { border-color: rgba(168, 85, 247, 0.2); }
+
+.level-number {
+  font-family: var(--font-heading);
+  font-size: 3.5rem;
+  font-weight: 300;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.level-card.green .level-number { color: var(--green); }
+.level-card.blue .level-number { color: var(--blue); }
+.level-card.purple .level-number { color: var(--purple); }
+
+.level-name {
+  font-family: var(--font-heading);
+  font-size: 1.4rem;
+  font-weight: 500;
+  margin-bottom: 16px;
+  color: var(--text-primary);
+}
+
+.level-desc {
+  font-size: 0.9rem;
+  line-height: 1.65;
+  color: var(--text-secondary);
+  margin-bottom: 28px;
+}
+
+.level-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  font-family: var(--font-body);
+  text-decoration: none;
+  border: 1px solid var(--border-hover);
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background 0.3s, border-color 0.3s;
+}
+
+.level-btn:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.level-btn i {
+  font-size: 0.75rem;
+}
+
+/* ===== SECTION 6: THE APP ===== */
+.app-section {
+  padding: 140px 0;
+}
+
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+  max-width: 960px;
+  margin: 0 auto 64px;
+}
+
+.feature-block {
+  text-align: center;
+  padding: 40px 20px;
+  border-radius: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  transition: border-color 0.4s, transform 0.3s;
+}
+
+.feature-block:hover {
+  border-color: var(--border-hover);
+  transform: translateY(-3px);
+}
+
+.feature-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  background: var(--accent-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+  font-size: 1.3rem;
+  color: var(--accent);
+}
+
+.feature-name {
+  font-family: var(--font-heading);
+  font-size: 1.3rem;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.feature-desc {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.55;
+}
+
+/* ===== SECTION 7: FOOTER ===== */
+.site-footer {
+  padding: 80px 0 48px;
+  border-top: 1px solid var(--border);
+}
+
+.footer-statement {
+  text-align: center;
+  margin-bottom: 48px;
+}
+
+.footer-statement p {
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  font-weight: 400;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.footer-links {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  margin-bottom: 48px;
+}
+
+.footer-links a {
+  color: var(--text-tertiary);
+  text-decoration: none;
+  font-size: 0.85rem;
+  transition: color 0.3s;
+}
+
+.footer-links a:hover {
+  color: var(--text-primary);
+}
+
+.footer-copyright {
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 900px) {
+  .hero-content {
+    flex-direction: column;
+    gap: 48px;
+    padding-top: 80px;
+  }
+
+  .hero-tagline-area {
+    align-items: center;
+    text-align: center;
+    order: -1;
+  }
+
+  .demo-mockup {
+    width: 100%;
+    max-width: 500px;
+  }
+
+  .video-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .level-cards {
+    grid-template-columns: 1fr;
+    max-width: 420px;
+  }
+
+  .feature-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .reveal-block {
+    gap: 24px;
+  }
+
+  .reveal-block-text {
+    font-size: 1.5rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .hero {
+    min-height: auto;
+    padding: 100px 0 80px;
+  }
+
+  .demo-mockup {
+    flex-direction: column;
+    min-height: auto;
+  }
+
+  .demo-canvas {
+    min-height: 280px;
+  }
+
+  .video-grid {
+    grid-template-columns: 1fr;
+    max-width: 360px;
+  }
+
+  .feature-grid {
+    grid-template-columns: 1fr;
+    max-width: 320px;
+  }
+
+  .reveal-block {
+    flex-direction: column;
+    text-align: center;
+    gap: 16px;
+  }
+
+  .footer-links {
+    flex-wrap: wrap;
+    gap: 20px 32px;
+  }
+
+  .hero-tagline {
+    font-size: 2.4rem;
+  }
+}
+</style>
+</head>
+<body>
+
+<!-- Starfield -->
+<div class="starfield" id="starfield"></div>
+
+<!-- ===== SECTION 1: THE COLD OPEN ===== -->
+<section class="hero" id="hero">
+  <div class="hero-content">
+    <div class="demo-mockup">
+      <!-- Animation Canvas -->
+      <div class="demo-canvas">
+        <!-- Grid dots (diamond pattern) -->
+        <div class="grid-dots">
+          <!-- N -->
+          <div class="grid-dot active" style="top: 0%; left: 50%;"></div>
+          <!-- NE -->
+          <div class="grid-dot" style="top: 14.6%; left: 85.4%;"></div>
+          <!-- E -->
+          <div class="grid-dot active" style="top: 50%; left: 100%;"></div>
+          <!-- SE -->
+          <div class="grid-dot" style="top: 85.4%; left: 85.4%;"></div>
+          <!-- S -->
+          <div class="grid-dot active" style="top: 100%; left: 50%;"></div>
+          <!-- SW -->
+          <div class="grid-dot" style="top: 85.4%; left: 14.6%;"></div>
+          <!-- W -->
+          <div class="grid-dot active" style="top: 50%; left: 0%;"></div>
+          <!-- NW -->
+          <div class="grid-dot" style="top: 14.6%; left: 14.6%;"></div>
+          <!-- Center -->
+          <div class="grid-dot" style="top: 50%; left: 50%; opacity: 0.06; width: 4px; height: 4px;"></div>
+        </div>
+
+        <!-- Blue prop (left hand staff) -->
+        <svg class="prop-figure blue-prop" width="120" height="120" viewBox="0 0 120 120" style="left: 42%; top: 46%;">
+          <line x1="20" y1="100" x2="100" y2="20" class="prop-line" stroke="var(--prop-blue)" />
+          <circle cx="20" cy="100" r="6" fill="var(--prop-blue)" opacity="0.7" />
+          <circle cx="100" cy="20" r="5" fill="var(--prop-blue)" opacity="0.4" />
+        </svg>
+
+        <!-- Red prop (right hand staff) -->
+        <svg class="prop-figure red-prop" width="120" height="120" viewBox="0 0 120 120" style="left: 58%; top: 46%;">
+          <line x1="20" y1="100" x2="100" y2="20" class="prop-line" stroke="var(--prop-red)" />
+          <circle cx="20" cy="100" r="6" fill="var(--prop-red)" opacity="0.7" />
+          <circle cx="100" cy="20" r="5" fill="var(--prop-red)" opacity="0.4" />
+        </svg>
+
+        <!-- Beat indicator -->
+        <div class="beat-indicator" id="beatIndicator">
+          <div class="beat-dot active"></div>
+          <div class="beat-dot"></div>
+          <div class="beat-dot"></div>
+          <div class="beat-dot"></div>
+          <div class="beat-dot"></div>
+          <div class="beat-dot"></div>
+          <div class="beat-dot"></div>
+          <div class="beat-dot"></div>
+        </div>
+      </div>
+
+      <!-- Notation Card -->
+      <div class="demo-card">
+        <div class="demo-card-header">
+          <span class="demo-card-word">A B B D</span>
+          <span class="demo-card-meta">8 beats</span>
+        </div>
+        <div class="picto-grid" id="pictoGrid">
+          <!-- 8 pictograph cells generated by JS -->
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-tagline-area">
+      <h1 class="hero-tagline" id="heroTagline">Sheet music<br>for <em>spinning.</em></h1>
+    </div>
+  </div>
+
+  <a href="#reveal" class="scroll-chevron" aria-label="Scroll down">
+    <i class="fas fa-chevron-down"></i>
+  </a>
+</section>
+
+<!-- ===== SECTION 2: THE REVEAL ===== -->
+<section class="reveal-section" id="reveal">
+  <div class="container">
+    <div class="reveal-blocks">
+      <!-- Block 1 -->
+      <div class="reveal-block reveal">
+        <div class="reveal-block-icon">
+          <svg viewBox="0 0 36 36" fill="none">
+            <!-- Stylized pictograph icon -->
+            <rect x="2" y="2" width="32" height="32" rx="6" stroke="var(--accent)" stroke-width="1.5" fill="none" />
+            <circle cx="18" cy="10" r="2.5" fill="rgba(99,102,241,0.4)" />
+            <circle cx="10" cy="18" r="2.5" fill="rgba(99,102,241,0.4)" />
+            <circle cx="26" cy="18" r="2.5" fill="rgba(99,102,241,0.4)" />
+            <circle cx="18" cy="26" r="2.5" fill="rgba(99,102,241,0.4)" />
+            <line x1="14" y1="12" x2="22" y2="24" stroke="var(--prop-blue)" stroke-width="2" stroke-linecap="round" />
+            <line x1="22" y1="12" x2="14" y2="24" stroke="var(--prop-red)" stroke-width="2" stroke-linecap="round" />
+          </svg>
+        </div>
+        <div>
+          <div class="reveal-block-text">Every move has a symbol.</div>
+        </div>
+      </div>
+
+      <!-- Block 2 -->
+      <div class="reveal-block reveal reveal-delay-1">
+        <div class="reveal-block-icon">
+          <svg viewBox="0 0 36 36" fill="none">
+            <!-- Row of mini symbols -->
+            <rect x="1" y="8" width="8" height="8" rx="2" stroke="var(--accent)" stroke-width="1" fill="rgba(99,102,241,0.08)" />
+            <rect x="11" y="8" width="8" height="8" rx="2" stroke="var(--accent)" stroke-width="1" fill="rgba(99,102,241,0.08)" />
+            <rect x="21" y="8" width="8" height="8" rx="2" stroke="var(--accent)" stroke-width="1" fill="rgba(99,102,241,0.08)" />
+            <line x1="3" y1="10" x2="7" y2="14" stroke="var(--prop-blue)" stroke-width="1.5" stroke-linecap="round" />
+            <line x1="13" y1="14" x2="17" y2="10" stroke="var(--prop-red)" stroke-width="1.5" stroke-linecap="round" />
+            <line x1="23" y1="11" x2="27" y2="13" stroke="var(--prop-blue)" stroke-width="1.5" stroke-linecap="round" />
+            <!-- Arrow connecting them -->
+            <line x1="2" y1="22" x2="28" y2="22" stroke="var(--accent)" stroke-width="1" stroke-dasharray="2 2" />
+            <polygon points="28,19 34,22 28,25" fill="var(--accent)" />
+          </svg>
+        </div>
+        <div>
+          <div class="reveal-block-text">String symbols together. Get a sequence.</div>
+          <div class="symbol-row">
+            <div class="symbol-cell">
+              <div class="symbol-mini-arrow blue" style="transform: rotate(-45deg);"></div>
+              <div class="symbol-mini-arrow red" style="transform: rotate(45deg); position: absolute;"></div>
+              <span class="symbol-letter">A</span>
+            </div>
+            <div class="symbol-cell">
+              <div class="symbol-mini-arrow blue" style="transform: rotate(30deg);"></div>
+              <div class="symbol-mini-arrow red" style="transform: rotate(-60deg); position: absolute;"></div>
+              <span class="symbol-letter">B</span>
+            </div>
+            <div class="symbol-cell">
+              <div class="symbol-mini-arrow blue" style="transform: rotate(30deg);"></div>
+              <div class="symbol-mini-arrow red" style="transform: rotate(-60deg); position: absolute;"></div>
+              <span class="symbol-letter">B</span>
+            </div>
+            <div class="symbol-cell">
+              <div class="symbol-mini-arrow blue" style="transform: rotate(80deg);"></div>
+              <div class="symbol-mini-arrow red" style="transform: rotate(-20deg); position: absolute;"></div>
+              <span class="symbol-letter">D</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Block 3 -->
+      <div class="reveal-block reveal reveal-delay-2">
+        <div class="reveal-block-icon">
+          <div class="play-circle"></div>
+        </div>
+        <div>
+          <div class="reveal-block-text">Hit play. Watch it move.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SECTION 3: THE BRIDGE ===== -->
+<section class="bridge-section" id="bridge">
+  <div class="container">
+    <div class="reveal">
+      <h2 class="bridge-text-main">You already know sequences you can't write down.</h2>
+    </div>
+    <div class="reveal reveal-delay-1">
+      <p class="bridge-text-sub">That combo you taught your friend at the last festival? You had to stand next to them and show it. Fifteen times.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SECTION 4: REAL PERFORMANCES ===== -->
+<section class="performances-section" id="performances">
+  <div class="container">
+    <div class="section-header reveal">
+      <h2>Real spinners. Real sequences.</h2>
+      <p>Staves, fans, clubs. If you grip it and spin it, TKA maps it.</p>
+    </div>
+
+    <div class="video-grid">
+      <div class="video-card reveal reveal-delay-1">
+        <div class="video-thumb">
+          <div class="thumb-silhouette">
+            <svg width="80" height="100" viewBox="0 0 80 100" fill="white">
+              <circle cx="40" cy="20" r="8" />
+              <line x1="40" y1="28" x2="40" y2="60" stroke="white" stroke-width="3" stroke-linecap="round" />
+              <line x1="40" y1="38" x2="18" y2="22" stroke="white" stroke-width="2.5" stroke-linecap="round" />
+              <line x1="40" y1="38" x2="62" y2="22" stroke="white" stroke-width="2.5" stroke-linecap="round" />
+              <line x1="40" y1="60" x2="28" y2="88" stroke="white" stroke-width="2.5" stroke-linecap="round" />
+              <line x1="40" y1="60" x2="52" y2="88" stroke="white" stroke-width="2.5" stroke-linecap="round" />
+              <!-- Staves -->
+              <line x1="8" y1="8" x2="28" y2="36" stroke="var(--prop-blue)" stroke-width="2" stroke-linecap="round" opacity="0.6" />
+              <line x1="72" y1="8" x2="52" y2="36" stroke="var(--prop-red)" stroke-width="2" stroke-linecap="round" opacity="0.6" />
+            </svg>
+          </div>
+          <div class="video-play-btn"></div>
+        </div>
+        <div class="video-info">
+          <div class="video-performer">Aiden Cross</div>
+          <div class="video-prop">Double staves</div>
+        </div>
+      </div>
+
+      <div class="video-card reveal reveal-delay-2">
+        <div class="video-thumb">
+          <div class="thumb-silhouette">
+            <svg width="80" height="100" viewBox="0 0 80 100" fill="white">
+              <circle cx="40" cy="20" r="8" />
+              <line x1="40" y1="28" x2="40" y2="60" stroke="white" stroke-width="3" stroke-linecap="round" />
+              <line x1="40" y1="38" x2="14" y2="28" stroke="white" stroke-width="2.5" stroke-linecap="round" />
+              <line x1="40" y1="38" x2="66" y2="28" stroke="white" stroke-width="2.5" stroke-linecap="round" />
+              <line x1="40" y1="60" x2="28" y2="88" stroke="white" stroke-width="2.5" stroke-linecap="round" />
+              <line x1="40" y1="60" x2="52" y2="88" stroke="white" stroke-width="2.5" stroke-linecap="round" />
+              <!-- Fans -->
+              <path d="M4,18 Q14,8 24,18 Q14,28 4,18Z" fill="var(--prop-blue)" opacity="0.4" />
+              <path d="M56,18 Q66,8 76,18 Q66,28 56,18Z" fill="var(--prop-red)" opacity="0.4" />
+            </svg>
+          </div>
+          <div class="video-play-btn"></div>
+        </div>
+        <div class="video-info">
+          <div class="video-performer">Mara Soleil</div>
+          <div class="video-prop">Fans</div>
+        </div>
+      </div>
+
+      <div class="video-card reveal reveal-delay-3">
+        <div class="video-thumb">
+          <div class="thumb-silhouette">
+            <svg width="80" height="100" viewBox="0 0 80 100" fill="white">
+              <circle cx="40" cy="20" r="8" />
+              <line x1="40" y1="28" x2="40" y2="60" stroke="white" stroke-width="3" stroke-linecap="round" />
+              <line x1="40" y1="38" x2="16" y2="18" stroke="white" stroke-width="2.5" stroke-linecap="round" />
+              <line x1="40" y1="38" x2="64" y2="18" stroke="white" stroke-width="2.5" stroke-linecap="round" />
+              <line x1="40" y1="60" x2="28" y2="88" stroke="white" stroke-width="2.5" stroke-linecap="round" />
+              <line x1="40" y1="60" x2="52" y2="88" stroke="white" stroke-width="2.5" stroke-linecap="round" />
+              <!-- Clubs -->
+              <rect x="6" y="4" width="6" height="22" rx="3" fill="var(--prop-blue)" opacity="0.4" transform="rotate(25, 9, 15)" />
+              <rect x="58" y="4" width="6" height="22" rx="3" fill="var(--prop-red)" opacity="0.4" transform="rotate(-25, 61, 15)" />
+            </svg>
+          </div>
+          <div class="video-play-btn"></div>
+        </div>
+        <div class="video-info">
+          <div class="video-performer">Kai Nomura</div>
+          <div class="video-prop">Clubs</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cta-center reveal reveal-delay-2">
+      <a href="#" class="cta-btn">
+        Try the app <i class="fas fa-arrow-right" style="font-size: 0.85rem;"></i>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SECTION 5: HOW DEEP DOES IT GO ===== -->
+<section class="levels-section" id="levels">
+  <div class="container">
+    <div class="section-header reveal">
+      <h2>Three levels. Twelve months. One alphabet.</h2>
+    </div>
+
+    <div class="level-cards">
+      <div class="level-card green reveal reveal-delay-1">
+        <div class="level-number">1</div>
+        <div class="level-name">Base Motions</div>
+        <p class="level-desc">Six letters. Both hands, no rotation. The building blocks of every combo. You can spell hundreds of sequences with just these.</p>
+        <button class="level-btn"><i class="fas fa-download"></i> Download PDF</button>
+      </div>
+
+      <div class="level-card blue reveal reveal-delay-2">
+        <div class="level-number">2</div>
+        <div class="level-name">Whole Turns</div>
+        <p class="level-desc">Add full rotations. The alphabet expands to 30 motions. Everything you've seen at a festival lives here.</p>
+        <button class="level-btn"><i class="fas fa-download"></i> Download PDF</button>
+      </div>
+
+      <div class="level-card purple reveal reveal-delay-3">
+        <div class="level-number">3</div>
+        <div class="level-name">Half Turns + Float</div>
+        <p class="level-desc">Half-turn precision and floats. 56 total motions. Enough to notate virtually any gripped-prop sequence on the planet.</p>
+        <button class="level-btn"><i class="fas fa-download"></i> Download PDF</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SECTION 6: THE APP IN 30 SECONDS ===== -->
+<section class="app-section" id="app">
+  <div class="container">
+    <div class="section-header reveal">
+      <h2>The app in 30 seconds.</h2>
+    </div>
+
+    <div class="feature-grid">
+      <div class="feature-block reveal reveal-delay-1">
+        <div class="feature-icon"><i class="fas fa-compass"></i></div>
+        <div class="feature-name">Browse</div>
+        <p class="feature-desc">Search the sequence library by word, difficulty, or prop type.</p>
+      </div>
+
+      <div class="feature-block reveal reveal-delay-2">
+        <div class="feature-icon"><i class="fas fa-pen-nib"></i></div>
+        <div class="feature-name">Create</div>
+        <p class="feature-desc">Build sequences beat by beat. The app handles the notation.</p>
+      </div>
+
+      <div class="feature-block reveal reveal-delay-3">
+        <div class="feature-icon"><i class="fas fa-play"></i></div>
+        <div class="feature-name">Animate</div>
+        <p class="feature-desc">See your sequence performed. Adjust speed, loop it, study the path.</p>
+      </div>
+
+      <div class="feature-block reveal reveal-delay-4">
+        <div class="feature-icon"><i class="fas fa-qrcode"></i></div>
+        <div class="feature-name">Share</div>
+        <p class="feature-desc">QR code or link. The other person sees the animation instantly.</p>
+      </div>
+    </div>
+
+    <div class="cta-center reveal">
+      <a href="#" class="cta-btn">
+        Open TKA <i class="fas fa-arrow-right" style="font-size: 0.85rem;"></i>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SECTION 7: FOOTER ===== -->
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-statement reveal">
+      <p>Built by a flow artist for flow artists. Not a startup. Not going anywhere.</p>
+    </div>
+    <nav class="footer-links reveal reveal-delay-1">
+      <a href="#">About</a>
+      <a href="#">Roots</a>
+      <a href="#">Terms</a>
+      <a href="#">Privacy</a>
+    </nav>
+    <div class="footer-copyright reveal reveal-delay-2">
+      &copy; 2026 The Kinetic Alphabet. All rights reserved.
+    </div>
+  </div>
+</footer>
+
+<script>
+// ===== STARFIELD =====
+(function initStarfield() {
+  const field = document.getElementById('starfield');
+  const count = 160;
+  for (let i = 0; i < count; i++) {
+    const star = document.createElement('div');
+    star.className = 'star';
+    const size = Math.random() * 2 + 0.5;
+    star.style.width = size + 'px';
+    star.style.height = size + 'px';
+    star.style.left = Math.random() * 100 + '%';
+    star.style.top = Math.random() * 100 + '%';
+    star.style.opacity = Math.random() * 0.5 + 0.05;
+    // Some drift, some twinkle
+    if (Math.random() > 0.6) {
+      star.style.animation = `drift ${20 + Math.random() * 40}s linear infinite`;
+      star.style.animationDelay = -Math.random() * 30 + 's';
+    } else {
+      star.style.animation = `twinkle ${3 + Math.random() * 5}s ease-in-out infinite`;
+      star.style.animationDelay = -Math.random() * 5 + 's';
+    }
+    field.appendChild(star);
+  }
+})();
+
+// ===== HERO TAGLINE FADE IN =====
+setTimeout(() => {
+  document.getElementById('heroTagline').classList.add('visible');
+}, 3000);
+
+// ===== BEAT CYCLE =====
+(function initBeatCycle() {
+  const dots = document.querySelectorAll('#beatIndicator .beat-dot');
+  const cells = document.querySelectorAll('#pictoGrid .picto-cell');
+  let current = 0;
+  setInterval(() => {
+    dots.forEach(d => d.classList.remove('active'));
+    cells.forEach(c => c.classList.remove('active-beat'));
+    current = (current + 1) % 8;
+    dots[current].classList.add('active');
+    if (cells[current]) cells[current].classList.add('active-beat');
+  }, 1200);
+})();
+
+// ===== POPULATE PICTO GRID =====
+(function initPictoGrid() {
+  const grid = document.getElementById('pictoGrid');
+  const letters = ['A', 'B', 'B', 'D', 'A', 'B', 'B', 'D'];
+  const angles = [
+    [-45, 45], [30, -60], [30, -60], [80, -20],
+    [-45, 45], [30, -60], [30, -60], [80, -20]
+  ];
+
+  letters.forEach((letter, i) => {
+    const cell = document.createElement('div');
+    cell.className = 'picto-cell' + (i === 0 ? ' active-beat' : '');
+
+    // Mini grid with arrows
+    cell.innerHTML = `
+      <div class="mini-grid">
+        <div class="mini-dot" style="top: 0%; left: 50%;"></div>
+        <div class="mini-dot" style="top: 50%; left: 0%;"></div>
+        <div class="mini-dot" style="top: 50%; left: 100%;"></div>
+        <div class="mini-dot" style="top: 100%; left: 50%;"></div>
+        <div class="mini-arrow blue" style="height: 16px; top: 30%; left: 40%; transform: rotate(${angles[i][0]}deg);"></div>
+        <div class="mini-arrow red" style="height: 16px; top: 30%; left: 55%; transform: rotate(${angles[i][1]}deg);"></div>
+      </div>
+      <span class="picto-cell-label">${letter}</span>
+    `;
+    grid.appendChild(cell);
+  });
+})();
+
+// ===== SCROLL REVEAL =====
+(function initReveal() {
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+      }
+    });
+  }, {
+    threshold: 0.15,
+    rootMargin: '0px 0px -60px 0px'
+  });
+
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+})();
+</script>
+</body>
+</html>

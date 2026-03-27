@@ -79,6 +79,12 @@
   let spinnerOrchestrator: IEndlessSpinnerOrchestrator | null = null;
   let servicesReady = $state(false);
   let animationReady = $state(false);
+  interface Props {
+    onPropTypeChange?: (propType: PropType) => void;
+  }
+
+  let { onPropTypeChange }: Props = $props();
+
   let animationError = $state(false);
   let isLoading = $state(false);
   let isChainingEnabled = $state(true); // Enable endless chaining
@@ -478,6 +484,7 @@
         RANDOM_PROPS[Math.floor(Math.random() * RANDOM_PROPS.length)]!;
     }
     currentPropType = newPropType;
+    onPropTypeChange?.(newPropType);
 
     // Hot swap - instant prop change without transition animation:
     // 1. AnimatorCanvas receives new prop type via bluePropType/redPropType props
@@ -579,7 +586,7 @@
                 {darkMode}
                 bluePropType={currentPropType}
                 redPropType={currentPropType}
-                columnCount={5}
+                columnCount={4}
                 highlightedStepIndex={currentStepNumber > 0 ? currentStepNumber - 1 : null}
                 showHighlight={animationState.isPlaying}
                 showDifficultyLevel={false}
