@@ -288,6 +288,20 @@
     const offset = (windowCounter % 8) * 28;
     windowCounter++;
 
+    /* Low memory warning after the 10th window (one-time) */
+    if (windowCounter === 10 && !lowMemoryWarningShown) {
+      lowMemoryWarningShown = true;
+      desktopState.dialogQueue = [
+        ...desktopState.dialogQueue,
+        {
+          title: "Low Memory Warning",
+          message: "Your system is running low on memory. Close some windows.\n\nOr don't. I'm a dialog, not a cop.",
+          type: "warning",
+          buttons: ["OK"],
+        },
+      ];
+    }
+
     /* App-specific default sizes */
     const sizes: Record<string, { width: number; height: number }> = {
       notation: { width: 640, height: 480 },
@@ -406,6 +420,26 @@
       doomBuffer = "";
       openDoom();
     }
+  }
+
+  function openTaskManager() {
+    const offset = (windowCounter % 8) * 28;
+    windowCounter++;
+
+    windowManager.openWindow({
+      id: "taskmgr",
+      title: "TKA-OS Task Manager",
+      x: 100 + offset,
+      y: 60 + offset,
+      width: 400,
+      height: 350,
+      minWidth: 320,
+      minHeight: 260,
+      isMinimized: false,
+      isMaximized: false,
+    });
+
+    retroSound.windowOpen();
   }
 
   function openDoom() {
@@ -589,6 +623,13 @@
       return;
     }
 
+    // Ctrl+Alt+Delete: Open Task Manager
+    if (e.ctrlKey && e.altKey && (e.key === "Delete" || e.key === "Del")) {
+      e.preventDefault();
+      openTaskManager();
+      return;
+    }
+
     // Escape: Close menus in priority order
     if (e.key === "Escape") {
       if (desktopState.startMenuOpen) {
@@ -725,6 +766,8 @@
                 <RetroDoom onclose={() => closeWindowWithSound(win.id)} />
               {:else if win.id === "recyclebin"}
                 <RetroRecycleBin onclose={() => closeWindowWithSound(win.id)} />
+              {:else if win.id === "taskmgr"}
+                <RetroTaskManager onclose={() => closeWindowWithSound(win.id)} />
               {:else}
                 <div class="placeholder-content">
                   <p>{win.title}</p>
