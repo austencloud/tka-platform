@@ -152,6 +152,14 @@ function applyReversalToSequence(steps, patternId) {
   const pattern = REVERSAL_PATTERNS[patternId];
   const seq = pattern.sequence;
 
+  // Track running state per hand for cumulative reversal.
+  // Pro/anti motions flip cumulatively (each beat reverses from the previous).
+  // Static/dash motions only flip rotation direction from their original value.
+  let runBlueType = null;
+  let runBlueRotDir = null;
+  let runRedType = null;
+  let runRedRotDir = null;
+
   let beatIndex = 0;
   for (let i = 0; i < steps.length; i++) {
     const step = steps[i];
@@ -160,10 +168,12 @@ function applyReversalToSequence(steps, patternId) {
     const blue = step.motions?.blue;
     const red = step.motions?.red;
 
-    // Beat 1 (beatIndex 0): no reversal, just record the state
+    // Beat 1 (beatIndex 0): no reversal, just record the running state
     if (beatIndex === 0) {
       step.blueReversal = false;
       step.redReversal = false;
+      if (blue) { runBlueType = blue.motionType; runBlueRotDir = blue.rotationDirection; }
+      if (red) { runRedType = red.motionType; runRedRotDir = red.rotationDirection; }
       beatIndex++;
       continue;
     }
@@ -175,26 +185,33 @@ function applyReversalToSequence(steps, patternId) {
     step.blueReversal = blueReversed;
     step.redReversal = redReversed;
 
-    // Apply reversal based on the CURRENT beat's original motion type.
-    // - pro/anti: flip motion type AND rotation direction
-    // - static/dash: only flip rotation direction (motion type stays)
     if (blue && blueReversed) {
-      if (blue.motionType === "pro" || blue.motionType === "anti") {
-        blue.motionType = blue.motionType === "pro" ? "anti" : "pro";
-      }
-      if (blue.rotationDirection === "cw" || blue.rotationDirection === "ccw") {
-        blue.rotationDirection = blue.rotationDirection === "cw" ? "ccw" : "cw";
+      if (blue.motionType === "static" || blue.motionType === "dash") {
+        // Static/dash: only flip rotation direction from the beat's own value
+        if (blue.rotationDirection === "cw" || blue.rotationDirection === "ccw") {
+          blue.rotationDirection = blue.rotationDirection === "cw" ? "ccw" : "cw";
+        }
+      } else {
+        // Pro/anti: flip cumulatively from the RUNNING state
+        blue.motionType = runBlueType === "pro" ? "anti" : "pro";
+        blue.rotationDirection = runBlueRotDir === "cw" ? "ccw"
+          : runBlueRotDir === "ccw" ? "cw" : runBlueRotDir;
       }
     }
+    if (blue) { runBlueType = blue.motionType; runBlueRotDir = blue.rotationDirection; }
 
     if (red && redReversed) {
-      if (red.motionType === "pro" || red.motionType === "anti") {
-        red.motionType = red.motionType === "pro" ? "anti" : "pro";
-      }
-      if (red.rotationDirection === "cw" || red.rotationDirection === "ccw") {
-        red.rotationDirection = red.rotationDirection === "cw" ? "ccw" : "cw";
+      if (red.motionType === "static" || red.motionType === "dash") {
+        if (red.rotationDirection === "cw" || red.rotationDirection === "ccw") {
+          red.rotationDirection = red.rotationDirection === "cw" ? "ccw" : "cw";
+        }
+      } else {
+        red.motionType = runRedType === "pro" ? "anti" : "pro";
+        red.rotationDirection = runRedRotDir === "cw" ? "ccw"
+          : runRedRotDir === "ccw" ? "cw" : runRedRotDir;
       }
     }
+    if (red) { runRedType = red.motionType; runRedRotDir = red.rotationDirection; }
 
     // Re-derive letter
     const newLetter = lookupLetterForStep(step);
