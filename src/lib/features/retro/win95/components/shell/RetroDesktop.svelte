@@ -71,7 +71,7 @@
 
   const desktopIcons: RetroDesktopIcon[] = [
     { id: "mycomputer", label: "My Computer", icon: "mycomputer", executable: "mycomputer" },
-    { id: "scribe", label: "SCRIBE.EXE", icon: "scribe", executable: "scribe" },
+    { id: "notation", label: "TKANOTTN.EXE", icon: "scribe", executable: "notation" },
     { id: "filemgr", label: "FILEMGR.EXE", icon: "filemgr", executable: "filemgr" },
     { id: "tutor", label: "TUTOR.EXE", icon: "tutor", executable: "tutor" },
     { id: "cards", label: "CARDS.EXE", icon: "cards", executable: "cards" },
@@ -98,7 +98,7 @@
       label: "Programs",
       icon: "programs",
       children: [
-        { label: "SCRIBE.EXE", icon: "scribe", action: () => openApp("scribe", "SCRIBE.EXE", "scribe") },
+        { label: "TKANOTTN.EXE", icon: "scribe", action: () => openApp("notation", "TKA Notation System", "scribe") },
         { label: "FILEMGR.EXE", icon: "filemgr", action: () => openApp("filemgr", "FILEMGR.EXE", "filemgr") },
         { label: "TUTOR.EXE", icon: "tutor", action: () => openApp("tutor", "TUTOR.EXE", "tutor") },
         { label: "CARDS.EXE", icon: "cards", action: () => openApp("cards", "CARDS.EXE", "cards") },
@@ -239,7 +239,7 @@
 
     /* App-specific default sizes */
     const sizes: Record<string, { width: number; height: number }> = {
-      scribe: { width: 640, height: 480 },
+      notation: { width: 640, height: 480 },
       filemgr: { width: 580, height: 400 },
       tutor: { width: 520, height: 400 },
       cards: { width: 480, height: 380 },
@@ -469,8 +469,8 @@
       desktopState.isBooting = false;
       desktopState.bootComplete = true;
       retroSound.startup();
-      /* Auto-open SCRIBE.EXE like a real Win95 startup program */
-      openApp("scribe", "SCRIBE.EXE", "scribe");
+      /* Auto-open TKA Notation System like a real Win95 startup program */
+      openApp("notation", "TKA Notation System", "scribe");
     }} />
   {:else}
     <!-- Desktop surface -->
@@ -529,7 +529,7 @@
             onresize={(w, h) => windowManager.resizeWindow(win.id, w, h)}
           >
             {#snippet children()}
-              {#if win.id === "scribe"}
+              {#if win.id === "notation"}
                 <RetroScribe onclose={() => windowManager.closeWindow(win.id)} />
               {:else if win.id === "filemgr"}
                 <RetroFileManager onclose={() => windowManager.closeWindow(win.id)} />

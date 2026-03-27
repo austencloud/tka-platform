@@ -213,7 +213,7 @@
         "COMMAND.COM",
       ],
       "c-sys-config": [
-        "SCRIBE.INI",
+        "TKANOTTN.INI",
         "DISPLAY.CFG",
         "PALETTE.DAT",
         "GRID.CFG",
@@ -483,7 +483,7 @@
   function handleFileDblClick(index: number) {
     const file = currentFiles[index];
     if (!file) return;
-    statusText = `Opening ${file.name}... (redirecting to SCRIBE.EXE)`;
+    statusText = `Opening ${file.name}... (redirecting to TKANOTTN.EXE)`;
   }
 </script>
 
