@@ -50,6 +50,7 @@
   import RetroMobileWarning from "./RetroMobileWarning.svelte";
   import RetroLoginDialog from "./RetroLoginDialog.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import { loadRetroSettings } from "../../adapters/settings-adapter";
 
   /* ------------------------------------------------------------------ */
   /* Props                                                               */
@@ -134,6 +135,24 @@
   let windowWidth = $state(typeof window !== "undefined" ? window.innerWidth : 1024);
 
   const isMobile = $derived(windowWidth < 768);
+
+  /* ------------------------------------------------------------------ */
+  /* Load persisted settings on first mount                             */
+  /* ------------------------------------------------------------------ */
+
+  // We run this once at startup so settings survive page refresh.
+  // The effect runs synchronously before the first render, meaning
+  // the CRT overlay and desktop color are already correct at boot time.
+  $effect(() => {
+    const saved = loadRetroSettings();
+    desktopState.crtScanlines = saved.retroCrtScanlines;
+    desktopState.crtVignette = saved.retroCrtVignette;
+    desktopState.crtFlicker = saved.retroCrtFlicker;
+    desktopState.desktopColor = saved.retroDesktopColor;
+    desktopState.soundVolume = saved.retroSoundVolume;
+    desktopState.soundMuted = saved.retroSoundMuted;
+    desktopState.screensaverTimeout = saved.retroScreensaverTimeout;
+  });
 
   /* ------------------------------------------------------------------ */
   /* Sync sound manager with state                                       */

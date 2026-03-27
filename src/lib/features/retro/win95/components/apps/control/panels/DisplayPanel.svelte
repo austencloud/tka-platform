@@ -7,6 +7,7 @@
   import RetroCheckbox from "../../../primitives/RetroCheckbox.svelte";
   import RetroTabControl from "../../../primitives/RetroTabControl.svelte";
   import { desktopState } from "../../../../state/desktop-state.svelte";
+  import { saveRetroSettings } from "../../../../adapters/settings-adapter";
 
   let {
     onback,
@@ -50,6 +51,13 @@
     desktopState.crtFlicker = flicker;
     desktopState.desktopColor = color;
     desktopState.screensaverTimeout = saverTimeout;
+    saveRetroSettings({
+      retroCrtScanlines: scanlines,
+      retroCrtVignette: vignette,
+      retroCrtFlicker: flicker,
+      retroDesktopColor: color,
+      retroScreensaverTimeout: saverTimeout,
+    });
     onstatuschange("Display settings applied");
   }
 

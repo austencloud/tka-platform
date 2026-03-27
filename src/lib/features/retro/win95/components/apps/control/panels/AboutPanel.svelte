@@ -3,12 +3,26 @@
 -->
 <script lang="ts">
   import RetroButton from "../../../primitives/RetroButton.svelte";
+  import { desktopState } from "../../../../state/desktop-state.svelte";
+  import { authState } from "$lib/shared/auth/state/authState.svelte";
 
   let {
     onback,
   }: {
     onback: () => void;
   } = $props();
+
+  // Show the first 8 characters of the user's UID as a "serial number".
+  // Guests see a placeholder until they log in.
+  const serial = $derived(
+    authState.user?.uid
+      ? authState.user.uid.slice(0, 8).toUpperCase()
+      : "XXXXXXXX"
+  );
+
+  const registeredTo = $derived(
+    desktopState.userDisplayName ?? desktopState.userEmail ?? "[CLASSIFIED]"
+  );
 </script>
 
 <div class="sub-panel">
@@ -20,12 +34,12 @@
   </div>
 
   <div class="about-body sunken-panel">
-    <div class="about-line about-bold">TKA-OS v1.0</div>
+    <div class="about-line about-bold">TKA Notation System v1.0</div>
     <div class="about-line">(c) 1995 Bellweather Technical Institute</div>
     <div class="about-line">All rights reserved.</div>
     <div class="about-spacer"></div>
-    <div class="about-line">Licensed to: [CLASSIFIED]</div>
-    <div class="about-line">Serial: BTI-1995-TKA-OS-001</div>
+    <div class="about-line">Registered to: {registeredTo}</div>
+    <div class="about-line">Serial: BTI-{serial}</div>
     <div class="about-spacer"></div>
     <div class="about-line">Physical Memory: 640 KB</div>
     <div class="about-line">Available Memory: 247 KB</div>

@@ -6,6 +6,7 @@
   import RetroCheckbox from "../../../primitives/RetroCheckbox.svelte";
   import { desktopState } from "../../../../state/desktop-state.svelte";
   import { retroSound } from "../../../../state/retro-sound";
+  import { saveRetroSettings } from "../../../../adapters/settings-adapter";
 
   let {
     onback,
@@ -29,6 +30,12 @@
   function apply() {
     desktopState.soundVolume = volume;
     desktopState.soundMuted = muted;
+    retroSound.setVolume(volume / 100);
+    retroSound.setMuted(muted);
+    saveRetroSettings({
+      retroSoundVolume: volume,
+      retroSoundMuted: muted,
+    });
     onstatuschange("Sound settings applied");
   }
 
