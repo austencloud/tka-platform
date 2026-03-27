@@ -179,7 +179,9 @@
         <p class="loop-explanation">{loopExplanationText}</p>
       {/if}
 
-      <div class="spacer"></div>
+      {#if !d.hasLoop}
+        <div class="spacer"></div>
+      {/if}
 
     </div>
 
