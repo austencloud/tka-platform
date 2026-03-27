@@ -145,6 +145,39 @@ export interface ILibraryRepository {
   ): Promise<LibrarySequence[]>;
 
   // ============================================================
+  // SOFT DELETE (RECYCLE BIN)
+  // ============================================================
+
+  /**
+   * Soft-delete a sequence (move to recycle bin).
+   * Sets isDeleted=true and deletedAt=now.
+   * Removes from public index if public.
+   */
+  softDeleteSequence(sequenceId: string): Promise<void>;
+
+  /**
+   * Restore a soft-deleted sequence from the recycle bin.
+   * Clears isDeleted and deletedAt.
+   */
+  restoreSequence(sequenceId: string): Promise<void>;
+
+  /**
+   * Permanently delete a soft-deleted sequence.
+   * Only works on sequences where isDeleted=true.
+   */
+  purgeSequence(sequenceId: string): Promise<void>;
+
+  /**
+   * Get all soft-deleted sequences (recycle bin contents).
+   */
+  getDeletedSequences(): Promise<LibrarySequence[]>;
+
+  /**
+   * Permanently delete all soft-deleted sequences.
+   */
+  emptyRecycleBin(): Promise<void>;
+
+  // ============================================================
   // VISIBILITY MANAGEMENT
   // ============================================================
 

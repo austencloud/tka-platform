@@ -125,6 +125,16 @@ export interface LibrarySequence extends SequenceData {
   readonly contentHash?: string;
 
   // ============================================================
+  // SOFT DELETE (RECYCLE BIN)
+  // ============================================================
+
+  /** When the sequence was soft-deleted. Null means not deleted. */
+  readonly deletedAt?: Date | null;
+
+  /** Whether the sequence is in the recycle bin */
+  readonly isDeleted?: boolean;
+
+  // ============================================================
   // TIMESTAMPS
   // ============================================================
 

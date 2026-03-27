@@ -840,10 +840,15 @@ export class LibraryRepository implements ILibraryRepository {
       ownerAvatarUrl: ownerAvatarUrl ?? seq.ownerAvatarUrl,
     }));
 
+    // Filter out soft-deleted sequences (recycle bin).
+    // Done client-side because a Firestore "!=" query would exclude all
+    // existing documents that lack the isDeleted field entirely.
+    const activeSequences = enrichedSequences.filter((seq) => !seq.isDeleted);
+
     // Client-side search filter (Firestore doesn't support full-text search)
     if (options?.searchQuery) {
       const searchLower = options.searchQuery.toLowerCase();
-      return enrichedSequences.filter(
+      return activeSequences.filter(
         (seq) =>
           seq.name.toLowerCase().includes(searchLower) ||
           seq.word.toLowerCase().includes(searchLower) ||
@@ -851,7 +856,7 @@ export class LibraryRepository implements ILibraryRepository {
       );
     }
 
-    return enrichedSequences;
+    return activeSequences;
   }
 
   // ============================================================
@@ -1318,6 +1323,198 @@ export class LibraryRepository implements ILibraryRepository {
       console.error("[LibraryRepository] Failed to sync public index:", error);
       toast.warning("Visibility updated, but public index sync failed.");
       // Don't throw - visibility was already successfully updated
+    }
+  }
+
+  // ============================================================
+  // SOFT DELETE (RECYCLE BIN)
+  // ============================================================
+
+  async softDeleteSequence(sequenceId: string): Promise<void> {
+    const firestore = await getFirestoreInstance();
+    const userId = this.getUserId();
+    const existing = await this.getSequence(sequenceId);
+
+    if (!existing) {
+      throw new LibraryError("Sequence not found", "NOT_FOUND", sequenceId);
+    }
+
+    // Remove from public index first if the sequence is public.
+    // This ensures the card disappears from the community gallery immediately.
+    if (existing.visibility === "public" && this.publicIndexSyncer) {
+      try {
+        await this.publicIndexSyncer.removeFromPublicIndex(sequenceId);
+      } catch (error) {
+        this.reportError(
+          "Sequence moved to recycle bin, but it may still appear in the community gallery.",
+          error,
+          "soft-delete-public-index-remove",
+          { sequenceId },
+          "warning"
+        );
+      }
+    }
+
+    try {
+      await trackWrite(
+        () =>
+          updateDoc(doc(firestore, getUserSequencePath(userId, sequenceId)), {
+            isDeleted: true,
+            deletedAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+          }),
+        "library"
+      );
+      notifyLibraryMutated(sequenceId);
+    } catch (error) {
+      this.reportError(
+        "Failed to move sequence to recycle bin.",
+        error,
+        "soft-delete-sequence",
+        { sequenceId }
+      );
+      throw new LibraryError("Failed to soft-delete sequence", "NETWORK", sequenceId);
+    }
+  }
+
+  async restoreSequence(sequenceId: string): Promise<void> {
+    const firestore = await getFirestoreInstance();
+    const userId = this.getUserId();
+
+    try {
+      await trackWrite(
+        () =>
+          updateDoc(doc(firestore, getUserSequencePath(userId, sequenceId)), {
+            isDeleted: false,
+            deletedAt: null,
+            updatedAt: serverTimestamp(),
+          }),
+        "library"
+      );
+      notifyLibraryMutated(sequenceId);
+    } catch (error) {
+      this.reportError(
+        "Failed to restore sequence from recycle bin.",
+        error,
+        "restore-sequence",
+        { sequenceId }
+      );
+      throw new LibraryError("Failed to restore sequence", "NETWORK", sequenceId);
+    }
+  }
+
+  async purgeSequence(sequenceId: string): Promise<void> {
+    const existing = await this.getSequence(sequenceId);
+
+    // getSequence filters out soft-deleted sequences, so we need to fetch
+    // the raw document to check the isDeleted flag.
+    if (existing) {
+      // Document exists but is NOT soft-deleted — refuse to purge.
+      // Use softDeleteSequence first, or deleteSequence for an immediate hard delete.
+      throw new LibraryError(
+        "Cannot purge a sequence that is not in the recycle bin. Soft-delete it first.",
+        "INVALID_DATA",
+        sequenceId
+      );
+    }
+
+    // Fetch the raw document to confirm it exists and is soft-deleted
+    const firestore = await getFirestoreInstance();
+    const userId = this.getUserId();
+    const docRef = doc(firestore, getUserSequencePath(userId, sequenceId));
+    const docSnap = await getDoc(docRef);
+
+    if (!docSnap.exists()) {
+      return; // Already gone
+    }
+
+    const data = docSnap.data();
+    if (!data?.["isDeleted"]) {
+      throw new LibraryError(
+        "Cannot purge a sequence that is not in the recycle bin.",
+        "INVALID_DATA",
+        sequenceId
+      );
+    }
+
+    // Hard-delete the document directly. We can't delegate to deleteSequence()
+    // because it calls getSequence() which filters out soft-deleted items.
+    try {
+      await trackWrite(() => deleteDoc(docRef), "library");
+      notifyLibraryMutated(sequenceId);
+    } catch (error) {
+      this.reportError(
+        "Failed to permanently delete sequence.",
+        error,
+        "purge-sequence",
+        { sequenceId }
+      );
+      throw new LibraryError("Failed to purge sequence", "NETWORK", sequenceId);
+    }
+  }
+
+  async getDeletedSequences(): Promise<LibrarySequence[]> {
+    const firestore = await getFirestoreInstance();
+    const userId = this.getUserId();
+    const sequencesRef = collection(firestore, getUserSequencesPath(userId));
+
+    const q = query(
+      sequencesRef,
+      where("isDeleted", "==", true),
+      orderBy("deletedAt", "desc")
+    );
+
+    const snapshot = await getDocs(q);
+    const sequences: LibrarySequence[] = [];
+
+    snapshot.forEach((docSnap) => {
+      sequences.push(this.mapDocToLibrarySequence(docSnap.data(), docSnap.id));
+    });
+
+    return sequences;
+  }
+
+  async emptyRecycleBin(): Promise<void> {
+    const deleted = await this.getDeletedSequences();
+    if (deleted.length === 0) return;
+
+    const firestore = await getFirestoreInstance();
+    const userId = this.getUserId();
+
+    // Firestore batches are limited to 500 operations. For most users the
+    // recycle bin will be small, but we chunk to be safe.
+    const BATCH_LIMIT = 500;
+
+    for (let i = 0; i < deleted.length; i += BATCH_LIMIT) {
+      const chunk = deleted.slice(i, i + BATCH_LIMIT);
+      const batch = writeBatch(firestore);
+
+      for (const seq of chunk) {
+        batch.delete(doc(firestore, getUserSequencePath(userId, seq.id)));
+
+        // Also remove from public index if it was public before soft-deletion.
+        // This is a safety net — softDeleteSequence already removes it, but
+        // the removal may have failed silently.
+        if (seq.visibility === "public") {
+          batch.delete(doc(firestore, getPublicSequencePath(seq.id)));
+        }
+      }
+
+      try {
+        await trackWrite(() => batch.commit(), "library");
+      } catch (error) {
+        this.reportError(
+          "Failed to empty recycle bin. Some sequences may remain.",
+          error,
+          "empty-recycle-bin"
+        );
+        throw new LibraryError("Failed to empty recycle bin", "NETWORK");
+      }
+    }
+
+    // Notify listeners for each purged sequence
+    for (const seq of deleted) {
+      notifyLibraryMutated(seq.id);
     }
   }
 
