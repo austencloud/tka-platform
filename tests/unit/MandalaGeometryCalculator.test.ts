@@ -648,10 +648,10 @@ describe("MandalaGeometryCalculator", () => {
       expect(maxDist).toBeGreaterThan(MANDALA_GRID_RADIUS);
     });
 
-    it("DEFAULT_TIP_INSET_PX is 20 (pin the constant)", () => {
+    it("DEFAULT_TIP_INSET_PX is 15 (pin the constant)", () => {
       // If someone changes this constant, the visual output changes significantly.
       // Pin it explicitly so any change requires updating the tests too.
-      expect(DEFAULT_TIP_INSET_PX).toBe(20);
+      expect(DEFAULT_TIP_INSET_PX).toBe(15);
     });
   });
 
