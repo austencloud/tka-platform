@@ -115,14 +115,22 @@ For each prop-type layer (Layer 3 → Layer 2 → Layer 1):
 
 The existing Layer 3 → Layer 2 → Layer 1 cascade (prop-type layers) remains unchanged. The orientation fallback is an inner loop within each prop-type layer.
 
+The caller (in `ArrowAdjustmentCalculator`) computes the legacy key and passes it in, keeping the repository free of orientation-key-generation logic:
+
 ```typescript
+// In ArrowAdjustmentCalculator (the caller):
+const oriKey = this.orientationKeyService.generateOrientationKey(motionData, pictographData);
+const legacyOriKey = this.orientationKeyService.mapToLegacyBucket(oriKey);
+const baseKey = { gridMode, oriKey, letter, turnsTuple, arrowKey };
+repo.getAdjustmentCascading(baseKey, legacyOriKey, thisPropType, otherPropType);
+
+// In GlobalArrowAdjustmentRepository:
 getAdjustmentCascading(
-  baseKey: GlobalAdjustmentKey,  // now contains specific oriKey
+  baseKey: GlobalAdjustmentKey,       // specific oriKey (e.g., "counter_counter")
+  legacyOriKey: string,               // fallback bucket (e.g., "from_layer2")
   thisPropType: string,
   otherPropType: string
 ): CascadingLookupResult | null {
-  // Compute legacy fallback oriKey
-  const legacyOriKey = this.oriKeyGenerator.mapToLegacyBucket(baseKey.oriKey);
   const fallbackKey = { ...baseKey, oriKey: legacyOriKey };
 
   // Layer 3: try specific → try legacy
@@ -136,17 +144,50 @@ getAdjustmentCascading(
 
 No structural changes needed. It already delegates to `SpecialPlacementOriKeyGenerator.generateOrientationKey()`, which now returns specific keys. The generated key automatically uses the new format.
 
-### 4. Special Placement JSON Tier
+### 4. `SpecialPlacer.ts` — JSON Folder Fallback (Critical)
 
-The static JSON files in `/data/arrow_placement/{gridMode}/special/` are organized by the legacy `from_layer*` folder names. These are **read-only reference data**, not user-editable. They continue to work because:
+The static JSON files live in `/data/arrow_placement/{gridMode}/special/{oriKey}/`. The folders are named `from_layer1`, `from_layer2`, etc. After this change, `generateOrientationKey()` returns `counter_counter`, so the data provider tries to load from a `counter_counter/` folder that does not exist.
 
-- The special JSON tier has its own lookup path (`SpecialPlacer.getSpecialAdjustment()`) that uses `oriKey` to find the right folder.
-- The `SpecialPlacer` will need to use the same fallback strategy: try specific oriKey folder first, fall back to legacy bucket folder.
-- Since no specific-orientation JSON folders exist yet, it will always fall through to the legacy folders. This is correct — the JSON data was authored under the old scheme and remains valid.
+Three methods in `SpecialPlacer` pass `oriKey` to `SpecialPlacementDataProvider.getLetterData()`:
+- `getSpecialAdjustment()` (line ~114)
+- `getSpecialJsonAdjustmentOnly()` (line ~266)
+- `hasRotationAngleOverride()` (line ~192)
 
-### 5. Rotation Override Manager / Other oriKey Consumers
+Each needs the two-step fallback:
 
-Any code that reads `oriKey` to find placement data needs the same fallback pattern. Grep for `oriKey` usage to identify all consumers. The `mapToLegacyBucket()` method provides a single source of truth for the mapping.
+```typescript
+// Try specific oriKey folder first
+let letterData = await this.dataService.getLetterData(gridMode, oriKey, letter);
+if (!letterData || Object.keys(letterData).length === 0) {
+  // Fall back to legacy bucket folder
+  const legacyOriKey = this.oriKeyGenerator.mapToLegacyBucket(oriKey);
+  letterData = await this.dataService.getLetterData(gridMode, legacyOriKey, letter);
+}
+```
+
+Since no specific-orientation JSON folders exist yet, the first lookup always returns empty and falls through to the legacy folders. This is correct — the JSON data was authored under the old scheme and remains valid. If specific-orientation JSON folders are added in the future, they will take priority.
+
+### 5. `RotationOverrideManager.ts` — localStorage Key Fallback
+
+`RotationOverrideManager` stores rotation overrides in localStorage keyed by `[gridMode][oriKey][letter][turnsTuple][rotationKey]`. After this change, new overrides save under `counter_counter` while old overrides remain under `from_layer2`.
+
+Without a fallback, existing user overrides become orphaned. The lookup needs:
+
+```typescript
+// Try specific oriKey first
+let override = overrides[gridMode]?.[specificOriKey]?.[letter]?.[turnsTuple]?.[rotationKey];
+if (override === undefined) {
+  // Fall back to legacy bucket oriKey
+  const legacyOriKey = this.oriKeyGenerator.mapToLegacyBucket(specificOriKey);
+  override = overrides[gridMode]?.[legacyOriKey]?.[letter]?.[turnsTuple]?.[rotationKey];
+}
+```
+
+`SpecialPlacer.checkLocalStorageOverride()` (line ~299) also needs this pattern.
+
+### 6. Interradial Orientations (Level 6+)
+
+At Level 6, there are 8 orientations (e.g., `clockIn`, `counterOut`). These are not `in` or `out`, so `mapToLegacyBucket` classifies them as layer 2, which matches the current behavior. The specific key format (`clockIn_counterOut`) handles them correctly without special casing.
 
 ## Key Format Summary
 
@@ -185,11 +226,11 @@ diamond|counter_counter|I|(0.5, 0.5)|blue|fan
 |------|--------|
 | `SpecialPlacementOriKeyGenerator.ts` | New key format + `mapToLegacyBucket()` method |
 | `ISpecialPlacementOriKeyGenerator.ts` | Add `mapToLegacyBucket()` to interface |
-| `GlobalArrowAdjustmentRepository.ts` | Orientation fallback in cascading lookup |
-| `IGlobalArrowAdjustmentRepository.ts` | Add oriKeyGenerator dependency or pass legacy key |
-| `SpecialPlacer.ts` | Orientation fallback when loading JSON folders |
-| `SpecialPlacementDataProvider.ts` | Try specific oriKey folder, fall back to legacy |
-| `RotationOverrideManager.ts` | Same fallback pattern for rotation overrides |
+| `GlobalArrowAdjustmentRepository.ts` | Orientation fallback in cascading lookup. Pass legacy oriKey from caller rather than adding oriKeyGenerator dependency (keeps repo as a general-purpose data store). |
+| `SpecialPlacer.ts` | Two-step JSON folder lookup in 3 methods + localStorage override fallback |
+| `RotationOverrideManager.ts` | Two-key fallback for localStorage rotation overrides |
+| `PictographInspectModal.svelte` | Display change only — oriKey now shows `counter_counter` instead of `from_layer2` (more informative, no code change needed) |
+| `ArrowAdjustmentHistory.svelte` | Display change only — history entries show new format, old entries still parse correctly |
 
 ## Risk Assessment
 
