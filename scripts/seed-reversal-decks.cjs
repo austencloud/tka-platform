@@ -320,6 +320,37 @@ async function main() {
       continue;
     }
 
+    // Resolve metadata fields that must be present on the variant deck.
+    // The spread of sourceDeck copies these if they exist, but source decks
+    // created before the backfill script ran may be missing them. We derive
+    // them explicitly here so variant decks are always fully populated,
+    // which is required for the drill-down filtering in LoopCollectionView.
+    const resolvedLoopType =
+      sourceDeck.loopType ||
+      (() => {
+        const LOOP_TYPE_PATTERNS = [
+          "strict_rotated",
+          "strict_mirrored",
+          "strict_swapped",
+          "strict_inverted",
+          "rewound",
+        ];
+        for (const p of LOOP_TYPE_PATTERNS) {
+          if (sourceDeckId.includes(p)) return p;
+        }
+        return null;
+      })();
+
+    const resolvedBeatCount =
+      sourceDeck.beatCount ||
+      (() => {
+        const match = (sourceDeck.name || "").match(/(\d+)-Beat/);
+        return match ? parseInt(match[1], 10) : null;
+      })();
+
+    // turns carries over from source (undefined is fine — it means 0 turns)
+    const resolvedTurns = sourceDeck.turns ?? undefined;
+
     // Write deck document
     await db.doc(`decks/${newDeckId}`).set({
       ...sourceDeck,
@@ -328,6 +359,11 @@ async function main() {
       reversalPattern: patternId,
       families,
       totalSequences: transformedSequences.length,
+      // Explicitly set metadata so variant decks always have these fields,
+      // even when the source deck was written before backfill-deck-metadata ran.
+      ...(resolvedLoopType !== null && resolvedLoopType !== undefined ? { loopType: resolvedLoopType } : {}),
+      ...(resolvedBeatCount !== null && resolvedBeatCount !== undefined ? { beatCount: resolvedBeatCount } : {}),
+      ...(resolvedTurns !== undefined ? { turns: resolvedTurns } : {}),
     });
 
     // Write sequences in batches of 450
