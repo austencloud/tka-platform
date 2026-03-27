@@ -69,20 +69,26 @@ export class RetroSoundManager implements IRetroSoundManager {
 
 		const now = ctx.currentTime;
 		const gain = this.volume;
-		const noteDuration = 150;
 
-		// C4 -> E4 -> G4
-		const notes = [261.63, 329.63, 392.0] as const;
+		// Classic Win95-style ascending chord: C4 → E4 → G4 → C5
+		const notes: [number, number][] = [
+			[262, 150],  // C4
+			[330, 150],  // E4
+			[392, 150],  // G4
+			[523, 300],  // C5 — held longer at the top
+		];
 
-		for (const [i, frequency] of notes.entries()) {
+		let offset = 0;
+		for (const [frequency, durationMs] of notes) {
 			this.scheduleNote(ctx, {
 				frequency,
 				type: "sine",
-				startTime: now + i * (noteDuration / 1000),
-				durationMs: noteDuration,
+				startTime: now + offset,
+				durationMs,
 				gain,
 				envelope: "smooth",
 			});
+			offset += durationMs / 1000;
 		}
 	}
 
@@ -92,6 +98,264 @@ export class RetroSoundManager implements IRetroSoundManager {
 			type: "square",
 			durationMs: 100,
 			envelope: "sharp",
+		});
+	}
+
+	windowOpen(): void {
+		const ctx = this.ensureContext();
+		if (!ctx || this.muted) return;
+
+		const now = ctx.currentTime;
+		const gain = this.volume;
+
+		// Ascending two-note sine chord — airy, welcoming
+		this.scheduleNote(ctx, {
+			frequency: 400,
+			type: "sine",
+			startTime: now,
+			durationMs: 50,
+			gain,
+			envelope: "smooth",
+		});
+		this.scheduleNote(ctx, {
+			frequency: 600,
+			type: "sine",
+			startTime: now + 0.05,
+			durationMs: 80,
+			gain,
+			envelope: "smooth",
+		});
+	}
+
+	windowClose(): void {
+		const ctx = this.ensureContext();
+		if (!ctx || this.muted) return;
+
+		const now = ctx.currentTime;
+		const gain = this.volume;
+
+		// Descending two-note — closing, but not alarming
+		this.scheduleNote(ctx, {
+			frequency: 500,
+			type: "sine",
+			startTime: now,
+			durationMs: 50,
+			gain,
+			envelope: "smooth",
+		});
+		this.scheduleNote(ctx, {
+			frequency: 300,
+			type: "sine",
+			startTime: now + 0.05,
+			durationMs: 80,
+			gain,
+			envelope: "smooth",
+		});
+	}
+
+	minimize(): void {
+		const ctx = this.ensureContext();
+		if (!ctx || this.muted) return;
+
+		const now = ctx.currentTime;
+		const gain = this.volume * 0.7;
+
+		// Short downward frequency sweep — like shrinking
+		const osc = ctx.createOscillator();
+		const gainNode = ctx.createGain();
+
+		osc.type = "sine";
+		osc.frequency.setValueAtTime(480, now);
+		osc.frequency.exponentialRampToValueAtTime(240, now + 0.1);
+
+		gainNode.gain.setValueAtTime(0.001, now);
+		gainNode.gain.exponentialRampToValueAtTime(gain, now + 0.01);
+		gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+
+		osc.connect(gainNode);
+		gainNode.connect(ctx.destination);
+
+		osc.start(now);
+		osc.stop(now + 0.1);
+		osc.onended = () => {
+			osc.disconnect();
+			gainNode.disconnect();
+		};
+	}
+
+	maximize(): void {
+		const ctx = this.ensureContext();
+		if (!ctx || this.muted) return;
+
+		const now = ctx.currentTime;
+		const gain = this.volume * 0.7;
+
+		// Short upward frequency sweep — like expanding
+		const osc = ctx.createOscillator();
+		const gainNode = ctx.createGain();
+
+		osc.type = "sine";
+		osc.frequency.setValueAtTime(240, now);
+		osc.frequency.exponentialRampToValueAtTime(480, now + 0.1);
+
+		gainNode.gain.setValueAtTime(0.001, now);
+		gainNode.gain.exponentialRampToValueAtTime(gain, now + 0.01);
+		gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+
+		osc.connect(gainNode);
+		gainNode.connect(ctx.destination);
+
+		osc.start(now);
+		osc.stop(now + 0.1);
+		osc.onended = () => {
+			osc.disconnect();
+			gainNode.disconnect();
+		};
+	}
+
+	menuOpen(): void {
+		const ctx = this.ensureContext();
+		if (!ctx || this.muted) return;
+
+		const now = ctx.currentTime;
+		const gain = this.volume * 0.5;
+
+		// Soft pop — subtle, not distracting
+		this.scheduleNote(ctx, {
+			frequency: 660,
+			type: "sine",
+			startTime: now,
+			durationMs: 40,
+			gain,
+			envelope: "decay",
+		});
+	}
+
+	startMenu(): void {
+		const ctx = this.ensureContext();
+		if (!ctx || this.muted) return;
+
+		const now = ctx.currentTime;
+		const gain = this.volume;
+
+		// Iconic two-tone ascending chime — recognizable as "Start"
+		this.scheduleNote(ctx, {
+			frequency: 523,  // C5
+			type: "sine",
+			startTime: now,
+			durationMs: 100,
+			gain,
+			envelope: "smooth",
+		});
+		this.scheduleNote(ctx, {
+			frequency: 784,  // G5
+			type: "sine",
+			startTime: now + 0.08,
+			durationMs: 150,
+			gain,
+			envelope: "smooth",
+		});
+	}
+
+	floppySeek(): void {
+		const ctx = this.ensureContext();
+		if (!ctx || this.muted) return;
+
+		const now = ctx.currentTime;
+		const gain = this.volume * 0.6;
+
+		// Six rapid clicks at irregular intervals — mechanical floppy drive
+		const clickOffsets = [0, 0.06, 0.13, 0.185, 0.26, 0.32];
+		const frequencies = [120, 180, 140, 160, 110, 150];
+
+		for (let i = 0; i < clickOffsets.length; i++) {
+			this.scheduleNote(ctx, {
+				frequency: frequencies[i]!,
+				type: "square",
+				startTime: now + clickOffsets[i]!,
+				durationMs: 20,
+				gain,
+				envelope: "sharp",
+			});
+		}
+	}
+
+	recycle(): void {
+		const ctx = this.ensureContext();
+		if (!ctx || this.muted) return;
+
+		const now = ctx.currentTime;
+		const gain = this.volume;
+
+		// Hollow thud — item dropped into bin
+		// Low rumble followed by a short high knock
+		this.scheduleNote(ctx, {
+			frequency: 80,
+			type: "sine",
+			startTime: now,
+			durationMs: 120,
+			gain: gain * 0.8,
+			envelope: "decay",
+		});
+		this.scheduleNote(ctx, {
+			frequency: 440,
+			type: "square",
+			startTime: now + 0.04,
+			durationMs: 30,
+			gain: gain * 0.4,
+			envelope: "sharp",
+		});
+	}
+
+	loginSuccess(): void {
+		const ctx = this.ensureContext();
+		if (!ctx || this.muted) return;
+
+		const now = ctx.currentTime;
+		const gain = this.volume;
+
+		// Welcoming ascending arpeggio — A4, C#5, E5
+		const notes: [number, number, number][] = [
+			[440, 0,    100],  // A4
+			[554, 0.09, 100],  // C#5
+			[659, 0.18, 200],  // E5 — held
+		];
+
+		for (const [frequency, offset, durationMs] of notes) {
+			this.scheduleNote(ctx, {
+				frequency,
+				type: "sine",
+				startTime: now + offset,
+				durationMs,
+				gain,
+				envelope: "smooth",
+			});
+		}
+	}
+
+	loginFail(): void {
+		const ctx = this.ensureContext();
+		if (!ctx || this.muted) return;
+
+		const now = ctx.currentTime;
+		const gain = this.volume;
+
+		// Harsh descending buzz — unmistakably wrong
+		this.scheduleNote(ctx, {
+			frequency: 320,
+			type: "square",
+			startTime: now,
+			durationMs: 100,
+			gain,
+			envelope: "sharp",
+		});
+		this.scheduleNote(ctx, {
+			frequency: 200,
+			type: "square",
+			startTime: now + 0.1,
+			durationMs: 200,
+			gain,
+			envelope: "decay",
 		});
 	}
 

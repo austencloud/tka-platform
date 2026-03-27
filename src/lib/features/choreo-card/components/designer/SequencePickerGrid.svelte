@@ -81,7 +81,18 @@
           aria-label={`Select sequence ${seq.word ?? seq.name ?? i + 1}`}
           aria-pressed={i === selectedIndex}
         >
-          <PropAwareThumbnail sequence={seq} eager={true} />
+          <PropAwareThumbnail
+            sequence={seq}
+            eager={true}
+            lightMode={true}
+            addWord={false}
+            includeStartPosition={false}
+            addDifficultyLevel={false}
+            addStepNumbers={false}
+            showCreatorName={false}
+            showNotes={false}
+            showBirthday={false}
+          />
         </button>
       {/each}
     </div>

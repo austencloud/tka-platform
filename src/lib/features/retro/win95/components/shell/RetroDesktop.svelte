@@ -164,6 +164,16 @@
   });
 
   /* ------------------------------------------------------------------ */
+  /* Start menu sound — play chime each time the menu opens             */
+  /* ------------------------------------------------------------------ */
+
+  $effect(() => {
+    if (desktopState.startMenuOpen) {
+      retroSound.startMenu();
+    }
+  });
+
+  /* ------------------------------------------------------------------ */
   /* Auth: skip login dialog if user already has a Firebase session       */
   /* ------------------------------------------------------------------ */
 
@@ -303,10 +313,36 @@
       isMinimized: false,
       isMaximized: false,
     });
+
+    retroSound.windowOpen();
   }
 
   function openAppFromIcon(iconDef: RetroDesktopIcon) {
     openApp(iconDef.executable, iconDef.label, iconDef.icon);
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Sound-wrapped window management                                     */
+  /* ------------------------------------------------------------------ */
+
+  function closeWindowWithSound(id: string) {
+    retroSound.windowClose();
+    windowManager.closeWindow(id);
+  }
+
+  function minimizeWindowWithSound(id: string) {
+    retroSound.minimize();
+    windowManager.minimizeWindow(id);
+  }
+
+  function maximizeWindowWithSound(id: string) {
+    retroSound.maximize();
+    windowManager.maximizeWindow(id);
+  }
+
+  function restoreWindowWithSound(id: string) {
+    retroSound.maximize();
+    windowManager.restoreWindow(id);
   }
 
   /* ------------------------------------------------------------------ */
@@ -513,7 +549,10 @@
   {:else}
     <!-- Login dialog (shown after boot, before auth) -->
     {#if showLoginDialog}
-      <RetroLoginDialog />
+      <RetroLoginDialog
+        onsuccess={() => retroSound.loginSuccess()}
+        onfail={() => retroSound.loginFail()}
+      />
     {/if}
 
     <!-- Desktop surface -->
@@ -565,34 +604,34 @@
             bind:isMaximized={win.isMaximized}
             isActive={desktopState.activeWindowId === win.id}
             onfocus={() => windowManager.focusWindow(win.id)}
-            onclose={() => windowManager.closeWindow(win.id)}
-            onminimize={() => windowManager.minimizeWindow(win.id)}
-            onmaximize={() => windowManager.maximizeWindow(win.id)}
-            onrestore={() => windowManager.restoreWindow(win.id)}
+            onclose={() => closeWindowWithSound(win.id)}
+            onminimize={() => minimizeWindowWithSound(win.id)}
+            onmaximize={() => maximizeWindowWithSound(win.id)}
+            onrestore={() => restoreWindowWithSound(win.id)}
             onmove={(newX, newY) => windowManager.moveWindow(win.id, newX, newY)}
             onresize={(w, h) => windowManager.resizeWindow(win.id, w, h)}
           >
             {#snippet children()}
               {#if win.id === "notation"}
-                <RetroScribe onclose={() => windowManager.closeWindow(win.id)} />
+                <RetroScribe onclose={() => closeWindowWithSound(win.id)} />
               {:else if win.id === "filemgr"}
-                <RetroFileManager onclose={() => windowManager.closeWindow(win.id)} />
+                <RetroFileManager onclose={() => closeWindowWithSound(win.id)} />
               {:else if win.id === "tutor"}
-                <RetroTutor onclose={() => windowManager.closeWindow(win.id)} />
+                <RetroTutor onclose={() => closeWindowWithSound(win.id)} />
               {:else if win.id === "cards"}
-                <RetroCards onclose={() => windowManager.closeWindow(win.id)} />
+                <RetroCards onclose={() => closeWindowWithSound(win.id)} />
               {:else if win.id === "control"}
-                <RetroControlPanel onclose={() => windowManager.closeWindow(win.id)} />
+                <RetroControlPanel onclose={() => closeWindowWithSound(win.id)} />
               {:else if win.id === "upgrade"}
-                <RetroUpgrade onclose={() => windowManager.closeWindow(win.id)} />
+                <RetroUpgrade onclose={() => closeWindowWithSound(win.id)} />
               {:else if win.id === "readme"}
-                <RetroReadme onclose={() => windowManager.closeWindow(win.id)} />
+                <RetroReadme onclose={() => closeWindowWithSound(win.id)} />
               {:else if win.id === "help"}
-                <RetroHelp onclose={() => windowManager.closeWindow(win.id)} />
+                <RetroHelp onclose={() => closeWindowWithSound(win.id)} />
               {:else if win.id === "defrag"}
-                <RetroDefrag onclose={() => windowManager.closeWindow(win.id)} />
+                <RetroDefrag onclose={() => closeWindowWithSound(win.id)} />
               {:else if win.id === "recyclebin"}
-                <RetroRecycleBin onclose={() => windowManager.closeWindow(win.id)} />
+                <RetroRecycleBin onclose={() => closeWindowWithSound(win.id)} />
               {:else}
                 <div class="placeholder-content">
                   <p>{win.title}</p>
