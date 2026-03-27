@@ -49,6 +49,7 @@
   import { deepLinker } from "./navigation/services/implementations/DeepLinker";
   import { useDesktopSidebarVisibility } from "./navigation/services/desktop-sidebar-visibility.svelte";
   import { browseScrollState } from "../features/browse/shared/state/BrowseScrollState.svelte";
+  import { fuseTourState } from "./onboarding/state/fuse-tour-state.svelte";
   import { container } from "./di";
   import type { ModuleId } from "./navigation/domain/types";
   import { navigationState } from "./navigation/state/navigation-state.svelte";
@@ -165,8 +166,10 @@
   > | null = null;
   const showDesktopSidebar = $derived(desktopSidebarState.isVisible);
 
-  // Primary navigation visibility - hide during Browse module scroll
+  // Primary navigation visibility - hide during Browse module scroll or Fuse tour
   const isPrimaryNavVisible = $derived(() => {
+    // Fuse tour owns the full viewport — hide nav so nothing peeks through
+    if (fuseTourState.isActive) return false;
     const module = currentModule();
     if (module === "browse") {
       return browseScrollState.isUIVisible;
