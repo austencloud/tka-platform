@@ -10,7 +10,7 @@
     level4: () => import("$lib/features/level5-lab/Level5LabModule.svelte"),
     level5: () => import("$lib/features/skewlab/SkewLabModule.svelte"),
     level6: () => import("$lib/features/level7-lab/Level7LabModule.svelte"),
-    level7: () => import("$lib/features/conjoined-lab/ConjoinedLabModule.svelte"),
+    "conjoined-grid": () => import("$lib/features/conjoined-grid/ConjoinedGridTab.svelte"),
     poi: () => import("$lib/features/poi-lab/PoiLabModule.svelte"),
   };
 

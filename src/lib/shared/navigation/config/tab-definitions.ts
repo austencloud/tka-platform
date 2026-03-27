@@ -637,6 +637,14 @@ export const REALM_TABS: Section[] = [
     gradient: "linear-gradient(135deg, #34d399 0%, #10b981 100%)",
   },
   {
+    id: "archive",
+    label: "The Archive",
+    icon: '<i class="fas fa-scroll" aria-hidden="true"></i>',
+    description: "Walk through 40,000 years of kinetic history",
+    color: "#c8a050",
+    gradient: "linear-gradient(135deg, #d4b060 0%, #c8a050 100%)",
+  },
+  {
     id: "museum",
     label: "Museum",
     icon: '<i class="fas fa-building-columns" aria-hidden="true"></i>',
@@ -682,10 +690,10 @@ export const LEVELS_TABS: Section[] = [
     gradient: "linear-gradient(135deg, #c084fc 0%, #a855f7 100%)",
   },
   {
-    id: "level7",
-    label: "Level 7",
+    id: "conjoined-grid",
+    label: "Conjoined Grid",
     icon: '<i class="fas fa-link" aria-hidden="true"></i>',
-    description: "Conjoined grids (dual grids, junction point)",
+    description: "N-grid topology explorer with real pictograph data",
     color: "#10b981",
     gradient: "linear-gradient(135deg, #34d399 0%, #10b981 100%)",
   },
@@ -839,14 +847,7 @@ export const LAB_TABS: Section[] = [
     gradient: "linear-gradient(135deg, #f9a8d4 0%, #f472b6 100%)",
   },
   // ml-training removed (Mar 2026)
-  {
-    id: "multi-grid",
-    label: "Multi-Grid",
-    icon: '<i class="fas fa-border-all" aria-hidden="true"></i>',
-    description: "N-grid topology explorer (arbitrary arrangements)",
-    color: "#0d9488",
-    gradient: "linear-gradient(135deg, #2dd4bf 0%, #0d9488 100%)",
-  },
+  // multi-grid graduated to Levels module as conjoined-grid (Mar 2026)
   // hand-path-explorer graduated to Hand Paths module (Mar 2026)
   {
     id: "phrase-effort",
