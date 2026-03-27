@@ -10,11 +10,15 @@ export const MANDALA_GRID_RADIUS = 80;
 /** SVG viewBox size (square) */
 export const MANDALA_DEFAULT_SIZE = 500;
 
-/** TKA mandala colors — blue brightened for visibility on dark card backgrounds */
-export const BLUE_STROKE = "#5599ff";
-export const RED_STROKE = "#ed1c24";
-export const BLUE_FILL = "rgba(85, 153, 255, 0.2)";
-export const RED_FILL = "rgba(237, 28, 36, 0.2)";
+/**
+ * TKA mandala colors — uses --prop-*-text values from background-theme-calculator.
+ * These are the readable-on-dark-backgrounds versions of the canonical prop colors.
+ * --prop-blue-text: #818cf8, --prop-red-text: #f87171
+ */
+export const BLUE_STROKE = "#818cf8";
+export const RED_STROKE = "#f87171";
+export const BLUE_FILL = "rgba(129, 140, 248, 0.2)";
+export const RED_FILL = "rgba(248, 113, 113, 0.2)";
 
 /**
  * Grid radius in the animation engine's coordinate space (prop-local units).
