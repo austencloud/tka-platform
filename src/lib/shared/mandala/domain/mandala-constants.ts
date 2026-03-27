@@ -10,10 +10,10 @@ export const MANDALA_GRID_RADIUS = 80;
 /** SVG viewBox size (square) */
 export const MANDALA_DEFAULT_SIZE = 500;
 
-/** TKA canonical colors */
-export const BLUE_STROKE = "#2e3192";
+/** TKA mandala colors — blue brightened for visibility on dark card backgrounds */
+export const BLUE_STROKE = "#5599ff";
 export const RED_STROKE = "#ed1c24";
-export const BLUE_FILL = "rgba(46, 49, 146, 0.2)";
+export const BLUE_FILL = "rgba(85, 153, 255, 0.2)";
 export const RED_FILL = "rgba(237, 28, 36, 0.2)";
 
 /**
