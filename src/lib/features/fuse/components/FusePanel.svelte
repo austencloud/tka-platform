@@ -113,6 +113,16 @@
 		flex: 1;
 		min-height: 0;
 		overflow: hidden;
+		display: flex;
+		justify-content: var(--align, center);
+	}
+
+	/* Constrain card to square-ish width matching its height, pushed toward center */
+	.card-section > :global(*) {
+		height: 100%;
+		aspect-ratio: 1;
+		max-width: 100%;
+		flex-shrink: 1;
 	}
 
 	.animation-section {
