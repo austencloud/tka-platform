@@ -56,7 +56,7 @@ export class MandalaRenderer implements IMandalaRenderer {
 	 * ready to embed in HTML or save as a file.
 	 */
 	renderSVG(paths: MandalaPaths, options: MandalaRenderOptions): string {
-		const { size, style, showGridDots, show, strokeWidth = 2, transparentBackground = false } = options;
+		const { size, style, showGridDots, show, strokeWidth = 2.5, transparentBackground = false } = options;
 		const center = size / 2;
 
 		// Scale from mandala coordinate space to pixel space.
@@ -71,13 +71,21 @@ export class MandalaRenderer implements IMandalaRenderer {
 
 		parts.push(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" width="100%" height="100%">`);
 
+		// Glow filter for subtle luminosity on dark backgrounds
+		parts.push(`  <defs>`);
+		parts.push(`    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">`);
+		parts.push(`      <feGaussianBlur stdDeviation="3" result="blur"/>`);
+		parts.push(`      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>`);
+		parts.push(`    </filter>`);
+		parts.push(`  </defs>`);
+
 		// Background — skip for card-back or other themed containers
 		if (!transparentBackground) {
 			parts.push(`  <rect width="${size}" height="${size}" fill="#0d0d1a" rx="12"/>`);
 		}
 
-		// All drawing happens in a group translated to the center
-		parts.push(`  <g transform="translate(${center}, ${center}) scale(${scale.toFixed(4)})">`);
+		// All drawing happens in a group translated to the center, with glow
+		parts.push(`  <g transform="translate(${center}, ${center}) scale(${scale.toFixed(4)})" filter="url(#glow)">`);
 
 		// Grid dots at cardinal/intercardinal positions
 		if (showGridDots) {
