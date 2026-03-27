@@ -48,6 +48,8 @@
   import CRTOverlay from "../effects/CRTOverlay.svelte";
   import RetroContextMenu from "./RetroContextMenu.svelte";
   import RetroMobileWarning from "./RetroMobileWarning.svelte";
+  import RetroLoginDialog from "./RetroLoginDialog.svelte";
+  import { authState } from "$lib/shared/auth/state/authState.svelte";
 
   /* ------------------------------------------------------------------ */
   /* Props                                                               */
@@ -141,6 +143,23 @@
     retroSound.setVolume(desktopState.soundVolume / 100);
     retroSound.setMuted(desktopState.soundMuted);
   });
+
+  /* ------------------------------------------------------------------ */
+  /* Auth: skip login dialog if user already has a Firebase session       */
+  /* ------------------------------------------------------------------ */
+
+  $effect(() => {
+    if (authState.user) {
+      desktopState.isAuthenticated = true;
+      desktopState.userDisplayName = authState.user.displayName;
+      desktopState.userEmail = authState.user.email;
+    }
+  });
+
+  /** True when the login dialog should be shown (boot done, not authed). */
+  const showLoginDialog = $derived(
+    desktopState.bootComplete && !desktopState.isAuthenticated
+  );
 
   /* ------------------------------------------------------------------ */
   /* Window resize tracking                                              */
@@ -473,11 +492,17 @@
       openApp("notation", "TKA Notation System", "scribe");
     }} />
   {:else}
+    <!-- Login dialog (shown after boot, before auth) -->
+    {#if showLoginDialog}
+      <RetroLoginDialog />
+    {/if}
+
     <!-- Desktop surface -->
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <!-- svelte-ignore a11y_click_events_have_key_events -->
     <div
       class="desktop-surface"
+      class:desktop-locked={showLoginDialog}
       onclick={handleDesktopClick}
       oncontextmenu={handleDesktopContextMenu}
       style:background={desktopState.desktopColor}
@@ -716,6 +741,12 @@
     bottom: 28px; /* Leave room for taskbar */
     background: var(--retro-desktop-bg, #008080);
     z-index: var(--retro-z-desktop, 0);
+  }
+
+  /* Disable all interaction when the login dialog is showing */
+  .desktop-surface.desktop-locked {
+    pointer-events: none;
+    user-select: none;
   }
 
   /* ------------------------------------------------------------------ */
