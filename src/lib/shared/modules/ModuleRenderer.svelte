@@ -109,13 +109,15 @@
     moderation: () => import("../../features/moderation/ModerationModule.svelte"),
     // festivals module - discover and apply to flow festivals
     festivals: () => import("../../features/festivals/FestivalModule.svelte"),
+    // Levels module - L4-L7 position labs + Poi (graduated from Lab Mar 2026)
+    levels: () => import("../../features/levels/LevelsModule.svelte"),
     // Lab module - ALL experiments consolidated here (Skew, Poi, Realm, Terrain, Mandala, Backgrounds, Landing)
     lab: () => import("../../features/lab/LabModule.svelte"),
     // ========================================================================
     // BACKWARDS COMPAT: Old standalone experimental modules now redirect to Lab
     // ========================================================================
-    skewlab: () => import("../../features/lab/LabModule.svelte"),
-    "poi-lab": () => import("../../features/lab/LabModule.svelte"),
+    skewlab: () => import("../../features/levels/LevelsModule.svelte"),
+    "poi-lab": () => import("../../features/levels/LevelsModule.svelte"),
     retro: () => import("../../features/retro/RetroModule.svelte"),
     realm: () => import("../../features/realm/RealmModule.svelte"),
     mandala: () => import("../../features/lab/LabModule.svelte"),

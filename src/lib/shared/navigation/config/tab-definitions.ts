@@ -656,6 +656,49 @@ export const REALM_TABS: Section[] = [
 
 // Lab tabs configuration (admin-only, temporary experiments)
 // All experimental modules consolidated here instead of cluttering the sidebar
+export const LEVELS_TABS: Section[] = [
+  {
+    id: "level4",
+    label: "Level 4",
+    icon: '<i class="fas fa-bullseye" aria-hidden="true"></i>',
+    description: "Centric positions (Tau & Terra)",
+    color: "#06b6d4",
+    gradient: "linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%)",
+  },
+  {
+    id: "level5",
+    label: "Level 5",
+    icon: '<i class="fas fa-bezier-curve" aria-hidden="true"></i>',
+    description: "Skewed positions (Zeta & Eta)",
+    color: "#f97316",
+    gradient: "linear-gradient(135deg, #fb923c 0%, #f97316 100%)",
+  },
+  {
+    id: "level6",
+    label: "Level 6",
+    icon: '<i class="fas fa-magnet" aria-hidden="true"></i>',
+    description: "Interradial orientations (completes 2D mastery)",
+    color: "#a855f7",
+    gradient: "linear-gradient(135deg, #c084fc 0%, #a855f7 100%)",
+  },
+  {
+    id: "level7",
+    label: "Level 7",
+    icon: '<i class="fas fa-link" aria-hidden="true"></i>',
+    description: "Conjoined grids (dual grids, junction point)",
+    color: "#10b981",
+    gradient: "linear-gradient(135deg, #34d399 0%, #10b981 100%)",
+  },
+  {
+    id: "poi",
+    label: "Poi",
+    icon: '<i class="fas fa-circle-notch" aria-hidden="true"></i>',
+    description: "Poi constraints with VTG terminology",
+    color: "#22d3ee",
+    gradient: "linear-gradient(135deg, #67e8f9 0%, #22d3ee 100%)",
+  },
+];
+
 export const LAB_TABS: Section[] = [
   // ascii-pictograph graduated to Retro module (Mar 2026)
   // assemble-lab removed — functionality lives in Create module's Assemble tab
@@ -755,38 +798,7 @@ export const LAB_TABS: Section[] = [
     color: "#f472b6",
     gradient: "linear-gradient(135deg, #f472b6 0%, #ec4899 100%)",
   },
-  {
-    id: "level4",
-    label: "Level 4",
-    icon: '<i class="fas fa-bullseye" aria-hidden="true"></i>',
-    description: "Centric positions (Tau & Terra)",
-    color: "#06b6d4",
-    gradient: "linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%)",
-  },
-  {
-    id: "level5",
-    label: "Level 5",
-    icon: '<i class="fas fa-bezier-curve" aria-hidden="true"></i>',
-    description: "Skewed positions (Zeta & Eta)",
-    color: "#f97316",
-    gradient: "linear-gradient(135deg, #fb923c 0%, #f97316 100%)",
-  },
-  {
-    id: "level6",
-    label: "Level 6",
-    icon: '<i class="fas fa-magnet" aria-hidden="true"></i>',
-    description: "Interradial orientations (completes 2D mastery)",
-    color: "#a855f7",
-    gradient: "linear-gradient(135deg, #c084fc 0%, #a855f7 100%)",
-  },
-  {
-    id: "level7",
-    label: "Level 7",
-    icon: '<i class="fas fa-link" aria-hidden="true"></i>',
-    description: "Conjoined grids (dual grids, junction point)",
-    color: "#10b981",
-    gradient: "linear-gradient(135deg, #34d399 0%, #10b981 100%)",
-  },
+  // level4, level5, level6, level7 graduated to Levels module (Mar 2026)
   {
     id: "mandala",
     label: "Arrow Mandalas",
@@ -827,14 +839,7 @@ export const LAB_TABS: Section[] = [
     color: "#a78bfa",
     gradient: "linear-gradient(135deg, #c084fc 0%, #a78bfa 100%)",
   },
-  {
-    id: "poi",
-    label: "Poi",
-    icon: '<i class="fas fa-circle-notch" aria-hidden="true"></i>',
-    description: "Poi constraints with VTG terminology",
-    color: "#22d3ee",
-    gradient: "linear-gradient(135deg, #67e8f9 0%, #22d3ee 100%)",
-  },
+  // poi graduated to Levels module (Mar 2026)
   {
     id: "prop-buttons",
     label: "Prop Buttons",
