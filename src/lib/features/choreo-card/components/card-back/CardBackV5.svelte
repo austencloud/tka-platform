@@ -167,7 +167,7 @@
             mode="card-back"
             style="stroke"
             show="both"
-            size={280}
+            size={240}
           />
         </div>
       {:else}
@@ -337,14 +337,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 260px;
-    height: 260px;
     margin: 0 auto;
-  }
-
-  .mandala-hero :global(svg) {
-    width: 260px;
-    height: 260px;
   }
 
   .loop-explanation {

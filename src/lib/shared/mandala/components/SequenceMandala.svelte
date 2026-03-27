@@ -63,5 +63,21 @@
 </script>
 
 {#if svgString}
-	{@html svgString}
+	<div class="mandala-container" style="width: {size}px; height: {size}px;">
+		{@html svgString}
+	</div>
 {/if}
+
+<style>
+	.mandala-container {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		overflow: hidden;
+	}
+
+	.mandala-container :global(svg) {
+		width: 100%;
+		height: 100%;
+	}
+</style>
