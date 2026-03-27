@@ -59,16 +59,24 @@
     padding: 24px 20px;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: var(--radius-lg, 12px);
+    border-radius: 14px;
     cursor: pointer;
     color: var(--theme-text, #ffffff);
-    transition: border-color 0.15s ease;
+    transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
     text-align: center;
     min-height: 140px;
   }
 
   .reversal-card:hover {
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
+    transform: translateY(-4px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reversal-card:hover {
+      transform: none;
+    }
   }
 
   .reversal-card:focus-visible {
@@ -135,6 +143,6 @@
 
   .card-count {
     font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
   }
 </style>

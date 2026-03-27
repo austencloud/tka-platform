@@ -212,9 +212,9 @@
   }
 
   .loop-pill.active {
-    background: var(--theme-accent, #63b3ed);
-    border-color: var(--theme-accent, #63b3ed);
-    color: var(--theme-text, #ffffff);
+    background: rgba(99, 183, 205, 0.2);
+    border-color: rgba(99, 183, 205, 0.4);
+    color: #63b7cd;
   }
 
   .loop-pill.disabled {

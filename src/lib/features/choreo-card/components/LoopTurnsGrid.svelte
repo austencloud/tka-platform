@@ -53,20 +53,32 @@
 
   .section-header {
     font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.45));
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
     letter-spacing: 0.15em;
     text-align: center;
     text-transform: uppercase;
     font-weight: 600;
-    margin: 0 0 16px;
+    margin: 0 0 20px;
   }
 
   .turns-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 12px;
-    max-width: 700px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    max-width: 960px;
     margin: 0 auto;
+  }
+
+  @media (max-width: 700px) {
+    .turns-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 480px) {
+    .turns-grid {
+      grid-template-columns: 1fr;
+    }
   }
 
   .turns-card {
@@ -74,18 +86,26 @@
     flex-direction: column;
     align-items: center;
     gap: 6px;
-    padding: 20px 16px;
+    padding: 24px 20px;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: var(--radius-lg, 12px);
+    border-radius: 14px;
     cursor: pointer;
     color: var(--theme-text, #ffffff);
-    transition: border-color 0.15s ease;
+    transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
     text-align: center;
   }
 
   .turns-card:hover {
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
+    transform: translateY(-4px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .turns-card:hover {
+      transform: none;
+    }
   }
 
   .turns-card:focus-visible {
@@ -100,7 +120,7 @@
   }
 
   .big-number {
-    font-size: 28px;
+    font-size: 32px;
     font-weight: 700;
     color: var(--theme-text, #ffffff);
     line-height: 1;
@@ -108,7 +128,7 @@
 
   .unit-label {
     font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.45));
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
     text-transform: uppercase;
     letter-spacing: 0.1em;
   }
@@ -123,6 +143,6 @@
 
   .meta span {
     font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.45));
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
   }
 </style>
