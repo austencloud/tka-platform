@@ -127,5 +127,5 @@ export const PRODUCTION_MODULES: Record<ModuleId, boolean> = {
   festivals: true, // Festival Hub (admin-only via feature flags)
   retro: false, // Retro module (graduated from Lab)
   realm: false, // 3D destinations (admin-only)
-  lab: false, // Experimental features lab (admin-only) - consolidates mandala, skewlab, poi-lab, background-builder, landing-preview, terrain-research, ml-training, community, connect
+  lab: false, // Experimental features lab (admin-only) - consolidates mandala, skewlab, poi-lab, background-builder, landing-preview, ml-training, community, connect
 };

@@ -118,7 +118,6 @@
     "poi-lab": () => import("../../features/lab/LabModule.svelte"),
     retro: () => import("../../features/retro/RetroModule.svelte"),
     realm: () => import("../../features/realm/RealmModule.svelte"),
-    "terrain-research": () => import("../../features/lab/LabModule.svelte"),
     mandala: () => import("../../features/lab/LabModule.svelte"),
     "background-builder": () => import("../../features/lab/LabModule.svelte"),
     "landing-preview": () => import("../../features/lab/LabModule.svelte"),
