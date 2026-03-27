@@ -20,6 +20,8 @@ import {
   ARENA_TABS,
   CHOREO_CARD_TABS,
   FESTIVAL_TABS,
+  RETRO_TABS,
+  REALM_TABS,
 } from "./tab-definitions";
 
 /**
@@ -35,7 +37,6 @@ const MODULE_ID_MIGRATIONS: Record<string, ModuleId> = {
   // Experimental modules consolidated into Lab (Jan 2026)
   skewlab: "lab",
   "poi-lab": "lab",
-  "terrain-research": "lab",
   mandala: "lab",
   "background-builder": "lab",
   "landing-preview": "lab",
@@ -220,7 +221,7 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     color: "#06b6d4",
     description: "3D destinations: museum, stage, gallery, procedural worlds",
     isMain: true,
-    sections: [],
+    sections: REALM_TABS,
   },
   {
     id: "retro",
@@ -229,7 +230,7 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     color: "#008080",
     description: "TKA-OS: Win95 desktop, DOS terminal, and pixel pictographs",
     isMain: true,
-    sections: [],
+    sections: RETRO_TABS,
   },
   {
     id: "lab",

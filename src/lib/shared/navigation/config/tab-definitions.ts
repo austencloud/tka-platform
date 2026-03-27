@@ -668,14 +668,6 @@ export const LAB_TABS: Section[] = [
     gradient: "linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%)",
   },
   {
-    id: "audio-toolkit",
-    label: "Audio Toolkit",
-    icon: '<i class="fas fa-waveform" aria-hidden="true"></i>',
-    description: "Archived audio components: waveform, beat markers, tempo regions, beat tapper",
-    color: "#8b5cf6",
-    gradient: "linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%)",
-  },
-  {
     id: "avatar",
     label: "Avatar",
     icon: '<i class="fas fa-user-circle" aria-hidden="true"></i>',
@@ -746,14 +738,6 @@ export const LAB_TABS: Section[] = [
     description: "Visual effects: trails, fire, LED overlays",
     color: "#8b5cf6",
     gradient: "linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%)",
-  },
-  {
-    id: "effort",
-    label: "Effort",
-    icon: '<i class="fas fa-wind" aria-hidden="true"></i>',
-    description: "Laban effort qualities: compare movement styles side by side",
-    color: "#818cf8",
-    gradient: "linear-gradient(135deg, #a5b4fc 0%, #818cf8 100%)",
   },
   {
     id: "hand-path-builder",
@@ -836,14 +820,6 @@ export const LAB_TABS: Section[] = [
     gradient: "linear-gradient(135deg, #34d399 0%, #10b981 100%)",
   },
   {
-    id: "photo-picker",
-    label: "Photo Picker",
-    icon: '<i class="fas fa-portrait" aria-hidden="true"></i>',
-    description: "Profile photo selection modal redesign",
-    color: "#ec4899",
-    gradient: "linear-gradient(135deg, #f472b6 0%, #ec4899 100%)",
-  },
-  {
     id: "phrase-effort",
     label: "Phrase Effort",
     icon: '<i class="fas fa-music" aria-hidden="true"></i>',
@@ -883,14 +859,6 @@ export const LAB_TABS: Section[] = [
     description: "Video-to-TKA notation pipeline",
     color: "#f43f5e",
     gradient: "linear-gradient(135deg, #fb7185 0%, #f43f5e 100%)",
-  },
-  {
-    id: "terrain",
-    label: "Terrain",
-    icon: '<i class="fas fa-mountain" aria-hidden="true"></i>',
-    description: "Terrain implementation research",
-    color: "#22c55e",
-    gradient: "linear-gradient(135deg, #4ade80 0%, #22c55e 100%)",
   },
   {
     id: "trigrid",
