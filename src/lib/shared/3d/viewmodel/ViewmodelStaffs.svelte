@@ -17,8 +17,8 @@
   import { Quaternion, Euler, Vector3 } from "three";
   import type { PropState3D } from "../domain/models/PropState3D";
   import { userProportionsState } from "../state/user-proportions-state.svelte";
-  import { LAYER_VIEWMODEL } from "$lib/shared/3d-animation/layers/layer-constants";
-  import { CameraMode } from "$lib/shared/3d-animation/camera/types";
+  import { LAYER_VIEWMODEL } from "$lib/shared/3d/layers/layer-constants";
+  import { CameraMode } from "$lib/shared/3d/camera/types";
 
   interface Props {
     /** Blue prop state (left hand) */

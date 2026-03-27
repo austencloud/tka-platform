@@ -11,9 +11,9 @@
   import { onDestroy } from "svelte";
   import { PointerLockControls } from "three/examples/jsm/controls/PointerLockControls.js";
   import { Vector3, Raycaster, MathUtils, type PerspectiveCamera, type Object3D } from "three";
-  import { CameraMode } from "$lib/shared/3d-animation/camera/types";
-  import { cameraPreferences } from "$lib/shared/3d-animation/camera/camera-preferences.svelte";
-  import { SCALE } from "$lib/shared/3d-animation/scale/scale-constants";
+  import { CameraMode } from "$lib/shared/3d/camera/types";
+  import { cameraPreferences } from "$lib/shared/3d/camera/camera-preferences.svelte";
+  import { SCALE } from "$lib/shared/3d/scale/scale-constants";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   interface Props {

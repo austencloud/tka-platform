@@ -16,7 +16,7 @@ import type {
 } from "../services/contracts/ISequenceConverter";
 import type { AvatarId } from "../config/avatar-definitions";
 import { DEFAULT_AVATAR_ID } from "../config/avatar-definitions";
-import { SCALE } from "$lib/shared/3d-animation/scale/scale-constants";
+import { SCALE } from "$lib/shared/3d/scale/scale-constants";
 
 // ============================================
 // Position Constants (all in meters)

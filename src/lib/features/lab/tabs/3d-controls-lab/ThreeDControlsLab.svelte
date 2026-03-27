@@ -9,14 +9,14 @@
 <script lang="ts">
   import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { LOCATION_ANGLES } from "$lib/features/compose/shared/domain/math-constants";
-  import { Plane } from "$lib/shared/3d-animation/domain/enums/Plane";
-  import type { PropState3D } from "$lib/shared/3d-animation/domain/models/PropState3D";
+  import { Plane } from "$lib/shared/3d/domain/enums/Plane";
+  import type { PropState3D } from "$lib/shared/3d/domain/models/PropState3D";
   import { container } from "$lib/shared/di";
-  import type { IPlaneCoordinateMapper } from "$lib/shared/3d-animation/services/contracts/IPlaneCoordinateMapper";
-  import Scene3D from "$lib/shared/3d-animation/components/Scene3D.svelte";
-  import Avatar3D from "$lib/shared/3d-animation/components/Avatar3D.svelte";
-  import Staff3D from "$lib/shared/3d-animation/components/Staff3D.svelte";
-  import { WALL_OFFSET } from "$lib/shared/3d-animation/domain/constants/performer-positions";
+  import type { IPlaneCoordinateMapper } from "$lib/shared/3d/services/contracts/IPlaneCoordinateMapper";
+  import Scene3D from "$lib/shared/3d/components/Scene3D.svelte";
+  import Avatar3D from "$lib/shared/3d/components/Avatar3D.svelte";
+  import Staff3D from "$lib/shared/3d/components/Staff3D.svelte";
+  import { WALL_OFFSET } from "$lib/shared/3d/domain/constants/performer-positions";
 
   // ── DI services ──────────────────────────────────────────────────────
   const mapper = container.items.planeCoordinateMapper as IPlaneCoordinateMapper;

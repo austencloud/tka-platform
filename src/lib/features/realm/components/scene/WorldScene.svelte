@@ -18,12 +18,12 @@
   import DebugPanelTabs from "../debug/DebugPanelTabs.svelte";
   import VirtualJoystick from "$lib/shared/components/touch/VirtualJoystick.svelte";
 
-  import type { PhysicsWorldState, PlayerControllerState } from "$lib/shared/3d-animation/physics/types";
-  import type { PhysicsProvider } from "$lib/shared/3d-animation/camera/types";
-  import { TerrainPhysicsManager } from "$lib/shared/3d-animation/physics/terrain-collider";
-  import { teleportPlayer } from "$lib/shared/3d-animation/physics/player-controller";
-  import { CameraMode } from "$lib/shared/3d-animation/camera/types";
-  import { cameraPreferences } from "$lib/shared/3d-animation/camera/camera-preferences.svelte";
+  import type { PhysicsWorldState, PlayerControllerState } from "$lib/shared/3d/physics/types";
+  import type { PhysicsProvider } from "$lib/shared/3d/camera/types";
+  import { TerrainPhysicsManager } from "$lib/shared/3d/physics/terrain-collider";
+  import { teleportPlayer } from "$lib/shared/3d/physics/player-controller";
+  import { CameraMode } from "$lib/shared/3d/camera/types";
+  import { cameraPreferences } from "$lib/shared/3d/camera/camera-preferences.svelte";
 
   import { type HybridChunkManager } from "../../core/hybrid-chunk-manager";
   import { generateWorldSeed, encodeSeed, SeededNoise } from "../../generation/seed-generator";
@@ -41,13 +41,13 @@
   import {
     createPerformerManager,
     type PerformerManager,
-  } from "$lib/shared/3d-animation/state/performer-manager.svelte";
+  } from "$lib/shared/3d/state/performer-manager.svelte";
   import { container } from "$lib/shared/di";
   import {
     DEFAULT_AVATAR_ID,
     type AvatarId,
-  } from "$lib/shared/3d-animation/config/avatar-definitions";
-  import DuetOrchestrator from "$lib/shared/3d-animation/components/DuetOrchestrator.svelte";
+  } from "$lib/shared/3d/config/avatar-definitions";
+  import DuetOrchestrator from "$lib/shared/3d/components/DuetOrchestrator.svelte";
 
   // ============================================================================
   // PROPS
@@ -271,7 +271,7 @@
     if (gameBridgeInitialized) return;
     gameBridgeInitialized = true;
 
-    import("$lib/shared/3d-animation/debug/game-bridge").then(async ({ initGameBridge }) => {
+    import("$lib/shared/3d/debug/game-bridge").then(async ({ initGameBridge }) => {
       const bridge = initGameBridge({
         physics: {
           getPlayerPosition: () => physicsProvider?.getPlayerPosition() ?? null,

@@ -10,8 +10,8 @@
    */
 
   import { onMount } from "svelte";
-  import { destinationManager } from "$lib/shared/3d-animation/destinations/destination-manager.svelte";
-  import { DESTINATIONS } from "$lib/shared/3d-animation/destinations/definitions";
+  import { destinationManager } from "$lib/shared/3d/destinations/destination-manager.svelte";
+  import { DESTINATIONS } from "$lib/shared/3d/destinations/definitions";
   import DestinationPicker from "./components/picker/DestinationPicker.svelte";
   import DestinationRenderer from "./components/picker/DestinationRenderer.svelte";
 

@@ -14,7 +14,7 @@
 	 * - Visual effects (trails, bloom)
 	 */
 
-	import Viewer3DModule from "$lib/shared/3d-animation/Viewer3DModule.svelte";
+	import Viewer3DModule from "$lib/shared/3d/Viewer3DModule.svelte";
 </script>
 
 <Viewer3DModule />

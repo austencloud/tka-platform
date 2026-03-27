@@ -15,29 +15,29 @@
     createPhysicsWorldState,
     initPhysicsWorld,
     disposePhysicsWorld,
-  } from "$lib/shared/3d-animation/physics/rapier-world";
-  import type { PhysicsWorldState, PlayerControllerState } from "$lib/shared/3d-animation/physics/types";
-  import { TerrainPhysicsManager } from "$lib/shared/3d-animation/physics/terrain-collider";
+  } from "$lib/shared/3d/physics/rapier-world";
+  import type { PhysicsWorldState, PlayerControllerState } from "$lib/shared/3d/physics/types";
+  import { TerrainPhysicsManager } from "$lib/shared/3d/physics/terrain-collider";
   import {
     createPlayerController,
     disposePlayerController,
     teleportPlayer,
     getPlayerPosition,
     snapToGround,
-  } from "$lib/shared/3d-animation/physics/player-controller";
-  import { createRapierPhysicsProvider, RapierPhysicsProvider } from "$lib/shared/3d-animation/physics/RapierPhysicsProvider";
-  import type { PhysicsProvider, AvatarState } from "$lib/shared/3d-animation/camera/types";
+  } from "$lib/shared/3d/physics/player-controller";
+  import { createRapierPhysicsProvider, RapierPhysicsProvider } from "$lib/shared/3d/physics/RapierPhysicsProvider";
+  import type { PhysicsProvider, AvatarState } from "$lib/shared/3d/camera/types";
 
   // Unified camera system
-  import UnifiedCameraController from "$lib/shared/3d-animation/camera/UnifiedCameraController.svelte";
-  import { CameraMode } from "$lib/shared/3d-animation/camera/types";
+  import UnifiedCameraController from "$lib/shared/3d/camera/UnifiedCameraController.svelte";
+  import { CameraMode } from "$lib/shared/3d/camera/types";
 
 
   // Avatar components
-  import Avatar3D from "$lib/shared/3d-animation/components/Avatar3D.svelte";
-  import Staff3D from "$lib/shared/3d-animation/components/Staff3D.svelte";
-  import Grid3D from "$lib/shared/3d-animation/components/Grid3D.svelte";
-  import { Plane } from "$lib/shared/3d-animation/domain/enums/Plane";
+  import Avatar3D from "$lib/shared/3d/components/Avatar3D.svelte";
+  import Staff3D from "$lib/shared/3d/components/Staff3D.svelte";
+  import Grid3D from "$lib/shared/3d/components/Grid3D.svelte";
+  import { Plane } from "$lib/shared/3d/domain/enums/Plane";
 
   // World systems
   import { type ChunkState } from "../../core/chunk-manager";
@@ -140,7 +140,7 @@
     terrainTexturesEnabled: boolean;
 
     /** Performer state for sequence playback (optional) */
-    performerState?: import("$lib/shared/3d-animation/state/avatar-instance-state.svelte").AvatarInstanceState | null;
+    performerState?: import("$lib/shared/3d/state/avatar-instance-state.svelte").AvatarInstanceState | null;
   }
 
   let {

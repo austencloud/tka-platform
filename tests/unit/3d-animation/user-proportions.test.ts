@@ -9,8 +9,8 @@ import {
   feetInchesToCm,
   inchesToCm,
   type UserProportions,
-} from "$lib/shared/3d-animation/config/user-proportions";
-import { CM_TO_UNITS } from "$lib/shared/3d-animation/config/avatar-proportions";
+} from "$lib/shared/3d/config/user-proportions";
+import { CM_TO_UNITS } from "$lib/shared/3d/config/avatar-proportions";
 
 describe("User Proportions Calculations", () => {
   // Test heights representing typical range

@@ -16,15 +16,15 @@
 import { createContainer } from "iti";
 
 // Service implementations
-import { AngleMathCalculator } from "$lib/shared/3d-animation/services/implementations/AngleMathCalculator";
-import { OrientationMapper } from "$lib/shared/3d-animation/services/implementations/OrientationMapper";
-import { MotionCalculator } from "$lib/shared/3d-animation/services/implementations/MotionCalculator";
-import { PlaneCoordinateMapper } from "$lib/shared/3d-animation/services/implementations/PlaneCoordinateMapper";
-import { PropStateInterpolator } from "$lib/shared/3d-animation/services/implementations/PropStateInterpolator";
-import { SequenceConverter } from "$lib/shared/3d-animation/services/implementations/SequenceConverter";
-import { Animation3DPersister } from "$lib/shared/3d-animation/services/implementations/Animation3DPersister";
-import { DuetPersister } from "$lib/shared/3d-animation/services/implementations/DuetPersister";
-import { createPerformerSynchronizer } from "$lib/shared/3d-animation/services/implementations/PerformerSynchronizer";
+import { AngleMathCalculator } from "$lib/shared/3d/services/implementations/AngleMathCalculator";
+import { OrientationMapper } from "$lib/shared/3d/services/implementations/OrientationMapper";
+import { MotionCalculator } from "$lib/shared/3d/services/implementations/MotionCalculator";
+import { PlaneCoordinateMapper } from "$lib/shared/3d/services/implementations/PlaneCoordinateMapper";
+import { PropStateInterpolator } from "$lib/shared/3d/services/implementations/PropStateInterpolator";
+import { SequenceConverter } from "$lib/shared/3d/services/implementations/SequenceConverter";
+import { Animation3DPersister } from "$lib/shared/3d/services/implementations/Animation3DPersister";
+import { DuetPersister } from "$lib/shared/3d/services/implementations/DuetPersister";
+import { createPerformerSynchronizer } from "$lib/shared/3d/services/implementations/PerformerSynchronizer";
 
 // External dependency types
 import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";

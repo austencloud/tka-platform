@@ -34,13 +34,13 @@
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
   // Unified camera system (handles orbit, third-person, first-person)
-  import UnifiedCameraController from "$lib/shared/3d-animation/camera/UnifiedCameraController.svelte";
-  import { CameraMode, isGameMode, type PhysicsProvider } from "$lib/shared/3d-animation/camera/types";
-  import { cameraPreferences } from "$lib/shared/3d-animation/camera/camera-preferences.svelte";
+  import UnifiedCameraController from "$lib/shared/3d/camera/UnifiedCameraController.svelte";
+  import { CameraMode, isGameMode, type PhysicsProvider } from "$lib/shared/3d/camera/types";
+  import { cameraPreferences } from "$lib/shared/3d/camera/camera-preferences.svelte";
 
   // Physics system (Stage now uses meters + Rapier for unified collision with Infinite Worlds)
-  import type { PhysicsWorldState, PlayerControllerState } from "$lib/shared/3d-animation/physics/types";
-  import { SCALE } from "$lib/shared/3d-animation/scale/scale-constants";
+  import type { PhysicsWorldState, PlayerControllerState } from "$lib/shared/3d/physics/types";
+  import { SCALE } from "$lib/shared/3d/scale/scale-constants";
 
   // Effects system
   import EffectsLayer from "./effects/EffectsLayer.svelte";
@@ -282,13 +282,13 @@
 
     // Initialize Rapier physics (Stage uses meters, unified with Infinite Worlds)
     const { createPhysicsWorldState, initPhysicsWorld, createStageGround } = await import(
-      "$lib/shared/3d-animation/physics/rapier-world"
+      "$lib/shared/3d/physics/rapier-world"
     );
     const { createPlayerController } = await import(
-      "$lib/shared/3d-animation/physics/player-controller"
+      "$lib/shared/3d/physics/player-controller"
     );
     const { createRapierPhysicsProvider } = await import(
-      "$lib/shared/3d-animation/physics/RapierPhysicsProvider"
+      "$lib/shared/3d/physics/RapierPhysicsProvider"
     );
 
     physicsState = createPhysicsWorldState();
@@ -353,8 +353,8 @@
 
     // Initialize MCP Game Bridge in dev mode
     if (import.meta.env.DEV && typeof window !== 'undefined') {
-      import("$lib/shared/3d-animation/debug/game-bridge").then(async ({ initGameBridge }) => {
-        import("$lib/shared/3d-animation/debug/game-bridge-types").then(async ({ DEFAULT_BRIDGE_CONFIG }) => {
+      import("$lib/shared/3d/debug/game-bridge").then(async ({ initGameBridge }) => {
+        import("$lib/shared/3d/debug/game-bridge-types").then(async ({ DEFAULT_BRIDGE_CONFIG }) => {
           const bridge = initGameBridge({
             physics: {
               getPlayerPosition: () => physicsProvider?.getPlayerPosition() ?? null,
@@ -514,7 +514,7 @@
     }
     // Clean up MCP game bridge
     if (import.meta.env.DEV && typeof window !== 'undefined') {
-      const { destroyGameBridge } = await import("$lib/shared/3d-animation/debug/game-bridge");
+      const { destroyGameBridge } = await import("$lib/shared/3d/debug/game-bridge");
       destroyGameBridge();
     }
   });

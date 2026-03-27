@@ -5,7 +5,7 @@
   import InteractionPrompt from "./components/InteractionPrompt.svelte";
   import SequenceBrowserOverlay from "./overlay/SequenceBrowserOverlay.svelte";
   import { container } from "$lib/shared/di";
-  import { destinationManager } from "$lib/shared/3d-animation/destinations/destination-manager.svelte";
+  import { destinationManager } from "$lib/shared/3d/destinations/destination-manager.svelte";
   // The userId to view — if set and different from current user, this is visitor mode
   const CURRENT_USER_ID = "local-user"; // Placeholder until auth integration
   const visitingUserId = $derived(destinationManager.navigationParams.userId || CURRENT_USER_ID);

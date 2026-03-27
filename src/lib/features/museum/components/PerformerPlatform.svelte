@@ -3,9 +3,9 @@
   import * as THREE from "three";
   import type { ExhibitSlot } from "../domain/museum-types";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import Avatar3D from "$lib/shared/3d-animation/components/Avatar3D.svelte";
-  import Staff3D from "$lib/shared/3d-animation/components/Staff3D.svelte";
-  import { createAvatarInstanceState } from "$lib/shared/3d-animation/state/avatar-instance-state.svelte";
+  import Avatar3D from "$lib/shared/3d/components/Avatar3D.svelte";
+  import Staff3D from "$lib/shared/3d/components/Staff3D.svelte";
+  import { createAvatarInstanceState } from "$lib/shared/3d/state/avatar-instance-state.svelte";
   import { container } from "$lib/shared/di";
 
   interface Props {
