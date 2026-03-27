@@ -14,9 +14,6 @@
     onPublish?: () => void;
     onUnpublish?: () => void;
     onDeleteRequest?: () => void;
-    practiceActive?: boolean;
-    onPracticeStart?: () => void;
-    onPracticeStop?: () => void;
   }
 
   let {
@@ -27,9 +24,6 @@
     onPublish,
     onUnpublish,
     onDeleteRequest,
-    practiceActive = false,
-    onPracticeStart,
-    onPracticeStop,
   }: Props = $props();
 
   let isOpen = $state(false);
@@ -82,14 +76,6 @@
   let menuItems = $derived.by(() => {
     const items: Array<{ label: string; icon: string; action: () => void; className?: string }> = [];
 
-    if (onPracticeStart || onPracticeStop) {
-      items.push({
-        label: practiceActive ? "Stop Practice" : "Practice",
-        icon: practiceActive ? "fa-stop" : "fa-signal",
-        action: practiceActive ? (onPracticeStop ?? (() => {})) : (onPracticeStart ?? (() => {})),
-        className: practiceActive ? "practice-active" : undefined,
-      });
-    }
     if (onPropsOpen) {
       items.push({ label: "Props", icon: "fa-wand-magic-sparkles", action: onPropsOpen });
     }
@@ -262,16 +248,6 @@
 
   .overflow-item.copied {
     color: var(--semantic-success, #22c55e);
-  }
-
-  .overflow-item.practice-active {
-    color: #f87171;
-  }
-
-  .overflow-item.practice-active:hover,
-  .overflow-item.practice-active:focus {
-    background: rgba(239, 68, 68, 0.1);
-    color: #f87171;
   }
 
   @media (prefers-reduced-motion: reduce) {
