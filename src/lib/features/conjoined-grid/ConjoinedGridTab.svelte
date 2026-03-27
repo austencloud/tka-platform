@@ -6,16 +6,15 @@
 -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import { container } from "$lib/shared/di";
   import { createConjoinedGridState } from "./state/conjoined-grid-state.svelte";
   import TopologyCanvas from "$lib/shared/multi-grid/components/TopologyCanvas.svelte";
   import ConjoinedGridControls from "./components/ConjoinedGridControls.svelte";
-
-  const letterQueryHandler = container.items.letterQueryHandler;
-  const pictographPreparer = container.items.pictographPreparer;
+  import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler";
+  import { pictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
+  import type { ConjoinedGridDeps } from "./state/conjoined-grid-state.svelte";
 
   const state = createConjoinedGridState({
-    letterQueryHandler,
+    letterQueryHandler: letterQueryHandler as unknown as ConjoinedGridDeps["letterQueryHandler"],
     pictographPreparer,
   });
 
