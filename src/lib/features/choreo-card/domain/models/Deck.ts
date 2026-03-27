@@ -18,4 +18,7 @@ export interface Deck {
   readonly collection?: string;
   readonly vtgRatio?: string;
   readonly turns?: number;
+  readonly reversalPattern?: string;
+  readonly loopType?: string;
+  readonly beatCount?: number;
 }
