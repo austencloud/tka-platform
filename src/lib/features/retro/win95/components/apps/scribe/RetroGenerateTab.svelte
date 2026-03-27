@@ -16,6 +16,7 @@
   import RetroPictograph from "../../rendering/RetroPictograph.svelte";
   import { createMockPictographData } from "../../../../shared/data/mock-pictograph-data";
   import type { RetroPictographData } from "../../../../shared/domain/pictograph-types";
+  import { generateRetroSequence } from "../../../adapters/notation-adapter";
 
   let {
     onstatuschange,
@@ -95,7 +96,7 @@
   /* Generation                                                          */
   /* ------------------------------------------------------------------ */
 
-  function handleGenerate() {
+  async function handleGenerate() {
     if (isGenerating) return;
     if (mode === "spell" && !spellWord.trim()) return;
 
@@ -105,6 +106,7 @@
     generateStatus = "Computing kinetic path...";
     onstatuschange?.("Generating...");
 
+    // Theatrical progress bar runs in parallel with real generation
     const messages = [
       "Computing kinetic path...",
       "Resolving bridges...",
@@ -119,34 +121,51 @@
       generateStatus = messages[msgIdx]!;
     }, 500);
 
-    setTimeout(() => {
+    try {
+      const result = await generateRetroSequence({
+        mode,
+        word: mode === "spell" ? spellWord.toUpperCase() : undefined,
+        length: parseInt(length),
+        level: parseInt(level),
+        turnIntensity: parseInt(turnIntensity),
+        gridMode,
+        constraintPreset: constraint === "none" ? undefined : constraint,
+      });
+
       clearInterval(interval);
       generateProgress = 100;
 
-      /* Build result based on mode */
-      let resultWord: string;
+      generatedWord = result.word;
+      generateStatus = `Generated: ${result.word} (${result.beatCount} beats)`;
+      onstatuschange?.(`Beats: ${result.beatCount} | Generated`);
+      generatedBeats = result.beats;
+    } catch (error) {
+      clearInterval(interval);
+      generateProgress = 0;
 
-      if (mode === "spell") {
-        resultWord = spellWord.toUpperCase();
-      } else {
-        /* Generate a random word of the chosen length */
-        const len = parseInt(length);
-        const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-        resultWord = Array.from({ length: len }, () =>
-          letters.charAt(Math.floor(Math.random() * letters.length)),
-        ).join("");
-      }
+      // Fall back to mock data so the UI still works if the engine fails
+      const fallbackWord =
+        mode === "spell"
+          ? spellWord.toUpperCase()
+          : Array.from({ length: parseInt(length) }, () =>
+              "ABCDEFGHIJKLMNOPQRSTUVWXYZ".charAt(
+                Math.floor(Math.random() * 26),
+              ),
+            ).join("");
 
-      generatedWord = resultWord;
-      generateStatus = `Generated: ${resultWord} (${resultWord.length} beats)`;
-      onstatuschange?.(`Beats: ${resultWord.length} | Generated`);
+      generatedWord = fallbackWord;
+      generateStatus = `Generated (fallback): ${fallbackWord}`;
+      onstatuschange?.(`Beats: ${fallbackWord.length} | Fallback`);
 
-      generatedBeats = resultWord.split("").map((letter) => ({
+      generatedBeats = fallbackWord.split("").map((letter) => ({
         letter,
         pictograph: createMockPictographData(letter),
       }));
+
+      console.warn("[RetroGenerateTab] Real generation failed, using mock data:", error);
+    } finally {
       isGenerating = false;
-    }, 2500);
+    }
   }
 
   function handleKeydown(event: KeyboardEvent) {
