@@ -96,14 +96,14 @@
       label: "LOOPs",
       icon: "rotate",
       color: "#36c3ff",
-      description: "Circular sequences that repeat through rotation",
+      description: "Repeating patterns sorted by length, speed, and reversal style",
     },
     VTG: {
       id: "VTG",
       label: "VTG",
       icon: "fire",
       color: "#ff9800",
-      description: "Vulcan Tech Goss motion categories at each ratio",
+      description: "The 6 fundamental two-hand movement families and their variations",
     },
   };
 
@@ -601,6 +601,13 @@
         </div>
       {:else}
         {@const collections = getCollections()}
+        <div class="collections-intro">
+          <h2 class="intro-heading">Decks</h2>
+          <p class="intro-text">
+            Each deck is a set of movement cards organized around a pattern type.
+            Pick a collection to browse.
+          </p>
+        </div>
         <div class="collection-stack">
           {#each collections as col (col.info.id)}
             <button
@@ -619,7 +626,6 @@
               </div>
               <div class="hero-stats">
                 <span class="hero-stat"><span class="hero-stat-value">{col.deckCount}</span> {col.deckCount === 1 ? "deck" : "decks"}</span>
-                <span class="hero-stat"><span class="hero-stat-value">{formatCount(col.cardCount)}</span> cards</span>
               </div>
               <div class="hero-accent-line"></div>
             </button>
@@ -884,6 +890,26 @@
   }
 
   /* ── Collection Picker (Level 0) ── */
+
+  .collections-intro {
+    text-align: center;
+    max-width: 480px;
+    margin: 0 auto 8px;
+  }
+
+  .intro-heading {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--theme-text, #ffffff);
+    margin: 0 0 8px;
+  }
+
+  .intro-text {
+    font-size: var(--font-size-min, 14px);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
+    line-height: 1.5;
+    margin: 0;
+  }
 
   .collection-stack {
     display: grid;
