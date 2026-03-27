@@ -746,6 +746,25 @@ export const VIDEO_TABS: Section[] = [
   },
 ];
 
+export const SOCIAL_TABS: Section[] = [
+  {
+    id: "community",
+    label: "Community",
+    icon: '<i class="fas fa-globe" aria-hidden="true"></i>',
+    description: "Global TKA community map",
+    color: "#14b8a6",
+    gradient: "linear-gradient(135deg, #2dd4bf 0%, #14b8a6 100%)",
+  },
+  {
+    id: "connect",
+    label: "Connect",
+    icon: '<i class="fas fa-users" aria-hidden="true"></i>',
+    description: "Sync with nearby spinners",
+    color: "#10b981",
+    gradient: "linear-gradient(135deg, #34d399 0%, #10b981 100%)",
+  },
+];
+
 export const LAB_TABS: Section[] = [
   // ascii-pictograph graduated to Retro module (Mar 2026)
   // assemble-lab removed — functionality lives in Create module's Assemble tab
@@ -773,14 +792,7 @@ export const LAB_TABS: Section[] = [
     color: "#0ea5e9",
     gradient: "linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%)",
   },
-  {
-    id: "community",
-    label: "Community",
-    icon: '<i class="fas fa-globe" aria-hidden="true"></i>',
-    description: "Global TKA community map",
-    color: "#14b8a6",
-    gradient: "linear-gradient(135deg, #2dd4bf 0%, #14b8a6 100%)",
-  },
+  // community graduated to Social module (Mar 2026)
   {
     id: "composition",
     label: "Composition",
@@ -789,14 +801,7 @@ export const LAB_TABS: Section[] = [
     color: "#6366f1",
     gradient: "linear-gradient(135deg, #818cf8 0%, #6366f1 100%)",
   },
-  {
-    id: "connect",
-    label: "Connect",
-    icon: '<i class="fas fa-users" aria-hidden="true"></i>',
-    description: "Sync with nearby spinners",
-    color: "#10b981",
-    gradient: "linear-gradient(135deg, #34d399 0%, #10b981 100%)",
-  },
+  // connect graduated to Social module (Mar 2026)
   {
     id: "contact-ball",
     label: "Contact Ball",

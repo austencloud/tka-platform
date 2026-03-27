@@ -25,6 +25,7 @@ import {
   LEVELS_TABS,
   HAND_PATH_TABS,
   VIDEO_TABS,
+  SOCIAL_TABS,
 } from "./tab-definitions";
 
 /**
@@ -45,8 +46,8 @@ const MODULE_ID_MIGRATIONS: Record<string, ModuleId> = {
   "landing-preview": "lab",
   // Standalone modules consolidated into Lab (Feb 2026)
   "ml-training": "lab",
-  community: "lab",
-  connect: "lab",
+  community: "social",
+  connect: "social",
 };
 
 /**
@@ -90,7 +91,15 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     isMain: true,
     sections: BROWSE_TABS,
   },
-  // community module consolidated into Lab (Feb 2026)
+  {
+    id: "social",
+    label: "Social",
+    icon: '<i class="fas fa-users" style="color: #14b8a6;" aria-hidden="true"></i>',
+    color: "#14b8a6",
+    description: "Community map and nearby spinner sync",
+    isMain: true,
+    sections: SOCIAL_TABS,
+  },
   {
     id: "learn",
     label: "Learn",
@@ -146,7 +155,6 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     isMain: true,
     sections: ARENA_TABS,
   },
-  // connect module consolidated into Lab (Feb 2026)
   {
     id: "train",
     label: "Train",

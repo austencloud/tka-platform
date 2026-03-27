@@ -26,8 +26,7 @@
     "multi-grid": () => import("$lib/features/multi-grid-lab/MultiGridLabModule.svelte"),
     "ml-training": () =>
       import("$lib/features/train/ml-training/components/MLTrainingModule.svelte"),
-    community: () => import("$lib/features/community/Community.svelte"),
-    connect: () => import("$lib/features/connect/ConnectModule.svelte"),
+    // community, connect graduated to Social module (Mar 2026)
     voice: () => import("./tabs/VoiceControlLab.svelte"),
     vtg: () => import("$lib/features/vtg-lab/VtgLabModule.svelte"),
     "screenshot-gallery": () => import("./tabs/ScreenshotCaptureLab.svelte"),
