@@ -9,6 +9,8 @@
 
 import {
 	MANDALA_GRID_RADIUS,
+	ENGINE_GRID_RADIUS,
+	DEFAULT_TIP_INSET_PX,
 	BLUE_STROKE,
 	RED_STROKE,
 	BLUE_FILL,
@@ -57,8 +59,13 @@ export class MandalaRenderer implements IMandalaRenderer {
 		const { size, style, showGridDots, show, strokeWidth = 2, transparentBackground = false } = options;
 		const center = size / 2;
 
-		// Scale from mandala coordinate space to pixel space
-		const scale = center / (MANDALA_GRID_RADIUS * 1.5);
+		// Scale from mandala coordinate space to pixel space.
+		// Max content extent = grid radius + scaled tip reach.
+		// Staff tip dx=150, minus 20px inset = 130, scaled by gridRadius/engineRadius.
+		const tipReach = (ENGINE_GRID_RADIUS - DEFAULT_TIP_INSET_PX) * MANDALA_GRID_RADIUS / ENGINE_GRID_RADIUS;
+		const maxExtent = MANDALA_GRID_RADIUS + tipReach;
+		// Add 5% padding so strokes don't clip at the edge
+		const scale = center / (maxExtent * 1.05);
 
 		const parts: string[] = [];
 
@@ -120,7 +127,9 @@ export class MandalaRenderer implements IMandalaRenderer {
 	): void {
 		const { size, style, showGridDots, show, strokeWidth = 2, offsetX, offsetY } = options;
 		const center = size / 2;
-		const scale = center / (MANDALA_GRID_RADIUS * 1.5);
+		const tipReach = (ENGINE_GRID_RADIUS - DEFAULT_TIP_INSET_PX) * MANDALA_GRID_RADIUS / ENGINE_GRID_RADIUS;
+		const maxExtent = MANDALA_GRID_RADIUS + tipReach;
+		const scale = center / (maxExtent * 1.05);
 
 		ctx.save();
 
