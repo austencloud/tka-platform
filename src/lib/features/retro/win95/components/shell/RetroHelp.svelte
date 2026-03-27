@@ -35,7 +35,7 @@
     {
       title: "Creating Sequences",
       content:
-        "Open SCRIBE.EXE from the desktop or Programs menu.\n\nSelect the Construct tab to build sequences beat by beat, or use Generate for automatic creation.\n\nSave frequently. The floppy drive is unreliable.",
+        "Open TKANOTTN.EXE from the desktop or Programs menu.\n\nSelect the Construct tab to build sequences beat by beat, or use Generate for automatic creation.\n\nSave frequently. The floppy drive is unreliable.",
     },
     {
       title: "Using the File Manager",

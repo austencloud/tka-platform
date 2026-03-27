@@ -1,5 +1,5 @@
 <!--
-  RetroScribe — SCRIBE.EXE main component
+  RetroScribe — TKA Notation System main component
 
   The flagship TKA-OS application. Retro version of the Create module
   rendered inside a RetroWindow. Contains a full Win95-style app shell:
@@ -7,7 +7,7 @@
 
   Fills its parent container (the RetroWindow body area).
 
-  Domain: Retro SCRIBE App
+  Domain: Retro Notation App
 -->
 <script lang="ts">
   import RetroMenuBar from "../../primitives/RetroMenuBar.svelte";
@@ -118,7 +118,7 @@
     },
     {
       label: "Help",
-      items: [{ label: "About SCRIBE.EXE", action: () => showAbout() }],
+      items: [{ label: "About TKA Notation System", action: () => showAbout() }],
     },
   ]);
 
@@ -174,7 +174,7 @@
   }
 
   function showAbout() {
-    statusText = "SCRIBE.EXE v1.0 - TKA-OS";
+    statusText = "TKA Notation System v1.0 - TKA-OS";
   }
 
   function handleStatusChange(status: string) {
