@@ -48,6 +48,7 @@ import { presenceContainer } from "./containers/presence-container";
 import { communityContainer } from "./containers/community-container";
 import { writeContainer } from "./containers/write-container";
 import { mandalaContainer } from "./containers/mandala-container";
+import { sequenceMandalaContainer } from "./containers/sequence-mandala-container";
 
 // ============================================================================
 // FACTORY CONTAINERS (export function createXyzContainer(deps)...)
@@ -426,6 +427,7 @@ function buildAppContainer(): any {
   c = c.add(communityContainer.items);
   c = c.add(writeContainer.items);
   c = c.add(mandalaContainer.items);
+  c = c.add(sequenceMandalaContainer.items);
   c = c.add(qrContainer.items);
   c = c.add(animation3DContainer.items);
   c = c.add(galleryContainer.items);
