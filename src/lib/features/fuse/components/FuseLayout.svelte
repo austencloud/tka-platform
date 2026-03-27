@@ -390,11 +390,20 @@
 	.panel-wrap {
 		min-height: 0;
 		display: flex;
+		justify-content: var(--panel-justify, center);
 	}
 
 	.panel-wrap > :global(*) {
-		flex: 1;
 		min-height: 0;
+		height: 100%;
+	}
+
+	/* Left panel pushes content right, right panel pushes content left */
+	.panel-wrap:first-child {
+		--panel-justify: flex-end;
+	}
+	.panel-wrap:last-child {
+		--panel-justify: flex-start;
 	}
 
 	.fuse-target {

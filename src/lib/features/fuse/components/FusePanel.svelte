@@ -107,22 +107,15 @@
 		border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
 		border-radius: var(--radius-md, 12px);
 		overflow: hidden;
+		/* On wide screens, don't stretch full width — align toward center */
+		max-width: 600px;
+		align-self: var(--align, center);
 	}
 
 	.card-section {
 		flex: 1;
 		min-height: 0;
 		overflow: hidden;
-		display: flex;
-		justify-content: var(--align, center);
-	}
-
-	/* Constrain card to square-ish width matching its height, pushed toward center */
-	.card-section > :global(*) {
-		height: 100%;
-		aspect-ratio: 1;
-		max-width: 100%;
-		flex-shrink: 1;
 	}
 
 	.animation-section {
