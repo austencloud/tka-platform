@@ -62,16 +62,27 @@
       : ''
   );
 
+  function drillOrSelect(axis: AxisView, value: string | number, matchingDecks: Deck[]): void {
+    if (matchingDecks.length === 1) {
+      onSelectDeck(matchingDecks[0]!);
+    } else {
+      drillFilter = { axis, value };
+    }
+  }
+
   function handleSelectBeatCount(beatCount: number): void {
-    drillFilter = { axis: 'beats', value: beatCount };
+    const matching = filteredDecks.filter(d => (d.beatCount || 0) === beatCount);
+    drillOrSelect('beats', beatCount, matching);
   }
 
   function handleSelectTurns(turns: number): void {
-    drillFilter = { axis: 'turns', value: turns };
+    const matching = filteredDecks.filter(d => (d.turns ?? 0) === turns);
+    drillOrSelect('turns', turns, matching);
   }
 
   function handleSelectPattern(patternId: string): void {
-    drillFilter = { axis: 'reversal', value: patternId };
+    const matching = filteredDecks.filter(d => (d.reversalPattern || 'continuous') === patternId);
+    drillOrSelect('reversal', patternId, matching);
   }
 
   function clearDrill(): void {
