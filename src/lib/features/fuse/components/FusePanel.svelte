@@ -157,6 +157,9 @@
 	}
 
 	.shuffle-btn.glow {
+		background: color-mix(in srgb, var(--accent) 35%, transparent);
+		border: 1.5px solid color-mix(in srgb, var(--accent) 50%, transparent);
+		border-top: 1.5px solid color-mix(in srgb, var(--accent) 50%, transparent);
 		box-shadow: 0 0 20px color-mix(in srgb, var(--accent) 40%, transparent);
 		animation: shuffleGlow 1.5s ease-in-out infinite;
 	}
@@ -164,9 +167,11 @@
 	@keyframes shuffleGlow {
 		0%, 100% {
 			box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 30%, transparent);
+			background: color-mix(in srgb, var(--accent) 30%, transparent);
 		}
 		50% {
 			box-shadow: 0 0 24px color-mix(in srgb, var(--accent) 50%, transparent);
+			background: color-mix(in srgb, var(--accent) 45%, transparent);
 		}
 	}
 
