@@ -56,18 +56,20 @@
 		/>
 	</div>
 
-	<div class="animation-section">
+	<div class="animation-section" style="--align: {side === 'left' ? 'flex-end' : 'flex-start'};">
 		{#if currentSequence}
-			{#key currentSequence.id ?? currentSequence.word}
-				<FuseAnimationPreview
-					sequence={currentSequence}
-					{bpm}
-					{onControllerReady}
-					propColor={side === "left" ? "blue" : "red"}
-					{currentBeat}
-					showBackButton={false}
-				/>
-			{/key}
+			<div class="animation-square">
+				{#key currentSequence.id ?? currentSequence.word}
+					<FuseAnimationPreview
+						sequence={currentSequence}
+						{bpm}
+						{onControllerReady}
+						propColor={side === "left" ? "blue" : "red"}
+						{currentBeat}
+						showBackButton={false}
+					/>
+				{/key}
+			</div>
 		{:else}
 			<div class="animation-placeholder">
 				<i class="fas fa-play-circle" aria-hidden="true"></i>
@@ -117,6 +119,16 @@
 		flex: 1;
 		min-height: 100px;
 		border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+		position: relative;
+		display: flex;
+		justify-content: var(--align, center);
+		align-items: center;
+	}
+
+	.animation-square {
+		aspect-ratio: 1;
+		height: 100%;
+		max-width: 100%;
 		position: relative;
 	}
 
