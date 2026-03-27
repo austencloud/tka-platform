@@ -165,25 +165,49 @@
   }
 
   .crumb {
-    background: none;
-    border: none;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 8px 14px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 8px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    font: inherit;
+    font-size: var(--font-size-sm, 14px);
+    font-weight: 500;
     cursor: pointer;
-    padding: 0;
-    font-size: inherit;
+    transition: border-color 0.15s ease, color 0.15s ease;
   }
 
   .crumb:hover {
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
     color: var(--theme-text, #fff);
+    text-decoration: none;
   }
 
-  .crumb-sep {
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.3));
+  .crumb:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 2px;
   }
 
   .crumb.current {
     color: var(--theme-text, #fff);
+    cursor: default;
     font-weight: 600;
+    background: rgba(255, 255, 255, 0.08);
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
+  }
+
+  .crumb.current:hover {
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
+    color: var(--theme-text, #fff);
+  }
+
+  .crumb-sep {
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.25));
+    font-size: 14px;
+    padding: 0 2px;
   }
 
   .loading,
@@ -224,7 +248,7 @@
 
   .turns-note {
     font-weight: 400;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
     margin-left: 8px;
     font-size: var(--font-size-compact, 12px);
   }

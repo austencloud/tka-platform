@@ -45,7 +45,7 @@
 
   .section-header {
     font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.45));
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
     letter-spacing: 0.15em;
     text-align: center;
     text-transform: uppercase;
@@ -56,7 +56,7 @@
   .reversal-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
+    gap: 20px;
     max-width: 960px;
     margin: 0 auto;
   }
