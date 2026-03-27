@@ -15,6 +15,18 @@
   import RetroButton from "../primitives/RetroButton.svelte";
 
   /* ------------------------------------------------------------------ */
+  /* Props                                                               */
+  /* ------------------------------------------------------------------ */
+
+  let {
+    onsuccess = undefined,
+    onfail = undefined,
+  }: {
+    onsuccess?: () => void;
+    onfail?: () => void;
+  } = $props();
+
+  /* ------------------------------------------------------------------ */
   /* Local state                                                         */
   /* ------------------------------------------------------------------ */
 
@@ -35,6 +47,7 @@
     // authState watcher in RetroDesktop will populate display name / email
     // once the Firebase user object updates. We just flip the gate here.
     desktopState.isAuthenticated = true;
+    onsuccess?.();
   }
 
   /* ------------------------------------------------------------------ */
@@ -56,6 +69,7 @@
         error instanceof Error
           ? error.message
           : "Sign-in failed. Check your credentials and try again.";
+      onfail?.();
     } finally {
       isSubmitting = false;
     }
@@ -78,6 +92,7 @@
         error instanceof Error
           ? error.message
           : "Google sign-in failed. Please try again.";
+      onfail?.();
     } finally {
       isSubmitting = false;
     }

@@ -18,11 +18,44 @@ export interface IRetroSoundManager {
 	/** 1000Hz sine chime with exponential decay. 150ms. */
 	ding(): void;
 
-	/** Ascending C-E-G chord (261.63 / 329.63 / 392 Hz). Sine wave, 150ms per note. */
+	/** Ascending C-E-G-C chord. Sine wave, sequenced quarter notes. */
 	startup(): void;
 
 	/** 440Hz square wave tone. 100ms. */
 	beep(): void;
+
+	/** Ascending two-note sine chord — window opening. */
+	windowOpen(): void;
+
+	/** Descending two-note sine chord — window closing. */
+	windowClose(): void;
+
+	/** Short downward swoosh — window minimize. */
+	minimize(): void;
+
+	/** Short upward sweep — window maximize/restore. */
+	maximize(): void;
+
+	/** Soft pop — generic menu appears. */
+	menuOpen(): void;
+
+	/** Iconic two-tone chime — Start menu opens. */
+	startMenu(): void;
+
+	/**
+	 * Rapid mechanical clicking — emulates a floppy drive seeking
+	 * during data loading operations.
+	 */
+	floppySeek(): void;
+
+	/** Hollow clunk — file moved to Recycle Bin. */
+	recycle(): void;
+
+	/** Welcoming ascending arpeggio — successful login. */
+	loginSuccess(): void;
+
+	/** Harsh descending buzz — failed login attempt. */
+	loginFail(): void;
 
 	/** Set master volume. Clamped to 0.0 - 1.0. */
 	setVolume(level: number): void;
