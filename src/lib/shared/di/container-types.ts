@@ -23,6 +23,7 @@ import type { PresenceContainer } from "./containers/presence-container";
 import type { CommunityContainer } from "./containers/community-container";
 import type { WriteContainer } from "./containers/write-container";
 import type { MandalaContainer } from "./containers/mandala-container";
+import type { SequenceMandalaContainer } from "./containers/sequence-mandala-container";
 import type { BackgroundBuilderContainerType } from "./containers/background-builder-container";
 import type { ConjoinedLabContainer } from "./containers/conjoined-lab-container";
 import type { TrigridLabContainer } from "./containers/trigrid-lab-container";
@@ -102,6 +103,7 @@ type PresenceItems = ItemsOf<PresenceContainer>;
 type CommunityItems = ItemsOf<CommunityContainer>;
 type WriteItems = ItemsOf<WriteContainer>;
 type MandalaItems = ItemsOf<MandalaContainer>;
+type SequenceMandalaItems = ItemsOf<SequenceMandalaContainer>;
 type BackgroundBuilderItems = ItemsOf<BackgroundBuilderContainerType>;
 type ConjoinedLabItems = ItemsOf<ConjoinedLabContainer>;
 type TrigridLabItems = ItemsOf<TrigridLabContainer>;
@@ -203,6 +205,7 @@ export type IAppContainerItems =
 	CommunityItems &
 	WriteItems &
 	MandalaItems &
+	SequenceMandalaItems &
 	QRItems &
 	Animation3DItems &
 	GalleryItems &
