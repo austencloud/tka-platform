@@ -163,15 +163,15 @@ function applyReversalToSequence(steps, patternId) {
     const blue = step.motions?.blue;
     const red = step.motions?.red;
 
-    if (blue && blueReversed) {
-      // Flip motion type only — rotationDirection is the HAND's travel direction
-      // and doesn't change. The prop spin reversal is encoded in pro↔anti.
-      blue.motionType = blue.motionType === "pro" ? "anti"
-        : blue.motionType === "anti" ? "pro" : blue.motionType;
+    if (blue && blueReversed && (blue.motionType === "pro" || blue.motionType === "anti")) {
+      blue.motionType = blue.motionType === "pro" ? "anti" : "pro";
+      blue.rotationDirection = blue.rotationDirection === "cw" ? "ccw"
+        : blue.rotationDirection === "ccw" ? "cw" : blue.rotationDirection;
     }
-    if (red && redReversed) {
-      red.motionType = red.motionType === "pro" ? "anti"
-        : red.motionType === "anti" ? "pro" : red.motionType;
+    if (red && redReversed && (red.motionType === "pro" || red.motionType === "anti")) {
+      red.motionType = red.motionType === "pro" ? "anti" : "pro";
+      red.rotationDirection = red.rotationDirection === "cw" ? "ccw"
+        : red.rotationDirection === "ccw" ? "cw" : red.rotationDirection;
     }
 
     // Re-derive letter
