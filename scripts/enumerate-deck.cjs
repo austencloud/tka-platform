@@ -870,19 +870,24 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
           step.blueReversal = blueReversed;
           step.redReversal  = redReversed;
 
-          // Flip motionType AND rotationDirection — both are prop properties.
-          // rotationDirection is the prop's spin direction, not the hand's travel.
-          if (blueReversed && (step.blueMotion.motionType === 'pro' || step.blueMotion.motionType === 'anti')) {
-            step.blueMotion.motionType = step.blueMotion.motionType === 'pro' ? 'anti' : 'pro';
-            step.blueMotion.rotationDirection = step.blueMotion.rotationDirection === 'cw' ? 'ccw'
-              : step.blueMotion.rotationDirection === 'ccw' ? 'cw'
-              : step.blueMotion.rotationDirection;
+          // Apply reversal based on the CURRENT beat's motion type:
+          // - pro/anti: flip motion type AND rotation direction
+          // - static/dash: only flip rotation direction (type stays)
+          if (blueReversed) {
+            if (step.blueMotion.motionType === 'pro' || step.blueMotion.motionType === 'anti') {
+              step.blueMotion.motionType = step.blueMotion.motionType === 'pro' ? 'anti' : 'pro';
+            }
+            if (step.blueMotion.rotationDirection === 'cw' || step.blueMotion.rotationDirection === 'ccw') {
+              step.blueMotion.rotationDirection = step.blueMotion.rotationDirection === 'cw' ? 'ccw' : 'cw';
+            }
           }
-          if (redReversed && (step.redMotion.motionType === 'pro' || step.redMotion.motionType === 'anti')) {
-            step.redMotion.motionType = step.redMotion.motionType === 'pro' ? 'anti' : 'pro';
-            step.redMotion.rotationDirection = step.redMotion.rotationDirection === 'cw' ? 'ccw'
-              : step.redMotion.rotationDirection === 'ccw' ? 'cw'
-              : step.redMotion.rotationDirection;
+          if (redReversed) {
+            if (step.redMotion.motionType === 'pro' || step.redMotion.motionType === 'anti') {
+              step.redMotion.motionType = step.redMotion.motionType === 'pro' ? 'anti' : 'pro';
+            }
+            if (step.redMotion.rotationDirection === 'cw' || step.redMotion.rotationDirection === 'ccw') {
+              step.redMotion.rotationDirection = step.redMotion.rotationDirection === 'cw' ? 'ccw' : 'cw';
+            }
           }
 
           // Re-derive the letter from the reversed motion types via CSV lookup.

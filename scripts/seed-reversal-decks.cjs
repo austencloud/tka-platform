@@ -152,12 +152,6 @@ function applyReversalToSequence(steps, patternId) {
   const pattern = REVERSAL_PATTERNS[patternId];
   const seq = pattern.sequence;
 
-  // Track running motion state per hand (from the previous beat)
-  let prevBlueType = null;
-  let prevBlueRotDir = null;
-  let prevRedType = null;
-  let prevRedRotDir = null;
-
   let beatIndex = 0;
   for (let i = 0; i < steps.length; i++) {
     const step = steps[i];
@@ -170,8 +164,6 @@ function applyReversalToSequence(steps, patternId) {
     if (beatIndex === 0) {
       step.blueReversal = false;
       step.redReversal = false;
-      if (blue) { prevBlueType = blue.motionType; prevBlueRotDir = blue.rotationDirection; }
-      if (red) { prevRedType = red.motionType; prevRedRotDir = red.rotationDirection; }
       beatIndex++;
       continue;
     }
@@ -183,32 +175,25 @@ function applyReversalToSequence(steps, patternId) {
     step.blueReversal = blueReversed;
     step.redReversal = redReversed;
 
-    // Derive this beat's motion from the PREVIOUS beat's state
-    if (blue) {
-      if (blueReversed && (prevBlueType === "pro" || prevBlueType === "anti")) {
-        blue.motionType = prevBlueType === "pro" ? "anti" : "pro";
-        blue.rotationDirection = prevBlueRotDir === "cw" ? "ccw"
-          : prevBlueRotDir === "ccw" ? "cw" : prevBlueRotDir;
-      } else {
-        // No reversal — carry forward previous state
-        blue.motionType = prevBlueType;
-        blue.rotationDirection = prevBlueRotDir;
+    // Apply reversal based on the CURRENT beat's original motion type.
+    // - pro/anti: flip motion type AND rotation direction
+    // - static/dash: only flip rotation direction (motion type stays)
+    if (blue && blueReversed) {
+      if (blue.motionType === "pro" || blue.motionType === "anti") {
+        blue.motionType = blue.motionType === "pro" ? "anti" : "pro";
       }
-      prevBlueType = blue.motionType;
-      prevBlueRotDir = blue.rotationDirection;
+      if (blue.rotationDirection === "cw" || blue.rotationDirection === "ccw") {
+        blue.rotationDirection = blue.rotationDirection === "cw" ? "ccw" : "cw";
+      }
     }
 
-    if (red) {
-      if (redReversed && (prevRedType === "pro" || prevRedType === "anti")) {
-        red.motionType = prevRedType === "pro" ? "anti" : "pro";
-        red.rotationDirection = prevRedRotDir === "cw" ? "ccw"
-          : prevRedRotDir === "ccw" ? "cw" : prevRedRotDir;
-      } else {
-        red.motionType = prevRedType;
-        red.rotationDirection = prevRedRotDir;
+    if (red && redReversed) {
+      if (red.motionType === "pro" || red.motionType === "anti") {
+        red.motionType = red.motionType === "pro" ? "anti" : "pro";
       }
-      prevRedType = red.motionType;
-      prevRedRotDir = red.rotationDirection;
+      if (red.rotationDirection === "cw" || red.rotationDirection === "ccw") {
+        red.rotationDirection = red.rotationDirection === "cw" ? "ccw" : "cw";
+      }
     }
 
     // Re-derive letter
