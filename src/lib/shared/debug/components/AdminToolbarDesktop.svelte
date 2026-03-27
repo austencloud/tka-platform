@@ -48,6 +48,7 @@
     isClearingTikaCache: boolean;
     onClearThumbnailCache: () => void;
     isClearingThumbnailCache: boolean;
+    onShowPwaBanner: () => void;
     onClose: () => void;
   }
 
@@ -78,6 +79,7 @@
     isClearingTikaCache,
     onClearThumbnailCache,
     isClearingThumbnailCache,
+    onShowPwaBanner,
     onClose,
   }: Props = $props();
 
@@ -105,6 +107,11 @@
 
   function handleResetHelpDiscovery() {
     onResetHelpDiscovery();
+    isActionsOpen = false;
+  }
+
+  function handleShowPwaBanner() {
+    onShowPwaBanner();
     isActionsOpen = false;
   }
 
@@ -287,6 +294,15 @@
             >
               <i class="fas fa-circle-question" aria-hidden="true"></i>
               <span>Reset Help Button Discovery</span>
+            </button>
+
+            <button
+              type="button"
+              class="dropdown-item"
+              onclick={handleShowPwaBanner}
+            >
+              <i class="fas fa-mobile-screen" aria-hidden="true"></i>
+              <span>Show PWA Migration Banner</span>
             </button>
 
             <div class="dropdown-divider"></div>

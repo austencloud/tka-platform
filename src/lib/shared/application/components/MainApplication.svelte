@@ -58,6 +58,7 @@
   import type { IDeviceDetector } from "../../device/services/contracts/IDeviceDetector";
   import BackgroundHost from "../../background/shared/components/BackgroundHost.svelte";
   import { BackgroundType } from "@austencloud/backgrounds";
+  import PwaMigrationBanner from "../../pwa/components/PwaMigrationBanner.svelte";
   import {
     getShowDebugPanel,
     toggleDebugPanel,
@@ -516,6 +517,9 @@
   {:else}
     <!-- Main Interface - Full app -->
     <MainInterface />
+
+    <!-- PWA migration banner for users who installed from tkascribe.com -->
+    <PwaMigrationBanner />
 
     <!-- Tutorial prompt overlays the main app so the user sees the real layout behind it -->
     {#if appEntryState.isTutorialPrompt()}

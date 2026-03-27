@@ -361,6 +361,14 @@
     }
   }
 
+  function showPwaMigrationBanner() {
+    window.dispatchEvent(new CustomEvent("pwaMigrationBannerShow"));
+    introResetMessage = "PWA migration banner shown";
+    setTimeout(() => {
+      introResetMessage = null;
+    }, 2000);
+  }
+
   function handleClose() {
     adminToolbarState.close();
   }
@@ -420,6 +428,7 @@
     {isClearingTikaCache}
     onClearThumbnailCache={clearThumbnailLocalCache}
     {isClearingThumbnailCache}
+    onShowPwaBanner={showPwaMigrationBanner}
     onClose={handleClose}
   />
 {/if}
@@ -452,6 +461,7 @@
     {isClearingTikaCache}
     onClearThumbnailCache={clearThumbnailLocalCache}
     {isClearingThumbnailCache}
+    onShowPwaBanner={showPwaMigrationBanner}
     onClose={handleClose}
   />
 {/if}
