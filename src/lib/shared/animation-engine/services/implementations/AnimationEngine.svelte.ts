@@ -134,6 +134,8 @@ const DEFAULT_ENGINE_PROPS: AnimationEngineProps = {
 export interface AnimationEngineCallbacks {
   onCanvasReady?: (canvas: HTMLCanvasElement | null) => void;
   onTrailSettingsChange?: (settings: TrailSettings) => void;
+  /** Called when an effect (fire/charcoal/LED) fails repeatedly and is auto-disabled */
+  onEffectError?: (effectName: string, error: Error) => void;
 }
 
 /**
@@ -948,6 +950,7 @@ export class AnimationEngine {
     if (props.sequenceData && this.orchestrator) {
       const newHash = this.getSequenceContentHash(props.sequenceData);
       if (newHash !== this.lastSequenceContentHash) {
+        console.log(`[TRAIL-DIAG] Sequence changed, hash: ${this.lastSequenceContentHash} → ${newHash}`);
         this.orchestrator.initializeWithDomainData(props.sequenceData);
         this.lastSequenceContentHash = newHash;
 
@@ -956,6 +959,8 @@ export class AnimationEngine {
         // instead of clear() — props are already positioned correctly by
         // the orchestrator above, so no warmup delay needed.
         this.trailOverlay?.clearBuffers();
+        this.fireTipTracker?.reset();
+        console.log(`[TRAIL-DIAG] Cleared trail buffers + reset fire tip tracker`);
 
         // Trigger path cache precomputation for smooth trails during stutters
         // This pre-computes the entire animation at 120fps so the render loop can
@@ -1435,6 +1440,7 @@ export class AnimationEngine {
       frameBudgetMonitor: this.frameBudgetMonitor,
       fireTipTracker: this.fireTipTracker,
       ledTipTracker: this.ledTipTracker,
+      onEffectError: this.callbacks.onEffectError,
     });
 
     this.trailOverlay = new TrailOverlayCanvas();

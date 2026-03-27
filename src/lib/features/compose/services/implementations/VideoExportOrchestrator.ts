@@ -238,6 +238,11 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       }
       playbackController.jumpToStep(0);
 
+      // Invalidate the fire frame cache BEFORE clearing canvases. The cache
+      // may be "warm" from normal playback and would blit stale fire frames
+      // during frame-by-frame export instead of running fresh simulation.
+      fireCacheInvalidation.trigger();
+
       // Clear all overlay canvases (trails, fire, charcoal, LED) so residual
       // effects from the user's previous playback don't bleed into frame 1.
       const container = canvas.parentElement;

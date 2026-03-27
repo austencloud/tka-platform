@@ -23,8 +23,10 @@ import type {
   RenderFrameParams,
 } from "../contracts/IAnimationRenderLoop";
 import { QualityTier } from "../../domain/types/QualityTypes";
+import { effectErrorSignal } from "../../state/effect-error-signal.svelte";
 
 export class AnimationRenderLoop implements IAnimationRenderLoop {
+  private diagFrameCount = 0;
   private renderer: IAnimationRenderer | null = null;
   private TrailCapturer: ITrailCapturer | null = null;
   private pathCache: AnimationPathCache | null = null;
@@ -35,12 +37,20 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
   private ledRenderer: ILedOverlayRenderer | null = null;
   private ledTipTracker: ILedTipTracker | null = null;
   private trailOverlay: ITrailOverlayCanvas | null = null;
+  private onEffectError: ((effectName: string, error: Error) => void) | null = null;
   private canvasSize: number = 950;
   private lastTrailFrameTime: number = 0;
   private rafId: number | null = null;
   private needsRender: boolean = false;
   private getFrameParamsCallback: (() => RenderFrameParams) | null = null;
   private isDisposed: boolean = false; // Prevent RAF from continuing after disposal
+
+  // Effect error tracking: auto-recover on first failure, escalate on repeated failures
+  private consecutiveFireErrors: number = 0;
+  private consecutiveLedErrors: number = 0;
+  private fireDisabledByError: boolean = false;
+  private ledDisabledByError: boolean = false;
+  private static readonly EFFECT_ERROR_THRESHOLD = 3;
 
   // Loop detection for cache-based trail gathering and fire frame cache
   // Tracks when the animation loops to prevent trail artifacts
@@ -95,6 +105,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     this.ledRenderer = config.ledRenderer ?? null;
     this.ledTipTracker = config.ledTipTracker ?? null;
     this.trailOverlay = config.trailOverlay ?? null;
+    this.onEffectError = config.onEffectError ?? null;
   }
 
   updateConfig(config: Partial<RenderLoopConfig>): void {
@@ -117,6 +128,8 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       this.ledTipTracker = config.ledTipTracker ?? null;
     if (config.trailOverlay !== undefined)
       this.trailOverlay = config.trailOverlay ?? null;
+    if (config.onEffectError !== undefined)
+      this.onEffectError = config.onEffectError ?? null;
   }
 
   start(getFrameParams: () => RenderFrameParams): void {
@@ -138,6 +151,11 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     this.loopOccurredAtStep = null;
     this.hasLoopedAtLeastOnce = false;
     this.loopStartTime = 0;
+    // Reset effect error tracking so effects can retry on next start
+    this.consecutiveFireErrors = 0;
+    this.consecutiveLedErrors = 0;
+    this.fireDisabledByError = false;
+    this.ledDisabledByError = false;
   }
 
   isRunning(): boolean {
@@ -283,6 +301,17 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
 
   private render(params: RenderFrameParams, currentTime: number): void {
     if (!this.renderer) return;
+    this.diagFrameCount++;
+
+    if (this.diagFrameCount <= 10) {
+      const bp = params.props.blueProp;
+      const rp = params.props.redProp;
+      const hasFireR = this.fireRenderer?.isInitialized() && params.fireConfig?.enabled;
+      const hasCharR = this.charcoalRenderer?.isInitialized();
+      const hasTrailO = !!this.trailOverlay;
+      const hasLed = this.ledRenderer?.isInitialized() && params.ledConfig?.enabled;
+      console.log(`[TRAIL-DIAG] RenderLoop frame ${this.diagFrameCount} | effects: trail=${hasTrailO} fire=${!!hasFireR} charcoal=${!!hasCharR} led=${!!hasLed} | blue=(${bp?.x?.toFixed(0)},${bp?.y?.toFixed(0)}) red=(${rp?.x?.toFixed(0)},${rp?.y?.toFixed(0)})`);
+    }
 
     // Measure RAF-to-RAF gap (includes browser layout, GC, other JS, vsync wait)
     const rafGap = this.lastFrameTime > 0 ? currentTime - this.lastFrameTime : 0;
@@ -439,54 +468,83 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       (activeFireRenderer && params.fireConfig?.enabled) || activeCharcoalRenderer
     );
 
-    if (hasActiveOverlay) {
-      // Reset tip tracker on loop to prevent velocity spike from position teleport.
-      // Without this, the position delta (end-of-sequence → start-of-sequence) produces
-      // a massive velocity injection that pushes fire off the prop tips.
-      if (this.loopDetectedThisFrame) {
-        this.fireTipTracker!.reset();
-      }
-
-      const tipTrackerConfig: FireTipTrackerConfig = {
-        canvasSize: this.canvasSize,
-        bluePropDimensions: props.bluePropDimensions,
-        redPropDimensions: props.redPropDimensions,
-        bluePropType: params.bluePropType,
-        redPropType: params.redPropType,
-        renderedTransforms,
-      };
-
-      const tipResult = this.fireTipTracker!.update(
-        props.blueProp,
-        props.redProp,
-        tipTrackerConfig,
-        currentTime
-      );
-
-      const fireInput: import("../../domain/types/FireTypes").FireFrameInput = {
-        tips: tipResult.tips,
-        currentTime,
-        canvasWidth: this.canvasSize,
-        canvasHeight: this.canvasSize,
-        darkMode: params.darkMode ?? false,
-        propColors: params.propColors,
-        loopDetected: this.loopDetectedThisFrame || tipResult.gapDetected,
-        playbackSpeed: params.playbackSpeed,
-        sequenceContentHash: params.sequenceContentHash,
-        relativeTime: currentTime - this.loopStartTime,
-        isSeamlesslyLoopable: params.isSeamlesslyLoopable ?? false,
-      };
-
-      if (activeFireRenderer) {
-        if (tipResult.gapDetected) {
-          activeFireRenderer.clearSimulation();
+    if (hasActiveOverlay && !this.fireDisabledByError) {
+      try {
+        // Reset tip tracker on loop to prevent velocity spike from position teleport.
+        // Without this, the position delta (end-of-sequence → start-of-sequence) produces
+        // a massive velocity injection that pushes fire off the prop tips.
+        if (this.loopDetectedThisFrame) {
+          this.fireTipTracker!.reset();
         }
-        activeFireRenderer.renderFire(fireInput, params.fireConfig!);
-      } else if (activeCharcoalRenderer) {
-        if (tipResult.gapDetected) {
-          activeCharcoalRenderer.clearSimulation();
+
+        const tipTrackerConfig: FireTipTrackerConfig = {
+          canvasSize: this.canvasSize,
+          bluePropDimensions: props.bluePropDimensions,
+          redPropDimensions: props.redPropDimensions,
+          bluePropType: params.bluePropType,
+          redPropType: params.redPropType,
+          renderedTransforms,
+        };
+
+        const tipResult = this.fireTipTracker!.update(
+          props.blueProp,
+          props.redProp,
+          tipTrackerConfig,
+          currentTime
+        );
+
+        const fireInput: import("../../domain/types/FireTypes").FireFrameInput = {
+          tips: tipResult.tips,
+          currentTime,
+          canvasWidth: this.canvasSize,
+          canvasHeight: this.canvasSize,
+          darkMode: params.darkMode ?? false,
+          propColors: params.propColors,
+          loopDetected: this.loopDetectedThisFrame || tipResult.gapDetected,
+          playbackSpeed: params.playbackSpeed,
+          sequenceContentHash: params.sequenceContentHash,
+          relativeTime: currentTime - this.loopStartTime,
+          isSeamlesslyLoopable: params.isSeamlesslyLoopable ?? false,
+        };
+
+        if (activeFireRenderer) {
+          if (tipResult.gapDetected) {
+            activeFireRenderer.clearSimulation();
+          }
+          activeFireRenderer.renderFire(fireInput, params.fireConfig!);
+        } else if (activeCharcoalRenderer) {
+          if (tipResult.gapDetected) {
+            activeCharcoalRenderer.clearSimulation();
+          }
+          activeCharcoalRenderer.renderCharcoal(fireInput, params.fireConfig!);
         }
-        activeCharcoalRenderer.renderCharcoal(fireInput, params.fireConfig!);
+
+        // Successful frame resets the error counter
+        this.consecutiveFireErrors = 0;
+      } catch (error) {
+        this.consecutiveFireErrors++;
+
+        // First few failures: reset state and try again next frame
+        this.fireTipTracker?.reset();
+        activeFireRenderer?.clearSimulation();
+        activeCharcoalRenderer?.clearSimulation();
+
+        if (this.consecutiveFireErrors >= AnimationRenderLoop.EFFECT_ERROR_THRESHOLD) {
+          // Repeated failures: disable fire and notify user
+          this.fireDisabledByError = true;
+          const err = error instanceof Error ? error : new Error(String(error));
+          console.error("[AnimationRenderLoop] Fire effect disabled after repeated failures:", err);
+          if (this.onEffectError) {
+            this.onEffectError("fire", err);
+          } else {
+            effectErrorSignal.trigger("fire", err);
+          }
+        } else {
+          console.warn(
+            `[AnimationRenderLoop] Fire render error (attempt ${this.consecutiveFireErrors}/${AnimationRenderLoop.EFFECT_ERROR_THRESHOLD}), resetting:`,
+            error
+          );
+        }
       }
     }
 
@@ -494,33 +552,57 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     if (
       this.ledRenderer?.isInitialized() &&
       this.ledTipTracker &&
-      params.ledConfig?.enabled
+      params.ledConfig?.enabled &&
+      !this.ledDisabledByError
     ) {
-      const tipTrackerConfig: LedTipTrackerConfig = {
-        canvasSize: this.canvasSize,
-        bluePropDimensions: props.bluePropDimensions,
-        redPropDimensions: props.redPropDimensions,
-        bluePropType: params.bluePropType,
-        redPropType: params.redPropType,
-      };
+      try {
+        const tipTrackerConfig: LedTipTrackerConfig = {
+          canvasSize: this.canvasSize,
+          bluePropDimensions: props.bluePropDimensions,
+          redPropDimensions: props.redPropDimensions,
+          bluePropType: params.bluePropType,
+          redPropType: params.redPropType,
+        };
 
-      const tips = this.ledTipTracker.update(
-        props.blueProp,
-        props.redProp,
-        tipTrackerConfig,
-        currentTime,
-        params.ledConfig
-      );
-
-      this.ledRenderer.renderLeds(
-        {
-          tips,
+        const tips = this.ledTipTracker.update(
+          props.blueProp,
+          props.redProp,
+          tipTrackerConfig,
           currentTime,
-          canvasWidth: this.canvasSize,
-          canvasHeight: this.canvasSize,
-        },
-        params.ledConfig
-      );
+          params.ledConfig
+        );
+
+        this.ledRenderer.renderLeds(
+          {
+            tips,
+            currentTime,
+            canvasWidth: this.canvasSize,
+            canvasHeight: this.canvasSize,
+          },
+          params.ledConfig
+        );
+
+        // Successful frame resets the error counter
+        this.consecutiveLedErrors = 0;
+      } catch (error) {
+        this.consecutiveLedErrors++;
+
+        if (this.consecutiveLedErrors >= AnimationRenderLoop.EFFECT_ERROR_THRESHOLD) {
+          this.ledDisabledByError = true;
+          const err = error instanceof Error ? error : new Error(String(error));
+          console.error("[AnimationRenderLoop] LED effect disabled after repeated failures:", err);
+          if (this.onEffectError) {
+            this.onEffectError("led", err);
+          } else {
+            effectErrorSignal.trigger("led", err);
+          }
+        } else {
+          console.warn(
+            `[AnimationRenderLoop] LED render error (attempt ${this.consecutiveLedErrors}/${AnimationRenderLoop.EFFECT_ERROR_THRESHOLD}), resetting:`,
+            error
+          );
+        }
+      }
     }
 
     // End frame budget measurement (updates rolling averages, may trigger tier change)

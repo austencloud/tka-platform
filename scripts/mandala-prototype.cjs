@@ -683,10 +683,18 @@ for (let i = 0; i < blueDiag.diagnostics.length - 1; i++) {
   console.log(`Beat ${end.beat} end → Beat ${start.beat} start: gap = ${gap}px (dx=${dx.toFixed(2)}, dy=${dy.toFixed(2)})`);
 }
 
-// Also generate the decomposed view alongside
-const blueSvg = generateDecomposedSVG(seq, { ...svgOpts, show: "blue" });
-const redSvg = generateDecomposedSVG(seq, { ...svgOpts, show: "red" });
-const combinedSvg = generateDecomposedSVG(seq, { ...svgOpts, show: "both" });
+// Generate tip inset comparison
+const insets = [0, 5, 10, 15, 20, 30];
+const insetSvgs = insets.map(inset => ({
+  inset,
+  svg: generateWithTipInset(seq, inset, svgOpts),
+}));
+
+// Also generate the decomposed view alongside (using 10px inset as default)
+const bestInsetOpts = { ...svgOpts };
+const blueSvg = generateDecomposedSVG(seq, { ...bestInsetOpts, show: "blue" });
+const redSvg = generateDecomposedSVG(seq, { ...bestInsetOpts, show: "red" });
+const combinedSvg = generateDecomposedSVG(seq, { ...bestInsetOpts, show: "both" });
 
 // Beat color legend
 const beatColors = ["#4488ff", "#22cc88", "#ff8844", "#cc44ff", "#ffcc22", "#44cccc"];
@@ -716,6 +724,18 @@ const html = `<!DOCTYPE html>
 <body>
 <h1>${seq.seedWord}</h1>
 <p class="subtitle">${rawSeq.handPathFamily} &mdash; ${rawSeq.beats.length}-beat seed expanded to ${fullBeats.length}-beat loop</p>
+
+<h2 class="section-title">Tip Inset Comparison</h2>
+<p style="text-align:center;color:#888;font-size:14px;margin-bottom:24px;">Tracking point moved inward from the exact staff tip. 0 = exact tip (dx=150), 10 = 10px inward (dx=140), etc.</p>
+<div class="row" style="gap: 16px;">
+${insetSvgs.map(({ inset, svg }) => `
+  <div class="panel">
+    ${svg}
+    <h3 style="color:#ccc;">${inset === 0 ? 'Exact tip (0px)' : inset + 'px inset'}</h3>
+    <p>dx = ${150 - inset}</p>
+  </div>
+`).join("")}
+</div>
 
 <h2 class="section-title">Blue Hand: Beat-by-Beat Diagnostic</h2>
 <div class="legend">${legend}</div>

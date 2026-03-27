@@ -50,6 +50,7 @@ export type ModuleId =
   | "arena" // Community pairwise ranking
   | "festivals" // Festival Hub — discover and apply to flow festivals
   | "realm" // 3D destinations: museum, stage, gallery, procedural worlds
+  | "retro" // Retro module: TKA-OS desktop, ASCII pictograph, pixel pictograph
   | "lab"; // Experimental features lab (all experiments consolidated here)
   // Consolidated into Lab (Feb 2026): community, ml-training, connect
 

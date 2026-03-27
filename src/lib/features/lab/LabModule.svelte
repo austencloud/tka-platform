@@ -44,10 +44,8 @@
     effects: () => import("$lib/features/effects-lab/EffectsLabModule.svelte"),
     disassemble: () => import("$lib/features/disassemble-lab/DisassembleLab.svelte"),
     "prop-buttons": () => import("./tabs/PropButtonLab.svelte"),
-    retro: () => import("$lib/features/retro/win95/components/RetroLab.svelte"),
+    // retro, ascii-pictograph, retro-pictograph graduated to Retro module (Mar 2026)
     "contact-ball": () => import("./tabs/ContactBallLab.svelte"),
-    "ascii-pictograph": () => import("./tabs/AsciiPictographLab.svelte"),
-    "retro-pictograph": () => import("./tabs/RetroPictographLab.svelte"),
     effort: () => import("$lib/features/effort-lab/EffortLabModule.svelte"),
     "phrase-effort": () => import("$lib/features/phrase-effort-lab/PhraseEffortLabModule.svelte"),
     "audio-toolkit": () => import("./tabs/audio-lab/AudioToolkitLab.svelte"),
