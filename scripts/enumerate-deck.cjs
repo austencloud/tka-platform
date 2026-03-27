@@ -443,15 +443,9 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
           csvEdge.redEndLoc === e.redEndLoc
         );
 
-        // NOW mutate motion types and rotation directions
+        // Mutate motion types only — rotationDirection (hand travel) stays the same
         e.blueMotionType = newBlue;
         e.redMotionType = newRed;
-        if (blueReversed && (e.blueRotDir === 'cw' || e.blueRotDir === 'ccw')) {
-          e.blueRotDir = e.blueRotDir === 'cw' ? 'ccw' : 'cw';
-        }
-        if (redReversed && (e.redRotDir === 'cw' || e.redRotDir === 'ccw')) {
-          e.redRotDir = e.redRotDir === 'cw' ? 'ccw' : 'cw';
-        }
         if (match) e.letter = match.letter;
       }
 
@@ -861,18 +855,17 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
           step.blueReversal = blueReversed;
           step.redReversal  = redReversed;
 
-          if (blueReversed && (step.blueMotion.motionType === 'pro' || step.blueMotion.motionType === 'anti')) {
-            step.blueMotion.motionType = step.blueMotion.motionType === 'pro' ? 'anti' : 'pro';
-            // Anti is the opposite rotation of pro — flip cw↔ccw
-            step.blueMotion.rotationDirection = step.blueMotion.rotationDirection === 'cw' ? 'ccw'
-              : step.blueMotion.rotationDirection === 'ccw' ? 'cw'
-              : step.blueMotion.rotationDirection;
+          // Flip motion type only — rotationDirection is the HAND's travel direction
+          // and doesn't change. The prop spin reversal is encoded in pro↔anti.
+          if (blueReversed) {
+            step.blueMotion.motionType = step.blueMotion.motionType === 'pro' ? 'anti'
+              : step.blueMotion.motionType === 'anti' ? 'pro'
+              : step.blueMotion.motionType;
           }
-          if (redReversed && (step.redMotion.motionType === 'pro' || step.redMotion.motionType === 'anti')) {
-            step.redMotion.motionType = step.redMotion.motionType === 'pro' ? 'anti' : 'pro';
-            step.redMotion.rotationDirection = step.redMotion.rotationDirection === 'cw' ? 'ccw'
-              : step.redMotion.rotationDirection === 'ccw' ? 'cw'
-              : step.redMotion.rotationDirection;
+          if (redReversed) {
+            step.redMotion.motionType = step.redMotion.motionType === 'pro' ? 'anti'
+              : step.redMotion.motionType === 'anti' ? 'pro'
+              : step.redMotion.motionType;
           }
 
           // Re-derive the letter from the reversed motion types via CSV lookup.
