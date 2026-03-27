@@ -44,6 +44,7 @@ Last audit: 2025-12-27
   import AnimationSettingsModal from "./animation-settings-modal/AnimationSettingsModal.svelte";
   import { onDestroy, untrack } from "svelte";
   import { fireCacheInvalidation } from "../state/fire-invalidation-signal.svelte";
+  import { effectErrorSignal } from "../state/effect-error-signal.svelte";
   import AnimatorCanvasSelf from "./AnimatorCanvas.svelte";
 
   // Props
@@ -79,6 +80,7 @@ Last audit: 2025-12-27
     fillContainer = false,
     resizePaused = false,
     onInitialized: onInitializedCallback = undefined,
+    onEffectError = undefined,
   }: {
     blueProp: PropState | null;
     redProp: PropState | null;
@@ -113,6 +115,8 @@ Last audit: 2025-12-27
     resizePaused?: boolean;
     /** Fires when the canvas engine has initialized and rendered its first frame */
     onInitialized?: () => void;
+    /** Called when an effect (fire/charcoal/LED) fails repeatedly and is auto-disabled */
+    onEffectError?: (effectName: string, error: Error) => void;
   } = $props();
 
   // Disassemble mode state machine
@@ -267,6 +271,25 @@ Last audit: 2025-12-27
     }
   });
 
+  // When an overlay effect (fire/charcoal/LED) fails repeatedly, the render loop
+  // auto-disables it and fires this signal. Show a warning so the user knows.
+  let lastEffectErrorSignal = effectErrorSignal.signal;
+  $effect(() => {
+    const sig = effectErrorSignal.signal;
+    if (sig !== lastEffectErrorSignal) {
+      lastEffectErrorSignal = sig;
+      const name = effectErrorSignal.effectName;
+      const err = effectErrorSignal.error;
+      if (name && err) {
+        console.warn(
+          `[AnimatorCanvas] ${name} effect was auto-disabled after repeated failures. ` +
+          `Toggle the effect off and on to retry. Error: ${err.message}`
+        );
+        effectErrorSignal.clear();
+      }
+    }
+  });
+
   // Derived state from engine
   const rendererLoading = $derived(engine.state.rendererLoading);
   const rendererError = $derived(engine.state.rendererError);
@@ -291,6 +314,7 @@ Last audit: 2025-12-27
         onTrailSettingsChange: (settings) => {
           externalTrailSettings = settings;
         },
+        onEffectError,
       });
     });
 

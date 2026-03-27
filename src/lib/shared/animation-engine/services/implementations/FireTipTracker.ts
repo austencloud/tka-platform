@@ -70,6 +70,8 @@ export class FireTipTracker implements IFireTipTracker {
 	/** Reusable result object to avoid allocation per frame */
 	private result: FireTipUpdateResult = { tips: this.outputTips, gapDetected: false };
 
+	private diagFrameCount = 0;
+
 	constructor() {
 		// Pre-allocate stored tips pool
 		for (let i = 0; i < MAX_TOTAL_TIPS; i++) {
@@ -83,6 +85,8 @@ export class FireTipTracker implements IFireTipTracker {
 		config: FireTipTrackerConfig,
 		currentTime: number
 	): FireTipUpdateResult {
+		this.diagFrameCount++;
+
 		// Detect time gaps (HMR, tab switch, long frame drops).
 		// When a gap is detected, invalidate all stored tips so the first
 		// post-gap frame starts with zero velocity instead of a spike.
@@ -92,9 +96,15 @@ export class FireTipTracker implements IFireTipTracker {
 			if (elapsed > GAP_THRESHOLD_MS) {
 				gapDetected = true;
 				this.reset();
+				console.log(`[TRAIL-DIAG] FireTipTracker: gap detected (${elapsed.toFixed(0)}ms), reset tips`);
 			}
 		}
 		this.lastUpdateTime = currentTime;
+
+		if (this.diagFrameCount <= 10) {
+			const validCount = this.prevTips.filter(t => t.valid).length;
+			console.log(`[TRAIL-DIAG] FireTipTracker frame ${this.diagFrameCount} | blue=(${blueProp?.x?.toFixed(0)},${blueProp?.y?.toFixed(0)}) red=(${redProp?.x?.toFixed(0)},${redProp?.y?.toFixed(0)}) | validPrev=${validCount} gap=${gapDetected}`);
+		}
 
 		this.outputTips.length = 0;
 		let totalTips = 0;

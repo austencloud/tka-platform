@@ -43,6 +43,22 @@ export const DESTINATIONS: Destination[] = [
 		component: () => import("../../../features/realm/destinations/museum/MuseumDestination.svelte"),
 		enabled: true,
 	},
+	{
+		id: "3d-controls",
+		name: "3D Controls",
+		description:
+			"Adjust grid positions, turns, planes, and motion types on a live 3D scene",
+		icon: "fa-cube",
+		color: "#06b6d4",
+		supportsMultiplayer: false,
+		supportsPhysics: false,
+		defaultCameraMode: CameraMode.ORBIT,
+		category: "creative",
+		tags: ["controls", "dev", "tuning", "props"],
+		component: () =>
+			import("../../../features/realm/tools/3d-controls/ThreeDControlsLab.svelte"),
+		enabled: true,
+	},
 	// Disabled destinations (kept for future re-enabling)
 	{
 		id: "stage",

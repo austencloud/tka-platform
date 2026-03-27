@@ -45,6 +45,8 @@ export interface RenderLoopConfig {
   ledTipTracker?: ILedTipTracker | null;
   /** Trail overlay canvas for persistent cross-sequence trails */
   trailOverlay?: ITrailOverlayCanvas | null;
+  /** Called when an effect (fire/charcoal/LED) fails repeatedly and is auto-disabled */
+  onEffectError?: (effectName: string, error: Error) => void;
 }
 
 /**

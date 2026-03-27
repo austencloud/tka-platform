@@ -223,6 +223,15 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     sections: [],
   },
   {
+    id: "retro",
+    label: "Retro",
+    icon: '<i class="fas fa-desktop" style="color: #008080;" aria-hidden="true"></i>',
+    color: "#008080",
+    description: "TKA-OS: Win95 desktop, DOS terminal, and pixel pictographs",
+    isMain: true,
+    sections: [],
+  },
+  {
     id: "lab",
     label: "Lab",
     icon: '<i class="fas fa-flask" style="color: #10b981;" aria-hidden="true"></i>',

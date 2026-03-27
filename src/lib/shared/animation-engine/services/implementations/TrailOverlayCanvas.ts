@@ -107,16 +107,30 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
     this.height = height;
   }
 
+  private diagFrameCount = 0;
+
   renderFrame(params: TrailOverlayRenderParams): void {
     const ctx = this.ctx;
     if (!ctx) return;
+
+    this.diagFrameCount++;
 
     // Let props settle before capturing trail data. The first few frames
     // often have props at intermediate positions (default coords before the
     // animation engine places them), which produces a straight-line artifact.
     if (this.warmupFramesRemaining > 0) {
+      if (this.diagFrameCount <= 10) {
+        console.log(`[TRAIL-DIAG] Warmup skip frame ${this.diagFrameCount}, remaining=${this.warmupFramesRemaining}`);
+      }
       this.warmupFramesRemaining--;
       return;
+    }
+
+    // Log first 10 frames after warmup to see what positions we're capturing
+    if (this.diagFrameCount <= 15) {
+      const bp = params.blueProp;
+      const rp = params.redProp;
+      console.log(`[TRAIL-DIAG] Frame ${this.diagFrameCount} | blue=(${bp?.x?.toFixed(0)},${bp?.y?.toFixed(0)}) rot=${bp?.staffRotationAngle?.toFixed(1)} | red=(${rp?.x?.toFixed(0)},${rp?.y?.toFixed(0)}) rot=${rp?.staffRotationAngle?.toFixed(1)} | rings: bL=${this.blueLeftRing.length} bR=${this.blueRightRing.length} rL=${this.redLeftRing.length} rR=${this.redRightRing.length}`);
     }
 
     const {
@@ -244,6 +258,8 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
    *  orchestrator has repositioned them). */
   clearBuffers(): void {
     if (!this.ctx) return;
+    console.log(`[TRAIL-DIAG] clearBuffers() called at frame ${this.diagFrameCount}`);
+    this.diagFrameCount = 0;
     this.ctx.clearRect(0, 0, this.width, this.height);
     this.blueLeftRing = [];
     this.blueRightRing = [];
