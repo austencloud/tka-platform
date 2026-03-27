@@ -164,12 +164,19 @@ function applyReversalToSequence(steps, patternId) {
     const red = step.motions?.red;
 
     if (blue && blueReversed) {
-      blue.motionType = blue.motionType === "pro" ? "anti"
-        : blue.motionType === "anti" ? "pro" : blue.motionType;
+      if (blue.motionType === "pro" || blue.motionType === "anti") {
+        blue.motionType = blue.motionType === "pro" ? "anti" : "pro";
+        // Anti is the opposite rotation of pro — flip cw↔ccw
+        blue.rotationDirection = blue.rotationDirection === "cw" ? "ccw"
+          : blue.rotationDirection === "ccw" ? "cw" : blue.rotationDirection;
+      }
     }
     if (red && redReversed) {
-      red.motionType = red.motionType === "pro" ? "anti"
-        : red.motionType === "anti" ? "pro" : red.motionType;
+      if (red.motionType === "pro" || red.motionType === "anti") {
+        red.motionType = red.motionType === "pro" ? "anti" : "pro";
+        red.rotationDirection = red.rotationDirection === "cw" ? "ccw"
+          : red.rotationDirection === "ccw" ? "cw" : red.rotationDirection;
+      }
     }
 
     // Re-derive letter
