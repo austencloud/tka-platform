@@ -725,8 +725,8 @@ Set on the R2 bucket via Cloudflare dashboard or API:
 [
   {
     "AllowedOrigins": [
-      "https://tkascribe.com",
-      "https://www.tkascribe.com",
+      "https://tkaflowarts.com",
+      "https://www.tkaflowarts.com",
       "http://localhost:5173",
       "http://localhost:5174"
     ],

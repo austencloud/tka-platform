@@ -370,10 +370,11 @@
     );
   });
 
-  // Hand path sequences always use HAND prop type — they represent pure spatial
-  // paths, not prop-based sequences. Detected by metadata.handPathId set in
-  // DeckFamilySection when building synthetic hand path sequences.
-  const isHandPath = $derived(Boolean(sequence?.metadata?.handPathId));
+  // Hand path visualization sequences always use HAND prop type — they represent
+  // pure spatial paths, not prop-based sequences. Only synthetic sequences built
+  // by DeckFamilySection set this flag. Regular sequences with handPathId metadata
+  // (for grouping/sorting) are NOT hand path visualizations.
+  const isHandPath = $derived(Boolean(sequence?.metadata?.isHandPathVisualization));
 
   const activeBlueProp = $derived(isHandPath ? PropType.HAND : presentation.bluePropType);
   const activeRedProp = $derived(isHandPath ? PropType.HAND : presentation.redPropType);

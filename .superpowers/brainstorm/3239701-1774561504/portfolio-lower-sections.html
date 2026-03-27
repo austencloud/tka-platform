@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portfolio Lower Sections Redesign</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0d0d1a;
+    color: #e8e8f0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    padding: 24px;
+    min-height: 100vh;
+  }
+
+  .design-header {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+  .design-header h1 { font-size: 1.5rem; color: #a78bfa; margin-bottom: 6px; }
+  .design-header p { color: rgba(255,255,255,0.4); font-size: 0.85rem; }
+
+  .comparison {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    max-width: 1600px;
+    margin: 0 auto  50px;
+  }
+
+  .panel { border-radius: 16px; overflow: hidden; }
+  .panel h2 {
+    font-size: 0.8rem; text-transform: uppercase; letter-spacing: 2px;
+    padding: 10px 20px; background: rgba(255,255,255,0.03);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .panel.before h2 { color: #ef4444; }
+  .panel.after h2 { color: #22c55e; }
+  .panel-body { padding: 16px; background: rgba(255,255,255,0.02); border-radius: 0 0 12px 12px; }
+
+  /* === BEFORE styles === */
+  .old-section {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 10px;
+  }
+  .old-section h3 { font-size: 0.75rem; color: rgba(255,255,255,0.7); margin-bottom: 8px; }
+  .old-bio {
+    font-size: 0.6rem; color: rgba(255,255,255,0.5); line-height: 1.4;
+    margin-bottom: 6px; max-height: 48px; overflow: hidden;
+  }
+  .old-actions {
+    display: flex; gap: 6px; padding-top: 6px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+  }
+  .old-actions span {
+    font-size: 0.5rem; color: rgba(255,255,255,0.35);
+    padding: 2px 6px; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px;
+  }
+  .old-list-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 5px 8px; background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06); border-radius: 4px;
+    font-size: 0.55rem; color: rgba(255,255,255,0.6); margin-bottom: 4px;
+  }
+  .old-list-item .x { color: rgba(255,255,255,0.3); cursor: pointer; }
+  .old-form-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+  }
+  .old-field {
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .old-field label { font-size: 0.5rem; color: rgba(255,255,255,0.4); }
+  .old-field input {
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 3px; padding: 3px 6px; font-size: 0.55rem; color: rgba(255,255,255,0.7);
+  }
+
+  /* === AFTER styles === */
+  .new-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .new-section {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 14px;
+  }
+  .new-section-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 10px;
+  }
+  .new-section-header h3 { font-size: 0.8rem; color: rgba(255,255,255,0.9); font-weight: 600; }
+  .new-add-btn {
+    font-size: 0.6rem; color: #a78bfa; background: rgba(167,139,250,0.12);
+    border: 1px solid rgba(167,139,250,0.25); border-radius: 6px;
+    padding: 3px 10px; cursor: pointer;
+  }
+
+  /* Bio cards */
+  .bio-card {
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px; padding: 12px; cursor: pointer;
+    transition: border-color 0.15s; margin-bottom: 8px;
+  }
+  .bio-card:hover { border-color: rgba(255,255,255,0.18); }
+  .bio-card-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 6px;
+  }
+  .bio-card-header h4 { font-size: 0.7rem; color: rgba(255,255,255,0.85); font-weight: 600; }
+  .bio-card-header .chars {
+    font-size: 0.55rem; color: rgba(255,255,255,0.3);
+    background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 8px;
+  }
+  .bio-card p {
+    font-size: 0.6rem; color: rgba(255,255,255,0.45); line-height: 1.5;
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* Credit pills */
+  .credit-pills {
+    display: flex; flex-wrap: wrap; gap: 6px;
+  }
+  .credit-pill {
+    font-size: 0.6rem; color: rgba(255,255,255,0.7);
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 16px; padding: 4px 12px;
+    display: flex; align-items: center; gap: 6px;
+    transition: border-color 0.15s;
+  }
+  .credit-pill:hover { border-color: rgba(255,255,255,0.2); }
+  .credit-pill .pill-x {
+    font-size: 0.45rem; color: rgba(255,255,255,0.3);
+    opacity: 0; transition: opacity 0.15s;
+  }
+  .credit-pill:hover .pill-x { opacity: 1; }
+  .credit-add-pill {
+    font-size: 0.6rem; color: rgba(255,255,255,0.3);
+    border: 1px dashed rgba(255,255,255,0.15); border-radius: 16px;
+    padding: 4px 12px; font-style: italic;
+  }
+
+  /* Video thumbnails */
+  .video-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 8px;
+  }
+  .video-thumb {
+    position: relative; border-radius: 8px; overflow: hidden;
+    aspect-ratio: 16/9; cursor: pointer;
+  }
+  .video-thumb img {
+    width: 100%; height: 100%; object-fit: cover;
+  }
+  .video-thumb .play-icon {
+    position: absolute; inset: 0; display: flex;
+    align-items: center; justify-content: center;
+    background: rgba(0,0,0,0.3); opacity: 0; transition: opacity 0.15s;
+  }
+  .video-thumb:hover .play-icon { opacity: 1; }
+  .play-icon i { color: white; font-size: 1.2rem; }
+  .video-add {
+    aspect-ratio: 16/9; border: 1px dashed rgba(255,255,255,0.15);
+    border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    color: rgba(255,255,255,0.25); font-size: 0.5rem; text-align: center;
+    padding: 8px;
+  }
+
+  /* Profile card */
+  .profile-columns {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+  }
+  .profile-col h4 {
+    font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1px;
+    color: rgba(255,255,255,0.35); margin-bottom: 8px;
+  }
+  .profile-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
+    cursor: pointer; transition: background 0.15s; border-radius: 4px;
+  }
+  .profile-row:hover { background: rgba(255,255,255,0.03); }
+  .profile-row .icon {
+    width: 20px; text-align: center;
+    color: rgba(255,255,255,0.3); font-size: 0.65rem;
+  }
+  .profile-row .label {
+    font-size: 0.55rem; color: rgba(255,255,255,0.35);
+    min-width: 55px;
+  }
+  .profile-row .value {
+    font-size: 0.65rem; color: rgba(255,255,255,0.8);
+    flex: 1;
+  }
+  .profile-row .value.empty {
+    font-style: italic; color: rgba(255,255,255,0.25);
+  }
+
+  /* Notes section */
+  .notes {
+    max-width: 1600px; margin: 0 auto;
+    padding: 24px; background: rgba(167,139,250,0.05);
+    border: 1px solid rgba(167,139,250,0.15); border-radius: 16px;
+  }
+  .notes h2 { font-size: 1rem; color: #a78bfa; margin-bottom: 16px; }
+  .notes-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 14px;
+  }
+  .note {
+    padding: 12px; background: rgba(255,255,255,0.03);
+    border-radius: 8px; border-left: 3px solid rgba(167,139,250,0.4);
+  }
+  .note h4 { font-size: 0.75rem; color: #c4b5fd; margin-bottom: 4px; }
+  .note p { font-size: 0.65rem; color: rgba(255,255,255,0.5); line-height: 1.5; }
+  .old { text-decoration: line-through; color: rgba(239,68,68,0.5); }
+  .new { color: rgba(34,197,94,0.8); font-weight: 500; }
+</style>
+</head>
+<body>
+
+<div class="design-header">
+  <h1>Portfolio Lower Sections Redesign</h1>
+  <p>Bios, Credits, Videos, and Profile — from admin panel to showcase</p>
+</div>
+
+<div class="comparison">
+  <!-- BEFORE -->
+  <div class="panel before">
+    <h2>Before — Settings Page Energy</h2>
+    <div class="panel-body">
+      <div class="old-section">
+        <h3>Bios</h3>
+        <div style="margin-bottom: 8px;">
+          <div style="font-size:0.6rem;color:rgba(255,255,255,0.6);font-weight:600;margin-bottom:2px;">Teaching Bio <span style="float:right;color:rgba(255,255,255,0.3);">441 chars</span></div>
+          <div class="old-bio">Austen Cloud is a Chicago-based flow artist, juggler, and performer. He began his flow arts journey in 2014 and has been teaching classes at flow arts festivals...</div>
+          <div class="old-actions">
+            <span><i class="fas fa-copy"></i> Copy</span>
+            <span><i class="fas fa-edit"></i> Edit</span>
+            <span style="color:rgba(239,68,68,0.4);"><i class="fas fa-trash"></i> Delete</span>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:0.6rem;color:rgba(255,255,255,0.6);font-weight:600;margin-bottom:2px;">Performing Bio <span style="float:right;color:rgba(255,255,255,0.3);">401 chars</span></div>
+          <div class="old-bio">Austen has been an avid lover of all flow arts since 2014 and is deeply passionate about teaching and performing...</div>
+          <div class="old-actions">
+            <span><i class="fas fa-copy"></i> Copy</span>
+            <span><i class="fas fa-edit"></i> Edit</span>
+            <span style="color:rgba(239,68,68,0.4);"><i class="fas fa-trash"></i> Delete</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="old-section">
+        <h3>Performance Credits</h3>
+        <div class="old-list-item">Black Circle <span class="x"><i class="fas fa-times"></i></span></div>
+        <div class="old-list-item">Pyrotechniq <span class="x"><i class="fas fa-times"></i></span></div>
+        <div class="old-list-item">Red Mink <span class="x"><i class="fas fa-times"></i></span></div>
+        <div class="old-list-item">Stage Factor <span class="x"><i class="fas fa-times"></i></span></div>
+        <div class="old-list-item">Cirque Aflame (own troupe since 2020) <span class="x"><i class="fas fa-times"></i></span></div>
+      </div>
+
+      <div class="old-section">
+        <h3>Social Links</h3>
+        <div class="old-form-grid">
+          <div class="old-field"><label>Website</label><input value="thekineticalphabet.com"></div>
+          <div class="old-field"><label>Instagram</label><input value="@thekineticalphabet"></div>
+          <div class="old-field"><label>Facebook</label><input value="facebook.com/TheKinetic..."></div>
+          <div class="old-field"><label>YouTube</label><input value="youtube.com/@channel"></div>
+        </div>
+      </div>
+
+      <div class="old-section">
+        <h3>About</h3>
+        <div class="old-form-grid">
+          <div class="old-field"><label>Home City</label><input value="Chicago"></div>
+          <div class="old-field"><label>Home Country</label><input value="USA"></div>
+          <div class="old-field"><label>Years Teaching</label><input value="9"></div>
+          <div class="old-field"><label>Years Performing</label><input value="12"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AFTER -->
+  <div class="panel after">
+    <h2>After — Portfolio Showcase</h2>
+    <div class="panel-body">
+      <div class="new-grid">
+        <!-- Bios -->
+        <div class="new-section">
+          <div class="new-section-header">
+            <h3>Bios</h3>
+            <button class="new-add-btn"><i class="fas fa-plus"></i> Add Bio</button>
+          </div>
+          <div class="bio-card">
+            <div class="bio-card-header">
+              <h4>Teaching Bio</h4>
+              <span class="chars">441 chars</span>
+            </div>
+            <p>Austen Cloud is a Chicago-based flow artist, juggler, and performer. He began his flow arts journey in 2014 and has been teaching classes at flow arts festivals and in his local Chicago community since 2017.</p>
+          </div>
+          <div class="bio-card">
+            <div class="bio-card-header">
+              <h4>Performing Bio</h4>
+              <span class="chars">401 chars</span>
+            </div>
+            <p>Austen has been an avid lover of all flow arts since 2014 and is deeply passionate about teaching and performing. His biggest passion is The Kinetic Alphabet, a notation system designed to make choreography more accessible.</p>
+          </div>
+        </div>
+
+        <!-- Profile (merged social + about) -->
+        <div class="new-section">
+          <div class="new-section-header">
+            <h3>Profile</h3>
+          </div>
+          <div class="profile-columns">
+            <div class="profile-col">
+              <h4>Social Links</h4>
+              <div class="profile-row">
+                <span class="icon"><i class="fas fa-globe"></i></span>
+                <span class="value">thekineticalphabet.com</span>
+              </div>
+              <div class="profile-row">
+                <span class="icon"><i class="fab fa-instagram"></i></span>
+                <span class="value">@thekineticalphabet</span>
+              </div>
+              <div class="profile-row">
+                <span class="icon"><i class="fab fa-facebook"></i></span>
+                <span class="value">facebook.com/TheKineticAlphabet</span>
+              </div>
+              <div class="profile-row">
+                <span class="icon"><i class="fab fa-youtube"></i></span>
+                <span class="value empty">Not set</span>
+              </div>
+              <div class="profile-row">
+                <span class="icon"><i class="fab fa-tiktok"></i></span>
+                <span class="value empty">Not set</span>
+              </div>
+            </div>
+            <div class="profile-col">
+              <h4>About</h4>
+              <div class="profile-row">
+                <span class="icon"><i class="fas fa-map-marker-alt"></i></span>
+                <span class="label">City</span>
+                <span class="value">Chicago</span>
+              </div>
+              <div class="profile-row">
+                <span class="icon"><i class="fas fa-flag"></i></span>
+                <span class="label">Country</span>
+                <span class="value">USA</span>
+              </div>
+              <div class="profile-row">
+                <span class="icon"><i class="fas fa-chalkboard-teacher"></i></span>
+                <span class="label">Teaching</span>
+                <span class="value">9 years</span>
+              </div>
+              <div class="profile-row">
+                <span class="icon"><i class="fas fa-star"></i></span>
+                <span class="label">Performing</span>
+                <span class="value">12 years</span>
+              </div>
+              <div class="profile-row">
+                <span class="icon"><i class="fas fa-shield-alt"></i></span>
+                <span class="label">Insurance</span>
+                <span class="value">Specialty Insurance Agency</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Credits -->
+        <div class="new-section">
+          <div class="new-section-header">
+            <h3>Performance Credits</h3>
+          </div>
+          <div class="credit-pills">
+            <div class="credit-pill">Black Circle <span class="pill-x"><i class="fas fa-times"></i></span></div>
+            <div class="credit-pill">Pyrotechniq <span class="pill-x"><i class="fas fa-times"></i></span></div>
+            <div class="credit-pill">Red Mink <span class="pill-x"><i class="fas fa-times"></i></span></div>
+            <div class="credit-pill">Stage Factor <span class="pill-x"><i class="fas fa-times"></i></span></div>
+            <div class="credit-pill">Cirque Aflame (own troupe since 2020) <span class="pill-x"><i class="fas fa-times"></i></span></div>
+            <div class="credit-add-pill">Add a credit...</div>
+          </div>
+        </div>
+
+        <!-- Videos -->
+        <div class="new-section">
+          <div class="new-section-header">
+            <h3>Performance Videos</h3>
+          </div>
+          <div class="video-grid">
+            <div class="video-thumb">
+              <img src="https://img.youtube.com/vi/aTV3rtOIshU/mqdefault.jpg" alt="Video">
+              <div class="play-icon"><i class="fas fa-play"></i></div>
+            </div>
+            <div class="video-thumb">
+              <img src="https://img.youtube.com/vi/5k-aGn0nxLY/mqdefault.jpg" alt="Video">
+              <div class="play-icon"><i class="fas fa-play"></i></div>
+            </div>
+            <div class="video-thumb">
+              <img src="https://img.youtube.com/vi/c1AzCYasT-g/mqdefault.jpg" alt="Video">
+              <div class="play-icon"><i class="fas fa-play"></i></div>
+            </div>
+            <div class="video-add">
+              <div><i class="fas fa-plus" style="margin-bottom:4px;"></i><br>Add Video</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Design Notes -->
+<div class="notes">
+  <h2>What Changed</h2>
+  <div class="notes-grid">
+    <div class="note">
+      <h4>Bios</h4>
+      <p><span class="old">Copy/Edit/Delete buttons on every bio</span><br>
+      <span class="new">Clean preview cards, click to edit in modal</span><br>
+      3-line clamp preview. Character count badge stays.</p>
+    </div>
+    <div class="note">
+      <h4>Performance Credits</h4>
+      <p><span class="old">Vertical list with X buttons</span><br>
+      <span class="new">Horizontal pill chips that wrap</span><br>
+      Hover reveals remove. Inline add input as dashed pill.</p>
+    </div>
+    <div class="note">
+      <h4>Performance Videos</h4>
+      <p><span class="old">Raw YouTube URLs with X buttons</span><br>
+      <span class="new">Thumbnail grid from YouTube API</span><br>
+      Hover shows play icon. Visual instead of text.</p>
+    </div>
+    <div class="note">
+      <h4>Social + About</h4>
+      <p><span class="old">Two separate form grids with labeled inputs</span><br>
+      <span class="new">One Profile card with icon rows, click to edit</span><br>
+      Display-first. Shows values, not input fields.</p>
+    </div>
+    <div class="note">
+      <h4>Layout</h4>
+      <p><span class="new">2x2 grid below the full-width workshop cards</span><br>
+      Bios + Profile on top row, Credits + Videos on bottom. Responsive.</p>
+    </div>
+    <div class="note">
+      <h4>Interaction Model</h4>
+      <p><span class="new">Showcase by default, edit on interaction</span><br>
+      No buttons cluttering the view. Click cards/rows/pills to manage.</p>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

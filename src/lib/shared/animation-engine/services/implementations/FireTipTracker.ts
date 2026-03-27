@@ -241,6 +241,10 @@ export class FireTipTracker implements IFireTipTracker {
 		let speed = 0;
 		let jerk = 0;
 
+		// Capture previous position before overwriting (for sub-frame interpolation)
+		const prevX = prev.valid ? prev.x : x;
+		const prevY = prev.valid ? prev.y : y;
+
 		if (prev.valid) {
 			const dt = Math.max((currentTime - prev.time) / 1000, MIN_DT_SECONDS);
 			velocityX = (x - prev.x) / dt;
@@ -274,6 +278,8 @@ export class FireTipTracker implements IFireTipTracker {
 		if (existing) {
 			existing.x = x;
 			existing.y = y;
+			existing.prevX = prevX;
+			existing.prevY = prevY;
 			existing.velocityX = velocityX;
 			existing.velocityY = velocityY;
 			existing.speed = speed;
@@ -285,6 +291,8 @@ export class FireTipTracker implements IFireTipTracker {
 			this.outputTips.push({
 				x,
 				y,
+				prevX,
+				prevY,
 				velocityX,
 				velocityY,
 				speed,

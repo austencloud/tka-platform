@@ -145,8 +145,9 @@
     </button>
   </div>
 
-  <!-- Grid content or drill-down list -->
+  <!-- Grid content or drill-down list — vertically centered in remaining space -->
   <div class="grid-content">
+    <div class="grid-inner">
     {#if drillFilter}
       <!-- Drill-down: filtered deck list -->
       <div class="drill-header">
@@ -177,15 +178,18 @@
     {:else}
       <LoopReversalGrid decks={filteredDecks} onSelectPattern={handleSelectPattern} />
     {/if}
+    </div>
   </div>
 </div>
 
 <style>
   .loop-collection-view {
     width: 100%;
+    flex: 1;
     display: flex;
     flex-direction: column;
     gap: 24px;
+    min-height: 0;
   }
 
   /* Loop type pill bar */
@@ -280,6 +284,16 @@
 
   .grid-content {
     width: 100%;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 0;
+  }
+
+  .grid-inner {
+    width: 100%;
+    max-width: 960px;
   }
 
   /* Drill-down view */

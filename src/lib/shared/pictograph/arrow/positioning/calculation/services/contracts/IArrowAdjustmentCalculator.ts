@@ -8,6 +8,7 @@ import type { GridLocation } from "../../../../../grid/domain/enums/grid-enums";
 import type { PictographData } from "../../../../../shared/domain/models/PictographData";
 import type { MotionData } from "../../../../../shared/domain/models/MotionData";
 import type { Point } from "fabric";
+import type { PipelineDiagnostics } from "../../domain/PipelineDiagnostics";
 
 export interface IArrowAdjustmentCalculator {
   /**
@@ -32,4 +33,17 @@ export interface IArrowAdjustmentCalculator {
     letter: string,
     arrowColor?: string
   ): Promise<Point>;
+
+  /**
+   * Probe all 4 tiers of the arrow positioning pipeline without short-circuiting.
+   * Returns rich metadata about which tier is active and what values each tier has.
+   * Useful for the WASD adjustment panel to show the full pipeline state.
+   */
+  getDiagnostics(
+    pictographData: PictographData,
+    motionData: MotionData,
+    letter: string,
+    location: GridLocation,
+    arrowColor?: string
+  ): Promise<PipelineDiagnostics>;
 }

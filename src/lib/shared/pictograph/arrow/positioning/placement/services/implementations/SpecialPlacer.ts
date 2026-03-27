@@ -67,9 +67,14 @@ export class SpecialPlacer implements ISpecialPlacer {
 
     const letter = pictographData.letter;
 
-    // Step 1: Generate orientation key
-    const oriKey = this.oriKeyGenerator.generateOrientationKey(
+    // Step 1: Generate orientation key.
+    // For staff+staff, collapse to legacy bucket — radial variants are identical.
+    const rawOriKey = this.oriKeyGenerator.generateOrientationKey(
       motionData,
+      pictographData
+    );
+    const oriKey = this.oriKeyGenerator.resolveEffectiveOriKey(
+      rawOriKey,
       pictographData
     );
 
@@ -175,9 +180,14 @@ export class SpecialPlacer implements ISpecialPlacer {
 
     const letter = pictographData.letter;
 
-    // Step 1: Generate orientation key
-    const oriKey = this.oriKeyGenerator.generateOrientationKey(
+    // Step 1: Generate orientation key.
+    // For staff+staff, collapse to legacy bucket — radial variants are identical.
+    const rawOriKey = this.oriKeyGenerator.generateOrientationKey(
       motionData,
+      pictographData
+    );
+    const oriKey = this.oriKeyGenerator.resolveEffectiveOriKey(
+      rawOriKey,
       pictographData
     );
     const legacyOriKey = this.oriKeyGenerator.mapToLegacyBucket(oriKey);
@@ -279,9 +289,14 @@ export class SpecialPlacer implements ISpecialPlacer {
 
     const letter = pictographData.letter;
 
-    // Generate orientation key
-    const oriKey = this.oriKeyGenerator.generateOrientationKey(
+    // Generate orientation key.
+    // For staff+staff, collapse to legacy bucket — radial variants are identical.
+    const rawOriKey = this.oriKeyGenerator.generateOrientationKey(
       motionData,
+      pictographData
+    );
+    const oriKey = this.oriKeyGenerator.resolveEffectiveOriKey(
+      rawOriKey,
       pictographData
     );
     const legacyOriKey = this.oriKeyGenerator.mapToLegacyBucket(oriKey);

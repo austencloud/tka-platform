@@ -16,6 +16,10 @@
   import { rotationAngleOverrideKeyGenerator } from "$lib/shared/pictograph/arrow/positioning/key-generation/services/implementations/RotationAngleOverrideKeyGenerator";
   import { turnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/implementations/TurnsTupleGenerator";
 
+  import type { PipelineDiagnostics } from "$lib/shared/pictograph/arrow/positioning/calculation/domain/PipelineDiagnostics";
+  import { arrowAdjustmentCalculator } from "$lib/shared/pictograph/arrow/positioning/calculation/services/implementations/ArrowAdjustmentCalculator";
+  import { arrowLocationCalculator } from "$lib/shared/pictograph/arrow/positioning/calculation/services/implementations/ArrowLocationCalculator";
+
   import InspectModalHeader from "./pictograph-inspect/InspectModalHeader.svelte";
   import BasicInfoColumn from "./pictograph-inspect/BasicInfoColumn.svelte";
   import MotionColumn from "./pictograph-inspect/MotionColumn.svelte";
@@ -38,6 +42,11 @@
   let blueRotationOverride = $state<{ hasOverride: boolean } | null>(null);
   let redRotationOverride = $state<{ hasOverride: boolean } | null>(null);
 
+  let blueDiagnostics = $state<PipelineDiagnostics | null>(null);
+  let redDiagnostics = $state<PipelineDiagnostics | null>(null);
+  let blueMotionColumnRef: MotionColumn | undefined = $state();
+  let redMotionColumnRef: MotionColumn | undefined = $state();
+
   // Lookup keys for debugging
   let lookupKeys = $state<{
     gridMode: string;
@@ -58,6 +67,8 @@
       blueRotationOverride = null;
       redRotationOverride = null;
       lookupKeys = null;
+      blueDiagnostics = null;
+      redDiagnostics = null;
     }
   });
 
@@ -87,11 +98,47 @@
 
       await checkRotationOverrides(pictographData);
       calculateLookupKeys(pictographData);
+      await calculateDiagnostics(pictographData);
     } catch (err) {
       console.error("Failed to calculate arrow positions:", err);
       calculatedData = stepData;
     } finally {
       isCalculating = false;
+    }
+  }
+
+  async function calculateDiagnostics(pictographData: PictographData) {
+    const blueMotionData = pictographData.motions?.[MotionColor.BLUE];
+    const redMotionData = pictographData.motions?.[MotionColor.RED];
+
+    if (blueMotionData) {
+      try {
+        const location = arrowLocationCalculator.calculateLocation(blueMotionData, pictographData);
+        blueDiagnostics = await arrowAdjustmentCalculator.getDiagnostics(
+          pictographData, blueMotionData, pictographData.letter || "", location, "blue"
+        );
+      } catch (err) {
+        console.error("Blue diagnostics failed:", err);
+        blueDiagnostics = null;
+      }
+    }
+
+    if (redMotionData) {
+      try {
+        const location = arrowLocationCalculator.calculateLocation(redMotionData, pictographData);
+        redDiagnostics = await arrowAdjustmentCalculator.getDiagnostics(
+          pictographData, redMotionData, pictographData.letter || "", location, "red"
+        );
+      } catch (err) {
+        console.error("Red diagnostics failed:", err);
+        redDiagnostics = null;
+      }
+    }
+  }
+
+  async function refreshDiagnostics() {
+    if (pictographDataState) {
+      await calculateDiagnostics(pictographDataState);
     }
   }
 
@@ -248,6 +295,15 @@
   function handleKeydown(e: KeyboardEvent) {
     if (e.key === "Escape") {
       onClose();
+      return;
+    }
+
+    // Delegate WASD to the active pipeline editor
+    if (["w", "a", "s", "d"].includes(e.key.toLowerCase())) {
+      const blueHandled = blueMotionColumnRef?.handleWASDKeydown(e);
+      if (blueHandled) return;
+      const redHandled = redMotionColumnRef?.handleWASDKeydown(e);
+      if (redHandled) return;
     }
   }
 </script>
@@ -289,16 +345,24 @@
             color="blue"
             motion={blueMotion}
             rotationOverride={blueRotationOverride}
+            diagnostics={blueDiagnostics}
+            stepData={stepData}
+            onDiagnosticsChanged={refreshDiagnostics}
             {copiedSection}
             onCopy={copyToClipboard}
+            bind:this={blueMotionColumnRef}
           />
 
           <MotionColumn
             color="red"
             motion={redMotion}
             rotationOverride={redRotationOverride}
+            diagnostics={redDiagnostics}
+            stepData={stepData}
+            onDiagnosticsChanged={refreshDiagnostics}
             {copiedSection}
             onCopy={copyToClipboard}
+            bind:this={redMotionColumnRef}
           />
         </div>
       </div>

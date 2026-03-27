@@ -15,22 +15,22 @@
     createPhysicsWorldState,
     initPhysicsWorld,
     disposePhysicsWorld,
-  } from "$lib/shared/3d-core/physics/rapier-world";
-  import type { PhysicsWorldState, PlayerControllerState } from "$lib/shared/3d-core/physics/types";
-  import { TerrainPhysicsManager } from "$lib/shared/3d-core/physics/terrain-collider";
+  } from "$lib/shared/3d-animation/physics/rapier-world";
+  import type { PhysicsWorldState, PlayerControllerState } from "$lib/shared/3d-animation/physics/types";
+  import { TerrainPhysicsManager } from "$lib/shared/3d-animation/physics/terrain-collider";
   import {
     createPlayerController,
     disposePlayerController,
     teleportPlayer,
     getPlayerPosition,
     snapToGround,
-  } from "$lib/shared/3d-core/physics/player-controller";
-  import { createRapierPhysicsProvider, RapierPhysicsProvider } from "$lib/shared/3d-core/physics/RapierPhysicsProvider";
-  import type { PhysicsProvider, AvatarState } from "$lib/shared/3d-core/camera/types";
+  } from "$lib/shared/3d-animation/physics/player-controller";
+  import { createRapierPhysicsProvider, RapierPhysicsProvider } from "$lib/shared/3d-animation/physics/RapierPhysicsProvider";
+  import type { PhysicsProvider, AvatarState } from "$lib/shared/3d-animation/camera/types";
 
   // Unified camera system
-  import UnifiedCameraController from "$lib/shared/3d-core/camera/UnifiedCameraController.svelte";
-  import { CameraMode } from "$lib/shared/3d-core/camera/types";
+  import UnifiedCameraController from "$lib/shared/3d-animation/camera/UnifiedCameraController.svelte";
+  import { CameraMode } from "$lib/shared/3d-animation/camera/types";
 
 
   // Avatar components

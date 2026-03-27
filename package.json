@@ -13,7 +13,7 @@
     "dev:debug": "NODE_OPTIONS='--inspect' vite --host 0.0.0.0",
     "dev:turbo": "vite --host 0.0.0.0 --force",
     "dev:kill": "npx kill-port 5173 && npm run dev",
-    "dev:mobile": "node scripts/adb-connect.js && vite dev --host",
+    "dev:mobile": "node scripts/adb-connect.js --watch &  vite --host 0.0.0.0",
     "adb:connect": "node scripts/adb-connect.js",
     "adb:watch": "node scripts/adb-connect.js --watch",
     "build:packages": "tsc --project packages/flow-arts-core/tsconfig.json && tsc --project packages/domain/tsconfig.json && tsc --project packages/vtg-domain/tsconfig.json && tsc --project packages/caps-domain/tsconfig.json && tsc --project packages/spin-science-domain/tsconfig.json && tsc --project packages/9square-domain/tsconfig.json && tsc --project packages/render-core/tsconfig.json && tsc --project packages/sequence-engine/tsconfig.json",

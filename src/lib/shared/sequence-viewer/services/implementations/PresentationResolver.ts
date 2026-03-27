@@ -40,6 +40,25 @@ export class PresentationResolver implements IPresentationResolver {
           source: "creator-intent",
         };
       }
+      // Infer prop type from motion data when no explicit intent exists
+      // (deck sequences, imported sequences). The propType on the motions
+      // IS the intended prop — the sequence was created with that prop.
+      if (sequence.steps?.length) {
+        const firstStep = sequence.steps[0];
+        const blueMotion = firstStep?.motions?.blue;
+        const redMotion = firstStep?.motions?.red;
+        const blueProp = blueMotion?.propType as string | undefined;
+        const redProp = redMotion?.propType as string | undefined;
+        if (blueProp && redProp && blueProp !== "hand" && redProp !== "hand") {
+          return {
+            bluePropType: blueProp as PropType,
+            redPropType: redProp as PropType,
+            catDogMode: viewerCatDog,
+            effortTimeline,
+            source: "creator-intent",
+          };
+        }
+      }
     }
 
     return {

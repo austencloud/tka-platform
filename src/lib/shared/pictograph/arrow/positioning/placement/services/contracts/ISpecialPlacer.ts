@@ -19,4 +19,16 @@ export interface ISpecialPlacer {
     pictographData: PictographData,
     rotationOverrideKey: string
   ): Promise<boolean>;
+
+  /**
+   * Get the special adjustment from static JSON only (no global overrides).
+   * Used by diagnostics to show what the JSON file contains independently.
+   * Returns the raw value plus the file path and turns tuple key for display.
+   */
+  getSpecialJsonAdjustmentOnly(
+    motionData: MotionData,
+    pictographData: PictographData,
+    arrowColor?: string,
+    attributeKey?: string
+  ): Promise<{ adjustment: Point; filePath: string; turnsTupleKey: string } | null>;
 }

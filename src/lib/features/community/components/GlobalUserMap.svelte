@@ -40,7 +40,7 @@
 
     return new Promise<void>((resolve, reject) => {
       const script = document.createElement("script");
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=marker`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=marker&loading=async`;
       script.async = true;
       script.defer = true;
       script.onload = () => resolve();
@@ -105,12 +105,11 @@
           lat: location.cityCenterCoordinates.lat,
           lng: location.cityCenterCoordinates.lng,
         },
-        content: pin.element,
+        content: pin,
         title: `${location.displayName} - ${location.city}, ${location.country}`,
       });
 
-      // Click handler for marker
-      marker.addListener("click", () => {
+      marker.addEventListener("gmp-click", () => {
         selectedUser = location;
 
         // Pan map to marker

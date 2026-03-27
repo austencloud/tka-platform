@@ -75,18 +75,20 @@ export class Autosaver {
     const user = getAuthSync().currentUser;
     if (user) {
       const draftData = createDraftSequence(sessionId, user.uid, sequenceData);
-      const draft: DraftSequence = {
-        ...draftData,
-        createdAt: serverTimestamp() as Timestamp,
-        updatedAt: serverTimestamp() as Timestamp,
-      };
+      // Deep-clone the sequence data via JSON to strip undefined values —
+      // Firestore rejects them (e.g. startPosition.startPosition can be
+      // undefined on fresh pictographs). Timestamps are added after the
+      // clone since serverTimestamp() is a Firestore sentinel, not JSON.
+      const cleanData = JSON.parse(JSON.stringify(draftData));
+      cleanData.createdAt = serverTimestamp();
+      cleanData.updatedAt = serverTimestamp();
 
       getFirestoreInstance().then((firestore) => {
         const draftRef = doc(
           firestore,
           `users/${user.uid}/drafts/${sessionId}`
         );
-        trackWrite(() => setDoc(draftRef, draft, { merge: true })).catch(
+        trackWrite(() => setDoc(draftRef, cleanData, { merge: true })).catch(
           (err) =>
             console.warn("[Autosaver] Firestore draft sync failed:", err)
         );

@@ -29,15 +29,15 @@
   import Environment3D from "../environments/components/Environment3D.svelte";
   import StageTerrain from "./StageTerrain.svelte";
   import { BackgroundType } from "@austencloud/backgrounds";
-  import type { PhysicsWorldState } from "$lib/shared/3d-core/physics/types";
+  import type { PhysicsWorldState } from "$lib/shared/3d-animation/physics/types";
   import { Plane } from "../domain/enums/Plane";
   import type { GridMode } from "../domain/constants/grid-layout";
   import type { Snippet } from "svelte";
   import { WALL_OFFSET } from "../domain/constants/performer-positions";
-  import { CameraMode } from "$lib/shared/3d-core/camera/types";
+  import { CameraMode } from "$lib/shared/3d-animation/camera/types";
   import type { AvatarInstanceState } from "../state/avatar-instance-state.svelte";
-  import { getCameraLayers } from "$lib/shared/3d-core/layers/layer-constants";
-  import { SCALE, STAGE } from "$lib/shared/3d-core/scale/scale-constants";
+  import { getCameraLayers } from "$lib/shared/3d-animation/layers/layer-constants";
+  import { SCALE, STAGE } from "$lib/shared/3d-animation/scale/scale-constants";
 
   // Enable Threlte layers plugin for layer inheritance through component tree
   layers();

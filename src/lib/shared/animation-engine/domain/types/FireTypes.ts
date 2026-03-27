@@ -41,6 +41,10 @@ export interface PropTipData {
   x: number;
   /** Y position in viewbox coordinates */
   y: number;
+  /** Previous frame X position in viewbox coordinates (for sub-frame interpolation) */
+  prevX: number;
+  /** Previous frame Y position in viewbox coordinates (for sub-frame interpolation) */
+  prevY: number;
   /** Horizontal velocity (viewbox units/second) */
   velocityX: number;
   /** Vertical velocity (viewbox units/second) */
@@ -185,7 +189,7 @@ export interface FireOverlayConfig {
 
 /** Default physics parameters — tuned for fire spinning (shorter trails, wick-focused) */
 export const DEFAULT_PHYSICS: FirePhysicsParams = {
-  splatRadius: 0.011,
+  splatRadius: 0.018,
   fuelAmount: 0.55,
   velocityInjectScale: 0.0006,
   velocityDissipation: 0.955,

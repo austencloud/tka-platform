@@ -1,0 +1,137 @@
+<h2>Fuse Tour — 4-Stop Storyboard</h2>
+<p class="subtitle">Each card shows one tour stop as it would appear on a tablet (706px). Click the one you want to discuss.</p>
+
+<div class="cards" style="grid-template-columns: 1fr 1fr;">
+
+  <!-- STOP 1: Welcome -->
+  <div class="card" data-choice="stop1" onclick="toggleSelect(this)">
+    <div class="card-image" style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 24px; min-height: 280px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;">
+      <div style="width: 56px; height: 56px; border-radius: 50%; background: rgba(249,115,22,0.2); border: 1.5px solid rgba(249,115,22,0.35); display: flex; align-items: center; justify-content: center; color: #f97316; font-size: 1.4rem;">🔥</div>
+      <div style="font-size: 1.2rem; font-weight: 700; color: white;">Fuse</div>
+      <div style="font-size: 0.8rem; color: rgba(255,255,255,0.6); text-align: center; max-width: 240px; line-height: 1.5;">Combine a blue prop path and a red prop path into one complete sequence.</div>
+      <div style="display: flex; gap: 6px; margin-top: 4px;">
+        <div style="width: 8px; height: 8px; border-radius: 50%; background: #f97316;"></div>
+        <div style="width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.15);"></div>
+        <div style="width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.15);"></div>
+        <div style="width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.15);"></div>
+      </div>
+      <div style="display: flex; gap: 12px; margin-top: 8px;">
+        <div style="padding: 8px 16px; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; color: rgba(255,255,255,0.5); font-size: 0.8rem;">Skip</div>
+        <div style="padding: 8px 20px; background: linear-gradient(135deg, #fb923c, #ea580c); border-radius: 8px; color: white; font-size: 0.8rem; font-weight: 600;">Show me</div>
+      </div>
+      <div style="position: absolute; bottom: 8px; left: 0; right: 0; text-align: center; font-size: 0.65rem; color: rgba(255,255,255,0.3);">NO bottom nav. NO panels. Fullscreen takeover.</div>
+    </div>
+    <div class="card-body">
+      <h3>Stop 1: Welcome</h3>
+      <p>Fullscreen. Nothing else visible. No bottom nav, no panels. Pure intro.</p>
+    </div>
+  </div>
+
+  <!-- STOP 2: Both Panels -->
+  <div class="card" data-choice="stop2" onclick="toggleSelect(this)">
+    <div class="card-image" style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 12px; min-height: 280px; display: flex; flex-direction: column; gap: 8px;">
+      <!-- Tour text banner at top -->
+      <div style="text-align: center; padding: 8px; border-radius: 8px; background: rgba(249,115,22,0.1); border: 1px solid rgba(249,115,22,0.2);">
+        <div style="font-size: 0.75rem; font-weight: 600; color: white;">Blue on the left, red on the right</div>
+        <div style="font-size: 0.65rem; color: rgba(255,255,255,0.5); margin-top: 2px;">Both step in sync. The grid shows notation, the animation shows motion.</div>
+      </div>
+      <!-- Two panels side by side -->
+      <div style="flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 4px; min-height: 0;">
+        <div style="background: rgba(33,150,243,0.08); border: 1px solid rgba(33,150,243,0.2); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+          <div style="font-size: 0.7rem; color: rgba(33,150,243,0.6);">Blue Panel</div>
+        </div>
+        <div style="background: rgba(244,67,54,0.08); border: 1px solid rgba(244,67,54,0.2); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+          <div style="font-size: 0.7rem; color: rgba(244,67,54,0.6);">Red Panel</div>
+        </div>
+      </div>
+      <!-- Dots + Next -->
+      <div style="display: flex; align-items: center; justify-content: center; gap: 12px; padding: 4px;">
+        <div style="display: flex; gap: 4px;">
+          <div style="width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.4);"></div>
+          <div style="width: 6px; height: 6px; border-radius: 50%; background: #f97316;"></div>
+          <div style="width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.15);"></div>
+          <div style="width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.15);"></div>
+        </div>
+        <div style="padding: 4px 12px; background: rgba(249,115,22,0.3); border-radius: 6px; color: white; font-size: 0.65rem; font-weight: 600;">Next</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>Stop 2: Both Panels</h3>
+      <p>Tour text as a banner above both live panels. User sees the actual UI. Dots + Next inline below.</p>
+    </div>
+  </div>
+
+  <!-- STOP 3: Shuffle -->
+  <div class="card" data-choice="stop3" onclick="toggleSelect(this)">
+    <div class="card-image" style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 12px; min-height: 280px; display: flex; flex-direction: column; gap: 8px;">
+      <!-- Tour text banner -->
+      <div style="text-align: center; padding: 8px; border-radius: 8px; background: rgba(249,115,22,0.1); border: 1px solid rgba(249,115,22,0.2);">
+        <div style="font-size: 0.75rem; font-weight: 600; color: white;">Try shuffling</div>
+        <div style="font-size: 0.65rem; color: rgba(255,255,255,0.5); margin-top: 2px;">Tap a Shuffle button to see a different prop path.</div>
+        <div style="font-size: 0.6rem; color: #f97316; margin-top: 4px; animation: none;">👆 Shuffle to continue</div>
+      </div>
+      <!-- Two panels with highlighted shuffle buttons -->
+      <div style="flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 4px; min-height: 0;">
+        <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; display: flex; flex-direction: column;">
+          <div style="flex: 1;"></div>
+          <div style="padding: 8px; text-align: center; border-top: 1px solid rgba(255,255,255,0.08); background: rgba(33,150,243,0.15); color: white; font-size: 0.7rem; font-weight: 600; border-radius: 0 0 8px 8px; box-shadow: 0 0 12px rgba(33,150,243,0.3);">🔀 Shuffle</div>
+        </div>
+        <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; display: flex; flex-direction: column;">
+          <div style="flex: 1;"></div>
+          <div style="padding: 8px; text-align: center; border-top: 1px solid rgba(255,255,255,0.08); background: rgba(244,67,54,0.15); color: white; font-size: 0.7rem; font-weight: 600; border-radius: 0 0 8px 8px; box-shadow: 0 0 12px rgba(244,67,54,0.3);">🔀 Shuffle</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>Stop 3: Shuffle (Interactive)</h3>
+      <p>Shuffle buttons glow/pulse. User must tap one. Waits 1.5s after shuffle so they see the result, then auto-advances.</p>
+    </div>
+  </div>
+
+  <!-- STOP 4: Fuse -->
+  <div class="card" data-choice="stop4" onclick="toggleSelect(this)">
+    <div class="card-image" style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 12px; min-height: 280px; display: flex; flex-direction: column; gap: 8px;">
+      <!-- Tour text banner -->
+      <div style="text-align: center; padding: 8px; border-radius: 8px; background: rgba(249,115,22,0.1); border: 1px solid rgba(249,115,22,0.2);">
+        <div style="font-size: 0.75rem; font-weight: 600; color: white;">Fuse them together</div>
+        <div style="font-size: 0.65rem; color: rgba(255,255,255,0.5); margin-top: 2px;">When you like both sides, tap Fuse.</div>
+      </div>
+      <!-- Both panels visible -->
+      <div style="flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 4px; min-height: 0;">
+        <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; opacity: 0.6;"></div>
+        <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; opacity: 0.6;"></div>
+      </div>
+      <!-- Fuse button prominent at bottom -->
+      <div style="display: flex; justify-content: center; padding: 4px;">
+        <div style="padding: 10px 32px; background: linear-gradient(135deg, #fb923c, #ea580c); border-radius: 10px; color: white; font-size: 0.85rem; font-weight: 700; box-shadow: 0 0 20px rgba(249,115,22,0.4);">🔥 Fuse</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>Stop 4: Fuse (Interactive)</h3>
+      <p>Both panels visible but slightly dimmed. Fuse button glows. Tapping it actually fuses and shows the result. Tour ends.</p>
+    </div>
+  </div>
+
+</div>
+
+<div class="section" style="margin-top: 24px;">
+  <h3>Key Design Decisions</h3>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+    <div>
+      <p class="label">Transitions</p>
+      <p>Each stop slides/fades in (300ms ease). No jarring pops.</p>
+    </div>
+    <div>
+      <p class="label">Bottom Nav</p>
+      <p>Hidden during entire tour. Tour owns the full screen.</p>
+    </div>
+    <div>
+      <p class="label">Shuffle Delay</p>
+      <p>After user shuffles, wait 1.5s so they see the new path before advancing.</p>
+    </div>
+    <div>
+      <p class="label">Fuse Result</p>
+      <p>Stop 4's Fuse button actually fuses. Tour ends with the result view showing.</p>
+    </div>
+  </div>
+</div>

@@ -24,6 +24,7 @@ export interface ITrailOverlayCanvas {
   resize(width: number, height: number): void;
   renderFrame(params: TrailOverlayRenderParams): void;
   clear(): void;
+  clearBuffers(): void;
   setVisible(visible: boolean): void;
   dispose(): void;
 }

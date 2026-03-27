@@ -146,7 +146,16 @@ function xhrPut(
       }
     };
 
-    xhr.onerror = () => reject(new Error("Network error during upload"));
+    xhr.onerror = () => {
+      // Extract the R2 host from the presigned URL for diagnostics
+      let host = "unknown";
+      try { host = new URL(url).host; } catch { /* ignore */ }
+      reject(new Error(
+        `Network error during upload to ${host}. ` +
+        `This usually means CORS is not configured on the R2 bucket to allow PUT from ${location.origin}. ` +
+        `Check the bucket's CORS settings in the Cloudflare dashboard.`
+      ));
+    };
     xhr.ontimeout = () => reject(new Error("Upload timed out"));
 
     xhr.send(body);

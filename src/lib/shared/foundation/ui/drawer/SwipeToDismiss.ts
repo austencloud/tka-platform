@@ -587,9 +587,7 @@ export class SwipeToDismiss {
   }
 
   private handleClick(event: MouseEvent) {
-    console.log("[SwipeToDismiss] handleClick capture phase — justDragged:", this.justDragged, "pendingMouseDrag:", this.pendingMouseDrag, "isDragging:", this.isDragging);
     if (this.justDragged) {
-      console.log("[SwipeToDismiss] BLOCKING click (justDragged=true)");
       event.preventDefault();
       event.stopPropagation();
       event.stopImmediatePropagation();

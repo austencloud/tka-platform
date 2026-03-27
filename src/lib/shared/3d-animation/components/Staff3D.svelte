@@ -18,7 +18,7 @@
   import {
     LAYER_WORLD,
     LAYER_PLAYER_BODY,
-  } from "$lib/shared/3d-core/layers/layer-constants";
+  } from "$lib/shared/3d-animation/layers/layer-constants";
 
   interface Props {
     /** Prop state with position and rotation */

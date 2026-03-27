@@ -16,23 +16,60 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
   import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 
   let heroStep = $state<StepData | null>(null);
+  let heroPictographData = $state<PictographData | null>(null);
   let loaded = $state(false);
+
+  import { RANDOM_PROPS } from "../landing-content";
 
   interface Props {
     onSequenceLoaded?: (seq: SequenceData) => void;
+    propType?: PropType;
+    onPropTypeChange?: (propType: PropType) => void;
   }
 
-  let { onSequenceLoaded }: Props = $props();
+  let { onSequenceLoaded, propType = PropType.STAFF, onPropTypeChange }: Props = $props();
+
+  function cycleProp() {
+    let next = propType;
+    while (next === propType && RANDOM_PROPS.length > 1) {
+      next = RANDOM_PROPS[Math.floor(Math.random() * RANDOM_PROPS.length)]!;
+    }
+    onPropTypeChange?.(next);
+  }
 
   onMount(async () => {
     try {
       const browseLoader = container.items.browseLoader;
-      const full = await browseLoader.loadFullSequenceData("AABB");
+      // Load the specific curated AABB sequence (alpha1→3→5→3→1, pro+anti)
+      const full = await browseLoader.loadFullSequenceData(
+        "AABB",
+        "seq_1773477720946_so6kw28yf"
+      );
 
       if (full && full.steps.length > 0) {
         heroStep = full.steps[0] ?? null;
+
+        // Build pictograph data with staves forced — the canonical TKA prop
+        if (heroStep) {
+          const forceStaff = (motion: any) =>
+            motion ? { ...motion, propType: PropType.STAFF } : undefined;
+
+          heroPictographData = {
+            id: heroStep.id ?? "hero-a",
+            letter: (heroStep.letter || undefined) as Letter | undefined,
+            startPosition: heroStep.startPosition,
+            endPosition: heroStep.endPosition,
+            motions: {
+              blue: forceStaff(heroStep.motions?.blue),
+              red: forceStaff(heroStep.motions?.red),
+            },
+          };
+        }
+
         onSequenceLoaded?.(full);
       }
     } catch (e) {
@@ -55,17 +92,13 @@
   <!-- The pictograph: the centerpiece. Frame is always visible for stable layout. -->
   <div class="pictograph-stage fade-up" style="--delay: 0.4s">
     <div class="pictograph-frame">
-      {#if heroStep}
-        <div class="pictograph-inner" class:visible={heroStep}>
+      {#if heroPictographData}
+        <div class="pictograph-inner" class:visible={heroPictographData}>
           <PictographContainer
-            pictographData={{
-              id: heroStep.id ?? "hero-a",
-              letter: (heroStep.letter || undefined) as Letter | undefined,
-              startPosition: heroStep.startPosition,
-              endPosition: heroStep.endPosition,
-              motions: heroStep.motions ?? {},
-            }}
+            pictographData={heroPictographData}
             gridMode={GridMode.DIAMOND}
+            bluePropTypeOverride={propType}
+            redPropTypeOverride={propType}
           />
         </div>
       {/if}
@@ -73,6 +106,10 @@
     <span class="pictograph-caption">
       The letter A. One beat of movement, written down.
     </span>
+    <button class="change-prop-btn" onclick={cycleProp}>
+      <i class="fas fa-sync-alt" aria-hidden="true"></i>
+      Change prop
+    </button>
   </div>
 
   <!-- Scroll hint at the very bottom, pulling you down -->
@@ -185,6 +222,31 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
     text-align: center;
     letter-spacing: 0.01em;
+  }
+
+  /* --- Change prop button --- */
+  .change-prop-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    font-size: var(--font-size-compact, 12px);
+    cursor: pointer;
+    transition: border-color 0.2s ease, color 0.2s ease;
+    margin-top: 4px;
+  }
+
+  .change-prop-btn:hover {
+    border-color: var(--theme-accent, #6366f1);
+    color: var(--theme-text, #fff);
+  }
+
+  .change-prop-btn i {
+    font-size: 10px;
   }
 
   /* --- Scroll cue at bottom --- */

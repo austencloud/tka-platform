@@ -25,6 +25,7 @@ import type {
   CompositionDefaults,
 } from "../contracts/IThumbnailKeyDeriver";
 import type { ILOOPDetector } from "$lib/features/create/generate/circular/services/contracts/ILOOPDetector";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 
 const DEFAULT_BEAT_SIZE = 240;
 const DEFAULT_FORMAT = "WebP" as const;
@@ -224,10 +225,16 @@ export class ThumbnailRenderer implements IThumbnailRenderer {
       backgroundColor: input.lightMode ? "#ffffff" : "#1a1a2e",
 
       // Prop overrides — hand path mode uses HAND props baked into the data,
-      // so skip user prop overrides that would clobber PropType.HAND
-      propTypeOverride: isHandPath ? undefined : (isCatDog ? undefined : (input.bluePropType || input.redPropType || undefined)),
-      bluePropTypeOverride: isHandPath ? undefined : (isCatDog ? input.bluePropType : undefined),
-      redPropTypeOverride: isHandPath ? undefined : (isCatDog ? input.redPropType : undefined),
+      // so skip user prop overrides that would clobber PropType.HAND.
+      // CRITICAL: Always fall back to PropType.STAFF when input prop types are
+      // undefined/null. Without this, hasPropOverride is false in ImageComposer
+      // and the motion's intrinsic propType is used (e.g., "fan" from when the
+      // sequence was created), while the cache key says "staff" (from
+      // ThumbnailKeyDeriver's identical fallback). This mismatch causes wrong-prop
+      // images to be cached and served.
+      propTypeOverride: isHandPath ? undefined : (isCatDog ? undefined : (input.bluePropType || input.redPropType || PropType.STAFF)),
+      bluePropTypeOverride: isHandPath ? undefined : (isCatDog ? (input.bluePropType || PropType.STAFF) : undefined),
+      redPropTypeOverride: isHandPath ? undefined : (isCatDog ? (input.redPropType || PropType.STAFF) : undefined),
 
       // Visibility settings - respect user preferences from input
       visibilityOverrides: {

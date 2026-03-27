@@ -1,0 +1,1459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TKA — The Kinetic Alphabet</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400&family=Inter:wght@300;400;500;600&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    /* ================================================================
+       RESET & BASE
+       ================================================================ */
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      font-size: 16px;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+      background: #0a0a12;
+      color: #c8c8d4;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      line-height: 1.7;
+      overflow-x: hidden;
+    }
+
+    ::selection {
+      background: rgba(99, 102, 241, 0.35);
+      color: #fff;
+    }
+
+    /* ================================================================
+       TYPOGRAPHY
+       ================================================================ */
+    .serif {
+      font-family: 'Cormorant Garamond', 'Georgia', serif;
+    }
+
+    .display {
+      font-family: 'DM Serif Display', 'Georgia', serif;
+    }
+
+    /* ================================================================
+       PARTICLE CANVAS (Sections 1-3, 9)
+       ================================================================ */
+    #particle-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* ================================================================
+       SCROLL REVEAL SYSTEM
+       ================================================================ */
+    .reveal {
+      opacity: 0;
+      transform: translateY(28px);
+      transition: opacity 0.9s cubic-bezier(0.23, 1, 0.32, 1),
+                  transform 0.9s cubic-bezier(0.23, 1, 0.32, 1);
+    }
+
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .reveal-delay-1 { transition-delay: 0.15s; }
+    .reveal-delay-2 { transition-delay: 0.3s; }
+    .reveal-delay-3 { transition-delay: 0.45s; }
+    .reveal-delay-4 { transition-delay: 0.6s; }
+    .reveal-delay-5 { transition-delay: 0.75s; }
+    .reveal-delay-6 { transition-delay: 0.9s; }
+
+    /* Reduced motion */
+    @media (prefers-reduced-motion: reduce) {
+      .reveal {
+        opacity: 0;
+        transform: none;
+        transition: opacity 0.4s ease;
+      }
+      .reveal.visible {
+        opacity: 1;
+      }
+      .typewriter-cursor { display: none; }
+      .particle { animation: none !important; }
+    }
+
+    /* ================================================================
+       SECTION: SHARED
+       ================================================================ */
+    section {
+      position: relative;
+      z-index: 1;
+    }
+
+    .section-inner {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    .section-inner--wide {
+      max-width: 960px;
+    }
+
+    /* ================================================================
+       SECTION 1: THE HOOK
+       ================================================================ */
+    .hook {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 80px 24px;
+    }
+
+    .hook-content {
+      max-width: 680px;
+    }
+
+    .hook-headline {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(2rem, 5.5vw, 3.5rem);
+      color: #e8e8f0;
+      line-height: 1.25;
+      letter-spacing: -0.01em;
+      margin-bottom: 48px;
+      min-height: 1.25em;
+    }
+
+    .typewriter-cursor {
+      display: inline-block;
+      width: 2px;
+      height: 0.9em;
+      background: #6366f1;
+      margin-left: 3px;
+      vertical-align: text-bottom;
+      animation: blink 1s step-end infinite;
+    }
+
+    @keyframes blink {
+      50% { opacity: 0; }
+    }
+
+    .hook-body {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(1.15rem, 2.8vw, 1.45rem);
+      font-weight: 300;
+      color: #8a8a9e;
+      line-height: 1.85;
+    }
+
+    .hook-body p {
+      margin-bottom: 16px;
+    }
+
+    .hook-body .kicker {
+      font-style: italic;
+      color: #9a9ab2;
+      margin-top: 32px;
+    }
+
+    /* ================================================================
+       SECTION 2: THE LOSS
+       ================================================================ */
+    .loss {
+      padding: 120px 24px 160px;
+    }
+
+    .loss-block {
+      max-width: 620px;
+      margin: 0 auto 100px;
+      text-align: center;
+    }
+
+    .loss-block:last-child {
+      margin-bottom: 0;
+    }
+
+    .loss-text {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(1.3rem, 3.2vw, 1.75rem);
+      font-weight: 300;
+      color: #7a7a92;
+      line-height: 1.8;
+    }
+
+    .loss-text em {
+      font-style: italic;
+      color: #9898b2;
+    }
+
+    .loss-text.stark {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(1.6rem, 4vw, 2.4rem);
+      color: #b0b0c4;
+      line-height: 1.35;
+    }
+
+    .loss-final {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(1.1rem, 2.5vw, 1.5rem);
+      color: #5a5a74;
+      letter-spacing: 0.02em;
+    }
+
+    /* ================================================================
+       SECTION 3: FAILED SOLUTIONS
+       ================================================================ */
+    .failed {
+      padding: 100px 24px 140px;
+      background: linear-gradient(180deg, transparent 0%, rgba(15, 15, 25, 0.5) 100%);
+    }
+
+    .failed-header {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(1.6rem, 3.5vw, 2.2rem);
+      color: #6e6e88;
+      text-align: center;
+      margin-bottom: 80px;
+    }
+
+    .failed-grid {
+      max-width: 780px;
+      margin: 0 auto;
+      display: grid;
+      gap: 48px;
+    }
+
+    .failed-card {
+      padding: 36px 40px;
+      border-left: 2px solid rgba(99, 102, 241, 0.15);
+      background: rgba(255, 255, 255, 0.015);
+    }
+
+    .failed-card-label {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.3rem;
+      color: #a0a0b8;
+      margin-bottom: 12px;
+    }
+
+    .failed-card-text {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(1.05rem, 2.2vw, 1.2rem);
+      font-weight: 300;
+      color: #6a6a82;
+      line-height: 1.75;
+      font-style: italic;
+    }
+
+    /* ================================================================
+       SECTION 4: THE REFRAME (HINGE)
+       ================================================================ */
+    .reframe {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 80px 24px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .reframe::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 80% 60% at 50% 50%, rgba(245, 158, 11, 0.06) 0%, transparent 70%);
+      opacity: 0;
+      transition: opacity 1.2s ease;
+    }
+
+    .reframe.warm::before {
+      opacity: 1;
+    }
+
+    .reframe-content {
+      max-width: 700px;
+    }
+
+    .reframe-line {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(1.8rem, 5vw, 3.2rem);
+      line-height: 1.3;
+      letter-spacing: -0.01em;
+    }
+
+    .reframe-line-1 {
+      color: #c8b070;
+    }
+
+    .reframe-line-2 {
+      color: #f5c842;
+      margin-top: 40px;
+      font-style: italic;
+    }
+
+    .reframe-rule {
+      width: 60px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, #c8a040, transparent);
+      margin: 48px auto 0;
+      border: none;
+    }
+
+    /* ================================================================
+       SECTION 5: THE REVEAL
+       ================================================================ */
+    .the-reveal {
+      padding: 160px 24px 120px;
+      text-align: center;
+      background: linear-gradient(180deg, rgba(18, 16, 30, 0.0) 0%, rgba(18, 16, 30, 0.6) 30%, rgba(18, 16, 30, 0.6) 70%, transparent 100%);
+    }
+
+    .reveal-wordmark {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(2.5rem, 7vw, 5rem);
+      color: #e8e4f0;
+      letter-spacing: 0.04em;
+      line-height: 1.1;
+      margin-bottom: 8px;
+    }
+
+    .reveal-subtitle {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(1.2rem, 2.8vw, 1.6rem);
+      font-weight: 300;
+      color: #8080a0;
+      font-style: italic;
+      margin-bottom: 56px;
+      letter-spacing: 0.08em;
+    }
+
+    .reveal-explanation {
+      max-width: 580px;
+      margin: 0 auto 72px;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(1.1rem, 2.2vw, 1.3rem);
+      font-weight: 300;
+      color: #8a8aa4;
+      line-height: 1.85;
+    }
+
+    /* Pictograph SVG */
+    .pictograph-container {
+      display: flex;
+      justify-content: center;
+      margin: 0 auto;
+      max-width: 340px;
+    }
+
+    .pictograph-container svg {
+      width: 100%;
+      height: auto;
+      filter: drop-shadow(0 0 40px rgba(99, 102, 241, 0.1));
+    }
+
+    /* ================================================================
+       SECTION 6: THE DEMO
+       ================================================================ */
+    .demo {
+      padding: 140px 24px;
+      text-align: center;
+    }
+
+    .demo-header {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(1.6rem, 3.5vw, 2.4rem);
+      color: #c0c0d8;
+      margin-bottom: 60px;
+    }
+
+    .demo-mockup {
+      max-width: 800px;
+      margin: 0 auto 64px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(99, 102, 241, 0.12);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .demo-mockup-top {
+      display: flex;
+      gap: 0;
+      min-height: 360px;
+    }
+
+    .demo-canvas {
+      flex: 1;
+      background: #0c0c18;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+      position: relative;
+    }
+
+    .demo-canvas::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.04) 0%, transparent 70%);
+    }
+
+    .demo-notation {
+      width: 200px;
+      background: rgba(255, 255, 255, 0.03);
+      border-left: 1px solid rgba(255, 255, 255, 0.06);
+      padding: 24px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+    }
+
+    .demo-notation-title {
+      font-family: 'Inter', sans-serif;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: #5a5a74;
+    }
+
+    .demo-letter-sequence {
+      display: flex;
+      gap: 8px;
+    }
+
+    .demo-letter {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.1rem;
+      color: #e0e0f0;
+      background: rgba(99, 102, 241, 0.1);
+      border: 1px solid rgba(99, 102, 241, 0.2);
+    }
+
+    .demo-letter.active {
+      background: rgba(99, 102, 241, 0.25);
+      border-color: rgba(99, 102, 241, 0.5);
+      box-shadow: 0 0 16px rgba(99, 102, 241, 0.2);
+    }
+
+    .demo-mini-pictograph {
+      width: 120px;
+      height: 120px;
+    }
+
+    .demo-controls {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      padding: 20px;
+      border-top: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .demo-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.03);
+      color: #8080a0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .demo-btn:hover {
+      background: rgba(99, 102, 241, 0.15);
+      border-color: rgba(99, 102, 241, 0.3);
+      color: #a0a0f0;
+    }
+
+    .demo-btn.play {
+      width: 48px;
+      height: 48px;
+      background: rgba(99, 102, 241, 0.2);
+      border-color: rgba(99, 102, 241, 0.35);
+      color: #b0b0f0;
+      font-size: 1rem;
+    }
+
+    .demo-description {
+      max-width: 540px;
+      margin: 0 auto;
+    }
+
+    .demo-description p {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(1.1rem, 2.4vw, 1.35rem);
+      font-weight: 300;
+      color: #8a8aa4;
+      line-height: 1.8;
+      margin-bottom: 40px;
+    }
+
+    .cta-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 16px 36px;
+      border-radius: 100px;
+      border: 1px solid rgba(99, 102, 241, 0.4);
+      background: rgba(99, 102, 241, 0.12);
+      color: #b8b8f0;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .cta-button:hover {
+      background: rgba(99, 102, 241, 0.22);
+      border-color: rgba(99, 102, 241, 0.6);
+      color: #d0d0ff;
+      transform: translateY(-1px);
+      box-shadow: 0 8px 32px rgba(99, 102, 241, 0.15);
+    }
+
+    .cta-button i {
+      font-size: 0.8rem;
+      transition: transform 0.3s ease;
+    }
+
+    .cta-button:hover i {
+      transform: translateX(3px);
+    }
+
+    /* ================================================================
+       SECTION 7: USE CASES
+       ================================================================ */
+    .use-cases {
+      padding: 120px 24px;
+    }
+
+    .use-cases-grid {
+      max-width: 800px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 40px;
+    }
+
+    .use-case {
+      padding: 32px;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.015);
+      transition: all 0.35s ease;
+    }
+
+    .use-case:hover {
+      border-color: rgba(99, 102, 241, 0.15);
+      background: rgba(255, 255, 255, 0.025);
+    }
+
+    .use-case-icon {
+      font-size: 1.4rem;
+      color: #6366f1;
+      margin-bottom: 16px;
+      opacity: 0.7;
+    }
+
+    .use-case-text {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(1.15rem, 2.4vw, 1.35rem);
+      font-weight: 400;
+      color: #a0a0b8;
+      line-height: 1.5;
+    }
+
+    /* ================================================================
+       SECTION 8: GUIDE CARDS
+       ================================================================ */
+    .guides {
+      padding: 120px 24px 140px;
+      text-align: center;
+    }
+
+    .guides-header {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(1.6rem, 3.5vw, 2.2rem);
+      color: #c0c0d8;
+      margin-bottom: 16px;
+    }
+
+    .guides-subheader {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.15rem;
+      font-weight: 300;
+      color: #6a6a82;
+      margin-bottom: 64px;
+    }
+
+    .guides-grid {
+      max-width: 860px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 28px;
+    }
+
+    .guide-card {
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.02);
+      overflow: hidden;
+      transition: all 0.35s ease;
+    }
+
+    .guide-card:hover {
+      border-color: rgba(99, 102, 241, 0.2);
+      transform: translateY(-4px);
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.3);
+    }
+
+    .guide-card-cover {
+      height: 180px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .guide-card-cover.level-1 {
+      background: linear-gradient(135deg, #1a1a2e, #16213e);
+    }
+    .guide-card-cover.level-2 {
+      background: linear-gradient(135deg, #1a1a2e, #1e1640);
+    }
+    .guide-card-cover.level-3 {
+      background: linear-gradient(135deg, #1a1a2e, #2a1430);
+    }
+
+    .guide-level-badge {
+      font-family: 'DM Serif Display', serif;
+      font-size: 2.8rem;
+      color: rgba(255, 255, 255, 0.08);
+      position: absolute;
+      top: 16px;
+      right: 20px;
+    }
+
+    .guide-card-cover svg {
+      width: 80px;
+      height: 80px;
+      opacity: 0.6;
+    }
+
+    .guide-card-body {
+      padding: 24px 20px;
+    }
+
+    .guide-card-title {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.15rem;
+      color: #c0c0d8;
+      margin-bottom: 8px;
+    }
+
+    .guide-card-desc {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 0.95rem;
+      color: #6a6a82;
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+
+    .guide-download-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      border: 1px solid rgba(99, 102, 241, 0.25);
+      border-radius: 100px;
+      background: transparent;
+      color: #8888c0;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 500;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.25s ease;
+    }
+
+    .guide-download-btn:hover {
+      background: rgba(99, 102, 241, 0.1);
+      border-color: rgba(99, 102, 241, 0.4);
+      color: #b0b0f0;
+    }
+
+    /* ================================================================
+       SECTION 9: THE CLOSE
+       ================================================================ */
+    .the-close {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 80px 24px;
+      position: relative;
+    }
+
+    .close-content {
+      max-width: 640px;
+    }
+
+    .close-headline {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(2.2rem, 5.5vw, 3.8rem);
+      color: #d8d8ec;
+      line-height: 1.2;
+      margin-bottom: 32px;
+    }
+
+    .close-body {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(1.1rem, 2.4vw, 1.3rem);
+      font-weight: 300;
+      color: #7a7a96;
+      line-height: 1.8;
+      margin-bottom: 48px;
+    }
+
+    .cta-button.primary {
+      background: rgba(99, 102, 241, 0.2);
+      border-color: rgba(99, 102, 241, 0.5);
+      color: #d0d0ff;
+      padding: 18px 44px;
+      font-size: 1.05rem;
+    }
+
+    .cta-button.primary:hover {
+      background: rgba(99, 102, 241, 0.32);
+      box-shadow: 0 12px 40px rgba(99, 102, 241, 0.2);
+    }
+
+    /* ================================================================
+       SECTION 10: FOOTER
+       ================================================================ */
+    .site-footer {
+      padding: 48px 24px;
+      text-align: center;
+      border-top: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .footer-links {
+      display: flex;
+      justify-content: center;
+      gap: 32px;
+      flex-wrap: wrap;
+    }
+
+    .footer-links a {
+      font-family: 'Inter', sans-serif;
+      font-size: 0.8rem;
+      color: #4a4a64;
+      text-decoration: none;
+      letter-spacing: 0.04em;
+      transition: color 0.25s ease;
+    }
+
+    .footer-links a:hover {
+      color: #8080a0;
+    }
+
+    .footer-copyright {
+      margin-top: 24px;
+      font-size: 0.7rem;
+      color: #2a2a3e;
+      letter-spacing: 0.06em;
+    }
+
+    /* ================================================================
+       PROP FIGURE (CSS Art for Demo)
+       ================================================================ */
+    .prop-figures {
+      position: relative;
+      width: 200px;
+      height: 200px;
+      z-index: 1;
+    }
+
+    .figure-body {
+      position: absolute;
+      width: 4px;
+      height: 50px;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 2px;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -10px);
+    }
+
+    .figure-head {
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.15);
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -34px);
+    }
+
+    .staff-blue {
+      position: absolute;
+      width: 2px;
+      height: 90px;
+      background: linear-gradient(to bottom, #4488ff, #2255cc);
+      border-radius: 1px;
+      top: 50%;
+      left: 50%;
+      transform-origin: center 20px;
+      transform: translate(-50%, -20px) rotate(-45deg);
+      box-shadow: 0 0 8px rgba(68, 136, 255, 0.3);
+    }
+
+    .staff-red {
+      position: absolute;
+      width: 2px;
+      height: 90px;
+      background: linear-gradient(to bottom, #ff4466, #cc2244);
+      border-radius: 1px;
+      top: 50%;
+      left: 50%;
+      transform-origin: center 20px;
+      transform: translate(-50%, -20px) rotate(45deg);
+      box-shadow: 0 0 8px rgba(255, 68, 102, 0.3);
+    }
+
+    .staff-dot {
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+
+    .staff-dot.blue-tip {
+      background: #4488ff;
+      box-shadow: 0 0 6px rgba(68, 136, 255, 0.5);
+    }
+
+    .staff-dot.red-tip {
+      background: #ff4466;
+      box-shadow: 0 0 6px rgba(255, 68, 102, 0.5);
+    }
+
+    /* ================================================================
+       RESPONSIVE
+       ================================================================ */
+    @media (max-width: 768px) {
+      .use-cases-grid {
+        grid-template-columns: 1fr;
+        gap: 24px;
+      }
+
+      .guides-grid {
+        grid-template-columns: 1fr;
+        max-width: 320px;
+      }
+
+      .demo-mockup-top {
+        flex-direction: column;
+      }
+
+      .demo-notation {
+        width: 100%;
+        border-left: none;
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+        padding: 20px;
+      }
+
+      .demo-canvas {
+        min-height: 260px;
+      }
+
+      .failed-card {
+        padding: 28px 24px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .hook {
+        padding: 60px 20px;
+      }
+
+      .loss-block {
+        margin-bottom: 80px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ============================================================
+       PARTICLE CANVAS
+       ============================================================ -->
+  <canvas id="particle-canvas"></canvas>
+
+  <!-- ============================================================
+       SECTION 1: THE HOOK
+       ============================================================ -->
+  <section class="hook" id="hook">
+    <div class="hook-content">
+      <h1 class="hook-headline" id="typewriter-target" aria-label="You learned something incredible last weekend."></h1>
+      <div class="hook-body" id="hook-body" style="opacity: 0;">
+        <p>A combo that clicked. A pattern someone showed you between sets. The way two props moved together that you'd never seen before.</p>
+        <p class="kicker">You told yourself you'd remember it.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       SECTION 2: THE LOSS
+       ============================================================ -->
+  <section class="loss">
+    <div class="loss-block reveal">
+      <p class="loss-text stark">It's Wednesday now.</p>
+    </div>
+
+    <div class="loss-block reveal">
+      <p class="loss-text">You remember it started with a split-time antispin. Or was it a cateye? The entrance was something with your left hand going... no. Right hand.</p>
+    </div>
+
+    <div class="loss-block reveal">
+      <p class="loss-text">The shape is gone. The timing is gone. You're left with a feeling and no way to get it back.</p>
+    </div>
+
+    <div class="loss-block reveal">
+      <p class="loss-final">This has been happening your entire flow career.</p>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       SECTION 3: FAILED SOLUTIONS
+       ============================================================ -->
+  <section class="failed">
+    <h2 class="failed-header reveal">You've tried.</h2>
+
+    <div class="failed-grid">
+      <div class="failed-card reveal reveal-delay-1">
+        <div class="failed-card-label">Video.</div>
+        <p class="failed-card-text">You recorded it at the jam. Shaky phone footage, bad lighting, someone's elbow in frame. You watched it back six times and still can't tell what your right hand is doing at beat three.</p>
+      </div>
+
+      <div class="failed-card reveal reveal-delay-2">
+        <div class="failed-card-label">Verbal description.</div>
+        <p class="failed-card-text">"It's like a butterfly but your right hand does a thing." You posted it in a group chat. Nobody knew what you meant. Someone replied with an unrelated video of a contact roll.</p>
+      </div>
+
+      <div class="failed-card reveal reveal-delay-3">
+        <div class="failed-card-label">Memory.</div>
+        <p class="failed-card-text">You drilled it 50 times before bed. By morning, your muscle memory kept the first four beats and improvised the rest. Close enough, you told yourself. It wasn't.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       SECTION 4: THE REFRAME
+       ============================================================ -->
+  <section class="reframe" id="reframe">
+    <div class="reframe-content">
+      <p class="reframe-line reframe-line-1 reveal">Musicians solved this problem 1,000 years ago.</p>
+      <p class="reframe-line reframe-line-2 reveal reveal-delay-2">They wrote it down.</p>
+      <hr class="reframe-rule reveal reveal-delay-4">
+    </div>
+  </section>
+
+  <!-- ============================================================
+       SECTION 5: THE REVEAL
+       ============================================================ -->
+  <section class="the-reveal">
+    <div class="section-inner">
+      <h2 class="reveal-wordmark reveal">The Kinetic Alphabet</h2>
+      <p class="reveal-subtitle reveal reveal-delay-1">Sheet music for flow arts.</p>
+
+      <p class="reveal-explanation reveal reveal-delay-2">
+        Every position your hands can hold becomes a point on a grid.
+        Every movement between positions becomes a letter.
+        Letters form words. Words form sequences.
+        Readable. Shareable. Permanent.
+      </p>
+
+      <div class="pictograph-container reveal reveal-delay-3">
+        <!-- TKA Pictograph: Diamond grid, 8 positions, two hand paths -->
+        <svg viewBox="0 0 300 340" xmlns="http://www.w3.org/2000/svg">
+          <!-- Background -->
+          <rect width="300" height="340" fill="transparent"/>
+
+          <!-- Grid diamond shape - connecting lines -->
+          <g stroke="rgba(255,255,255,0.06)" stroke-width="1" fill="none">
+            <!-- Outer diamond -->
+            <line x1="150" y1="30" x2="270" y2="150"/>
+            <line x1="270" y1="150" x2="150" y2="270"/>
+            <line x1="150" y1="270" x2="30" y2="150"/>
+            <line x1="30" y1="150" x2="150" y2="30"/>
+            <!-- Cross lines -->
+            <line x1="150" y1="30" x2="150" y2="270"/>
+            <line x1="30" y1="150" x2="270" y2="150"/>
+            <!-- Diagonal crosses -->
+            <line x1="65" y1="65" x2="235" y2="235"/>
+            <line x1="235" y1="65" x2="65" y2="235"/>
+          </g>
+
+          <!-- Blue hand path (arc from N to E) -->
+          <path d="M 150 30 Q 230 60 270 150" stroke="#4488ff" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.8"/>
+          <!-- Blue arrow at E -->
+          <polygon points="270,150 258,142 258,158" fill="#4488ff" opacity="0.8"/>
+
+          <!-- Red hand path (arc from S to W) -->
+          <path d="M 150 270 Q 70 240 30 150" stroke="#ff4466" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.8"/>
+          <!-- Red arrow at W -->
+          <polygon points="30,150 42,142 42,158" fill="#ff4466" opacity="0.8"/>
+
+          <!-- Grid points - Cardinal (larger) -->
+          <circle cx="150" cy="30" r="7" fill="#1a1a2e" stroke="#4488ff" stroke-width="2" opacity="0.9"/>
+          <!-- N label -->
+          <text x="150" y="18" text-anchor="middle" fill="rgba(255,255,255,0.25)" font-family="Inter, sans-serif" font-size="10">N</text>
+
+          <circle cx="270" cy="150" r="7" fill="#1a1a2e" stroke="rgba(150,150,200,0.3)" stroke-width="1.5"/>
+          <text x="286" y="154" text-anchor="middle" fill="rgba(255,255,255,0.25)" font-family="Inter, sans-serif" font-size="10">E</text>
+
+          <circle cx="150" cy="270" r="7" fill="#1a1a2e" stroke="#ff4466" stroke-width="2" opacity="0.9"/>
+          <text x="150" y="290" text-anchor="middle" fill="rgba(255,255,255,0.25)" font-family="Inter, sans-serif" font-size="10">S</text>
+
+          <circle cx="30" cy="150" r="7" fill="#1a1a2e" stroke="rgba(150,150,200,0.3)" stroke-width="1.5"/>
+          <text x="14" y="154" text-anchor="middle" fill="rgba(255,255,255,0.25)" font-family="Inter, sans-serif" font-size="10">W</text>
+
+          <!-- Grid points - Intercardinal (smaller) -->
+          <circle cx="235" cy="65" r="5" fill="#1a1a2e" stroke="rgba(150,150,200,0.2)" stroke-width="1"/>
+          <circle cx="235" cy="235" r="5" fill="#1a1a2e" stroke="rgba(150,150,200,0.2)" stroke-width="1"/>
+          <circle cx="65" cy="235" r="5" fill="#1a1a2e" stroke="rgba(150,150,200,0.2)" stroke-width="1"/>
+          <circle cx="65" cy="65" r="5" fill="#1a1a2e" stroke="rgba(150,150,200,0.2)" stroke-width="1"/>
+
+          <!-- Start position indicators -->
+          <circle cx="150" cy="30" r="12" fill="none" stroke="#4488ff" stroke-width="1" opacity="0.4" stroke-dasharray="3,3"/>
+          <circle cx="150" cy="270" r="12" fill="none" stroke="#ff4466" stroke-width="1" opacity="0.4" stroke-dasharray="3,3"/>
+
+          <!-- Letter label -->
+          <text x="150" y="322" text-anchor="middle" fill="rgba(255,255,255,0.4)" font-family="'DM Serif Display', serif" font-size="22" letter-spacing="0.05em">A</text>
+        </svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       SECTION 6: THE DEMO
+       ============================================================ -->
+  <section class="demo">
+    <div class="section-inner section-inner--wide">
+      <h2 class="demo-header reveal">Notation in motion.</h2>
+
+      <div class="demo-mockup reveal reveal-delay-1">
+        <div class="demo-mockup-top">
+          <div class="demo-canvas">
+            <div class="prop-figures">
+              <div class="figure-head"></div>
+              <div class="figure-body"></div>
+              <div class="staff-blue"></div>
+              <div class="staff-red"></div>
+            </div>
+          </div>
+          <div class="demo-notation">
+            <div class="demo-notation-title">Sequence</div>
+            <div class="demo-letter-sequence">
+              <div class="demo-letter active">A</div>
+              <div class="demo-letter">B</div>
+              <div class="demo-letter">B</div>
+              <div class="demo-letter">D</div>
+            </div>
+            <svg class="demo-mini-pictograph" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+              <g stroke="rgba(255,255,255,0.06)" stroke-width="0.5" fill="none">
+                <line x1="60" y1="10" x2="110" y2="60"/>
+                <line x1="110" y1="60" x2="60" y2="110"/>
+                <line x1="60" y1="110" x2="10" y2="60"/>
+                <line x1="10" y1="60" x2="60" y2="10"/>
+                <line x1="60" y1="10" x2="60" y2="110"/>
+                <line x1="10" y1="60" x2="110" y2="60"/>
+              </g>
+              <path d="M 60 10 Q 95 25 110 60" stroke="#4488ff" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.7"/>
+              <path d="M 60 110 Q 25 95 10 60" stroke="#ff4466" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.7"/>
+              <circle cx="60" cy="10" r="3.5" fill="#1a1a2e" stroke="#4488ff" stroke-width="1.2"/>
+              <circle cx="110" cy="60" r="3.5" fill="#1a1a2e" stroke="rgba(150,150,200,0.3)" stroke-width="1"/>
+              <circle cx="60" cy="110" r="3.5" fill="#1a1a2e" stroke="#ff4466" stroke-width="1.2"/>
+              <circle cx="10" cy="60" r="3.5" fill="#1a1a2e" stroke="rgba(150,150,200,0.3)" stroke-width="1"/>
+              <circle cx="85" cy="25" r="2.5" fill="#1a1a2e" stroke="rgba(150,150,200,0.15)" stroke-width="0.8"/>
+              <circle cx="85" cy="95" r="2.5" fill="#1a1a2e" stroke="rgba(150,150,200,0.15)" stroke-width="0.8"/>
+              <circle cx="35" cy="95" r="2.5" fill="#1a1a2e" stroke="rgba(150,150,200,0.15)" stroke-width="0.8"/>
+              <circle cx="35" cy="25" r="2.5" fill="#1a1a2e" stroke="rgba(150,150,200,0.15)" stroke-width="0.8"/>
+            </svg>
+            <div class="demo-notation-title" style="color: #4a4a64; margin-top: 4px;">Beat 1 of 4</div>
+          </div>
+        </div>
+        <div class="demo-controls">
+          <button class="demo-btn" aria-label="Previous beat"><i class="fas fa-backward-step"></i></button>
+          <button class="demo-btn play" aria-label="Play animation"><i class="fas fa-play"></i></button>
+          <button class="demo-btn" aria-label="Next beat"><i class="fas fa-forward-step"></i></button>
+        </div>
+      </div>
+
+      <div class="demo-description reveal reveal-delay-2">
+        <p>That combo you lost last weekend? With TKA, it looks like this. Four letters. Readable. Shareable. Permanent.</p>
+        <a href="#" class="cta-button">
+          Try the app <i class="fas fa-arrow-right"></i>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       SECTION 7: USE CASES
+       ============================================================ -->
+  <section class="use-cases">
+    <div class="section-inner section-inner--wide">
+      <div class="use-cases-grid">
+        <div class="use-case reveal">
+          <div class="use-case-icon"><i class="fas fa-camera"></i></div>
+          <p class="use-case-text">Learn a sequence from a photo.</p>
+        </div>
+        <div class="use-case reveal reveal-delay-1">
+          <div class="use-case-icon"><i class="fas fa-chalkboard"></i></div>
+          <p class="use-case-text">Teach without losing fidelity.</p>
+        </div>
+        <div class="use-case reveal reveal-delay-2">
+          <div class="use-case-icon"><i class="fas fa-pen-ruler"></i></div>
+          <p class="use-case-text">Build something new.</p>
+        </div>
+        <div class="use-case reveal reveal-delay-3">
+          <div class="use-case-icon"><i class="fas fa-share-nodes"></i></div>
+          <p class="use-case-text">Share across the world.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       SECTION 8: GUIDE CARDS
+       ============================================================ -->
+  <section class="guides">
+    <div class="section-inner section-inner--wide">
+      <h2 class="guides-header reveal">Learn to read it.</h2>
+      <p class="guides-subheader reveal reveal-delay-1">Three levels. Start anywhere.</p>
+
+      <div class="guides-grid">
+        <!-- Level 1 -->
+        <div class="guide-card reveal reveal-delay-1">
+          <div class="guide-card-cover level-1">
+            <div class="guide-level-badge">1</div>
+            <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="40" cy="10" r="4" stroke="#6366f1" stroke-width="1.5" fill="none" opacity="0.5"/>
+              <circle cx="70" cy="40" r="4" stroke="#6366f1" stroke-width="1.5" fill="none" opacity="0.5"/>
+              <circle cx="40" cy="70" r="4" stroke="#6366f1" stroke-width="1.5" fill="none" opacity="0.5"/>
+              <circle cx="10" cy="40" r="4" stroke="#6366f1" stroke-width="1.5" fill="none" opacity="0.5"/>
+              <line x1="40" y1="10" x2="70" y2="40" stroke="rgba(255,255,255,0.08)" stroke-width="0.8"/>
+              <line x1="70" y1="40" x2="40" y2="70" stroke="rgba(255,255,255,0.08)" stroke-width="0.8"/>
+              <line x1="40" y1="70" x2="10" y2="40" stroke="rgba(255,255,255,0.08)" stroke-width="0.8"/>
+              <line x1="10" y1="40" x2="40" y2="10" stroke="rgba(255,255,255,0.08)" stroke-width="0.8"/>
+            </svg>
+          </div>
+          <div class="guide-card-body">
+            <h3 class="guide-card-title">Level 1</h3>
+            <p class="guide-card-desc">Four cardinal positions. Six letters. The foundation.</p>
+            <a href="#" class="guide-download-btn"><i class="fas fa-download"></i> Download PDF</a>
+          </div>
+        </div>
+
+        <!-- Level 2 -->
+        <div class="guide-card reveal reveal-delay-2">
+          <div class="guide-card-cover level-2">
+            <div class="guide-level-badge">2</div>
+            <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="40" cy="10" r="4" stroke="#6366f1" stroke-width="1.5" fill="none" opacity="0.5"/>
+              <circle cx="70" cy="40" r="4" stroke="#6366f1" stroke-width="1.5" fill="none" opacity="0.5"/>
+              <circle cx="40" cy="70" r="4" stroke="#6366f1" stroke-width="1.5" fill="none" opacity="0.5"/>
+              <circle cx="10" cy="40" r="4" stroke="#6366f1" stroke-width="1.5" fill="none" opacity="0.5"/>
+              <circle cx="58" cy="22" r="3" stroke="#8b5cf6" stroke-width="1" fill="none" opacity="0.4"/>
+              <circle cx="58" cy="58" r="3" stroke="#8b5cf6" stroke-width="1" fill="none" opacity="0.4"/>
+              <circle cx="22" cy="58" r="3" stroke="#8b5cf6" stroke-width="1" fill="none" opacity="0.4"/>
+              <circle cx="22" cy="22" r="3" stroke="#8b5cf6" stroke-width="1" fill="none" opacity="0.4"/>
+              <line x1="40" y1="10" x2="70" y2="40" stroke="rgba(255,255,255,0.08)" stroke-width="0.8"/>
+              <line x1="70" y1="40" x2="40" y2="70" stroke="rgba(255,255,255,0.08)" stroke-width="0.8"/>
+              <line x1="40" y1="70" x2="10" y2="40" stroke="rgba(255,255,255,0.08)" stroke-width="0.8"/>
+              <line x1="10" y1="40" x2="40" y2="10" stroke="rgba(255,255,255,0.08)" stroke-width="0.8"/>
+            </svg>
+          </div>
+          <div class="guide-card-body">
+            <h3 class="guide-card-title">Level 2</h3>
+            <p class="guide-card-desc">Eight positions. Whole turns. The vocabulary expands.</p>
+            <a href="#" class="guide-download-btn"><i class="fas fa-download"></i> Download PDF</a>
+          </div>
+        </div>
+
+        <!-- Level 3 -->
+        <div class="guide-card reveal reveal-delay-3">
+          <div class="guide-card-cover level-3">
+            <div class="guide-level-badge">3</div>
+            <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="40" cy="10" r="4" stroke="#6366f1" stroke-width="1.5" fill="none" opacity="0.5"/>
+              <circle cx="70" cy="40" r="4" stroke="#6366f1" stroke-width="1.5" fill="none" opacity="0.5"/>
+              <circle cx="40" cy="70" r="4" stroke="#6366f1" stroke-width="1.5" fill="none" opacity="0.5"/>
+              <circle cx="10" cy="40" r="4" stroke="#6366f1" stroke-width="1.5" fill="none" opacity="0.5"/>
+              <circle cx="58" cy="22" r="3" stroke="#8b5cf6" stroke-width="1" fill="none" opacity="0.4"/>
+              <circle cx="58" cy="58" r="3" stroke="#8b5cf6" stroke-width="1" fill="none" opacity="0.4"/>
+              <circle cx="22" cy="58" r="3" stroke="#8b5cf6" stroke-width="1" fill="none" opacity="0.4"/>
+              <circle cx="22" cy="22" r="3" stroke="#8b5cf6" stroke-width="1" fill="none" opacity="0.4"/>
+              <!-- Rotation arcs -->
+              <path d="M 42 12 A 20 20 0 0 1 58 24" stroke="#a78bfa" stroke-width="1" fill="none" opacity="0.35"/>
+              <path d="M 58 42 A 20 20 0 0 1 42 58" stroke="#a78bfa" stroke-width="1" fill="none" opacity="0.35"/>
+              <line x1="40" y1="10" x2="70" y2="40" stroke="rgba(255,255,255,0.08)" stroke-width="0.8"/>
+              <line x1="70" y1="40" x2="40" y2="70" stroke="rgba(255,255,255,0.08)" stroke-width="0.8"/>
+              <line x1="40" y1="70" x2="10" y2="40" stroke="rgba(255,255,255,0.08)" stroke-width="0.8"/>
+              <line x1="10" y1="40" x2="40" y2="10" stroke="rgba(255,255,255,0.08)" stroke-width="0.8"/>
+            </svg>
+          </div>
+          <div class="guide-card-body">
+            <h3 class="guide-card-title">Level 3</h3>
+            <p class="guide-card-desc">Half turns. Float. The full expressive range.</p>
+            <a href="#" class="guide-download-btn"><i class="fas fa-download"></i> Download PDF</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       SECTION 9: THE CLOSE
+       ============================================================ -->
+  <section class="the-close">
+    <div class="close-content">
+      <h2 class="close-headline reveal">Next time, write it down.</h2>
+      <p class="close-body reveal reveal-delay-1">TKA is free. Build sequences, browse the library, animate and share.</p>
+      <div class="reveal reveal-delay-2">
+        <a href="#" class="cta-button primary">
+          Open TKA <i class="fas fa-arrow-right"></i>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       SECTION 10: FOOTER
+       ============================================================ -->
+  <footer class="site-footer">
+    <nav class="footer-links">
+      <a href="#">About</a>
+      <a href="#">Roots</a>
+      <a href="#">Terms</a>
+      <a href="#">Privacy</a>
+    </nav>
+    <p class="footer-copyright">&copy; 2026 The Kinetic Alphabet</p>
+  </footer>
+
+  <!-- ============================================================
+       JAVASCRIPT
+       ============================================================ -->
+  <script>
+    // ============================================================
+    // PARTICLE SYSTEM
+    // ============================================================
+    (function() {
+      const canvas = document.getElementById('particle-canvas');
+      const ctx = canvas.getContext('2d');
+      let particles = [];
+      let width, height;
+      let animationId;
+      const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      function resize() {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+      }
+
+      function createParticles() {
+        particles = [];
+        if (prefersReduced) return;
+        const count = Math.floor((width * height) / 18000);
+        for (let i = 0; i < count; i++) {
+          particles.push({
+            x: Math.random() * width,
+            y: Math.random() * height,
+            size: Math.random() * 1.5 + 0.3,
+            speedX: (Math.random() - 0.5) * 0.15,
+            speedY: (Math.random() - 0.5) * 0.1,
+            opacity: Math.random() * 0.4 + 0.1,
+            pulse: Math.random() * Math.PI * 2,
+            pulseSpeed: Math.random() * 0.008 + 0.003
+          });
+        }
+      }
+
+      function getScrollProgress() {
+        const scrollY = window.scrollY || window.pageYOffset;
+        const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+        return docHeight > 0 ? scrollY / docHeight : 0;
+      }
+
+      function animate() {
+        ctx.clearRect(0, 0, width, height);
+        const progress = getScrollProgress();
+
+        // Fade particles in sections 4-8 (middle of page), bring back at end
+        let particleOpacityMultiplier = 1;
+        if (progress > 0.2 && progress < 0.75) {
+          const fadeOut = Math.max(0, 1 - (progress - 0.2) / 0.15);
+          const fadeIn = Math.max(0, (progress - 0.6) / 0.15);
+          particleOpacityMultiplier = Math.max(fadeOut, fadeIn);
+          particleOpacityMultiplier = Math.max(0.05, particleOpacityMultiplier);
+        }
+
+        particles.forEach(p => {
+          p.x += p.speedX;
+          p.y += p.speedY;
+          p.pulse += p.pulseSpeed;
+
+          if (p.x < -10) p.x = width + 10;
+          if (p.x > width + 10) p.x = -10;
+          if (p.y < -10) p.y = height + 10;
+          if (p.y > height + 10) p.y = -10;
+
+          const pulseOpacity = p.opacity * (0.6 + 0.4 * Math.sin(p.pulse));
+          const finalOpacity = pulseOpacity * particleOpacityMultiplier;
+
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(180, 180, 220, ${finalOpacity})`;
+          ctx.fill();
+        });
+
+        animationId = requestAnimationFrame(animate);
+      }
+
+      resize();
+      createParticles();
+      if (!prefersReduced) animate();
+
+      window.addEventListener('resize', () => {
+        resize();
+        createParticles();
+      });
+    })();
+
+    // ============================================================
+    // TYPEWRITER EFFECT (Section 1)
+    // ============================================================
+    (function() {
+      const target = document.getElementById('typewriter-target');
+      const hookBody = document.getElementById('hook-body');
+      const text = 'You learned something incredible last weekend.';
+      const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      if (prefersReduced) {
+        target.textContent = text;
+        hookBody.style.opacity = '1';
+        return;
+      }
+
+      let i = 0;
+      const cursor = document.createElement('span');
+      cursor.className = 'typewriter-cursor';
+      target.appendChild(cursor);
+
+      function type() {
+        if (i < text.length) {
+          target.insertBefore(document.createTextNode(text.charAt(i)), cursor);
+          i++;
+          const delay = text.charAt(i - 1) === ' ' ? 60 : (30 + Math.random() * 50);
+          setTimeout(type, delay);
+        } else {
+          // Typing done, fade in body text
+          setTimeout(() => {
+            hookBody.style.transition = 'opacity 1.2s ease';
+            hookBody.style.opacity = '1';
+          }, 600);
+          // Remove cursor after a beat
+          setTimeout(() => {
+            cursor.style.transition = 'opacity 0.5s ease';
+            cursor.style.opacity = '0';
+            setTimeout(() => cursor.remove(), 500);
+          }, 3000);
+        }
+      }
+
+      // Start after brief pause
+      setTimeout(type, 800);
+    })();
+
+    // ============================================================
+    // SCROLL REVEAL (IntersectionObserver)
+    // ============================================================
+    (function() {
+      const reveals = document.querySelectorAll('.reveal');
+
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            observer.unobserve(entry.target);
+          }
+        });
+      }, {
+        threshold: 0.15,
+        rootMargin: '0px 0px -40px 0px'
+      });
+
+      reveals.forEach(el => observer.observe(el));
+    })();
+
+    // ============================================================
+    // REFRAME SECTION: Warm background transition
+    // ============================================================
+    (function() {
+      const reframe = document.getElementById('reframe');
+
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            reframe.classList.add('warm');
+          }
+        });
+      }, {
+        threshold: 0.3
+      });
+
+      observer.observe(reframe);
+    })();
+  </script>
+</body>
+</html>

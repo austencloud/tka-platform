@@ -10,8 +10,8 @@
 	 */
 
 	import { onMount } from "svelte";
-	import { DESTINATIONS, DESTINATION_CATEGORIES } from "$lib/shared/3d-core/destinations/definitions";
-	import type { Destination } from "$lib/shared/3d-core/destinations/types";
+	import { DESTINATIONS, DESTINATION_CATEGORIES } from "$lib/shared/3d-animation/destinations/definitions";
+	import type { Destination } from "$lib/shared/3d-animation/destinations/types";
 	import Mini3DPreview from "./Mini3DPreview.svelte";
 
 	interface Props {

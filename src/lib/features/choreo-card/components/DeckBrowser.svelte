@@ -645,6 +645,8 @@
     margin: 0 auto;
     width: 100%;
     gap: 16px;
+    flex: 1;
+    min-height: 0;
   }
 
   .level-collections,

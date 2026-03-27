@@ -17,77 +17,61 @@ import {
   query,
   where,
   orderBy,
-  limit,
-  startAfter,
   Timestamp,
-  type QueryConstraint,
-  type DocumentSnapshot,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import type { Festival } from "../../domain/models/festival";
 import type { FestivalFilters, IFestivalLoader } from "../contracts/IFestivalLoader";
 
-const DEFAULT_PAGE_SIZE = 20;
+const DEFAULT_PAGE_SIZE = 200;
 
 // FestivalLoader has no constructor dependencies — it queries Firestore directly
 // via getFirestoreInstance() on each call.
 export class FestivalLoader implements IFestivalLoader {
   async loadFestivals(
     filters: FestivalFilters,
-    pageSize = DEFAULT_PAGE_SIZE,
-    cursor?: unknown
+    _pageSize = DEFAULT_PAGE_SIZE,
+    _cursor?: unknown
   ): Promise<{ festivals: Festival[]; nextCursor: unknown | null }> {
     const db = await getFirestoreInstance();
-    const constraints: QueryConstraint[] = [];
 
-    // Only show approved festivals to end users
-    constraints.push(where("moderationStatus", "==", "approved"));
-    constraints.push(where("status", "==", "upcoming"));
+    // Fetch all approved upcoming festivals in one query (collection is small,
+    // ~65 entries). All other filtering is done client-side to avoid needing
+    // composite Firestore indexes for every filter combination.
+    const ref = collection(db, "festivals");
+    const q = query(
+      ref,
+      where("moderationStatus", "==", "approved"),
+      where("status", "==", "upcoming"),
+      orderBy("dates.start"),
+    );
+    const snap = await getDocs(q);
 
+    let festivals = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Festival));
+
+    // Client-side filters
     if (filters.region) {
-      constraints.push(where("region", "==", filters.region));
+      festivals = festivals.filter((f) => f.region === filters.region);
     }
 
     if (filters.seeking === "instructors") {
-      constraints.push(where("seekingInstructors", "==", true));
+      festivals = festivals.filter((f) => f.seekingInstructors);
     } else if (filters.seeking === "performers") {
-      constraints.push(where("seekingPerformers", "==", true));
+      festivals = festivals.filter((f) => f.seekingPerformers);
     } else if (filters.seeking === "applications-open") {
-      // Either instructors or performers — handled client-side after load
-      // because Firestore doesn't support OR queries across different fields
+      festivals = festivals.filter((f) => f.seekingInstructors || f.seekingPerformers);
     }
 
     if (filters.timeWindow && filters.timeWindow !== "upcoming") {
       const now = Timestamp.now();
       const cutoff = this.timeWindowCutoff(filters.timeWindow);
-      constraints.push(where("dates.start", ">=", now));
-      constraints.push(where("dates.start", "<=", cutoff));
+      festivals = festivals.filter((f) => {
+        const start = f.dates.start;
+        return start >= now && start <= cutoff;
+      });
     }
 
-    constraints.push(orderBy("dates.start"));
-    constraints.push(limit(pageSize + 1)); // fetch one extra to detect next page
-
-    if (cursor) {
-      constraints.push(startAfter(cursor as DocumentSnapshot));
-    }
-
-    const ref = collection(db, "festivals");
-    const q = query(ref, ...constraints);
-    const snap = await getDocs(q);
-
-    const docs = snap.docs;
-    const hasMore = docs.length > pageSize;
-    const resultDocs = hasMore ? docs.slice(0, pageSize) : docs;
-
-    let festivals = resultDocs.map((d) => ({ id: d.id, ...d.data() } as Festival));
-
-    // Client-side filter for applications-open (either flag is true)
-    if (filters.seeking === "applications-open") {
-      festivals = festivals.filter((f) => f.seekingInstructors || f.seekingPerformers);
-    }
-
-    const nextCursor = hasMore ? docs[pageSize - 1] : null;
-    return { festivals, nextCursor };
+    return { festivals, nextCursor: null };
   }
 
   async getByIds(ids: string[]): Promise<Festival[]> {

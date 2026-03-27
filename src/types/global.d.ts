@@ -60,6 +60,8 @@ declare global {
       interface MapOptions {
         center?: LatLngLiteral;
         zoom?: number;
+        minZoom?: number;
+        maxZoom?: number;
         mapId?: string;
         disableDefaultUI?: boolean;
         zoomControl?: boolean;
@@ -86,7 +88,7 @@ declare global {
       function importLibrary(name: "marker"): Promise<MarkerLibrary>;
 
       namespace marker {
-        class AdvancedMarkerElement {
+        class AdvancedMarkerElement extends EventTarget {
           constructor(options: AdvancedMarkerElementOptions);
           map: Map | null;
           addListener(eventName: string, handler: () => void): void;
@@ -95,7 +97,7 @@ declare global {
         interface AdvancedMarkerElementOptions {
           map?: Map;
           position?: LatLngLiteral;
-          content?: HTMLElement;
+          content?: Node | PinElement | null;
           title?: string;
         }
 

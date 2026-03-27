@@ -8,12 +8,14 @@
    */
   import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 
   interface Props {
     sequence: SequenceData | null;
+    propType?: PropType;
   }
 
-  let { sequence }: Props = $props();
+  let { sequence, propType }: Props = $props();
 </script>
 
 <section class="progression">
@@ -32,7 +34,9 @@
           <ChoreoCard
             {sequence}
             darkMode={true}
-            columnCount={5}
+            columnCount={4}
+            bluePropType={propType}
+            redPropType={propType}
             showDifficultyLevel={false}
             showCreatorName={false}
             showNotes={false}

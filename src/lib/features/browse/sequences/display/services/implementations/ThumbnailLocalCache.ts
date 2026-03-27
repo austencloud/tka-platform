@@ -20,7 +20,11 @@ import type {
 
 const DB_NAME = "thumbnail-local-cache";
 const STORE_NAME = "thumbnails";
-const DB_VERSION = 1;
+// v2: Purge all entries. Prior version cached thumbnails where propTypeOverride
+// was undefined (falling back to motion-intrinsic prop type like "fan") but the
+// cache key used PropType.STAFF as fallback. This caused wrong-prop images to be
+// served from cache (e.g., fans when user has staves selected).
+const DB_VERSION = 2;
 const DEFAULT_MAX_SIZE_BYTES = 100 * 1024 * 1024; // 100 MB default limit
 
 interface CachedEntry {
@@ -58,10 +62,12 @@ export class ThumbnailLocalCache implements IThumbnailLocalCache {
       request.onupgradeneeded = (event) => {
         const db = (event.target as IDBOpenDBRequest).result;
 
-        if (!db.objectStoreNames.contains(STORE_NAME)) {
-          const store = db.createObjectStore(STORE_NAME, { keyPath: "key" });
-          store.createIndex("timestamp", "timestamp", { unique: false });
+        // On version bump, delete and recreate the store to purge stale entries
+        if (db.objectStoreNames.contains(STORE_NAME)) {
+          db.deleteObjectStore(STORE_NAME);
         }
+        const store = db.createObjectStore(STORE_NAME, { keyPath: "key" });
+        store.createIndex("timestamp", "timestamp", { unique: false });
       };
 
       request.onsuccess = () => resolve(request.result);

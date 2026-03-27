@@ -187,6 +187,7 @@ Usage:
     return Object.entries(pictograph.motions)
       .filter((entry): entry is [string, any] => entry[1] !== undefined)
       .filter(([color]) => visibleHand === null || color === visibleHand)
+      .sort(([a], [b]) => (a === "blue" ? -1 : 1))
       .map(([color, data]) => ({ color: color as "blue" | "red", data }));
   });
 

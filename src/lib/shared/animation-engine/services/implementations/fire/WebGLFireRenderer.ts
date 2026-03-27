@@ -518,36 +518,60 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     this.displayCanvasWidth = input.canvasWidth;
     this.displayCanvasHeight = input.canvasHeight;
 
-    // 1. Inject fuel + velocity at tip positions, scaled by per-tip flameScale
+    // 1. Inject fuel + velocity at tip positions, scaled by per-tip flameScale.
+    //    When a tip moves far between frames (fast spin), interpolate intermediate
+    //    splats along the path so the flame trail stays continuous.
     const p = this.physics;
     const baseSplatRadius = p.splatRadius;
 
+    // Step size in UV space for interpolation. Using the splat radius (not diameter)
+    // ensures Gaussian splats overlap by ~50%, producing a continuous fuel field
+    // instead of isolated dots.
+    const stepUV = baseSplatRadius;
+
     for (const tip of tips) {
-      const uvX = tip.x / input.canvasWidth;
-      const uvY = 1.0 - tip.y / input.canvasHeight;
+      const curUvX = tip.x / input.canvasWidth;
+      const curUvY = 1.0 - tip.y / input.canvasHeight;
+      const prevUvX = tip.prevX / input.canvasWidth;
+      const prevUvY = 1.0 - tip.prevY / input.canvasHeight;
       const fs = tip.flameScale;
+
+      // Measure how far the tip traveled in UV space
+      const dxUV = curUvX - prevUvX;
+      const dyUV = curUvY - prevUvY;
+      const distUV = Math.sqrt(dxUV * dxUV + dyUV * dyUV);
+
+      // Number of splats needed to fill the gap (at least 1 = the current position).
+      // Cap at 32 to bound GPU cost on extreme frame drops.
+      const splatCount = Math.min(32, Math.max(1, Math.ceil(distUV / stepUV)));
 
       // Scale splat radius by flameScale (larger wicks = wider splat)
       this.physics.splatRadius = baseSplatRadius * fs;
 
-      const fuelAmount = p.fuelAmount * config.intensity * fs;
-      this.splat(this.fuel!, uvX, uvY, fuelAmount, 0, 0);
-
-      // Velocity injection: fire trails BEHIND the wick (opposite to motion).
-      // The upward bias is reduced for spinning — centrifugal force dominates.
       const velScale = config.velocityReactive ? p.velocityInjectScale : 0;
       const injectVx = -tip.velocityX * velScale * fs;
       const injectVy = tip.velocityY * velScale * fs + p.upwardBias * config.flameHeight * fs;
-      this.splat(this.velocity!, uvX, uvY, injectVx, injectVy, 0);
 
-      // Temperature injection: the wick is always hot
-      this.splat(this.temperature!, uvX, uvY, p.temperatureInjection * config.intensity * fs, 0, 0);
+      // Distribute fuel evenly across all sub-frame splats so total injection stays constant
+      const fuelPerSplat = (p.fuelAmount * config.intensity * fs) / splatCount;
+      const tempPerSplat = (p.temperatureInjection * config.intensity * fs) / splatCount;
 
-      // Color injection: splat prop color into color field
-      if ((config.colorBlend ?? 0) > 0 && input.propColors && this.colorField) {
-        const propColor = input.propColors[tip.propIndex];
-        if (propColor) {
-          this.splat(this.colorField, uvX, uvY, propColor.r, propColor.g, propColor.b);
+      for (let s = 0; s < splatCount; s++) {
+        // t=0 is previous position, t=1 is current position
+        const t = splatCount === 1 ? 1.0 : s / (splatCount - 1);
+        const uvX = prevUvX + dxUV * t;
+        const uvY = prevUvY + dyUV * t;
+
+        this.splat(this.fuel!, uvX, uvY, fuelPerSplat, 0, 0);
+        this.splat(this.velocity!, uvX, uvY, injectVx / splatCount, injectVy / splatCount, 0);
+        this.splat(this.temperature!, uvX, uvY, tempPerSplat, 0, 0);
+
+        // Color injection: splat prop color into color field
+        if ((config.colorBlend ?? 0) > 0 && input.propColors && this.colorField) {
+          const propColor = input.propColors[tip.propIndex];
+          if (propColor) {
+            this.splat(this.colorField, uvX, uvY, propColor.r, propColor.g, propColor.b);
+          }
         }
       }
     }

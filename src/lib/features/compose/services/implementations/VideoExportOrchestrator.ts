@@ -237,6 +237,25 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
         playbackController.togglePlayback();
       }
       playbackController.jumpToStep(0);
+
+      // Clear all overlay canvases (trails, fire, charcoal, LED) so residual
+      // effects from the user's previous playback don't bleed into frame 1.
+      const container = canvas.parentElement;
+      if (container) {
+        for (const overlay of container.querySelectorAll("canvas")) {
+          if (overlay === canvas) continue;
+          const ctx = overlay.getContext("2d");
+          if (ctx) {
+            ctx.clearRect(0, 0, overlay.width, overlay.height);
+          } else {
+            // WebGL canvas — resize trick forces clear
+            const w = overlay.width;
+            overlay.width = 0;
+            overlay.width = w;
+          }
+        }
+      }
+
       await this.delay(VIDEO_INITIAL_CAPTURE_DELAY_MS);
 
       // If effect overrides were applied, wait for the DOM to stabilize.

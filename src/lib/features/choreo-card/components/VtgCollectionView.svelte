@@ -54,18 +54,24 @@
     </button>
   </div>
 
-  {#if activeView === "family"}
-    <VtgFamilyGrid decks={continuousDecks} {onSelectFamily} />
-  {:else if activeView === "ratio"}
-    <VtgRatioGrid decks={continuousDecks} {onSelectDeck} />
-  {:else}
-    <VtgReversalGrid {decks} onSelectPattern={handleSelectPattern} />
-  {/if}
+  <div class="grid-content">
+    {#if activeView === "family"}
+      <VtgFamilyGrid decks={continuousDecks} {onSelectFamily} />
+    {:else if activeView === "ratio"}
+      <VtgRatioGrid decks={continuousDecks} {onSelectDeck} />
+    {:else}
+      <VtgReversalGrid {decks} onSelectPattern={handleSelectPattern} />
+    {/if}
+  </div>
 </div>
 
 <style>
   .vtg-collection-view {
     width: 100%;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
   }
 
   .toggle-bar {
@@ -106,5 +112,13 @@
     .toggle-pill {
       transition: none;
     }
+  }
+
+  .grid-content {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 0;
   }
 </style>

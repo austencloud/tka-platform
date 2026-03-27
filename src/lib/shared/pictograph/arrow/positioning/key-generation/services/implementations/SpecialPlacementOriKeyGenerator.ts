@@ -33,6 +33,27 @@ export class SpecialPlacementOriKeyGenerator implements ISpecialPlacementOriKeyG
   }
 
   /**
+   * For staff+staff, collapse to legacy bucket — radial in/out differences
+   * don't affect arrow positioning on staves. For any non-staff prop, the
+   * specific orientation matters visually, so return it unchanged.
+   */
+  resolveEffectiveOriKey(
+    specificOriKey: string,
+    pictographData: PictographData
+  ): string {
+    const blueMotion = pictographData.motions.blue;
+    const redMotion = pictographData.motions.red;
+    const blueProp = blueMotion?.propType?.toLowerCase() || "staff";
+    const redProp = redMotion?.propType?.toLowerCase() || "staff";
+
+    if (blueProp === "staff" && redProp === "staff") {
+      return this.mapToLegacyBucket(specificOriKey);
+    }
+
+    return specificOriKey;
+  }
+
+  /**
    * Map a specific orientation key back to the legacy bucket key for fallback lookups.
    * "in"/"out" = radial (layer 1), everything else = nonradial (layer 2).
    */

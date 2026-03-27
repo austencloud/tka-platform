@@ -374,10 +374,10 @@
     min-width: 40px;
   }
 
-  /* Difficulty badge — matches ChoreoCard.svelte exactly */
+  /* Difficulty badge — matches ChoreoCard.svelte proportions */
   .difficulty-badge {
-    width: 32px;
-    height: 32px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
     border: 1px solid black;
     display: flex;
@@ -385,10 +385,10 @@
     justify-content: center;
     font-family: Cambria, serif;
     font-weight: bold;
-    font-size: 18px;
+    font-size: 26px;
     flex-shrink: 0;
     cursor: pointer;
-    padding: 0 0 1px 0;
+    padding: 0;
     -webkit-tap-highlight-color: transparent;
     transition: transform 0.15s ease;
   }

@@ -1,0 +1,58 @@
+<h2>Stop 1: Welcome</h2>
+<p class="subtitle">Fullscreen takeover. No bottom nav, no panels. This is what the user sees when they first open the Fuse tab.</p>
+
+<div class="mockup" style="max-width: 706px; margin: 0 auto;">
+  <div class="mockup-header">Tablet — 706 × 705</div>
+  <div class="mockup-body" style="height: 600px; background: linear-gradient(165deg, #1a1a2e 0%, #0f0f23 40%, #1a1025 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; position: relative; overflow: hidden;">
+
+    <!-- Subtle star particles -->
+    <div style="position: absolute; inset: 0; opacity: 0.3;">
+      <div style="position: absolute; top: 12%; left: 18%; width: 3px; height: 3px; background: white; border-radius: 50%;"></div>
+      <div style="position: absolute; top: 34%; left: 72%; width: 2px; height: 2px; background: white; border-radius: 50%;"></div>
+      <div style="position: absolute; top: 56%; left: 8%; width: 2px; height: 2px; background: white; border-radius: 50%;"></div>
+      <div style="position: absolute; top: 78%; left: 85%; width: 3px; height: 3px; background: white; border-radius: 50%;"></div>
+      <div style="position: absolute; top: 22%; left: 45%; width: 2px; height: 2px; background: white; border-radius: 50%;"></div>
+      <div style="position: absolute; top: 65%; left: 55%; width: 2px; height: 2px; background: white; border-radius: 50%;"></div>
+    </div>
+
+    <!-- Icon -->
+    <div style="width: 80px; height: 80px; border-radius: 50%; background: rgba(249,115,22,0.15); border: 2px solid rgba(249,115,22,0.3); display: flex; align-items: center; justify-content: center; font-size: 2rem;">🔥</div>
+
+    <!-- Title -->
+    <div style="font-size: 2rem; font-weight: 800; color: white; letter-spacing: -0.02em;">Fuse</div>
+
+    <!-- Description -->
+    <div style="font-size: 1rem; color: rgba(255,255,255,0.6); text-align: center; max-width: 340px; line-height: 1.65;">
+      Pick a blue prop path and a red prop path, then merge them into one complete sequence.
+    </div>
+
+    <!-- Progress dots -->
+    <div style="display: flex; gap: 8px; margin-top: 8px;">
+      <div style="width: 10px; height: 10px; border-radius: 50%; background: #f97316; transform: scale(1.2);"></div>
+      <div style="width: 10px; height: 10px; border-radius: 50%; background: rgba(255,255,255,0.15);"></div>
+      <div style="width: 10px; height: 10px; border-radius: 50%; background: rgba(255,255,255,0.15);"></div>
+      <div style="width: 10px; height: 10px; border-radius: 50%; background: rgba(255,255,255,0.15);"></div>
+    </div>
+
+    <!-- Buttons -->
+    <div style="display: flex; gap: 16px; margin-top: 12px;">
+      <div style="padding: 14px 28px; border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; color: rgba(255,255,255,0.5); font-size: 1rem; cursor: pointer;">Skip</div>
+      <div style="padding: 14px 32px; background: linear-gradient(135deg, #fb923c 0%, #ea580c 100%); border-radius: 12px; color: white; font-size: 1rem; font-weight: 700; cursor: pointer;">Show me</div>
+    </div>
+
+    <!-- Note: no bottom nav -->
+    <div style="position: absolute; bottom: 0; left: 0; right: 0; padding: 8px; text-align: center; font-size: 0.7rem; color: rgba(249,115,22,0.4); border-top: 1px dashed rgba(249,115,22,0.15);">
+      ⬆ Bottom navigation is HIDDEN during the tour
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top: 16px; max-width: 706px; margin-left: auto; margin-right: auto;">
+  <p class="label">Design notes</p>
+  <ul style="color: rgba(255,255,255,0.6); font-size: 0.9rem; line-height: 1.8;">
+    <li>Entire viewport is the tour. No distractions.</li>
+    <li>Fades in with a 400ms ease animation on mount.</li>
+    <li>"Show me" advances to Stop 2 with a slide-left transition.</li>
+    <li>"Skip" closes the tour and shows the normal Fuse layout.</li>
+  </ul>
+</div>

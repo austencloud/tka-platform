@@ -821,9 +821,8 @@
 
   .export-panel.sidebar {
     position: relative;
-    width: 360px;
-    min-width: 320px;
-    flex: 0 1 400px;
+    width: 100%;
+    max-width: 100%;
     border-left: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     overflow-y: auto;
   }

@@ -20,8 +20,8 @@
   import ExhibitLabel from "./exhibits/ExhibitLabel.svelte";
 
   // Unified camera system (replaces ModelFirstPerson)
-  import UnifiedCameraController from "$lib/shared/3d-core/camera/UnifiedCameraController.svelte";
-  import { CameraMode } from "$lib/shared/3d-core/camera/types";
+  import UnifiedCameraController from "$lib/shared/3d-animation/camera/UnifiedCameraController.svelte";
+  import { CameraMode } from "$lib/shared/3d-animation/camera/types";
   import { createGalleryAvatarState } from "../state/gallery-avatar-state.svelte";
 
   // Avatar for visual representation

@@ -32,7 +32,7 @@
 
     return new Promise<void>((resolve, reject) => {
       const script = document.createElement("script");
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=marker`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=marker&loading=async`;
       script.async = true;
       script.defer = true;
       script.onload = () => resolve();
@@ -48,7 +48,8 @@
 
     map = new Map(mapContainer, {
       center: { lat: 20, lng: 0 },
-      zoom: 2,
+      zoom: 3,
+      minZoom: 3,
       mapId: "tka-festival-map",
       disableDefaultUI: false,
       zoomControl: true,
@@ -95,11 +96,11 @@
       const marker = new AdvancedMarkerElement({
         map,
         position: { lat, lng },
-        content: pin.element,
+        content: pin,
         title: `${festival.name} — ${festival.location.city}, ${festival.location.country}`,
       });
 
-      marker.addListener("click", () => {
+      marker.addEventListener("gmp-click", () => {
         selectedFestival = festival;
         map?.panTo({ lat, lng });
       });

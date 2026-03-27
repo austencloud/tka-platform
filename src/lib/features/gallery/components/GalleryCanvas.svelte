@@ -11,7 +11,7 @@
   import { type Snippet } from "svelte";
   import { WebGLRenderer, PCFSoftShadowMap, type ToneMapping } from "three";
   import type { RenderingBackend } from "../state/gallery-settings.svelte";
-  import { isWebGPUSupported } from "$lib/shared/3d-core/rendering/create-renderer";
+  import { isWebGPUSupported } from "$lib/shared/3d-animation/rendering/create-renderer";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
 

@@ -179,8 +179,12 @@ export class ArrowAdjustmentCalculator implements IArrowAdjustmentCalculator {
           const otherMotion = pictographData.motions?.[otherColor];
           const otherPropType = otherMotion?.propType?.toLowerCase() || "staff";
 
-          const oriKey = this.orientationKeyService.generateOrientationKey(
+          const rawOriKey = this.orientationKeyService.generateOrientationKey(
             motionData,
+            pictographData
+          );
+          const oriKey = this.orientationKeyService.resolveEffectiveOriKey(
+            rawOriKey,
             pictographData
           );
           const gridMode =
