@@ -1,9 +1,9 @@
 <!--
   RetroCards — CARDS.EXE main component
 
-  Choreo card viewer for TKA-OS. Displays mock sequence choreo cards
-  with pixelated pictograph beats rendered via RetroPictograph.
-  Navigate between 5 pre-built cards with Prev/Next buttons.
+  Choreo card viewer for TKA-OS. Displays real sequences from the user's
+  library as choreo cards with pixelated pictograph beats rendered via
+  RetroPictograph. Navigate between cards with Prev/Next buttons.
   Print button triggers a period-accurate LPT1 error.
 
   Fills its parent container (the RetroWindow body area).
@@ -11,13 +11,14 @@
   Domain: Retro Choreo Card Viewer
 -->
 <script lang="ts">
+  import { onMount } from "svelte";
   import RetroMenuBar from "../../primitives/RetroMenuBar.svelte";
   import RetroToolbar from "../../primitives/RetroToolbar.svelte";
   import RetroStatusBar from "../../primitives/RetroStatusBar.svelte";
   import RetroButton from "../../primitives/RetroButton.svelte";
   import RetroPictograph from "../../rendering/RetroPictograph.svelte";
-  import { createMockPictographData } from "../../../../shared/data/mock-pictograph-data";
-  import type { RetroPictographData } from "../../../../shared/domain/pictograph-types";
+  import { loadCards } from "../../../adapters/cards-adapter";
+  import type { RetroCard } from "../../../adapters/cards-adapter";
   import { RETRO_ICONS } from "../../rendering/retro-icons";
 
   /* ------------------------------------------------------------------ */
@@ -31,72 +32,34 @@
   } = $props();
 
   /* ------------------------------------------------------------------ */
-  /* Card data                                                           */
-  /* ------------------------------------------------------------------ */
-
-  interface ChoreoCard {
-    word: string;
-    letters: string[];
-    beats: RetroPictographData[];
-    constraint: string;
-    date: string;
-    notes: string;
-  }
-
-  const cards: ChoreoCard[] = [
-    {
-      word: "BOOK",
-      letters: ["B", "O", "O", "K"],
-      beats: ["B", "O", "O", "K"].map(createMockPictographData),
-      constraint: "Smooth",
-      date: "03/15/1995",
-      notes: "A gripping page-turner",
-    },
-    {
-      word: "FLOW",
-      letters: ["F", "L", "O", "W"],
-      beats: ["F", "L", "O", "W"].map(createMockPictographData),
-      constraint: "Smooth",
-      date: "04/22/1995",
-      notes: "The state, not the river",
-    },
-    {
-      word: "SPIN",
-      letters: ["S", "P", "I", "N"],
-      beats: ["S", "P", "I", "N"].map(createMockPictographData),
-      constraint: "Reversal",
-      date: "06/07/1995",
-      notes: "Centrifugal narrative",
-    },
-    {
-      word: "CAKE",
-      letters: ["C", "A", "K", "E"],
-      beats: ["C", "A", "K", "E"].map(createMockPictographData),
-      constraint: "Smooth",
-      date: "08/30/1995",
-      notes: "The lie is a piece of cake",
-    },
-    {
-      word: "NOVA",
-      letters: ["N", "O", "V", "A"],
-      beats: ["N", "O", "V", "A"].map(createMockPictographData),
-      constraint: "None",
-      date: "11/12/1995",
-      notes: "A star's dramatic exit",
-    },
-  ];
-
-  /* ------------------------------------------------------------------ */
   /* State                                                               */
   /* ------------------------------------------------------------------ */
 
+  let cards = $state<RetroCard[]>([]);
+  let isLoading = $state(true);
+  let loadError = $state<string | null>(null);
   let currentIndex = $state(0);
   let statusText = $state("");
   let zoom = $state(1);
 
-  const currentCard = $derived(cards[currentIndex]!);
+  const currentCard = $derived(cards[currentIndex] ?? null);
 
   const beatSize = $derived(Math.round(64 * zoom));
+
+  /* ------------------------------------------------------------------ */
+  /* Load library on mount                                               */
+  /* ------------------------------------------------------------------ */
+
+  onMount(async () => {
+    try {
+      cards = await loadCards();
+    } catch (err) {
+      loadError =
+        err instanceof Error ? err.message : "Failed to load library.";
+    } finally {
+      isLoading = false;
+    }
+  });
 
   /* ------------------------------------------------------------------ */
   /* Menu bar                                                            */
@@ -146,13 +109,13 @@
     {
       icon: RETRO_ICONS.arrowLeft,
       tooltip: "Previous Card",
-      disabled: currentIndex === 0,
+      disabled: currentIndex === 0 || cards.length === 0,
       action: () => handlePrev(),
     },
     {
       icon: RETRO_ICONS.arrowRight,
       tooltip: "Next Card",
-      disabled: currentIndex === cards.length - 1,
+      disabled: currentIndex === cards.length - 1 || cards.length === 0,
       action: () => handleNext(),
     },
     { separator: true, icon: "", tooltip: "", action: () => {} },
@@ -168,8 +131,17 @@
   /* ------------------------------------------------------------------ */
 
   const statusPanels = $derived([
-    { text: `Card ${currentIndex + 1} of ${cards.length}`, width: "120px" },
-    { text: statusText || `Sequence: ${currentCard.word}` },
+    {
+      text: isLoading
+        ? "Loading..."
+        : cards.length === 0
+          ? "No cards"
+          : `Card ${currentIndex + 1} of ${cards.length}`,
+      width: "120px",
+    },
+    {
+      text: statusText || (currentCard ? `Sequence: ${currentCard.word}` : ""),
+    },
   ]);
 
   /* ------------------------------------------------------------------ */
@@ -179,19 +151,15 @@
   function handlePrev() {
     if (currentIndex > 0) {
       currentIndex--;
-      selectedReset();
+      statusText = "";
     }
   }
 
   function handleNext() {
     if (currentIndex < cards.length - 1) {
       currentIndex++;
-      selectedReset();
+      statusText = "";
     }
-  }
-
-  function selectedReset() {
-    statusText = "";
   }
 
   function handlePrint() {
@@ -222,53 +190,75 @@
 
   <!-- Card display area -->
   <div class="cards-viewport sunken-panel">
-    <div class="card-frame">
-      <!-- Card title -->
-      <div class="card-title">
-        Sequence: {currentCard.word}
+    {#if isLoading}
+      <div class="cards-message">
+        <span class="cards-message-text">Loading sequences...</span>
       </div>
+    {:else if loadError}
+      <div class="cards-message">
+        <span class="cards-message-text cards-message-error"
+          >Error: {loadError}</span
+        >
+      </div>
+    {:else if cards.length === 0}
+      <div class="cards-message">
+        <span class="cards-message-text"
+          >No cards found. Generate sequences in TKA Notation System.</span
+        >
+      </div>
+    {:else if currentCard}
+      <div class="card-frame">
+        <!-- Card title -->
+        <div class="card-title">
+          Sequence: {currentCard.word}
+        </div>
 
-      <!-- Beat row -->
-      <div class="card-beats">
-        {#each currentCard.beats as beat, i (i)}
-          <div class="card-beat-cell">
-            <div class="card-beat-border">
-              <RetroPictograph data={beat} size={beatSize} />
+        <!-- Beat row -->
+        <div class="card-beats">
+          {#each currentCard.beats as beat, i (i)}
+            <div class="card-beat-cell">
+              <div class="card-beat-border">
+                <RetroPictograph data={beat} size={beatSize} />
+              </div>
             </div>
+          {/each}
+        </div>
+
+        <!-- Word label — individual letters spaced out -->
+        <div class="card-word-label">
+          {currentCard.word.split("").join(" - ")}
+        </div>
+
+        <!-- Notes area -->
+        {#if currentCard.notes}
+          <div class="card-notes">
+            <span class="card-notes-label">Notes:</span>
+            {currentCard.notes}
           </div>
-        {/each}
-      </div>
+        {/if}
 
-      <!-- Word label -->
-      <div class="card-word-label">
-        {currentCard.letters.join(" - ")}
+        <!-- Footer metadata -->
+        <div class="card-footer">
+          {#if currentCard.constraint}Constraint: {currentCard.constraint} |
+          {/if}Generated: {currentCard.date}
+        </div>
       </div>
-
-      <!-- Notes area -->
-      <div class="card-notes">
-        <span class="card-notes-label">Notes:</span> {currentCard.notes}
-      </div>
-
-      <!-- Footer metadata -->
-      <div class="card-footer">
-        Constraint: {currentCard.constraint} | Generated: {currentCard.date}
-      </div>
-    </div>
+    {/if}
   </div>
 
   <!-- Bottom navigation row -->
   <div class="cards-nav-row">
     <RetroButton
       label="◀ Prev"
-      disabled={currentIndex === 0}
+      disabled={currentIndex === 0 || cards.length === 0}
       onclick={handlePrev}
     />
     <span class="nav-indicator">
-      {currentIndex + 1} / {cards.length}
+      {cards.length === 0 ? "0 / 0" : `${currentIndex + 1} / ${cards.length}`}
     </span>
     <RetroButton
       label="Next ▶"
-      disabled={currentIndex === cards.length - 1}
+      disabled={currentIndex === cards.length - 1 || cards.length === 0}
       onclick={handleNext}
     />
   </div>
@@ -318,6 +308,28 @@
     justify-content: center;
     overflow: auto;
     background: var(--retro-field-bg, #fff);
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Loading / empty / error message                                     */
+  /* ------------------------------------------------------------------ */
+  .cards-message {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+
+  .cards-message-text {
+    font-family: var(--retro-font-family, "Microsoft Sans Serif", Arial, sans-serif);
+    font-size: var(--retro-font-size, 11px);
+    color: var(--retro-disabled-text, #808080);
+    text-align: center;
+    max-width: 280px;
+  }
+
+  .cards-message-error {
+    color: var(--semantic-error, #cc0000);
   }
 
   /* ------------------------------------------------------------------ */
