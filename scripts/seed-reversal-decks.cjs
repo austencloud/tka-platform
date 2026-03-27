@@ -1,0 +1,329 @@
+/**
+ * Seed Reversal Variant Decks to Firestore
+ *
+ * Reads sequences from a source deck, applies reversal transformations
+ * (flipping pro↔anti on reversed beats), recomputes letters via CSV lookup,
+ * recalculates orientations, and writes each pattern variant as a new deck.
+ *
+ * Usage:
+ *   node scripts/seed-reversal-decks.cjs --source l1-vtg-motions --patterns book,red-book,blue-book,long-book,alternating
+ *   node scripts/seed-reversal-decks.cjs --source l1-vtg-motions --patterns book --dry-run
+ *   node scripts/seed-reversal-decks.cjs --source l1-vtg-motions --patterns book --gridMode diamond
+ */
+
+const admin = require("firebase-admin");
+const path = require("path");
+const fs = require("fs");
+const { REVERSAL_PATTERNS } = require("./apply-reversal-pattern.cjs");
+const {
+  calculateEndOrientation,
+} = require("../packages/sequence-engine/dist/core/orientation/OrientationCalculator.js");
+
+// ============================================================================
+// Firebase Admin Setup
+// ============================================================================
+
+const serviceAccountPath = path.join(__dirname, "..", "serviceAccountKey.json");
+let db;
+
+try {
+  const serviceAccount = require(serviceAccountPath);
+  if (!admin.apps.length) {
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount),
+    });
+  }
+  db = admin.firestore();
+} catch (error) {
+  console.error("Failed to initialize Firebase:", error.message);
+  process.exit(1);
+}
+
+// ============================================================================
+// CLI Arguments
+// ============================================================================
+
+const args = process.argv.slice(2);
+function getArg(name) {
+  const idx = args.indexOf(`--${name}`);
+  return idx >= 0 ? args[idx + 1] : null;
+}
+
+const sourceDeckId = getArg("source");
+const patternsArg = getArg("patterns");
+const gridMode = getArg("gridMode") || "diamond";
+const DRY_RUN = args.includes("--dry-run");
+
+if (!sourceDeckId || !patternsArg) {
+  console.error("Usage: node seed-reversal-decks.cjs --source <deckId> --patterns <p1,p2,...> [--dry-run] [--gridMode diamond]");
+  process.exit(1);
+}
+
+const patternIds = patternsArg.split(",").map(s => s.trim());
+
+// Validate patterns
+for (const pid of patternIds) {
+  if (!REVERSAL_PATTERNS[pid]) {
+    console.error(`Unknown reversal pattern: ${pid}`);
+    console.error(`Available: ${Object.keys(REVERSAL_PATTERNS).join(", ")}`);
+    process.exit(1);
+  }
+}
+
+// ============================================================================
+// CSV Loading for Letter Re-derivation
+// ============================================================================
+
+const CSV_PATHS = {
+  diamond: path.join(__dirname, "..", "static", "data", "pictographs", "DiamondPictographDataframe.csv"),
+  box: path.join(__dirname, "..", "static", "data", "pictographs", "BoxPictographDataframe.csv"),
+};
+
+function loadCsvEdges() {
+  const csvPath = CSV_PATHS[gridMode];
+  if (!csvPath || !fs.existsSync(csvPath)) {
+    console.error(`CSV not found for grid mode: ${gridMode}`);
+    process.exit(1);
+  }
+  const lines = fs.readFileSync(csvPath, "utf8").split("\n").filter(l => l.trim());
+  const headers = lines[0].split(",").map(h => h.trim());
+  return lines.slice(1).map(line => {
+    const cols = line.split(",").map(c => c.trim());
+    const edge = {};
+    headers.forEach((h, i) => (edge[h] = cols[i]));
+    return edge;
+  });
+}
+
+const csvEdges = loadCsvEdges();
+console.log(`Loaded ${csvEdges.length} CSV edges for ${gridMode} grid\n`);
+
+/**
+ * Look up the letter for a motion after reversal using the CSV.
+ * Matches on positions + motion types (but not rotation direction,
+ * which can vary within a letter family).
+ */
+function lookupReversedLetter(motion, color, startPos, endPos) {
+  const blueKey = color === "blue" ? "blueMotionType" : null;
+  const redKey = color === "red" ? "redMotionType" : null;
+
+  // We need to match the full step, not individual motions.
+  // This function is called per-step with both motions already set.
+  return null; // Placeholder — actual lookup is per-step below
+}
+
+/**
+ * Find the letter from CSV given a step's blue and red motion types + locations.
+ */
+function lookupLetterForStep(step) {
+  const blue = step.motions?.blue;
+  const red = step.motions?.red;
+  if (!blue || !red) return null;
+
+  const match = csvEdges.find(e =>
+    e.startPosition === step.startPosition &&
+    e.endPosition === step.endPosition &&
+    e.blueMotionType === blue.motionType &&
+    e.blueStartLocation === blue.startLocation &&
+    e.blueEndLocation === blue.endLocation &&
+    e.redMotionType === red.motionType &&
+    e.redStartLocation === red.startLocation &&
+    e.redEndLocation === red.endLocation
+  );
+  return match ? match.letter : null;
+}
+
+// ============================================================================
+// Reversal Application
+// ============================================================================
+
+/**
+ * Apply a reversal pattern to a sequence's steps (Firestore format).
+ * Flips motion types, sets reversal flags, recomputes letters and orientations.
+ */
+function applyReversalToSequence(steps, patternId) {
+  const pattern = REVERSAL_PATTERNS[patternId];
+  const seq = pattern.sequence;
+
+  // Steps array: index 0 = start position (no reversal), index 1+ = beats
+  let beatIndex = 0;
+  for (let i = 0; i < steps.length; i++) {
+    const step = steps[i];
+
+    // Skip start position step
+    if (step.isStartPosition) continue;
+
+    const symbol = seq[beatIndex % seq.length];
+    const blueReversed = symbol === "P" || symbol === "B";
+    const redReversed = symbol === "P" || symbol === "R";
+
+    step.blueReversal = blueReversed;
+    step.redReversal = redReversed;
+
+    const blue = step.motions?.blue;
+    const red = step.motions?.red;
+
+    if (blue && blueReversed) {
+      blue.motionType = blue.motionType === "pro" ? "anti"
+        : blue.motionType === "anti" ? "pro" : blue.motionType;
+    }
+    if (red && redReversed) {
+      red.motionType = red.motionType === "pro" ? "anti"
+        : red.motionType === "anti" ? "pro" : red.motionType;
+    }
+
+    // Re-derive letter
+    const newLetter = lookupLetterForStep(step);
+    if (newLetter) step.letter = newLetter;
+
+    beatIndex++;
+  }
+
+  // Recalculate orientations through the chain
+  recalcOrientations(steps);
+
+  return steps;
+}
+
+/**
+ * Recalculate orientations through a sequence after reversal.
+ */
+function recalcOrientations(steps) {
+  for (let i = 1; i < steps.length; i++) {
+    const prev = steps[i - 1];
+    const step = steps[i];
+    const prevBlue = prev.motions?.blue;
+    const prevRed = prev.motions?.red;
+    const blue = step.motions?.blue;
+    const red = step.motions?.red;
+
+    if (!prevBlue || !prevRed || !blue || !red) continue;
+
+    // Chain: previous end → current start
+    blue.startOrientation = prevBlue.endOrientation;
+    red.startOrientation = prevRed.endOrientation;
+
+    // Calculate end orientations
+    blue.endOrientation = calculateEndOrientation({
+      motionType: blue.motionType,
+      turns: blue.turns ?? 0,
+      rotationDirection: blue.rotationDirection,
+      startLocation: blue.startLocation,
+      endLocation: blue.endLocation,
+      startOrientation: blue.startOrientation,
+    });
+
+    red.endOrientation = calculateEndOrientation({
+      motionType: red.motionType,
+      turns: red.turns ?? 0,
+      rotationDirection: red.rotationDirection,
+      startLocation: red.startLocation,
+      endLocation: red.endLocation,
+      startOrientation: red.startOrientation,
+    });
+  }
+}
+
+// ============================================================================
+// Main
+// ============================================================================
+
+async function main() {
+  console.log(`Source deck: ${sourceDeckId}`);
+  console.log(`Patterns: ${patternIds.join(", ")}`);
+  console.log(`Dry run: ${DRY_RUN}\n`);
+
+  // Load source deck metadata
+  const sourceDeckDoc = await db.doc(`decks/${sourceDeckId}`).get();
+  if (!sourceDeckDoc.exists) {
+    console.error(`Source deck not found: ${sourceDeckId}`);
+    process.exit(1);
+  }
+  const sourceDeck = sourceDeckDoc.data();
+
+  // Load source sequences
+  const seqSnapshot = await db.collection(`decks/${sourceDeckId}/sequences`).get();
+  const sourceSequences = seqSnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+  console.log(`Loaded ${sourceSequences.length} sequences from ${sourceDeckId}\n`);
+
+  for (const patternId of patternIds) {
+    const newDeckId = `${sourceDeckId}-${patternId}`;
+    const patternDef = REVERSAL_PATTERNS[patternId];
+    console.log(`━━━ ${newDeckId} (${patternDef.sequence}) ━━━`);
+
+    const transformedSequences = [];
+
+    for (const seq of sourceSequences) {
+      // Deep clone
+      const cloned = JSON.parse(JSON.stringify(seq));
+      const steps = cloned.steps || [];
+
+      // Apply reversal
+      applyReversalToSequence(steps, patternId);
+
+      // Recompute word from new letters
+      const beatSteps = steps.filter(s => !s.isStartPosition);
+      const word = beatSteps.map(s => s.letter).join("");
+
+      cloned.word = word;
+      cloned.name = word;
+      cloned.reversalPattern = patternId;
+      cloned.steps = steps;
+
+      transformedSequences.push(cloned);
+    }
+
+    // Regroup into families by hand path
+    const familyMap = new Map();
+    for (const seq of transformedSequences) {
+      const family = seq.handPathFamily || "unknown";
+      if (!familyMap.has(family)) familyMap.set(family, []);
+      familyMap.get(family).push(seq);
+    }
+
+    const families = [...familyMap.entries()].map(([label, seqs]) => ({
+      id: label.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+      label,
+      typeCombo: seqs[0]?.typeCombo || "",
+      sequenceIds: seqs.map(s => s.id),
+    }));
+
+    console.log(`  ${transformedSequences.length} sequences in ${families.length} families`);
+    console.log(`  Sample words: ${transformedSequences.slice(0, 3).map(s => s.word).join(", ")}`);
+
+    if (DRY_RUN) {
+      console.log("  [dry run — not written]\n");
+      continue;
+    }
+
+    // Write deck document
+    await db.doc(`decks/${newDeckId}`).set({
+      ...sourceDeck,
+      id: newDeckId,
+      name: `${sourceDeck.name} (${patternDef.sequence})`,
+      reversalPattern: patternId,
+      families,
+      totalSequences: transformedSequences.length,
+    });
+
+    // Write sequences in batches of 450
+    const BATCH_SIZE = 450;
+    for (let i = 0; i < transformedSequences.length; i += BATCH_SIZE) {
+      const batch = db.batch();
+      const chunk = transformedSequences.slice(i, i + BATCH_SIZE);
+      for (const seq of chunk) {
+        batch.set(db.doc(`decks/${newDeckId}/sequences/${seq.id}`), seq);
+      }
+      await batch.commit();
+    }
+
+    console.log(`  ✓ Written to Firestore\n`);
+  }
+
+  console.log("Done!");
+}
+
+main().catch(err => {
+  console.error("Fatal error:", err);
+  process.exit(1);
+});
