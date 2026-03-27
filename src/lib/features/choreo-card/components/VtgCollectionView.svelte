@@ -21,8 +21,11 @@
   );
 
   function handleSelectPattern(patternId: string): void {
-    // TODO: drill down to filtered sequences for this reversal pattern
-    console.log("Selected reversal pattern:", patternId);
+    // Find the deck matching this reversal pattern and select it
+    const matchingDeck = decks.find(d => d.reversalPattern === patternId);
+    if (matchingDeck) {
+      onSelectDeck(matchingDeck.id);
+    }
   }
 </script>
 
