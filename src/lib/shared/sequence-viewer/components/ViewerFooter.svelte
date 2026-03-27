@@ -722,6 +722,11 @@
     flex-wrap: wrap;
   }
 
+  /* Override TempoControl's width: 100% so it can center */
+  .mid-tempo-row :global(.tempo-control) {
+    width: auto;
+  }
+
   .mid-controls-row {
     display: flex;
     align-items: center;
