@@ -268,28 +268,14 @@
   {#if layout === "mid"}
     <!-- Mid-width: Two-row layout with all controls visible -->
     <div class="mid-layout">
-      <!-- Row 1: Tempo + Practice -->
+      <!-- Row 1: Tempo (BPM + presets) -->
       <div class="mid-tempo-row">
         <TempoControl
           {bpm}
           {onBpmChange}
           showPresets={true}
           showPractice={false}
-          practiceActive={practiceActive}
-          onPracticeStart={onPracticeStart}
-          onPracticeStop={onPracticeStop}
         />
-        <button
-          type="button"
-          class="mid-practice-btn"
-          class:active={practiceActive}
-          onclick={() => practiceActive ? onPracticeStop?.() : onPracticeStart?.()}
-          aria-label={practiceActive ? "Stop practice training" : "Start practice training"}
-          aria-pressed={practiceActive}
-        >
-          <i class="fas {practiceActive ? 'fa-stop' : 'fa-signal'}" aria-hidden="true"></i>
-          <span>{practiceActive ? "Stop" : "Practice"}</span>
-        </button>
       </div>
 
       <!-- Row 2: Transport + Actions -->
@@ -393,8 +379,10 @@
             onPropsOpen={isLoggedIn ? onPropsOpen : undefined}
             onPublish={isLoggedIn && isOwned && isSaved ? onPublish : undefined}
             onUnpublish={isLoggedIn && isOwned && isSaved ? onUnpublish : undefined}
-            {onExportImage}
             onDeleteRequest={isLoggedIn && isOwned && isSaved ? onDeleteRequest : undefined}
+            {practiceActive}
+            onPracticeStart={onPracticeStart}
+            onPracticeStop={onPracticeStop}
           />
         </div>
       </div>
@@ -744,63 +732,6 @@
     flex-shrink: 0;
   }
 
-  /* Practice button (mid) — separate from TempoControl so it can wrap */
-  .mid-practice-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    padding: 8px 14px;
-    min-height: 44px;
-    min-width: 44px;
-    flex-shrink: 0;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 12px;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 600;
-    cursor: pointer;
-    transition: all var(--duration-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1);
-    -webkit-tap-highlight-color: transparent;
-    white-space: nowrap;
-  }
-
-  .mid-practice-btn.active {
-    background: rgba(239, 68, 68, 0.15);
-    border-color: rgba(239, 68, 68, 0.4);
-    color: #f87171;
-    box-shadow: 0 0 12px rgba(239, 68, 68, 0.2);
-    animation: mid-practice-pulse 2s ease-in-out infinite;
-  }
-
-  @keyframes mid-practice-pulse {
-    0%, 100% { box-shadow: 0 0 12px rgba(239, 68, 68, 0.2); }
-    50% { box-shadow: 0 0 20px rgba(239, 68, 68, 0.35); }
-  }
-
-  @media (hover: hover) and (pointer: fine) {
-    .mid-practice-btn:hover:not(.active) {
-      background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
-      border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
-      color: var(--theme-text, white);
-    }
-  }
-
-  .mid-practice-btn:active {
-    transform: scale(0.95);
-    transition-duration: 0ms;
-  }
-
-  .mid-practice-btn:focus-visible {
-    outline: 2px solid var(--theme-accent, #6366f1);
-    outline-offset: 2px;
-  }
-
-  .mid-practice-btn i {
-    font-size: 14px;
-  }
-
   /* Transport buttons (mid) */
   .mid-step-btn {
     display: flex;
@@ -973,18 +904,15 @@
     .mid-step-btn,
     .mid-play-btn,
     .mid-action-btn,
-    .mid-get-app-btn,
-    .mid-practice-btn {
+    .mid-get-app-btn {
       transition: none;
-      animation: none;
     }
 
     .mid-step-btn:active,
     .mid-play-btn:active,
     .mid-play-btn:hover,
     .mid-action-btn:active,
-    .mid-get-app-btn:active,
-    .mid-practice-btn:active {
+    .mid-get-app-btn:active {
       transform: none;
     }
   }
