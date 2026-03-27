@@ -583,12 +583,6 @@
   {:else}
     <!-- ═══ Level 0: Collection Picker ═══ -->
     <div class="level-container level-collections">
-      <div class="top-bar">
-        <nav class="breadcrumb" aria-label="Deck navigation">
-          <span class="crumb current">Collections</span>
-        </nav>
-      </div>
-
       {#if isLoading}
         <div class="loading" role="status" aria-live="polite">
           <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
@@ -601,35 +595,37 @@
         </div>
       {:else}
         {@const collections = getCollections()}
-        <div class="collections-intro">
-          <h2 class="intro-heading">Decks</h2>
-          <p class="intro-text">
-            Each deck is a set of movement cards organized around a pattern type.
-            Pick a collection to browse.
-          </p>
-        </div>
-        <div class="collection-stack">
-          {#each collections as col (col.info.id)}
-            <button
-              class="collection-hero"
-              onclick={() => onSelectCollection(col.info.id)}
-              type="button"
-              aria-label="Browse {col.info.label}"
-              style="--accent: {col.info.color}"
-            >
-              <div class="hero-icon-wrap">
-                <i class="fas fa-{col.info.icon}" aria-hidden="true"></i>
-              </div>
-              <div class="hero-body">
-                <h3 class="hero-name">{col.info.label}</h3>
-                <p class="hero-desc">{col.info.description}</p>
-              </div>
-              <div class="hero-stats">
-                <span class="hero-stat"><span class="hero-stat-value">{col.deckCount}</span> {col.deckCount === 1 ? "deck" : "decks"}</span>
-              </div>
-              <div class="hero-accent-line"></div>
-            </button>
-          {/each}
+        <div class="collections-landing">
+          <div class="landing-header">
+            <h2 class="landing-title">Decks</h2>
+            <p class="landing-subtitle">Movement patterns organized into practice-ready collections</p>
+          </div>
+          <div class="collection-stack">
+            {#each collections as col (col.info.id)}
+              <button
+                class="collection-hero"
+                onclick={() => onSelectCollection(col.info.id)}
+                type="button"
+                aria-label="Browse {col.info.label}"
+                style="--accent: {col.info.color}"
+              >
+                <div class="hero-accent-edge"></div>
+                <div class="hero-content">
+                  <div class="hero-icon-wrap">
+                    <i class="fas fa-{col.info.icon}" aria-hidden="true"></i>
+                  </div>
+                  <div class="hero-text">
+                    <h3 class="hero-name">{col.info.label}</h3>
+                    <p class="hero-desc">{col.info.description}</p>
+                    <span class="hero-stat">{col.deckCount} {col.deckCount === 1 ? "deck" : "decks"}</span>
+                  </div>
+                  <div class="hero-arrow">
+                    <i class="fas fa-chevron-right" aria-hidden="true"></i>
+                  </div>
+                </div>
+              </button>
+            {/each}
+          </div>
         </div>
       {/if}
     </div>
@@ -891,133 +887,144 @@
 
   /* ── Collection Picker (Level 0) ── */
 
-  .collections-intro {
-    text-align: center;
-    max-width: 480px;
-    margin: 0 auto 8px;
+  .collections-landing {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    max-width: 640px;
+    margin: 0 auto;
+    width: 100%;
+    gap: 32px;
   }
 
-  .intro-heading {
-    font-size: 24px;
+  .landing-header {
+    text-align: center;
+  }
+
+  .landing-title {
+    font-size: 28px;
     font-weight: 700;
     color: var(--theme-text, #ffffff);
     margin: 0 0 8px;
+    letter-spacing: -0.01em;
   }
 
-  .intro-text {
+  .landing-subtitle {
     font-size: var(--font-size-min, 14px);
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
-    line-height: 1.5;
     margin: 0;
+    line-height: 1.5;
   }
 
   .collection-stack {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 20px;
-    max-width: 700px;
-    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
     width: 100%;
   }
 
   .collection-hero {
     position: relative;
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    gap: 16px;
-    aspect-ratio: 1;
-    padding: 32px 24px;
+    align-items: stretch;
+    padding: 0;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: var(--border-radius-md, 8px);
-    color: var(--theme-text, #ffffff);
+    border-radius: 16px;
     cursor: pointer;
+    color: var(--theme-text, #fff);
     font: inherit;
     text-align: left;
     overflow: hidden;
-    transition: border-color 0.15s ease;
+    transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
   }
 
   .collection-hero:hover {
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+    border-color: color-mix(in srgb, var(--accent) 50%, transparent);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px color-mix(in srgb, var(--accent) 15%, transparent);
   }
 
-  .collection-hero:hover .hero-accent-line {
-    height: 2px;
-    opacity: 0.9;
+  .collection-hero:hover .hero-arrow {
+    color: var(--accent);
+    transform: translateX(3px);
   }
 
   .collection-hero:focus-visible {
-    outline: 2px solid var(--theme-accent, #6366f1);
+    outline: 2px solid var(--accent);
     outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .collection-hero { transition: none; }
+    .collection-hero:hover { transform: none; }
+  }
+
+  .hero-accent-edge {
+    width: 5px;
+    flex-shrink: 0;
+    background: linear-gradient(180deg, var(--accent), color-mix(in srgb, var(--accent) 30%, transparent));
+  }
+
+  .hero-content {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 28px 24px;
+    flex: 1;
+    min-width: 0;
   }
 
   .hero-icon-wrap {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 72px;
-    height: 72px;
-    border-radius: 50%;
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
     background: color-mix(in srgb, var(--accent) 12%, transparent);
-    border: 1.5px solid color-mix(in srgb, var(--accent) 25%, transparent);
     color: var(--accent);
-    font-size: 2rem;
+    font-size: 1.5rem;
+    flex-shrink: 0;
   }
 
-  .hero-body {
+  .hero-text {
     display: flex;
     flex-direction: column;
     gap: 4px;
+    flex: 1;
     min-width: 0;
   }
 
   .hero-name {
     margin: 0;
-    font-size: 1.5rem;
+    font-size: 20px;
     font-weight: 700;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.01em;
   }
 
   .hero-desc {
     margin: 0;
-    font-size: var(--font-size-sm, 14px);
+    font-size: var(--font-size-min, 14px);
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .hero-stats {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    flex-shrink: 0;
+    line-height: 1.4;
   }
 
   .hero-stat {
     font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
+    margin-top: 4px;
   }
 
-  .hero-stat-value {
-    font-size: var(--font-size-sm, 14px);
-    font-weight: 600;
-    color: var(--accent);
-  }
-
-  .hero-accent-line {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, var(--accent), transparent);
-    opacity: 0.5;
-    transition: height 0.2s ease, opacity 0.2s ease;
+  .hero-arrow {
+    display: flex;
+    align-items: center;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.2));
+    font-size: 14px;
+    flex-shrink: 0;
+    padding-right: 4px;
+    transition: color 0.15s ease, transform 0.15s ease;
   }
 
   /* ── Shared States ── */
@@ -1076,12 +1083,9 @@
       padding: 16px;
     }
 
-    .collection-stack {
-      grid-template-columns: 1fr;
-    }
-
-    .collection-hero {
-      padding: 20px;
+    .hero-content {
+      padding: 20px 16px;
+      gap: 14px;
     }
 
     .sequence-grid {
