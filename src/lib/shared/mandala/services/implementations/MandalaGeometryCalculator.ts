@@ -446,11 +446,46 @@ function getStaffTipOffsets(): { left: TipOffset; right: TipOffset } {
 // ─── Public class ───────────────────────────────────────────────────────────
 
 export class MandalaGeometryCalculator implements IMandalaGeometryCalculator {
+	private cache = new Map<string, MandalaPaths>();
+	private static MAX_CACHE_SIZE = 50;
+
+	private buildCacheKey(
+		steps: readonly StepLike[],
+		bluePropType?: string,
+		redPropType?: string
+	): string {
+		const parts: string[] = [];
+		for (const step of steps) {
+			const b = step.motions?.blue;
+			const r = step.motions?.red;
+			if (b)
+				parts.push(
+					b.motionType + b.startLocation + b.endLocation + (b.turns ?? 0)
+				);
+			if (r)
+				parts.push(
+					r.motionType + r.startLocation + r.endLocation + (r.turns ?? 0)
+				);
+		}
+		parts.push(bluePropType ?? "staff", redPropType ?? "staff");
+		return parts.join("|");
+	}
+
 	calculate(
 		steps: readonly StepLike[],
 		_bluePropType?: string,
 		_redPropType?: string
 	): MandalaPaths {
+		// Check cache first
+		const key = this.buildCacheKey(steps, _bluePropType, _redPropType);
+		const cached = this.cache.get(key);
+		if (cached) {
+			// Move to end (most recently used) by deleting and re-inserting
+			this.cache.delete(key);
+			this.cache.set(key, cached);
+			return cached;
+		}
+
 		// Filter to steps that have motions (skip start position / empty steps)
 		const stepsWithMotions = steps.filter(
 			(s) => s.motions?.blue || s.motions?.red
@@ -513,6 +548,16 @@ export class MandalaGeometryCalculator implements IMandalaGeometryCalculator {
 		const redRightD = pointsToSVGPath(redRightPoints);
 		if (redRightD) red.push({ d: redRightD, endType: 1 });
 
-		return { blue, red };
+		const result = { blue, red };
+
+		// Cache the result with LRU eviction if needed
+		if (this.cache.size >= MandalaGeometryCalculator.MAX_CACHE_SIZE) {
+			// Delete oldest entry (first key in Map iteration order)
+			const oldestKey = this.cache.keys().next().value;
+			if (oldestKey !== undefined) this.cache.delete(oldestKey);
+		}
+		this.cache.set(key, result);
+
+		return result;
 	}
 }
