@@ -180,8 +180,105 @@
   let decks = $state<Deck[]>([]);
   let selectedDeckId = $state<string | null>(getPersistedString(STORAGE_KEY_SELECTED_DECK));
   let selectedCollection = $state<string | null>(getPersistedString(STORAGE_KEY_SELECTED_COLLECTION));
+  let selectedVtgFamily = $state<string | null>(null);
+  let vtgActiveView = $state<"family" | "ratio" | "reversal">("family");
   let deckSequences = $state<SequenceData[]>([]);
   let isDeckLoading = $state(false);
+
+  // ── Browser history (back/forward) for deck navigation ──
+
+  // Prevents re-pushing state when we're already restoring from a popstate event.
+  let isRestoringFromHistory = false;
+
+  interface DeckNavState {
+    collection: string | null;
+    deckId: string | null;
+    vtgFamily: string | null;
+    vtgView: "family" | "ratio" | "reversal";
+  }
+
+  function buildCurrentNavState(): DeckNavState {
+    return {
+      collection: selectedCollection,
+      deckId: selectedDeckId,
+      vtgFamily: selectedVtgFamily,
+      vtgView: vtgActiveView,
+    };
+  }
+
+  function encodeNavHash(state: DeckNavState): string {
+    const params = new URLSearchParams();
+    if (state.collection) params.set("col", state.collection);
+    if (state.deckId) params.set("deck", state.deckId);
+    if (state.vtgFamily) params.set("vtgFamily", state.vtgFamily);
+    if (state.vtgView !== "family") params.set("vtgView", state.vtgView);
+    const str = params.toString();
+    return str ? `deck-nav:${str}` : "";
+  }
+
+  function decodeNavHash(hash: string): DeckNavState | null {
+    if (!hash.startsWith("#deck-nav:")) return null;
+    try {
+      const params = new URLSearchParams(hash.slice("#deck-nav:".length));
+      return {
+        collection: params.get("col"),
+        deckId: params.get("deck"),
+        vtgFamily: params.get("vtgFamily"),
+        vtgView: (params.get("vtgView") as "family" | "ratio" | "reversal") || "family",
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  function pushNavState() {
+    if (isRestoringFromHistory) return;
+    const state = buildCurrentNavState();
+    const url = new URL(window.location.href);
+    const encoded = encodeNavHash(state);
+    url.hash = encoded;
+    history.pushState(state, "", url.toString());
+  }
+
+  async function restoreNavState(state: DeckNavState) {
+    isRestoringFromHistory = true;
+    try {
+      // Restore collection & deck
+      selectedCollection = state.collection;
+      selectedDeckId = state.deckId;
+      selectedVtgFamily = state.vtgFamily;
+      vtgActiveView = state.vtgView;
+      deckSequences = [];
+
+      persist(STORAGE_KEY_SELECTED_COLLECTION, state.collection);
+      persist(STORAGE_KEY_SELECTED_DECK, state.deckId);
+
+      // If a deck was selected, load its sequences
+      if (state.deckId) {
+        if (decks.length === 0) await loadDecks();
+        await handleSelectDeckSequences(state.deckId);
+      } else if (state.collection && decks.length === 0) {
+        await loadDecks();
+      }
+    } finally {
+      isRestoringFromHistory = false;
+    }
+  }
+
+  $effect(() => {
+    function handlePopState(event: PopStateEvent) {
+      const state = event.state as DeckNavState | null;
+      if (state && "collection" in state) {
+        void restoreNavState(state);
+      } else {
+        // No state object (e.g. initial page load entry) — go to root
+        void restoreNavState({ collection: null, deckId: null, vtgFamily: null, vtgView: "family" });
+      }
+    }
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  });
 
   // Derive unique authors from loaded sequences
   let authors = $derived(
@@ -283,14 +380,34 @@
     loaderService = container.items.browseLoader;
     await loadSequences();
 
-    // Restore deck list if a deck or collection was previously selected
+    // Check if the URL hash encodes a saved nav state (e.g. from a page refresh).
+    // If so, it takes priority over localStorage so the user lands back where they were.
+    const hashState = decodeNavHash(window.location.hash);
+    if (hashState) {
+      isRestoringFromHistory = true;
+      selectedCollection = hashState.collection;
+      selectedDeckId = hashState.deckId;
+      selectedVtgFamily = hashState.vtgFamily;
+      vtgActiveView = hashState.vtgView;
+      persist(STORAGE_KEY_SELECTED_COLLECTION, hashState.collection);
+      persist(STORAGE_KEY_SELECTED_DECK, hashState.deckId);
+      isRestoringFromHistory = false;
+    }
+
+    // Seed the history stack with the current state so popstate works on first Back.
+    // replaceState (not pushState) keeps the current URL entry intact.
+    const initialState = buildCurrentNavState();
+    const url = new URL(window.location.href);
+    url.hash = encodeNavHash(initialState);
+    history.replaceState(initialState, "", url.toString());
+
+    // Load decks if needed to restore UI
     if (selectedDeckId || selectedCollection) {
       if (decks.length === 0) {
         await loadDecks();
       }
-      // If deck was selected, load its sequences
       if (selectedDeckId) {
-        await handleSelectDeck(selectedDeckId);
+        await handleSelectDeckSequences(selectedDeckId);
       }
     }
   });
@@ -369,21 +486,23 @@
   function handleSelectCollection(collectionId: string) {
     selectedCollection = collectionId;
     persist(STORAGE_KEY_SELECTED_COLLECTION, collectionId);
+    pushNavState();
   }
 
   function handleBackToCollections() {
     selectedCollection = null;
     selectedDeckId = null;
+    selectedVtgFamily = null;
+    vtgActiveView = "family";
     deckSequences = [];
     persist(STORAGE_KEY_SELECTED_COLLECTION, null);
     persist(STORAGE_KEY_SELECTED_DECK, null);
+    pushNavState();
   }
 
-  async function handleSelectDeck(deckId: string) {
-    selectedDeckId = deckId;
-    deckSequences = [];
-    persist(STORAGE_KEY_SELECTED_DECK, deckId);
-
+  // Loads sequences for a deck without touching selectedDeckId or nav state.
+  // Used both by handleSelectDeck and restoreNavState.
+  async function handleSelectDeckSequences(deckId: string) {
     const deckLoader = container.items.deckLoader as IDeckLoader;
     const deck = decks.find((d) => d.id === deckId);
     if (!deck) return;
@@ -406,10 +525,30 @@
     }
   }
 
+  async function handleSelectDeck(deckId: string) {
+    selectedDeckId = deckId;
+    deckSequences = [];
+    persist(STORAGE_KEY_SELECTED_DECK, deckId);
+    pushNavState();
+    await handleSelectDeckSequences(deckId);
+  }
+
   function handleBackToDeckList() {
     selectedDeckId = null;
     deckSequences = [];
     persist(STORAGE_KEY_SELECTED_DECK, null);
+    pushNavState();
+  }
+
+  function handleSelectVtgFamily(familyId: string | null) {
+    selectedVtgFamily = familyId;
+    pushNavState();
+  }
+
+  function handleVtgViewChange(view: "family" | "ratio" | "reversal") {
+    vtgActiveView = view;
+    // View changes within VTG don't push new history entries to avoid polluting
+    // the back stack with every tab switch. We only push on structural navigation.
   }
 
   async function handleLoadFamilySequences(familyIds: string[]) {
@@ -513,6 +652,8 @@
           {decks}
           {selectedDeckId}
           {selectedCollection}
+          {selectedVtgFamily}
+          {vtgActiveView}
           {deckSequences}
           isLoading={isDeckLoading}
           {handPointsVisible}
@@ -524,6 +665,8 @@
           onBackToCollections={handleBackToCollections}
           onSelectDeck={handleSelectDeck}
           onBackToDeckList={handleBackToDeckList}
+          onSelectVtgFamily={handleSelectVtgFamily}
+          onVtgViewChange={handleVtgViewChange}
           onSelectSequence={handleSelectSequence}
           onLoadFamilySequences={handleLoadFamilySequences}
           onContextMenu={openCardContextMenu}

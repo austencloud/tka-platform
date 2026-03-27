@@ -23,6 +23,8 @@
     decks: Deck[];
     selectedDeckId: string | null;
     selectedCollection: string | null;
+    selectedVtgFamily: string | null;
+    vtgActiveView: "family" | "ratio" | "reversal";
     deckSequences: SequenceData[];
     isLoading: boolean;
     handPointsVisible?: boolean;
@@ -34,6 +36,8 @@
     onBackToCollections: () => void;
     onSelectDeck: (deckId: string) => void;
     onBackToDeckList: () => void;
+    onSelectVtgFamily: (familyId: string | null) => void;
+    onVtgViewChange: (view: "family" | "ratio" | "reversal") => void;
     onSelectSequence: (sequence: SequenceData) => void;
     onLoadFamilySequences: (familyIds: string[]) => void;
     onContextMenu?: (x: number, y: number, rerender: () => void) => void;
@@ -43,6 +47,8 @@
     decks,
     selectedDeckId,
     selectedCollection,
+    selectedVtgFamily,
+    vtgActiveView,
     deckSequences,
     isLoading,
     handPointsVisible = true,
@@ -54,6 +60,8 @@
     onBackToCollections,
     onSelectDeck,
     onBackToDeckList,
+    onSelectVtgFamily,
+    onVtgViewChange,
     onSelectSequence,
     onLoadFamilySequences,
     onContextMenu,
@@ -170,8 +178,6 @@
   }
 
   // ── VTG family navigation ──
-  let selectedVtgFamily = $state<string | null>(null);
-  let vtgActiveView = $state<"family" | "ratio" | "reversal">("family");
   const isVtgCollectionView = $derived(
     selectedCollection === "VTG" && !selectedDeckId && !selectedVtgFamily,
   );
@@ -419,7 +425,7 @@
         {includeStartPosition}
         {onSelectSequence}
         {onContextMenu}
-        onBack={() => { selectedVtgFamily = null; }}
+        onBack={() => onSelectVtgFamily(null)}
       />
     </div>
 
@@ -443,9 +449,9 @@
         <VtgCollectionView
           decks={getDecksForCollection("VTG")}
           {onSelectDeck}
-          onSelectFamily={(familyId) => { selectedVtgFamily = familyId; }}
+          onSelectFamily={(familyId) => onSelectVtgFamily(familyId)}
           initialView={vtgActiveView}
-          onViewChange={(view) => { vtgActiveView = view; }}
+          onViewChange={(view) => onVtgViewChange(view)}
         />
       {/if}
     </div>

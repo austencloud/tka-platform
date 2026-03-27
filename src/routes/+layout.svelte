@@ -306,16 +306,25 @@
   onMount(() => {
     siteMode = detectSiteMode();
 
-    // Standalone routes that bypass the full app bootstrap.
-    // The /1995 retro route has its own boot sequence and doesn't need
-    // Firebase, auth, analytics, or the DI container.
-    const isStandaloneRoute = ["/1989", "/1995", "/1998", "/2003"].some(
+    // Retro routes get a lightweight bootstrap: Firebase + auth + DI container,
+    // but skip prefetch, analytics, moderation banners, modal state, web vitals.
+    const isRetroRoute = ["/1989", "/1995", "/1998", "/2003"].some(
       (r) => window.location.pathname.startsWith(r)
     );
-    if (isStandaloneRoute) {
+    if (isRetroRoute) {
       const loadingScreen = document.getElementById("app-loading");
       if (loadingScreen) loadingScreen.remove();
-      containerReady = true;
+
+      import("$lib/features/retro/shared/services/retro-init")
+        .then(({ initRetroMode }) => initRetroMode())
+        .then(({ container: retroContainer }) => {
+          containerRef = retroContainer;
+          containerReady = true;
+        })
+        .catch((error) => {
+          console.error("[Layout] Retro init failed:", error);
+          containerError = String(error);
+        });
       return;
     }
 
