@@ -20,7 +20,7 @@ import {
 	equalTo,
 	serverTimestamp
 } from 'firebase/database';
-import { database, auth } from '../../../../../shared/auth/firebase';
+import { database, auth } from '$lib/shared/auth/firebase';
 import type { IGallerySessionManager } from '../contracts/IGallerySessionManager';
 import type {
 	GallerySession,

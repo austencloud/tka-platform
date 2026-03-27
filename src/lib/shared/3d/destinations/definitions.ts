@@ -40,7 +40,7 @@ export const DESTINATIONS: Destination[] = [
 		defaultCameraMode: CameraMode.FIRST_PERSON,
 		category: "social",
 		tags: ["museum", "gallery", "curation", "exhibits"],
-		component: () => import("../../../features/museum/MuseumDestination.svelte"),
+		component: () => import("../../../features/realm/destinations/museum/MuseumDestination.svelte"),
 		enabled: true,
 	},
 	// Disabled destinations (kept for future re-enabling)
@@ -56,7 +56,7 @@ export const DESTINATIONS: Destination[] = [
 		defaultCameraMode: CameraMode.THIRD_PERSON,
 		category: "performance",
 		tags: ["choreography", "avatars", "performance", "timeline"],
-		component: () => import("../../../features/stage/StageDestination.svelte"),
+		component: () => import("../../../features/realm/destinations/stage/StageDestination.svelte"),
 		enabled: false, // Will be ported to Realm
 	},
 	{
@@ -72,7 +72,7 @@ export const DESTINATIONS: Destination[] = [
 		category: "social",
 		tags: ["museum", "multiplayer", "social", "exhibits"],
 		component: () =>
-			import("../../../features/gallery/GalleryDestination.svelte"),
+			import("../../../features/realm/destinations/gallery/GalleryDestination.svelte"),
 		enabled: false, // Will be completely redone
 	},
 	{

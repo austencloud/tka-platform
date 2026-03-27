@@ -13,7 +13,7 @@
     try {
       // ITI container is ready synchronously - no module loading needed
       // Import the gallery module
-      const module = await import("$lib/features/gallery/GalleryModule.svelte");
+      const module = await import("$lib/features/realm/destinations/gallery/GalleryModule.svelte");
       GalleryModule = module.default;
       loading = false;
     } catch (err) {

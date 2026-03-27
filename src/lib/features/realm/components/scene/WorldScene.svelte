@@ -13,7 +13,7 @@
    * - Full Avatar3D, Staff3D, Grid3D support
    */
 
-  import GalleryCanvas from "$lib/features/gallery/components/GalleryCanvas.svelte";
+  import GalleryCanvas from "$lib/features/realm/destinations/gallery/components/GalleryCanvas.svelte";
   import WorldSceneContent from "./WorldSceneContent.svelte";
   import DebugPanelTabs from "../debug/DebugPanelTabs.svelte";
   import VirtualJoystick from "$lib/shared/components/touch/VirtualJoystick.svelte";

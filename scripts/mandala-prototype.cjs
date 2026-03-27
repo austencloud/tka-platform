@@ -609,6 +609,57 @@ const rawSeq = { beats: fullBeats, handPathFamily: firestoreSeq.loopType + " LOO
 console.log(`Generating mandala for: ${firestoreSeq.word} (${firestoreSeq.loopType})`);
 console.log(`Beats: ${fullBeats.length}`);
 
+// ─── Tip inset comparison ──────────────────────────────────────────────────
+
+function generateWithTipInset(sequence, insetAmount, options = {}) {
+  const {
+    size = 500,
+    gridRadius = 80,
+    strokeWidth = 2,
+    samplesPerBeat = 64,
+    showGridDots = true,
+  } = options;
+
+  // Staff tip at 150, inset moves it toward center
+  const tipLeft = { dx: -(150 - insetAmount), dy: 0 };
+  const tipRight = { dx: (150 - insetAmount), dy: 0 };
+  const beats = sequence.beats;
+  const center = size / 2;
+
+  const blueColor = "#2e3192";
+  const redColor = "#ed1c24";
+  const paths = [];
+
+  // Blue paths
+  const blueLeftPoints = generateMandalaPath(beats, "blue", tipLeft, gridRadius, samplesPerBeat);
+  const blueRightPoints = generateMandalaPath(beats, "blue", tipRight, gridRadius, samplesPerBeat);
+  const blueLeftD = pointsToSVGPath(blueLeftPoints);
+  const blueRightD = pointsToSVGPath(blueRightPoints);
+  if (blueLeftD) paths.push(`<path d="${blueLeftD}" fill="none" stroke="${blueColor}" stroke-width="${strokeWidth}" stroke-linecap="round" opacity="0.9"/>`);
+  if (blueRightD) paths.push(`<path d="${blueRightD}" fill="none" stroke="${blueColor}" stroke-width="${strokeWidth}" stroke-linecap="round" opacity="0.9"/>`);
+
+  // Red paths
+  const redLeftPoints = generateMandalaPath(beats, "red", tipLeft, gridRadius, samplesPerBeat);
+  const redRightPoints = generateMandalaPath(beats, "red", tipRight, gridRadius, samplesPerBeat);
+  const redLeftD = pointsToSVGPath(redLeftPoints);
+  const redRightD = pointsToSVGPath(redRightPoints);
+  if (redLeftD) paths.push(`<path d="${redLeftD}" fill="none" stroke="${redColor}" stroke-width="${strokeWidth}" stroke-linecap="round" opacity="0.9"/>`);
+  if (redRightD) paths.push(`<path d="${redRightD}" fill="none" stroke="${redColor}" stroke-width="${strokeWidth}" stroke-linecap="round" opacity="0.9"/>`);
+
+  const gridDots = showGridDots ? Object.entries(LOCATION_ANGLES).map(([loc, angle]) => {
+    if (loc === "center") return { x: 0, y: 0 };
+    return { x: Math.cos(angle) * gridRadius, y: Math.sin(angle) * gridRadius };
+  }) : [];
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+  <rect width="${size}" height="${size}" fill="#0d0d1a" rx="12"/>
+  <g transform="translate(${center}, ${center})">
+    ${gridDots.map(d => `<circle cx="${d.x.toFixed(1)}" cy="${d.y.toFixed(1)}" r="3.5" fill="rgba(255,255,255,0.25)"/>`).join("\n    ")}
+    ${paths.join("\n    ")}
+  </g>
+</svg>`;
+}
+
 const svgOpts = { size: 500, gridRadius: 80, strokeWidth: 2, samplesPerBeat: 64, showGridDots: true };
 
 // Generate diagnostic beat-by-beat view

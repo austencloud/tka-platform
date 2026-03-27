@@ -44,7 +44,7 @@
     "assemble-lab": () => import("$lib/features/assemble-lab/AssembleLabModule.svelte"),
     effects: () => import("$lib/features/effects-lab/EffectsLabModule.svelte"),
     disassemble: () => import("$lib/features/disassemble-lab/DisassembleLab.svelte"),
-    museum: () => import("$lib/features/museum/MuseumDestination.svelte"),
+    museum: () => import("$lib/features/realm/destinations/museum/MuseumDestination.svelte"),
     "prop-buttons": () => import("./tabs/PropButtonLab.svelte"),
     retro: () => import("$lib/features/retro/win95/components/RetroLab.svelte"),
     "contact-ball": () => import("./tabs/ContactBallLab.svelte"),
