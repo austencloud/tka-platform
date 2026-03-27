@@ -42,8 +42,8 @@ const movePlayer = () => {};
 const getPlayerPosition = () => new Vector3();
 import type { PerspectiveCamera, Scene, Object3D } from "three";
 import { Vector3, Quaternion, Euler } from "three";
-import { CameraMode } from "$lib/shared/3d-animation/camera/types";
-import { cameraPreferences } from "$lib/shared/3d-animation/camera/camera-preferences.svelte";
+import { CameraMode } from "$lib/shared/3d/camera/types";
+import { cameraPreferences } from "$lib/shared/3d/camera/camera-preferences.svelte";
 
 // ============================================================================
 // SYSTEM CONTEXT

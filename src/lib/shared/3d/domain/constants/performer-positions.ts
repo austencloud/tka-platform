@@ -5,7 +5,7 @@
  * All performers face the same direction (toward camera).
  */
 
-import { STAGE } from "$lib/shared/3d-animation/scale/scale-constants";
+import { STAGE } from "$lib/shared/3d/scale/scale-constants";
 
 export interface PerformerPosition {
   x: number;

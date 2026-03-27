@@ -18,7 +18,7 @@
   import { BrowseSortMethod } from "../domain/enums/browse-enums";
   import ExpandableSearchBar from "./ExpandableSearchBar.svelte";
   import SortPopover from "./SortPopover.svelte";
-  import SegmentedControl from "$lib/shared/3d-animation/components/controls/SegmentedControl.svelte";
+  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte";
 
   interface Props {

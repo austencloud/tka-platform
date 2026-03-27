@@ -9,8 +9,8 @@
 	 * - ESC key to return to picker
 	 */
 
-	import { getDestination } from "$lib/shared/3d-animation/destinations/definitions";
-	import type { Destination } from "$lib/shared/3d-animation/destinations/types";
+	import { getDestination } from "$lib/shared/3d/destinations/definitions";
+	import type { Destination } from "$lib/shared/3d/destinations/types";
 
 	interface Props {
 		destinationId: string;

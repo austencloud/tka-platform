@@ -53,7 +53,7 @@ import type { LearnContainer } from "./containers/learn-container";
 import type { ModerationContainer } from "./containers/moderation-container";
 import type { LibraryContainer } from "./containers/library-container";
 import type { QRContainer } from "./containers/qr-container";
-import type { Animation3DContainer } from "./containers/animation-3d-container";
+import type { Animation3DContainer } from "./containers/3d-container";
 import type { GalleryContainer } from "./containers/gallery-container";
 import type { DelightContainer } from "./containers/delight-container";
 import type { PoiLabContainer } from "./containers/poi-lab-container";

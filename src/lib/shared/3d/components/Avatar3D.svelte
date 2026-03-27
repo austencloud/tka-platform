@@ -26,7 +26,7 @@
   import {
     LAYER_WORLD,
     LAYER_PLAYER_BODY,
-  } from "$lib/shared/3d-animation/layers/layer-constants";
+  } from "$lib/shared/3d/layers/layer-constants";
   import {
     getAvatarModelPath,
     type AvatarId,

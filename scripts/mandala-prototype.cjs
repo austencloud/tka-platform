@@ -188,6 +188,10 @@ function computeTipPosition(handPos, staffAngle, tipOffset, gridRadius) {
 function generateMandalaPath(beats, color, tipOffset, gridRadius, samplesPerBeat) {
   const points = [];
 
+  // Chain staff angles across beats: each beat's start staff angle =
+  // previous beat's end staff angle. This prevents junction gaps.
+  let prevEndStaffAngle = null;
+
   for (const beat of beats) {
     const motion = color === "blue"
       ? {
@@ -213,6 +217,40 @@ function generateMandalaPath(beats, color, tipOffset, gridRadius, samplesPerBeat
     if (motion.motionType === "float") continue;
 
     const endpoints = calculateMotionEndpoints(motion);
+
+    // Override start staff angle with previous beat's end angle (chaining)
+    if (prevEndStaffAngle !== null) {
+      // Recompute staffRotationDelta relative to the chained start angle
+      const originalEndStaffAngle = normalizeAnglePositive(
+        endpoints.startStaffAngle + endpoints.staffRotationDelta
+      );
+      endpoints.startStaffAngle = prevEndStaffAngle;
+
+      // For motions with explicit turns, recompute delta from turns
+      if ((motion.turns ?? 0) > 0 && motion.rotDir !== "noRotation") {
+        const dir = motion.rotDir === "ccw" ? -1 : 1;
+        const turnsRotation = dir * (motion.turns ?? 0) * PI;
+        if (motion.motionType === "pro") {
+          const centerMovement = normalizeAngleSigned(endpoints.targetCenterAngle - endpoints.startCenterAngle);
+          endpoints.staffRotationDelta = centerMovement + turnsRotation;
+        } else if (motion.motionType === "anti") {
+          const centerMovement = normalizeAngleSigned(endpoints.targetCenterAngle - endpoints.startCenterAngle);
+          endpoints.staffRotationDelta = -centerMovement + turnsRotation;
+        } else {
+          endpoints.staffRotationDelta = turnsRotation;
+        }
+      } else {
+        // No turns: compute shortest path to the orientation-derived end angle
+        endpoints.staffRotationDelta = normalizeAngleSigned(
+          originalEndStaffAngle - prevEndStaffAngle
+        );
+      }
+    }
+
+    // Track end staff angle for next beat
+    prevEndStaffAngle = normalizeAnglePositive(
+      endpoints.startStaffAngle + endpoints.staffRotationDelta
+    );
 
     // Adaptive sampling: more samples for high-turn motions
     const turnCount = motion.turns ?? 0;
@@ -413,6 +451,7 @@ function generateBeatByBeatSVG(sequence, color, options = {}) {
   const paths = [];
   const junctionPoints = [];
   const diagnostics = [];
+  let prevEndStaffAngle = null;
 
   for (let b = 0; b < beats.length; b++) {
     const beat = beats[b];
@@ -439,6 +478,35 @@ function generateBeatByBeatSVG(sequence, color, options = {}) {
     if (motion.motionType === "float") continue;
 
     const endpoints = calculateMotionEndpoints(motion);
+
+    // Chain staff angles across beats
+    if (prevEndStaffAngle !== null) {
+      const originalEndStaffAngle = normalizeAnglePositive(
+        endpoints.startStaffAngle + endpoints.staffRotationDelta
+      );
+      endpoints.startStaffAngle = prevEndStaffAngle;
+      if ((motion.turns ?? 0) > 0 && motion.rotDir !== "noRotation") {
+        const dir = motion.rotDir === "ccw" ? -1 : 1;
+        const turnsRotation = dir * (motion.turns ?? 0) * PI;
+        if (motion.motionType === "pro") {
+          const centerMovement = normalizeAngleSigned(endpoints.targetCenterAngle - endpoints.startCenterAngle);
+          endpoints.staffRotationDelta = centerMovement + turnsRotation;
+        } else if (motion.motionType === "anti") {
+          const centerMovement = normalizeAngleSigned(endpoints.targetCenterAngle - endpoints.startCenterAngle);
+          endpoints.staffRotationDelta = -centerMovement + turnsRotation;
+        } else {
+          endpoints.staffRotationDelta = turnsRotation;
+        }
+      } else {
+        endpoints.staffRotationDelta = normalizeAngleSigned(
+          originalEndStaffAngle - prevEndStaffAngle
+        );
+      }
+    }
+    prevEndStaffAngle = normalizeAnglePositive(
+      endpoints.startStaffAngle + endpoints.staffRotationDelta
+    );
+
     const samples = Math.max(samplesPerBeat, samplesPerBeat * Math.ceil(Math.max(1, motion.turns ?? 0)));
 
     const beatPoints = [];
@@ -496,24 +564,84 @@ function generateBeatByBeatSVG(sequence, color, options = {}) {
   return { svg, diagnostics };
 }
 
+// ─── Convert Firestore step format to our beat format ──────────────────────
+
+function firestoreStepsToBeats(steps) {
+  return steps
+    .filter(s => s.motions) // skip start position
+    .map(s => {
+      const b = s.motions.blue || {};
+      const r = s.motions.red || {};
+      // Map rotationDirection strings
+      const mapRotDir = (rd) => {
+        if (rd === "clockwise" || rd === "cw") return "cw";
+        if (rd === "counter_clockwise" || rd === "ccw") return "ccw";
+        return "noRotation";
+      };
+      return {
+        letter: s.letter,
+        blueMotionType: b.motionType || "static",
+        blueRotDir: mapRotDir(b.rotationDirection),
+        blueStartLoc: b.startLocation || "center",
+        blueEndLoc: b.endLocation || b.startLocation || "center",
+        blueStartOri: b.startOrientation || "out",
+        blueEndOri: b.endOrientation || "out",
+        blueTurns: typeof b.turns === "number" ? b.turns : 0,
+        redMotionType: r.motionType || "static",
+        redRotDir: mapRotDir(r.rotationDirection),
+        redStartLoc: r.startLocation || "center",
+        redEndLoc: r.endLocation || r.startLocation || "center",
+        redStartOri: r.startOrientation || "out",
+        redEndOri: r.endOrientation || "out",
+        redTurns: typeof r.turns === "number" ? r.turns : 0,
+      };
+    });
+}
+
 // ─── Main ──────────────────────────────────────────────────────────────────
 
-const deckData = JSON.parse(fs.readFileSync("decks/strict_rotated_halved_L1_3beat.json", "utf-8"));
-const sequences = deckData.families[0].sequences;
-const rawSeq = sequences[0];
+// Load from Firestore export
+const firestoreSeq = JSON.parse(fs.readFileSync("scripts/test-sequence.json", "utf-8"));
+const fullBeats = firestoreStepsToBeats(firestoreSeq.steps);
+const seq = { beats: fullBeats, seedWord: firestoreSeq.word };
+const rawSeq = { beats: fullBeats, handPathFamily: firestoreSeq.loopType + " LOOP" };
 
-// Expand the 3-beat seed into the full 6-beat LOOP cycle
-const fullBeats = expandHalvedRotatedLoop(rawSeq.beats);
-const seq = { ...rawSeq, beats: fullBeats };
-
-console.log(`Generating decomposed mandala for: ${seq.seedWord} (${seq.handPathFamily})`);
-console.log(`Seed: ${rawSeq.beats.length} beats → Full loop: ${fullBeats.length} beats`);
+console.log(`Generating mandala for: ${firestoreSeq.word} (${firestoreSeq.loopType})`);
+console.log(`Beats: ${fullBeats.length}`);
 
 const svgOpts = { size: 500, gridRadius: 80, strokeWidth: 2, samplesPerBeat: 64, showGridDots: true };
 
+// Generate diagnostic beat-by-beat view
+const blueDiag = generateBeatByBeatSVG(seq, "blue", svgOpts);
+
+console.log("\n=== BLUE HAND BEAT JUNCTIONS ===");
+for (const d of blueDiag.diagnostics) {
+  console.log(`Beat ${d.beat} (${d.letter}, ${d.motionType}): ${d.startLoc} → ${d.endLoc}`);
+  console.log(`  Staff angle: ${d.startStaffAngle}° → ${d.endStaffAngle}°`);
+  console.log(`  Tip start: (${d.startTip.x}, ${d.startTip.y})  Tip end: (${d.endTip.x}, ${d.endTip.y})`);
+}
+
+// Check gaps between beats
+console.log("\n=== JUNCTION GAPS ===");
+for (let i = 0; i < blueDiag.diagnostics.length - 1; i++) {
+  const end = blueDiag.diagnostics[i];
+  const start = blueDiag.diagnostics[i + 1];
+  const dx = parseFloat(start.startTip.x) - parseFloat(end.endTip.x);
+  const dy = parseFloat(start.startTip.y) - parseFloat(end.endTip.y);
+  const gap = Math.sqrt(dx * dx + dy * dy).toFixed(2);
+  console.log(`Beat ${end.beat} end → Beat ${start.beat} start: gap = ${gap}px (dx=${dx.toFixed(2)}, dy=${dy.toFixed(2)})`);
+}
+
+// Also generate the decomposed view alongside
 const blueSvg = generateDecomposedSVG(seq, { ...svgOpts, show: "blue" });
 const redSvg = generateDecomposedSVG(seq, { ...svgOpts, show: "red" });
 const combinedSvg = generateDecomposedSVG(seq, { ...svgOpts, show: "both" });
+
+// Beat color legend
+const beatColors = ["#4488ff", "#22cc88", "#ff8844", "#cc44ff", "#ffcc22", "#44cccc"];
+const legend = seq.beats.map((b, i) =>
+  `<span style="color:${beatColors[i % beatColors.length]}; margin-right: 16px;">Beat ${i+1}: ${b.letter} (${b.blueMotionType})</span>`
+).join("");
 
 const html = `<!DOCTYPE html>
 <html>
@@ -521,8 +649,10 @@ const html = `<!DOCTYPE html>
 <style>
   body { background: #111; color: #eee; font-family: system-ui; padding: 40px 20px; margin: 0; }
   h1 { text-align: center; color: #ccc; font-size: 28px; margin-bottom: 4px; }
-  .subtitle { text-align: center; color: #666; margin-bottom: 40px; font-size: 15px; }
-  .equation { display: flex; align-items: center; justify-content: center; gap: 24px; flex-wrap: wrap; }
+  .subtitle { text-align: center; color: #666; margin-bottom: 20px; font-size: 15px; }
+  .section-title { text-align: center; color: #999; font-size: 20px; margin: 30px 0 10px; }
+  .legend { text-align: center; margin-bottom: 20px; font-size: 14px; }
+  .row { display: flex; align-items: center; justify-content: center; gap: 24px; flex-wrap: wrap; margin-bottom: 30px; }
   .panel { text-align: center; }
   .panel h3 { margin: 12px 0 4px; font-size: 18px; }
   .panel p { margin: 0; color: #666; font-size: 13px; }
@@ -534,24 +664,33 @@ const html = `<!DOCTYPE html>
 </head>
 <body>
 <h1>${seq.seedWord}</h1>
-<p class="subtitle">${seq.handPathFamily} &mdash; prop tip paths through one LOOP cycle</p>
-<div class="equation">
+<p class="subtitle">${rawSeq.handPathFamily} &mdash; ${rawSeq.beats.length}-beat seed expanded to ${fullBeats.length}-beat loop</p>
+
+<h2 class="section-title">Blue Hand: Beat-by-Beat Diagnostic</h2>
+<div class="legend">${legend}</div>
+<p style="text-align:center;color:#ff3333;font-size:13px;">Red dots = beat junction points (where discontinuities occur)</p>
+<div class="row">
+  <div class="panel">
+    ${blueDiag.svg}
+    <h3 class="blue-label">Blue Right Tip — Color per Beat</h3>
+  </div>
+</div>
+
+<h2 class="section-title">Final Mandala</h2>
+<div class="row">
   <div class="panel">
     ${blueSvg}
     <h3 class="blue-label">Blue Hand</h3>
-    <p>Left + right staff tips</p>
   </div>
   <div class="operator">+</div>
   <div class="panel">
     ${redSvg}
     <h3 class="red-label">Red Hand</h3>
-    <p>Left + right staff tips</p>
   </div>
   <div class="operator">=</div>
   <div class="panel">
     ${combinedSvg}
     <h3 class="combined-label">Mandala</h3>
-    <p>Both hands overlaid</p>
   </div>
 </div>
 </body>

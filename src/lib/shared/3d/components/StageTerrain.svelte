@@ -20,8 +20,8 @@
   import { VegetationManager } from "$lib/features/realm/rendering/instanced-vegetation";
   import { AtmosphereManager } from "$lib/features/realm/rendering/atmosphere";
   import { SeededNoise } from "$lib/features/realm/generation/seed-generator";
-  import { TerrainPhysicsManager } from "$lib/shared/3d-animation/physics/terrain-collider";
-  import type { PhysicsWorldState } from "$lib/shared/3d-animation/physics/types";
+  import { TerrainPhysicsManager } from "$lib/shared/3d/physics/terrain-collider";
+  import type { PhysicsWorldState } from "$lib/shared/3d/physics/types";
   import {
     BufferGeometry,
     BufferAttribute,

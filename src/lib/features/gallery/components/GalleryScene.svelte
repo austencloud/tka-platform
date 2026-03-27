@@ -20,14 +20,14 @@
   import ExhibitLabel from "./exhibits/ExhibitLabel.svelte";
 
   // Unified camera system (replaces ModelFirstPerson)
-  import UnifiedCameraController from "$lib/shared/3d-animation/camera/UnifiedCameraController.svelte";
-  import { CameraMode } from "$lib/shared/3d-animation/camera/types";
+  import UnifiedCameraController from "$lib/shared/3d/camera/UnifiedCameraController.svelte";
+  import { CameraMode } from "$lib/shared/3d/camera/types";
   import { createGalleryAvatarState } from "../state/gallery-avatar-state.svelte";
 
   // Avatar for visual representation
-  import Avatar3D from "$lib/shared/3d-animation/components/Avatar3D.svelte";
-  import Grid3D from "$lib/shared/3d-animation/components/Grid3D.svelte";
-  import { Plane } from "$lib/shared/3d-animation/domain/enums/Plane";
+  import Avatar3D from "$lib/shared/3d/components/Avatar3D.svelte";
+  import Grid3D from "$lib/shared/3d/components/Grid3D.svelte";
+  import { Plane } from "$lib/shared/3d/domain/enums/Plane";
 
   // Multiplayer
   import RemotePlayerManager from "../multiplayer/components/RemotePlayerManager.svelte";

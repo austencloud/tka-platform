@@ -16,7 +16,7 @@ import type {
   PlaybackMode,
   StepPlaybackStepSize,
 } from "$lib/features/compose/state/animation-panel-state.svelte";
-import type { PropState3D } from "$lib/shared/3d-animation/domain/models/PropState3D";
+import type { PropState3D } from "$lib/shared/3d/domain/models/PropState3D";
 
 const CONTEXT_KEY = Symbol("animation-export-context");
 
