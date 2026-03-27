@@ -17,11 +17,16 @@
   import { createMockPictographData } from "../../../../shared/data/mock-pictograph-data";
   import type { RetroPictographData } from "../../../../shared/domain/pictograph-types";
   import { generateRetroSequence } from "../../../adapters/notation-adapter";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
   let {
     onstatuschange,
+    onsequencegenerated,
   }: {
     onstatuschange?: (status: string) => void;
+    /** Fires after a successful generation with the raw SequenceData so the
+     *  parent (RetroScribe) can offer File > Save without re-running generation. */
+    onsequencegenerated?: (sequenceData: SequenceData) => void;
   } = $props();
 
   /* ------------------------------------------------------------------ */
@@ -139,6 +144,7 @@
       generateStatus = `Generated: ${result.word} (${result.beatCount} beats)`;
       onstatuschange?.(`Beats: ${result.beatCount} | Generated`);
       generatedBeats = result.beats;
+      onsequencegenerated?.(result.sequenceData);
     } catch (error) {
       clearInterval(interval);
       generateProgress = 0;
