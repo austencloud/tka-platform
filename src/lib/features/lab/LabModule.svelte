@@ -22,7 +22,7 @@
     backgrounds: () => import("$lib/features/background-builder/BackgroundBuilder.svelte"),
     landing: () => import("$lib/features/landing-preview/LandingPreviewModule.svelte"),
     composition: () => import("$lib/features/constraint-layout-lab/CompositionLab.svelte"),
-    "multi-grid": () => import("$lib/features/multi-grid-lab/MultiGridLabModule.svelte"),
+    // multi-grid graduated to Levels module as conjoined-grid (Mar 2026)
     // community, connect graduated to Social module (Mar 2026)
     voice: () => import("./tabs/VoiceControlLab.svelte"),
     vtg: () => import("$lib/features/vtg-lab/VtgLabModule.svelte"),

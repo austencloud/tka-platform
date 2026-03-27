@@ -142,8 +142,9 @@
   <div class="explainer">
     <h3 class="explainer-title">Orientation</h3>
     <p class="explainer-desc">
-      Orientation is which direction the prop faces relative to the center of the grid.
-      Tap a point on the grid, then pick an orientation to see the prop rotate.
+      Orientation is which direction the prop faces.
+      At perimeter points, it's relative to center: in, out, clock, or counter.
+      Tap a point, then pick an orientation to see it change.
     </p>
 
     <GridModePicker
