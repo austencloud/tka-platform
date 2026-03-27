@@ -22,6 +22,7 @@ import {
   FESTIVAL_TABS,
   RETRO_TABS,
   REALM_TABS,
+  LEVELS_TABS,
 } from "./tab-definitions";
 
 /**
@@ -34,9 +35,9 @@ const MODULE_ID_MIGRATIONS: Record<string, ModuleId> = {
   discover: "browse", // Module renamed from Discover to Browse (Jan 2026)
   explore: "browse", // Module renamed from Explore to Browse (Jan 2026)
   dashboard: "create", // Dashboard removed - Create is now the default landing (Jan 2026)
-  // Experimental modules consolidated into Lab (Jan 2026)
-  skewlab: "lab",
-  "poi-lab": "lab",
+  // Experimental modules consolidated into Lab (Jan 2026), then graduated to Levels (Mar 2026)
+  skewlab: "levels",
+  "poi-lab": "levels",
   mandala: "lab",
   "background-builder": "lab",
   "landing-preview": "lab",
@@ -231,6 +232,15 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     description: "TKA-OS: Win95 desktop, DOS terminal, and pixel pictographs",
     isMain: true,
     sections: RETRO_TABS,
+  },
+  {
+    id: "levels",
+    label: "Levels",
+    icon: '<i class="fas fa-layer-group" style="color: #8b5cf6;" aria-hidden="true"></i>',
+    color: "#8b5cf6",
+    description: "Level 4-7 position labs and poi constraints",
+    isMain: true,
+    sections: LEVELS_TABS,
   },
   {
     id: "lab",

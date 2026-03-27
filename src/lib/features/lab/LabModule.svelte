@@ -16,17 +16,13 @@
   // Dynamic tab imports - add new experiments here
   const tabComponents: Record<string, () => Promise<{ default: any }>> = {
     attribution: () => import("./tabs/AttributionLab.svelte"),
-    level4: () => import("$lib/features/level5-lab/Level5LabModule.svelte"),
-    level5: () => import("$lib/features/skewlab/SkewLabModule.svelte"),
-    level7: () => import("$lib/features/conjoined-lab/ConjoinedLabModule.svelte"),
-    poi: () => import("$lib/features/poi-lab/PoiLabModule.svelte"),
+    // level4, level5, level6, level7, poi graduated to Levels module (Mar 2026)
     avatar: () => import("./tabs/ProfileAvatarLab.svelte"),
     mandala: () =>
       import("$lib/features/mandala-generator/components/MandalaGeneratorModule.svelte"),
     backgrounds: () => import("$lib/features/background-builder/BackgroundBuilder.svelte"),
     landing: () => import("$lib/features/landing-preview/LandingPreviewModule.svelte"),
     composition: () => import("$lib/features/constraint-layout-lab/CompositionLab.svelte"),
-    level6: () => import("$lib/features/level7-lab/Level7LabModule.svelte"),
     "multi-grid": () => import("$lib/features/multi-grid-lab/MultiGridLabModule.svelte"),
     "ml-training": () =>
       import("$lib/features/train/ml-training/components/MLTrainingModule.svelte"),
