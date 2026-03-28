@@ -90,14 +90,17 @@
         motions: {},
       };
 
-      // Card 2: grid + hand position dots only — no props, no arrows
+      // Card 2: grid + hands (prop type = HAND, no arrows)
       if (startPos) {
         gridOnlyData = {
-          id: "how-grid",
+          id: "how-hands",
           letter: undefined,
           startPosition: startPos.startPosition,
           endPosition: startPos.endPosition,
-          motions: {},
+          motions: {
+            blue: startPos.motions?.blue ? { ...startPos.motions.blue, propType: PropType.HAND } : undefined,
+            red: startPos.motions?.red ? { ...startPos.motions.red, propType: PropType.HAND } : undefined,
+          },
         };
       }
 
@@ -164,7 +167,7 @@
         <p>Eight points on a diamond. This is where everything happens.</p>
       </div>
 
-      <!-- Card 2: Grid + hand dots -->
+      <!-- Card 2: Grid + hands (PropType.HAND) -->
       <div class="step-card">
         <span class="step-badge">2</span>
         <div class="pictograph-frame">
@@ -172,6 +175,8 @@
             <PictographContainer
               pictographData={gridOnlyData}
               gridMode={GridMode.DIAMOND}
+              bluePropTypeOverride={PropType.HAND}
+              redPropTypeOverride={PropType.HAND}
               showTKA={false}
               showReversals={false}
               showPositions={true}
