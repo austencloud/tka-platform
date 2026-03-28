@@ -164,15 +164,13 @@
     display: grid;
     gap: 4px;
     width: 100%;
-    align-content: start;
-    justify-content: start;
+    align-content: center;
+    justify-content: center;
   }
 
   .card-slot {
-    border-radius: 8px;
     overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-    border: 1px solid rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(0, 0, 0, 0.12);
     background: #ffffff;
   }
 
