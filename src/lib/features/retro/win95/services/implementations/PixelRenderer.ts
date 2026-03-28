@@ -23,6 +23,7 @@ import type { RetroPictographData } from "../../../shared/domain/pictograph-type
 import type { IPictographPreparer } from "$lib/shared/pictograph/shared/services/contracts/IPictographPreparer";
 import type { PreparedRenderData } from "$lib/shared/pictograph/shared/domain/models/PreparedPictographData";
 import { EraRendererBase } from "../../../shared/services/implementations/EraRendererBase";
+import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
 // ============================================================================
 // WINDOWS 16-COLOR PALETTE
@@ -74,22 +75,16 @@ const BAYER_4X4 = [
  */
 const GRID_CENTER = { x: 475, y: 475 };
 // Cardinal positions match Canvas2DDirectRenderer.BASE_GRID_POINTS (radius 300 from center)
-// Intercardinals at 300 * cos(45°) ≈ 212 offset from center
-const GRID_POINTS = {
-	n:  { x: 475, y: 175 },
-	s:  { x: 475, y: 775 },
-	e:  { x: 775, y: 475 },
-	w:  { x: 175, y: 475 },
-	ne: { x: 687, y: 263 },
-	nw: { x: 263, y: 263 },
-	se: { x: 687, y: 687 },
-	sw: { x: 263, y: 687 },
-};
+const GRID_OUTER_POINTS = [
+	{ x: 475, y: 175 }, // N
+	{ x: 775, y: 475 }, // E
+	{ x: 475, y: 775 }, // S
+	{ x: 175, y: 475 }, // W
+];
 
-// Win95 grid colors — gray lines, darker gray dots
-const GRID_LINE_COLOR = "#808080";
-const GRID_DOT_COLOR  = "#606060";
-const GRID_DOT_RADIUS_VB = 14;
+// Win95 grid colors
+const GRID_DOT_COLOR  = "#404040";
+const GRID_DOT_RADIUS_VB = 25; // Matches modern renderer
 
 // Win16 flat colors for props and arrows
 const BLUE_COLOR = "#0000FF";
@@ -139,7 +134,8 @@ export class PixelRenderer extends EraRendererBase implements IPixelRenderer {
 
 		const scale = this.getScale(size);
 
-		this.drawGrid(ctx, scale);
+		this.drawGrid(ctx, scale, data.gridMode);
+		this.drawHandPoints(ctx, scale, data.gridMode);
 		await this.drawProps(ctx, prepared, scale);
 		await this.drawArrows(ctx, prepared, scale);
 		this.drawLetter(ctx, String(data.letter), size);
@@ -182,44 +178,55 @@ export class PixelRenderer extends EraRendererBase implements IPixelRenderer {
 	// --------------------------------------------------------------------------
 
 	/**
-	 * Draw the TKA grid with flat gray Win95 colors.
-	 * No anti-aliasing, no gradients — just lines and dots.
+	 * Draw the TKA grid as flat dots only (no lines).
+	 * 4 outer cardinal dots + center dot. Rotates for box mode.
 	 */
-	private drawGrid(ctx: CanvasRenderingContext2D, scale: number): void {
+	private drawGrid(ctx: CanvasRenderingContext2D, scale: number, gridMode: GridMode): void {
+		const isBox = gridMode === GridMode.BOX;
+		const center = GRID_CENTER.x * scale;
+
 		ctx.save();
-		ctx.strokeStyle = GRID_LINE_COLOR;
-		ctx.lineWidth = 1;
+		if (isBox) {
+			ctx.translate(center, center);
+			ctx.rotate(Math.PI / 4);
+			ctx.translate(-center, -center);
+		}
 
-		// Cardinal cross and diagonals
-		this.drawLine(ctx, GRID_POINTS.n,  GRID_POINTS.s,  scale);
-		this.drawLine(ctx, GRID_POINTS.e,  GRID_POINTS.w,  scale);
-		this.drawLine(ctx, GRID_POINTS.ne, GRID_POINTS.sw, scale);
-		this.drawLine(ctx, GRID_POINTS.nw, GRID_POINTS.se, scale);
-
-		ctx.restore();
-
-		// Grid point dots
 		const dotR = GRID_DOT_RADIUS_VB * scale;
 		ctx.fillStyle = GRID_DOT_COLOR;
 
-		for (const pt of Object.values(GRID_POINTS)) {
+		for (const pt of GRID_OUTER_POINTS) {
 			this.fillCircle(ctx, pt.x * scale, pt.y * scale, dotR);
 		}
 
-		// Center dot — slightly smaller
-		this.fillCircle(ctx, GRID_CENTER.x * scale, GRID_CENTER.y * scale, dotR * 0.7);
+		// Center dot
+		this.fillCircle(ctx, GRID_CENTER.x * scale, GRID_CENTER.y * scale, 12 * scale);
+
+		ctx.restore();
 	}
 
-	private drawLine(
-		ctx: CanvasRenderingContext2D,
-		a: { x: number; y: number },
-		b: { x: number; y: number },
-		scale: number,
-	): void {
-		ctx.beginPath();
-		ctx.moveTo(a.x * scale, a.y * scale);
-		ctx.lineTo(b.x * scale, b.y * scale);
-		ctx.stroke();
+	/**
+	 * Draw small flat hand-position dots at cardinal positions,
+	 * halfway between center and outer. Drawn behind props.
+	 */
+	private drawHandPoints(ctx: CanvasRenderingContext2D, scale: number, gridMode: GridMode): void {
+		const isBox = gridMode === GridMode.BOX;
+		const canvasCenter = GRID_CENTER.x * scale;
+		const handR = 5 * scale;
+		const cx = GRID_CENTER.x, cy = GRID_CENTER.y;
+
+		ctx.save();
+		if (isBox) {
+			ctx.translate(canvasCenter, canvasCenter);
+			ctx.rotate(Math.PI / 4);
+			ctx.translate(-canvasCenter, -canvasCenter);
+		}
+
+		ctx.fillStyle = "#808080";
+		for (const pt of GRID_OUTER_POINTS) {
+			this.fillCircle(ctx, ((cx + pt.x) / 2) * scale, ((cy + pt.y) / 2) * scale, handR);
+		}
+		ctx.restore();
 	}
 
 	private fillCircle(
