@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { DeckFamily } from "../../domain/models/Deck";
-  import { getPageLayout, type CardSizeId } from "../../domain/card-sizes";
+  import { getPageLayout, CARD_SIZES, type CardSizeId } from "../../domain/card-sizes";
   import ChoreoCard from "../ChoreoCard.svelte";
 
   interface Props {
@@ -40,6 +40,16 @@
   }: Props = $props();
 
   let layout = $derived(getPageLayout(cardSize));
+  let sizeSpec = $derived(CARD_SIZES[cardSize]);
+
+  // Card aspect ratio from actual physical dimensions
+  let cardAspect = $derived(sizeSpec.widthInches / sizeSpec.heightInches);
+
+  // Column width as percentage of page — matches physical proportions
+  // Page is 8.5" wide, each card is widthInches, with margins
+  let colWidthPct = $derived(
+    (sizeSpec.widthInches / 8.5) * 100
+  );
 
   // Group sequences into pages
   let pages = $derived.by(() => {
@@ -97,10 +107,10 @@
         <div class="page">
           <div
             class="page-grid"
-            style:grid-template-columns="repeat({layout.cols}, 1fr)"
+            style:grid-template-columns="repeat({layout.cols}, {colWidthPct}%)"
           >
             {#each page as seq (seq.id)}
-              <div class="card-slot" use:detectOrientation>
+              <div class="card-slot" style:aspect-ratio="{cardAspect}" use:detectOrientation>
                 <ChoreoCard
                   sequence={seq}
                   printMode={true}
@@ -150,14 +160,14 @@
 
   .page-grid {
     display: grid;
-    gap: 8px;
+    gap: 4px;
     width: 100%;
     height: 100%;
     align-content: start;
+    justify-content: center;
   }
 
   .card-slot {
-    aspect-ratio: 5 / 7;
     border-radius: 8px;
     overflow: hidden;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
