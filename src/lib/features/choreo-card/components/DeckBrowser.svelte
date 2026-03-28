@@ -18,6 +18,15 @@
   import VtgCollectionView from "./VtgCollectionView.svelte";
   import VtgFamilyDrillDown from "./VtgFamilyDrillDown.svelte";
   import LoopCollectionView from "./LoopCollectionView.svelte";
+  import CardPageLayout from "./card-preview/CardPageLayout.svelte";
+  import CardSizeToggle from "./card-preview/CardSizeToggle.svelte";
+  import CardPreviewSettings from "./card-preview/CardPreviewSettings.svelte";
+  import { CARD_SIZES, type CardSizeId } from "../domain/card-sizes";
+  import type { PrintRenderOptions } from "../services/contracts/IPrintCardRenderer";
+  import type { IPrintCardRenderer } from "../services/contracts/IPrintCardRenderer";
+  import type { IPrintPDFExporter, CardPair } from "../services/contracts/IPrintPDFExporter";
+  import type { IPrintZipExporter, ZipCardPair } from "../services/contracts/IPrintZipExporter";
+  import { container } from "$lib/shared/di";
 
   interface Props {
     decks: Deck[];
@@ -66,6 +75,97 @@
     onLoadFamilySequences,
     onContextMenu,
   }: Props = $props();
+
+  // ── Card view mode ──────────────────────────────────────────────────────
+  type ViewMode = 'grid' | 'cards';
+  let viewMode = $state<ViewMode>(
+    (typeof window !== 'undefined' ? localStorage.getItem('choreoCard.deckViewMode') : null) as ViewMode ?? 'grid'
+  );
+
+  let cardSize = $state<CardSizeId>(
+    (typeof window !== 'undefined' ? localStorage.getItem('cardPreview.cardSize') : null) as CardSizeId ?? 'poker'
+  );
+
+  let settingsOpen = $state(false);
+  let selectedTheme = $state(typeof window !== 'undefined' ? localStorage.getItem('cardPreview.theme') ?? 'nightSky' : 'nightSky');
+  let exportFormat = $state<'pdf' | 'zip'>(
+    (typeof window !== 'undefined' ? localStorage.getItem('cardPreview.exportFormat') : null) as 'pdf' | 'zip' ?? 'zip'
+  );
+  let isExporting = $state(false);
+
+  function setViewMode(mode: ViewMode) {
+    viewMode = mode;
+    if (typeof window !== 'undefined') localStorage.setItem('choreoCard.deckViewMode', mode);
+  }
+
+  function setCardSize(size: CardSizeId) {
+    cardSize = size;
+    if (typeof window !== 'undefined') localStorage.setItem('cardPreview.cardSize', size);
+  }
+
+  let renderOptions = $derived<PrintRenderOptions>({
+    canvasWidth: CARD_SIZES[cardSize].canvasWidth,
+    canvasHeight: CARD_SIZES[cardSize].canvasHeight,
+    bleedPx: CARD_SIZES[cardSize].bleedPx,
+    showGrid,
+    showTKA,
+    showWord,
+    includeStartPosition,
+    handPointsVisible,
+    theme: selectedTheme,
+  });
+
+  const themeOptions = [
+    { id: 'nightSky', label: 'Night Sky', color: '#1a1a2e' },
+    { id: 'deepOcean', label: 'Deep Ocean', color: '#0a1628' },
+    { id: 'snowfall', label: 'Snowfall', color: '#e8eaf0' },
+    { id: 'emberGlow', label: 'Ember Glow', color: '#2d1b1b' },
+    { id: 'sakuraDrift', label: 'Sakura Drift', color: '#2d1b28' },
+    { id: 'fireflyForest', label: 'Firefly Forest', color: '#1b2d1b' },
+    { id: 'autumnDrift', label: 'Autumn Drift', color: '#2d251b' },
+    { id: 'pride', label: 'Pride', color: 'linear-gradient(135deg, #e40303, #ff8c00, #ffed00, #008026, #004dff, #750787)' },
+  ] as const;
+
+  async function handleExport() {
+    if (filteredSequences.length === 0 || !selectedDeck) return;
+    isExporting = true;
+    try {
+      const printRenderer = container.items.printCardRenderer as IPrintCardRenderer;
+      const deckName = selectedDeck.name;
+      if (exportFormat === 'pdf') {
+        const pairs: CardPair[] = [];
+        for (const seq of filteredSequences) {
+          const front = await printRenderer.renderFront(seq, renderOptions);
+          const back = await printRenderer.renderBack(seq, renderOptions);
+          pairs.push({ front, back, label: seq.word ?? seq.id });
+        }
+        const pdfExporter = container.items.printPDFExporter as IPrintPDFExporter;
+        const blob = await pdfExporter.exportHomePrintPDF(pairs, deckName, cardSize);
+        downloadBlob(blob, `${deckName}-${cardSize}.pdf`);
+      } else {
+        const pairs: ZipCardPair[] = [];
+        for (const seq of filteredSequences) {
+          const front = await printRenderer.renderFront(seq, renderOptions);
+          const back = await printRenderer.renderBack(seq, renderOptions);
+          pairs.push({ front, back, label: seq.word ?? seq.id });
+        }
+        const zipExporter = container.items.printZipExporter as IPrintZipExporter;
+        const blob = await zipExporter.exportDeckZIP(pairs, deckName);
+        downloadBlob(blob, `${deckName}-${cardSize}.zip`);
+      }
+    } finally {
+      isExporting = false;
+    }
+  }
+
+  function downloadBlob(blob: Blob, filename: string) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
 
   // Derived deck/family lookups
   let selectedDeck = $derived(decks.find((d) => d.id === selectedDeckId) ?? null);
@@ -326,6 +426,44 @@
           <span class="crumb current">{selectedDeck.name}</span>
         </nav>
         <div class="top-bar-actions">
+          <!-- View mode toggle -->
+          <div class="view-toggle" role="radiogroup" aria-label="View mode">
+            <button
+              class="action-chip"
+              class:active={viewMode === 'grid'}
+              onclick={() => setViewMode('grid')}
+              type="button"
+              role="radio"
+              aria-checked={viewMode === 'grid'}
+            >
+              <i class="fas fa-th" aria-hidden="true"></i>
+              Grid
+            </button>
+            <button
+              class="action-chip"
+              class:active={viewMode === 'cards'}
+              onclick={() => setViewMode('cards')}
+              type="button"
+              role="radio"
+              aria-checked={viewMode === 'cards'}
+            >
+              <i class="fas fa-id-card" aria-hidden="true"></i>
+              Cards
+            </button>
+          </div>
+
+          {#if viewMode === 'cards'}
+            <CardSizeToggle selected={cardSize} onchange={setCardSize} />
+            <button
+              class="action-chip"
+              onclick={() => { settingsOpen = !settingsOpen; }}
+              type="button"
+              aria-label="Card settings"
+            >
+              <i class="fas fa-cog" aria-hidden="true"></i>
+            </button>
+          {/if}
+
           <button
             class="action-chip"
             class:active={interiorFiltersOpen}
@@ -385,30 +523,77 @@
           {/if}
         </div>
       {:else}
-        <div class="sequence-sections">
-          {#each sequenceGroups as group (group.label)}
-            <section class="seq-section">
-              <h3 class="section-header">{group.label} <span class="section-count">({group.sequences.length})</span></h3>
-              <div class="sequence-grid">
-                {#each group.sequences as sequence (sequence.id)}
-                  <div class="playing-card">
-                    <ChoreoCard
-                      {sequence}
-                      printMode={true}
-                      {handPointsVisible}
-                      {showGrid}
-                      {showTKA}
-                      {showWord}
-                      {includeStartPosition}
-                      onSelect={() => onSelectSequence(sequence)}
-                      {onContextMenu}
-                    />
-                  </div>
-                {/each}
-              </div>
-            </section>
-          {/each}
-        </div>
+        {#if viewMode === 'cards'}
+          <div class="cards-view-container">
+            <CardPageLayout
+              sequences={filteredSequences}
+              families={selectedDeck.families}
+              selectedFamilyIds={interiorFilters.familyIds}
+              {cardSize}
+              {renderOptions}
+              {isLoading}
+              {isLargeDeck}
+              onCardClick={() => {}}
+              onRenderProgress={() => {}}
+            />
+          </div>
+        {:else}
+          <div class="sequence-sections">
+            {#each sequenceGroups as group (group.label)}
+              <section class="seq-section">
+                <h3 class="section-header">{group.label} <span class="section-count">({group.sequences.length})</span></h3>
+                <div class="sequence-grid">
+                  {#each group.sequences as sequence (sequence.id)}
+                    <div class="playing-card">
+                      <ChoreoCard
+                        {sequence}
+                        printMode={true}
+                        {handPointsVisible}
+                        {showGrid}
+                        {showTKA}
+                        {showWord}
+                        {includeStartPosition}
+                        onSelect={() => onSelectSequence(sequence)}
+                        {onContextMenu}
+                      />
+                    </div>
+                  {/each}
+                </div>
+              </section>
+            {/each}
+          </div>
+        {/if}
+      {/if}
+
+      {#if viewMode === 'cards'}
+        <CardPreviewSettings
+          isOpen={settingsOpen}
+          {showGrid}
+          {showTKA}
+          {showWord}
+          {includeStartPosition}
+          {handPointsVisible}
+          {selectedTheme}
+          {themeOptions}
+          {exportFormat}
+          {cardSize}
+          totalCards={filteredSequences.length}
+          {isExporting}
+          hasRenderedCards={filteredSequences.length > 0 && !isLoading}
+          onToggle={() => { settingsOpen = false; }}
+          onVisibilityChange={(key, value) => {
+            console.log('Visibility change needs parent wiring:', key, value);
+          }}
+          onThemeChange={(id) => {
+            selectedTheme = id;
+            if (typeof window !== 'undefined') localStorage.setItem('cardPreview.theme', id);
+          }}
+          onExportFormatChange={(format) => {
+            exportFormat = format;
+            if (typeof window !== 'undefined') localStorage.setItem('cardPreview.exportFormat', format);
+          }}
+          onExport={handleExport}
+        />
       {/if}
     </div>
 
@@ -678,6 +863,28 @@
     display: flex;
     align-items: center;
     gap: 8px;
+  }
+
+  .view-toggle {
+    display: flex;
+    gap: 0;
+  }
+
+  .view-toggle .action-chip {
+    border-radius: 0;
+  }
+
+  .view-toggle .action-chip:first-child {
+    border-radius: 8px 0 0 8px;
+  }
+
+  .view-toggle .action-chip:last-child {
+    border-radius: 0 8px 8px 0;
+  }
+
+  .cards-view-container {
+    flex: 1;
+    overflow-y: auto;
   }
 
   .action-chip {
