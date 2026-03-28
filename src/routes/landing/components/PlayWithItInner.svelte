@@ -21,6 +21,7 @@
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
   import { container } from "$lib/shared/di";
   import type { IGridPositionDeriver } from "$lib/shared/pictograph/grid/services/contracts/IGridPositionDeriver";
+  import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { gridPositionDeriver as gridPositionDeriverInstance } from "$lib/shared/pictograph/grid/services/implementations/GridPositionDeriver";
   import { orientationCalculator as orientationCalculatorInstance } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
   import { startPositionDeriver as startPositionDeriverInstance } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
@@ -35,7 +36,7 @@
   import { createStartPositionFromBeatStart } from "$lib/features/create/shared/services/implementations/sequence-transforms/sequence-transforms";
   import { RANDOM_PROPS } from "../landing-content";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
-  import BpmChips from "$lib/features/compose/components/controls/BpmChips.svelte";
+  import TempoControl from "$lib/shared/sequence-viewer/components/TempoControl.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { EFFORTS, type EffortId as EffortPresetId } from "$lib/features/effort-lab/domain/effort-types";
   import type { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -197,7 +198,7 @@
     return null;
   });
 
-  let gridMode = $derived(animationState.sequenceData?.gridMode ?? null);
+  let gridMode = $derived(animationState.sequenceData?.gridMode ?? GridMode.DIAMOND);
   let currentStepNumber = $derived(Math.floor(animationState.currentStep));
 
   // ── Pre-load next sequence partway through current one ──────────────────────
@@ -521,12 +522,6 @@
     return cells;
   });
 
-  let displayWord = $derived.by(() => {
-    const seq = animationState.sequenceData;
-    if (!seq) return "";
-    return seq.intendedWord ?? seq.word ?? "";
-  });
-
   // Auto-scroll beat strip to keep active beat visible
   let beatStripEl = $state<HTMLDivElement | null>(null);
 
@@ -670,14 +665,10 @@
       </div>
 
       <div class="tb-group bpm-group">
-        <span class="tb-label">Speed</span>
-        <BpmChips bind:bpm variant="compact" onBpmChange={handleBpmChange} min={30} max={180} />
+        <TempoControl {bpm} onBpmChange={handleBpmChange} showPresets={true} showPractice={false} />
       </div>
     </div>
     <div class="canvas-area">
-      {#if displayWord}
-        <div class="word-label">{displayWord}</div>
-      {/if}
       {#if animationReady && !isLoading}
         <div class="canvas-wrapper">
           <AnimatorCanvas
@@ -856,23 +847,6 @@
     justify-content: center;
   }
 
-  .word-label {
-    position: absolute;
-    top: 10px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 10;
-    padding: 4px 14px;
-    border-radius: 20px;
-    background: rgba(0, 0, 0, 0.55);
-    color: #fff;
-    font-size: 1rem;
-    font-weight: 700;
-    font-family: var(--font-body, 'DM Sans', system-ui, sans-serif);
-    letter-spacing: 0.05em;
-    pointer-events: none;
-    white-space: nowrap;
-  }
 
   .canvas-wrapper {
     width: 100%;
