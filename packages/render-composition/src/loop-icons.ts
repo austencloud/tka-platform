@@ -1,0 +1,146 @@
+import type { LOOPComponentId } from "./types.js";
+import { drawSvgPath } from "./svg-path-painter.js";
+
+// The 6 active LOOP components in the order they appear in the icon strip
+const DISPLAY_ORDER: LOOPComponentId[] = [
+  "rotated",
+  "mirrored",
+  "flipped",
+  "swapped",
+  "inverted",
+  "rewound",
+];
+
+// FA7 solid icon SVG path data for each LOOP component, embedded to avoid
+// runtime file reads. Each path comes from the corresponding icon in
+// @fortawesome/fontawesome-free/svgs/solid/
+const LOOP_ICON_PATHS: Record<LOOPComponentId | "freeform", { d: string; viewBox: [number, number] }> = {
+  // rotate.svg — viewBox 0 0 512 512
+  rotated: {
+    d: "M480.1 192l7.9 0c13.3 0 24-10.7 24-24l0-144c0-9.7-5.8-18.5-14.8-22.2S477.9 .2 471 7L419.3 58.8C375 22.1 318 0 256 0 127 0 20.3 95.4 2.6 219.5 .1 237 12.2 253.2 29.7 255.7s33.7-9.7 36.2-27.1C79.2 135.5 159.3 64 256 64 300.4 64 341.2 79 373.7 104.3L327 151c-6.9 6.9-8.9 17.2-5.2 26.2S334.3 192 344 192l136.1 0zm29.4 100.5c2.5-17.5-9.7-33.7-27.1-36.2s-33.7 9.7-36.2 27.1c-13.3 93-93.4 164.5-190.1 164.5-44.4 0-85.2-15-117.7-40.3L185 361c6.9-6.9 8.9-17.2 5.2-26.2S177.7 320 168 320L24 320c-13.3 0-24 10.7-24 24L0 488c0 9.7 5.8 18.5 14.8 22.2S34.1 511.8 41 505l51.8-51.8C137 489.9 194 512 256 512 385 512 491.7 416.6 509.4 292.5z",
+    viewBox: [512, 512],
+  },
+
+  // arrows-left-right.svg — viewBox 0 0 576 512
+  mirrored: {
+    d: "M470.6 374.6l96-96c12.5-12.5 12.5-32.8 0-45.3l-96-96c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l41.4 41.4-357.5 0 41.4-41.4c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-96 96c-6 6-9.4 14.1-9.4 22.6s3.4 16.6 9.4 22.6l96 96c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3l-41.4-41.4 357.5 0-41.4 41.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0z",
+    viewBox: [576, 512],
+  },
+
+  // arrows-up-down.svg — viewBox 0 0 256 512
+  flipped: {
+    d: "M150.6-22.6c-12.5-12.5-32.8-12.5-45.3 0l-96 96c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L96 77.3 96 434.7 54.6 393.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l96 96c6 6 14.1 9.4 22.6 9.4s16.6-3.4 22.6-9.4l96-96c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-41.4 41.4 0-357.5 41.4 41.4c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3l-96-96z",
+    viewBox: [256, 512],
+  },
+
+  // shuffle.svg — viewBox 0 0 512 512
+  swapped: {
+    d: "M403.8 34.4c12-5 25.7-2.2 34.9 6.9l64 64c6 6 9.4 14.1 9.4 22.6s-3.4 16.6-9.4 22.6l-64 64c-9.2 9.2-22.9 11.9-34.9 6.9S384 204.9 384 192l0-32-32 0c-10.1 0-19.6 4.7-25.6 12.8l-32.4 43.2-40-53.3 21.2-28.3C293.3 110.2 321.8 96 352 96l32 0 0-32c0-12.9 7.8-24.6 19.8-29.6zM154 296l40 53.3-21.2 28.3C154.7 401.8 126.2 416 96 416l-64 0c-17.7 0-32-14.3-32-32s14.3-32 32-32l64 0c10.1 0 19.6-4.7 25.6-12.8L154 296zM438.6 470.6c-9.2 9.2-22.9 11.9-34.9 6.9S384 460.9 384 448l0-32-32 0c-30.2 0-58.7-14.2-76.8-38.4L121.6 172.8c-6-8.1-15.5-12.8-25.6-12.8l-64 0c-17.7 0-32-14.3-32-32S14.3 96 32 96l64 0c30.2 0 58.7 14.2 76.8 38.4L326.4 339.2c6 8.1 15.5 12.8 25.6 12.8l32 0 0-32c0-12.9 7.8-24.6 19.8-29.6s25.7-2.2 34.9 6.9l64 64c6 6 9.4 14.1 9.4 22.6s-3.4 16.6-9.4 22.6l-64 64z",
+    viewBox: [512, 512],
+  },
+
+  // circle-half-stroke.svg — viewBox 0 0 512 512
+  inverted: {
+    d: "M448 256c0-106-86-192-192-192l0 384c106 0 192-86 192-192zM0 256a256 256 0 1 1 512 0 256 256 0 1 1 -512 0z",
+    viewBox: [512, 512],
+  },
+
+  // backward.svg — viewBox 0 0 576 512
+  rewound: {
+    d: "M204.3 43.1C215.9 32 233 28.9 247.7 35.2S272 56 272 72l0 136.3 172.3-165.1C455.9 32 473 28.9 487.7 35.2S512 56 512 72l0 368c0 16-9.6 30.5-24.3 36.8s-31.8 3.2-43.4-7.9L272 303.7 272 440c0 16-9.6 30.5-24.3 36.8s-31.8 3.2-43.4-7.9l-192-184C4.5 277.3 0 266.9 0 256s4.5-21.3 12.3-28.9l192-184z",
+    viewBox: [576, 512],
+  },
+
+  // infinity.svg — viewBox 0 0 640 512
+  freeform: {
+    d: "M0 256c0-88.4 71.6-160 160-160 50.4 0 97.8 23.7 128 64l32 42.7 32-42.7c30.2-40.3 77.6-64 128-64 88.4 0 160 71.6 160 160S568.4 416 480 416c-50.4 0-97.8-23.7-128-64l-32-42.7-32 42.7c-30.2 40.3-77.6 64-128 64-88.4 0-160-71.6-160-160zm280 0l-43.2-57.6c-18.1-24.2-46.6-38.4-76.8-38.4-53 0-96 43-96 96s43 96 96 96c30.2 0 58.7-14.2 76.8-38.4L280 256zm80 0l43.2 57.6c18.1 24.2 46.6 38.4 76.8 38.4 53 0 96-43 96-96s-43-96-96-96c-30.2 0-58.7 14.2-76.8 38.4L360 256z",
+    viewBox: [640, 512],
+  },
+};
+
+/** Brand colors for each LOOP component — shared between app and MCP render output */
+export const LOOP_ICON_COLORS: Record<LOOPComponentId | "freeform", string> = {
+  rotated: "#36c3ff",
+  mirrored: "#6F2DA8",
+  flipped: "#e91e63",
+  swapped: "#26e600",
+  inverted: "#eb7d00",
+  rewound: "#00bcd4",
+  freeform: "#9e9e9e",
+};
+
+/**
+ * Render a horizontal strip of LOOP component icons onto a Canvas 2D context.
+ *
+ * Each icon is drawn as a Font Awesome solid glyph scaled uniformly into a
+ * square bounding box. Active components are drawn left-to-right in canonical
+ * order with a small gap between them. When no components are active and
+ * showFreeformWhenEmpty is true, a single grey infinity icon is drawn instead
+ * to indicate an unconstrained (freeform) loop.
+ *
+ * @param ctx                  - Canvas 2D context to draw on
+ * @param components           - Set of active LOOP component identifiers
+ * @param centerX              - Horizontal center of the icon strip
+ * @param centerY              - Vertical center of the icon strip
+ * @param iconSize             - Width and height of each icon in canvas pixels
+ * @param darkMode             - Whether to apply dark-mode shadow styling
+ * @param showFreeformWhenEmpty - Draw the freeform icon when the set is empty
+ * @returns                    The total rendered width in canvas pixels
+ */
+export function renderLoopIconStrip(
+  ctx: CanvasRenderingContext2D,
+  components: Set<LOOPComponentId>,
+  centerX: number,
+  centerY: number,
+  iconSize: number,
+  darkMode: boolean,
+  showFreeformWhenEmpty: boolean = false
+): { totalWidth: number } {
+  const active = DISPLAY_ORDER.filter((c) => components.has(c));
+
+  if (active.length === 0) {
+    if (showFreeformWhenEmpty) {
+      drawLoopIcon(ctx, "freeform", centerX, centerY, iconSize, LOOP_ICON_COLORS.freeform, darkMode);
+    }
+    return { totalWidth: showFreeformWhenEmpty ? iconSize : 0 };
+  }
+
+  const gap = Math.max(2, Math.round(iconSize * 0.15));
+  const totalWidth = active.length * iconSize + (active.length - 1) * gap;
+  let currentX = centerX - totalWidth / 2 + iconSize / 2;
+
+  for (const component of active) {
+    drawLoopIcon(ctx, component, currentX, centerY, iconSize, LOOP_ICON_COLORS[component], darkMode);
+    currentX += iconSize + gap;
+  }
+
+  return { totalWidth };
+}
+
+function drawLoopIcon(
+  ctx: CanvasRenderingContext2D,
+  component: LOOPComponentId | "freeform",
+  x: number,
+  y: number,
+  size: number,
+  color: string,
+  darkMode: boolean
+): void {
+  const iconData = LOOP_ICON_PATHS[component];
+  if (!iconData) return;
+
+  ctx.save();
+
+  // Drop shadow matching the app's LOOPIconStripRenderer
+  ctx.shadowColor = darkMode ? "rgba(0, 0, 0, 0.5)" : "rgba(0, 0, 0, 0.3)";
+  ctx.shadowBlur = 2;
+  ctx.shadowOffsetY = 1;
+
+  ctx.fillStyle = color;
+
+  const target = { x: x - size / 2, y: y - size / 2, width: size, height: size };
+  drawSvgPath(ctx, iconData.d, { width: iconData.viewBox[0], height: iconData.viewBox[1] }, target);
+  ctx.fill();
+
+  ctx.restore();
+}
