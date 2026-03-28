@@ -11,6 +11,9 @@
 
   let meta = $derived(getTileMetadata(tile.type));
   let materialClass = $derived(tile.material ? `material-${tile.material}` : "");
+
+  // Show a label when the tile is large enough to fit text legibly
+  let showLabel = $derived(tileSize >= 28);
 </script>
 
 <div
@@ -19,7 +22,14 @@
   role="presentation"
 >
   {#if meta.icon}
-    <i class="fas {meta.icon} tile-icon" aria-hidden="true"></i>
+    <div class="tile-content">
+      <i class="fas {meta.icon} tile-icon" aria-hidden="true"></i>
+      {#if showLabel && (tile.type === "performer" || tile.type === "exhibit" || tile.type === "pedestal")}
+        <span class="tile-label">
+          {tile.type === "performer" ? "Performer" : tile.type === "exhibit" ? "Exhibit" : "Pedestal"}
+        </span>
+      {/if}
+    </div>
   {/if}
 </div>
 
@@ -30,13 +40,36 @@
     justify-content: center;
     box-sizing: border-box;
     position: relative;
+    overflow: hidden;
+  }
+
+  .tile-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
   }
 
   .tile-icon {
-    font-size: 1em;
-    opacity: 0.9;
+    font-size: 1.4em;
+    opacity: 1;
     pointer-events: none;
-    filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.5));
+    line-height: 1;
+  }
+
+  .tile-label {
+    font-size: 0.38em;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    opacity: 0.9;
+    line-height: 1;
+    pointer-events: none;
+    white-space: nowrap;
   }
 
   /* ---- Tile types ---- */
@@ -74,78 +107,119 @@
     border: 1px solid rgba(200, 180, 140, 0.2);
   }
 
+  /* ---- Exhibit panel — display frame on the wall ---- */
+
   .tile-exhibit {
-    background: #1e1e2e;
-    border: 2px solid rgba(150, 200, 255, 0.35);
+    background: #12123a;
+    border: 3px solid #c8b890;
     box-shadow:
-      inset 0 0 10px rgba(150, 200, 255, 0.12),
-      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      inset 0 0 14px rgba(200, 184, 144, 0.18),
+      inset 0 1px 0 rgba(255, 255, 255, 0.12),
+      0 0 6px rgba(200, 184, 144, 0.25);
     background-image: linear-gradient(
-      135deg,
-      rgba(255, 255, 255, 0.04) 0%,
-      transparent 50%,
-      rgba(150, 200, 255, 0.03) 100%
+      160deg,
+      rgba(200, 184, 144, 0.08) 0%,
+      transparent 50%
     );
   }
 
   .tile-exhibit .tile-icon {
-    color: #c8b890;
-    opacity: 0.9;
+    color: #f0d890;
+    filter: drop-shadow(0 0 4px rgba(240, 216, 144, 0.8));
   }
 
+  .tile-exhibit .tile-label {
+    color: #c8b890;
+  }
+
+  /* ---- Performer station — raised green stage ---- */
+
   .tile-performer {
-    background: #1e2e1e;
-    border: 2px solid rgba(150, 200, 255, 0.35);
+    background: #0e2e0e;
+    border: 3px solid #4aaa4a;
     box-shadow:
-      inset 0 0 10px rgba(150, 200, 255, 0.12),
-      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      inset 0 0 14px rgba(74, 170, 74, 0.2),
+      inset 0 -3px 0 rgba(0, 0, 0, 0.4),
+      inset 0 1px 0 rgba(100, 220, 100, 0.15),
+      0 0 6px rgba(74, 170, 74, 0.3);
     background-image: linear-gradient(
-      135deg,
-      rgba(255, 255, 255, 0.04) 0%,
-      transparent 50%,
-      rgba(150, 200, 255, 0.03) 100%
+      180deg,
+      rgba(74, 170, 74, 0.08) 0%,
+      transparent 60%,
+      rgba(0, 0, 0, 0.2) 100%
     );
   }
 
   .tile-performer .tile-icon {
-    color: #8cc88c;
-    opacity: 0.9;
+    color: #6ee06e;
+    filter: drop-shadow(0 0 5px rgba(110, 224, 110, 0.8));
   }
 
-  .tile-torch {
-    background: #2a2520;
-    border: 1px solid rgba(255, 160, 60, 0.15);
+  .tile-performer .tile-label {
+    color: #7ad67a;
   }
 
-  .tile-torch .tile-icon {
-    color: #ff9030;
-    opacity: 1;
-    animation: torch-flicker 0.4s ease-in-out infinite alternate;
-    filter: drop-shadow(0 0 4px rgba(255, 140, 40, 0.6));
-  }
-
-  @keyframes torch-flicker {
-    0% { transform: scale(1) translateY(0); opacity: 0.85; }
-    100% { transform: scale(1.1) translateY(-1px); opacity: 1; }
-  }
+  /* ---- Pedestal — solid raised stone block ---- */
 
   .tile-pedestal {
-    background: #2e2a22;
-    border: 2px solid rgba(150, 200, 255, 0.35);
+    background: #3a3028;
+    border: 3px solid #8a7a60;
     box-shadow:
-      inset 0 0 10px rgba(150, 200, 255, 0.12),
-      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      inset 0 -4px 0 rgba(0, 0, 0, 0.45),
+      inset 0 1px 0 rgba(255, 255, 255, 0.12),
+      inset 2px 0 0 rgba(255, 255, 255, 0.05),
+      inset -2px 0 0 rgba(0, 0, 0, 0.2),
+      0 3px 0 rgba(0, 0, 0, 0.5),
+      0 0 5px rgba(138, 122, 96, 0.3);
     background-image: linear-gradient(
-      135deg,
-      rgba(255, 255, 255, 0.04) 0%,
-      transparent 50%,
-      rgba(150, 200, 255, 0.03) 100%
+      180deg,
+      rgba(255, 255, 255, 0.06) 0%,
+      transparent 40%,
+      rgba(0, 0, 0, 0.15) 100%
     );
   }
 
   .tile-pedestal .tile-icon {
-    color: #c8b890;
+    color: #e0c878;
+    filter: drop-shadow(0 0 4px rgba(224, 200, 120, 0.7));
+  }
+
+  .tile-pedestal .tile-label {
+    color: #b8a870;
+  }
+
+  /* ---- Torch — bigger flame, strong glow ---- */
+
+  .tile-torch {
+    background: #2a2520;
+    border: 1px solid rgba(255, 160, 60, 0.2);
+  }
+
+  .tile-torch .tile-icon {
+    font-size: 1.5em;
+    color: #ffb040;
     opacity: 1;
+    animation: torch-flicker 0.4s ease-in-out infinite alternate;
+    filter:
+      drop-shadow(0 0 5px rgba(255, 160, 40, 0.9))
+      drop-shadow(0 0 10px rgba(255, 120, 20, 0.6));
+  }
+
+  @keyframes torch-flicker {
+    0% {
+      transform: scale(1) translateY(0);
+      opacity: 0.88;
+      filter:
+        drop-shadow(0 0 4px rgba(255, 160, 40, 0.8))
+        drop-shadow(0 0 8px rgba(255, 100, 20, 0.5));
+    }
+    100% {
+      transform: scale(1.12) translateY(-2px);
+      opacity: 1;
+      filter:
+        drop-shadow(0 0 7px rgba(255, 180, 60, 1))
+        drop-shadow(0 0 14px rgba(255, 140, 30, 0.7));
+    }
   }
 
   .tile-trigger {
