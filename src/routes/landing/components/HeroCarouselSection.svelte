@@ -554,10 +554,13 @@
   .dot {
     width: 8px;
     height: 8px;
+    min-width: 8px;
+    min-height: 8px;
     border-radius: 50%;
     border: none;
     cursor: pointer;
     padding: 0;
+    box-sizing: content-box;
     background: rgba(255, 255, 255, 0.25);
     transition:
       background 0.25s ease,

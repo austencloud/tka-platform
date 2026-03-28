@@ -674,11 +674,11 @@
   /* ── Showcase grid ───────────────────────────────────────────────────────── */
   .showcase {
     display: grid;
-    grid-template-columns: 1fr 320px;
+    grid-template-columns: 1fr 380px;
     gap: 24px;
     align-items: start;
     width: 100%;
-    max-width: 940px;
+    max-width: 1060px;
   }
 
   .canvas-col {
@@ -717,7 +717,7 @@
   .notation-col {
     border-radius: 16px;
     overflow: hidden;
-    max-height: clamp(340px, 50vw, 560px);
+    width: 100%;
   }
 
   /* ── Responsive: single column below 800px ───────────────────────────────── */
