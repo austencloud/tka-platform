@@ -28,7 +28,7 @@
   import GridSvg from "$lib/shared/pictograph/grid/components/GridSvg.svelte";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { HAND_POINT_LOCATIONS, PIXELS_PER_UNIT, SVG_CENTER } from "../domain/constants/GridModeOffsets";
-  import { STRICT_HAND_POINT_COORDS } from "$lib/features/conjoined-lab/domain/types";
+  import { STRICT_HAND_POINT_COORDS } from "$lib/features/conjoined-grid/domain/types";
 
   interface Props {
     topology: GridTopology;

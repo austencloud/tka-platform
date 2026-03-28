@@ -81,7 +81,6 @@ import { createWatchContainer } from "./containers/watch-container";
 import { createLanSyncContainer } from "./containers/lan-sync-container";
 import { createConnectContainer } from "./containers/connect-container";
 import { createDeviceSyncContainer } from "./containers/device-sync-container";
-import { conjoinedLabContainer } from "./containers/conjoined-lab-container";
 import { trigridLabContainer } from "./containers/trigrid-lab-container";
 import { multiGridContainer } from "./containers/multi-grid-container";
 import { createAttributionContainer } from "./containers/attribution-container";
@@ -441,7 +440,6 @@ function buildAppContainer(): any {
   c = c.add(lanSyncContainer.items);
   c = c.add(deviceSyncContainer.items);
   c = c.add(connectContainer.items);
-  c = c.add(conjoinedLabContainer.items);
   c = c.add(trigridLabContainer.items);
   c = c.add(multiGridContainer.items);
   // Attribution tracking services

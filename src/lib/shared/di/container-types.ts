@@ -25,7 +25,6 @@ import type { WriteContainer } from "./containers/write-container";
 import type { MandalaContainer } from "./containers/mandala-container";
 import type { SequenceMandalaContainer } from "./containers/sequence-mandala-container";
 import type { BackgroundBuilderContainerType } from "./containers/background-builder-container";
-import type { ConjoinedLabContainer } from "./containers/conjoined-lab-container";
 import type { TrigridLabContainer } from "./containers/trigrid-lab-container";
 import type { MultiGridContainer } from "./containers/multi-grid-container";
 import type { EffectsLabContainer } from "./containers/effects-lab-container";
@@ -105,7 +104,6 @@ type WriteItems = ItemsOf<WriteContainer>;
 type MandalaItems = ItemsOf<MandalaContainer>;
 type SequenceMandalaItems = ItemsOf<SequenceMandalaContainer>;
 type BackgroundBuilderItems = ItemsOf<BackgroundBuilderContainerType>;
-type ConjoinedLabItems = ItemsOf<ConjoinedLabContainer>;
 type TrigridLabItems = ItemsOf<TrigridLabContainer>;
 type MultiGridItems = ItemsOf<MultiGridContainer>;
 type EffectsLabItems = ItemsOf<EffectsLabContainer>;
@@ -219,8 +217,7 @@ export type IAppContainerItems =
 	LanSyncItems &
 	DeviceSyncItems &
 	ConnectItems &
-	ConjoinedLabItems &
-	TrigridLabItems &
+TrigridLabItems &
 	MultiGridItems &
 	// Attribution (proxy keys match container items)
 	AttributionItems &
