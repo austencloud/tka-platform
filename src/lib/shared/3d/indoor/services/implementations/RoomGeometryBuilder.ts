@@ -566,8 +566,10 @@ export class RoomGeometryBuilder implements IRoomGeometryBuilder {
 	}
 
 	private resolveFacing(facing: WallId): number {
-		// In Three.js, camera looks down -Z by default
-		// "north" (toward z=0) means rotating PI around Y
+		// CameraMovementController convention:
+		// Look direction = (sin(yaw), 0, cos(yaw))
+		// yaw=0 → look toward +Z (south in our coords where Z+ = south)
+		// yaw=PI → look toward -Z (north, toward z=0)
 		switch (facing) {
 			case "north":
 				return Math.PI;
