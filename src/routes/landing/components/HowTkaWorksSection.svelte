@@ -64,7 +64,7 @@
       const browseLoader = container.items.browseLoader;
       const full = await browseLoader.loadFullSequenceData(
         "AABB",
-        "seq_1773477720946_so6kw28yf"
+        "seq_1774721810120_yigllpcr6"
       );
 
       if (!full || full.steps.length === 0) {
