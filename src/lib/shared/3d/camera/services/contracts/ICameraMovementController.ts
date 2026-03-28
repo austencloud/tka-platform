@@ -159,4 +159,14 @@ export interface ICameraMovementController {
 	 * Get player position (from physics or kinematic state)
 	 */
 	getPlayerPosition(): Vector3;
+
+	/**
+	 * Set camera yaw directly (radians). Used for spawn facing direction.
+	 */
+	setYaw(yaw: number): void;
+
+	/**
+	 * Set camera pitch directly (radians). Used for spawn look angle.
+	 */
+	setPitch(pitch: number): void;
 }
