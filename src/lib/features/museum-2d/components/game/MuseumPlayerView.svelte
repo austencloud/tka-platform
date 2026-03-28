@@ -71,7 +71,7 @@
     left: 0;
     pointer-events: none;
     z-index: 20;
-    transition: transform 0.15s cubic-bezier(0.34, 1.2, 0.64, 1);
+    transition: transform 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     display: flex;
     align-items: center;
     justify-content: center;

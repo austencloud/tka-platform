@@ -12,31 +12,73 @@
 
   const { state } = getMuseum2DContext();
 
-  // Key-to-direction mapping (WASD + arrows)
-  const KEY_MAP: Record<string, Direction> = {
-    ArrowUp: "north",
-    ArrowDown: "south",
-    ArrowLeft: "west",
-    ArrowRight: "east",
-    w: "north",
-    W: "north",
-    s: "south",
-    S: "south",
-    a: "west",
-    A: "west",
-    d: "east",
-    D: "east",
+  // Movement key tracking for diagonal support
+  const MOVE_KEYS = new Set(["w", "W", "ArrowUp", "s", "S", "ArrowDown", "a", "A", "ArrowLeft", "d", "D", "ArrowRight"]);
+
+  const KEY_AXIS: Record<string, { dx: number; dy: number; facing: Direction }> = {
+    ArrowUp:    { dx: 0,  dy: -1, facing: "north" },
+    ArrowDown:  { dx: 0,  dy:  1, facing: "south" },
+    ArrowLeft:  { dx: -1, dy:  0, facing: "west"  },
+    ArrowRight: { dx: 1,  dy:  0, facing: "east"  },
+    w:          { dx: 0,  dy: -1, facing: "north" },
+    W:          { dx: 0,  dy: -1, facing: "north" },
+    s:          { dx: 0,  dy:  1, facing: "south" },
+    S:          { dx: 0,  dy:  1, facing: "south" },
+    a:          { dx: -1, dy:  0, facing: "west"  },
+    A:          { dx: -1, dy:  0, facing: "west"  },
+    d:          { dx: 1,  dy:  0, facing: "east"  },
+    D:          { dx: 1,  dy:  0, facing: "east"  },
   };
 
-  // Auto-repeat: 200ms initial delay, then 100ms interval
-  let activeKey: string | null = null;
+  // Track which movement keys are currently held
+  let heldKeys = new Set<string>();
+
+  // Auto-repeat: 180ms initial delay, 130ms interval (slightly > 120ms animation)
   let repeatTimer: ReturnType<typeof setTimeout> | null = null;
   let repeatInterval: ReturnType<typeof setInterval> | null = null;
 
   function clearRepeat() {
     if (repeatTimer) { clearTimeout(repeatTimer); repeatTimer = null; }
     if (repeatInterval) { clearInterval(repeatInterval); repeatInterval = null; }
-    activeKey = null;
+  }
+
+  /**
+   * Resolve the current combined dx/dy from all held movement keys and
+   * dispatch either a diagonal or cardinal move. Returns true if a move
+   * was dispatched (even if blocked by collision).
+   */
+  function dispatchMovement(): boolean {
+    let dx = 0;
+    let dy = 0;
+    let lastVerticalFacing: Direction | null = null;
+    let lastHorizontalFacing: Direction | null = null;
+
+    for (const key of heldKeys) {
+      const axis = KEY_AXIS[key];
+      if (!axis) continue;
+      if (axis.dy !== 0) { dy += axis.dy; lastVerticalFacing = axis.facing; }
+      if (axis.dx !== 0) { dx += axis.dx; lastHorizontalFacing = axis.facing; }
+    }
+
+    // Clamp to ±1 in each axis (handles conflicting directions — they cancel)
+    dx = Math.sign(dx);
+    dy = Math.sign(dy);
+
+    if (dx === 0 && dy === 0) return false;
+
+    if (dx !== 0 && dy !== 0) {
+      // Diagonal: prefer vertical facing for consistency
+      const facing = lastVerticalFacing ?? lastHorizontalFacing ?? "north";
+      state.moveDiagonal(dx, dy, facing);
+    } else if (dy !== 0) {
+      const facing = lastVerticalFacing!;
+      state.movePlayer(facing);
+    } else {
+      const facing = lastHorizontalFacing!;
+      state.movePlayer(facing);
+    }
+
+    return true;
   }
 
   function handleKeyDown(e: KeyboardEvent) {
@@ -47,39 +89,48 @@
       return;
     }
 
-    const direction = KEY_MAP[e.key];
-    if (!direction) return;
-
+    if (!MOVE_KEYS.has(e.key)) return;
     e.preventDefault();
 
-    // If this key is already held, browser repeat will re-fire keydown.
-    // We handle our own repeat, so ignore browser repeats.
+    // Ignore browser-generated key repeats — we handle our own timing
     if (e.repeat) return;
 
-    // If a different key was being held, cancel its repeat
-    if (activeKey && activeKey !== e.key) {
+    const wasEmpty = heldKeys.size === 0;
+    heldKeys.add(e.key);
+
+    if (!wasEmpty) {
+      // A new key was added while another was held — restart repeat so the
+      // diagonal fires immediately instead of waiting for the next tick
       clearRepeat();
     }
 
-    if (activeKey === e.key) return;
-
-    activeKey = e.key;
-
     // Immediate first move
-    state.movePlayer(direction);
+    dispatchMovement();
 
-    // After 200ms delay, start repeating at 100ms
+    // After 180ms delay, repeat every 130ms (> 120ms animation so each move finishes)
     repeatTimer = setTimeout(() => {
       repeatInterval = setInterval(() => {
-        const dir = KEY_MAP[activeKey ?? ""];
-        if (dir) state.movePlayer(dir);
-      }, 100);
-    }, 200);
+        dispatchMovement();
+      }, 130);
+    }, 180);
   }
 
   function handleKeyUp(e: KeyboardEvent) {
-    if (e.key === activeKey) {
+    if (!MOVE_KEYS.has(e.key)) return;
+
+    heldKeys.delete(e.key);
+
+    if (heldKeys.size === 0) {
+      // All movement keys released — stop repeating
       clearRepeat();
+    } else {
+      // At least one key still held — restart repeat for the remaining keys
+      clearRepeat();
+      repeatTimer = setTimeout(() => {
+        repeatInterval = setInterval(() => {
+          dispatchMovement();
+        }, 130);
+      }, 0); // No delay — already in motion
     }
   }
 

@@ -57,15 +57,52 @@ export function createMuseum2DState(grid: MuseumGrid) {
     playerX = newX;
     playerY = newY;
 
-    // Brief "isMoving" flag for animation
+    // Brief "isMoving" flag for animation — duration matches CSS transition (120ms)
     isMoving = true;
     if (moveTimeout) clearTimeout(moveTimeout);
     moveTimeout = setTimeout(() => {
       isMoving = false;
-    }, 150);
+    }, 120);
 
     // Check if we stepped onto a trigger
     checkTriggerAtPosition(newX, newY);
+  }
+
+  /**
+   * Move diagonally by (dx, dy). Both axes must be non-zero.
+   *
+   * Prevents corner-cutting: the diagonal tile AND both adjacent cardinal tiles
+   * must all be walkable. If any of the three is blocked, movement is cancelled.
+   * Facing is set to the vertical axis (north/south) for consistency.
+   */
+  function moveDiagonal(dx: number, dy: number, preferredFacing: Direction) {
+    const targetX = playerX + dx;
+    const targetY = playerY + dy;
+    const adjacentHX = playerX + dx; // same column, current row
+    const adjacentHY = playerY;
+    const adjacentVX = playerX;      // current column, same row
+    const adjacentVY = playerY + dy;
+
+    // Update facing regardless of whether movement succeeds
+    playerFacing = preferredFacing;
+
+    // All three tiles must be walkable to prevent corner-cutting
+    if (
+      !canMoveTo(targetX, targetY) ||
+      !canMoveTo(adjacentHX, adjacentHY) ||
+      !canMoveTo(adjacentVX, adjacentVY)
+    ) return;
+
+    playerX = targetX;
+    playerY = targetY;
+
+    isMoving = true;
+    if (moveTimeout) clearTimeout(moveTimeout);
+    moveTimeout = setTimeout(() => {
+      isMoving = false;
+    }, 120);
+
+    checkTriggerAtPosition(targetX, targetY);
   }
 
   function checkTriggerAtPosition(x: number, y: number) {
@@ -170,6 +207,7 @@ export function createMuseum2DState(grid: MuseumGrid) {
     get grid() { return grid; },
 
     movePlayer,
+    moveDiagonal,
     interact,
     clearFocus,
   };
