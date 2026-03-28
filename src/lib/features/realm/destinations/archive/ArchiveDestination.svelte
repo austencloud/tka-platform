@@ -2,62 +2,53 @@
 	/**
 	 * ArchiveDestination — The Kinetic Archive
 	 *
-	 * Standalone 3D scene with proper FPS camera. Does NOT use WorldScene
-	 * (designed for outdoor terrain with third-person raycasting that breaks
-	 * in enclosed rooms). Uses GalleryCanvas + FirstPersonCamera directly.
+	 * Standalone 3D scene using IndoorScene for physics-based FPS navigation
+	 * with Rapier collision detection and grid-snapped room geometry.
 	 */
-	import GalleryCanvas from "$lib/features/realm/destinations/gallery/components/GalleryCanvas.svelte";
-	import DiscoveryChamber from "./components/DiscoveryChamber.svelte";
-	import FirstPersonCamera from "./components/FirstPersonCamera.svelte";
-	import PlaqueOverlay from "./components/PlaqueOverlay.svelte";
+	import IndoorScene from "$lib/shared/3d/indoor/IndoorScene.svelte";
+	import { RoomGeometryBuilder } from "$lib/shared/3d/indoor/services/implementations/RoomGeometryBuilder";
+	import { DISCOVERY_CHAMBER } from "./domain/wing-definitions";
 	import { createArchiveState } from "./state/archive-state.svelte";
+	import DiscoveryChamber from "./components/DiscoveryChamber.svelte";
+	import PlaqueOverlay from "./components/PlaqueOverlay.svelte";
 
 	const archiveState = createArchiveState();
+	const builder = new RoomGeometryBuilder();
+	const solvedRoom = builder.build(DISCOVERY_CHAMBER);
 
-	const groundY = 8;
+	// World offset: existing archive uses groundY = 8
+	solvedRoom.worldOffset = { x: 0, y: 8, z: 0 };
 
-	let playerPosition = $state({ x: 0, y: groundY + 1.7, z: 3 });
+	let playerPosition = $state({ x: 0, y: 0, z: 0 });
 
 	function handlePlaqueClose() {
 		archiveState.closePlaque();
-		// Re-lock pointer after closing plaque
 		const canvas = document.querySelector<HTMLCanvasElement>("canvas[data-engine]");
 		canvas?.requestPointerLock();
 	}
 </script>
 
 <div class="archive-scene">
-	<GalleryCanvas
-		renderingBackend="webgpu-auto"
-		autoRender={true}
-		toneMapping={undefined}
+	<IndoorScene
+		room={solvedRoom}
+		eyeHeight={1.7}
+		moveSpeed={2.5}
+		onPositionChange={(pos) => { playerPosition = pos; }}
 	>
-		<FirstPersonCamera
-			position={[0, groundY + 1.7, 3]}
-			lookAt={[0, groundY + 1.2, -5]}
-			speed={2.5}
-			eyeHeight={groundY + 1.7}
-			onPositionChange={(pos) => { playerPosition = pos; }}
-		/>
-
 		<DiscoveryChamber
-			{groundY}
+			{solvedRoom}
 			{playerPosition}
 			{archiveState}
 		/>
-	</GalleryCanvas>
+	</IndoorScene>
 
 	<!-- Crosshair -->
 	<div class="crosshair"></div>
 
-	<!-- Click-to-start hint (fades out after pointer lock) -->
 	{#if !archiveState.isOverlayOpen}
-		<div class="hint" class:hidden={false}>
-			Click to explore
-		</div>
+		<div class="hint">Click to explore</div>
 	{/if}
 
-	<!-- Interaction prompt -->
 	{#if archiveState.interactionTargetId && !archiveState.isOverlayOpen}
 		<div class="interaction-prompt">
 			<div class="prompt-key">E</div>
@@ -65,7 +56,6 @@
 		</div>
 	{/if}
 
-	<!-- Plaque overlay -->
 	{#if archiveState.isOverlayOpen && archiveState.activePlaqueContent}
 		<PlaqueOverlay
 			content={archiveState.activePlaqueContent}
@@ -114,10 +104,6 @@
 		pointer-events: none;
 		z-index: 10;
 		transition: opacity 0.5s ease;
-	}
-
-	.hint.hidden {
-		opacity: 0;
 	}
 
 	.interaction-prompt {

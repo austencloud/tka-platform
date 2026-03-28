@@ -2,31 +2,30 @@
 	/**
 	 * DiscoveryChamber - Wing 1: Ancient Origins
 	 *
-	 * An enclosed cave-like room housing the Lascaux Tablets exhibit.
-	 * Dark stone walls, flickering torchlight, dramatic exhibit spotlight.
-	 * The first room of The Kinetic Archive.
+	 * Provides the exhibit content, torch lighting, and cave ambiance
+	 * for the Discovery Chamber. Room geometry (walls, floor, ceiling)
+	 * is rendered by IndoorScene — this component only adds:
+	 *   - Tablet exhibit at the pedestal position
+	 *   - Torch lights at mount positions
+	 *   - Cave-specific lighting (ambient, hemisphere)
+	 *   - Scene background color (cave darkness)
+	 *   - Interaction detection (E key near exhibit)
 	 */
 	import { T, useThrelte } from "@threlte/core";
 	import * as THREE from "three";
-	import {
-		getChamberWalls,
-		getCeilingSegments,
-		getFloorSegments,
-		getTorchPositions,
-		getExhibitPosition,
-	} from "../domain/chamber-geometry";
+	import type { SolvedRoom } from "$lib/shared/3d/indoor/domain/room-types";
 	import TorchLight from "./TorchLight.svelte";
 	import TabletExhibit from "./TabletExhibit.svelte";
 	import type { ArchiveState } from "../state/archive-state.svelte";
 	import { LASCAUX_TABLETS_PLAQUE } from "../domain/lascaux-plaque";
 
 	interface Props {
-		groundY: number;
+		solvedRoom: SolvedRoom;
 		playerPosition: { x: number; y: number; z: number };
 		archiveState: ArchiveState;
 	}
 
-	let { groundY, playerPosition, archiveState }: Props = $props();
+	let { solvedRoom, playerPosition, archiveState }: Props = $props();
 
 	// Set scene background to black (cave darkness)
 	const { scene } = useThrelte();
@@ -40,20 +39,30 @@
 		};
 	});
 
-	// Materials - brighter than real cave to ensure visibility with torchlight
-	const wallColor = new THREE.Color(0x5a4a3a); // Warm brown stone
-	const floorColor = new THREE.Color(0x4a3a2a); // Slightly darker floor
-	const ceilingColor = new THREE.Color(0x3a302a); // Darkest ceiling
+	// World offset for positioning objects
+	const ox = solvedRoom.worldOffset.x;
+	const oy = solvedRoom.worldOffset.y;
+	const oz = solvedRoom.worldOffset.z;
 
-	// Geometry data
-	const walls = $derived(getChamberWalls(groundY));
-	const ceilings = $derived(getCeilingSegments(groundY));
-	const floors = $derived(getFloorSegments(groundY));
-	const torchPositions = $derived(getTorchPositions(groundY));
-	const exhibitPosition = $derived(getExhibitPosition(groundY));
+	// Get exhibit position from solved room objects
+	const exhibitObj = solvedRoom.objectsById.get("tablet-pedestal");
+	const exhibitPosition: [number, number, number] = exhibitObj
+		? [exhibitObj.position[0] + ox, exhibitObj.position[1] + oy, exhibitObj.position[2] + oz]
+		: [0 + ox, 0 + oy, -4.5 + oz];
+
+	// Ground Y for exhibit pedestal placement (floor level with world offset)
+	const groundY = oy;
+
+	// Get torch positions from solved room objects
+	const torchObjects = solvedRoom.objects.filter((o) => o.type === "torch-mount");
+	const torchPositions: [number, number, number][] = torchObjects.map((t) => [
+		t.position[0] + ox,
+		t.position[1] + oy,
+		t.position[2] + oz,
+	]);
 
 	// Interaction detection: is player near the exhibit?
-	const INTERACTION_RADIUS = 3.5; // meters
+	const INTERACTION_RADIUS = 3.5;
 	const distanceToExhibit = $derived.by(() => {
 		const dx = playerPosition.x - exhibitPosition[0];
 		const dz = playerPosition.z - exhibitPosition[2];
@@ -78,74 +87,16 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-<!-- Ambient light (enough to see walls even away from torches) -->
+<!-- Cave ambient light (enough to see walls even away from torches) -->
 <T.AmbientLight color="#2a1808" intensity={0.4} />
 
 <!-- Hemisphere light for ground/sky color variation -->
-<T.HemisphereLight
-	args={["#1a1008", "#2a2014", 0.25]}
-/>
+<T.HemisphereLight args={["#1a1008", "#2a2014", 0.25]} />
 
-<!-- ======================== WALLS ======================== -->
-{#each walls as wall, i (i)}
-	<T.Mesh
-		position.x={wall.position[0]}
-		position.y={wall.position[1]}
-		position.z={wall.position[2]}
-		rotation.y={wall.rotationY}
-	>
-		<T.BoxGeometry args={wall.size} />
-		<T.MeshStandardMaterial
-			color={wallColor}
-			roughness={0.95}
-			metalness={0.02}
-			side={THREE.DoubleSide}
-		/>
-	</T.Mesh>
-{/each}
-
-<!-- ======================== CEILING ======================== -->
-{#each ceilings as ceiling, i (i)}
-	<T.Mesh
-		position.x={ceiling.position[0]}
-		position.y={ceiling.position[1]}
-		position.z={ceiling.position[2]}
-	>
-		<T.BoxGeometry args={ceiling.size} />
-		<T.MeshStandardMaterial
-			color={ceilingColor}
-			roughness={0.95}
-			metalness={0.0}
-			side={THREE.DoubleSide}
-		/>
-	</T.Mesh>
-{/each}
-
-<!-- ======================== FLOOR ======================== -->
-{#each floors as floor, i (i)}
-	<T.Mesh
-		position.x={floor.position[0]}
-		position.y={floor.position[1]}
-		position.z={floor.position[2]}
-		receiveShadow
-	>
-		<T.BoxGeometry args={floor.size} />
-		<T.MeshStandardMaterial
-			color={floorColor}
-			roughness={0.9}
-			metalness={0.03}
-			side={THREE.DoubleSide}
-		/>
-	</T.Mesh>
-{/each}
-
-<!-- ======================== TORCH LIGHTS ======================== -->
+<!-- Torch lights at solved mount positions -->
 {#each torchPositions as pos, i (i)}
 	<TorchLight position={pos} />
 {/each}
 
-<!-- ======================== EXHIBIT ======================== -->
+<!-- Tablet exhibit at solved pedestal position -->
 <TabletExhibit position={exhibitPosition} {groundY} />
-
-<!-- ======================== INTERACTION PROMPT ======================== -->
-<!-- This is handled by ArchiveDestination.svelte (HTML overlay) -->

@@ -56,10 +56,7 @@
   import { InteractionDetector } from "$lib/features/realm/destinations/museum/services/implementations/InteractionDetector";
   import { setActiveMuseumState } from "$lib/features/realm/destinations/museum/state/museum-state-bridge.svelte";
 
-  // Archive (The Kinetic Archive)
-  import DiscoveryChamber from "$lib/features/realm/destinations/archive/components/DiscoveryChamber.svelte";
-  import { createArchiveState } from "$lib/features/realm/destinations/archive/state/archive-state.svelte";
-  import { setActiveArchiveState } from "$lib/features/realm/destinations/archive/state/archive-state-bridge.svelte";
+  // Archive (The Kinetic Archive) — standalone via ArchiveDestination + IndoorScene
 
   import hannonsTerrainData from "../../data/hannons-camp-terrain.json";
 
@@ -236,14 +233,8 @@
     return () => setActiveMuseumState(null);
   });
 
-  // Archive state (The Kinetic Archive - narrative museum)
+  // Archive realm detection (used for camera/lighting adjustments when in archive zone)
   const isArchiveRealm = $derived(activeConfig.id === "archive-wing1");
-  const archiveState = createArchiveState();
-
-  $effect(() => {
-    setActiveArchiveState(isArchiveRealm ? archiveState : null);
-    return () => setActiveArchiveState(null);
-  });
 
   // Sun light reference for shadow updates
   let sunLight: DirectionalLight | null = null;
@@ -1096,7 +1087,7 @@
     fov={isArchiveRealm ? 70 : 60}
     near={0.1}
     far={10000}
-    on:create={({ ref }) => {
+    oncreate={(ref) => {
       if (isArchiveRealm) {
         ref.lookAt(0, 9.2, -5);
       } else {
@@ -1179,11 +1170,4 @@
   />
 {/if}
 
-<!-- Archive: The Kinetic Archive (narrative museum rooms) -->
-{#if isArchiveRealm && isInitialized && isReadyToRender}
-  <DiscoveryChamber
-    groundY={(activeConfig.terrain.waterLevel ?? 5) + 3}
-    {playerPosition}
-    {archiveState}
-  />
-{/if}
+<!-- Archive: The Kinetic Archive is now standalone via ArchiveDestination + IndoorScene -->
