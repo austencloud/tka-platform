@@ -73,15 +73,17 @@ const BAYER_4X4 = [
  * Grid point positions below are in that space.
  */
 const GRID_CENTER = { x: 475, y: 475 };
+// Cardinal positions match Canvas2DDirectRenderer.BASE_GRID_POINTS (radius 300 from center)
+// Intercardinals at 300 * cos(45°) ≈ 212 offset from center
 const GRID_POINTS = {
-	n:  { x: 475, y: 120 },
-	s:  { x: 475, y: 830 },
-	e:  { x: 830, y: 475 },
-	w:  { x: 120, y: 475 },
-	ne: { x: 726, y: 224 },
-	nw: { x: 224, y: 224 },
-	se: { x: 726, y: 726 },
-	sw: { x: 224, y: 726 },
+	n:  { x: 475, y: 175 },
+	s:  { x: 475, y: 775 },
+	e:  { x: 775, y: 475 },
+	w:  { x: 175, y: 475 },
+	ne: { x: 687, y: 263 },
+	nw: { x: 263, y: 263 },
+	se: { x: 687, y: 687 },
+	sw: { x: 263, y: 687 },
 };
 
 // Win95 grid colors — gray lines, darker gray dots
