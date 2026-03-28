@@ -34,10 +34,11 @@
   import { RANDOM_PROPS } from "../landing-content";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import { EFFORTS, type EffortId as EffortPresetId } from "$lib/features/effort-lab/domain/effort-types";
   import type { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
   // ── Effect definitions ──────────────────────────────────────────────────────
-  type EffectId = "clean" | "trails" | "fire" | "leds";
+  type EffectId = "clean" | "trails" | "fire" | "leds" | "charcoal";
 
   interface EffectDef {
     id: EffectId;
@@ -50,6 +51,7 @@
     { id: "clean", label: "Clean", icon: "fas fa-circle", activeColor: "#a3a3a3" },
     { id: "trails", label: "Trails", icon: "fas fa-wind", activeColor: "#818cf8" },
     { id: "fire", label: "Fire", icon: "fas fa-fire", activeColor: "#f59e0b" },
+    { id: "charcoal", label: "Charcoal", icon: "fas fa-smog", activeColor: "#78716c" },
     { id: "leds", label: "LEDs", icon: "fas fa-lightbulb", activeColor: "#00ff88" },
   ];
 
@@ -114,6 +116,13 @@
   // Effect state
   let activeEffect = $state<EffectId>("trails");
   const visibilityManager = getAnimationVisibilityManager();
+
+  // Effort state — cycles through available effort presets
+  let activeEffort = $state<EffortPresetId>("linear");
+  const EFFORT_CYCLE: EffortPresetId[] = EFFORTS.map((e) => e.id);
+  const EFFORT_COLORS: Record<EffortPresetId, string> = Object.fromEntries(
+    EFFORTS.map((e) => [e.id, e.color])
+  ) as Record<EffortPresetId, string>;
 
   // ── Derived values for AnimatorCanvas ───────────────────────────────────────
   let derivedStartPosition = $derived.by(() => {
@@ -255,21 +264,31 @@
       case "clean":
         visibilityManager.setTrailStyle("off");
         visibilityManager.setFireEffect(false);
+        visibilityManager.setCharcoalEffect(false);
         visibilityManager.setLedEffect(false);
         break;
       case "trails":
         visibilityManager.setTrailStyle("on");
         visibilityManager.setFireEffect(false);
+        visibilityManager.setCharcoalEffect(false);
         visibilityManager.setLedEffect(false);
         break;
       case "fire":
         visibilityManager.setTrailStyle("on");
         visibilityManager.setFireEffect(true);
+        visibilityManager.setCharcoalEffect(false);
         visibilityManager.setLedEffect(false);
+        break;
+      case "charcoal":
+        visibilityManager.setTrailStyle("off");
+        visibilityManager.setFireEffect(false);
+        visibilityManager.setLedEffect(false);
+        visibilityManager.setCharcoalEffect(true);
         break;
       case "leds":
         visibilityManager.setTrailStyle("on");
         visibilityManager.setFireEffect(false);
+        visibilityManager.setCharcoalEffect(false);
         visibilityManager.setLedEffect(true);
         break;
     }
@@ -291,6 +310,14 @@
       );
       animationState.setSequenceData(updated);
     }
+  }
+
+  // ── Effort cycling ─────────────────────────────────────────────────────────
+  function cycleEffort() {
+    const idx = EFFORT_CYCLE.indexOf(activeEffort);
+    const next = EFFORT_CYCLE[(idx + 1) % EFFORT_CYCLE.length]!;
+    activeEffort = next;
+    visibilityManager.setEffortPreset(next);
   }
 
   // ── Sequence loading ────────────────────────────────────────────────────────
@@ -401,6 +428,8 @@
 
   // ── Derived display values ──────────────────────────────────────────────────
   let propLabel = $derived(PROP_LABELS[currentPropType] ?? "Staff");
+  let effortLabel = $derived(EFFORTS.find((e) => e.id === activeEffort)?.label ?? "Linear");
+  let effortColor = $derived(EFFORT_COLORS[activeEffort] ?? "#94a3b8");
   let isDisabled = $derived(!servicesReady || isLoading);
 </script>
 
@@ -433,6 +462,17 @@
     >
       <i class="fas fa-random" aria-hidden="true"></i>
       <span>{propLabel}</span>
+    </button>
+
+    <button
+      class="effort-btn"
+      onclick={cycleEffort}
+      disabled={isDisabled}
+      aria-label="Cycle effort quality, currently {effortLabel}"
+      style="--effort-color: {effortColor};"
+    >
+      <i class="fas fa-wave-square" aria-hidden="true"></i>
+      <span>{effortLabel}</span>
     </button>
   </div>
 
@@ -595,14 +635,50 @@
     font-size: 14px;
   }
 
+  /* ── Effort button ──────────────────────────────────────────────────────── */
+  .effort-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 24px;
+    min-height: 44px;
+    border-radius: 100px;
+    border: 1.5px solid color-mix(in srgb, var(--effort-color) 35%, transparent);
+    background: color-mix(in srgb, var(--effort-color) 10%, transparent);
+    color: var(--effort-color);
+    font-size: var(--font-size-sm, 0.875rem);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .effort-btn:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--effort-color) 18%, transparent);
+    border-color: color-mix(in srgb, var(--effort-color) 55%, transparent);
+    box-shadow: 0 0 16px color-mix(in srgb, var(--effort-color) 15%, transparent);
+  }
+
+  .effort-btn:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+
+  .effort-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  .effort-btn i {
+    font-size: 14px;
+  }
+
   /* ── Showcase grid ───────────────────────────────────────────────────────── */
   .showcase {
     display: grid;
-    grid-template-columns: 1fr 260px;
+    grid-template-columns: 1fr 320px;
     gap: 24px;
     align-items: start;
     width: 100%;
-    max-width: 880px;
+    max-width: 940px;
   }
 
   .canvas-col {
@@ -670,7 +746,8 @@
       gap: 6px;
     }
 
-    .prop-btn {
+    .prop-btn,
+    .effort-btn {
       padding: 8px 16px;
       font-size: var(--font-size-compact, 12px);
     }
@@ -692,11 +769,13 @@
 
   @media (prefers-reduced-motion: reduce) {
     .chip,
-    .prop-btn {
+    .prop-btn,
+    .effort-btn {
       transition: none;
     }
 
-    .prop-btn:active:not(:disabled) {
+    .prop-btn:active:not(:disabled),
+    .effort-btn:active:not(:disabled) {
       transform: none;
     }
   }
