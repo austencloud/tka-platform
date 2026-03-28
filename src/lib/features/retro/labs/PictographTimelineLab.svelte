@@ -14,6 +14,7 @@
   import { onMount } from "svelte";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import { PixelRenderer } from "$lib/features/retro/win95/services/implementations/PixelRenderer";
+  import { XPRenderer } from "$lib/features/retro/winxp/services/implementations/XPRenderer";
   import { SvgToBrailleConverter } from "$lib/features/retro/dos/services/implementations/SvgToBrailleConverter";
   import AsciiRawPreview from "./AsciiRawPreview.svelte";
   import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/implementations/MotionQueryHandler";
@@ -27,12 +28,14 @@
   import "$lib/features/retro/dos/styles/dos-terminal.css";
 
   const pixelRenderer = new PixelRenderer(pictographPreparer);
+  const xpRenderer = new XPRenderer(pictographPreparer);
   const svgToBraille = new SvgToBrailleConverter(
     container.items.canvas2DRenderer as IDirectRenderer,
     pictographPreparer,
   );
 
   const PIXEL_INTERNAL_SIZE = 128;
+  const XP_INTERNAL_SIZE = 256;
 
   // ── State ──
 
@@ -44,6 +47,9 @@
 
   // 1995 pixel canvas
   let pixelCanvas = $state<HTMLCanvasElement | undefined>();
+
+  // 2003 XP canvas
+  let xpCanvas = $state<HTMLCanvasElement | undefined>();
 
   // 1989 braille
   let brailleLines = $state<string[]>([]);
@@ -113,6 +119,16 @@
     pixelRenderer.render(canvas, retroData, PIXEL_INTERNAL_SIZE);
   });
 
+  // ── Render 2003 XP when pictograph changes ──
+
+  $effect(() => {
+    const data = pictograph;
+    const canvas = xpCanvas;
+    if (!canvas || !data) return;
+    const retroData = toRetro(data);
+    xpRenderer.render(canvas, retroData, XP_INTERNAL_SIZE);
+  });
+
   // ── Render 1989 braille when pictograph changes ──
 
   $effect(() => {
@@ -179,9 +195,9 @@
   {:else if error}
     <div class="lab-status lab-error">{error}</div>
   {:else}
-    <!-- Three-column comparison -->
+    <!-- 2×2 era comparison grid -->
     <div class="compare-row">
-      <!-- 1989: ASCII/Braille -->
+      <!-- 1989: ASCII/Braille (top-left) -->
       <div class="era-column">
         <div class="era-label era-1989">1989</div>
         <div class="era-content">
@@ -200,9 +216,7 @@
         </div>
       </div>
 
-      <div class="era-divider"></div>
-
-      <!-- 1995: Pixel -->
+      <!-- 1995: Pixel (top-right) -->
       <div class="era-column">
         <div class="era-label era-1995">1995</div>
         <div class="era-content">
@@ -218,9 +232,23 @@
         </div>
       </div>
 
-      <div class="era-divider"></div>
+      <!-- 2003: XP (bottom-left) -->
+      <div class="era-column">
+        <div class="era-label era-2003">2003</div>
+        <div class="era-content">
+          <div class="xp-frame">
+            <canvas
+              bind:this={xpCanvas}
+              width={XP_INTERNAL_SIZE}
+              height={XP_INTERNAL_SIZE}
+              class="xp-canvas"
+              aria-label="2003 XP pictograph"
+            ></canvas>
+          </div>
+        </div>
+      </div>
 
-      <!-- 2026: Modern SVG -->
+      <!-- 2026: Modern SVG (bottom-right) -->
       <div class="era-column">
         <div class="era-label era-2026">2026</div>
         <div class="era-content">
@@ -327,21 +355,24 @@
     cursor: not-allowed;
   }
 
-  /* ── Three-column comparison ── */
+  /* ── 2×2 era comparison grid ── */
 
   .compare-row {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
     flex: 1;
     min-height: 0;
-    gap: 0;
+    gap: 1px;
+    background: rgba(255, 255, 255, 0.08);
   }
 
   .era-column {
-    flex: 1;
     display: flex;
     flex-direction: column;
     min-width: 0;
     min-height: 0;
+    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
   }
 
   .era-label {
@@ -356,6 +387,7 @@
 
   .era-1989 { color: #33ff33; }
   .era-1995 { color: #6666ff; }
+  .era-2003 { color: #FF9933; }
   .era-2026 { color: var(--theme-text-dim, rgba(255, 255, 255, 0.6)); }
 
   .era-content {
@@ -365,12 +397,6 @@
     justify-content: center;
     min-height: 0;
     padding: 8px;
-  }
-
-  .era-divider {
-    width: 1px;
-    background: rgba(255, 255, 255, 0.08);
-    align-self: stretch;
   }
 
   .era-loading {
@@ -465,6 +491,25 @@
     aspect-ratio: 1;
     background: #c0c0c0;
     border: 2px inset #c0c0c0;
+  }
+
+  /* ── XP frame (2003) ── */
+
+  .xp-frame {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+  }
+
+  .xp-canvas {
+    display: block;
+    width: min(100%, 80vh);
+    max-width: 500px;
+    height: auto;
+    aspect-ratio: 1;
+    background: #ffffff;
   }
 
   /* ── SVG frame (2026) ── */
