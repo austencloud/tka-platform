@@ -34,16 +34,13 @@
   let heldKeys = new Set<string>();
 
   // Timing constants
-  const INPUT_BUFFER_MS = 30;    // Wait for simultaneous keypresses before first move
   const REPEAT_DELAY_MS = 150;   // Delay before auto-repeat starts
-  const REPEAT_INTERVAL_MS = 100; // Interval between repeated moves (fast, smooth)
+  const REPEAT_INTERVAL_MS = 100; // Interval between repeated moves
 
-  let inputBufferTimer: ReturnType<typeof setTimeout> | null = null;
   let repeatTimer: ReturnType<typeof setTimeout> | null = null;
   let repeatInterval: ReturnType<typeof setInterval> | null = null;
 
   function clearRepeat() {
-    if (inputBufferTimer) { clearTimeout(inputBufferTimer); inputBufferTimer = null; }
     if (repeatTimer) { clearTimeout(repeatTimer); repeatTimer = null; }
     if (repeatInterval) { clearInterval(repeatInterval); repeatInterval = null; }
   }
@@ -88,26 +85,19 @@
   }
 
   /**
-   * Start the movement loop: buffer → first move → repeat.
-   * Called whenever held keys change.
+   * Start the repeat loop after the initial immediate move.
+   * On each tick, checks all held keys so diagonal emerges naturally
+   * when both axes are held simultaneously.
    */
-  function startMovementLoop() {
+  function startRepeatLoop() {
     clearRepeat();
     if (heldKeys.size === 0) return;
 
-    // Buffer: wait a few ms for simultaneous keypresses to register
-    // (W+D pressed "at once" arrive as two events ~5-15ms apart)
-    inputBufferTimer = setTimeout(() => {
-      // First move
-      dispatchMovement();
-
-      // Then repeat
-      repeatTimer = setTimeout(() => {
-        repeatInterval = setInterval(() => {
-          dispatchMovement();
-        }, REPEAT_INTERVAL_MS);
-      }, REPEAT_DELAY_MS);
-    }, INPUT_BUFFER_MS);
+    repeatTimer = setTimeout(() => {
+      repeatInterval = setInterval(() => {
+        dispatchMovement();
+      }, REPEAT_INTERVAL_MS);
+    }, REPEAT_DELAY_MS);
   }
 
   function handleKeyDown(e: KeyboardEvent) {
@@ -123,13 +113,26 @@
     if (e.repeat) return;
 
     heldKeys.add(e.key);
-    startMovementLoop();
+
+    // First press is always immediate and cardinal (this key's direction only).
+    // Diagonal movement emerges from held keys on repeat ticks — matching how
+    // tile-based games (Pokemon, Zelda) handle it. Sequential presses stay
+    // independent; holding both keys produces diagonals on the repeat cycle.
+    dispatchMovement();
+    startRepeatLoop();
   }
 
   function handleKeyUp(e: KeyboardEvent) {
     if (!MOVE_KEYS.has(e.key)) return;
     heldKeys.delete(e.key);
-    startMovementLoop();
+
+    // If keys remain held, restart the repeat so the remaining direction
+    // continues smoothly without an extra delay gap.
+    if (heldKeys.size > 0) {
+      startRepeatLoop();
+    } else {
+      clearRepeat();
+    }
   }
 
   onMount(() => {
