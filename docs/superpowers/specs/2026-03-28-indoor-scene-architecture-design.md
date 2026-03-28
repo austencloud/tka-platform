@@ -100,6 +100,11 @@ interface EntranceDefinition {
   width: number;     // meters
   height: number;    // meters
   offset: "center" | number; // center or meters from wall start
+  corridor?: {
+    depth: number;   // how far the corridor extends from the room
+    height: number;  // corridor ceiling height (may differ from room)
+    width?: number;  // defaults to entrance width if omitted
+  };
 }
 
 interface ConnectionDefinition {
@@ -129,17 +134,11 @@ type RoomObjectType =
   | "display-case"
   | "alcove";
 
-interface RoomLightDefinition {
-  type: "torch" | "spotlight" | "ambient" | "hemisphere";
-  // torch: placed at object location
-  targetObjectId?: string;
-  // spotlight: aimed at a target
-  target?: string; // object ID reference
-  angle?: number;
-  // ambient/hemisphere: scene-wide
-  color?: string;
-  intensity?: number;
-}
+type RoomLightDefinition =
+  | { type: "torch"; targetObjectId: string; intensity?: number }
+  | { type: "spotlight"; target: string; angle: number; intensity?: number; color?: string }
+  | { type: "ambient"; color: string; intensity: number }
+  | { type: "hemisphere"; color: string; intensity: number };
 
 type WallMaterialId = "stone" | "marble" | "wood" | "metal" | "sandstone";
 ```
@@ -155,7 +154,10 @@ const DISCOVERY_CHAMBER: RoomDefinition = {
   depth: 12,
   height: 4.5,
   walls: { thickness: 0.5, material: "stone" },
-  entrance: { wall: "south", width: 3, height: 3.2, offset: "center" },
+  entrance: {
+    wall: "south", width: 3, height: 3.2, offset: "center",
+    corridor: { depth: 4, height: 3.2, width: 2.8 },
+  },
   connections: [], // Wing 1 has no connections yet
   objects: [
     {
@@ -231,12 +233,18 @@ interface SolvedRoom {
   entrance: SolvedEntrance;
   objects: SolvedObject[];
 
-  // Physics geometry (for Rapier colliders)
+  // Convenience lookup (O(1) by ID instead of array search)
+  objectsById: Map<string, SolvedObject>;
+
+  // Physics geometry (for Rapier colliders — uses existing ColliderConfig convention)
   colliders: ColliderDefinition[];
 
   // Player
   spawnPoint: { x: number; y: number; z: number };
   spawnFacing: number; // yaw in radians
+
+  // World-space offset (rooms can be placed above world origin)
+  worldOffset: { x: number; y: number; z: number }; // default (0, 0, 0)
 
   // Metadata
   bounds: { minX: number; maxX: number; minZ: number; maxZ: number };
@@ -259,6 +267,18 @@ interface SolvedSurface {
 interface SolvedEntrance {
   // Wall sections around the entrance opening
   segments: SolvedWallSegment[];
+  // The opening itself (for door frames, trigger zones, lighting)
+  opening: {
+    position: [number, number, number]; // center of opening
+    size: [number, number];             // width, height
+    facing: number;                     // outward normal as yaw radians
+  };
+  // Corridor geometry (if entrance has a corridor)
+  corridor?: {
+    walls: SolvedWallSegment[];
+    floor: SolvedSurface;
+    ceiling: SolvedSurface;
+  };
 }
 
 interface SolvedObject {
@@ -271,7 +291,7 @@ interface SolvedObject {
 interface ColliderDefinition {
   shape: "box";
   position: [number, number, number]; // center
-  halfExtents: [number, number, number]; // Rapier half-extents
+  size: [number, number, number];     // full extents (matches existing ColliderConfig convention)
 }
 ```
 
@@ -347,6 +367,14 @@ src/lib/shared/3d/indoor/
 - Material lookup from `WallMaterialId`
 - Spawn point initialization
 
+### Prerequisites (Changes to Existing Code)
+
+**CameraMovementController needs a `setYaw(radians)` method.** Currently `yaw` is private with no setter — the only way to change it is through `update()` with look input deltas. IndoorScene needs to set the initial facing direction from `room.spawnFacing`. Add `setYaw(yaw: number)` and `setPitch(pitch: number)` to `ICameraMovementController` and the implementation.
+
+### Interaction Detection
+
+Each wing component owns its own interaction detection (proximity checks, E-key handling). IndoorScene does not provide a built-in interaction system. Wings can use the existing `InteractionDetector` pattern from the museum destination, or simple distance checks as the current DiscoveryChamber does. A shared indoor interaction system is a Phase 3 concern.
+
 ### Props
 
 ```typescript
@@ -354,7 +382,7 @@ interface IndoorSceneProps {
   room: SolvedRoom;
   eyeHeight?: number;    // default 1.7
   moveSpeed?: number;    // default 2.5
-  gravity?: number;      // default -20
+  gravity?: number;      // default -9.81 (standard gravity; WorldScene uses -20 for snappier outdoor feel)
   children: Snippet;     // destination content (exhibits, custom lighting, interactions)
 }
 ```
@@ -406,18 +434,24 @@ Material properties are looked up from a material registry. Phase 1 uses solid c
 
 ### Collider Creation
 
-```typescript
-for (const collider of room.colliders) {
-  const bodyDesc = RAPIER.RigidBodyDesc.fixed()
-    .setTranslation(collider.position[0], collider.position[1], collider.position[2]);
-  const body = world.createRigidBody(bodyDesc);
+Uses the existing `createRigidBody()` helper from `rapier-world.ts` which accepts `RigidBodyConfig` + `ColliderConfig` and handles half-extent conversion internally:
 
-  const colliderDesc = RAPIER.ColliderDesc.cuboid(
-    collider.halfExtents[0],
-    collider.halfExtents[1],
-    collider.halfExtents[2]
-  );
-  world.createCollider(colliderDesc, body);
+```typescript
+import { createRigidBody } from "$lib/shared/3d/physics/rapier-world";
+
+for (const collider of room.colliders) {
+  createRigidBody(physicsState, {
+    bodyConfig: {
+      type: "fixed",
+      position: { x: collider.position[0], y: collider.position[1], z: collider.position[2] },
+    },
+    colliderConfig: {
+      shape: "box",
+      size: collider.size, // full extents — helper divides by 2 for Rapier
+      friction: 0.8,
+      restitution: 0.0,
+    },
+  });
 }
 ```
 
@@ -490,7 +524,7 @@ Spawn a test capsule and walk it along each wall via Rapier simulation. If it pa
 ```svelte
 <IndoorScene room={solvedRoom} eyeHeight={1.7} moveSpeed={2.5}>
   <!-- Wing-specific content -->
-  <TabletExhibit position={solvedRoom.objects.find(o => o.id === 'tablet-pedestal')?.position} />
+  <TabletExhibit position={solvedRoom.objectsById.get('tablet-pedestal')?.position} />
 
   {#each torchObjects as torch}
     <TorchLight position={torch.position} />
@@ -567,6 +601,8 @@ src/lib/features/realm/destinations/archive/
 - Connection rendering (doorways, corridors between wings)
 - Wing-to-wing navigation (walk through doorway → load next wing)
 - Transition effects (lighting fade, loading states)
+- Shared wall handling: adjacent rooms sharing a wall must avoid double-thickness geometry (solver deduplicates shared wall segments)
+- Shared indoor interaction system (proximity + angle detection, extracted from per-wing logic)
 
 ### Phase 4: Editor (Future)
 
