@@ -30,7 +30,8 @@
     TrackingMode,
   } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
-  import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
+  import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
+  import { createStartPositionFromBeatStart } from "$lib/features/create/shared/services/implementations/sequence-transforms/sequence-transforms";
   import { RANDOM_PROPS } from "../landing-content";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
@@ -431,6 +432,56 @@
   let effortLabel = $derived(EFFORTS.find((e) => e.id === activeEffort)?.label ?? "Linear");
   let effortColor = $derived(EFFORT_COLORS[activeEffort] ?? "#94a3b8");
   let isDisabled = $derived(!servicesReady || isLoading);
+
+  // ── Notation panel cells ──────────────────────────────────────────────────
+  // Build an array of cells: start position (index 0) + each beat step.
+  // Each cell carries the pictograph data and a display label.
+  interface NotationCell {
+    key: string;
+    data: StepData | StartPositionData;
+    label: string;
+    isStart: boolean;
+    beatIndex: number; // 0 for start, 1-N for beats
+  }
+
+  let notationCells = $derived.by((): NotationCell[] => {
+    const seq = animationState.sequenceData;
+    if (!seq?.steps?.length) return [];
+
+    const cells: NotationCell[] = [];
+
+    // Start position cell
+    const startPos = seq.startPosition ?? (seq.steps[0] ? createStartPositionFromBeatStart(seq.steps[0]) : null);
+    if (startPos) {
+      cells.push({
+        key: `start-${seq.id ?? seq.word}`,
+        data: startPos,
+        label: "Start",
+        isStart: true,
+        beatIndex: 0,
+      });
+    }
+
+    // Beat cells
+    for (let i = 0; i < seq.steps.length; i++) {
+      const step = seq.steps[i]!;
+      cells.push({
+        key: `beat-${i}-${step.letter ?? i}`,
+        data: step,
+        label: `${i + 1}`,
+        isStart: false,
+        beatIndex: i + 1,
+      });
+    }
+
+    return cells;
+  });
+
+  let displayWord = $derived.by(() => {
+    const seq = animationState.sequenceData;
+    if (!seq) return "";
+    return seq.intendedWord ?? seq.word ?? "";
+  });
 </script>
 
 <div class="play-inner">
@@ -512,22 +563,33 @@
     </div>
 
     <!-- Notation side panel (desktop) / beat strip (mobile) -->
-    {#if animationState.sequenceData}
+    {#if animationState.sequenceData && notationCells.length > 0}
       <div class="notation-col">
-        <ChoreoCard
-          sequence={animationState.sequenceData}
-          darkMode={true}
-          bluePropType={currentPropType}
-          redPropType={currentPropType}
-          columnCount={4}
-          highlightedStepIndex={currentStepNumber > 0 ? currentStepNumber - 1 : null}
-          showHighlight={animationState.isPlaying}
-          showDifficultyLevel={false}
-          showCreatorName={false}
-          showNotes={false}
-          showBirthday={false}
-          showLoopGlyph={false}
-        />
+        <div class="notation-word">{displayWord}</div>
+        <div class="notation-grid">
+          {#each notationCells as cell (cell.key)}
+            {@const isActive = animationState.isPlaying && (
+              cell.isStart
+                ? currentStepNumber === 0
+                : currentStepNumber === cell.beatIndex
+            )}
+            <div class="notation-cell" class:active={isActive}>
+              <div class="cell-pictograph">
+                <PictographContainer
+                  pictographData={cell.data}
+                  darkMode={true}
+                  disableTransitions={true}
+                  disableContentTransitions={true}
+                  bluePropTypeOverride={currentPropType}
+                  redPropTypeOverride={currentPropType}
+                />
+              </div>
+              <span class="cell-label" class:start-label={cell.isStart}>
+                {cell.label}
+              </span>
+            </div>
+          {/each}
+        </div>
       </div>
     {/if}
   </div>
@@ -718,11 +780,69 @@
 
   .notation-col {
     border-left: 1px solid rgba(255, 255, 255, 0.08);
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
     width: 100%;
     min-height: 400px;
     height: 100%;
     background: rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+    padding: 12px;
+    gap: 8px;
+  }
+
+  .notation-word {
+    text-align: center;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.85);
+    letter-spacing: 0.08em;
+    padding: 4px 0;
+    flex-shrink: 0;
+  }
+
+  .notation-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+    flex: 1;
+    align-content: start;
+  }
+
+  .notation-cell {
+    position: relative;
+    aspect-ratio: 1;
+    border: 1.5px solid rgba(255, 255, 255, 0.06);
+    border-radius: 6px;
+    overflow: hidden;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .notation-cell.active {
+    border-color: #d4813a;
+    box-shadow: 0 0 10px rgba(212, 129, 58, 0.3);
+  }
+
+  .cell-pictograph {
+    width: 100%;
+    height: 100%;
+  }
+
+  .cell-label {
+    position: absolute;
+    bottom: 2px;
+    right: 4px;
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.3);
+    font-weight: 500;
+    pointer-events: none;
+    line-height: 1;
+  }
+
+  .cell-label.start-label {
+    font-size: 9px;
+    color: rgba(255, 255, 255, 0.4);
   }
 
   /* ── Responsive: single column below 800px ───────────────────────────────── */
@@ -736,6 +856,7 @@
       border-top: 1px solid rgba(255, 255, 255, 0.08);
       max-height: 280px;
       min-height: auto;
+      padding: 8px;
     }
   }
 
@@ -769,13 +890,20 @@
 
     .notation-col {
       max-height: 220px;
+      padding: 6px;
+    }
+
+    .notation-word {
+      font-size: 0.9rem;
+      padding: 2px 0;
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
     .chip,
     .prop-btn,
-    .effort-btn {
+    .effort-btn,
+    .notation-cell {
       transition: none;
     }
 
