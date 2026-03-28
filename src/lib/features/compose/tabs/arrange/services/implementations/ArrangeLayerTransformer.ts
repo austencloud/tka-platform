@@ -22,6 +22,21 @@ export class ArrangeLayerTransformer implements IArrangeLayerTransformer {
       let transformed: SequenceData;
 
       switch (transformType) {
+        case "rotate45L":
+          transformed = await sequenceTransformer.rotateSequence(sequence, -1);
+          break;
+        case "rotate45R":
+          transformed = await sequenceTransformer.rotateSequence(sequence, 1);
+          break;
+        case "shiftStart":
+          // Shift starting beat: rotate steps so beat 1 moves to the end
+          if (sequence.steps.length > 1) {
+            const [first, ...rest] = sequence.steps;
+            transformed = { ...sequence, steps: [...rest, first!] };
+          } else {
+            transformed = sequence;
+          }
+          break;
         case "rotate90":
           transformed = await sequenceTransformer.rotateSequence(sequence, 2);
           break;

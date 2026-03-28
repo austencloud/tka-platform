@@ -66,6 +66,9 @@ export type CellMediaType =
  * Tracked in order of application for clipboard and serialization.
  */
 export type TransformType =
+  | "rotate45L"
+  | "rotate45R"
+  | "shiftStart"
   | "rotate90"
   | "rotate180"
   | "rotate270"
@@ -74,6 +77,14 @@ export type TransformType =
   | "swapColors"
   | "invert"
   | "rewind";
+
+export type TargetHand = "left" | "right" | "both";
+
+export interface AppliedTransform {
+  type: TransformType;
+  hand: TargetHand;
+  timestamp: number;
+}
 
 // ============================================================================
 // Tunnel (Layered Sequence) Configuration
@@ -115,9 +126,17 @@ export interface TunnelLayerConfig {
   /** Prop colors for this layer */
   propColors: PropColors;
 
-  /** Transforms applied to this layer's sequence (in order) */
+  /** Ordered stack of transforms applied to this layer */
+  transformStack: AppliedTransform[];
+
+  /** @deprecated Use transformStack. Kept for deserialization migration. */
   appliedTransforms?: TransformType[];
 }
+
+/**
+ * Visual effect overlay for a cell
+ */
+export type CellEffect = "none" | "fire" | "charcoal" | "led" | "trails";
 
 /**
  * Get default prop colors for a tunnel layer index

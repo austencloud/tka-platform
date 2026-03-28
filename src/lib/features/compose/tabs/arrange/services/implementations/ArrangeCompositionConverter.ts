@@ -152,6 +152,7 @@ export class ArrangeCompositionConverter implements IArrangeCompositionConverter
         sequence: l.sequence,
         beatOffset: l.beatOffset,
         propColors: l.propColors,
+        transformStack: l.transformStack ?? [],
         appliedTransforms: l.appliedTransforms,
       }));
     }
@@ -176,6 +177,7 @@ export class ArrangeCompositionConverter implements IArrangeCompositionConverter
         sequence: seq,
         beatOffset: 0,
         propColors: getTunnelLayerColors(i),
+        transformStack: [],
       }));
     }
 
