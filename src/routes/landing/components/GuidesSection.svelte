@@ -40,7 +40,13 @@
 
     <div class="guides-grid">
       {#each guides as guide}
-        <div class="guide-card" style="--accent: {guide.accent}">
+        <a
+          class="guide-card"
+          style="--accent: {guide.accent}"
+          href={guide.href}
+          download
+          aria-label="Download Level {guide.level} guide: {guide.title}"
+        >
           <div class="guide-image">
             <img
               src={guide.image}
@@ -52,16 +58,13 @@
             <span class="guide-level">Level {guide.level}</span>
             <h3>{guide.title}</h3>
             <p>{guide.description}</p>
-            <a href={guide.href} download class="download-link">
-              <i class="fas fa-download" aria-hidden="true"></i>
-              Download PDF
-            </a>
+            <span class="guide-dl">⬇ Download PDF</span>
           </div>
-        </div>
+        </a>
       {/each}
     </div>
 
-    <p class="closing">Grab a pair of staves and follow along.</p>
+    <p class="closing">Start with Level 1. Grab a pair of staves and follow along.</p>
   </div>
 </section>
 
@@ -100,19 +103,22 @@
   }
 
   .guide-card {
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 16px;
+    background: rgba(255, 240, 220, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 10px;
     overflow: hidden;
-    transition: all var(--duration-emphasis, 0.3s) ease;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
     display: flex;
     flex-direction: column;
+    text-decoration: none;
+    color: inherit;
+    min-height: 44px;
   }
 
   .guide-card:hover {
-    border-color: var(--accent);
-    transform: translateY(-4px);
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+    border-color: rgba(212, 129, 58, 0.25);
+    box-shadow: 0 0 20px rgba(212, 129, 58, 0.15);
+    transform: translateY(-2px);
   }
 
   .guide-image {
@@ -158,25 +164,24 @@
     flex: 1;
   }
 
-  .download-link {
+  .guide-dl {
     display: inline-flex;
     align-items: center;
     gap: 6px;
     margin-top: 8px;
-    color: var(--accent);
-    text-decoration: none;
-    font-size: var(--font-size-sm, 0.875rem);
-    font-weight: 600;
-    transition: color var(--duration-normal, 0.2s) ease;
     align-self: flex-start;
+    font-size: 0.82rem;
+    color: #4a8f8f;
+    padding: 6px 14px;
+    min-height: 44px;
+    border: 1px solid rgba(74, 143, 143, 0.3);
+    border-radius: 6px;
+    transition: background 0.2s ease, border-color 0.2s ease;
   }
 
-  .download-link:hover {
-    color: var(--theme-text, #fff);
-  }
-
-  .download-link i {
-    font-size: 0.75rem;
+  .guide-card:hover .guide-dl {
+    background: rgba(74, 143, 143, 0.1);
+    border-color: #4a8f8f;
   }
 
   .closing {
@@ -191,7 +196,7 @@
       transition: none;
     }
 
-    .download-link {
+    .guide-dl {
       transition: none;
     }
   }
