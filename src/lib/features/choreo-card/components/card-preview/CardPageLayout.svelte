@@ -31,6 +31,13 @@
 
   const renderer = container.items.printCardRenderer as IPrintCardRenderer;
 
+  function getStartPositionLayout(seq: SequenceData): "row" | "column" {
+    const stepCount = seq.steps?.length ?? 0;
+    if (stepCount === 4) return "row";
+    if (stepCount === 16) return "row";
+    return "column";
+  }
+
   let layout = $derived(getPageLayout(cardSize));
   let aspectRatio = $derived(8.5 / 11);
 
@@ -70,7 +77,11 @@
 
       const seq = sequences[i]!;
       try {
-        const canvas = await renderer.renderFront(seq, renderOptions);
+        const seqOptions = {
+          ...renderOptions,
+          startPositionLayout: getStartPositionLayout(seq),
+        };
+        const canvas = await renderer.renderFront(seq, seqOptions);
         newImages.set(seq.id, canvas.toDataURL('image/png'));
       } catch {
         // Skip failed renders
