@@ -191,9 +191,9 @@ export class XPRenderer extends EraRendererBase implements IEraRenderer {
 			this.fillCircle(ctx, px - dotR * 0.35, py - dotR * 0.35, dotR * 0.3);
 		}
 
-		// Center dot — flat, slightly smaller
+		// Center dot — matches modern renderer (12vb radius)
 		ctx.fillStyle = GRID_DOT_COLOR;
-		this.fillCircle(ctx, GRID_CENTER.x * scale, GRID_CENTER.y * scale, dotR * 0.7);
+		this.fillCircle(ctx, GRID_CENTER.x * scale, GRID_CENTER.y * scale, 12 * scale);
 	}
 
 	private drawLine(
