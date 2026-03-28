@@ -13,6 +13,7 @@
   import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
   import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
   import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
+  import type { IAnimationPlaybackControllerFactory } from "$lib/features/compose/services/contracts/IAnimationPlaybackControllerFactory";
   import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
   import type { IStartPositionDeriver } from "$lib/shared/pictograph/shared/services/contracts/IStartPositionDeriver";
   import type { IEndlessSpinnerOrchestrator, EndState } from "$lib/features/landing/services/contracts/IEndlessSpinnerOrchestrator";
@@ -232,7 +233,8 @@
       visibilityManager.setLedEffect(false);
 
       browseLoader = container.items.browseLoader;
-      playbackController = container.items.animationPlaybackController;
+      const controllerFactory = container.items.animationPlaybackControllerFactory as IAnimationPlaybackControllerFactory;
+      playbackController = controllerFactory.create();
       startPositionDeriver = startPositionDeriverInstance;
       gridPositionDeriver = gridPositionDeriverInstance;
 

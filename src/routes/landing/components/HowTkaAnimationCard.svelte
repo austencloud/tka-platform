@@ -12,6 +12,7 @@
   import type { Component } from "svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
+  import type { IAnimationPlaybackControllerFactory } from "$lib/features/compose/services/contracts/IAnimationPlaybackControllerFactory";
   import type { IStartPositionDeriver } from "$lib/shared/pictograph/shared/services/contracts/IStartPositionDeriver";
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
   import { container } from "$lib/shared/di";
@@ -132,7 +133,8 @@
       visibilityManager.setLedEffect(false);
       visibilityManager.setCharcoalEffect(false);
 
-      playbackController = container.items.animationPlaybackController;
+      const factory = container.items.animationPlaybackControllerFactory as IAnimationPlaybackControllerFactory;
+      playbackController = factory.create();
       startPositionDeriver = startPositionDeriverInstance;
 
       const prepared = applyPropType(sequence);
