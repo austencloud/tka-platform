@@ -482,6 +482,17 @@
     if (!seq) return "";
     return seq.intendedWord ?? seq.word ?? "";
   });
+
+  // Auto-scroll beat strip to keep active beat visible
+  let beatStripEl = $state<HTMLDivElement | null>(null);
+
+  $effect(() => {
+    if (!beatStripEl || !animationState.isPlaying) return;
+    const activeCell = beatStripEl.querySelector('.beat-cell.active') as HTMLElement | null;
+    if (activeCell) {
+      activeCell.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+  });
 </script>
 
 <div class="play-inner">
@@ -564,7 +575,7 @@
 
     <!-- Beat strip below the canvas -->
     {#if animationState.sequenceData && notationCells.length > 0}
-      <div class="beat-strip">
+      <div class="beat-strip" bind:this={beatStripEl}>
         {#each notationCells as cell (cell.key)}
           {@const isActive = animationState.isPlaying && (
             cell.isStart
@@ -732,7 +743,7 @@
     display: flex;
     flex-direction: column;
     width: 100%;
-    max-width: 700px;
+    max-width: 800px;
     margin: 0 auto;
     border-radius: 16px;
     overflow: hidden;
@@ -744,7 +755,7 @@
   .canvas-area {
     width: 100%;
     aspect-ratio: 1;
-    max-height: 560px;
+    max-height: 640px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -777,8 +788,8 @@
   /* ── Beat strip ────────────────────────────────────────────────────────── */
   .beat-strip {
     display: flex;
-    gap: 4px;
-    padding: 10px 12px;
+    gap: 6px;
+    padding: 12px 16px;
     border-top: 1px solid rgba(255, 255, 255, 0.08);
     background: rgba(0, 0, 0, 0.2);
     overflow-x: auto;
@@ -801,9 +812,9 @@
   }
 
   .beat-cell {
-    flex: 0 0 52px;
-    width: 52px;
-    height: 52px;
+    flex: 0 0 72px;
+    width: 72px;
+    height: 72px;
     border: 1.5px solid rgba(255, 255, 255, 0.08);
     border-radius: 6px;
     overflow: hidden;
@@ -837,9 +848,9 @@
     }
 
     .beat-cell {
-      flex: 0 0 44px;
-      width: 44px;
-      height: 44px;
+      flex: 0 0 56px;
+      width: 56px;
+      height: 56px;
     }
   }
 
