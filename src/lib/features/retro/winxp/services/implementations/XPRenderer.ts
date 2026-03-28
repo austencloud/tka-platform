@@ -237,7 +237,7 @@ export class XPRenderer extends EraRendererBase implements IEraRenderer {
 
 				const eraColor = color === "blue" ? BLUE_COLOR : RED_COLOR;
 				const shadowColor =
-					color === "blue" ? "rgba(0,50,200,0.35)" : "rgba(200,0,0,0.35)";
+					color === "blue" ? "rgba(0,50,200,0.4)" : "rgba(200,0,0,0.4)";
 
 				// Props use the viewBox center for their pivot (not a stored center field)
 				const centerX = viewBoxWidth / 2;
@@ -258,7 +258,7 @@ export class XPRenderer extends EraRendererBase implements IEraRenderer {
 				// Pass 1: shadow pass (untinted so shadow respects the shape's alpha)
 				ctx.save();
 				ctx.shadowColor = shadowColor;
-				ctx.shadowBlur = 6;
+				ctx.shadowBlur = 2;
 				ctx.shadowOffsetX = 2;
 				ctx.shadowOffsetY = 2;
 				this.drawElementWithTransform(ctx, img, drawParams);
@@ -354,7 +354,7 @@ export class XPRenderer extends EraRendererBase implements IEraRenderer {
 				// Shadow pass
 				ctx.save();
 				ctx.shadowColor = shadowColor;
-				ctx.shadowBlur = 5;
+				ctx.shadowBlur = 4;
 				ctx.shadowOffsetX = 1.5;
 				ctx.shadowOffsetY = 1.5;
 				this.drawElementWithTransform(ctx, img, drawParams);
