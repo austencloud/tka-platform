@@ -93,11 +93,26 @@ export class AnimationVisibilityStateManager {
    */
   private transforming: boolean = false;
 
-  constructor() {
-    // Load from localStorage or use defaults
-    this.settings = this.loadFromStorage() || this.getDefaultSettings();
-    // Sync the .dark class on <html> to match persisted state
-    this.syncDarkModeClass();
+  /** When true, this instance is scoped to a single canvas and does not
+   * persist settings to localStorage or modify the global .dark CSS class. */
+  private readonly ephemeral: boolean;
+
+  /**
+   * @param options.ephemeral When true, creates an isolated instance that uses
+   *   default settings and skips localStorage persistence and DOM dark-class sync.
+   *   Use for per-canvas instances that shouldn't affect global app state.
+   */
+  constructor(options?: { ephemeral?: boolean }) {
+    this.ephemeral = options?.ephemeral ?? false;
+
+    if (this.ephemeral) {
+      // Ephemeral instances start with defaults — no localStorage, no DOM sync
+      this.settings = this.getDefaultSettings();
+    } else {
+      // Global singleton loads from localStorage and syncs the .dark class
+      this.settings = this.loadFromStorage() || this.getDefaultSettings();
+      this.syncDarkModeClass();
+    }
     // Compute initial motion colors from CSS variables
     this.updateMotionColorsCache();
   }
@@ -258,9 +273,10 @@ export class AnimationVisibilityStateManager {
   }
 
   /**
-   * Save settings to localStorage
+   * Save settings to localStorage (skipped for ephemeral instances)
    */
   private saveToStorage(): void {
+    if (this.ephemeral) return;
     if (typeof window === "undefined") return;
 
     try {
@@ -509,8 +525,10 @@ export class AnimationVisibilityStateManager {
    * Sync the .dark class on <html> element with current darkMode state.
    * This enables CSS-first dark mode - all components use CSS variables
    * instead of receiving darkMode as a prop.
+   * Skipped for ephemeral instances to avoid global DOM side effects.
    */
   private syncDarkModeClass(): void {
+    if (this.ephemeral) return;
     if (typeof document === "undefined") return;
 
     const htmlElement = document.documentElement;

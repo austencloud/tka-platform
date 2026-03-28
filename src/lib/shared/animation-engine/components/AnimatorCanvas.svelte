@@ -36,7 +36,7 @@ Last audit: 2025-12-27
   import ProgressOverlay from "./layers/ProgressOverlay.svelte";
   import SegmentedSequenceProgressBar from "./layers/SegmentedSequenceProgressBar.svelte";
   import { AnimationEngine } from "../services/implementations/AnimationEngine.svelte";
-  import { getAnimationVisibilityManager } from "../state/animation-visibility-state.svelte";
+  import { getAnimationVisibilityManager, type AnimationVisibilityStateManager } from "../state/animation-visibility-state.svelte";
   import { sequenceLoopabilityChecker } from "$lib/features/compose/services/implementations/SequenceLoopabilityChecker";
   import type { FireOverlayConfig } from "../domain/types/FireTypes";
   import type { LedOverlayConfig } from "../domain/types/LedTypes";
@@ -81,6 +81,7 @@ Last audit: 2025-12-27
     resizePaused = false,
     onInitialized: onInitializedCallback = undefined,
     onEffectError = undefined,
+    visibilityManagerOverride = undefined,
   }: {
     blueProp: PropState | null;
     redProp: PropState | null;
@@ -117,6 +118,10 @@ Last audit: 2025-12-27
     onInitialized?: () => void;
     /** Called when an effect (fire/charcoal/LED) fails repeatedly and is auto-disabled */
     onEffectError?: (effectName: string, error: Error) => void;
+    /** Per-instance visibility manager. When provided, this canvas uses its own
+     * manager instead of the global singleton. Enables multiple canvases to have
+     * independent visibility/effect settings (e.g. landing page with two players). */
+    visibilityManagerOverride?: AnimationVisibilityStateManager;
   } = $props();
 
   // Disassemble mode state machine
@@ -216,11 +221,14 @@ Last audit: 2025-12-27
     settingsModalOpen = true;
   }
 
-  // Engine instance
+  // Engine instance — wire per-instance visibility manager before initialization
   const engine = new AnimationEngine();
+  if (visibilityManagerOverride) {
+    engine.setVisibilityManager(visibilityManagerOverride);
+  }
 
-  // Visibility manager
-  const visibilityManager = getAnimationVisibilityManager();
+  // Visibility manager — use per-instance override when provided
+  const visibilityManager = visibilityManagerOverride ?? getAnimationVisibilityManager();
 
   let tkaGlyphVisible = $state(visibilityManager.getVisibility("tkaGlyph"));
   let stepNumbersVisible = $state(visibilityManager.getVisibility("stepNumbers"));
