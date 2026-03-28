@@ -671,40 +671,42 @@
     font-size: 14px;
   }
 
-  /* ── Showcase grid ───────────────────────────────────────────────────────── */
+  /* ── Showcase: unified container ─────────────────────────────────────────── */
   .showcase {
     display: grid;
-    grid-template-columns: 1fr 380px;
-    gap: 24px;
-    align-items: start;
+    grid-template-columns: 1fr 340px;
+    gap: 0;
     width: 100%;
     max-width: 1060px;
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.35);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
   }
 
   .canvas-col {
     display: flex;
     justify-content: center;
+    align-items: center;
+    min-height: 450px;
   }
 
   .canvas-wrapper {
-    width: clamp(340px, 50vw, 560px);
-    height: clamp(340px, 50vw, 560px);
-    border-radius: 20px;
+    width: 100%;
+    height: 100%;
     overflow: hidden;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
   }
 
   .canvas-placeholder {
-    width: clamp(340px, 50vw, 560px);
-    height: clamp(340px, 50vw, 560px);
+    width: 100%;
+    height: 100%;
+    min-height: 400px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 12px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 20px;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     font-size: var(--font-size-min, 14px);
   }
@@ -715,24 +717,25 @@
   }
 
   .notation-col {
-    border-radius: 16px;
+    border-left: 1px solid rgba(255, 255, 255, 0.08);
     overflow: hidden;
     width: 100%;
     min-height: 400px;
     height: 100%;
+    background: rgba(0, 0, 0, 0.2);
   }
 
   /* ── Responsive: single column below 800px ───────────────────────────────── */
   @media (max-width: 800px) {
     .showcase {
       grid-template-columns: 1fr;
-      justify-items: center;
     }
 
     .notation-col {
-      width: 100%;
-      max-width: min(500px, 90vw);
+      border-left: none;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
       max-height: 280px;
+      min-height: auto;
     }
   }
 
