@@ -3,20 +3,15 @@
   import BackgroundHost from "$lib/shared/background/shared/components/BackgroundHost.svelte";
   import { BackgroundType } from "@austencloud/backgrounds";
   import { applyThemeForBackground } from "$lib/shared/settings/utils/background-theme-calculator";
-  import HearthSection from "./landing/components/HearthSection.svelte";
-  import NotationProgressionSection from "./landing/components/NotationProgressionSection.svelte";
-  import NotationShowcaseSection from "./landing/components/NotationShowcaseSection.svelte";
-  import VideoPerformanceSection from "./landing/components/VideoPerformanceSection.svelte";
-  import WhatsHereSection from "./landing/components/WhatsHereSection.svelte";
+  import HeroCarouselSection from "./landing/components/HeroCarouselSection.svelte";
+  import HowTkaWorksSection from "./landing/components/HowTkaWorksSection.svelte";
+  import WhatsHereSectionV2 from "./landing/components/WhatsHereSectionV2.svelte";
+  import PlayWithItSection from "./landing/components/PlayWithItSection.svelte";
   import GuidesSection from "./landing/components/GuidesSection.svelte";
   import LandingFooter from "./landing/components/LandingFooter.svelte";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 
   const DEFAULT_BACKGROUND = BackgroundType.NIGHT_SKY;
   let mounted = $state(false);
-  let aabbSequence = $state<SequenceData | null>(null);
-  let landingPropType = $state<PropType>(PropType.STAFF);
 
   onMount(() => {
     applyThemeForBackground(DEFAULT_BACKGROUND);
@@ -43,10 +38,6 @@
 
     return () => observer.disconnect();
   });
-
-  function handleSequenceLoaded(seq: SequenceData) {
-    aabbSequence = seq;
-  }
 </script>
 
 <svelte:head>
@@ -355,24 +346,21 @@
   <a href="#main-content" class="skip-link">Skip to main content</a>
 
   <div class="content-layer">
-    <HearthSection
-      onSequenceLoaded={handleSequenceLoaded}
-      propType={landingPropType}
-      onPropTypeChange={(pt) => { landingPropType = pt; }}
-    />
+    <HeroCarouselSection />
     <main id="main-content">
+      <hr class="divider" />
       <div class="scroll-reveal">
-        <NotationProgressionSection sequence={aabbSequence} propType={landingPropType} />
+        <HowTkaWorksSection />
       </div>
+      <hr class="divider" />
       <div class="scroll-reveal">
-        <NotationShowcaseSection onPropTypeChange={(pt) => { landingPropType = pt; }} />
+        <WhatsHereSectionV2 />
       </div>
+      <hr class="divider" />
       <div class="scroll-reveal">
-        <VideoPerformanceSection />
+        <PlayWithItSection />
       </div>
-      <div class="scroll-reveal">
-        <WhatsHereSection />
-      </div>
+      <hr class="divider" />
       <div class="scroll-reveal">
         <GuidesSection />
       </div>
@@ -422,6 +410,12 @@
   .content-layer {
     position: relative;
     z-index: 1;
+  }
+
+  .divider {
+    border: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+    margin: 0;
   }
 
   /* Scroll-triggered reveal animations */
