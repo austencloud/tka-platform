@@ -527,9 +527,9 @@
     </button>
   </div>
 
-  <!-- Showcase: canvas + notation panel -->
+  <!-- Showcase: stacked canvas + beat strip -->
   <div class="showcase">
-    <div class="canvas-col">
+    <div class="canvas-area">
       {#if animationReady && !isLoading}
         <div class="canvas-wrapper">
           <AnimatorCanvas
@@ -562,34 +562,28 @@
       {/if}
     </div>
 
-    <!-- Notation side panel (desktop) / beat strip (mobile) -->
+    <!-- Beat strip below the canvas -->
     {#if animationState.sequenceData && notationCells.length > 0}
-      <div class="notation-col">
-        <div class="notation-word">{displayWord}</div>
-        <div class="notation-grid">
-          {#each notationCells as cell (cell.key)}
-            {@const isActive = animationState.isPlaying && (
-              cell.isStart
-                ? currentStepNumber === 0
-                : currentStepNumber === cell.beatIndex
-            )}
-            <div class="notation-cell" class:active={isActive}>
-              <div class="cell-pictograph">
-                <PictographContainer
-                  pictographData={cell.data}
-                  darkMode={true}
-                  disableTransitions={true}
-                  disableContentTransitions={true}
-                  bluePropTypeOverride={currentPropType}
-                  redPropTypeOverride={currentPropType}
-                />
-              </div>
-              <span class="cell-label" class:start-label={cell.isStart}>
-                {cell.label}
-              </span>
+      <div class="beat-strip">
+        {#each notationCells as cell (cell.key)}
+          {@const isActive = animationState.isPlaying && (
+            cell.isStart
+              ? currentStepNumber === 0
+              : currentStepNumber === cell.beatIndex
+          )}
+          <div class="beat-cell" class:active={isActive} class:start-cell={cell.isStart}>
+            <div class="beat-pictograph">
+              <PictographContainer
+                pictographData={cell.data}
+                darkMode={true}
+                disableTransitions={true}
+                disableContentTransitions={true}
+                bluePropTypeOverride={currentPropType}
+                redPropTypeOverride={currentPropType}
+              />
             </div>
-          {/each}
-        </div>
+          </div>
+        {/each}
       </div>
     {/if}
   </div>
@@ -733,13 +727,13 @@
     font-size: 14px;
   }
 
-  /* ── Showcase: unified container ─────────────────────────────────────────── */
+  /* ── Showcase: stacked container ─────────────────────────────────────────── */
   .showcase {
-    display: grid;
-    grid-template-columns: 1fr 340px;
-    gap: 0;
+    display: flex;
+    flex-direction: column;
     width: 100%;
-    max-width: 1060px;
+    max-width: 700px;
+    margin: 0 auto;
     border-radius: 16px;
     overflow: hidden;
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -747,11 +741,13 @@
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
   }
 
-  .canvas-col {
+  .canvas-area {
+    width: 100%;
+    aspect-ratio: 1;
+    max-height: 560px;
     display: flex;
-    justify-content: center;
     align-items: center;
-    min-height: 450px;
+    justify-content: center;
   }
 
   .canvas-wrapper {
@@ -763,7 +759,7 @@
   .canvas-placeholder {
     width: 100%;
     height: 100%;
-    min-height: 400px;
+    min-height: 300px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -778,85 +774,72 @@
     opacity: 0.4;
   }
 
-  .notation-col {
-    border-left: 1px solid rgba(255, 255, 255, 0.08);
-    overflow-y: auto;
-    overflow-x: hidden;
-    width: 100%;
-    min-height: 400px;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.2);
+  /* ── Beat strip ────────────────────────────────────────────────────────── */
+  .beat-strip {
     display: flex;
-    flex-direction: column;
-    padding: 12px;
-    gap: 8px;
-  }
-
-  .notation-word {
-    text-align: center;
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: rgba(255, 255, 255, 0.85);
-    letter-spacing: 0.08em;
-    padding: 4px 0;
-    flex-shrink: 0;
-  }
-
-  .notation-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
     gap: 4px;
-    flex: 1;
-    align-content: start;
+    padding: 10px 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(0, 0, 0, 0.2);
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
   }
 
-  .notation-cell {
-    position: relative;
-    aspect-ratio: 1;
-    border: 1.5px solid rgba(255, 255, 255, 0.06);
+  .beat-strip::-webkit-scrollbar {
+    height: 3px;
+  }
+  .beat-strip::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .beat-strip::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 2px;
+  }
+
+  .beat-cell {
+    flex: 0 0 52px;
+    width: 52px;
+    height: 52px;
+    border: 1.5px solid rgba(255, 255, 255, 0.08);
     border-radius: 6px;
     overflow: hidden;
+    scroll-snap-align: start;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
   }
 
-  .notation-cell.active {
+  .beat-cell.active {
     border-color: #d4813a;
     box-shadow: 0 0 10px rgba(212, 129, 58, 0.3);
   }
 
-  .cell-pictograph {
+  .beat-cell.start-cell {
+    border-color: rgba(255, 255, 255, 0.15);
+  }
+
+  .beat-pictograph {
     width: 100%;
     height: 100%;
   }
 
-  .cell-label {
-    position: absolute;
-    bottom: 2px;
-    right: 4px;
-    font-size: 10px;
-    color: rgba(255, 255, 255, 0.3);
-    font-weight: 500;
-    pointer-events: none;
-    line-height: 1;
-  }
-
-  .cell-label.start-label {
-    font-size: 9px;
-    color: rgba(255, 255, 255, 0.4);
-  }
-
-  /* ── Responsive: single column below 800px ───────────────────────────────── */
-  @media (max-width: 800px) {
+  /* ── Responsive ────────────────────────────────────────────────────────── */
+  @media (max-width: 600px) {
     .showcase {
-      grid-template-columns: 1fr;
+      max-width: 100%;
+      border-radius: 12px;
     }
 
-    .notation-col {
-      border-left: none;
-      border-top: 1px solid rgba(255, 255, 255, 0.08);
-      max-height: 280px;
-      min-height: auto;
-      padding: 8px;
+    .canvas-area {
+      max-height: 400px;
+    }
+
+    .beat-cell {
+      flex: 0 0 44px;
+      width: 44px;
+      height: 44px;
     }
   }
 
