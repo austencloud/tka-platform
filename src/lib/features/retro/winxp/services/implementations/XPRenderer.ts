@@ -103,10 +103,10 @@ export class XPRenderer extends EraRendererBase implements IEraRenderer {
 
 		const scale = this.getScale(size);
 
-		this.drawHandPoints(ctx, scale, data.gridMode);
 		this.drawGrid(ctx, scale, data.gridMode);
 		await this.drawProps(ctx, prepared, scale);
 		await this.drawArrows(ctx, prepared, scale);
+		this.drawHandPoints(ctx, scale, data.gridMode);
 		this.drawLetter(ctx, String(data.letter), scale, size);
 		this.drawBeveledBorder(ctx, size);
 	}
@@ -192,9 +192,10 @@ export class XPRenderer extends EraRendererBase implements IEraRenderer {
 	}
 
 	/**
-	 * Draw small flat dots at intercardinal positions (NE, NW, SE, SW).
-	 * These are the "hand points" — smaller reference dots between the
-	 * main cardinal grid dots. In box mode they rotate with the grid.
+	 * Draw small flat hand-position dots at cardinal grid positions (N/E/S/W).
+	 * These mark where hands grip the props — drawn ON TOP of props/arrows
+	 * so they're visible on the staves, matching the modern pictograph.
+	 * In box mode they rotate with the grid.
 	 */
 	private drawHandPoints(
 		ctx: CanvasRenderingContext2D,
@@ -203,17 +204,7 @@ export class XPRenderer extends EraRendererBase implements IEraRenderer {
 	): void {
 		const isBox = gridMode === GridMode.BOX;
 		const center = GRID_CENTER.x * scale;
-		const handR = 5 * scale;
-
-		// Intercardinal positions (212 offset from center = 300 * cos(45°))
-		const diag = 212;
-		const cx = GRID_CENTER.x, cy = GRID_CENTER.y;
-		const intercardinals = [
-			{ x: cx + diag, y: cy - diag }, // NE
-			{ x: cx - diag, y: cy - diag }, // NW
-			{ x: cx + diag, y: cy + diag }, // SE
-			{ x: cx - diag, y: cy + diag }, // SW
-		];
+		const handR = 8 * scale;
 
 		ctx.save();
 		if (isBox) {
@@ -222,8 +213,8 @@ export class XPRenderer extends EraRendererBase implements IEraRenderer {
 			ctx.translate(-center, -center);
 		}
 
-		ctx.fillStyle = "#999999";
-		for (const pt of intercardinals) {
+		ctx.fillStyle = "#888888";
+		for (const pt of GRID_OUTER_POINTS) {
 			this.fillCircle(ctx, pt.x * scale, pt.y * scale, handR);
 		}
 		ctx.restore();
