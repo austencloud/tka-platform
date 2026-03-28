@@ -16,6 +16,8 @@
     showTKA?: boolean;
     showWord?: boolean;
     includeStartPosition?: boolean;
+    /** Function to derive custom footer notes per sequence (e.g. VTG description) */
+    getCustomNotes?: (sequence: SequenceData) => string | undefined;
     onSelectSequence?: (sequence: SequenceData) => void;
     onContextMenu?: (x: number, y: number, rerender: () => void) => void;
   }
@@ -32,6 +34,7 @@
     showTKA = true,
     showWord = true,
     includeStartPosition = true,
+    getCustomNotes,
     onSelectSequence,
     onContextMenu,
   }: Props = $props();
@@ -106,6 +109,7 @@
                   {showTKA}
                   {showWord}
                   {includeStartPosition}
+                  customNotesText={getCustomNotes?.(seq)}
                   onSelect={onSelectSequence ? () => onSelectSequence(seq) : undefined}
                   {onContextMenu}
                 />

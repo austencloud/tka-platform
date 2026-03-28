@@ -36,6 +36,8 @@
     handPathMode?: boolean;
     /** Use 5:7 playing card layout for physical card export (different from printMode) */
     cardMode?: boolean;
+    /** Override the notes text in the card footer (e.g. VTG description) */
+    customNotesText?: string;
     onSelect?: (sequence: SequenceData) => void;
     onContextMenu?: (x: number, y: number, rerender: () => void) => void;
   }
@@ -53,6 +55,7 @@
     startPositionLayout = "row",
     handPathMode = false,
     cardMode = false,
+    customNotesText,
     onSelect,
     onContextMenu,
   }: Props = $props();
@@ -174,6 +177,7 @@
       {showBirthday}
       visibility={visibilitySettings}
       {cardMode}
+      {customNotesText}
     />
     {#if hasLoopPattern && !handPathMode}
       <div class="loop-overlay">
