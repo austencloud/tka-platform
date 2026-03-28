@@ -83,6 +83,54 @@
     "shared/video-record": {
       "claimedAt": "2026-03-11T22:49:59.296Z",
       "agentId": "agent-1773269399297-w46jxv"
+    },
+    "features/conjoined-grid": {
+      "claimedAt": "2026-03-27T07:33:25.899Z",
+      "agentId": "agent-1774596805901-lyt2ig"
+    },
+    "features/festivals": {
+      "claimedAt": "2026-03-27T07:33:44.400Z",
+      "agentId": "agent-1774596824401-9sn9va"
+    },
+    "features/fuse": {
+      "claimedAt": "2026-03-27T07:34:09.245Z",
+      "agentId": "agent-1774596849246-o2habq"
+    },
+    "features/hand-path-builder": {
+      "claimedAt": "2026-03-27T07:34:28.598Z",
+      "agentId": "agent-1774596868599-mieo4k"
+    },
+    "features/hand-path-explorer": {
+      "claimedAt": "2026-03-27T07:34:46.038Z",
+      "agentId": "agent-1774596886038-h0a8rd"
+    },
+    "features/hand-paths": {
+      "claimedAt": "2026-03-27T07:35:01.756Z",
+      "agentId": "agent-1774596901757-i0kk4v"
+    },
+    "features/levels": {
+      "claimedAt": "2026-03-27T07:35:16.343Z",
+      "agentId": "agent-1774596916343-5t051a"
+    },
+    "features/social": {
+      "claimedAt": "2026-03-27T07:35:30.763Z",
+      "agentId": "agent-1774596930763-gopb1w"
+    },
+    "features/video": {
+      "claimedAt": "2026-03-27T07:35:45.735Z",
+      "agentId": "agent-1774596945736-95mp39"
+    },
+    "shared/config": {
+      "claimedAt": "2026-03-27T07:36:09.512Z",
+      "agentId": "agent-1774596969512-8aj3nv"
+    },
+    "shared/interactive-canvas": {
+      "claimedAt": "2026-03-27T07:36:23.564Z",
+      "agentId": "agent-1774596983565-azr4ao"
+    },
+    "shared/mandala": {
+      "claimedAt": "2026-03-27T07:36:38.620Z",
+      "agentId": "agent-1774596998621-djhbhq"
     }
   }
 }

@@ -895,6 +895,69 @@
       "deadCount": 0,
       "removedCount": 0,
       "deferredCount": 0
+    },
+    "features/conjoined-grid": {
+      "scannedAt": "2026-03-27T07:33:26.555Z",
+      "status": "complete",
+      "deadCount": 0,
+      "removedCount": 0,
+      "deferredCount": 0
+    },
+    "features/hand-path-builder": {
+      "scannedAt": "2026-03-27T07:34:29.361Z",
+      "status": "complete",
+      "deadCount": 0,
+      "removedCount": 0,
+      "deferredCount": 0
+    },
+    "features/hand-path-explorer": {
+      "scannedAt": "2026-03-27T07:34:46.686Z",
+      "status": "complete",
+      "deadCount": 0,
+      "removedCount": 0,
+      "deferredCount": 0
+    },
+    "features/hand-paths": {
+      "scannedAt": "2026-03-27T07:35:02.101Z",
+      "status": "complete",
+      "deadCount": 0,
+      "removedCount": 0,
+      "deferredCount": 0
+    },
+    "features/levels": {
+      "scannedAt": "2026-03-27T07:35:16.716Z",
+      "status": "complete",
+      "deadCount": 0,
+      "removedCount": 0,
+      "deferredCount": 0
+    },
+    "features/social": {
+      "scannedAt": "2026-03-27T07:35:31.093Z",
+      "status": "complete",
+      "deadCount": 0,
+      "removedCount": 0,
+      "deferredCount": 0
+    },
+    "shared/config": {
+      "scannedAt": "2026-03-27T07:36:09.759Z",
+      "status": "complete",
+      "deadCount": 0,
+      "removedCount": 0,
+      "deferredCount": 0
+    },
+    "shared/interactive-canvas": {
+      "scannedAt": "2026-03-27T07:36:23.977Z",
+      "status": "complete",
+      "deadCount": 0,
+      "removedCount": 0,
+      "deferredCount": 0
+    },
+    "shared/mandala": {
+      "scannedAt": "2026-03-27T07:36:39.994Z",
+      "status": "complete",
+      "deadCount": 0,
+      "removedCount": 0,
+      "deferredCount": 0
     }
   },
   "items": {},
