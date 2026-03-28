@@ -192,9 +192,9 @@ export class XPRenderer extends EraRendererBase implements IEraRenderer {
 	}
 
 	/**
-	 * Draw small flat hand-position dots at all cardinal grid positions.
-	 * These sit behind props/arrows — visible where no prop covers them.
-	 * In box mode, the positions rotate 45 degrees with the grid.
+	 * Draw small flat dots at intercardinal positions (NE, NW, SE, SW).
+	 * These are the "hand points" — smaller reference dots between the
+	 * main cardinal grid dots. In box mode they rotate with the grid.
 	 */
 	private drawHandPoints(
 		ctx: CanvasRenderingContext2D,
@@ -203,7 +203,17 @@ export class XPRenderer extends EraRendererBase implements IEraRenderer {
 	): void {
 		const isBox = gridMode === GridMode.BOX;
 		const center = GRID_CENTER.x * scale;
-		const handR = 8 * scale;
+		const handR = 5 * scale;
+
+		// Intercardinal positions (212 offset from center = 300 * cos(45°))
+		const diag = 212;
+		const cx = GRID_CENTER.x, cy = GRID_CENTER.y;
+		const intercardinals = [
+			{ x: cx + diag, y: cy - diag }, // NE
+			{ x: cx - diag, y: cy - diag }, // NW
+			{ x: cx + diag, y: cy + diag }, // SE
+			{ x: cx - diag, y: cy + diag }, // SW
+		];
 
 		ctx.save();
 		if (isBox) {
@@ -212,8 +222,8 @@ export class XPRenderer extends EraRendererBase implements IEraRenderer {
 			ctx.translate(-center, -center);
 		}
 
-		ctx.fillStyle = "#888888";
-		for (const pt of GRID_OUTER_POINTS) {
+		ctx.fillStyle = "#999999";
+		for (const pt of intercardinals) {
 			this.fillCircle(ctx, pt.x * scale, pt.y * scale, handR);
 		}
 		ctx.restore();
