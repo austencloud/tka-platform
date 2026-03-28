@@ -507,30 +507,24 @@ export class TextRenderer implements ITextRenderer {
     ctx.fillStyle = darkMode ? "#ffffff" : "black";
     ctx.textBaseline = "middle"; // Vertically center text
 
-    // Username (bottom-left) - Georgia Bold
+    // Measure all three footer segments first, then draw only what fits.
+    // This prevents overlapping when the card is narrow.
+
+    const boldFont = `bold ${fontSize}px Georgia, serif`;
+    const normalFont = `${fontSize}px Georgia, serif`;
+
+    // Prepare left text (username)
+    let leftText = "";
+    let leftWidth = 0;
     if (showCreatorName && userInfo.userName && userInfo.userName.trim() !== "") {
-      ctx.font = `bold ${fontSize}px Georgia, serif`;
-      ctx.textAlign = "left";
-      ctx.fillText(userInfo.userName, margin, yPosition);
+      leftText = userInfo.userName;
+      ctx.font = boldFont;
+      leftWidth = ctx.measureText(leftText).width + margin;
     }
 
-    // Notes (bottom-center) - Georgia Normal weight
-    if (showNotes) {
-      // Use custom notes text if provided, otherwise fall back to userInfo.notes or default
-      const notes =
-        customNotesText && customNotesText.trim() !== ""
-          ? customNotesText
-          : userInfo.notes && userInfo.notes.trim() !== ""
-            ? userInfo.notes
-            : "Created using TKA Composer";
-      ctx.font = `${fontSize}px Georgia, serif`;
-      ctx.textAlign = "center";
-      ctx.fillText(notes, canvas.width / 2, yPosition);
-    }
-
-    // Date (bottom-right) - Georgia Normal
-    // When birthday is set: shows cake emoji + creation date (🎂 M-D-YYYY)
-    // When exportDate is set but no birthday: shows plain date (M-D-YYYY) — used for print cards
+    // Prepare right text (date)
+    let rightText = "";
+    let rightWidth = 0;
     if (showBirthday) {
       const dateToUse = userInfo.birthday
         ? userInfo.birthday
@@ -538,11 +532,46 @@ export class TextRenderer implements ITextRenderer {
           ? new Date(userInfo.exportDate)
           : new Date();
       const formatted = `${dateToUse.getMonth() + 1}-${dateToUse.getDate()}-${dateToUse.getFullYear()}`;
-      // Only show cake emoji when it's a birthday (creation date), not a print/export date
-      const dateStr = userInfo.birthday ? `🎂 ${formatted}` : formatted;
-      ctx.font = `${fontSize}px Georgia, serif`;
+      rightText = userInfo.birthday ? `🎂 ${formatted}` : formatted;
+      ctx.font = normalFont;
+      rightWidth = ctx.measureText(rightText).width + margin;
+    }
+
+    // Prepare center text (notes)
+    let centerText = "";
+    if (showNotes) {
+      centerText =
+        customNotesText && customNotesText.trim() !== ""
+          ? customNotesText
+          : userInfo.notes && userInfo.notes.trim() !== ""
+            ? userInfo.notes
+            : "Created using TKA Composer";
+    }
+
+    // Draw left (username)
+    if (leftText) {
+      ctx.font = boldFont;
+      ctx.textAlign = "left";
+      ctx.fillText(leftText, margin, yPosition);
+    }
+
+    // Draw right (date)
+    if (rightText) {
+      ctx.font = normalFont;
       ctx.textAlign = "right";
-      ctx.fillText(dateStr, canvas.width - margin, yPosition);
+      ctx.fillText(rightText, canvas.width - margin, yPosition);
+    }
+
+    // Draw center (notes) only if it fits between left and right text
+    if (centerText) {
+      ctx.font = normalFont;
+      const centerWidth = ctx.measureText(centerText).width;
+      const availableCenter = canvas.width - leftWidth - rightWidth - margin * 2;
+      if (centerWidth <= availableCenter) {
+        ctx.textAlign = "center";
+        ctx.fillText(centerText, canvas.width / 2, yPosition);
+      }
+      // If it doesn't fit, skip the center text entirely rather than overlap
     }
   }
 
