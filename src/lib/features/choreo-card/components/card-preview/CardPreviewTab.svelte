@@ -76,10 +76,24 @@
     { id: 'pride', label: 'Pride', color: 'linear-gradient(135deg, #e40303, #ff8c00, #ffed00, #008026, #004dff, #750787)' },
   ] as const;
 
+  // Bridge state factory values into Svelte's reactive system via $derived.
+  // Accessing $state through a getter on a const object may not always
+  // trigger template reactivity — these wrappers guarantee it.
+  let currentLevel = $derived(previewState.level);
+  let currentSource = $derived(previewState.selectedSource);
+  let currentDeck = $derived(previewState.selectedDeck);
+  let currentBreadcrumbs = $derived(previewState.breadcrumbs);
+  let currentCardSize = $derived(previewState.cardSize);
+  let currentFamilyIds = $derived(previewState.selectedFamilyIds);
+  let currentPositionFilter = $derived(previewState.startPositionFilter);
+  let currentFilteredSequences = $derived(previewState.filteredSequences);
+  let currentIsLoading = $derived(previewState.isLoading);
+  let currentIsLargeDeck = $derived(previewState.isLargeDeck);
+
   let loopDecks = $derived(decks.filter(d => d.collection === 'LOOPs'));
   let vtgDecks = $derived(decks.filter(d => d.collection === 'VTG'));
   let collectionDecks = $derived(
-    previewState.selectedSource === 'loops' ? loopDecks : vtgDecks
+    currentSource === 'loops' ? loopDecks : vtgDecks
   );
 
   function handleVisibilityChange(key: string, value: boolean) {
@@ -153,14 +167,14 @@
   <div class="top-bar">
     <div class="top-bar-left">
       <BreadcrumbBar
-        segments={previewState.breadcrumbs}
+        segments={currentBreadcrumbs}
         onNavigate={(level) => previewState.navigateTo(level)}
       />
     </div>
     <div class="top-bar-right">
-      {#if previewState.level === 2}
+      {#if currentLevel === 2}
         <CardSizeToggle
-          selected={previewState.cardSize}
+          selected={currentCardSize}
           onchange={(size) => { previewState.cardSize = size; }}
         />
       {/if}
@@ -174,15 +188,15 @@
     </div>
   </div>
 
-  {#if previewState.level === 2 && previewState.selectedDeck}
+  {#if currentLevel === 2 && currentDeck}
     <div class="filter-bar-container">
       <SubsetFilterBar
-        families={previewState.selectedDeck.families}
-        selectedFamilyIds={previewState.selectedFamilyIds}
-        activePosition={previewState.startPositionFilter}
-        totalFiltered={previewState.filteredSequences.length}
-        totalSequences={previewState.selectedDeck.totalSequences}
-        isLargeDeck={previewState.isLargeDeck}
+        families={currentDeck.families}
+        selectedFamilyIds={currentFamilyIds}
+        activePosition={currentPositionFilter}
+        totalFiltered={currentFilteredSequences.length}
+        totalSequences={currentDeck.totalSequences}
+        isLargeDeck={currentIsLargeDeck}
         onFamilyChange={(ids) => previewState.setFamilyFilter(ids)}
         onPositionChange={(pos) => previewState.setStartPositionFilter(pos)}
       />
@@ -191,16 +205,16 @@
 
   <div class="content-area">
     <div class="content-main">
-      {#if previewState.level === 0}
+      {#if currentLevel === 0}
         <SourcePicker {decks} onSelect={(source) => previewState.selectSource(source)} />
 
-      {:else if previewState.level === 1 && previewState.selectedSource === 'loops'}
+      {:else if currentLevel === 1 && currentSource === 'loops'}
         <LoopCollectionView
           decks={collectionDecks}
           onSelectDeck={(deck) => previewState.selectDeck(deck)}
         />
 
-      {:else if previewState.level === 1 && previewState.selectedSource === 'vtg'}
+      {:else if currentLevel === 1 && currentSource === 'vtg'}
         <VtgCollectionView
           decks={collectionDecks}
           onSelectDeck={(deckId) => {
@@ -210,15 +224,15 @@
           onSelectFamily={() => {}}
         />
 
-      {:else if previewState.level === 2 && previewState.selectedDeck}
+      {:else if currentLevel === 2 && currentDeck}
         <CardPageLayout
-          sequences={previewState.filteredSequences}
-          families={previewState.selectedDeck.families}
-          selectedFamilyIds={previewState.selectedFamilyIds}
-          cardSize={previewState.cardSize}
+          sequences={currentFilteredSequences}
+          families={currentDeck.families}
+          selectedFamilyIds={currentFamilyIds}
+          cardSize={currentCardSize}
           {renderOptions}
-          isLoading={previewState.isLoading}
-          isLargeDeck={previewState.isLargeDeck}
+          isLoading={currentIsLoading}
+          isLargeDeck={currentIsLargeDeck}
           onCardClick={() => {}}
           onRenderProgress={(current, total) => {
             previewState.renderProgress = current;
@@ -238,10 +252,10 @@
       {selectedTheme}
       {themeOptions}
       {exportFormat}
-      cardSize={previewState.cardSize}
-      totalCards={previewState.filteredSequences.length}
+      cardSize={currentCardSize}
+      totalCards={currentFilteredSequences.length}
       {isExporting}
-      hasRenderedCards={previewState.filteredSequences.length > 0 && !previewState.isLoading}
+      hasRenderedCards={currentFilteredSequences.length > 0 && !currentIsLoading}
       onToggle={() => { settingsOpen = false; }}
       onVisibilityChange={handleVisibilityChange}
       onThemeChange={handleThemeChange}
