@@ -104,9 +104,9 @@ export class XPRenderer extends EraRendererBase implements IEraRenderer {
 		const scale = this.getScale(size);
 
 		this.drawGrid(ctx, scale, data.gridMode);
+		this.drawHandPoints(ctx, scale, data.gridMode);
 		await this.drawProps(ctx, prepared, scale);
 		await this.drawArrows(ctx, prepared, scale);
-		this.drawHandPoints(ctx, scale, data.gridMode);
 		this.drawLetter(ctx, String(data.letter), scale, size);
 		this.drawBeveledBorder(ctx, size);
 	}
@@ -192,9 +192,8 @@ export class XPRenderer extends EraRendererBase implements IEraRenderer {
 	}
 
 	/**
-	 * Draw small flat hand-position dots at cardinal grid positions (N/E/S/W).
-	 * These mark where hands grip the props — drawn ON TOP of props/arrows
-	 * so they're visible on the staves, matching the modern pictograph.
+	 * Draw small flat hand-position dots at cardinal positions, halfway
+	 * between center and the outer grid points. These sit behind props.
 	 * In box mode they rotate with the grid.
 	 */
 	private drawHandPoints(
@@ -203,18 +202,25 @@ export class XPRenderer extends EraRendererBase implements IEraRenderer {
 		gridMode: GridMode,
 	): void {
 		const isBox = gridMode === GridMode.BOX;
-		const center = GRID_CENTER.x * scale;
-		const handR = 8 * scale;
+		const canvasCenter = GRID_CENTER.x * scale;
+		const handR = 5 * scale;
+
+		// Halfway between center (475) and outer points
+		const cx = GRID_CENTER.x, cy = GRID_CENTER.y;
+		const handPoints = GRID_OUTER_POINTS.map(pt => ({
+			x: (cx + pt.x) / 2,
+			y: (cy + pt.y) / 2,
+		}));
 
 		ctx.save();
 		if (isBox) {
-			ctx.translate(center, center);
+			ctx.translate(canvasCenter, canvasCenter);
 			ctx.rotate(Math.PI / 4);
-			ctx.translate(-center, -center);
+			ctx.translate(-canvasCenter, -canvasCenter);
 		}
 
 		ctx.fillStyle = "#888888";
-		for (const pt of GRID_OUTER_POINTS) {
+		for (const pt of handPoints) {
 			this.fillCircle(ctx, pt.x * scale, pt.y * scale, handR);
 		}
 		ctx.restore();
