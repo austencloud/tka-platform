@@ -19,7 +19,7 @@
   import type { IDeckLoader } from "../services/contracts/IDeckLoader";
   import DeckBrowser from "./DeckBrowser.svelte";
   import CardDesigner from "./CardDesigner.svelte";
-  import PrintPrepView from "./PrintPrepView.svelte";
+  import CardPreviewTab from "./card-preview/CardPreviewTab.svelte";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import ContextMenu from "$lib/shared/components/context-menu/ContextMenu.svelte";
   import type { ContextMenuState, ContextMenuEntry } from "$lib/shared/components/context-menu/context-menu-types";
@@ -159,17 +159,17 @@
   );
 
   // Mode state - synced with global navigation
-  type ChoreoCardMode = "library" | "decks" | "designer" | "print-prep";
-  let mode = $state<ChoreoCardMode>("library");
+  type ChoreoCardMode = "card-preview" | "decks" | "designer";
+  let mode = $state<ChoreoCardMode>("card-preview");
 
   // Sync with navigation state (sidebar tab selection)
   $effect(() => {
     const navTab = navigationState.activeTab;
-    if (navTab === "library" || navTab === "decks" || navTab === "designer" || navTab === "print-prep") {
+    if (navTab === "card-preview" || navTab === "decks" || navTab === "designer") {
       const newMode = navTab as ChoreoCardMode;
       if (newMode !== mode) {
         mode = newMode;
-        if ((newMode === "decks" || newMode === "print-prep") && decks.length === 0) {
+        if (newMode !== "designer" && decks.length === 0) {
           loadDecks();
         }
       }
@@ -569,82 +569,16 @@
     }
   }
 
-  // Derive the selected deck object for Print Prep tab
-  const selectedDeck = $derived(
-    selectedDeckId ? decks.find((d) => d.id === selectedDeckId) ?? null : null
-  );
 
-  function switchToDecksTab() {
-    navigationState.setActiveTab("decks");
-  }
 
 </script>
 
 <div class="choreo-card-tab">
-  <!-- Status bar (library mode only) -->
-  {#if mode === "library"}
-    <div class="status-bar">
-      <p class="status" role="status" aria-live="polite" aria-atomic="true">
-        {statusMessage}
-      </p>
-    </div>
-  {/if}
-
   <!-- Main content -->
   <div class="main-content">
-    {#if mode === "library"}
-      <!-- Navigation Sidebar -->
-      <aside class="sidebar">
-        <div class="sidebar-content">
-          <ChoreoCardNavigation
-            {selectedLength}
-            {columnCount}
-            onLengthSelected={handleLengthSelected}
-            onColumnCountChanged={handleColumnCountChanged}
-          />
-          <div class="filter-divider"></div>
-          <ChoreoCardFilters
-            {level}
-            {favorites}
-            {gridMode}
-            {author}
-            {authors}
-            {showQRCodes}
-            onLevelChange={handleLevelChange}
-            onFavoritesChange={handleFavoritesChange}
-            onGridModeChange={handleGridModeChange}
-            onAuthorChange={handleAuthorChange}
-            onShowQRCodesChange={handleShowQRCodesChange}
-          />
-          <div class="filter-divider"></div>
-          <ChoreoCardExport
-            sequences={filteredSequences}
-            {showGrid}
-            {showTKA}
-            {showWord}
-            {includeStartPosition}
-          />
-        </div>
-      </aside>
-
-      <!-- Page Display -->
+    {#if mode === "card-preview"}
       <main class="content-area">
-        <PageDisplay
-          {pages}
-          {isLoading}
-          {error}
-          {columnCount}
-          {showQRCodes}
-          {handPointsVisible}
-          {showGrid}
-          {showTKA}
-          {showWord}
-          {includeStartPosition}
-          onRetry={loadSequences}
-          onColumnCountChanged={handleColumnCountChanged}
-          onSelectSequence={handleSelectSequence}
-          onContextMenu={openCardContextMenu}
-        />
+        <CardPreviewTab {decks} />
       </main>
     {:else if mode === "decks"}
       <main class="content-area">
@@ -676,14 +610,6 @@
       <!-- Card Designer: full-width, no sidebar -->
       <main class="content-area">
         <CardDesigner {sequences} {isLoading} />
-      </main>
-    {:else if mode === "print-prep"}
-      <main class="content-area">
-        <PrintPrepView
-          deck={selectedDeck}
-          {deckSequences}
-          onSwitchToDecks={switchToDecksTab}
-        />
       </main>
     {/if}
   </div>
