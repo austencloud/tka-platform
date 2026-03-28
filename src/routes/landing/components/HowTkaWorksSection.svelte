@@ -59,81 +59,91 @@
     return { ...motion, propType };
   }
 
+  const LANDING_SEQUENCE_ID = "seq_1774721810120_yigllpcr6";
+  const LANDING_SEQUENCE_OWNER = "PBp3GSBO6igCKPwJyLZNmVEmamI3";
+
+  function setupFromSequence(full: SequenceData) {
+    sequence = full;
+    firstStep = full.steps[0] ?? null;
+
+    const derived = startPositionDeriver.getOrDeriveStartPosition(full);
+    startPos = derived as StartPositionData | null;
+
+    // Card 1: empty grid
+    emptyGridData = {
+      id: "how-empty-grid",
+      letter: undefined,
+      startPosition: null,
+      endPosition: null,
+      motions: {},
+    };
+
+    // Card 2: hands (PropType.HAND) + alpha glyph
+    if (startPos) {
+      gridOnlyData = {
+        id: "how-hands",
+        letter: Letter.ALPHA,
+        startPosition: startPos.startPosition,
+        endPosition: startPos.endPosition,
+        motions: {
+          blue: startPos.motions?.blue ? { ...startPos.motions.blue, propType: PropType.HAND } : undefined,
+          red: startPos.motions?.red ? { ...startPos.motions.red, propType: PropType.HAND } : undefined,
+        },
+      };
+    }
+
+    // Card 3: props + alpha glyph + "Start" label
+    if (startPos) {
+      propsData = {
+        id: startPos.id ?? "how-props",
+        letter: Letter.ALPHA,
+        stepNumber: 0,
+        startPosition: startPos.startPosition,
+        endPosition: startPos.endPosition,
+        motions: {
+          blue: forceProps(startPos.motions?.blue),
+          red: forceProps(startPos.motions?.red),
+        },
+      } as PictographData;
+    }
+
+    // Card 4: first beat + beat "1" + positions
+    if (firstStep) {
+      motionData = {
+        id: firstStep.id ?? "how-motion",
+        letter: (firstStep.letter || undefined) as Letter | undefined,
+        stepNumber: 1,
+        startPosition: firstStep.startPosition,
+        endPosition: firstStep.endPosition,
+        motions: {
+          blue: forceProps(firstStep.motions?.blue),
+          red: forceProps(firstStep.motions?.red),
+        },
+      };
+    }
+  }
+
   onMount(async () => {
     try {
-      const browseLoader = container.items.browseLoader;
-      const full = await browseLoader.loadFullSequenceData(
-        "AABB",
-        "seq_1774721810120_yigllpcr6"
-      );
+      // Load the specific AABB sequence directly from Firestore, then use
+      // browseLoader's mapping by injecting the sourceRef into its cache.
+      const browseLoader = container.items.browseLoader as any;
+      const sourceRef = `users/${LANDING_SEQUENCE_OWNER}/sequences/${LANDING_SEQUENCE_ID}`;
 
-      if (!full || full.steps.length === 0) {
-        console.warn("[HowTkaWorks] AABB sequence not found, section hidden");
+      // Inject the direct path so browseLoader can find and map it
+      if (browseLoader.sourceRefCache) {
+        browseLoader.sourceRefCache.set(`id:${LANDING_SEQUENCE_ID}`, sourceRef);
+      }
+
+      const full = await browseLoader.loadFullSequenceData("AABB", LANDING_SEQUENCE_ID);
+
+      if (!full || !full.steps || full.steps.length === 0) {
+        console.warn("[HowTkaWorks] Landing sequence not found or empty");
         loaded = true;
         return;
       }
 
-      sequence = full;
-      firstStep = full.steps[0] ?? null;
-
-      // Derive start position from sequence
-      const derived = startPositionDeriver.getOrDeriveStartPosition(full);
-      // The deriver can return StepData | StartPositionData — cast to StartPositionData
-      // since we only need the pictograph fields (id, startPosition, motions)
-      startPos = derived as StartPositionData | null;
-
-      // Card 1: empty grid — null startPosition/endPosition so no hand dots render
-      emptyGridData = {
-        id: "how-empty-grid",
-        letter: undefined,
-        startPosition: null,
-        endPosition: null,
-        motions: {},
-      };
-
-      // Card 2: grid + hands (prop type = HAND, no arrows), alpha glyph
-      if (startPos) {
-        gridOnlyData = {
-          id: "how-hands",
-          letter: Letter.ALPHA,
-          startPosition: startPos.startPosition,
-          endPosition: startPos.endPosition,
-          motions: {
-            blue: startPos.motions?.blue ? { ...startPos.motions.blue, propType: PropType.HAND } : undefined,
-            red: startPos.motions?.red ? { ...startPos.motions.red, propType: PropType.HAND } : undefined,
-          },
-        };
-      }
-
-      // Card 3: start position with props visible (static motions = props shown), alpha glyph, "Start" label
-      if (startPos) {
-        propsData = {
-          id: startPos.id ?? "how-props",
-          letter: Letter.ALPHA,
-          stepNumber: 0, // 0 = start position indicator
-          startPosition: startPos.startPosition,
-          endPosition: startPos.endPosition,
-          motions: {
-            blue: forceProps(startPos.motions?.blue),
-            red: forceProps(startPos.motions?.red),
-          },
-        } as PictographData;
-      }
-
-      // Card 4: first beat with full pictograph, beat "1" at top-left
-      if (firstStep) {
-        motionData = {
-          id: firstStep.id ?? "how-motion",
-          letter: (firstStep.letter || undefined) as Letter | undefined,
-          stepNumber: 1, // Beat 1 of the sequence
-          startPosition: firstStep.startPosition,
-          endPosition: firstStep.endPosition,
-          motions: {
-            blue: forceProps(firstStep.motions?.blue),
-            red: forceProps(firstStep.motions?.red),
-          },
-        };
-      }
+      setupFromSequence(full);
     } catch (e) {
       console.error("[HowTkaWorks] Failed to load AABB:", e);
     } finally {
@@ -144,10 +154,10 @@
   // Step metadata — defined inline per card to avoid array-index TS strictness issues
 </script>
 
-{#if loaded && sequence}
-  <section class="how-tka-works">
-    <h2>How TKA works</h2>
+<section class="how-tka-works">
+  <h2>How TKA works</h2>
 
+  {#if loaded && sequence}
     <!-- Top row: 3 cards -->
     <div class="top-row">
       <!-- Card 1: Empty grid -->
@@ -270,8 +280,30 @@
         <p>The sequence plays back as a looping animation.</p>
       </div>
     </div>
-  </section>
-{/if}
+  {:else}
+    <!-- Skeleton: same 3+3 grid layout, pulsing placeholders -->
+    <div class="top-row">
+      {#each [1, 2, 3] as n}
+        <div class="step-card skeleton">
+          <span class="step-badge">{n}</span>
+          <div class="skeleton-pictograph"></div>
+          <div class="skeleton-title"></div>
+          <div class="skeleton-text"></div>
+        </div>
+      {/each}
+    </div>
+    <div class="bottom-row">
+      {#each [4, 5, 6] as n}
+        <div class="step-card skeleton">
+          <span class="step-badge">{n}</span>
+          <div class="skeleton-pictograph"></div>
+          <div class="skeleton-title"></div>
+          <div class="skeleton-text"></div>
+        </div>
+      {/each}
+    </div>
+  {/if}
+</section>
 
 <style>
   .how-tka-works {
@@ -417,9 +449,50 @@
     }
   }
 
+  /* ── Skeleton loading states ─────────────────────────────────────────────── */
+  @keyframes skeleton-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  .skeleton {
+    animation: skeleton-pulse 1.8s ease-in-out infinite;
+    /* Prevent hover border-color change on skeleton cards */
+    pointer-events: none;
+  }
+
+  .skeleton .skeleton-pictograph {
+    width: 100%;
+    max-width: 200px;
+    aspect-ratio: 1;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.03);
+    margin: 0 auto;
+  }
+
+  .skeleton .skeleton-title {
+    width: 60%;
+    height: 20px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.05);
+    margin: 0 auto;
+  }
+
+  .skeleton .skeleton-text {
+    width: 80%;
+    height: 14px;
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.03);
+    margin: 0 auto;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .step-card {
       transition: none;
+    }
+
+    .skeleton {
+      animation: none;
     }
   }
 </style>

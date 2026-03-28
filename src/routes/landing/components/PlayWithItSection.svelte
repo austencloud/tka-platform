@@ -8,7 +8,6 @@
 -->
 <script lang="ts">
   import type { Component } from "svelte";
-  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
   // Lazy-loaded heavy component — typed as Component<any> because the inner
   // component manages its own state and is rendered without props.
@@ -50,14 +49,25 @@
   {#if InnerComponent}
     <InnerComponent />
   {:else if loadFailed}
-    <div class="placeholder">
-      <div class="placeholder-icon">🌀</div>
-      <span>Animation preview unavailable</span>
+    <div class="showcase skeleton-showcase" aria-hidden="true">
+      <div class="sk-toolbar"></div>
+      <div class="sk-canvas"></div>
+      <div class="sk-beat-strip">
+        {#each { length: 5 } as _}
+          <div class="sk-beat-cell"></div>
+        {/each}
+      </div>
     </div>
   {:else}
-    <div class="placeholder">
-      <ProgressRing percent={-1} size={32} strokeWidth={3} />
-      <span>Loading animation...</span>
+    <!-- Structural skeleton — same showcase proportions as PlayWithItInner -->
+    <div class="showcase skeleton-showcase" aria-hidden="true">
+      <div class="sk-toolbar"></div>
+      <div class="sk-canvas"></div>
+      <div class="sk-beat-strip">
+        {#each { length: 5 } as _}
+          <div class="sk-beat-cell"></div>
+        {/each}
+      </div>
     </div>
   {/if}
 </section>
@@ -86,25 +96,70 @@
     margin-inline: auto;
   }
 
-  .placeholder {
+  /* ── Skeleton showcase ───────────────────────────────────────────────────── */
+
+  /*
+   * Matches the .showcase container in PlayWithItInner exactly:
+   * column-flex, max 800px, border-radius 16px, dark border + shadow.
+   */
+  .showcase {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 16px;
-    width: clamp(340px, 60vw, 560px);
-    height: clamp(340px, 60vw, 560px);
+    width: 100%;
+    max-width: 800px;
     margin: 0 auto;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 20px;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    font-size: var(--font-size-min, 14px);
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.35);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
   }
 
-  .placeholder-icon {
-    font-size: 3rem;
-    opacity: 0.4;
+  /* Toolbar band — same height as the real toolbar (~62px with padding) */
+  .sk-toolbar {
+    height: 62px;
+    background: rgba(255, 255, 255, 0.03);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    flex-shrink: 0;
+  }
+
+  /* Canvas — square aspect-ratio matching .canvas-area */
+  .sk-canvas {
+    width: 100%;
+    aspect-ratio: 1;
+    max-height: 640px;
+    background: rgba(255, 255, 255, 0.02);
+    flex-shrink: 0;
+  }
+
+  /* Beat strip — same padding/height as the real strip */
+  .sk-beat-strip {
+    display: flex;
+    gap: 6px;
+    padding: 12px 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(0, 0, 0, 0.2);
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+
+  /* Individual beat placeholder cells */
+  .sk-beat-cell {
+    flex: 0 0 72px;
+    width: 72px;
+    height: 72px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1.5px solid rgba(255, 255, 255, 0.06);
+  }
+
+  @keyframes skeleton-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  .skeleton-showcase {
+    animation: skeleton-pulse 1.8s ease-in-out infinite;
   }
 
   @media (max-width: 600px) {
@@ -112,9 +167,25 @@
       padding: 48px 16px;
     }
 
-    .placeholder {
-      width: min(340px, 90vw);
-      height: min(340px, 90vw);
+    .showcase {
+      max-width: 100%;
+      border-radius: 12px;
+    }
+
+    .sk-canvas {
+      max-height: 400px;
+    }
+
+    .sk-beat-cell {
+      flex: 0 0 56px;
+      width: 56px;
+      height: 56px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .skeleton-showcase {
+      animation: none;
     }
   }
 </style>
