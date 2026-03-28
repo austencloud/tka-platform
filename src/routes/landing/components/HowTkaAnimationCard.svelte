@@ -9,7 +9,7 @@
 -->
 <script lang="ts">
   import { onMount, onDestroy, tick } from "svelte";
-  import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
+  import type { Component } from "svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
   import type { IStartPositionDeriver } from "$lib/shared/pictograph/shared/services/contracts/IStartPositionDeriver";
@@ -40,6 +40,8 @@
   let startPositionDeriver: IStartPositionDeriver | null = null;
   let animationReady = $state(false);
   let animationError = $state(false);
+  // Dynamically imported — null until the card scrolls into view
+  let AnimatorCanvasComponent = $state<Component | null>(null);
 
   const visibilityManager = getAnimationVisibilityManager();
 
@@ -136,6 +138,12 @@
       const success = playbackController.initialize(prepared, animationState);
       if (!success) throw new Error("Playback init failed");
 
+      // Dynamically import the animation canvas — keeps it out of the initial bundle
+      const mod = await import(
+        "$lib/shared/animation-engine/components/AnimatorCanvas.svelte"
+      );
+      AnimatorCanvasComponent = mod.default as Component;
+
       animationReady = true;
       await tick();
 
@@ -150,9 +158,10 @@
 </script>
 
 <div class="animation-card" bind:this={containerRef}>
-  {#if animationReady}
+  {#if animationReady && AnimatorCanvasComponent}
     <div class="canvas-fill">
-      <AnimatorCanvas
+      <svelte:component
+        this={AnimatorCanvasComponent}
         blueProp={animationState.bluePropState}
         redProp={animationState.redPropState}
         gridVisible={true}
