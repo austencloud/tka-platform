@@ -191,9 +191,25 @@ export class XPRenderer extends EraRendererBase implements IEraRenderer {
 			this.fillCircle(ctx, px - dotR * 0.35, py - dotR * 0.35, dotR * 0.3);
 		}
 
-		// Center dot — matches modern renderer (12vb radius)
-		ctx.fillStyle = GRID_DOT_COLOR;
-		this.fillCircle(ctx, GRID_CENTER.x * scale, GRID_CENTER.y * scale, 12 * scale);
+		// Center dot — 3D glossy sphere like the outer points (XP signature)
+		const centerR = 12 * scale;
+		const ccx = GRID_CENTER.x * scale;
+		const ccy = GRID_CENTER.y * scale;
+
+		ctx.save();
+		ctx.shadowColor = "rgba(0,0,0,0.25)";
+		ctx.shadowBlur = 4;
+		ctx.shadowOffsetX = 1;
+		ctx.shadowOffsetY = 1;
+		ctx.fillStyle = "#B8B8B8";
+		this.fillCircle(ctx, ccx, ccy, centerR);
+		ctx.restore();
+
+		ctx.fillStyle = "#E8E8E8";
+		this.fillCircle(ctx, ccx - centerR * 0.15, ccy - centerR * 0.15, centerR * 0.8);
+
+		ctx.fillStyle = "#FFFFFF";
+		this.fillCircle(ctx, ccx - centerR * 0.35, ccy - centerR * 0.35, centerR * 0.3);
 	}
 
 	private drawLine(
