@@ -1,36 +1,64 @@
 <script lang="ts">
 	/**
-	 * ArchiveDestination - The Kinetic Archive
+	 * ArchiveDestination — The Kinetic Archive
 	 *
-	 * Top-level destination component for the narrative museum experience.
-	 * Uses WorldScene for camera/movement, renders HTML overlays for
-	 * plaque reading and interaction prompts.
+	 * Standalone 3D scene with proper FPS camera. Does NOT use WorldScene
+	 * (designed for outdoor terrain with third-person raycasting that breaks
+	 * in enclosed rooms). Uses GalleryCanvas + FirstPersonCamera directly.
 	 */
-	import WorldScene from "$lib/features/realm/components/scene/WorldScene.svelte";
-	import { ARCHIVE_WING1_CONFIG } from "$lib/features/realm/core/realm-definitions";
-	import { getActiveArchiveState } from "./state/archive-state-bridge.svelte";
+	import GalleryCanvas from "$lib/features/realm/destinations/gallery/components/GalleryCanvas.svelte";
+	import DiscoveryChamber from "./components/DiscoveryChamber.svelte";
+	import FirstPersonCamera from "./components/FirstPersonCamera.svelte";
 	import PlaqueOverlay from "./components/PlaqueOverlay.svelte";
+	import { createArchiveState } from "./state/archive-state.svelte";
 
-	const archiveState = $derived(getActiveArchiveState());
+	const archiveState = createArchiveState();
 
-	const showPrompt = $derived(
-		archiveState &&
-		archiveState.interactionTargetId !== null &&
-		!archiveState.isOverlayOpen
-	);
+	const groundY = 8;
+
+	let playerPosition = $state({ x: 0, y: groundY + 1.7, z: 3 });
 
 	function handlePlaqueClose() {
-		if (!archiveState) return;
 		archiveState.closePlaque();
-		document.body.requestPointerLock();
+		// Re-lock pointer after closing plaque
+		const canvas = document.querySelector<HTMLCanvasElement>("canvas[data-engine]");
+		canvas?.requestPointerLock();
 	}
 </script>
 
-<WorldScene realmConfig={ARCHIVE_WING1_CONFIG} />
+<div class="archive-scene">
+	<GalleryCanvas
+		renderingBackend="webgpu-auto"
+		autoRender={true}
+		toneMapping={undefined}
+	>
+		<FirstPersonCamera
+			position={[0, groundY + 1.7, 3]}
+			lookAt={[0, groundY + 1.2, -5]}
+			speed={2.5}
+			eyeHeight={groundY + 1.7}
+			onPositionChange={(pos) => { playerPosition = pos; }}
+		/>
 
-{#if archiveState}
+		<DiscoveryChamber
+			{groundY}
+			{playerPosition}
+			{archiveState}
+		/>
+	</GalleryCanvas>
+
+	<!-- Crosshair -->
+	<div class="crosshair"></div>
+
+	<!-- Click-to-start hint (fades out after pointer lock) -->
+	{#if !archiveState.isOverlayOpen}
+		<div class="hint" class:hidden={false}>
+			Click to explore
+		</div>
+	{/if}
+
 	<!-- Interaction prompt -->
-	{#if showPrompt}
+	{#if archiveState.interactionTargetId && !archiveState.isOverlayOpen}
 		<div class="interaction-prompt">
 			<div class="prompt-key">E</div>
 			<div class="prompt-text">Examine</div>
@@ -45,9 +73,53 @@
 			onClose={handlePlaqueClose}
 		/>
 	{/if}
-{/if}
+</div>
 
 <style>
+	.archive-scene {
+		width: 100%;
+		height: 100%;
+		position: relative;
+		background: #050403;
+		cursor: crosshair;
+	}
+
+	.archive-scene :global(canvas) {
+		cursor: none;
+	}
+
+	.crosshair {
+		position: fixed;
+		top: 50%;
+		left: 50%;
+		width: 2px;
+		height: 2px;
+		background: rgba(200, 180, 140, 0.5);
+		border-radius: 50%;
+		transform: translate(-50%, -50%);
+		pointer-events: none;
+		z-index: 10;
+		box-shadow: 0 0 4px rgba(200, 180, 140, 0.3);
+	}
+
+	.hint {
+		position: fixed;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		font-family: "Georgia", "Times New Roman", serif;
+		font-size: 1.1rem;
+		color: rgba(200, 180, 140, 0.6);
+		letter-spacing: 0.1em;
+		pointer-events: none;
+		z-index: 10;
+		transition: opacity 0.5s ease;
+	}
+
+	.hint.hidden {
+		opacity: 0;
+	}
+
 	.interaction-prompt {
 		position: fixed;
 		bottom: 30%;
@@ -61,7 +133,6 @@
 		border: 1px solid rgba(200, 180, 140, 0.3);
 		border-radius: 6px;
 		z-index: 100;
-		animation: promptFadeIn 0.2s ease-out;
 		pointer-events: none;
 	}
 
@@ -85,10 +156,5 @@
 		font-size: 0.9rem;
 		color: #c8b890;
 		letter-spacing: 0.05em;
-	}
-
-	@keyframes promptFadeIn {
-		from { opacity: 0; transform: translateX(-50%) translateY(8px); }
-		to { opacity: 1; transform: translateX(-50%) translateY(0); }
 	}
 </style>
