@@ -76,6 +76,7 @@ export class PrintCardRenderer implements IPrintCardRenderer {
       visibilityOverrides: {
         showTKA: options.showTKA,
         showGrid: options.showGrid,
+        showQRCode: options.showQRCode ?? false,
         printMode: true,
         darkMode: false,
         handPointVisibility: options.handPointsVisible ? "all" : "none",
