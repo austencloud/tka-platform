@@ -29,11 +29,11 @@ describe('getPageLayout', () => {
     expect(layout.cardHeightPt).toBe(252);
   });
 
-  it('tarot layout fits 2x2=4 on letter', () => {
+  it('tarot layout fits 3x2=6 on letter', () => {
     const layout = getPageLayout('tarot');
-    expect(layout.cols).toBe(2);
+    expect(layout.cols).toBe(3);
     expect(layout.rows).toBe(2);
-    expect(layout.cardsPerPage).toBe(4);
+    expect(layout.cardsPerPage).toBe(6);
     expect(layout.cardWidthPt).toBe(198);
     expect(layout.cardHeightPt).toBe(342);
   });
@@ -44,7 +44,7 @@ describe('getPageLayout', () => {
     expect(poker.marginYPt).toBe(18);
 
     const tarot = getPageLayout('tarot');
-    expect(tarot.marginXPt).toBe(108);
+    expect(tarot.marginXPt).toBe(9);
     expect(tarot.marginYPt).toBe(54);
   });
 });
