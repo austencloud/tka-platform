@@ -1,9 +1,9 @@
 <!--
   RetroIcon — Pixel art SVG icon renderer for TKA-OS v1.0
 
-  Renders a 16x16 pixel art SVG from the RETRO_ICONS library at the
+  Renders a 32x32 pixel art SVG from the RETRO_ICONS library at the
   specified display size. Uses image-rendering: pixelated for crisp
-  scaling at larger sizes (32x32 desktop icons, etc.).
+  scaling. Icons use authentic Win95 3D beveling with TKA theming.
 
   Domain: Retro Rendering
 -->
