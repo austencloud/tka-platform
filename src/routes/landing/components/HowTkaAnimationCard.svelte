@@ -165,7 +165,7 @@
         trailSettings={animationSettings.trail}
         bluePropType={propType}
         redPropType={propType}
-        word={sequence?.word ?? null}
+        word={null}
         previewDarkMode={true}
         hideTkaGlyph={false}
         hideStepNumbers={false}
