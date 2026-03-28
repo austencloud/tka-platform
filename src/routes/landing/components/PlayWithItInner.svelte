@@ -718,6 +718,8 @@
     border-radius: 16px;
     overflow: hidden;
     width: 100%;
+    min-height: 400px;
+    height: 100%;
   }
 
   /* ── Responsive: single column below 800px ───────────────────────────────── */
