@@ -7,9 +7,9 @@
 	import type { TileType, FloorMaterial } from "../../domain/museum-grid-types";
 	import { getTileMetadata } from "../../domain/tile-registry";
 	import { getEditorContext } from "../../state/editor-context";
-	import type { EditorTool, DrawMode } from "../../state/editor-state.svelte";
+	import type { EditorTool, DrawMode } from "../../state/editor-editor.svelte";
 
-	const { state } = getEditorContext();
+	const { state: editor } = getEditorContext();
 
 	// Build tool list from tile registry so labels and icons stay in sync
 	const tileTypes: TileType[] = [
@@ -59,7 +59,7 @@
 
 	// Only show material picker when a floor-type tool is selected
 	let showMaterialPicker = $derived(
-		state.selectedTool === "floor" || state.selectedTool === "corridor"
+		editor.selectedTool === "floor" || editor.selectedTool === "corridor"
 	);
 </script>
 
@@ -70,8 +70,8 @@
 			<button
 				type="button"
 				class="tool-btn"
-				class:active={state.selectedTool === tool.id}
-				onclick={() => state.setTool(tool.id)}
+				class:active={editor.selectedTool === tool.id}
+				onclick={() => editor.setTool(tool.id)}
 				title={tool.label}
 			>
 				<i class={tool.icon}></i>
@@ -86,8 +86,8 @@
 			<button
 				type="button"
 				class="tool-btn"
-				class:active={state.selectedTool === tool.id}
-				onclick={() => state.setTool(tool.id)}
+				class:active={editor.selectedTool === tool.id}
+				onclick={() => editor.setTool(tool.id)}
 				title={tool.label}
 			>
 				<i class={tool.icon}></i>
@@ -103,8 +103,8 @@
 				<button
 					type="button"
 					class="mode-btn"
-					class:active={state.drawMode === mode.id}
-					onclick={() => state.setDrawMode(mode.id)}
+					class:active={editor.drawMode === mode.id}
+					onclick={() => editor.setDrawMode(mode.id)}
 					title={mode.label}
 				>
 					<i class={mode.icon}></i>
@@ -118,10 +118,10 @@
 			<span class="section-label">Material</span>
 			<select
 				class="material-select"
-				value={state.selectedMaterial}
+				value={editor.selectedMaterial}
 				onchange={(e) => {
 					const target = e.currentTarget as HTMLSelectElement;
-					state.setMaterial(target.value as FloorMaterial);
+					editor.setMaterial(target.value as FloorMaterial);
 				}}
 			>
 				{#each materials as mat (mat.id)}
