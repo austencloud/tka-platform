@@ -1,0 +1,155 @@
+/**
+ * Museum Grid Types
+ *
+ * Shared data format for the 2D museum game, floor plan editor,
+ * and 2D-to-3D pipeline. 1 tile = 0.5m in real-world scale.
+ */
+
+export type TileType =
+  | "floor"
+  | "wall"
+  | "door"
+  | "exhibit-panel"
+  | "performer-station"
+  | "torch"
+  | "pedestal"
+  | "trigger"
+  | "corridor";
+
+export type FloorMaterial = "stone" | "marble" | "wood" | "dirt" | "sandstone";
+export type Direction = "north" | "south" | "east" | "west";
+export type WingTheme = "cave" | "classical" | "modern" | "futuristic" | "outdoor";
+
+export interface MuseumTile {
+  type: TileType;
+  material?: FloorMaterial;
+  refId?: string;
+  facing?: Direction;
+}
+
+export interface MuseumGrid {
+  width: number;
+  height: number;
+  tileScale: 0.5;
+  tiles: Map<string, MuseumTile>;
+  wings: WingRegion[];
+  spawn: { x: number; y: number; facing: Direction };
+  exhibits: ExhibitDefinition[];
+  performers: PerformerDefinition[];
+  triggers: TriggerDefinition[];
+}
+
+export interface MuseumGridSerialized {
+  width: number;
+  height: number;
+  tileScale: 0.5;
+  tiles: Record<string, MuseumTile>;
+  wings: WingRegion[];
+  spawn: { x: number; y: number; facing: Direction };
+  exhibits: ExhibitDefinition[];
+  performers: PerformerDefinition[];
+  triggers: TriggerDefinition[];
+}
+
+export interface WingRegion {
+  id: string;
+  name: string;
+  bounds: { x: number; y: number; width: number; height: number };
+  theme: WingTheme;
+}
+
+export interface ExhibitDefinition {
+  id: string;
+  tileX: number;
+  tileY: number;
+  sequenceId?: string;
+  plaque?: {
+    title: string;
+    subtitle?: string;
+    body: string;
+    footer?: string;
+  };
+}
+
+export interface PerformerDefinition {
+  id: string;
+  tileX: number;
+  tileY: number;
+  facing: Direction;
+  sequenceId?: string;
+  autoPlay: boolean;
+}
+
+export interface TriggerDefinition {
+  id: string;
+  tileX: number;
+  tileY: number;
+  action: "show-lore" | "play-audio" | "show-image" | "custom";
+  content?: {
+    title?: string;
+    body: string;
+  };
+}
+
+// ── Serialization (Map doesn't survive JSON.stringify) ──
+
+export function serializeGrid(grid: MuseumGrid): MuseumGridSerialized {
+  const tiles: Record<string, MuseumTile> = {};
+  for (const [key, tile] of grid.tiles) {
+    tiles[key] = tile;
+  }
+  return {
+    width: grid.width,
+    height: grid.height,
+    tileScale: grid.tileScale,
+    tiles,
+    wings: grid.wings,
+    spawn: grid.spawn,
+    exhibits: grid.exhibits,
+    performers: grid.performers,
+    triggers: grid.triggers,
+  };
+}
+
+export function deserializeGrid(data: MuseumGridSerialized): MuseumGrid {
+  const tiles = new Map<string, MuseumTile>();
+  for (const [key, tile] of Object.entries(data.tiles)) {
+    tiles.set(key, tile);
+  }
+  return {
+    width: data.width,
+    height: data.height,
+    tileScale: data.tileScale,
+    tiles,
+    wings: data.wings,
+    spawn: data.spawn,
+    exhibits: data.exhibits,
+    performers: data.performers,
+    triggers: data.triggers,
+  };
+}
+
+// ── Helpers ──
+
+export function tileKey(x: number, y: number): string {
+  return `${x},${y}`;
+}
+
+export function parseTileKey(key: string): { x: number; y: number } {
+  const [x, y] = key.split(",").map(Number);
+  return { x, y };
+}
+
+export function createEmptyGrid(width: number, height: number): MuseumGrid {
+  return {
+    width,
+    height,
+    tileScale: 0.5,
+    tiles: new Map(),
+    wings: [],
+    spawn: { x: Math.floor(width / 2), y: Math.floor(height / 2), facing: "north" },
+    exhibits: [],
+    performers: [],
+    triggers: [],
+  };
+}
