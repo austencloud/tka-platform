@@ -8,12 +8,13 @@
 -->
 <script lang="ts">
   import type { Component } from "svelte";
-  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
 
-  // Lazy-loaded heavy component
+  // Lazy-loaded heavy component — typed as Component<any> because the inner
+  // component manages its own state and is rendered without props.
   let sectionEl: HTMLElement | undefined = $state();
-  let InnerComponent = $state<Component<{ onEffectChange?: (effect: string) => void; onPropChange?: (propType: PropType) => void }> | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let InnerComponent: Component<any> | null = $state(null);
   let loadFailed = $state(false);
 
   $effect(() => {
