@@ -376,6 +376,14 @@ export const ADMIN_TABS: Section[] = [
 // Settings tabs configuration - shown in sidebar like other modules
 export const SETTINGS_TABS: Section[] = [
   {
+    id: "visibility",
+    label: "Visibility",
+    icon: '<i class="fas fa-eye" aria-hidden="true"></i>',
+    description: "Pictograph, animation, and card display settings",
+    color: "#22c55e",
+    gradient: "linear-gradient(135deg, #4ade80 0%, #22c55e 100%)",
+  },
+  {
     id: "profile",
     label: "Profile",
     icon: '<i class="fas fa-user" aria-hidden="true"></i>',
@@ -531,12 +539,12 @@ export const ARENA_TABS: Section[] = [
 // Choreo Card tabs configuration
 export const CHOREO_CARD_TABS: Section[] = [
   {
-    id: "library",
-    label: "My Library",
-    icon: '<i class="fas fa-book" aria-hidden="true"></i>',
-    description: "Browse your sequences as printable cards",
-    color: "#6366f1",
-    gradient: "linear-gradient(135deg, #818cf8 0%, #6366f1 100%)",
+    id: "card-preview",
+    label: "Card Preview",
+    icon: '<i class="fas fa-id-card" style="color: #e0c068;" aria-hidden="true"></i>',
+    description: "Preview and print physical card decks",
+    color: "#e0c068",
+    gradient: "linear-gradient(135deg, #e0c068 0%, #c4a44e 100%)",
   },
   {
     id: "decks",
@@ -553,14 +561,6 @@ export const CHOREO_CARD_TABS: Section[] = [
     description: "Design custom choreo cards",
     color: "#ec4899",
     gradient: "linear-gradient(135deg, #f472b6 0%, #ec4899 100%)",
-  },
-  {
-    id: "print-prep",
-    label: "Print Prep",
-    icon: '<i class="fas fa-print" aria-hidden="true"></i>',
-    description: "Prepare cards for professional printing",
-    color: "#059669",
-    gradient: "linear-gradient(135deg, #34d399 0%, #059669 100%)",
   },
 ];
 
