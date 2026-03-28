@@ -42,9 +42,12 @@ interface MuseumGrid {
   tileScale: 0.5;
 
   /** Sparse tile map — only non-void tiles stored */
+  /** Sparse tile map — runtime uses Map for O(1) lookups */
   tiles: Map<string, MuseumTile>;  // key: "x,y"
 
-  /** Named regions for wing identification */
+  /** Named regions for wing identification.
+   *  Phase 1: rectangular only, no overlaps.
+   *  Phase 2: irregular shapes via tile-set membership. */
   wings: WingRegion[];
 
   /** Player spawn */
@@ -55,7 +58,28 @@ interface MuseumGrid {
 
   /** Performer definitions (bound to performer tiles) */
   performers: PerformerDefinition[];
+
+  /** Trigger definitions (lore, audio, narrative content) */
+  triggers: TriggerDefinition[];
 }
+
+/** Serialized format for JSON/Firestore persistence.
+ *  Map doesn't survive JSON.stringify — use Record instead. */
+interface MuseumGridSerialized {
+  width: number;
+  height: number;
+  tileScale: 0.5;
+  tiles: Record<string, MuseumTile>;  // plain object, not Map
+  wings: WingRegion[];
+  spawn: { x: number; y: number; facing: Direction };
+  exhibits: ExhibitDefinition[];
+  performers: PerformerDefinition[];
+  triggers: TriggerDefinition[];
+}
+
+/** Convert between runtime Map and serialized Record formats */
+function serializeGrid(grid: MuseumGrid): MuseumGridSerialized;
+function deserializeGrid(data: MuseumGridSerialized): MuseumGrid;
 
 type TileType =
   | "floor"              // walkable
@@ -118,6 +142,19 @@ interface PerformerDefinition {
   sequenceId?: string;
   /** Whether performer starts playing automatically or on trigger */
   autoPlay: boolean;
+}
+
+interface TriggerDefinition {
+  id: string;
+  tileX: number;
+  tileY: number;
+  /** What happens when player steps on this tile */
+  action: "show-lore" | "play-audio" | "show-image" | "custom";
+  /** Content to display in detail panel */
+  content?: {
+    title?: string;
+    body: string;
+  };
 }
 ```
 
@@ -342,7 +379,7 @@ interface AnalyzedMuseum {
 | wall | Box geometry (0.5m × height × 0.5m) + Rapier collider |
 | corridor | Floor surface (different material) |
 | door | Opening in wall (no geometry, no collider) |
-| exhibit-panel | Flat mesh on wall (display surface) |
+| exhibit-panel | Flat mesh on wall (display surface). Wall attachment inferred: if tile opposite to `facing` is a wall tile, panel is wall-mounted; otherwise freestanding. |
 | performer-station | Avatar3D + Staff3D + Grid3D at tile position |
 | torch | PointLight + torch mesh |
 | pedestal | Cylinder/box geometry + Rapier collider |
@@ -398,7 +435,9 @@ src/lib/features/museum-2d/
 
   state/
     museum-2d-state.svelte.ts        — Game state (player position, focused exhibit, etc.)
+    museum-2d-context.ts             — Context distribution for game state
     editor-state.svelte.ts           — Editor state (selected tool, grid, undo stack)
+    editor-context.ts                — Context distribution for editor state
 
   components/
     game/
@@ -434,6 +473,9 @@ src/lib/features/museum-2d/
       TileGridAnalyzer.ts            — Grid → RoomDefinition[] conversion
       MuseumGridPersister.ts         — Save/load to Firestore + JSON export
 
+  di/
+    museum-2d-container.ts           — ITI container for museum-2d services
+
   data/
     wing-templates.ts                — Pre-built wing templates (cave, gallery, corridor)
 ```
@@ -447,7 +489,7 @@ src/lib/features/museum-2d/
 | Pressure Stones File | TKA Destination | Adaptation |
 |---------------------|-----------------|------------|
 | `shared/domain/Position.ts` | `museum-2d/domain/` | Reuse as-is |
-| `shared/domain/Direction.ts` | `museum-2d/domain/` | Reuse as-is |
+| `shared/domain/Direction.ts` | `museum-2d/domain/` | Rewrite: "up/down/left/right" → "north/south/east/west" to match 3D `WallId` |
 | `shared/domain/Room.ts` | `museum-2d/domain/museum-grid-types.ts` | Replace tile types |
 | `shared/animation/AnimationService.ts` | `museum-2d/services/` | Reuse spring physics |
 | `features/game/components/GameBoard.svelte` | `museum-2d/components/game/Museum2DGame.svelte` | Replace puzzle rendering with museum |
@@ -483,10 +525,15 @@ Not a copy-paste. Each file is read, understood, and rewritten to fit TKA's patt
 
 To prevent conflicts when three agents work simultaneously:
 
+### Pre-Work (written before any agent starts)
+- `src/lib/features/museum-2d/domain/museum-grid-types.ts` — shared data format (types + serialization helpers)
+- `src/lib/features/museum-2d/domain/tile-registry.ts` — tile metadata (walkable, renderable, interactable)
+- `src/lib/features/museum-2d/domain/` is **read-only for all agents** after pre-work
+
 ### Agent 1: Museum 2D Walker
 **Touches only:**
-- `src/lib/features/museum-2d/domain/`
 - `src/lib/features/museum-2d/state/museum-2d-state.svelte.ts`
+- `src/lib/features/museum-2d/state/museum-2d-context.ts`
 - `src/lib/features/museum-2d/components/game/`
 - `src/lib/features/museum-2d/components/panel/`
 - `src/lib/features/museum-2d/components/layout/`
@@ -495,18 +542,16 @@ To prevent conflicts when three agents work simultaneously:
 ### Agent 2: Floor Plan Editor
 **Touches only:**
 - `src/lib/features/museum-2d/state/editor-state.svelte.ts`
+- `src/lib/features/museum-2d/state/editor-context.ts`
 - `src/lib/features/museum-2d/components/editor/`
 - `src/lib/features/museum-2d/data/wing-templates.ts`
 
 ### Agent 3: 2D-to-3D Pipeline
 **Touches only:**
 - `src/lib/features/museum-2d/services/`
+- `src/lib/features/museum-2d/di/museum-2d-container.ts` (DI container registration)
 - `src/lib/shared/3d/indoor/` (extending existing RoomGeometryBuilder if needed)
-- `tests/unit/indoor/` (new tests for TileGridAnalyzer)
-
-### Shared (written first, before agents start)
-- `src/lib/features/museum-2d/domain/museum-grid-types.ts` — the shared data format
-- `src/lib/features/museum-2d/domain/tile-registry.ts` — tile metadata
+- `tests/unit/museum-2d/` (new tests for TileGridAnalyzer)
 
 ---
 
