@@ -48,10 +48,10 @@ export class ArrangeGridSerializer implements IArrangeGridSerializer {
     // First pass: assign sequence IDs (prefer untransformed layers as reference)
     for (const cell of enabled) {
       const untransformed = cell.layers.filter(
-        (l) => !l.appliedTransforms?.length
+        (l) => !l.transformStack?.length && !l.appliedTransforms?.length
       );
       const transformed = cell.layers.filter(
-        (l) => l.appliedTransforms?.length
+        (l) => (l.transformStack?.length ?? 0) > 0 || (l.appliedTransforms?.length ?? 0) > 0
       );
       for (const layer of [...untransformed, ...transformed]) {
         getSeqId(layer);
@@ -138,9 +138,12 @@ export class ArrangeGridSerializer implements IArrangeGridSerializer {
   ): string {
     const parts: string[] = [];
 
-    // Transforms
-    if (layer.appliedTransforms?.length) {
-      parts.push(`[${layer.appliedTransforms.join(", ")}]`);
+    // Transforms (prefer transformStack, fall back to legacy appliedTransforms)
+    const transformTypes = layer.transformStack?.length
+      ? layer.transformStack.map((t) => t.type)
+      : layer.appliedTransforms;
+    if (transformTypes?.length) {
+      parts.push(`[${transformTypes.join(", ")}]`);
     } else {
       const fallback = this.getMotionFallback(layer, refLayer);
       if (fallback) parts.push(fallback);

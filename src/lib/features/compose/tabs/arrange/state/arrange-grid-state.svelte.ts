@@ -18,11 +18,14 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import {
   type TunnelLayerConfig,
   type TransformType,
+  type AppliedTransform,
+  type CellEffect,
   getTunnelLayerColors,
 } from "../../../compose/domain/types";
 
 import type { CellMediaType } from "../../../compose/domain/types";
 import type { Composition } from "../../../compose/domain/types";
+import { TrailMode } from "$lib/shared/animation-engine/domain/types/TrailTypes";
 import { container } from "$lib/shared/di";
 import type {
   ArrangeUndoOperationType,
@@ -55,6 +58,13 @@ export interface GridCell {
   rowSpan: number;
   /** Media type for this cell (default: animation for tunnel mode) */
   mediaType: CellMediaType;
+  // Per-cell overrides (undefined = global default)
+  speedMultiplier?: number;
+  effect?: CellEffect;
+  trailMode?: TrailMode;
+  effort?: string;
+  blueMotionVisible?: boolean;
+  redMotionVisible?: boolean;
 }
 
 /**
@@ -126,7 +136,7 @@ function createArrangeGridState() {
   let clipboard = $state<{
     layers: {
       sequence: SequenceData;
-      appliedTransforms: TransformType[];
+      transformStack: AppliedTransform[];
     }[];
     mediaType: CellMediaType;
   } | null>(null);
@@ -502,7 +512,7 @@ function createArrangeGridState() {
 
       const word = sequence.word || sequence.name || "sequence";
       withUndo("ADD_LAYER", `Add ${word}`, () => {
-        const newLayer: TunnelLayerConfig = { sequence, beatOffset: 0, propColors: getTunnelLayerColors(cell.layers.length) };
+        const newLayer: TunnelLayerConfig = { sequence, beatOffset: 0, propColors: getTunnelLayerColors(cell.layers.length), transformStack: [] };
         const newCells = [...cells];
         newCells[cellIndex] = { ...cell, layers: [...cell.layers, newLayer] };
         cells = newCells;
@@ -656,7 +666,7 @@ function createArrangeGridState() {
           layers: [
             {
               sequence: structuredClone($state.snapshot(layer.sequence)),
-              appliedTransforms: [...(layer.appliedTransforms ?? [])],
+              transformStack: [...(layer.transformStack ?? [])],
             },
           ],
           mediaType: cell.mediaType,
@@ -670,7 +680,7 @@ function createArrangeGridState() {
         clipboard = {
           layers: cell.layers.map((layer) => ({
             sequence: structuredClone($state.snapshot(layer.sequence)),
-            appliedTransforms: [...(layer.appliedTransforms ?? [])],
+            transformStack: [...(layer.transformStack ?? [])],
           })),
           mediaType: cell.mediaType,
         };
@@ -710,7 +720,7 @@ function createArrangeGridState() {
           sequence: structuredClone($state.snapshot(clipLayer.sequence)),
           beatOffset: 0,
           propColors: getTunnelLayerColors(cell.layers.length + i),
-          appliedTransforms: [...(clipLayer.appliedTransforms ?? [])],
+          transformStack: [...(clipLayer.transformStack ?? [])],
         }));
         const newCells = [...cells];
         newCells[cellIndex] = { ...cell, layers: [...cell.layers, ...newLayers], mediaType: clipboard!.mediaType };
@@ -742,8 +752,9 @@ function createArrangeGridState() {
         }
 
         const newLayers = [...cellSnapshot.layers];
-        const prevTransforms = layerSnapshot.appliedTransforms ?? [];
-        newLayers[layerIndex] = { ...layerSnapshot, sequence: result.transformed, appliedTransforms: [...prevTransforms, transformType] };
+        const prevStack = layerSnapshot.transformStack ?? [];
+        const newTransform: AppliedTransform = { type: transformType, hand: "both", timestamp: Date.now() };
+        newLayers[layerIndex] = { ...layerSnapshot, sequence: result.transformed, transformStack: [...prevStack, newTransform] };
         const newCells = [...($state.snapshot(cells) as GridCell[])];
         newCells[cellIdx] = { ...cellSnapshot, layers: newLayers };
         cells = newCells;
