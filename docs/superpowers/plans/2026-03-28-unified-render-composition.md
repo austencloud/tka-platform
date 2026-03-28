@@ -791,12 +791,29 @@ export function renderHeader(ctx: CanvasRenderingContext2D, options: HeaderOptio
 
   // Word text (center)
   const finalFontSize = Math.max(10, Math.floor(headerHeight * 0.66));
+  const textColor = darkMode ? "#ffffff" : "#1f2937";
+  const dimmedColor = darkMode ? "rgba(255,255,255,0.35)" : "rgba(0,0,0,0.35)";
   ctx.font = `700 ${finalFontSize}px Georgia, serif`;
-  ctx.fillStyle = darkMode ? "#ffffff" : "#1f2937";
-  ctx.textAlign = "center";
   ctx.textBaseline = "middle";
+
   if (word?.trim()) {
-    ctx.fillText(word, canvasWidth / 2, headerHeight / 2);
+    if (letterStyles && letterStyles.length > 0) {
+      // Render per-letter with dimming for bridge/derived letters
+      const totalWidth = ctx.measureText(word).width;
+      let cursorX = canvasWidth / 2 - totalWidth / 2;
+      ctx.textAlign = "left";
+      for (let i = 0; i < word.length; i++) {
+        const char = word[i];
+        const style = letterStyles[i];
+        ctx.fillStyle = style?.dimmed ? dimmedColor : textColor;
+        ctx.fillText(char, cursorX, headerHeight / 2);
+        cursorX += ctx.measureText(char).width;
+      }
+    } else {
+      ctx.fillStyle = textColor;
+      ctx.textAlign = "center";
+      ctx.fillText(word, canvasWidth / 2, headerHeight / 2);
+    }
   }
 }
 
@@ -838,7 +855,54 @@ function renderLevelBadge(
 }
 ```
 
-- [ ] **Step 2: Add export to index.ts, commit**
+- [ ] **Step 2: Write header renderer test**
+
+Create `packages/render-composition/tests/header-renderer.test.ts` with a mock canvas context. Verify the critical drawing calls happen with correct values:
+
+```typescript
+import { describe, it, expect, vi } from "vitest";
+import { renderHeader } from "../src/header-renderer.js";
+
+function createMockCtx() {
+  return {
+    fillStyle: "", strokeStyle: "", lineWidth: 0, font: "",
+    textAlign: "", textBaseline: "", shadowColor: "", shadowBlur: 0, shadowOffsetY: 0,
+    fillRect: vi.fn(), fillText: vi.fn(), strokeText: vi.fn(),
+    beginPath: vi.fn(), moveTo: vi.fn(), lineTo: vi.fn(),
+    arc: vi.fn(), stroke: vi.fn(), fill: vi.fn(), closePath: vi.fn(),
+    save: vi.fn(), restore: vi.fn(), measureText: vi.fn(() => ({ width: 50 })),
+    createLinearGradient: vi.fn(() => ({ addColorStop: vi.fn() })),
+  } as unknown as CanvasRenderingContext2D;
+}
+
+describe("renderHeader", () => {
+  it("draws header background in dark mode", () => {
+    const ctx = createMockCtx();
+    renderHeader(ctx, { canvasWidth: 900, headerHeight: 100, word: "TEST", darkMode: true });
+    expect(ctx.fillRect).toHaveBeenCalledWith(0, 0, 900, 100);
+  });
+
+  it("draws word text centered", () => {
+    const ctx = createMockCtx();
+    renderHeader(ctx, { canvasWidth: 900, headerHeight: 100, word: "SSSS", darkMode: true });
+    expect(ctx.fillText).toHaveBeenCalledWith("SSSS", 450, 50);
+  });
+
+  it("draws difficulty badge with linear gradient", () => {
+    const ctx = createMockCtx();
+    renderHeader(ctx, { canvasWidth: 900, headerHeight: 100, word: "TEST", difficultyLevel: 1, showDifficultyBadge: true });
+    expect(ctx.createLinearGradient).toHaveBeenCalled();
+    expect(ctx.arc).toHaveBeenCalled(); // badge circle
+  });
+});
+```
+
+- [ ] **Step 3: Run tests**
+
+Run: `cd packages/render-composition && npx vitest run`
+Expected: All tests pass
+
+- [ ] **Step 4: Add export to index.ts, commit**
 
 ```
 git add packages/render-composition/
@@ -929,7 +993,58 @@ export function renderFooter(ctx: CanvasRenderingContext2D, options: FooterOptio
 }
 ```
 
-- [ ] **Step 2: Add export to index.ts, commit**
+- [ ] **Step 2: Write footer renderer test**
+
+Create `packages/render-composition/tests/footer-renderer.test.ts`:
+
+```typescript
+import { describe, it, expect, vi } from "vitest";
+import { renderFooter } from "../src/footer-renderer.js";
+
+function createMockCtx() {
+  return {
+    fillStyle: "", strokeStyle: "", lineWidth: 0, font: "",
+    textAlign: "", textBaseline: "",
+    fillRect: vi.fn(), fillText: vi.fn(),
+    beginPath: vi.fn(), moveTo: vi.fn(), lineTo: vi.fn(), stroke: vi.fn(),
+    measureText: vi.fn(() => ({ width: 50 })),
+  } as unknown as CanvasRenderingContext2D;
+}
+
+describe("renderFooter", () => {
+  it("draws footer at bottom of canvas", () => {
+    const ctx = createMockCtx();
+    renderFooter(ctx, { canvasWidth: 900, canvasHeight: 1000, footerHeight: 50 });
+    expect(ctx.fillRect).toHaveBeenCalledWith(0, 950, 900, 50);
+  });
+
+  it("renders username left-aligned", () => {
+    const ctx = createMockCtx();
+    renderFooter(ctx, { canvasWidth: 900, canvasHeight: 1000, footerHeight: 50, userName: "Austen Cloud", showCreatorName: true });
+    expect(ctx.fillText).toHaveBeenCalledWith("Austen Cloud", expect.any(Number), expect.any(Number));
+  });
+
+  it("renders default notes when none provided", () => {
+    const ctx = createMockCtx();
+    renderFooter(ctx, { canvasWidth: 900, canvasHeight: 1000, footerHeight: 50, showNotes: true });
+    expect(ctx.fillText).toHaveBeenCalledWith("Created using TKA Composer", 450, expect.any(Number));
+  });
+
+  it("formats birthday with cake emoji", () => {
+    const ctx = createMockCtx();
+    const bday = new Date(2026, 2, 28); // March 28, 2026
+    renderFooter(ctx, { canvasWidth: 900, canvasHeight: 1000, footerHeight: 50, birthday: bday, showBirthday: true });
+    expect(ctx.fillText).toHaveBeenCalledWith("🎂 3-28-2026", expect.any(Number), expect.any(Number));
+  });
+});
+```
+
+- [ ] **Step 3: Run tests**
+
+Run: `cd packages/render-composition && npx vitest run`
+Expected: All tests pass
+
+- [ ] **Step 4: Add export to index.ts, commit**
 
 ```
 git add packages/render-composition/
@@ -1104,7 +1219,11 @@ Update `LOOPIconStripRenderer.render()` to delegate to `renderLoopIconStrip()` f
 
 - [ ] **Step 4: Delete LOOPGlyphRenderer.ts**
 
-Remove the pie chart glyph renderer entirely. Remove its registration from the render DI container. Remove the fallback in `TextRenderer.ts` that uses it.
+First, grep to confirm no other imports exist:
+```bash
+grep -r "LOOPGlyphRenderer" src/ --include="*.ts" --include="*.svelte" -l
+```
+Expected: only `TextRenderer.ts` and the render container. Then remove the pie chart glyph renderer entirely, its DI registration, and the fallback in `TextRenderer.ts` that uses it.
 
 - [ ] **Step 5: Delegate TextRenderer to package**
 

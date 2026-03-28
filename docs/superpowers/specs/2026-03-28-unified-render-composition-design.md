@@ -228,7 +228,7 @@ Drawing behavior (from app's `TextRenderer.renderWordHeader`):
 - Word color: `darkMode ? "#ffffff" : "#1f2937"`
 - Badge size: 90% of header height
 - Badge padding: 5% of header height
-- Difficulty badge: radial gradient using `DIFFICULTY_LEVELS` config, font from `DIFFICULTY_FONT_FAMILY`
+- Difficulty badge: linear gradient (top-left to bottom-right) using `DIFFICULTY_LEVELS` config, font from `DIFFICULTY_FONT_FAMILY`
 - LOOP icons: positioned at right edge using `renderLoopIconStrip`
 
 ### 7. `footer-renderer.ts`
@@ -295,7 +295,6 @@ export function renderSmartBorders(
     columns: number;
     rows: number;
     cellSize: number;
-    offsetX: number;
     offsetY: number;
     occupiedCells: Set<string>; // "col,row" format
     darkMode: boolean;
