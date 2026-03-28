@@ -78,9 +78,10 @@
 
   const { renderer, camera, scene } = useThrelte();
 
-  // Current camera mode (from preferences)
-  let mode = $state<CameraMode>(CameraMode.ORBIT);
-  $effect.pre(() => { mode = cameraPreferences.getModeForDestination(destinationId); });
+  // Current camera mode — load from preferences once on init, not continuously.
+  const _initMode = cameraPreferences.getModeForDestination(destinationId);
+  console.log(`[CameraCtrl] INIT mode=${_initMode} destId=${destinationId}`);
+  let mode = $state<CameraMode>(_initMode);
 
   // Camera state (for game modes - orbit mode uses Scene3D's OrbitControls)
   // Use initial values from props for HMR restoration
@@ -294,31 +295,34 @@
 
     const wasLocked = isPointerLocked;
     isPointerLocked = document.pointerLockElement === canvas;
+    console.log(`[CameraCtrl] POINTERLOCK CHANGE: wasLocked=${wasLocked} isLocked=${isPointerLocked} mode=${mode} element=${document.pointerLockElement?.tagName ?? 'NONE'}`);
 
     // If we lost pointer lock (e.g., ESC pressed), return to orbit
     if (wasLocked && !isPointerLocked && mode !== CameraMode.ORBIT) {
+      console.log(`[CameraCtrl] LOST POINTER LOCK → returnToOrbit()`);
       returnToOrbit();
     }
   }
 
   function handleCanvasClick() {
-    if (!enabled) return;
+    console.log(`[CameraCtrl] CANVAS CLICK: enabled=${enabled} mode=${mode}`);
+    if (!enabled) { console.log(`[CameraCtrl] CLICK IGNORED: not enabled`); return; }
 
     // In orbit mode, clicking enters third-person mode
     if (mode === CameraMode.ORBIT) {
+      console.log(`[CameraCtrl] SWITCHING: ORBIT → THIRD_PERSON`);
       cameraPreferences.setModeForDestination(destinationId, CameraMode.THIRD_PERSON);
       mode = CameraMode.THIRD_PERSON;
     }
 
     // Always notify parent of current mode on click.
-    // This handles the case where mode was loaded from preferences (e.g., FIRST_PERSON)
-    // but the parent still thinks we're in ORBIT (showing the splash overlay).
     onModeChange?.(mode);
 
-    // Only request pointer lock if we can use it (mouse, not touch/DevTools simulation)
-    // When using touch, the drag-to-look fallback is handled by pointer events
-    if (isGameMode(mode) && inputCaps.canUsePointerLock()) {
+    const canLock = isGameMode(mode) && inputCaps.canUsePointerLock();
+    console.log(`[CameraCtrl] POINTER LOCK CHECK: isGameMode=${isGameMode(mode)} canUsePointerLock=${inputCaps.canUsePointerLock()} → requesting=${canLock}`);
+    if (canLock) {
       const canvas = cachedCanvas ?? renderer.current?.domElement;
+      console.log(`[CameraCtrl] REQUESTING POINTER LOCK on canvas=${!!canvas}`);
       canvas?.requestPointerLock();
     }
   }
@@ -328,10 +332,37 @@
   }
 
   onMount(() => {
-    if (!enabled) return;
+    console.log(`[CameraCtrl] MOUNT: enabled=${enabled} mode=${mode} destId=${destinationId}`);
+    if (!enabled) { console.log(`[CameraCtrl] MOUNT ABORTED: not enabled`); return; }
 
-    const canvas = renderer.current?.domElement;
-    if (!canvas) return;
+    // WebGPU renderer initializes asynchronously — renderer.current?.domElement
+    // may be null even though the canvas exists in the DOM. Try the renderer first,
+    // fall back to DOM query, then poll if neither works.
+    function findCanvas(): HTMLCanvasElement | null {
+      return (renderer.current?.domElement as HTMLCanvasElement | undefined)
+        ?? document.querySelector<HTMLCanvasElement>("canvas[data-engine]")
+        ?? null;
+    }
+
+    const canvas = findCanvas();
+    if (canvas) {
+      attachToCanvas(canvas);
+    } else {
+      // Poll until available (WebGPU init is async)
+      let attempts = 0;
+      const maxAttempts = 50;
+      function tryAttach() {
+        const c = findCanvas();
+        if (c) { attachToCanvas(c); return; }
+        if (++attempts < maxAttempts) setTimeout(tryAttach, 100);
+        else console.warn(`[CameraCtrl] MOUNT FAILED: no canvas after ${maxAttempts} attempts`);
+      }
+      setTimeout(tryAttach, 100);
+    }
+  });
+
+  function attachToCanvas(canvas: HTMLCanvasElement) {
+    console.log(`[CameraCtrl] ATTACHED: canvas=${canvas.tagName} ${canvas.width}x${canvas.height}`);
 
     // Cache for use in onDestroy (renderer.current may be gone by then)
     cachedCanvas = canvas;
@@ -353,9 +384,10 @@
     document.addEventListener("pointerup", handlePointerUp);
     document.addEventListener("pointercancel", handlePointerUp);
     document.addEventListener("pointermove", handlePointerMove);
-  });
+  }
 
   onDestroy(() => {
+    console.log(`[CameraCtrl] DESTROY: mode=${mode} destId=${destinationId} pointerLocked=${!!document.pointerLockElement}`);
     const canvas = cachedCanvas ?? renderer.current?.domElement;
 
     // Cleanup input capabilities

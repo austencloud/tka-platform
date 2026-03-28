@@ -334,7 +334,7 @@ export const ARCHIVE_WING1_CONFIG: RealmConfig = {
 
   spawn: {
     position: [0, 50, 3.5], // Inside room; Y=50 is high, ground snap finds correct Y
-    yaw: Math.PI, // Face north (toward exhibit at -Z)
+    yaw: 0, // Default facing; camera controller handles orientation
   },
 
   physics: {

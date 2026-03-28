@@ -501,6 +501,25 @@
 
     isInitialized = true;
 
+    // DEBUG: expose archive state to console for diagnostics (remove after debugging)
+    if (isArchiveRealm) {
+      (window as any).__archiveDebug = {
+        get isInitialized() { return isInitialized; },
+        get isReadyToRender() { return isReadyToRender; },
+        get needsGroundSnap() { return needsGroundSnap; },
+        get groundSnapAttempts() { return groundSnapAttempts; },
+        get physicsProvider() { return !!physicsProvider; },
+        get playerController() { return !!playerController; },
+        get playerPosition() { return playerPosition; },
+        get cameraMode() { return cameraMode; },
+        get colliderCount() { return terrainPhysics?.getColliderCount() ?? -1; },
+        get isArchiveRealm() { return isArchiveRealm; },
+        get scene() { return rawScene; },
+        get camera() { return camera.current; },
+      };
+      console.log("[Archive] Debug state exposed on window.__archiveDebug");
+    }
+
     // Place campground objects (spawn clearing was already set above)
     if (activeConfig.spawnClearing?.enabled && activeConfig.spawnClearing.campground.enabled) {
       const waterLvl = activeConfig.terrain.waterLevel ?? 5;
@@ -1068,17 +1087,21 @@
   });
 </script>
 
-<!-- Default camera during loading (orbit view of campground from above) -->
-<!-- Shows nice overhead view while physics/terrain initializes -->
+<!-- Default camera during loading -->
+<!-- Indoor scenes (archive): camera inside the room. Outdoor: overhead view. -->
 {#if !isReadyToRender}
   <T.PerspectiveCamera
     makeDefault
-    position={[0, 25, 30]}
-    fov={60}
+    position={isArchiveRealm ? [0, 9.7, 2] : [0, 25, 30]}
+    fov={isArchiveRealm ? 70 : 60}
     near={0.1}
     far={10000}
     on:create={({ ref }) => {
-      ref.lookAt(0, 8, 0);
+      if (isArchiveRealm) {
+        ref.lookAt(0, 9.2, -5);
+      } else {
+        ref.lookAt(0, 8, 0);
+      }
     }}
   />
 {/if}
@@ -1087,7 +1110,7 @@
 <!-- Takes over once ground snap is complete and player is at correct position -->
 {#if isInitialized && isReadyToRender && physicsProvider}
   <UnifiedCameraController
-    destinationId="realm"
+    destinationId={isArchiveRealm ? "archive" : "realm"}
     {avatarState}
     {physicsProvider}
     enabled={true}

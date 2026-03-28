@@ -40,10 +40,10 @@
 		};
 	});
 
-	// Materials
-	const wallColor = new THREE.Color(0x2a2420); // Dark warm brown stone
-	const floorColor = new THREE.Color(0x1e1a16); // Darker floor
-	const ceilingColor = new THREE.Color(0x1a1614); // Darkest ceiling
+	// Materials - brighter than real cave to ensure visibility with torchlight
+	const wallColor = new THREE.Color(0x5a4a3a); // Warm brown stone
+	const floorColor = new THREE.Color(0x4a3a2a); // Slightly darker floor
+	const ceilingColor = new THREE.Color(0x3a302a); // Darkest ceiling
 
 	// Geometry data
 	const walls = $derived(getChamberWalls(groundY));
@@ -78,12 +78,12 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-<!-- Very dim ambient light (cave darkness) -->
-<T.AmbientLight color="#1a1008" intensity={0.12} />
+<!-- Ambient light (enough to see walls even away from torches) -->
+<T.AmbientLight color="#2a1808" intensity={0.4} />
 
-<!-- Hemisphere light for subtle ground/sky color variation -->
+<!-- Hemisphere light for ground/sky color variation -->
 <T.HemisphereLight
-	args={["#0a0806", "#1a1614", 0.08]}
+	args={["#1a1008", "#2a2014", 0.25]}
 />
 
 <!-- ======================== WALLS ======================== -->
@@ -93,8 +93,6 @@
 		position.y={wall.position[1]}
 		position.z={wall.position[2]}
 		rotation.y={wall.rotationY}
-		receiveShadow
-		castShadow
 	>
 		<T.BoxGeometry args={wall.size} />
 		<T.MeshStandardMaterial
@@ -112,7 +110,6 @@
 		position.x={ceiling.position[0]}
 		position.y={ceiling.position[1]}
 		position.z={ceiling.position[2]}
-		receiveShadow
 	>
 		<T.BoxGeometry args={ceiling.size} />
 		<T.MeshStandardMaterial

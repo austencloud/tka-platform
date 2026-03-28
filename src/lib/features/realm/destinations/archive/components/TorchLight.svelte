@@ -1,6 +1,5 @@
 <script lang="ts">
-	import { T } from "@threlte/core";
-	import { onMount } from "svelte";
+	import { T, useTask } from "@threlte/core";
 
 	interface Props {
 		position: [number, number, number];
@@ -8,28 +7,17 @@
 
 	let { position }: Props = $props();
 
-	// Flickering intensity for torchlight effect
-	let intensity = $state(2.0);
-	let animationId: number;
+	// Flickering intensity - uses Threlte's task system (no extra RAF)
+	let intensity = $state(5.0);
+	const phase = Math.random() * 100;
+	let time = phase;
 
-	onMount(() => {
-		let time = Math.random() * 100; // Random phase offset per torch
-
-		function flicker() {
-			time += 0.05;
-			// Combine two sine waves for organic flicker
-			const flicker1 = Math.sin(time * 3.7) * 0.3;
-			const flicker2 = Math.sin(time * 7.1) * 0.15;
-			const flicker3 = Math.sin(time * 13.3) * 0.08;
-			intensity = 2.0 + flicker1 + flicker2 + flicker3;
-			animationId = requestAnimationFrame(flicker);
-		}
-
-		flicker();
-
-		return () => {
-			cancelAnimationFrame(animationId);
-		};
+	useTask(() => {
+		time += 0.05;
+		const f1 = Math.sin(time * 3.7) * 0.6;
+		const f2 = Math.sin(time * 7.1) * 0.3;
+		const f3 = Math.sin(time * 13.3) * 0.15;
+		intensity = 5.0 + f1 + f2 + f3;
 	});
 </script>
 
@@ -40,8 +28,8 @@
 	position.z={position[2]}
 	color="#ff8c3a"
 	{intensity}
-	distance={10}
-	decay={2}
+	distance={15}
+	decay={1.5}
 	castShadow={false}
 />
 
