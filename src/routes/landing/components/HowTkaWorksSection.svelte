@@ -2,14 +2,15 @@
   /**
    * HowTkaWorksSection
    *
-   * Five-card progression that teaches TKA notation by building layers:
-   * 1. Hand positions on the grid (just the grid, position glyph)
-   * 2. Add props (staves appear at the hand positions)
-   * 3. Add motion (arrows + letter glyph = one full pictograph)
-   * 4. String them together (ChoreoCard showing the full sequence)
-   * 5. Watch it move (animation placeholder)
+   * Six-card progression that teaches TKA notation by building layers:
+   * 1. The grid (empty diamond grid, no hands, no props)
+   * 2. Add hands (grid + hand position dots)
+   * 3. Add props (staves appear at the hand positions)
+   * 4. Add motion (arrows + letter glyph = one full pictograph)
+   * 5. String them together (ChoreoCard showing the full sequence)
+   * 6. Watch it move (animation placeholder)
    *
-   * All five cards derive from the same loaded AABB sequence.
+   * All six cards derive from the same loaded AABB sequence.
    */
   import { onMount } from "svelte";
   import { container } from "$lib/shared/di";
@@ -35,13 +36,16 @@
   let startPos = $state<StartPositionData | null>(null);
   let firstStep = $state<StepData | null>(null);
 
-  // Card 1: grid only — start position with motions stripped out
+  // Card 1: empty grid — no hand dots, no props, no arrows
+  let emptyGridData = $state<PictographData | null>(null);
+
+  // Card 2: grid + hand position dots (start position, motions stripped)
   let gridOnlyData = $state<PictographData | null>(null);
 
-  // Card 2: start position with props (static motions, no arrows)
+  // Card 3: start position with props (static motions, no arrows)
   let propsData = $state<PictographData | null>(null);
 
-  // Card 3: first step with full pictograph
+  // Card 4: first step with full pictograph
   let motionData = $state<PictographData | null>(null);
 
   let loaded = $state(false);
@@ -77,7 +81,16 @@
       // since we only need the pictograph fields (id, startPosition, motions)
       startPos = derived as StartPositionData | null;
 
-      // Card 1: grid + position glyph only — no props, no arrows
+      // Card 1: empty grid — null startPosition/endPosition so no hand dots render
+      emptyGridData = {
+        id: "how-empty-grid",
+        letter: undefined,
+        startPosition: null,
+        endPosition: null,
+        motions: {},
+      };
+
+      // Card 2: grid + hand position dots only — no props, no arrows
       if (startPos) {
         gridOnlyData = {
           id: "how-grid",
@@ -88,7 +101,7 @@
         };
       }
 
-      // Card 2: start position with props visible (static motions = props shown)
+      // Card 3: start position with props visible (static motions = props shown)
       if (startPos) {
         propsData = {
           id: startPos.id ?? "how-props",
@@ -102,7 +115,7 @@
         };
       }
 
-      // Card 3: first beat with full pictograph
+      // Card 4: first beat with full pictograph
       if (firstStep) {
         motionData = {
           id: firstStep.id ?? "how-motion",
@@ -131,9 +144,29 @@
 
     <!-- Top row: 3 cards -->
     <div class="top-row">
-      <!-- Card 1: Grid only -->
+      <!-- Card 1: Empty grid -->
       <div class="step-card">
         <span class="step-badge">1</span>
+        <div class="pictograph-frame">
+          {#if emptyGridData}
+            <PictographContainer
+              pictographData={emptyGridData}
+              gridMode={GridMode.DIAMOND}
+              showTKA={false}
+              showReversals={false}
+              showPositions={false}
+              darkMode={true}
+              disableTransitions={true}
+            />
+          {/if}
+        </div>
+        <h3>The grid</h3>
+        <p>Eight points on a diamond. This is where everything happens.</p>
+      </div>
+
+      <!-- Card 2: Grid + hand dots -->
+      <div class="step-card">
+        <span class="step-badge">2</span>
         <div class="pictograph-frame">
           {#if gridOnlyData}
             <PictographContainer
@@ -147,13 +180,13 @@
             />
           {/if}
         </div>
-        <h3>Hand positions</h3>
-        <p>Two hands on a grid. Each dot is a place your hand can be.</p>
+        <h3>Add hands</h3>
+        <p>Two hands on the grid. Where they sit is the position.</p>
       </div>
 
-      <!-- Card 2: Props visible -->
+      <!-- Card 3: Props visible -->
       <div class="step-card">
-        <span class="step-badge">2</span>
+        <span class="step-badge">3</span>
         <div class="pictograph-frame">
           {#if propsData}
             <PictographContainer
@@ -170,12 +203,15 @@
           {/if}
         </div>
         <h3>Add props</h3>
-        <p>Put staves (or fans, clubs, anything) in the hands. The prop orientation is recorded.</p>
+        <p>Each hand holds a prop. Staves, fans, clubs — the notation works for all of them.</p>
       </div>
+    </div>
 
-      <!-- Card 3: Full pictograph -->
+    <!-- Bottom row: 3 cards -->
+    <div class="bottom-row">
+      <!-- Card 4: Full pictograph -->
       <div class="step-card">
-        <span class="step-badge">3</span>
+        <span class="step-badge">4</span>
         <div class="pictograph-frame">
           {#if motionData}
             <PictographContainer
@@ -194,13 +230,10 @@
         <h3>Add motion</h3>
         <p>Arrows show where each hand moves. The letter names the pattern.</p>
       </div>
-    </div>
 
-    <!-- Bottom row: 2 cards centered -->
-    <div class="bottom-row">
-      <!-- Card 4: Full sequence -->
+      <!-- Card 5: Full sequence -->
       <div class="step-card wide-card">
-        <span class="step-badge">4</span>
+        <span class="step-badge">5</span>
         <span class="sequence-word">{sequence.word}</span>
         <div class="sequence-frame">
           <ChoreoCard
@@ -220,13 +253,15 @@
         <p>Each cell is one beat. Read left to right. Four beats spell a word.</p>
       </div>
 
-      <!-- Card 5: Animation placeholder -->
-      <div class="step-card wide-card">
-        <span class="step-badge">5</span>
+      <!-- Card 6: Animation placeholder -->
+      <div class="step-card">
+        <span class="step-badge">6</span>
         <div class="animation-frame">
           <div class="animation-placeholder">
-            <i class="fas fa-play-circle" aria-hidden="true"></i>
-            <span>Animation plays here</span>
+            <div class="play-icon-wrap">
+              <i class="fas fa-play" aria-hidden="true"></i>
+            </div>
+            <span>Tap to play</span>
           </div>
         </div>
         <h3>Watch it move</h3>
@@ -261,13 +296,11 @@
     margin-bottom: 20px;
   }
 
-  /* Bottom row: 2 cards centered */
+  /* Bottom row: 3 cards, full width */
   .bottom-row {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 20px;
-    max-width: 680px;
-    margin: 0 auto;
   }
 
   /* Individual card */
@@ -348,17 +381,40 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 10px;
+    gap: 12px;
     background: rgba(0, 0, 0, 0.3);
-    border: 1px dashed rgba(255, 255, 255, 0.12);
+    border: 1px dashed rgba(212, 129, 58, 0.2);
     border-radius: 8px;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.35));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
     font-size: var(--font-size-sm, 0.875rem);
   }
 
-  .animation-placeholder i {
-    font-size: 2rem;
-    opacity: 0.5;
+  .play-icon-wrap {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 2px solid rgba(212, 129, 58, 0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: pulse-ring 2.4s ease-in-out infinite;
+  }
+
+  .play-icon-wrap i {
+    font-size: 1.1rem;
+    color: rgba(212, 129, 58, 0.6);
+    margin-left: 3px; /* optical center for play triangle */
+  }
+
+  @keyframes pulse-ring {
+    0%, 100% {
+      border-color: rgba(212, 129, 58, 0.2);
+      box-shadow: 0 0 0 0 rgba(212, 129, 58, 0);
+    }
+    50% {
+      border-color: rgba(212, 129, 58, 0.5);
+      box-shadow: 0 0 0 8px rgba(212, 129, 58, 0.06);
+    }
   }
 
   /* Card text */
@@ -400,6 +456,8 @@
     .bottom-row {
       grid-template-columns: 1fr;
       max-width: 340px;
+      margin-left: auto;
+      margin-right: auto;
     }
 
     .pictograph-frame {
@@ -410,6 +468,10 @@
   @media (prefers-reduced-motion: reduce) {
     .step-card {
       transition: none;
+    }
+
+    .play-icon-wrap {
+      animation: none;
     }
   }
 </style>
