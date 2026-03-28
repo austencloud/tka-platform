@@ -12,6 +12,7 @@ import { ArrangeGridPersister } from "$lib/features/compose/tabs/arrange/service
 import { ArrangePlaybackEngine } from "$lib/features/compose/tabs/arrange/services/implementations/ArrangePlaybackEngine";
 import { ArrangeLayerTransformer } from "$lib/features/compose/tabs/arrange/services/implementations/ArrangeLayerTransformer";
 import { ArrangeKeyboardHandler } from "$lib/features/compose/tabs/arrange/services/implementations/ArrangeKeyboardHandler";
+import { CellTransformStack } from "$lib/features/compose/tabs/arrange/services/implementations/CellTransformStack";
 
 export function createComposeArrangeContainer() {
 	return createContainer().add({
@@ -20,7 +21,9 @@ export function createComposeArrangeContainer() {
 		arrangePlaybackEngine: () => new ArrangePlaybackEngine(),
 		arrangeLayerTransformer: () => new ArrangeLayerTransformer(),
 		arrangeKeyboardHandler: () => new ArrangeKeyboardHandler(),
-	});
+	}).add((items) => ({
+		cellTransformStack: () => new CellTransformStack(items.arrangeLayerTransformer),
+	}));
 }
 
 export type ComposeArrangeContainer = ReturnType<typeof createComposeArrangeContainer>;
