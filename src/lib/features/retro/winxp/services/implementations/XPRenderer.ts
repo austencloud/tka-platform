@@ -19,6 +19,7 @@ import type { IEraRenderer } from "../../../shared/services/contracts/IEraRender
 import type { RetroPictographData } from "../../../shared/domain/pictograph-types";
 import type { IPictographPreparer } from "$lib/shared/pictograph/shared/services/contracts/IPictographPreparer";
 import type { PreparedRenderData } from "$lib/shared/pictograph/shared/domain/models/PreparedPictographData";
+import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { EraRendererBase } from "../../../shared/services/implementations/EraRendererBase";
 
 // ============================================================================
@@ -38,20 +39,15 @@ const VIEWBOX_SIZE = 950;
 // Lines connect opposite cardinals through center; dots mark each position.
 const GRID_CENTER = { x: 475, y: 475 };
 // Cardinal positions match Canvas2DDirectRenderer.BASE_GRID_POINTS (radius 300 from center)
-// Intercardinals at 300 * cos(45°) ≈ 212 offset from center
-const GRID_POINTS = {
-	n: { x: 475, y: 175 },
-	s: { x: 475, y: 775 },
-	e: { x: 775, y: 475 },
-	w: { x: 175, y: 475 },
-	ne: { x: 687, y: 263 },
-	nw: { x: 263, y: 263 },
-	se: { x: 687, y: 687 },
-	sw: { x: 263, y: 687 },
-};
+// Only 4 outer points — in box mode the whole grid rotates 45 degrees
+const GRID_OUTER_POINTS = [
+	{ x: 475, y: 175 }, // N
+	{ x: 775, y: 475 }, // E
+	{ x: 475, y: 775 }, // S
+	{ x: 175, y: 475 }, // W
+];
 
 // Grid visual style
-const GRID_LINE_COLOR = "#C0C0C0";
 const GRID_DOT_COLOR = "#A0A0A0";
 const GRID_DOT_RADIUS_VB = 25; // Matches Canvas2DDirectRenderer.BASE_GRID_POINTS radius
 
@@ -107,7 +103,8 @@ export class XPRenderer extends EraRendererBase implements IEraRenderer {
 
 		const scale = this.getScale(size);
 
-		this.drawGrid(ctx, scale);
+		this.drawGrid(ctx, scale, data.gridMode);
+		this.drawHandPoints(ctx, scale, data.gridMode);
 		await this.drawProps(ctx, prepared, scale);
 		await this.drawArrows(ctx, prepared, scale);
 		this.drawLetter(ctx, String(data.letter), scale, size);
@@ -144,84 +141,82 @@ export class XPRenderer extends EraRendererBase implements IEraRenderer {
 	// --------------------------------------------------------------------------
 
 	/**
-	 * Draw the TKA grid directly on the canvas.
-	 *
-	 * Lines connect each cardinal to its opposite through center, plus the
-	 * two diagonal lines (NE↔SW and NW↔SE). Dots mark every grid point and
-	 * the center.
+	 * Draw the TKA grid with 3D glossy XP dots.
+	 * Diamond mode: 4 lines through center, dots at N/E/S/W.
+	 * Box mode: same grid rotated 45 degrees.
 	 */
-	private drawGrid(ctx: CanvasRenderingContext2D, scale: number): void {
+	private drawGrid(ctx: CanvasRenderingContext2D, scale: number, gridMode: GridMode): void {
+		const isBox = gridMode === GridMode.BOX;
+		const center = GRID_CENTER.x * scale; // Square canvas, x === y
+
 		ctx.save();
-		ctx.strokeStyle = GRID_LINE_COLOR;
-		ctx.lineWidth = 1;
 
-		// Cardinal cross: N–S and E–W
-		this.drawLine(ctx, GRID_POINTS.n, GRID_POINTS.s, scale);
-		this.drawLine(ctx, GRID_POINTS.e, GRID_POINTS.w, scale);
-
-		// Diagonal lines: NE–SW and NW–SE
-		this.drawLine(ctx, GRID_POINTS.ne, GRID_POINTS.sw, scale);
-		this.drawLine(ctx, GRID_POINTS.nw, GRID_POINTS.se, scale);
-
-		ctx.restore();
-
-		// Grid point dots — 3D glossy spheres (XP glass-orb style)
-		const dotR = GRID_DOT_RADIUS_VB * scale;
-
-		for (const pt of Object.values(GRID_POINTS)) {
-			const px = pt.x * scale;
-			const py = pt.y * scale;
-
-			// Shadow
-			ctx.save();
-			ctx.shadowColor = "rgba(0,0,0,0.25)";
-			ctx.shadowBlur = 4;
-			ctx.shadowOffsetX = 1;
-			ctx.shadowOffsetY = 1;
-			ctx.fillStyle = "#B8B8B8";
-			this.fillCircle(ctx, px, py, dotR);
-			ctx.restore();
-
-			// Highlight
-			ctx.fillStyle = "#E8E8E8";
-			this.fillCircle(ctx, px - dotR * 0.15, py - dotR * 0.15, dotR * 0.8);
-
-			// Specular
-			ctx.fillStyle = "#FFFFFF";
-			this.fillCircle(ctx, px - dotR * 0.35, py - dotR * 0.35, dotR * 0.3);
+		// Box mode: rotate entire grid 45 degrees around center
+		if (isBox) {
+			ctx.translate(center, center);
+			ctx.rotate(Math.PI / 4);
+			ctx.translate(-center, -center);
 		}
 
-		// Center dot — 3D glossy sphere like the outer points (XP signature)
-		const centerR = 12 * scale;
-		const ccx = GRID_CENTER.x * scale;
-		const ccy = GRID_CENTER.y * scale;
+		// Outer dots — 3D glossy XP spheres (no lines — just dots)
+		const dotR = GRID_DOT_RADIUS_VB * scale;
+		for (const pt of GRID_OUTER_POINTS) {
+			this.drawGlossyDot(ctx, pt.x * scale, pt.y * scale, dotR);
+		}
 
+		// Center dot — also glossy
+		this.drawGlossyDot(ctx, GRID_CENTER.x * scale, GRID_CENTER.y * scale, 12 * scale);
+
+		ctx.restore();
+	}
+
+	/** Draw a 3D glossy XP sphere at the given position. */
+	private drawGlossyDot(ctx: CanvasRenderingContext2D, px: number, py: number, r: number): void {
+		// Shadow
 		ctx.save();
-		ctx.shadowColor = "rgba(0,0,0,0.25)";
+		ctx.shadowColor = "rgba(0,0,0,0.35)";
 		ctx.shadowBlur = 4;
 		ctx.shadowOffsetX = 1;
 		ctx.shadowOffsetY = 1;
-		ctx.fillStyle = "#B8B8B8";
-		this.fillCircle(ctx, ccx, ccy, centerR);
+		ctx.fillStyle = "#808080";
+		this.fillCircle(ctx, px, py, r);
 		ctx.restore();
 
-		ctx.fillStyle = "#E8E8E8";
-		this.fillCircle(ctx, ccx - centerR * 0.15, ccy - centerR * 0.15, centerR * 0.8);
+		// Highlight
+		ctx.fillStyle = "#C0C0C0";
+		this.fillCircle(ctx, px - r * 0.15, py - r * 0.15, r * 0.8);
 
-		ctx.fillStyle = "#FFFFFF";
-		this.fillCircle(ctx, ccx - centerR * 0.35, ccy - centerR * 0.35, centerR * 0.3);
+		// Specular
+		ctx.fillStyle = "#F0F0F0";
+		this.fillCircle(ctx, px - r * 0.35, py - r * 0.35, r * 0.3);
 	}
 
-	private drawLine(
+	/**
+	 * Draw small flat hand-position dots at all cardinal grid positions.
+	 * These sit behind props/arrows — visible where no prop covers them.
+	 * In box mode, the positions rotate 45 degrees with the grid.
+	 */
+	private drawHandPoints(
 		ctx: CanvasRenderingContext2D,
-		a: { x: number; y: number },
-		b: { x: number; y: number },
 		scale: number,
+		gridMode: GridMode,
 	): void {
-		ctx.beginPath();
-		ctx.moveTo(a.x * scale, a.y * scale);
-		ctx.lineTo(b.x * scale, b.y * scale);
-		ctx.stroke();
+		const isBox = gridMode === GridMode.BOX;
+		const center = GRID_CENTER.x * scale;
+		const handR = 8 * scale;
+
+		ctx.save();
+		if (isBox) {
+			ctx.translate(center, center);
+			ctx.rotate(Math.PI / 4);
+			ctx.translate(-center, -center);
+		}
+
+		ctx.fillStyle = "#888888";
+		for (const pt of GRID_OUTER_POINTS) {
+			this.fillCircle(ctx, pt.x * scale, pt.y * scale, handR);
+		}
+		ctx.restore();
 	}
 
 	private fillCircle(
