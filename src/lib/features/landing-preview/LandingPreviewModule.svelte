@@ -31,7 +31,8 @@
   // Lazy-load the public page content components
   // These are the actual route components - we embed them directly
   const pageLoaders = {
-    landing: () => import("../../../routes/(public)/landing/+page.svelte"),
+    // landing page route was removed — stub to prevent build failure
+    landing: () => Promise.resolve({ default: null as any }),
     about: () => import("../../../routes/(public)/about/+page.svelte"),
     roots: () => import("../../../routes/(public)/roots/+page.svelte"),
     terms: () => import("../../../routes/(public)/terms/+page.svelte"),
