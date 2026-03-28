@@ -33,9 +33,10 @@
   }
 
   .tile-icon {
-    font-size: 0.75em;
-    opacity: 0.7;
+    font-size: 1em;
+    opacity: 0.9;
     pointer-events: none;
+    filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.5));
   }
 
   /* ---- Tile types ---- */
@@ -75,8 +76,16 @@
 
   .tile-exhibit {
     background: #1e1e2e;
-    border: 1px solid rgba(200, 180, 140, 0.25);
-    box-shadow: inset 0 0 8px rgba(200, 180, 140, 0.1);
+    border: 2px solid rgba(150, 200, 255, 0.35);
+    box-shadow:
+      inset 0 0 10px rgba(150, 200, 255, 0.12),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    background-image: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.04) 0%,
+      transparent 50%,
+      rgba(150, 200, 255, 0.03) 100%
+    );
   }
 
   .tile-exhibit .tile-icon {
@@ -86,8 +95,16 @@
 
   .tile-performer {
     background: #1e2e1e;
-    border: 1px solid rgba(140, 200, 140, 0.2);
-    box-shadow: inset 0 0 8px rgba(140, 200, 140, 0.08);
+    border: 2px solid rgba(150, 200, 255, 0.35);
+    box-shadow:
+      inset 0 0 10px rgba(150, 200, 255, 0.12),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    background-image: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.04) 0%,
+      transparent 50%,
+      rgba(150, 200, 255, 0.03) 100%
+    );
   }
 
   .tile-performer .tile-icon {
@@ -114,8 +131,21 @@
 
   .tile-pedestal {
     background: #2e2a22;
-    border: 1px solid rgba(200, 180, 140, 0.2);
-    box-shadow: inset 0 0 6px rgba(200, 180, 140, 0.08);
+    border: 2px solid rgba(150, 200, 255, 0.35);
+    box-shadow:
+      inset 0 0 10px rgba(150, 200, 255, 0.12),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    background-image: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.04) 0%,
+      transparent 50%,
+      rgba(150, 200, 255, 0.03) 100%
+    );
+  }
+
+  .tile-pedestal .tile-icon {
+    color: #c8b890;
+    opacity: 1;
   }
 
   .tile-trigger {
