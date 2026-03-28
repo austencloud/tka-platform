@@ -3,7 +3,7 @@
   import LoopBeatGrid from "./LoopBeatGrid.svelte";
   import LoopTurnsGrid from "./LoopTurnsGrid.svelte";
   import LoopReversalGrid from "./LoopReversalGrid.svelte";
-  import DeckRow from "./DeckRow.svelte";
+  import DeckCard from "./DeckCard.svelte";
 
   interface Props {
     decks: Deck[];
@@ -158,12 +158,10 @@
         <span class="drill-label">{drillLabel}</span>
         <span class="drill-count">{drilledDecks.length} {drilledDecks.length === 1 ? 'deck' : 'decks'}</span>
       </div>
-      <div class="deck-list">
+      <div class="deck-grid">
         {#each drilledDecks as deck (deck.id)}
-          <DeckRow
+          <DeckCard
             {deck}
-            accentColor="#63b3ed"
-            accentIcon='<i class="fas fa-sync-alt" aria-hidden="true"></i>'
             onSelect={() => onSelectDeck(deck)}
           />
         {/each}
@@ -323,10 +321,10 @@
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
   }
 
-  .deck-list {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
+  .deck-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 12px;
   }
 
   .empty-state {
