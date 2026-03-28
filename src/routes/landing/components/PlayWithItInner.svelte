@@ -140,7 +140,7 @@
     const s = visibilityManager.getSettings();
     if (s.fireEffect) return "fire";
     if (s.charcoalEffect) return "charcoal";
-    if (s.ledEffect) return "led";
+    if (s.ledEffect) return "leds";
     if (s.trailStyle !== "off") return "trails";
     return "clean";
   }

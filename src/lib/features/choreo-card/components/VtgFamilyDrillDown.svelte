@@ -6,6 +6,12 @@
   import { VTG_ELEMENTAL_THEMES } from "../domain/elemental-theme";
   import { container } from "$lib/shared/di";
   import ChoreoCard from "./ChoreoCard.svelte";
+  import CardPageLayout from "./card-preview/CardPageLayout.svelte";
+  import CardSizeToggle from "./card-preview/CardSizeToggle.svelte";
+  import { CARD_SIZES, type CardSizeId } from "../domain/card-sizes";
+  import type { PrintRenderOptions } from "../services/contracts/IPrintCardRenderer";
+
+  type ViewMode = 'grid' | 'cards';
 
   interface Props {
     familyId: string;
@@ -87,6 +93,33 @@
     };
   }
 
+  // ── Card view mode ──────────────────────────────────────────────────────
+  let viewMode = $state<ViewMode>(
+    (typeof window !== 'undefined' ? localStorage.getItem('choreoCard.deckViewMode') : null) as ViewMode ?? 'grid'
+  );
+  let cardSize = $state<CardSizeId>(
+    (typeof window !== 'undefined' ? localStorage.getItem('cardPreview.cardSize') : null) as CardSizeId ?? 'poker'
+  );
+
+  function setViewMode(mode: ViewMode) {
+    viewMode = mode;
+    if (typeof window !== 'undefined') localStorage.setItem('choreoCard.deckViewMode', mode);
+  }
+
+  let renderOptions = $derived<PrintRenderOptions>({
+    canvasWidth: CARD_SIZES[cardSize].canvasWidth,
+    canvasHeight: CARD_SIZES[cardSize].canvasHeight,
+    bleedPx: CARD_SIZES[cardSize].bleedPx,
+    showGrid,
+    showTKA,
+    showWord,
+    includeStartPosition,
+    handPointsVisible,
+  });
+
+  // Flatten all sequences across ratio groups for card view
+  let allSequences = $derived(ratioGroups.flatMap(g => g.sequences));
+
   function turnsLabel(turns: number): string {
     if (turns === 0) return "0 turns";
     if (turns === 1) return "1 turn";
@@ -101,6 +134,32 @@
       <span class="crumb-sep" aria-hidden="true">›</span>
       <span class="crumb current">{familyLabel}</span>
     </nav>
+    <div class="top-bar-actions">
+      <div class="view-toggle" role="radiogroup" aria-label="View mode">
+        <button
+          class="action-chip"
+          class:active={viewMode === 'grid'}
+          onclick={() => setViewMode('grid')}
+          type="button"
+        >
+          <i class="fas fa-th" aria-hidden="true"></i> Grid
+        </button>
+        <button
+          class="action-chip"
+          class:active={viewMode === 'cards'}
+          onclick={() => setViewMode('cards')}
+          type="button"
+        >
+          <i class="fas fa-id-card" aria-hidden="true"></i> Cards
+        </button>
+      </div>
+      {#if viewMode === 'cards'}
+        <CardSizeToggle selected={cardSize} onchange={(s) => {
+          cardSize = s;
+          if (typeof window !== 'undefined') localStorage.setItem('cardPreview.cardSize', s);
+        }} />
+      {/if}
+    </div>
   </div>
 
   {#if loading}
@@ -119,6 +178,18 @@
       <p>No sequences found for {familyLabel}</p>
       <button type="button" class="back-btn" onclick={onBack}>Back to VTG</button>
     </div>
+  {:else if viewMode === 'cards'}
+    <CardPageLayout
+      sequences={allSequences}
+      families={[]}
+      selectedFamilyIds={[]}
+      {cardSize}
+      {renderOptions}
+      isLoading={false}
+      isLargeDeck={false}
+      onCardClick={() => {}}
+      onRenderProgress={() => {}}
+    />
   {:else}
     {#each ratioGroups as group (group.ratio)}
       <section class="ratio-section">
@@ -154,7 +225,51 @@
   }
 
   .top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     padding: 0 0 16px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .top-bar-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .view-toggle {
+    display: flex;
+  }
+
+  .action-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 36px;
+    padding: 6px 12px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    font: inherit;
+    font-size: var(--font-size-compact, 12px);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .view-toggle .action-chip:first-child { border-radius: 8px 0 0 8px; }
+  .view-toggle .action-chip:last-child { border-radius: 0 8px 8px 0; }
+
+  .action-chip.active {
+    background: var(--theme-accent, #4a9eff);
+    color: #fff;
+    border-color: var(--theme-accent, #4a9eff);
+  }
+
+  .action-chip:hover:not(.active) {
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+    color: var(--theme-text, #fff);
   }
 
   .breadcrumb {
