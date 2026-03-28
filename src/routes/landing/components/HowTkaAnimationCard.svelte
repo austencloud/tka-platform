@@ -185,6 +185,7 @@
         hideStepNumbers={false}
         hideProgressBar={true}
         fillContainer={true}
+        disableContextMenu={true}
         visibilityManagerOverride={visibilityManager}
       />
     </div>
