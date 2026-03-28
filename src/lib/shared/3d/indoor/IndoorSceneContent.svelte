@@ -3,15 +3,16 @@
    * IndoorSceneContent
    *
    * Inner component that runs inside the Threlte Canvas context (via GalleryCanvas).
-   * Handles Rapier physics initialization, player controller, camera, input,
-   * and renders room geometry (walls, floor, ceiling, entrance, corridor).
+   * Handles Rapier physics initialization, creates colliders from room geometry,
+   * and renders walls/floor/ceiling meshes.
    *
-   * Must be a child of GalleryCanvas so useThrelte() has access to the scene.
+   * Uses UnifiedCameraController (the same one Museum/Realm use) for all
+   * camera, input, movement, jumping, and pointer lock handling.
    */
 
   import { onMount, onDestroy, type Snippet } from "svelte";
-  import { T, useTask, useThrelte } from "@threlte/core";
-  import { DoubleSide, type PerspectiveCamera } from "three";
+  import { T, useTask } from "@threlte/core";
+  import { DoubleSide } from "three";
 
   // Physics
   import {
@@ -25,14 +26,14 @@
   import {
     createPlayerController,
     disposePlayerController,
-    teleportPlayer,
   } from "$lib/shared/3d/physics/player-controller";
   import { createRapierPhysicsProvider } from "$lib/shared/3d/physics/RapierPhysicsProvider";
 
-  // Camera
-  import { CameraMovementController } from "$lib/shared/3d/camera/services/implementations/CameraMovementController";
+  // Camera — use the SAME controller as Museum/Realm
+  import UnifiedCameraController from "$lib/shared/3d/camera/UnifiedCameraController.svelte";
   import { CameraMode } from "$lib/shared/3d/camera/types";
-  import type { MovementInput, LookInput } from "$lib/shared/3d/camera/services/contracts/ICameraMovementController";
+  import type { AvatarState, PhysicsProvider } from "$lib/shared/3d/camera/types";
+  import { getInputCapabilities } from "$lib/shared/input/InputCapabilities.svelte";
 
   // Room types and materials
   import type { SolvedRoom } from "./domain/room-types";
@@ -64,72 +65,50 @@
     children,
   }: Props = $props();
 
-  // Get Threlte context (only available inside Canvas)
-  const { renderer } = useThrelte();
-
   // ============================================================================
   // STATE
   // ============================================================================
 
   let physicsState: PhysicsWorldState | null = null;
   let playerState: PlayerControllerState | null = null;
+  let physicsProvider = $state<PhysicsProvider | null>(null);
   let isDisposed = false;
   let isInitialized = $state(false);
 
-  // Camera controller
-  const cameraController = new CameraMovementController({
-    destinationId: "indoor-scene",
-    moveSpeed,
-    gravity: Math.abs(gravity),
-    firstPersonHeight: eyeHeight,
-  });
+  // Player state (reactive, read by UCC)
+  const offset = room.worldOffset;
+  const spawnX = room.spawnPoint.x + offset.x;
+  const spawnY = room.spawnPoint.y + offset.y;
+  const spawnZ = room.spawnPoint.z + offset.z;
 
-  // Input state
-  let keys = $state<Record<string, boolean>>({});
-  let mouseDeltaX = 0;
-  let mouseDeltaY = 0;
+  let playerPosition = $state({ x: spawnX, y: spawnY, z: spawnZ });
+  let playerYaw = $state(room.spawnFacing);
+  let isMoving = $state(false);
+  let cameraMode = $state(CameraMode.FIRST_PERSON);
 
-  // ============================================================================
-  // INPUT HANDLING
-  // ============================================================================
+  const inputCapabilities = getInputCapabilities();
 
-  function onKeyDown(event: KeyboardEvent) {
-    keys[event.code] = true;
-
-    // V to cycle camera mode
-    if (event.code === "KeyV") {
-      cameraController.cycleMode();
-    }
-  }
-
-  function onKeyUp(event: KeyboardEvent) {
-    keys[event.code] = false;
-  }
-
-  function onMouseMove(event: MouseEvent) {
-    if (!cameraController.isPointerLocked()) return;
-    mouseDeltaX += event.movementX;
-    mouseDeltaY += event.movementY;
-  }
-
-  function onClick(event: MouseEvent) {
-    // Request pointer lock on click
-    const canvas = renderer.current?.domElement;
-    if (canvas && !cameraController.isPointerLocked()) {
-      canvas.requestPointerLock();
-    }
-  }
-
-  function onPointerLockChange() {
-    const canvas = renderer.current?.domElement;
-    const locked = document.pointerLockElement === canvas;
-    cameraController.setPointerLocked(locked);
-
-    // Return to orbit on ESC (pointer lock release)
-    if (!locked) {
-      cameraController.returnToOrbit();
-    }
-  }
+  // AvatarState adapter — same pattern as WorldScene.svelte
+  const avatarState: AvatarState = {
+    get position() {
+      return playerPosition;
+    },
+    get facingAngle() {
+      return playerYaw;
+    },
+    get isMoving() {
+      return isMoving;
+    },
+    setMoveInput(input: { x: number; z: number }) {
+      isMoving = input.x !== 0 || input.z !== 0;
+    },
+    updateMovement(_delta: number, _cameraAngle: number) {
+      // Handled by physics provider
+    },
+    setFacingAngle(angle: number) {
+      playerYaw = angle;
+    },
+  };
 
   // ============================================================================
   // PHYSICS INITIALIZATION
@@ -141,8 +120,6 @@
     await initPhysicsWorld(physicsState, { x: 0, y: gravity, z: 0 });
 
     if (isDisposed) return;
-
-    const offset = room.worldOffset;
 
     // 2. Create static colliders for room geometry
     for (const collider of room.colliders) {
@@ -168,31 +145,18 @@
     }
 
     // 3. Create player controller at spawn point
-    const spawnX = room.spawnPoint.x + offset.x;
-    const spawnY = room.spawnPoint.y + offset.y;
-    const spawnZ = room.spawnPoint.z + offset.z;
-
     playerState = createPlayerController(physicsState, {
       position: { x: spawnX, y: spawnY, z: spawnZ },
     });
 
-    // 4. Create physics provider and wire to camera controller
-    const physicsProvider = createRapierPhysicsProvider(physicsState, playerState);
-    cameraController.setPhysicsProvider(physicsProvider);
-
-    // 5. Set initial facing direction and mode
-    cameraController.setYaw(room.spawnFacing);
-    cameraController.setMode(CameraMode.FIRST_PERSON);
-    cameraController.teleport({ x: spawnX, y: spawnY, z: spawnZ });
-
-    // 6. Listen for pointer lock changes
-    document.addEventListener("pointerlockchange", onPointerLockChange);
+    // 4. Create physics provider for UnifiedCameraController
+    physicsProvider = createRapierPhysicsProvider(physicsState, playerState);
 
     isInitialized = true;
   });
 
   // ============================================================================
-  // FRAME LOOP
+  // FRAME LOOP (physics only — UCC handles its own camera/input loop)
   // ============================================================================
 
   useTask((delta) => {
@@ -201,42 +165,9 @@
     // Step physics
     stepPhysics(physicsState, Math.min(delta, 1 / 30));
 
-    // Build movement input from keyboard state
-    const movementInput: MovementInput = {
-      forward: !!keys["KeyW"] || !!keys["ArrowUp"],
-      backward: !!keys["KeyS"] || !!keys["ArrowDown"],
-      left: !!keys["KeyA"] || !!keys["ArrowLeft"],
-      right: !!keys["KeyD"] || !!keys["ArrowRight"],
-      sprint: !!keys["ShiftLeft"] || !!keys["ShiftRight"],
-      crouch: !!keys["ControlLeft"] || !!keys["ControlRight"],
-      jump: !!keys["Space"],
-    };
-
-    // Build look input from accumulated mouse deltas
-    const lookInput: LookInput = {
-      deltaYaw: mouseDeltaX,
-      deltaPitch: mouseDeltaY,
-    };
-
-    // Reset mouse deltas after consuming
-    mouseDeltaX = 0;
-    mouseDeltaY = 0;
-
-    // Update camera and movement
-    cameraController.update(delta, movementInput, lookInput);
-
     // Report position to parent
-    const pos = cameraController.getPlayerPosition();
-    onPositionChange?.(pos);
+    onPositionChange?.(playerPosition);
   });
-
-  // ============================================================================
-  // CAMERA INIT CALLBACK
-  // ============================================================================
-
-  function onCameraCreate(ref: PerspectiveCamera) {
-    cameraController.init(ref);
-  }
 
   // ============================================================================
   // CLEANUP
@@ -244,10 +175,6 @@
 
   onDestroy(() => {
     isDisposed = true;
-
-    document.removeEventListener("pointerlockchange", onPointerLockChange);
-
-    cameraController.dispose();
 
     if (playerState && physicsState) {
       disposePlayerController(physicsState, playerState);
@@ -273,24 +200,22 @@
   const oz = room.worldOffset.z;
 </script>
 
-<!-- Keyboard and mouse input -->
-<svelte:window onkeydown={onKeyDown} onkeyup={onKeyUp} />
-<svelte:document onmousemove={onMouseMove} onclick={onClick} />
-
-<!-- Camera -->
-<T.PerspectiveCamera
-  makeDefault
-  fov={70}
-  near={0.1}
-  far={100}
-  oncreate={onCameraCreate}
-/>
-
-<!-- Ambient light for base visibility -->
-<T.AmbientLight intensity={0.3} color={0xffffff} />
-<T.HemisphereLight
-  args={[0xb1e1ff, 0x886644, 0.4]}
-/>
+<!-- UnifiedCameraController — handles ALL input, camera, movement, jumping, pointer lock -->
+{#if isInitialized && physicsProvider}
+  <UnifiedCameraController
+    destinationId="archive"
+    {avatarState}
+    {physicsProvider}
+    enabled={true}
+    initialYaw={room.spawnFacing}
+    onModeChange={(mode) => {
+      cameraMode = mode;
+    }}
+    onRotationChange={(newYaw, _pitch) => {
+      playerYaw = newYaw;
+    }}
+  />
+{/if}
 
 <!-- Walls -->
 {#each room.walls as wall, i}

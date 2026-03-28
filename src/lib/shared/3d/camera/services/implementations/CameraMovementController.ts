@@ -48,8 +48,9 @@ export class CameraMovementController implements ICameraMovementController {
 	private playerPosition = new ThreeVector3(0, 0, 0);
 	private targetPosition = new ThreeVector3(0, 0, 0);
 
-	// Kinematic movement state (when no physics provider)
+	// Movement state
 	private velocity = new ThreeVector3(0, 0, 0);
+	private verticalVelocity = 0;
 	private isGrounded = true;
 
 	// Orbit state
@@ -105,23 +106,23 @@ export class CameraMovementController implements ICameraMovementController {
 	}
 
 	private updatePlayerMovement(deltaTime: number, input: MovementInput): void {
-		// Calculate movement direction in world space
+		// Build movement from camera's forward/right vectors.
+		// Look direction convention: forward = (sin(yaw), 0, cos(yaw))
+		// Right = perpendicular on XZ plane = (cos(yaw), 0, -sin(yaw))
 		const moveDir = new ThreeVector3(0, 0, 0);
 
-		if (input.forward) moveDir.z -= 1;
-		if (input.backward) moveDir.z += 1;
-		if (input.left) moveDir.x -= 1;
-		if (input.right) moveDir.x += 1;
+		const sinYaw = Math.sin(this.yaw);
+		const cosYaw = Math.cos(this.yaw);
 
-		// Rotate movement direction by yaw
+		// Forward/backward along look direction projected onto XZ
+		const forwardInput = (input.forward ? 1 : 0) - (input.backward ? 1 : 0);
+		const strafeInput = (input.right ? 1 : 0) - (input.left ? 1 : 0);
+
+		moveDir.x = sinYaw * forwardInput - cosYaw * strafeInput;
+		moveDir.z = cosYaw * forwardInput + sinYaw * strafeInput;
+
 		if (moveDir.lengthSq() > 0) {
 			moveDir.normalize();
-			const cos = Math.cos(this.yaw);
-			const sin = Math.sin(this.yaw);
-			const x = moveDir.x * cos - moveDir.z * sin;
-			const z = moveDir.x * sin + moveDir.z * cos;
-			moveDir.x = x;
-			moveDir.z = z;
 		}
 
 		// Calculate speed
@@ -130,10 +131,12 @@ export class CameraMovementController implements ICameraMovementController {
 		if (input.crouch) speed *= this.config.crouchMultiplier;
 
 		if (this.physicsProvider) {
-			// Physics-based movement using movePlayer interface
+			// Indoor scenes: no jumping. Ground-level movement only.
+			// Jump + gravity will be handled properly when IndoorScene
+			// migrates to UnifiedCameraController.
 			const desiredMovement: Vector3 = {
 				x: moveDir.x * speed * deltaTime,
-				y: input.jump && this.isGrounded ? this.config.jumpForce * deltaTime : 0,
+				y: 0,
 				z: moveDir.z * speed * deltaTime,
 			};
 
