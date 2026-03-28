@@ -37,15 +37,17 @@ const VIEWBOX_SIZE = 950;
 // Grid point positions in the 950×950 viewBox coordinate space.
 // Lines connect opposite cardinals through center; dots mark each position.
 const GRID_CENTER = { x: 475, y: 475 };
+// Cardinal positions match Canvas2DDirectRenderer.BASE_GRID_POINTS (radius 300 from center)
+// Intercardinals at 300 * cos(45°) ≈ 212 offset from center
 const GRID_POINTS = {
-	n: { x: 475, y: 120 },
-	s: { x: 475, y: 830 },
-	e: { x: 830, y: 475 },
-	w: { x: 120, y: 475 },
-	ne: { x: 726, y: 224 },
-	nw: { x: 224, y: 224 },
-	se: { x: 726, y: 726 },
-	sw: { x: 224, y: 726 },
+	n: { x: 475, y: 175 },
+	s: { x: 475, y: 775 },
+	e: { x: 775, y: 475 },
+	w: { x: 175, y: 475 },
+	ne: { x: 687, y: 263 },
+	nw: { x: 263, y: 263 },
+	se: { x: 687, y: 687 },
+	sw: { x: 263, y: 687 },
 };
 
 // Grid visual style
@@ -59,8 +61,6 @@ const RED_COLOR = "#EE3322";
 
 // Hand dot radii in viewBox units
 const HAND_DOT_BASE_RADIUS_VB = 22;
-const HAND_DOT_HIGHLIGHT_RADIUS_VB = 12;
-const HAND_DOT_SPECULAR_RADIUS_VB = 6;
 
 // TKA letter positioning — bottom-left corner of the 950-unit viewBox
 const LETTER_VB_X = 55;
@@ -166,15 +166,34 @@ export class XPRenderer extends EraRendererBase implements IEraRenderer {
 
 		ctx.restore();
 
-		// Grid point dots
+		// Grid point dots — 3D glossy spheres (XP glass-orb style)
 		const dotR = GRID_DOT_RADIUS_VB * scale;
-		ctx.fillStyle = GRID_DOT_COLOR;
 
 		for (const pt of Object.values(GRID_POINTS)) {
-			this.fillCircle(ctx, pt.x * scale, pt.y * scale, dotR);
+			const px = pt.x * scale;
+			const py = pt.y * scale;
+
+			// Shadow
+			ctx.save();
+			ctx.shadowColor = "rgba(0,0,0,0.25)";
+			ctx.shadowBlur = 4;
+			ctx.shadowOffsetX = 1;
+			ctx.shadowOffsetY = 1;
+			ctx.fillStyle = "#B8B8B8";
+			this.fillCircle(ctx, px, py, dotR);
+			ctx.restore();
+
+			// Highlight
+			ctx.fillStyle = "#E8E8E8";
+			this.fillCircle(ctx, px - dotR * 0.15, py - dotR * 0.15, dotR * 0.8);
+
+			// Specular
+			ctx.fillStyle = "#FFFFFF";
+			this.fillCircle(ctx, px - dotR * 0.35, py - dotR * 0.35, dotR * 0.3);
 		}
 
-		// Center dot — slightly smaller
+		// Center dot — flat, slightly smaller
+		ctx.fillStyle = GRID_DOT_COLOR;
 		this.fillCircle(ctx, GRID_CENTER.x * scale, GRID_CENTER.y * scale, dotR * 0.7);
 	}
 
@@ -376,13 +395,8 @@ export class XPRenderer extends EraRendererBase implements IEraRenderer {
 	// --------------------------------------------------------------------------
 
 	/**
-	 * Draw a three-layer glossy dot at the prop end positions.
-	 *
-	 * Layer 1 (base):      Darker gray ring — anchors the dot visually
-	 * Layer 2 (fill):      Main dot in mid-gray — the visible "hand" indicator
-	 * Layer 3 (highlight): Small lighter circle offset toward the top-left —
-	 *                      gives the XP glass-orb effect
-	 * Layer 4 (specular):  Tiny white pinpoint for maximum glossiness
+	 * Draw hand-position endpoints as simple flat dots.
+	 * The 3D glossy treatment is on the outer grid points instead.
 	 */
 	private drawHandDots(
 		ctx: CanvasRenderingContext2D,
@@ -395,39 +409,10 @@ export class XPRenderer extends EraRendererBase implements IEraRenderer {
 
 			const cx = position.x * scale;
 			const cy = position.y * scale;
-			const baseR = HAND_DOT_BASE_RADIUS_VB * scale;
-			const highlightR = HAND_DOT_HIGHLIGHT_RADIUS_VB * scale;
-			const specularR = HAND_DOT_SPECULAR_RADIUS_VB * scale;
+			const r = HAND_DOT_BASE_RADIUS_VB * scale;
 
-			// Shadow for the whole dot
-			ctx.save();
-			ctx.shadowColor = "rgba(0,0,0,0.25)";
-			ctx.shadowBlur = 4;
-			ctx.shadowOffsetX = 1;
-			ctx.shadowOffsetY = 1;
-
-			// Base circle (dark gray)
-			ctx.fillStyle = "#B8B8B8";
-			this.fillCircle(ctx, cx, cy, baseR);
-			ctx.restore();
-
-			// Highlight circle (lighter gray, slightly offset toward top-left)
-			ctx.fillStyle = "#E8E8E8";
-			this.fillCircle(
-				ctx,
-				cx - baseR * 0.15,
-				cy - baseR * 0.15,
-				highlightR,
-			);
-
-			// Specular dot (white, top-left)
-			ctx.fillStyle = "#FFFFFF";
-			this.fillCircle(
-				ctx,
-				cx - baseR * 0.35,
-				cy - baseR * 0.35,
-				specularR,
-			);
+			ctx.fillStyle = GRID_DOT_COLOR;
+			this.fillCircle(ctx, cx, cy, r);
 		}
 	}
 
