@@ -142,7 +142,6 @@ export class PixelRenderer extends EraRendererBase implements IPixelRenderer {
 		this.drawGrid(ctx, scale);
 		await this.drawProps(ctx, prepared, scale);
 		await this.drawArrows(ctx, prepared, scale);
-		this.drawHandDots(ctx, prepared, scale);
 		this.drawLetter(ctx, String(data.letter), size);
 		this.drawBorder(ctx, size);
 

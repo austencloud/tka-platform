@@ -110,7 +110,6 @@ export class XPRenderer extends EraRendererBase implements IEraRenderer {
 		this.drawGrid(ctx, scale);
 		await this.drawProps(ctx, prepared, scale);
 		await this.drawArrows(ctx, prepared, scale);
-		this.drawHandDots(ctx, prepared, scale);
 		this.drawLetter(ctx, String(data.letter), scale, size);
 		this.drawBeveledBorder(ctx, size);
 	}
