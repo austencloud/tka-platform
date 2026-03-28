@@ -46,10 +46,13 @@
   let cardAspect = $derived(sizeSpec.widthInches / sizeSpec.heightInches);
 
   // Column width as percentage of page — matches physical proportions
-  // Page is 8.5" wide, each card is widthInches, with margins
   let colWidthPct = $derived(
     (sizeSpec.widthInches / 8.5) * 100
   );
+
+  // Page margins as percentages — match actual print margins
+  let marginXPct = $derived((layout.marginXPt / 612) * 100);
+  let marginYPct = $derived((layout.marginYPt / 792) * 100);
 
   // Group sequences into pages
   let pages = $derived.by(() => {
@@ -104,10 +107,10 @@
   {:else}
     <div class="pages-scroll">
       {#each pages as page, pageIndex (pageIndex)}
-        <div class="page">
+        <div class="page" style:padding="{marginYPct}% {marginXPct}%">
           <div
             class="page-grid"
-            style:grid-template-columns="repeat({layout.cols}, {colWidthPct}%)"
+            style:grid-template-columns="repeat({layout.cols}, 1fr)"
           >
             {#each page as seq (seq.id)}
               <div class="card-slot" style:aspect-ratio="{cardAspect}" use:detectOrientation>
@@ -154,7 +157,6 @@
     width: 100%;
     max-width: 800px;
     aspect-ratio: 8.5 / 11;
-    padding: 3%;
     box-sizing: border-box;
   }
 
@@ -162,7 +164,6 @@
     display: grid;
     gap: 4px;
     width: 100%;
-    height: 100%;
     align-content: start;
     justify-content: start;
   }
