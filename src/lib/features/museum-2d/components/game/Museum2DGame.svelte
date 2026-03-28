@@ -33,11 +33,17 @@
   // Track which movement keys are currently held
   let heldKeys = new Set<string>();
 
-  // Auto-repeat: 180ms initial delay, 130ms interval (slightly > 120ms animation)
+  // Timing constants
+  const INPUT_BUFFER_MS = 30;    // Wait for simultaneous keypresses before first move
+  const REPEAT_DELAY_MS = 150;   // Delay before auto-repeat starts
+  const REPEAT_INTERVAL_MS = 100; // Interval between repeated moves (fast, smooth)
+
+  let inputBufferTimer: ReturnType<typeof setTimeout> | null = null;
   let repeatTimer: ReturnType<typeof setTimeout> | null = null;
   let repeatInterval: ReturnType<typeof setInterval> | null = null;
 
   function clearRepeat() {
+    if (inputBufferTimer) { clearTimeout(inputBufferTimer); inputBufferTimer = null; }
     if (repeatTimer) { clearTimeout(repeatTimer); repeatTimer = null; }
     if (repeatInterval) { clearInterval(repeatInterval); repeatInterval = null; }
   }
@@ -81,6 +87,29 @@
     return true;
   }
 
+  /**
+   * Start the movement loop: buffer → first move → repeat.
+   * Called whenever held keys change.
+   */
+  function startMovementLoop() {
+    clearRepeat();
+    if (heldKeys.size === 0) return;
+
+    // Buffer: wait a few ms for simultaneous keypresses to register
+    // (W+D pressed "at once" arrive as two events ~5-15ms apart)
+    inputBufferTimer = setTimeout(() => {
+      // First move
+      dispatchMovement();
+
+      // Then repeat
+      repeatTimer = setTimeout(() => {
+        repeatInterval = setInterval(() => {
+          dispatchMovement();
+        }, REPEAT_INTERVAL_MS);
+      }, REPEAT_DELAY_MS);
+    }, INPUT_BUFFER_MS);
+  }
+
   function handleKeyDown(e: KeyboardEvent) {
     // Interact
     if (e.key === "e" || e.key === "E") {
@@ -91,47 +120,16 @@
 
     if (!MOVE_KEYS.has(e.key)) return;
     e.preventDefault();
-
-    // Ignore browser-generated key repeats — we handle our own timing
     if (e.repeat) return;
 
-    const wasEmpty = heldKeys.size === 0;
     heldKeys.add(e.key);
-
-    if (!wasEmpty) {
-      // A new key was added while another was held — restart repeat so the
-      // diagonal fires immediately instead of waiting for the next tick
-      clearRepeat();
-    }
-
-    // Immediate first move
-    dispatchMovement();
-
-    // After 180ms delay, repeat every 130ms (> 120ms animation so each move finishes)
-    repeatTimer = setTimeout(() => {
-      repeatInterval = setInterval(() => {
-        dispatchMovement();
-      }, 130);
-    }, 180);
+    startMovementLoop();
   }
 
   function handleKeyUp(e: KeyboardEvent) {
     if (!MOVE_KEYS.has(e.key)) return;
-
     heldKeys.delete(e.key);
-
-    if (heldKeys.size === 0) {
-      // All movement keys released — stop repeating
-      clearRepeat();
-    } else {
-      // At least one key still held — restart repeat for the remaining keys
-      clearRepeat();
-      repeatTimer = setTimeout(() => {
-        repeatInterval = setInterval(() => {
-          dispatchMovement();
-        }, 130);
-      }, 0); // No delay — already in motion
-    }
+    startMovementLoop();
   }
 
   onMount(() => {
