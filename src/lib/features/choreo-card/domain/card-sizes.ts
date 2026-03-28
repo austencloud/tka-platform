@@ -39,7 +39,7 @@ export interface PageLayout {
 
 const PAGE_LAYOUTS: Record<CardSizeId, PageLayout> = {
   poker: buildLayout(CARD_SIZES.poker, 3, 3),
-  tarot: buildLayout(CARD_SIZES.tarot, 3, 2),
+  tarot: buildLayout(CARD_SIZES.tarot, 2, 2),
 };
 
 function buildLayout(
