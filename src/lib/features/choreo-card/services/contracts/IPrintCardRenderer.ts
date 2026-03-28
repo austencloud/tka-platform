@@ -13,6 +13,8 @@ export interface PrintRenderOptions {
   handPointsVisible: boolean;
   /** Override the default card back theme (e.g. "nightSky", "deepOcean") */
   theme?: string;
+  /** Show QR code in an empty grid cell */
+  showQRCode?: boolean;
   /** Override prop types (reads from settings when not provided) */
   bluePropType?: PropType;
   redPropType?: PropType;
