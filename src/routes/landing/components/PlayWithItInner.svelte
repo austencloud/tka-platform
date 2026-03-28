@@ -29,7 +29,7 @@
     animationSettings,
     TrackingMode,
   } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
-  import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
+  import { AnimationVisibilityStateManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import { createStartPositionFromBeatStart } from "$lib/features/create/shared/services/implementations/sequence-transforms/sequence-transforms";
   import { RANDOM_PROPS } from "../landing-content";
@@ -116,7 +116,10 @@
 
   // Effect state
   let activeEffect = $state<EffectId>("trails");
-  const visibilityManager = getAnimationVisibilityManager();
+  // Per-instance visibility manager so this player's effect/dark-mode settings
+  // don't conflict with other AnimatorCanvas instances on the same page.
+  // Ephemeral: no localStorage persistence, no global dark-class sync.
+  const visibilityManager = new AnimationVisibilityStateManager({ ephemeral: true });
 
   // BPM state — local to this landing section (default 60, step 15, range 30-180)
   const BPM_MIN = 30;
@@ -550,8 +553,11 @@
     stripContainerWidth = el.clientWidth;
     stripScrollLeft = el.scrollLeft;
 
+    // Hoist to a typed non-nullable local so closures below see a non-null ref
+    const strip: HTMLDivElement = el;
+
     function onScroll() {
-      stripScrollLeft = el.scrollLeft;
+      stripScrollLeft = strip.scrollLeft;
     }
 
     const ro = new ResizeObserver((entries) => {
@@ -559,11 +565,11 @@
       if (entry) stripContainerWidth = entry.contentRect.width;
     });
 
-    el.addEventListener('scroll', onScroll, { passive: true });
-    ro.observe(el);
+    strip.addEventListener('scroll', onScroll, { passive: true });
+    ro.observe(strip);
 
     return () => {
-      el.removeEventListener('scroll', onScroll);
+      strip.removeEventListener('scroll', onScroll);
       ro.disconnect();
     };
   });
@@ -686,6 +692,7 @@
             redPropType={currentPropType}
             word={animationState.sequenceData?.intendedWord ?? animationState.sequenceData?.word ?? null}
             previewDarkMode={true}
+            visibilityManagerOverride={visibilityManager}
           />
         </div>
       {:else if animationError}
