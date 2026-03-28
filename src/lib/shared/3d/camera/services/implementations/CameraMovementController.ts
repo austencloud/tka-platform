@@ -283,4 +283,12 @@ export class CameraMovementController implements ICameraMovementController {
 			z: this.playerPosition.z,
 		};
 	}
+
+	setYaw(yaw: number): void {
+		this.yaw = yaw;
+	}
+
+	setPitch(pitch: number): void {
+		this.pitch = Math.max(-Math.PI / 2 + 0.01, Math.min(Math.PI / 2 - 0.01, pitch));
+	}
 }
