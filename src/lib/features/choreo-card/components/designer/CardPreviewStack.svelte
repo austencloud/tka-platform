@@ -46,8 +46,7 @@
   // Playing card proportions: 2.5" x 3.5" = 5:7
   const CARD_PORTRAIT = 5 / 7;
   const CARD_LANDSCAPE = 7 / 5;
-  const BACK_RENDER_W = 500;
-  const BACK_RENDER_H = 700;
+  const BACK_AR = 5 / 7; // Back card is always portrait 5:7
   const GAP = 16;
 
   // Container dimensions via ResizeObserver
@@ -74,7 +73,7 @@
   // The front card is landscape when the sequence image is meaningfully wider
   // than tall (aspect > 1.3). Near-square images (like 16-beat grids) fit
   // better in portrait. Default to landscape for the initial render.
-  const frontIsLandscape = $derived(cardAspect > 0 ? cardAspect > 1.3 : true);
+  const frontIsLandscape = $derived(cardAspect > 0 ? cardAspect > 1.3 : false);
   const frontAR = $derived(frontIsLandscape ? CARD_LANDSCAPE : CARD_PORTRAIT);
 
   // Flex distribution: focused card gets 70%, other gets 30%, or 50/50
@@ -104,10 +103,16 @@
     return { w: Math.floor(w), h: Math.floor(h) };
   });
 
-  // Back card: rendered at fixed 500x700, scaled to fit the slot
-  const backScale = $derived.by(() => {
-    if (cW === 0 || backSlotH === 0) return 0.5;
-    return Math.min(cW / BACK_RENDER_W, backSlotH / BACK_RENDER_H);
+  // Back card: fit within slot using 5:7 aspect ratio (same approach as front)
+  const backLayout = $derived.by(() => {
+    if (cW === 0 || backSlotH === 0) return { w: 0, h: 0 };
+    let h = backSlotH;
+    let w = h * BACK_AR;
+    if (w > cW) {
+      w = cW;
+      h = w / BACK_AR;
+    }
+    return { w: Math.floor(w), h: Math.floor(h) };
   });
 
   function handleFrontClick() {
@@ -184,7 +189,7 @@
   >
     <div
       class="card-frame back-frame"
-      style="width: {BACK_RENDER_W}px; height: {BACK_RENDER_H}px; transform: scale({backScale}); transform-origin: top center;"
+      style="width: {backLayout.w}px; height: {backLayout.h}px;"
     >
       {#if showInfoCard}
         <InfoCardBack />
@@ -203,6 +208,7 @@
     gap: 16px;
     align-items: center;
     padding: 8px;
+    overflow: hidden;
   }
 
   .card-slot {
@@ -210,7 +216,7 @@
     align-items: center;
     justify-content: center;
     transition: flex 300ms ease;
-    overflow: hidden;
+    overflow: visible;
     background: none;
     border: none;
     cursor: pointer;
@@ -222,5 +228,8 @@
     border-radius: 12px;
     overflow: hidden;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    transition:
+      width 300ms ease,
+      height 300ms ease;
   }
 </style>

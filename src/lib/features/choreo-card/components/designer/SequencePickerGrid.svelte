@@ -36,8 +36,6 @@
 
   let gridEl: HTMLDivElement | undefined = $state();
 
-  // Scroll selected cell into view whenever selectedIndex changes.
-  // tick() ensures the DOM reflects the latest render before we query children.
   $effect(() => {
     const idx = selectedIndex;
     if (!gridEl || idx < 0) return;
@@ -74,10 +72,14 @@
   {:else}
     <div class="thumbnail-grid themed-scrollbar" bind:this={gridEl}>
       {#each sequences as seq, i (seq.id ?? i)}
-        <button
+        <!-- div instead of button: buttons don't honor aspect-ratio or child sizing -->
+        <div
           class="thumbnail-cell"
           class:selected={i === selectedIndex}
           onclick={() => onSelect(i)}
+          onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(i); } }}
+          role="button"
+          tabindex="0"
           aria-label={`Select sequence ${seq.word ?? seq.name ?? i + 1}`}
           aria-pressed={i === selectedIndex}
         >
@@ -93,7 +95,7 @@
             showNotes={false}
             showBirthday={false}
           />
-        </button>
+        </div>
       {/each}
     </div>
   {/if}
@@ -149,8 +151,8 @@
   .thumbnail-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
-    padding: 8px;
+    gap: 6px;
+    padding: 6px;
     overflow-y: auto;
     flex: 1;
     min-height: 0;
@@ -158,18 +160,10 @@
   }
 
   .thumbnail-cell {
-    position: relative;
-    border: none;
-    background: transparent;
-    padding: 0;
     cursor: pointer;
     border-radius: 6px;
     overflow: hidden;
-    /* Keep the aspect ratio consistent across all grid cells */
-    aspect-ratio: 3 / 4;
-    display: flex;
-    align-items: stretch;
-    transition: transform 0.1s ease;
+    transition: transform 0.15s ease;
   }
 
   .thumbnail-cell:hover:not(.selected) {
@@ -179,14 +173,6 @@
   .thumbnail-cell.selected {
     outline: 2px solid var(--theme-accent, #4488ff);
     outline-offset: 2px;
-    border-radius: 6px;
-  }
-
-  /* PropAwareThumbnail fills the cell */
-  .thumbnail-cell :global(.prop-thumbnail) {
-    width: 100%;
-    height: 100%;
-    flex: 1;
   }
 
   /* ── Empty state ───────────────────────────────── */

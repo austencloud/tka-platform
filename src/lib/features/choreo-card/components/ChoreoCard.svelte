@@ -165,7 +165,7 @@
       bluePropType={propSettings.bluePropType}
       redPropType={propSettings.redPropType}
       catDogModeEnabled={propSettings.catDogMode}
-      lightMode={printMode}
+      lightMode={printMode || cardMode}
       variant="wordcard"
       addWord={showWord}
       addDifficultyLevel={handPathMode ? false : undefined}
@@ -180,7 +180,7 @@
         <LOOPIconStrip
           activeComponents={loopComponents}
           size={14}
-          darkMode={!printMode}
+          darkMode={!printMode && !cardMode}
           showFreeformWhenEmpty={false}
         />
       </div>
