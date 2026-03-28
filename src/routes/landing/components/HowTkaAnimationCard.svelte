@@ -20,7 +20,7 @@
     animationSettings,
     TrackingMode,
   } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
-  import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
+  import { AnimationVisibilityStateManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 
   interface Props {
@@ -43,7 +43,10 @@
   // Dynamically imported — null until the card scrolls into view
   let AnimatorCanvasComponent = $state<Component | null>(null);
 
-  const visibilityManager = getAnimationVisibilityManager();
+  // Per-instance visibility manager so this card's settings don't conflict
+  // with other AnimatorCanvas instances on the same page (e.g. PlayWithItInner).
+  // Ephemeral: no localStorage persistence, no global dark-class sync.
+  const visibilityManager = new AnimationVisibilityStateManager({ ephemeral: true });
 
   // Apply prop type to all motions in the sequence
   function applyPropType(seq: SequenceData): SequenceData {
@@ -180,6 +183,7 @@
         hideStepNumbers={false}
         hideProgressBar={true}
         fillContainer={true}
+        visibilityManagerOverride={visibilityManager}
       />
     </div>
   {:else if animationError}

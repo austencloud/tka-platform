@@ -37,7 +37,7 @@ import { TrailCapturer } from "$lib/features/compose/services/implementations/Tr
 import { SequenceAnimationOrchestrator } from "$lib/features/compose/services/implementations/SequenceAnimationOrchestrator";
 import { AnimationStateManager } from "$lib/features/compose/services/implementations/AnimationStateManager";
 import { container } from "$lib/shared/di";
-import { getAnimationVisibilityManager } from "../../state/animation-visibility-state.svelte";
+import { getAnimationVisibilityManager, type AnimationVisibilityStateManager } from "../../state/animation-visibility-state.svelte";
 import type { EffortId } from "$lib/features/effort-lab/domain/effort-types";
 
 // Services
@@ -259,6 +259,10 @@ export class AnimationEngine {
   private callbacks: AnimationEngineCallbacks = {};
   private canvasSize = DEFAULT_CANVAS_SIZE;
   private instanceId = Math.random().toString(36).substring(2, 8);
+  /** Per-instance visibility manager override. When set, this engine uses its own
+   * manager instead of the global singleton, allowing multiple canvases to have
+   * independent visibility/effect settings. */
+  private visibilityManagerOverride: AnimationVisibilityStateManager | null = null;
   private settingsLoaded = false;
   private trailCapturerInitialized = false;
   private previousGridMode: string | null = null;
@@ -355,6 +359,20 @@ export class AnimationEngine {
   // ============================================================================
 
   /**
+   * Set a per-instance visibility manager override. Must be called before
+   * initialize() so that the engine (and its sub-services) read from the
+   * correct manager from the start.
+   */
+  setVisibilityManager(manager: AnimationVisibilityStateManager): void {
+    this.visibilityManagerOverride = manager;
+  }
+
+  /** Return the per-instance override if set, otherwise the global singleton. */
+  private getVM(): AnimationVisibilityStateManager {
+    return this.visibilityManagerOverride ?? getAnimationVisibilityManager();
+  }
+
+  /**
    * Initialize the engine with a container element
    */
   async initialize(
@@ -365,19 +383,19 @@ export class AnimationEngine {
     this.callbacks = callbacks;
 
     // Initialize visibility manager
-    const visibilityManager = getAnimationVisibilityManager();
-    this.prevDarkMode = visibilityManager.isDarkMode();
-    this.prevTrailsVisible = visibilityManager.isTrailsVisible();
-    this.prevPropsVisible = visibilityManager.getVisibility("props");
-    this.prevBlueMotionVisible = visibilityManager.getVisibility("blueMotion");
-    this.prevRedMotionVisible = visibilityManager.getVisibility("redMotion");
-    this.prevFireEffect = visibilityManager.isFireEffectEnabled();
+    const vm = this.getVM();
+    this.prevDarkMode = vm.isDarkMode();
+    this.prevTrailsVisible = vm.isTrailsVisible();
+    this.prevPropsVisible = vm.getVisibility("props");
+    this.prevBlueMotionVisible = vm.getVisibility("blueMotion");
+    this.prevRedMotionVisible = vm.getVisibility("redMotion");
+    this.prevFireEffect = vm.isFireEffectEnabled();
     this.fireConfig.enabled = this.prevFireEffect;
-    this.prevColorBlend = visibilityManager.getFireColorBlend();
-    this.prevCharcoalEffect = visibilityManager.isCharcoalEffectEnabled();
-    this.prevFireIntensity = visibilityManager.getFireIntensity();
-    this.prevCharcoalParamsJson = JSON.stringify(visibilityManager.getCharcoalParams());
-    this.prevEffortPreset = visibilityManager.getEffortPreset();
+    this.prevColorBlend = vm.getFireColorBlend();
+    this.prevCharcoalEffect = vm.isCharcoalEffectEnabled();
+    this.prevFireIntensity = vm.getFireIntensity();
+    this.prevCharcoalParamsJson = JSON.stringify(vm.getCharcoalParams());
+    this.prevEffortPreset = vm.getEffortPreset();
     this.fireDefaultsLoader = container.items.fireDefaultsLoader;
 
     // Build fireConfig from base params + slider mappings
@@ -393,26 +411,26 @@ export class AnimationEngine {
       ...intensityOverrides,
     };
     this.fireConfig.colorCurve = BASE_COLOR_CURVE;
-    this.fireConfig.charcoalParams = visibilityManager.getCharcoalParams();
+    this.fireConfig.charcoalParams = vm.getCharcoalParams();
     // Initialize LED state from visibility manager
-    this.ledConfig.enabled = visibilityManager.isLedEffectEnabled();
-    this.ledConfig.patternId = visibilityManager.getLedPatternId();
-    this.ledConfig.primaryColor = visibilityManager.getLedPrimaryColor();
+    this.ledConfig.enabled = vm.isLedEffectEnabled();
+    this.ledConfig.patternId = vm.getLedPatternId();
+    this.ledConfig.primaryColor = vm.getLedPrimaryColor();
 
     this.state.visibilityState = {
-      grid: visibilityManager.getGridMode() !== "none",
-      stepNumbers: visibilityManager.getVisibility("stepNumbers"),
-      props: visibilityManager.getVisibility("props"),
-      trails: visibilityManager.getTrailStyle() !== "off",
-      tkaGlyph: visibilityManager.getVisibility("tkaGlyph"), // TKA Glyph includes turn numbers
-      blueMotion: visibilityManager.getVisibility("blueMotion"),
-      redMotion: visibilityManager.getVisibility("redMotion"),
-      darkMode: visibilityManager.isDarkMode(),
-      wordHeader: visibilityManager.getVisibility("wordHeader"),
+      grid: vm.getGridMode() !== "none",
+      stepNumbers: vm.getVisibility("stepNumbers"),
+      props: vm.getVisibility("props"),
+      trails: vm.getTrailStyle() !== "off",
+      tkaGlyph: vm.getVisibility("tkaGlyph"), // TKA Glyph includes turn numbers
+      blueMotion: vm.getVisibility("blueMotion"),
+      redMotion: vm.getVisibility("redMotion"),
+      darkMode: vm.isDarkMode(),
+      wordHeader: vm.getVisibility("wordHeader"),
     };
 
     // Initialize services that don't need renderer
-    this.visibilitySyncService = new AnimationVisibilitySynchronizer();
+    this.visibilitySyncService = new AnimationVisibilitySynchronizer(this.visibilityManagerOverride ?? undefined);
     this.unsubscribeVisibility = this.visibilitySyncService.subscribe(
       (state) => {
         this.state.visibilityState = state;
@@ -501,7 +519,7 @@ export class AnimationEngine {
         }
 
         // Sync fire effect toggle from visibility manager
-        const vm = getAnimationVisibilityManager();
+        const vm = this.getVM();
         const fireEnabled = vm.isFireEffectEnabled();
         if (fireEnabled !== this.prevFireEffect) {
           this.prevFireEffect = fireEnabled;
@@ -954,6 +972,15 @@ export class AnimationEngine {
         this.orchestrator.initializeWithDomainData(props.sequenceData);
         this.lastSequenceContentHash = newHash;
 
+        // Log what the orchestrator just set as prop state — this is what the
+        // trail overlay will see on the NEXT renderFrame() call
+        const postInitStates = this.orchestrator.getCurrentPropStates();
+        console.log(`[TRAIL-DIAG] Post-orchestrator prop state: blue.path=${postInitStates.blue.centerPathAngle?.toFixed(3)} blue.staff=${postInitStates.blue.staffRotationAngle?.toFixed(3)} blue.xy=(${postInitStates.blue.x},${postInitStates.blue.y}) | red.path=${postInitStates.red.centerPathAngle?.toFixed(3)} red.staff=${postInitStates.red.staffRotationAngle?.toFixed(3)} red.xy=(${postInitStates.red.x},${postInitStates.red.y})`);
+        // BUT: the trail overlay reads from props.blueProp which comes from the Svelte component.
+        // If there's a reactive propagation delay, the trail overlay might see STALE props on
+        // the first frame after clearBuffers(). Log what's in the current props for comparison:
+        console.log(`[TRAIL-DIAG] Current props.blueProp: path=${props.blueProp?.centerPathAngle?.toFixed(3)} staff=${props.blueProp?.staffRotationAngle?.toFixed(3)} xy=(${props.blueProp?.x},${props.blueProp?.y}) | props.redProp: path=${props.redProp?.centerPathAngle?.toFixed(3)} staff=${props.redProp?.staffRotationAngle?.toFixed(3)} xy=(${props.redProp?.x},${props.redProp?.y})`);
+
         // Flush stale trail data so old ring buffer points don't draw
         // artifact lines to the new prop positions. Use clearBuffers()
         // instead of clear() — props are already positioned correctly by
@@ -1180,7 +1207,7 @@ export class AnimationEngine {
    * Returns a JSON-serializable object with all relevant state.
    */
   captureEffectDiagnostics(): Record<string, unknown> {
-    const vm = getAnimationVisibilityManager();
+    const vm = this.getVM();
     const settings = vm.getSettings();
     const lastProps = this.lastPropsRef;
 
@@ -1547,8 +1574,7 @@ export class AnimationEngine {
           this.canvasSize
         );
         if (success) {
-          const vm = getAnimationVisibilityManager();
-          this.charcoalRenderer.setParams(vm.getCharcoalParams());
+          this.charcoalRenderer.setParams(this.getVM().getCharcoalParams());
           this.renderLoopService?.updateConfig({
             charcoalRenderer: this.charcoalRenderer,
           });
@@ -2077,14 +2103,14 @@ export class AnimationEngine {
     fp.ledConfig = this.ledConfig.enabled ? this.ledConfig : null;
 
     // Playback speed for fire cache invalidation
-    const visibilityManager = getAnimationVisibilityManager();
-    fp.playbackSpeed = visibilityManager.getSpeed();
+    const vmRef = this.getVM();
+    fp.playbackSpeed = vmRef.getSpeed();
 
     // Step mode: disable fire frame cache so flames track actual prop positions.
     // The cache records during continuous playback and replays using wall-clock time,
     // which drifts from prop positions during step mode's discrete pauses.
     if (fp.fireConfig) {
-      fp.fireConfig.disableFrameCache = visibilityManager.getPlaybackMode() === "step";
+      fp.fireConfig.disableFrameCache = vmRef.getPlaybackMode() === "step";
     }
 
     // Sequence identity for fire cache invalidation (new sequence = invalidate stale fire frames)

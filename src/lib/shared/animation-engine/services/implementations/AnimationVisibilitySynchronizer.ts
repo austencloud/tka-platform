@@ -5,7 +5,7 @@
  * animation visibility settings at once.
  */
 
-import { getAnimationVisibilityManager } from "../../state/animation-visibility-state.svelte";
+import { getAnimationVisibilityManager, type AnimationVisibilityStateManager } from "../../state/animation-visibility-state.svelte";
 import type {
   IAnimationVisibilitySynchronizer,
   AnimationVisibilityState,
@@ -13,11 +13,12 @@ import type {
 } from "../contracts/IAnimationVisibilitySynchronizer";
 
 export class AnimationVisibilitySynchronizer implements IAnimationVisibilitySynchronizer {
-  private manager = getAnimationVisibilityManager();
+  private manager: AnimationVisibilityStateManager;
   private callbacks: Set<VisibilityStateCallback> = new Set();
   private boundObserver: () => void;
 
-  constructor() {
+  constructor(managerOverride?: AnimationVisibilityStateManager) {
+    this.manager = managerOverride ?? getAnimationVisibilityManager();
     this.boundObserver = () => this.notifySubscribers();
     this.manager.registerObserver(this.boundObserver);
   }
