@@ -530,11 +530,15 @@
               families={selectedDeck.families}
               selectedFamilyIds={interiorFilters.familyIds}
               {cardSize}
-              {renderOptions}
               {isLoading}
               {isLargeDeck}
-              onCardClick={() => {}}
-              onRenderProgress={() => {}}
+              {handPointsVisible}
+              {showGrid}
+              {showTKA}
+              {showWord}
+              {includeStartPosition}
+              onSelectSequence={(seq) => onSelectSequence(seq)}
+              {onContextMenu}
             />
           </div>
         {:else}
