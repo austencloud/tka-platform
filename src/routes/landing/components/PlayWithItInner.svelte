@@ -496,50 +496,64 @@
 </script>
 
 <div class="play-inner">
-  <!-- Effect chips + prop switcher -->
-  <div class="controls-row">
-    <div class="effect-chips" role="radiogroup" aria-label="Visual effect">
-      {#each EFFECTS as effect}
-        <button
-          class="chip"
-          class:active={activeEffect === effect.id}
-          onclick={() => setEffect(effect.id)}
-          disabled={isDisabled}
-          role="radio"
-          aria-checked={activeEffect === effect.id}
-          aria-label="{effect.label} effect"
-          style="--chip-color: {effect.activeColor};"
-        >
-          <i class={effect.icon} aria-hidden="true"></i>
-          <span>{effect.label}</span>
-        </button>
-      {/each}
-    </div>
-
-    <button
-      class="prop-btn"
-      onclick={handleChangeProp}
-      disabled={isDisabled}
-      aria-label="Change prop type, currently {propLabel}"
-    >
-      <i class="fas fa-random" aria-hidden="true"></i>
-      <span>{propLabel}</span>
-    </button>
-
-    <button
-      class="effort-btn"
-      onclick={cycleEffort}
-      disabled={isDisabled}
-      aria-label="Cycle effort quality, currently {effortLabel}"
-      style="--effort-color: {effortColor};"
-    >
-      <i class="fas fa-wave-square" aria-hidden="true"></i>
-      <span>{effortLabel}</span>
-    </button>
-  </div>
-
-  <!-- Showcase: stacked canvas + beat strip -->
+  <!-- Unified showcase: toolbar + canvas + beat strip -->
   <div class="showcase">
+    <!-- Toolbar integrated into the top of the viewer -->
+    <div class="toolbar">
+      <div class="tb-group">
+        <span class="tb-label">Effect</span>
+        <div class="tb-pills" role="radiogroup" aria-label="Visual effect">
+          {#each EFFECTS as effect}
+            <button
+              class="tb-pill"
+              class:active={activeEffect === effect.id}
+              onclick={() => setEffect(effect.id)}
+              disabled={isDisabled}
+              role="radio"
+              aria-checked={activeEffect === effect.id}
+              aria-label="{effect.label} effect"
+              style="--chip-color: {effect.activeColor};"
+            >
+              <i class={effect.icon} aria-hidden="true"></i>
+              <span class="pill-text">{effect.label}</span>
+            </button>
+          {/each}
+        </div>
+      </div>
+
+      <div class="tb-spacer"></div>
+
+      <div class="tb-group">
+        <span class="tb-label">Prop</span>
+        <div class="tb-pills">
+          <button
+            class="tb-pill active"
+            onclick={handleChangeProp}
+            disabled={isDisabled}
+            aria-label="Change prop type, currently {propLabel}"
+          >
+            <i class="fas fa-random" aria-hidden="true"></i>
+            <span class="pill-text">{propLabel}</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="tb-group">
+        <span class="tb-label">Effort</span>
+        <div class="tb-pills">
+          <button
+            class="tb-pill active"
+            onclick={cycleEffort}
+            disabled={isDisabled}
+            aria-label="Cycle effort quality, currently {effortLabel}"
+            style="--chip-color: {effortColor};"
+          >
+            <i class="fas fa-wave-square" aria-hidden="true"></i>
+            <span class="pill-text">{effortLabel}</span>
+          </button>
+        </div>
+      </div>
+    </div>
     <div class="canvas-area">
       {#if animationReady && !isLoading}
         <div class="canvas-wrapper">
@@ -609,133 +623,75 @@
     width: 100%;
   }
 
-  /* ── Controls row ────────────────────────────────────────────────────────── */
-  .controls-row {
+  /* ── Toolbar (inside showcase container) ─────────────────────────────────── */
+  .toolbar {
     display: flex;
-    align-items: center;
-    gap: 16px;
+    align-items: flex-end;
+    gap: 14px;
     flex-wrap: wrap;
-    justify-content: center;
+    padding: 14px 18px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(0, 0, 0, 0.2);
   }
 
-  .effect-chips {
+  .tb-group {
     display: flex;
-    gap: 8px;
+    flex-direction: column;
+    gap: 5px;
   }
 
-  .chip {
+  .tb-label {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: rgba(255, 255, 255, 0.25);
+    padding-left: 2px;
+  }
+
+  .tb-pills {
+    display: flex;
+    gap: 4px;
+  }
+
+  .tb-spacer {
+    flex: 1;
+  }
+
+  .tb-pill {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    padding: 10px 20px;
-    min-height: 44px;
-    border-radius: 100px;
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-    font-size: var(--font-size-sm, 0.875rem);
+    gap: 5px;
+    padding: 6px 12px;
+    min-height: 34px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.02);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    font-family: var(--font-body, 'DM Sans', system-ui, sans-serif);
+    font-size: 12px;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.15s ease;
   }
 
-  .chip:hover:not(:disabled) {
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.25));
+  .tb-pill:hover:not(:disabled) {
+    border-color: rgba(255, 255, 255, 0.18);
     color: var(--theme-text, #fff);
-    background: rgba(255, 255, 255, 0.07);
   }
 
-  .chip.active {
-    background: color-mix(in srgb, var(--chip-color) 18%, transparent);
-    border-color: color-mix(in srgb, var(--chip-color) 50%, transparent);
-    color: var(--chip-color);
-    box-shadow: 0 0 14px color-mix(in srgb, var(--chip-color) 20%, transparent);
+  .tb-pill.active {
+    background: color-mix(in srgb, var(--chip-color, #d4813a) 15%, transparent);
+    border-color: color-mix(in srgb, var(--chip-color, #d4813a) 40%, transparent);
+    color: var(--chip-color, #d4813a);
   }
 
-  .chip.active:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--chip-color) 28%, transparent);
-    border-color: color-mix(in srgb, var(--chip-color) 65%, transparent);
-  }
-
-  .chip:disabled {
+  .tb-pill:disabled {
     opacity: 0.45;
     cursor: not-allowed;
   }
 
-  .chip i {
-    font-size: 14px;
-  }
-
-  /* ── Prop button ─────────────────────────────────────────────────────────── */
-  .prop-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 24px;
-    min-height: 44px;
-    border-radius: 100px;
-    border: 1.5px solid rgba(212, 129, 58, 0.35);
-    background: rgba(212, 129, 58, 0.1);
-    color: #d4813a;
-    font-size: var(--font-size-sm, 0.875rem);
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-
-  .prop-btn:hover:not(:disabled) {
-    background: rgba(212, 129, 58, 0.18);
-    border-color: rgba(212, 129, 58, 0.55);
-    box-shadow: 0 0 16px rgba(212, 129, 58, 0.15);
-  }
-
-  .prop-btn:active:not(:disabled) {
-    transform: scale(0.97);
-  }
-
-  .prop-btn:disabled {
-    opacity: 0.45;
-    cursor: not-allowed;
-  }
-
-  .prop-btn i {
-    font-size: 14px;
-  }
-
-  /* ── Effort button ──────────────────────────────────────────────────────── */
-  .effort-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 24px;
-    min-height: 44px;
-    border-radius: 100px;
-    border: 1.5px solid color-mix(in srgb, var(--effort-color) 35%, transparent);
-    background: color-mix(in srgb, var(--effort-color) 10%, transparent);
-    color: var(--effort-color);
-    font-size: var(--font-size-sm, 0.875rem);
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-
-  .effort-btn:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--effort-color) 18%, transparent);
-    border-color: color-mix(in srgb, var(--effort-color) 55%, transparent);
-    box-shadow: 0 0 16px color-mix(in srgb, var(--effort-color) 15%, transparent);
-  }
-
-  .effort-btn:active:not(:disabled) {
-    transform: scale(0.97);
-  }
-
-  .effort-btn:disabled {
-    opacity: 0.45;
-    cursor: not-allowed;
-  }
-
-  .effort-btn i {
-    font-size: 14px;
+  .tb-pill i {
+    font-size: 11px;
   }
 
   /* ── Showcase: stacked container ─────────────────────────────────────────── */
@@ -847,6 +803,29 @@
       max-height: 400px;
     }
 
+    .toolbar {
+      gap: 10px;
+      padding: 10px 12px;
+    }
+
+    .tb-spacer {
+      display: none;
+    }
+
+    .tb-pill {
+      padding: 5px 10px;
+      min-height: 30px;
+      font-size: 11px;
+    }
+
+    .pill-text {
+      display: none;
+    }
+
+    .tb-pill i {
+      font-size: 13px;
+    }
+
     .beat-cell {
       flex: 0 0 56px;
       width: 56px;
@@ -854,56 +833,10 @@
     }
   }
 
-  /* ── Mobile: tighter canvas ──────────────────────────────────────────────── */
-  @media (max-width: 600px) {
-    .controls-row {
-      gap: 8px;
-    }
-
-    .chip {
-      padding: 8px 14px;
-      font-size: var(--font-size-compact, 12px);
-      gap: 6px;
-    }
-
-    .prop-btn,
-    .effort-btn {
-      padding: 8px 16px;
-      font-size: var(--font-size-compact, 12px);
-    }
-
-    .canvas-wrapper {
-      width: min(340px, 90vw);
-      height: min(340px, 90vw);
-    }
-
-    .canvas-placeholder {
-      width: min(340px, 90vw);
-      height: min(340px, 90vw);
-    }
-
-    .notation-col {
-      max-height: 220px;
-      padding: 6px;
-    }
-
-    .notation-word {
-      font-size: 0.9rem;
-      padding: 2px 0;
-    }
-  }
-
   @media (prefers-reduced-motion: reduce) {
-    .chip,
-    .prop-btn,
-    .effort-btn,
-    .notation-cell {
+    .tb-pill,
+    .beat-cell {
       transition: none;
-    }
-
-    .prop-btn:active:not(:disabled),
-    .effort-btn:active:not(:disabled) {
-      transform: none;
     }
   }
 </style>
