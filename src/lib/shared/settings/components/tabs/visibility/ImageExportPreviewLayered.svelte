@@ -1,0 +1,457 @@
+<!--
+ImageExportPreviewLayered.svelte - Animated choreo card preview for visibility settings
+
+Simulates a full choreo card layout (header + sequence grid + footer) with fly/fade
+transitions that animate each section in and out as the user toggles visibility options.
+This gives users a live preview of exactly how their settings affect the exported image.
+-->
+<script lang="ts">
+  import { fly, fade, scale } from "svelte/transition";
+  import { cubicOut } from "svelte/easing";
+  import PictographWithVisibility from "$lib/shared/pictograph/shared/components/PictographWithVisibility.svelte";
+  import {
+    exampleStartPositionData,
+    getAabbPictographSteps,
+  } from "./example-data";
+  import { authState } from "$lib/shared/auth/state/authState.svelte";
+
+  interface Props {
+    showWord?: boolean;
+    showDifficultyLevel?: boolean;
+    includeStartPosition?: boolean;
+    showStepNumbers?: boolean;
+    showQRCode?: boolean;
+    showCreatorName?: boolean;
+    showNotes?: boolean;
+    showDate?: boolean;
+    customNotesText?: string;
+    darkMode?: boolean;
+    onToggleTKA?: () => void;
+    onToggleVTG?: () => void;
+    onToggleElemental?: () => void;
+    onTogglePositions?: () => void;
+    onToggleReversals?: () => void;
+    onToggleNonRadial?: () => void;
+  }
+
+  let {
+    showWord = true,
+    showDifficultyLevel = false,
+    includeStartPosition = false,
+    showStepNumbers = false,
+    showQRCode = false,
+    showCreatorName = false,
+    showNotes = false,
+    showDate = false,
+    customNotesText = "",
+    darkMode = false,
+    onToggleTKA = undefined,
+    onToggleVTG = undefined,
+    onToggleElemental = undefined,
+    onTogglePositions = undefined,
+    onToggleReversals = undefined,
+    onToggleNonRadial = undefined,
+  }: Props = $props();
+
+  const aabbSteps = getAabbPictographSteps();
+  const previewWord = "AABB";
+  const difficultyLevel = 2;
+
+  const showHeader = $derived(showWord || showDifficultyLevel);
+  const showFooter = $derived(showCreatorName || showNotes || showDate);
+
+  const birthdayDate = $derived(() => {
+    const date = new Date();
+    return `${date.getMonth() + 1}-${date.getDate()}-${date.getFullYear()}`;
+  });
+
+  const effectiveUserName = $derived(
+    authState.user?.displayName || "Your Name"
+  );
+
+  // Level badge visual styles — matches the actual choreo card print styles
+  const levelStyles: Record<
+    number,
+    { bg: string; border: string; text: string }
+  > = {
+    1: {
+      bg: "linear-gradient(135deg, #fff, #f5f5f5)",
+      border: "#000",
+      text: "#000",
+    },
+    2: {
+      bg: "linear-gradient(135deg, #d4d4d4, #a8a8a8)",
+      border: "#000",
+      text: "#000",
+    },
+    3: {
+      bg: "linear-gradient(135deg, #ffd700, #b8860b)",
+      border: "#000",
+      text: "#000",
+    },
+    4: {
+      bg: "linear-gradient(135deg, #c8a2c8, #9400d3)",
+      border: "#000",
+      text: "#000",
+    },
+    5: {
+      bg: "linear-gradient(135deg, #ff4500, #8b0000)",
+      border: "#000",
+      text: "#fff",
+    },
+  };
+  const defaultLevelStyle = {
+    bg: "linear-gradient(135deg, #fff, #f5f5f5)",
+    border: "#000",
+    text: "#000",
+  };
+  const currentLevelStyle = $derived(
+    levelStyles[difficultyLevel] ?? defaultLevelStyle
+  );
+</script>
+
+<div class="layered-preview" class:dark-mode={darkMode}>
+  <div class="preview-stack">
+    <!-- Header: word text + difficulty badge -->
+    {#if showHeader}
+      <div
+        class="header-section"
+        transition:fly={{ y: -20, duration: 250, easing: cubicOut }}
+      >
+        {#if showDifficultyLevel}
+          <div
+            class="difficulty-badge"
+            style="background: {currentLevelStyle.bg}; border-color: {currentLevelStyle.border}; color: {currentLevelStyle.text};"
+            transition:scale={{ duration: 200, easing: cubicOut }}
+          >
+            {difficultyLevel}
+          </div>
+        {/if}
+        {#if showWord}
+          <span class="word-text" transition:fade={{ duration: 200 }}>
+            {previewWord}
+          </span>
+        {/if}
+      </div>
+    {/if}
+
+    <!-- Grid: sequence strip with optional start position cell -->
+    <div class="grid-section">
+      {#if includeStartPosition}
+        <div
+          class="sequence-cell start-cell"
+          transition:fade={{ duration: 200 }}
+        >
+          <PictographWithVisibility
+            pictographData={exampleStartPositionData}
+            forceShowAll={true}
+          />
+        </div>
+      {/if}
+      {#each aabbSteps as step, i}
+        <div class="sequence-cell">
+          {#if showStepNumbers}
+            <span class="step-number">{i + 1}</span>
+          {/if}
+          <PictographWithVisibility
+            pictographData={step}
+            forceShowAll={false}
+            previewMode={true}
+            {onToggleTKA}
+            {onToggleVTG}
+            {onToggleElemental}
+            {onTogglePositions}
+            {onToggleReversals}
+            {onToggleNonRadial}
+          />
+        </div>
+      {/each}
+    </div>
+
+    <!-- QR code indicator — shows in the corner when enabled -->
+    {#if showQRCode}
+      <div class="qr-indicator" transition:fade={{ duration: 200 }}>
+        <i class="fas fa-qrcode" aria-hidden="true"></i>
+      </div>
+    {/if}
+
+    <!-- Footer: creator name (left), notes (center), date (right) -->
+    {#if showFooter}
+      <div
+        class="footer-section"
+        transition:fly={{ y: 20, duration: 250, easing: cubicOut }}
+      >
+        {#if showCreatorName}
+          <span
+            class="footer-name"
+            transition:fly={{ x: -20, duration: 200, easing: cubicOut }}
+          >
+            {effectiveUserName}
+          </span>
+        {/if}
+        {#if showNotes}
+          <span class="footer-notes" transition:fade={{ duration: 200 }}>
+            {customNotesText}
+          </span>
+        {/if}
+        {#if showDate}
+          <span
+            class="footer-date"
+            transition:fly={{ x: 20, duration: 200, easing: cubicOut }}
+          >
+            {birthdayDate()}
+          </span>
+        {/if}
+      </div>
+    {/if}
+  </div>
+</div>
+
+<style>
+  .layered-preview {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .preview-stack {
+    display: flex;
+    flex-direction: column;
+    max-width: 100%;
+    max-height: 100%;
+    background: rgba(245, 245, 245, 0.98);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    position: relative;
+  }
+
+  .dark-mode .preview-stack {
+    background: rgba(10, 10, 15, 0.98);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  }
+
+  .header-section {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: clamp(24px, 8cqi, 36px);
+    background: rgba(245, 245, 245, 0.98);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    flex-shrink: 0;
+    padding: 0 8px;
+  }
+
+  .dark-mode .header-section {
+    background: rgba(10, 10, 15, 0.98);
+    border-bottom-color: rgba(255, 255, 255, 0.15);
+  }
+
+  .difficulty-badge {
+    position: absolute;
+    left: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: clamp(18px, 6cqi, 28px);
+    height: clamp(18px, 6cqi, 28px);
+    border-radius: 50%;
+    border: 1px solid black;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: Georgia, serif;
+    font-weight: bold;
+    font-size: clamp(10px, 3cqi, 14px);
+    flex-shrink: 0;
+  }
+
+  .word-text {
+    font-family: Georgia, serif;
+    font-weight: 700;
+    font-size: clamp(12px, 4cqi, 18px);
+    color: #1f2937;
+    text-transform: uppercase;
+  }
+
+  .dark-mode .word-text {
+    color: #ffffff;
+  }
+
+  .grid-section {
+    display: flex;
+    background: rgba(255, 255, 255, 1);
+    min-height: 0;
+  }
+
+  .dark-mode .grid-section {
+    background: rgba(20, 20, 25, 1);
+  }
+
+  .sequence-cell {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    aspect-ratio: 1;
+    min-width: 0;
+    border-right: 1px solid rgba(0, 0, 0, 0.08);
+  }
+
+  .sequence-cell:last-child {
+    border-right: none;
+  }
+
+  .dark-mode .sequence-cell {
+    border-right-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .sequence-cell.start-cell {
+    flex: 1;
+    background: rgba(250, 250, 250, 1);
+  }
+
+  .dark-mode .sequence-cell.start-cell {
+    background: rgba(25, 25, 30, 1);
+  }
+
+  /* Force pictograph children to fill the cell completely */
+  .sequence-cell :global(.pictograph-with-visibility),
+  .sequence-cell :global(.pictograph),
+  .sequence-cell :global(svg.pictograph) {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100%;
+    max-height: 100%;
+  }
+
+  .step-number {
+    position: absolute;
+    bottom: 2px;
+    left: 4px;
+    font-size: clamp(8px, 2cqi, 11px);
+    font-weight: 600;
+    color: rgba(0, 0, 0, 0.4);
+    font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    z-index: 1;
+  }
+
+  .dark-mode .step-number {
+    color: rgba(255, 255, 255, 0.4);
+  }
+
+  /* QR code icon — absolute-positioned in bottom-right corner */
+  .qr-indicator {
+    position: absolute;
+    bottom: 4px;
+    right: 4px;
+    font-size: clamp(10px, 3cqi, 16px);
+    color: rgba(0, 0, 0, 0.3);
+    z-index: 1;
+  }
+
+  .dark-mode .qr-indicator {
+    color: rgba(255, 255, 255, 0.3);
+  }
+
+  .footer-section {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: clamp(18px, 5cqi, 26px);
+    padding: 0 clamp(4px, 1.5cqi, 8px);
+    background: rgba(245, 245, 245, 0.98);
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+    font-family: Georgia, serif;
+    font-size: clamp(8px, 2.5cqi, 11px);
+    color: black;
+    flex-shrink: 0;
+    gap: 4px;
+  }
+
+  .dark-mode .footer-section {
+    background: rgba(10, 10, 15, 0.98);
+    border-top-color: rgba(255, 255, 255, 0.15);
+    color: white;
+  }
+
+  .footer-name {
+    font-weight: bold;
+    flex-shrink: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 30%;
+  }
+
+  .footer-notes {
+    flex: 1;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .footer-date {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  /*
+   * In preview mode, glyphs that are toggled off should be fully hidden
+   * (opacity 0), not just dimmed. The parent preview mode dims them;
+   * we override that here to match the actual export behavior.
+   */
+  .sequence-cell :global(.tka-glyph.preview-mode:not(.visible)),
+  .sequence-cell :global(.turns-column.preview-mode:not(.visible)),
+  .sequence-cell :global(.vtg-glyph.preview-mode:not(.visible)),
+  .sequence-cell :global(.elemental-glyph.preview-mode:not(.visible)),
+  .sequence-cell :global(.position-glyph.preview-mode:not(.visible)),
+  .sequence-cell :global(.reversal-indicators.preview-mode:not(.visible)) {
+    opacity: 0 !important;
+  }
+
+  .sequence-cell
+    :global(.grid-container.preview-mode.hide-inactive-hand-points .hand-point-inactive) {
+    opacity: 0 !important;
+  }
+
+  .sequence-cell
+    :global(
+      .grid-container.preview-mode:not(.show-non-radial) #ne_diamond_layer2_point
+    ),
+  .sequence-cell
+    :global(
+      .grid-container.preview-mode:not(.show-non-radial) #se_diamond_layer2_point
+    ),
+  .sequence-cell
+    :global(
+      .grid-container.preview-mode:not(.show-non-radial) #sw_diamond_layer2_point
+    ),
+  .sequence-cell
+    :global(
+      .grid-container.preview-mode:not(.show-non-radial) #nw_diamond_layer2_point
+    ) {
+    opacity: 0 !important;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .header-section,
+    .footer-section,
+    .difficulty-badge,
+    .word-text,
+    .footer-name,
+    .footer-notes,
+    .footer-date,
+    .sequence-cell {
+      transition: opacity 200ms ease;
+    }
+  }
+</style>
