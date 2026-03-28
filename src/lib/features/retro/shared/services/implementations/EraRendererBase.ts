@@ -51,7 +51,7 @@ export abstract class EraRendererBase {
 
 		return {
 			id: `retro_${data.letter}_${Date.now()}`,
-			letter: typeof data.letter === "string" ? null : data.letter,
+			letter: data.letter as any,
 			motions: {
 				[MotionColor.BLUE]: blueMotion,
 				[MotionColor.RED]: redMotion,
