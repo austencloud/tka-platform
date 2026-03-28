@@ -35,6 +35,7 @@
   import { createStartPositionFromBeatStart } from "$lib/features/create/shared/services/implementations/sequence-transforms/sequence-transforms";
   import { RANDOM_PROPS } from "../landing-content";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
+  import BpmChips from "$lib/features/compose/components/controls/BpmChips.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { EFFORTS, type EffortId as EffortPresetId } from "$lib/features/effort-lab/domain/effort-types";
   import type { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -122,10 +123,7 @@
   // Ephemeral: no localStorage persistence, no global dark-class sync.
   const visibilityManager = new AnimationVisibilityStateManager({ ephemeral: true });
 
-  // BPM state — local to this landing section (default 60, step 15, range 30-180)
-  const BPM_MIN = 30;
-  const BPM_MAX = 180;
-  const BPM_STEP = 15;
+  // BPM state — local to this landing section
   let bpm = $state(60);
 
   // Effort state — cycles through available effort presets
@@ -134,6 +132,28 @@
   const EFFORT_COLORS: Record<EffortPresetId, string> = Object.fromEntries(
     EFFORTS.map((e) => [e.id, e.color])
   ) as Record<EffortPresetId, string>;
+
+  // Sync toolbar buttons when the context menu (or anything else) changes the
+  // visibility manager directly. Without this, the buttons show stale state
+  // because they only tracked their own local $state variables.
+  function deriveEffectFromManager(): EffectId {
+    const s = visibilityManager.getSettings();
+    if (s.fireEffect) return "fire";
+    if (s.charcoalEffect) return "charcoal";
+    if (s.ledEffect) return "led";
+    if (s.trailStyle !== "off") return "trails";
+    return "clean";
+  }
+
+  $effect(() => {
+    function onVisibilityChange() {
+      activeEffect = deriveEffectFromManager();
+      activeEffort = visibilityManager.getEffortPreset();
+    }
+
+    visibilityManager.registerObserver(onVisibilityChange);
+    return () => visibilityManager.unregisterObserver(onVisibilityChange);
+  });
 
   // ── Derived values for AnimatorCanvas ───────────────────────────────────────
   let derivedStartPosition = $derived.by(() => {
@@ -341,16 +361,8 @@
   }
 
   // ── BPM control ─────────────────────────────────────────────────────────────
-  function decreaseBpm() {
-    const next = Math.max(BPM_MIN, bpm - BPM_STEP);
-    bpm = next;
-    animationSettings.setBpm(next);
-  }
-
-  function increaseBpm() {
-    const next = Math.min(BPM_MAX, bpm + BPM_STEP);
-    bpm = next;
-    animationSettings.setBpm(next);
+  function handleBpmChange(newBpm: number) {
+    animationSettings.setBpm(newBpm);
   }
 
   // ── Sequence loading ────────────────────────────────────────────────────────
@@ -657,26 +669,15 @@
         </div>
       </div>
 
-      <div class="tb-group">
+      <div class="tb-group bpm-group">
         <span class="tb-label">Speed</span>
-        <div class="tb-pills bpm-stepper">
-          <button
-            class="tb-pill"
-            onclick={decreaseBpm}
-            disabled={isDisabled || bpm <= BPM_MIN}
-            aria-label="Decrease speed"
-          >−</button>
-          <span class="bpm-value">{bpm}</span>
-          <button
-            class="tb-pill"
-            onclick={increaseBpm}
-            disabled={isDisabled || bpm >= BPM_MAX}
-            aria-label="Increase speed"
-          >+</button>
-        </div>
+        <BpmChips bind:bpm variant="compact" onBpmChange={handleBpmChange} min={30} max={180} />
       </div>
     </div>
     <div class="canvas-area">
+      {#if displayWord}
+        <div class="word-label">{displayWord}</div>
+      {/if}
       {#if animationReady && !isLoading}
         <div class="canvas-wrapper">
           <AnimatorCanvas
@@ -826,18 +827,9 @@
     line-height: 1;
   }
 
-  /* BPM stepper: align value display with the buttons */
-  .bpm-stepper {
-    align-items: center;
-  }
-
-  .bpm-value {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    min-width: 36px;
-    text-align: center;
-    font-variant-numeric: tabular-nums;
+  /* BPM group: constrain width so chips don't stretch the toolbar */
+  .bpm-group {
+    min-width: 0;
   }
 
   /* ── Showcase: stacked container ─────────────────────────────────────────── */
@@ -855,12 +847,31 @@
   }
 
   .canvas-area {
+    position: relative;
     width: 100%;
     aspect-ratio: 1;
     max-height: 640px;
     display: flex;
     align-items: center;
     justify-content: center;
+  }
+
+  .word-label {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    padding: 4px 14px;
+    border-radius: 20px;
+    background: rgba(0, 0, 0, 0.55);
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 700;
+    font-family: var(--font-body, 'DM Sans', system-ui, sans-serif);
+    letter-spacing: 0.05em;
+    pointer-events: none;
+    white-space: nowrap;
   }
 
   .canvas-wrapper {
