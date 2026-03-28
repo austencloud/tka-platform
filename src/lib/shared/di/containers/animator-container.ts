@@ -39,6 +39,7 @@ import { PropInterpolator } from "$lib/features/compose/services/implementations
 import { SequenceAnimationOrchestrator } from "$lib/features/compose/services/implementations/SequenceAnimationOrchestrator";
 import { AnimationPlaybackController } from "$lib/features/compose/services/implementations/AnimationPlaybackController";
 import { SequenceLoopabilityChecker } from "$lib/features/compose/services/implementations/SequenceLoopabilityChecker";
+import { AnimationPlaybackControllerFactory } from "$lib/features/compose/services/implementations/AnimationPlaybackControllerFactory";
 
 // === TIER 2: External dependencies (require other containers) ===
 import { CompositeVideoRenderer } from "$lib/features/compose/services/implementations/CompositeVideoRenderer";
@@ -131,6 +132,10 @@ export function createAnimatorContainer(externalDeps: AnimatorContainerDependenc
         new AnimationPlaybackController(
           ctx.sequenceAnimationOrchestrator,
           ctx.animationLoop,
+          externalDeps.sequenceLoopabilityChecker
+        ),
+      animationPlaybackControllerFactory: () =>
+        new AnimationPlaybackControllerFactory(
           externalDeps.sequenceLoopabilityChecker
         ),
     }))
