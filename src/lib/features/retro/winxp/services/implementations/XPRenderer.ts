@@ -53,7 +53,7 @@ const GRID_POINTS = {
 // Grid visual style
 const GRID_LINE_COLOR = "#C0C0C0";
 const GRID_DOT_COLOR = "#A0A0A0";
-const GRID_DOT_RADIUS_VB = 14; // In viewBox units — will be scaled to canvas
+const GRID_DOT_RADIUS_VB = 25; // Matches Canvas2DDirectRenderer.BASE_GRID_POINTS radius
 
 // XP-era prop colors (brighter, more saturated than the modern defaults)
 const BLUE_COLOR = "#3366EE";
