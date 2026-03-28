@@ -118,6 +118,12 @@
   let activeEffect = $state<EffectId>("trails");
   const visibilityManager = getAnimationVisibilityManager();
 
+  // BPM state — local to this landing section (default 60, step 15, range 30-180)
+  const BPM_MIN = 30;
+  const BPM_MAX = 180;
+  const BPM_STEP = 15;
+  let bpm = $state(60);
+
   // Effort state — cycles through available effort presets
   let activeEffort = $state<EffortPresetId>("linear");
   const EFFORT_CYCLE: EffortPresetId[] = EFFORTS.map((e) => e.id);
@@ -212,6 +218,8 @@
   onMount(async () => {
     try {
       animationSettings.setTrackingMode(TrackingMode.BOTH_ENDS);
+      // Set landing-page default BPM (60 feels comfortable for visitors)
+      animationSettings.setBpm(bpm);
 
       // Dark mode on for visual impact
       visibilityManager.setDarkMode(true);
@@ -319,6 +327,25 @@
     const next = EFFORT_CYCLE[(idx + 1) % EFFORT_CYCLE.length]!;
     activeEffort = next;
     visibilityManager.setEffortPreset(next);
+  }
+
+  // ── Play / Pause ────────────────────────────────────────────────────────────
+  function togglePlayPause() {
+    if (!playbackController) return;
+    playbackController.togglePlayback();
+  }
+
+  // ── BPM control ─────────────────────────────────────────────────────────────
+  function decreaseBpm() {
+    const next = Math.max(BPM_MIN, bpm - BPM_STEP);
+    bpm = next;
+    animationSettings.setBpm(next);
+  }
+
+  function increaseBpm() {
+    const next = Math.min(BPM_MAX, bpm + BPM_STEP);
+    bpm = next;
+    animationSettings.setBpm(next);
   }
 
   // ── Sequence loading ────────────────────────────────────────────────────────
@@ -493,6 +520,53 @@
       activeCell.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
     }
   });
+
+  // ── Beat strip virtualization ─────────────────────────────────────────────
+  // Only render PictographContainers for cells that are actually visible in the
+  // scrollable strip. Each cell is 72px wide with a 6px gap = 78px per slot.
+  // We keep a 2-cell buffer on each side so pictographs are already rendered
+  // when the user scrolls to them.
+  const CELL_SIZE = 78; // 72px cell + 6px gap
+  const BUFFER = 2;
+
+  let stripScrollLeft = $state(0);
+  let stripContainerWidth = $state(800);
+
+  let visibleRange = $derived.by(() => {
+    const start = Math.max(0, Math.floor(stripScrollLeft / CELL_SIZE) - BUFFER);
+    const end = Math.min(
+      notationCells.length,
+      Math.ceil((stripScrollLeft + stripContainerWidth) / CELL_SIZE) + BUFFER
+    );
+    return { start, end };
+  });
+
+  // Wire scroll + resize tracking to the beat-strip element.
+  $effect(() => {
+    const el = beatStripEl;
+    if (!el) return;
+
+    // Capture initial dimensions
+    stripContainerWidth = el.clientWidth;
+    stripScrollLeft = el.scrollLeft;
+
+    function onScroll() {
+      stripScrollLeft = el.scrollLeft;
+    }
+
+    const ro = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (entry) stripContainerWidth = entry.contentRect.width;
+    });
+
+    el.addEventListener('scroll', onScroll, { passive: true });
+    ro.observe(el);
+
+    return () => {
+      el.removeEventListener('scroll', onScroll);
+      ro.disconnect();
+    };
+  });
 </script>
 
 <div class="play-inner">
@@ -500,6 +574,27 @@
   <div class="showcase">
     <!-- Toolbar integrated into the top of the viewer -->
     <div class="toolbar">
+      <div class="tb-group">
+        <span class="tb-label">Playback</span>
+        <div class="tb-pills">
+          <button
+            class="tb-pill"
+            class:active={animationState.isPlaying}
+            onclick={togglePlayPause}
+            disabled={isDisabled || !animationReady}
+            aria-label={animationState.isPlaying ? "Pause animation" : "Play animation"}
+            style="--chip-color: #d4813a;"
+          >
+            {#if animationState.isPlaying}
+              <span class="playback-icon" aria-hidden="true">⏸</span>
+            {:else}
+              <span class="playback-icon" aria-hidden="true">▶</span>
+            {/if}
+            <span class="pill-text">{animationState.isPlaying ? "Pause" : "Play"}</span>
+          </button>
+        </div>
+      </div>
+
       <div class="tb-group">
         <span class="tb-label">Effect</span>
         <div class="tb-pills" role="radiogroup" aria-label="Visual effect">
@@ -553,6 +648,25 @@
           </button>
         </div>
       </div>
+
+      <div class="tb-group">
+        <span class="tb-label">Speed</span>
+        <div class="tb-pills bpm-stepper">
+          <button
+            class="tb-pill"
+            onclick={decreaseBpm}
+            disabled={isDisabled || bpm <= BPM_MIN}
+            aria-label="Decrease speed"
+          >−</button>
+          <span class="bpm-value">{bpm}</span>
+          <button
+            class="tb-pill"
+            onclick={increaseBpm}
+            disabled={isDisabled || bpm >= BPM_MAX}
+            aria-label="Increase speed"
+          >+</button>
+        </div>
+      </div>
     </div>
     <div class="canvas-area">
       {#if animationReady && !isLoading}
@@ -590,24 +704,28 @@
     <!-- Beat strip below the canvas -->
     {#if animationState.sequenceData && notationCells.length > 0}
       <div class="beat-strip" bind:this={beatStripEl}>
-        {#each notationCells as cell (cell.key)}
+        {#each notationCells as cell, i (cell.key)}
           {@const isActive = animationState.isPlaying && (
             cell.isStart
               ? currentStepNumber === 0
               : currentStepNumber === cell.beatIndex
           )}
-          <div class="beat-cell" class:active={isActive} class:start-cell={cell.isStart}>
-            <div class="beat-pictograph">
-              <PictographContainer
-                pictographData={cell.data}
-                darkMode={true}
-                disableTransitions={true}
-                disableContentTransitions={true}
-                bluePropTypeOverride={currentPropType}
-                redPropTypeOverride={currentPropType}
-              />
+          {#if i >= visibleRange.start && i < visibleRange.end}
+            <div class="beat-cell" class:active={isActive} class:start-cell={cell.isStart}>
+              <div class="beat-pictograph">
+                <PictographContainer
+                  pictographData={cell.data}
+                  darkMode={true}
+                  disableTransitions={true}
+                  disableContentTransitions={true}
+                  bluePropTypeOverride={currentPropType}
+                  redPropTypeOverride={currentPropType}
+                />
+              </div>
             </div>
-          </div>
+          {:else}
+            <div class="beat-cell beat-cell-placeholder" aria-hidden="true"></div>
+          {/if}
         {/each}
       </div>
     {/if}
@@ -692,6 +810,25 @@
 
   .tb-pill i {
     font-size: 11px;
+  }
+
+  .playback-icon {
+    font-size: 12px;
+    line-height: 1;
+  }
+
+  /* BPM stepper: align value display with the buttons */
+  .bpm-stepper {
+    align-items: center;
+  }
+
+  .bpm-value {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    min-width: 36px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
   }
 
   /* ── Showcase: stacked container ─────────────────────────────────────────── */
@@ -790,6 +927,15 @@
   .beat-pictograph {
     width: 100%;
     height: 100%;
+  }
+
+  /* Off-screen placeholder: same dimensions as a real cell, no border or content.
+     Keeps the scrollable width correct while the PictographContainer is unmounted. */
+  .beat-cell-placeholder {
+    border-color: transparent;
+    box-shadow: none;
+    background: transparent;
+    pointer-events: none;
   }
 
   /* ── Responsive ────────────────────────────────────────────────────────── */
