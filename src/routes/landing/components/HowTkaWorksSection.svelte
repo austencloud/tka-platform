@@ -8,7 +8,7 @@
    * 3. Add props (staves appear at the hand positions)
    * 4. Add motion (arrows + letter glyph = one full pictograph)
    * 5. String them together (ChoreoCard showing the full sequence)
-   * 6. Watch it move (animation placeholder)
+   * 6. Watch it move (live animation canvas)
    *
    * All six cards derive from the same loaded AABB sequence.
    */
@@ -23,8 +23,9 @@
   import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
-  import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
+  import { Letter } from "$lib/shared/foundation/domain/models/Letter";
   import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
+  import HowTkaAnimationCard from "./HowTkaAnimationCard.svelte";
 
   interface Props {
     propType?: PropType;
@@ -90,11 +91,11 @@
         motions: {},
       };
 
-      // Card 2: grid + hands (prop type = HAND, no arrows)
+      // Card 2: grid + hands (prop type = HAND, no arrows), alpha glyph
       if (startPos) {
         gridOnlyData = {
           id: "how-hands",
-          letter: undefined,
+          letter: Letter.ALPHA,
           startPosition: startPos.startPosition,
           endPosition: startPos.endPosition,
           motions: {
@@ -104,11 +105,11 @@
         };
       }
 
-      // Card 3: start position with props visible (static motions = props shown)
+      // Card 3: start position with props visible (static motions = props shown), alpha glyph
       if (startPos) {
         propsData = {
           id: startPos.id ?? "how-props",
-          letter: undefined,
+          letter: Letter.ALPHA,
           startPosition: startPos.startPosition,
           endPosition: startPos.endPosition,
           motions: {
@@ -177,9 +178,9 @@
               gridMode={GridMode.DIAMOND}
               bluePropTypeOverride={PropType.HAND}
               redPropTypeOverride={PropType.HAND}
-              showTKA={false}
+              showTKA={true}
               showReversals={false}
-              showPositions={true}
+              showPositions={false}
               darkMode={true}
               disableTransitions={true}
             />
@@ -199,7 +200,7 @@
               gridMode={GridMode.DIAMOND}
               bluePropTypeOverride={propType}
               redPropTypeOverride={propType}
-              showTKA={false}
+              showTKA={true}
               showReversals={false}
               showPositions={false}
               darkMode={true}
@@ -226,7 +227,7 @@
               redPropTypeOverride={propType}
               showTKA={true}
               showReversals={false}
-              showPositions={false}
+              showPositions={true}
               darkMode={true}
               disableTransitions={true}
             />
@@ -239,12 +240,11 @@
       <!-- Card 5: Full sequence -->
       <div class="step-card wide-card">
         <span class="step-badge">5</span>
-        <span class="sequence-word">{sequence.word}</span>
         <div class="sequence-frame">
           <ChoreoCard
             {sequence}
             darkMode={true}
-            columnCount={4}
+            columnCount={2}
             bluePropType={propType}
             redPropType={propType}
             showDifficultyLevel={false}
@@ -258,19 +258,14 @@
         <p>Each cell is one beat. Read left to right. Four beats spell a word.</p>
       </div>
 
-      <!-- Card 6: Animation placeholder -->
+      <!-- Card 6: Live animation -->
       <div class="step-card">
         <span class="step-badge">6</span>
         <div class="animation-frame">
-          <div class="animation-placeholder">
-            <div class="play-icon-wrap">
-              <i class="fas fa-play" aria-hidden="true"></i>
-            </div>
-            <span>Tap to play</span>
-          </div>
+          <HowTkaAnimationCard {sequence} {propType} />
         </div>
         <h3>Watch it move</h3>
-        <p>Play the sequence back as an animation to see the full movement.</p>
+        <p>The sequence plays back as a looping animation.</p>
       </div>
     </div>
   </section>
@@ -355,15 +350,7 @@
     overflow: hidden;
   }
 
-  /* Word label above ChoreoCard in card 4 */
-  .sequence-word {
-    font-family: var(--font-heading, "Instrument Serif");
-    letter-spacing: 0.1em;
-    color: var(--text-dim);
-    text-align: center;
-  }
-
-  /* ChoreoCard frame for card 4 */
+  /* ChoreoCard frame for card 5 */
   .sequence-frame {
     width: 100%;
     height: clamp(140px, 25vw, 220px);
@@ -371,55 +358,13 @@
     overflow: hidden;
   }
 
-  /* Animation placeholder for card 5 */
+  /* Animation canvas for card 6 */
   .animation-frame {
     width: 100%;
-    height: clamp(140px, 25vw, 220px);
+    max-width: 200px;
+    aspect-ratio: 1;
     border-radius: 8px;
     overflow: hidden;
-  }
-
-  .animation-placeholder {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    background: rgba(0, 0, 0, 0.3);
-    border: 1px dashed rgba(212, 129, 58, 0.2);
-    border-radius: 8px;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
-    font-size: var(--font-size-sm, 0.875rem);
-  }
-
-  .play-icon-wrap {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    border: 2px solid rgba(212, 129, 58, 0.35);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    animation: pulse-ring 2.4s ease-in-out infinite;
-  }
-
-  .play-icon-wrap i {
-    font-size: 1.1rem;
-    color: rgba(212, 129, 58, 0.6);
-    margin-left: 3px; /* optical center for play triangle */
-  }
-
-  @keyframes pulse-ring {
-    0%, 100% {
-      border-color: rgba(212, 129, 58, 0.2);
-      box-shadow: 0 0 0 0 rgba(212, 129, 58, 0);
-    }
-    50% {
-      border-color: rgba(212, 129, 58, 0.5);
-      box-shadow: 0 0 0 8px rgba(212, 129, 58, 0.06);
-    }
   }
 
   /* Card text */
@@ -473,10 +418,6 @@
   @media (prefers-reduced-motion: reduce) {
     .step-card {
       transition: none;
-    }
-
-    .play-icon-wrap {
-      animation: none;
     }
   }
 </style>
