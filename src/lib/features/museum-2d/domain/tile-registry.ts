@@ -17,7 +17,7 @@ const TILE_REGISTRY: Record<TileType, TileMetadata> = {
   "exhibit-panel":     { walkable: false, interactable: true,  solid: true,  renders3D: true,  cssClass: "tile-exhibit",   label: "Exhibit", icon: "fa-image" },
   "performer-station": { walkable: false, interactable: true,  solid: true,  renders3D: true,  cssClass: "tile-performer", label: "Performer", icon: "fa-person" },
   torch:               { walkable: false, interactable: false, solid: false, renders3D: true,  cssClass: "tile-torch",     label: "Torch", icon: "fa-fire" },
-  pedestal:            { walkable: false, interactable: true,  solid: true,  renders3D: true,  cssClass: "tile-pedestal",  label: "Pedestal" },
+  pedestal:            { walkable: false, interactable: true,  solid: true,  renders3D: true,  cssClass: "tile-pedestal",  label: "Pedestal", icon: "fa-cube" },
   trigger:             { walkable: true,  interactable: false, solid: false, renders3D: false, cssClass: "tile-trigger",   label: "Trigger" },
   corridor:            { walkable: true,  interactable: false, solid: false, renders3D: true,  cssClass: "tile-corridor",  label: "Corridor" },
 };
