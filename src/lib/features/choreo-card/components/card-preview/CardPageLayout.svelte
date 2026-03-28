@@ -164,7 +164,7 @@
     width: 100%;
     height: 100%;
     align-content: start;
-    justify-content: center;
+    justify-content: start;
   }
 
   .card-slot {
