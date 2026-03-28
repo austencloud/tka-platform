@@ -284,7 +284,9 @@ describe("RoomGeometryBuilder", () => {
 			expect(solved.spawnPoint.z).toBeCloseTo(snapToGrid(D - T - 2), 1);
 			// Centered on X
 			expect(solved.spawnPoint.x).toBeCloseTo(snapToGrid(W / 2), 1);
-			expect(solved.spawnPoint.y).toBe(0);
+			// Y is above floor so the player capsule starts with feet on the ground.
+			// floor top = 0.25, capsule center = floorTop + halfHeight + radius, snapped to 0.5 grid → 1.0
+			expect(solved.spawnPoint.y).toBeCloseTo(1.0, 3);
 		});
 
 		it("spawnFacing is a number in radians", () => {

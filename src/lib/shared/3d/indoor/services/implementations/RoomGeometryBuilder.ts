@@ -22,6 +22,7 @@ import type {
 	WallMaterialId,
 } from "../../domain/room-types";
 import { GRID_CELL, snapToGrid } from "../../domain/room-types";
+import { DEFAULT_PLAYER_CONFIG } from "$lib/shared/3d/physics/types";
 
 type Vec3 = [number, number, number];
 
@@ -562,7 +563,17 @@ export class RoomGeometryBuilder implements IRoomGeometryBuilder {
 				break;
 		}
 
-		return { x, y: 0, z: z! };
+		// The floor collider center sits at y=0 with half-thickness 0.25, so its
+		// top surface is at y=0.25. The Rapier capsule is positioned by its center,
+		// so we need center = floorTop + halfHeight + radius to place feet on the
+		// floor. We snap to grid (0.5m resolution) which yields 1.0m — well above
+		// the floor top, but the character controller's snapToGround setting handles
+		// the last fraction of a meter.
+		const floorTopY = 0.25; // floor box: center y=0, half-thickness=0.25
+		const spawnY = snapToGrid(
+			floorTopY + DEFAULT_PLAYER_CONFIG.halfHeight + DEFAULT_PLAYER_CONFIG.radius,
+		);
+		return { x, y: spawnY, z: z! };
 	}
 
 	private resolveFacing(facing: WallId): number {
