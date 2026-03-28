@@ -4,7 +4,7 @@
   import { BackgroundType } from "@austencloud/backgrounds";
   import { applyThemeForBackground } from "$lib/shared/settings/utils/background-theme-calculator";
   import HeroCarouselSection from "./landing/components/HeroCarouselSection.svelte";
-  import HowTkaWorksSection from "./landing/components/HowTkaWorksSection.svelte";
+  import LazyHowTkaWorksSection from "./landing/components/LazyHowTkaWorksSection.svelte";
   import WhatsHereSectionV2 from "./landing/components/WhatsHereSectionV2.svelte";
   import PlayWithItSection from "./landing/components/PlayWithItSection.svelte";
   import GuidesSection from "./landing/components/GuidesSection.svelte";
@@ -42,6 +42,7 @@
 
 <svelte:head>
   <!-- Instrument Serif for landing page headings -->
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Instrument+Serif&display=swap" as="style" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
   <link
@@ -350,7 +351,7 @@
     <main id="main-content">
       <hr class="divider" />
       <div class="scroll-reveal">
-        <HowTkaWorksSection />
+        <LazyHowTkaWorksSection />
       </div>
       <hr class="divider" />
       <div class="scroll-reveal">
