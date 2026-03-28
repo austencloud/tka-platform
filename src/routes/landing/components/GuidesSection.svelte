@@ -103,7 +103,7 @@
   }
 
   .guide-card {
-    background: rgba(255, 240, 220, 0.04);
+    background: rgba(18, 16, 14, 0.85);
     border: 1px solid rgba(255, 255, 255, 0.07);
     border-radius: 10px;
     overflow: hidden;
