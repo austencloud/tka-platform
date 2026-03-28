@@ -105,25 +105,27 @@
         };
       }
 
-      // Card 3: start position with props visible (static motions = props shown), alpha glyph
+      // Card 3: start position with props visible (static motions = props shown), alpha glyph, "Start" label
       if (startPos) {
         propsData = {
           id: startPos.id ?? "how-props",
           letter: Letter.ALPHA,
+          stepNumber: 0, // 0 = start position indicator
           startPosition: startPos.startPosition,
           endPosition: startPos.endPosition,
           motions: {
             blue: forceProps(startPos.motions?.blue),
             red: forceProps(startPos.motions?.red),
           },
-        };
+        } as PictographData;
       }
 
-      // Card 4: first beat with full pictograph
+      // Card 4: first beat with full pictograph, beat "1" at top-left
       if (firstStep) {
         motionData = {
           id: firstStep.id ?? "how-motion",
           letter: (firstStep.letter || undefined) as Letter | undefined,
+          stepNumber: 1, // Beat 1 of the sequence
           startPosition: firstStep.startPosition,
           endPosition: firstStep.endPosition,
           motions: {
