@@ -1,0 +1,21 @@
+{
+  "name": "@tka/render-composition",
+  "version": "0.1.0",
+  "description": "Shared choreo card composition — headers, footers, badges, LOOP icons, layout. Used by both app and MCP.",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "vitest": "^3.0.0"
+  }
+}
