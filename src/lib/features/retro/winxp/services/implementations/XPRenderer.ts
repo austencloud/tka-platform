@@ -103,8 +103,8 @@ export class XPRenderer extends EraRendererBase implements IEraRenderer {
 
 		const scale = this.getScale(size);
 
-		this.drawGrid(ctx, scale, data.gridMode);
 		this.drawHandPoints(ctx, scale, data.gridMode);
+		this.drawGrid(ctx, scale, data.gridMode);
 		await this.drawProps(ctx, prepared, scale);
 		await this.drawArrows(ctx, prepared, scale);
 		this.drawLetter(ctx, String(data.letter), scale, size);
