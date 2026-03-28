@@ -1,29 +1,28 @@
 /**
- * PixelRenderer — 16-color dithered canvas renderer for retro pictographs
+ * PixelRenderer — 1995 Win95 pixel pictograph renderer.
  *
- * Renders TKA pictograph data as chunky pixel art on an HTML canvas,
- * using the Windows 16-color palette with 4x4 Bayer matrix ordered
- * dithering for intermediate colors.
+ * Renders TKA pictographs at 128×128 using era-native drawing:
+ *   - Flat gray grid (no anti-aliasing, no shadows)
+ *   - Blue/red staves tinted to Win16 palette colors
+ *   - Arrows tinted to Win16 palette colors
+ *   - Flat gray hand dots (no gloss, no highlight layers)
+ *   - Black monospace letter in the bottom-left corner
+ *   - 1px solid black border
+ *   - Bayer 4×4 dithering to enforce the Windows 16-color palette
  *
- * Internal render resolution is 64x64. The canvas is set to this size
- * and the caller uses CSS `image-rendering: pixelated` + scaled display
- * dimensions to get crisp nearest-neighbor upscaling.
+ * Extends EraRendererBase which handles SVG wrapping, image loading,
+ * color tinting, coordinate scaling, and data conversion. This renderer
+ * draws flat shapes in Win16 colors then dithers — the modern high-res
+ * downsample pipeline is gone.
  *
- * Domain: Retro SCRIBE App
+ * Domain: 1995 TKA Notation System
  */
 
 import type { IPixelRenderer } from "../contracts/IPixelRenderer";
-import type {
-	RetroPictographData,
-	RetroHandData,
-} from "../../../shared/domain/pictograph-types";
-import {
-	GridLocation,
-	GridMode,
-	MotionType,
-	MotionColor,
-	Orientation,
-} from "../../../shared/domain/pictograph-types";
+import type { RetroPictographData } from "../../../shared/domain/pictograph-types";
+import type { IPictographPreparer } from "$lib/shared/pictograph/shared/services/contracts/IPictographPreparer";
+import type { PreparedRenderData } from "$lib/shared/pictograph/shared/domain/models/PreparedPictographData";
+import { EraRendererBase } from "../../../shared/services/implementations/EraRendererBase";
 
 // ============================================================================
 // WINDOWS 16-COLOR PALETTE
@@ -58,10 +57,6 @@ const WIN16_PALETTE: readonly PaletteColor[] = [
 // BAYER DITHERING MATRIX (4x4)
 // ============================================================================
 
-/**
- * 4x4 Bayer ordered dithering matrix.
- * Values 0-15, normalized to 0-1 by dividing by 16.
- */
 const BAYER_4X4 = [
 	[0, 8, 2, 10],
 	[12, 4, 14, 6],
@@ -70,161 +65,94 @@ const BAYER_4X4 = [
 ] as const;
 
 // ============================================================================
-// GRID COORDINATE MAPPING
+// WIN95 VISUAL CONSTANTS
 // ============================================================================
 
 /**
- * Maps grid locations to normalized coordinates (0-1 range).
- * Diamond mode: hands at N/E/S/W, arrows at diagonals.
- * Box mode: hands at NE/SE/SW/NW.
+ * The TKA rendering system uses a 950×950 coordinate space.
+ * Grid point positions below are in that space.
  */
-function getGridPosition(
-	location: GridLocation,
-	gridMode: GridMode,
-	size: number,
-): { x: number; y: number } {
-	const center = size / 2;
-	const radius = size * 0.35; // hand points are 35% from center
+const GRID_CENTER = { x: 475, y: 475 };
+const GRID_POINTS = {
+	n:  { x: 475, y: 120 },
+	s:  { x: 475, y: 830 },
+	e:  { x: 830, y: 475 },
+	w:  { x: 120, y: 475 },
+	ne: { x: 726, y: 224 },
+	nw: { x: 224, y: 224 },
+	se: { x: 726, y: 726 },
+	sw: { x: 224, y: 726 },
+};
 
-	const positions: Record<GridLocation, { x: number; y: number }> = {
-		[GridLocation.NORTH]: { x: center, y: center - radius },
-		[GridLocation.EAST]: { x: center + radius, y: center },
-		[GridLocation.SOUTH]: { x: center, y: center + radius },
-		[GridLocation.WEST]: { x: center - radius, y: center },
-		[GridLocation.NORTHEAST]: { x: center + radius * 0.707, y: center - radius * 0.707 },
-		[GridLocation.SOUTHEAST]: { x: center + radius * 0.707, y: center + radius * 0.707 },
-		[GridLocation.SOUTHWEST]: { x: center - radius * 0.707, y: center + radius * 0.707 },
-		[GridLocation.NORTHWEST]: { x: center - radius * 0.707, y: center - radius * 0.707 },
-		[GridLocation.CENTER]: { x: center, y: center },
-	};
+// Win95 grid colors — gray lines, darker gray dots
+const GRID_LINE_COLOR = "#808080";
+const GRID_DOT_COLOR  = "#606060";
+const GRID_DOT_RADIUS_VB = 14;
 
-	return positions[location];
-}
+// Win16 flat colors for props and arrows
+const BLUE_COLOR = "#0000FF";
+const RED_COLOR  = "#FF0000";
 
-/**
- * Get prop rotation angle in radians based on orientation and grid location.
- *
- * "in" = points toward center
- * "out" = points away from center
- * "clock" = perpendicular, 90deg clockwise from radial
- * "counter" = perpendicular, 90deg counter-clockwise from radial
- */
-function getPropAngle(
-	location: GridLocation,
-	orientation: Orientation,
-): number {
-	// Angle from center to this grid location (radians, 0 = right, positive = clockwise)
-	const locationAngles: Record<GridLocation, number> = {
-		[GridLocation.NORTH]: -Math.PI / 2,
-		[GridLocation.NORTHEAST]: -Math.PI / 4,
-		[GridLocation.EAST]: 0,
-		[GridLocation.SOUTHEAST]: Math.PI / 4,
-		[GridLocation.SOUTH]: Math.PI / 2,
-		[GridLocation.SOUTHWEST]: (3 * Math.PI) / 4,
-		[GridLocation.WEST]: Math.PI,
-		[GridLocation.NORTHWEST]: (-3 * Math.PI) / 4,
-		[GridLocation.CENTER]: 0,
-	};
+// Hand dot in Win16 silver (palette index 7)
+const HAND_DOT_COLOR = "#C0C0C0";
+const HAND_DOT_RADIUS_VB = 22;
 
-	const baseAngle = locationAngles[location];
+// ============================================================================
+// PIXEL RENDERER
+// ============================================================================
 
-	// Cardinal orientations map directly
-	switch (orientation) {
-		case Orientation.IN:
-			return baseAngle + Math.PI;
-		case Orientation.OUT:
-			return baseAngle;
-		case Orientation.CLOCK:
-			return baseAngle + Math.PI / 2;
-		case Orientation.COUNTER:
-			return baseAngle - Math.PI / 2;
-
-		// Interradial orientations: split the difference between adjacent cardinals
-		case Orientation.CLOCK_IN:
-			return baseAngle + Math.PI * 0.75; // between CLOCK (+90) and IN (+180)
-		case Orientation.CLOCK_OUT:
-			return baseAngle + Math.PI / 4; // between CLOCK (+90) and OUT (0)
-		case Orientation.COUNTER_IN:
-			return baseAngle - Math.PI * 0.75; // between COUNTER (-90) and IN (+180)
-		case Orientation.COUNTER_OUT:
-			return baseAngle - Math.PI / 4; // between COUNTER (-90) and OUT (0)
-
-		// Centric orientations: prop at center points toward a compass direction
-		case Orientation.CENTER_N:
-			return -Math.PI / 2;
-		case Orientation.CENTER_NE:
-			return -Math.PI / 4;
-		case Orientation.CENTER_E:
-			return 0;
-		case Orientation.CENTER_SE:
-			return Math.PI / 4;
-		case Orientation.CENTER_S:
-			return Math.PI / 2;
-		case Orientation.CENTER_SW:
-			return (3 * Math.PI) / 4;
-		case Orientation.CENTER_W:
-			return Math.PI;
-		case Orientation.CENTER_NW:
-			return (-3 * Math.PI) / 4;
-
-		default:
-			// Graceful fallback for any future orientation values
-			return baseAngle;
+export class PixelRenderer extends EraRendererBase implements IPixelRenderer {
+	constructor(preparer: IPictographPreparer) {
+		super(preparer);
 	}
-}
 
-// ============================================================================
-// PIXEL RENDERER IMPLEMENTATION
-// ============================================================================
+	// --------------------------------------------------------------------------
+	// IEraRenderer — primary entry point
+	// --------------------------------------------------------------------------
 
-export class PixelRenderer implements IPixelRenderer {
-	render(
+	async render(
 		canvas: HTMLCanvasElement,
 		data: RetroPictographData,
-		size: number = 64,
-	): void {
+		size: number = 128,
+	): Promise<void> {
 		canvas.width = size;
 		canvas.height = size;
 
 		const ctx = canvas.getContext("2d");
 		if (!ctx) return;
 
-		// Disable smoothing for crisp pixels
+		// Disable smoothing — we want the hard pixel edges of Win95
 		ctx.imageSmoothingEnabled = false;
 
-		// 1. White background
-		this.fillRect(ctx, 0, 0, size, size, WIN16_PALETTE[15]!);
+		// White background
+		ctx.fillStyle = "#FFFFFF";
+		ctx.fillRect(0, 0, size, size);
 
-		// 2. Draw grid lines
-		this.drawGrid(ctx, data.gridMode, size);
-
-		// 3. Draw center point
-		this.drawCenterDot(ctx, size);
-
-		// 4. Draw props (staves)
-		this.drawProp(ctx, data.blueHand, data.gridMode, size);
-		this.drawProp(ctx, data.redHand, data.gridMode, size);
-
-		// 5. Draw hand position squares
-		this.drawHand(ctx, data.blueHand, data.gridMode, size);
-		this.drawHand(ctx, data.redHand, data.gridMode, size);
-
-		// 6. Draw arrows (motion indicators)
-		if (data.blueHand.motionType !== MotionType.STATIC) {
-			this.drawArrow(ctx, data.blueHand, data.gridMode, size);
-		}
-		if (data.redHand.motionType !== MotionType.STATIC) {
-			this.drawArrow(ctx, data.redHand, data.gridMode, size);
+		// Prepare positioned arrow/prop data via the shared base
+		const prepared = await this.prepare(data);
+		if (!prepared) {
+			this.renderPlaceholder(canvas, size);
+			return;
 		}
 
-		// 7. Black border
+		const scale = this.getScale(size);
+
+		this.drawGrid(ctx, scale);
+		await this.drawProps(ctx, prepared, scale);
+		await this.drawArrows(ctx, prepared, scale);
+		this.drawHandDots(ctx, prepared, scale);
+		this.drawLetter(ctx, String(data.letter), size);
 		this.drawBorder(ctx, size);
 
-		// 8. Apply dithering pass to enforce 16-color palette
+		// Quantize every pixel to the Win16 palette via Bayer ordered dithering
 		this.applyDithering(ctx, size);
 	}
 
-	renderPlaceholder(canvas: HTMLCanvasElement, size: number = 64): void {
+	// --------------------------------------------------------------------------
+	// Placeholder — Win95-styled silver "?" card
+	// --------------------------------------------------------------------------
+
+	override renderPlaceholder(canvas: HTMLCanvasElement, size: number = 128): void {
 		canvas.width = size;
 		canvas.height = size;
 
@@ -233,13 +161,10 @@ export class PixelRenderer implements IPixelRenderer {
 
 		ctx.imageSmoothingEnabled = false;
 
-		// Gray fill
-		this.fillRect(ctx, 0, 0, size, size, WIN16_PALETTE[7]!); // Silver
+		// Silver background (Win16 palette index 7)
+		ctx.fillStyle = `rgb(${WIN16_PALETTE[7]!.r}, ${WIN16_PALETTE[7]!.g}, ${WIN16_PALETTE[7]!.b})`;
+		ctx.fillRect(0, 0, size, size);
 
-		// Black border
-		this.drawBorder(ctx, size);
-
-		// "?" in center
 		const fontSize = Math.max(8, Math.floor(size * 0.4));
 		ctx.fillStyle = "#000000";
 		ctx.font = `bold ${fontSize}px monospace`;
@@ -247,25 +172,236 @@ export class PixelRenderer implements IPixelRenderer {
 		ctx.textBaseline = "middle";
 		ctx.fillText("?", size / 2, size / 2);
 
-		// Dither the placeholder too
+		this.drawBorder(ctx, size);
 		this.applyDithering(ctx, size);
 	}
 
-	// ========================================================================
-	// DRAWING PRIMITIVES
-	// ========================================================================
+	// --------------------------------------------------------------------------
+	// Grid
+	// --------------------------------------------------------------------------
 
-	private fillRect(
-		ctx: CanvasRenderingContext2D,
-		x: number,
-		y: number,
-		w: number,
-		h: number,
-		color: PaletteColor,
-	): void {
-		ctx.fillStyle = `rgb(${color.r}, ${color.g}, ${color.b})`;
-		ctx.fillRect(Math.floor(x), Math.floor(y), Math.ceil(w), Math.ceil(h));
+	/**
+	 * Draw the TKA grid with flat gray Win95 colors.
+	 * No anti-aliasing, no gradients — just lines and dots.
+	 */
+	private drawGrid(ctx: CanvasRenderingContext2D, scale: number): void {
+		ctx.save();
+		ctx.strokeStyle = GRID_LINE_COLOR;
+		ctx.lineWidth = 1;
+
+		// Cardinal cross and diagonals
+		this.drawLine(ctx, GRID_POINTS.n,  GRID_POINTS.s,  scale);
+		this.drawLine(ctx, GRID_POINTS.e,  GRID_POINTS.w,  scale);
+		this.drawLine(ctx, GRID_POINTS.ne, GRID_POINTS.sw, scale);
+		this.drawLine(ctx, GRID_POINTS.nw, GRID_POINTS.se, scale);
+
+		ctx.restore();
+
+		// Grid point dots
+		const dotR = GRID_DOT_RADIUS_VB * scale;
+		ctx.fillStyle = GRID_DOT_COLOR;
+
+		for (const pt of Object.values(GRID_POINTS)) {
+			this.fillCircle(ctx, pt.x * scale, pt.y * scale, dotR);
+		}
+
+		// Center dot — slightly smaller
+		this.fillCircle(ctx, GRID_CENTER.x * scale, GRID_CENTER.y * scale, dotR * 0.7);
 	}
+
+	private drawLine(
+		ctx: CanvasRenderingContext2D,
+		a: { x: number; y: number },
+		b: { x: number; y: number },
+		scale: number,
+	): void {
+		ctx.beginPath();
+		ctx.moveTo(a.x * scale, a.y * scale);
+		ctx.lineTo(b.x * scale, b.y * scale);
+		ctx.stroke();
+	}
+
+	private fillCircle(
+		ctx: CanvasRenderingContext2D,
+		cx: number,
+		cy: number,
+		r: number,
+	): void {
+		ctx.beginPath();
+		ctx.arc(cx, cy, r, 0, Math.PI * 2);
+		ctx.fill();
+	}
+
+	// --------------------------------------------------------------------------
+	// Props
+	// --------------------------------------------------------------------------
+
+	/**
+	 * Draw both staves tinted to flat Win16 colors. No shadows, no gradients.
+	 * The SVG is rasterised and then every opaque pixel is replaced with the
+	 * era color. Bayer dithering later handles any intermediate shades.
+	 */
+	private async drawProps(
+		ctx: CanvasRenderingContext2D,
+		prepared: PreparedRenderData,
+		scale: number,
+	): Promise<void> {
+		for (const color of ["blue", "red"] as const) {
+			const position = prepared.propPositions[color];
+			const assets   = prepared.propAssets[color];
+			if (!position || !assets?.imageSrc) continue;
+
+			try {
+				const viewBoxParts  = assets.viewBox.split(/\s+/).map(Number);
+				const viewBoxWidth  = viewBoxParts[0] || 100;
+				const viewBoxHeight = viewBoxParts[1] || 100;
+
+				const wrapped  = this.wrapSvgContent(assets.imageSrc, viewBoxWidth, viewBoxHeight, false);
+				const cacheKey = `pixel_prop_${color}_${wrapped.svg.length}`;
+				const img      = await this.loadSvgImage(wrapped.svg, cacheKey);
+
+				const eraColor = color === "blue" ? BLUE_COLOR : RED_COLOR;
+
+				const drawParams = {
+					x:            position.x * scale,
+					y:            position.y * scale,
+					rotation:     position.rotation,
+					centerX:      viewBoxWidth  / 2,
+					centerY:      viewBoxHeight / 2,
+					viewBoxWidth:  wrapped.newWidth,
+					viewBoxHeight: wrapped.newHeight,
+					scale,
+					shouldMirror: false,
+				};
+
+				ctx.save();
+				this.drawTintedElement(ctx, img, drawParams, eraColor);
+				ctx.restore();
+			} catch {
+				// Non-fatal — skip this prop if asset loading fails
+			}
+		}
+	}
+
+	// --------------------------------------------------------------------------
+	// Arrows
+	// --------------------------------------------------------------------------
+
+	/**
+	 * Draw both arrows tinted to flat Win16 colors. No shadows.
+	 *
+	 * The center adjustment formula mirrors Canvas2DDirectRenderer exactly —
+	 * subtract the viewBox origin (which may be negative) and add the expansion
+	 * offset so the pivot lands on the correct pixel.
+	 */
+	private async drawArrows(
+		ctx: CanvasRenderingContext2D,
+		prepared: PreparedRenderData,
+		scale: number,
+	): Promise<void> {
+		for (const color of ["blue", "red"] as const) {
+			const position    = prepared.arrowPositions[color];
+			const assets      = prepared.arrowAssets[color];
+			const shouldMirror = prepared.arrowMirroring[color] ?? false;
+			if (!position || !assets?.imageSrc) continue;
+
+			try {
+				const viewBoxWidth  = assets.viewBox.width;
+				const viewBoxHeight = assets.viewBox.height;
+				const fullViewBox   = assets.viewBox.fullViewBox;
+
+				// Expand the viewBox so overflowing arrow tips are not clipped
+				const wrapped = this.wrapSvgContent(
+					assets.imageSrc,
+					viewBoxWidth,
+					viewBoxHeight,
+					true,
+					fullViewBox,
+				);
+
+				const cacheKey = `pixel_arrow_${color}_${wrapped.svg.length}`;
+				const img      = await this.loadSvgImage(wrapped.svg, cacheKey);
+
+				// Compute image-space center: subtract viewBox origin, add expansion offset
+				let viewBoxMinX = 0;
+				let viewBoxMinY = 0;
+				if (fullViewBox) {
+					const parts = fullViewBox.split(/\s+/);
+					viewBoxMinX = parseFloat(parts[0] ?? "0") || 0;
+					viewBoxMinY = parseFloat(parts[1] ?? "0") || 0;
+				}
+
+				const adjustedCenterX =
+					(assets.center?.x ?? viewBoxWidth  / 2) - viewBoxMinX + wrapped.offsetX;
+				const adjustedCenterY =
+					(assets.center?.y ?? viewBoxHeight / 2) - viewBoxMinY + wrapped.offsetY;
+
+				const eraColor = color === "blue" ? BLUE_COLOR : RED_COLOR;
+
+				const drawParams = {
+					x:            position.x * scale,
+					y:            position.y * scale,
+					rotation:     position.rotation,
+					centerX:      adjustedCenterX,
+					centerY:      adjustedCenterY,
+					viewBoxWidth:  wrapped.newWidth,
+					viewBoxHeight: wrapped.newHeight,
+					scale,
+					shouldMirror,
+				};
+
+				ctx.save();
+				this.drawTintedElement(ctx, img, drawParams, eraColor);
+				ctx.restore();
+			} catch {
+				// Non-fatal — skip this arrow if asset loading fails
+			}
+		}
+	}
+
+	// --------------------------------------------------------------------------
+	// Hand position dots
+	// --------------------------------------------------------------------------
+
+	/**
+	 * Draw a flat gray circle at each hand position.
+	 * No highlight layers, no shadow — flat Win95 style.
+	 */
+	private drawHandDots(
+		ctx: CanvasRenderingContext2D,
+		prepared: PreparedRenderData,
+		scale: number,
+	): void {
+		ctx.fillStyle = HAND_DOT_COLOR;
+
+		for (const color of ["blue", "red"] as const) {
+			const position = prepared.propPositions[color];
+			if (!position) continue;
+
+			const cx = position.x * scale;
+			const cy = position.y * scale;
+			const r  = HAND_DOT_RADIUS_VB * scale;
+
+			this.fillCircle(ctx, cx, cy, r);
+		}
+	}
+
+	// --------------------------------------------------------------------------
+	// Letter
+	// --------------------------------------------------------------------------
+
+	private drawLetter(ctx: CanvasRenderingContext2D, letter: string, size: number): void {
+		const fontSize = Math.max(10, Math.floor(size * 0.11));
+		ctx.fillStyle = "#000000";
+		ctx.font = `bold ${fontSize}px monospace`;
+		ctx.textAlign = "left";
+		ctx.textBaseline = "bottom";
+		ctx.fillText(letter, 4, size - 3);
+	}
+
+	// --------------------------------------------------------------------------
+	// Border
+	// --------------------------------------------------------------------------
 
 	private drawBorder(ctx: CanvasRenderingContext2D, size: number): void {
 		ctx.strokeStyle = "#000000";
@@ -273,198 +409,16 @@ export class PixelRenderer implements IPixelRenderer {
 		ctx.strokeRect(0.5, 0.5, size - 1, size - 1);
 	}
 
-	// ========================================================================
-	// GRID
-	// ========================================================================
-
-	private drawGrid(
-		ctx: CanvasRenderingContext2D,
-		gridMode: GridMode,
-		size: number,
-	): void {
-		ctx.strokeStyle = "#808080"; // Gray
-		ctx.lineWidth = 1;
-
-		const center = size / 2;
-		const radius = size * 0.42; // Grid lines extend a bit further than hand points
-
-		if (gridMode === GridMode.DIAMOND) {
-			// Diamond: lines from N-S and E-W through center
-			this.drawLine(ctx, center, center - radius, center, center + radius);
-			this.drawLine(ctx, center - radius, center, center + radius, center);
-		} else if (gridMode === GridMode.BOX) {
-			// Box: lines from NE-SW and NW-SE through center
-			const d = radius * 0.707;
-			this.drawLine(ctx, center - d, center - d, center + d, center + d);
-			this.drawLine(ctx, center + d, center - d, center - d, center + d);
-		} else {
-			// Skewed / centric / trigrid: draw both diamond + box lines
-			this.drawLine(ctx, center, center - radius, center, center + radius);
-			this.drawLine(ctx, center - radius, center, center + radius, center);
-			const d = radius * 0.707;
-			this.drawLine(ctx, center - d, center - d, center + d, center + d);
-			this.drawLine(ctx, center + d, center - d, center - d, center + d);
-		}
-	}
-
-	private drawLine(
-		ctx: CanvasRenderingContext2D,
-		x1: number,
-		y1: number,
-		x2: number,
-		y2: number,
-	): void {
-		ctx.beginPath();
-		ctx.moveTo(Math.floor(x1) + 0.5, Math.floor(y1) + 0.5);
-		ctx.lineTo(Math.floor(x2) + 0.5, Math.floor(y2) + 0.5);
-		ctx.stroke();
-	}
-
-	// ========================================================================
-	// CENTER DOT
-	// ========================================================================
-
-	private drawCenterDot(ctx: CanvasRenderingContext2D, size: number): void {
-		const center = Math.floor(size / 2);
-		const dotSize = Math.max(2, Math.floor(size / 16));
-		const half = Math.floor(dotSize / 2);
-
-		ctx.fillStyle = "#000000";
-		ctx.fillRect(center - half, center - half, dotSize, dotSize);
-	}
-
-	// ========================================================================
-	// HAND POSITION SQUARES
-	// ========================================================================
-
-	private drawHand(
-		ctx: CanvasRenderingContext2D,
-		hand: RetroHandData,
-		gridMode: GridMode,
-		size: number,
-	): void {
-		const pos = getGridPosition(hand.location, gridMode, size);
-		const handSize = Math.max(4, Math.floor(size / 8));
-		const half = Math.floor(handSize / 2);
-
-		const color =
-			hand.color === MotionColor.BLUE ? WIN16_PALETTE[12]! : WIN16_PALETTE[9]!;
-
-		this.fillRect(ctx, pos.x - half, pos.y - half, handSize, handSize, color);
-	}
-
-	// ========================================================================
-	// PROP (STAFF) RENDERING
-	// ========================================================================
-
-	private drawProp(
-		ctx: CanvasRenderingContext2D,
-		hand: RetroHandData,
-		gridMode: GridMode,
-		size: number,
-	): void {
-		const pos = getGridPosition(hand.location, gridMode, size);
-		const angle = getPropAngle(hand.location, hand.orientation);
-
-		const propLength = Math.max(6, Math.floor(size / 5));
-		const propWidth = Math.max(2, Math.floor(size / 24));
-
-		const color = hand.color === MotionColor.BLUE ? "#0000FF" : "#FF0000";
-
-		ctx.save();
-		ctx.translate(pos.x, pos.y);
-		ctx.rotate(angle);
-
-		// Draw the staff as a thick rectangle centered on the hand position
-		ctx.fillStyle = color;
-		ctx.fillRect(
-			-Math.floor(propLength / 2),
-			-Math.floor(propWidth / 2),
-			propLength,
-			propWidth,
-		);
-
-		ctx.restore();
-	}
-
-	// ========================================================================
-	// ARROW RENDERING
-	// ========================================================================
-
-	private drawArrow(
-		ctx: CanvasRenderingContext2D,
-		hand: RetroHandData,
-		gridMode: GridMode,
-		size: number,
-	): void {
-		// For dash motions: straight line from start to end
-		// For pro/anti: curved path indicator (simplified to straight line in retro)
-		const startPos = getGridPosition(hand.location, gridMode, size);
-		const endPos = getGridPosition(hand.endLocation, gridMode, size);
-
-		// If start and end are the same, no arrow needed
-		if (hand.location === hand.endLocation) return;
-
-		const color = hand.color === MotionColor.BLUE ? "#0000FF" : "#FF0000";
-
-		ctx.strokeStyle = color;
-		ctx.lineWidth = 1;
-
-		// Draw the shaft
-		this.drawLine(ctx, startPos.x, startPos.y, endPos.x, endPos.y);
-
-		// Draw arrowhead at end position
-		this.drawArrowhead(ctx, startPos, endPos, color, size);
-	}
-
-	private drawArrowhead(
-		ctx: CanvasRenderingContext2D,
-		from: { x: number; y: number },
-		to: { x: number; y: number },
-		color: string,
-		size: number,
-	): void {
-		const headSize = Math.max(3, Math.floor(size / 16));
-		const angle = Math.atan2(to.y - from.y, to.x - from.x);
-
-		const tipX = Math.floor(to.x);
-		const tipY = Math.floor(to.y);
-
-		const leftX = Math.floor(
-			tipX - headSize * Math.cos(angle - Math.PI / 6),
-		);
-		const leftY = Math.floor(
-			tipY - headSize * Math.sin(angle - Math.PI / 6),
-		);
-		const rightX = Math.floor(
-			tipX - headSize * Math.cos(angle + Math.PI / 6),
-		);
-		const rightY = Math.floor(
-			tipY - headSize * Math.sin(angle + Math.PI / 6),
-		);
-
-		ctx.fillStyle = color;
-		ctx.beginPath();
-		ctx.moveTo(tipX, tipY);
-		ctx.lineTo(leftX, leftY);
-		ctx.lineTo(rightX, rightY);
-		ctx.closePath();
-		ctx.fill();
-	}
-
-	// ========================================================================
-	// BAYER DITHERING (16-COLOR QUANTIZATION)
-	// ========================================================================
+	// --------------------------------------------------------------------------
+	// Bayer dithering (Win16 palette quantization)
+	// --------------------------------------------------------------------------
 
 	/**
-	 * Reads every pixel from the canvas, snaps each to the nearest
-	 * Windows 16-color palette entry using ordered dithering, and
-	 * writes the result back.
+	 * Apply ordered 4×4 Bayer dithering to quantize every pixel to the nearest
+	 * Win16 palette color. Pure black and pure white pass through unchanged —
+	 * they are already in the palette and dithering them would create noise.
 	 */
-	private applyDithering(
-		ctx: CanvasRenderingContext2D,
-		size: number,
-	): void {
+	private applyDithering(ctx: CanvasRenderingContext2D, size: number): void {
 		const imageData = ctx.getImageData(0, 0, size, size);
 		const data = imageData.data;
 
@@ -475,26 +429,67 @@ export class PixelRenderer implements IPixelRenderer {
 				const g = data[idx + 1]!;
 				const b = data[idx + 2]!;
 
-				// Bayer threshold for this pixel
-				const threshold =
-					(BAYER_4X4[y % 4]![x % 4]! / 16.0 - 0.5) * 64;
+				// Skip pure white and pure black — already in palette
+				if (r === 255 && g === 255 && b === 255) continue;
+				if (r === 0   && g === 0   && b === 0  ) continue;
 
-				// Apply threshold offset before quantization
+				const threshold = (BAYER_4X4[y % 4]![x % 4]! / 16.0 - 0.5) * 64;
 				const dr = clampByte(r + threshold);
 				const dg = clampByte(g + threshold);
 				const db = clampByte(b + threshold);
 
-				// Find nearest palette color
 				const nearest = findNearestPaletteColor(dr, dg, db);
-
-				data[idx] = nearest.r;
+				data[idx]     = nearest.r;
 				data[idx + 1] = nearest.g;
 				data[idx + 2] = nearest.b;
-				// Alpha stays at 255
 			}
 		}
 
 		ctx.putImageData(imageData, 0, 0);
+	}
+
+	// --------------------------------------------------------------------------
+	// Internal helpers (tint pipeline)
+	// --------------------------------------------------------------------------
+
+	/**
+	 * Draw a tinted prop or arrow by mirroring the same transform pipeline as
+	 * drawElementWithTransform, then delegating to drawTintedImage.
+	 *
+	 * This is the same pattern used by XPRenderer — the transform is applied
+	 * manually here so the tint OffscreenCanvas can be drawn at (0,0) within
+	 * the already-transformed context.
+	 */
+	private drawTintedElement(
+		ctx: CanvasRenderingContext2D,
+		img: import("$lib/shared/render/services/implementations/SvgImageCache").DrawableImage,
+		params: {
+			x: number;
+			y: number;
+			rotation: number;
+			centerX: number;
+			centerY: number;
+			viewBoxWidth: number;
+			viewBoxHeight: number;
+			scale: number;
+			shouldMirror: boolean;
+		},
+		color: string,
+	): void {
+		const { x, y, rotation, centerX, centerY, viewBoxWidth, viewBoxHeight, scale, shouldMirror } =
+			params;
+
+		ctx.save();
+
+		ctx.translate(x, y);
+		ctx.rotate((rotation * Math.PI) / 180);
+		if (shouldMirror) ctx.scale(-1, 1);
+		ctx.scale(scale, scale);
+		ctx.translate(-centerX, -centerY);
+
+		this.drawTintedImage(ctx, img, 0, 0, viewBoxWidth, viewBoxHeight, color);
+
+		ctx.restore();
 	}
 }
 
@@ -506,15 +501,7 @@ function clampByte(value: number): number {
 	return Math.max(0, Math.min(255, Math.round(value)));
 }
 
-/**
- * Find the nearest color in the Windows 16-color palette using
- * Euclidean distance in RGB space.
- */
-function findNearestPaletteColor(
-	r: number,
-	g: number,
-	b: number,
-): PaletteColor {
+function findNearestPaletteColor(r: number, g: number, b: number): PaletteColor {
 	let bestDist = Infinity;
 	let bestColor = WIN16_PALETTE[0]!;
 
@@ -525,9 +512,9 @@ function findNearestPaletteColor(
 		const dist = dr * dr + dg * dg + db * db;
 
 		if (dist < bestDist) {
-			bestDist = dist;
+			bestDist  = dist;
 			bestColor = color;
-			if (dist === 0) break; // Exact match
+			if (dist === 0) break;
 		}
 	}
 
