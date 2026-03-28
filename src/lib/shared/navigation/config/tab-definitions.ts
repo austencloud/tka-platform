@@ -594,10 +594,18 @@ export const FESTIVAL_TABS: Section[] = [
 
 export const RETRO_TABS: Section[] = [
   {
+    id: "dos",
+    label: "1989",
+    icon: '<i class="fas fa-terminal" aria-hidden="true"></i>',
+    description: "DOS-era terminal with SCRIBE notation utility",
+    color: "#33ff33",
+    gradient: "linear-gradient(135deg, #33ff33 0%, #1a8c1a 100%)",
+  },
+  {
     id: "desktop",
-    label: "TKA-OS",
+    label: "1995",
     icon: '<i class="fas fa-desktop" aria-hidden="true"></i>',
-    description: "TKA-OS v1.0 (1995 parody)",
+    description: "Windows 95-era desktop environment",
     color: "#008080",
     gradient: "linear-gradient(135deg, #008080 0%, #000080 100%)",
   },
@@ -605,25 +613,9 @@ export const RETRO_TABS: Section[] = [
     id: "timeline",
     label: "Pictograph Timeline",
     icon: '<i class="fas fa-clock-rotate-left" aria-hidden="true"></i>',
-    description: "Compare pictographs across eras: 1989 ASCII, 1995 pixel, 2026 modern",
+    description: "Compare pictographs across eras: 1989, 1995, 2026",
     color: "#c084fc",
     gradient: "linear-gradient(135deg, #c084fc 0%, #6366f1 100%)",
-  },
-  {
-    id: "ascii",
-    label: "1989 Pictograph",
-    icon: '<i class="fas fa-terminal" aria-hidden="true"></i>',
-    description: "ASCII pictograph rendering for the DOS terminal",
-    color: "#33ff33",
-    gradient: "linear-gradient(135deg, #33ff33 0%, #1a8c1a 100%)",
-  },
-  {
-    id: "pixel",
-    label: "1995 Pictograph",
-    icon: '<i class="fas fa-th" aria-hidden="true"></i>',
-    description: "Win95 pixel pictograph rendering (16-color dithered)",
-    color: "#6666ff",
-    gradient: "linear-gradient(135deg, #9999ff 0%, #6666ff 100%)",
   },
 ];
 
@@ -651,6 +643,14 @@ export const REALM_TABS: Section[] = [
     description: "Curate your own open-air museum of sequences",
     color: "#a78bfa",
     gradient: "linear-gradient(135deg, #c4b5fd 0%, #a78bfa 100%)",
+  },
+  {
+    id: "museum-2d",
+    label: "Museum 2D",
+    icon: '<i class="fas fa-map" aria-hidden="true"></i>',
+    description: "Walk the museum from above — 2D tile-based explorer",
+    color: "#f59e0b",
+    gradient: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)",
   },
   {
     id: "3d-controls",
