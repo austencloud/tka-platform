@@ -116,12 +116,19 @@ export function createMuseum2DState(grid: MuseumGrid) {
       return;
     }
 
-    // Pedestal or other interactable without a definition — use refId if present
+    // Fallback: use refId to find matching definition (handles multi-tile objects)
     if (tile.refId) {
       const exhibitByRef = grid.exhibits.find((e) => e.id === tile.refId);
       if (exhibitByRef) {
         focusedExhibitId = exhibitByRef.id;
         focusedPerformerId = null;
+        focusedTriggerId = null;
+        return;
+      }
+      const performerByRef = grid.performers.find((p) => p.id === tile.refId);
+      if (performerByRef) {
+        focusedPerformerId = performerByRef.id;
+        focusedExhibitId = null;
         focusedTriggerId = null;
         return;
       }
