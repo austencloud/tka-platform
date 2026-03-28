@@ -457,7 +457,7 @@
     inset: 0;
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
     /* Sub-frame opacity handled by JS rAF; transition here smooths any micro-gaps */
     transition: opacity 0.05s linear;
   }
