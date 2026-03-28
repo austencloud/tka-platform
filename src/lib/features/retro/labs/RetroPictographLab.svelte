@@ -10,10 +10,12 @@
   import { PixelRenderer } from "$lib/features/retro/win95/services/implementations/PixelRenderer";
   import FilterChipBase from "$lib/features/browse/sequences/filtering/components/inline-filter/FilterChipBase.svelte";
   import { createAsciiLabState } from "./ascii-pictograph-lab-state.svelte";
+  import { pictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
 
   const labState = createAsciiLabState();
-  const renderer = new PixelRenderer();
+  const renderer = new PixelRenderer(pictographPreparer);
 
+  const INTERNAL_SIZE = 128;
   const PREVIEW_SIZES = [32, 48, 64, 96, 128, 192];
 
   let canvasRefs = $state<Record<number, HTMLCanvasElement | undefined>>({});
@@ -29,9 +31,9 @@
       if (!canvas) continue;
 
       if (data && data.letter) {
-        renderer.render(canvas, data, 64);
+        renderer.render(canvas, data, INTERNAL_SIZE);
       } else {
-        renderer.renderPlaceholder(canvas, 64);
+        renderer.renderPlaceholder(canvas, INTERNAL_SIZE);
       }
     }
   });
@@ -100,8 +102,8 @@
             <div class="canvas-frame" style="width: {size}px; height: {size}px;">
               <canvas
                 bind:this={canvasRefs[size]}
-                width="64"
-                height="64"
+                width={INTERNAL_SIZE}
+                height={INTERNAL_SIZE}
                 class="pixel-canvas"
                 style="width: {size}px; height: {size}px;"
                 aria-label="Pictograph at {size}px"

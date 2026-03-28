@@ -12,6 +12,7 @@
 <script lang="ts">
   import type { RetroPictographData } from "../../../shared/domain/pictograph-types";
   import { PixelRenderer } from "../../services/implementations/PixelRenderer";
+  import { pictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
 
   let {
     data = null,
@@ -21,11 +22,11 @@
     size?: number;
   } = $props();
 
-  const INTERNAL_SIZE = 64;
+  const INTERNAL_SIZE = 128;
 
   let canvasEl: HTMLCanvasElement | undefined = $state();
 
-  const renderer = new PixelRenderer();
+  const renderer = new PixelRenderer(pictographPreparer);
 
   $effect(() => {
     if (!canvasEl) return;
