@@ -8,8 +8,7 @@
   import ChoreoCard from "./ChoreoCard.svelte";
   import CardPageLayout from "./card-preview/CardPageLayout.svelte";
   import CardSizeToggle from "./card-preview/CardSizeToggle.svelte";
-  import { CARD_SIZES, type CardSizeId } from "../domain/card-sizes";
-  import type { PrintRenderOptions } from "../services/contracts/IPrintCardRenderer";
+  import type { CardSizeId } from "../domain/card-sizes";
 
   type ViewMode = 'grid' | 'cards';
 
@@ -106,17 +105,6 @@
     if (typeof window !== 'undefined') localStorage.setItem('choreoCard.deckViewMode', mode);
   }
 
-  let renderOptions = $derived<PrintRenderOptions>({
-    canvasWidth: CARD_SIZES[cardSize].canvasWidth,
-    canvasHeight: CARD_SIZES[cardSize].canvasHeight,
-    bleedPx: CARD_SIZES[cardSize].bleedPx,
-    showGrid,
-    showTKA,
-    showWord,
-    includeStartPosition,
-    handPointsVisible,
-  });
-
   // Flatten all sequences across ratio groups for card view
   let allSequences = $derived(ratioGroups.flatMap(g => g.sequences));
 
@@ -184,11 +172,15 @@
       families={[]}
       selectedFamilyIds={[]}
       {cardSize}
-      {renderOptions}
       isLoading={false}
       isLargeDeck={false}
-      onCardClick={() => {}}
-      onRenderProgress={() => {}}
+      {handPointsVisible}
+      {showGrid}
+      {showTKA}
+      {showWord}
+      {includeStartPosition}
+      onSelectSequence={(seq) => onSelectSequence(seq)}
+      {onContextMenu}
     />
   {:else}
     {#each ratioGroups as group (group.ratio)}
