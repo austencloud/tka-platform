@@ -539,14 +539,6 @@ export const ARENA_TABS: Section[] = [
 // Choreo Card tabs configuration
 export const CHOREO_CARD_TABS: Section[] = [
   {
-    id: "card-preview",
-    label: "Card Preview",
-    icon: '<i class="fas fa-id-card" style="color: #e0c068;" aria-hidden="true"></i>',
-    description: "Preview and print physical card decks",
-    color: "#e0c068",
-    gradient: "linear-gradient(135deg, #e0c068 0%, #c4a44e 100%)",
-  },
-  {
     id: "decks",
     label: "Decks",
     icon: '<i class="fas fa-layer-group" aria-hidden="true"></i>',
@@ -610,8 +602,16 @@ export const RETRO_TABS: Section[] = [
     gradient: "linear-gradient(135deg, #008080 0%, #000080 100%)",
   },
   {
+    id: "timeline",
+    label: "Pictograph Timeline",
+    icon: '<i class="fas fa-clock-rotate-left" aria-hidden="true"></i>',
+    description: "Compare pictographs across eras: 1989 ASCII, 1995 pixel, 2026 modern",
+    color: "#c084fc",
+    gradient: "linear-gradient(135deg, #c084fc 0%, #6366f1 100%)",
+  },
+  {
     id: "ascii",
-    label: "ASCII Pictograph",
+    label: "1989 Pictograph",
     icon: '<i class="fas fa-terminal" aria-hidden="true"></i>',
     description: "ASCII pictograph rendering for the DOS terminal",
     color: "#33ff33",
@@ -619,7 +619,7 @@ export const RETRO_TABS: Section[] = [
   },
   {
     id: "pixel",
-    label: "Pixel Pictograph",
+    label: "1995 Pictograph",
     icon: '<i class="fas fa-th" aria-hidden="true"></i>',
     description: "Win95 pixel pictograph rendering (16-color dithered)",
     color: "#6666ff",

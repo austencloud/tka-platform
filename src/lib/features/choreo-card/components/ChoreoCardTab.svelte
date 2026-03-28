@@ -19,7 +19,6 @@
   import type { IDeckLoader } from "../services/contracts/IDeckLoader";
   import DeckBrowser from "./DeckBrowser.svelte";
   import CardDesigner from "./CardDesigner.svelte";
-  import CardPreviewTab from "./card-preview/CardPreviewTab.svelte";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import ContextMenu from "$lib/shared/components/context-menu/ContextMenu.svelte";
   import type { ContextMenuState, ContextMenuEntry } from "$lib/shared/components/context-menu/context-menu-types";
@@ -159,13 +158,13 @@
   );
 
   // Mode state - synced with global navigation
-  type ChoreoCardMode = "card-preview" | "decks" | "designer";
-  let mode = $state<ChoreoCardMode>("card-preview");
+  type ChoreoCardMode = "decks" | "designer";
+  let mode = $state<ChoreoCardMode>("decks");
 
   // Sync with navigation state (sidebar tab selection)
   $effect(() => {
     const navTab = navigationState.activeTab;
-    if (navTab === "card-preview" || navTab === "decks" || navTab === "designer") {
+    if (navTab === "decks" || navTab === "designer") {
       const newMode = navTab as ChoreoCardMode;
       if (newMode !== mode) {
         mode = newMode;
@@ -401,14 +400,13 @@
     url.hash = encodeNavHash(initialState);
     history.replaceState(initialState, "", url.toString());
 
-    // Load decks if needed to restore UI
-    if (selectedDeckId || selectedCollection) {
-      if (decks.length === 0) {
-        await loadDecks();
-      }
-      if (selectedDeckId) {
-        await handleSelectDeckSequences(selectedDeckId);
-      }
+    // Decks tab is the default — always load the deck list on mount
+    if (decks.length === 0) {
+      await loadDecks();
+    }
+    // Restore a previously selected deck if one was persisted
+    if (selectedDeckId) {
+      await handleSelectDeckSequences(selectedDeckId);
     }
   });
 
@@ -576,11 +574,7 @@
 <div class="choreo-card-tab">
   <!-- Main content -->
   <div class="main-content">
-    {#if mode === "card-preview"}
-      <main class="content-area">
-        <CardPreviewTab {decks} />
-      </main>
-    {:else if mode === "decks"}
+    {#if mode === "decks"}
       <main class="content-area">
         <DeckBrowser
           {decks}
