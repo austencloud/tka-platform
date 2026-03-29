@@ -17,10 +17,10 @@ Enumerate, seed, and manage algorithmic LOOP decks. Reference data (flags, Fires
 
 ```bash
 # Always dry-run first
-node scripts/enumerate-deck.cjs --loopType strict_rotated --slice quartered --seedLength 4 --level 1 --dry-run
+node scripts/enumerate-deck.cjs --loopType rotated --slice quartered --seedLength 4 --level 1 --dry-run
 
 # Then seed if count is reasonable
-node scripts/enumerate-deck.cjs --loopType strict_rotated --slice quartered --seedLength 4 --level 1 --seed-firestore
+node scripts/enumerate-deck.cjs --loopType rotated --slice quartered --seedLength 4 --level 1 --seed-firestore
 ```
 
 1. Load CSV adjacency graph

@@ -59,7 +59,9 @@ You don't need to pre-compute bridges. Just call `generate_sequence` with a cons
 
 ## When Generating Sequences with Creative Freedom
 
-If the user requests a sequence without specifying an exact tagline (notes field), this is a **humor training opportunity**.
+**This ONLY applies when the user provides a specific named word with creative intent** (e.g. "generate CAKE", "make me a NOVA sequence"). It does NOT apply when the user asks for a sequence by letter, level, loop type, length, or constraints (e.g. "level 2 starting with G", "6-beat rotated loop"). In those cases, just generate immediately — no tagline workflow.
+
+If the user provides a specific word without specifying an exact tagline (notes field), this is a **humor training opportunity**.
 
 ### The Workflow (IN THIS ORDER)
 

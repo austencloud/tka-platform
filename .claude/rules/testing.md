@@ -1,46 +1,41 @@
-# Testing Philosophy: "Earned Tests"
+# Testing Philosophy: Tests That Catch What Eyes Can't
 
-**Core principle:** Tests are earned, not given. Code must prove it deserves a test.
-
-## Why This Approach
-
-- Most tests die - they get written, code changes, they're deleted
-- Tests are insurance - only pay for expensive risks
-- Production is the first test - real users find real bugs
-- Zero fluff tolerance - if it doesn't provide measurable value, delete it
+**Core principle:** Tests exist to catch silent bugs -- things that would produce wrong output without anyone noticing.
 
 ## When to Write Tests
 
-| Scenario                           | Write Test? | Why                                  |
-| ---------------------------------- | ----------- | ------------------------------------ |
-| Pure algorithm/calculation         | Yes         | Math is stable, bugs are subtle      |
-| Silent data corruption risk        | Yes         | You won't notice until it's too late |
-| Bug that regressed twice           | Yes         | Proven problem worth preventing      |
-| New feature, still evolving        | No          | Will change, test will die           |
-| UI component                       | No          | You'll see if it's broken            |
-| Glue code / wiring                 | No          | Obvious when broken                  |
-| Something you'd notice immediately | No          | Your eyes are the test               |
+| Scenario | Write Test? | Why |
+|----------|-------------|-----|
+| Pure algorithm/calculation | Yes | Math is stable, bugs are subtle |
+| Silent data corruption risk | Yes | You won't notice until it's too late |
+| Data transformation pipelines | Yes | Wrong output looks plausible |
+| Bug that regressed before | Yes | Proven problem worth preventing |
+| Complex state transitions | Yes | Edge cases are invisible |
+| Serialization/deserialization | Yes | Round-trip bugs are silent |
+| UI component rendering | No | You'll see if it's broken |
+| Glue code / wiring | No | Obvious when broken |
+| Something you'd notice immediately | No | Your eyes are the test |
 
 ## The "Silent Bug" Test
 
-Ask yourself: "If this breaks, will I notice immediately, or will it silently produce wrong output?"
+Ask: "If this breaks, will I notice immediately, or will it silently produce wrong output?"
 
-**Only test the silent ones.**
+Test the silent ones. Skip the obvious ones.
 
-## When to Delete Tests
+## What Makes a Test Valuable
 
-- Code changed so much the test is meaningless
-- Test requires complex mocking that breaks constantly
-- You can't remember why the test exists
-- Test is for something you'd notice immediately if broken
+A good test:
+- Catches a bug that would otherwise reach production unnoticed
+- Tests a specific behavior with a clear assertion
+- Doesn't just confirm the implementation does what it does (tautological)
+- Would actually fail if the code broke in a meaningful way
 
-## Current Test Files
+A bad test:
+- Confirms a component renders without crashing (yes, we can see that)
+- Mocks so heavily it tests the mocks, not the code
+- Asserts implementation details instead of behavior
+- Would still pass even if the core logic was wrong
 
-Tests live in `tests/unit/` and cover core algorithms where bugs would be subtle:
+## Current Test Scope
 
-- `DimensionCalculationService.test.ts` - Export dimension math
-- `GridPositionDeriver.test.ts` - Grid position calculations
-- `ReversalDetectionService.test.ts` - Prop reversal detection
-- `DataTransformer.test.ts` - Pictograph data transforms
-
-Run tests: `npm test`
+49 test files in `tests/unit/` covering algorithms, calculations, data transforms, and domain logic. Run with `npm test`.

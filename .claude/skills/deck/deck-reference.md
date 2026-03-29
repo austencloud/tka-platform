@@ -6,7 +6,7 @@ Supporting data for the `/deck` skill. Not loaded into every conversation.
 
 | Flag | Required | Values |
 |------|----------|--------|
-| `--loopType` | Yes | Any LOOPType string (strict_rotated, strict_mirrored, etc.) |
+| `--loopType` | Yes | Any LOOPType string (rotated, mirrored, swapped, inverted, flipped, etc.) |
 | `--slice` | Yes | `halved` or `quartered` |
 | `--seedLength` | Yes | Integer (2, 3, 4, ...) |
 | `--level` | Yes | 1, 2, or 3 |
@@ -19,7 +19,7 @@ Supporting data for the `/deck` skill. Not loaded into every conversation.
 ## Halved-Only LOOP Types
 
 These reject `--slice quartered`:
-strict_mirrored, strict_flipped, strict_swapped, strict_inverted, swapped_inverted, mirrored_swapped, mirrored_inverted, mirrored_swapped_inverted, rewound
+mirrored, flipped, swapped, inverted, swapped_inverted, mirrored_swapped, mirrored_inverted, mirrored_swapped_inverted, rewound
 
 ## Firestore Structure
 
