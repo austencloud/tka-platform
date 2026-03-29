@@ -7,3 +7,4 @@ export { getLayout, calculateImageDimensions, BASE_BEAT_SIZE } from "./layout-ta
 export { calculateHeaderHeight, calculateFooterHeight } from "./dimensions.js";
 export { renderStepNumber } from "./step-number-renderer.js";
 export { renderSmartBorders } from "./border-renderer.js";
+export { renderHeader, type HeaderOptions } from "./header-renderer.js";

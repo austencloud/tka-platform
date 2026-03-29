@@ -225,7 +225,7 @@ difficulty, QR code, footer content, and custom notes text.
    */
   .preview-frame {
     width: 100%;
-    max-width: 280px;
+    max-width: 100%;
     align-self: center;
     flex-shrink: 0;
     padding: 0 16px;
@@ -297,15 +297,15 @@ difficulty, QR code, footer content, and custom notes text.
   }
 
   .toggle-btn.active {
-    background: color-mix(in srgb, #34d399 15%, transparent);
-    border-color: color-mix(in srgb, #34d399 50%, transparent);
-    color: #34d399;
-    box-shadow: 0 0 0 1px color-mix(in srgb, #34d399 20%, transparent);
+    background: color-mix(in srgb, var(--theme-accent) 20%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent) 40%, transparent);
+    color: var(--theme-text, #ffffff);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--theme-accent) 15%, transparent), 0 2px 8px color-mix(in srgb, var(--theme-accent) 25%, transparent);
   }
 
   .toggle-btn.active:hover {
-    background: color-mix(in srgb, #34d399 22%, transparent);
-    border-color: color-mix(in srgb, #34d399 65%, transparent);
+    background: color-mix(in srgb, var(--theme-accent) 30%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent) 55%, transparent);
   }
 
   /* ── Notes input ─────────────────────────────────────────── */
@@ -329,7 +329,7 @@ difficulty, QR code, footer content, and custom notes text.
   }
 
   .notes-input:focus {
-    border-color: color-mix(in srgb, #34d399 50%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent) 50%, transparent);
     outline: none;
   }
 
