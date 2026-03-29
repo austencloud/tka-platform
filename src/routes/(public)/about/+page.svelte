@@ -22,7 +22,7 @@
       title: "What Is TKA",
       color: "#22c55e",
       content: [
-        "TKA is a notation system for flow arts. Other people have documented patterns before, and that work matters. TKA tries to take it further.",
+        "TKA is a notation system for flow arts. Other people have documented patterns before. TKA takes it further.",
         "Right now, flow arts knowledge lives mostly in videos scattered across the internet. Sheet music tells musicians what to play. Scripts tell actors what to say. TKA does that for prop movement: write it down, read it back, reproduce it later.",
       ],
     },
@@ -42,7 +42,7 @@
       title: "Why This Matters",
       color: "#ec4899",
       content: [
-        "Flow arts is young. Most spinners learn alone, develop their own vocabulary, and have a hard time collaborating with people who learned differently. That's especially true in the US, where TKA started.",
+        "Flow arts is young. Most spinners learn alone, develop their own vocabulary, and have a hard time collaborating with people who learned differently.",
         "TKA uses symbols and pictures instead of English terminology, so it works across languages. It works on paper and on screen.",
         "When patterns are written down, choreographers can share and build on each other's work. You can also archive your own material and actually find it again months later.",
       ],

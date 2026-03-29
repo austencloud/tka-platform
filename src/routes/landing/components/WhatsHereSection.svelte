@@ -70,7 +70,7 @@
   }
 
   h2 {
-    font-family: "Instrument Serif", Georgia, serif;
+    font-family: var(--landing-heading-font, "Instrument Serif", Georgia, serif);
     font-size: clamp(1.6rem, 4vw, 2.2rem);
     font-weight: 400;
     margin-bottom: 48px;

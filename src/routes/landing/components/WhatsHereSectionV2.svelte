@@ -62,7 +62,7 @@
 	}
 
 	h2 {
-		font-family: 'Instrument Serif', Georgia, serif;
+		font-family: var(--landing-heading-font, 'Instrument Serif', Georgia, serif);
 		font-size: clamp(1.7rem, 3.5vw, 2.3rem);
 		font-weight: 400;
 		margin-bottom: 32px;
@@ -139,7 +139,7 @@
 	}
 
 	.title {
-		font-family: 'Instrument Serif', Georgia, serif;
+		font-family: var(--landing-heading-font, 'Instrument Serif', Georgia, serif);
 		font-size: 1.1rem;
 		font-weight: 400;
 		margin-bottom: 4px;

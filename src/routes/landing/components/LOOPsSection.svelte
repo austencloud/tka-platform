@@ -42,7 +42,7 @@
     </div>
 
     <p class="loop-cta">
-      This is where TKA starts <strong>creating patterns for you</strong> — not just
+      This is where TKA starts <strong>creating patterns for you</strong>. Not just
       documenting what you know, but showing you patterns you've never tried.
     </p>
   </div>

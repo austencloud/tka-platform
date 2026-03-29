@@ -13,6 +13,7 @@
   const DEFAULT_BACKGROUND = BackgroundType.NIGHT_SKY;
   let mounted = $state(false);
 
+
   onMount(() => {
     applyThemeForBackground(DEFAULT_BACKGROUND);
     mounted = true;
@@ -41,12 +42,11 @@
 </script>
 
 <svelte:head>
-  <!-- Instrument Serif for landing page headings -->
-  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Instrument+Serif&display=swap" as="style" />
+  <!-- Playfair Display for landing page headings -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
   <link
-    href="https://fonts.googleapis.com/css2?family=Instrument+Serif&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&display=swap"
     rel="stylesheet"
   />
 
@@ -370,6 +370,7 @@
   </div>
 </div>
 
+
 <style>
   /* Skip link - visible only on focus for keyboard users */
   .skip-link {
@@ -397,10 +398,12 @@
     position: relative;
     min-height: 100vh;
     font-family: system-ui, -apple-system, sans-serif;
+    --landing-heading-font: "Playfair Display", Georgia, serif;
     color: var(--theme-text, #ffffff);
     line-height: 1.6;
     overflow-x: hidden;
   }
+
 
   .background-layer {
     position: fixed;

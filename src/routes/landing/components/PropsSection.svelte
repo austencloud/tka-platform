@@ -6,8 +6,8 @@
   <div class="container">
     <h2>30+ Supported Props</h2>
     <p class="section-intro">
-      TKA Composer works with virtually every flow prop — both unilateral
-      (one-handed) and bilateral (two-handed).
+      TKA works with staves, fans, clubs, hoops, buugeng, swords, and more.
+      One prop per hand, any grip style.
     </p>
 
     <div class="props-showcase">

@@ -2,7 +2,7 @@
   /**
    * HeroCarouselSection
    *
-   * The landing page hero: title and subtitle above a 16:9 video carousel.
+   * The landing page hero: title and subtitle above a 4:5 portrait video carousel.
    * Videos are loaded from Firestore's showcaseVideos collection (featured + approved),
    * with a crossfade every 5 seconds. Manual nav resets the timer.
    *
@@ -293,12 +293,19 @@
 <section class="hero-carousel" aria-label="TKA hero introduction">
   <!-- Title block -->
   <div class="title-block">
-    <h1>The Kinetic Alphabet</h1>
-    <p class="subtitle">
-      Notation for flow arts. A shared language for staff, fans, clubs, hoops,
-      and everything you grip and spin.
-    </p>
+    <h1>
+      <span class="sparkle-text">
+        The Kinetic Alphabet
+        <span class="glint glint-1"></span>
+        <span class="glint glint-2"></span>
+        <span class="glint glint-3"></span>
+        <span class="glint glint-4"></span>
+      </span>
+    </h1>
   </div>
+
+  <!-- Video + CTA row -->
+  <div class="hero-body">
 
   <!-- Video frame -->
   <div class="carousel-stage">
@@ -361,10 +368,9 @@
     {/if}
   </div>
 
-  <!-- Dots + credit — outside the video frame -->
+  <!-- Dots + credit — directly under the video -->
   {#if !loading && entries.length > 0}
     <div class="carousel-footer">
-      <!-- Dot indicators -->
       {#if entries.length > 1}
         <div class="dots" role="tablist" aria-label="Video indicators">
           {#each entries as _, i}
@@ -380,7 +386,6 @@
         </div>
       {/if}
 
-      <!-- Performer credit -->
       {#if currentEntry}
         <p class="credit" aria-live="polite">
           <span class="performer">{currentEntry.performer}</span>
@@ -390,6 +395,34 @@
       {/if}
     </div>
   {/if}
+
+  <!-- CTA panel beside the video -->
+  <div class="hero-cta">
+    <p class="cta-tagline">Notation for flow arts.</p>
+    <p class="cta-desc">
+      Document, animate, and share choreography for staves, fans, clubs, hoops, and everything you spin.
+    </p>
+
+    <div class="cta-buttons">
+      <a href="/create" class="cta-btn cta-primary" data-sveltekit-reload>
+        <i class="fas fa-pen-nib" aria-hidden="true"></i>
+        Start creating
+      </a>
+      <a href="/browse/gallery" class="cta-btn cta-secondary" data-sveltekit-reload>
+        <i class="fas fa-compass" aria-hidden="true"></i>
+        Browse sequences
+      </a>
+    </div>
+
+    <button class="cta-btn cta-tertiary" onclick={() => {
+      document.getElementById('main-content')?.scrollIntoView({ behavior: 'smooth' });
+    }}>
+      <i class="fas fa-chevron-down" aria-hidden="true"></i>
+      See how it works
+    </button>
+  </div>
+
+  </div><!-- /.hero-body -->
 </section>
 
 <style>
@@ -412,20 +445,170 @@
   }
 
   h1 {
-    font-family: "Instrument Serif", Georgia, serif;
+    font-family: var(--landing-heading-font, "Playfair Display", Georgia, serif);
     font-size: clamp(2.4rem, 6vw, 4.5rem);
     font-weight: 400;
     line-height: 1.05;
     color: var(--theme-text, #fff);
     letter-spacing: -0.02em;
-    margin: 0 0 16px;
+    margin: 0;
   }
 
-  .subtitle {
-    font-size: clamp(0.95rem, 1.8vw, 1.125rem);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
-    line-height: 1.65;
+  /* Sparkle glint container */
+  .sparkle-text {
+    position: relative;
+    display: inline-block;
+  }
+
+  /* Individual glint — a 4-pointed star that fades in/out at different times */
+  .glint {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    pointer-events: none;
+    opacity: 0;
+  }
+
+  .glint::before,
+  .glint::after {
+    content: "";
+    position: absolute;
+    background: rgba(255, 240, 200, 0.9);
+    border-radius: 1px;
+  }
+
+  /* Vertical bar of the cross */
+  .glint::before {
+    width: 2px;
+    height: 100%;
+    left: 50%;
+    top: 0;
+    transform: translateX(-50%);
+  }
+
+  /* Horizontal bar of the cross */
+  .glint::after {
+    width: 100%;
+    height: 2px;
+    top: 50%;
+    left: 0;
+    transform: translateY(-50%);
+  }
+
+  .glint-1 { top: 15%; left: 8%; animation: glint-flash 3.5s ease-in-out 0.5s infinite; }
+  .glint-2 { top: 25%; right: 5%; animation: glint-flash 4s ease-in-out 1.8s infinite; }
+  .glint-3 { bottom: 20%; left: 42%; animation: glint-flash 3.8s ease-in-out 3s infinite; }
+  .glint-4 { top: 10%; left: 65%; animation: glint-flash 4.2s ease-in-out 0s infinite; }
+
+  @keyframes glint-flash {
+    0%, 85%, 100% { opacity: 0; transform: scale(0.5); }
+    90% { opacity: 1; transform: scale(1.2); }
+    95% { opacity: 0.6; transform: scale(0.8); }
+  }
+
+  /* ── Hero body: video + CTA side by side on desktop ────────────────────────── */
+
+  .hero-body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(24px, 4vw, 48px);
+    width: 100%;
+    max-width: 900px;
+  }
+
+  /* ── CTA panel ──────────────────────────────────────────────────────────── */
+
+  .hero-cta {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    flex-shrink: 0;
+    max-width: 300px;
+    animation: fade-up 0.7s ease both;
+    animation-delay: 0.5s;
+  }
+
+  .cta-tagline {
+    font-family: var(--landing-heading-font, "Playfair Display", Georgia, serif);
+    font-size: clamp(1.2rem, 2vw, 1.5rem);
+    font-weight: 400;
+    color: var(--theme-text, #fff);
     margin: 0;
+    line-height: 1.3;
+  }
+
+  .cta-desc {
+    font-size: 0.9rem;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
+    line-height: 1.6;
+    margin: 0 0 8px;
+  }
+
+  .cta-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .cta-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 24px;
+    border-radius: 12px;
+    font-family: var(--font-body, system-ui, sans-serif);
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    white-space: nowrap;
+  }
+
+  .cta-btn:hover {
+    transform: translateY(-1px);
+  }
+
+  .cta-primary {
+    background: var(--theme-accent, #d4813a);
+    color: #fff;
+    box-shadow: 0 4px 20px rgba(212, 129, 58, 0.35);
+  }
+
+  .cta-primary:hover {
+    box-shadow: 0 6px 28px rgba(212, 129, 58, 0.5);
+  }
+
+  .cta-secondary {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--theme-text, #fff);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+  }
+
+  .cta-secondary:hover {
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  .cta-tertiary {
+    background: transparent;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    border: 1px dashed rgba(255, 255, 255, 0.15);
+  }
+
+  .cta-tertiary:hover {
+    color: var(--theme-text, #fff);
+    border-color: rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  .cta-tertiary i {
+    animation: bounce-down 2s ease-in-out infinite;
+  }
+
+  @keyframes bounce-down {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(3px); }
   }
 
   /* ── Carousel stage ─────────────────────────────────────────────────────────── */
@@ -433,8 +616,8 @@
   .carousel-stage {
     position: relative;
     width: 100%;
-    max-width: 760px;
-    aspect-ratio: 16 / 9;
+    max-width: 480px;
+    aspect-ratio: 4 / 5;
     border-radius: 16px;
     overflow: hidden;
     background: #0a0a0f;
@@ -614,6 +797,23 @@
       padding: 60px 16px 48px;
     }
 
+    .hero-body {
+      flex-direction: column;
+    }
+
+    .hero-cta {
+      max-width: 100%;
+      text-align: center;
+      align-items: center;
+    }
+
+    .cta-buttons {
+      flex-direction: row;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+
     .carousel-stage {
       border-radius: 12px;
     }
@@ -655,6 +855,10 @@
 
     .video-layer {
       transition: none;
+    }
+
+    .glint {
+      display: none;
     }
 
     .dot,

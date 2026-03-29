@@ -83,7 +83,7 @@
 
   .caption-above strong {
     color: var(--theme-text, #fff);
-    font-family: "Instrument Serif", Georgia, serif;
+    font-family: var(--landing-heading-font, "Instrument Serif", Georgia, serif);
     font-size: 1.1em;
   }
 

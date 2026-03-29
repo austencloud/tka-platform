@@ -81,7 +81,7 @@
   }
 
   h2 {
-    font-family: "Instrument Serif", Georgia, serif;
+    font-family: var(--landing-heading-font, "Instrument Serif", Georgia, serif);
     font-size: clamp(2rem, 5vw, 3rem);
     font-weight: 400;
     color: #f5f5f5;
