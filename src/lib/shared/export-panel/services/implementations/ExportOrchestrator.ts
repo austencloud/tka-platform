@@ -178,6 +178,8 @@ export class ExportOrchestrator implements IExportOrchestrator {
         fps: exportOpts.fps,
         resolution: exportOpts.resolution,
         loopCount: exportOpts.loopCount,
+        includeAnimationStartPosition: exportOpts.includeStartPosition,
+        includeEndHold: exportOpts.includeEndHold,
         effectOverrides: exportOpts.effectOverrides ?? undefined,
         format: "mp4",
       }
