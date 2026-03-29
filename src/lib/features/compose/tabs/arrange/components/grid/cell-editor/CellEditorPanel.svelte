@@ -18,6 +18,11 @@
   import LayerSection from "./LayerSection.svelte";
   import ChipGrid from "./ChipGrid.svelte";
   import TransformSection from "./sections/TransformSection.svelte";
+  import SpeedSection from "./sections/SpeedSection.svelte";
+  import EffectsSection from "./sections/EffectsSection.svelte";
+  import EffortSection from "./sections/EffortSection.svelte";
+  import OffsetSection from "./sections/OffsetSection.svelte";
+  import DisplaySection from "./sections/DisplaySection.svelte";
 
   const MAX_LAYERS = 4;
 
@@ -181,10 +186,34 @@
   <!-- Expanded sections -->
   {#if panelState.expandedSection === 'transform'}
     <TransformSection {panelState} onTransform={handleTransform} />
-  {:else if panelState.expandedSection}
-    <div class="expanded-section-placeholder">
-      Section: {panelState.expandedSection}
-    </div>
+  {:else if panelState.expandedSection === 'speed'}
+    <SpeedSection
+      currentSpeed={cell.speedMultiplier ?? 1.0}
+      onSetSpeed={speed => onSetSpeed?.(speed)}
+    />
+  {:else if panelState.expandedSection === 'effects'}
+    <EffectsSection
+      currentEffect={cell.effect ?? "none"}
+      currentTrailMode={cell.trailMode}
+      onSetEffect={effect => onSetEffect?.(effect)}
+      onSetTrailMode={mode => onSetTrailMode?.(mode)}
+    />
+  {:else if panelState.expandedSection === 'effort'}
+    <EffortSection
+      currentEffort={cell.effort}
+      onSetEffort={effort => onSetEffort?.(effort)}
+    />
+  {:else if panelState.expandedSection === 'offset'}
+    <OffsetSection
+      currentOffset={cell.beatOffset}
+      onSetOffset={offset => onSetOffset?.(offset)}
+    />
+  {:else if panelState.expandedSection === 'display'}
+    <DisplaySection
+      currentMediaType={cell.mediaType}
+      layerCount={cell.layers.length}
+      onMediaTypeChange={type => onMediaTypeChange(type)}
+    />
   {/if}
 
   <!-- Footer actions -->
@@ -278,17 +307,6 @@
   .close-btn:hover {
     background: rgba(255, 255, 255, 0.1);
     color: var(--theme-text, white);
-  }
-
-  /* Expanded section placeholder */
-  .expanded-section-placeholder {
-    padding: clamp(12px, 3cqi, 16px);
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1px dashed var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: clamp(6px, 2cqi, 10px);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    font-size: clamp(0.8rem, 2.8cqi, 0.9rem);
-    text-align: center;
   }
 
   /* Footer */

@@ -148,7 +148,7 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
-    animation: slideDown 200ms ease;
+    animation: slideDown 180ms ease-out;
   }
 
   @keyframes slideDown {
@@ -167,7 +167,7 @@
     font-size: 10px;
     text-transform: uppercase;
     letter-spacing: 1px;
-    color: rgba(255, 255, 255, 0.2);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.2));
     font-weight: 600;
     margin: 0;
   }
@@ -190,7 +190,7 @@
     gap: 6px;
     background: transparent;
     border: none;
-    color: rgba(255, 255, 255, 0.5);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     font-size: 13px;
     font-weight: 500;
     cursor: pointer;
@@ -198,12 +198,12 @@
   }
 
   .segment-btn:hover {
-    color: rgba(255, 255, 255, 0.8);
+    color: var(--theme-text, rgba(255, 255, 255, 0.8));
   }
 
   .segment-btn.active {
-    color: #a855f7;
-    box-shadow: inset 0 -2px 0 #a855f7;
+    color: var(--theme-accent, #a855f7);
+    box-shadow: inset 0 -2px 0 var(--theme-accent, #a855f7);
   }
 
   /* Rotate strip hover */
@@ -267,7 +267,7 @@
 
   .btn-desc {
     font-size: 10px;
-    color: rgba(255, 255, 255, 0.3);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.3));
   }
 
   /* Hotkey badge */
@@ -276,7 +276,7 @@
     top: 4px;
     right: 4px;
     font-size: 9px;
-    color: rgba(255, 255, 255, 0.15);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.15));
     pointer-events: none;
   }
 
