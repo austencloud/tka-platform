@@ -79,7 +79,9 @@ export class HandPathFactory implements IHandPathFactory {
 
     const startLocation = locations[0] as GridLocation;
     const endLocation = locations[locations.length - 1] as GridLocation;
-    const length = locations.length;
+    // The number of beats (steps) in the path. Each consecutive pair of
+    // locations defines one step, so beat count is locations.length - 1.
+    const length = locations.length - 1;
     const bigrams = buildBigrams(locations);
     const uniqueLocations = deduplicateLocations(locations);
     const impliedGridMode = deriveGridMode(locations);

@@ -26,7 +26,6 @@ import { QualityTier } from "../../domain/types/QualityTypes";
 import { effectErrorSignal } from "../../state/effect-error-signal.svelte";
 
 export class AnimationRenderLoop implements IAnimationRenderLoop {
-  private diagFrameCount = 0;
   private renderer: IAnimationRenderer | null = null;
   private TrailCapturer: ITrailCapturer | null = null;
   private pathCache: AnimationPathCache | null = null;
@@ -327,17 +326,6 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
 
   private render(params: RenderFrameParams, currentTime: number): void {
     if (!this.renderer) return;
-    this.diagFrameCount++;
-
-    if (this.diagFrameCount <= 10) {
-      const bp = params.props.blueProp;
-      const rp = params.props.redProp;
-      const hasFireR = this.fireRenderer?.isInitialized() && params.fireConfig?.enabled;
-      const hasCharR = this.charcoalRenderer?.isInitialized();
-      const hasTrailO = !!this.trailOverlay;
-      const hasLed = this.ledRenderer?.isInitialized() && params.ledConfig?.enabled;
-      console.log(`[TRAIL-DIAG] RenderLoop frame ${this.diagFrameCount} | effects: trail=${hasTrailO} fire=${!!hasFireR} charcoal=${!!hasCharR} led=${!!hasLed} | blue: path=${bp?.centerPathAngle?.toFixed(2)} staff=${bp?.staffRotationAngle?.toFixed(2)} | red: path=${rp?.centerPathAngle?.toFixed(2)} staff=${rp?.staffRotationAngle?.toFixed(2)}`);
-    }
 
     // Measure RAF-to-RAF gap (includes browser layout, GC, other JS, vsync wait)
     const rafGap = this.lastFrameTime > 0 ? currentTime - this.lastFrameTime : 0;

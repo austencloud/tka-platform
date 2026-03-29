@@ -26,10 +26,12 @@ describe("LayoutCalculator", () => {
     });
   });
 
-  describe("calculateGalleryAspectRatio with start row", () => {
-    it("uses row-based layout for aspect ratio", () => {
+  describe("calculateGalleryAspectRatio with start column", () => {
+    it("uses column-based layout for aspect ratio", () => {
+      // 16 steps → LAYOUT_WITH_START_COLUMN[16] = [5, 4]
+      // AR = columns / (rows + header/footer fraction)
       const ar = calc.calculateGalleryAspectRatio(16);
-      expect(ar).toBeCloseTo(4 / (5 + 10 / 21), 3);
+      expect(ar).toBeCloseTo(5 / (4 + 10 / 21), 3);
     });
   });
 });

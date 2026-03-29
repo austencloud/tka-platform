@@ -97,6 +97,7 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
 
   resize(width: number, height: number): void {
     if (!this.canvas) return;
+    const sizeChanged = width !== this.width || height !== this.height;
     this.canvas.width = width;
     this.canvas.height = height;
     if (this.bufferCanvas) {
@@ -105,32 +106,29 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
     }
     this.width = width;
     this.height = height;
-  }
 
-  private diagFrameCount = 0;
+    // Canvas resize invalidates all ring buffer positions — they were
+    // computed at the old canvas size and would cause artifact lines
+    // when the next point is captured at the new size.
+    if (sizeChanged) {
+      this.blueLeftRing = [];
+      this.blueRightRing = [];
+      this.redLeftRing = [];
+      this.redRightRing = [];
+      this.warmupFramesRemaining = TrailOverlayCanvas.WARMUP_FRAMES;
+    }
+  }
 
   renderFrame(params: TrailOverlayRenderParams): void {
     const ctx = this.ctx;
     if (!ctx) return;
 
-    this.diagFrameCount++;
-
     // Let props settle before capturing trail data. The first few frames
     // often have props at intermediate positions (default coords before the
     // animation engine places them), which produces a straight-line artifact.
     if (this.warmupFramesRemaining > 0) {
-      if (this.diagFrameCount <= 10) {
-        console.log(`[TRAIL-DIAG] Warmup skip frame ${this.diagFrameCount}, remaining=${this.warmupFramesRemaining}`);
-      }
       this.warmupFramesRemaining--;
       return;
-    }
-
-    // Log first 10 frames after warmup to see what positions we're capturing
-    if (this.diagFrameCount <= 15) {
-      const bp = params.blueProp;
-      const rp = params.redProp;
-      console.log(`[TRAIL-DIAG] Frame ${this.diagFrameCount} | blue: path=${bp?.centerPathAngle?.toFixed(2)} staff=${bp?.staffRotationAngle?.toFixed(2)} xy=(${bp?.x},${bp?.y}) | red: path=${rp?.centerPathAngle?.toFixed(2)} staff=${rp?.staffRotationAngle?.toFixed(2)} xy=(${rp?.x},${rp?.y}) | rings: bL=${this.blueLeftRing.length} bR=${this.blueRightRing.length} rL=${this.redLeftRing.length} rR=${this.redRightRing.length}`);
     }
 
     const {
@@ -219,10 +217,6 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
         const blueLeading = this.getLeadingEdge(blueRing, canvasSize);
         const redLeading = this.getLeadingEdge(redRing, canvasSize);
         if (blueLeading.length >= 2 || redLeading.length >= 2) {
-          if (this.diagFrameCount <= 15) {
-            const fmt = (pts: TrailPoint[]) => pts.map(p => `(${p.x.toFixed(1)},${p.y.toFixed(1)})`).join('→');
-            console.log(`[TRAIL-DIAG] DRAW frame ${this.diagFrameCount} | blue[${blueLeading.length}]: ${fmt(blueLeading)} | red[${redLeading.length}]: ${fmt(redLeading)} | lineWidth=${overlaySettings.lineWidth.toFixed(1)} canvasSize=${canvasSize}`);
-          }
           this.trailRenderer.renderTrails(
             bCtx as CanvasRenderingContext2D,
             blueLeading,
@@ -257,18 +251,20 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
     this.warmupFramesRemaining = TrailOverlayCanvas.WARMUP_FRAMES;
   }
 
-  /** Flush stale trail data without the warmup delay. Use when props are
-   *  already at their correct positions (e.g. sequence change after the
-   *  orchestrator has repositioned them). */
+  /** Flush stale trail data on sequence change. Applies a short warmup
+   *  to let canvas sizing and prop state propagate before capturing. */
   clearBuffers(): void {
     if (!this.ctx) return;
-    console.log(`[TRAIL-DIAG] clearBuffers() called at frame ${this.diagFrameCount}`);
-    this.diagFrameCount = 0;
+    this.hasPrevCenter = false;
     this.ctx.clearRect(0, 0, this.width, this.height);
     this.blueLeftRing = [];
     this.blueRightRing = [];
     this.redLeftRing = [];
     this.redRightRing = [];
+    // Always apply warmup — the orchestrator sets angles synchronously but
+    // the canvas size may still be settling (resize events arrive async)
+    // and Svelte reactive props may not have propagated yet.
+    this.warmupFramesRemaining = TrailOverlayCanvas.WARMUP_FRAMES;
   }
 
   setVisible(visible: boolean): void {

@@ -81,8 +81,10 @@ export class SequenceFuser implements ISequenceFuser {
 		const blueHandPath = extractHandPath(blue);
 		const redHandPath = extractHandPath(red);
 
-		const blueLength = blueHandPath.length;
-		const redLength = redHandPath.length;
+		// Derive beat count from locations (N+1 locations = N beats), not from
+		// the `length` property which may be stale or incorrect in existing data.
+		const blueLength = blueHandPath.locations.length - 1;
+		const redLength = redHandPath.locations.length - 1;
 
 		// Compute target length: LCM of both, truncated if it exceeds maxBeats
 		const naturalLength = lcm(blueLength, redLength);

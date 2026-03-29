@@ -59,10 +59,16 @@ export function getR2Client(
   cachedClient = new S3Client({
     region: "auto",
     endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
+    forcePathStyle: true,
     credentials: {
       accessKeyId,
       secretAccessKey,
     },
+    // AWS SDK v3.723+ adds CRC32 checksums to all requests by default.
+    // Presigned URLs include these as signed query params, but browser
+    // XHR can't send the matching headers, causing R2 to return 403.
+    requestChecksumCalculation: "WHEN_REQUIRED",
+    responseChecksumValidation: "WHEN_REQUIRED",
   });
 
   return cachedClient;
