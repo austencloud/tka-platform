@@ -7,7 +7,7 @@
 	import type { TileType, FloorMaterial } from "../../domain/museum-grid-types";
 	import { getTileMetadata } from "../../domain/tile-registry";
 	import { getEditorContext } from "../../state/editor-context";
-	import type { EditorTool, DrawMode } from "../../state/editor-editor.svelte";
+	import type { EditorTool, DrawMode } from "../../state/editor-state.svelte";
 
 	const { state: editor } = getEditorContext();
 

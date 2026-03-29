@@ -1,216 +1,376 @@
 /**
  * Museum 2D Game State Factory
  *
- * Tracks player position, facing direction, movement, and which interactable
- * the player is standing next to. Provides collision-checked movement and
- * interaction via the tile registry.
+ * rAF-driven game loop with sub-tile interpolation for smooth movement.
+ * Logical position is tile-locked. Visual position lerps between tiles
+ * using easeOutQuad. Input is buffered during transitions and consumed
+ * on arrival at the target tile (Pokemon pattern).
  */
 
 import type {
-  MuseumGrid,
-  Direction,
-  WingRegion,
+	MuseumGrid,
+	Direction,
+	WingRegion,
 } from "../domain/museum-grid-types";
 import { tileKey } from "../domain/museum-grid-types";
 import { isSolid, isInteractable } from "../domain/tile-registry";
 
 const DIRECTION_DELTAS: Record<Direction, { dx: number; dy: number }> = {
-  north: { dx: 0, dy: -1 },
-  south: { dx: 0, dy: 1 },
-  east: { dx: 1, dy: 0 },
-  west: { dx: -1, dy: 0 },
+	north: { dx: 0, dy: -1 },
+	south: { dx: 0, dy: 1 },
+	east: { dx: 1, dy: 0 },
+	west: { dx: -1, dy: 0 },
 };
 
+function easeOutQuad(t: number): number {
+	return 1 - (1 - t) * (1 - t);
+}
+
+function lerp(a: number, b: number, t: number): number {
+	return a + (b - a) * t;
+}
+
+const MOVE_DURATION_MS = 110;
+const MOVE_DURATION_DIAG_MS = 155; // ~1.414x for consistent diagonal speed
+const INPUT_BUFFER_WINDOW_MS = 150;
+const CAMERA_SMOOTHING = 0.14;
+
 export function createMuseum2DState(grid: MuseumGrid) {
-  let playerX = $state(grid.spawn.x);
-  let playerY = $state(grid.spawn.y);
-  let playerFacing = $state<Direction>(grid.spawn.facing);
-  let isMoving = $state(false);
+	// Logical position — committed tile the player is on (or heading to)
+	let logicalX = $state(grid.spawn.x);
+	let logicalY = $state(grid.spawn.y);
+	let targetX = $state(grid.spawn.x);
+	let targetY = $state(grid.spawn.y);
+	let playerFacing = $state<Direction>(grid.spawn.facing);
 
-  // Interaction panel state — which definition ID is currently focused
-  let focusedExhibitId = $state<string | null>(null);
-  let focusedPerformerId = $state<string | null>(null);
-  let focusedTriggerId = $state<string | null>(null);
+	// Visual position — sub-tile float for rendering (pixels = visualPos * tileSize)
+	let visualX = $state(grid.spawn.x);
+	let visualY = $state(grid.spawn.y);
 
-  // Movement cooldown handled externally (keyboard repeat timer),
-  // but we track "isMoving" for animation purposes
-  let moveTimeout: ReturnType<typeof setTimeout> | null = null;
+	// Camera position — smoothed follow
+	let cameraX = $state(grid.spawn.x);
+	let cameraY = $state(grid.spawn.y);
 
-  function canMoveTo(x: number, y: number): boolean {
-    if (x < 0 || y < 0 || x >= grid.width || y >= grid.height) return false;
-    const tile = grid.tiles.get(tileKey(x, y));
-    // Empty tile (not in the map) = void, can't walk there
-    if (!tile) return false;
-    return !isSolid(tile.type);
-  }
+	// Movement interpolation
+	let moveProgress = $state(0);
+	let isTransitioning = $state(false);
+	let currentMoveDuration = MOVE_DURATION_MS;
 
-  function movePlayer(direction: Direction) {
-    const delta = DIRECTION_DELTAS[direction];
-    const newX = playerX + delta.dx;
-    const newY = playerY + delta.dy;
+	// Input state — managed by the game component
+	let heldDirections = $state(new Set<Direction>());
+	let inputBuffer = $state<{ direction: Direction; dx: number; dy: number; timestamp: number } | null>(null);
 
-    // Always update facing, even if movement is blocked
-    playerFacing = direction;
+	// Interaction panel state
+	let focusedExhibitId = $state<string | null>(null);
+	let focusedPerformerId = $state<string | null>(null);
+	let focusedTriggerId = $state<string | null>(null);
 
-    if (!canMoveTo(newX, newY)) return;
+	// rAF loop
+	let rafId: number | null = null;
+	let lastTimestamp = 0;
 
-    playerX = newX;
-    playerY = newY;
+	function canMoveTo(x: number, y: number): boolean {
+		if (x < 0 || y < 0 || x >= grid.width || y >= grid.height) return false;
+		const tile = grid.tiles.get(tileKey(x, y));
+		if (!tile) return false;
+		return !isSolid(tile.type);
+	}
 
-    // Brief "isMoving" flag for animation — duration matches CSS transition (120ms)
-    isMoving = true;
-    if (moveTimeout) clearTimeout(moveTimeout);
-    moveTimeout = setTimeout(() => {
-      isMoving = false;
-    }, 120);
+	/**
+	 * Start a move to an adjacent tile. Sets target and begins interpolation.
+	 * Returns true if the move started (tile was walkable).
+	 */
+	function startMove(dx: number, dy: number, facing: Direction): boolean {
+		const newX = logicalX + dx;
+		const newY = logicalY + dy;
 
-    // Check if we stepped onto a trigger
-    checkTriggerAtPosition(newX, newY);
-  }
+		playerFacing = facing;
 
-  /**
-   * Move diagonally by (dx, dy). Both axes must be non-zero.
-   *
-   * Prevents corner-cutting: the diagonal tile AND both adjacent cardinal tiles
-   * must all be walkable. If any of the three is blocked, movement is cancelled.
-   * Facing is set to the vertical axis (north/south) for consistency.
-   */
-  function moveDiagonal(dx: number, dy: number, preferredFacing: Direction) {
-    const targetX = playerX + dx;
-    const targetY = playerY + dy;
-    const adjacentHX = playerX + dx; // same column, current row
-    const adjacentHY = playerY;
-    const adjacentVX = playerX;      // current column, same row
-    const adjacentVY = playerY + dy;
+		if (!canMoveTo(newX, newY)) return false;
 
-    // Update facing regardless of whether movement succeeds
-    playerFacing = preferredFacing;
+		targetX = newX;
+		targetY = newY;
+		moveProgress = 0;
+		isTransitioning = true;
+		currentMoveDuration = (dx !== 0 && dy !== 0) ? MOVE_DURATION_DIAG_MS : MOVE_DURATION_MS;
 
-    // All three tiles must be walkable to prevent corner-cutting
-    if (
-      !canMoveTo(targetX, targetY) ||
-      !canMoveTo(adjacentHX, adjacentHY) ||
-      !canMoveTo(adjacentVX, adjacentVY)
-    ) return;
+		return true;
+	}
 
-    playerX = targetX;
-    playerY = targetY;
+	/**
+	 * Try to move in a direction. For diagonals, implements wall sliding:
+	 * if diagonal is blocked, tries each cardinal axis independently.
+	 */
+	function tryMove(dx: number, dy: number, facing: Direction): boolean {
+		if (isTransitioning) {
+			// Buffer the input for when current move completes
+			inputBuffer = { direction: facing, dx, dy, timestamp: performance.now() };
+			return false;
+		}
 
-    isMoving = true;
-    if (moveTimeout) clearTimeout(moveTimeout);
-    moveTimeout = setTimeout(() => {
-      isMoving = false;
-    }, 120);
+		// Cardinal move
+		if (dx === 0 || dy === 0) {
+			return startMove(dx, dy, facing);
+		}
 
-    checkTriggerAtPosition(targetX, targetY);
-  }
+		// Diagonal move — check corner-cutting prevention
+		const canDiag = canMoveTo(logicalX + dx, logicalY + dy)
+			&& canMoveTo(logicalX + dx, logicalY)
+			&& canMoveTo(logicalX, logicalY + dy);
 
-  function checkTriggerAtPosition(x: number, y: number) {
-    const trigger = grid.triggers.find((t) => t.tileX === x && t.tileY === y);
-    if (trigger) {
-      focusedTriggerId = trigger.id;
-      focusedExhibitId = null;
-      focusedPerformerId = null;
-    }
-  }
+		if (canDiag) {
+			return startMove(dx, dy, facing);
+		}
 
-  /**
-   * Look at the tile the player is facing. If it's interactable, find the
-   * matching exhibit or performer definition and focus it in the detail panel.
-   */
-  function interact() {
-    const delta = DIRECTION_DELTAS[playerFacing];
-    const targetX = playerX + delta.dx;
-    const targetY = playerY + delta.dy;
+		// Wall sliding: try each axis independently
+		if (canMoveTo(logicalX + dx, logicalY)) {
+			const hFacing = dx > 0 ? "east" : "west";
+			return startMove(dx, 0, hFacing);
+		}
+		if (canMoveTo(logicalX, logicalY + dy)) {
+			const vFacing = dy > 0 ? "south" : "north";
+			return startMove(0, dy, vFacing);
+		}
 
-    const tile = grid.tiles.get(tileKey(targetX, targetY));
-    if (!tile || !isInteractable(tile.type)) {
-      // Clear any previous focus
-      focusedExhibitId = null;
-      focusedPerformerId = null;
-      focusedTriggerId = null;
-      return;
-    }
+		// Fully blocked — just update facing
+		playerFacing = facing;
+		return false;
+	}
 
-    // Find matching definition by tile coordinates
-    const exhibit = grid.exhibits.find(
-      (e) => e.tileX === targetX && e.tileY === targetY
-    );
-    if (exhibit) {
-      focusedExhibitId = exhibit.id;
-      focusedPerformerId = null;
-      focusedTriggerId = null;
-      return;
-    }
+	/**
+	 * Resolve held directions into a single movement vector.
+	 */
+	function resolveHeldInput(): { dx: number; dy: number; facing: Direction } | null {
+		if (heldDirections.size === 0) return null;
 
-    const performer = grid.performers.find(
-      (p) => p.tileX === targetX && p.tileY === targetY
-    );
-    if (performer) {
-      focusedPerformerId = performer.id;
-      focusedExhibitId = null;
-      focusedTriggerId = null;
-      return;
-    }
+		let dx = 0;
+		let dy = 0;
+		let lastVFacing: Direction | null = null;
+		let lastHFacing: Direction | null = null;
 
-    // Fallback: use refId to find matching definition (handles multi-tile objects)
-    if (tile.refId) {
-      const exhibitByRef = grid.exhibits.find((e) => e.id === tile.refId);
-      if (exhibitByRef) {
-        focusedExhibitId = exhibitByRef.id;
-        focusedPerformerId = null;
-        focusedTriggerId = null;
-        return;
-      }
-      const performerByRef = grid.performers.find((p) => p.id === tile.refId);
-      if (performerByRef) {
-        focusedPerformerId = performerByRef.id;
-        focusedExhibitId = null;
-        focusedTriggerId = null;
-        return;
-      }
-    }
-  }
+		for (const dir of heldDirections) {
+			const delta = DIRECTION_DELTAS[dir];
+			dx += delta.dx;
+			dy += delta.dy;
+			if (delta.dy !== 0) lastVFacing = dir;
+			if (delta.dx !== 0) lastHFacing = dir;
+		}
 
-  /**
-   * Which wing region currently contains the player, if any.
-   */
-  function findCurrentWing(): WingRegion | null {
-    return (
-      grid.wings.find((w) => {
-        const b = w.bounds;
-        return (
-          playerX >= b.x &&
-          playerX < b.x + b.width &&
-          playerY >= b.y &&
-          playerY < b.y + b.height
-        );
-      }) ?? null
-    );
-  }
+		dx = Math.sign(dx);
+		dy = Math.sign(dy);
 
-  function clearFocus() {
-    focusedExhibitId = null;
-    focusedPerformerId = null;
-    focusedTriggerId = null;
-  }
+		if (dx === 0 && dy === 0) return null;
 
-  return {
-    get playerX() { return playerX; },
-    get playerY() { return playerY; },
-    get playerFacing() { return playerFacing; },
-    get isMoving() { return isMoving; },
-    get focusedExhibitId() { return focusedExhibitId; },
-    get focusedPerformerId() { return focusedPerformerId; },
-    get focusedTriggerId() { return focusedTriggerId; },
-    get currentWing() { return findCurrentWing(); },
-    get grid() { return grid; },
+		const facing = lastVFacing ?? lastHFacing ?? "north";
+		return { dx, dy, facing };
+	}
 
-    movePlayer,
-    moveDiagonal,
-    interact,
-    clearFocus,
-  };
+	/**
+	 * Check for buffered or held input and start the next move.
+	 * Called when the current transition completes (Pokemon pattern).
+	 */
+	function consumeNextInput() {
+		// Priority 1: Currently held keys
+		const held = resolveHeldInput();
+		if (held) {
+			tryMove(held.dx, held.dy, held.facing);
+			return;
+		}
+
+		// Priority 2: Buffered tap (pressed during transition, already released)
+		if (inputBuffer) {
+			const age = performance.now() - inputBuffer.timestamp;
+			if (age < INPUT_BUFFER_WINDOW_MS) {
+				const { dx, dy, direction } = inputBuffer;
+				inputBuffer = null;
+				tryMove(dx, dy, direction);
+				return;
+			}
+			inputBuffer = null;
+		}
+	}
+
+	/**
+	 * The game loop. Driven by requestAnimationFrame.
+	 * Advances movement interpolation and updates visual/camera positions.
+	 */
+	function gameLoop(timestamp: number) {
+		const dt = Math.min(timestamp - lastTimestamp, 50); // clamp for tab-switch
+		lastTimestamp = timestamp;
+
+		if (isTransitioning) {
+			moveProgress += dt / currentMoveDuration;
+
+			if (moveProgress >= 1.0) {
+				// Arrive at target tile
+				moveProgress = 1.0;
+				logicalX = targetX;
+				logicalY = targetY;
+				visualX = targetX;
+				visualY = targetY;
+				isTransitioning = false;
+
+				checkTriggerAtPosition(logicalX, logicalY);
+
+				// Immediately check for next input (zero gap between moves)
+				consumeNextInput();
+			} else {
+				// Interpolate visual position with easing
+				const t = easeOutQuad(moveProgress);
+				visualX = lerp(logicalX, targetX, t);
+				visualY = lerp(logicalY, targetY, t);
+			}
+		}
+
+		// Smooth camera follow (exponential lerp, frame-rate independent)
+		cameraX = lerp(cameraX, isTransitioning ? visualX : logicalX, CAMERA_SMOOTHING);
+		cameraY = lerp(cameraY, isTransitioning ? visualY : logicalY, CAMERA_SMOOTHING);
+
+		rafId = requestAnimationFrame(gameLoop);
+	}
+
+	function start() {
+		if (rafId !== null) return;
+		lastTimestamp = performance.now();
+		rafId = requestAnimationFrame(gameLoop);
+	}
+
+	function stop() {
+		if (rafId !== null) {
+			cancelAnimationFrame(rafId);
+			rafId = null;
+		}
+	}
+
+	// ── Input handlers (called by Museum2DGame component) ──
+
+	function onDirectionDown(direction: Direction) {
+		const newSet = new Set(heldDirections);
+		newSet.add(direction);
+		heldDirections = newSet;
+
+		const input = resolveHeldInput();
+		if (input) {
+			tryMove(input.dx, input.dy, input.facing);
+		}
+	}
+
+	function onDirectionUp(direction: Direction) {
+		const newSet = new Set(heldDirections);
+		newSet.delete(direction);
+		heldDirections = newSet;
+	}
+
+	// ── Interaction ──
+
+	function checkTriggerAtPosition(x: number, y: number) {
+		const trigger = grid.triggers.find((t) => t.tileX === x && t.tileY === y);
+		if (trigger) {
+			focusedTriggerId = trigger.id;
+			focusedExhibitId = null;
+			focusedPerformerId = null;
+		}
+	}
+
+	function interact() {
+		const delta = DIRECTION_DELTAS[playerFacing];
+		const tx = logicalX + delta.dx;
+		const ty = logicalY + delta.dy;
+
+		const tile = grid.tiles.get(tileKey(tx, ty));
+		if (!tile || !isInteractable(tile.type)) {
+			focusedExhibitId = null;
+			focusedPerformerId = null;
+			focusedTriggerId = null;
+			return;
+		}
+
+		const exhibit = grid.exhibits.find((e) => e.tileX === tx && e.tileY === ty);
+		if (exhibit) {
+			focusedExhibitId = exhibit.id;
+			focusedPerformerId = null;
+			focusedTriggerId = null;
+			return;
+		}
+
+		const performer = grid.performers.find((p) => p.tileX === tx && p.tileY === ty);
+		if (performer) {
+			focusedPerformerId = performer.id;
+			focusedExhibitId = null;
+			focusedTriggerId = null;
+			return;
+		}
+
+		if (tile.refId) {
+			const exhibitByRef = grid.exhibits.find((e) => e.id === tile.refId);
+			if (exhibitByRef) {
+				focusedExhibitId = exhibitByRef.id;
+				focusedPerformerId = null;
+				focusedTriggerId = null;
+				return;
+			}
+			const performerByRef = grid.performers.find((p) => p.id === tile.refId);
+			if (performerByRef) {
+				focusedPerformerId = performerByRef.id;
+				focusedExhibitId = null;
+				focusedTriggerId = null;
+				return;
+			}
+		}
+	}
+
+	function findCurrentWing(): WingRegion | null {
+		return (
+			grid.wings.find((w) => {
+				const b = w.bounds;
+				return (
+					logicalX >= b.x &&
+					logicalX < b.x + b.width &&
+					logicalY >= b.y &&
+					logicalY < b.y + b.height
+				);
+			}) ?? null
+		);
+	}
+
+	function clearFocus() {
+		focusedExhibitId = null;
+		focusedPerformerId = null;
+		focusedTriggerId = null;
+	}
+
+	return {
+		// Logical tile position (for collision, interaction, wing detection)
+		get playerX() { return logicalX; },
+		get playerY() { return logicalY; },
+		get playerFacing() { return playerFacing; },
+		get isMoving() { return isTransitioning; },
+
+		// Visual float position (for rendering — sub-tile interpolated)
+		get visualX() { return visualX; },
+		get visualY() { return visualY; },
+
+		// Camera position (smoothed follow)
+		get cameraX() { return cameraX; },
+		get cameraY() { return cameraY; },
+
+		// Panel state
+		get focusedExhibitId() { return focusedExhibitId; },
+		get focusedPerformerId() { return focusedPerformerId; },
+		get focusedTriggerId() { return focusedTriggerId; },
+		get currentWing() { return findCurrentWing(); },
+		get grid() { return grid; },
+
+		// Input (called by game component)
+		onDirectionDown,
+		onDirectionUp,
+		interact,
+		clearFocus,
+
+		// Lifecycle (called by game component onMount/onDestroy)
+		start,
+		stop,
+	};
 }
 
 export type Museum2DState = ReturnType<typeof createMuseum2DState>;
