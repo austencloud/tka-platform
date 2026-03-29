@@ -24,9 +24,9 @@
   {#if meta.icon}
     <div class="tile-content">
       <i class="fas {meta.icon} tile-icon" aria-hidden="true"></i>
-      {#if showLabel && (tile.type === "performer" || tile.type === "exhibit" || tile.type === "pedestal")}
+      {#if showLabel && (tile.type === "performer-station" || tile.type === "exhibit-panel" || tile.type === "pedestal" || tile.type === "sign")}
         <span class="tile-label">
-          {tile.type === "performer" ? "Performer" : tile.type === "exhibit" ? "Exhibit" : "Pedestal"}
+          {meta.label}
         </span>
       {/if}
     </div>
@@ -276,5 +276,65 @@
   .material-sandstone {
     background-image:
       radial-gradient(circle at 50% 50%, rgba(200, 180, 140, 0.04) 0%, transparent 60%);
+  }
+
+  /* ---- Rope barrier (VTG Wing) ---- */
+
+  .tile-rope {
+    background: #2a2520;
+    border: 1px solid rgba(255, 255, 255, 0.03);
+    position: relative;
+  }
+
+  .tile-rope::after {
+    content: "";
+    position: absolute;
+    top: 45%;
+    left: 5%;
+    right: 5%;
+    height: 3px;
+    background: linear-gradient(90deg, #c4a032, #e8c848, #c4a032);
+    border-radius: 2px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  }
+
+  .tile-rope .tile-icon {
+    color: #c4a032;
+    opacity: 0.7;
+  }
+
+  /* ---- Scaffolding (Construction Zone) ---- */
+
+  .tile-scaffolding {
+    background:
+      repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 3px,
+        rgba(200, 140, 50, 0.08) 3px,
+        rgba(200, 140, 50, 0.08) 6px
+      ),
+      #28201a;
+    border: 2px dashed rgba(200, 140, 50, 0.25);
+  }
+
+  .tile-scaffolding .tile-icon {
+    color: #d4940a;
+    opacity: 0.8;
+  }
+
+  /* ---- Sign (readable) ---- */
+
+  .tile-sign {
+    background: #1a2030;
+    border: 2px solid #4477aa;
+    box-shadow:
+      inset 0 0 8px rgba(68, 119, 170, 0.15),
+      0 0 4px rgba(68, 119, 170, 0.2);
+  }
+
+  .tile-sign .tile-icon {
+    color: #88bbdd;
+    filter: drop-shadow(0 0 3px rgba(136, 187, 221, 0.6));
   }
 </style>

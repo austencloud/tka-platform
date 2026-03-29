@@ -98,8 +98,7 @@ export class MotionQueryHandler implements IMotionQueryHandler {
     const actualGridMode = gridMode;
     const pictographs: PictographData[] = [];
 
-    for (const row of csvRows.slice(0, 50)) {
-      // Limit for performance
+    for (const row of csvRows) {
       const pictograph = this.csvPictographParser.parseCSVRowToPictograph(
         row as unknown as CSVRow,
         actualGridMode

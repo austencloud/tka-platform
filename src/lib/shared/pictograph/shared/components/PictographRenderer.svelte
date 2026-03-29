@@ -47,6 +47,9 @@ Usage:
     pictograph,
     blueReversal = false,
     redReversal = false,
+    // Motion visibility (hides arrows + props for that hand)
+    blueMotionVisible = true,
+    redMotionVisible = true,
     // Core visibility controls
     showGrid = true,
     showTKA = true,
@@ -96,6 +99,10 @@ Usage:
     pictograph: PreparedPictographData;
     blueReversal?: boolean;
     redReversal?: boolean;
+    /** Hide blue hand arrows + props when false */
+    blueMotionVisible?: boolean;
+    /** Hide red hand arrows + props when false */
+    redMotionVisible?: boolean;
     /** Master toggle for grid visibility */
     showGrid?: boolean;
     showTKA?: boolean;
@@ -181,15 +188,28 @@ Usage:
   const propPositions = $derived(pictograph._prepared?.propPositions || {});
   const propAssets = $derived(pictograph._prepared?.propAssets || {});
 
-  // Motions to render (filtered by visibleHand if specified)
+  // Opacity for dimmed (not hidden) motions — visible enough to see, clearly de-emphasized
+  const DIMMED_OPACITY = 0.2;
+
+  // Motions to render (filtered by visibleHand only; visibility controls opacity, not presence)
   const motions = $derived.by(() => {
     if (!pictograph.motions) return [];
     return Object.entries(pictograph.motions)
       .filter((entry): entry is [string, any] => entry[1] !== undefined)
       .filter(([color]) => visibleHand === null || color === visibleHand)
       .sort(([a], [b]) => (a === "blue" ? -1 : 1))
-      .map(([color, data]) => ({ color: color as "blue" | "red", data }));
+      .map(([color, data]) => ({
+        color: color as "blue" | "red",
+        data,
+        opacity: (color === "blue" ? blueMotionVisible : redMotionVisible) ? 1 : DIMMED_OPACITY,
+      }));
   });
+
+  // Both motions fully visible — glyphs that depend on both hands use this
+  const bothMotionsFullyVisible = $derived(blueMotionVisible && redMotionVisible);
+
+  // Glyph opacity: full when both motions visible, dimmed when one is off
+  const glyphOpacity = $derived(bothMotionsFullyVisible ? 1 : DIMMED_OPACITY);
 
   // VTG and Elemental calculation
   const vtgInfo = $derived.by(() => {
@@ -289,76 +309,86 @@ Usage:
       {/if}
 
       <!-- Props -->
-      {#each motions as { color, data } (color)}
+      {#each motions as { color, data, opacity } (color)}
         {#if propAssets[color] && propPositions[color]}
-          <PropSvg
-            motionData={data}
-            propAssets={propAssets[color]}
-            propPosition={propPositions[color]}
-            showProp={true}
-            isClickable={propsClickable}
-            isSelected={selectedPropHand === color}
-            onPropClick={propsClickable && onPropClick
-              ? () => onPropClick(color)
-              : undefined}
-            {cellIndex}
-          />
+          <g opacity={opacity}>
+            <PropSvg
+              motionData={data}
+              propAssets={propAssets[color]}
+              propPosition={propPositions[color]}
+              showProp={true}
+              isClickable={propsClickable}
+              isSelected={selectedPropHand === color}
+              onPropClick={propsClickable && onPropClick
+                ? () => onPropClick(color)
+                : undefined}
+              {cellIndex}
+            />
+          </g>
         {/if}
       {/each}
 
       <!-- Arrows -->
-      {#each motions as { color, data } (color)}
+      {#each motions as { color, data, opacity } (color)}
         {#if arrowAssets[color] && arrowPositions[color]}
-          <ArrowSvg
-            motionData={data}
-            {color}
-            pictographData={pictograph}
-            arrowAssets={arrowAssets[color]}
-            arrowPosition={arrowPositions[color]}
-            shouldMirror={arrowMirroring[color] || false}
-            showArrow={true}
-            isClickable={arrowsClickable}
-            {cellIndex}
-          />
+          <g opacity={opacity}>
+            <ArrowSvg
+              motionData={data}
+              {color}
+              pictographData={pictograph}
+              arrowAssets={arrowAssets[color]}
+              arrowPosition={arrowPositions[color]}
+              shouldMirror={arrowMirroring[color] || false}
+              showArrow={true}
+              isClickable={arrowsClickable}
+              {cellIndex}
+              {darkMode}
+            />
+          </g>
         {/if}
       {/each}
     </g>
 
     <!-- Corner glyphs - positioned at edges of expanded viewBox -->
-      <!-- TKA Glyph -->
+      <!-- TKA Glyph (fades when one motion is dimmed since it represents both hands) -->
       {#if pictograph.letter}
-        <TKAGlyph
+        <g opacity={showTKA ? glyphOpacity : 0}>
+          <TKAGlyph
+            letter={pictograph.letter}
+            pictographData={pictograph}
+            visible={showTKA}
+            {previewMode}
+            {darkMode}
+            onToggle={onToggleTKA}
+          />
+        </g>
+      {/if}
+
+      <!-- Turns Column (part of TKA) -->
+      <g opacity={showTKA ? glyphOpacity : 0}>
+        <TurnsColumn
+          {turnsTuple}
           letter={pictograph.letter}
           pictographData={pictograph}
           visible={showTKA}
           {previewMode}
-          {darkMode}
+          standalone={false}
           onToggle={onToggleTKA}
         />
-      {/if}
-
-      <!-- Turns Column (part of TKA) -->
-      <TurnsColumn
-        {turnsTuple}
-        letter={pictograph.letter}
-        pictographData={pictograph}
-        visible={showTKA}
-        {previewMode}
-        standalone={false}
-        onToggle={onToggleTKA}
-      />
+      </g>
 
       <!-- Direction Dot (same/opp indicator) - positioned relative to letter -->
-      <!-- NOTE: letterDimensions is already the base letter dimensions for dash letters -->
       {#if pictograph.letter}
-        <DirectionDot
-          direction={parsedDirection}
-          letter={pictograph.letter}
-          {letterDimensions}
-          visible={showTKA}
-          {previewMode}
-          {darkMode}
-        />
+        <g opacity={showTKA ? glyphOpacity : 0}>
+          <DirectionDot
+            direction={parsedDirection}
+            letter={pictograph.letter}
+            {letterDimensions}
+            visible={showTKA}
+            {previewMode}
+            {darkMode}
+          />
+        </g>
       {/if}
 
       <!-- Beat number overlay -->
@@ -378,30 +408,36 @@ Usage:
         visible={showReversals}
         {previewMode}
         onToggle={onToggleReversals}
+        {blueMotionVisible}
+        {redMotionVisible}
       />
 
       <!-- Fused Elemental + VTG glyph (bottom-right) -->
-      <ElementalGlyph
-        elementalType={vtgInfo.elementalType}
-        letter={pictograph.letter}
-        {hasValidData}
-        visible={showElemental || showVTG}
-        {previewMode}
-        onToggle={onToggleElemental ?? onToggleVTG}
-        xOffset={rightGlyphOffset}
-      />
+      <g opacity={(showElemental || showVTG) ? glyphOpacity : 0}>
+        <ElementalGlyph
+          elementalType={vtgInfo.elementalType}
+          letter={pictograph.letter}
+          {hasValidData}
+          visible={showElemental || showVTG}
+          {previewMode}
+          onToggle={onToggleElemental ?? onToggleVTG}
+          xOffset={rightGlyphOffset}
+        />
+      </g>
 
       <!-- Position glyph -->
-      <PositionGlyph
-        startPosition={pictograph.startPosition}
-        endPosition={pictograph.endPosition}
-        letter={pictograph.letter}
-        {hasValidData}
-        visible={showPositions}
-        {previewMode}
-        onToggle={onTogglePositions}
-        centerX={expandedWidth / 2}
-      />
+      <g opacity={showPositions ? glyphOpacity : 0}>
+        <PositionGlyph
+          startPosition={pictograph.startPosition}
+          endPosition={pictograph.endPosition}
+          letter={pictograph.letter}
+          {hasValidData}
+          visible={showPositions}
+          {previewMode}
+          onToggle={onTogglePositions}
+          centerX={expandedWidth / 2}
+        />
+      </g>
 
       <!-- Duration glyph (shows "2×", "0.5×", etc. when duration != 1) -->
       <!-- In timeline mode, use widthMultiplier as the live duration (reflects drag preview) -->

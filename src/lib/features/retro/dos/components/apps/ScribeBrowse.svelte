@@ -15,7 +15,7 @@
   import { onMount, onDestroy } from "svelte";
   import { terminalState } from "../../state/terminal-state.svelte";
   import { DosFileSystem } from "../../services/implementations/DosFileSystem";
-  import { AsciiRenderer } from "../../services/implementations/AsciiRenderer";
+  import { BrailleHybridRenderer } from "../../services/implementations/BrailleHybridRenderer";
   import { DosSoundManager } from "../../services/implementations/DosSoundManager";
   import { createMockPictographData } from "../../../shared/data/mock-pictograph-data";
   import type { DosFile } from "../../domain/dos-types";
@@ -36,7 +36,7 @@
   /* ------------------------------------------------------------------ */
 
   const fs = new DosFileSystem();
-  const renderer = new AsciiRenderer();
+  const renderer = new BrailleHybridRenderer();
   const soundManager = new DosSoundManager();
 
   /* ------------------------------------------------------------------ */

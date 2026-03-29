@@ -62,7 +62,7 @@
         <button class="era-card" onclick={() => selectEra(i)}>
           <div class="era-frame">
             <iframe
-              src="/retro-eras/{era.file}"
+              src="/retro-eras/{era.file}?embed=1"
               title="{era.title}"
               loading="lazy"
             ></iframe>

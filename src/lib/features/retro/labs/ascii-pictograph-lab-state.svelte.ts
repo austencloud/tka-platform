@@ -34,7 +34,7 @@ export interface RenderLayers {
 	arrows: boolean;
 }
 
-export type LabMode = "single" | "sequence" | "arrows";
+export type LabMode = "single" | "sequence" | "arrows" | "compare";
 export type ViewMode = "raw" | "crt";
 
 // ============================================================================
@@ -164,7 +164,7 @@ function loadPersistedState(): PersistedState {
 		if (!raw) return { ...DEFAULTS };
 		const parsed = JSON.parse(raw) as Partial<PersistedState>;
 		return {
-			mode: parsed.mode === "sequence" ? "sequence" : parsed.mode === "arrows" ? "arrows" : "single",
+			mode: parsed.mode === "sequence" ? "sequence" : parsed.mode === "arrows" ? "arrows" : parsed.mode === "compare" ? "compare" : "single",
 			viewMode: parsed.viewMode === "crt" ? "crt" : "raw",
 			gridModeFilter: parsed.gridModeFilter === GridMode.BOX ? GridMode.BOX : GridMode.DIAMOND,
 			currentIndex: typeof parsed.currentIndex === "number" ? parsed.currentIndex : 0,

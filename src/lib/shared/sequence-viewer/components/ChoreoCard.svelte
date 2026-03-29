@@ -77,7 +77,13 @@
     }).join("") ?? "";
     const vm = opts.browseViewMode;
     const vmKey = vm ? `${vm.subject}-${vm.granularity}-${vm.color}` : "default";
-    return `${seq.id ?? seq.word ?? "?"}-${stepLetters}-${seq.steps?.length ?? 0}-${opts.size}-${opts.showStepNumbers}-${opts.showNonRadialPoints}-${opts.showTKA}-${opts.showReversals}-${opts.handPathMode ?? false}-${opts.bluePropType ?? ""}-${opts.redPropType ?? ""}-${colCount ?? "auto"}-${isDark ? "dark" : "light"}-d:${durationFingerprint}-m:${motionFingerprint}-vm:${vmKey}`;
+    // Resolve prop types to actual values (fall back to global settings) so the
+    // in-memory cache differentiates between e.g. staff and fan when the caller
+    // doesn't explicitly pass a prop type override.
+    const settings = getSettings();
+    const resolvedBlue = opts.bluePropType ?? settings.bluePropType ?? "staff";
+    const resolvedRed = opts.redPropType ?? settings.redPropType ?? "staff";
+    return `${seq.id ?? seq.word ?? "?"}-${stepLetters}-${seq.steps?.length ?? 0}-${opts.size}-${opts.showStepNumbers}-${opts.showNonRadialPoints}-${opts.showTKA}-${opts.showReversals}-${opts.handPathMode ?? false}-${resolvedBlue}-${resolvedRed}-${colCount ?? "auto"}-${isDark ? "dark" : "light"}-d:${durationFingerprint}-m:${motionFingerprint}-vm:${vmKey}`;
   }
 
   function storePreviewInCache(key: string, data: CachedPreview): void {

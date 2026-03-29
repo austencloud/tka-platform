@@ -20,6 +20,9 @@ const TILE_REGISTRY: Record<TileType, TileMetadata> = {
   pedestal:            { walkable: false, interactable: true,  solid: true,  renders3D: true,  cssClass: "tile-pedestal",  label: "Pedestal", icon: "fa-cube" },
   trigger:             { walkable: true,  interactable: false, solid: false, renders3D: false, cssClass: "tile-trigger",   label: "Trigger" },
   corridor:            { walkable: true,  interactable: false, solid: false, renders3D: true,  cssClass: "tile-corridor",  label: "Corridor" },
+  rope:                { walkable: false, interactable: false, solid: true,  renders3D: true,  cssClass: "tile-rope",      label: "Rope", icon: "fa-minus" },
+  scaffolding:         { walkable: false, interactable: false, solid: true,  renders3D: true,  cssClass: "tile-scaffolding", label: "Scaffolding", icon: "fa-triangle-exclamation" },
+  sign:                { walkable: false, interactable: true,  solid: true,  renders3D: false, cssClass: "tile-sign",      label: "Sign", icon: "fa-sign-hanging" },
 };
 
 export function getTileMetadata(type: TileType): TileMetadata {

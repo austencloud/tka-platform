@@ -51,6 +51,10 @@ even when Svelte recreates the component instance.
     isClickable = false,
     // Cell index for position caching (enables smooth transitions on regeneration)
     cellIndex = null,
+    // Dark mode override - when provided, takes precedence over global state.
+    // This lets containers like PictographTimeline force dark mode even when
+    // the user's global setting is light mode.
+    darkMode = undefined,
   } = $props<{
     motionData: MotionData;
     arrowAssets: ArrowAssets;
@@ -62,20 +66,26 @@ even when Svelte recreates the component instance.
     isClickable?: boolean;
     /** Cell index for position caching (enables smooth transitions on regeneration) */
     cellIndex?: number | null;
+    /** Dark mode override. When set, overrides global AnimationVisibilityStateManager detection. */
+    darkMode?: boolean;
   }>();
 
   // Get centralized visibility manager for dark mode state and cached colors
   const visibilityManager = getAnimationVisibilityManager();
 
-  // Track dark mode, colors, and transform state from centralized cache
-  let isDarkMode = $state(visibilityManager.isDarkMode());
+  // Track dark mode, colors, and transform state from centralized cache.
+  // When darkMode prop is provided, it overrides the global state so that
+  // containers rendered on dark backgrounds (e.g. PictographTimeline) don't
+  // get the white drop-shadow meant for light backgrounds.
+  let globalIsDarkMode = $state(visibilityManager.isDarkMode());
+  let isDarkMode = $derived(darkMode !== undefined ? darkMode : globalIsDarkMode);
   let cachedColors = $state(visibilityManager.getMotionColors());
   let isTransforming = $state(visibilityManager.isTransforming());
 
   // Register for updates when visibility state changes
   $effect(() => {
     const handler = () => {
-      isDarkMode = visibilityManager.isDarkMode();
+      globalIsDarkMode = visibilityManager.isDarkMode();
       cachedColors = visibilityManager.getMotionColors();
       isTransforming = visibilityManager.isTransforming();
     };

@@ -17,7 +17,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
   import { terminalState } from "../../state/terminal-state.svelte";
-  import { AsciiRenderer } from "../../services/implementations/AsciiRenderer";
+  import { BrailleHybridRenderer } from "../../services/implementations/BrailleHybridRenderer";
   import { createMockPictographData } from "../../../shared/data/mock-pictograph-data";
   import type { RetroPictographData } from "../../../shared/domain/pictograph-types";
   import { DosSoundManager } from "../../services/implementations/DosSoundManager";
@@ -37,7 +37,7 @@
   /* Services                                                            */
   /* ------------------------------------------------------------------ */
 
-  const renderer = new AsciiRenderer();
+  const renderer = new BrailleHybridRenderer();
   const soundManager = new DosSoundManager();
 
   /* ------------------------------------------------------------------ */

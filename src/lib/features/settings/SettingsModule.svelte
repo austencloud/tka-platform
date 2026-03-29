@@ -41,6 +41,7 @@
   import KeyboardShortcutsTab from "$lib/shared/keyboard/components/settings/KeyboardShortcutsTab.svelte";
   import PreferencesTab from "$lib/shared/settings/components/tabs/PreferencesTab.svelte";
   import LanguageTab from "$lib/shared/settings/components/tabs/LanguageTab.svelte";
+  import VisibilityTab from "$lib/shared/settings/components/tabs/VisibilityTab.svelte";
   import NotificationPreferencesPanel from "$lib/features/feedback/components/NotificationPreferencesPanel.svelte";
 
   // Reactive settings - derives from getSettings() to maintain reactivity
@@ -244,7 +245,9 @@
   {:else}
     <div class="settings-module-body">
       <section class="panel">
-        {#if activeTab === "profile"}
+        {#if activeTab === "visibility"}
+          <VisibilityTab />
+        {:else if activeTab === "profile"}
           <ProfileTab
             currentSettings={settings}
             onSettingUpdate={handleSettingUpdate}

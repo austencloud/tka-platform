@@ -1,17 +1,16 @@
 <!--
-OptionPictograph.svelte - DEPRECATED, use PictographRenderer instead
-
-This file re-exports PictographRenderer for backwards compatibility.
-Update your imports to use:
-  import PictographRenderer from "$lib/shared/pictograph/shared/components/PictographRenderer.svelte";
+  OptionPictograph — Visibility-aware wrapper around PictographRenderer.
+  Subscribes to VisibilityStateManager so option picker pictographs
+  reflect all user visibility preferences (motions, grid, glyphs, etc.).
 -->
-
 <script lang="ts">
+  import { onMount } from "svelte";
   import type { PreparedPictographData } from "../shared/domain/models/PreparedPictographData";
   import PictographRenderer from "../shared/components/PictographRenderer.svelte";
+  import { getVisibilityStateManager } from "../shared/state/visibility-state.svelte";
+  import { MotionColor } from "../shared/domain/enums/pictograph-enums";
+  import type { GridLocation } from "../grid/domain/enums/grid-enums";
 
-  // Re-export old prop names
-  // NOTE: darkMode removed - CSS-first approach uses :root.dark class
   let {
     pictograph,
     blueReversal = false,
@@ -21,6 +20,62 @@ Update your imports to use:
     blueReversal?: boolean;
     redReversal?: boolean;
   }>();
+
+  const vm = getVisibilityStateManager();
+
+  let blueMotionVisible = $state(vm.getMotionVisibility(MotionColor.BLUE));
+  let redMotionVisible = $state(vm.getMotionVisibility(MotionColor.RED));
+  let showGrid = $state(vm.getGridVisibility());
+  let showTKA = $state(vm.getGlyphVisibility("tkaGlyph"));
+  let showReversals = $state(vm.getGlyphVisibility("reversalIndicators"));
+  let showNonRadialPoints = $state(vm.getNonRadialVisibility());
+  let showVTG = $state(vm.getGlyphVisibility("vtgGlyph"));
+  let showElemental = $state(vm.getGlyphVisibility("elementalGlyph"));
+  let showPositions = $state(vm.getGlyphVisibility("positionsGlyph"));
+  let handPointVisibility = $state<"all" | "active">(vm.getHandPointVisibility());
+
+  function syncAll() {
+    blueMotionVisible = vm.getMotionVisibility(MotionColor.BLUE);
+    redMotionVisible = vm.getMotionVisibility(MotionColor.RED);
+    showGrid = vm.getGridVisibility();
+    showTKA = vm.getGlyphVisibility("tkaGlyph");
+    showReversals = vm.getGlyphVisibility("reversalIndicators");
+    showNonRadialPoints = vm.getNonRadialVisibility();
+    showVTG = vm.getGlyphVisibility("vtgGlyph");
+    showElemental = vm.getGlyphVisibility("elementalGlyph");
+    showPositions = vm.getGlyphVisibility("positionsGlyph");
+    handPointVisibility = vm.getHandPointVisibility();
+  }
+
+  onMount(() => {
+    vm.registerObserver(syncAll, ["all"]);
+    return () => vm.unregisterObserver(syncAll);
+  });
+
+  // Compute active locations from motion end positions (where props are)
+  const activeLocations = $derived.by(() => {
+    const locations: GridLocation[] = [];
+    const blue = pictograph.motions?.blue;
+    const red = pictograph.motions?.red;
+    if (blue?.endLocation) locations.push(blue.endLocation as GridLocation);
+    if (red?.endLocation) locations.push(red.endLocation as GridLocation);
+    return locations;
+  });
 </script>
 
-<PictographRenderer {pictograph} {blueReversal} {redReversal} />
+<PictographRenderer
+  {pictograph}
+  {blueReversal}
+  {redReversal}
+  {blueMotionVisible}
+  {redMotionVisible}
+  {showGrid}
+  {showTKA}
+  {showReversals}
+  {showNonRadialPoints}
+  {showVTG}
+  {showElemental}
+  {showPositions}
+  {handPointVisibility}
+  {activeLocations}
+/>
