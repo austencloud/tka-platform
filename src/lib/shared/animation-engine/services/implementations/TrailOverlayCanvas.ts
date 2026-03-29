@@ -367,14 +367,14 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
       const leftRing = propIndex === 0 ? this.blueLeftRing : this.redLeftRing;
       const worldX = center.x + (tp.dx * cosA - tp.dy * sinA) * gridScaleFactor;
       const worldY = center.y + (tp.dx * sinA + tp.dy * cosA) * gridScaleFactor;
-      this.appendToRing(leftRing, worldX, worldY, canvasSize, propIndex, 0);
+      this.appendToRing(leftRing, worldX, worldY, canvasSize, propIndex, leftTipIndex);
     }
     if (trackRight && rightTipIndex < pts.length) {
       const tp = pts[rightTipIndex]!;
       const rightRing = propIndex === 0 ? this.blueRightRing : this.redRightRing;
       const worldX = center.x + (tp.dx * cosA - tp.dy * sinA) * gridScaleFactor;
       const worldY = center.y + (tp.dx * sinA + tp.dy * cosA) * gridScaleFactor;
-      this.appendToRing(rightRing, worldX, worldY, canvasSize, propIndex, 1);
+      this.appendToRing(rightRing, worldX, worldY, canvasSize, propIndex, rightTipIndex);
     }
   }
 
@@ -384,7 +384,7 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
     worldY: number,
     canvasSize: number,
     propIndex: 0 | 1,
-    endType: 0 | 1
+    tipIndex: number
   ): void {
 
     if (ring.length > 0) {
@@ -414,7 +414,7 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
       y: worldY,
       timestamp: performance.now(),
       propIndex,
-      endType,
+      tipIndex,
     });
 
     if (ring.length > RING_BUFFER_SIZE) {

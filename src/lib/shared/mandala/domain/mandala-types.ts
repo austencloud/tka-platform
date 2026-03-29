@@ -1,8 +1,8 @@
 export interface SVGPathData {
 	/** SVG path "d" attribute string */
 	d: string;
-	/** 0 = left end, 1 = right end (tip) — matches trail system endType */
-	endType: 0 | 1;
+	/** Index into prop's tip points array — matches trail system tipIndex */
+	tipIndex: number;
 }
 
 export interface MandalaPaths {

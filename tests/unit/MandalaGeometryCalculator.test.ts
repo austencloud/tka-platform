@@ -631,7 +631,7 @@ describe("MandalaGeometryCalculator", () => {
       const result = calc.calculate(SINGLE_STATIC_STEP);
       expect(result.blue.length).toBeGreaterThan(0);
 
-      const path = result.blue[1]!; // right tip (endType 1, dx = +(halfLength - inset))
+      const path = result.blue[1]!; // right tip (tipIndex 1, dx = +(halfLength - inset))
       const pts = parseSVGEndpoints(path.d);
       const maxDist = Math.max(...pts.map((p) => Math.sqrt(p.x ** 2 + p.y ** 2)));
 
@@ -792,11 +792,11 @@ describe("MandalaGeometryCalculator", () => {
       expect(Array.isArray(result.red)).toBe(true);
     });
 
-    it("each path entry has a non-empty d string and endType 0 or 1", () => {
+    it("each path entry has a non-empty d string and tipIndex 0 or 1", () => {
       const result = calc.calculate(SINGLE_PRO_STEP);
       for (const path of [...result.blue, ...result.red]) {
         expect(path.d.length).toBeGreaterThan(0);
-        expect(path.endType === 0 || path.endType === 1).toBe(true);
+        expect(path.tipIndex === 0 || path.tipIndex === 1).toBe(true);
       }
     });
 

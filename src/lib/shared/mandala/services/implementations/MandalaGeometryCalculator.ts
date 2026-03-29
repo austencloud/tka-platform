@@ -429,7 +429,7 @@ function generatePathPoints(
 
 // ─── Staff tip offsets ──────────────────────────────────────────────────────
 
-// Default staff: left tip at dx=-150 (0 endType), right tip at dx=+150 (1 endType).
+// Default staff: left tip at dx=-150 (tipIndex 0), right tip at dx=+150 (tipIndex 1).
 // Inset by DEFAULT_TIP_INSET_PX so 0-turn motions still produce visible lobes
 // instead of collapsing to a single line.
 
@@ -537,16 +537,16 @@ export class MandalaGeometryCalculator implements IMandalaGeometryCalculator {
 		const red: SVGPathData[] = [];
 
 		const blueLeftD = pointsToSVGPath(blueLeftPoints);
-		if (blueLeftD) blue.push({ d: blueLeftD, endType: 0 });
+		if (blueLeftD) blue.push({ d: blueLeftD, tipIndex: 0 });
 
 		const blueRightD = pointsToSVGPath(blueRightPoints);
-		if (blueRightD) blue.push({ d: blueRightD, endType: 1 });
+		if (blueRightD) blue.push({ d: blueRightD, tipIndex: 1 });
 
 		const redLeftD = pointsToSVGPath(redLeftPoints);
-		if (redLeftD) red.push({ d: redLeftD, endType: 0 });
+		if (redLeftD) red.push({ d: redLeftD, tipIndex: 0 });
 
 		const redRightD = pointsToSVGPath(redRightPoints);
-		if (redRightD) red.push({ d: redRightD, endType: 1 });
+		if (redRightD) red.push({ d: redRightD, tipIndex: 1 });
 
 		const result = { blue, red };
 

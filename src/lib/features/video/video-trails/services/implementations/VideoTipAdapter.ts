@@ -90,8 +90,7 @@ export class VideoTipAdapter implements IVideoTipAdapter {
       y: ep.y,
       timestamp: currentTime,
       propIndex: ep.propIndex as 0 | 1,
-      // tipIndex maps directly to endType: 0 = left end, 1 = right end (tip).
-      endType: ep.tipIndex as 0 | 1,
+      tipIndex: ep.tipIndex,
     }));
   }
 

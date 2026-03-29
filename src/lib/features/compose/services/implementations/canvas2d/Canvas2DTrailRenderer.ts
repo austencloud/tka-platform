@@ -242,35 +242,19 @@ export class Canvas2DTrailRenderer {
   ): void {
     if (points.length < 2) return;
 
-    // Separate points by endType based on tracking mode
-    let pointSets: TrailPoint[][];
-    if (settings.trackingMode === TrackingMode.BOTH_ENDS) {
-      // Both ends: render each end's trail separately
-      const leftPoints: TrailPoint[] = [];
-      const rightPoints: TrailPoint[] = [];
-      for (let i = 0; i < points.length; i++) {
-        const p = points[i]!;
-        if (p.endType === 0) leftPoints.push(p);
-        else rightPoints.push(p);
+    // Group points by tipIndex so each tip's trail is rendered as a
+    // separate continuous curve (prevents zigzagging between tips)
+    const tipGroups = new Map<number, TrailPoint[]>();
+    for (let i = 0; i < points.length; i++) {
+      const p = points[i]!;
+      let group = tipGroups.get(p.tipIndex);
+      if (!group) {
+        group = [];
+        tipGroups.set(p.tipIndex, group);
       }
-      pointSets = [leftPoints, rightPoints];
-    } else if (settings.trackingMode === TrackingMode.LEFT_END) {
-      // Left end only: filter to endType 0
-      const leftPoints: TrailPoint[] = [];
-      for (let i = 0; i < points.length; i++) {
-        const p = points[i]!;
-        if (p.endType === 0) leftPoints.push(p);
-      }
-      pointSets = [leftPoints];
-    } else {
-      // Right end only: filter to endType 1
-      const rightPoints: TrailPoint[] = [];
-      for (let i = 0; i < points.length; i++) {
-        const p = points[i]!;
-        if (p.endType === 1) rightPoints.push(p);
-      }
-      pointSets = [rightPoints];
+      group.push(p);
     }
+    const pointSets = Array.from(tipGroups.values());
 
     for (const pointSet of pointSets) {
       if (pointSet.length < 2) continue;

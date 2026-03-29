@@ -36,9 +36,9 @@ export interface PropEndpointResult {
  * Result of calculating both endpoints
  */
 export interface PropEndpointPair {
-  /** Left end (endType = 0) */
+  /** Left end (tipIndex 0) */
   left: PropEndpointResult;
-  /** Right end (endType = 1, tip) */
+  /** Right end (tipIndex 1, tip) */
   right: PropEndpointResult;
 }
 

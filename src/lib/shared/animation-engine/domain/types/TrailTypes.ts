@@ -20,7 +20,7 @@ export interface TrailPoint {
   y: number;
   timestamp: number;
   propIndex: 0 | 1; // 0 = blue, 1 = red
-  endType: 0 | 1; // 0 = left end, 1 = right end (tip)
+  tipIndex: number; // Index into prop's tip points array (from PropTipPoints)
 }
 
 /**
@@ -35,6 +35,12 @@ export enum TrailMode {
 
 /**
  * Which prop end(s) to track
+ *
+ * @deprecated Legacy endpoint-based tracking. Kept for backward compatibility
+ * with TrailSettings. New code should use per-tip effect assignments via
+ * TipEffectMap. When no TipEffectMap has trail assignments, these values
+ * are used as fallback: LEFT_END → tip 0, RIGHT_END → last tip,
+ * BOTH_ENDS → all tips.
  */
 export enum TrackingMode {
   LEFT_END = "left_end", // Track only left end

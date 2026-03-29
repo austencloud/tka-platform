@@ -43,8 +43,8 @@ export interface PrecomputedPropPosition {
   propState: PropState;
   /** Calculated endpoint positions for both ends */
   endpoints: {
-    left: { x: number; y: number }; // endType = 0
-    right: { x: number; y: number }; // endType = 1 (tip)
+    left: { x: number; y: number }; // tipIndex 0 (left end)
+    right: { x: number; y: number }; // tipIndex 1+ (right end / tip)
   };
 }
 
@@ -233,14 +233,14 @@ export class AnimationPathCache {
    * Get pre-computed trail points for a beat range
    *
    * @param propIndex - 0 for blue, 1 for red
-   * @param endType - 0 for left end, 1 for right end (tip)
+   * @param tipIndex - Tip index (0 = left endpoint, 1 = right endpoint for cache)
    * @param startStep - Start beat number (fractional, e.g., 2.5)
    * @param endStep - End beat number (fractional, e.g., 4.2)
    * @returns Array of trail points with beat-relative timestamps
    */
   getTrailPoints(
     propIndex: 0 | 1,
-    endType: 0 | 1,
+    tipIndex: number,
     startStep: number,
     endStep: number
   ): TrailPoint[] {
@@ -264,27 +264,32 @@ export class AnimationPathCache {
     const startFrame = Math.floor(startTime / frameTimeMs);
     const endFrame = Math.ceil(endTime / frameTimeMs);
 
+    // Cache stores two endpoints (left=0, right=1). Map tipIndex to the
+    // closest cached endpoint: 0 → left, anything else → right.
+    const useLeft = tipIndex === 0;
+
     const trailPoints: TrailPoint[] = [];
 
     for (let frame = startFrame; frame <= endFrame; frame++) {
       if (frame >= 0 && frame < propPath.positions.length) {
         const position = propPath.positions[frame]!;
-        const endpoint =
-          endType === 0 ? position.endpoints.left : position.endpoints.right;
+        const endpoint = useLeft
+          ? position.endpoints.left
+          : position.endpoints.right;
 
         trailPoints.push({
           x: endpoint.x,
           y: endpoint.y,
           timestamp: position.timestamp, // Beat-relative timestamp (0ms to totalDurationMs)
           propIndex,
-          endType,
+          tipIndex,
         });
       }
     }
 
     // Debug logging disabled - too noisy for every frame
     // if (trailPoints.length > 0 && trailPoints.length < 10) {
-    //   console.log(`📦 CACHE RETRIEVAL (prop=${propIndex}, end=${endType}, steps ${startStep.toFixed(2)}-${endStep.toFixed(2)}):`);
+    //   console.log(`📦 CACHE RETRIEVAL (prop=${propIndex}, tip=${tipIndex}, steps ${startStep.toFixed(2)}-${endStep.toFixed(2)}):`);
     //   console.log(`   Frames ${startFrame}-${endFrame}, returned ${trailPoints.length} points`);
     // }
 
@@ -298,7 +303,7 @@ export class AnimationPathCache {
    * Only allocates when the array needs to grow (first few frames, then steady state = zero allocations).
    *
    * @param propIndex - 0 for blue, 1 for red
-   * @param endType - 0 for left end, 1 for right end (tip)
+   * @param tipIndex - Tip index (0 = left endpoint, 1+ = right endpoint for cache)
    * @param startStep - Start beat number (fractional)
    * @param endStep - End beat number (fractional)
    * @param scaleFactor - Coordinate scale factor (canvasSize / 950)
@@ -308,7 +313,7 @@ export class AnimationPathCache {
    */
   fillTrailPoints(
     propIndex: 0 | 1,
-    endType: 0 | 1,
+    tipIndex: number,
     startStep: number,
     endStep: number,
     scaleFactor: number,
@@ -334,13 +339,18 @@ export class AnimationPathCache {
     const startFrame = Math.floor(startTime / frameTimeMs);
     const endFrame = Math.ceil(endTime / frameTimeMs);
 
+    // Cache stores two endpoints (left=0, right=1). Map tipIndex to the
+    // closest cached endpoint: 0 → left, anything else → right.
+    const useLeft = tipIndex === 0;
+
     let writeIndex = targetOffset;
 
     for (let frame = startFrame; frame <= endFrame; frame++) {
       if (frame >= 0 && frame < propPath.positions.length) {
         const position = propPath.positions[frame]!;
-        const endpoint =
-          endType === 0 ? position.endpoints.left : position.endpoints.right;
+        const endpoint = useLeft
+          ? position.endpoints.left
+          : position.endpoints.right;
 
         // Reuse existing object if available, otherwise push a new one
         if (writeIndex < targetArray.length) {
@@ -349,14 +359,14 @@ export class AnimationPathCache {
           existing.y = endpoint.y * scaleFactor;
           existing.timestamp = position.timestamp;
           existing.propIndex = propIndex;
-          existing.endType = endType;
+          existing.tipIndex = tipIndex;
         } else {
           targetArray.push({
             x: endpoint.x * scaleFactor,
             y: endpoint.y * scaleFactor,
             timestamp: position.timestamp,
             propIndex,
-            endType,
+            tipIndex,
           });
         }
         writeIndex++;
@@ -370,14 +380,14 @@ export class AnimationPathCache {
    * Get pre-computed trail points for a time range (animation-relative)
    *
    * @param propIndex - 0 for blue, 1 for red
-   * @param endType - 0 for left end, 1 for right end (tip)
+   * @param tipIndex - Tip index (0 = left endpoint, 1+ = right endpoint for cache)
    * @param startTimeMs - Start time in ms from animation start (0-based)
    * @param endTimeMs - End time in ms from animation start (0-based)
    * @returns Array of trail points
    */
   getTrailPointsByTime(
     propIndex: 0 | 1,
-    endType: 0 | 1,
+    tipIndex: number,
     startTimeMs: number,
     endTimeMs: number
   ): TrailPoint[] {
@@ -390,7 +400,7 @@ export class AnimationPathCache {
     const startStep = startTimeMs / stepDurationMs;
     const endStep = endTimeMs / stepDurationMs;
 
-    return this.getTrailPoints(propIndex, endType, startStep, endStep);
+    return this.getTrailPoints(propIndex, tipIndex, startStep, endStep);
   }
 
   /**
@@ -398,7 +408,7 @@ export class AnimationPathCache {
    * This is a wrapper around getTrailPoints to match the expected interface signature
    *
    * @param propIndex - 0 for blue, 1 for red
-   * @param endType - 0 for left end, 1 for right end (tip)
+   * @param tipIndex - Tip index (0 = left endpoint, 1+ = right endpoint for cache)
    * @param startStep - Start beat number (fractional, e.g., 2.5)
    * @param endStep - End beat number (fractional, e.g., 4.2)
    * @param canvasSize - Canvas size (unused, kept for interface compatibility)
@@ -406,14 +416,14 @@ export class AnimationPathCache {
    */
   getCachedPoints(
     propIndex: 0 | 1,
-    endType: 0 | 1,
+    tipIndex: number,
     startStep: number,
     endStep: number,
     _canvasSize: number
   ): TrailPoint[] {
     // canvasSize is ignored - cache uses standard coordinate system (950x950)
     // and points are transformed by AnimatorCanvas as needed
-    return this.getTrailPoints(propIndex, endType, startStep, endStep);
+    return this.getTrailPoints(propIndex, tipIndex, startStep, endStep);
   }
 
   /**
