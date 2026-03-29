@@ -82,6 +82,31 @@
 		return Math.floor(heroCurrentStep) % fuseState.fusedSequence.steps.length;
 	});
 
+	// ── Tour state ───────────────────────────────────────────────────────
+	const tourShuffleGlow = $derived(fuseTourState.isActive && fuseTourState.currentStop === "shuffle");
+	let tourFuseCompleted = $state(false);
+
+	$effect(() => {
+		if (isAssembled && fuseTourState.isActive && fuseTourState.currentStop === "fuse") {
+			tourFuseCompleted = true;
+		}
+	});
+
+	function handleShuffle(side: "left" | "right") {
+		if (side === "left") leftShuffleFn?.();
+		else rightShuffleFn?.();
+
+		if (fuseTourState.isActive && fuseTourState.currentStop === "shuffle") {
+			fuseTourState.completeAction();
+			setTimeout(() => fuseTourState.advance(), 1500);
+		}
+	}
+
+	function handleTourFinish() {
+		fuseTourState.complete();
+		tourFuseCompleted = false;
+	}
+
 	// ── Element refs (for FLIP in Tasks 4-5) ─────────────────────────────
 	let layoutEl = $state<HTMLDivElement>(undefined!);
 	let heroEl = $state<HTMLDivElement>(undefined!);
@@ -453,6 +478,8 @@
 			hideProgressBar={false}
 			progressBarVariant="gradient"
 			word={fuseState.fusedSequence?.word ?? null}
+			externalDisassembled={false}
+			externalToggleDisassemble={() => fuseState.startDisassemble(false)}
 		/>
 	</div>
 
@@ -513,7 +540,7 @@
 						onCounterChange={(c, t) => (leftCounter = { current: c, total: t })}
 					/>
 				</div>
-				<button class="shuffle-btn shuffle-blue" onclick={() => leftShuffleFn?.()}>
+				<button class="shuffle-btn shuffle-blue" class:glow={tourShuffleGlow} onclick={() => handleShuffle("left")}>
 					<i class="fas fa-shuffle" aria-hidden="true"></i>
 					Shuffle {leftCounter.current} / {leftCounter.total}
 				</button>
@@ -530,7 +557,7 @@
 						onCounterChange={(c, t) => (rightCounter = { current: c, total: t })}
 					/>
 				</div>
-				<button class="shuffle-btn shuffle-red" onclick={() => rightShuffleFn?.()}>
+				<button class="shuffle-btn shuffle-red" class:glow={tourShuffleGlow} onclick={() => handleShuffle("right")}>
 					<i class="fas fa-shuffle" aria-hidden="true"></i>
 					Shuffle {rightCounter.current} / {rightCounter.total}
 				</button>
@@ -558,6 +585,13 @@
 					onStepClick={handleStepClick}
 				/>
 			</div>
+		</div>
+	{/if}
+
+	<!-- ─── Tour banner (stops 2-4) ──────────────────────────────────── -->
+	{#if fuseTourState.isActive && fuseTourState.currentStop !== "welcome"}
+		<div class="tour-banner-overlay">
+			<FuseTour variant="banner" />
 		</div>
 	{/if}
 
@@ -609,32 +643,63 @@
 				<span>Fuse</span>
 			</button>
 		{:else if isAssembled}
-			<button class="action-btn action-save" onclick={handleSave} disabled={isTransitioning}>
-				<i class="fas fa-bookmark" aria-hidden="true"></i>
-				Save
-			</button>
-			<button
-				class="action-btn action-ghost"
-				onclick={() => fuseState.startDisassemble(true)}
-				disabled={isTransitioning}
-			>
-				<i class="fas fa-redo" aria-hidden="true"></i>
-				Build Another
-			</button>
-			<button class="action-btn action-ghost" onclick={handleOpenInViewer} disabled={isTransitioning}>
-				<i class="fas fa-expand" aria-hidden="true"></i>
-				Open in Viewer
-			</button>
-			<button
-				class="action-btn action-ghost"
-				onclick={() => fuseState.startDisassemble(false)}
-				disabled={isTransitioning}
-			>
-				<i class="fas fa-arrow-left" aria-hidden="true"></i>
-				Swap a Half
-			</button>
+			{#if tourFuseCompleted && fuseTourState.isActive && fuseTourState.currentStop === "fuse"}
+				<button class="fuse-button" onclick={handleTourFinish}>
+					Let's go
+					<i class="fas fa-arrow-right" aria-hidden="true"></i>
+				</button>
+			{:else}
+				<button class="action-btn action-save" onclick={handleSave} disabled={isTransitioning}>
+					<i class="fas fa-bookmark" aria-hidden="true"></i>
+					Save
+				</button>
+				<button
+					class="action-btn action-ghost"
+					onclick={() => fuseState.startDisassemble(true)}
+					disabled={isTransitioning}
+				>
+					<i class="fas fa-redo" aria-hidden="true"></i>
+					Build Another
+				</button>
+				<button class="action-btn action-ghost" onclick={handleOpenInViewer} disabled={isTransitioning}>
+					<i class="fas fa-expand" aria-hidden="true"></i>
+					Open in Viewer
+				</button>
+				<button
+					class="action-btn action-ghost"
+					onclick={() => fuseState.startDisassemble(false)}
+					disabled={isTransitioning}
+				>
+					<i class="fas fa-arrow-left" aria-hidden="true"></i>
+					Swap a Half
+				</button>
+			{/if}
 		{/if}
 	</div>
+
+	<!-- ─── Tour welcome modal (stop 1) ──────────────────────────────── -->
+	{#if fuseTourState.isActive && fuseTourState.currentStop === "welcome"}
+		<div class="tour-prompt-backdrop">
+			<div class="tour-prompt-card">
+				<div class="tour-prompt-icon">
+					<i class="fas fa-fire" aria-hidden="true"></i>
+				</div>
+				<h2 class="tour-prompt-title">Quick tour?</h2>
+				<p class="tour-prompt-body">
+					Pick a blue prop path and a red prop path, then merge them into one complete sequence. Takes about a minute.
+				</p>
+				<div class="tour-prompt-actions">
+					<button class="tour-prompt-accept" onclick={() => fuseTourState.advance()}>
+						Show me
+						<i class="fas fa-arrow-right" aria-hidden="true"></i>
+					</button>
+					<button class="tour-prompt-skip" onclick={() => fuseTourState.skip()}>
+						Skip, I'll explore
+					</button>
+				</div>
+			</div>
+		</div>
+	{/if}
 </div>
 
 <style>
@@ -990,6 +1055,122 @@
 		}
 	}
 
+	/* ── Tour: welcome modal ─────────────────────────────────────────── */
+
+	.tour-prompt-backdrop {
+		position: absolute;
+		inset: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: rgba(0, 0, 0, 0.5);
+		z-index: 20;
+		padding: 24px;
+	}
+
+	.tour-prompt-card {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 16px;
+		max-width: 380px;
+		width: 100%;
+		padding: 36px 28px 28px;
+		background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+		border-radius: 20px;
+		border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+		text-align: center;
+		animation: promptFadeIn 350ms ease-out both;
+	}
+
+	@keyframes promptFadeIn {
+		from { opacity: 0; transform: translateY(16px) scale(0.97); }
+		to { opacity: 1; transform: translateY(0) scale(1); }
+	}
+
+	.tour-prompt-icon {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 56px;
+		height: 56px;
+		border-radius: 50%;
+		background: color-mix(in srgb, #f97316 20%, transparent);
+		border: 1.5px solid color-mix(in srgb, #f97316 40%, transparent);
+		color: #f97316;
+		font-size: 1.4rem;
+	}
+
+	.tour-prompt-title {
+		font-size: 1.35rem;
+		font-weight: 700;
+		color: var(--theme-text, #fff);
+		margin: 0;
+	}
+
+	.tour-prompt-body {
+		font-size: 0.95rem;
+		color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+		margin: 0;
+		line-height: 1.5;
+		max-width: 300px;
+	}
+
+	.tour-prompt-actions {
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+		width: 100%;
+		margin-top: 4px;
+	}
+
+	.tour-prompt-accept {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 8px;
+		width: 100%;
+		padding: 14px 24px;
+		background: color-mix(in srgb, #f97316 40%, transparent);
+		border: 2px solid color-mix(in srgb, #f97316 60%, transparent);
+		border-radius: 12px;
+		color: var(--theme-text, #fff);
+		font-size: 1rem;
+		font-weight: 600;
+		cursor: pointer;
+	}
+
+	.tour-prompt-skip {
+		padding: 10px 24px;
+		background: transparent;
+		border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+		border-radius: 12px;
+		color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+		font-size: 0.9rem;
+		cursor: pointer;
+	}
+
+	/* ── Tour: banner overlay ────────────────────────────────────────── */
+
+	.tour-banner-overlay {
+		flex-shrink: 0;
+		padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
+		background: var(--theme-panel-bg, rgba(18, 18, 28, 0.95));
+		border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+		z-index: 5;
+	}
+
+	/* ── Tour: shuffle glow ──────────────────────────────────────────── */
+
+	.shuffle-btn.glow {
+		animation: shuffleGlow 1.5s ease-in-out infinite;
+	}
+
+	@keyframes shuffleGlow {
+		0%, 100% { box-shadow: 0 0 8px rgba(249, 115, 22, 0.3); }
+		50% { box-shadow: 0 0 20px rgba(249, 115, 22, 0.6); }
+	}
+
 	/* ── Reduced motion ───────────────────────────────────────────────── */
 
 	@media (prefers-reduced-motion: reduce) {
@@ -999,6 +1180,15 @@
 		.length-trigger,
 		.length-option {
 			transition: none;
+		}
+
+		.tour-prompt-card {
+			animation: none;
+		}
+
+		.shuffle-btn.glow {
+			animation: none;
+			box-shadow: 0 0 12px rgba(249, 115, 22, 0.4);
 		}
 	}
 </style>
