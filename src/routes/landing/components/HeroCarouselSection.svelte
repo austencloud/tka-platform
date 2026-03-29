@@ -307,6 +307,9 @@
   <!-- Video + CTA row -->
   <div class="hero-body">
 
+  <!-- Video + dots/credit column -->
+  <div class="carousel-column">
+
   <!-- Video frame -->
   <div class="carousel-stage">
     {#if loading}
@@ -395,6 +398,8 @@
       {/if}
     </div>
   {/if}
+
+  </div><!-- /.carousel-column -->
 
   <!-- CTA panel beside the video -->
   <div class="hero-cta">
@@ -514,7 +519,7 @@
     justify-content: center;
     gap: clamp(24px, 4vw, 48px);
     width: 100%;
-    max-width: 900px;
+    max-width: 1400px;
   }
 
   /* ── CTA panel ──────────────────────────────────────────────────────────── */
@@ -611,12 +616,20 @@
     50% { transform: translateY(3px); }
   }
 
+  /* ── Carousel column (video + dots stacked) ─────────────────────────────────── */
+
+  .carousel-column {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
   /* ── Carousel stage ─────────────────────────────────────────────────────────── */
 
   .carousel-stage {
     position: relative;
     width: 100%;
-    max-width: 480px;
+    max-width: min(50vw, 55vh / 0.8);
     aspect-ratio: 4 / 5;
     border-radius: 16px;
     overflow: hidden;
