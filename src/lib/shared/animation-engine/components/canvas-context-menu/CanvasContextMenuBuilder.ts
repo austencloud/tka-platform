@@ -4,8 +4,12 @@
  * Reads current state from AnimationVisibilityStateManager and produces
  * ContextMenuEntry[] for the animation canvas right-click menu.
  *
- * Three submenu groups for quick access:
+ * Submenu groups for quick access:
+ *   - Visibility: Props, Beat #s, TKA Glyph, Word Header, Progress Bar (toggles)
+ *   - Grid: Off / 8-Point / Auto (radio-style)
+ *   - Playback: Continuous / Step (radio-style)
  *   - Effects: None, Fire, Charcoal, LED, Trails (radio-style, one active)
+ *   - Trail Tracking: Pinky / Thumb / Both (when trails active)
  *   - Efforts: 8 effort presets from the effort-lab domain (radio-style)
  *   - Path Shape: Arc vs Linear (radio-style)
  *
@@ -16,9 +20,11 @@ import type {
   ContextMenuEntry,
   ContextMenuItem,
 } from "$lib/shared/components/context-menu/context-menu-types";
-import type { AnimationVisibilityStateManager } from "../../state/animation-visibility-state.svelte";
+import type { AnimationVisibilityStateManager, GridMode } from "../../state/animation-visibility-state.svelte";
 import { EFFORTS } from "$lib/features/effort-lab/domain/effort-types";
 import type { EffortId } from "$lib/features/effort-lab/domain/effort-types";
+import { animationSettings } from "../../state/animation-settings-state.svelte";
+import { TrackingMode } from "../../domain/types/TrailTypes";
 
 interface CanvasContextMenuDeps {
   visibilityManager: AnimationVisibilityStateManager;
@@ -105,6 +111,41 @@ function buildEffortChildren(
   }));
 }
 
+function getTrackingLabels(): { left: string; right: string } {
+  const pt = animationSettings.currentPropType?.toLowerCase() ?? "staff";
+  if (pt === "staff") return { left: "Pinky", right: "Thumb" };
+  if (pt === "bigclub") return { left: "Knob", right: "Bulb" };
+  return { left: "End 1", right: "End 2" };
+}
+
+function buildTrailTrackingChildren(): ContextMenuItem[] {
+  const current = animationSettings.trail.trackingMode;
+  const labels = getTrackingLabels();
+  return [
+    {
+      id: "trail-left-end",
+      label: labels.left,
+      icon: "fa-minus",
+      checked: current === TrackingMode.LEFT_END,
+      action: () => animationSettings.setTrackingMode(TrackingMode.LEFT_END),
+    },
+    {
+      id: "trail-right-end",
+      label: labels.right,
+      icon: "fa-minus",
+      checked: current === TrackingMode.RIGHT_END,
+      action: () => animationSettings.setTrackingMode(TrackingMode.RIGHT_END),
+    },
+    {
+      id: "trail-both-ends",
+      label: "Both",
+      icon: "fa-grip-lines",
+      checked: current === TrackingMode.BOTH_ENDS,
+      action: () => animationSettings.setTrackingMode(TrackingMode.BOTH_ENDS),
+    },
+  ];
+}
+
 function buildPathShapeChildren(
   vm: AnimationVisibilityStateManager
 ): ContextMenuItem[] {
@@ -127,6 +168,105 @@ function buildPathShapeChildren(
   ];
 }
 
+function buildGridChildren(
+  vm: AnimationVisibilityStateManager
+): ContextMenuItem[] {
+  const current: GridMode = vm.getGridMode();
+  return [
+    {
+      id: "grid-none",
+      label: "Off",
+      icon: "fa-border-none",
+      checked: current === "none",
+      action: () => vm.setGridMode("none"),
+    },
+    {
+      id: "grid-8point",
+      label: "8-Point",
+      icon: "fa-diamond",
+      checked: current === "8point",
+      action: () => vm.setGridMode("8point"),
+    },
+    {
+      id: "grid-auto",
+      label: "Auto",
+      icon: "fa-wand-magic",
+      checked: current === "auto",
+      action: () => vm.setGridMode("auto"),
+    },
+  ];
+}
+
+function buildPlaybackChildren(
+  vm: AnimationVisibilityStateManager
+): ContextMenuItem[] {
+  const current = vm.getPlaybackMode();
+  return [
+    {
+      id: "playback-continuous",
+      label: "Continuous",
+      icon: "fa-play",
+      checked: current === "continuous",
+      action: () => vm.setPlaybackMode("continuous"),
+    },
+    {
+      id: "playback-step",
+      label: "Step",
+      icon: "fa-forward-step",
+      checked: current === "step",
+      action: () => vm.setPlaybackMode("step"),
+    },
+  ];
+}
+
+function buildVisibilityChildren(
+  vm: AnimationVisibilityStateManager
+): ContextMenuItem[] {
+  const settings = vm.getSettings();
+  return [
+    {
+      id: "vis-props",
+      label: "Props",
+      icon: "fa-wand-sparkles",
+      checked: settings.props,
+      keepOpen: true,
+      action: () => vm.toggleVisibility("props"),
+    },
+    {
+      id: "vis-beat-numbers",
+      label: "Beat #s",
+      icon: "fa-hashtag",
+      checked: settings.stepNumbers,
+      keepOpen: true,
+      action: () => vm.toggleVisibility("stepNumbers"),
+    },
+    {
+      id: "vis-tka-glyph",
+      label: "TKA Glyph",
+      icon: "fa-font",
+      checked: settings.tkaGlyph,
+      keepOpen: true,
+      action: () => vm.toggleVisibility("tkaGlyph"),
+    },
+    {
+      id: "vis-word-header",
+      label: "Word Header",
+      icon: "fa-heading",
+      checked: settings.wordHeader,
+      keepOpen: true,
+      action: () => vm.toggleVisibility("wordHeader"),
+    },
+    {
+      id: "vis-progress-bar",
+      label: "Progress Bar",
+      icon: "fa-bars-progress",
+      checked: settings.progressBar,
+      keepOpen: true,
+      action: () => vm.toggleVisibility("progressBar"),
+    },
+  ];
+}
+
 export function buildCanvasContextMenuItems(
   deps: CanvasContextMenuDeps
 ): ContextMenuEntry[] {
@@ -135,12 +275,48 @@ export function buildCanvasContextMenuItems(
   const active = getActiveEffect(vm);
 
   const items: ContextMenuEntry[] = [
+    // Visibility toggles submenu
+    {
+      id: "visibility-submenu",
+      label: "Visibility",
+      icon: "fa-eye",
+      children: buildVisibilityChildren(vm),
+    },
+    // Grid mode submenu
+    {
+      id: "grid-submenu",
+      label: "Grid",
+      icon: "fa-border-all",
+      children: buildGridChildren(vm),
+    },
+    // Playback mode submenu
+    {
+      id: "playback-submenu",
+      label: "Playback",
+      icon: "fa-circle-play",
+      children: buildPlaybackChildren(vm),
+    },
+    { type: "separator" as const },
+    // Effects submenu
     {
       id: "effects-submenu",
       label: "Effects",
       icon: "fa-wand-magic-sparkles",
       children: buildEffectChildren(vm, active),
     },
+  ];
+
+  // Show trail tracking submenu when trails are active
+  if (active === "trails") {
+    items.push({
+      id: "trail-tracking-submenu",
+      label: "Trail Tracking",
+      icon: "fa-route",
+      children: buildTrailTrackingChildren(),
+    });
+  }
+
+  items.push(
     {
       id: "efforts-submenu",
       label: "Efforts",
@@ -154,7 +330,7 @@ export function buildCanvasContextMenuItems(
       children: buildPathShapeChildren(vm),
     },
     { type: "separator" as const },
-  ];
+  );
 
   if (deps.onToggleDisassemble) {
     items.push(
