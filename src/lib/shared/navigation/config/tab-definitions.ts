@@ -617,6 +617,14 @@ export const RETRO_TABS: Section[] = [
     color: "#c084fc",
     gradient: "linear-gradient(135deg, #c084fc 0%, #6366f1 100%)",
   },
+  {
+    id: "history",
+    label: "Pictograph History",
+    icon: '<i class="fas fa-scroll" aria-hidden="true"></i>',
+    description: "TKA notation across 40,000 years of art history",
+    color: "#D4AF37",
+    gradient: "linear-gradient(135deg, #D4AF37 0%, #8B6914 100%)",
+  },
 ];
 
 export const REALM_TABS: Section[] = [

@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>TKA Pictograph — Line Printer Output 1976</title>
+  <style>
+    body {
+      margin: 0;
+      background: #1a1a1a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 24px 0;
+      box-sizing: border-box;
+    }
+    canvas { display: block; }
+  </style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+(function () {
+  // ────────────────────────────────────────────────────────────────────────────
+  // Layout constants
+  // ────────────────────────────────────────────────────────────────────────────
+  const CHAR_W  = 8;    // px wide per monospace character
+  const CHAR_H  = 13;   // px tall per line
+  const COLS    = 80;   // printable character columns
+  const MARGIN  = 38;   // tractor-feed strip width on each side
+
+  // We'll fill a "lines" array, then set canvas height to fit exactly.
+  const lines   = [];   // each entry: { text, col, bold } — one per row
+
+  // Helpers to push content
+  const push  = (text, col = 0, bold = false) => lines.push({ text, col, bold });
+  const pushB = (text, col = 0) => push(text, col, true);
+  const blank = () => push('');
+  const rule  = (ch = '=') => pushB(ch.repeat(COLS));
+  const dashes = () => push('-'.repeat(COLS));
+
+  function centre (str, bold = false) {
+    const col = Math.max(0, Math.floor((COLS - str.length) / 2));
+    push(str, col, bold);
+  }
+
+  // ────────────────────────────────────────────────────────────────────────────
+  // ASCII pictograph art buffer  (55 cols × 37 rows)
+  // ────────────────────────────────────────────────────────────────────────────
+  const AC = 55;
+  const AR = 37;
+  const buf = Array.from({ length: AR }, () => Array(AC).fill(' '));
+
+  function put (r, c, ch) {
+    if (r >= 0 && r < AR && c >= 0 && c < AC) buf[r][c] = ch;
+  }
+  function blank2 (r, c, ch) {
+    if (r >= 0 && r < AR && c >= 0 && c < AC && buf[r][c] === ' ') buf[r][c] = ch;
+  }
+
+  // Grid points — (row, col) inside art buffer
+  // Diamond layout:  N top-centre, S bottom-centre, E/W mid-sides
+  const G = {
+    N:  [1,  27],
+    NE: [7,  44],
+    E:  [18, 52],
+    SE: [29, 44],
+    S:  [35, 27],
+    SW: [29, 10],
+    W:  [18, 2],
+    NW: [7,  10],
+    C:  [18, 27],
+  };
+
+  // Thin grid lines using middle-dot
+  function gline (r1, c1, r2, c2) {
+    const steps = Math.max(Math.abs(r2-r1), Math.abs(c2-c1));
+    for (let i = 1; i < steps; i++) {
+      const r = Math.round(r1 + (r2-r1)*i/steps);
+      const c = Math.round(c1 + (c2-c1)*i/steps);
+      blank2(r, c, '\xb7');
+    }
+  }
+
+  // Outer diamond + cross + diagonals
+  gline(...G.N, ...G.NE); gline(...G.NE, ...G.E);
+  gline(...G.E, ...G.SE); gline(...G.SE, ...G.S);
+  gline(...G.S, ...G.SW); gline(...G.SW, ...G.W);
+  gline(...G.W, ...G.NW); gline(...G.NW, ...G.N);
+  gline(...G.N,  ...G.S);
+  gline(...G.E,  ...G.W);
+  gline(...G.NE, ...G.SW);
+  gline(...G.NW, ...G.SE);
+
+  // Grid dots (stamps — will restore after drawing staves/arcs)
+  const stampGrid = () => {
+    for (const [pos, [r,c]] of Object.entries(G)) {
+      if (pos === 'C')                            put(r, c, 'O');
+      else if (['N','S','E','W'].includes(pos))   put(r, c, '+');
+      else                                        put(r, c, '*');
+    }
+  };
+
+  // ── Blue stave: vertical at North, from row 2 to 17 (just above centre) ──
+  for (let r = 2; r <= 17; r++) {
+    put(r, 27, (r % 4 === 1) ? '#' : '|');
+  }
+
+  // ── Red stave: vertical at South, from row 19 to 34 (just below centre) ─
+  for (let r = 19; r <= 34; r++) {
+    put(r, 27, (r % 4 === 1) ? '@' : '|');
+  }
+
+  // ── Blue hand PRO arc: W → N  (sweeps through NW quadrant) ───────────────
+  // Characters: # (blue hand)
+  // Path traced from W(18,2) upward-and-right through NW zone to N(1,27)
+  const blueArc = [
+    [18, 3], [17, 3], [16, 3],
+    [15, 4], [14, 5], [13, 6],
+    [12, 7], [11, 8], [10, 9],
+    [9, 10], [8, 11],
+    [7, 13], [6, 15],
+    [5, 17], [4, 19],
+    [3, 22], [2, 25],
+  ];
+  for (const [r,c] of blueArc) blank2(r, c, '#');
+
+  // Blue arrowhead + tail
+  put(0, 27, '^');   // arrowhead at N pointing up
+  put(18, 1, '>');   // tail at W pointing right into arc
+
+  // ── Red hand PRO arc: E → S  (sweeps through SE quadrant) ───────────────
+  // Characters: @ (red hand)
+  // Path traced from E(18,52) downward-and-left through SE zone to S(35,27)
+  const redArc = [
+    [18, 51], [19, 51], [20, 50],
+    [21, 49], [22, 48], [23, 46],
+    [24, 45], [25, 43],
+    [26, 42], [27, 40],
+    [28, 38], [29, 36],
+    [30, 34], [31, 32],
+    [32, 30], [33, 29],
+    [34, 28],
+  ];
+  for (const [r,c] of redArc) blank2(r, c, '@');
+
+  // Red arrowhead + tail
+  put(36, 27, 'v');   // arrowhead at S pointing down (row 36 = below art, handled later)
+  put(18, 53, '<');   // tail at E pointing left into arc
+
+  // Restore grid anchors on top of everything
+  stampGrid();
+
+  // Compass labels
+  put(0,  26, 'N');
+  put(18,  0, 'W');
+  put(18, 54, 'E');
+  // S label placed as a separate art line after the buffer
+
+  // ────────────────────────────────────────────────────────────────────────────
+  // Build content lines
+  // ────────────────────────────────────────────────────────────────────────────
+
+  // ── Header ────────────────────────────────────────────────────────────────
+  pushB('*** TKA PICTOGRAPH SYSTEM V2.1 ***  LETTER: A  DATE: 12/15/1976  PAGE 1 OF 1 ***');
+  rule('=');
+  push('PROGRAM: PICTOGRAPH-GEN      RUN BY: AUSTEN/CLOUD      BATCH JOB: 197612150001');
+  dashes();
+
+  // ── Legend ────────────────────────────────────────────────────────────────
+  push('  LEGEND:  # = BLUE HAND (PRO-MOTION)     @ = RED HAND (PRO-MOTION)     + = CARDINAL');
+  push('           * = INTERCARDINAL POINT         O = CENTRE POSITION           · = GRID LINE');
+  dashes();
+
+  // ── Pictograph title + blank ───────────────────────────────────────────────
+  centre('[ PICTOGRAPH OUTPUT — LETTER: A ]', true);
+  blank();
+
+  // ── Art buffer rows ────────────────────────────────────────────────────────
+  const artColOffset = Math.floor((COLS - AC) / 2);
+  for (let r = 0; r < AR; r++) {
+    push(buf[r].join(''), artColOffset);
+  }
+  // S label + arrowhead row (below buffer)
+  const sRow = ' '.repeat(artColOffset + 26) + 'v';
+  push(sRow);
+  const sLabel = ' '.repeat(artColOffset + 26) + 'S';
+  push(sLabel);
+  blank();
+
+  // ── Metadata ───────────────────────────────────────────────────────────────
+  dashes();
+  push('  BEAT: 1 OF 1    BLUE: NORTH / PRO    RED: SOUTH / PRO    MOTION-TYPE: 1    TURNS: 0');
+  push('  START POSITION: ALPHA    END POSITION: ALPHA    WORD: A');
+  dashes();
+  blank();
+
+  // ── Block letter A (dot-matrix style) ─────────────────────────────────────
+  centre('[ BLOCK LETTER REFERENCE ]');
+  blank();
+
+  // 7x5 dot-matrix letter A — each '#' = dot-matrix pin fired
+  const dotA = [
+    '  #####  ',
+    ' ##   ## ',
+    ' ##   ## ',
+    ' ####### ',
+    ' ##   ## ',
+    ' ##   ## ',
+    ' ##   ## ',
+  ];
+  const aBcol = Math.floor((COLS - dotA[0].length) / 2);
+  for (const line of dotA) pushB(line, aBcol);
+  blank();
+
+  // ── Footer ─────────────────────────────────────────────────────────────────
+  rule('=');
+  push('  RECORD COUNT: 1    ERRORS: 0    WARNINGS: 0    STATUS: NORMAL TERMINATION');
+  rule('=');
+  centre('E N D   O F   R E P O R T', true);
+  rule('=');
+  blank();
+
+  // ────────────────────────────────────────────────────────────────────────────
+  // Canvas sizing & rendering
+  // ────────────────────────────────────────────────────────────────────────────
+  const TOTAL_ROWS = lines.length;
+  const CANVAS_W   = MARGIN * 2 + COLS * CHAR_W;
+  const CANVAS_H   = 14 + TOTAL_ROWS * CHAR_H + 16;  // top baseline offset + bottom pad
+  const STRIPE_H   = CHAR_H * 3;
+
+  const canvas = document.getElementById('c');
+  canvas.width  = CANVAS_W;
+  canvas.height = CANVAS_H;
+  const ctx = canvas.getContext('2d');
+
+  const PAPER_L = MARGIN;
+  const PAPER_R = CANVAS_W - MARGIN;
+
+  // ── Green-bar paper ─────────────────────────────────────────────────────────
+  ctx.fillStyle = '#a8a8a8';
+  ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+  for (let y = 0, band = 0; y < CANVAS_H; y += STRIPE_H, band++) {
+    ctx.fillStyle = band % 2 === 0 ? '#ffffff' : '#dff0de';
+    ctx.fillRect(PAPER_L, y, PAPER_R - PAPER_L, Math.min(STRIPE_H, CANVAS_H - y));
+  }
+
+  // ── Tractor-feed holes ──────────────────────────────────────────────────────
+  const HOLE_STEP = 22;
+  const HOLE_R    = 5.5;
+  const cxL = MARGIN / 2;
+  const cxR = CANVAS_W - MARGIN / 2;
+  for (let y = HOLE_STEP / 2; y < CANVAS_H; y += HOLE_STEP) {
+    for (const cx of [cxL, cxR]) {
+      // Punched hole: dark circle
+      ctx.beginPath();
+      ctx.arc(cx, y, HOLE_R, 0, Math.PI * 2);
+      ctx.fillStyle   = '#606060';
+      ctx.fill();
+      ctx.strokeStyle = '#444';
+      ctx.lineWidth   = 0.7;
+      ctx.stroke();
+      // Inner highlight ring
+      ctx.beginPath();
+      ctx.arc(cx, y, HOLE_R - 2, 0, Math.PI * 2);
+      ctx.strokeStyle = '#888';
+      ctx.lineWidth   = 0.5;
+      ctx.stroke();
+    }
+  }
+
+  // ── Edge perforation lines ──────────────────────────────────────────────────
+  ctx.strokeStyle = '#909090';
+  ctx.lineWidth   = 0.5;
+  ctx.setLineDash([3, 3]);
+  ctx.beginPath();
+  ctx.moveTo(PAPER_L, 0); ctx.lineTo(PAPER_L, CANVAS_H);
+  ctx.moveTo(PAPER_R, 0); ctx.lineTo(PAPER_R, CANVAS_H);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // ── Text rendering ──────────────────────────────────────────────────────────
+  ctx.textBaseline = 'alphabetic';
+
+  lines.forEach(({ text, col, bold }, rowIdx) => {
+    const x = PAPER_L + col * CHAR_W + 2;
+    const y = 14 + rowIdx * CHAR_H;
+
+    ctx.font      = bold
+      ? `bold ${CHAR_H - 2}px "Courier New", Courier, monospace`
+      : `${CHAR_H - 2}px "Courier New", Courier, monospace`;
+    ctx.fillStyle = '#0d0d0d';
+    ctx.fillText(text, x, y);
+
+    // Double-strike simulation for bold (authentic line-printer look)
+    if (bold) {
+      ctx.fillStyle = '#0d0d0d';
+      ctx.fillText(text, x + 0.5, y);
+    }
+  });
+
+})();
+</script>
+</body>
+</html>

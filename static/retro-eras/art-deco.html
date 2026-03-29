@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TKA — Art Deco Pictograph (1925)</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #05050D;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      font-family: Georgia, serif;
+    }
+    canvas {
+      display: block;
+    }
+    .caption {
+      margin-top: 18px;
+      color: #D4AF37;
+      letter-spacing: 0.35em;
+      font-size: 11px;
+      text-transform: uppercase;
+      opacity: 0.7;
+    }
+
+    /* ─── Control Panel ─────────────────────────────────────────────── */
+    .controls {
+      margin-top: 24px;
+      background: #0A0A14;
+      border: 1px solid rgba(212,175,55,0.25);
+      border-radius: 6px;
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      width: 500px;
+      font-family: Georgia, serif;
+    }
+    .controls-title {
+      color: #D4AF37;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.3em;
+      text-align: center;
+      opacity: 0.6;
+      margin-bottom: 4px;
+    }
+    .control-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .control-row label {
+      color: #D4AF37;
+      font-size: 11px;
+      min-width: 90px;
+      text-align: right;
+      letter-spacing: 0.05em;
+    }
+    .control-row select,
+    .control-row input[type="text"] {
+      background: #12122A;
+      border: 1px solid rgba(212,175,55,0.3);
+      color: #F5EDD0;
+      font-family: Georgia, serif;
+      font-size: 12px;
+      padding: 4px 8px;
+      border-radius: 3px;
+      outline: none;
+    }
+    .control-row select:focus,
+    .control-row input[type="text"]:focus {
+      border-color: #D4AF37;
+    }
+    .control-row select { cursor: pointer; }
+    .hand-group {
+      display: flex;
+      gap: 16px;
+      flex: 1;
+    }
+    .hand-group .field {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .hand-group .field label {
+      min-width: auto;
+      font-size: 10px;
+      opacity: 0.7;
+    }
+    .presets {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin-top: 4px;
+    }
+    .presets button {
+      background: #12122A;
+      border: 1px solid rgba(212,175,55,0.3);
+      color: #D4AF37;
+      font-family: Georgia, serif;
+      font-size: 11px;
+      padding: 5px 12px;
+      border-radius: 3px;
+      cursor: pointer;
+      letter-spacing: 0.05em;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .presets button:hover {
+      border-color: #D4AF37;
+      background: rgba(212,175,55,0.08);
+    }
+    .presets button.active {
+      border-color: #D4AF37;
+      background: rgba(212,175,55,0.15);
+    }
+    .divider {
+      height: 1px;
+      background: rgba(212,175,55,0.12);
+    }
+  </style>
+</head>
+<body>
+  <canvas id="c" width="500" height="500"></canvas>
+  <p class="caption" id="caption">TKA Notation &mdash; Letter A &mdash; Art Deco c.&thinsp;1925</p>
+
+  <!-- Control Panel -->
+  <div class="controls">
+    <div class="controls-title">Pictograph Data</div>
+
+    <div class="control-row">
+      <label>Letter</label>
+      <input type="text" id="ctrl-letter" value="A" maxlength="6" style="width:60px;" />
+      <label style="min-width:auto;">Grid</label>
+      <select id="ctrl-grid">
+        <option value="diamond">Diamond</option>
+        <option value="box">Box</option>
+      </select>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="control-row">
+      <label style="color:#6090E0;">Blue Hand</label>
+      <div class="hand-group">
+        <div class="field">
+          <label>Start</label>
+          <select id="ctrl-blue-start"></select>
+        </div>
+        <div class="field">
+          <label>End</label>
+          <select id="ctrl-blue-end"></select>
+        </div>
+        <div class="field">
+          <label>Motion</label>
+          <select id="ctrl-blue-motion">
+            <option value="pro">Pro</option>
+            <option value="anti">Anti</option>
+            <option value="static">Static</option>
+            <option value="dash">Dash</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="control-row">
+      <label style="color:#D04050;">Red Hand</label>
+      <div class="hand-group">
+        <div class="field">
+          <label>Start</label>
+          <select id="ctrl-red-start"></select>
+        </div>
+        <div class="field">
+          <label>End</label>
+          <select id="ctrl-red-end"></select>
+        </div>
+        <div class="field">
+          <label>Motion</label>
+          <select id="ctrl-red-motion">
+            <option value="pro">Pro</option>
+            <option value="anti">Anti</option>
+            <option value="static">Static</option>
+            <option value="dash">Dash</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="presets">
+      <button onclick="applyPreset('A')" class="active" id="btn-A">Letter A</button>
+      <button onclick="applyPreset('B')" id="btn-B">Letter B</button>
+      <button onclick="applyPreset('C')" id="btn-C">Letter C</button>
+      <button onclick="applyPreset('random')" id="btn-random">Random</button>
+    </div>
+  </div>
+
+  <script>
+  // ─── Pictograph Data ─────────────────────────────────────────────────────
+  let pictographData = {
+    letter: 'A',
+    gridMode: 'diamond',
+    blueHand: { startLocation: 'W', endLocation: 'N', motionType: 'pro' },
+    redHand:  { startLocation: 'E', endLocation: 'S', motionType: 'pro' },
+  };
+
+  const PRESETS = {
+    A: {
+      letter: 'A', gridMode: 'diamond',
+      blueHand: { startLocation: 'W', endLocation: 'N', motionType: 'pro' },
+      redHand:  { startLocation: 'E', endLocation: 'S', motionType: 'pro' },
+    },
+    B: {
+      letter: 'B', gridMode: 'diamond',
+      blueHand: { startLocation: 'N', endLocation: 'E', motionType: 'pro' },
+      redHand:  { startLocation: 'S', endLocation: 'W', motionType: 'pro' },
+    },
+    C: {
+      letter: 'C', gridMode: 'diamond',
+      blueHand: { startLocation: 'E', endLocation: 'E', motionType: 'static' },
+      redHand:  { startLocation: 'W', endLocation: 'W', motionType: 'static' },
+    },
+  };
+
+  const LOCATIONS = ['N','NE','E','SE','S','SW','W','NW'];
+  const MOTIONS   = ['pro','anti','static','dash'];
+
+  // ─── Populate location selects ───────────────────────────────────────────
+  ['ctrl-blue-start','ctrl-blue-end','ctrl-red-start','ctrl-red-end'].forEach(id => {
+    const sel = document.getElementById(id);
+    LOCATIONS.forEach(loc => {
+      const opt = document.createElement('option');
+      opt.value = loc; opt.textContent = loc;
+      sel.appendChild(opt);
+    });
+  });
+
+  // ─── Sync controls from data ─────────────────────────────────────────────
+  function syncControlsFromData() {
+    document.getElementById('ctrl-letter').value      = pictographData.letter;
+    document.getElementById('ctrl-grid').value         = pictographData.gridMode;
+    document.getElementById('ctrl-blue-start').value   = pictographData.blueHand.startLocation;
+    document.getElementById('ctrl-blue-end').value     = pictographData.blueHand.endLocation;
+    document.getElementById('ctrl-blue-motion').value  = pictographData.blueHand.motionType;
+    document.getElementById('ctrl-red-start').value    = pictographData.redHand.startLocation;
+    document.getElementById('ctrl-red-end').value      = pictographData.redHand.endLocation;
+    document.getElementById('ctrl-red-motion').value   = pictographData.redHand.motionType;
+  }
+
+  function readControlsToData() {
+    pictographData.letter                    = document.getElementById('ctrl-letter').value || '?';
+    pictographData.gridMode                  = document.getElementById('ctrl-grid').value;
+    pictographData.blueHand.startLocation    = document.getElementById('ctrl-blue-start').value;
+    pictographData.blueHand.endLocation      = document.getElementById('ctrl-blue-end').value;
+    pictographData.blueHand.motionType       = document.getElementById('ctrl-blue-motion').value;
+    pictographData.redHand.startLocation     = document.getElementById('ctrl-red-start').value;
+    pictographData.redHand.endLocation       = document.getElementById('ctrl-red-end').value;
+    pictographData.redHand.motionType        = document.getElementById('ctrl-red-motion').value;
+  }
+
+  function applyPreset(key) {
+    if (key === 'random') {
+      const rl = () => LOCATIONS[Math.floor(Math.random() * LOCATIONS.length)];
+      const rm = () => MOTIONS[Math.floor(Math.random() * MOTIONS.length)];
+      const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+      pictographData = {
+        letter: letters[Math.floor(Math.random() * letters.length)],
+        gridMode: Math.random() > 0.5 ? 'diamond' : 'box',
+        blueHand: { startLocation: rl(), endLocation: rl(), motionType: rm() },
+        redHand:  { startLocation: rl(), endLocation: rl(), motionType: rm() },
+      };
+    } else {
+      pictographData = JSON.parse(JSON.stringify(PRESETS[key]));
+    }
+    syncControlsFromData();
+    updateCaption();
+    highlightPresetButton(key);
+    render(pictographData);
+  }
+
+  function highlightPresetButton(key) {
+    document.querySelectorAll('.presets button').forEach(b => b.classList.remove('active'));
+    const btn = document.getElementById('btn-' + key);
+    if (btn) btn.classList.add('active');
+  }
+
+  function updateCaption() {
+    const motionLabel = (pictographData.blueHand.motionType === pictographData.redHand.motionType)
+      ? pictographData.blueHand.motionType.toUpperCase()
+      : 'Mixed';
+    document.getElementById('caption').innerHTML =
+      'TKA Notation &mdash; Letter ' + pictographData.letter + ' &mdash; Art Deco c.&thinsp;1925';
+  }
+
+  // ─── Wire up controls ────────────────────────────────────────────────────
+  document.querySelectorAll('.controls select, .controls input').forEach(el => {
+    el.addEventListener('change', () => {
+      readControlsToData();
+      highlightPresetButton(null);
+      updateCaption();
+      render(pictographData);
+    });
+    el.addEventListener('input', () => {
+      readControlsToData();
+      highlightPresetButton(null);
+      updateCaption();
+      render(pictographData);
+    });
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // RENDERER
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  const canvas = document.getElementById('c');
+  const ctx    = canvas.getContext('2d');
+  const W = 500, H = 500, CX = 250, CY = 250;
+
+  // ─── Palette ─────────────────────────────────────────────────────────────
+  const GOLD    = '#D4AF37';
+  const GOLD_L  = '#F0D060';
+  const GOLD_D  = '#8B6914';
+  const SILVER  = '#C8C8C8';
+  const SILVER_L= '#E8E8E8';
+  const TEAL    = '#007070';
+  const TEAL_L  = '#00A090';
+  const CREAM   = '#F5EDD0';
+  const BLACK   = '#050508';
+  const BG      = '#0A0A14';
+  const BURGUNDY= '#7A001C';
+  const NAVY    = '#0C0C2A';
+
+  // ─── Grid positions (8-point compass on a 160-radius circle) ─────────────
+  const R = 160;
+  const dirs = ['N','NE','E','SE','S','SW','W','NW'];
+
+  // Build pts for a given grid mode. Diamond = standard (N at top).
+  // Box = rotated 45 degrees (NE at top).
+  function buildGridPoints(gridMode) {
+    const pts = {};
+    const offset = (gridMode === 'box') ? 45 : 0;
+    dirs.forEach((d, i) => {
+      const angle = (i * 45 - 90 + offset) * Math.PI / 180;
+      pts[d] = { x: CX + R * Math.cos(angle), y: CY + R * Math.sin(angle) };
+    });
+    pts['C'] = { x: CX, y: CY };
+    return pts;
+  }
+
+  // ─── Helpers ─────────────────────────────────────────────────────────────
+
+  function makeGold(x1, y1, x2, y2) {
+    const g = ctx.createLinearGradient(x1, y1, x2, y2);
+    g.addColorStop(0,    GOLD_D);
+    g.addColorStop(0.3,  GOLD);
+    g.addColorStop(0.55, GOLD_L);
+    g.addColorStop(0.75, GOLD);
+    g.addColorStop(1,    GOLD_D);
+    return g;
+  }
+
+  function makeSilver(x1, y1, x2, y2) {
+    const g = ctx.createLinearGradient(x1, y1, x2, y2);
+    g.addColorStop(0,    '#707070');
+    g.addColorStop(0.3,  SILVER);
+    g.addColorStop(0.55, SILVER_L);
+    g.addColorStop(0.75, SILVER);
+    g.addColorStop(1,    '#707070');
+    return g;
+  }
+
+  // ─── 1. Background ────────────────────────────────────────────────────────
+  function drawBackground() {
+    const bg = ctx.createRadialGradient(CX, CY, 60, CX, CY, 300);
+    bg.addColorStop(0,   '#12122A');
+    bg.addColorStop(0.6, '#080814');
+    bg.addColorStop(1,   '#050508');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  // ─── 2. Outer sunburst / radiating lines ─────────────────────────────────
+  function drawSunburst() {
+    const rays  = 48;
+    const rOuter = 238;
+    const rInner = 195;
+    ctx.save();
+    ctx.globalAlpha = 0.18;
+    for (let i = 0; i < rays; i++) {
+      const a = (i / rays) * Math.PI * 2;
+      ctx.beginPath();
+      ctx.moveTo(CX + (rInner + 4) * Math.cos(a), CY + (rInner + 4) * Math.sin(a));
+      ctx.lineTo(CX + rOuter       * Math.cos(a), CY + rOuter       * Math.sin(a));
+      ctx.strokeStyle = GOLD;
+      ctx.lineWidth   = (i % 2 === 0) ? 1.5 : 0.6;
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+    ctx.restore();
+  }
+
+  // ─── 3. Outer geometric border ────────────────────────────────────────────
+  function drawBorder() {
+    const pad   = 10;
+    const steps = 4;
+    const gap   = 4;
+
+    ctx.strokeStyle = GOLD;
+    ctx.lineWidth   = 3;
+    ctx.strokeRect(pad, pad, W - pad * 2, H - pad * 2);
+
+    for (let i = 1; i <= steps; i++) {
+      const p = pad + i * gap;
+      ctx.strokeStyle = (i % 2 === 0) ? GOLD : '#4A3A10';
+      ctx.lineWidth   = (i === 1) ? 1.5 : 0.8;
+      ctx.strokeRect(p, p, W - p * 2, H - p * 2);
+    }
+
+    const inner = pad + steps * gap + 6;
+    ctx.strokeStyle = GOLD;
+    ctx.lineWidth   = 2;
+    ctx.strokeRect(inner, inner, W - inner * 2, H - inner * 2);
+  }
+
+  // ─── 4. Corner fan motifs ─────────────────────────────────────────────────
+  function drawCornerFan(ox, oy, rotAngle) {
+    ctx.save();
+    ctx.translate(ox, oy);
+    ctx.rotate(rotAngle);
+    const fanR  = 52;
+    const fanR2 = 38;
+    const rays  = 9;
+    const span  = Math.PI / 2;
+
+    for (let i = 0; i < rays; i++) {
+      const a0 = (i / rays) * span;
+      const a1 = ((i + 1) / rays) * span;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.arc(0, 0, fanR, a0, a1);
+      ctx.closePath();
+      ctx.fillStyle   = (i % 2 === 0) ? GOLD : '#1A1400';
+      ctx.globalAlpha = (i % 2 === 0) ? 0.85 : 1;
+      ctx.fill();
+      ctx.strokeStyle = GOLD_D;
+      ctx.lineWidth   = 0.5;
+      ctx.globalAlpha = 1;
+      ctx.stroke();
+    }
+
+    ctx.beginPath();
+    ctx.arc(0, 0, fanR2, 0, span);
+    ctx.strokeStyle = GOLD_L;
+    ctx.lineWidth   = 1.5;
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(0, 0, 3, 0, Math.PI * 2);
+    ctx.fillStyle = GOLD_L;
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+  function drawAllCornerFans() {
+    const off = 10;
+    drawCornerFan(off, off,             0);
+    drawCornerFan(W - off, off,         Math.PI / 2);
+    drawCornerFan(W - off, H - off,     Math.PI);
+    drawCornerFan(off, H - off,         -Math.PI / 2);
+  }
+
+  // ─── 5. Mid-border decorative band ───────────────────────────────────────
+  function drawDecorativeBand() {
+    const bY1 = 36, bY2 = 46;
+    const bY3 = H - 46, bY4 = H - 36;
+
+    [{ y1: bY1, y2: bY2 }, { y1: bY3, y2: bY4 }].forEach(({ y1, y2 }) => {
+      const g = ctx.createLinearGradient(0, y1, 0, y2);
+      g.addColorStop(0,   GOLD_D);
+      g.addColorStop(0.5, GOLD);
+      g.addColorStop(1,   GOLD_D);
+      ctx.fillStyle = g;
+      ctx.fillRect(36, y1, W - 72, y2 - y1);
+    });
+
+    const lX1 = 36, lX2 = 46;
+    const rX1 = W - 46, rX2 = W - 36;
+    [{ x1: lX1, x2: lX2 }, { x1: rX1, x2: rX2 }].forEach(({ x1, x2 }) => {
+      const g = ctx.createLinearGradient(x1, 0, x2, 0);
+      g.addColorStop(0,   GOLD_D);
+      g.addColorStop(0.5, GOLD);
+      g.addColorStop(1,   GOLD_D);
+      ctx.fillStyle = g;
+      ctx.fillRect(x1, 36, x2 - x1, H - 72);
+    });
+
+    const tickCount = 12;
+    const xStart = 60, xEnd = W - 60;
+    const tickW = (xEnd - xStart) / tickCount;
+    for (let i = 0; i < tickCount; i++) {
+      const tx = xStart + i * tickW + tickW / 2;
+      ctx.beginPath();
+      ctx.moveTo(tx - 5, bY1 + 1);
+      ctx.lineTo(tx,     bY1 + 5);
+      ctx.lineTo(tx + 5, bY1 + 1);
+      ctx.strokeStyle = GOLD_D;
+      ctx.lineWidth   = 1;
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(tx - 5, bY3 + 9);
+      ctx.lineTo(tx,     bY3 + 5);
+      ctx.lineTo(tx + 5, bY3 + 9);
+      ctx.stroke();
+    }
+  }
+
+  // ─── 6. Grid dots as geometric diamonds ──────────────────────────────────
+  function drawDiamond(x, y, size, fill, stroke) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(Math.PI / 4);
+    ctx.beginPath();
+    ctx.rect(-size / 2, -size / 2, size, size);
+    ctx.fillStyle   = fill;
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth   = 1;
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawGridDots(pts) {
+    dirs.forEach(d => {
+      const p = pts[d];
+      drawDiamond(p.x, p.y, 14, 'rgba(212,175,55,0.12)', 'rgba(212,175,55,0.4)');
+      drawDiamond(p.x, p.y, 7,  GOLD, GOLD_L);
+      drawDiamond(p.x, p.y, 3,  GOLD_L, GOLD_L);
+    });
+
+    const c = pts['C'];
+    drawDiamond(c.x, c.y, 18, 'rgba(212,175,55,0.08)', 'rgba(212,175,55,0.35)');
+    drawDiamond(c.x, c.y, 10, GOLD,   GOLD_L);
+    drawDiamond(c.x, c.y, 5,  GOLD_L, GOLD_L);
+  }
+
+  // ─── 7. Subtle grid lines ─────────────────────────────────────────────────
+  function drawGridLines(pts) {
+    ctx.save();
+    ctx.globalAlpha = 0.12;
+    ctx.strokeStyle = GOLD;
+    ctx.lineWidth   = 0.8;
+    ctx.setLineDash([3, 6]);
+
+    ctx.beginPath();
+    ctx.moveTo(pts['W'].x, pts['W'].y); ctx.lineTo(pts['E'].x, pts['E'].y);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(pts['N'].x, pts['N'].y); ctx.lineTo(pts['S'].x, pts['S'].y);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(pts['NW'].x, pts['NW'].y); ctx.lineTo(pts['SE'].x, pts['SE'].y);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(pts['NE'].x, pts['NE'].y); ctx.lineTo(pts['SW'].x, pts['SW'].y);
+    ctx.stroke();
+
+    ctx.setLineDash([]);
+    ctx.globalAlpha = 1;
+    ctx.restore();
+  }
+
+  // ─── 8. Geometric Art Deco stave ─────────────────────────────────────────
+  function drawAngularStave(x1, y1, x2, y2, color) {
+    const dx = x2 - x1, dy = y2 - y1;
+    const len = Math.sqrt(dx * dx + dy * dy);
+    const nx = -dy / len, ny = dx / len;
+
+    const W_SHAFT = 9;
+    const W_TIP   = 4;
+    const BEVEL   = 12;
+
+    const p0 = { x: x1 + nx * W_TIP,   y: y1 + ny * W_TIP   };
+    const p1 = { x: x1 - nx * W_TIP,   y: y1 - ny * W_TIP   };
+    const p2 = { x: x2 - nx * W_TIP,   y: y2 - ny * W_TIP   };
+    const p3 = { x: x2 + nx * W_TIP,   y: y2 + ny * W_TIP   };
+
+    const grad = (color === 'gold')
+      ? makeGold(x1 + nx * W_SHAFT, y1 + ny * W_SHAFT,
+                 x1 - nx * W_SHAFT, y1 - ny * W_SHAFT)
+      : makeSilver(x1 + nx * W_SHAFT, y1 + ny * W_SHAFT,
+                   x1 - nx * W_SHAFT, y1 - ny * W_SHAFT);
+
+    ctx.save();
+    ctx.shadowColor = (color === 'gold') ? 'rgba(212,175,55,0.5)' : 'rgba(200,200,200,0.4)';
+    ctx.shadowBlur  = 14;
+
+    const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+    ctx.beginPath();
+    ctx.moveTo(p0.x, p0.y);
+    ctx.lineTo(mx + nx * W_SHAFT, my + ny * W_SHAFT);
+    ctx.lineTo(p3.x, p3.y);
+    ctx.lineTo(p2.x, p2.y);
+    ctx.lineTo(mx - nx * W_SHAFT, my - ny * W_SHAFT);
+    ctx.lineTo(p1.x, p1.y);
+    ctx.closePath();
+
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    ctx.strokeStyle = (color === 'gold') ? GOLD_D : '#606060';
+    ctx.lineWidth   = 1;
+    ctx.stroke();
+
+    ctx.shadowBlur = 0;
+    ctx.restore();
+
+    ctx.save();
+    ctx.globalAlpha = 0.55;
+    ctx.beginPath();
+    ctx.moveTo(x1 + nx * 2, y1 + ny * 2);
+    ctx.lineTo(x2 + nx * 2, y2 + ny * 2);
+    ctx.strokeStyle = (color === 'gold') ? GOLD_L : SILVER_L;
+    ctx.lineWidth   = 1.5;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+    ctx.restore();
+
+    function drawChevronCap(ex, ey, dirSign) {
+      const ux = (dx / len) * dirSign, uy = (dy / len) * dirSign;
+      ctx.beginPath();
+      ctx.moveTo(ex + nx * W_SHAFT,  ey + ny * W_SHAFT);
+      ctx.lineTo(ex + ux * BEVEL,    ey + uy * BEVEL);
+      ctx.lineTo(ex - nx * W_SHAFT,  ey - ny * W_SHAFT);
+      ctx.strokeStyle = (color === 'gold') ? GOLD : SILVER;
+      ctx.lineWidth   = 2;
+      ctx.lineJoin    = 'miter';
+      ctx.stroke();
+    }
+
+    drawChevronCap(x1, y1, -1);
+    drawChevronCap(x2, y2, +1);
+  }
+
+  // ─── 9. Generic motion arc / arrow drawing ─────────────────────────────────
+  // Draws a faceted arc from fromPt to toPt around the center, with arrowhead.
+  // direction: 'cw' or 'ccw' determines sweep direction.
+  function drawDecoArc(fromPt, toPt, colorMain, colorAccent, direction) {
+    const cx = CX, cy = CY;
+    const startAngle = Math.atan2(fromPt.y - cy, fromPt.x - cx);
+    const endAngle   = Math.atan2(toPt.y - cy, toPt.x - cx);
+
+    let sweep;
+    if (direction === 'ccw') {
+      // CCW = increasing angle
+      sweep = endAngle - startAngle;
+      if (sweep <= 0) sweep += Math.PI * 2;
+    } else {
+      // CW = decreasing angle
+      sweep = endAngle - startAngle;
+      if (sweep >= 0) sweep -= Math.PI * 2;
+    }
+
+    const segments = 12;
+    const arcPts = [];
+    for (let i = 0; i <= segments; i++) {
+      const t = i / segments;
+      const a = startAngle + sweep * t;
+      arcPts.push({ x: cx + R * Math.cos(a), y: cy + R * Math.sin(a) });
+    }
+
+    // Outer glow halo
+    ctx.save();
+    ctx.shadowColor = colorMain + '88';
+    ctx.shadowBlur  = 18;
+
+    // Stepped / faceted arc path
+    ctx.beginPath();
+    ctx.moveTo(arcPts[0].x, arcPts[0].y);
+    for (let i = 1; i <= segments; i++) {
+      ctx.lineTo(arcPts[i].x, arcPts[i].y);
+    }
+    ctx.strokeStyle = colorMain;
+    ctx.lineWidth   = 5;
+    ctx.lineCap     = 'butt';
+    ctx.stroke();
+
+    ctx.shadowBlur = 0;
+    ctx.restore();
+
+    // Thin accent line inset
+    const innerR = R - 8;
+    ctx.beginPath();
+    for (let i = 0; i <= segments; i++) {
+      const t = i / segments;
+      const a = startAngle + sweep * t;
+      const px = cx + innerR * Math.cos(a);
+      const py = cy + innerR * Math.sin(a);
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.strokeStyle = colorAccent;
+    ctx.lineWidth   = 1.5;
+    ctx.globalAlpha = 0.7;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+
+    // Cross-hatch facet ticks
+    for (let i = 1; i < segments; i++) {
+      const t = i / segments;
+      const a = startAngle + sweep * t;
+      const px = cx + R * Math.cos(a);
+      const py = cy + R * Math.sin(a);
+      const tickLen = (i % 3 === 0) ? 12 : 6;
+      ctx.beginPath();
+      ctx.moveTo(px, py);
+      ctx.lineTo(px + tickLen * Math.cos(a), py + tickLen * Math.sin(a));
+      ctx.strokeStyle = colorAccent;
+      ctx.lineWidth   = (i % 3 === 0) ? 1.5 : 0.8;
+      ctx.globalAlpha = 0.65;
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+
+    // Geometric arrowhead at end
+    const endA = startAngle + sweep;
+    const tangentA = endA + ((direction === 'ccw') ? Math.PI / 2 : -Math.PI / 2);
+
+    const tip = { x: cx + R * Math.cos(endA), y: cy + R * Math.sin(endA) };
+    const aLen = 20, aWid = 11;
+
+    const ax0 = tip.x - aLen * Math.cos(tangentA);
+    const ay0 = tip.y - aLen * Math.sin(tangentA);
+
+    const ax1 = ax0 + aWid * Math.cos(endA + Math.PI / 2);
+    const ay1 = ay0 + aWid * Math.sin(endA + Math.PI / 2);
+    const ax2 = ax0 - aWid * Math.cos(endA + Math.PI / 2);
+    const ay2 = ay0 - aWid * Math.sin(endA + Math.PI / 2);
+
+    ctx.save();
+    ctx.shadowColor = colorMain + 'AA';
+    ctx.shadowBlur  = 12;
+
+    ctx.beginPath();
+    ctx.moveTo(tip.x, tip.y);
+    ctx.lineTo(ax1, ay1);
+    ctx.lineTo(ax0, ay0);
+    ctx.lineTo(ax2, ay2);
+    ctx.closePath();
+    ctx.fillStyle   = colorMain;
+    ctx.strokeStyle = colorAccent;
+    ctx.lineWidth   = 1;
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.shadowBlur = 0;
+    ctx.restore();
+
+    drawDiamond(tip.x, tip.y, 6, colorAccent, colorMain);
+
+    // Start-point indicator: small geometric sunburst
+    const startPt = arcPts[0];
+    ctx.save();
+    ctx.translate(startPt.x, startPt.y);
+    const sRays = 8;
+    for (let i = 0; i < sRays; i++) {
+      const sa = (i / sRays) * Math.PI * 2;
+      const sLen = (i % 2 === 0) ? 9 : 5;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(sLen * Math.cos(sa), sLen * Math.sin(sa));
+      ctx.strokeStyle = colorMain;
+      ctx.lineWidth   = 1.2;
+      ctx.globalAlpha = 0.8;
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+    ctx.beginPath();
+    ctx.arc(0, 0, 4, 0, Math.PI * 2);
+    ctx.fillStyle = colorMain;
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // ─── Dash arrow: straight line with arrowhead ────────────────────────────
+  function drawDashArrow(fromPt, toPt, colorMain, colorAccent) {
+    const dx = toPt.x - fromPt.x;
+    const dy = toPt.y - fromPt.y;
+    const len = Math.sqrt(dx * dx + dy * dy);
+    const ux = dx / len, uy = dy / len;
+    const nx = -uy, ny = ux;
+
+    // Glow
+    ctx.save();
+    ctx.shadowColor = colorMain + '88';
+    ctx.shadowBlur  = 18;
+
+    // Main line
+    ctx.beginPath();
+    ctx.moveTo(fromPt.x, fromPt.y);
+    ctx.lineTo(toPt.x, toPt.y);
+    ctx.strokeStyle = colorMain;
+    ctx.lineWidth   = 5;
+    ctx.lineCap     = 'butt';
+    ctx.stroke();
+
+    ctx.shadowBlur = 0;
+    ctx.restore();
+
+    // Thin accent line inset
+    ctx.beginPath();
+    ctx.moveTo(fromPt.x + nx * 4, fromPt.y + ny * 4);
+    ctx.lineTo(toPt.x + nx * 4, toPt.y + ny * 4);
+    ctx.strokeStyle = colorAccent;
+    ctx.lineWidth   = 1.5;
+    ctx.globalAlpha = 0.7;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+
+    // Ticks along the line
+    const segments = 8;
+    for (let i = 1; i < segments; i++) {
+      const t = i / segments;
+      const px = fromPt.x + dx * t;
+      const py = fromPt.y + dy * t;
+      const tickLen = (i % 3 === 0) ? 12 : 6;
+      const tickAngle = Math.atan2(ny, nx);
+      ctx.beginPath();
+      ctx.moveTo(px, py);
+      ctx.lineTo(px + tickLen * Math.cos(tickAngle), py + tickLen * Math.sin(tickAngle));
+      ctx.strokeStyle = colorAccent;
+      ctx.lineWidth   = (i % 3 === 0) ? 1.5 : 0.8;
+      ctx.globalAlpha = 0.65;
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+
+    // Arrowhead
+    const aLen = 20, aWid = 11;
+    const tip = toPt;
+    const ax0 = { x: tip.x - ux * aLen, y: tip.y - uy * aLen };
+    const ax1 = { x: ax0.x + nx * aWid, y: ax0.y + ny * aWid };
+    const ax2 = { x: ax0.x - nx * aWid, y: ax0.y - ny * aWid };
+
+    ctx.save();
+    ctx.shadowColor = colorMain + 'AA';
+    ctx.shadowBlur  = 12;
+    ctx.beginPath();
+    ctx.moveTo(tip.x, tip.y);
+    ctx.lineTo(ax1.x, ax1.y);
+    ctx.lineTo(ax0.x, ax0.y);
+    ctx.lineTo(ax2.x, ax2.y);
+    ctx.closePath();
+    ctx.fillStyle   = colorMain;
+    ctx.strokeStyle = colorAccent;
+    ctx.lineWidth   = 1;
+    ctx.fill();
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.restore();
+
+    drawDiamond(tip.x, tip.y, 6, colorAccent, colorMain);
+
+    // Start sunburst
+    ctx.save();
+    ctx.translate(fromPt.x, fromPt.y);
+    for (let i = 0; i < 8; i++) {
+      const sa = (i / 8) * Math.PI * 2;
+      const sLen = (i % 2 === 0) ? 9 : 5;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(sLen * Math.cos(sa), sLen * Math.sin(sa));
+      ctx.strokeStyle = colorMain;
+      ctx.lineWidth   = 1.2;
+      ctx.globalAlpha = 0.8;
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+    ctx.beginPath();
+    ctx.arc(0, 0, 4, 0, Math.PI * 2);
+    ctx.fillStyle = colorMain;
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // ─── 10. Generic stave drawing ───────────────────────────────────────────
+  function drawStaves(pts, data) {
+    const STAVE_LEN = 80;
+
+    function staveEndpoints(handPt) {
+      const dx = CX - handPt.x;
+      const dy = CY - handPt.y;
+      const d  = Math.sqrt(dx * dx + dy * dy);
+      if (d < 0.001) {
+        // Hand at center: draw vertical stave
+        return {
+          inner: { x: handPt.x, y: handPt.y + STAVE_LEN },
+          outer: { x: handPt.x, y: handPt.y - STAVE_LEN },
+        };
+      }
+      const ux = dx / d, uy = dy / d;
+      return {
+        inner: { x: handPt.x + ux * STAVE_LEN, y: handPt.y + uy * STAVE_LEN },
+        outer: { x: handPt.x - ux * STAVE_LEN, y: handPt.y - uy * STAVE_LEN },
+      };
+    }
+
+    // Blue stave
+    const bluePt = pts[data.blueHand.endLocation] || pts['N'];
+    const blueEnds = staveEndpoints(bluePt);
+    drawAngularStave(blueEnds.outer.x, blueEnds.outer.y,
+                     blueEnds.inner.x, blueEnds.inner.y, 'silver');
+
+    // Blue color band
+    ctx.save();
+    ctx.globalAlpha = 0.55;
+    const bDx = blueEnds.inner.x - blueEnds.outer.x;
+    const bDy = blueEnds.inner.y - blueEnds.outer.y;
+    const bLen = Math.sqrt(bDx * bDx + bDy * bDy);
+    const bNx = -bDy / (bLen || 1) * 8;
+    const bNy = bDx / (bLen || 1) * 8;
+    const blueGrad = ctx.createLinearGradient(
+      blueEnds.outer.x + bNx, blueEnds.outer.y + bNy,
+      blueEnds.outer.x - bNx, blueEnds.outer.y - bNy
+    );
+    blueGrad.addColorStop(0,   '#003070');
+    blueGrad.addColorStop(0.5, '#0060D0');
+    blueGrad.addColorStop(1,   '#003070');
+    ctx.beginPath();
+    ctx.moveTo(blueEnds.outer.x, blueEnds.outer.y);
+    ctx.lineTo(blueEnds.inner.x, blueEnds.inner.y);
+    ctx.strokeStyle = blueGrad;
+    ctx.lineWidth   = 6;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+    ctx.restore();
+
+    // Red stave
+    const redPt = pts[data.redHand.endLocation] || pts['S'];
+    const redEnds = staveEndpoints(redPt);
+    drawAngularStave(redEnds.outer.x, redEnds.outer.y,
+                     redEnds.inner.x, redEnds.inner.y, 'gold');
+
+    // Red color band
+    ctx.save();
+    ctx.globalAlpha = 0.55;
+    const rDx = redEnds.inner.x - redEnds.outer.x;
+    const rDy = redEnds.inner.y - redEnds.outer.y;
+    const rLen = Math.sqrt(rDx * rDx + rDy * rDy);
+    const rNx = -rDy / (rLen || 1) * 8;
+    const rNy = rDx / (rLen || 1) * 8;
+    const redGrad = ctx.createLinearGradient(
+      redEnds.outer.x + rNx, redEnds.outer.y + rNy,
+      redEnds.outer.x - rNx, redEnds.outer.y - rNy
+    );
+    redGrad.addColorStop(0,   '#5A0010');
+    redGrad.addColorStop(0.5, '#CC2030');
+    redGrad.addColorStop(1,   '#5A0010');
+    ctx.beginPath();
+    ctx.moveTo(redEnds.outer.x, redEnds.outer.y);
+    ctx.lineTo(redEnds.inner.x, redEnds.inner.y);
+    ctx.strokeStyle = redGrad;
+    ctx.lineWidth   = 6;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+    ctx.restore();
+  }
+
+  // ─── 11. Generic motion arrows ──────────────────────────────────────────
+  function drawMotionArrows(pts, data) {
+    const BLUE_MAIN   = '#1A6FFF';
+    const BLUE_ACCENT = '#80B8FF';
+    const RED_MAIN    = '#CC1530';
+    const RED_ACCENT  = '#FF7090';
+
+    function drawHandArrow(hand, mainColor, accentColor) {
+      if (hand.motionType === 'static') return; // No arrow for static
+
+      const fromPt = pts[hand.startLocation];
+      const toPt   = pts[hand.endLocation];
+      if (!fromPt || !toPt) return;
+
+      if (hand.motionType === 'dash') {
+        drawDashArrow(fromPt, toPt, mainColor, accentColor);
+        return;
+      }
+
+      // Pro = CCW, Anti = CW
+      const direction = (hand.motionType === 'pro') ? 'ccw' : 'cw';
+      drawDecoArc(fromPt, toPt, mainColor, accentColor, direction);
+    }
+
+    drawHandArrow(data.blueHand, BLUE_MAIN, BLUE_ACCENT);
+    drawHandArrow(data.redHand,  RED_MAIN,  RED_ACCENT);
+  }
+
+  // ─── 12. Hand dot indicators ──────────────────────────────────────────────
+  function drawHandDots(pts, data) {
+    function handDiamond(pt, fill, stroke) {
+      drawDiamond(pt.x, pt.y, 20, fill, stroke);
+      drawDiamond(pt.x, pt.y, 10, stroke, fill);
+      drawDiamond(pt.x, pt.y,  4, fill,   stroke);
+    }
+
+    const bluePt = pts[data.blueHand.endLocation] || pts['N'];
+    const redPt  = pts[data.redHand.endLocation]  || pts['S'];
+
+    handDiamond(bluePt,
+      'rgba(0, 80, 200, 0.85)',
+      '#60A0FF'
+    );
+
+    handDiamond(redPt,
+      'rgba(160, 10, 30, 0.85)',
+      '#FF6080'
+    );
+  }
+
+  // ─── 13. Central sunburst disc ────────────────────────────────────────────
+  function drawCenterDisc() {
+    const radial = ctx.createRadialGradient(CX, CY, 0, CX, CY, 30);
+    radial.addColorStop(0,   'rgba(212,175,55,0.12)');
+    radial.addColorStop(1,   'rgba(212,175,55,0)');
+    ctx.beginPath();
+    ctx.arc(CX, CY, 30, 0, Math.PI * 2);
+    ctx.fillStyle = radial;
+    ctx.fill();
+
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2;
+      ctx.beginPath();
+      ctx.moveTo(CX + 5 * Math.cos(a),  CY + 5 * Math.sin(a));
+      ctx.lineTo(CX + 22 * Math.cos(a), CY + 22 * Math.sin(a));
+      ctx.strokeStyle = GOLD;
+      ctx.lineWidth   = (i % 2 === 0) ? 1.5 : 0.7;
+      ctx.globalAlpha = 0.45;
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+
+    drawDiamond(CX, CY, 10, 'rgba(212,175,55,0.2)', GOLD);
+    drawDiamond(CX, CY,  4, GOLD, GOLD_L);
+  }
+
+  // ─── 14. Generic letter label ──────────────────────────────────────────────
+  function drawLetter(letter) {
+    const lx = 430, ly = 430;
+
+    ctx.save();
+    ctx.translate(lx, ly);
+
+    // Background diamond plate
+    drawDiamond(0, 0, 54, 'rgba(8,8,20,0.9)', GOLD_D);
+    drawDiamond(0, 0, 48, 'rgba(8,8,20,0.9)', 'rgba(212,175,55,0.25)');
+
+    // Draw the letter as text (works for any letter, not just A)
+    ctx.fillStyle    = GOLD;
+    ctx.font         = 'bold 32px Georgia, serif';
+    ctx.textAlign    = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(letter, 0, 1);
+
+    // Serifs: top and bottom horizontal accents
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = GOLD_L;
+    ctx.beginPath();
+    ctx.moveTo(-12, -18); ctx.lineTo(12, -18);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-12, 18); ctx.lineTo(12, 18);
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  // ─── 15. Motion type label ──────────────────────────────────────────────
+  function drawMotionLabel(data) {
+    const lx = 70, ly = 435;
+
+    // Determine label text
+    let label;
+    if (data.blueHand.motionType === data.redHand.motionType) {
+      label = data.blueHand.motionType.toUpperCase();
+    } else {
+      label = 'MIXED';
+    }
+
+    ctx.save();
+    ctx.translate(lx, ly);
+
+    drawDiamond(0, 0, 46, 'rgba(8,8,20,0.9)', GOLD_D);
+    drawDiamond(0, 0, 40, 'rgba(8,8,20,0.9)', 'rgba(212,175,55,0.2)');
+
+    ctx.fillStyle    = GOLD;
+    ctx.font         = 'bold 11px Georgia, serif';
+    ctx.textAlign    = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label, 0, 1);
+
+    ctx.restore();
+  }
+
+  // ─── 16. Pinstripe cross-lines ────────────────────────────────────────────
+  function drawPinstripes() {
+    [[75, 76], [424, 425]].forEach(([y1, y2]) => {
+      ctx.beginPath();
+      ctx.moveTo(55, y1); ctx.lineTo(W - 55, y1);
+      ctx.strokeStyle = GOLD;
+      ctx.lineWidth   = 0.8;
+      ctx.globalAlpha = 0.35;
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(55, y2); ctx.lineTo(W - 55, y2);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    });
+
+    [[75, 76], [424, 425]].forEach(([x1, x2]) => {
+      ctx.beginPath();
+      ctx.moveTo(x1, 55); ctx.lineTo(x1, H - 55);
+      ctx.strokeStyle = GOLD;
+      ctx.lineWidth   = 0.8;
+      ctx.globalAlpha = 0.35;
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x2, 55); ctx.lineTo(x2, H - 55);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    });
+  }
+
+  // ─── 17. Top title banner ─────────────────────────────────────────────────
+  function drawTitleBanner() {
+    ctx.save();
+    ctx.fillStyle    = '#1A1100';
+    ctx.font         = 'bold 9px Georgia, serif';
+    ctx.textAlign    = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.globalAlpha  = 0;
+    ctx.fillText('· THE KINETIC ARCHIVE ·', CX, 41);
+    ctx.globalAlpha  = 1;
+
+    ctx.fillStyle    = GOLD;
+    ctx.font         = 'bold 8px Georgia, serif';
+    ctx.textAlign    = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('· T K A ·', CX, 41);
+    ctx.restore();
+  }
+
+  // ─── Main render ──────────────────────────────────────────────────────────
+  function render(data) {
+    ctx.clearRect(0, 0, W, H);
+
+    const pts = buildGridPoints(data.gridMode);
+
+    // Chrome (static decorative elements)
+    drawBackground();
+    drawSunburst();
+    drawBorder();
+    drawDecorativeBand();
+    drawAllCornerFans();
+    drawPinstripes();
+
+    // Dynamic elements driven by data
+    drawGridLines(pts);
+    drawStaves(pts, data);
+    drawMotionArrows(pts, data);
+    drawGridDots(pts);
+    drawHandDots(pts, data);
+    drawCenterDisc();
+    drawLetter(data.letter);
+    drawMotionLabel(data);
+    drawTitleBanner();
+  }
+
+  // ─── Initial render ────────────────────────────────────────────────────────
+  syncControlsFromData();
+  render(pictographData);
+
+  </script>
+</body>
+</html>

@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TKA Pictograph Through the Ages</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0a0a14;
+    color: #e0e0e0;
+    font-family: system-ui, -apple-system, sans-serif;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* ── Gallery View ── */
+  .gallery-view {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+  .gallery-view.hidden { display: none; }
+
+  .header {
+    text-align: center;
+    padding: 12px 20px 4px;
+    flex-shrink: 0;
+  }
+  .header h1 {
+    font-size: 22px;
+    font-weight: 300;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: #fff;
+    margin-bottom: 4px;
+  }
+  .header p {
+    font-size: 12px;
+    color: #888;
+    letter-spacing: 1px;
+  }
+
+  .timeline {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 40px;
+    gap: 0;
+    position: relative;
+    flex-shrink: 0;
+  }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 60px;
+    right: 60px;
+    height: 1px;
+    background: linear-gradient(to right, transparent, rgba(255,255,255,0.15), transparent);
+  }
+  .timeline-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.3);
+    flex-shrink: 0;
+    position: relative;
+    z-index: 1;
+  }
+  .timeline-label {
+    font-size: 10px;
+    color: #666;
+    padding: 0 8px;
+    white-space: nowrap;
+    position: relative;
+    z-index: 1;
+  }
+
+  .gallery {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    grid-template-rows: 1fr 1fr;
+    gap: 10px;
+    padding: 8px 20px 12px;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 8px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    cursor: pointer;
+    transition: border-color 0.3s, box-shadow 0.3s;
+  }
+  .card:hover {
+    border-color: rgba(255,255,255,0.2);
+    box-shadow: 0 0 20px rgba(255,255,255,0.05);
+  }
+
+  .card-frame {
+    width: 100%;
+    flex: 1;
+    min-height: 0;
+    border: none;
+    display: block;
+    background: #111;
+    pointer-events: none;
+  }
+
+  .card-info {
+    padding: 6px 10px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    flex-shrink: 0;
+  }
+  .card-year {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 2px;
+  }
+  .card-title {
+    font-size: 12px;
+    font-weight: 500;
+    color: #fff;
+  }
+
+  /* Era accent colors */
+  .era-cave .card-year, .era-cave .detail-year { color: #C17F3A; }
+  .era-egypt .card-year, .era-egypt .detail-year { color: #C5A54E; }
+  .era-mosaic .card-year, .era-mosaic .detail-year { color: #7BA089; }
+  .era-medieval .card-year, .era-medieval .detail-year { color: #D4AF37; }
+  .era-renaissance .card-year, .era-renaissance .detail-year { color: #8B7355; }
+  .era-woodblock .card-year, .era-woodblock .detail-year { color: #D14836; }
+  .era-blueprint .card-year, .era-blueprint .detail-year { color: #4A90D9; }
+  .era-deco .card-year, .era-deco .detail-year { color: #D4AF37; }
+  .era-bauhaus .card-year, .era-bauhaus .detail-year { color: #E63B2E; }
+  .era-punch .card-year, .era-punch .detail-year { color: #33AA55; }
+
+  /* ── Detail View ── */
+  .detail-view {
+    display: none;
+    height: 100vh;
+    flex-direction: row;
+  }
+  .detail-view.active { display: flex; }
+
+  .detail-left {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #080810;
+    position: relative;
+    min-width: 0;
+  }
+
+  .detail-iframe {
+    width: 90%;
+    height: 90%;
+    max-width: 700px;
+    max-height: 700px;
+    aspect-ratio: 1;
+    border: none;
+    border-radius: 8px;
+  }
+
+  .detail-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.15);
+    background: rgba(255,255,255,0.05);
+    color: #aaa;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  .detail-nav:hover { border-color: rgba(255,255,255,0.3); color: #fff; }
+  .detail-prev { left: 16px; }
+  .detail-next { right: 16px; }
+
+  .detail-right {
+    width: 380px;
+    flex-shrink: 0;
+    background: #0d0d1a;
+    border-left: 1px solid rgba(255,255,255,0.06);
+    padding: 24px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .detail-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: #888;
+    font-size: 12px;
+    cursor: pointer;
+    border: none;
+    background: none;
+    padding: 4px 0;
+    transition: color 0.2s;
+  }
+  .detail-back:hover { color: #fff; }
+
+  .detail-year {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  .detail-title {
+    font-size: 24px;
+    font-weight: 300;
+    color: #fff;
+    letter-spacing: 1px;
+  }
+  .detail-desc {
+    font-size: 13px;
+    color: #999;
+    line-height: 1.6;
+  }
+
+  .detail-section {
+    border-top: 1px solid rgba(255,255,255,0.06);
+    padding-top: 14px;
+  }
+  .detail-section h3 {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #666;
+    margin-bottom: 8px;
+  }
+  .detail-section ul {
+    list-style: none;
+    font-size: 12px;
+    color: #aaa;
+    line-height: 1.8;
+  }
+  .detail-section li::before {
+    content: ">";
+    color: #555;
+    margin-right: 8px;
+  }
+
+  .detail-file {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 11px;
+    color: #666;
+    word-break: break-all;
+  }
+
+  kbd {
+    display: inline-block;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-size: 11px;
+    font-family: 'SF Mono', monospace;
+    color: #aaa;
+  }
+
+  .shortcuts {
+    font-size: 11px;
+    color: #555;
+    display: flex;
+    gap: 16px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ── Gallery View ── -->
+<div class="gallery-view" id="galleryView">
+  <div class="header">
+    <h1>Pictograph Through the Ages</h1>
+    <p>The same notation. Ten different eras. Click any to inspect.</p>
+  </div>
+
+  <div class="timeline">
+    <span class="timeline-label">40,000 BC</span><span class="timeline-dot"></span>
+    <span class="timeline-label">3000 BC</span><span class="timeline-dot"></span>
+    <span class="timeline-label">500 BC</span><span class="timeline-dot"></span>
+    <span class="timeline-label">1200 AD</span><span class="timeline-dot"></span>
+    <span class="timeline-label">1500</span><span class="timeline-dot"></span>
+    <span class="timeline-label">1800</span><span class="timeline-dot"></span>
+    <span class="timeline-label">1850</span><span class="timeline-dot"></span>
+    <span class="timeline-label">1925</span><span class="timeline-dot"></span>
+    <span class="timeline-label">1930</span><span class="timeline-dot"></span>
+    <span class="timeline-label">1976</span>
+  </div>
+
+  <div class="gallery" id="gallery"></div>
+</div>
+
+<!-- ── Detail View ── -->
+<div class="detail-view" id="detailView">
+  <div class="detail-left">
+    <button class="detail-nav detail-prev" onclick="navigate(-1)">&larr;</button>
+    <iframe class="detail-iframe" id="detailFrame"></iframe>
+    <button class="detail-nav detail-next" onclick="navigate(1)">&rarr;</button>
+  </div>
+  <div class="detail-right" id="detailPanel"></div>
+</div>
+
+<script>
+const ERAS = [
+  {
+    id: 'cave', era: 'era-cave', year: '~40,000 BC', title: 'Cave Painting',
+    file: 'cave-painting.html',
+    desc: 'Ochre and charcoal pigment smeared on procedurally generated stone wall. Every stroke is a cluster of randomized ellipses simulating finger-applied pigment.',
+    techniques: ['Fractal Brownian motion (6 octaves) for stone texture', 'Pigment strokes: overlapping elliptical blobs with jittered positions', 'Fingerprint daubs: concentric rings with randomized radii', 'Handprint: palm ellipse + finger blobs with knuckle ridges', 'Scratched letter: dual-pass groove + highlight lines', 'Seeded PRNG (mulberry32) for deterministic output'],
+    palette: ['Charcoal/soot blue-black (#2a2a3a)', 'Iron oxide red (#8b3a1a)', 'Warm stone browns (#6e5238 to #b89870)', 'Calcite white veins'],
+    canvas: '500x500, pixel-level noise generation'
+  },
+  {
+    id: 'egypt', era: 'era-egypt', year: '~3000 BC', title: 'Egyptian Hieroglyph',
+    file: 'egyptian.html',
+    desc: 'Flat profile painting on sandstone, following Egyptian artistic conventions: bold outlines, flat fills, no perspective. Lapis lazuli blue and vermillion on warm stone.',
+    techniques: ['Sandstone gradient with horizontal striations', 'Cartouche border with ankh symbol band', 'Lotus rosette grid points (8-petal geometric flowers)', 'Flat profile staves with grip-wrap band markings', 'Bold black outline pass beneath each colored element', 'Hieroglyphic strip: eye of Horus, ibis, water-wave glyphs'],
+    palette: ['Lapis lazuli (#2E5090)', 'Vermillion (#C13B2A)', 'Gold (#C5A54E)', 'Sandstone (#D4B896)', 'Black ink outlines'],
+    canvas: '500x500, layered canvas drawing'
+  },
+  {
+    id: 'mosaic', era: 'era-mosaic', year: '~500 BC', title: 'Greek Mosaic',
+    file: 'greek-mosaic.html',
+    desc: 'Every pixel built from individual stone tesserae. Each tile has unique color variation, micro-rotation, top-edge highlight, and bottom-edge shadow. Thin grout lines separate every tile.',
+    techniques: ['9px tessera grid with per-tile color randomization', 'Grout lines: 1.5px dark gaps between all tiles', 'Greek key (meander) border: hand-coded 7x3 tile pattern unit', 'Staves/arrows: colored tesserae placed along paths', 'Per-tile highlight/shadow for stone depth', 'Post-processing: radial vignette, crack lines, mineral deposits'],
+    palette: ['Mediterranean blue (#2B4C7E)', 'Terracotta (#A0522D)', 'Cream (#F5E6CC)', 'Olive/sage green', 'Charcoal grout (#1a1409)'],
+    canvas: '500x500, ~3000 individual tiles rendered'
+  },
+  {
+    id: 'medieval', era: 'era-medieval', year: '~1200 AD', title: 'Illuminated Manuscript',
+    file: 'medieval.html',
+    desc: 'Gold leaf and ultramarine ink on aged vellum. Vine border with leaves and berries, illuminated capital A with Celtic knotwork, Latin inscription.',
+    techniques: ['Parchment: radial gradient + fiber lines + foxing spots', 'Vine border: spine + leaves + berries + gold bird accents', 'Gold roundel grid points with vermillion gems', 'Staves: multi-stop gradients with gold leaf accent lines', 'Calligraphic arrows with quill-style taper (thin-thick-thin)', 'Historiated capital A: knotwork, triquetra, vine tendrils', 'Latin inscription: LITERA A MOTUS PRONAVICULARIS'],
+    palette: ['Ultramarine (#1B3A8C)', 'Vermillion (#E34234)', 'Gold leaf (#D4AF37)', 'Deep green (#2E5339)', 'Black ink', 'Vellum cream (#F0E2C8)'],
+    canvas: '500x500, multi-layer ornamental rendering'
+  },
+  {
+    id: 'renaissance', era: 'era-renaissance', year: '~1500 AD', title: 'Renaissance Diagram',
+    file: 'renaissance.html',
+    desc: 'Sepia ink technical study on aged paper. Construction lines show compass geometry, annotations in mirror-written Latin (da Vinci style). Compass rose in corner.',
+    techniques: ['Aged paper: yellowing patches, foxing spots, edge burn vignette', 'lineVar() function: wavering pen lines simulating hand drawing', 'Mirror-written text: horizontal scale(-1,1) transform', 'Compass construction: dashed radii to arc endpoints', 'Tick marks along arc paths for measurement', 'Jittered polylines instead of smooth beziers', '10-layer rendering: paper, border, title, grid, staves, arcs, letter, annotations, compass rose, vignette'],
+    palette: ['Dark sepia (#4A3728)', 'Light sepia (#8B7355)', 'Faint sepia for construction lines', 'Aged paper (#F0E0C0)', 'Rust foxing spots'],
+    canvas: '500x500, ~2400 grain dots + geometric construction'
+  },
+  {
+    id: 'woodblock', era: 'era-woodblock', year: '~1800 AD', title: 'Japanese Woodblock',
+    file: 'woodblock.html',
+    desc: 'Ukiyo-e style print on washi paper. Bold brush strokes with width variation simulating ink transfer from carved wood. Bokashi gradient washes, red hanko seal.',
+    techniques: ['Washi paper: fiber lines + stray diagonal fibers + age spots', 'Bokashi: radial tints simulating hand-wiped ink gradients', 'woodStroke(): width varies along path, grain-slip lines', 'Tapered brush strokes: 48-point parametric paths, 14px to 3px', 'Mon crest: 6-petal circular family emblem', 'Hanko seal: imperfect red square with kanji-style strokes', 'Wood grain texture lines through colored areas'],
+    palette: ['Indigo (#264E70)', 'Beni red (#D14836)', 'Sumi black (#1A1A1A)', 'Washi cream (#F5EDDC)', 'Seal red (#CC3333)'],
+    canvas: '500x500, brush physics simulation'
+  },
+  {
+    id: 'blueprint', era: 'era-blueprint', year: '~1850 AD', title: 'Technical Blueprint',
+    file: 'blueprint.html',
+    desc: 'White lines on cyanotype blue. Engineering drawing with dimension annotations, compass arc construction, and formal title block. Graph paper grid visible beneath.',
+    techniques: ['Cyanotype background (#0A1929) with faint graph-paper grid', 'Crosshair markers at grid points instead of circles', 'Dimension lines with arrowhead endpoints and unit labels', 'Compass arcs with dashed radius lines and center crosshairs', 'Annotation badges: position/motion/type data blocks', 'Title block: TKA PICTOGRAPH LETTER A / SCALE 1:1 / DATE 1852', 'Ghost watermark A behind center'],
+    palette: ['Cyanotype blue (#0A1929)', 'White/light cyan lines', 'Warm tint for red hand elements', 'Graph paper: slightly lighter blue grid'],
+    canvas: '500x500, technical drafting precision'
+  },
+  {
+    id: 'deco', era: 'era-deco', year: '~1925 AD', title: 'Art Deco',
+    file: 'art-deco.html',
+    desc: 'Gold on black, like the interior of a Chrysler Building elevator. Faceted arcs instead of smooth curves, sunburst rays, diamond-shaped grid dots, stepped ziggurat border.',
+    techniques: ['48 radiating gold sunburst lines from center', 'Stepped inset border: 4 graduated ziggurat lines', 'Corner quarter-circle fans: 9-segment alternating gold/black', 'Faceted arcs: segmented straight lines, not beziers', 'Diamond grid dots: layered halo + solid + spark', 'Metallic gradient staves with centerline highlight', 'Geometric A: angular polygon, no curves', 'Chevron end-caps and cross-hatch ticks on arcs'],
+    palette: ['Gold (#D4AF37)', 'Silver/chrome (#C0C0C0)', 'Deep black (#0A0A14)', 'Teal accent (#008080)', 'Blue arc (#4488FF)', 'Red arc (#FF4444)'],
+    canvas: '500x500, geometric precision + metallic effects'
+  },
+  {
+    id: 'bauhaus', era: 'era-bauhaus', year: '~1930 AD', title: 'Bauhaus',
+    file: 'bauhaus.html',
+    desc: 'Primary colors on cream. Asymmetric composition with thick black vertical bar, yellow accent block, red horizontal bar. Geometric A constructed from polygons.',
+    techniques: ['Asymmetric layout: pictograph offset from center', 'Thick black vertical bar (right edge)', 'Yellow block (bottom-left) + red bar (top-right)', 'Open frame rules: top and left edges only', 'Flat rectangular staves: square end caps, no rounding', 'Quarter-arc arrows with geometric arrowheads', 'Geometric A: filled polygon legs + crossbar, no curves', 'Vertical text: PICTOGRAPH A in the black bar', 'Compositional circle with center dot + diagonal tension line'],
+    palette: ['Pure red (#E63B2E)', 'Pure blue (#2A4B9B)', 'Pure yellow (#F0C400)', 'Black (#1A1A1A)', 'Cream (#F2EDE4)'],
+    canvas: '500x500, radical simplicity'
+  },
+  {
+    id: 'punch', era: 'era-punch', year: '~1976 AD', title: 'Line Printer',
+    file: 'punch-card.html',
+    desc: 'ASCII art on green-bar continuous-feed paper. Tractor-feed holes, monospace characters, mainframe header, block letter A, END OF REPORT.',
+    techniques: ['Green-bar paper: alternating white/pale green horizontal bands', 'Tractor-feed holes: punched circles with inner highlight rings', 'Dashed perforation lines at margins', 'ASCII pictograph: # for blue hand, @ for red hand', '55x37 character art buffer with grid-line dots', 'Diamond grid: middle-dot lines, + cardinals, * intercardinals', 'Block letter A: 7-row dot-matrix bitmap at 2x scale', 'Header/footer: TKA PICTOGRAPH SYSTEM V2.1 / END OF REPORT'],
+    palette: ['Black text on white/green paper', 'Monochrome only (line printer limitation)', '# density for blue hand, @ density for red hand'],
+    canvas: '712x~870, character grid rendering'
+  },
+];
+
+let currentIndex = 0;
+
+// Build gallery cards
+const gallery = document.getElementById('gallery');
+ERAS.forEach((era, i) => {
+  const card = document.createElement('div');
+  card.className = `card ${era.era}`;
+  card.onclick = () => openDetail(i);
+  card.innerHTML = `
+    <iframe class="card-frame" src="${era.file}" loading="lazy"></iframe>
+    <div class="card-info">
+      <div class="card-year">${era.year}</div>
+      <div class="card-title">${era.title}</div>
+    </div>
+  `;
+  gallery.appendChild(card);
+});
+
+function openDetail(index) {
+  currentIndex = index;
+  renderDetail();
+  document.getElementById('galleryView').classList.add('hidden');
+  document.getElementById('detailView').classList.add('active');
+}
+
+function closeDetail() {
+  document.getElementById('detailView').classList.remove('active');
+  document.getElementById('galleryView').classList.remove('hidden');
+}
+
+function navigate(dir) {
+  currentIndex = (currentIndex + dir + ERAS.length) % ERAS.length;
+  renderDetail();
+}
+
+function renderDetail() {
+  const era = ERAS[currentIndex];
+  document.getElementById('detailFrame').src = era.file;
+
+  const panel = document.getElementById('detailPanel');
+  panel.innerHTML = `
+    <button class="detail-back" onclick="closeDetail()">&larr; Back to gallery</button>
+
+    <div>
+      <div class="detail-year ${era.era}">${era.year}</div>
+      <div class="detail-title">${era.title}</div>
+    </div>
+
+    <div class="detail-desc">${era.desc}</div>
+
+    <div class="detail-section">
+      <h3>Rendering Techniques</h3>
+      <ul>${era.techniques.map(t => `<li>${t}</li>`).join('')}</ul>
+    </div>
+
+    <div class="detail-section">
+      <h3>Color Palette</h3>
+      <ul>${era.palette.map(p => `<li>${p}</li>`).join('')}</ul>
+    </div>
+
+    <div class="detail-section">
+      <h3>Canvas</h3>
+      <div class="detail-desc">${era.canvas}</div>
+    </div>
+
+    <div class="detail-section">
+      <h3>Source File</h3>
+      <div class="detail-file">${era.file}</div>
+    </div>
+
+    <div class="shortcuts">
+      <span><kbd>&larr;</kbd> <kbd>&rarr;</kbd> navigate</span>
+      <span><kbd>Esc</kbd> back</span>
+    </div>
+  `;
+}
+
+// Keyboard navigation
+document.addEventListener('keydown', (e) => {
+  const detailActive = document.getElementById('detailView').classList.contains('active');
+  if (!detailActive) return;
+
+  if (e.key === 'ArrowLeft') navigate(-1);
+  else if (e.key === 'ArrowRight') navigate(1);
+  else if (e.key === 'Escape') closeDetail();
+});
+</script>
+</body>
+</html>

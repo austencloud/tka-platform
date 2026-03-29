@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TKA Letter A — Ukiyo-e Woodblock Print</title>
+  <style>
+    body {
+      margin: 0;
+      background: #2a1f14;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      font-family: serif;
+    }
+    canvas {
+      display: block;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.7), 0 2px 8px rgba(0,0,0,0.5);
+    }
+  </style>
+</head>
+<body>
+<canvas id="c" width="500" height="500"></canvas>
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+// ─── Palette ───────────────────────────────────────────────────────────────
+const WASHI    = '#F5EDDC';
+const INDIGO   = '#264E70';
+const VERMIL   = '#D14836';
+const SUMI     = '#1A1A1A';
+const SEAL_RED = '#C0291A';
+const GOLD_HNT = '#C8974A';  // warm ochre accent
+
+// ─── Utilities ─────────────────────────────────────────────────────────────
+function lerp(a, b, t) { return a + (b - a) * t; }
+
+// Draw a stroke that varies width along its length — simulates wood-cut pressure
+function woodStroke(pts, widths, color, grain = true) {
+  ctx.save();
+  for (let i = 0; i < pts.length - 1; i++) {
+    const t  = i / (pts.length - 2);
+    const w  = lerp(widths[0], widths[1], t);
+    const x0 = pts[i][0],   y0 = pts[i][1];
+    const x1 = pts[i+1][0], y1 = pts[i+1][1];
+
+    ctx.beginPath();
+    ctx.moveTo(x0, y0);
+    ctx.lineTo(x1, y1);
+    ctx.strokeStyle = color;
+    ctx.lineWidth   = w;
+    ctx.lineCap     = 'round';
+    ctx.lineJoin    = 'round';
+    ctx.stroke();
+
+    // Subtle wood grain "slip" on thick areas
+    if (grain && w > 5 && Math.random() < 0.25) {
+      ctx.beginPath();
+      const dx = x1 - x0, dy = y1 - y0;
+      const len = Math.sqrt(dx*dx + dy*dy) || 1;
+      const nx = -dy/len, ny = dx/len;
+      const slip = (Math.random() - 0.5) * w * 0.3;
+      ctx.moveTo(x0 + nx*slip, y0 + ny*slip);
+      ctx.lineTo(x1 + nx*slip*0.5, y1 + ny*slip*0.5);
+      ctx.strokeStyle = color + '55';
+      ctx.lineWidth   = 0.5 + Math.random() * 0.8;
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
+// Parametric arc points (for arrows)
+function arcPoints(cx, cy, r, startA, endA, n = 32) {
+  const pts = [];
+  for (let i = 0; i <= n; i++) {
+    const a = lerp(startA, endA, i / n);
+    pts.push([cx + Math.cos(a) * r, cy + Math.sin(a) * r]);
+  }
+  return pts;
+}
+
+// ─── Step 1: Washi paper background ─────────────────────────────────────────
+function drawWashi() {
+  // Base tone
+  ctx.fillStyle = WASHI;
+  ctx.fillRect(0, 0, 500, 500);
+
+  // Fiber texture — fine horizontal and diagonal lines of varying opacity
+  ctx.save();
+  for (let y = 0; y < 500; y += 2.5) {
+    const alpha = 0.03 + Math.random() * 0.04;
+    ctx.strokeStyle = `rgba(160,130,90,${alpha})`;
+    ctx.lineWidth   = 0.4 + Math.random() * 0.4;
+    ctx.beginPath();
+    ctx.moveTo(0, y + Math.random() * 1.5);
+    ctx.lineTo(500, y + Math.random() * 1.5);
+    ctx.stroke();
+  }
+  // Occasional diagonal fibers
+  for (let i = 0; i < 60; i++) {
+    const x = Math.random() * 600 - 50;
+    const y = Math.random() * 600 - 50;
+    ctx.strokeStyle = `rgba(140,110,70,${0.02 + Math.random() * 0.03})`;
+    ctx.lineWidth   = 0.3;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + 40 + Math.random()*80, y + 5 + Math.random()*15);
+    ctx.stroke();
+  }
+  // Subtle age spots
+  for (let i = 0; i < 20; i++) {
+    const x = Math.random() * 500, y = Math.random() * 500;
+    const r = 1 + Math.random() * 4;
+    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+    g.addColorStop(0, 'rgba(160,120,70,0.12)');
+    g.addColorStop(1, 'rgba(160,120,70,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI*2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+// ─── Step 2: Border ──────────────────────────────────────────────────────────
+function drawBorder() {
+  ctx.save();
+
+  // Outer rectangle
+  ctx.strokeStyle = SUMI;
+  ctx.lineWidth   = 3;
+  ctx.beginPath();
+  ctx.roundRect(14, 14, 472, 472, 4);
+  ctx.stroke();
+
+  // Inner rectangle (registration mark feel)
+  ctx.lineWidth = 1.2;
+  ctx.strokeStyle = SUMI + 'AA';
+  ctx.beginPath();
+  ctx.roundRect(20, 20, 460, 460, 2);
+  ctx.stroke();
+
+  // Corner ticks (registration marks)
+  const corners = [[14,14],[486,14],[486,486],[14,486]];
+  const signs   = [[1,1],[-1,1],[-1,-1],[1,-1]];
+  ctx.strokeStyle = SUMI;
+  ctx.lineWidth   = 1.5;
+  for (let i = 0; i < 4; i++) {
+    const [cx, cy] = corners[i];
+    const [sx, sy] = signs[i];
+    ctx.beginPath();
+    ctx.moveTo(cx + sx*8, cy);
+    ctx.lineTo(cx + sx*18, cy);
+    ctx.moveTo(cx, cy + sy*8);
+    ctx.lineTo(cx, cy + sy*18);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+// ─── Step 3: Subtle bokashi gradient on background ──────────────────────────
+function drawBokashi() {
+  ctx.save();
+  // Soft top-left blue tint (sky suggestion)
+  const gBl = ctx.createRadialGradient(60, 60, 0, 60, 60, 250);
+  gBl.addColorStop(0,   'rgba(38,78,112,0.08)');
+  gBl.addColorStop(0.6, 'rgba(38,78,112,0.03)');
+  gBl.addColorStop(1,   'rgba(38,78,112,0)');
+  ctx.fillStyle = gBl;
+  ctx.fillRect(0, 0, 500, 500);
+
+  // Soft bottom-right warm tint
+  const gWm = ctx.createRadialGradient(440, 440, 0, 440, 440, 220);
+  gWm.addColorStop(0,   'rgba(200,151,74,0.09)');
+  gWm.addColorStop(0.7, 'rgba(200,151,74,0.03)');
+  gWm.addColorStop(1,   'rgba(200,151,74,0)');
+  ctx.fillStyle = gWm;
+  ctx.fillRect(0, 0, 500, 500);
+  ctx.restore();
+}
+
+// ─── Step 4: 8-point grid dots ───────────────────────────────────────────────
+function drawGridDots() {
+  // Diamond grid: 8 cardinal/intercardinal points on a radius around center
+  const cx = 250, cy = 250;
+  const outerR = 150;
+  const dirs = [
+    [0,   -1,  'N'],
+    [0.707, -0.707, 'NE'],
+    [1,    0,  'E'],
+    [0.707, 0.707, 'SE'],
+    [0,    1,  'S'],
+    [-0.707, 0.707, 'SW'],
+    [-1,   0,  'W'],
+    [-0.707,-0.707,'NW'],
+  ];
+
+  ctx.save();
+  dirs.forEach(([dx, dy, label]) => {
+    const x = cx + dx * outerR;
+    const y = cy + dy * outerR;
+
+    // Outer glow ring (mon-style)
+    ctx.beginPath();
+    ctx.arc(x, y, 8, 0, Math.PI*2);
+    ctx.strokeStyle = SUMI + '30';
+    ctx.lineWidth   = 1;
+    ctx.stroke();
+
+    // Filled dot
+    ctx.beginPath();
+    ctx.arc(x, y, 5, 0, Math.PI*2);
+    ctx.fillStyle = SUMI + 'AA';
+    ctx.fill();
+
+    // Inner dot highlight
+    ctx.beginPath();
+    ctx.arc(x, y, 2, 0, Math.PI*2);
+    ctx.fillStyle = SUMI;
+    ctx.fill();
+
+    // Grain lines through dot
+    ctx.strokeStyle = SUMI + '33';
+    ctx.lineWidth   = 0.5;
+    for (let i = 0; i < 3; i++) {
+      const gy = y - 3 + i * 3;
+      ctx.beginPath();
+      ctx.moveTo(x - 4, gy);
+      ctx.lineTo(x + 4, gy);
+      ctx.stroke();
+    }
+  });
+
+  // Center dot
+  ctx.beginPath();
+  ctx.arc(cx, cy, 4, 0, Math.PI*2);
+  ctx.fillStyle = SUMI + '55';
+  ctx.fill();
+
+  ctx.restore();
+}
+
+// ─── Step 5: Staff lines (thick ink strokes) ─────────────────────────────────
+function drawStaves() {
+  const cx = 250, cy = 250;
+
+  // BLUE staff: vertical, north point to some center-ish extent
+  // In letter A: blue is at North. Staff is oriented so one end points north.
+  // We render each staff as a bold ink line with wood-grain variation.
+
+  // Blue staff — vertical, centered, north end up
+  // Runs from (cx, cy-180) to (cx, cy+40) — mostly upper half
+  {
+    const x0 = cx, y0 = cy - 175;
+    const x1 = cx, y1 = cy +  40;
+    const steps = 60;
+    const pts = [];
+    for (let i = 0; i <= steps; i++) {
+      const t  = i / steps;
+      // slight S-curve to mimic brush variation
+      const bx = x0 + (x1 - x0) * t + Math.sin(t * Math.PI) * 2;
+      const by = y0 + (y1 - y0) * t;
+      pts.push([bx, by]);
+    }
+    // Main shaft — thick
+    woodStroke(pts, [12, 7], INDIGO, true);
+    // Bokashi: gradient fill over the stroke
+    const grad = ctx.createLinearGradient(x0, y0, x1, y1);
+    grad.addColorStop(0,   INDIGO + 'FF');
+    grad.addColorStop(0.5, INDIGO + 'CC');
+    grad.addColorStop(1,   INDIGO + '88');
+    woodStroke(pts, [8, 4], grad, false);
+
+    // Rounded end caps (tapered like a brush stroke)
+    ctx.save();
+    ctx.fillStyle = INDIGO;
+    ctx.beginPath();
+    ctx.ellipse(x0 + 1, y0, 4, 7, 0.1, 0, Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle = INDIGO + 'BB';
+    ctx.beginPath();
+    ctx.ellipse(x1, y1, 3, 5, 0, 0, Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // Red staff — horizontal, center height, south end outward
+  // Runs from (cx-40, cy) to (cx+175, cy) — right half
+  {
+    const x0 = cx - 40, y0 = cy;
+    const x1 = cx + 175, y1 = cy;
+    const steps = 60;
+    const pts = [];
+    for (let i = 0; i <= steps; i++) {
+      const t  = i / steps;
+      const bx = x0 + (x1 - x0) * t;
+      const by = y0 + (y1 - y0) * t + Math.sin(t * Math.PI) * 2;
+      pts.push([bx, by]);
+    }
+    woodStroke(pts, [12, 7], VERMIL, true);
+    const grad = ctx.createLinearGradient(x0, y0, x1, y1);
+    grad.addColorStop(0,   VERMIL + 'AA');
+    grad.addColorStop(0.4, VERMIL + 'FF');
+    grad.addColorStop(1,   VERMIL + 'CC');
+    woodStroke(pts, [8, 4], grad, false);
+
+    ctx.save();
+    ctx.fillStyle = VERMIL + 'BB';
+    ctx.beginPath();
+    ctx.ellipse(x0, y0, 5, 3, 0, 0, Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle = VERMIL;
+    ctx.beginPath();
+    ctx.ellipse(x1, y1 - 1, 7, 4, 0.1, 0, Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+// ─── Step 6: Motion arrows (calligraphic curves) ─────────────────────────────
+// Blue: pro motion, curves from W to N (counterclockwise quarter arc, upper-left)
+// Red:  pro motion, curves from E to S (clockwise quarter arc, lower-right)
+
+function drawArrowhead(x, y, angle, size, color) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(angle);
+  // Bold decisive arrowhead — woodblock style
+  ctx.beginPath();
+  ctx.moveTo(0, 0);                   // tip
+  ctx.lineTo(-size * 0.9, -size * 0.5);
+  ctx.lineTo(-size * 0.5, 0);
+  ctx.lineTo(-size * 0.9,  size * 0.5);
+  ctx.closePath();
+  ctx.fillStyle   = color;
+  ctx.strokeStyle = color;
+  ctx.lineWidth   = 1;
+  ctx.fill();
+  ctx.stroke();
+  ctx.restore();
+}
+
+function addGrainToPath(pts, color, baseAlpha = 0.15) {
+  // Overlay grain lines along the arrow path
+  for (let i = 0; i < pts.length - 1; i += 6) {
+    if (Math.random() > 0.5) continue;
+    const [x0, y0] = pts[i];
+    const [x1, y1] = pts[Math.min(i+3, pts.length-1)];
+    const dx = x1 - x0, dy = y1 - y0;
+    const len = Math.sqrt(dx*dx + dy*dy) || 1;
+    const nx = -dy/len, ny = dx/len;
+    const slip = (Math.random() - 0.5) * 10;
+    ctx.save();
+    ctx.strokeStyle = color + Math.floor(baseAlpha*255).toString(16).padStart(2,'0');
+    ctx.lineWidth   = 0.4 + Math.random() * 0.5;
+    ctx.beginPath();
+    ctx.moveTo(x0 + nx*slip,     y0 + ny*slip);
+    ctx.lineTo(x0 + nx*slip*0.3, y0 + ny*slip*0.3);
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
+function drawArrows() {
+  const cx = 250, cy = 250;
+  const R  = 150;  // grid radius
+
+  // ── Blue arrow: W → N (upper-left quadrant, counterclockwise)
+  // W is at angle π (left), N is at angle -π/2 (up)
+  // Arc center is at the pivot = the CORNER between W and N on the grid box
+  // For a circular grid: center is at (cx - R, cy - R) with radius R
+  // Arc sweeps from the point closest to W, curving up to N.
+  // Actually for a quarter-circle arc in the upper-left:
+  //   arc center = (cx, cy) with r=R, from angle=π to angle=-π/2 going counterclockwise
+  {
+    const startA = Math.PI;           // West
+    const endA   = -Math.PI / 2;     // North
+    const pts    = arcPoints(cx, cy, R, startA, endA, 48);
+    // (counterclockwise, so going from W up and over to N — upper arc)
+
+    // Shadow/outline for depth
+    ctx.save();
+    ctx.strokeStyle = SUMI + '33';
+    ctx.lineWidth   = 18;
+    ctx.lineCap     = 'round';
+    ctx.beginPath();
+    ctx.moveTo(pts[0][0], pts[0][1]);
+    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+    ctx.stroke();
+    ctx.restore();
+
+    // Main stroke — thick at start, thin at end
+    for (let i = 0; i < pts.length - 1; i++) {
+      const t  = i / (pts.length - 2);
+      const w  = lerp(14, 3, t);
+      ctx.beginPath();
+      ctx.moveTo(pts[i][0], pts[i][1]);
+      ctx.lineTo(pts[i+1][0], pts[i+1][1]);
+      ctx.strokeStyle = INDIGO;
+      ctx.lineWidth   = w;
+      ctx.lineCap     = 'round';
+      ctx.stroke();
+    }
+
+    // Bokashi — lighter wash layer
+    for (let i = 0; i < pts.length - 1; i++) {
+      const t  = i / (pts.length - 2);
+      const w  = lerp(8, 1.5, t);
+      ctx.beginPath();
+      ctx.moveTo(pts[i][0], pts[i][1]);
+      ctx.lineTo(pts[i+1][0], pts[i+1][1]);
+      const alpha = Math.floor(lerp(0.4, 0.15, t) * 255).toString(16).padStart(2,'0');
+      ctx.strokeStyle = '#6BA3C8' + alpha;
+      ctx.lineWidth   = w * 0.7;
+      ctx.lineCap     = 'round';
+      ctx.stroke();
+    }
+
+    addGrainToPath(pts, INDIGO, 0.12);
+
+    // Arrowhead at N end
+    const last  = pts[pts.length - 1];
+    const prev  = pts[pts.length - 5];
+    const angle = Math.atan2(last[1] - prev[1], last[0] - prev[0]);
+    drawArrowhead(last[0], last[1], angle, 18, INDIGO);
+
+    // Origin dot at W end
+    ctx.beginPath();
+    ctx.arc(pts[0][0], pts[0][1], 7, 0, Math.PI*2);
+    ctx.fillStyle = INDIGO + 'BB';
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(pts[0][0], pts[0][1], 4, 0, Math.PI*2);
+    ctx.fillStyle = INDIGO;
+    ctx.fill();
+  }
+
+  // ── Red arrow: E → S (lower-right quadrant, clockwise)
+  // E is at angle 0, S is at angle π/2
+  {
+    const startA = 0;              // East
+    const endA   = Math.PI / 2;   // South
+    const pts    = arcPoints(cx, cy, R, startA, endA, 48);
+
+    // Shadow
+    ctx.save();
+    ctx.strokeStyle = SUMI + '33';
+    ctx.lineWidth   = 18;
+    ctx.lineCap     = 'round';
+    ctx.beginPath();
+    ctx.moveTo(pts[0][0], pts[0][1]);
+    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+    ctx.stroke();
+    ctx.restore();
+
+    // Main stroke
+    for (let i = 0; i < pts.length - 1; i++) {
+      const t  = i / (pts.length - 2);
+      const w  = lerp(14, 3, t);
+      ctx.beginPath();
+      ctx.moveTo(pts[i][0], pts[i][1]);
+      ctx.lineTo(pts[i+1][0], pts[i+1][1]);
+      ctx.strokeStyle = VERMIL;
+      ctx.lineWidth   = w;
+      ctx.lineCap     = 'round';
+      ctx.stroke();
+    }
+
+    // Bokashi wash
+    for (let i = 0; i < pts.length - 1; i++) {
+      const t  = i / (pts.length - 2);
+      const w  = lerp(8, 1.5, t);
+      ctx.beginPath();
+      ctx.moveTo(pts[i][0], pts[i][1]);
+      ctx.lineTo(pts[i+1][0], pts[i+1][1]);
+      const alpha = Math.floor(lerp(0.4, 0.12, t) * 255).toString(16).padStart(2,'0');
+      ctx.strokeStyle = '#E8806A' + alpha;
+      ctx.lineWidth   = w * 0.7;
+      ctx.lineCap     = 'round';
+      ctx.stroke();
+    }
+
+    addGrainToPath(pts, VERMIL, 0.12);
+
+    // Arrowhead at S end
+    const last  = pts[pts.length - 1];
+    const prev  = pts[pts.length - 5];
+    const angle = Math.atan2(last[1] - prev[1], last[0] - prev[0]);
+    drawArrowhead(last[0], last[1], angle, 18, VERMIL);
+
+    // Origin dot at E end
+    ctx.beginPath();
+    ctx.arc(pts[0][0], pts[0][1], 7, 0, Math.PI*2);
+    ctx.fillStyle = VERMIL + 'BB';
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(pts[0][0], pts[0][1], 4, 0, Math.PI*2);
+    ctx.fillStyle = VERMIL;
+    ctx.fill();
+  }
+}
+
+// ─── Step 7: Letter "A" in calligraphic brush style ─────────────────────────
+function drawLetterA() {
+  // Render in upper-right area — won't overlap main pictograph
+  const bx = 390, by = 60;
+
+  ctx.save();
+
+  // Character: brushstroke "A" — rendered as a thick-to-thin calligraphic glyph
+  // Left diagonal stroke (thick): top-center down-left
+  function brushLine(x0, y0, x1, y1, w0, w1, color, steps = 20) {
+    const pts = [];
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps;
+      pts.push([lerp(x0, x1, t), lerp(y0, y1, t)]);
+    }
+    woodStroke(pts, [w0, w1], color, true);
+  }
+
+  const scale = 1.0;
+  const ox = bx, oy = by;
+
+  // Left stroke: top (ox, oy) → bottom-left (ox-22, oy+52)
+  brushLine(ox, oy+2,       ox-20, oy+52, 3*scale, 8*scale, SUMI);
+
+  // Right stroke: top (ox, oy) → bottom-right (ox+22, oy+52)
+  brushLine(ox, oy+2,       ox+20, oy+52, 3*scale, 8*scale, SUMI);
+
+  // Crossbar: (ox-10, oy+30) → (ox+10, oy+30)
+  brushLine(ox-12, oy+28,   ox+12, oy+28, 5*scale, 5*scale, SUMI);
+
+  // Serif ticks on left foot
+  brushLine(ox-22, oy+52,   ox-30, oy+52, 5*scale, 1*scale, SUMI);
+  brushLine(ox-22, oy+52,   ox-14, oy+52, 5*scale, 1*scale, SUMI);
+  // Serif ticks on right foot
+  brushLine(ox+20, oy+52,   ox+28, oy+52, 5*scale, 1*scale, SUMI);
+  brushLine(ox+20, oy+52,   ox+12, oy+52, 5*scale, 1*scale, SUMI);
+
+  // Subtle red accent mark (like a Japanese character reading mark)
+  ctx.fillStyle = VERMIL + 'CC';
+  ctx.beginPath();
+  ctx.arc(ox + 28, oy + 12, 3, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+// ─── Step 8: Hanko (red seal stamp) ─────────────────────────────────────────
+function drawHanko() {
+  const x = 60, y = 430;
+  const w = 46, h = 50;
+
+  ctx.save();
+
+  // Outer stamp square with rough edge (woodblock feel)
+  ctx.strokeStyle = SEAL_RED;
+  ctx.lineWidth   = 3.5;
+  ctx.fillStyle   = SEAL_RED + '18';
+
+  // Slightly imperfect rectangle
+  ctx.beginPath();
+  ctx.moveTo(x + 2,     y);
+  ctx.lineTo(x + w - 1, y + 1);
+  ctx.lineTo(x + w,     y + h - 2);
+  ctx.lineTo(x + 1,     y + h);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  // Inner content: simplified kanji-style character for "motion" or "A"
+  // Rendered as bold sumi brush strokes inside the seal
+  ctx.strokeStyle = SEAL_RED;
+  ctx.lineCap     = 'round';
+
+  const sx = x + 8, sy = y + 7;
+
+  // Top horizontal stroke
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(sx, sy + 4);
+  ctx.lineTo(sx + 28, sy + 4);
+  ctx.stroke();
+
+  // Vertical center stroke
+  ctx.lineWidth = 3.5;
+  ctx.beginPath();
+  ctx.moveTo(sx + 14, sy + 4);
+  ctx.lineTo(sx + 14, sy + 36);
+  ctx.stroke();
+
+  // Left diagonal
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.moveTo(sx + 4, sy + 16);
+  ctx.lineTo(sx + 14, sy + 28);
+  ctx.stroke();
+
+  // Right diagonal
+  ctx.beginPath();
+  ctx.moveTo(sx + 24, sy + 16);
+  ctx.lineTo(sx + 14, sy + 28);
+  ctx.stroke();
+
+  // Bottom horizontal
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(sx + 2,  sy + 36);
+  ctx.lineTo(sx + 26, sy + 36);
+  ctx.stroke();
+
+  // "Ink bleed" effect — extra blob at intersections
+  ctx.fillStyle = SEAL_RED;
+  [[sx+14, sy+4],[sx+14, sy+28]].forEach(([px, py]) => {
+    ctx.beginPath();
+    ctx.arc(px, py, 2.5, 0, Math.PI*2);
+    ctx.fill();
+  });
+
+  ctx.restore();
+}
+
+// ─── Step 9: Supplementary decorative elements ──────────────────────────────
+function drawDecoration() {
+  ctx.save();
+
+  // Small mon-style circular decoration near top-left
+  const mx = 68, my = 68;
+  ctx.strokeStyle = SUMI + '55';
+  ctx.lineWidth   = 1.2;
+  ctx.beginPath();
+  ctx.arc(mx, my, 18, 0, Math.PI*2);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(mx, my, 12, 0, Math.PI*2);
+  ctx.stroke();
+
+  // Simple kamon-like flower in the circle
+  for (let i = 0; i < 6; i++) {
+    const a = (i / 6) * Math.PI * 2;
+    const x = mx + Math.cos(a) * 7;
+    const y = my + Math.sin(a) * 7;
+    ctx.beginPath();
+    ctx.arc(x, y, 4, 0, Math.PI*2);
+    ctx.strokeStyle = SUMI + '44';
+    ctx.lineWidth   = 1;
+    ctx.stroke();
+  }
+  ctx.beginPath();
+  ctx.arc(mx, my, 3, 0, Math.PI*2);
+  ctx.fillStyle = SUMI + '44';
+  ctx.fill();
+
+  // Thin horizontal title area line at top (like a print title band)
+  ctx.strokeStyle = SUMI + '33';
+  ctx.lineWidth   = 0.8;
+  ctx.beginPath();
+  ctx.moveTo(30, 42);
+  ctx.lineTo(470, 42);
+  ctx.stroke();
+
+  // Thin bottom band
+  ctx.beginPath();
+  ctx.moveTo(30, 458);
+  ctx.lineTo(470, 458);
+  ctx.stroke();
+
+  // Small ochre accent dots along top band
+  for (let x = 50; x < 470; x += 30) {
+    ctx.beginPath();
+    ctx.arc(x, 42, 1.5, 0, Math.PI*2);
+    ctx.fillStyle = GOLD_HNT + '88';
+    ctx.fill();
+  }
+
+  // Series title text (small, top-right area)
+  ctx.font = 'italic 11px serif';
+  ctx.fillStyle = SUMI + '77';
+  ctx.textAlign = 'right';
+  ctx.fillText('TKA · Letter A · Pro', 470, 37);
+
+  // Bottom notation
+  ctx.font = '10px serif';
+  ctx.fillStyle = SUMI + '55';
+  ctx.textAlign = 'center';
+  ctx.fillText('青 · 北  |  赤 · 南', 250, 474);
+
+  ctx.restore();
+}
+
+// ─── Step 10: Final vignette (age/print feel) ────────────────────────────────
+function drawVignette() {
+  ctx.save();
+  const g = ctx.createRadialGradient(250, 250, 160, 250, 250, 360);
+  g.addColorStop(0, 'rgba(0,0,0,0)');
+  g.addColorStop(1, 'rgba(30,20,10,0.22)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, 500, 500);
+  ctx.restore();
+}
+
+// ─── Compose everything ──────────────────────────────────────────────────────
+(function render() {
+  drawWashi();
+  drawBokashi();
+  drawBorder();
+  drawDecoration();
+  drawGridDots();
+  drawStaves();
+  drawArrows();
+  drawLetterA();
+  drawHanko();
+  drawVignette();
+})();
+</script>
+</body>
+</html>
