@@ -8,7 +8,6 @@
  * - SVGToCanvasConverter, TextRenderer
  * - GlyphCache, FilenameGenerator
  * - PictographBlobCache, PictographKeyHasher, PictographMemoryCache, StepNumberRenderer
- * - LOOPGlyphRenderer
  */
 
 import { createContainer } from "iti";
@@ -20,7 +19,6 @@ import { GlyphCache } from "$lib/shared/render/services/implementations/GlyphCac
 import { ImageComposer } from "$lib/shared/render/services/implementations/ImageComposer";
 import { ImageFormatConverter } from "$lib/shared/render/services/implementations/ImageFormatConverter";
 import { LayoutCalculator } from "$lib/shared/render/services/implementations/LayoutCalculator";
-import { LOOPGlyphRenderer } from "$lib/shared/render/services/implementations/LOOPGlyphRenderer";
 import { LOOPIconStripRenderer } from "$lib/shared/render/services/implementations/LOOPIconStripRenderer";
 import { SequenceRenderer } from "$lib/shared/render/services/implementations/SequenceRenderer";
 import { SVGToCanvasConverter } from "$lib/shared/render/services/implementations/SVGToCanvasConverter";
@@ -57,9 +55,7 @@ export function createRenderContainer(fileDownloader: IFileDownloader) {
     canvas2DRenderer: () => new Canvas2DDirectRenderer(),
     // Layer compositor - composes cached layers for fast visibility toggles
     layerCompositor: () => new LayerCompositor(),
-    // LOOP glyph renderer - renders pie chart badges for LOOP components (legacy)
-    loopGlyphRenderer: () => new LOOPGlyphRenderer(),
-    // LOOP icon strip renderer - renders horizontal icon strip (preferred)
+    // LOOP icon strip renderer - renders horizontal icon strip via SVG paths
     loopIconStripRenderer: () => new LOOPIconStripRenderer(),
   });
 
@@ -68,7 +64,6 @@ export function createRenderContainer(fileDownloader: IFileDownloader) {
     textRenderer: () =>
       new TextRenderer(
         ctx.dimensionCalculator,
-        ctx.loopGlyphRenderer,
         ctx.loopIconStripRenderer
       ),
     imageFormatConverter: () => new ImageFormatConverter(fileDownloader),

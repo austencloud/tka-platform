@@ -2,12 +2,12 @@
  * Text Rendering Service
  *
  * Handles rendering of sequence titles, user info, and other text overlays
- * on exported images. Matches desktop application text rendering patterns.
+ * on exported images. Delegates header and footer rendering to
+ * @tka/render-composition for cross-environment consistency.
  */
 
 import type { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
 import type { IDimensionCalculator } from "../contracts/IDimensionCalculator";
-import type { ILOOPGlyphRenderer } from "../contracts/ILOOPGlyphRenderer";
 import type { ILOOPIconStripRenderer } from "../contracts/ILOOPIconStripRenderer";
 import type {
   TextRenderOptions,
@@ -20,6 +20,7 @@ import {
   DIFFICULTY_FONT_FAMILY,
   applyGradientStops,
 } from "$lib/shared/config/difficulty-styles";
+import { renderHeader, renderFooter, type LOOPComponentId } from "@tka/render-composition";
 
 export class TextRenderer implements ITextRenderer {
   // Font configuration matching WordLabel component exactly
@@ -27,11 +28,9 @@ export class TextRenderer implements ITextRenderer {
   private readonly titleFontWeight = "600"; // Matches WordLabel
   private readonly fallbackFontFamily =
     "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif";
-  private readonly userInfoFontWeight = "400";
 
   constructor(
     private dimensionService: IDimensionCalculator,
-    private loopGlyphRenderer?: ILOOPGlyphRenderer,
     private loopIconStripRenderer?: ILOOPIconStripRenderer
   ) {}
 
@@ -141,10 +140,9 @@ export class TextRenderer implements ITextRenderer {
   }
 
   /**
-   * Render word in a header at the top of the canvas
-   * Simple background with optional level badge indicator
-   * @param darkMode - When true, uses dark theme styling (dark bg, light text)
-   * @param loopComponents - Optional LOOP components to display as badge on right side
+   * Render word in a header at the top of the canvas.
+   * Delegates to @tka/render-composition's renderHeader for cross-environment
+   * consistency (same output as MCP server).
    */
   renderWordHeader(
     canvas: HTMLCanvasElement,
@@ -161,164 +159,197 @@ export class TextRenderer implements ITextRenderer {
       return;
     }
 
-    // Check if we have LOOP components to show (and a renderer is available)
-    // Prefer icon strip renderer over pie chart glyph renderer
-    const hasLoopComponents =
-      loopComponents && loopComponents.size > 0 &&
-      (this.loopIconStripRenderer || this.loopGlyphRenderer);
-
-    // Allow rendering even with empty word if we need to show badges
-    const hasWord = word && word.trim() !== "";
-    if (!hasWord && !showDifficultyBadge && !hasLoopComponents) {
-      return;
-    }
-
-    // Dark Mode uses dark background, normal mode uses light gray
-    ctx.fillStyle = darkMode
-      ? "rgba(10, 10, 15, 0.98)"
-      : "rgba(245, 245, 245, 0.98)";
-    ctx.fillRect(0, 0, canvas.width, headerHeight);
-
-    // Draw subtle bottom border (light for Dark Mode, dark for normal)
-    ctx.strokeStyle = darkMode
-      ? "rgba(255, 255, 255, 0.15)"
-      : "rgba(0, 0, 0, 0.1)";
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(0, headerHeight - 0.5);
-    ctx.lineTo(canvas.width, headerHeight - 0.5);
-    ctx.stroke();
-
-    // Calculate font size based on header height (66% of header height)
-    // Matches ChoreoCard preview scaling (0.55 * 1.2 = 0.66 for 20% larger)
-    const finalFontSize = Math.max(10, Math.floor(headerHeight * 0.66));
-
-    // Set font properties - bold weight for emphasis
-    // Dark Mode uses white text, normal mode uses dark gray
-    ctx.font = `700 ${finalFontSize}px ${this.titleFontFamily}`;
-    ctx.fillStyle = darkMode ? "#ffffff" : "#1f2937";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-
-    // Calculate badge size (90% of header height)
-    const badgeSize = headerHeight * 0.9;
-    const badgePadding = headerHeight * 0.05; // Small padding from edge
-    const centerX = canvas.width / 2;
-    const centerY = headerHeight / 2;
-
-    // Render the word text (only if we have a word)
-    if (hasWord) {
-      ctx.fillText(word, centerX, centerY);
-    }
-
-    // Render level badge on the left side (only if showDifficultyBadge is true)
-    if (showDifficultyBadge) {
-      this.renderLevelBadge(
-        ctx,
-        difficultyLevel,
-        badgePadding,
-        (headerHeight - badgeSize) / 2,
-        badgeSize
-      );
-    }
-
-    // Render LOOP icons on the right side
-    if (hasLoopComponents && loopComponents) {
-      const iconSize = badgeSize * 0.6; // Smaller icons for cleaner look
-      const rightEdge = canvas.width - badgePadding;
-
-      // Prefer icon strip renderer (Font Awesome style icons)
-      if (this.loopIconStripRenderer) {
-        // Icon strip renders from center, so we need to calculate where center should be
-        // First, calculate how wide the strip will be
-        const activeCount = Array.from(loopComponents).length;
-        const gap = Math.max(2, Math.round(iconSize * 0.15));
-        const stripWidth = activeCount > 0
-          ? activeCount * iconSize + (activeCount - 1) * gap
-          : iconSize; // freeform single icon
-
-        // Position so right edge of strip aligns with rightEdge - some padding
-        const stripCenterX = rightEdge - stripWidth / 2 - iconSize * 0.2;
-
-        this.loopIconStripRenderer.render(
-          ctx,
-          loopComponents,
-          stripCenterX,
-          headerHeight / 2,
-          iconSize,
-          darkMode
-        );
-      } else if (this.loopGlyphRenderer) {
-        // Fallback to pie chart glyph
-        const glyphX = canvas.width - badgePadding - badgeSize / 2;
-        const glyphY = headerHeight / 2;
-        this.loopGlyphRenderer.render(
-          ctx,
-          loopComponents,
-          glyphX,
-          glyphY,
-          badgeSize,
-          darkMode
-        );
+    // Convert app enum Set to package string Set
+    let packageComponents: Set<LOOPComponentId> | undefined;
+    if (loopComponents && loopComponents.size > 0) {
+      packageComponents = new Set<LOOPComponentId>();
+      for (const c of loopComponents) {
+        packageComponents.add(c as unknown as LOOPComponentId);
       }
     }
+
+    renderHeader(ctx, {
+      canvasWidth: canvas.width,
+      headerHeight,
+      word: word ?? "",
+      difficultyLevel,
+      showDifficultyBadge,
+      loopComponents: packageComponents,
+      darkMode,
+    });
   }
 
   /**
-   * Render a colored level badge with gradient.
-   * Colors and font come from the shared difficulty-styles config,
-   * the same source the Svelte UI badges use.
+   * Render user information at the bottom of the canvas.
+   * Delegates to @tka/render-composition's renderFooter for cross-environment
+   * consistency (same output as MCP server).
    */
-  private renderLevelBadge(
-    ctx: CanvasRenderingContext2D,
+  renderUserInfo(
+    canvas: HTMLCanvasElement,
+    userInfo: UserExportInfo,
+    _options: TextRenderOptions,
+    footerHeight: number = 60,
+    _beatCount: number = 3,
+    darkMode: boolean = false,
+    showFlags?: {
+      showCreatorName?: boolean;
+      showNotes?: boolean;
+      showBirthday?: boolean;
+    },
+    customNotesText?: string
+  ): void {
+    const showCreatorName = showFlags?.showCreatorName ?? true;
+    const showNotes = showFlags?.showNotes ?? true;
+    const showBirthday = showFlags?.showBirthday ?? true;
+
+    if (!showCreatorName && !showNotes && !showBirthday) {
+      return;
+    }
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    // Resolve the notes text (custom > userInfo.notes > default)
+    const notes =
+      customNotesText && customNotesText.trim() !== ""
+        ? customNotesText
+        : userInfo.notes && userInfo.notes.trim() !== ""
+          ? userInfo.notes
+          : undefined; // package will default to "Created using TKA Composer"
+
+    // Resolve the date to display
+    const birthday = userInfo.birthday
+      ? userInfo.birthday
+      : userInfo.exportDate
+        ? new Date(userInfo.exportDate)
+        : undefined;
+
+    renderFooter(ctx, {
+      canvasWidth: canvas.width,
+      canvasHeight: canvas.height,
+      footerHeight,
+      userName: userInfo.userName,
+      notes,
+      birthday,
+      darkMode,
+      showCreatorName,
+      showNotes,
+      showBirthday,
+    });
+  }
+
+  /**
+   * Render difficulty level badge with beautiful gradients
+   */
+  renderDifficultyBadge(
+    canvas: HTMLCanvasElement,
     level: number,
-    x: number,
-    y: number,
+    position: [number, number],
     size: number
   ): void {
-    const centerX = x + size / 2;
-    const centerY = y + size / 2;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const [x, y] = position;
     const radius = size / 2;
+    const centerX = x + radius;
+    const centerY = y + radius;
 
-    // Create LINEAR gradient (top-left to bottom-right) matching legacy
-    const gradient = this.createLevelBadgeGradient(ctx, x, y, size, level);
+    // Create gradient based on difficulty level
+    const gradient = this.createDifficultyGradient(
+      ctx,
+      centerX,
+      centerY,
+      radius,
+      level
+    );
 
-    // Draw badge circle with gradient
+    // Draw badge background with gradient
     ctx.beginPath();
     ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
     ctx.fillStyle = gradient;
     ctx.fill();
 
-    // Add black border matching legacy: pen width = max(1, height // 50)
-    const borderWidth = Math.max(1, Math.floor(size / 50));
-    ctx.strokeStyle = "black";
-    ctx.lineWidth = borderWidth;
+    // Draw badge border
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = 2;
     ctx.stroke();
 
-    // Draw level number — font matches the Svelte UI badge via shared config
-    const levelStyle = DIFFICULTY_LEVELS[level] ?? DEFAULT_DIFFICULTY_STYLE;
-    const fontSize = Math.floor(size / 1.75);
-    ctx.fillStyle = levelStyle.text;
-    ctx.font = `bold ${fontSize}px ${DIFFICULTY_FONT_FAMILY}`;
+    // Draw level text
+    ctx.fillStyle = "#000000"; // Black text for better contrast on gradients
+    ctx.font = `bold ${size * 0.6}px ${this.fallbackFontFamily}`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText(level.toString(), centerX, centerY);
   }
 
   /**
-   * Create gradient for level badge using the shared difficulty style config.
-   * Uses a linear gradient from top-left to bottom-right on canvas.
+   * Calculate text dimensions for layout planning
    */
-  private createLevelBadgeGradient(
+  measureText(
+    text: string,
+    fontFamily: string,
+    fontSize: number,
+    fontWeight?: string
+  ): { width: number; height: number } {
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return { width: 0, height: 0 };
+
+    ctx.font = `${fontWeight || "normal"} ${fontSize}px ${fontFamily}`;
+    const metrics = ctx.measureText(text);
+
+    return {
+      width: metrics.width,
+      height: fontSize, // Approximate height
+    };
+  }
+
+  /**
+   * Apply custom kerning to text
+   */
+  renderTextWithKerning(
     ctx: CanvasRenderingContext2D,
+    text: string,
     x: number,
     y: number,
-    size: number,
-    level: number,
-  ): CanvasGradient {
-    const gradient = ctx.createLinearGradient(x, y, x + size, y + size);
-    const style = DIFFICULTY_LEVELS[level] ?? DEFAULT_DIFFICULTY_STYLE;
-    return applyGradientStops(gradient, style.stops);
+    kerning: number
+  ): void {
+    if (kerning === 0) {
+      ctx.fillText(text, x, y);
+      return;
+    }
+
+    let currentX = x;
+    for (let i = 0; i < text.length; i++) {
+      const char = text[i];
+      if (!char) continue; // Skip if char is undefined
+      ctx.fillText(char, currentX, y);
+
+      const charWidth = ctx.measureText(char).width;
+      currentX += charWidth + kerning;
+    }
+  }
+
+  /**
+   * Draw subtle background behind title text
+   */
+  private drawTitleBackground(
+    ctx: CanvasRenderingContext2D,
+    width: number,
+    height: number
+  ): void {
+    // Very subtle white background
+    ctx.fillStyle = "rgba(235, 235, 235, 0.98)";
+    ctx.fillRect(0, 0, width, height);
+
+    // Very subtle bottom border
+    ctx.strokeStyle = "rgba(0, 0, 0, 0.05)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, height - 1);
+    ctx.lineTo(width, height - 1);
+    ctx.stroke();
   }
 
   /**
@@ -440,256 +471,6 @@ export class TextRenderer implements ITextRenderer {
   }
 
   /**
-   * Render user information at the bottom of the canvas
-   * Layout:
-   * - Username (bottom-left) - Georgia Bold
-   * - Notes (bottom-center) - Georgia Normal
-   * - Date (bottom-right) - Georgia Normal
-   *
-   * Font sizing is now based on footer height to ensure text fits properly.
-   * @param darkMode - When true, uses dark theme styling (dark bg, light text)
-   * @param showFlags - Granular controls for which footer elements to show
-   * @param customNotesText - Custom text to use for notes instead of default
-   */
-  renderUserInfo(
-    canvas: HTMLCanvasElement,
-    userInfo: UserExportInfo,
-    _options: TextRenderOptions,
-    footerHeight: number = 60,
-    _beatCount: number = 3,
-    darkMode: boolean = false,
-    showFlags?: {
-      showCreatorName?: boolean;
-      showNotes?: boolean;
-      showBirthday?: boolean;
-    },
-    customNotesText?: string
-  ): void {
-    // Resolve show flags (default all to true for backwards compatibility)
-    const showCreatorName = showFlags?.showCreatorName ?? true;
-    const showNotes = showFlags?.showNotes ?? true;
-    const showBirthday = showFlags?.showBirthday ?? true;
-
-    // If nothing to show, don't render the footer at all
-    if (!showCreatorName && !showNotes && !showBirthday) {
-      return;
-    }
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    const footerTop = canvas.height - footerHeight;
-
-    // Dark Mode uses dark background, normal mode uses light gray
-    ctx.fillStyle = darkMode
-      ? "rgba(10, 10, 15, 0.98)"
-      : "rgba(245, 245, 245, 0.98)";
-    ctx.fillRect(0, footerTop, canvas.width, footerHeight);
-
-    // Draw subtle top border (light for Dark Mode, dark for normal)
-    ctx.strokeStyle = darkMode
-      ? "rgba(255, 255, 255, 0.15)"
-      : "rgba(0, 0, 0, 0.1)";
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(0, footerTop + 0.5);
-    ctx.lineTo(canvas.width, footerTop + 0.5);
-    ctx.stroke();
-
-    // Calculate font size based on footer height (50% of footer height)
-    // This ensures text always fits within the footer regardless of scale
-    const fontSize = Math.max(10, Math.floor(footerHeight * 0.55));
-    const margin = Math.max(8, Math.floor(footerHeight * 0.3));
-
-    // Position text lower in footer (65% down) to create space from pictographs above
-    const yPosition = footerTop + footerHeight * 0.55;
-
-    // Dark Mode uses white text, normal mode uses black
-    ctx.fillStyle = darkMode ? "#ffffff" : "black";
-    ctx.textBaseline = "middle"; // Vertically center text
-
-    // Measure all three footer segments first, then draw only what fits.
-    // This prevents overlapping when the card is narrow.
-
-    const boldFont = `bold ${fontSize}px Georgia, serif`;
-    const normalFont = `${fontSize}px Georgia, serif`;
-
-    // Prepare left text (username)
-    let leftText = "";
-    let leftWidth = 0;
-    if (showCreatorName && userInfo.userName && userInfo.userName.trim() !== "") {
-      leftText = userInfo.userName;
-      ctx.font = boldFont;
-      leftWidth = ctx.measureText(leftText).width + margin;
-    }
-
-    // Prepare right text (date)
-    let rightText = "";
-    let rightWidth = 0;
-    if (showBirthday) {
-      const dateToUse = userInfo.birthday
-        ? userInfo.birthday
-        : userInfo.exportDate
-          ? new Date(userInfo.exportDate)
-          : new Date();
-      const formatted = `${dateToUse.getMonth() + 1}-${dateToUse.getDate()}-${dateToUse.getFullYear()}`;
-      rightText = userInfo.birthday ? `🎂 ${formatted}` : formatted;
-      ctx.font = normalFont;
-      rightWidth = ctx.measureText(rightText).width + margin;
-    }
-
-    // Prepare center text (notes)
-    let centerText = "";
-    if (showNotes) {
-      centerText =
-        customNotesText && customNotesText.trim() !== ""
-          ? customNotesText
-          : userInfo.notes && userInfo.notes.trim() !== ""
-            ? userInfo.notes
-            : "Created using TKA Composer";
-    }
-
-    // Draw left (username)
-    if (leftText) {
-      ctx.font = boldFont;
-      ctx.textAlign = "left";
-      ctx.fillText(leftText, margin, yPosition);
-    }
-
-    // Draw right (date)
-    if (rightText) {
-      ctx.font = normalFont;
-      ctx.textAlign = "right";
-      ctx.fillText(rightText, canvas.width - margin, yPosition);
-    }
-
-    // Draw center (notes) only if it fits between left and right text
-    if (centerText) {
-      ctx.font = normalFont;
-      const centerWidth = ctx.measureText(centerText).width;
-      const availableCenter = canvas.width - leftWidth - rightWidth - margin * 2;
-      if (centerWidth <= availableCenter) {
-        ctx.textAlign = "center";
-        ctx.fillText(centerText, canvas.width / 2, yPosition);
-      }
-      // If it doesn't fit, skip the center text entirely rather than overlap
-    }
-  }
-
-  /**
-   * Render difficulty level badge with beautiful gradients
-   */
-  renderDifficultyBadge(
-    canvas: HTMLCanvasElement,
-    level: number,
-    position: [number, number],
-    size: number
-  ): void {
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    const [x, y] = position;
-    const radius = size / 2;
-    const centerX = x + radius;
-    const centerY = y + radius;
-
-    // Create gradient based on difficulty level
-    const gradient = this.createDifficultyGradient(
-      ctx,
-      centerX,
-      centerY,
-      radius,
-      level
-    );
-
-    // Draw badge background with gradient
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
-    ctx.fillStyle = gradient;
-    ctx.fill();
-
-    // Draw badge border
-    ctx.strokeStyle = "#ffffff";
-    ctx.lineWidth = 2;
-    ctx.stroke();
-
-    // Draw level text
-    ctx.fillStyle = "#000000"; // Black text for better contrast on gradients
-    ctx.font = `bold ${size * 0.6}px ${this.fallbackFontFamily}`;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(level.toString(), centerX, centerY);
-  }
-
-  /**
-   * Calculate text dimensions for layout planning
-   */
-  measureText(
-    text: string,
-    fontFamily: string,
-    fontSize: number,
-    fontWeight?: string
-  ): { width: number; height: number } {
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return { width: 0, height: 0 };
-
-    ctx.font = `${fontWeight || "normal"} ${fontSize}px ${fontFamily}`;
-    const metrics = ctx.measureText(text);
-
-    return {
-      width: metrics.width,
-      height: fontSize, // Approximate height
-    };
-  }
-
-  /**
-   * Apply custom kerning to text
-   */
-  renderTextWithKerning(
-    ctx: CanvasRenderingContext2D,
-    text: string,
-    x: number,
-    y: number,
-    kerning: number
-  ): void {
-    if (kerning === 0) {
-      ctx.fillText(text, x, y);
-      return;
-    }
-
-    let currentX = x;
-    for (let i = 0; i < text.length; i++) {
-      const char = text[i];
-      if (!char) continue; // Skip if char is undefined
-      ctx.fillText(char, currentX, y);
-
-      const charWidth = ctx.measureText(char).width;
-      currentX += charWidth + kerning;
-    }
-  }
-
-  /**
-   * Draw subtle background behind title text
-   */
-  private drawTitleBackground(
-    ctx: CanvasRenderingContext2D,
-    width: number,
-    height: number
-  ): void {
-    // Very subtle white background
-    ctx.fillStyle = "rgba(235, 235, 235, 0.98)";
-    ctx.fillRect(0, 0, width, height);
-
-    // Very subtle bottom border
-    ctx.strokeStyle = "rgba(0, 0, 0, 0.05)";
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(0, height - 1);
-    ctx.lineTo(width, height - 1);
-    ctx.stroke();
-  }
-
-  /**
    * Create beautiful gradient for difficulty level badge
    * Based on legacy desktop gradient definitions
    */
@@ -738,11 +519,9 @@ export class TextRenderer implements ITextRenderer {
 // DIRECT SINGLETON EXPORT
 // ============================================================================
 import { dimensionCalculator } from "./DimensionCalculator";
-import { loopGlyphRenderer } from "./LOOPGlyphRenderer";
 import { loopIconStripRenderer } from "./LOOPIconStripRenderer";
 
 export const textRenderer = new TextRenderer(
   dimensionCalculator,
-  loopGlyphRenderer,
   loopIconStripRenderer
 );
