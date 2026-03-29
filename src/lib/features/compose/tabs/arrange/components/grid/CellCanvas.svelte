@@ -19,6 +19,8 @@
   import { createAnimationPanelState } from "../../../../state/animation-panel-state.svelte";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import type { AdditionalLayerProps } from "../../../../services/contracts/ITrailCapturer";
+  import type { FireOverlayConfig } from "$lib/shared/animation-engine/domain/types/FireTypes";
+  import type { LedOverlayConfig } from "$lib/shared/animation-engine/domain/types/LedTypes";
 
   let {
     cell,
@@ -74,6 +76,24 @@
 
   // Trail settings
   const trailSettings = $derived(animationSettings.trail);
+
+  // Per-cell effect overrides — translate cell.effect into fireConfig/ledConfig
+  // When cell.effect is set, it overrides the global effect for this cell's AnimatorCanvas.
+  // When undefined, no override is passed and the global setting applies.
+  const cellFireConfig = $derived.by((): Partial<FireOverlayConfig> | undefined => {
+    const effect = cell.effect;
+    if (!effect || effect === 'none') return { enabled: false };
+    if (effect === 'fire') return { enabled: true };
+    if (effect === 'charcoal') return { enabled: true, charcoalParams: {} as any };
+    return { enabled: false }; // LED and trails don't use fireConfig
+  });
+
+  const cellLedConfig = $derived.by((): Partial<LedOverlayConfig> | undefined => {
+    const effect = cell.effect;
+    if (!effect || effect === 'none') return { enabled: false };
+    if (effect === 'led') return { enabled: true };
+    return { enabled: false }; // Fire, charcoal, and trails don't use ledConfig
+  });
 
   // Per-cell motion visibility overrides (undefined defaults to visible)
   const blueVisible = $derived(cell.blueMotionVisible ?? true);
@@ -297,6 +317,8 @@
         {trailSettings}
         hideTkaGlyph={true}
         hideStepNumbers={true}
+        fireConfig={cell.effect ? cellFireConfig : undefined}
+        ledConfig={cell.effect ? cellLedConfig : undefined}
       />
     {:else}
       <div class="empty-cell">

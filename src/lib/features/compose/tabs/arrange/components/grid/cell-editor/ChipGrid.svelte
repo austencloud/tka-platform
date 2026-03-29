@@ -10,6 +10,7 @@
   import type { CellEditorPanelState, ExpandableSection } from "./state/cell-editor-panel-state.svelte";
   import { EFFORTS } from '$lib/features/effort-lab/domain/effort-types';
   import { TUNNEL_LAYER_COLORS } from '$lib/features/compose/compose/domain/types';
+  import { getAnimationVisibilityManager } from '$lib/shared/animation-engine/state/animation-visibility-state.svelte';
 
   let {
     cell,
@@ -42,13 +43,23 @@
   const colorComboLabels = ['Blue / Red', 'Purple / Orange', 'Emerald / Pink', 'Cyan / Yellow'];
   const colorLabel = $derived(colorComboLabels[colorComboIndex] ?? 'Blue / Red');
 
-  // Effect display
+  // Effect display — show per-cell override, or fall back to global effect
+  const globalVM = getAnimationVisibilityManager();
+  const activeEffect = $derived.by(() => {
+    if (cell.effect && cell.effect !== 'none') return cell.effect;
+    // Fall back to global effect
+    if (globalVM?.isFireEffectEnabled()) return 'fire';
+    if (globalVM?.isCharcoalEffectEnabled()) return 'charcoal';
+    if (globalVM?.isLedEffectEnabled()) return 'led';
+    return 'none';
+  });
   const effectName = $derived(
-    cell.effect && cell.effect !== "none"
-      ? cell.effect.charAt(0).toUpperCase() + cell.effect.slice(1)
+    activeEffect !== 'none'
+      ? activeEffect.charAt(0).toUpperCase() + activeEffect.slice(1)
       : "None"
   );
-  const hasEffect = $derived(cell.effect !== undefined && cell.effect !== "none");
+  const hasEffect = $derived(activeEffect !== 'none');
+  const isGlobalEffect = $derived(!cell.effect && activeEffect !== 'none');
 
   // Speed display
   const speedLabel = $derived(
