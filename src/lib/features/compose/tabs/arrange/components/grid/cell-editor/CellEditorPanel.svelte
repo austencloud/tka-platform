@@ -17,6 +17,7 @@
   import { createCellEditorPanelState } from "./state/cell-editor-panel-state.svelte";
   import LayerSection from "./LayerSection.svelte";
   import ChipGrid from "./ChipGrid.svelte";
+  import TransformSection from "./sections/TransformSection.svelte";
 
   const MAX_LAYERS = 4;
 
@@ -98,7 +99,33 @@
     const current = cell.redMotionVisible !== false;
     onSetRedVisible?.(!current);
   }
+
+  function handleTransform(type: TransformType) {
+    onTransformLayer?.(0, type);
+  }
+
+  function handleKeydown(e: KeyboardEvent) {
+    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+    const key = e.key.toLowerCase();
+    const shift = e.shiftKey;
+    const map: Record<string, TransformType> = {
+      m: "mirror",
+      v: "flip",
+      s: "swapColors",
+      i: "invert",
+      f: "shiftStart",
+    };
+    if (shift && key === "r") {
+      handleTransform("rewind");
+      e.preventDefault();
+    } else if (map[key]) {
+      handleTransform(map[key]);
+      e.preventDefault();
+    }
+  }
 </script>
+
+<svelte:window onkeydown={handleKeydown} />
 
 <div class="cell-editor-panel">
   <!-- Header -->
@@ -151,8 +178,10 @@
     />
   {/if}
 
-  <!-- Expanded section placeholder (Tasks 7/8 will add real content) -->
-  {#if panelState.expandedSection}
+  <!-- Expanded sections -->
+  {#if panelState.expandedSection === 'transform'}
+    <TransformSection {panelState} onTransform={handleTransform} />
+  {:else if panelState.expandedSection}
     <div class="expanded-section-placeholder">
       Section: {panelState.expandedSection}
     </div>
