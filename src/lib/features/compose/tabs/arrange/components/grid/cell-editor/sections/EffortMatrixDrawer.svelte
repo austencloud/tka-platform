@@ -1,15 +1,16 @@
 <!--
-  EffectMatrixDrawer.svelte
+  EffortMatrixDrawer.svelte
 
-  Matrix UI for assigning visual effects to individual prop tip points.
+  Matrix UI for assigning effort qualities to individual prop tip points.
   Three scope levels: Cell (1 row), Per Hand (2 rows), Per Tip (N rows).
-  Opens as an overlay from the Effects section in CellEditorPanel.
+  Opens as an overlay from the Effort section in CellEditorPanel.
 -->
 <script lang="ts">
   import type {
-    TipEffectMap,
-    EffectType,
+    TipEffortMap,
   } from "$lib/shared/animation-engine/domain/types/TipEffectTypes";
+  import type { EffortId } from "$lib/features/effort-lab/domain/effort-types";
+  import { EFFORTS } from "$lib/features/effort-lab/domain/effort-types";
   import { getTipPoints } from "$lib/shared/animation-engine/domain/types/PropTipPoints";
 
   type Scope = "cell" | "hand" | "tip";
@@ -21,43 +22,20 @@
     onUpdateMap,
     onClose,
   }: {
-    currentMap: TipEffectMap;
+    currentMap: TipEffortMap;
     bluePropType: string;
     redPropType: string;
-    onUpdateMap: (map: TipEffectMap) => void;
+    onUpdateMap: (map: TipEffortMap) => void;
     onClose: () => void;
   } = $props();
 
   let scope: Scope = $state(inferScope(currentMap));
-  let localMap: TipEffectMap = $state({ ...currentMap });
+  let localMap: TipEffortMap = $state({ ...currentMap });
 
   const scopes: { value: Scope; label: string; icon: string }[] = [
     { value: "cell", label: "Cell", icon: "fa-border-all" },
     { value: "hand", label: "Per Hand", icon: "fa-hand" },
     { value: "tip", label: "Per Tip", icon: "fa-crosshairs" },
-  ];
-
-  const effectDefs: {
-    value: EffectType;
-    label: string;
-    icon: string;
-    cssClass: string;
-  }[] = [
-    { value: "none", label: "None", icon: "fa-ban", cssClass: "eff-none" },
-    { value: "fire", label: "Fire", icon: "fa-fire", cssClass: "eff-fire" },
-    {
-      value: "charcoal",
-      label: "Charcoal",
-      icon: "fa-fire",
-      cssClass: "eff-charcoal",
-    },
-    { value: "led", label: "LED", icon: "fa-lightbulb", cssClass: "eff-led" },
-    {
-      value: "trails",
-      label: "Trails",
-      icon: "fa-wind",
-      cssClass: "eff-trails",
-    },
   ];
 
   // Build channel rows based on current scope
@@ -111,19 +89,19 @@
     return `tip ${tipIndex + 1}`;
   }
 
-  function getEffectForKey(key: string): EffectType {
-    return localMap[key]?.effect ?? "none";
+  function getEffortForKey(key: string): EffortId {
+    return localMap[key]?.effort ?? "linear";
   }
 
-  function setEffect(key: string, effect: EffectType) {
-    localMap = { ...localMap, [key]: { effect } };
+  function setEffort(key: string, effort: EffortId) {
+    localMap = { ...localMap, [key]: { effort } };
     onUpdateMap(localMap);
   }
 
-  function applyToAll(effect: EffectType) {
-    const newMap: TipEffectMap = {};
+  function applyToAll(effort: EffortId) {
+    const newMap: TipEffortMap = {};
     for (const ch of channels) {
-      newMap[ch.key] = { effect };
+      newMap[ch.key] = { effort };
     }
     localMap = newMap;
     onUpdateMap(localMap);
@@ -133,41 +111,37 @@
     if (newScope === scope) return;
 
     const oldScope = scope;
-    const newMap: TipEffectMap = {};
+    const newMap: TipEffortMap = {};
 
     if (newScope === "cell") {
-      // Collapse to single key: use most common effect
-      const most = mostCommonEffect(Object.keys(localMap));
-      newMap["*"] = { effect: most };
+      const most = mostCommonEffort(Object.keys(localMap));
+      newMap["*"] = { effort: most };
     } else if (newScope === "hand") {
       if (oldScope === "tip") {
-        // Collapse per-tip to per-hand: most common per prop
         const blueKeys = Object.keys(localMap).filter((k) => k.startsWith("0-"));
         const redKeys = Object.keys(localMap).filter((k) => k.startsWith("1-"));
-        newMap["0"] = { effect: mostCommonEffect(blueKeys) };
-        newMap["1"] = { effect: mostCommonEffect(redKeys) };
+        newMap["0"] = { effort: mostCommonEffort(blueKeys) };
+        newMap["1"] = { effort: mostCommonEffort(redKeys) };
       } else {
-        // Expand cell to per-hand
-        const base = localMap["*"]?.effect ?? "none";
-        newMap["0"] = { effect: base };
-        newMap["1"] = { effect: base };
+        const base = localMap["*"]?.effort ?? "linear";
+        newMap["0"] = { effort: base };
+        newMap["1"] = { effort: base };
       }
     } else {
       // Per-tip: expand from parent
       if (oldScope === "cell") {
-        const base = localMap["*"]?.effect ?? "none";
+        const base = localMap["*"]?.effort ?? "linear";
         for (let t = 0; t < blueTipCount; t++)
-          newMap[`0-${t}`] = { effect: base };
+          newMap[`0-${t}`] = { effort: base };
         for (let t = 0; t < redTipCount; t++)
-          newMap[`1-${t}`] = { effect: base };
+          newMap[`1-${t}`] = { effort: base };
       } else {
-        // From per-hand
-        const blueEffect = localMap["0"]?.effect ?? "none";
-        const redEffect = localMap["1"]?.effect ?? "none";
+        const blueEffort = localMap["0"]?.effort ?? "linear";
+        const redEffort = localMap["1"]?.effort ?? "linear";
         for (let t = 0; t < blueTipCount; t++)
-          newMap[`0-${t}`] = { effect: blueEffect };
+          newMap[`0-${t}`] = { effort: blueEffort };
         for (let t = 0; t < redTipCount; t++)
-          newMap[`1-${t}`] = { effect: redEffect };
+          newMap[`1-${t}`] = { effort: redEffort };
       }
     }
 
@@ -176,28 +150,27 @@
     onUpdateMap(localMap);
   }
 
-  function mostCommonEffect(keys: string[]): EffectType {
+  function mostCommonEffort(keys: string[]): EffortId {
     const counts: Record<string, number> = {};
     for (const k of keys) {
-      const e = localMap[k]?.effect ?? "none";
+      const e = localMap[k]?.effort ?? "linear";
       counts[e] = (counts[e] ?? 0) + 1;
     }
-    // If no keys at all, fall back to cell-wide or "none"
     if (Object.keys(counts).length === 0) {
-      return localMap["*"]?.effect ?? "none";
+      return localMap["*"]?.effort ?? "linear";
     }
-    let best: EffectType = "none";
+    let best: EffortId = "linear";
     let bestCount = 0;
     for (const [e, c] of Object.entries(counts)) {
       if (c > bestCount) {
-        best = e as EffectType;
+        best = e as EffortId;
         bestCount = c;
       }
     }
     return best;
   }
 
-  function inferScope(map: TipEffectMap): Scope {
+  function inferScope(map: TipEffortMap): Scope {
     const keys = Object.keys(map);
     if (keys.length === 0 || (keys.length === 1 && keys[0] === "*"))
       return "cell";
@@ -205,6 +178,7 @@
     if (keys.includes("0") || keys.includes("1")) return "hand";
     return "cell";
   }
+
 </script>
 
 <div class="matrix-overlay">
@@ -212,8 +186,8 @@
     <!-- Header -->
     <header class="panel-header">
       <h3 class="panel-title">
-        <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
-        Effect Matrix
+        <i class="fas fa-gauge" aria-hidden="true"></i>
+        Effort Matrix
       </h3>
       <button class="done-btn" onclick={onClose}>Done</button>
     </header>
@@ -221,7 +195,7 @@
     <!-- Scope selector -->
     <div class="scope-section">
       <label class="scope-label">SCOPE</label>
-      <div class="scope-strip" role="radiogroup" aria-label="Effect scope">
+      <div class="scope-strip" role="radiogroup" aria-label="Effort scope">
         {#each scopes as s}
           <button
             class="scope-seg"
@@ -248,15 +222,16 @@
             ></span>
             <span class="channel-label">{ch.label}</span>
           </div>
-          <div class="channel-effects">
-            {#each effectDefs as eff}
+          <div class="channel-efforts">
+            {#each EFFORTS as effort}
               <button
-                class="effect-btn {eff.cssClass}"
-                class:active={getEffectForKey(ch.key) === eff.value}
-                title={eff.label}
-                onclick={() => setEffect(ch.key, eff.value)}
+                class="effort-btn"
+                class:active={getEffortForKey(ch.key) === effort.id}
+                title={effort.label}
+                onclick={() => setEffort(ch.key, effort.id)}
+                style:--effort-color={effort.color}
               >
-                <i class="fas {eff.icon}" aria-hidden="true"></i>
+                <span class="effort-dot" style:background={effort.color}></span>
               </button>
             {/each}
           </div>
@@ -267,13 +242,14 @@
       <div class="quick-apply">
         <span class="quick-apply-label">Apply to all:</span>
         <div class="quick-apply-btns">
-          {#each effectDefs as eff}
+          {#each EFFORTS as effort}
             <button
               class="quick-btn"
-              onclick={() => applyToAll(eff.value)}
+              onclick={() => applyToAll(effort.id)}
+              style:--effort-color={effort.color}
             >
-              <i class="fas {eff.icon}" aria-hidden="true"></i>
-              {eff.label}
+              <span class="effort-dot" style:background={effort.color}></span>
+              {effort.label}
             </button>
           {/each}
         </div>
@@ -461,15 +437,15 @@
     text-align: center;
   }
 
-  /* Effect buttons in channel */
-  .channel-effects {
-    display: flex;
+  /* Effort buttons in channel — 2 rows of 4 for the 8 efforts */
+  .channel-efforts {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
     gap: 4px;
     flex: 1;
-    flex-wrap: wrap;
   }
 
-  .effect-btn {
+  .effort-btn {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -482,65 +458,32 @@
     transition: all 120ms ease;
   }
 
-  .effect-btn:hover {
+  .effort-btn:hover {
     background: rgba(255, 255, 255, 0.08);
     border-color: rgba(255, 255, 255, 0.15);
   }
 
-  .effect-btn i {
-    font-size: 13px;
-    color: rgba(255, 255, 255, 0.4);
-  }
-
-  /* Active states with colored tints */
-  .effect-btn.active {
+  .effort-btn.active {
+    background: color-mix(in srgb, var(--effort-color, #94a3b8) 15%, transparent);
+    border-color: color-mix(in srgb, var(--effort-color, #94a3b8) 40%, transparent);
     border-width: 1.5px;
   }
 
-  .effect-btn.active.eff-none {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.2);
-  }
-  .effect-btn.active.eff-none i {
-    color: rgba(255, 255, 255, 0.7);
-  }
-
-  .effect-btn.active.eff-fire {
-    background: rgba(249, 115, 22, 0.15);
-    border-color: rgba(249, 115, 22, 0.4);
-  }
-  .effect-btn.active.eff-fire i {
-    color: #fb923c;
+  .effort-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
   }
 
-  .effect-btn.active.eff-charcoal {
-    background: rgba(168, 85, 247, 0.15);
-    border-color: rgba(168, 85, 247, 0.4);
-  }
-  .effect-btn.active.eff-charcoal i {
-    color: #a78bfa;
-  }
-
-  .effect-btn.active.eff-led {
-    background: rgba(34, 197, 94, 0.15);
-    border-color: rgba(34, 197, 94, 0.4);
-  }
-  .effect-btn.active.eff-led i {
-    color: #4ade80;
-  }
-
-  .effect-btn.active.eff-trails {
-    background: rgba(96, 165, 250, 0.15);
-    border-color: rgba(96, 165, 250, 0.4);
-  }
-  .effect-btn.active.eff-trails i {
-    color: #60a5fa;
+  .effort-btn.active .effort-dot {
+    box-shadow: 0 0 6px var(--effort-color, #94a3b8);
   }
 
   /* Quick-apply bar */
   .quick-apply {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 8px;
     margin-top: 12px;
     padding: 10px 14px;
@@ -553,6 +496,7 @@
     font-size: 11px;
     color: rgba(255, 255, 255, 0.3);
     flex-shrink: 0;
+    padding-top: 6px;
   }
 
   .quick-apply-btns {
@@ -583,8 +527,9 @@
     color: rgba(255, 255, 255, 0.8);
   }
 
-  .quick-btn i {
-    font-size: 11px;
+  .quick-btn .effort-dot {
+    width: 6px;
+    height: 6px;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -593,7 +538,7 @@
     }
 
     .scope-seg,
-    .effect-btn,
+    .effort-btn,
     .quick-btn,
     .done-btn,
     .channel {

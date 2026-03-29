@@ -43,9 +43,20 @@
   const colorComboLabels = ['Blue / Red', 'Purple / Orange', 'Emerald / Pink', 'Cyan / Yellow'];
   const colorLabel = $derived(colorComboLabels[colorComboIndex] ?? 'Blue / Red');
 
-  // Effect display — show per-cell override, or fall back to global effect
+  // Effect display — check tipEffectMap first, then flat effect, then global
   const globalVM = getAnimationVisibilityManager();
   const activeEffect = $derived.by(() => {
+    // Check tip effect map first for per-tip assignments
+    if (cell.tipEffectMap) {
+      const values = Object.values(cell.tipEffectMap);
+      if (values.length > 0) {
+        const effects = values.map(v => v.effect);
+        const unique = [...new Set(effects)];
+        if (unique.length === 1) return unique[0];
+        return 'mixed' as const;
+      }
+    }
+    // Fall back to flat effect field
     if (cell.effect && cell.effect !== 'none') return cell.effect;
     // Fall back to global effect
     if (globalVM?.isFireEffectEnabled()) return 'fire';
@@ -54,12 +65,13 @@
     return 'none';
   });
   const effectName = $derived(
-    activeEffect !== 'none'
+    activeEffect === 'mixed' ? 'Mixed'
+    : activeEffect !== 'none'
       ? activeEffect.charAt(0).toUpperCase() + activeEffect.slice(1)
       : "None"
   );
   const hasEffect = $derived(activeEffect !== 'none');
-  const isGlobalEffect = $derived(!cell.effect && activeEffect !== 'none');
+  const isGlobalEffect = $derived(!cell.effect && !cell.tipEffectMap && activeEffect !== 'none');
 
   // Speed display
   const speedLabel = $derived(

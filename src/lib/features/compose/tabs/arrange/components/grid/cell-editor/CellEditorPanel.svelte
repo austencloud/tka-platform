@@ -23,6 +23,7 @@
   import EffectsSection from "./sections/EffectsSection.svelte";
   import EffectMatrixDrawer from "./sections/EffectMatrixDrawer.svelte";
   import EffortSection from "./sections/EffortSection.svelte";
+  import EffortMatrixDrawer from "./sections/EffortMatrixDrawer.svelte";
   import ColorsSection from "./sections/ColorsSection.svelte";
   import OffsetSection from "./sections/OffsetSection.svelte";
   import DisplaySection from "./sections/DisplaySection.svelte";
@@ -88,6 +89,7 @@
   const panelState = createCellEditorPanelState();
 
   let effectMatrixOpen = $state(false);
+  let effortMatrixOpen = $state(false);
 
   // Reset state when the selected cell changes
   let previousCellId = $state(cell.id);
@@ -203,23 +205,44 @@
       onSetSpeed={speed => onSetSpeed?.(speed)}
     />
   {:else if panelState.expandedSection === 'effects'}
-    <EffectsSection
-      currentEffect={cell.effect ?? "none"}
-      currentTrailMode={cell.trailMode}
-      onSetEffect={effect => onSetEffect?.(effect)}
-      onSetTrailMode={mode => onSetTrailMode?.(mode)}
-      onOpenMatrix={() => { effectMatrixOpen = true; }}
-    />
+    {#if effectMatrixOpen}
+      <EffectMatrixDrawer
+        currentMap={cell.tipEffectMap ?? {}}
+        bluePropType="staff"
+        redPropType="staff"
+        onUpdateMap={map => onSetTipEffectMap?.(map)}
+        onClose={() => { effectMatrixOpen = false; }}
+      />
+    {:else}
+      <EffectsSection
+        currentEffect={cell.effect ?? "none"}
+        currentTrailMode={cell.trailMode}
+        onSetEffect={effect => onSetEffect?.(effect)}
+        onSetTrailMode={mode => onSetTrailMode?.(mode)}
+        onOpenMatrix={() => { effectMatrixOpen = true; }}
+      />
+    {/if}
   {:else if panelState.expandedSection === 'colors'}
     <ColorsSection
       currentColors={cell.layers[0]?.propColors ?? { left: '#3b82f6', right: '#ef4444' }}
       onSetColors={colors => onSetColors?.(colors)}
     />
   {:else if panelState.expandedSection === 'effort'}
-    <EffortSection
-      currentEffort={cell.effort}
-      onSetEffort={effort => onSetEffort?.(effort)}
-    />
+    {#if effortMatrixOpen}
+      <EffortMatrixDrawer
+        currentMap={cell.tipEffortMap ?? {}}
+        bluePropType="staff"
+        redPropType="staff"
+        onUpdateMap={map => onSetTipEffortMap?.(map)}
+        onClose={() => { effortMatrixOpen = false; }}
+      />
+    {:else}
+      <EffortSection
+        currentEffort={cell.effort}
+        onSetEffort={effort => onSetEffort?.(effort)}
+        onOpenMatrix={() => { effortMatrixOpen = true; }}
+      />
+    {/if}
   {:else if panelState.expandedSection === 'offset'}
     <OffsetSection
       currentOffset={cell.beatOffset}
@@ -234,17 +257,6 @@
   {/if}
 
   <!-- Footer actions -->
-  <!-- Effect Matrix Drawer overlay -->
-  {#if effectMatrixOpen}
-    <EffectMatrixDrawer
-      currentMap={cell.tipEffectMap ?? {}}
-      bluePropType="staff"
-      redPropType="staff"
-      onUpdateMap={map => onSetTipEffectMap?.(map)}
-      onClose={() => { effectMatrixOpen = false; }}
-    />
-  {/if}
-
   {#if cell.layers.length > 0}
     <div class="panel-footer">
       {#if onCopyCell}

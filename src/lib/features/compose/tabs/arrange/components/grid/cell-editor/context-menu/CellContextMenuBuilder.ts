@@ -29,6 +29,8 @@ export interface CellContextMenuCallbacks {
   onSetEffort: (effort: string) => void;
   onCopyCell: () => void;
   onClearCell: () => void;
+  onOpenEffectMatrix?: () => void;
+  onOpenEffortMatrix?: () => void;
 }
 
 // ============================================================================
@@ -213,6 +215,13 @@ function buildEffectChildren(
         },
       ],
     },
+    { id: "effect-sep", label: "", disabled: true } as ContextMenuItem,
+    {
+      id: "customize-effects",
+      label: "Customize...",
+      icon: "fa-sliders",
+      action: () => callbacks.onOpenEffectMatrix?.(),
+    },
   ];
 }
 
@@ -250,7 +259,7 @@ function buildEffortChildren(
   callbacks: CellContextMenuCallbacks
 ): ContextMenuItem[] {
   const currentEffort = cell.effort ?? "linear";
-  return EFFORTS.map((effort) => ({
+  const items: ContextMenuItem[] = EFFORTS.map((effort) => ({
     id: `effort-${effort.id}`,
     label: effort.label,
     icon: "fa-circle",
@@ -258,6 +267,18 @@ function buildEffortChildren(
     checked: currentEffort === effort.id,
     action: () => callbacks.onSetEffort(effort.id),
   }));
+
+  items.push(
+    { id: "effort-sep", label: "", disabled: true } as ContextMenuItem,
+    {
+      id: "customize-efforts",
+      label: "Customize...",
+      icon: "fa-sliders",
+      action: () => callbacks.onOpenEffortMatrix?.(),
+    },
+  );
+
+  return items;
 }
 
 // ============================================================================
