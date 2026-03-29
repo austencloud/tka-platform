@@ -150,7 +150,7 @@
   }
 
   h1 {
-    font-family: "Instrument Serif", Georgia, serif;
+    font-family: var(--landing-heading-font, "Instrument Serif", Georgia, serif);
     font-size: clamp(2.6rem, 7vw, 5rem);
     font-weight: 400;
     line-height: 1.05;

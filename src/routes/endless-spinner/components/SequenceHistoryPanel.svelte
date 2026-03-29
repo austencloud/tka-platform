@@ -62,7 +62,7 @@
 
   function formatLoopType(settings: GenerationSettings | null): string {
     if (!settings) return "";
-    return settings.loopType.replace(/_/g, " ").toLowerCase();
+    return settings.loopType.replace(/^strict_/i, "").replace(/_/g, " ").toLowerCase();
   }
 </script>
 

@@ -221,7 +221,7 @@
           {/if}
         </div>
         <h3>Add props</h3>
-        <p>Each hand holds a prop. Staves, fans, clubs — the notation works for all of them.</p>
+        <p>Each hand holds a prop. Staves, fans, clubs. The notation works for all of them.</p>
       </div>
     </div>
 
@@ -313,7 +313,7 @@
   }
 
   h2 {
-    font-family: "Instrument Serif", Georgia, serif;
+    font-family: var(--landing-heading-font, "Instrument Serif", Georgia, serif);
     font-size: clamp(1.8rem, 4vw, 2.6rem);
     font-weight: 400;
     color: var(--theme-text, #fff);
@@ -403,7 +403,7 @@
 
   /* Card text */
   h3 {
-    font-family: "Instrument Serif", Georgia, serif;
+    font-family: var(--landing-heading-font, "Instrument Serif", Georgia, serif);
     font-size: clamp(0.95rem, 1.8vw, 1.15rem);
     font-weight: 400;
     color: var(--theme-text, #fff);
