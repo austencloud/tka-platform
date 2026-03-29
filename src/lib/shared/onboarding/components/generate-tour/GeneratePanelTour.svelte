@@ -6,6 +6,7 @@
   no services, no responsive complexity. Works at any size.
 -->
 <script lang="ts">
+  import { fly, fade } from "svelte/transition";
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
   import ModalFooter from "$lib/shared/foundation/ui/modal/ModalFooter.svelte";
   import {
@@ -17,7 +18,7 @@
     type GeneratorHelpItem,
   } from "$lib/features/create/generate/domain/generator-help-content";
   import { CARD_REGISTRY, type GeneratorCardId } from "$lib/features/create/generate/shared/domain/card-registry";
-  import { getCardColors } from "$lib/features/create/generate/shared/domain/card-colors";
+  import { getCardColor } from "$lib/features/create/generate/shared/domain/card-colors";
   import { BackgroundType } from "@austencloud/backgrounds";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import { container } from "$lib/shared/di";
@@ -33,12 +34,11 @@
 
   // Derive mini cards from the shared registry so they stay in sync
   // with the real generator panel automatically.
-  const defaultColors = getCardColors(BackgroundType.NIGHT_SKY);
   const MINI_CARDS: MiniCard[] = CARD_REGISTRY.map((entry) => ({
     id: entry.id,
     header: entry.tourHeader,
     value: entry.tourDefaultValue,
-    gradient: (defaultColors as unknown as Record<string, { color: string }>)[entry.colorKey]?.color ?? "",
+    gradient: getCardColor(entry.colorKey, BackgroundType.NIGHT_SKY),
     span: entry.tourSpan,
   }));
 
@@ -110,7 +110,55 @@
     hapticService?.trigger("selection");
     generateTourState.goToStop(stop);
   }
+
+  function handleRetreat() {
+    hapticService?.trigger("selection");
+    generateTourState.retreat();
+  }
+
+  function handleKeydown(e: KeyboardEvent) {
+    if (!isOpen) return;
+    if (e.key === "ArrowRight") {
+      e.preventDefault();
+      handleNext();
+    } else if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      handleRetreat();
+    }
+    // Escape is already handled by BaseModal
+  }
+
+  // Card pulse: track which card just became active so it gets a bounce animation
+  let pulsingCard = $state<string | null>(null);
+
+  $effect(() => {
+    const stop = generateTourState.currentStop;
+    pulsingCard = stop;
+    const timer = setTimeout(() => (pulsingCard = null), 400);
+    return () => clearTimeout(timer);
+  });
+
+  // Respect reduced motion preference for content transitions
+  const prefersReducedMotion =
+    typeof window !== "undefined"
+      ? window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      : false;
+
+  // Custom transition wrappers that respect reduced motion
+  function slideIn(node: Element) {
+    return prefersReducedMotion
+      ? fade(node, { duration: 150 })
+      : fly(node, { x: 30, duration: 250, delay: 200 });
+  }
+
+  function slideOut(node: Element) {
+    return prefersReducedMotion
+      ? fade(node, { duration: 100 })
+      : fly(node, { x: -30, duration: 200 });
+  }
 </script>
+
+<svelte:window onkeydown={handleKeydown} />
 
 <BaseModal
   open={isOpen}
@@ -121,6 +169,10 @@
   labelledBy="tour-modal-title"
 >
   {#if currentContent}
+    <button class="close-btn" onclick={handleClose} aria-label="Close tour">
+      <i class="fas fa-xmark" aria-hidden="true"></i>
+    </button>
+
     <!-- Mini card grid -->
     <div class="card-grid" role="img" aria-label="Generator cards — {currentContent.name} highlighted">
       {#each MINI_CARDS as card}
@@ -129,6 +181,7 @@
           class="mini-card"
           class:active={card.id === generateTourState.currentStop}
           class:dim={card.id !== generateTourState.currentStop}
+          class:pulse={card.id === pulsingCard}
           class:generate-btn={card.id === "generate-button"}
           style:grid-column="span {card.span}"
           style:background={card.gradient}
@@ -146,43 +199,48 @@
       {/each}
     </div>
 
-    <!-- Info section -->
+    <!-- Info section — outer container holds layout, inner content transitions -->
     <div class="tour-info">
-      <div class="info-header">
-        <div class="info-icon" style:background={currentContent.color}>
-          <i class="fas {currentContent.icon}" aria-hidden="true"></i>
-        </div>
-        <div class="info-titles">
-          <h2 id="tour-modal-title" class="info-title">{currentContent.name}</h2>
-          <p class="info-subtitle">{currentContent.shortDesc}</p>
-        </div>
-        <button class="close-btn" onclick={handleClose} aria-label="Close tour">
-          <i class="fas fa-xmark" aria-hidden="true"></i>
-        </button>
-      </div>
-
-      <div class="info-body">
-        <p class="description">{currentContent.fullDesc}</p>
-
-        {#if currentContent.images && currentContent.images.length > 0}
-          <div class="image-grid">
-            {#each currentContent.images as image}
-              <figure class="image-item">
-                <img src={image.src} alt={image.label} />
-                <figcaption>{image.label}</figcaption>
-              </figure>
-            {/each}
+      {#key generateTourState.currentStop}
+        <div
+          class="tour-info-content"
+          in:slideIn
+          out:slideOut
+        >
+          <div class="info-header">
+            <div class="info-icon" style:background={currentContent.color}>
+              <i class="fas {currentContent.icon}" aria-hidden="true"></i>
+            </div>
+            <div class="info-titles">
+              <h2 id="tour-modal-title" class="info-title">{currentContent.name}</h2>
+              <p class="info-subtitle">{currentContent.shortDesc}</p>
+            </div>
           </div>
-        {/if}
 
-        {#if currentContent.bullets && currentContent.bullets.length > 0}
-          <ul class="bullet-list">
-            {#each currentContent.bullets as bullet}
-              <li>{bullet}</li>
-            {/each}
-          </ul>
-        {/if}
-      </div>
+          <div class="info-body">
+            <p class="description">{currentContent.fullDesc}</p>
+
+            {#if currentContent.images && currentContent.images.length > 0}
+              <div class="image-grid">
+                {#each currentContent.images as image}
+                  <figure class="image-item">
+                    <img src={image.src} alt={image.label} />
+                    <figcaption>{image.label}</figcaption>
+                  </figure>
+                {/each}
+              </div>
+            {/if}
+
+            {#if currentContent.bullets && currentContent.bullets.length > 0}
+              <ul class="bullet-list">
+                {#each currentContent.bullets as bullet}
+                  <li>{bullet}</li>
+                {/each}
+              </ul>
+            {/if}
+          </div>
+        </div>
+      {/key}
     </div>
   {/if}
 
@@ -199,10 +257,10 @@
       </div>
       <div class="tour-actions">
         <button class="ghost" onclick={handleSkip}>Skip</button>
-        <button class="primary" onclick={handleNext}>
+        <button class="primary" onclick={handleNext} aria-label={generateTourState.isLastStop ? "Finish tour" : "Next step"}>
           {generateTourState.isLastStop ? "Got it" : "Next"}
           {#if !generateTourState.isLastStop}
-            <i class="fas fa-arrow-right" aria-hidden="true" style="font-size: 0.75rem; margin-left: 4px;"></i>
+            <i class="fas fa-arrow-right next-arrow" aria-hidden="true"></i>
           {/if}
         </button>
       </div>
@@ -226,8 +284,9 @@
    */
   :global(dialog.tour-modal) {
     width: min(92vw, 560px) !important;
-    height: min(75vh, 580px) !important;
-    max-height: 75vh !important;
+    height: min(82vh, 650px) !important;
+    max-height: 82vh !important;
+    position: relative;
   }
 
   /* ===== Mini Card Grid ===== */
@@ -236,7 +295,7 @@
     grid-template-columns: repeat(6, 1fr);
     gap: 5px;
     padding: 14px 16px;
-    background: rgba(0, 0, 0, 0.25);
+    background: var(--theme-surface-overlay, rgba(0, 0, 0, 0.25));
     flex-shrink: 0;
   }
 
@@ -259,12 +318,14 @@
   }
 
   .card-header {
-    font-size: 9px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 700;
     letter-spacing: 0.5px;
     text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.7);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
     line-height: 1;
+    transform: scale(0.75);
+    transform-origin: center;
   }
 
   .card-value {
@@ -272,7 +333,7 @@
     font-weight: 700;
     color: white;
     line-height: 1.2;
-    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+    text-shadow: 0 1px 4px var(--theme-shadow, rgba(0, 0, 0, 0.3));
   }
 
   .generate-value {
@@ -281,8 +342,8 @@
 
   .mini-card.active {
     box-shadow:
-      0 0 0 2px rgba(59, 130, 246, 0.7),
-      0 0 14px rgba(59, 130, 246, 0.35);
+      0 0 0 2px var(--semantic-info, #3b82f6),
+      0 0 14px var(--semantic-info-glow, rgba(59, 130, 246, 0.35));
     z-index: 1;
   }
 
@@ -290,15 +351,31 @@
     opacity: 0.3;
   }
 
+  @keyframes cardPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.08); }
+    100% { transform: scale(1); }
+  }
+
+  .mini-card.pulse {
+    animation: cardPulse 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
   /* ===== Info Section ===== */
-  /* Takes all remaining space between card grid and footer */
+  /* Outer container holds layout space; inner content transitions in/out */
   .tour-info {
+    position: relative;
+    overflow: hidden;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .tour-info-content {
     padding: 14px 20px;
     display: flex;
     flex-direction: column;
     gap: 10px;
-    flex: 1;
-    min-height: 0;
+    height: 100%;
   }
 
   .info-header {
@@ -315,7 +392,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.9rem;
+    font-size: 14px;
     color: white;
     flex-shrink: 0;
   }
@@ -340,23 +417,27 @@
   }
 
   .close-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 2;
     width: 32px;
     height: 32px;
     border: none;
     border-radius: 8px;
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--theme-surface-overlay, rgba(0, 0, 0, 0.5));
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.9rem;
+    font-size: 14px;
     flex-shrink: 0;
     transition: background 0.15s ease;
   }
 
   .close-btn:hover {
-    background: rgba(255, 255, 255, 0.12);
+    background: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
     color: var(--theme-text, white);
   }
 
@@ -368,6 +449,7 @@
     flex: 1;
     min-height: 0;
     overflow-y: auto;
+    padding-bottom: 4px;
     scrollbar-width: thin;
     scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
   }
@@ -398,7 +480,7 @@
     aspect-ratio: 1;
     object-fit: contain;
     border-radius: 8px;
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
@@ -448,7 +530,7 @@
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.15);
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.15));
     transition: all 0.2s ease;
   }
 
@@ -458,7 +540,7 @@
   }
 
   .dot.completed {
-    background: rgba(255, 255, 255, 0.4);
+    background: var(--theme-stroke-strong, rgba(255, 255, 255, 0.4));
   }
 
   .tour-actions {
@@ -467,11 +549,16 @@
     align-items: center;
   }
 
+  .next-arrow {
+    font-size: 12px;
+    margin-left: 4px;
+  }
+
   /* ===== Mobile ===== */
   @media (max-width: 520px) {
     :global(dialog.tour-modal) {
       width: calc(100% - 24px) !important;
-      height: min(85vh, 600px) !important;
+      height: min(88vh, 680px) !important;
     }
 
     .card-grid {
@@ -489,13 +576,16 @@
     }
 
     .card-header {
-      font-size: 8px;
+      transform: scale(0.65);
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
     .dot, .mini-card, .close-btn {
       transition: none;
+    }
+    .mini-card.pulse {
+      animation: none;
     }
   }
 </style>

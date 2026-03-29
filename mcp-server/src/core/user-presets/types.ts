@@ -6,7 +6,7 @@
  */
 
 // Simple string types to avoid dependency on other modules
-export type LoopType = "rewound" | "strict_rotated";
+export type LoopType = "rewound" | "rotated";
 export type SliceSize = "halved" | "quartered";
 export type GridMode = "diamond" | "box" | "skewed";
 
@@ -91,7 +91,7 @@ export interface CreatePresetInput {
  * Type guard to validate preset config values.
  */
 export function isValidLoopType(value: string): value is LoopType {
-	return ["rewound", "strict_rotated"].includes(value);
+	return ["rewound", "rotated"].includes(value);
 }
 
 export function isValidSliceSize(value: string): value is SliceSize {

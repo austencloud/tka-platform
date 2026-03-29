@@ -84,7 +84,7 @@ export function registerPresetTools(server: McpServer): void {
       name: z.string().describe("Preset name (e.g., 'Comfy 16')"),
       description: z.string().optional().describe("Description of the preset"),
       icon: z.string().optional().describe("Emoji icon for the preset"),
-      loopType: z.enum(["rewound", "strict_rotated"]).optional().describe("LOOP type"),
+      loopType: z.enum(["rewound", "rotated"]).optional().describe("LOOP type"),
       sliceSize: z.enum(["halved", "quartered"]).optional().describe("Slice size for LOOP"),
       loopComponents: z.array(z.enum(["rotated", "mirrored", "flipped", "swapped", "inverted", "rewound"])).optional().describe("LOOP transformation components"),
       wordLength: z.number().min(1).max(20).optional().describe("Default word length"),
@@ -296,7 +296,7 @@ export function registerPresetTools(server: McpServer): void {
           // noBridges: only skip bridges when we generated the word (chainable sequence)
           // If user specified a word, allow bridges - beat count will vary
           const loopConstraint: LoopConstraint = {
-            loopType: config.loopType as "rewound" | "strict_rotated",
+            loopType: config.loopType as "rewound" | "rotated",
             sliceSize: (config.sliceSize || "halved") as "halved" | "quartered",
             noBridges: !userSpecifiedWord,
           };
@@ -395,7 +395,7 @@ export function registerPresetTools(server: McpServer): void {
 
         // If LOOP type is specified, apply transformation
         if (config.loopType) {
-          const loopTypeEnum = config.loopType === "rewound" ? LOOPType.REWOUND : LOOPType.STRICT_ROTATED;
+          const loopTypeEnum = config.loopType === "rewound" ? LOOPType.REWOUND : LOOPType.ROTATED;
           const sliceSize = config.sliceSize === "quartered" ? SliceSize.QUARTERED : SliceSize.HALVED;
 
           // Debug: check positions before calling executeLOOP

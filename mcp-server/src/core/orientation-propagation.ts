@@ -97,5 +97,47 @@ export function recalculateAllOrientations(result: SequenceResult): SequenceResu
   };
 }
 
+/**
+ * Recalculate orientations with explicit overrides for the start position.
+ * Updates step 0's orientations and re-propagates through the entire sequence.
+ */
+export function recalculateOrientationsWithOverrides(
+  steps: SequenceStep[],
+  blueStartOrientation?: string,
+  redStartOrientation?: string,
+): SequenceStep[] {
+  if (steps.length === 0) return steps;
+
+  let updatedSteps = [...steps];
+  const sp = updatedSteps[0];
+  if (!sp) return updatedSteps;
+
+  // Override step 0 (start position) orientations
+  if (blueStartOrientation) {
+    const blueOri = blueStartOrientation as McpOrientation;
+    updatedSteps[0] = {
+      ...sp,
+      blueMotion: { ...sp.blueMotion, startOrientation: blueOri, endOrientation: blueOri },
+    };
+  }
+  if (redStartOrientation) {
+    const updatedSp = updatedSteps[0]!;
+    updatedSteps[0] = {
+      ...updatedSp,
+      redMotion: { ...updatedSp.redMotion, startOrientation: redStartOrientation as McpOrientation, endOrientation: redStartOrientation as McpOrientation },
+    };
+  }
+
+  // Re-propagate from the (possibly overridden) step 0
+  const finalSp = updatedSteps[0]!;
+  const blueOri = (finalSp.blueMotion.endOrientation || "in") as McpOrientation;
+  updatedSteps = propagateOrientationsForColor(updatedSteps, "blue", blueOri);
+
+  const redOri = (finalSp.redMotion.endOrientation || "in") as McpOrientation;
+  updatedSteps = propagateOrientationsForColor(updatedSteps, "red", redOri);
+
+  return updatedSteps;
+}
+
 // Re-export the shared calculator for direct use
 export { calculateEndOrientation } from "./orientation-calculator.js";
