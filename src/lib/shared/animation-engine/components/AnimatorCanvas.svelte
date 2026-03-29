@@ -82,6 +82,8 @@ Last audit: 2025-12-27
     onInitialized: onInitializedCallback = undefined,
     onEffectError = undefined,
     visibilityManagerOverride = undefined,
+    externalToggleDisassemble = undefined,
+    externalDisassembled = false,
   }: {
     blueProp: PropState | null;
     redProp: PropState | null;
@@ -122,6 +124,12 @@ Last audit: 2025-12-27
      * manager instead of the global singleton. Enables multiple canvases to have
      * independent visibility/effect settings (e.g. landing page with two players). */
     visibilityManagerOverride?: AnimationVisibilityStateManager;
+    /** When provided, overrides the internal disassemble toggle for the context menu.
+     * The context menu will call this callback instead of the built-in split animation. */
+    externalToggleDisassemble?: () => void;
+    /** When provided alongside externalToggleDisassemble, controls the context menu label
+     * ("Disassemble" vs "Reassemble"). Defaults to false. */
+    externalDisassembled?: boolean;
   } = $props();
 
   // Disassemble mode state machine
@@ -546,8 +554,8 @@ Last audit: 2025-12-27
     <CanvasContextMenuHost
       bind:this={contextMenuHost}
       onOpenSettings={handleOpenSettings}
-      disassembled={isDisassembledView}
-      onToggleDisassemble={toggleDisassemble}
+      disassembled={externalToggleDisassemble ? externalDisassembled : isDisassembledView}
+      onToggleDisassemble={externalToggleDisassemble ?? toggleDisassemble}
       captureEffectDiagnostics={() => engine.captureEffectDiagnostics()}
     />
 
