@@ -122,4 +122,5 @@ export enum GridMode {
   SKEWED = "skewed",
   CENTRIC = "centric",
   TRIGRID = "trigrid",
+  EIGHT_POINT = "8point",
 }

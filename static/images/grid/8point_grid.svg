@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg version="1.1"
+    id="Layer_1"
+    xmlns="http://www.w3.org/2000/svg"
+    x="0"
+    y="0"
+    viewBox="0 0 950 950"
+    xml:space="preserve">
+  <style>
+    /* Default: show normal points, hide strict points */
+    .box-grid-stroke{stroke:#000;stroke-width:7;stroke-miterlimit:10}
+    .normal-hand-point{fill:currentColor}
+    .normal-layer2-point{fill:none}
+    .strict-hand-point{fill:none}
+    .strict-layer2-point{fill:none}
+
+    /* Strict mode: hide normal points, show strict points */
+    .strict-mode .normal-hand-point{fill:none}
+    .strict-mode .normal-layer2-point{fill:none}
+    .strict-mode .strict-hand-point{fill:currentColor}
+    .strict-mode .strict-layer2-point{fill:currentColor}
+  </style>
+
+  <!-- ═══ Diamond grid points (N, E, S, W) ═══ -->
+
+  <!-- Diamond outer points -->
+  <circle id="n_diamond_outer_point" cx="475" cy="175" r="25"/>
+  <circle id="e_diamond_outer_point" cx="775" cy="475" r="25"/>
+  <circle id="s_diamond_outer_point" cx="475" cy="775" r="25"/>
+  <circle id="w_diamond_outer_point" cx="175" cy="475" r="25"/>
+
+  <!-- Diamond hand points -->
+  <circle id="n_diamond_hand_point" class="normal-hand-point" cx="475" cy="331.9" r="4.7"/>
+  <circle id="e_diamond_hand_point" class="normal-hand-point" cx="618.1" cy="475" r="4.7"/>
+  <circle id="s_diamond_hand_point" class="normal-hand-point" cx="475" cy="618.1" r="4.7"/>
+  <circle id="w_diamond_hand_point" class="normal-hand-point" cx="331.9" cy="475" r="4.7"/>
+
+  <!-- Diamond layer 2 points -->
+  <circle id="ne_diamond_layer2_point" class="normal-layer2-point" cx="618.1" cy="331.9" r="8.8"/>
+  <circle id="se_diamond_layer2_point" class="normal-layer2-point" cx="618.1" cy="618.1" r="8.8"/>
+  <circle id="sw_diamond_layer2_point" class="normal-layer2-point" cx="331.9" cy="618.1" r="8.8"/>
+  <circle id="nw_diamond_layer2_point" class="normal-layer2-point" cx="331.9" cy="331.9" r="8.8"/>
+
+  <!-- Diamond layer 2 strict points -->
+  <circle id="ne_diamond_layer2_point_strict" class="strict-layer2-point" cx="625" cy="325" r="8.8"/>
+  <circle id="se_diamond_layer2_point_strict" class="strict-layer2-point" cx="625" cy="625" r="8.8"/>
+  <circle id="sw_diamond_layer2_point_strict" class="strict-layer2-point" cx="325" cy="625" r="8.8"/>
+  <circle id="nw_diamond_layer2_point_strict" class="strict-layer2-point" cx="325" cy="325" r="8.8"/>
+
+  <!-- Diamond hand strict points -->
+  <circle id="n_diamond_hand_point_strict" class="strict-hand-point" cx="475" cy="325" r="4.7"/>
+  <circle id="e_diamond_hand_point_strict" class="strict-hand-point" cx="625" cy="475" r="4.7"/>
+  <circle id="s_diamond_hand_point_strict" class="strict-hand-point" cx="475" cy="625" r="4.7"/>
+  <circle id="w_diamond_hand_point_strict" class="strict-hand-point" cx="325" cy="475" r="4.7"/>
+
+  <!-- ═══ Box grid points (NE, SE, SW, NW) ═══ -->
+
+  <!-- Box outer points -->
+  <path id="ne_box_outer_point" class="box-grid-stroke" d="M262.9 247.9c4 0 7.8 1.6 10.6 4.4 5.8 5.8 5.8 15.4 0 21.2a15 15 0 0 1-21.2 0c-5.8-5.8-5.8-15.4 0-21.2 2.8-2.9 6.6-4.4 10.6-4.4m0-10a24.99 24.99 0 1 0 0 50 24.99 24.99 0 1 0 0-50z"/>
+  <path id="se_box_outer_point" class="box-grid-stroke" d="M687.1 247.9c4 0 7.8 1.6 10.6 4.4 5.8 5.8 5.8 15.4 0 21.2a15 15 0 0 1-21.2 0c-5.8-5.8-5.8-15.4 0-21.2 2.9-2.9 6.6-4.4 10.6-4.4m0-10a24.99 24.99 0 1 0 0 50 24.99 24.99 0 1 0 0-50z"/>
+  <path id="sw_box_outer_point" class="box-grid-stroke" d="M687.1 672.1c4 0 7.8 1.6 10.6 4.4 5.8 5.8 5.8 15.4 0 21.2a15 15 0 0 1-21.2 0c-5.8-5.8-5.8-15.4 0-21.2 2.9-2.8 6.6-4.4 10.6-4.4m0-10a24.99 24.99 0 1 0 0 50 24.99 24.99 0 1 0 0-50z"/>
+  <path id="nw_box_outer_point" class="box-grid-stroke" d="M262.9 672.1c4 0 7.8 1.6 10.6 4.4 5.8 5.8 5.8 15.4 0 21.2a15 15 0 0 1-21.2 0c-5.8-5.8-5.8-15.4 0-21.2 2.8-2.8 6.6-4.4 10.6-4.4m0-10a24.99 24.99 0 1 0 0 50 24.99 24.99 0 1 0 0-50z"/>
+
+  <!-- Box hand points -->
+  <circle id="nw_box_hand_point" class="normal-hand-point" cx="373.8" cy="373.8" r="4.7"/>
+  <circle id="ne_box_hand_point" class="normal-hand-point" cx="576.2" cy="373.8" r="4.7"/>
+  <circle id="se_box_hand_point" class="normal-hand-point" cx="576.2" cy="576.2" r="4.7"/>
+  <circle id="sw_box_hand_point" class="normal-hand-point" cx="373.8" cy="576.2" r="4.7"/>
+
+  <!-- Box layer 2 points -->
+  <circle id="n_box_layer2_point" class="normal-layer2-point" cx="475" cy="272.6" r="8.8"/>
+  <circle id="e_box_layer2_point" class="normal-layer2-point" cx="677.4" cy="475" r="8.8"/>
+  <circle id="s_box_layer2_point" class="normal-layer2-point" cx="475" cy="677.4" r="8.8"/>
+  <circle id="w_box_layer2_point" class="normal-layer2-point" cx="272.6" cy="475" r="8.8"/>
+
+  <!-- Box layer 2 strict points -->
+  <circle id="strict_n_box_layer2_point" class="strict-layer2-point" cx="475" cy="262.9" r="8.8"/>
+  <circle id="strict_e_box_layer2_point" class="strict-layer2-point" cx="687.1" cy="475" r="8.8"/>
+  <circle id="strict_s_box_layer2_point" class="strict-layer2-point" cx="475" cy="687.1" r="8.8"/>
+  <circle id="strict_w_box_layer2_point" class="strict-layer2-point" cx="262.9" cy="475" r="8.8"/>
+
+  <!-- Box hand strict points -->
+  <circle id="strict_se_box_hand_point" class="strict-hand-point" cx="581.1" cy="581.1" r="4.7"/>
+  <circle id="strict_sw_box_hand_point" class="strict-hand-point" cx="368.9" cy="581.1" r="4.7"/>
+  <circle id="strict_nw_box_hand_point" class="strict-hand-point" cx="368.9" cy="368.9" r="4.7"/>
+  <circle id="strict_ne_box_hand_point" class="strict-hand-point" cx="581.1" cy="368.9" r="4.7"/>
+
+  <!-- ═══ Shared center point ═══ -->
+  <circle id="center_point" cx="475" cy="475" r="12"/>
+</svg>

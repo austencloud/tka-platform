@@ -23,7 +23,7 @@ export interface MotionColorsCache {
 
 // Trail toggle - simplified from off/subtle/vivid to just on/off
 export type TrailVisibility = "off" | "on";
-export type GridMode = "none" | "diamond" | "box";
+export type GridMode = "none" | "8point" | "auto";
 export type PlaybackMode = "continuous" | "step";
 
 interface AnimationVisibilitySettings {
@@ -123,7 +123,7 @@ export class AnimationVisibilityStateManager {
   private getDefaultSettings(): AnimationVisibilitySettings {
     return {
       // Animation-specific defaults
-      gridMode: "diamond", // Default to diamond grid
+      gridMode: "8point", // Default to 8-point grid (all cardinal + intercardinal points)
       stepNumbers: true, // Show step numbers by default
       beatPosition: false, // Hide beat position by default (replaced by progress bar)
       props: true,
@@ -257,6 +257,11 @@ export class AnimationVisibilityStateManager {
         }
 
         if (!("pathShape" in parsed)) parsed.pathShape = "arc";
+
+        // Migrate old gridMode values ("diamond" | "box") → new system ("8point" | "auto")
+        if (parsed.gridMode === "diamond" || parsed.gridMode === "box") {
+          parsed.gridMode = "8point";
+        }
 
         return {
           ...defaults,

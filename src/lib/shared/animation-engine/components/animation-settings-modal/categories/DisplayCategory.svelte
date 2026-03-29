@@ -28,7 +28,7 @@
 	function toggleGrid(): void {
 		// Toggle between "none" and "diamond" (sequence's actual grid mode
 		// is determined by the sequence data, not this setting)
-		vm.setGridMode(gridVisible ? "none" : "diamond");
+		vm.setGridMode(gridVisible ? "none" : "8point");
 	}
 
 	const toggles: { key: "tkaGlyph" | "stepNumbers" | "beatPosition" | "props" | "wordHeader" | "progressBar"; label: string }[] = [

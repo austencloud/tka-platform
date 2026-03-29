@@ -125,8 +125,8 @@
   function handleAnimationToggle(key: string) {
     switch (key) {
       case "gridOff": tap(() => avm.setGridMode("none")); break;
-      case "grid8pt": tap(() => avm.setGridMode("diamond")); break;
-      case "gridAuto": tap(() => avm.setGridMode("box")); break;
+      case "grid8pt": tap(() => avm.setGridMode("8point")); break;
+      case "gridAuto": tap(() => avm.setGridMode("auto")); break;
       case "darkMode": tap(() => {
         const next = !darkMode;
         void updateSettings({ darkMode: next });
