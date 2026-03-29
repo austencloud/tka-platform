@@ -13,6 +13,7 @@
     CellMediaType,
     CellEffect,
   } from "../../../../../compose/domain/types";
+  import type { TipEffectMap, TipEffortMap } from "$lib/shared/animation-engine/domain/types/TipEffectTypes";
   import { TrailMode } from "$lib/shared/animation-engine/domain/types/TrailTypes";
   import { createCellEditorPanelState } from "./state/cell-editor-panel-state.svelte";
   import LayerSection from "./LayerSection.svelte";
@@ -20,6 +21,7 @@
   import TransformSection from "./sections/TransformSection.svelte";
   import SpeedSection from "./sections/SpeedSection.svelte";
   import EffectsSection from "./sections/EffectsSection.svelte";
+  import EffectMatrixDrawer from "./sections/EffectMatrixDrawer.svelte";
   import EffortSection from "./sections/EffortSection.svelte";
   import ColorsSection from "./sections/ColorsSection.svelte";
   import OffsetSection from "./sections/OffsetSection.svelte";
@@ -52,6 +54,8 @@
     onSetBlueVisible,
     onSetRedVisible,
     onSetOffset,
+    onSetTipEffectMap,
+    onSetTipEffortMap,
   }: {
     cell: GridCell;
     cellIndex: number;
@@ -77,9 +81,13 @@
     onSetBlueVisible?: (visible: boolean) => void;
     onSetRedVisible?: (visible: boolean) => void;
     onSetOffset?: (offset: number) => void;
+    onSetTipEffectMap?: (map: TipEffectMap) => void;
+    onSetTipEffortMap?: (map: TipEffortMap) => void;
   } = $props();
 
   const panelState = createCellEditorPanelState();
+
+  let effectMatrixOpen = $state(false);
 
   // Reset state when the selected cell changes
   let previousCellId = $state(cell.id);
@@ -200,6 +208,7 @@
       currentTrailMode={cell.trailMode}
       onSetEffect={effect => onSetEffect?.(effect)}
       onSetTrailMode={mode => onSetTrailMode?.(mode)}
+      onOpenMatrix={() => { effectMatrixOpen = true; }}
     />
   {:else if panelState.expandedSection === 'colors'}
     <ColorsSection
@@ -225,6 +234,17 @@
   {/if}
 
   <!-- Footer actions -->
+  <!-- Effect Matrix Drawer overlay -->
+  {#if effectMatrixOpen}
+    <EffectMatrixDrawer
+      currentMap={cell.tipEffectMap ?? {}}
+      bluePropType="staff"
+      redPropType="staff"
+      onUpdateMap={map => onSetTipEffectMap?.(map)}
+      onClose={() => { effectMatrixOpen = false; }}
+    />
+  {/if}
+
   {#if cell.layers.length > 0}
     <div class="panel-footer">
       {#if onCopyCell}
@@ -243,6 +263,7 @@
 
 <style>
   .cell-editor-panel {
+    position: relative;
     display: flex;
     flex-direction: column;
     gap: clamp(12px, 3cqi, 20px);
