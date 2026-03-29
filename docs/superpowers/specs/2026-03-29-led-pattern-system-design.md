@@ -539,7 +539,7 @@ Following the "tests that catch what eyes can't" philosophy:
 
 | File | Change |
 |------|--------|
-| `domain/types/LedTypes.ts` | Add `secondaryColor`, `activePresetId`, `userPresets` to `LedOverlayConfig` |
+| `domain/types/LedTypes.ts` | Add `secondaryColor` to `LedOverlayConfig` (NOT `activePresetId` or `userPresets` -- those are state manager only) |
 | `domain/types/LedPatterns.ts` | Deprecate old `evaluatePattern`, re-export from new evaluator for backward compat |
 | `services/implementations/LedTipTracker.ts` | Build `TipEvaluationContext`, call new evaluator |
 | `state/animation-visibility-state.svelte.ts` | Add secondary color, preset methods |
