@@ -16,6 +16,8 @@ import type { ISequencePersister } from "$lib/features/create/shared/services/co
 import type { ISequenceStatsCalculator } from "$lib/features/create/shared/services/contracts/ISequenceStatsCalculator";
 import type { ISequenceTransformer } from "$lib/features/create/shared/services/contracts/ISequenceTransformer";
 import type { ISequenceValidator } from "$lib/features/create/shared/services/contracts/ISequenceValidator";
+import type { IReversalDetector } from "$lib/features/create/shared/services/contracts/IReversalDetector";
+import { container } from "$lib/shared/di";
 import { createSequenceState } from "$lib/features/create/shared/state/SequenceStateOrchestrator.svelte";
 import type { SequenceState } from "$lib/features/create/shared/state/SequenceStateOrchestrator.svelte";
 import type {
@@ -110,6 +112,7 @@ export function createSpellTabState(
 
   // Spell tab has its own independent sequence state
   // IMPORTANT: Pass tabId="spell" to ensure persistence loads/saves only spell's data
+  const ReversalDetector = container.items.reversalDetector as IReversalDetector | undefined;
   const sequenceState: SequenceState | null = sequenceService
     ? createSequenceState({
         sequenceService,
@@ -117,6 +120,7 @@ export function createSpellTabState(
         ...(sequenceStatisticsService && { sequenceStatisticsService }),
         ...(SequenceTransformer && { SequenceTransformer }),
         ...(sequenceValidationService && { sequenceValidationService }),
+        ...(ReversalDetector && { ReversalDetector }),
         tabId: "spell", // Persistence isolation - only load/save spell's data
       })
     : null;

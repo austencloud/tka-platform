@@ -25,6 +25,7 @@ import type { ISequenceRepository } from "../services/contracts/ISequenceReposit
 import type { ISequenceStatsCalculator } from "../services/contracts/ISequenceStatsCalculator";
 import type { ISequenceTransformer } from "../services/contracts/ISequenceTransformer";
 import type { ISequenceValidator } from "../services/contracts/ISequenceValidator";
+import type { IReversalDetector } from "../services/contracts/IReversalDetector";
 import { createSequenceState } from "./SequenceStateOrchestrator.svelte";
 import type { SequenceState } from "./SequenceStateOrchestrator.svelte";
 import type { UndoMetadata } from "../services/contracts/IUndoManager";
@@ -113,6 +114,7 @@ export function createConstructTabState(
 
   // Construct tab has its own independent sequence state
   // IMPORTANT: Pass tabId="construct" to ensure persistence loads/saves only construct's data
+  const ReversalDetector = container.items.reversalDetector as IReversalDetector | undefined;
   const sequenceState: SequenceState | null = sequenceService
     ? createSequenceState({
         sequenceService,
@@ -120,6 +122,7 @@ export function createConstructTabState(
         ...(sequenceStatisticsService && { sequenceStatisticsService }),
         ...(SequenceTransformer && { SequenceTransformer }),
         ...(sequenceValidationService && { sequenceValidationService }),
+        ...(ReversalDetector && { ReversalDetector }),
         tabId: "construct", // Persistence isolation - only load/save construct's data
       })
     : null;

@@ -18,19 +18,34 @@ import type {
 
 export class ReversalDetector implements IReversalDetector {
   /**
-   * Process reversals for an entire sequence
+   * Process reversals for an entire sequence.
+   *
+   * For loop sequences (rotated, mirrored, etc.) the last beats wrap into the
+   * first beats, so beat 1's "previous" context includes the tail of the
+   * sequence. We build a virtual prefix from the end of the sequence so that
+   * early beats can detect reversals across the loop boundary.
    */
   processReversals(sequence: SequenceData): SequenceData {
+    const isLoop = !!sequence.loopType;
+    const steps = sequence.steps;
     const processedBeats: StepData[] = [];
 
-    for (let i = 0; i < sequence.steps.length; i++) {
-      const currentStep = sequence.steps[i]!;
-      const previousSteps = sequence.steps.slice(0, i);
+    for (let i = 0; i < steps.length; i++) {
+      const currentStep = steps[i]!;
 
-      // Detect reversals for this beat
+      // For loop sequences, early beats that have no prior context (or only
+      // noRotation predecessors) can look back through the tail of the sequence.
+      // We concatenate the full sequence before the current slice so that
+      // _getLastValidPropRotDir can walk backwards across the loop boundary.
+      let previousSteps: StepData[];
+      if (isLoop && i < steps.length) {
+        // Wrap: [...allBeats, ...beatsBeforeCurrent]
+        previousSteps = [...steps, ...steps.slice(0, i)];
+      } else {
+        previousSteps = steps.slice(0, i);
+      }
+
       const reversalInfo = this.detectReversal(previousSteps, currentStep);
-
-      // Apply reversal symbols to the beat
       const processedBeat = this.applyReversalSymbols(
         currentStep,
         reversalInfo
