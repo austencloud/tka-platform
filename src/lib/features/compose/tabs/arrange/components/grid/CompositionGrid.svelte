@@ -675,7 +675,6 @@
     display: grid;
     grid-template-rows: repeat(var(--grid-rows, 1), var(--cell-size, 200px));
     grid-template-columns: repeat(var(--grid-cols, 1), var(--cell-size, 200px));
-    gap: var(--grid-gap, 16px);
     place-content: center;
   }
 

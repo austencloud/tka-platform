@@ -14,11 +14,26 @@ export type TileType =
   | "torch"
   | "pedestal"
   | "trigger"
-  | "corridor";
+  | "corridor"
+  | "rope"          // Barrier — visible, solid, not interactable (VTG Wing rope-off)
+  | "scaffolding"   // Construction Zone — visible clutter, solid
+  | "sign";         // Readable sign — interactable, not solid
 
 export type FloorMaterial = "stone" | "marble" | "wood" | "dirt" | "sandstone";
 export type Direction = "north" | "south" | "east" | "west";
-export type WingTheme = "cave" | "classical" | "modern" | "futuristic" | "outdoor";
+export type WingTheme =
+  | "cave"          // Wing 1: Ancient Origins — torchlight, stone
+  | "classical"     // Wing 2: Egypt/Greece — oil lamps, warm
+  | "renaissance"   // Wing 3: Da Vinci — natural light, studio
+  | "industrial"    // Wing 4: Victorian — gas lamps, brass
+  | "digital"       // Wing 5: CRT glow, fluorescent
+  | "institutional" // Wing 6: Suppression — sterile, bureaucratic
+  | "gallery"       // Wing 7: Vessel Hall — spotlights
+  | "modern"        // Wing 8: Modern Vessel — dramatic
+  | "futuristic"    // Futures Chamber
+  | "outdoor"       // Ending rooms
+  | "construction"  // Construction Zone / Janitor's Closet
+  | "retail";       // Gift Shop
 
 export interface MuseumTile {
   type: TileType;
@@ -56,6 +71,7 @@ export interface WingRegion {
   name: string;
   bounds: { x: number; y: number; width: number; height: number };
   theme: WingTheme;
+  description?: string;
 }
 
 export interface ExhibitDefinition {

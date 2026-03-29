@@ -22,6 +22,9 @@
         0 2px 8px rgba(0,0,0,0.6),
         inset 0 0 0 1px rgba(212,175,55,0.3);
     }
+      body.embed { min-height: 0; padding: 0; margin: 0; display: block; }
+    body.embed canvas { width: 100%; height: auto; }
+    body.embed .caption, body.embed .controls, body.embed .scene > :not(canvas) { display: none; }
   </style>
 </head>
 <body>
@@ -1142,5 +1145,6 @@
 
 })();
 </script>
+<script>if(location.search.includes("embed"))document.body.classList.add("embed")</script>
 </body>
 </html>

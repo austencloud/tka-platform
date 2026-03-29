@@ -93,9 +93,7 @@
   </div>
 
   <!-- Clock tray -->
-  <!-- svelte-ignore a11y_click_events_have_key_events -->
-  <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-  <div class="taskbar-tray" aria-label="System tray" onclick={handleClockClick}>
+  <div class="taskbar-tray" aria-label="System tray" onclick={handleClockClick} onkeydown={(e) => e.key === "Enter" && handleClockClick()} role="button" tabindex="0">
     <span class="tray-clock" aria-label="Time: 3:47 PM" title="3:47 PM. Always.">3:47 PM</span>
     {#if clockTooltipVisible}
       <div class="clock-tooltip" role="tooltip">3:47 PM. Always.</div>

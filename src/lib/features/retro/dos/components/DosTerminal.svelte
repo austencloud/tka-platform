@@ -70,14 +70,18 @@
     // Ignore key events with ctrl or alt modifiers (browser shortcuts)
     if (event.ctrlKey || event.altKey || event.metaKey) return;
 
+    // Stop propagation on ALL handled keys so global hotkeys (prop
+    // selection, module shortcuts, etc.) don't intercept terminal input.
     if (event.key === "Enter") {
       event.preventDefault();
+      event.stopPropagation();
       submitInput();
       return;
     }
 
     if (event.key === "Backspace") {
       event.preventDefault();
+      event.stopPropagation();
       if (terminalState.inputText.length > 0) {
         terminalState.inputText = terminalState.inputText.slice(0, -1);
       }
@@ -86,6 +90,7 @@
 
     if (event.key === "Escape") {
       event.preventDefault();
+      event.stopPropagation();
       handleEscape();
       return;
     }
@@ -93,6 +98,7 @@
     // Only append printable single characters
     if (event.key.length === 1) {
       event.preventDefault();
+      event.stopPropagation();
       terminalState.inputText += event.key;
     }
   }

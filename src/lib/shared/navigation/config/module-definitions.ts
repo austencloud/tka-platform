@@ -238,7 +238,7 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     label: "Retro",
     icon: '<i class="fas fa-desktop" style="color: #008080;" aria-hidden="true"></i>',
     color: "#008080",
-    description: "TKA-OS: Win95 desktop, DOS terminal, and pixel pictographs",
+    description: "1989 DOS terminal, 1995 Win95 desktop, pictograph timeline",
     isMain: true,
     sections: RETRO_TABS,
   },

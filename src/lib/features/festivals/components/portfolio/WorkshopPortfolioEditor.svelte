@@ -711,6 +711,9 @@
             <div
               class="social-row"
               onclick={() => editingField !== link.key && startFieldEdit(link.key)}
+              onkeydown={(e) => e.key === "Enter" && editingField !== link.key && startFieldEdit(link.key)}
+              role="button"
+              tabindex="0"
             >
               <i
                 class="{link.iconClass} {link.icon} social-icon"
@@ -752,6 +755,9 @@
             <div
               class="about-row"
               onclick={() => editingField !== field.key && startFieldEdit(field.key)}
+              onkeydown={(e) => e.key === "Enter" && editingField !== field.key && startFieldEdit(field.key)}
+              role="button"
+              tabindex="0"
             >
               <span class="about-label">{field.label}</span>
               {#if editingField === field.key}

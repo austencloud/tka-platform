@@ -17,6 +17,8 @@ Color-coded dots indicate which motion (blue/red) is reversing between pictograp
     visible = true,
     previewMode = false,
     onToggle = undefined,
+    blueMotionVisible = true,
+    redMotionVisible = true,
   } = $props<{
     /** Whether to show blue reversal indicator */
     blueReversal?: boolean;
@@ -30,6 +32,10 @@ Color-coded dots indicate which motion (blue/red) is reversing between pictograp
     previewMode?: boolean;
     /** Callback when glyph is clicked to toggle visibility */
     onToggle?: () => void;
+    /** Blue motion visibility (dims dot when false) */
+    blueMotionVisible?: boolean;
+    /** Red motion visibility (dims dot when false) */
+    redMotionVisible?: boolean;
   }>();
 
   // Get global visibility manager to respect motion visibility settings
@@ -64,20 +70,21 @@ Color-coded dots indicate which motion (blue/red) is reversing between pictograp
     };
   });
 
-  // Filter reversals based on global motion visibility
+  // Show reversal dots based on data (visibility controls opacity, not presence)
   const effectiveBlueReversal = $derived.by(() => {
     visibilityUpdateCount; // Force reactivity
-    return (
-      blueReversal && visibilityManager.getMotionVisibility(MotionColor.BLUE)
-    );
+    return blueReversal;
   });
 
   const effectiveRedReversal = $derived.by(() => {
     visibilityUpdateCount; // Force reactivity
-    return (
-      redReversal && visibilityManager.getMotionVisibility(MotionColor.RED)
-    );
+    return redReversal;
   });
+
+  // Per-dot opacity: dimmed when the corresponding motion is hidden
+  const DIMMED_DOT_OPACITY = 0.2;
+  const blueDotOpacity = $derived(blueMotionVisible ? 1 : DIMMED_DOT_OPACITY);
+  const redDotOpacity = $derived(redMotionVisible ? 1 : DIMMED_DOT_OPACITY);
 
   // Only render if we have valid data, at least one reversal, AND when visible
   // NOTE: We check visibility here (not just CSS) because when exporting to SVG/image,
@@ -258,7 +265,7 @@ Color-coded dots indicate which motion (blue/red) is reversing between pictograp
       cy={redDotY}
       r={DOT_RADIUS}
       fill={RED_COLOR}
-      style="transform-origin: {X_POSITION}px {redDotY}px"
+      style="transform-origin: {X_POSITION}px {redDotY}px; opacity: {effectiveRedReversal ? redDotOpacity : 0};"
     />
     <circle
       class="reversal-dot blue-dot"
@@ -268,7 +275,7 @@ Color-coded dots indicate which motion (blue/red) is reversing between pictograp
       cy={blueDotY}
       r={DOT_RADIUS}
       fill={BLUE_COLOR}
-      style="transform-origin: {X_POSITION}px {blueDotY}px"
+      style="transform-origin: {X_POSITION}px {blueDotY}px; opacity: {effectiveBlueReversal ? blueDotOpacity : 0};"
     />
   </g>
 {/if}

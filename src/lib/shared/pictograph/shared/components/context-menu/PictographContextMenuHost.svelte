@@ -1,32 +1,43 @@
 <!--
   PictographContextMenuHost — Orchestrator for the pictograph right-click context menu.
-  Entries: "Pictograph Settings..." and optional arrow adjustment items (admin only).
+  Entries: inline visibility toggles and optional arrow adjustment items (admin only).
 -->
 <script lang="ts">
+  import { onMount } from "svelte";
   import ContextMenu from "$lib/shared/components/context-menu/ContextMenu.svelte";
   import type { ContextMenuState, ContextMenuEntry } from "$lib/shared/components/context-menu/context-menu-types";
   import { buildPictographContextMenuItems } from "./PictographContextMenuBuilder";
+  import { getVisibilityStateManager } from "../../state/visibility-state.svelte";
 
   interface Props {
-    onOpenSettings: () => void;
     onAdjustArrow?: (color: "blue" | "red") => void;
     showArrowAdjustment?: boolean;
   }
 
-  const { onOpenSettings, onAdjustArrow, showArrowAdjustment = false }: Props = $props();
+  const { onAdjustArrow, showArrowAdjustment = false }: Props = $props();
+
+  const visibilityManager = getVisibilityStateManager();
 
   let menuState: ContextMenuState = $state({ open: false });
+
+  // Increments on every visibility change so $derived rebuilds menu items with fresh checked states
+  let version = $state(0);
+
+  function bumpVersion() { version++; }
+
+  onMount(() => {
+    visibilityManager.registerObserver(bumpVersion, ["all"]);
+    return () => visibilityManager.unregisterObserver(bumpVersion);
+  });
 
   function closeContextMenu(): void {
     menuState = { open: false };
   }
 
   const menuItems: ContextMenuEntry[] = $derived.by(() => {
+    void version;
     return buildPictographContextMenuItems({
-      onOpenSettings: () => {
-        closeContextMenu();
-        onOpenSettings();
-      },
+      visibilityManager,
       onAdjustArrow: onAdjustArrow ? (color) => {
         closeContextMenu();
         onAdjustArrow(color);
@@ -36,6 +47,7 @@
   });
 
   export function openContextMenu(x: number, y: number): void {
+    version++;
     menuState = { open: true, x, y };
   }
 </script>

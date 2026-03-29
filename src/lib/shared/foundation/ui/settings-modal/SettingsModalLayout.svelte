@@ -4,7 +4,7 @@
   Desktop (>=768px): BaseModal with side-by-side preview + controls layout
   Mobile (<768px): Full-height bottom Drawer with stacked preview + controls
 
-  Used by: PictographSettingsModal, CardSettingsModal
+  Used by: CardSettingsModal
   NOT used by: AnimationSettingsModal (has its own complex layout)
 -->
 <script lang="ts">

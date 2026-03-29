@@ -36,6 +36,9 @@
       opacity: 0.85;
       text-align: center;
     }
+      body.embed { min-height: 0; padding: 0; margin: 0; display: block; }
+    body.embed canvas { width: 100%; height: auto; }
+    body.embed .caption, body.embed .controls, body.embed .scene > :not(canvas) { display: none; }
   </style>
 </head>
 <body>
@@ -619,5 +622,6 @@ handprint(70, 416, 1.05, '#6a2510', 0.45);
 }
 
 </script>
+<script>if(location.search.includes("embed"))document.body.classList.add("embed")</script>
 </body>
 </html>
