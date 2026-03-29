@@ -169,7 +169,7 @@
   .count {
     font-size: clamp(0.7rem, 2.2cqi, 0.8rem);
     font-weight: 400;
-    color: rgba(255, 255, 255, 0.4);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
   }
 
   /* Empty state */
@@ -250,8 +250,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 32px;
+    width: 44px;
+    height: 44px;
     border: none;
     background: transparent;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));

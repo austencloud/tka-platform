@@ -93,7 +93,7 @@
       icon: blueVisible ? "fa-eye" : "fa-eye-slash",
       label: "Blue",
       action: onToggleBlueVisibility,
-      activeColor: blueVisible ? "#5b9aff" : undefined,
+      activeColor: blueVisible ? "#2563eb" : undefined,
       isActive: blueVisible,
       isMuted: !blueVisible,
       isExpandable: false,
@@ -103,7 +103,7 @@
       icon: redVisible ? "fa-eye" : "fa-eye-slash",
       label: "Red",
       action: onToggleRedVisibility,
-      activeColor: redVisible ? "#f87171" : undefined,
+      activeColor: redVisible ? "#dc2626" : undefined,
       isActive: redVisible,
       isMuted: !redVisible,
       isExpandable: false,
@@ -202,13 +202,13 @@
 
   /* Active state: tinted by chip color */
   .chip.active {
-    background: color-mix(in srgb, var(--chip-color) 15%, transparent);
-    border-color: color-mix(in srgb, var(--chip-color) 40%, transparent);
+    background: color-mix(in srgb, var(--chip-color) 12%, transparent);
+    border-color: color-mix(in srgb, var(--chip-color) 35%, transparent);
   }
 
   .chip.active:hover {
-    background: color-mix(in srgb, var(--chip-color) 25%, transparent);
-    border-color: color-mix(in srgb, var(--chip-color) 55%, transparent);
+    background: color-mix(in srgb, var(--chip-color) 20%, transparent);
+    border-color: color-mix(in srgb, var(--chip-color) 50%, transparent);
   }
 
   /* Expanded state: highlighted border to show which section is open */
