@@ -1,8 +1,8 @@
 /**
  * Fuse State Factory
  *
- * Five-phase state machine for merging two sequences into one.
- * Phases: browse -> left-selected -> both-selected -> fusing -> result
+ * Four-phase state machine for merging two sequences into one.
+ * Phases: disassembled -> reassembling -> assembled -> disassembling
  *
  * The factory receives DI services as arguments (never resolves from container internally).
  * Returns a plain object with getter accessors, matching the Factory + Context pattern.
@@ -13,11 +13,10 @@ import type { ISequenceFuser } from "../services/contracts/ISequenceFuser";
 import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
 
 export type FusePhase =
-	| "browse"
-	| "left-selected"
-	| "both-selected"
-	| "fusing"
-	| "result";
+	| "disassembled"
+	| "reassembling"
+	| "assembled"
+	| "disassembling";
 
 export interface FuseStateDeps {
 	sequenceFuser: ISequenceFuser;
@@ -53,12 +52,13 @@ export function createFuseState(deps: FuseStateDeps) {
 
 	const persisted = readPersistedState();
 
-	let phase = $state<FusePhase>("browse");
+	let phase = $state<FusePhase>("disassembled");
 	let leftSequence = $state<SequenceData | null>(null);
 	let rightSequence = $state<SequenceData | null>(null);
 	let fusedSequence = $state<SequenceData | null>(null);
 	const matchLengths = true;
 	let bpm = $state(persisted.bpm ?? 60);
+	let resetOnComplete = $state(false);
 
 	const DEFAULT_BPM = 60;
 
@@ -107,95 +107,74 @@ export function createFuseState(deps: FuseStateDeps) {
 	}
 
 	const canFuse = $derived(
-		phase === "both-selected" &&
-			leftSequence !== null &&
-			rightSequence !== null
+		leftSequence !== null && rightSequence !== null
 	);
 
 	function selectLeft(seq: SequenceData) {
 		leftSequence = seq;
-		if (rightSequence) {
-			phase = "both-selected";
-		} else {
-			phase = "left-selected";
-		}
 	}
 
 	function selectRight(seq: SequenceData) {
 		rightSequence = seq;
-		if (leftSequence) {
-			phase = "both-selected";
-		}
-		// If no left yet, stay in current phase (user picked right first — still need left)
 	}
 
-	function deselectLeft() {
-		leftSequence = null;
-		fusedSequence = null;
-		leftController?.dispose();
-		leftController = null;
-		phase = rightSequence ? "browse" : "browse";
-	}
-
-	function deselectRight() {
-		rightSequence = null;
-		fusedSequence = null;
-		rightController?.dispose();
-		rightController = null;
-		phase = leftSequence ? "left-selected" : "browse";
-	}
-
-	function startFuse() {
+	function startReassemble() {
 		if (!leftSequence || !rightSequence) return;
-
-		// Compute the fused result first, then enter the "fusing" phase so the
-		// layout can play the assembly animation. The layout calls completeFuse()
-		// when the animation finishes, which transitions to "result".
 		try {
 			const blue = leftSequence.blueSoloProp;
 			const red = rightSequence.redSoloProp;
-
-			if (!blue || !red) {
-				// Cannot fuse sequences without compositional data yet.
-				// Later tasks will add sequence-to-solo-prop extraction.
-				return;
-			}
+			if (!blue || !red) return;
 
 			const result = sequenceFuser.fuse(blue, red, {
-				maxBeats: matchLengths
-					? Math.min(
-							leftSequence.steps.length || 8,
-							rightSequence.steps.length || 8
-						)
-					: undefined,
+				maxBeats: Math.min(
+					leftSequence.steps.length || 8,
+					rightSequence.steps.length || 8
+				),
 			});
-
 			fusedSequence = result;
-			phase = "fusing";
+			phase = "reassembling";
 		} catch {
-			// Revert to both-selected so user can retry or change selections
-			phase = "both-selected";
+			// Stay in disassembled
 		}
 	}
 
-	function completeFuse() {
-		// Called by FuseLayout after the assembly animation finishes.
-		// Transitions from "fusing" to "result" so FuseTab renders FuseResultView.
-		phase = "result";
+	function completeReassemble() {
+		phase = "assembled";
+	}
+
+	function startDisassemble(shouldReset: boolean = false) {
+		if (phase !== "assembled") return;
+		resetOnComplete = shouldReset;
+		phase = "disassembling";
+	}
+
+	function completeDisassemble() {
+		phase = "disassembled";
+		fusedSequence = null;
+		if (resetOnComplete) {
+			leftSequence = null;
+			rightSequence = null;
+			bpm = 60;
+			resetOnComplete = false;
+		}
 	}
 
 	function reset() {
-		stopClock();
-		currentBeat = 0;
-		phase = "browse";
-		leftSequence = null;
-		rightSequence = null;
-		fusedSequence = null;
-		bpm = 60;
-		leftController?.dispose();
-		rightController?.dispose();
-		leftController = null;
-		rightController = null;
+		if (phase === "assembled") {
+			startDisassemble(true);
+		} else {
+			stopClock();
+			currentBeat = 0;
+			phase = "disassembled";
+			leftSequence = null;
+			rightSequence = null;
+			fusedSequence = null;
+			bpm = 60;
+			leftController?.dispose();
+			rightController?.dispose();
+			leftController = null;
+			rightController = null;
+		}
 	}
 
 	function toggleClock() {
@@ -274,16 +253,17 @@ export function createFuseState(deps: FuseStateDeps) {
 		},
 		get currentBeat() { return currentBeat; },
 		get clockRunning() { return clockRunning; },
+		get isTransitioning() { return phase === "reassembling" || phase === "disassembling"; },
 		startClock,
 		stopClock,
 		toggleClock,
 		dispose,
 		selectLeft,
 		selectRight,
-		deselectLeft,
-		deselectRight,
-		startFuse,
-		completeFuse,
+		startReassemble,
+		completeReassemble,
+		startDisassemble,
+		completeDisassemble,
 		reset,
 		setBpm,
 		registerController,
