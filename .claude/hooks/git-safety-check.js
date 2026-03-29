@@ -2,20 +2,38 @@
 /**
  * Git Safety Hook for Claude Code
  *
- * Blocks dangerous git commands that could destroy uncommitted work.
+ * Blocks dangerous git commands that could destroy uncommitted work,
+ * create branches, rewrite history, or force push.
  * Returns exit code 2 to deny the action.
  */
 
-const dangerousPatterns = [
-  /git\s+checkout\s+--\s*\./,           // git checkout -- .
-  /git\s+checkout\s+--\s+\S/,           // git checkout -- <file>
-  /git\s+reset\s+--hard/,               // git reset --hard
-  /git\s+reset\s+HEAD~/,                // git reset HEAD~
-  /git\s+clean\s+-f/,                   // git clean -f or -fd
-  /git\s+stash\s+drop/,                 // git stash drop (less common but dangerous)
+const rules = [
+  // Discard uncommitted changes
+  { pattern: /git\s+checkout\s+--\s*\./, msg: "This discards all uncommitted changes." },
+  { pattern: /git\s+checkout\s+--\s+\S/, msg: "This discards uncommitted changes to a file." },
+  { pattern: /git\s+reset\s+--hard/, msg: "This discards all uncommitted changes." },
+  { pattern: /git\s+reset\s+HEAD~/, msg: "This rewrites recent commits and may lose work." },
+  { pattern: /git\s+clean\s+-f/, msg: "This permanently deletes untracked files." },
+  { pattern: /git\s+restore\s+--staged\s+\.\s*$/, msg: "This unstages all staged changes." },
+
+  // Stash (any form — requires explicit user permission per CLAUDE.md)
+  { pattern: /git\s+stash\b/, msg: "git stash requires explicit user permission. Suggest committing instead." },
+
+  // Branch creation (ALL work happens on main per CLAUDE.md)
+  { pattern: /git\s+checkout\s+-b\s/, msg: "Branch creation is forbidden. All work happens on main." },
+  { pattern: /git\s+branch\s+(?!-D\b)\S/, msg: "Branch creation is forbidden. All work happens on main." },
+  { pattern: /git\s+switch\s+-c\s/, msg: "Branch creation is forbidden. All work happens on main." },
+  { pattern: /git\s+worktree\s+add\b/, msg: "Worktree creation is forbidden. All work happens on main." },
+
+  // History rewriting (nuclear options)
+  { pattern: /git\s+filter-repo\b/, msg: "filter-repo rewrites ALL commits and resets the working tree. Extremely destructive." },
+  { pattern: /git\s+filter-branch\b/, msg: "filter-branch rewrites history. Extremely destructive." },
+
+  // Force push
+  { pattern: /git\s+push\s+.*--force/, msg: "Force push can overwrite remote history." },
+  { pattern: /git\s+push\s+-f\b/, msg: "Force push can overwrite remote history." },
 ];
 
-// Read the tool input from stdin (Claude Code passes it as JSON)
 let input = '';
 process.stdin.setEncoding('utf8');
 process.stdin.on('data', chunk => input += chunk);
@@ -24,27 +42,15 @@ process.stdin.on('end', () => {
     const toolInput = JSON.parse(input);
     const command = toolInput.command || '';
 
-    for (const pattern of dangerousPatterns) {
+    for (const { pattern, msg } of rules) {
       if (pattern.test(command)) {
-        // Output error message that Claude will see
-        console.error(`
-⛔ BLOCKED: Dangerous git command detected!
-
-Command: ${command}
-
-This command would discard uncommitted changes.
-Ask the user for explicit confirmation before running this.
-
-Remember: Every modified file = hours of user work.
-`);
-        process.exit(2); // Exit code 2 = deny action
+        console.error(`\n⛔ BLOCKED: ${msg}\n\nCommand: ${command}\n\nAsk the user for explicit confirmation before running this.\nRemember: Every modified file = hours of user work.\n`);
+        process.exit(2);
       }
     }
 
-    // Command is safe, allow it
     process.exit(0);
   } catch (e) {
-    // If we can't parse, allow the command (fail open)
     process.exit(0);
   }
 });

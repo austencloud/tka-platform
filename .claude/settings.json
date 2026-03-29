@@ -1,3 +1,42 @@
 {
-  "permissions": {}
+  "permissions": {},
+  "hooks": {
+    "PostToolUse": [],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/git-safety-check.js",
+            "timeout": 10,
+            "statusMessage": "Git safety check..."
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/dev-server-guard.js",
+            "timeout": 10,
+            "statusMessage": "Dev server guard..."
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "if": "Bash(git commit*)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/pre-commit-check.cjs",
+            "timeout": 120,
+            "statusMessage": "Pre-commit type check..."
+          }
+        ]
+      }
+    ]
+  }
 }
