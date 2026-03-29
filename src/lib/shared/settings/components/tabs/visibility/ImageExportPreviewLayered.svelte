@@ -135,20 +135,17 @@ This gives users a live preview of exactly how their settings affect the exporte
       </div>
     {/if}
 
-    <!-- Grid: sequence strip with optional start position cell -->
-    <div class="grid-section">
+    <!-- Sequence grid: 2x2 beats with optional start position top row -->
+    <div class="grid-section" class:with-start={includeStartPosition}>
       {#if includeStartPosition}
-        <div
-          class="sequence-cell start-cell"
-          transition:fade={{ duration: 200 }}
-        >
+        <div class="sequence-cell start-cell" transition:fade={{ duration: 200 }}>
           <PictographWithVisibility
             pictographData={exampleStartPositionData}
             forceShowAll={true}
           />
         </div>
       {/if}
-      {#each aabbSteps as step, i}
+      {#each aabbSteps as step}
         <div class="sequence-cell">
           <PictographWithVisibility
             pictographData={step}
@@ -280,10 +277,17 @@ This gives users a live preview of exactly how their settings affect the exporte
     color: #ffffff;
   }
 
+  /* 2-column grid matching layout table: 4 steps = [2,2] */
   .grid-section {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     background: rgba(255, 255, 255, 1);
     min-height: 0;
+  }
+
+  /* With start position: top row spans full width, then 2x2 beats below */
+  .grid-section.with-start {
+    grid-template-columns: 1fr 1fr;
   }
 
   .dark-mode .grid-section {
@@ -295,23 +299,37 @@ This gives users a live preview of exactly how their settings affect the exporte
     display: flex;
     align-items: center;
     justify-content: center;
-    flex: 1;
     aspect-ratio: 1;
     min-width: 0;
     border-right: 1px solid rgba(0, 0, 0, 0.08);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
   }
 
-  .sequence-cell:last-child {
+  /* Remove right border on last column */
+  .sequence-cell:nth-child(2n) {
     border-right: none;
+  }
+
+  /* Remove bottom border on last row */
+  .grid-section:not(.with-start) .sequence-cell:nth-last-child(-n+2) {
+    border-bottom: none;
+  }
+  .grid-section.with-start .sequence-cell:nth-last-child(-n+2) {
+    border-bottom: none;
   }
 
   .dark-mode .sequence-cell {
     border-right-color: rgba(255, 255, 255, 0.1);
+    border-bottom-color: rgba(255, 255, 255, 0.1);
   }
 
+  /* Start position spans the full top row */
   .sequence-cell.start-cell {
-    flex: 1;
+    grid-column: 1 / -1;
+    aspect-ratio: auto;
+    max-height: 50%;
     background: rgba(250, 250, 250, 1);
+    border-right: none;
   }
 
   .dark-mode .sequence-cell.start-cell {
