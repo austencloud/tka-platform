@@ -14,13 +14,17 @@
 -->
 <script lang="ts">
   import { getExportPanelState } from "../../state/export-panel-state.svelte";
+  import { getExportOptionsState } from "$lib/shared/sequence-viewer/state/export-options-state.svelte";
+  import type { VideoFps } from "$lib/shared/sequence-viewer/state/export-options-state.svelte";
 
   // FIX: Use 'hubState' instead of 'state' to avoid collision with $state rune
   const hubState = getExportPanelState();
+  const exportOptions = getExportOptionsState();
 
   function handleFpsChange(event: Event) {
     const value = parseInt((event.target as HTMLInputElement).value);
     hubState.animationSettings = { ...hubState.animationSettings, fps: value };
+    exportOptions.setVideoFps(value as VideoFps);
   }
 
   function handleLoopCountChange(event: Event) {
@@ -29,6 +33,7 @@
       ...hubState.animationSettings,
       loopCount: value,
     };
+    exportOptions.setVideoLoopCount(value);
   }
 
   function handleOverlaysToggle() {

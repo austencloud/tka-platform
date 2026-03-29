@@ -994,7 +994,8 @@
           fps: opts.fps,
           loopCount: opts.loopCount,
           resolution: opts.resolution,
-          effectOverrides: opts.effectOverrides ?? undefined,
+          // No effectOverrides — the download panel already sets global visibility
+          // state via onEffectToggle, so the export captures whatever's showing
           includeStartPosition: opts.includeStartPosition,
           includeEndHold: opts.includeEndHold,
         },

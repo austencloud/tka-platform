@@ -427,9 +427,12 @@
   const hasPathShapeMetadata = $derived(sequence?.metadata?.pathShape === "linear");
   const showFooter = $derived(showCreatorName || showNotes || showBirthday || hasPathShapeMetadata);
 
-  // Format birthday date — use the sequence's saved birthday when available
+  // Format birthday date — use the sequence's saved birthday when available.
+  // Values from Firestore may arrive as Timestamp objects instead of Date,
+  // so coerce to Date before calling Date methods.
   const birthdayDate = $derived.by(() => {
-    const date = sequence.birthday ?? sequence.createdAt ?? sequence.dateAdded ?? new Date();
+    const raw = sequence.birthday ?? sequence.createdAt ?? sequence.dateAdded ?? new Date();
+    const date = raw instanceof Date ? raw : typeof (raw as any).toDate === "function" ? (raw as any).toDate() : new Date(raw as any);
     const month = date.getMonth() + 1;
     const day = date.getDate();
     const year = date.getFullYear();

@@ -296,8 +296,15 @@ export class SwipeToDismiss {
     }
     this.delegatingToTopDrawer = false;
 
-    // Track if we started on an interactive element
+    // Bail out entirely for range sliders — dragging a slider thumb must never
+    // be interpreted as a swipe-to-dismiss gesture
     const target = event.target as HTMLElement;
+    const rangeInput = target.closest('input[type="range"]') as HTMLInputElement | null;
+    if (rangeInput) {
+      return;
+    }
+
+    // Track if we started on an interactive element
     this.startedOnInteractive = !!(
       target.closest("button") ||
       target.closest("a") ||

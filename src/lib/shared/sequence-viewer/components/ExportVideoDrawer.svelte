@@ -17,8 +17,10 @@
   import type { VideoExportProgress } from "$lib/features/compose/services/contracts/IVideoExportOrchestrator";
   import { estimateExportTime, hasDeviceMetrics } from "../state/export-timing-tracker";
   import TempoControl from "./TempoControl.svelte";
-  import PremiumNudge from "$lib/shared/subscription/components/PremiumNudge.svelte";
-  import { CAPABILITY_NUDGES } from "$lib/shared/subscription/domain/capability-nudges";
+  import FireCategory from "$lib/shared/animation-engine/components/animation-settings-modal/categories/FireCategory.svelte";
+  import CharcoalCategory from "$lib/shared/animation-engine/components/animation-settings-modal/categories/CharcoalCategory.svelte";
+  import LedCategory from "$lib/shared/animation-engine/components/animation-settings-modal/categories/LedCategory.svelte";
+  import TrailsCategory from "$lib/shared/animation-engine/components/animation-settings-modal/categories/TrailsCategory.svelte";
 
   export interface ActiveEffect {
     id: string;
@@ -88,7 +90,7 @@
       exportOptions.videoResolution,
       exportOptions.videoFps,
       singlePlayDuration,
-      1
+      exportOptions.videoLoopCount
     );
   });
 
@@ -113,24 +115,22 @@
     { value: 4320, label: "8K" },
   ];
 
-  // Initialize effect overrides from viewer state on first open.
-  // Only one effect can be active at a time (radio behavior).
-  $effect(() => {
-    if (!exportOptions.videoEffectOverrides && viewerEffects.length > 0) {
-      // Find the first active effect from the viewer state
-      const activeEffect = viewerEffects.find((e) => e.active);
-      const overrides = {
-        fire: false,
-        led: false,
-        trails: false,
-        charcoal: false,
-      };
-      if (activeEffect) {
-        overrides[activeEffect.id as keyof typeof overrides] = true;
-      }
-      exportOptions.setVideoEffectOverrides(overrides);
+  // Sync effect overrides from the current global visibility state on mount.
+  // This ensures the chips reflect what's actually showing in the preview,
+  // not stale values persisted to localStorage from a previous session.
+  {
+    const activeEffect = viewerEffects.find((e) => e.active);
+    const overrides = {
+      fire: false,
+      led: false,
+      trails: false,
+      charcoal: false,
+    };
+    if (activeEffect) {
+      overrides[activeEffect.id as keyof typeof overrides] = true;
     }
-  });
+    exportOptions.setVideoEffectOverrides(overrides);
+  }
 
   function toggleEffect(id: string) {
     const current = exportOptions.videoEffectOverrides;
@@ -164,6 +164,18 @@
     }
   }
 
+  function clearAllEffects() {
+    exportOptions.setVideoEffectOverrides({
+      fire: false,
+      led: false,
+      trails: false,
+      charcoal: false,
+    });
+    for (const key of ["fire", "led", "trails", "charcoal"] as const) {
+      onEffectToggle?.(key, false);
+    }
+  }
+
   const effectChips = $derived(
     viewerEffects.map((e) => ({
       ...e,
@@ -174,17 +186,13 @@
     })),
   );
 
-  let premiumNudgeDismissed = $state(false);
-
   const hasActiveEffect = $derived(
     effectChips.some((e) => e.active),
   );
 
-  const showPremiumPreviewNudge = $derived(
-    hasActiveEffect && !premiumNudgeDismissed,
+  const activeEffectId = $derived(
+    effectChips.find((e) => e.active)?.id ?? null,
   );
-
-  const effectsNudge = CAPABILITY_NUDGES["capability:export:effects"]!;
 
   /** Summary of current settings for the bottom bar chip */
   const settingsSummary = $derived(
@@ -315,7 +323,17 @@
             {#if effectChips.length > 0}
               <div class="setting-row">
                 <span class="setting-label">Effects</span>
-                <div class="chip-group">
+                <div class="effect-grid">
+                  <button
+                    type="button"
+                    class="chip effect-chip"
+                    class:active={!hasActiveEffect}
+                    onclick={clearAllEffects}
+                    aria-pressed={!hasActiveEffect}
+                  >
+                    <i class="fas fa-ban" aria-hidden="true"></i>
+                    None
+                  </button>
                   {#each effectChips as effect}
                     <button
                       type="button"
@@ -330,16 +348,16 @@
                   {/each}
                 </div>
               </div>
-            {/if}
 
-            {#if showPremiumPreviewNudge}
-              <div class="premium-nudge-wrapper">
-                <PremiumNudge
-                  nudge={effectsNudge}
-                  preview={true}
-                  onDismiss={() => premiumNudgeDismissed = true}
-                />
-              </div>
+              {#if activeEffectId === "fire"}
+                <FireCategory />
+              {:else if activeEffectId === "charcoal"}
+                <CharcoalCategory />
+              {:else if activeEffectId === "led"}
+                <LedCategory />
+              {:else if activeEffectId === "trails"}
+                <TrailsCategory />
+              {/if}
             {/if}
 
             <!-- Timing -->
@@ -363,6 +381,32 @@
                   aria-pressed={exportOptions.videoIncludeEndHold}
                 >
                   End Hold
+                </button>
+              </div>
+            </div>
+
+            <!-- Loops -->
+            <div class="setting-row">
+              <span class="setting-label">Loops</span>
+              <div class="loop-count-row">
+                <button
+                  type="button"
+                  class="loop-btn"
+                  onclick={() => exportOptions.setVideoLoopCount(exportOptions.videoLoopCount - 1)}
+                  disabled={exportOptions.videoLoopCount <= 1}
+                  aria-label="Decrease loop count"
+                >
+                  <i class="fas fa-minus" aria-hidden="true"></i>
+                </button>
+                <span class="loop-count-value">{exportOptions.videoLoopCount}x</span>
+                <button
+                  type="button"
+                  class="loop-btn"
+                  onclick={() => exportOptions.setVideoLoopCount(exportOptions.videoLoopCount + 1)}
+                  disabled={exportOptions.videoLoopCount >= 10}
+                  aria-label="Increase loop count"
+                >
+                  <i class="fas fa-plus" aria-hidden="true"></i>
                 </button>
               </div>
             </div>
@@ -492,7 +536,17 @@
       {#if effectChips.length > 0}
         <div class="setting-row">
           <span class="setting-label">Effects</span>
-          <div class="chip-group">
+          <div class="effect-grid">
+            <button
+              type="button"
+              class="chip effect-chip"
+              class:active={!hasActiveEffect}
+              onclick={clearAllEffects}
+              aria-pressed={!hasActiveEffect}
+            >
+              <i class="fas fa-ban" aria-hidden="true"></i>
+              None
+            </button>
             {#each effectChips as effect}
               <button
                 type="button"
@@ -507,16 +561,16 @@
             {/each}
           </div>
         </div>
-      {/if}
 
-      {#if showPremiumPreviewNudge}
-        <div class="premium-nudge-wrapper">
-          <PremiumNudge
-            nudge={effectsNudge}
-            preview={true}
-            onDismiss={() => premiumNudgeDismissed = true}
-          />
-        </div>
+        {#if activeEffectId === "fire"}
+          <FireCategory />
+        {:else if activeEffectId === "charcoal"}
+          <CharcoalCategory />
+        {:else if activeEffectId === "led"}
+          <LedCategory />
+        {:else if activeEffectId === "trails"}
+          <TrailsCategory />
+        {/if}
       {/if}
 
       <div class="setting-row">
@@ -539,6 +593,31 @@
             aria-pressed={exportOptions.videoIncludeEndHold}
           >
             End Hold
+          </button>
+        </div>
+      </div>
+
+      <div class="setting-row">
+        <span class="setting-label">Loops</span>
+        <div class="loop-count-row">
+          <button
+            type="button"
+            class="loop-btn"
+            onclick={() => exportOptions.setVideoLoopCount(exportOptions.videoLoopCount - 1)}
+            disabled={exportOptions.videoLoopCount <= 1}
+            aria-label="Decrease loop count"
+          >
+            <i class="fas fa-minus" aria-hidden="true"></i>
+          </button>
+          <span class="loop-count-value">{exportOptions.videoLoopCount}x</span>
+          <button
+            type="button"
+            class="loop-btn"
+            onclick={() => exportOptions.setVideoLoopCount(exportOptions.videoLoopCount + 1)}
+            disabled={exportOptions.videoLoopCount >= 10}
+            aria-label="Increase loop count"
+          >
+            <i class="fas fa-plus" aria-hidden="true"></i>
           </button>
         </div>
       </div>
@@ -840,8 +919,8 @@
   }
 
   .sidebar .panel-body {
-    gap: 24px;
-    padding: 24px 28px;
+    gap: 20px;
+    padding: 16px 16px;
   }
 
   .setting-row {
@@ -921,6 +1000,59 @@
 
   .effect-chip i {
     font-size: 12px;
+  }
+
+  .effect-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 8px;
+  }
+
+  .effect-grid > :nth-child(1) { grid-column: span 2; }
+  .effect-grid > :nth-child(2) { grid-column: span 2; }
+  .effect-grid > :nth-child(3) { grid-column: span 2; }
+  .effect-grid > :nth-child(4) { grid-column: 1 / span 3; }
+  .effect-grid > :nth-child(5) { grid-column: 4 / span 3; }
+
+  /* Loop count */
+  .loop-count-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .loop-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: color-mix(in srgb, var(--theme-card-bg) 70%, transparent);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 8px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .loop-btn:hover:not(:disabled) {
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
+    color: var(--theme-text, white);
+  }
+
+  .loop-btn:disabled {
+    opacity: 0.3;
+    cursor: default;
+  }
+
+  .loop-count-value {
+    font-size: var(--font-size-min, 14px);
+    font-weight: 700;
+    color: var(--theme-text, white);
+    min-width: 28px;
+    text-align: center;
   }
 
   /* Playback row (desktop sidebar) */
