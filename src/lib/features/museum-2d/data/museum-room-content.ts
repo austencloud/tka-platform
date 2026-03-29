@@ -267,4 +267,264 @@ export const ROOM_CONTENT: Record<string, RoomContentMap> = {
       },
     },
   },
+
+  // ── Phase 3: Digital + Suppression ──
+
+  digital: {
+    exhibits: {
+      "digital-crt": {
+        plaque: {
+          title: "The CRT",
+          subtitle: "1993",
+          body:
+            "The original terminal running TKA-OS v2. One of an estimated 3,400 copies " +
+            "distributed before the Bureau detected the breach. " +
+            "Press E to boot the system.",
+          footer: "Serial: BKC-ASSET-7741",
+        },
+      },
+      "digital-bbs": {
+        plaque: {
+          title: "BBS Printouts",
+          body:
+            "Forum posts from 1993-1994. Users sharing sequences, asking questions, " +
+            "building on each other's work. The Bureau monitored these forums for eleven months " +
+            "before requesting emergency powers.",
+        },
+      },
+      "digital-3400": {
+        plaque: {
+          title: "3,400 Users",
+          body:
+            "The number that triggered the crisis. Internal memo: 'Distribution has exceeded " +
+            "containment threshold. Recommend immediate execution of Protocol Lethe. " +
+            "See attached requisition.'",
+        },
+      },
+      "digital-team": {
+        plaque: {
+          title: "Development Team",
+          body:
+            "Grainy photograph. Faces obscured. One circled in red marker — added later, " +
+            "not original to the print. The handwriting on the circle matches " +
+            "no known Bureau personnel.",
+        },
+      },
+    },
+  },
+
+  suppression: {
+    exhibits: {
+      "supp-order-1": {
+        plaque: {
+          title: "The Order of the Closed Palm",
+          body:
+            "Founded before recorded history. A hand with fingers curled inward — " +
+            "not a fist, more like recoiling. The hand that refuses to grip. " +
+            "The hand that will not hold a prop.",
+        },
+      },
+      "supp-order-2": {
+        plaque: {
+          title: "Bureau of Kinetic Containment",
+          body:
+            "The modern name. American, 1940s. The transition from ancient mystic guardians " +
+            "to government bureaucracy was gradual — decades of absorption, not a founding date. " +
+            "Eventually: a budget line item and reporting requirements.",
+          footer: "Department of Rotational Affairs, Facility 7",
+        },
+      },
+      "supp-order-3": {
+        plaque: {
+          title: "Three Eras, One Mission",
+          body:
+            "Prehistoric: nameless, just a symbol repeated on cave walls. " +
+            "Classical: Order of the Closed Palm, a named secret society. " +
+            "Modern: Bureau of Kinetic Containment. " +
+            "Observe. Archive. Revere. But never practice.",
+        },
+      },
+      "supp-lethe": {
+        plaque: {
+          title: "Protocol Lethe Documentation",
+          body:
+            "Named for the Greek river of forgetting. An ancient bureaucratic procedure. " +
+            "Requisition 7741-B submitted to three departments: Media Degaussing, " +
+            "Cognitive Reclassification, Digital Archive Redaction. " +
+            "Each processes independently. The Order follows a checklist they can barely read.",
+        },
+      },
+      "supp-youve-seen": {
+        plaque: {
+          title: "You've Seen This Before",
+          body:
+            "The symbol in the cave ceiling. The wax seal on the Renaissance letter. " +
+            "The stamp on the Victorian patent. The username in the BBS thread. " +
+            "It was here the whole time. You just didn't know what you were looking at.",
+        },
+      },
+      "supp-may8": {
+        plaque: {
+          title: "May 8, 1994",
+          body:
+            "Date of the final Protocol Lethe execution. The protocol was designed for " +
+            "villages and monasteries. It cannot scale to eight billion people with broadband. " +
+            "Ancient containment procedure versus YouTube.",
+          footer: "Status: PARTIAL FAILURE — See Addendum 7741-F",
+        },
+      },
+    },
+  },
+
+  "vtg-wing": {
+    exhibits: {
+      "vtg-renovation": {
+        plaque: {
+          title: "THE VULCAN WING",
+          subtitle: "Documenting the Oakland School, 1990s–Present",
+          body:
+            "NOTICE: This exhibit has been under renovation since 2024. " +
+            "We appreciate your patience. Estimated completion: [DATE NOT FOUND]. " +
+            "Visitors interested in the Vulcan notation tradition are encouraged " +
+            "to consult external resources.",
+        },
+      },
+    },
+  },
+
+  // ── Phase 4: Post-Order rooms ──
+
+  gallery: {
+    exhibits: {
+      "gallery-spiral": {
+        plaque: {
+          title: "The Spiral",
+          body:
+            "You've seen it throughout the museum. On floor tiles, in frame corners, " +
+            "woven into decoration. Every spin is a spiral through time. " +
+            "The Scribes didn't choose it. It chose them.",
+          footer: "— K",
+        },
+      },
+      "gallery-scribes": {
+        plaque: {
+          title: "The Scribes",
+          body:
+            "Not an organization. A pattern. People who picked up the thing and did it. " +
+            "Sometimes they cluster into groups. Sometimes they're alone. " +
+            "The Order documents them all.",
+        },
+      },
+      "gallery-practice": {
+        plaque: {
+          title: "Practice",
+          body:
+            "The gap between 'I can see this is beautiful' and 'I can do this myself' " +
+            "is the whole story. Forty thousand years of it.",
+          footer: "— K",
+        },
+      },
+      "gallery-k-note": {
+        plaque: {
+          title: "Curator's Note",
+          body:
+            "This is my favorite room. I built it from what the Order left behind. " +
+            "They had everything right except the padlock.",
+          footer: "— K",
+        },
+      },
+    },
+    performers: {
+      "gallery-scribe": { autoPlay: false },
+    },
+  },
+
+  fear: {
+    exhibits: {
+      "fear-containment-1": {
+        plaque: {
+          title: "CONTAINMENT PROTOCOL ACTIVE",
+          body:
+            "This knowledge is a public health hazard. Seal the archive. Walk away. " +
+            "Authorized handling personnel only.",
+          footer: "Bureau of Kinetic Containment — Form 7741-C",
+        },
+      },
+      "fear-containment-2": {
+        plaque: {
+          title: "DO NOT ATTEMPT REPLICATION",
+          body:
+            "Exposure to kinetic notation has been classified as a Category 3 " +
+            "cognitive hazard. Report symptoms immediately: temporal dissociation, " +
+            "compulsive repetition, inability to release the object.",
+        },
+      },
+      "fear-containment-3": {
+        plaque: {
+          title: "REPORT EXPOSURE",
+          body:
+            "If you have observed synchronized movement, gripped a prop-like object, " +
+            "or experienced loss of time awareness during repetitive motion, " +
+            "contact your regional monitor immediately.",
+          footer: "Hotline: [NUMBER DISCONNECTED]",
+        },
+      },
+    },
+  },
+
+  collaboration: {
+    performers: {
+      "collab-1": { autoPlay: true },
+      "collab-2": { autoPlay: true },
+      "collab-3": { autoPlay: true },
+      "collab-4": { autoPlay: true },
+    },
+  },
+
+  // ── Phase 5: Final rooms ──
+
+  "gift-shop": {
+    performers: {
+      "shop-cashier": { autoPlay: false },
+    },
+  },
+
+  "construction-zone": {
+    exhibits: {
+      "cz-staff-only": {
+        plaque: {
+          title: "STAFF ONLY — EXHIBIT PREPARATION",
+          body:
+            "Authorized personnel beyond this point. Hard hat required. " +
+            "Estimated completion of Wing 9: [DATE NOT FOUND].",
+        },
+      },
+    },
+  },
+
+  janitor: {
+    exhibits: {
+      "janitor-whiteboard": {
+        plaque: {
+          title: "AUSTEN'S FAKE MUSEUM IDEAS",
+          body:
+            "- Cave wing with fake tablets (DONE)\n" +
+            "- Egyptian wing (TODO: need more hieroglyphs)\n" +
+            "- Gift shop w/ fake money mechanic\n" +
+            "- Statues of myself?? (too much?)\n" +
+            "- VTG wing (ask Noel first)\n" +
+            "- Three endings like Scrooge\n" +
+            "- Janitor's closet reveal (you are here)",
+        },
+      },
+      "janitor-mannequin": {
+        plaque: {
+          title: "Mannequin",
+          body:
+            "A department store mannequin with a photograph of a face taped to it. " +
+            "The photograph is slightly askew. The wig is worse.",
+        },
+      },
+    },
+  },
 };

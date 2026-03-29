@@ -23,44 +23,31 @@
     `width: ${tileSize}px; height: ${tileSize}px;`
   );
 
-  // Scale the body to ~75% of tile, minimum 16px
-  let bodySize = $derived(Math.max(16, Math.round(tileSize * 0.75)));
-  let iconSize = $derived(Math.max(10, Math.round(bodySize * 0.5)));
-  let chevronSize = $derived(Math.max(6, Math.round(bodySize * 0.3)));
-
+  let bodySize = $derived(Math.max(14, Math.round(tileSize * 0.55)));
+  let beamLength = $derived(Math.max(40, Math.round(tileSize * 2.8)));
   let facingDeg = $derived(FACING_ROTATION[facing]);
 </script>
 
 <div class="museum-player" class:moving={isMoving} style={posStyle}>
-  <!-- Ambient glow -->
+  <!-- Lantern beam: conic gradient cone pointing in facing direction -->
   <div
-    class="glow-ring"
-    style="width: {bodySize + 12}px; height: {bodySize + 12}px;"
+    class="lantern-beam"
+    style="
+      width: {beamLength}px;
+      height: {beamLength}px;
+      transform: rotate({facingDeg}deg);
+    "
   ></div>
 
-  <!-- Main body circle -->
-  <div
-    class="player-body"
-    style="width: {bodySize}px; height: {bodySize}px;"
-  >
-    <!-- Person icon using Font Awesome -->
-    <i
-      class="fas fa-person player-icon"
-      style="font-size: {iconSize}px;"
-      aria-hidden="true"
-    ></i>
+  <!-- Lantern glow: warm pool of light around the figure -->
+  <div class="lantern-glow" style="width: {bodySize + 18}px; height: {bodySize + 18}px;"></div>
 
-    <!-- Directional chevron -->
-    <div
-      class="facing-ring"
-      style="transform: rotate({facingDeg}deg);"
-    >
-      <div class="chevron" style="width: {chevronSize}px;">
-        <svg viewBox="0 0 12 8" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <path d="M1 7 L6 1 L11 7" stroke="#1a1208" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-        </svg>
-      </div>
-    </div>
+  <!-- The figure: a dark silhouette, deliberately ambiguous -->
+  <div class="figure" style="width: {bodySize}px; height: {bodySize}px;">
+    <div class="figure-head"></div>
+    <div class="figure-body"></div>
+    <!-- Lantern spot: small warm dot near right shoulder -->
+    <div class="lantern-spot"></div>
   </div>
 </div>
 
@@ -75,65 +62,121 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    box-sizing: border-box;
   }
 
-  .glow-ring {
+  /* ── Lantern beam: conic gradient cone of warm light ── */
+  .lantern-beam {
     position: absolute;
     border-radius: 50%;
-    background: radial-gradient(circle, rgba(245, 158, 11, 0.35) 0%, transparent 70%);
-    animation: glow-pulse 2.5s ease-in-out infinite;
+    background: conic-gradient(
+      from -35deg,
+      transparent 0deg,
+      rgba(255, 180, 60, 0.06) 10deg,
+      rgba(255, 160, 40, 0.12) 25deg,
+      rgba(255, 180, 60, 0.06) 40deg,
+      transparent 55deg,
+      transparent 360deg
+    );
+    transform-origin: center center;
+    translate: 0 -35%;
+    pointer-events: none;
+    animation: beam-flicker 3.2s ease-in-out infinite;
   }
 
-  @keyframes glow-pulse {
-    0%, 100% { transform: scale(1); opacity: 0.7; }
-    50%      { transform: scale(1.2); opacity: 1; }
+  @keyframes beam-flicker {
+    0%, 100% { opacity: 0.8; }
+    25%      { opacity: 1; }
+    50%      { opacity: 0.7; }
+    75%      { opacity: 0.95; }
   }
 
-  .player-body {
+  /* ── Lantern glow: warm pool around the figure ── */
+  .lantern-glow {
+    position: absolute;
     border-radius: 50%;
-    background: radial-gradient(circle at 38% 32%, #fde68a, #f59e0b 55%, #b45309);
-    border: 2px solid rgba(253, 230, 138, 0.7);
-    box-shadow:
-      0 0 14px rgba(245, 158, 11, 0.5),
-      0 3px 8px rgba(0, 0, 0, 0.55),
-      inset 0 -3px 6px rgba(0, 0, 0, 0.25),
-      inset 0 3px 6px rgba(255, 255, 255, 0.25);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    background: radial-gradient(
+      circle,
+      rgba(255, 170, 50, 0.22) 0%,
+      rgba(255, 140, 30, 0.1) 45%,
+      transparent 70%
+    );
+    animation: glow-breathe 3.8s ease-in-out infinite;
+  }
+
+  @keyframes glow-breathe {
+    0%, 100% { transform: scale(1); opacity: 0.75; }
+    50%      { transform: scale(1.08); opacity: 1; }
+  }
+
+  /* ── Figure: dark silhouette ── */
+  .figure {
     position: relative;
-    flex-shrink: 0;
-  }
-
-  .player-icon {
-    color: #1a1208;
-    line-height: 1;
-    pointer-events: none;
-  }
-
-  .facing-ring {
-    position: absolute;
-    inset: 0;
-    border-radius: 50%;
     display: flex;
-    justify-content: center;
-    transition: transform 0.1s ease;
-    pointer-events: none;
-  }
-
-  .chevron {
-    position: absolute;
-    top: -2px;
-    display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    filter: drop-shadow(0 0 3px rgba(255, 240, 180, 0.9));
+    filter: drop-shadow(0 0 4px rgba(0, 0, 0, 0.9));
   }
 
-  .chevron svg {
-    width: 100%;
-    height: auto;
-    display: block;
+  .figure-head {
+    width: 48%;
+    height: 48%;
+    border-radius: 50%;
+    background: radial-gradient(circle at 40% 35%, #2a2218, #0e0b06);
+    border: 1px solid rgba(180, 140, 80, 0.12);
+    position: relative;
+    z-index: 1;
+    animation: idle-breathe 3.5s ease-in-out infinite;
+  }
+
+  .figure-body {
+    width: 72%;
+    height: 42%;
+    border-radius: 35% 35% 25% 25%;
+    background: radial-gradient(circle at 45% 30%, #221c12, #0a0804);
+    border: 1px solid rgba(180, 140, 80, 0.08);
+    margin-top: -12%;
+  }
+
+  .lantern-spot {
+    position: absolute;
+    right: 5%;
+    top: 35%;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: #c8a050;
+    box-shadow: 0 0 6px rgba(200, 160, 80, 0.6);
+    animation: lantern-flicker 2.2s ease-in-out infinite;
+  }
+
+  @keyframes lantern-flicker {
+    0%, 100% { opacity: 0.5; transform: scale(1); }
+    30%      { opacity: 0.8; transform: scale(1.2); }
+    70%      { opacity: 0.4; transform: scale(0.9); }
+  }
+
+  @keyframes idle-breathe {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50%      { transform: translateY(-0.4px) scale(1.03); }
+  }
+
+  /* ── Walking animation ── */
+  .moving .figure-head {
+    animation: walk-bob 0.32s steps(2) infinite;
+  }
+
+  .moving .figure-body {
+    animation: walk-sway 0.32s steps(2) infinite;
+  }
+
+  @keyframes walk-bob {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-1.5px); }
+  }
+
+  @keyframes walk-sway {
+    0%, 100% { transform: translateX(0) rotate(0deg); }
+    50%      { transform: translateX(0.5px) rotate(1.5deg); }
   }
 </style>
