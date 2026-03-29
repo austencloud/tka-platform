@@ -8,6 +8,7 @@
 <script lang="ts">
   import type { GridCell } from "../../../state/arrange-grid-state.svelte";
   import type { CellEditorPanelState, ExpandableSection } from "./state/cell-editor-panel-state.svelte";
+  import { EFFORTS } from '$lib/features/effort-lab/domain/effort-types';
 
   let {
     cell,
@@ -24,8 +25,10 @@
   const blueVisible = $derived(cell.blueMotionVisible !== false);
   const redVisible = $derived(cell.redMotionVisible !== false);
 
-  // Effort display: colored dot when set
-  const effortLabel = $derived(cell.effort || "None");
+  // Effort display: look up real label and color from EFFORTS
+  const currentEffort = $derived(EFFORTS.find(e => e.id === cell.effort));
+  const effortLabel = $derived(currentEffort?.label || "None");
+  const effortColor = $derived(currentEffort?.color || "rgba(255,255,255,0.15)");
   const hasEffort = $derived(!!cell.effort);
 
   // Effect display
@@ -113,7 +116,7 @@
       icon: "",
       label: effortLabel,
       action: () => panelState.toggleSection("effort"),
-      activeColor: hasEffort ? "#a855f7" : undefined,
+      activeColor: hasEffort ? effortColor : undefined,
       isActive: hasEffort,
       isExpandable: true,
     },
@@ -156,6 +159,8 @@
         <span
           class="effort-dot"
           class:has-effort={hasEffort}
+          style:background={hasEffort ? effortColor : undefined}
+          style:border-color={hasEffort ? effortColor : undefined}
         ></span>
       {/if}
       <span class="chip-label">{chip.label}</span>
