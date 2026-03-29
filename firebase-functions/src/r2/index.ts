@@ -36,6 +36,17 @@ const r2PublicUrl = defineSecret("R2_PUBLIC_URL");
 
 const ALL_SECRETS = [r2AccountId, r2AccessKeyId, r2SecretAccessKey, r2BucketName, r2PublicUrl];
 
+// Trim secrets to guard against trailing whitespace/newlines from copy-paste.
+// Firebase Secret Manager preserves exact bytes, so secrets set from editors
+// that add trailing newlines will silently corrupt S3 presigned URL signatures.
+const secret = {
+  accountId: (): string => r2AccountId.value().trim(),
+  accessKeyId: (): string => r2AccessKeyId.value().trim(),
+  secretAccessKey: (): string => r2SecretAccessKey.value().trim(),
+  bucketName: (): string => r2BucketName.value().trim(),
+  publicUrl: (): string => r2PublicUrl.value().trim(),
+};
+
 // ============================================================================
 // Allowed MIME types
 // ============================================================================
@@ -146,11 +157,11 @@ export const r2PresignUrl = onCall(
 
     const key = buildKey(userId, category, sequenceId, fileName);
     const client = getR2Client(
-      r2AccountId.value(),
-      r2AccessKeyId.value(),
-      r2SecretAccessKey.value()
+      secret.accountId(),
+      secret.accessKeyId(),
+      secret.secretAccessKey()
     );
-    const bucket = r2BucketName.value();
+    const bucket = secret.bucketName();
 
     const presignedUrl = await getPresignedPutUrl(
       client,
@@ -160,7 +171,7 @@ export const r2PresignUrl = onCall(
       PRESIGN_EXPIRES_SINGLE
     );
 
-    const publicUrl = `${r2PublicUrl.value()}/${key}`;
+    const publicUrl = `${secret.publicUrl()}/${key}`;
 
     return { presignedUrl, publicUrl, key };
   }
@@ -196,11 +207,11 @@ export const r2MultipartStart = onCall(
 
     const key = buildKey(userId, category, sequenceId, fileName);
     const client = getR2Client(
-      r2AccountId.value(),
-      r2AccessKeyId.value(),
-      r2SecretAccessKey.value()
+      secret.accountId(),
+      secret.accessKeyId(),
+      secret.secretAccessKey()
     );
-    const bucket = r2BucketName.value();
+    const bucket = secret.bucketName();
 
     const uploadId = await createMultipartUpload(client, bucket, key, contentType);
 
@@ -230,11 +241,11 @@ export const r2MultipartPartUrl = onCall(
     assertOwnership(callerUid, key);
 
     const client = getR2Client(
-      r2AccountId.value(),
-      r2AccessKeyId.value(),
-      r2SecretAccessKey.value()
+      secret.accountId(),
+      secret.accessKeyId(),
+      secret.secretAccessKey()
     );
-    const bucket = r2BucketName.value();
+    const bucket = secret.bucketName();
 
     const presignedUrl = await getMultipartPartUrl(
       client,
@@ -271,15 +282,15 @@ export const r2MultipartComplete = onCall(
     assertOwnership(callerUid, key);
 
     const client = getR2Client(
-      r2AccountId.value(),
-      r2AccessKeyId.value(),
-      r2SecretAccessKey.value()
+      secret.accountId(),
+      secret.accessKeyId(),
+      secret.secretAccessKey()
     );
-    const bucket = r2BucketName.value();
+    const bucket = secret.bucketName();
 
     await completeMultipartUploadHelper(client, bucket, key, uploadId, parts);
 
-    const publicUrl = `${r2PublicUrl.value()}/${key}`;
+    const publicUrl = `${secret.publicUrl()}/${key}`;
 
     return { publicUrl };
   }
@@ -306,11 +317,11 @@ export const r2MultipartAbort = onCall(
     assertOwnership(callerUid, key);
 
     const client = getR2Client(
-      r2AccountId.value(),
-      r2AccessKeyId.value(),
-      r2SecretAccessKey.value()
+      secret.accountId(),
+      secret.accessKeyId(),
+      secret.secretAccessKey()
     );
-    const bucket = r2BucketName.value();
+    const bucket = secret.bucketName();
 
     await abortMultipartUploadHelper(client, bucket, key, uploadId);
 
@@ -339,11 +350,11 @@ export const r2MultipartListParts = onCall(
     assertOwnership(callerUid, key);
 
     const client = getR2Client(
-      r2AccountId.value(),
-      r2AccessKeyId.value(),
-      r2SecretAccessKey.value()
+      secret.accountId(),
+      secret.accessKeyId(),
+      secret.secretAccessKey()
     );
-    const bucket = r2BucketName.value();
+    const bucket = secret.bucketName();
 
     return listMultipartParts(client, bucket, key, uploadId);
   }
@@ -367,11 +378,11 @@ export const r2DeleteObject = onCall(
     assertOwnership(callerUid, key);
 
     const client = getR2Client(
-      r2AccountId.value(),
-      r2AccessKeyId.value(),
-      r2SecretAccessKey.value()
+      secret.accountId(),
+      secret.accessKeyId(),
+      secret.secretAccessKey()
     );
-    const bucket = r2BucketName.value();
+    const bucket = secret.bucketName();
 
     await deleteObjectHelper(client, bucket, key);
 
@@ -405,11 +416,11 @@ export const r2DeleteByPrefix = onCall(
     }
 
     const client = getR2Client(
-      r2AccountId.value(),
-      r2AccessKeyId.value(),
-      r2SecretAccessKey.value()
+      secret.accountId(),
+      secret.accessKeyId(),
+      secret.secretAccessKey()
     );
-    const bucket = r2BucketName.value();
+    const bucket = secret.bucketName();
 
     const deletedCount = await deleteByPrefixHelper(client, bucket, prefix);
 

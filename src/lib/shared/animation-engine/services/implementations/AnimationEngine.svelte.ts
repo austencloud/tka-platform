@@ -968,18 +968,8 @@ export class AnimationEngine {
     if (props.sequenceData && this.orchestrator) {
       const newHash = this.getSequenceContentHash(props.sequenceData);
       if (newHash !== this.lastSequenceContentHash) {
-        console.log(`[TRAIL-DIAG] Sequence changed, hash: ${this.lastSequenceContentHash} → ${newHash}`);
         this.orchestrator.initializeWithDomainData(props.sequenceData);
         this.lastSequenceContentHash = newHash;
-
-        // Log what the orchestrator just set as prop state — this is what the
-        // trail overlay will see on the NEXT renderFrame() call
-        const postInitStates = this.orchestrator.getCurrentPropStates();
-        console.log(`[TRAIL-DIAG] Post-orchestrator prop state: blue.path=${postInitStates.blue.centerPathAngle?.toFixed(3)} blue.staff=${postInitStates.blue.staffRotationAngle?.toFixed(3)} blue.xy=(${postInitStates.blue.x},${postInitStates.blue.y}) | red.path=${postInitStates.red.centerPathAngle?.toFixed(3)} red.staff=${postInitStates.red.staffRotationAngle?.toFixed(3)} red.xy=(${postInitStates.red.x},${postInitStates.red.y})`);
-        // BUT: the trail overlay reads from props.blueProp which comes from the Svelte component.
-        // If there's a reactive propagation delay, the trail overlay might see STALE props on
-        // the first frame after clearBuffers(). Log what's in the current props for comparison:
-        console.log(`[TRAIL-DIAG] Current props.blueProp: path=${props.blueProp?.centerPathAngle?.toFixed(3)} staff=${props.blueProp?.staffRotationAngle?.toFixed(3)} xy=(${props.blueProp?.x},${props.blueProp?.y}) | props.redProp: path=${props.redProp?.centerPathAngle?.toFixed(3)} staff=${props.redProp?.staffRotationAngle?.toFixed(3)} xy=(${props.redProp?.x},${props.redProp?.y})`);
 
         // Flush stale trail data so old ring buffer points don't draw
         // artifact lines to the new prop positions. Use clearBuffers()
@@ -989,7 +979,6 @@ export class AnimationEngine {
         this.fireTipTracker?.reset();
         this.fireRenderer?.clearSimulation();
         this.charcoalRenderer?.clearSimulation();
-        console.log(`[TRAIL-DIAG] Cleared trail buffers + reset fire tip tracker + cleared fire/charcoal simulations`);
 
         // Trigger path cache precomputation for smooth trails during stutters
         // This pre-computes the entire animation at 120fps so the render loop can
@@ -1027,7 +1016,6 @@ export class AnimationEngine {
     // Handle cache clear signals (only process once per signal)
     const clearSignal = this.sequenceCacheService?.state.clearSignal ?? 0;
     if (clearSignal > this.lastClearSignal) {
-      console.log(`[trail-overlay] 🔄 Cache clear signal fired — clearing path caches`);
       this.precomputationService?.clearCaches();
       // When the trail overlay is active, DON'T clear the trail capturer
       // buffer. Old trail points stay in the buffer and continue being

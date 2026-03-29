@@ -54,6 +54,10 @@ export class LedTipTracker implements ILedTipTracker {
 	/** Output array reused each frame */
 	private outputTips: LedTipData[] = [];
 
+	/** Skip first few frames after reset to let canvas size settle. */
+	private warmupFramesRemaining = 3;
+	private static readonly WARMUP_FRAMES = 3;
+
 	constructor() {
 		// Pre-allocate stored tips pool
 		for (let i = 0; i < MAX_TOTAL_TIPS; i++) {
@@ -68,6 +72,12 @@ export class LedTipTracker implements ILedTipTracker {
 		currentTime: number,
 		ledConfig: LedOverlayConfig
 	): LedTipData[] {
+		// Let canvas size settle before emitting LED positions
+		if (this.warmupFramesRemaining > 0) {
+			this.warmupFramesRemaining--;
+			return this.outputTips;
+		}
+
 		this.outputTips.length = 0;
 		let totalTips = 0;
 
@@ -138,6 +148,7 @@ export class LedTipTracker implements ILedTipTracker {
 			this.prevTips[i]!.valid = false;
 		}
 		this.outputTips.length = 0;
+		this.warmupFramesRemaining = LedTipTracker.WARMUP_FRAMES;
 	}
 
 	/**

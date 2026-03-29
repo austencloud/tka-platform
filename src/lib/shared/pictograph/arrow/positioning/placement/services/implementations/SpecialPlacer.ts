@@ -96,7 +96,10 @@ export class SpecialPlacer implements ISpecialPlacer {
     // Step 0 (NEW): Check global adjustments first (Firestore-backed overrides)
     // Uses cascading lookup: Layer 3 (combination) → Layer 2 (prop-specific) → Layer 1 (base)
     // Within each layer, tries specific oriKey first, then legacy bucket fallback
-    const legacyOriKey = this.oriKeyGenerator.mapToLegacyBucket(oriKey);
+    // CRITICAL: Compute legacy bucket from rawOriKey, not oriKey. For staff+staff,
+    // oriKey is already "from_layer1" — mapToLegacyBucket would parse the underscores
+    // as orientation separators, producing "from_layer2" (wrong layer entirely).
+    const legacyOriKey = this.oriKeyGenerator.mapToLegacyBucket(rawOriKey);
     const globalAdjustmentRepo = getGlobalAdjustmentRepository();
     if (globalAdjustmentRepo?.isInitialized) {
       const baseKey = {
@@ -190,7 +193,8 @@ export class SpecialPlacer implements ISpecialPlacer {
       rawOriKey,
       pictographData
     );
-    const legacyOriKey = this.oriKeyGenerator.mapToLegacyBucket(oriKey);
+    // Compute legacy bucket from rawOriKey, not oriKey (same fix as getSpecialAdjustment)
+    const legacyOriKey = this.oriKeyGenerator.mapToLegacyBucket(rawOriKey);
 
     // Step 2: Determine grid mode
     const gridMode = this.getGridMode(pictographData);
@@ -299,7 +303,8 @@ export class SpecialPlacer implements ISpecialPlacer {
       rawOriKey,
       pictographData
     );
-    const legacyOriKey = this.oriKeyGenerator.mapToLegacyBucket(oriKey);
+    // Compute legacy bucket from rawOriKey, not oriKey (same fix as getSpecialAdjustment)
+    const legacyOriKey = this.oriKeyGenerator.mapToLegacyBucket(rawOriKey);
 
     // Determine grid mode
     const gridMode = this.getGridMode(pictographData);

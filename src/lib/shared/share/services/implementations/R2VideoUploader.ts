@@ -520,7 +520,11 @@ export class R2VideoUploader implements IVideoUploader {
       );
     } catch (error) {
       if ((error as Error).name === "AbortError") throw error;
-      return this.handleError(error, "upload-thumbnail", { sequenceId, format });
+      // Don't show error modal here — let the caller (LibrarySaveService)
+      // decide how to present this. It treats thumbnail failure as a
+      // non-blocking warning since the sequence saves regardless.
+      console.error("R2VideoUploader: Failed to upload-thumbnail:", error);
+      throw error;
     }
   }
 }

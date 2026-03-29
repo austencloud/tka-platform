@@ -70,7 +70,10 @@ export class FireTipTracker implements IFireTipTracker {
 	/** Reusable result object to avoid allocation per frame */
 	private result: FireTipUpdateResult = { tips: this.outputTips, gapDetected: false };
 
-	private diagFrameCount = 0;
+	/** Skip the first few frames after reset to let canvas size and prop
+	 *  positions settle. Mirrors TrailOverlayCanvas warmup logic. */
+	private warmupFramesRemaining = 3;
+	private static readonly WARMUP_FRAMES = 3;
 
 	constructor() {
 		// Pre-allocate stored tips pool
@@ -85,7 +88,17 @@ export class FireTipTracker implements IFireTipTracker {
 		config: FireTipTrackerConfig,
 		currentTime: number
 	): FireTipUpdateResult {
-		this.diagFrameCount++;
+		// Let canvas size and prop positions settle before tracking.
+		// Without this, the first frame can compute tip positions at a
+		// stale canvas size, producing a velocity spike to the correct
+		// position that pushes flames/charcoal away from the prop.
+		if (this.warmupFramesRemaining > 0) {
+			this.warmupFramesRemaining--;
+			this.lastUpdateTime = currentTime;
+			this.result.tips = this.outputTips;
+			this.result.gapDetected = false;
+			return this.result;
+		}
 
 		// Detect time gaps (HMR, tab switch, long frame drops).
 		// When a gap is detected, invalidate all stored tips so the first
@@ -96,15 +109,9 @@ export class FireTipTracker implements IFireTipTracker {
 			if (elapsed > GAP_THRESHOLD_MS) {
 				gapDetected = true;
 				this.reset();
-				console.log(`[TRAIL-DIAG] FireTipTracker: gap detected (${elapsed.toFixed(0)}ms), reset tips`);
 			}
 		}
 		this.lastUpdateTime = currentTime;
-
-		if (this.diagFrameCount <= 10) {
-			const validCount = this.prevTips.filter(t => t.valid).length;
-			console.log(`[TRAIL-DIAG] FireTipTracker frame ${this.diagFrameCount} | blue: path=${blueProp?.centerPathAngle?.toFixed(2)} staff=${blueProp?.staffRotationAngle?.toFixed(2)} | red: path=${redProp?.centerPathAngle?.toFixed(2)} staff=${redProp?.staffRotationAngle?.toFixed(2)} | validPrev=${validCount} gap=${gapDetected}`);
-		}
 
 		this.outputTips.length = 0;
 		let totalTips = 0;
@@ -154,6 +161,7 @@ export class FireTipTracker implements IFireTipTracker {
 		}
 		this.outputTips.length = 0;
 		this.lastUpdateTime = 0;
+		this.warmupFramesRemaining = FireTipTracker.WARMUP_FRAMES;
 	}
 
 	/**
