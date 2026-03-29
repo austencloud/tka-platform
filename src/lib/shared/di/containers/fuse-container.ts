@@ -7,10 +7,12 @@
 
 import { createContainer } from "iti";
 import { SequenceFuser } from "$lib/features/fuse/services/implementations/SequenceFuser";
+import { FuseAssemblyAnimator } from "$lib/features/fuse/services/implementations/FuseAssemblyAnimator";
 import { HandPathLoopDetector } from "$lib/features/fuse/services/implementations/HandPathLoopDetector";
 
 export const fuseContainer = createContainer().add({
 	sequenceFuser: () => new SequenceFuser(),
+	fuseAssemblyAnimator: () => new FuseAssemblyAnimator(),
 	handPathLoopDetector: () => new HandPathLoopDetector(),
 });
 

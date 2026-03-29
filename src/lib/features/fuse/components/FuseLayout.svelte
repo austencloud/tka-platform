@@ -1,182 +1,65 @@
 <script lang="ts">
 	/**
-	 * FuseLayout v2
+	 * Fuse Layout
 	 *
-	 * Single component managing the entire fuse lifecycle with three always-mounted
-	 * AnimatorCanvas instances (hero, blue-only split, red-only split). Visibility is
-	 * toggled via CSS classes, never {#if}, so FLIP measurements work in Tasks 4-5.
-	 *
-	 * Browse UI (beat grids + shuffle) is inlined from the now-deleted FusePanel.
-	 * Tour overlay deferred to Task 7.
+	 * Shuffle-to-discover: pick a beat length, shuffle cards on each side,
+	 * hit Fuse when you like what's showing. No pick step.
 	 */
 
 	import { getFuseContext } from "../context/fuse-context";
-	import FuseSequenceBrowser from "./FuseSequenceBrowser.svelte";
+	import FusePanel from "./FusePanel.svelte";
+	import FuseAnimationPreview from "./FuseAnimationPreview.svelte";
 	import FuseTour from "$lib/shared/onboarding/components/fuse-tour/FuseTour.svelte";
 	import HelpButton from "$lib/shared/components/help/HelpButton.svelte";
-	import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
-	import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
-	import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
 	import { fuseTourState } from "$lib/shared/onboarding/state/fuse-tour-state.svelte";
 	import { container } from "$lib/shared/di";
-	import { onMount, onDestroy, untrack } from "svelte";
-	import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/implementations/SequenceViewerNavigator";
+	import { onMount } from "svelte";
+	import type { IFuseAssemblyAnimator } from "../services/contracts/IFuseAssemblyAnimator";
 	import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-	import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
-	import type { IAnimationPlaybackControllerFactory } from "$lib/features/compose/services/contracts/IAnimationPlaybackControllerFactory";
-	import type { ISequenceMotionLoader } from "$lib/shared/sequence-viewer/services/contracts/ISequenceMotionLoader";
-	import type { PropState } from "$lib/shared/animation-engine/domain/PropState";
 
-	// ── Context ──────────────────────────────────────────────────────────
 	const { state: fuseState } = getFuseContext();
 
-	// ── Derived phase helpers ────────────────────────────────────────────
-	const phase = $derived(fuseState.phase);
-	const isDisassembled = $derived(phase === "disassembled");
-	const isAssembled = $derived(phase === "assembled");
-	const isTransitioning = $derived(phase === "reassembling" || phase === "disassembling");
-	const resizePaused = $derived(isTransitioning);
-
-	// ── Browse state ─────────────────────────────────────────────────────
-	let leftBrowsingSeq = $state<SequenceData | null>(null);
-	let rightBrowsingSeq = $state<SequenceData | null>(null);
-	const canFuse = $derived(leftBrowsingSeq !== null && rightBrowsingSeq !== null);
-
-	// ── Beat length ──────────────────────────────────────────────────────
-	let fuseLength = $state(8);
-	const LENGTHS = [2, 4, 8, 12, 16, 24, 32];
+	let fuseLength: number = $state(8);
 	let showLengthPicker = $state(false);
 
-	// ── Shuffle function refs + counters ─────────────────────────────────
-	let leftShuffleFn = $state<(() => void) | null>(null);
-	let rightShuffleFn = $state<(() => void) | null>(null);
-	let leftCounter = $state({ current: 0, total: 0 });
-	let rightCounter = $state({ current: 0, total: 0 });
+	const LENGTHS = [2, 4, 8, 12, 16, 24, 32];
 
-	// ── Hero playback ────────────────────────────────────────────────────
-	const heroAnimState = createAnimationPanelState();
-	let heroController: IAnimationPlaybackController | null = null;
-	let motionLoader: ISequenceMotionLoader | null = null;
-
-	const heroBlueProp = $derived<PropState | null>(
-		isAssembled ? heroAnimState.bluePropState : null
-	);
-	const heroRedProp = $derived<PropState | null>(
-		isAssembled ? heroAnimState.redPropState : null
-	);
-	const heroCurrentStep = $derived(heroAnimState.currentStep);
-	const heroIsPlaying = $derived(heroAnimState.isPlaying);
-
-	// ── Split canvas prop states ─────────────────────────────────────────
-	// The split canvases don't need their own playback controllers. The
-	// FuseSequenceBrowser already renders ChoreoCards with beat highlighting
-	// driven by fuseState.currentBeat. The split AnimatorCanvases here are
-	// placeholders for the FLIP animation (Tasks 4-5). For now they show
-	// nothing when disassembled — the browse cards ARE the visual.
-	let leftBlueProp = $state<PropState | null>(null);
-	let rightRedProp = $state<PropState | null>(null);
-
-	// ── ChoreoCard sync ──────────────────────────────────────────────────
-	const highlightedStepIndex = $derived.by(() => {
-		if (!heroIsPlaying || !fuseState.fusedSequence?.steps?.length) return null;
-		return Math.floor(heroCurrentStep) % fuseState.fusedSequence.steps.length;
-	});
-
-	// ── Tour state ───────────────────────────────────────────────────────
-	const tourShuffleGlow = $derived(fuseTourState.isActive && fuseTourState.currentStop === "shuffle");
-	let tourFuseCompleted = $state(false);
-
-	$effect(() => {
-		if (isAssembled && fuseTourState.isActive && fuseTourState.currentStop === "fuse") {
-			tourFuseCompleted = true;
-		}
-	});
-
-	function handleShuffle(side: "left" | "right") {
-		if (side === "left") leftShuffleFn?.();
-		else rightShuffleFn?.();
-
-		if (fuseTourState.isActive && fuseTourState.currentStop === "shuffle") {
-			fuseTourState.completeAction();
-			setTimeout(() => fuseTourState.advance(), 1500);
-		}
-	}
-
-	function handleTourFinish() {
-		fuseTourState.complete();
-		tourFuseCompleted = false;
-	}
-
-	// ── Element refs (for FLIP in Tasks 4-5) ─────────────────────────────
-	let layoutEl = $state<HTMLDivElement>(undefined!);
-	let heroEl = $state<HTMLDivElement>(undefined!);
-	let splitLeftEl = $state<HTMLDivElement>(undefined!);
-	let splitRightEl = $state<HTMLDivElement>(undefined!);
-	let browseLeftEl = $state<HTMLDivElement>(undefined!);
-	let browseRightEl = $state<HTMLDivElement>(undefined!);
-	let cardAreaEl = $state<HTMLDivElement>(undefined!);
-
-
-	// ── Lifecycle ─────────────────────────────────────────────────────────
 	onMount(() => {
 		fuseTourState.triggerIfFirstTime();
-
-		try {
-			const factory = container.items.animationPlaybackControllerFactory as IAnimationPlaybackControllerFactory;
-			heroController = factory.create();
-		} catch {
-			// Factory may not be registered; hero playback won't work
-		}
-
-		try {
-			motionLoader = container.items.sequenceMotionLoader as ISequenceMotionLoader;
-		} catch {
-			// Motion loader unavailable
-		}
 	});
 
-	onDestroy(() => {
-		heroController?.dispose();
-		heroAnimState.dispose();
-	});
 
-	// ── Hero initialization effect ───────────────────────────────────────
-	// When we enter assembled state with a fused sequence, initialize the
-	// hero playback controller so the animation canvas plays the result.
-	$effect(() => {
-		const seq = fuseState.fusedSequence;
-		if (!seq || !isAssembled) return;
+	function selectLength(len: number) {
+		fuseLength = len;
+		showLengthPicker = false;
+	}
 
-		const ctrl = heroController;
-		const loader = motionLoader;
-		if (!ctrl || !loader) return;
+	// Track what each panel is currently showing (for fusing without pick)
+	let leftBrowsingSeq = $state<SequenceData | null>(null);
+	let rightBrowsingSeq = $state<SequenceData | null>(null);
 
-		untrack(async () => {
-			if (heroAnimState.isPlaying) ctrl.togglePlayback();
-			heroAnimState.reset();
+	const canFuse = $derived(leftBrowsingSeq !== null && rightBrowsingSeq !== null);
 
-			const fullSeq = await loader.ensureMotionData(seq);
-			if (!fullSeq) return;
+	// DOM refs for assembly animation
+	let leftPanelEl: HTMLDivElement;
+	let rightPanelEl: HTMLDivElement;
+	let fuseTargetEl: HTMLDivElement;
 
-			heroAnimState.setShouldLoop(true);
-			const ok = ctrl.initialize(fullSeq, heroAnimState);
-			if (!ok) return;
-
-			ctrl.setSpeed(fuseState.bpm / 60);
-			setTimeout(() => ctrl.togglePlayback(), 300);
-		});
-	});
-
-	// ── Action handlers ──────────────────────────────────────────────────
+	let fuseAssemblyAnimator: IFuseAssemblyAnimator;
+	try {
+		fuseAssemblyAnimator = container.items.fuseAssemblyAnimator;
+	} catch {
+		fuseAssemblyAnimator = { async animate() {} };
+	}
 
 	async function handleFuse() {
 		if (!leftBrowsingSeq || !rightBrowsingSeq) return;
-
+		// Set the sequences on fuse state so startFuse can use them
 		fuseState.selectLeft(leftBrowsingSeq);
 		fuseState.selectRight(rightBrowsingSeq);
-		fuseState.startReassemble();
+		fuseState.startFuse();
 
-		// Derive letters so the fused sequence has a word
+		// Derive letters on the fused sequence so it has a word
 		if (fuseState.fusedSequence) {
 			try {
 				const letterDeriver = container.items.letterDeriver;
@@ -188,23 +71,19 @@
 		}
 	}
 
-	function handleSave() {
-		// TODO: wire to save flow
-	}
-
-	function handleOpenInViewer() {
-		const seq = fuseState.fusedSequence;
-		if (!seq) return;
-		openSequenceViewer(seq, {
-			returnPath: "/app/create",
-			returnLabel: "Fuse",
-			initialBpm: fuseState.bpm,
+	// When state enters "fusing", trigger the assembly animation
+	$effect(() => {
+		if (fuseState.phase !== "fusing") return;
+		const frameId = requestAnimationFrame(async () => {
+			if (!leftPanelEl || !rightPanelEl || !fuseTargetEl) {
+				fuseState.completeFuse();
+				return;
+			}
+			await fuseAssemblyAnimator.animate(leftPanelEl, rightPanelEl, fuseTargetEl);
+			fuseState.completeFuse();
 		});
-	}
-
-	function handleStepClick(stepIndex: number) {
-		heroController?.seekToStep(stepIndex);
-	}
+		return () => cancelAnimationFrame(frameId);
+	});
 
 	function handleKeydown(event: KeyboardEvent) {
 		if (event.key === " ") {
@@ -213,394 +92,205 @@
 		}
 	}
 
-	// ── FLIP animation utilities ─────────────────────────────────────────
-	const FLIP_DURATION = 600;
-	const FLIP_EASING = "cubic-bezier(0.16, 1, 0.3, 1)";
-
-	function calcFlipTransform(sourceRect: DOMRect, targetRect: DOMRect) {
-		const sCX = sourceRect.left + sourceRect.width / 2;
-		const sCY = sourceRect.top + sourceRect.height / 2;
-		const tCX = targetRect.left + targetRect.width / 2;
-		const tCY = targetRect.top + targetRect.height / 2;
-		return {
-			tx: tCX - sCX,
-			ty: tCY - sCY,
-			sx: targetRect.width / sourceRect.width,
-			sy: targetRect.height / sourceRect.height,
-		};
+	function decrementBpm() {
+		fuseState.setBpm(Math.max(10, fuseState.bpm - 5));
 	}
 
-	function cancelAllAnimations(elements: (HTMLElement | undefined)[]) {
-		for (const el of elements) {
-			if (!el) continue;
-			for (const anim of el.getAnimations()) anim.cancel();
-		}
+	function incrementBpm() {
+		fuseState.setBpm(Math.min(300, fuseState.bpm + 5));
 	}
 
-	// ── Reassemble FLIP animation ────────────────────────────────────────
-	function animateReassemble() {
-		if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-			fuseState.completeReassemble();
-			return;
-		}
-		if (!heroEl || !splitLeftEl || !splitRightEl) {
-			fuseState.completeReassemble();
-			return;
-		}
+	// Tour fuse result state
+	let tourFuseCompleted = $state(false);
+	let tourFusedWord = $state("");
 
-		// Measure all three canvas rects (all always in DOM, some visibility:hidden)
-		const heroRect = heroEl.getBoundingClientRect();
-		const leftRect = splitLeftEl.getBoundingClientRect();
-		const rightRect = splitRightEl.getBoundingClientRect();
-
-		const leftFlip = calcFlipTransform(leftRect, heroRect);
-		const rightFlip = calcFlipTransform(rightRect, heroRect);
-
-		const opts: KeyframeAnimationOptions = {
-			duration: FLIP_DURATION,
-			easing: FLIP_EASING,
-			fill: "both" as FillMode,
-		};
-
-		// Fade out browse chrome (beat grids + shuffle buttons)
-		if (browseLeftEl)
-			browseLeftEl.animate([{ opacity: 1 }, { opacity: 0 }], {
-				duration: 200,
-				easing: "ease-out",
-				fill: "both" as FillMode,
-			});
-		if (browseRightEl)
-			browseRightEl.animate([{ opacity: 1 }, { opacity: 0 }], {
-				duration: 200,
-				easing: "ease-out",
-				fill: "both" as FillMode,
-			});
-
-		// FLIP split canvases toward hero position
-		splitLeftEl.animate(
-			[
-				{ transform: "translate(0,0) scale(1)" },
-				{
-					transform: `translate(${leftFlip.tx}px,${leftFlip.ty}px) scale(${leftFlip.sx},${leftFlip.sy})`,
-				},
-			],
-			opts
-		);
-		// Fade out left split during last 25%
-		splitLeftEl.animate([{ opacity: 1 }, { opacity: 0 }], {
-			duration: FLIP_DURATION * 0.25,
-			delay: FLIP_DURATION * 0.75,
-			easing: "ease-in",
-			fill: "both" as FillMode,
-		});
-
-		const mainAnim = splitRightEl.animate(
-			[
-				{ transform: "translate(0,0) scale(1)" },
-				{
-					transform: `translate(${rightFlip.tx}px,${rightFlip.ty}px) scale(${rightFlip.sx},${rightFlip.sy})`,
-				},
-			],
-			opts
-		);
-		splitRightEl.animate([{ opacity: 1 }, { opacity: 0 }], {
-			duration: FLIP_DURATION * 0.25,
-			delay: FLIP_DURATION * 0.75,
-			easing: "ease-in",
-			fill: "both" as FillMode,
-		});
-
-		// When FLIP finishes, clean up and transition to assembled
-		mainAnim.finished.then(() => {
-			cancelAllAnimations([heroEl, splitLeftEl, splitRightEl, browseLeftEl, browseRightEl]);
-			fuseState.completeReassemble();
-
-			// After state change, slide in choreo card
-			requestAnimationFrame(() => {
-				if (cardAreaEl) {
-					cardAreaEl.animate(
-						[
-							{ opacity: 0, transform: "translateX(30px)" },
-							{ opacity: 1, transform: "translateX(0)" },
-						],
-						{ duration: 200, easing: FLIP_EASING, fill: "both" as FillMode }
-					);
-				}
-			});
-		});
+	async function handleTourFuse() {
+		await handleFuse();
+		tourFuseCompleted = true;
+		tourFusedWord = fuseState.fusedSequence?.word ??
+			fuseState.fusedSequence?.steps?.map(s => s.letter).filter(Boolean).join("") ?? "";
 	}
-
-	// ── Disassemble FLIP animation (reverse of reassemble) ──────────────
-	function animateDisassemble() {
-		if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-			fuseState.completeDisassemble();
-			return;
-		}
-		if (!heroEl || !splitLeftEl || !splitRightEl) {
-			fuseState.completeDisassemble();
-			return;
-		}
-
-		// Card exits first (slides out to the right)
-		if (cardAreaEl) {
-			cardAreaEl.animate(
-				[
-					{ opacity: 1, transform: "translateX(0)" },
-					{ opacity: 0, transform: "translateX(30px)" },
-				],
-				{ duration: 200, easing: "ease-in", fill: "both" as FillMode }
-			);
-		}
-
-		// After card exit, run FLIP disassemble
-		setTimeout(() => {
-			// Measure rects (all elements always in DOM via visibility toggle)
-			const heroRect = heroEl.getBoundingClientRect();
-			const leftRect = splitLeftEl.getBoundingClientRect();
-			const rightRect = splitRightEl.getBoundingClientRect();
-
-			const leftFlip = calcFlipTransform(leftRect, heroRect);
-			const rightFlip = calcFlipTransform(rightRect, heroRect);
-
-			const opts: KeyframeAnimationOptions = {
-				duration: FLIP_DURATION,
-				easing: FLIP_EASING,
-				fill: "both" as FillMode,
-			};
-
-			// FLIP splits from hero position back to their natural side-by-side positions
-			// Start: at hero position (translated + scaled). End: natural position (identity).
-			splitLeftEl.animate(
-				[
-					{
-						transform: `translate(${leftFlip.tx}px,${leftFlip.ty}px) scale(${leftFlip.sx},${leftFlip.sy})`,
-					},
-					{ transform: "translate(0,0) scale(1)" },
-				],
-				opts
-			);
-			// Fade in during first 25%
-			splitLeftEl.animate([{ opacity: 0 }, { opacity: 1 }], {
-				duration: FLIP_DURATION * 0.25,
-				easing: "ease-out",
-				fill: "both" as FillMode,
-			});
-
-			const mainAnim = splitRightEl.animate(
-				[
-					{
-						transform: `translate(${rightFlip.tx}px,${rightFlip.ty}px) scale(${rightFlip.sx},${rightFlip.sy})`,
-					},
-					{ transform: "translate(0,0) scale(1)" },
-				],
-				opts
-			);
-			splitRightEl.animate([{ opacity: 0 }, { opacity: 1 }], {
-				duration: FLIP_DURATION * 0.25,
-				easing: "ease-out",
-				fill: "both" as FillMode,
-			});
-
-			mainAnim.finished.then(() => {
-				cancelAllAnimations([
-					heroEl,
-					splitLeftEl,
-					splitRightEl,
-					browseLeftEl,
-					browseRightEl,
-					cardAreaEl,
-				]);
-
-				// Complete the state transition — this sets isDisassembled=true,
-				// which mounts the browse chrome via {#if isDisassembled}
-				fuseState.completeDisassemble();
-
-				// After DOM mounts the browse elements, fade them in
-				requestAnimationFrame(() => {
-					if (browseLeftEl) {
-						browseLeftEl.animate([{ opacity: 0 }, { opacity: 1 }], {
-							duration: 200,
-							easing: "ease-out",
-							fill: "both" as FillMode,
-						});
-					}
-					if (browseRightEl) {
-						browseRightEl.animate([{ opacity: 0 }, { opacity: 1 }], {
-							duration: 200,
-							easing: "ease-out",
-							fill: "both" as FillMode,
-						});
-					}
-				});
-			});
-		}, 200); // Wait for card exit
-	}
-
-	// ── Phase transition effect ──────────────────────────────────────────
-	// Triggers animations when phase enters "reassembling" or "disassembling".
-	// untrack() prevents the animation functions from creating reactive
-	// dependencies on the element refs (which are $state).
-	$effect(() => {
-		const p = phase;
-		if (p !== "reassembling" && p !== "disassembling") return;
-
-		return untrack(() => {
-			const frameId = requestAnimationFrame(() => {
-				if (p === "reassembling") {
-					animateReassemble();
-				} else if (p === "disassembling") {
-					animateDisassemble();
-				}
-			});
-			return () => cancelAnimationFrame(frameId);
-		});
-	});
 </script>
 
 <svelte:window onkeydown={handleKeydown} />
 
-<div class="fuse-layout" bind:this={layoutEl}>
-	<!-- ─── Hero canvas: always mounted ──────────────────────────────── -->
-	<div
-		class="hero-slot"
-		class:slot-visible={isAssembled || isTransitioning}
-		class:slot-hidden={isDisassembled}
-		bind:this={heroEl}
-	>
-		<AnimatorCanvas
-			blueProp={heroBlueProp}
-			redProp={heroRedProp}
-			gridVisible={true}
-			isPlaying={isAssembled && heroIsPlaying}
-			currentStep={heroCurrentStep}
-			resizePaused={resizePaused}
-			fillContainer={true}
-			hideProgressBar={false}
-			progressBarVariant="gradient"
-			word={fuseState.fusedSequence?.word ?? null}
-			externalDisassembled={false}
-			externalToggleDisassemble={() => fuseState.startDisassemble(false)}
-		/>
-	</div>
-
-	<!-- ─── Split left canvas: always mounted ────────────────────────── -->
-	<div
-		class="split-slot split-left"
-		class:slot-visible={isDisassembled || isTransitioning}
-		class:slot-hidden={isAssembled}
-		bind:this={splitLeftEl}
-	>
-		<AnimatorCanvas
-			blueProp={leftBlueProp}
-			redProp={null}
-			gridVisible={true}
-			isPlaying={isDisassembled && fuseState.clockRunning}
-			currentStep={fuseState.currentBeat}
-			resizePaused={resizePaused}
-			fillContainer={true}
-			hideProgressBar={true}
-			hideTkaGlyph={true}
-			hideStepNumbers={true}
-		/>
-	</div>
-
-	<!-- ─── Split right canvas: always mounted ───────────────────────── -->
-	<div
-		class="split-slot split-right"
-		class:slot-visible={isDisassembled || isTransitioning}
-		class:slot-hidden={isAssembled}
-		bind:this={splitRightEl}
-	>
-		<AnimatorCanvas
-			blueProp={null}
-			redProp={rightRedProp}
-			gridVisible={true}
-			isPlaying={isDisassembled && fuseState.clockRunning}
-			currentStep={fuseState.currentBeat}
-			resizePaused={resizePaused}
-			fillContainer={true}
-			hideProgressBar={true}
-			hideTkaGlyph={true}
-			hideStepNumbers={true}
-		/>
-	</div>
-
-	<!-- ─── Browse chrome: disassembled state ────────────────────────── -->
-	{#if isDisassembled}
-		<div class="browse-area">
-			<div class="browse-column" bind:this={browseLeftEl}>
-				<div class="card-section">
-					<FuseSequenceBrowser
-						side="left"
-						length={fuseLength}
-						onSelect={() => {}}
-						hideActions={true}
-						onCurrentItemChange={(seq) => (leftBrowsingSeq = seq)}
-						onShuffleReady={(fn) => (leftShuffleFn = fn)}
-						onCounterChange={(c, t) => (leftCounter = { current: c, total: t })}
-					/>
-				</div>
-				<button class="shuffle-btn shuffle-blue" class:glow={tourShuffleGlow} onclick={() => handleShuffle("left")}>
-					<i class="fas fa-shuffle" aria-hidden="true"></i>
-					Shuffle {leftCounter.current} / {leftCounter.total}
-				</button>
+{#if fuseTourState.isActive}
+	<!-- TOUR MODE: fixed overlay covers entire viewport including bottom nav -->
+	<div class="tour-overlay">
+		{#if fuseTourState.currentStop === "welcome"}
+			<!-- Stop 1: Welcome — fullscreen centered FuseTour -->
+			<div class="tour-stop welcome-stop">
+				<FuseTour variant="fullscreen" />
 			</div>
-			<div class="browse-column" bind:this={browseRightEl}>
-				<div class="card-section">
-					<FuseSequenceBrowser
-						side="right"
-						length={fuseLength}
-						onSelect={() => {}}
-						hideActions={true}
-						onCurrentItemChange={(seq) => (rightBrowsingSeq = seq)}
-						onShuffleReady={(fn) => (rightShuffleFn = fn)}
-						onCounterChange={(c, t) => (rightCounter = { current: c, total: t })}
-					/>
-				</div>
-				<button class="shuffle-btn shuffle-red" class:glow={tourShuffleGlow} onclick={() => handleShuffle("right")}>
-					<i class="fas fa-shuffle" aria-hidden="true"></i>
-					Shuffle {rightCounter.current} / {rightCounter.total}
-				</button>
-			</div>
-		</div>
-	{/if}
 
-	<!-- ─── ChoreoCard: assembled state ──────────────────────────────── -->
-	{#if isAssembled && fuseState.fusedSequence}
-		<div class="card-area" bind:this={cardAreaEl}>
-			<div class="card-scroll themed-scrollbar">
-				<ChoreoCard
-					sequence={fuseState.fusedSequence}
-					showWord={false}
-					showDifficultyLevel={false}
-					showCreatorName={false}
-					showNotes={false}
-					showBirthday={false}
-					showLoopGlyph={false}
-					showStepNumbers={true}
-					includeStartPosition={true}
-					darkMode={true}
-					highlightedStepIndex={highlightedStepIndex}
-					showHighlight={heroIsPlaying}
-					onStepClick={handleStepClick}
+		{:else if fuseTourState.currentStop === "panels"}
+			<!-- Stop 2: Both Panels — banner at top, both panels below -->
+			<div class="tour-stop panels-stop">
+				<div class="tour-banner-area">
+					<FuseTour variant="banner" />
+				</div>
+				<div class="tour-panels">
+					<div class="panel-wrap" bind:this={leftPanelEl}>
+						<FusePanel
+							side="left"
+							bpm={fuseState.bpm}
+							onControllerReady={(ctrl) => fuseState.registerController("left", ctrl)}
+							length={fuseLength}
+							currentBeat={fuseState.currentBeat}
+							onCurrentSequenceChange={(seq) => leftBrowsingSeq = seq}
+						/>
+					</div>
+					<div class="panel-wrap" bind:this={rightPanelEl}>
+						<FusePanel
+							side="right"
+							bpm={fuseState.bpm}
+							onControllerReady={(ctrl) => fuseState.registerController("right", ctrl)}
+							length={fuseLength}
+							currentBeat={fuseState.currentBeat}
+							onCurrentSequenceChange={(seq) => rightBrowsingSeq = seq}
+						/>
+					</div>
+				</div>
+			</div>
+
+		{:else if fuseTourState.currentStop === "shuffle"}
+			<!-- Stop 3: Shuffle — banner below panels, near the shuffle buttons -->
+			<div class="tour-stop shuffle-stop">
+				<div class="tour-panels">
+					<div class="panel-wrap" bind:this={leftPanelEl}>
+						<FusePanel
+							side="left"
+							bpm={fuseState.bpm}
+							onControllerReady={(ctrl) => fuseState.registerController("left", ctrl)}
+							length={fuseLength}
+							currentBeat={fuseState.currentBeat}
+							onCurrentSequenceChange={(seq) => leftBrowsingSeq = seq}
+							tourShuffleGlow={true}
+						/>
+					</div>
+					<div class="panel-wrap" bind:this={rightPanelEl}>
+						<FusePanel
+							side="right"
+							bpm={fuseState.bpm}
+							onControllerReady={(ctrl) => fuseState.registerController("right", ctrl)}
+							length={fuseLength}
+							currentBeat={fuseState.currentBeat}
+							onCurrentSequenceChange={(seq) => rightBrowsingSeq = seq}
+							tourShuffleGlow={true}
+						/>
+					</div>
+				</div>
+				<div class="tour-banner-area">
+					<FuseTour variant="banner" />
+				</div>
+			</div>
+
+		{:else if fuseTourState.currentStop === "fuse"}
+			<!-- Stop 4: Fuse — panels dimmed with fuse button, or result after fusing -->
+			<div class="tour-stop fuse-stop">
+				{#if !tourFuseCompleted}
+					<!-- Pre-fuse: panels dimmed, fuse button pulsing -->
+					<div class="tour-banner-area">
+						<FuseTour variant="banner" />
+					</div>
+					<div class="tour-panels tour-panels-dimmed">
+						<div class="panel-wrap" bind:this={leftPanelEl}>
+							<FusePanel
+								side="left"
+								bpm={fuseState.bpm}
+								onControllerReady={(ctrl) => fuseState.registerController("left", ctrl)}
+								length={fuseLength}
+								currentBeat={fuseState.currentBeat}
+								onCurrentSequenceChange={(seq) => leftBrowsingSeq = seq}
+							/>
+						</div>
+						<div class="panel-wrap" bind:this={rightPanelEl}>
+							<FusePanel
+								side="right"
+								bpm={fuseState.bpm}
+								onControllerReady={(ctrl) => fuseState.registerController("right", ctrl)}
+								length={fuseLength}
+								currentBeat={fuseState.currentBeat}
+								onCurrentSequenceChange={(seq) => rightBrowsingSeq = seq}
+							/>
+						</div>
+					</div>
+					<div class="tour-fuse-area">
+						<button
+							class="fuse-button tour-fuse-btn"
+							onclick={handleTourFuse}
+						>
+							<i class="fas fa-fire" aria-hidden="true"></i>
+							<span>Fuse</span>
+						</button>
+					</div>
+				{:else}
+					<!-- Post-fuse: result with derived word + "Let's go" button -->
+					<div class="tour-result">
+						<div class="tour-result-word">{tourFusedWord || "Fused!"}</div>
+						<p class="tour-result-subtitle">Your fused sequence</p>
+
+						{#if fuseState.fusedSequence}
+							<div class="tour-result-preview">
+								<FuseAnimationPreview
+									sequence={fuseState.fusedSequence}
+									bpm={fuseState.bpm}
+									currentBeat={fuseState.currentBeat}
+									showBackButton={false}
+								/>
+							</div>
+						{/if}
+
+						<button
+							class="fuse-button tour-finish-btn"
+							onclick={() => {
+								fuseTourState.complete();
+								tourFuseCompleted = false;
+								tourFusedWord = "";
+							}}
+						>
+							Let's go
+						</button>
+					</div>
+				{/if}
+			</div>
+		{/if}
+	</div>
+
+{:else}
+	<!-- NORMAL MODE -->
+	<div class="fuse-layout">
+		<div class="fuse-panels">
+			<div class="panel-wrap" bind:this={leftPanelEl}>
+				<FusePanel
+					side="left"
+					bpm={fuseState.bpm}
+					onControllerReady={(ctrl) => fuseState.registerController("left", ctrl)}
+					length={fuseLength}
+					currentBeat={fuseState.currentBeat}
+					onCurrentSequenceChange={(seq) => leftBrowsingSeq = seq}
+				/>
+			</div>
+			<div class="panel-wrap" bind:this={rightPanelEl}>
+				<FusePanel
+					side="right"
+					bpm={fuseState.bpm}
+					onControllerReady={(ctrl) => fuseState.registerController("right", ctrl)}
+					length={fuseLength}
+					currentBeat={fuseState.currentBeat}
+					onCurrentSequenceChange={(seq) => rightBrowsingSeq = seq}
 				/>
 			</div>
 		</div>
-	{/if}
 
-	<!-- ─── Tour banner (stops 2-4) ──────────────────────────────────── -->
-	{#if fuseTourState.isActive && fuseTourState.currentStop !== "welcome"}
-		<div class="tour-banner-overlay">
-			<FuseTour variant="banner" />
-		</div>
-	{/if}
+		<!-- Invisible target for assembly animation -->
+		<div class="fuse-target" bind:this={fuseTargetEl} aria-hidden="true"></div>
 
-	<!-- ─── Bottom bar ───────────────────────────────────────────────── -->
-	<div class="fuse-bottom">
-		{#if isDisassembled}
+		<!-- Bottom bar -->
+		<div class="fuse-bottom">
 			<HelpButton
 				onclick={() => fuseTourState.restart()}
-				ariaLabel="Replay tour"
+				ariaLabel="Replay Fuse tour"
 				title="Replay tour"
 				size="compact"
 			/>
@@ -608,13 +298,14 @@
 			<div class="length-picker-wrap">
 				<button
 					class="length-trigger"
-					onclick={() => (showLengthPicker = !showLengthPicker)}
+					onclick={() => showLengthPicker = !showLengthPicker}
 					aria-label="Change beat length (currently {fuseLength})"
 				>
 					<span class="length-value">{fuseLength}</span>
 					<span class="length-unit">beats</span>
 				</button>
 				{#if showLengthPicker}
+					<!-- svelte-ignore a11y_no_static_element_interactions -->
 					<div class="length-popover" role="radiogroup" aria-label="Beat length">
 						{#each LENGTHS as len}
 							<button
@@ -622,89 +313,52 @@
 								class:active={fuseLength === len}
 								role="radio"
 								aria-checked={fuseLength === len}
-								onclick={() => {
-									fuseLength = len;
-									showLengthPicker = false;
-								}}
-							>
-								{len}
-							</button>
+								onclick={() => selectLength(len)}
+							>{len}</button>
 						{/each}
 					</div>
 				{/if}
 			</div>
 
+			<div class="bpm-control">
+				<button class="bpm-btn" onclick={decrementBpm} aria-label="Decrease BPM">
+					<i class="fas fa-minus" aria-hidden="true"></i>
+				</button>
+				<span class="bpm-display">{fuseState.bpm}</span>
+				<button class="bpm-btn" onclick={incrementBpm} aria-label="Increase BPM">
+					<i class="fas fa-plus" aria-hidden="true"></i>
+				</button>
+			</div>
+
+			<button
+				class="play-btn"
+				onclick={() => fuseState.toggleClock()}
+				aria-label={fuseState.clockRunning ? "Pause" : "Play"}
+			>
+				{#if fuseState.clockRunning}
+					<svg viewBox="0 0 24 24" fill="currentColor">
+						<path d="M6 4h4v16H6zm8 0h4v16h-4z" />
+					</svg>
+				{:else}
+					<svg viewBox="0 0 24 24" fill="currentColor">
+						<path d="M8 5v14l11-7z" />
+					</svg>
+				{/if}
+			</button>
+
 			<button
 				class="fuse-button"
-				disabled={!canFuse || isTransitioning}
+				disabled={!canFuse}
 				onclick={handleFuse}
 			>
 				<i class="fas fa-fire" aria-hidden="true"></i>
 				<span>Fuse</span>
 			</button>
-		{:else if isAssembled}
-			{#if tourFuseCompleted && fuseTourState.isActive && fuseTourState.currentStop === "fuse"}
-				<button class="fuse-button" onclick={handleTourFinish}>
-					Let's go
-					<i class="fas fa-arrow-right" aria-hidden="true"></i>
-				</button>
-			{:else}
-				<button class="action-btn action-save" onclick={handleSave} disabled={isTransitioning}>
-					<i class="fas fa-bookmark" aria-hidden="true"></i>
-					Save
-				</button>
-				<button
-					class="action-btn action-ghost"
-					onclick={() => fuseState.startDisassemble(true)}
-					disabled={isTransitioning}
-				>
-					<i class="fas fa-redo" aria-hidden="true"></i>
-					Build Another
-				</button>
-				<button class="action-btn action-ghost" onclick={handleOpenInViewer} disabled={isTransitioning}>
-					<i class="fas fa-expand" aria-hidden="true"></i>
-					Open in Viewer
-				</button>
-				<button
-					class="action-btn action-ghost"
-					onclick={() => fuseState.startDisassemble(false)}
-					disabled={isTransitioning}
-				>
-					<i class="fas fa-arrow-left" aria-hidden="true"></i>
-					Swap a Half
-				</button>
-			{/if}
-		{/if}
-	</div>
-
-	<!-- ─── Tour welcome modal (stop 1) ──────────────────────────────── -->
-	{#if fuseTourState.isActive && fuseTourState.currentStop === "welcome"}
-		<div class="tour-prompt-backdrop">
-			<div class="tour-prompt-card">
-				<div class="tour-prompt-icon">
-					<i class="fas fa-fire" aria-hidden="true"></i>
-				</div>
-				<h2 class="tour-prompt-title">Quick tour?</h2>
-				<p class="tour-prompt-body">
-					Pick a blue prop path and a red prop path, then merge them into one complete sequence. Takes about a minute.
-				</p>
-				<div class="tour-prompt-actions">
-					<button class="tour-prompt-accept" onclick={() => fuseTourState.advance()}>
-						Show me
-						<i class="fas fa-arrow-right" aria-hidden="true"></i>
-					</button>
-					<button class="tour-prompt-skip" onclick={() => fuseTourState.skip()}>
-						Skip, I'll explore
-					</button>
-				</div>
-			</div>
 		</div>
-	{/if}
-</div>
+	</div>
+{/if}
 
 <style>
-	/* ── Layout shell ─────────────────────────────────────────────────── */
-
 	.fuse-layout {
 		display: flex;
 		flex-direction: column;
@@ -716,156 +370,42 @@
 		position: relative;
 	}
 
-	/* ── Canvas slot visibility ───────────────────────────────────────── */
-
-	.slot-visible {
-		visibility: visible;
-		position: relative;
-	}
-
-	.slot-hidden {
-		visibility: hidden;
-		position: absolute;
-		pointer-events: none;
-	}
-
-	/* ── Hero slot ─────────────────────────────────────────────────────── */
-
-	.hero-slot {
-		flex: 1;
-		min-height: 0;
-		max-width: 600px;
-	}
-
-	.hero-slot.slot-hidden {
-		top: 0;
-		left: 0;
-		width: 50%;
-		max-width: 600px;
-		height: 60%;
-	}
-
-	/* ── Split canvas slots ────────────────────────────────────────────── */
-
-	.split-slot {
-		flex: 0 0 auto;
-		width: 48%;
-		max-width: 300px;
-		aspect-ratio: 1;
-	}
-
-	.split-left.slot-hidden {
-		top: 0;
-		left: 0;
-		width: 48%;
-		max-width: 300px;
-	}
-
-	.split-right.slot-hidden {
-		top: 0;
-		right: 0;
-		width: 48%;
-		max-width: 300px;
-	}
-
-	/* When visible and disassembled, the splits are visual-only placeholders.
-	   The real browse UI is in .browse-area. Hide visible splits behind browse. */
-	.split-slot.slot-visible {
-		position: absolute;
-		top: 0;
-		width: 48%;
-		max-width: 300px;
-		z-index: -1;
-		opacity: 0;
-	}
-
-	/* ── Browse area (disassembled state) ─────────────────────────────── */
-
-	.browse-area {
+	.fuse-panels {
 		flex: 1;
 		min-height: 0;
 		display: grid;
 		grid-template-columns: 1fr 1fr;
+		grid-template-rows: 1fr;
 		gap: var(--spacing-xs, 4px);
 		padding: var(--spacing-xs, 4px);
 	}
 
-	@container fuse-layout (max-width: 600px) {
-		.browse-area {
+	@container fuse-layout (max-width: 700px) {
+		.fuse-panels {
 			grid-template-columns: 1fr;
 			grid-template-rows: 1fr 1fr;
 		}
 	}
 
-	.browse-column {
-		display: flex;
-		flex-direction: column;
+	.panel-wrap {
 		min-height: 0;
-		gap: var(--spacing-xs, 4px);
+		display: flex;
 	}
 
-	.card-section {
+	.panel-wrap > :global(*) {
 		flex: 1;
 		min-height: 0;
-		overflow: hidden;
 	}
 
-	/* ── Shuffle buttons ──────────────────────────────────────────────── */
-
-	.shuffle-btn {
-		flex-shrink: 0;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: var(--spacing-xs, 4px);
-		padding: 10px 16px;
-		border-radius: var(--radius-md, 8px);
-		font-size: var(--font-size-min, 14px);
-		font-weight: 500;
-		cursor: pointer;
-		min-height: 48px;
-		transition: border-color 150ms ease, background 150ms ease;
-		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-		color: var(--theme-text, #ffffff);
-		border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+	.fuse-target {
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		width: 200px;
+		height: 200px;
+		transform: translate(-50%, -50%);
+		pointer-events: none;
 	}
-
-	.shuffle-btn:hover {
-		border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
-		background: rgba(255, 255, 255, 0.06);
-	}
-
-	.shuffle-blue {
-		border-color: rgba(59, 130, 246, 0.3);
-	}
-
-	.shuffle-blue:hover {
-		border-color: rgba(59, 130, 246, 0.5);
-	}
-
-	.shuffle-red {
-		border-color: rgba(239, 68, 68, 0.3);
-	}
-
-	.shuffle-red:hover {
-		border-color: rgba(239, 68, 68, 0.5);
-	}
-
-	/* ── Card area (assembled state) ──────────────────────────────────── */
-
-	.card-area {
-		flex: 1;
-		min-height: 0;
-		overflow: hidden;
-		padding: var(--spacing-xs, 4px);
-	}
-
-	.card-scroll {
-		height: 100%;
-		overflow-y: auto;
-	}
-
-	/* ── Bottom bar ────────────────────────────────────────────────────── */
 
 	.fuse-bottom {
 		flex-shrink: 0;
@@ -875,10 +415,33 @@
 		gap: var(--spacing-md, 16px);
 		padding: var(--spacing-xs, 4px) var(--spacing-md, 16px);
 		border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
-		min-height: 56px;
 	}
 
-	/* ── Length picker ─────────────────────────────────────────────────── */
+	.bpm-control {
+		display: flex;
+		align-items: center;
+		gap: var(--spacing-xs, 4px);
+	}
+
+	.bpm-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 44px;
+		height: 44px;
+		border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+		border-radius: 50%;
+		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+		color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+		font-size: 12px;
+		cursor: pointer;
+		transition: border-color 150ms ease, color 150ms ease;
+	}
+
+	.bpm-btn:hover {
+		border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+		color: var(--theme-text, #ffffff);
+	}
 
 	.length-picker-wrap {
 		position: relative;
@@ -954,7 +517,49 @@
 		color: #ffffff;
 	}
 
-	/* ── Fuse button ──────────────────────────────────────────────────── */
+	.bpm-display {
+		min-width: 36px;
+		text-align: center;
+		font-size: var(--font-size-sm, 14px);
+		font-weight: 600;
+		color: var(--theme-text, #ffffff);
+		font-variant-numeric: tabular-nums;
+	}
+
+	.play-btn {
+		width: 52px;
+		height: 52px;
+		min-width: 52px;
+		min-height: 52px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: linear-gradient(
+			135deg,
+			var(--theme-accent, #3b82f6) 0%,
+			color-mix(in srgb, var(--theme-accent, #3b82f6) 80%, black) 100%
+		);
+		border: none;
+		border-radius: 50%;
+		color: white;
+		cursor: pointer;
+		flex-shrink: 0;
+		transition: transform 150ms ease, box-shadow 150ms ease;
+	}
+
+	.play-btn svg {
+		width: 24px;
+		height: 24px;
+	}
+
+	.play-btn:hover {
+		transform: scale(1.05);
+		box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+	}
+
+	.play-btn:active {
+		transform: scale(0.98);
+	}
 
 	.fuse-button {
 		display: flex;
@@ -986,209 +591,113 @@
 		cursor: not-allowed;
 	}
 
-	/* ── Action buttons (assembled state) ─────────────────────────────── */
-
-	.action-btn {
+	/* Tour overlay — fills the sub-tab-content container (which has container-type: size,
+	   trapping position: fixed). Bottom nav is hidden separately via MainInterface. */
+	.tour-overlay {
+		position: absolute;
+		inset: 0;
+		z-index: 10;
+		background: linear-gradient(165deg, #1a1a2e 0%, #0f0f23 40%, #1a1025 100%);
 		display: flex;
+		flex-direction: column;
+		overflow: hidden;
+	}
+
+	.tour-stop {
+		display: flex;
+		flex-direction: column;
+		flex: 1;
+		min-height: 0;
+	}
+
+	.welcome-stop {
 		align-items: center;
 		justify-content: center;
+	}
+
+	.tour-banner-area {
+		flex-shrink: 0;
+		padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
+	}
+
+	.tour-panels {
+		flex: 1;
+		min-height: 0;
+		display: grid;
+		grid-template-columns: 1fr 1fr;
 		gap: var(--spacing-xs, 4px);
-		min-height: 44px;
-		padding: 8px 16px;
-		border-radius: var(--radius-md, 8px);
-		font-size: var(--font-size-min, 14px);
-		font-weight: 600;
-		cursor: pointer;
-		transition: border-color 150ms ease, background 150ms ease;
+		padding: 0 var(--spacing-xs, 4px);
 	}
 
-	.action-btn:disabled {
-		opacity: 0.35;
-		cursor: not-allowed;
+	.tour-panels-dimmed {
+		opacity: 0.6;
 	}
 
-	.action-save {
-		background: linear-gradient(135deg, #fb923c 0%, #f97316 50%, #ea580c 100%);
-		color: #ffffff;
-		border: none;
+	.tour-fuse-area {
+		flex-shrink: 0;
+		display: flex;
+		justify-content: center;
+		padding: var(--spacing-md, 16px);
 	}
 
-	.action-save:hover:not(:disabled) {
-		filter: brightness(1.1);
+	.tour-fuse-btn {
+		animation: tourPulse 2s ease-in-out infinite;
+		font-size: 16px;
+		padding: var(--spacing-md, 16px) var(--spacing-xl, 32px);
+		min-height: 56px;
 	}
 
-	.action-ghost {
-		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-		color: var(--theme-text, #ffffff);
+	@keyframes tourPulse {
+		0%, 100% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.4); }
+		50% { box-shadow: 0 0 0 12px rgba(249, 115, 22, 0); }
+	}
+
+	.tour-result {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 16px;
+		padding: var(--spacing-md, 16px);
+		min-height: 0;
+	}
+
+	.tour-result-word {
+		font-size: 2.5rem;
+		font-weight: 800;
+		color: white;
+		letter-spacing: 0.15em;
+		text-transform: uppercase;
+	}
+
+	.tour-result-subtitle {
+		margin: 0;
+		font-size: var(--font-size-sm, 14px);
+		color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+	}
+
+	.tour-result-preview {
+		width: 100%;
+		max-width: 400px;
+		aspect-ratio: 1;
+		border-radius: var(--radius-md, 12px);
+		overflow: hidden;
 		border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
 	}
 
-	.action-ghost:hover:not(:disabled) {
-		border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
-		background: rgba(255, 255, 255, 0.06);
+	.tour-finish-btn {
+		margin-top: 8px;
 	}
-
-	/* ── Responsive: assembled layout ─────────────────────────────────── */
-	/* On wider screens, hero + card side by side */
-
-	@container fuse-layout (min-width: 700px) {
-		.fuse-layout:has(.hero-slot.slot-visible) {
-			display: grid;
-			grid-template-columns: 1fr 1fr;
-			grid-template-rows: 1fr auto;
-		}
-
-		.hero-slot.slot-visible {
-			grid-column: 1;
-			grid-row: 1;
-			max-width: none;
-		}
-
-		.card-area {
-			grid-column: 2;
-			grid-row: 1;
-		}
-
-		.fuse-bottom {
-			grid-column: 1 / -1;
-			grid-row: 2;
-		}
-	}
-
-	/* ── Tour: welcome modal ─────────────────────────────────────────── */
-
-	.tour-prompt-backdrop {
-		position: absolute;
-		inset: 0;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		background: rgba(0, 0, 0, 0.5);
-		z-index: 20;
-		padding: 24px;
-	}
-
-	.tour-prompt-card {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 16px;
-		max-width: 380px;
-		width: 100%;
-		padding: 36px 28px 28px;
-		background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
-		border-radius: 20px;
-		border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-		text-align: center;
-		animation: promptFadeIn 350ms ease-out both;
-	}
-
-	@keyframes promptFadeIn {
-		from { opacity: 0; transform: translateY(16px) scale(0.97); }
-		to { opacity: 1; transform: translateY(0) scale(1); }
-	}
-
-	.tour-prompt-icon {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 56px;
-		height: 56px;
-		border-radius: 50%;
-		background: color-mix(in srgb, #f97316 20%, transparent);
-		border: 1.5px solid color-mix(in srgb, #f97316 40%, transparent);
-		color: #f97316;
-		font-size: 1.4rem;
-	}
-
-	.tour-prompt-title {
-		font-size: 1.35rem;
-		font-weight: 700;
-		color: var(--theme-text, #fff);
-		margin: 0;
-	}
-
-	.tour-prompt-body {
-		font-size: 0.95rem;
-		color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-		margin: 0;
-		line-height: 1.5;
-		max-width: 300px;
-	}
-
-	.tour-prompt-actions {
-		display: flex;
-		flex-direction: column;
-		gap: 10px;
-		width: 100%;
-		margin-top: 4px;
-	}
-
-	.tour-prompt-accept {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 8px;
-		width: 100%;
-		padding: 14px 24px;
-		background: color-mix(in srgb, #f97316 40%, transparent);
-		border: 2px solid color-mix(in srgb, #f97316 60%, transparent);
-		border-radius: 12px;
-		color: var(--theme-text, #fff);
-		font-size: 1rem;
-		font-weight: 600;
-		cursor: pointer;
-	}
-
-	.tour-prompt-skip {
-		padding: 10px 24px;
-		background: transparent;
-		border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-		border-radius: 12px;
-		color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-		font-size: 0.9rem;
-		cursor: pointer;
-	}
-
-	/* ── Tour: banner overlay ────────────────────────────────────────── */
-
-	.tour-banner-overlay {
-		flex-shrink: 0;
-		padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
-		background: var(--theme-panel-bg, rgba(18, 18, 28, 0.95));
-		border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
-		z-index: 5;
-	}
-
-	/* ── Tour: shuffle glow ──────────────────────────────────────────── */
-
-	.shuffle-btn.glow {
-		animation: shuffleGlow 1.5s ease-in-out infinite;
-	}
-
-	@keyframes shuffleGlow {
-		0%, 100% { box-shadow: 0 0 8px rgba(249, 115, 22, 0.3); }
-		50% { box-shadow: 0 0 20px rgba(249, 115, 22, 0.6); }
-	}
-
-	/* ── Reduced motion ───────────────────────────────────────────────── */
 
 	@media (prefers-reduced-motion: reduce) {
-		.shuffle-btn,
-		.fuse-button,
-		.action-btn,
-		.length-trigger,
-		.length-option {
+		.bpm-btn,
+		.play-btn,
+		.fuse-button {
 			transition: none;
 		}
-
-		.tour-prompt-card {
+		.tour-fuse-btn {
 			animation: none;
-		}
-
-		.shuffle-btn.glow {
-			animation: none;
-			box-shadow: 0 0 12px rgba(249, 115, 22, 0.4);
 		}
 	}
 </style>
