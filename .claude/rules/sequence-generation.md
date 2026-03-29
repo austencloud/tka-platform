@@ -32,6 +32,22 @@ Any constraint (preset or natural language) triggers the reliable builder.
 
 ---
 
+## When the User Doesn't Specify a Word
+
+**If the user says "generate a sequence" / "give me a loop" / "pick the parameters" without specifying a word, DO NOT invent a word.**
+
+Use `length` and/or `loopType` instead:
+
+```
+generate_sequence(loopType: "rotated", constraintPreset: "smooth")
+generate_sequence(length: 8, constraintPreset: "smooth")
+generate_sequence(loopType: "mirrored", level: 2, constraintPreset: "smooth")
+```
+
+Words are ONLY used when the user explicitly provides one. Making up a word and then struggling when it fails is the worst possible behavior.
+
+---
+
 ## Tool Selection
 
 | Tool | Use When | Returns |

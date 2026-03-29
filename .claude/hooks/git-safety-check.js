@@ -13,8 +13,14 @@ const rules = [
   { pattern: /git\s+checkout\s+--\s+\S/, msg: "This discards uncommitted changes to a file." },
   { pattern: /git\s+reset\s+--hard/, msg: "This discards all uncommitted changes." },
   { pattern: /git\s+reset\s+HEAD~/, msg: "This rewrites recent commits and may lose work." },
+  { pattern: /git\s+reset\s+--soft\s+HEAD~/, msg: "This undoes commits. Other sessions' uncommitted work may be affected." },
+  { pattern: /git\s+reset\s+--mixed\s+HEAD~/, msg: "This undoes commits and unstages changes. Other sessions' work may be affected." },
+  { pattern: /git\s+reset\s+HEAD\s+--/, msg: "This unstages files. Check that you're not affecting other sessions' staged work." },
   { pattern: /git\s+clean\s+-f/, msg: "This permanently deletes untracked files." },
   { pattern: /git\s+restore\s+--staged\s+\.\s*$/, msg: "This unstages all staged changes." },
+  // Broad git add that catches unrelated files
+  { pattern: /git\s+add\s+-A/, msg: "git add -A stages EVERYTHING including other sessions' work. Add specific files by name." },
+  { pattern: /git\s+add\s+\.\s*($|[;&|])/, msg: "git add . stages EVERYTHING including other sessions' work. Add specific files by name." },
 
   // Stash (any form — requires explicit user permission per CLAUDE.md)
   { pattern: /git\s+stash\b/, msg: "git stash requires explicit user permission. Suggest committing instead." },
