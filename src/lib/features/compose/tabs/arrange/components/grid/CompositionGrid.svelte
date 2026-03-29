@@ -10,6 +10,8 @@
 <script lang="ts">
   import CellCanvas from "./CellCanvas.svelte";
   import CellResizeHandles from "./CellResizeHandles.svelte";
+  import CellContextMenuHost from "./cell-editor/context-menu/CellContextMenuHost.svelte";
+  import type { CellContextMenuCallbacks } from "./cell-editor/context-menu/CellContextMenuBuilder";
   import { arrangeGridState, type GridCell } from "../../state/arrange-grid-state.svelte";
 
   interface GridBoundsInfo {
@@ -495,6 +497,67 @@
 
   // Whether any drag is active (for drop zone highlighting)
   const isDragActive = $derived(dragState?.activated ?? false);
+
+  // Context menu state
+  let contextMenuHost: CellContextMenuHost | null = $state(null);
+  let contextMenuCell: GridCell | null = $state(null);
+
+  // Long-press timer for context menu on touch devices
+  let contextMenuLongPressTimer: ReturnType<typeof setTimeout> | null = null;
+
+  function buildContextMenuCallbacks(cell: GridCell): CellContextMenuCallbacks {
+    return {
+      onTransform: (type, hand) => {
+        // Apply transform to all layers (context menu is a quick shortcut)
+        for (let i = 0; i < cell.layers.length; i++) {
+          arrangeGridState.transformLayer(cell.id, i, type);
+        }
+      },
+      onSetSpeed: (speed) => arrangeGridState.setCellSpeed(cell.id, speed),
+      onSetEffect: (effect) => arrangeGridState.setCellEffect(cell.id, effect),
+      onSetTrailMode: (mode) => arrangeGridState.setCellTrailMode(cell.id, mode),
+      onSetBlueVisible: (visible) => arrangeGridState.setCellMotionVisibility(cell.id, "blue", visible),
+      onSetRedVisible: (visible) => arrangeGridState.setCellMotionVisibility(cell.id, "red", visible),
+      onSetEffort: (effort) => arrangeGridState.setCellEffort(cell.id, effort),
+      onCopyCell: () => arrangeGridState.copyCellLayers(cell.id),
+      onClearCell: () => arrangeGridState.clearCell(cell.id),
+    };
+  }
+
+  function openCellContextMenu(cell: GridCell, x: number, y: number) {
+    contextMenuCell = cell;
+    // Wait a tick for the derived menu items to rebuild with the new cell
+    requestAnimationFrame(() => {
+      contextMenuHost?.openContextMenu(x, y);
+    });
+  }
+
+  function handleCellContextMenu(cell: GridCell, e: MouseEvent) {
+    e.preventDefault();
+    if (dragState) return;
+    openCellContextMenu(cell, e.clientX, e.clientY);
+  }
+
+  function startContextMenuLongPress(cell: GridCell, e: PointerEvent) {
+    if (e.pointerType !== "touch") return;
+    contextMenuLongPressTimer = setTimeout(() => {
+      contextMenuLongPressTimer = null;
+      navigator.vibrate?.(30);
+      openCellContextMenu(cell, e.clientX, e.clientY);
+    }, 500);
+  }
+
+  function cancelContextMenuLongPress() {
+    if (contextMenuLongPressTimer !== null) {
+      clearTimeout(contextMenuLongPressTimer);
+      contextMenuLongPressTimer = null;
+    }
+  }
+
+  const contextMenuCallbacks = $derived.by(() => {
+    if (!contextMenuCell) return undefined;
+    return buildContextMenuCallbacks(contextMenuCell);
+  });
 </script>
 
 <div
@@ -528,8 +591,14 @@
               style:--row-span={cell.rowSpan}
               role="group"
               aria-label="Cell {arrangeGridState.getCellDisplayIndex(cell.id)}"
-              onpointerdown={(e) => handleDragStart(cell.id, e)}
-              oncontextmenu={(e) => { if (dragState) e.preventDefault(); }}
+              onpointerdown={(e) => {
+                handleDragStart(cell.id, e);
+                startContextMenuLongPress(cell, e);
+              }}
+              onpointermove={() => cancelContextMenuLongPress()}
+              onpointerup={() => cancelContextMenuLongPress()}
+              onpointercancel={() => cancelContextMenuLongPress()}
+              oncontextmenu={(e) => handleCellContextMenu(cell, e)}
             >
               <!-- Key by cell ID only. CellCanvas effects handle reinit when layer data changes.
                    Including sequence properties in the key causes unnecessary destruction/recreation. -->
@@ -581,6 +650,15 @@
       {/if}
     </div>
 </div>
+
+<!-- Context menu portal (renders to document.body via ContextMenu internals) -->
+{#if contextMenuCell && contextMenuCallbacks}
+  <CellContextMenuHost
+    bind:this={contextMenuHost}
+    cell={contextMenuCell}
+    callbacks={contextMenuCallbacks}
+  />
+{/if}
 
 <style>
   .composition-grid {
