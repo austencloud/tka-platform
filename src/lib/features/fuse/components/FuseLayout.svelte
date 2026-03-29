@@ -463,8 +463,8 @@
 	<!-- ─── Hero canvas: always mounted ──────────────────────────────── -->
 	<div
 		class="hero-slot"
-		class:slot-visible={isAssembled}
-		class:slot-hidden={!isAssembled}
+		class:slot-visible={isAssembled || isTransitioning}
+		class:slot-hidden={isDisassembled}
 		bind:this={heroEl}
 	>
 		<AnimatorCanvas
@@ -486,8 +486,8 @@
 	<!-- ─── Split left canvas: always mounted ────────────────────────── -->
 	<div
 		class="split-slot split-left"
-		class:slot-visible={isDisassembled}
-		class:slot-hidden={!isDisassembled}
+		class:slot-visible={isDisassembled || isTransitioning}
+		class:slot-hidden={isAssembled}
 		bind:this={splitLeftEl}
 	>
 		<AnimatorCanvas
@@ -507,8 +507,8 @@
 	<!-- ─── Split right canvas: always mounted ───────────────────────── -->
 	<div
 		class="split-slot split-right"
-		class:slot-visible={isDisassembled}
-		class:slot-hidden={!isDisassembled}
+		class:slot-visible={isDisassembled || isTransitioning}
+		class:slot-hidden={isAssembled}
 		bind:this={splitRightEl}
 	>
 		<AnimatorCanvas
