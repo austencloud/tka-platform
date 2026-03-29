@@ -39,23 +39,23 @@ const LOOP_OPTION_CONFIG: Record<
   LOOPType,
   { icon: string; description: string }
 > = {
-  [LOOPType.STRICT_ROTATED]: {
+  [LOOPType.ROTATED]: {
     icon: "fa-rotate",
     description: "Rotates positions around the grid",
   },
-  [LOOPType.STRICT_MIRRORED]: {
+  [LOOPType.MIRRORED]: {
     icon: "fa-reflect-horizontal",
     description: "Mirrors positions vertically",
   },
-  [LOOPType.STRICT_FLIPPED]: {
+  [LOOPType.FLIPPED]: {
     icon: "fa-arrows-up-down",
     description: "Mirrors positions horizontally",
   },
-  [LOOPType.STRICT_SWAPPED]: {
+  [LOOPType.SWAPPED]: {
     icon: "fa-shuffle",
     description: "Swaps blue and red props",
   },
-  [LOOPType.STRICT_INVERTED]: {
+  [LOOPType.INVERTED]: {
     icon: "fa-arrows-up-down",
     description: "Inverts motion directions",
   },
@@ -99,11 +99,11 @@ const LOOP_OPTION_CONFIG: Record<
 
 /** All supported LOOP types in display order */
 const ALL_LOOP_TYPES = [
-  LOOPType.STRICT_ROTATED,
-  LOOPType.STRICT_MIRRORED,
-  LOOPType.STRICT_FLIPPED,
-  LOOPType.STRICT_SWAPPED,
-  LOOPType.STRICT_INVERTED,
+  LOOPType.ROTATED,
+  LOOPType.MIRRORED,
+  LOOPType.FLIPPED,
+  LOOPType.SWAPPED,
+  LOOPType.INVERTED,
   LOOPType.SWAPPED_INVERTED,
   LOOPType.ROTATED_INVERTED,
   LOOPType.MIRRORED_SWAPPED,
@@ -173,7 +173,7 @@ export class LOOPValidator implements ILOOPValidator {
 
     switch (loopType) {
       // Pure rotation-based LOOPs (no swap component)
-      case LOOPType.STRICT_ROTATED:
+      case LOOPType.ROTATED:
       case LOOPType.ROTATED_INVERTED:
         return rotationSet.has(positionPair);
 
@@ -182,12 +182,12 @@ export class LOOPValidator implements ILOOPValidator {
         return rotatedSwappedSet.has(positionPair);
 
       // Pure mirror-based LOOPs (no rotation component)
-      case LOOPType.STRICT_MIRRORED:
+      case LOOPType.MIRRORED:
       case LOOPType.MIRRORED_INVERTED:
         return MIRRORED_LOOP_VALIDATION_SET.has(positionPair);
 
       // Flipped LOOP (N ↔ S)
-      case LOOPType.STRICT_FLIPPED:
+      case LOOPType.FLIPPED:
         return FLIPPED_LOOP_VALIDATION_SET.has(positionPair);
 
       // Mirrored + Swapped (uses composed validation set)
@@ -204,12 +204,12 @@ export class LOOPValidator implements ILOOPValidator {
         );
 
       // Swap-based LOOPs
-      case LOOPType.STRICT_SWAPPED:
+      case LOOPType.SWAPPED:
       case LOOPType.SWAPPED_INVERTED:
         return SWAPPED_LOOP_VALIDATION_SET.has(positionPair);
 
       // Invert-only LOOP (needs same start/end position)
-      case LOOPType.STRICT_INVERTED:
+      case LOOPType.INVERTED:
         return INVERTED_LOOP_VALIDATION_SET.has(positionPair);
 
       // Rewound LOOP - always valid (works on any sequence regardless of positions)

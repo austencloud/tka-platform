@@ -372,11 +372,11 @@ No separate bridge scoring logic. No `rotationRelation` filtering. The constrain
 
 | Executor | LOOPType |
 |----------|----------|
-| StrictRotatedExecutor | STRICT_ROTATED |
-| StrictMirroredExecutor | STRICT_MIRRORED |
-| StrictFlippedExecutor | STRICT_FLIPPED |
-| StrictSwappedExecutor | STRICT_SWAPPED |
-| StrictInvertedExecutor | STRICT_INVERTED |
+| StrictRotatedExecutor | ROTATED |
+| StrictMirroredExecutor | MIRRORED |
+| StrictFlippedExecutor | FLIPPED |
+| StrictSwappedExecutor | SWAPPED |
+| StrictInvertedExecutor | INVERTED |
 | RewoundExecutor | STRICT_REWOUND |
 | MirroredSwappedExecutor | MIRRORED_SWAPPED |
 | SwappedInvertedExecutor | SWAPPED_INVERTED |

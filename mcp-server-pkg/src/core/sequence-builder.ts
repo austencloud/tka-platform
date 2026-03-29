@@ -732,7 +732,7 @@ function attemptSequenceBuildWithEndConstraint(
  * Parameters for LOOP-constrained sequence building
  */
 export interface LoopConstraint {
-  loopType: "rewound" | "strict_rotated";
+  loopType: "rewound" | "rotated";
   sliceSize: "halved" | "quartered";
   /** If true, don't add bridge letters - just fail if not naturally compatible */
   noBridges?: boolean;
@@ -742,7 +742,7 @@ export interface LoopConstraint {
  * Build a sequence that is compatible with a LOOP transformation.
  *
  * For REWOUND: Any sequence works, so this just calls buildSequenceFromLetters.
- * For STRICT_ROTATED: The end position must be at a rotation of the start position.
+ * For ROTATED: The end position must be at a rotation of the start position.
  *   If the natural sequence doesn't end at a valid position, a bridge letter is added.
  *
  * @param letters - Array of letters to build sequence from
@@ -761,7 +761,7 @@ export function buildSequenceForLoop(
     return buildSequenceFromLetters(letters, allPictographs, maxAttempts);
   }
 
-  // For strict_rotated: build the sequence normally, then add a bridge if needed
+  // For rotated: build the sequence normally, then add a bridge if needed
   if (letters.length === 0) {
     return {
       word: "",
@@ -1046,7 +1046,7 @@ function extractPositionGroup(position: string): string {
 }
 
 /**
- * Compute valid end positions for a strict_rotated LOOP
+ * Compute valid end positions for a rotated LOOP
  */
 function computeValidEndPositionsForRotatedLoop(
   startPosition: string,

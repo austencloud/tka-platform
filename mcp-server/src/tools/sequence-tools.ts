@@ -469,7 +469,7 @@ export function registerSequenceTools(server: McpServer): void {
   //
   // Routing: loopType present OR (length without word) → engine path. Otherwise → legacy.
   const ALL_LOOP_TYPES = [
-    "strict_rotated", "strict_mirrored", "strict_flipped", "strict_swapped", "strict_inverted",
+    "rotated", "mirrored", "flipped", "swapped", "inverted",
     "swapped_inverted", "rotated_inverted", "mirrored_swapped", "mirrored_inverted", "rotated_swapped",
     "mirrored_rotated", "mirrored_inverted_rotated", "mirrored_swapped_inverted",
     "mirrored_rotated_inverted_swapped", "strict_rewound", "rewound",
@@ -509,6 +509,10 @@ export function registerSequenceTools(server: McpServer): void {
       maxAttempts: z.number().optional().default(500).describe("Maximum generation attempts (default 500 handles complex words)"),
       bridgeSelections: z.record(z.string(), z.number()).optional().describe("Map of bridge transition index to preferred bridge option index."),
 
+      // Orientation overrides
+      blueStartOrientation: z.enum(["in", "out", "clock", "counter", "clockIn", "clockOut", "counterIn", "counterOut"]).optional().describe('Override starting orientation for blue prop (default: "in")'),
+      redStartOrientation: z.enum(["in", "out", "clock", "counter", "clockIn", "clockOut", "counterIn", "counterOut"]).optional().describe('Override starting orientation for red prop (default: "in")'),
+
       // Display params
       layout: z.enum(["grid", "strip"]).optional().default("grid").describe("Layout: grid (square) or strip (single row)"),
       cellSize: z.number().optional().default(900).describe("Size of each pictograph cell in pixels"),
@@ -525,7 +529,7 @@ export function registerSequenceTools(server: McpServer): void {
       notes: z.string().optional().describe("Notes to show in footer (bottom-center)"),
       birthday: z.string().optional().describe("Birthday/creation date in ISO format (bottom-right), e.g., '2024-01-15'"),
     },
-    async ({ word, length, loopType, sliceSize = "halved", constraintPreset, constraints, handPathMode, motionTypeFilter, startPosition, endPosition, blockedStartPositions, mustContainLetters, mustNotContainLetters, gridMode = "diamond", level = 1, turnIntensity, maxAttempts = 500, bridgeSelections, layout = "grid", cellSize = 900, showStepNumbers = true, showWord = true, displayWord, darkMode = true, showDifficulty = true, showReversals = true, loopComponents, userName, notes, birthday }) => {
+    async ({ word, length, loopType, sliceSize = "halved", constraintPreset, constraints, handPathMode, motionTypeFilter, startPosition, endPosition, blockedStartPositions, mustContainLetters, mustNotContainLetters, gridMode = "diamond", level = 1, turnIntensity, maxAttempts = 500, bridgeSelections, blueStartOrientation, redStartOrientation, layout = "grid", cellSize = 900, showStepNumbers = true, showWord = true, displayWord, darkMode = true, showDifficulty = true, showReversals = true, loopComponents, userName, notes, birthday }) => {
       // Validation: must have word or length
       if (!word && !length) {
         return {
@@ -536,16 +540,16 @@ export function registerSequenceTools(server: McpServer): void {
         };
       }
 
-      // GUARDRAIL: Require tagline before generating sequences.
-      // Opt-out: pass notes="none" to explicitly skip the tagline.
-      if (!notes) {
-        const identifier = word ?? `${length}-beat sequence`;
+      // GUARDRAIL: Require tagline only for named-word sequences (creative intent).
+      // Skip tagline enforcement for: length-based, loop, mustContainLetters, or constraint-driven generation.
+      const isCreativeWordRequest = !!word && !length && !loopType && !mustContainLetters;
+      if (isCreativeWordRequest && !notes) {
         return {
           content: [
             {
               type: "text" as const,
               text: [
-                `BLOCKED: No tagline (notes) provided for "${identifier}".`,
+                `BLOCKED: No tagline (notes) provided for "${word}".`,
                 ``,
                 `You MUST present 4 tagline options to the user BEFORE generating.`,
                 ``,
@@ -590,6 +594,8 @@ export function registerSequenceTools(server: McpServer): void {
           mustContainLetters,
           loopType,
           sliceSize,
+          blueStartOrientation,
+          redStartOrientation,
         }, allPictographs);
 
         result = engineResult.result;

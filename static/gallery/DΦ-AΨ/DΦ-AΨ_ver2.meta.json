@@ -12,9 +12,9 @@
         "grid_mode": "diamond",
         "is_circular": true,
         "can_be_LOOP": true,
-        "is_strict_rotated_LOOP": false,
-        "is_strict_mirrored_LOOP": false,
-        "is_strict_swapped_LOOP": false,
+        "is_rotated_LOOP": false,
+        "is_mirrored_LOOP": false,
+        "is_swapped_LOOP": false,
         "is_mirrored_swapped_LOOP": true,
         "is_rotated_swapped_LOOP": false
       },

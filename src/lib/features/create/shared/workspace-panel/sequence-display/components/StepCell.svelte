@@ -6,7 +6,6 @@
   import { onMount } from "svelte";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import PictographContextMenuHost from "$lib/shared/pictograph/shared/components/context-menu/PictographContextMenuHost.svelte";
-  import PictographSettingsModal from "$lib/shared/pictograph/shared/components/PictographSettingsModal.svelte";
   import ArrowLayerModal from "../../../components/arrow-adjustment/ArrowLayerModal.svelte";
   import { practiceAnimationStyle } from "../../../state/practice-animation-style.svelte";
   import { createStepCellAnimationManager } from "../services/implementations/StepCellAnimationManager";
@@ -106,9 +105,8 @@
   // Element ref for focus management
   let cellElement: HTMLDivElement;
 
-  // Context menu and settings state
+  // Context menu state
   let contextMenuHost: PictographContextMenuHost;
-  let settingsOpen = $state(false);
 
   // Arrow layer adjustment modal state
   let arrowModalOpen = $state(false);
@@ -351,14 +349,8 @@
 
 <PictographContextMenuHost
   bind:this={contextMenuHost}
-  onOpenSettings={() => { settingsOpen = true; }}
   onAdjustArrow={handleAdjustArrow}
   {showArrowAdjustment}
-/>
-
-<PictographSettingsModal
-  bind:open={settingsOpen}
-  stepData={step}
 />
 
 {#if arrowModalOpen}

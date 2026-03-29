@@ -23,7 +23,7 @@ export interface ILOOPTypeResolver {
    *
    * Analyzes the LOOP type string to extract which components are active.
    * For example:
-   * - "strict_rotated" -> [ROTATED]
+   * - "rotated" -> [ROTATED]
    * - "mirrored_inverted" -> [MIRRORED, INVERTED]
    * - "mirrored_inverted_rotated" -> [MIRRORED, INVERTED, ROTATED]
    *
@@ -52,7 +52,7 @@ export interface ILOOPTypeResolver {
    * - Single components (strict types)
    * - Two-component combinations
    * - Three-component combinations
-   * - Fallback to STRICT_ROTATED for invalid combinations
+   * - Fallback to ROTATED for invalid combinations
    *
    * @param components - Set of LOOP components to combine
    * @returns The corresponding LOOP type enum
@@ -68,7 +68,7 @@ export interface ILOOPTypeResolver {
    * - Truncates long names with ellipsis for compact display
    *
    * Examples:
-   * - "strict_rotated" -> "Strict Rotated"
+   * - "rotated" -> "Strict Rotated"
    * - "mirrored_inverted_rotated" -> "Mirrored + 2 more"
    *
    * @param loopType - The LOOP type to format

@@ -354,7 +354,7 @@ export function isLOOPValidForPositionPair(
 
   switch (loopType) {
     // Pure rotation-based LOOPs
-    case LOOPType.STRICT_ROTATED:
+    case LOOPType.ROTATED:
     case LOOPType.ROTATED_INVERTED:
       return rotationSet.has(positionPair);
 
@@ -363,7 +363,7 @@ export function isLOOPValidForPositionPair(
       return rotatedSwappedSet.has(positionPair);
 
     // Pure mirror-based LOOPs
-    case LOOPType.STRICT_MIRRORED:
+    case LOOPType.MIRRORED:
     case LOOPType.MIRRORED_INVERTED:
       return MIRRORED_LOOP_VALIDATION_SET.has(positionPair);
 
@@ -378,12 +378,12 @@ export function isLOOPValidForPositionPair(
       return MIRRORED_LOOP_VALIDATION_SET.has(positionPair) && rotationSet.has(positionPair);
 
     // Swap-based LOOPs
-    case LOOPType.STRICT_SWAPPED:
+    case LOOPType.SWAPPED:
     case LOOPType.SWAPPED_INVERTED:
       return SWAPPED_LOOP_VALIDATION_SET.has(positionPair);
 
     // Invert-only LOOP
-    case LOOPType.STRICT_INVERTED:
+    case LOOPType.INVERTED:
       return INVERTED_LOOP_VALIDATION_SET.has(positionPair);
 
     // Rewound LOOP - always valid (works on any sequence)
@@ -453,7 +453,7 @@ export function getExpectedEndPosition(
   sliceSize: SliceSize
 ): string | null {
   switch (loopType) {
-    case LOOPType.STRICT_ROTATED:
+    case LOOPType.ROTATED:
     case LOOPType.ROTATED_INVERTED:
       if (sliceSize === SliceSize.HALVED) {
         return HALF_POSITION_MAP[startPosition] || null;
@@ -462,15 +462,15 @@ export function getExpectedEndPosition(
         return QUARTER_POSITION_MAP_CW[startPosition] || null;
       }
 
-    case LOOPType.STRICT_MIRRORED:
+    case LOOPType.MIRRORED:
     case LOOPType.MIRRORED_INVERTED:
       return VERTICAL_MIRROR_POSITION_MAP[startPosition] || null;
 
-    case LOOPType.STRICT_SWAPPED:
+    case LOOPType.SWAPPED:
     case LOOPType.SWAPPED_INVERTED:
       return SWAPPED_POSITION_MAP[startPosition] || null;
 
-    case LOOPType.STRICT_INVERTED:
+    case LOOPType.INVERTED:
       return startPosition; // Returns to same position
 
     case LOOPType.REWOUND:
@@ -541,7 +541,7 @@ export function getValidEndPositionsForLoop(
   const validPositions: string[] = [];
 
   switch (loopType) {
-    case LOOPType.STRICT_ROTATED:
+    case LOOPType.ROTATED:
     case LOOPType.ROTATED_INVERTED:
       if (sliceSize === SliceSize.HALVED) {
         const halved = HALF_POSITION_MAP[startPosition];
@@ -555,19 +555,19 @@ export function getValidEndPositionsForLoop(
       }
       break;
 
-    case LOOPType.STRICT_MIRRORED:
+    case LOOPType.MIRRORED:
     case LOOPType.MIRRORED_INVERTED:
       const mirrored = VERTICAL_MIRROR_POSITION_MAP[startPosition];
       if (mirrored) validPositions.push(mirrored);
       break;
 
-    case LOOPType.STRICT_SWAPPED:
+    case LOOPType.SWAPPED:
     case LOOPType.SWAPPED_INVERTED:
       const swapped = SWAPPED_POSITION_MAP[startPosition];
       if (swapped) validPositions.push(swapped);
       break;
 
-    case LOOPType.STRICT_INVERTED:
+    case LOOPType.INVERTED:
       validPositions.push(startPosition); // Returns to same position
       break;
 

@@ -46,11 +46,11 @@ Shows "Off" when disabled, LOOP type name when enabled. Click opens the expanded
   const displayValue = $derived.by(() => {
     if (!loopEnabled) return "Off";
     const typeMap: Record<LOOPType, string> = {
-      [LOOPType.STRICT_ROTATED]: t("generator_loop_rotated"),
-      [LOOPType.STRICT_MIRRORED]: t("generator_loop_mirrored"),
-      [LOOPType.STRICT_FLIPPED]: t("generator_loop_flipped"),
-      [LOOPType.STRICT_SWAPPED]: t("generator_loop_swapped"),
-      [LOOPType.STRICT_INVERTED]: t("generator_loop_inverted"),
+      [LOOPType.ROTATED]: t("generator_loop_rotated"),
+      [LOOPType.MIRRORED]: t("generator_loop_mirrored"),
+      [LOOPType.FLIPPED]: t("generator_loop_flipped"),
+      [LOOPType.SWAPPED]: t("generator_loop_swapped"),
+      [LOOPType.INVERTED]: t("generator_loop_inverted"),
       [LOOPType.SWAPPED_INVERTED]: t("generator_loop_swapped_inverted"),
       [LOOPType.MIRRORED_SWAPPED]: t("generator_loop_mirrored_swapped"),
       [LOOPType.ROTATED_INVERTED]: t("generator_loop_rotated_inverted"),
@@ -61,7 +61,9 @@ Shows "Off" when disabled, LOOP type name when enabled. Click opens the expanded
       [LOOPType.MIRRORED_ROTATED_INVERTED_SWAPPED]: t("generator_loop_all_four"),
       [LOOPType.STRICT_REWOUND]: t("generator_loop_rewound"),
     };
-    return typeMap[currentLOOPType as keyof typeof typeMap] || currentLOOPType;
+    // Fallback: strip "strict_" prefix and title-case for unmapped legacy values
+    return typeMap[currentLOOPType as keyof typeof typeMap] ||
+      currentLOOPType.replace(/^strict_/, "").split("_").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" / ");
   });
 
   function handleClick() {

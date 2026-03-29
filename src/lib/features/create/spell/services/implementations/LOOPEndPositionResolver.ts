@@ -40,7 +40,7 @@ export class LOOPEndPositionResolver implements ILOOPEndPositionResolver {
         return [];
 
       // --- ROTATED (and composites where rotation takes precedence) ---
-      case LOOPType.STRICT_ROTATED:
+      case LOOPType.ROTATED:
       case LOOPType.ROTATED_INVERTED:
       case LOOPType.ROTATED_SWAPPED:
       case LOOPType.MIRRORED_ROTATED:
@@ -49,12 +49,12 @@ export class LOOPEndPositionResolver implements ILOOPEndPositionResolver {
         return this.getRotatedEndPositions(startPosition, sliceSize);
 
       // --- MIRRORED (vertical mirror, and composites without rotation) ---
-      case LOOPType.STRICT_MIRRORED:
+      case LOOPType.MIRRORED:
       case LOOPType.MIRRORED_INVERTED:
         return this.getSingleEndPosition(VERTICAL_MIRROR_POSITION_MAP, startPosition);
 
       // --- FLIPPED (horizontal mirror) ---
-      case LOOPType.STRICT_FLIPPED:
+      case LOOPType.FLIPPED:
         return this.getSingleEndPosition(HORIZONTAL_MIRROR_POSITION_MAP, startPosition);
 
       // --- MIRRORED_SWAPPED: compose mirror then swap ---
@@ -66,12 +66,12 @@ export class LOOPEndPositionResolver implements ILOOPEndPositionResolver {
       }
 
       // --- SWAPPED (strict only, no rotation/mirror) ---
-      case LOOPType.STRICT_SWAPPED:
+      case LOOPType.SWAPPED:
       case LOOPType.SWAPPED_INVERTED:
         return this.getSingleEndPosition(SWAPPED_POSITION_MAP, startPosition);
 
       // --- INVERTED alone: must return to start ---
-      case LOOPType.STRICT_INVERTED:
+      case LOOPType.INVERTED:
         return [startPosition];
 
       default:

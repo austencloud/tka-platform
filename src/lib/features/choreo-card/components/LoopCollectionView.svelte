@@ -3,6 +3,7 @@
   import LoopBeatGrid from "./LoopBeatGrid.svelte";
   import LoopTurnsGrid from "./LoopTurnsGrid.svelte";
   import LoopReversalGrid from "./LoopReversalGrid.svelte";
+  import LoopDeckFilters from "./LoopDeckFilters.svelte";
   import DeckCard from "./DeckCard.svelte";
 
   interface Props {
@@ -13,17 +14,21 @@
   const { decks, onSelectDeck }: Props = $props();
 
   // Loop type pill bar state
-  type LoopType = 'strict_rotated' | 'mirrored' | 'swapped' | 'inverted' | 'rewound';
+  type LoopType = 'rotated' | 'mirrored' | 'swapped' | 'inverted' | 'rewound';
 
   const LOOP_TYPE_LABELS: { id: LoopType; label: string }[] = [
-    { id: 'strict_rotated', label: 'Rotated' },
+    { id: 'rotated', label: 'Rotated' },
     { id: 'mirrored', label: 'Mirrored' },
     { id: 'swapped', label: 'Swapped' },
     { id: 'inverted', label: 'Inverted' },
     { id: 'rewound', label: 'Rewound' },
   ];
 
-  let activeLoopType = $state<LoopType>('strict_rotated');
+  let activeLoopType = $state<LoopType>('rotated');
+
+  // Slice type and grid mode filter state
+  let activeSliceType = $state<string>('halved');
+  let activeGridMode = $state<string>('diamond');
 
   // Axis toggle state
   type AxisView = 'beats' | 'turns' | 'reversal';
@@ -34,18 +39,50 @@
 
   // Which loop types have any matching decks
   const populatedLoopTypes = $derived(
-    new Set(decks.map(d => d.loopType || 'strict_rotated'))
+    new Set(decks.map(d => d.loopType || 'rotated'))
   );
 
   // Decks filtered by active loop type
   const filteredDecks = $derived(
-    decks.filter(d => (d.loopType || 'strict_rotated') === activeLoopType)
+    decks.filter(d => (d.loopType || 'rotated') === activeLoopType)
   );
 
-  // Decks filtered by drill-down selection
+  // Count distinct values per axis to hide single-option tabs
+  const distinctBeatCounts = $derived(new Set(filteredDecks.map(d => d.beatCount || 0)).size);
+  const distinctTurnCounts = $derived(new Set(filteredDecks.map(d => d.turns ?? 0)).size);
+  const distinctReversalPatterns = $derived(new Set(filteredDecks.map(d => d.reversalPattern || 'continuous')).size);
+
+  // Axes worth showing (more than one distinct value)
+  type AxisDef = { id: AxisView; label: string };
+  const visibleAxes = $derived<AxisDef[]>(
+    ([
+      { id: 'beats' as AxisView, label: 'By Beats', count: distinctBeatCounts },
+      { id: 'turns' as AxisView, label: 'By Turns', count: distinctTurnCounts },
+      { id: 'reversal' as AxisView, label: 'By Reversal', count: distinctReversalPatterns },
+    ] as const).filter(a => a.count > 1).map(({ id, label }) => ({ id, label }))
+  );
+
+  // If current axis got hidden, fall back to the first visible one
+  $effect(() => {
+    if (visibleAxes.length > 0 && !visibleAxes.some(a => a.id === activeAxis)) {
+      activeAxis = visibleAxes[0]!.id;
+    }
+  });
+
+  // Apply slice type and grid mode filters on top of loop type
+  const sliceAndGridFiltered = $derived(
+    filteredDecks.filter(d => {
+      const deckSlice = d.sliceType || (d.id.includes('halved') ? 'halved' : d.id.includes('quartered') ? 'quartered' : null);
+      const matchesSlice = !deckSlice || deckSlice === activeSliceType;
+      const matchesGrid = d.gridMode === activeGridMode;
+      return matchesSlice && matchesGrid;
+    })
+  );
+
+  // Decks filtered by drill-down selection (uses sliceAndGridFiltered as base)
   const drilledDecks = $derived(
     drillFilter
-      ? filteredDecks.filter(d => {
+      ? sliceAndGridFiltered.filter(d => {
           if (drillFilter!.axis === 'beats') return (d.beatCount || 0) === drillFilter!.value;
           if (drillFilter!.axis === 'turns') return (d.turns ?? 0) === drillFilter!.value;
           if (drillFilter!.axis === 'reversal') return (d.reversalPattern || 'continuous') === drillFilter!.value;
@@ -71,17 +108,17 @@
   }
 
   function handleSelectBeatCount(beatCount: number): void {
-    const matching = filteredDecks.filter(d => (d.beatCount || 0) === beatCount);
+    const matching = sliceAndGridFiltered.filter(d => (d.beatCount || 0) === beatCount);
     drillOrSelect('beats', beatCount, matching);
   }
 
   function handleSelectTurns(turns: number): void {
-    const matching = filteredDecks.filter(d => (d.turns ?? 0) === turns);
+    const matching = sliceAndGridFiltered.filter(d => (d.turns ?? 0) === turns);
     drillOrSelect('turns', turns, matching);
   }
 
   function handleSelectPattern(patternId: string): void {
-    const matching = filteredDecks.filter(d => (d.reversalPattern || 'continuous') === patternId);
+    const matching = sliceAndGridFiltered.filter(d => (d.reversalPattern || 'continuous') === patternId);
     drillOrSelect('reversal', patternId, matching);
   }
 
@@ -112,39 +149,33 @@
     </div>
   {/if}
 
-  <!-- Axis toggle -->
-  <div class="axis-toggle" role="tablist" aria-label="Browse axis">
-    <button
-      type="button"
-      role="tab"
-      class="axis-btn"
-      class:active={activeAxis === 'beats'}
-      aria-selected={activeAxis === 'beats'}
-      onclick={() => (activeAxis = 'beats')}
-    >
-      By Beats
-    </button>
-    <button
-      type="button"
-      role="tab"
-      class="axis-btn"
-      class:active={activeAxis === 'turns'}
-      aria-selected={activeAxis === 'turns'}
-      onclick={() => (activeAxis = 'turns')}
-    >
-      By Turns
-    </button>
-    <button
-      type="button"
-      role="tab"
-      class="axis-btn"
-      class:active={activeAxis === 'reversal'}
-      aria-selected={activeAxis === 'reversal'}
-      onclick={() => (activeAxis = 'reversal')}
-    >
-      By Reversal
-    </button>
-  </div>
+  <!-- Axis toggle — only show tabs with 2+ distinct values -->
+  {#if visibleAxes.length > 1}
+    <div class="axis-toggle" role="tablist" aria-label="Browse axis">
+      {#each visibleAxes as axis (axis.id)}
+        <button
+          type="button"
+          role="tab"
+          class="axis-btn"
+          class:active={activeAxis === axis.id}
+          aria-selected={activeAxis === axis.id}
+          onclick={() => (activeAxis = axis.id)}
+        >
+          {axis.label}
+        </button>
+      {/each}
+    </div>
+  {/if}
+
+  <!-- Slice type + grid mode filter bar -->
+  <LoopDeckFilters
+    decks={filteredDecks}
+    {activeSliceType}
+    {activeGridMode}
+    filteredCount={sliceAndGridFiltered.length}
+    onSliceTypeChange={(s) => activeSliceType = s}
+    onGridModeChange={(g) => activeGridMode = g}
+  />
 
   <!-- Grid content or drill-down list — vertically centered in remaining space -->
   <div class="grid-content">
@@ -170,11 +201,11 @@
         {/if}
       </div>
     {:else if activeAxis === 'beats'}
-      <LoopBeatGrid decks={filteredDecks} onSelectBeatCount={handleSelectBeatCount} />
+      <LoopBeatGrid decks={sliceAndGridFiltered} onSelectBeatCount={handleSelectBeatCount} />
     {:else if activeAxis === 'turns'}
-      <LoopTurnsGrid decks={filteredDecks} onSelectTurns={handleSelectTurns} />
+      <LoopTurnsGrid decks={sliceAndGridFiltered} onSelectTurns={handleSelectTurns} />
     {:else}
-      <LoopReversalGrid decks={filteredDecks} onSelectPattern={handleSelectPattern} />
+      <LoopReversalGrid decks={sliceAndGridFiltered} onSelectPattern={handleSelectPattern} />
     {/if}
   </div>
 </div>

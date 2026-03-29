@@ -28,9 +28,9 @@
  * Deduplicates to one representative per letter-combination per start position.
  *
  * Usage:
- *   node scripts/enumerate-deck.cjs --loopType strict_rotated --slice halved --seedLength 3 --level 1
- *   node scripts/enumerate-deck.cjs --loopType strict_rotated --slice quartered --seedLength 2 --level 1 --dry-run
- *   node scripts/enumerate-deck.cjs --loopType strict_rotated --slice halved --seedLength 3 --level 1 --out deck.json
+ *   node scripts/enumerate-deck.cjs --loopType rotated --slice halved --seedLength 3 --level 1
+ *   node scripts/enumerate-deck.cjs --loopType rotated --slice quartered --seedLength 2 --level 1 --dry-run
+ *   node scripts/enumerate-deck.cjs --loopType rotated --slice halved --seedLength 3 --level 1 --out deck.json
  */
 
 const { LOOPType } = require("../packages/sequence-engine/dist/loop/loop-types.js");
@@ -89,7 +89,7 @@ if (level < 1 || level > 3) {
 
 // Validate LOOP type + slice size combination
 const QUARTERED_CAPABLE = new Set([
-  "strict_rotated", "rotated_swapped", "rotated_inverted",
+  "rotated", "rotated_swapped", "rotated_inverted",
   "mirrored_rotated", "mirrored_inverted_rotated",
   "mirrored_rotated_inverted_swapped",
 ]);
@@ -112,7 +112,7 @@ console.log("");
 
 - [ ] **Step 2: Run to verify CLI parsing works**
 
-Run: `node scripts/enumerate-deck.cjs --loopType strict_rotated --slice halved --seedLength 3 --level 1 --dry-run`
+Run: `node scripts/enumerate-deck.cjs --loopType rotated --slice halved --seedLength 3 --level 1 --dry-run`
 Expected: Prints configuration summary without errors.
 
 - [ ] **Step 3: Commit**
@@ -203,7 +203,7 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
 
 - [ ] **Step 2: Test CSV loading**
 
-Run: `node scripts/enumerate-deck.cjs --loopType strict_rotated --slice halved --seedLength 3 --level 1 --dry-run`
+Run: `node scripts/enumerate-deck.cjs --loopType rotated --slice halved --seedLength 3 --level 1 --dry-run`
 Expected: "Loaded 576 variations from diamond CSV" (or similar count) + adjacency map size.
 
 - [ ] **Step 3: Commit**
@@ -253,15 +253,15 @@ const {
  */
 function getValidationSet(lt, sl) {
   switch (lt) {
-    case "strict_rotated":
+    case "rotated":
       return sl === "quartered" ? QUARTERED_LOOPS : HALVED_LOOPS;
-    case "strict_mirrored":
+    case "mirrored":
       return MIRRORED_LOOP_VALIDATION_SET;
-    case "strict_flipped":
+    case "flipped":
       return FLIPPED_LOOP_VALIDATION_SET;
-    case "strict_swapped":
+    case "swapped":
       return SWAPPED_LOOP_VALIDATION_SET;
-    case "strict_inverted":
+    case "inverted":
     case "swapped_inverted":
     case "rewound":
       return INVERTED_LOOP_VALIDATION_SET;
@@ -320,12 +320,12 @@ console.log("");
 
 - [ ] **Step 2: Test constraint resolution for halved rotated**
 
-Run: `node scripts/enumerate-deck.cjs --loopType strict_rotated --slice halved --seedLength 3 --level 1 --dry-run`
+Run: `node scripts/enumerate-deck.cjs --loopType rotated --slice halved --seedLength 3 --level 1 --dry-run`
 Expected: Shows alpha1→alpha5, beta5→beta1, gamma11→gamma3 (or similar 180° pairs).
 
 - [ ] **Step 3: Test constraint resolution for quartered rotated (existing L1 case)**
 
-Run: `node scripts/enumerate-deck.cjs --loopType strict_rotated --slice quartered --seedLength 2 --level 1 --dry-run`
+Run: `node scripts/enumerate-deck.cjs --loopType rotated --slice quartered --seedLength 2 --level 1 --dry-run`
 Expected: Shows alpha1→alpha3, beta5→beta7, gamma11→gamma13.
 
 - [ ] **Step 4: Commit**
@@ -454,12 +454,12 @@ console.log(`\nTotal raw seeds: ${totalRawSeeds}`);
 
 - [ ] **Step 2: Test DFS enumeration for quartered 2-beat (should match ~200 before dedup)**
 
-Run: `node scripts/enumerate-deck.cjs --loopType strict_rotated --slice quartered --seedLength 2 --level 1 --dry-run`
+Run: `node scripts/enumerate-deck.cjs --loopType rotated --slice quartered --seedLength 2 --level 1 --dry-run`
 Expected: Raw seed counts per start position, total should be near the L1 deck's pre-dedup count.
 
 - [ ] **Step 3: Test DFS enumeration for halved 3-beat**
 
-Run: `node scripts/enumerate-deck.cjs --loopType strict_rotated --slice halved --seedLength 3 --level 1 --dry-run`
+Run: `node scripts/enumerate-deck.cjs --loopType rotated --slice halved --seedLength 3 --level 1 --dry-run`
 Expected: Prints raw seed counts — this is the first time we'll see the actual number.
 
 - [ ] **Step 4: Commit**
@@ -603,7 +603,7 @@ console.log(`  └${"─".repeat(28)}┴${validStarts.map(() => "─".repeat(col
 
 - [ ] **Step 2: Test quartered 2-beat output matches L1 deck count of 192**
 
-Run: `node scripts/enumerate-deck.cjs --loopType strict_rotated --slice quartered --seedLength 2 --level 1 --dry-run`
+Run: `node scripts/enumerate-deck.cjs --loopType rotated --slice quartered --seedLength 2 --level 1 --dry-run`
 Expected: TOTAL = 192 (matching the existing `enumerate-l1-deck.cjs`).
 
 - [ ] **Step 3: Run the existing L1 script and compare letter-pair seeds**
@@ -613,7 +613,7 @@ Compare the total and per-start-position counts with the new script's output.
 
 - [ ] **Step 4: Run halved 3-beat to discover the deck size**
 
-Run: `node scripts/enumerate-deck.cjs --loopType strict_rotated --slice halved --seedLength 3 --level 1 --dry-run`
+Run: `node scripts/enumerate-deck.cjs --loopType rotated --slice halved --seedLength 3 --level 1 --dry-run`
 Expected: First-ever complete count of the L1 halved 3-beat rotated deck.
 
 - [ ] **Step 5: Commit**
@@ -687,7 +687,7 @@ if (!outPath && !seedFirestore) {
 
 - [ ] **Step 2: Test JSON output**
 
-Run: `node scripts/enumerate-deck.cjs --loopType strict_rotated --slice halved --seedLength 3 --level 1 --out /tmp/test-deck.json`
+Run: `node scripts/enumerate-deck.cjs --loopType rotated --slice halved --seedLength 3 --level 1 --out /tmp/test-deck.json`
 Expected: JSON file written with metadata + families + sequences.
 
 - [ ] **Step 3: Verify JSON structure**
@@ -718,7 +718,7 @@ node scripts/enumerate-l1-deck.cjs 2>&1 | tail -20
 
 Run the new script:
 ```bash
-node scripts/enumerate-deck.cjs --loopType strict_rotated --slice quartered --seedLength 2 --level 1 --dry-run
+node scripts/enumerate-deck.cjs --loopType rotated --slice quartered --seedLength 2 --level 1 --dry-run
 ```
 
 Compare:
@@ -729,7 +729,7 @@ Compare:
 - [ ] **Step 2: Compare actual letter-pair seeds**
 
 ```bash
-node scripts/enumerate-deck.cjs --loopType strict_rotated --slice quartered --seedLength 2 --level 1 --out /tmp/new-deck.json
+node scripts/enumerate-deck.cjs --loopType rotated --slice quartered --seedLength 2 --level 1 --out /tmp/new-deck.json
 node -e "
 const d = require('/tmp/new-deck.json');
 const seeds = d.families.flatMap(f => f.sequences.map(s => s.seedWord)).sort();
@@ -762,7 +762,7 @@ git commit -m "fix(enumerate): align with L1 deck validation"
 - [ ] **Step 1: Generate the deck**
 
 ```bash
-node scripts/enumerate-deck.cjs --loopType strict_rotated --slice halved --seedLength 3 --level 1 --out decks/strict_rotated_halved_L1_3beat.json
+node scripts/enumerate-deck.cjs --loopType rotated --slice halved --seedLength 3 --level 1 --out decks/rotated_halved_L1_3beat.json
 ```
 
 - [ ] **Step 2: Record the results**
@@ -772,6 +772,6 @@ Note the total count, per-start-position breakdown, and hand-path family distrib
 - [ ] **Step 3: Commit the deck data**
 
 ```bash
-git add decks/strict_rotated_halved_L1_3beat.json
-git commit -m "data: L1 halved strict_rotated 3-beat deck enumeration"
+git add decks/rotated_halved_L1_3beat.json
+git commit -m "data: L1 halved rotated 3-beat deck enumeration"
 ```

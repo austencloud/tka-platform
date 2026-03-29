@@ -5,7 +5,7 @@
  * in Firestore. Only adds missing fields, never overwrites existing ones.
  *
  * Inference rules:
- *   loopType — from deck ID (e.g., "strict_rotated_..." → "strict_rotated")
+ *   loopType — from deck ID (e.g., "rotated_..." → "rotated")
  *   beatCount — from deck name using regex /(\d+)-Beat/
  *   reversalPattern — defaults to "continuous" if not set
  *
@@ -26,10 +26,10 @@ const DECKS_COLLECTION = "decks";
 
 // LOOP type patterns to match in deck ID (order matters - check longer strings first)
 const LOOP_TYPE_PATTERNS = [
-  "strict_rotated",
-  "strict_mirrored",
-  "strict_swapped",
-  "strict_inverted",
+  "rotated",
+  "mirrored",
+  "swapped",
+  "inverted",
   "rewound",
 ];
 

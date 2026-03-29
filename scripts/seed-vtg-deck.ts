@@ -424,7 +424,7 @@ function buildVTGSequence(
   const result = executeLOOP(
     inputSteps,
     seedWord,
-    LOOPType.STRICT_ROTATED,
+    LOOPType.ROTATED,
     def.sliceSize,
     allPictographs
   );
@@ -576,7 +576,7 @@ async function writeToFirestore(sequences: VTGSequence[]): Promise<void> {
       word: seq.word,
       gridMode: "diamond",
       isCircular: true,
-      loopType: "strict_rotated",
+      loopType: "rotated",
       sequenceLength: 4,
       level: 1,
       isFavorite: false,

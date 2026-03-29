@@ -2,11 +2,11 @@
  * Position and Location Maps for Strict LOOP Variations
  *
  * These maps define transformations for:
- * - STRICT_MIRRORED: Vertical mirroring of positions and locations
- * - STRICT_SWAPPED: Color swapping position transformations
- * - STRICT_INVERTED: Letter complementarity mappings
+ * - MIRRORED: Vertical mirroring of positions and locations
+ * - SWAPPED: Color swapping position transformations
+ * - INVERTED: Letter complementarity mappings
  *
- * Note: STRICT_ROTATED uses different maps defined in circular-position-maps.ts
+ * Note: ROTATED uses different maps defined in circular-position-maps.ts
  */
 
 import {
@@ -17,7 +17,7 @@ import {
 /**
  * Vertical Mirror Position Map
  * Mirrors positions vertically across the center horizontal axis
- * Used by STRICT_MIRRORED LOOP type
+ * Used by MIRRORED LOOP type
  *
  * Examples:
  * - ALPHA2 (SW-NE) ↔ ALPHA8 (SE-NW) - diagonals flip
@@ -124,7 +124,7 @@ export const VERTICAL_MIRROR_POSITION_MAP: Record<GridPosition, GridPosition> = 
 /**
  * Vertical Mirror Location Map
  * Mirrors hand locations vertically (flips east/west)
- * Used by STRICT_MIRRORED for transforming motion end locations
+ * Used by MIRRORED for transforming motion end locations
  *
  * Examples:
  * - E (east) ↔ W (west)
@@ -281,7 +281,7 @@ export const HORIZONTAL_MIRROR_LOCATION_MAP: Record<
 /**
  * Swapped Position Map
  * Maps positions to their color-swapped equivalents
- * Used by STRICT_SWAPPED LOOP type
+ * Used by SWAPPED LOOP type
  *
  * Pattern:
  * - Alpha: 180° rotation (cross-pattern)
@@ -393,7 +393,7 @@ export const SWAPPED_POSITION_MAP: Record<GridPosition, GridPosition> = {
 /**
  * Inverted Letter Map
  * Maps letters to their inverted pairs (opposite motion types)
- * Used by STRICT_INVERTED LOOP type
+ * Used by INVERTED LOOP type
  *
  * Pattern:
  * - Most letters pair with adjacent letter (A↔B, D↔E, etc.)

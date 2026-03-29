@@ -170,7 +170,7 @@ export class GenerationOrchestrator implements IGenerationOrchestrator {
   private mapLoopTypeToEngine(
     appLoopType?: string
   ): LOOPType {
-    if (!appLoopType) return LOOPType.STRICT_ROTATED;
+    if (!appLoopType) return LOOPType.ROTATED;
 
     // Handle the naming difference for rewound
     if (appLoopType === "strict_rewound") {
@@ -181,7 +181,7 @@ export class GenerationOrchestrator implements IGenerationOrchestrator {
     const engineType = Object.values(LOOPType).find(
       (v) => v === appLoopType
     );
-    return engineType ?? LOOPType.STRICT_ROTATED;
+    return engineType ?? LOOPType.ROTATED;
   }
 
   /**

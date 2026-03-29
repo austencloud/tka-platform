@@ -49,10 +49,10 @@
   // Get a color for the LOOP type badge
   function getLoopColor(loopType: LOOPType): string {
     const colors: Partial<Record<LOOPType, string>> = {
-      [LOOPType.STRICT_ROTATED]: "#6366f1",     // Indigo
-      [LOOPType.STRICT_MIRRORED]: "#8b5cf6",    // Purple
-      [LOOPType.STRICT_SWAPPED]: "#ec4899",     // Pink
-      [LOOPType.STRICT_INVERTED]: "#f59e0b",    // Amber
+      [LOOPType.ROTATED]: "#6366f1",     // Indigo
+      [LOOPType.MIRRORED]: "#8b5cf6",    // Purple
+      [LOOPType.SWAPPED]: "#ec4899",     // Pink
+      [LOOPType.INVERTED]: "#f59e0b",    // Amber
       [LOOPType.ROTATED_SWAPPED]: "#10b981",    // Emerald
       [LOOPType.MIRRORED_SWAPPED]: "#06b6d4",   // Cyan
       [LOOPType.ROTATED_INVERTED]: "#f97316",   // Orange

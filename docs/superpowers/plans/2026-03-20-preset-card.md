@@ -104,7 +104,7 @@ function createDefaultPreset(): GenerationPreset {
     gridMode: GridMode.DIAMOND,
     propContinuity: PropContinuity.CONTINUOUS,
     sliceSize: SliceSize.QUARTERED,
-    loopType: LOOPType.STRICT_ROTATED,
+    loopType: LOOPType.ROTATED,
     constraintPreset: "smooth",
     handPathMode: "mixed",
     motionTypeFilter: null,

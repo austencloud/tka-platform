@@ -61,7 +61,7 @@ export class MirroredRotatedInvertedLOOPExecutor implements ILOOPExecutor {
       }
     }
 
-    // Step 1: Apply STRICT_ROTATED with user-selected slice size
+    // Step 1: Apply ROTATED with user-selected slice size
     // HALVED: doubles the sequence (e.g., 4 steps → 8 steps)
     // QUARTERED: quadruples the sequence (e.g., 2 steps → 8 steps)
     // Returns to home position in both cases

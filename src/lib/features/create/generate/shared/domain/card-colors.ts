@@ -168,6 +168,16 @@ export function getCardColors(backgroundType: BackgroundType): CardColors {
 }
 
 /**
+ * Get a single card's gradient color by its colorKey
+ */
+export function getCardColor(
+  colorKey: keyof CardColors,
+  backgroundType: BackgroundType,
+): string {
+  return getCardColors(backgroundType)[colorKey].color;
+}
+
+/**
  * Check if a background needs darker card colors
  */
 export function isBrightBackground(backgroundType: BackgroundType): boolean {

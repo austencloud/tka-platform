@@ -387,7 +387,7 @@
     exportTotal = pairs.length;
 
     try {
-      const blob = await pdfExporter.exportHomePrintPDF(pairs, deck.name, (current, total) => {
+      const blob = await pdfExporter.exportHomePrintPDF(pairs, deck.name, 'poker', (current, total) => {
         exportProgress = current;
         exportTotal = total;
       });

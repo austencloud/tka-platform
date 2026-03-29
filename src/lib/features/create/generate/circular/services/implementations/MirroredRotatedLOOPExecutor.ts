@@ -58,7 +58,7 @@ export class MirroredRotatedLOOPExecutor implements ILOOPExecutor {
       }
     }
 
-    // Step 1: Apply STRICT_ROTATED with user-selected slice size
+    // Step 1: Apply ROTATED with user-selected slice size
     // HALVED: doubles the sequence (e.g., 4 steps → 8 steps)
     // QUARTERED: quadruples the sequence (e.g., 2 steps → 8 steps)
     // Returns to home position in both cases
@@ -67,7 +67,7 @@ export class MirroredRotatedLOOPExecutor implements ILOOPExecutor {
       sliceSize
     );
 
-    // Step 2: Apply STRICT_MIRRORED to the rotated sequence
+    // Step 2: Apply MIRRORED to the rotated sequence
     // This always doubles the sequence using vertical mirroring
     // For example: 8 steps → 16 steps final
     const finalSequence = this.strictMirroredExecutor.executeLOOP(

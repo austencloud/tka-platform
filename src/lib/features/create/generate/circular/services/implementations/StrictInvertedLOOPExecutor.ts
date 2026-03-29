@@ -13,7 +13,7 @@
  * - Keeping positions the same (sequence returns to start position)
  * - Maintaining the same hand locations
  *
- * IMPORTANT: Slice size is ALWAYS halved (no user choice like STRICT_ROTATED)
+ * IMPORTANT: Slice size is ALWAYS halved (no user choice like ROTATED)
  * IMPORTANT: End position must equal start position for inverted LOOPs
  */
 

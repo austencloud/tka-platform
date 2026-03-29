@@ -113,13 +113,14 @@ describe("HandPathFactory", () => {
       expect(path.endLocation).toBe(GridLocation.EAST);
     });
 
-    it("sets length to the number of locations", () => {
+    it("sets length to the number of beats (locations minus one)", () => {
       const path = factory.create([
         GridLocation.NORTH,
         GridLocation.EAST,
         GridLocation.SOUTH,
       ]);
-      expect(path.length).toBe(3);
+      // 3 locations = 2 beats (each consecutive pair defines one step)
+      expect(path.length).toBe(2);
     });
 
     it("deduplicates uniqueLocations while preserving order", () => {

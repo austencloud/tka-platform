@@ -33,19 +33,19 @@ export class LOOPExecutorSelector implements ILOOPExecutorSelector {
    */
   getExecutor(loopType: LOOPType): ILOOPExecutor {
     switch (loopType) {
-      case LOOPType.STRICT_ROTATED:
+      case LOOPType.ROTATED:
         return this.strictRotatedExecutor;
 
-      case LOOPType.STRICT_MIRRORED:
+      case LOOPType.MIRRORED:
         return this.strictMirroredExecutor;
 
-      case LOOPType.STRICT_FLIPPED:
+      case LOOPType.FLIPPED:
         return this.strictFlippedExecutor;
 
-      case LOOPType.STRICT_SWAPPED:
+      case LOOPType.SWAPPED:
         return this.strictSwappedExecutor;
 
-      case LOOPType.STRICT_INVERTED:
+      case LOOPType.INVERTED:
         return this.strictInvertedExecutor;
 
       case LOOPType.MIRRORED_SWAPPED:
@@ -78,8 +78,8 @@ export class LOOPExecutorSelector implements ILOOPExecutorSelector {
       default:
         throw new Error(
           `LOOP type "${loopType}" is not yet implemented. ` +
-            `Currently supported: STRICT_ROTATED, STRICT_MIRRORED, STRICT_FLIPPED, STRICT_SWAPPED, ` +
-            `STRICT_INVERTED, MIRRORED_SWAPPED, SWAPPED_INVERTED, MIRRORED_INVERTED, ` +
+            `Currently supported: ROTATED, MIRRORED, FLIPPED, SWAPPED, ` +
+            `INVERTED, MIRRORED_SWAPPED, SWAPPED_INVERTED, MIRRORED_INVERTED, ` +
             `ROTATED_SWAPPED, ROTATED_INVERTED, MIRRORED_ROTATED, MIRRORED_INVERTED_ROTATED, ` +
             `MIRRORED_ROTATED_INVERTED_SWAPPED, REWOUND`
         );
@@ -91,11 +91,11 @@ export class LOOPExecutorSelector implements ILOOPExecutorSelector {
    */
   isSupported(loopType: LOOPType): boolean {
     return [
-      LOOPType.STRICT_ROTATED,
-      LOOPType.STRICT_MIRRORED,
-      LOOPType.STRICT_FLIPPED,
-      LOOPType.STRICT_SWAPPED,
-      LOOPType.STRICT_INVERTED,
+      LOOPType.ROTATED,
+      LOOPType.MIRRORED,
+      LOOPType.FLIPPED,
+      LOOPType.SWAPPED,
+      LOOPType.INVERTED,
       LOOPType.MIRRORED_SWAPPED,
       LOOPType.SWAPPED_INVERTED,
       LOOPType.MIRRORED_INVERTED,

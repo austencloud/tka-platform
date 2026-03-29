@@ -2,7 +2,7 @@
  * Mirrored Rotated Inverted Swapped LOOP Executor
  *
  * Composes two operations sequentially:
- * 1. STRICT_ROTATED (with user-selected slice size)
+ * 1. ROTATED (with user-selected slice size)
  * 2. MIRRORED_SWAPPED_INVERTED (all three transformations together)
  */
 

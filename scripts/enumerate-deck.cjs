@@ -6,9 +6,9 @@
  * Deduplicates to one representative per letter-combination per start position.
  *
  * Usage:
- *   node scripts/enumerate-deck.cjs --loopType strict_rotated --slice halved --seedLength 3 --level 1
- *   node scripts/enumerate-deck.cjs --loopType strict_rotated --slice quartered --seedLength 2 --level 1 --dry-run
- *   node scripts/enumerate-deck.cjs --loopType strict_rotated --slice halved --seedLength 3 --level 1 --out deck.json
+ *   node scripts/enumerate-deck.cjs --loopType rotated --slice halved --seedLength 3 --level 1
+ *   node scripts/enumerate-deck.cjs --loopType rotated --slice quartered --seedLength 2 --level 1 --dry-run
+ *   node scripts/enumerate-deck.cjs --loopType rotated --slice halved --seedLength 3 --level 1 --out deck.json
  */
 
 const fs = require("fs");
@@ -48,11 +48,11 @@ const reversalPattern = getArg("reversalPattern");
 
 // All LOOP type values (hardcoded to avoid ES module import issues)
 const ALL_LOOP_TYPES = new Set([
-  "strict_rotated", "strict_mirrored", "strict_swapped", "strict_inverted",
+  "rotated", "mirrored", "swapped", "inverted",
   "swapped_inverted", "rotated_inverted", "mirrored_swapped", "mirrored_inverted",
   "rotated_swapped", "mirrored_rotated", "mirrored_inverted_rotated",
   "mirrored_swapped_inverted", "mirrored_rotated_inverted_swapped",
-  "strict_flipped", "rewound",
+  "flipped", "rewound",
 ]);
 
 if (!loopType || !ALL_LOOP_TYPES.has(loopType)) {
@@ -77,7 +77,7 @@ if (level < 1 || level > 3) {
 
 // Validate LOOP type + slice size combination
 const QUARTERED_CAPABLE = new Set([
-  "strict_rotated", "rotated_swapped", "rotated_inverted",
+  "rotated", "rotated_swapped", "rotated_inverted",
   "mirrored_rotated", "mirrored_inverted_rotated",
   "mirrored_rotated_inverted_swapped",
 ]);
@@ -213,15 +213,15 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
    */
   function getValidationSet(lt, sl) {
     switch (lt) {
-      case "strict_rotated":
+      case "rotated":
         return sl === "quartered" ? QUARTERED_LOOPS_CW : HALVED_LOOPS;
-      case "strict_mirrored":
+      case "mirrored":
         return MIRRORED_LOOP_VALIDATION_SET;
-      case "strict_flipped":
+      case "flipped":
         return FLIPPED_LOOP_VALIDATION_SET;
-      case "strict_swapped":
+      case "swapped":
         return SWAPPED_LOOP_VALIDATION_SET;
-      case "strict_inverted":
+      case "inverted":
       case "swapped_inverted":
       case "rewound":
         return INVERTED_LOOP_VALIDATION_SET;
@@ -630,6 +630,7 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
       totalSequences: deduped.length,
       gridMode,
       level,
+      sliceType: slice,
     };
 
     console.log(`\nSeeding deck "${deckId}" to Firestore...`);

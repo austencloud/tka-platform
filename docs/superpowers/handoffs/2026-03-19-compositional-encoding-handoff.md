@@ -43,7 +43,7 @@ Check each executor file for its singleton export name before using it.
 
 ### 2. Fix LOOP_TYPE_TAGS keys
 
-The `LOOPType` enum values are `"strict_rotated"`, `"strict_mirrored"`, `"strict_rewound"`, etc. The plan has `rewound: "rw"` but the enum value is `"strict_rewound"`. Fix:
+The `LOOPType` enum values are `"rotated"`, `"mirrored"`, `"strict_rewound"`, etc. The plan has `rewound: "rw"` but the enum value is `"strict_rewound"`. Fix:
 
 ```typescript
 // WRONG:

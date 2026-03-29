@@ -346,10 +346,10 @@ async function main() {
       sourceDeck.loopType ||
       (() => {
         const LOOP_TYPE_PATTERNS = [
-          "strict_rotated",
-          "strict_mirrored",
-          "strict_swapped",
-          "strict_inverted",
+          "rotated",
+          "mirrored",
+          "swapped",
+          "inverted",
           "rewound",
         ];
         for (const p of LOOP_TYPE_PATTERNS) {

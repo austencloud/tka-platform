@@ -24,10 +24,10 @@ const SEQUENCE_INDEX_PATH = resolve(
 
 // LOOP Type definitions (mirrored from circular-models.ts)
 const LOOPType = {
-  STRICT_ROTATED: "strict_rotated",
-  STRICT_MIRRORED: "strict_mirrored",
-  STRICT_SWAPPED: "strict_swapped",
-  STRICT_INVERTED: "strict_inverted",
+  ROTATED: "rotated",
+  MIRRORED: "mirrored",
+  SWAPPED: "swapped",
+  INVERTED: "inverted",
   MIRRORED_SWAPPED: "mirrored_swapped",
   SWAPPED_INVERTED: "swapped_inverted",
   MIRRORED_INVERTED: "mirrored_inverted",
@@ -47,10 +47,10 @@ const LOOPComponent = {
 
 // Component to LOOPType mapping
 const COMPONENT_TO_LOOP_TYPE = {
-  rotated: LOOPType.STRICT_ROTATED,
-  mirrored: LOOPType.STRICT_MIRRORED,
-  swapped: LOOPType.STRICT_SWAPPED,
-  inverted: LOOPType.STRICT_INVERTED,
+  rotated: LOOPType.ROTATED,
+  mirrored: LOOPType.MIRRORED,
+  swapped: LOOPType.SWAPPED,
+  inverted: LOOPType.INVERTED,
   "mirrored,swapped": LOOPType.MIRRORED_SWAPPED,
   "inverted,swapped": LOOPType.SWAPPED_INVERTED,
   "inverted,mirrored": LOOPType.MIRRORED_INVERTED,

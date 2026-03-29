@@ -2,7 +2,7 @@
  * Mirrored Rotated Inverted LOOP Executor
  *
  * Composes two operations sequentially:
- * 1. STRICT_ROTATED (with user-selected slice size)
+ * 1. ROTATED (with user-selected slice size)
  * 2. MIRRORED_INVERTED (doubles with inverted mirroring)
  *
  * Requires start position on the vertical axis (self-mirroring).

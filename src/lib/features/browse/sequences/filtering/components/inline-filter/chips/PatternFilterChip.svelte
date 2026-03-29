@@ -30,8 +30,9 @@ Shows circular/non-circular/specific LOOP types with counts.
   function formatLabel(value: string): string {
     if (value === "circular") return t('browse_pattern_circular');
     if (value === "non_circular") return "Freeform";
-    // "strict_rotated" → "Strict Rotated", "inverted_rotated_swapped" → "Inverted Rotated Swapped"
+    // Strip legacy "strict_" prefix, then title-case: "rotated" → "Rotated"
     return value
+      .replace(/^strict_/, "")
       .split("_")
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
       .join(" ");

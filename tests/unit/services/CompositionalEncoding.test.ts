@@ -186,11 +186,11 @@ describe("CompositionalEncoding", () => {
 
   describe("LOOP_TYPE_TAGS", () => {
     it("maps all single-transform LOOP types to compact tags", () => {
-      expect(LOOP_TYPE_TAGS["strict_rotated"]).toBe("sr");
-      expect(LOOP_TYPE_TAGS["strict_mirrored"]).toBe("sm");
-      expect(LOOP_TYPE_TAGS["strict_flipped"]).toBe("sf");
-      expect(LOOP_TYPE_TAGS["strict_swapped"]).toBe("ss");
-      expect(LOOP_TYPE_TAGS["strict_inverted"]).toBe("si");
+      expect(LOOP_TYPE_TAGS["rotated"]).toBe("sr");
+      expect(LOOP_TYPE_TAGS["mirrored"]).toBe("sm");
+      expect(LOOP_TYPE_TAGS["flipped"]).toBe("sf");
+      expect(LOOP_TYPE_TAGS["swapped"]).toBe("ss");
+      expect(LOOP_TYPE_TAGS["inverted"]).toBe("si");
       expect(LOOP_TYPE_TAGS["strict_rewound"]).toBe("rw");
     });
 

@@ -78,7 +78,7 @@ interface Deck {
 
   // new fields
   reversalPattern?: string;   // pattern id, e.g. "book", "dense-weave-1". Defaults to "continuous".
-  loopType?: string;          // "strict_rotated", etc. Required for LOOP decks. Absent for VTG decks.
+  loopType?: string;          // "rotated", etc. Required for LOOP decks. Absent for VTG decks.
   beatCount?: number;         // 4, 6, 8, 12, 16
 }
 ```
@@ -104,7 +104,7 @@ The existing generalized deck enumerator adds an optional `--reversalPattern` fl
 
 ```bash
 node scripts/enumerate-deck.cjs \
-  --loopType strict_rotated \
+  --loopType rotated \
   --slice quartered \
   --seedLength 1 \
   --level 1 \
@@ -145,8 +145,8 @@ decks/
   l1-vtg-motions-blue-book/                          # blue book reversal
   l1-vtg-motions-long-book/                          # long book reversal
   l1-vtg-motions-alternating/                        # alternating reversal
-  strict_rotated_quartered_L1_diamond/               # continuous LOOP (existing)
-  strict_rotated_quartered_L1_diamond_book/          # book reversal
+  rotated_quartered_L1_diamond/               # continuous LOOP (existing)
+  rotated_quartered_L1_diamond_book/          # book reversal
   ...
 ```
 

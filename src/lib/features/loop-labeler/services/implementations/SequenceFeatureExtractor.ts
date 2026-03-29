@@ -101,7 +101,7 @@ export class SequenceFeatureExtractor implements ISequenceFeatureExtractor {
   /**
    * Parse a LOOPType string to extract base StrictLoopType(s)
    *
-   * LOOPType values like "strict_rotated_quartered", "strict_mirrored",
+   * LOOPType values like "rotated_quartered", "mirrored",
    * "mirrored_swapped", etc. are parsed to extract the base transformations.
    */
   private parseCapTypeToStrictTypes(
@@ -110,7 +110,7 @@ export class SequenceFeatureExtractor implements ISequenceFeatureExtractor {
     const loopTypeLower = loopType.toLowerCase();
     const types: StrictLoopType[] = [];
 
-    // Check for rotated (covers "strict_rotated", "strict_rotated_quartered", "rotated_*", etc.)
+    // Check for rotated (covers "rotated", "rotated_quartered", "rotated_*", etc.)
     if (
       loopTypeLower.includes("rotated") ||
       loopTypeLower.includes("rotation")
@@ -118,7 +118,7 @@ export class SequenceFeatureExtractor implements ISequenceFeatureExtractor {
       types.push("rotated");
     }
 
-    // Check for mirrored (covers "strict_mirrored", "mirrored_*", etc.)
+    // Check for mirrored (covers "mirrored", "mirrored_*", etc.)
     if (
       loopTypeLower.includes("mirrored") ||
       loopTypeLower.includes("mirror")

@@ -128,11 +128,11 @@ const SLICE_SIZE_ALIASES: Record<string, string> = {
 };
 
 const LOOP_TYPE_ALIASES: Record<string, string> = {
-  rotated: "strict_rotated",
-  mirrored: "strict_mirrored",
-  flipped: "strict_flipped",
-  swapped: "strict_swapped",
-  inverted: "strict_inverted",
+  rotated: "rotated",
+  mirrored: "mirrored",
+  flipped: "flipped",
+  swapped: "swapped",
+  inverted: "inverted",
   rewound: "strict_rewound",
   "swapped inverted": "swapped_inverted",
   "rotated inverted": "rotated_inverted",

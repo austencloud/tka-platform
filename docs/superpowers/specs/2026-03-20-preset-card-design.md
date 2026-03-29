@@ -196,7 +196,7 @@ Replace the current "Diamond 16" default preset with "Austen's Favorite":
     gridMode: GridMode.DIAMOND,
     propContinuity: PropContinuity.CONTINUOUS,
     sliceSize: SliceSize.QUARTERED,
-    loopType: LOOPType.STRICT_ROTATED,
+    loopType: LOOPType.ROTATED,
     constraintPreset: "smooth",
     handPathMode: "mixed",
     motionTypeFilter: null,         // "mixed dashes" = no filter
@@ -222,7 +222,7 @@ Key config notes:
 - **Level 2, turn intensity 1** = whole turns, max 1 turn per beat
 - **Diamond mode** with **Classic 3** start positions (alpha1, beta5, gamma11)
 - **Props smooth** (`constraintPreset: "smooth"`), **hands mixed** (`handPathMode: "mixed"`), **dashes mixed** (`motionTypeFilter: null`)
-- **Rotated quartered LOOP** (`loopType: STRICT_ROTATED`, `sliceSize: QUARTERED`)
+- **Rotated quartered LOOP** (`loopType: ROTATED`, `sliceSize: QUARTERED`)
 
 ### Files to Create
 

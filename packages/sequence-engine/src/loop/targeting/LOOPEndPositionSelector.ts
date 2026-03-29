@@ -41,19 +41,19 @@ export class LOOPEndPositionSelector {
   ): string | null {
     switch (loopType) {
       // Strict LOOP types
-      case LOOPType.STRICT_ROTATED:
+      case LOOPType.ROTATED:
         return this.rotatedSelector.determineRotatedEndPosition(sliceSize, startPosition);
 
-      case LOOPType.STRICT_MIRRORED:
+      case LOOPType.MIRRORED:
         return VERTICAL_MIRROR_POSITION_MAP[startPosition] ?? null;
 
-      case LOOPType.STRICT_FLIPPED:
+      case LOOPType.FLIPPED:
         return HORIZONTAL_MIRROR_POSITION_MAP[startPosition] ?? null;
 
-      case LOOPType.STRICT_SWAPPED:
+      case LOOPType.SWAPPED:
         return SWAPPED_POSITION_MAP[startPosition] ?? null;
 
-      case LOOPType.STRICT_INVERTED:
+      case LOOPType.INVERTED:
         // Inverted LOOP returns to start position (same position)
         return startPosition;
 

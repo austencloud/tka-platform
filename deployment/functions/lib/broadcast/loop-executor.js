@@ -33,7 +33,7 @@ function validateSequence(sequence, sliceSize, loopType) {
     }
     // For non-rotated LOOPs (mirror, swap, invert), end position should equal start position
     const isRotatedLoop = [
-        types_1.LOOPType.STRICT_ROTATED,
+        types_1.LOOPType.ROTATED,
         types_1.LOOPType.ROTATED_SWAPPED,
         types_1.LOOPType.ROTATED_INVERTED,
         types_1.LOOPType.MIRRORED_ROTATED,
@@ -414,13 +414,13 @@ function executeLOOP(partialBeats, loopType, sliceSize) {
     validateSequence(sequence, sliceSize, loopType);
     // Execute appropriate LOOP type
     switch (loopType) {
-        case types_1.LOOPType.STRICT_ROTATED:
+        case types_1.LOOPType.ROTATED:
             return executeStrictRotated(sequence, sliceSize);
-        case types_1.LOOPType.STRICT_MIRRORED:
+        case types_1.LOOPType.MIRRORED:
             return executeStrictMirrored(sequence, sliceSize);
-        case types_1.LOOPType.STRICT_SWAPPED:
+        case types_1.LOOPType.SWAPPED:
             return executeStrictSwapped(sequence, sliceSize);
-        case types_1.LOOPType.STRICT_INVERTED:
+        case types_1.LOOPType.INVERTED:
             return executeStrictInverted(sequence, sliceSize);
         case types_1.LOOPType.ROTATED_SWAPPED:
         case types_1.LOOPType.MIRRORED_SWAPPED:
@@ -432,7 +432,7 @@ function executeLOOP(partialBeats, loopType, sliceSize) {
             return executeCompoundLoop(sequence, sliceSize, loopType);
         default:
             // Fallback to strict rotated
-            console.warn(`Unknown LOOP type: ${loopType}, using STRICT_ROTATED`);
+            console.warn(`Unknown LOOP type: ${loopType}, using ROTATED`);
             return executeStrictRotated(sequence, sliceSize);
     }
 }
@@ -444,7 +444,7 @@ function determineEndPosition(loopType, startPosition, sliceSize) {
     var _a, _b;
     // For rotated LOOPs, end position is rotated from start
     const isRotatedLoop = [
-        types_1.LOOPType.STRICT_ROTATED,
+        types_1.LOOPType.ROTATED,
         types_1.LOOPType.ROTATED_SWAPPED,
         types_1.LOOPType.ROTATED_INVERTED,
         types_1.LOOPType.MIRRORED_ROTATED,

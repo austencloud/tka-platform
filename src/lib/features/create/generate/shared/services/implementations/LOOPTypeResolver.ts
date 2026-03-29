@@ -87,7 +87,7 @@ export class LOOPTypeResolver implements ILOOPTypeResolver {
    * EXACT ORIGINAL LOGIC from LOOPCard.svelte lines 82-123
    */
   generateLOOPType(components: Set<LOOPComponent>): LOOPType {
-    if (components.size === 0) return LOOPType.STRICT_ROTATED;
+    if (components.size === 0) return LOOPType.ROTATED;
 
     const sorted = Array.from(components).sort();
 
@@ -95,15 +95,15 @@ export class LOOPTypeResolver implements ILOOPTypeResolver {
     if (sorted.length === 1) {
       switch (sorted[0]) {
         case LOOPComponent.ROTATED:
-          return LOOPType.STRICT_ROTATED;
+          return LOOPType.ROTATED;
         case LOOPComponent.MIRRORED:
-          return LOOPType.STRICT_MIRRORED;
+          return LOOPType.MIRRORED;
         case LOOPComponent.FLIPPED:
-          return LOOPType.STRICT_FLIPPED;
+          return LOOPType.FLIPPED;
         case LOOPComponent.SWAPPED:
-          return LOOPType.STRICT_SWAPPED;
+          return LOOPType.SWAPPED;
         case LOOPComponent.INVERTED:
-          return LOOPType.STRICT_INVERTED;
+          return LOOPType.INVERTED;
         case LOOPComponent.REWOUND:
           return LOOPType.STRICT_REWOUND;
       }
@@ -154,7 +154,7 @@ export class LOOPTypeResolver implements ILOOPTypeResolver {
     }
 
     // Fallback for unimplemented combinations
-    return LOOPType.STRICT_ROTATED;
+    return LOOPType.ROTATED;
   }
 
   /**
@@ -163,6 +163,7 @@ export class LOOPTypeResolver implements ILOOPTypeResolver {
    */
   formatForDisplay(loopType: LOOPType): string {
     const readable = loopType
+      .replace(/^strict_/i, "")
       .replace(/_/g, " ")
       .replace(/\b\w/g, (l: string) => l.toUpperCase());
 

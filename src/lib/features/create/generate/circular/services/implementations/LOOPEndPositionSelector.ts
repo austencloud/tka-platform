@@ -41,34 +41,34 @@ export class LOOPEndPositionSelector implements ILOOPEndPositionSelector {
   ): GridPosition | null {
     switch (loopType) {
       // Strict LOOP types
-      case LOOPType.STRICT_ROTATED:
+      case LOOPType.ROTATED:
         // Rotated LOOP uses rotation maps (halved or quartered)
         return this.rotatedEndPositionSelector.determineRotatedEndPosition(
           sliceSize,
           startPosition
         );
 
-      case LOOPType.STRICT_MIRRORED: {
+      case LOOPType.MIRRORED: {
         // Mirrored LOOP uses vertical mirror map
         // Non-null assertion: LOOP operations only use alpha/beta/gamma positions
         const mirroredEnd = VERTICAL_MIRROR_POSITION_MAP[startPosition]!;
         return mirroredEnd;
       }
 
-      case LOOPType.STRICT_FLIPPED: {
+      case LOOPType.FLIPPED: {
         // Flipped LOOP uses horizontal mirror map (N ↔ S)
         const flippedEnd = HORIZONTAL_MIRROR_POSITION_MAP[startPosition]!;
         return flippedEnd;
       }
 
-      case LOOPType.STRICT_SWAPPED: {
+      case LOOPType.SWAPPED: {
         // Swapped LOOP uses swap position map
         // Non-null assertion: LOOP operations only use alpha/beta/gamma positions
         const swappedEnd = SWAPPED_POSITION_MAP[startPosition]!;
         return swappedEnd;
       }
 
-      case LOOPType.STRICT_INVERTED:
+      case LOOPType.INVERTED:
         // Inverted LOOP returns to start position (same position)
         return startPosition;
 
@@ -139,8 +139,8 @@ export class LOOPEndPositionSelector implements ILOOPEndPositionSelector {
       default:
         throw new Error(
           `LOOP type "${loopType}" is not yet implemented. ` +
-            `Currently supported: STRICT_ROTATED, STRICT_MIRRORED, STRICT_FLIPPED, STRICT_SWAPPED, ` +
-            `STRICT_INVERTED, MIRRORED_INVERTED, MIRRORED_SWAPPED, ` +
+            `Currently supported: ROTATED, MIRRORED, FLIPPED, SWAPPED, ` +
+            `INVERTED, MIRRORED_INVERTED, MIRRORED_SWAPPED, ` +
             `ROTATED_INVERTED, ROTATED_SWAPPED, SWAPPED_INVERTED, MIRRORED_ROTATED, ` +
             `MIRRORED_INVERTED_ROTATED, MIRRORED_ROTATED_INVERTED_SWAPPED`
         );

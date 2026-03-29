@@ -12,7 +12,7 @@
  * - Flipping prop rotation directions (clockwise ↔ counter-clockwise)
  * - Maintaining the same letters and motion types
  *
- * IMPORTANT: Slice size is ALWAYS halved (no user choice like STRICT_ROTATED)
+ * IMPORTANT: Slice size is ALWAYS halved (no user choice like ROTATED)
  */
 
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";

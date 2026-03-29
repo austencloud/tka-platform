@@ -162,7 +162,7 @@ export function uiConfigToGenerationOptions(
 export function generationOptionsToUIConfig(
   options: GenerationOptions,
   sliceSize: string = "halved",
-  loopType: string = "strict_rotated"
+  loopType: string = "rotated"
 ): UIGenerationConfig {
   // Derive constraintPreset from propContinuity for backwards compat
   const constraintPreset: UIGenerationConfig["constraintPreset"] =
