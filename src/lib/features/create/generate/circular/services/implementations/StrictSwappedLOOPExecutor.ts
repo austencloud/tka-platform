@@ -12,7 +12,7 @@
  * - Maintaining the same letters, motion types, and prop rotation directions
  * - Only the color assignment changes
  *
- * IMPORTANT: Slice size is ALWAYS halved (no user choice like STRICT_ROTATED)
+ * IMPORTANT: Slice size is ALWAYS halved (no user choice like ROTATED)
  */
 
 import {

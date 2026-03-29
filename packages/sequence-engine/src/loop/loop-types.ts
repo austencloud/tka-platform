@@ -10,17 +10,17 @@
  * Defines the different types of Linked Orbital Offset Patterns
  */
 export enum LOOPType {
-  /** Strict rotated - rotates positions around the grid */
-  STRICT_ROTATED = "strict_rotated",
+  /** Rotated - rotates positions around the grid */
+  ROTATED = "rotated",
 
-  /** Strict mirrored - mirrors positions vertically */
-  STRICT_MIRRORED = "strict_mirrored",
+  /** Mirrored - mirrors positions vertically */
+  MIRRORED = "mirrored",
 
-  /** Strict swapped - swaps blue and red attributes */
-  STRICT_SWAPPED = "strict_swapped",
+  /** Swapped - swaps blue and red attributes */
+  SWAPPED = "swapped",
 
-  /** Strict inverted - uses inverted letters (opposite motion types) */
-  STRICT_INVERTED = "strict_inverted",
+  /** Inverted - uses inverted letters (opposite motion types) */
+  INVERTED = "inverted",
 
   /** Swapped inverted - combines swapping with inverted motion */
   SWAPPED_INVERTED = "swapped_inverted",
@@ -49,8 +49,8 @@ export enum LOOPType {
   /** Mirrored rotated inverted swapped - combines all four transformations */
   MIRRORED_ROTATED_INVERTED_SWAPPED = "mirrored_rotated_inverted_swapped",
 
-  /** Strict flipped - mirrors positions horizontally (north/south) */
-  STRICT_FLIPPED = "strict_flipped",
+  /** Flipped - mirrors positions horizontally (north/south) */
+  FLIPPED = "flipped",
 
   /** Rewound - appends reversed sequence to double length */
   REWOUND = "rewound",
@@ -73,11 +73,11 @@ export enum SliceSize {
  * Maps LOOP types to display names for UI
  */
 export const LOOP_TYPE_LABELS: Record<LOOPType, string> = {
-  [LOOPType.STRICT_ROTATED]: "Rotated",
-  [LOOPType.STRICT_MIRRORED]: "Mirrored",
-  [LOOPType.STRICT_FLIPPED]: "Flipped",
-  [LOOPType.STRICT_SWAPPED]: "Swapped",
-  [LOOPType.STRICT_INVERTED]: "Inverted",
+  [LOOPType.ROTATED]: "Rotated",
+  [LOOPType.MIRRORED]: "Mirrored",
+  [LOOPType.FLIPPED]: "Flipped",
+  [LOOPType.SWAPPED]: "Swapped",
+  [LOOPType.INVERTED]: "Inverted",
   [LOOPType.SWAPPED_INVERTED]: "Swapped / Inverted",
   [LOOPType.MIRRORED_SWAPPED]: "Mirrored / Swapped",
   [LOOPType.ROTATED_INVERTED]: "Rotated / Inverted",
@@ -94,11 +94,11 @@ export const LOOP_TYPE_LABELS: Record<LOOPType, string> = {
  * LOOP descriptions for each type
  */
 export const LOOP_TYPE_DESCRIPTIONS: Record<LOOPType, string> = {
-  [LOOPType.STRICT_ROTATED]: "Rotates positions around the grid",
-  [LOOPType.STRICT_MIRRORED]: "Mirrors positions vertically",
-  [LOOPType.STRICT_FLIPPED]: "Mirrors positions horizontally (north/south)",
-  [LOOPType.STRICT_SWAPPED]: "Swaps blue and red props",
-  [LOOPType.STRICT_INVERTED]: "Inverts motion directions",
+  [LOOPType.ROTATED]: "Rotates positions around the grid",
+  [LOOPType.MIRRORED]: "Mirrors positions vertically",
+  [LOOPType.FLIPPED]: "Mirrors positions horizontally (north/south)",
+  [LOOPType.SWAPPED]: "Swaps blue and red props",
+  [LOOPType.INVERTED]: "Inverts motion directions",
   [LOOPType.SWAPPED_INVERTED]: "Swaps colors with inverted motion",
   [LOOPType.ROTATED_INVERTED]: "Rotates with inverted motion",
   [LOOPType.MIRRORED_SWAPPED]: "Mirrors with color swap",
@@ -132,11 +132,11 @@ export interface LOOPValidationResult {
  * All supported LOOP types in display order
  */
 export const ALL_LOOP_TYPES: LOOPType[] = [
-  LOOPType.STRICT_ROTATED,
-  LOOPType.STRICT_MIRRORED,
-  LOOPType.STRICT_FLIPPED,
-  LOOPType.STRICT_SWAPPED,
-  LOOPType.STRICT_INVERTED,
+  LOOPType.ROTATED,
+  LOOPType.MIRRORED,
+  LOOPType.FLIPPED,
+  LOOPType.SWAPPED,
+  LOOPType.INVERTED,
   LOOPType.SWAPPED_INVERTED,
   LOOPType.ROTATED_INVERTED,
   LOOPType.MIRRORED_SWAPPED,
@@ -154,14 +154,14 @@ export const ALL_LOOP_TYPES: LOOPType[] = [
  */
 export const SUPPORTED_LOOP_TYPES: LOOPType[] = [
   LOOPType.REWOUND,
-  LOOPType.STRICT_ROTATED,
+  LOOPType.ROTATED,
 ];
 
 /**
  * LOOP types that involve rotation as part of the transformation
  */
 export const ROTATED_LOOP_TYPES = new Set<LOOPType>([
-  LOOPType.STRICT_ROTATED,
+  LOOPType.ROTATED,
   LOOPType.ROTATED_INVERTED,
   LOOPType.ROTATED_SWAPPED,
   LOOPType.MIRRORED_ROTATED,

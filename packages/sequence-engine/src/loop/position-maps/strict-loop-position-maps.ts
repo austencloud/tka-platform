@@ -2,13 +2,13 @@
  * Position and Location Maps for Strict LOOP Variations
  *
  * These maps define transformations for:
- * - STRICT_MIRRORED: Vertical mirroring of positions and locations
- * - STRICT_FLIPPED: Horizontal mirroring of positions and locations
- * - STRICT_SWAPPED: Color swapping position transformations
- * - STRICT_INVERTED: Letter complementarity mappings
+ * - MIRRORED: Vertical mirroring of positions and locations
+ * - FLIPPED: Horizontal mirroring of positions and locations
+ * - SWAPPED: Color swapping position transformations
+ * - INVERTED: Letter complementarity mappings
  * - Compound/counterpart letter relationships
  *
- * Note: STRICT_ROTATED uses the rotation maps in circular-position-maps.ts
+ * Note: ROTATED uses the rotation maps in circular-position-maps.ts
  *
  * All position and location values are strings for engine compatibility.
  */
@@ -25,7 +25,7 @@ import {
 
 /**
  * Mirrors positions vertically across the center horizontal axis (flips east/west).
- * Used by STRICT_MIRRORED LOOP type.
+ * Used by MIRRORED LOOP type.
  *
  * Examples:
  * - alpha2 (SW-NE) <-> alpha8 (SE-NW) - diagonals flip
@@ -64,7 +64,7 @@ export const VERTICAL_MIRROR_POSITION_MAP: Record<string, string> = {
 
 /**
  * Mirrors hand locations vertically (flips east/west).
- * Used by STRICT_MIRRORED for transforming motion end locations.
+ * Used by MIRRORED for transforming motion end locations.
  */
 export const VERTICAL_MIRROR_LOCATION_MAP: Record<string, string> = {
   n: "n", s: "s", e: "w", w: "e",
@@ -126,7 +126,7 @@ export const HORIZONTAL_MIRROR_LOCATION_MAP: Record<string, string> = {
 
 /**
  * Maps positions to their color-swapped equivalents.
- * Used by STRICT_SWAPPED LOOP type.
+ * Used by SWAPPED LOOP type.
  *
  * Pattern:
  * - Alpha: 180 degree rotation (cross-pattern)
@@ -170,7 +170,7 @@ export const SWAPPED_POSITION_MAP: Record<string, string> = {
 
 /**
  * Maps letters to their inverted pairs (opposite motion types).
- * Used by STRICT_INVERTED LOOP type.
+ * Used by INVERTED LOOP type.
  */
 export const INVERTED_LETTER_MAP: Record<string, string> = {
   // Basic alphabet pairs

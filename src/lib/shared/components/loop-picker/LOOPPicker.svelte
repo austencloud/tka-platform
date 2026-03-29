@@ -47,7 +47,7 @@
   // Format LOOP type for display
   function formatLOOPType(loopType: LOOPType): string {
     return loopType
-      .replace("STRICT_", "")
+      .replace(/^strict_/i, "")
       .split("_")
       .map((word) => word.charAt(0) + word.slice(1).toLowerCase())
       .join(" ");

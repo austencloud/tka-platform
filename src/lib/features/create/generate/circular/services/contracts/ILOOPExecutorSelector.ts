@@ -12,7 +12,7 @@ export interface ILOOPExecutorSelector {
   /**
    * Get the appropriate LOOP executor for the given LOOP type
    *
-   * @param loopType - The LOOP type enum value (e.g., STRICT_ROTATED, STRICT_MIRRORED)
+   * @param loopType - The LOOP type enum value (e.g., ROTATED, MIRRORED)
    * @returns The executor instance for this LOOP type
    * @throws Error if the LOOP type is not supported
    */

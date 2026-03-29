@@ -240,7 +240,7 @@ export class WordSequenceGenerator implements IWordSequenceGenerator {
           : null;
 
         // Check if position groups don't match - this means position-dependent LOOPs
-        // (STRICT_ROTATED, STRICT_MIRRORED, etc.) won't work without bridge letters
+        // (ROTATED, MIRRORED, etc.) won't work without bridge letters
         if (startPosGroup && endPosGroup && startPosGroup !== endPosGroup) {
           directLoopUnavailableReason = `Sequence ends at ${endPosGroup}, needs to reach ${startPosGroup} for position-dependent LOOPs`;
 

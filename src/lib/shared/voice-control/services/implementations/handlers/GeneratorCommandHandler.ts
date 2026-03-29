@@ -74,11 +74,11 @@ const PARAM_META: Record<string, ParamMeta> = {
     type: "cyclic",
     display: "LOOP type",
     values: [
-      "strict_rotated",
-      "strict_mirrored",
-      "strict_flipped",
-      "strict_swapped",
-      "strict_inverted",
+      "rotated",
+      "mirrored",
+      "flipped",
+      "swapped",
+      "inverted",
       "swapped_inverted",
       "rotated_inverted",
       "mirrored_swapped",
@@ -97,11 +97,11 @@ const PARAM_META: Record<string, ParamMeta> = {
 // ============================================================================
 
 const LOOP_TYPE_DISPLAY: Record<string, string> = {
-  strict_rotated: "Rotated",
-  strict_mirrored: "Mirrored",
-  strict_flipped: "Flipped",
-  strict_swapped: "Swapped",
-  strict_inverted: "Inverted",
+  rotated: "Rotated",
+  mirrored: "Mirrored",
+  flipped: "Flipped",
+  swapped: "Swapped",
+  inverted: "Inverted",
   swapped_inverted: "Swapped / Inverted",
   rotated_inverted: "Rotated / Inverted",
   mirrored_swapped: "Mirrored / Swapped",

@@ -116,7 +116,7 @@ Add three new optional readonly fields after the existing `turns` field (line 20
 
 ```typescript
 readonly reversalPattern?: string;  // pattern id from reversal-patterns.ts. Defaults to "continuous".
-readonly loopType?: string;         // "strict_rotated", etc. Required for LOOP decks.
+readonly loopType?: string;         // "rotated", etc. Required for LOOP decks.
 readonly beatCount?: number;        // 4, 6, 8, 12, 16
 ```
 
@@ -466,7 +466,7 @@ reversalPattern: reversalPattern || 'continuous',
 
 - [ ] **Step 5: Test with dry-run**
 
-Run: `node scripts/enumerate-deck.cjs --loopType strict_rotated --slice quartered --seedLength 1 --level 1 --gridMode diamond --reversalPattern book --dry-run`
+Run: `node scripts/enumerate-deck.cjs --loopType rotated --slice quartered --seedLength 1 --level 1 --gridMode diamond --reversalPattern book --dry-run`
 
 Expected: Output shows sequences with transformed letters (e.g., G→H for tog-same with book pattern). Word field should reflect post-reversal letters. Reversal flags should be set on all beats.
 
@@ -486,7 +486,7 @@ git commit -m "feat(decks): integrate reversal pattern into deck enumerator"
 
 - [ ] **Step 1: Generate book pattern deck in dry-run mode**
 
-Run: `node scripts/enumerate-deck.cjs --loopType strict_rotated --slice quartered --seedLength 1 --level 1 --gridMode diamond --reversalPattern book --dry-run --out /tmp/book-test.json`
+Run: `node scripts/enumerate-deck.cjs --loopType rotated --slice quartered --seedLength 1 --level 1 --gridMode diamond --reversalPattern book --dry-run --out /tmp/book-test.json`
 
 - [ ] **Step 2: Check boundary continuity**
 
@@ -535,7 +535,7 @@ Model after `scripts/seed-vtg-turn-decks.cjs`. The seeder:
 //
 // Usage:
 //   node scripts/seed-reversal-decks.cjs --source l1-vtg-motions --patterns book,red-book,blue-book,long-book,alternating
-//   node scripts/seed-reversal-decks.cjs --source strict_rotated_quartered_L1_diamond --patterns book --dry-run
+//   node scripts/seed-reversal-decks.cjs --source rotated_quartered_L1_diamond --patterns book --dry-run
 
 const { initializeApp, cert } = require('firebase-admin/app');
 const { getFirestore } = require('firebase-admin/firestore');
@@ -1291,24 +1291,24 @@ This replaces the flat deck list for the LOOPs collection. Has a loop type pill 
 
   let { decks, onSelectDeck }: Props = $props();
 
-  // Loop type filter — only "strict_rotated" is populated for now
+  // Loop type filter — only "rotated" is populated for now
   const LOOP_TYPES = [
-    { id: 'strict_rotated', label: 'Rotated' },
-    { id: 'strict_mirrored', label: 'Mirrored' },
-    { id: 'strict_swapped', label: 'Swapped' },
-    { id: 'strict_inverted', label: 'Inverted' },
+    { id: 'rotated', label: 'Rotated' },
+    { id: 'mirrored', label: 'Mirrored' },
+    { id: 'swapped', label: 'Swapped' },
+    { id: 'inverted', label: 'Inverted' },
     { id: 'rewound', label: 'Rewound' },
   ] as const;
 
-  let activeLoopType = $state('strict_rotated');
+  let activeLoopType = $state('rotated');
   let activeView = $state<'Beats' | 'Turns' | 'Reversal'>('Beats');
 
   const filteredDecks = $derived(
-    decks.filter(d => (d.loopType || 'strict_rotated') === activeLoopType)
+    decks.filter(d => (d.loopType || 'rotated') === activeLoopType)
   );
 
   const populatedLoopTypes = $derived(
-    new Set(decks.map(d => d.loopType || 'strict_rotated'))
+    new Set(decks.map(d => d.loopType || 'rotated'))
   );
 
   function handleSelectBeatCount(beatCount: number) {
@@ -1516,7 +1516,7 @@ Existing LOOP decks in Firestore don't have `loopType`, `beatCount`, or `reversa
 // scripts/backfill-deck-metadata.cjs
 //
 // Adds loopType, beatCount, and reversalPattern fields to existing deck documents.
-// Parses the deck ID to infer metadata (e.g., "strict_rotated_quartered_L1_diamond" → loopType: "strict_rotated", beatCount from slice).
+// Parses the deck ID to infer metadata (e.g., "rotated_quartered_L1_diamond" → loopType: "rotated", beatCount from slice).
 //
 // Usage:
 //   node scripts/backfill-deck-metadata.cjs --dry-run
@@ -1541,10 +1541,10 @@ async function main() {
 
     // Infer loopType from ID
     if (!data.loopType) {
-      if (id.includes('strict_rotated')) updates.loopType = 'strict_rotated';
-      else if (id.includes('strict_mirrored')) updates.loopType = 'strict_mirrored';
-      else if (id.includes('strict_swapped')) updates.loopType = 'strict_swapped';
-      else if (id.includes('strict_inverted')) updates.loopType = 'strict_inverted';
+      if (id.includes('rotated')) updates.loopType = 'rotated';
+      else if (id.includes('mirrored')) updates.loopType = 'mirrored';
+      else if (id.includes('swapped')) updates.loopType = 'swapped';
+      else if (id.includes('inverted')) updates.loopType = 'inverted';
       else if (id.includes('rewound')) updates.loopType = 'rewound';
     }
 

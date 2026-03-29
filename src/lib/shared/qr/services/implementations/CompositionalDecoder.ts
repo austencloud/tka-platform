@@ -5,7 +5,7 @@
  * from a seed + LOOP executor. Verifies integrity via SHA-256 hash.
  *
  * Format: r:{tag}:{hash}:{compressed seed}
- * - tag identifies the LOOP type (sr = strict_rotated, etc.)
+ * - tag identifies the LOOP type (sr = rotated, etc.)
  * - hash is 8-char truncated SHA-256 of the full flat encoding
  * - compressed seed is LZString-compressed flat encoding of just the seed beats
  *

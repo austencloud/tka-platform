@@ -50,11 +50,11 @@
 
 /** Compact tags for LOOP types in recipe encoding */
 export const LOOP_TYPE_TAGS: Record<string, string> = {
-  strict_rotated: "sr",
-  strict_mirrored: "sm",
-  strict_flipped: "sf",
-  strict_swapped: "ss",
-  strict_inverted: "si",
+  rotated: "sr",
+  mirrored: "sm",
+  flipped: "sf",
+  swapped: "ss",
+  inverted: "si",
   rewound: "rw",
 } as const;
 
@@ -71,7 +71,7 @@ export interface CompositionalEncodeResult {
   encoded: string;
   /** Whether compositional encoding was used (false = fell back to flat) */
   isCompositional: boolean;
-  /** The detected LOOP type tag (e.g., "sr" for strict_rotated) */
+  /** The detected LOOP type tag (e.g., "sr" for rotated) */
   tag?: string;
   /** Size comparison */
   flatSize: number;
@@ -286,7 +286,7 @@ export class CompositionalEncoder implements ICompositionalEncoder {
 - Read the existing `StrictRotatedLOOPExecutor.ts` to understand the `executeLOOP()` signature. It takes `steps: StepData[]` and `sliceSize: SliceSize` and returns `StepData[]`.
 - The `loopDetector` is imported as a singleton from `LOOPDetector.ts`.
 - The `SliceSize` enum has `QUARTERED` and `HALVED` values.
-- The `LOOPType` enum values are like `STRICT_ROTATED`, `STRICT_MIRRORED`, etc.
+- The `LOOPType` enum values are like `ROTATED`, `MIRRORED`, etc.
 - The `flatEncoder.encode()` and `flatDecoder.decode()` are methods from `SequenceEncoder`.
 
 - [ ] **Step 2: Commit**

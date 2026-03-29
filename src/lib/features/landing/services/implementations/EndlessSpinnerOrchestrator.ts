@@ -573,8 +573,9 @@ export class EndlessSpinnerOrchestrator implements IEndlessSpinnerOrchestrator {
         this.orientationCalculator
       );
 
-      // Step 5: Force diamond grid mode on all transformed sequences
-      const gridCorrected = this.forceGridMode(orientationCorrected, GridMode.DIAMOND);
+      // Step 5: Preserve the sequence's original grid mode on all motions/steps
+      const sequenceGridMode = sequence.gridMode ?? GridMode.DIAMOND;
+      const gridCorrected = this.forceGridMode(orientationCorrected, sequenceGridMode);
 
       // Step 6: Update start position letter to match new position
       const result = this.updateStartPositionLetter(gridCorrected, targetEndState.position);

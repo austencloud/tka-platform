@@ -423,7 +423,7 @@ function enumerateAndExecute(
       const result = executeLOOP(
         [startStep, beat1Step, beat2Step],
         seedWord,
-        LOOPType.STRICT_ROTATED,
+        LOOPType.ROTATED,
         SliceSize.QUARTERED,
         allPictographs
       );
@@ -682,7 +682,7 @@ async function writeToFirestore(
         word: seq.loopWord,
         gridMode: "diamond",
         isCircular: true,
-        loopType: "strict_rotated",
+        loopType: "rotated",
         sequenceLength: 8,
         level: 1,
         isFavorite: false,

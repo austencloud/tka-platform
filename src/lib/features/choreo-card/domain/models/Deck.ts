@@ -21,4 +21,5 @@ export interface Deck {
   readonly reversalPattern?: string;
   readonly loopType?: string;
   readonly beatCount?: number;
+  readonly sliceType?: 'halved' | 'quartered';
 }

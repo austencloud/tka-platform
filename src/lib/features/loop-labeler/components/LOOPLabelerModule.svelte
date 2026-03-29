@@ -321,11 +321,11 @@
 
     // Component mapping (simplified - real mapping in LOOPDesignator)
     const mapping: Record<string, string> = {
-      rotated: "STRICT_ROTATED",
-      mirrored: "STRICT_MIRRORED",
-      flipped: "strict_flipped",
-      swapped: "STRICT_SWAPPED",
-      inverted: "STRICT_INVERTED",
+      rotated: "ROTATED",
+      mirrored: "MIRRORED",
+      flipped: "flipped",
+      swapped: "SWAPPED",
+      inverted: "INVERTED",
       inverted_swapped: "SWAPPED_INVERTED",
       inverted_rotated: "ROTATED_INVERTED",
       mirrored_swapped: "MIRRORED_SWAPPED",

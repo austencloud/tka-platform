@@ -474,7 +474,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    max-width: 100px;
+    max-width: 200px;
   }
 
   .tier-value {

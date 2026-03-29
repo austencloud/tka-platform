@@ -71,11 +71,11 @@ The existing `seed-l1-deck.ts` seeder handles quartered LOOPs (90° slices, 2-be
 
 1. **1-beat seed support** for quartered LOOPs (same-direction motions)
    - Input: [startPos, beat1] → executeLOOP produces 4-beat sequence
-   - Use `SliceSize.QUARTERED` with LOOPType.STRICT_ROTATED
+   - Use `SliceSize.QUARTERED` with LOOPType.ROTATED
 
 2. **Halved LOOP support** for opposite-direction motions
    - Input: [startPos, beat1, beat2] → executeLOOP produces 4-beat sequence
-   - Use `SliceSize.HALVED` with LOOPType.STRICT_ROTATED
+   - Use `SliceSize.HALVED` with LOOPType.ROTATED
 
 3. **Corrected gamma 180° map** for position validation
 

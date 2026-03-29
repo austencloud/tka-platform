@@ -2,7 +2,7 @@
  * LOOP Executor for MCP Server
  *
  * Executes LOOP transformations on sequences.
- * Phase 1 supports: REWOUND and STRICT_ROTATED
+ * Phase 1 supports: REWOUND and ROTATED
  *
  * Each executor takes a partial sequence and produces a complete circular sequence
  * by applying the appropriate transformation.
@@ -362,7 +362,7 @@ function executeStrictRotated(
       loopWord: "",
       seedWord: word,
       derivedWord: "",
-      loopType: LOOPType.STRICT_ROTATED,
+      loopType: LOOPType.ROTATED,
       sliceSize,
       isCircular: false,
       derivedBeatIndices: [],
@@ -387,7 +387,7 @@ function executeStrictRotated(
       loopWord: "",
       seedWord: word,
       derivedWord: "",
-      loopType: LOOPType.STRICT_ROTATED,
+      loopType: LOOPType.ROTATED,
       sliceSize,
       isCircular: false,
       derivedBeatIndices: [],
@@ -424,7 +424,7 @@ function executeStrictRotated(
         loopWord: "",
         seedWord: word,
         derivedWord: "",
-        loopType: LOOPType.STRICT_ROTATED,
+        loopType: LOOPType.ROTATED,
         sliceSize,
         isCircular: false,
         derivedBeatIndices: [],
@@ -469,7 +469,7 @@ function executeStrictRotated(
     loopWord,
     seedWord: word,
     derivedWord,
-    loopType: LOOPType.STRICT_ROTATED,
+    loopType: LOOPType.ROTATED,
     sliceSize,
     isCircular: true,
     derivedBeatIndices,
@@ -608,7 +608,7 @@ export function executeLOOP(
     case LOOPType.REWOUND:
       return executeRewound(steps, word, allPictographs);
 
-    case LOOPType.STRICT_ROTATED:
+    case LOOPType.ROTATED:
       return executeStrictRotated(steps, word, sliceSize, allPictographs);
 
     default:
@@ -623,7 +623,7 @@ export function executeLOOP(
         sliceSize,
         isCircular: false,
         derivedBeatIndices: [],
-        error: `LOOP type "${loopType}" is not yet implemented. Supported types: REWOUND, STRICT_ROTATED`,
+        error: `LOOP type "${loopType}" is not yet implemented. Supported types: REWOUND, ROTATED`,
       };
   }
 }

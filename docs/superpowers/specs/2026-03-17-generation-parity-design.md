@@ -29,7 +29,7 @@ Deprecate `generate_loop_image` and `generate_loop_sequence`.
 ### LOOP Type Enum Values
 
 All 14 types from the app:
-`strict_rotated`, `strict_mirrored`, `strict_flipped`, `strict_swapped`, `strict_inverted`,
+`rotated`, `mirrored`, `flipped`, `swapped`, `inverted`,
 `swapped_inverted`, `rotated_inverted`, `mirrored_swapped`, `mirrored_inverted`, `rotated_swapped`,
 `mirrored_rotated`, `mirrored_inverted_rotated`, `mirrored_rotated_inverted_swapped`,
 `strict_rewound`
@@ -87,7 +87,7 @@ The engine's `SequenceStep` and the renderer's step format share the same field 
 ### LOOP Component Auto-population
 
 When `loopType` is provided, auto-derive `loopComponents` for rendering:
-- `strict_rotated` -> `["rotated"]`
+- `rotated` -> `["rotated"]`
 - `mirrored_rotated` -> `["mirrored", "rotated"]`
 - `strict_rewound` -> `["rewound"]`
 - etc.

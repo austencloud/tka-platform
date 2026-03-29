@@ -108,7 +108,7 @@ function getValidStartPositions(
   sliceSize: SliceSizeValue
 ): string[] {
   const isRotatedLoop = [
-    LOOPType.STRICT_ROTATED,
+    LOOPType.ROTATED,
     LOOPType.ROTATED_SWAPPED,
     LOOPType.ROTATED_INVERTED,
     LOOPType.MIRRORED_ROTATED,
@@ -314,10 +314,10 @@ function calculateWord(beats: BeatData[]): string {
  * LOOP types to cycle through, ordered from simple to complex.
  */
 const LOOP_TYPE_ROTATION: LOOPTypeValue[] = [
-  LOOPType.STRICT_ROTATED,
-  LOOPType.STRICT_MIRRORED,
-  LOOPType.STRICT_SWAPPED,
-  LOOPType.STRICT_INVERTED,
+  LOOPType.ROTATED,
+  LOOPType.MIRRORED,
+  LOOPType.SWAPPED,
+  LOOPType.INVERTED,
   LOOPType.ROTATED_SWAPPED,
   LOOPType.MIRRORED_SWAPPED,
   LOOPType.ROTATED_INVERTED,

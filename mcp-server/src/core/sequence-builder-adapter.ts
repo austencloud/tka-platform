@@ -468,7 +468,7 @@ export function buildSequenceWithEndConstraint(
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface LoopConstraint {
-  loopType: "rewound" | "strict_rotated";
+  loopType: "rewound" | "rotated";
   sliceSize: "halved" | "quartered";
   noBridges?: boolean;
 }

@@ -110,7 +110,7 @@ function getAlphaPositions() {
  */
 function getValidStartPositions(loopType, sliceSize) {
     const isRotatedLoop = [
-        types_1.LOOPType.STRICT_ROTATED,
+        types_1.LOOPType.ROTATED,
         types_1.LOOPType.ROTATED_SWAPPED,
         types_1.LOOPType.ROTATED_INVERTED,
         types_1.LOOPType.MIRRORED_ROTATED,
@@ -281,10 +281,10 @@ function calculateWord(beats) {
  * LOOP types to cycle through, ordered from simple to complex.
  */
 const LOOP_TYPE_ROTATION = [
-    types_1.LOOPType.STRICT_ROTATED,
-    types_1.LOOPType.STRICT_MIRRORED,
-    types_1.LOOPType.STRICT_SWAPPED,
-    types_1.LOOPType.STRICT_INVERTED,
+    types_1.LOOPType.ROTATED,
+    types_1.LOOPType.MIRRORED,
+    types_1.LOOPType.SWAPPED,
+    types_1.LOOPType.INVERTED,
     types_1.LOOPType.ROTATED_SWAPPED,
     types_1.LOOPType.MIRRORED_SWAPPED,
     types_1.LOOPType.ROTATED_INVERTED,

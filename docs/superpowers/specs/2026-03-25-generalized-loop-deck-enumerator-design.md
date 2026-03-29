@@ -11,7 +11,7 @@ Exhaustively enumerate every valid LOOP sequence for a given configuration (LOOP
 
 1. **Load CSV** — Read the pictograph dataframe for the specified grid mode. Build an adjacency map: `position → list of variations reachable from that position`.
 2. **Filter to level** — L1 keeps only 0-turn motions. L2 adds 0 and 1-turn. L3 adds 0, 0.5 (float), and 1-turn. Filtering happens at adjacency map construction time — variations with turns outside the level's pool are excluded before the tree walk begins.
-3. **Validate LOOP type + slice size** — Reject invalid combinations (e.g. quartered + strict_mirrored). See the Valid Combinations table below.
+3. **Validate LOOP type + slice size** — Reject invalid combinations (e.g. quartered + mirrored). See the Valid Combinations table below.
 4. **For each valid start position** (alpha1, beta5, gamma11 for diamond grid):
    - Look up the required end position from the **LOOP-type-specific position map** (see End Position Constraints table below).
    - **Depth-first tree walk** of N beats (seed length). At each depth, branch on every valid variation from the current position. At the final depth, keep only paths that land on the required end position.
@@ -27,11 +27,11 @@ Each LOOP type has a specific position map that determines where the seed must e
 
 | LOOP Type | Position Map | End Position Rule |
 |-----------|-------------|-------------------|
-| `strict_rotated` | `HALF_POSITION_MAP` (halved) or `QUARTER_POSITION_MAP_CW` (quartered) | 180° or 90° CW rotation of start |
-| `strict_mirrored` | `VERTICAL_MIRROR_POSITION_MAP` | Vertical mirror of start |
-| `strict_flipped` | `HORIZONTAL_MIRROR_POSITION_MAP` | Horizontal mirror of start |
-| `strict_swapped` | `SWAPPED_POSITION_MAP` | Swapped position of start |
-| `strict_inverted` | Identity | End must equal start |
+| `rotated` | `HALF_POSITION_MAP` (halved) or `QUARTER_POSITION_MAP_CW` (quartered) | 180° or 90° CW rotation of start |
+| `mirrored` | `VERTICAL_MIRROR_POSITION_MAP` | Vertical mirror of start |
+| `flipped` | `HORIZONTAL_MIRROR_POSITION_MAP` | Horizontal mirror of start |
+| `swapped` | `SWAPPED_POSITION_MAP` | Swapped position of start |
+| `inverted` | Identity | End must equal start |
 | `swapped_inverted` | Identity (inverted requires same, swap is on motions) | End must equal start |
 | `mirrored_swapped` | `SWAPPED(VERTICAL_MIRROR(start))` | Composed: mirror then swap |
 | `mirrored_inverted` | `VERTICAL_MIRROR_POSITION_MAP` | Mirror (invert is on motions) |
@@ -49,11 +49,11 @@ Some executors only support halved mode. The enumerator rejects invalid combinat
 
 | LOOP Type | Halved | Quartered |
 |-----------|--------|-----------|
-| `strict_rotated` | Yes | Yes |
-| `strict_mirrored` | Yes | No |
-| `strict_flipped` | Yes | No |
-| `strict_swapped` | Yes | No |
-| `strict_inverted` | Yes | No |
+| `rotated` | Yes | Yes |
+| `mirrored` | Yes | No |
+| `flipped` | Yes | No |
+| `swapped` | Yes | No |
+| `inverted` | Yes | No |
 | `swapped_inverted` | Yes | No |
 | `mirrored_swapped` | Yes | No |
 | `mirrored_inverted` | Yes | No |
@@ -69,23 +69,23 @@ When a LOOP executor transforms a seed into the derived slice, the prop rotation
 
 | LOOP Type | Boundary Rule |
 |-----------|--------------|
-| `strict_rotated` | `seed_last.rotDir === derived_first.rotDir` (rotation preserves direction) |
-| `strict_mirrored` | `seed_last.rotDir === flip(derived_first.rotDir)` (mirror flips direction) |
-| `strict_inverted` | `seed_last.rotDir === flip(derived_first.rotDir)` (invert flips direction) |
-| `strict_swapped` | Swap is on hands, not direction — check per-hand continuity |
+| `rotated` | `seed_last.rotDir === derived_first.rotDir` (rotation preserves direction) |
+| `mirrored` | `seed_last.rotDir === flip(derived_first.rotDir)` (mirror flips direction) |
+| `inverted` | `seed_last.rotDir === flip(derived_first.rotDir)` (invert flips direction) |
+| `swapped` | Swap is on hands, not direction — check per-hand continuity |
 | Compound types | Follow from component transformations |
 
 Rather than reimplementing these rules, the enumerator validates continuity **after** executing the LOOP: check that every consecutive step pair in the full circular sequence has matching `endLocation → startLocation` chains. If the executor produces a discontinuity, the seed is rejected.
 
 ## Quartered Rotation Direction
 
-For `strict_rotated` quartered LOOPs, `QUARTER_POSITION_MAP_CW` (clockwise 90°) is the canonical direction, matching the existing L1 deck. CCW quartered produces a different (and equally valid) deck. The enumerator defaults to CW. A future `--rotationDir ccw` flag can enable CCW enumeration.
+For `rotated` quartered LOOPs, `QUARTER_POSITION_MAP_CW` (clockwise 90°) is the canonical direction, matching the existing L1 deck. CCW quartered produces a different (and equally valid) deck. The enumerator defaults to CW. A future `--rotationDir ccw` flag can enable CCW enumeration.
 
 ## CLI Interface
 
 ```
 node scripts/enumerate-deck.cjs \
-  --loopType strict_rotated \
+  --loopType rotated \
   --slice halved \
   --seedLength 3 \
   --level 1 \
@@ -99,7 +99,7 @@ node scripts/enumerate-deck.cjs \
 
 | Flag | Values | Description |
 |------|--------|-------------|
-| `--loopType` | Any `LOOPType` string (e.g. `strict_rotated`) | Which LOOP transformation to apply |
+| `--loopType` | Any `LOOPType` string (e.g. `rotated`) | Which LOOP transformation to apply |
 | `--slice` | `halved` or `quartered` | Slice size for the LOOP |
 | `--seedLength` | Integer (e.g. 2, 3, 4) | Number of beats in the seed before LOOP extension |
 | `--level` | 1, 2, 3 | Difficulty level (controls turn pool) |
@@ -126,7 +126,7 @@ node scripts/enumerate-deck.cjs \
   steps: SequenceStep[];     // Full circular sequence (engine format)
   startPosition: string;     // e.g. "alpha1"
   handPathFamily: string;    // Coarse grouping (e.g. "Dual-Shift+Cross-Shift+Dual-Shift")
-  loopType: string;          // e.g. "strict_rotated"
+  loopType: string;          // e.g. "rotated"
   sliceSize: string;         // e.g. "halved"
   level: number;
   gridMode: string;
@@ -139,7 +139,7 @@ node scripts/enumerate-deck.cjs \
 decks/{loopType}_{sliceSize}_L{level}_{gridMode}/sequences/{startPosition}_{word}
 ```
 
-Example: `decks/strict_rotated_halved_L1_diamond/sequences/alpha1_OAΣOAΣ`
+Example: `decks/rotated_halved_L1_diamond/sequences/alpha1_OAΣOAΣ`
 
 Note: `startPosition` is part of the document ID because the same word from different start positions represents different sequences.
 
@@ -161,7 +161,7 @@ Computed from seed beats only — derived beats follow deterministically from th
 
 ## Validation
 
-The first validation target: run `--loopType strict_rotated --slice quartered --seedLength 2 --level 1` and verify it produces the same 192 sequences as the existing `enumerate-l1-deck.cjs`. This confirms the generalized enumerator subsumes the existing one.
+The first validation target: run `--loopType rotated --slice quartered --seedLength 2 --level 1` and verify it produces the same 192 sequences as the existing `enumerate-l1-deck.cjs`. This confirms the generalized enumerator subsumes the existing one.
 
 ## Scaling Estimates
 

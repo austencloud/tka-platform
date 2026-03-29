@@ -15,11 +15,11 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
  * Keys must match the LOOPType enum values exactly (snake_case strings).
  */
 export const LOOP_TYPE_TAGS: Record<string, string> = {
-  strict_rotated: "sr",
-  strict_mirrored: "sm",
-  strict_flipped: "sf",
-  strict_swapped: "ss",
-  strict_inverted: "si",
+  rotated: "sr",
+  mirrored: "sm",
+  flipped: "sf",
+  swapped: "ss",
+  inverted: "si",
   // Audit fix #2: the enum value is "strict_rewound", not "rewound"
   strict_rewound: "rw",
 } as const;

@@ -22,7 +22,7 @@ Recipe (new):     s~r:{loopType}:{hash}:{seed compressed}  ~60-80 chars
 
 - `s~` prefix: inline-encoded sequence (existing convention, handled by ShortCodeManager)
 - `r:` prefix (after `s~`): signals "recipe" encoding — decoder must reconstruct
-- `{loopType}`: compact tag identifying the transformation (e.g., `sr` = strict_rotated, `sm` = strict_mirrored)
+- `{loopType}`: compact tag identifying the transformation (e.g., `sr` = rotated, `sm` = mirrored)
 - `{hash}`: 8-character truncated SHA-256 of the full flat encoding. Verifies reconstruction correctness at decode time.
 - `{seed compressed}`: only the seed beats (e.g., 4 beats for quartered, 8 for halved), LZString compressed
 
@@ -30,11 +30,11 @@ Recipe (new):     s~r:{loopType}:{hash}:{seed compressed}  ~60-80 chars
 
 | Tag | LOOPType | Slice | Seed Size (16-beat) |
 |-----|----------|-------|---------------------|
-| `sr` | STRICT_ROTATED | quartered | 4 beats |
-| `sm` | STRICT_MIRRORED | halved | 8 beats |
-| `sf` | STRICT_FLIPPED | halved | 8 beats |
-| `ss` | STRICT_SWAPPED | halved | 8 beats |
-| `si` | STRICT_INVERTED | halved | 8 beats |
+| `sr` | ROTATED | quartered | 4 beats |
+| `sm` | MIRRORED | halved | 8 beats |
+| `sf` | FLIPPED | halved | 8 beats |
+| `ss` | SWAPPED | halved | 8 beats |
+| `si` | INVERTED | halved | 8 beats |
 | `rw` | REWOUND | halved | 8 beats |
 
 Compound patterns (rotated_inverted, mirrored_swapped, etc.) are future work. For now, only single-transform LOOPs qualify for recipe encoding.

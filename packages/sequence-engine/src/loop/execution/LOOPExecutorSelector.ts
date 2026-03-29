@@ -28,11 +28,11 @@ export class LOOPExecutorSelector {
 
   constructor() {
     this.executorMap = new Map<LOOPType, ILOOPExecutor>([
-      [LOOPType.STRICT_ROTATED, strictRotatedExecutor],
-      [LOOPType.STRICT_MIRRORED, strictMirroredExecutor],
-      [LOOPType.STRICT_FLIPPED, strictFlippedExecutor],
-      [LOOPType.STRICT_SWAPPED, strictSwappedExecutor],
-      [LOOPType.STRICT_INVERTED, strictInvertedExecutor],
+      [LOOPType.ROTATED, strictRotatedExecutor],
+      [LOOPType.MIRRORED, strictMirroredExecutor],
+      [LOOPType.FLIPPED, strictFlippedExecutor],
+      [LOOPType.SWAPPED, strictSwappedExecutor],
+      [LOOPType.INVERTED, strictInvertedExecutor],
       [LOOPType.MIRRORED_SWAPPED, mirroredSwappedExecutor],
       [LOOPType.SWAPPED_INVERTED, swappedInvertedExecutor],
       [LOOPType.MIRRORED_INVERTED, mirroredInvertedExecutor],

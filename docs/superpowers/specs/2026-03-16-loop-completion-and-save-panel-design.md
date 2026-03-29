@@ -251,7 +251,7 @@ Added to `AppSettings` interface. Exposed in PreferencesTab as "Ask before apply
 1. **Sequence too short** — Ring shows all gray. Popover says "Add more beats to see LOOP options."
 2. **No start position** — Same as too short.
 3. **Already a complete LOOP** — Active components show full color. No faint options. Popover shows LOOP type name as status.
-4. **Multiple LOOPTypes share a component** — When user taps a component that appears in multiple available LOOPTypes (e.g., Mirrored appears in both `STRICT_MIRRORED` and `MIRRORED_SWAPPED`), prefer the simplest (fewest components). This gives the user the most direct completion.
+4. **Multiple LOOPTypes share a component** — When user taps a component that appears in multiple available LOOPTypes (e.g., Mirrored appears in both `MIRRORED` and `MIRRORED_SWAPPED`), prefer the simplest (fewest components). This gives the user the most direct completion.
 5. **Bridge auto-selection fails** — If no valid bridge exists for the chosen LOOP type, show a toast error. This shouldn't happen if `availableLOOPOptions` is correct, but handled defensively.
 6. **Very long sequences** — LOOP analysis is O(n) on step count. Fast enough for any realistic sequence length.
 7. **Undo after LOOP completion** — Single undo restores pre-extension state. The extension replaces the sequence in one state update.

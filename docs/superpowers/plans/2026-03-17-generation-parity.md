@@ -1069,7 +1069,7 @@ describe("LOOP extension", () => {
       gridMode: "diamond",
       level: 1,
       constraintOptions: { propContinuity: "maximize" },
-      loop: { type: LOOPType.STRICT_ROTATED, sliceSize: SliceSize.HALVED },
+      loop: { type: LOOPType.ROTATED, sliceSize: SliceSize.HALVED },
     });
     const lastStep = result.sequence[result.sequence.length - 1]!;
     const startStep = result.sequence[0]!;
@@ -1231,7 +1231,7 @@ private async generateCircularSequence(options: GenerationOptions): Promise<Sequ
     startPosition: options.startPosition?.startPosition,
     maxTurnIntensity: options.turnIntensity,
     loop: {
-      type: options.loopType ?? LOOPType.STRICT_ROTATED,
+      type: options.loopType ?? LOOPType.ROTATED,
       sliceSize: options.sliceSize ?? SliceSize.HALVED,
       useTargetedGeneration: true,
     },

@@ -11,10 +11,10 @@ exports.GridPosition = exports.RotationDirection = exports.MotionType = exports.
  * Matches client-side LOOPType enum values.
  */
 exports.LOOPType = {
-    STRICT_ROTATED: "STRICT_ROTATED",
-    STRICT_MIRRORED: "STRICT_MIRRORED",
-    STRICT_SWAPPED: "STRICT_SWAPPED",
-    STRICT_INVERTED: "STRICT_INVERTED",
+    ROTATED: "ROTATED",
+    MIRRORED: "MIRRORED",
+    SWAPPED: "SWAPPED",
+    INVERTED: "INVERTED",
     ROTATED_SWAPPED: "ROTATED_SWAPPED",
     MIRRORED_SWAPPED: "MIRRORED_SWAPPED",
     ROTATED_INVERTED: "ROTATED_INVERTED",

@@ -23,11 +23,16 @@ export class BrowserVariationProvider implements IBrowserVariationProvider {
   private readonly index = new Map<string, EnginePictographData[]>();
   private allVariationsList: EnginePictographData[] = [];
   private initialized = false;
+  private initializedGridMode: string | null = null;
 
   constructor(private readonly letterQueryHandler: ILetterQueryHandler) {}
 
   async initialize(gridMode: string): Promise<void> {
-    if (this.initialized) return;
+    if (this.initialized && this.initializedGridMode === gridMode) return;
+
+    // Clear previous data when switching grid modes
+    this.index.clear();
+    this.allVariationsList = [];
 
     // Convert string grid mode to the enum the LetterQueryHandler expects
     const gridModeEnum = this.toGridModeEnum(gridMode);
@@ -53,6 +58,7 @@ export class BrowserVariationProvider implements IBrowserVariationProvider {
     }
 
     this.initialized = true;
+    this.initializedGridMode = gridMode;
   }
 
   isInitialized(): boolean {

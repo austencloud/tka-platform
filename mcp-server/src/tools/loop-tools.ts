@@ -12,6 +12,7 @@ import { buildSequenceFromLetters, parseWordToLetters } from "../core/sequence-b
 import { renderSequenceToImage, LOOPComponent } from "../core/sequence-renderer.js";
 import { simplifyRepeatedWord } from "../core/word-simplifier.js";
 import { allocateTurns } from "@tka/sequence-engine/generation";
+import { recalculateOrientationsWithOverrides } from "../core/orientation-propagation.js";
 import {
   LOOPType,
   SliceSize,
@@ -24,6 +25,8 @@ import {
   detectLOOPFromSteps,
   isSequenceCircular,
 } from "@tka/sequence-engine/loop";
+
+const orientationEnum = z.enum(["in", "out", "clock", "counter", "clockIn", "clockOut", "counterIn", "counterOut"]);
 
 /**
  * Auto-bridge helper: If the sequence ends at an incompatible position for the
@@ -177,15 +180,17 @@ export function registerLoopTools(server: McpServer): void {
   // Tool: generate_loop_sequence
   server.tool(
     "generate_loop_sequence",
-    "[DEPRECATED: Use generate_sequence with loopType parameter instead.] Generate a complete LOOP sequence from a word + LOOP type. Returns the circular sequence with all transformed steps. Currently supports REWOUND and STRICT_ROTATED.",
+    "[DEPRECATED: Use generate_sequence with loopType parameter instead.] Generate a complete LOOP sequence from a word + LOOP type. Returns the circular sequence with all transformed steps. Currently supports REWOUND and ROTATED.",
     {
       word: z.string().describe('The sequence word, e.g., "CAKE"'),
-      loopType: z.enum(["rewound", "strict_rotated"]).describe('LOOP type to apply: "rewound" (reverses and appends) or "strict_rotated" (180°/90° rotation)'),
+      loopType: z.enum(["rewound", "rotated"]).describe('LOOP type to apply: "rewound" (reverses and appends) or "rotated" (180°/90° rotation)'),
       sliceSize: z.enum(["halved", "quartered"]).optional().default("halved").describe('Slice size: "halved" for 180° rotation (default), "quartered" for 90° rotation'),
       gridMode: z.enum(["diamond", "box", "skewed"]).optional().default("diamond").describe("Grid mode: diamond (default), box, or skewed"),
       maxAttempts: z.number().optional().default(500).describe("Maximum generation attempts (default 500 handles complex words)"),
+      blueStartOrientation: orientationEnum.optional().describe('Override starting orientation for blue prop (default: "in")'),
+      redStartOrientation: orientationEnum.optional().describe('Override starting orientation for red prop (default: "in")'),
     },
-    async ({ word, loopType, sliceSize = "halved", gridMode = "diamond", maxAttempts = 500 }) => {
+    async ({ word, loopType, sliceSize = "halved", gridMode = "diamond", maxAttempts = 500, blueStartOrientation, redStartOrientation }) => {
       const allPictographs = ensureDataLoaded(gridMode);
 
       // Parse word to individual letters
@@ -213,7 +218,7 @@ export function registerLoopTools(server: McpServer): void {
       }
 
       // Determine LOOP type enum
-      const loopTypeEnum = loopType === "rewound" ? LOOPType.REWOUND : LOOPType.STRICT_ROTATED;
+      const loopTypeEnum = loopType === "rewound" ? LOOPType.REWOUND : LOOPType.ROTATED;
       const slice = sliceSize === "quartered" ? SliceSize.QUARTERED : SliceSize.HALVED;
 
       // Retry loop: keep generating until we get a LOOP-compatible sequence
@@ -283,6 +288,13 @@ export function registerLoopTools(server: McpServer): void {
         };
       }
 
+      // Apply orientation overrides if specified
+      if (blueStartOrientation || redStartOrientation) {
+        loopResult.steps = recalculateOrientationsWithOverrides(
+          loopResult.steps, blueStartOrientation, redStartOrientation
+        );
+      }
+
       // Format output
       const output = {
         word: loopResult.word,
@@ -334,7 +346,7 @@ export function registerLoopTools(server: McpServer): void {
     "[DEPRECATED: Use generate_sequence with loopType parameter instead.] Generate a choreo card image for a LOOP sequence. Displays the complete circular sequence as a composite image.",
     {
       word: z.string().describe('The sequence word, e.g., "CAKE"'),
-      loopType: z.enum(["rewound", "strict_rotated"]).describe('LOOP type to apply'),
+      loopType: z.enum(["rewound", "rotated"]).describe('LOOP type to apply'),
       sliceSize: z.enum(["halved", "quartered"]).optional().default("halved").describe('Slice size'),
       gridMode: z.enum(["diamond", "box", "skewed"]).optional().default("diamond").describe("Grid mode"),
       layout: z.enum(["grid", "strip"]).optional().default("grid").describe("Layout: grid (square) or strip (single row)"),
@@ -349,8 +361,10 @@ export function registerLoopTools(server: McpServer): void {
       userName: z.string().optional().describe("Username for footer"),
       notes: z.string().optional().describe("Notes for footer"),
       birthday: z.string().optional().describe("Birthday/creation date in ISO format"),
+      blueStartOrientation: orientationEnum.optional().describe('Override starting orientation for blue prop (default: "in")'),
+      redStartOrientation: orientationEnum.optional().describe('Override starting orientation for red prop (default: "in")'),
     },
-    async ({ word, loopType, sliceSize = "halved", gridMode = "diamond", layout = "grid", cellSize = 900, showStepNumbers = true, showWord = true, darkMode = true, maxAttempts = 500, loopComponents, level = 1, turnIntensity, userName, notes, birthday }) => {
+    async ({ word, loopType, sliceSize = "halved", gridMode = "diamond", layout = "grid", cellSize = 900, showStepNumbers = true, showWord = true, darkMode = true, maxAttempts = 500, loopComponents, level = 1, turnIntensity, userName, notes, birthday, blueStartOrientation, redStartOrientation }) => {
       const allPictographs = ensureDataLoaded(gridMode);
 
       // Parse word to individual letters
@@ -378,7 +392,7 @@ export function registerLoopTools(server: McpServer): void {
       }
 
       // Execute the LOOP transformation (pass pictograph data for letter derivation)
-      const loopTypeEnum = loopType === "rewound" ? LOOPType.REWOUND : LOOPType.STRICT_ROTATED;
+      const loopTypeEnum = loopType === "rewound" ? LOOPType.REWOUND : LOOPType.ROTATED;
       const slice = sliceSize === "quartered" ? SliceSize.QUARTERED : SliceSize.HALVED;
 
       // Retry loop: keep generating until we get a LOOP-compatible sequence
@@ -446,6 +460,13 @@ export function registerLoopTools(server: McpServer): void {
           ],
           isError: true,
         };
+      }
+
+      // Apply orientation overrides if specified
+      if (blueStartOrientation || redStartOrientation) {
+        loopResult.steps = recalculateOrientationsWithOverrides(
+          loopResult.steps, blueStartOrientation, redStartOrientation
+        );
       }
 
       try {
@@ -539,7 +560,7 @@ export function registerLoopTools(server: McpServer): void {
     "Generate a LOOP sequence choreo card and open it in the system image viewer. Returns only confirmation text - NO image data returned. Use this when the USER needs to see the LOOP sequence but Claude doesn't need to analyze it. Saves ~30-100k tokens compared to generate_loop_image.",
     {
       word: z.string().describe('The sequence word, e.g., "CAKE"'),
-      loopType: z.enum(["rewound", "strict_rotated"]).describe('LOOP type to apply: "rewound" (reverses and appends) or "strict_rotated" (180°/90° rotation)'),
+      loopType: z.enum(["rewound", "rotated"]).describe('LOOP type to apply: "rewound" (reverses and appends) or "rotated" (180°/90° rotation)'),
       sliceSize: z.enum(["halved", "quartered"]).optional().default("halved").describe("Slice size"),
       gridMode: z.enum(["diamond", "box", "skewed"]).optional().default("diamond").describe("Grid mode"),
       layout: z.enum(["grid", "strip"]).optional().default("grid").describe("Layout: grid (square) or strip (single row)"),
@@ -554,8 +575,10 @@ export function registerLoopTools(server: McpServer): void {
       userName: z.string().optional().describe("Username for footer"),
       notes: z.string().optional().describe("Notes for footer"),
       birthday: z.string().optional().describe("Birthday/creation date in ISO format"),
+      blueStartOrientation: orientationEnum.optional().describe('Override starting orientation for blue prop (default: "in")'),
+      redStartOrientation: orientationEnum.optional().describe('Override starting orientation for red prop (default: "in")'),
     },
-    async ({ word, loopType, sliceSize = "halved", gridMode = "diamond", layout = "grid", cellSize = 900, showStepNumbers = true, showWord = true, darkMode = true, maxAttempts = 500, loopComponents, level = 1, turnIntensity, userName, notes, birthday }) => {
+    async ({ word, loopType, sliceSize = "halved", gridMode = "diamond", layout = "grid", cellSize = 900, showStepNumbers = true, showWord = true, darkMode = true, maxAttempts = 500, loopComponents, level = 1, turnIntensity, userName, notes, birthday, blueStartOrientation, redStartOrientation }) => {
       const allPictographs = ensureDataLoaded(gridMode);
 
       // Parse word to individual letters
@@ -583,7 +606,7 @@ export function registerLoopTools(server: McpServer): void {
       }
 
       // Execute the LOOP transformation
-      const loopTypeEnum = loopType === "rewound" ? LOOPType.REWOUND : LOOPType.STRICT_ROTATED;
+      const loopTypeEnum = loopType === "rewound" ? LOOPType.REWOUND : LOOPType.ROTATED;
       const slice = sliceSize === "quartered" ? SliceSize.QUARTERED : SliceSize.HALVED;
 
       // Retry loop: keep generating until we get a LOOP-compatible sequence
@@ -651,6 +674,13 @@ export function registerLoopTools(server: McpServer): void {
           ],
           isError: true,
         };
+      }
+
+      // Apply orientation overrides if specified
+      if (blueStartOrientation || redStartOrientation) {
+        loopResult.steps = recalculateOrientationsWithOverrides(
+          loopResult.steps, blueStartOrientation, redStartOrientation
+        );
       }
 
       try {

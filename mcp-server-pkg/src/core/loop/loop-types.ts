@@ -11,16 +11,16 @@
  */
 export enum LOOPType {
   /** Strict rotated - rotates positions around the grid */
-  STRICT_ROTATED = "strict_rotated",
+  ROTATED = "rotated",
 
   /** Strict mirrored - mirrors positions vertically */
-  STRICT_MIRRORED = "strict_mirrored",
+  MIRRORED = "mirrored",
 
   /** Strict swapped - swaps blue and red attributes */
-  STRICT_SWAPPED = "strict_swapped",
+  SWAPPED = "swapped",
 
   /** Strict inverted - uses inverted letters (opposite motion types) */
-  STRICT_INVERTED = "strict_inverted",
+  INVERTED = "inverted",
 
   /** Swapped inverted - combines swapping with inverted motion */
   SWAPPED_INVERTED = "swapped_inverted",
@@ -67,10 +67,10 @@ export enum SliceSize {
  * Maps LOOP types to display names for UI
  */
 export const LOOP_TYPE_LABELS: Record<LOOPType, string> = {
-  [LOOPType.STRICT_ROTATED]: "Rotated",
-  [LOOPType.STRICT_MIRRORED]: "Mirrored",
-  [LOOPType.STRICT_SWAPPED]: "Swapped",
-  [LOOPType.STRICT_INVERTED]: "Inverted",
+  [LOOPType.ROTATED]: "Rotated",
+  [LOOPType.MIRRORED]: "Mirrored",
+  [LOOPType.SWAPPED]: "Swapped",
+  [LOOPType.INVERTED]: "Inverted",
   [LOOPType.SWAPPED_INVERTED]: "Swapped / Inverted",
   [LOOPType.MIRRORED_SWAPPED]: "Mirrored / Swapped",
   [LOOPType.ROTATED_INVERTED]: "Rotated / Inverted",
@@ -86,10 +86,10 @@ export const LOOP_TYPE_LABELS: Record<LOOPType, string> = {
  * LOOP descriptions for each type
  */
 export const LOOP_TYPE_DESCRIPTIONS: Record<LOOPType, string> = {
-  [LOOPType.STRICT_ROTATED]: "Rotates positions around the grid",
-  [LOOPType.STRICT_MIRRORED]: "Mirrors positions vertically",
-  [LOOPType.STRICT_SWAPPED]: "Swaps blue and red props",
-  [LOOPType.STRICT_INVERTED]: "Inverts motion directions",
+  [LOOPType.ROTATED]: "Rotates positions around the grid",
+  [LOOPType.MIRRORED]: "Mirrors positions vertically",
+  [LOOPType.SWAPPED]: "Swaps blue and red props",
+  [LOOPType.INVERTED]: "Inverts motion directions",
   [LOOPType.SWAPPED_INVERTED]: "Swaps colors with inverted motion",
   [LOOPType.ROTATED_INVERTED]: "Rotates with inverted motion",
   [LOOPType.MIRRORED_SWAPPED]: "Mirrors with color swap",
@@ -122,10 +122,10 @@ export interface LOOPValidationResult {
  * All supported LOOP types in display order
  */
 export const ALL_LOOP_TYPES: LOOPType[] = [
-  LOOPType.STRICT_ROTATED,
-  LOOPType.STRICT_MIRRORED,
-  LOOPType.STRICT_SWAPPED,
-  LOOPType.STRICT_INVERTED,
+  LOOPType.ROTATED,
+  LOOPType.MIRRORED,
+  LOOPType.SWAPPED,
+  LOOPType.INVERTED,
   LOOPType.SWAPPED_INVERTED,
   LOOPType.ROTATED_INVERTED,
   LOOPType.MIRRORED_SWAPPED,
@@ -142,5 +142,5 @@ export const ALL_LOOP_TYPES: LOOPType[] = [
  */
 export const SUPPORTED_LOOP_TYPES: LOOPType[] = [
   LOOPType.REWOUND,
-  LOOPType.STRICT_ROTATED,
+  LOOPType.ROTATED,
 ];

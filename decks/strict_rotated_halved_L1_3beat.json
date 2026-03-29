@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "loopType": "strict_rotated",
+    "loopType": "rotated",
     "sliceSize": "halved",
     "seedLength": 3,
     "level": 1,

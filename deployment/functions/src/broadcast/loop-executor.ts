@@ -55,7 +55,7 @@ function validateSequence(
 
   // For non-rotated LOOPs (mirror, swap, invert), end position should equal start position
   const isRotatedLoop = [
-    LOOPType.STRICT_ROTATED,
+    LOOPType.ROTATED,
     LOOPType.ROTATED_SWAPPED,
     LOOPType.ROTATED_INVERTED,
     LOOPType.MIRRORED_ROTATED,
@@ -531,16 +531,16 @@ export function executeLOOP(
 
   // Execute appropriate LOOP type
   switch (loopType) {
-    case LOOPType.STRICT_ROTATED:
+    case LOOPType.ROTATED:
       return executeStrictRotated(sequence, sliceSize);
 
-    case LOOPType.STRICT_MIRRORED:
+    case LOOPType.MIRRORED:
       return executeStrictMirrored(sequence, sliceSize);
 
-    case LOOPType.STRICT_SWAPPED:
+    case LOOPType.SWAPPED:
       return executeStrictSwapped(sequence, sliceSize);
 
-    case LOOPType.STRICT_INVERTED:
+    case LOOPType.INVERTED:
       return executeStrictInverted(sequence, sliceSize);
 
     case LOOPType.ROTATED_SWAPPED:
@@ -554,7 +554,7 @@ export function executeLOOP(
 
     default:
       // Fallback to strict rotated
-      console.warn(`Unknown LOOP type: ${loopType}, using STRICT_ROTATED`);
+      console.warn(`Unknown LOOP type: ${loopType}, using ROTATED`);
       return executeStrictRotated(sequence, sliceSize);
   }
 }
@@ -570,7 +570,7 @@ export function determineEndPosition(
 ): string {
   // For rotated LOOPs, end position is rotated from start
   const isRotatedLoop = [
-    LOOPType.STRICT_ROTATED,
+    LOOPType.ROTATED,
     LOOPType.ROTATED_SWAPPED,
     LOOPType.ROTATED_INVERTED,
     LOOPType.MIRRORED_ROTATED,

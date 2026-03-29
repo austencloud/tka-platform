@@ -14,6 +14,7 @@ import type { PictographData } from "$lib/shared/pictograph/shared/domain/models
 import type { PictographVisibilityOptions } from "$lib/shared/render/utils/pictograph-to-svg";
 import type { IPictographKeyHasher } from "../contracts/IPictographKeyHasher";
 import { GridLocation, GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 
 /**
  * Internal structure for motion key data
@@ -72,6 +73,14 @@ export class PictographKeyHasher implements IPictographKeyHasher {
     // Guard against missing motions data
     const motions = data.motions ?? { blue: undefined, red: undefined };
 
+    // Fall back to global settings for prop types when not explicitly provided.
+    // The renderer (PictographPreparer) does the same fallback, so the cache key
+    // must match. Without this, changing the global prop type setting (e.g. from
+    // staff to fan) would serve stale cached images rendered with the old prop type.
+    const globalSettings = getSettings();
+    const resolvedBlueProp = visibility.bluePropType ?? globalSettings.bluePropType ?? "staff";
+    const resolvedRedProp = visibility.redPropType ?? globalSettings.redPropType ?? "staff";
+
     return {
       letter: data.letter ?? undefined,
       blue: this.extractMotionKey(motions.blue),
@@ -84,8 +93,8 @@ export class PictographKeyHasher implements IPictographKeyHasher {
         showReversals: visibility.showReversals ?? true,
         showNonRadialPoints: visibility.showNonRadialPoints ?? true,
         darkMode: visibility.darkMode ?? false,
-        bluePropType: visibility.bluePropType ?? undefined,
-        redPropType: visibility.redPropType ?? undefined,
+        bluePropType: resolvedBlueProp,
+        redPropType: resolvedRedProp,
         handPathMode: visibility.handPathMode ?? false,
         handPointVisibility: visibility.handPointVisibility ?? "all",
         printMode: visibility.printMode ?? false,

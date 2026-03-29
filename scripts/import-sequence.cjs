@@ -63,7 +63,7 @@ const AUSTEN_UID = "PBp3GSBO6igCKPwJyLZNmVEmamI3";
 
 // Maps LOOP component IDs to the loopType enum values used in Firestore
 const COMPONENT_TO_LOOP_TYPE = {
-  rotated: "strict_rotated",
+  rotated: "rotated",
   mirrored: "mirrored",
   swapped: "swapped",
   inverted: "inverted",

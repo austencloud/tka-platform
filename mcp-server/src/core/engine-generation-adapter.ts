@@ -28,11 +28,11 @@ import type { SequenceStep, SequenceResult } from "./sequence-builder-adapter.js
 // ─────────────────────────────────────────────────────────────────────────────
 
 const LOOP_TYPE_MAP: Record<string, LOOPType> = {
-  strict_rotated: LOOPType.STRICT_ROTATED,
-  strict_mirrored: LOOPType.STRICT_MIRRORED,
-  strict_flipped: LOOPType.STRICT_FLIPPED,
-  strict_swapped: LOOPType.STRICT_SWAPPED,
-  strict_inverted: LOOPType.STRICT_INVERTED,
+  rotated: LOOPType.ROTATED,
+  mirrored: LOOPType.MIRRORED,
+  flipped: LOOPType.FLIPPED,
+  swapped: LOOPType.SWAPPED,
+  inverted: LOOPType.INVERTED,
   swapped_inverted: LOOPType.SWAPPED_INVERTED,
   rotated_inverted: LOOPType.ROTATED_INVERTED,
   mirrored_swapped: LOOPType.MIRRORED_SWAPPED,
@@ -51,11 +51,11 @@ const LOOP_TYPE_MAP: Record<string, LOOPType> = {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const LOOP_TYPE_COMPONENTS: Record<string, string[]> = {
-  strict_rotated: ["rotated"],
-  strict_mirrored: ["mirrored"],
-  strict_flipped: ["flipped"],
-  strict_swapped: ["swapped"],
-  strict_inverted: ["inverted"],
+  rotated: ["rotated"],
+  mirrored: ["mirrored"],
+  flipped: ["flipped"],
+  swapped: ["swapped"],
+  inverted: ["inverted"],
   swapped_inverted: ["swapped", "inverted"],
   rotated_inverted: ["rotated", "inverted"],
   mirrored_swapped: ["mirrored", "swapped"],
@@ -108,6 +108,10 @@ export interface EngineGenerationParams {
   sliceSize?: "halved" | "quartered";
   /** Beam search width */
   beamWidth?: number;
+  /** Override starting orientation for blue prop (e.g. "in", "out", "clock", "counter") */
+  blueStartOrientation?: string;
+  /** Override starting orientation for red prop (e.g. "in", "out", "clock", "counter") */
+  redStartOrientation?: string;
 }
 
 export interface EngineGenerationResult {
@@ -163,6 +167,8 @@ function assembleBuildOptions(params: EngineGenerationParams): BuildOptions {
     blockedStartPositions: params.blockedStartPositions,
     mustNotContainLetters: params.mustNotContainLetters,
     mustContainLetters: params.mustContainLetters,
+    blueStartOrientation: params.blueStartOrientation,
+    redStartOrientation: params.redStartOrientation,
   };
 
   // Word or length (one is required, caller validates)

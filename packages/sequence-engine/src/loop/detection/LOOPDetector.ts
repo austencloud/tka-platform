@@ -108,11 +108,11 @@ function resolveComponentsToLOOPType(components: Set<LOOPComponent>): LOOPType |
 
   // Single-component types
   if (size === 1) {
-    if (has(LOOPComponent.ROTATED)) return LOOPType.STRICT_ROTATED;
-    if (has(LOOPComponent.MIRRORED)) return LOOPType.STRICT_MIRRORED;
-    if (has(LOOPComponent.FLIPPED)) return LOOPType.STRICT_FLIPPED;
-    if (has(LOOPComponent.SWAPPED)) return LOOPType.STRICT_SWAPPED;
-    if (has(LOOPComponent.INVERTED)) return LOOPType.STRICT_INVERTED;
+    if (has(LOOPComponent.ROTATED)) return LOOPType.ROTATED;
+    if (has(LOOPComponent.MIRRORED)) return LOOPType.MIRRORED;
+    if (has(LOOPComponent.FLIPPED)) return LOOPType.FLIPPED;
+    if (has(LOOPComponent.SWAPPED)) return LOOPType.SWAPPED;
+    if (has(LOOPComponent.INVERTED)) return LOOPType.INVERTED;
     if (has(LOOPComponent.REWOUND)) return LOOPType.REWOUND;
   }
 

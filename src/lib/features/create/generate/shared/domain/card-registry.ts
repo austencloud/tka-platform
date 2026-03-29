@@ -7,6 +7,7 @@
  */
 
 import type { GeneratorHelpId } from "../../domain/generator-help-content";
+import type { CardColors } from "./card-colors";
 
 export interface CardRegistryEntry {
   /** Card ID used by CardConfigurator (e.g. "word-input", "preset") */
@@ -20,7 +21,7 @@ export interface CardRegistryEntry {
   /** Maps to the help content entry for this card's explanation */
   helpId: GeneratorHelpId;
   /** Key into CardColors for this card's gradient */
-  colorKey: string;
+  colorKey: keyof CardColors;
 }
 
 /**

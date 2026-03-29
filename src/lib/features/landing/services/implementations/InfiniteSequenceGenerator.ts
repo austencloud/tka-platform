@@ -57,10 +57,10 @@ function isAxisSymmetric(position: GridPosition): boolean {
  */
 const LOOP_TYPE_ROTATION: LOOPType[] = [
   // Single transformations (most common, easiest to see)
-  LOOPType.STRICT_ROTATED,
-  LOOPType.STRICT_MIRRORED,
-  LOOPType.STRICT_SWAPPED,
-  LOOPType.STRICT_INVERTED,
+  LOOPType.ROTATED,
+  LOOPType.MIRRORED,
+  LOOPType.SWAPPED,
+  LOOPType.INVERTED,
 
   // Double combinations
   LOOPType.ROTATED_SWAPPED,
@@ -191,7 +191,7 @@ export class InfiniteSequenceGenerator implements IInfiniteSequenceGenerator {
     targetStartPosition?: GridPosition
   ): Promise<GeneratedSequenceInfo | null> {
     const fallbackSettings: GenerationSettings = {
-      loopType: LOOPType.STRICT_ROTATED,
+      loopType: LOOPType.ROTATED,
       sliceSize: SliceSize.QUARTERED,
       difficulty: DifficultyLevel.BEGINNER,
       turnIntensity: 0,
@@ -240,7 +240,7 @@ export class InfiniteSequenceGenerator implements IInfiniteSequenceGenerator {
    */
   private getNextSettings(): GenerationSettings {
     // Get next LOOP type in rotation (guaranteed to exist via modulo)
-    const loopType = LOOP_TYPE_ROTATION[this.loopTypeIndex] ?? LOOPType.STRICT_ROTATED;
+    const loopType = LOOP_TYPE_ROTATION[this.loopTypeIndex] ?? LOOPType.ROTATED;
     this.loopTypeIndex = (this.loopTypeIndex + 1) % LOOP_TYPE_ROTATION.length;
 
     // Select slice size (weighted random)

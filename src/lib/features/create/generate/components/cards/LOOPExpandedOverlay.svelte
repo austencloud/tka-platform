@@ -35,7 +35,7 @@ Animates forward in z-axis and expands to fill the container space
 
   // Determine if current selection allows slice choice (rotated variants)
   const ROTATED_TYPES = new Set([
-    LOOPType.STRICT_ROTATED,
+    LOOPType.ROTATED,
     LOOPType.ROTATED_INVERTED,
     LOOPType.ROTATED_SWAPPED,
     LOOPType.MIRRORED_ROTATED,

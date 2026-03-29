@@ -147,6 +147,12 @@ export interface BuildOptions {
 
   /** Letters that MUST appear at least once in the generated sequence. */
   mustContainLetters?: string[];
+
+  /** Override the starting orientation for the blue prop (e.g. "in", "out", "clock", "counter") */
+  blueStartOrientation?: string;
+
+  /** Override the starting orientation for the red prop (e.g. "in", "out", "clock", "counter") */
+  redStartOrientation?: string;
 }
 
 /**
@@ -330,7 +336,10 @@ export class SequenceBuilder {
 
     // Stage 5: Post-process (convert PictographData to SequenceStep)
     const propContinuity = this.resolveEffectivePropContinuity(options);
-    const result = this.postProcess(searchResult, turnAllocation, letters, propContinuity);
+    const result = this.postProcess(searchResult, turnAllocation, letters, propContinuity, {
+      blueStartOrientation: options.blueStartOrientation,
+      redStartOrientation: options.redStartOrientation,
+    });
 
     // Stage 6: LOOP extension (if requested)
     if (options.loop) {
@@ -539,7 +548,10 @@ export class SequenceBuilder {
     // Stage 5: Post-process
     const letters = searchResult.steps.slice(1).map((s) => s.letter);
     const propContinuity = this.resolveEffectivePropContinuity(options);
-    const result = this.postProcess(searchResult, turnAllocation, letters, propContinuity);
+    const result = this.postProcess(searchResult, turnAllocation, letters, propContinuity, {
+      blueStartOrientation: options.blueStartOrientation,
+      redStartOrientation: options.redStartOrientation,
+    });
 
     // Stage 6: LOOP extension (if requested)
     if (options.loop) {
@@ -630,6 +642,7 @@ export class SequenceBuilder {
     turnAllocation: TurnAllocation,
     letters: string[],
     propContinuity?: "maximize" | "allow-reversals" | "force-reversals",
+    orientationOverrides?: { blueStartOrientation?: string; redStartOrientation?: string },
   ): BuildResult {
     const bridgeIndices = new Set(searchResult.bridgeStepIndices);
     const sequence: SequenceStep[] = [];
@@ -717,10 +730,31 @@ export class SequenceBuilder {
     // orientation = previous beat's end orientation, and end orientation
     // is derived from motion type + turns + rotation direction.
     const propagator = new OrientationPropagator(new OrientationCalculatorImpl());
-    const blueStartOrientation = (sequence[0]?.blueMotion.endOrientation || "in") as Orientation;
+    const blueStartOrientation = (orientationOverrides?.blueStartOrientation || sequence[0]?.blueMotion.endOrientation || "in") as Orientation;
     let propagated = propagator.propagateForColor(sequence, "blue", blueStartOrientation);
-    const redStartOrientation = (sequence[0]?.redMotion.endOrientation || "in") as Orientation;
+    const redStartOrientation = (orientationOverrides?.redStartOrientation || sequence[0]?.redMotion.endOrientation || "in") as Orientation;
     propagated = propagator.propagateForColor(propagated, "red", redStartOrientation);
+
+    // Update beat 0 (start position) orientations when overrides are provided.
+    // The propagator starts at i=1, so beat 0 retains its original CSV orientations.
+    // The start position is a static hold, so start and end orientation are the same.
+    if (orientationOverrides && propagated[0]) {
+      const sp = propagated[0];
+      if (orientationOverrides.blueStartOrientation) {
+        const blueOri = orientationOverrides.blueStartOrientation as Orientation;
+        propagated[0] = {
+          ...sp,
+          blueMotion: { ...sp.blueMotion, startOrientation: blueOri, endOrientation: blueOri },
+        };
+      }
+      if (orientationOverrides.redStartOrientation) {
+        const redOri = orientationOverrides.redStartOrientation as Orientation;
+        propagated[0] = {
+          ...propagated[0]!,
+          redMotion: { ...propagated[0]!.redMotion, startOrientation: redOri, endOrientation: redOri },
+        };
+      }
+    }
 
     const startPosition = propagated[0]!;
 

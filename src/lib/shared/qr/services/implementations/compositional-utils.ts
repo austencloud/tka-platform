@@ -71,7 +71,7 @@ export async function getLoopExecutor(
 
 /**
  * Get the slice size for a given LOOP type tag.
- * Only strict_rotated uses QUARTERED; all others use HALVED.
+ * Only rotated uses QUARTERED; all others use HALVED.
  */
 export function getSliceSizeForTag(tag: string): SliceSize {
   return tag === "sr" ? SliceSize.QUARTERED : SliceSize.HALVED;

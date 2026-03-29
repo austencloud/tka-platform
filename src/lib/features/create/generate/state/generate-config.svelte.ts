@@ -119,7 +119,15 @@ function loadConfig(): UIGenerationConfig | null {
       result.sliceSize = data.sliceSize as SliceSize;
     }
     if (data.loopType !== undefined) {
-      result.loopType = data.loopType as LOOPType;
+      // Migrate legacy "strict_*" prefixed LOOP types → clean names
+      const STRICT_MIGRATION: Record<string, string> = {
+        strict_rotated: "rotated",
+        strict_mirrored: "mirrored",
+        strict_swapped: "swapped",
+        strict_inverted: "inverted",
+      };
+      const migratedType = STRICT_MIGRATION[data.loopType] ?? data.loopType;
+      result.loopType = migratedType as LOOPType;
     }
     if (data.constraintPreset !== undefined) {
       // Migrate legacy "high-reversal" → "choppy"
@@ -171,7 +179,7 @@ const DEFAULT_CONFIG: UIGenerationConfig = {
   gridMode: GridMode.DIAMOND,
   propContinuity: PropContinuity.CONTINUOUS,
   sliceSize: SliceSize.HALVED,
-  loopType: LOOPType.STRICT_ROTATED,
+  loopType: LOOPType.ROTATED,
   constraintPreset: "smooth",
   handPathMode: "mixed",
   motionTypeFilter: null,

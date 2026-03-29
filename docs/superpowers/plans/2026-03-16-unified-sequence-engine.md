@@ -468,8 +468,8 @@ Move all 18 LOOP executors from the app into the engine. Requires refactoring aw
 - Create: `packages/sequence-engine/src/loop/execution/LOOPExecutorSelector.ts`
 
 - [ ] **Step 1:** Port selector, updating all imports to reference engine executors
-- [ ] **Step 2:** Write test: `selector.getExecutor(LOOPType.STRICT_ROTATED)` returns an executor
-- [ ] **Step 3:** Write test: `selector.isSupported(LOOPType.STRICT_ROTATED)` returns `true`
+- [ ] **Step 2:** Write test: `selector.getExecutor(LOOPType.ROTATED)` returns an executor
+- [ ] **Step 3:** Write test: `selector.isSupported(LOOPType.ROTATED)` returns `true`
 - [ ] **Step 4:** Run tests
 - [ ] **Step 5:** Commit: `feat(sequence-engine): port LOOPExecutorSelector`
 

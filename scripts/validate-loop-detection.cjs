@@ -768,11 +768,11 @@ function detectLOOPType(sequence) {
     const sorted = [...detectedComponents].sort().join("_");
 
     const typeMap = {
-      rotated: "STRICT_ROTATED",
-      swapped: "STRICT_SWAPPED",
-      mirrored: "STRICT_MIRRORED",
-      flipped: "STRICT_FLIPPED",
-      inverted: "STRICT_INVERTED",
+      rotated: "ROTATED",
+      swapped: "SWAPPED",
+      mirrored: "MIRRORED",
+      flipped: "FLIPPED",
+      inverted: "INVERTED",
       repeated: "STRICT_REPEATED",
       rotated_swapped: "ROTATED_SWAPPED",
       "rotated+swapped": "ROTATED_SWAPPED",

@@ -79,11 +79,11 @@ export function componentsToLOOPType(
 
   // Map combinations to LOOPType enum values
   const mapping: Record<string, LOOPType | string> = {
-    rotated: LOOPType.STRICT_ROTATED,
-    mirrored: LOOPType.STRICT_MIRRORED,
-    flipped: "strict_flipped",
-    swapped: LOOPType.STRICT_SWAPPED,
-    inverted: LOOPType.STRICT_INVERTED,
+    rotated: LOOPType.ROTATED,
+    mirrored: LOOPType.MIRRORED,
+    flipped: "flipped",
+    swapped: LOOPType.SWAPPED,
+    inverted: LOOPType.INVERTED,
     inverted_swapped: LOOPType.SWAPPED_INVERTED,
     inverted_rotated: LOOPType.ROTATED_INVERTED,
     mirrored_swapped: LOOPType.MIRRORED_SWAPPED,

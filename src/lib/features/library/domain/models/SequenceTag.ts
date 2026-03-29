@@ -38,12 +38,16 @@ export function createSequenceTag(
   source: "user" | "ai" | "rule-based" = "user",
   confidence?: number
 ): SequenceTag {
-  return {
+  const tag: SequenceTag = {
     tagId,
     source,
-    confidence,
     addedAt: new Date(),
   };
+  // Only include confidence if defined — Firestore rejects undefined values
+  if (confidence !== undefined) {
+    return { ...tag, confidence };
+  }
+  return tag;
 }
 
 /**

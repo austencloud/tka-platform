@@ -1,3 +1,5 @@
+import type { CardSizeId } from '../../domain/card-sizes';
+
 export interface CardPair {
   front: HTMLCanvasElement;
   back: HTMLCanvasElement;
@@ -9,6 +11,7 @@ export interface IPrintPDFExporter {
   exportDeckPDF(
     pairs: CardPair[],
     deckName: string,
+    cardSize?: CardSizeId,
     onProgress?: (current: number, total: number) => void
   ): Promise<Blob>;
 
@@ -18,6 +21,7 @@ export interface IPrintPDFExporter {
   exportHomePrintPDF(
     pairs: CardPair[],
     deckName: string,
+    cardSize?: CardSizeId,
     onProgress?: (current: number, total: number) => void
   ): Promise<Blob>;
 }
