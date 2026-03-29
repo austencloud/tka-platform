@@ -559,12 +559,11 @@ export function registerSequenceTools(server: McpServer): void {
       showReversals: z.boolean().optional().default(true).describe("Show reversal indicators (colored dots on left edge when prop direction changes from previous step). Defaults to true."),
     },
     async ({ word, gridMode = "diamond", layout = "grid", cellSize = 900, showStepNumbers = true, showWord = true, displayWord, darkMode = true, maxAttempts = 500, showDifficulty = true, userName, notes, birthday, bridgeSelections, level = 1, turnIntensity, loopComponents, constraints, constraintPreset, showReversals = true }) => {
-      // GUARDRAIL: Require tagline before generating sequences.
-      // When notes is not provided, block generation and remind Claude to present
-      // tagline options to the user first. This prevents generating sequences without
-      // the humor training workflow (see sequence-generation.md).
-      // Opt-out: pass notes="none" to explicitly skip the tagline.
-      if (!notes) {
+      // GUARDRAIL: Require tagline only for creative word requests.
+      // Skip enforcement when constraints, loopComponents, or constraintPreset suggest
+      // the user just wants a sequence generated, not a creative tagline session.
+      const isCreativeWordRequest = !loopComponents && !constraintPreset && !constraints;
+      if (isCreativeWordRequest && !notes) {
         return {
           content: [
             {

@@ -20,6 +20,7 @@ Renders a section with:
   import { getLetterBorderColors } from "$lib/shared/pictograph/shared/utils/letter-border-utils";
   import OptionPictographCell from "./OptionPictographCell.svelte";
   import SectionHeader from "./SectionHeader.svelte";
+  import PictographContextMenuHost from "$lib/shared/pictograph/shared/components/context-menu/PictographContextMenuHost.svelte";
   import type { PreparedPictographData } from "$lib/shared/pictograph/option/PreparedPictographData";
 
   // Props - Dark mode is handled via CSS (:root.dark) not prop drilling
@@ -297,6 +298,14 @@ Renders a section with:
     };
   });
 
+  // Context menu for visibility toggles
+  let contextMenuHost: PictographContextMenuHost;
+
+  function handleContextMenu(e: MouseEvent) {
+    e.preventDefault();
+    contextMenuHost.openContextMenu(e.clientX, e.clientY);
+  }
+
   // Handle pictograph selection
   function handlePictographClick(
     pictographWithReversals: PictographWithReversals,
@@ -341,6 +350,7 @@ Renders a section with:
         class="pictograph-option"
         class:continuation={continuationIndex === index}
         onclick={() => handlePictographClick(pictograph, index)}
+        oncontextmenu={handleContextMenu}
         style:width="{optimalLayout().pictographSize}px"
         style:height="{optimalLayout().pictographSize}px"
         style:--border-primary={borderColors.primary}
@@ -359,6 +369,8 @@ Renders a section with:
     {/each}
   </div>
 </div>
+
+<PictographContextMenuHost bind:this={contextMenuHost} />
 
 <style>
   .option-viewer-section {

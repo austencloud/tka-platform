@@ -222,7 +222,7 @@ export function seedDefaultPresets(): { added: string[]; skipped: string[] } {
 			description: "Go-to comfortable sequence - 4 letters x quartered = 16 beats",
 			icon: "🎯",
 			config: {
-				loopType: "strict_rotated",
+				loopType: "rotated",
 				sliceSize: "quartered",
 				wordLength: 4,
 				constraintPreset: "smooth",
@@ -236,7 +236,7 @@ export function seedDefaultPresets(): { added: string[]; skipped: string[] } {
 			description: "Soft spot combo - halved LOOP, can go level 3 with 1.5 turns",
 			icon: "🪞",
 			config: {
-				loopType: "strict_rotated",
+				loopType: "rotated",
 				sliceSize: "halved",
 				loopComponents: ["mirrored", "inverted"],
 				constraintPreset: "smooth",

@@ -162,7 +162,6 @@ export function buildCanvasContextMenuItems(
         id: "toggle-disassemble",
         label: deps.disassembled ? "Reassemble" : "Disassemble",
         icon: deps.disassembled ? "fa-compress" : "fa-table-columns",
-        checked: deps.disassembled,
         action: () => deps.onToggleDisassemble!(),
       },
       { type: "separator" as const },

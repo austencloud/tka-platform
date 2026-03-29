@@ -11,6 +11,7 @@
 import { CARD_REGISTRY, type GeneratorCardId } from "$lib/features/create/generate/shared/domain/card-registry";
 
 const TOUR_COMPLETED_KEY = "tka-generate-tour-completed";
+const TOUR_INDEX_KEY = "tka-generate-tour-index";
 
 export type GenerateTourStop = GeneratorCardId;
 
@@ -55,17 +56,29 @@ function createGenerateTourState() {
       return data.currentStopIndex >= STOPS.length - 1;
     },
 
-    /** Start the tour (from help button tap). */
+    /** Start the tour (from help button tap). Resumes from last position if closed mid-tour. */
     start() {
+      const saved = isBrowser
+        ? parseInt(localStorage.getItem(TOUR_INDEX_KEY) ?? "0", 10)
+        : 0;
       data.isActive = true;
-      data.currentStopIndex = 0;
+      data.currentStopIndex = Math.min(saved, STOPS.length - 1);
     },
 
     advance() {
       if (data.currentStopIndex < STOPS.length - 1) {
         data.currentStopIndex++;
+        if (isBrowser) localStorage.setItem(TOUR_INDEX_KEY, String(data.currentStopIndex));
       } else {
         this.complete();
+      }
+    },
+
+    /** Go back one stop (for keyboard ← navigation). */
+    retreat() {
+      if (data.currentStopIndex > 0) {
+        data.currentStopIndex--;
+        if (isBrowser) localStorage.setItem(TOUR_INDEX_KEY, String(data.currentStopIndex));
       }
     },
 
@@ -74,6 +87,7 @@ function createGenerateTourState() {
       data.isActive = false;
       data.hasCompleted = true;
       localStorage.setItem(TOUR_COMPLETED_KEY, "true");
+      localStorage.removeItem(TOUR_INDEX_KEY);
     },
 
     skip() {
@@ -81,6 +95,7 @@ function createGenerateTourState() {
       data.isActive = false;
       data.hasCompleted = true;
       localStorage.setItem(TOUR_COMPLETED_KEY, "true");
+      localStorage.removeItem(TOUR_INDEX_KEY);
     },
 
     /** Jump directly to a specific stop (from clicking a mini card). */
@@ -88,6 +103,7 @@ function createGenerateTourState() {
       const index = STOPS.indexOf(stop);
       if (index >= 0) {
         data.currentStopIndex = index;
+        if (isBrowser) localStorage.setItem(TOUR_INDEX_KEY, String(index));
       }
     },
 
@@ -95,6 +111,7 @@ function createGenerateTourState() {
     restart() {
       data.isActive = true;
       data.currentStopIndex = 0;
+      if (isBrowser) localStorage.removeItem(TOUR_INDEX_KEY);
     },
 
     /** Reset for testing/development */
@@ -104,6 +121,7 @@ function createGenerateTourState() {
       data.isActive = false;
       data.currentStopIndex = 0;
       localStorage.removeItem(TOUR_COMPLETED_KEY);
+      localStorage.removeItem(TOUR_INDEX_KEY);
     },
   };
 }

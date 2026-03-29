@@ -235,12 +235,17 @@ export async function renderSequenceToImage(
       ? letterSteps.filter((s) => (s.stepNumber ?? s.beatIndex) > 0 && !opts.derivedBeatIndices?.includes(s.stepNumber ?? s.beatIndex))
       : letterSteps.filter((s) => (s.stepNumber ?? s.beatIndex) > 0);
 
+    // Filter out bridge letters from styles since they aren't displayed in the header.
+    // Without this, bridge styles (dimmed) get applied to the wrong header characters
+    // because the styles array is longer than the displayed word.
     const letterStyles: LetterStyle[] = opts.showWord
-      ? seedLetters.map((s) => ({
-          letter: s.letter,
-          isBridge: s.isBridge ?? false,
-          isDerived: false, // Never dim since we're only showing seed letters
-        }))
+      ? seedLetters
+          .filter((s) => !s.isBridge)
+          .map((s) => ({
+            letter: s.letter,
+            isBridge: false,
+            isDerived: false,
+          }))
       : [];
 
     renderWordHeader(

@@ -8,6 +8,7 @@ Receives pre-calculated data, just renders it.
   import type { PreparedPictographData } from "$lib/shared/pictograph/option/PreparedPictographData";
   import { getLetterBorderColors } from "$lib/shared/pictograph/shared/utils/letter-border-utils";
   import OptionCardContent from "./OptionCardContent.svelte";
+  import PictographContextMenuHost from "$lib/shared/pictograph/shared/components/context-menu/PictographContextMenuHost.svelte";
 
   interface Props {
     pictograph: PreparedPictographData;
@@ -31,10 +32,17 @@ Receives pre-calculated data, just renders it.
 
   const borderColors = $derived(getLetterBorderColors(pictograph.letter));
 
+  let contextMenuHost: PictographContextMenuHost;
+
   function handleClick() {
     if (!disabled) {
       onSelect(pictograph);
     }
+  }
+
+  function handleContextMenu(e: MouseEvent) {
+    e.preventDefault();
+    contextMenuHost.openContextMenu(e.clientX, e.clientY);
   }
 </script>
 
@@ -42,6 +50,7 @@ Receives pre-calculated data, just renders it.
   class="option-card"
   class:continuation={isContinuation}
   onclick={handleClick}
+  oncontextmenu={handleContextMenu}
   {disabled}
   style:width="{size}px"
   style:height="{size}px"
@@ -53,6 +62,8 @@ Receives pre-calculated data, just renders it.
 >
   <OptionCardContent {pictograph} {blueReversal} {redReversal} />
 </button>
+
+<PictographContextMenuHost bind:this={contextMenuHost} />
 
 <style>
   .option-card {
