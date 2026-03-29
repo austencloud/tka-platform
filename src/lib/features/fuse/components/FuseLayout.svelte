@@ -71,18 +71,11 @@
 		}
 	}
 
-	// When state enters "fusing", trigger the assembly animation
+	// When state enters "fusing", complete immediately — the crossfade
+	// transition on FuseTab handles the visual transition between views
 	$effect(() => {
 		if (fuseState.phase !== "fusing") return;
-		const frameId = requestAnimationFrame(async () => {
-			if (!leftPanelEl || !rightPanelEl || !fuseTargetEl) {
-				fuseState.completeFuse();
-				return;
-			}
-			await fuseAssemblyAnimator.animate(leftPanelEl, rightPanelEl, fuseTargetEl);
-			fuseState.completeFuse();
-		});
-		return () => cancelAnimationFrame(frameId);
+		fuseState.completeFuse();
 	});
 
 	function handleKeydown(event: KeyboardEvent) {

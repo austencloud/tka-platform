@@ -1,15 +1,15 @@
 <!--
   FuseResultView.svelte
 
-  Displayed after a successful fuse. Shows a brief celebration burst,
-  then the fused sequence playing in an AnimatorCanvas with three action
-  buttons: Save, Build Another, and See Related.
+  Displayed after a successful fuse. Shows the fused sequence in a split
+  layout: animation canvas on the left, ChoreoCard on the right.
+  Autoplay starts immediately on mount.
 -->
 <script lang="ts">
 	import { onMount, onDestroy, untrack } from "svelte";
 	import { getFuseContext } from "../context/fuse-context";
-	import CelebrationOverlay from "./CelebrationOverlay.svelte";
 	import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
+	import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
 	import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
 	import { container } from "$lib/shared/di";
 	import type { IAnimationPlaybackController } from "$lib/features/compose/services/contracts/IAnimationPlaybackController";
@@ -19,9 +19,6 @@
 	const { state: fuseState } = getFuseContext();
 
 	const DEFAULT_BPM = 60;
-
-	let showCelebration = $state(true);
-	let resultEl = $state<HTMLDivElement | null>(null);
 
 	// Animation playback state
 	let controller = $state<IAnimationPlaybackController | null>(null);
@@ -50,9 +47,19 @@
 	const letter = $derived(stepData?.letter ?? null);
 	const gridMode = $derived(sequenceData?.gridMode ?? sequence?.gridMode);
 
-	// Celebration center — middle of the result container
-	const celebrationX = $derived(resultEl ? resultEl.clientWidth / 2 : 0);
-	const celebrationY = $derived(resultEl ? resultEl.clientHeight / 2 : 0);
+	// ChoreoCard highlight sync
+	const highlightedStepIndex = $derived.by(() => {
+		if (!isPlaying) return null;
+		return Math.floor(currentStep) - 1;
+	});
+
+	// Display name: use derived word, fall back to generic
+	const displayWord = $derived.by(() => {
+		const seq = sequence;
+		if (!seq) return "";
+		if (seq.word && seq.word !== "__fused__") return seq.word;
+		return seq.displayName || seq.name || "";
+	});
 
 	onMount(async () => {
 		try {
@@ -71,7 +78,7 @@
 		animState.dispose();
 	});
 
-	// Initialize playback when controller and sequence are ready
+	// Initialize playback when controller and sequence are ready — autoplay immediately
 	$effect(() => {
 		void controller;
 		void motionLoader;
@@ -99,13 +106,10 @@
 			const speed = fuseState.bpm / DEFAULT_BPM;
 			controller!.setSpeed(speed);
 
-			setTimeout(() => controller?.togglePlayback(), 300);
+			// Autoplay with minimal delay
+			setTimeout(() => controller?.togglePlayback(), 50);
 		});
 	});
-
-	function handleCelebrationComplete() {
-		showCelebration = false;
-	}
 
 	function handleBuildAnother() {
 		fuseState.reset();
@@ -118,6 +122,10 @@
 			returnLabel: "Fuse",
 			initialBpm: fuseState.bpm,
 		});
+	}
+
+	function handleStepClick(stepIndex: number) {
+		controller?.seekToStep(stepIndex);
 	}
 
 	function handleKeydown(event: KeyboardEvent) {
@@ -136,76 +144,98 @@
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <div
 	class="fuse-result"
-	bind:this={resultEl}
 	role="region"
 	aria-label="Fused sequence result"
 	tabindex="0"
 	onkeydown={handleKeydown}
 >
-	{#if showCelebration && resultEl}
-		<CelebrationOverlay
-			centerX={celebrationX}
-			centerY={celebrationY}
-			onComplete={handleCelebrationComplete}
-		/>
+	<!-- Header: word + beats -->
+	{#if displayWord}
+		<div class="result-header">
+			<h2 class="result-title">{displayWord}</h2>
+			{#if sequence}
+				<span class="result-meta">
+					{sequence.sequenceLength ?? sequence.steps?.length ?? 0} beats
+				</span>
+			{/if}
+		</div>
 	{/if}
 
-	<div class="result-header">
-		<h2 class="result-title">
-			{sequence?.displayName || sequence?.name || sequence?.word || "Fused Sequence"}
-		</h2>
-		{#if sequence}
-			<span class="result-meta">
-				{sequence.sequenceLength ?? sequence.steps?.length ?? 0} beats
-			</span>
-		{/if}
+	<!-- Split layout: canvas + card -->
+	<div class="result-split">
+		<!-- Animation canvas -->
+		<div class="canvas-pane">
+			{#if loading}
+				<div class="state-msg">
+					<i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+					<span>Loading...</span>
+				</div>
+			{:else if error}
+				<div class="state-msg error">
+					<span>{error}</span>
+				</div>
+			{:else if sequence}
+				<div class="canvas-container">
+					<AnimatorCanvas
+						blueProp={bluePropState}
+						redProp={redPropState}
+						gridVisible={true}
+						{gridMode}
+						{letter}
+						{stepData}
+						sequenceData={sequenceData}
+						{currentStep}
+						{isPlaying}
+						word={sequenceData?.word ?? sequence?.word ?? null}
+						hideProgressBar={false}
+						hideTkaGlyph={false}
+						hideStepNumbers={false}
+						progressBarVariant="gradient"
+						fillContainer={true}
+					/>
+				</div>
+			{:else}
+				<div class="state-msg">
+					<span>No result available</span>
+				</div>
+			{/if}
+		</div>
+
+		<!-- ChoreoCard -->
+		<div class="card-pane">
+			{#if sequence}
+				<div class="card-scroll themed-scrollbar">
+					<ChoreoCard
+						{sequence}
+						showWord={false}
+						showDifficultyLevel={false}
+						showCreatorName={false}
+						showNotes={false}
+						showBirthday={false}
+						showLoopGlyph={false}
+						showStepNumbers={true}
+						includeStartPosition={true}
+						darkMode={true}
+						highlightedStepIndex={highlightedStepIndex}
+						showHighlight={isPlaying}
+						onStepClick={handleStepClick}
+					/>
+				</div>
+			{/if}
+		</div>
 	</div>
 
-	<div class="result-canvas">
-		{#if loading}
-			<div class="state-msg">
-				<i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-				<span>Loading...</span>
-			</div>
-		{:else if error}
-			<div class="state-msg error">
-				<span>{error}</span>
-			</div>
-		{:else if sequence}
-			<AnimatorCanvas
-				blueProp={bluePropState}
-				redProp={redPropState}
-				gridVisible={true}
-				{gridMode}
-				{letter}
-				{stepData}
-				sequenceData={sequenceData}
-				{currentStep}
-				{isPlaying}
-				word={sequenceData?.word ?? sequence?.word ?? null}
-				hideProgressBar={false}
-				hideTkaGlyph={false}
-				hideStepNumbers={false}
-				progressBarVariant="gradient"
-				fillContainer={true}
-			/>
-		{:else}
-			<div class="state-msg">
-				<span>No result available</span>
-			</div>
-		{/if}
-	</div>
-
+	<!-- Action buttons -->
 	<div class="result-actions">
 		<button class="action-btn action-save" onclick={() => {}}>
 			<i class="fas fa-bookmark" aria-hidden="true"></i>
 			<span>Save</span>
 		</button>
-		<button class="action-btn action-another" onclick={handleBuildAnother}>
+		<button class="action-btn action-ghost" onclick={handleBuildAnother}>
 			<i class="fas fa-redo" aria-hidden="true"></i>
 			<span>Build Another</span>
 		</button>
-		<button class="action-btn action-related" onclick={handleOpenInViewer}>
+		<button class="action-btn action-ghost" onclick={handleOpenInViewer}>
 			<i class="fas fa-expand" aria-hidden="true"></i>
 			<span>Open in Viewer</span>
 		</button>
@@ -221,6 +251,8 @@
 		overflow: hidden;
 		position: relative;
 		outline: none;
+		container-type: inline-size;
+		container-name: fuse-result;
 	}
 
 	.result-header {
@@ -229,7 +261,7 @@
 		align-items: baseline;
 		justify-content: center;
 		gap: var(--spacing-sm, 8px);
-		padding: var(--spacing-md, 16px);
+		padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
 		border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
 	}
 
@@ -238,6 +270,8 @@
 		font-size: var(--font-size-lg, 18px);
 		font-weight: 700;
 		color: var(--theme-text, #ffffff);
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
 	}
 
 	.result-meta {
@@ -245,14 +279,61 @@
 		color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
 	}
 
-	.result-canvas {
+	/* ── Split layout ──────────────────────────────────────────── */
+
+	.result-split {
 		flex: 1;
 		min-height: 0;
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: var(--spacing-xs, 4px);
+		padding: var(--spacing-sm, 8px);
+	}
+
+	@container fuse-result (max-width: 600px) {
+		.result-split {
+			grid-template-columns: 1fr;
+			grid-template-rows: 1fr 1fr;
+		}
+	}
+
+	/* ── Canvas pane ───────────────────────────────────────────── */
+
+	.canvas-pane {
+		min-height: 0;
+		min-width: 0;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		padding: var(--spacing-sm, 8px);
+		overflow: hidden;
 	}
+
+	.canvas-container {
+		width: 100%;
+		max-width: 600px;
+		height: 100%;
+		border-radius: var(--radius-md, 12px);
+		overflow: hidden;
+		border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
+	}
+
+	/* ── Card pane ─────────────────────────────────────────────── */
+
+	.card-pane {
+		min-height: 0;
+		min-width: 0;
+		display: flex;
+		overflow: hidden;
+	}
+
+	.card-scroll {
+		flex: 1;
+		min-height: 0;
+		overflow-y: auto;
+		padding: var(--spacing-xs, 4px);
+	}
+
+	/* ── State messages ────────────────────────────────────────── */
 
 	.state-msg {
 		display: flex;
@@ -268,12 +349,14 @@
 		color: var(--semantic-error, #fca5a5);
 	}
 
+	/* ── Action buttons ────────────────────────────────────────── */
+
 	.result-actions {
 		flex-shrink: 0;
 		display: flex;
 		justify-content: center;
 		gap: var(--spacing-sm, 8px);
-		padding: var(--spacing-md, 16px);
+		padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
 		border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
 	}
 
@@ -283,23 +366,11 @@
 		gap: var(--spacing-xs, 4px);
 		min-height: 44px;
 		padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
-		border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
 		border-radius: var(--radius-md, 12px);
-		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-		color: var(--theme-text, #ffffff);
 		font-size: var(--font-size-min, 14px);
 		font-weight: 600;
 		cursor: pointer;
 		transition: border-color 0.15s ease;
-	}
-
-	.action-btn:hover {
-		border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
-	}
-
-	.action-btn:focus-visible {
-		outline: 2px solid var(--theme-accent, #fb923c);
-		outline-offset: 2px;
 	}
 
 	.action-save {
@@ -310,6 +381,21 @@
 
 	.action-save:hover {
 		opacity: 0.9;
+	}
+
+	.action-ghost {
+		border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+		color: var(--theme-text, #ffffff);
+	}
+
+	.action-ghost:hover {
+		border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
+	}
+
+	.action-btn:focus-visible {
+		outline: 2px solid var(--theme-accent, #fb923c);
+		outline-offset: 2px;
 	}
 
 	@media (prefers-reduced-motion: reduce) {

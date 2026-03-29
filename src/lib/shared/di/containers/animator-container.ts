@@ -30,6 +30,7 @@ import { AnimationStorageManager } from "$lib/features/compose/services/implemen
 import { VideoExporter } from "$lib/features/compose/services/implementations/VideoExporter";
 import { BackgroundVideoEncoder } from "$lib/features/compose/services/implementations/BackgroundVideoEncoder";
 import { DarkModeProvider } from "$lib/shared/animation-engine/services/implementations/DarkModeProvider";
+import { TipEffectResolver } from "$lib/shared/animation-engine/services/implementations/TipEffectResolver";
 import { PropPositionCalculator } from "$lib/shared/animation-engine/services/implementations/PropPositionCalculator";
 import { Animator } from "$lib/shared/application/services/implementations/Animator";
 
@@ -104,6 +105,7 @@ export function createAnimatorContainer(externalDeps: AnimatorContainerDependenc
       arrangeUndoManager: () => new ArrangeUndoManager(),
       arrangeGridSerializer: () => new ArrangeGridSerializer(),
       deviceTierDetector: () => new DeviceTierDetector(),
+      tipEffectResolver: () => new TipEffectResolver(),
     })
     // === TIER 0.5: Depends on tier 0 ===
     .add((ctx) => ({
