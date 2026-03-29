@@ -305,6 +305,112 @@
 		});
 	}
 
+	// ── Disassemble FLIP animation (reverse of reassemble) ──────────────
+	function animateDisassemble() {
+		if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+			fuseState.completeDisassemble();
+			return;
+		}
+		if (!heroEl || !splitLeftEl || !splitRightEl) {
+			fuseState.completeDisassemble();
+			return;
+		}
+
+		// Card exits first (slides out to the right)
+		if (cardAreaEl) {
+			cardAreaEl.animate(
+				[
+					{ opacity: 1, transform: "translateX(0)" },
+					{ opacity: 0, transform: "translateX(30px)" },
+				],
+				{ duration: 200, easing: "ease-in", fill: "both" as FillMode }
+			);
+		}
+
+		// After card exit, run FLIP disassemble
+		setTimeout(() => {
+			// Measure rects (all elements always in DOM via visibility toggle)
+			const heroRect = heroEl.getBoundingClientRect();
+			const leftRect = splitLeftEl.getBoundingClientRect();
+			const rightRect = splitRightEl.getBoundingClientRect();
+
+			const leftFlip = calcFlipTransform(leftRect, heroRect);
+			const rightFlip = calcFlipTransform(rightRect, heroRect);
+
+			const opts: KeyframeAnimationOptions = {
+				duration: FLIP_DURATION,
+				easing: FLIP_EASING,
+				fill: "both" as FillMode,
+			};
+
+			// FLIP splits from hero position back to their natural side-by-side positions
+			// Start: at hero position (translated + scaled). End: natural position (identity).
+			splitLeftEl.animate(
+				[
+					{
+						transform: `translate(${leftFlip.tx}px,${leftFlip.ty}px) scale(${leftFlip.sx},${leftFlip.sy})`,
+					},
+					{ transform: "translate(0,0) scale(1)" },
+				],
+				opts
+			);
+			// Fade in during first 25%
+			splitLeftEl.animate([{ opacity: 0 }, { opacity: 1 }], {
+				duration: FLIP_DURATION * 0.25,
+				easing: "ease-out",
+				fill: "both" as FillMode,
+			});
+
+			const mainAnim = splitRightEl.animate(
+				[
+					{
+						transform: `translate(${rightFlip.tx}px,${rightFlip.ty}px) scale(${rightFlip.sx},${rightFlip.sy})`,
+					},
+					{ transform: "translate(0,0) scale(1)" },
+				],
+				opts
+			);
+			splitRightEl.animate([{ opacity: 0 }, { opacity: 1 }], {
+				duration: FLIP_DURATION * 0.25,
+				easing: "ease-out",
+				fill: "both" as FillMode,
+			});
+
+			mainAnim.finished.then(() => {
+				cancelAllAnimations([
+					heroEl,
+					splitLeftEl,
+					splitRightEl,
+					browseLeftEl,
+					browseRightEl,
+					cardAreaEl,
+				]);
+
+				// Complete the state transition — this sets isDisassembled=true,
+				// which mounts the browse chrome via {#if isDisassembled}
+				fuseState.completeDisassemble();
+
+				// After DOM mounts the browse elements, fade them in
+				requestAnimationFrame(() => {
+					if (browseLeftEl) {
+						browseLeftEl.animate([{ opacity: 0 }, { opacity: 1 }], {
+							duration: 200,
+							easing: "ease-out",
+							fill: "both" as FillMode,
+						});
+					}
+					if (browseRightEl) {
+						browseRightEl.animate([{ opacity: 0 }, { opacity: 1 }], {
+							duration: 200,
+							easing: "ease-out",
+							fill: "both" as FillMode,
+						});
+					}
+				});
+			});
+		}, 200); // Wait for card exit
+	}
+
 	// ── Phase transition effect ──────────────────────────────────────────
 	// Triggers animations when phase enters "reassembling" or "disassembling".
 	// untrack() prevents the animation functions from creating reactive
@@ -318,8 +424,7 @@
 				if (p === "reassembling") {
 					animateReassemble();
 				} else if (p === "disassembling") {
-					// Task 5 will implement this — for now, instant transition
-					fuseState.completeDisassemble();
+					animateDisassemble();
 				}
 			});
 			return () => cancelAnimationFrame(frameId);
