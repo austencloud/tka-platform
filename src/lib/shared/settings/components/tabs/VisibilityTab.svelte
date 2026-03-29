@@ -124,12 +124,9 @@
   // ── Animation toggle handler ──
   function handleAnimationToggle(key: string) {
     switch (key) {
-      case "cycleGrid": tap(() => {
-        const modes = ["diamond", "box", "none"] as const;
-        const idx = modes.indexOf(animGridMode as typeof modes[number]);
-        const next = modes[(idx + 1) % modes.length];
-        if (next) avm.setGridMode(next);
-      }); break;
+      case "gridOff": tap(() => avm.setGridMode("none")); break;
+      case "grid8pt": tap(() => avm.setGridMode("diamond")); break;
+      case "gridAuto": tap(() => avm.setGridMode("box")); break;
       case "darkMode": tap(() => {
         const next = !darkMode;
         void updateSettings({ darkMode: next });

@@ -149,18 +149,41 @@
         </div>
       </div>
 
+      <!-- Grid -->
+      <div class="control-group">
+        <span class="group-label">Grid</span>
+        <div class="toggle-grid toggle-grid-3">
+          <button
+            class="toggle-btn"
+            class:active={gridMode === "none"}
+            onclick={() => onToggle("gridOff")}
+            aria-pressed={gridMode === "none"}
+          >
+            Off
+          </button>
+          <button
+            class="toggle-btn"
+            class:active={gridMode === "diamond"}
+            onclick={() => onToggle("grid8pt")}
+            aria-pressed={gridMode === "diamond"}
+          >
+            8-Point
+          </button>
+          <button
+            class="toggle-btn"
+            class:active={gridMode === "box"}
+            onclick={() => onToggle("gridAuto")}
+            aria-pressed={gridMode === "box"}
+          >
+            Auto
+          </button>
+        </div>
+      </div>
+
       <!-- Canvas -->
       <div class="control-group">
         <span class="group-label">Canvas</span>
         <div class="toggle-grid toggle-grid-3">
-          <button
-            class="toggle-btn"
-            onclick={() => onToggle("cycleGrid")}
-            aria-label="Cycle grid mode"
-          >
-            <i class="fas fa-border-all" aria-hidden="true"></i>
-            Grid: {gridMode}
-          </button>
           <button
             class="toggle-btn"
             class:active={propsVisible}
@@ -303,16 +326,33 @@
         {/each}
       </div>
 
-      <!-- Row 3: Canvas + Overlay toggles -->
-      <div class="mobile-row mobile-row-wrap">
+      <!-- Row 3: Grid mode -->
+      <div class="mobile-row">
         <button
           class="toggle-btn"
-          onclick={() => onToggle("cycleGrid")}
-          aria-label="Cycle grid mode"
+          class:active={gridMode === "none"}
+          onclick={() => onToggle("gridOff")}
         >
-          <i class="fas fa-border-all" aria-hidden="true"></i>
-          Grid
+          Off
         </button>
+        <button
+          class="toggle-btn"
+          class:active={gridMode === "diamond"}
+          onclick={() => onToggle("grid8pt")}
+        >
+          8-Pt
+        </button>
+        <button
+          class="toggle-btn"
+          class:active={gridMode === "box"}
+          onclick={() => onToggle("gridAuto")}
+        >
+          Auto
+        </button>
+      </div>
+
+      <!-- Row 4: Canvas + Overlay toggles -->
+      <div class="mobile-row mobile-row-wrap">
         <button
           class="toggle-btn"
           class:active={propsVisible}
