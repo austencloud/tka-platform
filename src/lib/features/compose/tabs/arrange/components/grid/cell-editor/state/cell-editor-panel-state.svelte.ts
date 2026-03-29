@@ -1,7 +1,7 @@
 import type { TargetHand } from '$lib/features/compose/compose/domain/types';
 
 export type ExpandableSection =
-  | 'transform' | 'speed' | 'effects' | 'effort' | 'offset' | 'display'
+  | 'transform' | 'speed' | 'effects' | 'effort' | 'offset' | 'display' | 'colors'
   | null;
 
 export function createCellEditorPanelState() {

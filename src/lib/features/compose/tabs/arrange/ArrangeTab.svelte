@@ -20,7 +20,7 @@
   import { arrangeGridState, type GridCell } from "./state/arrange-grid-state.svelte";
   import GridLayoutControls from "./components/grid/GridLayoutControls.svelte";
   import CompositionGrid from "./components/grid/CompositionGrid.svelte";
-  import CellEditor from "./components/grid/CellEditor.svelte";
+  import CellEditorPanel from "./components/grid/cell-editor/CellEditorPanel.svelte";
   import PlaybackBar from "./components/shared/PlaybackBar.svelte";
   import StaggerControls from "./components/shared/StaggerControls.svelte";
   import SequencePickerModal from "$lib/shared/components/sequence-picker/SequencePickerModal.svelte";
@@ -476,7 +476,7 @@
     onclose={handleDrawerClose}
   >
     {#if selectedCell && selectedCellId !== null}
-      <CellEditor
+      <CellEditorPanel
         cell={selectedCell}
         cellIndex={selectedCell ? gridState.getCellDisplayIndex(selectedCell.id) : 0}
         clipboardHasData={gridState.clipboard !== null}
@@ -491,6 +491,14 @@
         onPasteLayer={handlePasteLayer}
         onTransformLayer={handleTransformLayer}
         onClose={handleDrawerClose}
+        onSetSpeed={(speed) => gridState.setCellSpeed(selectedCell.id, speed)}
+        onSetEffect={(effect) => gridState.setCellEffect(selectedCell.id, effect)}
+        onSetTrailMode={(mode) => gridState.setCellTrailMode(selectedCell.id, mode)}
+        onSetEffort={(effort) => gridState.setCellEffort(selectedCell.id, effort)}
+        onSetBlueVisible={(visible) => gridState.setCellMotionVisibility(selectedCell.id, 'blue', visible)}
+        onSetRedVisible={(visible) => gridState.setCellMotionVisibility(selectedCell.id, 'red', visible)}
+        onSetOffset={(offset) => gridState.setCellBeatOffset(selectedCell.id, offset)}
+        onSetColors={(colors) => gridState.setCellPropColors(selectedCell.id, colors)}
       />
     {/if}
   </Drawer>

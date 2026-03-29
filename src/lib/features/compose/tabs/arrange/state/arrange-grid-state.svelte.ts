@@ -23,7 +23,7 @@ import {
   getTunnelLayerColors,
 } from "../../../compose/domain/types";
 
-import type { CellMediaType } from "../../../compose/domain/types";
+import type { CellMediaType, PropColors } from "../../../compose/domain/types";
 import type { Composition } from "../../../compose/domain/types";
 import { TrailMode } from "$lib/shared/animation-engine/domain/types/TrailTypes";
 import { container } from "$lib/shared/di";
@@ -664,6 +664,19 @@ function createArrangeGridState() {
       withCoalescingUndo("SET_BEAT_OFFSET" as ArrangeUndoOperationType, `Set beat offset to ${offset}`, `offset-${cellId}`, () => {
         const newCells = [...cells];
         newCells[cellIndex] = { ...cell, beatOffset: Math.max(0, offset) };
+        cells = newCells;
+        save();
+      });
+    },
+
+    setCellPropColors(cellId: string, colors: PropColors) {
+      const cellIndex = cells.findIndex((c) => c.id === cellId);
+      const cell = cells[cellIndex];
+      if (!cell || cell.layers.length === 0) return;
+      withUndo("SET_PROP_COLORS" as ArrangeUndoOperationType, `Change prop colors`, () => {
+        const newLayers = cell.layers.map((l, i) => i === 0 ? { ...l, propColors: colors } : l);
+        const newCells = [...cells];
+        newCells[cellIndex] = { ...cell, layers: newLayers };
         cells = newCells;
         save();
       });

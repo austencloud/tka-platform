@@ -21,6 +21,7 @@
   import SpeedSection from "./sections/SpeedSection.svelte";
   import EffectsSection from "./sections/EffectsSection.svelte";
   import EffortSection from "./sections/EffortSection.svelte";
+  import ColorsSection from "./sections/ColorsSection.svelte";
   import OffsetSection from "./sections/OffsetSection.svelte";
   import DisplaySection from "./sections/DisplaySection.svelte";
 
@@ -47,6 +48,7 @@
     onSetEffect,
     onSetTrailMode,
     onSetEffort,
+    onSetColors,
     onSetBlueVisible,
     onSetRedVisible,
     onSetOffset,
@@ -71,6 +73,7 @@
     onSetEffect?: (effect: CellEffect) => void;
     onSetTrailMode?: (mode: TrailMode) => void;
     onSetEffort?: (effort: string) => void;
+    onSetColors?: (colors: import('$lib/features/compose/compose/domain/types').PropColors) => void;
     onSetBlueVisible?: (visible: boolean) => void;
     onSetRedVisible?: (visible: boolean) => void;
     onSetOffset?: (offset: number) => void;
@@ -197,6 +200,11 @@
       currentTrailMode={cell.trailMode}
       onSetEffect={effect => onSetEffect?.(effect)}
       onSetTrailMode={mode => onSetTrailMode?.(mode)}
+    />
+  {:else if panelState.expandedSection === 'colors'}
+    <ColorsSection
+      currentColors={cell.layers[0]?.propColors ?? { left: '#3b82f6', right: '#ef4444' }}
+      onSetColors={colors => onSetColors?.(colors)}
     />
   {:else if panelState.expandedSection === 'effort'}
     <EffortSection
