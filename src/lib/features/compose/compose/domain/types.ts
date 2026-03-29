@@ -10,6 +10,7 @@ import {
   type TrailSettings,
   DEFAULT_TRAIL_SETTINGS,
 } from "$lib/shared/animation-engine/domain/types/TrailTypes";
+import type { TipEffectMap, TipEffortMap } from "$lib/shared/animation-engine/domain/types/TipEffectTypes";
 
 // ============================================================================
 // Grid Layout
@@ -193,6 +194,12 @@ export interface CellConfig {
 
   /** Rotation offset in degrees (0, 90, 180, 270) for grid mode */
   rotationOffset?: number;
+
+  /** Per-tip effect assignments that override the global TipEffectMap for this cell */
+  tipEffectMap?: TipEffectMap;
+
+  /** Per-tip effort assignments that override the global TipEffortMap for this cell */
+  tipEffortMap?: TipEffortMap;
 
   /** Whether this cell mirrors another cell's sequence */
   isMirrored?: boolean;

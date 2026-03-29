@@ -319,6 +319,8 @@
         hideStepNumbers={true}
         fireConfig={cell.effect ? cellFireConfig : undefined}
         ledConfig={cell.effect ? cellLedConfig : undefined}
+        tipEffectMap={cell.tipEffectMap}
+        tipEffortMap={cell.tipEffortMap}
       />
     {:else}
       <div class="empty-cell">

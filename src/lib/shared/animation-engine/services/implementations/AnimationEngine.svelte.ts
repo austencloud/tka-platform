@@ -39,6 +39,7 @@ import { AnimationStateManager } from "$lib/features/compose/services/implementa
 import { container } from "$lib/shared/di";
 import { getAnimationVisibilityManager, type AnimationVisibilityStateManager } from "../../state/animation-visibility-state.svelte";
 import type { EffortId } from "$lib/features/effort-lab/domain/effort-types";
+import type { TipEffectMap, TipEffortMap } from "../../domain/types/TipEffectTypes";
 
 // Services
 import { CanvasResizer } from "./CanvasResizer.svelte";
@@ -250,6 +251,11 @@ export class AnimationEngine {
   private ledTipTracker: ILedTipTracker | null = null;
   private ledConfig: LedOverlayConfig = { ...DEFAULT_LED_CONFIG };
   private ledInitPending = false;
+
+  /** Per-cell tip effect/effort maps set by compose grid cells.
+   *  When present, used instead of the global visibility manager maps. */
+  private cellTipEffectMap: TipEffectMap | undefined = undefined;
+  private cellTipEffortMap: TipEffortMap | undefined = undefined;
   private trailOverlay: ITrailOverlayCanvas | null = null;
 
   // ============================================================================
@@ -1389,6 +1395,11 @@ export class AnimationEngine {
       container.items.stepCalculationService,
       container.items.propInterpolationService
     );
+    // Pass per-instance visibility manager so effort presets are read from
+    // the correct source (e.g. landing page's ephemeral manager, not global).
+    if (this.visibilityManagerOverride) {
+      this.orchestrator.setVisibilityManager(this.visibilityManagerOverride);
+    }
     // Per-instance TrailCapturer instead of shared DI singleton.
     // The singleton causes trail data contamination when multiple canvases
     // (e.g. compose grid cells) all write to the same trail buffers.
@@ -1704,6 +1715,22 @@ export class AnimationEngine {
         this.getFrameParams(this.lastPropsRef ?? DEFAULT_ENGINE_PROPS)
       );
     }
+  }
+
+  /**
+   * Set per-cell tip effect map. When provided, this map takes priority
+   * over the global visibility manager's map in getFrameParams().
+   */
+  setCellTipEffectMap(map: TipEffectMap | undefined): void {
+    this.cellTipEffectMap = map;
+  }
+
+  /**
+   * Set per-cell tip effort map. When provided, this map takes priority
+   * over the global visibility manager's map in getFrameParams().
+   */
+  setCellTipEffortMap(map: TipEffortMap | undefined): void {
+    this.cellTipEffortMap = map;
   }
 
   /**
@@ -2091,8 +2118,9 @@ export class AnimationEngine {
     // LED overlay config
     fp.ledConfig = this.ledConfig.enabled ? this.ledConfig : null;
 
-    // Per-tip effect assignments for filtering tips by effect type
-    fp.tipEffectMap = this.getVM()?.getTipEffectMap() ?? {};
+    // Per-tip effect assignments for filtering tips by effect type.
+    // Cell-level map (from compose grid) takes priority over the global map.
+    fp.tipEffectMap = this.cellTipEffectMap ?? this.getVM()?.getTipEffectMap() ?? {};
 
     // Playback speed for fire cache invalidation
     const vmRef = this.getVM();

@@ -26,6 +26,7 @@ import {
 import type { CellMediaType, PropColors } from "../../../compose/domain/types";
 import type { Composition } from "../../../compose/domain/types";
 import { TrailMode } from "$lib/shared/animation-engine/domain/types/TrailTypes";
+import type { TipEffectMap, TipEffortMap } from "$lib/shared/animation-engine/domain/types/TipEffectTypes";
 import { container } from "$lib/shared/di";
 import type {
   ArrangeUndoOperationType,
@@ -63,6 +64,10 @@ export interface GridCell {
   effect?: CellEffect;
   trailMode?: TrailMode;
   effort?: string;
+  /** Per-tip effect assignments that override the global TipEffectMap for this cell */
+  tipEffectMap?: TipEffectMap;
+  /** Per-tip effort assignments that override the global TipEffortMap for this cell */
+  tipEffortMap?: TipEffortMap;
   blueMotionVisible?: boolean;
   redMotionVisible?: boolean;
 }
@@ -635,6 +640,30 @@ function createArrangeGridState() {
       withUndo("SET_CELL_EFFORT" as ArrangeUndoOperationType, `Set effort to ${effort}`, () => {
         const newCells = [...cells];
         newCells[cellIndex] = { ...cell, effort };
+        cells = newCells;
+        save();
+      });
+    },
+
+    setCellTipEffectMap(cellId: string, map: TipEffectMap) {
+      const cellIndex = cells.findIndex((c) => c.id === cellId);
+      const cell = cells[cellIndex];
+      if (!cell) return;
+      withUndo("SET_TIP_EFFECT_MAP" as ArrangeUndoOperationType, "Update effects", () => {
+        const newCells = [...cells];
+        newCells[cellIndex] = { ...cell, tipEffectMap: map };
+        cells = newCells;
+        save();
+      });
+    },
+
+    setCellTipEffortMap(cellId: string, map: TipEffortMap) {
+      const cellIndex = cells.findIndex((c) => c.id === cellId);
+      const cell = cells[cellIndex];
+      if (!cell) return;
+      withUndo("SET_TIP_EFFORT_MAP" as ArrangeUndoOperationType, "Update efforts", () => {
+        const newCells = [...cells];
+        newCells[cellIndex] = { ...cell, tipEffortMap: map };
         cells = newCells;
         save();
       });

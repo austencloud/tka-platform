@@ -40,6 +40,7 @@ Last audit: 2025-12-27
   import { sequenceLoopabilityChecker } from "$lib/features/compose/services/implementations/SequenceLoopabilityChecker";
   import type { FireOverlayConfig } from "../domain/types/FireTypes";
   import type { LedOverlayConfig } from "../domain/types/LedTypes";
+  import type { TipEffectMap, TipEffortMap } from "../domain/types/TipEffectTypes";
   import CanvasContextMenuHost from "./canvas-context-menu/CanvasContextMenuHost.svelte";
   import AnimationSettingsModal from "./animation-settings-modal/AnimationSettingsModal.svelte";
   import { onDestroy, untrack } from "svelte";
@@ -76,6 +77,8 @@ Last audit: 2025-12-27
     focused = false,
     fireConfig = undefined,
     ledConfig = undefined,
+    tipEffectMap: cellTipEffectMap = undefined,
+    tipEffortMap: cellTipEffortMap = undefined,
     disableContextMenu = false,
     fillContainer = false,
     resizePaused = false,
@@ -112,6 +115,10 @@ Last audit: 2025-12-27
     focused?: boolean;
     fireConfig?: Partial<FireOverlayConfig>;
     ledConfig?: Partial<LedOverlayConfig>;
+    /** Per-cell tip effect map that overrides the global map */
+    tipEffectMap?: TipEffectMap;
+    /** Per-cell tip effort map that overrides the global map */
+    tipEffortMap?: TipEffortMap;
     disableContextMenu?: boolean;
     fillContainer?: boolean;
     /** When true, the engine's ResizeObserver is paused to prevent canvas buffer clears during CSS transitions */
@@ -345,6 +352,8 @@ Last audit: 2025-12-27
   $effect(() => {
     const currentFireConfig = fireConfig;
     const currentLedConfig = ledConfig;
+    const currentCellTipEffectMap = cellTipEffectMap;
+    const currentCellTipEffortMap = cellTipEffortMap;
     const props = {
       blueProp,
       redProp,
@@ -370,6 +379,8 @@ Last audit: 2025-12-27
       if (currentLedConfig) {
         engine.setLedConfig(currentLedConfig);
       }
+      engine.setCellTipEffectMap(currentCellTipEffectMap);
+      engine.setCellTipEffortMap(currentCellTipEffortMap);
       engine.update(props);
     });
   });
