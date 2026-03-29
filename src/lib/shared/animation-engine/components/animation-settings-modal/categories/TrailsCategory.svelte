@@ -6,15 +6,6 @@
 
 	const settingsState = container.items.settingsState;
 
-	const trackingOptions: ReadonlyArray<{
-		readonly id: TrackingMode;
-		readonly label: string;
-		readonly icon: string;
-	}> = [
-		{ id: TrackingMode.RIGHT_END, label: "One End", icon: "fa-minus" },
-		{ id: TrackingMode.BOTH_ENDS, label: "Both Ends", icon: "fa-grip-lines" },
-	];
-
 	// Check if ANY current prop is bilateral — only bilateral props can track both ends
 	const hasBilateralProp = $derived.by(() => {
 		const blue = settingsState.settings.bluePropType;
@@ -22,6 +13,31 @@
 		const blueIsBilateral = blue != null && isBilateralProp(blue);
 		const redIsBilateral = red != null && isBilateralProp(red);
 		return blueIsBilateral || redIsBilateral;
+	});
+
+	// Prop-specific labels for each end
+	const trackingOptions = $derived.by(() => {
+		const pt = animationSettings.currentPropType?.toLowerCase() ?? "staff";
+
+		let leftLabel: string;
+		let rightLabel: string;
+
+		if (pt === "staff") {
+			leftLabel = "Pinky";
+			rightLabel = "Thumb";
+		} else if (pt === "bigclub") {
+			leftLabel = "Knob";
+			rightLabel = "Bulb";
+		} else {
+			leftLabel = "End 1";
+			rightLabel = "End 2";
+		}
+
+		return [
+			{ id: TrackingMode.LEFT_END, label: leftLabel, icon: "fa-minus" },
+			{ id: TrackingMode.RIGHT_END, label: rightLabel, icon: "fa-minus" },
+			{ id: TrackingMode.BOTH_ENDS, label: "Both", icon: "fa-grip-lines" },
+		];
 	});
 
 	let storedTrackingMode = $derived(animationSettings.trail.trackingMode);
@@ -136,25 +152,28 @@
 	}
 
 	.option-label {
-		min-width: 70px;
+		min-width: 56px;
 		font-size: var(--font-size-compact, 12px);
 		color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+		flex-shrink: 0;
 	}
 
 	.chip-group {
 		display: flex;
 		gap: 6px;
 		flex: 1;
+		min-width: 0;
 	}
 
 	.chip {
 		flex: 1;
+		min-width: 0;
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		gap: 6px;
 		min-height: var(--min-touch-target, 44px);
-		padding: 8px 12px;
+		padding: 8px 8px;
 		border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
 		border-radius: 10px;
 		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
