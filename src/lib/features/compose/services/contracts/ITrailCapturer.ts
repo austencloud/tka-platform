@@ -84,12 +84,12 @@ export interface ITrailCapturer {
   ): void;
 
   /**
-   * Get trail points for a specific prop/end combination
+   * Get trail points for a specific prop/tip combination
    * @param propIndex - 0=blue, 1=red
-   * @param endType - 0=left, 1=right
+   * @param tipIndex - Index into prop's tip points array
    * @param layerIndex - 0=primary, 1+=additional layers (optional, defaults to 0)
    */
-  getTrailPoints(propIndex: 0 | 1, endType: 0 | 1, layerIndex?: number): TrailPoint[];
+  getTrailPoints(propIndex: 0 | 1, tipIndex: number, layerIndex?: number): TrailPoint[];
 
   /**
    * Get all trail points for rendering
@@ -138,7 +138,7 @@ export interface ITrailCapturer {
 export interface IAnimationCacheService {
   getCachedPoints(
     propIndex: 0 | 1,
-    endType: 0 | 1,
+    tipIndex: number,
     startStep: number,
     endStep: number,
     canvasSize: number

@@ -22,8 +22,8 @@ export type TrailPointSource =
 
 /**
  * Trail endpoint configuration for a prop type.
- * Left = endType 0 in PropPositionCalculator.
- * Right = endType 1 (tip end).
+ * Left = tipIndex 0 in PropPositionCalculator.
+ * Right = tipIndex 1 (tip end).
  */
 export interface TrailPointConfig {
   left: TrailPointSource;

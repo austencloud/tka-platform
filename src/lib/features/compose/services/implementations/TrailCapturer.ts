@@ -34,9 +34,12 @@ import type {
   IAnimationCacheService,
   IPerformanceMonitorService,
 } from "../contracts/ITrailCapturer";
-import { isBilateralProp } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";
 import { PropPositionCalculator } from "$lib/shared/animation-engine/services/implementations/PropPositionCalculator";
 import type { PropEndpointConfig } from "$lib/shared/animation-engine/services/contracts/IPropPositionCalculator";
+import { getTipPoints } from "$lib/shared/animation-engine/domain/types/PropTipPoints";
+
+/** Standard viewbox size used by the prop coordinate system */
+const VIEWBOX_SIZE = 950;
 
 // ============================================================================
 // CIRCULAR BUFFER (inlined for O(1) trail point management)
@@ -197,7 +200,7 @@ export class TrailCapturer implements ITrailCapturer {
   }> = [];
 
   // Last captured points for distance-based sampling
-  // Key format: "propIndex-endType" (e.g., "0-1" = blue prop, right end)
+  // Key format: "propIndex-tipIndex" (e.g., "0-1" = blue prop, tip index 1)
   private lastCapturedPoints = new Map<string, LastCapturedPoint>();
 
   // Animation timing
@@ -393,12 +396,12 @@ export class TrailCapturer implements ITrailCapturer {
     this.pruneOldTrailPoints(animRelativeTime);
   }
 
-  getTrailPoints(propIndex: 0 | 1, endType: 0 | 1, layerIndex: number = 0): TrailPoint[] {
+  getTrailPoints(propIndex: 0 | 1, tipIndex: number, layerIndex: number = 0): TrailPoint[] {
     const buffer = this.getBufferForProp(propIndex, layerIndex);
     const allPoints = buffer.toArray();
 
-    // Filter points for this specific end
-    return allPoints.filter((p) => p.endType === endType);
+    // Filter points for this specific tip
+    return allPoints.filter((p) => p.tipIndex === tipIndex);
   }
 
   getAllTrailPoints(): {
@@ -496,8 +499,9 @@ export class TrailCapturer implements ITrailCapturer {
   }
 
   /**
-   * Capture trail point for an additional tunnel layer
-   * Delegates to captureTrailPoint with the correct buffer lookup key prefix
+   * Capture trail point for an additional tunnel layer.
+   * Uses tip-based tracking: enumerates tip points from PropTipPoints
+   * and filters based on legacy TrackingMode fallback.
    */
   private captureTrailPointForLayer(
     prop: PropState,
@@ -507,88 +511,77 @@ export class TrailCapturer implements ITrailCapturer {
     currentStep: number,
     additionalLayerIndex: number
   ): void {
-    const { trailSettings, bluePropType, redPropType } = this.config;
-
-    const propType = propIndex === 0 ? bluePropType : redPropType;
-    const isPropBilateral = propType ? isBilateralProp(propType) : true;
-    const isHandProp = propType?.toLowerCase() === "hand";
-
-    let endsToTrack: Array<0 | 1>;
-    if (trailSettings.trackingMode === TrackingMode.BOTH_ENDS) {
-      endsToTrack = isPropBilateral && !isHandProp ? [0, 1] : [1];
-    } else if (trailSettings.trackingMode === TrackingMode.LEFT_END) {
-      endsToTrack = [0];
-    } else {
-      endsToTrack = [1];
-    }
+    const propType = propIndex === 0 ? this.config.bluePropType : this.config.redPropType;
+    const tipIndicesToTrack = this.resolveTipIndices(propIndex, propType);
 
     this.ensureAdditionalLayerBuffers(additionalLayerIndex + 1);
     const layerBuffers = this.additionalLayerBuffers[additionalLayerIndex]!;
     const buffer = propIndex === 0 ? layerBuffers.blue : layerBuffers.red;
 
+    const tipConfig = getTipPoints(propType);
+    const tipPoints = tipConfig.points;
+    const center = this.propPositionCalculator.calculateCenter(prop, {
+      canvasSize: this.config.canvasSize,
+      propDimensions,
+    });
+    const gridScaleFactor = this.config.canvasSize / VIEWBOX_SIZE;
+    const cosA = Math.cos(prop.staffRotationAngle);
+    const sinA = Math.sin(prop.staffRotationAngle);
+
     const minSpacing = this.getAdaptivePointSpacing();
 
-    for (const endType of endsToTrack) {
-      // Use layer-prefixed key to avoid collision with primary layer
-      const key = `L${additionalLayerIndex + 1}-${propIndex}-${endType}`;
-      const lastPoint = this.lastCapturedPoints.get(key);
+    for (const tipIndex of tipIndicesToTrack) {
+      if (tipIndex >= tipPoints.length) continue;
+      const tp = tipPoints[tipIndex]!;
 
-      const endpointConfig: PropEndpointConfig = {
-        canvasSize: this.config.canvasSize,
-        propDimensions,
-      };
-      const endpoint = this.propPositionCalculator.calculateEndpoint(
-        prop,
-        endpointConfig,
-        endType,
-        propType
-      );
+      // Transform tip from prop-local to canvas space
+      const worldX = center.x + (tp.dx * cosA - tp.dy * sinA) * gridScaleFactor;
+      const worldY = center.y + (tp.dx * sinA + tp.dy * cosA) * gridScaleFactor;
+
+      // Use layer-prefixed key to avoid collision with primary layer
+      const key = `L${additionalLayerIndex + 1}-${propIndex}-${tipIndex}`;
+      const lastPoint = this.lastCapturedPoints.get(key);
 
       if (lastPoint === undefined) {
         if (currentTime >= INITIALIZATION_DELAY_MS) {
-          const point: TrailPoint = {
-            x: endpoint.x,
-            y: endpoint.y,
+          buffer.push({
+            x: worldX,
+            y: worldY,
             timestamp: currentTime,
             propIndex,
-            endType,
-          };
-          buffer.push(point);
+            tipIndex,
+          });
           this.totalPointsCaptured++;
         }
         this.lastCapturedPoints.set(key, {
-          x: endpoint.x,
-          y: endpoint.y,
+          x: worldX,
+          y: worldY,
           beat: currentStep,
           timestamp: currentTime,
         });
       } else {
-        const distance = Math.hypot(
-          endpoint.x - lastPoint.x,
-          endpoint.y - lastPoint.y
-        );
+        const distance = Math.hypot(worldX - lastPoint.x, worldY - lastPoint.y);
         const isInitialJump = distance > INITIAL_JUMP_DISTANCE_THRESHOLD;
 
         if (isInitialJump) {
           this.lastCapturedPoints.set(key, {
-            x: endpoint.x,
-            y: endpoint.y,
+            x: worldX,
+            y: worldY,
             beat: currentStep,
             timestamp: currentTime,
           });
         } else if (distance >= minSpacing) {
-          const point: TrailPoint = {
-            x: endpoint.x,
-            y: endpoint.y,
+          buffer.push({
+            x: worldX,
+            y: worldY,
             timestamp: currentTime,
             propIndex,
-            endType,
-          };
-          buffer.push(point);
+            tipIndex,
+          });
           this.totalPointsCaptured++;
           this.lastCapturedPoints.set(key, {
-            x: endpoint.x,
-            y: endpoint.y,
+            x: worldX,
+            y: worldY,
             beat: currentStep,
             timestamp: currentTime,
           });
@@ -609,7 +602,34 @@ export class TrailCapturer implements ITrailCapturer {
   }
 
   /**
-   * Capture trail point with distance-based sampling and intelligent cache backfill
+   * Resolve which tip indices to track based on legacy TrackingMode.
+   * Used as fallback when no TipEffectMap assigns specific tips to trails.
+   */
+  private resolveTipIndices(
+    propIndex: 0 | 1,
+    propType: string | null | undefined
+  ): number[] {
+    const { trailSettings } = this.config;
+    const tipConfig = getTipPoints(propType);
+    const tipCount = tipConfig.points.length;
+
+    if (tipCount === 0) return [];
+
+    if (trailSettings.trackingMode === TrackingMode.BOTH_ENDS) {
+      // Track all tips for the prop
+      return Array.from({ length: tipCount }, (_, i) => i);
+    } else if (trailSettings.trackingMode === TrackingMode.LEFT_END) {
+      return [0];
+    } else {
+      // RIGHT_END: last tip (for staff that's index 1, for club that's index 0)
+      return [tipCount - 1];
+    }
+  }
+
+  /**
+   * Capture trail points with distance-based sampling and intelligent cache backfill.
+   * Uses tip-based tracking: enumerates tip points from PropTipPoints registry
+   * and transforms each from prop-local to canvas space.
    *
    * Strategy:
    * 1. Distance-based sampling: Only add points when prop moves >N pixels
@@ -623,24 +643,25 @@ export class TrailCapturer implements ITrailCapturer {
     currentTime: number,
     currentStep: number
   ): void {
-    const { trailSettings, bluePropType, redPropType } = this.config;
+    const { trailSettings } = this.config;
+    const propType = propIndex === 0 ? this.config.bluePropType : this.config.redPropType;
 
-    // Determine which ends to track based on tracking mode AND prop type
-    // For unilateral props (minihoop, fan, club), always use single end even if BOTH_ENDS is selected
-    // This prevents imaginary second ends on props that only have one meaningful endpoint
-    const propType = propIndex === 0 ? bluePropType : redPropType;
-    const isPropBilateral = propType ? isBilateralProp(propType) : true; // Default to bilateral if unknown
-    const isHandProp = propType?.toLowerCase() === "hand";
+    // Resolve which tips to track using legacy TrackingMode fallback
+    const tipIndicesToTrack = this.resolveTipIndices(propIndex, propType);
 
-    let endsToTrack: Array<0 | 1>;
-    if (trailSettings.trackingMode === TrackingMode.BOTH_ENDS) {
-      // Only track both ends for bilateral props (staff, buugeng, etc.)
-      endsToTrack = isPropBilateral && !isHandProp ? [0, 1] : [1]; // Unilateral/hand uses single point
-    } else if (trailSettings.trackingMode === TrackingMode.LEFT_END) {
-      endsToTrack = [0];
-    } else {
-      endsToTrack = [1]; // RIGHT_END
-    }
+    // Get tip point definitions for coordinate transformation
+    const tipConfig = getTipPoints(propType);
+    const tipPoints = tipConfig.points;
+
+    // Compute prop center and transformation factors
+    const endpointConfig: PropEndpointConfig = {
+      canvasSize: this.config.canvasSize,
+      propDimensions,
+    };
+    const center = this.propPositionCalculator.calculateCenter(prop, endpointConfig);
+    const gridScaleFactor = this.config.canvasSize / VIEWBOX_SIZE;
+    const cosA = Math.cos(prop.staffRotationAngle);
+    const sinA = Math.sin(prop.staffRotationAngle);
 
     // Select buffer based on prop index (primary layer)
     const buffer = this.getBufferForProp(propIndex, 0);
@@ -648,41 +669,35 @@ export class TrailCapturer implements ITrailCapturer {
     // Get adaptive point spacing
     const minSpacing = this.getAdaptivePointSpacing();
 
-    for (const endType of endsToTrack) {
-      const key = `${propIndex}-${endType}`;
-      const lastPoint = this.lastCapturedPoints.get(key);
+    for (const tipIndex of tipIndicesToTrack) {
+      if (tipIndex >= tipPoints.length) continue;
+      const tp = tipPoints[tipIndex]!;
 
-      // Calculate current endpoint position using shared calculator
-      const endpointConfig: PropEndpointConfig = {
-        canvasSize: this.config.canvasSize,
-        propDimensions,
-      };
-      const endpoint = this.propPositionCalculator.calculateEndpoint(
-        prop,
-        endpointConfig,
-        endType,
-        propType
-      );
+      // Transform tip from prop-local to canvas space
+      const worldX = center.x + (tp.dx * cosA - tp.dy * sinA) * gridScaleFactor;
+      const worldY = center.y + (tp.dx * sinA + tp.dy * cosA) * gridScaleFactor;
+
+      const key = `${propIndex}-${tipIndex}`;
+      const lastPoint = this.lastCapturedPoints.get(key);
 
       // FIRST POINT: Wait for animation initialization
       if (lastPoint === undefined) {
         // Only capture first point after initialization delay
         if (currentTime >= INITIALIZATION_DELAY_MS) {
-          const point: TrailPoint = {
-            x: endpoint.x,
-            y: endpoint.y,
+          buffer.push({
+            x: worldX,
+            y: worldY,
             timestamp: currentTime,
             propIndex,
-            endType,
-          };
-          buffer.push(point);
+            tipIndex,
+          });
           this.totalPointsCaptured++;
         }
 
         // Always update tracking position (even if we don't capture the point yet)
         this.lastCapturedPoints.set(key, {
-          x: endpoint.x,
-          y: endpoint.y,
+          x: worldX,
+          y: worldY,
           beat: currentStep,
           timestamp: currentTime,
         });
@@ -702,7 +717,7 @@ export class TrailCapturer implements ITrailCapturer {
           // CACHE BACKFILL: Device stuttered - fill gap with pre-computed points
           const cachedPoints = this.animationCacheService.getCachedPoints(
             propIndex,
-            endType,
+            tipIndex,
             lastPoint.beat,
             currentStep,
             this.config.canvasSize
@@ -720,26 +735,24 @@ export class TrailCapturer implements ITrailCapturer {
 
             if (dist >= minSpacing) {
               buffer.push(cachedPoint);
-              this.totalPointsCaptured++; // Track backfilled points too
+              this.totalPointsCaptured++;
               lastAddedX = cachedPoint.x;
               lastAddedY = cachedPoint.y;
             }
           }
 
-          // Backfill gaps silently
-
           // Update last captured point
           this.lastCapturedPoints.set(key, {
-            x: endpoint.x,
-            y: endpoint.y,
+            x: worldX,
+            y: worldY,
             beat: currentStep,
             timestamp: currentTime,
           });
         } else {
           // REAL-TIME SAMPLING: Normal playback - use distance-based sampling
           const distance = Math.hypot(
-            endpoint.x - lastPoint.x,
-            endpoint.y - lastPoint.y
+            worldX - lastPoint.x,
+            worldY - lastPoint.y
           );
 
           // Detect initial jump (from default position to first beat position)
@@ -748,26 +761,25 @@ export class TrailCapturer implements ITrailCapturer {
           if (isInitialJump) {
             // Just update the tracking position without adding a trail point
             this.lastCapturedPoints.set(key, {
-              x: endpoint.x,
-              y: endpoint.y,
+              x: worldX,
+              y: worldY,
               beat: currentStep,
               timestamp: currentTime,
             });
           } else if (distance >= minSpacing) {
             // Normal trail capture - add point if prop moved far enough
-            const point: TrailPoint = {
-              x: endpoint.x,
-              y: endpoint.y,
+            buffer.push({
+              x: worldX,
+              y: worldY,
               timestamp: currentTime,
               propIndex,
-              endType,
-            };
+              tipIndex,
+            });
 
-            buffer.push(point);
             this.totalPointsCaptured++;
             this.lastCapturedPoints.set(key, {
-              x: endpoint.x,
-              y: endpoint.y,
+              x: worldX,
+              y: worldY,
               beat: currentStep,
               timestamp: currentTime,
             });

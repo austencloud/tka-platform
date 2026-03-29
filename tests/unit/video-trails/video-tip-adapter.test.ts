@@ -50,7 +50,7 @@ describe("VideoTipAdapter", () => {
     it("converts endpoints to TrailPoint format", () => {
       const points = adapter.mapToTrailPoints([makeEndpoint({ x: 50, y: 75, propIndex: 1 })], 1234);
       expect(points.length).toBe(1);
-      expect(points[0]).toEqual({ x: 50, y: 75, timestamp: 1234, propIndex: 1, endType: 0 });
+      expect(points[0]).toEqual({ x: 50, y: 75, timestamp: 1234, propIndex: 1, tipIndex: 0 });
     });
   });
 
