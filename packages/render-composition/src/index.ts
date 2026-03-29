@@ -8,3 +8,4 @@ export { calculateHeaderHeight, calculateFooterHeight } from "./dimensions.js";
 export { renderStepNumber } from "./step-number-renderer.js";
 export { renderSmartBorders } from "./border-renderer.js";
 export { renderHeader, type HeaderOptions } from "./header-renderer.js";
+export { renderFooter, type FooterOptions } from "./footer-renderer.js";
