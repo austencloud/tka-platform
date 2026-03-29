@@ -142,12 +142,6 @@
 		});
 	});
 
-	// ── Disassemble completion (TEMP: skip animation, Task 4 adds FLIP) ─
-	$effect(() => {
-		if (fuseState.phase !== "disassembling") return;
-		fuseState.completeDisassemble();
-	});
-
 	// ── Action handlers ──────────────────────────────────────────────────
 
 	async function handleFuse() {
@@ -156,9 +150,6 @@
 		fuseState.selectLeft(leftBrowsingSeq);
 		fuseState.selectRight(rightBrowsingSeq);
 		fuseState.startReassemble();
-
-		// TEMP: skip animation, go straight to assembled (Task 4 adds FLIP)
-		fuseState.completeReassemble();
 
 		// Derive letters so the fused sequence has a word
 		if (fuseState.fusedSequence) {
@@ -196,6 +187,144 @@
 			fuseState.toggleClock();
 		}
 	}
+
+	// ── FLIP animation utilities ─────────────────────────────────────────
+	const FLIP_DURATION = 600;
+	const FLIP_EASING = "cubic-bezier(0.16, 1, 0.3, 1)";
+
+	function calcFlipTransform(sourceRect: DOMRect, targetRect: DOMRect) {
+		const sCX = sourceRect.left + sourceRect.width / 2;
+		const sCY = sourceRect.top + sourceRect.height / 2;
+		const tCX = targetRect.left + targetRect.width / 2;
+		const tCY = targetRect.top + targetRect.height / 2;
+		return {
+			tx: tCX - sCX,
+			ty: tCY - sCY,
+			sx: targetRect.width / sourceRect.width,
+			sy: targetRect.height / sourceRect.height,
+		};
+	}
+
+	function cancelAllAnimations(elements: (HTMLElement | undefined)[]) {
+		for (const el of elements) {
+			if (!el) continue;
+			for (const anim of el.getAnimations()) anim.cancel();
+		}
+	}
+
+	// ── Reassemble FLIP animation ────────────────────────────────────────
+	function animateReassemble() {
+		if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+			fuseState.completeReassemble();
+			return;
+		}
+		if (!heroEl || !splitLeftEl || !splitRightEl) {
+			fuseState.completeReassemble();
+			return;
+		}
+
+		// Measure all three canvas rects (all always in DOM, some visibility:hidden)
+		const heroRect = heroEl.getBoundingClientRect();
+		const leftRect = splitLeftEl.getBoundingClientRect();
+		const rightRect = splitRightEl.getBoundingClientRect();
+
+		const leftFlip = calcFlipTransform(leftRect, heroRect);
+		const rightFlip = calcFlipTransform(rightRect, heroRect);
+
+		const opts: KeyframeAnimationOptions = {
+			duration: FLIP_DURATION,
+			easing: FLIP_EASING,
+			fill: "both" as FillMode,
+		};
+
+		// Fade out browse chrome (beat grids + shuffle buttons)
+		if (browseLeftEl)
+			browseLeftEl.animate([{ opacity: 1 }, { opacity: 0 }], {
+				duration: 200,
+				easing: "ease-out",
+				fill: "both" as FillMode,
+			});
+		if (browseRightEl)
+			browseRightEl.animate([{ opacity: 1 }, { opacity: 0 }], {
+				duration: 200,
+				easing: "ease-out",
+				fill: "both" as FillMode,
+			});
+
+		// FLIP split canvases toward hero position
+		splitLeftEl.animate(
+			[
+				{ transform: "translate(0,0) scale(1)" },
+				{
+					transform: `translate(${leftFlip.tx}px,${leftFlip.ty}px) scale(${leftFlip.sx},${leftFlip.sy})`,
+				},
+			],
+			opts
+		);
+		// Fade out left split during last 25%
+		splitLeftEl.animate([{ opacity: 1 }, { opacity: 0 }], {
+			duration: FLIP_DURATION * 0.25,
+			delay: FLIP_DURATION * 0.75,
+			easing: "ease-in",
+			fill: "both" as FillMode,
+		});
+
+		const mainAnim = splitRightEl.animate(
+			[
+				{ transform: "translate(0,0) scale(1)" },
+				{
+					transform: `translate(${rightFlip.tx}px,${rightFlip.ty}px) scale(${rightFlip.sx},${rightFlip.sy})`,
+				},
+			],
+			opts
+		);
+		splitRightEl.animate([{ opacity: 1 }, { opacity: 0 }], {
+			duration: FLIP_DURATION * 0.25,
+			delay: FLIP_DURATION * 0.75,
+			easing: "ease-in",
+			fill: "both" as FillMode,
+		});
+
+		// When FLIP finishes, clean up and transition to assembled
+		mainAnim.finished.then(() => {
+			cancelAllAnimations([heroEl, splitLeftEl, splitRightEl, browseLeftEl, browseRightEl]);
+			fuseState.completeReassemble();
+
+			// After state change, slide in choreo card
+			requestAnimationFrame(() => {
+				if (cardAreaEl) {
+					cardAreaEl.animate(
+						[
+							{ opacity: 0, transform: "translateX(30px)" },
+							{ opacity: 1, transform: "translateX(0)" },
+						],
+						{ duration: 200, easing: FLIP_EASING, fill: "both" as FillMode }
+					);
+				}
+			});
+		});
+	}
+
+	// ── Phase transition effect ──────────────────────────────────────────
+	// Triggers animations when phase enters "reassembling" or "disassembling".
+	// untrack() prevents the animation functions from creating reactive
+	// dependencies on the element refs (which are $state).
+	$effect(() => {
+		const p = phase;
+		if (p !== "reassembling" && p !== "disassembling") return;
+
+		return untrack(() => {
+			const frameId = requestAnimationFrame(() => {
+				if (p === "reassembling") {
+					animateReassemble();
+				} else if (p === "disassembling") {
+					// Task 5 will implement this — for now, instant transition
+					fuseState.completeDisassemble();
+				}
+			});
+			return () => cancelAnimationFrame(frameId);
+		});
+	});
 </script>
 
 <svelte:window onkeydown={handleKeydown} />
