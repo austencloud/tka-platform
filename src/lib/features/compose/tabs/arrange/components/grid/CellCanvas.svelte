@@ -221,13 +221,14 @@
   });
 
   // Sync step positions - calculate prop states and update animation state
-  // IMPORTANT: Read the derived step value BEFORE the conditional so Svelte 5
-  // always tracks it as a dependency. If the read is inside the `if`, and the
-  // condition is false on first run, the dependency is never registered and
-  // the effect won't re-run when the step changes during playback.
+  // IMPORTANT: Read `initialized` and the derived step value BEFORE the
+  // conditional so Svelte 5 always tracks them as dependencies. Without
+  // reading `initialized`, the effect may run before onMount creates the
+  // orchestrator and never re-run when it becomes available.
   $effect(() => {
+    const isReady = initialized;
     const step = primaryCurrentStep;
-    if (primaryOrchestrator?.isInitialized() && primaryLayer) {
+    if (isReady && primaryOrchestrator?.isInitialized() && primaryLayer) {
       primaryOrchestrator.calculateState(step);
       const states = primaryOrchestrator.getCurrentPropStates();
       primaryAnimationState.setPropStates(states.blue, states.red);
@@ -235,8 +236,13 @@
   });
 
   // Sync step positions for additional layers
+  // IMPORTANT: Read `initialized` so this effect re-runs after onMount creates
+  // orchestrators. Without it, the effect runs before onMount, finds no orchestrators,
+  // skips, and never re-runs because additionalCurrentSteps doesn't change (still beat 0).
   $effect(() => {
+    const isReady = initialized;
     const steps = additionalCurrentSteps;
+    if (!isReady) return;
     for (let i = 0; i < extraLayers.length; i++) {
       const step = steps[i] ?? 0;
       const orch = additionalOrchestrators[i];
