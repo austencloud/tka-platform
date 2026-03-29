@@ -43,13 +43,14 @@
   } = $props();
 
   // Per-cell animation orchestrators (NOT shared singletons)
-  let primaryOrchestrator: ISequenceAnimationOrchestrator | null = null;
-  // Additional layer orchestrators (layers 1-3, indexed from 0)
-  let additionalOrchestrators: ISequenceAnimationOrchestrator[] = [];
+  // These must be $state so that derived values (additionalLayerProps) and
+  // effects (sync step positions) re-evaluate after onMount populates them.
+  let primaryOrchestrator = $state<ISequenceAnimationOrchestrator | null>(null);
+  let additionalOrchestrators = $state<ISequenceAnimationOrchestrator[]>([]);
 
   // Animation states for primary and additional layers
   const primaryAnimationState = createAnimationPanelState();
-  let additionalAnimationStates: ReturnType<typeof createAnimationPanelState>[] = [];
+  let additionalAnimationStates = $state<ReturnType<typeof createAnimationPanelState>[]>([]);
 
   // Local state
   let initialized = $state(false);
