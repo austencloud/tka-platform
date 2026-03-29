@@ -8,6 +8,7 @@
 	 */
 
 	import { onDestroy } from "svelte";
+	import { fade } from "svelte/transition";
 	import { container } from "$lib/shared/di";
 	import { createFuseState } from "./state/fuse-state.svelte";
 	import { setFuseContext } from "./context/fuse-context";
@@ -40,9 +41,13 @@
 	</div>
 {:else if fuseState}
 	{#if fuseState.phase === "result"}
-		<FuseResultView />
+		<div class="fuse-view" in:fade={{ duration: 300, delay: 150 }} out:fade={{ duration: 150 }}>
+			<FuseResultView />
+		</div>
 	{:else}
-		<FuseLayout />
+		<div class="fuse-view" in:fade={{ duration: 300, delay: 150 }} out:fade={{ duration: 150 }}>
+			<FuseLayout />
+		</div>
 	{/if}
 {:else}
 	<div class="fuse-error">
@@ -51,6 +56,11 @@
 {/if}
 
 <style>
+	.fuse-view {
+		height: 100%;
+		width: 100%;
+	}
+
 	.fuse-error {
 		display: flex;
 		flex-direction: column;
