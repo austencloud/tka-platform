@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TKA — Cave Painting (~40,000 BC)</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #1a1510;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      font-family: serif;
+    }
+
+    .scene {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 18px;
+    }
+
+    canvas {
+      display: block;
+    }
+
+    .caption {
+      color: #7a6248;
+      font-size: 12px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      opacity: 0.85;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+<div class="scene">
+  <canvas id="cave" width="500" height="500"></canvas>
+  <div class="caption">Grotte des Séquences — Parietal Period — ~38,000 BCE</div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// Cave Painting Renderer — TKA Letter "A"
+// Blue hand: North, pro motion (curves W→N)
+// Red hand:  South, pro motion (curves E→S)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const canvas = document.getElementById('cave');
+const ctx = canvas.getContext('2d');
+const W = 500, H = 500;
+
+// ── Seeded PRNG (Mulberry32) ──────────────────────────────────────────────────
+function mulberry32(seed) {
+  return function() {
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+const rng = mulberry32(0xDEADBEEF);
+
+// ── Noise helpers ─────────────────────────────────────────────────────────────
+function hash(x, y) {
+  let n = Math.sin(x * 127.1 + y * 311.7) * 43758.5453123;
+  return n - Math.floor(n);
+}
+function smoothstep(t) { return t * t * (3 - 2 * t); }
+function lerp(a, b, t) { return a + (b - a) * t; }
+function noise2d(x, y) {
+  const ix = Math.floor(x), iy = Math.floor(y);
+  const fx = x - ix, fy = y - iy;
+  const ux = smoothstep(fx), uy = smoothstep(fy);
+  return lerp(
+    lerp(hash(ix, iy),   hash(ix + 1, iy),   ux),
+    lerp(hash(ix, iy+1), hash(ix + 1, iy+1), ux),
+    uy
+  );
+}
+function fbm(x, y, octaves = 5) {
+  let val = 0, amp = 0.5, freq = 1, max = 0;
+  for (let i = 0; i < octaves; i++) {
+    val += noise2d(x * freq, y * freq) * amp;
+    max += amp;
+    amp *= 0.5;
+    freq *= 2.1;
+  }
+  return val / max;
+}
+
+// ── Step 1: Stone wall — BRIGHT warm brown, like a well-lit Lascaux photograph ──
+function drawStoneWall() {
+  // Start bright: warm tan/ochre base. NOT dark.
+  ctx.fillStyle = '#b08060';
+  ctx.fillRect(0, 0, W, H);
+
+  const imgData = ctx.getImageData(0, 0, W, H);
+  const d = imgData.data;
+
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const nx = x / W * 4.3;
+      const ny = y / H * 4.3;
+
+      const base   = fbm(nx, ny, 6);
+      const detail = fbm(nx * 3.7 + 1.1, ny * 3.7 + 0.9, 4);
+      const crack  = fbm(nx * 0.8 + 5.2, ny * 1.2 + 3.1, 3);
+      const fine   = noise2d(nx * 12, ny * 12);
+
+      const combined = base * 0.5 + detail * 0.3 + crack * 0.15 + fine * 0.05;
+
+      // BRIGHT rock palette — well-lit cave wall
+      // Dark zones: warm medium brown (not black)
+      const r0 = 100, g0 = 75,  b0 = 50;
+      // Mid zones: warm tan
+      const r1 = 155, g1 = 118, b1 = 78;
+      // Light zones: sandy limestone
+      const r2 = 178, g2 = 142, b2 = 98;
+      // Pale highlight zones: calcite white-tan
+      const r3 = 200, g3 = 168, b3 = 125;
+
+      // t drives the brightness — keep it high (0.4 minimum)
+      let t = Math.pow(combined, 0.75);
+      t = 0.35 + t * 0.65; // clamp floor so wall never goes dark
+
+      let r, g, b;
+      if (t < 0.5) {
+        const u = t * 2;
+        r = lerp(r0, r1, u);
+        g = lerp(g0, g1, u);
+        b = lerp(b0, b1, u);
+      } else if (t < 0.8) {
+        const u = (t - 0.5) / 0.3;
+        r = lerp(r1, r2, u);
+        g = lerp(g1, g2, u);
+        b = lerp(b1, b2, u);
+      } else {
+        const u = (t - 0.8) / 0.2;
+        r = lerp(r2, r3, u);
+        g = lerp(g2, g3, u);
+        b = lerp(b2, b3, u);
+      }
+
+      // Pale calcite veins
+      const vein = fbm(nx * 6 + 2.2, ny * 1.4 + 7.3, 2);
+      const veinStrength = Math.max(0, vein - 0.62) * 2.2;
+      r += veinStrength * 25;
+      g += veinStrength * 20;
+      b += veinStrength * 15;
+
+      // Warm ochre mineral patches
+      const ochreN = fbm(nx * 2.1 + 9.1, ny * 2.5 + 4.3, 3);
+      const ochre = Math.max(0, ochreN - 0.54) * 2.5;
+      r += ochre * 18;
+      g += ochre * 8;
+      b -= ochre * 5;
+
+      // SUBTLE edge vignette — only the outer 20% of the canvas dims
+      // Center 80% stays fully bright
+      const edgeDx = (x / W) * 2 - 1;
+      const edgeDy = (y / H) * 2 - 1;
+      const edgeDist = Math.sqrt(edgeDx * edgeDx + edgeDy * edgeDy);
+      // Only pull darkness in at dist > 1.1 (well into the corners/edges)
+      const vignetteFactor = Math.max(0, edgeDist - 1.05) * 0.9;
+      const vignette = 1 - Math.min(0.35, vignetteFactor);
+
+      r *= vignette;
+      g *= vignette;
+      b *= vignette;
+
+      const idx = (y * W + x) * 4;
+      d[idx]     = Math.min(255, Math.max(0, r | 0));
+      d[idx + 1] = Math.min(255, Math.max(0, g | 0));
+      d[idx + 2] = Math.min(255, Math.max(0, b | 0));
+      d[idx + 3] = 255;
+    }
+  }
+
+  ctx.putImageData(imgData, 0, 0);
+}
+
+// ── Step 2: Pigment stroke — BOLD, visible. No hidden alpha multipliers. ────────
+// opacity is used DIRECTLY — 0.7 means 0.7, not 0.7 * 0.18
+function pigmentStroke(x1, y1, x2, y2, color, width, opacity, roughness = 1.0) {
+  const dist = Math.hypot(x2 - x1, y2 - y1);
+  const steps = Math.max(18, dist * 1.6 | 0);
+  const angle = Math.atan2(y2 - y1, x2 - x1);
+
+  ctx.save();
+
+  for (let s = 0; s < steps; s++) {
+    const t = s / (steps - 1);
+    const wobble = (rng() - 0.5) * width * roughness * 0.7;
+    const perpX = -Math.sin(angle) * wobble;
+    const perpY =  Math.cos(angle) * wobble;
+    const cx = lerp(x1, x2, t) + perpX + (rng() - 0.5) * roughness * 1.5;
+    const cy = lerp(y1, y2, t) + perpY + (rng() - 0.5) * roughness * 1.5;
+
+    const blobW = (width * 0.5 + rng() * width * 0.6) * (0.7 + t * 0.3);
+    const blobH = blobW * (0.45 + rng() * 0.4);
+    const blobAngle = angle + (rng() - 0.5) * 0.7;
+
+    // Each blob at the direct opacity — bold and visible
+    ctx.globalAlpha = opacity * (0.55 + rng() * 0.45);
+    ctx.fillStyle = color;
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(blobAngle);
+    ctx.beginPath();
+    ctx.ellipse(0, 0, blobW, blobH, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  ctx.restore();
+}
+
+// ── Wobbly charcoal line ──────────────────────────────────────────────────────
+// opacity used DIRECTLY — no hidden multiplier
+function wobbleLine(x1, y1, x2, y2, color, width, opacity, roughness = 1.0) {
+  const dist = Math.hypot(x2 - x1, y2 - y1);
+  const layers = 3;
+
+  ctx.save();
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  for (let layer = 0; layer < layers; layer++) {
+    // Layered from wide-faint to narrow-bold
+    ctx.globalAlpha = opacity * (0.5 + layer * 0.25);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width * (1.2 - layer * 0.2) + rng() * width * 0.25;
+
+    const segments = Math.max(4, dist / 18 | 0);
+    ctx.beginPath();
+    for (let i = 0; i <= segments; i++) {
+      const t = i / segments;
+      const jx = (rng() - 0.5) * roughness * width * 0.6;
+      const jy = (rng() - 0.5) * roughness * width * 0.6;
+      const px = lerp(x1, x2, t) + jx;
+      const py = lerp(y1, y2, t) + jy;
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+// ── Pigment daub (fingerprint dot) — BOLD ────────────────────────────────────
+function pigmentDaub(x, y, r, color, opacity) {
+  ctx.save();
+  // Solid fill center
+  ctx.globalAlpha = opacity * 0.85;
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.ellipse(x, y, r * 0.9, r * 0.75, rng() * Math.PI, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Outer rings for organic edge
+  const rings = 3 + (rng() * 2 | 0);
+  for (let i = 0; i < rings; i++) {
+    const jx = (rng() - 0.5) * r * 0.5;
+    const jy = (rng() - 0.5) * r * 0.5;
+    const jr = r * (0.55 + rng() * 0.55);
+    ctx.globalAlpha = opacity * (0.3 + rng() * 0.35);
+    ctx.beginPath();
+    ctx.ellipse(x + jx, y + jy, jr, jr * (0.65 + rng() * 0.35), rng() * Math.PI, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Fingerprint arc lines
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.0 + rng() * 0.8;
+  for (let arc = 0; arc < 4; arc++) {
+    ctx.globalAlpha = opacity * (0.45 + rng() * 0.2);
+    const startA = rng() * Math.PI;
+    ctx.beginPath();
+    ctx.arc(
+      x + (rng() - 0.5) * 3,
+      y + (rng() - 0.5) * 3,
+      r * (0.3 + arc * 0.12),
+      startA,
+      startA + Math.PI * (0.5 + rng() * 0.9)
+    );
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+// ── Pigment arc with arrow — BOLD. opacity used directly. ─────────────────────
+function pigmentArc(cx, cy, radius, startAngle, endAngle, color, width, opacity) {
+  const steps = 60;
+  const points = [];
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps;
+    const a = lerp(startAngle, endAngle, t);
+    const r = radius + (rng() - 0.5) * width * 0.8;
+    points.push({ x: cx + Math.cos(a) * r, y: cy + Math.sin(a) * r });
+  }
+
+  ctx.save();
+
+  // Draw 3 passes: wide soft → medium → narrow crisp
+  const passes = [
+    { widthMult: 1.6, alpha: opacity * 0.35 },
+    { widthMult: 1.1, alpha: opacity * 0.65 },
+    { widthMult: 0.7, alpha: opacity * 0.85 },
+  ];
+
+  for (const pass of passes) {
+    ctx.globalAlpha = pass.alpha;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width * pass.widthMult + rng() * width * 0.3;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    ctx.beginPath();
+    for (let i = 0; i < points.length; i++) {
+      const jx = (rng() - 0.5) * width * 0.3;
+      const jy = (rng() - 0.5) * width * 0.3;
+      if (i === 0) ctx.moveTo(points[i].x + jx, points[i].y + jy);
+      else ctx.lineTo(points[i].x + jx, points[i].y + jy);
+    }
+    ctx.stroke();
+  }
+
+  // Arrowhead — solid, clearly visible
+  const endPt  = points[points.length - 1];
+  const prevPt = points[points.length - 7];
+  const headAngle = Math.atan2(endPt.y - prevPt.y, endPt.x - prevPt.x);
+  const headLen = width * 3.2;
+
+  ctx.globalAlpha = opacity * 0.92;
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(endPt.x, endPt.y);
+  ctx.lineTo(
+    endPt.x - Math.cos(headAngle - 0.52) * headLen + (rng() - 0.5) * 4,
+    endPt.y - Math.sin(headAngle - 0.52) * headLen + (rng() - 0.5) * 4
+  );
+  ctx.lineTo(
+    endPt.x - Math.cos(headAngle + 0.52) * headLen + (rng() - 0.5) * 4,
+    endPt.y - Math.sin(headAngle + 0.52) * headLen + (rng() - 0.5) * 4
+  );
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.restore();
+}
+
+// ── Scratch carved into stone ──────────────────────────────────────────────────
+function carvedScratch(x1, y1, x2, y2, opacity = 0.55) {
+  const dist = Math.hypot(x2 - x1, y2 - y1);
+  const steps = Math.max(3, dist / 10 | 0);
+
+  ctx.save();
+  ctx.lineCap = 'round';
+
+  // Deep groove shadow
+  ctx.strokeStyle = '#3a2a18';
+  ctx.lineWidth = 1.8 + rng() * 1.0;
+  ctx.globalAlpha = opacity;
+  ctx.beginPath();
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps;
+    const px = lerp(x1, x2, t) + (rng() - 0.5) * 2.0;
+    const py = lerp(y1, y2, t) + (rng() - 0.5) * 2.0;
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
+  ctx.stroke();
+
+  // Light catch on the upper-left edge of the groove
+  ctx.strokeStyle = '#c8a870';
+  ctx.lineWidth = 0.7;
+  ctx.globalAlpha = opacity * 0.55;
+  ctx.beginPath();
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps;
+    const px = lerp(x1 + 1, x2 + 1, t) + (rng() - 0.5) * 1.2;
+    const py = lerp(y1 + 1, y2 + 1, t) + (rng() - 0.5) * 1.2;
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+// ── Grid dot ──────────────────────────────────────────────────────────────────
+function gridDot(x, y) {
+  // Outer ring
+  pigmentDaub(x, y, 8, '#7a5228', 0.75);
+  // Inner dark center
+  pigmentDaub(x, y, 4, '#4a2e12', 0.85);
+}
+
+// ── Handprint stamp ────────────────────────────────────────────────────────────
+function handprint(cx, cy, scale = 1.0, color = '#8b3a1a', opacity = 0.80) {
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.scale(scale, scale);
+  ctx.globalAlpha = opacity;
+  ctx.fillStyle = color;
+
+  // Palm
+  ctx.beginPath();
+  ctx.ellipse(0, 8, 13, 17, 0.1, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Fingers
+  const fingers = [
+    { x: -11, y: -6,  rx: 4.5, ry: 10, rot: -0.35 },
+    { x: -4,  y: -13, rx: 4,   ry: 11, rot: -0.12 },
+    { x:  4,  y: -14, rx: 4,   ry: 11, rot:  0.08 },
+    { x: 11,  y: -10, rx: 4,   ry: 10, rot:  0.28 },
+    { x: 16,  y:  -2, rx: 3.5, ry:  8, rot:  0.55 },
+  ];
+  fingers.forEach(f => {
+    ctx.save();
+    ctx.translate(f.x, f.y);
+    ctx.rotate(f.rot);
+    ctx.beginPath();
+    ctx.ellipse(0, 0, f.rx + rng() * 1.2, f.ry + rng() * 1.8, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  });
+
+  // Knuckle ridge lines — slight negative space
+  ctx.globalAlpha = opacity * 0.35;
+  ctx.strokeStyle = '#2a1208';
+  ctx.lineWidth = 1.5;
+  fingers.slice(0, 4).forEach(f => {
+    ctx.beginPath();
+    ctx.arc(f.x + (rng()-0.5)*2, f.y + 5 + (rng()-0.5)*2, 3 + rng()*1.5, 0.3, Math.PI - 0.3);
+    ctx.stroke();
+  });
+
+  ctx.restore();
+}
+
+// ── Primitive "A" scratched into stone ───────────────────────────────────────
+function primitiveA(x, y, size = 28, opacity = 0.80) {
+  const hs = size / 2;
+  ctx.save();
+  ctx.translate(x, y);
+  carvedScratch(-hs * 0.6,  hs * 0.9, 0,          -hs * 0.9, opacity);
+  carvedScratch( 0,         -hs * 0.9, hs * 0.6,   hs * 0.9,  opacity);
+  carvedScratch(-hs * 0.32,  hs * 0.1, hs * 0.32,  hs * 0.05, opacity);
+  ctx.restore();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Grid layout
+// ─────────────────────────────────────────────────────────────────────────────
+const CX = 248, CY = 250;
+const R  = 88;
+
+function gridPoint(angle) {
+  return { x: CX + Math.cos(angle) * R, y: CY + Math.sin(angle) * R };
+}
+
+const N  = gridPoint(-Math.PI / 2);
+const NE = gridPoint(-Math.PI / 4);
+const E  = gridPoint(0);
+const SE = gridPoint( Math.PI / 4);
+const S  = gridPoint( Math.PI / 2);
+const SW = gridPoint( Math.PI * 3 / 4);
+const Wp = gridPoint( Math.PI);
+const NW = gridPoint(-Math.PI * 3 / 4);
+
+// ── Color palettes ─────────────────────────────────────────────────────────────
+// Blue hand: manganese/charcoal — deep blue-black, still clearly visible
+const CHAR_DARK = '#1e1a2e';
+const CHAR_MID  = '#2e2848';
+const CHAR_BLUE = '#3a3560';
+
+// Red hand: iron oxide / ochre / burnt sienna
+const OCHRE       = '#9b621e';
+const SIENNA      = '#8a3a1a';
+const SIENNA_DARK = '#6a2610';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RENDER
+// ─────────────────────────────────────────────────────────────────────────────
+drawStoneWall();
+
+// ── Grid construction lines (faint scratches — still legible) ────────────────
+const gridLineOpacity = 0.35;
+carvedScratch(Wp.x - 12, CY,        E.x + 12,  CY,        gridLineOpacity);
+carvedScratch(CX,         N.y - 12,  CX,         S.y + 12,  gridLineOpacity);
+carvedScratch(NW.x - 8,  NW.y - 8,  SE.x + 8,  SE.y + 8,  gridLineOpacity * 0.65);
+carvedScratch(NE.x + 8,  NE.y - 8,  SW.x - 8,  SW.y + 8,  gridLineOpacity * 0.65);
+
+// ── Grid dots ─────────────────────────────────────────────────────────────────
+[N, NE, E, SE, S, SW, Wp, NW].forEach(pt => gridDot(pt.x, pt.y));
+gridDot(CX, CY);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// STAVES
+// Blue staff: vertical — center up through North point
+// ─────────────────────────────────────────────────────────────────────────────
+{
+  // Staff runs from center toward North and beyond
+  const staffTop    = CY - R - 30;  // above North
+  const staffBottom = CY - 15;      // just above center
+
+  // Bold passes — opacity used DIRECTLY, 0.7+ means actually 0.7+
+  for (let pass = 0; pass < 4; pass++) {
+    pigmentStroke(CX, staffBottom, CX, staffTop, CHAR_DARK, 11, 0.75, 1.1);
+  }
+  for (let pass = 0; pass < 2; pass++) {
+    pigmentStroke(CX, staffBottom, CX, staffTop, CHAR_BLUE, 6,  0.60, 0.7);
+  }
+
+  // End caps (thumb / pinky ends)
+  pigmentDaub(CX, staffTop,    6, CHAR_MID,  0.80);
+  pigmentDaub(CX, staffBottom, 6, CHAR_DARK, 0.80);
+}
+
+// Red staff: vertical — center down through South point
+{
+  const staffTop    = CY + 15;      // just below center
+  const staffBottom = CY + R + 30;  // below South
+
+  for (let pass = 0; pass < 4; pass++) {
+    pigmentStroke(CX, staffTop, CX, staffBottom, SIENNA_DARK, 11, 0.75, 1.1);
+  }
+  for (let pass = 0; pass < 2; pass++) {
+    pigmentStroke(CX, staffTop, CX, staffBottom, SIENNA, 6, 0.60, 0.7);
+  }
+
+  pigmentDaub(CX, staffTop,    6, OCHRE,       0.80);
+  pigmentDaub(CX, staffBottom, 6, SIENNA_DARK, 0.80);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PRO MOTION ARROWS
+// Blue: W → N (CW arc through NW, short 90° sweep)
+// Red:  E → S (CW arc through SE, short 90° sweep)
+// ─────────────────────────────────────────────────────────────────────────────
+const arcRadius = R * 1.0;
+
+// Blue: W(π) → N(3π/2), CW in canvas coords
+// Soft outer pass, then bold crisp passes
+pigmentArc(CX, CY, arcRadius, Math.PI, Math.PI * 3 / 2, CHAR_BLUE, 14, 0.55);
+pigmentArc(CX, CY, arcRadius, Math.PI, Math.PI * 3 / 2, CHAR_DARK, 10, 0.80);
+
+// Red: E(0) → S(π/2), CW
+pigmentArc(CX, CY, arcRadius, 0, Math.PI / 2, SIENNA,      14, 0.55);
+pigmentArc(CX, CY, arcRadius, 0, Math.PI / 2, SIENNA_DARK, 10, 0.80);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Primitive "A" glyph — scratched upper-right
+// ─────────────────────────────────────────────────────────────────────────────
+primitiveA(CX + 148, CY - 135, 30, 0.85);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Handprint — lower left
+// ─────────────────────────────────────────────────────────────────────────────
+handprint(72, 418, 1.05, '#8a3518', 0.80);
+// Slightly offset second layer for depth/imperfection
+handprint(70, 416, 1.05, '#6a2510', 0.45);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Surface texture — fine grain and spatter
+// ─────────────────────────────────────────────────────────────────────────────
+{
+  const overlay = ctx.getImageData(0, 0, W, H);
+  const od = overlay.data;
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const nx = x / W * 9.7;
+      const ny = y / H * 9.7;
+      const grain  = noise2d(nx * 22, ny * 22);
+      const micro  = noise2d(nx * 68, ny * 68);
+      const spatter = Math.pow(
+        Math.max(0, fbm(nx * 1.4 + 12.1, ny * 1.4 + 8.7, 4) - 0.72),
+        1.6
+      ) * 2.5;
+
+      const grainVal = (grain - 0.5) * 12 + (micro - 0.5) * 4;
+      const idx = (y * W + x) * 4;
+      od[idx]     = Math.min(255, Math.max(0, od[idx]     + grainVal     | 0));
+      od[idx + 1] = Math.min(255, Math.max(0, od[idx + 1] + grainVal * 0.92 | 0));
+      od[idx + 2] = Math.min(255, Math.max(0, od[idx + 2] + grainVal * 0.82 | 0));
+
+      if (spatter > 0.02) {
+        const s = spatter * 22;
+        od[idx]     = Math.min(255, od[idx]     + s | 0);
+        od[idx + 1] = Math.min(255, od[idx + 1] + s | 0);
+        od[idx + 2] = Math.min(255, od[idx + 2] + s * 0.8 | 0);
+      }
+    }
+  }
+  ctx.putImageData(overlay, 0, 0);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Final vignette — SUBTLE. Center 80% stays fully bright.
+// Only the outer ~15% of the radius dims slightly.
+// ─────────────────────────────────────────────────────────────────────────────
+{
+  // Inner clear zone: 60% of half-width = 150px radius
+  // Outer edge: max opacity 0.18 at canvas corners
+  const grd = ctx.createRadialGradient(CX, CY, W * 0.5, CX, CY, W * 0.82);
+  grd.addColorStop(0,   'rgba(0,0,0,0)');
+  grd.addColorStop(0.7, 'rgba(0,0,0,0.04)');
+  grd.addColorStop(1,   'rgba(0,0,0,0.18)');
+  ctx.fillStyle = grd;
+  ctx.fillRect(0, 0, W, H);
+}
+
+</script>
+</body>
+</html>

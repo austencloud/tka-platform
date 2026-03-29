@@ -1,5 +1,5 @@
 <!--
-  RetroModule.svelte — TKA-OS, ASCII, and Pixel pictograph rendering.
+  RetroModule.svelte — Retro era renderers: 1989 DOS terminal, 1995 Win95 desktop.
   Tabs appear in the sidebar. Navigation handled by the nav system.
 -->
 <script lang="ts">
@@ -7,12 +7,13 @@
   import { RETRO_TABS } from "$lib/shared/navigation/config/tab-definitions";
 
   const tabComponents: Record<string, () => Promise<{ default: any }>> = {
-    desktop: () => import("./win95/components/RetroLab.svelte"),
-    ascii: () => import("./labs/AsciiPictographLab.svelte"),
-    pixel: () => import("./labs/RetroPictographLab.svelte"),
+    dos: () => import("./dos/components/DosTerminal.svelte"),
+    desktop: () => import("./win95/components/shell/RetroDesktop.svelte"),
+    timeline: () => import("./labs/PictographTimelineLab.svelte"),
+    history: () => import("./labs/PictographHistoryLab.svelte"),
   };
 
-  const activeTab = $derived(navigationState.activeTab || RETRO_TABS[0]?.id || "desktop");
+  const activeTab = $derived(navigationState.activeTab || RETRO_TABS[0]?.id || "dos");
 
   let TabComponent = $state<any>(null);
   let loadError = $state<string | null>(null);

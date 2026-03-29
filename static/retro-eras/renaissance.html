@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TKA — Litera A — Studio di Moto Circolare</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #2a1f0e;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      font-family: serif;
+    }
+    canvas {
+      display: block;
+      image-rendering: high-quality;
+    }
+  </style>
+</head>
+<body>
+<canvas id="c" width="500" height="500"></canvas>
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+// ─── Palette ────────────────────────────────────────────────────────────────
+const INK_DARK    = '#3B2A1A';   // primary ink — darkest sepia
+const INK_MED     = '#6B4E32';   // secondary ink — medium sepia
+const INK_LIGHT   = '#9B7A55';   // construction lines
+const INK_GHOST   = '#C4A882';   // faintest annotations
+const PAPER_BASE  = '#F0E0C0';   // warm cream
+const PAPER_AGED  = '#E8D0A0';   // slightly more amber patches
+const FOX_SPOT    = '#C8A86840'; // foxing spots (semi-transparent)
+
+const CX = 250, CY = 250;       // canvas center = pictograph center
+const GRID_R = 130;             // radius to grid points
+
+// ─── Utility helpers ─────────────────────────────────────────────────────────
+function pt(angleDeg, r = GRID_R) {
+  const a = (angleDeg - 90) * Math.PI / 180;
+  return { x: CX + r * Math.cos(a), y: CY + r * Math.sin(a) };
+}
+
+// "Hand-drawn" jitter — very subtle to preserve precision aesthetic
+function jitter(v, amt = 0.6) {
+  return v + (Math.random() - 0.5) * amt;
+}
+
+function lineVar(x1, y1, x2, y2, segments = 12, drift = 0.7) {
+  // Slightly wavering line simulating pen drag
+  ctx.beginPath();
+  ctx.moveTo(jitter(x1, drift), jitter(y1, drift));
+  for (let i = 1; i <= segments; i++) {
+    const t = i / segments;
+    const x = x1 + (x2 - x1) * t;
+    const y = y1 + (y2 - y1) * t;
+    ctx.lineTo(jitter(x, drift), jitter(y, drift));
+  }
+  ctx.stroke();
+}
+
+// Draw a slight-pressure-variation circle
+function circleVar(cx, cy, r, segments = 60, drift = 0.5) {
+  ctx.beginPath();
+  for (let i = 0; i <= segments; i++) {
+    const a = (i / segments) * Math.PI * 2;
+    const rx = cx + (r + (Math.random() - 0.5) * drift) * Math.cos(a);
+    const ry = cy + (r + (Math.random() - 0.5) * drift) * Math.sin(a);
+    i === 0 ? ctx.moveTo(rx, ry) : ctx.lineTo(rx, ry);
+  }
+  ctx.closePath();
+  ctx.stroke();
+}
+
+// ─── 1. Aged paper background ─────────────────────────────────────────────────
+function drawPaper() {
+  // Base cream fill
+  ctx.fillStyle = PAPER_BASE;
+  ctx.fillRect(0, 0, 500, 500);
+
+  // Aged patches — subtle radial gradient variations
+  const patches = [
+    { x: 60,  y: 60,  r: 80,  c: 'rgba(180,140,80,0.12)' },
+    { x: 440, y: 80,  r: 70,  c: 'rgba(160,120,60,0.10)' },
+    { x: 80,  y: 420, r: 90,  c: 'rgba(170,130,70,0.13)' },
+    { x: 430, y: 440, r: 75,  c: 'rgba(180,140,80,0.09)' },
+    { x: 250, y: 250, r: 140, c: 'rgba(200,170,110,0.06)' },
+  ];
+  patches.forEach(p => {
+    const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r);
+    g.addColorStop(0, p.c);
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, 500, 500);
+  });
+
+  // Edge yellowing — vignette burn
+  const edgeGrad = ctx.createRadialGradient(250, 250, 160, 250, 250, 360);
+  edgeGrad.addColorStop(0, 'rgba(0,0,0,0)');
+  edgeGrad.addColorStop(1, 'rgba(90,55,10,0.28)');
+  ctx.fillStyle = edgeGrad;
+  ctx.fillRect(0, 0, 500, 500);
+
+  // Foxing spots — small rust-brown specks scattered across the page
+  const foxPositions = [
+    {x:42, y:38, r:3.5}, {x:88, y:55, r:2}, {x:132, y:22, r:2.8},
+    {x:195, y:41, r:1.8}, {x:318, y:28, r:3}, {x:410, y:45, r:2.2},
+    {x:467, y:33, r:3.8}, {x:22,  y:120, r:2.4}, {x:478, y:155, r:2},
+    {x:15,  y:280, r:3.2}, {x:488, y:320, r:2.6}, {x:28,  y:430, r:2},
+    {x:460, y:460, r:3.5}, {x:390, y:480, r:2.2}, {x:105, y:475, r:2.8},
+    {x:220, y:490, r:1.9}, {x:55,  y:350, r:1.5}, {x:475, y:220, r:2.3},
+    {x:340, y:490, r:1.7}, {x:162, y:488, r:3.1},
+    // smaller mid-page specks
+    {x:155, y:85,  r:1.2}, {x:380, y:110, r:1.4}, {x:420, y:370, r:1.1},
+    {x:75,  y:340, r:1.3}, {x:330, y:155, r:0.9},
+  ];
+  foxPositions.forEach(f => {
+    ctx.beginPath();
+    ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(160,100,40,${0.12 + Math.random() * 0.18})`;
+    ctx.fill();
+    // Inner darker core
+    ctx.beginPath();
+    ctx.arc(f.x, f.y, f.r * 0.5, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(120,70,20,${0.18 + Math.random() * 0.15})`;
+    ctx.fill();
+  });
+
+  // Subtle paper grain — very faint noise texture via tiny dots
+  ctx.save();
+  ctx.globalAlpha = 0.025;
+  for (let i = 0; i < 2400; i++) {
+    const x = Math.random() * 500;
+    const y = Math.random() * 500;
+    ctx.fillStyle = Math.random() > 0.5 ? '#5A3810' : '#F5DEB3';
+    ctx.fillRect(x, y, 1, 1);
+  }
+  ctx.restore();
+}
+
+// ─── 2. Ruled border ──────────────────────────────────────────────────────────
+function drawBorder() {
+  const margin = 18;
+
+  // Outer frame — heavier weight
+  ctx.strokeStyle = INK_MED;
+  ctx.lineWidth = 1.8;
+  ctx.lineJoin = 'round';
+  // Draw with slight hand-wobble
+  ctx.beginPath();
+  ctx.moveTo(jitter(margin), jitter(margin));
+  ctx.lineTo(jitter(500 - margin), jitter(margin));
+  ctx.lineTo(jitter(500 - margin), jitter(500 - margin));
+  ctx.lineTo(jitter(margin), jitter(500 - margin));
+  ctx.closePath();
+  ctx.stroke();
+
+  // Inner rule — thinner, offset inward
+  const m2 = margin + 5;
+  ctx.strokeStyle = INK_LIGHT;
+  ctx.lineWidth = 0.7;
+  ctx.beginPath();
+  ctx.moveTo(jitter(m2), jitter(m2));
+  ctx.lineTo(jitter(500 - m2), jitter(m2));
+  ctx.lineTo(jitter(500 - m2), jitter(500 - m2));
+  ctx.lineTo(jitter(m2), jitter(500 - m2));
+  ctx.closePath();
+  ctx.stroke();
+
+  // Corner ornament ticks
+  const corners = [
+    [margin, margin], [500-margin, margin],
+    [500-margin, 500-margin], [margin, 500-margin]
+  ];
+  ctx.strokeStyle = INK_MED;
+  ctx.lineWidth = 1.2;
+  corners.forEach(([cx, cy]) => {
+    const sgx = cx < 250 ? 1 : -1;
+    const sgy = cy < 250 ? 1 : -1;
+    ctx.beginPath();
+    ctx.moveTo(cx + sgx * 8, cy);
+    ctx.lineTo(cx, cy);
+    ctx.lineTo(cx, cy + sgy * 8);
+    ctx.stroke();
+  });
+}
+
+// ─── 3. Title header (mirror-written + normal) ────────────────────────────────
+function drawTitle() {
+  // Normal italic title at top centre
+  ctx.save();
+  ctx.font = 'italic 13px Georgia, serif';
+  ctx.fillStyle = INK_DARK;
+  ctx.textAlign = 'center';
+  ctx.fillText('Litera  A  ·  Studio di Moto Circolare', 250, 46);
+  ctx.restore();
+
+  // Mirror-written subtitle (da Vinci style) — transform for horizontal flip
+  ctx.save();
+  ctx.translate(250, 65);
+  ctx.scale(-1, 1); // Mirror
+  ctx.font = 'italic 9px Georgia, serif';
+  ctx.fillStyle = INK_GHOST;
+  ctx.textAlign = 'center';
+  ctx.fillText('de instrumentis motus progressivi artis kinestheticae', 0, 0);
+  ctx.restore();
+
+  // Bottom caption — normal, small
+  ctx.save();
+  ctx.font = 'italic 10px Georgia, serif';
+  ctx.fillStyle = INK_LIGHT;
+  ctx.textAlign = 'center';
+  ctx.fillText('Codex Motuum Manuum  ·  Anno Domini MDI', 250, 479);
+  ctx.restore();
+}
+
+// ─── 4. Eight-point grid with surveying marks ─────────────────────────────────
+function drawGrid() {
+  // Faint radial lines from centre to all 8 cardinal/intercardinal points
+  ctx.strokeStyle = INK_GHOST;
+  ctx.lineWidth = 0.5;
+  for (let a = 0; a < 360; a += 45) {
+    const p = pt(a, GRID_R + 20);
+    lineVar(CX, CY, p.x, p.y, 8, 0.4);
+  }
+
+  // Dashed concentric reference circle at GRID_R
+  ctx.strokeStyle = INK_GHOST;
+  ctx.lineWidth = 0.6;
+  ctx.setLineDash([4, 6]);
+  circleVar(CX, CY, GRID_R, 80, 0.4);
+  ctx.setLineDash([]);
+
+  // Outer tick ring — subtle measurement ring at GRID_R + 18
+  ctx.strokeStyle = INK_GHOST;
+  ctx.lineWidth = 0.5;
+  for (let a = 0; a < 360; a += 22.5) {
+    const inner = pt(a, GRID_R + 12);
+    const outer = pt(a, GRID_R + 20);
+    lineVar(inner.x, inner.y, outer.x, outer.y, 3, 0.3);
+  }
+
+  // Eight grid-point marks — small precise circles with crosshairs
+  const gridAngles = [0, 45, 90, 135, 180, 225, 270, 315];
+  const labels = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+  gridAngles.forEach((a, i) => {
+    const p = pt(a);
+    ctx.strokeStyle = INK_MED;
+    ctx.lineWidth = 0.9;
+    circleVar(p.x, p.y, 5, 16, 0.3);
+
+    // Crosshair inside the circle
+    ctx.strokeStyle = INK_MED;
+    ctx.lineWidth = 0.6;
+    lineVar(p.x - 3.5, p.y, p.x + 3.5, p.y, 3, 0.2);
+    lineVar(p.x, p.y - 3.5, p.x, p.y + 3.5, 3, 0.2);
+
+    // Cardinal labels just outside circle
+    const labelPt = pt(a, GRID_R + 30);
+    ctx.save();
+    ctx.font = '8px Georgia, serif';
+    ctx.fillStyle = INK_LIGHT;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(labels[i], labelPt.x, labelPt.y);
+    ctx.restore();
+  });
+
+  // Centre mark — small double circle
+  ctx.strokeStyle = INK_MED;
+  ctx.lineWidth = 0.8;
+  circleVar(CX, CY, 6, 20, 0.3);
+  circleVar(CX, CY, 2, 10, 0.2);
+  ctx.beginPath();
+  ctx.arc(CX, CY, 1.2, 0, Math.PI * 2);
+  ctx.fillStyle = INK_MED;
+  ctx.fill();
+}
+
+// ─── 5. Staves — north (blue→sepia-dark) and south (red→sepia-med) ──────────
+function drawStaves() {
+  const north = pt(0);   // N
+  const south = pt(180); // S
+
+  // ── North stave ──────────────────────────────────────────────────────────
+  // Main shaft — drawn as thick precise technical line
+  ctx.strokeStyle = INK_DARK;
+  ctx.lineWidth = 2.8;
+  ctx.lineCap = 'round';
+  lineVar(north.x - 6, north.y + 18, north.x + 6, north.y - 18, 18, 0.5);
+  // Parallel shadow line for cylinder illusion
+  ctx.strokeStyle = INK_MED;
+  ctx.lineWidth = 0.7;
+  lineVar(north.x - 4.5, north.y + 18, north.x - 4.5, north.y - 18, 8, 0.3);
+  // End caps — small perpendicular tick marks
+  ctx.strokeStyle = INK_DARK;
+  ctx.lineWidth = 1.6;
+  lineVar(north.x - 8, north.y - 16, north.x + 8, north.y - 16, 4, 0.4);
+  lineVar(north.x - 8, north.y + 16, north.x + 8, north.y + 16, 4, 0.4);
+
+  // Stave label: "BACULUS SEPTENTR." near north stave
+  ctx.save();
+  ctx.font = '7.5px Georgia, serif';
+  ctx.fillStyle = INK_MED;
+  ctx.textAlign = 'left';
+  ctx.fillText('Baculus septentrionalis', north.x + 12, north.y - 8);
+  // Small dimension tick
+  ctx.strokeStyle = INK_GHOST;
+  ctx.lineWidth = 0.5;
+  lineVar(north.x + 10, north.y - 18, north.x + 10, north.y + 18, 5, 0.2);
+  lineVar(north.x + 8, north.y - 18, north.x + 12, north.y - 18, 3, 0.2);
+  lineVar(north.x + 8, north.y + 18, north.x + 12, north.y + 18, 3, 0.2);
+  ctx.restore();
+
+  // ── South stave ──────────────────────────────────────────────────────────
+  ctx.strokeStyle = INK_MED;
+  ctx.lineWidth = 2.4;
+  ctx.lineCap = 'round';
+  lineVar(south.x - 6, south.y + 18, south.x + 6, south.y - 18, 18, 0.5);
+  // Parallel shadow line
+  ctx.strokeStyle = INK_LIGHT;
+  ctx.lineWidth = 0.6;
+  lineVar(south.x + 4.5, south.y - 18, south.x + 4.5, south.y + 18, 8, 0.3);
+  // End caps
+  ctx.strokeStyle = INK_MED;
+  ctx.lineWidth = 1.4;
+  lineVar(south.x - 8, south.y - 16, south.x + 8, south.y - 16, 4, 0.4);
+  lineVar(south.x - 8, south.y + 16, south.x + 8, south.y + 16, 4, 0.4);
+
+  // South stave label
+  ctx.save();
+  ctx.font = '7.5px Georgia, serif';
+  ctx.fillStyle = INK_MED;
+  ctx.textAlign = 'right';
+  ctx.fillText('Baculus meridionalis', south.x - 12, south.y + 8);
+  ctx.restore();
+}
+
+// ─── 6. Pro motion arrows with compass-construction geometry ─────────────────
+//  Blue hand: W → N (pro, clockwise arc going through NW quadrant)
+//  Red hand:  E → S (pro, clockwise arc going through SE quadrant)
+// ──────────────────────────────────────────────────────────────────────────────
+function drawArrows() {
+  const W  = pt(270);   // West
+  const N  = pt(0);     // North
+  const E  = pt(90);    // East
+  const S  = pt(180);   // South
+
+  // ── Construction geometry — compass radii (dashed, very faint) ──────────
+
+  // Blue arc: center of compass for W→N arc lies at CX, CY (center)
+  // The arc sweeps from W to N, counterclockwise in standard math (clockwise visually)
+  // Radius = distance from center to grid point = GRID_R
+  // Show construction: dashed radii from center to W and N endpoints
+  ctx.strokeStyle = INK_GHOST;
+  ctx.lineWidth = 0.5;
+  ctx.setLineDash([3, 5]);
+  lineVar(CX, CY, W.x, W.y, 8, 0.4);  // radius to W
+  lineVar(CX, CY, N.x, N.y, 8, 0.4);  // radius to N
+  ctx.setLineDash([]);
+
+  // Small arc tick marks on blue arc construction circle
+  for (let a = 180; a <= 270; a += 15) {
+    const ta = (a - 90) * Math.PI / 180;
+    const p1 = { x: CX + (GRID_R - 5) * Math.cos(ta), y: CY + (GRID_R - 5) * Math.sin(ta) };
+    const p2 = { x: CX + (GRID_R + 5) * Math.cos(ta), y: CY + (GRID_R + 5) * Math.sin(ta) };
+    ctx.strokeStyle = INK_GHOST;
+    ctx.lineWidth = 0.4;
+    lineVar(p1.x, p1.y, p2.x, p2.y, 2, 0.2);
+  }
+
+  // Red arc: same center, same radius, sweeps from E to S
+  ctx.strokeStyle = INK_GHOST;
+  ctx.lineWidth = 0.5;
+  ctx.setLineDash([3, 5]);
+  lineVar(CX, CY, E.x, E.y, 8, 0.4);
+  lineVar(CX, CY, S.x, S.y, 8, 0.4);
+  ctx.setLineDash([]);
+
+  // Red arc tick marks
+  for (let a = 0; a <= 90; a += 15) {
+    const ta = (a - 90) * Math.PI / 180;
+    const p1 = { x: CX + (GRID_R - 5) * Math.cos(ta), y: CY + (GRID_R - 5) * Math.sin(ta) };
+    const p2 = { x: CX + (GRID_R + 5) * Math.cos(ta), y: CY + (GRID_R + 5) * Math.sin(ta) };
+    ctx.strokeStyle = INK_GHOST;
+    ctx.lineWidth = 0.4;
+    lineVar(p1.x, p1.y, p2.x, p2.y, 2, 0.2);
+  }
+
+  // ── Blue arc: W → N (clockwise visually = counterclockwise in canvas angles) ─
+  // Canvas angles: 0=right, π/2=down. Grid angles: 0=up (N), 90=right (E)
+  // W = 270° grid = 180° canvas. N = 0° grid = -90° canvas (=270°).
+  // Arc from W to N going through NW: canvas from 180° to 270° (counterclockwise = false means we go shorter way)
+  // Actually W is 270° grid → canvas angle = (270-90)*π/180 = 180° = π
+  // N is 0° grid → canvas angle = (0-90)*π/180 = -90° = 270° = 3π/2
+  // Going through NW (315° grid = 225° canvas) → from π to 3π/2 counterclockwise (going π → 3π/2 the long way)
+  // In canvas arc(cx, cy, r, startAngle, endAngle, anticlockwise):
+  //   start = π (W), end = 3π/2 (N), anticlockwise = true goes π → π/2 → 0 → 3π/2 → through NW
+  // Let's verify: going anticlockwise from π: π → 3π/4 (NW canvas) → π/2 → ... → 3π/2
+  // Yes, 3π/4 is NW in canvas = 135° canvas → grid angle 135+90=225° (SW). That's wrong.
+  // Let me re-derive carefully:
+  // Canvas angle 0 = East, increases clockwise. Grid: 0=N, 90=E, 180=S, 270=W.
+  // grid_to_canvas(g) = (g - 90) * π/180
+  // W  = grid 270° → canvas (270-90)*π/180 = 180° = π ✓
+  // N  = grid 0°   → canvas (0-90)*π/180   = -90° = -π/2 (= 3π/2 after mod)
+  // NW = grid 315° → canvas (315-90)*π/180 = 225° = 5π/4
+  // Arc through NW going from W to N: start at π, pass through 5π/4, arrive at 3π/2
+  // That direction is CLOCKWISE in canvas (increasing angle π → 5π/4 → 3π/2).
+  // So: arc(CX, CY, GRID_R, π, -π/2, false) [false = clockwise in canvas]
+  const W_angle = Math.PI;           // canvas angle for W
+  const N_angle = -Math.PI / 2;      // canvas angle for N (= 3π/2)
+  const E_angle = 0;                 // canvas angle for E
+  const S_angle = Math.PI / 2;       // canvas angle for S
+
+  // Blue arc stroke — drawn with slight line weight variation via manual segmentation
+  ctx.save();
+  ctx.strokeStyle = INK_DARK;
+  ctx.lineWidth = 2.2;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  // Draw arc as polyline segments with slight jitter for hand-drawn feel
+  const numSeg = 36;
+  ctx.beginPath();
+  for (let i = 0; i <= numSeg; i++) {
+    const t = i / numSeg;
+    // Clockwise from W_angle (π) to N_angle (-π/2 = 3π/2):
+    // going clockwise means angle increases: π → 3π/2
+    const startA = Math.PI;
+    const endA   = Math.PI * 1.5;
+    const a = startA + (endA - startA) * t;
+    const r = GRID_R + (Math.random() - 0.5) * 0.8;
+    const x = CX + r * Math.cos(a);
+    const y = CY + r * Math.sin(a);
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+
+  // Blue arc: arrowhead at N end — tangent direction at N (clockwise arc, arriving at 3π/2)
+  // At canvas angle 3π/2, tangent of clockwise arc points in direction of increasing angle:
+  // d/dθ of (cos θ, sin θ) = (-sin θ, cos θ). At 3π/2: (-sin(3π/2), cos(3π/2)) = (1, 0) → pointing East.
+  // But N is at top of grid — arrow should point toward N (up on canvas). Let me re-check arc direction.
+  // Actually for clockwise arc (anticlockwise=false in canvas, angle increases), the path goes
+  // from W (left) clockwise through NW (upper-left) to N (top). So at N the arrow tip points East? No...
+  // At top of circle, going clockwise, the tangent points to the right (East). But the stave is at N.
+  // The arrowhead should point INTO the N stave — so pointing roughly East/right at that point. ✓
+  const arrAngle = Math.PI * 1.5; // angle of arrival
+  const tx =  -Math.sin(arrAngle); // tangent x = -sin(θ) for clockwise
+  const ty =   Math.cos(arrAngle); // tangent y =  cos(θ) for clockwise
+  // Arrow tip at N grid point
+  const tipBx = CX + GRID_R * Math.cos(arrAngle);
+  const tipBy = CY + GRID_R * Math.sin(arrAngle);
+  drawArrowhead(tipBx, tipBy, tx, ty, 9, INK_DARK, 2.0);
+
+  // Blue annotation: "motus dexter" (right/clockwise motion)
+  ctx.font = 'italic 8px Georgia, serif';
+  ctx.fillStyle = INK_MED;
+  ctx.textAlign = 'center';
+  ctx.fillText('motus dexter', CX - 72, CY - 72);
+  // Arc length annotation
+  ctx.font = '7px Georgia, serif';
+  ctx.fillStyle = INK_GHOST;
+  ctx.fillText('¼ circuli', CX - 85, CY - 58);
+  ctx.restore();
+
+  // Red arc: E → S (clockwise through SE: E_angle=0 to S_angle=π/2)
+  ctx.save();
+  ctx.strokeStyle = INK_MED;
+  ctx.lineWidth = 1.9;
+  ctx.lineCap = 'round';
+
+  ctx.beginPath();
+  for (let i = 0; i <= numSeg; i++) {
+    const t = i / numSeg;
+    const startA = 0;           // E
+    const endA   = Math.PI / 2; // S
+    const a = startA + (endA - startA) * t;
+    const r = GRID_R + (Math.random() - 0.5) * 0.8;
+    const x = CX + r * Math.cos(a);
+    const y = CY + r * Math.sin(a);
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+
+  // Red arc arrowhead at S (arrival angle = π/2)
+  const arrAngleR = Math.PI / 2;
+  const txR = -Math.sin(arrAngleR);
+  const tyR =  Math.cos(arrAngleR);
+  const tipRx = CX + GRID_R * Math.cos(arrAngleR);
+  const tipRy = CY + GRID_R * Math.sin(arrAngleR);
+  drawArrowhead(tipRx, tipRy, txR, tyR, 8, INK_MED, 1.7);
+
+  // Red annotation
+  ctx.font = 'italic 8px Georgia, serif';
+  ctx.fillStyle = INK_MED;
+  ctx.textAlign = 'center';
+  ctx.fillText('motus dexter', CX + 74, CY + 72);
+  ctx.font = '7px Georgia, serif';
+  ctx.fillStyle = INK_GHOST;
+  ctx.fillText('¼ circuli', CX + 86, CY + 58);
+  ctx.restore();
+
+  // Compass centre mark for arcs — small circle at CX, CY showing it's the pivot
+  ctx.save();
+  ctx.strokeStyle = INK_GHOST;
+  ctx.lineWidth = 0.5;
+  circleVar(CX, CY, 10, 20, 0.3);
+  ctx.font = '6.5px Georgia, serif';
+  ctx.fillStyle = INK_GHOST;
+  ctx.textAlign = 'left';
+  ctx.fillText('centrum', CX + 12, CY - 4);
+  ctx.restore();
+}
+
+// Helper: draw a small triangular arrowhead at (tx, ty) pointing in direction (dx, dy)
+function drawArrowhead(tipX, tipY, dx, dy, size, color, lw) {
+  const len = Math.sqrt(dx * dx + dy * dy);
+  const ux = dx / len;
+  const uy = dy / len;
+  const px = -uy; // perpendicular
+  const py =  ux;
+
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  ctx.lineWidth = lw;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  ctx.beginPath();
+  ctx.moveTo(tipX, tipY);
+  ctx.lineTo(tipX - ux * size + px * (size * 0.38), tipY - uy * size + py * (size * 0.38));
+  ctx.lineTo(tipX - ux * (size * 0.55), tipY - uy * (size * 0.55)); // slight concavity
+  ctx.lineTo(tipX - ux * size - px * (size * 0.38), tipY - uy * size - py * (size * 0.38));
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+// ─── 7. Large italic "A" — elegant hand lettering in centre margin ─────────────
+function drawLetterA() {
+  // Big ornamental A in top-left corner (notebook heading style)
+  ctx.save();
+  ctx.font = 'bold italic 64px Georgia, serif';
+  ctx.fillStyle = 'rgba(59,42,26,0.18)';  // very faint ghost letter behind
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillText('A', 30, 70);
+
+  ctx.font = 'bold italic 42px Georgia, serif';
+  ctx.fillStyle = INK_DARK;
+  ctx.fillText('A', 32, 72);
+  ctx.restore();
+
+  // Mirror-written annotation beside the A
+  ctx.save();
+  ctx.translate(38, 122);
+  ctx.scale(-1, 1);
+  ctx.font = 'italic 7.5px Georgia, serif';
+  ctx.fillStyle = INK_GHOST;
+  ctx.textAlign = 'left';
+  ctx.fillText('forma prima — litera progreditur', 0, 0);
+  ctx.restore();
+
+  // Pro motion indicator note
+  ctx.save();
+  ctx.font = 'italic 8px Georgia, serif';
+  ctx.fillStyle = INK_LIGHT;
+  ctx.textAlign = 'right';
+  ctx.fillText('Manus dextera · Pro motu', 468, 90);
+  ctx.fillText('Manus sinistra · Pro motu', 468, 103);
+  ctx.restore();
+}
+
+// ─── 8. Margin annotations — measurement notes, Latin labels ──────────────────
+function drawAnnotations() {
+  ctx.save();
+  ctx.font = 'italic 7px Georgia, serif';
+  ctx.fillStyle = INK_GHOST;
+  ctx.textAlign = 'left';
+
+  // Left margin notes (mirror-written)
+  const leftNotes = [
+    { x: 28, y: 190, text: 'radius: r', mirror: true },
+    { x: 28, y: 210, text: 'arcus: ¼π', mirror: true },
+    { x: 28, y: 230, text: 'angulus: 90°', mirror: true },
+  ];
+  leftNotes.forEach(n => {
+    if (n.mirror) {
+      ctx.save();
+      const tw = ctx.measureText(n.text).width;
+      ctx.translate(n.x + tw, n.y);
+      ctx.scale(-1, 1);
+      ctx.fillText(n.text, 0, 0);
+      ctx.restore();
+    } else {
+      ctx.fillText(n.text, n.x, n.y);
+    }
+  });
+
+  // Right margin notes — normal
+  ctx.textAlign = 'right';
+  const rightNotes = [
+    { x: 472, y: 190, text: 'positio: alpha' },
+    { x: 472, y: 205, text: 'manus sinistera: N' },
+    { x: 472, y: 220, text: 'manus dextera: S' },
+    { x: 472, y: 240, text: 'motus: progressivus' },
+  ];
+  rightNotes.forEach(n => ctx.fillText(n.text, n.x, n.y));
+
+  // Bottom margin measurement note
+  ctx.textAlign = 'left';
+  ctx.fillText('viii · puncti · in · circulo · inscripto', 36, 462);
+
+  ctx.restore();
+
+  // Small tick-marks along left border as measurement scale
+  ctx.strokeStyle = INK_GHOST;
+  ctx.lineWidth = 0.4;
+  for (let y = 80; y <= 440; y += 20) {
+    const isMajor = ((y - 80) % 60 === 0);
+    const len = isMajor ? 8 : 5;
+    lineVar(28, y, 28 + len, y, 2, 0.2);
+    if (isMajor) {
+      ctx.save();
+      ctx.font = '6px Georgia, serif';
+      ctx.fillStyle = INK_GHOST;
+      ctx.textAlign = 'left';
+      ctx.fillText(String(Math.round((y - 80) / 3)), 38, y + 3);
+      ctx.restore();
+    }
+  }
+}
+
+// ─── 9. Small compass rose decoration in bottom-right corner ─────────────────
+function drawCompassRose() {
+  const rx = 450, ry = 442, rr = 18;
+
+  ctx.strokeStyle = INK_LIGHT;
+  ctx.lineWidth = 0.7;
+  circleVar(rx, ry, rr, 32, 0.3);
+
+  // 4 main compass arms
+  const dirs = [{a:0,l:'S'},{a:90,l:'E'},{a:180,l:'N'},{a:270,l:'O'}]; // O=Occidente (West)
+  dirs.forEach(d => {
+    const inner = pt_local(d.a, 4, rx, ry);
+    const outer = pt_local(d.a, rr - 3, rx, ry);
+    const tip   = pt_local(d.a, rr + 4, rx, ry);
+    ctx.strokeStyle = INK_DARK;
+    ctx.lineWidth = 1.0;
+    lineVar(inner.x, inner.y, outer.x, outer.y, 4, 0.3);
+    // Small arrowhead
+    ctx.fillStyle = INK_MED;
+    ctx.beginPath();
+    ctx.arc(tip.x, tip.y, 1.5, 0, Math.PI * 2);
+    ctx.fill();
+    // Label
+    ctx.save();
+    const lp = pt_local(d.a, rr + 10, rx, ry);
+    ctx.font = '6px Georgia, serif';
+    ctx.fillStyle = INK_MED;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(d.l, lp.x, lp.y);
+    ctx.restore();
+  });
+
+  // 4 diagonal light arms
+  [45, 135, 225, 315].forEach(a => {
+    const inner = pt_local(a, 3, rx, ry);
+    const outer = pt_local(a, rr - 6, rx, ry);
+    ctx.strokeStyle = INK_GHOST;
+    ctx.lineWidth = 0.5;
+    lineVar(inner.x, inner.y, outer.x, outer.y, 3, 0.2);
+  });
+
+  // Centre dot
+  ctx.beginPath();
+  ctx.arc(rx, ry, 2, 0, Math.PI * 2);
+  ctx.fillStyle = INK_DARK;
+  ctx.fill();
+}
+
+function pt_local(angleDeg, r, cx, cy) {
+  const a = (angleDeg - 90) * Math.PI / 180;
+  return { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) };
+}
+
+// ─── 10. Final ink-bleed vignette overlay ─────────────────────────────────────
+function drawFinalOverlay() {
+  // Subtle ink-stain around the central diagram area
+  const stain = ctx.createRadialGradient(CX, CY, 60, CX, CY, 200);
+  stain.addColorStop(0, 'rgba(0,0,0,0)');
+  stain.addColorStop(1, 'rgba(50,30,10,0.04)');
+  ctx.fillStyle = stain;
+  ctx.fillRect(0, 0, 500, 500);
+}
+
+// ─── Render pipeline ──────────────────────────────────────────────────────────
+// Use a seeded pseudo-random for reproducibility (override Math.random)
+let _seed = 42;
+const origRandom = Math.random;
+Math.random = function() {
+  _seed = (_seed * 9301 + 49297) % 233280;
+  return _seed / 233280;
+};
+
+drawPaper();
+drawBorder();
+drawTitle();
+drawGrid();
+drawStaves();
+drawArrows();
+drawLetterA();
+drawAnnotations();
+drawCompassRose();
+drawFinalOverlay();
+
+Math.random = origRandom; // restore
+</script>
+</body>
+</html>

@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TKA Letter A — Egyptian Hieroglyph</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #2a1f0e;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      font-family: serif;
+    }
+    canvas {
+      display: block;
+      image-rendering: pixelated;
+    }
+    .caption {
+      color: #C5A54E;
+      font-size: 13px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      margin-top: 14px;
+      opacity: 0.7;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="canvas" width="500" height="500"></canvas>
+  <div class="caption">TKA Letter A · Egyptian Scribe · c. 3000 BC</div>
+
+  <script>
+  (function () {
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const W = 500, H = 500;
+
+    // ─── Palette ─────────────────────────────────────────────────────────────
+    const SAND_LIGHT    = '#D9B97A';
+    const SAND_MID      = '#C4A05C';
+    const SAND_DARK     = '#A07840';
+    const PAPYRUS_GRAIN = '#B8904A';
+    const BLACK         = '#1A0F00';
+    const LAPIS         = '#2E5090';   // Egyptian blue (blue staff / hand)
+    const VERMILLION    = '#C13B2A';   // Egyptian red (red staff / hand)
+    const GOLD          = '#C5A54E';
+    const GOLD_DARK     = '#8B6914';
+    const CREAM         = '#EDD9A0';
+    const SHADOW        = 'rgba(26,15,0,0.35)';
+
+    // ─── Sandstone background with texture ───────────────────────────────────
+    function drawBackground() {
+      // Base warm sand gradient
+      const bg = ctx.createLinearGradient(0, 0, W, H);
+      bg.addColorStop(0,    '#D2AA6A');
+      bg.addColorStop(0.3,  '#C4985C');
+      bg.addColorStop(0.65, '#CEAA72');
+      bg.addColorStop(1,    '#BA8F50');
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, W, H);
+
+      // Papyrus / stone grain lines — horizontal striations
+      ctx.save();
+      ctx.globalAlpha = 0.08;
+      for (let y = 0; y < H; y += 3) {
+        const noise = Math.sin(y * 0.7) * 2 + Math.cos(y * 0.31) * 1.5;
+        ctx.strokeStyle = (y % 6 < 3) ? '#8B6000' : '#E8CC80';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(0, y + noise);
+        ctx.lineTo(W, y + noise * 0.6);
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      // Scattered grain specks
+      ctx.save();
+      ctx.globalAlpha = 0.06;
+      const seedX = [23, 77, 134, 198, 256, 311, 378, 423, 467, 12, 89, 145, 203, 267, 324, 389, 431, 478, 55, 112, 166, 222, 287, 345, 401, 451, 489];
+      const seedY = [18, 45, 88, 133, 176, 221, 267, 312, 358, 401, 447, 482, 29, 74, 119, 164, 209, 254, 299, 344, 389, 434, 479, 38, 83, 128, 173, 218, 263, 308, 353, 398, 443, 488];
+      for (let i = 0; i < 200; i++) {
+        const sx = seedX[i % seedX.length] * ((i * 17 + 3) % 7) % W;
+        const sy = seedY[i % seedY.length] * ((i * 13 + 5) % 5) % H;
+        ctx.fillStyle = (i % 3 === 0) ? '#6B4400' : '#F0D080';
+        ctx.fillRect(sx, sy, 1, 1);
+      }
+      ctx.restore();
+    }
+
+    // ─── Outer decorative border band ────────────────────────────────────────
+    function drawOuterBorder() {
+      const margin = 14;
+      const bw = 18; // band width
+
+      // Outer rectangle — thick gold frame
+      ctx.save();
+      ctx.strokeStyle = BLACK;
+      ctx.lineWidth = 2;
+
+      // Band fill
+      ctx.fillStyle = GOLD_DARK;
+      ctx.fillRect(margin, margin, W - margin*2, bw);                     // top
+      ctx.fillRect(margin, H - margin - bw, W - margin*2, bw);            // bottom
+      ctx.fillRect(margin, margin, bw, H - margin*2);                      // left
+      ctx.fillRect(W - margin - bw, margin, bw, H - margin*2);            // right
+
+      // Gold band outlines
+      ctx.strokeRect(margin, margin, W - margin*2, bw);
+      ctx.strokeRect(margin, H - margin - bw, W - margin*2, bw);
+      ctx.strokeRect(margin, margin, bw, H - margin*2);
+      ctx.strokeRect(W - margin - bw, margin, bw, H - margin*2);
+
+      // Decorative repeating ankh/lotus pattern along top band
+      drawBandPattern(margin + bw, margin, W - margin*2 - bw*2, bw, 'horizontal');
+      drawBandPattern(margin + bw, H - margin - bw, W - margin*2 - bw*2, bw, 'horizontal');
+      drawBandPattern(margin, margin + bw, bw, H - margin*2 - bw*2, 'vertical');
+      drawBandPattern(W - margin - bw, margin + bw, bw, H - margin*2 - bw*2, 'vertical');
+
+      // Corner squares — gold filled
+      ctx.fillStyle = GOLD;
+      ctx.fillRect(margin, margin, bw, bw);
+      ctx.fillRect(W - margin - bw, margin, bw, bw);
+      ctx.fillRect(margin, H - margin - bw, bw, bw);
+      ctx.fillRect(W - margin - bw, H - margin - bw, bw, bw);
+
+      // Corner rosettes
+      drawRosette(margin + bw/2, margin + bw/2, 6);
+      drawRosette(W - margin - bw/2, margin + bw/2, 6);
+      drawRosette(margin + bw/2, H - margin - bw/2, 6);
+      drawRosette(W - margin - bw/2, H - margin - bw/2, 6);
+
+      // Inner border line
+      const inner = margin + bw + 4;
+      ctx.strokeStyle = BLACK;
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(inner, inner, W - inner*2, H - inner*2);
+      ctx.restore();
+    }
+
+    function drawBandPattern(x, y, w, h, dir) {
+      const isH = dir === 'horizontal';
+      const step = isH ? h : w;
+      const count = Math.floor((isH ? w : h) / step);
+      ctx.save();
+      for (let i = 0; i < count; i++) {
+        const cx = isH ? x + i * step + step/2 : x + w/2;
+        const cy = isH ? y + h/2 : y + i * step + step/2;
+        // Small ankh cross
+        ctx.fillStyle = GOLD;
+        ctx.strokeStyle = BLACK;
+        ctx.lineWidth = 0.8;
+        // Loop top of ankh
+        ctx.beginPath();
+        ctx.ellipse(cx, cy - 2, 3, 3.5, 0, 0, Math.PI * 2);
+        ctx.fillStyle = CREAM;
+        ctx.fill();
+        ctx.stroke();
+        // Cross stem
+        ctx.fillStyle = CREAM;
+        ctx.fillRect(cx - 1, cy + 1, 2, 4.5);
+        ctx.strokeRect(cx - 1, cy + 1, 2, 4.5);
+        // Cross arms
+        ctx.fillRect(cx - 3.5, cy + 1, 7, 2);
+        ctx.strokeRect(cx - 3.5, cy + 1, 7, 2);
+      }
+      ctx.restore();
+    }
+
+    // ─── Cartouche for the letter A ───────────────────────────────────────────
+    function drawCartouche() {
+      const cx = 250, cy = 68;
+      const rx = 44, ry = 20;
+      const lw = 3;
+
+      ctx.save();
+      ctx.shadowColor = 'rgba(0,0,0,0.4)';
+      ctx.shadowBlur = 4;
+      ctx.shadowOffsetY = 2;
+
+      // Cartouche fill
+      const cartFill = ctx.createLinearGradient(cx - rx, cy - ry, cx + rx, cy + ry);
+      cartFill.addColorStop(0, '#E8CC80');
+      cartFill.addColorStop(1, '#C5A54E');
+      ctx.fillStyle = cartFill;
+
+      // Oval
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = BLACK;
+      ctx.lineWidth = lw;
+      ctx.stroke();
+
+      // Cartouche base bar
+      ctx.fillStyle = GOLD;
+      ctx.fillRect(cx - rx, cy + ry - 1, rx * 2, lw + 2);
+      ctx.strokeStyle = BLACK;
+      ctx.lineWidth = 1;
+      ctx.strokeRect(cx - rx, cy + ry - 1, rx * 2, lw + 2);
+
+      // Vertical binding lines (left/right of base)
+      ctx.lineWidth = lw;
+      ctx.strokeStyle = BLACK;
+      ctx.beginPath();
+      ctx.moveTo(cx - rx, cy + ry - 1);
+      ctx.lineTo(cx - rx, cy + ry + lw + 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(cx + rx, cy + ry - 1);
+      ctx.lineTo(cx + rx, cy + ry + lw + 2);
+      ctx.stroke();
+
+      ctx.shadowColor = 'transparent';
+
+      // Letter "A" in hieroglyph style — wedge/ox glyph shape
+      drawHieroglyphA(cx, cy);
+
+      ctx.restore();
+    }
+
+    function drawHieroglyphA(cx, cy) {
+      // Stylized vulture / arm glyph for "A" — simplified as a wedge arm shape
+      ctx.save();
+      ctx.fillStyle = BLACK;
+      ctx.strokeStyle = BLACK;
+      ctx.lineWidth = 1;
+
+      // Upper arm stroke (simplified arm glyph)
+      // Horizontal bar with angled serif
+      const bx = cx - 18, by = cy - 4;
+
+      // Main body wedge
+      ctx.beginPath();
+      ctx.moveTo(bx, by + 8);
+      ctx.lineTo(bx + 36, by + 8);
+      ctx.lineTo(bx + 32, by);
+      ctx.lineTo(bx + 4, by);
+      ctx.closePath();
+      ctx.fill();
+
+      // Left serif post
+      ctx.fillRect(bx, by - 6, 4, 14);
+
+      // Right short serif
+      ctx.fillRect(bx + 32, by - 3, 4, 11);
+
+      // Small dot mark below (phonetic complement)
+      ctx.beginPath();
+      ctx.arc(cx, by + 14, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    // ─── Grid points as lotus rosettes ───────────────────────────────────────
+    function drawRosette(x, y, r) {
+      ctx.save();
+      ctx.fillStyle = GOLD;
+      ctx.strokeStyle = BLACK;
+      ctx.lineWidth = 0.7;
+      // 8 petals
+      for (let i = 0; i < 8; i++) {
+        const angle = (i / 8) * Math.PI * 2;
+        const px = x + Math.cos(angle) * r * 0.55;
+        const py = y + Math.sin(angle) * r * 0.55;
+        ctx.beginPath();
+        ctx.ellipse(px, py, r * 0.32, r * 0.55, angle, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      }
+      // Center circle
+      ctx.beginPath();
+      ctx.arc(x, y, r * 0.28, 0, Math.PI * 2);
+      ctx.fillStyle = CREAM;
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawGridDot(x, y) {
+      // Lotus rosette at each grid point
+      drawRosette(x, y, 9);
+    }
+
+    // ─── Grid layout ─────────────────────────────────────────────────────────
+    // TKA 8-point grid:  N, NE, E, SE, S, SW, W, NW + center
+    // Center of composition:
+    const GCX = 250, GCY = 268;
+    const GR  = 88;  // grid radius
+
+    const gridPoints = {
+      N:  { x: GCX,        y: GCY - GR      },
+      NE: { x: GCX + GR * Math.SQRT1_2, y: GCY - GR * Math.SQRT1_2 },
+      E:  { x: GCX + GR,   y: GCY           },
+      SE: { x: GCX + GR * Math.SQRT1_2, y: GCY + GR * Math.SQRT1_2 },
+      S:  { x: GCX,        y: GCY + GR      },
+      SW: { x: GCX - GR * Math.SQRT1_2, y: GCY + GR * Math.SQRT1_2 },
+      W:  { x: GCX - GR,   y: GCY           },
+      NW: { x: GCX - GR * Math.SQRT1_2, y: GCY - GR * Math.SQRT1_2 },
+    };
+
+    // ─── Draw faint grid lines ────────────────────────────────────────────────
+    function drawGrid() {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(26,15,0,0.12)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3, 4]);
+
+      const pairs = [['N','S'],['E','W'],['NE','SW'],['NW','SE']];
+      for (const [a,b] of pairs) {
+        ctx.beginPath();
+        ctx.moveTo(gridPoints[a].x, gridPoints[a].y);
+        ctx.lineTo(gridPoints[b].x, gridPoints[b].y);
+        ctx.stroke();
+      }
+
+      // Outer ring (simplified octagon)
+      ctx.setLineDash([2, 3]);
+      ctx.beginPath();
+      const pts = ['N','NE','E','SE','S','SW','W','NW','N'];
+      ctx.moveTo(gridPoints['N'].x, gridPoints['N'].y);
+      for (const k of pts) ctx.lineTo(gridPoints[k].x, gridPoints[k].y);
+      ctx.stroke();
+
+      ctx.restore();
+
+      // Grid point rosettes at cardinal & intercardinal positions
+      for (const key of ['N','E','S','W','NE','SE','SW','NW']) {
+        drawGridDot(gridPoints[key].x, gridPoints[key].y);
+      }
+      // Center rosette (slightly bigger)
+      drawRosette(GCX, GCY, 12);
+    }
+
+    // ─── Egyptian-style flat staff ────────────────────────────────────────────
+    // Profile view: a flat stick painted like a tomb painting — thick, bold outlines
+    function drawStaff(x1, y1, x2, y2, color) {
+      const dx = x2 - x1, dy = y2 - y1;
+      const len = Math.sqrt(dx*dx + dy*dy);
+      const nx = -dy / len, ny = dx / len;
+      const hw = 5.5; // half-width of staff
+
+      // Shadow
+      ctx.save();
+      ctx.globalAlpha = 0.22;
+      ctx.fillStyle = BLACK;
+      ctx.beginPath();
+      ctx.moveTo(x1 + nx*hw + 2, y1 + ny*hw + 2);
+      ctx.lineTo(x2 + nx*hw + 2, y2 + ny*hw + 2);
+      ctx.lineTo(x2 - nx*hw + 2, y2 - ny*hw + 2);
+      ctx.lineTo(x1 - nx*hw + 2, y1 - ny*hw + 2);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+
+      // Staff body — flat fill, Egyptian style
+      ctx.save();
+      ctx.fillStyle = color;
+      ctx.strokeStyle = BLACK;
+      ctx.lineWidth = 2.2;
+      ctx.lineJoin = 'round';
+
+      ctx.beginPath();
+      ctx.moveTo(x1 + nx*hw, y1 + ny*hw);
+      ctx.lineTo(x2 + nx*hw, y2 + ny*hw);
+      ctx.lineTo(x2 - nx*hw, y2 - ny*hw);
+      ctx.lineTo(x1 - nx*hw, y1 - ny*hw);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // End caps — rounded knob
+      ctx.fillStyle = CREAM;
+      ctx.beginPath();
+      ctx.arc(x1, y1, hw * 0.9, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = BLACK;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      ctx.fillStyle = CREAM;
+      ctx.beginPath();
+      ctx.arc(x2, y2, hw * 0.9, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      // Grip wrap bands (3 diagonal bands near center)
+      const midX = (x1+x2)/2, midY = (y1+y2)/2;
+      const ux = dx/len, uy = dy/len;
+      ctx.strokeStyle = BLACK;
+      ctx.lineWidth = 1;
+      ctx.globalAlpha = 0.35;
+      for (let i = -1; i <= 1; i++) {
+        const bx = midX + ux * i * 10;
+        const by = midY + uy * i * 10;
+        ctx.beginPath();
+        ctx.moveTo(bx + nx*(hw+1), by + ny*(hw+1));
+        ctx.lineTo(bx - nx*(hw+1), by - ny*(hw+1));
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    // ─── Motion arrow in Egyptian flat style ─────────────────────────────────
+    // Pro motion: curves from start to end, with bold Egyptian arrowhead
+    function drawProArrow(startAngle, endAngle, color) {
+      // Arc drawn from startAngle to endAngle around the grid center
+      // Blue: W->N (270->360 degrees), Red: E->S (0->90 degrees)
+      // We draw a thick arc on the grid circle, then add arrowhead
+
+      const startRad = startAngle * Math.PI / 180;
+      const endRad   = endAngle   * Math.PI / 180;
+
+      // Arrow travels counter-clockwise for blue (W to N: 270->360=0),
+      // clockwise for red (E to S: 0->90).
+
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 8;
+      ctx.lineCap = 'butt';
+      ctx.lineJoin = 'round';
+
+      // Shadow
+      ctx.shadowColor = 'rgba(0,0,0,0.3)';
+      ctx.shadowBlur = 3;
+      ctx.shadowOffsetX = 2;
+      ctx.shadowOffsetY = 2;
+
+      const arrowR = GR * 0.72;  // slightly inside grid radius
+
+      // Determine arc direction
+      const isBlue = (color === LAPIS);
+      const ccw = isBlue; // blue goes CCW (W to N), red goes CW (E to S)
+
+      ctx.beginPath();
+      ctx.arc(GCX, GCY, arrowR, startRad, endRad, ccw);
+      ctx.stroke();
+
+      ctx.shadowColor = 'transparent';
+
+      // Black outline pass (slightly wider, drawn beneath)
+      ctx.globalCompositeOperation = 'destination-over';
+      ctx.strokeStyle = BLACK;
+      ctx.lineWidth = 12;
+      ctx.beginPath();
+      ctx.arc(GCX, GCY, arrowR, startRad, endRad, ccw);
+      ctx.stroke();
+      ctx.globalCompositeOperation = 'source-over';
+
+      // Re-draw color on top
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 8;
+      ctx.beginPath();
+      ctx.arc(GCX, GCY, arrowR, startRad, endRad, ccw);
+      ctx.stroke();
+
+      // Egyptian-style arrowhead at end of arc
+      // Find tangent direction at endRad (for CCW or CW)
+      const arrowTipX = GCX + Math.cos(endRad) * arrowR;
+      const arrowTipY = GCY + Math.sin(endRad) * arrowR;
+
+      // Tangent: for CW motion, tangent = (sin, -cos); for CCW = (-sin, cos)
+      let tanX, tanY;
+      if (ccw) {
+        tanX = Math.sin(endRad);
+        tanY = -Math.cos(endRad);
+      } else {
+        tanX = -Math.sin(endRad);
+        tanY = Math.cos(endRad);
+      }
+
+      drawEgyptianArrowhead(arrowTipX, arrowTipY, tanX, tanY, color);
+      ctx.restore();
+    }
+
+    function drawEgyptianArrowhead(tx, ty, dirX, dirY, color) {
+      // Bold flat triangular arrowhead — Egyptian style, no perspective
+      const len = 20, hw = 9;
+      const nx = -dirY, ny = dirX;  // perpendicular
+
+      const tip   = { x: tx + dirX * len * 0.5, y: ty + dirY * len * 0.5 };
+      const base1 = { x: tx - dirX * len * 0.5 + nx * hw, y: ty - dirY * len * 0.5 + ny * hw };
+      const base2 = { x: tx - dirX * len * 0.5 - nx * hw, y: ty - dirY * len * 0.5 - ny * hw };
+      // Small notch at base (Egyptian feathered look)
+      const notch = { x: tx - dirX * len * 0.15, y: ty - dirY * len * 0.15 };
+
+      ctx.save();
+      // Shadow
+      ctx.fillStyle = 'rgba(0,0,0,0.3)';
+      ctx.beginPath();
+      ctx.moveTo(tip.x+2, tip.y+2);
+      ctx.lineTo(base1.x+2, base1.y+2);
+      ctx.lineTo(notch.x+2, notch.y+2);
+      ctx.lineTo(base2.x+2, base2.y+2);
+      ctx.closePath();
+      ctx.fill();
+
+      // Arrowhead fill
+      ctx.fillStyle = color;
+      ctx.strokeStyle = BLACK;
+      ctx.lineWidth = 2;
+      ctx.lineJoin = 'miter';
+      ctx.beginPath();
+      ctx.moveTo(tip.x, tip.y);
+      ctx.lineTo(base1.x, base1.y);
+      ctx.lineTo(notch.x, notch.y);
+      ctx.lineTo(base2.x, base2.y);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // ─── Hands (profile view Egyptian style) ─────────────────────────────────
+    function drawHand(x, y, color, direction) {
+      // Flat Egyptian profile hand — simplified to palm + fingers suggestion
+      ctx.save();
+      ctx.fillStyle = color;
+      ctx.strokeStyle = BLACK;
+      ctx.lineWidth = 1.8;
+
+      const angle = direction === 'up' ? -Math.PI/2 :
+                    direction === 'down' ? Math.PI/2 :
+                    direction === 'left' ? Math.PI :
+                    0;  // right
+
+      ctx.translate(x, y);
+      ctx.rotate(angle);
+
+      // Palm body (rectangle-ish)
+      ctx.beginPath();
+      ctx.roundRect(-8, -6, 16, 12, 2);
+      ctx.fill();
+      ctx.stroke();
+
+      // Thumb (smaller rectangle at top)
+      ctx.fillStyle = CREAM;
+      ctx.beginPath();
+      ctx.roundRect(5, -10, 7, 6, 2);
+      ctx.fill();
+      ctx.stroke();
+
+      // Finger suggestions (3 lines)
+      ctx.strokeStyle = BLACK;
+      ctx.lineWidth = 1;
+      for (let i = -1; i <= 1; i++) {
+        ctx.beginPath();
+        ctx.moveTo(i * 4, -6);
+        ctx.lineTo(i * 4, -11);
+        ctx.stroke();
+      }
+      // Finger tips bar
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.roundRect(-7, -14, 14, 5, 2);
+      ctx.fill();
+      ctx.strokeStyle = BLACK;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    // ─── Center Eye of Horus / Ankh ───────────────────────────────────────────
+    function drawCenterSymbol() {
+      const cx = GCX, cy = GCY;
+
+      ctx.save();
+
+      // Ankh symbol centered on grid
+      const s = 18; // scale
+
+      ctx.fillStyle = GOLD;
+      ctx.strokeStyle = BLACK;
+      ctx.lineWidth = 1.8;
+
+      // Loop (top oval)
+      ctx.beginPath();
+      ctx.ellipse(cx, cy - s * 0.6, s * 0.45, s * 0.55, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      // Interior cutout (lighter)
+      ctx.fillStyle = SAND_MID;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy - s * 0.6, s * 0.28, s * 0.35, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Vertical stem
+      ctx.fillStyle = GOLD;
+      ctx.fillRect(cx - s*0.15, cy - s*0.1, s*0.3, s*1.0);
+      ctx.strokeRect(cx - s*0.15, cy - s*0.1, s*0.3, s*1.0);
+
+      // Horizontal cross-bar
+      ctx.fillRect(cx - s*0.6, cy + s*0.1, s*1.2, s*0.25);
+      ctx.strokeRect(cx - s*0.6, cy + s*0.1, s*1.2, s*0.25);
+
+      ctx.restore();
+    }
+
+    // ─── "PRO" label glyph markers ────────────────────────────────────────────
+    // Small hieroglyph-like indicators for "pro" motion type
+    function drawMotionLabel(x, y, color) {
+      ctx.save();
+      ctx.fillStyle = color;
+      ctx.strokeStyle = BLACK;
+      ctx.lineWidth = 1;
+
+      // Simple feather/reed glyph — upright stroke with horizontal cuts
+      ctx.fillRect(x - 1.5, y - 10, 3, 20);
+      ctx.strokeRect(x - 1.5, y - 10, 3, 20);
+      for (let i = -8; i <= 8; i += 4) {
+        ctx.beginPath();
+        ctx.moveTo(x - 1.5, y + i);
+        ctx.lineTo(x - 7, y + i - 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x + 1.5, y + i);
+        ctx.lineTo(x + 7, y + i - 2);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    // ─── Inner panel background ───────────────────────────────────────────────
+    function drawInnerPanel() {
+      const inner = 36;
+      const iw = W - inner * 2, ih = H - inner * 2;
+
+      // Slightly different shade to suggest carved recessed panel
+      const panelGrad = ctx.createLinearGradient(inner, inner, inner + iw, inner + ih);
+      panelGrad.addColorStop(0, 'rgba(180,140,80,0.18)');
+      panelGrad.addColorStop(1, 'rgba(100,70,20,0.12)');
+      ctx.fillStyle = panelGrad;
+      ctx.fillRect(inner, inner, iw, ih);
+
+      // Inset shadow edges (simulate carved stone)
+      ctx.save();
+      ctx.strokeStyle = 'rgba(26,15,0,0.25)';
+      ctx.lineWidth = 3;
+      // Top/left darker (shadow side)
+      ctx.beginPath();
+      ctx.moveTo(inner, inner + ih);
+      ctx.lineTo(inner, inner);
+      ctx.lineTo(inner + iw, inner);
+      ctx.stroke();
+      // Bottom/right lighter (lit side)
+      ctx.strokeStyle = 'rgba(240,200,120,0.2)';
+      ctx.beginPath();
+      ctx.moveTo(inner + iw, inner);
+      ctx.lineTo(inner + iw, inner + ih);
+      ctx.lineTo(inner, inner + ih);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // ─── Title section (top of inner panel) ──────────────────────────────────
+    function drawTitleArea() {
+      // Horizontal divider line below cartouche
+      ctx.save();
+      ctx.strokeStyle = BLACK;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(50, 100);
+      ctx.lineTo(450, 100);
+      ctx.stroke();
+
+      // Small decorative lotus buds at divider ends
+      drawLotus(50, 100);
+      drawLotus(450, 100);
+
+      ctx.restore();
+    }
+
+    function drawLotus(x, y) {
+      ctx.save();
+      ctx.fillStyle = GOLD;
+      ctx.strokeStyle = BLACK;
+      ctx.lineWidth = 1;
+
+      // Stem
+      ctx.fillRect(x - 2, y, 4, 10);
+      ctx.strokeRect(x - 2, y, 4, 10);
+
+      // Three petals suggestion
+      ctx.beginPath();
+      ctx.ellipse(x, y - 5, 4, 8, 0, 0, Math.PI * 2);
+      ctx.fill(); ctx.stroke();
+      ctx.beginPath();
+      ctx.ellipse(x - 6, y - 2, 3, 6, -0.4, 0, Math.PI * 2);
+      ctx.fill(); ctx.stroke();
+      ctx.beginPath();
+      ctx.ellipse(x + 6, y - 2, 3, 6, 0.4, 0, Math.PI * 2);
+      ctx.fill(); ctx.stroke();
+      ctx.restore();
+    }
+
+    // ─── Bottom label area ────────────────────────────────────────────────────
+    function drawBottomArea() {
+      ctx.save();
+      // Divider
+      ctx.strokeStyle = BLACK;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(50, 430);
+      ctx.lineTo(450, 430);
+      ctx.stroke();
+      drawLotus(50, 430);
+      drawLotus(450, 430);
+
+      // Bottom hieroglyph-style text row (decorative symbolic strip)
+      const symbols = ['eye', 'bird', 'wave', 'eye', 'bird', 'wave', 'eye'];
+      const startX = 90, y = 454, spacing = 50;
+      for (let i = 0; i < symbols.length; i++) {
+        const sx = startX + i * spacing;
+        drawMiniGlyph(sx, y, symbols[i % 3]);
+      }
+      ctx.restore();
+    }
+
+    function drawMiniGlyph(x, y, type) {
+      ctx.save();
+      ctx.fillStyle = BLACK;
+      ctx.strokeStyle = BLACK;
+      ctx.lineWidth = 0.8;
+      if (type === 'eye') {
+        // Simplified eye of Horus
+        ctx.beginPath();
+        ctx.ellipse(x, y, 7, 4, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(x, y, 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(x + 7, y);
+        ctx.lineTo(x + 12, y + 5);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x - 7, y);
+        ctx.lineTo(x - 9, y + 4);
+        ctx.lineTo(x - 11, y);
+        ctx.stroke();
+      } else if (type === 'bird') {
+        // Profile bird silhouette (ibis-like)
+        ctx.fillStyle = BLACK;
+        ctx.beginPath();
+        ctx.ellipse(x, y + 2, 6, 4, 0.3, 0, Math.PI * 2);
+        ctx.fill();
+        // Head
+        ctx.beginPath();
+        ctx.arc(x + 6, y - 1, 3, 0, Math.PI * 2);
+        ctx.fill();
+        // Beak
+        ctx.beginPath();
+        ctx.moveTo(x + 9, y - 1);
+        ctx.lineTo(x + 15, y + 2);
+        ctx.lineTo(x + 9, y + 1);
+        ctx.closePath();
+        ctx.fill();
+        // Leg
+        ctx.beginPath();
+        ctx.moveTo(x + 1, y + 6);
+        ctx.lineTo(x + 1, y + 10);
+        ctx.stroke();
+      } else { // wave
+        // Water/wave hieroglyph
+        ctx.beginPath();
+        ctx.moveTo(x - 8, y);
+        for (let i = 0; i < 4; i++) {
+          ctx.quadraticCurveTo(x - 8 + i*4 + 2, y - 4, x - 8 + i*4 + 4, y);
+        }
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x - 8, y + 4);
+        for (let i = 0; i < 4; i++) {
+          ctx.quadraticCurveTo(x - 8 + i*4 + 2, y, x - 8 + i*4 + 4, y + 4);
+        }
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    // ─── Render everything ────────────────────────────────────────────────────
+    function render() {
+      // 1. Sandstone background
+      drawBackground();
+
+      // 2. Outer decorative border band
+      drawOuterBorder();
+
+      // 3. Inner panel (recessed stone)
+      drawInnerPanel();
+
+      // 4. Cartouche + letter A at top
+      drawCartouche();
+
+      // 5. Title divider
+      drawTitleArea();
+
+      // 6. Grid (faint lines + grid point rosettes)
+      drawGrid();
+
+      // 7. Pro motion arrows UNDER staves
+      // Blue (lapis): W -> N  = 180° -> 270°  but N is -90° in canvas coords
+      // In canvas: right=0°, down=90°, left=180°, up=270° (-90°)
+      // W = 180°, N = -90° (or 270°)
+      // Blue staff is at N, so the arrow approaches N from W going CCW
+      // startAngle=180 (W), endAngle=270 (N in canvas = -90° -> 270°)
+      // We use actual canvas angles: N=-90°=270°, E=0°, S=90°, W=180°
+
+      // Blue arrow: W (180°) -> N (270°) counter-clockwise
+      // In canvas, CCW = going from 180 to 270 counter-clockwise passes through 90, 0...
+      // Actually: W=180°, going CCW means decreasing angle: 180 -> 90 -> 0 -> 270 (=N)
+      // That's a 270° sweep — too long. Instead:
+      // Going CW from W(180) to N(270) is only 90°. But the brief says "pro" = CCW.
+      // Let's use the shorter arc that looks like a pro curve:
+      // Blue: from W to N = short arc going through NW. That's 270->180 reversed...
+      // In canvas terms: N is at angle -Math.PI/2 (or 3π/2), W is at Math.PI.
+      // Going from W(π) to N(-π/2) = going CW (decreasing from π): π -> π/2 -> 0 -> -π/2? No.
+      // Going CW in canvas = increasing angle. N=270° (3π/2 or -π/2 equiv), W=180°(π).
+      // CW from W(180) to N(270): that goes through S(90)... that's wrong direction.
+      // Going CCW (decreasing): W(180) -> NW(225? no)
+      // Let me just think in degrees: N=270 (or -90), E=0, S=90, W=180.
+      // From W(180) going CCW (decreasing) to N(270): 180 -> 135(NW) -> ... hmm NW would be 225.
+      // Actually in standard canvas: N=270°, NE=315°, E=0°, SE=45°, S=90°, SW=135°, W=180°, NW=225°
+      // Blue: W(180) -> N(270) going CCW.
+      //   CCW in canvas = ctx.arc(x,y,r,start,end,true)
+      //   From 180° to 270° CCW means going: 180->135->90->45->0->315->270. That's 270° sweep passing through S. Too long.
+      //   CW from 180° to 270°: 180->225(NW)->270(N). 90° sweep through NW. This is what we want.
+      // Red: E(0°) -> S(90°) CW: 0->45->90. 90° sweep through SE. This is what we want.
+      // So: blue is CW through NW, red is CW through SE.
+
+      drawProArrow(Math.PI, 3*Math.PI/2, LAPIS);       // Blue: W->N (CW, through NW)
+      drawProArrow(0, Math.PI/2, VERMILLION);            // Red: E->S (CW, through SE)
+
+      // 8. Staves
+      // Letter A: blue staff at N, red staff at S
+      // Staves drawn vertically through center — blue from N, red from S
+      // Each staff runs from center outward to its hand position
+      // Blue staff: from center going up to N
+      // Red staff: from center going down to S
+      // Actually staves typically run parallel; for letter A both are radial.
+      // Blue at N: staff pointing N from center (runs N-S axis, blue end at N)
+      // Red at S: staff pointing S from center (runs N-S axis, red end at S)
+      // To make it interesting / Egyptian profile: slight inward lean
+      const staffOffset = 20; // horizontal separation
+      drawStaff(
+        GCX - staffOffset, GCY + GR * 0.55,
+        GCX - staffOffset, GCY - GR * 0.85,
+        LAPIS
+      );
+      drawStaff(
+        GCX + staffOffset, GCY - GR * 0.55,
+        GCX + staffOffset, GCY + GR * 0.85,
+        VERMILLION
+      );
+
+      // 9. Hand dots at staff tips
+      // Blue hand: top of blue staff (N)
+      drawHand(GCX - staffOffset, GCY - GR * 0.85, LAPIS, 'up');
+      // Red hand: bottom of red staff (S)
+      drawHand(GCX + staffOffset, GCY + GR * 0.85, VERMILLION, 'down');
+
+      // 10. Pro motion labels (feather glyphs beside arrows)
+      drawMotionLabel(GCX - GR * 0.8, GCY - GR * 0.5, LAPIS);
+      drawMotionLabel(GCX + GR * 0.8, GCY + GR * 0.5, VERMILLION);
+
+      // 11. Center ankh symbol
+      drawCenterSymbol();
+
+      // 12. Bottom divider + glyph strip
+      drawBottomArea();
+
+      // 13. Aged vignette (dark corners, simulating old stone)
+      drawVignette();
+    }
+
+    function drawVignette() {
+      const vg = ctx.createRadialGradient(W/2, H/2, W*0.3, W/2, H/2, W*0.72);
+      vg.addColorStop(0, 'rgba(0,0,0,0)');
+      vg.addColorStop(1, 'rgba(26,15,0,0.45)');
+      ctx.fillStyle = vg;
+      ctx.fillRect(0, 0, W, H);
+
+      // Subtle overall patina
+      ctx.fillStyle = 'rgba(180,130,60,0.04)';
+      ctx.fillRect(0, 0, W, H);
+    }
+
+    render();
+  })();
+  </script>
+</body>
+</html>

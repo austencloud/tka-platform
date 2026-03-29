@@ -1,0 +1,1146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TKA Letter A — Illuminated Manuscript (~1200 AD)</title>
+  <style>
+    body {
+      margin: 0;
+      background: #2a1f0e;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      font-family: serif;
+    }
+    canvas {
+      display: block;
+      /* Subtle drop shadow to simulate resting on a surface */
+      box-shadow:
+        0 8px 32px rgba(0,0,0,0.8),
+        0 2px 8px rgba(0,0,0,0.6),
+        inset 0 0 0 1px rgba(212,175,55,0.3);
+    }
+  </style>
+</head>
+<body>
+<canvas id="c" width="500" height="500"></canvas>
+<script>
+(function() {
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+  const W = 500, H = 500;
+
+  // ─── Color Palette ────────────────────────────────────────────────────────
+  const GOLD     = '#D4AF37';
+  const GOLD_DK  = '#A07820';
+  const GOLD_LT  = '#F0D060';
+  const BLUE     = '#1B3A8C';
+  const BLUE_MD  = '#2B4FAC';
+  const BLUE_LT  = '#4A72CC';
+  const RED      = '#E34234';
+  const RED_DK   = '#9B2418';
+  const RED_LT   = '#F07060';
+  const GREEN    = '#2E5339';
+  const GREEN_LT = '#4A7A58';
+  const BROWN    = '#5A3010';
+  const INK      = '#1A0E04';
+  const PARCHMENT_BASE = '#E8D5A0';
+
+  // ─── 1. PARCHMENT BACKGROUND ──────────────────────────────────────────────
+  function drawParchment() {
+    // Base parchment fill
+    const grad = ctx.createRadialGradient(250, 230, 40, 250, 250, 340);
+    grad.addColorStop(0,   '#EFE0B0');
+    grad.addColorStop(0.4, '#E4D098');
+    grad.addColorStop(0.75,'#D8C080');
+    grad.addColorStop(1,   '#C8A860');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, H);
+
+    // Subtle warm-cool variation patches
+    const patches = [
+      { x:  60, y:  80, r: 80, c: 'rgba(200,170,90,0.18)' },
+      { x: 400, y: 120, r: 70, c: 'rgba(180,140,60,0.15)' },
+      { x: 100, y: 380, r: 90, c: 'rgba(210,185,120,0.20)' },
+      { x: 380, y: 400, r: 75, c: 'rgba(185,150,70,0.18)' },
+      { x: 240, y:  50, r: 60, c: 'rgba(220,195,130,0.14)' },
+      { x: 250, y: 460, r: 65, c: 'rgba(190,155,75,0.16)' },
+    ];
+    patches.forEach(p => {
+      const pg = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r);
+      pg.addColorStop(0,   p.c);
+      pg.addColorStop(1,   'rgba(0,0,0,0)');
+      ctx.fillStyle = pg;
+      ctx.fillRect(0, 0, W, H);
+    });
+
+    // Fibrous texture lines — horizontal & slight diagonal
+    ctx.save();
+    ctx.globalAlpha = 0.06;
+    for (let y = 2; y < H; y += 3) {
+      ctx.beginPath();
+      ctx.moveTo(0, y + (Math.random() - 0.5) * 1.5);
+      for (let x = 20; x < W; x += 20) {
+        ctx.lineTo(x, y + (Math.random() - 0.5) * 1.5);
+      }
+      ctx.strokeStyle = Math.random() > 0.5 ? '#8B6020' : '#A07830';
+      ctx.lineWidth = 0.4;
+      ctx.stroke();
+    }
+    // Subtle vertical fibers
+    ctx.globalAlpha = 0.035;
+    for (let x = 2; x < W; x += 5) {
+      ctx.beginPath();
+      ctx.moveTo(x + (Math.random() - 0.5), 0);
+      for (let y = 20; y < H; y += 20) {
+        ctx.lineTo(x + (Math.random() - 0.5), y);
+      }
+      ctx.strokeStyle = '#7A5010';
+      ctx.lineWidth = 0.3;
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // Age spots / foxing
+    const spots = [
+      { x:  42, y:  55, r: 4.5, a: 0.22 },
+      { x: 458, y:  78, r: 3.0, a: 0.18 },
+      { x:  68, y: 432, r: 5.0, a: 0.20 },
+      { x: 445, y: 460, r: 3.5, a: 0.17 },
+      { x: 190, y:  30, r: 2.5, a: 0.16 },
+      { x: 330, y: 470, r: 4.0, a: 0.19 },
+      { x:  30, y: 250, r: 3.0, a: 0.15 },
+      { x: 470, y: 290, r: 3.5, a: 0.16 },
+      { x:  95, y: 160, r: 2.0, a: 0.12 },
+      { x: 405, y: 320, r: 2.5, a: 0.13 },
+    ];
+    spots.forEach(s => {
+      const sg = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, s.r);
+      sg.addColorStop(0,   `rgba(100,60,10,${s.a})`);
+      sg.addColorStop(0.6, `rgba(120,75,15,${s.a * 0.6})`);
+      sg.addColorStop(1,   'rgba(0,0,0,0)');
+      ctx.fillStyle = sg;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r * 1.5, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    // Slight edge darkening (natural shadow from page curl)
+    const edgeShadow = ctx.createLinearGradient(0, 0, 0, H);
+    edgeShadow.addColorStop(0,   'rgba(80,40,0,0.12)');
+    edgeShadow.addColorStop(0.12,'rgba(0,0,0,0)');
+    edgeShadow.addColorStop(0.88,'rgba(0,0,0,0)');
+    edgeShadow.addColorStop(1,   'rgba(60,30,0,0.18)');
+    ctx.fillStyle = edgeShadow;
+    ctx.fillRect(0, 0, W, H);
+    const edgeShadowH = ctx.createLinearGradient(0, 0, W, 0);
+    edgeShadowH.addColorStop(0,   'rgba(80,40,0,0.10)');
+    edgeShadowH.addColorStop(0.10,'rgba(0,0,0,0)');
+    edgeShadowH.addColorStop(0.90,'rgba(0,0,0,0)');
+    edgeShadowH.addColorStop(1,   'rgba(60,30,0,0.14)');
+    ctx.fillStyle = edgeShadowH;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  // ─── Helper: Gold fill with inner shine ───────────────────────────────────
+  function goldFill(path2D, shimmerDir) {
+    ctx.fillStyle = GOLD;
+    ctx.fill(path2D);
+    // Highlight pass
+    ctx.save();
+    ctx.clip(path2D);
+    const sg = shimmerDir || ctx.createLinearGradient(0, 0, W, H);
+    ctx.globalAlpha = 0.35;
+    ctx.fillStyle = sg;
+    ctx.fill(path2D);
+    ctx.restore();
+  }
+
+  // ─── Helper: Ink outline ──────────────────────────────────────────────────
+  function inkStroke(lw) {
+    ctx.strokeStyle = INK;
+    ctx.lineWidth   = lw || 1.2;
+    ctx.stroke();
+  }
+
+  // ─── 2. OUTER BORDER ──────────────────────────────────────────────────────
+  function drawBorder() {
+    const M = 14; // margin from edge
+
+    // ── 2a. Outer gold double-line frame ──────────────────────────────────
+    // Outer gold band
+    ctx.strokeStyle = GOLD;
+    ctx.lineWidth   = 5;
+    roundRect(M, M, W - M*2, H - M*2, 4);
+    ctx.stroke();
+
+    ctx.strokeStyle = GOLD_DK;
+    ctx.lineWidth   = 1;
+    roundRect(M + 3, M + 3, W - (M+3)*2, H - (M+3)*2, 3);
+    ctx.stroke();
+    roundRect(M - 2, M - 2, W - (M-2)*2, H - (M-2)*2, 5);
+    ctx.stroke();
+
+    // ── 2b. Vine border band ──────────────────────────────────────────────
+    // The vine lives in the strip between the gold frame and the inner border
+    const vOuter = M + 6;
+    const vInner = M + 28;
+    drawVineBand(vOuter, vInner);
+
+    // ── 2c. Inner gold rule ───────────────────────────────────────────────
+    ctx.strokeStyle = GOLD;
+    ctx.lineWidth   = 2.5;
+    roundRect(vInner - 1, vInner - 1, W - (vInner-1)*2, H - (vInner-1)*2, 2);
+    ctx.stroke();
+    ctx.strokeStyle = GOLD_DK;
+    ctx.lineWidth   = 0.8;
+    roundRect(vInner + 2, vInner + 2, W - (vInner+2)*2, H - (vInner+2)*2, 2);
+    ctx.stroke();
+
+    // ── 2d. Corner ornaments ─────────────────────────────────────────────
+    const corners = [
+      { x: M + 14, y: M + 14 },
+      { x: W - M - 14, y: M + 14 },
+      { x: M + 14,     y: H - M - 14 },
+      { x: W - M - 14, y: H - M - 14 },
+    ];
+    corners.forEach(c => drawCornerOrnament(c.x, c.y));
+  }
+
+  // Vine band along all four edges
+  function drawVineBand(outer, inner) {
+    const thickness = inner - outer;
+    const midline   = outer + thickness / 2;
+
+    // Draw vine along each side
+    drawVineSide('top',    outer, inner, midline);
+    drawVineSide('bottom', outer, inner, midline);
+    drawVineSide('left',   outer, inner, midline);
+    drawVineSide('right',  outer, inner, midline);
+  }
+
+  function drawVineSide(side, outer, inner, mid) {
+    ctx.save();
+
+    let len, tx, ty, rot;
+    if (side === 'top')    { len = W - outer*2; tx = outer;     ty = 0;       rot = 0; }
+    if (side === 'bottom') { len = W - outer*2; tx = W - outer; ty = H;       rot = Math.PI; }
+    if (side === 'left')   { len = H - outer*2; tx = 0;         ty = H - outer; rot = Math.PI * 1.5; }
+    if (side === 'right')  { len = H - outer*2; tx = W;         ty = outer;   rot = Math.PI * 0.5; }
+
+    ctx.translate(tx, ty);
+    ctx.rotate(rot);
+
+    const thickness = inner - outer;
+    const step      = 18;
+    const count     = Math.floor(len / step);
+    const offset    = (len - count * step) / 2;
+
+    // Spine
+    ctx.beginPath();
+    ctx.moveTo(offset, thickness / 2);
+    for (let i = 0; i <= count; i++) {
+      const xi = offset + i * step;
+      const wave = Math.sin(i * 0.8) * 1.5;
+      ctx.lineTo(xi, thickness / 2 + wave);
+    }
+    ctx.strokeStyle = GREEN;
+    ctx.lineWidth   = 1.5;
+    ctx.stroke();
+
+    // Leaves and tendrils
+    for (let i = 0; i < count; i++) {
+      const xi   = offset + i * step + step / 2;
+      const wave = Math.sin(i * 0.8) * 1.5;
+      const cy   = thickness / 2 + wave;
+      const flip = (i % 2 === 0) ? 1 : -1;
+
+      // Tendril
+      ctx.beginPath();
+      ctx.moveTo(xi, cy);
+      ctx.bezierCurveTo(xi + 4, cy - flip * 4, xi + 7, cy - flip * 2, xi + 5, cy - flip * 7);
+      ctx.strokeStyle = GREEN_LT;
+      ctx.lineWidth   = 0.8;
+      ctx.stroke();
+
+      // Small leaf
+      drawLeaf(xi, cy - flip * 5, flip > 0 ? Math.PI * 0.25 : -Math.PI * 0.25);
+
+      // Occasional berry
+      if (i % 3 === 0) {
+        ctx.beginPath();
+        ctx.arc(xi - 3, cy + flip * 3, 2, 0, Math.PI * 2);
+        ctx.fillStyle = (i % 6 === 0) ? RED : BLUE;
+        ctx.fill();
+        ctx.strokeStyle = INK;
+        ctx.lineWidth   = 0.5;
+        ctx.stroke();
+      }
+    }
+
+    // Small decorative animals at midpoints of each side (simplified geometry)
+    // We place a tiny bird silhouette at center of each strip
+    const birdX = len / 2;
+    const birdY = thickness / 2;
+    drawTinyBird(birdX, birdY);
+
+    ctx.restore();
+  }
+
+  function drawLeaf(x, y, angle) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.bezierCurveTo(-2, -3, -1, -7, 0, -8);
+    ctx.bezierCurveTo(1, -7, 2, -3, 0, 0);
+    ctx.fillStyle = GREEN;
+    ctx.fill();
+    ctx.strokeStyle = GREEN_LT;
+    ctx.lineWidth   = 0.4;
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawTinyBird(x, y) {
+    ctx.save();
+    ctx.translate(x, y);
+    // Body
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 4, 2.5, -0.2, 0, Math.PI * 2);
+    ctx.fillStyle = GOLD;
+    ctx.fill();
+    ctx.strokeStyle = INK;
+    ctx.lineWidth   = 0.5;
+    ctx.stroke();
+    // Head
+    ctx.beginPath();
+    ctx.arc(4.5, -1, 2, 0, Math.PI * 2);
+    ctx.fillStyle = GOLD;
+    ctx.fill();
+    ctx.stroke();
+    // Wing
+    ctx.beginPath();
+    ctx.moveTo(-1, -1);
+    ctx.bezierCurveTo(-3, -5, 2, -6, 1, -2);
+    ctx.fillStyle = GOLD_DK;
+    ctx.fill();
+    ctx.stroke();
+    // Eye
+    ctx.beginPath();
+    ctx.arc(5.2, -1.5, 0.6, 0, Math.PI * 2);
+    ctx.fillStyle = INK;
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawCornerOrnament(cx, cy) {
+    // A four-petaled gold flower with ink outline
+    const r = 7;
+    ctx.save();
+    ctx.translate(cx, cy);
+    for (let p = 0; p < 4; p++) {
+      ctx.save();
+      ctx.rotate((Math.PI / 2) * p);
+      ctx.beginPath();
+      ctx.ellipse(0, -r * 0.65, r * 0.38, r * 0.65, 0, 0, Math.PI * 2);
+      ctx.fillStyle = GOLD;
+      ctx.fill();
+      ctx.strokeStyle = INK;
+      ctx.lineWidth   = 0.8;
+      ctx.stroke();
+      ctx.restore();
+    }
+    // Center dot
+    ctx.beginPath();
+    ctx.arc(0, 0, 3.5, 0, Math.PI * 2);
+    ctx.fillStyle = RED;
+    ctx.fill();
+    ctx.strokeStyle = INK;
+    ctx.lineWidth   = 0.8;
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // ─── 3. GRID DOTS ─────────────────────────────────────────────────────────
+  // The TKA grid: 9 points in a 3×3 diamond grid.
+  // For the standard 8-point + center layout:
+  //   N, NE, E, SE, S, SW, W, NW, Center
+  // Mapped to pixel positions (diamond layout inside the inner frame)
+  const CENTER  = { x: 250, y: 250 };
+  const GRID_R  = 88; // radius to cardinal points
+
+  const gridPoints = {
+    N:  { x: 250,           y: 250 - GRID_R },
+    NE: { x: 250 + GRID_R * 0.707, y: 250 - GRID_R * 0.707 },
+    E:  { x: 250 + GRID_R,  y: 250 },
+    SE: { x: 250 + GRID_R * 0.707, y: 250 + GRID_R * 0.707 },
+    S:  { x: 250,           y: 250 + GRID_R },
+    SW: { x: 250 - GRID_R * 0.707, y: 250 + GRID_R * 0.707 },
+    W:  { x: 250 - GRID_R,  y: 250 },
+    NW: { x: 250 - GRID_R * 0.707, y: 250 - GRID_R * 0.707 },
+  };
+
+  function drawGridDots() {
+    Object.values(gridPoints).forEach(p => {
+      // Outer gold ring
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
+      ctx.fillStyle = GOLD;
+      ctx.fill();
+      ctx.strokeStyle = GOLD_DK;
+      ctx.lineWidth   = 0.8;
+      ctx.stroke();
+
+      // Inner red/blue gem dot
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 2.5, 0, Math.PI * 2);
+      ctx.fillStyle = RED_DK;
+      ctx.fill();
+
+      // Tiny gold center sparkle
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 0.9, 0, Math.PI * 2);
+      ctx.fillStyle = GOLD_LT;
+      ctx.fill();
+    });
+
+    // Center grid dot — more elaborate
+    ctx.beginPath();
+    ctx.arc(CENTER.x, CENTER.y, 7, 0, Math.PI * 2);
+    ctx.fillStyle = GOLD;
+    ctx.fill();
+    ctx.strokeStyle = INK;
+    ctx.lineWidth   = 1;
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(CENTER.x, CENTER.y, 3.5, 0, Math.PI * 2);
+    ctx.fillStyle = BLUE;
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(CENTER.x, CENTER.y, 1.2, 0, Math.PI * 2);
+    ctx.fillStyle = GOLD_LT;
+    ctx.fill();
+  }
+
+  // ─── 4. STAVES ────────────────────────────────────────────────────────────
+  // Letter A: blue hand at N, red hand at S
+  // Staves are vertical props pointing up and down
+  function drawStaves() {
+    // Blue staff at N (pointing from center upward through N)
+    drawStaff(CENTER.x, CENTER.y, gridPoints.N.x, gridPoints.N.y, BLUE, BLUE_LT, '#6090FF');
+    // Red staff at S (pointing from center downward through S)
+    drawStaff(CENTER.x, CENTER.y, gridPoints.S.x, gridPoints.S.y, RED, RED_LT, '#FF8878');
+  }
+
+  function drawStaff(x1, y1, x2, y2, mainColor, lightColor, tipColor) {
+    const dx   = x2 - x1;
+    const dy   = y2 - y1;
+    const len  = Math.sqrt(dx*dx + dy*dy);
+    const nx   = dx / len;
+    const ny   = dy / len;
+    const perp = { x: -ny, y: nx };
+
+    const staffW = 6; // half-width of staff
+
+    // Extend slightly beyond the grid point
+    const ex1 = x1 - nx * 20;
+    const ey1 = y1 - ny * 20;
+    const ex2 = x2 + nx * 20;
+    const ey2 = y2 + ny * 20;
+
+    // ── Staff body ──────────────────────────────────────────────────────────
+    ctx.save();
+    // Gradient: dark core + light edge + gold accent
+    const staffLen = Math.sqrt((ex2-ex1)**2 + (ey2-ey1)**2);
+    const grad = ctx.createLinearGradient(
+      ex1 + perp.x * staffW, ey1 + perp.y * staffW,
+      ex1 - perp.x * staffW, ey1 - perp.y * staffW
+    );
+    grad.addColorStop(0,    mainColor);
+    grad.addColorStop(0.25, lightColor);
+    grad.addColorStop(0.5,  GOLD_LT);
+    grad.addColorStop(0.75, lightColor);
+    grad.addColorStop(1,    mainColor);
+
+    ctx.beginPath();
+    ctx.moveTo(ex1 + perp.x * staffW, ey1 + perp.y * staffW);
+    ctx.lineTo(ex2 + perp.x * staffW, ey2 + perp.y * staffW);
+    ctx.lineTo(ex2 - perp.x * staffW, ey2 - perp.y * staffW);
+    ctx.lineTo(ex1 - perp.x * staffW, ey1 - perp.y * staffW);
+    ctx.closePath();
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // Ink outline
+    ctx.strokeStyle = INK;
+    ctx.lineWidth   = 1.2;
+    ctx.stroke();
+
+    // ── Gold leaf accent lines along edge ─────────────────────────────────
+    ctx.beginPath();
+    ctx.moveTo(ex1 + perp.x * (staffW - 1.2), ey1 + perp.y * (staffW - 1.2));
+    ctx.lineTo(ex2 + perp.x * (staffW - 1.2), ey2 + perp.y * (staffW - 1.2));
+    ctx.strokeStyle = GOLD;
+    ctx.lineWidth   = 0.8;
+    ctx.globalAlpha = 0.7;
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(ex1 - perp.x * (staffW - 1.2), ey1 - perp.y * (staffW - 1.2));
+    ctx.lineTo(ex2 - perp.x * (staffW - 1.2), ey2 - perp.y * (staffW - 1.2));
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+
+    // ── Decorative bands / wrapping ────────────────────────────────────────
+    const bandPositions = [0.25, 0.5, 0.75];
+    bandPositions.forEach(t => {
+      const bx = ex1 + (ex2 - ex1) * t;
+      const by = ey1 + (ey2 - ey1) * t;
+      ctx.beginPath();
+      ctx.moveTo(bx + perp.x * staffW, by + perp.y * staffW);
+      ctx.lineTo(bx - perp.x * staffW, by - perp.y * staffW);
+      ctx.strokeStyle = GOLD;
+      ctx.lineWidth   = 1.5;
+      ctx.stroke();
+      ctx.strokeStyle = INK;
+      ctx.lineWidth   = 0.4;
+      ctx.stroke();
+    });
+
+    // ── Tip ornaments ─────────────────────────────────────────────────────
+    // Near tip
+    ctx.beginPath();
+    ctx.arc(ex2, ey2, staffW * 1.1, 0, Math.PI * 2);
+    const tipGrad = ctx.createRadialGradient(ex2, ey2, 0, ex2, ey2, staffW * 1.1);
+    tipGrad.addColorStop(0,   GOLD_LT);
+    tipGrad.addColorStop(0.5, GOLD);
+    tipGrad.addColorStop(1,   GOLD_DK);
+    ctx.fillStyle = tipGrad;
+    ctx.fill();
+    ctx.strokeStyle = INK;
+    ctx.lineWidth   = 1;
+    ctx.stroke();
+    // Gem at tip
+    ctx.beginPath();
+    ctx.arc(ex2, ey2, 2.5, 0, Math.PI * 2);
+    ctx.fillStyle = tipColor;
+    ctx.fill();
+
+    // Near base ornament
+    ctx.beginPath();
+    ctx.arc(ex1, ey1, staffW * 0.9, 0, Math.PI * 2);
+    ctx.fillStyle = GOLD;
+    ctx.fill();
+    ctx.strokeStyle = INK;
+    ctx.lineWidth   = 1;
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  // ─── 5. ARROWS ────────────────────────────────────────────────────────────
+  // Letter A: blue arrow W→N (pro = curves counter-clockwise for blue)
+  //           red arrow  E→S (pro = curves clockwise for red)
+  function drawArrows() {
+    // Blue: W to N, pro motion — curves through the upper-left arc
+    drawIlluminatedArrow(
+      gridPoints.W, gridPoints.N,
+      BLUE, BLUE_LT,
+      // Control point for the curve: upper-left quadrant
+      { x: CENTER.x - GRID_R * 0.82, y: CENTER.y - GRID_R * 0.82 },
+      'start' // arrowhead at end (N)
+    );
+
+    // Red: E to S, pro motion — curves through the lower-right arc
+    drawIlluminatedArrow(
+      gridPoints.E, gridPoints.S,
+      RED, RED_LT,
+      // Control point: lower-right quadrant
+      { x: CENTER.x + GRID_R * 0.82, y: CENTER.y + GRID_R * 0.82 },
+      'end'
+    );
+  }
+
+  function drawIlluminatedArrow(from, to, mainColor, lightColor, ctrl, headAt) {
+    ctx.save();
+
+    // ── Thick calligraphic curve ──────────────────────────────────────────
+    // We draw the curve as a filled calligraphic stroke with varying width
+    // (thick in middle, tapered at ends — like a quill stroke)
+
+    const steps    = 60;
+    const maxWidth = 7;
+    const points   = [];
+
+    for (let i = 0; i <= steps; i++) {
+      const t  = i / steps;
+      const mt = 1 - t;
+      // Quadratic Bézier
+      const x = mt*mt*from.x + 2*mt*t*ctrl.x + t*t*to.x;
+      const y = mt*mt*from.y + 2*mt*t*ctrl.y + t*t*to.y;
+      // Tangent
+      const tx = 2*mt*(ctrl.x - from.x) + 2*t*(to.x - ctrl.x);
+      const ty = 2*mt*(ctrl.y - from.y) + 2*t*(to.y - ctrl.y);
+      const tlen = Math.sqrt(tx*tx + ty*ty) || 1;
+      // Perpendicular
+      const px = -ty / tlen;
+      const py =  tx / tlen;
+      // Width taper: thin at ends, thick in middle
+      const taper = Math.sin(t * Math.PI);
+      const w = maxWidth * taper;
+      points.push({ x, y, px, py, w });
+    }
+
+    // Build filled outline path
+    ctx.beginPath();
+    ctx.moveTo(points[0].x + points[0].px * points[0].w,
+               points[0].y + points[0].py * points[0].w);
+    for (let i = 1; i <= steps; i++) {
+      ctx.lineTo(points[i].x + points[i].px * points[i].w,
+                 points[i].y + points[i].py * points[i].w);
+    }
+    for (let i = steps; i >= 0; i--) {
+      ctx.lineTo(points[i].x - points[i].px * points[i].w,
+                 points[i].y - points[i].py * points[i].w);
+    }
+    ctx.closePath();
+
+    // Color gradient along curve direction
+    const arrowGrad = ctx.createLinearGradient(from.x, from.y, to.x, to.y);
+    arrowGrad.addColorStop(0,   mainColor);
+    arrowGrad.addColorStop(0.5, lightColor);
+    arrowGrad.addColorStop(1,   mainColor);
+    ctx.fillStyle   = arrowGrad;
+    ctx.fill();
+    ctx.strokeStyle = INK;
+    ctx.lineWidth   = 0.8;
+    ctx.stroke();
+
+    // ── Gold accent line along center ─────────────────────────────────────
+    ctx.beginPath();
+    ctx.moveTo(points[0].x, points[0].y);
+    for (let i = 1; i <= steps; i++) {
+      ctx.lineTo(points[i].x, points[i].y);
+    }
+    ctx.strokeStyle = GOLD;
+    ctx.lineWidth   = 0.7;
+    ctx.globalAlpha = 0.55;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+
+    // ── Pointed arrowhead (illuminated manuscript style) ──────────────────
+    const tipIdx = steps;
+    const tail   = points[tipIdx - 3];
+    const tip    = points[tipIdx];
+    const tdx    = tip.x - tail.x;
+    const tdy    = tip.y - tail.y;
+    const tlen2  = Math.sqrt(tdx*tdx + tdy*tdy) || 1;
+    const tnx    = tdx / tlen2;
+    const tny    = tdy / tlen2;
+
+    // Elongated Gothic arrowhead
+    const headLen  = 16;
+    const headWide = 7;
+    ctx.beginPath();
+    ctx.moveTo(tip.x + tnx * headLen, tip.y + tny * headLen);
+    ctx.lineTo(tip.x - tip.py * headWide, tip.y + tip.px * headWide);
+    ctx.lineTo(tip.x + tnx * 4, tip.y + tny * 4);
+    ctx.lineTo(tip.x + tip.py * headWide, tip.y - tip.px * headWide);
+    ctx.closePath();
+    ctx.fillStyle   = mainColor;
+    ctx.fill();
+    ctx.strokeStyle = INK;
+    ctx.lineWidth   = 1;
+    ctx.stroke();
+
+    // Gold glint on arrowhead
+    ctx.beginPath();
+    ctx.moveTo(tip.x + tnx * headLen * 0.9, tip.y + tny * headLen * 0.9);
+    ctx.lineTo(tip.x + tnx * 4, tip.y + tny * 4);
+    ctx.strokeStyle = GOLD_LT;
+    ctx.lineWidth   = 0.6;
+    ctx.globalAlpha = 0.7;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+
+    // Small tail flourish — a tiny calligraphic curl at the origin end
+    const srcPt  = points[0];
+    const srcTx  = points[2].x - points[0].x;
+    const srcTy  = points[2].y - points[0].y;
+    const srcLen = Math.sqrt(srcTx*srcTx + srcTy*srcTy) || 1;
+    // Backtrack
+    const bx = srcPt.x - (srcTx / srcLen) * 8;
+    const by = srcPt.y - (srcTy / srcLen) * 8;
+    ctx.beginPath();
+    ctx.moveTo(srcPt.x, srcPt.y);
+    ctx.bezierCurveTo(
+      bx + srcPt.py * 6,  by - srcPt.px * 6,
+      bx + srcPt.py * 10, by - srcPt.px * 2,
+      bx + srcPt.py * 8,  by + srcPt.px * 4
+    );
+    ctx.strokeStyle = mainColor;
+    ctx.lineWidth   = 2;
+    ctx.stroke();
+    ctx.strokeStyle = GOLD;
+    ctx.lineWidth   = 0.6;
+    ctx.globalAlpha = 0.5;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+
+    ctx.restore();
+  }
+
+  // ─── 6. CENTER ROSETTE ────────────────────────────────────────────────────
+  function drawCenterRosette() {
+    const cx = CENTER.x, cy = CENTER.y;
+    const r  = 14;
+
+    // Outer petals (6-petal rosette)
+    for (let i = 0; i < 6; i++) {
+      const a   = (Math.PI / 3) * i;
+      const px  = cx + Math.cos(a) * r * 0.65;
+      const py  = cy + Math.sin(a) * r * 0.65;
+      ctx.beginPath();
+      ctx.arc(px, py, r * 0.42, 0, Math.PI * 2);
+      ctx.fillStyle = (i % 2 === 0) ? GOLD : RED;
+      ctx.fill();
+      ctx.strokeStyle = INK;
+      ctx.lineWidth   = 0.7;
+      ctx.stroke();
+    }
+
+    // Center gold circle
+    ctx.beginPath();
+    ctx.arc(cx, cy, r * 0.48, 0, Math.PI * 2);
+    const rg = ctx.createRadialGradient(cx - 2, cy - 2, 0, cx, cy, r * 0.48);
+    rg.addColorStop(0, GOLD_LT);
+    rg.addColorStop(1, GOLD_DK);
+    ctx.fillStyle = rg;
+    ctx.fill();
+    ctx.strokeStyle = INK;
+    ctx.lineWidth   = 1;
+    ctx.stroke();
+
+    // Tiny cross inscription in center
+    ctx.strokeStyle = INK;
+    ctx.lineWidth   = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(cx - 4, cy);
+    ctx.lineTo(cx + 4, cy);
+    ctx.moveTo(cx, cy - 4);
+    ctx.lineTo(cx, cy + 4);
+    ctx.stroke();
+  }
+
+  // ─── 7. ILLUMINATED CAPITAL "A" ──────────────────────────────────────────
+  // Placed in upper-left quadrant of the inner frame
+  // Large, decorated with knotwork, painted gold + blue + red
+  function drawIlluminatedA() {
+    const lx = 52;  // left edge of letter block
+    const ly = 52;  // top edge
+    const lw = 88;  // width of letter block
+    const lh = 88;  // height of letter block
+
+    // ── Background panel for the letter ───────────────────────────────────
+    // Deep blue background panel (like a historiated initial)
+    ctx.save();
+    ctx.beginPath();
+    roundRect(lx, ly, lw, lh, 5);
+    ctx.fillStyle = BLUE;
+    ctx.fill();
+
+    // Inner border: gold rule
+    ctx.strokeStyle = GOLD;
+    ctx.lineWidth   = 2.5;
+    ctx.stroke();
+    ctx.strokeStyle = INK;
+    ctx.lineWidth   = 0.8;
+    ctx.stroke();
+
+    // Subtle parchment-colored inner frame
+    ctx.beginPath();
+    roundRect(lx + 4, ly + 4, lw - 8, lh - 8, 3);
+    ctx.strokeStyle = GOLD_DK;
+    ctx.lineWidth   = 1;
+    ctx.stroke();
+    ctx.restore();
+
+    // ── Corner knotwork in the panel ──────────────────────────────────────
+    const kCorners = [
+      { x: lx + 9,      y: ly + 9 },
+      { x: lx + lw - 9, y: ly + 9 },
+      { x: lx + 9,      y: ly + lh - 9 },
+      { x: lx + lw - 9, y: ly + lh - 9 },
+    ];
+    kCorners.forEach(k => drawKnotOrnament(k.x, k.y, 7));
+
+    // ── The letter A itself ────────────────────────────────────────────────
+    const ax = lx + lw / 2; // center X of letter
+    const ay = ly + lh / 2; // center Y of letter
+    const ah = 50;          // height of the A strokes
+    const aw = 32;          // half-width at base
+
+    // Shadow/depth offset for the letter
+    ctx.save();
+    ctx.translate(1.5, 1.5);
+    drawLetterAShape(ax, ay, ah, aw, 'rgba(0,0,0,0.5)');
+    ctx.restore();
+
+    // Main gold letter
+    drawLetterAShape(ax, ay, ah, aw, GOLD);
+
+    // Ink outline
+    ctx.save();
+    drawLetterAStroke(ax, ay, ah, aw);
+    ctx.restore();
+
+    // ── Red and blue knotwork inside the A counter (the triangle space) ───
+    // Fill the counter with a small knotwork pattern
+    const counterCx = ax;
+    const counterCy = ay + 3;
+    drawCounterKnot(counterCx, counterCy, 7);
+
+    // ── Decorative serif flourishes at base ───────────────────────────────
+    drawASerifs(ax, ay, ah, aw);
+
+    // ── Label "A" is already drawn — add illumination details ─────────────
+    // Small vine tendrils emerging from the letter
+    ctx.save();
+    ctx.globalAlpha = 0.85;
+
+    // Left vine curl from top of A
+    ctx.beginPath();
+    ctx.moveTo(ax - aw * 0.25, ay - ah * 0.45);
+    ctx.bezierCurveTo(
+      ax - aw * 0.5, ay - ah * 0.7,
+      lx + 8,        ly + 8,
+      lx + 12,       ly + 14
+    );
+    ctx.strokeStyle = GREEN;
+    ctx.lineWidth   = 1.5;
+    ctx.stroke();
+
+    // Right vine curl
+    ctx.beginPath();
+    ctx.moveTo(ax + aw * 0.25, ay - ah * 0.45);
+    ctx.bezierCurveTo(
+      ax + aw * 0.5,  ay - ah * 0.7,
+      lx + lw - 8,    ly + 8,
+      lx + lw - 12,   ly + 14
+    );
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  function drawLetterAShape(cx, cy, ah, aw, fillColor) {
+    // A consists of: two diagonal strokes + crossbar
+    const top    = cy - ah * 0.5;
+    const botL   = cy + ah * 0.5;
+    const botR   = cy + ah * 0.5;
+    const crossY = cy + ah * 0.1;
+    const strokeW = 6;
+    const sw2     = strokeW / 2;
+
+    ctx.save();
+    ctx.fillStyle = fillColor;
+
+    // Left diagonal stroke
+    ctx.beginPath();
+    ctx.moveTo(cx - sw2 * 0.5, top);
+    ctx.lineTo(cx - aw - sw2, botL);
+    ctx.lineTo(cx - aw + sw2 * 1.5, botL);
+    ctx.lineTo(cx + sw2 * 0.5, top);
+    ctx.closePath();
+    ctx.fill();
+
+    // Right diagonal stroke
+    ctx.beginPath();
+    ctx.moveTo(cx - sw2 * 0.5, top);
+    ctx.lineTo(cx + aw - sw2 * 1.5, botR);
+    ctx.lineTo(cx + aw + sw2, botR);
+    ctx.lineTo(cx + sw2 * 0.5, top);
+    ctx.closePath();
+    ctx.fill();
+
+    // Crossbar
+    const crossLeft  = cx - aw * 0.42;
+    const crossRight = cx + aw * 0.42;
+    ctx.beginPath();
+    ctx.rect(crossLeft, crossY - sw2 * 0.9, crossRight - crossLeft, sw2 * 1.8);
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+  function drawLetterAStroke(cx, cy, ah, aw) {
+    const top    = cy - ah * 0.5;
+    const botL   = cy + ah * 0.5;
+    const botR   = cy + ah * 0.5;
+    const crossY = cy + ah * 0.1;
+    const strokeW = 6;
+    const sw2     = strokeW / 2;
+
+    ctx.strokeStyle = INK;
+    ctx.lineWidth   = 0.9;
+    ctx.lineJoin    = 'round';
+
+    // Left stroke
+    ctx.beginPath();
+    ctx.moveTo(cx - sw2 * 0.5, top);
+    ctx.lineTo(cx - aw - sw2, botL);
+    ctx.lineTo(cx - aw + sw2 * 1.5, botL);
+    ctx.lineTo(cx + sw2 * 0.5, top);
+    ctx.closePath();
+    ctx.stroke();
+
+    // Right stroke
+    ctx.beginPath();
+    ctx.moveTo(cx - sw2 * 0.5, top);
+    ctx.lineTo(cx + aw - sw2 * 1.5, botR);
+    ctx.lineTo(cx + aw + sw2, botR);
+    ctx.lineTo(cx + sw2 * 0.5, top);
+    ctx.closePath();
+    ctx.stroke();
+
+    // Crossbar
+    const crossLeft  = cx - aw * 0.42;
+    const crossRight = cx + aw * 0.42;
+    ctx.beginPath();
+    ctx.rect(crossLeft, crossY - sw2 * 0.9, crossRight - crossLeft, sw2 * 1.8);
+    ctx.stroke();
+
+    // Gold highlight on A
+    ctx.strokeStyle = GOLD_LT;
+    ctx.lineWidth   = 0.5;
+    ctx.globalAlpha = 0.6;
+    ctx.beginPath();
+    ctx.moveTo(cx - sw2 * 0.5 + 1, top + 1);
+    ctx.lineTo(cx - aw + sw2 * 0.5 + 1, botL - 1);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx + sw2 * 0.5 - 1, top + 1);
+    ctx.lineTo(cx + aw - sw2 * 0.5 - 1, botR - 1);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+
+  function drawASerifs(cx, cy, ah, aw) {
+    const bot = cy + ah * 0.5;
+    const sw  = 9;
+    ctx.strokeStyle = GOLD;
+    ctx.lineWidth   = 2.5;
+    ctx.lineCap     = 'round';
+
+    // Left base serif
+    ctx.beginPath();
+    ctx.moveTo(cx - aw - sw, bot);
+    ctx.lineTo(cx - aw + sw, bot);
+    ctx.stroke();
+
+    // Right base serif
+    ctx.beginPath();
+    ctx.moveTo(cx + aw - sw, bot);
+    ctx.lineTo(cx + aw + sw, bot);
+    ctx.stroke();
+
+    // Top apex ornament
+    const top = cy - ah * 0.5;
+    ctx.beginPath();
+    ctx.arc(cx, top - 2, 3.5, 0, Math.PI * 2);
+    ctx.fillStyle   = RED;
+    ctx.fill();
+    ctx.strokeStyle = INK;
+    ctx.lineWidth   = 0.8;
+    ctx.stroke();
+  }
+
+  function drawCounterKnot(cx, cy, r) {
+    // A small interlaced knotwork ornament inside the counter of A
+    ctx.save();
+    ctx.translate(cx, cy);
+
+    // Three interlaced circles (triquetra-like)
+    const angles = [0, Math.PI * 2/3, Math.PI * 4/3];
+    angles.forEach((a, i) => {
+      const ox = Math.cos(a) * r * 0.55;
+      const oy = Math.sin(a) * r * 0.55;
+      ctx.beginPath();
+      ctx.arc(ox, oy, r * 0.65, 0, Math.PI * 2);
+      ctx.strokeStyle = [RED, GOLD, BLUE_MD][i];
+      ctx.lineWidth   = 1.8;
+      ctx.stroke();
+    });
+
+    // Center dot
+    ctx.beginPath();
+    ctx.arc(0, 0, 2, 0, Math.PI * 2);
+    ctx.fillStyle = GOLD;
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+  function drawKnotOrnament(cx, cy, r) {
+    ctx.save();
+    ctx.translate(cx, cy);
+
+    // Simple Celtic-ish square knot, very small
+    const colors = [GOLD, RED, BLUE_MD, GREEN];
+    for (let i = 0; i < 4; i++) {
+      const a  = (Math.PI / 2) * i;
+      const ox = Math.cos(a) * r * 0.4;
+      const oy = Math.sin(a) * r * 0.4;
+      ctx.beginPath();
+      ctx.arc(ox, oy, r * 0.38, 0, Math.PI * 2);
+      ctx.fillStyle = colors[i];
+      ctx.globalAlpha = 0.85;
+      ctx.fill();
+      ctx.strokeStyle = INK;
+      ctx.lineWidth   = 0.5;
+      ctx.globalAlpha = 1;
+      ctx.stroke();
+    }
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 0.28, 0, Math.PI * 2);
+    ctx.fillStyle = GOLD_LT;
+    ctx.fill();
+    ctx.strokeStyle = INK;
+    ctx.lineWidth   = 0.5;
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  // ─── 8. TITLE INSCRIPTION ─────────────────────────────────────────────────
+  function drawInscription() {
+    // Small Gothic-style text label below the TKA content
+    const iy = H - 46;
+    const ix = W / 2;
+
+    // Gold rule above text
+    ctx.beginPath();
+    ctx.moveTo(60, iy - 10);
+    ctx.lineTo(W - 60, iy - 10);
+    ctx.strokeStyle = GOLD;
+    ctx.lineWidth   = 1;
+    ctx.stroke();
+
+    // Text
+    ctx.save();
+    ctx.textAlign    = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Shadow
+    ctx.fillStyle = 'rgba(40,15,0,0.5)';
+    ctx.font      = 'bold 11px serif';
+    ctx.fillText('LITERA · A · MOTUS · PRONAVICULARIS', ix + 1, iy + 1);
+
+    // Main ink text
+    ctx.fillStyle = INK;
+    ctx.fillText('LITERA · A · MOTUS · PRONAVICULARIS', ix, iy);
+
+    // Gold accent on alternate runs
+    ctx.fillStyle = GOLD_DK;
+    ctx.font      = 'bold 11px serif';
+    ctx.globalAlpha = 0.6;
+    ctx.fillText('LITERA · A · MOTUS · PRONAVICULARIS', ix, iy);
+    ctx.globalAlpha = 1;
+
+    // Small decorative dots flanking text
+    [50, W - 50].forEach(dx => {
+      ctx.beginPath();
+      ctx.arc(dx, iy, 3, 0, Math.PI * 2);
+      ctx.fillStyle = RED;
+      ctx.fill();
+      ctx.strokeStyle = INK;
+      ctx.lineWidth   = 0.5;
+      ctx.stroke();
+    });
+
+    // Gold rule below text
+    ctx.beginPath();
+    ctx.moveTo(60, iy + 10);
+    ctx.lineTo(W - 60, iy + 10);
+    ctx.strokeStyle = GOLD;
+    ctx.lineWidth   = 1;
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  // ─── 9. HAND POSITION LABELS ──────────────────────────────────────────────
+  function drawHandLabels() {
+    ctx.save();
+    ctx.font      = 'bold 9px serif';
+    ctx.textAlign = 'center';
+
+    // Blue hand at N — label "B" (for blue/north) in a small gold roundel
+    drawHandRoundel(gridPoints.N.x + 16, gridPoints.N.y - 14, 'N', BLUE, GOLD);
+    // Red hand at S — label "R" in a small roundel
+    drawHandRoundel(gridPoints.S.x - 16, gridPoints.S.y + 14, 'S', RED, GOLD);
+
+    ctx.restore();
+  }
+
+  function drawHandRoundel(x, y, label, bgColor, textColor) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(x, y, 9, 0, Math.PI * 2);
+    ctx.fillStyle = bgColor;
+    ctx.fill();
+    ctx.strokeStyle = GOLD;
+    ctx.lineWidth   = 1.5;
+    ctx.stroke();
+    ctx.strokeStyle = INK;
+    ctx.lineWidth   = 0.5;
+    ctx.stroke();
+    ctx.fillStyle    = textColor;
+    ctx.font         = 'bold 8px serif';
+    ctx.textAlign    = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label, x, y);
+    ctx.restore();
+  }
+
+  // ─── Utility: Rounded rectangle path ─────────────────────────────────────
+  function roundRect(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+  }
+
+  // ─── RENDER ORDER ─────────────────────────────────────────────────────────
+  drawParchment();
+  drawBorder();
+  drawGridDots();
+  drawStaves();
+  drawArrows();
+  drawCenterRosette();
+  drawIlluminatedA();
+  drawHandLabels();
+  drawInscription();
+
+  // Final vignette — gentle darkening at edges to simulate age
+  const vignette = ctx.createRadialGradient(250, 250, 180, 250, 250, 360);
+  vignette.addColorStop(0,   'rgba(0,0,0,0)');
+  vignette.addColorStop(0.7, 'rgba(0,0,0,0)');
+  vignette.addColorStop(1,   'rgba(30,10,0,0.30)');
+  ctx.fillStyle = vignette;
+  ctx.fillRect(0, 0, W, H);
+
+})();
+</script>
+</body>
+</html>
