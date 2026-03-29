@@ -15,12 +15,9 @@
     showGrid: boolean;
     tkaGlyphVisible: boolean;
     vtgGlyphVisible: boolean;
-    elementalGlyphVisible: boolean;
     positionsGlyphVisible: boolean;
     reversalIndicatorsVisible: boolean;
     nonRadialVisible: boolean;
-    stepNumbersVisible: boolean;
-    handPointVisibility: "all" | "active";
     allMotionsVisible: boolean;
     onToggle: (key: string) => void;
     isMobileHidden?: boolean;
@@ -32,12 +29,9 @@
     showGrid,
     tkaGlyphVisible,
     vtgGlyphVisible,
-    elementalGlyphVisible,
     positionsGlyphVisible,
     reversalIndicatorsVisible,
     nonRadialVisible,
-    stepNumbersVisible,
-    handPointVisibility,
     allMotionsVisible,
     onToggle,
     isMobileHidden = false,
@@ -121,24 +115,6 @@
           Non-Radial
         </button>
       </div>
-      <div class="segmented-pair">
-        <button
-          class="toggle-btn segment-half"
-          class:active={handPointVisibility === "all"}
-          onclick={() => onToggle("handPointsAll")}
-          aria-pressed={handPointVisibility === "all"}
-        >
-          All Points
-        </button>
-        <button
-          class="toggle-btn segment-half"
-          class:active={handPointVisibility === "active"}
-          onclick={() => onToggle("handPointsActive")}
-          aria-pressed={handPointVisibility === "active"}
-        >
-          Active Only
-        </button>
-      </div>
     </div>
 
     <!-- Glyphs group -->
@@ -170,16 +146,6 @@
         </button>
         <button
           class="toggle-btn"
-          class:active={elementalGlyphVisible}
-          disabled={!allMotionsVisible}
-          onclick={() => onToggle("elemental")}
-          aria-pressed={elementalGlyphVisible}
-        >
-          <i class="fas fa-fire" aria-hidden="true"></i>
-          Elemental
-        </button>
-        <button
-          class="toggle-btn"
           class:active={positionsGlyphVisible}
           disabled={!allMotionsVisible}
           onclick={() => onToggle("positions")}
@@ -200,21 +166,6 @@
       </div>
     </div>
 
-    <!-- Display group -->
-    <div class="control-group">
-      <span class="group-label">Display</span>
-      <div class="toggle-grid">
-        <button
-          class="toggle-btn"
-          class:active={stepNumbersVisible}
-          onclick={() => onToggle("stepNumbers")}
-          aria-pressed={stepNumbersVisible}
-        >
-          <i class="fas fa-list-ol" aria-hidden="true"></i>
-          Step Numbers
-        </button>
-      </div>
-    </div>
   </div>
 </section>
 
@@ -313,24 +264,6 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 6px;
-  }
-
-  .segmented-pair {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0;
-    border-radius: 10px;
-    overflow: hidden;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-  }
-
-  .segmented-pair .toggle-btn.segment-half {
-    border-radius: 0;
-    border: none;
-  }
-
-  .segmented-pair .toggle-btn.segment-half:first-child {
-    border-right: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
   /* Toggle Buttons */

@@ -150,9 +150,6 @@ This gives users a live preview of exactly how their settings affect the exporte
       {/if}
       {#each aabbSteps as step, i}
         <div class="sequence-cell">
-          {#if showStepNumbers}
-            <span class="step-number">{i + 1}</span>
-          {/if}
           <PictographWithVisibility
             pictographData={step}
             forceShowAll={false}

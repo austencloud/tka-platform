@@ -67,14 +67,11 @@
   const blueMotion = $derived.by(() => { void version; return vm.getMotionVisibility(MotionColor.BLUE); });
   const redMotion = $derived.by(() => { void version; return vm.getMotionVisibility(MotionColor.RED); });
   const showGrid = $derived.by(() => { void version; return vm.getGridVisibility(); });
-  const handPoints = $derived.by(() => { void version; return vm.getHandPointVisibility(); });
   const nonRadial = $derived.by(() => { void version; return vm.getNonRadialVisibility(); });
   const tkaGlyph = $derived.by(() => { void version; return vm.getRawGlyphVisibility("tkaGlyph"); });
   const vtgGlyph = $derived.by(() => { void version; return vm.getRawGlyphVisibility("vtgGlyph"); });
-  const elementalGlyph = $derived.by(() => { void version; return vm.getRawGlyphVisibility("elementalGlyph"); });
   const positionsGlyph = $derived.by(() => { void version; return vm.getRawGlyphVisibility("positionsGlyph"); });
   const reversals = $derived.by(() => { void version; return vm.getRawGlyphVisibility("reversalIndicators"); });
-  const stepNumbers = $derived.by(() => { void version; return vm.getBeatNumbersVisibility(); });
   const allMotionsVisible = $derived.by(() => { void version; return vm.areAllMotionsVisible(); });
 
   // ── Animation state ──
@@ -113,14 +110,14 @@
       case "red": tap(() => vm.setMotionVisibility(MotionColor.RED, !redMotion)); break;
       case "grid": tap(() => vm.setGridVisibility(!showGrid)); break;
       case "tka": tap(() => vm.setGlyphVisibility("tkaGlyph", !tkaGlyph)); break;
-      case "vtg": tap(() => vm.setGlyphVisibility("vtgGlyph", !vtgGlyph)); break;
-      case "elemental": tap(() => vm.setGlyphVisibility("elementalGlyph", !elementalGlyph)); break;
+      case "vtg": tap(() => {
+        const next = !vtgGlyph;
+        vm.setGlyphVisibility("vtgGlyph", next);
+        vm.setGlyphVisibility("elementalGlyph", next);
+      }); break;
       case "positions": tap(() => vm.setGlyphVisibility("positionsGlyph", !positionsGlyph)); break;
       case "reversals": tap(() => vm.setGlyphVisibility("reversalIndicators", !reversals)); break;
       case "nonRadial": tap(() => vm.setNonRadialVisibility(!nonRadial)); break;
-      case "stepNumbers": tap(() => vm.setBeatNumbersVisibility(!stepNumbers)); break;
-      case "handPointsAll": tap(() => vm.setHandPointVisibility("all")); break;
-      case "handPointsActive": tap(() => vm.setHandPointVisibility("active")); break;
     }
   }
 
@@ -192,12 +189,9 @@
       {showGrid}
       tkaGlyphVisible={tkaGlyph}
       vtgGlyphVisible={vtgGlyph}
-      elementalGlyphVisible={elementalGlyph}
       positionsGlyphVisible={positionsGlyph}
       reversalIndicatorsVisible={reversals}
       nonRadialVisible={nonRadial}
-      stepNumbersVisible={stepNumbers}
-      handPointVisibility={handPoints}
       {allMotionsVisible}
       onToggle={handlePictographToggle}
       isMobileHidden={mobileMode !== "pictograph"}
