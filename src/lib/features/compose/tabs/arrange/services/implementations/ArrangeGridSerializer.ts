@@ -6,12 +6,42 @@
  * - Cell layout section showing grid positions, spans, layers, transforms, offsets
  */
 
-import type { TunnelLayerConfig } from "../../../../compose/domain/types";
+import type {
+  TunnelLayerConfig,
+  TransformType,
+  AppliedTransform,
+} from "../../../../compose/domain/types";
 import type { GridCell } from "../../state/arrange-grid-state.svelte";
 import type {
   IArrangeGridSerializer,
   SerializationContext,
 } from "../contracts/IArrangeGridSerializer";
+
+/**
+ * Migrates legacy `appliedTransforms` (string[]) to the new `transformStack`
+ * (AppliedTransform[]) format. Used during deserialization of persisted
+ * compositions that were saved before the transformStack migration.
+ *
+ * - If `transformStack` already exists, it is returned as-is.
+ * - If only `appliedTransforms` exists, each entry is wrapped with
+ *   `hand: 'both'` and `timestamp: 0`.
+ * - If neither exists, an empty array is returned.
+ */
+export function migrateAppliedTransforms(
+  layer: { appliedTransforms?: TransformType[]; transformStack?: AppliedTransform[] }
+): { transformStack: AppliedTransform[] } {
+  if (layer.transformStack) return { transformStack: layer.transformStack };
+  if (layer.appliedTransforms) {
+    return {
+      transformStack: layer.appliedTransforms.map((type) => ({
+        type,
+        hand: "both" as const,
+        timestamp: 0,
+      })),
+    };
+  }
+  return { transformStack: [] };
+}
 
 interface RegistryEntry {
   id: string;
@@ -48,10 +78,10 @@ export class ArrangeGridSerializer implements IArrangeGridSerializer {
     // First pass: assign sequence IDs (prefer untransformed layers as reference)
     for (const cell of enabled) {
       const untransformed = cell.layers.filter(
-        (l) => !l.transformStack?.length && !l.appliedTransforms?.length
+        (l) => !migrateAppliedTransforms(l).transformStack.length
       );
       const transformed = cell.layers.filter(
-        (l) => (l.transformStack?.length ?? 0) > 0 || (l.appliedTransforms?.length ?? 0) > 0
+        (l) => migrateAppliedTransforms(l).transformStack.length > 0
       );
       for (const layer of [...untransformed, ...transformed]) {
         getSeqId(layer);
@@ -138,11 +168,10 @@ export class ArrangeGridSerializer implements IArrangeGridSerializer {
   ): string {
     const parts: string[] = [];
 
-    // Transforms (prefer transformStack, fall back to legacy appliedTransforms)
-    const transformTypes = layer.transformStack?.length
-      ? layer.transformStack.map((t) => t.type)
-      : layer.appliedTransforms;
-    if (transformTypes?.length) {
+    // Transforms (migrated from legacy appliedTransforms if needed)
+    const stack = migrateAppliedTransforms(layer).transformStack;
+    const transformTypes = stack.map((t) => t.type);
+    if (transformTypes.length) {
       parts.push(`[${transformTypes.join(", ")}]`);
     } else {
       const fallback = this.getMotionFallback(layer, refLayer);
