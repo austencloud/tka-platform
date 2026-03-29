@@ -74,8 +74,11 @@
   // Trail settings
   const trailSettings = $derived(animationSettings.trail);
 
-  // Calculate effective beat for this cell (including cell-level offset)
-  const effectiveBeat = $derived(currentBeat + cell.beatOffset);
+  // Calculate effective beat for this cell (including cell-level offset and speed)
+  const effectiveBeat = $derived.by(() => {
+    const speed = cell.speedMultiplier ?? 1.0;
+    return (currentBeat + cell.beatOffset) * speed;
+  });
 
   // Calculate current step for each layer.
   // The orchestrator uses 1-based steps: step=1 is beat 1 (steps[0]), step < 1 is start position.
