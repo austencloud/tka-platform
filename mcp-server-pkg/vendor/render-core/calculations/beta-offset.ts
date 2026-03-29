@@ -240,6 +240,57 @@ function calculateYZBetaOffset(
   return directionToOffset(direction, gridMode);
 }
 
+/**
+ * Calculate beta offset for G/H letters.
+ *
+ * G/H letters have both motions as shifts with the same trajectory.
+ * Red gets the base direction (from static/dash map using end location),
+ * blue gets the opposite direction.
+ * Matches the app's LetterGHHandler logic.
+ */
+function calculateGHBetaOffset(
+  input: BetaOffsetInput,
+  targetMotion: BetaMotionInput,
+  isRadial: boolean,
+  gridMode: GridMode
+): { x: number; y: number } {
+  const endLoc = targetMotion.endLocation.toLowerCase() as GridLocation;
+
+  // Special case: South location always returns RIGHT as base direction
+  if (endLoc === "s") {
+    const baseDirection: VectorDirection = "right";
+    const direction = targetMotion.color === "red"
+      ? baseDirection
+      : getOppositeDirection(baseDirection);
+    return directionToOffset(direction, gridMode);
+  }
+
+  // Look up base direction from the static/dash map using red's perspective
+  const isDiamond = isCardinal(endLoc);
+  let map: Record<GridLocation, Record<"blue" | "red", VectorDirection>>;
+  if (isDiamond) {
+    map = isRadial ? DIAMOND_RADIAL_MAP : DIAMOND_NON_RADIAL_MAP;
+  } else {
+    map = isRadial ? BOX_RADIAL_MAP : BOX_NON_RADIAL_MAP;
+  }
+
+  const locationMap = map[endLoc];
+  if (!locationMap) {
+    return { x: 0, y: 0 };
+  }
+
+  // Red gets the base direction, blue gets the opposite
+  const baseDirection = locationMap["red"];
+  const direction = targetMotion.color === "red"
+    ? baseDirection
+    : getOppositeDirection(baseDirection);
+
+  // DEBUG
+  console.log(`[GH-BETA] endLoc=${endLoc} isDiamond=${isDiamond} isRadial=${isRadial} base=${baseDirection} final=${direction} color=${targetMotion.color} offset=${JSON.stringify(directionToOffset(direction, gridMode))}`);
+
+  return directionToOffset(direction, gridMode);
+}
+
 // ============================================================================
 // MAIN CALCULATION FUNCTION
 // ============================================================================
@@ -257,6 +308,11 @@ export function calculateBetaOffset(
   // Check if both props end at the same location (beta position)
   const blueEndLoc = blueMotion.endLocation.toLowerCase();
   const redEndLoc = redMotion.endLocation.toLowerCase();
+
+  // DEBUG: trace beta offset calculation
+  if (letter === "G" || letter === "H") {
+    console.log(`[BETA-DEBUG] letter=${letter} target=${targetMotion.color} blueEnd=${blueEndLoc} redEnd=${redEndLoc} blueMT=${blueMotion.motionType} redMT=${redMotion.motionType} blueOri=${blueMotion.endOrientation} redOri=${redMotion.endOrientation}`);
+  }
 
   if (blueEndLoc !== redEndLoc) {
     // Props don't overlap, no offset needed
@@ -289,9 +345,15 @@ export function calculateBetaOffset(
     return calculateYZBetaOffset(input, targetMotion, isRadial, gridMode);
   }
 
+  // Letter G/H: both motions are shifts with the same trajectory.
+  // Red gets the base direction (from static/dash map), blue gets opposite.
+  // This matches the app's LetterGHHandler logic.
+  if (letter === "G" || letter === "H" || letter === "G-" || letter === "H-") {
+    return calculateGHBetaOffset(input, targetMotion, isRadial, gridMode);
+  }
+
   // Check if this is a shift motion (PRO/ANTI/FLOAT)
   if (isShiftMotion(targetMotion.motionType)) {
-    // Letter G/H/I have special handling but use shift maps
     return calculateShiftBetaOffset(targetMotion, isRadial, gridMode);
   }
 

@@ -557,9 +557,226 @@ const LOOP_COMPONENT_COLORS: Record<LOOPComponent, string> = {
   [LOOPComponent.REWOUND]: "#00bcd4",  // Teal
 };
 
+// ============================================================================
+// Font Awesome SVG icon paths for LOOP components
+// Embedded from @fortawesome/fontawesome-free/svgs/solid/
+// ============================================================================
+
+const LOOP_ICON_SVG_PATHS: Record<LOOPComponent, { d: string; viewBox: [number, number] }> = {
+  // rotate.svg
+  [LOOPComponent.ROTATED]: {
+    d: "M480.1 192l7.9 0c13.3 0 24-10.7 24-24l0-144c0-9.7-5.8-18.5-14.8-22.2S477.9 .2 471 7L419.3 58.8C375 22.1 318 0 256 0 127 0 20.3 95.4 2.6 219.5 .1 237 12.2 253.2 29.7 255.7s33.7-9.7 36.2-27.1C79.2 135.5 159.3 64 256 64 300.4 64 341.2 79 373.7 104.3L327 151c-6.9 6.9-8.9 17.2-5.2 26.2S334.3 192 344 192l136.1 0zm29.4 100.5c2.5-17.5-9.7-33.7-27.1-36.2s-33.7 9.7-36.2 27.1c-13.3 93-93.4 164.5-190.1 164.5-44.4 0-85.2-15-117.7-40.3L185 361c6.9-6.9 8.9-17.2 5.2-26.2S177.7 320 168 320L24 320c-13.3 0-24 10.7-24 24L0 488c0 9.7 5.8 18.5 14.8 22.2S34.1 511.8 41 505l51.8-51.8C137 489.9 194 512 256 512 385 512 491.7 416.6 509.4 292.5z",
+    viewBox: [512, 512],
+  },
+  // arrows-left-right.svg
+  [LOOPComponent.MIRRORED]: {
+    d: "M470.6 374.6l96-96c12.5-12.5 12.5-32.8 0-45.3l-96-96c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l41.4 41.4-357.5 0 41.4-41.4c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-96 96c-6 6-9.4 14.1-9.4 22.6s3.4 16.6 9.4 22.6l96 96c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3l-41.4-41.4 357.5 0-41.4 41.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0z",
+    viewBox: [576, 512],
+  },
+  // arrows-up-down.svg
+  [LOOPComponent.FLIPPED]: {
+    d: "M150.6-22.6c-12.5-12.5-32.8-12.5-45.3 0l-96 96c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L96 77.3 96 434.7 54.6 393.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l96 96c6 6 14.1 9.4 22.6 9.4s16.6-3.4 22.6-9.4l96-96c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-41.4 41.4 0-357.5 41.4 41.4c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3l-96-96z",
+    viewBox: [256, 512],
+  },
+  // shuffle.svg
+  [LOOPComponent.SWAPPED]: {
+    d: "M403.8 34.4c12-5 25.7-2.2 34.9 6.9l64 64c6 6 9.4 14.1 9.4 22.6s-3.4 16.6-9.4 22.6l-64 64c-9.2 9.2-22.9 11.9-34.9 6.9S384 204.9 384 192l0-32-32 0c-10.1 0-19.6 4.7-25.6 12.8l-32.4 43.2-40-53.3 21.2-28.3C293.3 110.2 321.8 96 352 96l32 0 0-32c0-12.9 7.8-24.6 19.8-29.6zM154 296l40 53.3-21.2 28.3C154.7 401.8 126.2 416 96 416l-64 0c-17.7 0-32-14.3-32-32s14.3-32 32-32l64 0c10.1 0 19.6-4.7 25.6-12.8L154 296zM438.6 470.6c-9.2 9.2-22.9 11.9-34.9 6.9S384 460.9 384 448l0-32-32 0c-30.2 0-58.7-14.2-76.8-38.4L121.6 172.8c-6-8.1-15.5-12.8-25.6-12.8l-64 0c-17.7 0-32-14.3-32-32S14.3 96 32 96l64 0c30.2 0 58.7 14.2 76.8 38.4L326.4 339.2c6 8.1 15.5 12.8 25.6 12.8l32 0 0-32c0-12.9 7.8-24.6 19.8-29.6s25.7-2.2 34.9 6.9l64 64c6 6 9.4 14.1 9.4 22.6s-3.4 16.6-9.4 22.6l-64 64z",
+    viewBox: [512, 512],
+  },
+  // circle-half-stroke.svg
+  [LOOPComponent.INVERTED]: {
+    d: "M448 256c0-106-86-192-192-192l0 384c106 0 192-86 192-192zM0 256a256 256 0 1 1 512 0 256 256 0 1 1 -512 0z",
+    viewBox: [512, 512],
+  },
+  // backward.svg
+  [LOOPComponent.REWOUND]: {
+    d: "M204.3 43.1C215.9 32 233 28.9 247.7 35.2S272 56 272 72l0 136.3 172.3-165.1C455.9 32 473 28.9 487.7 35.2S512 56 512 72l0 368c0 16-9.6 30.5-24.3 36.8s-31.8 3.2-43.4-7.9L272 303.7 272 440c0 16-9.6 30.5-24.3 36.8s-31.8 3.2-43.4-7.9l-192-184C4.5 277.3 0 266.9 0 256s4.5-21.3 12.3-28.9l192-184z",
+    viewBox: [576, 512],
+  },
+};
+
+// ============================================================================
+// SVG Path Parser — converts SVG path "d" strings to canvas drawing commands
+// ============================================================================
+
+interface PathCmd { cmd: string; args: number[] }
+
+function parseSvgPathData(d: string): PathCmd[] {
+  if (!d) return [];
+  const commands: PathCmd[] = [];
+  const re = /([MmZzLlHhVvCcSsQqTtAa])([^MmZzLlHhVvCcSsQqTtAa]*)/g;
+  let m;
+  while ((m = re.exec(d)) !== null) {
+    const cmd = m[1] ?? "";
+    const argsStr = (m[2] ?? "").trim();
+    // Handle negative numbers that act as separators (e.g., "10-5" = [10, -5])
+    const args = argsStr.length > 0
+      ? argsStr.match(/-?\d+\.?\d*(?:e[+-]?\d+)?/gi)?.map(Number) ?? []
+      : [];
+    commands.push({ cmd, args });
+  }
+  return commands;
+}
+
 /**
- * Draw a simplified icon for a LOOP component
- * Since we can't use Font Awesome in node-canvas, we draw geometric representations
+ * Execute parsed SVG path commands onto a canvas context.
+ * Assumes canvas is already transformed (translate + scale) to map
+ * viewBox coordinates to screen coordinates.
+ */
+function executeSvgPathOnCanvas(
+  ctx: CanvasRenderingContext2D,
+  commands: PathCmd[]
+): void {
+  let curX = 0, curY = 0, startX = 0, startY = 0;
+  let lastCpX = 0, lastCpY = 0, lastCmd = "";
+
+  ctx.beginPath();
+
+  for (const { cmd, args } of commands) {
+    const isRel = cmd === cmd.toLowerCase();
+    const C = cmd.toUpperCase();
+    const ax = (rx: number) => isRel ? curX + rx : rx;
+    const ay = (ry: number) => isRel ? curY + ry : ry;
+
+    switch (C) {
+      case "M": {
+        const x = ax(args[0] ?? 0), y = ay(args[1] ?? 0);
+        ctx.moveTo(x, y);
+        curX = startX = x; curY = startY = y;
+        for (let i = 2; i < args.length; i += 2) {
+          const lx = ax(args[i] ?? 0), ly = ay(args[i + 1] ?? 0);
+          ctx.lineTo(lx, ly); curX = lx; curY = ly;
+        }
+        break;
+      }
+      case "L":
+        for (let i = 0; i < args.length; i += 2) {
+          const x = ax(args[i] ?? 0), y = ay(args[i + 1] ?? 0);
+          ctx.lineTo(x, y); curX = x; curY = y;
+        }
+        break;
+      case "H":
+        for (const a of args) {
+          const x = isRel ? curX + a : a;
+          ctx.lineTo(x, curY); curX = x;
+        }
+        break;
+      case "V":
+        for (const a of args) {
+          const y = isRel ? curY + a : a;
+          ctx.lineTo(curX, y); curY = y;
+        }
+        break;
+      case "C":
+        for (let i = 0; i < args.length; i += 6) {
+          const c1x = ax(args[i]??0), c1y = ay(args[i+1]??0);
+          const c2x = ax(args[i+2]??0), c2y = ay(args[i+3]??0);
+          const x = ax(args[i+4]??0), y = ay(args[i+5]??0);
+          ctx.bezierCurveTo(c1x, c1y, c2x, c2y, x, y);
+          lastCpX = c2x; lastCpY = c2y; curX = x; curY = y;
+        }
+        break;
+      case "S":
+        for (let i = 0; i < args.length; i += 4) {
+          let c1x: number, c1y: number;
+          if (lastCmd === "C" || lastCmd === "S") {
+            c1x = 2 * curX - lastCpX; c1y = 2 * curY - lastCpY;
+          } else { c1x = curX; c1y = curY; }
+          const c2x = ax(args[i]??0), c2y = ay(args[i+1]??0);
+          const x = ax(args[i+2]??0), y = ay(args[i+3]??0);
+          ctx.bezierCurveTo(c1x, c1y, c2x, c2y, x, y);
+          lastCpX = c2x; lastCpY = c2y; curX = x; curY = y;
+        }
+        break;
+      case "Q":
+        for (let i = 0; i < args.length; i += 4) {
+          const cpx = ax(args[i]??0), cpy = ay(args[i+1]??0);
+          const x = ax(args[i+2]??0), y = ay(args[i+3]??0);
+          ctx.quadraticCurveTo(cpx, cpy, x, y);
+          lastCpX = cpx; lastCpY = cpy; curX = x; curY = y;
+        }
+        break;
+      case "T":
+        for (let i = 0; i < args.length; i += 2) {
+          let cpx: number, cpy: number;
+          if (lastCmd === "Q" || lastCmd === "T") {
+            cpx = 2 * curX - lastCpX; cpy = 2 * curY - lastCpY;
+          } else { cpx = curX; cpy = curY; }
+          const x = ax(args[i]??0), y = ay(args[i+1]??0);
+          ctx.quadraticCurveTo(cpx, cpy, x, y);
+          lastCpX = cpx; lastCpY = cpy; curX = x; curY = y;
+        }
+        break;
+      case "A":
+        for (let i = 0; i < args.length; i += 7) {
+          const rx = args[i]??0, ry = args[i+1]??0;
+          const rotation = args[i+2]??0;
+          const largeArc = !!(args[i+3]??0), sweep = !!(args[i+4]??0);
+          const x = ax(args[i+5]??0), y = ay(args[i+6]??0);
+          svgArcToCanvas(ctx, curX, curY, x, y, rx, ry, rotation, largeArc, sweep);
+          curX = x; curY = y;
+        }
+        break;
+      case "Z":
+        ctx.closePath();
+        curX = startX; curY = startY;
+        break;
+    }
+    lastCmd = C;
+  }
+}
+
+/** Convert SVG arc to canvas bezier curves */
+function svgArcToCanvas(
+  ctx: CanvasRenderingContext2D,
+  x1: number, y1: number, x2: number, y2: number,
+  rx: number, ry: number, phi: number,
+  largeArc: boolean, sweep: boolean
+): void {
+  if (rx === 0 || ry === 0) { ctx.lineTo(x2, y2); return; }
+  const sinPhi = Math.sin(phi * Math.PI / 180);
+  const cosPhi = Math.cos(phi * Math.PI / 180);
+  const x1p = cosPhi * (x1 - x2) / 2 + sinPhi * (y1 - y2) / 2;
+  const y1p = -sinPhi * (x1 - x2) / 2 + cosPhi * (y1 - y2) / 2;
+  const lambda = (x1p * x1p) / (rx * rx) + (y1p * y1p) / (ry * ry);
+  if (lambda > 1) { rx *= Math.sqrt(lambda); ry *= Math.sqrt(lambda); }
+  const rxSq = rx * rx, rySq = ry * ry, x1pSq = x1p * x1p, y1pSq = y1p * y1p;
+  let sq = Math.max(0, (rxSq * rySq - rxSq * y1pSq - rySq * x1pSq) / (rxSq * y1pSq + rySq * x1pSq));
+  sq = Math.sqrt(sq) * (largeArc === sweep ? -1 : 1);
+  const cxp = sq * rx * y1p / ry, cyp = sq * -ry * x1p / rx;
+  const cx = cosPhi * cxp - sinPhi * cyp + (x1 + x2) / 2;
+  const cy = sinPhi * cxp + cosPhi * cyp + (y1 + y2) / 2;
+  const vecAngle = (ux: number, uy: number, vx: number, vy: number) => {
+    const sign = ux * vy - uy * vx < 0 ? -1 : 1;
+    const dot = ux * vx + uy * vy;
+    const len = Math.sqrt(ux * ux + uy * uy) * Math.sqrt(vx * vx + vy * vy);
+    return sign * Math.acos(Math.max(-1, Math.min(1, dot / len)));
+  };
+  const theta1 = vecAngle(1, 0, (x1p - cxp) / rx, (y1p - cyp) / ry);
+  let dtheta = vecAngle((x1p - cxp) / rx, (y1p - cyp) / ry, (-x1p - cxp) / rx, (-y1p - cyp) / ry);
+  if (!sweep && dtheta > 0) dtheta -= Math.PI * 2;
+  else if (sweep && dtheta < 0) dtheta += Math.PI * 2;
+  const segs = Math.ceil(Math.abs(dtheta) / (Math.PI / 2));
+  const delta = dtheta / segs;
+  for (let i = 0; i < segs; i++) {
+    const t1 = theta1 + i * delta, t2 = theta1 + (i + 1) * delta;
+    const alpha = Math.sin(delta) * (Math.sqrt(4 + 3 * Math.pow(Math.tan(delta / 2), 2)) - 1) / 3;
+    const cos1 = Math.cos(t1), sin1 = Math.sin(t1), cos2 = Math.cos(t2), sin2 = Math.sin(t2);
+    const p1x = cx + rx * cosPhi * cos1 - ry * sinPhi * sin1;
+    const p1y = cy + rx * sinPhi * cos1 + ry * cosPhi * sin1;
+    const p2x = cx + rx * cosPhi * cos2 - ry * sinPhi * sin2;
+    const p2y = cy + rx * sinPhi * cos2 + ry * cosPhi * sin2;
+    const dx1 = -rx * cosPhi * sin1 - ry * sinPhi * cos1;
+    const dy1 = -rx * sinPhi * sin1 + ry * cosPhi * cos1;
+    const dx2 = -rx * cosPhi * sin2 - ry * sinPhi * cos2;
+    const dy2 = -rx * sinPhi * sin2 + ry * cosPhi * cos2;
+    ctx.bezierCurveTo(p1x + alpha * dx1, p1y + alpha * dy1, p2x - alpha * dx2, p2y - alpha * dy2, p2x, p2y);
+  }
+}
+
+/**
+ * Draw a LOOP component icon using the actual Font Awesome SVG path data.
+ * Uses canvas transforms to scale from viewBox to target size.
  */
 function drawLOOPIcon(
   ctx: CanvasRenderingContext2D,
@@ -569,147 +786,37 @@ function drawLOOPIcon(
   size: number,
   color: string
 ): void {
-  const cx = x + size / 2;
-  const cy = y + size / 2;
-  const r = size * 0.35; // Icon radius
+  const iconData = LOOP_ICON_SVG_PATHS[component];
+  if (!iconData) return;
 
-  ctx.strokeStyle = color;
+  const [vbW, vbH] = iconData.viewBox;
+  const scale = Math.min(size / vbW, size / vbH);
+
+  // Padding to keep icon from touching badge edges
+  const padding = size * 0.15;
+  const innerSize = size - padding * 2;
+  const innerScale = Math.min(innerSize / vbW, innerSize / vbH);
+
+  ctx.save();
+
+  // Translate and scale so viewBox coordinates map to the target rectangle
+  ctx.translate(
+    x + (size - vbW * innerScale) / 2,
+    y + (size - vbH * innerScale) / 2
+  );
+  ctx.scale(innerScale, innerScale);
+
+  // Draw shadow
+  ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
+  ctx.shadowBlur = 2 / innerScale;
+  ctx.shadowOffsetY = 1 / innerScale;
+
   ctx.fillStyle = color;
-  ctx.lineWidth = Math.max(1.5, size * 0.08);
-  ctx.lineCap = "round";
-  ctx.lineJoin = "round";
+  const commands = parseSvgPathData(iconData.d);
+  executeSvgPathOnCanvas(ctx, commands);
+  ctx.fill();
 
-  switch (component) {
-    case LOOPComponent.ROTATED:
-      // Circular arrow (rotation symbol)
-      ctx.beginPath();
-      ctx.arc(cx, cy, r, -Math.PI * 0.7, Math.PI * 0.5);
-      ctx.stroke();
-      // Arrow head
-      const arrowTip = { x: cx + r * Math.cos(Math.PI * 0.5), y: cy + r * Math.sin(Math.PI * 0.5) };
-      ctx.beginPath();
-      ctx.moveTo(arrowTip.x - size * 0.12, arrowTip.y - size * 0.08);
-      ctx.lineTo(arrowTip.x, arrowTip.y);
-      ctx.lineTo(arrowTip.x + size * 0.08, arrowTip.y - size * 0.12);
-      ctx.stroke();
-      break;
-
-    case LOOPComponent.MIRRORED:
-      // Left-right arrows (horizontal mirror)
-      const hw = r * 0.8;
-      // Left arrow
-      ctx.beginPath();
-      ctx.moveTo(cx - hw, cy);
-      ctx.lineTo(cx - hw * 0.3, cy);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(cx - hw, cy);
-      ctx.lineTo(cx - hw + size * 0.1, cy - size * 0.08);
-      ctx.moveTo(cx - hw, cy);
-      ctx.lineTo(cx - hw + size * 0.1, cy + size * 0.08);
-      ctx.stroke();
-      // Right arrow
-      ctx.beginPath();
-      ctx.moveTo(cx + hw, cy);
-      ctx.lineTo(cx + hw * 0.3, cy);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(cx + hw, cy);
-      ctx.lineTo(cx + hw - size * 0.1, cy - size * 0.08);
-      ctx.moveTo(cx + hw, cy);
-      ctx.lineTo(cx + hw - size * 0.1, cy + size * 0.08);
-      ctx.stroke();
-      // Center line
-      ctx.beginPath();
-      ctx.moveTo(cx, cy - r * 0.6);
-      ctx.lineTo(cx, cy + r * 0.6);
-      ctx.stroke();
-      break;
-
-    case LOOPComponent.FLIPPED:
-      // Up-down arrows (vertical mirror)
-      const vh = r * 0.8;
-      // Up arrow
-      ctx.beginPath();
-      ctx.moveTo(cx, cy - vh);
-      ctx.lineTo(cx, cy - vh * 0.3);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(cx, cy - vh);
-      ctx.lineTo(cx - size * 0.08, cy - vh + size * 0.1);
-      ctx.moveTo(cx, cy - vh);
-      ctx.lineTo(cx + size * 0.08, cy - vh + size * 0.1);
-      ctx.stroke();
-      // Down arrow
-      ctx.beginPath();
-      ctx.moveTo(cx, cy + vh);
-      ctx.lineTo(cx, cy + vh * 0.3);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(cx, cy + vh);
-      ctx.lineTo(cx - size * 0.08, cy + vh - size * 0.1);
-      ctx.moveTo(cx, cy + vh);
-      ctx.lineTo(cx + size * 0.08, cy + vh - size * 0.1);
-      ctx.stroke();
-      // Center line
-      ctx.beginPath();
-      ctx.moveTo(cx - r * 0.6, cy);
-      ctx.lineTo(cx + r * 0.6, cy);
-      ctx.stroke();
-      break;
-
-    case LOOPComponent.SWAPPED:
-      // Shuffle/crossing arrows
-      const sw = r * 0.7;
-      ctx.beginPath();
-      // Top-left to bottom-right
-      ctx.moveTo(cx - sw, cy - sw * 0.5);
-      ctx.lineTo(cx + sw, cy + sw * 0.5);
-      ctx.stroke();
-      // Bottom-left to top-right
-      ctx.beginPath();
-      ctx.moveTo(cx - sw, cy + sw * 0.5);
-      ctx.lineTo(cx + sw, cy - sw * 0.5);
-      ctx.stroke();
-      // Arrow heads on right side
-      ctx.beginPath();
-      ctx.moveTo(cx + sw, cy + sw * 0.5);
-      ctx.lineTo(cx + sw - size * 0.1, cy + sw * 0.5 - size * 0.06);
-      ctx.moveTo(cx + sw, cy - sw * 0.5);
-      ctx.lineTo(cx + sw - size * 0.1, cy - sw * 0.5 + size * 0.06);
-      ctx.stroke();
-      break;
-
-    case LOOPComponent.INVERTED:
-      // Half-filled circle (adjust icon)
-      ctx.beginPath();
-      ctx.arc(cx, cy, r * 0.85, 0, 2 * Math.PI);
-      ctx.stroke();
-      // Fill left half
-      ctx.beginPath();
-      ctx.arc(cx, cy, r * 0.85, Math.PI * 0.5, Math.PI * 1.5);
-      ctx.fill();
-      break;
-
-    case LOOPComponent.REWOUND:
-      // Backward arrows (rewind symbol)
-      const rw = r * 0.5;
-      // First triangle (left)
-      ctx.beginPath();
-      ctx.moveTo(cx - rw * 0.1, cy - rw);
-      ctx.lineTo(cx - rw * 1.2, cy);
-      ctx.lineTo(cx - rw * 0.1, cy + rw);
-      ctx.closePath();
-      ctx.fill();
-      // Second triangle (right)
-      ctx.beginPath();
-      ctx.moveTo(cx + rw * 0.9, cy - rw);
-      ctx.lineTo(cx - rw * 0.2, cy);
-      ctx.lineTo(cx + rw * 0.9, cy + rw);
-      ctx.closePath();
-      ctx.fill();
-      break;
-  }
+  ctx.restore();
 }
 
 /**
