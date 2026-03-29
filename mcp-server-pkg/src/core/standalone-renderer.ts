@@ -485,6 +485,11 @@ ${svgParts.join("\n")}
     const finalX = placement.x + betaOffset.x;
     const finalY = placement.y + betaOffset.y;
 
+    // DEBUG: log beta offset for G/H letters
+    if (pictograph.letter === "G" || pictograph.letter === "H") {
+      console.error(`[RENDER-PROP] letter=${pictograph.letter} color=${motion.color} endLoc=${endLocation} base=(${placement.x},${placement.y}) betaOffset=(${betaOffset.x},${betaOffset.y}) final=(${finalX},${finalY})`);
+    }
+
     // Determine prop file name - use provided prop type or default to staff
     // Use the current motion's prop type
     const currentPropType = motion.color === "blue" ? bluePropType : redPropType;

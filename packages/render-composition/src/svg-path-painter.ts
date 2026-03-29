@@ -58,9 +58,9 @@ export function drawPathCommands(
       return [relX, relY];
     };
 
-    // Transform coordinates with offset and scale
-    const tx = (x: number): number => (x + offsetX) * scale;
-    const ty = (y: number): number => (y + offsetY) * scale;
+    // Transform coordinates: scale first, then offset
+    const tx = (x: number): number => x * scale + offsetX;
+    const ty = (y: number): number => y * scale + offsetY;
 
     switch (command) {
       case "M": {
@@ -351,6 +351,24 @@ function angle(ux: number, uy: number, vx: number, vy: number): number {
 }
 
 /**
+ * Tokenize an SVG numeric argument string into individual numbers.
+ *
+ * SVG paths use compact notation where separators are implicit:
+ *   - A minus sign starts a new number:  `24-10.7`  →  [24, -10.7]
+ *   - A dot after digits starts a new number:  `10.5.3`  →  [10.5, 0.3]
+ *   - Scientific notation is preserved:  `1e-5`  →  [0.00001]
+ */
+function tokenizeNumbers(str: string): number[] {
+  const re = /[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?/g;
+  const nums: number[] = [];
+  let m;
+  while ((m = re.exec(str)) !== null) {
+    nums.push(parseFloat(m[0]));
+  }
+  return nums;
+}
+
+/**
  * Parse an SVG path "d" attribute string into commands
  *
  * @param d - SVG path data string
@@ -367,14 +385,7 @@ export function parsePathData(d: string): PathCommand[] {
     const command = match[1] ?? "";
     const argsStr = (match[2] ?? "").trim();
 
-    // Parse numeric arguments
-    const args = argsStr
-      .split(/[\s,]+/)
-      .filter(s => s.length > 0)
-      .map(s => parseFloat(s))
-      .filter(n => !isNaN(n));
-
-    commands.push({ cmd: command, args });
+    commands.push({ cmd: command, args: tokenizeNumbers(argsStr) });
   }
 
   return commands;
@@ -393,7 +404,11 @@ export function drawSvgPath(
   const scaleX = target.width / viewBox.width;
   const scaleY = target.height / viewBox.height;
   const scale = Math.min(scaleX, scaleY);
+  // Offset is in canvas pixel space — applied after scaling via ctx.translate
   const offsetX = target.x + (target.width - viewBox.width * scale) / 2;
   const offsetY = target.y + (target.height - viewBox.height * scale) / 2;
-  drawPathCommands(ctx, commands, offsetX, offsetY, scale);
+  ctx.save();
+  ctx.translate(offsetX, offsetY);
+  drawPathCommands(ctx, commands, 0, 0, scale);
+  ctx.restore();
 }

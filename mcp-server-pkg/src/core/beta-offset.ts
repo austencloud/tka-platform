@@ -322,16 +322,15 @@ export function calculateBetaOffset(
     return calculateYZBetaOffset(input, targetMotion, isRadial, gridMode);
   }
 
+  // Letter G/H: both motions are shifts with the same trajectory.
+  // Red gets the base direction (from static/dash map), blue gets opposite.
+  // Matches the app's LetterGHHandler logic.
+  if (letter === "G" || letter === "H" || letter === "G-" || letter === "H-") {
+    return calculateGHBetaOffset(location, targetMotion.color, isRadial, gridMode);
+  }
+
   // Check if this is a shift motion (PRO/ANTI/FLOAT)
   if (isShiftMotion(targetMotion.motionType)) {
-    // Letter G/H have special handling
-    if (letter === "G" || letter === "H") {
-      return calculateShiftBetaOffset(targetMotion, isRadial, gridMode);
-    }
-    // Letter I has its own maps but we'll use shift maps
-    if (letter === "I") {
-      return calculateShiftBetaOffset(targetMotion, isRadial, gridMode);
-    }
     return calculateShiftBetaOffset(targetMotion, isRadial, gridMode);
   }
 
@@ -401,6 +400,52 @@ function calculateShiftBetaOffset(
     // Fall back to static/dash calculation
     return calculateStaticDashBetaOffset(endLoc, motion.color, isRadial, gridMode);
   }
+
+  return directionToOffset(direction, gridMode);
+}
+
+/**
+ * Calculate beta offset for G/H letters.
+ *
+ * G/H letters have both motions as shifts with the same trajectory.
+ * Red gets the base direction (from static/dash map using end location),
+ * blue gets the opposite direction.
+ * Matches the app's LetterGHHandler logic.
+ */
+function calculateGHBetaOffset(
+  location: string,
+  color: "blue" | "red",
+  isRadial: boolean,
+  gridMode: GridMode
+): { x: number; y: number } {
+  // Special case: South location always returns RIGHT as base direction
+  if (location === "s" || location === GridLocation.SOUTH) {
+    const baseDirection = VectorDirection.RIGHT;
+    const direction = color === "red"
+      ? baseDirection
+      : getOppositeDirection(baseDirection);
+    return directionToOffset(direction, gridMode);
+  }
+
+  // Look up base direction from the static/dash map using red's perspective
+  const isDiamond = isCardinalLocation(location);
+  let map: Record<string, ColorMap>;
+  if (isDiamond) {
+    map = isRadial ? DIAMOND_RADIAL_MAP : DIAMOND_NON_RADIAL_MAP;
+  } else {
+    map = isRadial ? BOX_RADIAL_MAP : BOX_NON_RADIAL_MAP;
+  }
+
+  const locationMap = map[location];
+  if (!locationMap) {
+    return { x: 0, y: 0 };
+  }
+
+  // Red gets the base direction, blue gets the opposite
+  const baseDirection = locationMap["red"];
+  const direction = color === "red"
+    ? baseDirection
+    : getOppositeDirection(baseDirection);
 
   return directionToOffset(direction, gridMode);
 }

@@ -45,6 +45,31 @@ export { LOOPComponent };
 import { calculateDifficultyLevel } from "./difficulty-calculator.js";
 
 /**
+ * Layout table for start-column grid mode.
+ * Matches WITH_START_COLUMN from packages/render-composition/src/layout-tables.ts.
+ * Key = beat count (not including start position), value = [totalColumns, rows].
+ */
+const START_COLUMN_LAYOUTS: Record<number, [number, number]> = {
+  0: [1, 1], 1: [2, 1], 2: [2, 2], 3: [2, 3], 4: [3, 2],
+  5: [3, 3], 6: [4, 2], 7: [3, 4], 8: [3, 4], 9: [4, 3],
+  10: [3, 5], 11: [4, 4], 12: [4, 4], 13: [4, 5], 14: [4, 5],
+  15: [4, 5], 16: [5, 4], 17: [5, 5], 18: [5, 5], 19: [5, 5],
+  20: [5, 5], 21: [5, 6], 22: [5, 6], 23: [5, 6], 24: [5, 6],
+  25: [5, 7], 26: [5, 7], 27: [5, 7], 28: [5, 7], 29: [5, 8],
+  30: [5, 8], 31: [5, 8], 32: [5, 8], 33: [5, 9], 34: [5, 9],
+  35: [5, 9], 36: [5, 9], 37: [5, 10], 38: [5, 10], 39: [5, 10],
+  40: [5, 10], 41: [5, 11], 42: [5, 11], 43: [5, 11], 44: [5, 11],
+  45: [5, 12], 46: [5, 12], 47: [5, 12], 48: [5, 12], 49: [5, 13],
+  50: [5, 13], 51: [5, 13], 52: [5, 13], 53: [5, 14], 54: [5, 14],
+  55: [5, 14], 56: [5, 14], 57: [5, 15], 58: [5, 15], 59: [5, 15],
+  60: [5, 15], 61: [5, 16], 62: [5, 16], 63: [5, 16], 64: [5, 16],
+};
+
+function getStartColumnLayout(beatCount: number): [number, number] {
+  return START_COLUMN_LAYOUTS[beatCount] ?? START_COLUMN_LAYOUTS[64] ?? [5, 16];
+}
+
+/**
  * Turn allocation per step (blue and red get independent values)
  */
 export interface TurnAllocation {
@@ -358,22 +383,9 @@ function calculateLayout(
     return { width, height, columns, rows, headerHeight, footerHeight, gridStartY: headerHeight };
   }
 
-  // Grid layout with start position offset
-  // We need to figure out how many columns based on letter count
+  // Grid layout using the same layout table as the app
   const letterCount = stepCount - 1; // Exclude start position
-
-  // Target roughly square, but minimum 2 columns (1 for start + 1 for beats)
-  // Calculate beat columns (columns after the start position)
-  const beatColumns = Math.max(1, Math.ceil(Math.sqrt(letterCount)));
-  const totalColumns = beatColumns + 1; // +1 for start position column
-
-  // Calculate rows needed
-  // Row 1 has beatColumns beats
-  // Subsequent rows each have beatColumns beats
-  const beatsInFirstRow = Math.min(letterCount, beatColumns);
-  const remainingBeats = letterCount - beatsInFirstRow;
-  const additionalRows = remainingBeats > 0 ? Math.ceil(remainingBeats / beatColumns) : 0;
-  const rows = 1 + additionalRows;
+  const [totalColumns, rows] = getStartColumnLayout(letterCount);
 
   const width = totalColumns * opts.cellSize;
   const height = headerHeight + rows * opts.cellSize + footerHeight;
