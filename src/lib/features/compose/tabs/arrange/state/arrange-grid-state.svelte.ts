@@ -591,6 +591,84 @@ function createArrangeGridState() {
       });
     },
 
+    // Per-cell overrides
+    setCellSpeed(cellId: string, speed: number) {
+      const cellIndex = cells.findIndex((c) => c.id === cellId);
+      const cell = cells[cellIndex];
+      if (!cell) return;
+      withCoalescingUndo("SET_CELL_SPEED" as ArrangeUndoOperationType, `Set speed to ${speed}x`, `speed-${cellId}`, () => {
+        const newCells = [...cells];
+        newCells[cellIndex] = { ...cell, speedMultiplier: Math.max(0.25, Math.min(2.0, speed)) };
+        cells = newCells;
+        save();
+      });
+    },
+
+    setCellEffect(cellId: string, effect: CellEffect) {
+      const cellIndex = cells.findIndex((c) => c.id === cellId);
+      const cell = cells[cellIndex];
+      if (!cell) return;
+      withUndo("SET_CELL_EFFECT" as ArrangeUndoOperationType, `Set effect to ${effect}`, () => {
+        const newCells = [...cells];
+        newCells[cellIndex] = { ...cell, effect };
+        cells = newCells;
+        save();
+      });
+    },
+
+    setCellTrailMode(cellId: string, mode: TrailMode) {
+      const cellIndex = cells.findIndex((c) => c.id === cellId);
+      const cell = cells[cellIndex];
+      if (!cell) return;
+      withUndo("SET_CELL_TRAIL" as ArrangeUndoOperationType, `Set trail mode to ${mode}`, () => {
+        const newCells = [...cells];
+        newCells[cellIndex] = { ...cell, trailMode: mode };
+        cells = newCells;
+        save();
+      });
+    },
+
+    setCellEffort(cellId: string, effort: string) {
+      const cellIndex = cells.findIndex((c) => c.id === cellId);
+      const cell = cells[cellIndex];
+      if (!cell) return;
+      withUndo("SET_CELL_EFFORT" as ArrangeUndoOperationType, `Set effort to ${effort}`, () => {
+        const newCells = [...cells];
+        newCells[cellIndex] = { ...cell, effort };
+        cells = newCells;
+        save();
+      });
+    },
+
+    setCellMotionVisibility(cellId: string, color: 'blue' | 'red', visible: boolean) {
+      const cellIndex = cells.findIndex((c) => c.id === cellId);
+      const cell = cells[cellIndex];
+      if (!cell) return;
+      const label = `${visible ? 'Show' : 'Hide'} ${color} motion`;
+      withUndo("SET_CELL_VISIBILITY" as ArrangeUndoOperationType, label, () => {
+        const newCells = [...cells];
+        if (color === 'blue') {
+          newCells[cellIndex] = { ...cell, blueMotionVisible: visible };
+        } else {
+          newCells[cellIndex] = { ...cell, redMotionVisible: visible };
+        }
+        cells = newCells;
+        save();
+      });
+    },
+
+    setCellBeatOffset(cellId: string, offset: number) {
+      const cellIndex = cells.findIndex((c) => c.id === cellId);
+      const cell = cells[cellIndex];
+      if (!cell) return;
+      withCoalescingUndo("SET_BEAT_OFFSET" as ArrangeUndoOperationType, `Set beat offset to ${offset}`, `offset-${cellId}`, () => {
+        const newCells = [...cells];
+        newCells[cellIndex] = { ...cell, beatOffset: Math.max(0, offset) };
+        cells = newCells;
+        save();
+      });
+    },
+
     // Playback (delegated to ArrangePlaybackEngine)
     play() {
       if (!cells.some((c) => c.row < gridRows && c.col < gridCols && c.layers.length > 0)) return;

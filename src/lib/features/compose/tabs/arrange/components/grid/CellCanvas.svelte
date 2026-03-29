@@ -74,6 +74,15 @@
   // Trail settings
   const trailSettings = $derived(animationSettings.trail);
 
+  // Per-cell motion visibility overrides (undefined defaults to visible)
+  const blueVisible = $derived(cell.blueMotionVisible ?? true);
+  const redVisible = $derived(cell.redMotionVisible ?? true);
+  // TODO: Pass blueVisible/redVisible to AnimatorCanvas once the animation
+  // engine supports per-cell visibility overrides. Currently the global
+  // AnimationVisibilityStateManager controls visibility for the entire app.
+  // When per-cell support is added, these derived values should be passed as
+  // props to AnimatorCanvas to control per-hand opacity independently.
+
   // Calculate effective beat for this cell (including cell-level offset and speed)
   const effectiveBeat = $derived.by(() => {
     const speed = cell.speedMultiplier ?? 1.0;
