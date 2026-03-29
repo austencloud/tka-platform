@@ -29,6 +29,7 @@
   let error = $state<string | null>(null);
   let sequenceData = $state<SequenceData | null>(null);
   let gridVisible = $state(true);
+  let gridModeStr = $state(visibilityManager.getGridMode());
 
   function createOneTurnPattern(stepCount: number): TurnPattern {
     const entries = [];
@@ -138,6 +139,7 @@
       if (playbackModeChanged) animationState.setPlaybackMode(newPlaybackMode);
       if (speedChanged) animationState.setSpeed(newSpeed);
       if (gridVisible !== newGridVisible) gridVisible = newGridVisible;
+      gridModeStr = visibilityManager.getGridMode();
 
       if ((playbackModeChanged || speedChanged) && wasPlaying && playbackController) {
         playbackController.togglePlayback();
@@ -166,7 +168,7 @@
     <span>{error}</span>
   </div>
 {:else if sequenceData}
-  <AnimationPreviewCanvas {animationState} {gridVisible} />
+  <AnimationPreviewCanvas {animationState} {gridVisible} {gridModeStr} />
 {:else}
   <div class="preview-error">
     <i class="fas fa-video-slash" aria-hidden="true"></i>
