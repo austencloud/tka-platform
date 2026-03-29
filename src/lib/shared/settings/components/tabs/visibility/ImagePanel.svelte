@@ -70,7 +70,6 @@ so the preview matches exactly what the user will see when exporting.
       {userName}
       {customNotesText}
       forceContain={true}
-      showLoopGlyph={false}
     />
   </div>
 
@@ -227,11 +226,11 @@ so the preview matches exactly what the user will see when exporting.
    */
   .preview-frame {
     width: 100%;
-    max-width: 100%;
     align-self: center;
     flex-shrink: 0;
     padding: 0 16px;
     box-sizing: border-box;
+    min-height: 280px;
   }
 
   /* ── Controls ────────────────────────────────────────────── */
