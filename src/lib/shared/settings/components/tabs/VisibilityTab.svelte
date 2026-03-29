@@ -205,7 +205,6 @@
       tkaGlyphVisible={animTkaGlyph}
       wordHeaderVisible={animWordHeader}
       progressBarVisible={animProgressBar}
-      {darkMode}
       onToggle={handleAnimationToggle}
       onTrailStyleChange={handleTrailStyleChange}
       onPlaybackModeChange={handlePlaybackModeChange}

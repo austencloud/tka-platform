@@ -21,7 +21,6 @@
     tkaGlyphVisible: boolean;
     wordHeaderVisible: boolean;
     progressBarVisible: boolean;
-    darkMode: boolean;
     onToggle: (key: string) => void;
     onTrailStyleChange: (style: TrailVisibility) => void;
     onPlaybackModeChange: (mode: PlaybackMode) => void;
@@ -40,7 +39,6 @@
     tkaGlyphVisible,
     wordHeaderVisible,
     progressBarVisible,
-    darkMode,
     onToggle,
     onTrailStyleChange,
     onPlaybackModeChange,
@@ -272,15 +270,6 @@
             <i class="fas fa-tasks" aria-hidden="true"></i>
             Progress Bar
           </button>
-          <button
-            class="toggle-btn dark-mode-btn"
-            class:active={darkMode}
-            onclick={() => onToggle("darkMode")}
-            aria-pressed={darkMode}
-          >
-            <i class="fas fa-moon" aria-hidden="true"></i>
-            Dark Mode
-          </button>
         </div>
       </div>
 
@@ -433,19 +422,6 @@
         {/if}
       </div>
 
-      <!-- Row 5: Dark Mode -->
-      <div class="mobile-row">
-        <button
-          class="toggle-btn full-width"
-          class:active={darkMode}
-          onclick={() => onToggle("darkMode")}
-          aria-pressed={darkMode}
-        >
-          <i class="fas fa-moon" aria-hidden="true"></i>
-          Dark Mode
-        </button>
-      </div>
-
     </div>
     <!-- /mobile-controls -->
 
@@ -512,7 +488,7 @@
 
   .preview-frame {
     aspect-ratio: 1;
-    max-width: 280px;
+    max-width: 100%;
     width: 100%;
     align-self: center;
     border-radius: 16px;
