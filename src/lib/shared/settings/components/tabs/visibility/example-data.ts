@@ -231,6 +231,39 @@ export function getAabbPictographSteps() {
   }));
 }
 
+/** AABB as a proper SequenceData for ChoreoCard rendering */
+export function getAabbSequenceData(): SequenceData {
+  const steps: StepData[] = aabbStepData.map((step) => ({
+    id: `aabb-step-${step.stepNumber}`,
+    letter: step.letter,
+    startPosition: GridPosition.ALPHA1,
+    endPosition: GridPosition.ALPHA1,
+    gridMode: GridMode.DIAMOND,
+    stepNumber: step.stepNumber,
+    duration: 1,
+    blueReversal: false,
+    redReversal: false,
+    isBlank: false,
+    motions: {
+      blue: createMotionData(step.blueMotion),
+      red: createMotionData(step.redMotion),
+    },
+  }));
+
+  return {
+    id: "visibility-preview-aabb",
+    name: "AABB",
+    word: "AABB",
+    steps,
+    startPosition: exampleStartPositionData,
+    thumbnails: [],
+    isFavorite: false,
+    isCircular: false,
+    tags: [],
+    metadata: {},
+  };
+}
+
 export const exampleStartPositionData: StartPositionData = {
   isStartPosition: true,
   id: "visibility-preview-start",
