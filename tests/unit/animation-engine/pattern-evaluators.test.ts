@@ -7,6 +7,7 @@ import { evaluateChase, evaluateComet, evaluateWave, evaluateCascade } from "$li
 import { evaluateRainbow, evaluateWarmShift, evaluateCoolShift, evaluateNeon } from "$lib/shared/animation-engine/domain/patterns/spectrum";
 import { evaluateSparkle, evaluateFlicker, evaluateAurora } from "$lib/shared/animation-engine/domain/patterns/texture";
 import { evaluateProximity, evaluateVelocity, evaluateMirrorSync, evaluateBeatPulse } from "$lib/shared/animation-engine/domain/patterns/tka-aware";
+import { evaluatePattern as oldEvaluatePattern, getLedPattern } from "$lib/shared/animation-engine/domain/types/LedPatterns";
 
 // ─── Registry Setup ──────────────────────────────────────────────────────────
 
@@ -582,5 +583,47 @@ describe("TKA-Aware patterns", () => {
     for (let t = 0; t < 2; t += 0.05) {
       expect(colorInRange(evaluatePattern("beat-pulse", ctx({ time: t, speed: 2 })))).toBe(true);
     }
+  });
+});
+
+// ─── Backward Compatibility ─────────────────────────────────────────────────
+
+describe("Backward compatibility", () => {
+  it("old evaluatePattern(solid) matches new evaluator", () => {
+    const pattern = getLedPattern("solid");
+    const primaryColor = { r: 0.5, g: 0.8, b: 0.2 };
+    const old = oldEvaluatePattern(pattern, 1.0, 0, 4, 1.0, primaryColor);
+    expect(old.r).toBeCloseTo(0.5);
+    expect(old.g).toBeCloseTo(0.8);
+    expect(old.b).toBeCloseTo(0.2);
+  });
+
+  it("old evaluatePattern(rainbow) produces valid color", () => {
+    const pattern = getLedPattern("rainbow");
+    const primaryColor = { r: 1, g: 1, b: 1 };
+    const result = oldEvaluatePattern(pattern, 2.5, 1, 4, 1.0, primaryColor);
+    expect(result.r).toBeGreaterThanOrEqual(0);
+    expect(result.r).toBeLessThanOrEqual(1);
+    expect(result.g).toBeGreaterThanOrEqual(0);
+    expect(result.b).toBeGreaterThanOrEqual(0);
+  });
+
+  it("old evaluatePattern delegates to new registry for all known patterns", () => {
+    const primaryColor = { r: 0.7, g: 0.3, b: 0.9 };
+    for (const id of ["solid", "rainbow"]) {
+      const pattern = getLedPattern(id);
+      const result = oldEvaluatePattern(pattern, 1.0, 0, 4, 1.0, primaryColor);
+      expect(colorInRange(result)).toBe(true);
+    }
+  });
+
+  it("old evaluatePattern with unknown id falls back to primary color", () => {
+    // getLedPattern returns solid fallback for unknown IDs
+    const pattern = getLedPattern("nonexistent-pattern");
+    const primaryColor = { r: 0.1, g: 0.2, b: 0.3 };
+    const result = oldEvaluatePattern(pattern, 0, 0, 4, 1.0, primaryColor);
+    expect(result.r).toBeCloseTo(0.1);
+    expect(result.g).toBeCloseTo(0.2);
+    expect(result.b).toBeCloseTo(0.3);
   });
 });

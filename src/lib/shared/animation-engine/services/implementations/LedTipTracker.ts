@@ -15,7 +15,12 @@ import type { LedTipData, LedOverlayConfig } from "../../domain/types/LedTypes";
 import { hexToLedColor, resolveHandColor } from "../../domain/types/LedTypes";
 import type { PropState } from "../../domain/PropState";
 import { getTipPoints } from "../../domain/types/PropTipPoints";
-import { getLedPattern, evaluatePattern } from "../../domain/types/LedPatterns";
+import { evaluatePattern as evaluatePatternNew } from "../../domain/patterns/evaluator";
+import {
+	createReusableContext,
+	type TipEvaluationContext,
+	type TipRelationData,
+} from "../../domain/patterns/context";
 import { PropPositionCalculator } from "./PropPositionCalculator";
 import type { PropEndpointConfig } from "../contracts/IPropPositionCalculator";
 
@@ -54,6 +59,12 @@ export class LedTipTracker implements ILedTipTracker {
 	/** Output array reused each frame */
 	private outputTips: LedTipData[] = [];
 
+	/** Reusable evaluation context to avoid allocations per LED per frame */
+	private evalCtx: TipEvaluationContext = createReusableContext();
+
+	/** Snapshot of previous frame tip positions for TKA-aware patterns (proximity, etc.) */
+	private prevFrameSnapshot: TipRelationData[] = [];
+
 	/** Skip first few frames after reset to let canvas size settle. */
 	private warmupFramesRemaining = 3;
 	private static readonly WARMUP_FRAMES = 3;
@@ -81,12 +92,12 @@ export class LedTipTracker implements ILedTipTracker {
 		this.outputTips.length = 0;
 		let totalTips = 0;
 
-		// Pre-compute pattern for this frame
-		const pattern = getLedPattern(ledConfig.patternId);
-
 		// Resolve per-hand base colors from the color mode
 		const blueBaseColor = hexToLedColor(resolveHandColor(ledConfig, 0));
 		const redBaseColor = hexToLedColor(resolveHandColor(ledConfig, 1));
+
+		// Secondary color is shared across both hands
+		const secondaryBaseColor = hexToLedColor(ledConfig.secondaryColor);
 
 		// Count total LEDs across both props for pattern evaluation
 		const blueTipConfig = getTipPoints(config.bluePropType);
@@ -107,12 +118,13 @@ export class LedTipTracker implements ILedTipTracker {
 				0, // prevTipOffset (blue = slots 0-15)
 				currentTime,
 				totalTips,
-				pattern,
 				blueBaseColor,
+				secondaryBaseColor,
 				ledConfig.patternSpeed,
 				totalLedCount,
 				timeSeconds,
-				0 // ledGlobalOffset (blue LEDs start at 0)
+				0, // ledGlobalOffset (blue LEDs start at 0)
+				ledConfig
 			);
 		} else {
 			this.invalidateRange(0, MAX_TOTAL_TIPS / 2);
@@ -129,16 +141,25 @@ export class LedTipTracker implements ILedTipTracker {
 				MAX_TOTAL_TIPS / 2, // prevTipOffset (red = slots 16-31)
 				currentTime,
 				totalTips,
-				pattern,
 				redBaseColor,
+				secondaryBaseColor,
 				ledConfig.patternSpeed,
 				totalLedCount,
 				timeSeconds,
-				blueLedCount // ledGlobalOffset (red LEDs start after blue)
+				blueLedCount, // ledGlobalOffset (red LEDs start after blue)
+				ledConfig
 			);
 		} else {
 			this.invalidateRange(MAX_TOTAL_TIPS / 2, MAX_TOTAL_TIPS);
 		}
+
+		// Snapshot current output for next frame's prevFrameTips (used by TKA-aware patterns)
+		this.prevFrameSnapshot = this.outputTips.map((t) => ({
+			x: t.x,
+			y: t.y,
+			propIndex: t.propIndex,
+			tipIndex: t.tipIndex,
+		}));
 
 		return this.outputTips;
 	}
@@ -153,6 +174,8 @@ export class LedTipTracker implements ILedTipTracker {
 
 	/**
 	 * Emit LED tips for a single prop based on its LED point configuration.
+	 * Computes velocity BEFORE pattern evaluation so TKA-aware patterns
+	 * can use speed/position data in the evaluator context.
 	 */
 	private emitPropTips(
 		prop: PropState,
@@ -163,12 +186,13 @@ export class LedTipTracker implements ILedTipTracker {
 		prevTipOffset: number,
 		currentTime: number,
 		outputStartIndex: number,
-		pattern: ReturnType<typeof getLedPattern>,
 		baseColor: { r: number; g: number; b: number },
+		secondaryBaseColor: { r: number; g: number; b: number },
 		patternSpeed: number,
 		totalLedCount: number,
 		timeSeconds: number,
-		ledGlobalOffset: number
+		ledGlobalOffset: number,
+		ledConfig: LedOverlayConfig
 	): number {
 		const tipConfig = getTipPoints(propType);
 		const points = tipConfig.points;
@@ -191,24 +215,53 @@ export class LedTipTracker implements ILedTipTracker {
 		for (let i = 0; i < points.length && outputIndex < MAX_TOTAL_TIPS; i++) {
 			const lp = points[i]!;
 			const prevSlot = prevTipOffset + i;
+			const prev = this.prevTips[prevSlot]!;
 
 			// Transform LED point from prop-local to canvas space
 			const worldX = center.x + (lp.dx * cosA - lp.dy * sinA) * gridScaleFactor;
 			const worldY = center.y + (lp.dx * sinA + lp.dy * cosA) * gridScaleFactor;
 
-			// Evaluate pattern color for this LED
+			// Compute velocity from previous frame BEFORE pattern evaluation
+			// so TKA-aware patterns can use speed/position data
+			let velocityX = 0;
+			let velocityY = 0;
+			let speedMagnitude = 0;
+			if (prev.valid) {
+				const dt = Math.max((currentTime - prev.time) / 1000, MIN_DT_SECONDS);
+				velocityX = (worldX - prev.x) / dt;
+				velocityY = (worldY - prev.y) / dt;
+				speedMagnitude = Math.sqrt(velocityX * velocityX + velocityY * velocityY);
+				if (speedMagnitude > MAX_SPEED) {
+					const scale = MAX_SPEED / speedMagnitude;
+					velocityX *= scale;
+					velocityY *= scale;
+					speedMagnitude = MAX_SPEED;
+				}
+			}
+
+			// Build evaluation context and run the new pattern evaluator
 			const ledGlobalIndex = ledGlobalOffset + i;
-			const color = evaluatePattern(
-				pattern,
-				timeSeconds,
-				ledGlobalIndex,
-				totalLedCount,
-				patternSpeed,
-				baseColor
-			);
+			const ctx = this.evalCtx;
+			ctx.time = timeSeconds;
+			ctx.ledIndex = ledGlobalIndex;
+			ctx.totalLeds = totalLedCount;
+			ctx.speed = patternSpeed;
+			ctx.primaryColor = baseColor;
+			ctx.secondaryColor = secondaryBaseColor;
+			ctx.propIndex = propIndex;
+			ctx.tipIndex = i;
+			ctx.x = worldX;
+			ctx.y = worldY;
+			ctx.velocityX = velocityX;
+			ctx.velocityY = velocityY;
+			ctx.speedMagnitude = speedMagnitude;
+			ctx.prevFrameTips = this.prevFrameSnapshot;
+			ctx.beatIndex = -1;
+			ctx.totalBeats = 0;
+			const color = evaluatePatternNew(ledConfig.patternId, ctx);
 
 			this.emitTip(
-				this.prevTips[prevSlot]!,
+				prev,
 				worldX,
 				worldY,
 				propIndex,
@@ -216,7 +269,10 @@ export class LedTipTracker implements ILedTipTracker {
 				1.0,
 				color,
 				currentTime,
-				outputIndex
+				outputIndex,
+				velocityX,
+				velocityY,
+				speedMagnitude
 			);
 			outputIndex++;
 		}
@@ -241,28 +297,12 @@ export class LedTipTracker implements ILedTipTracker {
 		brightness: number,
 		color: { r: number; g: number; b: number },
 		currentTime: number,
-		outputIndex: number
+		outputIndex: number,
+		velocityX: number,
+		velocityY: number,
+		speed: number
 	): void {
-		let velocityX = 0;
-		let velocityY = 0;
-		let speed = 0;
-
-		if (prev.valid) {
-			const dt = Math.max((currentTime - prev.time) / 1000, MIN_DT_SECONDS);
-			velocityX = (x - prev.x) / dt;
-			velocityY = (y - prev.y) / dt;
-			speed = Math.sqrt(velocityX * velocityX + velocityY * velocityY);
-
-			// Clamp to prevent physics outliers
-			if (speed > MAX_SPEED) {
-				const scale = MAX_SPEED / speed;
-				velocityX *= scale;
-				velocityY *= scale;
-				speed = MAX_SPEED;
-			}
-		}
-
-		// Update stored position
+		// Update stored position for next frame's velocity computation
 		prev.x = x;
 		prev.y = y;
 		prev.time = currentTime;

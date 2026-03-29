@@ -1,13 +1,34 @@
 /**
  * LED Pattern Engine
  *
- * Defines the built-in LED color patterns and the pure `evaluatePattern()`
- * function that maps (time, LED index, config) → a normalized RGB color.
+ * Defines the built-in LED color patterns and the backward-compatible
+ * `evaluatePattern()` wrapper that delegates to the new registry-based
+ * evaluator introduced in the pattern expansion.
  *
  * All RGB values are in [0, 1]. Time is in seconds. The function is
  * intentionally free of side effects so it can be called from both the
  * main thread and (eventually) a WebWorker without serialization overhead.
  */
+
+import { evaluatePattern as newEvaluatePattern, initializeRegistry } from "../patterns/evaluator";
+import { createReusableContext } from "../patterns/context";
+import { evaluateSolid, evaluateSplit, evaluateQuad } from "../patterns/solid";
+import { evaluateBreathe, evaluatePulse, evaluateHeartbeat, evaluateColorMorph } from "../patterns/breathe";
+import { evaluateChase, evaluateComet, evaluateWave, evaluateCascade } from "../patterns/chase";
+import { evaluateRainbow, evaluateWarmShift, evaluateCoolShift, evaluateNeon } from "../patterns/spectrum";
+import { evaluateSparkle, evaluateFlicker, evaluateAurora } from "../patterns/texture";
+import { evaluateProximity, evaluateVelocity, evaluateMirrorSync, evaluateBeatPulse } from "../patterns/tka-aware";
+
+// ─── Initialize Pattern Registry ─────────────────────────────────────────────
+
+initializeRegistry([
+  ["solid", evaluateSolid], ["split", evaluateSplit], ["quad", evaluateQuad],
+  ["breathe", evaluateBreathe], ["pulse", evaluatePulse], ["heartbeat", evaluateHeartbeat], ["color-morph", evaluateColorMorph],
+  ["chase", evaluateChase], ["comet", evaluateComet], ["wave", evaluateWave], ["cascade", evaluateCascade],
+  ["rainbow", evaluateRainbow], ["warm-shift", evaluateWarmShift], ["cool-shift", evaluateCoolShift], ["neon", evaluateNeon],
+  ["sparkle", evaluateSparkle], ["flicker", evaluateFlicker], ["aurora", evaluateAurora],
+  ["proximity", evaluateProximity], ["velocity", evaluateVelocity], ["mirror-sync", evaluateMirrorSync], ["beat-pulse", evaluateBeatPulse],
+]);
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -70,12 +91,20 @@ function hueToChannel(p: number, q: number, t: number): number {
   return p;
 }
 
-// ─── Pattern Evaluator ────────────────────────────────────────────────────────
+// ─── Pattern Evaluator (Backward-Compat Wrapper) ─────────────────────────────
+
+/** Reusable context for the backward-compatible evaluatePattern() wrapper */
+const _compatCtx = createReusableContext();
 
 /**
  * Compute the LED color for a single point at a given moment in time.
  *
- * @param pattern      - The pattern descriptor (only `type` is consumed here).
+ * This is a backward-compatible wrapper that delegates to the new
+ * registry-based evaluator. New code should use the evaluator directly
+ * via `evaluatePattern` from `../patterns/evaluator` with a full
+ * TipEvaluationContext for access to velocity, position, and TKA-aware data.
+ *
+ * @param pattern      - The pattern descriptor (uses `id` to look up the evaluator).
  * @param time         - Elapsed time in seconds (monotonically increasing).
  * @param ledIndex     - Zero-based index of this LED within the prop's LED array.
  * @param totalLeds    - Total number of LEDs on this prop (used for relative offset).
@@ -91,27 +120,12 @@ export function evaluatePattern(
   speed: number,
   primaryColor: LedColor
 ): LedColor {
-  // Scaled time drives all temporal oscillations.
-  const t = time * speed;
-
-  switch (pattern.type) {
-    case "solid": {
-      // All LEDs emit the primary color at full intensity.
-      return { r: primaryColor.r, g: primaryColor.g, b: primaryColor.b };
-    }
-
-    case "rainbow": {
-      // Each LED is offset around the hue wheel proportionally to its
-      // position in the array, and the whole spectrum rotates over time.
-      const hue = (t * 0.15 + ledIndex / Math.max(totalLeds, 1)) % 1.0;
-      return hslToRgb(hue, 1.0, 0.5);
-    }
-
-    default: {
-      // Defensive fallback — return primary color unchanged.
-      return { r: primaryColor.r, g: primaryColor.g, b: primaryColor.b };
-    }
-  }
+  _compatCtx.time = time;
+  _compatCtx.ledIndex = ledIndex;
+  _compatCtx.totalLeds = totalLeds;
+  _compatCtx.speed = speed;
+  _compatCtx.primaryColor = primaryColor;
+  return newEvaluatePattern(pattern.id, _compatCtx);
 }
 
 // ─── Built-in Pattern Registry ────────────────────────────────────────────────
