@@ -108,6 +108,8 @@ export interface LedOverlayConfig {
   patternSpeed: number;
   /** Primary color for the pattern engine, expressed as a CSS hex string (e.g. "#00ff88") */
   primaryColor: string;
+  /** Secondary color for dual-color patterns, expressed as a CSS hex string (e.g. "#ffffff") */
+  secondaryColor: string;
   /**
    * Global brightness multiplier (0.0 - 1.0, default 1.0).
    * Applied on top of per-LED brightness values.
@@ -135,6 +137,7 @@ export const DEFAULT_LED_CONFIG: LedOverlayConfig = {
   patternId: "solid",
   patternSpeed: 1.0,
   primaryColor: "#00ff88",
+  secondaryColor: "#ffffff",
   brightness: 1.0,
   colorMode: "unified",
   blueHandColor: PROP_BLUE,

@@ -8,6 +8,8 @@
 import type { CharcoalSparkParams } from "../domain/types/CharcoalSparkTypes";
 import { DEFAULT_CHARCOAL_PARAMS } from "../domain/types/CharcoalSparkTypes";
 import type { EffortId } from "$lib/features/effort-lab/domain/effort-types";
+import type { TipEffectMap, TipEffortMap } from "../domain/types/TipEffectTypes";
+import { findPreset, validatePreset, type LedColorPreset } from "../domain/types/LedColorPresets";
 
 type VisibilityObserver = () => void;
 
@@ -56,6 +58,9 @@ interface AnimationVisibilitySettings {
   ledBrightness: number; // 1-5 discrete level (maps to 0.2-1.0 float)
   ledPatternId: string; // Active LED pattern ID
   ledPrimaryColor: string; // Primary color (hex)
+  ledSecondaryColor: string; // Secondary color (hex)
+  ledActivePresetId: string | null; // Currently active color preset
+  ledUserPresets: LedColorPreset[]; // User-created color presets
 
   // Shared with pictograph visibility (can sync)
   tkaGlyph: boolean; // TKA Glyph includes turn numbers
@@ -65,6 +70,10 @@ interface AnimationVisibilitySettings {
   effortPreset: EffortId;
   /** Path shape for shift interpolation: "arc" (default) or "linear" */
   pathShape: "arc" | "linear";
+
+  // Per-tip effect/effort assignments (global level)
+  tipEffectMap: TipEffectMap;
+  tipEffortMap: TipEffortMap;
 }
 
 const STORAGE_KEY = "animation-visibility-settings";
@@ -150,6 +159,9 @@ export class AnimationVisibilityStateManager {
       ledBrightness: 5,
       ledPatternId: "solid",
       ledPrimaryColor: "#00ff88",
+      ledSecondaryColor: "#ffffff",
+      ledActivePresetId: null,
+      ledUserPresets: [],
 
       // Shared elements - defaults optimized for animation viewing
       tkaGlyph: true, // TKA Glyph includes turn numbers
@@ -158,6 +170,10 @@ export class AnimationVisibilityStateManager {
       redMotion: true,
       effortPreset: "linear",
       pathShape: "arc",
+
+      // Per-tip effect/effort assignments
+      tipEffectMap: {},
+      tipEffortMap: {},
     };
   }
 
@@ -263,6 +279,25 @@ export class AnimationVisibilityStateManager {
           parsed.gridMode = "8point";
         }
 
+        // Migrate legacy global effect booleans → per-tip effect map
+        if (!parsed.tipEffectMap) {
+          parsed.tipEffectMap = {};
+          if (parsed.fireEffect) parsed.tipEffectMap = { "*": { effect: "fire" } };
+          else if (parsed.charcoalEffect) parsed.tipEffectMap = { "*": { effect: "charcoal" } };
+          else if (parsed.ledEffect) parsed.tipEffectMap = { "*": { effect: "led" } };
+        }
+        if (!parsed.tipEffortMap) {
+          parsed.tipEffortMap = {};
+          if (parsed.effortPreset && parsed.effortPreset !== "linear") {
+            parsed.tipEffortMap = { "*": { effort: parsed.effortPreset } };
+          }
+        }
+
+        // Validate user presets from storage (reject malformed entries)
+        if (Array.isArray(parsed.ledUserPresets)) {
+          parsed.ledUserPresets = parsed.ledUserPresets.filter(validatePreset);
+        }
+
         return {
           ...defaults,
           ...parsed,
@@ -330,7 +365,7 @@ export class AnimationVisibilityStateManager {
   getVisibility(
     key: Exclude<
       keyof AnimationVisibilitySettings,
-      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "darkMode" | "fireColorBlend" | "fireIntensity" | "charcoalParams" | "ledBrightness" | "ledPatternId" | "ledPrimaryColor" | "effortPreset" | "pathShape"
+      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "darkMode" | "fireColorBlend" | "fireIntensity" | "charcoalParams" | "ledBrightness" | "ledPatternId" | "ledPrimaryColor" | "effortPreset" | "pathShape" | "tipEffectMap" | "tipEffortMap"
     >
   ): boolean {
     return this.settings[key] as boolean;
@@ -626,11 +661,11 @@ export class AnimationVisibilityStateManager {
    */
   setFireEffect(enabled: boolean): void {
     this.settings.fireEffect = enabled;
-    // Mutual exclusion: only one effect active at a time
     if (enabled) {
+      if (this.settings.trailStyle !== "off") this.settings.trailStyle = "off";
+      // Mutual exclusion: only one overlay effect can be active
       if (this.settings.charcoalEffect) this.settings.charcoalEffect = false;
       if (this.settings.ledEffect) this.settings.ledEffect = false;
-      if (this.settings.trailStyle !== "off") this.settings.trailStyle = "off";
     }
     this.syncEffectDarkMode(enabled);
     this.saveToStorage();
@@ -668,11 +703,11 @@ export class AnimationVisibilityStateManager {
 
   setCharcoalEffect(enabled: boolean): void {
     this.settings.charcoalEffect = enabled;
-    // Mutual exclusion: only one effect active at a time
     if (enabled) {
+      if (this.settings.trailStyle !== "off") this.settings.trailStyle = "off";
+      // Mutual exclusion: only one overlay effect can be active
       if (this.settings.fireEffect) this.settings.fireEffect = false;
       if (this.settings.ledEffect) this.settings.ledEffect = false;
-      if (this.settings.trailStyle !== "off") this.settings.trailStyle = "off";
     }
     this.syncEffectDarkMode(enabled);
     this.saveToStorage();
@@ -750,11 +785,11 @@ export class AnimationVisibilityStateManager {
    */
   setLedEffect(enabled: boolean): void {
     this.settings.ledEffect = enabled;
-    // Mutual exclusion: only one effect active at a time
     if (enabled) {
+      if (this.settings.trailStyle !== "off") this.settings.trailStyle = "off";
+      // Mutual exclusion: LED disables fire and charcoal
       if (this.settings.fireEffect) this.settings.fireEffect = false;
       if (this.settings.charcoalEffect) this.settings.charcoalEffect = false;
-      if (this.settings.trailStyle !== "off") this.settings.trailStyle = "off";
     }
     this.syncEffectDarkMode(enabled);
     this.saveToStorage();
@@ -816,6 +851,78 @@ export class AnimationVisibilityStateManager {
     this.notifyObservers();
   }
 
+  /**
+   * Get current LED secondary color
+   */
+  getLedSecondaryColor(): string {
+    return this.settings.ledSecondaryColor;
+  }
+
+  /**
+   * Set LED secondary color
+   */
+  setLedSecondaryColor(color: string): void {
+    if (this.settings.ledSecondaryColor === color) return;
+    this.settings.ledSecondaryColor = color;
+    this.saveToStorage();
+    this.notifyObservers();
+  }
+
+  /**
+   * Get the currently active color preset ID (null if no preset is active)
+   */
+  getActivePresetId(): string | null {
+    return this.settings.ledActivePresetId;
+  }
+
+  /**
+   * Activate a color preset by ID, applying its colors to the LED settings.
+   * No-op if the preset ID is not found in built-in or user presets.
+   */
+  setActivePreset(presetId: string): void {
+    const preset = findPreset(presetId, this.settings.ledUserPresets);
+    if (!preset) return;
+    this.settings.ledActivePresetId = presetId;
+    this.settings.ledPrimaryColor = preset.primaryColor;
+    if (preset.secondaryColor) {
+      this.settings.ledSecondaryColor = preset.secondaryColor;
+    }
+    this.saveToStorage();
+    this.notifyObservers();
+  }
+
+  /**
+   * Get all user-created color presets
+   */
+  getUserPresets(): LedColorPreset[] {
+    return this.settings.ledUserPresets;
+  }
+
+  /**
+   * Create and persist a new user color preset
+   */
+  addUserPreset(name: string, primaryColor: string): void {
+    const id = `user-${Date.now()}`;
+    this.settings.ledUserPresets = [
+      ...this.settings.ledUserPresets,
+      { id, name, primaryColor, builtIn: false },
+    ];
+    this.saveToStorage();
+    this.notifyObservers();
+  }
+
+  /**
+   * Remove a user-created preset by ID. Clears active preset if it was the removed one.
+   */
+  removeUserPreset(presetId: string): void {
+    this.settings.ledUserPresets = this.settings.ledUserPresets.filter((p) => p.id !== presetId);
+    if (this.settings.ledActivePresetId === presetId) {
+      this.settings.ledActivePresetId = null;
+    }
+    this.saveToStorage();
+    this.notifyObservers();
+  }
+
   // ============================================================================
   // EFFORT PRESET
   // ============================================================================
@@ -832,6 +939,30 @@ export class AnimationVisibilityStateManager {
    */
   setEffortPreset(preset: EffortId): void {
     this.settings.effortPreset = preset;
+    this.saveToStorage();
+    this.notifyObservers();
+  }
+
+  // ============================================================================
+  // PER-TIP EFFECT / EFFORT MAPS
+  // ============================================================================
+
+  getTipEffectMap(): TipEffectMap {
+    return this.settings.tipEffectMap;
+  }
+
+  setTipEffectMap(map: TipEffectMap): void {
+    this.settings.tipEffectMap = map;
+    this.saveToStorage();
+    this.notifyObservers();
+  }
+
+  getTipEffortMap(): TipEffortMap {
+    return this.settings.tipEffortMap;
+  }
+
+  setTipEffortMap(map: TipEffortMap): void {
+    this.settings.tipEffortMap = map;
     this.saveToStorage();
     this.notifyObservers();
   }
@@ -860,7 +991,7 @@ export class AnimationVisibilityStateManager {
   toggleVisibility(
     key: Exclude<
       keyof AnimationVisibilitySettings,
-      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "darkMode" | "fireColorBlend" | "fireIntensity" | "charcoalParams" | "ledBrightness" | "ledPatternId" | "ledPrimaryColor" | "effortPreset" | "pathShape"
+      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "darkMode" | "fireColorBlend" | "fireIntensity" | "charcoalParams" | "ledBrightness" | "ledPatternId" | "ledPrimaryColor" | "effortPreset" | "pathShape" | "tipEffectMap" | "tipEffortMap"
     >
   ): void {
     this.setVisibility(key, !(this.settings[key] as boolean));
