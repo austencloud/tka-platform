@@ -423,6 +423,7 @@ export class AnimationEngine {
     this.ledConfig.enabled = vm.isLedEffectEnabled();
     this.ledConfig.patternId = vm.getLedPatternId();
     this.ledConfig.primaryColor = vm.getLedPrimaryColor();
+    this.ledConfig.secondaryColor = vm.getLedSecondaryColor();
 
     this.state.visibilityState = {
       grid: vm.getGridMode() !== "none",
@@ -672,6 +673,7 @@ export class AnimationEngine {
         const ledEnabled = vm.isLedEffectEnabled();
         const ledPatternId = vm.getLedPatternId();
         const ledColor = vm.getLedPrimaryColor();
+        const ledSecondaryColor = vm.getLedSecondaryColor();
         const ledBrightness = ledBrightnessToFloat(vm.getLedBrightness());
 
         const ledDiff: Partial<LedOverlayConfig> = {};
@@ -680,6 +682,8 @@ export class AnimationEngine {
           ledDiff.patternId = ledPatternId;
         if (ledColor !== this.ledConfig.primaryColor)
           ledDiff.primaryColor = ledColor;
+        if (ledSecondaryColor !== this.ledConfig.secondaryColor)
+          ledDiff.secondaryColor = ledSecondaryColor;
         if (ledBrightness !== this.ledConfig.brightness)
           ledDiff.brightness = ledBrightness;
 
