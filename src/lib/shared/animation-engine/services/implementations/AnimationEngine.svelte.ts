@@ -352,6 +352,7 @@ export class AnimationEngine {
     ledConfig: null,
     isSeamlesslyLoopable: false,
     sequenceContentHash: undefined,
+    tipEffectMap: {},
   };
 
   // ============================================================================
@@ -2089,6 +2090,9 @@ export class AnimationEngine {
 
     // LED overlay config
     fp.ledConfig = this.ledConfig.enabled ? this.ledConfig : null;
+
+    // Per-tip effect assignments for filtering tips by effect type
+    fp.tipEffectMap = this.getVM()?.getTipEffectMap() ?? {};
 
     // Playback speed for fire cache invalidation
     const vmRef = this.getVM();

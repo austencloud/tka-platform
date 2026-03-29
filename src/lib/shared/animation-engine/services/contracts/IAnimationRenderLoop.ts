@@ -23,6 +23,7 @@ import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enu
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 import type { StartPositionData } from "$lib/features/create/shared/domain/models/StartPositionData";
+import type { TipEffectMap } from "../../domain/types/TipEffectTypes";
 
 /**
  * Configuration for render loop initialization
@@ -115,6 +116,8 @@ export interface RenderFrameParams {
   isSeamlesslyLoopable?: boolean;
   /** Changes when the sequence content changes. Invalidates fire cache. */
   sequenceContentHash?: string;
+  /** Per-tip effect assignments (global level). Used to filter tips by effect type. */
+  tipEffectMap?: TipEffectMap;
 }
 
 /**

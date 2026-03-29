@@ -24,6 +24,7 @@ import type {
 } from "../contracts/IAnimationRenderLoop";
 import { QualityTier } from "../../domain/types/QualityTypes";
 import { effectErrorSignal } from "../../state/effect-error-signal.svelte";
+import { resolveEffect } from "../../domain/types/TipEffectTypes";
 
 export class AnimationRenderLoop implements IAnimationRenderLoop {
   private renderer: IAnimationRenderer | null = null;
@@ -507,8 +508,14 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
           currentTime
         );
 
+        // Filter tips by resolved effect so each renderer only gets its assigned tips
+        const allTips = tipResult.tips;
+        const tipMap = params.tipEffectMap ?? {};
+        const fireTips = allTips.filter(t => resolveEffect(t.propIndex, t.tipIndex, undefined, tipMap) === 'fire');
+        const charcoalTips = allTips.filter(t => resolveEffect(t.propIndex, t.tipIndex, undefined, tipMap) === 'charcoal');
+
         const fireInput: import("../../domain/types/FireTypes").FireFrameInput = {
-          tips: tipResult.tips,
+          tips: allTips,
           currentTime,
           canvasWidth: this.canvasSize,
           canvasHeight: this.canvasSize,
@@ -521,16 +528,18 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
           isSeamlesslyLoopable: params.isSeamlesslyLoopable ?? false,
         };
 
-        if (activeFireRenderer) {
+        // Fire and charcoal can now run simultaneously on different tips
+        if (activeFireRenderer && fireTips.length > 0) {
           if (tipResult.gapDetected) {
             activeFireRenderer.clearSimulation();
           }
-          activeFireRenderer.renderFire(fireInput, params.fireConfig!);
-        } else if (activeCharcoalRenderer) {
+          activeFireRenderer.renderFire({ ...fireInput, tips: fireTips }, params.fireConfig!);
+        }
+        if (activeCharcoalRenderer && charcoalTips.length > 0) {
           if (tipResult.gapDetected) {
             activeCharcoalRenderer.clearSimulation();
           }
-          activeCharcoalRenderer.renderCharcoal(fireInput, params.fireConfig!);
+          activeCharcoalRenderer.renderCharcoal({ ...fireInput, tips: charcoalTips }, params.fireConfig!);
         }
 
         // Successful frame resets the error counter
@@ -578,7 +587,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
           redPropType: params.redPropType,
         };
 
-        const tips = this.ledTipTracker.update(
+        const allLedTips = this.ledTipTracker.update(
           props.blueProp,
           props.redProp,
           tipTrackerConfig,
@@ -586,15 +595,21 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
           params.ledConfig
         );
 
-        this.ledRenderer.renderLeds(
-          {
-            tips,
-            currentTime,
-            canvasWidth: this.canvasSize,
-            canvasHeight: this.canvasSize,
-          },
-          params.ledConfig
-        );
+        // Filter LED tips by resolved effect assignment
+        const ledTipMap = params.tipEffectMap ?? {};
+        const ledTips = allLedTips.filter(t => resolveEffect(t.propIndex, t.tipIndex, undefined, ledTipMap) === 'led');
+
+        if (ledTips.length > 0) {
+          this.ledRenderer.renderLeds(
+            {
+              tips: ledTips,
+              currentTime,
+              canvasWidth: this.canvasSize,
+              canvasHeight: this.canvasSize,
+            },
+            params.ledConfig
+          );
+        }
 
         // Successful frame resets the error counter
         this.consecutiveLedErrors = 0;
