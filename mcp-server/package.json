@@ -16,6 +16,7 @@
     "@flow-arts/core": "file:../packages/flow-arts-core",
     "@tka/domain": "file:../packages/domain",
     "@vtg/domain": "file:../packages/vtg-domain",
+    "@tka/render-composition": "file:../packages/render-composition",
     "@tka/render-core": "file:../packages/render-core",
     "@tka/sequence-engine": "file:../packages/sequence-engine",
     "canvas": "^3.2.1",

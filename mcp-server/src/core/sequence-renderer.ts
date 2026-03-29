@@ -17,11 +17,11 @@ import {
   renderUserInfo,
   calculateHeaderHeight,
   calculateFooterHeight,
-  renderLOOPGlyph,
   LOOPComponent,
   type UserExportInfo,
   type LetterStyle,
 } from "./text-renderer.js";
+import { renderStepNumber } from "@tka/render-composition";
 
 // Re-export LOOPComponent for consumers
 export { LOOPComponent };
@@ -207,7 +207,7 @@ export async function renderSequenceToImage(
 
       // Draw step number overlaid on pictograph (top-left corner)
       if (opts.showStepNumbers) {
-        drawOverlaidStepNumber(ctx, stepNum, x, y, opts.cellSize, opts.darkMode);
+        renderStepNumber(ctx as unknown as globalThis.CanvasRenderingContext2D, stepNum, x, y, opts.cellSize, opts.darkMode);
       }
     } catch (error) {
       // Draw error placeholder
@@ -360,57 +360,6 @@ function calculateLayout(
   return { width, height, columns: totalColumns, rows, headerHeight, footerHeight, gridStartY: headerHeight };
 }
 
-/**
- * Draw step number overlaid on pictograph (top-left corner)
- * Matches app's StepNumberRenderer style
- */
-function drawOverlaidStepNumber(
-  ctx: CanvasRenderingContext2D,
-  stepNumber: number,
-  x: number,
-  y: number,
-  cellSize: number,
-  darkMode: boolean
-): void {
-  // Calculate font size proportional to cell size (10% of cell size)
-  const fontSize = Math.max(12, Math.floor(cellSize * 0.1));
-  const padding = Math.floor(cellSize * 0.02);
-
-  // Step number text - use "start" for step 0, otherwise the number
-  const text = stepNumber === 0 ? "start" : stepNumber.toString();
-
-  // Set font for measurement
-  ctx.font = `bold ${fontSize}px Georgia, Times New Roman, serif`;
-  const metrics = ctx.measureText(text);
-  const textWidth = metrics.width;
-  const textHeight = fontSize;
-
-  // Calculate badge position (top-left corner with small margin)
-  const badgeX = x + padding;
-  const badgeY = y + padding;
-  const badgePadding = Math.floor(fontSize * 0.3);
-  const badgeWidth = textWidth + badgePadding * 2;
-  const badgeHeight = textHeight + badgePadding;
-
-  // Draw semi-transparent background circle/rounded rect
-  ctx.fillStyle = darkMode ? "rgba(0, 0, 0, 0.7)" : "rgba(255, 255, 255, 0.85)";
-  ctx.beginPath();
-  const cornerRadius = badgeHeight / 2;
-  // Rounded rectangle
-  ctx.moveTo(badgeX + cornerRadius, badgeY);
-  ctx.lineTo(badgeX + badgeWidth - cornerRadius, badgeY);
-  ctx.arc(badgeX + badgeWidth - cornerRadius, badgeY + cornerRadius, cornerRadius, -Math.PI / 2, Math.PI / 2);
-  ctx.lineTo(badgeX + cornerRadius, badgeY + badgeHeight);
-  ctx.arc(badgeX + cornerRadius, badgeY + cornerRadius, cornerRadius, Math.PI / 2, -Math.PI / 2);
-  ctx.closePath();
-  ctx.fill();
-
-  // Draw text
-  ctx.fillStyle = darkMode ? "#ffffff" : "#1f2937";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText(text, badgeX + badgeWidth / 2, badgeY + badgeHeight / 2);
-}
 
 /**
  * Draw cell borders only between occupied cells
