@@ -15,6 +15,8 @@ import type { ISequencePersister } from "../services/contracts/ISequencePersiste
 import type { ISequenceStatsCalculator } from "../services/contracts/ISequenceStatsCalculator";
 import type { ISequenceTransformer } from "../services/contracts/ISequenceTransformer";
 import type { ISequenceValidator } from "../services/contracts/ISequenceValidator";
+import type { IReversalDetector } from "../services/contracts/IReversalDetector";
+import { container } from "$lib/shared/di";
 import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
 import type { StepData } from "../domain/models/StepData";
 import type { BuildModeId } from "$lib/shared/foundation/ui/UITypes";
@@ -46,12 +48,14 @@ export function createCreateModuleState(
   sequenceValidationService?: ISequenceValidator
 ) {
   // Create sequence state (shared/legacy - kept for backwards compatibility)
+  const ReversalDetector = container.items.reversalDetector as IReversalDetector | undefined;
   const sequenceState = createSequenceState({
     sequenceService,
     ...(SequencePersister && { SequencePersister }),
     ...(sequenceStatisticsService && { sequenceStatisticsService }),
     ...(SequenceTransformer && { SequenceTransformer }),
     ...(sequenceValidationService && { sequenceValidationService }),
+    ...(ReversalDetector && { ReversalDetector }),
   });
 
   // Create per-tab fallback sequence states
@@ -65,6 +69,7 @@ export function createCreateModuleState(
       ...(sequenceStatisticsService && { sequenceStatisticsService }),
       ...(SequenceTransformer && { SequenceTransformer }),
       ...(sequenceValidationService && { sequenceValidationService }),
+      ...(ReversalDetector && { ReversalDetector }),
     });
 
   const constructorFallbackState = createTabFallbackState();

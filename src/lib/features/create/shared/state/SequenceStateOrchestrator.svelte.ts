@@ -70,7 +70,7 @@ export function createSequenceState(services: SequenceStateServices) {
     SequenceTransformer,
     sequenceValidationService,
     tabId, // Tab ID for persistence isolation
-    // ReversalDetector, // Removed - not used
+    ReversalDetector,
   } = services;
 
   // Create sub-states
@@ -82,7 +82,9 @@ export function createSequenceState(services: SequenceStateServices) {
   // Create persistence coordinator with tab ID for isolated persistence
   const persistenceCoordinator = createSequencePersistenceCoordinator(
     SequencePersister ?? null,
-    undefined, // Reversal detection service removed
+    ReversalDetector
+      ? (seq: SequenceData) => ReversalDetector.processReversals(seq)
+      : undefined,
     tabId // Pass tab ID for persistence isolation
   );
 
@@ -95,6 +97,7 @@ export function createSequenceState(services: SequenceStateServices) {
     coreState,
     selectionState,
     animationState,
+    ReversalDetector,
     onSave: saveSequenceDataOnly,
   });
 
@@ -291,6 +294,13 @@ export function createSequenceState(services: SequenceStateServices) {
           })),
         };
       }
+    }
+
+    // Recompute reversal indicators so dashes (noRotation) don't break the chain.
+    // The detector looks past noRotation beats to find the last real rotation direction
+    // and compares it with the current beat's direction.
+    if (sequence?.steps?.length && ReversalDetector) {
+      sequence = ReversalDetector.processReversals(sequence);
     }
 
     // Only clear selection when loading a NEW sequence, not when updating the current one
