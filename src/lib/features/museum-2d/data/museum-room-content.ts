@@ -132,4 +132,139 @@ export const ROOM_CONTENT: Record<string, RoomContentMap> = {
       },
     },
   },
+
+  // ── Phase 2: Order-era wings ──
+
+  egyptian: {
+    exhibits: {
+      "egypt-karnak": {
+        plaque: {
+          title: "The Karnak Scrolls",
+          subtitle: "c. 1470 BCE",
+          body:
+            "Hieroglyphic scrolls documenting the first formal Type classification system. " +
+            "Six categories of movement, organized by hand path. " +
+            "The priesthood controlled access to advanced notation.",
+          footer: "Translated by the Cairo Institute, 1923",
+        },
+      },
+      "egypt-priesthood": {
+        plaque: {
+          title: "Priesthood Display",
+          body:
+            "Temple scene: priests notating ceremonial movements on papyrus. " +
+            "Access to the complete Type system required initiation into the inner circle. " +
+            "Knowledge was power. Power was controlled.",
+        },
+      },
+      "egypt-amphora": {
+        plaque: {
+          title: "Greek Amphora",
+          subtitle: "c. 500 BCE",
+          body:
+            "Decorated pottery showing spinning figures. The Greeks inherited the system from Egypt " +
+            "and applied mathematical rigor. Pythagoras recognized the relationships. " +
+            "He founded a secret cult to study them.",
+        },
+      },
+      "egypt-controlled": {
+        plaque: {
+          title: "Controlled Knowledge",
+          body:
+            "First evidence that access was deliberately restricted. " +
+            "Temple records show notation scrolls stored separately from other documents, " +
+            "with specialized access protocols.",
+          footer: "NILE BUREAU — Classification: RESTRICTED",
+        },
+      },
+    },
+  },
+
+  renaissance: {
+    exhibits: {
+      "ren-codex": {
+        plaque: {
+          title: "Codex Pages",
+          subtitle: "c. 1500 CE",
+          body:
+            "Da Vinci's notebooks contain rotational diagrams that precisely match " +
+            "the Kinetic Alphabet's position system. He decoded the Egyptian scrolls " +
+            "and recast them as geometry.",
+          footer: "Reproductions. Originals: scattered across seven collections.",
+        },
+      },
+      "ren-vitruvian": {
+        plaque: {
+          title: "Vitruvian Man Analysis",
+          body:
+            "The famous image reinterpreted as a position diagram. " +
+            "Arms and legs map to the eight cardinal and intercardinal points. " +
+            "Da Vinci embedded the grid in the most famous drawing in history.",
+        },
+      },
+      "ren-workshop": {
+        plaque: {
+          title: "Workshop Recreation",
+          body:
+            "Da Vinci's studio with scattered notes. " +
+            "The notebooks were deliberately dispersed after his death. " +
+            "By whom, and why, remains a matter of institutional record.",
+        },
+      },
+      "ren-notebooks": {
+        plaque: {
+          title: "Notebooks Scattered",
+          body:
+            "After Leonardo's death in 1519, his notebooks were dispersed " +
+            "across seven collections in five countries. The dispersal pattern matches " +
+            "no known inheritance or sale. Someone wanted the complete system " +
+            "to be unrecoverable.",
+        },
+      },
+    },
+  },
+
+  victorian: {
+    exhibits: {
+      "vic-brass": {
+        plaque: {
+          title: "The Brass Notation Device",
+          subtitle: "1871, London",
+          body:
+            "The only surviving prototype. A mechanical calculator that could " +
+            "enumerate all possible four-beat sequences for a given starting position. " +
+            "Patent recalled by the Home Office within six months of filing.",
+          footer: "Inventor: [NAME REDACTED]",
+        },
+      },
+      "vic-patents": {
+        plaque: {
+          title: "Patent Documents",
+          body:
+            "Seven patent applications related to kinetic notation, filed between 1868 and 1891. " +
+            "Three marked RECALLED. Two marked APPLICATION DENIED. " +
+            "One stamped with a symbol not yet catalogued by this archive.",
+        },
+      },
+      "vic-portraits": {
+        plaque: {
+          title: "Inventor Portraits",
+          body:
+            "Several portraits of notable kinetic researchers. " +
+            "One portrait has the nameplate replaced with NAME REDACTED. " +
+            "The subject appears undisturbed by this.",
+        },
+      },
+      "vic-discredited": {
+        plaque: {
+          title: "Discredited",
+          body:
+            "Key inventors were ruined by scandal. Anonymous complaints, funding reviews, " +
+            "paper retractions. No violence. Just process. " +
+            "The method is never explained in this archive.",
+          footer: "See also: Containment Protocol 4-C (discrediting)",
+        },
+      },
+    },
+  },
 };

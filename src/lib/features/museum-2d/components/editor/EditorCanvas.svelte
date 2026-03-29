@@ -24,6 +24,14 @@
 	// Hover position for ghost preview
 	let hoverPos = $state<{ x: number; y: number } | null>(null);
 
+	// Spacebar+drag panning
+	let isPanning = $state(false);
+	let spaceHeld = $state(false);
+	let panStartX = 0;
+	let panStartY = 0;
+	let scrollStartX = 0;
+	let scrollStartY = 0;
+
 	const MIN_TILE_SIZE = 16;
 	const MAX_TILE_SIZE = 48;
 
@@ -110,6 +118,9 @@
 	function handlePointerDown(x: number, y: number, event: PointerEvent): void {
 		event.preventDefault();
 
+		// Don't paint while panning
+		if (spaceHeld || isPanning) return;
+
 		// Right-click always erases
 		if (event.button === 2) {
 			editor.eraseTile(x, y);
@@ -128,6 +139,7 @@
 	}
 
 	function handlePointerMove(x: number, y: number): void {
+		if (spaceHeld || isPanning) return;
 		hoverPos = { x, y };
 
 		if (editor.drawMode === "rectangle" && editor.rectanglePreview) {
@@ -169,9 +181,116 @@
 	function handleContextMenu(event: MouseEvent): void {
 		event.preventDefault();
 	}
+
+	// ── Spacebar + drag panning ──
+
+	function handleCanvasPointerDown(e: PointerEvent): void {
+		if (spaceHeld) {
+			e.preventDefault();
+			isPanning = true;
+			panStartX = e.clientX;
+			panStartY = e.clientY;
+			scrollStartX = containerEl?.scrollLeft ?? 0;
+			scrollStartY = containerEl?.scrollTop ?? 0;
+			containerEl?.setPointerCapture(e.pointerId);
+		}
+	}
+
+	function handleCanvasPointerMove(e: PointerEvent): void {
+		if (isPanning && containerEl) {
+			const dx = e.clientX - panStartX;
+			const dy = e.clientY - panStartY;
+			containerEl.scrollLeft = scrollStartX - dx;
+			containerEl.scrollTop = scrollStartY - dy;
+		}
+	}
+
+	function handleCanvasPointerUp(e: PointerEvent): void {
+		if (isPanning) {
+			isPanning = false;
+			containerEl?.releasePointerCapture(e.pointerId);
+		}
+	}
+
+	// ── Keyboard panning (WASD + arrows + spacebar+drag) ──
+
+	const PAN_SPEED = 12; // pixels per frame
+	let panKeysHeld = new Set<string>();
+	let panRafId: number | null = null;
+
+	function panLoop() {
+		if (!containerEl || panKeysHeld.size === 0) {
+			panRafId = null;
+			return;
+		}
+		let dx = 0;
+		let dy = 0;
+		if (panKeysHeld.has("w") || panKeysHeld.has("ArrowUp")) dy -= PAN_SPEED;
+		if (panKeysHeld.has("s") || panKeysHeld.has("ArrowDown")) dy += PAN_SPEED;
+		if (panKeysHeld.has("a") || panKeysHeld.has("ArrowLeft")) dx -= PAN_SPEED;
+		if (panKeysHeld.has("d") || panKeysHeld.has("ArrowRight")) dx += PAN_SPEED;
+		containerEl.scrollLeft += dx;
+		containerEl.scrollTop += dy;
+		panRafId = requestAnimationFrame(panLoop);
+	}
+
+	function handleEditorKeyDown(e: KeyboardEvent): void {
+		// Spacebar for drag-pan
+		if (e.code === "Space" && !e.repeat) {
+			e.preventDefault();
+			spaceHeld = true;
+			return;
+		}
+
+		// WASD / arrows for scroll-pan
+		const panKeys = new Set(["w", "a", "s", "d", "W", "A", "S", "D", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"]);
+		if (panKeys.has(e.key) && !e.repeat) {
+			e.preventDefault();
+			panKeysHeld.add(e.key.toLowerCase() === e.key ? e.key : e.key);
+			// Normalize: map WASD to wasd, keep arrows as-is
+			const normalized = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+			panKeysHeld.add(normalized);
+			if (!panRafId) panRafId = requestAnimationFrame(panLoop);
+		}
+	}
+
+	function handleEditorKeyUp(e: KeyboardEvent): void {
+		if (e.code === "Space") {
+			spaceHeld = false;
+			isPanning = false;
+			return;
+		}
+
+		const normalized = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+		panKeysHeld.delete(normalized);
+		panKeysHeld.delete(e.key);
+		if (panKeysHeld.size === 0 && panRafId) {
+			cancelAnimationFrame(panRafId);
+			panRafId = null;
+		}
+	}
+
+	import { onMount } from "svelte";
+
+	onMount(() => {
+		window.addEventListener("keydown", handleEditorKeyDown);
+		window.addEventListener("keyup", handleEditorKeyUp);
+		return () => {
+			window.removeEventListener("keydown", handleEditorKeyDown);
+			window.removeEventListener("keyup", handleEditorKeyUp);
+			if (panRafId) cancelAnimationFrame(panRafId);
+		};
+	});
 </script>
 
-<div class="canvas-container" bind:this={containerEl}>
+<div
+	class="canvas-container"
+	class:panning={spaceHeld}
+	bind:this={containerEl}
+	onpointerdown={handleCanvasPointerDown}
+	onpointermove={handleCanvasPointerMove}
+	onpointerup={handleCanvasPointerUp}
+>
 	<div
 		class="canvas-grid"
 		style={gridStyle}
@@ -219,12 +338,22 @@
 		width: 100%;
 		height: 100%;
 		overflow: auto;
-		display: flex;
-		align-items: flex-start;
-		justify-content: center;
 		padding: 1rem;
 		background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
 		border-radius: 8px;
+	}
+
+	.canvas-container.panning {
+		cursor: grab;
+	}
+
+	.canvas-container.panning:active {
+		cursor: grabbing;
+	}
+
+	.canvas-container.panning .cell {
+		cursor: grab;
+		pointer-events: none;
 	}
 
 	.canvas-grid {

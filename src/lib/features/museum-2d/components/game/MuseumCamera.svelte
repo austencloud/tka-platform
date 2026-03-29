@@ -77,7 +77,6 @@
 
   .museum-camera-inner {
     position: relative;
-    transition: transform 0.18s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     will-change: transform;
   }
 </style>

@@ -11,15 +11,14 @@
 	 *   Ctrl+Shift+Z — Redo
 	 */
 
-	import { createEditorState } from "../../state/editor-state.svelte";
-	import { setEditorContext } from "../../state/editor-context";
+	import { getEditorContext } from "../../state/editor-context";
 	import EditorToolPalette from "./EditorToolPalette.svelte";
 	import EditorCanvas from "./EditorCanvas.svelte";
 	import PropertyInspector from "./PropertyInspector.svelte";
 	import TemplatePicker from "./TemplatePicker.svelte";
 
-	const editor = createEditorState(40, 40);
-	setEditorContext({ state: editor });
+	// Context is set by Museum2DModule with the generated grid already loaded
+	const { state: editor } = getEditorContext();
 
 	let showTemplatePicker = $state(false);
 
@@ -129,6 +128,7 @@
 		display: flex;
 		flex-direction: column;
 		overflow: hidden;
+		min-width: 0;
 	}
 
 	.editor-toolbar {

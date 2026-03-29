@@ -12,93 +12,13 @@
 
   const { state } = getMuseum2DContext();
 
-  // Movement key tracking for diagonal support
-  const MOVE_KEYS = new Set(["w", "W", "ArrowUp", "s", "S", "ArrowDown", "a", "A", "ArrowLeft", "d", "D", "ArrowRight"]);
-
-  const KEY_AXIS: Record<string, { dx: number; dy: number; facing: Direction }> = {
-    ArrowUp:    { dx: 0,  dy: -1, facing: "north" },
-    ArrowDown:  { dx: 0,  dy:  1, facing: "south" },
-    ArrowLeft:  { dx: -1, dy:  0, facing: "west"  },
-    ArrowRight: { dx: 1,  dy:  0, facing: "east"  },
-    w:          { dx: 0,  dy: -1, facing: "north" },
-    W:          { dx: 0,  dy: -1, facing: "north" },
-    s:          { dx: 0,  dy:  1, facing: "south" },
-    S:          { dx: 0,  dy:  1, facing: "south" },
-    a:          { dx: -1, dy:  0, facing: "west"  },
-    A:          { dx: -1, dy:  0, facing: "west"  },
-    d:          { dx: 1,  dy:  0, facing: "east"  },
-    D:          { dx: 1,  dy:  0, facing: "east"  },
+  // Key → Direction mapping
+  const KEY_TO_DIRECTION: Record<string, Direction> = {
+    ArrowUp: "north", w: "north", W: "north",
+    ArrowDown: "south", s: "south", S: "south",
+    ArrowLeft: "west", a: "west", A: "west",
+    ArrowRight: "east", d: "east", D: "east",
   };
-
-  // Track which movement keys are currently held
-  let heldKeys = new Set<string>();
-
-  // Timing constants
-  const REPEAT_DELAY_MS = 150;   // Delay before auto-repeat starts
-  const REPEAT_INTERVAL_MS = 100; // Interval between repeated moves
-
-  let repeatTimer: ReturnType<typeof setTimeout> | null = null;
-  let repeatInterval: ReturnType<typeof setInterval> | null = null;
-
-  function clearRepeat() {
-    if (repeatTimer) { clearTimeout(repeatTimer); repeatTimer = null; }
-    if (repeatInterval) { clearInterval(repeatInterval); repeatInterval = null; }
-  }
-
-  /**
-   * Resolve the current combined dx/dy from all held movement keys and
-   * dispatch either a diagonal or cardinal move. Returns true if a move
-   * was dispatched (even if blocked by collision).
-   */
-  function dispatchMovement(): boolean {
-    let dx = 0;
-    let dy = 0;
-    let lastVerticalFacing: Direction | null = null;
-    let lastHorizontalFacing: Direction | null = null;
-
-    for (const key of heldKeys) {
-      const axis = KEY_AXIS[key];
-      if (!axis) continue;
-      if (axis.dy !== 0) { dy += axis.dy; lastVerticalFacing = axis.facing; }
-      if (axis.dx !== 0) { dx += axis.dx; lastHorizontalFacing = axis.facing; }
-    }
-
-    // Clamp to ±1 in each axis (handles conflicting directions — they cancel)
-    dx = Math.sign(dx);
-    dy = Math.sign(dy);
-
-    if (dx === 0 && dy === 0) return false;
-
-    if (dx !== 0 && dy !== 0) {
-      // Diagonal: prefer vertical facing for consistency
-      const facing = lastVerticalFacing ?? lastHorizontalFacing ?? "north";
-      state.moveDiagonal(dx, dy, facing);
-    } else if (dy !== 0) {
-      const facing = lastVerticalFacing!;
-      state.movePlayer(facing);
-    } else {
-      const facing = lastHorizontalFacing!;
-      state.movePlayer(facing);
-    }
-
-    return true;
-  }
-
-  /**
-   * Start the repeat loop after the initial immediate move.
-   * On each tick, checks all held keys so diagonal emerges naturally
-   * when both axes are held simultaneously.
-   */
-  function startRepeatLoop() {
-    clearRepeat();
-    if (heldKeys.size === 0) return;
-
-    repeatTimer = setTimeout(() => {
-      repeatInterval = setInterval(() => {
-        dispatchMovement();
-      }, REPEAT_INTERVAL_MS);
-    }, REPEAT_DELAY_MS);
-  }
 
   function handleKeyDown(e: KeyboardEvent) {
     // Interact
@@ -108,40 +28,28 @@
       return;
     }
 
-    if (!MOVE_KEYS.has(e.key)) return;
+    const direction = KEY_TO_DIRECTION[e.key];
+    if (!direction) return;
     e.preventDefault();
     if (e.repeat) return;
 
-    heldKeys.add(e.key);
-
-    // First press is always immediate and cardinal (this key's direction only).
-    // Diagonal movement emerges from held keys on repeat ticks — matching how
-    // tile-based games (Pokemon, Zelda) handle it. Sequential presses stay
-    // independent; holding both keys produces diagonals on the repeat cycle.
-    dispatchMovement();
-    startRepeatLoop();
+    state.onDirectionDown(direction);
   }
 
   function handleKeyUp(e: KeyboardEvent) {
-    if (!MOVE_KEYS.has(e.key)) return;
-    heldKeys.delete(e.key);
-
-    // If keys remain held, restart the repeat so the remaining direction
-    // continues smoothly without an extra delay gap.
-    if (heldKeys.size > 0) {
-      startRepeatLoop();
-    } else {
-      clearRepeat();
-    }
+    const direction = KEY_TO_DIRECTION[e.key];
+    if (!direction) return;
+    state.onDirectionUp(direction);
   }
 
   onMount(() => {
+    state.start();
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keyup", handleKeyUp);
     return () => {
+      state.stop();
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
-      clearRepeat();
     };
   });
 
@@ -171,8 +79,8 @@
 
 <div class="museum-game" role="application" aria-label="Museum 2D game">
   <MuseumCamera
-    playerX={state.playerX}
-    playerY={state.playerY}
+    playerX={state.cameraX}
+    playerY={state.cameraY}
     tileSize={TILE_SIZE}
     gridWidth={state.grid.width}
     gridHeight={state.grid.height}
@@ -188,8 +96,8 @@
     </div>
 
     <MuseumPlayerView
-      x={state.playerX}
-      y={state.playerY}
+      x={state.visualX}
+      y={state.visualY}
       facing={state.playerFacing}
       tileSize={TILE_SIZE}
       isMoving={state.isMoving}

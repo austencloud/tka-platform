@@ -21,7 +21,8 @@ import type {
 } from "../../domain/museum-grid-types";
 import type { ExhibitPlacement, PerformerPlacement, TorchPlacement } from "../../domain/layout-types";
 import { tileKey } from "../../domain/museum-grid-types";
-import { stampRoom, stampCorridor, carveDoor, placeTile } from "../../data/museum-floor-plan";
+import { isWalkable } from "../../domain/tile-registry";
+import { placeTile } from "../../data/museum-floor-plan";
 import { GraphLayoutEngine } from "./GraphLayoutEngine";
 import { CorridorRouter } from "./CorridorRouter";
 import { LayoutValidator } from "./LayoutValidator";
@@ -49,26 +50,35 @@ export class MuseumGridBuilder implements IMuseumGridBuilder {
       corridorData.push({ edge, segments });
     }
 
-    // Step 3: Build the tile map
+    // Step 3: Carve-Then-Wall rendering
+    // Phase 1: Carve rooms and corridors as FLOOR only (no walls)
+    // Phase 2: Derive walls from adjacency (any void tile next to floor = wall)
     const tiles = new Map<string, MuseumTile>();
     const exhibits: ExhibitDefinition[] = [];
     const performers: PerformerDefinition[] = [];
 
-    // Stamp all rooms
+    // Phase 1a: Carve room interiors as floor (no walls)
     for (const room of layout.rooms) {
-      stampRoom(tiles, room.x, room.y, room.w, room.h, room.material);
+      this.carveRoomFloor(tiles, room);
     }
 
-    // Stamp all corridors and carve doors
-    for (const { edge, segments } of corridorData) {
+    // Phase 1b: Carve corridor paths as floor (no walls)
+    for (const { segments } of corridorData) {
+      this.carveCorridorFloor(tiles, segments);
+    }
+
+    // Phase 1c: Carve doorway flares where corridors meet rooms
+    // This widens the corridor opening at room junctions to prevent corner-cutting
+    for (const { edge } of corridorData) {
       const fromRoom = roomLookup.get(edge.from)!;
       const toRoom = roomLookup.get(edge.to)!;
       const width = edge.corridorWidth ?? 4;
-
-      this.stampCorridorSegments(tiles, segments, fromRoom.material);
-      this.carveDoorOnWall(tiles, fromRoom, edge.fromWall, width);
-      this.carveDoorOnWall(tiles, toRoom, edge.toWall, width);
+      this.carveDoorwayFlare(tiles, fromRoom, edge.fromWall, width);
+      this.carveDoorwayFlare(tiles, toRoom, edge.toWall, width);
     }
+
+    // Phase 2: Derive walls — any empty tile adjacent to a walkable tile becomes a wall
+    this.deriveWalls(tiles, layout.gridWidth, layout.gridHeight);
 
     // Step 4: Place room content (exhibits, performers, torches)
     for (const room of layout.rooms) {
@@ -77,10 +87,9 @@ export class MuseumGridBuilder implements IMuseumGridBuilder {
       this.placeTorches(tiles, room);
     }
 
-    // Step 5: Determine spawn position (center of first room's floor)
+    // Step 5: Determine spawn position (find a walkable tile near center of first room)
     const firstRoom = layout.rooms[0];
-    const spawnX = firstRoom.x + Math.floor(firstRoom.w / 2);
-    const spawnY = firstRoom.y + Math.floor(firstRoom.h / 2);
+    const { x: spawnX, y: spawnY } = this.findWalkableSpawn(tiles, firstRoom);
 
     const grid: MuseumGrid = {
       width: layout.gridWidth,
@@ -107,14 +116,29 @@ export class MuseumGridBuilder implements IMuseumGridBuilder {
   }
 
   /**
-   * Stamps corridor segments onto the tile map. Each segment is a straight
-   * run (horizontal or vertical). The corridor width expands perpendicular
-   * to the run direction.
+   * Phase 1a: Carve room interior as floor tiles only.
+   * No walls — walls are derived in Phase 2.
    */
-  private stampCorridorSegments(
+  private carveRoomFloor(tiles: Map<string, MuseumTile>, room: PlacedRoom): void {
+    for (let dy = 0; dy < room.h; dy++) {
+      for (let dx = 0; dx < room.w; dx++) {
+        tiles.set(tileKey(room.x + dx, room.y + dy), {
+          type: "floor",
+          material: room.material,
+        });
+      }
+    }
+  }
+
+  /**
+   * Phase 1b: Carve corridor segments as floor tiles only.
+   * Each segment is a straight run. The corridor width expands perpendicular
+   * to the run direction. Carving is monotonic — floor overwrites void,
+   * never downgrades existing floor.
+   */
+  private carveCorridorFloor(
     tiles: Map<string, MuseumTile>,
     segments: CorridorSegment[],
-    material: string,
   ): void {
     for (const seg of segments) {
       const isVertical = seg.x1 === seg.x2;
@@ -123,54 +147,114 @@ export class MuseumGridBuilder implements IMuseumGridBuilder {
       if (isVertical) {
         const minY = Math.min(seg.y1, seg.y2);
         const maxY = Math.max(seg.y1, seg.y2);
-        const corridorX = seg.x1 - halfWidth;
-        const corridorW = seg.width;
-        const corridorH = maxY - minY + 1;
-
-        if (corridorH > 0) {
-          stampCorridor(tiles, corridorX, minY, corridorW, corridorH, "vertical", "stone");
+        for (let y = minY; y <= maxY; y++) {
+          for (let dx = -halfWidth; dx < seg.width - halfWidth; dx++) {
+            const x = seg.x1 + dx;
+            tiles.set(tileKey(x, y), { type: "corridor", material: "stone" });
+          }
         }
       } else {
         const minX = Math.min(seg.x1, seg.x2);
         const maxX = Math.max(seg.x1, seg.x2);
-        const corridorY = seg.y1 - halfWidth;
-        const corridorW = maxX - minX + 1;
-        const corridorH = seg.width;
-
-        if (corridorW > 0) {
-          stampCorridor(tiles, minX, corridorY, corridorW, corridorH, "horizontal", "stone");
+        for (let x = minX; x <= maxX; x++) {
+          for (let dy = -halfWidth; dy < seg.width - halfWidth; dy++) {
+            const y = seg.y1 + dy;
+            tiles.set(tileKey(x, y), { type: "corridor", material: "stone" });
+          }
         }
       }
     }
   }
 
   /**
-   * Carves a door opening on a room wall. The door is centered on the wall,
-   * matching the corridor width.
+   * Phase 1c: Carve a flared opening where a corridor meets a room wall.
+   * Extends the corridor opening by 2 tiles on each side and 2 tiles deep
+   * into the space outside the room, creating a smooth transition from
+   * narrow corridor to wide room. Prevents the "cut corners" artifact.
    */
-  private carveDoorOnWall(
+  private carveDoorwayFlare(
     tiles: Map<string, MuseumTile>,
     room: PlacedRoom,
     wall: string,
-    doorWidth: number,
+    corridorWidth: number,
   ): void {
     const centerX = room.x + Math.floor(room.w / 2);
     const centerY = room.y + Math.floor(room.h / 2);
-    const halfDoor = Math.floor(doorWidth / 2);
+    const halfCorridor = Math.floor(corridorWidth / 2);
+    const flareExtra = 2; // extra tiles on each side beyond corridor width
+    const flareDepth = 2; // how far the flare extends outside the room
 
     switch (wall) {
       case "north":
-        carveDoor(tiles, centerX - halfDoor, room.y, doorWidth, "horizontal");
+        for (let dy = 1; dy <= flareDepth; dy++) {
+          for (let dx = -(halfCorridor + flareExtra); dx <= halfCorridor + flareExtra; dx++) {
+            tiles.set(tileKey(centerX + dx, room.y - dy), { type: "corridor", material: "stone" });
+          }
+        }
         break;
       case "south":
-        carveDoor(tiles, centerX - halfDoor, room.y + room.h - 1, doorWidth, "horizontal");
+        for (let dy = 1; dy <= flareDepth; dy++) {
+          for (let dx = -(halfCorridor + flareExtra); dx <= halfCorridor + flareExtra; dx++) {
+            tiles.set(tileKey(centerX + dx, room.y + room.h - 1 + dy), { type: "corridor", material: "stone" });
+          }
+        }
         break;
       case "east":
-        carveDoor(tiles, room.x + room.w - 1, centerY - halfDoor, doorWidth, "vertical");
+        for (let dx = 1; dx <= flareDepth; dx++) {
+          for (let dy = -(halfCorridor + flareExtra); dy <= halfCorridor + flareExtra; dy++) {
+            tiles.set(tileKey(room.x + room.w - 1 + dx, centerY + dy), { type: "corridor", material: "stone" });
+          }
+        }
         break;
       case "west":
-        carveDoor(tiles, room.x, centerY - halfDoor, doorWidth, "vertical");
+        for (let dx = 1; dx <= flareDepth; dx++) {
+          for (let dy = -(halfCorridor + flareExtra); dy <= halfCorridor + flareExtra; dy++) {
+            tiles.set(tileKey(room.x - dx, centerY + dy), { type: "corridor", material: "stone" });
+          }
+        }
         break;
+    }
+  }
+
+  /**
+   * Phase 2: Derive walls from adjacency.
+   * Any empty tile (not in the map) that is adjacent (8-directional)
+   * to a walkable tile becomes a wall. This generates walls around
+   * rooms and corridors automatically, with correct elbows and junctions.
+   */
+  private deriveWalls(
+    tiles: Map<string, MuseumTile>,
+    gridWidth: number,
+    gridHeight: number,
+  ): void {
+    const NEIGHBORS = [
+      [-1, -1], [0, -1], [1, -1],
+      [-1,  0],          [1,  0],
+      [-1,  1], [0,  1], [1,  1],
+    ];
+
+    // Collect wall positions first (can't modify map while iterating neighbors)
+    const wallPositions: { x: number; y: number }[] = [];
+
+    for (let y = 0; y < gridHeight; y++) {
+      for (let x = 0; x < gridWidth; x++) {
+        const key = tileKey(x, y);
+        if (tiles.has(key)) continue; // already carved — skip
+
+        const adjacentToWalkable = NEIGHBORS.some(([dx, dy]) => {
+          const tile = tiles.get(tileKey(x + dx, y + dy));
+          return tile !== undefined && isWalkable(tile.type);
+        });
+
+        if (adjacentToWalkable) {
+          wallPositions.push({ x, y });
+        }
+      }
+    }
+
+    // Stamp walls
+    for (const pos of wallPositions) {
+      tiles.set(tileKey(pos.x, pos.y), { type: "wall" });
     }
   }
 
@@ -252,6 +336,36 @@ export class MuseumGridBuilder implements IMuseumGridBuilder {
       const pos = this.computeWallPosition(room, torch.wall, torch.position);
       placeTile(tiles, pos.x, pos.y, { type: "torch" });
     }
+  }
+
+  /**
+   * Finds a walkable tile near the center of a room.
+   * Spirals outward from center until a walkable floor tile is found.
+   */
+  private findWalkableSpawn(
+    tiles: Map<string, MuseumTile>,
+    room: PlacedRoom,
+  ): { x: number; y: number } {
+    const centerX = room.x + Math.floor(room.w / 2);
+    const centerY = room.y + Math.floor(room.h / 2);
+
+    // Spiral outward from center
+    for (let radius = 0; radius < Math.max(room.w, room.h); radius++) {
+      for (let dy = -radius; dy <= radius; dy++) {
+        for (let dx = -radius; dx <= radius; dx++) {
+          if (Math.abs(dx) !== radius && Math.abs(dy) !== radius) continue;
+          const x = centerX + dx;
+          const y = centerY + dy;
+          const tile = tiles.get(tileKey(x, y));
+          if (tile && isWalkable(tile.type)) {
+            return { x, y };
+          }
+        }
+      }
+    }
+
+    // Fallback: interior point (shouldn't reach here for valid rooms)
+    return { x: room.x + 2, y: room.y + 2 };
   }
 
   /**

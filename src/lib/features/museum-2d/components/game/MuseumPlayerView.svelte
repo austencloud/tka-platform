@@ -71,15 +71,11 @@
     left: 0;
     pointer-events: none;
     z-index: 20;
-    transition: transform 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    will-change: transform;
     display: flex;
     align-items: center;
     justify-content: center;
     box-sizing: border-box;
-  }
-
-  .museum-player.moving {
-    transition-duration: 0.12s;
   }
 
   .glow-ring {

@@ -25,6 +25,9 @@
   );
 
   let hasContent = $derived(!!focusedExhibit || !!focusedPerformer || !!focusedTrigger);
+
+  // Current wing for contextual display when nothing is focused
+  let currentWing = $derived(state.currentWing);
 </script>
 
 <div class="detail-panel">
@@ -73,11 +76,24 @@
         <p class="trigger-action">Trigger: {focusedTrigger.action}</p>
       {/if}
     </div>
+  {:else if currentWing}
+    <div class="panel-wing">
+      <div class="wing-header">
+        <i class="fas fa-location-dot wing-icon" aria-hidden="true"></i>
+        <h2 class="wing-name">{currentWing.name}</h2>
+      </div>
+      {#if currentWing.description}
+        <p class="wing-description">{currentWing.description}</p>
+      {/if}
+      <div class="wing-hint">
+        <p>Walk up to an exhibit and press <kbd>E</kbd> to examine it.</p>
+      </div>
+    </div>
   {:else}
     <div class="panel-empty">
       <i class="fas fa-compass" aria-hidden="true"></i>
-      <p class="empty-title">Explore the chamber</p>
-      <p class="empty-hint">Walk up to an exhibit and press <kbd>E</kbd> to examine it.</p>
+      <p class="empty-title">Corridor</p>
+      <p class="empty-hint">Keep walking. Something ahead.</p>
     </div>
   {/if}
 </div>
@@ -152,6 +168,69 @@
     font-size: var(--font-size-min, 14px);
     color: rgba(200, 180, 140, 0.5);
     font-style: italic;
+  }
+
+  .panel-wing {
+    padding: 28px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    animation: panel-slide-in 0.25s ease;
+  }
+
+  .wing-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .wing-icon {
+    font-size: 1rem;
+    color: rgba(200, 180, 140, 0.5);
+  }
+
+  .wing-name {
+    margin: 0;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 1.3rem;
+    font-weight: 400;
+    color: rgba(200, 180, 140, 0.85);
+    letter-spacing: 0.02em;
+  }
+
+  .wing-description {
+    margin: 0;
+    font-size: var(--font-size-min, 14px);
+    line-height: 1.7;
+    color: rgba(200, 180, 140, 0.45);
+  }
+
+  .wing-hint {
+    margin-top: 8px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(200, 180, 140, 0.08);
+  }
+
+  .wing-hint p {
+    margin: 0;
+    font-size: var(--font-size-min, 14px);
+    color: rgba(200, 180, 140, 0.25);
+  }
+
+  .wing-hint kbd {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 5px;
+    background: rgba(200, 180, 140, 0.1);
+    border: 1px solid rgba(200, 180, 140, 0.2);
+    border-radius: 3px;
+    font-family: monospace;
+    font-size: var(--font-size-compact, 12px);
+    color: rgba(200, 180, 140, 0.5);
+    vertical-align: middle;
   }
 
   .panel-empty {
