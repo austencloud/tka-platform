@@ -1,12 +1,13 @@
 <!--
 ImagePanel.svelte - Choreo card visibility settings panel
 
-Wraps the layered export preview with toggle controls for all the fields
-that appear on a printed choreo card: word, beat numbers, start position,
-difficulty, QR code, footer content, and custom notes text.
+Uses the real ChoreoCard component with an AABB example sequence,
+so the preview matches exactly what the user will see when exporting.
 -->
 <script lang="ts">
-  import ImageExportPreviewLayered from "./ImageExportPreviewLayered.svelte";
+  import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
+  import { getAabbSequenceData } from "./example-data";
+  import { authState } from "$lib/shared/auth/state/authState.svelte";
 
   interface Props {
     addWord: boolean;
@@ -41,6 +42,9 @@ difficulty, QR code, footer content, and custom notes text.
     onPictographToggle,
     isMobileHidden = false,
   }: Props = $props();
+
+  const aabbSequence = getAabbSequenceData();
+  const userName = $derived(authState.user?.displayName || "Your Name");
 </script>
 
 <section class="settings-panel image-panel" class:mobile-hidden={isMobileHidden}>
@@ -52,23 +56,20 @@ difficulty, QR code, footer content, and custom notes text.
   </header>
 
   <div class="preview-frame image-preview">
-    <ImageExportPreviewLayered
+    <ChoreoCard
+      sequence={aabbSequence}
       showWord={addWord}
+      showStepNumbers={addBeatNumbers}
       showDifficultyLevel={addDifficultyLevel}
       {includeStartPosition}
-      showStepNumbers={addBeatNumbers}
       {showQRCode}
       {showCreatorName}
       {showNotes}
-      showDate={showBirthday}
-      {customNotesText}
+      {showBirthday}
       {darkMode}
-      onToggleTKA={() => onPictographToggle("tka")}
-      onToggleVTG={() => onPictographToggle("vtg")}
-      onToggleElemental={() => onPictographToggle("elemental")}
-      onTogglePositions={() => onPictographToggle("positions")}
-      onToggleReversals={() => onPictographToggle("reversals")}
-      onToggleNonRadial={() => onPictographToggle("nonRadial")}
+      {userName}
+      {customNotesText}
+      forceContain={true}
     />
   </div>
 
