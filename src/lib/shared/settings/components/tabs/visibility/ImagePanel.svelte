@@ -70,6 +70,7 @@ so the preview matches exactly what the user will see when exporting.
       {userName}
       {customNotesText}
       forceContain={true}
+      showLoopGlyph={false}
     />
   </div>
 
