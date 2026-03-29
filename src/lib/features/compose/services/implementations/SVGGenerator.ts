@@ -45,8 +45,12 @@ export class SVGGenerator implements ISVGGenerator {
   ): string {
     // For animation viewer, always use strict mode
     // Load from actual grid SVG files to get the complete grid with all point layers
-    const gridFileName =
-      gridMode === GridMode.BOX ? "box_grid.svg" : "diamond_grid.svg";
+    let gridFileName: string;
+    switch (gridMode) {
+      case GridMode.BOX: gridFileName = "box_grid.svg"; break;
+      case GridMode.DIAMOND: gridFileName = "diamond_grid.svg"; break;
+      default: gridFileName = "8point_grid.svg"; break;
+    }
 
     // Note: This is a synchronous method but ideally should be async
     // For now, we'll fetch synchronously using XMLHttpRequest
@@ -91,7 +95,25 @@ export class SVGGenerator implements ISVGGenerator {
    * Fallback grid SVG for when file loading fails
    */
   private getFallbackGridSvg(gridMode: GridMode): string {
-    if (gridMode === GridMode.BOX) {
+    if (gridMode === GridMode.EIGHT_POINT) {
+      return `<?xml version="1.0" encoding="utf-8"?>
+<svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" x="0" y="0" viewBox="0 0 950 950" xml:space="preserve" class="strict-mode">
+<style>
+  .box-grid-stroke{stroke:#000;stroke-width:7;stroke-miterlimit:10}
+  .normal-hand-point{fill:none}
+  .strict-hand-point{fill:currentColor}
+</style>
+<circle id="center_point" cx="475" cy="475" r="12"/>
+<circle id="n_diamond_hand_point_strict" class="strict-hand-point" cx="475" cy="325" r="4.7"/>
+<circle id="e_diamond_hand_point_strict" class="strict-hand-point" cx="625" cy="475" r="4.7"/>
+<circle id="s_diamond_hand_point_strict" class="strict-hand-point" cx="475" cy="625" r="4.7"/>
+<circle id="w_diamond_hand_point_strict" class="strict-hand-point" cx="325" cy="475" r="4.7"/>
+<circle id="strict_ne_box_hand_point" class="strict-hand-point" cx="581.1" cy="368.9" r="4.7"/>
+<circle id="strict_se_box_hand_point" class="strict-hand-point" cx="581.1" cy="581.1" r="4.7"/>
+<circle id="strict_sw_box_hand_point" class="strict-hand-point" cx="368.9" cy="581.1" r="4.7"/>
+<circle id="strict_nw_box_hand_point" class="strict-hand-point" cx="368.9" cy="368.9" r="4.7"/>
+</svg>`;
+    } else if (gridMode === GridMode.BOX) {
       return `<?xml version="1.0" encoding="utf-8"?>
 <svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" x="0" y="0" viewBox="0 0 950 950" xml:space="preserve" class="strict-mode">
 <style>

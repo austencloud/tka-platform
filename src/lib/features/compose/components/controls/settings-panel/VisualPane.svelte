@@ -144,7 +144,7 @@
   // Toggle handlers
   function toggleGrid() {
     const currentMode = visibilityManager.getGridMode();
-    const newMode: GridMode = currentMode === "none" ? "diamond" : "none";
+    const newMode: GridMode = currentMode === "none" ? "8point" : "none";
     visibilityManager.setGridMode(newMode);
     updateCounter++;
   }

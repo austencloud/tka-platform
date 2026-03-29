@@ -64,6 +64,7 @@ export class MotionQueryHandler implements IMotionQueryHandler {
         [GridMode.SKEWED]: skewedParseResult.rows,
         [GridMode.CENTRIC]: [],
         [GridMode.TRIGRID]: [],
+        [GridMode.EIGHT_POINT]: [],
       };
 
       this.isInitialized = true;

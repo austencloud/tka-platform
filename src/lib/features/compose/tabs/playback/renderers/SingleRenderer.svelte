@@ -11,6 +11,8 @@
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import { container } from "$lib/shared/di";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
+  import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
+  import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IAnimationPlaybackController } from "../../../services/contracts/IAnimationPlaybackController";
   import { createAnimationPanelState } from "../../../state/animation-panel-state.svelte";
@@ -61,6 +63,14 @@
   // Trail settings - derive directly from animationSettings for proper reactivity
   // This ensures changes to trail effect settings are picked up
   let trailSettings = $derived(animationSettings.trail);
+
+  // Resolve grid mode: "8point" overrides to 8-point, "auto" uses sequence's own mode
+  const visibilityManager = getAnimationVisibilityManager();
+  let effectiveGridMode = $derived.by(() => {
+    const visGridMode = visibilityManager.getGridMode();
+    if (visGridMode === "8point") return GridMode.EIGHT_POINT;
+    return animationState.sequenceData?.gridMode ?? null;
+  });
 
   // Whether sequence loops seamlessly (affects trail clearing behavior)
   let isSeamlesslyLoopable = $derived.by(() => {
@@ -241,7 +251,7 @@
       blueProp={blueVisible && visible ? animationState.bluePropState : null}
       redProp={redVisible && visible ? animationState.redPropState : null}
       gridVisible={true}
-      gridMode={animationState.sequenceData?.gridMode ?? null}
+      gridMode={effectiveGridMode}
       letter={currentLetter}
       stepData={currentStepData}
       currentStep={animationState.currentStep}

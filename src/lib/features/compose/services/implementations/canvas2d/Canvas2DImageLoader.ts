@@ -211,9 +211,15 @@ export class Canvas2DImageLoader {
       const svgGenerator = container.items.svgGenerator;
 
       // Convert gridMode string to GridMode enum
-      const gridModeEnum =
-        GridMode[gridMode.toUpperCase() as keyof typeof GridMode] ||
-        GridMode.DIAMOND;
+      // "8point" needs special handling since "8POINT" isn't a valid enum key
+      let gridModeEnum: (typeof GridMode)[keyof typeof GridMode];
+      if (gridMode === "8point") {
+        gridModeEnum = GridMode.EIGHT_POINT;
+      } else {
+        gridModeEnum =
+          GridMode[gridMode.toUpperCase() as keyof typeof GridMode] ||
+          GridMode.DIAMOND;
+      }
 
       const gridSvg = svgGenerator.generateGridSvg(gridModeEnum);
 

@@ -161,17 +161,17 @@
           </button>
           <button
             class="toggle-btn"
-            class:active={gridMode === "diamond"}
+            class:active={gridMode === "8point"}
             onclick={() => onToggle("grid8pt")}
-            aria-pressed={gridMode === "diamond"}
+            aria-pressed={gridMode === "8point"}
           >
             8-Point
           </button>
           <button
             class="toggle-btn"
-            class:active={gridMode === "box"}
+            class:active={gridMode === "auto"}
             onclick={() => onToggle("gridAuto")}
-            aria-pressed={gridMode === "box"}
+            aria-pressed={gridMode === "auto"}
           >
             Auto
           </button>
@@ -326,14 +326,14 @@
         </button>
         <button
           class="toggle-btn"
-          class:active={gridMode === "diamond"}
+          class:active={gridMode === "8point"}
           onclick={() => onToggle("grid8pt")}
         >
           8-Pt
         </button>
         <button
           class="toggle-btn"
-          class:active={gridMode === "box"}
+          class:active={gridMode === "auto"}
           onclick={() => onToggle("gridAuto")}
         >
           Auto
