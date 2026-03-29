@@ -9,6 +9,7 @@
   import type { GridCell } from "../../../state/arrange-grid-state.svelte";
   import type { CellEditorPanelState, ExpandableSection } from "./state/cell-editor-panel-state.svelte";
   import { EFFORTS } from '$lib/features/effort-lab/domain/effort-types';
+  import { TUNNEL_LAYER_COLORS } from '$lib/features/compose/compose/domain/types';
 
   let {
     cell,
@@ -30,6 +31,16 @@
   const effortLabel = $derived(currentEffort?.label || "None");
   const effortColor = $derived(currentEffort?.color || "rgba(255,255,255,0.15)");
   const hasEffort = $derived(!!cell.effort);
+
+  // Color combo display: find which pairing the primary layer uses
+  const primaryColors = $derived(cell.layers[0]?.propColors);
+  const colorComboIndex = $derived(
+    primaryColors
+      ? TUNNEL_LAYER_COLORS.findIndex(c => c.left === primaryColors.left && c.right === primaryColors.right)
+      : 0
+  );
+  const colorComboLabels = ['Blue / Red', 'Purple / Orange', 'Emerald / Pink', 'Cyan / Yellow'];
+  const colorLabel = $derived(colorComboLabels[colorComboIndex] ?? 'Blue / Red');
 
   // Effect display
   const effectName = $derived(
@@ -110,6 +121,13 @@
       isActive: redVisible,
       isMuted: !redVisible,
       isExpandable: false,
+    },
+    {
+      id: "colors" as ExpandableSection,
+      icon: "fa-palette",
+      label: colorLabel,
+      action: () => panelState.toggleSection("colors"),
+      isExpandable: true,
     },
     {
       id: "effort" as ExpandableSection,
