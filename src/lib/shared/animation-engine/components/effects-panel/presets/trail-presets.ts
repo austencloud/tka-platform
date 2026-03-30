@@ -1,15 +1,21 @@
 /**
  * Trail effect presets.
  *
- * 4 quick-select presets for prop-tip trail rendering. Trails are controlled
- * via `animationSettings` (not the visibility manager), but the `apply`
- * function still accepts `vm` for interface consistency with other preset
- * groups — it just doesn't use it.
+ * Each preset sets trail appearance (width, opacity, glow) and optionally
+ * custom colors via animationSettings.setTrailAppearance(). The trail
+ * renderer reads blueColor/redColor from TrailSettings — overriding them
+ * here changes what the trails actually look like.
  */
 
 import type { EffectPreset, EffectPresetGroup } from "./types";
 import type { AnimationVisibilityStateManager } from "../../../state/animation-visibility-state.svelte";
 import { animationSettings } from "../../../state/animation-settings-state.svelte";
+import { getMotionColor } from "$lib/shared/utils/svg-color-utils";
+import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+
+// Default prop colors (restore to these when "Clean Trace" is selected)
+const DEFAULT_BLUE = getMotionColor(MotionColor.BLUE, "dark");
+const DEFAULT_RED = getMotionColor(MotionColor.RED, "dark");
 
 export const TRAIL_PRESETS: EffectPreset[] = [
   {
@@ -20,6 +26,9 @@ export const TRAIL_PRESETS: EffectPreset[] = [
       animationSettings.setTrailAppearance({
         lineWidth: 5,
         maxOpacity: 1.0,
+        glowBlur: 3,
+        blueColor: DEFAULT_BLUE,
+        redColor: DEFAULT_RED,
       });
     },
   },
@@ -31,30 +40,39 @@ export const TRAIL_PRESETS: EffectPreset[] = [
       animationSettings.setTrailAppearance({
         lineWidth: 8,
         maxOpacity: 0.7,
-        glowBlur: 5,
+        glowBlur: 8,
+        blueColor: DEFAULT_BLUE,
+        redColor: DEFAULT_RED,
       });
     },
   },
   {
-    id: "trail-thin-line",
-    name: "Thin Line",
-    previewColor: "#94a3b8",
+    id: "trail-neon",
+    name: "Neon",
+    previewColor: "#00ffcc",
+    previewColor2: "#ff00ff",
     apply: (_vm) => {
       animationSettings.setTrailAppearance({
-        lineWidth: 2,
+        lineWidth: 4,
         maxOpacity: 1.0,
+        glowBlur: 10,
+        blueColor: "#00ffcc",
+        redColor: "#ff00ff",
       });
     },
   },
   {
-    id: "trail-prop-match",
-    name: "Prop Match",
-    previewColor: "#4488ff",
-    previewColor2: "#ff4444",
+    id: "trail-ember",
+    name: "Ember Trail",
+    previewColor: "#f97316",
+    previewColor2: "#fbbf24",
     apply: (_vm) => {
       animationSettings.setTrailAppearance({
-        lineWidth: 5,
+        lineWidth: 6,
         maxOpacity: 0.9,
+        glowBlur: 6,
+        blueColor: "#f97316",
+        redColor: "#fbbf24",
       });
     },
   },
