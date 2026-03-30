@@ -10,25 +10,8 @@
  * main thread and (eventually) a WebWorker without serialization overhead.
  */
 
-import { evaluatePattern as newEvaluatePattern, initializeRegistry } from "../patterns/evaluator";
+import { evaluatePattern as newEvaluatePattern } from "../patterns/evaluator";
 import { createReusableContext } from "../patterns/context";
-import { evaluateSolid, evaluateSplit, evaluateQuad } from "../patterns/solid";
-import { evaluateBreathe, evaluatePulse, evaluateHeartbeat, evaluateColorMorph } from "../patterns/breathe";
-import { evaluateChase, evaluateComet, evaluateWave, evaluateCascade } from "../patterns/chase";
-import { evaluateRainbow, evaluateWarmShift, evaluateCoolShift, evaluateNeon } from "../patterns/spectrum";
-import { evaluateSparkle, evaluateFlicker, evaluateAurora } from "../patterns/texture";
-import { evaluateProximity, evaluateVelocity, evaluateMirrorSync, evaluateBeatPulse } from "../patterns/tka-aware";
-
-// ─── Initialize Pattern Registry ─────────────────────────────────────────────
-
-initializeRegistry([
-  ["solid", evaluateSolid], ["split", evaluateSplit], ["quad", evaluateQuad],
-  ["breathe", evaluateBreathe], ["pulse", evaluatePulse], ["heartbeat", evaluateHeartbeat], ["color-morph", evaluateColorMorph],
-  ["chase", evaluateChase], ["comet", evaluateComet], ["wave", evaluateWave], ["cascade", evaluateCascade],
-  ["rainbow", evaluateRainbow], ["warm-shift", evaluateWarmShift], ["cool-shift", evaluateCoolShift], ["neon", evaluateNeon],
-  ["sparkle", evaluateSparkle], ["flicker", evaluateFlicker], ["aurora", evaluateAurora],
-  ["proximity", evaluateProximity], ["velocity", evaluateVelocity], ["mirror-sync", evaluateMirrorSync], ["beat-pulse", evaluateBeatPulse],
-]);
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

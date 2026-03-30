@@ -1,19 +1,45 @@
 import type { LedColor } from "../types/LedPatterns";
 import type { TipEvaluationContext } from "./context";
 
+// Direct imports of all evaluators — no lazy initialization, no side effects
+import { evaluateSolid, evaluateSplit, evaluateQuad } from "./solid";
+import { evaluateBreathe, evaluatePulse, evaluateHeartbeat, evaluateColorMorph } from "./breathe";
+import { evaluateChase, evaluateComet, evaluateWave, evaluateCascade } from "./chase";
+import { evaluateRainbow, evaluateWarmShift, evaluateCoolShift, evaluateNeon } from "./spectrum";
+import { evaluateSparkle, evaluateFlicker, evaluateAurora } from "./texture";
+import { evaluateProximity, evaluateVelocity, evaluateMirrorSync, evaluateBeatPulse } from "./tka-aware";
+
 export type PatternEvaluatorFn = (ctx: TipEvaluationContext) => LedColor;
 
-// Registry starts empty. Populated via initializeRegistry() called from LedPatterns.ts
-// when all category files are available. No side-effect registration.
-let EVALUATOR_REGISTRY: ReadonlyMap<string, PatternEvaluatorFn> = new Map();
-
 /**
- * Called once to populate the registry with all evaluator imports.
- * Category files export pure functions. This file imports from them (not vice versa).
+ * Explicit const registry. Populated at module load time.
+ * No initializeRegistry() needed — anyone importing evaluatePattern()
+ * gets a fully populated registry automatically.
  */
-export function initializeRegistry(entries: ReadonlyArray<[string, PatternEvaluatorFn]>): void {
-  EVALUATOR_REGISTRY = new Map(entries);
-}
+const EVALUATOR_REGISTRY: ReadonlyMap<string, PatternEvaluatorFn> = new Map([
+  ["solid", evaluateSolid],
+  ["split", evaluateSplit],
+  ["quad", evaluateQuad],
+  ["breathe", evaluateBreathe],
+  ["pulse", evaluatePulse],
+  ["heartbeat", evaluateHeartbeat],
+  ["color-morph", evaluateColorMorph],
+  ["chase", evaluateChase],
+  ["comet", evaluateComet],
+  ["wave", evaluateWave],
+  ["cascade", evaluateCascade],
+  ["rainbow", evaluateRainbow],
+  ["warm-shift", evaluateWarmShift],
+  ["cool-shift", evaluateCoolShift],
+  ["neon", evaluateNeon],
+  ["sparkle", evaluateSparkle],
+  ["flicker", evaluateFlicker],
+  ["aurora", evaluateAurora],
+  ["proximity", evaluateProximity],
+  ["velocity", evaluateVelocity],
+  ["mirror-sync", evaluateMirrorSync],
+  ["beat-pulse", evaluateBeatPulse],
+]);
 
 export function evaluatePattern(id: string, ctx: TipEvaluationContext): LedColor {
   const evaluator = EVALUATOR_REGISTRY.get(id);
