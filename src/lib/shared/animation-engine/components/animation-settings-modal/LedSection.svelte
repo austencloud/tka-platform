@@ -1,0 +1,378 @@
+<script lang="ts">
+  import { onDestroy } from "svelte";
+  import { getAnimationVisibilityManager } from "../../state/animation-visibility-state.svelte";
+  import { BUILT_IN_COLOR_PRESETS, type LedColorPreset } from "../../domain/types/LedColorPresets";
+  import {
+    CATEGORY_LABELS,
+    type PatternCategory,
+    getPatternsByCategory,
+    getPatternDescriptor,
+  } from "../../domain/patterns/registry";
+
+  const vm = getAnimationVisibilityManager();
+
+  let brightness = $state(vm.getLedBrightness());
+  let patternSpeed = $state(vm.getLedPatternSpeed());
+  let activePatternId = $state(vm.getLedPatternId());
+  let primaryColor = $state(vm.getLedPrimaryColor());
+  let activePresetId = $state(vm.getActivePresetId());
+  let userPresets = $state(vm.getUserPresets());
+  let patternPickerOpen = $state(false);
+  let colorInputRef: HTMLInputElement | null = $state(null);
+
+  function handleChange(): void {
+    brightness = vm.getLedBrightness();
+    patternSpeed = vm.getLedPatternSpeed();
+    activePatternId = vm.getLedPatternId();
+    primaryColor = vm.getLedPrimaryColor();
+    activePresetId = vm.getActivePresetId();
+    userPresets = vm.getUserPresets();
+  }
+
+  vm.registerObserver(handleChange);
+  onDestroy(() => vm.unregisterObserver(handleChange));
+
+  const activeDescriptor = $derived(getPatternDescriptor(activePatternId));
+  const allPresets = $derived([...BUILT_IN_COLOR_PRESETS, ...userPresets]);
+  const categories = Object.keys(CATEGORY_LABELS) as PatternCategory[];
+
+  function selectPreset(preset: LedColorPreset) {
+    vm.setActivePreset(preset.id);
+  }
+
+  function selectPattern(id: string) {
+    vm.setLedPatternId(id);
+    patternPickerOpen = false;
+  }
+
+  function addCustomColor(e: Event) {
+    const color = (e.target as HTMLInputElement).value;
+    vm.setLedPrimaryColor(color);
+  }
+
+  function removePreset(e: MouseEvent, id: string) {
+    e.preventDefault();
+    vm.removeUserPreset(id);
+  }
+</script>
+
+<div class="led-section">
+  <!-- Row 1: Color swatches (single scrollable row) -->
+  <div class="color-row">
+    {#each allPresets as preset (preset.id)}
+      <button
+        type="button"
+        class="swatch"
+        class:active={activePresetId === preset.id}
+        style:background={preset.primaryColor}
+        title={preset.name}
+        onclick={() => selectPreset(preset)}
+        oncontextmenu={!preset.builtIn ? (e) => removePreset(e, preset.id) : undefined}
+      ></button>
+    {/each}
+    <button type="button" class="swatch add-swatch" title="Custom color" onclick={() => colorInputRef?.click()}>+</button>
+    <input
+      bind:this={colorInputRef}
+      type="color"
+      value={primaryColor}
+      class="hidden-input"
+      onchange={addCustomColor}
+    />
+  </div>
+
+  <!-- Row 2: Pattern selector (tap to open picker) -->
+  <button type="button" class="pattern-selector" onclick={() => patternPickerOpen = !patternPickerOpen}>
+    <span class="pattern-current">{activeDescriptor?.name ?? "Solid"}</span>
+    <span class="pattern-category">{activeDescriptor ? CATEGORY_LABELS[activeDescriptor.category] : ""}</span>
+    <span class="selector-chevron" class:open={patternPickerOpen}>
+      <i class="fas fa-chevron-down" aria-hidden="true"></i>
+    </span>
+  </button>
+
+  {#if patternPickerOpen}
+    <div class="pattern-picker">
+      {#each categories as category}
+        {@const patterns = getPatternsByCategory(category)}
+        <div class="picker-category-label">{CATEGORY_LABELS[category]}</div>
+        <div class="picker-row">
+          {#each patterns as pattern (pattern.id)}
+            <button
+              type="button"
+              class="picker-btn"
+              class:active={activePatternId === pattern.id}
+              onclick={() => selectPattern(pattern.id)}
+            >
+              {pattern.name}
+            </button>
+          {/each}
+        </div>
+      {/each}
+    </div>
+  {/if}
+
+  <!-- Row 3: Speed + Brightness inline -->
+  <div class="controls-row">
+    <div class="speed-group">
+      <input
+        type="range"
+        class="speed-slider"
+        min="0.1"
+        max="5.0"
+        step="0.1"
+        value={patternSpeed}
+        oninput={(e) => vm.setLedPatternSpeed(parseFloat((e.target as HTMLInputElement).value))}
+        aria-label="Pattern speed"
+      />
+      <span class="speed-label">{patternSpeed.toFixed(1)}x</span>
+    </div>
+    <div class="brightness-group">
+      {#each [1, 2, 3, 4, 5] as level}
+        <button
+          type="button"
+          class="bright-btn"
+          class:active={brightness === level}
+          onclick={() => vm.setLedBrightness(level)}
+          aria-label="Brightness {level}"
+        >
+          {level}
+        </button>
+      {/each}
+    </div>
+  </div>
+</div>
+
+<style>
+  .led-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  /* ─── Color row ───────────────────────────── */
+  .color-row {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .swatch {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: transform 100ms ease;
+    padding: 0;
+    flex-shrink: 0;
+  }
+
+  .swatch:hover {
+    transform: scale(1.1);
+  }
+
+  .swatch.active {
+    border-color: white;
+    box-shadow: 0 0 6px rgba(255, 255, 255, 0.3);
+  }
+
+  .add-swatch {
+    background: transparent;
+    border: 2px dashed rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.3);
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .hidden-input {
+    position: absolute;
+    width: 0;
+    height: 0;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* ─── Pattern selector ────────────────────── */
+  .pattern-selector {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    min-height: 40px;
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 8px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    cursor: pointer;
+    transition: border-color 100ms ease;
+  }
+
+  .pattern-selector:hover {
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+  }
+
+  .pattern-current {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--theme-text, white);
+  }
+
+  .pattern-category {
+    font-size: 11px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.35));
+    margin-left: auto;
+  }
+
+  .selector-chevron {
+    font-size: 10px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.35));
+    transition: transform 150ms ease;
+  }
+
+  .selector-chevron.open {
+    transform: rotate(180deg);
+  }
+
+  /* ─── Pattern picker dropdown ─────────────── */
+  .pattern-picker {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 8px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+  }
+
+  .picker-category-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.35));
+    padding: 4px 0 2px;
+  }
+
+  .picker-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .picker-btn {
+    padding: 5px 10px;
+    min-height: 30px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+    border-radius: 6px;
+    background: transparent;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 100ms ease;
+  }
+
+  .picker-btn:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--theme-text, white);
+  }
+
+  .picker-btn.active {
+    background: color-mix(in srgb, var(--theme-accent) 15%, transparent);
+    border-color: var(--theme-accent, #8b5cf6);
+    color: var(--theme-text, white);
+  }
+
+  /* ─── Speed + Brightness row ──────────────── */
+  .controls-row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .speed-group {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .speed-slider {
+    flex: 1;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    outline: none;
+    cursor: pointer;
+  }
+
+  .speed-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--theme-accent, #8b5cf6);
+    border: 2px solid var(--theme-card-bg, rgba(18, 18, 28, 0.98));
+    cursor: pointer;
+  }
+
+  .speed-slider::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--theme-accent, #8b5cf6);
+    border: 2px solid var(--theme-card-bg, rgba(18, 18, 28, 0.98));
+    cursor: pointer;
+  }
+
+  .speed-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
+    min-width: 30px;
+    text-align: right;
+  }
+
+  .brightness-group {
+    display: flex;
+    gap: 3px;
+  }
+
+  .bright-btn {
+    width: 30px;
+    height: 30px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 6px;
+    background: transparent;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0;
+    transition: all 100ms ease;
+  }
+
+  .bright-btn:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--theme-text, white);
+  }
+
+  .bright-btn.active {
+    background: color-mix(in srgb, var(--theme-accent) 15%, transparent);
+    border-color: var(--theme-accent, #8b5cf6);
+    color: var(--theme-text, white);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .swatch,
+    .pattern-selector,
+    .selector-chevron,
+    .picker-btn,
+    .bright-btn {
+      transition: none;
+    }
+  }
+</style>
