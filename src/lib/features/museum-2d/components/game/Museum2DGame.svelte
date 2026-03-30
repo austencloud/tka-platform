@@ -3,10 +3,17 @@
   import { getMuseum2DContext } from "../../state/museum-2d-context";
   import { tileKey } from "../../domain/museum-grid-types";
   import type { Direction, MuseumTile } from "../../domain/museum-grid-types";
+  import type { AvatarState } from "../../state/avatar-state.svelte";
   import MuseumTileRenderer from "./MuseumTileRenderer.svelte";
   import MuseumPlayerView from "./MuseumPlayerView.svelte";
   import MuseumCamera from "./MuseumCamera.svelte";
   import InteractionPrompt from "./InteractionPrompt.svelte";
+
+  interface Props {
+    avatar: AvatarState;
+  }
+
+  let { avatar }: Props = $props();
 
   const TILE_SIZE = 32;
 
@@ -42,14 +49,29 @@
     state.onDirectionUp(direction);
   }
 
+  // When the window loses focus or a context menu opens, keyup events
+  // are swallowed. Clear all held directions to prevent ghost movement.
+  function handleFocusLoss() {
+    state.clearAllDirections();
+  }
+
+  function handleContextMenu(e: Event) {
+    e.preventDefault();
+    state.clearAllDirections();
+  }
+
   onMount(() => {
     state.start();
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keyup", handleKeyUp);
+    window.addEventListener("blur", handleFocusLoss);
+    window.addEventListener("contextmenu", handleContextMenu);
     return () => {
       state.stop();
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
+      window.removeEventListener("blur", handleFocusLoss);
+      window.removeEventListener("contextmenu", handleContextMenu);
     };
   });
 
@@ -168,9 +190,10 @@
     <MuseumPlayerView
       x={state.visualX}
       y={state.visualY}
-      facing={state.playerFacing}
+      facing={state.visualFacing}
       tileSize={TILE_SIZE}
       isMoving={state.isMoving}
+      {avatar}
     />
   </MuseumCamera>
 

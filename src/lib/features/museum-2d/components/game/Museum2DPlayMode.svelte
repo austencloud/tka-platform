@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { MuseumGrid } from "../../domain/museum-grid-types";
+  import type { AvatarState } from "../../state/avatar-state.svelte";
   import { createMuseum2DState } from "../../state/museum-2d-state.svelte";
   import { setMuseum2DContext } from "../../state/museum-2d-context";
   import SplitScreenLayout from "../layout/SplitScreenLayout.svelte";
@@ -8,9 +9,10 @@
 
   interface Props {
     grid: MuseumGrid;
+    avatar: AvatarState;
   }
 
-  let { grid }: Props = $props();
+  let { grid, avatar }: Props = $props();
 
   // Fresh state + context for each mount
   const state = createMuseum2DState(grid);
@@ -19,7 +21,7 @@
 
 <SplitScreenLayout>
   {#snippet left()}
-    <Museum2DGame />
+    <Museum2DGame {avatar} />
   {/snippet}
   {#snippet right()}
     <DetailPanel />
