@@ -45,6 +45,7 @@ import {
   CLEAR_FRAG,
   DISPLAY_FRAG,
   BLOOM_COMPOSITE_FRAG,
+  CURL_NOISE_FRAG,
 } from "./FluidShaderSources";
 import {
   BLOOM_DOWNSAMPLE_FRAG,
@@ -127,6 +128,7 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
   private curlProgram: ShaderProgram | null = null;
   private vorticityProgram: ShaderProgram | null = null;
   private buoyancyProgram: ShaderProgram | null = null;
+  private curlNoiseProgram: ShaderProgram | null = null;
   private combustionProgram: ShaderProgram | null = null;
   private divergenceProgram: ShaderProgram | null = null;
   private jacobiProgram: ShaderProgram | null = null;
@@ -158,6 +160,9 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
   // Timing
   private lastTime = 0;
   private reducedMotion = false;
+
+  // Turbulence clock for idle-fire flickering (cheap deterministic noise)
+  private turbulenceClock = 0;
 
   // Per-frame tip data cached for display pass (set during stepSimulation)
   private displayTipUVs: Float32Array = new Float32Array(32);  // 16 tips * 2 (x,y)
@@ -548,6 +553,10 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     // instead of isolated dots.
     const stepUV = baseSplatRadius;
 
+    // Advance turbulence clock — used by the buoyancy shader to create wind
+    // perturbation on the rising plume (not the wick itself).
+    this.turbulenceClock += dt;
+
     for (const tip of tips) {
       const curUvX = tip.x / input.canvasWidth;
       const curUvY = 1.0 - tip.y / input.canvasHeight;
@@ -573,13 +582,26 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
 
       // Distribute fuel evenly across all sub-frame splats so total injection stays constant
       const fuelPerSplat = (p.fuelAmount * config.intensity * fs) / splatCount;
-      const tempPerSplat = (p.temperatureInjection * config.intensity * fs) / splatCount;
+      const baseTempPerSplat = (p.temperatureInjection * config.intensity * fs) / splatCount;
+
+      // Temperature perturbation: vary the heat of each fuel parcel so some
+      // rise faster (hotter) and some slower (cooler). The differential buoyancy
+      // creates natural shear that triggers Kelvin-Helmholtz instability —
+      // the same mechanism that makes real fire flicker. Uses incommensurate
+      // frequencies per tip so flames don't pulse in unison.
+      const tc = this.turbulenceClock;
+      const tipPhase = tip.propIndex * 3.7 + tip.tipIndex * 2.3;
 
       for (let s = 0; s < splatCount; s++) {
         // t=0 is previous position, t=1 is current position
         const t = splatCount === 1 ? 1.0 : s / (splatCount - 1);
         const uvX = prevUvX + dxUV * t;
         const uvY = prevUvY + dyUV * t;
+
+        // Modulate temperature ±20%: some fuel parcels are hotter, some cooler
+        const tempNoise = Math.sin(tc * 8.3 + tipPhase) * 0.12
+                        + Math.sin(tc * 13.7 + tipPhase * 1.4) * 0.08;
+        const tempPerSplat = baseTempPerSplat * (1.0 + tempNoise);
 
         this.splat(this.fuel!, uvX, uvY, fuelPerSplat, 0, 0);
         this.splat(this.velocity!, uvX, uvY, injectVx / splatCount, injectVy / splatCount, 0);
@@ -624,6 +646,11 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
 
     // 4. Buoyancy
     this.applyBuoyancy(dt, config.flameHeight);
+
+    // 4b. Curl noise turbulence: divergence-free perturbation at flame boundaries.
+    // Inserted after buoyancy so buoyancy establishes the bulk upward flow,
+    // then curl noise adds the stochastic vortical detail that makes fire flicker.
+    this.applyCurlNoiseTurbulence(dt, texelSize, config.flameHeight);
 
     // 5. Combustion + cooling
     this.applyCombustion(dt, config.intensity);
@@ -725,6 +752,7 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     gl.uniform2f(prog.uniforms.get("u_texelSize")!, texelSize[0], texelSize[1]);
     gl.uniform1f(prog.uniforms.get("u_dt")!, dt);
     gl.uniform1f(prog.uniforms.get("u_strength")!, this.physics.vorticityStrength * heightMult);
+    gl.uniform1f(prog.uniforms.get("u_time")!, this.turbulenceClock);
 
     gl.bindFramebuffer(gl.FRAMEBUFFER, this.velocity!.write.fbo);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
@@ -754,6 +782,40 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     const termVel = this.physics.gravity < 0 ? 14.0 : 6.0;
     gl.uniform1f(prog.uniforms.get("u_terminalVelocity")!, termVel);
     gl.uniform1f(prog.uniforms.get("u_gravity")!, this.physics.gravity);
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.velocity!.write.fbo);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+    this.swapFBO(this.velocity!);
+  }
+
+  /**
+   * Apply curl-noise turbulence: divergence-free velocity perturbation
+   * concentrated at flame boundaries. This is what makes stationary fire
+   * flicker naturally — the rising plume gets pushed by spatially-coherent
+   * vortical forces while the wick stays still.
+   */
+  private applyCurlNoiseTurbulence(dt: number, texelSize: [number, number], heightMult: number): void {
+    const gl = this.gl!;
+    const prog = this.curlNoiseProgram!;
+    gl.useProgram(prog.program);
+
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, this.velocity!.read.texture);
+    gl.uniform1i(prog.uniforms.get("u_velocity")!, 0);
+
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, this.temperature!.read.texture);
+    gl.uniform1i(prog.uniforms.get("u_temperature")!, 1);
+
+    gl.uniform2f(prog.uniforms.get("u_texelSize")!, texelSize[0], texelSize[1]);
+    gl.uniform1f(prog.uniforms.get("u_dt")!, dt);
+    gl.uniform1f(prog.uniforms.get("u_time")!, this.turbulenceClock);
+
+    // Strength scaled by vorticity strength so turbulence is proportional
+    // to the overall fire intensity. The 0.5 factor keeps curl noise
+    // subordinate to the simulation's own vorticity confinement.
+    const strength = this.physics.vorticityStrength * heightMult * 0.5;
+    gl.uniform1f(prog.uniforms.get("u_strength")!, strength);
 
     gl.bindFramebuffer(gl.FRAMEBUFFER, this.velocity!.write.fbo);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
@@ -1198,8 +1260,9 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     this.splatProgram = this.buildProgram(SPLAT_FRAG, ["u_target", "u_point", "u_splatValue", "u_radius"]);
     this.advectionProgram = this.buildProgram(ADVECTION_FRAG, ["u_velocity", "u_source", "u_texelSize", "u_dt", "u_dissipation"]);
     this.curlProgram = this.buildProgram(CURL_FRAG, ["u_velocity", "u_texelSize"]);
-    this.vorticityProgram = this.buildProgram(VORTICITY_FRAG, ["u_velocity", "u_curl", "u_texelSize", "u_dt", "u_strength"]);
+    this.vorticityProgram = this.buildProgram(VORTICITY_FRAG, ["u_velocity", "u_curl", "u_texelSize", "u_dt", "u_strength", "u_time"]);
     this.buoyancyProgram = this.buildProgram(BUOYANCY_FRAG, ["u_velocity", "u_temperature", "u_dt", "u_buoyancy", "u_ambientTemp", "u_terminalVelocity", "u_gravity"]);
+    this.curlNoiseProgram = this.buildProgram(CURL_NOISE_FRAG, ["u_velocity", "u_temperature", "u_texelSize", "u_dt", "u_time", "u_strength"]);
     this.combustionProgram = this.buildProgram(COMBUSTION_FRAG, ["u_temperature", "u_fuel", "u_dt", "u_burnRate", "u_burnTemp", "u_fuelEfficiency", "u_coolingRate", "u_ambientTemp"]);
     this.divergenceProgram = this.buildProgram(DIVERGENCE_FRAG, ["u_velocity", "u_texelSize"]);
     this.jacobiProgram = this.buildProgram(JACOBI_FRAG, ["u_pressure", "u_divergence", "u_texelSize"]);
@@ -1223,7 +1286,8 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     ]);
     const all = [
       this.splatProgram, this.advectionProgram, this.curlProgram,
-      this.vorticityProgram, this.buoyancyProgram, this.combustionProgram,
+      this.vorticityProgram, this.buoyancyProgram, this.curlNoiseProgram,
+      this.combustionProgram,
       this.divergenceProgram, this.jacobiProgram, this.gradientSubtractProgram,
       this.clearProgram, this.displayProgram,
       this.bloomDownsampleProgram,
@@ -1331,7 +1395,8 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     if (gl) {
       const programs = [
         this.splatProgram, this.advectionProgram, this.curlProgram,
-        this.vorticityProgram, this.buoyancyProgram, this.combustionProgram,
+        this.vorticityProgram, this.buoyancyProgram, this.curlNoiseProgram,
+        this.combustionProgram,
         this.divergenceProgram, this.jacobiProgram, this.gradientSubtractProgram,
         this.clearProgram, this.displayProgram,
         this.bloomDownsampleProgram,
@@ -1347,6 +1412,7 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     this.curlProgram = null;
     this.vorticityProgram = null;
     this.buoyancyProgram = null;
+    this.curlNoiseProgram = null;
     this.combustionProgram = null;
     this.divergenceProgram = null;
     this.jacobiProgram = null;
