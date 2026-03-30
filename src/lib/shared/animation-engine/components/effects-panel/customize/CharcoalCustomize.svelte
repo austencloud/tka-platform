@@ -1,5 +1,5 @@
 <script lang="ts">
-  import CharcoalCategory from "../../../animation-settings-modal/categories/CharcoalCategory.svelte";
+  import CharcoalCategory from "../../animation-settings-modal/categories/CharcoalCategory.svelte";
 
   interface Props {
     onBack: () => void;
