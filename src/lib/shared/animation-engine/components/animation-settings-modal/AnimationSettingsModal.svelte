@@ -21,16 +21,12 @@
   import type { StepData } from "../../../../features/create/shared/domain/models/StepData";
   import { slide } from "svelte/transition";
   import { onDestroy } from "svelte";
-  import FireCategory from "./categories/FireCategory.svelte";
-  import CharcoalCategory from "./categories/CharcoalCategory.svelte";
-  import LedCategory from "./categories/LedCategory.svelte";
-  import TrailsCategory from "./categories/TrailsCategory.svelte";
   import PlaybackCategory from "./categories/PlaybackCategory.svelte";
   import EffortCategory from "./categories/EffortCategory.svelte";
   import PathShapeCategory from "./categories/PathShapeCategory.svelte";
   import DisplayCategory from "./categories/DisplayCategory.svelte";
-  import EffectPicker from "./EffectPicker.svelte";
-  import type { ActiveEffect } from "./EffectPicker.svelte";
+  import EffectsPanel from "../effects-panel/EffectsPanel.svelte";
+  import EffectMatrixDrawer from "../../../../features/compose/tabs/arrange/components/grid/cell-editor/sections/EffectMatrixDrawer.svelte";
 
   interface Props {
     open: boolean;
@@ -57,6 +53,7 @@
   // Collapsible section state
   let motionOpen = $state(false);
   let displayOpen = $state(false);
+  let tipMatrixOpen = $state(false);
 
   // Playback state
   let isPlaying = $state(true);
@@ -66,55 +63,11 @@
 
   const vm = getAnimationVisibilityManager();
 
-  // ── Reactive state from visibility manager ──
-  let fireEnabled = $state(vm.isFireEffectEnabled());
-  let charcoalEnabled = $state(vm.isCharcoalEffectEnabled());
-  let ledEnabled = $state(vm.isLedEffectEnabled());
-  let trailsVisible = $state(vm.isTrailsVisible());
-
-  function syncFromManager(): void {
-    fireEnabled = vm.isFireEffectEnabled();
-    charcoalEnabled = vm.isCharcoalEffectEnabled();
-    ledEnabled = vm.isLedEffectEnabled();
-    trailsVisible = vm.isTrailsVisible();
-  }
-
-  vm.registerObserver(syncFromManager);
-  onDestroy(() => vm.unregisterObserver(syncFromManager));
-
-  // ── Active effect ──
-  const activeEffect: ActiveEffect = $derived.by(() => {
-    if (charcoalEnabled) return "charcoal";
-    if (fireEnabled) return "fire";
-    if (ledEnabled) return "led";
-    if (trailsVisible) return "trails";
-    return "none";
-  });
-
-  function selectEffect(effect: ActiveEffect) {
-    // Each setter handles mutual exclusion internally
-    if (effect === "fire") {
-      vm.setFireEffect(true);
-    } else if (effect === "charcoal") {
-      vm.setCharcoalEffect(true);
-    } else if (effect === "led") {
-      vm.setLedEffect(true);
-    } else if (effect === "trails") {
-      vm.setTrailStyle("on");
-    } else {
-      // "none" — turn everything off
-      vm.setFireEffect(false);
-      vm.setCharcoalEffect(false);
-      vm.setLedEffect(false);
-      vm.setTrailStyle("off");
-    }
-  }
-
   // ── Auto-select initial effect when modal opens ──
   $effect(() => {
     if (open && initialCategory) {
-      if (initialCategory === "fire" && !fireEnabled) selectEffect("fire");
-      else if (initialCategory === "led" && !ledEnabled) selectEffect("led");
+      if (initialCategory === "fire" && !vm.isFireEffectEnabled()) vm.setFireEffect(true);
+      else if (initialCategory === "led" && !vm.isLedEffectEnabled()) vm.setLedEffect(true);
     }
   });
 
@@ -214,25 +167,34 @@
     <div class="controls-section">
       <!-- Effects: always visible -->
       <div class="control-group" data-animate="3">
-        <span class="group-label">Effects</span>
-        <EffectPicker {activeEffect} onSelect={selectEffect} />
+        <EffectsPanel
+          bpm={vm.getBpm()}
+          onBpmChange={(bpm) => vm.setBpm(bpm)}
+          {isPlaying}
+          onPlaybackToggle={togglePlayback}
+          showPlayback={false}
+        />
       </div>
 
-      {#if activeEffect === "fire"}
-        <div class="control-group" data-animate="4">
-          <FireCategory />
-        </div>
-      {:else if activeEffect === "charcoal"}
-        <div class="control-group" data-animate="4">
-          <CharcoalCategory />
-        </div>
-      {:else if activeEffect === "led"}
-        <div class="control-group" data-animate="4">
-          <LedCategory />
-        </div>
-      {:else if activeEffect === "trails"}
-        <div class="control-group" data-animate="4">
-          <TrailsCategory />
+      <!-- Per-tip customization button -->
+      <button
+        class="customize-tip-btn"
+        onclick={() => { tipMatrixOpen = true; }}
+        type="button"
+      >
+        <i class="fas fa-sliders" aria-hidden="true"></i>
+        Customize per tip
+      </button>
+
+      {#if tipMatrixOpen}
+        <div class="tip-matrix-overlay">
+          <EffectMatrixDrawer
+            currentMap={vm.getTipEffectMap()}
+            bluePropType="staff"
+            redPropType="staff"
+            onUpdateMap={(map) => vm.setTipEffectMap(map)}
+            onClose={() => { tipMatrixOpen = false; }}
+          />
         </div>
       {/if}
 
@@ -481,10 +443,59 @@
     }
   }
 
+  /* ── Customize per-tip button ── */
+  .customize-tip-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 16px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px dashed var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 10px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--duration-fast, 100ms) ease;
+  }
+
+  .customize-tip-btn:hover {
+    background: color-mix(in srgb, var(--theme-accent) 8%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent) 40%, transparent);
+    color: var(--theme-text, white);
+  }
+
+  .customize-tip-btn:focus-visible {
+    outline: 2px solid var(--theme-accent, #8b5cf6);
+    outline-offset: 2px;
+  }
+
+  .customize-tip-btn i {
+    font-size: 13px;
+  }
+
+  /* The matrix drawer needs to fill the controls section */
+  .tip-matrix-overlay {
+    position: relative;
+    min-height: 300px;
+  }
+
+  .tip-matrix-overlay :global(.matrix-overlay) {
+    position: relative;
+    inset: unset;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .close-btn,
     .play-btn,
-    .section-toggle {
+    .section-toggle,
+    .customize-tip-btn {
       transition: none;
     }
   }
