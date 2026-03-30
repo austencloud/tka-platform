@@ -50,13 +50,11 @@
   }
 
   async function initializeMap() {
-    const { Map } = await google.maps.importLibrary("maps") as google.maps.MapsLibrary;
-
     // Default center (world view)
     const center = userLocation || { lat: 20, lng: 0 };
     const zoom = userLocation ? 4 : 2;
 
-    map = new Map(mapContainer, {
+    map = new google.maps.Map(mapContainer, {
       center,
       zoom,
       mapId: "tka-community-map", // Required for AdvancedMarkerElement
@@ -89,7 +87,7 @@
       return;
     }
 
-    const { AdvancedMarkerElement, PinElement } = await google.maps.importLibrary("marker") as google.maps.MarkerLibrary;
+    const { AdvancedMarkerElement, PinElement } = google.maps.marker;
 
     // Create markers for each user location
     for (const location of locations) {
