@@ -64,9 +64,7 @@
   <div class="museum-camera-inner" style={innerStyle}>
     {@render children()}
   </div>
-  <!-- Darkness overlay: radial gradient centered on player (always viewport center) -->
-  <div class="darkness-overlay"></div>
-  <!-- Vignette: subtle edge darkening for atmosphere -->
+  <!-- Subtle vignette only — museum is well-lit, no darkness overlay -->
   <div class="vignette-overlay"></div>
 </div>
 
@@ -84,28 +82,7 @@
     will-change: transform;
   }
 
-  /* Darkness: radial light around the player, darkness beyond.
-     The player is always at viewport center, so the gradient is fixed at 50% 50%.
-     This creates the Museum of Jurassic Technology feel — near-total darkness
-     with a small pool of visibility. */
-  .darkness-overlay {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    z-index: 15;
-    background: radial-gradient(
-      ellipse at 50% 50%,
-      transparent 0%,
-      transparent 12%,
-      rgba(0, 0, 0, 0.15) 20%,
-      rgba(0, 0, 0, 0.4) 35%,
-      rgba(0, 0, 0, 0.7) 55%,
-      rgba(0, 0, 0, 0.9) 80%,
-      rgba(0, 0, 0, 0.97) 100%
-    );
-  }
-
-  /* Vignette: subtle edge darkening that adds depth */
+  /* Subtle vignette — just gentle edge darkening, no dungeon feel */
   .vignette-overlay {
     position: absolute;
     inset: 0;
@@ -113,8 +90,8 @@
     z-index: 16;
     background: radial-gradient(
       ellipse at 50% 50%,
-      transparent 60%,
-      rgba(0, 0, 0, 0.3) 100%
+      transparent 70%,
+      rgba(0, 0, 0, 0.15) 100%
     );
   }
 </style>

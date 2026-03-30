@@ -1,21 +1,26 @@
 <script lang="ts">
-  import type { Direction } from "../../domain/museum-grid-types";
+  import type { AvatarState } from "../../state/avatar-state.svelte";
 
   interface Props {
     x: number;
     y: number;
-    facing: Direction;
+    facing: string;  // 8-direction: north, northeast, east, southeast, south, southwest, west, northwest
     tileSize: number;
     isMoving: boolean;
+    avatar: AvatarState;
   }
 
-  let { x, y, facing, tileSize, isMoving }: Props = $props();
+  let { x, y, facing, tileSize, isMoving, avatar }: Props = $props();
 
-  const FACING_ROTATION: Record<Direction, number> = {
+  const FACING_ROTATION: Record<string, number> = {
     north: 0,
+    northeast: 45,
     east: 90,
+    southeast: 135,
     south: 180,
+    southwest: 225,
     west: 270,
+    northwest: 315,
   };
 
   let posStyle = $derived(
@@ -23,31 +28,48 @@
     `width: ${tileSize}px; height: ${tileSize}px;`
   );
 
-  let bodySize = $derived(Math.max(14, Math.round(tileSize * 0.55)));
-  let beamLength = $derived(Math.max(40, Math.round(tileSize * 2.8)));
+  // All sizes relative to tileSize
+  let ts = $derived(tileSize);
   let facingDeg = $derived(FACING_ROTATION[facing]);
 </script>
 
 <div class="museum-player" class:moving={isMoving} style={posStyle}>
-  <!-- Lantern beam: conic gradient cone pointing in facing direction -->
-  <div
-    class="lantern-beam"
-    style="
-      width: {beamLength}px;
-      height: {beamLength}px;
-      transform: rotate({facingDeg}deg);
-    "
-  ></div>
+  <div class="figure-rotator" style="transform: rotate({facingDeg}deg); width: {ts}px; height: {ts}px;">
+    <!-- Hair: sits on top of head -->
+    <div
+      class="figure-hair"
+      style="
+        width: {ts * 0.4}px;
+        height: {ts * 0.22}px;
+        background: {avatar.config.hairColor};
+        left: {ts * 0.3}px;
+        top: {ts * 0.08}px;
+      "
+    ></div>
 
-  <!-- Lantern glow: warm pool of light around the figure -->
-  <div class="lantern-glow" style="width: {bodySize + 18}px; height: {bodySize + 18}px;"></div>
+    <!-- Head -->
+    <div
+      class="figure-head"
+      style="
+        width: {ts * 0.38}px;
+        height: {ts * 0.32}px;
+        background: {avatar.skinGradient};
+        left: {ts * 0.31}px;
+        top: {ts * 0.12}px;
+      "
+    ></div>
 
-  <!-- The figure: a dark silhouette, deliberately ambiguous -->
-  <div class="figure" style="width: {bodySize}px; height: {bodySize}px;">
-    <div class="figure-head"></div>
-    <div class="figure-body"></div>
-    <!-- Lantern spot: small warm dot near right shoulder -->
-    <div class="lantern-spot"></div>
+    <!-- Body -->
+    <div
+      class="figure-body"
+      style="
+        width: {ts * 0.65}px;
+        height: {ts * 0.48}px;
+        background: {avatar.jacketGradient};
+        left: {ts * 0.175}px;
+        top: {ts * 0.38}px;
+      "
+    ></div>
   </div>
 </div>
 
@@ -64,104 +86,38 @@
     justify-content: center;
   }
 
-  /* ── Lantern beam: conic gradient cone of warm light ── */
-  .lantern-beam {
-    position: absolute;
-    border-radius: 50%;
-    background: conic-gradient(
-      from -35deg,
-      transparent 0deg,
-      rgba(255, 180, 60, 0.06) 10deg,
-      rgba(255, 160, 40, 0.12) 25deg,
-      rgba(255, 180, 60, 0.06) 40deg,
-      transparent 55deg,
-      transparent 360deg
-    );
-    transform-origin: center center;
-    translate: 0 -35%;
-    pointer-events: none;
-    animation: beam-flicker 3.2s ease-in-out infinite;
-  }
-
-  @keyframes beam-flicker {
-    0%, 100% { opacity: 0.8; }
-    25%      { opacity: 1; }
-    50%      { opacity: 0.7; }
-    75%      { opacity: 0.95; }
-  }
-
-  /* ── Lantern glow: warm pool around the figure ── */
-  .lantern-glow {
-    position: absolute;
-    border-radius: 50%;
-    background: radial-gradient(
-      circle,
-      rgba(255, 170, 50, 0.22) 0%,
-      rgba(255, 140, 30, 0.1) 45%,
-      transparent 70%
-    );
-    animation: glow-breathe 3.8s ease-in-out infinite;
-  }
-
-  @keyframes glow-breathe {
-    0%, 100% { transform: scale(1); opacity: 0.75; }
-    50%      { transform: scale(1.08); opacity: 1; }
-  }
-
-  /* ── Figure: dark silhouette ── */
-  .figure {
+  .figure-rotator {
     position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    filter: drop-shadow(0 0 4px rgba(0, 0, 0, 0.9));
+    transition: transform 0.1s ease;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+  }
+
+  .figure-hair {
+    position: absolute;
+    border-radius: 50% 50% 30% 30%;
+    z-index: 3;
   }
 
   .figure-head {
-    width: 48%;
-    height: 48%;
+    position: absolute;
     border-radius: 50%;
-    background: radial-gradient(circle at 40% 35%, #2a2218, #0e0b06);
-    border: 1px solid rgba(180, 140, 80, 0.12);
-    position: relative;
-    z-index: 1;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    z-index: 2;
     animation: idle-breathe 3.5s ease-in-out infinite;
   }
 
   .figure-body {
-    width: 72%;
-    height: 42%;
-    border-radius: 35% 35% 25% 25%;
-    background: radial-gradient(circle at 45% 30%, #221c12, #0a0804);
-    border: 1px solid rgba(180, 140, 80, 0.08);
-    margin-top: -12%;
-  }
-
-  .lantern-spot {
     position: absolute;
-    right: 5%;
-    top: 35%;
-    width: 5px;
-    height: 5px;
-    border-radius: 50%;
-    background: #c8a050;
-    box-shadow: 0 0 6px rgba(200, 160, 80, 0.6);
-    animation: lantern-flicker 2.2s ease-in-out infinite;
-  }
-
-  @keyframes lantern-flicker {
-    0%, 100% { opacity: 0.5; transform: scale(1); }
-    30%      { opacity: 0.8; transform: scale(1.2); }
-    70%      { opacity: 0.4; transform: scale(0.9); }
+    border-radius: 5px 5px 3px 3px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    z-index: 1;
   }
 
   @keyframes idle-breathe {
     0%, 100% { transform: translateY(0) scale(1); }
-    50%      { transform: translateY(-0.4px) scale(1.03); }
+    50%      { transform: translateY(-0.4px) scale(1.02); }
   }
 
-  /* ── Walking animation ── */
   .moving .figure-head {
     animation: walk-bob 0.32s steps(2) infinite;
   }
@@ -177,6 +133,6 @@
 
   @keyframes walk-sway {
     0%, 100% { transform: translateX(0) rotate(0deg); }
-    50%      { transform: translateX(0.5px) rotate(1.5deg); }
+    50%      { transform: translateX(0.5px) rotate(1deg); }
   }
 </style>

@@ -51,6 +51,9 @@ export function createMuseum2DState(grid: MuseumGrid) {
 	let cameraX = $state(grid.spawn.x);
 	let cameraY = $state(grid.spawn.y);
 
+	// Visual facing includes diagonals (8-direction) for sprite rendering
+	let visualFacing = $state<string>("north");
+
 	// Movement interpolation
 	let moveProgress = $state(0);
 	let isTransitioning = $state(false);
@@ -85,6 +88,16 @@ export function createMuseum2DState(grid: MuseumGrid) {
 		const newY = logicalY + dy;
 
 		playerFacing = facing;
+
+		// Compute 8-direction visual facing from movement vector
+		if (dx === 0 && dy < 0) visualFacing = "north";
+		else if (dx > 0 && dy < 0) visualFacing = "northeast";
+		else if (dx > 0 && dy === 0) visualFacing = "east";
+		else if (dx > 0 && dy > 0) visualFacing = "southeast";
+		else if (dx === 0 && dy > 0) visualFacing = "south";
+		else if (dx < 0 && dy > 0) visualFacing = "southwest";
+		else if (dx < 0 && dy === 0) visualFacing = "west";
+		else if (dx < 0 && dy < 0) visualFacing = "northwest";
 
 		if (!canMoveTo(newX, newY)) return false;
 
@@ -261,6 +274,15 @@ export function createMuseum2DState(grid: MuseumGrid) {
 		heldDirections = newSet;
 	}
 
+	/**
+	 * Clear all held directions. Called when the window loses focus or a
+	 * context menu opens, because keyup events fired during those states
+	 * never reach the game — leaving ghost keys that cause infinite movement.
+	 */
+	function clearAllDirections() {
+		heldDirections = new Set<Direction>();
+	}
+
 	// ── Interaction ──
 
 	function checkTriggerAtPosition(x: number, y: number) {
@@ -345,6 +367,7 @@ export function createMuseum2DState(grid: MuseumGrid) {
 		get playerY() { return logicalY; },
 		get playerFacing() { return playerFacing; },
 		get isMoving() { return isTransitioning; },
+		get visualFacing() { return visualFacing; },
 
 		// Visual float position (for rendering — sub-tile interpolated)
 		get visualX() { return visualX; },
@@ -364,6 +387,7 @@ export function createMuseum2DState(grid: MuseumGrid) {
 		// Input (called by game component)
 		onDirectionDown,
 		onDirectionUp,
+		clearAllDirections,
 		interact,
 		clearFocus,
 
