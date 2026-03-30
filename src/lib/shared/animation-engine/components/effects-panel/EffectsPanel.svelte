@@ -1,0 +1,221 @@
+<script lang="ts">
+  import { onMount, onDestroy } from "svelte";
+  import type { Snippet } from "svelte";
+  import { getAnimationVisibilityManager } from "../../state/animation-visibility-state.svelte";
+  import EffectSelector from "./EffectSelector.svelte";
+  import EffectPresetsSection from "./EffectPresetsSection.svelte";
+  import LedCustomize from "./customize/LedCustomize.svelte";
+  import FireCustomize from "./customize/FireCustomize.svelte";
+  import TrailCustomize from "./customize/TrailCustomize.svelte";
+  import CharcoalCustomize from "./customize/CharcoalCustomize.svelte";
+  import TempoControl from "$lib/shared/sequence-viewer/components/TempoControl.svelte";
+  import TransportControls from "$lib/features/compose/components/controls/TransportControls.svelte";
+  import { LED_PRESET_GROUP } from "./presets/led-presets";
+  import { FIRE_PRESET_GROUP } from "./presets/fire-presets";
+  import { TRAIL_PRESET_GROUP } from "./presets/trail-presets";
+  import { CHARCOAL_PRESET_GROUP } from "./presets/charcoal-presets";
+  import type { EffectPresetGroup } from "./presets/types";
+
+  interface Props {
+    // Playback state (from parent — the parent owns the playback engine)
+    bpm: number;
+    onBpmChange: (bpm: number) => void;
+    isPlaying: boolean;
+    onPlaybackToggle: () => void;
+    onStepForward?: () => void;
+    onStepBackward?: () => void;
+    onHalfStepForward?: () => void;
+    onHalfStepBackward?: () => void;
+
+    // Layout control
+    showPlayback?: boolean;       // default true
+    showExportControls?: boolean; // default false
+
+    // Svelte 5 snippet for slot content (export controls, source picker, etc.)
+    children?: Snippet;
+  }
+
+  const {
+    bpm,
+    onBpmChange,
+    isPlaying,
+    onPlaybackToggle,
+    onStepForward,
+    onStepBackward,
+    onHalfStepForward,
+    onHalfStepBackward,
+    showPlayback = true,
+    showExportControls = false,
+    children,
+  }: Props = $props();
+
+  const vm = getAnimationVisibilityManager();
+
+  // Internal state
+  let activeEffect = $state("none");
+  let customizeOpen = $state(false);
+  let activePresetId = $state<string | null>(null);
+  // Tick counter to force summary recompute when VM state changes
+  let summaryTick = $state(0);
+
+  const EFFECT_COLORS: Record<string, string> = {
+    fire: "#f97316",
+    led: "#22c55e",
+    trails: "#60a5fa",
+    charcoal: "#a855f7",
+  };
+
+  const EFFECT_LABELS: Record<string, string> = {
+    fire: "Fire",
+    led: "LED",
+    trails: "Trails",
+    charcoal: "Charcoal",
+  };
+
+  function syncFromVM(): void {
+    if (vm.isFireEffectEnabled()) activeEffect = "fire";
+    else if (vm.isLedEffectEnabled()) activeEffect = "led";
+    else if (vm.isCharcoalEffectEnabled()) activeEffect = "charcoal";
+    else if (vm.isTrailsVisible() && vm.getTrailStyle() === "on") activeEffect = "trails";
+    else activeEffect = "none";
+
+    if (activeEffect === "led") {
+      activePresetId = vm.getActivePresetId();
+    }
+
+    summaryTick++;
+  }
+
+  onMount(() => {
+    syncFromVM();
+    vm.registerObserver(syncFromVM);
+  });
+
+  onDestroy(() => {
+    vm.unregisterObserver(syncFromVM);
+  });
+
+  function handleEffectSelect(effectId: string): void {
+    customizeOpen = false;
+
+    // Disable all effects first
+    vm.setFireEffect(false);
+    vm.setLedEffect(false);
+    vm.setCharcoalEffect(false);
+
+    // Enable selected
+    if (effectId === "fire") vm.setFireEffect(true);
+    else if (effectId === "led") vm.setLedEffect(true);
+    else if (effectId === "charcoal") vm.setCharcoalEffect(true);
+    else if (effectId === "trails") vm.setTrailStyle("on");
+    // "none" — all disabled, already done above
+
+    activeEffect = effectId;
+    activePresetId = null;
+  }
+
+  function getPresetGroup(effect: string): EffectPresetGroup | null {
+    switch (effect) {
+      case "led": return LED_PRESET_GROUP;
+      case "fire": return FIRE_PRESET_GROUP;
+      case "trails": return TRAIL_PRESET_GROUP;
+      case "charcoal": return CHARCOAL_PRESET_GROUP;
+      default: return null;
+    }
+  }
+
+  function handlePresetSelect(presetId: string): void {
+    const group = getPresetGroup(activeEffect);
+    if (!group) return;
+    const preset = group.presets.find((p) => p.id === presetId);
+    if (!preset) return;
+    preset.apply(vm);
+    activePresetId = presetId;
+  }
+
+  const currentSummary = $derived.by(() => {
+    // summaryTick makes this reactive to VM observer changes
+    summaryTick;
+    const group = getPresetGroup(activeEffect);
+    if (!group) return "";
+    return group.getSummary(vm);
+  });
+</script>
+
+<div class="effects-panel">
+  {#if showPlayback}
+    <div class="sb-section">
+      <TempoControl {bpm} {onBpmChange} showPresets={false} showPractice={false} />
+      <TransportControls
+        {isPlaying}
+        onPlaybackToggle={onPlaybackToggle}
+        onStepHalfBeatForward={onHalfStepForward}
+        onStepHalfBeatBackward={onHalfStepBackward}
+        onStepFullBeatForward={onStepForward}
+        onStepFullBeatBackward={onStepBackward}
+      />
+    </div>
+  {/if}
+
+  <div class="sb-section">
+    <span class="sb-label">EFFECTS</span>
+    <EffectSelector {activeEffect} onSelect={handleEffectSelect} />
+  </div>
+
+  {#if activeEffect !== "none" && !customizeOpen}
+    {@const group = getPresetGroup(activeEffect)}
+    {#if group}
+      <div class="sb-section">
+        <EffectPresetsSection
+          presetGroup={group}
+          {activePresetId}
+          onSelectPreset={handlePresetSelect}
+          onCustomize={() => (customizeOpen = true)}
+          effectLabel={EFFECT_LABELS[activeEffect] ?? ""}
+          accentColor={EFFECT_COLORS[activeEffect] ?? "#8b5cf6"}
+          summary={currentSummary}
+        />
+      </div>
+    {/if}
+  {/if}
+
+  {#if customizeOpen}
+    <div class="sb-section">
+      {#if activeEffect === "led"}
+        <LedCustomize onBack={() => (customizeOpen = false)} />
+      {:else if activeEffect === "fire"}
+        <FireCustomize onBack={() => (customizeOpen = false)} />
+      {:else if activeEffect === "trails"}
+        <TrailCustomize onBack={() => (customizeOpen = false)} />
+      {:else if activeEffect === "charcoal"}
+        <CharcoalCustomize onBack={() => (customizeOpen = false)} />
+      {/if}
+    </div>
+  {/if}
+
+  {#if children}
+    {@render children()}
+  {/if}
+</div>
+
+<style>
+  .effects-panel {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .sb-section {
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .sb-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.35));
+    margin-bottom: 8px;
+  }
+</style>
