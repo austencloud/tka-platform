@@ -250,6 +250,7 @@
     patternId: ledPatternId,
     patternSpeed: ledPatternSpeed,
     primaryColor: ledPrimaryColor,
+    secondaryColor: "#ffffff",
     brightness: ledBrightnessToFloat(ledBrightness),
     colorMode: ledColorMode,
     blueHandColor: ledBlueHandColor,
