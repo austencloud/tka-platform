@@ -103,6 +103,15 @@ export {
   OPPOSITE_DIRECTIONS,
 } from "./constants/direction-maps.js";
 
+// Prop classification
+export {
+  getBetaOffsetSize,
+  isUnilateralProp,
+  isBuugengFamilyProp,
+  isStrictPlacedProp,
+  pictographRequiresStrictHandpoints,
+} from "./constants/prop-classification.js";
+
 // Dash location maps
 export {
   PHI_DASH_PSI_DASH_LOCATION_MAP,
