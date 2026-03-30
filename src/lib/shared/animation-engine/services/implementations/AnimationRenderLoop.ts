@@ -280,10 +280,14 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       trailSettings.enabled && trailSettings.mode !== TrailMode.OFF;
     const backgroundTransitioning =
       this.renderer?.isBackgroundTransitioning() ?? false;
+    // Fire or charcoal overlay is active. fireConfig is passed when either
+    // effect is enabled (see AnimationEngine.getFrameParams), so check for both.
     const fireActive =
       params.fireConfig?.enabled === true &&
-      (this.fireRenderer?.isInitialized() === true ||
-       this.charcoalRenderer?.isInitialized() === true);
+      this.fireRenderer?.isInitialized() === true;
+    const charcoalActive =
+      this.charcoalRenderer?.isInitialized() === true &&
+      params.fireConfig != null;
     const ledActive =
       params.ledConfig?.enabled === true &&
       this.ledRenderer?.isInitialized() === true;
@@ -294,6 +298,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       isPlaying ||
       backgroundTransitioning ||
       fireActive ||
+      charcoalActive ||
       ledActive;
 
     // Trails alone (without active work) should not keep the loop alive forever.
@@ -508,11 +513,28 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
           currentTime
         );
 
-        // Filter tips by resolved effect so each renderer only gets its assigned tips
+        // Filter tips by resolved effect so each renderer only gets its assigned tips.
+        // When tipEffectMap is empty (the common case — user toggled a global effect
+        // rather than assigning per-tip), route ALL tips to the active renderer based
+        // on which renderer is initialized. Without this fallback, resolveEffect()
+        // returns "none" for every tip and nothing renders.
         const allTips = tipResult.tips;
         const tipMap = params.tipEffectMap ?? {};
-        const fireTips = allTips.filter(t => resolveEffect(t.propIndex, t.tipIndex, undefined, tipMap) === 'fire');
-        const charcoalTips = allTips.filter(t => resolveEffect(t.propIndex, t.tipIndex, undefined, tipMap) === 'charcoal');
+        const hasPerTipAssignments = Object.keys(tipMap).length > 0;
+
+        let fireTips: typeof allTips;
+        let charcoalTips: typeof allTips;
+
+        if (hasPerTipAssignments) {
+          fireTips = allTips.filter(t => resolveEffect(t.propIndex, t.tipIndex, tipMap, {}) === 'fire');
+          charcoalTips = allTips.filter(t => resolveEffect(t.propIndex, t.tipIndex, tipMap, {}) === 'charcoal');
+        } else {
+          // No per-tip map: all tips go to whichever renderer is active.
+          // Fire and charcoal are mutually exclusive at the global toggle level,
+          // so at most one of these will get tips.
+          fireTips = (activeFireRenderer && params.fireConfig?.enabled) ? allTips : [];
+          charcoalTips = activeCharcoalRenderer ? allTips : [];
+        }
 
         const fireInput: import("../../domain/types/FireTypes").FireFrameInput = {
           tips: allTips,
@@ -597,7 +619,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
 
         // Filter LED tips by resolved effect assignment
         const ledTipMap = params.tipEffectMap ?? {};
-        const ledTips = allLedTips.filter(t => resolveEffect(t.propIndex, t.tipIndex, undefined, ledTipMap) === 'led');
+        const ledTips = allLedTips.filter(t => resolveEffect(t.propIndex, t.tipIndex, ledTipMap, {}) === 'led');
 
         if (ledTips.length > 0) {
           this.ledRenderer.renderLeds(

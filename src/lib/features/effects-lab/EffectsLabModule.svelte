@@ -139,7 +139,7 @@
 
   <div class="tab-content" role="tabpanel">
     <div class="tuning-host" class:hidden={activeTab !== "tuning"}>
-      <EffectsLabPlaybackHost {activeMode} onModeChange={setMode} />
+      <EffectsLabPlaybackHost />
     </div>
     {#if activeTab === "points"}
       {#if PointEditorComponent}
