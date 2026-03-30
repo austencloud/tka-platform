@@ -3,9 +3,12 @@
  *
  * When two props end at the same location (a "beta" position),
  * they need to be offset from each other so they don't overlap.
+ *
+ * This implements the EXACT gate sequence from PropPlacer.calculateBetaOffset()
+ * (lines 130-376) and BetaPropDirectionCalculator for direction routing.
  */
 
-import type { GridLocation, GridMode, Orientation, VectorDirection } from "../types.js";
+import type { GridLocation, GridMode, VectorDirection } from "../types.js";
 import { isCardinal } from "../types.js";
 import {
   DIAMOND_RADIAL_MAP,
@@ -14,20 +17,15 @@ import {
   BOX_NON_RADIAL_MAP,
   SHIFT_RADIAL_MAP,
   SHIFT_NON_RADIAL_MAP,
+  LETTER_I_RADIAL_MAP,
+  LETTER_I_NON_RADIAL_MAP,
   OPPOSITE_DIRECTIONS,
 } from "../constants/direction-maps.js";
-
-// ============================================================================
-// CONSTANTS
-// ============================================================================
-
-// Default offset distance in pixels (for staff prop type in diamond mode)
-const BETA_OFFSET_DISTANCE_DIAMOND = 21.11; // 950/45
-const BETA_OFFSET_DISTANCE_BOX = 14.93; // (950/45) / sqrt(2)
-
-// Hand-specific offset distance (same values)
-const HAND_BETA_OFFSET_DISTANCE_DIAMOND = 950 / 45; // ~21.11px
-const HAND_BETA_OFFSET_DISTANCE_BOX = 950 / 45 / Math.sqrt(2); // ~14.93px
+import {
+  getBetaOffsetSize,
+  isUnilateralProp,
+  isBuugengFamilyProp,
+} from "../constants/prop-classification.js";
 
 // ============================================================================
 // INPUT TYPES
@@ -47,44 +45,72 @@ export interface BetaOffsetInput {
   redMotion: BetaMotionInput;
   letter: string;
   gridMode: GridMode;
+  /** Prop type override from user settings (e.g. user renders "staff" data as "buugeng") */
+  bluePropType?: string;
+  /** Prop type override from user settings */
+  redPropType?: string;
+  /** Whether the blue buugeng prop is flipped (chirality) */
+  blueBuugengFlipped?: boolean;
+  /** Whether the red buugeng prop is flipped (chirality) */
+  redBuugengFlipped?: boolean;
 }
 
 // ============================================================================
-// HELPER FUNCTIONS
+// ORIENTATION HELPERS
 // ============================================================================
 
-/**
- * Check if orientation is radial (IN or OUT)
- * Interradial orientations (clockIn, clockOut, counterIn, counterOut) are NOT radial —
- * they use non-radial (clock/counter) offset maps as a close approximation.
- */
-function isRadialOrientation(orientation: string | undefined): boolean {
-  if (!orientation) return true; // Default to radial if not specified
-  const ori = orientation.toLowerCase();
-  return ori === "in" || ori === "out";
+const RADIAL_ORIENTATIONS = ["in", "out"];
+const NON_RADIAL_ORIENTATIONS = ["clock", "counter"];
+
+function isRadialOrientation(ori: string | undefined): boolean {
+  if (!ori) return false;
+  return RADIAL_ORIENTATIONS.includes(ori.toLowerCase());
+}
+
+function isNonRadialOrientation(ori: string | undefined): boolean {
+  if (!ori) return false;
+  return NON_RADIAL_ORIENTATIONS.includes(ori.toLowerCase());
 }
 
 /**
- * Check if both orientations are radial
+ * Replicate the app's OrientationChecker.isRadial() for direction map selection.
+ *
+ * TODO: Known parity requirement — this logic is ASYMMETRIC in the app.
+ * The app checks: (red is IN|OUT AND blue is IN) OR (blue is OUT regardless of red).
+ * The symmetric version would be: both are IN|OUT. We replicate the asymmetric
+ * version here for exact parity with the app's rendering.
  */
-function areBothRadial(blueOri: string | undefined, redOri: string | undefined): boolean {
-  return isRadialOrientation(blueOri) && isRadialOrientation(redOri);
+function isRadialForMapSelection(
+  blueEndOri: string | undefined,
+  redEndOri: string | undefined
+): boolean {
+  const redNorm = redEndOri?.toLowerCase();
+  const blueNorm = blueEndOri?.toLowerCase();
+
+  const redIsInOrOut = redNorm === "in" || redNorm === "out";
+  const blueIsIn = blueNorm === "in";
+  const blueIsOut = blueNorm === "out";
+
+  return (redIsInOrOut && blueIsIn) || blueIsOut;
 }
 
-/**
- * Check if motion is a shift motion (PRO, ANTI, FLOAT)
- */
+// ============================================================================
+// MOTION TYPE HELPERS
+// ============================================================================
+
 function isShiftMotion(motionType: string): boolean {
   const type = motionType.toLowerCase();
   return type === "pro" || type === "anti" || type === "float";
 }
 
-/**
- * Convert direction to pixel offset
- */
-function directionToOffset(direction: VectorDirection, gridMode: GridMode): { x: number; y: number } {
-  const distance = gridMode === "box" ? BETA_OFFSET_DISTANCE_BOX : BETA_OFFSET_DISTANCE_DIAMOND;
+// ============================================================================
+// DIRECTION RESOLUTION HELPERS
+// ============================================================================
 
+function directionToOffset(
+  direction: VectorDirection,
+  distance: number
+): { x: number; y: number } {
   switch (direction) {
     case "up":
       return { x: 0, y: -distance };
@@ -107,32 +133,26 @@ function directionToOffset(direction: VectorDirection, gridMode: GridMode): { x:
   }
 }
 
-/**
- * Get the opposite direction
- */
 function getOppositeDirection(direction: VectorDirection): VectorDirection {
   return OPPOSITE_DIRECTIONS[direction];
 }
 
 // ============================================================================
-// OFFSET CALCULATION FUNCTIONS
+// DIRECTION CALCULATION (mirrors BetaPropDirectionCalculator)
 // ============================================================================
 
 /**
- * Calculate beta offset for static/dash motions
+ * Static/Dash handler: look up direction from DIAMOND/BOX × RADIAL/NON_RADIAL maps
+ * by location and color. Uses isCardinal(location) to choose diamond vs box map.
  */
-function calculateStaticDashBetaOffset(
-  location: string,
+function getStaticDashDirection(
+  endLocation: string,
   color: "blue" | "red",
-  isRadial: boolean,
-  gridMode: GridMode
-): { x: number; y: number } {
-  const normalizedLocation = location.toLowerCase() as GridLocation;
+  isRadial: boolean
+): VectorDirection | null {
+  const loc = endLocation.toLowerCase() as GridLocation;
+  const isDiamond = isCardinal(loc);
 
-  // Determine if this is a cardinal (diamond) or intercardinal (box) location
-  const isDiamond = isCardinal(normalizedLocation);
-
-  // Select the appropriate direction map
   let map: Record<GridLocation, Record<"blue" | "red", VectorDirection>>;
   if (isDiamond) {
     map = isRadial ? DIAMOND_RADIAL_MAP : DIAMOND_NON_RADIAL_MAP;
@@ -140,104 +160,176 @@ function calculateStaticDashBetaOffset(
     map = isRadial ? BOX_RADIAL_MAP : BOX_NON_RADIAL_MAP;
   }
 
-  // Look up the direction for this location and color
-  const locationMap = map[normalizedLocation];
-  if (!locationMap) {
-    // Location not found in map, no offset
-    return { x: 0, y: 0 };
-  }
-
-  const direction = locationMap[color];
-  if (!direction) {
-    return { x: 0, y: 0 };
-  }
-
-  // Convert direction to pixel offset
-  return directionToOffset(direction, gridMode);
+  const locationMap = map[loc];
+  if (!locationMap) return null;
+  return locationMap[color] ?? null;
 }
 
 /**
- * Calculate beta offset for shift motions (PRO/ANTI/FLOAT)
+ * Shift handler: look up from SHIFT_RADIAL/NON_RADIAL maps by [startLocation][endLocation].
+ * Falls back to static/dash if lookup fails.
  */
-function calculateShiftBetaOffset(
-  motion: BetaMotionInput,
-  isRadial: boolean,
-  gridMode: GridMode
-): { x: number; y: number } {
-  const startLoc = motion.startLocation.toLowerCase() as GridLocation;
-  const endLoc = motion.endLocation.toLowerCase() as GridLocation;
+function getShiftDirection(
+  startLocation: string,
+  endLocation: string,
+  color: "blue" | "red",
+  isRadial: boolean
+): VectorDirection | null {
+  const startLoc = startLocation.toLowerCase() as GridLocation;
+  const endLoc = endLocation.toLowerCase() as GridLocation;
 
-  // Select the appropriate shift map
   const map = isRadial ? SHIFT_RADIAL_MAP : SHIFT_NON_RADIAL_MAP;
-
-  // Look up direction based on start->end transition
   const startMap = map[startLoc];
   if (!startMap) {
-    // Fall back to static/dash calculation
-    return calculateStaticDashBetaOffset(endLoc, motion.color, isRadial, gridMode);
+    return getStaticDashDirection(endLoc, color, isRadial);
   }
 
   const direction = startMap[endLoc];
   if (!direction) {
-    // Fall back to static/dash calculation
-    return calculateStaticDashBetaOffset(endLoc, motion.color, isRadial, gridMode);
+    return getStaticDashDirection(endLoc, color, isRadial);
   }
 
-  return directionToOffset(direction, gridMode);
+  return direction;
 }
 
 /**
- * Calculate beta offset for Y/Z letters.
- *
- * Y/Z letters combine a shift motion with a static/dash motion.
- * The shift motion gets its calculated direction, the non-shift motion
- * gets the OPPOSITE direction.
+ * Letter I handler: look up from LETTER_I_RADIAL/NON_RADIAL maps by location and color.
  */
-function calculateYZBetaOffset(
-  input: BetaOffsetInput,
-  targetMotion: BetaMotionInput,
-  isRadial: boolean,
-  gridMode: GridMode
-): { x: number; y: number } {
-  const { blueMotion, redMotion } = input;
+function getLetterIDirection(
+  endLocation: string,
+  color: "blue" | "red",
+  isRadial: boolean
+): VectorDirection | null {
+  const loc = endLocation.toLowerCase() as GridLocation;
+  const map = isRadial ? LETTER_I_RADIAL_MAP : LETTER_I_NON_RADIAL_MAP;
+  const locationMap = map[loc];
+  if (!locationMap) return null;
+  return locationMap[color] ?? null;
+}
 
-  // Identify which motion is shift (PRO/ANTI/FLOAT) vs non-shift (STATIC/DASH)
+/**
+ * G/H handler: look up from static/dash maps (DIAMOND/BOX) using endLocation.
+ * Red gets the base direction. Blue gets the OPPOSITE direction.
+ * SPECIAL: At south location, always use RIGHT as red's base direction.
+ */
+function getLetterGHDirection(
+  endLocation: string,
+  color: "blue" | "red",
+  isRadial: boolean
+): VectorDirection | null {
+  const loc = endLocation.toLowerCase();
+
+  // Special case: south always returns RIGHT as base
+  if (loc === "s") {
+    const baseDirection: VectorDirection = "right";
+    return color === "red" ? baseDirection : getOppositeDirection(baseDirection);
+  }
+
+  // Determine map based on cardinal vs intercardinal
+  const isBox = !isCardinal(loc);
+
+  let map: Record<GridLocation, Record<"blue" | "red", VectorDirection>>;
+  if (isBox) {
+    map = isRadial ? BOX_RADIAL_MAP : BOX_NON_RADIAL_MAP;
+  } else {
+    map = isRadial ? DIAMOND_RADIAL_MAP : DIAMOND_NON_RADIAL_MAP;
+  }
+
+  const locationMap = map[loc as GridLocation];
+  if (!locationMap) return null;
+
+  // Red gets the base direction from the map
+  const baseDirection = locationMap["red"];
+  if (!baseDirection) return null;
+
+  // Red gets base, blue gets opposite
+  return color === "red" ? baseDirection : getOppositeDirection(baseDirection);
+}
+
+/**
+ * Y/Z handler: identify which motion is shift vs non-shift.
+ * Calculate direction from the SHIFT motion using shift maps.
+ * If target IS the shift motion → use that direction.
+ * If target is NOT the shift motion → use OPPOSITE direction.
+ */
+function getLetterYZDirection(
+  blueMotion: BetaMotionInput,
+  redMotion: BetaMotionInput,
+  targetMotion: BetaMotionInput,
+  isRadial: boolean
+): VectorDirection | null {
+  // Identify shift vs non-shift
   const redIsShift = isShiftMotion(redMotion.motionType);
   const blueIsShift = isShiftMotion(blueMotion.motionType);
 
   const shiftMotion = redIsShift ? redMotion : blueIsShift ? blueMotion : null;
+  if (!shiftMotion) return null;
 
-  if (!shiftMotion) {
-    // Neither is a shift motion - fall back to static/dash calculation
-    const location = targetMotion.endLocation.toLowerCase();
-    return calculateStaticDashBetaOffset(location, targetMotion.color, isRadial, gridMode);
+  // Identify non-shift motion (static first, then dash)
+  const findNonShift = (): BetaMotionInput | null => {
+    const redType = redMotion.motionType.toLowerCase();
+    const blueType = blueMotion.motionType.toLowerCase();
+    if (redType === "static") return redMotion;
+    if (blueType === "static") return blueMotion;
+    if (redType === "dash") return redMotion;
+    if (blueType === "dash") return blueMotion;
+    return null;
+  };
+
+  const nonShiftMotion = findNonShift();
+  if (!nonShiftMotion) return null;
+
+  // Calculate direction from the shift motion
+  const shiftDirection = getShiftDirection(
+    shiftMotion.startLocation,
+    shiftMotion.endLocation,
+    shiftMotion.color,
+    isRadial
+  );
+  if (!shiftDirection) return null;
+
+  // Target is the shift motion → use direction; otherwise → opposite
+  const isTargetShift = targetMotion.color === shiftMotion.color;
+  return isTargetShift ? shiftDirection : getOppositeDirection(shiftDirection);
+}
+
+/**
+ * Route to the correct direction handler based on letter and motion type.
+ * Exact routing order from BetaPropDirectionCalculator.getDirectionForMotionData().
+ */
+function calculateDirection(
+  input: BetaOffsetInput,
+  targetMotion: BetaMotionInput,
+  isRadial: boolean
+): VectorDirection | null {
+  const { blueMotion, redMotion, letter } = input;
+
+  // 1. Is letter Y, Z, Y-, or Z-?
+  if (letter === "Y" || letter === "Z" || letter === "Y-" || letter === "Z-") {
+    return getLetterYZDirection(blueMotion, redMotion, targetMotion, isRadial);
   }
 
-  // Calculate direction from the SHIFT motion (not the target motion)
-  const startLoc = shiftMotion.startLocation.toLowerCase() as GridLocation;
-  const endLoc = shiftMotion.endLocation.toLowerCase() as GridLocation;
-  const map = isRadial ? SHIFT_RADIAL_MAP : SHIFT_NON_RADIAL_MAP;
-
-  const startMap = map[startLoc];
-  if (!startMap) {
-    // Fall back
-    const location = targetMotion.endLocation.toLowerCase();
-    return calculateStaticDashBetaOffset(location, targetMotion.color, isRadial, gridMode);
+  // 2. Is target motion a shift (pro/anti/float)?
+  if (isShiftMotion(targetMotion.motionType)) {
+    // 2a. Is letter G or H (NOT G- or H-)?
+    if (letter === "G" || letter === "H") {
+      return getLetterGHDirection(targetMotion.endLocation, targetMotion.color, isRadial);
+    }
+    // 2b. Is letter I (NOT I-)?
+    if (letter === "I") {
+      return getLetterIDirection(targetMotion.endLocation, targetMotion.color, isRadial);
+    }
+    // 2c. Generic shift handler
+    return getShiftDirection(
+      targetMotion.startLocation,
+      targetMotion.endLocation,
+      targetMotion.color,
+      isRadial
+    );
   }
 
-  const shiftDirection = startMap[endLoc];
-  if (!shiftDirection) {
-    // Fall back
-    const location = targetMotion.endLocation.toLowerCase();
-    return calculateStaticDashBetaOffset(location, targetMotion.color, isRadial, gridMode);
-  }
-
-  // If target is the shift motion, use the calculated direction
-  // If target is the non-shift motion, use the OPPOSITE direction
-  const isTargetShiftMotion = targetMotion.color === shiftMotion.color;
-  const direction = isTargetShiftMotion ? shiftDirection : getOppositeDirection(shiftDirection);
-
-  return directionToOffset(direction, gridMode);
+  // 3. Static or dash → static/dash handler
+  return getStaticDashDirection(targetMotion.endLocation, targetMotion.color, isRadial);
 }
 
 // ============================================================================
@@ -245,56 +337,161 @@ function calculateYZBetaOffset(
 // ============================================================================
 
 /**
- * Calculate beta offset for a single motion
- * Returns { x, y } pixel offset to apply to prop position
+ * Calculate beta offset for a single motion.
+ * Returns { x, y } pixel offset to apply to prop position.
+ *
+ * Implements the exact gate sequence from PropPlacer.calculateBetaOffset()
+ * (lines 130-376 of the app's PropPlacer.ts).
  */
 export function calculateBetaOffset(
   input: BetaOffsetInput,
   targetMotion: BetaMotionInput
 ): { x: number; y: number } {
-  const { blueMotion, redMotion, letter, gridMode } = input;
+  const { blueMotion, redMotion, gridMode } = input;
 
-  // Check if both props end at the same location (beta position)
+  // ========================================================================
+  // Gate 1: Same location check
+  // If blue and red don't end at same location → return {0,0}
+  // ========================================================================
   const blueEndLoc = blueMotion.endLocation.toLowerCase();
   const redEndLoc = redMotion.endLocation.toLowerCase();
 
   if (blueEndLoc !== redEndLoc) {
-    // Props don't overlap, no offset needed
     return { x: 0, y: 0 };
   }
 
-  // SPECIAL CASE: Hand props always use "right hand on right, left hand on left"
-  const bothAreHands = blueMotion.propType === "hand" && redMotion.propType === "hand";
-  if (bothAreHands) {
-    const distance =
-      gridMode === "box" ? HAND_BETA_OFFSET_DISTANCE_BOX : HAND_BETA_OFFSET_DISTANCE_DIAMOND;
+  // ========================================================================
+  // Resolve actual prop types (settings override stored motionData.propType)
+  // A user may have "staff" stored in data but render as "buugeng" via settings.
+  // Hand prop type is never overridden — if stored as hand, it stays hand.
+  // ========================================================================
+  const blueIsHand = blueMotion.propType === "hand";
+  const redIsHand = redMotion.propType === "hand";
+  const actualBluePropType = blueIsHand
+    ? "hand"
+    : (input.bluePropType ?? blueMotion.propType ?? "staff");
+  const actualRedPropType = redIsHand
+    ? "hand"
+    : (input.redPropType ?? redMotion.propType ?? "staff");
 
-    // Blue hand goes LEFT (negative X), Red hand goes RIGHT (positive X)
-    // This creates the "right hand on right, left hand on left" visual
-    if (targetMotion.color === "blue") {
-      return { x: -distance, y: 0 };
+  // ========================================================================
+  // Gate 2: Hand prop special case (PropPlacer lines 154-222)
+  // When both props are hands, use direction-aware positioning.
+  // ========================================================================
+  const bothAreHands = actualBluePropType === "hand" && actualRedPropType === "hand";
+
+  if (bothAreHands) {
+    const distance = getBetaOffsetSize("hand", gridMode);
+
+    const eastPositions = ["e", "ne", "se"];
+    const westPositions = ["w", "nw", "sw"];
+
+    const blueStartLoc = blueMotion.startLocation.toLowerCase();
+    const redStartLoc = redMotion.startLocation.toLowerCase();
+
+    const blueFromEast = eastPositions.includes(blueStartLoc);
+    const blueFromWest = westPositions.includes(blueStartLoc);
+    const redFromEast = eastPositions.includes(redStartLoc);
+    const redFromWest = westPositions.includes(redStartLoc);
+
+    if (blueFromEast && redFromWest) {
+      // Blue approaching from east → RIGHT, red from west → LEFT
+      return targetMotion.color === "blue"
+        ? { x: distance, y: 0 }
+        : { x: -distance, y: 0 };
+    } else if (blueFromWest && redFromEast) {
+      // Blue approaching from west → LEFT, red from east → RIGHT
+      return targetMotion.color === "blue"
+        ? { x: -distance, y: 0 }
+        : { x: distance, y: 0 };
     } else {
-      return { x: distance, y: 0 };
+      // Default: blue LEFT, red RIGHT
+      return targetMotion.color === "blue"
+        ? { x: -distance, y: 0 }
+        : { x: distance, y: 0 };
     }
   }
 
-  // Determine if both orientations are radial
-  const isRadial = areBothRadial(blueMotion.endOrientation, redMotion.endOrientation);
+  // ========================================================================
+  // Gate 3: Hybrid orientation skip (PropPlacer lines 231-250)
+  // Check each prop's end orientation independently.
+  // If one is radial and one is nonRadial → return {0,0}.
+  // This check is SYMMETRIC (unlike OrientationChecker used later for maps).
+  // ========================================================================
+  const blueEndOri = blueMotion.endOrientation;
+  const redEndOri = redMotion.endOrientation;
 
-  // Get the target motion's end location
-  const location = targetMotion.endLocation.toLowerCase();
+  const blueIsRadial = isRadialOrientation(blueEndOri);
+  const redIsRadial = isRadialOrientation(redEndOri);
+  const blueIsNonRadial = isNonRadialOrientation(blueEndOri);
+  const redIsNonRadial = isNonRadialOrientation(redEndOri);
 
-  // Check for letter-specific handling (Y/Z have special logic)
-  if (letter === "Y" || letter === "Z" || letter === "Y-" || letter === "Z-") {
-    return calculateYZBetaOffset(input, targetMotion, isRadial, gridMode);
+  const hybridOrientation =
+    (redIsRadial && blueIsNonRadial) || (redIsNonRadial && blueIsRadial);
+
+  if (hybridOrientation) {
+    return { x: 0, y: 0 };
   }
 
-  // Check if this is a shift motion (PRO/ANTI/FLOAT)
-  if (isShiftMotion(targetMotion.motionType)) {
-    // Letter G/H/I have special handling but use shift maps
-    return calculateShiftBetaOffset(targetMotion, isRadial, gridMode);
+  // Pre-compute orientation relationships for gates 4-6
+  const bothRadial = redIsRadial && blueIsRadial;
+  const bothNonRadial = redIsNonRadial && blueIsNonRadial;
+  const sameTypeButDifferentOrientation =
+    (bothRadial && redEndOri?.toLowerCase() !== blueEndOri?.toLowerCase()) ||
+    (bothNonRadial && redEndOri?.toLowerCase() !== blueEndOri?.toLowerCase());
+
+  // ========================================================================
+  // Gate 4: Buugeng family nesting (PropPlacer lines 274-290)
+  // If both props are buugeng family AND have opposite chirality → return {0,0}
+  // ========================================================================
+  const bothAreBuugengFamily =
+    isBuugengFamilyProp(actualBluePropType) &&
+    isBuugengFamilyProp(actualRedPropType);
+
+  if (bothAreBuugengFamily) {
+    const blueChirality = input.blueBuugengFlipped ?? false;
+    const redChirality = input.redBuugengFlipped ?? false;
+    const oppositeChirality = blueChirality !== redChirality; // XOR
+
+    if (oppositeChirality) {
+      return { x: 0, y: 0 };
+    }
   }
 
-  // Static or Dash motion - use location-based maps
-  return calculateStaticDashBetaOffset(location, targetMotion.color, isRadial, gridMode);
+  // ========================================================================
+  // Gate 5: Unilateral prop skip (PropPlacer lines 292-303)
+  // Same orientation TYPE but different specific orientations AND unilateral
+  // → return {0,0}
+  // ========================================================================
+  const actualPropType =
+    targetMotion.color === "blue" ? actualBluePropType : actualRedPropType;
+
+  if (sameTypeButDifferentOrientation && isUnilateralProp(actualPropType)) {
+    return { x: 0, y: 0 };
+  }
+
+  // ========================================================================
+  // Gate 6: Trigeng skip (PropPlacer lines 308-310)
+  // Same type different orientation AND prop type is "trigeng" → return {0,0}
+  // ========================================================================
+  if (sameTypeButDifferentOrientation && actualPropType === "trigeng") {
+    return { x: 0, y: 0 };
+  }
+
+  // ========================================================================
+  // Direction Calculation (BetaPropDirectionCalculator)
+  // Uses the ASYMMETRIC OrientationChecker for map selection (known parity bug).
+  // ========================================================================
+  const isRadial = isRadialForMapSelection(blueEndOri, redEndOri);
+  const direction = calculateDirection(input, targetMotion, isRadial);
+
+  if (!direction) {
+    return { x: 0, y: 0 };
+  }
+
+  // ========================================================================
+  // Final Step: Convert direction to offset using prop-type-specific distance
+  // ========================================================================
+  const distance = getBetaOffsetSize(actualPropType, gridMode);
+  return directionToOffset(direction, distance);
 }
