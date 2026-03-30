@@ -40,6 +40,11 @@ export interface ImageCompositionSettings {
   // When a step count has an override, it takes precedence over the global startPositionLayout.
   startPositionLayoutOverrides: Record<string, "row" | "column">;
 
+  // Per-step-count column count overrides.
+  // Keys are step counts as strings. Values are beat column counts (null = auto).
+  // Controls how many beat columns ChoreoCards use for that sequence length.
+  columnCountOverrides: Record<string, number>;
+
   // Backwards compatibility - computed from granular controls (always defined in getSettings())
   addUserInfo: boolean; // True if any footer element is shown
 }
@@ -68,6 +73,9 @@ const DEFAULT_SETTINGS: ImageCompositionSettings = {
 
   // No per-step-count overrides by default
   startPositionLayoutOverrides: {},
+
+  // No per-step-count column count overrides by default (auto layout)
+  columnCountOverrides: {},
 
   // Computed: true when any footer element is shown
   addUserInfo: true,
@@ -137,10 +145,22 @@ class ImageCompositionStateManager {
       this.saveToStorage();
     }
 
-    // Ensure overrides object exists for older persisted data
+    // Ensure overrides objects exist for older persisted data
     if (!this.settings.startPositionLayoutOverrides) {
       this.settings.startPositionLayoutOverrides = {};
     }
+    if (!this.settings.columnCountOverrides) {
+      this.settings.columnCountOverrides = {};
+    }
+    // Clean up any stale overrides for sequences too short to have column options
+    let cleaned = false;
+    for (const key of Object.keys(this.settings.columnCountOverrides)) {
+      if (Number(key) < 4) {
+        delete this.settings.columnCountOverrides[key];
+        cleaned = true;
+      }
+    }
+    if (cleaned) this.saveToStorage();
     // Note: darkMode is synced from AnimationVisibilityManager in syncWithAnimationVisibility()
   }
 
@@ -363,6 +383,29 @@ class ImageCompositionStateManager {
    */
   clearStartPositionLayoutOverride(stepCount: number): void {
     delete this.settings.startPositionLayoutOverrides[String(stepCount)];
+    this.saveToStorage();
+    this.notifyObservers();
+  }
+
+  /**
+   * Get the column count override for a specific step count.
+   * Returns null if no override is set (auto layout).
+   */
+  getColumnCountForStepCount(stepCount: number): number | null {
+    const override = this.settings.columnCountOverrides[String(stepCount)];
+    return override ?? null;
+  }
+
+  /**
+   * Set the column count for a specific step count.
+   * Pass null to remove the override (revert to auto).
+   */
+  setColumnCountForStepCount(stepCount: number, value: number | null): void {
+    if (value === null) {
+      delete this.settings.columnCountOverrides[String(stepCount)];
+    } else {
+      this.settings.columnCountOverrides[String(stepCount)] = value;
+    }
     this.saveToStorage();
     this.notifyObservers();
   }

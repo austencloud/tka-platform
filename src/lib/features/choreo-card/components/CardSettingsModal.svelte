@@ -52,6 +52,24 @@
   const showBirthday = $derived.by(() => { void compositionVersion; return composition.showBirthday; });
   const showQRCode = $derived.by(() => { void compositionVersion; return composition.showQRCode; });
   const currentStepCount = $derived(sequence?.steps?.length ?? 0);
+
+  // Per-length column count — even numbers only, 4+ steps
+  const columnOptions = $derived.by(() => {
+    if (currentStepCount < 4) return [];
+    const maxCols = Math.min(currentStepCount, 8);
+    const options: { label: string; value: number | null }[] = [
+      { label: "Auto", value: null },
+    ];
+    for (let n = 2; n <= maxCols; n += 2) {
+      options.push({ label: String(n), value: n });
+    }
+    return options;
+  });
+  const currentColumnCount = $derived.by(() => {
+    void compositionVersion;
+    if (currentStepCount === 0) return null;
+    return composition.getColumnCountForStepCount(currentStepCount);
+  });
   const startPositionLayout = $derived.by(() => {
     void compositionVersion;
     if (currentStepCount > 0) {
@@ -107,6 +125,7 @@
           {startPositionLayout}
           {showBirthday}
           showQRCodes={showQRCode}
+          columnCount={currentColumnCount}
         />
       {:else}
         <span class="no-sequence">No sequence selected</span>
@@ -172,6 +191,24 @@
         </div>
       </div>
 
+      {#if columnOptions.length > 0}
+        <div class="section">
+          <div class="section-title">{currentStepCount}-Count Columns</div>
+          <div class="chip-group">
+            {#each columnOptions as option}
+              <button
+                class="chip"
+                class:active={currentColumnCount === option.value}
+                aria-pressed={currentColumnCount === option.value}
+                onclick={() => composition.setColumnCountForStepCount(currentStepCount, option.value)}
+              >
+                {option.label}
+              </button>
+            {/each}
+          </div>
+        </div>
+      {/if}
+
     </div>
   {/snippet}
 </SettingsModalLayout>
@@ -179,6 +216,7 @@
 <style>
   .preview-container {
     width: 100%;
+    height: 100%;
     max-width: 300px;
   }
 

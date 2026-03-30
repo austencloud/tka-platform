@@ -521,6 +521,16 @@
       onSetEffort: (effort) => arrangeGridState.setCellEffort(cell.id, effort),
       onCopyCell: () => arrangeGridState.copyCellLayers(cell.id),
       onClearCell: () => arrangeGridState.clearCell(cell.id),
+      // TODO: Wire to parent ArrangeTab so these open the matrix drawers in CellEditorPanel.
+      // Currently the matrix drawers live inside CellEditorPanel's local state, so opening
+      // them from the context menu requires the parent to select the cell and signal the
+      // drawer to open. For now the menu items exist but don't open anything.
+      onOpenEffectMatrix: () => {
+        onSelectCell(cell.id);
+      },
+      onOpenEffortMatrix: () => {
+        onSelectCell(cell.id);
+      },
     };
   }
 
