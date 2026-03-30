@@ -16,24 +16,12 @@
   } from "../state/export-options-state.svelte";
   import type { VideoExportProgress } from "$lib/features/compose/services/contracts/IVideoExportOrchestrator";
   import { estimateExportTime, hasDeviceMetrics } from "../state/export-timing-tracker";
-  import TempoControl from "./TempoControl.svelte";
-  import FireCategory from "$lib/shared/animation-engine/components/animation-settings-modal/categories/FireCategory.svelte";
-  import CharcoalCategory from "$lib/shared/animation-engine/components/animation-settings-modal/categories/CharcoalCategory.svelte";
-  import LedCategory from "$lib/shared/animation-engine/components/animation-settings-modal/categories/LedCategory.svelte";
-  import TrailsCategory from "$lib/shared/animation-engine/components/animation-settings-modal/categories/TrailsCategory.svelte";
-
-  export interface ActiveEffect {
-    id: string;
-    label: string;
-    icon: string;
-    active: boolean;
-  }
+  import EffectsPanel from "$lib/shared/animation-engine/components/effects-panel/EffectsPanel.svelte";
 
   type PanelLayout = "sidebar" | "bottom";
 
   interface Props {
     exportOptions: ExportOptionsStateManager;
-    viewerEffects: ActiveEffect[];
     isExporting: boolean;
     exportProgress?: VideoExportProgress | null;
     canvasReady?: boolean;
@@ -45,12 +33,10 @@
     onBpmChange?: (bpm: number) => void;
     onExport: () => void;
     onCancel?: () => void;
-    onEffectToggle?: (id: string, active: boolean) => void;
   }
 
   let {
     exportOptions,
-    viewerEffects,
     isExporting,
     exportProgress = null,
     canvasReady = true,
@@ -62,7 +48,6 @@
     onBpmChange,
     onExport,
     onCancel,
-    onEffectToggle,
   }: Props = $props();
 
   // Mobile settings drawer state
@@ -114,85 +99,6 @@
     { value: 2160, label: "4K" },
     { value: 4320, label: "8K" },
   ];
-
-  // Sync effect overrides from the current global visibility state on mount.
-  // This ensures the chips reflect what's actually showing in the preview,
-  // not stale values persisted to localStorage from a previous session.
-  {
-    const activeEffect = viewerEffects.find((e) => e.active);
-    const overrides = {
-      fire: false,
-      led: false,
-      trails: false,
-      charcoal: false,
-    };
-    if (activeEffect) {
-      overrides[activeEffect.id as keyof typeof overrides] = true;
-    }
-    exportOptions.setVideoEffectOverrides(overrides);
-  }
-
-  function toggleEffect(id: string) {
-    const current = exportOptions.videoEffectOverrides;
-    if (!current) return;
-    const wasActive = current[id as keyof typeof current];
-
-    if (wasActive) {
-      // Turning off: just disable this effect
-      exportOptions.setVideoEffectOverrides({
-        ...current,
-        [id]: false,
-      });
-      onEffectToggle?.(id, false);
-    } else {
-      // Turning on: disable all others (radio behavior)
-      const newOverrides = {
-        fire: false,
-        led: false,
-        trails: false,
-        charcoal: false,
-        [id]: true,
-      };
-      exportOptions.setVideoEffectOverrides(newOverrides);
-      // Turn off all other effects on the live preview
-      for (const key of ["fire", "led", "trails", "charcoal"] as const) {
-        if (key !== id) {
-          onEffectToggle?.(key, false);
-        }
-      }
-      onEffectToggle?.(id, true);
-    }
-  }
-
-  function clearAllEffects() {
-    exportOptions.setVideoEffectOverrides({
-      fire: false,
-      led: false,
-      trails: false,
-      charcoal: false,
-    });
-    for (const key of ["fire", "led", "trails", "charcoal"] as const) {
-      onEffectToggle?.(key, false);
-    }
-  }
-
-  const effectChips = $derived(
-    viewerEffects.map((e) => ({
-      ...e,
-      active:
-        exportOptions.videoEffectOverrides?.[
-          e.id as keyof NonNullable<typeof exportOptions.videoEffectOverrides>
-        ] ?? e.active,
-    })),
-  );
-
-  const hasActiveEffect = $derived(
-    effectChips.some((e) => e.active),
-  );
-
-  const activeEffectId = $derived(
-    effectChips.find((e) => e.active)?.id ?? null,
-  );
 
   /** Summary of current settings for the bottom bar chip */
   const settingsSummary = $derived(
@@ -265,20 +171,13 @@
           </div>
 
           <div class="inline-settings-body">
-            <!-- BPM -->
-            {#if onBpmChange}
-              <div class="setting-row">
-                <span class="setting-label">BPM</span>
-                <div class="bpm-inline">
-                  <TempoControl
-                    {bpm}
-                    {onBpmChange}
-                    showPresets={false}
-                    showPractice={false}
-                  />
-                </div>
-              </div>
-            {/if}
+            <EffectsPanel
+              bpm={bpm}
+              onBpmChange={onBpmChange ?? (() => {})}
+              {isPlaying}
+              onPlaybackToggle={onPlaybackToggle ?? (() => {})}
+              showPlayback={!!(onPlaybackToggle && onBpmChange)}
+            />
 
             <!-- FPS -->
             <div class="setting-row">
@@ -318,47 +217,6 @@
                 {/each}
               </div>
             </div>
-
-            <!-- Effects -->
-            {#if effectChips.length > 0}
-              <div class="setting-row">
-                <span class="setting-label">Effects</span>
-                <div class="effect-grid">
-                  <button
-                    type="button"
-                    class="chip effect-chip"
-                    class:active={!hasActiveEffect}
-                    onclick={clearAllEffects}
-                    aria-pressed={!hasActiveEffect}
-                  >
-                    <i class="fas fa-ban" aria-hidden="true"></i>
-                    None
-                  </button>
-                  {#each effectChips as effect}
-                    <button
-                      type="button"
-                      class="chip effect-chip"
-                      class:active={effect.active}
-                      onclick={() => toggleEffect(effect.id)}
-                      aria-pressed={effect.active}
-                    >
-                      <i class={effect.icon} aria-hidden="true"></i>
-                      {effect.label}
-                    </button>
-                  {/each}
-                </div>
-              </div>
-
-              {#if activeEffectId === "fire"}
-                <FireCategory />
-              {:else if activeEffectId === "charcoal"}
-                <CharcoalCategory />
-              {:else if activeEffectId === "led"}
-                <LedCategory />
-              {:else if activeEffectId === "trails"}
-                <TrailsCategory />
-              {/if}
-            {/if}
 
             <!-- Timing -->
             <div class="setting-row">
@@ -476,25 +334,13 @@
   >
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div class="panel-body" onkeydown={preventSpaceActivation}>
-      {#if onPlaybackToggle && onBpmChange}
-        <div class="playback-row">
-          <button
-            type="button"
-            class="play-btn"
-            class:playing={isPlaying}
-            onclick={onPlaybackToggle}
-            aria-label={isPlaying ? "Pause" : "Play"}
-          >
-            <i class="fas {isPlaying ? 'fa-pause' : 'fa-play'}" aria-hidden="true"></i>
-          </button>
-          <TempoControl
-            {bpm}
-            {onBpmChange}
-            showPresets={false}
-            showPractice={false}
-          />
-        </div>
-      {/if}
+      <EffectsPanel
+        bpm={bpm}
+        onBpmChange={onBpmChange ?? (() => {})}
+        {isPlaying}
+        onPlaybackToggle={onPlaybackToggle ?? (() => {})}
+        showPlayback={!!(onPlaybackToggle && onBpmChange)}
+      />
 
       <div class="setting-row">
         <span class="setting-label">FPS</span>
@@ -532,46 +378,6 @@
           {/each}
         </div>
       </div>
-
-      {#if effectChips.length > 0}
-        <div class="setting-row">
-          <span class="setting-label">Effects</span>
-          <div class="effect-grid">
-            <button
-              type="button"
-              class="chip effect-chip"
-              class:active={!hasActiveEffect}
-              onclick={clearAllEffects}
-              aria-pressed={!hasActiveEffect}
-            >
-              <i class="fas fa-ban" aria-hidden="true"></i>
-              None
-            </button>
-            {#each effectChips as effect}
-              <button
-                type="button"
-                class="chip effect-chip"
-                class:active={effect.active}
-                onclick={() => toggleEffect(effect.id)}
-                aria-pressed={effect.active}
-              >
-                <i class={effect.icon} aria-hidden="true"></i>
-                {effect.label}
-              </button>
-            {/each}
-          </div>
-        </div>
-
-        {#if activeEffectId === "fire"}
-          <FireCategory />
-        {:else if activeEffectId === "charcoal"}
-          <CharcoalCategory />
-        {:else if activeEffectId === "led"}
-          <LedCategory />
-        {:else if activeEffectId === "trails"}
-          <TrailsCategory />
-        {/if}
-      {/if}
 
       <div class="setting-row">
         <span class="setting-label">Timing</span>
@@ -856,11 +662,6 @@
     text-align: center;
   }
 
-  .bpm-inline {
-    flex: 1;
-    min-width: 0;
-  }
-
   /* Compact shared controls within mobile inline settings */
   .inline-settings .setting-row {
     gap: 8px;
@@ -998,22 +799,6 @@
     color: #c084fc;
   }
 
-  .effect-chip i {
-    font-size: 12px;
-  }
-
-  .effect-grid {
-    display: grid;
-    grid-template-columns: repeat(6, 1fr);
-    gap: 8px;
-  }
-
-  .effect-grid > :nth-child(1) { grid-column: span 2; }
-  .effect-grid > :nth-child(2) { grid-column: span 2; }
-  .effect-grid > :nth-child(3) { grid-column: span 2; }
-  .effect-grid > :nth-child(4) { grid-column: 1 / span 3; }
-  .effect-grid > :nth-child(5) { grid-column: 4 / span 3; }
-
   /* Loop count */
   .loop-count-row {
     display: flex;
@@ -1054,44 +839,6 @@
     min-width: 28px;
     text-align: center;
   }
-
-  /* Playback row (desktop sidebar) */
-  .playback-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
-  }
-
-  .play-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 44px;
-    height: 44px;
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
-    border-radius: 50%;
-    background: color-mix(in srgb, var(--theme-card-bg) 70%, transparent);
-    color: var(--theme-text, white);
-    font-size: 16px;
-    cursor: pointer;
-    transition: all 0.15s ease;
-    flex-shrink: 0;
-  }
-
-  .play-btn:hover {
-    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
-    border-color: var(--theme-accent, #6366f1);
-  }
-
-  .play-btn.playing {
-    border-color: var(--theme-accent, #6366f1);
-    background: color-mix(in srgb, var(--theme-accent, #6366f1) 20%, transparent);
-  }
-
-  .play-btn i { margin-left: 2px; }
-  .play-btn.playing i { margin-left: 0; }
 
   /* ============================================================
    * Footer (desktop sidebar)
@@ -1218,7 +965,7 @@
    * ============================================================ */
 
   @media (prefers-reduced-motion: reduce) {
-    .chip, .play-btn, .bar-play-btn,
+    .chip, .bar-play-btn,
     .export-btn, .bar-export-btn, .bar-settings-btn,
     .cancel-btn, .progress-fill, .inline-settings-close {
       transition: none !important;

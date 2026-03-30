@@ -32,8 +32,6 @@
   import ExportImagePanel from "./ExportImagePanel.svelte";
   import VideoPreviewPanel from "./VideoPreviewPanel.svelte";
   import PracticeProgressIndicator from "./PracticeProgressIndicator.svelte";
-  import type { ActiveEffect } from "./ExportVideoDrawer.svelte";
-  import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   // Services
   import { container } from "$lib/shared/di";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
@@ -135,40 +133,6 @@
   // ChoreoCard context menu + settings modal
   let choreoCardMenuHost: ChoreoCardContextMenuHost | undefined = $state();
   let cardSettingsOpen = $state(false);
-
-  // Animation visibility for video export effects
-  const animationVisibility = getAnimationVisibilityManager();
-
-  function getActiveEffects(): ActiveEffect[] {
-    return [
-      { id: "fire", label: "Fire", icon: "fas fa-fire", active: animationVisibility.getVisibility("fireEffect") },
-      { id: "led", label: "LED", icon: "fas fa-lightbulb", active: animationVisibility.getVisibility("ledEffect") },
-      { id: "trails", label: "Trails", icon: "fas fa-wind", active: animationVisibility.getTrailStyle() !== "off" },
-      { id: "charcoal", label: "Charcoal", icon: "fas fa-smog", active: animationVisibility.isCharcoalEffectEnabled() },
-    ];
-  }
-
-  /** Apply effect toggles from the export panel to the live animation preview.
-   *  Effects are mutually exclusive — enabling one disables all others. */
-  function handleExportEffectToggle(id: string, active: boolean) {
-    // The ExportVideoDrawer already sends individual toggle calls for each
-    // effect (turning off others before turning on the selected one), so
-    // we just apply what we're told.
-    switch (id) {
-      case "fire":
-        animationVisibility.setFireEffect(active);
-        break;
-      case "led":
-        animationVisibility.setLedEffect(active);
-        break;
-      case "trails":
-        animationVisibility.setTrailStyle(active ? "on" : "off");
-        break;
-      case "charcoal":
-        animationVisibility.setCharcoalEffect(active);
-        break;
-    }
-  }
 
   // Sync overlay state to drawer state
   $effect(() => {
@@ -403,6 +367,7 @@
                     isExportMode={isImageExportActive}
                     exportOptions={ctx.exportOptions}
                     onSendTo={overlay.sequence ? handleSendTo : undefined}
+                    stepCount={overlay.sequence?.steps?.length ?? 0}
                   />
                   <CardSettingsModal bind:open={cardSettingsOpen} sequence={overlay.sequence} />
                   {#if isAnyExportActive}
@@ -422,7 +387,6 @@
                         {:else}
                           <ExportVideoDrawer
                             exportOptions={ctx.exportOptions}
-                            viewerEffects={getActiveEffects()}
                             isExporting={ctx.isExporting}
                             exportProgress={ctx.exportProgress}
                             canvasReady={ctx.canvasReady}
@@ -434,7 +398,6 @@
                             onBpmChange={ctx.handleBpmChange}
                             onExport={ctx.handleExport}
                             onCancel={ctx.handleCancelExport}
-                            onEffectToggle={handleExportEffectToggle}
                           />
                         {/if}
                       {:else if isImageExportActive && !isMobileWidth}
