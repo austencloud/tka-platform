@@ -1,5 +1,5 @@
 <script lang="ts">
-  import FireCategory from "../../../animation-settings-modal/categories/FireCategory.svelte";
+  import FireCategory from "../../animation-settings-modal/categories/FireCategory.svelte";
 
   interface Props {
     onBack: () => void;

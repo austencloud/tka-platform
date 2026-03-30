@@ -1,5 +1,5 @@
 <script lang="ts">
-  import LedSection from "../../../animation-settings-modal/LedSection.svelte";
+  import LedSection from "../../animation-settings-modal/LedSection.svelte";
 
   interface Props {
     onBack: () => void;

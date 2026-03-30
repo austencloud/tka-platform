@@ -1,5 +1,5 @@
 <script lang="ts">
-  import TrailsCategory from "../../../animation-settings-modal/categories/TrailsCategory.svelte";
+  import TrailsCategory from "../../animation-settings-modal/categories/TrailsCategory.svelte";
 
   interface Props {
     onBack: () => void;
