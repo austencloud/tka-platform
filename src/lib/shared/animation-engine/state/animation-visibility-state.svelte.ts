@@ -7,6 +7,7 @@
 
 import type { CharcoalSparkParams } from "../domain/types/CharcoalSparkTypes";
 import { DEFAULT_CHARCOAL_PARAMS } from "../domain/types/CharcoalSparkTypes";
+import type { FireColorCurve } from "../domain/types/FireTypes";
 import type { EffortId } from "$lib/features/effort-lab/domain/effort-types";
 import type { TipEffectMap, TipEffortMap } from "../domain/types/TipEffectTypes";
 import { findPreset, validatePreset, type LedColorPreset } from "../domain/types/LedColorPresets";
@@ -48,6 +49,7 @@ interface AnimationVisibilitySettings {
   fireEffect: boolean; // WebGL Navier-Stokes fluid fire at prop tips
   fireColorBlend: number; // 0 = natural fire, 1 = prop-colored (continuous slider)
   fireIntensity: number; // User intensity slider value (0.0-1.0)
+  fireColorCurve: FireColorCurve | null; // Custom 4-stop color gradient (null = use default)
 
   // Charcoal Effect (independent particle system, NOT a fire variant)
   charcoalEffect: boolean; // Discrete gravity-heavy spark particles at prop tips
@@ -150,6 +152,7 @@ export class AnimationVisibilityStateManager {
       fireEffect: false, // Fire disabled by default
       fireColorBlend: 0.5, // Halfway between natural and prop-colored
       fireIntensity: 0.7, // 0-1 range, 0.7 = normal fire
+      fireColorCurve: null, // null = use default BASE_COLOR_CURVE
 
       // Charcoal Effect (independent from fire)
       charcoalEffect: false, // Charcoal disabled by default
@@ -756,10 +759,21 @@ export class AnimationVisibilityStateManager {
     this.notifyObservers();
   }
 
+  getFireColorCurve(): FireColorCurve | null {
+    return this.settings.fireColorCurve;
+  }
+
+  setFireColorCurve(curve: FireColorCurve | null): void {
+    this.settings.fireColorCurve = curve;
+    this.saveToStorage();
+    this.notifyObservers();
+  }
+
   /** Reset fire controls to defaults. */
   resetFireDefaults(): void {
     this.settings.fireIntensity = 0.7;
     this.settings.fireColorBlend = 0.5;
+    this.settings.fireColorCurve = null;
     this.saveToStorage();
     this.notifyObservers();
   }

@@ -314,6 +314,7 @@ export class AnimationEngine {
   private prevColorBlend: number = 0.5;
   private prevCharcoalEffect: boolean = false;
   private prevFireIntensity: number = 0.7;
+  private prevFireColorCurve: import("../../domain/types/FireTypes").FireColorCurve | null = null;
   private prevCharcoalParamsJson: string = "";
   private prevEffortPreset: EffortId = "linear";
   private prevPathShape: "arc" | "linear" = "arc";
@@ -417,7 +418,7 @@ export class AnimationEngine {
       ...basePhysics,
       ...intensityOverrides,
     };
-    this.fireConfig.colorCurve = BASE_COLOR_CURVE;
+    this.fireConfig.colorCurve = vm.getFireColorCurve() ?? BASE_COLOR_CURVE;
     this.fireConfig.charcoalParams = vm.getCharcoalParams();
     // Initialize LED state from visibility manager
     this.ledConfig.enabled = vm.isLedEffectEnabled();
@@ -541,17 +542,20 @@ export class AnimationEngine {
           this.syncCharcoalOverlay();
         }
 
-        // Sync fire slider values → physics
+        // Sync fire slider values + color curve → physics
         const colorBlend = vm.getFireColorBlend();
         const fireIntensity = vm.getFireIntensity();
+        const fireColorCurve = vm.getFireColorCurve();
 
         const slidersChanged =
           colorBlend !== this.prevColorBlend ||
-          fireIntensity !== this.prevFireIntensity;
+          fireIntensity !== this.prevFireIntensity ||
+          fireColorCurve !== this.prevFireColorCurve;
 
         if (slidersChanged) {
           this.prevColorBlend = colorBlend;
           this.prevFireIntensity = fireIntensity;
+          this.prevFireColorCurve = fireColorCurve;
 
           const basePhysics = BASE_FIRE_PHYSICS;
           const intOverrides = intensityToPhysics(fireIntensity);
@@ -564,7 +568,7 @@ export class AnimationEngine {
               ...basePhysics,
               ...intOverrides,
             },
-            colorCurve: BASE_COLOR_CURVE,
+            colorCurve: fireColorCurve ?? BASE_COLOR_CURVE,
           });
         }
 
