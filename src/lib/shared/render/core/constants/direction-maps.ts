@@ -69,14 +69,14 @@ export const BOX_RADIAL_MAP: Record<GridLocation, ColorMap> = {
  * as a close approximation — both are perpendicular-ish to the radial axis.
  */
 export const BOX_NON_RADIAL_MAP: Record<GridLocation, ColorMap> = {
-  ne: { red: "upright", blue: "downleft" },
-  se: { red: "downright", blue: "upleft" },
-  sw: { red: "downleft", blue: "upright" },
-  nw: { red: "upleft", blue: "downright" },
-  n: { red: "upright", blue: "downleft" },
-  e: { red: "upright", blue: "downleft" },
-  s: { red: "upright", blue: "downleft" },
-  w: { red: "upright", blue: "downleft" },
+  ne: { red: "upleft", blue: "downright" },
+  se: { red: "upright", blue: "downleft" },
+  sw: { red: "upleft", blue: "downright" },
+  nw: { red: "downleft", blue: "upright" },
+  n: { red: "upleft", blue: "downright" },
+  e: { red: "upleft", blue: "downright" },
+  s: { red: "upleft", blue: "downright" },
+  w: { red: "upleft", blue: "downright" },
   c: { red: "up", blue: "down" },
 };
 
@@ -113,6 +113,39 @@ export const SHIFT_NON_RADIAL_MAP: Record<GridLocation, Partial<Record<GridLocat
   sw: { nw: "upright", se: "downleft" },
   nw: { ne: "downright", sw: "upleft" },
   c: {},
+};
+
+// ============================================================================
+// LETTER I DIRECTION MAPS
+// ============================================================================
+
+/**
+ * Letter I (one pro + one anti, same trajectory) has unique offset directions
+ * different from generic shift maps.
+ * Ported from app's DirectionMaps.ts LETTER_I_RADIAL_MAP / LETTER_I_NON_RADIAL_MAP.
+ */
+export const LETTER_I_RADIAL_MAP: Record<GridLocation, ColorMap> = {
+  n: { red: "right", blue: "left" },
+  e: { red: "down", blue: "up" },
+  s: { red: "left", blue: "right" },
+  w: { red: "down", blue: "up" },
+  ne: { red: "downright", blue: "upleft" },
+  se: { red: "upright", blue: "downleft" },
+  sw: { red: "downright", blue: "upleft" },
+  nw: { red: "upright", blue: "downleft" },
+  c: { red: "up", blue: "down" },
+};
+
+export const LETTER_I_NON_RADIAL_MAP: Record<GridLocation, ColorMap> = {
+  n: { red: "up", blue: "down" },
+  e: { red: "right", blue: "left" },
+  s: { red: "down", blue: "up" },
+  w: { red: "right", blue: "left" },
+  ne: { red: "upright", blue: "downleft" },
+  se: { red: "downright", blue: "upleft" },
+  sw: { red: "upright", blue: "downleft" },
+  nw: { red: "downright", blue: "upleft" },
+  c: { red: "up", blue: "down" },
 };
 
 // ============================================================================

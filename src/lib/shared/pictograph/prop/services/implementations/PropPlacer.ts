@@ -6,21 +6,12 @@
  * Returns PropPlacementData that can be attached to PropPlacementData.
  */
 
-import { GridMode, GridLocation } from "../../../grid/domain/enums/grid-enums";
+import { GridMode } from "../../../grid/domain/enums/grid-enums";
 import type { IGridModeDeriver } from "../../../grid/services/contracts/IGridModeDeriver";
-import {
-  MotionColor,
-  Orientation,
-  VectorDirection,
-} from "../../../shared/domain/enums/pictograph-enums";
+import { MotionColor } from "../../../shared/domain/enums/pictograph-enums";
 import type { MotionData } from "../../../shared/domain/models/MotionData";
 import type { PictographData } from "../../../shared/domain/models/PictographData";
-import {
-  getBetaOffsetSize,
-  isBuugengFamilyProp,
-  isUnilateralProp,
-  pictographRequiresStrictHandpoints,
-} from "../../domain/enums/PropClassification";
+import { pictographRequiresStrictHandpoints } from "../../domain/enums/PropClassification";
 
 // Settings interface for Node.js contexts where getSettings() isn't available
 interface PropPlacerSettings {
@@ -35,9 +26,13 @@ import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 import type { PropPlacementData } from "../../domain/models/PropPlacementData";
 import type { IBetaDetector } from "../contracts/IBetaDetector";
 import type { IPropPlacer } from "../contracts/IPropPlacer";
-import { BetaPropDirectionCalculator } from "./BetaPropDirectionCalculator";
 import DefaultPropPositioner from "./DefaultPropPositioner";
 import { PropRotAngleManager } from "./PropRotAngleManager";
+import {
+  calculateBetaOffset,
+  type BetaOffsetInput,
+  type BetaMotionInput,
+} from "$lib/shared/render/core/calculations/beta-offset";
 
 export class PropPlacer implements IPropPlacer {
   constructor(
@@ -132,7 +127,7 @@ export class PropPlacer implements IPropPlacer {
     motionData: MotionData,
     gridMode: GridMode
   ): Promise<{ x: number; y: number }> {
-    // Check if this pictograph ends with beta position - now synchronous!
+    // App-specific check: does this pictograph end in a beta position?
     const needsBetaOffset = this.BetaDetector.endsWithBeta(pictographData);
 
     if (!needsBetaOffset) {
@@ -146,232 +141,54 @@ export class PropPlacer implements IPropPlacer {
       return { x: 0, y: 0 };
     }
 
-    // Only apply beta offset if both props end at the same location
-    if (redMotion.endLocation !== blueMotion.endLocation) {
-      return { x: 0, y: 0 };
-    }
-
-    // SPECIAL CASE: HAND prop type direction-aware beta offset
-    // When both props are HAND type, we apply direction-aware positioning:
-    // - If blue comes from east and red from west → blue RIGHT, red LEFT
-    // - If blue comes from west and red from east → blue LEFT, red RIGHT
-    // - Default: blue LEFT, red RIGHT
-    const blueMotionIsHand = blueMotion.propType === "hand";
-    const redMotionIsHand = redMotion.propType === "hand";
-    // Use constructor settings, then fall back to global settings
+    // App-specific: resolve actual prop types from user settings
+    // (user may have "staff" stored in data but render as "buugeng" via settings)
     const globalSettings = this.settings ? null : getSettings();
     const settings = this.settings ?? {
       bluePropType: globalSettings?.bluePropType,
       redPropType: globalSettings?.redPropType,
+      blueBuugengFlipped: globalSettings?.blueBuugengFlipped,
+      redBuugengFlipped: globalSettings?.redBuugengFlipped,
     };
-    const actualBluePropType = blueMotionIsHand
-      ? "hand"
-      : (settings.bluePropType ?? blueMotion.propType);
-    const actualRedPropType = redMotionIsHand
-      ? "hand"
-      : (settings.redPropType ?? redMotion.propType);
-    const bothAreHands =
-      actualBluePropType === "hand" && actualRedPropType === "hand";
 
-    if (bothAreHands) {
-      const distance = getBetaOffsetSize("hand", gridMode);
+    // Build the render-core input objects
+    const blueMotionInput: BetaMotionInput = {
+      startLocation: blueMotion.startLocation,
+      endLocation: blueMotion.endLocation,
+      endOrientation: blueMotion.endOrientation,
+      motionType: blueMotion.motionType,
+      color: "blue",
+      propType: blueMotion.propType,
+    };
 
-      // Define east and west positions for direction detection
-      const eastPositions = [
-        GridLocation.EAST,
-        GridLocation.NORTHEAST,
-        GridLocation.SOUTHEAST,
-      ];
-      const westPositions = [
-        GridLocation.WEST,
-        GridLocation.NORTHWEST,
-        GridLocation.SOUTHWEST,
-      ];
+    const redMotionInput: BetaMotionInput = {
+      startLocation: redMotion.startLocation,
+      endLocation: redMotion.endLocation,
+      endOrientation: redMotion.endOrientation,
+      motionType: redMotion.motionType,
+      color: "red",
+      propType: redMotion.propType,
+    };
 
-      const blueStartLoc = blueMotion.startLocation;
-      const redStartLoc = redMotion.startLocation;
+    const targetMotionInput: BetaMotionInput =
+      motionData.color === MotionColor.BLUE ? blueMotionInput : redMotionInput;
 
-      const blueFromEast = eastPositions.includes(blueStartLoc as GridLocation);
-      const blueFromWest = westPositions.includes(blueStartLoc as GridLocation);
-      const redFromEast = eastPositions.includes(redStartLoc as GridLocation);
-      const redFromWest = westPositions.includes(redStartLoc as GridLocation);
+    // Determine gridMode string for render-core ("diamond" | "box" | "skewed")
+    // GridMode enum values are the same strings, so a direct cast works.
+    const gridModeStr = gridMode as unknown as "diamond" | "box" | "skewed";
 
-      // Direction-aware positioning
-      if (blueFromEast && redFromWest) {
-        // Blue approaching from east stays RIGHT, red from west stays LEFT
-        if (motionData.color === MotionColor.BLUE) {
-          return { x: distance, y: 0 }; // Blue goes RIGHT
-        } else {
-          return { x: -distance, y: 0 }; // Red goes LEFT
-        }
-      } else if (blueFromWest && redFromEast) {
-        // Blue approaching from west stays LEFT, red from east stays RIGHT
-        if (motionData.color === MotionColor.BLUE) {
-          return { x: -distance, y: 0 }; // Blue goes LEFT
-        } else {
-          return { x: distance, y: 0 }; // Red goes RIGHT
-        }
-      } else {
-        // Default: blue LEFT, red RIGHT
-        if (motionData.color === MotionColor.BLUE) {
-          return { x: -distance, y: 0 }; // Blue goes LEFT
-        } else {
-          return { x: distance, y: 0 }; // Red goes RIGHT
-        }
-      }
-    }
+    const input: BetaOffsetInput = {
+      blueMotion: blueMotionInput,
+      redMotion: redMotionInput,
+      letter: pictographData.letter || "",
+      gridMode: gridModeStr,
+      bluePropType: settings.bluePropType,
+      redPropType: settings.redPropType,
+      blueBuugengFlipped: settings.blueBuugengFlipped,
+      redBuugengFlipped: settings.redBuugengFlipped,
+    };
 
-    // ORIENTATION-BASED BETA SKIP LOGIC (from desktop legacy)
-    // Beta offset is applied when BOTH props share the same orientation TYPE:
-    // - BOTH radial (IN/IN, IN/OUT, OUT/IN, OUT/OUT) → APPLY offset
-    // - BOTH non-radial (CLOCK/CLOCK, CLOCK/COUNTER, COUNTER/CLOCK, COUNTER/COUNTER) → APPLY offset
-    // - HYBRID (one radial + one non-radial) → SKIP offset
-    //
-    // This applies to ALL prop types (unilateral AND bilateral)
-    const redEndOri = redMotion.endOrientation;
-    const blueEndOri = blueMotion.endOrientation;
-
-    // Define radial and non-radial orientations
-    const radialOrientations = [Orientation.IN, Orientation.OUT];
-    const nonRadialOrientations = [Orientation.CLOCK, Orientation.COUNTER];
-
-    const redIsRadial = radialOrientations.includes(redEndOri);
-    const blueIsRadial = radialOrientations.includes(blueEndOri);
-    const redIsNonRadial = nonRadialOrientations.includes(redEndOri);
-    const blueIsNonRadial = nonRadialOrientations.includes(blueEndOri);
-
-    // Check if one is radial and one is non-radial (hybrid orientation)
-    const hybridOrientation =
-      (redIsRadial && blueIsNonRadial) || (redIsNonRadial && blueIsRadial);
-
-    // Skip beta offset when hybrid (one radial, one non-radial)
-    if (hybridOrientation) {
-      return { x: 0, y: 0 };
-    }
-
-    // Calculate orientation relationships
-    const bothRadial = redIsRadial && blueIsRadial;
-    const bothNonRadial = redIsNonRadial && blueIsNonRadial;
-    const sameTypeButDifferentOrientation =
-      (bothRadial && redEndOri !== blueEndOri) ||
-      (bothNonRadial && redEndOri !== blueEndOri);
-
-    // BUUGENG FAMILY SPECIAL CASE:
-    // Buugeng props are asymmetric bilateral props that can "nest" together
-    // when they have opposite CHIRALITY (mirror-image forms of the asymmetric shape).
-    //
-    // Two separate concepts (do NOT confuse):
-    //   - ORIENTATION: IN/OUT/CLOCK/COUNTER - affects prop rotation angle
-    //   - CHIRALITY: Which mirror-image form of the asymmetric Buugeng is used
-    //                (controlled by blueBuugengFlipped/redBuugengFlipped settings)
-    //
-    // Nesting condition: Both Buugeng + opposite chirality → skip beta offset
-    // Orientation is irrelevant for this decision.
-    //
-    // IMPORTANT: We check settings prop type override, not stored motionData.propType,
-    // because the user may have a sequence with "staff" stored but rendering as "buugeng".
-    // Note: settings/actualBluePropType/actualRedPropType already declared above for HAND logic
-    const bothAreBuugengFamily =
-      isBuugengFamilyProp(actualBluePropType) &&
-      isBuugengFamilyProp(actualRedPropType);
-
-    if (bothAreBuugengFamily) {
-      // Chirality is determined by the "flipped" setting - each value represents
-      // one of two mirror-image forms of the asymmetric Buugeng shape
-      const blueChirality = settings.blueBuugengFlipped ?? false;
-      const redChirality = settings.redBuugengFlipped ?? false;
-      const oppositeChirality = blueChirality !== redChirality; // XOR
-
-      // When Buugeng have opposite chirality, the asymmetric shapes complement
-      // each other and can nest together without needing beta offset separation
-      if (oppositeChirality) {
-        return { x: 0, y: 0 };
-      }
-    }
-
-    // Skip beta offset for UNILATERAL props when both props have same orientation TYPE
-    // but DIFFERENT specific orientations (OUT/IN or CLOCK/COUNTER)
-    // Bilateral props always get the offset (unless hybrid or Buugeng family)
-    // Use actual rendered prop type from settings, not stored motionData.propType
-    const actualPropType =
-      motionData.color === MotionColor.BLUE
-        ? actualBluePropType
-        : actualRedPropType;
-
-    if (sameTypeButDifferentOrientation && isUnilateralProp(actualPropType)) {
-      return { x: 0, y: 0 };
-    }
-
-    // Trigeng: opposite orientations (IN/OUT or CLOCK/COUNTER) don't need separation.
-    // Physically, trigeng with opposite orientations face away from each other
-    // and don't overlap, same as clubs or hoops.
-    if (sameTypeButDifferentOrientation && actualPropType === "trigeng") {
-      return { x: 0, y: 0 };
-    }
-
-    // Calculate direction for this specific prop
-    const directionCalculator = new BetaPropDirectionCalculator(
-      {
-        red: redMotion,
-        blue: blueMotion,
-      },
-      pictographData.letter || undefined
-    );
-
-    const direction = directionCalculator.getDirectionForMotionData(motionData);
-
-    if (!direction) {
-      return { x: 0, y: 0 };
-    }
-
-    // Calculate the offset based on the direction and actual rendered prop type
-    const offset = this.getOffsetForDirection(
-      direction,
-      actualPropType,
-      gridMode
-    );
-    return { x: offset.x, y: offset.y };
-  }
-
-  /**
-   * Get pixel offset for a given direction
-   * Offset distance varies by prop type based on desktop legacy calculations:
-   * - Large props (club, eightrings): 15.83px (diamond) / 11.20px (box)
-   * - Medium props (doublestar): 19px (diamond) / 13.43px (box)
-   * - Default props: 21.11px (diamond) / 14.93px (box)
-   * Box mode uses diagonal compensation (÷√2) to achieve equal visual spacing.
-   */
-  private getOffsetForDirection(
-    direction: VectorDirection,
-    propType: string,
-    gridMode: GridMode
-  ): {
-    x: number;
-    y: number;
-  } {
-    // Get prop-type-specific offset distance with grid mode scaling
-    const distance = getBetaOffsetSize(propType, gridMode);
-
-    switch (direction) {
-      case VectorDirection.UP:
-        return { x: 0, y: -distance };
-      case VectorDirection.DOWN:
-        return { x: 0, y: distance };
-      case VectorDirection.LEFT:
-        return { x: -distance, y: 0 };
-      case VectorDirection.RIGHT:
-        return { x: distance, y: 0 };
-      case VectorDirection.UPRIGHT:
-        return { x: distance, y: -distance };
-      case VectorDirection.DOWNRIGHT:
-        return { x: distance, y: distance };
-      case VectorDirection.UPLEFT:
-        return { x: -distance, y: -distance };
-      case VectorDirection.DOWNLEFT:
-        return { x: -distance, y: distance };
-      default:
-        return { x: 0, y: 0 };
-    }
+    return calculateBetaOffset(input, targetMotionInput);
   }
 }
 
