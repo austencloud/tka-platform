@@ -42,10 +42,8 @@
   import ViewerFooter from "$lib/shared/sequence-viewer/components/ViewerFooter.svelte";
   import FullscreenControls from "$lib/shared/sequence-viewer/components/FullscreenControls.svelte";
   import ExportVideoDrawer from "$lib/shared/sequence-viewer/components/ExportVideoDrawer.svelte";
-  import type { ActiveEffect } from "$lib/shared/sequence-viewer/components/ExportVideoDrawer.svelte";
   import ExportImagePanel from "$lib/shared/sequence-viewer/components/ExportImagePanel.svelte";
   import VideoPreviewPanel from "$lib/shared/sequence-viewer/components/VideoPreviewPanel.svelte";
-  import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import PracticeProgressIndicator from "$lib/shared/sequence-viewer/components/PracticeProgressIndicator.svelte";
   import RouteViewerHeader from "./RouteViewerHeader.svelte";
   import DeleteConfirmDialog from "$lib/shared/sequence-viewer/components/DeleteConfirmDialog.svelte";
@@ -435,34 +433,6 @@
   // EXPORT HELPERS
   // ============================================================================
 
-  const animationVisibility = getAnimationVisibilityManager();
-
-  function getActiveEffects(): ActiveEffect[] {
-    return [
-      { id: "fire", label: "Fire", icon: "fas fa-fire", active: animationVisibility.getVisibility("fireEffect") },
-      { id: "led", label: "LED", icon: "fas fa-lightbulb", active: animationVisibility.getVisibility("ledEffect") },
-      { id: "trails", label: "Trails", icon: "fas fa-wind", active: animationVisibility.getTrailStyle() !== "off" },
-      { id: "charcoal", label: "Charcoal", icon: "fas fa-smog", active: animationVisibility.isCharcoalEffectEnabled() },
-    ];
-  }
-
-  function handleExportEffectToggle(id: string, active: boolean) {
-    switch (id) {
-      case "fire":
-        animationVisibility.setFireEffect(active);
-        break;
-      case "led":
-        animationVisibility.setLedEffect(active);
-        break;
-      case "trails":
-        animationVisibility.setTrailStyle(active ? "on" : "off");
-        break;
-      case "charcoal":
-        animationVisibility.setCharcoalEffect(active);
-        break;
-    }
-  }
-
   // ============================================================================
   // URL HELPERS
   // ============================================================================
@@ -618,6 +588,7 @@
                 isExportMode={isImageExportActive}
                 exportOptions={ctx.exportOptions}
                 onSendTo={sequence ? handleSendTo : undefined}
+                stepCount={sequence?.steps?.length ?? 0}
               />
               <CardSettingsModal bind:open={cardSettingsOpen} {sequence} />
               {#if isAnyExportActive}
@@ -637,7 +608,6 @@
                     {:else}
                       <ExportVideoDrawer
                         exportOptions={ctx.exportOptions}
-                        viewerEffects={getActiveEffects()}
                         isExporting={ctx.isExporting}
                         exportProgress={ctx.exportProgress}
                         canvasReady={ctx.canvasReady}
@@ -649,7 +619,6 @@
                         onBpmChange={ctx.handleBpmChange}
                         onExport={ctx.handleExport}
                         onCancel={ctx.handleCancelExport}
-                        onEffectToggle={handleExportEffectToggle}
                       />
                     {/if}
                   {:else if isImageExportActive}
