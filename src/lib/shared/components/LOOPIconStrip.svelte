@@ -18,6 +18,7 @@ Used in:
 -->
 <script lang="ts">
   import { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
+  import { LOOP_ICON_GAP_SCALE } from "@tka/render-composition";
 
   interface Props {
     activeComponents: Set<LOOPComponent>;
@@ -103,8 +104,8 @@ Used in:
       : "Freeform LOOP"
   );
 
-  // Calculate gap based on size
-  const gap = $derived(Math.max(2, Math.round(size * 0.15)));
+  // Gap uses shared constant from @tka/render-composition
+  const gap = $derived(Math.max(2, Math.round(size * LOOP_ICON_GAP_SCALE)));
 </script>
 
 <div

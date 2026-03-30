@@ -193,8 +193,8 @@ export class LayoutCalculator implements ILayoutCalculator {
     // Step capacity = (cols - 1) * rows
     0: [1, 1],
     1: [2, 1],      // 1 step col × 1 row = 1
-    2: [2, 2],      // 1 × 2 = 2
-    3: [2, 3],      // 1 × 3 = 3
+    2: [3, 1],      // start + 2 steps in a single row
+    3: [4, 1],      // start + 3 steps in a single row
     4: [3, 2],      // 2 × 2 = 4
     5: [3, 3],      // 2 × 3 = 6 (fits 5)
     6: [4, 2],      // 3 × 2 = 6

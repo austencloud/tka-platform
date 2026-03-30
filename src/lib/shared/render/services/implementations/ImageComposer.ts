@@ -37,6 +37,10 @@ import type { PictographMemoryCache } from "./PictographMemoryCache";
 import type { Canvas2DDirectRenderer } from "./Canvas2DDirectRenderer";
 import type { ILayerCompositor } from "../contracts/ILayerCompositor";
 import type { IQRCodeGenerator } from "../../../qr/services/contracts/IQRCodeGenerator";
+import {
+  calculateHeaderHeight as sharedHeaderHeight,
+  calculateFooterHeight as sharedFooterHeight,
+} from "@tka/render-composition";
 
 
 export class ImageComposer implements IImageComposer {
@@ -268,7 +272,7 @@ export class ImageComposer implements IImageComposer {
       options.addDifficultyLevel ||
       !!earlyLoopType;
     const headerHeight = showHeaderForLayout
-        ? this.calculateHeaderHeight(stepCount, stepSize)
+        ? this.calculateHeaderHeight(stepCount, stepSize, columns)
         : 0;
 
     // Calculate footer height if user info should be included
@@ -278,7 +282,7 @@ export class ImageComposer implements IImageComposer {
     const showBirthday = options.showBirthday ?? options.addUserInfo;
     const hasAnyFooterContent = showCreatorName || showNotes || showBirthday;
     const footerHeight = hasAnyFooterContent
-      ? this.calculateFooterHeight(stepSize)
+      ? this.calculateFooterHeight(stepSize, columns)
       : 0;
 
     const canvasHeight = rows * stepSize + headerHeight + footerHeight;
@@ -1159,32 +1163,15 @@ export class ImageComposer implements IImageComposer {
     return canvas;
   }
 
-  /**
-   * Calculate header height based on beat count and actual beat size
-   * Header is at the top of the image
-   *
-   * Height is proportional to beat size for balanced layout:
-   * - 1 beat: 1.0x beat size
-   * - 2 steps: 1.0x beat size
-   * - 3+ steps: 1.0x beat size (header equals one beat height)
-   */
-  private calculateHeaderHeight(stepCount: number, stepSize: number): number {
-    if (stepCount === 0) {
-      return 0;
-    }
-
-    // Header height = 1x beat size for balanced proportions
-    // This ensures the header doesn't dominate the image
-    return Math.floor(stepSize / 3);
+  /** Delegates to @tka/render-composition shared constant. */
+  private calculateHeaderHeight(stepCount: number, stepSize: number, columns?: number): number {
+    if (stepCount === 0) return 0;
+    return sharedHeaderHeight(stepSize, columns);
   }
 
-  /**
-   * Calculate footer height for user info based on beat size
-   * Footer is at the bottom of the image - proportional to beat size for consistency
-   */
-  private calculateFooterHeight(stepSize: number): number {
-    // Footer height = 1/3 of beat size (same as header for balanced layout)
-    return Math.floor(stepSize / 7);
+  /** Delegates to @tka/render-composition shared constant. */
+  private calculateFooterHeight(stepSize: number, columns?: number): number {
+    return sharedFooterHeight(stepSize, columns);
   }
 
   /**
@@ -1392,7 +1379,7 @@ export class ImageComposer implements IImageComposer {
       options.addDifficultyLevel ||
       !!earlyLoopType;
     const headerHeight = showHeader
-      ? this.calculateHeaderHeight(stepCount, stepSize)
+      ? this.calculateHeaderHeight(stepCount, stepSize, columns)
       : 0;
 
     // Determine footer height
@@ -1400,7 +1387,7 @@ export class ImageComposer implements IImageComposer {
     const showNotes = options.showNotes ?? options.addUserInfo;
     const showBirthday = options.showBirthday ?? options.addUserInfo;
     const hasFooter = showCreatorName || showNotes || showBirthday;
-    const footerHeight = hasFooter ? this.calculateFooterHeight(stepSize) : 0;
+    const footerHeight = hasFooter ? this.calculateFooterHeight(stepSize, columns) : 0;
 
     const gridHeight = rows * stepSize;
 
