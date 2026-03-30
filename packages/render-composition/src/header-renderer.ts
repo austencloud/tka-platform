@@ -1,4 +1,9 @@
 import type { LOOPComponentId, LetterStyle } from "./types.js";
+import {
+  BADGE_SIZE_SCALE, BADGE_PADDING_SCALE, BADGE_NUMBER_FONT_SCALE, BADGE_BORDER_WIDTH_DIVISOR,
+  HEADER_WORD_FONT_SCALE,
+  LOOP_ICON_SIZE_SCALE, LOOP_ICON_GAP_SCALE, LOOP_ICON_STRIP_OFFSET_SCALE,
+} from "./dimensions.js";
 import { DIFFICULTY_LEVELS, DEFAULT_DIFFICULTY_STYLE, DIFFICULTY_FONT_FAMILY, applyGradientStops } from "./difficulty-config.js";
 import { renderLoopIconStrip } from "./loop-icons.js";
 
@@ -32,8 +37,8 @@ export function renderHeader(ctx: CanvasRenderingContext2D, options: HeaderOptio
   ctx.lineTo(canvasWidth, headerHeight - 0.5);
   ctx.stroke();
 
-  const badgeSize = headerHeight * 0.9;
-  const badgePadding = headerHeight * 0.05;
+  const badgeSize = headerHeight * BADGE_SIZE_SCALE;
+  const badgePadding = headerHeight * BADGE_PADDING_SCALE;
 
   // Difficulty badge (left)
   if (showDifficultyBadge) {
@@ -43,17 +48,17 @@ export function renderHeader(ctx: CanvasRenderingContext2D, options: HeaderOptio
   // LOOP icon strip (right)
   const hasLoop = loopComponents && loopComponents.size > 0;
   if (hasLoop) {
-    const iconSize = badgeSize * 0.6;
-    const gap = Math.max(2, Math.round(iconSize * 0.15));
+    const iconSize = badgeSize * LOOP_ICON_SIZE_SCALE;
+    const gap = Math.max(2, Math.round(iconSize * LOOP_ICON_GAP_SCALE));
     const activeCount = loopComponents.size;
     const stripWidth = activeCount * iconSize + (activeCount - 1) * gap;
     const rightEdge = canvasWidth - badgePadding;
-    const stripCenterX = rightEdge - stripWidth / 2 - iconSize * 0.2;
+    const stripCenterX = rightEdge - stripWidth / 2 - iconSize * LOOP_ICON_STRIP_OFFSET_SCALE;
     renderLoopIconStrip(ctx, loopComponents, stripCenterX, headerHeight / 2, iconSize, darkMode);
   }
 
   // Word text (center)
-  const finalFontSize = Math.max(10, Math.floor(headerHeight * 0.66));
+  const finalFontSize = Math.max(10, Math.floor(headerHeight * HEADER_WORD_FONT_SCALE));
   const textColor = darkMode ? "#ffffff" : "#1f2937";
   const dimmedColor = darkMode ? "rgba(255,255,255,0.35)" : "rgba(0,0,0,0.35)";
   ctx.font = `700 ${finalFontSize}px Georgia, serif`;
@@ -103,13 +108,13 @@ function renderLevelBadge(
   ctx.fill();
 
   // Border
-  const borderWidth = Math.max(1, Math.floor(size / 50));
+  const borderWidth = Math.max(1, Math.floor(size / BADGE_BORDER_WIDTH_DIVISOR));
   ctx.strokeStyle = style.border;
   ctx.lineWidth = borderWidth;
   ctx.stroke();
 
   // Level number
-  const fontSize = Math.floor(size / 1.75);
+  const fontSize = Math.floor(size * BADGE_NUMBER_FONT_SCALE);
   ctx.fillStyle = style.text;
   ctx.font = `bold ${fontSize}px ${DIFFICULTY_FONT_FAMILY}`;
   ctx.textAlign = "center";

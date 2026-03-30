@@ -1,3 +1,7 @@
+import {
+  FOOTER_FONT_SCALE, FOOTER_MARGIN_SCALE, FOOTER_TEXT_Y_SCALE,
+} from "./dimensions.js";
+
 export interface FooterOptions {
   canvasWidth: number;
   canvasHeight: number;
@@ -33,9 +37,9 @@ export function renderFooter(ctx: CanvasRenderingContext2D, options: FooterOptio
   ctx.lineTo(canvasWidth, footerTop + 0.5);
   ctx.stroke();
 
-  const fontSize = Math.max(10, Math.floor(footerHeight * 0.55));
-  const margin = Math.max(8, Math.floor(footerHeight * 0.3));
-  const yPosition = footerTop + footerHeight * 0.55;
+  const fontSize = Math.max(10, Math.floor(footerHeight * FOOTER_FONT_SCALE));
+  const margin = Math.max(8, Math.floor(footerHeight * FOOTER_MARGIN_SCALE));
+  const yPosition = footerTop + footerHeight * FOOTER_TEXT_Y_SCALE;
   ctx.fillStyle = darkMode ? "#ffffff" : "black";
   ctx.textBaseline = "middle";
 
