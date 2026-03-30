@@ -14,8 +14,11 @@ import type {
   PropStates,
 } from "../../shared/domain/types/PropState";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import type { AnimationVisibilityStateManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 
 export interface ISequenceAnimationOrchestrator {
+  /** Override the visibility manager used for effort preset lookups. */
+  setVisibilityManager(vm: AnimationVisibilityStateManager): void;
   initializeWithDomainData(sequenceData: SequenceData): boolean;
   calculateState(currentStep: number): void;
   getPropStates(): PropStates;
