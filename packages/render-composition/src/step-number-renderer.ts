@@ -1,8 +1,6 @@
-const VIEW_BOX_SIZE = 950;
-const STEP_NUMBER_X = 50;
-const STEP_NUMBER_Y = 50;
-const NUMBER_FONT_SIZE = 100;
-const LABEL_FONT_SIZE = 80;
+import {
+  STEP_NUMBER_FONT_RATIO, STEP_LABEL_FONT_RATIO, STEP_NUMBER_OFFSET_RATIO,
+} from "./dimensions.js";
 
 export function renderStepNumber(
   ctx: CanvasRenderingContext2D,
@@ -14,16 +12,16 @@ export function renderStepNumber(
 ): void {
   if (stepNumber === null || stepNumber === undefined || stepNumber === -1) return;
 
-  const scale = cellSize / VIEW_BOX_SIZE;
   const isLabel = stepNumber === 0 || stepNumber === -2;
-  const fontSize = (isLabel ? LABEL_FONT_SIZE : NUMBER_FONT_SIZE) * scale;
+  const fontSize = cellSize * (isLabel ? STEP_LABEL_FONT_RATIO : STEP_NUMBER_FONT_RATIO);
   const text = stepNumber === 0 ? "Start" : stepNumber === -2 ? "End" : stepNumber.toString();
+  const offset = cellSize * STEP_NUMBER_OFFSET_RATIO;
 
   ctx.save();
   ctx.font = `bold ${fontSize}px Georgia, serif`;
   ctx.fillStyle = darkMode ? "#ffffff" : "#231f20";
   ctx.textAlign = "start";
   ctx.textBaseline = "hanging";
-  ctx.fillText(text, cellX + STEP_NUMBER_X * scale, cellY + STEP_NUMBER_Y * scale);
+  ctx.fillText(text, cellX + offset, cellY + offset);
   ctx.restore();
 }

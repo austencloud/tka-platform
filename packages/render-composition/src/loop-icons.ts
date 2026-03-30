@@ -1,5 +1,6 @@
 import type { LOOPComponentId } from "./types.js";
 import { drawSvgPath } from "./svg-path-painter.js";
+import { LOOP_ICON_GAP_SCALE } from "./dimensions.js";
 
 // The 6 active LOOP components in the order they appear in the icon strip
 const DISPLAY_ORDER: LOOPComponentId[] = [
@@ -105,7 +106,7 @@ export function renderLoopIconStrip(
     return { totalWidth: showFreeformWhenEmpty ? iconSize : 0 };
   }
 
-  const gap = Math.max(2, Math.round(iconSize * 0.15));
+  const gap = Math.max(2, Math.round(iconSize * LOOP_ICON_GAP_SCALE));
   const totalWidth = active.length * iconSize + (active.length - 1) * gap;
   let currentX = centerX - totalWidth / 2 + iconSize / 2;
 

@@ -169,8 +169,8 @@ const WITH_START_ROW: Record<number, [number, number]> = Object.fromEntries(
 const WITH_START_COLUMN: Record<number, [number, number]> = {
   0: [1, 1],
   1: [2, 1],
-  2: [2, 2],
-  3: [2, 3],
+  2: [3, 1],
+  3: [4, 1],
   4: [3, 2],
   5: [3, 3],
   6: [4, 2],
