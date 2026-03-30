@@ -15,6 +15,10 @@
   import type { PerspectiveCamera } from "three";
   import type { MuseumGrid, TileType, FloorMaterial } from "../../domain/museum-grid-types";
   import { parseTileKey } from "../../domain/museum-grid-types";
+  import type { AvatarState, PhysicsProvider } from "$lib/shared/3d/camera/types";
+  import { CameraMode } from "$lib/shared/3d/camera/types";
+  import UnifiedCameraController from "$lib/shared/3d/camera/UnifiedCameraController.svelte";
+  import { createMuseumPhysicsProvider } from "../../services/implementations/MuseumPhysicsProvider";
 
   interface Props {
     grid: MuseumGrid;
@@ -55,7 +59,6 @@
   const maxExtent = Math.max(grid.width, grid.height) * TILE_SIZE;
 
   // FOV must be wide enough to see the full museum from this height
-  // FOV = 2 * atan(halfWidth / height) — we want the full extent visible
   const topDownHeight = maxExtent * 0.8;
   const topDownFov = 2 * Math.atan((maxExtent * 0.6) / topDownHeight) * (180 / Math.PI);
 
@@ -65,16 +68,48 @@
     fov: Math.max(30, Math.min(60, topDownFov)),
   };
 
-  // FPS camera at spawn point
+  // FPS camera target — updated to match UCC's exact first-frame camera position
+  // before each flip so there's zero discontinuity on handoff.
   const spawnWorldX = grid.spawn.x * TILE_SIZE;
   const spawnWorldZ = grid.spawn.y * TILE_SIZE;
 
+  // These must match UCC's SETTINGS.firstPerson exactly
+  const UCC_FP_HEIGHT = 0.75;
+  const UCC_FP_FORWARD_OFFSET = 0.05;
+  const UCC_FPS_FOV = 65;
+  const UCC_FAR_PLANE = 10000; // UCC forces this in its game loop
+
   const FPS = {
-    position: new Vector3(spawnWorldX, 1.7, spawnWorldZ),
-    quaternion: new Quaternion().setFromEuler(new Euler(0, 0, 0)),
-    fov: 65,
+    position: new Vector3(spawnWorldX, 0.85 + UCC_FP_HEIGHT, spawnWorldZ + UCC_FP_FORWARD_OFFSET),
+    quaternion: new Quaternion(), // computed by syncFpsToPlayer
+    fov: UCC_FPS_FOV,
   };
 
+  /**
+   * Sync FPS endpoint to match exactly what UCC will compute on its first frame.
+   * This eliminates the visual "swap" on handoff.
+   */
+  function syncFpsToPlayer(): void {
+    const pos = physicsProvider.getPlayerPosition();
+
+    // Match UCC first-person: camPos = target + forwardOffset in yaw direction
+    const camX = pos.x + Math.sin(playerYaw) * UCC_FP_FORWARD_OFFSET;
+    const camY = pos.y + UCC_FP_HEIGHT;
+    const camZ = pos.z + Math.cos(playerYaw) * UCC_FP_FORWARD_OFFSET;
+    FPS.position.set(camX, camY, camZ);
+
+    // Match UCC's lookAt orientation: look 100 units ahead at same height
+    const lookX = camX + Math.sin(playerYaw) * 100;
+    const lookZ = camZ + Math.cos(playerYaw) * 100;
+
+    // Build a lookAt matrix to get the exact quaternion UCC would produce
+    const tempCam = new Object3D();
+    tempCam.position.set(camX, camY, camZ);
+    tempCam.lookAt(lookX, camY, lookZ);
+    FPS.quaternion.copy(tempCam.quaternion);
+  }
+
+  // ── Flip animation state ──
   const DURATION = 1.5;
   let progress = 0;
   let animating = false;
@@ -89,9 +124,46 @@
     return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
   }
 
+  // ── FPS mode: active when flip animation has completed (progress=1) ──
+  // UnifiedCameraController takes over camera when this is true.
+  let fpsActive = $state(false);
+
+  // Avatar state for UnifiedCameraController (follows the established pattern)
+  // Yaw and pitch persist across flip cycles so the player's view direction is restored.
+  let playerYaw = $state(0);
+  let playerPitch = $state(0);
+  let isMoving = $state(false);
+  let playerPosition = $state({ x: spawnWorldX, y: 0, z: spawnWorldZ });
+
+  const avatarState: AvatarState = {
+    get position() { return playerPosition; },
+    get facingAngle() { return playerYaw; },
+    get isMoving() { return isMoving; },
+    setMoveInput(input: { x: number; z: number }) {
+      isMoving = input.x !== 0 || input.z !== 0;
+    },
+    updateMovement(_delta: number, _cameraAngle: number) {
+      // Handled by physics provider
+    },
+    setFacingAngle(angle: number) { playerYaw = angle; },
+  };
+
+  // Physics provider for grid-based wall collision
+  const physicsProvider: PhysicsProvider = createMuseumPhysicsProvider(
+    grid,
+    TILE_SIZE,
+    { x: spawnWorldX, y: 0, z: spawnWorldZ }
+  );
+
+  // Initialize FPS target at spawn (must be after physicsProvider is created)
+  syncFpsToPlayer();
+
+  // ── Flip animation loop ──
+  // When fpsActive, UnifiedCameraController owns the camera — we don't touch it.
   useTask((delta) => {
     if (!camera) return;
 
+    // First frame: set camera to top-down
     if (!initialized) {
       initialized = true;
       camera.position.copy(TOP_DOWN.position);
@@ -103,9 +175,16 @@
       return;
     }
 
+    // If FPS mode is active, UCC owns the camera — skip flip animation
+    if (fpsActive) return;
+
+    // Detect new flip request
     if (flipRequested !== lastFlipCount) {
       lastFlipCount = flipRequested;
       if (!animating) {
+        // Sync FPS target to player's current position so the flip-down
+        // animation lands where the player actually is, not at spawn
+        syncFpsToPlayer();
         animating = true;
         goingDown = progress < 0.5;
       }
@@ -116,7 +195,11 @@
     const step = delta / DURATION;
     if (goingDown) {
       progress = Math.min(progress + step, 1);
-      if (progress >= 1) animating = false;
+      if (progress >= 1) {
+        animating = false;
+        // Flip completed → hand off to UnifiedCameraController
+        fpsActive = true;
+      }
     } else {
       progress = Math.max(progress - step, 0);
       if (progress <= 0) animating = false;
@@ -132,38 +215,33 @@
 
     camera.fov = MathUtils.lerp(TOP_DOWN.fov, FPS.fov, t);
     camera.near = MathUtils.lerp(0.1, 0.1, t);
-    camera.far = MathUtils.lerp(maxExtent * 3, 200, t);
+    camera.far = MathUtils.lerp(maxExtent * 3, UCC_FAR_PLANE, t);
     camera.updateProjectionMatrix();
   });
 
-  // ── Bucket tiles by render category ──
-  // Each category gets one InstancedMesh for performance.
+  // When Q is pressed again while in FPS mode, exit back to top-down
+  $effect(() => {
+    if (fpsActive && flipRequested !== lastFlipCount) {
+      lastFlipCount = flipRequested;
+      syncFpsToPlayer(); // So the flip-back animation starts from where the player is
+      fpsActive = false;
+      animating = true;
+      goingDown = false;
+    }
+  });
 
+  // ── Bucket tiles by render category ──
   interface TileBucket {
     positions: { x: number; z: number }[];
     color: string;
   }
 
-  // Floor-like tiles (flat planes at y=0): floor, corridor, door
-  // Grouped by color (material + type combo)
   const floorBuckets = new Map<string, TileBucket>();
-
-  // Walls: boxes at y=1.5, height=3
   const wallPositions: { x: number; z: number }[] = [];
-
-  // Exhibit panels: thin tall boxes
   const exhibitPositions: { x: number; z: number }[] = [];
-
-  // Performer stations: small cylinders
   const performerPositions: { x: number; z: number }[] = [];
-
-  // Pedestals: boxes at y=0.25
   const pedestalPositions: { x: number; z: number }[] = [];
-
-  // Signs: thin boxes
   const signPositions: { x: number; z: number }[] = [];
-
-  // Torches: point lights + emissive spheres
   const torchPositions: { x: number; z: number }[] = [];
 
   function addToFloorBucket(color: string, x: number, z: number): void {
@@ -198,7 +276,6 @@
         break;
       }
       case "exhibit-panel": {
-        // Exhibit panels also get a floor tile underneath
         addToFloorBucket(FLOOR_COLORS.stone, worldX, worldZ);
         exhibitPositions.push({ x: worldX, z: worldZ });
         break;
@@ -224,22 +301,17 @@
         break;
       }
       case "trigger":
-        // Invisible — don't render
         break;
       case "rope":
       case "scaffolding":
-        // Skipped for now
         addToFloorBucket(FLOOR_COLORS.stone, worldX, worldZ);
         break;
     }
   }
 
   // ── Build InstancedMesh data ──
-  // For each bucket/category, we create geometry + material + instance matrices
-
   const dummy = new Object3D();
 
-  // Shared geometries (created once)
   const floorGeo = new BoxGeometry(TILE_SIZE - 0.02, 0.05, TILE_SIZE - 0.02);
   const wallGeo = new BoxGeometry(TILE_SIZE, 1.5, TILE_SIZE);
   const exhibitGeo = new BoxGeometry(TILE_SIZE * 0.8, 1.0, 0.08);
@@ -248,7 +320,6 @@
   const signGeo = new BoxGeometry(TILE_SIZE * 0.6, 0.4, 0.06);
   const torchSphereGeo = new SphereGeometry(0.06, 6, 6);
 
-  // Build instanced meshes for floor buckets
   interface InstancedMeshData {
     mesh: InstancedMesh;
   }
@@ -268,7 +339,6 @@
     floorMeshes.push({ mesh });
   }
 
-  // Wall instanced mesh
   let wallMesh: InstancedMesh | null = null;
   if (wallPositions.length > 0) {
     const wallMat = new MeshStandardMaterial({ color: TILE_TYPE_COLORS.wall! });
@@ -281,7 +351,6 @@
     wallMesh.instanceMatrix.needsUpdate = true;
   }
 
-  // Exhibit panel instanced mesh
   let exhibitMesh: InstancedMesh | null = null;
   if (exhibitPositions.length > 0) {
     const exhibitMat = new MeshStandardMaterial({ color: TILE_TYPE_COLORS["exhibit-panel"]! });
@@ -294,7 +363,6 @@
     exhibitMesh.instanceMatrix.needsUpdate = true;
   }
 
-  // Performer station instanced mesh
   let performerMesh: InstancedMesh | null = null;
   if (performerPositions.length > 0) {
     const performerMat = new MeshStandardMaterial({ color: TILE_TYPE_COLORS["performer-station"]! });
@@ -307,7 +375,6 @@
     performerMesh.instanceMatrix.needsUpdate = true;
   }
 
-  // Pedestal instanced mesh
   let pedestalMesh: InstancedMesh | null = null;
   if (pedestalPositions.length > 0) {
     const pedestalMat = new MeshStandardMaterial({ color: TILE_TYPE_COLORS.pedestal! });
@@ -320,7 +387,6 @@
     pedestalMesh.instanceMatrix.needsUpdate = true;
   }
 
-  // Sign instanced mesh
   let signMesh: InstancedMesh | null = null;
   if (signPositions.length > 0) {
     const signMat = new MeshStandardMaterial({ color: TILE_TYPE_COLORS.sign! });
@@ -333,7 +399,6 @@
     signMesh.instanceMatrix.needsUpdate = true;
   }
 
-  // Torch emissive spheres instanced mesh
   let torchSphereMesh: InstancedMesh | null = null;
   if (torchPositions.length > 0) {
     const torchMat = new MeshStandardMaterial({
@@ -350,8 +415,6 @@
     torchSphereMesh.instanceMatrix.needsUpdate = true;
   }
 
-  // Limit torch point lights to avoid GPU overload.
-  // Pick evenly spaced torches if there are too many.
   const MAX_POINT_LIGHTS = 32;
   let torchLightPositions: { x: number; z: number }[];
   if (torchPositions.length <= MAX_POINT_LIGHTS) {
@@ -365,7 +428,7 @@
   }
 </script>
 
-<!-- Camera -->
+<!-- Camera (owned by flip animation when not in FPS, by UCC when in FPS) -->
 <T.PerspectiveCamera
   makeDefault
   bind:ref={camera}
@@ -373,6 +436,32 @@
   near={0.1}
   far={maxExtent * 3}
 />
+
+<!-- UnifiedCameraController: only active when FPS mode is engaged -->
+{#if fpsActive}
+  <UnifiedCameraController
+    destinationId="museum"
+    {avatarState}
+    {physicsProvider}
+    enabled={true}
+    moveSpeed={3}
+    initialYaw={playerYaw}
+    initialPitch={playerPitch}
+    onModeChange={(mode) => {
+      // ESC in UCC returns to orbit mode — in the museum, that means flip back to top-down
+      if (mode === CameraMode.ORBIT) {
+        syncFpsToPlayer();
+        fpsActive = false;
+        animating = true;
+        goingDown = false;
+      }
+    }}
+    onRotationChange={(newYaw, newPitch) => {
+      playerYaw = newYaw;
+      playerPitch = newPitch;
+    }}
+  />
+{/if}
 
 <!-- Lighting -->
 <T.AmbientLight intensity={0.3} color="#c8b890" />

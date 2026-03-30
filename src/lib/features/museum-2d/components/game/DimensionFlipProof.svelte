@@ -10,7 +10,7 @@
   const { grid } = buildMuseumGrid(MUSEUM_ROOMS, MUSEUM_EDGES, GRID_CONFIG);
 
   // State shared between the outer component (buttons) and inner scene
-  let flipRequested = $state(0); // increment to trigger flip
+  let flipRequested = $state(0);
 
   function handleKey(e: KeyboardEvent) {
     if (e.key === "q" || e.key === "Q") {
@@ -29,8 +29,9 @@
   <div class="info-bar">
     <span class="info-label">3D Museum — {grid.tiles.size} tiles across {grid.wings.length} rooms</span>
     <button class="flip-btn" onclick={() => flipRequested++}>
-      Press Q or click to flip
+      Q to flip dimension
     </button>
+    <span class="controls-hint">WASD to move • Mouse to look • ESC to exit</span>
   </div>
 
   <div class="canvas-area">
@@ -77,6 +78,12 @@
 
   .flip-btn:hover {
     background: rgba(200, 180, 140, 0.15);
+  }
+
+  .controls-hint {
+    margin-left: auto;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.3);
   }
 
   .canvas-area {
