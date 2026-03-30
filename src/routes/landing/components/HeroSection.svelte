@@ -29,12 +29,13 @@
 <style>
   .hero {
     position: relative;
-    min-height: 100vh;
+    height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 60px 24px;
-    overflow: visible;
+    overflow: hidden;
+    box-sizing: border-box;
   }
 
   .hero-bg {
@@ -111,8 +112,10 @@
   }
 
   .hero-video-side {
-    flex: 0 0 auto;
+    flex: 0 1 auto;
     width: clamp(280px, 35vw, 400px);
+    max-height: calc(100vh - 140px);
+    overflow: hidden;
   }
 
   /* Tablet and below - stack vertically */
@@ -145,7 +148,8 @@
   @media (max-width: 480px) {
     .hero {
       padding: 60px 16px 32px;
-      min-height: auto;
+      height: auto;
+      min-height: 100vh;
     }
 
     .hero-text-panel {

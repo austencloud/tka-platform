@@ -168,16 +168,19 @@
             <PictographContainer
               pictographData={emptyGridData}
               gridMode={GridMode.DIAMOND}
+              showGrid={true}
               showTKA={false}
               showReversals={false}
               showPositions={false}
+              showHandPoints={false}
+              showBlueMotion={false}
+              showRedMotion={false}
               darkMode={true}
               disableTransitions={true}
             />
           {/if}
         </div>
         <h3>The grid</h3>
-        <p>Eight points on a diamond. This is where everything happens.</p>
       </div>
 
       <!-- Card 2: Grid + hands (PropType.HAND) -->
@@ -190,16 +193,17 @@
               gridMode={GridMode.DIAMOND}
               bluePropTypeOverride={PropType.HAND}
               redPropTypeOverride={PropType.HAND}
+              showGrid={true}
               showTKA={true}
               showReversals={false}
               showPositions={false}
+              showHandPoints={true}
               darkMode={true}
               disableTransitions={true}
             />
           {/if}
         </div>
         <h3>Add hands</h3>
-        <p>Two hands on the grid. Where they sit is the position.</p>
       </div>
 
       <!-- Card 3: Props visible -->
@@ -212,16 +216,17 @@
               gridMode={GridMode.DIAMOND}
               bluePropTypeOverride={propType}
               redPropTypeOverride={propType}
+              showGrid={true}
               showTKA={true}
               showReversals={false}
               showPositions={false}
+              showHandPoints={true}
               darkMode={true}
               disableTransitions={true}
             />
           {/if}
         </div>
         <h3>Add props</h3>
-        <p>Each hand holds a prop. Staves, fans, clubs. The notation works for all of them.</p>
       </div>
     </div>
 
@@ -237,16 +242,19 @@
               gridMode={GridMode.DIAMOND}
               bluePropTypeOverride={propType}
               redPropTypeOverride={propType}
+              showGrid={true}
               showTKA={true}
               showReversals={false}
               showPositions={true}
+              showHandPoints={true}
+              showBlueMotion={true}
+              showRedMotion={true}
               darkMode={true}
               disableTransitions={true}
             />
           {/if}
         </div>
         <h3>Add motion</h3>
-        <p>Arrows show where each hand moves. The letter names the pattern.</p>
       </div>
 
       <!-- Card 5: Full sequence -->
@@ -267,7 +275,6 @@
           />
         </div>
         <h3>String them together</h3>
-        <p>Each cell is one beat. Read left to right. Four beats spell a word.</p>
       </div>
 
       <!-- Card 6: Live animation -->
@@ -277,9 +284,37 @@
           <HowTkaAnimationCard {sequence} {propType} />
         </div>
         <h3>Watch it move</h3>
-        <p>The sequence plays back as a looping animation.</p>
       </div>
     </div>
+
+    <!--
+      HIDDEN: Cards 7 & 8 — waiting on content.
+
+      AI agent: remind Austen that he needs to get the footage for AABB
+      (a video of someone performing the AABB sequence, and one of teaching it).
+
+      Card 7: "Perform it" (fa-fire icon)
+      Card 8: "Teach it to a friend" (fa-people-arrows icon)
+
+      Uncomment the block below when footage is ready.
+    -->
+    <!-- <div class="third-row">
+      <div class="step-card icon-card">
+        <span class="step-badge">7</span>
+        <div class="icon-frame">
+          <i class="fas fa-fire" aria-hidden="true"></i>
+        </div>
+        <h3>Perform it</h3>
+      </div>
+
+      <div class="step-card icon-card">
+        <span class="step-badge">8</span>
+        <div class="icon-frame">
+          <i class="fas fa-people-arrows" aria-hidden="true"></i>
+        </div>
+        <h3>Teach it to a friend</h3>
+      </div>
+    </div> -->
   {:else}
     <!-- Skeleton: same 3+3 grid layout, pulsing placeholders -->
     <div class="top-row">
@@ -298,10 +333,19 @@
           <span class="step-badge">{n}</span>
           <div class="skeleton-pictograph"></div>
           <div class="skeleton-title"></div>
-          <div class="skeleton-text"></div>
         </div>
       {/each}
     </div>
+    <!-- skeleton for cards 7-8 (hidden until footage is ready) -->
+    <!-- <div class="third-row">
+      {#each [7, 8] as n}
+        <div class="step-card skeleton icon-card">
+          <span class="step-badge">{n}</span>
+          <div class="skeleton-pictograph"></div>
+          <div class="skeleton-title"></div>
+        </div>
+      {/each}
+    </div> -->
   {/if}
 </section>
 
@@ -335,6 +379,16 @@
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 20px;
+    margin-bottom: 20px;
+  }
+
+  /* Third row: 2 centered cards */
+  .third-row {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+    max-width: 66%;
+    margin: 0 auto;
   }
 
   /* Individual card */
@@ -401,20 +455,29 @@
     overflow: hidden;
   }
 
+  /* Icon-based cards (7, 8) */
+  .icon-frame {
+    width: 100%;
+    max-width: 200px;
+    aspect-ratio: 1;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.02);
+  }
+
+  .icon-frame i {
+    font-size: clamp(3rem, 6vw, 4.5rem);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
+  }
+
   /* Card text */
   h3 {
     font-family: var(--landing-heading-font, "Instrument Serif", Georgia, serif);
     font-size: clamp(0.95rem, 1.8vw, 1.15rem);
     font-weight: 400;
     color: var(--theme-text, #fff);
-    margin: 0;
-    text-align: center;
-  }
-
-  p {
-    font-size: var(--font-size-sm, 0.875rem);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    line-height: 1.55;
     margin: 0;
     text-align: center;
   }
@@ -438,6 +501,13 @@
     }
 
     .bottom-row {
+      grid-template-columns: 1fr;
+      max-width: 340px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .third-row {
       grid-template-columns: 1fr;
       max-width: 340px;
       margin-left: auto;
