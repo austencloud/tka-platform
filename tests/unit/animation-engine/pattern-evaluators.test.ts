@@ -1,42 +1,8 @@
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect } from "vitest";
 import { createReusableContext } from "$lib/shared/animation-engine/domain/patterns/context";
-import { initializeRegistry, evaluatePattern } from "$lib/shared/animation-engine/domain/patterns/evaluator";
-import { evaluateSolid, evaluateSplit, evaluateQuad } from "$lib/shared/animation-engine/domain/patterns/solid";
-import { evaluateBreathe, evaluatePulse, evaluateHeartbeat, evaluateColorMorph } from "$lib/shared/animation-engine/domain/patterns/breathe";
-import { evaluateChase, evaluateComet, evaluateWave, evaluateCascade } from "$lib/shared/animation-engine/domain/patterns/chase";
-import { evaluateRainbow, evaluateWarmShift, evaluateCoolShift, evaluateNeon } from "$lib/shared/animation-engine/domain/patterns/spectrum";
-import { evaluateSparkle, evaluateFlicker, evaluateAurora } from "$lib/shared/animation-engine/domain/patterns/texture";
-import { evaluateProximity, evaluateVelocity, evaluateMirrorSync, evaluateBeatPulse } from "$lib/shared/animation-engine/domain/patterns/tka-aware";
+// evaluator.ts auto-initializes the registry on import — no setup needed
+import { evaluatePattern } from "$lib/shared/animation-engine/domain/patterns/evaluator";
 import { evaluatePattern as oldEvaluatePattern, getLedPattern } from "$lib/shared/animation-engine/domain/types/LedPatterns";
-
-// ─── Registry Setup ──────────────────────────────────────────────────────────
-
-beforeAll(() => {
-  initializeRegistry([
-    ["solid",        evaluateSolid],
-    ["split",        evaluateSplit],
-    ["quad",         evaluateQuad],
-    ["breathe",      evaluateBreathe],
-    ["pulse",        evaluatePulse],
-    ["heartbeat",    evaluateHeartbeat],
-    ["color-morph",  evaluateColorMorph],
-    ["chase",        evaluateChase],
-    ["comet",        evaluateComet],
-    ["wave",         evaluateWave],
-    ["cascade",      evaluateCascade],
-    ["rainbow",      evaluateRainbow],
-    ["warm-shift",   evaluateWarmShift],
-    ["cool-shift",   evaluateCoolShift],
-    ["neon",         evaluateNeon],
-    ["sparkle",      evaluateSparkle],
-    ["flicker",      evaluateFlicker],
-    ["aurora",       evaluateAurora],
-    ["proximity",    evaluateProximity],
-    ["velocity",     evaluateVelocity],
-    ["mirror-sync",  evaluateMirrorSync],
-    ["beat-pulse",   evaluateBeatPulse],
-  ]);
-});
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
