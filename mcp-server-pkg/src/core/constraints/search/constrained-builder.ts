@@ -31,7 +31,8 @@ import {
 import { generateConstraintReport } from "../reporting/report-generator.js";
 import { scoreBridgeOptions } from "./bridge-scorer.js";
 import { getLetterTransitionGraph } from "../../letter-transition-graph.js";
-import { calculateEndOrientation, Orientation } from "../../orientation-calculator.js";
+import { calculateEndOrientation } from "@tka/render-core";
+import { Orientation } from "../../enums.js";
 
 /**
  * Type 6 static letters - valid for starting positions.
@@ -565,6 +566,7 @@ function propagateOrientations(steps: PictographData[]): PictographData[] {
     if (!step) continue;
 
     // Calculate blue end orientation
+    // Cast: render-core returns string literal Orientation, MCP uses enum Orientation (same values)
     const blueEndOrientation = calculateEndOrientation({
       motionType: step.blueMotion.motionType,
       turns: 0, // CSV variations are all 0 turns
@@ -572,7 +574,7 @@ function propagateOrientations(steps: PictographData[]): PictographData[] {
       startLocation: step.blueMotion.startLocation,
       endLocation: step.blueMotion.endLocation,
       startOrientation: blueOrientation,
-    });
+    }) as Orientation;
 
     // Calculate red end orientation
     const redEndOrientation = calculateEndOrientation({
@@ -582,7 +584,7 @@ function propagateOrientations(steps: PictographData[]): PictographData[] {
       startLocation: step.redMotion.startLocation,
       endLocation: step.redMotion.endLocation,
       startOrientation: redOrientation,
-    });
+    }) as Orientation;
 
     // Create updated step with correct orientations
     result.push({

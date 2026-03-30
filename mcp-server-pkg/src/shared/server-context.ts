@@ -10,7 +10,7 @@ import * as path from "path";
 import { fileURLToPath } from "url";
 import { exec } from "child_process";
 import { tmpdir } from "os";
-import { calculateOrientations } from "../core/orientation-calculator.js";
+import { calculateOrientations } from "@tka/render-core";
 import type { MotionData, PictographData, GridMode } from "../types/pictograph.js";
 
 const __filename = fileURLToPath(import.meta.url);

@@ -8,7 +8,7 @@
 
 import {
   calculateEndOrientation as calculateEndOrientationCore,
-} from "../../../render-core/calculations/orientation.js";
+} from "@tka/render-core";
 import type {
   IOrientationPropagator,
   IOrientationCalculator,
