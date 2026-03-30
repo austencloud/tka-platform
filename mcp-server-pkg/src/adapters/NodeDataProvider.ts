@@ -13,7 +13,7 @@ import type {
   LetterVariationData,
 } from "../../vendor/sequence-engine/data/contracts/ISequenceDataProvider.js";
 import type { LetterMappingsJson } from "../../vendor/sequence-engine/domain/models/SequenceEngineTypes.js";
-import { calculateOrientations } from "../core/orientation-calculator.js";
+import { calculateOrientations } from "@tka/render-core";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

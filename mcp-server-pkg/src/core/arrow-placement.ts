@@ -6,7 +6,7 @@
  */
 
 import { GridLocation, GridMode, MotionType } from "./enums.js";
-import { getLayer2PointCoordinates, type Coordinates } from "./grid-coordinates.js";
+import { getLayer2PointCoordinates, type Coordinates } from "@tka/render-core";
 
 // ============================================================================
 // ARROW ROTATION MAPS

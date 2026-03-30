@@ -26,7 +26,6 @@ import {
   getLayer2PointCoordinates,
   // Prop placement calculations
   calculatePropPlacement,
-  // Arrow calculations (still using local files for arrow-specific logic)
   // Beta offset
   calculateBetaOffset,
   type BetaOffsetInput,
@@ -44,7 +43,7 @@ import {
   BLUE_COLOR_LIGHT,
   RED_COLOR_DARK,
   RED_COLOR_LIGHT,
-} from "../../vendor/render-core/index.js";
+} from "@tka/render-core";
 // Arrow calculations still use local files (they have MCP-specific logic)
 import { calculateArrowPlacement, calculateArrowRotation } from "./arrow-placement.js";
 import { calculateArrowAdjustment, type PictographAdjustmentInput, type MotionAdjustmentInput } from "./arrow-adjustment.js";
@@ -255,7 +254,7 @@ export class StandaloneRenderer {
    */
   async renderToPng(input: PictographInput, options: RenderVisibilityOptions = {}): Promise<Buffer> {
     const svg = await this.renderToSvg(input, options);
-    return this.svgToPng(svg, options.size || 400);
+    return this.svgToPng(svg, options.size || 950);
   }
 
   /**
@@ -484,11 +483,6 @@ ${svgParts.join("\n")}
     const betaOffset = this.calculateBetaOffsetForProp(pictograph, motion, gridMode, bluePropType, redPropType);
     const finalX = placement.x + betaOffset.x;
     const finalY = placement.y + betaOffset.y;
-
-    // DEBUG: log beta offset for G/H letters
-    if (pictograph.letter === "G" || pictograph.letter === "H") {
-      console.error(`[RENDER-PROP] letter=${pictograph.letter} color=${motion.color} endLoc=${endLocation} base=(${placement.x},${placement.y}) betaOffset=(${betaOffset.x},${betaOffset.y}) final=(${finalX},${finalY})`);
-    }
 
     // Determine prop file name - use provided prop type or default to staff
     // Use the current motion's prop type

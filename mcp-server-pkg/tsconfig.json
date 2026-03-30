@@ -11,8 +11,11 @@
     "declaration": true,
     "declarationDir": "./dist",
     "noEmit": false,
-    "rootDir": "."
+    "rootDir": ".",
+    "paths": {
+      "@tka/render-core": ["../packages/render-core/dist/index.d.ts"]
+    }
   },
-  "include": ["index.ts", "src/**/*.ts", "vendor/**/*.ts"],
+  "include": ["index.ts", "src/**/*.ts", "vendor/sequence-engine/**/*.ts"],
   "exclude": ["node_modules"]
 }

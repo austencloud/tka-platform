@@ -10,7 +10,8 @@ import {
   OrientationPropagator,
 } from "../../vendor/sequence-engine/services/implementations/OrientationPropagator.js";
 import type { Orientation } from "../../vendor/sequence-engine/domain/models/SequenceEngineTypes.js";
-import { calculateEndOrientation as mcpCalculateEndOrientation, Orientation as McpOrientation } from "./orientation-calculator.js";
+import { calculateEndOrientation as mcpCalculateEndOrientation } from "@tka/render-core";
+import { Orientation as McpOrientation } from "./enums.js";
 import type { SequenceStep, SequenceResult } from "./sequence-builder.js";
 
 // Create shared instances
@@ -43,6 +44,8 @@ export function propagateOrientationsForColor(
     if (!motion) continue;
 
     // Calculate new end orientation based on this beat's motion
+    // Cast needed: render-core returns string literal Orientation, MCP uses enum Orientation
+    // Values are identical ("in", "out", "clock", "counter") so the cast is safe
     const newEndOrientation = mcpCalculateEndOrientation({
       motionType: motion.motionType,
       turns: 0, // CSV variations are all 0 turns
@@ -50,7 +53,7 @@ export function propagateOrientationsForColor(
       startLocation: motion.startLocation,
       endLocation: motion.endLocation,
       startOrientation: previousEndOrientation,
-    });
+    }) as McpOrientation;
 
     // Update this step with correct orientations
     const updatedMotion = {
@@ -149,4 +152,4 @@ export function recalculateOrientationsWithOverrides(
 }
 
 // Re-export the shared calculator for direct use
-export { calculateEndOrientation } from "./orientation-calculator.js";
+export { calculateEndOrientation } from "@tka/render-core";
