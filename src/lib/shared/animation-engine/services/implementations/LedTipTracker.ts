@@ -96,8 +96,8 @@ export class LedTipTracker implements ILedTipTracker {
 		const blueBaseColor = hexToLedColor(resolveHandColor(ledConfig, 0));
 		const redBaseColor = hexToLedColor(resolveHandColor(ledConfig, 1));
 
-		// Secondary color is shared across both hands
-		const secondaryBaseColor = hexToLedColor(ledConfig.secondaryColor);
+		// Secondary color is shared across both hands (default white if missing)
+		const secondaryBaseColor = hexToLedColor(ledConfig.secondaryColor ?? "#ffffff");
 
 		// Count total LEDs across both props for pattern evaluation
 		const blueTipConfig = getTipPoints(config.bluePropType);
