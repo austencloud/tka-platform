@@ -20,7 +20,7 @@ import {
   DIFFICULTY_FONT_FAMILY,
   applyGradientStops,
 } from "$lib/shared/config/difficulty-styles";
-import { renderHeader, renderFooter, type LOOPComponentId } from "@tka/render-composition";
+import { renderHeader, renderFooter, FOOTER_FONT_SCALE, type LOOPComponentId } from "@tka/render-composition";
 
 export class TextRenderer implements ITextRenderer {
   // Font configuration matching WordLabel component exactly
@@ -123,7 +123,7 @@ export class TextRenderer implements ITextRenderer {
     );
 
     // Calculate font size based on footer height (larger, bolder text)
-    const finalFontSize = footerHeight * 0.55;
+    const finalFontSize = footerHeight * FOOTER_FONT_SCALE;
 
     // Set font properties - bold weight for emphasis
     ctx.font = `700 ${finalFontSize}px ${this.titleFontFamily}`;

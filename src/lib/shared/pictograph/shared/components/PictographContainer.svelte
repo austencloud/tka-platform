@@ -51,9 +51,13 @@ with pre-prepared data for better performance.
     // Grid mode override (for single-motion start positions)
     gridMode: overrideGridMode = null,
     // Core visibility overrides (if undefined, uses global settings)
+    showGrid = undefined,
     showTKA = undefined,
     showReversals = undefined,
     showNonRadialPoints = undefined,
+    showBlueMotion = undefined,
+    showRedMotion = undefined,
+    showHandPoints = undefined,
     // Extended glyph visibility overrides
     showVTG = undefined,
     showElemental = undefined,
@@ -96,9 +100,13 @@ with pre-prepared data for better performance.
     disableTransitions?: boolean;
     disableContentTransitions?: boolean;
     gridMode?: GridMode | null;
+    showGrid?: boolean;
     showTKA?: boolean;
     showReversals?: boolean;
     showNonRadialPoints?: boolean;
+    showBlueMotion?: boolean;
+    showRedMotion?: boolean;
+    showHandPoints?: boolean;
     showVTG?: boolean;
     showElemental?: boolean;
     showPositions?: boolean;
@@ -201,9 +209,15 @@ with pre-prepared data for better performance.
   );
 
   // Effective visibility values - use prop overrides if set, otherwise synced state
-  const effectiveBlueMotion = $derived(syncedVisibility.blueMotion);
-  const effectiveRedMotion = $derived(syncedVisibility.redMotion);
-  const effectiveShowGrid = $derived(syncedVisibility.showGrid);
+  const effectiveBlueMotion = $derived(
+    showBlueMotion !== undefined ? showBlueMotion : syncedVisibility.blueMotion
+  );
+  const effectiveRedMotion = $derived(
+    showRedMotion !== undefined ? showRedMotion : syncedVisibility.redMotion
+  );
+  const effectiveShowGrid = $derived(
+    showGrid !== undefined ? showGrid : syncedVisibility.showGrid
+  );
 
   const effectiveShowTKA = $derived(
     showTKA !== undefined ? showTKA : syncedVisibility.tkaGlyph
@@ -230,8 +244,12 @@ with pre-prepared data for better performance.
     showPositions !== undefined ? showPositions : syncedVisibility.positionsGlyph
   );
 
-  // Hand point visibility mode
-  const effectiveHandPointVisibility = $derived(syncedVisibility.handPointVisibility);
+  // Hand point visibility mode — prop override forces "always" or uses global
+  const effectiveHandPointVisibility = $derived(
+    showHandPoints !== undefined
+      ? (showHandPoints ? "always" : "never")
+      : syncedVisibility.handPointVisibility
+  );
 
   // Active locations (where props are positioned)
   // Extract from pictograph motion data - use endLocation for prop positioning
