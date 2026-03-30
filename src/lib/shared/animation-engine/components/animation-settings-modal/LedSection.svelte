@@ -110,34 +110,31 @@
     </div>
   {/if}
 
-  <!-- Row 3: Speed + Brightness inline -->
-  <div class="controls-row">
-    <div class="speed-group">
-      <input
-        type="range"
-        class="speed-slider"
-        min="0.1"
-        max="5.0"
-        step="0.1"
-        value={patternSpeed}
-        oninput={(e) => vm.setLedPatternSpeed(parseFloat((e.target as HTMLInputElement).value))}
-        aria-label="Pattern speed"
-      />
-      <span class="speed-label">{patternSpeed.toFixed(1)}x</span>
-    </div>
-    <div class="brightness-group">
-      {#each [1, 2, 3, 4, 5] as level}
-        <button
-          type="button"
-          class="bright-btn"
-          class:active={brightness === level}
-          onclick={() => vm.setLedBrightness(level)}
-          aria-label="Brightness {level}"
-        >
-          {level}
-        </button>
-      {/each}
-    </div>
+  <!-- Row 3: Speed -->
+  <div class="speed-row">
+    <input
+      type="range"
+      class="speed-slider"
+      min="0.1"
+      max="5.0"
+      step="0.1"
+      value={patternSpeed}
+      oninput={(e) => vm.setLedPatternSpeed(parseFloat((e.target as HTMLInputElement).value))}
+      aria-label="Pattern speed"
+    />
+    <span class="speed-label">{patternSpeed.toFixed(1)}x</span>
+    <!-- Brightness as small inline dots -->
+    {#each [1, 2, 3, 4, 5] as level}
+      <button
+        type="button"
+        class="bright-btn"
+        class:active={brightness === level}
+        onclick={() => vm.setLedBrightness(level)}
+        aria-label="Brightness {level}"
+      >
+        {level}
+      </button>
+    {/each}
   </div>
 </div>
 
@@ -145,20 +142,20 @@
   .led-section {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
   }
 
   /* ─── Color row ───────────────────────────── */
   .color-row {
     display: flex;
-    gap: 6px;
+    gap: 4px;
     flex-wrap: wrap;
     align-items: center;
   }
 
   .swatch {
-    width: 28px;
-    height: 28px;
+    width: 22px;
+    height: 22px;
     border-radius: 50%;
     border: 2px solid transparent;
     cursor: pointer;
@@ -199,8 +196,8 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 8px 12px;
-    min-height: 40px;
+    padding: 6px 10px;
+    min-height: 32px;
     border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 8px;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
@@ -213,7 +210,7 @@
   }
 
   .pattern-current {
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
     color: var(--theme-text, white);
   }
@@ -284,24 +281,18 @@
   }
 
   /* ─── Speed + Brightness row ──────────────── */
-  .controls-row {
-    display: flex;
-    gap: 12px;
-    align-items: center;
-  }
-
-  .speed-group {
-    flex: 1;
+  .speed-row {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 4px;
   }
 
   .speed-slider {
     flex: 1;
+    min-width: 0;
     -webkit-appearance: none;
     appearance: none;
-    height: 4px;
+    height: 3px;
     border-radius: 2px;
     background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
     outline: none;
@@ -311,8 +302,8 @@
   .speed-slider::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
-    width: 16px;
-    height: 16px;
+    width: 14px;
+    height: 14px;
     border-radius: 50%;
     background: var(--theme-accent, #8b5cf6);
     border: 2px solid var(--theme-card-bg, rgba(18, 18, 28, 0.98));
@@ -320,8 +311,8 @@
   }
 
   .speed-slider::-moz-range-thumb {
-    width: 16px;
-    height: 16px;
+    width: 14px;
+    height: 14px;
     border-radius: 50%;
     background: var(--theme-accent, #8b5cf6);
     border: 2px solid var(--theme-card-bg, rgba(18, 18, 28, 0.98));
@@ -329,29 +320,26 @@
   }
 
   .speed-label {
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 600;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
-    min-width: 30px;
+    min-width: 26px;
     text-align: right;
-  }
-
-  .brightness-group {
-    display: flex;
-    gap: 3px;
+    flex-shrink: 0;
   }
 
   .bright-btn {
-    width: 30px;
-    height: 30px;
+    width: 22px;
+    height: 22px;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 6px;
+    border-radius: 4px;
     background: transparent;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 600;
     cursor: pointer;
     padding: 0;
+    flex-shrink: 0;
     transition: all 100ms ease;
   }
 
