@@ -98,6 +98,8 @@ export {
   BOX_NON_RADIAL_MAP,
   SHIFT_RADIAL_MAP,
   SHIFT_NON_RADIAL_MAP,
+  LETTER_I_RADIAL_MAP,
+  LETTER_I_NON_RADIAL_MAP,
   OPPOSITE_DIRECTIONS,
 } from "./constants/direction-maps.js";
 
