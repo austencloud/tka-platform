@@ -20,7 +20,7 @@ import type { IAnimationStateManager } from "../contracts/IAnimationStateManager
 import type { IStepCalculator } from "../contracts/IStepCalculator";
 import type { IPropInterpolator } from "../contracts/IPropInterpolator";
 import type { ISequenceAnimationOrchestrator } from "../contracts/ISequenceAnimationOrchestrator";
-import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
+import { getAnimationVisibilityManager, type AnimationVisibilityStateManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 import { applyEffort } from "$lib/features/effort-lab/domain/effort-easing-unified";
 import { PhraseInterpolator } from "$lib/features/phrase-effort-lab/services/implementations/PhraseInterpolator";
 import { findPhraseAtBeat } from "$lib/features/phrase-effort-lab/domain/effort-timeline-types";
@@ -49,6 +49,7 @@ export class SequenceAnimationOrchestrator implements ISequenceAnimationOrchestr
   private metadata: SequenceMetadata = { word: "", author: "", totalSteps: 0 };
   private effortTimeline: EffortTimeline | null = null;
   private phraseInterpolator = new PhraseInterpolator();
+  private visibilityManagerOverride: AnimationVisibilityStateManager | null = null;
   private initialized = false;
   private currentStepIndex = 0;
   private currentStepProgress = 0; // Sub-beat progress (0.0 to 1.0)
@@ -59,6 +60,10 @@ export class SequenceAnimationOrchestrator implements ISequenceAnimationOrchestr
     private readonly stepCalculationService: IStepCalculator,
     private readonly propInterpolationService: IPropInterpolator
   ) {}
+
+  setVisibilityManager(vm: AnimationVisibilityStateManager): void {
+    this.visibilityManagerOverride = vm;
+  }
 
   /**
    * Initialize with domain sequence data (PURE DOMAIN!)
@@ -249,7 +254,7 @@ export class SequenceAnimationOrchestrator implements ISequenceAnimationOrchestr
       }
     } else {
       // No effort timeline — existing behavior (global preset)
-      const effortPreset = getAnimationVisibilityManager().getEffortPreset();
+      const effortPreset = (this.visibilityManagerOverride ?? getAnimationVisibilityManager()).getEffortPreset();
       const easedProgress = applyEffort(effortPreset, stepState.stepProgress);
       interpolationResult = this.propInterpolationService.interpolatePropAngles(
         stepState.currentStepData, easedProgress,
@@ -521,7 +526,7 @@ export class SequenceAnimationOrchestrator implements ISequenceAnimationOrchestr
       }
     } else {
       // No effort timeline — existing behavior (global preset)
-      const effortPreset = getAnimationVisibilityManager().getEffortPreset();
+      const effortPreset = (this.visibilityManagerOverride ?? getAnimationVisibilityManager()).getEffortPreset();
       const easedProgress = applyEffort(effortPreset, stepState.stepProgress);
       interpolationResult = this.propInterpolationService.interpolatePropAngles(
         stepState.currentStepData, easedProgress,

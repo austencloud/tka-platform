@@ -499,6 +499,8 @@
         onSetRedVisible={(visible) => gridState.setCellMotionVisibility(selectedCell.id, 'red', visible)}
         onSetOffset={(offset) => gridState.setCellBeatOffset(selectedCell.id, offset)}
         onSetColors={(colors) => gridState.setCellPropColors(selectedCell.id, colors)}
+        onSetTipEffectMap={(map) => gridState.setCellTipEffectMap(selectedCell.id, map)}
+        onSetTipEffortMap={(map) => gridState.setCellTipEffortMap(selectedCell.id, map)}
       />
     {/if}
   </Drawer>

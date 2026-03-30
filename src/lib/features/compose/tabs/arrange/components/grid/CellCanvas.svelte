@@ -77,22 +77,33 @@
   // Trail settings
   const trailSettings = $derived(animationSettings.trail);
 
-  // Per-cell effect overrides — translate cell.effect into fireConfig/ledConfig
-  // When cell.effect is set, it overrides the global effect for this cell's AnimatorCanvas.
-  // When undefined, no override is passed and the global setting applies.
+  // Scan tipEffectMap for any assignments of a given effect type.
+  // When the user assigns effects per-tip or per-hand via the matrix,
+  // cell.effect stays empty but the renderers still need to be enabled.
+  function tipMapHasEffect(effectType: string): boolean {
+    const map = cell.tipEffectMap;
+    if (!map) return false;
+    return Object.values(map).some(v => v.effect === effectType);
+  }
+
+  // Per-cell effect overrides — translate cell.effect AND tipEffectMap into
+  // fireConfig/ledConfig. The renderers must be enabled if ANY tip is assigned
+  // the effect, whether via the flat cell.effect or the per-tip matrix.
   const cellFireConfig = $derived.by((): Partial<FireOverlayConfig> | undefined => {
     const effect = cell.effect;
-    if (!effect || effect === 'none') return { enabled: false };
-    if (effect === 'fire') return { enabled: true };
-    if (effect === 'charcoal') return { enabled: true, charcoalParams: {} as any };
-    return { enabled: false }; // LED and trails don't use fireConfig
+    if (effect === 'fire' || tipMapHasEffect('fire')) return { enabled: true };
+    if (effect === 'charcoal' || tipMapHasEffect('charcoal')) return { enabled: true, charcoalParams: {} as any };
+    if (effect && effect !== 'none') return { enabled: false };
+    if (cell.tipEffectMap && Object.keys(cell.tipEffectMap).length > 0) return { enabled: false };
+    return undefined; // No per-cell override — global setting applies
   });
 
   const cellLedConfig = $derived.by((): Partial<LedOverlayConfig> | undefined => {
     const effect = cell.effect;
-    if (!effect || effect === 'none') return { enabled: false };
-    if (effect === 'led') return { enabled: true };
-    return { enabled: false }; // Fire, charcoal, and trails don't use ledConfig
+    if (effect === 'led' || tipMapHasEffect('led')) return { enabled: true };
+    if (effect && effect !== 'none') return { enabled: false };
+    if (cell.tipEffectMap && Object.keys(cell.tipEffectMap).length > 0) return { enabled: false };
+    return undefined; // No per-cell override — global setting applies
   });
 
   // Per-cell motion visibility overrides (undefined defaults to visible)
@@ -317,8 +328,8 @@
         {trailSettings}
         hideTkaGlyph={true}
         hideStepNumbers={true}
-        fireConfig={cell.effect ? cellFireConfig : undefined}
-        ledConfig={cell.effect ? cellLedConfig : undefined}
+        fireConfig={(cell.effect || cell.tipEffectMap) ? cellFireConfig : undefined}
+        ledConfig={(cell.effect || cell.tipEffectMap) ? cellLedConfig : undefined}
         tipEffectMap={cell.tipEffectMap}
         tipEffortMap={cell.tipEffortMap}
       />
