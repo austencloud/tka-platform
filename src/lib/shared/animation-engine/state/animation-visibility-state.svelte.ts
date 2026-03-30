@@ -61,6 +61,7 @@ interface AnimationVisibilitySettings {
   ledSecondaryColor: string; // Secondary color (hex)
   ledActivePresetId: string | null; // Currently active color preset
   ledUserPresets: LedColorPreset[]; // User-created color presets
+  ledPatternSpeed: number; // Pattern animation speed multiplier (0.1-5.0, default 1.0)
 
   // Shared with pictograph visibility (can sync)
   tkaGlyph: boolean; // TKA Glyph includes turn numbers
@@ -162,6 +163,7 @@ export class AnimationVisibilityStateManager {
       ledSecondaryColor: "#ffffff",
       ledActivePresetId: null,
       ledUserPresets: [],
+      ledPatternSpeed: 1.0,
 
       // Shared elements - defaults optimized for animation viewing
       tkaGlyph: true, // TKA Glyph includes turn numbers
@@ -790,6 +792,13 @@ export class AnimationVisibilityStateManager {
       // Mutual exclusion: LED disables fire and charcoal
       if (this.settings.fireEffect) this.settings.fireEffect = false;
       if (this.settings.charcoalEffect) this.settings.charcoalEffect = false;
+      // Assign LED effect to all tips so the render loop filter includes them
+      this.settings.tipEffectMap = { "*": { effect: "led" } };
+    } else {
+      // Clear the tip effect map when LED is disabled
+      if (this.settings.tipEffectMap?.["*"]?.effect === "led") {
+        this.settings.tipEffectMap = {};
+      }
     }
     this.syncEffectDarkMode(enabled);
     this.saveToStorage();
@@ -919,6 +928,22 @@ export class AnimationVisibilityStateManager {
     if (this.settings.ledActivePresetId === presetId) {
       this.settings.ledActivePresetId = null;
     }
+    this.saveToStorage();
+    this.notifyObservers();
+  }
+
+  /**
+   * Get the LED pattern animation speed multiplier (0.1-5.0, default 1.0)
+   */
+  getLedPatternSpeed(): number {
+    return this.settings.ledPatternSpeed;
+  }
+
+  /**
+   * Set the LED pattern animation speed multiplier, clamped to 0.1-5.0
+   */
+  setLedPatternSpeed(speed: number): void {
+    this.settings.ledPatternSpeed = Math.max(0.1, Math.min(5.0, speed));
     this.saveToStorage();
     this.notifyObservers();
   }
