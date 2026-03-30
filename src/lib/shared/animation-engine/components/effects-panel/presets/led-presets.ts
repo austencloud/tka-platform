@@ -2,8 +2,8 @@
  * LED effect presets.
  *
  * 4 quick-select presets for the LED overlay. Each preset sets a pattern,
- * brightness, and color scheme. The user can tap "Customize" to dial in
- * exact values beyond what these presets offer.
+ * brightness, color, and color mode. "Prop Colors" uses the prop-matched
+ * color mode so each prop gets its canonical color (blue/red).
  */
 
 import type { EffectPreset, EffectPresetGroup } from "./types";
@@ -15,6 +15,7 @@ export const LED_PRESETS: EffectPreset[] = [
     name: "Green Glow",
     previewColor: "#00ff88",
     apply: (vm) => {
+      vm.setLedColorMode("unified");
       vm.setLedPrimaryColor("#00ff88");
       vm.setLedPatternId("solid");
       vm.setLedBrightness(4);
@@ -26,6 +27,7 @@ export const LED_PRESETS: EffectPreset[] = [
     name: "Ice Blue",
     previewColor: "#4488ff",
     apply: (vm) => {
+      vm.setLedColorMode("unified");
       vm.setLedPrimaryColor("#4488ff");
       vm.setLedPatternId("solid");
       vm.setLedBrightness(4);
@@ -37,6 +39,7 @@ export const LED_PRESETS: EffectPreset[] = [
     name: "Rainbow",
     previewColor: "rainbow",
     apply: (vm) => {
+      vm.setLedColorMode("unified");
       vm.setLedPatternId("rainbow");
       vm.setLedBrightness(5);
       vm.setActivePreset("led-rainbow");
@@ -48,8 +51,7 @@ export const LED_PRESETS: EffectPreset[] = [
     previewColor: "#4488ff",
     previewColor2: "#ff4444",
     apply: (vm) => {
-      vm.setLedPrimaryColor("#4488ff");
-      vm.setLedSecondaryColor("#ff4444");
+      vm.setLedColorMode("prop-matched");
       vm.setLedPatternId("solid");
       vm.setLedBrightness(4);
       vm.setActivePreset("led-prop-colors");

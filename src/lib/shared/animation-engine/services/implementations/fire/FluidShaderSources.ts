@@ -133,6 +133,7 @@ uniform sampler2D u_curl;
 uniform vec2 u_texelSize;
 uniform float u_dt;
 uniform float u_strength;    // vorticity confinement coefficient
+uniform float u_time;        // seconds, for flickering pulse
 
 void main() {
   float cL = texture(u_curl, v_uv - vec2(u_texelSize.x, 0.0)).x;
@@ -146,8 +147,15 @@ void main() {
   float len = max(length(grad), 1e-5);
   vec2 N = grad / len;
 
+  // Time-varying vorticity pulse: real flames flicker at ~10-15 Hz due to
+  // periodic vortex shedding. Modulating the confinement strength at this
+  // frequency creates a natural pulsing amplification of rotational detail
+  // that matches the physical vortex shedding cycle.
+  float pulse = 1.0 + 0.3 * sin(u_time * 2.0 * 3.14159 * 12.0)   // ~12 Hz primary
+                     + 0.15 * sin(u_time * 2.0 * 3.14159 * 7.3);  // ~7 Hz secondary
+
   // Force perpendicular to curl gradient
-  vec2 force = u_strength * vec2(N.y, -N.x) * cC;
+  vec2 force = u_strength * pulse * vec2(N.y, -N.x) * cC;
 
   vec2 vel = texture(u_velocity, v_uv).xy;
   fragColor = vec4(vel + force * u_dt, 0.0, 1.0);
@@ -192,6 +200,118 @@ void main() {
   float speedInForceDir = sign(totalForce) * vel.y;
   float attenuation = max(0.0, 1.0 - speedInForceDir / u_terminalVelocity);
   vel.y += totalForce * attenuation * u_dt;
+
+  fragColor = vec4(vel, 0.0, 1.0);
+}
+`;
+
+// ============================================================
+// Curl noise turbulence: divergence-free velocity perturbation
+// that targets flame boundaries (where temperature gradient is steep).
+//
+// Real fire flickers because buoyancy-driven shear layers (hot rising
+// gas next to cool ambient air) trigger Kelvin-Helmholtz instability.
+// On a coarse grid, numerical dissipation kills this instability before
+// it can grow. Curl noise injects physically-plausible vorticity at the
+// flame boundary to compensate — divergence-free by construction, so
+// the pressure solver passes it through untouched.
+//
+// Reference: Bridson et al., "Curl-Noise for Procedural Fluid Flow"
+// (SIGGRAPH 2007)
+// ============================================================
+
+export const CURL_NOISE_FRAG = `#version 300 es
+precision highp float;
+
+in vec2 v_uv;
+out vec4 fragColor;
+
+uniform sampler2D u_velocity;
+uniform sampler2D u_temperature;
+uniform vec2 u_texelSize;
+uniform float u_dt;
+uniform float u_time;
+uniform float u_strength;      // curl noise amplitude
+
+// 2D gradient noise (Perlin-style) — less blocky than value noise,
+// avoids the axis-aligned artifacts that look artificial in fire.
+float hash(vec2 p) {
+  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+}
+
+vec2 gradHash(vec2 p) {
+  float h = hash(p);
+  float angle = h * 6.2831853;
+  return vec2(cos(angle), sin(angle));
+}
+
+float gradientNoise(vec2 p) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  vec2 u = f * f * (3.0 - 2.0 * f);
+
+  float n00 = dot(gradHash(i + vec2(0.0, 0.0)), f - vec2(0.0, 0.0));
+  float n10 = dot(gradHash(i + vec2(1.0, 0.0)), f - vec2(1.0, 0.0));
+  float n01 = dot(gradHash(i + vec2(0.0, 1.0)), f - vec2(0.0, 1.0));
+  float n11 = dot(gradHash(i + vec2(1.0, 1.0)), f - vec2(1.0, 1.0));
+
+  return mix(mix(n00, n10, u.x), mix(n01, n11, u.x), u.y);
+}
+
+// 3-octave FBM of gradient noise, used as a scalar potential field.
+// The curl of this field gives us divergence-free velocity.
+float noisePotential(vec2 p, float time) {
+  float n = 0.0;
+  float amp = 0.5;
+  float freq = 5.0;
+  // Scroll with time so the turbulence evolves. Different speeds per
+  // octave prevent visible repetition.
+  vec2 drift = vec2(time * 0.6, time * 0.9);
+  for (int i = 0; i < 3; i++) {
+    n += amp * gradientNoise(p * freq + drift);
+    freq *= 2.2;
+    amp *= 0.45;
+    drift *= 1.5;
+  }
+  return n;
+}
+
+void main() {
+  vec2 vel = texture(u_velocity, v_uv).xy;
+  float temp = texture(u_temperature, v_uv).x;
+
+  // Compute temperature gradient magnitude — this tells us where
+  // the flame boundary is (steep gradient = hot/cold interface).
+  float tL = texture(u_temperature, v_uv - vec2(u_texelSize.x, 0.0)).x;
+  float tR = texture(u_temperature, v_uv + vec2(u_texelSize.x, 0.0)).x;
+  float tB = texture(u_temperature, v_uv - vec2(0.0, u_texelSize.y)).x;
+  float tT = texture(u_temperature, v_uv + vec2(0.0, u_texelSize.y)).x;
+  float gradMag = length(vec2(tR - tL, tT - tB)) * 0.5;
+
+  // Spatial mask: turbulence is strongest at the flame boundary
+  // (high temperature gradient) and fades to zero in uniform regions.
+  // Also require some heat so we don't perturb empty space.
+  float boundaryMask = smoothstep(0.0, 0.8, gradMag * 6.0);
+  float heatMask = smoothstep(0.0, 0.15, temp);
+  float mask = boundaryMask * heatMask;
+
+  if (mask > 0.001) {
+    // Curl of the noise potential: in 2D, curl(psi) = (dpsi/dy, -dpsi/dx).
+    // Finite-difference the potential field to get divergence-free velocity.
+    float eps = 0.003; // finite difference step in UV space
+    float psiR = noisePotential(v_uv + vec2(eps, 0.0), u_time);
+    float psiL = noisePotential(v_uv - vec2(eps, 0.0), u_time);
+    float psiT = noisePotential(v_uv + vec2(0.0, eps), u_time);
+    float psiB = noisePotential(v_uv - vec2(0.0, eps), u_time);
+
+    float dpdx = (psiR - psiL) / (2.0 * eps);
+    float dpdy = (psiT - psiB) / (2.0 * eps);
+
+    // curl(psi) = (dpsi/dy, -dpsi/dx)
+    vec2 curlForce = vec2(dpdy, -dpdx);
+
+    vel += curlForce * u_strength * mask * u_dt;
+  }
 
   fragColor = vec4(vel, 0.0, 1.0);
 }
