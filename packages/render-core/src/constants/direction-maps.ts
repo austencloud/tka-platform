@@ -116,6 +116,39 @@ export const SHIFT_NON_RADIAL_MAP: Record<GridLocation, Partial<Record<GridLocat
 };
 
 // ============================================================================
+// LETTER I DIRECTION MAPS
+// ============================================================================
+
+/**
+ * Letter I (one pro + one anti, same trajectory) has unique offset directions
+ * different from generic shift maps.
+ * Ported from app's DirectionMaps.ts LETTER_I_RADIAL_MAP / LETTER_I_NON_RADIAL_MAP.
+ */
+export const LETTER_I_RADIAL_MAP: Record<GridLocation, ColorMap> = {
+  n: { red: "right", blue: "left" },
+  e: { red: "down", blue: "up" },
+  s: { red: "left", blue: "right" },
+  w: { red: "down", blue: "up" },
+  ne: { red: "downright", blue: "upleft" },
+  se: { red: "upright", blue: "downleft" },
+  sw: { red: "downright", blue: "upleft" },
+  nw: { red: "upright", blue: "downleft" },
+  c: { red: "up", blue: "down" },
+};
+
+export const LETTER_I_NON_RADIAL_MAP: Record<GridLocation, ColorMap> = {
+  n: { red: "up", blue: "down" },
+  e: { red: "right", blue: "left" },
+  s: { red: "down", blue: "up" },
+  w: { red: "right", blue: "left" },
+  ne: { red: "upright", blue: "downleft" },
+  se: { red: "downright", blue: "upleft" },
+  sw: { red: "upright", blue: "downleft" },
+  nw: { red: "downright", blue: "upleft" },
+  c: { red: "up", blue: "down" },
+};
+
+// ============================================================================
 // OPPOSITE DIRECTIONS
 // ============================================================================
 
