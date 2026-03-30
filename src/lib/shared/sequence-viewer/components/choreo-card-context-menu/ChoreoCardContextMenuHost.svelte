@@ -1,6 +1,6 @@
 <!--
   ChoreoCardContextMenuHost — Orchestrates the ChoreoCard right-click context menu.
-  Single entry: "Card Settings..." plus optional Send to action.
+  Includes inline column picker, "Card Settings..." plus optional Send to action.
   Preserves export mode props for parent compatibility.
 -->
 <script lang="ts">
@@ -14,23 +14,28 @@
     isExportMode?: boolean;
     exportOptions?: ExportOptionsStateManager;
     onSendTo?: () => void;
+    stepCount?: number;
   }
 
-  const { onOpenSettings, isExportMode = false, exportOptions, onSendTo }: Props = $props();
+  const { onOpenSettings, isExportMode = false, exportOptions, onSendTo, stepCount = 0 }: Props = $props();
 
   let menuState: ContextMenuState = $state({ open: false });
+  let menuVersion = $state(0);
 
   function closeContextMenu(): void {
     menuState = { open: false };
   }
 
   const menuItems: ContextMenuEntry[] = $derived.by(() => {
+    void menuVersion;
     return buildChoreoCardContextMenuItems({
       onOpenSettings: () => {
         closeContextMenu();
         onOpenSettings();
       },
       onSendTo: onSendTo ? () => { closeContextMenu(); onSendTo(); } : undefined,
+      stepCount,
+      onColumnCountChange: () => { menuVersion++; },
     });
   });
 

@@ -41,6 +41,15 @@
   import { calculateTimelineRowsByBeatCount } from "$lib/features/create/shared/workspace-panel/sequence-display/utils/grid-calculations";
   import type { TimelineRow } from "$lib/features/create/shared/workspace-panel/sequence-display/utils/grid-calculations";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
+  import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
+  import {
+    HEADER_HEIGHT_DIVISOR, FOOTER_HEIGHT_DIVISOR,
+    BADGE_SIZE_SCALE, BADGE_PADDING_SCALE, BADGE_NUMBER_FONT_SCALE,
+    HEADER_WORD_FONT_SCALE, HEADER_WORD_FONT_MIN_SCALE,
+    LOOP_ICON_SIZE_SCALE, LOOP_ICON_GAP_SCALE,
+    FOOTER_FONT_SCALE, FOOTER_MARGIN_SCALE,
+    STEP_NUMBER_FONT_RATIO, STEP_NUMBER_FONT_MAX,
+  } from "@tka/render-composition";
 
   // ============================================================================
   // GLOBAL CELL URL CACHE
@@ -478,6 +487,13 @@
       // When the start position is shown, add 1 for its column.
       return includeStartPosition ? columnCount + 1 : columnCount;
     }
+    // Check per-length column count from global composition settings (4+ steps only)
+    if (stepCount >= 4) {
+      const compositionCols = getImageCompositionManager().getColumnCountForStepCount(stepCount);
+      if (compositionCols !== null && compositionCols > 0) {
+        return includeStartPosition ? compositionCols + 1 : compositionCols;
+      }
+    }
     // Long sequences use fixed 5 columns whether scrolling or force-contained.
     // This keeps the cell grid positions consistent so entering export mode
     // doesn't trigger a full re-render with different column positions.
@@ -540,13 +556,14 @@
       : 1;
     const gridHeight = effectiveRows * rowHeightInCellUnits;
 
-    // Header adds ~1/3 cell height, footer adds ~1/7 cell height.
+    // Header and footer fractions use shared constants from @tka/render-composition
+    // so the interactive card and the export image never drift.
     // For narrow grids (<=2 columns), scale fractions down so header/footer
     // don't dominate the card. This matches the headerFooterRefWidth cap.
     const cols = effectiveColumns;
     const hfScale = cols >= 3 ? 1 : cols / 3;
-    const headerFraction = showHeader ? (1/3) * hfScale : 0;
-    const footerFraction = showFooter ? (1/7) * hfScale : 0;
+    const headerFraction = showHeader ? (1 / HEADER_HEIGHT_DIVISOR) * hfScale : 0;
+    const footerFraction = showFooter ? (1 / FOOTER_HEIGHT_DIVISOR) * hfScale : 0;
 
     // Total height in cell-height units
     const totalHeight = gridHeight + headerFraction + footerFraction;
@@ -569,7 +586,7 @@
 
   const scaledHeaderHeight = $derived.by(() => {
     if (!headerFooterRefWidth) return 0;
-    const proportional = Math.floor(headerFooterRefWidth / 3);
+    const proportional = Math.floor(headerFooterRefWidth / HEADER_HEIGHT_DIVISOR);
     // On-screen viewing needs a minimum readable height (24px).
     // Export/forceContain mode uses exact proportional sizing for WYSIWYG fidelity.
     return forceContain ? proportional : Math.max(proportional, 24);
@@ -577,29 +594,28 @@
 
   const scaledFooterHeight = $derived.by(() => {
     if (!headerFooterRefWidth) return 0;
-    return Math.floor(headerFooterRefWidth / 7);
+    return Math.floor(headerFooterRefWidth / FOOTER_HEIGHT_DIVISOR);
   });
 
-  // Step number font size: 10.526% of cell width (which equals row height
-  // for square cells). Using cellWidth directly instead of cqw ensures
-  // consistent sizing even for wider duration cells.
+  // Step number font size uses shared constant from @tka/render-composition.
+  // Using cellWidth directly instead of cqw ensures consistent sizing
+  // even for wider duration cells.
   const stepNumFontSize = $derived(
-    cellWidth ? Math.min(Math.round(cellWidth * 0.10526), 28) : 0
+    cellWidth ? Math.min(Math.round(cellWidth * STEP_NUMBER_FONT_RATIO), STEP_NUMBER_FONT_MAX) : 0
   );
 
-  const badgeSize = $derived(scaledHeaderHeight * 0.9);
-  const badgePadding = $derived(scaledHeaderHeight * 0.05);
-  const badgeNumberFontSize = $derived(Math.round(badgeSize * 0.65));
+  const badgeSize = $derived(scaledHeaderHeight * BADGE_SIZE_SCALE);
+  const badgePadding = $derived(scaledHeaderHeight * BADGE_PADDING_SCALE);
+  const badgeNumberFontSize = $derived(Math.round(badgeSize * BADGE_NUMBER_FONT_SCALE));
 
   // Word title font size: shrinks for longer words so the full title fits
   // between the difficulty badge and LOOP icon without clipping.
   // Count letter units (dashes don't count as separate letters).
   const wordTitleFontSize = $derived.by(() => {
-    const baseFontSize = Math.floor(scaledHeaderHeight * 0.66);
+    const baseFontSize = Math.floor(scaledHeaderHeight * HEADER_WORD_FONT_SCALE);
     if (!sequence.word) return baseFontSize;
 
     const displayWord = simplifyAndTruncate(sequence.word, 16);
-    // Count letter units: each letter char counts as 1, dashes are part of the preceding letter
     let letterCount = 0;
     for (let i = 0; i < displayWord.length; i++) {
       const ch = displayWord[i];
@@ -608,12 +624,12 @@
 
     // Up to 10 letters: full size. Beyond that, scale down proportionally.
     if (letterCount <= 10) return baseFontSize;
-    return Math.max(Math.floor(baseFontSize * (10 / letterCount)), Math.floor(scaledHeaderHeight * 0.35));
+    return Math.max(Math.floor(baseFontSize * (10 / letterCount)), Math.floor(scaledHeaderHeight * HEADER_WORD_FONT_MIN_SCALE));
   });
 
-  // Footer font size scales proportionally - no minimum constraint for WYSIWYG preview
-  const footerFontSize = $derived(Math.floor(scaledFooterHeight * 0.55));
-  const footerMargin = $derived(Math.floor(scaledFooterHeight * 0.3));
+  // Footer font/margin use shared constants from @tka/render-composition
+  const footerFontSize = $derived(Math.floor(scaledFooterHeight * FOOTER_FONT_SCALE));
+  const footerMargin = $derived(Math.floor(scaledFooterHeight * FOOTER_MARGIN_SCALE));
 
 
   /**
@@ -813,12 +829,16 @@
       const mixed = detectMixedDurations(sequence.steps);
       hasMixedDurations = mixed;
 
-      if (columnCount !== null && columnCount > 0) {
-        // Manual column override (e.g., export mode).
-        // columnCount is the number of *beat* columns (see effectiveColumns comment).
+      // Resolve column count: explicit prop > composition setting (4+ steps) > layout table
+      const resolvedColumnCount = columnCount
+        ?? (stepCount >= 4 ? getImageCompositionManager().getColumnCountForStepCount(stepCount) : null);
+
+      if (resolvedColumnCount !== null && resolvedColumnCount > 0) {
+        // Manual or composition column override.
+        // resolvedColumnCount is the number of *beat* columns.
         // Convert to total columns (including start position) to match the
         // convention used by the layout table and isLongSequence paths.
-        cols = includeStartPosition ? columnCount + 1 : columnCount;
+        cols = includeStartPosition ? resolvedColumnCount + 1 : resolvedColumnCount;
         const stepsPerRow = includeStartPosition ? cols - 1 : cols;
         const firstRowSteps = Math.min(stepsPerRow, stepCount);
         const remainingSteps = stepCount - firstRowSteps;
@@ -1764,7 +1784,7 @@
               >
                 <LOOPIconStrip
                   activeComponents={loopComponents}
-                  size={Math.floor(badgeSize * 0.6)}
+                  size={Math.floor(badgeSize * LOOP_ICON_SIZE_SCALE)}
                   darkMode={activeDarkMode}
                   showFreeformWhenEmpty={false}
                 />
