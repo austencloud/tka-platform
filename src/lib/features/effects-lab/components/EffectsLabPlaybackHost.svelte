@@ -3,8 +3,8 @@
 
   Single persistent component that owns all shared playback infrastructure
   for the Effects Lab. Canvas, playback services, and sequence state live here.
-  Mode switching swaps only the controls panel — the animation continues
-  uninterrupted.
+  The unified EffectsPanel handles effect selection and customization.
+  The animation engine reads effect state directly from the visibility manager.
 -->
 <script lang="ts">
   import { onMount, onDestroy, untrack } from "svelte";
@@ -15,7 +15,6 @@
   import type { ISequenceRepository } from "$lib/features/create/shared/services/contracts/ISequenceRepository";
   import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
   import { container } from "$lib/shared/di";
-  import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import { Letter } from "$lib/shared/foundation/domain/models/Letter";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 
@@ -24,23 +23,6 @@
   import { AnimationStateManager } from "$lib/features/compose/services/implementations/AnimationStateManager";
   import { AnimationLoop } from "$lib/features/compose/services/implementations/AnimationLoop";
   import { StepCalculator } from "$lib/features/compose/services/implementations/StepCalculator";
-
-  import TempoControl from "$lib/shared/sequence-viewer/components/TempoControl.svelte";
-  import TransportControls from "$lib/features/compose/components/controls/TransportControls.svelte";
-
-  // Fire
-  import {
-    BASE_FIRE_PHYSICS,
-    BASE_COLOR_CURVE,
-    intensityToPhysics,
-  } from "$lib/shared/animation-engine/domain/types/FireTypes";
-
-  // LED
-  import { DEFAULT_LED_CONFIG, ledBrightnessToFloat, type LedOverlayConfig, type LedColorMode } from "$lib/shared/animation-engine/domain/types/LedTypes";
-
-  // Charcoal
-  import type { CharcoalSparkParams } from "$lib/shared/animation-engine/domain/types/CharcoalSparkTypes";
-  import { DEFAULT_CHARCOAL_PARAMS } from "$lib/shared/animation-engine/domain/types/CharcoalSparkTypes";
 
   // Auto-chaining
   import { EndlessSpinnerOrchestrator } from "$lib/features/landing/services/implementations/EndlessSpinnerOrchestrator";
@@ -53,46 +35,20 @@
   import { SequenceChainingOrchestrator } from "$lib/shared/animation-engine/services/implementations/SequenceChainingOrchestrator";
   import type { ISequenceChainingOrchestrator, SourceMode } from "$lib/shared/animation-engine/services/contracts/ISequenceChainingOrchestrator";
 
-  import { getEffectDescriptor, type EffectMode } from "../domain/EffectDescriptor";
+  import { getEffectDescriptor } from "../domain/EffectDescriptor";
 
-  // Child control panels
-  import FireControlsPanel from "./FireControlsPanel.svelte";
-  import CharcoalControlsPanel from "./CharcoalControlsPanel.svelte";
-  import LedControlPanel from "./LedControlPanel.svelte";
-  import TrailControlsPanel from "./TrailControlsPanel.svelte";
+  import EffectsPanel from "$lib/shared/animation-engine/components/effects-panel/EffectsPanel.svelte";
   import SourceControls from "$lib/shared/animation-engine/components/SourceControls.svelte";
-  import EffectModeBar from "./EffectModeBar.svelte";
-
-  interface Props {
-    activeMode: EffectMode;
-    onModeChange: (mode: EffectMode) => void;
-  }
-
-  let { activeMode, onModeChange }: Props = $props();
 
   const DEFAULT_BPM = 60;
   const STORAGE_KEY = "effects-lab-state";
   const visibilityManager = getAnimationVisibilityManager();
 
-  // ─── Unified persisted state ──────────────────────────────────────────
+  // ─── Persisted state (playback only — effect params managed by VM) ────
   interface EffectsLabPersistedState {
     sequenceId: string | null;
     bpm: number;
     sourceMode: SourceMode;
-    // Fire
-    fireIntensity: number;
-    fireColorBlend: number;
-    // LED
-    ledBrightness: number;
-    ledPatternId: string;
-    ledPrimaryColor: string;
-    ledPatternSpeed: number;
-    ledGlowRadius: number;
-    ledBloomIntensity: number;
-    ledTrailFadeRate: number;
-    ledColorMode: LedColorMode;
-    ledBlueHandColor: string;
-    ledRedHandColor: string;
   }
 
   function loadPersistedState(): Partial<EffectsLabPersistedState> {
@@ -100,72 +56,7 @@
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) return JSON.parse(raw);
     } catch { /* ignore */ }
-
-    // Migration: merge old per-mode keys into unified key
-    return migrateOldKeys();
-  }
-
-  function migrateOldKeys(): Partial<EffectsLabPersistedState> {
-    const merged: Partial<EffectsLabPersistedState> = {};
-    try {
-      const fireRaw = localStorage.getItem("flame-lab-state");
-      if (fireRaw) {
-        const fire = JSON.parse(fireRaw);
-        merged.sequenceId = fire.sequenceId ?? null;
-        merged.bpm = fire.bpm;
-        merged.sourceMode = fire.sourceMode;
-        merged.fireIntensity = fire.intensity;
-        merged.fireColorBlend = fire.colorBlend;
-      }
-
-      const ledRaw = localStorage.getItem("led-lab-state");
-      if (ledRaw) {
-        const led = JSON.parse(ledRaw);
-        merged.ledBrightness = led.brightness;
-        merged.ledPatternId = led.patternId;
-        merged.ledPrimaryColor = led.primaryColor;
-        merged.ledPatternSpeed = led.patternSpeed;
-        merged.ledGlowRadius = led.glowRadius;
-        merged.ledBloomIntensity = led.bloomIntensity;
-        merged.ledTrailFadeRate = led.trailFadeRate;
-        merged.ledColorMode = led.colorMode;
-        merged.ledBlueHandColor = led.blueHandColor;
-        merged.ledRedHandColor = led.redHandColor;
-        if (!merged.bpm && led.bpm) merged.bpm = led.bpm;
-        if (!merged.sourceMode && led.sourceMode) merged.sourceMode = led.sourceMode;
-        if (!merged.sequenceId && led.sequenceId) merged.sequenceId = led.sequenceId;
-      }
-
-      const trailRaw = localStorage.getItem("trail-lab-state");
-      if (trailRaw) {
-        const trail = JSON.parse(trailRaw);
-        if (!merged.bpm && trail.bpm) merged.bpm = trail.bpm;
-        if (!merged.sourceMode && trail.sourceMode) merged.sourceMode = trail.sourceMode;
-        if (!merged.sequenceId && trail.sequenceId) merged.sequenceId = trail.sequenceId;
-      }
-
-      const charcoalRaw = localStorage.getItem("charcoal-lab-state");
-      if (charcoalRaw) {
-        const charcoal = JSON.parse(charcoalRaw);
-        if (!merged.bpm && charcoal.bpm) merged.bpm = charcoal.bpm;
-        if (!merged.sourceMode && charcoal.sourceMode) merged.sourceMode = charcoal.sourceMode;
-        if (!merged.sequenceId && charcoal.sequenceId) merged.sequenceId = charcoal.sequenceId;
-      }
-
-      // Remove old keys after migration
-      if (fireRaw || ledRaw || trailRaw || charcoalRaw) {
-        localStorage.removeItem("flame-lab-state");
-        localStorage.removeItem("led-lab-state");
-        localStorage.removeItem("trail-lab-state");
-        localStorage.removeItem("charcoal-lab-state");
-        // Save merged state immediately
-        if (Object.keys(merged).length > 0) {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
-        }
-      }
-    } catch { /* ignore migration errors */ }
-
-    return merged;
+    return {};
   }
 
   function savePersistedState() {
@@ -174,18 +65,6 @@
         sequenceId: sequence?.word || sequence?.name || sequence?.id || null,
         bpm,
         sourceMode,
-        fireIntensity: intensity,
-        fireColorBlend: colorBlend,
-        ledBrightness: ledBrightness,
-        ledPatternId,
-        ledPrimaryColor,
-        ledPatternSpeed,
-        ledGlowRadius,
-        ledBloomIntensity,
-        ledTrailFadeRate,
-        ledColorMode,
-        ledBlueHandColor,
-        ledRedHandColor,
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     } catch { /* ignore */ }
@@ -207,149 +86,40 @@
   let bpm = $state(persisted.bpm ?? DEFAULT_BPM);
   let sourceMode = $state<SourceMode>(persisted.sourceMode ?? "infinite");
 
-  // ─── Fire state ───────────────────────────────────────────────────────
-  let fireEnabled = $state(true);
-  let intensity = $state(persisted.fireIntensity ?? 0.7);
-  let colorBlend = $state(persisted.fireColorBlend ?? 0.5);
+  // ─── Derive active mode from visibility manager for canvas/UI hints ────
+  // The EffectsPanel writes to the VM; we read from it to know which mode
+  // is active for the canvas conditional props and accent color theming.
+  let vmActiveMode = $state<"fire" | "charcoal" | "led" | "trails" | "none">("none");
 
-  let fireConfig = $derived.by(() => {
-    const mergedPhysics = {
-      ...BASE_FIRE_PHYSICS,
-      ...intensityToPhysics(intensity),
-    };
-    return {
-      enabled: fireEnabled,
-      intensity: intensity * 0.8,
-      flameHeight: intensity * 0.8,
-      velocityReactive: true,
-      quality: 4,
-      fuelRendererType: "fluid" as const,
-      physicsPreset: mergedPhysics,
-      colorCurve: BASE_COLOR_CURVE,
-      colorBlend,
-    };
-  });
+  function syncActiveMode() {
+    if (visibilityManager.isFireEffectEnabled()) vmActiveMode = "fire";
+    else if (visibilityManager.isCharcoalEffectEnabled()) vmActiveMode = "charcoal";
+    else if (visibilityManager.isLedEffectEnabled()) vmActiveMode = "led";
+    else if (visibilityManager.isTrailsVisible() && visibilityManager.getTrailStyle() === "on") vmActiveMode = "trails";
+    else vmActiveMode = "none";
+  }
 
-  // ─── LED state ────────────────────────────────────────────────────────
-  let ledBrightness = $state(persisted.ledBrightness ?? 5);
-  let ledPatternId = $state(persisted.ledPatternId ?? DEFAULT_LED_CONFIG.patternId);
-  let ledPrimaryColor = $state(persisted.ledPrimaryColor ?? DEFAULT_LED_CONFIG.primaryColor);
-  let ledPatternSpeed = $state(persisted.ledPatternSpeed ?? DEFAULT_LED_CONFIG.patternSpeed);
-  let ledGlowRadius = $state(persisted.ledGlowRadius ?? DEFAULT_LED_CONFIG.glowRadius);
-  let ledBloomIntensity = $state(persisted.ledBloomIntensity ?? DEFAULT_LED_CONFIG.bloomIntensity);
-  let ledTrailFadeRate = $state(persisted.ledTrailFadeRate ?? DEFAULT_LED_CONFIG.trailFadeRate);
-  let ledColorMode = $state<LedColorMode>(persisted.ledColorMode ?? DEFAULT_LED_CONFIG.colorMode);
-  let ledBlueHandColor = $state(persisted.ledBlueHandColor ?? DEFAULT_LED_CONFIG.blueHandColor);
-  let ledRedHandColor = $state(persisted.ledRedHandColor ?? DEFAULT_LED_CONFIG.redHandColor);
-
-  let ledConfig = $derived<LedOverlayConfig>({
-    enabled: true,
-    glowRadius: ledGlowRadius,
-    bloomIntensity: ledBloomIntensity,
-    trailFadeRate: ledTrailFadeRate,
-    patternId: ledPatternId,
-    patternSpeed: ledPatternSpeed,
-    primaryColor: ledPrimaryColor,
-    secondaryColor: "#ffffff",
-    brightness: ledBrightnessToFloat(ledBrightness),
-    colorMode: ledColorMode,
-    blueHandColor: ledBlueHandColor,
-    redHandColor: ledRedHandColor,
-  });
-
-  // ─── Charcoal state ───────────────────────────────────────────────────
-  let charcoalParams = $state<CharcoalSparkParams>(visibilityManager.getCharcoalParams());
-
-  // Sync charcoal params to visibility manager
+  // Poll the VM to keep vmActiveMode in sync (the VM uses an observer
+  // pattern but $effect doesn't auto-track method calls on plain objects).
   $effect(() => {
-    const params = charcoalParams;
-    untrack(() => visibilityManager.setCharcoalParams(params));
+    syncActiveMode();
+    visibilityManager.registerObserver(syncActiveMode);
+    return () => visibilityManager.unregisterObserver(syncActiveMode);
   });
 
-  // ─── Derived descriptor for accent colors ─────────────────────────────
-  let descriptor = $derived(getEffectDescriptor(activeMode));
+  let descriptor = $derived(getEffectDescriptor(
+    vmActiveMode === "none" ? "trails" : vmActiveMode
+  ));
 
   // ─── Animation state ──────────────────────────────────────────────────
   const animationState = createAnimationPanelState();
 
   // Save global effect states so we can restore them when leaving the Effects Lab.
-  // The Effects Lab takes exclusive control of fire/LED/trail visibility.
   const savedFireEnabled = visibilityManager.isFireEffectEnabled();
   const savedCharcoalEnabled = visibilityManager.isCharcoalEffectEnabled();
   const savedLedEnabled = visibilityManager.isLedEffectEnabled();
   const savedTrailStyle = visibilityManager.getTrailStyle();
 
-  // Suppress effects not matching the active mode.
-  // The engine reads from the visibility manager independently of the config props,
-  // so we must turn effects off at the source to prevent bleed-through.
-  // Uses untrack() for writes because notifyObservers() triggers observer callbacks
-  // that write to $state, causing infinite loops.
-  $effect(() => {
-    const mode = activeMode;
-    untrack(() => {
-      // Trails
-      if (mode === "trails") {
-        visibilityManager.setTrailStyle("on");
-        animationSettings.setTrailEnabled(true);
-      } else {
-        visibilityManager.setTrailStyle("off");
-      }
-
-      // Fire
-      if (mode === "fire") {
-        visibilityManager.setFireEffect(true);
-        visibilityManager.setCharcoalEffect(false);
-        visibilityManager.setFireIntensity(intensity);
-        visibilityManager.setFireColorBlend(colorBlend);
-      } else if (mode === "charcoal") {
-        visibilityManager.setCharcoalEffect(true);
-        visibilityManager.setFireEffect(false);
-      } else {
-        visibilityManager.setFireEffect(false);
-        visibilityManager.setCharcoalEffect(false);
-      }
-
-      // LED
-      if (mode === "led") {
-        visibilityManager.setLedEffect(true);
-      } else {
-        visibilityManager.setLedEffect(false);
-      }
-    });
-  });
-
-  // Fire visibility syncs — only push values when in fire mode.
-  // Without the mode guard, fireEnabled ($state(true)) would re-enable fire
-  // even after the mode-switch effect disables it for non-fire modes.
-  $effect(() => {
-    const val = fireEnabled;
-    const mode = activeMode;
-    if (mode === "fire") {
-      untrack(() => visibilityManager.setFireEffect(val));
-    }
-  });
-  $effect(() => {
-    const mode = activeMode;
-    if (mode !== "fire") return;
-    const syncBack = () => {
-      const managerState = visibilityManager.isFireEffectEnabled();
-      if (managerState !== fireEnabled) fireEnabled = managerState;
-    };
-    visibilityManager.registerObserver(syncBack);
-    return () => visibilityManager.unregisterObserver(syncBack);
-  });
-  $effect(() => {
-    const val = intensity;
-    const mode = activeMode;
-    if (mode !== "fire") return;
-    untrack(() => visibilityManager.setFireIntensity(val));
-  });
-  $effect(() => {
-    const val = colorBlend;
-    const mode = activeMode;
-    if (mode !== "fire") return;
-    untrack(() => visibilityManager.setFireColorBlend(val));
-  });
   // Playback state polling
   $effect(() => {
     const check = () => {
@@ -398,22 +168,9 @@
 
   // ─── Persistence ──────────────────────────────────────────────────────
   $effect(() => {
-    // Touch all persisted values to track them
     void bpm;
     void sequence;
     void sourceMode;
-    void intensity;
-    void colorBlend;
-    void ledBrightness;
-    void ledPatternId;
-    void ledPrimaryColor;
-    void ledPatternSpeed;
-    void ledGlowRadius;
-    void ledBloomIntensity;
-    void ledTrailFadeRate;
-    void ledColorMode;
-    void ledBlueHandColor;
-    void ledRedHandColor;
     untrack(() => savePersistedState());
   });
 
@@ -601,15 +358,6 @@
     await chainingOrchestrator?.shuffle();
   }
 
-  // ─── Charcoal controls ────────────────────────────────────────────────
-  function handleCharcoalParamChange(key: keyof CharcoalSparkParams, value: number | boolean) {
-    charcoalParams = { ...charcoalParams, [key]: value };
-  }
-
-  function handleCharcoalReset() {
-    charcoalParams = { ...DEFAULT_CHARCOAL_PARAMS };
-  }
-
   // ─── Debug: copy current sequence data to clipboard ─────────────
   let debugToast = $state<string | null>(null);
   let debugToastTimer: ReturnType<typeof setTimeout> | null = null;
@@ -719,10 +467,7 @@
             currentStep={animationState.currentStep}
             {isPlaying}
             onPlaybackToggle={togglePlayback}
-            trailSettings={activeMode === "trails" ? animationSettings.trail : undefined}
             word={sequence?.word || sequence?.name || null}
-            fireConfig={activeMode === "fire" || activeMode === "charcoal" ? fireConfig : undefined}
-            ledConfig={activeMode === "led" ? ledConfig : undefined}
             backgroundAlpha={0}
             focused={true}
           />
@@ -732,8 +477,6 @@
 
     <!-- Controls Panel -->
     <div class="controls-panel themed-scrollbar">
-      <EffectModeBar {activeMode} onModeChange={onModeChange} />
-
       <SourceControls
         {sourceMode}
         {sequence}
@@ -744,56 +487,16 @@
         onShuffle={handleShuffle}
       />
 
-      <!-- Playback -->
-      {#if sequence && !loading && !error}
-        <div class="control-section">
-          <h3>Playback</h3>
-          <TempoControl {bpm} onBpmChange={handleBpmChange} showPresets={false} showPractice={false} />
-          <TransportControls
-            {isPlaying}
-            onPlaybackToggle={togglePlayback}
-            onStepHalfBeatBackward={() => playbackController?.stepHalfBeatBackward()}
-            onStepHalfBeatForward={() => playbackController?.stepHalfBeatForward()}
-            onStepFullBeatBackward={() => playbackController?.stepFullBeatBackward()}
-            onStepFullBeatForward={() => playbackController?.stepFullBeatForward()}
-          />
-        </div>
-      {/if}
-
-      <!-- Mode-specific controls -->
-      {#if activeMode === "fire"}
-        <FireControlsPanel
-          {intensity}
-          {colorBlend}
-          onIntensityChange={(v) => (intensity = v)}
-          onColorBlendChange={(v) => (colorBlend = v)}
-        />
-      {:else if activeMode === "charcoal"}
-        <CharcoalControlsPanel
-          params={charcoalParams}
-          onParamChange={handleCharcoalParamChange}
-          onParamsReplace={(p) => { charcoalParams = { ...p }; }}
-          onReset={handleCharcoalReset}
-        />
-      {:else if activeMode === "led"}
-        <div class="control-section led-host">
-          <LedControlPanel
-            bind:brightness={ledBrightness}
-            bind:patternId={ledPatternId}
-            bind:primaryColor={ledPrimaryColor}
-            bind:patternSpeed={ledPatternSpeed}
-            bind:glowRadius={ledGlowRadius}
-            bind:bloomIntensity={ledBloomIntensity}
-            bind:trailFadeRate={ledTrailFadeRate}
-            bind:colorMode={ledColorMode}
-            bind:blueHandColor={ledBlueHandColor}
-            bind:redHandColor={ledRedHandColor}
-          />
-        </div>
-      {:else if activeMode === "trails"}
-        <TrailControlsPanel />
-      {/if}
-
+      <EffectsPanel
+        {bpm}
+        onBpmChange={handleBpmChange}
+        {isPlaying}
+        onPlaybackToggle={togglePlayback}
+        onStepForward={() => playbackController?.stepFullBeatForward()}
+        onStepBackward={() => playbackController?.stepFullBeatBackward()}
+        onHalfStepForward={() => playbackController?.stepHalfBeatForward()}
+        onHalfStepBackward={() => playbackController?.stepHalfBeatBackward()}
+      />
     </div>
   </div>
 </div>
@@ -902,34 +605,6 @@
     gap: var(--spacing-md, 16px);
     overflow-y: auto;
     min-height: 0;
-  }
-
-  .control-section {
-    padding: var(--spacing-md, 16px);
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: var(--border-radius-lg, 12px);
-  }
-
-  .control-section h3 {
-    margin: 0 0 var(--spacing-sm, 8px);
-    font-size: var(--font-size-min, 14px);
-    font-weight: 600;
-    color: var(--theme-text, white);
-  }
-
-  .control-section :global(.tempo-control) {
-    justify-content: center;
-  }
-
-  /* LED host needs the color tokens for the child panel */
-  .led-host {
-    --led-green: #00ff88;
-    --led-green-bright: #33ffaa;
-    --led-green-dim: rgba(0, 255, 136, 0.08);
-    --led-green-mid: rgba(0, 255, 136, 0.15);
-    --led-green-border: rgba(0, 255, 136, 0.3);
-    --led-green-border-strong: rgba(0, 255, 136, 0.5);
   }
 
   @media (prefers-reduced-motion: reduce) {

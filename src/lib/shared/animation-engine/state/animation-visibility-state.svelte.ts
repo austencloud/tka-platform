@@ -64,6 +64,7 @@ interface AnimationVisibilitySettings {
   ledActivePresetId: string | null; // Currently active color preset
   ledUserPresets: LedColorPreset[]; // User-created color presets
   ledPatternSpeed: number; // Pattern animation speed multiplier (0.1-5.0, default 1.0)
+  ledColorMode: "unified" | "per-hand" | "prop-matched"; // How LED colors map to props
 
   // Shared with pictograph visibility (can sync)
   tkaGlyph: boolean; // TKA Glyph includes turn numbers
@@ -167,6 +168,7 @@ export class AnimationVisibilityStateManager {
       ledActivePresetId: null,
       ledUserPresets: [],
       ledPatternSpeed: 1.0,
+      ledColorMode: "unified",
 
       // Shared elements - defaults optimized for animation viewing
       tkaGlyph: true, // TKA Glyph includes turn numbers
@@ -958,6 +960,16 @@ export class AnimationVisibilityStateManager {
    */
   setLedPatternSpeed(speed: number): void {
     this.settings.ledPatternSpeed = Math.max(0.1, Math.min(5.0, speed));
+    this.saveToStorage();
+    this.notifyObservers();
+  }
+
+  getLedColorMode(): "unified" | "per-hand" | "prop-matched" {
+    return this.settings.ledColorMode;
+  }
+
+  setLedColorMode(mode: "unified" | "per-hand" | "prop-matched"): void {
+    this.settings.ledColorMode = mode;
     this.saveToStorage();
     this.notifyObservers();
   }
