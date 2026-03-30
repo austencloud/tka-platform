@@ -435,16 +435,21 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
     gap: 0;
-    padding: 80px 24px 60px;
+    height: 100vh;
+    box-sizing: border-box;
+    padding: 40px 24px 24px;
     text-align: center;
+    overflow: hidden;
   }
 
   /* ── Title block ────────────────────────────────────────────────────────────── */
 
   .title-block {
-    margin-bottom: clamp(32px, 5vw, 56px);
+    margin-bottom: clamp(16px, 3vw, 32px);
     max-width: 680px;
+    flex-shrink: 0;
     animation: fade-up 0.7s ease both;
     animation-delay: 0.1s;
   }
@@ -520,6 +525,8 @@
     gap: clamp(24px, 4vw, 48px);
     width: 100%;
     max-width: 1400px;
+    flex: 1 1 auto;
+    min-height: 0;
   }
 
   /* ── CTA panel ──────────────────────────────────────────────────────────── */
@@ -622,6 +629,10 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 0;
+    max-height: 100%;
   }
 
   /* ── Carousel stage ─────────────────────────────────────────────────────────── */
@@ -630,6 +641,7 @@
     position: relative;
     width: 100%;
     max-width: min(50vw, 55vh / 0.8);
+    max-height: calc(100vh - 220px);
     aspect-ratio: 4 / 5;
     border-radius: 16px;
     overflow: hidden;
