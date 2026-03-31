@@ -48,6 +48,16 @@
         {avatarState}
       />
     </Canvas>
+    <button
+      class="exit-3d-button"
+      onclick={() => viewer3DState.exit3D()}
+      aria-label="Exit 3D view"
+    >
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M19 12H5M12 19l-7-7 7-7" />
+      </svg>
+      Exit 3D
+    </button>
   {:else}
     <div class="viewer-3d-loading">Loading 3D viewer...</div>
   {/if}
@@ -59,6 +69,29 @@
     height: 100%;
     position: relative;
     background: #1a1a2e;
+  }
+
+  .exit-3d-button {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: rgba(255, 255, 255, 0.8);
+    font-size: var(--font-size-compact, 12px);
+    cursor: pointer;
+    backdrop-filter: blur(8px);
+    transition: background 0.2s ease;
+  }
+  .exit-3d-button:hover {
+    background: rgba(0, 0, 0, 0.7);
+    color: #fff;
   }
 
   .viewer-3d-loading {
