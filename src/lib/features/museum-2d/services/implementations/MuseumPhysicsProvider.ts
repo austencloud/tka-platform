@@ -3,8 +3,9 @@
  *
  * Grid-based collision detection for the museum's 3D mode.
  * Instead of Rapier physics, this checks the museum's tile grid
- * to determine if movement is allowed. Wall tiles block movement;
- * floor, corridor, door, and content tiles are walkable.
+ * to determine if movement is allowed. Solid tiles (walls, ropes,
+ * exhibit furniture, signs) block movement; floor, corridor, door,
+ * and content tiles are walkable.
  *
  * Supports jumping: UCC handles jump impulse and gravity, we accept
  * the Y component of desiredMovement and report grounded state
@@ -14,7 +15,15 @@
 import type { PhysicsProvider, Vector3 } from "$lib/shared/3d/camera/types";
 import type { MuseumGrid } from "../../domain/museum-grid-types";
 
-const WALL_TYPES = new Set(["wall", "rope", "scaffolding"]);
+const SOLID_TYPES = new Set([
+	"wall",
+	"rope",
+	"scaffolding",
+	"exhibit-panel",
+	"pedestal",
+	"performer-station",
+	"sign",
+]);
 
 // Collision radius in world units — prevents clipping through wall corners.
 // TILE_SIZE is 0.5, so 0.15 keeps the player ~30% of a tile away from walls.
@@ -38,7 +47,7 @@ export class MuseumPhysicsProvider implements PhysicsProvider {
 	}
 
 	/**
-	 * Check if a world-space position is walkable (not a wall, not void).
+	 * Check if a world-space position is walkable (not a solid object, not void).
 	 * Tests a small collision disc around the position to prevent corner clipping.
 	 */
 	private isWalkableAt(worldX: number, worldZ: number): boolean {
@@ -55,7 +64,7 @@ export class MuseumPhysicsProvider implements PhysicsProvider {
 			const key = `${tileX},${tileY}`;
 			const tile = this.grid.tiles.get(key);
 
-			if (!tile || WALL_TYPES.has(tile.type)) {
+			if (!tile || SOLID_TYPES.has(tile.type)) {
 				return false;
 			}
 		}

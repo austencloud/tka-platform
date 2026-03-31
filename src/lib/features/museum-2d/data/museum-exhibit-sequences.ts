@@ -1,0 +1,247 @@
+/**
+ * Museum Exhibit Sequences — Pre-baked sequence data for exhibit pictographs.
+ *
+ * Each entry maps an exhibit's sequenceId to the step data needed by
+ * PictographContainer. Data generated via MCP get_sequence_data tool
+ * and converted to client-side format at import time.
+ */
+
+import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
+import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
+import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+import type { GridLocation, GridMode, GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import type { MotionType, RotationDirection, Orientation, MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
+
+// ── Raw MCP format ──
+
+interface RawMotion {
+	color: string;
+	startLocation: string;
+	endLocation: string;
+	motionType: string;
+	rotationDirection: string;
+	startOrientation: string;
+	endOrientation: string;
+}
+
+interface RawStep {
+	letter: string;
+	startPosition: string;
+	endPosition: string;
+	blueMotion: RawMotion;
+	redMotion: RawMotion;
+	stepNumber: number;
+}
+
+interface RawSequence {
+	word: string;
+	steps: RawStep[];
+}
+
+// ── Conversion ──
+
+function toMotionData(raw: RawMotion, gridMode: GridMode): MotionData {
+	return {
+		motionType: raw.motionType as MotionType,
+		rotationDirection: raw.rotationDirection as RotationDirection,
+		startLocation: raw.startLocation as GridLocation,
+		endLocation: raw.endLocation as GridLocation,
+		turns: 0,
+		startOrientation: raw.startOrientation as Orientation,
+		endOrientation: raw.endOrientation as Orientation,
+		isVisible: true,
+		propType: "staff" as PropType,
+		arrowLocation: raw.endLocation as GridLocation,
+		color: raw.color as MotionColor,
+		gridMode,
+		arrowPlacementData: { x: 0, y: 0, rotation: 0 },
+		propPlacementData: { x: 0, y: 0, rotation: 0 },
+	} as unknown as MotionData;
+}
+
+function convertRaw(raw: RawSequence, gridMode: GridMode = "diamond" as GridMode): MuseumSequenceData {
+	const steps: StepData[] = raw.steps
+		.filter((s) => s.stepNumber > 0)
+		.map((step) => ({
+			id: `museum-${raw.word}-${step.stepNumber}`,
+			letter: step.letter as Letter,
+			startPosition: step.startPosition as GridPosition,
+			endPosition: step.endPosition as GridPosition,
+			gridMode,
+			motions: {
+				blue: toMotionData(step.blueMotion, gridMode),
+				red: toMotionData(step.redMotion, gridMode),
+			},
+			isStep: true as const,
+			stepNumber: step.stepNumber,
+			duration: 1,
+			blueReversal: false,
+			redReversal: false,
+			isBlank: false,
+		}));
+
+	const step0 = raw.steps.find((s) => s.stepNumber === 0);
+	const startPosition: PictographData | null = step0
+		? {
+				id: `museum-${raw.word}-start`,
+				letter: step0.letter as Letter,
+				startPosition: step0.startPosition as GridPosition,
+				endPosition: step0.endPosition as GridPosition,
+				gridMode,
+				motions: {
+					blue: toMotionData(step0.blueMotion, gridMode),
+					red: toMotionData(step0.redMotion, gridMode),
+				},
+			}
+		: null;
+
+	return { word: raw.word, steps, startPosition };
+}
+
+// ── Raw sequence data from MCP get_sequence_data ──
+
+const RAW: Record<string, RawSequence> = {
+	// Victorian: Brass Notation Device — simple 3-beat pattern (ABD)
+	"vic-brass-seq": {
+		word: "ABD",
+		steps: [
+			{ letter: "α", startPosition: "alpha7", endPosition: "alpha7", stepNumber: 0,
+				blueMotion: { color: "blue", startLocation: "e", endLocation: "e", motionType: "static", rotationDirection: "noRotation", startOrientation: "in", endOrientation: "in" },
+				redMotion: { color: "red", startLocation: "w", endLocation: "w", motionType: "static", rotationDirection: "noRotation", startOrientation: "in", endOrientation: "in" } },
+			{ letter: "A", startPosition: "alpha7", endPosition: "alpha5", stepNumber: 1,
+				blueMotion: { color: "blue", startLocation: "e", endLocation: "n", motionType: "pro", rotationDirection: "ccw", startOrientation: "in", endOrientation: "in" },
+				redMotion: { color: "red", startLocation: "w", endLocation: "s", motionType: "pro", rotationDirection: "ccw", startOrientation: "in", endOrientation: "in" } },
+			{ letter: "B", startPosition: "alpha5", endPosition: "alpha3", stepNumber: 2,
+				blueMotion: { color: "blue", startLocation: "n", endLocation: "w", motionType: "anti", rotationDirection: "cw", startOrientation: "in", endOrientation: "out" },
+				redMotion: { color: "red", startLocation: "s", endLocation: "e", motionType: "anti", rotationDirection: "cw", startOrientation: "in", endOrientation: "out" } },
+			{ letter: "D", startPosition: "alpha3", endPosition: "alpha7", stepNumber: 3,
+				blueMotion: { color: "blue", startLocation: "w", endLocation: "e", motionType: "dash", rotationDirection: "noRotation", startOrientation: "out", endOrientation: "out" },
+				redMotion: { color: "red", startLocation: "e", endLocation: "w", motionType: "dash", rotationDirection: "noRotation", startOrientation: "out", endOrientation: "out" } },
+		],
+	},
+
+	// Digital: The CRT — first digital sequence (ABBD)
+	"digital-crt-seq": {
+		word: "ABBD",
+		steps: [
+			{ letter: "α", startPosition: "alpha7", endPosition: "alpha7", stepNumber: 0,
+				blueMotion: { color: "blue", startLocation: "e", endLocation: "e", motionType: "static", rotationDirection: "noRotation", startOrientation: "in", endOrientation: "in" },
+				redMotion: { color: "red", startLocation: "w", endLocation: "w", motionType: "static", rotationDirection: "noRotation", startOrientation: "in", endOrientation: "in" } },
+			{ letter: "A", startPosition: "alpha7", endPosition: "alpha1", stepNumber: 1,
+				blueMotion: { color: "blue", startLocation: "e", endLocation: "s", motionType: "pro", rotationDirection: "cw", startOrientation: "in", endOrientation: "in" },
+				redMotion: { color: "red", startLocation: "w", endLocation: "n", motionType: "pro", rotationDirection: "cw", startOrientation: "in", endOrientation: "in" } },
+			{ letter: "B", startPosition: "alpha1", endPosition: "alpha7", stepNumber: 2,
+				blueMotion: { color: "blue", startLocation: "s", endLocation: "e", motionType: "anti", rotationDirection: "cw", startOrientation: "in", endOrientation: "out" },
+				redMotion: { color: "red", startLocation: "n", endLocation: "w", motionType: "anti", rotationDirection: "cw", startOrientation: "in", endOrientation: "out" } },
+			{ letter: "B", startPosition: "alpha7", endPosition: "alpha5", stepNumber: 3,
+				blueMotion: { color: "blue", startLocation: "e", endLocation: "n", motionType: "anti", rotationDirection: "cw", startOrientation: "out", endOrientation: "in" },
+				redMotion: { color: "red", startLocation: "w", endLocation: "s", motionType: "anti", rotationDirection: "cw", startOrientation: "out", endOrientation: "in" } },
+			{ letter: "D", startPosition: "alpha5", endPosition: "alpha1", stepNumber: 4,
+				blueMotion: { color: "blue", startLocation: "n", endLocation: "s", motionType: "dash", rotationDirection: "noRotation", startOrientation: "in", endOrientation: "in" },
+				redMotion: { color: "red", startLocation: "s", endLocation: "n", motionType: "dash", rotationDirection: "noRotation", startOrientation: "in", endOrientation: "in" } },
+		],
+	},
+
+	// Gallery: The Spiral — centerpiece exhibit (ABCD)
+	"gallery-spiral-seq": {
+		word: "ABCD",
+		steps: [
+			{ letter: "α", startPosition: "alpha3", endPosition: "alpha3", stepNumber: 0,
+				blueMotion: { color: "blue", startLocation: "w", endLocation: "w", motionType: "static", rotationDirection: "noRotation", startOrientation: "in", endOrientation: "in" },
+				redMotion: { color: "red", startLocation: "e", endLocation: "e", motionType: "static", rotationDirection: "noRotation", startOrientation: "in", endOrientation: "in" } },
+			{ letter: "A", startPosition: "alpha3", endPosition: "alpha5", stepNumber: 1,
+				blueMotion: { color: "blue", startLocation: "w", endLocation: "n", motionType: "pro", rotationDirection: "cw", startOrientation: "in", endOrientation: "in" },
+				redMotion: { color: "red", startLocation: "e", endLocation: "s", motionType: "pro", rotationDirection: "cw", startOrientation: "in", endOrientation: "in" } },
+			{ letter: "B", startPosition: "alpha5", endPosition: "alpha3", stepNumber: 2,
+				blueMotion: { color: "blue", startLocation: "n", endLocation: "w", motionType: "anti", rotationDirection: "cw", startOrientation: "in", endOrientation: "out" },
+				redMotion: { color: "red", startLocation: "s", endLocation: "e", motionType: "anti", rotationDirection: "cw", startOrientation: "in", endOrientation: "out" } },
+			{ letter: "C", startPosition: "alpha3", endPosition: "alpha1", stepNumber: 3,
+				blueMotion: { color: "blue", startLocation: "w", endLocation: "s", motionType: "anti", rotationDirection: "cw", startOrientation: "out", endOrientation: "in" },
+				redMotion: { color: "red", startLocation: "e", endLocation: "n", motionType: "pro", rotationDirection: "ccw", startOrientation: "out", endOrientation: "out" } },
+			{ letter: "D", startPosition: "alpha1", endPosition: "alpha5", stepNumber: 4,
+				blueMotion: { color: "blue", startLocation: "s", endLocation: "n", motionType: "dash", rotationDirection: "noRotation", startOrientation: "in", endOrientation: "in" },
+				redMotion: { color: "red", startLocation: "n", endLocation: "s", motionType: "dash", rotationDirection: "noRotation", startOrientation: "out", endOrientation: "out" } },
+		],
+	},
+
+	// Gallery: Scribe Training — beginner pattern (EFGH)
+	"gallery-scribes-seq": {
+		word: "EFGH",
+		steps: [
+			{ letter: "β", startPosition: "beta3", endPosition: "beta3", stepNumber: 0,
+				blueMotion: { color: "blue", startLocation: "e", endLocation: "e", motionType: "static", rotationDirection: "noRotation", startOrientation: "in", endOrientation: "in" },
+				redMotion: { color: "red", startLocation: "e", endLocation: "e", motionType: "static", rotationDirection: "noRotation", startOrientation: "in", endOrientation: "in" } },
+			{ letter: "E", startPosition: "beta3", endPosition: "alpha5", stepNumber: 1,
+				blueMotion: { color: "blue", startLocation: "e", endLocation: "n", motionType: "anti", rotationDirection: "cw", startOrientation: "in", endOrientation: "out" },
+				redMotion: { color: "red", startLocation: "e", endLocation: "s", motionType: "anti", rotationDirection: "ccw", startOrientation: "in", endOrientation: "out" } },
+			{ letter: "F", startPosition: "alpha5", endPosition: "alpha1", stepNumber: 2,
+				blueMotion: { color: "blue", startLocation: "n", endLocation: "s", motionType: "pro", rotationDirection: "cw", startOrientation: "out", endOrientation: "out" },
+				redMotion: { color: "red", startLocation: "s", endLocation: "n", motionType: "anti", rotationDirection: "cw", startOrientation: "out", endOrientation: "in" } },
+			{ letter: "G", startPosition: "alpha1", endPosition: "beta1", stepNumber: 3,
+				blueMotion: { color: "blue", startLocation: "s", endLocation: "n", motionType: "pro", rotationDirection: "cw", startOrientation: "out", endOrientation: "out" },
+				redMotion: { color: "red", startLocation: "n", endLocation: "n", motionType: "pro", rotationDirection: "cw", startOrientation: "in", endOrientation: "in" } },
+			{ letter: "H", startPosition: "beta1", endPosition: "beta3", stepNumber: 4,
+				blueMotion: { color: "blue", startLocation: "n", endLocation: "e", motionType: "anti", rotationDirection: "ccw", startOrientation: "out", endOrientation: "in" },
+				redMotion: { color: "red", startLocation: "n", endLocation: "e", motionType: "anti", rotationDirection: "ccw", startOrientation: "in", endOrientation: "out" } },
+		],
+	},
+
+	// Gallery: Practice Area — drills pattern (ABD again, different variation)
+	"gallery-practice-seq": {
+		word: "ABD",
+		steps: [
+			{ letter: "α", startPosition: "alpha3", endPosition: "alpha3", stepNumber: 0,
+				blueMotion: { color: "blue", startLocation: "w", endLocation: "w", motionType: "static", rotationDirection: "noRotation", startOrientation: "in", endOrientation: "in" },
+				redMotion: { color: "red", startLocation: "e", endLocation: "e", motionType: "static", rotationDirection: "noRotation", startOrientation: "in", endOrientation: "in" } },
+			{ letter: "A", startPosition: "alpha3", endPosition: "alpha1", stepNumber: 1,
+				blueMotion: { color: "blue", startLocation: "w", endLocation: "s", motionType: "pro", rotationDirection: "cw", startOrientation: "in", endOrientation: "in" },
+				redMotion: { color: "red", startLocation: "e", endLocation: "n", motionType: "pro", rotationDirection: "cw", startOrientation: "in", endOrientation: "in" } },
+			{ letter: "B", startPosition: "alpha1", endPosition: "alpha7", stepNumber: 2,
+				blueMotion: { color: "blue", startLocation: "s", endLocation: "e", motionType: "anti", rotationDirection: "cw", startOrientation: "in", endOrientation: "out" },
+				redMotion: { color: "red", startLocation: "n", endLocation: "w", motionType: "anti", rotationDirection: "cw", startOrientation: "in", endOrientation: "out" } },
+			{ letter: "D", startPosition: "alpha7", endPosition: "alpha3", stepNumber: 3,
+				blueMotion: { color: "blue", startLocation: "e", endLocation: "w", motionType: "dash", rotationDirection: "noRotation", startOrientation: "out", endOrientation: "out" },
+				redMotion: { color: "red", startLocation: "w", endLocation: "e", motionType: "dash", rotationDirection: "noRotation", startOrientation: "out", endOrientation: "out" } },
+		],
+	},
+
+	// ── Performer station sequences ──
+
+	// Cave performers — simple repeating pattern (ABAB)
+	"performer-cave-seq": {
+		word: "ABAB",
+		steps: [
+			{ letter: "α", startPosition: "alpha3", endPosition: "alpha3", stepNumber: 0,
+				blueMotion: { color: "blue", startLocation: "w", endLocation: "w", motionType: "static", rotationDirection: "noRotation", startOrientation: "in", endOrientation: "in" },
+				redMotion: { color: "red", startLocation: "e", endLocation: "e", motionType: "static", rotationDirection: "noRotation", startOrientation: "in", endOrientation: "in" } },
+			{ letter: "A", startPosition: "alpha3", endPosition: "alpha5", stepNumber: 1,
+				blueMotion: { color: "blue", startLocation: "w", endLocation: "n", motionType: "pro", rotationDirection: "cw", startOrientation: "in", endOrientation: "in" },
+				redMotion: { color: "red", startLocation: "e", endLocation: "s", motionType: "pro", rotationDirection: "cw", startOrientation: "in", endOrientation: "in" } },
+			{ letter: "B", startPosition: "alpha5", endPosition: "alpha3", stepNumber: 2,
+				blueMotion: { color: "blue", startLocation: "n", endLocation: "w", motionType: "anti", rotationDirection: "cw", startOrientation: "in", endOrientation: "out" },
+				redMotion: { color: "red", startLocation: "s", endLocation: "e", motionType: "anti", rotationDirection: "cw", startOrientation: "in", endOrientation: "out" } },
+			{ letter: "A", startPosition: "alpha3", endPosition: "alpha5", stepNumber: 3,
+				blueMotion: { color: "blue", startLocation: "w", endLocation: "n", motionType: "pro", rotationDirection: "cw", startOrientation: "out", endOrientation: "out" },
+				redMotion: { color: "red", startLocation: "e", endLocation: "s", motionType: "pro", rotationDirection: "cw", startOrientation: "out", endOrientation: "out" } },
+			{ letter: "B", startPosition: "alpha5", endPosition: "alpha3", stepNumber: 4,
+				blueMotion: { color: "blue", startLocation: "n", endLocation: "w", motionType: "anti", rotationDirection: "cw", startOrientation: "out", endOrientation: "in" },
+				redMotion: { color: "red", startLocation: "s", endLocation: "e", motionType: "anti", rotationDirection: "cw", startOrientation: "out", endOrientation: "in" } },
+		],
+	},
+};
+
+// ── Public API ──
+
+export interface MuseumSequenceData {
+	word: string;
+	steps: StepData[];
+	startPosition: PictographData | null;
+}
+
+const GM = "diamond" as GridMode;
+
+export const MUSEUM_EXHIBIT_SEQUENCES: Record<string, MuseumSequenceData> = Object.fromEntries(
+	Object.entries(RAW).map(([id, raw]) => [id, convertRaw(raw, GM)])
+);

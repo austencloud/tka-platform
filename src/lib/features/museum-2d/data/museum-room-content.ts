@@ -15,6 +15,7 @@ export interface ExhibitContent {
     body: string;
     footer?: string;
   };
+  sequenceId?: string;
 }
 
 export interface PerformerContent {
@@ -126,9 +127,11 @@ export const ROOM_CONTENT: Record<string, RoomContentMap> = {
     performers: {
       "cave-performer-1": {
         autoPlay: true,
+        sequenceId: "performer-cave-seq",
       },
       "cave-performer-2": {
         autoPlay: true,
+        sequenceId: "performer-cave-seq",
       },
     },
   },
@@ -236,6 +239,7 @@ export const ROOM_CONTENT: Record<string, RoomContentMap> = {
             "Patent recalled by the Home Office within six months of filing.",
           footer: "Inventor: [NAME REDACTED]",
         },
+        sequenceId: "vic-brass-seq",
       },
       "vic-patents": {
         plaque: {
@@ -282,6 +286,7 @@ export const ROOM_CONTENT: Record<string, RoomContentMap> = {
             "Press E to boot the system.",
           footer: "Serial: BKC-ASSET-7741",
         },
+        sequenceId: "digital-crt-seq",
       },
       "digital-bbs": {
         plaque: {
@@ -405,6 +410,7 @@ export const ROOM_CONTENT: Record<string, RoomContentMap> = {
             "The Scribes didn't choose it. It chose them.",
           footer: "— K",
         },
+        sequenceId: "gallery-spiral-seq",
       },
       "gallery-scribes": {
         plaque: {
@@ -414,6 +420,7 @@ export const ROOM_CONTENT: Record<string, RoomContentMap> = {
             "Sometimes they cluster into groups. Sometimes they're alone. " +
             "The Order documents them all.",
         },
+        sequenceId: "gallery-scribes-seq",
       },
       "gallery-practice": {
         plaque: {
@@ -423,6 +430,7 @@ export const ROOM_CONTENT: Record<string, RoomContentMap> = {
             "is the whole story. Forty thousand years of it.",
           footer: "— K",
         },
+        sequenceId: "gallery-practice-seq",
       },
       "gallery-k-note": {
         plaque: {
@@ -435,7 +443,7 @@ export const ROOM_CONTENT: Record<string, RoomContentMap> = {
       },
     },
     performers: {
-      "gallery-scribe": { autoPlay: false },
+      "gallery-scribe": { autoPlay: true, sequenceId: "gallery-spiral-seq" },
     },
   },
 
@@ -474,10 +482,10 @@ export const ROOM_CONTENT: Record<string, RoomContentMap> = {
 
   collaboration: {
     performers: {
-      "collab-1": { autoPlay: true },
-      "collab-2": { autoPlay: true },
-      "collab-3": { autoPlay: true },
-      "collab-4": { autoPlay: true },
+      "collab-1": { autoPlay: true, sequenceId: "performer-cave-seq" },
+      "collab-2": { autoPlay: true, sequenceId: "gallery-spiral-seq" },
+      "collab-3": { autoPlay: true, sequenceId: "gallery-scribes-seq" },
+      "collab-4": { autoPlay: true, sequenceId: "gallery-practice-seq" },
     },
   },
 

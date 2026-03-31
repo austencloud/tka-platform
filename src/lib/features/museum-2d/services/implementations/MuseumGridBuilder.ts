@@ -283,6 +283,7 @@ export class MuseumGridBuilder implements IMuseumGridBuilder {
         id: placement.refId,
         tileX: pos.x,
         tileY: pos.y,
+        sequenceId: content?.sequenceId,
         plaque: content?.plaque,
       });
     }
