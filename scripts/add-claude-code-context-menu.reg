@@ -1,0 +1,17 @@
+Windows Registry Editor Version 5.00
+
+; === Right-click on a FOLDER ===
+[HKEY_CLASSES_ROOT\Directory\shell\ClaudeCode]
+@="Open with Claude Code"
+"Icon"="C:\\Users\\Austen\\.local\\bin\\claude.exe"
+
+[HKEY_CLASSES_ROOT\Directory\shell\ClaudeCode\command]
+@="cmd.exe /c \"cd /d \"%V\" && start \"Claude Code\" cmd /k \"C:\\Users\\Austen\\.local\\bin\\claude.exe --dangerously-skip-permissions\"\""
+
+; === Right-click on folder BACKGROUND (empty space inside a folder) ===
+[HKEY_CLASSES_ROOT\Directory\Background\shell\ClaudeCode]
+@="Open with Claude Code"
+"Icon"="C:\\Users\\Austen\\.local\\bin\\claude.exe"
+
+[HKEY_CLASSES_ROOT\Directory\Background\shell\ClaudeCode\command]
+@="cmd.exe /c \"cd /d \"%V\" && start \"Claude Code\" cmd /k \"C:\\Users\\Austen\\.local\\bin\\claude.exe --dangerously-skip-permissions\"\""
