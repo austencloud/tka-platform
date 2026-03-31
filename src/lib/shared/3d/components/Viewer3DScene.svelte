@@ -11,6 +11,7 @@
   import { T, useTask } from "@threlte/core";
   import Avatar3D from "./Avatar3D.svelte";
   import Staff3D from "./Staff3D.svelte";
+  import { userProportionsState } from "../state/user-proportions-state.svelte";
   import type { AvatarInstanceState } from "../state/avatar-instance-state.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
@@ -23,9 +24,12 @@
 
   let { sequenceData, currentStep, isPlaying, avatarState }: Props = $props();
 
-  // The avatar world position — fixed at origin for the single-performer viewer.
-  // Staff3D and Avatar3D both need this to agree on where the IK pivot is.
-  const avatarPosition = { x: 0, y: 0, z: 0 };
+  // Avatar3D.position.y serves two purposes: IK target math AND visual placement.
+  // groundY is ~-1.56 (where the avatar's feet naturally sit). We set position.y
+  // to STAGE_LIFT so IK math is correct, then wrap in a Group at -STAGE_LIFT to
+  // push the visual model down so feet land at y=0. Same pattern as MuseumPerformerStation3D.
+  const STAGE_LIFT = $derived(-userProportionsState.groundY);
+  const avatarPosition = $derived({ x: 0, y: STAGE_LIFT, z: 0 });
   const facingAngle = 0;
 
   // Puppet-mode sync loop: convert the orchestrator's floating-point currentStep
@@ -59,16 +63,18 @@
   <T.MeshStandardMaterial color="#1a1a2e" />
 </T.Mesh>
 
-<!-- Avatar (GLTF rigged humanoid, falls back to procedural IK figure) -->
-<Avatar3D
-  id="viewer"
-  bluePropState={bluePropState}
-  redPropState={redPropState}
-  position={avatarPosition}
-  {facingAngle}
-  isActive={false}
-  isMoving={false}
-/>
+<!-- Avatar wrapped in offset Group: -STAGE_LIFT puts feet at floor y=0 -->
+<T.Group position.y={-STAGE_LIFT}>
+  <Avatar3D
+    id="viewer"
+    bluePropState={bluePropState}
+    redPropState={redPropState}
+    position={avatarPosition}
+    {facingAngle}
+    isActive={false}
+    isMoving={false}
+  />
+</T.Group>
 
 <!-- Blue staff -->
 {#if bluePropState}
