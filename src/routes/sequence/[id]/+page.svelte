@@ -47,6 +47,7 @@
   import PracticeProgressIndicator from "$lib/shared/sequence-viewer/components/PracticeProgressIndicator.svelte";
   import RouteViewerHeader from "./RouteViewerHeader.svelte";
   import DeleteConfirmDialog from "$lib/shared/sequence-viewer/components/DeleteConfirmDialog.svelte";
+  import Viewer3DFullscreen from "$lib/shared/3d/components/Viewer3DFullscreen.svelte";
 
   import { getIabBannerVisible, IAB_BANNER_HEIGHT } from "$lib/shared/auth/state/iab-banner-state.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
@@ -79,6 +80,9 @@
   const urlDarkMode = $derived($page.url.searchParams.get("dark"));
   const urlDifficulty = $derived($page.url.searchParams.get("difficulty"));
   const urlBirthday = $derived($page.url.searchParams.get("birthday"));
+
+  // URL render mode param (2D/3D)
+  const urlRenderMode = $derived($page.url.searchParams.get("render") as '2d' | '3d' | null);
 
   // URL prop params (from QR codes with prop info)
   const urlBlueProp = $derived($page.url.searchParams.get("bp"));
@@ -482,6 +486,7 @@
     initialBpm={urlBpm || handoffData?.playbackState?.bpm || 60}
     initialStep={handoffData?.playbackState?.currentStep || 0}
     initialViewMode={urlViewMode || undefined}
+    initialRenderMode={urlRenderMode || undefined}
     onBack={handleBack}
     onUrlParamChange={updateUrlParam}
     blockClicks={swipeDismiss.state.blockClicks}
@@ -545,9 +550,28 @@
               class:export-active={isAnyExportActive}
               class:desktop={!isMobile}
             >
+              <!-- Mobile 3D fullscreen overlay -->
+              {#if isMobile && ctx.renderMode === '3d' && ctx.effectiveSequence}
+                <Viewer3DFullscreen
+                  sequenceData={ctx.effectiveSequence}
+                  currentStep={ctx.currentStepLocal}
+                  isPlaying={ctx.isPlayingLocal}
+                  bpm={ctx.bpmLocal}
+                  word={ctx.effectiveSequence.word ?? null}
+                  bluePropType={ctx.bluePropType != null ? String(ctx.bluePropType) : null}
+                  redPropType={ctx.redPropType != null ? String(ctx.redPropType) : null}
+                  onClose={() => ctx.viewer3DState.exit3D()}
+                  onPlaybackToggle={ctx.handlePlaybackToggle}
+                  onBpmChange={ctx.handleBpmChange}
+                  onStepForward={ctx.stepFullBeatForward}
+                  onStepBackward={ctx.stepFullBeatBackward}
+                />
+              {/if}
+
               <!-- Single persistent ViewerSplitPane — never destroyed, CSS grid transitions handle focus -->
               <ViewerSplitPane
                 sequence={ctx.effectiveSequence}
+                renderMode={isMobile ? '2d' : ctx.renderMode}
                 playback={ctx.splitPanePlayback}
                 imageComposition={isImageExportActive
                   ? {

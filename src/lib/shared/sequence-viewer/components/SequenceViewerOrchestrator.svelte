@@ -175,6 +175,10 @@
     splitPanePlayback: ViewerPlaybackState;
     splitPaneImageComposition: ImageCompositionProps;
     splitPanePropRendering: PropRenderingProps;
+
+    // 3D render mode
+    renderMode: '2d' | '3d';
+    viewer3DState: ReturnType<typeof import("$lib/shared/3d/state/viewer-3d-state.svelte").createViewer3DState>;
   }
 </script>
 
@@ -215,6 +219,8 @@
   import type { ICollectionManager } from "$lib/features/library/services/contracts/ICollectionManager";
   import type { ILibraryRepository } from "$lib/features/library/services/contracts/ILibraryRepository";
   import type { LibrarySequence } from "$lib/features/library/domain/models/LibrarySequence";
+  import { createViewer3DState } from "$lib/shared/3d/state/viewer-3d-state.svelte";
+  import { setViewer3DContext } from "$lib/shared/3d/context/viewer-3d-context";
 
   // ============================================================================
   // PROPS
@@ -241,6 +247,8 @@
     viewingContext?: ViewingContext;
     /** When true, forces unauthenticated view (shows "Get App" footer instead of save/edit). Debug tool via ?guest=1. */
     forceGuest?: boolean;
+    /** Initial 2D/3D render mode (e.g. from URL param). */
+    initialRenderMode?: '2d' | '3d';
     /** Children snippet receiving the full orchestrator context. */
     children: Snippet<[OrchestratorContext]>;
   }
@@ -256,6 +264,7 @@
     blockClicks = false,
     viewingContext = "notation",
     forceGuest = false,
+    initialRenderMode,
     children,
   }: Props = $props();
 
@@ -278,6 +287,13 @@
   let playbackController = $state<IAnimationPlaybackController | null>(null);
   let sequenceDataProvider: ISequenceDataProvider | null = null;
   let hapticService: IHapticFeedback | null = null;
+
+  // 3D viewer state — created once, distributed via Svelte context
+  const viewer3DState = createViewer3DState({
+    propInterpolator: container.items.propStateInterpolator,
+    sequenceConverter: container.items.sequenceConverter,
+  });
+  setViewer3DContext(viewer3DState);
 
   // Animation state
   const modalAnimationState = createAnimationPanelState();
@@ -677,6 +693,7 @@
     }
     modalAnimationState.dispose();
     sequenceModalExporter.dispose();
+    viewer3DState.dispose();
   });
 
   // Initialize animation when sequence becomes available and services are ready
@@ -691,6 +708,22 @@
     const savedPathShape = sequence?.metadata?.pathShape;
     if (savedPathShape === "arc" || savedPathShape === "linear") {
       getAnimationVisibilityManager().setPathShape(savedPathShape);
+    }
+  });
+
+  // Sync render mode to URL param when it changes
+  $effect(() => {
+    if (viewer3DState.renderMode === '3d') {
+      onUrlParamChange?.('render', '3d');
+    } else {
+      onUrlParamChange?.('render', '');
+    }
+  });
+
+  // Enter 3D mode from URL param on first load
+  $effect(() => {
+    if (initialRenderMode === '3d' && viewer3DState.webgl2Available && sequence) {
+      viewer3DState.enter3D(sequence);
     }
   });
 
@@ -877,6 +910,10 @@
   let wasPlayingBeforeImageExport = false;
 
   function enterEditMode(pane: 'animation' | 'image' | 'video-upload') {
+    // Auto-exit 3D when entering export mode (export works on 2D canvas only)
+    if (viewer3DState.renderMode === '3d') {
+      viewer3DState.exit3D();
+    }
     hapticService?.trigger("selection");
     editingPane = pane;
 
@@ -1537,6 +1574,10 @@
 
     // Render progress
     onRenderProgress: handleRenderProgress,
+
+    // 3D render mode
+    renderMode: viewer3DState.renderMode,
+    viewer3DState,
 
     // Auth (?guest=1 overrides to unauthenticated view for debugging shared link UX)
     isLoggedIn: forceGuest ? false : authState.isAuthenticated,

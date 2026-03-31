@@ -15,6 +15,8 @@
     ViewerLayoutState,
   } from "../domain/viewer-prop-groups";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
+  import Viewer3DCanvas from "$lib/shared/3d/components/Viewer3DCanvas.svelte";
+  import Viewer3DCornerIcon from "$lib/shared/3d/components/Viewer3DCornerIcon.svelte";
   import ChoreoCard from "./ChoreoCard.svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
@@ -58,6 +60,7 @@
     imageComposition: ImageCompositionProps;
     propRendering: PropRenderingProps;
     layout: ViewerLayoutState;
+    renderMode?: '2d' | '3d';
     onRenderProgress?: (loaded: number, total: number) => void;
     onFocusPane: (pane: "animation" | "image") => void;
     onUnfocusPane: () => void;
@@ -72,6 +75,7 @@
     imageComposition,
     propRendering,
     layout,
+    renderMode = '2d',
     onRenderProgress,
     onFocusPane,
     onUnfocusPane,
@@ -160,6 +164,14 @@
           <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
           <span>{playback.animationState.error}</span>
         </div>
+      {:else if renderMode === '3d'}
+        <Viewer3DCanvas
+          sequenceData={playback.animationState.sequenceData}
+          currentStep={playback.currentStep}
+          isPlaying={playback.isPlaying}
+          bluePropType={propRendering.bluePropType != null ? String(propRendering.bluePropType) : null}
+          redPropType={propRendering.redPropType != null ? String(propRendering.redPropType) : null}
+        />
       {:else}
         <AnimatorCanvas
           sequenceData={playback.animationState.sequenceData}
@@ -177,6 +189,7 @@
           {onCanvasReady}
           focused={layout.focusedPane === "animation"}
         />
+        <Viewer3DCornerIcon sequenceData={playback.animationState.sequenceData} />
       {/if}
 
     </div>
