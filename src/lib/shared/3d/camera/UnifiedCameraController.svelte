@@ -54,6 +54,8 @@
     externalYaw?: number | null;
     /** External pitch setter (for MCP control) */
     externalPitch?: number | null;
+    /** Restrict which modes the V-key cycle includes. If omitted, all modes are allowed. */
+    allowedModes?: CameraMode[];
   }
 
   let {
@@ -130,6 +132,24 @@
   const CAMERA_COLLISION_OFFSET = 0.5;
   // Minimum camera distance from player (so we don't get stuck inside the player)
   const MIN_CAMERA_DISTANCE = 0.8;
+
+  // Smoothed camera distance for third-person mode (prevents jitter at wall collisions).
+  // Instead of snapping instantly to the raycast-safe distance, we lerp toward it each frame.
+  // Pulling IN (wall hit) is fast so you don't clip through geometry.
+  // Pulling OUT (wall cleared) is slow so the camera doesn't oscillate at corridor junctions.
+  let smoothedCameraDistance = 3.0; // Must match SETTINGS.thirdPerson.distance
+  const CAMERA_LERP_IN = 0.25;   // Fast pull-in when wall detected
+  const CAMERA_LERP_OUT = 0.04;  // Slow pull-out when wall clears
+
+  // Smoothed camera POSITION for third-person mode (prevents jitter from yaw micro-changes,
+  // avatar sub-frame movement, and raycast collision oscillation). Instead of snapping the
+  // camera to the computed orbit position each frame, we lerp toward it. This absorbs all
+  // sources of frame-to-frame position jitter without adding perceptible lag.
+  let smoothedCamX = 0;
+  let smoothedCamY = 0;
+  let smoothedCamZ = 0;
+  let smoothedCamInitialized = false;
+  const CAMERA_POSITION_DAMPING = 0.15;
 
   // Camera settings (all distances/heights in meters)
   // Orbit mode settings are in Scene3D.svelte's OrbitControls
@@ -635,23 +655,25 @@
         camera.current.lookAt(lookX, lookY, lookZ);
 
       } else {
-        // Third-person: camera behind avatar with terrain collision
+        // Third-person: camera behind avatar with smoothed terrain collision.
+        // The raycast determines the maximum safe distance this frame, then we
+        // lerp smoothedCameraDistance toward that target. Pulling in is fast
+        // (avoid clipping), pulling out is slow (avoid jitter at wall edges).
         const cfg = SETTINGS.thirdPerson;
         const cosPitch = Math.cos(pitch);
 
-        // Calculate desired camera position
-        const desiredCamX = targetX - Math.sin(yaw) * cfg.distance * cosPitch;
-        const desiredCamY = targetY + cfg.height + Math.sin(pitch) * cfg.distance * 0.5;
-        const desiredCamZ = targetZ - Math.cos(yaw) * cfg.distance * cosPitch;
-
-        let finalCamX = desiredCamX;
-        let finalCamY = desiredCamY;
-        let finalCamZ = desiredCamZ;
+        // The ideal (uncollided) distance from the player
+        let targetDistance = cfg.distance;
 
         // Raycast from player to desired camera position to detect terrain collision
         if (scene.current) {
           // Start ray from player's head area (slightly above center)
           rayOrigin.set(targetX, targetY + cfg.lookAtHeight, targetZ);
+
+          // Desired camera position at full distance
+          const desiredCamX = targetX - Math.sin(yaw) * cfg.distance * cosPitch;
+          const desiredCamY = targetY + cfg.height + Math.sin(pitch) * cfg.distance * 0.5;
+          const desiredCamZ = targetZ - Math.cos(yaw) * cfg.distance * cosPitch;
           desiredCamPos.set(desiredCamX, desiredCamY, desiredCamZ);
 
           // Direction from player to camera
@@ -675,20 +697,41 @@
                 continue;
               }
 
-              // Hit terrain - move camera closer to avoid clipping
-              const hitDistance = intersection.distance;
-              const safeDistance = Math.max(hitDistance - CAMERA_COLLISION_OFFSET, MIN_CAMERA_DISTANCE);
-
-              // Calculate the safe camera position along the ray
-              finalCamX = rayOrigin.x + rayDirection.x * safeDistance;
-              finalCamY = rayOrigin.y + rayDirection.y * safeDistance;
-              finalCamZ = rayOrigin.z + rayDirection.z * safeDistance;
+              // Hit terrain — clamp the target distance so camera stays in front of the wall
+              const safeDistance = Math.max(intersection.distance - CAMERA_COLLISION_OFFSET, MIN_CAMERA_DISTANCE);
+              targetDistance = Math.min(targetDistance, safeDistance);
               break;
             }
           }
         }
 
-        camera.current.position.set(finalCamX, finalCamY, finalCamZ);
+        // Smooth the camera distance: fast pull-in, slow pull-out
+        const lerpFactor = targetDistance < smoothedCameraDistance ? CAMERA_LERP_IN : CAMERA_LERP_OUT;
+        smoothedCameraDistance += (targetDistance - smoothedCameraDistance) * lerpFactor;
+
+        // Clamp to valid range
+        smoothedCameraDistance = Math.max(MIN_CAMERA_DISTANCE, Math.min(cfg.distance, smoothedCameraDistance));
+
+        // Place camera at smoothed distance along the yaw/pitch direction
+        const finalCamX = targetX - Math.sin(yaw) * smoothedCameraDistance * cosPitch;
+        const finalCamY = targetY + cfg.height + Math.sin(pitch) * smoothedCameraDistance * 0.5;
+        const finalCamZ = targetZ - Math.cos(yaw) * smoothedCameraDistance * cosPitch;
+
+        // Damp the camera position to absorb jitter from yaw micro-changes, avatar
+        // sub-frame movement, and raycast collision oscillation. On the very first
+        // frame we snap to avoid a visible lerp-from-origin.
+        if (!smoothedCamInitialized) {
+          smoothedCamX = finalCamX;
+          smoothedCamY = finalCamY;
+          smoothedCamZ = finalCamZ;
+          smoothedCamInitialized = true;
+        } else {
+          smoothedCamX += (finalCamX - smoothedCamX) * CAMERA_POSITION_DAMPING;
+          smoothedCamY += (finalCamY - smoothedCamY) * CAMERA_POSITION_DAMPING;
+          smoothedCamZ += (finalCamZ - smoothedCamZ) * CAMERA_POSITION_DAMPING;
+        }
+
+        camera.current.position.set(smoothedCamX, smoothedCamY, smoothedCamZ);
         camera.current.lookAt(targetX, targetY + cfg.lookAtHeight, targetZ);
       }
   });

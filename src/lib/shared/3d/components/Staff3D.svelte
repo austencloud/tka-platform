@@ -98,11 +98,13 @@
     const rotatedX = localX * cos + localZ * sin;
     const rotatedZ = -localX * sin + localZ * cos;
 
-    return [
+    const finalPos: [number, number, number] = [
       rotatedX + avatarPosition.x,
       propState.worldPosition.y + avatarPosition.y,
       rotatedZ + avatarPosition.z,
     ];
+
+    return finalPos;
   });
 
   // Convert quaternion to Euler for T.Group rotation
