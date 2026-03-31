@@ -12,10 +12,12 @@
   import { T } from "@threlte/core";
   import { OrbitControls } from "@threlte/extras";
 
-  // Default framing: slight angle so the avatar reads naturally.
-  // x=0.85, y=1.6, z=2.3 places the camera at roughly 20° azimuth and
-  // 10° elevation from the avatar at 2.5 m. Target is chest height (y=1.2).
-  const defaultPosition = { x: 0.85, y: 1.6, z: 2.3 };
+  // Camera behind the performer, looking over their shoulder at the wall plane.
+  // TKA pictographs are authored from the performer's perspective: south=down,
+  // east=performer's right=viewer's right. Placing the camera at -Z achieves
+  // this — we see the avatar's back, and the staves on the XY plane read
+  // correctly (performer's right +X = our right).
+  const defaultPosition = { x: -0.85, y: 1.6, z: -2.3 };
   const defaultTarget = { x: 0, y: 1.2, z: 0 };
 </script>
 
