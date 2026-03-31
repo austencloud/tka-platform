@@ -85,6 +85,8 @@
   }: Props = $props();
 
   function handleAnimationClick() {
+    // In 3D mode, don't intercept clicks — OrbitControls needs them
+    if (renderMode === '3d') return;
     if (layout.focusedPane === "animation") {
       onUnfocusPane();
     } else {
