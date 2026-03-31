@@ -642,19 +642,32 @@ export function initializeNavigationHistory() {
   // Also handles legacy hash URLs for backwards compatibility
   const pathNav = parsePathNavigation();
   if (pathNav) {
-    // URL has a valid module/section - navigate to it (overrides localStorage)
-    if (pathNav.moduleId !== navigationState.currentModule) {
-      navigationState.setCurrentModule(pathNav.moduleId, pathNav.sectionId);
-    } else if (
-      pathNav.sectionId &&
-      pathNav.sectionId !== navigationState.activeTab
-    ) {
-      navigationState.setActiveTab(pathNav.sectionId);
-    }
+    // On fresh page load (not HMR), don't restore heavyweight 3D modules from the URL.
+    // sessionStorage is cleared by hard reload (Ctrl+Shift+R) but survives HMR remounts,
+    // so its presence reliably distinguishes the two cases.
+    const isHmrRemount =
+      typeof sessionStorage !== "undefined" &&
+      sessionStorage.getItem("tka-nav-session-active") === "1";
+    const isHeavyweight = pathNav.moduleId === "realm";
 
-    // If user came from legacy hash URL, update to new path format
-    if (window.location.hash && window.location.hash !== "#") {
-      replaceHistoryState(pathNav.moduleId, pathNav.sectionId);
+    if (!isHmrRemount && isHeavyweight) {
+      // Redirect to default module instead of re-mounting heavy 3D content
+      navigationState.setCurrentModule("create");
+    } else {
+      // URL has a valid module/section - navigate to it (overrides localStorage)
+      if (pathNav.moduleId !== navigationState.currentModule) {
+        navigationState.setCurrentModule(pathNav.moduleId, pathNav.sectionId);
+      } else if (
+        pathNav.sectionId &&
+        pathNav.sectionId !== navigationState.activeTab
+      ) {
+        navigationState.setActiveTab(pathNav.sectionId);
+      }
+
+      // If user came from legacy hash URL, update to new path format
+      if (window.location.hash && window.location.hash !== "#") {
+        replaceHistoryState(pathNav.moduleId, pathNav.sectionId);
+      }
     }
   }
 
