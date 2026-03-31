@@ -225,6 +225,7 @@
   function resetAll() {
     eulerAngles = FINGER_BONES.map(() => ({ x: 0, y: 0, z: 0 }));
     applyToBones();
+    saveToSession();
   }
 </script>
 
@@ -239,6 +240,7 @@
       >
         <OrbitControls
           bind:ref={controlsRef}
+          onchange={handleCameraChange}
         />
       </T.PerspectiveCamera>
 

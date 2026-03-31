@@ -234,6 +234,25 @@ export class LegAnimator implements ILegAnimator {
   private animationLoaded = false;
   private directionalMode = false;
 
+  // Smooth weight blending for walk/idle transitions.
+  // Instead of hard-switching between 0 and 1, we lerp to avoid jerky starts/stops.
+  private currentWalkWeight = 0;
+  private targetWalkWeight = 0;
+
+  // Directional blend weights (smoothed)
+  private currentDirWeights: Record<DirectionKey, number> = {
+    forward: 0,
+    backward: 0,
+    strafeLeft: 0,
+    strafeRight: 0,
+  };
+  private targetDirWeights: Record<DirectionKey, number> = {
+    forward: 0,
+    backward: 0,
+    strafeLeft: 0,
+    strafeRight: 0,
+  };
+
   constructor() {
     this.loader = new GLTFLoader();
   }
