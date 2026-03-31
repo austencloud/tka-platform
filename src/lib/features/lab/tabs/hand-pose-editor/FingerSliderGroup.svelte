@@ -29,48 +29,49 @@
   </div>
 
   {#each boneLabels as label, i}
-    <div class="bone-row">
+    <div class="bone-section">
       <span class="bone-label">{label}</span>
-
-      {#if isThumb || showAllAxes}
+      <div class="bone-sliders">
         <label class="slider-label">
-          Y
+          <span class="axis-label">X</span>
           <input
             type="range"
-            min="-90"
-            max="90"
+            min="-10"
+            max="120"
             step="1"
-            value={rotations[i].y}
-            oninput={(e) => onchange(i, "y", Number(e.currentTarget.value))}
+            value={rotations[i].x}
+            oninput={(e) => onchange(i, "x", Number(e.currentTarget.value))}
           />
-          <span class="value">{rotations[i].y}°</span>
+          <span class="value">{rotations[i].x}°</span>
         </label>
-        <label class="slider-label">
-          Z
-          <input
-            type="range"
-            min="-90"
-            max="90"
-            step="1"
-            value={rotations[i].z}
-            oninput={(e) => onchange(i, "z", Number(e.currentTarget.value))}
-          />
-          <span class="value">{rotations[i].z}°</span>
-        </label>
-      {/if}
 
-      <label class="slider-label">
-        X
-        <input
-          type="range"
-          min="-10"
-          max="120"
-          step="1"
-          value={rotations[i].x}
-          oninput={(e) => onchange(i, "x", Number(e.currentTarget.value))}
-        />
-        <span class="value">{rotations[i].x}°</span>
-      </label>
+        {#if isThumb || showAllAxes}
+          <label class="slider-label">
+            <span class="axis-label">Y</span>
+            <input
+              type="range"
+              min="-90"
+              max="90"
+              step="1"
+              value={rotations[i].y}
+              oninput={(e) => onchange(i, "y", Number(e.currentTarget.value))}
+            />
+            <span class="value">{rotations[i].y}°</span>
+          </label>
+          <label class="slider-label">
+            <span class="axis-label">Z</span>
+            <input
+              type="range"
+              min="-90"
+              max="90"
+              step="1"
+              value={rotations[i].z}
+              oninput={(e) => onchange(i, "z", Number(e.currentTarget.value))}
+            />
+            <span class="value">{rotations[i].z}°</span>
+          </label>
+        {/if}
+      </div>
     </div>
   {/each}
 </div>
@@ -81,6 +82,8 @@
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 6px;
     margin-bottom: 8px;
+    min-width: 0;
+    overflow: hidden;
   }
 
   .finger-header {
@@ -106,17 +109,27 @@
     cursor: pointer;
   }
 
-  .bone-row {
+  .bone-section {
     display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 2px;
+    gap: 6px;
+    margin-bottom: 4px;
+    align-items: flex-start;
   }
 
   .bone-label {
-    width: 30px;
+    width: 28px;
+    flex-shrink: 0;
+    padding-top: 2px;
     font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+  }
+
+  .bone-sliders {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
   }
 
   .slider-label {
@@ -125,17 +138,24 @@
     gap: 4px;
     font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
-    flex: 1;
+    min-width: 0;
+  }
+
+  .axis-label {
+    width: 10px;
+    flex-shrink: 0;
   }
 
   input[type="range"] {
     flex: 1;
+    min-width: 0;
     height: 4px;
     accent-color: var(--theme-accent, #8b5cf6);
   }
 
   .value {
-    width: 36px;
+    width: 32px;
+    flex-shrink: 0;
     text-align: right;
     font-variant-numeric: tabular-nums;
   }
