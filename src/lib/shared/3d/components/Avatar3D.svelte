@@ -44,6 +44,8 @@
   import { AvatarAnimator } from "../services/implementations/AvatarAnimator";
   import { LegAnimator } from "../services/implementations/LegAnimator";
   import type { ILegAnimator } from "../services/contracts/ILegAnimator";
+  import { FingerAnimator } from "$lib/shared/3d/services/implementations/FingerAnimator";
+  import { GripType } from "$lib/shared/3d/domain/models/GripPose";
 
   // Default Z position for avatars
   // Placing avatar at z=0 (same as grid plane) so hands are exactly at prop positions
@@ -94,6 +96,7 @@
   let ikSolver: IIKSolver | null = $state(null);
   let animationService: IAvatarAnimator | null = $state(null);
   let legAnimator: ILegAnimator | null = $state(null);
+  let fingerAnimator: FingerAnimator | null = null;
 
   let servicesReady = $state(false);
   let modelLoaded = $state(false);
@@ -186,6 +189,14 @@
             // Animation is optional - avatar will work without it
           });
       }
+
+      // Initialize finger animator with mapped finger chains
+      if (fingerAnimator) {
+        const skeletonState = skeletonService.getState();
+        if (skeletonState.fingerChains) {
+          fingerAnimator.initialize(skeletonState.fingerChains);
+        }
+      }
     } catch (err) {
       console.warn(
         "[Avatar3D] Failed to load avatar model, using procedural fallback:",
@@ -225,6 +236,9 @@
       ikSolver = solver;
       animationService = animator;
       legAnimator = legs;
+
+      const fingers = new FingerAnimator();
+      fingerAnimator = fingers;
 
       servicesReady = true;
 
@@ -329,6 +343,14 @@
       });
       legAnimator.update(delta);
     }
+
+    // Update finger grip animation
+    if (fingerAnimator?.isReady()) {
+      const leftGrip = bluePropState ? GripType.SQUARE : GripType.IDLE;
+      const rightGrip = redPropState ? GripType.SQUARE : GripType.IDLE;
+      fingerAnimator.setGrips(leftGrip, rightGrip);
+      fingerAnimator.update(delta);
+    }
   });
 
   // Note: Visibility is handled via the {#if visible} in the template
@@ -352,6 +374,11 @@
     // Dispose leg animator
     if (legAnimator) {
       legAnimator.dispose();
+    }
+
+    // Dispose finger animator
+    if (fingerAnimator) {
+      fingerAnimator.dispose();
     }
 
     // Only dispose if we loaded a GLTF model
