@@ -34,7 +34,12 @@
   // a sequence viewer, the orchestrator will have set it. In other contexts
   // (e.g., the compose tab) it won't be present and we gracefully omit the
   // 3D menu item.
-  const viewer3DState = getViewer3DContext();
+  let viewer3DState: ReturnType<typeof getViewer3DContext> | undefined;
+  try {
+    viewer3DState = getViewer3DContext();
+  } catch {
+    // Context not available — not in a sequence viewer
+  }
 
   let menuState: ContextMenuState = $state({ open: false });
   let menuItemsVersion: number = $state(0);
