@@ -6,10 +6,12 @@
 
 	let intensity = $state(vm.getFireIntensity());
 	let colorBlend = $state(vm.getFireColorBlend());
+	let turbulence = $state(vm.getFireTurbulence());
 
 	function handleVisibilityChange(): void {
 		intensity = vm.getFireIntensity();
 		colorBlend = vm.getFireColorBlend();
+		turbulence = vm.getFireTurbulence();
 	}
 
 	vm.registerObserver(handleVisibilityChange);
@@ -26,13 +28,20 @@
 		return `${Math.round(v * 100)}%`;
 	}
 
+	function formatTurbulence(v: number): string {
+		if (v < 0.05) return "Off";
+		if (v > 0.95) return "Max";
+		return `${Math.round(v * 100)}%`;
+	}
+
 	function resetDefaults(): void {
 		vm.resetFireDefaults();
 	}
 
 	const isDefault = $derived(
 		Math.abs(intensity - 0.7) < 0.03 &&
-		Math.abs(colorBlend - 0.5) < 0.03
+		Math.abs(colorBlend - 0.5) < 0.03 &&
+		Math.abs(turbulence - 0.5) < 0.03
 	);
 </script>
 
@@ -63,6 +72,20 @@
 			oninput={(e) => vm.setFireColorBlend(Number((e.target as HTMLInputElement).value))}
 		/>
 		<span class="slider-value">{formatColorBlend(colorBlend)}</span>
+	</div>
+
+	<div class="slider-row">
+		<label for="ctx-fire-turbulence">Turbulence</label>
+		<input
+			id="ctx-fire-turbulence"
+			type="range"
+			min="0"
+			max="1"
+			step="0.05"
+			value={turbulence}
+			oninput={(e) => vm.setFireTurbulence(Number((e.target as HTMLInputElement).value))}
+		/>
+		<span class="slider-value">{formatTurbulence(turbulence)}</span>
 	</div>
 
 	<button

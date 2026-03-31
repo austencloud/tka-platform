@@ -49,6 +49,7 @@ interface AnimationVisibilitySettings {
   fireEffect: boolean; // WebGL Navier-Stokes fluid fire at prop tips
   fireColorBlend: number; // 0 = natural fire, 1 = prop-colored (continuous slider)
   fireIntensity: number; // User intensity slider value (0.0-1.0)
+  fireTurbulence: number; // Curl noise turbulence strength (0.0-1.0), how much idle fire flickers
   fireColorCurve: FireColorCurve | null; // Custom 4-stop color gradient (null = use default)
 
   // Charcoal Effect (independent particle system, NOT a fire variant)
@@ -153,6 +154,7 @@ export class AnimationVisibilityStateManager {
       fireEffect: false, // Fire disabled by default
       fireColorBlend: 0.5, // Halfway between natural and prop-colored
       fireIntensity: 0.7, // 0-1 range, 0.7 = normal fire
+      fireTurbulence: 0.5, // 0-1 range, how much idle fire flickers
       fireColorCurve: null, // null = use default BASE_COLOR_CURVE
 
       // Charcoal Effect (independent from fire)
@@ -265,6 +267,7 @@ export class AnimationVisibilityStateManager {
           parsed.charcoalParams = { ...DEFAULT_CHARCOAL_PARAMS };
         }
         if (!("fireIntensity" in parsed)) parsed.fireIntensity = 0.7;
+        if (!("fireTurbulence" in parsed)) parsed.fireTurbulence = 0.5;
 
         // Clean up removed keys
         delete parsed.fuelSourceId;
@@ -372,7 +375,7 @@ export class AnimationVisibilityStateManager {
   getVisibility(
     key: Exclude<
       keyof AnimationVisibilitySettings,
-      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "darkMode" | "fireColorBlend" | "fireIntensity" | "charcoalParams" | "ledBrightness" | "ledPatternId" | "ledPrimaryColor" | "effortPreset" | "pathShape" | "tipEffectMap" | "tipEffortMap"
+      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "darkMode" | "fireColorBlend" | "fireIntensity" | "fireTurbulence" | "charcoalParams" | "ledBrightness" | "ledPatternId" | "ledPrimaryColor" | "effortPreset" | "pathShape" | "tipEffectMap" | "tipEffortMap"
     >
   ): boolean {
     return this.settings[key] as boolean;
@@ -396,7 +399,7 @@ export class AnimationVisibilityStateManager {
   setVisibility(
     key: Exclude<
       keyof AnimationVisibilitySettings,
-      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "fireColorBlend" | "fireIntensity" | "charcoalParams" | "ledBrightness" | "ledPatternId" | "ledPrimaryColor" | "effortPreset" | "pathShape"
+      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "fireColorBlend" | "fireIntensity" | "fireTurbulence" | "charcoalParams" | "ledBrightness" | "ledPatternId" | "ledPrimaryColor" | "effortPreset" | "pathShape"
     >,
     visible: boolean
   ): void {
@@ -761,6 +764,16 @@ export class AnimationVisibilityStateManager {
     this.notifyObservers();
   }
 
+  getFireTurbulence(): number {
+    return this.settings.fireTurbulence;
+  }
+
+  setFireTurbulence(value: number): void {
+    this.settings.fireTurbulence = Math.max(0, Math.min(1, value));
+    this.saveToStorage();
+    this.notifyObservers();
+  }
+
   getFireColorCurve(): FireColorCurve | null {
     return this.settings.fireColorCurve;
   }
@@ -775,6 +788,7 @@ export class AnimationVisibilityStateManager {
   resetFireDefaults(): void {
     this.settings.fireIntensity = 0.7;
     this.settings.fireColorBlend = 0.5;
+    this.settings.fireTurbulence = 0.5;
     this.settings.fireColorCurve = null;
     this.saveToStorage();
     this.notifyObservers();
@@ -1042,7 +1056,7 @@ export class AnimationVisibilityStateManager {
   toggleVisibility(
     key: Exclude<
       keyof AnimationVisibilitySettings,
-      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "darkMode" | "fireColorBlend" | "fireIntensity" | "charcoalParams" | "ledBrightness" | "ledPatternId" | "ledPrimaryColor" | "effortPreset" | "pathShape" | "tipEffectMap" | "tipEffortMap"
+      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "darkMode" | "fireColorBlend" | "fireIntensity" | "fireTurbulence" | "charcoalParams" | "ledBrightness" | "ledPatternId" | "ledPrimaryColor" | "effortPreset" | "pathShape" | "tipEffectMap" | "tipEffortMap"
     >
   ): void {
     this.setVisibility(key, !(this.settings[key] as boolean));

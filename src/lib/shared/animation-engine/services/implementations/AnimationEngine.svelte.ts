@@ -314,6 +314,7 @@ export class AnimationEngine {
   private prevColorBlend: number = 0.5;
   private prevCharcoalEffect: boolean = false;
   private prevFireIntensity: number = 0.7;
+  private prevFireTurbulence: number = 0.5;
   private prevFireColorCurve: import("../../domain/types/FireTypes").FireColorCurve | null = null;
   private prevCharcoalParamsJson: string = "";
   private prevEffortPreset: EffortId = "linear";
@@ -407,9 +408,11 @@ export class AnimationEngine {
     this.fireDefaultsLoader = container.items.fireDefaultsLoader;
 
     // Build fireConfig from base params + slider mappings
+    this.prevFireTurbulence = vm.getFireTurbulence();
     this.fireConfig.colorBlend = this.prevColorBlend;
     this.fireConfig.intensity = this.prevFireIntensity;
     this.fireConfig.flameHeight = this.prevFireIntensity;
+    this.fireConfig.turbulence = this.prevFireTurbulence;
     this.fireConfig.fuelRendererType = "fluid";
 
     const basePhysics = BASE_FIRE_PHYSICS;
@@ -546,16 +549,19 @@ export class AnimationEngine {
         // Sync fire slider values + color curve → physics
         const colorBlend = vm.getFireColorBlend();
         const fireIntensity = vm.getFireIntensity();
+        const fireTurbulence = vm.getFireTurbulence();
         const fireColorCurve = vm.getFireColorCurve();
 
         const slidersChanged =
           colorBlend !== this.prevColorBlend ||
           fireIntensity !== this.prevFireIntensity ||
+          fireTurbulence !== this.prevFireTurbulence ||
           fireColorCurve !== this.prevFireColorCurve;
 
         if (slidersChanged) {
           this.prevColorBlend = colorBlend;
           this.prevFireIntensity = fireIntensity;
+          this.prevFireTurbulence = fireTurbulence;
           this.prevFireColorCurve = fireColorCurve;
 
           const basePhysics = BASE_FIRE_PHYSICS;
@@ -565,6 +571,7 @@ export class AnimationEngine {
             fuelRendererType: "fluid",
             intensity: fireIntensity,
             flameHeight: fireIntensity,
+            turbulence: fireTurbulence,
             physicsPreset: {
               ...basePhysics,
               ...intOverrides,

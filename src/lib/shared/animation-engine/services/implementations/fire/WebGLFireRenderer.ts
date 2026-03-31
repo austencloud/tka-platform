@@ -599,8 +599,8 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
         const uvY = prevUvY + dyUV * t;
 
         // Modulate temperature ±20%: some fuel parcels are hotter, some cooler
-        const tempNoise = Math.sin(tc * 8.3 + tipPhase) * 0.12
-                        + Math.sin(tc * 13.7 + tipPhase * 1.4) * 0.08;
+        const tempNoise = Math.sin(tc * 8.3 + tipPhase) * 0.15
+                        + Math.sin(tc * 13.7 + tipPhase * 1.4) * 0.1;
         const tempPerSplat = baseTempPerSplat * (1.0 + tempNoise);
 
         this.splat(this.fuel!, uvX, uvY, fuelPerSplat, 0, 0);
@@ -650,7 +650,7 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     // 4b. Curl noise turbulence: divergence-free perturbation at flame boundaries.
     // Inserted after buoyancy so buoyancy establishes the bulk upward flow,
     // then curl noise adds the stochastic vortical detail that makes fire flicker.
-    this.applyCurlNoiseTurbulence(dt, texelSize, config.flameHeight);
+    this.applyCurlNoiseTurbulence(dt, texelSize, config.flameHeight, config.turbulence ?? 0.5);
 
     // 5. Combustion + cooling
     this.applyCombustion(dt, config.intensity);
@@ -794,7 +794,8 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
    * flicker naturally — the rising plume gets pushed by spatially-coherent
    * vortical forces while the wick stays still.
    */
-  private applyCurlNoiseTurbulence(dt: number, texelSize: [number, number], heightMult: number): void {
+  private applyCurlNoiseTurbulence(dt: number, texelSize: [number, number], heightMult: number, turbulence: number): void {
+    if (turbulence <= 0) return;
     const gl = this.gl!;
     const prog = this.curlNoiseProgram!;
     gl.useProgram(prog.program);
@@ -812,9 +813,9 @@ export class WebGLFireRenderer implements IFireOverlayRenderer {
     gl.uniform1f(prog.uniforms.get("u_time")!, this.turbulenceClock);
 
     // Strength scaled by vorticity strength so turbulence is proportional
-    // to the overall fire intensity. The 0.5 factor keeps curl noise
-    // subordinate to the simulation's own vorticity confinement.
-    const strength = this.physics.vorticityStrength * heightMult * 0.5;
+    // to the overall fire intensity. The turbulence parameter (0-1) maps
+    // to a 0-8x multiplier on the base vorticity strength.
+    const strength = this.physics.vorticityStrength * heightMult * turbulence * 8.0;
     gl.uniform1f(prog.uniforms.get("u_strength")!, strength);
 
     gl.bindFramebuffer(gl.FRAMEBUFFER, this.velocity!.write.fbo);

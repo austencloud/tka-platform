@@ -151,8 +151,8 @@ void main() {
   // periodic vortex shedding. Modulating the confinement strength at this
   // frequency creates a natural pulsing amplification of rotational detail
   // that matches the physical vortex shedding cycle.
-  float pulse = 1.0 + 0.3 * sin(u_time * 2.0 * 3.14159 * 12.0)   // ~12 Hz primary
-                     + 0.15 * sin(u_time * 2.0 * 3.14159 * 7.3);  // ~7 Hz secondary
+  float pulse = 1.0 + 0.4 * sin(u_time * 2.0 * 3.14159 * 12.0)   // ~12 Hz primary
+                     + 0.2 * sin(u_time * 2.0 * 3.14159 * 7.3);  // ~7 Hz secondary
 
   // Force perpendicular to curl gradient
   vec2 force = u_strength * pulse * vec2(N.y, -N.x) * cC;

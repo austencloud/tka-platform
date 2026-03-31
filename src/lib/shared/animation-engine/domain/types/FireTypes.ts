@@ -174,6 +174,10 @@ export interface FireOverlayConfig {
   disableFrameCache?: boolean;
   /** Charcoal spark params (only used when useCharcoal is true) */
   charcoalParams?: import("./CharcoalSparkTypes").CharcoalSparkParams;
+  /** Curl noise turbulence strength (0.0-1.0). Controls how much idle fire flickers
+   *  via divergence-free velocity perturbation at flame boundaries. 0 = static plume,
+   *  0.5 = natural flicker, 1.0 = aggressive turbulence. */
+  turbulence?: number;
   /** HDR bloom strength (0.0 = no bloom, 0.04-0.15 = subtle glow, default 0.08) */
   bloomStrength?: number;
   /**
