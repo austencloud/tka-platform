@@ -103,6 +103,7 @@ export function createViewer3DState(deps: {
     charcoal: false,
   });
   let cameraSnapshot = $state<CameraStateSnapshot | null>(null);
+  let showGrid = $state(false);
 
   // Camera snap callback — registered by Viewer3DCamera, called by Viewer3DViewPresets
   let _snapToFn: ((position: { x: number; y: number; z: number }, target: { x: number; y: number; z: number }) => void) | null = null;
@@ -207,6 +208,12 @@ export function createViewer3DState(deps: {
     },
     get cameraSnapshot() {
       return cameraSnapshot;
+    },
+    get showGrid() {
+      return showGrid;
+    },
+    toggleGrid() {
+      showGrid = !showGrid;
     },
     enter3D,
     exit3D,
