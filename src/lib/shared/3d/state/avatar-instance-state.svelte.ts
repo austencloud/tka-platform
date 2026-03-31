@@ -127,6 +127,10 @@ export function createAvatarInstanceState(
   // Target facing angle for smooth rotation
   let targetFacingAngle = $state(0);
 
+  // Rotation speed in radians per second — fast enough to feel responsive,
+  // slow enough to look smooth. 12 rad/s ≈ 180° in ~0.26s.
+  const ROTATION_SPEED = 12;
+
   // Visibility - start hidden until a sequence is loaded
   let showBlue = $state(false);
   let showRed = $state(false);
@@ -312,12 +316,47 @@ export function createAvatarInstanceState(
   }
 
   /**
-   * Set facing angle directly.
-   * Called by UnifiedCameraController to sync avatar rotation with camera.
+   * Set facing angle target.
+   * Called by UnifiedCameraController to tell the avatar where to face.
+   * In third-person mode this sets a TARGET that the avatar lerps toward
+   * smoothly. In first-person mode, use snapFacingAngle for instant response.
    */
   function setFacingAngle(value: number) {
+    targetFacingAngle = value;
+  }
+
+  /**
+   * Snap facing angle instantly (no lerp). Used for first-person mode
+   * where the avatar body must exactly match the camera direction.
+   */
+  function snapFacingAngle(value: number) {
     facingAngle = value;
     targetFacingAngle = value;
+  }
+
+  /**
+   * Update locomotion state each frame. Lerps facing angle toward
+   * target for smooth avatar rotation in third-person mode.
+   * @param delta - frame time in seconds
+   */
+  function updateLocomotion(delta: number) {
+    // Smoothly rotate toward target facing angle.
+    // Use shortest-path rotation (handle angle wrapping around ±π).
+    let diff = targetFacingAngle - facingAngle;
+
+    // Normalize to [-π, π] for shortest rotation path
+    while (diff > Math.PI) diff -= 2 * Math.PI;
+    while (diff < -Math.PI) diff += 2 * Math.PI;
+
+    // If close enough, snap to avoid oscillation
+    if (Math.abs(diff) < 0.01) {
+      facingAngle = targetFacingAngle;
+    } else {
+      // Lerp at constant angular speed, capped to not overshoot
+      const maxStep = ROTATION_SPEED * delta;
+      const step = Math.sign(diff) * Math.min(Math.abs(diff), maxStep);
+      facingAngle += step;
+    }
   }
 
   return {
@@ -337,7 +376,6 @@ export function createAvatarInstanceState(
       return facingAngle;
     },
     set facingAngle(value: number) {
-      facingAngle = value;
       targetFacingAngle = value;
     },
 
@@ -354,8 +392,10 @@ export function createAvatarInstanceState(
     // Locomotion methods
     setMoveInput,
     updateMovement,
+    updateLocomotion,
     stopMovement,
     setFacingAngle,
+    snapFacingAngle,
 
     // Avatar model
     get avatarModelId() {

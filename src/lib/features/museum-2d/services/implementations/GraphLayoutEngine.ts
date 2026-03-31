@@ -198,9 +198,15 @@ export class GraphLayoutEngine implements ILayoutEngine {
    * handling cases where the path folds back and rooms from distant
    * parts of the chain end up in the same region.
    */
+  /**
+   * Iteratively resolves ALL room overlaps by pushing overlapping pairs
+   * apart symmetrically (each room moves half the required distance).
+   * This converges reliably even when the path folds back on itself,
+   * because no single room absorbs the full displacement.
+   */
   private resolveAllOverlaps(placed: Map<string, PlacedRoom>, gap: number): void {
     const roomList = Array.from(placed.values());
-    const maxIterations = 200;
+    const maxIterations = 500;
 
     for (let iter = 0; iter < maxIterations; iter++) {
       let resolved = true;
@@ -213,27 +219,30 @@ export class GraphLayoutEngine implements ILayoutEngine {
           if (!this.roomsOverlap(a, b)) continue;
           resolved = false;
 
-          // Compute the exact displacement needed to separate them.
-          // Push the later room (b) away from the earlier room (a).
-          const centerAx = a.x + a.w / 2;
-          const centerAy = a.y + a.h / 2;
-          const centerBx = b.x + b.w / 2;
-          const centerBy = b.y + b.h / 2;
+          // Overlap amounts on each axis
+          const overlapX = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
+          const overlapY = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
 
-          // How far to move on each axis to fully clear
-          const moveRight = (a.x + a.w + gap) - b.x;
-          const moveLeft = b.x + b.w + gap - a.x;
-          const moveDown = (a.y + a.h + gap) - b.y;
-          const moveUp = b.y + b.h + gap - a.y;
-
-          // Pick the axis with less displacement to minimize layout distortion
-          const dx = centerBx >= centerAx ? moveRight : -moveLeft;
-          const dy = centerBy >= centerAy ? moveDown : -moveUp;
-
-          if (Math.abs(dx) <= Math.abs(dy)) {
-            b.x += dx;
+          // Push apart along the axis with less overlap (minimum displacement).
+          // Each room moves half the required distance + half the gap.
+          if (overlapX <= overlapY) {
+            const push = Math.ceil((overlapX + gap) / 2);
+            if (a.x + a.w / 2 <= b.x + b.w / 2) {
+              a.x -= push;
+              b.x += push;
+            } else {
+              a.x += push;
+              b.x -= push;
+            }
           } else {
-            b.y += dy;
+            const push = Math.ceil((overlapY + gap) / 2);
+            if (a.y + a.h / 2 <= b.y + b.h / 2) {
+              a.y -= push;
+              b.y += push;
+            } else {
+              a.y += push;
+              b.y -= push;
+            }
           }
         }
       }
