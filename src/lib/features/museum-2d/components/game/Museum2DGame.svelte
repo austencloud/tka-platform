@@ -149,7 +149,7 @@
   }
 </script>
 
-<div class="museum-game" role="application" aria-label="Museum 2D game">
+<div class="museum-game" role="application" aria-label="The Archive game">
   <MuseumCamera
     playerX={state.cameraX}
     playerY={state.cameraY}

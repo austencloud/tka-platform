@@ -1,61 +1,110 @@
 <script lang="ts">
+  import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
+  import { MUSEUM_EXHIBIT_SEQUENCES } from "../../data/museum-exhibit-sequences";
+
   interface Props {
     sequenceId: string;
   }
 
   let { sequenceId }: Props = $props();
+
+  let sequence = $derived(MUSEUM_EXHIBIT_SEQUENCES[sequenceId] ?? null);
 </script>
 
-<div class="sequence-view">
-  <div class="sequence-placeholder">
-    <i class="fas fa-film" aria-hidden="true"></i>
-    <p class="sequence-label">Sequence</p>
-    <p class="sequence-id">{sequenceId}</p>
-    <p class="sequence-note">Pictograph rendering available in Phase 2</p>
+{#if sequence}
+  <div class="sequence-strip">
+    <div class="strip-cells">
+      {#if sequence.startPosition}
+        <div class="cell start-cell">
+          <PictographContainer
+            pictographData={sequence.startPosition}
+            showGrid={true}
+            showTKA={true}
+            showPositions={true}
+            showReversals={false}
+          />
+        </div>
+      {/if}
+      {#each sequence.steps as step (step.id)}
+        <div class="cell">
+          <PictographContainer
+            pictographData={step}
+            showGrid={true}
+            showTKA={true}
+            showPositions={true}
+            showReversals={false}
+            showStepNumber={true}
+          />
+        </div>
+      {/each}
+    </div>
+    <p class="strip-label">
+      "{sequence.word}" — {sequence.steps.length} beats
+    </p>
   </div>
-</div>
+{:else}
+  <div class="sequence-unknown">
+    <i class="fas fa-film" aria-hidden="true"></i>
+    <p class="unknown-id">{sequenceId}</p>
+  </div>
+{/if}
 
 <style>
-  .sequence-view {
-    padding: 16px;
+  .sequence-strip {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
   }
 
-  .sequence-placeholder {
+  .strip-cells {
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    padding: 8px 0;
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb, rgba(200, 180, 140, 0.2)) transparent;
+  }
+
+  .cell {
+    flex-shrink: 0;
+    width: 80px;
+    height: 80px;
+    border-radius: 4px;
+    overflow: hidden;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(200, 180, 140, 0.1);
+  }
+
+  .start-cell {
+    opacity: 0.6;
+    border-style: dashed;
+  }
+
+  .strip-label {
+    margin: 0;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: var(--font-size-compact, 12px);
+    color: rgba(200, 180, 140, 0.45);
+    text-align: center;
+    letter-spacing: 0.03em;
+  }
+
+  .sequence-unknown {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 32px 16px;
-    background: rgba(200, 180, 140, 0.04);
-    border: 1px dashed rgba(200, 180, 140, 0.15);
-    border-radius: 8px;
-    text-align: center;
+    gap: 6px;
+    padding: 20px;
+    color: rgba(200, 180, 140, 0.25);
   }
 
-  .sequence-placeholder i {
-    font-size: 1.5rem;
-    color: rgba(200, 180, 140, 0.3);
+  .sequence-unknown i {
+    font-size: 1.2rem;
   }
 
-  .sequence-label {
-    margin: 0;
-    font-size: var(--font-size-min, 14px);
-    color: rgba(200, 180, 140, 0.5);
-    font-weight: 500;
-  }
-
-  .sequence-id {
+  .unknown-id {
     margin: 0;
     font-family: monospace;
     font-size: var(--font-size-compact, 12px);
-    color: rgba(200, 180, 140, 0.35);
-  }
-
-  .sequence-note {
-    margin: 8px 0 0;
-    font-size: var(--font-size-compact, 12px);
-    color: rgba(200, 180, 140, 0.25);
-    font-style: italic;
   }
 </style>

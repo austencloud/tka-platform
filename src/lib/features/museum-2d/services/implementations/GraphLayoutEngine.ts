@@ -2,9 +2,13 @@
  * Graph Layout Engine
  *
  * Takes an abstract room graph (nodes + edges) and a grid configuration,
- * then computes absolute tile positions for every room. Uses topological
- * ordering with a snake pattern so the museum reads as a linear journey
- * that zigzags across the grid.
+ * then computes absolute tile positions for every room. Uses a LINEAR CHAIN
+ * layout: rooms placed sequentially along the main path, alternating
+ * horizontal and vertical segments for a winding journey.
+ *
+ * Room sizes vary based on their min/max dimensions (compression/release).
+ * Corridors are tight (width from edges). No fixed cell grid — each room
+ * gets exactly the space it needs.
  */
 
 import type { ILayoutEngine } from "../contracts/ILayoutEngine";
@@ -12,68 +16,218 @@ import type {
   RoomNode,
   RoomEdge,
   GridConfig,
-  GridAssignment,
   PlacedRoom,
   LayoutResult,
 } from "../../domain/layout-types";
 
+// Direction vectors for placing the next room relative to the current one
+const DIR_VECTORS: Record<string, { dx: number; dy: number }> = {
+  north: { dx: 0, dy: -1 },
+  south: { dx: 0, dy: 1 },
+  east: { dx: 1, dy: 0 },
+  west: { dx: -1, dy: 0 },
+};
+
 export class GraphLayoutEngine implements ILayoutEngine {
   computeLayout(rooms: RoomNode[], edges: RoomEdge[], config: GridConfig): LayoutResult {
-    const assignments = this.assignGridPositions(rooms, edges);
-    const placedRooms = this.computeAbsolutePositions(rooms, assignments, config);
-    const { gridWidth, gridHeight } = this.computeGridDimensions(assignments, config);
+    const mainPath = this.extractMainPath(rooms, edges);
+    const sideEdges = edges.filter((e) => e.type !== "main-path");
+    const roomMap = new Map(rooms.map((r) => [r.id, r]));
+    const edgeMap = new Map(edges.map((e) => [`${e.from}->${e.to}`, e]));
+
+    // Place rooms sequentially along the main path
+    const placed = new Map<string, PlacedRoom>();
+    const corridorGap = config.padding + 6; // Space for corridor between rooms
+
+    for (let i = 0; i < mainPath.length; i++) {
+      const roomId = mainPath[i]!;
+      const room = roomMap.get(roomId);
+      if (!room) continue;
+
+      // Deterministic sizing: midpoint of min/max
+      const w = room.minWidth + Math.floor((room.maxWidth - room.minWidth) / 2);
+      const h = room.minHeight + Math.floor((room.maxHeight - room.minHeight) / 2);
+
+      if (i === 0) {
+        // First room at origin
+        placed.set(roomId, this.createPlacedRoom(room, 2, 2, w, h));
+        continue;
+      }
+
+      // Find the edge connecting the previous room to this one
+      const prevId = mainPath[i - 1]!;
+      const edge = edgeMap.get(`${prevId}->${roomId}`);
+      const prevRoom = placed.get(prevId);
+      if (!edge || !prevRoom) continue;
+
+      // Place this room based on which wall the corridor exits from
+      const dir = DIR_VECTORS[edge.fromWall];
+      if (!dir) continue;
+
+      let x: number;
+      let y: number;
+
+      if (dir.dx > 0) {
+        // Exit east: new room to the right of previous
+        x = prevRoom.x + prevRoom.w + corridorGap;
+        y = prevRoom.y + Math.floor((prevRoom.h - h) / 2); // Vertically centered
+      } else if (dir.dx < 0) {
+        // Exit west: new room to the left
+        x = prevRoom.x - w - corridorGap;
+        y = prevRoom.y + Math.floor((prevRoom.h - h) / 2);
+      } else if (dir.dy > 0) {
+        // Exit south: new room below
+        x = prevRoom.x + Math.floor((prevRoom.w - w) / 2); // Horizontally centered
+        y = prevRoom.y + prevRoom.h + corridorGap;
+      } else {
+        // Exit north: new room above
+        x = prevRoom.x + Math.floor((prevRoom.w - w) / 2);
+        y = prevRoom.y - h - corridorGap;
+      }
+
+      const candidate = this.createPlacedRoom(room, x, y, w, h);
+      placed.set(roomId, this.nudgeUntilClear(candidate, placed));
+    }
+
+    // Place side-branch rooms
+    for (const edge of sideEdges) {
+      if (placed.has(edge.to)) continue;
+      const parentRoom = placed.get(edge.from);
+      const childNode = roomMap.get(edge.to);
+      if (!parentRoom || !childNode) continue;
+
+      const w = childNode.minWidth + Math.floor((childNode.maxWidth - childNode.minWidth) / 2);
+      const h = childNode.minHeight + Math.floor((childNode.maxHeight - childNode.minHeight) / 2);
+      const dir = DIR_VECTORS[edge.fromWall];
+      if (!dir) continue;
+
+      let x: number;
+      let y: number;
+
+      if (dir.dx > 0) {
+        x = parentRoom.x + parentRoom.w + corridorGap;
+        y = parentRoom.y + Math.floor((parentRoom.h - h) / 2);
+      } else if (dir.dx < 0) {
+        x = parentRoom.x - w - corridorGap;
+        y = parentRoom.y + Math.floor((parentRoom.h - h) / 2);
+      } else if (dir.dy > 0) {
+        x = parentRoom.x + Math.floor((parentRoom.w - w) / 2);
+        y = parentRoom.y + parentRoom.h + corridorGap;
+      } else {
+        x = parentRoom.x + Math.floor((parentRoom.w - w) / 2);
+        y = parentRoom.y - h - corridorGap;
+      }
+
+      const candidate = this.createPlacedRoom(childNode, x, y, w, h);
+      placed.set(edge.to, this.nudgeUntilClear(candidate, placed));
+    }
+
+    // Shift all rooms so the minimum coordinate is at (2, 2).
+    // This eliminates negative coordinates from rooms placed north/west
+    // of the entrance without clamping (which caused overlaps).
+    this.shiftAllRoomsToPositive(placed);
+
+    const placedRooms = Array.from(placed.values());
+
+    // Compute total grid dimensions from placed rooms
+    let maxX = 0;
+    let maxY = 0;
+    for (const room of placedRooms) {
+      maxX = Math.max(maxX, room.x + room.w);
+      maxY = Math.max(maxY, room.y + room.h);
+    }
 
     return {
       rooms: placedRooms,
-      corridors: [], // Corridors are routed separately by CorridorRouter
-      gridWidth,
-      gridHeight,
+      corridors: [],
+      gridWidth: maxX + 4,
+      gridHeight: maxY + 4,
+    };
+  }
+
+  private createPlacedRoom(room: RoomNode, x: number, y: number, w: number, h: number): PlacedRoom {
+    return {
+      id: room.id,
+      name: room.name,
+      x, y, w, h,
+      material: room.material,
+      theme: room.theme,
+      description: room.description,
+      exhibits: room.exhibits,
+      performers: room.performers,
+      torches: room.torches,
     };
   }
 
   /**
-   * Assigns each room to a grid cell using topological order.
-   * Main-path rooms snake left-to-right, then right-to-left.
-   * Side-branch rooms go perpendicular to the main path.
+   * Shifts every placed room so the minimum X and Y across all rooms
+   * lands at (2, 2). This replaces the old Math.max(0, ...) clamping
+   * that collapsed negative-coordinate rooms onto each other.
    */
-  private assignGridPositions(rooms: RoomNode[], edges: RoomEdge[]): GridAssignment[] {
-    const mainPath = this.extractMainPath(rooms, edges);
-    const sideEdges = edges.filter((e) => e.type !== "main-path");
-    const assignments = new Map<string, GridAssignment>();
-
-    // Snake pattern for main path: row 0 left-to-right, row 1 right-to-left, etc.
-    const columnsPerRow = Math.max(3, Math.ceil(Math.sqrt(mainPath.length)));
-    for (let i = 0; i < mainPath.length; i++) {
-      const row = Math.floor(i / columnsPerRow);
-      const colInRow = i % columnsPerRow;
-      const col = row % 2 === 0 ? colInRow : columnsPerRow - 1 - colInRow;
-      assignments.set(mainPath[i], { roomId: mainPath[i], gridCol: col, gridRow: row });
+  private shiftAllRoomsToPositive(placed: Map<string, PlacedRoom>): void {
+    const allRooms = Array.from(placed.values());
+    let minX = Infinity;
+    let minY = Infinity;
+    for (const room of allRooms) {
+      minX = Math.min(minX, room.x);
+      minY = Math.min(minY, room.y);
     }
 
-    // Side branches go one row below their parent
-    for (const edge of sideEdges) {
-      if (assignments.has(edge.to)) continue;
-      const parentAssignment = assignments.get(edge.from);
-      if (!parentAssignment) continue;
+    const offsetX = 2 - minX;
+    const offsetY = 2 - minY;
 
-      // Place side branch one row below, offset by +1 column
-      const sideCol = parentAssignment.gridCol + 1;
-      const sideRow = parentAssignment.gridRow + 1;
-      assignments.set(edge.to, { roomId: edge.to, gridCol: sideCol, gridRow: sideRow });
+    if (offsetX === 0 && offsetY === 0) return;
+
+    for (const room of allRooms) {
+      room.x += offsetX;
+      room.y += offsetY;
     }
+  }
 
-    return Array.from(assignments.values());
+  /**
+   * If a candidate room overlaps any already-placed room, nudge it
+   * along its placement direction until it clears. This handles the
+   * case where centering causes rooms to collide (e.g. multiple rooms
+   * placed in the same direction with different sizes).
+   */
+  private nudgeUntilClear(candidate: PlacedRoom, placed: Map<string, PlacedRoom>): PlacedRoom {
+    const maxAttempts = 50;
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      let hasOverlap = false;
+      for (const existing of Array.from(placed.values())) {
+        if (this.roomsOverlap(candidate, existing)) {
+          hasOverlap = true;
+          // Nudge away from the overlapping room
+          const overlapX = Math.min(candidate.x + candidate.w, existing.x + existing.w) - Math.max(candidate.x, existing.x);
+          const overlapY = Math.min(candidate.y + candidate.h, existing.y + existing.h) - Math.max(candidate.y, existing.y);
+
+          // Nudge along the axis with less overlap (cheaper to resolve)
+          if (overlapX < overlapY) {
+            const nudge = overlapX + 2;
+            candidate.x += candidate.x >= existing.x ? nudge : -nudge;
+          } else {
+            const nudge = overlapY + 2;
+            candidate.y += candidate.y >= existing.y ? nudge : -nudge;
+          }
+          break; // Re-check all rooms after nudging
+        }
+      }
+      if (!hasOverlap) break;
+    }
+    return candidate;
+  }
+
+  private roomsOverlap(a: PlacedRoom, b: PlacedRoom): boolean {
+    return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
   }
 
   /**
    * Extracts the main-path room ordering via topological sort.
-   * Follows only "main-path" edges.
    */
   private extractMainPath(rooms: RoomNode[], edges: RoomEdge[]): string[] {
     const mainEdges = edges.filter((e) => e.type === "main-path");
     const roomIds = new Set(rooms.map((r) => r.id));
 
-    // Build adjacency and in-degree maps for main-path edges only
     const adj = new Map<string, string[]>();
     const inDegree = new Map<string, number>();
     for (const id of roomIds) {
@@ -86,7 +240,6 @@ export class GraphLayoutEngine implements ILayoutEngine {
       inDegree.set(edge.to, (inDegree.get(edge.to) ?? 0) + 1);
     }
 
-    // Find starting nodes (in-degree 0 among main-path edges)
     const mainPathNodes = new Set<string>();
     for (const edge of mainEdges) {
       mainPathNodes.add(edge.from);
@@ -115,8 +268,6 @@ export class GraphLayoutEngine implements ILayoutEngine {
       }
     }
 
-    // Add any rooms not on the main path at the end (shouldn't happen with
-    // a well-formed graph, but prevents silent data loss)
     for (const room of rooms) {
       if (!order.includes(room.id)) {
         order.push(room.id);
@@ -124,69 +275,5 @@ export class GraphLayoutEngine implements ILayoutEngine {
     }
 
     return order;
-  }
-
-  /**
-   * Converts grid assignments to absolute tile positions.
-   * Each room is centered within its grid cell, sized between min and max.
-   * Uses deterministic sizing (midpoint) rather than random, so the layout
-   * is reproducible.
-   */
-  private computeAbsolutePositions(
-    rooms: RoomNode[],
-    assignments: GridAssignment[],
-    config: GridConfig,
-  ): PlacedRoom[] {
-    const roomMap = new Map(rooms.map((r) => [r.id, r]));
-    const placed: PlacedRoom[] = [];
-
-    for (const assignment of assignments) {
-      const room = roomMap.get(assignment.roomId);
-      if (!room) continue;
-
-      const cellX = assignment.gridCol * config.cellWidth;
-      const cellY = assignment.gridRow * config.cellHeight;
-
-      // Deterministic: use midpoint of min/max range
-      const w = room.minWidth + Math.floor((room.maxWidth - room.minWidth) / 2);
-      const h = room.minHeight + Math.floor((room.maxHeight - room.minHeight) / 2);
-
-      // Center room within its grid cell
-      const x = cellX + Math.floor((config.cellWidth - w) / 2);
-      const y = cellY + Math.floor((config.cellHeight - h) / 2);
-
-      placed.push({
-        id: room.id,
-        name: room.name,
-        x,
-        y,
-        w,
-        h,
-        material: room.material,
-        theme: room.theme,
-        description: room.description,
-        exhibits: room.exhibits,
-        performers: room.performers,
-        torches: room.torches,
-      });
-    }
-
-    return placed;
-  }
-
-  private computeGridDimensions(
-    assignments: GridAssignment[],
-    config: GridConfig,
-  ): { gridWidth: number; gridHeight: number } {
-    let maxCol = 0;
-    let maxRow = 0;
-    for (const a of assignments) {
-      maxCol = Math.max(maxCol, a.gridCol);
-      maxRow = Math.max(maxRow, a.gridRow);
-    }
-    return {
-      gridWidth: (maxCol + 1) * config.cellWidth,
-      gridHeight: (maxRow + 1) * config.cellHeight,
-    };
   }
 }
