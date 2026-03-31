@@ -19,6 +19,51 @@ import {
 } from "./avatar-instance-state.svelte";
 
 // ============================================
+// Persistence
+// ============================================
+
+const STORAGE_KEY_MODE = "tka-viewer3d-renderMode";
+const STORAGE_KEY_CAMERA = "tka-viewer3d-camera";
+
+function loadPersistedMode(): "2d" | "3d" {
+  if (typeof localStorage === "undefined") return "2d";
+  try {
+    const v = localStorage.getItem(STORAGE_KEY_MODE);
+    return v === "3d" ? "3d" : "2d";
+  } catch {
+    return "2d";
+  }
+}
+
+function persistMode(mode: "2d" | "3d") {
+  if (typeof localStorage === "undefined") return;
+  try {
+    localStorage.setItem(STORAGE_KEY_MODE, mode);
+  } catch {
+    // Storage full or unavailable
+  }
+}
+
+function loadPersistedCamera(): CameraStateSnapshot | null {
+  if (typeof localStorage === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_CAMERA);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function persistCamera(snapshot: CameraStateSnapshot) {
+  if (typeof localStorage === "undefined") return;
+  try {
+    localStorage.setItem(STORAGE_KEY_CAMERA, JSON.stringify(snapshot));
+  } catch {
+    // Storage full or unavailable
+  }
+}
+
+// ============================================
 // WebGL2 Detection
 // ============================================
 
@@ -46,8 +91,10 @@ export function createViewer3DState(deps: {
   sequenceConverter: ISequenceConverter;
 }) {
   const _webgl2Available = detectWebGL2();
+  const _persistedMode = _webgl2Available ? loadPersistedMode() : "2d";
+  const _persistedCamera = loadPersistedCamera();
 
-  let renderMode = $state<"2d" | "3d">("2d");
+  let renderMode = $state<"2d" | "3d">("2d"); // Actual restore happens via enter3D call from orchestrator
   let avatarState = $state<AvatarInstanceState | null>(null);
   let effectToggles = $state<Record<string, boolean>>({
     fire: false,
@@ -76,6 +123,7 @@ export function createViewer3DState(deps: {
     }
     avatarState.loadSequence(sequenceData);
     renderMode = "3d";
+    persistMode("3d");
   }
 
   /**
@@ -84,6 +132,7 @@ export function createViewer3DState(deps: {
    */
   function exit3D() {
     renderMode = "2d";
+    persistMode("2d");
   }
 
   /**
@@ -101,6 +150,7 @@ export function createViewer3DState(deps: {
    */
   function updateCameraSnapshot(snapshot: CameraStateSnapshot) {
     cameraSnapshot = snapshot;
+    persistCamera(snapshot);
   }
 
   /**
@@ -115,6 +165,12 @@ export function createViewer3DState(deps: {
   return {
     get webgl2Available() {
       return _webgl2Available;
+    },
+    get preferredMode() {
+      return _persistedMode;
+    },
+    get persistedCamera() {
+      return _persistedCamera;
     },
     get renderMode() {
       return renderMode;

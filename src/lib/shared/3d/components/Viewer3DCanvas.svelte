@@ -50,7 +50,7 @@
     </Canvas>
     <button
       class="exit-3d-button"
-      onclick={() => viewer3DState.exit3D()}
+      onclick={(e) => { e.stopPropagation(); viewer3DState.exit3D(); }}
       aria-label="Exit 3D view"
     >
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

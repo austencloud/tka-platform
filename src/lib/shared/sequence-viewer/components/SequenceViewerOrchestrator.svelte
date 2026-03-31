@@ -720,9 +720,10 @@
     }
   });
 
-  // Enter 3D mode from URL param on first load
+  // Enter 3D mode on first load — URL param takes priority, then persisted preference
   $effect(() => {
-    if (initialRenderMode === '3d' && viewer3DState.webgl2Available && sequence) {
+    const shouldStart3D = initialRenderMode === '3d' || viewer3DState.preferredMode === '3d';
+    if (shouldStart3D && viewer3DState.webgl2Available && sequence) {
       viewer3DState.enter3D(sequence);
     }
   });
