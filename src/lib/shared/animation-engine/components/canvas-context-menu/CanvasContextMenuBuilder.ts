@@ -391,16 +391,10 @@ export function buildCanvasContextMenuItems(
       label: deps.viewer3DState.renderMode === "3d" ? "Exit 3D View" : "Enter 3D View",
       icon: "fa-cube",
       action: () => {
-        console.log("[3D Debug] Action fired. renderMode:", deps.viewer3DState!.renderMode);
-        console.log("[3D Debug] webgl2Available:", deps.viewer3DState!.webgl2Available);
-        console.log("[3D Debug] sequenceData:", !!deps.sequenceData);
         if (deps.viewer3DState!.renderMode === "3d") {
           deps.viewer3DState!.exit3D();
-          console.log("[3D Debug] Called exit3D. renderMode now:", deps.viewer3DState!.renderMode);
         } else {
           deps.viewer3DState!.enter3D(deps.sequenceData!);
-          console.log("[3D Debug] Called enter3D. renderMode now:", deps.viewer3DState!.renderMode);
-          console.log("[3D Debug] avatarState:", !!deps.viewer3DState!.avatarState);
         }
       },
     });
