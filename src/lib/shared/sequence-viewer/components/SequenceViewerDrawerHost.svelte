@@ -327,6 +327,7 @@
                 >
                   <ViewerSplitPane
                     sequence={ctx.effectiveSequence}
+                    renderMode={ctx.renderMode}
                     playback={ctx.splitPanePlayback}
                     imageComposition={isImageExportActive
                       ? {
