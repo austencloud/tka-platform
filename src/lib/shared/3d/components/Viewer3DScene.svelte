@@ -11,7 +11,9 @@
   import { T, useTask } from "@threlte/core";
   import Avatar3D from "./Avatar3D.svelte";
   import Staff3D from "./Staff3D.svelte";
+  import Grid3D from "./Grid3D.svelte";
   import { userProportionsState } from "../state/user-proportions-state.svelte";
+  import { getViewer3DContext } from "../context/viewer-3d-context";
   import type { AvatarInstanceState } from "../state/avatar-instance-state.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
@@ -23,6 +25,7 @@
   }
 
   let { sequenceData, currentStep, isPlaying, avatarState }: Props = $props();
+  const viewer3DState = getViewer3DContext();
 
   // Avatar3D.position.y serves two purposes: IK target math AND visual placement.
   // groundY is ~-1.56 (where the avatar's feet naturally sit). We set position.y
@@ -66,6 +69,17 @@
   <T.CircleGeometry args={[2, 64]} />
   <T.MeshStandardMaterial color="#1a1a2e" />
 </T.Mesh>
+
+<!-- Grid planes (wall/wheel/floor discs) — toggled via viewer state -->
+{#if viewer3DState.showGrid}
+  <Grid3D
+    centerPosition={{ x: 0, y: 0, z: 0 }}
+    {facingAngle}
+    gridOffset={0.3}
+    planeOpacity={0.12}
+    showLabels={true}
+  />
+{/if}
 
 <!-- Avatar wrapped in offset Group: -STAGE_LIFT puts feet at floor y=0 -->
 <T.Group position.y={-STAGE_LIFT}>
