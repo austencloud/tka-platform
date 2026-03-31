@@ -85,8 +85,7 @@ export class GraphLayoutEngine implements ILayoutEngine {
         y = prevRoom.y - h - corridorGap;
       }
 
-      const candidate = this.createPlacedRoom(room, x, y, w, h);
-      placed.set(roomId, this.nudgeUntilClear(candidate, placed));
+      placed.set(roomId, this.createPlacedRoom(room, x, y, w, h));
     }
 
     // Place side-branch rooms
@@ -118,9 +117,14 @@ export class GraphLayoutEngine implements ILayoutEngine {
         y = parentRoom.y - h - corridorGap;
       }
 
-      const candidate = this.createPlacedRoom(childNode, x, y, w, h);
-      placed.set(edge.to, this.nudgeUntilClear(candidate, placed));
+      placed.set(edge.to, this.createPlacedRoom(childNode, x, y, w, h));
     }
+
+    // Resolve all overlaps globally. The naive placement above can produce
+    // overlaps when the path folds back on itself (e.g. north->east->south->
+    // west->north). We iteratively push overlapping rooms apart until no
+    // bounding boxes intersect.
+    this.resolveAllOverlaps(placed, corridorGap);
 
     // Shift all rooms so the minimum coordinate is at (2, 2).
     // This eliminates negative coordinates from rooms placed north/west
@@ -185,36 +189,57 @@ export class GraphLayoutEngine implements ILayoutEngine {
   }
 
   /**
-   * If a candidate room overlaps any already-placed room, nudge it
-   * along its placement direction until it clears. This handles the
-   * case where centering causes rooms to collide (e.g. multiple rooms
-   * placed in the same direction with different sizes).
+   * Iteratively resolves ALL room overlaps. For each overlapping pair,
+   * pushes the later-placed room (higher index in placement order) away
+   * from the earlier room. Repeats until no overlaps remain or max
+   * iterations hit.
+   *
+   * Unlike per-room nudging, this considers ALL rooms simultaneously,
+   * handling cases where the path folds back and rooms from distant
+   * parts of the chain end up in the same region.
    */
-  private nudgeUntilClear(candidate: PlacedRoom, placed: Map<string, PlacedRoom>): PlacedRoom {
-    const maxAttempts = 50;
-    for (let attempt = 0; attempt < maxAttempts; attempt++) {
-      let hasOverlap = false;
-      for (const existing of Array.from(placed.values())) {
-        if (this.roomsOverlap(candidate, existing)) {
-          hasOverlap = true;
-          // Nudge away from the overlapping room
-          const overlapX = Math.min(candidate.x + candidate.w, existing.x + existing.w) - Math.max(candidate.x, existing.x);
-          const overlapY = Math.min(candidate.y + candidate.h, existing.y + existing.h) - Math.max(candidate.y, existing.y);
+  private resolveAllOverlaps(placed: Map<string, PlacedRoom>, gap: number): void {
+    const roomList = Array.from(placed.values());
+    const maxIterations = 200;
 
-          // Nudge along the axis with less overlap (cheaper to resolve)
-          if (overlapX < overlapY) {
-            const nudge = overlapX + 2;
-            candidate.x += candidate.x >= existing.x ? nudge : -nudge;
+    for (let iter = 0; iter < maxIterations; iter++) {
+      let resolved = true;
+
+      for (let i = 0; i < roomList.length; i++) {
+        for (let j = i + 1; j < roomList.length; j++) {
+          const a = roomList[i]!;
+          const b = roomList[j]!;
+
+          if (!this.roomsOverlap(a, b)) continue;
+          resolved = false;
+
+          // Compute the exact displacement needed to separate them.
+          // Push the later room (b) away from the earlier room (a).
+          const centerAx = a.x + a.w / 2;
+          const centerAy = a.y + a.h / 2;
+          const centerBx = b.x + b.w / 2;
+          const centerBy = b.y + b.h / 2;
+
+          // How far to move on each axis to fully clear
+          const moveRight = (a.x + a.w + gap) - b.x;
+          const moveLeft = b.x + b.w + gap - a.x;
+          const moveDown = (a.y + a.h + gap) - b.y;
+          const moveUp = b.y + b.h + gap - a.y;
+
+          // Pick the axis with less displacement to minimize layout distortion
+          const dx = centerBx >= centerAx ? moveRight : -moveLeft;
+          const dy = centerBy >= centerAy ? moveDown : -moveUp;
+
+          if (Math.abs(dx) <= Math.abs(dy)) {
+            b.x += dx;
           } else {
-            const nudge = overlapY + 2;
-            candidate.y += candidate.y >= existing.y ? nudge : -nudge;
+            b.y += dy;
           }
-          break; // Re-check all rooms after nudging
         }
       }
-      if (!hasOverlap) break;
+
+      if (resolved) break;
     }
-    return candidate;
   }
 
   private roomsOverlap(a: PlacedRoom, b: PlacedRoom): boolean {

@@ -325,6 +325,32 @@
         }
       : null;
 
+    // Keep the idle pose anchored to the avatar's current world position so that
+    // when both prop states are null (e.g. museum player with no staves), the IK
+    // targets move with the avatar instead of staying fixed at the world origin.
+    // The idle offsets (-0.25/+0.25 lateral, 0.5 up) are rotated by facingAngle
+    // so arms stay at the avatar's sides regardless of which way it faces.
+    // NOTE: We use raw rotation here (no gridOffset) because idle targets are
+    // body-relative, not grid-relative like prop positions.
+    function toIdleWorld(lx: number, ly: number, lz: number): Vector3 {
+      return new Vector3(
+        lx * cos + lz * sin + position.x,
+        ly + (position.y ?? 0),
+        -lx * sin + lz * cos + position.z
+      );
+    }
+    animationService.setIdlePose({
+      leftHand: {
+        targetPosition: toIdleWorld(-0.25, 0.5, 0),
+        weight: 1,
+      },
+      rightHand: {
+        targetPosition: toIdleWorld(0.25, 0.5, 0),
+        weight: 1,
+      },
+      timestamp: Date.now(),
+    });
+
     // Update hand targets from prop states (now in world coords)
     animationService.setHandTargetsFromProps(blueWorldProp, redWorldProp);
 

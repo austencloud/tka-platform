@@ -73,6 +73,7 @@
     initialPitch = 0.3,
     externalYaw = null,
     externalPitch = null,
+    allowedModes,
   }: Props = $props();
 
   // Derived: are we using physics-based movement?
@@ -173,7 +174,13 @@
   };
 
   function cycleMode() {
-    mode = cameraPreferences.cycleMode(destinationId);
+    // Cycle until we land on an allowed mode (or exhaust all 3 possibilities)
+    let attempts = 0;
+    do {
+      mode = cameraPreferences.cycleMode(destinationId);
+      attempts++;
+    } while (allowedModes && !allowedModes.includes(mode) && attempts < 3);
+
     onModeChange?.(mode);
 
     // If entering orbit, exit pointer lock
