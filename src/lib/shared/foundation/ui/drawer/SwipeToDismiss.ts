@@ -304,6 +304,12 @@ export class SwipeToDismiss {
       return;
     }
 
+    // Bail out for canvas elements (e.g., Three.js/Threlte 3D viewer orbit controls)
+    // — dragging on a canvas is for the canvas's own interaction, not drawer dismissal
+    if (target.tagName === "CANVAS" || target.closest("canvas")) {
+      return;
+    }
+
     // Track if we started on an interactive element
     this.startedOnInteractive = !!(
       target.closest("button") ||
