@@ -636,9 +636,15 @@
       // Update movement state for walk animation
       avatarState.setMoveInput({ x: strafeInput, z: forwardInput });
 
-      // Avatar faces camera direction when moving (standard 3rd person convention)
+      // Avatar faces MOVEMENT direction when moving (standard 3rd person convention).
+      // The movement vector is camera-relative: W pushes along camera forward, A/D strafe.
+      // We compute the actual world-space movement direction and face the avatar that way.
+      // When standing still, the avatar keeps its last facing direction.
       if (mode === CameraMode.THIRD_PERSON && hasMovementInput) {
-        const facingAngle = Math.atan2(_forward.x, _forward.z);
+        // Build movement direction from camera-relative input (same vectors used for position)
+        const moveDirX = _forward.x * forwardInput + _right.x * strafeInput;
+        const moveDirZ = _forward.z * forwardInput + _right.z * strafeInput;
+        const facingAngle = Math.atan2(moveDirX, moveDirZ);
         avatarState.setFacingAngle(facingAngle);
       }
 
