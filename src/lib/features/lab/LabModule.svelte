@@ -30,6 +30,7 @@
     trigrid: () => import("$lib/features/trigrid-lab/TriGridLabModule.svelte"),
     duration: () => import("$lib/features/duration-lab/DurationLabModule.svelte"),
     effects: () => import("$lib/features/effects-lab/EffectsLabModule.svelte"),
+    "hand-pose": () => import("./tabs/hand-pose-editor/HandPoseEditor.svelte"),
     disassemble: () => import("$lib/features/disassemble-lab/DisassembleLab.svelte"),
     "prop-buttons": () => import("./tabs/PropButtonLab.svelte"),
     // retro, ascii-pictograph, retro-pictograph graduated to Retro module (Mar 2026)
