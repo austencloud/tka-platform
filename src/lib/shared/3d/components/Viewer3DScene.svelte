@@ -30,10 +30,10 @@
   // push the visual model down so feet land at y=0. Same pattern as MuseumPerformerStation3D.
   const STAGE_LIFT = $derived(-userProportionsState.groundY);
   const avatarPosition = $derived({ x: 0, y: STAGE_LIFT, z: 0 });
-  // Avatar faces its default direction (toward +Z / audience). The camera is
-  // positioned behind the performer (negative Z) looking over their shoulder,
-  // so we see the avatar's back. This means performer's left = viewer's left,
-  // matching TKA pictograph notation (authored from performer's perspective).
+  // Avatar faces +Z (toward audience) at facingAngle=0. The default camera
+  // sits at -Z (behind the performer), so the viewer sees the avatar's back.
+  // This matches TKA pictograph notation: performer's right (red) appears on
+  // the viewer's right, performer's left (blue) on the viewer's left.
   const facingAngle = 0;
 
   // Puppet-mode sync loop: convert the orchestrator's floating-point currentStep

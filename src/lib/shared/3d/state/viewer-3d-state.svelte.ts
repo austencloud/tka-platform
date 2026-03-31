@@ -104,6 +104,9 @@ export function createViewer3DState(deps: {
   });
   let cameraSnapshot = $state<CameraStateSnapshot | null>(null);
 
+  // Camera snap callback — registered by Viewer3DCamera, called by Viewer3DViewPresets
+  let _snapToFn: ((position: { x: number; y: number; z: number }, target: { x: number; y: number; z: number }) => void) | null = null;
+
   /**
    * Switch to 3D render mode and load a sequence for the viewer avatar.
    * No-ops silently when WebGL2 is unavailable so callers don't need to
@@ -162,6 +165,27 @@ export function createViewer3DState(deps: {
     avatarState = null;
   }
 
+  /**
+   * Register the snap-to callback from Viewer3DCamera so preset buttons
+   * can animate the camera without direct coupling to Three.js objects.
+   */
+  function registerSnapTo(
+    fn: (position: { x: number; y: number; z: number }, target: { x: number; y: number; z: number }) => void
+  ) {
+    _snapToFn = fn;
+  }
+
+  /**
+   * Animate the camera to a new position/target. No-ops if the camera
+   * hasn't registered its snap callback yet.
+   */
+  function snapCameraTo(
+    position: { x: number; y: number; z: number },
+    target: { x: number; y: number; z: number }
+  ) {
+    _snapToFn?.(position, target);
+  }
+
   return {
     get webgl2Available() {
       return _webgl2Available;
@@ -188,6 +212,8 @@ export function createViewer3DState(deps: {
     exit3D,
     toggleEffect,
     updateCameraSnapshot,
+    registerSnapTo,
+    snapCameraTo,
     dispose,
   };
 }
