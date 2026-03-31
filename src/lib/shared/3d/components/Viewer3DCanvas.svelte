@@ -16,6 +16,7 @@
   import { Canvas } from "@threlte/core";
   import Viewer3DScene from "./Viewer3DScene.svelte";
   import Viewer3DCamera from "./Viewer3DCamera.svelte";
+  import Viewer3DViewPresets from "./Viewer3DViewPresets.svelte";
   import { getViewer3DContext } from "../context/viewer-3d-context";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { CameraStateSnapshot } from "../domain/types/CameraStateSnapshot";
@@ -58,6 +59,7 @@
       </svg>
       Exit 3D
     </button>
+    <Viewer3DViewPresets />
   {:else}
     <div class="viewer-3d-loading">Loading 3D viewer...</div>
   {/if}
