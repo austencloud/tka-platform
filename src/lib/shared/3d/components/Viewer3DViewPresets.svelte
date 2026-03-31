@@ -28,10 +28,10 @@
     target: { x: number; y: number; z: number };
   };
 
-  // Grid center is at world (0, 0, 0) — that's shoulder height where the staves
-  // cross. All preset targets aim at grid center so the grid fills the viewport.
-  // Camera distance ~2.5m frames the full grid radius (~0.52m) with room to spare.
-  const GRID_CENTER = { x: 0, y: 0, z: 0 };
+  // The prop rotation center is offset forward from the avatar origin by gridOffset
+  // (0.3m in +Z). Y=0 is shoulder height. This is the actual point the staves
+  // orbit around — centering the camera here puts the grid dead-center in viewport.
+  const GRID_CENTER = { x: 0, y: 0, z: 0.3 };
 
   const PRESETS: ViewPreset[] = [
     {
