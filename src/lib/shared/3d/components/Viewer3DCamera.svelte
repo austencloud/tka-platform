@@ -20,11 +20,11 @@
   // Camera behind the performer (performer's perspective / "Back" preset).
   // Avatar faces +Z (toward audience), so -Z = behind = seeing the avatar's back.
   // This matches TKA pictograph notation: red = right, blue = left.
-  // Grid center is at world (0,0,0) = shoulder height. Camera targets grid center
-  // so the staves/grid fill the viewport. Slightly above center (y=0.3) to see
-  // both the grid and some of the avatar's torso for context.
-  const defaultPosition = { x: 0, y: 0.3, z: -2.5 };
-  const defaultTarget = { x: 0, y: 0, z: 0 };
+  // The prop rotation center is at (0, 0, 0.3) — shoulder height, offset 0.3m
+  // forward from avatar origin by gridOffset. Camera targets this point so
+  // the grid (where staves orbit) is centered in the viewport.
+  const defaultPosition = { x: 0, y: 0.3, z: -2.2 };
+  const defaultTarget = { x: 0, y: 0, z: 0.3 };
 
   // Restore persisted camera position if available
   const persisted = viewer3DState.persistedCamera;
