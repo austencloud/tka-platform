@@ -30,7 +30,11 @@
   // push the visual model down so feet land at y=0. Same pattern as MuseumPerformerStation3D.
   const STAGE_LIFT = $derived(-userProportionsState.groundY);
   const avatarPosition = $derived({ x: 0, y: STAGE_LIFT, z: 0 });
-  const facingAngle = 0;
+  // Rotate avatar 180° so it faces AWAY from the camera. TKA pictographs are
+  // authored from the performer's perspective — the reader IS the performer.
+  // With the avatar's back to the camera, performer's left = viewer's left,
+  // matching how the pictograph reads.
+  const facingAngle = Math.PI;
 
   // Puppet-mode sync loop: convert the orchestrator's floating-point currentStep
   // into avatar beat index + sub-beat progress each frame.
