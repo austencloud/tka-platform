@@ -301,25 +301,24 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
   /**
    * Build finger bone chains for both hands.
    *
-   * Walks FINGER_BONES (15 per hand) and resolves each bone by trying
-   * multiple naming conventions (Mixamo, characters3d.com, Unreal Engine).
-   * Respects the skeleton prefix (e.g. "mixamorig") detected from the Hips bone.
+   * Uses the skeleton's own bone array (same objects the GPU skinning references)
+   * rather than scene-graph lookup, which can return different object instances.
    *
    * Returns null if ANY of the 30 bones cannot be found — graceful degradation
    * for low-poly models that omit finger rigs entirely.
    */
-  private buildFingerChains(root: Object3D): FingerChains | null {
+  private buildFingerChains(_root: Object3D): FingerChains | null {
+    if (!this.skeleton) return null;
+
     const left = new Map<FingerBoneName, Bone>();
     const right = new Map<FingerBoneName, Bone>();
 
-    // Detect the skeleton prefix used by this model (e.g. "mixamorig" from "mixamorigHips")
-    let prefix = "";
-    root.traverse((obj) => {
-      if (obj.name.includes("Hips")) {
-        const idx = obj.name.indexOf("Hips");
-        prefix = obj.name.slice(0, idx);
-      }
-    });
+    // Build a lookup from lowercase bone name → Bone reference
+    // using the skeleton's actual bone array (the GPU-bound instances)
+    const bonesByName = new Map<string, Bone>();
+    for (const bone of this.skeleton.bones) {
+      bonesByName.set(bone.name.toLowerCase(), bone);
+    }
 
     for (const boneName of FINGER_BONES) {
       // --- Left hand ---
@@ -328,11 +327,9 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
       let leftBone: Bone | null = null;
 
       for (const alias of leftAliases) {
-        const withPrefix = root.getObjectByName(`${prefix}${alias}`);
-        const without = root.getObjectByName(alias);
-        const found = withPrefix ?? without;
-        if (found && (found as Bone).isBone) {
-          leftBone = found as Bone;
+        const found = bonesByName.get(alias.toLowerCase());
+        if (found) {
+          leftBone = found;
           break;
         }
       }
@@ -343,17 +340,13 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
       let rightBone: Bone | null = null;
 
       for (const alias of rightAliases) {
-        const withPrefix = root.getObjectByName(`${prefix}${alias}`);
-        const without = root.getObjectByName(alias);
-        const found = withPrefix ?? without;
-        if (found && (found as Bone).isBone) {
-          rightBone = found as Bone;
+        const found = bonesByName.get(alias.toLowerCase());
+        if (found) {
+          rightBone = found;
           break;
         }
       }
 
-      // Fail fast: if this model doesn't have finger bones, return null rather
-      // than a partially-populated map that would produce broken animations
       if (!leftBone || !rightBone) {
         return null;
       }
