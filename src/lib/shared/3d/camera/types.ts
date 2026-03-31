@@ -147,8 +147,12 @@ export interface AvatarState {
 	isMoving: boolean;
 	setMoveInput: (input: { x: number; z: number }) => void;
 	updateMovement: (delta: number, cameraAngle: number) => void;
-	/** Set facing angle directly (for first-person mode where looking = turning) */
+	/** Set facing angle target (avatar lerps toward it smoothly) */
 	setFacingAngle: (angle: number) => void;
+	/** Snap facing angle instantly with no lerp (for first-person mode) */
+	snapFacingAngle?: (angle: number) => void;
+	/** Update locomotion state each frame (lerps facing angle, etc.) */
+	updateLocomotion?: (delta: number) => void;
 }
 
 /**

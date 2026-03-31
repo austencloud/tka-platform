@@ -648,10 +648,14 @@
         avatarState.setFacingAngle(facingAngle);
       }
 
+      // Lerp the avatar's facing angle toward its target each frame.
+      // This produces smooth body rotation in third-person mode.
+      avatarState.updateLocomotion?.(delta);
+
       if (mode === CameraMode.FIRST_PERSON) {
         // First-person: camera IS the avatar's eyes
-        // Avatar always faces where you're looking (you turn your body when you turn your head)
-        avatarState.setFacingAngle(yaw);
+        // Avatar always faces where you're looking — snap, don't lerp
+        (avatarState.snapFacingAngle ?? avatarState.setFacingAngle)(yaw);
 
         const cfg = SETTINGS.firstPerson;
         const camX = targetX + Math.sin(yaw) * cfg.forwardOffset;
