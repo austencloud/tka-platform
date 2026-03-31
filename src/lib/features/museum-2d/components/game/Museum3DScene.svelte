@@ -827,14 +827,10 @@
     moveSpeed={3}
     initialYaw={playerYaw}
     initialPitch={playerPitch}
-    onModeChange={(newMode) => {
-      // Museum only uses FIRST_PERSON and THIRD_PERSON.
-      // The standard cycle is ORBIT → THIRD → FIRST → ORBIT, so pressing V
-      // in first-person lands on ORBIT, which exits pointer lock. Skip ORBIT
-      // and go straight to THIRD_PERSON so V toggles between 1st and 3rd.
-      if (newMode === CameraMode.ORBIT) {
-        cameraPreferences.setModeForDestination("museum", CameraMode.THIRD_PERSON);
-      }
+    allowedModes={[CameraMode.FIRST_PERSON, CameraMode.THIRD_PERSON]}
+    onModeChange={() => {
+      // No action needed — UCC handles mode internally.
+      // allowedModes ensures ORBIT is never reached via V-key cycling.
     }}
     onRotationChange={(newYaw, newPitch) => {
       playerYaw = newYaw;
