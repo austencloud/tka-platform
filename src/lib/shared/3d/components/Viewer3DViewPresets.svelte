@@ -28,39 +28,45 @@
     target: { x: number; y: number; z: number };
   };
 
+  // Grid center is at world (0, 0, 0) — that's shoulder height where the staves
+  // cross. All preset targets aim at grid center so the grid fills the viewport.
+  // Camera distance ~2.5m frames the full grid radius (~0.52m) with room to spare.
+  const GRID_CENTER = { x: 0, y: 0, z: 0 };
+
   const PRESETS: ViewPreset[] = [
     {
       id: "behind",
       label: "Back",
       sublabel: "Performer's view  \u2022  red = right, blue = left",
-      position: { x: 0, y: 1.5, z: -2.5 },
-      target: { x: 0, y: 1.0, z: 0 },
+      position: { x: 0, y: 0.3, z: -2.5 },
+      target: GRID_CENTER,
     },
     {
       id: "front",
       label: "Front",
       sublabel: "Audience view",
-      position: { x: 0, y: 1.5, z: 2.5 },
-      target: { x: 0, y: 1.0, z: 0 },
+      position: { x: 0, y: 0.3, z: 2.5 },
+      target: GRID_CENTER,
     },
     {
       id: "side",
       label: "Side",
-      position: { x: 2.5, y: 1.5, z: 0 },
-      target: { x: 0, y: 1.0, z: 0 },
+      sublabel: "From performer's right",
+      position: { x: 2.5, y: 0.3, z: 0 },
+      target: GRID_CENTER,
     },
     {
       id: "top",
       label: "Top",
-      position: { x: 0, y: 3.5, z: -0.3 },
-      target: { x: 0, y: 0, z: 0 },
+      position: { x: 0, y: 3.0, z: -0.01 },
+      target: GRID_CENTER,
     },
     {
       id: "threequarter",
       label: "3/4",
       sublabel: "Isometric behind",
-      position: { x: -1.5, y: 2.2, z: -2.0 },
-      target: { x: 0, y: 0.8, z: 0 },
+      position: { x: -1.5, y: 1.5, z: -2.0 },
+      target: GRID_CENTER,
     },
   ];
 
