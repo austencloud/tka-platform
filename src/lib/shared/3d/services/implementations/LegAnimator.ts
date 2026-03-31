@@ -428,19 +428,16 @@ export class LegAnimator implements ILegAnimator {
   }
 
   /**
-   * Update single animation mode (legacy)
+   * Update single animation mode (legacy).
+   * Sets TARGET weight — actual blending happens in update() via lerpWeights().
    */
   private updateSingleAnimation(
     input: LocomotionInput,
-    wasMoving: boolean
+    _wasMoving: boolean
   ): void {
     if (!this.walkAction) return;
 
-    if (input.isMoving && !wasMoving) {
-      this.walkAction.setEffectiveWeight(1);
-    } else if (!input.isMoving && wasMoving) {
-      this.walkAction.setEffectiveWeight(0);
-    }
+    this.targetWalkWeight = input.isMoving ? 1 : 0;
 
     if (input.isMoving) {
       const playbackSpeed = this.config.baseSpeed * Math.max(0.5, input.speed);
@@ -450,7 +447,7 @@ export class LegAnimator implements ILegAnimator {
 
   /**
    * Update directional blend based on movement direction.
-   * Uses 4-way blend: calculates weights for each direction based on input.
+   * Sets TARGET weights — actual blending happens in update() via lerpWeights().
    */
   private updateDirectionalBlend(
     input: LocomotionInput,
@@ -458,37 +455,27 @@ export class LegAnimator implements ILegAnimator {
   ): void {
     const dir = input.moveDirection ?? { x: 0, z: 1 };
 
-    // Calculate weights for each direction
-    // Forward/backward from z, strafe from x
-    const forwardWeight = Math.max(0, dir.z); // z > 0 = forward
-    const backwardWeight = Math.max(0, -dir.z); // z < 0 = backward
-    const strafeLeftWeight = Math.max(0, -dir.x); // x < 0 = left
-    const strafeRightWeight = Math.max(0, dir.x); // x > 0 = right
+    // Calculate target weights for each direction
+    const forwardWeight = Math.max(0, dir.z);
+    const backwardWeight = Math.max(0, -dir.z);
+    const strafeLeftWeight = Math.max(0, -dir.x);
+    const strafeRightWeight = Math.max(0, dir.x);
 
     // Normalize so weights sum to 1 when moving
     const totalWeight =
       forwardWeight + backwardWeight + strafeLeftWeight + strafeRightWeight;
     const normalize = totalWeight > 0 ? 1 / totalWeight : 0;
 
-    // Apply weights (0 when not moving)
     const movingMultiplier = input.isMoving ? 1 : 0;
 
-    this.setActionWeight(
-      "forward",
-      forwardWeight * normalize * movingMultiplier
-    );
-    this.setActionWeight(
-      "backward",
-      backwardWeight * normalize * movingMultiplier
-    );
-    this.setActionWeight(
-      "strafeLeft",
-      strafeLeftWeight * normalize * movingMultiplier
-    );
-    this.setActionWeight(
-      "strafeRight",
-      strafeRightWeight * normalize * movingMultiplier
-    );
+    this.targetDirWeights.forward =
+      forwardWeight * normalize * movingMultiplier;
+    this.targetDirWeights.backward =
+      backwardWeight * normalize * movingMultiplier;
+    this.targetDirWeights.strafeLeft =
+      strafeLeftWeight * normalize * movingMultiplier;
+    this.targetDirWeights.strafeRight =
+      strafeRightWeight * normalize * movingMultiplier;
 
     // Adjust playback speed
     if (input.isMoving) {
