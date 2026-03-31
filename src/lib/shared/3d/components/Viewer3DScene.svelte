@@ -1,0 +1,95 @@
+<script lang="ts">
+  /**
+   * Viewer3DScene
+   *
+   * Inner 3D scene content for the sequence viewer. Renders inside a Threlte
+   * <Canvas>. Drives avatar pose purely through the useTask sync loop — the
+   * orchestrator controls currentStep and this component puppets the avatar
+   * to match. avatarState.play() is never called here.
+   */
+
+  import { T, useTask } from "@threlte/core";
+  import Avatar3D from "./Avatar3D.svelte";
+  import Staff3D from "./Staff3D.svelte";
+  import type { AvatarInstanceState } from "../state/avatar-instance-state.svelte";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+
+  interface Props {
+    sequenceData: SequenceData | null;
+    currentStep: number;
+    isPlaying: boolean;
+    avatarState: AvatarInstanceState;
+  }
+
+  let { sequenceData, currentStep, isPlaying, avatarState }: Props = $props();
+
+  // The avatar world position — fixed at origin for the single-performer viewer.
+  // Staff3D and Avatar3D both need this to agree on where the IK pivot is.
+  const avatarPosition = { x: 0, y: 0, z: 0 };
+  const facingAngle = 0;
+
+  // Puppet-mode sync loop: convert the orchestrator's floating-point currentStep
+  // into avatar beat index + sub-beat progress each frame.
+  //
+  // currentStep is a continuous float: integer part = beat index (1-based from
+  // the animation orchestrator), fractional part = sub-beat interpolation 0..1.
+  //
+  // We shift to 0-based step indices for the avatar and clamp to 0 so the
+  // start frame (currentStep < 1) shows the first pose.
+  useTask(() => {
+    const beatIndex = Math.floor(currentStep);
+    const subBeatProgress = currentStep - beatIndex;
+    const stepIndex3D = Math.max(0, beatIndex - 1);
+    const progress3D = beatIndex < 1 ? 0 : subBeatProgress;
+    avatarState.goToStep(stepIndex3D);
+    avatarState.setProgress(progress3D);
+  });
+
+  const bluePropState = $derived(avatarState.bluePropState);
+  const redPropState = $derived(avatarState.redPropState);
+</script>
+
+<!-- Lighting -->
+<T.AmbientLight intensity={0.4} />
+<T.DirectionalLight position={[5, 10, 5]} intensity={0.8} />
+
+<!-- Ground disc -->
+<T.Mesh rotation.x={-Math.PI / 2}>
+  <T.CircleGeometry args={[2, 64]} />
+  <T.MeshStandardMaterial color="#1a1a2e" />
+</T.Mesh>
+
+<!-- Avatar (GLTF rigged humanoid, falls back to procedural IK figure) -->
+<Avatar3D
+  id="viewer"
+  bluePropState={bluePropState}
+  redPropState={redPropState}
+  position={avatarPosition}
+  {facingAngle}
+  isActive={false}
+  isMoving={false}
+/>
+
+<!-- Blue staff -->
+{#if bluePropState}
+  <Staff3D
+    propState={bluePropState}
+    color="blue"
+    {avatarPosition}
+    {facingAngle}
+    gridOffset={0.3}
+    isActivePlayer={false}
+  />
+{/if}
+
+<!-- Red staff -->
+{#if redPropState}
+  <Staff3D
+    propState={redPropState}
+    color="red"
+    {avatarPosition}
+    {facingAngle}
+    gridOffset={0.3}
+    isActivePlayer={false}
+  />
+{/if}
