@@ -7,6 +7,7 @@
  */
 
 import type { Bone, SkinnedMesh, Object3D, Vector3 } from "three";
+import type { FingerChains } from "../../domain/models/GripPose";
 
 /**
  * Standard bone names following Mixamo/humanoid conventions
@@ -70,6 +71,8 @@ export interface SkeletonState {
   /** Pre-computed arm chains for IK */
   leftArmChain: BoneChain | null;
   rightArmChain: BoneChain | null;
+  /** Mapped finger bone chains. Null if model lacks finger bones. */
+  fingerChains: FingerChains | null;
 }
 
 export interface IAvatarSkeletonBuilder {

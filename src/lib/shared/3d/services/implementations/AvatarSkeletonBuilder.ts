@@ -14,6 +14,11 @@ import type {
   BoneChain,
   SkeletonState,
 } from "../contracts/IAvatarSkeletonBuilder";
+import {
+  FINGER_BONES,
+  type FingerBoneName,
+  type FingerChains,
+} from "../../domain/models/GripPose";
 
 /**
  * Mapping of standard bone names to common variations
@@ -60,6 +65,29 @@ const BONE_NAME_ALIASES: Record<BoneName, string[]> = {
   RightFoot: ["RightFoot", "r_foot", "foot.R", "foot_r"],
 };
 
+/**
+ * Mapping of canonical finger bone names to common GLTF naming conventions.
+ * Built at module load time — one entry per hand × 15 bones.
+ *
+ * Supported conventions:
+ *   Mixamo:          LeftHandThumb1
+ *   characters3d.com: L_Thumb1
+ *   Unreal Engine:   thumb1_l
+ */
+const FINGER_BONE_ALIASES: Record<string, string[]> = {};
+
+for (const side of ["Left", "Right"] as const) {
+  const prefix = side === "Left" ? "L" : "R";
+  for (const bone of FINGER_BONES) {
+    const key = `${side}${bone}`;
+    FINGER_BONE_ALIASES[key] = [
+      `${side}Hand${bone}`,                        // Mixamo: LeftHandThumb1
+      `${prefix}_${bone}`,                          // characters3d.com: L_Thumb1
+      `${bone.toLowerCase()}_${prefix.toLowerCase()}`, // Unreal: thumb1_l
+    ];
+  }
+}
+
 export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
   private state: SkeletonState = {
     isLoaded: false,
@@ -68,6 +96,7 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
     bones: new Map(),
     leftArmChain: null,
     rightArmChain: null,
+    fingerChains: null,
   };
 
   private loader = new GLTFLoader();
@@ -141,6 +170,7 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
 
     // Build new arm chains (uses the new bones map)
     this.buildArmChains();
+    this.state.fingerChains = this.buildFingerChains(gltf.scene);
 
     this.state.isLoaded = true;
 
@@ -170,17 +200,6 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
   private mapBoneToMap(bone: Bone, bonesMap: Map<BoneName, Bone>): void {
     const boneName = bone.name.toLowerCase();
 
-    // Skip finger bones
-    if (
-      boneName.includes("thumb") ||
-      boneName.includes("index") ||
-      boneName.includes("middle") ||
-      boneName.includes("ring") ||
-      boneName.includes("pinky")
-    ) {
-      return;
-    }
-
     for (const [standardName, aliases] of Object.entries(BONE_NAME_ALIASES)) {
       for (const alias of aliases) {
         if (boneName === alias.toLowerCase()) {
@@ -204,17 +223,6 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
 
   private mapBone(bone: Bone): void {
     const boneName = bone.name.toLowerCase();
-
-    // Skip finger bones - they contain hand name but aren't the hand
-    if (
-      boneName.includes("thumb") ||
-      boneName.includes("index") ||
-      boneName.includes("middle") ||
-      boneName.includes("ring") ||
-      boneName.includes("pinky")
-    ) {
-      return; // Don't map finger bones
-    }
 
     for (const [standardName, aliases] of Object.entries(BONE_NAME_ALIASES)) {
       for (const alias of aliases) {
@@ -288,6 +296,73 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
         middleRestDir,
       };
     }
+  }
+
+  /**
+   * Build finger bone chains for both hands.
+   *
+   * Walks FINGER_BONES (15 per hand) and resolves each bone by trying
+   * multiple naming conventions (Mixamo, characters3d.com, Unreal Engine).
+   * Respects the skeleton prefix (e.g. "mixamorig") detected from the Hips bone.
+   *
+   * Returns null if ANY of the 30 bones cannot be found — graceful degradation
+   * for low-poly models that omit finger rigs entirely.
+   */
+  private buildFingerChains(root: Object3D): FingerChains | null {
+    const left = new Map<FingerBoneName, Bone>();
+    const right = new Map<FingerBoneName, Bone>();
+
+    // Detect the skeleton prefix used by this model (e.g. "mixamorig" from "mixamorigHips")
+    let prefix = "";
+    root.traverse((obj) => {
+      if (obj.name.includes("Hips")) {
+        const idx = obj.name.indexOf("Hips");
+        prefix = obj.name.slice(0, idx);
+      }
+    });
+
+    for (const boneName of FINGER_BONES) {
+      // --- Left hand ---
+      const leftKey = `Left${boneName}`;
+      const leftAliases = FINGER_BONE_ALIASES[leftKey] ?? [];
+      let leftBone: Bone | null = null;
+
+      for (const alias of leftAliases) {
+        const withPrefix = root.getObjectByName(`${prefix}${alias}`);
+        const without = root.getObjectByName(alias);
+        const found = withPrefix ?? without;
+        if (found && (found as Bone).isBone) {
+          leftBone = found as Bone;
+          break;
+        }
+      }
+
+      // --- Right hand ---
+      const rightKey = `Right${boneName}`;
+      const rightAliases = FINGER_BONE_ALIASES[rightKey] ?? [];
+      let rightBone: Bone | null = null;
+
+      for (const alias of rightAliases) {
+        const withPrefix = root.getObjectByName(`${prefix}${alias}`);
+        const without = root.getObjectByName(alias);
+        const found = withPrefix ?? without;
+        if (found && (found as Bone).isBone) {
+          rightBone = found as Bone;
+          break;
+        }
+      }
+
+      // Fail fast: if this model doesn't have finger bones, return null rather
+      // than a partially-populated map that would produce broken animations
+      if (!leftBone || !rightBone) {
+        return null;
+      }
+
+      left.set(boneName, leftBone);
+      right.set(boneName, rightBone);
+    }
+
+    return { left, right };
   }
 
   /**
@@ -427,6 +502,7 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
       bones: new Map(),
       leftArmChain: null,
       rightArmChain: null,
+      fingerChains: null,
     };
     this.skeleton = null;
   }
