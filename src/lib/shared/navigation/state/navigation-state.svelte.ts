@@ -200,6 +200,23 @@ export function createNavigationState() {
   // Load Persisted State (runs at module initialization)
   // ─────────────────────────────────────────────────────────────────────────────
 
+  // Modules with heavy 3D content that shouldn't auto-restore on full page reload.
+  // During HMR (Vite dev hot reload), these modules restore normally because the
+  // developer is actively working on them. On a hard reload (Ctrl+Shift+R) or fresh
+  // navigation to "/", the app falls back to "create" instead of re-mounting
+  // heavyweight 3D scenes the user didn't ask for.
+  const HEAVYWEIGHT_MODULES: ReadonlySet<string> = new Set(["realm"]);
+
+  // Detect whether this is an HMR remount (same page session) or a fresh page load.
+  // sessionStorage survives Vite HMR remounts but is cleared by hard reload (Ctrl+Shift+R)
+  // and new tab opens, so its presence reliably distinguishes the two cases.
+  const HMR_SESSION_KEY = "tka-nav-session-active";
+  let isHmrRemount = false;
+  if (typeof sessionStorage !== "undefined") {
+    isHmrRemount = sessionStorage.getItem(HMR_SESSION_KEY) === "1";
+    sessionStorage.setItem(HMR_SESSION_KEY, "1");
+  }
+
   if (typeof localStorage !== "undefined") {
     // Load create mode persistence
     const savedCreateMode = localStorage.getItem(CURRENT_CREATE_MODE_KEY);
@@ -217,10 +234,18 @@ export function createNavigationState() {
     if (savedModule) {
       const normalizedSavedModule = normalizeModuleId(savedModule);
       if (normalizedSavedModule) {
-        currentModule = normalizedSavedModule;
-        // Fix localStorage if it had stale/migrated value
-        if (normalizedSavedModule !== savedModule) {
-          localStorage.setItem(CURRENT_MODULE_KEY, normalizedSavedModule);
+        // On a fresh page load (not HMR), don't restore heavyweight modules.
+        // The user likely hard-reloaded to escape the heavy 3D scene, not to
+        // re-enter it. Fall back to "create" as the default landing module.
+        if (!isHmrRemount && HEAVYWEIGHT_MODULES.has(normalizedSavedModule)) {
+          currentModule = "create";
+          localStorage.setItem(CURRENT_MODULE_KEY, "create");
+        } else {
+          currentModule = normalizedSavedModule;
+          // Fix localStorage if it had stale/migrated value
+          if (normalizedSavedModule !== savedModule) {
+            localStorage.setItem(CURRENT_MODULE_KEY, normalizedSavedModule);
+          }
         }
       } else {
         // Invalid module in localStorage - clear it and use default
@@ -270,35 +295,43 @@ export function createNavigationState() {
           : null;
 
         if (urlModuleDefinition && normalizedModule) {
-          // Valid module - use it
-          currentModule = normalizedModule;
-
-          // Determine the tab to use
-          if (urlModuleDefinition.sections.length > 0) {
-            // Module has tabs - check if URL specifies a valid one FOR THIS MODULE
-            const validTab = urlTab
-              ? urlModuleDefinition.sections.find((s) => s.id === urlTab)
-              : null;
-
-            if (validTab && urlTab) {
-              // URL has valid tab for this module - use it
-              activeTab = urlTab;
-            } else {
-              // No tab in URL - check persisted per-module tab first, then default.
-              // This preserves the user's last tab across HMR reloads and page refreshes.
-              const savedTab = loadModuleTab(normalizedModule);
-              if (savedTab && urlModuleDefinition.sections.some((s) => s.id === savedTab)) {
-                activeTab = savedTab;
-              } else {
-                activeTab =
-                  normalizedModule === "create"
-                    ? DEFAULT_CREATE_TAB
-                    : urlModuleDefinition.sections[0]?.id || "";
-              }
-            }
+          // On fresh page load, redirect heavyweight modules to "create" instead of
+          // re-mounting heavy 3D scenes. During HMR the URL is left alone so the
+          // developer stays on the module they're editing.
+          if (!isHmrRemount && HEAVYWEIGHT_MODULES.has(normalizedModule)) {
+            currentModule = "create";
+            activeTab = DEFAULT_CREATE_TAB;
           } else {
-            // Module has no tabs
-            activeTab = "";
+            // Valid module - use it
+            currentModule = normalizedModule;
+
+            // Determine the tab to use
+            if (urlModuleDefinition.sections.length > 0) {
+              // Module has tabs - check if URL specifies a valid one FOR THIS MODULE
+              const validTab = urlTab
+                ? urlModuleDefinition.sections.find((s) => s.id === urlTab)
+                : null;
+
+              if (validTab && urlTab) {
+                // URL has valid tab for this module - use it
+                activeTab = urlTab;
+              } else {
+                // No tab in URL - check persisted per-module tab first, then default.
+                // This preserves the user's last tab across HMR reloads and page refreshes.
+                const savedTab = loadModuleTab(normalizedModule);
+                if (savedTab && urlModuleDefinition.sections.some((s) => s.id === savedTab)) {
+                  activeTab = savedTab;
+                } else {
+                  activeTab =
+                    normalizedModule === "create"
+                      ? DEFAULT_CREATE_TAB
+                      : urlModuleDefinition.sections[0]?.id || "";
+                }
+              }
+            } else {
+              // Module has no tabs
+              activeTab = "";
+            }
           }
         } else {
           // Unrecognized path — could be a typo ("sdashboard") or a standalone
