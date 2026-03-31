@@ -6,6 +6,7 @@
 
 import type { Vector3, Quaternion } from "three";
 import type { Plane } from "../enums/Plane";
+import type { GripType } from "./GripPose";
 
 /**
  * 2D prop state (matches existing animation-engine PropState)
@@ -31,6 +32,8 @@ export interface PropState3D extends PropState2D {
   worldPosition: Vector3;
   /** 3D rotation quaternion (computed from plane + staffAngle) */
   worldRotation: Quaternion;
+  /** Grip type for the hand holding this prop. Scaffolding for Phase 3. */
+  gripType?: GripType;
 }
 
 /**

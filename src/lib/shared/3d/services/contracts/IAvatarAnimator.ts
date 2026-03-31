@@ -16,8 +16,8 @@ export interface HandPose {
   targetPosition: Vector3;
   /** Target rotation for wrist (optional) */
   wristRotation?: Quaternion;
-  /** Grip type for fingers (future) */
-  gripType?: "staff" | "open" | "fist" | "point";
+  /** Grip type for fingers — see GripType enum in GripPose.ts */
+  gripType?: import("../../domain/models/GripPose").GripType;
   /** Blend weight (0-1) */
   weight: number;
 }
