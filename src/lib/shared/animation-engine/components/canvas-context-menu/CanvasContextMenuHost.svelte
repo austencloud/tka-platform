@@ -11,12 +11,15 @@
   } from "$lib/shared/components/context-menu/context-menu-types";
   import { buildCanvasContextMenuItems } from "./CanvasContextMenuBuilder";
   import { getAnimationVisibilityManager } from "../../state/animation-visibility-state.svelte";
+  import { getViewer3DContext } from "$lib/shared/3d/context/viewer-3d-context";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
   interface Props {
     onOpenSettings: () => void;
     disassembled?: boolean;
     onToggleDisassemble?: () => void;
     captureEffectDiagnostics?: () => Record<string, unknown>;
+    sequenceData?: SequenceData | null;
   }
 
   const {
@@ -24,7 +27,14 @@
     disassembled = false,
     onToggleDisassemble,
     captureEffectDiagnostics,
+    sequenceData,
   }: Props = $props();
+
+  // Try to read the viewer-3d context. When this component is rendered inside
+  // a sequence viewer, the orchestrator will have set it. In other contexts
+  // (e.g., the compose tab) it won't be present and we gracefully omit the
+  // 3D menu item.
+  const viewer3DState = getViewer3DContext();
 
   let menuState: ContextMenuState = $state({ open: false });
   let menuItemsVersion: number = $state(0);
@@ -58,6 +68,8 @@
       disassembled,
       onToggleDisassemble,
       captureEffectDiagnostics,
+      viewer3DState,
+      sequenceData,
     });
   });
 

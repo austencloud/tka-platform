@@ -568,6 +568,7 @@ Last audit: 2025-12-27
       disassembled={externalToggleDisassemble ? externalDisassembled : isDisassembledView}
       onToggleDisassemble={externalToggleDisassemble ?? toggleDisassemble}
       captureEffectDiagnostics={() => engine.captureEffectDiagnostics()}
+      {sequenceData}
     />
 
     <AnimationSettingsModal
