@@ -720,10 +720,16 @@
     }
   });
 
-  // Enter 3D mode on first load — URL param takes priority, then persisted preference
+  // Enter 3D mode on first load — URL param takes priority, then persisted preference.
+  // One-shot: only runs once when sequence first becomes available. Using a flag
+  // prevents re-triggering when enter3D writes to $state (which would cause an
+  // infinite effect_update_depth_exceeded loop).
+  let _3dRestored = false;
   $effect(() => {
+    if (_3dRestored) return;
     const shouldStart3D = initialRenderMode === '3d' || viewer3DState.preferredMode === '3d';
     if (shouldStart3D && viewer3DState.webgl2Available && sequence) {
+      _3dRestored = true;
       viewer3DState.enter3D(sequence);
     }
   });
