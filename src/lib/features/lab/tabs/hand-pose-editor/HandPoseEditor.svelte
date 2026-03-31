@@ -18,6 +18,40 @@
   import { cmToUnits } from "$lib/shared/3d/config/avatar-proportions";
 
   const FINGERS = ["Thumb", "Index", "Middle", "Ring", "Pinky"] as const;
+  const SESSION_KEY = "hand-pose-editor";
+
+  // Shape of what we persist to sessionStorage
+  interface PersistedState {
+    selectedPreset: GripType;
+    eulerAngles: { x: number; y: number; z: number }[];
+    camera: { x: number; y: number; z: number };
+    target: { x: number; y: number; z: number };
+  }
+
+  function loadFromSession(): PersistedState | null {
+    try {
+      const raw = sessionStorage.getItem(SESSION_KEY);
+      if (!raw) return null;
+      return JSON.parse(raw) as PersistedState;
+    } catch {
+      return null;
+    }
+  }
+
+  function saveToSession() {
+    try {
+      const camera = cameraRef
+        ? { x: cameraRef.position.x, y: cameraRef.position.y, z: cameraRef.position.z }
+        : { x: 0, y: 0, z: 0 };
+      const target = controlsRef
+        ? { x: controlsRef.target.x, y: controlsRef.target.y, z: controlsRef.target.z }
+        : { x: 0, y: 0, z: 0 };
+      const data: PersistedState = { selectedPreset, eulerAngles, camera, target };
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify(data));
+    } catch {
+      // sessionStorage unavailable — silently skip
+    }
+  }
 
   let eulerAngles = $state<{ x: number; y: number; z: number }[]>(
     FINGER_BONES.map(() => ({ x: 0, y: 0, z: 0 }))
@@ -86,10 +120,28 @@
       // Pass meshes to SkeletonUpdater (inside Canvas) for per-frame skeleton updates
       skinnedMeshes = state.meshes;
 
-      loadPreset(GripType.IDLE);
+      const persisted = loadFromSession();
+      if (persisted) {
+        // Restore pose state from last session
+        selectedPreset = persisted.selectedPreset;
+        eulerAngles = persisted.eulerAngles;
+        applyToBones();
 
-      // Focus camera after Threlte mounts the scene
-      setTimeout(() => focusCameraOnHand(), 100);
+        // Restore camera after Threlte mounts the scene
+        setTimeout(() => {
+          if (cameraRef) {
+            cameraRef.position.set(persisted.camera.x, persisted.camera.y, persisted.camera.z);
+          }
+          if (controlsRef) {
+            controlsRef.target.set(persisted.target.x, persisted.target.y, persisted.target.z);
+            controlsRef.update();
+          }
+        }, 100);
+      } else {
+        loadPreset(GripType.IDLE);
+        // Focus camera after Threlte mounts the scene
+        setTimeout(() => focusCameraOnHand(), 100);
+      }
     } catch (err) {
       loadError = `Failed to load model: ${err instanceof Error ? err.message : String(err)}`;
       console.error("[HandPoseEditor]", err);
@@ -111,12 +163,14 @@
     });
 
     applyToBones();
+    saveToSession();
   }
 
   function handleSliderChange(fingerIndex: number, boneInFinger: number, axis: "x" | "y" | "z", degrees: number) {
     const globalIndex = fingerIndex * 3 + boneInFinger;
     eulerAngles[globalIndex] = { ...eulerAngles[globalIndex], [axis]: degrees };
     applyToBones();
+    saveToSession();
   }
 
   function applyToBones() {
@@ -141,6 +195,10 @@
     // Propagate bone transforms down hierarchy — SkeletonUpdater handles skeleton.update() per frame
     const root = skeleton.getRoot();
     if (root) root.updateMatrixWorld(true);
+  }
+
+  function handleCameraChange() {
+    saveToSession();
   }
 
   function copyAsJson() {
