@@ -14,6 +14,7 @@
   import { STAFF_GRIP_POSES } from "$lib/shared/3d/data/grip-poses/staff-grip-poses";
   import FingerSliderGroup from "./FingerSliderGroup.svelte";
   import SkeletonUpdater from "./SkeletonUpdater.svelte";
+  import TaxonomyGallery from "./TaxonomyGallery.svelte";
   import { AVATAR_DEFINITIONS } from "$lib/shared/3d/config/avatar-definitions";
   import { cmToUnits } from "$lib/shared/3d/config/avatar-proportions";
 
@@ -62,6 +63,7 @@
   let selectedPreset = $state<GripType>(GripType.IDLE);
   let copied = $state(false);
   let hasFingerChains = $state(false);
+  let activeTaxonomyPose = $state("");
   let loadError = $state<string | null>(null);
   // Camera and controls refs — set imperatively after model loads
   let cameraRef: PerspectiveCamera | undefined = $state();
@@ -150,6 +152,7 @@
 
   function loadPreset(type: GripType) {
     selectedPreset = type;
+    activeTaxonomyPose = ""; // Clear taxonomy selection
     const pose = STAFF_GRIP_POSES[type];
 
     eulerAngles = pose.rotations.map(([x, y, z, w]) => {
@@ -195,6 +198,23 @@
     // Propagate bone transforms down hierarchy — SkeletonUpdater handles skeleton.update() per frame
     const root = skeleton.getRoot();
     if (root) root.updateMatrixWorld(true);
+  }
+
+  function loadTaxonomyPose(grasp: { name: string; rotations: [number, number, number, number][] }) {
+    activeTaxonomyPose = grasp.name;
+
+    eulerAngles = grasp.rotations.map(([x, y, z, w]) => {
+      const euler = new Euler();
+      euler.setFromQuaternion(new Quaternion(x, y, z, w));
+      return {
+        x: Math.round((euler.x * 180) / Math.PI),
+        y: Math.round((euler.y * 180) / Math.PI),
+        z: Math.round((euler.z * 180) / Math.PI),
+      };
+    });
+
+    applyToBones();
+    saveToSession();
   }
 
   function handleCameraChange() {
@@ -309,6 +329,11 @@
         />
       {/each}
     </div>
+
+    <TaxonomyGallery
+      activePoseName={activeTaxonomyPose}
+      onselect={loadTaxonomyPose}
+    />
   </div>
 </div>
 
