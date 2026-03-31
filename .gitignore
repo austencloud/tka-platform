@@ -265,3 +265,6 @@ scripts/card-designer-screenshot.png
 
 # Flowtrails prototype (reference for video feature migration)
 flowtrails/
+
+# Superpowers brainstorm sessions (ephemeral design explorations)
+.superpowers/brainstorm/
