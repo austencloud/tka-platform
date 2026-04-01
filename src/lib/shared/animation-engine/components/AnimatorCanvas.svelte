@@ -251,7 +251,7 @@ Last audit: 2025-12-27
   let globalDarkMode = $state(visibilityManager.isDarkMode());
   let wordHeaderVisible = $state(visibilityManager.getVisibility("wordHeader"));
   let progressBarVisible = $state(visibilityManager.getVisibility("progressBar"));
-  let fireEffectEnabled = $state(visibilityManager.isFireEffectEnabled());
+  let fireEffectEnabled = $state(visibilityManager.hasEffect("fire"));
 
   const darkModeEnabled = $derived(
     previewDarkMode !== null ? previewDarkMode : globalDarkMode
@@ -274,7 +274,7 @@ Last audit: 2025-12-27
     globalDarkMode = visibilityManager.isDarkMode();
     wordHeaderVisible = visibilityManager.getVisibility("wordHeader");
     progressBarVisible = visibilityManager.getVisibility("progressBar");
-    fireEffectEnabled = visibilityManager.isFireEffectEnabled();
+    fireEffectEnabled = visibilityManager.hasEffect("fire");
   }
 
   visibilityManager.registerObserver(handleVisibilityChange);
