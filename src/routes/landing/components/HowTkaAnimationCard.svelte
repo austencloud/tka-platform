@@ -128,10 +128,7 @@
       // Configure for a clean, dark, no-frills look
       animationSettings.setTrackingMode(TrackingMode.BOTH_ENDS);
       visibilityManager.setDarkMode(true);
-      visibilityManager.setTrailStyle("off");
-      visibilityManager.setFireEffect(false);
-      visibilityManager.setLedEffect(false);
-      visibilityManager.setCharcoalEffect(false);
+      visibilityManager.setActiveEffect("none");
 
       const factory = container.items.animationPlaybackControllerFactory as IAnimationPlaybackControllerFactory;
       playbackController = factory.create();
