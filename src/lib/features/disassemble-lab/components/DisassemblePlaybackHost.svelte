@@ -56,6 +56,7 @@
   import type { ISequenceChainingOrchestrator, SourceMode } from "$lib/shared/animation-engine/services/contracts/ISequenceChainingOrchestrator";
 
   import { getEffectDescriptor, type EffectMode } from "$lib/features/effects-lab/domain/EffectDescriptor";
+  import type { EffectType } from "$lib/shared/animation-engine/domain/types/TipEffectTypes";
 
   // Child control panels
   import FireControlsPanel from "$lib/features/effects-lab/components/FireControlsPanel.svelte";
@@ -211,63 +212,20 @@
   const animationState = createAnimationPanelState();
 
   // Save global effect states so we can restore them when leaving the Disassemble Lab.
-  const savedFireEnabled = visibilityManager.isFireEffectEnabled();
-  const savedCharcoalEnabled = visibilityManager.isCharcoalEffectEnabled();
-  const savedLedEnabled = visibilityManager.isLedEffectEnabled();
-  const savedTrailStyle = visibilityManager.getTrailStyle();
+  const savedEffectMap = { ...visibilityManager.getTipEffectMap() };
 
   // Suppress effects not matching the active mode.
   $effect(() => {
     const mode = activeEffectMode;
     untrack(() => {
-      // Trails
-      if (mode === "trails") {
-        visibilityManager.setTrailStyle("on");
-      } else {
-        visibilityManager.setTrailStyle("off");
-      }
-
-      // Fire
+      visibilityManager.setActiveEffect(mode === "clean" ? "none" : mode as EffectType);
       if (mode === "fire") {
-        visibilityManager.setFireEffect(true);
-        visibilityManager.setCharcoalEffect(false);
         visibilityManager.setFireIntensity(intensity);
         visibilityManager.setFireColorBlend(colorBlend);
-      } else if (mode === "charcoal") {
-        visibilityManager.setCharcoalEffect(true);
-        visibilityManager.setFireEffect(false);
-      } else {
-        visibilityManager.setFireEffect(false);
-        visibilityManager.setCharcoalEffect(false);
-      }
-
-      // LED
-      if (mode === "led") {
-        visibilityManager.setLedEffect(true);
-      } else {
-        visibilityManager.setLedEffect(false);
       }
     });
   });
 
-  // Fire visibility syncs
-  $effect(() => {
-    const val = fireEnabled;
-    const mode = activeEffectMode;
-    if (mode === "fire") {
-      untrack(() => visibilityManager.setFireEffect(val));
-    }
-  });
-  $effect(() => {
-    const mode = activeEffectMode;
-    if (mode !== "fire") return;
-    const syncBack = () => {
-      const managerState = visibilityManager.isFireEffectEnabled();
-      if (managerState !== fireEnabled) fireEnabled = managerState;
-    };
-    visibilityManager.registerObserver(syncBack);
-    return () => visibilityManager.unregisterObserver(syncBack);
-  });
   $effect(() => {
     const val = intensity;
     const mode = activeEffectMode;
@@ -478,10 +436,7 @@
     animationState.dispose();
 
     // Restore global effect states that were active before the Disassemble Lab took over
-    visibilityManager.setFireEffect(savedFireEnabled);
-    visibilityManager.setCharcoalEffect(savedCharcoalEnabled);
-    visibilityManager.setLedEffect(savedLedEnabled);
-    visibilityManager.setTrailStyle(savedTrailStyle);
+    visibilityManager.setTipEffectMap(savedEffectMap);
   });
 
   // ─── Sequence loading ─────────────────────────────────────────────────
