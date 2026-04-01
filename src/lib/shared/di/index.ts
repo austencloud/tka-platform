@@ -100,6 +100,7 @@ import { createMuseumContainer } from "./containers/museum-container";
 import { createPushContainer } from "./containers/push-container";
 import { createOfflineContainer } from "./containers/offline-container";
 import { festivalContainer } from "./containers/festival-container";
+import { createStoreContainer } from "./containers/store-container";
 // Deep link resolution for cross-tab/cross-user URLs
 import { DeepLinkResolver } from "../application/services/implementations/DeepLinkResolver";
 
@@ -350,6 +351,9 @@ const connectContainer = typeof window !== 'undefined' ? createConnectContainer(
   lanSyncCoordinator: lanSyncContainer.items.lanSyncCoordinator,
 }) : null as any;
 
+// Store container - physical merch store, self-contained
+const storeContainer = typeof window !== 'undefined' ? createStoreContainer() : null as any;
+
 // Offline container - needs networkStatusMonitor from device-sync and
 // galleryOfflineCache + thumbnailLocalCache from browse
 const offlineContainer = typeof window !== 'undefined' ? createOfflineContainer({
@@ -478,6 +482,8 @@ function buildAppContainer(): any {
   c = c.add(offlineContainer.items);
   // Festival Hub (discovery, attendance, tracker, portfolio, submissions)
   c = c.add(festivalContainer.items);
+  // Physical merch store (products, Stripe checkout)
+  c = c.add(storeContainer.items);
   // Print Prep services (MPC card export — depend on render + build containers)
   c = c.add({
     cardBackCanvasRenderer: () => new CardBackCanvasRendererImpl(),

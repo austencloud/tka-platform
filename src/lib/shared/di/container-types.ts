@@ -72,6 +72,7 @@ import type { MuseumContainer } from "./containers/museum-container";
 import type { PushContainer } from "./containers/push-container";
 import type { OfflineContainer } from "./containers/offline-container";
 import type { FestivalContainer } from "./containers/festival-container";
+import type { StoreContainer } from "./containers/store-container";
 // Containers that already export items types directly (["items"])
 import type { NavigationContainerItems } from "./containers/navigation-container";
 import type { AnimatorContainerItems } from "./containers/animator-container";
@@ -147,6 +148,7 @@ type MuseumItems = ItemsOf<MuseumContainer>;
 type PushItems = ItemsOf<PushContainer>;
 type OfflineItems = ItemsOf<OfflineContainer>;
 type FestivalItems = ItemsOf<FestivalContainer>;
+type StoreItems = ItemsOf<StoreContainer>;
 // ============================================================================
 // Upsert conflict handling
 //
@@ -242,5 +244,7 @@ TrigridLabItems &
 	VideoInfraItems &
 	// Festival Hub (discovery, attendance, tracker, portfolio, submissions)
 	FestivalItems &
+	// Physical merch store (products, Stripe checkout)
+	StoreItems &
 	// Standalone services
 	StandaloneItems;
