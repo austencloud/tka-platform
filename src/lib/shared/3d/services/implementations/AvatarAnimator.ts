@@ -14,9 +14,10 @@ import type {
   TransitionConfig,
   PositionOffset,
 } from "../contracts/IAvatarAnimator";
-import type { IIKSolver } from "../contracts/IIKSolver";
+import type { IIKSolver, IKTarget } from "../contracts/IIKSolver";
 import type { IAvatarSkeletonBuilder } from "../contracts/IAvatarSkeletonBuilder";
 import type { PropState3D } from "../../domain/models/PropState3D";
+import type { IElbowPoleComputer } from "../contracts/IElbowPoleComputer";
 
 /**
  * Default idle pose - arms relaxed at sides
@@ -48,11 +49,16 @@ export class AvatarAnimator implements IAvatarAnimator {
   private transitionEnd: BodyPose | null = null;
   private transitionProgress = 0;
   private transitionConfig: TransitionConfig | null = null;
+  private poleComputer: IElbowPoleComputer | null;
+  private leftPoleVector = new Vector3(0, 0, 1);
+  private rightPoleVector = new Vector3(0, 0, 1);
 
   constructor(
     private ikSolver: IIKSolver,
-    private skeleton: IAvatarSkeletonBuilder
+    private skeleton: IAvatarSkeletonBuilder,
+    poleComputer?: IElbowPoleComputer
   ) {
+    this.poleComputer = poleComputer ?? null;
     this.idlePose = createIdlePose();
     this.currentPose = { ...this.idlePose };
     this.targetPose = { ...this.idlePose };
@@ -84,6 +90,7 @@ export class AvatarAnimator implements IAvatarAnimator {
           blueProp.worldPosition.y - oy,
           blueProp.worldPosition.z - oz
         ),
+        plane: blueProp.plane,
         weight: 1,
       };
     } else {
@@ -98,6 +105,7 @@ export class AvatarAnimator implements IAvatarAnimator {
           redProp.worldPosition.y - oy,
           redProp.worldPosition.z - oz
         ),
+        plane: redProp.plane,
         weight: 1,
       };
     } else {
@@ -155,6 +163,10 @@ export class AvatarAnimator implements IAvatarAnimator {
     this.currentPose.rightHand.weight +=
       (this.targetPose.rightHand.weight - this.currentPose.rightHand.weight) *
       this.smoothingFactor;
+
+    // Plane is discrete — always take the latest target's plane
+    this.currentPose.leftHand.plane = this.targetPose.leftHand.plane;
+    this.currentPose.rightHand.plane = this.targetPose.rightHand.plane;
 
     this.currentPose.timestamp = Date.now();
   }
@@ -216,10 +228,12 @@ export class AvatarAnimator implements IAvatarAnimator {
     const result: BodyPose = {
       leftHand: {
         targetPosition: this.currentPose.leftHand.targetPosition.clone(),
+        plane: this.currentPose.leftHand.plane,
         weight: this.currentPose.leftHand.weight,
       },
       rightHand: {
         targetPosition: this.currentPose.rightHand.targetPosition.clone(),
+        plane: this.currentPose.rightHand.plane,
         weight: this.currentPose.rightHand.weight,
       },
       timestamp: this.currentPose.timestamp,
@@ -249,18 +263,53 @@ export class AvatarAnimator implements IAvatarAnimator {
     const leftChain = this.skeleton.getLeftArmChain();
     const rightChain = this.skeleton.getRightArmChain();
 
+    // Compute body center from Hips bone (or default to origin)
+    const bodyCenter = new Vector3(0, 0, 0);
+    const hipsBone = state.bones.get("Hips");
+    if (hipsBone) {
+      hipsBone.getWorldPosition(bodyCenter);
+    }
+
     if (leftChain) {
-      this.ikSolver.solveAndApply(leftChain, {
+      const target: IKTarget = {
         position: pose.leftHand.targetPosition,
         weight: pose.leftHand.weight,
-      });
+      };
+
+      if (this.poleComputer && pose.leftHand.plane) {
+        const idealPole = this.poleComputer.computePoleVector(
+          pose.leftHand.targetPosition,
+          pose.leftHand.plane,
+          "left",
+          bodyCenter
+        );
+        this.leftPoleVector.lerp(idealPole, this.smoothingFactor);
+        this.leftPoleVector.normalize();
+        target.poleHint = this.leftPoleVector.clone();
+      }
+
+      this.ikSolver.solveAndApply(leftChain, target);
     }
 
     if (rightChain) {
-      this.ikSolver.solveAndApply(rightChain, {
+      const target: IKTarget = {
         position: pose.rightHand.targetPosition,
         weight: pose.rightHand.weight,
-      });
+      };
+
+      if (this.poleComputer && pose.rightHand.plane) {
+        const idealPole = this.poleComputer.computePoleVector(
+          pose.rightHand.targetPosition,
+          pose.rightHand.plane,
+          "right",
+          bodyCenter
+        );
+        this.rightPoleVector.lerp(idealPole, this.smoothingFactor);
+        this.rightPoleVector.normalize();
+        target.poleHint = this.rightPoleVector.clone();
+      }
+
+      this.ikSolver.solveAndApply(rightChain, target);
     }
 
     this.skeleton.updateMatrices();
