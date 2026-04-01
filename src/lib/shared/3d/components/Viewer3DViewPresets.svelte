@@ -28,44 +28,45 @@
     target: { x: number; y: number; z: number };
   };
 
-  // The prop rotation center is offset forward from the avatar origin by gridOffset
-  // (0.3m in +Z). Y=0 is shoulder height. This is the actual point the staves
-  // orbit around — centering the camera here puts the grid dead-center in viewport.
-  const GRID_CENTER = { x: 0, y: 0, z: 0.3 };
+  // The grid center in world space: Y=STAGE_LIFT (shoulder height ≈1.56m),
+  // Z=gridOffset (0.3m in front of avatar). This is where the three plane
+  // discs intersect — the exact rotation center of the prop system.
+  // Using 1.55 as a reasonable approximation of STAGE_LIFT.
+  const GRID_CENTER = { x: 0, y: 1.55, z: 0.3 };
 
   const PRESETS: ViewPreset[] = [
     {
       id: "behind",
       label: "Back",
       sublabel: "Performer's view  \u2022  red = right, blue = left",
-      position: { x: 0, y: 0.3, z: -2.5 },
+      position: { x: 0, y: 1.85, z: -2.2 },
       target: GRID_CENTER,
     },
     {
       id: "front",
       label: "Front",
       sublabel: "Audience view",
-      position: { x: 0, y: 0.3, z: 2.5 },
+      position: { x: 0, y: 1.85, z: 2.8 },
       target: GRID_CENTER,
     },
     {
       id: "side",
       label: "Side",
       sublabel: "From performer's right",
-      position: { x: 2.5, y: 0.3, z: 0 },
+      position: { x: 2.5, y: 1.85, z: 0.3 },
       target: GRID_CENTER,
     },
     {
       id: "top",
       label: "Top",
-      position: { x: 0, y: 3.0, z: -0.01 },
+      position: { x: 0, y: 4.5, z: 0.29 },
       target: GRID_CENTER,
     },
     {
       id: "threequarter",
       label: "3/4",
       sublabel: "Isometric behind",
-      position: { x: -1.5, y: 1.5, z: -2.0 },
+      position: { x: -1.5, y: 3.0, z: -1.7 },
       target: GRID_CENTER,
     },
   ];

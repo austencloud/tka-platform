@@ -70,10 +70,12 @@
   <T.MeshStandardMaterial color="#1a1a2e" />
 </T.Mesh>
 
-<!-- Grid planes (wall/wheel/floor discs) — toggled via viewer state -->
+<!-- Grid planes (wall/wheel/floor discs) — toggled via viewer state.
+     centerPosition matches avatarPosition so the grid is at shoulder height
+     where the props actually rotate, not at ground level. -->
 {#if viewer3DState.showGrid}
   <Grid3D
-    centerPosition={{ x: 0, y: 0, z: 0 }}
+    centerPosition={avatarPosition}
     {facingAngle}
     gridOffset={0.3}
     planeOpacity={0.12}
