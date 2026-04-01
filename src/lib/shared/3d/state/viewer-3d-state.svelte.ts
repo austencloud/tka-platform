@@ -24,6 +24,7 @@ import {
 
 const STORAGE_KEY_MODE = "tka-viewer3d-renderMode";
 const STORAGE_KEY_CAMERA = "tka-viewer3d-camera";
+const STORAGE_KEY_GRID = "tka-viewer3d-showGrid";
 
 function loadPersistedMode(): "2d" | "3d" {
   if (typeof localStorage === "undefined") return "2d";
@@ -103,7 +104,10 @@ export function createViewer3DState(deps: {
     charcoal: false,
   });
   let cameraSnapshot = $state<CameraStateSnapshot | null>(null);
-  let showGrid = $state(false);
+  let showGrid = $state((() => {
+    if (typeof localStorage === "undefined") return false;
+    try { return localStorage.getItem(STORAGE_KEY_GRID) === "true"; } catch { return false; }
+  })());
 
   // Camera snap callback — registered by Viewer3DCamera, called by Viewer3DViewPresets
   let _snapToFn: ((position: { x: number; y: number; z: number }, target: { x: number; y: number; z: number }) => void) | null = null;
@@ -214,6 +218,7 @@ export function createViewer3DState(deps: {
     },
     toggleGrid() {
       showGrid = !showGrid;
+      try { localStorage.setItem(STORAGE_KEY_GRID, String(showGrid)); } catch {}
     },
     enter3D,
     exit3D,
