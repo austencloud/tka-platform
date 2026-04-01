@@ -2,7 +2,7 @@
 // Create and Browse are open, but restricted to specific tabs.
 // Everything else — Learn, Social, Settings — requires signing in.
 
-type AccessTier = "guest" | "user" | "premium";
+import type { AccessTier } from "./AccessTier";
 
 const GUEST_MODULE_ACCESS: Record<string, string[]> = {
   create: ["assemble", "construct", "generate"],
