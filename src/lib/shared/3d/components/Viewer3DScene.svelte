@@ -9,6 +9,7 @@
    */
 
   import { T, useTask } from "@threlte/core";
+  import { Vector3, Quaternion, Euler } from "three";
   import Avatar3D from "./Avatar3D.svelte";
   import Staff3D from "./Staff3D.svelte";
   import Grid3D from "./Grid3D.svelte";
@@ -16,6 +17,7 @@
   import { getViewer3DContext } from "../context/viewer-3d-context";
   import { Plane } from "../domain/enums/Plane";
   import type { AvatarInstanceState } from "../state/avatar-instance-state.svelte";
+  import type { PropState3D } from "../domain/models/PropState3D";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
   interface Props {
@@ -55,11 +57,27 @@
     avatarState.setProgress(subBeatProgress);
   });
 
-  // In mirror mode, swap blue↔red so the performer mirrors the viewer.
-  // The viewer's right hand maps to the performer's left hand (blue) and vice versa.
+  // Mirror mode: swap blue↔red AND mirror X positions so the performer
+  // appears to do the same visual shapes from the front (face to face).
+  // Your red = their red, your left = their right.
   const isMirror = $derived(viewer3DState.mirrorMode);
-  const bluePropState = $derived(isMirror ? avatarState.redPropState : avatarState.bluePropState);
-  const redPropState = $derived(isMirror ? avatarState.bluePropState : avatarState.redPropState);
+
+  function mirrorPropState(state: PropState3D | null): PropState3D | null {
+    if (!state) return null;
+    // Negate X position to mirror east↔west
+    const mirroredPos = new Vector3(-state.worldPosition.x, state.worldPosition.y, state.worldPosition.z);
+    // Mirror rotation: reflect across YZ plane by negating quaternion y and z components
+    const q = state.worldRotation;
+    const mirroredRot = new Quaternion(q.x, -q.y, -q.z, q.w);
+    return { ...state, worldPosition: mirroredPos, worldRotation: mirroredRot };
+  }
+
+  const rawBlue = $derived(avatarState.bluePropState);
+  const rawRed = $derived(avatarState.redPropState);
+
+  // In mirror mode: swap hands AND mirror positions
+  const bluePropState = $derived(isMirror ? mirrorPropState(rawRed) : rawBlue);
+  const redPropState = $derived(isMirror ? mirrorPropState(rawBlue) : rawRed);
 
   // Convert string-keyed Set from state into the typed Plane Set that Grid3D expects.
   // The state layer uses Plane enum values as strings so it doesn't need to import
