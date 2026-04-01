@@ -64,9 +64,11 @@ export function planeAngleToWorldPosition(
 
   switch (plane) {
     case Plane.WALL:
-      // XY plane: X=right, Y=up, Z=0 (toward audience)
-      // Apply Y inversion: canvas -sin becomes +Y (up)
-      return new Vector3(cos_a * radius, -sin_a * radius, 0);
+      // XY plane, performer's perspective: east = performer's right = -X in world.
+      // Negate X so that from behind the performer (camera at -Z), east appears
+      // on the viewer's right — matching the pictograph notation.
+      // Y inversion: canvas sin (Y-down) becomes -sin (Y-up).
+      return new Vector3(-cos_a * radius, -sin_a * radius, 0);
 
     case Plane.WHEEL:
       // YZ plane: X=0, Y=up, Z=toward audience
@@ -75,13 +77,12 @@ export function planeAngleToWorldPosition(
       return new Vector3(0, -sin_a * radius, -cos_a * radius);
 
     case Plane.FLOOR:
-      // XZ plane: X=right, Y=0, Z=toward audience
-      // N (angle=-π/2) should point toward audience (+Z? or -Z?)
-      // Using +sin_a for Z so N points forward
-      return new Vector3(cos_a * radius, 0, sin_a * radius);
+      // XZ plane, performer's perspective: east = performer's right = -X.
+      // Same X mirror as wall plane so left/right matches from behind.
+      return new Vector3(-cos_a * radius, 0, sin_a * radius);
 
     default:
-      return new Vector3(cos_a * radius, -sin_a * radius, 0);
+      return new Vector3(-cos_a * radius, -sin_a * radius, 0);
   }
 }
 
