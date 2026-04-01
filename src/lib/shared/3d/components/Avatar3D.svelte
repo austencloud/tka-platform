@@ -45,6 +45,7 @@
   import { LegAnimator } from "../services/implementations/LegAnimator";
   import type { ILegAnimator } from "../services/contracts/ILegAnimator";
   import { FingerAnimator } from "$lib/shared/3d/services/implementations/FingerAnimator";
+  import { ElbowPoleComputer } from "../services/implementations/ElbowPoleComputer";
   import { GripType } from "$lib/shared/3d/domain/models/GripPose";
 
   // Default Z position for avatars
@@ -229,7 +230,8 @@
       // (Using DI would give animator its own skeleton via constructor injection)
       const skeleton = new AvatarSkeletonBuilder();
       const solver = new IKSolver();
-      const animator = new AvatarAnimator(solver, skeleton);
+      const poleComputer = new ElbowPoleComputer();
+      const animator = new AvatarAnimator(solver, skeleton, poleComputer);
       const legs = new LegAnimator();
 
       skeletonService = skeleton;
