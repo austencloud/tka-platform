@@ -1025,6 +1025,7 @@ export class AnimationVisibilityStateManager {
 
   setTipEffectMap(map: TipEffectMap): void {
     this.settings.tipEffectMap = map;
+    this.syncDarkModeFromMap();
     this.saveToStorage();
     this.notifyObservers();
   }
