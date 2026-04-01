@@ -46,12 +46,7 @@ interface CanvasContextMenuDeps {
 type ActiveEffect = "fire" | "charcoal" | "led" | "trails" | "none";
 
 function getActiveEffect(vm: AnimationVisibilityStateManager): ActiveEffect {
-  const s = vm.getSettings();
-  if (s.fireEffect) return "fire";
-  if (s.charcoalEffect) return "charcoal";
-  if (s.ledEffect) return "led";
-  if (s.trailStyle !== "off") return "trails";
-  return "none";
+  return vm.getActiveEffect() as ActiveEffect;
 }
 
 function buildEffectChildren(
@@ -64,12 +59,7 @@ function buildEffectChildren(
       label: "None",
       icon: "fa-ban",
       checked: active === "none",
-      action: () => {
-        vm.setFireEffect(false);
-        vm.setCharcoalEffect(false);
-        vm.setLedEffect(false);
-        vm.setTrailStyle("off");
-      },
+      action: () => vm.setActiveEffect("none"),
     },
     {
       id: "effect-fire",
@@ -77,7 +67,7 @@ function buildEffectChildren(
       icon: "fa-fire-flame-curved",
       iconColor: "#f97316",
       checked: active === "fire",
-      action: () => vm.setFireEffect(true),
+      action: () => vm.setActiveEffect("fire"),
     },
     {
       id: "effect-charcoal",
@@ -85,7 +75,7 @@ function buildEffectChildren(
       icon: "fa-fire",
       iconColor: "#a855f7",
       checked: active === "charcoal",
-      action: () => vm.setCharcoalEffect(true),
+      action: () => vm.setActiveEffect("charcoal"),
     },
     {
       id: "effect-led",
@@ -93,14 +83,14 @@ function buildEffectChildren(
       icon: "fa-lightbulb",
       iconColor: "#22c55e",
       checked: active === "led",
-      action: () => vm.setLedEffect(true),
+      action: () => vm.setActiveEffect("led"),
     },
     {
       id: "effect-trails",
       label: "Trails",
       icon: "fa-route",
       checked: active === "trails",
-      action: () => vm.setTrailStyle("on"),
+      action: () => vm.setActiveEffect("trails"),
     },
   ];
 }
