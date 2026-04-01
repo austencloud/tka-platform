@@ -92,6 +92,17 @@ describe("ElbowPoleComputer", () => {
       );
       expect(pole.x).toBeLessThan(0);
     });
+
+    it("hand in front: adds upward Y bias", () => {
+      // Hand far forward in Z — should increase Y component
+      const poleFar = computer.computePoleVector(
+        new Vector3(0, 1.2, 0.5), Plane.WHEEL, "left", bodyCenter
+      );
+      const poleNear = computer.computePoleVector(
+        new Vector3(0, 1.2, 0.01), Plane.WHEEL, "left", bodyCenter
+      );
+      expect(poleFar.y).toBeGreaterThan(poleNear.y);
+    });
   });
 
   describe("floor plane", () => {
