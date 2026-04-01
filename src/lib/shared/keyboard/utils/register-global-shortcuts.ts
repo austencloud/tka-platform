@@ -326,9 +326,9 @@ export function registerGlobalShortcuts(
     priority: "high",
     action: () => {
       const visibilityManager = getAnimationVisibilityManager();
-      const wasEnabled = visibilityManager.isFireEffectEnabled();
-      visibilityManager.toggleFireEffect();
-      toast.info(wasEnabled ? "Fire OFF" : "Fire ON", 1500);
+      const isFireActive = visibilityManager.getActiveEffect() === "fire";
+      visibilityManager.setActiveEffect(isFireActive ? "none" : "fire");
+      toast.info(isFireActive ? "Fire OFF" : "Fire ON", 1500);
     },
   });
 
@@ -344,9 +344,9 @@ export function registerGlobalShortcuts(
     priority: "high",
     action: () => {
       const visibilityManager = getAnimationVisibilityManager();
-      const wasEnabled = visibilityManager.isLedEffectEnabled();
-      visibilityManager.toggleLedEffect();
-      toast.info(wasEnabled ? "LED OFF" : "LED ON", 1500);
+      const isLedActive = visibilityManager.getActiveEffect() === "led";
+      visibilityManager.setActiveEffect(isLedActive ? "none" : "led");
+      toast.info(isLedActive ? "LED OFF" : "LED ON", 1500);
     },
   });
 
