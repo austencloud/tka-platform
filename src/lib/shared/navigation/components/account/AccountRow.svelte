@@ -4,6 +4,7 @@
   import { container } from "../../../di";
   import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
   import RobustAvatar from "../../../components/avatar/RobustAvatar.svelte";
+  import { authDrawerState } from "../../../auth/state/auth-drawer-state.svelte";
 
   let { variant = "expanded", onclick } = $props<{
     variant?: "expanded" | "collapsed" | "drawer";
@@ -41,17 +42,25 @@
       <span class="account-label">{displayName}</span>
       <i class="fas fa-chevron-right drawer-chevron" aria-hidden="true"></i>
     </button>
-  {:else}
+  {:else if isAuthenticated}
     <div class="account-row drawer">
-      {#if isAuthenticated}
-        <RobustAvatar src={photoURL} name={displayName} customSize={32} />
-      {:else}
-        <div class="avatar-guest">
-          <i class="fas fa-user" aria-hidden="true"></i>
-        </div>
-      {/if}
+      <RobustAvatar src={photoURL} name={displayName} customSize={32} />
       <span class="account-label">{displayName}</span>
     </div>
+  {:else}
+    <button
+      class="account-row drawer interactive"
+      onclick={() => {
+        try { (container.items.hapticFeedback as IHapticFeedback)?.trigger("selection"); } catch {}
+        authDrawerState.show();
+      }}
+      aria-label="Create account"
+    >
+      <div class="avatar-guest drawer-size">
+        <i class="fas fa-user-plus" aria-hidden="true"></i>
+      </div>
+      <span class="account-label sign-up-label">Sign up</span>
+    </button>
   {/if}
 {:else}
   <button
@@ -186,6 +195,18 @@
     width: 32px;
     height: 32px;
     font-size: var(--font-size-sm, 14px);
+  }
+
+  .avatar-guest.drawer-size {
+    width: 32px;
+    height: 32px;
+    border: 1.5px solid var(--theme-accent, #3b82f6);
+    font-size: var(--font-size-sm, 14px);
+  }
+
+  .sign-up-label {
+    color: var(--theme-accent, #3b82f6);
+    font-weight: 600;
   }
 
   /* ==========================================================================
