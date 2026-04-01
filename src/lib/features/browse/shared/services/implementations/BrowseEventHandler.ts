@@ -19,6 +19,8 @@ import { handleModuleChange } from "../../../../../shared/navigation-coordinator
 import { openSequenceViewer } from "../../../../../shared/sequence-viewer/services/implementations/SequenceViewerNavigator";
 import { openVariationPicker } from "../../state/variation-picker-state.svelte";
 import { container } from "$lib/shared/di";
+import { authState } from "$lib/shared/auth/state/authState.svelte";
+import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
 
 export class BrowseEventHandler implements IBrowseEventHandler {
   private params: BrowseEventHandlerParams | null = null;
@@ -111,6 +113,11 @@ export class BrowseEventHandler implements IBrowseEventHandler {
 
   async handleEditSequence(sequence: SequenceData): Promise<void> {
     this.ensureInitialized();
+
+    if (!authState.isAuthenticated) {
+      authDrawerState.show();
+      return;
+    }
 
     try {
       // Gallery sequences have empty steps - need to load full sequence data
