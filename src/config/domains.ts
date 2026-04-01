@@ -37,6 +37,7 @@ const PUBLIC_PATH_PREFIXES = [
   "/sequence/",
   "/profile/",
   "/demo",
+  "/store",
   "/1989",
   "/1995",
   "/1998",
