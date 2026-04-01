@@ -27,6 +27,8 @@ const STORAGE_KEY_MODE = "tka-viewer3d-renderMode";
 const STORAGE_KEY_CAMERA = "tka-viewer3d-camera";
 const STORAGE_KEY_VISIBLE_PLANES = "tka-viewer3d-visiblePlanes";
 const STORAGE_KEY_PRESET = "tka-viewer3d-activePreset";
+const STORAGE_KEY_MIRROR = "tka-viewer3d-mirrorMode";
+const STORAGE_KEY_CAM_PRESET = "tka-viewer3d-cameraPreset";
 
 function loadPersistedMode(): "2d" | "3d" {
   if (typeof localStorage === "undefined") return "2d";
@@ -137,6 +139,14 @@ export function createViewer3DState(deps: {
   let activePreset = $state<string | null>((() => {
     if (typeof localStorage === "undefined") return "behind";
     try { return localStorage.getItem(STORAGE_KEY_PRESET) || "behind"; } catch { return "behind"; }
+  })());
+  let mirrorMode = $state((() => {
+    if (typeof localStorage === "undefined") return false;
+    try { return localStorage.getItem(STORAGE_KEY_MIRROR) === "true"; } catch { return false; }
+  })());
+  let activeCameraPreset = $state<string>((() => {
+    if (typeof localStorage === "undefined") return "main";
+    try { return localStorage.getItem(STORAGE_KEY_CAM_PRESET) || "main"; } catch { return "main"; }
   })());
   // visiblePlanes: which grid planes are currently shown. Empty set = grid hidden.
   // On first visit, default to null (no planes shown). When the user enables the
@@ -259,6 +269,20 @@ export function createViewer3DState(deps: {
     setActivePreset(id: string | null) {
       activePreset = id;
       try { localStorage.setItem(STORAGE_KEY_PRESET, id ?? ""); } catch {}
+    },
+    get mirrorMode() {
+      return mirrorMode;
+    },
+    setMirrorMode(mirror: boolean) {
+      mirrorMode = mirror;
+      try { localStorage.setItem(STORAGE_KEY_MIRROR, String(mirror)); } catch {}
+    },
+    get activeCameraPreset() {
+      return activeCameraPreset;
+    },
+    setActiveCameraPreset(id: string) {
+      activeCameraPreset = id;
+      try { localStorage.setItem(STORAGE_KEY_CAM_PRESET, id); } catch {}
     },
     /**
      * Toggle a single grid plane on or off.

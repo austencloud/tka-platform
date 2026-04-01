@@ -48,23 +48,18 @@
   //
   // stepConfigs now includes the start position at index 0, so the mapping
   // is direct: 2D beat N → 3D index N (no offset needed).
-  let _diagLogged = false;
   useTask(() => {
     const beatIndex = Math.floor(currentStep);
     const subBeatProgress = currentStep - beatIndex;
     avatarState.goToStep(beatIndex);
     avatarState.setProgress(subBeatProgress);
-
-    if (!_diagLogged && avatarState.bluePropState) {
-      _diagLogged = true;
-      console.log('[DIAG:Viewer3DScene.useTask] FIRST FRAME — currentStep:', currentStep, '| beatIndex:', beatIndex, '| subBeatProgress:', subBeatProgress);
-      console.log('[DIAG:Viewer3DScene.useTask] activeBlueConfig startOri:', avatarState.activeBlueConfig?.startOrientation, '| activeRedConfig startOri:', avatarState.activeRedConfig?.startOrientation);
-      console.log('[DIAG:Viewer3DScene.useTask] bluePropState staffRotAngle:', avatarState.bluePropState?.staffRotationAngle, '| redPropState staffRotAngle:', avatarState.redPropState?.staffRotationAngle);
-    }
   });
 
-  const bluePropState = $derived(avatarState.bluePropState);
-  const redPropState = $derived(avatarState.redPropState);
+  // In mirror mode, swap blue↔red so the performer mirrors the viewer.
+  // The viewer's right hand maps to the performer's left hand (blue) and vice versa.
+  const isMirror = $derived(viewer3DState.mirrorMode);
+  const bluePropState = $derived(isMirror ? avatarState.redPropState : avatarState.bluePropState);
+  const redPropState = $derived(isMirror ? avatarState.bluePropState : avatarState.redPropState);
 
   // Convert string-keyed Set from state into the typed Plane Set that Grid3D expects.
   // The state layer uses Plane enum values as strings so it doesn't need to import
