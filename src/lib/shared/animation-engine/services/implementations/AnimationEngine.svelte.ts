@@ -314,13 +314,13 @@ export class AnimationEngine {
   private trailsSuppressedUntilTextureLoad = false;
   private prevDarkMode: boolean = false;
   private previewDarkModeActive: boolean = false; // true when previewDarkMode prop overrides global
-  private prevTrailsVisible: boolean = true;
+  private prevTrailsActive: boolean = true;
   private prevPropsVisible: boolean = true;
   private prevBlueMotionVisible: boolean = true;
   private prevRedMotionVisible: boolean = true;
-  private prevFireEffect: boolean = false;
+  private prevHasFireTips: boolean = false;
   private prevColorBlend: number = 0.5;
-  private prevCharcoalEffect: boolean = false;
+  private prevHasCharcoalTips: boolean = false;
   private prevFireIntensity: number = 0.7;
   private prevFireTurbulence: number = 0.5;
   private prevFireColorCurve: import("../../domain/types/FireTypes").FireColorCurve | null = null;
@@ -403,13 +403,13 @@ export class AnimationEngine {
     // Initialize visibility manager
     const vm = this.getVM();
     this.prevDarkMode = vm.isDarkMode();
-    this.prevTrailsVisible = vm.isTrailsVisible();
+    this.prevTrailsActive = vm.isTrailsActive();
     this.prevPropsVisible = vm.getVisibility("props");
     this.prevBlueMotionVisible = vm.getVisibility("blueMotion");
     this.prevRedMotionVisible = vm.getVisibility("redMotion");
-    this.prevFireEffect = vm.isFireEffectEnabled();
+    this.prevHasFireTips = vm.hasEffect("fire");
     this.prevColorBlend = vm.getFireColorBlend();
-    this.prevCharcoalEffect = vm.isCharcoalEffectEnabled();
+    this.prevHasCharcoalTips = vm.hasEffect("charcoal");
     this.prevFireIntensity = vm.getFireIntensity();
     this.prevCharcoalParamsJson = JSON.stringify(vm.getCharcoalParams());
     this.prevEffortPreset = vm.getEffortPreset();
@@ -481,16 +481,18 @@ export class AnimationEngine {
         }
 
         // Trigger render when trails visibility changes
-        if (state.trails !== this.prevTrailsVisible) {
-          const trailsTurnedOff = this.prevTrailsVisible && !state.trails;
-          this.prevTrailsVisible = state.trails;
+        const vm = this.getVM();
+        const trailsInMap = vm.isTrailsActive();
+        if (trailsInMap !== this.prevTrailsActive) {
+          const trailsTurnedOff = this.prevTrailsActive && !trailsInMap;
+          this.prevTrailsActive = trailsInMap;
 
           // When trails are turned off (e.g. switching to fire mode),
           // clear and hide the overlay so stale trail pixels don't persist
           if (trailsTurnedOff && this.trailOverlay) {
             this.trailOverlay.clear();
             this.trailOverlay.setVisible(false);
-          } else if (state.trails && this.trailOverlay) {
+          } else if (trailsInMap && this.trailOverlay) {
             this.trailOverlay.setVisible(true);
           }
 
@@ -539,11 +541,10 @@ export class AnimationEngine {
           }
         }
 
-        // Sync fire effect toggle from visibility manager
-        const vm = this.getVM();
-        const fireEnabled = vm.isFireEffectEnabled();
-        if (fireEnabled !== this.prevFireEffect) {
-          this.prevFireEffect = fireEnabled;
+        // Sync fire effect toggle from tipEffectMap
+        const hasFireTips = vm.hasEffect("fire");
+        if (hasFireTips !== this.prevHasFireTips) {
+          this.prevHasFireTips = hasFireTips;
           this.syncFireOverlay();
           // Trigger a render to start/stop fire loop
           if (this.renderLoopService && this.lastPropsRef) {
@@ -553,10 +554,10 @@ export class AnimationEngine {
           }
         }
 
-        // Sync charcoal effect toggle (independent from fire)
-        const charcoalEnabled = vm.isCharcoalEffectEnabled();
-        if (charcoalEnabled !== this.prevCharcoalEffect) {
-          this.prevCharcoalEffect = charcoalEnabled;
+        // Sync charcoal effect toggle from tipEffectMap (independent from fire)
+        const hasCharcoalTips = vm.hasEffect("charcoal");
+        if (hasCharcoalTips !== this.prevHasCharcoalTips) {
+          this.prevHasCharcoalTips = hasCharcoalTips;
           this.syncCharcoalOverlay();
         }
 
@@ -686,7 +687,7 @@ export class AnimationEngine {
         // Charcoal param changes (gravity, burst threshold, etc.) don't affect
         // fire sliders, so slidersChanged won't detect them.
         // Forward directly to the renderer when changed.
-        if (charcoalEnabled && this.charcoalRenderer?.isInitialized()) {
+        if (hasCharcoalTips && this.charcoalRenderer?.isInitialized()) {
           const currentCharcoalJson = JSON.stringify(vm.getCharcoalParams());
           if (currentCharcoalJson !== this.prevCharcoalParamsJson) {
             this.prevCharcoalParamsJson = currentCharcoalJson;
@@ -758,10 +759,10 @@ export class AnimationEngine {
 
     // Create overlays that weren't created yet (e.g. enabled before HMR/reload
     // but the $effect hasn't triggered, or the rAF hasn't fired yet).
-    if (this.prevFireEffect && !this.fireRenderer?.isInitialized()) {
+    if (this.prevHasFireTips && !this.fireRenderer?.isInitialized()) {
       this.syncFireOverlay();
     }
-    if (this.prevCharcoalEffect && !this.charcoalRenderer?.isInitialized()) {
+    if (this.prevHasCharcoalTips && !this.charcoalRenderer?.isInitialized()) {
       this.syncCharcoalOverlay();
     }
     if (this.ledConfig.enabled && !this.ledRenderer?.isInitialized()) {
@@ -1562,11 +1563,11 @@ export class AnimationEngine {
   }
 
   /**
-   * Initialize or destroy the fire overlay based on prevFireEffect.
+   * Initialize or destroy the fire overlay based on prevHasFireTips.
    * Fire and charcoal are independent effects with independent renderers.
    */
   private syncFireOverlay(): void {
-    const enabled = this.prevFireEffect;
+    const enabled = this.prevHasFireTips;
 
     if (enabled) {
       if (!this.fireRenderer?.isInitialized()) {
@@ -1591,7 +1592,7 @@ export class AnimationEngine {
         this.fireRenderer = null;
       }
       this.renderLoopService?.updateConfig({ fireRenderer: null });
-      if (!this.prevCharcoalEffect) {
+      if (!this.prevHasCharcoalTips) {
         this.fireTipTracker?.reset();
       }
     }
@@ -1633,11 +1634,11 @@ export class AnimationEngine {
   }
 
   /**
-   * Initialize or destroy the charcoal overlay based on charcoalEffect state.
+   * Initialize or destroy the charcoal overlay based on prevHasCharcoalTips.
    * Charcoal is an independent effect with its own particle renderer.
    */
   private syncCharcoalOverlay(): void {
-    const enabled = this.prevCharcoalEffect;
+    const enabled = this.prevHasCharcoalTips;
 
     if (enabled) {
       if (!this.charcoalRenderer?.isInitialized()) {
@@ -1663,7 +1664,7 @@ export class AnimationEngine {
         this.charcoalRenderer = null;
       }
       this.renderLoopService?.updateConfig({ charcoalRenderer: null });
-      if (!this.prevFireEffect) {
+      if (!this.prevHasFireTips) {
         this.fireTipTracker?.reset();
       }
     }
@@ -2198,7 +2199,7 @@ export class AnimationEngine {
     fp.redPropType = redPropType;
 
     // Fire/charcoal overlay config — pass when either effect is active
-    fp.fireConfig = (this.prevFireEffect || this.prevCharcoalEffect) ? this.fireConfig : null;
+    fp.fireConfig = (this.prevHasFireTips || this.prevHasCharcoalTips) ? this.fireConfig : null;
     fp.darkMode = this.prevDarkMode;
     // Prop colors for colored flames (default blue/red)
     fp.propColors = DEFAULT_PROP_FLAME_COLORS;
