@@ -29,6 +29,9 @@ import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/imp
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { sequenceExtender } from "$lib/features/create/shared/services/implementations/SequenceExtender";
 import { LOOPType, SliceSize, ROTATED_LOOP_TYPES } from "$lib/features/create/generate/circular/domain/models/circular-models";
+import { resolveAccessTier, getMaxBeats } from "$lib/shared/auth/domain/AccessTier";
+import { authState } from "$lib/shared/auth/state/authState.svelte";
+import { isPremiumOrAbove } from "$lib/shared/auth/domain/models/UserRole";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import { orientationCycleExtender } from "$lib/features/create/generate/circular/services/implementations/OrientationCycleExtender";
 import { turnAllocator } from "../shared/services/implementations/TurnAllocator";
@@ -95,6 +98,17 @@ export function createGenerationActionsState(
             console.warn("Duration template application error:", err);
           }
         }
+      }
+
+      // Enforce tier beat cap post-generation — handles words with bridge letters
+      // that push the sequence beyond what the user's tier allows.
+      const tier = resolveAccessTier(authState.isAuthenticated, isPremiumOrAbove(authState.role));
+      const maxBeats = getMaxBeats(tier);
+      if (generatedSequence.steps.length > maxBeats) {
+        generatedSequence = {
+          ...generatedSequence,
+          steps: generatedSequence.steps.slice(0, maxBeats),
+        };
       }
 
       // Snapshot current state before replacing so the user can undo back to it
@@ -385,6 +399,17 @@ export function createGenerationActionsState(
             // Duration application failed, use sequence as-is
           }
         }
+      }
+
+      // Enforce tier beat cap post-generation — spell sequences with bridge letters
+      // can exceed the user's allowed length.
+      const spellTier = resolveAccessTier(authState.isAuthenticated, isPremiumOrAbove(authState.role));
+      const spellMaxBeats = getMaxBeats(spellTier);
+      if (loopedSequence.steps.length > spellMaxBeats) {
+        loopedSequence = {
+          ...loopedSequence,
+          steps: loopedSequence.steps.slice(0, spellMaxBeats),
+        };
       }
 
       // Snapshot current state before replacing so the user can undo back to it

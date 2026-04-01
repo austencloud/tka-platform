@@ -7,6 +7,9 @@ In spell mode, shows bridge count as subtitle and allows upward adjustment.
   import { GenerationMode } from "$lib/features/create/generate/shared/domain/models/generate-models";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
   import StepperCard from "./StepperCard/StepperCard.svelte";
+  import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import { resolveAccessTier, getMaxBeats } from "$lib/shared/auth/domain/AccessTier";
+  import { isPremiumOrAbove } from "$lib/shared/auth/domain/models/UserRole";
 
   let {
     currentLength,
@@ -34,7 +37,10 @@ In spell mode, shows bridge count as subtitle and allows upward adjustment.
     headerFontSize?: string;
   }>();
 
-  const MAX_LENGTH = 64;
+  const accessTier = $derived(
+    resolveAccessTier(authState.isAuthenticated, isPremiumOrAbove(authState.role))
+  );
+  const MAX_LENGTH = $derived(getMaxBeats(accessTier));
 
   const MIN_LENGTH = $derived(minOverride ?? (loopEnabled ? 4 : 4));
   const STEP = $derived(loopEnabled ? 2 : 1);
