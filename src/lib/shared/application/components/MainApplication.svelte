@@ -70,6 +70,9 @@
   import type { ModuleId } from "../../navigation/domain/types";
   import { handleModuleChange } from "../../navigation-coordinator/navigation-coordinator.svelte";
   import { container } from "../../di";
+  import { isModuleAccessible } from "../../auth/domain/guest-access-config";
+  import { resolveAccessTier } from "../../auth/domain/AccessTier";
+  import { isPremiumOrAbove } from "../../auth/domain/models/UserRole";
   // Get DI container from context
   const getContainer = getContext<() => typeof container | null>("di-container");
 
@@ -353,32 +356,26 @@
       }
 
       // Tab navigation (Ctrl/Cmd + 1-6)
+      // Guests can only switch to modules they have access to.
       if (event.ctrlKey || event.metaKey) {
-        switch (event.key) {
-          case "1":
-            event.preventDefault();
-            switchModule("create");
-            break;
-          case "2":
-            event.preventDefault();
-            switchModule("browse");
-            break;
-          case "3":
-            event.preventDefault();
-            switchModule("learn");
-            break;
-          case "4":
-            event.preventDefault();
-            switchModule("compose");
-            break;
-          case "5":
-            event.preventDefault();
-            switchModule("train");
-            break;
-          case "6":
-            event.preventDefault();
-            switchModule("browse");
-            break;
+        const moduleKeyMap: Record<string, string> = {
+          "1": "create",
+          "2": "browse",
+          "3": "learn",
+          "4": "compose",
+          "5": "train",
+          "6": "browse",
+        };
+        const targetModuleId = moduleKeyMap[event.key];
+        if (targetModuleId) {
+          event.preventDefault();
+          const tier = resolveAccessTier(
+            authState.isAuthenticated,
+            isPremiumOrAbove(authState.role)
+          );
+          if (isModuleAccessible(targetModuleId, tier)) {
+            switchModule(targetModuleId as ModuleId);
+          }
         }
       }
     }

@@ -13,6 +13,9 @@ import {
   getModuleDefinitions,
 } from "../../navigation-coordinator/navigation-coordinator.svelte";
 import { authState } from "../../auth/state/authState.svelte";
+import { isModuleAccessible } from "../../auth/domain/guest-access-config";
+import { resolveAccessTier } from "../../auth/domain/AccessTier";
+import { isPremiumOrAbove } from "../../auth/domain/models/UserRole";
 import { quickFeedbackState } from "$lib/features/feedback/state/quick-feedback-state.svelte";
 import { saveActiveTab } from "../../settings/utils/tab-persistence.svelte";
 import { adminToolbarState } from "../../debug/state/admin-toolbar-state.svelte";
@@ -117,6 +120,14 @@ export function registerGlobalShortcuts(
       scope: "navigation",
       priority: "high",
       action: async () => {
+        // Guests can only navigate to modules their access tier allows.
+        const tier = resolveAccessTier(
+          authState.isAuthenticated,
+          isPremiumOrAbove(authState.role)
+        );
+        if (!isModuleAccessible(module.id, tier)) {
+          return;
+        }
         // Force View Transition for keyboard shortcuts (even when leaving Dashboard)
         await handleModuleChange(module.id, undefined, {
           forceViewTransition: true,
