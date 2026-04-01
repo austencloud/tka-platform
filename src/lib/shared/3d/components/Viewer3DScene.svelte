@@ -9,7 +9,8 @@
    */
 
   import { T, useTask } from "@threlte/core";
-  import { Vector3, Quaternion, Euler } from "three";
+  import { Vector3 } from "three";
+  import { calculatePropQuaternion } from "../domain/constants/plane-transforms";
   import Avatar3D from "./Avatar3D.svelte";
   import Staff3D from "./Staff3D.svelte";
   import Grid3D from "./Grid3D.svelte";
@@ -66,10 +67,11 @@
     if (!state) return null;
     // Negate X position to mirror east↔west
     const mirroredPos = new Vector3(-state.worldPosition.x, state.worldPosition.y, state.worldPosition.z);
-    // Mirror rotation: reflect across YZ plane by negating quaternion y and z components
-    const q = state.worldRotation;
-    const mirroredRot = new Quaternion(q.x, -q.y, -q.z, q.w);
-    return { ...state, worldPosition: mirroredPos, worldRotation: mirroredRot };
+    // Mirror the staff rotation angle (negate it) then recompute the quaternion.
+    // We import calculatePropQuaternion to rebuild from the mirrored angle.
+    const mirroredStaffAngle = -state.staffRotationAngle;
+    const mirroredRot = calculatePropQuaternion(state.plane, mirroredStaffAngle);
+    return { ...state, worldPosition: mirroredPos, worldRotation: mirroredRot, staffRotationAngle: mirroredStaffAngle };
   }
 
   const rawBlue = $derived(avatarState.bluePropState);
@@ -105,7 +107,7 @@
     {facingAngle}
     gridOffset={0.3}
     planeOpacity={0.12}
-    showLabels={true}
+    showLabels={false}
     gridMode={sequenceData?.gridMode ?? "diamond"}
   />
 {/if}
