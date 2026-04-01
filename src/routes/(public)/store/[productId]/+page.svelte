@@ -2,7 +2,7 @@
   import { page } from "$app/stores";
   import ProductDetailPage from "$lib/features/store/ProductDetailPage.svelte";
 
-  let productId = $derived($page.params.productId);
+  let productId = $derived($page.params.productId!);
 </script>
 
 <svelte:head>
