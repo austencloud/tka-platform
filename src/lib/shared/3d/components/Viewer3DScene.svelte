@@ -10,7 +10,6 @@
 
   import { T, useTask } from "@threlte/core";
   import { Vector3 } from "three";
-  import { calculatePropQuaternion } from "../domain/constants/plane-transforms";
   import Avatar3D from "./Avatar3D.svelte";
   import Staff3D from "./Staff3D.svelte";
   import Grid3D from "./Grid3D.svelte";
@@ -65,13 +64,11 @@
 
   function mirrorPropState(state: PropState3D | null): PropState3D | null {
     if (!state) return null;
-    // Negate X position to mirror east↔west
+    // Mirror only the X position (east↔west). The staff orientation (IN/OUT)
+    // and rotation stay the same — we're just reflecting where on the grid
+    // the prop appears, not how it's oriented.
     const mirroredPos = new Vector3(-state.worldPosition.x, state.worldPosition.y, state.worldPosition.z);
-    // Mirror the staff rotation angle (negate it) then recompute the quaternion.
-    // We import calculatePropQuaternion to rebuild from the mirrored angle.
-    const mirroredStaffAngle = -state.staffRotationAngle;
-    const mirroredRot = calculatePropQuaternion(state.plane, mirroredStaffAngle);
-    return { ...state, worldPosition: mirroredPos, worldRotation: mirroredRot, staffRotationAngle: mirroredStaffAngle };
+    return { ...state, worldPosition: mirroredPos };
   }
 
   const rawBlue = $derived(avatarState.bluePropState);
