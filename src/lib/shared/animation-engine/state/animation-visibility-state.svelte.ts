@@ -9,7 +9,7 @@ import type { CharcoalSparkParams } from "../domain/types/CharcoalSparkTypes";
 import { DEFAULT_CHARCOAL_PARAMS } from "../domain/types/CharcoalSparkTypes";
 import type { FireColorCurve } from "../domain/types/FireTypes";
 import type { EffortId } from "$lib/features/effort-lab/domain/effort-types";
-import type { TipEffectMap, TipEffortMap } from "../domain/types/TipEffectTypes";
+import type { EffectType, TipEffectMap, TipEffortMap } from "../domain/types/TipEffectTypes";
 import { findPreset, validatePreset, type LedColorPreset } from "../domain/types/LedColorPresets";
 
 type VisibilityObserver = () => void;
@@ -289,13 +289,20 @@ export class AnimationVisibilityStateManager {
           parsed.gridMode = "8point";
         }
 
-        // Migrate legacy global effect booleans → per-tip effect map
-        if (!parsed.tipEffectMap) {
-          parsed.tipEffectMap = {};
+        // Migrate legacy booleans → tipEffectMap (one-time, on load)
+        if (!parsed.tipEffectMap || Object.keys(parsed.tipEffectMap).length === 0) {
           if (parsed.fireEffect) parsed.tipEffectMap = { "*": { effect: "fire" } };
           else if (parsed.charcoalEffect) parsed.tipEffectMap = { "*": { effect: "charcoal" } };
           else if (parsed.ledEffect) parsed.tipEffectMap = { "*": { effect: "led" } };
+          else if (parsed.trailStyle === "on") parsed.tipEffectMap = { "*": { effect: "trails" } };
+          else parsed.tipEffectMap = {};
         }
+
+        // Clean up legacy fields (they'll be omitted on next save)
+        delete parsed.fireEffect;
+        delete parsed.charcoalEffect;
+        delete parsed.ledEffect;
+        delete parsed.trailStyle;
         if (!parsed.tipEffortMap) {
           parsed.tipEffortMap = {};
           if (parsed.effortPreset && parsed.effortPreset !== "linear") {
@@ -1030,6 +1037,82 @@ export class AnimationVisibilityStateManager {
     this.settings.tipEffortMap = map;
     this.saveToStorage();
     this.notifyObservers();
+  }
+
+  /**
+   * Set a single active effect across all tips. Passing "none" clears the map.
+   * This is the tipEffectMap-based replacement for setFireEffect/setCharcoalEffect/setLedEffect.
+   */
+  setActiveEffect(effect: EffectType): void {
+    if (effect === "none") {
+      this.settings.tipEffectMap = {};
+    } else {
+      this.settings.tipEffectMap = { "*": { effect } };
+    }
+    this.syncDarkModeFromMap();
+    this.saveToStorage();
+    this.notifyObservers();
+  }
+
+  /**
+   * Return the globally-active effect, or "none" if the map is empty or has no wildcard.
+   */
+  getActiveEffect(): EffectType {
+    const cellWide = this.settings.tipEffectMap["*"];
+    return cellWide?.effect ?? "none";
+  }
+
+  /**
+   * Return true if any tip assignment uses the given effect.
+   */
+  hasEffect(effect: EffectType): boolean {
+    return Object.values(this.settings.tipEffectMap)
+      .some(a => a.effect === effect);
+  }
+
+  /**
+   * Return true if trails are the active effect in the map.
+   */
+  isTrailsActive(): boolean {
+    return this.hasEffect("trails");
+  }
+
+  /**
+   * Return true if any dark-mode-requiring effect (fire, charcoal, LED) is in the map.
+   */
+  isAnyDarkModeEffectActive(): boolean {
+    const darkEffects: EffectType[] = ["fire", "charcoal", "led"];
+    return Object.values(this.settings.tipEffectMap)
+      .some(a => darkEffects.includes(a.effect as EffectType));
+  }
+
+  /**
+   * Sync dark mode based on the current tipEffectMap contents.
+   * Forces dark mode on when a dark-requiring effect is active, and restores
+   * the previous dark mode state when the last such effect is removed.
+   */
+  private syncDarkModeFromMap(): void {
+    const needsDarkMode = this.isAnyDarkModeEffectActive();
+    if (needsDarkMode) {
+      if (this.darkModeBeforeEffect === null) {
+        this.darkModeBeforeEffect = this.settings.darkMode;
+      }
+      if (!this.settings.darkMode) {
+        this.settings.darkMode = true;
+        this.syncDarkModeClass();
+        this.updateMotionColorsCache();
+      }
+    } else {
+      if (this.darkModeBeforeEffect !== null) {
+        const restore = this.darkModeBeforeEffect;
+        this.darkModeBeforeEffect = null;
+        if (this.settings.darkMode !== restore) {
+          this.settings.darkMode = restore;
+          this.syncDarkModeClass();
+          this.updateMotionColorsCache();
+        }
+      }
+    }
   }
 
   // ============================================================================
