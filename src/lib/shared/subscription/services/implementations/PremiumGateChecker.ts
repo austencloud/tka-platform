@@ -12,7 +12,7 @@ export class PremiumGateChecker implements IPremiumGateChecker {
 		const role = featureFlagService.effectiveRole;
 
 		if (!featureFlagService.userId) {
-			return this.notAllowed(capability);
+			return this.authRequired(capability);
 		}
 
 		if (isPremiumOrAbove(role)) {
@@ -39,10 +39,24 @@ export class PremiumGateChecker implements IPremiumGateChecker {
 		return {
 			allowed: false,
 			reason: "premium_required",
+			nudgeType: "premium",
 			nudge: nudge ?? {
 				capability,
 				description: "Premium feature",
 				premiumBenefit: "Unlock this feature with Premium",
+			},
+		};
+	}
+
+	private authRequired(capability: CapabilityFeatureId): PremiumGateResult {
+		return {
+			allowed: false,
+			reason: "auth_required",
+			nudgeType: "auth",
+			nudge: {
+				capability,
+				description: "Account required",
+				premiumBenefit: "Create a free account to access this feature",
 			},
 		};
 	}
