@@ -49,6 +49,8 @@ export interface IKTarget {
   rotation?: Quaternion;
   /** Blend weight (0-1) for this target */
   weight?: number;
+  /** Preferred elbow bend direction. If absent, defaults to (0, 0, -1). */
+  poleHint?: Vector3;
 }
 
 /**
