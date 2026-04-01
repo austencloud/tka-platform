@@ -102,13 +102,16 @@ export class PropStateInterpolator implements IPropStateInterpolator {
       endCenterAngle
     );
 
-    // Calculate staff rotation delta (un-normalized for multi-turn)
-    const staffRotationDelta = targetStaffAngle - startStaffAngle;
-
-    // Interpolate staff rotation (linear for multi-turn support)
-    const staffRotationAngle = this.angleMath.normalizeAngle(
-      startStaffAngle + staffRotationDelta * progress
-    );
+    // Interpolate staff rotation:
+    // - For motions WITH turns (pro/anti/etc), use raw delta to preserve full rotation count
+    // - For motions WITHOUT turns (dash t=0, static, float), use shortest-path to avoid
+    //   phantom full rotations from equivalent angles (e.g., 2π vs 0)
+    const hasTurns = config.turns > 0;
+    const staffRotationAngle = hasTurns
+      ? this.angleMath.normalizeAngle(
+          startStaffAngle + (targetStaffAngle - startStaffAngle) * progress
+        )
+      : this.angleMath.lerpAngle(startStaffAngle, targetStaffAngle, progress);
 
     // Calculate 3D rotation
     const worldRotation = calculatePropQuaternion(
