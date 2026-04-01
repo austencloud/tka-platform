@@ -17,6 +17,14 @@
   import type { Component } from "svelte";
   import { onMount, onDestroy } from "svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
+  import { authState } from "../auth/state/authState.svelte";
+  import { resolveAccessTier } from "../auth/domain/AccessTier";
+  import { isModuleAccessible } from "../auth/domain/guest-access-config";
+  import { isPremiumOrAbove } from "../auth/domain/models/UserRole";
+  import AuthNudge from "../auth/components/AuthNudge.svelte";
+  import type { AuthNudgeTrigger } from "../auth/domain/AuthNudgeTrigger";
+  import { authDrawerState } from "../auth/state/auth-drawer-state.svelte";
+  import { switchModule } from "../application/state/ui/module-state";
 
   // Only assign view-transition-name during module switches.
   // If set permanently, ANY view transition on the page captures this element.
@@ -160,6 +168,22 @@
   let modulePromise = $derived(
     activeModule ? loadModule(activeModule) : Promise.resolve(null)
   );
+
+  const accessTier = $derived(
+    resolveAccessTier(authState.isAuthenticated, isPremiumOrAbove(authState.role))
+  );
+
+  const isModuleBlocked = $derived(
+    activeModule ? !isModuleAccessible(activeModule, accessTier) : false
+  );
+
+  function getModuleNudgeTrigger(moduleId: string): AuthNudgeTrigger {
+    const triggerMap: Record<string, AuthNudgeTrigger> = {
+      learn: "module:learn",
+      settings: "module:settings",
+    };
+    return triggerMap[moduleId] ?? "module:library";
+  }
 </script>
 
 {#if isModuleLoading}
@@ -169,34 +193,56 @@
     <p>Loading...</p>
   </div>
 {:else}
-  <!-- Transition container for overlaying content -->
-  <div class="transition-container">
-    {#key activeModule}
-      <div class="module-content" style:view-transition-name={vtName}>
-        {#await modulePromise}
-          <!-- Loading state while module chunk is being fetched -->
-          <div
-            class="module-loading"
-            role="status"
-            aria-live="polite"
-            aria-busy="true"
-          >
-            <ProgressRing percent={-1} size={32} strokeWidth={3} />
-            <p>Loading module...</p>
-          </div>
-        {:then LoadedModule}
-          {#if LoadedModule}
-            {#if isModuleActive("create")}
-              <LoadedModule {onTabAccessibilityChange} {onCurrentWordChange} />
-            {:else if isModuleActive("learn")}
-              <LoadedModule onHeaderChange={onLearnHeaderChange} />
-            {:else}
-              <LoadedModule />
+  {#if isModuleBlocked}
+    <div class="module-gate" style="display: flex; align-items: center; justify-content: center; height: 100%;">
+      <AuthNudge
+        trigger={getModuleNudgeTrigger(activeModule!)}
+        onCreateAccount={() => authDrawerState.show()}
+        onDismiss={() => switchModule("create")}
+      />
+    </div>
+  {:else}
+    <!-- Transition container for overlaying content -->
+    <div class="transition-container">
+      {#key activeModule}
+        <div class="module-content" style:view-transition-name={vtName}>
+          {#await modulePromise}
+            <!-- Loading state while module chunk is being fetched -->
+            <div
+              class="module-loading"
+              role="status"
+              aria-live="polite"
+              aria-busy="true"
+            >
+              <ProgressRing percent={-1} size={32} strokeWidth={3} />
+              <p>Loading module...</p>
+            </div>
+          {:then LoadedModule}
+            {#if LoadedModule}
+              {#if isModuleActive("create")}
+                <LoadedModule {onTabAccessibilityChange} {onCurrentWordChange} />
+              {:else if isModuleActive("learn")}
+                <LoadedModule onHeaderChange={onLearnHeaderChange} />
+              {:else}
+                <LoadedModule />
+              {/if}
+            {:else if activeModule}
+              <!-- Module name is set but component didn't load - show error with retry -->
+              <div class="module-error" role="alert">
+                <p>Module "{activeModule}" failed to load</p>
+                <button
+                  class="reload-button"
+                  onclick={() => window.location.reload()}
+                  type="button"
+                >
+                  Reload Page
+                </button>
+              </div>
             {/if}
-          {:else if activeModule}
-            <!-- Module name is set but component didn't load - show error with retry -->
+          {:catch error}
             <div class="module-error" role="alert">
-              <p>Module "{activeModule}" failed to load</p>
+              <p>Failed to load module</p>
+              <p class="error-details">{error?.message || "Unknown error"}</p>
               <button
                 class="reload-button"
                 onclick={() => window.location.reload()}
@@ -205,23 +251,11 @@
                 Reload Page
               </button>
             </div>
-          {/if}
-        {:catch error}
-          <div class="module-error" role="alert">
-            <p>Failed to load module</p>
-            <p class="error-details">{error?.message || "Unknown error"}</p>
-            <button
-              class="reload-button"
-              onclick={() => window.location.reload()}
-              type="button"
-            >
-              Reload Page
-            </button>
-          </div>
-        {/await}
-      </div>
-    {/key}
-  </div>
+          {/await}
+        </div>
+      {/key}
+    </div>
+  {/if}
 {/if}
 
 <style>
