@@ -52,17 +52,14 @@
       if (values.length > 0) {
         const effects = values.map(v => v.effect);
         const unique = [...new Set(effects)];
-        if (unique.length === 1) return unique[0];
+        if (unique.length === 1) return unique[0]!;
         return 'mixed' as const;
       }
     }
     // Fall back to flat effect field
     if (cell.effect && cell.effect !== 'none') return cell.effect;
     // Fall back to global effect
-    if (globalVM?.isFireEffectEnabled()) return 'fire';
-    if (globalVM?.isCharcoalEffectEnabled()) return 'charcoal';
-    if (globalVM?.isLedEffectEnabled()) return 'led';
-    return 'none';
+    return globalVM?.getActiveEffect() ?? 'none';
   });
   const effectName = $derived(
     activeEffect === 'mixed' ? 'Mixed'
