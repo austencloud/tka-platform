@@ -13,6 +13,7 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 import type { IPropStateInterpolator } from "../services/contracts/IPropStateInterpolator";
 import type { ISequenceConverter } from "../services/contracts/ISequenceConverter";
 import type { CameraStateSnapshot } from "../domain/types/CameraStateSnapshot";
+import { Plane } from "../domain/enums/Plane";
 import {
   createAvatarInstanceState,
   type AvatarInstanceState,
@@ -24,7 +25,7 @@ import {
 
 const STORAGE_KEY_MODE = "tka-viewer3d-renderMode";
 const STORAGE_KEY_CAMERA = "tka-viewer3d-camera";
-const STORAGE_KEY_GRID = "tka-viewer3d-showGrid";
+const STORAGE_KEY_VISIBLE_PLANES = "tka-viewer3d-visiblePlanes";
 
 function loadPersistedMode(): "2d" | "3d" {
   if (typeof localStorage === "undefined") return "2d";
@@ -59,6 +60,34 @@ function persistCamera(snapshot: CameraStateSnapshot) {
   if (typeof localStorage === "undefined") return;
   try {
     localStorage.setItem(STORAGE_KEY_CAMERA, JSON.stringify(snapshot));
+  } catch {
+    // Storage full or unavailable
+  }
+}
+
+// ============================================
+// Plane Persistence
+// ============================================
+
+function loadPersistedPlanes(): Set<Plane> | null {
+  if (typeof localStorage === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_VISIBLE_PLANES);
+    if (!raw) return null;
+    const arr = JSON.parse(raw) as string[];
+    // Validate each entry is a known Plane value
+    const validValues = new Set<string>(Object.values(Plane));
+    const planes = arr.filter((v) => validValues.has(v)) as Plane[];
+    return new Set(planes);
+  } catch {
+    return null;
+  }
+}
+
+function persistPlanes(planes: Set<Plane>) {
+  if (typeof localStorage === "undefined") return;
+  try {
+    localStorage.setItem(STORAGE_KEY_VISIBLE_PLANES, JSON.stringify([...planes]));
   } catch {
     // Storage full or unavailable
   }
@@ -104,10 +133,10 @@ export function createViewer3DState(deps: {
     charcoal: false,
   });
   let cameraSnapshot = $state<CameraStateSnapshot | null>(null);
-  let showGrid = $state((() => {
-    if (typeof localStorage === "undefined") return false;
-    try { return localStorage.getItem(STORAGE_KEY_GRID) === "true"; } catch { return false; }
-  })());
+  // visiblePlanes: which grid planes are currently shown. Empty set = grid hidden.
+  // On first visit, default to null (no planes shown). When the user enables the
+  // grid for the first time, we auto-select only the planes the sequence uses.
+  let visiblePlanes = $state<Set<Plane>>(loadPersistedPlanes() ?? new Set());
 
   // Camera snap callback — registered by Viewer3DCamera, called by Viewer3DViewPresets
   let _snapToFn: ((position: { x: number; y: number; z: number }, target: { x: number; y: number; z: number }) => void) | null = null;
@@ -213,12 +242,53 @@ export function createViewer3DState(deps: {
     get cameraSnapshot() {
       return cameraSnapshot;
     },
-    get showGrid() {
-      return showGrid;
+    get visiblePlanes() {
+      return visiblePlanes;
     },
-    toggleGrid() {
-      showGrid = !showGrid;
-      try { localStorage.setItem(STORAGE_KEY_GRID, String(showGrid)); } catch {}
+    get showGrid() {
+      return visiblePlanes.size > 0;
+    },
+    /**
+     * Toggle a single grid plane on or off.
+     */
+    togglePlane(plane: Plane) {
+      const next = new Set(visiblePlanes);
+      if (next.has(plane)) next.delete(plane);
+      else next.add(plane);
+      visiblePlanes = next;
+      persistPlanes(visiblePlanes);
+    },
+    /**
+     * Show all three grid planes at once.
+     */
+    showAllPlanes() {
+      visiblePlanes = new Set([Plane.WALL, Plane.WHEEL, Plane.FLOOR]);
+      persistPlanes(visiblePlanes);
+    },
+    /**
+     * Hide all grid planes.
+     */
+    hideAllPlanes() {
+      visiblePlanes = new Set();
+      persistPlanes(visiblePlanes);
+    },
+    /**
+     * Toggle between "all planes visible" and "no planes visible".
+     * When turning on for the first time (or after hide-all), defaults to
+     * wall-only since all current sequences use the wall plane.
+     */
+    toggleGrid(sequenceData?: SequenceData | null) {
+      if (visiblePlanes.size > 0) {
+        // Already showing something — turn off everything
+        visiblePlanes = new Set();
+      } else {
+        // Turn on — show only the planes the sequence actually uses.
+        // Currently every sequence uses the wall plane, so we default to that.
+        // When multi-plane sequences exist, read sequenceData.gridMode here.
+        const defaultPlane = Plane.WALL;
+        visiblePlanes = new Set([defaultPlane]);
+      }
+      persistPlanes(visiblePlanes);
     },
     enter3D,
     exit3D,
