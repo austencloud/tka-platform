@@ -123,11 +123,11 @@
   />
 </T.Group>
 
-<!-- Blue staff -->
+<!-- Blue staff (renders red in mirror mode so your red = their visual red) -->
 {#if bluePropState}
   <Staff3D
     propState={bluePropState}
-    color="blue"
+    color={isMirror ? "red" : "blue"}
     {avatarPosition}
     {facingAngle}
     gridOffset={0.3}
@@ -135,11 +135,11 @@
   />
 {/if}
 
-<!-- Red staff -->
+<!-- Red staff (renders blue in mirror mode) -->
 {#if redPropState}
   <Staff3D
     propState={redPropState}
-    color="red"
+    color={isMirror ? "blue" : "red"}
     {avatarPosition}
     {facingAngle}
     gridOffset={0.3}
