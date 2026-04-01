@@ -7,6 +7,7 @@
 
 import type { Vector3, Quaternion } from "three";
 import type { PropState3D } from "../../domain/models/PropState3D";
+import type { Plane } from "../../domain/enums/Plane";
 
 /**
  * Pose for a single hand/arm
@@ -18,6 +19,8 @@ export interface HandPose {
   wristRotation?: Quaternion;
   /** Grip type for fingers — see GripType enum in GripPose.ts */
   gripType?: import("../../domain/models/GripPose").GripType;
+  /** Which plane this hand's prop is operating on */
+  plane?: Plane;
   /** Blend weight (0-1) */
   weight: number;
 }
