@@ -92,11 +92,8 @@
   let vmActiveMode = $state<"fire" | "charcoal" | "led" | "trails" | "none">("none");
 
   function syncActiveMode() {
-    if (visibilityManager.isFireEffectEnabled()) vmActiveMode = "fire";
-    else if (visibilityManager.isCharcoalEffectEnabled()) vmActiveMode = "charcoal";
-    else if (visibilityManager.isLedEffectEnabled()) vmActiveMode = "led";
-    else if (visibilityManager.isTrailsVisible() && visibilityManager.getTrailStyle() === "on") vmActiveMode = "trails";
-    else vmActiveMode = "none";
+    const active = visibilityManager.getActiveEffect();
+    vmActiveMode = active === "none" ? "none" : active;
   }
 
   // Poll the VM to keep vmActiveMode in sync (the VM uses an observer
@@ -115,10 +112,7 @@
   const animationState = createAnimationPanelState();
 
   // Save global effect states so we can restore them when leaving the Effects Lab.
-  const savedFireEnabled = visibilityManager.isFireEffectEnabled();
-  const savedCharcoalEnabled = visibilityManager.isCharcoalEffectEnabled();
-  const savedLedEnabled = visibilityManager.isLedEffectEnabled();
-  const savedTrailStyle = visibilityManager.getTrailStyle();
+  const savedEffectMap = { ...visibilityManager.getTipEffectMap() };
 
   // Playback state polling
   $effect(() => {
@@ -281,10 +275,7 @@
     animationState.dispose();
 
     // Restore global effect states that were active before the Effects Lab took over
-    visibilityManager.setFireEffect(savedFireEnabled);
-    visibilityManager.setCharcoalEffect(savedCharcoalEnabled);
-    visibilityManager.setLedEffect(savedLedEnabled);
-    visibilityManager.setTrailStyle(savedTrailStyle);
+    visibilityManager.setTipEffectMap(savedEffectMap);
   });
 
   // ─── Sequence loading ─────────────────────────────────────────────────

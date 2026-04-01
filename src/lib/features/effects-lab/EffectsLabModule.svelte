@@ -44,36 +44,23 @@
 
   // Activate the effect for a given mode
   function activateMode(mode: EffectMode) {
-    if (mode === "fire") {
-      visibilityManager.setFireEffect(true);
-    } else if (mode === "charcoal") {
-      visibilityManager.setCharcoalEffect(true);
-    } else if (mode === "led") {
-      visibilityManager.setLedEffect(true);
-    }
-    // trails: no visibility manager flag needed
+    // "trails" maps to the "trails" effect type; others map directly
+    visibilityManager.setActiveEffect(mode as "fire" | "charcoal" | "led" | "trails");
   }
 
-  // Deactivate the effect for a given mode
-  function deactivateMode(mode: EffectMode) {
-    if (mode === "fire") visibilityManager.setFireEffect(false);
-    if (mode === "charcoal") visibilityManager.setCharcoalEffect(false);
-    if (mode === "led") visibilityManager.setLedEffect(false);
+  // Deactivate all effects (clear to none)
+  function deactivateMode(_mode: EffectMode) {
+    visibilityManager.setActiveEffect("none");
   }
 
-  // On mount: disable effects that don't belong to the active mode, then activate it
-  function initializeMode(current: EffectMode) {
-    if (current !== "fire" && current !== "charcoal") visibilityManager.setFireEffect(false);
-    if (current !== "charcoal") visibilityManager.setCharcoalEffect(false);
-    if (current !== "led") visibilityManager.setLedEffect(false);
-    activateMode(current);
-  }
+  // On mount: set the active effect to match the restored mode
   initializeMode(untrack(() => activeMode));
 
+  function initializeMode(current: EffectMode) {
+    activateMode(current);
+  }
+
   function setMode(mode: EffectMode) {
-    if (mode !== activeMode) {
-      deactivateMode(activeMode);
-    }
     activeMode = mode;
     activateMode(mode);
     try { sessionStorage.setItem(MODE_KEY, mode); } catch { /* ignore */ }

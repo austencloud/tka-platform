@@ -904,32 +904,28 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
 
   /**
    * Save current effect state and apply overrides for export.
-   * Returns the saved state for restoration after export.
+   * Returns the saved tipEffectMap for restoration after export.
    */
   private applyEffectOverrides(
     visibilityManager: ReturnType<typeof getAnimationVisibilityManager>,
     overrides?: VideoEffectOverrides
-  ): { fire: boolean; led: boolean; trails: boolean; charcoal: boolean } | null {
+  ): import("$lib/shared/animation-engine/domain/types/TipEffectTypes").TipEffectMap | null {
     if (!overrides) return null;
 
-    const saved = {
-      fire: visibilityManager.isFireEffectEnabled(),
-      led: visibilityManager.isLedEffectEnabled(),
-      trails: visibilityManager.isTrailsVisible(),
-      charcoal: visibilityManager.isCharcoalEffectEnabled(),
-    };
+    const saved = { ...visibilityManager.getTipEffectMap() };
 
-    if (overrides.fire !== undefined) {
-      visibilityManager.setFireEffect(overrides.fire);
-    }
-    if (overrides.led !== undefined) {
-      visibilityManager.setLedEffect(overrides.led);
-    }
-    if (overrides.trails !== undefined) {
-      visibilityManager.setTrailStyle(overrides.trails ? "on" : "off");
-    }
-    if (overrides.charcoal !== undefined) {
-      visibilityManager.setCharcoalEffect(overrides.charcoal);
+    // Determine which single effect (if any) should be active for the export.
+    // Priority: fire > charcoal > led > trails > none.
+    if (overrides.fire) {
+      visibilityManager.setActiveEffect("fire");
+    } else if (overrides.charcoal) {
+      visibilityManager.setActiveEffect("charcoal");
+    } else if (overrides.led) {
+      visibilityManager.setActiveEffect("led");
+    } else if (overrides.trails) {
+      visibilityManager.setActiveEffect("trails");
+    } else {
+      visibilityManager.setActiveEffect("none");
     }
 
     return saved;
@@ -940,14 +936,10 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
    */
   private restoreEffectState(
     visibilityManager: ReturnType<typeof getAnimationVisibilityManager>,
-    saved: { fire: boolean; led: boolean; trails: boolean; charcoal: boolean } | null
+    saved: import("$lib/shared/animation-engine/domain/types/TipEffectTypes").TipEffectMap | null
   ): void {
     if (!saved) return;
-
-    visibilityManager.setFireEffect(saved.fire);
-    visibilityManager.setLedEffect(saved.led);
-    visibilityManager.setTrailStyle(saved.trails ? "on" : "off");
-    visibilityManager.setCharcoalEffect(saved.charcoal);
+    visibilityManager.setTipEffectMap(saved);
   }
 
   private waitForAnimationFrame(): Promise<void> {
