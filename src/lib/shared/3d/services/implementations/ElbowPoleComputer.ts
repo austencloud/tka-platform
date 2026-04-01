@@ -103,7 +103,7 @@ export class ElbowPoleComputer implements IElbowPoleComputer {
     const localY = handTarget.y - bodyCenter.y;
 
     // Forward/back adjustment: add upward bias when hand is in front/behind
-    const depthFactor = Math.min(1, Math.abs(localZ) * 2);
+    const depthFactor = Math.min(1, Math.abs(localZ) / SHOULDER_HALF_WIDTH);
     pole.y += depthFactor * 0.3;
 
     // Low position: increase outward bias
