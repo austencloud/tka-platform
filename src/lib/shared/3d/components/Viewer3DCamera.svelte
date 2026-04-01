@@ -23,7 +23,8 @@
   // Grid center is at (0, ~1.55, 0.3) — shoulder height (STAGE_LIFT) plus
   // gridOffset forward. Camera targets this so the grid disc intersection
   // point is dead-center in the viewport.
-  const defaultPosition = { x: 0, y: 1.85, z: -2.2 };
+  // Pull back to ~3.0 so the grid appears inset like the 2D canvas (15-20% padding)
+  const defaultPosition = { x: 0, y: 1.85, z: -3.0 };
   const defaultTarget = { x: 0, y: 1.55, z: 0.3 };
 
   // Restore persisted camera position if available
