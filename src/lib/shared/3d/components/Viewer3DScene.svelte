@@ -42,18 +42,16 @@
   // Puppet-mode sync loop: convert the orchestrator's floating-point currentStep
   // into avatar beat index + sub-beat progress each frame.
   //
-  // currentStep is a continuous float: integer part = beat index (1-based from
-  // the animation orchestrator), fractional part = sub-beat interpolation 0..1.
+  // currentStep is a continuous float: integer part = beat index, fractional
+  // part = sub-beat interpolation 0..1. Beat 0 = start position, beats 1+ = motion.
   //
-  // We shift to 0-based step indices for the avatar and clamp to 0 so the
-  // start frame (currentStep < 1) shows the first pose.
+  // stepConfigs now includes the start position at index 0, so the mapping
+  // is direct: 2D beat N → 3D index N (no offset needed).
   useTask(() => {
     const beatIndex = Math.floor(currentStep);
     const subBeatProgress = currentStep - beatIndex;
-    const stepIndex3D = Math.max(0, beatIndex - 1);
-    const progress3D = beatIndex < 1 ? 0 : subBeatProgress;
-    avatarState.goToStep(stepIndex3D);
-    avatarState.setProgress(progress3D);
+    avatarState.goToStep(beatIndex);
+    avatarState.setProgress(subBeatProgress);
   });
 
   const bluePropState = $derived(avatarState.bluePropState);

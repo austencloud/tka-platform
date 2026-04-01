@@ -218,10 +218,21 @@ export function createAvatarInstanceState(
    */
   function loadSequence(sequence: SequenceData) {
     loadedSequence = sequence;
-    stepConfigs = sequenceConverter.sequenceToMotionConfigs(
+
+    // Get motion configs (beats 1+) and prepend start position (beat 0)
+    // so the full sequence including initial orientation is available.
+    const motionConfigs = sequenceConverter.sequenceToMotionConfigs(
       sequence,
       Plane.WALL
     );
+    const startConfig = sequenceConverter.getStartPositionConfigs(
+      sequence,
+      Plane.WALL
+    );
+    stepConfigs = startConfig
+      ? [startConfig, ...motionConfigs]
+      : motionConfigs;
+
     currentStepIndex = 0;
     playback.reset();
     updateVisibilityFromStep(stepConfigs[0]);
