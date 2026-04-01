@@ -67,6 +67,10 @@ export {
 // Export staged upload cleanup (orphan prevention)
 export { cleanupStagedUploads } from "./cleanupStagedUploads";
 
+// Merch store: checkout session creation and order recording via Stripe webhook
+export { createMerchCheckout } from "./merch/createMerchCheckout";
+export { handleMerchWebhook } from "./merch/handleMerchWebhook";
+
 const db = admin.firestore();
 
 // Role hierarchy: user < premium < tester < admin
