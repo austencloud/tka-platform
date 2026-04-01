@@ -138,11 +138,11 @@
   // visibility manager directly. Without this, the buttons show stale state
   // because they only tracked their own local $state variables.
   function deriveEffectFromManager(): EffectId {
-    const s = visibilityManager.getSettings();
-    if (s.fireEffect) return "fire";
-    if (s.charcoalEffect) return "charcoal";
-    if (s.ledEffect) return "leds";
-    if (s.trailStyle !== "off") return "trails";
+    const active = visibilityManager.getActiveEffect();
+    if (active === "fire") return "fire";
+    if (active === "charcoal") return "charcoal";
+    if (active === "led") return "leds";
+    if (active === "trails") return "trails";
     return "clean";
   }
 
@@ -249,9 +249,7 @@
       // Dark mode on for visual impact
       visibilityManager.setDarkMode(true);
       // Trails on by default (matches "trails" active chip)
-      visibilityManager.setTrailStyle("on");
-      visibilityManager.setFireEffect(false);
-      visibilityManager.setLedEffect(false);
+      visibilityManager.setActiveEffect("trails");
 
       browseLoader = container.items.browseLoader;
       const controllerFactory = container.items.animationPlaybackControllerFactory as IAnimationPlaybackControllerFactory;
@@ -294,37 +292,21 @@
   function setEffect(effect: EffectId) {
     activeEffect = effect;
 
-    // Fire and LEDs are mutually exclusive
     switch (effect) {
       case "clean":
-        visibilityManager.setTrailStyle("off");
-        visibilityManager.setFireEffect(false);
-        visibilityManager.setCharcoalEffect(false);
-        visibilityManager.setLedEffect(false);
+        visibilityManager.setActiveEffect("none");
         break;
       case "trails":
-        visibilityManager.setTrailStyle("on");
-        visibilityManager.setFireEffect(false);
-        visibilityManager.setCharcoalEffect(false);
-        visibilityManager.setLedEffect(false);
+        visibilityManager.setActiveEffect("trails");
         break;
       case "fire":
-        visibilityManager.setTrailStyle("on");
-        visibilityManager.setFireEffect(true);
-        visibilityManager.setCharcoalEffect(false);
-        visibilityManager.setLedEffect(false);
+        visibilityManager.setActiveEffect("fire");
         break;
       case "charcoal":
-        visibilityManager.setTrailStyle("off");
-        visibilityManager.setFireEffect(false);
-        visibilityManager.setLedEffect(false);
-        visibilityManager.setCharcoalEffect(true);
+        visibilityManager.setActiveEffect("charcoal");
         break;
       case "leds":
-        visibilityManager.setTrailStyle("on");
-        visibilityManager.setFireEffect(false);
-        visibilityManager.setCharcoalEffect(false);
-        visibilityManager.setLedEffect(true);
+        visibilityManager.setActiveEffect("led");
         break;
     }
   }

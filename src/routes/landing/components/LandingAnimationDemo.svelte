@@ -508,26 +508,26 @@
   function handleToggleFire() {
     fireEnabled = !fireEnabled;
     if (fireEnabled) {
-      // Mutually exclusive: turn off LED
       ledEnabled = false;
-      visibilityManager.setLedEffect(false);
+      visibilityManager.setActiveEffect("fire");
+    } else {
+      visibilityManager.setActiveEffect("none");
     }
-    visibilityManager.setFireEffect(fireEnabled);
   }
 
   function handleToggleLed() {
     ledEnabled = !ledEnabled;
     if (ledEnabled) {
-      // Mutually exclusive: turn off fire
       fireEnabled = false;
-      visibilityManager.setFireEffect(false);
+      visibilityManager.setActiveEffect("led");
+    } else {
+      visibilityManager.setActiveEffect("none");
     }
-    visibilityManager.setLedEffect(ledEnabled);
   }
 
   function handleToggleTrails() {
     trailsEnabled = !trailsEnabled;
-    visibilityManager.setTrailStyle(trailsEnabled ? "on" : "off");
+    visibilityManager.setActiveEffect(trailsEnabled ? "trails" : "none");
   }
 </script>
 
