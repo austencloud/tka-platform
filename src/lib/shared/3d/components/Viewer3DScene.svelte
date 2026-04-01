@@ -14,6 +14,7 @@
   import Grid3D from "./Grid3D.svelte";
   import { userProportionsState } from "../state/user-proportions-state.svelte";
   import { getViewer3DContext } from "../context/viewer-3d-context";
+  import { Plane } from "../domain/enums/Plane";
   import type { AvatarInstanceState } from "../state/avatar-instance-state.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
@@ -47,15 +48,28 @@
   //
   // stepConfigs now includes the start position at index 0, so the mapping
   // is direct: 2D beat N → 3D index N (no offset needed).
+  let _diagLogged = false;
   useTask(() => {
     const beatIndex = Math.floor(currentStep);
     const subBeatProgress = currentStep - beatIndex;
     avatarState.goToStep(beatIndex);
     avatarState.setProgress(subBeatProgress);
+
+    if (!_diagLogged && avatarState.bluePropState) {
+      _diagLogged = true;
+      console.log('[DIAG:Viewer3DScene.useTask] FIRST FRAME — currentStep:', currentStep, '| beatIndex:', beatIndex, '| subBeatProgress:', subBeatProgress);
+      console.log('[DIAG:Viewer3DScene.useTask] activeBlueConfig startOri:', avatarState.activeBlueConfig?.startOrientation, '| activeRedConfig startOri:', avatarState.activeRedConfig?.startOrientation);
+      console.log('[DIAG:Viewer3DScene.useTask] bluePropState staffRotAngle:', avatarState.bluePropState?.staffRotationAngle, '| redPropState staffRotAngle:', avatarState.redPropState?.staffRotationAngle);
+    }
   });
 
   const bluePropState = $derived(avatarState.bluePropState);
   const redPropState = $derived(avatarState.redPropState);
+
+  // Convert string-keyed Set from state into the typed Plane Set that Grid3D expects.
+  // The state layer uses Plane enum values as strings so it doesn't need to import
+  // the enum — we do the conversion here at the scene boundary.
+  const gridVisiblePlanes = $derived(viewer3DState.visiblePlanes as Set<Plane>);
 </script>
 
 <!-- Lighting -->
@@ -73,6 +87,7 @@
      where the props actually rotate, not at ground level. -->
 {#if viewer3DState.showGrid}
   <Grid3D
+    visiblePlanes={gridVisiblePlanes}
     centerPosition={avatarPosition}
     {facingAngle}
     gridOffset={0.3}
