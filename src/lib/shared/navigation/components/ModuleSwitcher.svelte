@@ -198,18 +198,20 @@
         onclick={userPreviewState.isActive ? undefined : handleProfileTap}
       />
       <div class="account-footer-actions">
-        <button class="drawer-action inbox" onclick={handleInboxClick}>
-          <div class="drawer-action-icon-wrapper">
-            <i class="fas fa-inbox" aria-hidden="true"></i>
-            {#if hasUnread}
-              <span class="drawer-unread-dot" aria-hidden="true"></span>
+        {#if authState.isAuthenticated}
+          <button class="drawer-action inbox" onclick={handleInboxClick}>
+            <div class="drawer-action-icon-wrapper">
+              <i class="fas fa-inbox" aria-hidden="true"></i>
+              {#if hasUnread}
+                <span class="drawer-unread-dot" aria-hidden="true"></span>
+              {/if}
+            </div>
+            <span>Inbox</span>
+            {#if hasUnread && unreadCount > 0}
+              <span class="drawer-inbox-count">{unreadCount > 99 ? "99+" : unreadCount}</span>
             {/if}
-          </div>
-          <span>Inbox</span>
-          {#if hasUnread && unreadCount > 0}
-            <span class="drawer-inbox-count">{unreadCount > 99 ? "99+" : unreadCount}</span>
-          {/if}
-        </button>
+          </button>
+        {/if}
         <button class="drawer-action" onclick={handleAccountSettings}>
           <i class="fas fa-cog" aria-hidden="true"></i>
           <span>Settings</span>
