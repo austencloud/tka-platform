@@ -28,12 +28,14 @@ export class AnimationVisibilitySynchronizer implements IAnimationVisibilitySync
       grid: this.manager.isGridVisible(),
       stepNumbers: this.manager.getVisibility("stepNumbers"),
       props: this.manager.getVisibility("props"),
-      trails: this.manager.isTrailsVisible(),
+      trails: this.manager.isTrailsActive(),
       tkaGlyph: this.manager.getVisibility("tkaGlyph"), // TKA Glyph includes turn numbers
       blueMotion: this.manager.getVisibility("blueMotion"),
       redMotion: this.manager.getVisibility("redMotion"),
       darkMode: this.manager.isDarkMode(),
       wordHeader: this.manager.getVisibility("wordHeader"),
+      activeEffect: this.manager.getActiveEffect(),
+      tipEffectMap: this.manager.getTipEffectMap(),
     };
   }
 

@@ -6,6 +6,8 @@
  * individual state variable syncing.
  */
 
+import type { EffectType, TipEffectMap } from "../../domain/types/TipEffectTypes";
+
 /**
  * All visibility settings as a single object
  */
@@ -21,6 +23,8 @@ export interface AnimationVisibilityState {
   darkMode: boolean;
   /** Word header overlay showing sequence name */
   wordHeader: boolean;
+  activeEffect: EffectType;
+  tipEffectMap: TipEffectMap;
 }
 
 /**
