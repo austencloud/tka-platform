@@ -177,12 +177,12 @@ export function calculatePropQuaternion(
   // Start with plane base orientation
   const planeQuat = getPlaneQuaternion(plane);
 
-  // Add staff rotation around the plane's normal
-  // CRITICAL: Negate angle to convert from canvas (Y-down) to Three.js (Y-up)
-  // In canvas: positive angle = clockwise
-  // In Three.js: positive angle = counter-clockwise
+  // Add staff rotation around the plane's normal.
+  // The X-axis mirror in planeAngleToWorldPosition (performer's perspective)
+  // flips the coordinate handedness. Using positive staffAngle here compensates,
+  // keeping pro = clockwise and anti = counter-clockwise from the performer's view.
   const normal = getPlaneNormal(plane);
-  const staffQuat = new Quaternion().setFromAxisAngle(normal, -staffAngle);
+  const staffQuat = new Quaternion().setFromAxisAngle(normal, staffAngle);
 
   // Combine: plane orientation first, then staff rotation
   return planeQuat.clone().multiply(staffQuat);
