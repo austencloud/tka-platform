@@ -1,0 +1,54 @@
+import * as functions from "firebase-functions";
+import * as admin from "firebase-admin";
+import Stripe from "stripe";
+
+const stripe = new Stripe(functions.config().stripe?.secret_key || process.env.STRIPE_SECRET_KEY || "", {
+  // apiVersion omitted — uses SDK default for installed package version
+});
+
+interface CheckoutRequest {
+  productId: string;
+}
+
+interface CheckoutResponse {
+  url: string;
+}
+
+export const createMerchCheckout = functions.https.onCall(
+  async (data: CheckoutRequest): Promise<CheckoutResponse> => {
+    const { productId } = data;
+
+    if (!productId || typeof productId !== "string") {
+      throw new functions.https.HttpsError("invalid-argument", "productId is required");
+    }
+
+    const productDoc = await admin.firestore().collection("products").doc(productId).get();
+
+    if (!productDoc.exists) {
+      throw new functions.https.HttpsError("not-found", "Product not found");
+    }
+
+    const product = productDoc.data()!;
+
+    if (product.status !== "active") {
+      throw new functions.https.HttpsError("failed-precondition", "Product is not available for purchase");
+    }
+
+    const baseUrl = functions.config().app?.base_url || "https://thekineticalphabet.com";
+
+    const session = await stripe.checkout.sessions.create({
+      mode: "payment",
+      line_items: [{ price: product.stripePriceId, quantity: 1 }],
+      shipping_address_collection: { allowed_countries: ["US"] },
+      success_url: `${baseUrl}/store/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${baseUrl}/store/${productId}`,
+      metadata: { productId, productName: product.name },
+    });
+
+    if (!session.url) {
+      throw new functions.https.HttpsError("internal", "Failed to create checkout session");
+    }
+
+    return { url: session.url };
+  }
+);
