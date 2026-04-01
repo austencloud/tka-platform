@@ -172,7 +172,7 @@ export class Canvas2DTrailRenderer {
   ): void {
     const sizeScale = canvasSize / DEFAULT_CANVAS_SIZE;
 
-    if (!trailSettings.enabled || trailSettings.mode === TrailMode.OFF) {
+    if (trailSettings.mode === TrailMode.OFF) {
       return;
     }
 

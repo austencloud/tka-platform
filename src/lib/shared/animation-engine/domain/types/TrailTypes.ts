@@ -65,7 +65,6 @@ export enum TrailEffect {
  * - TAPERED width (thick at head, thin at tail)
  */
 export interface TrailSettings {
-  enabled: boolean;
   mode: TrailMode;
   effect: TrailEffect; // Visual effect (none, glow)
   fadeDurationMs: number; // How long before trail fades (fade mode only)
@@ -94,7 +93,6 @@ import { MotionColor } from "../../../pictograph/shared/domain/enums/pictograph-
  * Users can toggle trails on/off, but when ON, these exact settings are used.
  */
 export const DEFAULT_TRAIL_SETTINGS: TrailSettings = {
-  enabled: true,
   mode: TrailMode.FADE,
   effect: TrailEffect.GLOW,
   fadeDurationMs: 2500,

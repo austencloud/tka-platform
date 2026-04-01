@@ -51,7 +51,7 @@
   // Derive trail style from actual animation settings (source of truth)
   function getTrailStyleFromSettings(): TrailVisibility {
     const trail = animationSettings.trail;
-    if (!trail.enabled || trail.mode === TrailMode.OFF) return "off";
+    if (trail.mode === TrailMode.OFF) return "off";
     return "on";
   }
 

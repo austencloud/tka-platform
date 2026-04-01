@@ -128,7 +128,6 @@
 	// one meaningful endpoint, so BOTH_ENDS would show an imaginary second trail.
 	const trailSettings = $derived.by(() => {
 		const t = animationSettings.trail;
-		void t.enabled;
 		void t.mode;
 		void t.fadeDurationMs;
 		void t.lineWidth;

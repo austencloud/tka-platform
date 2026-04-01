@@ -43,7 +43,6 @@ export class EffectConfigMapper implements IEffectConfigMapper {
     const fadeDurationMs = (effect.length * 1000) / 60;
 
     return {
-      enabled: effect.enabled,
       mode: effect.mode as TrailMode,
       effect: effect.glow ? TrailEffect.GLOW : TrailEffect.NONE,
       fadeDurationMs,
