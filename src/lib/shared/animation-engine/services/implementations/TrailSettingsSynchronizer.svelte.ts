@@ -43,7 +43,7 @@ export class TrailSettingsSynchronizer implements ITrailSettingsSynchronizer {
     if (this.TrailCapturer) {
       this.TrailCapturer.updateSettings(settings);
 
-      if (!settings.enabled || settings.mode === TrailModeEnum.OFF) {
+      if (settings.mode === TrailModeEnum.OFF) {
         this.TrailCapturer.clearTrails();
       }
     }

@@ -171,7 +171,7 @@
   // Derive trail preset for settings button summary
   const currentTrailPreset = $derived.by(() => {
     const trail = animationSettings.trail;
-    if (!trail.enabled || trail.mode === TrailMode.OFF) return "Off";
+    if (trail.mode === TrailMode.OFF) return "Off";
     return "On";
   });
 

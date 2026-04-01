@@ -101,7 +101,6 @@ function loadSettings(): AnimationSettings {
   // The rendering now always uses exponential fade and tapered width (hardcoded)
   if (settings.trail) {
     // Always force these "vivid" settings - they're what makes trails look good
-    settings.trail.enabled = true;
     settings.trail.mode = TrailMode.FADE;
     settings.trail.effect = TrailEffect.GLOW;
     // Thicker line width to compensate for tapering (tapered trails thin at tail)
@@ -131,7 +130,6 @@ export type AnimationSettingsState = {
   setShouldLoop: (loop: boolean) => void;
 
   // Trail setters
-  setTrailEnabled: (enabled: boolean) => void;
   setTrailMode: (mode: TrailMode) => void;
   setTrailEffect: (effect: TrailEffect) => void;
   setTrackingMode: (mode: TrackingMode) => void;
@@ -162,7 +160,6 @@ export function createAnimationSettingsState(): AnimationSettingsState {
       // Access all properties to track changes
       void settings.bpm;
       void settings.shouldLoop;
-      void settings.trail.enabled;
       void settings.trail.mode;
       void settings.trail.effect;
       void settings.trail.trackingMode;
@@ -204,20 +201,12 @@ export function createAnimationSettingsState(): AnimationSettingsState {
     },
 
     // Trail setters
-    setTrailEnabled: (enabled: boolean) => {
-      settings = {
-        ...settings,
-        trail: { ...settings.trail, enabled },
-      };
-    },
-
     setTrailMode: (mode: TrailMode) => {
       settings = {
         ...settings,
         trail: {
           ...settings.trail,
           mode,
-          enabled: mode !== TrailMode.OFF,
         },
       };
     },

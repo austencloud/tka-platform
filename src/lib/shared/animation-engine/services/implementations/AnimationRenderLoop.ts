@@ -17,6 +17,8 @@ import type { IFireTipTracker, FireTipTrackerConfig } from "../contracts/IFireTi
 import type { ILedOverlayRenderer } from "../contracts/ILedOverlayRenderer";
 import type { ILedTipTracker, LedTipTrackerConfig } from "../contracts/ILedTipTracker";
 import type { ITrailOverlayCanvas } from "../contracts/ITrailOverlayCanvas";
+import type { IMandalaOverlayCanvas } from "$lib/shared/mandala/services/contracts/IMandalaOverlayCanvas";
+import type { IMandalaFrameProjector } from "$lib/shared/mandala/services/contracts/IMandalaFrameProjector";
 import type {
   IAnimationRenderLoop,
   RenderLoopConfig,
@@ -37,6 +39,9 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
   private ledRenderer: ILedOverlayRenderer | null = null;
   private ledTipTracker: ILedTipTracker | null = null;
   private trailOverlay: ITrailOverlayCanvas | null = null;
+  private mandalaOverlay: IMandalaOverlayCanvas | null = null;
+  private mandalaProjector: IMandalaFrameProjector | null = null;
+  private lastMandalaFrameTime: number = 0;
   private onEffectError: ((effectName: string, error: Error) => void) | null = null;
   private canvasSize: number = 950;
   private lastTrailFrameTime: number = 0;
@@ -128,6 +133,10 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       this.ledTipTracker = config.ledTipTracker ?? null;
     if (config.trailOverlay !== undefined)
       this.trailOverlay = config.trailOverlay ?? null;
+    if (config.mandalaOverlay !== undefined)
+      this.mandalaOverlay = config.mandalaOverlay ?? null;
+    if (config.mandalaProjector !== undefined)
+      this.mandalaProjector = config.mandalaProjector ?? null;
     if (config.onEffectError !== undefined)
       this.onEffectError = config.onEffectError ?? null;
   }
@@ -254,7 +263,6 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
 
     // Real-time trail capture
     if (
-      trailSettings.enabled &&
       trailSettings.mode !== TrailMode.OFF &&
       this.TrailCapturer
     ) {
@@ -277,7 +285,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
 
     // Determine what actually needs continuous rendering
     const trailsNeedContinuousRender =
-      trailSettings.enabled && trailSettings.mode !== TrailMode.OFF;
+      trailSettings.mode !== TrailMode.OFF;
     const backgroundTransitioning =
       this.renderer?.isBackgroundTransitioning() ?? false;
     // Fire or charcoal overlay is active. fireConfig is passed when either
@@ -293,13 +301,18 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       this.ledRenderer?.isInitialized() === true;
 
     // Active work: playing, effects running, background animating, or explicit render request
+    const mandalaActive =
+      params.mandalaConfig?.enabled === true &&
+      this.mandalaOverlay !== null;
+
     const hasActiveWork =
       this.needsRender ||
       isPlaying ||
       backgroundTransitioning ||
       fireActive ||
       charcoalActive ||
-      ledActive;
+      ledActive ||
+      mandalaActive;
 
     // Trails alone (without active work) should not keep the loop alive forever.
     // Allow a grace period for initialization/texture loading, then auto-stop.
@@ -379,7 +392,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     const effectiveGridVisible = gridVisible && visibility.gridVisible;
     const effectivePropsVisible = visibility.propsVisible;
     const effectiveTrailsVisible =
-      visibility.trailsVisible && trailSettings.enabled;
+      visibility.trailsVisible;
 
     // Derive motion visibility from both internal state AND whether prop is actually present
     // (props may be filtered to null by parent component based on its own visibility state)
@@ -411,6 +424,68 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     });
 
     // Route trail rendering through the overlay canvas
+    // Live mandala overlay — draws behind trails (z-index 0)
+    if (this.mandalaOverlay && this.mandalaProjector && params.mandalaConfig?.enabled) {
+      const now = performance.now();
+      const mdt = this.lastMandalaFrameTime > 0
+        ? (now - this.lastMandalaFrameTime) / 1000
+        : 1 / 60;
+      this.lastMandalaFrameTime = now;
+
+      // Convert PropState (angles) to canvas pixel positions for the projector
+      const canvasCenter = this.canvasSize / 2;
+      const gridScale = this.canvasSize / 950; // VIEWBOX_SIZE
+      const scaledRadius = 150 * gridScale; // DEFAULT_GRID_HALFWAY_OFFSET * gridScale
+
+      const blueProp = params.props.blueProp;
+      const redProp = params.props.redProp;
+
+      let blueInput: { centerX: number; centerY: number; staffAngle: number } | null = null;
+      if (blueProp) {
+        const bx = blueProp.x !== undefined
+          ? canvasCenter + blueProp.x * scaledRadius
+          : canvasCenter + Math.cos(blueProp.centerPathAngle) * scaledRadius;
+        const by = blueProp.y !== undefined
+          ? canvasCenter + blueProp.y * scaledRadius
+          : canvasCenter + Math.sin(blueProp.centerPathAngle) * scaledRadius;
+        blueInput = { centerX: bx, centerY: by, staffAngle: blueProp.staffRotationAngle };
+      }
+
+      let redInput: { centerX: number; centerY: number; staffAngle: number } | null = null;
+      if (redProp) {
+        const rx = redProp.x !== undefined
+          ? canvasCenter + redProp.x * scaledRadius
+          : canvasCenter + Math.cos(redProp.centerPathAngle) * scaledRadius;
+        const ry = redProp.y !== undefined
+          ? canvasCenter + redProp.y * scaledRadius
+          : canvasCenter + Math.sin(redProp.centerPathAngle) * scaledRadius;
+        redInput = { centerX: rx, centerY: ry, staffAngle: redProp.staffRotationAngle };
+      }
+
+      const projected = this.mandalaProjector.project(
+        blueInput, redInput, this.canvasSize, this.canvasSize,
+      );
+
+      // Default loop duration: 8 beats at current speed (conservative)
+      const beatsPerSecond = (params.playbackSpeed ?? 1.0);
+      const loopDurationMs = Math.max(2000, 8 / beatsPerSecond * 1000);
+
+      this.mandalaOverlay.renderFrame({
+        points: projected,
+        config: params.mandalaConfig,
+        deltaTime: mdt,
+        loopDurationMs: loopDurationMs * (params.mandalaConfig.fadeDurationMultiplier ?? 1.0),
+        canvasSize: this.canvasSize,
+        hasBlue: !!blueProp,
+        hasRed: !!redProp,
+      });
+
+      // Notify mandala overlay on loop detection
+      if (this.loopDetectedThisFrame) {
+        this.mandalaOverlay.onLoopDetected();
+      }
+    }
+
     if (this.trailOverlay && effectiveTrailsVisible) {
       const now = performance.now();
       const dt = this.lastTrailFrameTime > 0
@@ -698,9 +773,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
         const fireState = this.fireRenderer?.isInitialized()
           ? (params.fireConfig?.enabled ? "active" : "idle")
           : "off";
-        const trailCount = params.trailSettings.enabled
-          ? this.reusableBlueTrailPoints.length + this.reusableRedTrailPoints.length
-          : 0;
+        const trailCount = this.reusableBlueTrailPoints.length + this.reusableRedTrailPoints.length;
         console.warn(
           `[FrameDrop] render=${renderTime.toFixed(1)}ms rafGap=${rafGap.toFixed(1)}ms ` +
           `step=${params.currentStep.toFixed(2)} fire=${fireState} ` +

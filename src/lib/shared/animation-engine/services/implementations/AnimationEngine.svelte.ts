@@ -24,7 +24,7 @@ import type { ITurnsTupleGenerator } from "$lib/shared/pictograph/arrow/position
 import type { ISequenceAnimationOrchestrator } from "$lib/features/compose/services/contracts/ISequenceAnimationOrchestrator";
 import type { ISettingsState } from "$lib/shared/settings/services/contracts/ISettingsState";
 import type { PropState } from "../../domain/PropState";
-import { type TrailSettings, DEFAULT_TRAIL_SETTINGS } from "../../domain/types/TrailTypes";
+import { type TrailSettings, DEFAULT_TRAIL_SETTINGS, TrailMode } from "../../domain/types/TrailTypes";
 import type { RenderFrameParams } from "../contracts/IAnimationRenderLoop";
 import type { AdditionalLayerProps } from "$lib/features/compose/services/contracts/ITrailCapturer";
 import type { AnimationVisibilityState } from "../contracts/IAnimationVisibilitySynchronizer";
@@ -1954,7 +1954,6 @@ export class AnimationEngine {
    */
   private trailSettingsChanged(a: TrailSettings, b: TrailSettings): boolean {
     return (
-      a.enabled !== b.enabled ||
       a.mode !== b.mode ||
       a.effect !== b.effect ||
       a.fadeDurationMs !== b.fadeDurationMs ||
@@ -1999,7 +1998,7 @@ export class AnimationEngine {
   private getEffectiveTrailSettings(): TrailSettings {
     const settings = this.enforceUnilateralConstraint(this.state.trailSettings);
     if (this.trailsSuppressedUntilTextureLoad) {
-      return { ...settings, enabled: false };
+      return { ...settings, mode: TrailMode.OFF };
     }
     return settings;
   }

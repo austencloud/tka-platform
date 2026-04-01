@@ -170,7 +170,6 @@ export class TrailCapturer implements ITrailCapturer {
     bluePropDimensions: { width: DEFAULT_PROP_WIDTH, height: DEFAULT_PROP_HEIGHT },
     redPropDimensions: { width: DEFAULT_PROP_WIDTH, height: DEFAULT_PROP_HEIGHT },
     trailSettings: {
-      enabled: false,
       mode: TrailMode.OFF,
       effect: TrailEffect.NONE,
       trackingMode: TrackingMode.RIGHT_END,
@@ -291,8 +290,8 @@ export class TrailCapturer implements ITrailCapturer {
   updateSettings(settings: TrailSettings): void {
     this.config.trailSettings = settings;
 
-    // Clear trails if disabled or mode is OFF
-    if (!settings.enabled || settings.mode === TrailMode.OFF) {
+    // Clear trails if mode is OFF
+    if (settings.mode === TrailMode.OFF) {
       this.clearTrails();
     }
   }
@@ -312,8 +311,8 @@ export class TrailCapturer implements ITrailCapturer {
   ): void {
     const { trailSettings } = this.config;
 
-    // Skip if trails disabled
-    if (!trailSettings.enabled || trailSettings.mode === TrailMode.OFF) {
+    // Skip if trails are off
+    if (trailSettings.mode === TrailMode.OFF) {
       return;
     }
 

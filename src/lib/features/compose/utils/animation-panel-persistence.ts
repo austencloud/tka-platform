@@ -50,7 +50,6 @@ export function loadTrailSettings(): TrailSettings {
     const result = { ...DEFAULT_TRAIL_SETTINGS, ...parsed };
 
     // ALWAYS force these vivid settings - they make trails beautiful
-    result.enabled = true;
     result.mode = TrailMode.FADE;
     result.effect = TrailEffect.GLOW;
     // Thicker line width to compensate for tapering (tapered trails thin at tail)

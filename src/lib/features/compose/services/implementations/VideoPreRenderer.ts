@@ -248,7 +248,6 @@ export class VideoPreRenderer implements IVideoPreRenderer {
       // Trail settings for rendering
       const trailSettings: TrailSettings = {
         ...DEFAULT_TRAIL_SETTINGS,
-        enabled: true,
       };
 
       // Get settings for Buugeng flip and prop types

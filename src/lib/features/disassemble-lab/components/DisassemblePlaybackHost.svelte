@@ -223,7 +223,6 @@
       // Trails
       if (mode === "trails") {
         visibilityManager.setTrailStyle("on");
-        animationSettings.setTrailEnabled(true);
       } else {
         visibilityManager.setTrailStyle("off");
       }

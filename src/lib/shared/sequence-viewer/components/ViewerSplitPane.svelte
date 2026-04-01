@@ -29,7 +29,6 @@
   // (fan, club, minihoop, etc.) always use RIGHT_END regardless of stored preference.
   const trailSettings = $derived.by(() => {
     const t = animationSettings.trail;
-    void t.enabled;
     void t.mode;
     void t.fadeDurationMs;
     void t.lineWidth;
@@ -67,6 +66,7 @@
     onStepClick: (stepIndex: number) => void;
     onCanvasReady: (canvas: HTMLCanvasElement | null) => void;
     onChoreoCardContextMenu?: (x: number, y: number) => void;
+    rerenderTrigger?: number;
   }
 
   let {
@@ -82,6 +82,7 @@
     onStepClick,
     onCanvasReady,
     onChoreoCardContextMenu,
+    rerenderTrigger = 0,
   }: Props = $props();
 
   function handleAnimationClick() {
@@ -251,6 +252,7 @@
           redPropType={propRendering.redPropType}
           catDogModeEnabled={propRendering.catDogModeEnabled}
           onContextMenu={onChoreoCardContextMenu}
+          {rerenderTrigger}
         />
 
       </div>
