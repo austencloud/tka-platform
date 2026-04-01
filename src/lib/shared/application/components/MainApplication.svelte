@@ -37,6 +37,8 @@
   } from "../../navigation/services/contracts/ISheetRouter";
   import { authState } from "../../auth/state/authState.svelte";
   import LandingPage from "../../auth/components/LandingPage.svelte";
+  import AuthDrawer from "../../auth/components/AuthDrawer.svelte";
+  import { authDrawerState } from "../../auth/state/auth-drawer-state.svelte";
   import type { IAuthenticator } from "../../auth/services/contracts/IAuthenticator";
   import ErrorScreen from "../../foundation/ui/ErrorScreen.svelte";
   import type { ISettingsState } from "../../settings/services/contracts/ISettingsState";
@@ -276,17 +278,19 @@
           }
         }
 
-        // Initialize gamification system
-        (window as any).__tkaLoadProgress?.(98, "Initializing achievements...");
-        try {
-          const { initializeGamification } =
-            await import("../../gamification/init/gamification-initializer");
-          await initializeGamification();
-        } catch (gamError) {
-          console.error(
-            "⚠️ Gamification failed to initialize (non-blocking):",
-            gamError
-          );
+        // Initialize gamification system (authenticated users only — requires Firestore)
+        if (authState.isAuthenticated) {
+          (window as any).__tkaLoadProgress?.(98, "Initializing achievements...");
+          try {
+            const { initializeGamification } =
+              await import("../../gamification/init/gamification-initializer");
+            await initializeGamification();
+          } catch (gamError) {
+            console.error(
+              "⚠️ Gamification failed to initialize (non-blocking):",
+              gamError
+            );
+          }
         }
 
         setInitializationState(true, false, null, 0);
@@ -477,55 +481,66 @@
       <div class="auth-loading-spinner"></div>
       <p>Checking authentication...</p>
     </div>
-  {:else if !isAuthenticated}
-    <!-- Not authenticated: show landing page (login/signup) -->
-    <LandingPage />
-  {:else if firstRunState.syncInProgress || (!firstRunState.cloudSynced && !firstRunState.isDone())}
-    <!-- Wait for first-run status to sync from cloud before deciding to show wizard -->
-    <div class="auth-loading">
-      <div class="auth-loading-spinner"></div>
-      <p>Loading preferences...</p>
-    </div>
-  {:else if !firstRunState.isDone() || firstRunState.shouldShow}
-    <!-- First-run wizard with entry animation support -->
-    {#if appEntryState.phase === "wizard-exiting"}
-      <!-- Wizard fading out before create tutorial -->
-      <div class="wizard-exit-wrapper">
-        <FirstRunWizard
-          onComplete={() => firstRunState.markCompleted()}
-          onSkip={() => firstRunState.markSkipped()}
-        />
-      </div>
-    {:else}
-      <FirstRunWizard
-        onComplete={() => {
-          firstRunState.markCompleted();
-          appEntryState.startEntrySequence(true);
-        }}
-        onSkip={() => {
-          firstRunState.markSkipped();
-          appEntryState.startEntrySequence(true);
-        }}
-      />
-    {/if}
-  {:else if appEntryState.isCreateTutorial()}
-    <!-- Create tutorial wizard (user accepted the prompt) -->
-    <CreateTutorialWizard
-      onComplete={() => appEntryState.completeEntry()}
-      onSkip={() => appEntryState.skipToComplete()}
-    />
   {:else}
-    <!-- Main Interface - Full app -->
+    <!-- MainInterface always mounted — guest restrictions via context -->
     <MainInterface />
 
     <!-- PWA migration banner for users who installed from tkascribe.com -->
     <PwaMigrationBanner />
 
+    <!-- FirstRunWizard as overlay (only for newly authenticated users) -->
+    {#if isAuthenticated && (firstRunState.syncInProgress || (!firstRunState.cloudSynced && !firstRunState.isDone()))}
+      <div class="fullscreen-overlay">
+        <div class="auth-loading">
+          <div class="auth-loading-spinner"></div>
+          <p>Loading preferences...</p>
+          <p class="reassurance">Your sequence will be here when you're done.</p>
+        </div>
+      </div>
+    {:else if isAuthenticated && (!firstRunState.isDone() || firstRunState.shouldShow)}
+      <div class="fullscreen-overlay">
+        {#if appEntryState.phase === "wizard-exiting"}
+          <div class="wizard-exit-wrapper">
+            <FirstRunWizard
+              onComplete={() => firstRunState.markCompleted()}
+              onSkip={() => firstRunState.markSkipped()}
+            />
+          </div>
+        {:else}
+          <FirstRunWizard
+            onComplete={() => {
+              firstRunState.markCompleted();
+              appEntryState.startEntrySequence(true);
+            }}
+            onSkip={() => {
+              firstRunState.markSkipped();
+              appEntryState.startEntrySequence(true);
+            }}
+          />
+        {/if}
+      </div>
+    {:else if isAuthenticated && appEntryState.isCreateTutorial()}
+      <div class="fullscreen-overlay">
+        <CreateTutorialWizard
+          onComplete={() => appEntryState.completeEntry()}
+          onSkip={() => appEntryState.skipToComplete()}
+        />
+      </div>
+    {/if}
+
     <!-- Tutorial prompt overlays the main app so the user sees the real layout behind it -->
-    {#if appEntryState.isTutorialPrompt()}
+    {#if isAuthenticated && appEntryState.isTutorialPrompt()}
       <TutorialPrompt
         onAccept={() => appEntryState.acceptTutorial()}
         onSkip={() => appEntryState.declineTutorial()}
+      />
+    {/if}
+
+    <!-- AuthDrawer for guest sign-up flow -->
+    {#if !isAuthenticated}
+      <AuthDrawer
+        open={authDrawerState.open}
+        onClose={() => authDrawerState.hide()}
       />
     {/if}
 
@@ -649,6 +664,20 @@
     to {
       transform: rotate(360deg);
     }
+  }
+
+  /* Fullscreen overlay for first-run wizard and tutorial wizard */
+  .fullscreen-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 900;
+    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+  }
+
+  .reassurance {
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
+    font-size: var(--font-size-compact, 12px);
+    margin-top: 8px;
   }
 
   /* Wizard exit animation - fades out + slight scale down */
