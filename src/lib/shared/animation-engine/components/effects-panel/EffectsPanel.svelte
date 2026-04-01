@@ -2,6 +2,7 @@
   import { onMount, onDestroy } from "svelte";
   import type { Snippet } from "svelte";
   import { getAnimationVisibilityManager } from "../../state/animation-visibility-state.svelte";
+  import type { EffectType } from "../../domain/types/TipEffectTypes";
   import EffectSelector from "./EffectSelector.svelte";
   import EffectPresetsSection from "./EffectPresetsSection.svelte";
   import LedCustomize from "./customize/LedCustomize.svelte";
@@ -73,16 +74,10 @@
   };
 
   function syncFromVM(): void {
-    if (vm.isFireEffectEnabled()) activeEffect = "fire";
-    else if (vm.isLedEffectEnabled()) activeEffect = "led";
-    else if (vm.isCharcoalEffectEnabled()) activeEffect = "charcoal";
-    else if (vm.isTrailsVisible() && vm.getTrailStyle() === "on") activeEffect = "trails";
-    else activeEffect = "none";
-
+    activeEffect = vm.getActiveEffect();
     if (activeEffect === "led") {
       activePresetId = vm.getActivePresetId();
     }
-
     summaryTick++;
   }
 
@@ -97,19 +92,7 @@
 
   function handleEffectSelect(effectId: string): void {
     customizeOpen = false;
-
-    // Disable all effects first
-    vm.setFireEffect(false);
-    vm.setLedEffect(false);
-    vm.setCharcoalEffect(false);
-
-    // Enable selected
-    if (effectId === "fire") vm.setFireEffect(true);
-    else if (effectId === "led") vm.setLedEffect(true);
-    else if (effectId === "charcoal") vm.setCharcoalEffect(true);
-    else if (effectId === "trails") vm.setTrailStyle("on");
-    // "none" — all disabled, already done above
-
+    vm.setActiveEffect(effectId as EffectType);
     activeEffect = effectId;
     activePresetId = null;
   }
