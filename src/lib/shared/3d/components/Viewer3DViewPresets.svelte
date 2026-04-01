@@ -52,7 +52,7 @@
 
   const sublabel = $derived.by(() => {
     if (viewer3DState.mirrorMode) {
-      return "Face to face \u2022 match their movements";
+      return "Face to face \u2022 colors swapped so your red = their red";
     }
     return "Same direction \u2022 your right = their right";
   });
