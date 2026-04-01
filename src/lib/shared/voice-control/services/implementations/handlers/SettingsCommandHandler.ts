@@ -60,6 +60,11 @@ export class SettingsCommandHandler implements IVoiceCommandHandler {
   readonly supportedCategories: VoiceCommandCategory[] = ["settings"];
 
   async execute(command: VoiceCommand): Promise<CommandResult> {
+    // Handle effect:* targets routed through tipEffectMap API
+    if (command.target.startsWith("effect:")) {
+      return this.handleEffectCommand(command);
+    }
+
     const route = SETTING_ROUTES[command.target];
     if (!route) {
       return { success: false, message: `Unknown setting: "${command.target}"` };
@@ -74,6 +79,33 @@ export class SettingsCommandHandler implements IVoiceCommandHandler {
         return this.set(route, false);
       default:
         return { success: false, message: `Unknown action: "${command.action}"` };
+    }
+  }
+
+  private handleEffectCommand(command: VoiceCommand): CommandResult {
+    // Target format: "effect:fire" | "effect:charcoal" | "effect:led" | "effect:trails"
+    const effectName = command.target.slice("effect:".length) as import("../../../../animation-engine/domain/types/TipEffectTypes").EffectType;
+    const mgr = getAnimationVisibilityManager();
+    const displayName = effectName.charAt(0).toUpperCase() + effectName.slice(1);
+
+    switch (command.action) {
+      case "show":
+      case "enable": {
+        mgr.setActiveEffect(effectName);
+        return { success: true, message: `${displayName}: ON` };
+      }
+      case "hide":
+      case "disable": {
+        mgr.setActiveEffect("none");
+        return { success: true, message: `${displayName}: OFF` };
+      }
+      case "toggle": {
+        const isActive = mgr.getActiveEffect() === effectName;
+        mgr.setActiveEffect(isActive ? "none" : effectName);
+        return { success: true, message: `${displayName}: ${isActive ? "OFF" : "ON"}` };
+      }
+      default:
+        return { success: false, message: `Unknown action for effect: "${command.action}"` };
     }
   }
 
