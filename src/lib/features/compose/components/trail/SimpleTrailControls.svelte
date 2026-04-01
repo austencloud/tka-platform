@@ -79,13 +79,13 @@
 
   // Get current trail visibility from visibility manager (global state)
   let currentPreset = $state<TrailVisibility>(
-    animationVisibilityManager.getTrailStyle()
+    animationVisibilityManager.isTrailsActive() ? "on" : "off"
   );
 
   // Register as observer to get notified when trail style changes
   onMount(() => {
     const handleVisibilityChange = () => {
-      currentPreset = animationVisibilityManager.getTrailStyle();
+      currentPreset = animationVisibilityManager.isTrailsActive() ? "on" : "off";
     };
 
     animationVisibilityManager.registerObserver(handleVisibilityChange);
@@ -102,7 +102,7 @@
 
   function setPreset(preset: TrailVisibility) {
     // Update global visibility state
-    animationVisibilityManager.setTrailStyle(preset);
+    animationVisibilityManager.setActiveEffect(preset === "on" ? "trails" : "none");
 
     // Apply trail settings - hardcoded vivid style when enabled
     if (preset === "off") {

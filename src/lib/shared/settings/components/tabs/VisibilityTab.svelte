@@ -81,7 +81,7 @@
   const animProps = $derived.by(() => { void version; return avm.getSettings().props; });
   const animWordHeader = $derived.by(() => { void version; return avm.getSettings().wordHeader; });
   const animProgressBar = $derived.by(() => { void version; return avm.getSettings().progressBar; });
-  const animTrailStyle = $derived.by(() => { void version; return avm.getTrailStyle(); });
+  const animTrailStyle = $derived.by(() => { void version; return avm.isTrailsActive() ? "on" : "off"; });
   const animPlaybackMode = $derived.by(() => { void version; return avm.getPlaybackMode(); });
   const animBpm = $derived.by(() => { void version; return avm.getBpm(); });
   const animTkaGlyph = $derived.by(() => { void version; return avm.getSettings().tkaGlyph; });
@@ -142,7 +142,7 @@
 
   // ── Animation specialized handlers ──
   function handleTrailStyleChange(style: TrailVisibility) {
-    tap(() => avm.setTrailStyle(style));
+    tap(() => avm.setActiveEffect(style === "on" ? "trails" : "none"));
   }
 
   function handlePlaybackModeChange(mode: PlaybackMode) {

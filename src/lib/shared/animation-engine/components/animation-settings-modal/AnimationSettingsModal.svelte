@@ -66,8 +66,8 @@
   // ── Auto-select initial effect when modal opens ──
   $effect(() => {
     if (open && initialCategory) {
-      if (initialCategory === "fire" && !vm.isFireEffectEnabled()) vm.setFireEffect(true);
-      else if (initialCategory === "led" && !vm.isLedEffectEnabled()) vm.setLedEffect(true);
+      if (initialCategory === "fire" && !vm.hasEffect("fire")) vm.setActiveEffect("fire");
+      else if (initialCategory === "led" && !vm.hasEffect("led")) vm.setActiveEffect("led");
     }
   });
 

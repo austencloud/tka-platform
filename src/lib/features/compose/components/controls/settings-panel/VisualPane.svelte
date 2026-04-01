@@ -46,26 +46,11 @@
   // Visibility state
   const visibilityManager = getAnimationVisibilityManager();
   let updateCounter = $state(0);
-  let currentTrailStyle = $state<TrailVisibility>(visibilityManager.getTrailStyle());
-
-  // Derive trail style from actual animation settings (source of truth)
-  function getTrailStyleFromSettings(): TrailVisibility {
-    const trail = animationSettings.trail;
-    if (trail.mode === TrailMode.OFF) return "off";
-    return "on";
-  }
+  let currentTrailStyle = $state<TrailVisibility>(visibilityManager.isTrailsActive() ? "on" : "off");
 
   onMount(() => {
-    // Sync initial state: animationSettings is source of truth for actual behavior
-    // visibilityManager may be out of sync if persisted separately
-    const derivedStyle = getTrailStyleFromSettings();
-    if (derivedStyle !== visibilityManager.getTrailStyle()) {
-      visibilityManager.setTrailStyle(derivedStyle);
-      currentTrailStyle = derivedStyle;
-    }
-
     const handleChange = () => {
-      currentTrailStyle = visibilityManager.getTrailStyle();
+      currentTrailStyle = visibilityManager.isTrailsActive() ? "on" : "off";
       updateCounter++;
     };
     visibilityManager.registerObserver(handleChange);
@@ -198,7 +183,7 @@
 
   // Trail on/off handler with hardcoded vivid settings when enabled
   function setTrailStyle(style: TrailVisibility) {
-    visibilityManager.setTrailStyle(style);
+    visibilityManager.setActiveEffect(style === "on" ? "trails" : "none");
     if (style === "off") {
       animationSettings.setTrailMode(TrailMode.OFF);
     } else {
