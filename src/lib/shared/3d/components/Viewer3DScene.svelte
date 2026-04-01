@@ -80,6 +80,7 @@
     gridOffset={0.3}
     planeOpacity={0.12}
     showLabels={true}
+    gridMode={sequenceData?.gridMode ?? "diamond"}
   />
 {/if}
 
