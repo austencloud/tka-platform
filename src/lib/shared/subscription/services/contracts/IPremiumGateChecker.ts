@@ -8,8 +8,9 @@ export interface NudgeConfig {
 
 export interface PremiumGateResult {
 	allowed: boolean;
-	reason?: "premium_required" | "capability_disabled";
+	reason?: "auth_required" | "premium_required" | "capability_disabled";
 	nudge?: NudgeConfig;
+	nudgeType?: "auth" | "premium";
 }
 
 export interface IPremiumGateChecker {
