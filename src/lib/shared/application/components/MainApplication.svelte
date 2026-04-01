@@ -96,6 +96,20 @@
   const isAuthenticated = $derived(authState.isAuthenticated);
   const authLoading = $derived(authState.loading);
 
+  // Track whether MainInterface has been shown at least once.
+  // Once shown, never tear it down for auth loading — the loading spinner
+  // is only for initial app startup, not mid-session auth transitions
+  // (e.g., guest signing up mid-session should NOT destroy MainInterface).
+  let mainInterfaceShown = $state(false);
+  const showAuthLoadingSpinner = $derived(authLoading && !mainInterfaceShown);
+
+  // Mark MainInterface as shown once auth loading completes for the first time
+  $effect(() => {
+    if (!authLoading && !initializationError) {
+      mainInterfaceShown = true;
+    }
+  });
+
   // Route-based sheet state
   let currentSheetType = $state<SheetType>(null);
   let showAuthSheet = $derived(currentSheetType === "auth");
@@ -472,8 +486,8 @@
       error={initializationError}
       onRetry={() => window.location.reload()}
     />
-  {:else if authLoading}
-    <!-- Auth Loading State -->
+  {:else if showAuthLoadingSpinner}
+    <!-- Auth Loading State (initial load only — never tears down MainInterface once shown) -->
     <div class="auth-loading">
       <div class="auth-loading-spinner"></div>
       <p>Checking authentication...</p>
