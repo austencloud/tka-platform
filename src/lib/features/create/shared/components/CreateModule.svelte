@@ -67,6 +67,11 @@
   import { SessionManager } from "../services/SessionManager.svelte";
   import { Autosaver } from "../services/Autosaver";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
+  import { resolveAccessTier, getMaxBeats } from "$lib/shared/auth/domain/AccessTier";
+  import { isPremiumOrAbove } from "$lib/shared/auth/domain/models/UserRole";
+  import AuthNudge from "$lib/shared/auth/components/AuthNudge.svelte";
+  import type { AuthNudgeTrigger } from "$lib/shared/auth/domain/AuthNudgeTrigger";
   import { networkStatusState } from "$lib/shared/offline/state/network-status-state.svelte";
   import { createPanelHeightTracker } from "../state/managers/PanelHeightTracker.svelte";
   import type { ISettingsState } from "$lib/shared/settings/services/contracts/ISettingsState";
@@ -122,6 +127,15 @@
   // Confirmation dialog states
   let showTransferConfirmation = $state(false);
   let showClearSequenceConfirm = $state(false);
+
+  // Auth/tier state for beat cap enforcement
+  const accessTier = $derived(
+    resolveAccessTier(authState.isAuthenticated, isPremiumOrAbove(authState.role))
+  );
+  let showBeatCapNudge = $state(false);
+  const beatCapNudgeTrigger = $derived<AuthNudgeTrigger>(
+    accessTier === "guest" ? "beat-cap-guest" : "beat-cap-composer"
+  );
 
   // LOOP completion state
   let showLoopConfirm = $state(false);
@@ -444,6 +458,15 @@
       error = "Handlers service not initialized";
       return;
     }
+
+    // Enforce tier beat cap before adding a new beat to the sequence
+    const currentBeats = CreateModuleState?.sequenceState.getCurrentBeats().length ?? 0;
+    const maxBeats = getMaxBeats(accessTier);
+    if (currentBeats >= maxBeats) {
+      showBeatCapNudge = true;
+      return;
+    }
+
     try {
       await handlers.handleOptionSelected(option);
     } catch (err) {
@@ -725,6 +748,17 @@
     onClose={() => panelState.closeSaveToLibraryPanel()}
   />
 
+  <!-- Beat cap nudge — shown when user tries to exceed their tier's beat limit -->
+  {#if showBeatCapNudge}
+    <div class="beat-cap-nudge-overlay">
+      <AuthNudge
+        trigger={beatCapNudgeTrigger}
+        onCreateAccount={() => { showBeatCapNudge = false; authDrawerState.show(); }}
+        onDismiss={() => { showBeatCapNudge = false; }}
+      />
+    </div>
+  {/if}
+
   <!-- Sequence Transfer Confirmation Dialog -->
   <TransferConfirmDialog
     bind:isOpen={showTransferConfirmation}
@@ -774,12 +808,24 @@
     height: 100%;
     width: 100%;
     overflow: hidden;
+    position: relative;
     transition: background-color var(--duration-normal) ease-out;
   }
 
   .create-loading {
     align-items: center;
     justify-content: center;
+  }
+
+  .beat-cap-nudge-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 100;
+    pointer-events: all;
   }
 
 </style>

@@ -34,7 +34,14 @@
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import type { PropRenderData } from "$lib/shared/pictograph/prop/domain/models/PropRenderData";
 
-  let { builderState }: { builderState: AssembleState } = $props();
+  let {
+    builderState,
+    onBeatCapExceeded,
+  }: {
+    builderState: AssembleState;
+    /** Called when the user tries to add a motion. Return true to block the action and show the nudge. */
+    onBeatCapExceeded?: () => boolean;
+  } = $props();
 
   // Services
   const calculator = new GridHitTargetCalculator();
@@ -331,6 +338,15 @@
 
   // Click handler for hit targets
   function handleTargetClick(target: GridHitTarget): void {
+    // When a prop is already placed (placing/building phase), clicking creates a
+    // motion on the active hand. Check the beat cap before allowing it.
+    if (
+      onBeatCapExceeded &&
+      (builderState.phase === "placing" || builderState.phase === "building") &&
+      builderState.currentPosition !== null
+    ) {
+      if (onBeatCapExceeded()) return;
+    }
     builderState.handlePointClick(target.location);
   }
 
