@@ -39,49 +39,47 @@
       id: "behind",
       label: "Back",
       sublabel: "Performer's view  \u2022  red = right, blue = left",
-      position: { x: 0, y: 1.85, z: -2.2 },
+      position: { x: 0, y: 1.85, z: -3.0 },
       target: GRID_CENTER,
     },
     {
       id: "front",
       label: "Front",
       sublabel: "Audience view",
-      position: { x: 0, y: 1.85, z: 2.8 },
+      position: { x: 0, y: 1.85, z: 3.6 },
       target: GRID_CENTER,
     },
     {
       id: "side",
       label: "Side",
       sublabel: "From performer's right",
-      position: { x: 2.5, y: 1.85, z: 0.3 },
+      position: { x: 3.2, y: 1.85, z: 0.3 },
       target: GRID_CENTER,
     },
     {
       id: "top",
       label: "Top",
-      position: { x: 0, y: 4.5, z: 0.29 },
+      position: { x: 0, y: 5.0, z: 0.29 },
       target: GRID_CENTER,
     },
     {
       id: "threequarter",
       label: "3/4",
       sublabel: "Isometric behind",
-      position: { x: -1.5, y: 3.0, z: -1.7 },
+      position: { x: -2.0, y: 3.5, z: -2.2 },
       target: GRID_CENTER,
     },
   ];
 
-  // Track which preset was last clicked. Cleared when the user orbits
-  // far enough from any preset position (based on camera snapshot updates).
-  let clickedPresetId = $state<string | null>("behind");
+  // Active preset is persisted via viewer3DState so it survives exit/re-enter 3D.
+  const activePresetId = $derived(viewer3DState.activePreset);
 
-  // Check if the current camera position is close to any preset.
-  // Uses the persisted camera snapshot which updates after orbit ends.
-  const activePresetId = $derived.by(() => {
+  // Also check proximity to detect when user orbited away from all presets.
+  const nearPresetId = $derived.by(() => {
     const snap = viewer3DState.cameraSnapshot;
-    if (!snap) return clickedPresetId;
+    if (!snap) return activePresetId;
 
-    const threshold = 0.5; // distance within which we consider "at" a preset
+    const threshold = 0.8;
     for (const preset of PRESETS) {
       const dx = snap.position.x - preset.position.x;
       const dy = snap.position.y - preset.position.y;
@@ -93,7 +91,7 @@
   });
 
   function handlePresetClick(preset: ViewPreset) {
-    clickedPresetId = preset.id;
+    viewer3DState.setActivePreset(preset.id);
     viewer3DState.snapCameraTo(preset.position, preset.target);
   }
 </script>

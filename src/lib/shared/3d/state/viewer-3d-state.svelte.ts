@@ -26,6 +26,7 @@ import {
 const STORAGE_KEY_MODE = "tka-viewer3d-renderMode";
 const STORAGE_KEY_CAMERA = "tka-viewer3d-camera";
 const STORAGE_KEY_VISIBLE_PLANES = "tka-viewer3d-visiblePlanes";
+const STORAGE_KEY_PRESET = "tka-viewer3d-activePreset";
 
 function loadPersistedMode(): "2d" | "3d" {
   if (typeof localStorage === "undefined") return "2d";
@@ -133,6 +134,10 @@ export function createViewer3DState(deps: {
     charcoal: false,
   });
   let cameraSnapshot = $state<CameraStateSnapshot | null>(null);
+  let activePreset = $state<string | null>((() => {
+    if (typeof localStorage === "undefined") return "behind";
+    try { return localStorage.getItem(STORAGE_KEY_PRESET) || "behind"; } catch { return "behind"; }
+  })());
   // visiblePlanes: which grid planes are currently shown. Empty set = grid hidden.
   // On first visit, default to null (no planes shown). When the user enables the
   // grid for the first time, we auto-select only the planes the sequence uses.
@@ -247,6 +252,13 @@ export function createViewer3DState(deps: {
     },
     get showGrid() {
       return visiblePlanes.size > 0;
+    },
+    get activePreset() {
+      return activePreset;
+    },
+    setActivePreset(id: string | null) {
+      activePreset = id;
+      try { localStorage.setItem(STORAGE_KEY_PRESET, id ?? ""); } catch {}
     },
     /**
      * Toggle a single grid plane on or off.
