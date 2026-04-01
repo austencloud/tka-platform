@@ -34,7 +34,7 @@ export class SequenceConverter implements ISequenceConverter {
     // Handle turns - "fl" (float) becomes 0
     const turns = motion.turns === "fl" ? 0 : (motion.turns as number);
 
-    return {
+    const config = {
       plane,
       startLocation: motion.startLocation,
       endLocation: motion.endLocation,
@@ -44,6 +44,8 @@ export class SequenceConverter implements ISequenceConverter {
       startOrientation: motion.startOrientation,
       endOrientation: motion.endOrientation,
     };
+
+    return config;
   }
 
   /**
@@ -87,10 +89,12 @@ export class SequenceConverter implements ISequenceConverter {
       return [];
     }
 
-    return sequence.steps
+    const configs = sequence.steps
       .filter((beat) => beat.stepNumber !== 0)
       .map((beat) => this.beatDataToConfigs(beat, plane))
       .sort((a, b) => a.stepNumber - b.stepNumber);
+
+    return configs;
   }
 
   /**
