@@ -6,6 +6,10 @@
   import ModuleButton from "./ModuleButton.svelte";
   import SectionsList from "./SectionsList.svelte";
   import { inboxState } from "$lib/shared/inbox/state/inbox-state.svelte";
+  import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import { resolveAccessTier } from "$lib/shared/auth/domain/AccessTier";
+  import { getAccessibleTabs } from "$lib/shared/auth/domain/guest-access-config";
+  import { isPremiumOrAbove } from "$lib/shared/auth/domain/models/UserRole";
 
   let {
     module,
@@ -42,7 +46,18 @@
 
   const isActive = $derived(currentModule === module.id);
   const isDisabled = $derived(module.disabled ?? false);
-  const hasSections = $derived(isExpanded && module.sections.length > 0);
+
+  // Filter tabs for guests (e.g., Browse shows only Gallery)
+  const accessTier = $derived(
+    resolveAccessTier(authState.isAuthenticated, isPremiumOrAbove(authState.role))
+  );
+  const filteredSections = $derived.by(() => {
+    const allowed = getAccessibleTabs(module.id, accessTier);
+    if (!allowed) return module.sections; // No filtering for authenticated users
+    return module.sections.filter((s: Section) => allowed.includes(s.id));
+  });
+
+  const hasSections = $derived(isExpanded && filteredSections.length > 0);
   // Show active styling if we have sections OR if forced (e.g., during tutorial)
   const showActiveStyle = $derived(hasSections || forceActiveStyle);
 
@@ -94,9 +109,9 @@
   />
 
   <!-- Module Sections/Tabs (collapsible) -->
-  {#if isExpanded && module.sections.length > 0 && !isCollapsed && !isTransitioningFromCollapsed}
+  {#if isExpanded && filteredSections.length > 0 && !isCollapsed && !isTransitioningFromCollapsed}
     <SectionsList
-      sections={module.sections}
+      sections={filteredSections}
       {currentSection}
       moduleId={module.id}
       {isActive}
