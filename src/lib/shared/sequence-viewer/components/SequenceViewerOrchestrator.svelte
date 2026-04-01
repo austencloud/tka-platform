@@ -198,6 +198,7 @@
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import { lanSyncState } from "$lib/shared/lan-sync/state/lan-sync-state.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
   import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
   import { getSettings, updateSettings } from "$lib/shared/application/state/app-state.svelte";
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
@@ -1193,6 +1194,10 @@
 
   function handleEdit() {
     if (!sequence) return;
+    if (!authState.isAuthenticated) {
+      authDrawerState.show();
+      return;
+    }
     hapticService?.trigger("selection");
 
     // Store the sequence for the Constructor to pick up
