@@ -13,10 +13,46 @@
   import AssembleIdlePanel from "$lib/features/assemble-lab/components/AssembleIdlePanel.svelte";
   import { container } from "$lib/shared/di";
   import type { ISettingsState } from "$lib/shared/settings/services/contracts/ISettingsState";
+  import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
+  import { resolveAccessTier, getMaxBeats } from "$lib/shared/auth/domain/AccessTier";
+  import { isPremiumOrAbove } from "$lib/shared/auth/domain/models/UserRole";
+  import AuthNudge from "$lib/shared/auth/components/AuthNudge.svelte";
+  import type { AuthNudgeTrigger } from "$lib/shared/auth/domain/AuthNudgeTrigger";
 
   let { tabState }: { tabState: AssembleTabState } = $props();
 
   const builderState = $derived(tabState.assembleBuilderState);
+
+  // Auth/tier state for beat cap enforcement
+  const accessTier = $derived(
+    resolveAccessTier(authState.isAuthenticated, isPremiumOrAbove(authState.role))
+  );
+  let showBeatCapNudge = $state(false);
+  const beatCapNudgeTrigger = $derived<AuthNudgeTrigger>(
+    accessTier === "guest" ? "beat-cap-guest" : "beat-cap-composer"
+  );
+
+  /**
+   * Called by InteractiveGrid before adding a motion.
+   * Returns true to block the action and show the nudge.
+   *
+   * A completed beat = one paired step (one on each hand).
+   * We cap when the current paired step count would reach the tier limit.
+   */
+  function checkBeatCap(): boolean {
+    const maxBeats = getMaxBeats(accessTier);
+    // Completed beats = min of both hands' step counts (each pair = one beat)
+    const pairedBeats = Math.min(
+      builderState.blueSteps.length,
+      builderState.redSteps.length
+    );
+    if (pairedBeats >= maxBeats) {
+      showBeatCapNudge = true;
+      return true;
+    }
+    return false;
+  }
 
   let isIdle = $state(true);
   let prevPhaseIdle = true;
@@ -73,7 +109,7 @@
     {/if}
 
     <div class="grid-slot">
-      <InteractiveGrid {builderState} />
+      <InteractiveGrid {builderState} onBeatCapExceeded={checkBeatCap} />
       <BuilderControls {builderState} />
     </div>
   </div>
@@ -81,6 +117,17 @@
   <div class="turn-bar-section" class:hidden={isIdle}>
     <BuilderTurnBar {builderState} />
   </div>
+
+  <!-- Beat cap nudge — shown when user tries to exceed their tier's beat limit -->
+  {#if showBeatCapNudge}
+    <div class="beat-cap-nudge-overlay">
+      <AuthNudge
+        trigger={beatCapNudgeTrigger}
+        onCreateAccount={() => { showBeatCapNudge = false; authDrawerState.show(); }}
+        onDismiss={() => { showBeatCapNudge = false; }}
+      />
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -90,8 +137,20 @@
     height: 100%;
     width: 100%;
     overflow: hidden;
+    position: relative;
     padding: 0 12px 12px;
     gap: 8px;
+  }
+
+  .beat-cap-nudge-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 100;
+    pointer-events: all;
   }
 
   .header-section,
