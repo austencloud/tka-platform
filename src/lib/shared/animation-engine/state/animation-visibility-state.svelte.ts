@@ -24,7 +24,11 @@ export interface MotionColorsCache {
   grid: string;
 }
 
-// Trail toggle - simplified from off/subtle/vivid to just on/off
+/**
+ * Trail toggle type — still used by settings UI components to represent
+ * the on/off state that drives the trail section of tipEffectMap.
+ * The manager itself no longer stores this as a field; use isTrailsActive() instead.
+ */
 export type TrailVisibility = "off" | "on";
 export type GridMode = "none" | "8point" | "auto";
 export type PlaybackMode = "continuous" | "step";
@@ -35,7 +39,6 @@ interface AnimationVisibilitySettings {
   stepNumbers: boolean; // "Beat 1, 2, 3..." overlay at top-left
   beatPosition: boolean; // Musical beat position at bottom-center (1, 1.5, 2e, etc.)
   props: boolean; // Show props vs trails-only mode
-  trailStyle: TrailVisibility; // Trail visualization style (3-state)
   playbackMode: PlaybackMode; // Continuous flow vs step-by-step
   speed: number; // Speed multiplier (1.0 = 60 BPM, range 0.1-3.0)
   wordHeader: boolean; // Word/sequence name header at top
@@ -45,19 +48,16 @@ interface AnimationVisibilitySettings {
   // Dark Mode: dark background, inverted grid, white text/outlines
   darkMode: boolean;
 
-  // Fire Effect
-  fireEffect: boolean; // WebGL Navier-Stokes fluid fire at prop tips
+  // Fire Effect tuning
   fireColorBlend: number; // 0 = natural fire, 1 = prop-colored (continuous slider)
   fireIntensity: number; // User intensity slider value (0.0-1.0)
   fireTurbulence: number; // Curl noise turbulence strength (0.0-1.0), how much idle fire flickers
   fireColorCurve: FireColorCurve | null; // Custom 4-stop color gradient (null = use default)
 
-  // Charcoal Effect (independent particle system, NOT a fire variant)
-  charcoalEffect: boolean; // Discrete gravity-heavy spark particles at prop tips
+  // Charcoal Effect tuning
   charcoalParams: import("../domain/types/CharcoalSparkTypes").CharcoalSparkParams; // Charcoal spark tuning params
 
-  // LED Effects
-  ledEffect: boolean; // WebGL LED overlay
+  // LED Effect tuning
   ledBrightness: number; // 1-5 discrete level (maps to 0.2-1.0 float)
   ledPatternId: string; // Active LED pattern ID
   ledPrimaryColor: string; // Primary color (hex)
@@ -77,6 +77,7 @@ interface AnimationVisibilitySettings {
   pathShape: "arc" | "linear";
 
   // Per-tip effect/effort assignments (global level)
+  // tipEffectMap is the sole authority for which effect is active.
   tipEffectMap: TipEffectMap;
   tipEffortMap: TipEffortMap;
 }
@@ -141,7 +142,6 @@ export class AnimationVisibilityStateManager {
       stepNumbers: true, // Show step numbers by default
       beatPosition: false, // Hide beat position by default (replaced by progress bar)
       props: true,
-      trailStyle: "on", // Trails enabled by default (hardcoded vivid style)
       playbackMode: "continuous", // Default to continuous playback
       speed: 1.0, // Default to 60 BPM
       wordHeader: true, // Show word/sequence name by default
@@ -150,19 +150,16 @@ export class AnimationVisibilityStateManager {
       // Global effects
       darkMode: false, // Dark Mode disabled by default
 
-      // Fire Effect
-      fireEffect: false, // Fire disabled by default
+      // Fire Effect tuning
       fireColorBlend: 0.5, // Halfway between natural and prop-colored
       fireIntensity: 0.7, // 0-1 range, 0.7 = normal fire
       fireTurbulence: 0.5, // 0-1 range, how much idle fire flickers
       fireColorCurve: null, // null = use default BASE_COLOR_CURVE
 
-      // Charcoal Effect (independent from fire)
-      charcoalEffect: false, // Charcoal disabled by default
+      // Charcoal Effect tuning
       charcoalParams: { ...DEFAULT_CHARCOAL_PARAMS }, // Default charcoal spark params
 
-      // LED Effects
-      ledEffect: false,
+      // LED Effect tuning
       ledBrightness: 5,
       ledPatternId: "solid",
       ledPrimaryColor: "#00ff88",
@@ -180,8 +177,9 @@ export class AnimationVisibilityStateManager {
       effortPreset: "linear",
       pathShape: "arc",
 
-      // Per-tip effect/effort assignments
-      tipEffectMap: {},
+      // tipEffectMap is the sole authority for which effect is active.
+      // Default: trails on so new users see motion paths.
+      tipEffectMap: { "*": { effect: "trails" } },
       tipEffortMap: {},
     };
   }
@@ -376,13 +374,14 @@ export class AnimationVisibilityStateManager {
 
   /**
    * Get specific boolean visibility setting
-   * (For gridMode, trailStyle, playbackMode, speed use dedicated getters)
+   * (For gridMode, playbackMode, speed use dedicated getters)
    * (For darkMode, use isDarkMode() instead)
+   * (For effects, use getActiveEffect() / hasEffect() instead)
    */
   getVisibility(
     key: Exclude<
       keyof AnimationVisibilitySettings,
-      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "darkMode" | "fireColorBlend" | "fireIntensity" | "fireTurbulence" | "charcoalParams" | "ledBrightness" | "ledPatternId" | "ledPrimaryColor" | "effortPreset" | "pathShape" | "tipEffectMap" | "tipEffortMap"
+      "gridMode" | "playbackMode" | "speed" | "darkMode" | "fireColorBlend" | "fireIntensity" | "fireTurbulence" | "charcoalParams" | "ledBrightness" | "ledPatternId" | "ledPrimaryColor" | "ledSecondaryColor" | "ledActivePresetId" | "ledUserPresets" | "ledPatternSpeed" | "ledColorMode" | "effortPreset" | "pathShape" | "tipEffectMap" | "tipEffortMap" | "fireColorCurve"
     >
   ): boolean {
     return this.settings[key] as boolean;
@@ -401,12 +400,13 @@ export class AnimationVisibilityStateManager {
 
   /**
    * Set specific boolean visibility setting
-   * (For gridMode, trailStyle, playbackMode, speed use dedicated setters)
+   * (For gridMode, playbackMode, speed use dedicated setters)
+   * (For effects, use setActiveEffect() instead)
    */
   setVisibility(
     key: Exclude<
       keyof AnimationVisibilitySettings,
-      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "fireColorBlend" | "fireIntensity" | "fireTurbulence" | "charcoalParams" | "ledBrightness" | "ledPatternId" | "ledPrimaryColor" | "effortPreset" | "pathShape"
+      "gridMode" | "playbackMode" | "speed" | "fireColorBlend" | "fireIntensity" | "fireTurbulence" | "charcoalParams" | "ledBrightness" | "ledPatternId" | "ledPrimaryColor" | "ledSecondaryColor" | "ledActivePresetId" | "ledUserPresets" | "ledPatternSpeed" | "ledColorMode" | "effortPreset" | "pathShape" | "tipEffectMap" | "tipEffortMap" | "fireColorCurve"
     >,
     visible: boolean
   ): void {
@@ -457,28 +457,6 @@ export class AnimationVisibilityStateManager {
   // ============================================================================
 
   /**
-   * Get current trail visibility
-   */
-  getTrailStyle(): TrailVisibility {
-    return this.settings.trailStyle;
-  }
-
-  /**
-   * Set trail visibility
-   */
-  setTrailStyle(style: TrailVisibility): void {
-    this.settings.trailStyle = style;
-    // Mutual exclusion: trails can't be active alongside fire, charcoal, or LED
-    if (style !== "off") {
-      if (this.settings.fireEffect) this.settings.fireEffect = false;
-      if (this.settings.charcoalEffect) this.settings.charcoalEffect = false;
-      if (this.settings.ledEffect) this.settings.ledEffect = false;
-    }
-    this.saveToStorage();
-    this.notifyObservers();
-  }
-
-  /**
    * Get current grid mode
    */
   getGridMode(): GridMode {
@@ -492,13 +470,6 @@ export class AnimationVisibilityStateManager {
     this.settings.gridMode = mode;
     this.saveToStorage();
     this.notifyObservers();
-  }
-
-  /**
-   * Check if trails are visible (any style except 'off')
-   */
-  isTrailsVisible(): boolean {
-    return this.settings.trailStyle !== "off";
   }
 
   /**
@@ -632,72 +603,8 @@ export class AnimationVisibilityStateManager {
     this.setDarkMode(!this.settings.darkMode);
   }
 
-  /**
-   * When a visual effect (fire, charcoal, LED) is enabled, switch to dark mode
-   * so the effect is visible against a dark background. Restore the previous
-   * dark mode state when the last effect is disabled.
-   */
-  private syncEffectDarkMode(effectEnabled: boolean): void {
-    if (effectEnabled) {
-      if (this.darkModeBeforeEffect === null) {
-        this.darkModeBeforeEffect = this.settings.darkMode;
-      }
-      if (!this.settings.darkMode) {
-        this.settings.darkMode = true;
-        this.syncDarkModeClass();
-        this.updateMotionColorsCache();
-      }
-    } else {
-      // Only restore if no other effect is still active
-      const anyEffectActive = this.settings.fireEffect || this.settings.charcoalEffect || this.settings.ledEffect;
-      if (!anyEffectActive && this.darkModeBeforeEffect !== null) {
-        const restore = this.darkModeBeforeEffect;
-        this.darkModeBeforeEffect = null;
-        if (this.settings.darkMode !== restore) {
-          this.settings.darkMode = restore;
-          this.syncDarkModeClass();
-          this.updateMotionColorsCache();
-        }
-      }
-    }
-  }
-
   // ============================================================================
-  // FIRE EFFECT
-  // ============================================================================
-
-  /**
-   * Check if fire effect is enabled
-   */
-  isFireEffectEnabled(): boolean {
-    return this.settings.fireEffect;
-  }
-
-  /**
-   * Set fire effect
-   */
-  setFireEffect(enabled: boolean): void {
-    this.settings.fireEffect = enabled;
-    if (enabled) {
-      if (this.settings.trailStyle !== "off") this.settings.trailStyle = "off";
-      // Mutual exclusion: only one overlay effect can be active
-      if (this.settings.charcoalEffect) this.settings.charcoalEffect = false;
-      if (this.settings.ledEffect) this.settings.ledEffect = false;
-    }
-    this.syncEffectDarkMode(enabled);
-    this.saveToStorage();
-    this.notifyObservers();
-  }
-
-  /**
-   * Toggle fire effect
-   */
-  toggleFireEffect(): void {
-    this.setFireEffect(!this.settings.fireEffect);
-  }
-
-  // ============================================================================
-  // FIRE SLIDERS: Color Blend, Smoke Level, Use Charcoal, Intensity
+  // FIRE SLIDERS: Color Blend, Intensity, Turbulence
   // ============================================================================
 
   getFireColorBlend(): number {
@@ -711,39 +618,8 @@ export class AnimationVisibilityStateManager {
   }
 
   // ============================================================================
-  // CHARCOAL EFFECT (independent from fire)
+  // CHARCOAL EFFECT TUNING
   // ============================================================================
-
-  isCharcoalEffectEnabled(): boolean {
-    return this.settings.charcoalEffect;
-  }
-
-  setCharcoalEffect(enabled: boolean): void {
-    this.settings.charcoalEffect = enabled;
-    if (enabled) {
-      if (this.settings.trailStyle !== "off") this.settings.trailStyle = "off";
-      // Mutual exclusion: only one overlay effect can be active
-      if (this.settings.fireEffect) this.settings.fireEffect = false;
-      if (this.settings.ledEffect) this.settings.ledEffect = false;
-    }
-    this.syncEffectDarkMode(enabled);
-    this.saveToStorage();
-    this.notifyObservers();
-  }
-
-  toggleCharcoalEffect(): void {
-    this.setCharcoalEffect(!this.settings.charcoalEffect);
-  }
-
-  /** @deprecated Use isCharcoalEffectEnabled() instead. Kept for migration. */
-  getFireUseCharcoal(): boolean {
-    return this.settings.charcoalEffect;
-  }
-
-  /** @deprecated Use setCharcoalEffect() instead. Kept for migration. */
-  setFireUseCharcoal(value: boolean): void {
-    this.setCharcoalEffect(value);
-  }
 
   getCharcoalParams(): CharcoalSparkParams {
     return { ...this.settings.charcoalParams };
@@ -809,45 +685,8 @@ export class AnimationVisibilityStateManager {
   }
 
   // ============================================================================
-  // LED EFFECT
+  // LED EFFECT TUNING
   // ============================================================================
-
-  /**
-   * Check if LED effect is enabled
-   */
-  isLedEffectEnabled(): boolean {
-    return this.settings.ledEffect;
-  }
-
-  /**
-   * Set LED effect
-   */
-  setLedEffect(enabled: boolean): void {
-    this.settings.ledEffect = enabled;
-    if (enabled) {
-      if (this.settings.trailStyle !== "off") this.settings.trailStyle = "off";
-      // Mutual exclusion: LED disables fire and charcoal
-      if (this.settings.fireEffect) this.settings.fireEffect = false;
-      if (this.settings.charcoalEffect) this.settings.charcoalEffect = false;
-      // Assign LED effect to all tips so the render loop filter includes them
-      this.settings.tipEffectMap = { "*": { effect: "led" } };
-    } else {
-      // Clear the tip effect map when LED is disabled
-      if (this.settings.tipEffectMap?.["*"]?.effect === "led") {
-        this.settings.tipEffectMap = {};
-      }
-    }
-    this.syncEffectDarkMode(enabled);
-    this.saveToStorage();
-    this.notifyObservers();
-  }
-
-  /**
-   * Toggle LED effect
-   */
-  toggleLedEffect(): void {
-    this.setLedEffect(!this.settings.ledEffect);
-  }
 
   /**
    * Get current LED pattern ID
@@ -1140,7 +979,7 @@ export class AnimationVisibilityStateManager {
   toggleVisibility(
     key: Exclude<
       keyof AnimationVisibilitySettings,
-      "gridMode" | "trailStyle" | "playbackMode" | "speed" | "darkMode" | "fireColorBlend" | "fireIntensity" | "fireTurbulence" | "charcoalParams" | "ledBrightness" | "ledPatternId" | "ledPrimaryColor" | "effortPreset" | "pathShape" | "tipEffectMap" | "tipEffortMap"
+      "gridMode" | "playbackMode" | "speed" | "darkMode" | "fireColorBlend" | "fireIntensity" | "fireTurbulence" | "charcoalParams" | "ledBrightness" | "ledPatternId" | "ledPrimaryColor" | "ledSecondaryColor" | "ledActivePresetId" | "ledUserPresets" | "ledPatternSpeed" | "ledColorMode" | "effortPreset" | "pathShape" | "tipEffectMap" | "tipEffortMap" | "fireColorCurve"
     >
   ): void {
     this.setVisibility(key, !(this.settings[key] as boolean));
