@@ -1231,6 +1231,18 @@ service cloud.firestore {
       allow update, delete: if isAdmin();
     }
 
+    // ── STORE: PRODUCTS (public read) ──
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ── STORE: ORDERS (admin only, Cloud Function uses Admin SDK) ──
+    match /orders/{orderId} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
+
     // ============================================================================
     // EXPLICIT DENY FOR UNMATCHED PATHS
     // Any collection not explicitly defined above is denied by default
