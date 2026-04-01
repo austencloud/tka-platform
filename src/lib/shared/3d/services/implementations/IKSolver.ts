@@ -30,15 +30,16 @@ export class IKSolver implements IIKSolver {
     algorithm: IKAlgorithm = "analytic",
     constraints?: JointConstraints[]
   ): IKSolution {
+    const poleHint = target.poleHint ?? new Vector3(0, 0, -1);
     switch (algorithm) {
       case "analytic":
-        return this.solveTwoBone(chain, target.position, new Vector3(0, 0, -1));
+        return this.solveTwoBone(chain, target.position, poleHint);
       case "ccd":
         return this.solveCCD(chain, target, constraints);
       case "fabrik":
         return this.solveFABRIK(chain, target);
       default:
-        return this.solveTwoBone(chain, target.position, new Vector3(0, 0, -1));
+        return this.solveTwoBone(chain, target.position, poleHint);
     }
   }
 
