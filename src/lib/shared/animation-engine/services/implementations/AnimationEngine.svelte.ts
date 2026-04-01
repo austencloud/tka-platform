@@ -204,6 +204,8 @@ export class AnimationEngine {
       redMotion: true,
       darkMode: false,
       wordHeader: true,
+      activeEffect: "trails" as import("../../domain/types/TipEffectTypes").EffectType,
+      tipEffectMap: {} as import("../../domain/types/TipEffectTypes").TipEffectMap,
     },
     isPreRendering: false,
     preRenderProgress: null,
@@ -432,7 +434,7 @@ export class AnimationEngine {
     this.fireConfig.colorCurve = vm.getFireColorCurve() ?? BASE_COLOR_CURVE;
     this.fireConfig.charcoalParams = vm.getCharcoalParams();
     // Initialize LED state from visibility manager
-    this.ledConfig.enabled = vm.isLedEffectEnabled();
+    this.ledConfig.enabled = vm.hasEffect("led");
     this.ledConfig.patternId = vm.getLedPatternId();
     this.ledConfig.primaryColor = vm.getLedPrimaryColor();
     this.ledConfig.secondaryColor = vm.getLedSecondaryColor();
@@ -442,12 +444,14 @@ export class AnimationEngine {
       grid: vm.getGridMode() !== "none",
       stepNumbers: vm.getVisibility("stepNumbers"),
       props: vm.getVisibility("props"),
-      trails: vm.getTrailStyle() !== "off",
+      trails: vm.isTrailsActive(),
       tkaGlyph: vm.getVisibility("tkaGlyph"), // TKA Glyph includes turn numbers
       blueMotion: vm.getVisibility("blueMotion"),
       redMotion: vm.getVisibility("redMotion"),
       darkMode: vm.isDarkMode(),
       wordHeader: vm.getVisibility("wordHeader"),
+      activeEffect: vm.getActiveEffect(),
+      tipEffectMap: vm.getTipEffectMap(),
     };
 
     // Initialize services that don't need renderer
@@ -697,7 +701,7 @@ export class AnimationEngine {
 
         // Sync LED effect from visibility manager — batch into a single setLedConfig call
         // to avoid calling syncLedOverlay (WebGL init) multiple times per notification.
-        const ledEnabled = vm.isLedEffectEnabled();
+        const ledEnabled = vm.hasEffect("led");
         const ledPatternId = vm.getLedPatternId();
         const ledColor = vm.getLedPrimaryColor();
         const ledSecondaryColor = vm.getLedSecondaryColor();
@@ -1254,10 +1258,8 @@ export class AnimationEngine {
         canvasSize: this.canvasSize,
       },
       visibility: {
-        fireEffect: settings.fireEffect,
-        charcoalEffect: settings.charcoalEffect,
-        ledEffect: settings.ledEffect,
-        trailStyle: settings.trailStyle,
+        activeEffect: vm.getActiveEffect(),
+        tipEffectMap: settings.tipEffectMap,
         effortPreset: settings.effortPreset,
         pathShape: settings.pathShape,
       },
