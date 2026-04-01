@@ -153,9 +153,10 @@
     </T.Mesh>
 
     <!-- T-bar at thumb end - PERPENDICULAR crossbar like in 2D SVG -->
-    <!-- Placed at -halfLength because the quaternion rotation convention
-         maps the -Y end to the "toward center" direction (thumb/in side) -->
-    <T.Group position={[0, -halfLength, 0]}>
+    <!-- +halfLength = the end that points "outward" from grid center when
+         orientation is IN (staffAngle = centerAngle + π). With the X-mirror
+         and positive quaternion rotation, +Y maps to the thumb/in side. -->
+    <T.Group position={[0, halfLength, 0]}>
       <!-- Perpendicular crossbar - rotated 90° around Z to cross the shaft -->
       <T.Mesh rotation={[0, 0, Math.PI / 2]}>
         <T.CylinderGeometry
@@ -188,7 +189,7 @@
     </T.Group>
 
     <!-- Rounded cap at pinky end -->
-    <T.Mesh position={[0, halfLength, 0]}>
+    <T.Mesh position={[0, -halfLength, 0]}>
       <T.SphereGeometry args={[effectiveThickness, 16, 16]} />
       <T.MeshStandardMaterial
         color={palette.dark}
