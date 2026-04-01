@@ -91,10 +91,10 @@
   // the effect, whether via the flat cell.effect or the per-tip matrix.
   const cellFireConfig = $derived.by((): Partial<FireOverlayConfig> | undefined => {
     const effect = cell.effect;
-    if (effect === 'fire' || tipMapHasEffect('fire')) return { enabled: true };
-    if (effect === 'charcoal' || tipMapHasEffect('charcoal')) return { enabled: true, charcoalParams: {} as any };
-    if (effect && effect !== 'none') return { enabled: false };
-    if (cell.tipEffectMap && Object.keys(cell.tipEffectMap).length > 0) return { enabled: false };
+    if (effect === 'fire' || tipMapHasEffect('fire')) return {};
+    if (effect === 'charcoal' || tipMapHasEffect('charcoal')) return { charcoalParams: {} as any };
+    if (effect && effect !== 'none') return undefined;
+    if (cell.tipEffectMap && Object.keys(cell.tipEffectMap).length > 0) return undefined;
     return undefined; // No per-cell override — global setting applies
   });
 

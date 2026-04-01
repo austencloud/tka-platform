@@ -326,7 +326,7 @@
     if (effects.charcoal.enabled && charcoalRenderer?.isInitialized()) {
       charcoalRenderer.renderCharcoal(
         { tips: fireTips, currentTime, canvasWidth, canvasHeight, darkMode: true } as FireFrameInput,
-        { enabled: true, intensity: 0.8, flameHeight: 0.5, velocityReactive: true, quality: 3, colorBlend: 0 },
+        { intensity: 0.8, flameHeight: 0.5, velocityReactive: true, quality: 3, colorBlend: 0 },
       );
     }
 

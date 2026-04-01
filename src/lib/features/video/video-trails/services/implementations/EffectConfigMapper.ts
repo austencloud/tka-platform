@@ -12,7 +12,6 @@ import {
 export class EffectConfigMapper implements IEffectConfigMapper {
   toFireConfig(effect: EffectConfig["fire"]): FireOverlayConfig {
     return {
-      enabled: effect.enabled,
       intensity: effect.intensity,
       flameHeight: effect.flameHeight,
       velocityReactive: true,

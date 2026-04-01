@@ -27,6 +27,12 @@ import type {
 import { QualityTier } from "../../domain/types/QualityTypes";
 import { effectErrorSignal } from "../../state/effect-error-signal.svelte";
 import { resolveEffect } from "../../domain/types/TipEffectTypes";
+import type { TipEffectMap } from "../../domain/types/TipEffectTypes";
+
+function hasTrailTips(map: TipEffectMap | undefined): boolean {
+  if (!map) return false;
+  return Object.values(map).some(a => a.effect === "trails");
+}
 
 export class AnimationRenderLoop implements IAnimationRenderLoop {
   private renderer: IAnimationRenderer | null = null;
@@ -262,7 +268,9 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     const { trailSettings, isPlaying } = params;
 
     // Real-time trail capture
+    const trailsActive = hasTrailTips(params.tipEffectMap);
     if (
+      trailsActive &&
       trailSettings.mode !== TrailMode.OFF &&
       this.TrailCapturer
     ) {
@@ -285,13 +293,13 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
 
     // Determine what actually needs continuous rendering
     const trailsNeedContinuousRender =
-      trailSettings.mode !== TrailMode.OFF;
+      hasTrailTips(params.tipEffectMap) && trailSettings.mode !== TrailMode.OFF;
     const backgroundTransitioning =
       this.renderer?.isBackgroundTransitioning() ?? false;
-    // Fire or charcoal overlay is active. fireConfig is passed when either
-    // effect is enabled (see AnimationEngine.getFrameParams), so check for both.
+    // Fire or charcoal overlay is active. fireConfig is passed only when either
+    // effect is active (see AnimationEngine.getFrameParams), so presence is the gate.
     const fireActive =
-      params.fireConfig?.enabled === true &&
+      params.fireConfig != null &&
       this.fireRenderer?.isInitialized() === true;
     const charcoalActive =
       this.charcoalRenderer?.isInitialized() === true &&
@@ -391,8 +399,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     // Apply visibility settings
     const effectiveGridVisible = gridVisible && visibility.gridVisible;
     const effectivePropsVisible = visibility.propsVisible;
-    const effectiveTrailsVisible =
-      visibility.trailsVisible;
+    const effectiveTrailsVisible = hasTrailTips(params.tipEffectMap);
 
     // Derive motion visibility from both internal state AND whether prop is actually present
     // (props may be filtered to null by parent component based on its own visibility state)
@@ -560,7 +567,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     const activeFireRenderer = this.fireRenderer?.isInitialized() ? this.fireRenderer : null;
     const activeCharcoalRenderer = this.charcoalRenderer?.isInitialized() ? this.charcoalRenderer : null;
     const hasActiveOverlay = this.fireTipTracker && (
-      (activeFireRenderer && params.fireConfig?.enabled) || activeCharcoalRenderer
+      (activeFireRenderer && params.fireConfig != null) || activeCharcoalRenderer
     );
 
     if (hasActiveOverlay && !this.fireDisabledByError) {
@@ -589,27 +596,12 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
         );
 
         // Filter tips by resolved effect so each renderer only gets its assigned tips.
-        // When tipEffectMap is empty (the common case — user toggled a global effect
-        // rather than assigning per-tip), route ALL tips to the active renderer based
-        // on which renderer is initialized. Without this fallback, resolveEffect()
-        // returns "none" for every tip and nothing renders.
+        // tipEffectMap is always the authority. No legacy fallback.
         const allTips = tipResult.tips;
         const tipMap = params.tipEffectMap ?? {};
-        const hasPerTipAssignments = Object.keys(tipMap).length > 0;
 
-        let fireTips: typeof allTips;
-        let charcoalTips: typeof allTips;
-
-        if (hasPerTipAssignments) {
-          fireTips = allTips.filter(t => resolveEffect(t.propIndex, t.tipIndex, tipMap, {}) === 'fire');
-          charcoalTips = allTips.filter(t => resolveEffect(t.propIndex, t.tipIndex, tipMap, {}) === 'charcoal');
-        } else {
-          // No per-tip map: all tips go to whichever renderer is active.
-          // Fire and charcoal are mutually exclusive at the global toggle level,
-          // so at most one of these will get tips.
-          fireTips = (activeFireRenderer && params.fireConfig?.enabled) ? allTips : [];
-          charcoalTips = activeCharcoalRenderer ? allTips : [];
-        }
+        const fireTips = allTips.filter(t => resolveEffect(t.propIndex, t.tipIndex, tipMap, {}) === 'fire');
+        const charcoalTips = allTips.filter(t => resolveEffect(t.propIndex, t.tipIndex, tipMap, {}) === 'charcoal');
 
         const fireInput: import("../../domain/types/FireTypes").FireFrameInput = {
           tips: allTips,
@@ -771,7 +763,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       if (now - this.lastFrameDropLogTime > AnimationRenderLoop.FRAME_DROP_LOG_COOLDOWN_MS) {
         this.lastFrameDropLogTime = now;
         const fireState = this.fireRenderer?.isInitialized()
-          ? (params.fireConfig?.enabled ? "active" : "idle")
+          ? (params.fireConfig != null ? "active" : "idle")
           : "off";
         const trailCount = this.reusableBlueTrailPoints.length + this.reusableRedTrailPoints.length;
         console.warn(

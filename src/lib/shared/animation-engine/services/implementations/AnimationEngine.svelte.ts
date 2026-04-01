@@ -91,6 +91,11 @@ import type { ILedTipTracker } from "../contracts/ILedTipTracker";
 import { DEFAULT_LED_CONFIG, ledBrightnessToFloat, type LedOverlayConfig } from "../../domain/types/LedTypes";
 import { TrailOverlayCanvas } from "./TrailOverlayCanvas";
 import type { ITrailOverlayCanvas } from "../contracts/ITrailOverlayCanvas";
+import type { IMandalaOverlayCanvas } from "$lib/shared/mandala/services/contracts/IMandalaOverlayCanvas";
+import type { IMandalaFrameProjector } from "$lib/shared/mandala/services/contracts/IMandalaFrameProjector";
+import { MandalaOverlayCanvas } from "$lib/shared/mandala/services/implementations/MandalaOverlayCanvas";
+import { MandalaFrameProjector } from "$lib/shared/mandala/services/implementations/MandalaFrameProjector";
+import { type MandalaOverlayConfig, DEFAULT_MANDALA_OVERLAY_CONFIG } from "$lib/shared/mandala/domain/mandala-overlay-types";
 import { sequenceLoopabilityChecker } from "$lib/features/compose/services/implementations/SequenceLoopabilityChecker";
 import { isBilateralProp } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";
 import { TrackingMode } from "../../domain/types/TrailTypes";
@@ -257,6 +262,9 @@ export class AnimationEngine {
   private cellTipEffectMap: TipEffectMap | undefined = undefined;
   private cellTipEffortMap: TipEffortMap | undefined = undefined;
   private trailOverlay: ITrailOverlayCanvas | null = null;
+  private mandalaOverlay: IMandalaOverlayCanvas | null = null;
+  private mandalaProjector: IMandalaFrameProjector | null = null;
+  private mandalaConfig: MandalaOverlayConfig = { ...DEFAULT_MANDALA_OVERLAY_CONFIG };
 
   // ============================================================================
   // PRIVATE STATE
@@ -358,6 +366,7 @@ export class AnimationEngine {
     darkMode: false,
     propColors: undefined,
     ledConfig: null,
+    mandalaConfig: null,
     isSeamlesslyLoopable: false,
     sequenceContentHash: undefined,
     tipEffectMap: {},
@@ -399,7 +408,6 @@ export class AnimationEngine {
     this.prevBlueMotionVisible = vm.getVisibility("blueMotion");
     this.prevRedMotionVisible = vm.getVisibility("redMotion");
     this.prevFireEffect = vm.isFireEffectEnabled();
-    this.fireConfig.enabled = this.prevFireEffect;
     this.prevColorBlend = vm.getFireColorBlend();
     this.prevCharcoalEffect = vm.isCharcoalEffectEnabled();
     this.prevFireIntensity = vm.getFireIntensity();
@@ -536,7 +544,13 @@ export class AnimationEngine {
         const fireEnabled = vm.isFireEffectEnabled();
         if (fireEnabled !== this.prevFireEffect) {
           this.prevFireEffect = fireEnabled;
-          this.setFireConfig({ enabled: fireEnabled });
+          this.syncFireOverlay();
+          // Trigger a render to start/stop fire loop
+          if (this.renderLoopService && this.lastPropsRef) {
+            this.renderLoopService.triggerRender(() =>
+              this.getFrameParams(this.lastPropsRef ?? DEFAULT_ENGINE_PROPS)
+            );
+          }
         }
 
         // Sync charcoal effect toggle (independent from fire)
@@ -744,7 +758,7 @@ export class AnimationEngine {
 
     // Create overlays that weren't created yet (e.g. enabled before HMR/reload
     // but the $effect hasn't triggered, or the rAF hasn't fired yet).
-    if (this.fireConfig.enabled && !this.fireRenderer?.isInitialized()) {
+    if (this.prevFireEffect && !this.fireRenderer?.isInitialized()) {
       this.syncFireOverlay();
     }
     if (this.prevCharcoalEffect && !this.charcoalRenderer?.isInitialized()) {
@@ -752,6 +766,9 @@ export class AnimationEngine {
     }
     if (this.ledConfig.enabled && !this.ledRenderer?.isInitialized()) {
       this.syncLedOverlay();
+    }
+    if (this.mandalaConfig.enabled && !this.mandalaOverlay) {
+      this.syncMandalaOverlay();
     }
   }
 
@@ -1302,6 +1319,10 @@ export class AnimationEngine {
     this.trailOverlay?.dispose();
     this.trailOverlay = null;
 
+    this.mandalaOverlay?.dispose();
+    this.mandalaOverlay = null;
+    this.mandalaProjector = null;
+
     // Clear trails
     this.trailCapturer?.clearTrails();
 
@@ -1541,11 +1562,11 @@ export class AnimationEngine {
   }
 
   /**
-   * Initialize or destroy the fire overlay based on config.enabled.
+   * Initialize or destroy the fire overlay based on prevFireEffect.
    * Fire and charcoal are independent effects with independent renderers.
    */
   private syncFireOverlay(): void {
-    const enabled = this.fireConfig.enabled;
+    const enabled = this.prevFireEffect;
 
     if (enabled) {
       if (!this.fireRenderer?.isInitialized()) {
@@ -1573,6 +1594,41 @@ export class AnimationEngine {
       if (!this.prevCharcoalEffect) {
         this.fireTipTracker?.reset();
       }
+    }
+  }
+
+  /**
+   * Initialize or destroy the live mandala overlay based on config.enabled.
+   * Canvas2D overlay that draws mandala lines in sync with animation playback.
+   */
+  private syncMandalaOverlay(): void {
+    const enabled = this.mandalaConfig.enabled;
+
+    if (enabled) {
+      if (!this.mandalaOverlay) {
+        if (!this.containerElement) return;
+        this.mandalaProjector = new MandalaFrameProjector();
+        this.mandalaOverlay = new MandalaOverlayCanvas();
+        this.mandalaOverlay.initialize(
+          this.containerElement,
+          this.canvasSize,
+          this.canvasSize,
+        );
+        this.renderLoopService?.updateConfig({
+          mandalaOverlay: this.mandalaOverlay,
+          mandalaProjector: this.mandalaProjector,
+        });
+      }
+    } else {
+      if (this.mandalaOverlay) {
+        this.mandalaOverlay.dispose();
+        this.mandalaOverlay = null;
+        this.mandalaProjector = null;
+      }
+      this.renderLoopService?.updateConfig({
+        mandalaOverlay: null,
+        mandalaProjector: null,
+      });
     }
   }
 
@@ -1607,7 +1663,7 @@ export class AnimationEngine {
         this.charcoalRenderer = null;
       }
       this.renderLoopService?.updateConfig({ charcoalRenderer: null });
-      if (!this.fireConfig.enabled) {
+      if (!this.prevFireEffect) {
         this.fireTipTracker?.reset();
       }
     }
@@ -1639,18 +1695,12 @@ export class AnimationEngine {
    * Set fire overlay configuration. Called by visibility state changes.
    */
   setFireConfig(config: Partial<FireOverlayConfig>): void {
-    const wasEnabled = this.fireConfig.enabled;
     Object.assign(this.fireConfig, config);
     // Forward quality setting to renderer if present
     if (config.quality !== undefined && this.fireRenderer) {
       this.fireRenderer.setQuality(config.quality);
     }
     this.syncFireOverlay();
-
-    // When fire toggles, trigger a dark mode sync so the renderer reflects current state
-    if (config.enabled !== undefined && config.enabled !== wasEnabled && !this.previewDarkModeActive) {
-      this.animationRenderer?.setDarkMode(this.prevDarkMode);
-    }
 
     // Trigger a render to start/stop fire loop
     if (this.renderLoopService && this.lastPropsRef) {
@@ -1729,6 +1779,26 @@ export class AnimationEngine {
     this.syncLedOverlay();
 
     // Trigger a render to start/stop LED loop
+    if (this.renderLoopService && this.lastPropsRef) {
+      this.renderLoopService.triggerRender(() =>
+        this.getFrameParams(this.lastPropsRef ?? DEFAULT_ENGINE_PROPS)
+      );
+    }
+  }
+
+  /**
+   * Update live mandala overlay configuration.
+   */
+  setMandalaConfig(config: Partial<MandalaOverlayConfig>): void {
+    Object.assign(this.mandalaConfig, config);
+    this.syncMandalaOverlay();
+
+    // Clear the overlay when disabling
+    if (config.enabled === false && this.mandalaOverlay) {
+      this.mandalaOverlay.clear();
+    }
+
+    // Trigger a render to start/stop mandala loop
     if (this.renderLoopService && this.lastPropsRef) {
       this.renderLoopService.triggerRender(() =>
         this.getFrameParams(this.lastPropsRef ?? DEFAULT_ENGINE_PROPS)
@@ -2128,13 +2198,16 @@ export class AnimationEngine {
     fp.redPropType = redPropType;
 
     // Fire/charcoal overlay config — pass when either effect is active
-    fp.fireConfig = (this.fireConfig.enabled || this.prevCharcoalEffect) ? this.fireConfig : null;
+    fp.fireConfig = (this.prevFireEffect || this.prevCharcoalEffect) ? this.fireConfig : null;
     fp.darkMode = this.prevDarkMode;
     // Prop colors for colored flames (default blue/red)
     fp.propColors = DEFAULT_PROP_FLAME_COLORS;
 
     // LED overlay config
     fp.ledConfig = this.ledConfig.enabled ? this.ledConfig : null;
+
+    // Live mandala overlay config
+    fp.mandalaConfig = this.mandalaConfig.enabled ? this.mandalaConfig : null;
 
     // Per-tip effect assignments for filtering tips by effect type.
     // Cell-level map (from compose grid) takes priority over the global map.

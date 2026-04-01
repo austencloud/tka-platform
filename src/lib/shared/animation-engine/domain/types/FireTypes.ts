@@ -144,8 +144,6 @@ export interface FirePhysicsParams {
  * User-configurable fire overlay settings.
  */
 export interface FireOverlayConfig {
-  /** Whether fire effect is enabled */
-  enabled: boolean;
   /** Display intensity multiplier (0.1 - 3.0, default 1.0) */
   intensity: number;
   /** Flame height / buoyancy strength multiplier (0.3 - 3.0, default 1.0) */
@@ -212,7 +210,6 @@ export const DEFAULT_PHYSICS: FirePhysicsParams = {
 
 /** Default fire overlay config */
 export const DEFAULT_FIRE_CONFIG: FireOverlayConfig = {
-  enabled: false,
   intensity: 1.0,
   flameHeight: 1.0,
   velocityReactive: true,
