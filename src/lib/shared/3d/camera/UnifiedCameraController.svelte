@@ -394,6 +394,16 @@
     // Cache for use in onDestroy (renderer.current may be gone by then)
     cachedCanvas = canvas;
 
+    // Sync pointer lock state — it may already be held if requested before UCC mounted
+    isPointerLocked = document.pointerLockElement === canvas;
+
+    // Auto-request pointer lock if mounting into a game mode (e.g., after museum Q-flip).
+    // The original Q keypress was a valid user gesture, and browsers allow pointer lock
+    // requests within a short window after the gesture. If it fails, the user can click.
+    if (isGameMode(mode) && !isPointerLocked && inputCaps.canUsePointerLock()) {
+      canvas.requestPointerLock();
+    }
+
     // Initialize input capabilities tracking
     inputCaps.init();
 
