@@ -522,15 +522,20 @@
   });
 
   // Effective rows — must match effective columns to keep aspect ratio correct.
-  // When columnCount is overridden or isLongSequence forces 5 columns, calculate
-  // rows from that column count instead of the layout table (which assumes its own columns).
+  // When the column count comes from any override (prop, composition manager,
+  // or isLongSequence), derive rows from that count instead of the layout table
+  // (which assumes its own column count and would produce wrong rows).
   const effectiveRows = $derived.by(() => {
     if (!sequence?.steps?.length) return rows || 0;
     const stepCount = sequence.steps.length;
 
-    // If we know the column count (override or long-sequence), derive rows from it
+    // If we know the column count (prop override, composition manager, or
+    // long-sequence), derive rows from it. The composition manager check
+    // mirrors effectiveColumns so the two stay in sync.
     const cols = effectiveColumns;
-    if (cols > 0 && (columnCount !== null || isLongSequence)) {
+    const hasCompositionOverride = stepCount >= 4
+      && getImageCompositionManager().getColumnCountForStepCount(stepCount) !== null;
+    if (cols > 0 && (columnCount !== null || isLongSequence || hasCompositionOverride)) {
       const stepsPerRow = includeStartPosition ? cols - 1 : cols;
       const firstRowSteps = Math.min(stepsPerRow, stepCount);
       const remainingSteps = stepCount - firstRowSteps;
