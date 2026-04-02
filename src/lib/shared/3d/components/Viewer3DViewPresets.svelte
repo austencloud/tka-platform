@@ -140,12 +140,12 @@
   }
 
   .mode-button, .preset-button {
-    padding: 5px 10px;
+    padding: 6px 11px;
     border: 1px solid transparent;
     border-radius: 6px;
     background: transparent;
     color: rgba(255, 255, 255, 0.6);
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 500;
     cursor: pointer;
     transition: all 0.15s ease;
@@ -171,14 +171,14 @@
 
   .view-sublabel {
     position: absolute;
-    bottom: 48px;
+    bottom: 52px;
     right: 12px;
     z-index: 10;
-    padding: 4px 10px;
+    padding: 5px 12px;
     border-radius: 6px;
-    background: rgba(0, 0, 0, 0.5);
-    color: rgba(255, 255, 255, 0.5);
-    font-size: 10px;
+    background: rgba(0, 0, 0, 0.55);
+    color: rgba(255, 255, 255, 0.6);
+    font-size: var(--font-size-compact, 12px);
     pointer-events: none;
     white-space: nowrap;
   }
