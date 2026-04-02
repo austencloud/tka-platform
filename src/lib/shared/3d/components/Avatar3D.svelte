@@ -46,6 +46,7 @@
   import type { ILegAnimator } from "../services/contracts/ILegAnimator";
   import { FingerAnimator } from "$lib/shared/3d/services/implementations/FingerAnimator";
   import { ElbowPoleComputer } from "../services/implementations/ElbowPoleComputer";
+  import { ClavicleRaiser } from "../services/implementations/ClavicleRaiser";
   import { GripType } from "$lib/shared/3d/domain/models/GripPose";
 
   // Default Z position for avatars
@@ -231,7 +232,8 @@
       const skeleton = new AvatarSkeletonBuilder();
       const solver = new IKSolver();
       const poleComputer = new ElbowPoleComputer();
-      const animator = new AvatarAnimator(solver, skeleton, poleComputer);
+      const clavicleRaiser = new ClavicleRaiser();
+      const animator = new AvatarAnimator(solver, skeleton, poleComputer, clavicleRaiser);
       const legs = new LegAnimator();
 
       skeletonService = skeleton;
@@ -244,10 +246,15 @@
 
       servicesReady = true;
 
-      // Debug: toggle pole vectors from console with window.__togglePoleVectors()
+      // Debug toggles — A/B comparison from browser console
       (window as any).__togglePoleVectors = () => {
         const enabled = animator.togglePoleVectors();
         console.log(`Pole vectors: ${enabled ? "ON (new)" : "OFF (old — elbows bend backward)"}`);
+        return enabled;
+      };
+      (window as any).__toggleClavicleRaise = () => {
+        const enabled = animator.toggleClavicleRaise();
+        console.log(`Clavicle raise: ${enabled ? "ON (shoulders elevate)" : "OFF (shoulders static)"}`);
         return enabled;
       };
 
