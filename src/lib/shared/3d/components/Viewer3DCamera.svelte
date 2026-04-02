@@ -17,9 +17,9 @@
 
   const viewer3DState = getViewer3DContext();
 
-  // Avatar faces -Z. Its back faces +Z. Learn = behind = camera at +Z.
-  // From +Z looking -Z (right-handed): +X = screen right. East = +X = right ✓
-  const defaultPosition = { x: 0, y: 1.85, z: 3.0 };
+  // Default = Learn mode = behind avatar = camera at -Z.
+  // Pictograph matches from this angle (verified with screenshots).
+  const defaultPosition = { x: 0, y: 1.85, z: -3.0 };
   const defaultTarget = { x: 0, y: 1.55, z: -0.3 };
 
   // TEMPORARILY ignore persisted camera to verify default positions work
