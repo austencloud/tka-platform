@@ -1,22 +1,61 @@
 <script lang="ts">
   import { Canvas } from "@threlte/core";
+  import { useProgress } from "@threlte/extras";
   import Museum3DScene from "./Museum3DScene.svelte";
-  import { buildMuseumGrid } from "../../services/implementations/MuseumGridBuilder";
-  import { MUSEUM_ROOMS, MUSEUM_EDGES, GRID_CONFIG } from "../../data/museum-room-graph";
   import { MUSEUM_EXHIBIT_SEQUENCES } from "../../data/museum-exhibit-sequences";
   import { tileKey } from "../../domain/museum-grid-types";
-  import type { ExhibitDefinition, WingRegion } from "../../domain/museum-grid-types";
+  import type { MuseumGrid, ExhibitDefinition, PerformerDefinition, WingRegion } from "../../domain/museum-grid-types";
   import { SOLID_TYPES } from "../../services/implementations/MuseumPhysicsProvider";
   import PlaqueView from "../panel/PlaqueView.svelte";
   import SequenceView from "../panel/SequenceView.svelte";
+  import SequenceBrowserOverlay from "$lib/features/realm/destinations/museum/overlay/SequenceBrowserOverlay.svelte";
 
   import { onMount } from "svelte";
 
+  interface Props {
+    grid: MuseumGrid;
+    /** Called with 0-1 progress as assets load */
+    onLoadProgress?: (progress: number) => void;
+    /** Called when all assets are loaded and first frame has rendered */
+    onAllLoaded?: () => void;
+  }
+
+  let { grid, onLoadProgress, onAllLoaded }: Props = $props();
+
+  // useProgress hooks into Three.js DefaultLoadingManager globally.
+  // Every texture and GLTF model automatically reports here.
+  const { active, progress, finishedOnce } = useProgress();
+
+  // Pipe progress to parent
+  $effect(() => {
+    onLoadProgress?.($progress);
+  });
+
+  // Signal when all assets loaded + no longer actively loading.
+  // useProgress can briefly show active=false between batches (textures finish,
+  // then GLTF models start). Debounce 500ms to ensure loading is truly done.
+  let sceneReady = false;
+  let settleTimer: ReturnType<typeof setTimeout> | null = null;
+  $effect(() => {
+    if ($finishedOnce && !$active && !sceneReady) {
+      if (settleTimer) clearTimeout(settleTimer);
+      settleTimer = setTimeout(() => {
+        if (!sceneReady) {
+          sceneReady = true;
+          requestAnimationFrame(() => {
+            onAllLoaded?.();
+          });
+        }
+      }, 500);
+    } else if ($active && settleTimer) {
+      // New batch started — cancel the settle timer
+      clearTimeout(settleTimer);
+      settleTimer = null;
+    }
+  });
+
   const TILE_SIZE = 0.5;
   const HMR_KEY = "museum-hmr-state";
-
-  // Build the actual museum grid from room graph data
-  const { grid } = buildMuseumGrid(MUSEUM_ROOMS, MUSEUM_EDGES, GRID_CONFIG);
 
   // ── HMR state restore ──
   // sessionStorage survives Vite HMR remounts but clears on tab close — perfect for this.
@@ -123,7 +162,9 @@
 
   // ── Interaction state ──
   let focusedExhibit = $state<ExhibitDefinition | null>(null);
+  let focusedPerformer = $state<PerformerDefinition | null>(null);
   let showPanel = $state(false);
+  let showSequencePicker = $state(false);
 
   // ── Wing detection ──
   let currentWing = $derived.by<WingRegion | null>(() => {
@@ -155,7 +196,17 @@
     return grid.exhibits.find((e) => e.tileX === tx && e.tileY === ty) ?? null;
   });
 
-  let hasInteractable = $derived(facingExhibit !== null);
+  let facingPerformer = $derived.by<PerformerDefinition | null>(() => {
+    const offset = FACING_OFFSETS[playerFacing];
+    if (!offset) return null;
+    const tx = playerTileX + offset.dx;
+    const ty = playerTileY + offset.dy;
+    const tile = grid.tiles.get(tileKey(tx, ty));
+    if (!tile || tile.type !== "performer-station") return null;
+    return grid.performers.find((p) => p.tileX === tx && p.tileY === ty) ?? null;
+  });
+
+  let hasInteractable = $derived(facingExhibit !== null || facingPerformer !== null);
 
   // ── Keyboard handling ──
   function handleKeyDown(e: KeyboardEvent) {
@@ -175,26 +226,50 @@
       return;
     }
 
-    // E: interact with exhibit (not during flip animation)
+    // E: interact with exhibit or performer (not during flip animation)
     if (e.key === "e" || e.key === "E") {
       e.preventDefault();
       if (showPanel) {
-        // Dismiss panel
         showPanel = false;
         focusedExhibit = null;
+        focusedPerformer = null;
+        // Re-acquire pointer lock if in FPS mode
+        if (isInFPS) {
+          const canvas = document.querySelector<HTMLCanvasElement>("canvas");
+          canvas?.requestPointerLock();
+        }
       } else if (facingExhibit) {
-        // Open panel for this exhibit
         focusedExhibit = facingExhibit;
+        focusedPerformer = null;
         showPanel = true;
+        // Release pointer lock so the user can interact with the panel
+        if (document.pointerLockElement) document.exitPointerLock();
+      } else if (facingPerformer) {
+        focusedPerformer = facingPerformer;
+        focusedExhibit = null;
+        showPanel = true;
+        if (document.pointerLockElement) document.exitPointerLock();
       }
       return;
     }
 
-    // ESC: dismiss panel
-    if (e.key === "Escape" && showPanel) {
-      showPanel = false;
-      focusedExhibit = null;
-      return;
+    // ESC: dismiss panel or picker
+    if (e.key === "Escape") {
+      if (showSequencePicker) {
+        showSequencePicker = false;
+        return;
+      }
+      if (showPanel) {
+        showPanel = false;
+        focusedExhibit = null;
+        focusedPerformer = null;
+        // Re-acquire pointer lock if in FPS mode
+        if (isInFPS) {
+          const canvas = document.querySelector<HTMLCanvasElement>("canvas");
+          canvas?.requestPointerLock();
+        }
+        return;
+      }
     }
 
     // Home or R: reset to spawn
@@ -335,6 +410,48 @@
       {/if}
     </div>
   {/if}
+
+  <!-- Performer panel (right side) -->
+  {#if showPanel && focusedPerformer}
+    <div class="overlay-panel">
+      <button class="panel-close" onclick={() => { showPanel = false; focusedPerformer = null; }}>
+        <i class="fas fa-times" aria-hidden="true"></i>
+      </button>
+
+      <div class="performer-info">
+        <div class="performer-header">
+          <i class="fas fa-person" aria-hidden="true"></i>
+          <h3>Performer Station</h3>
+        </div>
+      </div>
+
+      {#if focusedPerformer.sequenceId}
+        <div class="panel-section">
+          <SequenceView sequenceId={focusedPerformer.sequenceId} />
+        </div>
+      {/if}
+
+      <button class="change-sequence-btn" onclick={() => (showSequencePicker = true)}>
+        <i class="fas fa-exchange-alt" aria-hidden="true"></i>
+        Change Sequence
+      </button>
+    </div>
+  {/if}
+
+  <SequenceBrowserOverlay
+    visible={showSequencePicker}
+    onSelect={(seqId) => {
+      if (focusedPerformer) {
+        focusedPerformer.sequenceId = seqId;
+        // Trigger Svelte reactivity by replacing the performer in the array
+        grid.performers = grid.performers.map((p) =>
+          p.id === focusedPerformer?.id ? { ...p, sequenceId: seqId } : p
+        );
+      }
+      showSequencePicker = false;
+    }}
+    onClose={() => (showSequencePicker = false)}
+  />
 </div>
 
 <style>
@@ -481,5 +598,52 @@
   @keyframes panel-slide-in {
     from { opacity: 0; transform: translateX(16px); }
     to { opacity: 1; transform: translateX(0); }
+  }
+
+  .performer-info {
+    padding: 16px;
+    background: rgba(140, 200, 140, 0.04);
+    border: 1px solid rgba(140, 200, 140, 0.12);
+    border-radius: 8px;
+  }
+
+  .performer-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .performer-header i {
+    color: #8cc88c;
+    font-size: 1.1rem;
+  }
+
+  .performer-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: #8cc88c;
+    font-weight: 500;
+  }
+
+  .change-sequence-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 10px 16px;
+    background: rgba(140, 200, 140, 0.08);
+    border: 1px solid rgba(140, 200, 140, 0.2);
+    border-radius: 6px;
+    color: rgba(140, 200, 140, 0.7);
+    font-size: var(--font-size-min, 14px);
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+  }
+
+  .change-sequence-btn:hover {
+    background: rgba(140, 200, 140, 0.14);
+    border-color: rgba(140, 200, 140, 0.35);
+    color: rgba(140, 200, 140, 0.9);
   }
 </style>
