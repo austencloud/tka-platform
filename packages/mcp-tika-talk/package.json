@@ -2,6 +2,7 @@
   "name": "@tka/mcp-tika-talk",
   "version": "1.0.0",
   "description": "MCP server for testing TIKA — direct tool calls and full LLM round-trips",
+  "license": "Elastic-2.0",
   "type": "module",
   "scripts": {
     "start": "npx tsx src/index.ts",

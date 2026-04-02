@@ -1,12 +1,10 @@
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import Stripe from "stripe";
+import { defineString } from "firebase-functions/params";
 
-const stripe = new Stripe(functions.config().stripe?.secret_key || process.env.STRIPE_SECRET_KEY || "", {
-  // apiVersion omitted — uses SDK default for installed package version
-});
-
-const endpointSecret = functions.config().stripe?.webhook_secret || process.env.STRIPE_WEBHOOK_SECRET || "";
+const stripeSecretKey = defineString("STRIPE_SECRET_KEY");
+const stripeWebhookSecret = defineString("STRIPE_WEBHOOK_SECRET");
 
 export const handleMerchWebhook = functions.https.onRequest(
   async (req, res) => {
@@ -24,7 +22,8 @@ export const handleMerchWebhook = functions.https.onRequest(
     let event: Stripe.Event;
 
     try {
-      event = stripe.webhooks.constructEvent(req.rawBody, sig, endpointSecret);
+      const stripe = new Stripe(stripeSecretKey.value());
+      event = stripe.webhooks.constructEvent(req.rawBody, sig, stripeWebhookSecret.value());
     } catch (err) {
       console.error("Webhook signature verification failed:", err);
       res.status(400).send("Webhook signature verification failed");
