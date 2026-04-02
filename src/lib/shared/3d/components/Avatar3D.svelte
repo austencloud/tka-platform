@@ -258,6 +258,38 @@
         return enabled;
       };
 
+      // Debug: dump shoulder bone positions to diagnose placement issues
+      (window as any).__dumpShoulders = () => {
+        const s = skeleton.getState();
+        if (!s.isLoaded) return "Skeleton not loaded";
+        const bones = ["LeftShoulder", "RightShoulder", "LeftArm", "RightArm", "Spine2", "Hips"];
+        const data: Record<string, any> = {};
+        for (const name of bones) {
+          const bone = s.bones.get(name as any);
+          if (bone) {
+            const wp = new Vector3();
+            bone.getWorldPosition(wp);
+            const q = bone.quaternion;
+            data[name] = {
+              worldPos: `(${wp.x.toFixed(3)}, ${wp.y.toFixed(3)}, ${wp.z.toFixed(3)})`,
+              localQuat: `(${q.x.toFixed(3)}, ${q.y.toFixed(3)}, ${q.z.toFixed(3)}, ${q.w.toFixed(3)})`,
+            };
+          }
+        }
+        const lc = skeleton.getLeftArmChain();
+        const rc = skeleton.getRightArmChain();
+        if (lc && rc) {
+          const lp = new Vector3(); const rp = new Vector3();
+          lc.root.getWorldPosition(lp);
+          rc.root.getWorldPosition(rp);
+          data._shoulderSpan = lp.distanceTo(rp).toFixed(3);
+          data._leftArmWorldY = lp.y.toFixed(3);
+          data._rightArmWorldY = rp.y.toFixed(3);
+        }
+        console.table(data);
+        return data;
+      };
+
       // Load initial avatar
       await loadAvatar(avatarId);
     } catch (err) {

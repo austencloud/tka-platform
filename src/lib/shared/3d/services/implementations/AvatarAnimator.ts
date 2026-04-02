@@ -57,6 +57,9 @@ export class AvatarAnimator implements IAvatarAnimator {
   private clavicleRaiser: IClavicleRaiser | null;
   private leftClavicleQuat = new Quaternion();
   private rightClavicleQuat = new Quaternion();
+  // The bone's original rest quaternion — we COMPOSE with this, never replace it
+  private leftClavicleRestQuat = new Quaternion();
+  private rightClavicleRestQuat = new Quaternion();
   private _clavicleRaiseEnabled = true;
   // Cached shoulder rest Y positions — captured once when skeleton loads.
   // Must NOT be read per-frame after clavicle rotation, or the elevated
@@ -294,6 +297,12 @@ export class AvatarAnimator implements IAvatarAnimator {
       rightChain.root.getWorldPosition(rightRoot);
       this.leftShoulderRestY = leftRoot.y;
       this.rightShoulderRestY = rightRoot.y;
+      // Cache the bone's original rest quaternions so we can compose with them
+      // instead of overwriting them (which would destroy the shoulder's outward position)
+      const leftClav = state.bones.get("LeftShoulder");
+      const rightClav = state.bones.get("RightShoulder");
+      if (leftClav) this.leftClavicleRestQuat.copy(leftClav.quaternion);
+      if (rightClav) this.rightClavicleRestQuat.copy(rightClav.quaternion);
       this.shoulderRestCached = true;
     }
 
@@ -309,7 +318,11 @@ export class AvatarAnimator implements IAvatarAnimator {
             leftChain.totalLength
           );
           this.leftClavicleQuat.slerp(targetQuat, this.smoothingFactor);
-          leftShoulder.quaternion.copy(this.leftClavicleQuat);
+          // COMPOSE with rest quaternion — never replace it, or the shoulder
+          // loses its outward position and collapses inward
+          leftShoulder.quaternion
+            .copy(this.leftClavicleRestQuat)
+            .multiply(this.leftClavicleQuat);
           leftShoulder.updateMatrixWorld(true);
         }
       }
@@ -346,7 +359,10 @@ export class AvatarAnimator implements IAvatarAnimator {
             rightChain.totalLength
           );
           this.rightClavicleQuat.slerp(targetQuat, this.smoothingFactor);
-          rightShoulder.quaternion.copy(this.rightClavicleQuat);
+          // COMPOSE with rest quaternion — same fix as left side
+          rightShoulder.quaternion
+            .copy(this.rightClavicleRestQuat)
+            .multiply(this.rightClavicleQuat);
           rightShoulder.updateMatrixWorld(true);
         }
       }
