@@ -7,6 +7,7 @@
 
 import type { Vector3 } from "three";
 import { MotionType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { Plane } from "../../domain/enums/Plane";
 import { LOCATION_ANGLES } from "$lib/features/compose/shared/domain/math-constants";
 import type { PropState3D } from "../../domain/models/PropState3D";
 import type { MotionConfig3D } from "../../domain/models/MotionData3D";
@@ -84,9 +85,15 @@ export class PropStateInterpolator implements IPropStateInterpolator {
    * Calculate PropState3D from config and progress
    */
   calculatePropState(config: MotionConfig3D, progress: number): PropState3D {
-    // Get start/end center angles from grid locations
-    const startCenterAngle = LOCATION_ANGLES[config.startLocation] ?? 0;
-    const endCenterAngle = LOCATION_ANGLES[config.endLocation] ?? 0;
+    // Get start/end center angles from grid locations.
+    // Mirror angles for wall and floor planes (π - angle) to match the X-axis
+    // mirror in planeAngleToWorldPosition. This ensures the staff orientation
+    // (IN/OUT) is computed relative to the mirrored position, not the original.
+    const rawStartAngle = LOCATION_ANGLES[config.startLocation] ?? 0;
+    const rawEndAngle = LOCATION_ANGLES[config.endLocation] ?? 0;
+    const mirrorX = config.plane === Plane.WALL || config.plane === Plane.FLOOR;
+    const startCenterAngle = mirrorX ? Math.PI - rawStartAngle : rawStartAngle;
+    const endCenterAngle = mirrorX ? Math.PI - rawEndAngle : rawEndAngle;
 
     // Calculate start staff angle from orientation
     const startStaffAngle = this.orientationService.mapOrientationToAngle(
