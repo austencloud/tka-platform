@@ -5,7 +5,7 @@
  * Bridges TKA prop states to skeleton IK targets.
  */
 
-import { Vector3 } from "three";
+import { Vector3, Quaternion } from "three";
 import type {
   IAvatarAnimator,
   HandPose,
@@ -18,6 +18,7 @@ import type { IIKSolver, IKTarget } from "../contracts/IIKSolver";
 import type { IAvatarSkeletonBuilder } from "../contracts/IAvatarSkeletonBuilder";
 import type { PropState3D } from "../../domain/models/PropState3D";
 import type { IElbowPoleComputer } from "../contracts/IElbowPoleComputer";
+import type { IClavicleRaiser } from "../contracts/IClavicleRaiser";
 
 /**
  * Default idle pose - arms relaxed at sides
@@ -53,13 +54,25 @@ export class AvatarAnimator implements IAvatarAnimator {
   private leftPoleVector = new Vector3(0, 0, 1);
   private rightPoleVector = new Vector3(0, 0, 1);
   private _poleVectorsEnabled = true;
+  private clavicleRaiser: IClavicleRaiser | null;
+  private leftClavicleQuat = new Quaternion();
+  private rightClavicleQuat = new Quaternion();
+  private _clavicleRaiseEnabled = true;
+  // Cached shoulder rest Y positions — captured once when skeleton loads.
+  // Must NOT be read per-frame after clavicle rotation, or the elevated
+  // position feeds back into the next frame and causes oscillation.
+  private leftShoulderRestY = 0;
+  private rightShoulderRestY = 0;
+  private shoulderRestCached = false;
 
   constructor(
     private ikSolver: IIKSolver,
     private skeleton: IAvatarSkeletonBuilder,
-    poleComputer?: IElbowPoleComputer
+    poleComputer?: IElbowPoleComputer,
+    clavicleRaiser?: IClavicleRaiser
   ) {
     this.poleComputer = poleComputer ?? null;
+    this.clavicleRaiser = clavicleRaiser ?? null;
     this.idlePose = createIdlePose();
     this.currentPose = { ...this.idlePose };
     this.targetPose = { ...this.idlePose };
@@ -271,7 +284,36 @@ export class AvatarAnimator implements IAvatarAnimator {
       hipsBone.getWorldPosition(bodyCenter);
     }
 
+    // Cache shoulder rest Y positions once (before any clavicle rotation has been applied).
+    // CRITICAL: Do NOT read these per-frame after clavicle is rotated — the elevated
+    // position feeds back and causes oscillation.
+    if (!this.shoulderRestCached && leftChain && rightChain) {
+      const leftRoot = new Vector3();
+      const rightRoot = new Vector3();
+      leftChain.root.getWorldPosition(leftRoot);
+      rightChain.root.getWorldPosition(rightRoot);
+      this.leftShoulderRestY = leftRoot.y;
+      this.rightShoulderRestY = rightRoot.y;
+      this.shoulderRestCached = true;
+    }
+
     if (leftChain) {
+      // Clavicle raise: elevate shoulder bone before IK solve
+      if (this._clavicleRaiseEnabled && this.clavicleRaiser && this.shoulderRestCached) {
+        const leftShoulder = state.bones.get("LeftShoulder");
+        if (leftShoulder) {
+          const targetQuat = this.clavicleRaiser.computeClavicleRotation(
+            pose.leftHand.targetPosition,
+            "left",
+            this.leftShoulderRestY,
+            leftChain.totalLength
+          );
+          this.leftClavicleQuat.slerp(targetQuat, this.smoothingFactor);
+          leftShoulder.quaternion.copy(this.leftClavicleQuat);
+          leftShoulder.updateMatrixWorld(true);
+        }
+      }
+
       const target: IKTarget = {
         position: pose.leftHand.targetPosition,
         weight: pose.leftHand.weight,
@@ -293,6 +335,22 @@ export class AvatarAnimator implements IAvatarAnimator {
     }
 
     if (rightChain) {
+      // Clavicle raise: elevate shoulder bone before IK solve
+      if (this._clavicleRaiseEnabled && this.clavicleRaiser && this.shoulderRestCached) {
+        const rightShoulder = state.bones.get("RightShoulder");
+        if (rightShoulder) {
+          const targetQuat = this.clavicleRaiser.computeClavicleRotation(
+            pose.rightHand.targetPosition,
+            "right",
+            this.rightShoulderRestY,
+            rightChain.totalLength
+          );
+          this.rightClavicleQuat.slerp(targetQuat, this.smoothingFactor);
+          rightShoulder.quaternion.copy(this.rightClavicleQuat);
+          rightShoulder.updateMatrixWorld(true);
+        }
+      }
+
       const target: IKTarget = {
         position: pose.rightHand.targetPosition,
         weight: pose.rightHand.weight,
@@ -376,5 +434,15 @@ export class AvatarAnimator implements IAvatarAnimator {
       this.rightPoleVector.set(0, 0, -1);
     }
     return this._poleVectorsEnabled;
+  }
+
+  /** Debug toggle: disable clavicle raise to compare old vs new shoulder behavior */
+  toggleClavicleRaise(): boolean {
+    this._clavicleRaiseEnabled = !this._clavicleRaiseEnabled;
+    if (!this._clavicleRaiseEnabled) {
+      this.leftClavicleQuat.identity();
+      this.rightClavicleQuat.identity();
+    }
+    return this._clavicleRaiseEnabled;
   }
 }
