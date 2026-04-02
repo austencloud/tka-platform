@@ -233,6 +233,16 @@ export function createAvatarInstanceState(
       ? [startConfig, ...motionConfigs]
       : motionConfigs;
 
+    // DIAG: Dump raw start position and configs
+    if (sequence.startPosition) {
+      const sp = sequence.startPosition;
+      const bm = sp.motions?.blue;
+      const rm = sp.motions?.red;
+    }
+    if (stepConfigs[0]) {
+      const s = stepConfigs[0];
+    }
+
     currentStepIndex = 0;
     playback.reset();
     updateVisibilityFromStep(stepConfigs[0]);
