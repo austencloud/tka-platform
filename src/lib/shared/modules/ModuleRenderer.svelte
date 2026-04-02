@@ -52,13 +52,33 @@
   // Register cache clearing callback for HMR
   // When Vite does an HMR update, clear our cache to prevent stale chunk issues
   let deregisterCacheClear: (() => void) | undefined;
+  let preloadTimer: ReturnType<typeof setTimeout> | undefined;
+
   onMount(() => {
     deregisterCacheClear = registerModuleCacheClear(() => {
       moduleCache.clear();
     });
+
+    // Preload heavy modules (museum = Three.js/Threlte) during idle time.
+    // Wait 3s after mount so we don't compete with initial page render,
+    // then use requestIdleCallback to avoid blocking user interaction.
+    preloadTimer = setTimeout(() => {
+      const idle =
+        (window as any).requestIdleCallback ??
+        ((cb: () => void) => setTimeout(cb, 100));
+      idle(() => {
+        if (activeModule !== "museum" && !moduleCache.has("museum")) {
+          loadModule("museum").catch(() => {
+            // Preload failure is non-critical — user gets normal loading on click
+          });
+        }
+      });
+    }, 3000);
   });
+
   onDestroy(() => {
     deregisterCacheClear?.();
+    clearTimeout(preloadTimer);
   });
 
   // Dynamic import functions for each module (enables code-splitting)
@@ -188,10 +208,22 @@
 
 {#if isModuleLoading}
   <!-- Loading state while module is being restored -->
-  <div class="module-loading" role="status" aria-live="polite" aria-busy="true">
-    <ProgressRing percent={-1} size={32} strokeWidth={3} />
-    <p>Loading...</p>
-  </div>
+  {#if activeModule === "museum"}
+    <div class="museum-skeleton" role="status" aria-live="polite" aria-busy="true">
+      <div class="museum-skeleton-icon">
+        <i class="fas fa-landmark" aria-hidden="true"></i>
+      </div>
+      <p class="museum-skeleton-title">Entering The Archive...</p>
+      <div class="museum-skeleton-track">
+        <div class="museum-skeleton-fill"></div>
+      </div>
+    </div>
+  {:else}
+    <div class="module-loading" role="status" aria-live="polite" aria-busy="true">
+      <ProgressRing percent={-1} size={32} strokeWidth={3} />
+      <p>Loading...</p>
+    </div>
+  {/if}
 {:else}
   {#if isModuleBlocked}
     <div class="module-gate" style="display: flex; align-items: center; justify-content: center; height: 100%;">
@@ -208,15 +240,27 @@
         <div class="module-content" style:view-transition-name={vtName}>
           {#await modulePromise}
             <!-- Loading state while module chunk is being fetched -->
-            <div
-              class="module-loading"
-              role="status"
-              aria-live="polite"
-              aria-busy="true"
-            >
-              <ProgressRing percent={-1} size={32} strokeWidth={3} />
-              <p>Loading module...</p>
-            </div>
+            {#if activeModule === "museum"}
+              <div class="museum-skeleton" role="status" aria-live="polite" aria-busy="true">
+                <div class="museum-skeleton-icon">
+                  <i class="fas fa-landmark" aria-hidden="true"></i>
+                </div>
+                <p class="museum-skeleton-title">Entering The Archive...</p>
+                <div class="museum-skeleton-track">
+                  <div class="museum-skeleton-fill"></div>
+                </div>
+              </div>
+            {:else}
+              <div
+                class="module-loading"
+                role="status"
+                aria-live="polite"
+                aria-busy="true"
+              >
+                <ProgressRing percent={-1} size={32} strokeWidth={3} />
+                <p>Loading module...</p>
+              </div>
+            {/if}
           {:then LoadedModule}
             {#if LoadedModule}
               {#if isModuleActive("create")}
@@ -344,6 +388,58 @@
   .module-error .reload-button:focus-visible {
     outline: 2px solid var(--theme-accent, #6366f1);
     outline-offset: 2px;
+  }
+
+  /* Museum-themed loading skeleton */
+  .museum-skeleton {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    background: #0a0a0a;
+    color: rgba(200, 180, 140, 0.8);
+    font-family: Georgia, "Times New Roman", serif;
+    gap: 16px;
+  }
+
+  .museum-skeleton-icon {
+    font-size: 36px;
+    opacity: 0.5;
+    animation: museum-pulse 2s ease-in-out infinite;
+  }
+
+  .museum-skeleton-title {
+    margin: 0;
+    font-size: 18px;
+    letter-spacing: 0.05em;
+    opacity: 0.7;
+  }
+
+  .museum-skeleton-track {
+    width: 160px;
+    height: 2px;
+    border-radius: 1px;
+    background: rgba(200, 180, 140, 0.12);
+    overflow: hidden;
+  }
+
+  .museum-skeleton-fill {
+    height: 100%;
+    width: 30%;
+    background: rgba(200, 180, 140, 0.6);
+    border-radius: 1px;
+    animation: museum-shimmer 1.5s ease-in-out infinite;
+  }
+
+  @keyframes museum-pulse {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 0.6; }
+  }
+
+  @keyframes museum-shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(433%); }
   }
 
 </style>
