@@ -18,13 +18,16 @@
   // Grid center: avatar faces -Z, so grid offset is at -0.3 Z
   const GRID_CENTER = { x: 0, y: 1.55, z: -0.3 };
 
-  // Avatar faces -Z. Its back faces +Z.
-  // Learn = see avatar's back = camera at +Z
-  // Mirror = see avatar's face = camera at -Z
+  // Avatar faces -Z (GLTF convention). Back faces +Z.
+  // Learn = behind avatar (see back) = camera at -Z (same side avatar faces)
+  // Mirror = in front (see face) = camera at +Z (behind avatar's back)
+  // NOTE: this is counterintuitive but verified with screenshots.
+  // From -Z looking +Z, pictograph matches when you orbit to the back.
+  // The avatar's "face" direction in GLTF doesn't match the grid direction.
   const CAMERA_POSITIONS = {
     main: {
-      learn:  { x: 0,    y: 1.85, z: 3.0 },
-      mirror: { x: 0,    y: 1.85, z: -3.6 },
+      learn:  { x: 0,    y: 1.85, z: -3.0 },
+      mirror: { x: 0,    y: 1.85, z: 3.6 },
     },
     side: {
       learn:  { x: 3.2,  y: 1.85, z: -0.3 },
@@ -35,8 +38,8 @@
       mirror: { x: 0, y: 5.0, z: -0.31 },
     },
     threequarter: {
-      learn:  { x: 2.0, y: 3.5, z: 2.2 },
-      mirror: { x: -2.0, y: 3.5, z: -2.5 },
+      learn:  { x: 2.0, y: 3.5, z: -2.2 },
+      mirror: { x: -2.0, y: 3.5, z: 2.5 },
     },
   };
 
