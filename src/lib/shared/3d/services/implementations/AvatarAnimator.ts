@@ -15,11 +15,11 @@ import type {
   PositionOffset,
 } from "../contracts/IAvatarAnimator";
 import type { IIKSolver, IKTarget } from "../contracts/IIKSolver";
-import type { IAvatarSkeletonBuilder } from "../contracts/IAvatarSkeletonBuilder";
+import type { IAvatarSkeletonBuilder, BoneName } from "../contracts/IAvatarSkeletonBuilder";
 import type { PropState3D } from "../../domain/models/PropState3D";
 import type { IElbowPoleComputer } from "../contracts/IElbowPoleComputer";
 import type { IClavicleRaiser } from "../contracts/IClavicleRaiser";
-import type { ISpineTwister } from "../contracts/ISpineTwister";
+import type { ISpineTwister, SpineTwistResult } from "../contracts/ISpineTwister";
 
 /**
  * Default idle pose - arms relaxed at sides
@@ -55,6 +55,7 @@ export class AvatarAnimator implements IAvatarAnimator {
   private leftPoleVector = new Vector3(0, 0, 1);
   private rightPoleVector = new Vector3(0, 0, 1);
   private _poleVectorsEnabled = true;
+
   private clavicleRaiser: IClavicleRaiser | null;
   private leftClavicleQuat = new Quaternion();
   private rightClavicleQuat = new Quaternion();
@@ -74,15 +75,22 @@ export class AvatarAnimator implements IAvatarAnimator {
     spine2: new Quaternion(),
     neck: new Quaternion(),
     head: new Quaternion(),
+    hips: new Quaternion(),
   };
   private spineTwistRestQuats = {
     spine1: new Quaternion(),
     spine2: new Quaternion(),
     neck: new Quaternion(),
     head: new Quaternion(),
+    hips: new Quaternion(),
+    leftUpLeg: new Quaternion(),
+    rightUpLeg: new Quaternion(),
   };
   private _spineTwistEnabled = true;
   private spineRestCached = false;
+  private _spineDiagCounter = 0;
+  /** Which spine/head bones the model actually has — used for weight redistribution */
+  private availableSpineBones = new Set<string>();
 
   constructor(
     private ikSolver: IIKSolver,
@@ -324,44 +332,91 @@ export class AvatarAnimator implements IAvatarAnimator {
       this.shoulderRestCached = true;
     }
 
-    // Cache spine bone rest quaternions once — COMPOSE with these, never replace
+    // Cache spine bone rest quaternions once — COMPOSE with these, never replace.
+    // Works with whatever bones are available (some models lack Spine2/upper_chest).
     if (!this.spineRestCached) {
-      const boneNames = ["Spine1", "Spine2", "Neck", "Head"] as const;
-      const keys = ["spine1", "spine2", "neck", "head"] as const;
-      let allFound = true;
-      for (let i = 0; i < boneNames.length; i++) {
-        const bone = state.bones.get(boneNames[i]);
+      let anyFound = false;
+      const cacheSpineBone = (boneName: BoneName, key: "spine1" | "spine2" | "neck" | "head") => {
+        const bone = state.bones.get(boneName);
         if (bone) {
-          this.spineTwistRestQuats[keys[i]].copy(bone.quaternion);
-        } else {
-          allFound = false;
+          this.spineTwistRestQuats[key].copy(bone.quaternion);
+          this.availableSpineBones.add(boneName);
+          anyFound = true;
         }
-      }
-      if (allFound) this.spineRestCached = true;
+      };
+      cacheSpineBone("Spine1", "spine1");
+      cacheSpineBone("Spine2", "spine2");
+      cacheSpineBone("Neck", "neck");
+      cacheSpineBone("Head", "head");
+      if (anyFound) this.spineRestCached = true;
     }
 
     // Spine twist: rotate torso and head toward cross-body hand positions
+    // --- DIAGNOSTIC: log every 120 frames (~2s at 60fps) ---
+    this._spineDiagCounter++;
+    if (this._spineDiagCounter % 120 === 0) {
+      const hasTwister = !!this.spineTwister;
+      const enabled = this._spineTwistEnabled;
+      const cached = this.spineRestCached;
+      const lx = pose.leftHand.targetPosition.x.toFixed(3);
+      const ly = pose.leftHand.targetPosition.y.toFixed(3);
+      const rx = pose.rightHand.targetPosition.x.toFixed(3);
+      const ry = pose.rightHand.targetPosition.y.toFixed(3);
+      const cx = bodyCenter.x.toFixed(3);
+      console.log(
+        `[SpineTwist DIAG] enabled=${enabled} hasTwister=${hasTwister} restCached=${cached} ` +
+        `leftHand=(${lx},${ly}) rightHand=(${rx},${ry}) bodyCenter.x=${cx}`
+      );
+      if (!cached) {
+        const checkNames: BoneName[] = ["Spine1", "Spine2", "Neck", "Head"];
+        const boneCheck = checkNames.map(
+          (n) => `${n}=${state.bones.has(n) ? "found" : "MISSING"}`
+        );
+        console.log(`[SpineTwist DIAG] Bone check: ${boneCheck.join(", ")}`);
+      }
+    }
+
     if (this._spineTwistEnabled && this.spineTwister && this.spineRestCached) {
       const twistResult = this.spineTwister.computeSpineTwist(
         pose.leftHand.targetPosition,
         pose.rightHand.targetPosition,
-        bodyCenter
+        bodyCenter,
+        this.availableSpineBones
       );
 
-      const boneNames = ["Spine1", "Spine2", "Neck", "Head"] as const;
-      const keys = ["spine1", "spine2", "neck", "head"] as const;
-      for (let i = 0; i < boneNames.length; i++) {
-        const bone = state.bones.get(boneNames[i]);
-        if (bone) {
-          const key = keys[i];
-          this.spineTwistQuats[key].slerp(twistResult[key], this.smoothingFactor);
-          bone.quaternion
-            .copy(this.spineTwistRestQuats[key])
-            .multiply(this.spineTwistQuats[key]);
-          bone.updateMatrixWorld(true);
-        }
+      // --- DIAGNOSTIC: log computed twist angles ---
+      if (this._spineDiagCounter % 120 === 0) {
+        const toDeg = (q: Quaternion) => {
+          const angle = 2 * Math.acos(Math.min(1, Math.abs(q.w)));
+          return ((angle * 180) / Math.PI).toFixed(1);
+        };
+        console.log(
+          `[SpineTwist DIAG] twist angles: Spine1=${toDeg(twistResult.spine1)}° ` +
+          `Spine2=${toDeg(twistResult.spine2)}° Neck=${toDeg(twistResult.neck)}° ` +
+          `Head=${toDeg(twistResult.head)}° Hips=${toDeg(twistResult.hips)}°`
+        );
+      }
+
+      // Apply twist to Spine1 only. Neck and Head inherit through the
+      // skeleton hierarchy, so they follow naturally without needing
+      // their own rotation (which was causing cascading artifacts).
+      // No hip counter-rotation — feet stay planted because we only
+      // rotate above the waist.
+      const spine1Bone = state.bones.get("Spine1");
+      if (spine1Bone) {
+        // Use the FULL twist (all weights combined) on Spine1 since it's
+        // the only bone we're directly rotating
+        const fullTwist = this.makeFullSpineTwist(twistResult);
+        this.spineTwistQuats.spine1.slerp(fullTwist, this.smoothingFactor);
+        spine1Bone.quaternion
+          .copy(this.spineTwistRestQuats.spine1)
+          .multiply(this.spineTwistQuats.spine1);
+        spine1Bone.updateMatrixWorld(true);
       }
     }
+
+    const leftTarget = pose.leftHand.targetPosition;
+    const rightTarget = pose.rightHand.targetPosition;
 
     if (leftChain) {
       // Clavicle raise: elevate shoulder bone before IK solve
@@ -369,14 +424,12 @@ export class AvatarAnimator implements IAvatarAnimator {
         const leftShoulder = state.bones.get("LeftShoulder");
         if (leftShoulder) {
           const targetQuat = this.clavicleRaiser.computeClavicleRotation(
-            pose.leftHand.targetPosition,
+            leftTarget,
             "left",
             this.leftShoulderRestY,
             leftChain.totalLength
           );
           this.leftClavicleQuat.slerp(targetQuat, this.smoothingFactor);
-          // COMPOSE with rest quaternion — never replace it, or the shoulder
-          // loses its outward position and collapses inward
           leftShoulder.quaternion
             .copy(this.leftClavicleRestQuat)
             .multiply(this.leftClavicleQuat);
@@ -385,13 +438,13 @@ export class AvatarAnimator implements IAvatarAnimator {
       }
 
       const target: IKTarget = {
-        position: pose.leftHand.targetPosition,
+        position: leftTarget,
         weight: pose.leftHand.weight,
       };
 
       if (this._poleVectorsEnabled && this.poleComputer && pose.leftHand.plane) {
         const idealPole = this.poleComputer.computePoleVector(
-          pose.leftHand.targetPosition,
+          leftTarget,
           pose.leftHand.plane,
           "left",
           bodyCenter
@@ -410,13 +463,12 @@ export class AvatarAnimator implements IAvatarAnimator {
         const rightShoulder = state.bones.get("RightShoulder");
         if (rightShoulder) {
           const targetQuat = this.clavicleRaiser.computeClavicleRotation(
-            pose.rightHand.targetPosition,
+            rightTarget,
             "right",
             this.rightShoulderRestY,
             rightChain.totalLength
           );
           this.rightClavicleQuat.slerp(targetQuat, this.smoothingFactor);
-          // COMPOSE with rest quaternion — same fix as left side
           rightShoulder.quaternion
             .copy(this.rightClavicleRestQuat)
             .multiply(this.rightClavicleQuat);
@@ -425,13 +477,13 @@ export class AvatarAnimator implements IAvatarAnimator {
       }
 
       const target: IKTarget = {
-        position: pose.rightHand.targetPosition,
+        position: rightTarget,
         weight: pose.rightHand.weight,
       };
 
       if (this._poleVectorsEnabled && this.poleComputer && pose.rightHand.plane) {
         const idealPole = this.poleComputer.computePoleVector(
-          pose.rightHand.targetPosition,
+          rightTarget,
           pose.rightHand.plane,
           "right",
           bodyCenter
@@ -496,6 +548,20 @@ export class AvatarAnimator implements IAvatarAnimator {
 
   setSmoothingFactor(factor: number): void {
     this.smoothingFactor = Math.max(0, Math.min(1, factor));
+  }
+
+  /**
+   * Combine all spine twist weights into a single quaternion.
+   * Since we only apply twist to Spine1 (children inherit naturally),
+   * we sum all the individual bone rotations into one.
+   */
+  private makeFullSpineTwist(result: SpineTwistResult): Quaternion {
+    const combined = new Quaternion();
+    combined.multiply(result.spine1);
+    combined.multiply(result.spine2);
+    combined.multiply(result.neck);
+    combined.multiply(result.head);
+    return combined;
   }
 
   /** Debug toggle: disable pole vectors to compare old vs new elbow behavior */
