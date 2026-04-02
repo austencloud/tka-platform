@@ -17,7 +17,6 @@
   }
 
   let { activePoseName, onselect }: Props = $props();
-  let expanded = $state(true);
 
   const grasps = taxonomyData.grasps as TaxonomyGrasp[];
 
@@ -56,13 +55,11 @@
 </script>
 
 <div class="gallery">
-  <button class="gallery-toggle" onclick={() => (expanded = !expanded)}>
-    <span class="toggle-icon">{expanded ? "▾" : "▸"}</span>
-    Yale Taxonomy ({grasps.length} poses)
-  </button>
+  <div class="gallery-header">
+    Yale GRASP Taxonomy ({grasps.length} poses)
+  </div>
 
-  {#if expanded}
-    <div class="gallery-content">
+  <div class="gallery-content">
       {#each [...groups().entries()] as [type, poses]}
         <div class="group">
           <div class="group-header" style="border-color: {groupColors[type] ?? '#666'}">
@@ -84,34 +81,20 @@
         </div>
       {/each}
     </div>
-  {/if}
 </div>
 
 <style>
   .gallery {
-    margin-top: 12px;
-    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    padding-top: 8px;
+    padding-top: 0;
   }
 
-  .gallery-toggle {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 0;
-    background: none;
-    border: none;
-    color: var(--theme-text, #fff);
-    font-size: var(--font-size-min, 14px);
+  .gallery-header {
+    padding: 4px 0 8px;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
-    cursor: pointer;
-    text-align: left;
-  }
-
-  .toggle-icon {
-    font-size: 12px;
-    width: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
   }
 
   .gallery-content {
@@ -141,20 +124,25 @@
   }
 
   .group-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
   }
 
   .pose-card {
-    padding: 4px 8px;
-    border-radius: 4px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 10px;
+    border-radius: 6px;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     background: transparent;
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
-    font-size: var(--font-size-compact, 12px);
+    font-size: var(--font-size-min, 14px);
     cursor: pointer;
     transition: all 0.15s ease;
+    text-align: center;
   }
 
   .pose-card:hover {
@@ -171,6 +159,6 @@
   }
 
   .pose-name {
-    white-space: nowrap;
+    line-height: 1.2;
   }
 </style>
