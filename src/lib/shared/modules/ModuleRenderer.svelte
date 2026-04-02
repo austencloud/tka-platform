@@ -133,8 +133,8 @@
     "poi-lab": () => import("../../features/levels/LevelsModule.svelte"),
     retro: () => import("../../features/retro/RetroModule.svelte"),
     realm: () => import("../../features/realm/RealmModule.svelte"),
-    // 2D Museum Walker - tile-based museum explorer
-    "museum-2d": () => import("../../features/museum-2d/Museum2DModule.svelte"),
+    // The Archive — tile-based museum explorer
+    museum: () => import("../../features/museum/MuseumModule.svelte"),
     mandala: () => import("../../features/lab/LabModule.svelte"),
     "background-builder": () => import("../../features/lab/LabModule.svelte"),
     "landing-preview": () => import("../../features/lab/LabModule.svelte"),

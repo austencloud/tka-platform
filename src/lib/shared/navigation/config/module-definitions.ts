@@ -22,6 +22,7 @@ import {
   FESTIVAL_TABS,
   RETRO_TABS,
   REALM_TABS,
+  ARCHIVE_TABS,
   LEVELS_TABS,
   HAND_PATH_TABS,
   VIDEO_TABS,
@@ -41,6 +42,8 @@ const MODULE_ID_MIGRATIONS: Record<string, ModuleId> = {
   // Experimental modules consolidated into Lab (Jan 2026), then graduated to Levels (Mar 2026)
   skewlab: "levels",
   "poi-lab": "levels",
+  // Museum renamed from museum-2d to museum (Mar 2026)
+  "museum-2d": "museum",
   mandala: "lab",
   "background-builder": "lab",
   "landing-preview": "lab",
@@ -225,11 +228,20 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     sections: FESTIVAL_TABS,
   },
   {
+    id: "museum",
+    label: "Museum",
+    icon: '<i class="fas fa-landmark" style="color: #f59e0b;" aria-hidden="true"></i>',
+    color: "#f59e0b",
+    description: "Explore The Kinetic Archive — walk the museum, flip into 3D",
+    isMain: true,
+    sections: ARCHIVE_TABS,
+  },
+  {
     id: "realm",
     label: "Realm",
     icon: '<i class="fas fa-vr-cardboard" style="color: #06b6d4;" aria-hidden="true"></i>',
     color: "#06b6d4",
-    description: "3D destinations: museum, stage, gallery, procedural worlds",
+    description: "3D destinations: stage, gallery, procedural worlds",
     isMain: true,
     sections: REALM_TABS,
   },
