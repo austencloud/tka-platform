@@ -57,11 +57,14 @@
     initialPlayerYaw?: number;
     /** Increment to teleport player back to spawn */
     resetRequested?: number;
+    /** Called once on the first rendered frame — signals the 3D scene is interactive */
+    onReady?: () => void;
   }
 
   let {
     grid, flipRequested, heldKeys = new Set(), topDownHeight = 12, onPlayerUpdate,
     initialFpsActive = false, initialPlayerPos, initialPlayerYaw, resetRequested = 0,
+    onReady,
   }: Props = $props();
 
   // ── Tile scale: each tile = 0.5m in world space ──
@@ -145,6 +148,8 @@
       t.repeat.set(tileRepeat, tileRepeat);
     }
 
+    // No fade-in needed — loading gate holds everything behind an opaque
+    // overlay until all assets are loaded. Scene appears fully textured.
     const mat = new MeshStandardMaterial({
       map: colorTex,
       normalMap: normalTex,
@@ -473,6 +478,7 @@
       camera.near = 0.1;
       camera.far = UCC_FAR_PLANE;
       camera.updateProjectionMatrix();
+      onReady?.();
       return;
     }
 
@@ -670,6 +676,66 @@
     }
   });
 
+  // ── MCP Game Bridge (lets Claude walk around the museum) ──
+  let gameBridgeInitialized = false;
+
+  $effect(() => {
+    if (typeof window === "undefined" || !import.meta.env.DEV) return;
+    if (gameBridgeInitialized) return;
+    gameBridgeInitialized = true;
+
+    import("$lib/shared/3d/debug/game-bridge").then(async ({ initGameBridge }) => {
+      const bridge = initGameBridge({
+        physics: {
+          getPlayerPosition: () => physicsProvider?.getPlayerPosition() ?? null,
+          getPlayerVelocity: () => physicsProvider?.getVelocity() ?? { x: 0, y: 0, z: 0 },
+          isGrounded: () => physicsProvider?.isGrounded() ?? false,
+          movePlayer: (movement, deltaTime) => physicsProvider?.movePlayer(movement, deltaTime),
+          teleportPlayer: (position) => physicsProvider?.teleport?.(position),
+          raycast: (_origin, _direction, _maxDistance) => ({ hit: false }),
+        },
+        camera: {
+          getMode: () => fpsActive
+            ? (lastCameraMode === CameraMode.THIRD_PERSON ? "third_person" : "first_person")
+            : "orbit",
+          setMode: (mode: string) => {
+            if (mode === "first_person") {
+              lastCameraMode = CameraMode.FIRST_PERSON;
+              if (!fpsActive) { fpsActive = true; }
+            } else if (mode === "third_person") {
+              lastCameraMode = CameraMode.THIRD_PERSON;
+              if (!fpsActive) { fpsActive = true; }
+            } else if (mode === "orbit" && fpsActive) {
+              fpsActive = false;
+            }
+          },
+          getYaw: () => playerYaw,
+          getPitch: () => playerPitch,
+          setYaw: (yaw: number) => { playerYaw = yaw; },
+          setPitch: (_pitch: number) => { /* UCC manages pitch internally */ },
+        },
+        playback: {
+          getPerformerManager: () => null,
+          getSpeed: () => 1,
+          setSpeed: () => {},
+        },
+      }, { debug: true });
+
+      try {
+        await bridge.connect();
+        console.log("[Museum3DScene] MCP Game Bridge connected");
+      } catch {
+        console.log("[Museum3DScene] MCP Game Bridge not available (run the MCP server to enable)");
+      }
+    });
+
+    return () => {
+      import("$lib/shared/3d/debug/game-bridge").then(({ destroyGameBridge }) => {
+        destroyGameBridge();
+      });
+    };
+  });
+
   // ── Bucket tiles by render category ──
   interface TileBucket {
     positions: { x: number; z: number }[];
@@ -857,7 +923,6 @@
   const wallMeshes: InstancedMeshData[] = [];
   for (const [, bucket] of wallBuckets) {
     const texturePack = bucket.wingTheme ? WALL_TEXTURE_MAP[bucket.wingTheme] : undefined;
-    // For walls, tint the texture with the wing's wall color so themed wings stay distinct
     const wallMat = texturePack
       ? loadPBR(texturePack, 4, bucket.color)
       : new MeshStandardMaterial({ color: bucket.color });
@@ -1046,7 +1111,6 @@
   position={[gridCenterX, 30, gridCenterZ]}
   color="#fff0d0"
 />
-<!-- Secondary fill light from below to soften shadows -->
 <T.HemisphereLight
   intensity={0.3}
   color="#fff8e0"
@@ -1113,6 +1177,7 @@
     facingAngle={FACING_TO_YAW[performer.facing] ?? 0}
     sequenceId={performer.sequenceId}
     autoPlay={performer.autoPlay}
+    showGrid={true}
   />
 {/each}
 

@@ -361,6 +361,15 @@ export function createMuseumState(grid: MuseumGrid) {
 		focusedTriggerId = null;
 	}
 
+	// Update a performer's sequence at runtime (e.g., from the browse overlay).
+	// Replaces the array so Svelte's reactivity picks up the change in
+	// Museum3DScene's {#each grid.performers} loop.
+	function updatePerformerSequence(performerId: string, newSequenceId: string) {
+		grid.performers = grid.performers.map((p) =>
+			p.id === performerId ? { ...p, sequenceId: newSequenceId } : p
+		);
+	}
+
 	return {
 		// Logical tile position (for collision, interaction, wing detection)
 		get playerX() { return logicalX; },
@@ -390,6 +399,9 @@ export function createMuseumState(grid: MuseumGrid) {
 		clearAllDirections,
 		interact,
 		clearFocus,
+
+		// Mutations
+		updatePerformerSequence,
 
 		// Lifecycle (called by game component onMount/onDestroy)
 		start,

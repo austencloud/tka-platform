@@ -2,32 +2,42 @@
   import { getMuseumContext } from "../../state/museum-context";
   import PlaqueView from "./PlaqueView.svelte";
   import SequenceView from "./SequenceView.svelte";
+  import SequenceBrowserOverlay from "$lib/features/realm/destinations/museum/overlay/SequenceBrowserOverlay.svelte";
 
-  const { state } = getMuseumContext();
+  const { state: museum } = getMuseumContext();
+
+  let showSequencePicker = $state(false);
+
+  function handleSequenceSelected(sequenceId: string) {
+    if (museum.focusedPerformerId) {
+      museum.updatePerformerSequence(museum.focusedPerformerId, sequenceId);
+    }
+    showSequencePicker = false;
+  }
 
   // Resolve focused definitions from their IDs
   let focusedExhibit = $derived(
-    state.focusedExhibitId
-      ? state.grid.exhibits.find((e) => e.id === state.focusedExhibitId) ?? null
+    museum.focusedExhibitId
+      ? museum.grid.exhibits.find((e) => e.id === museum.focusedExhibitId) ?? null
       : null
   );
 
   let focusedPerformer = $derived(
-    state.focusedPerformerId
-      ? state.grid.performers.find((p) => p.id === state.focusedPerformerId) ?? null
+    museum.focusedPerformerId
+      ? museum.grid.performers.find((p) => p.id === museum.focusedPerformerId) ?? null
       : null
   );
 
   let focusedTrigger = $derived(
-    state.focusedTriggerId
-      ? state.grid.triggers.find((t) => t.id === state.focusedTriggerId) ?? null
+    museum.focusedTriggerId
+      ? museum.grid.triggers.find((t) => t.id === museum.focusedTriggerId) ?? null
       : null
   );
 
   let hasContent = $derived(!!focusedExhibit || !!focusedPerformer || !!focusedTrigger);
 
   // Current wing for contextual display when nothing is focused
-  let currentWing = $derived(state.currentWing);
+  let currentWing = $derived(museum.currentWing);
 </script>
 
 <div class="detail-panel">
@@ -64,7 +74,16 @@
           <SequenceView sequenceId={focusedPerformer.sequenceId} />
         </div>
       {/if}
+      <button class="change-sequence-btn" onclick={() => (showSequencePicker = true)}>
+        <i class="fas fa-exchange-alt" aria-hidden="true"></i>
+        Change Sequence
+      </button>
     </div>
+    <SequenceBrowserOverlay
+      visible={showSequencePicker}
+      onSelect={handleSequenceSelected}
+      onClose={() => (showSequencePicker = false)}
+    />
   {:else if focusedTrigger}
     <div class="panel-content">
       {#if focusedTrigger.content}
@@ -161,6 +180,28 @@
   .performer-detail.auto-play {
     color: rgba(200, 180, 140, 0.5);
     font-style: italic;
+  }
+
+  .change-sequence-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 10px 16px;
+    background: rgba(140, 200, 140, 0.08);
+    border: 1px solid rgba(140, 200, 140, 0.2);
+    border-radius: 6px;
+    color: rgba(140, 200, 140, 0.7);
+    font-size: var(--font-size-min, 14px);
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+  }
+
+  .change-sequence-btn:hover {
+    background: rgba(140, 200, 140, 0.14);
+    border-color: rgba(140, 200, 140, 0.35);
+    color: rgba(140, 200, 140, 0.9);
   }
 
   .trigger-action {
