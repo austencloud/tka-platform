@@ -2,12 +2,16 @@
   /**
    * Guitar3D Component
    *
-   * Renders a 3D guitar-shaped prop:
-   * - Neck: long thin cylinder (~60% of staffLength, radius ~staffRadius)
-   * - Body: flattened ellipsoid at the pinky end (-Y), scaled x=1.5, y=0.3, z=1
-   * - Headstock: small flat box at the thumb end (+Y)
-   * - Grip at the neck center
+   * Renders a 3D guitar-shaped prop with:
+   * - Flat-backed neck (BoxGeometry, slightly tapered toward headstock)
+   * - Wider headstock at the thumb end (+Y)
+   * - Figure-8 body using two scaled spheres (upper and lower bout)
+   * - Dark sound hole circle on the body face
+   * - Grip ring at the neck center (origin)
    * - Trail indicator sphere for path visualization
+   *
+   * The hand grips at roughly the neck center (origin).
+   * Neck/headstock extend in +Y, body extends in -Y.
    */
 
   import { T } from "@threlte/core";
@@ -51,49 +55,61 @@
     computePropRotation(propState, facingAngle)
   );
 
-  // Neck: ~60% of total length
-  const neckLength = $derived(effectiveLength * 0.6);
-  const neckRadius = $derived(baseRadius);
-  const halfLength = $derived(effectiveLength / 2);
+  // === Neck: 55% of total length, flat-backed box ===
+  const neckLength = $derived(effectiveLength * 0.55);
+  const neckWidthBottom = $derived(baseRadius * 2.2); // wider near body
+  const neckWidthTop = $derived(baseRadius * 1.6); // narrower near headstock
+  const neckDepth = $derived(baseRadius * 1.2); // flat-backed
+  // Neck extends upward from origin
+  const neckCenterY = $derived(neckLength / 2);
 
-  // Body: flattened ellipsoid at the pinky end (-Y)
-  // Base sphere radius is ~20% of staffLength, then scaled to flatten
-  const bodyBaseRadius = $derived(effectiveLength * 0.2);
-  // Position the body center at the bottom of the neck
-  const bodyYOffset = $derived(-halfLength + bodyBaseRadius * 0.3);
-
-  // Headstock: small flat box at thumb end (+Y)
-  const headstockWidth = $derived(baseRadius * 3);
+  // === Headstock: wider flat piece at top of neck ===
+  const headstockWidth = $derived(baseRadius * 3.5);
   const headstockHeight = $derived(effectiveLength * 0.08);
-  const headstockDepth = $derived(baseRadius * 1.5);
-  const headstockYOffset = $derived(halfLength);
+  const headstockDepth = $derived(baseRadius * 1.4);
+  const headstockY = $derived(neckLength + headstockHeight / 2);
 
-  // Grip ring at center of the neck
+  // === Body: figure-8 using two scaled spheres ===
+  const bodyRadius = $derived(effectiveLength * 0.15);
+
+  // Upper bout: smaller sphere, positioned closer to neck
+  const upperBoutY = $derived(-(effectiveLength * 0.15));
+  const upperBoutScaleX = $derived(1.2);
+  const upperBoutScaleY = $derived(0.25);
+  const upperBoutScaleZ = $derived(0.8);
+
+  // Lower bout: larger sphere, positioned further from neck
+  const lowerBoutY = $derived(-(effectiveLength * 0.32));
+  const lowerBoutScaleX = $derived(1.5);
+  const lowerBoutScaleY = $derived(0.25);
+  const lowerBoutScaleZ = $derived(1.0);
+
+  // === Sound hole: dark circle on the body face ===
+  const soundHoleRadius = $derived(bodyRadius * 0.35);
+  const soundHoleY = $derived(-(effectiveLength * 0.24));
+  // Offset slightly forward (+Z) so it sits on the body surface
+  const soundHoleZ = $derived(bodyRadius * lowerBoutScaleZ * 0.95);
+
+  // === Grip ring at origin ===
   const gripOuterRadius = $derived(baseRadius * 1.3);
   const gripTubeRadius = $derived(baseRadius * 0.15);
+
+  // Darker body color for the guitar wood
+  const bodyColor = $derived(palette.dark);
 </script>
 
 {#if visible}
   <T.Group {position} {rotation} layers={propLayer}>
-    <!-- Neck: thin cylinder along Y axis -->
-    <T.Mesh position={[0, halfLength - neckLength / 2, 0]}>
-      <T.CylinderGeometry
-        args={[neckRadius, neckRadius, neckLength, 12, 1]}
+    <!-- Neck: flat-backed box, slightly tapered -->
+    <!-- Using average width since BoxGeometry doesn't taper natively -->
+    <T.Mesh position={[0, neckCenterY, 0]}>
+      <T.BoxGeometry
+        args={[
+          (neckWidthBottom + neckWidthTop) / 2,
+          neckLength,
+          neckDepth,
+        ]}
       />
-      <T.MeshStandardMaterial
-        color={palette.main}
-        roughness={0.3}
-        metalness={0.2}
-      />
-    </T.Mesh>
-
-    <!-- Body: flattened ellipsoid at the pinky end (-Y) -->
-    <!-- Scale x=1.5, y=0.3, z=1 to create a wide, flat guitar body shape -->
-    <T.Mesh
-      position={[0, bodyYOffset, 0]}
-      scale={[1.5, 0.3, 1]}
-    >
-      <T.SphereGeometry args={[bodyBaseRadius, 24, 16]} />
       <T.MeshStandardMaterial
         color={palette.main}
         roughness={0.35}
@@ -101,15 +117,73 @@
       />
     </T.Mesh>
 
-    <!-- Headstock: small flat box at thumb end (+Y) -->
-    <T.Mesh position={[0, headstockYOffset, 0]}>
+    <!-- Fretboard face: slightly darker strip on the neck front -->
+    <T.Mesh
+      position={[0, neckCenterY, neckDepth / 2 + 0.001]}
+    >
+      <T.BoxGeometry
+        args={[
+          (neckWidthBottom + neckWidthTop) / 2 * 0.85,
+          neckLength * 0.95,
+          0.002,
+        ]}
+      />
+      <T.MeshStandardMaterial
+        color={palette.dark}
+        roughness={0.5}
+        metalness={0.1}
+      />
+    </T.Mesh>
+
+    <!-- Headstock: wider flat piece at the top -->
+    <T.Mesh position={[0, headstockY, 0]}>
       <T.BoxGeometry
         args={[headstockWidth, headstockHeight, headstockDepth]}
       />
       <T.MeshStandardMaterial
         color={palette.dark}
-        roughness={0.3}
-        metalness={0.2}
+        roughness={0.4}
+        metalness={0.15}
+      />
+    </T.Mesh>
+
+    <!-- Upper bout: smaller sphere for the figure-8 top half -->
+    <T.Mesh
+      position={[0, upperBoutY, 0]}
+      scale={[upperBoutScaleX, upperBoutScaleY, upperBoutScaleZ]}
+    >
+      <T.SphereGeometry args={[bodyRadius, 24, 16]} />
+      <T.MeshStandardMaterial
+        color={palette.main}
+        roughness={0.35}
+        metalness={0.15}
+      />
+    </T.Mesh>
+
+    <!-- Lower bout: larger sphere for the figure-8 bottom half -->
+    <T.Mesh
+      position={[0, lowerBoutY, 0]}
+      scale={[lowerBoutScaleX, lowerBoutScaleY, lowerBoutScaleZ]}
+    >
+      <T.SphereGeometry args={[bodyRadius, 24, 16]} />
+      <T.MeshStandardMaterial
+        color={palette.main}
+        roughness={0.35}
+        metalness={0.15}
+      />
+    </T.Mesh>
+
+    <!-- Sound hole: dark circle on the body face -->
+    <T.Mesh
+      position={[0, soundHoleY, soundHoleZ]}
+      rotation={[Math.PI / 2, 0, 0]}
+    >
+      <T.CircleGeometry args={[soundHoleRadius, 24]} />
+      <T.MeshStandardMaterial
+        color="#1a1008"
+        roughness={0.9}
+        metalness={0}
+        side={2}
       />
     </T.Mesh>
 

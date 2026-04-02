@@ -56,21 +56,33 @@
 
   // Show ~240° of each torus (4/3 * PI radians), leaving a gap for the woven look
   const thetaLength = (4 / 3) * Math.PI;
-  // Start each arc offset so the gaps interlock
-  const thetaStart = -thetaLength / 2;
 
   // Center hub sphere at the grip point
   const hubRadius = $derived(baseRadius * 1.2);
 
-  // Angular spacing: 120° between each lobe
-  const ARC_ANGLES = [0, (2 * Math.PI) / 3, (4 * Math.PI) / 3];
+  // Offset each lobe center outward by 60% of lobeRadius at 120° intervals in XY plane
+  const lobeOffset = $derived(lobeRadius * 0.6);
+
+  // Three lobes at 120° intervals — positions and rotations computed for XY-plane trefoil
+  const LOBE_CONFIGS = [
+    { angle: 0 },
+    { angle: (2 * Math.PI) / 3 },
+    { angle: (4 * Math.PI) / 3 },
+  ];
 </script>
 
 {#if visible}
   <T.Group {position} {rotation} layers={propLayer}>
-    <!-- Three interlocked partial torus arcs -->
-    {#each ARC_ANGLES as angle}
-      <T.Mesh rotation={[0, angle, 0]}>
+    <!-- Three interlocked partial torus arcs in XY plane -->
+    {#each LOBE_CONFIGS as lobe}
+      <T.Mesh
+        position={[
+          Math.cos(lobe.angle) * lobeOffset,
+          Math.sin(lobe.angle) * lobeOffset,
+          0,
+        ]}
+        rotation={[Math.PI / 2, 0, lobe.angle]}
+      >
         <T.TorusGeometry
           args={[lobeRadius, lobeTubeRadius, 16, 48, thetaLength]}
         />

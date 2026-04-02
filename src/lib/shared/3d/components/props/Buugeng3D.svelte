@@ -3,15 +3,16 @@
    * Buugeng3D Component
    *
    * Renders a 3D buugeng (S-shaped curved staff) with:
-   * - Center straight section at the grip point (~20% of total length)
-   * - Upper arm angled ~30° from center, extending upward-right
-   * - Lower arm mirrored at ~30°, extending downward-left
-   * - Small sphere caps at each arm tip
-   * - Center grip ring (torus, matching Staff3D/Club3D style)
+   * - 5 cylinder segments forming a smooth S-curve
+   * - Center grip at the origin (buugeng are center-gripped)
+   * - Segments progress from ~35° at tips to 0° at center
+   * - Sphere caps at each tip
+   * - White grip ring (torus) at origin
    * - Trail indicator sphere for path visualization
    *
-   * The S-curve is approximated with 3 cylinders. Overall length is ~90%
-   * of staffLength since buugeng are slightly shorter than full staves.
+   * The S-curve uses 5 segments instead of 3 for a smoother shape.
+   * Overall length is ~90% of staffLength since buugeng are slightly
+   * shorter than full staves.
    */
 
   import { T } from "@threlte/core";
@@ -39,7 +40,6 @@
 
   const propLayer = $derived(isActivePlayer ? LAYER_PLAYER_BODY : LAYER_WORLD);
 
-  // Buugeng are ~90% of staff length
   const BUUGENG_LENGTH_RATIO = 0.9;
 
   const effectiveLength = $derived(
@@ -58,33 +58,66 @@
     computePropRotation(propState, facingAngle)
   );
 
-  // Arm thickness is 2x the base staff radius
-  const armRadius = $derived(baseRadius * 2);
+  // Tube radius: 1.8x base staff radius
+  const tubeRadius = $derived(baseRadius * 1.8);
 
-  // Center section: ~20% of total length, sits at the grip point
-  const centerLength = $derived(effectiveLength * 0.2);
+  // Each of the 5 segments is ~18% of total length
+  const segLength = $derived(effectiveLength * 0.18);
 
-  // Each arm: remaining length split between upper and lower
-  // Total arm extent = (effectiveLength - centerLength) / 2
-  const armLength = $derived((effectiveLength - centerLength) / 2);
+  // Angles progress from 0° at center to ~35° at tips.
+  // Segment 3 (center) = 0°, segments 2/4 = 18°, segments 1/5 = 35°
+  const ANGLE_TIP = (35 * Math.PI) / 180;
+  const ANGLE_MID = (18 * Math.PI) / 180;
+  const ANGLE_CENTER = 0;
 
-  // S-curve angle: each arm tilts ~30° from the center axis
-  const ARM_ANGLE = Math.PI / 6; // 30 degrees
+  // Build the upper half of the S-curve (segments 3, 4, 5 going upward).
+  // Each segment's base connects to the previous segment's top.
+  // A cylinder in Three.js is centered on its own origin, aligned along Y.
+  // We compute each segment's center position and Z-rotation so the
+  // chain connects end-to-end with no gaps.
 
-  // Arm offset from center: positioned so the arm base meets the center section ends
-  const armOffsetY = $derived(
-    centerLength / 2 + (armLength / 2) * Math.cos(ARM_ANGLE)
-  );
-  const armOffsetX = $derived((armLength / 2) * Math.sin(ARM_ANGLE));
+  // Segment center (seg 3): straight, centered at origin
+  // Its top end is at (0, segLength/2, 0)
+  const seg3Pos = $derived({ x: 0, y: 0 });
 
-  // Tip positions (end of each arm, for sphere caps)
-  const tipOffsetY = $derived(
-    centerLength / 2 + armLength * Math.cos(ARM_ANGLE)
-  );
-  const tipOffsetX = $derived(armLength * Math.sin(ARM_ANGLE));
+  // Segment 4 (upper mid): angled at ANGLE_MID from vertical
+  // Its bottom end must meet seg3's top end
+  const seg4Pos = $derived.by(() => {
+    const halfPrev = segLength / 2; // top of seg3
+    const halfCurr = segLength / 2;
+    const baseX = 0;
+    const baseY = halfPrev;
+    return {
+      x: baseX + halfCurr * Math.sin(ANGLE_MID),
+      y: baseY + halfCurr * Math.cos(ANGLE_MID),
+    };
+  });
 
-  // Sphere cap radius at arm tips
-  const tipCapRadius = $derived(armRadius * 1.2);
+  // Segment 5 (upper tip): angled at ANGLE_TIP from vertical
+  // Its bottom end must meet seg4's top end
+  const seg5Pos = $derived.by(() => {
+    const seg4TopX = seg4Pos.x + (segLength / 2) * Math.sin(ANGLE_MID);
+    const seg4TopY = seg4Pos.y + (segLength / 2) * Math.cos(ANGLE_MID);
+    const halfCurr = segLength / 2;
+    return {
+      x: seg4TopX + halfCurr * Math.sin(ANGLE_TIP),
+      y: seg4TopY + halfCurr * Math.cos(ANGLE_TIP),
+    };
+  });
+
+  // Tip positions (very end of seg 5, for sphere caps)
+  const upperTip = $derived.by(() => ({
+    x: seg5Pos.x + (segLength / 2) * Math.sin(ANGLE_TIP),
+    y: seg5Pos.y + (segLength / 2) * Math.cos(ANGLE_TIP),
+  }));
+
+  // Lower half mirrors upper half across the origin
+  const seg2Pos = $derived({ x: -seg4Pos.x, y: -seg4Pos.y });
+  const seg1Pos = $derived({ x: -seg5Pos.x, y: -seg5Pos.y });
+  const lowerTip = $derived({ x: -upperTip.x, y: -upperTip.y });
+
+  // Tip cap radius slightly larger than tube
+  const tipCapRadius = $derived(tubeRadius * 1.15);
 
   // Grip ring at center
   const gripOuterRadius = $derived(baseRadius * 1.3);
@@ -93,11 +126,9 @@
 
 {#if visible}
   <T.Group {position} {rotation} layers={propLayer}>
-    <!-- Center straight section at grip point -->
-    <T.Mesh>
-      <T.CylinderGeometry
-        args={[armRadius, armRadius, centerLength, 16, 1]}
-      />
+    <!-- Segment 3: center grip section (straight, 0° angle) -->
+    <T.Mesh position={[seg3Pos.x, seg3Pos.y, 0]}>
+      <T.CylinderGeometry args={[tubeRadius, tubeRadius, segLength, 16, 1]} />
       <T.MeshStandardMaterial
         color={palette.main}
         roughness={0.3}
@@ -105,12 +136,12 @@
       />
     </T.Mesh>
 
-    <!-- Upper arm: angled 30° toward +X, extending in +Y direction -->
+    <!-- Segment 4: upper mid (18° from vertical, curving outward) -->
     <T.Mesh
-      position={[armOffsetX, armOffsetY, 0]}
-      rotation={[0, 0, -ARM_ANGLE]}
+      position={[seg4Pos.x, seg4Pos.y, 0]}
+      rotation={[0, 0, -ANGLE_MID]}
     >
-      <T.CylinderGeometry args={[armRadius, armRadius, armLength, 16, 1]} />
+      <T.CylinderGeometry args={[tubeRadius, tubeRadius, segLength, 16, 1]} />
       <T.MeshStandardMaterial
         color={palette.main}
         roughness={0.3}
@@ -118,12 +149,12 @@
       />
     </T.Mesh>
 
-    <!-- Lower arm: mirrored, angled 30° toward -X, extending in -Y direction -->
+    <!-- Segment 5: upper tip (35° from vertical, most angled) -->
     <T.Mesh
-      position={[-armOffsetX, -armOffsetY, 0]}
-      rotation={[0, 0, -ARM_ANGLE]}
+      position={[seg5Pos.x, seg5Pos.y, 0]}
+      rotation={[0, 0, -ANGLE_TIP]}
     >
-      <T.CylinderGeometry args={[armRadius, armRadius, armLength, 16, 1]} />
+      <T.CylinderGeometry args={[tubeRadius, tubeRadius, segLength, 16, 1]} />
       <T.MeshStandardMaterial
         color={palette.main}
         roughness={0.3}
@@ -131,8 +162,34 @@
       />
     </T.Mesh>
 
-    <!-- Upper arm tip cap -->
-    <T.Mesh position={[tipOffsetX, tipOffsetY, 0]}>
+    <!-- Segment 2: lower mid (mirrors segment 4) -->
+    <T.Mesh
+      position={[seg2Pos.x, seg2Pos.y, 0]}
+      rotation={[0, 0, -ANGLE_MID]}
+    >
+      <T.CylinderGeometry args={[tubeRadius, tubeRadius, segLength, 16, 1]} />
+      <T.MeshStandardMaterial
+        color={palette.main}
+        roughness={0.3}
+        metalness={0.2}
+      />
+    </T.Mesh>
+
+    <!-- Segment 1: lower tip (mirrors segment 5) -->
+    <T.Mesh
+      position={[seg1Pos.x, seg1Pos.y, 0]}
+      rotation={[0, 0, -ANGLE_TIP]}
+    >
+      <T.CylinderGeometry args={[tubeRadius, tubeRadius, segLength, 16, 1]} />
+      <T.MeshStandardMaterial
+        color={palette.main}
+        roughness={0.3}
+        metalness={0.2}
+      />
+    </T.Mesh>
+
+    <!-- Upper tip cap -->
+    <T.Mesh position={[upperTip.x, upperTip.y, 0]}>
       <T.SphereGeometry args={[tipCapRadius, 12, 12]} />
       <T.MeshStandardMaterial
         color={palette.dark}
@@ -141,8 +198,8 @@
       />
     </T.Mesh>
 
-    <!-- Lower arm tip cap -->
-    <T.Mesh position={[-tipOffsetX, -tipOffsetY, 0]}>
+    <!-- Lower tip cap -->
+    <T.Mesh position={[lowerTip.x, lowerTip.y, 0]}>
       <T.SphereGeometry args={[tipCapRadius, 12, 12]} />
       <T.MeshStandardMaterial
         color={palette.dark}
