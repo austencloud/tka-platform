@@ -19,6 +19,7 @@ import type { IAvatarSkeletonBuilder } from "../contracts/IAvatarSkeletonBuilder
 import type { PropState3D } from "../../domain/models/PropState3D";
 import type { IElbowPoleComputer } from "../contracts/IElbowPoleComputer";
 import type { IClavicleRaiser } from "../contracts/IClavicleRaiser";
+import type { ISpineTwister } from "../contracts/ISpineTwister";
 
 /**
  * Default idle pose - arms relaxed at sides
@@ -67,15 +68,32 @@ export class AvatarAnimator implements IAvatarAnimator {
   private leftShoulderRestY = 0;
   private rightShoulderRestY = 0;
   private shoulderRestCached = false;
+  private spineTwister: ISpineTwister | null;
+  private spineTwistQuats = {
+    spine1: new Quaternion(),
+    spine2: new Quaternion(),
+    neck: new Quaternion(),
+    head: new Quaternion(),
+  };
+  private spineTwistRestQuats = {
+    spine1: new Quaternion(),
+    spine2: new Quaternion(),
+    neck: new Quaternion(),
+    head: new Quaternion(),
+  };
+  private _spineTwistEnabled = true;
+  private spineRestCached = false;
 
   constructor(
     private ikSolver: IIKSolver,
     private skeleton: IAvatarSkeletonBuilder,
     poleComputer?: IElbowPoleComputer,
-    clavicleRaiser?: IClavicleRaiser
+    clavicleRaiser?: IClavicleRaiser,
+    spineTwister?: ISpineTwister
   ) {
     this.poleComputer = poleComputer ?? null;
     this.clavicleRaiser = clavicleRaiser ?? null;
+    this.spineTwister = spineTwister ?? null;
     this.idlePose = createIdlePose();
     this.currentPose = { ...this.idlePose };
     this.targetPose = { ...this.idlePose };
@@ -306,6 +324,45 @@ export class AvatarAnimator implements IAvatarAnimator {
       this.shoulderRestCached = true;
     }
 
+    // Cache spine bone rest quaternions once — COMPOSE with these, never replace
+    if (!this.spineRestCached) {
+      const boneNames = ["Spine1", "Spine2", "Neck", "Head"] as const;
+      const keys = ["spine1", "spine2", "neck", "head"] as const;
+      let allFound = true;
+      for (let i = 0; i < boneNames.length; i++) {
+        const bone = state.bones.get(boneNames[i]);
+        if (bone) {
+          this.spineTwistRestQuats[keys[i]].copy(bone.quaternion);
+        } else {
+          allFound = false;
+        }
+      }
+      if (allFound) this.spineRestCached = true;
+    }
+
+    // Spine twist: rotate torso and head toward cross-body hand positions
+    if (this._spineTwistEnabled && this.spineTwister && this.spineRestCached) {
+      const twistResult = this.spineTwister.computeSpineTwist(
+        pose.leftHand.targetPosition,
+        pose.rightHand.targetPosition,
+        bodyCenter
+      );
+
+      const boneNames = ["Spine1", "Spine2", "Neck", "Head"] as const;
+      const keys = ["spine1", "spine2", "neck", "head"] as const;
+      for (let i = 0; i < boneNames.length; i++) {
+        const bone = state.bones.get(boneNames[i]);
+        if (bone) {
+          const key = keys[i];
+          this.spineTwistQuats[key].slerp(twistResult[key], this.smoothingFactor);
+          bone.quaternion
+            .copy(this.spineTwistRestQuats[key])
+            .multiply(this.spineTwistQuats[key]);
+          bone.updateMatrixWorld(true);
+        }
+      }
+    }
+
     if (leftChain) {
       // Clavicle raise: elevate shoulder bone before IK solve
       if (this._clavicleRaiseEnabled && this.clavicleRaiser && this.shoulderRestCached) {
@@ -460,5 +517,17 @@ export class AvatarAnimator implements IAvatarAnimator {
       this.rightClavicleQuat.identity();
     }
     return this._clavicleRaiseEnabled;
+  }
+
+  /** Debug toggle: disable spine twist to compare old vs new torso behavior */
+  toggleSpineTwist(): boolean {
+    this._spineTwistEnabled = !this._spineTwistEnabled;
+    if (!this._spineTwistEnabled) {
+      this.spineTwistQuats.spine1.identity();
+      this.spineTwistQuats.spine2.identity();
+      this.spineTwistQuats.neck.identity();
+      this.spineTwistQuats.head.identity();
+    }
+    return this._spineTwistEnabled;
   }
 }
