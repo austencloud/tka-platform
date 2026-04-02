@@ -94,7 +94,7 @@ describe("ClavicleRaiser", () => {
   });
 
   describe("left vs right: opposite rotation directions", () => {
-    it("same elevation produces opposite Z rotations", () => {
+    it("same elevation produces opposite X-axis rotations", () => {
       const leftQ = raiser.computeClavicleRotation(
         new Vector3(0, shoulderRestY + armLength * 0.6, 0),
         "left", shoulderRestY, armLength
@@ -104,7 +104,8 @@ describe("ClavicleRaiser", () => {
         "right", shoulderRestY, armLength
       );
       expect(angleDegrees(leftQ)).toBeCloseTo(angleDegrees(rightQ), 1);
-      expect(Math.sign(leftQ.z)).not.toBe(Math.sign(rightQ.z));
+      // Rotation around X axis: the X component of the quaternion carries the sign
+      expect(Math.sign(leftQ.x)).not.toBe(Math.sign(rightQ.x));
     });
   });
 
