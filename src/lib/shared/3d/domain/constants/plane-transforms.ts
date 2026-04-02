@@ -64,20 +64,20 @@ export function planeAngleToWorldPosition(
 
   switch (plane) {
     case Plane.WALL:
-      // XY plane: E(0)→+X, N(-π/2)→+Y, S(π/2)→-Y, W(π)→-X
-      // Camera at +Z sees +X as screen right. No mirror needed.
-      return new Vector3(cos_a * radius, -sin_a * radius, 0);
+      // XY plane. Learn camera at -Z: +X = screen LEFT (right-handed).
+      // Negate X so east(0) → -X → screen RIGHT from -Z camera.
+      return new Vector3(-cos_a * radius, -sin_a * radius, 0);
 
     case Plane.WHEEL:
       // YZ plane: X=0, Y=up, Z=toward audience
       return new Vector3(0, -sin_a * radius, -cos_a * radius);
 
     case Plane.FLOOR:
-      // XZ plane: E(0)→+X, N(-π/2)→+Z(forward)
-      return new Vector3(cos_a * radius, 0, sin_a * radius);
+      // Same X negate as wall
+      return new Vector3(-cos_a * radius, 0, sin_a * radius);
 
     default:
-      return new Vector3(cos_a * radius, -sin_a * radius, 0);
+      return new Vector3(-cos_a * radius, -sin_a * radius, 0);
   }
 }
 
@@ -172,10 +172,10 @@ export function calculatePropQuaternion(
   // Start with plane base orientation
   const planeQuat = getPlaneQuaternion(plane);
 
-  // Add staff rotation around the plane's normal
-  // Negate angle to convert from canvas (Y-down clockwise) to Three.js (Y-up counter-clockwise)
+  // Add staff rotation around the plane's normal.
+  // Positive angle because the X-negate in positions flips handedness.
   const normal = getPlaneNormal(plane);
-  const staffQuat = new Quaternion().setFromAxisAngle(normal, -staffAngle);
+  const staffQuat = new Quaternion().setFromAxisAngle(normal, staffAngle);
 
   // Combine: plane orientation first, then staff rotation
   return planeQuat.clone().multiply(staffQuat);
