@@ -29,27 +29,40 @@
 
   onMount(async () => {
     await loadGoogleMapsScript();
-    initializeMap();
+    await initializeMap();
   });
 
   async function loadGoogleMapsScript() {
-    // Check if already loaded
-    if (typeof google !== "undefined" && google.maps) {
+    // Check if already loaded and ready
+    if (typeof google !== "undefined" && google.maps?.Map) {
       return;
     }
 
     return new Promise<void>((resolve, reject) => {
+      // Use the callback approach so we know the API is fully initialized
+      const callbackName = `__googleMapsCallback_${Date.now()}`;
+      (window as any)[callbackName] = () => {
+        delete (window as any)[callbackName];
+        resolve();
+      };
+
       const script = document.createElement("script");
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&v=weekly&libraries=marker&loading=async`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&v=weekly&libraries=marker&callback=${callbackName}`;
       script.async = true;
       script.defer = true;
-      script.onload = () => resolve();
-      script.onerror = () => reject(new Error("Failed to load Google Maps"));
+      script.onerror = () => {
+        delete (window as any)[callbackName];
+        reject(new Error("Failed to load Google Maps"));
+      };
       document.head.appendChild(script);
     });
   }
 
   async function initializeMap() {
+    // Wait for the Maps library to be fully available
+    await google.maps.importLibrary("maps");
+    await google.maps.importLibrary("marker");
+
     // Default center (world view)
     const center = userLocation || { lat: 20, lng: 0 };
     const zoom = userLocation ? 4 : 2;
