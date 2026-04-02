@@ -99,6 +99,7 @@
         }}
         facingAngle={avatarState.facingAngle}
         isMoving={avatarState.isMoving}
+        moveDirection={avatarState.moveDirection ?? { x: 0, z: 1 }}
       />
 
       <!-- Grid plane for reference -->

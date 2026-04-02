@@ -15,10 +15,12 @@ export function createGalleryAvatarState(galleryState: GalleryState): AvatarStat
 	// Movement state
 	let moveInput = $state({ x: 0, z: 0 });
 	let facingAngle = $state(0);
+	let targetFacingAngle = $state(0);
 	let isMoving = $state(false);
 
 	// Movement speed (units per second)
 	const MOVE_SPEED = 5;
+	const ROTATION_SPEED = 12;
 
 	return {
 		get position() {
@@ -31,6 +33,10 @@ export function createGalleryAvatarState(galleryState: GalleryState): AvatarStat
 
 		get isMoving() {
 			return isMoving;
+		},
+
+		get moveDirection() {
+			return moveInput;
 		},
 
 		setMoveInput(input: { x: number; z: number }) {
@@ -64,7 +70,24 @@ export function createGalleryAvatarState(galleryState: GalleryState): AvatarStat
 		},
 
 		setFacingAngle(angle: number) {
+			targetFacingAngle = angle;
+		},
+
+		snapFacingAngle(angle: number) {
 			facingAngle = angle;
+			targetFacingAngle = angle;
+		},
+
+		updateLocomotion(delta: number) {
+			let diff = targetFacingAngle - facingAngle;
+			while (diff > Math.PI) diff -= 2 * Math.PI;
+			while (diff < -Math.PI) diff += 2 * Math.PI;
+			if (Math.abs(diff) < 0.01) {
+				facingAngle = targetFacingAngle;
+			} else {
+				const maxStep = ROTATION_SPEED * delta;
+				facingAngle += Math.sign(diff) * Math.min(Math.abs(diff), maxStep);
+			}
 		},
 	};
 }
