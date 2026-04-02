@@ -26,7 +26,7 @@
   /** R2 CDN base URL for large assets */
   const R2_CDN = "https://pub-f5505ed75927471cb198c54336317370.r2.dev";
 
-  // Load KayKit forest models
+  // Load KayKit forest models from R2 CDN
   const tree1 = useGltf(`${R2_CDN}/models/forest/Tree_1_A_Color1.gltf`);
   const tree2 = useGltf(`${R2_CDN}/models/forest/Tree_2_A_Color1.gltf`);
   const tree3 = useGltf(`${R2_CDN}/models/forest/Tree_3_A_Color1.gltf`);

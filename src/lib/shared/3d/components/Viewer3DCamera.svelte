@@ -193,7 +193,7 @@
     enableDamping
     dampingFactor={0.1}
     minDistance={1}
-    maxDistance={8}
+    maxDistance={25}
     onend={handleEnd}
   />
 </T.PerspectiveCamera>
