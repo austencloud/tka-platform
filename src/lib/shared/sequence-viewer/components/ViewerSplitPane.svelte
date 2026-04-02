@@ -168,18 +168,19 @@
           <span>{playback.animationState.error}</span>
         </div>
       {:else}
-        <!-- Both canvases stay mounted; toggle visibility for instant swap -->
-        {#if renderMode === '3d'}
-          <div class="canvas-layer" style="position:absolute;inset:0;z-index:1;">
-            <Viewer3DCanvas
-              sequenceData={playback.animationState.sequenceData}
-              currentStep={playback.currentStep}
-              isPlaying={playback.isPlaying}
-              bluePropType={propRendering.bluePropType != null ? String(propRendering.bluePropType) : null}
-              redPropType={propRendering.redPropType != null ? String(propRendering.redPropType) : null}
-            />
-          </div>
-        {/if}
+        <!-- Both canvases always mounted for instant swap. 3D overlays 2D when active. -->
+        <div
+          class="canvas-layer"
+          style="position:absolute;inset:0;z-index:{renderMode === '3d' ? 1 : -1};visibility:{renderMode === '3d' ? 'visible' : 'hidden'};"
+        >
+          <Viewer3DCanvas
+            sequenceData={playback.animationState.sequenceData}
+            currentStep={playback.currentStep}
+            isPlaying={playback.isPlaying}
+            bluePropType={propRendering.bluePropType != null ? String(propRendering.bluePropType) : null}
+            redPropType={propRendering.redPropType != null ? String(propRendering.redPropType) : null}
+          />
+        </div>
         <AnimatorCanvas
           sequenceData={playback.animationState.sequenceData}
           currentStep={playback.currentStep}
