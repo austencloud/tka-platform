@@ -12,8 +12,10 @@
   import { Vector3 } from "three";
   import { calculatePropQuaternion } from "../domain/constants/plane-transforms";
   import Avatar3D from "./Avatar3D.svelte";
-  import Staff3D from "./Staff3D.svelte";
+  import Prop3D from "./props/Prop3D.svelte";
   import Grid3D from "./Grid3D.svelte";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+  import { container } from "$lib/shared/di";
   import { userProportionsState } from "../state/user-proportions-state.svelte";
   import { getViewer3DContext } from "../context/viewer-3d-context";
   import { Plane } from "../domain/enums/Plane";
@@ -83,6 +85,24 @@
   const bluePropState = $derived(isMirror ? mirrorPropState(rawRed) : rawBlue);
   const redPropState = $derived(isMirror ? mirrorPropState(rawBlue) : rawRed);
 
+  // Resolve prop type: prefer sequence's intended prop, fall back to settings
+  const bluePropType = $derived.by((): PropType => {
+    if (sequenceData?.intendedProp?.bluePropType) return sequenceData.intendedProp.bluePropType;
+    if (sequenceData?.creatorIntent?.propConfig?.bluePropType) return sequenceData.creatorIntent.propConfig.bluePropType;
+    try {
+      const settings = container.items.settingsState;
+      return (settings as any)?.settings?.bluePropType ?? PropType.STAFF;
+    } catch { return PropType.STAFF; }
+  });
+  const redPropType = $derived.by((): PropType => {
+    if (sequenceData?.intendedProp?.redPropType) return sequenceData.intendedProp.redPropType;
+    if (sequenceData?.creatorIntent?.propConfig?.redPropType) return sequenceData.creatorIntent.propConfig.redPropType;
+    try {
+      const settings = container.items.settingsState;
+      return (settings as any)?.settings?.redPropType ?? PropType.STAFF;
+    } catch { return PropType.STAFF; }
+  });
+
   // Convert string-keyed Set from state into the typed Plane Set that Grid3D expects.
   // The state layer uses Plane enum values as strings so it doesn't need to import
   // the enum — we do the conversion here at the scene boundary.
@@ -127,9 +147,10 @@
   />
 </T.Group>
 
-<!-- Blue staff (renders red in mirror mode so your red = their visual red) -->
+<!-- Blue prop (renders red in mirror mode so your red = their visual red) -->
 {#if bluePropState}
-  <Staff3D
+  <Prop3D
+    propType={isMirror ? redPropType : bluePropType}
     propState={bluePropState}
     color={isMirror ? "red" : "blue"}
     {avatarPosition}
@@ -139,9 +160,10 @@
   />
 {/if}
 
-<!-- Red staff (renders blue in mirror mode) -->
+<!-- Red prop (renders blue in mirror mode) -->
 {#if redPropState}
-  <Staff3D
+  <Prop3D
+    propType={isMirror ? bluePropType : redPropType}
     propState={redPropState}
     color={isMirror ? "blue" : "red"}
     {avatarPosition}

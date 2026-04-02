@@ -145,6 +145,8 @@ export interface AvatarState {
 	position: { x: number; y?: number; z: number };
 	facingAngle: number;
 	isMoving: boolean;
+	/** Raw WASD input: x = strafe (-1 left, +1 right), z = forward/back (-1 back, +1 forward) */
+	moveDirection?: { x: number; z: number };
 	setMoveInput: (input: { x: number; z: number }) => void;
 	updateMovement: (delta: number, cameraAngle: number) => void;
 	/** Set facing angle target (avatar lerps toward it smoothly) */

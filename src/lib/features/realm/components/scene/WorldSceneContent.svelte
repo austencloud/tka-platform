@@ -35,7 +35,8 @@
 
   // Avatar components
   import Avatar3D from "$lib/shared/3d/components/Avatar3D.svelte";
-  import Staff3D from "$lib/shared/3d/components/Staff3D.svelte";
+  import Prop3D from "$lib/shared/3d/components/props/Prop3D.svelte";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import Grid3D from "$lib/shared/3d/components/Grid3D.svelte";
   import { Plane } from "$lib/shared/3d/domain/enums/Plane";
 
@@ -1127,11 +1128,13 @@
     position={playerPosition}
     facingAngle={playerYaw}
     isMoving={avatarState.isMoving}
+    moveDirection={avatarState.moveDirection ?? { x: 0, z: 1 }}
   />
 
-  <!-- Props (staffs) when sequence is loaded -->
+  <!-- Props when sequence is loaded -->
   {#if performerState?.bluePropState}
-    <Staff3D
+    <Prop3D
+      propType={PropType.STAFF}
       propState={performerState.bluePropState}
       color="blue"
       avatarPosition={{ x: playerPosition.x, y: 0, z: playerPosition.z }}
@@ -1141,7 +1144,8 @@
     />
   {/if}
   {#if performerState?.redPropState}
-    <Staff3D
+    <Prop3D
+      propType={PropType.STAFF}
       propState={performerState.redPropState}
       color="red"
       avatarPosition={{ x: playerPosition.x, y: 0, z: playerPosition.z }}

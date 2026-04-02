@@ -10,7 +10,8 @@
 
   import { onMount, onDestroy } from "svelte";
   import Scene3D from "./components/Scene3D.svelte";
-  import Staff3D from "./components/Staff3D.svelte";
+  import Prop3D from "./components/props/Prop3D.svelte";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import Avatar3D from "./components/Avatar3D.svelte";
   import AvatarLabel3D from "./components/AvatarLabel3D.svelte";
   import DraggablePerformer from "./components/DraggablePerformer.svelte";
@@ -566,7 +567,8 @@
               <!-- Props rotate with avatar (pivot at grid center, offset forward from avatar) -->
               <!-- Uses getStaffAvatarPosition to ensure staffs align with grid planes -->
               {#if performer.showBlue && performer.bluePropState}
-                <Staff3D
+                <Prop3D
+                  propType={PropType.STAFF}
                   propState={performer.bluePropState}
                   color="blue"
                   avatarPosition={getStaffAvatarPosition(performer)}
@@ -576,7 +578,8 @@
                 />
               {/if}
               {#if performer.showRed && performer.redPropState}
-                <Staff3D
+                <Prop3D
+                  propType={PropType.STAFF}
                   propState={performer.redPropState}
                   color="red"
                   avatarPosition={getStaffAvatarPosition(performer)}

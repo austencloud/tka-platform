@@ -158,7 +158,10 @@
     z: hmrState?.z ?? 0,
   });
   let playerYaw = $state(hmrState?.yaw ?? 0);
+  let targetPlayerYaw = $state(hmrState?.yaw ?? 0);
   let isMoving = $state(false);
+  let moveDir = $state({ x: 0, z: 0 });
+  const ROTATION_SPEED = 12;
 
   // Flag to indicate we should teleport to HMR position after physics init
   let pendingHMRTeleport = hmrState !== null;
@@ -326,14 +329,33 @@
     get isMoving() {
       return isMoving;
     },
+    get moveDirection() {
+      return moveDir;
+    },
     setMoveInput(input: { x: number; z: number }) {
+      moveDir = input;
       isMoving = input.x !== 0 || input.z !== 0;
     },
     updateMovement(_delta: number, _cameraAngle: number) {
       // Handled by physics provider
     },
     setFacingAngle(angle: number) {
+      targetPlayerYaw = angle;
+    },
+    snapFacingAngle(angle: number) {
       playerYaw = angle;
+      targetPlayerYaw = angle;
+    },
+    updateLocomotion(delta: number) {
+      let diff = targetPlayerYaw - playerYaw;
+      while (diff > Math.PI) diff -= 2 * Math.PI;
+      while (diff < -Math.PI) diff += 2 * Math.PI;
+      if (Math.abs(diff) < 0.01) {
+        playerYaw = targetPlayerYaw;
+      } else {
+        const maxStep = ROTATION_SPEED * delta;
+        playerYaw += Math.sign(diff) * Math.min(Math.abs(diff), maxStep);
+      }
     },
   };
 

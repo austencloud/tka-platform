@@ -4,7 +4,8 @@
   import type { ExhibitSlot } from "../domain/museum-types";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import Avatar3D from "$lib/shared/3d/components/Avatar3D.svelte";
-  import Staff3D from "$lib/shared/3d/components/Staff3D.svelte";
+  import Prop3D from "$lib/shared/3d/components/props/Prop3D.svelte";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { createAvatarInstanceState } from "$lib/shared/3d/state/avatar-instance-state.svelte";
   import { container } from "$lib/shared/di";
 
@@ -81,7 +82,7 @@
     />
 
     {#if performerState.bluePropState}
-      <Staff3D
+      <Prop3D propType={PropType.STAFF}
         propState={performerState.bluePropState}
         color="blue"
         avatarPosition={{ x: slot.position.x, y: slot.position.y + 0.3, z: slot.position.z }}
@@ -91,7 +92,7 @@
       />
     {/if}
     {#if performerState.redPropState}
-      <Staff3D
+      <Prop3D propType={PropType.STAFF}
         propState={performerState.redPropState}
         color="red"
         avatarPosition={{ x: slot.position.x, y: slot.position.y + 0.3, z: slot.position.z }}

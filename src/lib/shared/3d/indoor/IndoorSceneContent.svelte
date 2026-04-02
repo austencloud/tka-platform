@@ -83,10 +83,15 @@
 
   let playerPosition = $state({ x: spawnX, y: spawnY, z: spawnZ });
   let playerYaw = $state(room.spawnFacing);
+  let targetPlayerYaw = $state(room.spawnFacing);
   let isMoving = $state(false);
   let cameraMode = $state(CameraMode.FIRST_PERSON);
+  const ROTATION_SPEED = 12;
 
   const inputCapabilities = getInputCapabilities();
+
+  // Raw WASD input for directional animation blending
+  let moveDir = $state({ x: 0, z: 0 });
 
   // AvatarState adapter — same pattern as WorldScene.svelte
   const avatarState: AvatarState = {
@@ -99,14 +104,33 @@
     get isMoving() {
       return isMoving;
     },
+    get moveDirection() {
+      return moveDir;
+    },
     setMoveInput(input: { x: number; z: number }) {
+      moveDir = input;
       isMoving = input.x !== 0 || input.z !== 0;
     },
     updateMovement(_delta: number, _cameraAngle: number) {
       // Handled by physics provider
     },
     setFacingAngle(angle: number) {
+      targetPlayerYaw = angle;
+    },
+    snapFacingAngle(angle: number) {
       playerYaw = angle;
+      targetPlayerYaw = angle;
+    },
+    updateLocomotion(delta: number) {
+      let diff = targetPlayerYaw - playerYaw;
+      while (diff > Math.PI) diff -= 2 * Math.PI;
+      while (diff < -Math.PI) diff += 2 * Math.PI;
+      if (Math.abs(diff) < 0.01) {
+        playerYaw = targetPlayerYaw;
+      } else {
+        const maxStep = ROTATION_SPEED * delta;
+        playerYaw += Math.sign(diff) * Math.min(Math.abs(diff), maxStep);
+      }
     },
   };
 

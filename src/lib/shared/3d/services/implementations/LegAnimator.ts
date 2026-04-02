@@ -498,6 +498,30 @@ export class LegAnimator implements ILegAnimator {
 
   update(delta: number): void {
     if (!this.mixer) return;
+
+    // Smooth weight blending each frame.
+    // blendTime from config controls how fast we transition (0.2s default).
+    // A higher lerp factor = faster blend. We use an exponential approach
+    // that's framerate-independent: weight += (target - current) * (1 - e^(-speed * dt))
+    const blendSpeed = 1 / Math.max(0.01, this.config.blendTime);
+    const blendFactor = 1 - Math.exp(-blendSpeed * delta);
+
+    if (this.directionalMode) {
+      // Lerp each directional weight toward its target
+      for (const key of Object.keys(this.directions) as DirectionKey[]) {
+        const target = this.targetDirWeights[key];
+        const current = this.currentDirWeights[key];
+        const newWeight = current + (target - current) * blendFactor;
+        this.currentDirWeights[key] = newWeight;
+        this.setActionWeight(key, newWeight);
+      }
+    } else if (this.walkAction) {
+      // Lerp single walk weight
+      this.currentWalkWeight +=
+        (this.targetWalkWeight - this.currentWalkWeight) * blendFactor;
+      this.walkAction.setEffectiveWeight(this.currentWalkWeight);
+    }
+
     this.mixer.update(delta);
   }
 
