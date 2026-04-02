@@ -17,15 +17,13 @@
 
   const viewer3DState = getViewer3DContext();
 
-  // Camera behind the performer (performer's perspective / "Back" preset).
-  // Avatar faces +Z (toward audience), so -Z = behind = seeing the avatar's back.
-  // This matches TKA pictograph notation: red = right, blue = left.
-  // Grid center is at (0, ~1.55, 0.3) — shoulder height (STAGE_LIFT) plus
-  // gridOffset forward. Camera targets this so the grid disc intersection
-  // point is dead-center in the viewport.
-  // Pull back to ~3.0 so the grid appears inset like the 2D canvas (15-20% padding)
-  const defaultPosition = { x: 0, y: 1.85, z: -3.0 };
-  const defaultTarget = { x: 0, y: 1.55, z: 0.3 };
+  // Camera at +Z looking toward -Z. Avatar faces -Z (away from camera).
+  // In Three.js right-handed coords, from +Z looking -Z, +X = screen RIGHT.
+  // This means east (+X) appears on screen right — matching pictograph.
+  // No coordinate mirroring needed anywhere.
+  // Grid center is at (0, ~1.55, -0.3) — gridOffset in -Z (avatar faces -Z).
+  const defaultPosition = { x: 0, y: 1.85, z: 3.0 };
+  const defaultTarget = { x: 0, y: 1.55, z: -0.3 };
 
   // Restore persisted camera position if available
   const persisted = viewer3DState.persistedCamera;
