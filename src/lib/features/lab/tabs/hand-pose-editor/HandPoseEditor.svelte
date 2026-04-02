@@ -1,16 +1,26 @@
 <!--
   HandPoseEditor.svelte — Debug tool for authoring finger grip poses.
-  Camera auto-targets the left hand bone. Staff positioned at hand.
-  Lab tab only.
+  Two-tab layout: Browse (taxonomy gallery) and Edit (sliders).
+  Uses the standard Mixamo avatar with a clipping plane at the wrist
+  to show only the hand. Lab tab only.
 -->
 <script lang="ts">
   import { onMount } from "svelte";
   import { Canvas, T } from "@threlte/core";
   import { OrbitControls } from "@threlte/extras";
-  import { Euler, Quaternion, Vector3, PerspectiveCamera } from "three";
+  import {
+    Euler,
+    Quaternion,
+    Vector3,
+    PerspectiveCamera,
+    Mesh,
+    CylinderGeometry,
+    MeshStandardMaterial,
+  } from "three";
   import type { Bone } from "three";
   import { AvatarSkeletonBuilder } from "$lib/shared/3d/services/implementations/AvatarSkeletonBuilder";
   import { FINGER_BONES, GripType } from "$lib/shared/3d/domain/models/GripPose";
+  import { solveCylinderGrasp } from "$lib/shared/3d/services/implementations/CylinderGraspSolver";
   import { STAFF_GRIP_POSES } from "$lib/shared/3d/data/grip-poses/staff-grip-poses";
   import FingerSliderGroup from "./FingerSliderGroup.svelte";
   import SkeletonUpdater from "./SkeletonUpdater.svelte";
@@ -18,15 +28,16 @@
   import { AVATAR_DEFINITIONS } from "$lib/shared/3d/config/avatar-definitions";
   import { cmToUnits } from "$lib/shared/3d/config/avatar-proportions";
 
+  type TabMode = "browse" | "edit";
   const FINGERS = ["Thumb", "Index", "Middle", "Ring", "Pinky"] as const;
   const SESSION_KEY = "hand-pose-editor";
 
-  // Shape of what we persist to sessionStorage
   interface PersistedState {
     selectedPreset: GripType;
     eulerAngles: { x: number; y: number; z: number }[];
     camera: { x: number; y: number; z: number };
     target: { x: number; y: number; z: number };
+    activeTab: TabMode;
   }
 
   function loadFromSession(): PersistedState | null {
@@ -47,10 +58,16 @@
       const target = controlsRef
         ? { x: controlsRef.target.x, y: controlsRef.target.y, z: controlsRef.target.z }
         : { x: 0, y: 0, z: 0 };
-      const data: PersistedState = { selectedPreset, eulerAngles, camera, target };
+      const data: PersistedState = {
+        selectedPreset,
+        eulerAngles,
+        camera,
+        target,
+        activeTab,
+      };
       sessionStorage.setItem(SESSION_KEY, JSON.stringify(data));
     } catch {
-      // sessionStorage unavailable — silently skip
+      // sessionStorage unavailable
     }
   }
 
@@ -65,15 +82,55 @@
   let hasFingerChains = $state(false);
   let activeTaxonomyPose = $state("");
   let loadError = $state<string | null>(null);
-  // Camera and controls refs — set imperatively after model loads
   let cameraRef: PerspectiveCamera | undefined = $state();
   let controlsRef: any = $state();
+  let activeTab = $state<TabMode>("browse");
 
-  // Staff position at hand
-  let staffPos = $state<[number, number, number]>([0, 1, 0]);
+  // Clipping plane to isolate the hand (normal + constant)
+  let clipNormal = $state<[number, number, number]>([1, 0, 0]);
+  let clipConstant = $state(0);
 
-  // Meshes for SkeletonUpdater (runs inside Canvas context via useTask)
+  // Meshes for SkeletonUpdater
   let skinnedMeshes = $state<any[]>([]);
+
+  // Staff radius (scene units) — the cylinder the hand wraps around
+  const STAFF_RADIUS = 0.008;
+
+  // Grip tightness: 1 = full geometric wrap, lower = more relaxed
+  let gripTightness = $state(1.0);
+
+  // Staff mesh ref so we can update its position/rotation from sliders
+  let staffMesh: Mesh | null = null;
+
+  // Staff offset in hand bone local space — tweakable via Edit tab
+  let staffOffsetX = $state(0.023);
+  let staffOffsetY = $state(0.075);
+  let staffOffsetZ = $state(0.031);
+  let staffRotX = $state(-101 * Math.PI / 180);
+  let staffRotY = $state(17 * Math.PI / 180);
+  let staffRotZ = $state(-87 * Math.PI / 180);
+
+  function attachStaffToHand() {
+    if (!skeleton) return;
+    const leftHand = skeleton.getBone("LeftHand");
+    if (!leftHand) return;
+
+    const staffGeom = new CylinderGeometry(0.008, 0.008, 0.4, 8);
+    const staffMat = new MeshStandardMaterial({ color: 0xaaaaaa });
+    staffMesh = new Mesh(staffGeom, staffMat);
+
+    // Mixamo LeftHand local Y = toward fingertips
+    // Cylinder default axis = Y, so no rotation needed for staff along fingers
+    // Staff across the palm (perpendicular to fingers) needs 90° rotation
+    updateStaffTransform();
+    leftHand.add(staffMesh);
+  }
+
+  function updateStaffTransform() {
+    if (!staffMesh) return;
+    staffMesh.position.set(staffOffsetX, staffOffsetY, staffOffsetZ);
+    staffMesh.rotation.set(staffRotX, staffRotY, staffRotZ);
+  }
 
   function focusCameraOnHand() {
     if (!skeleton) return;
@@ -84,9 +141,6 @@
     const handPos = new Vector3();
     leftHand.getWorldPosition(handPos);
 
-    staffPos = [handPos.x, handPos.y, handPos.z];
-
-    // Point camera at the hand from slightly in front
     if (cameraRef) {
       cameraRef.position.set(handPos.x + 0.1, handPos.y + 0.05, handPos.z + 0.3);
       cameraRef.lookAt(handPos);
@@ -95,6 +149,29 @@
       controlsRef.target.copy(handPos);
       controlsRef.update();
     }
+  }
+
+  function computeClipPlane() {
+    if (!skeleton) return;
+    const foreArm = skeleton.getBone("LeftForeArm");
+    const hand = skeleton.getBone("LeftHand");
+    if (!foreArm || !hand) return;
+
+    skeleton.updateMatrices();
+    const elbowPos = new Vector3();
+    const handPos = new Vector3();
+    foreArm.getWorldPosition(elbowPos);
+    hand.getWorldPosition(handPos);
+
+    // Normal points from elbow toward hand — keeps everything on the hand side
+    const normal = handPos.clone().sub(elbowPos).normalize();
+
+    // Cut just above the wrist: 80% along forearm from elbow to hand
+    const cutPoint = elbowPos.clone().lerp(handPos, 0.8);
+    const constant = -normal.dot(cutPoint);
+
+    clipNormal = [normal.x, normal.y, normal.z];
+    clipConstant = constant;
   }
 
   onMount(async () => {
@@ -119,17 +196,17 @@
         loadError = `Model "${defaultModel.name}" has no finger bones`;
       }
 
-      // Pass meshes to SkeletonUpdater (inside Canvas) for per-frame skeleton updates
       skinnedMeshes = state.meshes;
+      computeClipPlane();
+      attachStaffToHand();
 
       const persisted = loadFromSession();
       if (persisted) {
-        // Restore pose state from last session
         selectedPreset = persisted.selectedPreset;
         eulerAngles = persisted.eulerAngles;
+        activeTab = persisted.activeTab ?? "browse";
         applyToBones();
 
-        // Restore camera after Threlte mounts the scene
         setTimeout(() => {
           if (cameraRef) {
             cameraRef.position.set(persisted.camera.x, persisted.camera.y, persisted.camera.z);
@@ -141,7 +218,6 @@
         }, 100);
       } else {
         loadPreset(GripType.IDLE);
-        // Focus camera after Threlte mounts the scene
         setTimeout(() => focusCameraOnHand(), 100);
       }
     } catch (err) {
@@ -152,7 +228,7 @@
 
   function loadPreset(type: GripType) {
     selectedPreset = type;
-    activeTaxonomyPose = ""; // Clear taxonomy selection
+    activeTaxonomyPose = "";
     const pose = STAFF_GRIP_POSES[type];
 
     eulerAngles = pose.rotations.map(([x, y, z, w]) => {
@@ -195,7 +271,6 @@
       bone.quaternion.setFromEuler(euler);
     }
 
-    // Propagate bone transforms down hierarchy — SkeletonUpdater handles skeleton.update() per frame
     const root = skeleton.getRoot();
     if (root) root.updateMatrixWorld(true);
   }
@@ -212,6 +287,23 @@
         z: Math.round((euler.z * 180) / Math.PI),
       };
     });
+
+    applyToBones();
+    saveToSession();
+  }
+
+  function autoGrasp() {
+    console.log("[HandPoseEditor] autoGrasp called, skeleton:", !!skeleton);
+    if (!skeleton) return;
+    const state = skeleton.getState();
+    console.log("[HandPoseEditor] fingerChains:", !!state.fingerChains, "bones:", state.fingerChains?.left.size);
+    if (!state.fingerChains) return;
+
+    const result = solveCylinderGrasp(state.fingerChains.left, STAFF_RADIUS, gripTightness);
+    console.log("[HandPoseEditor] grasp result:", result.eulerAngles.slice(0, 3));
+    eulerAngles = result.eulerAngles;
+    activeTaxonomyPose = "";
+    selectedPreset = GripType.SQUARE;
 
     applyToBones();
     saveToSession();
@@ -247,10 +339,16 @@
     applyToBones();
     saveToSession();
   }
+
+  function switchTab(tab: TabMode) {
+    activeTab = tab;
+    saveToSession();
+  }
 </script>
 
 <div class="editor-layout">
-  <div class="viewport">
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div class="viewport" onclick={(e) => e.stopPropagation()}>
     <Canvas>
       <T.PerspectiveCamera
         makeDefault
@@ -267,18 +365,17 @@
       <T.AmbientLight intensity={0.6} />
       <T.DirectionalLight position={[2, 3, 1]} intensity={1} />
 
-      <!-- Staff reference cylinder at hand position -->
-      <T.Mesh position={staffPos} rotation={[0, 0, Math.PI / 2]}>
-        <T.CylinderGeometry args={[0.008, 0.008, 0.3, 8]} />
-        <T.MeshStandardMaterial color="#aaaaaa" />
-      </T.Mesh>
-
       {#if cachedRoot}
         <T is={cachedRoot} />
       {/if}
 
       {#if skinnedMeshes.length > 0}
-        <SkeletonUpdater meshes={skinnedMeshes} />
+        <SkeletonUpdater
+          meshes={skinnedMeshes}
+          clipEnabled
+          {clipNormal}
+          {clipConstant}
+        />
       {/if}
     </Canvas>
   </div>
@@ -286,6 +383,7 @@
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
     class="controls"
+    onclick={(e) => e.stopPropagation()}
     onpointerdown={(e) => e.stopPropagation()}
     onpointermove={(e) => e.stopPropagation()}
     onpointerup={(e) => e.stopPropagation()}
@@ -295,45 +393,127 @@
     {:else if !skeleton}
       <div class="status-loading">Loading model...</div>
     {:else}
-      <div class="status-ok">
-        Finger bones: {hasFingerChains ? "found" : "not found"}
+      <!-- Tab bar -->
+      <div class="tab-bar">
+        <button
+          class="tab-btn"
+          class:active={activeTab === "browse"}
+          onclick={() => switchTab("browse")}
+        >
+          Browse
+        </button>
+        <button
+          class="tab-btn"
+          class:active={activeTab === "edit"}
+          onclick={() => switchTab("edit")}
+        >
+          Edit
+        </button>
       </div>
-    {/if}
 
-    <div class="toolbar">
-      <select
-        value={selectedPreset}
-        onchange={(e) => loadPreset(e.currentTarget.value as GripType)}
-      >
-        {#each Object.values(GripType) as type}
-          <option value={type}>{STAFF_GRIP_POSES[type].name}</option>
-        {/each}
-      </select>
+      <!-- Active pose indicator -->
+      {#if activeTaxonomyPose}
+        <div class="active-pose">
+          <span class="active-pose-label">Active:</span>
+          <span class="active-pose-name">{activeTaxonomyPose}</span>
+        </div>
+      {:else}
+        <div class="active-pose">
+          <span class="active-pose-label">Preset:</span>
+          <span class="active-pose-name">{STAFF_GRIP_POSES[selectedPreset].name}</span>
+        </div>
+      {/if}
 
-      <button onclick={copyAsJson}>
-        {copied ? "Copied!" : "Copy JSON"}
-      </button>
-
-      <button onclick={resetAll}>Reset</button>
-    </div>
-
-    <div class="sliders">
-      {#each FINGERS as finger, fi}
-        <FingerSliderGroup
-          fingerName={finger}
-          isThumb={finger === "Thumb"}
-          rotations={eulerAngles.slice(fi * 3, fi * 3 + 3)}
-          onchange={(boneIndex, axis, degrees) =>
-            handleSliderChange(fi, boneIndex, axis, degrees)
-          }
+      <!-- Browse tab: taxonomy gallery fills the panel -->
+      {#if activeTab === "browse"}
+        <TaxonomyGallery
+          activePoseName={activeTaxonomyPose}
+          onselect={loadTaxonomyPose}
         />
-      {/each}
-    </div>
 
-    <TaxonomyGallery
-      activePoseName={activeTaxonomyPose}
-      onselect={loadTaxonomyPose}
-    />
+      <!-- Edit tab: auto grasp + presets + sliders + export -->
+      {:else}
+        <!-- Auto Grasp controls -->
+        <div class="grasp-controls">
+          <button class="grasp-btn" onclick={autoGrasp}>
+            Auto Grasp
+          </button>
+          <label class="tightness-slider">
+            <span>Tightness</span>
+            <input type="range" min="0" max="1" step="0.05"
+              value={gripTightness}
+              oninput={(e) => { gripTightness = Number(e.currentTarget.value); autoGrasp(); }}
+            />
+            <span class="tightness-value">{Math.round(gripTightness * 100)}%</span>
+          </label>
+        </div>
+
+        <div class="toolbar">
+          <select
+            value={selectedPreset}
+            onchange={(e) => loadPreset(e.currentTarget.value as GripType)}
+          >
+            {#each Object.values(GripType) as type}
+              <option value={type}>{STAFF_GRIP_POSES[type].name}</option>
+            {/each}
+          </select>
+
+          <button onclick={copyAsJson}>
+            {copied ? "Copied!" : "Copy JSON"}
+          </button>
+
+          <button onclick={resetAll}>Reset</button>
+        </div>
+
+        <!-- Staff position/rotation controls -->
+        <div class="staff-controls">
+          <div class="section-label">Staff Position (local)</div>
+          {#each [
+            { label: "X", get: () => staffOffsetX, set: (v: number) => { staffOffsetX = v; updateStaffTransform(); } },
+            { label: "Y (fingers)", get: () => staffOffsetY, set: (v: number) => { staffOffsetY = v; updateStaffTransform(); } },
+            { label: "Z", get: () => staffOffsetZ, set: (v: number) => { staffOffsetZ = v; updateStaffTransform(); } },
+          ] as ctrl}
+            <label class="staff-slider">
+              <span class="staff-axis">{ctrl.label}</span>
+              <input type="range" min="-0.1" max="0.1" step="0.001"
+                value={ctrl.get()}
+                oninput={(e) => ctrl.set(Number(e.currentTarget.value))}
+              />
+              <span class="staff-value">{ctrl.get().toFixed(3)}</span>
+            </label>
+          {/each}
+
+          <div class="section-label">Staff Rotation</div>
+          {#each [
+            { label: "Rx", get: () => staffRotX, set: (v: number) => { staffRotX = v; updateStaffTransform(); } },
+            { label: "Ry", get: () => staffRotY, set: (v: number) => { staffRotY = v; updateStaffTransform(); } },
+            { label: "Rz", get: () => staffRotZ, set: (v: number) => { staffRotZ = v; updateStaffTransform(); } },
+          ] as ctrl}
+            <label class="staff-slider">
+              <span class="staff-axis">{ctrl.label}</span>
+              <input type="range" min={-Math.PI} max={Math.PI} step="0.01"
+                value={ctrl.get()}
+                oninput={(e) => ctrl.set(Number(e.currentTarget.value))}
+              />
+              <span class="staff-value">{(ctrl.get() * 180 / Math.PI).toFixed(0)}°</span>
+            </label>
+          {/each}
+        </div>
+
+        <div class="sliders">
+          {#each FINGERS as finger, fi}
+            <FingerSliderGroup
+              fingerName={finger}
+              isThumb={finger === "Thumb"}
+              rotations={eulerAngles.slice(fi * 3, fi * 3 + 3)}
+              onchange={(boneIndex, axis, degrees) =>
+                handleSliderChange(fi, boneIndex, axis, degrees)
+              }
+            />
+          {/each}
+        </div>
+      {/if}
+    {/if}
   </div>
 </div>
 
@@ -346,6 +526,7 @@
   }
 
   .viewport {
+    position: relative;
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
     min-height: 400px;
   }
@@ -358,6 +539,62 @@
     min-width: 0;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border-left: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+  }
+
+  .tab-bar {
+    display: flex;
+    gap: 0;
+    margin-bottom: 10px;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
+  }
+
+  .tab-btn {
+    flex: 1;
+    min-height: 44px;
+    padding: 10px 0;
+    border: none;
+    background: transparent;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
+    font-size: var(--font-size-min, 14px);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .tab-btn:first-child {
+    border-right: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
+  }
+
+  .tab-btn.active {
+    background: rgba(139, 92, 246, 0.15);
+    color: var(--theme-text, #fff);
+  }
+
+  .tab-btn:hover:not(.active) {
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--theme-text, #fff);
+  }
+
+  .active-pose {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 8px;
+    margin-bottom: 10px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.03);
+    font-size: var(--font-size-compact, 12px);
+  }
+
+  .active-pose-label {
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
+  }
+
+  .active-pose-name {
+    color: var(--theme-text, #fff);
+    font-weight: 600;
   }
 
   .toolbar {
@@ -375,6 +612,101 @@
     color: var(--theme-text, #fff);
     font-size: var(--font-size-min, 14px);
     cursor: pointer;
+  }
+
+  .grasp-controls {
+    margin-bottom: 12px;
+    padding: 10px;
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    border-radius: 6px;
+    background: rgba(139, 92, 246, 0.05);
+  }
+
+  .grasp-btn {
+    width: 100%;
+    min-height: 44px;
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid rgba(139, 92, 246, 0.4);
+    background: rgba(139, 92, 246, 0.15);
+    color: var(--theme-text, #fff);
+    font-size: var(--font-size-min, 14px);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    margin-bottom: 8px;
+  }
+
+  .grasp-btn:hover {
+    background: rgba(139, 92, 246, 0.25);
+    border-color: rgba(139, 92, 246, 0.6);
+  }
+
+  .tightness-slider {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+  }
+
+  .tightness-slider input[type="range"] {
+    flex: 1;
+    min-width: 0;
+    height: 4px;
+    accent-color: rgba(139, 92, 246, 0.8);
+  }
+
+  .tightness-value {
+    width: 32px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .staff-controls {
+    margin-bottom: 12px;
+    padding: 8px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 6px;
+  }
+
+  .section-label {
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
+    margin-bottom: 4px;
+    margin-top: 6px;
+  }
+
+  .section-label:first-child {
+    margin-top: 0;
+  }
+
+  .staff-slider {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+  }
+
+  .staff-axis {
+    width: 55px;
+    flex-shrink: 0;
+  }
+
+  .staff-slider input[type="range"] {
+    flex: 1;
+    min-width: 0;
+    height: 4px;
+    accent-color: var(--theme-accent, #8b5cf6);
+  }
+
+  .staff-value {
+    width: 40px;
+    flex-shrink: 0;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
   }
 
   .sliders {
@@ -396,12 +728,5 @@
     margin-bottom: 8px;
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
     font-size: var(--font-size-min, 14px);
-  }
-
-  .status-ok {
-    padding: 8px;
-    margin-bottom: 8px;
-    color: var(--semantic-success, #22c55e);
-    font-size: var(--font-size-compact, 12px);
   }
 </style>
