@@ -64,25 +64,21 @@ export function planeAngleToWorldPosition(
 
   switch (plane) {
     case Plane.WALL:
-      // XY plane, performer's perspective: east = performer's right = -X in world.
-      // Negate X so that from behind the performer (camera at -Z), east appears
-      // on the viewer's right — matching the pictograph notation.
-      // Y inversion: canvas sin (Y-down) becomes -sin (Y-up).
-      return new Vector3(-cos_a * radius, -sin_a * radius, 0);
+      // XY plane: E(0)→+X(right), N(-π/2)→+Y(up), S(π/2)→-Y(down), W(π)→-X(left)
+      // From behind (camera at -Z): +X = screen right = performer's right = east ✓
+      // Y inversion: canvas sin (Y-down) becomes -sin (Y-up)
+      return new Vector3(cos_a * radius, -sin_a * radius, 0);
 
     case Plane.WHEEL:
       // YZ plane: X=0, Y=up, Z=toward audience
-      // E (angle=0) should point toward audience (+Z in our convention)
-      // But we use -Z so E points toward audience when viewed from stage right
       return new Vector3(0, -sin_a * radius, -cos_a * radius);
 
     case Plane.FLOOR:
-      // XZ plane, performer's perspective: east = performer's right = -X.
-      // Same X mirror as wall plane so left/right matches from behind.
-      return new Vector3(-cos_a * radius, 0, sin_a * radius);
+      // XZ plane: E(0)→+X(right), N(-π/2)→+Z(forward)
+      return new Vector3(cos_a * radius, 0, sin_a * radius);
 
     default:
-      return new Vector3(-cos_a * radius, -sin_a * radius, 0);
+      return new Vector3(cos_a * radius, -sin_a * radius, 0);
   }
 }
 
@@ -177,12 +173,10 @@ export function calculatePropQuaternion(
   // Start with plane base orientation
   const planeQuat = getPlaneQuaternion(plane);
 
-  // Add staff rotation around the plane's normal.
-  // The X-axis mirror in planeAngleToWorldPosition (performer's perspective)
-  // flips the coordinate handedness. Using positive staffAngle here compensates,
-  // keeping pro = clockwise and anti = counter-clockwise from the performer's view.
+  // Add staff rotation around the plane's normal
+  // Negate angle to convert from canvas (Y-down) to Three.js (Y-up)
   const normal = getPlaneNormal(plane);
-  const staffQuat = new Quaternion().setFromAxisAngle(normal, staffAngle);
+  const staffQuat = new Quaternion().setFromAxisAngle(normal, -staffAngle);
 
   // Combine: plane orientation first, then staff rotation
   return planeQuat.clone().multiply(staffQuat);
