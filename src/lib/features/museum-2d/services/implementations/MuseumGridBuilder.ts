@@ -271,6 +271,18 @@ export class MuseumGridBuilder implements IMuseumGridBuilder {
 
     for (const placement of room.exhibits) {
       const pos = this.computeWallPosition(room, placement.wall, placement.position);
+
+      // An exhibit needs a wall behind it. At doorway openings the wall is
+      // replaced by corridor tiles, so the plaque would float in mid-air.
+      // Check the tile directly behind the exhibit (one step outside the room).
+      if (!this.hasWallBehind(tiles, pos.x, pos.y, placement.wall)) {
+        // Try shifting along the wall to find a position with a wall behind it
+        const adjusted = this.findWallBackedPosition(tiles, room, placement);
+        if (!adjusted) continue; // entire wall segment is a doorway
+        pos.x = adjusted.x;
+        pos.y = adjusted.y;
+      }
+
       placeTile(tiles, pos.x, pos.y, {
         type: "exhibit-panel",
         refId: placement.refId,
@@ -283,10 +295,79 @@ export class MuseumGridBuilder implements IMuseumGridBuilder {
         id: placement.refId,
         tileX: pos.x,
         tileY: pos.y,
+        size: placement.size,
         sequenceId: content?.sequenceId,
         plaque: content?.plaque,
       });
     }
+  }
+
+  /**
+   * Checks whether there's a wall tile directly behind the given position.
+   * "Behind" means one step outside the room in the direction the wall faces.
+   */
+  private hasWallBehind(
+    tiles: Map<string, MuseumTile>,
+    x: number,
+    y: number,
+    wall: string,
+  ): boolean {
+    // One step outside the room from the wall edge
+    const behindOffsets: Record<string, { dx: number; dy: number }> = {
+      north: { dx: 0, dy: -1 },
+      south: { dx: 0, dy: 1 },
+      east: { dx: 1, dy: 0 },
+      west: { dx: -1, dy: 0 },
+    };
+    const off = behindOffsets[wall];
+    if (!off) return true;
+
+    const behind = tiles.get(tileKey(x + off.dx, y + off.dy));
+    return behind !== undefined && behind.type === "wall";
+  }
+
+  /**
+   * Searches along a wall for the nearest position that has a wall tile
+   * behind it (not a doorway opening). Returns null if no valid position
+   * exists on this wall.
+   */
+  private findWallBackedPosition(
+    tiles: Map<string, MuseumTile>,
+    room: PlacedRoom,
+    placement: ExhibitPlacement,
+  ): { x: number; y: number } | null {
+    const wall = placement.wall;
+    const isHorizontal = wall === "north" || wall === "south";
+
+    // Fixed coordinate (perpendicular to wall)
+    const fixedY = wall === "north" ? room.y : wall === "south" ? room.y + room.h - 1 : 0;
+    const fixedX = wall === "west" ? room.x : wall === "east" ? room.x + room.w - 1 : 0;
+
+    // Range along the wall (skip corners)
+    const start = isHorizontal ? room.x + 1 : room.y + 1;
+    const end = isHorizontal ? room.x + room.w - 2 : room.y + room.h - 2;
+    const idealPos = isHorizontal
+      ? room.x + 1 + Math.floor(placement.position * (room.w - 2))
+      : room.y + 1 + Math.floor(placement.position * (room.h - 2));
+
+    // Search outward from the ideal position
+    for (let offset = 1; offset <= (end - start); offset++) {
+      for (const dir of [1, -1]) {
+        const along = idealPos + offset * dir;
+        if (along < start || along > end) continue;
+
+        const x = isHorizontal ? along : fixedX;
+        const y = isHorizontal ? fixedY : along;
+        const tile = tiles.get(tileKey(x, y));
+
+        // Must be a floor tile with a wall behind it
+        if (tile && tile.type === "floor" && this.hasWallBehind(tiles, x, y, wall)) {
+          return { x, y };
+        }
+      }
+    }
+
+    return null;
   }
 
   /**
@@ -335,6 +416,8 @@ export class MuseumGridBuilder implements IMuseumGridBuilder {
 
     for (const torch of room.torches) {
       const pos = this.computeWallPosition(room, torch.wall, torch.position);
+      // Skip torches at doorway openings (no wall behind to mount on)
+      if (!this.hasWallBehind(tiles, pos.x, pos.y, torch.wall)) continue;
       placeTile(tiles, pos.x, pos.y, { type: "torch" });
     }
   }
@@ -386,21 +469,21 @@ export class MuseumGridBuilder implements IMuseumGridBuilder {
       case "north":
         return {
           x: room.x + 1 + Math.floor(position * interiorW),
-          y: room.y + 1,
+          y: room.y,  // flush against north wall
         };
       case "south":
         return {
           x: room.x + 1 + Math.floor(position * interiorW),
-          y: room.y + room.h - 2,
+          y: room.y + room.h - 1,  // flush against south wall
         };
       case "east":
         return {
-          x: room.x + room.w - 2,
+          x: room.x + room.w - 1,  // flush against east wall
           y: room.y + 1 + Math.floor(position * interiorH),
         };
       case "west":
         return {
-          x: room.x + 1,
+          x: room.x,  // flush against west wall
           y: room.y + 1 + Math.floor(position * interiorH),
         };
       default:

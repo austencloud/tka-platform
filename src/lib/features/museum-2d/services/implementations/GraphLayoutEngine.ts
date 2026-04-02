@@ -157,9 +157,11 @@ export class GraphLayoutEngine implements ILayoutEngine {
       material: room.material,
       theme: room.theme,
       description: room.description,
+      devNotes: room.devNotes,
       exhibits: room.exhibits,
       performers: room.performers,
       torches: room.torches,
+      screens: room.screens,
     };
   }
 
@@ -188,16 +190,6 @@ export class GraphLayoutEngine implements ILayoutEngine {
     }
   }
 
-  /**
-   * Iteratively resolves ALL room overlaps. For each overlapping pair,
-   * pushes the later-placed room (higher index in placement order) away
-   * from the earlier room. Repeats until no overlaps remain or max
-   * iterations hit.
-   *
-   * Unlike per-room nudging, this considers ALL rooms simultaneously,
-   * handling cases where the path folds back and rooms from distant
-   * parts of the chain end up in the same region.
-   */
   /**
    * Iteratively resolves ALL room overlaps by pushing overlapping pairs
    * apart symmetrically (each room moves half the required distance).
