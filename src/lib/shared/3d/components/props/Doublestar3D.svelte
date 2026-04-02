@@ -66,29 +66,75 @@
   // Grip ring at center
   const gripOuterRadius = $derived(baseRadius * 1.3);
   const gripTubeRadius = $derived(baseRadius * 0.15);
+
+  // Star point cones: 4 per ring, pointing outward at 0°, 90°, 180°, 270°
+  const pointHeight = $derived(ringRadius * 0.15);
+  const pointBaseRadius = $derived(ringTubeRadius * 1.5);
+  // Angles around each ring where star points protrude
+  const POINT_ANGLES = [0, Math.PI / 2, Math.PI, (3 * Math.PI) / 2];
 </script>
 
 {#if visible}
   <T.Group {position} {rotation} layers={propLayer}>
     <!-- Upper star ring at +30% along Y -->
-    <T.Mesh position={[0, ringOffset, 0]}>
-      <T.TorusGeometry args={[ringRadius, ringTubeRadius, 16, 24]} />
-      <T.MeshStandardMaterial
-        color={palette.main}
-        roughness={0.3}
-        metalness={0.2}
-      />
-    </T.Mesh>
+    <T.Group position={[0, ringOffset, 0]}>
+      <T.Mesh>
+        <T.TorusGeometry args={[ringRadius, ringTubeRadius, 16, 24]} />
+        <T.MeshStandardMaterial
+          color={palette.main}
+          roughness={0.3}
+          metalness={0.2}
+        />
+      </T.Mesh>
+      <!-- 4 star points protruding outward from the upper ring -->
+      {#each POINT_ANGLES as pAngle}
+        <T.Mesh
+          position={[
+            Math.cos(pAngle) * (ringRadius + pointHeight / 2),
+            0,
+            Math.sin(pAngle) * (ringRadius + pointHeight / 2),
+          ]}
+          rotation={[0, 0, -pAngle + Math.PI / 2]}
+        >
+          <T.ConeGeometry args={[pointBaseRadius, pointHeight, 8]} />
+          <T.MeshStandardMaterial
+            color={palette.main}
+            roughness={0.3}
+            metalness={0.2}
+          />
+        </T.Mesh>
+      {/each}
+    </T.Group>
 
     <!-- Lower star ring at -30% along Y -->
-    <T.Mesh position={[0, -ringOffset, 0]}>
-      <T.TorusGeometry args={[ringRadius, ringTubeRadius, 16, 24]} />
-      <T.MeshStandardMaterial
-        color={palette.main}
-        roughness={0.3}
-        metalness={0.2}
-      />
-    </T.Mesh>
+    <T.Group position={[0, -ringOffset, 0]}>
+      <T.Mesh>
+        <T.TorusGeometry args={[ringRadius, ringTubeRadius, 16, 24]} />
+        <T.MeshStandardMaterial
+          color={palette.main}
+          roughness={0.3}
+          metalness={0.2}
+        />
+      </T.Mesh>
+      <!-- 4 star points protruding outward from the lower ring -->
+      {#each POINT_ANGLES as pAngle}
+        <T.Mesh
+          position={[
+            Math.cos(pAngle) * (ringRadius + pointHeight / 2),
+            0,
+            Math.sin(pAngle) * (ringRadius + pointHeight / 2),
+          ]}
+          rotation={[0, 0, -pAngle + Math.PI / 2]}
+        >
+          <T.ConeGeometry args={[pointBaseRadius, pointHeight, 8]} />
+          <T.MeshStandardMaterial
+            color={palette.main}
+            roughness={0.3}
+            metalness={0.2}
+          />
+        </T.Mesh>
+      {/each}
+    </T.Group>
 
     <!-- Connection bar between the two rings -->
     <T.Mesh>

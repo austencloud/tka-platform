@@ -2,15 +2,11 @@
   /**
    * Sword3D Component
    *
-   * Renders a 3D sword:
-   * - Flat blade (BoxGeometry) with metallic silver finish
-   * - Gold crosspiece/guard at the grip point
-   * - Dark brown handle below the guard
-   * - Gold pommel sphere at the handle end
-   * - Trail indicator sphere for path visualization
+   * Renders a 3D sword with tapered blade, pointed tip, curved crossguard,
+   * leather-wrapped handle, and flattened gold pommel.
    *
-   * The hand grips at the guard, so the group is centered there.
-   * Blade extends in +Y (thumb direction), handle in -Y (pinky direction).
+   * The hand grips at the guard (origin). Blade extends in +Y (thumb direction),
+   * handle and pommel extend in -Y (pinky direction).
    */
 
   import { T } from "@threlte/core";
@@ -44,31 +40,47 @@
     thickness ?? userProportionsState.dimensions.staffRadius * 2
   );
 
-  // Blade: 80% of total length, thin and flat
+  // === Blade: 80% of total length, tapered and flat ===
   const bladeLength = $derived(staffLength * 0.8);
-  const bladeWidth = $derived(staffRadius * 1.5);
-  const bladeDepth = $derived(staffRadius * 0.3);
 
-  // Guard/crosspiece: perpendicular bar at the grip point
-  const guardWidth = $derived(bladeLength * 0.25);
-  const guardHeight = $derived(staffRadius * 3);
-  const guardDepth = $derived(staffRadius * 0.6);
+  // Lower blade section (wider, near guard): 60% of blade length
+  const lowerBladeLength = $derived(bladeLength * 0.6);
+  const lowerBladeWidthBottom = $derived(staffRadius * 1.8); // wide at guard
+  const lowerBladeWidthTop = $derived(staffRadius * 1.2); // narrows toward upper
+  const lowerBladeDepth = $derived(staffRadius * 0.3); // flat cross-section
 
-  // Handle: short cylinder below the guard
-  const handleLength = $derived(staffLength * 0.15);
-  const handleRadius = $derived(staffRadius * 0.8);
+  // Upper blade section (narrower, toward tip): 35% of blade length
+  const upperBladeLength = $derived(bladeLength * 0.35);
+  const upperBladeWidthBottom = $derived(staffRadius * 1.2); // matches lower top
+  const upperBladeWidthTop = $derived(staffRadius * 0.5); // narrow near tip
+  const upperBladeDepth = $derived(staffRadius * 0.25);
 
-  // Pommel: small sphere at the handle end
-  const pommelRadius = $derived(staffRadius * 1.2);
+  // Tip cone: 5% of blade length
+  const tipHeight = $derived(bladeLength * 0.08);
+  const tipBaseWidth = $derived(staffRadius * 0.5);
+  const tipBaseDepth = $derived(staffRadius * 0.2);
 
-  // Blade center offset: blade extends upward from guard
-  const bladeCenterY = $derived(bladeLength / 2);
+  // Blade section Y positions (stacked from guard upward)
+  const lowerBladeCenterY = $derived(lowerBladeLength / 2);
+  const upperBladeCenterY = $derived(
+    lowerBladeLength + upperBladeLength / 2
+  );
+  const tipY = $derived(lowerBladeLength + upperBladeLength + tipHeight / 2);
 
-  // Handle center offset: handle extends downward from guard
+  // === Guard/crossguard: at origin, wider than blade ===
+  const guardWidth = $derived(bladeLength * 0.2);
+  const guardHeight = $derived(staffRadius * 2.5);
+  const guardDepth = $derived(staffRadius * 0.8);
+  const guardRounding = $derived(staffRadius * 0.3);
+
+  // === Handle: 12% of total length, slightly thicker than blade ===
+  const handleLength = $derived(staffLength * 0.12);
+  const handleRadius = $derived(staffRadius * 0.7);
   const handleCenterY = $derived(-(handleLength / 2));
 
-  // Pommel position: below the handle
-  const pommelY = $derived(-(handleLength + pommelRadius * 0.5));
+  // === Pommel: flattened gold sphere at handle bottom ===
+  const pommelRadius = $derived(staffRadius * 1.4);
+  const pommelY = $derived(-(handleLength + pommelRadius * 0.4));
 
   const position = $derived(
     computePropPosition(propState, avatarPosition, facingAngle, gridOffset)
@@ -79,9 +91,11 @@
 
 {#if visible}
   <T.Group {position} {rotation} layers={propLayer} scale={scale}>
-    <!-- Blade: flat box extending upward (+Y = thumb direction) -->
-    <T.Mesh position={[0, bladeCenterY, 0]}>
-      <T.BoxGeometry args={[bladeWidth, bladeLength, bladeDepth]} />
+    <!-- Lower blade: wider section near the guard -->
+    <T.Mesh position={[0, lowerBladeCenterY, 0]}>
+      <T.BoxGeometry
+        args={[lowerBladeWidthBottom, lowerBladeLength, lowerBladeDepth]}
+      />
       <T.MeshStandardMaterial
         color={METAL_COLORS.blade}
         roughness={0.2}
@@ -89,9 +103,11 @@
       />
     </T.Mesh>
 
-    <!-- Blade tip: tapered end at the top of the blade -->
-    <T.Mesh position={[0, bladeLength, 0]}>
-      <T.SphereGeometry args={[bladeWidth * 0.4, 8, 8]} />
+    <!-- Upper blade: narrower section tapering toward tip -->
+    <T.Mesh position={[0, upperBladeCenterY, 0]}>
+      <T.BoxGeometry
+        args={[upperBladeWidthTop, upperBladeLength, upperBladeDepth]}
+      />
       <T.MeshStandardMaterial
         color={METAL_COLORS.blade}
         roughness={0.2}
@@ -99,35 +115,63 @@
       />
     </T.Mesh>
 
-    <!-- Guard/crosspiece: perpendicular bar at center (grip point) -->
+    <!-- Blade tip: pointed cone instead of sphere -->
+    <T.Mesh position={[0, tipY, 0]}>
+      <T.ConeGeometry args={[tipBaseWidth, tipHeight, 4]} />
+      <T.MeshStandardMaterial
+        color={METAL_COLORS.blade}
+        roughness={0.2}
+        metalness={0.7}
+      />
+    </T.Mesh>
+
+    <!-- Guard/crossguard: wide flattened piece at origin -->
     <T.Mesh>
       <T.BoxGeometry args={[guardWidth, guardHeight, guardDepth]} />
       <T.MeshStandardMaterial
         color={METAL_COLORS.guard}
         roughness={0.3}
-        metalness={0.5}
+        metalness={0.6}
       />
     </T.Mesh>
 
-    <!-- Handle: cylinder extending downward from guard -->
+    <!-- Guard end caps: rounded ends of the crossguard -->
+    <T.Mesh position={[guardWidth / 2, 0, 0]}>
+      <T.SphereGeometry args={[guardHeight / 2, 8, 8]} />
+      <T.MeshStandardMaterial
+        color={METAL_COLORS.guard}
+        roughness={0.3}
+        metalness={0.6}
+      />
+    </T.Mesh>
+    <T.Mesh position={[-guardWidth / 2, 0, 0]}>
+      <T.SphereGeometry args={[guardHeight / 2, 8, 8]} />
+      <T.MeshStandardMaterial
+        color={METAL_COLORS.guard}
+        roughness={0.3}
+        metalness={0.6}
+      />
+    </T.Mesh>
+
+    <!-- Handle: leather-wrapped grip cylinder -->
     <T.Mesh position={[0, handleCenterY, 0]}>
       <T.CylinderGeometry
-        args={[handleRadius, handleRadius, handleLength, 12, 1]}
+        args={[handleRadius, handleRadius * 0.9, handleLength, 12, 1]}
       />
       <T.MeshStandardMaterial
         color={METAL_COLORS.grip}
-        roughness={0.7}
-        metalness={0.1}
+        roughness={0.8}
+        metalness={0.05}
       />
     </T.Mesh>
 
-    <!-- Pommel: gold sphere at the handle end -->
-    <T.Mesh position={[0, pommelY, 0]}>
+    <!-- Pommel: flattened gold sphere at the handle end -->
+    <T.Mesh position={[0, pommelY, 0]} scale={[1, 0.6, 1]}>
       <T.SphereGeometry args={[pommelRadius, 12, 12]} />
       <T.MeshStandardMaterial
         color={METAL_COLORS.guard}
         roughness={0.3}
-        metalness={0.5}
+        metalness={0.6}
       />
     </T.Mesh>
   </T.Group>

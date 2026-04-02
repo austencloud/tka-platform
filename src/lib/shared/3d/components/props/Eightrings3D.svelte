@@ -54,8 +54,11 @@
   const ringRadius = $derived(effectiveLength * 0.25);
   const ringTubeRadius = $derived(baseRadius * 0.8);
 
-  // Vertical offset: rings centered at ±25% of total length
-  const ringOffset = $derived(effectiveLength * 0.25);
+  // Reduced offset so rings overlap more at center for a proper figure-8 crossing
+  const ringOffset = $derived(effectiveLength * 0.18);
+
+  // Tilt angle: upper ring tilts forward, lower tilts back (~15°)
+  const ringTilt = 15 * (Math.PI / 180);
 
   // Grip ring at center overlap point (smaller, white)
   const gripOuterRadius = $derived(baseRadius * 1.3);
@@ -64,8 +67,8 @@
 
 {#if visible}
   <T.Group {position} {rotation} layers={propLayer}>
-    <!-- Upper ring (thumb end, +Y) -->
-    <T.Mesh position={[0, ringOffset, 0]}>
+    <!-- Upper ring (thumb end, +Y) — tilted forward for figure-8 crossing -->
+    <T.Mesh position={[0, ringOffset, 0]} rotation={[ringTilt, 0, 0]}>
       <T.TorusGeometry args={[ringRadius, ringTubeRadius, 16, 32]} />
       <T.MeshStandardMaterial
         color={palette.main}
@@ -74,8 +77,8 @@
       />
     </T.Mesh>
 
-    <!-- Lower ring (pinky end, -Y) -->
-    <T.Mesh position={[0, -ringOffset, 0]}>
+    <!-- Lower ring (pinky end, -Y) — tilted backward for figure-8 crossing -->
+    <T.Mesh position={[0, -ringOffset, 0]} rotation={[-ringTilt, 0, 0]}>
       <T.TorusGeometry args={[ringRadius, ringTubeRadius, 16, 32]} />
       <T.MeshStandardMaterial
         color={palette.main}
