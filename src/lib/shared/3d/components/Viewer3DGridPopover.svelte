@@ -97,7 +97,9 @@
       class="grid-popover"
       role="dialog"
       aria-label="Grid plane visibility"
+      tabindex="-1"
       onclick={(e) => e.stopPropagation()}
+      onkeydown={(e) => { if (e.key === 'Escape') open = false; }}
     >
       <!-- Quick actions row -->
       <div class="quick-row">

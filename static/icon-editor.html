@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Inverted Icon Editor</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0e0e14;
+      color: #fff;
+      font-family: system-ui, -apple-system, sans-serif;
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .editor-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      position: relative;
+    }
+
+    .editor-canvas {
+      background: #1a1a24;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      cursor: crosshair;
+      position: relative;
+    }
+
+    .preview-panel {
+      width: 320px;
+      background: #141420;
+      border-left: 1px solid rgba(255,255,255,0.06);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      overflow-y: auto;
+    }
+
+    .preview-panel h3 {
+      font-size: 13px;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .preview-sizes {
+      display: flex;
+      gap: 24px;
+      align-items: flex-end;
+      flex-wrap: wrap;
+    }
+    .preview-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+    .preview-item .label {
+      font-size: 10px;
+      color: #555;
+    }
+
+    .strip-preview {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      padding: 16px 20px;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 10px;
+    }
+    .strip-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+    .strip-item i { font-size: 22px; }
+    .strip-item .sl { font-size: 9px; color: #555; }
+    .strip-item.hl {
+      padding: 6px 8px;
+      border: 1px dashed #eb7d00;
+      border-radius: 6px;
+    }
+
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .control-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .control-row label {
+      font-size: 11px;
+      color: #888;
+      width: 100px;
+    }
+    .control-row input[type="range"] {
+      flex: 1;
+      accent-color: #eb7d00;
+    }
+    .control-row .val {
+      font-size: 11px;
+      color: #eb7d00;
+      width: 36px;
+      text-align: right;
+    }
+
+    button {
+      padding: 10px 16px;
+      background: rgba(235, 125, 0, 0.15);
+      border: 1px solid rgba(235, 125, 0, 0.4);
+      color: #eb7d00;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    button:hover {
+      background: rgba(235, 125, 0, 0.25);
+    }
+
+    .svg-output {
+      background: #0a0a12;
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 8px;
+      padding: 12px;
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      font-size: 10px;
+      color: #888;
+      white-space: pre-wrap;
+      word-break: break-all;
+      max-height: 120px;
+      overflow-y: auto;
+    }
+
+    .point-label {
+      font-size: 10px;
+      fill: #666;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .help-text {
+      font-size: 11px;
+      color: #444;
+      line-height: 1.5;
+    }
+
+    .color-info {
+      display: flex; gap: 12px; align-items: center;
+    }
+    .color-swatch {
+      width: 20px; height: 20px; border-radius: 4px;
+    }
+    .color-label { font-size: 11px; color: #888; }
+
+    .toggle-row {
+      display: flex; gap: 12px; align-items: center;
+    }
+    .toggle-btn {
+      padding: 6px 12px;
+      font-size: 11px;
+    }
+    .toggle-btn.active {
+      background: rgba(235, 125, 0, 0.3);
+      border-color: #eb7d00;
+    }
+  </style>
+</head>
+<body>
+
+<div class="editor-panel">
+  <svg id="editor" class="editor-canvas" width="600" height="400" viewBox="0 0 520 320">
+    <!-- Grid -->
+    <line x1="260" y1="0" x2="260" y2="320" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+    <line x1="0" y1="160" x2="520" y2="320" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+    <!-- Center marker -->
+    <circle cx="260" cy="160" r="4" fill="rgba(255,255,255,0.1)"/>
+
+    <!-- Arrow 1 path -->
+    <path id="path1" fill="none" stroke="#eb7d00" stroke-width="20" stroke-linecap="round"/>
+    <!-- Arrow 2 path -->
+    <path id="path2" fill="none" stroke="#eb7d00" stroke-width="20" stroke-linecap="round"/>
+
+    <!-- Arrowhead 1 (down) -->
+    <polygon id="arrow1" fill="#eb7d00"/>
+    <!-- Arrowhead 2 (up) -->
+    <polygon id="arrow2" fill="#eb7d00"/>
+
+    <!-- Control point handles (drawn by JS) -->
+    <g id="handles"></g>
+  </svg>
+</div>
+
+<div class="preview-panel">
+  <h3>Live Preview</h3>
+
+  <div class="preview-sizes">
+    <div class="preview-item">
+      <svg id="prev-64" width="64" height="40" viewBox="0 0 520 320"></svg>
+      <div class="label">64px</div>
+    </div>
+    <div class="preview-item">
+      <svg id="prev-36" width="36" height="23" viewBox="0 0 520 320"></svg>
+      <div class="label">36px</div>
+    </div>
+    <div class="preview-item">
+      <svg id="prev-28" width="28" height="18" viewBox="0 0 520 320"></svg>
+      <div class="label">28px</div>
+    </div>
+    <div class="preview-item">
+      <svg id="prev-20" width="20" height="13" viewBox="0 0 520 320"></svg>
+      <div class="label">20px</div>
+    </div>
+    <div class="preview-item">
+      <svg id="prev-16" width="16" height="10" viewBox="0 0 520 320"></svg>
+      <div class="label">16px</div>
+    </div>
+  </div>
+
+  <h3>Icon Strip</h3>
+  <div class="strip-preview">
+    <div class="strip-item"><i class="fas fa-rotate" style="color:#36c3ff"></i><div class="sl">rotated</div></div>
+    <div class="strip-item"><i class="fas fa-left-right" style="color:#6F2DA8"></i><div class="sl">mirrored</div></div>
+    <div class="strip-item"><i class="fas fa-up-down" style="color:#e91e63"></i><div class="sl">flipped</div></div>
+    <div class="strip-item"><i class="fas fa-shuffle" style="color:#26e600"></i><div class="sl">swapped</div></div>
+    <div class="strip-item hl">
+      <svg id="prev-strip" width="22" height="14" viewBox="0 0 520 320"></svg>
+      <div class="sl">inverted</div>
+    </div>
+    <div class="strip-item"><i class="fas fa-backward" style="color:#00bcd4"></i><div class="sl">rewound</div></div>
+  </div>
+
+  <h3>Stroke</h3>
+  <div class="controls">
+    <div class="control-row">
+      <label>Stroke width</label>
+      <input type="range" id="strokeWidth" min="10" max="40" value="20">
+      <span class="val" id="strokeWidthVal">20</span>
+    </div>
+    <div class="control-row">
+      <label>Arrow size</label>
+      <input type="range" id="arrowSize" min="10" max="50" value="28">
+      <span class="val" id="arrowSizeVal">28</span>
+    </div>
+    <div class="control-row">
+      <label>Arrow gap</label>
+      <input type="range" id="arrowGap" min="5" max="60" value="25">
+      <span class="val" id="arrowGapVal">25</span>
+    </div>
+    <div class="control-row">
+      <label>Start offset</label>
+      <input type="range" id="startOffset" min="0" max="30" value="12">
+      <span class="val" id="startOffsetVal">12</span>
+    </div>
+  </div>
+
+  <h3>Actions</h3>
+  <div class="toggle-row">
+    <button id="showHandles" class="toggle-btn active" onclick="toggleHandles()">Show Handles</button>
+    <button onclick="saveState(); resetPoints()">Reset</button>
+    <button onclick="undo()" title="Ctrl+Z">Undo</button>
+  </div>
+  <div class="help-text" style="margin-top:-12px">Ctrl+Z to undo. History: <span id="histCount">0</span> states</div>
+  <button onclick="copySVG()">Copy Stroked SVG</button>
+  <button onclick="generateFilledPath();" style="background:rgba(100,200,100,0.15); border-color:rgba(100,200,100,0.4); color:#6c6;">Generate Filled FA-Style Path</button>
+  <button onclick="copyFilledSVG();" style="background:rgba(100,200,100,0.15); border-color:rgba(100,200,100,0.4); color:#6c6;">Copy Filled SVG</button>
+
+  <h3>Filled Preview (FA-Style)</h3>
+  <div style="display:flex; gap:24px; align-items:center; flex-wrap:wrap;">
+    <div class="preview-item">
+      <svg id="filled-64" width="80" height="50" viewBox="0 0 520 320"></svg>
+      <div class="label">64px filled</div>
+    </div>
+    <div class="preview-item">
+      <svg id="filled-28" width="28" height="18" viewBox="0 0 520 320"></svg>
+      <div class="label">28px</div>
+    </div>
+    <div class="preview-item">
+      <svg id="filled-20" width="20" height="13" viewBox="0 0 520 320"></svg>
+      <div class="label">20px</div>
+    </div>
+  </div>
+
+  <h3>Filled in Strip</h3>
+  <div class="strip-preview" id="filledStrip">
+    <div class="strip-item"><i class="fas fa-rotate" style="color:#36c3ff"></i><div class="sl">rotated</div></div>
+    <div class="strip-item"><i class="fas fa-left-right" style="color:#6F2DA8"></i><div class="sl">mirrored</div></div>
+    <div class="strip-item"><i class="fas fa-up-down" style="color:#e91e63"></i><div class="sl">flipped</div></div>
+    <div class="strip-item"><i class="fas fa-shuffle" style="color:#26e600"></i><div class="sl">swapped</div></div>
+    <div class="strip-item hl">
+      <svg id="filled-strip" width="22" height="14" viewBox="0 0 520 320"></svg>
+      <div class="sl">inverted</div>
+    </div>
+    <div class="strip-item"><i class="fas fa-backward" style="color:#00bcd4"></i><div class="sl">rewound</div></div>
+  </div>
+
+  <h3>SVG Output</h3>
+  <div class="svg-output" id="svgOutput"></div>
+
+  <div class="help-text">
+    Drag the colored dots to reshape the curves.<br>
+    <span style="color:#eb7d00">Orange</span> = endpoints,
+    <span style="color:#4af">Blue</span> = control points for arrow 1,
+    <span style="color:#f4a">Pink</span> = control points for arrow 2.<br>
+    Ctrl+Z to undo. The <span style="color:#6c6">green buttons</span> convert your stroked curves into solid filled shapes matching Font Awesome's style.
+  </div>
+</div>
+
+<script>
+// Points for the two cubic bezier paths
+// Arrow 1: M start1 C cp1a cp1b end1(=cross) ... we'll use two cubics
+// Path 1: start -> left loop bottom -> center crossing -> right loop top -> end (pointing down)
+// Path 2: start -> left loop top -> center crossing -> right loop bottom -> end (pointing up)
+
+// Each path is TWO cubic beziers joined at center
+// Arrow 1: M s1 C c1a c1b center C c1c c1d e1
+// Arrow 2: M s2 C c2a c2b center C c2c c2d e2
+
+let points = {
+  // Arrow 1: goes down-left, crosses center going up-right, ends right going down
+  s1:  { x: 60, y: 148 },   // start (left, slightly above center)
+  c1a: { x: 50, y: 280 },   // control: pulls down-left
+  c1b: { x: 170, y: 290 },  // control: bottom of left loop
+  // center crossing point is shared
+  cx:  { x: 260, y: 160 },  // center
+  c1c: { x: 350, y: 30 },   // control: top of right loop
+  c1d: { x: 470, y: 50 },   // control: pulls toward top-right
+  e1:  { x: 460, y: 160 },  // end (right side, at center height — arrow points down from here)
+
+  // Arrow 2: goes up-left, crosses center going down-right, ends right going up
+  s2:  { x: 60, y: 172 },   // start (left, slightly below center)
+  c2a: { x: 50, y: 40 },    // control: pulls up-left
+  c2b: { x: 170, y: 30 },   // control: top of left loop
+  // shares cx for center
+  c2c: { x: 350, y: 290 },  // control: bottom of right loop
+  c2d: { x: 470, y: 270 },  // control: pulls toward bottom-right
+  e2:  { x: 460, y: 160 },  // end (right side, at center height — arrow points up from here)
+};
+
+let handlesVisible = true;
+let dragging = null;
+let dragOffset = { x: 0, y: 0 };
+
+// Undo history
+const history = [];
+const MAX_HISTORY = 100;
+
+function saveState() {
+  history.push(JSON.parse(JSON.stringify(points)));
+  if (history.length > MAX_HISTORY) history.shift();
+}
+
+function undo() {
+  if (history.length === 0) return;
+  points = history.pop();
+  render();
+}
+
+// Ctrl+Z / Cmd+Z
+document.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+    e.preventDefault();
+    undo();
+  }
+});
+
+const svg = document.getElementById('editor');
+const svgNS = "http://www.w3.org/2000/svg";
+
+function getStrokeWidth() { return +document.getElementById('strokeWidth').value; }
+function getArrowSize() { return +document.getElementById('arrowSize').value; }
+function getArrowGap() { return +document.getElementById('arrowGap').value; }
+function getStartOffset() { return +document.getElementById('startOffset').value; }
+
+function buildPath1() {
+  const p = points;
+  return `M ${p.s1.x},${p.s1.y} C ${p.c1a.x},${p.c1a.y} ${p.c1b.x},${p.c1b.y} ${p.cx.x},${p.cx.y} C ${p.c1c.x},${p.c1c.y} ${p.c1d.x},${p.c1d.y} ${p.e1.x},${p.e1.y}`;
+}
+
+function buildPath2() {
+  const p = points;
+  return `M ${p.s2.x},${p.s2.y} C ${p.c2a.x},${p.c2a.y} ${p.c2b.x},${p.c2b.y} ${p.cx.x},${p.cx.y} C ${p.c2c.x},${p.c2c.y} ${p.c2d.x},${p.c2d.y} ${p.e2.x},${p.e2.y}`;
+}
+
+function render() {
+  const sw = getStrokeWidth();
+  const as = getArrowSize();
+  const gap = getArrowGap();
+
+  // Main paths
+  document.getElementById('path1').setAttribute('d', buildPath1());
+  document.getElementById('path1').setAttribute('stroke-width', sw);
+  document.getElementById('path2').setAttribute('d', buildPath2());
+  document.getElementById('path2').setAttribute('stroke-width', sw);
+
+  // Arrowheads: arrow1 points DOWN from e1, arrow2 points UP from e2
+  const a1x = points.e1.x;
+  const a1y = points.e1.y + gap / 2;
+  document.getElementById('arrow1').setAttribute('points',
+    `${a1x - as/2},${a1y} ${a1x},${a1y + as} ${a1x + as/2},${a1y}`
+  );
+
+  const a2x = points.e2.x;
+  const a2y = points.e2.y - gap / 2;
+  document.getElementById('arrow2').setAttribute('points',
+    `${a2x - as/2},${a2y} ${a2x},${a2y - as} ${a2x + as/2},${a2y}`
+  );
+
+  // Handles
+  renderHandles();
+
+  // Previews
+  renderPreviews(sw, as, gap);
+
+  // SVG output
+  updateOutput(sw, as, gap);
+
+  // Slider values
+  document.getElementById('strokeWidthVal').textContent = sw;
+  document.getElementById('arrowSizeVal').textContent = as;
+  document.getElementById('arrowGapVal').textContent = gap;
+  document.getElementById('startOffsetVal').textContent = getStartOffset();
+  const hc = document.getElementById('histCount');
+  if (hc) hc.textContent = history.length;
+}
+
+function renderHandles() {
+  const g = document.getElementById('handles');
+  g.innerHTML = '';
+  if (!handlesVisible) return;
+
+  const pointDefs = [
+    // Arrow 1 points
+    { key: 's1', color: '#eb7d00', r: 7, label: 'S1' },
+    { key: 'c1a', color: '#4af', r: 6, label: 'C1a' },
+    { key: 'c1b', color: '#4af', r: 6, label: 'C1b' },
+    { key: 'cx', color: '#fff', r: 8, label: 'CX' },
+    { key: 'c1c', color: '#4af', r: 6, label: 'C1c' },
+    { key: 'c1d', color: '#4af', r: 6, label: 'C1d' },
+    { key: 'e1', color: '#eb7d00', r: 7, label: 'E1' },
+    // Arrow 2 points
+    { key: 's2', color: '#eb7d00', r: 7, label: 'S2' },
+    { key: 'c2a', color: '#f4a', r: 6, label: 'C2a' },
+    { key: 'c2b', color: '#f4a', r: 6, label: 'C2b' },
+    { key: 'c2c', color: '#f4a', r: 6, label: 'C2c' },
+    { key: 'c2d', color: '#f4a', r: 6, label: 'C2d' },
+    { key: 'e2', color: '#eb7d00', r: 7, label: 'E2' },
+  ];
+
+  // Draw control lines
+  const lines = [
+    ['s1', 'c1a', '#4af'], ['c1b', 'cx', '#4af'],
+    ['cx', 'c1c', '#4af'], ['c1d', 'e1', '#4af'],
+    ['s2', 'c2a', '#f4a'], ['c2b', 'cx', '#f4a'],
+    ['cx', 'c2c', '#f4a'], ['c2d', 'e2', '#f4a'],
+  ];
+  for (const [a, b, color] of lines) {
+    const line = document.createElementNS(svgNS, 'line');
+    line.setAttribute('x1', points[a].x);
+    line.setAttribute('y1', points[a].y);
+    line.setAttribute('x2', points[b].x);
+    line.setAttribute('y2', points[b].y);
+    line.setAttribute('stroke', color);
+    line.setAttribute('stroke-width', '1');
+    line.setAttribute('stroke-dasharray', '4,4');
+    line.setAttribute('opacity', '0.4');
+    g.appendChild(line);
+  }
+
+  // Draw points
+  for (const def of pointDefs) {
+    const p = points[def.key];
+    const circle = document.createElementNS(svgNS, 'circle');
+    circle.setAttribute('cx', p.x);
+    circle.setAttribute('cy', p.y);
+    circle.setAttribute('r', def.r);
+    circle.setAttribute('fill', def.color);
+    circle.setAttribute('stroke', '#fff');
+    circle.setAttribute('stroke-width', '1.5');
+    circle.setAttribute('cursor', 'grab');
+    circle.setAttribute('data-key', def.key);
+    circle.style.filter = 'drop-shadow(0 0 3px rgba(0,0,0,0.5))';
+    g.appendChild(circle);
+
+    const text = document.createElementNS(svgNS, 'text');
+    text.setAttribute('x', p.x + 10);
+    text.setAttribute('y', p.y - 10);
+    text.setAttribute('class', 'point-label');
+    text.textContent = def.label;
+    g.appendChild(text);
+  }
+}
+
+function renderPreviews(sw, as, gap) {
+  const previewIds = ['prev-64', 'prev-36', 'prev-28', 'prev-20', 'prev-16', 'prev-strip'];
+  const heavySw = Math.max(sw, 28);
+
+  for (const id of previewIds) {
+    const el = document.getElementById(id);
+    const isSmall = id === 'prev-20' || id === 'prev-16' || id === 'prev-strip';
+    const useSw = isSmall ? heavySw + 12 : heavySw;
+    const useAs = isSmall ? as + 10 : as;
+
+    const a1x = points.e1.x;
+    const a1y = points.e1.y + gap / 2;
+    const a2x = points.e2.x;
+    const a2y = points.e2.y - gap / 2;
+
+    el.innerHTML = `
+      <path d="${buildPath1()}" fill="none" stroke="#eb7d00" stroke-width="${useSw}" stroke-linecap="round"/>
+      <path d="${buildPath2()}" fill="none" stroke="#eb7d00" stroke-width="${useSw}" stroke-linecap="round"/>
+      <polygon points="${a1x - useAs/2},${a1y} ${a1x},${a1y + useAs} ${a1x + useAs/2},${a1y}" fill="#eb7d00"/>
+      <polygon points="${a2x - useAs/2},${a2y} ${a2x},${a2y - useAs} ${a2x + useAs/2},${a2y}" fill="#eb7d00"/>
+    `;
+  }
+}
+
+function updateOutput(sw, as, gap) {
+  const a1x = points.e1.x;
+  const a1y = points.e1.y + gap / 2;
+  const a2x = points.e2.x;
+  const a2y = points.e2.y - gap / 2;
+
+  const output = `<!-- Arrow 1: left-down, cross, right-up, end pointing down -->
+<path d="${buildPath1()}" fill="none" stroke="#eb7d00" stroke-width="${sw}" stroke-linecap="round"/>
+<!-- Arrowhead 1: down -->
+<polygon points="${a1x - as/2},${a1y} ${a1x},${a1y + as} ${a1x + as/2},${a1y}" fill="#eb7d00"/>
+
+<!-- Arrow 2: left-up, cross, right-down, end pointing up -->
+<path d="${buildPath2()}" fill="none" stroke="#eb7d00" stroke-width="${sw}" stroke-linecap="round"/>
+<!-- Arrowhead 2: up -->
+<polygon points="${a2x - as/2},${a2y} ${a2x},${a2y - as} ${a2x + as/2},${a2y}" fill="#eb7d00"/>`;
+
+  document.getElementById('svgOutput').textContent = output;
+}
+
+function copySVG() {
+  const text = document.getElementById('svgOutput').textContent;
+  navigator.clipboard.writeText(text);
+}
+
+function copyFullSVG() {
+  const sw = getStrokeWidth();
+  const as = getArrowSize();
+  const gap = getArrowGap();
+  const a1x = points.e1.x;
+  const a1y = points.e1.y + gap / 2;
+  const a2x = points.e2.x;
+  const a2y = points.e2.y - gap / 2;
+
+  const full = `<svg viewBox="0 0 520 320" xmlns="http://www.w3.org/2000/svg">
+  <path d="${buildPath1()}" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round"/>
+  <polygon points="${a1x - as/2},${a1y} ${a1x},${a1y + as} ${a1x + as/2},${a1y}" fill="currentColor"/>
+  <path d="${buildPath2()}" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round"/>
+  <polygon points="${a2x - as/2},${a2y} ${a2x},${a2y - as} ${a2x + as/2},${a2y}" fill="currentColor"/>
+</svg>`;
+  navigator.clipboard.writeText(full);
+}
+
+function toggleHandles() {
+  handlesVisible = !handlesVisible;
+  const btn = document.getElementById('showHandles');
+  btn.classList.toggle('active', handlesVisible);
+  render();
+}
+
+function resetPoints() {
+  points = {
+    s1:  { x: 60, y: 148 },
+    c1a: { x: 50, y: 280 },
+    c1b: { x: 170, y: 290 },
+    cx:  { x: 260, y: 160 },
+    c1c: { x: 350, y: 30 },
+    c1d: { x: 470, y: 50 },
+    e1:  { x: 460, y: 160 },
+    s2:  { x: 60, y: 172 },
+    c2a: { x: 50, y: 40 },
+    c2b: { x: 170, y: 30 },
+    c2c: { x: 350, y: 290 },
+    c2d: { x: 470, y: 270 },
+    e2:  { x: 460, y: 160 },
+  };
+  render();
+}
+
+// Drag handling
+function svgPoint(evt) {
+  const rect = svg.getBoundingClientRect();
+  const scaleX = 520 / rect.width;
+  const scaleY = 320 / rect.height;
+  return {
+    x: (evt.clientX - rect.left) * scaleX,
+    y: (evt.clientY - rect.top) * scaleY,
+  };
+}
+
+svg.addEventListener('pointerdown', (e) => {
+  const target = e.target;
+  if (target.tagName === 'circle' && target.dataset.key) {
+    saveState(); // Save before drag starts
+    dragging = target.dataset.key;
+    const sp = svgPoint(e);
+    dragOffset.x = points[dragging].x - sp.x;
+    dragOffset.y = points[dragging].y - sp.y;
+    target.style.cursor = 'grabbing';
+    svg.setPointerCapture(e.pointerId);
+    e.preventDefault();
+  }
+});
+
+svg.addEventListener('pointermove', (e) => {
+  if (!dragging) return;
+  const sp = svgPoint(e);
+  points[dragging].x = Math.round(sp.x + dragOffset.x);
+  points[dragging].y = Math.round(sp.y + dragOffset.y);
+  render();
+});
+
+svg.addEventListener('pointerup', () => {
+  dragging = null;
+});
+
+// Slider listeners
+for (const id of ['strokeWidth', 'arrowSize', 'arrowGap', 'startOffset']) {
+  document.getElementById(id).addEventListener('input', render);
+}
+
+// ============================================
+// FILLED PATH GENERATION (FA-style solid icons)
+// ============================================
+// Converts stroked bezier curves into filled outlines
+// by sampling points, computing normals, and offsetting.
+
+let lastFilledPaths = { arrow1: '', arrow2: '' };
+
+function cubicBezier(t, p0, p1, p2, p3) {
+  const mt = 1 - t;
+  return {
+    x: mt*mt*mt*p0.x + 3*mt*mt*t*p1.x + 3*mt*t*t*p2.x + t*t*t*p3.x,
+    y: mt*mt*mt*p0.y + 3*mt*mt*t*p1.y + 3*mt*t*t*p2.y + t*t*t*p3.y,
+  };
+}
+
+function cubicBezierTangent(t, p0, p1, p2, p3) {
+  const mt = 1 - t;
+  return {
+    x: 3*mt*mt*(p1.x-p0.x) + 6*mt*t*(p2.x-p1.x) + 3*t*t*(p3.x-p2.x),
+    y: 3*mt*mt*(p1.y-p0.y) + 6*mt*t*(p2.y-p1.y) + 3*t*t*(p3.y-p2.y),
+  };
+}
+
+function samplePathWithNormals(segments, numSamples) {
+  // segments: array of {p0, p1, p2, p3} cubic bezier segments
+  const pts = [];
+  const samplesPerSeg = Math.floor(numSamples / segments.length);
+
+  for (let s = 0; s < segments.length; s++) {
+    const seg = segments[s];
+    const count = (s === segments.length - 1) ? samplesPerSeg + 1 : samplesPerSeg;
+    for (let i = 0; i < count; i++) {
+      const t = i / samplesPerSeg;
+      const pt = cubicBezier(t, seg.p0, seg.p1, seg.p2, seg.p3);
+      const tan = cubicBezierTangent(t, seg.p0, seg.p1, seg.p2, seg.p3);
+      const len = Math.sqrt(tan.x * tan.x + tan.y * tan.y) || 1;
+      // Normal is perpendicular to tangent (rotated 90 degrees)
+      pts.push({
+        x: pt.x,
+        y: pt.y,
+        nx: -tan.y / len,
+        ny: tan.x / len,
+      });
+    }
+  }
+  return pts;
+}
+
+function buildFilledOutline(segments, halfWidth) {
+  const pts = samplePathWithNormals(segments, 80);
+  const outer = [];
+  const inner = [];
+
+  for (const p of pts) {
+    outer.push({ x: p.x + p.nx * halfWidth, y: p.y + p.ny * halfWidth });
+    inner.push({ x: p.x - p.nx * halfWidth, y: p.y - p.ny * halfWidth });
+  }
+
+  // Build SVG path: outer edge forward, inner edge backward
+  let d = `M ${outer[0].x.toFixed(1)},${outer[0].y.toFixed(1)}`;
+  for (let i = 1; i < outer.length; i++) {
+    d += ` L ${outer[i].x.toFixed(1)},${outer[i].y.toFixed(1)}`;
+  }
+  // Connect to inner edge (reversed)
+  for (let i = inner.length - 1; i >= 0; i--) {
+    d += ` L ${inner[i].x.toFixed(1)},${inner[i].y.toFixed(1)}`;
+  }
+  d += ' Z';
+  return d;
+}
+
+function buildArrowhead(tipX, tipY, baseX, baseY, width) {
+  // Triangle arrowhead
+  const dx = tipX - baseX;
+  const dy = tipY - baseY;
+  const len = Math.sqrt(dx*dx + dy*dy) || 1;
+  const nx = -dy / len * width / 2;
+  const ny = dx / len * width / 2;
+
+  return `M ${(baseX + nx).toFixed(1)},${(baseY + ny).toFixed(1)} L ${tipX.toFixed(1)},${tipY.toFixed(1)} L ${(baseX - nx).toFixed(1)},${(baseY - ny).toFixed(1)} Z`;
+}
+
+function generateFilledPath() {
+  const p = points;
+  const sw = getStrokeWidth();
+  const halfW = sw * 0.65; // Slightly thinner than stroke for clean FA look
+  const as = getArrowSize();
+  const gap = getArrowGap();
+
+  // Arrow 1 segments: s1 -> cx, cx -> e1
+  const seg1 = [
+    { p0: p.s1, p1: p.c1a, p2: p.c1b, p3: p.cx },
+    { p0: p.cx, p1: p.c1c, p2: p.c1d, p3: p.e1 },
+  ];
+
+  // Arrow 2 segments: s2 -> cx, cx -> e2
+  const seg2 = [
+    { p0: p.s2, p1: p.c2a, p2: p.c2b, p3: p.cx },
+    { p0: p.cx, p1: p.c2c, p2: p.c2d, p3: p.e2 },
+  ];
+
+  const body1 = buildFilledOutline(seg1, halfW);
+  const body2 = buildFilledOutline(seg2, halfW);
+
+  // Arrowheads
+  const a1TipY = p.e1.y + gap/2 + as;
+  const a1BaseY = p.e1.y + gap/2;
+  const ah1 = buildArrowhead(p.e1.x, a1TipY, p.e1.x, a1BaseY, as * 1.2);
+
+  const a2TipY = p.e2.y - gap/2 - as;
+  const a2BaseY = p.e2.y - gap/2;
+  const ah2 = buildArrowhead(p.e2.x, a2TipY, p.e2.x, a2BaseY, as * 1.2);
+
+  // Rounded tail caps (semicircles at start of each arrow)
+  const capR = halfW;
+  const cap1 = `M ${(p.s1.x).toFixed(1)},${(p.s1.y - capR).toFixed(1)} A ${capR.toFixed(1)} ${capR.toFixed(1)} 0 1 0 ${(p.s1.x).toFixed(1)},${(p.s1.y + capR).toFixed(1)} Z`;
+  const cap2 = `M ${(p.s2.x).toFixed(1)},${(p.s2.y - capR).toFixed(1)} A ${capR.toFixed(1)} ${capR.toFixed(1)} 0 1 0 ${(p.s2.x).toFixed(1)},${(p.s2.y + capR).toFixed(1)} Z`;
+
+  lastFilledPaths.arrow1 = body1 + ' ' + ah1 + ' ' + cap1;
+  lastFilledPaths.arrow2 = body2 + ' ' + ah2 + ' ' + cap2;
+
+  renderFilledPreviews();
+}
+
+function renderFilledPreviews() {
+  if (!lastFilledPaths.arrow1) return;
+
+  const ids = ['filled-64', 'filled-28', 'filled-20', 'filled-strip'];
+  for (const id of ids) {
+    const el = document.getElementById(id);
+    if (!el) continue;
+    el.innerHTML = `
+      <path d="${lastFilledPaths.arrow1}" fill="#eb7d00" fill-rule="nonzero"/>
+      <path d="${lastFilledPaths.arrow2}" fill="#eb7d00" fill-rule="nonzero"/>
+    `;
+  }
+}
+
+function copyFilledSVG() {
+  if (!lastFilledPaths.arrow1) {
+    generateFilledPath();
+  }
+  const full = `<svg viewBox="0 0 520 320" xmlns="http://www.w3.org/2000/svg">
+  <path d="${lastFilledPaths.arrow1}" fill="currentColor"/>
+  <path d="${lastFilledPaths.arrow2}" fill="currentColor"/>
+</svg>`;
+  navigator.clipboard.writeText(full);
+  document.getElementById('svgOutput').textContent = full;
+}
+
+// Auto-generate filled preview on any change
+const origRender = render;
+render = function() {
+  origRender();
+  if (lastFilledPaths.arrow1) generateFilledPath();
+};
+
+// Initial render
+origRender();
+</script>
+
+</body>
+</html>

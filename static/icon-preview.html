@@ -1,170 +1,267 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>TIKA Icon Options</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <title>Inverted Icon — Dual Arrow Figure-8</title>
   <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
-      background: #1a1a2e;
-      color: white;
-      font-family: system-ui, sans-serif;
-      padding: 40px;
+      background: #121218;
+      color: #fff;
+      font-family: system-ui, -apple-system, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px;
+      gap: 32px;
     }
-    h1 {
-      color: #6366f1;
-      margin-bottom: 40px;
+    h1 { font-size: 24px; font-weight: 500; color: #aaa; }
+    h2 { font-size: 13px; font-weight: 400; color: #555; max-width: 700px; text-align: center; line-height: 1.6; }
+
+    .variants {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px; max-width: 1100px; width: 100%;
     }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-      gap: 24px;
+    .variant {
+      display: flex; flex-direction: column; align-items: center; gap: 16px;
+      padding: 32px 20px;
+      background: rgba(255,255,255,0.03);
+      border: 1.5px solid rgba(255,255,255,0.08);
+      border-radius: 16px; transition: all 0.2s;
     }
-    .icon-card {
-      background: #252542;
+    .variant:hover { border-color: #eb7d00; background: rgba(235, 125, 0, 0.06); }
+    .variant .name { font-size: 14px; color: #ccc; font-weight: 600; }
+    .variant .desc { font-size: 11px; color: #777; text-align: center; line-height: 1.4; max-width: 260px; }
+    .number { font-size: 18px; font-weight: 700; color: #eb7d00; opacity: 0.5; }
+
+    .sizes {
+      display: flex; gap: 48px; align-items: flex-end;
+      padding: 24px 32px;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.06);
       border-radius: 12px;
-      padding: 24px;
-      text-align: center;
-      transition: transform 0.2s;
     }
-    .icon-card:hover {
-      transform: scale(1.05);
-      background: #2d2d4a;
+    .size-item { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+    .sl { font-size: 10px; color: #666; }
+
+    .strip {
+      display: flex; gap: 24px; align-items: center;
+      padding: 20px 32px;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 12px;
     }
-    .icon-card i {
-      font-size: 48px;
-      color: #6366f1;
-      margin-bottom: 16px;
-      display: block;
-    }
-    .icon-card .name {
-      font-size: 14px;
-      color: #a0a0b0;
-      font-family: monospace;
-    }
-    .icon-card .label {
-      font-size: 16px;
-      margin-top: 8px;
-      color: #ffffff;
-    }
-    .top-picks {
-      border: 2px solid #6366f1;
-    }
-    .section-title {
-      color: #6366f1;
-      margin: 40px 0 20px;
-      font-size: 20px;
-    }
+    .strip-item { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+    .strip-item.highlight { padding: 8px 12px; border: 1px dashed #eb7d00; border-radius: 8px; }
   </style>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
-  <h1>TIKA Icon Options - Font Awesome</h1>
+  <h1>Inverted — Two Arrows Through a Figure-8</h1>
+  <h2>
+    Both arrows start on the LEFT. Arrow 1 goes CCW through the left loop, crosses center, goes CW through right loop, ends on the RIGHT pointing DOWN.
+    Arrow 2 goes CW through the left loop, crosses center, goes CCW through the right loop, ends on the RIGHT pointing UP.
+    The two arrowheads face each other on the right side.
+  </h2>
 
-  <div class="section-title">⭐ Top Picks (Free Icons)</div>
-  <div class="grid">
-    <div class="icon-card top-picks">
-      <i class="fas fa-brain"></i>
-      <div class="name">fa-brain</div>
-      <div class="label">Intelligence</div>
+  <div class="variants">
+
+    <!-- Variant A: Clean, medium weight -->
+    <div class="variant">
+      <div class="number">A</div>
+      <svg width="140" height="90" viewBox="0 0 520 320">
+        <!-- Arrow 1: starts left-center, goes DOWN into left loop bottom, crosses center going UP-RIGHT, arcs over right loop top, ends RIGHT pointing DOWN -->
+        <path d="
+          M 55,150
+          C 55,270  170,290  260,170
+          C 350,50   465,70   455,195
+        " fill="none" stroke="#eb7d00" stroke-width="20" stroke-linecap="round"/>
+        <!-- Arrowhead 1: pointing down on right side -->
+        <polygon points="440,200 455,230 470,200" fill="#eb7d00"/>
+
+        <!-- Arrow 2: starts left-center (offset), goes UP into left loop top, crosses center going DOWN-RIGHT, arcs under right loop bottom, ends RIGHT pointing UP -->
+        <path d="
+          M 55,170
+          C 55,50   170,30   260,150
+          C 350,270  465,250  455,125
+        " fill="none" stroke="#eb7d00" stroke-width="20" stroke-linecap="round"/>
+        <!-- Arrowhead 2: pointing up on right side -->
+        <polygon points="440,120 455,90 470,120" fill="#eb7d00"/>
+      </svg>
+      <div class="name">A — Clean Medium</div>
+      <div class="desc">Two arrows crossing at center. Arrowheads face each other on the right. Clear figure-8 path.</div>
     </div>
-    <div class="icon-card top-picks">
-      <i class="fas fa-comment-dots"></i>
-      <div class="name">fa-comment-dots</div>
-      <div class="label">Chat/Conversation</div>
+
+    <!-- Variant B: Wider loops -->
+    <div class="variant">
+      <div class="number">B</div>
+      <svg width="140" height="90" viewBox="0 0 520 320">
+        <!-- Arrow 1: down-left-loop, cross, up-right-loop, end down -->
+        <path d="
+          M 50,148
+          C 40,280  160,300  260,168
+          C 360,36   480,56   468,190
+        " fill="none" stroke="#eb7d00" stroke-width="22" stroke-linecap="round"/>
+        <polygon points="452,196 468,228 484,196" fill="#eb7d00"/>
+
+        <!-- Arrow 2: up-left-loop, cross, down-right-loop, end up -->
+        <path d="
+          M 50,172
+          C 40,40   160,20   260,152
+          C 360,284  480,264  468,130
+        " fill="none" stroke="#eb7d00" stroke-width="22" stroke-linecap="round"/>
+        <polygon points="452,124 468,92 484,124" fill="#eb7d00"/>
+      </svg>
+      <div class="name">B — Wide Loops</div>
+      <div class="desc">Broader loops show the circular motion more clearly. Slightly more space between arrow tips.</div>
     </div>
-    <div class="icon-card top-picks">
-      <i class="fas fa-wand-magic-sparkles"></i>
-      <div class="name">fa-wand-magic-sparkles</div>
-      <div class="label">AI Magic</div>
+
+    <!-- Variant C: Tighter, more compact -->
+    <div class="variant">
+      <div class="number">C</div>
+      <svg width="140" height="90" viewBox="0 0 520 320">
+        <!-- Arrow 1 -->
+        <path d="
+          M 60,152
+          C 60,260  180,275  260,165
+          C 340,55   460,70   450,185
+        " fill="none" stroke="#eb7d00" stroke-width="20" stroke-linecap="round"/>
+        <polygon points="436,190 450,218 464,190" fill="#eb7d00"/>
+
+        <!-- Arrow 2 -->
+        <path d="
+          M 60,168
+          C 60,60   180,45   260,155
+          C 340,265  460,250  450,135
+        " fill="none" stroke="#eb7d00" stroke-width="20" stroke-linecap="round"/>
+        <polygon points="436,130 450,102 464,130" fill="#eb7d00"/>
+      </svg>
+      <div class="name">C — Compact</div>
+      <div class="desc">Tighter figure-8. Arrowheads closer together. Reads well at small sizes.</div>
     </div>
-    <div class="icon-card top-picks">
-      <i class="fas fa-graduation-cap"></i>
-      <div class="name">fa-graduation-cap</div>
-      <div class="label">Tutor/Learning</div>
+
+    <!-- Variant D: Heavy weight for small sizes -->
+    <div class="variant">
+      <div class="number">D</div>
+      <svg width="140" height="90" viewBox="0 0 520 320">
+        <!-- Arrow 1 -->
+        <path d="
+          M 50,145
+          C 40,285  165,305  260,170
+          C 355,35   480,55   465,195
+        " fill="none" stroke="#eb7d00" stroke-width="28" stroke-linecap="round"/>
+        <polygon points="446,202 465,240 484,202" fill="#eb7d00"/>
+
+        <!-- Arrow 2 -->
+        <path d="
+          M 50,175
+          C 40,35   165,15   260,150
+          C 355,285  480,265  465,125
+        " fill="none" stroke="#eb7d00" stroke-width="28" stroke-linecap="round"/>
+        <polygon points="446,118 465,80 484,118" fill="#eb7d00"/>
+      </svg>
+      <div class="name">D — Heavy</div>
+      <div class="desc">Thickest strokes and largest arrowheads. Best for 16-20px rendering.</div>
+    </div>
+
+    <!-- Variant E: More symmetrical loops, refined -->
+    <div class="variant">
+      <div class="number">E</div>
+      <svg width="140" height="90" viewBox="0 0 520 320">
+        <!-- Arrow 1: smoother curves -->
+        <path d="
+          M 52,155
+          C 30,280  175,295  260,165
+          C 345,35   490,50   465,192
+        " fill="none" stroke="#eb7d00" stroke-width="21" stroke-linecap="round"/>
+        <polygon points="449,198 465,230 481,198" fill="#eb7d00"/>
+
+        <!-- Arrow 2 -->
+        <path d="
+          M 52,165
+          C 30,40   175,25   260,155
+          C 345,285  490,270  465,128
+        " fill="none" stroke="#eb7d00" stroke-width="21" stroke-linecap="round"/>
+        <polygon points="449,122 465,90 481,122" fill="#eb7d00"/>
+      </svg>
+      <div class="name">E — Refined Symmetric</div>
+      <div class="desc">Smoothest curves with balanced loops. Most polished feel.</div>
+    </div>
+
+    <!-- Variant F: Arrows with more gap between tips -->
+    <div class="variant">
+      <div class="number">F</div>
+      <svg width="140" height="90" viewBox="0 0 520 320">
+        <!-- Arrow 1 -->
+        <path d="
+          M 48,148
+          C 38,280  170,300  260,170
+          C 350,40   475,60   462,200
+        " fill="none" stroke="#eb7d00" stroke-width="20" stroke-linecap="round"/>
+        <polygon points="446,206 462,240 478,206" fill="#eb7d00"/>
+
+        <!-- Arrow 2 -->
+        <path d="
+          M 48,172
+          C 38,40   170,20   260,150
+          C 350,280  475,260  462,120
+        " fill="none" stroke="#eb7d00" stroke-width="20" stroke-linecap="round"/>
+        <polygon points="446,114 462,80 478,114" fill="#eb7d00"/>
+      </svg>
+      <div class="name">F — Wider Tip Gap</div>
+      <div class="desc">More space between the facing arrowheads. Emphasizes the opposing directions.</div>
+    </div>
+
+  </div>
+
+  <h1>Size scaling (D variant — heavy weight)</h1>
+
+  <div class="sizes">
+    <div class="size-item">
+      <svg width="64" height="40" viewBox="0 0 520 320">
+        <path d="M 50,145 C 40,285 165,305 260,170 C 355,35 480,55 465,195" fill="none" stroke="#eb7d00" stroke-width="32" stroke-linecap="round"/><polygon points="446,202 465,244 484,202" fill="#eb7d00"/>
+        <path d="M 50,175 C 40,35 165,15 260,150 C 355,285 480,265 465,125" fill="none" stroke="#eb7d00" stroke-width="32" stroke-linecap="round"/><polygon points="446,118 465,76 484,118" fill="#eb7d00"/>
+      </svg>
+      <div class="sl">64px wide</div>
+    </div>
+    <div class="size-item">
+      <svg width="36" height="23" viewBox="0 0 520 320">
+        <path d="M 50,145 C 40,285 165,305 260,170 C 355,35 480,55 465,195" fill="none" stroke="#eb7d00" stroke-width="40" stroke-linecap="round"/><polygon points="440,204 465,252 490,204" fill="#eb7d00"/>
+        <path d="M 50,175 C 40,35 165,15 260,150 C 355,285 480,265 465,125" fill="none" stroke="#eb7d00" stroke-width="40" stroke-linecap="round"/><polygon points="440,116 465,68 490,116" fill="#eb7d00"/>
+      </svg>
+      <div class="sl">36px wide</div>
+    </div>
+    <div class="size-item">
+      <svg width="28" height="18" viewBox="0 0 520 320">
+        <path d="M 50,145 C 40,285 165,305 260,170 C 355,35 480,55 465,195" fill="none" stroke="#eb7d00" stroke-width="48" stroke-linecap="round"/><polygon points="434,208 465,260 496,208" fill="#eb7d00"/>
+        <path d="M 50,175 C 40,35 165,15 260,150 C 355,285 480,265 465,125" fill="none" stroke="#eb7d00" stroke-width="48" stroke-linecap="round"/><polygon points="434,112 465,60 496,112" fill="#eb7d00"/>
+      </svg>
+      <div class="sl">28px wide</div>
+    </div>
+    <div class="size-item">
+      <svg width="20" height="13" viewBox="0 0 520 320">
+        <path d="M 50,145 C 40,285 165,305 260,170 C 355,35 480,55 465,195" fill="none" stroke="#eb7d00" stroke-width="56" stroke-linecap="round"/><polygon points="428,212 465,272 502,212" fill="#eb7d00"/>
+        <path d="M 50,175 C 40,35 165,15 260,150 C 355,285 480,265 465,125" fill="none" stroke="#eb7d00" stroke-width="56" stroke-linecap="round"/><polygon points="428,108 465,48 502,108" fill="#eb7d00"/>
+      </svg>
+      <div class="sl">20px wide</div>
     </div>
   </div>
 
-  <div class="section-title">All Options (Free Icons)</div>
-  <div class="grid">
-    <div class="icon-card">
-      <i class="fas fa-robot"></i>
-      <div class="name">fa-robot</div>
-      <div class="label">Current (generic)</div>
+  <h1>In the full icon strip</h1>
+
+  <div class="strip">
+    <div class="strip-item"><i class="fas fa-rotate" style="color:#36c3ff; font-size:28px;"></i><div class="sl">rotated</div></div>
+    <div class="strip-item"><i class="fas fa-left-right" style="color:#6F2DA8; font-size:28px;"></i><div class="sl">mirrored</div></div>
+    <div class="strip-item"><i class="fas fa-up-down" style="color:#e91e63; font-size:28px;"></i><div class="sl">flipped</div></div>
+    <div class="strip-item"><i class="fas fa-shuffle" style="color:#26e600; font-size:28px;"></i><div class="sl">swapped</div></div>
+    <div class="strip-item highlight">
+      <svg width="28" height="18" viewBox="0 0 520 320">
+        <path d="M 50,145 C 40,285 165,305 260,170 C 355,35 480,55 465,195" fill="none" stroke="#eb7d00" stroke-width="48" stroke-linecap="round"/><polygon points="434,208 465,260 496,208" fill="#eb7d00"/>
+        <path d="M 50,175 C 40,35 165,15 260,150 C 355,285 480,265 465,125" fill="none" stroke="#eb7d00" stroke-width="48" stroke-linecap="round"/><polygon points="434,112 465,60 496,112" fill="#eb7d00"/>
+      </svg>
+      <div class="sl">inverted</div>
     </div>
-    <div class="icon-card">
-      <i class="fab fa-android"></i>
-      <div class="name">fa-android (brand)</div>
-      <div class="label">Android</div>
-    </div>
-    <div class="icon-card">
-      <i class="fas fa-comments"></i>
-      <div class="name">fa-comments</div>
-      <div class="label">Conversation</div>
-    </div>
-    <div class="icon-card">
-      <i class="fas fa-lightbulb"></i>
-      <div class="name">fa-lightbulb</div>
-      <div class="label">Ideas</div>
-    </div>
-    <div class="icon-card">
-      <i class="fas fa-headset"></i>
-      <div class="name">fa-headset</div>
-      <div class="label">Assistant</div>
-    </div>
-    <div class="icon-card">
-      <i class="fas fa-user-astronaut"></i>
-      <div class="name">fa-user-astronaut</div>
-      <div class="label">Futuristic</div>
-    </div>
-    <div class="icon-card">
-      <i class="fas fa-microchip"></i>
-      <div class="name">fa-microchip</div>
-      <div class="label">Tech</div>
-    </div>
-    <div class="icon-card">
-      <i class="fas fa-hat-wizard"></i>
-      <div class="name">fa-hat-wizard</div>
-      <div class="label">Wisdom</div>
-    </div>
-    <div class="icon-card">
-      <i class="fas fa-user-graduate"></i>
-      <div class="name">fa-user-graduate</div>
-      <div class="label">Teacher</div>
-    </div>
-    <div class="icon-card">
-      <i class="fas fa-atom"></i>
-      <div class="name">fa-atom</div>
-      <div class="label">Science</div>
-    </div>
-    <div class="icon-card">
-      <i class="fas fa-circle-nodes"></i>
-      <div class="name">fa-circle-nodes</div>
-      <div class="label">Neural Network</div>
-    </div>
-    <div class="icon-card">
-      <i class="fas fa-bolt"></i>
-      <div class="name">fa-bolt</div>
-      <div class="label">Quick/Smart</div>
-    </div>
-    <div class="icon-card">
-      <i class="fas fa-chalkboard-user"></i>
-      <div class="name">fa-chalkboard-user</div>
-      <div class="label">Instructor</div>
-    </div>
-    <div class="icon-card">
-      <i class="fas fa-book-open-reader"></i>
-      <div class="name">fa-book-open-reader</div>
-      <div class="label">Learning</div>
-    </div>
-    <div class="icon-card">
-      <i class="fas fa-message"></i>
-      <div class="name">fa-message</div>
-      <div class="label">Message</div>
-    </div>
-    <div class="icon-card">
-      <i class="fas fa-rocket"></i>
-      <div class="name">fa-rocket</div>
-      <div class="label">Launch/Fast</div>
-    </div>
+    <div class="strip-item"><i class="fas fa-backward" style="color:#00bcd4; font-size:28px;"></i><div class="sl">rewound</div></div>
   </div>
+
 </body>
 </html>
