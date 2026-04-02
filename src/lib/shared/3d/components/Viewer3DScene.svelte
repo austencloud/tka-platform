@@ -16,6 +16,8 @@
   import Grid3D from "./Grid3D.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { container } from "$lib/shared/di";
+  import { BackgroundType } from "@austencloud/backgrounds";
+  import Environment3D from "../environments/components/Environment3D.svelte";
   import { userProportionsState } from "../state/user-proportions-state.svelte";
   import { getViewer3DContext } from "../context/viewer-3d-context";
   import { Plane } from "../domain/enums/Plane";
@@ -117,17 +119,48 @@
   // The state layer uses Plane enum values as strings so it doesn't need to import
   // the enum — we do the conversion here at the scene boundary.
   const gridVisiblePlanes = $derived(viewer3DState.visiblePlanes as Set<Plane>);
+
+  // Read background type from settings for themed 3D environment
+  const backgroundType = $derived.by((): BackgroundType => {
+    try {
+      const settings = container.items.settingsState;
+      return (settings as any)?.settings?.backgroundType ?? BackgroundType.SOLID_COLOR;
+    } catch { return BackgroundType.SOLID_COLOR; }
+  });
+
+  const hasEnvironment = $derived(
+    backgroundType !== BackgroundType.SOLID_COLOR &&
+    backgroundType !== BackgroundType.LINEAR_GRADIENT
+  );
+
+  // Night environments need reduced default lighting since the environment provides its own
+  const isNightEnvironment = $derived(
+    backgroundType === BackgroundType.FIREFLY_FOREST ||
+    backgroundType === BackgroundType.NIGHT_SKY ||
+    backgroundType === BackgroundType.DEEP_OCEAN
+  );
 </script>
 
-<!-- Lighting -->
-<T.AmbientLight intensity={0.4} />
-<T.DirectionalLight position={[5, 10, 5]} intensity={0.8} />
+<!-- 3D Environment (sky, ground, particles - matches user's theme).
+     The environment positions everything at groundY (≈ -1.56m) but the viewer
+     lifts the avatar so feet land at y=0. Shift the environment up to match. -->
+{#if hasEnvironment}
+  <T.Group position.y={STAGE_LIFT}>
+    <Environment3D {backgroundType} />
+  </T.Group>
+{/if}
 
-<!-- Ground disc -->
-<T.Mesh rotation.x={-Math.PI / 2}>
-  <T.CircleGeometry args={[2, 64]} />
-  <T.MeshStandardMaterial color="#1a1a2e" />
-</T.Mesh>
+<!-- Lighting — reduced when the environment provides its own -->
+<T.AmbientLight intensity={isNightEnvironment ? 0.2 : hasEnvironment ? 0.3 : 0.4} />
+<T.DirectionalLight position={[5, 10, 5]} intensity={isNightEnvironment ? 0.4 : hasEnvironment ? 0.6 : 0.8} />
+
+<!-- Ground disc (only when no environment provides its own ground) -->
+{#if !hasEnvironment}
+  <T.Mesh rotation.x={-Math.PI / 2}>
+    <T.CircleGeometry args={[2, 64]} />
+    <T.MeshStandardMaterial color="#1a1a2e" />
+  </T.Mesh>
+{/if}
 
 <!-- Grid planes (wall/wheel/floor discs) — toggled via viewer state.
      centerPosition matches avatarPosition so the grid is at shoulder height
