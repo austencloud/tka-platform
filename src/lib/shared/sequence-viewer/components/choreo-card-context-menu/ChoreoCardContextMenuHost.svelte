@@ -11,13 +11,14 @@
 
   interface Props {
     onOpenSettings: () => void;
+    onRerender?: () => void;
     isExportMode?: boolean;
     exportOptions?: ExportOptionsStateManager;
     onSendTo?: () => void;
     stepCount?: number;
   }
 
-  const { onOpenSettings, isExportMode = false, exportOptions, onSendTo, stepCount = 0 }: Props = $props();
+  const { onOpenSettings, onRerender, isExportMode = false, exportOptions, onSendTo, stepCount = 0 }: Props = $props();
 
   let menuState: ContextMenuState = $state({ open: false });
   let menuVersion = $state(0);
@@ -34,6 +35,7 @@
         onOpenSettings();
       },
       onSendTo: onSendTo ? () => { closeContextMenu(); onSendTo(); } : undefined,
+      onRerender: onRerender ? () => { closeContextMenu(); onRerender(); } : undefined,
       stepCount,
       onColumnCountChange: () => { menuVersion++; },
     });

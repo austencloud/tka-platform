@@ -16,6 +16,7 @@
   import SequencePickerGrid from "./designer/SequencePickerGrid.svelte";
   import CardPreviewStack from "./designer/CardPreviewStack.svelte";
   import DesignerSettingsSidebar from "./designer/DesignerSettingsSidebar.svelte";
+  import CardDesignerContextMenuHost from "./context-menu/CardDesignerContextMenuHost.svelte";
 
   interface Props {
     sequences: SequenceData[];
@@ -58,6 +59,13 @@
   let showInfoCard = $state(loadBool(STORAGE_KEYS.infoCard, false));
   let sidebarOpen = $state(loadBool(STORAGE_KEYS.sidebarOpen, false));
   let isExporting = $state(false);
+  let contextMenuHost: CardDesignerContextMenuHost;
+  let activeRerender: (() => void) | undefined;
+
+  function handleCardContextMenu(x: number, y: number, rerender: () => void) {
+    activeRerender = rerender;
+    contextMenuHost?.openContextMenu(x, y);
+  }
 
   // ── Derived state ───────────────────────────────────────────────────
 
@@ -285,6 +293,7 @@
         {showBirthday}
         {showQRCode}
         {showInfoCard}
+        onCardContextMenu={handleCardContextMenu}
       />
 
       <button
@@ -295,6 +304,12 @@
       >
         <i class="fas fa-gear" aria-hidden="true"></i>
       </button>
+
+      <CardDesignerContextMenuHost
+        bind:this={contextMenuHost}
+        onOpenSettings={handleSidebarToggle}
+        onRerender={activeRerender}
+      />
 
       <DesignerSettingsSidebar
         open={sidebarOpen}

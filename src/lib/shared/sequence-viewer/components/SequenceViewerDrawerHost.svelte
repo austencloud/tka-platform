@@ -133,6 +133,7 @@
   // ChoreoCard context menu + settings modal
   let choreoCardMenuHost: ChoreoCardContextMenuHost | undefined = $state();
   let cardSettingsOpen = $state(false);
+  let rerenderTrigger = $state(0);
 
   // Sync overlay state to drawer state
   $effect(() => {
@@ -361,10 +362,12 @@
                     onStepClick={ctx.handleStepClick}
                     onCanvasReady={ctx.handleCanvasReady}
                     onChoreoCardContextMenu={(x, y) => choreoCardMenuHost?.openContextMenu(x, y)}
+                    {rerenderTrigger}
                   />
                   <ChoreoCardContextMenuHost
                     bind:this={choreoCardMenuHost}
                     onOpenSettings={() => { cardSettingsOpen = true; }}
+                    onRerender={() => { rerenderTrigger++; }}
                     isExportMode={isImageExportActive}
                     exportOptions={ctx.exportOptions}
                     onSendTo={overlay.sequence ? handleSendTo : undefined}

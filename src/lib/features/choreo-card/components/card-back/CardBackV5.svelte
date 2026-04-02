@@ -1,16 +1,18 @@
 <!--
   V5 "Deck" — Theme-aware printed card back with corner badges
 
-  Designed for physical 2.5" × 3.5" playing cards. Renders at a fixed
-  500×700px and gets scaled via CSS transform in CardDesigner.
+  Designed for physical 2.5" x 3.5" playing cards. Fills its parent
+  container and scales proportionally using container query units (cqi).
+  All dimensions are relative to the container's inline size, so the
+  card looks correct at any rendered size.
 
   Four corners for quick sorting when fanning cards:
     Top-left:     Level badge
     Top-right:    LOOP icons
     Bottom-left:  Step count
-    Bottom-right: Starting position (α, β, γ)
+    Bottom-right: Starting position (alpha, beta, gamma)
 
-  Center: word, LOOP explanation, branding, URL.
+  Center: word, mandala (for LOOP sequences), LOOP explanation, branding, URL.
 -->
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -103,6 +105,29 @@
     }
     return parts.join(" · ");
   });
+
+  // ── Auto-shrink word to fit on one line ──────────────────────────
+  // Wide characters (Θ, Ω, Φ, W, M) count as ~1.3 units, narrow ones
+  // (-, I, l) as ~0.5, everything else as 1. At 10.4cqi, roughly 9
+  // width-units fit inside the .content padding. Scale down for longer words.
+  const WIDE = new Set(["Θ", "Ω", "Φ", "W", "M", "Σ", "Δ", "Λ", "Ψ"]);
+  const NARROW = new Set(["-", "I", "l", "i", "·"]);
+
+  const wordFontCqi = $derived.by(() => {
+    const word = d.word;
+    if (!word) return 10.4;
+
+    let widthUnits = 0;
+    for (const ch of word) {
+      if (WIDE.has(ch)) widthUnits += 1.3;
+      else if (NARROW.has(ch)) widthUnits += 0.5;
+      else widthUnits += 1;
+    }
+
+    const maxUnits = 12;
+    if (widthUnits <= maxUnits) return 10.4;
+    return Math.max(10.4 * (maxUnits / widthUnits), 3);
+  });
 </script>
 
 <!-- Outer: themed gradient border -->
@@ -155,32 +180,24 @@
     <div class="content">
 
       <!-- Word -->
-      <div class="word">{d.word}</div>
+      <div class="word" style="font-size: {wordFontCqi}cqi;">{d.word}</div>
       {#if hasGreekLetters}
         <div class="pronunciation">{pronunciation}</div>
       {/if}
 
-      {#if d.hasLoop}
-        <div class="mandala-hero">
-          <SequenceMandala
-            {sequence}
-            mode="card-back"
-            style="stroke"
-            show="both"
-            size={380}
-          />
-        </div>
-      {:else}
-        <div class="spacer"></div>
-      {/if}
+      <div class="mandala-hero">
+        <SequenceMandala
+          {sequence}
+          mode="card-back"
+          style="stroke"
+          show="both"
+          size={380}
+        />
+      </div>
 
       <!-- LOOP explanation (if applicable) -->
       {#if d.hasLoop}
         <p class="loop-explanation">{loopExplanationText}</p>
-      {/if}
-
-      {#if !d.hasLoop}
-        <div class="spacer"></div>
       {/if}
 
     </div>
@@ -194,10 +211,11 @@
   .border-frame {
     width: 100%;
     height: 100%;
-    border-radius: 12px;
-    padding: 4px;
+    border-radius: 2.4cqi;
+    padding: 0.8cqi;
     box-sizing: border-box;
     overflow: hidden;
+    container-type: inline-size;
   }
 
   .back {
@@ -207,7 +225,7 @@
     color: #ffffff;
     font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
     overflow: hidden;
-    border-radius: 8px;
+    border-radius: 1.6cqi;
     box-sizing: border-box;
   }
 
@@ -218,37 +236,37 @@
     z-index: 2;
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 0.8cqi;
   }
 
-  .top-left { top: 16px; left: 16px; }
-  .top-right { top: 16px; right: 16px; }
-  .bottom-left { bottom: 16px; left: 16px; flex-direction: column; }
-  .bottom-right { bottom: 16px; right: 16px; }
+  .top-left { top: 3.2cqi; left: 3.2cqi; }
+  .top-right { top: 3.2cqi; right: 3.2cqi; }
+  .bottom-left { bottom: 3.2cqi; left: 3.2cqi; flex-direction: column; }
+  .bottom-right { bottom: 3.2cqi; right: 3.2cqi; }
 
   .corner-badge {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 40px;
-    height: 40px;
+    width: 8cqi;
+    height: 8cqi;
     border-radius: 50%;
     border: 1.5px solid rgba(0, 0, 0, 0.3);
     font-family: Cambria, serif;
-    font-size: 24px;
+    font-size: 4.8cqi;
     font-weight: bold;
-    padding-bottom: 1px;
+    padding-bottom: 0.2cqi;
   }
 
   .corner-label {
-    font-size: 30px;
+    font-size: 6cqi;
     font-weight: 700;
     color: rgba(255, 255, 255, 0.65);
     line-height: 1;
   }
 
   .corner-sublabel {
-    font-size: 11px;
+    font-size: 2.2cqi;
     font-weight: 500;
     color: rgba(255, 255, 255, 0.4);
     text-transform: uppercase;
@@ -260,17 +278,17 @@
   .top-brand {
     position: absolute;
     z-index: 2;
-    top: 18px;
+    top: 3.6cqi;
     left: 0;
     right: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
+    gap: 1.2cqi;
   }
 
   .brand {
-    font-size: 16px;
+    font-size: 3.2cqi;
     font-weight: 700;
     letter-spacing: 0.06em;
     color: rgba(255, 255, 255, 0.7);
@@ -281,7 +299,7 @@
   }
 
   .brand-sub {
-    font-size: 16px;
+    font-size: 3.2cqi;
     font-weight: 500;
     color: rgba(255, 255, 255, 0.4);
     letter-spacing: 0.08em;
@@ -292,11 +310,11 @@
   .bottom-url {
     position: absolute;
     z-index: 2;
-    bottom: 18px;
+    bottom: 3.6cqi;
     left: 0;
     right: 0;
     text-align: center;
-    font-size: 12px;
+    font-size: 2.4cqi;
     color: rgba(255, 255, 255, 0.3);
     letter-spacing: 0.06em;
   }
@@ -313,23 +331,24 @@
     height: 100%;
     /* Top padding pushes the word to roughly the same vertical
        position as the front card's header row (~25% from top) */
-    padding: 100px 50px 50px;
+    padding: 20cqi 4cqi 10cqi;
     box-sizing: border-box;
   }
 
   .word {
     font-family: Georgia, serif;
-    font-size: 52px;
+    font-size: 10.4cqi;
     font-weight: 600;
     letter-spacing: 0.05em;
     line-height: 1;
+    white-space: nowrap;
   }
 
   .pronunciation {
-    font-size: 13px;
+    font-size: 2.6cqi;
     font-style: italic;
     color: rgba(255, 255, 255, 0.4);
-    margin-top: 6px;
+    margin-top: 1.2cqi;
     letter-spacing: 0.02em;
   }
 
@@ -340,14 +359,40 @@
     align-items: center;
     justify-content: center;
     margin: 0 auto;
+    flex: 1;
+    width: 76cqi;
+    max-height: 76cqi;
+  }
+
+  /* Override the mandala's fixed pixel sizing so it fills the hero container */
+  .mandala-hero :global(.mandala-container) {
+    width: 100% !important;
+    height: 100% !important;
   }
 
   .loop-explanation {
     margin: 0;
-    font-size: 15px;
+    font-size: 3cqi;
     color: rgba(255, 255, 255, 0.5);
     line-height: 1.6;
-    max-width: 380px;
+    max-width: 76cqi;
+  }
+
+  /* ═══════ CHILD COMPONENT OVERRIDES ═══════ */
+
+  /* LOOPIconStrip uses inline font-size in px — override to scale with card */
+  .top-right :global(.loop-icon-strip i) {
+    font-size: 5.2cqi !important;
+  }
+
+  .top-right :global(.loop-icon-strip) {
+    gap: 0.8cqi !important;
+  }
+
+  /* StartPositionMiniGrid SVG — override inline width/height to scale */
+  .bottom-right :global(svg) {
+    width: 8cqi !important;
+    height: 8cqi !important;
   }
 
 </style>

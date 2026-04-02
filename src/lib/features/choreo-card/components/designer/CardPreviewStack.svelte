@@ -26,6 +26,7 @@
     showBirthday: boolean;
     showQRCode: boolean;
     showInfoCard: boolean;
+    onCardContextMenu?: (x: number, y: number, rerender: () => void) => void;
   }
 
   let {
@@ -41,6 +42,7 @@
     showBirthday,
     showQRCode,
     showInfoCard,
+    onCardContextMenu,
   }: Props = $props();
 
   // Playing card proportions: 2.5" x 3.5" = 5:7
@@ -175,6 +177,7 @@
           showQRCodes={showQRCode}
           showBirthday={showBirthday}
           cardMode={true}
+          onContextMenu={onCardContextMenu}
         />
       {/if}
     </div>

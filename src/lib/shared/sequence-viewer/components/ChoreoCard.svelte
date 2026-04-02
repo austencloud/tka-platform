@@ -149,6 +149,8 @@
     onRenderProgress?: (loaded: number, total: number) => void;
     // Context menu callback (right-click / long-press)
     onContextMenu?: (x: number, y: number) => void;
+    // Increment to force a full re-render (clears caches and re-renders all cells)
+    rerenderTrigger?: number;
     // Suppress solo mode header ("Blue Prop Path" / "Red Hand Path")
     hideSoloHeader?: boolean;
   }
@@ -180,6 +182,7 @@
     fitWidth = false,
     onRenderProgress,
     onContextMenu,
+    rerenderTrigger = 0,
     hideSoloHeader = false,
   }: Props = $props();
 
@@ -1500,13 +1503,19 @@
     const stka = showTKA;
     const sr = showReversals;
     const dm = darkMode;
+    // Read effectiveColumns so the effect fires when the composition manager's
+    // column override changes (e.g. via the right-click column picker).
+    const effCols = effectiveColumns;
 
     const durationKey = sequence?.steps?.map(s => s.duration ?? 1).join(",") ?? "";
 
-    // Image key: props that affect the actual pictograph images (NOT grid positions)
-    const imageKey = `${sequence?.id ?? ""}-${stepLetters}-${stepCount}-${bpt}-${rpt}-${cdm}-${ssn}-${snr}-${hpv}-${stka}-${sr}-${durationKey}`;
-    // Layout key: props that only affect grid positions (column count, start position)
-    const layoutKey = `${cc}-${isp}`;
+    // Image key: props that affect the actual pictograph images (NOT grid positions).
+    // effectiveColumns is included here so column count changes trigger a full
+    // re-render (not just relayout) — the grid structure, pass dividers, and
+    // cell sizes all change when columns change.
+    const imageKey = `${sequence?.id ?? ""}-${stepLetters}-${stepCount}-${bpt}-${rpt}-${cdm}-${ssn}-${snr}-${hpv}-${stka}-${sr}-${durationKey}-cols:${effCols}`;
+    // Layout key: props that only affect grid positions (start position toggle).
+    const layoutKey = `${isp}`;
     // Full content key combines both
     const contentKey = `${imageKey}-${layoutKey}`;
     const renderKey = `${contentKey}-${dm}`;
@@ -1632,13 +1641,24 @@
     }
   });
 
+  // Watch rerenderTrigger — parent increments to force a full cache-clearing re-render
+  let lastRerenderTrigger = 0;
+  $effect(() => {
+    const trigger = rerenderTrigger;
+    if (!hasMounted || trigger === lastRerenderTrigger) return;
+    lastRerenderTrigger = trigger;
+    untrack(() => {
+      forceRerenderAllCells();
+    });
+  });
+
   onMount(() => {
     // Initialize keys so the $effect can detect dark-mode-only and layout-only changes
     const stepLetters = sequence?.steps?.map(s => s.letter ?? "?").join("") ?? "";
     const stepCount = sequence?.steps?.length ?? 0;
     const durationKey = sequence?.steps?.map(s => s.duration ?? 1).join(",") ?? "";
-    lastImageKey = `${sequence?.id ?? ""}-${stepLetters}-${stepCount}-${bluePropType}-${redPropType}-${catDogModeEnabled}-${showStepNumbers}-${showNonRadial}-${handPointVis}-${showTKA}-${showReversals}-${durationKey}`;
-    lastContentKey = `${lastImageKey}-${columnCount}-${includeStartPosition}`;
+    lastImageKey = `${sequence?.id ?? ""}-${stepLetters}-${stepCount}-${bluePropType}-${redPropType}-${catDogModeEnabled}-${showStepNumbers}-${showNonRadial}-${handPointVis}-${showTKA}-${showReversals}-${durationKey}-cols:${effectiveColumns}`;
+    lastContentKey = `${lastImageKey}-${includeStartPosition}`;
     lastEffectRenderKey = `${lastContentKey}-${darkMode}`;
     renderAllCells().then(() => {
       hasMounted = true;
