@@ -19,6 +19,28 @@ export interface ExhibitPlacement {
   refId: string;
   /** Which direction the exhibit faces (toward the room interior) */
   facing: Direction;
+  /** Plaque size: standard (1 tile), large (2 tiles), or dev-whiteboard (3 tiles) */
+  size?: "standard" | "large" | "dev-whiteboard";
+  /** Group ID for exhibits that belong together (relaxes spacing rules within group) */
+  group?: string;
+  /** Whether this exhibit is the anchor piece for the room (used by design validation) */
+  isAnchor?: boolean;
+}
+
+/** Decade label for a sequence screen's content era */
+export type ScreenDecade = "1970s" | "1980s" | "1990s" | "2000s" | "2010s" | "2020s";
+
+export interface ScreenPlacement {
+  /** Which wall the screen is mounted on */
+  wall: "north" | "south" | "east" | "west";
+  /** 0.0–1.0 position along the wall */
+  position: number;
+  /** Reference ID linking to screen content */
+  refId: string;
+  /** Which direction the screen faces (toward the room interior) */
+  facing: Direction;
+  /** Content era for the footage shown on this screen */
+  decade?: ScreenDecade;
 }
 
 export interface PerformerPlacement {
@@ -49,9 +71,13 @@ export interface RoomNode {
   material: FloorMaterial;
   theme: WingTheme;
   description?: string;
+  /** Designer notes rendered as in-game dev whiteboards */
+  devNotes?: string;
   exhibits?: ExhibitPlacement[];
   performers?: PerformerPlacement[];
   torches?: TorchPlacement[];
+  /** TV screens showing sequence footage */
+  screens?: ScreenPlacement[];
 }
 
 export interface RoomEdge {
@@ -92,9 +118,13 @@ export interface PlacedRoom {
   material: FloorMaterial;
   theme: WingTheme;
   description?: string;
+  /** Designer notes rendered as in-game dev whiteboards */
+  devNotes?: string;
   exhibits?: ExhibitPlacement[];
   performers?: PerformerPlacement[];
   torches?: TorchPlacement[];
+  /** TV screens showing sequence footage */
+  screens?: ScreenPlacement[];
 }
 
 export interface CorridorSegment {

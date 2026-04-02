@@ -17,7 +17,8 @@ export type TileType =
   | "corridor"
   | "rope"          // Barrier — visible, solid, not interactable (VTG Wing rope-off)
   | "scaffolding"   // Construction Zone — visible clutter, solid
-  | "sign";         // Readable sign — interactable, not solid
+  | "sign"             // Readable sign — interactable, not solid
+  | "sequence-screen"; // TV screen showing sequence footage — solid, interactable
 
 export type FloorMaterial = "stone" | "marble" | "wood" | "dirt" | "sandstone";
 export type Direction = "north" | "south" | "east" | "west";
@@ -78,6 +79,8 @@ export interface ExhibitDefinition {
   id: string;
   tileX: number;
   tileY: number;
+  /** Plaque size: standard (1 tile), large (2 tiles), or dev-whiteboard (3 tiles) */
+  size?: "standard" | "large" | "dev-whiteboard";
   sequenceId?: string;
   plaque?: {
     title: string;
