@@ -17,18 +17,14 @@
 
   const viewer3DState = getViewer3DContext();
 
-  // Camera at +Z looking toward -Z. Avatar faces -Z (away from camera).
-  // In Three.js right-handed coords, from +Z looking -Z, +X = screen RIGHT.
-  // This means east (+X) appears on screen right — matching pictograph.
-  // No coordinate mirroring needed anywhere.
-  // Grid center is at (0, ~1.55, -0.3) — gridOffset in -Z (avatar faces -Z).
+  // Avatar faces -Z. Its back faces +Z. Learn = behind = camera at +Z.
+  // From +Z looking -Z (right-handed): +X = screen right. East = +X = right ✓
   const defaultPosition = { x: 0, y: 1.85, z: 3.0 };
   const defaultTarget = { x: 0, y: 1.55, z: -0.3 };
 
-  // Restore persisted camera position if available
-  const persisted = viewer3DState.persistedCamera;
-  const initialPosition = persisted?.position ?? defaultPosition;
-  const initialTarget = persisted?.target ?? defaultTarget;
+  // TEMPORARILY ignore persisted camera to verify default positions work
+  const initialPosition = defaultPosition;
+  const initialTarget = defaultTarget;
 
   let controlsRef: any = $state(null);
 

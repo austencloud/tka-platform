@@ -39,10 +39,10 @@
   // push the visual model down so feet land at y=0. Same pattern as MuseumPerformerStation3D.
   const STAGE_LIFT = $derived(-userProportionsState.groundY);
   const avatarPosition = $derived({ x: 0, y: STAGE_LIFT, z: 0 });
-  // Avatar faces -Z (facingAngle = π). Camera at +Z sees the avatar's back.
-  // In Three.js right-handed coords, +X = screen right from +Z camera.
-  // East (+X) naturally appears on the right — no coordinate mirroring needed.
-  const facingAngle = Math.PI;
+  // GLTF models face -Z at facingAngle=0 (OpenGL convention).
+  // Camera at +Z looks toward -Z and sees the avatar's back.
+  // From +Z looking -Z (right-handed): +X = screen right = east ✓
+  const facingAngle = 0;
 
   // Puppet-mode sync loop: convert the orchestrator's floating-point currentStep
   // into avatar beat index + sub-beat progress each frame.
