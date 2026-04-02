@@ -24,25 +24,30 @@
   // NOTE: this is counterintuitive but verified with screenshots.
   // From -Z looking +Z, pictograph matches when you orbit to the back.
   // The avatar's "face" direction in GLTF doesn't match the grid direction.
-  // Main preset: measured from 2D pixel positions.
-  // Grid center at (50%, 51.79%), diameter 46.60% of pane.
-  // FOV=50°, aspect ~1.013 → distance 2.36m, Y offset +0.04m.
+  // Presets use the same distance as the computed camera alignment.
+  // The exact distance varies by viewport but ~2.4m is typical for 46% grid fill.
+  // These values are approximate — the Main preset should match the camera's
+  // dynamically computed position when clicked via the snapTo mechanism.
+  const D = 2.4; // approximate aligned distance
+  const Y = 1.59; // approximate aligned Y
+  const GZ = -0.3; // grid center Z
+
   const CAMERA_POSITIONS = {
     main: {
-      learn:  { x: 0,    y: 1.59, z: -2.66 },
-      mirror: { x: 0,    y: 1.59, z: 2.06 },
+      learn:  { x: 0,  y: Y, z: GZ - D },
+      mirror: { x: 0,  y: Y, z: GZ + D },
     },
     side: {
-      learn:  { x: 2.66,  y: 1.59, z: -0.3 },
-      mirror: { x: -2.66, y: 1.59, z: -0.3 },
+      learn:  { x: D,   y: Y, z: GZ },
+      mirror: { x: -D,  y: Y, z: GZ },
     },
     top: {
-      learn:  { x: 0, y: 4.5, z: -0.29 },
-      mirror: { x: 0, y: 4.5, z: -0.31 },
+      learn:  { x: 0, y: GRID_CENTER.y + 3.0, z: GZ - 0.01 },
+      mirror: { x: 0, y: GRID_CENTER.y + 3.0, z: GZ + 0.01 },
     },
     threequarter: {
-      learn:  { x: 1.5, y: 2.8, z: -2.0 },
-      mirror: { x: -1.5, y: 2.8, z: 1.5 },
+      learn:  { x: D * 0.6, y: Y + 1.0, z: GZ - D * 0.8 },
+      mirror: { x: -D * 0.6, y: Y + 1.0, z: GZ + D * 0.8 },
     },
   };
 
