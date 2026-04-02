@@ -17,7 +17,7 @@
 
   import { onMount, onDestroy, untrack } from "svelte";
   import { T, useTask } from "@threlte/core";
-  import { Vector3 } from "three";
+  import { Vector3, Quaternion } from "three";
   import type { IAvatarSkeletonBuilder } from "../services/contracts/IAvatarSkeletonBuilder";
   import type { IIKSolver } from "../services/contracts/IIKSolver";
   import type { IAvatarAnimator } from "../services/contracts/IAvatarAnimator";
@@ -160,6 +160,23 @@
       modelLoaded = true;
       useProceduralFallback = false;
 
+      // Widen the default stance — rotate upper legs outward so feet
+      // are shoulder-width apart instead of the narrow T-pose default.
+      // This gives the avatar a more natural standing base and helps
+      // cross-body reaches look less strained.
+      const skState = skeletonService.getState();
+      const leftUpLeg = skState.bones.get("LeftUpLeg");
+      const rightUpLeg = skState.bones.get("RightUpLeg");
+      if (leftUpLeg && rightUpLeg) {
+        const stanceAngle = (8 * Math.PI) / 180; // 8° outward each side
+        const leftTilt = new Quaternion().setFromAxisAngle(new Vector3(0, 0, 1), stanceAngle);
+        const rightTilt = new Quaternion().setFromAxisAngle(new Vector3(0, 0, 1), -stanceAngle);
+        leftUpLeg.quaternion.multiply(leftTilt);
+        rightUpLeg.quaternion.multiply(rightTilt);
+        leftUpLeg.updateMatrixWorld(true);
+        rightUpLeg.updateMatrixWorld(true);
+      }
+
       // Verify arm chains are ready
       const leftChain = skeletonService.getLeftArmChain();
       const rightChain = skeletonService.getRightArmChain();
@@ -298,6 +315,134 @@
         return data;
       };
 
+      // Mocap playback: load an FBX animation and play it on the avatar
+      let mocapMixer: import("three").AnimationMixer | null = null;
+      let mocapPlaying = false;
+
+      (window as any).__playMocap = async (url = "/animations/mocap-test.fbx") => {
+        if (!skeletonService) return "Skeleton not loaded";
+        const root = skeletonService.getRoot();
+        if (!root) return "No root object";
+
+        const { FBXLoader } = await import("three/examples/jsm/loaders/FBXLoader.js");
+        const { AnimationMixer, AnimationClip, LoopRepeat } = await import("three");
+
+        // Detect the bone naming prefix used by our avatar's scene graph
+        // by searching for a bone containing "Hips"
+        let avatarPrefix = "";
+        root.traverse((obj: any) => {
+          if (obj.isBone && obj.name.includes("Hips") && !avatarPrefix) {
+            const idx = obj.name.indexOf("Hips");
+            avatarPrefix = obj.name.slice(0, idx);
+          }
+        });
+        console.log(`[Mocap] Avatar bone prefix: "${avatarPrefix}"`);
+
+        // Build a set of all bone names in our avatar for validation
+        const avatarBoneNames = new Set<string>();
+        root.traverse((obj: any) => {
+          if (obj.isBone) avatarBoneNames.add(obj.name);
+        });
+
+        console.log("[Mocap] Loading FBX:", url);
+        const loader = new FBXLoader();
+
+        return new Promise((resolve, reject) => {
+          loader.load(
+            url,
+            (fbx) => {
+              console.log("[Mocap] FBX loaded. Animations:", fbx.animations.length);
+              if (fbx.animations.length === 0) {
+                resolve("No animations found in FBX");
+                return;
+              }
+
+              // Detect the FBX bone prefix
+              let fbxPrefix = "";
+              fbx.traverse((child: any) => {
+                if (child.isBone && child.name.includes("Hips") && !fbxPrefix) {
+                  const idx = child.name.indexOf("Hips");
+                  fbxPrefix = child.name.slice(0, idx);
+                }
+              });
+              console.log(`[Mocap] FBX bone prefix: "${fbxPrefix}"`);
+
+              // Create mixer on the avatar's root
+              mocapMixer = new AnimationMixer(root);
+
+              for (const clip of fbx.animations) {
+                console.log(`[Mocap] Clip: "${clip.name}" duration=${clip.duration.toFixed(2)}s tracks=${clip.tracks.length}`);
+
+                // Retarget track names: strip FBX prefix, add avatar prefix
+                let mapped = 0;
+                let skipped = 0;
+                const retargetedTracks = clip.tracks.map((track) => {
+                  const [boneName, ...rest] = track.name.split(".");
+                  const property = rest.join(".");
+
+                  // Strip FBX prefix to get core bone name
+                  let coreName = boneName || "";
+                  if (fbxPrefix && coreName.startsWith(fbxPrefix)) {
+                    coreName = coreName.slice(fbxPrefix.length);
+                  }
+
+                  // Build the avatar track name
+                  const avatarBoneName = avatarPrefix + coreName;
+                  const newTrackName = `${avatarBoneName}.${property}`;
+
+                  if (avatarBoneNames.has(avatarBoneName)) {
+                    mapped++;
+                  } else {
+                    skipped++;
+                  }
+
+                  const cloned = track.clone();
+                  cloned.name = newTrackName;
+                  return cloned;
+                });
+
+                console.log(`[Mocap] Retargeted ${mapped} tracks, ${skipped} bones not found in avatar`);
+
+                const retargetedClip = new AnimationClip(
+                  clip.name + "_retargeted",
+                  clip.duration,
+                  retargetedTracks
+                );
+
+                const action = mocapMixer.clipAction(retargetedClip);
+                action.setLoop(LoopRepeat, Infinity);
+                action.play();
+              }
+
+              mocapPlaying = true;
+              console.log("[Mocap] Playing! Call __stopMocap() to stop.");
+              resolve("Mocap playing");
+            },
+            (progress) => {
+              if (progress.total) {
+                console.log(`[Mocap] Loading: ${((progress.loaded / progress.total) * 100).toFixed(0)}%`);
+              }
+            },
+            (error) => {
+              console.error("[Mocap] Failed to load:", error);
+              reject(error);
+            }
+          );
+        });
+      };
+
+      (window as any).__stopMocap = () => {
+        if (mocapMixer) {
+          mocapMixer.stopAllAction();
+          mocapMixer = null;
+        }
+        mocapPlaying = false;
+        console.log("[Mocap] Stopped.");
+      };
+
+      // Hook mocap mixer into the render loop — updates handled in useTask below
+      (window as any).__getMocapMixer = () => mocapMixer;
+
       // Load initial avatar
       await loadAvatar(avatarId);
     } catch (err) {
@@ -333,6 +478,12 @@
 
   // Update animation each frame
   useTask((delta) => {
+    // Update mocap mixer if playing (runs independently of IK)
+    const mixer = (window as any).__getMocapMixer?.();
+    if (mixer) {
+      mixer.update(delta);
+    }
+
     if (!servicesReady || !animationService || useProceduralFallback) return;
 
     // Convert prop states from grid-local coords to WORLD coords for IK solver.
