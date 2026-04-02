@@ -45,6 +45,15 @@ In spell mode, shows bridge count as subtitle and allows upward adjustment.
   const MIN_LENGTH = $derived(minOverride ?? (loopEnabled ? 4 : 4));
   const STEP = $derived(loopEnabled ? 2 : 1);
 
+  // Clamp the displayed length to the tier cap. If the stored config has a
+  // value above the tier limit (e.g., default 16 for a guest with cap 8),
+  // push the clamped value back to the parent.
+  $effect(() => {
+    if (currentLength > MAX_LENGTH) {
+      onLengthChange(MAX_LENGTH);
+    }
+  });
+
   function handleIncrement() {
     if (locked) return;
     const newLength = Math.min(currentLength + STEP, MAX_LENGTH);
