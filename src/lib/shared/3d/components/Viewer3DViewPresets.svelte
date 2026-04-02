@@ -18,9 +18,9 @@
   // Grid center: avatar faces -Z, so grid offset is at -0.3 Z
   const GRID_CENTER = { x: 0, y: 1.55, z: -0.3 };
 
-  // Camera positions for each preset, keyed by learning mode.
-  // Learn = behind (camera at +Z, seeing avatar's back)
-  // Mirror = front (camera at -Z, seeing avatar's face)
+  // Avatar faces -Z. Its back faces +Z.
+  // Learn = see avatar's back = camera at +Z
+  // Mirror = see avatar's face = camera at -Z
   const CAMERA_POSITIONS = {
     main: {
       learn:  { x: 0,    y: 1.85, z: 3.0 },
