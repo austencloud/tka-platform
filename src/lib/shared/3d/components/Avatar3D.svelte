@@ -47,6 +47,7 @@
   import { FingerAnimator } from "$lib/shared/3d/services/implementations/FingerAnimator";
   import { ElbowPoleComputer } from "../services/implementations/ElbowPoleComputer";
   import { ClavicleRaiser } from "../services/implementations/ClavicleRaiser";
+  import { SpineTwister } from "../services/implementations/SpineTwister";
   import { GripType } from "$lib/shared/3d/domain/models/GripPose";
 
   // Default Z position for avatars
@@ -233,7 +234,8 @@
       const solver = new IKSolver();
       const poleComputer = new ElbowPoleComputer();
       const clavicleRaiser = new ClavicleRaiser();
-      const animator = new AvatarAnimator(solver, skeleton, poleComputer, clavicleRaiser);
+      const spineTwister = new SpineTwister();
+      const animator = new AvatarAnimator(solver, skeleton, poleComputer, clavicleRaiser, spineTwister);
       const legs = new LegAnimator();
 
       skeletonService = skeleton;
@@ -255,6 +257,12 @@
       (window as any).__toggleClavicleRaise = () => {
         const enabled = animator.toggleClavicleRaise();
         console.log(`Clavicle raise: ${enabled ? "ON (shoulders elevate)" : "OFF (shoulders static)"}`);
+        return enabled;
+      };
+
+      (window as any).__toggleSpineTwist = () => {
+        const enabled = animator.toggleSpineTwist();
+        console.log(`Spine twist: ${enabled ? "ON (torso/head rotate)" : "OFF (spine static)"}`);
         return enabled;
       };
 
