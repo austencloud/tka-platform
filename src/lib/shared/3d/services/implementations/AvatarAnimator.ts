@@ -52,6 +52,7 @@ export class AvatarAnimator implements IAvatarAnimator {
   private poleComputer: IElbowPoleComputer | null;
   private leftPoleVector = new Vector3(0, 0, 1);
   private rightPoleVector = new Vector3(0, 0, 1);
+  private _poleVectorsEnabled = true;
 
   constructor(
     private ikSolver: IIKSolver,
@@ -276,7 +277,7 @@ export class AvatarAnimator implements IAvatarAnimator {
         weight: pose.leftHand.weight,
       };
 
-      if (this.poleComputer && pose.leftHand.plane) {
+      if (this._poleVectorsEnabled && this.poleComputer && pose.leftHand.plane) {
         const idealPole = this.poleComputer.computePoleVector(
           pose.leftHand.targetPosition,
           pose.leftHand.plane,
@@ -297,7 +298,7 @@ export class AvatarAnimator implements IAvatarAnimator {
         weight: pose.rightHand.weight,
       };
 
-      if (this.poleComputer && pose.rightHand.plane) {
+      if (this._poleVectorsEnabled && this.poleComputer && pose.rightHand.plane) {
         const idealPole = this.poleComputer.computePoleVector(
           pose.rightHand.targetPosition,
           pose.rightHand.plane,
@@ -364,5 +365,16 @@ export class AvatarAnimator implements IAvatarAnimator {
 
   setSmoothingFactor(factor: number): void {
     this.smoothingFactor = Math.max(0, Math.min(1, factor));
+  }
+
+  /** Debug toggle: disable pole vectors to compare old vs new elbow behavior */
+  togglePoleVectors(): boolean {
+    this._poleVectorsEnabled = !this._poleVectorsEnabled;
+    if (!this._poleVectorsEnabled) {
+      // Reset to default backward poles so difference is visible immediately
+      this.leftPoleVector.set(0, 0, -1);
+      this.rightPoleVector.set(0, 0, -1);
+    }
+    return this._poleVectorsEnabled;
   }
 }

@@ -244,6 +244,13 @@
 
       servicesReady = true;
 
+      // Debug: toggle pole vectors from console with window.__togglePoleVectors()
+      (window as any).__togglePoleVectors = () => {
+        const enabled = animator.togglePoleVectors();
+        console.log(`Pole vectors: ${enabled ? "ON (new)" : "OFF (old — elbows bend backward)"}`);
+        return enabled;
+      };
+
       // Load initial avatar
       await loadAvatar(avatarId);
     } catch (err) {
