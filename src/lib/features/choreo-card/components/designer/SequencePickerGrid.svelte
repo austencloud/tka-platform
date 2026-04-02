@@ -34,6 +34,54 @@
     { label: "16", value: 16 },
   ];
 
+  // ── Column count with Shift+Scroll zoom ────────────────────────────
+  const STORAGE_KEY = "choreoCard.pickerColumns";
+  const MIN_COLUMNS = 1;
+  const MAX_COLUMNS = 4;
+  const SCROLL_THRESHOLD = 50;
+
+  function loadColumns(): number {
+    try {
+      const v = localStorage.getItem(STORAGE_KEY);
+      if (v) {
+        const n = parseInt(v, 10);
+        if (n >= MIN_COLUMNS && n <= MAX_COLUMNS) return n;
+      }
+    } catch { /* ignore */ }
+    return 3;
+  }
+
+  let columnCount = $state(loadColumns());
+  let cumulativeScrollDelta = 0;
+
+  $effect(() => {
+    try { localStorage.setItem(STORAGE_KEY, String(columnCount)); } catch { /* ignore */ }
+  });
+
+  $effect(() => {
+    const el = gridEl;
+    if (!el) return;
+    el.addEventListener("wheel", handleWheel, { passive: false });
+    return () => el.removeEventListener("wheel", handleWheel);
+  });
+
+  function handleWheel(ev: WheelEvent) {
+    if (!ev.shiftKey) return;
+    ev.preventDefault();
+
+    cumulativeScrollDelta += ev.deltaY;
+
+    if (cumulativeScrollDelta > SCROLL_THRESHOLD) {
+      // Scroll down = more columns (smaller thumbnails)
+      if (columnCount < MAX_COLUMNS) columnCount++;
+      cumulativeScrollDelta = 0;
+    } else if (cumulativeScrollDelta < -SCROLL_THRESHOLD) {
+      // Scroll up = fewer columns (larger thumbnails)
+      if (columnCount > MIN_COLUMNS) columnCount--;
+      cumulativeScrollDelta = 0;
+    }
+  }
+
   let gridEl: HTMLDivElement | undefined = $state();
 
   $effect(() => {
@@ -60,6 +108,20 @@
     {/each}
   </div>
 
+  <div class="column-chips" role="group" aria-label="Grid columns">
+    <i class="fas fa-th" aria-hidden="true" style="font-size: 11px; opacity: 0.5; margin-right: 2px;"></i>
+    {#each Array.from({ length: MAX_COLUMNS - MIN_COLUMNS + 1 }, (_, i) => i + MIN_COLUMNS) as col}
+      <button
+        class="chip"
+        class:active={columnCount === col}
+        onclick={() => { columnCount = col; }}
+        aria-pressed={columnCount === col}
+      >
+        {col}
+      </button>
+    {/each}
+  </div>
+
   {#if sequences.length === 0}
     <div class="empty-state">
       <i class="fas fa-filter" aria-hidden="true"></i>
@@ -70,12 +132,15 @@
       </p>
     </div>
   {:else}
-    <div class="thumbnail-grid themed-scrollbar" bind:this={gridEl}>
+    <div
+      class="thumbnail-grid themed-scrollbar"
+      bind:this={gridEl}
+    >
       {#each sequences as seq, i (seq.id ?? i)}
-        <!-- div instead of button: buttons don't honor aspect-ratio or child sizing -->
         <div
           class="thumbnail-cell"
           class:selected={i === selectedIndex}
+          style:width="calc({100 / columnCount}% - {(columnCount - 1) * 4 / columnCount}px)"
           onclick={() => onSelect(i)}
           onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(i); } }}
           role="button"
@@ -147,12 +212,23 @@
     color: #ffffff;
   }
 
+  /* ── Column selector chips ──────────────────────── */
+  .column-chips {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+    flex-shrink: 0;
+  }
+
   /* ── Thumbnail grid ────────────────────────────── */
   .thumbnail-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 6px;
-    padding: 6px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 4px;
     overflow-y: auto;
     flex: 1;
     min-height: 0;
@@ -162,8 +238,16 @@
   .thumbnail-cell {
     cursor: pointer;
     border-radius: 6px;
-    overflow: hidden;
     transition: transform 0.15s ease;
+    /* width set via inline style based on columnCount */
+  }
+
+  /* The PropAwareThumbnail uses calculateGalleryAspectRatio which assumes
+     header/footer/start-position. In this picker we disable all those, so the
+     rendered image is just the raw grid (landscape). Remove the mismatched
+     portrait aspect-ratio and let the image's natural dimensions drive height. */
+  .thumbnail-cell :global(.prop-thumbnail) {
+    aspect-ratio: auto !important;
   }
 
   .thumbnail-cell:hover:not(.selected) {
