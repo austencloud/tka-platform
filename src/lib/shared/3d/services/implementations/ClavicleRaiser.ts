@@ -59,11 +59,14 @@ export class ClavicleRaiser implements IClavicleRaiser {
 
     const angle = smoothed * MAX_CLAVICLE_ELEVATION;
 
-    // Left clavicle tilts toward +Z, right toward -Z (mirrored anatomy)
-    const sign = side === "left" ? 1 : -1;
+    // Rotate around the bone's local X axis (which points roughly backward
+    // in world space for this model's skeleton). This swings the clavicle
+    // tip upward, elevating the shoulder. The sign differs per side because
+    // negative X rotation lifts the left shoulder, positive lifts the right.
+    const sign = side === "left" ? -1 : 1;
 
     const result = new Quaternion();
-    result.setFromAxisAngle(new Vector3(0, 0, 1), angle * sign);
+    result.setFromAxisAngle(new Vector3(1, 0, 0), angle * sign);
     return result;
   }
 }
