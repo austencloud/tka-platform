@@ -167,15 +167,19 @@
           <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
           <span>{playback.animationState.error}</span>
         </div>
-      {:else if renderMode === '3d'}
-        <Viewer3DCanvas
-          sequenceData={playback.animationState.sequenceData}
-          currentStep={playback.currentStep}
-          isPlaying={playback.isPlaying}
-          bluePropType={propRendering.bluePropType != null ? String(propRendering.bluePropType) : null}
-          redPropType={propRendering.redPropType != null ? String(propRendering.redPropType) : null}
-        />
       {:else}
+        <!-- Both canvases stay mounted; toggle visibility for instant swap -->
+        {#if renderMode === '3d'}
+          <div class="canvas-layer" style="position:absolute;inset:0;z-index:1;">
+            <Viewer3DCanvas
+              sequenceData={playback.animationState.sequenceData}
+              currentStep={playback.currentStep}
+              isPlaying={playback.isPlaying}
+              bluePropType={propRendering.bluePropType != null ? String(propRendering.bluePropType) : null}
+              redPropType={propRendering.redPropType != null ? String(propRendering.redPropType) : null}
+            />
+          </div>
+        {/if}
         <AnimatorCanvas
           sequenceData={playback.animationState.sequenceData}
           currentStep={playback.currentStep}
