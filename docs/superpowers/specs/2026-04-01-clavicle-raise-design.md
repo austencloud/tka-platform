@@ -7,20 +7,36 @@
 
 ## Problem
 
-When the avatar's hands go above shoulder height (north positions, overhead reaches), the clavicle/shoulder bones remain static. This makes the avatar look stiff and robotic — real humans naturally elevate their clavicles when raising their arms, contributing roughly 1/3 of total arm elevation above 90 degrees.
+When the avatar's hands go above shoulder height (north positions, overhead reaches), the clavicle/shoulder bones remain static. This makes the avatar look stiff and robotic — real humans naturally elevate their clavicles when raising their arms. Unity's built-in IK has this same limitation; FinalIK's ShoulderRotator is the industry standard solution.
 
-## Solution
+## Anatomy: Scapulohumeral Rhythm
 
-A new stateless service (`ClavicleRaiser`) that computes clavicle bone rotation based on how far the hand target is above shoulder rest height. Applied before IK solving so the arm chain starts from the elevated shoulder position.
+Research-backed breakdown of how the shoulder actually works during arm elevation:
 
-## Anatomy Reference
+**The 2:1 ratio:** For every 2° of arm elevation, ~1° comes from scapular/clavicle movement (Inman 1944, confirmed by modern studies with measured range 1.25:1 to 3.2:1).
 
-The scapulohumeral rhythm (Inman et al., 1944; updated by Ludewig et al., 2009):
-- Below ~60° arm elevation: clavicle contribution is minimal
-- 60°–180° arm elevation: clavicle contributes ~1° for every 2-3° of arm elevation
-- Maximum clavicle elevation: ~25-30° (varies by individual)
-- Primary rotation axis: roughly the Z axis in skeleton space (forward roll of the shoulder)
-- Secondary: slight posterior tilt and axial rotation (we'll skip these for now — the primary elevation is what's visually important)
+**Three phases of arm abduction:**
+
+| Phase | Arm Angle | What Happens | Clavicle |
+|-------|-----------|-------------|----------|
+| Setting | 0°–30° | Humerus moves, scapula barely moves | No elevation |
+| Mid-range | 30°–90° | Scapula rotates ~20°, humerus ~40° | Begins elevating |
+| Overhead | 90°–180° | 2:1 ratio continues | Elevates up to ~15°, posteriorly rotates 30°–50° |
+
+**Key number:** Maximum clavicle elevation at the sternoclavicular joint is approximately **15°**. The clavicle carries the scapula upward, accounting for half of the scapula's total 60° upward rotation during full abduction.
+
+**What we model:** Primary clavicle elevation (the upward tilt). We skip posterior rotation and axial rotation — the elevation is what's visually dominant and what game engines like FinalIK focus on.
+
+## Industry Reference: FinalIK ShoulderRotator
+
+The gold standard in game animation (used in thousands of Unity titles):
+
+- **ShoulderWeight:** 0-1 float controlling how strongly the shoulder rotates (default ~0.5)
+- **ShoulderOffset:** How far the hand must move above shoulder before rotation activates
+- **Technique:** Rotate the clavicle bone **before** the IK solver reads the pose
+- **AdvIKPlugin** extends this with configurable weight + offset parameters
+
+Our implementation follows this same pattern.
 
 ## Architecture
 
@@ -40,7 +56,8 @@ export interface IClavicleRaiser {
   computeClavicleRotation(
     handTarget: Vector3,
     side: "left" | "right",
-    shoulderRestY: number
+    shoulderRestY: number,
+    armLength: number
   ): Quaternion;
 }
 ```
@@ -51,65 +68,75 @@ Single method. Pure function. No state. Returns a quaternion to apply to the cla
 
 - `handTarget`: world-space position of the hand IK target
 - `side`: which shoulder — determines rotation direction
-- `shoulderRestY`: the Y position of the shoulder at rest (no elevation). Obtained once from the skeleton's rest pose.
+- `shoulderRestY`: Y position of the shoulder at rest (no elevation)
+- `armLength`: total arm length (upper + lower). Used to normalize the elevation ratio so the same code works regardless of avatar scale.
+
+### Constants
+
+```typescript
+// Maximum clavicle elevation angle — from biomechanics research
+// Real humans: ~15° at the sternoclavicular joint during full abduction
+MAX_CLAVICLE_ELEVATION = 15 degrees (0.262 radians)
+
+// How much of the arm length must be exceeded before clavicle activates
+// Maps to the "setting phase" (0°-30° abduction) where clavicle barely moves
+ACTIVATION_THRESHOLD = 0.2  // 20% of arm length above shoulder
+
+// Tuning weight — how strongly the clavicle responds (FinalIK-style)
+// 1.0 = full anatomical response, 0.5 = half, 0.0 = disabled
+DEFAULT_WEIGHT = 1.0
+```
 
 ### Computation
 
 ```
 elevationAboveShoulder = max(0, handTarget.y - shoulderRestY)
-armReachAboveShoulder = totalArmLength  // upper + lower arm length
-elevationRatio = clamp(elevationAboveShoulder / armReachAboveShoulder, 0, 1)
-```
-
-The clavicle rotation angle follows a curve:
-- 0% elevation ratio → 0° clavicle rotation
-- Below ~30% (hand near shoulder height): minimal rotation (ease-in)
-- 30%-100%: scales to MAX_CLAVICLE_ELEVATION (25°)
-
-Using an ease-in curve (quadratic or smoothstep) rather than linear ensures the clavicle doesn't visibly twitch for small hand movements near shoulder height.
-
-```
-MAX_CLAVICLE_ELEVATION = 25 degrees (0.436 radians)
-ACTIVATION_THRESHOLD = 0.15  // below this ratio, no rotation
+elevationRatio = clamp(elevationAboveShoulder / armLength, 0, 1)
 
 if elevationRatio < ACTIVATION_THRESHOLD:
   angle = 0
 else:
+  // Remap to 0-1 range above the threshold
   normalizedRatio = (elevationRatio - ACTIVATION_THRESHOLD) / (1 - ACTIVATION_THRESHOLD)
-  angle = smoothstep(normalizedRatio) * MAX_CLAVICLE_ELEVATION
+  // Smoothstep for natural ease-in (avoids twitching near threshold)
+  smoothed = normalizedRatio * normalizedRatio * (3 - 2 * normalizedRatio)
+  angle = smoothed * MAX_CLAVICLE_ELEVATION * weight
 ```
 
 The rotation quaternion is constructed around the skeleton's local Z axis:
-- Left shoulder: positive Z rotation (lifts left shoulder)
-- Right shoulder: negative Z rotation (lifts right shoulder)
+- Left shoulder: positive Z rotation (lifts left shoulder upward)
+- Right shoulder: negative Z rotation (lifts right shoulder upward)
 
-Note: The exact axis may need tuning based on the GLTF model's bone orientation. The implementation should derive the rotation axis from the bone's rest pose rather than hardcoding an axis.
+Note: The exact rotation axis depends on the GLTF model's bone orientation. If the model uses a different convention, the axis will need adjustment during implementation. The tests verify the rotation magnitude and direction, not the specific axis.
 
 ### Integration into AvatarAnimator
 
 In `applyIKToSkeleton()`, **before** the IK solve for each arm:
 
 1. Get the clavicle bone: `state.bones.get("LeftShoulder")` / `state.bones.get("RightShoulder")`
-2. Compute target rotation via `ClavicleRaiser`
-3. Slerp current bone quaternion toward target (using `smoothingFactor`)
-4. Apply to bone and update world matrix
-5. Proceed with IK solve (which now uses the elevated shoulder position as chain root parent)
+2. If bone exists and `clavicleRaiser` is provided:
+   a. Compute target rotation via `ClavicleRaiser`
+   b. Slerp current bone quaternion toward target (using `smoothingFactor`)
+   c. Apply to bone
+   d. Call `bone.updateMatrixWorld(true)` to propagate to child bones
+3. Proceed with IK solve (which now starts from the elevated shoulder position)
 
-This ordering is critical: the clavicle elevation changes where the IK chain root is in world space, so the IK solver naturally accounts for it.
+This ordering is critical: the clavicle elevation changes where the IK chain root (`LeftArm`) is in world space, so the IK solver naturally accounts for it.
 
-### Obtaining shoulderRestY
+### Obtaining shoulderRestY and armLength
 
-On skeleton load (in `AvatarAnimator` constructor or init), capture the world-space Y position of the LeftArm bone (the IK chain root, which is the child of the clavicle). This is the "rest height" of the shoulder. Since the avatar can be scaled via `setHeight()`, this value should be re-captured after any height change.
+Both values come from the existing skeleton data:
+- `shoulderRestY`: Get world position of `LeftArm`/`RightArm` bone (IK chain root) at rest. Cache per skeleton load.
+- `armLength`: Already available as `chain.totalLength` (= `chain.upperLength + chain.lowerLength`) on the `BoneChain`.
 
-Alternatively, compute it each frame from the Hips bone Y + a fixed ratio. The per-frame approach is simpler and handles height changes automatically.
-
-Simpler approach chosen: use `bodyCenter.y + SHOULDER_HEIGHT_OFFSET` where `SHOULDER_HEIGHT_OFFSET` is a proportion of avatar height (~0.35 of total height from hips). Since we already compute `bodyCenter` for pole vectors, this adds no new bone lookups.
+Since `bodyCenter` is already computed each frame for pole vectors, and the arm chains are already fetched, this adds minimal overhead.
 
 ## Backward Compatibility
 
 - `ClavicleRaiser` is optional in `AvatarAnimator` (same pattern as `ElbowPoleComputer`)
 - If not provided, clavicle bones remain static (current behavior)
 - No interface changes to `IIKSolver` or `IKTarget`
+- Constructor gains one more optional parameter
 
 ## Files Changed
 
@@ -126,16 +153,30 @@ Simpler approach chosen: use `bodyCenter.y + SHOULDER_HEIGHT_OFFSET` where `SHOU
 Pure math — ideal for unit tests:
 
 1. **Hand below shoulder height:** Returns identity quaternion (no rotation)
-2. **Hand at shoulder height:** Returns identity or near-zero rotation
-3. **Hand well above shoulder:** Returns rotation up to MAX_CLAVICLE_ELEVATION
-4. **Hand at maximum reach:** Rotation capped at MAX_CLAVICLE_ELEVATION
-5. **Left vs right:** Opposite rotation directions
-6. **All results are unit quaternions:** Length ≈ 1
-7. **Smooth activation:** Small elevation above threshold produces small rotation (not a jump)
+2. **Hand at shoulder height:** Returns identity quaternion (within activation threshold)
+3. **Hand slightly above threshold:** Returns small positive rotation (smooth ease-in, no jump)
+4. **Hand well above shoulder:** Returns rotation approaching MAX_CLAVICLE_ELEVATION
+5. **Hand at maximum reach (armLength above shoulder):** Rotation capped at MAX_CLAVICLE_ELEVATION (15°)
+6. **Left vs right:** Opposite rotation directions (positive Z vs negative Z)
+7. **All results are unit quaternions:** Length ≈ 1
+8. **Monotonic increase:** Higher hand → equal or greater rotation angle (never decreases)
+
+## Debug Toggle
+
+Add `window.__toggleClavicleRaise()` (same pattern as pole vector toggle) for A/B comparison during development.
 
 ## Future: Spine Twist (Next in Pipeline)
 
-The spine twist service would follow this exact same pattern:
+The spine twist service follows this exact same pattern:
 - Reads hand positions, computes a rotation for Spine1/Spine2 bones
 - Applied before IK, after clavicle raise
 - The pipeline in `applyIKToSkeleton()` becomes: clavicle raise → spine twist → IK solve → (future: collision resolve)
+
+## Sources
+
+- [Scapulohumeral Rhythm - Physiopedia](https://www.physio-pedia.com/Scapulohumeral_Rhythm) — canonical biomechanics reference
+- [Scapulohumeral Rhythm Degrees - Hand Therapy Academy](https://www.handtherapyacademy.com/treatments/increase-shoulder-range-by-improving-scapulohumeral-rhythm/) — phase breakdown with degree values
+- [FinalIK ShoulderRotator](http://www.root-motion.com/finalikdox/html/page8.html) — industry-standard game implementation
+- [AdvIKPlugin (GitHub)](https://github.com/OrangeSpork/AdvIKPlugin) — extended shoulder rotation with weight/offset params
+- [Unity Animation Rigging - Procedural Poses](https://unity.com/resources/procedural-poses-motion-animation-rigging) — Unity's official procedural animation guide
+- [Unity Discussion: Shoulder pull after TwoBone IK](https://discussions.unity.com/t/animation-rigging-proper-way-to-pull-shoulder-a-bit-after-twobone-ik-constraint/786976) — community solution for same problem
