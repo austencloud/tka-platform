@@ -24,23 +24,25 @@
   // NOTE: this is counterintuitive but verified with screenshots.
   // From -Z looking +Z, pictograph matches when you orbit to the back.
   // The avatar's "face" direction in GLTF doesn't match the grid direction.
-  // Main preset measured to match 2D grid: distance 1.94m, Y offset +0.14m
+  // Main preset: measured from 2D pixel positions.
+  // Grid center at (50%, 51.79%), diameter 46.60% of pane.
+  // FOV=50°, aspect ~1.013 → distance 2.36m, Y offset +0.04m.
   const CAMERA_POSITIONS = {
     main: {
-      learn:  { x: 0,    y: 1.69, z: -2.24 },
-      mirror: { x: 0,    y: 1.69, z: 1.64 },
+      learn:  { x: 0,    y: 1.59, z: -2.66 },
+      mirror: { x: 0,    y: 1.59, z: 2.06 },
     },
     side: {
-      learn:  { x: 2.24,  y: 1.69, z: -0.3 },
-      mirror: { x: -2.24, y: 1.69, z: -0.3 },
+      learn:  { x: 2.66,  y: 1.59, z: -0.3 },
+      mirror: { x: -2.66, y: 1.59, z: -0.3 },
     },
     top: {
-      learn:  { x: 0, y: 4.0, z: -0.29 },
-      mirror: { x: 0, y: 4.0, z: -0.31 },
+      learn:  { x: 0, y: 4.5, z: -0.29 },
+      mirror: { x: 0, y: 4.5, z: -0.31 },
     },
     threequarter: {
-      learn:  { x: 1.3, y: 2.5, z: -1.8 },
-      mirror: { x: -1.3, y: 2.5, z: 1.3 },
+      learn:  { x: 1.5, y: 2.8, z: -2.0 },
+      mirror: { x: -1.5, y: 2.8, z: 1.5 },
     },
   };
 

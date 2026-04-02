@@ -17,11 +17,13 @@
 
   const viewer3DState = getViewer3DContext();
 
-  // Default = Learn mode = behind avatar = camera at -Z.
-  // Measured from 2D canvas: grid center is 74px below pane center (out of 952px),
-  // grid fills 57% of pane width. At FOV=50° this requires distance ~1.94m.
-  // Camera Y offset 0.14m above grid center (Y=1.55) to push grid below viewport center.
-  const defaultPosition = { x: 0, y: 1.69, z: -2.24 };
+  // Measured from 2D canvas pixel positions:
+  //   Grid center at (50.00%, 51.79%) of pane
+  //   Grid diameter = 46.60% of pane width
+  //   At FOV=50°, aspect 964/952: distance = 2.36m
+  //   Y offset = 0.04m above grid center (1.55) to place at 51.79%
+  // Grid center is at z = -0.3 (gridOffset with facingAngle=0)
+  const defaultPosition = { x: 0, y: 1.59, z: -2.66 };
   const defaultTarget = { x: 0, y: 1.55, z: -0.3 };
 
   // Restore persisted camera if available, otherwise use default
