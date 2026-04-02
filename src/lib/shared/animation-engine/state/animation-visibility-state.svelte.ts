@@ -148,7 +148,7 @@ export class AnimationVisibilityStateManager {
       progressBar: true, // Show progress bar by default
 
       // Global effects
-      darkMode: false, // Dark Mode disabled by default
+      darkMode: true, // Dark Mode enabled by default (better first impression)
 
       // Fire Effect tuning
       fireColorBlend: 0.5, // Halfway between natural and prop-colored
