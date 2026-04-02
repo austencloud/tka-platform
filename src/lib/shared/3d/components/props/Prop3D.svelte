@@ -2,9 +2,9 @@
   /**
    * Prop3D — Dispatcher Component
    *
-   * Maps a PropType enum value to the correct 3D geometry component.
-   * "Big" variants are handled by passing a scale multiplier to the
-   * base prop component rather than duplicating geometry.
+   * Two-tier rendering:
+   * 1. If a GLTF model exists in the registry → render GltfProp3D (high quality)
+   * 2. Otherwise → fall back to procedural geometry component (always available)
    *
    * This is the single entry point for rendering any prop in 3D.
    * Scenes should use <Prop3D> instead of <Staff3D> directly.
@@ -12,8 +12,10 @@
 
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import type { PropState3D } from "../../domain/models/PropState3D";
+  import { resolvePropModel } from "./prop-model-registry";
+  import GltfProp3D from "./GltfProp3D.svelte";
 
-  // Prop geometry components
+  // Procedural fallback geometry components
   import Staff3D from "../Staff3D.svelte";
   import Club3D from "./Club3D.svelte";
   import Fan3D from "./Fan3D.svelte";
@@ -53,12 +55,30 @@
   }: Props = $props();
 
   // "Big" variants use a 1.4x scale on the base prop.
-  // This avoids duplicating geometry components.
   const BIG_SCALE = 1.4;
+
+  // Check if a GLTF model is available for this prop type.
+  // resolvePropModel handles big variant → base type resolution.
+  const gltfResolution = $derived(resolvePropModel(propType));
 </script>
 
 {#if visible}
-  {#if propType === PropType.STAFF || propType === PropType.SIMPLESTAFF || propType === PropType.STAFF2}
+  <!-- Tier 1: GLTF model (when available in registry) -->
+  {#if gltfResolution}
+    <GltfProp3D
+      modelEntry={gltfResolution.entry}
+      {propState}
+      {color}
+      {visible}
+      {avatarPosition}
+      {facingAngle}
+      {gridOffset}
+      {isActivePlayer}
+      extraScale={gltfResolution.scale}
+    />
+
+  <!-- Tier 2: Procedural fallback geometry -->
+  {:else if propType === PropType.STAFF || propType === PropType.SIMPLESTAFF || propType === PropType.STAFF2}
     <Staff3D {propState} {color} {visible} {avatarPosition} {facingAngle} {gridOffset} {isActivePlayer} />
   {:else if propType === PropType.BIGSTAFF}
     <Staff3D {propState} {color} {visible} {avatarPosition} {facingAngle} {gridOffset} {isActivePlayer} />
