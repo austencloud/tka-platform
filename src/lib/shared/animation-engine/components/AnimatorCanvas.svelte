@@ -38,6 +38,9 @@ Last audit: 2025-12-27
   import { AnimationEngine } from "../services/implementations/AnimationEngine.svelte";
   import { getAnimationVisibilityManager, type AnimationVisibilityStateManager } from "../state/animation-visibility-state.svelte";
   import { sequenceLoopabilityChecker } from "$lib/features/compose/services/implementations/SequenceLoopabilityChecker";
+  import { SequenceDifficultyCalculator } from "$lib/features/browse/sequences/display/services/implementations/SequenceDifficultyCalculator";
+  import { LOOPTypeResolver } from "$lib/features/create/generate/shared/services/implementations/LOOPTypeResolver";
+  import { loopDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
   import type { FireOverlayConfig } from "../domain/types/FireTypes";
   import type { LedOverlayConfig } from "../domain/types/LedTypes";
   import type { TipEffectMap, TipEffortMap } from "../domain/types/TipEffectTypes";
@@ -283,6 +286,37 @@ Last audit: 2025-12-27
     visibilityManager.unregisterObserver(handleVisibilityChange);
   });
 
+  // Difficulty level from sequence data
+  const difficultyCalculator = new SequenceDifficultyCalculator();
+  const loopTypeResolver = new LOOPTypeResolver();
+
+  const computedDifficultyLevel = $derived.by(() => {
+    if (!sequenceData?.steps?.length) return null;
+    return difficultyCalculator.calculateDifficultyLevel([...sequenceData.steps]);
+  });
+
+  const computedLoopComponents = $derived.by(() => {
+    if (!sequenceData) return null;
+    const loopType = sequenceData.loopType;
+    if (loopType) {
+      const components = loopTypeResolver.parseComponents(loopType);
+      return components.size > 0 ? components : null;
+    }
+    // Auto-detect if no explicit loopType
+    if (sequenceData.steps?.length) {
+      try {
+        const result = loopDetector.detectLOOPType(sequenceData);
+        if (result.loopType) {
+          const components = loopTypeResolver.parseComponents(result.loopType);
+          return components.size > 0 ? components : null;
+        }
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  });
+
   // When an external caller (e.g. video export orchestrator) signals that the
   // fire frame cache is stale, invalidate it so the simulation re-records.
   let lastFireInvalidationSignal = fireCacheInvalidation.signal;
@@ -453,6 +487,8 @@ Last audit: 2025-12-27
         visible={wordHeaderVisible}
         darkMode={darkModeEnabled}
         activeStepNumber={currentStep >= 1 && currentStep < (sequenceData?.steps?.length ?? 0) + 0.99 ? Math.floor(currentStep) : null}
+        difficultyLevel={computedDifficultyLevel}
+        loopComponents={computedLoopComponents}
       />
     </div>
 

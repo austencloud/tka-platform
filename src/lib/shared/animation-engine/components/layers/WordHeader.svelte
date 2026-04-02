@@ -14,19 +14,35 @@ Supports letter highlighting during animation playback.
   import { safeSlide } from "$lib/shared/utils/transitions";
   import { simplifyAndTruncate } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
   import { untrack } from "svelte";
+  import { DIFFICULTY_LEVELS, DEFAULT_DIFFICULTY_STYLE } from "$lib/shared/config/difficulty-styles";
+  import LOOPIconStrip from "$lib/shared/components/LOOPIconStrip.svelte";
+  import type { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
 
   let {
     word = null,
     visible = true,
     darkMode = false,
     activeStepNumber = null,
+    difficultyLevel = null,
+    loopComponents = null,
   }: {
     word?: string | null;
     visible?: boolean;
     darkMode?: boolean;
     /** Current beat number during animation playback (1-indexed) for letter highlighting */
     activeStepNumber?: number | null;
+    /** Difficulty level (1-18) to show as a badge on the left */
+    difficultyLevel?: number | null;
+    /** LOOP components to show as icon strip on the right */
+    loopComponents?: Set<LOOPComponent> | null;
   } = $props();
+
+  // Difficulty badge styling from shared config
+  const currentLevelStyle = $derived.by(() => {
+    if (difficultyLevel == null) return null;
+    const style = DIFFICULTY_LEVELS[difficultyLevel] ?? DEFAULT_DIFFICULTY_STYLE;
+    return { bg: style.cssBg, border: style.border, text: style.text };
+  });
 
   // Animation state machine: "idle" | "exiting" | "entering"
   let animationPhase = $state<"idle" | "exiting" | "entering">("idle");
@@ -164,6 +180,19 @@ Supports letter highlighting during animation playback.
     data-controlled="true"
     transition:safeSlide={{ duration: 350, easing: cubicOut }}
   >
+    {#if difficultyLevel != null && currentLevelStyle}
+      <div
+        class="difficulty-badge"
+        style="
+          background: {currentLevelStyle.bg};
+          border-color: {currentLevelStyle.border};
+          color: {currentLevelStyle.text};
+        "
+      >
+        {difficultyLevel}
+      </div>
+    {/if}
+
     <span class="word-text">
       {#if hasActiveHighlighting && parsedLetters.length > 0 && animationPhase === "idle"}
         <!-- Active playback mode: highlight current letter -->
@@ -186,6 +215,17 @@ Supports letter highlighting during animation playback.
         {/each}
       {/if}
     </span>
+
+    {#if loopComponents}
+      <div class="loop-icon-badge">
+        <LOOPIconStrip
+          activeComponents={loopComponents}
+          size={20}
+          darkMode={darkMode}
+          showFreeformWhenEmpty={false}
+        />
+      </div>
+    {/if}
   </div>
 {/if}
 
@@ -193,9 +233,10 @@ Supports letter highlighting during animation playback.
   /* Full-width header attached to canvas (matches image export style) */
   .word-header {
     width: 100%;
+    position: relative;
     display: flex;
-    flex-direction: column;
-    align-items: stretch;
+    align-items: center;
+    justify-content: center;
     box-sizing: border-box;
     flex-shrink: 0;
     background: var(--theme-panel-bg, rgba(240, 240, 240, 0.98));
@@ -204,6 +245,43 @@ Supports letter highlighting during animation playback.
     transition:
       background 150ms ease-out,
       border-color 150ms ease-out;
+  }
+
+  .difficulty-badge {
+    position: absolute;
+    left: clamp(6px, 3cqw, 12px);
+    top: 50%;
+    transform: translateY(-50%);
+    width: clamp(24px, 7cqw, 34px);
+    height: clamp(24px, 7cqw, 34px);
+    border-radius: 50%;
+    border: 1.5px solid black;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: Cambria, serif;
+    font-weight: bold;
+    font-size: clamp(12px, 4cqw, 18px);
+    flex-shrink: 0;
+  }
+
+  .loop-icon-badge {
+    position: absolute;
+    right: clamp(6px, 3cqw, 12px);
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    padding: 2px 4px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+    height: clamp(24px, 7cqw, 34px);
+  }
+
+  .word-header.dark-mode .loop-icon-badge {
+    background: rgba(255, 255, 255, 0.1);
   }
 
   .word-text {
