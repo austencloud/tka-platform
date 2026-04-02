@@ -15,26 +15,28 @@
 
   const viewer3DState = getViewer3DContext();
 
-  const GRID_CENTER = { x: 0, y: 1.55, z: 0.3 };
+  // Grid center: avatar faces -Z, so grid offset is at -0.3 Z
+  const GRID_CENTER = { x: 0, y: 1.55, z: -0.3 };
 
   // Camera positions for each preset, keyed by learning mode.
-  // In mirror mode, Z and X flip to look from the opposite side.
+  // Learn = behind (camera at +Z, seeing avatar's back)
+  // Mirror = front (camera at -Z, seeing avatar's face)
   const CAMERA_POSITIONS = {
     main: {
-      learn:  { x: 0,    y: 1.85, z: -3.0 },
-      mirror: { x: 0,    y: 1.85, z: 3.6 },
+      learn:  { x: 0,    y: 1.85, z: 3.0 },
+      mirror: { x: 0,    y: 1.85, z: -3.6 },
     },
     side: {
-      learn:  { x: 3.2,  y: 1.85, z: 0.3 },
-      mirror: { x: -3.2, y: 1.85, z: 0.3 },
+      learn:  { x: 3.2,  y: 1.85, z: -0.3 },
+      mirror: { x: -3.2, y: 1.85, z: -0.3 },
     },
     top: {
-      learn:  { x: 0, y: 5.0, z: 0.29 },
-      mirror: { x: 0, y: 5.0, z: 0.31 },
+      learn:  { x: 0, y: 5.0, z: -0.29 },
+      mirror: { x: 0, y: 5.0, z: -0.31 },
     },
     threequarter: {
-      learn:  { x: -2.0, y: 3.5, z: -2.2 },
-      mirror: { x: 2.0,  y: 3.5, z: 2.5 },
+      learn:  { x: 2.0, y: 3.5, z: 2.2 },
+      mirror: { x: -2.0, y: 3.5, z: -2.5 },
     },
   };
 

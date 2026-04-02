@@ -39,11 +39,10 @@
   // push the visual model down so feet land at y=0. Same pattern as MuseumPerformerStation3D.
   const STAGE_LIFT = $derived(-userProportionsState.groundY);
   const avatarPosition = $derived({ x: 0, y: STAGE_LIFT, z: 0 });
-  // Avatar faces +Z (toward audience) at facingAngle=0. The default camera
-  // sits at -Z (behind the performer), so the viewer sees the avatar's back.
-  // This matches TKA pictograph notation: performer's right (red) appears on
-  // the viewer's right, performer's left (blue) on the viewer's left.
-  const facingAngle = 0;
+  // Avatar faces -Z (facingAngle = π). Camera at +Z sees the avatar's back.
+  // In Three.js right-handed coords, +X = screen right from +Z camera.
+  // East (+X) naturally appears on the right — no coordinate mirroring needed.
+  const facingAngle = Math.PI;
 
   // Puppet-mode sync loop: convert the orchestrator's floating-point currentStep
   // into avatar beat index + sub-beat progress each frame.
@@ -53,11 +52,22 @@
   //
   // stepConfigs now includes the start position at index 0, so the mapping
   // is direct: 2D beat N → 3D index N (no offset needed).
+  let _diagOnce = false;
   useTask(() => {
     const beatIndex = Math.floor(currentStep);
     const subBeatProgress = currentStep - beatIndex;
     avatarState.goToStep(beatIndex);
     avatarState.setProgress(subBeatProgress);
+
+    if (!_diagOnce && avatarState.bluePropState) {
+      _diagOnce = true;
+      const b = avatarState.bluePropState;
+      const r = avatarState.redPropState;
+      console.log(`[DIAG:Scene] currentStep=${currentStep.toFixed(2)} beatIndex=${beatIndex}`);
+      console.log(`[DIAG:Scene] blue worldPos: x=${b.worldPosition.x.toFixed(3)} y=${b.worldPosition.y.toFixed(3)}`);
+      if (r) console.log(`[DIAG:Scene] red worldPos: x=${r.worldPosition.x.toFixed(3)} y=${r.worldPosition.y.toFixed(3)}`);
+      console.log(`[DIAG:Scene] blue staffAngle=${b.staffRotationAngle.toFixed(3)} centerPath=${b.centerPathAngle.toFixed(3)}`);
+    }
   });
 
   // Mirror mode: swap blue↔red AND mirror X positions so the performer

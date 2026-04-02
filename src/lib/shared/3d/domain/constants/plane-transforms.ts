@@ -64,9 +64,8 @@ export function planeAngleToWorldPosition(
 
   switch (plane) {
     case Plane.WALL:
-      // XY plane: E(0)→+X(right), N(-π/2)→+Y(up), S(π/2)→-Y(down), W(π)→-X(left)
-      // From behind (camera at -Z): +X = screen right = performer's right = east ✓
-      // Y inversion: canvas sin (Y-down) becomes -sin (Y-up)
+      // XY plane: E(0)→+X, N(-π/2)→+Y, S(π/2)→-Y, W(π)→-X
+      // Camera at +Z sees +X as screen right. No mirror needed.
       return new Vector3(cos_a * radius, -sin_a * radius, 0);
 
     case Plane.WHEEL:
@@ -74,7 +73,7 @@ export function planeAngleToWorldPosition(
       return new Vector3(0, -sin_a * radius, -cos_a * radius);
 
     case Plane.FLOOR:
-      // XZ plane: E(0)→+X(right), N(-π/2)→+Z(forward)
+      // XZ plane: E(0)→+X, N(-π/2)→+Z(forward)
       return new Vector3(cos_a * radius, 0, sin_a * radius);
 
     default:
@@ -174,7 +173,7 @@ export function calculatePropQuaternion(
   const planeQuat = getPlaneQuaternion(plane);
 
   // Add staff rotation around the plane's normal
-  // Negate angle to convert from canvas (Y-down) to Three.js (Y-up)
+  // Negate angle to convert from canvas (Y-down clockwise) to Three.js (Y-up counter-clockwise)
   const normal = getPlaneNormal(plane);
   const staffQuat = new Quaternion().setFromAxisAngle(normal, -staffAngle);
 
