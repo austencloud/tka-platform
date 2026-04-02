@@ -131,5 +131,6 @@ export const PRODUCTION_MODULES: Record<ModuleId, boolean> = {
   "hand-paths": false, // Hand path explorer + builder (graduated from Lab)
   video: false, // Video analysis, trails, effects (graduated from Lab)
   social: false, // Social module: community map + nearby spinner sync (graduated from Lab)
+  museum: false, // The Archive — walkable museum with 2D/3D flip
   lab: false, // Experimental features lab (admin-only) - consolidates mandala, skewlab, poi-lab, background-builder, landing-preview, ml-training
 };

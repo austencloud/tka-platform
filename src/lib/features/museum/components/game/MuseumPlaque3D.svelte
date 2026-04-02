@@ -23,9 +23,9 @@
 
   // ── Size dimensions (world units) ──
   const PLAQUE_DIMS: Record<PlaqueSize, { w: number; h: number; d: number }> = {
-    standard: { w: 0.4, h: 1.5, d: 0.08 },
-    large: { w: 0.75, h: 1.5, d: 0.08 },
-    "dev-whiteboard": { w: 1.5, h: 2.5, d: 0.06 },
+    standard: { w: 0.9, h: 1.2, d: 0.05 },
+    large: { w: 1.4, h: 1.2, d: 0.05 },
+    "dev-whiteboard": { w: 2.5, h: 2.0, d: 0.04 },
   };
 
   // Frame is slightly larger than the plaque in every dimension
@@ -48,33 +48,43 @@
   );
 
   // ── Materials ──
+  const isWhiteboard = size === "dev-whiteboard";
+
   const plaqueMat = new MeshStandardMaterial({
     map: texture,
     roughness: 0.85,
     metalness: 0.0,
+    emissive: isWhiteboard ? "#e0e0d8" : "#c8a860",
+    emissiveIntensity: isWhiteboard ? 0.4 : 0.25,
+    emissiveMap: texture,
   });
 
-  const isWhiteboard = size === "dev-whiteboard";
   const frameMat = new MeshStandardMaterial({
     color: isWhiteboard ? "#ccccbb" : "#8a7040",
     metalness: isWhiteboard ? 0.1 : 0.6,
     roughness: isWhiteboard ? 0.6 : 0.4,
   });
 
+  // ── Push plaque flush against wall ──
+  // The wallOffset from parent positions the plaque center on the tile.
+  // Add an extra nudge so the plaque back face touches the wall surface.
+  const wallNudge = dims.d / 2 + 0.01; // half plaque depth + tiny gap
+  const nudgeX = wallOffsetX !== 0 ? Math.sign(wallOffsetX) * wallNudge : 0;
+  const nudgeZ = wallOffsetZ !== 0 ? Math.sign(wallOffsetZ) * wallNudge : 0;
+
   // ── Compute frame offset (slightly behind plaque, toward wall) ──
-  // Frame sits half the plaque depth + half the frame depth behind the plaque face
   const frameBehindDist = dims.d / 2 + FRAME_DEPTH / 2;
   const frameOffsetX = -Math.sin(yaw) * frameBehindDist;
   const frameOffsetZ = -Math.cos(yaw) * frameBehindDist;
 </script>
 
-<!-- Plaque face — textured mesh at eye level, shifted against wall -->
+<!-- Plaque face — textured mesh at eye level, flush against wall -->
 <T.Mesh
   geometry={plaqueGeo}
   material={plaqueMat}
-  position.x={worldX + wallOffsetX}
+  position.x={worldX + wallOffsetX + nudgeX}
   position.y={PLAQUE_Y}
-  position.z={worldZ + wallOffsetZ}
+  position.z={worldZ + wallOffsetZ + nudgeZ}
   rotation.y={yaw}
 />
 
@@ -82,8 +92,8 @@
 <T.Mesh
   geometry={frameGeo}
   material={frameMat}
-  position.x={worldX + wallOffsetX + frameOffsetX}
+  position.x={worldX + wallOffsetX + nudgeX + frameOffsetX}
   position.y={PLAQUE_Y}
-  position.z={worldZ + wallOffsetZ + frameOffsetZ}
+  position.z={worldZ + wallOffsetZ + nudgeZ + frameOffsetZ}
   rotation.y={yaw}
 />

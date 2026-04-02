@@ -10,7 +10,7 @@
     "realm-world": () => import("./RealmDestination.svelte"),
     archive: () => import("./destinations/archive/ArchiveDestination.svelte"),
     museum: () => import("./destinations/museum/MuseumDestination.svelte"),
-    "museum-2d": () => import("$lib/features/museum-2d/Museum2DModule.svelte"),
+    "museum-2d": () => import("$lib/features/museum/MuseumModule.svelte"),
     "3d-controls": () => import("./tools/3d-controls/ThreeDControlsLab.svelte"),
   };
 

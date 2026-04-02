@@ -627,6 +627,41 @@ export const RETRO_TABS: Section[] = [
   },
 ];
 
+export const ARCHIVE_TABS: Section[] = [
+  {
+    id: "play",
+    label: "Play",
+    icon: '<i class="fas fa-gamepad" aria-hidden="true"></i>',
+    description: "Walk the museum in top-down or 3D",
+    color: "#f59e0b",
+    gradient: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)",
+  },
+  {
+    id: "edit",
+    label: "Edit",
+    icon: '<i class="fas fa-pen" aria-hidden="true"></i>',
+    description: "Edit the museum floor plan",
+    color: "#a78bfa",
+    gradient: "linear-gradient(135deg, #c4b5fd 0%, #a78bfa 100%)",
+  },
+  {
+    id: "showroom",
+    label: "Showroom",
+    icon: '<i class="fas fa-cubes" aria-hidden="true"></i>',
+    description: "Preview all available 3D props and textures",
+    color: "#06b6d4",
+    gradient: "linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%)",
+  },
+  {
+    id: "3p-test",
+    label: "3P Test",
+    icon: '<i class="fas fa-flask" aria-hidden="true"></i>',
+    description: "Test third-person character controller",
+    color: "#10b981",
+    gradient: "linear-gradient(135deg, #34d399 0%, #10b981 100%)",
+  },
+];
+
 export const REALM_TABS: Section[] = [
   {
     id: "realm-world",
@@ -635,14 +670,6 @@ export const REALM_TABS: Section[] = [
     description: "Campground clearing with procedural forest",
     color: "#10b981",
     gradient: "linear-gradient(135deg, #34d399 0%, #10b981 100%)",
-  },
-  {
-    id: "museum-2d",
-    label: "The Archive",
-    icon: '<i class="fas fa-landmark" aria-hidden="true"></i>',
-    description: "Explore The Kinetic Archive — walk the museum, examine exhibits, flip into 3D",
-    color: "#f59e0b",
-    gradient: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)",
   },
   {
     id: "3d-controls",
@@ -845,6 +872,14 @@ export const LAB_TABS: Section[] = [
     description: "Kaleidoscope art with arrow glyphs",
     color: "#f472b6",
     gradient: "linear-gradient(135deg, #f9a8d4 0%, #f472b6 100%)",
+  },
+  {
+    id: "mandala-drawing",
+    label: "Mandala Drawing",
+    icon: '<i class="fas fa-circle-notch" style="color: #c084fc;" aria-hidden="true"></i>',
+    description: "Live mandala tracing during animation playback",
+    color: "#c084fc",
+    gradient: "linear-gradient(135deg, #d8b4fe 0%, #c084fc 100%)",
   },
   // ml-training removed (Mar 2026)
   // multi-grid graduated to Levels module as conjoined-grid (Mar 2026)
