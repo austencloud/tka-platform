@@ -16,7 +16,6 @@
   } from "../domain/viewer-prop-groups";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import Viewer3DCanvas from "$lib/shared/3d/components/Viewer3DCanvas.svelte";
-  import { getViewer3DContext } from "$lib/shared/3d/context/viewer-3d-context";
   import ChoreoCard from "./ChoreoCard.svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
@@ -84,24 +83,6 @@
     onChoreoCardContextMenu,
     rerenderTrigger = 0,
   }: Props = $props();
-
-  // 3D viewer context for the toggle button
-  let viewer3DState: ReturnType<typeof getViewer3DContext> | undefined;
-  try {
-    viewer3DState = getViewer3DContext();
-  } catch {
-    // Not in a viewer context
-  }
-
-  function toggleRenderMode(e: MouseEvent) {
-    e.stopPropagation();
-    if (!viewer3DState) return;
-    if (viewer3DState.renderMode === '3d') {
-      viewer3DState.exit3D();
-    } else if (playback.animationState.sequenceData) {
-      viewer3DState.enter3D(playback.animationState.sequenceData);
-    }
-  }
 
   function handleAnimationClick() {
     // In 3D mode, don't intercept clicks — OrbitControls needs them
@@ -216,21 +197,6 @@
           focused={layout.focusedPane === "animation"}
         />
 
-        <!-- 2D/3D toggle — top left of animation pane -->
-        {#if viewer3DState?.webgl2Available}
-          <div class="render-mode-toggle" onclick={toggleRenderMode}>
-            <button
-              class="mode-pill"
-              class:active={renderMode !== '3d'}
-              aria-label="2D view"
-            >2D</button>
-            <button
-              class="mode-pill"
-              class:active={renderMode === '3d'}
-              aria-label="3D view"
-            >3D</button>
-          </div>
-        {/if}
       {/if}
 
     </div>
@@ -402,42 +368,6 @@
     transition: opacity 250ms ease;
   }
 
-  .render-mode-toggle {
-    position: absolute;
-    top: 12px;
-    left: 12px;
-    z-index: 10;
-    display: flex;
-    gap: 2px;
-    padding: 3px;
-    border-radius: 8px;
-    background: rgba(0, 0, 0, 0.45);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(8px);
-    cursor: pointer;
-  }
-
-  .mode-pill {
-    padding: 5px 12px;
-    border: 1px solid transparent;
-    border-radius: 6px;
-    background: transparent;
-    color: rgba(255, 255, 255, 0.5);
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.15s ease;
-  }
-
-  .mode-pill:hover {
-    color: rgba(255, 255, 255, 0.8);
-  }
-
-  .mode-pill.active {
-    color: #fff;
-    background: rgba(255, 255, 255, 0.12);
-    border-color: rgba(255, 255, 255, 0.2);
-  }
 
   .preview-pane {
     background: transparent;

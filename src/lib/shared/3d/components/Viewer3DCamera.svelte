@@ -18,13 +18,15 @@
   const viewer3DState = getViewer3DContext();
 
   // Default = Learn mode = behind avatar = camera at -Z.
-  // Pictograph matches from this angle (verified with screenshots).
-  const defaultPosition = { x: 0, y: 1.85, z: -3.0 };
+  // Camera aligned to grid center (same Y) for zero shift when switching 2D↔3D.
+  // Distance ~1.5m for grid to fill ~80% of viewport at 50° FOV.
+  const defaultPosition = { x: 0, y: 1.55, z: -1.8 };
   const defaultTarget = { x: 0, y: 1.55, z: -0.3 };
 
-  // TEMPORARILY ignore persisted camera to verify default positions work
-  const initialPosition = defaultPosition;
-  const initialTarget = defaultTarget;
+  // Restore persisted camera if available, otherwise use default
+  const persisted = viewer3DState.persistedCamera;
+  const initialPosition = persisted?.position ?? defaultPosition;
+  const initialTarget = persisted?.target ?? defaultTarget;
 
   let controlsRef: any = $state(null);
 

@@ -301,22 +301,26 @@
 
                 <div class="drawer-header-actions">
                   {#if ctx.viewer3DState?.webgl2Available}
-                    <button
-                      type="button"
-                      class="header-action-btn header-3d-toggle"
-                      class:active-3d={ctx.renderMode === '3d'}
-                      onclick={() => {
-                        if (ctx.renderMode === '3d') {
-                          ctx.viewer3DState.exit3D();
-                        } else if (ctx.effectiveSequence) {
-                          ctx.viewer3DState.enter3D(ctx.effectiveSequence);
-                        }
-                      }}
-                      aria-label={ctx.renderMode === '3d' ? 'Switch to 2D view' : 'Switch to 3D view'}
-                      title={ctx.renderMode === '3d' ? '2D View' : '3D View'}
-                    >
-                      {ctx.renderMode === '3d' ? '2D' : '3D'}
-                    </button>
+                    <div class="dimension-toggle" role="radiogroup" aria-label="View mode">
+                      <button
+                        type="button"
+                        class="dimension-option"
+                        class:active={ctx.renderMode !== '3d'}
+                        onclick={() => { if (ctx.renderMode === '3d') ctx.viewer3DState.exit3D(); }}
+                        aria-label="2D view"
+                        role="radio"
+                        aria-checked={ctx.renderMode !== '3d'}
+                      >2D</button>
+                      <button
+                        type="button"
+                        class="dimension-option"
+                        class:active={ctx.renderMode === '3d'}
+                        onclick={() => { if (ctx.renderMode !== '3d' && ctx.effectiveSequence) ctx.viewer3DState.enter3D(ctx.effectiveSequence); }}
+                        aria-label="3D view"
+                        role="radio"
+                        aria-checked={ctx.renderMode === '3d'}
+                      >3D</button>
+                    </div>
                   {/if}
                   {#if authState.isAdmin}
                     <button
@@ -694,17 +698,39 @@
     color: var(--theme-accent, #6366f1);
   }
 
-  .header-3d-toggle {
-    font-weight: 700;
-    font-size: var(--font-size-compact, 12px);
-    letter-spacing: 0.02em;
-    min-width: 32px;
+  .dimension-toggle {
+    display: flex;
+    gap: 2px;
+    padding: 3px;
+    border-radius: 10px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
-  .header-3d-toggle.active-3d {
-    color: var(--theme-accent, #6366f1);
-    background: rgba(99, 102, 241, 0.12);
-    border-radius: 6px;
+  .dimension-option {
+    min-width: 44px;
+    min-height: 36px;
+    padding: 6px 14px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.45));
+    font-size: var(--font-size-min, 14px);
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .dimension-option:hover {
+    color: var(--theme-text, rgba(255, 255, 255, 0.8));
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .dimension-option.active {
+    color: #fff;
+    background: var(--theme-accent, #6366f1);
+    border-color: transparent;
   }
 
   .header-action-btn:focus-visible {
