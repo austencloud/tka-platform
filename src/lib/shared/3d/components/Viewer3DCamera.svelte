@@ -18,9 +18,10 @@
   const viewer3DState = getViewer3DContext();
 
   // Default = Learn mode = behind avatar = camera at -Z.
-  // Camera aligned to grid center (same Y) for zero shift when switching 2D↔3D.
-  // Distance ~1.5m for grid to fill ~80% of viewport at 50° FOV.
-  const defaultPosition = { x: 0, y: 1.55, z: -1.8 };
+  // Measured from 2D canvas: grid center is 74px below pane center (out of 952px),
+  // grid fills 57% of pane width. At FOV=50° this requires distance ~1.94m.
+  // Camera Y offset 0.14m above grid center (Y=1.55) to push grid below viewport center.
+  const defaultPosition = { x: 0, y: 1.69, z: -2.24 };
   const defaultTarget = { x: 0, y: 1.55, z: -0.3 };
 
   // Restore persisted camera if available, otherwise use default
