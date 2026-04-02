@@ -26,20 +26,20 @@
   // The avatar's "face" direction in GLTF doesn't match the grid direction.
   const CAMERA_POSITIONS = {
     main: {
-      learn:  { x: 0,    y: 1.85, z: -3.0 },
-      mirror: { x: 0,    y: 1.85, z: 3.6 },
+      learn:  { x: 0,    y: 1.55, z: -1.8 },
+      mirror: { x: 0,    y: 1.55, z: 1.2 },
     },
     side: {
-      learn:  { x: 3.2,  y: 1.85, z: -0.3 },
-      mirror: { x: -3.2, y: 1.85, z: -0.3 },
+      learn:  { x: 1.8,  y: 1.55, z: -0.3 },
+      mirror: { x: -1.8, y: 1.55, z: -0.3 },
     },
     top: {
-      learn:  { x: 0, y: 5.0, z: -0.29 },
-      mirror: { x: 0, y: 5.0, z: -0.31 },
+      learn:  { x: 0, y: 3.5, z: -0.29 },
+      mirror: { x: 0, y: 3.5, z: -0.31 },
     },
     threequarter: {
-      learn:  { x: 2.0, y: 3.5, z: -2.2 },
-      mirror: { x: -2.0, y: 3.5, z: 2.5 },
+      learn:  { x: 1.0, y: 2.2, z: -1.5 },
+      mirror: { x: -1.0, y: 2.2, z: 1.0 },
     },
   };
 
