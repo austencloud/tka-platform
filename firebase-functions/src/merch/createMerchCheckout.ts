@@ -1,10 +1,10 @@
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import Stripe from "stripe";
+import { defineString } from "firebase-functions/params";
 
-const stripe = new Stripe(functions.config().stripe?.secret_key || process.env.STRIPE_SECRET_KEY || "", {
-  // apiVersion omitted — uses SDK default for installed package version
-});
+const stripeSecretKey = defineString("STRIPE_SECRET_KEY");
+const appBaseUrl = defineString("APP_BASE_URL", { default: "https://thekineticalphabet.com" });
 
 interface CheckoutRequest {
   productId: string;
@@ -22,6 +22,8 @@ export const createMerchCheckout = functions.https.onCall(
       throw new functions.https.HttpsError("invalid-argument", "productId is required");
     }
 
+    const stripe = new Stripe(stripeSecretKey.value());
+
     const productDoc = await admin.firestore().collection("products").doc(productId).get();
 
     if (!productDoc.exists) {
@@ -34,7 +36,7 @@ export const createMerchCheckout = functions.https.onCall(
       throw new functions.https.HttpsError("failed-precondition", "Product is not available for purchase");
     }
 
-    const baseUrl = functions.config().app?.base_url || "https://thekineticalphabet.com";
+    const baseUrl = appBaseUrl.value();
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
