@@ -301,26 +301,25 @@
 
                 <div class="drawer-header-actions">
                   {#if ctx.viewer3DState?.webgl2Available}
-                    <div class="dimension-toggle" role="radiogroup" aria-label="View mode">
-                      <button
-                        type="button"
-                        class="dimension-option"
-                        class:active={ctx.renderMode !== '3d'}
-                        onclick={() => { if (ctx.renderMode === '3d') ctx.viewer3DState.exit3D(); }}
-                        aria-label="2D view"
-                        role="radio"
-                        aria-checked={ctx.renderMode !== '3d'}
-                      >2D</button>
-                      <button
-                        type="button"
-                        class="dimension-option"
-                        class:active={ctx.renderMode === '3d'}
-                        onclick={() => { if (ctx.renderMode !== '3d' && ctx.effectiveSequence) ctx.viewer3DState.enter3D(ctx.effectiveSequence); }}
-                        aria-label="3D view"
-                        role="radio"
-                        aria-checked={ctx.renderMode === '3d'}
-                      >3D</button>
-                    </div>
+                    <button
+                      type="button"
+                      class="dimension-toggle-btn"
+                      class:is-3d={ctx.renderMode === '3d'}
+                      onclick={() => {
+                        if (ctx.renderMode === '3d') {
+                          ctx.viewer3DState.exit3D();
+                        } else if (ctx.effectiveSequence) {
+                          ctx.viewer3DState.enter3D(ctx.effectiveSequence);
+                        }
+                      }}
+                      aria-label={ctx.renderMode === '3d' ? 'Switch to 2D' : 'Switch to 3D'}
+                      title={ctx.renderMode === '3d' ? 'Switch to 2D' : 'Switch to 3D'}
+                    >
+                      <span class="toggle-track">
+                        <span class="toggle-thumb"></span>
+                      </span>
+                      <span class="toggle-label">{ctx.renderMode === '3d' ? '3D' : '2D'}</span>
+                    </button>
                   {/if}
                   {#if authState.isAdmin}
                     <button
@@ -698,39 +697,59 @@
     color: var(--theme-accent, #6366f1);
   }
 
-  .dimension-toggle {
+  .dimension-toggle-btn {
     display: flex;
-    gap: 2px;
-    padding: 3px;
-    border-radius: 10px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-  }
-
-  .dimension-option {
+    align-items: center;
+    gap: 8px;
     min-width: 44px;
-    min-height: 36px;
-    padding: 6px 14px;
-    border: 1px solid transparent;
-    border-radius: 8px;
+    min-height: 44px;
+    padding: 6px 12px;
+    border: none;
+    border-radius: 10px;
     background: transparent;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.45));
-    font-size: var(--font-size-min, 14px);
-    font-weight: 700;
-    letter-spacing: 0.02em;
     cursor: pointer;
     transition: all 0.15s ease;
   }
 
-  .dimension-option:hover {
-    color: var(--theme-text, rgba(255, 255, 255, 0.8));
+  .dimension-toggle-btn:hover {
     background: rgba(255, 255, 255, 0.05);
   }
 
-  .dimension-option.active {
-    color: #fff;
+  .toggle-track {
+    position: relative;
+    width: 36px;
+    height: 20px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.15);
+    transition: background 0.2s ease;
+  }
+
+  .dimension-toggle-btn.is-3d .toggle-track {
     background: var(--theme-accent, #6366f1);
-    border-color: transparent;
+  }
+
+  .toggle-thumb {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #fff;
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+
+  .dimension-toggle-btn.is-3d .toggle-thumb {
+    transform: translateX(16px);
+  }
+
+  .toggle-label {
+    color: var(--theme-text, rgba(255, 255, 255, 0.9));
+    font-size: var(--font-size-min, 14px);
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    min-width: 22px;
   }
 
   .header-action-btn:focus-visible {
