@@ -17,16 +17,86 @@
 
   const viewer3DState = getViewer3DContext();
 
-  // Measured from 2D canvas pixel positions:
-  //   Grid center at (50.00%, 51.79%) of pane
-  //   Grid diameter = 46.60% of pane width
-  //   At FOV=50°, aspect 964/952: distance = 2.36m
-  //   Y offset = 0.04m above grid center (1.55) to place at 51.79%
-  // Grid center is at z = -0.3 (gridOffset with facingAngle=0)
-  const defaultPosition = { x: 0, y: 1.59, z: -2.66 };
-  const defaultTarget = { x: 0, y: 1.55, z: -0.3 };
+  // Grid center in 3D world space (shoulder height + gridOffset in -Z with facingAngle=0)
+  const GRID_CENTER_Y = 1.55;
+  const GRID_CENTER_Z = -0.3;
+  const GRID_RADIUS_3D = 0.52; // meters
+  const FOV_DEG = 50;
 
-  // Restore persisted camera if available, otherwise use default
+  /**
+   * Compute camera Z distance so the 3D grid matches the 2D canvas grid size.
+   * Reads the actual DOM positions of both the 2D canvas and the 3D pane.
+   */
+  function computeAlignedPosition(): { position: { x: number; y: number; z: number }; target: { x: number; y: number; z: number } } {
+    const target = { x: 0, y: GRID_CENTER_Y, z: GRID_CENTER_Z };
+    const fallback = { position: { x: 0, y: 1.59, z: -2.5 }, target };
+
+    if (typeof document === "undefined") return fallback;
+
+    // Find the 2D animation canvas (square, ~785px)
+    const allCanvases = document.querySelectorAll("canvas");
+    let canvas2D: HTMLCanvasElement | null = null;
+    let paneEl: Element | null = null;
+
+    for (const c of allCanvases) {
+      const r = c.getBoundingClientRect();
+      if (Math.abs(r.width - r.height) < 10 && r.width > 200 && r.width < 1200) {
+        // Square canvas = likely the 2D AnimatorCanvas
+        canvas2D = c;
+        paneEl = c.closest(".animation-pane") || c.closest(".media-pane");
+        break;
+      }
+    }
+
+    if (!canvas2D || !paneEl) return fallback;
+
+    const canvasRect = canvas2D.getBoundingClientRect();
+    const paneRect = paneEl.getBoundingClientRect();
+
+    // 2D grid: hand point radius = 28.6% of canvas width (143/500)
+    const gridRadiusPx = canvasRect.width * 0.286;
+    const gridDiameterPx = gridRadiusPx * 2;
+
+    // Grid center position relative to pane
+    const gridCenterX = canvasRect.left + canvasRect.width / 2 - paneRect.left;
+    const gridCenterY = canvasRect.top + canvasRect.height / 2 - paneRect.top;
+
+    // Grid center as percentage of pane
+    const centerYPct = gridCenterY / paneRect.height;
+
+    // Grid diameter as percentage of pane width
+    const diamPct = gridDiameterPx / paneRect.width;
+
+    // Camera distance: grid diameter (1.04m) should subtend diamPct of viewport width
+    // Visible width at distance d = 2 * d * tan(hFov/2)
+    // hFov = 2 * atan(tan(vFov/2) * aspect)
+    const aspect = paneRect.width / paneRect.height;
+    const vFovRad = (FOV_DEG / 2) * Math.PI / 180;
+    const hFovHalf = Math.atan(Math.tan(vFovRad) * aspect);
+    const visibleWidthAtD1 = 2 * Math.tan(hFovHalf); // visible width per meter of distance
+    const dist = (GRID_RADIUS_3D * 2) / (diamPct * visibleWidthAtD1);
+
+    // Y offset: camera needs to be above grid center so grid projects below viewport center
+    // Grid center at centerYPct of viewport, viewport center at 0.5
+    const yOffsetPct = 0.5 - centerYPct; // negative if grid is below center
+    const visibleHeightAtDist = 2 * dist * Math.tan(vFovRad);
+    const cameraYOffset = yOffsetPct * visibleHeightAtDist;
+
+    const cameraY = GRID_CENTER_Y + cameraYOffset;
+    // Camera behind avatar = -Z direction
+    const cameraZ = GRID_CENTER_Z - dist;
+
+    return {
+      position: { x: 0, y: cameraY, z: cameraZ },
+      target,
+    };
+  }
+
+  const computed = computeAlignedPosition();
+  const defaultPosition = computed.position;
+  const defaultTarget = computed.target;
+
+  // Restore persisted camera if available, otherwise use computed default
   const persisted = viewer3DState.persistedCamera;
   const initialPosition = persisted?.position ?? defaultPosition;
   const initialTarget = persisted?.target ?? defaultTarget;
