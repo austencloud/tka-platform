@@ -111,6 +111,7 @@ export function mirrorStartPosition(
     ...startPos,
     motions: mirroredMotions,
     gridPosition: newGridPosition,
+    startPosition: newGridPosition,
     letter: newLetter,
   });
 }
@@ -160,6 +161,7 @@ export function flipStartPosition(
     ...startPos,
     motions: flippedMotions,
     gridPosition: newGridPosition,
+    startPosition: newGridPosition,
     letter: newLetter,
   });
 }
@@ -211,6 +213,7 @@ export function rotateStartPosition(
     ...startPos,
     motions: rotatedMotions,
     gridPosition: rotatedGridPosition,
+    startPosition: rotatedGridPosition,
     letter: newLetter,
   });
 }
@@ -230,12 +233,15 @@ export function colorSwapStartPosition(
       : undefined,
   };
 
+  const newGridPosition = startPos.gridPosition
+      ? SWAPPED_POSITION_MAP[startPos.gridPosition]
+      : null;
+
   return createStartPositionData({
     ...startPos,
     motions: swappedMotions,
-    gridPosition: startPos.gridPosition
-      ? SWAPPED_POSITION_MAP[startPos.gridPosition]
-      : null,
+    gridPosition: newGridPosition,
+    startPosition: newGridPosition,
   });
 }
 
@@ -302,6 +308,7 @@ export function invertStartPosition(
     ...startPos,
     motions: invertedMotions,
     gridPosition: newGridPosition,
+    startPosition: newGridPosition,
     letter: newLetter,
   });
 }
