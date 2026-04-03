@@ -171,18 +171,30 @@ export function retargetFullBody(
   const retargetedTracks: KeyframeTrack[] = [];
 
   for (const track of clip.tracks) {
-    // Only keep quaternion (rotation) tracks
-    if (!track.name.includes(".quaternion")) {
+    const boneName = track.name.split(".")[0] ?? "";
+    const coreName = extractCoreBoneName(boneName);
+    const property = track.name.split(".").slice(1).join(".");
+
+    // Exclude Hips quaternion — the locomotion system controls avatar
+    // orientation via the group's rotation.y (facingAngle). The animation's
+    // Hips rotation compounds with this and causes sideways tilt.
+    if (coreName === "Hips" && property === "quaternion") {
       continue;
     }
 
-    // Exclude Hips rotation — the locomotion system controls the avatar's
-    // orientation via the group's rotation.y (facingAngle). Including the
-    // Hips quaternion from the animation compounds with this and causes the
-    // avatar to tilt sideways ("walk on a wall" effect).
-    const boneName = track.name.split(".")[0] ?? "";
-    const coreName = extractCoreBoneName(boneName);
-    if (coreName === "Hips") {
+    // Include Hips position — this is the compensating translation that keeps
+    // feet planted during weight shifts and walking bob. Without it, bone
+    // rotations shift the body but feet slide on the floor.
+    if (coreName === "Hips" && property === "position") {
+      const newTrackName = retargetTrackName(track.name, targetPrefix);
+      const clonedTrack = track.clone();
+      clonedTrack.name = newTrackName;
+      retargetedTracks.push(clonedTrack);
+      continue;
+    }
+
+    // Keep all quaternion tracks (except Hips, handled above)
+    if (!track.name.includes(".quaternion")) {
       continue;
     }
 
