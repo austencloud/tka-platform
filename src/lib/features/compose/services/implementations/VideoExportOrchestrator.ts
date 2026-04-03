@@ -37,49 +37,7 @@ import type {
 import type { IBackgroundVideoEncoder } from "../contracts/IBackgroundVideoEncoder";
 import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 import { fireCacheInvalidation } from "$lib/shared/animation-engine/state/fire-invalidation-signal.svelte";
-
-// ---------------------------------------------------------------------------
-// Export dimension & bitrate helpers
-// ---------------------------------------------------------------------------
-
-/**
- * Map a target resolution + aspect ratio to concrete pixel dimensions.
- * Ensures both width and height are even (H.264 requirement).
- */
-function getExportDimensions(
-  resolution: VideoResolution,
-  aspectRatio: number
-): { width: number; height: number } {
-  const heightMap: Record<number, number> = { 720: 720, 1080: 1080, 2160: 2160, 4320: 4320 };
-  const height = heightMap[resolution] ?? 1080;
-  let width = Math.round(height * aspectRatio);
-  // H.264 requires even dimensions
-  width = width % 2 === 0 ? width : width + 1;
-  return { width, height };
-}
-
-/**
- * Auto-scale bitrate based on pixel count and frame rate.
- *
- * Base rates:
- *   - 720p  (921 600 px): 4 Mbps
- *   - 1080p (2 073 600 px): 6 Mbps
- *
- * FPS multipliers:
- *   - <= 30 fps: 1x
- *   - 31-60 fps: 1.33x
- *   - > 60 fps:  2.5x
- */
-function calculateBitrate(width: number, height: number, fps: number): number {
-  const pixels = width * height;
-  const base =
-    pixels <= 1280 * 720 ? 4_000_000 :
-    pixels <= 1920 * 1080 ? 6_000_000 :
-    pixels <= 3840 * 2160 ? 20_000_000 :
-    50_000_000;
-  const fpsMultiplier = fps <= 30 ? 1 : fps <= 60 ? 1.33 : 2.5;
-  return Math.round(base * fpsMultiplier);
-}
+import { getExportDimensions, calculateBitrate } from "../../shared/domain/video-export-calculations";
 
 export class VideoExportOrchestrator implements IVideoExportOrchestrator {
   private _isExporting = false;

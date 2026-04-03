@@ -59,6 +59,7 @@ import type { ISequenceRepository } from "$lib/features/create/shared/services/c
 import type { ISequenceTransformer } from "$lib/features/create/shared/services/contracts/ISequenceTransformer";
 import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
 import type { ISequenceLoopabilityChecker } from "$lib/features/compose/services/contracts/ISequenceLoopabilityChecker";
+import { Realtime3DExporter } from "$lib/shared/3d/services/implementations/Realtime3DExporter";
 
 /**
  * External dependencies that must be provided from other containers
@@ -162,6 +163,10 @@ export function createAnimatorContainer(externalDeps: AnimatorContainerDependenc
           ctx.exportGlyphPrerenderer,
           ctx.backgroundVideoEncoder
         ),
+    }))
+    .add((ctx) => ({
+      realtime3DExporter: () =>
+        new Realtime3DExporter(ctx.backgroundVideoEncoder),
     }))
     .add(() => ({
       tunnelModeSequenceManager: () =>
