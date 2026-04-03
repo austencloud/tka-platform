@@ -162,7 +162,7 @@
 
   .page-grid {
     display: grid;
-    gap: 4px;
+    gap: 8px;
     width: 100%;
     align-content: center;
     justify-content: center;
@@ -171,7 +171,9 @@
   .card-slot {
     overflow: hidden;
     border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 10px;
     background: #ffffff;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
   }
 
   .card-slot.landscape {
@@ -181,7 +183,7 @@
   .card-slot :global(> button) {
     width: 100%;
     height: 100%;
-    border-radius: 0;
+    border-radius: 10px;
   }
 
   .state-message {

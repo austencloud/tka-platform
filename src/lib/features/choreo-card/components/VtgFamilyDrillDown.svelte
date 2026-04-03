@@ -23,6 +23,7 @@
     onSelectSequence: (sequence: SequenceData) => void;
     onContextMenu?: (x: number, y: number, rerender: () => void) => void;
     onBack: () => void;
+    onPrintPrep?: (overrideDeck?: Deck, overrideSequences?: SequenceData[]) => void;
   }
 
   const {
@@ -36,6 +37,7 @@
     onSelectSequence,
     onContextMenu,
     onBack,
+    onPrintPrep,
   }: Props = $props();
 
   const theme = $derived(
@@ -146,6 +148,35 @@
           cardSize = s;
           if (typeof window !== 'undefined') localStorage.setItem('cardPreview.cardSize', s);
         }} />
+      {/if}
+
+      {#if onPrintPrep}
+        <button
+          class="action-chip"
+          onclick={() => {
+            const syntheticDeck: Deck = {
+              id: `vtg-${familyId}`,
+              name: `VTG ${familyLabel}`,
+              description: `VTG ${familyLabel} sequences`,
+              families: ratioGroups.map(g => ({
+                id: g.ratio,
+                label: `${g.ratio} (${turnsLabel(g.turns)})`,
+                typeCombo: g.ratio,
+                sequenceIds: g.sequences.map(s => s.id),
+              })),
+              totalSequences: allSequences.length,
+              gridMode: 'diamond' as const,
+              level: 1,
+              collection: 'VTG',
+            };
+            onPrintPrep(syntheticDeck, allSequences);
+          }}
+          type="button"
+          aria-label="Print preparation"
+        >
+          <i class="fas fa-print" aria-hidden="true"></i>
+          Print
+        </button>
       {/if}
     </div>
   </div>

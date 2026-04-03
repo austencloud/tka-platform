@@ -19,6 +19,7 @@
   import type { IDeckLoader } from "../services/contracts/IDeckLoader";
   import DeckBrowser from "./DeckBrowser.svelte";
   import CardDesigner from "./CardDesigner.svelte";
+  import PrintPrepView from "./PrintPrepView.svelte";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import ContextMenu from "$lib/shared/components/context-menu/ContextMenu.svelte";
   import type { ContextMenuState, ContextMenuEntry } from "$lib/shared/components/context-menu/context-menu-types";
@@ -175,6 +176,11 @@
     }
   });
 
+  // Print prep overlay state (renders PrintPrepView over the deck browser)
+  let printPrepActive = $state(false);
+  let printPrepDeckOverride = $state<Deck | null>(null);
+  let printPrepSequencesOverride = $state<SequenceData[] | null>(null);
+
   // Deck state
   let decks = $state<Deck[]>([]);
   let selectedDeckId = $state<string | null>(getPersistedString(STORAGE_KEY_SELECTED_DECK));
@@ -183,6 +189,9 @@
   let vtgActiveView = $state<"family" | "ratio" | "reversal">("family");
   let deckSequences = $state<SequenceData[]>([]);
   let isDeckLoading = $state(false);
+
+  // Derive the selected deck object for PrintPrepView
+  let selectedDeck = $derived(decks.find((d) => d.id === selectedDeckId) ?? null);
 
   // ── Browser history (back/forward) for deck navigation ──
 
@@ -574,7 +583,19 @@
 <div class="choreo-card-tab">
   <!-- Main content -->
   <div class="main-content">
-    {#if mode === "decks"}
+    {#if mode === "decks" && printPrepActive}
+      <main class="content-area">
+        <PrintPrepView
+          deck={printPrepDeckOverride ?? selectedDeck}
+          deckSequences={printPrepSequencesOverride ?? deckSequences}
+          onSwitchToDecks={() => {
+            printPrepActive = false;
+            printPrepDeckOverride = null;
+            printPrepSequencesOverride = null;
+          }}
+        />
+      </main>
+    {:else if mode === "decks"}
       <main class="content-area">
         <DeckBrowser
           {decks}
@@ -598,6 +619,11 @@
           onSelectSequence={handleSelectSequence}
           onLoadFamilySequences={handleLoadFamilySequences}
           onContextMenu={openCardContextMenu}
+          onPrintPrep={(overrideDeck, overrideSequences) => {
+            printPrepDeckOverride = overrideDeck ?? null;
+            printPrepSequencesOverride = overrideSequences ?? null;
+            printPrepActive = true;
+          }}
         />
       </main>
     {:else if mode === "designer"}

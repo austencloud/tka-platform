@@ -50,6 +50,7 @@
     onSelectSequence: (sequence: SequenceData) => void;
     onLoadFamilySequences: (familyIds: string[]) => void;
     onContextMenu?: (x: number, y: number, rerender: () => void) => void;
+    onPrintPrep?: (overrideDeck?: Deck, overrideSequences?: SequenceData[]) => void;
   }
 
   let {
@@ -74,6 +75,7 @@
     onSelectSequence,
     onLoadFamilySequences,
     onContextMenu,
+    onPrintPrep,
   }: Props = $props();
 
   // ── Card view mode ──────────────────────────────────────────────────────
@@ -474,6 +476,18 @@
             <i class="fas fa-filter" aria-hidden="true"></i>
             Filter
           </button>
+
+          {#if onPrintPrep}
+            <button
+              class="action-chip"
+              onclick={onPrintPrep}
+              type="button"
+              aria-label="Print preparation"
+            >
+              <i class="fas fa-print" aria-hidden="true"></i>
+              Print
+            </button>
+          {/if}
         </div>
       </div>
 
@@ -615,6 +629,7 @@
         {onSelectSequence}
         {onContextMenu}
         onBack={() => onSelectVtgFamily(null)}
+        {onPrintPrep}
       />
     </div>
 
