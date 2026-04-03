@@ -42,8 +42,8 @@
   import { AvatarSkeletonBuilder } from "../services/implementations/AvatarSkeletonBuilder";
   import { IKSolver } from "../services/implementations/IKSolver";
   import { AvatarAnimator } from "../services/implementations/AvatarAnimator";
-  import { LegAnimator } from "../services/implementations/LegAnimator";
-  import type { ILegAnimator } from "../services/contracts/ILegAnimator";
+  import { LocomotionAnimator } from "../services/implementations/LocomotionAnimator";
+  import type { ILocomotionAnimator } from "../services/contracts/ILocomotionAnimator";
   import { FingerAnimator } from "$lib/shared/3d/services/implementations/FingerAnimator";
   import { ElbowPoleComputer } from "../services/implementations/ElbowPoleComputer";
   import { ClavicleRaiser } from "../services/implementations/ClavicleRaiser";
@@ -98,7 +98,7 @@
   let skeletonService: IAvatarSkeletonBuilder | null = $state(null);
   let ikSolver: IIKSolver | null = $state(null);
   let animationService: IAvatarAnimator | null = $state(null);
-  let legAnimator: ILegAnimator | null = $state(null);
+  let locomotionAnimator: ILocomotionAnimator | null = $state(null);
   let fingerAnimator: FingerAnimator | null = null;
 
   let servicesReady = $state(false);
@@ -189,13 +189,14 @@
         console.warn("[Avatar3D] Right arm chain NOT FOUND");
       }
 
-      // Initialize leg animator with the loaded skeleton
-      if (legAnimator && cachedRoot) {
-        legAnimator.initialize(cachedRoot);
+      // Initialize locomotion animator with the loaded skeleton
+      if (locomotionAnimator && cachedRoot) {
+        locomotionAnimator.initialize(cachedRoot);
 
-        // Load directional walk animations (non-blocking)
-        legAnimator
-          .loadDirectionalAnimations({
+        // Load all locomotion animations (idle + 4 directional walks, non-blocking)
+        locomotionAnimator
+          .loadAnimations({
+            idle: "/animations/idle.glb",
             forward: "/animations/walk.glb",
             backward: "/animations/walk-backward.glb",
             strafeLeft: "/animations/strafe-left.glb",
@@ -203,10 +204,9 @@
           })
           .catch((err) => {
             console.warn(
-              "[Avatar3D] Directional animations not loaded:",
+              "[Avatar3D] Locomotion animations not loaded:",
               err.message
             );
-            // Animation is optional - avatar will work without it
           });
       }
 
@@ -253,12 +253,12 @@
       const clavicleRaiser = new ClavicleRaiser();
       const spineTwister = new SpineTwister();
       const animator = new AvatarAnimator(solver, skeleton, poleComputer, clavicleRaiser, spineTwister);
-      const legs = new LegAnimator();
+      const locomotion = new LocomotionAnimator();
 
       skeletonService = skeleton;
       ikSolver = solver;
       animationService = animator;
-      legAnimator = legs;
+      locomotionAnimator = locomotion;
 
       const fingers = new FingerAnimator();
       fingerAnimator = fingers;
@@ -486,31 +486,27 @@
 
     if (!servicesReady || !animationService || useProceduralFallback) return;
 
-    // Convert prop states from grid-local coords to WORLD coords for IK solver.
-    // Uses the EXACT same formula as Staff3D to ensure hands reach prop positions.
-    //
-    // Right-handed Y-axis rotation (same as Staff3D lines 82-85):
-    //   x' = x * cos(θ) + z * sin(θ)
-    //   z' = -x * sin(θ) + z * cos(θ)
+    // 1. Full-body animation (idle/walk with arm swing, hip sway)
+    if (locomotionAnimator) {
+      locomotionAnimator.setLocomotion({
+        isMoving,
+        speed: moveSpeed,
+        facingAngle,
+        moveDirection,
+      });
+      locomotionAnimator.update(delta);
+    }
 
+    // 2. IK post-process (blends per-arm based on prop presence)
     const cos = Math.cos(facingAngle);
     const sin = Math.sin(facingAngle);
-    const gridOffset = -WALL_OFFSET; // Same as passed to Staff3D
+    const gridOffset = -WALL_OFFSET;
 
-    // Transform grid-local position to world position (mirrors Staff3D.position calculation)
-    function toWorldPosition(local: {
-      x: number;
-      y: number;
-      z: number;
-    }): Vector3 {
-      // Body-local position with forward offset (same as Staff3D)
+    function toWorldPosition(local: { x: number; y: number; z: number }): Vector3 {
       const localX = local.x;
       const localZ = local.z + gridOffset;
-
-      // Right-handed Y-axis rotation (matches Staff3D exactly)
       const rotatedX = localX * cos + localZ * sin;
       const rotatedZ = -localX * sin + localZ * cos;
-
       return new Vector3(
         rotatedX + position.x,
         local.y + (position.y ?? 0),
@@ -519,65 +515,16 @@
     }
 
     const blueWorldProp = bluePropState
-      ? {
-          ...bluePropState,
-          worldPosition: toWorldPosition(bluePropState.worldPosition),
-        }
+      ? { ...bluePropState, worldPosition: toWorldPosition(bluePropState.worldPosition) }
       : null;
-
     const redWorldProp = redPropState
-      ? {
-          ...redPropState,
-          worldPosition: toWorldPosition(redPropState.worldPosition),
-        }
+      ? { ...redPropState, worldPosition: toWorldPosition(redPropState.worldPosition) }
       : null;
 
-    // Keep the idle pose anchored to the avatar's current world position so that
-    // when both prop states are null (e.g. museum player with no staves), the IK
-    // targets move with the avatar instead of staying fixed at the world origin.
-    // The idle offsets (-0.25/+0.25 lateral, 0.5 up) are rotated by facingAngle
-    // so arms stay at the avatar's sides regardless of which way it faces.
-    // NOTE: We use raw rotation here (no gridOffset) because idle targets are
-    // body-relative, not grid-relative like prop positions.
-    function toIdleWorld(lx: number, ly: number, lz: number): Vector3 {
-      return new Vector3(
-        lx * cos + lz * sin + position.x,
-        ly + (position.y ?? 0),
-        -lx * sin + lz * cos + position.z
-      );
-    }
-    animationService.setIdlePose({
-      leftHand: {
-        targetPosition: toIdleWorld(-0.25, 0.5, 0),
-        weight: 1,
-      },
-      rightHand: {
-        targetPosition: toIdleWorld(0.25, 0.5, 0),
-        weight: 1,
-      },
-      timestamp: Date.now(),
-    });
-
-    // Update hand targets from prop states (now in world coords)
-    animationService.setHandTargetsFromProps(blueWorldProp, redWorldProp);
-
-    // Update upper body animation (applies arm IK)
+    animationService.setPropsAndBlend(blueWorldProp, redWorldProp);
     animationService.update(delta);
 
-    // Update lower body animation (walk cycle)
-    // Pass locomotion state every frame - setLocomotion handles change detection internally
-    // (This avoids reactivity issues with $effect not re-running when animation loads async)
-    if (legAnimator) {
-      legAnimator.setLocomotion({
-        isMoving,
-        speed: moveSpeed,
-        facingAngle,
-        moveDirection,
-      });
-      legAnimator.update(delta);
-    }
-
-    // Update finger grip animation
+    // 3. Finger grips
     if (fingerAnimator?.isReady()) {
       const leftGrip = bluePropState ? GripType.SQUARE : GripType.IDLE;
       const rightGrip = redPropState ? GripType.SQUARE : GripType.IDLE;
@@ -604,9 +551,9 @@
   });
 
   onDestroy(() => {
-    // Dispose leg animator
-    if (legAnimator) {
-      legAnimator.dispose();
+    // Dispose locomotion animator
+    if (locomotionAnimator) {
+      locomotionAnimator.dispose();
     }
 
     // Dispose finger animator
