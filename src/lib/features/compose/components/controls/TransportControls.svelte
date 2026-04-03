@@ -15,10 +15,10 @@
     isPlaying = false,
     stepGlowMs = 500,
     onPlaybackToggle = () => {},
-    onStepHalfBeatBackward = () => {},
-    onStepHalfBeatForward = () => {},
-    onStepFullBeatBackward = () => {},
-    onStepFullBeatForward = () => {},
+    onStepHalfBeatBackward,
+    onStepHalfBeatForward,
+    onStepFullBeatBackward,
+    onStepFullBeatForward,
     onRestartToStart,
   }: {
     isPlaying?: boolean;
@@ -32,6 +32,11 @@
     /** When provided, replaces the full-beat-backward button with a restart-to-start button */
     onRestartToStart?: () => void;
   } = $props();
+
+  /** Show step buttons only when at least one step handler is provided */
+  const hasStepControls = $derived(
+    !!(onStepHalfBeatBackward || onStepHalfBeatForward || onStepFullBeatBackward || onStepFullBeatForward || onRestartToStart)
+  );
 
   // Step glow state
   let glowingBtn = $state<string | null>(null);
@@ -50,38 +55,40 @@
 </script>
 
 <div class="transport-controls">
-  <!-- Half Beat Back (secondary - outer position) -->
-  <button
-    class="step-btn step-half"
-    class:stepping={glowingBtn === 'hb'}
-    onclick={() => { glow('hb'); onStepHalfBeatBackward(); }}
-    type="button"
-    aria-label="Previous half beat"
-  >
-    <i class="fas fa-chevron-left" aria-hidden="true"></i>
-  </button>
+  {#if hasStepControls}
+    <!-- Half Beat Back (secondary - outer position) -->
+    <button
+      class="step-btn step-half"
+      class:stepping={glowingBtn === 'hb'}
+      onclick={() => { glow('hb'); onStepHalfBeatBackward?.(); }}
+      type="button"
+      aria-label="Previous half beat"
+    >
+      <i class="fas fa-chevron-left" aria-hidden="true"></i>
+    </button>
 
-  <!-- Full Beat Back / Restart (primary - adjacent to play) -->
-  {#if onRestartToStart}
-    <button
-      class="step-btn step-full"
-      class:stepping={glowingBtn === 'fb'}
-      onclick={() => { glow('fb'); onRestartToStart(); }}
-      type="button"
-      aria-label="Restart from beginning"
-    >
-      <i class="fas fa-backward-fast" aria-hidden="true"></i>
-    </button>
-  {:else}
-    <button
-      class="step-btn step-full"
-      class:stepping={glowingBtn === 'fb'}
-      onclick={() => { glow('fb'); onStepFullBeatBackward(); }}
-      type="button"
-      aria-label="Previous full beat"
-    >
-      <i class="fas fa-angles-left" aria-hidden="true"></i>
-    </button>
+    <!-- Full Beat Back / Restart (primary - adjacent to play) -->
+    {#if onRestartToStart}
+      <button
+        class="step-btn step-full"
+        class:stepping={glowingBtn === 'fb'}
+        onclick={() => { glow('fb'); onRestartToStart(); }}
+        type="button"
+        aria-label="Restart from beginning"
+      >
+        <i class="fas fa-backward-fast" aria-hidden="true"></i>
+      </button>
+    {:else}
+      <button
+        class="step-btn step-full"
+        class:stepping={glowingBtn === 'fb'}
+        onclick={() => { glow('fb'); onStepFullBeatBackward?.(); }}
+        type="button"
+        aria-label="Previous full beat"
+      >
+        <i class="fas fa-angles-left" aria-hidden="true"></i>
+      </button>
+    {/if}
   {/if}
 
   <!-- Play/Pause -->
@@ -95,27 +102,29 @@
     <i class="fas {isPlaying ? 'fa-pause' : 'fa-play'}" aria-hidden="true"></i>
   </button>
 
-  <!-- Full Beat Forward (primary - adjacent to play) -->
-  <button
-    class="step-btn step-full"
-    class:stepping={glowingBtn === 'ff'}
-    onclick={() => { glow('ff'); onStepFullBeatForward(); }}
-    type="button"
-    aria-label="Next full beat"
-  >
-    <i class="fas fa-angles-right" aria-hidden="true"></i>
-  </button>
+  {#if hasStepControls}
+    <!-- Full Beat Forward (primary - adjacent to play) -->
+    <button
+      class="step-btn step-full"
+      class:stepping={glowingBtn === 'ff'}
+      onclick={() => { glow('ff'); onStepFullBeatForward?.(); }}
+      type="button"
+      aria-label="Next full beat"
+    >
+      <i class="fas fa-angles-right" aria-hidden="true"></i>
+    </button>
 
-  <!-- Half Beat Forward (secondary - outer position) -->
-  <button
-    class="step-btn step-half"
-    class:stepping={glowingBtn === 'hf'}
-    onclick={() => { glow('hf'); onStepHalfBeatForward(); }}
-    type="button"
-    aria-label="Next half beat"
-  >
-    <i class="fas fa-chevron-right" aria-hidden="true"></i>
-  </button>
+    <!-- Half Beat Forward (secondary - outer position) -->
+    <button
+      class="step-btn step-half"
+      class:stepping={glowingBtn === 'hf'}
+      onclick={() => { glow('hf'); onStepHalfBeatForward?.(); }}
+      type="button"
+      aria-label="Next half beat"
+    >
+      <i class="fas fa-chevron-right" aria-hidden="true"></i>
+    </button>
+  {/if}
 </div>
 
 <style>

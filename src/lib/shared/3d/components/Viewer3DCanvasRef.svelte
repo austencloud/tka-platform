@@ -16,7 +16,7 @@
   const viewer3DState = getViewer3DContext();
 
   onMount(() => {
-    const canvas = renderer.current.domElement;
+    const canvas = renderer.current?.domElement;
     if (canvas) {
       viewer3DState.setWebglCanvas(canvas);
     }

@@ -68,6 +68,16 @@ export interface ImageExportDependencies {
 }
 
 /**
+ * Dependencies required for 3D video exports
+ */
+export interface Video3DExportDependencies {
+  webglCanvas: HTMLCanvasElement;
+  startPlayback: () => void;
+  stopPlayback: () => void;
+  getTotalDurationSeconds: () => number;
+}
+
+/**
  * Orchestrates sequence exports (image, video).
  * Combined exports (animation + choreo card) are handled by Compose module.
  */
@@ -83,6 +93,15 @@ export interface ISequenceModalExporter {
   exportAnimation(
     options: VideoExportOptions,
     deps: VideoExportDependencies,
+    callbacks: ExportCallbacks
+  ): Promise<void>;
+
+  /**
+   * Export as 3D animation video from a WebGL canvas
+   */
+  export3DAnimation(
+    options: VideoExportOptions,
+    deps: Video3DExportDependencies,
     callbacks: ExportCallbacks
   ): Promise<void>;
 
