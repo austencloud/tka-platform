@@ -204,8 +204,6 @@ export function retargetFullBody(
  */
 type DirectionKey = "forward" | "backward" | "strafeLeft" | "strafeRight";
 
-type LocomotionState = "idle" | "walk";
-
 export class LocomotionAnimator implements ILocomotionAnimator {
   private mixer: AnimationMixer | null = null;
   private root: Object3D | null = null;
@@ -231,9 +229,6 @@ export class LocomotionAnimator implements ILocomotionAnimator {
     strafeRight: null,
   };
 
-  // State machine
-  private currentState: LocomotionState = "idle";
-
   private config: Required<LocomotionConfig> = {
     baseSpeed: 1,
     blendTime: 0.3,
@@ -247,6 +242,10 @@ export class LocomotionAnimator implements ILocomotionAnimator {
   private initialized = false;
   private idleLoaded = false;
   private walkLoaded = false;
+
+  // Idle weight (managed by same lerp system as walk directions)
+  private currentIdleWeight = 1; // Start at 1 (idle by default)
+  private targetIdleWeight = 1;
 
   // Directional blend weights (smoothed via exponential lerp)
   private currentDirWeights: Record<DirectionKey, number> = {
@@ -405,20 +404,16 @@ export class LocomotionAnimator implements ILocomotionAnimator {
   }
 
   setLocomotion(input: LocomotionInput): void {
-    const previousState = this.currentState;
     this.currentLocomotion = { ...input };
 
-    const nextState: LocomotionState = input.isMoving ? "walk" : "idle";
-
-    if (nextState !== previousState) {
-      this.transitionState(previousState, nextState);
-    }
-
     if (input.isMoving) {
+      // Walking: idle weight → 0, walk directions get their computed weights
+      this.targetIdleWeight = 0;
       this.updateDirectionalTargets(input);
       this.updatePlaybackSpeed(input.speed);
     } else {
-      // Zero out all walk direction targets so they fade smoothly
+      // Stopped: idle weight → 1, all walk directions → 0
+      this.targetIdleWeight = 1;
       this.targetDirWeights.forward = 0;
       this.targetDirWeights.backward = 0;
       this.targetDirWeights.strafeLeft = 0;
@@ -427,66 +422,12 @@ export class LocomotionAnimator implements ILocomotionAnimator {
   }
 
   /**
-   * Crossfade between idle and walk states.
-   */
-  private transitionState(from: LocomotionState, to: LocomotionState): void {
-    this.currentState = to;
-
-    if (to === "walk" && from === "idle") {
-      // Idle -> Walk: find the dominant walk direction and crossfade from idle
-      const dominantKey = this.getDominantWalkDirection();
-      const walkAction = this.walkActions[dominantKey];
-      if (walkAction && this.idleAction) {
-        walkAction.crossFadeFrom(this.idleAction, this.config.blendTime, true);
-      }
-    } else if (to === "idle" && from === "walk") {
-      // Walk -> Idle: find the active walk action and crossfade to idle
-      const activeKey = this.getActiveWalkDirection();
-      const walkAction = this.walkActions[activeKey];
-      if (this.idleAction && walkAction) {
-        this.idleAction.crossFadeFrom(
-          walkAction,
-          this.config.blendTime,
-          true
-        );
-      }
-    }
-  }
-
-  /**
    * Determine which walk direction should be dominant based on current target weights.
    * Falls back to forward if no direction has weight yet.
    */
-  private getDominantWalkDirection(): DirectionKey {
-    const dir = this.currentLocomotion.moveDirection ?? { x: 0, z: 1 };
-    const weights = this.computeDirectionalWeights(dir);
-
-    let maxKey: DirectionKey = "forward";
-    let maxWeight = 0;
-    for (const key of Object.keys(weights) as DirectionKey[]) {
-      if (weights[key] > maxWeight) {
-        maxWeight = weights[key];
-        maxKey = key;
-      }
-    }
-    return maxKey;
-  }
-
   /**
    * Find the walk direction with the highest current (smoothed) weight.
    */
-  private getActiveWalkDirection(): DirectionKey {
-    let maxKey: DirectionKey = "forward";
-    let maxWeight = 0;
-    for (const key of Object.keys(this.currentDirWeights) as DirectionKey[]) {
-      if (this.currentDirWeights[key] > maxWeight) {
-        maxWeight = this.currentDirWeights[key];
-        maxKey = key;
-      }
-    }
-    return maxKey;
-  }
-
   /**
    * Compute normalized directional weights from a movement direction vector.
    */
@@ -539,6 +480,12 @@ export class LocomotionAnimator implements ILocomotionAnimator {
     // Exponential smoothing for framerate-independent blending
     const blendSpeed = 1 / Math.max(0.01, this.config.blendTime);
     const blendFactor = 1 - Math.exp(-blendSpeed * delta);
+
+    // Smoothly blend idle weight
+    this.currentIdleWeight += (this.targetIdleWeight - this.currentIdleWeight) * blendFactor;
+    if (this.idleAction) {
+      this.idleAction.setEffectiveWeight(this.currentIdleWeight);
+    }
 
     // Smoothly blend directional walk weights each frame
     for (const key of Object.keys(this.walkActions) as DirectionKey[]) {
@@ -594,7 +541,8 @@ export class LocomotionAnimator implements ILocomotionAnimator {
     this.initialized = false;
     this.idleLoaded = false;
     this.walkLoaded = false;
-    this.currentState = "idle";
+    this.currentIdleWeight = 1;
+    this.targetIdleWeight = 1;
 
     // Reset weights
     for (const key of Object.keys(this.currentDirWeights) as DirectionKey[]) {

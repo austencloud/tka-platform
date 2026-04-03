@@ -56,6 +56,27 @@ export const ROOM_CONTENT: Record<string, RoomContentMap> = {
           footer: "Form 7741-A: Visitor Registration",
         },
       },
+      "entrance-bulletin": {
+        plaque: {
+          title: "Staff Notice Board",
+          body:
+            "ALL STAFF: Badge access updated effective 11/14/1998. " +
+            "Please collect new credentials from Room 114. " +
+            "Fire drill scheduled for Friday. Attendance mandatory.",
+          footer: "— Facilities Management",
+        },
+      },
+      "entrance-reception": {
+        plaque: {
+          title: "Reception",
+          subtitle: "Visitor Hours: By Appointment Only",
+          body:
+            "Please check in with the front desk before proceeding. " +
+            "Unauthorized access beyond the lobby is prohibited. " +
+            "All personal effects must be declared.",
+          footer: "Department of Rotational Affairs",
+        },
+      },
     },
   },
 

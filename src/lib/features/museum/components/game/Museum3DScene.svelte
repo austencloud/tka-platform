@@ -30,7 +30,7 @@
   import Avatar3D from "$lib/shared/3d/components/Avatar3D.svelte";
   import MuseumMirror from "./MuseumMirror.svelte";
   import MuseumPortal from "./MuseumPortal.svelte";
-  import MuseumTorchLight from "./MuseumTorchLight.svelte";
+  import MuseumTorch3D from "./MuseumTorch3D.svelte";
   import MuseumPlaque3D from "./MuseumPlaque3D.svelte";
   import type { PlaqueContent, PlaqueSize } from "../../services/contracts/IPlaqueTextureGenerator";
   import { PlaqueTextureGenerator } from "../../services/implementations/PlaqueTextureGenerator";
@@ -852,7 +852,7 @@
   const performerPositions: { x: number; z: number }[] = [];
   const pedestalPositions: { x: number; z: number }[] = [];
   const signPositions: { x: number; z: number }[] = [];
-  const torchPositions: { x: number; z: number }[] = [];
+  const torchPositions: { x: number; z: number; wallOffsetX: number; wallOffsetZ: number }[] = [];
 
   function getWingThemeAt(tileX: number, tileY: number): WingTheme | null {
     for (const wing of grid.wings) {
@@ -947,7 +947,28 @@
       }
       case "torch": {
         addToFloorBucket(FLOOR_COLORS.stone, worldX, worldZ);
-        torchPositions.push({ x: worldX, z: worldZ });
+
+        // Detect which adjacent tile is a wall to offset the torch into the room.
+        // Check all 4 cardinal neighbors — the wall direction is where we find a wall tile.
+        let wallOffsetX = 0;
+        let wallOffsetZ = 0;
+        const neighbors = [
+          { dx: 0, dy: -1, ox: 0, oz: -1 },  // north neighbor → wall is north, offset south
+          { dx: 0, dy: 1, ox: 0, oz: 1 },     // south neighbor → wall is south, offset north
+          { dx: -1, dy: 0, ox: -1, oz: 0 },   // west neighbor → wall is west, offset east
+          { dx: 1, dy: 0, ox: 1, oz: 0 },     // east neighbor → wall is east, offset west
+        ];
+        for (const n of neighbors) {
+          const neighborTile = grid.tiles.get(`${tileX + n.dx},${tileY + n.dy}`);
+          if (neighborTile && neighborTile.type === "wall") {
+            // Offset AWAY from the wall (into the room)
+            wallOffsetX = -n.ox * TILE_SIZE * 0.35;
+            wallOffsetZ = -n.oz * TILE_SIZE * 0.35;
+            break;
+          }
+        }
+
+        torchPositions.push({ x: worldX, z: worldZ, wallOffsetX, wallOffsetZ });
         break;
       }
       case "trigger":
@@ -1257,9 +1278,15 @@
   <T is={signMesh} />
 {/if}
 
-<!-- Torch point lights — animated flicker for firelit atmosphere -->
+<!-- Full torch assemblies — bracket, flame, embers, light cone, point light -->
 {#each torchPositions as torch}
-  <MuseumTorchLight x={torch.x} z={torch.z} />
+  <MuseumTorch3D
+    x={torch.x}
+    z={torch.z}
+    wallOffsetX={torch.wallOffsetX}
+    wallOffsetZ={torch.wallOffsetZ}
+    baseIntensity={torchLightSet.has(`${torch.x},${torch.z}`) ? 4 : 0}
+  />
 {/each}
 
 <!-- GLTF furniture models (Kenney CC0 kit) -->
