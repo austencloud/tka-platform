@@ -21,29 +21,15 @@ import type { IElbowPoleComputer } from "../contracts/IElbowPoleComputer";
 import type { IClavicleRaiser } from "../contracts/IClavicleRaiser";
 import type { ISpineTwister, SpineTwistResult } from "../contracts/ISpineTwister";
 
-/**
- * Default idle pose - arms relaxed at sides
- * Positions in meters: 0.25m to the side, 0.5m up (waist height)
- */
-function createIdlePose(): BodyPose {
-  return {
-    leftHand: {
-      targetPosition: new Vector3(-0.25, 0.5, 0),
-      weight: 1,
-    },
-    rightHand: {
-      targetPosition: new Vector3(0.25, 0.5, 0),
-      weight: 1,
-    },
-    timestamp: Date.now(),
-  };
-}
-
 export class AvatarAnimator implements IAvatarAnimator {
   private currentPose: BodyPose;
   private targetPose: BodyPose;
-  private idlePose: BodyPose;
   private layers: Map<string, AnimationLayer> = new Map();
+
+  // Per-arm IK blend weights: 0 = animation drives the arm, 1 = IK drives the arm
+  private leftArmIK = { weight: 0, targetWeight: 0 };
+  private rightArmIK = { weight: 0, targetWeight: 0 };
+  private ikBlendSpeed = 1 / 0.3; // ~0.3s ramp time
   private smoothBlending = true;
   private smoothingFactor = 0.15; // 0-1, higher = smoother but laggier
   private transitioning = false;
@@ -88,7 +74,6 @@ export class AvatarAnimator implements IAvatarAnimator {
   };
   private _spineTwistEnabled = true;
   private spineRestCached = false;
-  private _spineDiagCounter = 0;
   /** Which spine/head bones the model actually has — used for weight redistribution */
   private availableSpineBones = new Set<string>();
 
@@ -102,9 +87,20 @@ export class AvatarAnimator implements IAvatarAnimator {
     this.poleComputer = poleComputer ?? null;
     this.clavicleRaiser = clavicleRaiser ?? null;
     this.spineTwister = spineTwister ?? null;
-    this.idlePose = createIdlePose();
-    this.currentPose = { ...this.idlePose };
-    this.targetPose = { ...this.idlePose };
+
+    const defaultPose: BodyPose = {
+      leftHand: {
+        targetPosition: new Vector3(-0.25, 0.5, 0),
+        weight: 1,
+      },
+      rightHand: {
+        targetPosition: new Vector3(0.25, 0.5, 0),
+        weight: 1,
+      },
+      timestamp: Date.now(),
+    };
+    this.currentPose = { ...defaultPose };
+    this.targetPose = { ...defaultPose };
   }
 
   setHandTargetsFromProps(
@@ -136,9 +132,8 @@ export class AvatarAnimator implements IAvatarAnimator {
         plane: blueProp.plane,
         weight: 1,
       };
-    } else {
-      this.targetPose.leftHand = { ...this.idlePose.leftHand };
     }
+    // else: no prop — animation drives the arm, don't update target
 
     if (redProp) {
       // Red prop → performer's right hand → skeleton's RightHand
@@ -151,8 +146,46 @@ export class AvatarAnimator implements IAvatarAnimator {
         plane: redProp.plane,
         weight: 1,
       };
-    } else {
-      this.targetPose.rightHand = { ...this.idlePose.rightHand };
+    }
+    // else: no prop — animation drives the arm, don't update target
+
+    this.targetPose.timestamp = Date.now();
+  }
+
+  setPropsAndBlend(
+    blueProp: PropState3D | null,
+    redProp: PropState3D | null,
+    offset?: PositionOffset
+  ): void {
+    this.leftArmIK.targetWeight = blueProp ? 1 : 0;
+    this.rightArmIK.targetWeight = redProp ? 1 : 0;
+
+    const ox = offset?.x ?? 0;
+    const oy = offset?.y ?? 0;
+    const oz = offset?.z ?? 0;
+
+    if (blueProp) {
+      this.targetPose.leftHand = {
+        targetPosition: new Vector3(
+          blueProp.worldPosition.x - ox,
+          blueProp.worldPosition.y - oy,
+          blueProp.worldPosition.z - oz
+        ),
+        plane: blueProp.plane,
+        weight: 1,
+      };
+    }
+
+    if (redProp) {
+      this.targetPose.rightHand = {
+        targetPosition: new Vector3(
+          redProp.worldPosition.x - ox,
+          redProp.worldPosition.y - oy,
+          redProp.worldPosition.z - oz
+        ),
+        plane: redProp.plane,
+        weight: 1,
+      };
     }
 
     this.targetPose.timestamp = Date.now();
@@ -173,6 +206,11 @@ export class AvatarAnimator implements IAvatarAnimator {
   }
 
   update(deltaTime: number): void {
+    // Ramp per-arm IK blend weights (framerate-independent exponential lerp)
+    const blendFactor = 1 - Math.exp(-this.ikBlendSpeed * deltaTime);
+    this.leftArmIK.weight += (this.leftArmIK.targetWeight - this.leftArmIK.weight) * blendFactor;
+    this.rightArmIK.weight += (this.rightArmIK.targetWeight - this.rightArmIK.weight) * blendFactor;
+
     if (this.transitioning) {
       this.updateTransition(deltaTime);
     } else if (this.smoothBlending) {
@@ -351,32 +389,11 @@ export class AvatarAnimator implements IAvatarAnimator {
       if (anyFound) this.spineRestCached = true;
     }
 
-    // Spine twist: rotate torso and head toward cross-body hand positions
-    // --- DIAGNOSTIC: log every 120 frames (~2s at 60fps) ---
-    this._spineDiagCounter++;
-    if (this._spineDiagCounter % 120 === 0) {
-      const hasTwister = !!this.spineTwister;
-      const enabled = this._spineTwistEnabled;
-      const cached = this.spineRestCached;
-      const lx = pose.leftHand.targetPosition.x.toFixed(3);
-      const ly = pose.leftHand.targetPosition.y.toFixed(3);
-      const rx = pose.rightHand.targetPosition.x.toFixed(3);
-      const ry = pose.rightHand.targetPosition.y.toFixed(3);
-      const cx = bodyCenter.x.toFixed(3);
-      console.log(
-        `[SpineTwist DIAG] enabled=${enabled} hasTwister=${hasTwister} restCached=${cached} ` +
-        `leftHand=(${lx},${ly}) rightHand=(${rx},${ry}) bodyCenter.x=${cx}`
-      );
-      if (!cached) {
-        const checkNames: BoneName[] = ["Spine1", "Spine2", "Neck", "Head"];
-        const boneCheck = checkNames.map(
-          (n) => `${n}=${state.bones.has(n) ? "found" : "MISSING"}`
-        );
-        console.log(`[SpineTwist DIAG] Bone check: ${boneCheck.join(", ")}`);
-      }
-    }
+    // Spine twist: rotate torso toward cross-body hand positions.
+    // Scale twist by max IK weight so it fades out when both arms are in animation mode.
+    const maxIKWeight = Math.max(this.leftArmIK.weight, this.rightArmIK.weight);
 
-    if (this._spineTwistEnabled && this.spineTwister && this.spineRestCached) {
+    if (this._spineTwistEnabled && this.spineTwister && this.spineRestCached && maxIKWeight > 0.001) {
       const twistResult = this.spineTwister.computeSpineTwist(
         pose.leftHand.targetPosition,
         pose.rightHand.targetPosition,
@@ -384,30 +401,12 @@ export class AvatarAnimator implements IAvatarAnimator {
         this.availableSpineBones
       );
 
-      // --- DIAGNOSTIC: log computed twist angles ---
-      if (this._spineDiagCounter % 120 === 0) {
-        const toDeg = (q: Quaternion) => {
-          const angle = 2 * Math.acos(Math.min(1, Math.abs(q.w)));
-          return ((angle * 180) / Math.PI).toFixed(1);
-        };
-        console.log(
-          `[SpineTwist DIAG] twist angles: Spine1=${toDeg(twistResult.spine1)}° ` +
-          `Spine2=${toDeg(twistResult.spine2)}° Neck=${toDeg(twistResult.neck)}° ` +
-          `Head=${toDeg(twistResult.head)}° Hips=${toDeg(twistResult.hips)}°`
-        );
-      }
-
-      // Apply twist to Spine1 only. Neck and Head inherit through the
-      // skeleton hierarchy, so they follow naturally without needing
-      // their own rotation (which was causing cascading artifacts).
-      // No hip counter-rotation — feet stay planted because we only
-      // rotate above the waist.
       const spine1Bone = state.bones.get("Spine1");
       if (spine1Bone) {
-        // Use the FULL twist (all weights combined) on Spine1 since it's
-        // the only bone we're directly rotating
         const fullTwist = this.makeFullSpineTwist(twistResult);
-        this.spineTwistQuats.spine1.slerp(fullTwist, this.smoothingFactor);
+        // Scale from identity toward full twist based on max IK weight
+        const scaledTwist = new Quaternion().slerp(fullTwist, maxIKWeight);
+        this.spineTwistQuats.spine1.slerp(scaledTwist, this.smoothingFactor);
         spine1Bone.quaternion
           .copy(this.spineTwistRestQuats.spine1)
           .multiply(this.spineTwistQuats.spine1);
@@ -419,81 +418,113 @@ export class AvatarAnimator implements IAvatarAnimator {
     const rightTarget = pose.rightHand.targetPosition;
 
     if (leftChain) {
-      // Clavicle raise: elevate shoulder bone before IK solve
-      if (this._clavicleRaiseEnabled && this.clavicleRaiser && this.shoulderRestCached) {
-        const leftShoulder = state.bones.get("LeftShoulder");
-        if (leftShoulder) {
-          const targetQuat = this.clavicleRaiser.computeClavicleRotation(
-            leftTarget,
-            "left",
-            this.leftShoulderRestY,
-            leftChain.totalLength
-          );
-          this.leftClavicleQuat.slerp(targetQuat, this.smoothingFactor);
-          leftShoulder.quaternion
-            .copy(this.leftClavicleRestQuat)
-            .multiply(this.leftClavicleQuat);
-          leftShoulder.updateMatrixWorld(true);
+      if (this.leftArmIK.weight > 0.001) {
+        // Save what the locomotion animation wrote to bone quaternions
+        const animRootQuat = leftChain.root.quaternion.clone();
+        const animMiddleQuat = leftChain.middle.quaternion.clone();
+        const animEffectorQuat = leftChain.effector.quaternion.clone();
+
+        // Clavicle raise: elevate shoulder bone before IK solve
+        if (this._clavicleRaiseEnabled && this.clavicleRaiser && this.shoulderRestCached) {
+          const leftShoulder = state.bones.get("LeftShoulder");
+          if (leftShoulder) {
+            const targetQuat = this.clavicleRaiser.computeClavicleRotation(
+              leftTarget,
+              "left",
+              this.leftShoulderRestY,
+              leftChain.totalLength
+            );
+            this.leftClavicleQuat.slerp(targetQuat, this.smoothingFactor);
+            leftShoulder.quaternion
+              .copy(this.leftClavicleRestQuat)
+              .multiply(this.leftClavicleQuat);
+            leftShoulder.updateMatrixWorld(true);
+          }
         }
+
+        // Build IK target with optional pole vector
+        const target: IKTarget = {
+          position: leftTarget,
+          weight: pose.leftHand.weight,
+        };
+
+        if (this._poleVectorsEnabled && this.poleComputer && pose.leftHand.plane) {
+          const idealPole = this.poleComputer.computePoleVector(
+            leftTarget,
+            pose.leftHand.plane,
+            "left",
+            bodyCenter
+          );
+          this.leftPoleVector.lerp(idealPole, this.smoothingFactor);
+          this.leftPoleVector.normalize();
+          target.poleHint = this.leftPoleVector.clone();
+        }
+
+        // Solve IK (overwrites bone quaternions)
+        this.ikSolver.solveAndApply(leftChain, target);
+
+        // Blend: slerp each bone from animation toward IK based on weight
+        const w = this.leftArmIK.weight;
+        leftChain.root.quaternion.copy(animRootQuat).slerp(leftChain.root.quaternion, w);
+        leftChain.middle.quaternion.copy(animMiddleQuat).slerp(leftChain.middle.quaternion, w);
+        leftChain.effector.quaternion.copy(animEffectorQuat).slerp(leftChain.effector.quaternion, w);
       }
-
-      const target: IKTarget = {
-        position: leftTarget,
-        weight: pose.leftHand.weight,
-      };
-
-      if (this._poleVectorsEnabled && this.poleComputer && pose.leftHand.plane) {
-        const idealPole = this.poleComputer.computePoleVector(
-          leftTarget,
-          pose.leftHand.plane,
-          "left",
-          bodyCenter
-        );
-        this.leftPoleVector.lerp(idealPole, this.smoothingFactor);
-        this.leftPoleVector.normalize();
-        target.poleHint = this.leftPoleVector.clone();
-      }
-
-      this.ikSolver.solveAndApply(leftChain, target);
+      // else: weight ~0, skip IK entirely — animation drives the arm
     }
 
     if (rightChain) {
-      // Clavicle raise: elevate shoulder bone before IK solve
-      if (this._clavicleRaiseEnabled && this.clavicleRaiser && this.shoulderRestCached) {
-        const rightShoulder = state.bones.get("RightShoulder");
-        if (rightShoulder) {
-          const targetQuat = this.clavicleRaiser.computeClavicleRotation(
-            rightTarget,
-            "right",
-            this.rightShoulderRestY,
-            rightChain.totalLength
-          );
-          this.rightClavicleQuat.slerp(targetQuat, this.smoothingFactor);
-          rightShoulder.quaternion
-            .copy(this.rightClavicleRestQuat)
-            .multiply(this.rightClavicleQuat);
-          rightShoulder.updateMatrixWorld(true);
+      if (this.rightArmIK.weight > 0.001) {
+        // Save what the locomotion animation wrote to bone quaternions
+        const animRootQuat = rightChain.root.quaternion.clone();
+        const animMiddleQuat = rightChain.middle.quaternion.clone();
+        const animEffectorQuat = rightChain.effector.quaternion.clone();
+
+        // Clavicle raise: elevate shoulder bone before IK solve
+        if (this._clavicleRaiseEnabled && this.clavicleRaiser && this.shoulderRestCached) {
+          const rightShoulder = state.bones.get("RightShoulder");
+          if (rightShoulder) {
+            const targetQuat = this.clavicleRaiser.computeClavicleRotation(
+              rightTarget,
+              "right",
+              this.rightShoulderRestY,
+              rightChain.totalLength
+            );
+            this.rightClavicleQuat.slerp(targetQuat, this.smoothingFactor);
+            rightShoulder.quaternion
+              .copy(this.rightClavicleRestQuat)
+              .multiply(this.rightClavicleQuat);
+            rightShoulder.updateMatrixWorld(true);
+          }
         }
+
+        // Build IK target with optional pole vector
+        const target: IKTarget = {
+          position: rightTarget,
+          weight: pose.rightHand.weight,
+        };
+
+        if (this._poleVectorsEnabled && this.poleComputer && pose.rightHand.plane) {
+          const idealPole = this.poleComputer.computePoleVector(
+            rightTarget,
+            pose.rightHand.plane,
+            "right",
+            bodyCenter
+          );
+          this.rightPoleVector.lerp(idealPole, this.smoothingFactor);
+          this.rightPoleVector.normalize();
+          target.poleHint = this.rightPoleVector.clone();
+        }
+
+        // Solve IK (overwrites bone quaternions)
+        this.ikSolver.solveAndApply(rightChain, target);
+
+        // Blend: slerp each bone from animation toward IK based on weight
+        const w = this.rightArmIK.weight;
+        rightChain.root.quaternion.copy(animRootQuat).slerp(rightChain.root.quaternion, w);
+        rightChain.middle.quaternion.copy(animMiddleQuat).slerp(rightChain.middle.quaternion, w);
+        rightChain.effector.quaternion.copy(animEffectorQuat).slerp(rightChain.effector.quaternion, w);
       }
-
-      const target: IKTarget = {
-        position: rightTarget,
-        weight: pose.rightHand.weight,
-      };
-
-      if (this._poleVectorsEnabled && this.poleComputer && pose.rightHand.plane) {
-        const idealPole = this.poleComputer.computePoleVector(
-          rightTarget,
-          pose.rightHand.plane,
-          "right",
-          bodyCenter
-        );
-        this.rightPoleVector.lerp(idealPole, this.smoothingFactor);
-        this.rightPoleVector.normalize();
-        target.poleHint = this.rightPoleVector.clone();
-      }
-
-      this.ikSolver.solveAndApply(rightChain, target);
+      // else: weight ~0, skip IK entirely — animation drives the arm
     }
 
     this.skeleton.updateMatrices();
@@ -532,14 +563,6 @@ export class AvatarAnimator implements IAvatarAnimator {
       };
       requestAnimationFrame(checkComplete);
     });
-  }
-
-  setIdlePose(pose: BodyPose): void {
-    this.idlePose = { ...pose };
-  }
-
-  resetToIdle(): void {
-    this.targetPose = { ...this.idlePose };
   }
 
   setSmoothBlending(enabled: boolean): void {

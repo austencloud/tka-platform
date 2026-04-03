@@ -130,14 +130,15 @@ export interface IAvatarAnimator {
   transitionTo(pose: BodyPose, config: TransitionConfig): Promise<void>;
 
   /**
-   * Set the idle pose (when no props are being held)
+   * Set prop states and compute per-arm IK blend weights.
+   * Arms with props ramp toward IK (weight 1).
+   * Arms without props ramp toward animation (weight 0).
    */
-  setIdlePose(pose: BodyPose): void;
-
-  /**
-   * Reset to idle pose
-   */
-  resetToIdle(): void;
+  setPropsAndBlend(
+    blueProp: PropState3D | null,
+    redProp: PropState3D | null,
+    offset?: PositionOffset
+  ): void;
 
   /**
    * Enable/disable smooth blending between poses
