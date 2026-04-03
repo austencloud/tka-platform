@@ -16,7 +16,7 @@ import type { Object3D, AnimationClip } from "three";
 export interface LocomotionInput {
   /** Whether the avatar is currently moving */
   isMoving: boolean;
-  /** Movement speed (0-1 normalized, affects animation playback rate) */
+  /** Movement speed in scene units/sec (used to sync animation playback with actual movement) */
   speed: number;
   /** Optional: facing angle for root motion alignment */
   facingAngle?: number;
@@ -43,6 +43,13 @@ export interface LocomotionConfig {
   baseSpeed?: number;
   /** Blend time when transitioning between states (seconds, default: 0.3) */
   blendTime?: number;
+  /**
+   * The walk animation's natural speed in scene units/sec.
+   * Mixamo walk animations are typically ~1.4 m/s.
+   * Animation timeScale = actualSpeed / animationWalkSpeed
+   * so feet match actual ground movement. Default: 1.4
+   */
+  animationWalkSpeed?: number;
 }
 
 export interface ILocomotionAnimator {

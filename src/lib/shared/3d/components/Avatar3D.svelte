@@ -75,6 +75,9 @@
     moveSpeed?: number;
     /** Movement direction relative to facing: x (-1 left, +1 right), z (-1 back, +1 forward) */
     moveDirection?: { x: number; z: number };
+    /** Enable idle/walk locomotion animation. False for exhibit performers
+     *  that should only use IK (no idle animation fighting the pose). */
+    enableLocomotion?: boolean;
   }
 
   let {
@@ -92,6 +95,7 @@
     isMoving = false,
     moveSpeed = 1,
     moveDirection = { x: 0, z: 1 },
+    enableLocomotion = false,
   }: Props = $props();
 
   // Services (manually instantiated to ensure shared skeleton instance)
@@ -190,13 +194,15 @@
       }
 
       // Initialize locomotion animator with the loaded skeleton
-      if (locomotionAnimator && cachedRoot) {
+      // Only for avatars that walk around (player) — exhibit performers
+      // use IK only and don't need idle/walk animations.
+      if (enableLocomotion && locomotionAnimator && cachedRoot) {
         locomotionAnimator.initialize(cachedRoot);
 
         // Load all locomotion animations (idle + 4 directional walks, non-blocking)
         locomotionAnimator
           .loadAnimations({
-            idle: "/animations/idle.glb",
+            idle: "/animations/standing-idle.glb",
             forward: "/animations/walk.glb",
             backward: "/animations/walk-backward.glb",
             strafeLeft: "/animations/strafe-left.glb",
@@ -487,7 +493,8 @@
     if (!servicesReady || !animationService || useProceduralFallback) return;
 
     // 1. Full-body animation (idle/walk with arm swing, hip sway)
-    if (locomotionAnimator) {
+    // Only runs for locomotion-enabled avatars (player), not exhibit performers
+    if (enableLocomotion && locomotionAnimator) {
       locomotionAnimator.setLocomotion({
         isMoving,
         speed: moveSpeed,
