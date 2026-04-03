@@ -1032,6 +1032,46 @@
       },
     };
 
+    // 3D mode: real-time capture from WebGL canvas
+    const is3DMode = viewer3DState.renderMode === '3d';
+    const webglCanvas = viewer3DState.webglCanvas;
+
+    if (exportType === "animation" && is3DMode && webglCanvas && playbackController) {
+      const pc = playbackController; // narrow for closures
+      const opts = exportOptions.getVideoOptions();
+      const secondsPerBeat = 1.0 / modalAnimationState.speed;
+      const steps = effectiveSequence?.steps ?? [];
+      const totalDurationUnits = steps.reduce((sum, s) => sum + (s.duration ?? 1), 0);
+      const startDur = opts.includeStartPosition ? 1 : 0;
+      const endDur = opts.includeEndHold ? 1 : 0;
+
+      await sequenceModalExporter.export3DAnimation(
+        {
+          fps: opts.fps,
+          loopCount: opts.loopCount,
+          resolution: opts.resolution,
+          includeStartPosition: opts.includeStartPosition,
+          includeEndHold: opts.includeEndHold,
+        },
+        {
+          webglCanvas,
+          startPlayback: () => {
+            pc.jumpToStep(0);
+            if (!isPlayingLocal) pc.togglePlayback();
+          },
+          stopPlayback: () => {
+            if (isPlayingLocal) pc.togglePlayback();
+          },
+          getTotalDurationSeconds: () => {
+            return (startDur + totalDurationUnits + endDur) * secondsPerBeat;
+          },
+        },
+        callbacks
+      );
+      return;
+    }
+
+    // 2D mode: frame-by-frame capture from PixiJS canvas
     if (exportType === "animation" && playbackController && animationCanvas) {
       const opts = exportOptions.getVideoOptions();
       await sequenceModalExporter.exportAnimation(
@@ -1039,8 +1079,6 @@
           fps: opts.fps,
           loopCount: opts.loopCount,
           resolution: opts.resolution,
-          // No effectOverrides — EffectsPanel manages global visibility state
-          // via AnimationVisibilityStateManager, so the export captures whatever's showing
           includeStartPosition: opts.includeStartPosition,
           includeEndHold: opts.includeEndHold,
         },
@@ -1079,8 +1117,9 @@
 
   function dismissPreview() {
     sequenceModalExporter.dismissPreview();
-    editingPane = null;
-    accessibilityHelper.announce("Returned to viewer");
+    // Stay in export mode so user returns to the Download Animation view,
+    // not the full viewer with split pane
+    accessibilityHelper.announce("Ready to export again");
   }
 
   // ============================================================================
@@ -1582,7 +1621,7 @@
     isSyncConnected: lanSyncState.isConnected,
 
     // Canvas state
-    canvasReady: !!animationCanvas && !!playbackController,
+    canvasReady: (viewer3DState.renderMode === '3d' ? !!viewer3DState.webglCanvas : !!animationCanvas) && !!playbackController,
 
     // Render progress
     onRenderProgress: handleRenderProgress,

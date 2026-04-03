@@ -3,11 +3,13 @@ import type {
   ExportState,
   ExportCallbacks,
   VideoExportDependencies,
+  Video3DExportDependencies,
   ImageExportDependencies,
   VideoExportOptions,
   ImageExportOptions,
 } from "../contracts/ISequenceModalExporter";
 import type { VideoExportProgress, IVideoExportOrchestrator } from "$lib/features/compose/services/contracts/IVideoExportOrchestrator";
+import type { IRealtime3DExporter } from "$lib/shared/3d/services/contracts/IRealtime3DExporter";
 import type { ISequenceRenderer } from "$lib/shared/render/services/contracts/ISequenceRenderer";
 import { container } from "$lib/shared/di";
 import { recordExportThroughput } from "../../state/export-timing-tracker";
@@ -25,6 +27,7 @@ export class SequenceModalExporter implements ISequenceModalExporter {
   // Lazy-loaded services
   private _videoExportOrchestrator: IVideoExportOrchestrator | null = null;
   private _sequenceRenderer: ISequenceRenderer | null = null;
+  private _activeRealtime3DExporter: IRealtime3DExporter | null = null;
 
   private get videoExportOrchestrator(): IVideoExportOrchestrator | null {
     if (!this._videoExportOrchestrator) {
@@ -118,6 +121,59 @@ export class SequenceModalExporter implements ISequenceModalExporter {
     }
   }
 
+  async export3DAnimation(
+    options: VideoExportOptions,
+    deps: Video3DExportDependencies,
+    callbacks: ExportCallbacks
+  ): Promise<void> {
+    const exporter = container.items.realtime3DExporter as IRealtime3DExporter;
+    if (!exporter) {
+      this._error = "3D export services not ready.";
+      return;
+    }
+
+    this._activeRealtime3DExporter = exporter;
+    this._isExporting = true;
+    this._error = null;
+    this._progress = { progress: 0, stage: "capturing" };
+    this.revokePreviewUrl();
+
+    try {
+      const blob = await exporter.export3D(
+        deps.webglCanvas,
+        deps.startPlayback,
+        deps.stopPlayback,
+        deps.getTotalDurationSeconds,
+        (progress) => {
+          this._progress = progress;
+          if (progress.stage === "complete") {
+            callbacks.onHaptic("success");
+            callbacks.onSuccess("3D video exported!");
+          }
+        },
+        {
+          fps: options.fps,
+          resolution: options.resolution,
+          loopCount: options.loopCount,
+          includeStartPosition: options.includeStartPosition ?? true,
+          includeEndHold: options.includeEndHold ?? false,
+        }
+      );
+
+      this._previewBlobUrl = URL.createObjectURL(blob);
+    } catch (error) {
+      if ((error as Error).message !== "Export cancelled") {
+        console.error("[SequenceModalExporter] 3D export failed:", error);
+        this._error = "3D export failed. Please try again.";
+        callbacks.onError(this._error);
+      }
+    } finally {
+      this._activeRealtime3DExporter = null;
+      this._isExporting = false;
+      this._progress = null;
+    }
+  }
+
   async exportImage(
     options: ImageExportOptions,
     deps: ImageExportDependencies,
@@ -179,6 +235,8 @@ export class SequenceModalExporter implements ISequenceModalExporter {
 
   cancel(): void {
     this.videoExportOrchestrator?.cancelExport();
+    this._activeRealtime3DExporter?.cancel();
+    this._activeRealtime3DExporter = null;
     this._isExporting = false;
     this._progress = null;
   }

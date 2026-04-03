@@ -11,6 +11,7 @@
   import TexturedGroundPlane from "../primitives/TexturedGroundPlane.svelte";
   import SkyGradient from "../primitives/SkyGradient.svelte";
   import FallingParticles from "../primitives/FallingParticles.svelte";
+  import GrassField from "../primitives/GrassField.svelte";
   import type { ForestVariant } from "../domain/enums/environment-enums";
   import { userProportionsState } from "../../state/user-proportions-state.svelte";
   import VolumetricFireComponent from "../../effects/volumetric-fire/VolumetricFireComponent.svelte";
@@ -216,6 +217,8 @@
       fog: { color: "#1a1008", density: 0.036 },
       // Smoke colors (gray with warm tint)
       smoke: ["#443322", "#332211", "#221100"],
+      // Grass: warm autumn tones — dried out, golden-green
+      grass: { base: "#2a2a08", tip: "#6a7a28" },
     },
     firefly: {
       // From FIREFLY_FOREST: deep night sky transitioning to forest
@@ -234,6 +237,8 @@
       fog: { color: "#0a1210", density: 0.044 },
       // Night smoke (darker, cooler)
       smoke: ["#222222", "#1a1a1a", "#111111"],
+      // Grass: cool dark greens — barely visible in moonlight
+      grass: { base: "#0a1a08", tip: "#1a3a1a" },
     },
   };
 
@@ -241,11 +246,14 @@
 
   // Apply fog to scene (reactive to variant changes)
   $effect(() => {
+    if (!scene.current) return;
     const fogColor = new Color(palette.fog.color);
     scene.current.fog = new FogExp2(fogColor, palette.fog.density);
 
     return () => {
-      scene.current.fog = null;
+      if (scene.current) {
+        scene.current.fog = null;
+      }
     };
   });
 </script>
@@ -264,6 +272,19 @@
   size={50}
   diffuseMap={forestFloorTextures.diffuse}
   textureRepeat={40}
+/>
+
+<!-- Grass blades across the clearing floor -->
+<GrassField
+  count={variant === "firefly" ? 5000 : 8000}
+  radius={9}
+  innerRadius={1.5}
+  heightRange={variant === "firefly" ? [0.1, 0.35] : [0.15, 0.45]}
+  bladeWidth={0.04}
+  baseColor={palette.grass.base}
+  tipColor={palette.grass.tip}
+  windSpeed={variant === "firefly" ? 0.6 : 1.0}
+  windStrength={variant === "firefly" ? 0.15 : 0.3}
 />
 
 <!-- Falling leaves - covers the entire forest (area in meters) -->
