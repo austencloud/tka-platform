@@ -12,11 +12,10 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { IImageComposer } from "$lib/shared/render/services/contracts/IImageComposer";
 import type { IPrintCardRenderer, PrintRenderOptions } from "../contracts/IPrintCardRenderer";
-import type { ICardBackCanvasRenderer } from "../contracts/ICardBackCanvasRenderer";
+import type { ICardBackDomRenderer } from "../contracts/ICardBackDomRenderer";
 import type { IInfoCardCanvasRenderer } from "../contracts/IInfoCardCanvasRenderer";
 import type { ISequenceToEntryConverter } from "../contracts/ISequenceToEntryConverter";
 import type { ILOOPExplainer } from "../contracts/ILOOPExplainer";
-import { deriveCardBackData } from "../../components/card-back/card-back-data";
 
 
 // MPC poker card defaults
@@ -29,7 +28,7 @@ const CONTENT_HEIGHT = MPC_HEIGHT - MPC_BLEED * 2;  // 1050
 export class PrintCardRenderer implements IPrintCardRenderer {
   constructor(
     private readonly imageComposer: IImageComposer,
-    private readonly cardBackRenderer: ICardBackCanvasRenderer,
+    private readonly cardBackDomRenderer: ICardBackDomRenderer,
     private readonly infoCardRenderer: IInfoCardCanvasRenderer,
     private readonly sequenceToEntryConverter: ISequenceToEntryConverter,
     private readonly loopExplainer: ILOOPExplainer,
@@ -121,17 +120,16 @@ export class PrintCardRenderer implements IPrintCardRenderer {
     sequence: SequenceData,
     options: PrintRenderOptions
   ): Promise<HTMLCanvasElement> {
-    const data = deriveCardBackData(
-      sequence,
-      this.sequenceToEntryConverter,
-      this.loopExplainer
-    );
+    const canvasWidth = options.canvasWidth ?? MPC_WIDTH;
+    const canvasHeight = options.canvasHeight ?? MPC_HEIGHT;
+    const bleedPx = options.bleedPx ?? MPC_BLEED;
+    const theme = options.theme ?? this.theme;
 
-    return this.cardBackRenderer.render(data, {
-      width: options.canvasWidth ?? MPC_WIDTH,
-      height: options.canvasHeight ?? MPC_HEIGHT,
-      bleedPx: options.bleedPx ?? MPC_BLEED,
-      theme: options.theme ?? this.theme,
+    return this.cardBackDomRenderer.render(sequence, {
+      width: canvasWidth,
+      height: canvasHeight,
+      bleedPx,
+      theme,
     });
   }
 

@@ -105,7 +105,7 @@ import { createStoreContainer } from "./containers/store-container";
 import { DeepLinkResolver } from "../application/services/implementations/DeepLinkResolver";
 
 // Print Prep services (MPC card export)
-import { CardBackCanvasRenderer as CardBackCanvasRendererImpl } from "$lib/features/choreo-card/services/implementations/CardBackCanvasRenderer";
+import { CardBackDomRenderer as CardBackDomRendererImpl } from "$lib/features/choreo-card/services/implementations/CardBackDomRenderer";
 import { InfoCardCanvasRenderer as InfoCardCanvasRendererImpl } from "$lib/features/choreo-card/services/implementations/InfoCardCanvasRenderer";
 import { PrintCardRenderer as PrintCardRendererImpl } from "$lib/features/choreo-card/services/implementations/PrintCardRenderer";
 import { PrintPDFExporter as PrintPDFExporterImpl } from "$lib/features/choreo-card/services/implementations/PrintPDFExporter";
@@ -486,7 +486,7 @@ function buildAppContainer(): any {
   c = c.add(storeContainer.items);
   // Print Prep services (MPC card export — depend on render + build containers)
   c = c.add({
-    cardBackCanvasRenderer: () => new CardBackCanvasRendererImpl(),
+    cardBackDomRenderer: () => new CardBackDomRendererImpl(),
     infoCardCanvasRenderer: () => new InfoCardCanvasRendererImpl(),
     printPDFExporter: () => new PrintPDFExporterImpl(),
     printZipExporter: () => new PrintZipExporterImpl(),
@@ -494,7 +494,7 @@ function buildAppContainer(): any {
   c = c.add((ctx: any) => ({
     printCardRenderer: () => new PrintCardRendererImpl(
       renderContainer.items.imageComposer,
-      ctx.cardBackCanvasRenderer,
+      ctx.cardBackDomRenderer,
       ctx.infoCardCanvasRenderer,
       buildContainer.items.sequenceToEntryConverter,
       buildContainer.items.loopExplainer,

@@ -166,7 +166,7 @@ interface StandaloneItems {
 	sequenceDataProvider: SequenceDataProvider;
 	// Print Prep services (MPC card export)
 	printCardRenderer: import("$lib/features/choreo-card/services/contracts/IPrintCardRenderer").IPrintCardRenderer;
-	cardBackCanvasRenderer: import("$lib/features/choreo-card/services/contracts/ICardBackCanvasRenderer").ICardBackCanvasRenderer;
+	cardBackDomRenderer: import("$lib/features/choreo-card/services/contracts/ICardBackDomRenderer").ICardBackDomRenderer;
 	infoCardCanvasRenderer: import("$lib/features/choreo-card/services/contracts/IInfoCardCanvasRenderer").IInfoCardCanvasRenderer;
 	printPDFExporter: import("$lib/features/choreo-card/services/contracts/IPrintPDFExporter").IPrintPDFExporter;
 	printZipExporter: import("$lib/features/choreo-card/services/contracts/IPrintZipExporter").IPrintZipExporter;
