@@ -17,40 +17,60 @@ export const MUSEUM_ROOMS: RoomNode[] = [
   {
     id: "entrance",
     name: "Entrance Lobby",
-    minWidth: 20,
-    maxWidth: 26,
-    minHeight: 14,
-    maxHeight: 18,
+    minWidth: 16,
+    maxWidth: 16,
+    minHeight: 50,
+    maxHeight: 50,
     material: "marble",
     theme: "institutional",
     description:
-      "The front entrance of The Kinetic Archive. " +
-      "A guest book sits near the door. The marble floor is worn from decades of foot traffic. " +
-      "A corridor leads north into the first exhibit.",
+      "A long marble hallway — the grand entrance to The Kinetic Archive. " +
+      "Brass letters above the double doors. A guest book podium with a warm desk lamp " +
+      "sits in the center. The archway at the far end leads into darkness.",
     devNotes:
-      "ENTRANCE LOBBY\n" +
+      "ENTRANCE LOBBY — GRAND HALLWAY\n" +
       "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" +
-      "PURPOSE: First impression. Grounding moment before the fiction starts.\n" +
+      "16 tiles wide × 50 tiles long (8m × 25m)\n" +
+      "PURPOSE: First impression. Processional walk. Grounding moment.\n" +
       "\n" +
-      "SPATIAL BEAT: open — wide marble, nothing urgent\n" +
+      "SPATIAL BEATS (south to north):\n" +
+      "  Rows 44-40: Arrival — door, mat, coat rack. 'This is a real building.'\n" +
+      "  Rows 39-26: Empty hallway. Footsteps echo. Podium light pulls you forward.\n" +
+      "  Rows 25-22: Guest book podium. First interaction. Warm lamp pool.\n" +
+      "  Rows 21-16: Bulletin board + reception window. 'Someone worked here.'\n" +
+      "  Rows 15-4: Open approach to archway. Bench along wall.\n" +
+      "  Rows 3-2: Stanchions, welcome plaque, K's note, archway into cave.\n" +
       "\n" +
-      "Guest book is the first interactive object.\n" +
-      "Welcome plaque sets institutional tone (Museum of Jurassic Technology energy).\n" +
-      "TODO: ambient lobby audio (clock tick, distant footsteps)\n" +
-      "\n" +
-      "TONE: Normal museum. Nothing weird yet.",
+      "TONE: Normal museum. Nothing weird yet.\n" +
+      "LIGHTING: Cool fluorescent baseline + one warm desk lamp on podium.",
     exhibits: [
+      // Welcome plaque — near the north archway, east side
       {
-        wall: "north",
-        position: 0.5,
+        wall: "east",
+        position: 0.05,
         refId: "entrance-welcome",
-        facing: "south",
+        facing: "west",
       },
+      // Guest book — center-ish, west wall (podium is center but plaque is on wall)
       {
-        wall: "south",
+        wall: "west",
         position: 0.5,
         refId: "entrance-guest-book",
-        facing: "north",
+        facing: "east",
+      },
+      // Bulletin board — west wall, upper third
+      {
+        wall: "west",
+        position: 0.35,
+        refId: "entrance-bulletin",
+        facing: "east",
+      },
+      // Reception window — east wall, upper third
+      {
+        wall: "east",
+        position: 0.4,
+        refId: "entrance-reception",
+        facing: "west",
       },
     ],
   },
