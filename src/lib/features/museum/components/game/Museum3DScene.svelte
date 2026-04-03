@@ -1247,6 +1247,8 @@
     moveSpeed={TOP_DOWN_MOVE_SPEED}
     moveDirection={moveDir}
     enableLocomotion={true}
+    isGrounded={physicsProvider.isGrounded()}
+    verticalVelocity={physicsProvider.getVelocity().y}
   />
 {/if}
 

@@ -39,7 +39,7 @@
   // we lift the avatar by -groundY so its feet land on the museum floor.
   //
   // STAGE_LIFT = shoulder height above floor. PLATFORM_HEIGHT = the pedestal
-  // the performer stands on. avatarWorldPosition.y includes both so that
+  // the performer stands on. avatarLocalPosition.y includes both so that
   // the IK targets, prop orbit center, and grid all align with the avatar's
   // visual shoulder height on top of the platform.
   const PLATFORM_HEIGHT = 0.3; // matches cylinder geometry (height 0.3, center at 0.15)
@@ -47,7 +47,8 @@
 
   // World position includes platform height so IK, props, and grid all
   // sit at shoulder height above the platform — not 0.3m below it.
-  const avatarWorldPosition = $derived({ x: worldX, y: STAGE_LIFT + PLATFORM_HEIGHT, z: worldZ });
+  // Avatar position is relative to the station group (which is at worldX, 0, worldZ)
+  const avatarLocalPosition = $derived({ x: 0, y: STAGE_LIFT + PLATFORM_HEIGHT, z: 0 });
 
   // Build a minimal SequenceData from the museum manifest
   function buildSequenceData(museumSeq: MuseumSequenceData): SequenceData {
@@ -139,11 +140,12 @@
   const platformColor = new THREE.Color(0x3a3028);
 </script>
 
-<!-- Circular platform under the performer (stays at world floor level) -->
+<!-- Station root group — positioned at world coords, children use local coords -->
+<T.Group name={`performer-station-${stationId}`} position.x={worldX} position.z={worldZ}>
+
+<!-- Circular platform (local y=0.15, x/z=0 since group handles world position) -->
 <T.Mesh
-  position.x={worldX}
   position.y={0.15}
-  position.z={worldZ}
   receiveShadow
 >
   <T.CylinderGeometry args={[0.8, 0.9, 0.3, 24]} />
@@ -153,7 +155,7 @@
 <!--
   Performer positioning:
 
-  avatarWorldPosition.y = STAGE_LIFT + PLATFORM_HEIGHT (≈ 1.86m)
+  avatarLocalPosition.y = STAGE_LIFT + PLATFORM_HEIGHT (≈ 1.86m)
     → IK targets and prop orbit at shoulder height above the platform ✓
     → Grid3D center at the same point ✓
 
@@ -169,7 +171,7 @@
       id={`museum-${stationId}`}
       bluePropState={performerState.bluePropState}
       redPropState={performerState.redPropState}
-      position={avatarWorldPosition}
+      position={avatarLocalPosition}
       {facingAngle}
       isActive={false}
       isMoving={false}
@@ -181,7 +183,7 @@
     <Prop3D propType={bluePropType}
       propState={performerState.bluePropState}
       color="blue"
-      avatarPosition={avatarWorldPosition}
+      avatarPosition={avatarLocalPosition}
       {facingAngle}
       gridOffset={0.3}
       isActivePlayer={false}
@@ -192,7 +194,7 @@
     <Prop3D propType={redPropType}
       propState={performerState.redPropState}
       color="red"
-      avatarPosition={avatarWorldPosition}
+      avatarPosition={avatarLocalPosition}
       {facingAngle}
       gridOffset={0.3}
       isActivePlayer={false}
@@ -203,7 +205,7 @@
   {#if showGrid}
     <Grid3D
       visiblePlanes={new Set([Plane.WALL])}
-      centerPosition={avatarWorldPosition}
+      centerPosition={avatarLocalPosition}
       {facingAngle}
       gridOffset={0.3}
       planeOpacity={0.12}
@@ -212,3 +214,4 @@
     />
   {/if}
 {/if}
+</T.Group>

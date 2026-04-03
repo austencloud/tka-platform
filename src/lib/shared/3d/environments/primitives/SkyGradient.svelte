@@ -58,14 +58,15 @@
   });
 
   onDestroy(() => {
-    // Restore original background
-    scene.current.background = originalBackground;
+    if (scene.current) {
+      scene.current.background = originalBackground;
+    }
     texture?.dispose();
   });
 
   // Update when colors change
   $effect(() => {
-    if (texture) {
+    if (texture && scene.current) {
       texture.dispose();
       texture = createGradientTexture();
       scene.current.background = texture;

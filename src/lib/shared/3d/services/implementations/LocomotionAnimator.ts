@@ -16,6 +16,7 @@ import {
   AnimationMixer,
   AnimationClip,
   LoopRepeat,
+  LoopOnce,
   AdditiveAnimationBlendMode,
 } from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
@@ -25,6 +26,7 @@ import type {
   AnimationUrls,
   LocomotionConfig,
 } from "../contracts/ILocomotionAnimator";
+import { LocomotionState } from "../contracts/IAnimationStateMachine";
 
 /**
  * Known bone name prefixes from various sources.
@@ -325,6 +327,18 @@ export class LocomotionAnimator implements ILocomotionAnimator {
     strafeRight: null,
   };
 
+  // Jump/fall/land animations (optional — loaded when URLs provided)
+  private jumpClipRaw: AnimationClip | null = null;
+  private fallClipRaw: AnimationClip | null = null;
+  private landClipRaw: AnimationClip | null = null;
+  private jumpAction: AnimationAction | null = null;
+  private fallAction: AnimationAction | null = null;
+  private landAction: AnimationAction | null = null;
+
+  // State machine integration — when set, overrides the idle↔walk logic
+  private activeState: LocomotionState | null = null;
+  private currentActiveState: LocomotionState | null = null;
+
   private config: Required<LocomotionConfig> = {
     baseSpeed: 1,
     blendTime: 0.3,
@@ -399,13 +413,18 @@ export class LocomotionAnimator implements ILocomotionAnimator {
   }
 
   async loadAnimations(urls: AnimationUrls): Promise<void> {
-    const entries: Array<{ key: "idle" | DirectionKey; url: string }> = [
+    const entries: Array<{ key: "idle" | DirectionKey | "jump" | "fall" | "land"; url: string }> = [
       { key: "idle", url: urls.idle },
       { key: "forward", url: urls.forward },
       { key: "backward", url: urls.backward },
       { key: "strafeLeft", url: urls.strafeLeft },
       { key: "strafeRight", url: urls.strafeRight },
     ];
+
+    // Optional jump/fall/land clips
+    if (urls.jump) entries.push({ key: "jump", url: urls.jump });
+    if (urls.fall) entries.push({ key: "fall", url: urls.fall });
+    if (urls.land) entries.push({ key: "land", url: urls.land });
 
     const results = await Promise.allSettled(
       entries.map(async (entry) => {
@@ -420,6 +439,12 @@ export class LocomotionAnimator implements ILocomotionAnimator {
         if (key === "idle") {
           this.idleClipRaw = clip;
           this.idleLoaded = true;
+        } else if (key === "jump") {
+          this.jumpClipRaw = clip;
+        } else if (key === "fall") {
+          this.fallClipRaw = clip;
+        } else if (key === "land") {
+          this.landClipRaw = clip;
         } else {
           this.walkClipsRaw[key] = clip;
           this.walkLoaded = true;
@@ -510,6 +535,36 @@ export class LocomotionAnimator implements ILocomotionAnimator {
       action.play();
       this.walkActions[key] = action;
     }
+
+    // Process jump/fall/land clips (optional — only if provided)
+    if (this.jumpClipRaw && !this.jumpAction) {
+      const { main } = retargetFullBody(this.jumpClipRaw, this.targetBonePrefix);
+      this.jumpAction = this.mixer.clipAction(main);
+      this.jumpAction.setLoop(LoopOnce, 1);
+      this.jumpAction.clampWhenFinished = true;
+      this.jumpAction.enabled = true;
+      this.jumpAction.setEffectiveWeight(0);
+      this.jumpAction.play();
+    }
+
+    if (this.fallClipRaw && !this.fallAction) {
+      const { main } = retargetFullBody(this.fallClipRaw, this.targetBonePrefix);
+      this.fallAction = this.mixer.clipAction(main);
+      this.fallAction.setLoop(LoopRepeat, Infinity);
+      this.fallAction.enabled = true;
+      this.fallAction.setEffectiveWeight(0);
+      this.fallAction.play();
+    }
+
+    if (this.landClipRaw && !this.landAction) {
+      const { main } = retargetFullBody(this.landClipRaw, this.targetBonePrefix);
+      this.landAction = this.mixer.clipAction(main);
+      this.landAction.setLoop(LoopOnce, 1);
+      this.landAction.clampWhenFinished = true;
+      this.landAction.enabled = true;
+      this.landAction.setEffectiveWeight(0);
+      this.landAction.play();
+    }
   }
 
   setLocomotion(input: LocomotionInput): void {
@@ -588,6 +643,10 @@ export class LocomotionAnimator implements ILocomotionAnimator {
     }
   }
 
+  setActiveState(state: LocomotionState): void {
+    this.activeState = state;
+  }
+
   update(delta: number): void {
     if (!this.mixer) return;
 
@@ -595,7 +654,78 @@ export class LocomotionAnimator implements ILocomotionAnimator {
     const blendSpeed = 1 / Math.max(0.01, this.config.blendTime);
     const blendFactor = 1 - Math.exp(-blendSpeed * delta);
 
-    // Smoothly blend idle weight (both main quaternion and additive hips position)
+    // State-driven blending: determine target weights for each action group
+    // based on the active locomotion state from AnimationStateMachine.
+    if (this.activeState !== null) {
+      this.applyStateWeights(blendFactor);
+    } else {
+      // Legacy path: no state machine, use idle↔walk logic from setLocomotion()
+      this.applyLegacyWeights(blendFactor);
+    }
+
+    this.mixer.update(delta);
+  }
+
+  /**
+   * State-driven weight blending (when AnimationStateMachine is active).
+   * The state machine tells us WHAT state we're in; we crossfade clips accordingly.
+   */
+  private applyStateWeights(blendFactor: number): void {
+    const state = this.activeState!;
+
+    // Target weights per state
+    const wantIdle = state === LocomotionState.IDLE ? 1 : 0;
+    const wantWalk = state === LocomotionState.WALKING ? 1 : 0;
+    const wantJump = state === LocomotionState.JUMPING ? 1 : 0;
+    const wantFall = state === LocomotionState.FALLING ? 1 : 0;
+    const wantLand = state === LocomotionState.LANDING ? 1 : 0;
+
+    // Blend idle
+    this.currentIdleWeight += (wantIdle - this.currentIdleWeight) * blendFactor;
+    this.idleAction?.setEffectiveWeight(this.currentIdleWeight);
+    this.idleHipsPosAction?.setEffectiveWeight(this.currentIdleWeight);
+
+    // Blend directional walk weights (scale by wantWalk so they fade to 0 in non-walk states)
+    for (const key of Object.keys(this.walkActions) as DirectionKey[]) {
+      const dirTarget = this.targetDirWeights[key] * wantWalk;
+      const current = this.currentDirWeights[key];
+      const newWeight = current + (dirTarget - current) * blendFactor;
+      this.currentDirWeights[key] = newWeight;
+      this.walkActions[key]?.setEffectiveWeight(newWeight);
+    }
+
+    // Blend jump/fall/land actions
+    this.blendAction(this.jumpAction, wantJump, blendFactor);
+    this.blendAction(this.fallAction, wantFall, blendFactor);
+    this.blendAction(this.landAction, wantLand, blendFactor);
+
+    // Reset one-shot clips when entering their state (restart from beginning)
+    if (state !== this.currentActiveState) {
+      if (state === LocomotionState.JUMPING && this.jumpAction) {
+        this.jumpAction.reset().play();
+      }
+      if (state === LocomotionState.LANDING && this.landAction) {
+        this.landAction.reset().play();
+      }
+      this.currentActiveState = state;
+    }
+  }
+
+  /**
+   * Smoothly blend an action's weight toward a target.
+   */
+  private blendAction(action: AnimationAction | null, targetWeight: number, blendFactor: number): void {
+    if (!action) return;
+    const current = action.getEffectiveWeight();
+    const newWeight = current + (targetWeight - current) * blendFactor;
+    action.setEffectiveWeight(newWeight);
+  }
+
+  /**
+   * Legacy weight blending (backward compatible — no state machine).
+   */
+  private applyLegacyWeights(blendFactor: number): void {
+    // Smoothly blend idle weight
     this.currentIdleWeight += (this.targetIdleWeight - this.currentIdleWeight) * blendFactor;
     if (this.idleAction) {
       this.idleAction.setEffectiveWeight(this.currentIdleWeight);
@@ -616,8 +746,6 @@ export class LocomotionAnimator implements ILocomotionAnimator {
         action.setEffectiveWeight(newWeight);
       }
     }
-
-    this.mixer.update(delta);
   }
 
   isReady(): boolean {
@@ -651,6 +779,14 @@ export class LocomotionAnimator implements ILocomotionAnimator {
       this.idleHipsPosAction = null;
     }
 
+    // Stop jump/fall/land actions
+    if (this.jumpAction) { this.jumpAction.stop(); this.jumpAction = null; }
+    if (this.fallAction) { this.fallAction.stop(); this.fallAction = null; }
+    if (this.landAction) { this.landAction.stop(); this.landAction = null; }
+    this.jumpClipRaw = null;
+    this.fallClipRaw = null;
+    this.landClipRaw = null;
+
     if (this.mixer) {
       this.mixer.stopAllAction();
       this.mixer = null;
@@ -664,6 +800,8 @@ export class LocomotionAnimator implements ILocomotionAnimator {
     this.walkLoaded = false;
     this.currentIdleWeight = 1;
     this.targetIdleWeight = 1;
+    this.activeState = null;
+    this.currentActiveState = null;
 
     // Reset weights
     for (const key of Object.keys(this.currentDirWeights) as DirectionKey[]) {

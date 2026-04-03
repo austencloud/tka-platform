@@ -121,6 +121,16 @@ export const museum3dEditorState = {
     animateOrbitTarget(x, y, z);
   },
 
+  /** Move orbit target by a delta (for WASD panning — no animation) */
+  panTarget(dx: number, dy: number, dz: number) {
+    if (orbitControls) {
+      orbitControls.target.x += dx;
+      orbitControls.target.y += dy;
+      orbitControls.target.z += dz;
+      orbitControls.update();
+    }
+  },
+
   loadCamera: loadEditorCamera,
   saveCamera: saveEditorCamera,
 };

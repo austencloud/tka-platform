@@ -52,6 +52,7 @@
       showGrid,
       showTKA,
       showWord,
+      showQRCode: true,
       includeStartPosition,
       startPositionLayout: stepCount != null
         ? imageComposition.getStartPositionLayoutForStepCount(stepCount)

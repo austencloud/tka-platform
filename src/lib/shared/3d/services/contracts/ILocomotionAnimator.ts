@@ -9,6 +9,7 @@
  */
 
 import type { Object3D, AnimationClip } from "three";
+import type { LocomotionState } from "./IAnimationStateMachine";
 
 /**
  * Locomotion state from the avatar movement system
@@ -33,6 +34,12 @@ export interface AnimationUrls {
   backward: string;
   strafeLeft: string;
   strafeRight: string;
+  /** Jump ascent clip (optional — needed for jump/fall/land states) */
+  jump?: string;
+  /** Sustained fall loop (optional) */
+  fall?: string;
+  /** One-shot landing recovery (optional) */
+  land?: string;
 }
 
 /**
@@ -87,6 +94,13 @@ export interface ILocomotionAnimator {
    * Configure animation behavior
    */
   configure(config: LocomotionConfig): void;
+
+  /**
+   * Set which locomotion state is active (drives clip selection beyond idle/walk).
+   * When called, takes priority over the idle↔walk logic in setLocomotion().
+   * If never called, LocomotionAnimator works exactly as before (backward compatible).
+   */
+  setActiveState?(state: LocomotionState): void;
 
   /**
    * Clean up all resources (mixer, actions, clips)

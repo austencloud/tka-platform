@@ -30,11 +30,12 @@
     isPlaying: boolean;
     bluePropType?: string | null;
     redPropType?: string | null;
+    hideOverlays?: boolean;
     onRendererReady?: (renderer: unknown) => void;
     onCameraStateChange?: (state: CameraStateSnapshot) => void;
   }
 
-  let { sequenceData, currentStep, isPlaying, onCameraStateChange }: Props =
+  let { sequenceData, currentStep, isPlaying, hideOverlays = false, onCameraStateChange }: Props =
     $props();
 
   const viewer3DState = getViewer3DContext();
@@ -55,10 +56,12 @@
         {avatarState}
       />
     </Canvas>
-    <div class="grid-popover-anchor">
-      <Viewer3DGridPopover {sequenceData} />
-    </div>
-    <Viewer3DViewPresets />
+    {#if !hideOverlays}
+      <div class="grid-popover-anchor">
+        <Viewer3DGridPopover {sequenceData} />
+      </div>
+      <Viewer3DViewPresets />
+    {/if}
   {:else}
     <div class="viewer-3d-loading">Loading 3D viewer...</div>
   {/if}

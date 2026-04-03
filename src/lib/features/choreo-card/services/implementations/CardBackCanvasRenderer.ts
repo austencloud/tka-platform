@@ -3,7 +3,7 @@
  *
  * Draws a choreo card back onto an HTML Canvas at MakePlayingCards.com
  * specifications (822x1122 px at 300 DPI). Replicates the layout of
- * CardBackV5.svelte using only the Canvas 2D API — no DOM, no SVG loading.
+ * CardBack.svelte using only the Canvas 2D API — no DOM, no SVG loading.
  *
  * The Svelte component was designed at a 500x700 reference size. The print
  * canvas is 822x1122 with 36px bleed on each side, giving a 750x1050

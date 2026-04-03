@@ -11,7 +11,6 @@
   import TexturedGroundPlane from "../primitives/TexturedGroundPlane.svelte";
   import SkyGradient from "../primitives/SkyGradient.svelte";
   import FallingParticles from "../primitives/FallingParticles.svelte";
-  import GrassField from "../primitives/GrassField.svelte";
   import type { ForestVariant } from "../domain/enums/environment-enums";
   import { userProportionsState } from "../../state/user-proportions-state.svelte";
   import VolumetricFireComponent from "../../effects/volumetric-fire/VolumetricFireComponent.svelte";
@@ -37,12 +36,13 @@
   const bush2 = useGltf(`${R2_CDN}/models/forest/Bush_2_A_Color1.gltf`);
 
   // Load camping models (Kenney Survival Kit - CC0)
-  const campfire = useGltf(`${R2_CDN}/models/camping/campfire-pit.glb`);
-  const tent = useGltf(`${R2_CDN}/models/camping/tent-canvas.glb`);
+  // Served from static/ with texture embedded in the GLB
+  const campfire = useGltf("/models/camping/campfire-pit.glb");
+  const tent = useGltf("/models/camping/tent-canvas.glb");
 
   // Load forest floor detail models
-  const fallenLog = useGltf(`${R2_CDN}/models/camping/tree-log.glb`);
-  const fallenLogSmall = useGltf(`${R2_CDN}/models/camping/tree-log-small.glb`);
+  const fallenLog = useGltf("/models/camping/tree-log.glb");
+  const fallenLogSmall = useGltf("/models/camping/tree-log-small.glb");
 
   // Get scene for fog
   const { scene } = useThrelte();
@@ -209,7 +209,7 @@
         midColor: "#3d2010",
         bottomColor: "#0a0808",
       },
-      ground: "#ddccbb", // Light warm tint - lets texture detail show through
+      ground: "#ddccbb", // Light warm tint — lets texture detail show through
       leaves: ["#d97706", "#dc2626", "#ea580c", "#92400e"],
       // No fireflies in autumn
       fireflies: null as string[] | null,
@@ -217,8 +217,6 @@
       fog: { color: "#1a1008", density: 0.036 },
       // Smoke colors (gray with warm tint)
       smoke: ["#443322", "#332211", "#221100"],
-      // Grass: warm autumn tones — dried out, golden-green
-      grass: { base: "#2a2a08", tip: "#6a7a28" },
     },
     firefly: {
       // From FIREFLY_FOREST: deep night sky transitioning to forest
@@ -228,7 +226,7 @@
         midColor: "#0a1612", // Transition to forest
         bottomColor: "#0a1810", // Dark green at bottom
       },
-      ground: "#99aa88", // Light green tint - lets texture show in darkness
+      ground: "#99aa88", // Light green tint — lets texture show in darkness
       // Subtle green leaves barely visible in the dark
       leaves: ["#1a3a1a", "#0d2a15", "#153020", "#0f2518"],
       // Single warm yellow-green like real fireflies
@@ -237,8 +235,6 @@
       fog: { color: "#0a1210", density: 0.044 },
       // Night smoke (darker, cooler)
       smoke: ["#222222", "#1a1a1a", "#111111"],
-      // Grass: cool dark greens — barely visible in moonlight
-      grass: { base: "#0a1a08", tip: "#1a3a1a" },
     },
   };
 
@@ -271,20 +267,10 @@
   color={palette.ground}
   size={50}
   diffuseMap={forestFloorTextures.diffuse}
+  normalMap={forestFloorTextures.normal}
+  roughnessMap={forestFloorTextures.roughness}
+  normalScale={1.5}
   textureRepeat={40}
-/>
-
-<!-- Grass blades across the clearing floor -->
-<GrassField
-  count={variant === "firefly" ? 5000 : 8000}
-  radius={9}
-  innerRadius={1.5}
-  heightRange={variant === "firefly" ? [0.1, 0.35] : [0.15, 0.45]}
-  bladeWidth={0.04}
-  baseColor={palette.grass.base}
-  tipColor={palette.grass.tip}
-  windSpeed={variant === "firefly" ? 0.6 : 1.0}
-  windStrength={variant === "firefly" ? 0.15 : 0.3}
 />
 
 <!-- Falling leaves - covers the entire forest (area in meters) -->

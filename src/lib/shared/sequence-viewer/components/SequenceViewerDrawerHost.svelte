@@ -32,6 +32,7 @@
   import ExportImagePanel from "./ExportImagePanel.svelte";
   import VideoPreviewPanel from "./VideoPreviewPanel.svelte";
   import PracticeProgressIndicator from "./PracticeProgressIndicator.svelte";
+  import Recording3DOverlay from "./Recording3DOverlay.svelte";
   // Services
   import { container } from "$lib/shared/di";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
@@ -239,7 +240,7 @@
                 </button>
 
                 <div class="drawer-header-title">
-                  {isVideoExportActive ? "Download Animation" : isImageExportActive ? "Download Card" : "Upload Video"}
+                  {isVideoExportActive ? (ctx.renderMode === '3d' ? "Record Scene" : "Download Animation") : isImageExportActive ? "Download Card" : "Upload Video"}
                 </div>
 
                 <div class="drawer-header-actions">
@@ -382,6 +383,14 @@
                     onChoreoCardContextMenu={(x, y) => choreoCardMenuHost?.openContextMenu(x, y)}
                     {rerenderTrigger}
                   />
+                  {#if ctx.renderMode === '3d' && (ctx.countdownValue > 0 || ctx.isRecording3D)}
+                    <Recording3DOverlay
+                      countdownValue={ctx.countdownValue}
+                      isRecording={ctx.isRecording3D}
+                      elapsed={ctx.recordingElapsed}
+                      total={ctx.recordingTotal}
+                    />
+                  {/if}
                   <ChoreoCardContextMenuHost
                     bind:this={choreoCardMenuHost}
                     onOpenSettings={() => { cardSettingsOpen = true; }}
@@ -416,6 +425,7 @@
                             singlePlayDuration={ctx.singlePlayDuration}
                             isPlaying={ctx.isPlayingLocal}
                             bpm={ctx.bpmLocal}
+                            renderMode={ctx.renderMode}
                             onPlaybackToggle={ctx.handlePlaybackToggle}
                             onBpmChange={ctx.handleBpmChange}
                             onExport={ctx.handleExport}

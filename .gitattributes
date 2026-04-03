@@ -1,0 +1,31 @@
+# Normalize line endings to LF in the repo, regardless of OS
+* text=auto eol=lf
+
+# Ensure these stay LF even on Windows checkout
+*.ts text eol=lf
+*.svelte text eol=lf
+*.js text eol=lf
+*.json text eol=lf
+*.css text eol=lf
+*.html text eol=lf
+*.md text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+
+# Binary files — don't touch
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.glb binary
+*.gltf binary
+*.fbx binary
+*.mp4 binary
+*.webm binary
+*.mp3 binary
+*.ogg binary
+*.wav binary

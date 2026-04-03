@@ -8,9 +8,11 @@
    * Uses OrbitControls (industry standard for 3D editors) + TransformControls
    * from @threlte/extras. TransformControls auto-pauses OrbitControls during drag.
    */
-  import { useThrelte } from "@threlte/core";
+  import { useThrelte, useTask } from "@threlte/core";
   import { TransformControls } from "@threlte/extras";
   import { Raycaster, Vector2, Vector3, Euler, Mesh, type Object3D, type Camera } from "three";
+
+  const _tempVec2 = new Vector3();
   import { onMount, onDestroy } from "svelte";
   import { museum3dEditorState } from "../../state/museum-3d-editor-state.svelte";
 
@@ -122,11 +124,18 @@
       if ((hit.object as any).isInstancedMesh) continue;
 
       if (hit.object instanceof Mesh) {
-        // Walk up to find a parent Group (plaque group, performer group, etc.)
+        // Walk up the hierarchy to find a named root group
         let target: Object3D = hit.object;
-        if (target.parent && target.parent.type === "Group"
-            && target.parent.parent?.type !== "Scene") {
-          target = target.parent;
+        let walk: Object3D | null = hit.object;
+        while (walk && walk.type !== "Scene") {
+          if (walk.name && (
+            walk.name.startsWith("plaque-") ||
+            walk.name.startsWith("performer-station-")
+          )) {
+            target = walk;
+            break;
+          }
+          walk = walk.parent;
         }
         return target;
       }
@@ -172,23 +181,70 @@
     }
   }
 
-  function handleKeyDown(event: KeyboardEvent) {
-    const key = event.key;
-    if (key === "1") museum3dEditorState.setMode("translate");
-    if (key === "2") museum3dEditorState.setMode("rotate");
-    if (key === "3") museum3dEditorState.setMode("scale");
-    if (key === "Escape") museum3dEditorState.deselect();
+  // ── WASD keyboard panning ──
+  const panKeys = new Set<string>();
+  const PAN_SPEED = 8; // units/sec
 
-    // Ctrl+Z = undo, Ctrl+Shift+Z = redo
+  function handleKeyDown(event: KeyboardEvent) {
+    const key = event.key.toLowerCase();
+
+    // Gizmo mode
+    if (key === "1") { museum3dEditorState.setMode("translate"); return; }
+    if (key === "2") { museum3dEditorState.setMode("rotate"); return; }
+    if (key === "3") { museum3dEditorState.setMode("scale"); return; }
+    if (key === "escape") { museum3dEditorState.deselect(); return; }
+
+    // Ctrl+Z/Ctrl+Shift+Z undo/redo
     if ((event.ctrlKey || event.metaKey) && key === "z") {
       event.preventDefault();
-      if (event.shiftKey) {
-        redo();
-      } else {
-        undo();
-      }
+      event.shiftKey ? redo() : undo();
+      return;
     }
+
+    // WASD + Q/E for panning
+    if (["w", "a", "s", "d", "q", "e"].includes(key)) {
+      panKeys.add(key);
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    if (event.key === "Shift") panKeys.add("shift");
   }
+
+  function handleKeyUp(event: KeyboardEvent) {
+    panKeys.delete(event.key.toLowerCase());
+    if (event.key === "Shift") panKeys.delete("shift");
+  }
+
+  // Each frame: move the orbit target (and camera) based on held keys
+  useTask((delta) => {
+    if (panKeys.size === 0) return;
+    const cam = getCamera();
+    if (!cam) return;
+
+    const speed = (panKeys.has("shift") ? PAN_SPEED * 3 : PAN_SPEED) * delta;
+    const forward = (panKeys.has("w") ? 1 : 0) - (panKeys.has("s") ? 1 : 0);
+    const strafe = (panKeys.has("d") ? 1 : 0) - (panKeys.has("a") ? 1 : 0);
+    const vertical = (panKeys.has("e") ? 1 : 0) - (panKeys.has("q") ? 1 : 0);
+
+    if (forward === 0 && strafe === 0 && vertical === 0) return;
+
+    // Get camera's forward/right vectors projected onto the XZ plane
+    const camDir = cam.getWorldDirection(_tempVec2);
+    const sinY = -camDir.x;
+    const cosY = -camDir.z;
+
+    const dx = (sinY * forward + cosY * strafe) * speed;
+    const dz = (cosY * forward - sinY * strafe) * speed;
+    const dy = vertical * speed;
+
+    // Move both the camera and the orbit target together (panning, not orbiting)
+    cam.position.x += dx;
+    cam.position.y += dy;
+    cam.position.z += dz;
+
+    // Also move the orbit target so orbit center stays relative to camera
+    museum3dEditorState.panTarget(dx, dy, dz);
+  });
 
   onMount(() => {
     const canvas = getCanvas();
@@ -197,6 +253,7 @@
       canvas.addEventListener("dblclick", handleDoubleClick);
     }
     window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
 
     // Release pointer lock on entering editor mode
     if (document.pointerLockElement) {
@@ -211,6 +268,7 @@
       canvas.removeEventListener("dblclick", handleDoubleClick);
     }
     window.removeEventListener("keydown", handleKeyDown);
+    window.removeEventListener("keyup", handleKeyUp);
     museum3dEditorState.deselect();
   });
 </script>
