@@ -1,6 +1,11 @@
-import type { CardBackCanvasOptions } from "./ICardBackCanvasRenderer";
+export interface InfoCardCanvasOptions {
+  width: number;
+  height: number;
+  bleedPx: number;
+  theme: string;
+}
 
 export interface IInfoCardCanvasRenderer {
-  renderFront(options: CardBackCanvasOptions): Promise<HTMLCanvasElement>;
-  renderBack(options: CardBackCanvasOptions): Promise<HTMLCanvasElement>;
+  renderFront(options: InfoCardCanvasOptions): Promise<HTMLCanvasElement>;
+  renderBack(options: InfoCardCanvasOptions): Promise<HTMLCanvasElement>;
 }

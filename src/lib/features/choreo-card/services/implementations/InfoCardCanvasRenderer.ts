@@ -8,8 +8,7 @@
  * after first render.
  */
 
-import type { IInfoCardCanvasRenderer } from "../contracts/IInfoCardCanvasRenderer";
-import type { CardBackCanvasOptions } from "../contracts/ICardBackCanvasRenderer";
+import type { IInfoCardCanvasRenderer, InfoCardCanvasOptions } from "../contracts/IInfoCardCanvasRenderer";
 import { DIFFICULTY_LEVELS } from "$lib/shared/config/difficulty-styles";
 
 // Scale factor: info cards were designed at 500x700. Content area is 750x1050.
@@ -22,7 +21,7 @@ let cachedTheme: string | null = null;
 
 export class InfoCardCanvasRenderer implements IInfoCardCanvasRenderer {
 
-  async renderFront(options: CardBackCanvasOptions): Promise<HTMLCanvasElement> {
+  async renderFront(options: InfoCardCanvasOptions): Promise<HTMLCanvasElement> {
     if (cachedFront && cachedTheme === options.theme) return cachedFront;
 
     const canvas = document.createElement("canvas");
@@ -182,7 +181,7 @@ export class InfoCardCanvasRenderer implements IInfoCardCanvasRenderer {
     return canvas;
   }
 
-  async renderBack(options: CardBackCanvasOptions): Promise<HTMLCanvasElement> {
+  async renderBack(options: InfoCardCanvasOptions): Promise<HTMLCanvasElement> {
     if (cachedBack && cachedTheme === options.theme) return cachedBack;
 
     const canvas = document.createElement("canvas");
