@@ -29,6 +29,7 @@
     singlePlayDuration?: number;
     isPlaying?: boolean;
     bpm?: number;
+    renderMode?: '2d' | '3d';
     onPlaybackToggle?: () => void;
     onBpmChange?: (bpm: number) => void;
     onExport: () => void;
@@ -44,11 +45,14 @@
     singlePlayDuration = 0,
     isPlaying = false,
     bpm = 60,
+    renderMode = '2d',
     onPlaybackToggle,
     onBpmChange,
     onExport,
     onCancel,
   }: Props = $props();
+
+  const exportButtonLabel = $derived(renderMode === '3d' ? 'Record Scene' : 'Download Animation');
 
   // Mobile settings drawer state
   let settingsOpen = $state(false);
@@ -99,6 +103,21 @@
     { value: 2160, label: "4K" },
     { value: 4320, label: "8K" },
   ];
+
+  /** Total video duration at current BPM and loop count */
+  const totalVideoDuration = $derived.by(() => {
+    if (singlePlayDuration <= 0) return "";
+    const total = singlePlayDuration * exportOptions.videoLoopCount;
+    return formatDuration(total);
+  });
+
+  /** Resolution label with pixel dimensions for square (3D) exports */
+  const resOptionsWithDims = $derived(
+    resOptions.map((opt) => ({
+      ...opt,
+      label: renderMode === '3d' ? `${opt.value}x${opt.value}` : opt.label,
+    }))
+  );
 
   /** Summary of current settings for the bottom bar chip */
   const settingsSummary = $derived(
@@ -204,7 +223,7 @@
             <div class="setting-row">
               <span class="setting-label">Resolution</span>
               <div class="chip-group">
-                {#each resOptions as opt}
+                {#each resOptionsWithDims as opt}
                   <button
                     type="button"
                     class="chip"
@@ -268,6 +287,13 @@
                 </button>
               </div>
             </div>
+
+            {#if totalVideoDuration}
+              <div class="video-duration-line">
+                <i class="fas fa-film" aria-hidden="true"></i>
+                Video length: {totalVideoDuration}
+              </div>
+            {/if}
           </div>
 
           {#if timeEstimateLabel}
@@ -297,14 +323,14 @@
           class="bar-export-btn"
           onclick={onExport}
           disabled={exportDisabled}
-          aria-label="Download Animation"
+          aria-label={exportButtonLabel}
         >
           {#if !canvasReady}
             <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
             Loading...
           {:else}
-            <i class="fas fa-download" aria-hidden="true"></i>
-            Download Animation
+            <i class="fas {renderMode === '3d' ? 'fa-circle' : 'fa-download'}" aria-hidden="true"></i>
+            {exportButtonLabel}
           {/if}
         </button>
 
@@ -365,7 +391,7 @@
       <div class="setting-row">
         <span class="setting-label">Resolution</span>
         <div class="chip-group">
-          {#each resOptions as opt}
+          {#each resOptionsWithDims as opt}
             <button
               type="button"
               class="chip"
@@ -427,6 +453,13 @@
           </button>
         </div>
       </div>
+
+      {#if totalVideoDuration}
+        <div class="video-duration-line">
+          <i class="fas fa-film" aria-hidden="true"></i>
+          Video length: {totalVideoDuration}
+        </div>
+      {/if}
     </div>
 
     <div class="panel-footer">
@@ -467,14 +500,14 @@
             class="export-btn"
             onclick={onExport}
             disabled={exportDisabled}
-            aria-label="Download Animation"
+            aria-label={exportButtonLabel}
           >
             {#if !canvasReady}
               <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
               Loading...
             {:else}
-              <i class="fas fa-download" aria-hidden="true"></i>
-              Download Animation
+              <i class="fas {renderMode === '3d' ? 'fa-circle' : 'fa-download'}" aria-hidden="true"></i>
+              {exportButtonLabel}
             {/if}
           </button>
           {#if timeEstimateLabel && !exportDisabled}
@@ -838,6 +871,22 @@
     color: var(--theme-text, white);
     min-width: 28px;
     text-align: center;
+    white-space: nowrap;
+  }
+
+  .video-duration-line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 500;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    padding: 4px 0;
+  }
+
+  .video-duration-line i {
+    font-size: 11px;
+    opacity: 0.6;
   }
 
   /* ============================================================

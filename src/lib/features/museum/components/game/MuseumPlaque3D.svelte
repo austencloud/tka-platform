@@ -78,22 +78,25 @@
   const frameOffsetZ = -Math.cos(yaw) * frameBehindDist;
 </script>
 
-<!-- Plaque face — textured mesh at eye level, flush against wall -->
-<T.Mesh
-  geometry={plaqueGeo}
-  material={plaqueMat}
-  position.x={worldX + wallOffsetX + nudgeX}
-  position.y={PLAQUE_Y}
-  position.z={worldZ + wallOffsetZ + nudgeZ}
-  rotation.y={yaw}
-/>
+<!-- Root group for editor selection — clicking face or frame selects both -->
+<T.Group name={`plaque-${refId}`}>
+  <!-- Plaque face — textured mesh at eye level, flush against wall -->
+  <T.Mesh
+    geometry={plaqueGeo}
+    material={plaqueMat}
+    position.x={worldX + wallOffsetX + nudgeX}
+    position.y={PLAQUE_Y}
+    position.z={worldZ + wallOffsetZ + nudgeZ}
+    rotation.y={yaw}
+  />
 
-<!-- Frame behind the plaque -->
-<T.Mesh
-  geometry={frameGeo}
-  material={frameMat}
-  position.x={worldX + wallOffsetX + nudgeX + frameOffsetX}
-  position.y={PLAQUE_Y}
-  position.z={worldZ + wallOffsetZ + nudgeZ + frameOffsetZ}
-  rotation.y={yaw}
-/>
+  <!-- Frame behind the plaque -->
+  <T.Mesh
+    geometry={frameGeo}
+    material={frameMat}
+    position.x={worldX + wallOffsetX + nudgeX + frameOffsetX}
+    position.y={PLAQUE_Y}
+    position.z={worldZ + wallOffsetZ + nudgeZ + frameOffsetZ}
+    rotation.y={yaw}
+  />
+</T.Group>

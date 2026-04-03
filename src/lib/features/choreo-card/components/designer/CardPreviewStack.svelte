@@ -9,7 +9,7 @@
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import ChoreoCard from "../ChoreoCard.svelte";
-  import CardBackV5 from "../card-back/CardBackV5.svelte";
+  import CardBack from "../card-back/CardBack.svelte";
   import InfoCardFront from "../card-back/InfoCardFront.svelte";
   import InfoCardBack from "../card-back/InfoCardBack.svelte";
 
@@ -197,7 +197,7 @@
       {#if showInfoCard}
         <InfoCardBack />
       {:else if sequence}
-        <CardBackV5 {sequence} />
+        <CardBack {sequence} />
       {/if}
     </div>
   </button>

@@ -44,6 +44,8 @@
   import { AvatarAnimator } from "../services/implementations/AvatarAnimator";
   import { LocomotionAnimator } from "../services/implementations/LocomotionAnimator";
   import type { ILocomotionAnimator } from "../services/contracts/ILocomotionAnimator";
+  import { AnimationStateMachine } from "../services/implementations/AnimationStateMachine";
+  import type { IAnimationStateMachine } from "../services/contracts/IAnimationStateMachine";
   import { FingerAnimator } from "$lib/shared/3d/services/implementations/FingerAnimator";
   import { ElbowPoleComputer } from "../services/implementations/ElbowPoleComputer";
   import { ClavicleRaiser } from "../services/implementations/ClavicleRaiser";
@@ -78,6 +80,10 @@
     /** Enable idle/walk locomotion animation. False for exhibit performers
      *  that should only use IK (no idle animation fighting the pose). */
     enableLocomotion?: boolean;
+    /** Whether the avatar is on the ground (from PhysicsProvider) */
+    isGrounded?: boolean;
+    /** Current vertical velocity for jump/fall state detection */
+    verticalVelocity?: number;
   }
 
   let {
@@ -96,6 +102,8 @@
     moveSpeed = 1,
     moveDirection = { x: 0, z: 1 },
     enableLocomotion = false,
+    isGrounded = true,
+    verticalVelocity = 0,
   }: Props = $props();
 
   // Services (manually instantiated to ensure shared skeleton instance)
@@ -103,6 +111,7 @@
   let ikSolver: IIKSolver | null = $state(null);
   let animationService: IAvatarAnimator | null = $state(null);
   let locomotionAnimator: ILocomotionAnimator | null = $state(null);
+  let stateMachine: IAnimationStateMachine | null = null;
   let fingerAnimator: FingerAnimator | null = null;
 
   let servicesReady = $state(false);
@@ -199,7 +208,7 @@
       if (enableLocomotion && locomotionAnimator && cachedRoot) {
         locomotionAnimator.initialize(cachedRoot);
 
-        // Load all locomotion animations (idle + 4 directional walks, non-blocking)
+        // Load all locomotion animations (idle + 4 directional walks + optional jump/fall/land)
         locomotionAnimator
           .loadAnimations({
             idle: "/animations/standing-idle.glb",
@@ -207,6 +216,9 @@
             backward: "/animations/walk-backward.glb",
             strafeLeft: "/animations/strafe-left.glb",
             strafeRight: "/animations/strafe-right.glb",
+            jump: "/animations/jump-up.glb",
+            fall: "/animations/falling-idle.glb",
+            land: "/animations/hard-landing.glb",
           })
           .catch((err) => {
             console.warn(
@@ -265,6 +277,11 @@
       ikSolver = solver;
       animationService = animator;
       locomotionAnimator = locomotion;
+
+      // State machine for jump/fall/land (only useful with locomotion)
+      if (enableLocomotion) {
+        stateMachine = new AnimationStateMachine();
+      }
 
       const fingers = new FingerAnimator();
       fingerAnimator = fingers;
@@ -492,15 +509,37 @@
 
     if (!servicesReady || !animationService || useProceduralFallback) return;
 
-    // 1. Full-body animation (idle/walk with arm swing, hip sway)
+    // 1. Full-body animation (idle/walk/jump/fall/land with arm swing, hip sway)
     // Only runs for locomotion-enabled avatars (player), not exhibit performers
     if (enableLocomotion && locomotionAnimator) {
-      locomotionAnimator.setLocomotion({
-        isMoving,
-        speed: moveSpeed,
-        facingAngle,
-        moveDirection,
-      });
+      if (stateMachine) {
+        // State machine decides what state we're in based on physics signals
+        const stateOutput = stateMachine.update({
+          hasMovementInput: isMoving,
+          horizontalSpeed: moveSpeed,
+          verticalVelocity,
+          isGrounded,
+          moveDirection,
+          facingAngle,
+        }, delta);
+
+        // Feed state to LocomotionAnimator for clip selection
+        locomotionAnimator.setActiveState?.(stateOutput.state);
+        locomotionAnimator.setLocomotion({
+          isMoving: stateOutput.isMoving,
+          speed: stateOutput.animationSpeed,
+          facingAngle: stateOutput.facingAngle,
+          moveDirection: stateOutput.moveDirection,
+        });
+      } else {
+        // Legacy path (no state machine)
+        locomotionAnimator.setLocomotion({
+          isMoving,
+          speed: moveSpeed,
+          facingAngle,
+          moveDirection,
+        });
+      }
       locomotionAnimator.update(delta);
     }
 
@@ -558,9 +597,12 @@
   });
 
   onDestroy(() => {
-    // Dispose locomotion animator
+    // Dispose locomotion animator and state machine
     if (locomotionAnimator) {
       locomotionAnimator.dispose();
+    }
+    if (stateMachine) {
+      stateMachine.dispose();
     }
 
     // Dispose finger animator

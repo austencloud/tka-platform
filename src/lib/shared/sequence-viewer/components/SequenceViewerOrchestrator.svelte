@@ -179,6 +179,16 @@
     // 3D render mode
     renderMode: '2d' | '3d';
     viewer3DState: ReturnType<typeof import("$lib/shared/3d/state/viewer-3d-state.svelte").createViewer3DState>;
+
+    // 3D recording UI state
+    /** Countdown value (3, 2, 1) before 3D recording starts. 0 = not counting down. */
+    countdownValue: number;
+    /** Whether a real-time 3D recording is in progress */
+    isRecording3D: boolean;
+    /** Elapsed seconds of the current 3D recording */
+    recordingElapsed: number;
+    /** Total expected duration of the 3D recording */
+    recordingTotal: number;
   }
 </script>
 
@@ -343,6 +353,13 @@
   const exportProgress = $derived(sequenceModalExporter.state.progress);
   const exportError = $derived(sequenceModalExporter.state.error);
   const previewBlobUrl = $derived(sequenceModalExporter.state.previewBlobUrl);
+
+  // 3D recording UI state
+  let countdownValue = $state(0);
+  let isRecording3D = $state(false);
+  let recordingElapsed = $state(0);
+  let recordingTotal = $state(0);
+  let recordingTimer: ReturnType<typeof setInterval> | null = null;
 
   // Duration of a single sequence playthrough (for export UI)
   const singlePlayDuration = $derived.by(() => {
@@ -1044,30 +1061,54 @@
       const totalDurationUnits = steps.reduce((sum, s) => sum + (s.duration ?? 1), 0);
       const startDur = opts.includeStartPosition ? 1 : 0;
       const endDur = opts.includeEndHold ? 1 : 0;
+      const totalSec = (startDur + totalDurationUnits + endDur) * secondsPerBeat * opts.loopCount;
 
-      await sequenceModalExporter.export3DAnimation(
-        {
-          fps: opts.fps,
-          loopCount: opts.loopCount,
-          resolution: opts.resolution,
-          includeStartPosition: opts.includeStartPosition,
-          includeEndHold: opts.includeEndHold,
-        },
-        {
-          webglCanvas,
-          startPlayback: () => {
-            pc.jumpToStep(0);
-            if (!isPlayingLocal) pc.togglePlayback();
+      // 3-2-1 countdown before recording
+      for (let c = 3; c >= 1; c--) {
+        countdownValue = c;
+        await new Promise((r) => setTimeout(r, 800));
+        if (!editingPane) { countdownValue = 0; return; } // user cancelled
+      }
+      countdownValue = 0;
+
+      // Start recording indicator
+      isRecording3D = true;
+      recordingElapsed = 0;
+      recordingTotal = totalSec;
+      const recordStart = performance.now();
+      recordingTimer = setInterval(() => {
+        recordingElapsed = Math.min((performance.now() - recordStart) / 1000, totalSec);
+      }, 100);
+
+      try {
+        await sequenceModalExporter.export3DAnimation(
+          {
+            fps: opts.fps,
+            loopCount: opts.loopCount,
+            resolution: opts.resolution,
+            includeStartPosition: opts.includeStartPosition,
+            includeEndHold: opts.includeEndHold,
           },
-          stopPlayback: () => {
-            if (isPlayingLocal) pc.togglePlayback();
+          {
+            webglCanvas,
+            startPlayback: () => {
+              pc.jumpToStep(0);
+              if (!isPlayingLocal) pc.togglePlayback();
+            },
+            stopPlayback: () => {
+              if (isPlayingLocal) pc.togglePlayback();
+            },
+            getTotalDurationSeconds: () => {
+              return (startDur + totalDurationUnits + endDur) * secondsPerBeat;
+            },
           },
-          getTotalDurationSeconds: () => {
-            return (startDur + totalDurationUnits + endDur) * secondsPerBeat;
-          },
-        },
-        callbacks
-      );
+          callbacks
+        );
+      } finally {
+        isRecording3D = false;
+        recordingElapsed = 0;
+        if (recordingTimer) { clearInterval(recordingTimer); recordingTimer = null; }
+      }
       return;
     }
 
@@ -1629,6 +1670,12 @@
     // 3D render mode
     renderMode: viewer3DState.renderMode,
     viewer3DState,
+
+    // 3D recording UI state
+    countdownValue,
+    isRecording3D,
+    recordingElapsed,
+    recordingTotal,
 
     // Auth (?guest=1 overrides to unauthenticated view for debugging shared link UX)
     isLoggedIn: forceGuest ? false : authState.isAuthenticated,

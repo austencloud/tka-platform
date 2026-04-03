@@ -11,7 +11,9 @@
     TextureLoader,
     RepeatWrapping,
     SRGBColorSpace,
+    LinearSRGBColorSpace,
     type MeshStandardMaterial as MeshStandardMaterialType,
+    type Texture,
   } from "three";
   import { userProportionsState } from "../../state/user-proportions-state.svelte";
 
@@ -28,6 +30,8 @@
     roughnessMap?: string;
     /** Texture repeat count */
     textureRepeat?: number;
+    /** Normal map intensity (default 1.0) */
+    normalScale?: number;
   }
 
   // Default values in meters (1 unit = 1 meter)
@@ -38,32 +42,61 @@
     normalMap,
     roughnessMap,
     textureRepeat = 8,
+    normalScale = 1.0,
   }: Props = $props();
 
   const groundY = $derived(userProportionsState.groundY);
 
-  // Load texture using Threlte's useLoader - reactive to diffuseMap changes
   const textureLoader = useLoader(TextureLoader);
-  const texture = $derived(textureLoader.load(diffuseMap));
 
-  // Reference to material for direct manipulation
+  // Load all texture maps
+  const diffuseTex = $derived(textureLoader.load(diffuseMap));
+  const normalTex = $derived(normalMap ? textureLoader.load(normalMap) : null);
+  const roughnessTex = $derived(
+    roughnessMap ? textureLoader.load(roughnessMap) : null
+  );
+
   let materialRef = $state<MeshStandardMaterialType | undefined>(undefined);
 
-  // Configure texture and apply to material when both are ready
+  /** Configure a texture for tiling: wrapping, repeat, and color space. */
+  function configureTexture(tex: Texture, colorSpace: string) {
+    tex.wrapS = RepeatWrapping;
+    tex.wrapT = RepeatWrapping;
+    tex.repeat.set(textureRepeat, textureRepeat);
+    tex.colorSpace = colorSpace;
+    tex.needsUpdate = true;
+  }
+
+  // Apply diffuse map
   $effect(() => {
-    const tex = $texture;
+    const tex = $diffuseTex;
     const mat = materialRef;
-
     if (tex && mat) {
-      // Configure texture
-      tex.wrapS = RepeatWrapping;
-      tex.wrapT = RepeatWrapping;
-      tex.repeat.set(textureRepeat, textureRepeat);
-      tex.colorSpace = SRGBColorSpace;
-      tex.needsUpdate = true;
-
-      // Apply directly to material
+      configureTexture(tex, SRGBColorSpace);
       mat.map = tex;
+      mat.needsUpdate = true;
+    }
+  });
+
+  // Apply normal map (adds surface depth — twigs, leaves, dirt ridges)
+  $effect(() => {
+    const tex = normalTex ? $normalTex : null;
+    const mat = materialRef;
+    if (tex && mat) {
+      configureTexture(tex, LinearSRGBColorSpace);
+      mat.normalMap = tex;
+      mat.normalScale.set(normalScale, normalScale);
+      mat.needsUpdate = true;
+    }
+  });
+
+  // Apply roughness map (variation in shininess across the surface)
+  $effect(() => {
+    const tex = roughnessTex ? $roughnessTex : null;
+    const mat = materialRef;
+    if (tex && mat) {
+      configureTexture(tex, LinearSRGBColorSpace);
+      mat.roughnessMap = tex;
       mat.needsUpdate = true;
     }
   });
