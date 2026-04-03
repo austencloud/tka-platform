@@ -73,10 +73,21 @@ describe("retargetFullBody", () => {
     expect(result.tracks.length).toBe(3); // ALL kept, not just legs
   });
 
-  it("excludes position tracks", () => {
+  it("excludes Hips quaternion tracks (locomotion controls orientation)", () => {
     const clip = new AnimationClip("test", 1, [
       new QuaternionKeyframeTrack("mixamorigHips.quaternion", [0], [0, 0, 0, 1]),
-      new VectorKeyframeTrack("mixamorigHips.position", [0], [0, 0, 0]),
+      new QuaternionKeyframeTrack("mixamorigSpine.quaternion", [0], [0, 0, 0, 1]),
+    ]);
+
+    const result = retargetFullBody(clip, "mixamorig");
+    expect(result.tracks.length).toBe(1);
+    expect(result.tracks[0].name).toContain("Spine");
+  });
+
+  it("excludes position tracks", () => {
+    const clip = new AnimationClip("test", 1, [
+      new QuaternionKeyframeTrack("mixamorigSpine.quaternion", [0], [0, 0, 0, 1]),
+      new VectorKeyframeTrack("mixamorigSpine.position", [0], [0, 0, 0]),
     ]);
 
     const result = retargetFullBody(clip, "mixamorig");
@@ -86,8 +97,8 @@ describe("retargetFullBody", () => {
 
   it("excludes scale tracks", () => {
     const clip = new AnimationClip("test", 1, [
-      new QuaternionKeyframeTrack("mixamorigHips.quaternion", [0], [0, 0, 0, 1]),
-      new VectorKeyframeTrack("mixamorigHips.scale", [0], [1, 1, 1]),
+      new QuaternionKeyframeTrack("mixamorigSpine.quaternion", [0], [0, 0, 0, 1]),
+      new VectorKeyframeTrack("mixamorigSpine.scale", [0], [1, 1, 1]),
     ]);
 
     const result = retargetFullBody(clip, "mixamorig");

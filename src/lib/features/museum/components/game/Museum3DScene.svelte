@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { T, useTask } from "@threlte/core";
+  import { T, useTask, useThrelte } from "@threlte/core";
   import {
     MathUtils,
     Vector3,
@@ -8,14 +8,16 @@
     Object3D,
     BoxGeometry,
     CylinderGeometry,
-    SphereGeometry,
     MeshStandardMaterial,
     InstancedMesh,
     TextureLoader,
     RepeatWrapping,
+    FogExp2,
+    Color,
   } from "three";
   import type { Texture } from "three";
   import type { PerspectiveCamera } from "three";
+  import MuseumPostProcessing from "./MuseumPostProcessing.svelte";
   import type { MuseumGrid, TileType, FloorMaterial } from "../../domain/museum-grid-types";
   import { parseTileKey } from "../../domain/museum-grid-types";
   import type { AvatarState, PhysicsProvider } from "$lib/shared/3d/camera/types";
@@ -28,12 +30,29 @@
   import Avatar3D from "$lib/shared/3d/components/Avatar3D.svelte";
   import MuseumMirror from "./MuseumMirror.svelte";
   import MuseumPortal from "./MuseumPortal.svelte";
+  import MuseumTorchLight from "./MuseumTorchLight.svelte";
   import MuseumPlaque3D from "./MuseumPlaque3D.svelte";
   import type { PlaqueContent, PlaqueSize } from "../../services/contracts/IPlaqueTextureGenerator";
   import { PlaqueTextureGenerator } from "../../services/implementations/PlaqueTextureGenerator";
 
   // Shared texture generator — one instance for all plaques (caches internally)
   const plaqueGenerator = new PlaqueTextureGenerator();
+
+  // Scene reference for fog control — scene may not be available at init,
+  // so we defer fog setup to the first frame via $effect
+  const threlteCtx = useThrelte();
+  const sceneFog = new FogExp2("#1a1008", 0.08);
+  $effect(() => {
+    const sc = (threlteCtx as any).scene?.current ?? (threlteCtx as any).scene;
+    if (sc && sc.fog !== sceneFog) sc.fog = sceneFog;
+  });
+
+  // Track current wing for ambient/fog transitions
+  let currentWingTheme: WingTheme | null = $state(null);
+  const fogColorTarget = new Color("#1a1008");
+  const fogColorCurrent = new Color("#1a1008");
+  let fogDensityTarget = 0.08;
+  const FOG_LERP_SPEED = 2.0; // Speed of fog color/density transition
 
   // Facing direction string → yaw angle for performer stations
   const FACING_TO_YAW: Record<string, number> = {
@@ -104,6 +123,38 @@
     outdoor: "#2a3020",      // natural green tinge
     construction: "#2e2a1e", // dusty beige
     retail: "#2a2220",       // warm commercial
+  };
+
+  // ── Per-wing fog settings — density and color vary by atmosphere ──
+  const WING_FOG: Record<WingTheme, { density: number; color: string }> = {
+    cave:          { density: 0.12, color: "#1a1008" },   // thick warm amber — firelit cavern
+    classical:     { density: 0.06, color: "#1a1510" },   // light warm haze — oil lamp warmth
+    renaissance:   { density: 0.05, color: "#14120e" },   // gentle mist — studio atmosphere
+    industrial:    { density: 0.07, color: "#141414" },   // sooty grey — gas lamp era
+    digital:       { density: 0.08, color: "#0a0a14" },   // cold blue haze — CRT glow
+    institutional: { density: 0.06, color: "#121218" },   // sterile — fluorescent buzz
+    gallery:       { density: 0.04, color: "#0e0a10" },   // minimal — let spotlights do the work
+    modern:        { density: 0.05, color: "#0a0a0a" },   // near-dark — dramatic
+    futuristic:    { density: 0.05, color: "#0a0a10" },   // cool darkness
+    outdoor:       { density: 0.02, color: "#1a2010" },   // light — open air feeling
+    construction:  { density: 0.08, color: "#14120a" },   // dusty — construction site
+    retail:        { density: 0.04, color: "#141210" },   // light — gift shop clarity
+  };
+
+  // ── Per-wing ambient light tint — each wing gets a distinct atmosphere ──
+  const WING_AMBIENT: Record<WingTheme, { color: string; intensity: number }> = {
+    cave:          { color: "#8a6030", intensity: 0.45 },  // deep amber — torch-warmed stone
+    classical:     { color: "#a08050", intensity: 0.55 },  // golden — oil lamp warmth
+    renaissance:   { color: "#907050", intensity: 0.55 },  // warm wood tones
+    industrial:    { color: "#808080", intensity: 0.5 },   // neutral grey — gas lamps
+    digital:       { color: "#4060a0", intensity: 0.5 },   // cool blue — CRT screens
+    institutional: { color: "#8090a0", intensity: 0.55 },  // cold fluorescent
+    gallery:       { color: "#a09080", intensity: 0.5 },   // warm neutral — spotlight room
+    modern:        { color: "#606060", intensity: 0.45 },  // minimal
+    futuristic:    { color: "#506080", intensity: 0.45 },  // cool
+    outdoor:       { color: "#90a080", intensity: 0.65 },  // natural daylight tint
+    construction:  { color: "#908060", intensity: 0.5 },   // dusty warm
+    retail:        { color: "#a09080", intensity: 0.55 },  // commercial warm
   };
 
   // ── PBR Texture Loading ──
@@ -455,6 +506,26 @@
   // Initialize FPS target at spawn (must be after physicsProvider is created)
   syncFpsFromPlayer();
 
+  // ── Atmospheric updates: fog and ambient light smoothly transition per wing ──
+  // Ambient light reference — we'll update its color/intensity per frame
+  let ambientLightRef: { color: Color; intensity: number } | null = null;
+
+  function updateAtmosphere(tileX: number, tileZ: number, delta: number): void {
+    const theme = getWingThemeAt(tileX, tileZ);
+
+    if (theme && theme !== currentWingTheme) {
+      currentWingTheme = theme;
+      const fogCfg = WING_FOG[theme];
+      fogColorTarget.set(fogCfg.color);
+      fogDensityTarget = fogCfg.density;
+    }
+
+    // Smoothly lerp fog color and density toward targets
+    fogColorCurrent.lerp(fogColorTarget, FOG_LERP_SPEED * delta);
+    sceneFog.color.copy(fogColorCurrent);
+    sceneFog.density += (fogDensityTarget - sceneFog.density) * FOG_LERP_SPEED * delta;
+  }
+
   // ── Flip animation loop ──
   // When fpsActive, UnifiedCameraController owns the camera — we don't touch it.
   useTask((delta) => {
@@ -507,6 +578,7 @@
 
       const fpsTileX = Math.round(fpsPos.x / TILE_SIZE);
       const fpsTileZ = Math.round(fpsPos.z / TILE_SIZE);
+      updateAtmosphere(fpsTileX, fpsTileZ, delta);
       onPlayerUpdate?.(fpsPos.x, fpsPos.z, fpsTileX, fpsTileZ, yawToFacing(playerYaw), true, playerYaw);
       return;
     }
@@ -601,6 +673,7 @@
       // Report to parent
       const tileX = Math.round(pos.x / TILE_SIZE);
       const tileZ = Math.round(pos.z / TILE_SIZE);
+      updateAtmosphere(tileX, tileZ, delta);
       onPlayerUpdate?.(pos.x, pos.z, tileX, tileZ, yawToFacing(playerYaw), false, playerYaw);
       return;
     }
@@ -764,8 +837,8 @@
   const PLAQUE_YAW: Record<string, number> = {
     south: 0,                // on north wall, faces south
     north: Math.PI,          // on south wall, faces north
-    east: -Math.PI / 2,      // on west wall, faces east
-    west: Math.PI / 2,       // on east wall, faces west
+    east: Math.PI / 2,       // on west wall, faces east
+    west: -Math.PI / 2,      // on east wall, faces west
   };
   // Shift the plaque toward its wall so it appears mounted, not floating
   const PLAQUE_WALL_SHIFT: Record<string, { x: number; z: number }> = {
@@ -894,7 +967,7 @@
   const performerGeo = new CylinderGeometry(TILE_SIZE * 0.2, TILE_SIZE * 0.2, 0.5, 8);
   const pedestalGeo = new BoxGeometry(TILE_SIZE * 0.7, 0.5, TILE_SIZE * 0.7);
   const signGeo = new BoxGeometry(TILE_SIZE * 0.6, 0.4, 0.06);
-  const torchSphereGeo = new SphereGeometry(0.06, 6, 6);
+  // Torch sphere geo removed — torches now use MuseumTorch3D with full flame shader
 
   interface InstancedMeshData {
     mesh: InstancedMesh;
@@ -1005,33 +1078,20 @@
     signMesh.instanceMatrix.needsUpdate = true;
   }
 
-  let torchSphereMesh: InstancedMesh | null = null;
-  if (torchPositions.length > 0) {
-    const torchMat = new MeshStandardMaterial({
-      color: "#ff9020",
-      emissive: "#ff9020",
-      emissiveIntensity: 2.0,
-    });
-    torchSphereMesh = new InstancedMesh(torchSphereGeo, torchMat, torchPositions.length);
-    for (let i = 0; i < torchPositions.length; i++) {
-      dummy.position.set(torchPositions[i]!.x, 1.25, torchPositions[i]!.z);
-      dummy.updateMatrix();
-      torchSphereMesh.setMatrixAt(i, dummy.matrix);
-    }
-    torchSphereMesh.instanceMatrix.needsUpdate = true;
-  }
-
+  // Torch point light budget — each MuseumTorch3D has its own point light,
+  // so we limit to MAX_POINT_LIGHTS torches with lights, rest get visuals only
   const MAX_POINT_LIGHTS = 32;
-  let torchLightPositions: { x: number; z: number }[];
-  if (torchPositions.length <= MAX_POINT_LIGHTS) {
-    torchLightPositions = torchPositions;
-  } else {
-    torchLightPositions = [];
-    const step = torchPositions.length / MAX_POINT_LIGHTS;
-    for (let i = 0; i < MAX_POINT_LIGHTS; i++) {
-      torchLightPositions.push(torchPositions[Math.floor(i * step)]!);
-    }
-  }
+  const torchesWithLight = torchPositions.length <= MAX_POINT_LIGHTS
+    ? torchPositions
+    : (() => {
+        const selected: { x: number; z: number }[] = [];
+        const step = torchPositions.length / MAX_POINT_LIGHTS;
+        for (let i = 0; i < MAX_POINT_LIGHTS; i++) {
+          selected.push(torchPositions[Math.floor(i * step)]!);
+        }
+        return selected;
+      })();
+  const torchLightSet = new Set(torchesWithLight.map(t => `${t.x},${t.z}`));
 </script>
 
 <!-- Camera (owned by flip animation when not in FPS, by UCC when in FPS) -->
@@ -1104,15 +1164,21 @@
   />
 {/if}
 
-<!-- Lighting — well-lit museum, warm and inviting -->
-<T.AmbientLight intensity={0.5} color="#c8b890" />
+<!-- Post-processing: bloom, vignette, ACES tone mapping -->
+<MuseumPostProcessing />
+
+<!-- Lighting — per-wing ambient tint smoothly transitions as player moves -->
+<T.AmbientLight
+  intensity={currentWingTheme ? WING_AMBIENT[currentWingTheme].intensity : 0.4}
+  color={currentWingTheme ? WING_AMBIENT[currentWingTheme].color : "#c8b890"}
+/>
 <T.DirectionalLight
-  intensity={0.8}
+  intensity={0.75}
   position={[gridCenterX, 30, gridCenterZ]}
   color="#fff0d0"
 />
 <T.HemisphereLight
-  intensity={0.3}
+  intensity={0.35}
   color="#fff8e0"
   groundColor="#1a1510"
 />
@@ -1191,19 +1257,9 @@
   <T is={signMesh} />
 {/if}
 
-<!-- Torch emissive spheres -->
-{#if torchSphereMesh}
-  <T is={torchSphereMesh} />
-{/if}
-
-<!-- Torch point lights (capped to avoid GPU overload) -->
-{#each torchLightPositions as torch}
-  <T.PointLight
-    position={[torch.x, 1.25, torch.z]}
-    intensity={4}
-    color="#ff9020"
-    distance={8}
-  />
+<!-- Torch point lights — animated flicker for firelit atmosphere -->
+{#each torchPositions as torch}
+  <MuseumTorchLight x={torch.x} z={torch.z} />
 {/each}
 
 <!-- GLTF furniture models (Kenney CC0 kit) -->

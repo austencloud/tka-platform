@@ -28,13 +28,76 @@ import { CorridorRouter } from "./CorridorRouter";
 import { LayoutValidator } from "./LayoutValidator";
 import { ROOM_CONTENT } from "../../data/museum-room-content";
 import { DEV_WHITEBOARDS_ENABLED, OPPOSITE_WALL } from "../../domain/museum-design-rules";
+import type { PlaqueSize } from "../contracts/IPlaqueTextureGenerator";
+
+/**
+ * How far each exhibit size extends from its center tile, in grid tiles.
+ * Derived from the 3D plaque widths in MuseumPlaque3D.svelte divided by
+ * tileScale (0.5m). A standard plaque is 0.9m wide = 1.8 tiles, so it
+ * extends ~1 tile on each side. A dev-whiteboard is 2.5m = 5 tiles, so
+ * it extends ~3 tiles on each side. We round up to be safe.
+ */
+const EXHIBIT_HALF_SPAN: Record<PlaqueSize, number> = {
+  standard: 1,
+  "large": 2,
+  "dev-whiteboard": 3,
+};
+
+/**
+ * Tracks where exhibits have been placed along each wall segment so we
+ * can detect visual overlap. Key: "roomId:wall", value: occupied ranges
+ * (center tile coordinate + half-span in tiles).
+ */
+interface OccupiedRange {
+  center: number;
+  halfSpan: number;
+}
 
 export class MuseumGridBuilder implements IMuseumGridBuilder {
   private layoutEngine = new GraphLayoutEngine();
   private corridorRouter = new CorridorRouter();
   private validator = new LayoutValidator();
 
+  /** Reset per build() call — tracks visual footprint of placed exhibits */
+  private wallOccupancy = new Map<string, OccupiedRange[]>();
+
+  private rangesOverlap(
+    wallKey: string,
+    center: number,
+    halfSpan: number,
+  ): boolean {
+    const ranges = this.wallOccupancy.get(wallKey) ?? [];
+    const newMin = center - halfSpan;
+    const newMax = center + halfSpan;
+    return ranges.some((r) => {
+      const existMin = r.center - r.halfSpan;
+      const existMax = r.center + r.halfSpan;
+      return newMin < existMax && newMax > existMin;
+    });
+  }
+
+  private recordOccupancy(
+    wallKey: string,
+    center: number,
+    halfSpan: number,
+  ): void {
+    if (!this.wallOccupancy.has(wallKey)) {
+      this.wallOccupancy.set(wallKey, []);
+    }
+    this.wallOccupancy.get(wallKey)!.push({ center, halfSpan });
+  }
+
+  /**
+   * Returns the "along-the-wall" coordinate for a position: X for
+   * horizontal walls (north/south), Y for vertical walls (east/west).
+   */
+  private alongCoord(x: number, y: number, wall: string): number {
+    return wall === "north" || wall === "south" ? x : y;
+  }
+
   build(rooms: RoomNode[], edges: RoomEdge[], config: GridConfig): MuseumGridBuildResult {
+    this.wallOccupancy.clear();
+
     // Step 1: Compute room positions
     const layout = this.layoutEngine.computeLayout(rooms, edges, config);
 
@@ -275,14 +338,20 @@ export class MuseumGridBuilder implements IMuseumGridBuilder {
 
     for (const placement of room.exhibits) {
       const pos = this.computeWallPosition(room, placement.wall, placement.position);
+      const plaqueSize: PlaqueSize = placement.size ?? "standard";
+      const halfSpan = EXHIBIT_HALF_SPAN[plaqueSize];
+      const wallKey = `${room.id}:${placement.wall}`;
 
-      // An exhibit needs a wall behind it. At doorway openings the wall is
-      // replaced by corridor tiles, so the plaque would float in mid-air.
-      // Check the tile directly behind the exhibit (one step outside the room).
-      if (!this.hasWallBehind(tiles, pos.x, pos.y, placement.wall)) {
-        // Try shifting along the wall to find a position with a wall behind it
-        const adjusted = this.findWallBackedPosition(tiles, room, placement);
-        if (!adjusted) continue; // entire wall segment is a doorway
+      // Check wall-behind AND overlap with already-placed exhibits
+      const needsReposition =
+        !this.hasWallBehindSpan(tiles, pos.x, pos.y, placement.wall, halfSpan) ||
+        this.rangesOverlap(wallKey, this.alongCoord(pos.x, pos.y, placement.wall), halfSpan);
+
+      if (needsReposition) {
+        const adjusted = this.findNonOverlappingPosition(
+          tiles, room, placement, halfSpan, wallKey,
+        );
+        if (!adjusted) continue; // no space on this wall
         pos.x = adjusted.x;
         pos.y = adjusted.y;
       }
@@ -292,6 +361,13 @@ export class MuseumGridBuilder implements IMuseumGridBuilder {
         refId: placement.refId,
         facing: placement.facing,
       });
+
+      // Record this exhibit's visual footprint on the wall
+      this.recordOccupancy(
+        wallKey,
+        this.alongCoord(pos.x, pos.y, placement.wall),
+        halfSpan,
+      );
 
       // Look up content for this exhibit
       const content = ROOM_CONTENT[room.id]?.exhibits?.[placement.refId];
@@ -307,7 +383,7 @@ export class MuseumGridBuilder implements IMuseumGridBuilder {
   }
 
   /**
-   * Checks whether there's a wall tile directly behind the given position.
+   * Checks whether there's a wall tile directly behind a single position.
    * "Behind" means one step outside the room in the direction the wall faces.
    */
   private hasWallBehind(
@@ -316,7 +392,6 @@ export class MuseumGridBuilder implements IMuseumGridBuilder {
     y: number,
     wall: string,
   ): boolean {
-    // One step outside the room from the wall edge
     const behindOffsets: Record<string, { dx: number; dy: number }> = {
       north: { dx: 0, dy: -1 },
       south: { dx: 0, dy: 1 },
@@ -331,14 +406,40 @@ export class MuseumGridBuilder implements IMuseumGridBuilder {
   }
 
   /**
-   * Searches along a wall for the nearest position that has a wall tile
-   * behind it (not a doorway opening). Returns null if no valid position
-   * exists on this wall.
+   * Checks that every tile in the exhibit's visual span has a wall behind it.
+   * A standard plaque occupies ~2 tiles, a dev-whiteboard ~5 tiles. If any
+   * tile in the span has a corridor behind it (doorway), the plaque would
+   * visually cover the passageway.
+   */
+  private hasWallBehindSpan(
+    tiles: Map<string, MuseumTile>,
+    x: number,
+    y: number,
+    wall: string,
+    halfSpan: number,
+  ): boolean {
+    const isHorizontal = wall === "north" || wall === "south";
+
+    for (let offset = -halfSpan; offset <= halfSpan; offset++) {
+      const checkX = isHorizontal ? x + offset : x;
+      const checkY = isHorizontal ? y : y + offset;
+      if (!this.hasWallBehind(tiles, checkX, checkY, wall)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /**
+   * Searches along a wall for the nearest position where the exhibit's full
+   * visual span has wall tiles behind it (no doorway overlap). Returns null
+   * if no valid position exists on this wall.
    */
   private findWallBackedPosition(
     tiles: Map<string, MuseumTile>,
     room: PlacedRoom,
     placement: ExhibitPlacement,
+    halfSpan: number = 0,
   ): { x: number; y: number } | null {
     const wall = placement.wall;
     const isHorizontal = wall === "north" || wall === "south";
@@ -347,25 +448,102 @@ export class MuseumGridBuilder implements IMuseumGridBuilder {
     const fixedY = wall === "north" ? room.y : wall === "south" ? room.y + room.h - 1 : 0;
     const fixedX = wall === "west" ? room.x : wall === "east" ? room.x + room.w - 1 : 0;
 
-    // Range along the wall (skip corners)
-    const start = isHorizontal ? room.x + 1 : room.y + 1;
-    const end = isHorizontal ? room.x + room.w - 2 : room.y + room.h - 2;
+    // Range along the wall — ensure the exhibit's span fits within the room
+    // by shrinking the valid range by halfSpan on each side
+    const start = (isHorizontal ? room.x + 1 : room.y + 1) + halfSpan;
+    const end = (isHorizontal ? room.x + room.w - 2 : room.y + room.h - 2) - halfSpan;
+    if (start > end) return null; // room too small for this exhibit size
+
     const idealPos = isHorizontal
       ? room.x + 1 + Math.floor(placement.position * (room.w - 2))
       : room.y + 1 + Math.floor(placement.position * (room.h - 2));
 
+    // Clamp ideal position to valid range
+    const clampedIdeal = Math.max(start, Math.min(end, idealPos));
+
+    // Check ideal position first
+    {
+      const x = isHorizontal ? clampedIdeal : fixedX;
+      const y = isHorizontal ? fixedY : clampedIdeal;
+      const tile = tiles.get(tileKey(x, y));
+      if (tile && tile.type === "floor" && this.hasWallBehindSpan(tiles, x, y, wall, halfSpan)) {
+        return { x, y };
+      }
+    }
+
     // Search outward from the ideal position
     for (let offset = 1; offset <= (end - start); offset++) {
       for (const dir of [1, -1]) {
-        const along = idealPos + offset * dir;
+        const along = clampedIdeal + offset * dir;
         if (along < start || along > end) continue;
 
         const x = isHorizontal ? along : fixedX;
         const y = isHorizontal ? fixedY : along;
         const tile = tiles.get(tileKey(x, y));
 
-        // Must be a floor tile with a wall behind it
-        if (tile && tile.type === "floor" && this.hasWallBehind(tiles, x, y, wall)) {
+        // Must be a floor tile with wall behind the full span
+        if (tile && tile.type === "floor" && this.hasWallBehindSpan(tiles, x, y, wall, halfSpan)) {
+          return { x, y };
+        }
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Like findWallBackedPosition but also rejects positions that would
+   * overlap with exhibits already placed on this wall.
+   */
+  private findNonOverlappingPosition(
+    tiles: Map<string, MuseumTile>,
+    room: PlacedRoom,
+    placement: ExhibitPlacement,
+    halfSpan: number,
+    wallKey: string,
+  ): { x: number; y: number } | null {
+    const wall = placement.wall;
+    const isHorizontal = wall === "north" || wall === "south";
+
+    const fixedY = wall === "north" ? room.y : wall === "south" ? room.y + room.h - 1 : 0;
+    const fixedX = wall === "west" ? room.x : wall === "east" ? room.x + room.w - 1 : 0;
+
+    const start = (isHorizontal ? room.x + 1 : room.y + 1) + halfSpan;
+    const end = (isHorizontal ? room.x + room.w - 2 : room.y + room.h - 2) - halfSpan;
+    if (start > end) return null;
+
+    const idealPos = isHorizontal
+      ? room.x + 1 + Math.floor(placement.position * (room.w - 2))
+      : room.y + 1 + Math.floor(placement.position * (room.h - 2));
+    const clampedIdeal = Math.max(start, Math.min(end, idealPos));
+
+    const isValid = (along: number): boolean => {
+      const x = isHorizontal ? along : fixedX;
+      const y = isHorizontal ? fixedY : along;
+      const tile = tiles.get(tileKey(x, y));
+      return (
+        !!tile &&
+        tile.type === "floor" &&
+        this.hasWallBehindSpan(tiles, x, y, wall, halfSpan) &&
+        !this.rangesOverlap(wallKey, along, halfSpan)
+      );
+    };
+
+    // Check ideal position first
+    if (isValid(clampedIdeal)) {
+      const x = isHorizontal ? clampedIdeal : fixedX;
+      const y = isHorizontal ? fixedY : clampedIdeal;
+      return { x, y };
+    }
+
+    // Search outward from the ideal position
+    for (let offset = 1; offset <= (end - start); offset++) {
+      for (const dir of [1, -1]) {
+        const along = clampedIdeal + offset * dir;
+        if (along < start || along > end) continue;
+        if (isValid(along)) {
+          const x = isHorizontal ? along : fixedX;
+          const y = isHorizontal ? fixedY : along;
           return { x, y };
         }
       }
@@ -422,7 +600,17 @@ export class MuseumGridBuilder implements IMuseumGridBuilder {
       const pos = this.computeWallPosition(room, torch.wall, torch.position);
       // Skip torches at doorway openings (no wall behind to mount on)
       if (!this.hasWallBehind(tiles, pos.x, pos.y, torch.wall)) continue;
+
+      const wallKey = `${room.id}:${torch.wall}`;
+      const along = this.alongCoord(pos.x, pos.y, torch.wall);
+
+      // Skip if an exhibit already occupies this spot
+      if (this.rangesOverlap(wallKey, along, 0)) continue;
+
       placeTile(tiles, pos.x, pos.y, { type: "torch" });
+
+      // Record torch position so exhibits placed later won't overlap it
+      this.recordOccupancy(wallKey, along, 1);
     }
   }
 
@@ -456,16 +644,27 @@ export class MuseumGridBuilder implements IMuseumGridBuilder {
 
       // Place centered on the anchor wall (position 0.5)
       const pos = this.computeWallPosition(room, anchorWall, 0.5);
+      const wbHalfSpan = EXHIBIT_HALF_SPAN["dev-whiteboard"];
+      const wallKey = `${room.id}:${anchorWall}`;
 
-      // If center lands on a doorway, shift along the wall to find a backed spot
-      if (!this.hasWallBehind(tiles, pos.x, pos.y, anchorWall)) {
-        const adjusted = this.findWallBackedPosition(tiles, room, {
-          wall: anchorWall,
-          position: 0.5,
-          refId: `dev-wb-${room.id}`,
-          facing: entranceWall,
-        });
-        if (!adjusted) continue; // entire wall is a doorway — skip
+      // Dev whiteboards are 2.5m wide (~5 tiles). Check wall backing AND
+      // overlap with exhibits already placed on this wall.
+      const wbPlacement = {
+        wall: anchorWall,
+        position: 0.5,
+        refId: `dev-wb-${room.id}`,
+        facing: entranceWall,
+      };
+
+      const needsReposition =
+        !this.hasWallBehindSpan(tiles, pos.x, pos.y, anchorWall, wbHalfSpan) ||
+        this.rangesOverlap(wallKey, this.alongCoord(pos.x, pos.y, anchorWall), wbHalfSpan);
+
+      if (needsReposition) {
+        const adjusted = this.findNonOverlappingPosition(
+          tiles, room, wbPlacement, wbHalfSpan, wallKey,
+        );
+        if (!adjusted) continue; // no space on this wall
         pos.x = adjusted.x;
         pos.y = adjusted.y;
       }
@@ -478,6 +677,13 @@ export class MuseumGridBuilder implements IMuseumGridBuilder {
         refId: `dev-wb-${room.id}`,
         facing,
       });
+
+      // Record whiteboard's visual footprint
+      this.recordOccupancy(
+        wallKey,
+        this.alongCoord(pos.x, pos.y, anchorWall),
+        wbHalfSpan,
+      );
 
       exhibits.push({
         id: `dev-wb-${room.id}`,

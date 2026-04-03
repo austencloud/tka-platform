@@ -176,6 +176,16 @@ export function retargetFullBody(
       continue;
     }
 
+    // Exclude Hips rotation — the locomotion system controls the avatar's
+    // orientation via the group's rotation.y (facingAngle). Including the
+    // Hips quaternion from the animation compounds with this and causes the
+    // avatar to tilt sideways ("walk on a wall" effect).
+    const boneName = track.name.split(".")[0] ?? "";
+    const coreName = extractCoreBoneName(boneName);
+    if (coreName === "Hips") {
+      continue;
+    }
+
     const newTrackName = retargetTrackName(track.name, targetPrefix);
     const clonedTrack = track.clone();
     clonedTrack.name = newTrackName;
