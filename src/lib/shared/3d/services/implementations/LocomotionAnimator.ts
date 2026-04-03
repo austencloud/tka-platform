@@ -12,7 +12,12 @@
  */
 
 import type { AnimationAction, Object3D, KeyframeTrack } from "three";
-import { AnimationMixer, AnimationClip, LoopRepeat } from "three";
+import {
+  AnimationMixer,
+  AnimationClip,
+  LoopRepeat,
+  AdditiveAnimationBlendMode,
+} from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import type {
   ILocomotionAnimator,
@@ -157,23 +162,64 @@ export function retargetTrackName(
 }
 
 /**
- * Retarget animation clip to play on ALL bones (full body).
- * Keeps all .quaternion tracks, excludes .position and .scale tracks.
- *
- * .position tracks cause root motion displacement (avatar walks away from origin).
- * .scale tracks can cause meshes to disappear.
- * .quaternion tracks are the joint rotations we actually want.
+ * Result of retargeting: the main clip (quaternion tracks, normal blend)
+ * and an optional additive clip for Hips position deltas.
  */
+export interface RetargetResult {
+  /** Main clip with all quaternion tracks (normal blending) */
+  main: AnimationClip;
+  /** Hips position delta clip (additive blending) — null if no Hips position in source */
+  hipsPosition: AnimationClip | null;
+}
+
+/**
+ * Retarget animation clip to play on ALL bones (full body).
+ *
+ * Returns two clips:
+ * 1. Main clip: all .quaternion tracks (normal blend mode)
+ * 2. Hips position clip: delta offsets from first frame (additive blend mode)
+ *
+ * The Hips position is separated because it needs additive blending —
+ * the absolute values from Mixamo would teleport the skeleton, but the
+ * relative deltas provide weight-shift compensation that keeps the avatar
+ * balanced during idle sway.
+ */
+/**
+ * Bones to exclude from idle animation to prevent foot-lift lean.
+ * The idle animation's weight-shift rotates these bones but without
+ * Hips position compensation, the feet lift off the ground.
+ * Upper body (spine, arms, head) still gets the breathing motion.
+ */
+export const IDLE_EXCLUDE_BONES = new Set([
+  // Legs — rotation without Hips position compensation lifts feet
+  "LeftUpLeg", "RightUpLeg",
+  "LeftLeg", "RightLeg",
+  "LeftFoot", "RightFoot",
+  "LeftToeBase", "RightToeBase",
+  // Lower spine — rotation tilts the whole torso sideways.
+  // Spine2/Neck/Head still animate for subtle breathing.
+  "Spine",
+  "Spine1",
+]);
+
 export function retargetFullBody(
   clip: AnimationClip,
-  targetPrefix: string
-): AnimationClip {
-  const retargetedTracks: KeyframeTrack[] = [];
+  targetPrefix: string,
+  /** Optional set of core bone names to skip */
+  excludeBones?: Set<string>
+): RetargetResult {
+  const mainTracks: KeyframeTrack[] = [];
+  let hipsPositionTrack: KeyframeTrack | null = null;
 
   for (const track of clip.tracks) {
     const boneName = track.name.split(".")[0] ?? "";
     const coreName = extractCoreBoneName(boneName);
     const property = track.name.split(".").slice(1).join(".");
+
+    // Skip bones in the exclusion set (e.g. leg bones for idle animation)
+    if (excludeBones?.has(coreName)) {
+      continue;
+    }
 
     // Exclude Hips quaternion — the locomotion system controls avatar
     // orientation via the group's rotation.y (facingAngle). The animation's
@@ -182,18 +228,44 @@ export function retargetFullBody(
       continue;
     }
 
-    // Include Hips position — this is the compensating translation that keeps
-    // feet planted during weight shifts and walking bob. Without it, bone
-    // rotations shift the body but feet slide on the floor.
+    // Capture Hips position as delta from first frame for additive blending.
+    // The absolute values are in Mixamo's coordinate space — subtracting
+    // the first keyframe gives us pure weight-shift offsets.
     if (coreName === "Hips" && property === "position") {
       const newTrackName = retargetTrackName(track.name, targetPrefix);
       const clonedTrack = track.clone();
       clonedTrack.name = newTrackName;
-      retargetedTracks.push(clonedTrack);
+
+      const values = clonedTrack.values;
+      if (values.length >= 3) {
+        const baseY = values[1]!;
+        for (let i = 0; i < values.length; i += 3) {
+          // Zero out X and Z — only keep Y (vertical bob).
+          // Horizontal drift makes the avatar slide around;
+          // vertical movement keeps feet planted during weight shifts.
+          values[i] = 0;       // X = 0 (no horizontal drift)
+          values[i + 1] = values[i + 1]! - baseY;  // Y = delta from rest
+          values[i + 2] = 0;   // Z = 0 (no forward/back drift)
+        }
+      }
+
+      hipsPositionTrack = clonedTrack;
       continue;
     }
 
-    // Keep all quaternion tracks (except Hips, handled above)
+    // Skip bones that don't exist on our avatar model:
+    // - Finger tip segments (LeftHandThumb4, LeftHandIndex4, etc.)
+    // - End/terminal bones (HeadTop_End, LeftToe_End, RightToe_End)
+    if (coreName.match(/\d$/) && coreName.match(/Hand/)) {
+      const digit = parseInt(coreName.slice(-1));
+      if (digit >= 4) continue;
+    }
+    if (coreName.endsWith("_End")) {
+      continue;
+    }
+
+    // Keep only quaternion tracks — position tracks cause root motion
+    // displacement, scale tracks can cause meshes to disappear.
     if (!track.name.includes(".quaternion")) {
       continue;
     }
@@ -201,14 +273,24 @@ export function retargetFullBody(
     const newTrackName = retargetTrackName(track.name, targetPrefix);
     const clonedTrack = track.clone();
     clonedTrack.name = newTrackName;
-    retargetedTracks.push(clonedTrack);
+    mainTracks.push(clonedTrack);
   }
 
-  return new AnimationClip(
+  const main = new AnimationClip(
     clip.name + "_fullBody",
     clip.duration,
-    retargetedTracks
+    mainTracks
   );
+
+  const hipsPosition = hipsPositionTrack
+    ? new AnimationClip(
+        clip.name + "_hipsPos",
+        clip.duration,
+        [hipsPositionTrack]
+      )
+    : null;
+
+  return { main, hipsPosition };
 }
 
 /**
@@ -226,6 +308,8 @@ export class LocomotionAnimator implements ILocomotionAnimator {
   private idleClipRaw: AnimationClip | null = null;
   private idleClip: AnimationClip | null = null;
   private idleAction: AnimationAction | null = null;
+  // Additive Hips position actions (weight-shift compensation)
+  private idleHipsPosAction: AnimationAction | null = null;
 
   // Directional walk animations
   private walkClipsRaw: Record<DirectionKey, AnimationClip | null> = {
@@ -244,6 +328,7 @@ export class LocomotionAnimator implements ILocomotionAnimator {
   private config: Required<LocomotionConfig> = {
     baseSpeed: 1,
     blendTime: 0.3,
+    animationWalkSpeed: 1.57,
   };
 
   private currentLocomotion: LocomotionInput = {
@@ -390,14 +475,26 @@ export class LocomotionAnimator implements ILocomotionAnimator {
   private processLoadedClips(): void {
     if (!this.mixer) return;
 
-    // Process idle clip
+    // Process idle clip — exclude legs and lower spine so feet stay
+    // perfectly planted. Without Hips position compensation (which we
+    // can't get working without floating), any leg rotation slides feet.
+    // Spine2/Neck/Head/Arms still animate for subtle breathing.
     if (this.idleClipRaw && !this.idleAction) {
-      this.idleClip = retargetFullBody(this.idleClipRaw, this.targetBonePrefix);
-      this.idleAction = this.mixer.clipAction(this.idleClip);
+      const { main, hipsPosition } = retargetFullBody(
+        this.idleClipRaw,
+        this.targetBonePrefix,
+        IDLE_EXCLUDE_BONES
+      );
+      this.idleClip = main;
+      this.idleAction = this.mixer.clipAction(main);
       this.idleAction.setLoop(LoopRepeat, Infinity);
       this.idleAction.enabled = true;
       this.idleAction.setEffectiveWeight(1);
       this.idleAction.play();
+
+      // Hips position additive track is available but causes floating —
+      // the cm-space deltas don't translate correctly to our scaled skeleton.
+      // Future: implement foot IK for proper grounding instead.
     }
 
     // Process walk clips
@@ -405,8 +502,8 @@ export class LocomotionAnimator implements ILocomotionAnimator {
       const raw = this.walkClipsRaw[key];
       if (!raw || this.walkActions[key]) continue;
 
-      const processed = retargetFullBody(raw, this.targetBonePrefix);
-      const action = this.mixer.clipAction(processed);
+      const { main } = retargetFullBody(raw, this.targetBonePrefix);
+      const action = this.mixer.clipAction(main);
       action.setLoop(LoopRepeat, Infinity);
       action.enabled = true;
       action.setEffectiveWeight(0);
@@ -477,12 +574,17 @@ export class LocomotionAnimator implements ILocomotionAnimator {
   }
 
   /**
-   * Adjust playback speed on all walk actions.
+   * Sync walk animation playback rate with actual movement speed.
+   * timeScale = actualSpeed / animationWalkSpeed so feet plant
+   * at the same rate the character moves across the ground.
+   * @param speed Actual movement speed in scene units/sec
    */
   private updatePlaybackSpeed(speed: number): void {
-    const playbackSpeed = this.config.baseSpeed * Math.max(0.5, speed);
+    const timeScale =
+      this.config.baseSpeed *
+      Math.max(0.3, speed / this.config.animationWalkSpeed);
     for (const key of Object.keys(this.walkActions) as DirectionKey[]) {
-      this.walkActions[key]?.setEffectiveTimeScale(playbackSpeed);
+      this.walkActions[key]?.setEffectiveTimeScale(timeScale);
     }
   }
 
@@ -493,10 +595,13 @@ export class LocomotionAnimator implements ILocomotionAnimator {
     const blendSpeed = 1 / Math.max(0.01, this.config.blendTime);
     const blendFactor = 1 - Math.exp(-blendSpeed * delta);
 
-    // Smoothly blend idle weight
+    // Smoothly blend idle weight (both main quaternion and additive hips position)
     this.currentIdleWeight += (this.targetIdleWeight - this.currentIdleWeight) * blendFactor;
     if (this.idleAction) {
       this.idleAction.setEffectiveWeight(this.currentIdleWeight);
+    }
+    if (this.idleHipsPosAction) {
+      this.idleHipsPosAction.setEffectiveWeight(this.currentIdleWeight);
     }
 
     // Smoothly blend directional walk weights each frame
@@ -536,10 +641,14 @@ export class LocomotionAnimator implements ILocomotionAnimator {
       this.walkClipsRaw[key] = null;
     }
 
-    // Stop idle action
+    // Stop idle actions
     if (this.idleAction) {
       this.idleAction.stop();
       this.idleAction = null;
+    }
+    if (this.idleHipsPosAction) {
+      this.idleHipsPosAction.stop();
+      this.idleHipsPosAction = null;
     }
 
     if (this.mixer) {

@@ -463,11 +463,16 @@ export class AvatarAnimator implements IAvatarAnimator {
         // Solve IK (overwrites bone quaternions)
         this.ikSolver.solveAndApply(leftChain, target);
 
-        // Blend: slerp each bone from animation toward IK based on weight
+        // Save IK results BEFORE blending — .copy() would overwrite them
+        const ikRootQuat = leftChain.root.quaternion.clone();
+        const ikMiddleQuat = leftChain.middle.quaternion.clone();
+        const ikEffectorQuat = leftChain.effector.quaternion.clone();
+
+        // Blend: slerp each bone from animation pose toward IK solution
         const w = this.leftArmIK.weight;
-        leftChain.root.quaternion.copy(animRootQuat).slerp(leftChain.root.quaternion, w);
-        leftChain.middle.quaternion.copy(animMiddleQuat).slerp(leftChain.middle.quaternion, w);
-        leftChain.effector.quaternion.copy(animEffectorQuat).slerp(leftChain.effector.quaternion, w);
+        leftChain.root.quaternion.copy(animRootQuat).slerp(ikRootQuat, w);
+        leftChain.middle.quaternion.copy(animMiddleQuat).slerp(ikMiddleQuat, w);
+        leftChain.effector.quaternion.copy(animEffectorQuat).slerp(ikEffectorQuat, w);
       }
       // else: weight ~0, skip IK entirely — animation drives the arm
     }
@@ -518,11 +523,16 @@ export class AvatarAnimator implements IAvatarAnimator {
         // Solve IK (overwrites bone quaternions)
         this.ikSolver.solveAndApply(rightChain, target);
 
-        // Blend: slerp each bone from animation toward IK based on weight
+        // Save IK results BEFORE blending — .copy() would overwrite them
+        const ikRootQuat = rightChain.root.quaternion.clone();
+        const ikMiddleQuat = rightChain.middle.quaternion.clone();
+        const ikEffectorQuat = rightChain.effector.quaternion.clone();
+
+        // Blend: slerp each bone from animation pose toward IK solution
         const w = this.rightArmIK.weight;
-        rightChain.root.quaternion.copy(animRootQuat).slerp(rightChain.root.quaternion, w);
-        rightChain.middle.quaternion.copy(animMiddleQuat).slerp(rightChain.middle.quaternion, w);
-        rightChain.effector.quaternion.copy(animEffectorQuat).slerp(rightChain.effector.quaternion, w);
+        rightChain.root.quaternion.copy(animRootQuat).slerp(ikRootQuat, w);
+        rightChain.middle.quaternion.copy(animMiddleQuat).slerp(ikMiddleQuat, w);
+        rightChain.effector.quaternion.copy(animEffectorQuat).slerp(ikEffectorQuat, w);
       }
       // else: weight ~0, skip IK entirely — animation drives the arm
     }

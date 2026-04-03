@@ -32,6 +32,9 @@
   import MuseumPortal from "./MuseumPortal.svelte";
   import MuseumTorch3D from "./MuseumTorch3D.svelte";
   import MuseumPlaque3D from "./MuseumPlaque3D.svelte";
+  import MuseumSceneEditor from "./MuseumSceneEditor.svelte";
+  import { OrbitControls } from "@threlte/extras";
+  import { museum3dEditorState } from "../../state/museum-3d-editor-state.svelte";
   import type { PlaqueContent, PlaqueSize } from "../../services/contracts/IPlaqueTextureGenerator";
   import { PlaqueTextureGenerator } from "../../services/implementations/PlaqueTextureGenerator";
 
@@ -92,7 +95,7 @@
   // ── Material colors — more contrast, brighter floors, distinct materials ──
   const FLOOR_COLORS: Record<FloorMaterial, string> = {
     stone: "#3a3530",    // warm grey stone
-    marble: "#b0a898",   // beige-cream marble — government building floor
+    marble: "#e0d8c8",   // bright beige-cream — government building marble
     wood: "#4a3820",     // warm brown planks
     dirt: "#352a1e",     // earthy dark
     sandstone: "#4a3e2a", // warm tan
@@ -116,7 +119,7 @@
     renaissance: "#2e2818",  // dark wood paneling
     industrial: "#282828",   // grey iron/steel
     digital: "#141428",      // dark with blue tinge
-    institutional: "#8a8890", // bright institutional off-white — the lights are on
+    institutional: "#e8e4e0", // warm off-white — painted drywall under fluorescents
     gallery: "#201820",      // deep purple-black (dramatic)
     modern: "#1a1a1a",       // pure dark
     futuristic: "#141420",   // dark with slight blue
@@ -132,7 +135,7 @@
     renaissance:   { density: 0.03, color: "#14120e" },   // gentle
     industrial:    { density: 0.04, color: "#141414" },   // slight grey
     digital:       { density: 0.04, color: "#0a0a14" },   // cool blue hint
-    institutional: { density: 0.03, color: "#121218" },   // subtle
+    institutional: { density: 0.02, color: "#606068" },   // light grey haze — fluorescent wash
     gallery:       { density: 0.02, color: "#0e0a10" },   // minimal
     modern:        { density: 0.03, color: "#0a0a0a" },   // slight
     futuristic:    { density: 0.03, color: "#0a0a10" },   // slight cool
@@ -148,7 +151,7 @@
     renaissance:   { color: "#907050", intensity: 1.0 },   // warm wood tones
     industrial:    { color: "#808080", intensity: 0.9 },   // neutral grey — gas lamps
     digital:       { color: "#4060a0", intensity: 0.9 },   // cool blue — CRT screens
-    institutional: { color: "#c0c8d0", intensity: 1.5 },   // bright cold fluorescent — DMV energy
+    institutional: { color: "#d0d8e0", intensity: 2.0 },   // aggressively bright — DMV energy
     gallery:       { color: "#a09080", intensity: 0.9 },   // warm neutral — spotlight room
     modern:        { color: "#606060", intensity: 0.8 },   // minimal
     futuristic:    { color: "#506080", intensity: 0.8 },   // cool
@@ -173,7 +176,7 @@
     classical: "Rock003",
     renaissance: "Rock003",
     gallery: "Plaster001",
-    institutional: "Plaster001",
+    // institutional walls use no texture — solid off-white like a painted government wall
     modern: "Plaster001",
   };
 
@@ -520,16 +523,23 @@
       fogDensityTarget = fogCfg.density;
     }
 
-    // Smoothly lerp fog color and density toward targets
-    fogColorCurrent.lerp(fogColorTarget, FOG_LERP_SPEED * delta);
-    sceneFog.color.copy(fogColorCurrent);
-    sceneFog.density += (fogDensityTarget - sceneFog.density) * FOG_LERP_SPEED * delta;
+    // Fog only in FPS — from overhead it just muddies the view with no benefit.
+    if (fpsActive) {
+      fogColorCurrent.lerp(fogColorTarget, FOG_LERP_SPEED * delta);
+      sceneFog.color.copy(fogColorCurrent);
+      sceneFog.density += (fogDensityTarget - sceneFog.density) * FOG_LERP_SPEED * delta;
+    } else {
+      sceneFog.density += (0 - sceneFog.density) * FOG_LERP_SPEED * delta;
+    }
   }
 
   // ── Flip animation loop ──
   // When fpsActive, UnifiedCameraController owns the camera — we don't touch it.
   useTask((delta) => {
     if (!camera) return;
+
+    // In editor mode, OrbitControls owns the camera — skip all movement/animation
+    if (museum3dEditorState.editorActive) return;
 
     // First frame: initialize camera
     if (!initialized) {
@@ -744,7 +754,18 @@
       const spawnX = grid.spawn.x * TILE_SIZE;
       const spawnZ = grid.spawn.y * TILE_SIZE;
       physicsProvider.teleport!({ x: spawnX, y: 0, z: spawnZ });
-      playerYaw = 0;
+      // Face north — looking down the hallway toward the cave
+      playerYaw = Math.PI;
+      targetPlayerYaw = Math.PI;
+      if (fpsActive) {
+        fpsInitialYaw = Math.PI;
+        fpsInitialPitch = 0;
+        fpsActive = false;
+        requestAnimationFrame(() => {
+          fpsActive = true;
+          progress = 1;
+        });
+      }
       syncPositionFromPhysics();
     }
   });
@@ -852,7 +873,7 @@
   const performerPositions: { x: number; z: number }[] = [];
   const pedestalPositions: { x: number; z: number }[] = [];
   const signPositions: { x: number; z: number }[] = [];
-  const torchPositions: { x: number; z: number; wallOffsetX: number; wallOffsetZ: number }[] = [];
+  const torchPositions: { x: number; z: number; wallOffsetX: number; wallOffsetZ: number; wingTheme: WingTheme }[] = [];
 
   function getWingThemeAt(tileX: number, tileY: number): WingTheme | null {
     for (const wing of grid.wings) {
@@ -968,7 +989,8 @@
           }
         }
 
-        torchPositions.push({ x: worldX, z: worldZ, wallOffsetX, wallOffsetZ });
+        const torchWingTheme = getWingThemeAt(tileX, tileY) ?? "cave";
+        torchPositions.push({ x: worldX, z: worldZ, wallOffsetX, wallOffsetZ, wingTheme: torchWingTheme });
         break;
       }
       case "trigger":
@@ -1063,6 +1085,24 @@
   }));
   const useSpotLights = plaquePlacements.length > 0 && plaquePlacements.length < 20;
 
+  // ── Ceiling fluorescent lights for institutional/retail wings ──
+  // Grid of overhead point lights simulating fluorescent panels
+  const ceilingLightPositions: { x: number; z: number }[] = [];
+  for (const wing of grid.wings) {
+    if (wing.theme === "institutional" || wing.theme === "retail") {
+      const b = wing.bounds;
+      // Place lights in a grid: every 6 tiles across, every 8 tiles along
+      for (let dx = 3; dx < b.width - 2; dx += 6) {
+        for (let dy = 3; dy < b.height - 2; dy += 8) {
+          ceilingLightPositions.push({
+            x: (b.x + dx) * TILE_SIZE,
+            z: (b.y + dy) * TILE_SIZE,
+          });
+        }
+      }
+    }
+  }
+
   let performerMesh: InstancedMesh | null = null;
   if (performerPositions.length > 0) {
     const performerMat = new MeshStandardMaterial({ color: TILE_TYPE_COLORS["performer-station"]! });
@@ -1115,17 +1155,67 @@
   const torchLightSet = new Set(torchesWithLight.map(t => `${t.x},${t.z}`));
 </script>
 
-<!-- Camera (owned by flip animation when not in FPS, by UCC when in FPS) -->
+<!-- Camera (owned by flip animation when not in FPS, by UCC when in FPS, by OrbitControls in editor) -->
 <T.PerspectiveCamera
   makeDefault
   bind:ref={camera}
   fov={TOP_DOWN.fov}
   near={0.1}
   far={maxExtent * 3}
-/>
+>
+  {#if museum3dEditorState.editorActive}
+    <OrbitControls
+      enableDamping
+      enablePan
+      panSpeed={1.5}
+      rotateSpeed={0.8}
+      zoomSpeed={1.2}
+      minDistance={1}
+      maxDistance={50}
+      onchange={(e) => {
+        // Persist editor camera + orbit target across HMR
+        if (camera) {
+          const controls = e.target;
+          museum3dEditorState.saveCamera({
+            x: camera.position.x,
+            y: camera.position.y,
+            z: camera.position.z,
+            targetX: controls.target.x,
+            targetY: controls.target.y,
+            targetZ: controls.target.z,
+          });
+        }
+      }}
+      oncreate={(controls) => {
+        // Store controls ref so editor state can update the orbit target
+        museum3dEditorState.setOrbitControls(controls);
 
-<!-- Player representation -->
-{#if !fpsActive}
+        const saved = museum3dEditorState.loadCamera();
+        if (saved && camera) {
+          camera.position.set(saved.x, saved.y, saved.z);
+          controls.target.set(saved.targetX, saved.targetY, saved.targetZ);
+        } else {
+          // First time: orbit target is where the player is looking at, 5m ahead
+          const lookAheadDist = 5;
+          controls.target.set(
+            playerPosition.x + Math.sin(playerYaw) * lookAheadDist,
+            1.2,
+            playerPosition.z + Math.cos(playerYaw) * lookAheadDist,
+          );
+        }
+        controls.update();
+
+        // Clean up on destroy
+        return () => {
+          museum3dEditorState.setOrbitControls(null);
+        };
+      }}
+    />
+  {/if}
+</T.PerspectiveCamera>
+
+<!-- Player representation (hidden in editor mode) -->
+{#if !fpsActive && !museum3dEditorState.editorActive}
   <!-- Top-down marker -->
   <T.Group position.x={playerPosition.x} position.y={0.15} position.z={playerPosition.z}>
     <T.Mesh rotation.x={-Math.PI / 2}>
@@ -1154,12 +1244,14 @@
     facingAngle={playerYaw}
     isActive={false}
     isMoving={isMoving}
+    moveSpeed={TOP_DOWN_MOVE_SPEED}
     moveDirection={moveDir}
+    enableLocomotion={true}
   />
 {/if}
 
-<!-- UnifiedCameraController: only active when FPS mode is engaged -->
-{#if fpsActive}
+<!-- UnifiedCameraController: only active when FPS mode is engaged AND not in editor mode -->
+{#if fpsActive && !museum3dEditorState.editorActive}
   <UnifiedCameraController
     destinationId="museum"
     {avatarState}
@@ -1254,6 +1346,17 @@
   {/if}
 {/each}
 
+<!-- Ceiling fluorescent lights — cold white overhead wash for institutional rooms -->
+{#each ceilingLightPositions as cLight}
+  <T.PointLight
+    position={[cLight.x, WALL_HEIGHT - 0.3, cLight.z]}
+    intensity={4}
+    color="#e8ecf0"
+    distance={16}
+    decay={1}
+  />
+{/each}
+
 <!-- Performer station instanced mesh -->
 <!-- Performer stations: 3D mannequins with spinning staves -->
 {#each grid.performers as performer (performer.id)}
@@ -1278,13 +1381,14 @@
   <T is={signMesh} />
 {/if}
 
-<!-- Full torch assemblies — bracket, flame, embers, light cone, point light -->
+<!-- Light fixtures — model and effects vary by wing theme/era -->
 {#each torchPositions as torch}
   <MuseumTorch3D
     x={torch.x}
     z={torch.z}
     wallOffsetX={torch.wallOffsetX}
     wallOffsetZ={torch.wallOffsetZ}
+    wingTheme={torch.wingTheme}
     baseIntensity={torchLightSet.has(`${torch.x},${torch.z}`) ? 4 : 0}
   />
 {/each}
@@ -1346,4 +1450,9 @@
     color="#ff8800"
     label="Cave"
   />
+{/if}
+
+<!-- 3D Scene Editor — click to select, gizmo to transform -->
+{#if museum3dEditorState.editorActive}
+  <MuseumSceneEditor />
 {/if}
