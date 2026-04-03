@@ -20,6 +20,19 @@ export const RED_STROKE = "#f87171";
 export const BLUE_FILL = "rgba(129, 140, 248, 0.2)";
 export const RED_FILL = "rgba(248, 113, 113, 0.2)";
 
+/** Purple overlap — Tailwind violet-400, perceptually between blue and red */
+export const PURPLE_STROKE = "#a78bfa";
+export const PURPLE_FILL = "rgba(167, 139, 250, 0.2)";
+
+/** Distance threshold in mandala coordinate units for overlap detection */
+export const OVERLAP_THRESHOLD = 4;
+
+/** Sliding window size for proximity search (indices, not distance) */
+export const OVERLAP_WINDOW_SIZE = 20;
+
+/** Minimum consecutive overlapping points to form a purple segment */
+export const OVERLAP_MIN_RUN = 3;
+
 /**
  * Grid radius in the animation engine's coordinate space (prop-local units).
  * This is the distance from center to cardinal grid points in a 950px viewBox.

@@ -26,6 +26,8 @@ import {
 	BASE_SAMPLES_PER_BEAT,
 	MANDALA_GRID_RADIUS,
 	ENGINE_GRID_RADIUS,
+	OVERLAP_THRESHOLD,
+	OVERLAP_MIN_RUN,
 } from "../../domain/mandala-constants";
 import type {
 	MandalaPaths,
@@ -443,6 +445,127 @@ function getStaffTipOffsets(): { left: TipOffset; right: TipOffset } {
 	};
 }
 
+// ─── Overlap detection (spatial hash) ──────────────────────────────────────
+
+/**
+ * Build a spatial hash grid from a set of points. Each cell is cellSize units
+ * wide. Returns a Set of "col,row" keys that have at least one point in them.
+ * O(n) to build, O(1) per lookup.
+ */
+function buildSpatialGrid(points: MandalaPoint[], cellSize: number): Set<string> {
+	const grid = new Set<string>();
+	for (const p of points) {
+		const col = Math.floor(p.x / cellSize);
+		const row = Math.floor(p.y / cellSize);
+		grid.add(`${col},${row}`);
+	}
+	return grid;
+}
+
+/**
+ * Check whether a point is near any point in the spatial grid by checking
+ * the 3x3 neighborhood of cells around it. This catches points within
+ * ~cellSize distance regardless of their parametric index.
+ */
+function isNearGrid(point: MandalaPoint, grid: Set<string>, cellSize: number): boolean {
+	const col = Math.floor(point.x / cellSize);
+	const row = Math.floor(point.y / cellSize);
+	for (let dc = -1; dc <= 1; dc++) {
+		for (let dr = -1; dr <= 1; dr++) {
+			if (grid.has(`${col + dc},${row + dr}`)) return true;
+		}
+	}
+	return false;
+}
+
+/**
+ * Spatial proximity detection: for each point in `queryPoints`, check whether
+ * ANY point in `referencePoints` occupies a nearby grid cell.
+ * O(n + m) total — O(m) to build the grid, O(n) to query.
+ */
+function detectOverlapMask(
+	queryPoints: MandalaPoint[],
+	referencePoints: MandalaPoint[],
+	threshold: number,
+): boolean[] {
+	const grid = buildSpatialGrid(referencePoints, threshold);
+	const mask = new Array<boolean>(queryPoints.length);
+	for (let i = 0; i < queryPoints.length; i++) {
+		mask[i] = isNearGrid(queryPoints[i]!, grid, threshold);
+	}
+	return mask;
+}
+
+/**
+ * Extract contiguous runs of overlapping points from a point array.
+ * Runs shorter than minRun are discarded to avoid tiny purple speckles.
+ */
+function extractOverlapSegments(
+	points: MandalaPoint[],
+	mask: boolean[],
+	minRun: number,
+): MandalaPoint[][] {
+	const segments: MandalaPoint[][] = [];
+	let runStart = -1;
+
+	for (let i = 0; i <= mask.length; i++) {
+		if (i < mask.length && mask[i]) {
+			if (runStart === -1) runStart = i;
+		} else {
+			if (runStart !== -1) {
+				const runLength = i - runStart;
+				if (runLength >= minRun) {
+					segments.push(points.slice(runStart, i));
+				}
+				runStart = -1;
+			}
+		}
+	}
+
+	return segments;
+}
+
+/**
+ * Detect purple overlap segments across all 4 tip-pair combinations
+ * (blue-left vs red-left, blue-left vs red-right, etc.)
+ * and return deduplicated purple SVG paths.
+ */
+function computePurplePaths(
+	blueLeftPoints: MandalaPoint[],
+	blueRightPoints: MandalaPoint[],
+	redLeftPoints: MandalaPoint[],
+	redRightPoints: MandalaPoint[],
+): SVGPathData[] {
+	const purple: SVGPathData[] = [];
+	let tipIndex = 0;
+
+	// All 4 combinations: each blue tip against each red tip
+	const pairs: [MandalaPoint[], MandalaPoint[]][] = [
+		[blueLeftPoints, redLeftPoints],
+		[blueLeftPoints, redRightPoints],
+		[blueRightPoints, redLeftPoints],
+		[blueRightPoints, redRightPoints],
+	];
+
+	for (const [queryPoints, refPoints] of pairs) {
+		if (queryPoints.length === 0 || refPoints.length === 0) continue;
+
+		const mask = detectOverlapMask(queryPoints, refPoints, OVERLAP_THRESHOLD);
+		const segments = extractOverlapSegments(queryPoints, mask, OVERLAP_MIN_RUN);
+
+		for (const segment of segments) {
+			const d = pointsToSVGPath(segment);
+			if (d) {
+				purple.push({ d, tipIndex });
+			}
+		}
+
+		tipIndex++;
+	}
+
+	return purple;
+}
+
 // ─── Public class ───────────────────────────────────────────────────────────
 
 export class MandalaGeometryCalculator implements IMandalaGeometryCalculator {
@@ -492,7 +615,7 @@ export class MandalaGeometryCalculator implements IMandalaGeometryCalculator {
 		);
 
 		if (stepsWithMotions.length === 0) {
-			return { blue: [], red: [] };
+			return { blue: [], red: [], purple: [] };
 		}
 
 		// For this initial implementation, default to staff tip offsets.
@@ -548,7 +671,15 @@ export class MandalaGeometryCalculator implements IMandalaGeometryCalculator {
 		const redRightD = pointsToSVGPath(redRightPoints);
 		if (redRightD) red.push({ d: redRightD, tipIndex: 1 });
 
-		const result = { blue, red };
+		// Detect purple overlap segments across all tip-pair combinations
+		const purple = computePurplePaths(
+			blueLeftPoints,
+			blueRightPoints,
+			redLeftPoints,
+			redRightPoints,
+		);
+
+		const result: MandalaPaths = { blue, red, purple };
 
 		// Cache the result with LRU eviction if needed
 		if (this.cache.size >= MandalaGeometryCalculator.MAX_CACHE_SIZE) {

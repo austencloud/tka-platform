@@ -8,6 +8,7 @@ export interface SVGPathData {
 export interface MandalaPaths {
 	blue: SVGPathData[];
 	red: SVGPathData[];
+	purple: SVGPathData[];
 }
 
 export interface MandalaRenderOptions {

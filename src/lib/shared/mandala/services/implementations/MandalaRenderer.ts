@@ -15,6 +15,8 @@ import {
 	RED_STROKE,
 	BLUE_FILL,
 	RED_FILL,
+	PURPLE_STROKE,
+	PURPLE_FILL,
 } from "../../domain/mandala-constants";
 import type { MandalaPaths, MandalaRenderOptions } from "../../domain/mandala-types";
 import type { IMandalaRenderer } from "../contracts/IMandalaRenderer";
@@ -118,6 +120,16 @@ export class MandalaRenderer implements IMandalaRenderer {
 			}
 		}
 
+		// Render purple overlap paths on top — visually replaces blue+red in overlap regions
+		if (show === "both" && paths.purple?.length) {
+			for (const pathData of paths.purple) {
+				const attrs = style === "filled"
+					? filledAttributes(PURPLE_STROKE, PURPLE_FILL, strokeWidth)
+					: strokeAttributes(PURPLE_STROKE, strokeWidth);
+				parts.push(`    <path d="${pathData.d}" ${attrs}/>`);
+			}
+		}
+
 		parts.push(`  </g>`);
 		parts.push(`</svg>`);
 
@@ -178,6 +190,13 @@ export class MandalaRenderer implements IMandalaRenderer {
 		if (show === "red" || show === "both") {
 			for (const pathData of paths.red) {
 				this._drawPath(ctx, pathData.d, RED_STROKE, RED_FILL, style, strokeWidth);
+			}
+		}
+
+		// Purple overlap paths on top
+		if (show === "both" && paths.purple?.length) {
+			for (const pathData of paths.purple) {
+				this._drawPath(ctx, pathData.d, PURPLE_STROKE, PURPLE_FILL, style, strokeWidth);
 			}
 		}
 
