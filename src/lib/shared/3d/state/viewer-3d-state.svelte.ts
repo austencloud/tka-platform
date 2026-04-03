@@ -152,6 +152,7 @@ export function createViewer3DState(deps: {
   // On first visit, default to null (no planes shown). When the user enables the
   // grid for the first time, we auto-select only the planes the sequence uses.
   let visiblePlanes = $state<Set<Plane>>(loadPersistedPlanes() ?? new Set());
+  let webglCanvas = $state<HTMLCanvasElement | null>(null);
 
   // Camera snap callback — registered by Viewer3DCamera, called by Viewer3DViewPresets
   let _snapToFn: ((position: { x: number; y: number; z: number }, target: { x: number; y: number; z: number }) => void) | null = null;
@@ -325,6 +326,12 @@ export function createViewer3DState(deps: {
         visiblePlanes = new Set([defaultPlane]);
       }
       persistPlanes(visiblePlanes);
+    },
+    get webglCanvas() {
+      return webglCanvas;
+    },
+    setWebglCanvas(canvas: HTMLCanvasElement | null) {
+      webglCanvas = canvas;
     },
     enter3D,
     exit3D,
