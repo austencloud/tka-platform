@@ -14,8 +14,10 @@
    */
 
   import { Canvas } from "@threlte/core";
+  import { WebGLRenderer } from "three";
   import Viewer3DScene from "./Viewer3DScene.svelte";
   import Viewer3DCamera from "./Viewer3DCamera.svelte";
+  import Viewer3DCanvasRef from "./Viewer3DCanvasRef.svelte";
   import Viewer3DViewPresets from "./Viewer3DViewPresets.svelte";
   import Viewer3DGridPopover from "./Viewer3DGridPopover.svelte";
   import { getViewer3DContext } from "../context/viewer-3d-context";
@@ -41,7 +43,10 @@
 
 <div class="viewer-3d-canvas">
   {#if avatarState && sequenceData}
-    <Canvas>
+    <Canvas
+      createRenderer={(canvas) => new WebGLRenderer({ canvas, preserveDrawingBuffer: true })}
+    >
+      <Viewer3DCanvasRef />
       <Viewer3DCamera />
       <Viewer3DScene
         {sequenceData}
