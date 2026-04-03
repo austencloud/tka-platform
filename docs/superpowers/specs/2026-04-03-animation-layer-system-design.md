@@ -210,22 +210,18 @@ private applyIKToSkeleton(pose: BodyPose): void {
   // Same for right arm...
 }
 
-private saveChainQuaternions(chain: BoneChain): Quaternion[] {
-  return chain.bones.map(bone => bone.quaternion.clone());
-}
+// BoneChain has root, middle, effector — not a bones array.
+// Save/blend each bone individually:
 
-private blendChainQuaternions(
-  chain: BoneChain,
-  animationQuats: Quaternion[],
-  ikWeight: number
-): void {
-  chain.bones.forEach((bone, i) => {
-    const animQuat = animationQuats[i];
-    // bone.quaternion is currently the IK result
-    // Blend from animation toward IK based on weight
-    bone.quaternion.copy(animQuat).slerp(bone.quaternion, ikWeight);
-  });
-}
+// Before IK solve:
+const animRootQuat = chain.root.quaternion.clone();
+const animMiddleQuat = chain.middle.quaternion.clone();
+const animEffectorQuat = chain.effector.quaternion.clone();
+
+// After IK solve, blend:
+chain.root.quaternion.copy(animRootQuat).slerp(chain.root.quaternion, ikWeight);
+chain.middle.quaternion.copy(animMiddleQuat).slerp(chain.middle.quaternion, ikWeight);
+chain.effector.quaternion.copy(animEffectorQuat).slerp(chain.effector.quaternion, ikWeight);
 ```
 
 ### Spine Twist and Clavicle Scaling
