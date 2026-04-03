@@ -26,6 +26,9 @@
     x: number;
     z: number;
     y?: number;
+    /** Offset from tile center toward room interior (away from wall) */
+    wallOffsetX?: number;
+    wallOffsetZ?: number;
     baseIntensity?: number;
     flameColor?: string;
     distance?: number;
@@ -35,10 +38,16 @@
     x,
     z,
     y = 1.25,
+    wallOffsetX = 0,
+    wallOffsetZ = 0,
     baseIntensity = 4,
     flameColor = "#ff9020",
     distance = 8,
   }: Props = $props();
+
+  // The torch's actual world position, offset from the wall into the room
+  const tx = x + wallOffsetX;
+  const tz = z + wallOffsetZ;
 
   // ── Bracket geometry (iron wall mount) ──
   const bracketRingGeo = new TorusGeometry(0.06, 0.012, 6, 12);
@@ -275,9 +284,9 @@
 <T.Mesh
   geometry={bracketRingGeo}
   material={bracketMat}
-  position.x={x}
+  position.x={tx}
   position.y={bracketY}
-  position.z={z}
+  position.z={tz}
   rotation.x={Math.PI / 2}
 />
 
@@ -285,9 +294,9 @@
 <T.Mesh
   geometry={bracketArmGeo}
   material={bracketMat}
-  position.x={x}
+  position.x={tx}
   position.y={bracketY}
-  position.z={z}
+  position.z={tz}
   rotation.z={Math.PI / 2}
 />
 
@@ -295,18 +304,18 @@
 <T.Mesh
   geometry={shaftGeo}
   material={shaftMat}
-  position.x={x}
+  position.x={tx}
   position.y={y + 0.02}
-  position.z={z}
+  position.z={tz}
 />
 
 <!-- Flame billboard (noise shader) -->
 <T.Mesh
   geometry={flameGeo}
   material={flameMat}
-  position.x={x}
+  position.x={tx}
   position.y={flameY}
-  position.z={z}
+  position.z={tz}
   frustumCulled={false}
 />
 
@@ -314,23 +323,23 @@
 <T.Mesh
   geometry={coneGeo}
   material={coneMat}
-  position.x={x}
+  position.x={tx}
   position.y={flameY - 0.5}
-  position.z={z}
+  position.z={tz}
 />
 
 <!-- Ember particles rising from the flame -->
-<T.Primitive
-  object={emberPoints}
-  position.x={x}
+<T
+  is={emberPoints}
+  position.x={tx}
   position.y={flameY}
-  position.z={z}
+  position.z={tz}
 />
 
 <!-- Animated point light for scene illumination -->
 <T.PointLight
   bind:ref={light}
-  position={[x, flameY, z]}
+  position={[tx, flameY, tz]}
   intensity={baseIntensity}
   color={flameColor}
   {distance}

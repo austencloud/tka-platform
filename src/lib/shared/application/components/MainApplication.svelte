@@ -505,7 +505,6 @@
         <div class="auth-loading">
           <div class="auth-loading-spinner"></div>
           <p>Loading preferences...</p>
-          <p class="reassurance">Your sequence will be here when you're done.</p>
         </div>
       </div>
     {:else if isAuthenticated && (!firstRunState.isDone() || firstRunState.shouldShow)}
@@ -682,14 +681,9 @@
     position: fixed;
     inset: 0;
     z-index: 900;
-    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+    background: rgb(18, 18, 28);
   }
 
-  .reassurance {
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
-    font-size: var(--font-size-compact, 12px);
-    margin-top: 8px;
-  }
 
   /* Wizard exit animation - fades out + slight scale down */
   .wizard-exit-wrapper {

@@ -92,7 +92,7 @@
   // ── Material colors — more contrast, brighter floors, distinct materials ──
   const FLOOR_COLORS: Record<FloorMaterial, string> = {
     stone: "#3a3530",    // warm grey stone
-    marble: "#484440",   // lighter, reflective feel
+    marble: "#b0a898",   // beige-cream marble — government building floor
     wood: "#4a3820",     // warm brown planks
     dirt: "#352a1e",     // earthy dark
     sandstone: "#4a3e2a", // warm tan
@@ -116,7 +116,7 @@
     renaissance: "#2e2818",  // dark wood paneling
     industrial: "#282828",   // grey iron/steel
     digital: "#141428",      // dark with blue tinge
-    institutional: "#1e1e24", // sterile grey-blue
+    institutional: "#8a8890", // bright institutional off-white — the lights are on
     gallery: "#201820",      // deep purple-black (dramatic)
     modern: "#1a1a1a",       // pure dark
     futuristic: "#141420",   // dark with slight blue
@@ -127,34 +127,34 @@
 
   // ── Per-wing fog settings — density and color vary by atmosphere ──
   const WING_FOG: Record<WingTheme, { density: number; color: string }> = {
-    cave:          { density: 0.12, color: "#1a1008" },   // thick warm amber — firelit cavern
-    classical:     { density: 0.06, color: "#1a1510" },   // light warm haze — oil lamp warmth
-    renaissance:   { density: 0.05, color: "#14120e" },   // gentle mist — studio atmosphere
-    industrial:    { density: 0.07, color: "#141414" },   // sooty grey — gas lamp era
-    digital:       { density: 0.08, color: "#0a0a14" },   // cold blue haze — CRT glow
-    institutional: { density: 0.06, color: "#121218" },   // sterile — fluorescent buzz
-    gallery:       { density: 0.04, color: "#0e0a10" },   // minimal — let spotlights do the work
-    modern:        { density: 0.05, color: "#0a0a0a" },   // near-dark — dramatic
-    futuristic:    { density: 0.05, color: "#0a0a10" },   // cool darkness
-    outdoor:       { density: 0.02, color: "#1a2010" },   // light — open air feeling
-    construction:  { density: 0.08, color: "#14120a" },   // dusty — construction site
-    retail:        { density: 0.04, color: "#141210" },   // light — gift shop clarity
+    cave:          { density: 0.06, color: "#1a1008" },   // warm amber haze
+    classical:     { density: 0.03, color: "#1a1510" },   // light warm
+    renaissance:   { density: 0.03, color: "#14120e" },   // gentle
+    industrial:    { density: 0.04, color: "#141414" },   // slight grey
+    digital:       { density: 0.04, color: "#0a0a14" },   // cool blue hint
+    institutional: { density: 0.03, color: "#121218" },   // subtle
+    gallery:       { density: 0.02, color: "#0e0a10" },   // minimal
+    modern:        { density: 0.03, color: "#0a0a0a" },   // slight
+    futuristic:    { density: 0.03, color: "#0a0a10" },   // slight cool
+    outdoor:       { density: 0.01, color: "#1a2010" },   // nearly clear
+    construction:  { density: 0.04, color: "#14120a" },   // dusty
+    retail:        { density: 0.02, color: "#141210" },   // clear
   };
 
-  // ── Per-wing ambient light tint — each wing gets a distinct atmosphere ──
+  // ── Per-wing ambient light — bright enough to actually see the exhibits ──
   const WING_AMBIENT: Record<WingTheme, { color: string; intensity: number }> = {
-    cave:          { color: "#8a6030", intensity: 0.45 },  // deep amber — torch-warmed stone
-    classical:     { color: "#a08050", intensity: 0.55 },  // golden — oil lamp warmth
-    renaissance:   { color: "#907050", intensity: 0.55 },  // warm wood tones
-    industrial:    { color: "#808080", intensity: 0.5 },   // neutral grey — gas lamps
-    digital:       { color: "#4060a0", intensity: 0.5 },   // cool blue — CRT screens
-    institutional: { color: "#8090a0", intensity: 0.55 },  // cold fluorescent
-    gallery:       { color: "#a09080", intensity: 0.5 },   // warm neutral — spotlight room
-    modern:        { color: "#606060", intensity: 0.45 },  // minimal
-    futuristic:    { color: "#506080", intensity: 0.45 },  // cool
-    outdoor:       { color: "#90a080", intensity: 0.65 },  // natural daylight tint
-    construction:  { color: "#908060", intensity: 0.5 },   // dusty warm
-    retail:        { color: "#a09080", intensity: 0.55 },  // commercial warm
+    cave:          { color: "#8a6030", intensity: 0.8 },   // warm amber — torch-warmed stone
+    classical:     { color: "#a08050", intensity: 1.0 },   // golden — oil lamp warmth
+    renaissance:   { color: "#907050", intensity: 1.0 },   // warm wood tones
+    industrial:    { color: "#808080", intensity: 0.9 },   // neutral grey — gas lamps
+    digital:       { color: "#4060a0", intensity: 0.9 },   // cool blue — CRT screens
+    institutional: { color: "#c0c8d0", intensity: 1.5 },   // bright cold fluorescent — DMV energy
+    gallery:       { color: "#a09080", intensity: 0.9 },   // warm neutral — spotlight room
+    modern:        { color: "#606060", intensity: 0.8 },   // minimal
+    futuristic:    { color: "#506080", intensity: 0.8 },   // cool
+    outdoor:       { color: "#90a080", intensity: 1.2 },   // natural daylight
+    construction:  { color: "#908060", intensity: 0.85 },  // dusty warm
+    retail:        { color: "#a09080", intensity: 1.0 },   // commercial bright
   };
 
   // ── PBR Texture Loading ──
@@ -1194,14 +1194,14 @@
   color={currentWingTheme ? WING_AMBIENT[currentWingTheme].color : "#c8b890"}
 />
 <T.DirectionalLight
-  intensity={0.75}
+  intensity={1.2}
   position={[gridCenterX, 30, gridCenterZ]}
   color="#fff0d0"
 />
 <T.HemisphereLight
-  intensity={0.35}
+  intensity={0.6}
   color="#fff8e0"
-  groundColor="#1a1510"
+  groundColor="#2a2015"
 />
 
 <!-- Floor instanced meshes (one per color bucket) -->
