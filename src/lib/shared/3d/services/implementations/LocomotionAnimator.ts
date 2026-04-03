@@ -18,6 +18,8 @@ import {
   LoopRepeat,
   LoopOnce,
   AdditiveAnimationBlendMode,
+  Quaternion,
+  Euler,
 } from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import type {
@@ -223,10 +225,33 @@ export function retargetFullBody(
       continue;
     }
 
-    // Exclude Hips quaternion — the locomotion system controls avatar
-    // orientation via the group's rotation.y (facingAngle). The animation's
-    // Hips rotation compounds with this and causes sideways tilt.
+    // Hips quaternion: keep X/Z rotation (tilt, sway) but strip Y rotation.
+    // The locomotion system controls yaw via group.rotation.y (facingAngle).
+    // If we leave the animation's Y rotation in, it compounds with facingAngle
+    // and causes sideways drift. But stripping the entire quaternion makes the
+    // pelvis rigidly locked — no natural hip sway during walks.
+    // Fix: decompose each keyframe, zero Y euler, recompose.
     if (coreName === "Hips" && property === "quaternion") {
+      const newTrackName = retargetTrackName(track.name, targetPrefix);
+      const clonedTrack = track.clone();
+      clonedTrack.name = newTrackName;
+
+      const values = clonedTrack.values;
+      const tempQuat = new Quaternion();
+      const tempEuler = new Euler();
+
+      for (let i = 0; i < values.length; i += 4) {
+        tempQuat.set(values[i]!, values[i + 1]!, values[i + 2]!, values[i + 3]!);
+        tempEuler.setFromQuaternion(tempQuat, "YXZ");
+        tempEuler.y = 0; // Strip yaw — facingAngle handles this
+        tempQuat.setFromEuler(tempEuler);
+        values[i] = tempQuat.x;
+        values[i + 1] = tempQuat.y;
+        values[i + 2] = tempQuat.z;
+        values[i + 3] = tempQuat.w;
+      }
+
+      mainTracks.push(clonedTrack);
       continue;
     }
 
@@ -327,13 +352,15 @@ export class LocomotionAnimator implements ILocomotionAnimator {
     strafeRight: null,
   };
 
-  // Jump/fall/land animations (optional — loaded when URLs provided)
+  // Jump/fall/land/crouch animations (optional — loaded when URLs provided)
   private jumpClipRaw: AnimationClip | null = null;
   private fallClipRaw: AnimationClip | null = null;
   private landClipRaw: AnimationClip | null = null;
+  private crouchClipRaw: AnimationClip | null = null;
   private jumpAction: AnimationAction | null = null;
   private fallAction: AnimationAction | null = null;
   private landAction: AnimationAction | null = null;
+  private crouchAction: AnimationAction | null = null;
 
   // State machine integration — when set, overrides the idle↔walk logic
   private activeState: LocomotionState | null = null;
@@ -425,6 +452,7 @@ export class LocomotionAnimator implements ILocomotionAnimator {
     if (urls.jump) entries.push({ key: "jump", url: urls.jump });
     if (urls.fall) entries.push({ key: "fall", url: urls.fall });
     if (urls.land) entries.push({ key: "land", url: urls.land });
+    if (urls.crouch) entries.push({ key: "crouch", url: urls.crouch });
 
     const results = await Promise.allSettled(
       entries.map(async (entry) => {
@@ -445,6 +473,8 @@ export class LocomotionAnimator implements ILocomotionAnimator {
           this.fallClipRaw = clip;
         } else if (key === "land") {
           this.landClipRaw = clip;
+        } else if (key === "crouch") {
+          this.crouchClipRaw = clip;
         } else {
           this.walkClipsRaw[key] = clip;
           this.walkLoaded = true;
@@ -565,6 +595,15 @@ export class LocomotionAnimator implements ILocomotionAnimator {
       this.landAction.setEffectiveWeight(0);
       this.landAction.play();
     }
+
+    if (this.crouchClipRaw && !this.crouchAction) {
+      const { main } = retargetFullBody(this.crouchClipRaw, this.targetBonePrefix);
+      this.crouchAction = this.mixer.clipAction(main);
+      this.crouchAction.setLoop(LoopRepeat, Infinity);
+      this.crouchAction.enabled = true;
+      this.crouchAction.setEffectiveWeight(0);
+      this.crouchAction.play();
+    }
   }
 
   setLocomotion(input: LocomotionInput): void {
@@ -676,6 +715,7 @@ export class LocomotionAnimator implements ILocomotionAnimator {
     // Target weights per state
     const wantIdle = state === LocomotionState.IDLE ? 1 : 0;
     const wantWalk = state === LocomotionState.WALKING ? 1 : 0;
+    const wantCrouch = state === LocomotionState.CROUCHING ? 1 : 0;
     const wantJump = state === LocomotionState.JUMPING ? 1 : 0;
     const wantFall = state === LocomotionState.FALLING ? 1 : 0;
     const wantLand = state === LocomotionState.LANDING ? 1 : 0;
@@ -694,7 +734,8 @@ export class LocomotionAnimator implements ILocomotionAnimator {
       this.walkActions[key]?.setEffectiveWeight(newWeight);
     }
 
-    // Blend jump/fall/land actions
+    // Blend crouch/jump/fall/land actions
+    this.blendAction(this.crouchAction, wantCrouch, blendFactor);
     this.blendAction(this.jumpAction, wantJump, blendFactor);
     this.blendAction(this.fallAction, wantFall, blendFactor);
     this.blendAction(this.landAction, wantLand, blendFactor);
@@ -779,13 +820,15 @@ export class LocomotionAnimator implements ILocomotionAnimator {
       this.idleHipsPosAction = null;
     }
 
-    // Stop jump/fall/land actions
+    // Stop jump/fall/land/crouch actions
     if (this.jumpAction) { this.jumpAction.stop(); this.jumpAction = null; }
     if (this.fallAction) { this.fallAction.stop(); this.fallAction = null; }
     if (this.landAction) { this.landAction.stop(); this.landAction = null; }
+    if (this.crouchAction) { this.crouchAction.stop(); this.crouchAction = null; }
     this.jumpClipRaw = null;
     this.fallClipRaw = null;
     this.landClipRaw = null;
+    this.crouchClipRaw = null;
 
     if (this.mixer) {
       this.mixer.stopAllAction();
