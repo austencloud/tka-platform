@@ -484,6 +484,16 @@
       </button>
     </div>
   {:else}
+    <div class="prep-header">
+      <button class="back-button" onclick={onSwitchToDecks} type="button">
+        <i class="fas fa-arrow-left" aria-hidden="true"></i>
+        Back to Deck
+      </button>
+      <h2 class="prep-title">
+        <i class="fas fa-print" aria-hidden="true"></i>
+        Print Prep: {deck.name}
+      </h2>
+    </div>
     <div class="prep-layout">
       <PrintPrepSidebar
         {exportFormat}
@@ -603,6 +613,49 @@
   .go-to-decks:focus-visible {
     outline: 2px solid var(--theme-accent, #6366f1);
     outline-offset: 2px;
+  }
+
+  /* ── Header ──────────────────────────────────────────────────────── */
+  .prep-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    flex-shrink: 0;
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+  }
+
+  .back-button {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 6px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    color: var(--theme-text, #ffffff);
+    font-size: var(--font-size-min, 14px);
+    cursor: pointer;
+    min-height: 36px;
+  }
+
+  .back-button:hover {
+    background: var(--theme-card-bg-hover, rgba(255, 255, 255, 0.08));
+  }
+
+  .back-button:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 2px;
+  }
+
+  .prep-title {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--theme-text, #ffffff);
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
 
   /* ── Layout ──────────────────────────────────────────────────────── */
