@@ -6,6 +6,7 @@
   import { tileKey } from "../../domain/museum-grid-types";
   import type { MuseumGrid, ExhibitDefinition, PerformerDefinition, WingRegion } from "../../domain/museum-grid-types";
   import { SOLID_TYPES } from "../../services/implementations/MuseumPhysicsProvider";
+  import { museum3dEditorState } from "../../state/museum-3d-editor-state.svelte";
   import PlaqueView from "../panel/PlaqueView.svelte";
   import SequenceView from "../panel/SequenceView.svelte";
   import SequenceBrowserOverlay from "$lib/features/realm/destinations/museum/overlay/SequenceBrowserOverlay.svelte";
@@ -65,6 +66,7 @@
     isInFPS: boolean;
     topDownHeight: number;
     playerYaw: number;
+    isEditorMode?: boolean;
   }
 
   let savedHmrState: HmrState | null = null;
@@ -105,6 +107,11 @@
   let playerFacing = $state("south");
   let isInFPS = $state(savedHmrState?.isInFPS ?? false);
 
+  // Restore editor mode from HMR state
+  if (savedHmrState?.isEditorMode) {
+    museum3dEditorState.setActive(true);
+  }
+
   // ── Debounced sessionStorage save ──
   // Writes at most every 500ms to avoid per-frame serialization overhead.
   let hmrSaveTimer: ReturnType<typeof setTimeout> | null = null;
@@ -124,6 +131,7 @@
           isInFPS,
           topDownHeight,
           playerYaw: lastKnownYaw,
+          isEditorMode: museum3dEditorState.editorActive,
         };
         sessionStorage.setItem(HMR_KEY, JSON.stringify(state));
       } catch {
@@ -147,6 +155,7 @@
         isInFPS,
         topDownHeight,
         playerYaw: lastKnownYaw,
+        isEditorMode: museum3dEditorState.editorActive,
       };
       sessionStorage.setItem(HMR_KEY, JSON.stringify(state));
     } catch {
@@ -211,6 +220,20 @@
   // ── Keyboard handling ──
   function handleKeyDown(e: KeyboardEvent) {
     if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
+    // F2: toggle editor mode
+    if (e.key === "F2") {
+      e.preventDefault();
+      museum3dEditorState.toggle();
+      if (museum3dEditorState.editorActive && document.pointerLockElement) {
+        document.exitPointerLock();
+      }
+      flushHmrSave(); // Persist editor mode state immediately for HMR
+      return;
+    }
+
+    // Skip normal controls when editor is active (editor handles its own keys)
+    if (museum3dEditorState.editorActive) return;
 
     // Q: dimension flip
     if (e.key === "q" || e.key === "Q") {
@@ -364,6 +387,13 @@
     </Canvas>
   </div>
 
+  <!-- Editor mode badge -->
+  {#if museum3dEditorState.editorActive}
+    <div class="editor-badge">
+      EDITOR — Orbit: left-drag, Pan: right-drag, Zoom: scroll, Select: click, Focus: double-click, 1/2/3: modes, F2: exit
+    </div>
+  {/if}
+
   <!-- Wing label (top-left) -->
   {#if currentWing && !showPanel}
     <div class="wing-label" class:fps={isInFPS}>
@@ -465,6 +495,23 @@
   .canvas-area {
     width: 100%;
     height: 100%;
+  }
+
+  /* Editor mode badge */
+  .editor-badge {
+    position: absolute;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 8px 20px;
+    background: rgba(255, 60, 60, 0.85);
+    color: white;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 6px;
+    letter-spacing: 0.5px;
+    z-index: 100;
+    pointer-events: none;
   }
 
   /* Wing label */
