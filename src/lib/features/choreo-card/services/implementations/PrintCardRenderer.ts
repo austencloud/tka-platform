@@ -85,29 +85,34 @@ export class PrintCardRenderer implements IPrintCardRenderer {
       },
     });
 
-    // Create the final MPC canvas and wrap with bleed
+    // Wrap in MPC canvas with bleed
     const mpcCanvas = document.createElement("canvas");
     mpcCanvas.width = canvasW;
     mpcCanvas.height = canvasH;
-    const ctx = mpcCanvas.getContext("2d")!;
+    const mpcCtx = mpcCanvas.getContext("2d")!;
 
-    // Fill entire canvas with the dominant edge color (for bleed)
-    // Sample the corner colors of the rendered sequence
-    const seqCtx = sequenceCanvas.getContext("2d")!;
-    const edgePixel = seqCtx.getImageData(0, 0, 1, 1).data;
-    ctx.fillStyle = `rgb(${edgePixel[0]}, ${edgePixel[1]}, ${edgePixel[2]})`;
-    ctx.fillRect(0, 0, canvasW, canvasH);
+    // 1. Fill bleed area with neutral gray (cutting guide)
+    mpcCtx.fillStyle = "#808080";
+    mpcCtx.fillRect(0, 0, canvasW, canvasH);
 
-    // Draw the sequence centered in the content area, scaled to fit
-    const scaleX = contentW / sequenceCanvas.width;
-    const scaleY = contentH / sequenceCanvas.height;
+    // 2. Fill content area with white
+    mpcCtx.fillStyle = "#ffffff";
+    mpcCtx.fillRect(bleed, bleed, contentW, contentH);
+
+    // 3. Center sequence in content area with consistent inner margin
+    const innerMargin = 24;
+    const availW = contentW - innerMargin * 2;
+    const availH = contentH - innerMargin * 2;
+
+    const scaleX = availW / sequenceCanvas.width;
+    const scaleY = availH / sequenceCanvas.height;
     const scale = Math.min(scaleX, scaleY);
     const drawW = sequenceCanvas.width * scale;
     const drawH = sequenceCanvas.height * scale;
-    const offsetX = bleed + (contentW - drawW) / 2;
-    const offsetY = bleed + (contentH - drawH) / 2;
+    const offsetX = bleed + innerMargin + (availW - drawW) / 2;
+    const offsetY = bleed + innerMargin + (availH - drawH) / 2;
 
-    ctx.drawImage(sequenceCanvas, offsetX, offsetY, drawW, drawH);
+    mpcCtx.drawImage(sequenceCanvas, offsetX, offsetY, drawW, drawH);
 
     return mpcCanvas;
   }
