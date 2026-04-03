@@ -240,7 +240,7 @@
   const pairsByFamily = $derived.by(() => {
     if (!deck) return [];
     const groups: Array<{ family: DeckFamily; pairs: typeof renderedPairs }> = [];
-    for (const family of deck.families) {
+    for (const family of deck.families ?? []) {
       const familyPairs = renderedPairs.filter((p) => p.familyId === family.id);
       if (familyPairs.length > 0) {
         groups.push({ family, pairs: familyPairs });
@@ -326,7 +326,7 @@
 
     // Build ordered list of sequences matching deck family order
     const orderedSequences: Array<{ seq: SequenceData; familyId: string }> = [];
-    for (const family of deck.families) {
+    for (const family of deck.families ?? []) {
       for (const seqId of family.sequenceIds) {
         const seq = deckSequences.find((s) => s.id === seqId);
         if (seq) orderedSequences.push({ seq, familyId: family.id });

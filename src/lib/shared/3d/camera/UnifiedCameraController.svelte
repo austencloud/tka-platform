@@ -230,7 +230,7 @@
     if (isGameMode(mode)) {
       keys.add(e.code);
 
-      if (["KeyW", "KeyA", "KeyS", "KeyD", "Space", "ShiftLeft", "ShiftRight", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.code)) {
+      if (["KeyW", "KeyA", "KeyS", "KeyD", "Space", "ShiftLeft", "ShiftRight", "ControlLeft", "ControlRight", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.code)) {
         e.preventDefault();
       }
     }
@@ -516,6 +516,7 @@
                        (keys.has("KeyA") || keys.has("ArrowLeft") ? 1 : 0);
     const isSprinting = keys.has("ShiftLeft") || keys.has("ShiftRight");
     const isJumping = keys.has("Space");
+    const isCrouching = keys.has("ControlLeft") || keys.has("ControlRight");
     const hasMovementInput = forwardInput !== 0 || strafeInput !== 0;
 
     // === UNIFIED DIRECTION CALCULATION ===
@@ -645,6 +646,7 @@
       // === UNIFIED STATE UPDATES ===
       // Update movement state for walk animation
       avatarState.setMoveInput({ x: strafeInput, z: forwardInput });
+      avatarState.isCrouching = isCrouching;
 
       // Avatar faces MOVEMENT direction when moving (standard 3rd person convention).
       // The movement vector is camera-relative: W pushes along camera forward, A/D strafe.

@@ -13,6 +13,7 @@
 export enum LocomotionState {
 	IDLE = "idle",
 	WALKING = "walking",
+	CROUCHING = "crouching",
 	JUMPING = "jumping",
 	FALLING = "falling",
 	LANDING = "landing",
@@ -29,6 +30,8 @@ export interface LocomotionStateInput {
 	verticalVelocity: number;
 	/** On the ground? (from PhysicsProvider.isGrounded()) */
 	isGrounded: boolean;
+	/** Player is holding the crouch key (Ctrl) */
+	isCrouching: boolean;
 	/** Movement direction relative to facing (-1..+1 per axis) */
 	moveDirection?: { x: number; z: number };
 	/** Facing angle in radians */

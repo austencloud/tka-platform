@@ -40,6 +40,8 @@ export interface AnimationUrls {
   fall?: string;
   /** One-shot landing recovery (optional) */
   land?: string;
+  /** Crouch idle loop (optional) */
+  crouch?: string;
 }
 
 /**

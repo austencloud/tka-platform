@@ -18,8 +18,6 @@ import {
   LoopRepeat,
   LoopOnce,
   AdditiveAnimationBlendMode,
-  Quaternion,
-  Euler,
 } from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import type {
@@ -225,33 +223,12 @@ export function retargetFullBody(
       continue;
     }
 
-    // Hips quaternion: keep X/Z rotation (tilt, sway) but strip Y rotation.
-    // The locomotion system controls yaw via group.rotation.y (facingAngle).
-    // If we leave the animation's Y rotation in, it compounds with facingAngle
-    // and causes sideways drift. But stripping the entire quaternion makes the
-    // pelvis rigidly locked — no natural hip sway during walks.
-    // Fix: decompose each keyframe, zero Y euler, recompose.
+    // Exclude Hips quaternion — the locomotion system controls avatar
+    // orientation via the group's rotation.y (facingAngle). The animation's
+    // Hips rotation includes the character's base orientation (not just sway),
+    // so keeping X/Z rotations causes the avatar to lay flat on the ground.
+    // Future: extract delta rotations from rest pose for subtle hip sway.
     if (coreName === "Hips" && property === "quaternion") {
-      const newTrackName = retargetTrackName(track.name, targetPrefix);
-      const clonedTrack = track.clone();
-      clonedTrack.name = newTrackName;
-
-      const values = clonedTrack.values;
-      const tempQuat = new Quaternion();
-      const tempEuler = new Euler();
-
-      for (let i = 0; i < values.length; i += 4) {
-        tempQuat.set(values[i]!, values[i + 1]!, values[i + 2]!, values[i + 3]!);
-        tempEuler.setFromQuaternion(tempQuat, "YXZ");
-        tempEuler.y = 0; // Strip yaw — facingAngle handles this
-        tempQuat.setFromEuler(tempEuler);
-        values[i] = tempQuat.x;
-        values[i + 1] = tempQuat.y;
-        values[i + 2] = tempQuat.z;
-        values[i + 3] = tempQuat.w;
-      }
-
-      mainTracks.push(clonedTrack);
       continue;
     }
 
@@ -440,7 +417,7 @@ export class LocomotionAnimator implements ILocomotionAnimator {
   }
 
   async loadAnimations(urls: AnimationUrls): Promise<void> {
-    const entries: Array<{ key: "idle" | DirectionKey | "jump" | "fall" | "land"; url: string }> = [
+    const entries: Array<{ key: "idle" | DirectionKey | "jump" | "fall" | "land" | "crouch"; url: string }> = [
       { key: "idle", url: urls.idle },
       { key: "forward", url: urls.forward },
       { key: "backward", url: urls.backward },
