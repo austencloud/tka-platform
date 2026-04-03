@@ -145,6 +145,8 @@ export interface AvatarState {
 	position: { x: number; y?: number; z: number };
 	facingAngle: number;
 	isMoving: boolean;
+	/** Whether the player is holding the crouch key (Ctrl) */
+	isCrouching?: boolean;
 	/** Raw WASD input: x = strafe (-1 left, +1 right), z = forward/back (-1 back, +1 forward) */
 	moveDirection?: { x: number; z: number };
 	setMoveInput: (input: { x: number; z: number }) => void;

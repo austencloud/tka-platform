@@ -84,7 +84,7 @@ export class AnimationStateMachine implements IAnimationStateMachine {
 	// ── State transitions ──
 
 	private updateState(input: LocomotionStateInput, delta: number): void {
-		const { isGrounded, hasMovementInput, verticalVelocity } = input;
+		const { isGrounded, hasMovementInput, verticalVelocity, isCrouching } = input;
 		const { verticalThreshold, coyoteGrace, landingDuration } = this.config;
 
 		switch (this.state) {
@@ -93,6 +93,8 @@ export class AnimationStateMachine implements IAnimationStateMachine {
 					this.enterState(LocomotionState.JUMPING);
 				} else if (!isGrounded && verticalVelocity < -verticalThreshold) {
 					this.enterState(LocomotionState.FALLING);
+				} else if (isCrouching && isGrounded) {
+					this.enterState(LocomotionState.CROUCHING);
 				} else if (hasMovementInput && isGrounded) {
 					this.enterState(LocomotionState.WALKING);
 				}
@@ -112,15 +114,26 @@ export class AnimationStateMachine implements IAnimationStateMachine {
 					}
 				} else {
 					this.airborneTimer = 0;
-					if (!hasMovementInput) {
+					if (isCrouching) {
+						this.enterState(LocomotionState.CROUCHING);
+					} else if (!hasMovementInput) {
 						this.enterState(LocomotionState.IDLE);
 					}
 				}
 				break;
 
+			case LocomotionState.CROUCHING:
+				if (!isCrouching && hasMovementInput) {
+					this.enterState(LocomotionState.WALKING);
+				} else if (!isCrouching) {
+					this.enterState(LocomotionState.IDLE);
+				} else if (!isGrounded) {
+					this.enterState(LocomotionState.FALLING);
+				}
+				break;
+
 			case LocomotionState.JUMPING:
 				if (isGrounded) {
-					// Hit something and came back down
 					this.enterState(LocomotionState.LANDING);
 				} else if (verticalVelocity <= 0) {
 					// Reached apex
@@ -137,7 +150,9 @@ export class AnimationStateMachine implements IAnimationStateMachine {
 			case LocomotionState.LANDING:
 				this.landingTimer += delta;
 				if (this.landingTimer >= landingDuration) {
-					if (hasMovementInput) {
+					if (isCrouching) {
+						this.enterState(LocomotionState.CROUCHING);
+					} else if (hasMovementInput) {
 						this.enterState(LocomotionState.WALKING);
 					} else {
 						this.enterState(LocomotionState.IDLE);

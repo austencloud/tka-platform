@@ -19,28 +19,15 @@ const DEFAULT_RED = getMotionColor(MotionColor.RED, "dark");
 
 export const TRAIL_PRESETS: EffectPreset[] = [
   {
-    id: "trail-clean-trace",
-    name: "Clean Trace",
-    previewColor: "#60a5fa",
+    id: "trail-default",
+    name: "Default",
+    previewColor: DEFAULT_BLUE,
+    previewColor2: DEFAULT_RED,
     apply: (_vm) => {
       animationSettings.setTrailAppearance({
         lineWidth: 5,
         maxOpacity: 1.0,
         glowBlur: 3,
-        blueColor: DEFAULT_BLUE,
-        redColor: DEFAULT_RED,
-      });
-    },
-  },
-  {
-    id: "trail-soft-glow",
-    name: "Soft Glow",
-    previewColor: "#818cf8",
-    apply: (_vm) => {
-      animationSettings.setTrailAppearance({
-        lineWidth: 8,
-        maxOpacity: 0.7,
-        glowBlur: 8,
         blueColor: DEFAULT_BLUE,
         redColor: DEFAULT_RED,
       });

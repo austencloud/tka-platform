@@ -84,6 +84,8 @@
     isGrounded?: boolean;
     /** Current vertical velocity for jump/fall state detection */
     verticalVelocity?: number;
+    /** Whether the player is crouching (Ctrl held) */
+    isCrouching?: boolean;
   }
 
   let {
@@ -104,6 +106,7 @@
     enableLocomotion = false,
     isGrounded = true,
     verticalVelocity = 0,
+    isCrouching = false,
   }: Props = $props();
 
   // Services (manually instantiated to ensure shared skeleton instance)
@@ -219,6 +222,7 @@
             jump: "/animations/jump-up.glb",
             fall: "/animations/falling-idle.glb",
             land: "/animations/hard-landing.glb",
+            crouch: "/animations/crouch-idle.glb",
           })
           .catch((err) => {
             console.warn(
@@ -519,6 +523,7 @@
           horizontalSpeed: moveSpeed,
           verticalVelocity,
           isGrounded,
+          isCrouching,
           moveDirection,
           facingAngle,
         }, delta);

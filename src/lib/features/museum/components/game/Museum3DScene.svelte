@@ -465,6 +465,7 @@
   let fpsInitialYaw = $state(initialPlayerYaw ?? 0);
   let fpsInitialPitch = $state(0);
   let isMoving = $state(false);
+  let isCrouching = $state(false);
   let moveDir = $state({ x: 0, z: 0 });
   let playerPosition = $state({ x: spawnWorldX, y: 0, z: spawnWorldZ });
   const ROTATION_SPEED = 12;
@@ -473,6 +474,8 @@
     get position() { return playerPosition; },
     get facingAngle() { return playerYaw; },
     get isMoving() { return isMoving; },
+    get isCrouching() { return isCrouching; },
+    set isCrouching(v: boolean) { isCrouching = v; },
     get moveDirection() { return moveDir; },
     setMoveInput(input: { x: number; z: number }) {
       moveDir = input;
@@ -1244,11 +1247,12 @@
     facingAngle={playerYaw}
     isActive={false}
     isMoving={isMoving}
-    moveSpeed={TOP_DOWN_MOVE_SPEED}
+    moveSpeed={Math.sqrt(physicsProvider.getVelocity().x ** 2 + physicsProvider.getVelocity().z ** 2)}
     moveDirection={moveDir}
     enableLocomotion={true}
     isGrounded={physicsProvider.isGrounded()}
     verticalVelocity={physicsProvider.getVelocity().y}
+    isCrouching={isCrouching}
   />
 {/if}
 
