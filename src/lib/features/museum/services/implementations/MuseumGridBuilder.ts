@@ -154,9 +154,11 @@ export class MuseumGridBuilder implements IMuseumGridBuilder {
     // Step 4b: Place dev whiteboards (designer notes on anchor walls)
     this.placeDevWhiteboards(tiles, layout.rooms, edges, exhibits);
 
-    // Step 5: Determine spawn position (find a walkable tile near center of first room)
+    // Step 5: Determine spawn position — south end of entrance, centered, facing north
+    // Player starts at the "doors" end of the grand hallway and walks toward the cave
     const firstRoom = layout.rooms[0];
-    const { x: spawnX, y: spawnY } = this.findWalkableSpawn(tiles, firstRoom);
+    const spawnX = firstRoom.x + Math.floor(firstRoom.w / 2);
+    const spawnY = firstRoom.y + firstRoom.h - 8; // 8 tiles from south wall — safely inside the doors
 
     const grid: MuseumGrid = {
       width: layout.gridWidth,
