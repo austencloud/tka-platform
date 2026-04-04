@@ -1616,7 +1616,7 @@
 {/if}
 
 <!-- Exhibit plaques: individually textured with readable content -->
-{#each visiblePlaques as plaque (plaque.refId)}
+{#each visiblePlaques as plaque (plaque.id)}
   {@const plaqueOverride = overrideVersion >= 0 ? museumEditorOverrides.get(`plaque-${plaque.refId}`) : null}
   <MuseumPlaque3D
     worldX={plaqueOverride?.x ?? plaque.worldX}
