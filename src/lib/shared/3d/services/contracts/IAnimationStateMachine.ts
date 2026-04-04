@@ -32,6 +32,8 @@ export interface LocomotionStateInput {
 	isGrounded: boolean;
 	/** Player is holding the crouch key (Ctrl) */
 	isCrouching: boolean;
+	/** True on the frame jump was requested (input-driven, not physics-driven) */
+	isJumpRequested?: boolean;
 	/** Movement direction relative to facing (-1..+1 per axis) */
 	moveDirection?: { x: number; z: number };
 	/** Facing angle in radians */

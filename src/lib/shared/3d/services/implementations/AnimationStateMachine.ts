@@ -31,7 +31,7 @@ import {
 const DEFAULT_CONFIG: Required<AnimationStateMachineConfig> = {
 	accelerationTime: 0.08,
 	decelerationTime: 0,  // Instant stop — prevents foot sliding when movement ends
-	landingDuration: 0.4,
+	landingDuration: 0.15,
 	coyoteGrace: 0.1,
 	verticalThreshold: 0.5,
 };
@@ -84,14 +84,16 @@ export class AnimationStateMachine implements IAnimationStateMachine {
 	// ── State transitions ──
 
 	private updateState(input: LocomotionStateInput, delta: number): void {
-		const { isGrounded, hasMovementInput, verticalVelocity, isCrouching } = input;
+		const { isGrounded, hasMovementInput, verticalVelocity, isCrouching, isJumpRequested } = input;
 		const { verticalThreshold, coyoteGrace, landingDuration } = this.config;
 
 		switch (this.state) {
 			case LocomotionState.IDLE:
-				if (!isGrounded && verticalVelocity > verticalThreshold) {
+				// Input-driven jump: immediate response, same frame as physics impulse
+				if (isJumpRequested) {
 					this.enterState(LocomotionState.JUMPING);
 				} else if (!isGrounded && verticalVelocity < -verticalThreshold) {
+					// Walked off a ledge
 					this.enterState(LocomotionState.FALLING);
 				} else if (isCrouching && isGrounded) {
 					this.enterState(LocomotionState.CROUCHING);
@@ -101,16 +103,14 @@ export class AnimationStateMachine implements IAnimationStateMachine {
 				break;
 
 			case LocomotionState.WALKING:
-				if (!isGrounded) {
-					// Coyote grace: don't instantly transition to airborne.
-					// Absorbs single-frame ground-loss from bumps or steps.
+				// Input-driven jump from walking
+				if (isJumpRequested) {
+					this.enterState(LocomotionState.JUMPING);
+				} else if (!isGrounded) {
 					this.airborneTimer += delta;
 					if (this.airborneTimer >= coyoteGrace) {
-						if (verticalVelocity > verticalThreshold) {
-							this.enterState(LocomotionState.JUMPING);
-						} else {
-							this.enterState(LocomotionState.FALLING);
-						}
+						// Walked off a ledge (no jump input)
+						this.enterState(LocomotionState.FALLING);
 					}
 				} else {
 					this.airborneTimer = 0;
@@ -164,6 +164,7 @@ export class AnimationStateMachine implements IAnimationStateMachine {
 
 	private enterState(newState: LocomotionState): void {
 		if (this.state === newState) return;
+
 
 		// Reset state-specific timers on exit
 		if (this.state === LocomotionState.WALKING) {

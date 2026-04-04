@@ -225,7 +225,7 @@
             backward: "/animations/locomotion-pack/walk-backward.glb",
             strafeLeft: "/animations/locomotion-pack/strafe-left.glb",
             strafeRight: "/animations/locomotion-pack/strafe-right.glb",
-            jump: "/animations/locomotion-pack/jump.glb",
+            jump: "/animations/jump-up.glb",
             fall: "/animations/falling-idle.glb",
             land: "/animations/hard-landing.glb",
           })

@@ -429,18 +429,15 @@ export class LocomotionAnimator implements ILocomotionAnimator {
   private applyStateWeights(blendFactor: number): void {
     const state = this.activeState!;
 
-    // The Mixamo jump clip is a full-arc animation (crouch → push → air → land).
-    // Keep it playing through JUMPING, FALLING, and LANDING states instead of
-    // switching to separate fall/land clips that don't match.
-    const isAirborne =
-      state === LocomotionState.JUMPING ||
-      state === LocomotionState.FALLING ||
-      state === LocomotionState.LANDING;
-
+    // Phase-based jump: each state has its own clip.
+    // jump-up = push off (one-shot), falling-idle = air loop, hard-landing = absorb (one-shot).
+    // Physics owns vertical position; animations are purely cosmetic poses.
     const wantIdle = state === LocomotionState.IDLE ? 1 : 0;
     const wantWalk = state === LocomotionState.WALKING ? 1 : 0;
     const wantCrouch = state === LocomotionState.CROUCHING ? 1 : 0;
-    const wantJump = isAirborne ? 1 : 0;
+    const wantJump = state === LocomotionState.JUMPING ? 1 : 0;
+    const wantFall = state === LocomotionState.FALLING ? 1 : 0;
+    const wantLand = state === LocomotionState.LANDING ? 1 : 0;
 
     // Idle
     this.currentIdleWeight += (wantIdle - this.currentIdleWeight) * blendFactor;
@@ -455,26 +452,38 @@ export class LocomotionAnimator implements ILocomotionAnimator {
       this.walkActions[key]?.setEffectiveWeight(newWeight);
     }
 
-    // Other states
+    // Airborne phase clips + crouch
     this.blendAction(this.crouchAction, wantCrouch, blendFactor);
     this.blendAction(this.jumpAction, wantJump, blendFactor);
-    // Fall/land clips unused — the full jump animation covers the entire arc
-    this.blendAction(this.fallAction, 0, blendFactor);
-    this.blendAction(this.landAction, 0, blendFactor);
+    this.blendAction(this.fallAction, wantFall, blendFactor);
+    this.blendAction(this.landAction, wantLand, blendFactor);
 
-    // On state entry: snap weights instantly for jump.
-    // The camera moves on the same frame as the input, so the animation must too.
+    // On state entry: snap weights for instant transitions on one-shot clips.
     if (state !== this.currentActiveState) {
-      if (state === LocomotionState.JUMPING && this.jumpAction) {
-        this.jumpAction.reset().play();
-        this.jumpAction.setEffectiveWeight(1);
-        // Zero out everything else instantly
+      // Zero out ground animations instantly when entering any airborne state
+      if (state === LocomotionState.JUMPING || state === LocomotionState.FALLING) {
         this.idleAction?.setEffectiveWeight(0);
         this.currentIdleWeight = 0;
         for (const key of Object.keys(this.walkActions) as DirectionKey[]) {
           this.walkActions[key]?.setEffectiveWeight(0);
           this.currentDirWeights[key] = 0;
         }
+      }
+      // Reset one-shot clips on entry
+      if (state === LocomotionState.JUMPING && this.jumpAction) {
+        this.jumpAction.reset().play();
+        this.jumpAction.setEffectiveWeight(1);
+      }
+      if (state === LocomotionState.FALLING && this.fallAction) {
+        this.fallAction.reset().play();
+        this.fallAction.setEffectiveWeight(1);
+        // Zero out jump clip
+        this.jumpAction?.setEffectiveWeight(0);
+      }
+      if (state === LocomotionState.LANDING && this.landAction) {
+        this.landAction.reset().play();
+        this.landAction.setEffectiveWeight(1);
+        this.fallAction?.setEffectiveWeight(0);
       }
       this.currentActiveState = state;
     }

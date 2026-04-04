@@ -71,6 +71,9 @@ export interface SkeletonState {
   /** Pre-computed arm chains for IK */
   leftArmChain: BoneChain | null;
   rightArmChain: BoneChain | null;
+  /** Pre-computed leg chains for foot IK (UpLeg -> Leg -> Foot) */
+  leftLegChain: BoneChain | null;
+  rightLegChain: BoneChain | null;
   /** Mapped finger bone chains. Null if model lacks finger bones. */
   fingerChains: FingerChains | null;
 }
@@ -103,6 +106,16 @@ export interface IAvatarSkeletonBuilder {
    * Get the right arm IK chain
    */
   getRightArmChain(): BoneChain | null;
+
+  /**
+   * Get the left leg IK chain (UpLeg -> Leg -> Foot)
+   */
+  getLeftLegChain(): BoneChain | null;
+
+  /**
+   * Get the right leg IK chain (UpLeg -> Leg -> Foot)
+   */
+  getRightLegChain(): BoneChain | null;
 
   /**
    * Get the root object for adding to the scene
