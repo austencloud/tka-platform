@@ -1018,12 +1018,14 @@
     east: Math.PI / 2,       // on west wall, faces east
     west: -Math.PI / 2,      // on east wall, faces west
   };
-  // Shift the plaque toward its wall so it appears mounted, not floating
+  // Shift the plaque inward from its wall tile so it's visible inside the room.
+  // With wall segment budgets, exhibit-panel tiles sit ON the boundary (wall row),
+  // so the shift moves them inward toward the room interior.
   const PLAQUE_WALL_SHIFT: Record<string, { x: number; z: number }> = {
-    south: { x: 0, z: -TILE_SIZE * 0.4 },  // toward north wall
-    north: { x: 0, z: TILE_SIZE * 0.4 },    // toward south wall
-    east: { x: -TILE_SIZE * 0.4, z: 0 },    // toward west wall
-    west: { x: TILE_SIZE * 0.4, z: 0 },     // toward east wall
+    south: { x: 0, z: TILE_SIZE * 0.4 },   // on north wall, shift south (into room)
+    north: { x: 0, z: -TILE_SIZE * 0.4 },   // on south wall, shift north (into room)
+    east: { x: TILE_SIZE * 0.4, z: 0 },     // on west wall, shift east (into room)
+    west: { x: -TILE_SIZE * 0.4, z: 0 },    // on east wall, shift west (into room)
   };
 
   const plaquePlacements: PlaquePlacement[] = [];
