@@ -41,17 +41,18 @@
     materials: TorchMaterials;
   }
 
-  let {
-    x,
-    z,
-    y = 1.25,
-    wallOffsetX = 0,
-    wallOffsetZ = 0,
-    baseIntensity = 4,
-    distance = 8,
-    wingTheme = "cave" as WingTheme,
-    materials,
-  }: Props = $props();
+  const props: Props = $props();
+
+  // Resolve defaults (plain consts — initial values for Three.js objects, not reactive)
+  const x = props.x;
+  const z = props.z;
+  const y = props.y ?? 1.25;
+  const wallOffsetX = props.wallOffsetX ?? 0;
+  const wallOffsetZ = props.wallOffsetZ ?? 0;
+  const baseIntensity = props.baseIntensity ?? 4;
+  const distance = props.distance ?? 8;
+  const wingTheme = props.wingTheme ?? ("cave" as WingTheme);
+  const materials = props.materials;
 
   const config: FixtureConfig = FIXTURE_REGISTRY[wingTheme];
   const effectiveIntensity = baseIntensity > 0 ? config.lightIntensity : 0;
@@ -149,9 +150,9 @@
     // Animate embers
     if (EMBER_COUNT > 0) {
       for (let i = 0; i < EMBER_COUNT; i++) {
-        emberPositions[i * 3] += emberDrifts[i * 2]! * delta;
-        emberPositions[i * 3 + 1] += emberSpeeds[i]! * delta;
-        emberPositions[i * 3 + 2] += emberDrifts[i * 2 + 1]! * delta;
+        emberPositions[i * 3] += (emberDrifts[i * 2] ?? 0) * delta;
+        emberPositions[i * 3 + 1] += (emberSpeeds[i] ?? 0) * delta;
+        emberPositions[i * 3 + 2] += (emberDrifts[i * 2 + 1] ?? 0) * delta;
         if (emberPositions[i * 3 + 1]! > 0.6) {
           resetEmber(i, 0);
           emberDrifts[i * 2] = (Math.random() - 0.5) * 0.15;

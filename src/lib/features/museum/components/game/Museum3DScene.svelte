@@ -1314,29 +1314,31 @@
     performerMesh.instanceMatrix.needsUpdate = true;
   }
 
-  let pedestalMesh: InstancedMesh | null = $state(null);
-  if (pedestalPositions.length > 0) {
+  let pedestalMesh: InstancedMesh | null = $state((() => {
+    if (pedestalPositions.length === 0) return null;
     const pedestalMat = new MeshStandardMaterial({ color: TILE_TYPE_COLORS.pedestal! });
-    pedestalMesh = new InstancedMesh(pedestalGeo, pedestalMat, pedestalPositions.length);
+    const mesh = new InstancedMesh(pedestalGeo, pedestalMat, pedestalPositions.length);
     for (let i = 0; i < pedestalPositions.length; i++) {
       dummy.position.set(pedestalPositions[i]!.x, 0.25, pedestalPositions[i]!.z);
       dummy.updateMatrix();
-      pedestalMesh.setMatrixAt(i, dummy.matrix);
+      mesh.setMatrixAt(i, dummy.matrix);
     }
-    pedestalMesh.instanceMatrix.needsUpdate = true;
-  }
+    mesh.instanceMatrix.needsUpdate = true;
+    return mesh;
+  })());
 
-  let signMesh: InstancedMesh | null = $state(null);
-  if (signPositions.length > 0) {
+  let signMesh: InstancedMesh | null = $state((() => {
+    if (signPositions.length === 0) return null;
     const signMat = new MeshStandardMaterial({ color: TILE_TYPE_COLORS.sign! });
-    signMesh = new InstancedMesh(signGeo, signMat, signPositions.length);
+    const mesh = new InstancedMesh(signGeo, signMat, signPositions.length);
     for (let i = 0; i < signPositions.length; i++) {
       dummy.position.set(signPositions[i]!.x, 0.5, signPositions[i]!.z);
       dummy.updateMatrix();
-      signMesh.setMatrixAt(i, dummy.matrix);
+      mesh.setMatrixAt(i, dummy.matrix);
     }
-    signMesh.instanceMatrix.needsUpdate = true;
-  }
+    mesh.instanceMatrix.needsUpdate = true;
+    return mesh;
+  })());
 
   // Torch point light budget — each MuseumTorch3D has its own point light,
   // so we limit to MAX_POINT_LIGHTS torches with lights, rest get visuals only

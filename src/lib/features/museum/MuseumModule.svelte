@@ -208,38 +208,42 @@
   });
 
   // Museum design validation (dev only)
+  // Runs inside $effect so generatedGrid is accessed reactively (avoids state_referenced_locally)
   if (import.meta.env.DEV) {
-    import("./services/implementations/MuseumDesignValidator").then(({ MuseumDesignValidator }) => {
-      // Reconstruct PlacedRoom-like objects from grid wings + original room data
-      const roomMap = new Map(MUSEUM_ROOMS.map(r => [r.id, r]));
-      const placedRooms = generatedGrid.wings.map(wing => {
-        const src = roomMap.get(wing.id);
-        return {
-          id: wing.id,
-          name: wing.name,
-          x: wing.bounds.x,
-          y: wing.bounds.y,
-          w: wing.bounds.width,
-          h: wing.bounds.height,
-          material: src?.material ?? "stone",
-          theme: wing.theme,
-          walls: src?.walls,
-          performers: src?.performers,
-        };
-      });
+    $effect(() => {
+      const grid = generatedGrid; // subscribe to derived grid
+      import("./services/implementations/MuseumDesignValidator").then(({ MuseumDesignValidator }) => {
+        // Reconstruct PlacedRoom-like objects from grid wings + original room data
+        const roomMap = new Map(MUSEUM_ROOMS.map(r => [r.id, r]));
+        const placedRooms = grid.wings.map(wing => {
+          const src = roomMap.get(wing.id);
+          return {
+            id: wing.id,
+            name: wing.name,
+            x: wing.bounds.x,
+            y: wing.bounds.y,
+            w: wing.bounds.width,
+            h: wing.bounds.height,
+            material: src?.material ?? "stone",
+            theme: wing.theme,
+            walls: src?.walls,
+            performers: src?.performers,
+          };
+        });
 
-      const designValidator = new MuseumDesignValidator();
-      const violations = designValidator.validateAll(placedRooms as any, MUSEUM_EDGES, generatedGrid);
-      if (violations.length > 0) {
-        console.group("%c🏛️ Museum Design Violations", "font-weight: bold; color: #d4b878");
-        for (const v of violations) {
-          const icon = v.severity === "error" ? "❌" : v.severity === "warning" ? "⚠️" : "ℹ️";
-          console.log(`${icon} [${v.roomId}] ${v.rule}: ${v.message}`);
+        const designValidator = new MuseumDesignValidator();
+        const violations = designValidator.validateAll(placedRooms as any, MUSEUM_EDGES, grid);
+        if (violations.length > 0) {
+          console.group("%c🏛️ Museum Design Violations", "font-weight: bold; color: #d4b878");
+          for (const v of violations) {
+            const icon = v.severity === "error" ? "❌" : v.severity === "warning" ? "⚠️" : "ℹ️";
+            console.log(`${icon} [${v.roomId}] ${v.rule}: ${v.message}`);
+          }
+          console.groupEnd();
+        } else {
+          console.log("%c🏛️ Museum Design: All rooms pass", "color: #4a8");
         }
-        console.groupEnd();
-      } else {
-        console.log("%c🏛️ Museum Design: All rooms pass", "color: #4a8");
-      }
+      });
     });
   }
 
@@ -254,7 +258,9 @@
   // Must use $state.raw: $state would deeply proxy 20k+ tiles, causing a
   // multi-second freeze on init. The grid is replaced wholesale (not mutated
   // in place), so shallow reactivity is correct.
-  let liveGrid = $state.raw<MuseumGrid>(generatedGrid);
+  // Compute initial value eagerly to avoid capturing $derived in $state.raw initializer.
+  const initialGrid = buildGridForRoom(selectedRoom).grid;
+  let liveGrid = $state.raw<MuseumGrid>(initialGrid);
 
   // When the room selection changes, the derived generatedGrid updates.
   // Propagate that to liveGrid so the 3D scene rebuilds.
@@ -262,9 +268,9 @@
     liveGrid = generatedGrid;
   });
 
-  // Editor state — initialized from the live grid
-  const editorState = createEditorState(liveGrid.width, liveGrid.height);
-  editorState.importGrid(serializeGrid(liveGrid));
+  // Editor state — initialized from the initial grid (plain const, not reactive)
+  const editorState = createEditorState(initialGrid.width, initialGrid.height);
+  editorState.importGrid(serializeGrid(initialGrid));
   setEditorContext({ state: editorState });
 
   // Module mode: museum | edit | showroom | 3p-test

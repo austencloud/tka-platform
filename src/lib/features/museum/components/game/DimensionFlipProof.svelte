@@ -23,7 +23,9 @@
     startInFps?: boolean;
   }
 
-  let { grid, onLoadProgress, onAllLoaded, startInFps = false }: Props = $props();
+  const props: Props = $props();
+  // Destructure non-reactive props; grid is accessed via props.grid in $derived/$effect for reactivity
+  const startInFps = props.startInFps ?? false;
 
   // useProgress hooks into Three.js DefaultLoadingManager globally.
   // Every texture and GLTF model automatically reports here.
@@ -31,7 +33,7 @@
 
   // Pipe progress to parent
   $effect(() => {
-    onLoadProgress?.($progress);
+    props.onLoadProgress?.($progress);
   });
 
   // Signal when all assets loaded + no longer actively loading.
@@ -46,7 +48,7 @@
         if (!sceneReady) {
           sceneReady = true;
           requestAnimationFrame(() => {
-            onAllLoaded?.();
+            props.onAllLoaded?.();
           });
         }
       }, 500);
@@ -71,25 +73,29 @@
     isEditorMode?: boolean;
   }
 
-  let savedHmrState: HmrState | null = null;
-  try {
-    const raw = sessionStorage.getItem(HMR_KEY);
-    if (raw) savedHmrState = JSON.parse(raw) as HmrState;
-  } catch {
-    // sessionStorage unavailable or corrupt — start fresh
-  }
-
-  // Validate saved position is on a walkable tile. After layout changes (rooms move),
-  // the saved position may land in void or wall space, trapping the player outside.
-  if (savedHmrState) {
-    const tileX = Math.round(savedHmrState.playerWorldX / TILE_SIZE);
-    const tileY = Math.round(savedHmrState.playerWorldZ / TILE_SIZE);
-    const tile = grid.tiles.get(`${tileX},${tileY}`);
-    if (!tile || SOLID_TYPES.has(tile.type)) {
-      savedHmrState = null;
-      try { sessionStorage.removeItem(HMR_KEY); } catch { /* non-critical */ }
+  // Compute saved HMR state once at init — plain const, no reactivity needed
+  const savedHmrState: HmrState | null = (() => {
+    let state: HmrState | null = null;
+    try {
+      const raw = sessionStorage.getItem(HMR_KEY);
+      if (raw) state = JSON.parse(raw) as HmrState;
+    } catch {
+      // sessionStorage unavailable or corrupt — start fresh
     }
-  }
+
+    // Validate saved position is on a walkable tile. After layout changes (rooms move),
+    // the saved position may land in void or wall space, trapping the player outside.
+    if (state) {
+      const tileX = Math.round(state.playerWorldX / TILE_SIZE);
+      const tileY = Math.round(state.playerWorldZ / TILE_SIZE);
+      const tile = props.grid.tiles.get(`${tileX},${tileY}`);
+      if (!tile || SOLID_TYPES.has(tile.type)) {
+        try { sessionStorage.removeItem(HMR_KEY); } catch { /* non-critical */ }
+        return null;
+      }
+    }
+    return state;
+  })();
 
   // ── Input state ──
   let flipRequested = $state(0);
@@ -102,10 +108,10 @@
   let topDownHeight = $state(savedHmrState?.topDownHeight ?? 12);
 
   // ── Player state (updated every frame by Museum3DScene callback) ──
-  let playerWorldX = $state(savedHmrState?.playerWorldX ?? grid.spawn.x * TILE_SIZE);
-  let playerWorldZ = $state(savedHmrState?.playerWorldZ ?? grid.spawn.y * TILE_SIZE);
-  let playerTileX = $state(grid.spawn.x);
-  let playerTileY = $state(grid.spawn.y);
+  let playerWorldX = $state(savedHmrState?.playerWorldX ?? props.grid.spawn.x * TILE_SIZE);
+  let playerWorldZ = $state(savedHmrState?.playerWorldZ ?? props.grid.spawn.y * TILE_SIZE);
+  let playerTileX = $state(props.grid.spawn.x);
+  let playerTileY = $state(props.grid.spawn.y);
   let playerFacing = $state("south");
   let isInFPS = $state(savedHmrState?.isInFPS ?? false);
 
@@ -179,7 +185,7 @@
 
   // ── Wing detection ──
   let currentWing = $derived.by<WingRegion | null>(() => {
-    for (const wing of grid.wings) {
+    for (const wing of props.grid.wings) {
       const b = wing.bounds;
       if (playerTileX >= b.x && playerTileX < b.x + b.width &&
           playerTileY >= b.y && playerTileY < b.y + b.height) {
@@ -202,9 +208,9 @@
     if (!offset) return null;
     const tx = playerTileX + offset.dx;
     const ty = playerTileY + offset.dy;
-    const tile = grid.tiles.get(tileKey(tx, ty));
+    const tile = props.grid.tiles.get(tileKey(tx, ty));
     if (!tile || tile.type !== "exhibit-panel") return null;
-    return grid.exhibits.find((e) => e.tileX === tx && e.tileY === ty) ?? null;
+    return props.grid.exhibits.find((e) => e.tileX === tx && e.tileY === ty) ?? null;
   });
 
   let facingPerformer = $derived.by<PerformerDefinition | null>(() => {
@@ -212,9 +218,9 @@
     if (!offset) return null;
     const tx = playerTileX + offset.dx;
     const ty = playerTileY + offset.dy;
-    const tile = grid.tiles.get(tileKey(tx, ty));
+    const tile = props.grid.tiles.get(tileKey(tx, ty));
     if (!tile || tile.type !== "performer-station") return null;
-    return grid.performers.find((p) => p.tileX === tx && p.tileY === ty) ?? null;
+    return props.grid.performers.find((p) => p.tileX === tx && p.tileY === ty) ?? null;
   });
 
   let hasInteractable = $derived(facingExhibit !== null || facingPerformer !== null);
@@ -376,7 +382,7 @@
   <div class="canvas-area" onwheel={handleWheel}>
     <Canvas>
       <Museum3DScene
-        {grid}
+        grid={props.grid}
         {flipRequested}
         {resetRequested}
         {heldKeys}
@@ -422,7 +428,7 @@
   <!-- Overlay panel (right side) -->
   {#if showPanel && focusedExhibit}
     <div class="overlay-panel">
-      <button class="panel-close" onclick={() => { showPanel = false; focusedExhibit = null; }}>
+      <button class="panel-close" aria-label="Close exhibit panel" onclick={() => { showPanel = false; focusedExhibit = null; }}>
         <i class="fas fa-times" aria-hidden="true"></i>
       </button>
 
@@ -446,7 +452,7 @@
   <!-- Performer panel (right side) -->
   {#if showPanel && focusedPerformer}
     <div class="overlay-panel">
-      <button class="panel-close" onclick={() => { showPanel = false; focusedPerformer = null; }}>
+      <button class="panel-close" aria-label="Close performer panel" onclick={() => { showPanel = false; focusedPerformer = null; }}>
         <i class="fas fa-times" aria-hidden="true"></i>
       </button>
 
@@ -476,7 +482,7 @@
       if (focusedPerformer) {
         focusedPerformer.sequenceId = seqId;
         // Trigger Svelte reactivity by replacing the performer in the array
-        grid.performers = grid.performers.map((p) =>
+        props.grid.performers = props.grid.performers.map((p) =>
           p.id === focusedPerformer?.id ? { ...p, sequenceId: seqId } : p
         );
       }

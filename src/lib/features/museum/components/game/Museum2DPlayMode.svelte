@@ -12,16 +12,16 @@
     avatar: AvatarState;
   }
 
-  let { grid, avatar }: Props = $props();
+  const props: Props = $props();
 
   // Fresh state + context for each mount
-  const state = createMuseumState(grid);
+  const state = createMuseumState(props.grid);
   setMuseumContext({ state });
 </script>
 
 <SplitScreenLayout>
   {#snippet left()}
-    <Museum2DGame {avatar} />
+    <Museum2DGame avatar={props.avatar} />
   {/snippet}
   {#snippet right()}
     <DetailPanel />

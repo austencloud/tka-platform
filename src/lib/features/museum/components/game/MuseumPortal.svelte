@@ -45,17 +45,18 @@
     textureSize?: number;
   }
 
-  let {
-    position,
-    rotation,
-    width = 1.2,
-    height = 2.2,
-    destPosition,
-    destRotation,
-    color = "#0088ff",
-    label = "",
-    textureSize = 256,
-  }: Props = $props();
+  const props: Props = $props();
+
+  // Resolve defaults (plain consts — initial values for Three.js objects, not reactive)
+  const position = props.position;
+  const rotation = props.rotation;
+  const width = props.width ?? 1.2;
+  const height = props.height ?? 2.2;
+  const destPosition = props.destPosition;
+  const destRotation = props.destRotation;
+  const color = props.color ?? "#0088ff";
+  const label = props.label ?? "";
+  const textureSize = props.textureSize ?? 256;
 
   const threlteCtx = useThrelte();
   // Threlte 8 wraps scene and renderer in CurrentWritable<T> (has a .current property)

@@ -17,10 +17,18 @@
     generator: PlaqueTextureGenerator;
   }
 
-  let {
-    worldX, worldZ, yaw, wallOffsetX, wallOffsetZ,
-    content, size, refId, generator,
-  }: Props = $props();
+  const props: Props = $props();
+
+  // Resolve from props (plain consts — initial values for Three.js objects, not reactive)
+  const worldX = props.worldX;
+  const worldZ = props.worldZ;
+  const yaw = props.yaw;
+  const wallOffsetX = props.wallOffsetX;
+  const wallOffsetZ = props.wallOffsetZ;
+  const content = props.content;
+  const size = props.size;
+  const refId = props.refId;
+  const generator = props.generator;
 
   // ── Size dimensions (world units) ──
   const PLAQUE_DIMS: Record<PlaqueSize, { w: number; h: number; d: number }> = {

@@ -32,7 +32,15 @@
     showGrid?: boolean;
   }
 
-  let { stationId, worldX, worldZ, facingAngle, sequenceId, autoPlay = false, showGrid = false }: Props = $props();
+  const props: Props = $props();
+
+  // Resolve defaults (plain consts for Three.js init; sequenceId is reactive via props access in $effect)
+  const stationId = props.stationId;
+  const worldX = props.worldX;
+  const worldZ = props.worldZ;
+  const facingAngle = props.facingAngle;
+  const autoPlay = props.autoPlay ?? false;
+  const showGrid = props.showGrid ?? false;
 
   // The 3D avatar system uses Y=0 as grid center (shoulder height).
   // The stage floor is at groundY (≈ -1.56). For the museum (floor at Y=0),
@@ -91,7 +99,7 @@
   // Mutations (loadSequence, play) are wrapped in untrack so the effect
   // only re-runs when sequenceId changes, not when internal state updates.
   $effect(() => {
-    const id = sequenceId; // subscribe to sequenceId
+    const id = props.sequenceId; // subscribe to sequenceId reactively via props object
     untrack(() => {
       if (!id || !performerState) return;
 

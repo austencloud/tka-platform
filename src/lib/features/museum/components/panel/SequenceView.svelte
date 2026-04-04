@@ -33,7 +33,6 @@
             showTKA={true}
             showPositions={true}
             showReversals={false}
-            showStepNumber={true}
           />
         </div>
       {/each}
