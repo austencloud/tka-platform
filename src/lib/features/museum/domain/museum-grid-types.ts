@@ -103,7 +103,7 @@ export interface PerformerDefinition {
 
 export interface FurnitureDefinition {
   id: string;
-  role: "bench" | "pedestal" | "bookshelf" | "lamp" | "plant";
+  role: "bench" | "pedestal" | "bookshelf" | "lamp" | "plant" | "scaffolding" | "sign";
   tileX: number;
   tileY: number;
   rotationY: number;
