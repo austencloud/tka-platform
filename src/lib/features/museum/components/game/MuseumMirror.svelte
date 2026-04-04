@@ -21,19 +21,20 @@
     frameThickness?: number;
   }
 
-  let {
-    width = 1.5,
-    height = 2.5,
-    textureWidth = 512,
-    textureHeight = 768,
-    color = 0xc8b890,
-    position = [0, 1.5, 0] as [number, number, number],
-    rotation = [0, 0, 0] as [number, number, number],
-    frameColor = "#8a7040",
-    frameThickness = 0.08,
-  }: Props = $props();
+  const props: Props = $props();
 
   const { scene } = useThrelte();
+
+  // Resolve defaults from props (plain consts — not reactive, used as initial values for Three.js objects)
+  const width = props.width ?? 1.5;
+  const height = props.height ?? 2.5;
+  const textureWidth = props.textureWidth ?? 512;
+  const textureHeight = props.textureHeight ?? 768;
+  const color = props.color ?? 0xc8b890;
+  const position = props.position ?? [0, 1.5, 0] as [number, number, number];
+  const rotation = props.rotation ?? [0, 0, 0] as [number, number, number];
+  const frameColor = props.frameColor ?? "#8a7040";
+  const frameThickness = props.frameThickness ?? 0.08;
 
   const frameMat = new MeshStandardMaterial({
     color: frameColor,
@@ -66,10 +67,12 @@
     reflector.rotation.set(...rotation);
 
     // Add directly to Threlte scene so onBeforeRender fires
-    scene.add(reflector);
+    // Guard: scene.current may not be ready during rapid remounts
+    if (!scene.current) return;
+    scene.current.add(reflector);
 
     return () => {
-      scene.remove(reflector);
+      scene.current?.remove(reflector);
       geometry.dispose();
     };
   });
