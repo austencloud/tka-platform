@@ -277,14 +277,14 @@
   }
   let mode = $state(getInitialMode());
   $effect(() => {
-    if (mode !== "picker") localStorage.setItem(LAST_MODE_KEY, mode);
+    localStorage.setItem(LAST_MODE_KEY, mode);
   });
 
   // Sync sidebar tab clicks to internal mode
   $effect(() => {
     const tab = navigationState.activeTab;
     const mapped = TAB_TO_MODE[tab];
-    if (mapped && mapped !== mode && mode !== "picker") {
+    if (mapped && mapped !== mode) {
       if (mapped === "edit") {
         editorState.importGrid(serializeGrid(liveGrid));
       }
@@ -355,7 +355,7 @@
       {#if mode === "museum" || museumSceneMounted}
         {#key selectedRoom}
           {#await import("./components/game/DimensionFlipProof.svelte") then { default: DimensionFlipProof }}
-            <DimensionFlipProof grid={liveGrid} onLoadProgress={handleLoadProgress} onAllLoaded={handleAllLoaded} />
+            <DimensionFlipProof grid={liveGrid} onLoadProgress={handleLoadProgress} onAllLoaded={handleAllLoaded} startInFps={selectedRoom !== null} />
           {/await}
         {/key}
       {/if}
