@@ -582,9 +582,6 @@
         <DeckBrowser
           {decks}
           {selectedDeckId}
-          {selectedCollection}
-          {selectedVtgFamily}
-          {vtgActiveView}
           {deckSequences}
           isLoading={isDeckLoading}
           {handPointsVisible}
@@ -592,12 +589,8 @@
           {showTKA}
           {showWord}
           {includeStartPosition}
-          onSelectCollection={handleSelectCollection}
           onBackToCollections={handleBackToCollections}
           onSelectDeck={handleSelectDeck}
-          onBackToDeckList={handleBackToDeckList}
-          onSelectVtgFamily={handleSelectVtgFamily}
-          onVtgViewChange={handleVtgViewChange}
           onSelectSequence={handleSelectSequence}
           onLoadFamilySequences={handleLoadFamilySequences}
           onContextMenu={openCardContextMenu}
@@ -624,64 +617,6 @@
     background: transparent;
   }
 
-  /* Status bar */
-  .status-bar {
-    flex-shrink: 0;
-    padding: var(--spacing-sm) var(--spacing-md);
-  }
-
-  .status {
-    margin: 0;
-    font-size: var(--font-size-sm, 14px);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-  }
-
-  /* Main Content */
-  .main-content {
-    flex: 1;
-    display: flex;
-    min-height: 0;
-    gap: var(--spacing-md);
-    padding: var(--spacing-md);
-  }
-
-  .sidebar {
-    width: 280px;
-    flex-shrink: 0;
-    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: var(--border-radius-lg, 12px);
-    overflow: hidden;
-  }
-
-  .sidebar-content {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    overflow-y: auto;
-    padding: var(--spacing-md);
-    gap: var(--spacing-md);
-  }
-
-  .sidebar-content::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  .sidebar-content::-webkit-scrollbar-track {
-    background: var(--scrollbar-track);
-  }
-
-  .sidebar-content::-webkit-scrollbar-thumb {
-    background: var(--scrollbar-thumb);
-    border-radius: 3px;
-  }
-
-  .filter-divider {
-    height: 1px;
-    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    margin: var(--spacing-xs) 0;
-  }
-
   .content-area {
     flex: 1;
     min-width: 0;
@@ -693,34 +628,10 @@
 
   /* Responsive */
   @media (max-width: 768px) {
-    .status {
-      font-size: var(--font-size-compact, 12px);
-    }
-
     .main-content {
       flex-direction: column;
       gap: var(--spacing-sm);
       padding: var(--spacing-sm);
-    }
-
-    .sidebar {
-      width: 100%;
-      max-height: 200px;
-    }
-
-    .sidebar-content {
-      flex-direction: row;
-      overflow-x: auto;
-      overflow-y: hidden;
-      padding: var(--spacing-sm);
-      gap: var(--spacing-sm);
-    }
-
-    .filter-divider {
-      width: 1px;
-      height: auto;
-      min-height: 40px;
-      margin: 0 var(--spacing-xs);
     }
   }
 </style>
