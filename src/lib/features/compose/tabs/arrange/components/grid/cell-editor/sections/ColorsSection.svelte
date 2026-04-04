@@ -16,10 +16,10 @@
   } = $props();
 
   const combos: { label: string; colors: PropColors }[] = [
-    { label: 'Blue / Red', colors: TUNNEL_LAYER_COLORS[0] },
-    { label: 'Purple / Orange', colors: TUNNEL_LAYER_COLORS[1] },
-    { label: 'Emerald / Pink', colors: TUNNEL_LAYER_COLORS[2] },
-    { label: 'Cyan / Yellow', colors: TUNNEL_LAYER_COLORS[3] },
+    { label: 'Blue / Red', colors: TUNNEL_LAYER_COLORS[0]! },
+    { label: 'Purple / Orange', colors: TUNNEL_LAYER_COLORS[1]! },
+    { label: 'Emerald / Pink', colors: TUNNEL_LAYER_COLORS[2]! },
+    { label: 'Cyan / Yellow', colors: TUNNEL_LAYER_COLORS[3]! },
   ];
 
   function isSelected(combo: PropColors): boolean {

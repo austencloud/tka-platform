@@ -173,7 +173,7 @@
     gridOffset={0.3}
     planeOpacity={0.12}
     showLabels={false}
-    gridMode={sequenceData?.gridMode ?? "diamond"}
+    gridMode={(sequenceData?.gridMode ?? "diamond") as import("../domain/constants/grid-layout").GridMode}
   />
 {/if}
 

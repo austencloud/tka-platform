@@ -125,7 +125,6 @@
           {startPositionLayout}
           {showBirthday}
           showQRCodes={showQRCode}
-          columnCount={currentColumnCount}
         />
       {:else}
         <span class="no-sequence">No sequence selected</span>
