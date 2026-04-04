@@ -18,14 +18,11 @@
   import VtgCollectionView from "./VtgCollectionView.svelte";
   import VtgFamilyDrillDown from "./VtgFamilyDrillDown.svelte";
   import LoopCollectionView from "./LoopCollectionView.svelte";
-  import CardPageLayout from "./card-preview/CardPageLayout.svelte";
-  import CardSizeToggle from "./card-preview/CardSizeToggle.svelte";
-  import CardPreviewSettings from "./card-preview/CardPreviewSettings.svelte";
-  import { CARD_SIZES, type CardSizeId } from "../domain/card-sizes";
-  import type { PrintRenderOptions } from "../services/contracts/IPrintCardRenderer";
-  import type { IPrintCardRenderer } from "../services/contracts/IPrintCardRenderer";
+  import PrintPreviewPages from "./print-preview/PrintPreviewPages.svelte";
+  import PrintPreviewToolbar from "./print-preview/PrintPreviewToolbar.svelte";
+  import { type CardSizeId } from "../domain/card-sizes";
   import type { IPrintPDFExporter, CardPair } from "../services/contracts/IPrintPDFExporter";
-  import type { IPrintZipExporter, ZipCardPair } from "../services/contracts/IPrintZipExporter";
+  import type { IPrintZipExporter } from "../services/contracts/IPrintZipExporter";
   import { container } from "$lib/shared/di";
 
   interface Props {
@@ -50,7 +47,6 @@
     onSelectSequence: (sequence: SequenceData) => void;
     onLoadFamilySequences: (familyIds: string[]) => void;
     onContextMenu?: (x: number, y: number, rerender: () => void) => void;
-    onPrintPrep?: (overrideDeck?: Deck, overrideSequences?: SequenceData[]) => void;
   }
 
   let {
@@ -75,25 +71,29 @@
     onSelectSequence,
     onLoadFamilySequences,
     onContextMenu,
-    onPrintPrep,
   }: Props = $props();
 
   // ── Card view mode ──────────────────────────────────────────────────────
-  type ViewMode = 'grid' | 'cards';
-  let viewMode = $state<ViewMode>(
-    (typeof window !== 'undefined' ? localStorage.getItem('choreoCard.deckViewMode') : null) as ViewMode ?? 'grid'
-  );
+  type ViewMode = 'grid' | 'print';
+  function readViewMode(): ViewMode {
+    if (typeof window === 'undefined') return 'grid';
+    const stored = localStorage.getItem('choreoCard.deckViewMode');
+    // Backwards compat: 'cards' was the old value, now maps to 'print'
+    if (stored === 'cards' || stored === 'print') return 'print';
+    return 'grid';
+  }
+  let viewMode = $state<ViewMode>(readViewMode());
 
   let cardSize = $state<CardSizeId>(
     (typeof window !== 'undefined' ? localStorage.getItem('cardPreview.cardSize') : null) as CardSizeId ?? 'poker'
   );
 
-  let settingsOpen = $state(false);
   let selectedTheme = $state(typeof window !== 'undefined' ? localStorage.getItem('cardPreview.theme') ?? 'nightSky' : 'nightSky');
-  let exportFormat = $state<'pdf' | 'zip'>(
-    (typeof window !== 'undefined' ? localStorage.getItem('cardPreview.exportFormat') : null) as 'pdf' | 'zip' ?? 'zip'
-  );
   let isExporting = $state(false);
+  let renderedPairs = $state<CardPair[]>([]);
+  let isRendering = $state(false);
+  let renderProgress = $state(0);
+  let renderTotal = $state(0);
 
   function setViewMode(mode: ViewMode) {
     viewMode = mode;
@@ -105,68 +105,40 @@
     if (typeof window !== 'undefined') localStorage.setItem('cardPreview.cardSize', size);
   }
 
-  let renderOptions = $derived<PrintRenderOptions>({
-    canvasWidth: CARD_SIZES[cardSize].canvasWidth,
-    canvasHeight: CARD_SIZES[cardSize].canvasHeight,
-    bleedPx: CARD_SIZES[cardSize].bleedPx,
-    showGrid,
-    showTKA,
-    showWord,
-    includeStartPosition,
-    handPointsVisible,
-    theme: selectedTheme,
-  });
-
-  const themeOptions = [
-    { id: 'nightSky', label: 'Night Sky', color: '#1a1a2e' },
-    { id: 'deepOcean', label: 'Deep Ocean', color: '#0a1628' },
-    { id: 'snowfall', label: 'Snowfall', color: '#e8eaf0' },
-    { id: 'emberGlow', label: 'Ember Glow', color: '#2d1b1b' },
-    { id: 'sakuraDrift', label: 'Sakura Drift', color: '#2d1b28' },
-    { id: 'fireflyForest', label: 'Firefly Forest', color: '#1b2d1b' },
-    { id: 'autumnDrift', label: 'Autumn Drift', color: '#2d251b' },
-    { id: 'pride', label: 'Pride', color: 'linear-gradient(135deg, #e40303, #ff8c00, #ffed00, #008026, #004dff, #750787)' },
-  ] as const;
-
-  async function handleExport() {
-    if (filteredSequences.length === 0 || !selectedDeck) return;
+  async function handleExportPDF() {
+    if (renderedPairs.length === 0) return;
     isExporting = true;
     try {
-      const printRenderer = container.items.printCardRenderer as IPrintCardRenderer;
-      const deckName = selectedDeck.name;
-      if (exportFormat === 'pdf') {
-        const pairs: CardPair[] = [];
-        for (const seq of filteredSequences) {
-          const front = await printRenderer.renderFront(seq, renderOptions);
-          const back = await printRenderer.renderBack(seq, renderOptions);
-          pairs.push({ front, back, label: seq.word ?? seq.id });
-        }
-        const pdfExporter = container.items.printPDFExporter as IPrintPDFExporter;
-        const blob = await pdfExporter.exportHomePrintPDF(pairs, deckName, cardSize);
-        downloadBlob(blob, `${deckName}-${cardSize}.pdf`);
-      } else {
-        const pairs: ZipCardPair[] = [];
-        for (const seq of filteredSequences) {
-          const front = await printRenderer.renderFront(seq, renderOptions);
-          const back = await printRenderer.renderBack(seq, renderOptions);
-          pairs.push({ front, back, label: seq.word ?? seq.id });
-        }
-        const zipExporter = container.items.printZipExporter as IPrintZipExporter;
-        const blob = await zipExporter.exportDeckZIP(pairs, deckName);
-        downloadBlob(blob, `${deckName}-${cardSize}.zip`);
-      }
+      const exporter = container.items.printPDFExporter as IPrintPDFExporter;
+      const deckName = selectedDeck?.name ?? "deck";
+      const blob = await exporter.exportHomePrintPDF(renderedPairs, deckName, cardSize);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${deckName.replace(/[^a-zA-Z0-9]/g, "_")}_print.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
     } finally {
       isExporting = false;
     }
   }
 
-  function downloadBlob(blob: Blob, filename: string) {
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(url);
+  async function handleExportZIP() {
+    if (renderedPairs.length === 0) return;
+    isExporting = true;
+    try {
+      const exporter = container.items.printZipExporter as IPrintZipExporter;
+      const deckName = selectedDeck?.name ?? "deck";
+      const blob = await exporter.exportDeckZIP(renderedPairs, deckName);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${deckName.replace(/[^a-zA-Z0-9]/g, "_")}_cards.zip`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      isExporting = false;
+    }
   }
 
   // Derived deck/family lookups
@@ -443,27 +415,34 @@
             </button>
             <button
               class="action-chip"
-              class:active={viewMode === 'cards'}
-              onclick={() => setViewMode('cards')}
+              class:active={viewMode === 'print'}
+              onclick={() => setViewMode('print')}
               type="button"
               role="radio"
-              aria-checked={viewMode === 'cards'}
+              aria-checked={viewMode === 'print'}
             >
-              <i class="fas fa-id-card" aria-hidden="true"></i>
-              Cards
+              <i class="fas fa-print" aria-hidden="true"></i>
+              Print Preview
             </button>
           </div>
 
-          {#if viewMode === 'cards'}
-            <CardSizeToggle selected={cardSize} onchange={setCardSize} />
-            <button
-              class="action-chip"
-              onclick={() => { settingsOpen = !settingsOpen; }}
-              type="button"
-              aria-label="Card settings"
-            >
-              <i class="fas fa-cog" aria-hidden="true"></i>
-            </button>
+          {#if viewMode === 'print'}
+            <PrintPreviewToolbar
+              {cardSize}
+              {selectedTheme}
+              totalCards={filteredSequences.length}
+              {isRendering}
+              {isExporting}
+              {renderProgress}
+              {renderTotal}
+              onCardSizeChange={setCardSize}
+              onThemeChange={(id) => {
+                selectedTheme = id;
+                if (typeof window !== 'undefined') localStorage.setItem('cardPreview.theme', id);
+              }}
+              onExportPDF={handleExportPDF}
+              onExportZIP={handleExportZIP}
+            />
           {/if}
 
           <button
@@ -476,18 +455,6 @@
             <i class="fas fa-filter" aria-hidden="true"></i>
             Filter
           </button>
-
-          {#if onPrintPrep}
-            <button
-              class="action-chip"
-              onclick={onPrintPrep}
-              type="button"
-              aria-label="Print preparation"
-            >
-              <i class="fas fa-print" aria-hidden="true"></i>
-              Print
-            </button>
-          {/if}
         </div>
       </div>
 
@@ -537,24 +504,19 @@
           {/if}
         </div>
       {:else}
-        {#if viewMode === 'cards'}
-          <div class="cards-view-container">
-            <CardPageLayout
-              sequences={filteredSequences}
-              families={selectedDeck.families}
-              selectedFamilyIds={interiorFilters.familyIds}
-              {cardSize}
-              {isLoading}
-              {isLargeDeck}
-              {handPointsVisible}
-              {showGrid}
-              {showTKA}
-              {showWord}
-              {includeStartPosition}
-              onSelectSequence={(seq) => onSelectSequence(seq)}
-              {onContextMenu}
-            />
-          </div>
+        {#if viewMode === 'print'}
+          <PrintPreviewPages
+            sequences={filteredSequences}
+            {cardSize}
+            theme={selectedTheme}
+            isLoading={false}
+            {handPointsVisible}
+            {showGrid}
+            {showTKA}
+            {showWord}
+            {includeStartPosition}
+            onPairsReady={(pairs) => { renderedPairs = pairs; }}
+          />
         {:else}
           <div class="sequence-sections">
             {#each sequenceGroups as group (group.label)}
@@ -583,36 +545,6 @@
         {/if}
       {/if}
 
-      {#if viewMode === 'cards'}
-        <CardPreviewSettings
-          isOpen={settingsOpen}
-          {showGrid}
-          {showTKA}
-          {showWord}
-          {includeStartPosition}
-          {handPointsVisible}
-          {selectedTheme}
-          {themeOptions}
-          {exportFormat}
-          {cardSize}
-          totalCards={filteredSequences.length}
-          {isExporting}
-          hasRenderedCards={filteredSequences.length > 0 && !isLoading}
-          onToggle={() => { settingsOpen = false; }}
-          onVisibilityChange={(key, value) => {
-            console.log('Visibility change needs parent wiring:', key, value);
-          }}
-          onThemeChange={(id) => {
-            selectedTheme = id;
-            if (typeof window !== 'undefined') localStorage.setItem('cardPreview.theme', id);
-          }}
-          onExportFormatChange={(format) => {
-            exportFormat = format;
-            if (typeof window !== 'undefined') localStorage.setItem('cardPreview.exportFormat', format);
-          }}
-          onExport={handleExport}
-        />
-      {/if}
     </div>
 
   {:else if selectedCollection === "VTG" && selectedVtgFamily}
@@ -629,7 +561,6 @@
         {onSelectSequence}
         {onContextMenu}
         onBack={() => onSelectVtgFamily(null)}
-        {onPrintPrep}
       />
     </div>
 
