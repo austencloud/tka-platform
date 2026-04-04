@@ -222,7 +222,7 @@
           .loadAnimations({
             idle: "/animations/locomotion-pack/idle.glb",
             forward: "/animations/locomotion-pack/walk-forward.glb",
-            backward: "/animations/walk-backward.glb",
+            backward: "/animations/locomotion-pack/walk-backward.glb",
             strafeLeft: "/animations/locomotion-pack/strafe-left.glb",
             strafeRight: "/animations/locomotion-pack/strafe-right.glb",
             jump: "/animations/locomotion-pack/jump.glb",
