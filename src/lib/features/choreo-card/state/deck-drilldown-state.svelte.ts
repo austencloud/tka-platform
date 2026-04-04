@@ -256,6 +256,11 @@ export function createDrillDownState(allDecks: Deck[]) {
 			resetSelectionsAfter(stepId);
 		},
 
+		goTo(stepId: DrillStepId) {
+			currentStep = stepId;
+			direction = 'forward';
+		},
+
 		reset() {
 			selections = emptySelections();
 			breadcrumbs = [];
