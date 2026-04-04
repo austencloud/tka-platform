@@ -29,6 +29,7 @@
   </div>
 
   {#each boneLabels as label, i}
+    {@const rot = rotations[i] ?? { x: 0, y: 0, z: 0 }}
     <div class="bone-section">
       <span class="bone-label">{label}</span>
       <div class="bone-sliders">
@@ -39,10 +40,10 @@
             min="-10"
             max="120"
             step="1"
-            value={rotations[i].x}
+            value={rot.x}
             oninput={(e) => onchange(i, "x", Number(e.currentTarget.value))}
           />
-          <span class="value">{rotations[i].x}°</span>
+          <span class="value">{rot.x}°</span>
         </label>
 
         {#if isThumb || showAllAxes}
@@ -53,10 +54,10 @@
               min="-90"
               max="90"
               step="1"
-              value={rotations[i].y}
+              value={rot.y}
               oninput={(e) => onchange(i, "y", Number(e.currentTarget.value))}
             />
-            <span class="value">{rotations[i].y}°</span>
+            <span class="value">{rot.y}°</span>
           </label>
           <label class="slider-label">
             <span class="axis-label">Z</span>
@@ -65,10 +66,10 @@
               min="-90"
               max="90"
               step="1"
-              value={rotations[i].z}
+              value={rot.z}
               oninput={(e) => onchange(i, "z", Number(e.currentTarget.value))}
             />
-            <span class="value">{rotations[i].z}°</span>
+            <span class="value">{rot.z}°</span>
           </label>
         {/if}
       </div>

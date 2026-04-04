@@ -247,7 +247,8 @@
 
   function handleSliderChange(fingerIndex: number, boneInFinger: number, axis: "x" | "y" | "z", degrees: number) {
     const globalIndex = fingerIndex * 3 + boneInFinger;
-    eulerAngles[globalIndex] = { ...eulerAngles[globalIndex], [axis]: degrees };
+    const current = eulerAngles[globalIndex] ?? { x: 0, y: 0, z: 0 };
+    eulerAngles[globalIndex] = { ...current, [axis]: degrees };
     applyToBones();
     saveToSession();
   }
@@ -259,10 +260,12 @@
 
     for (let i = 0; i < FINGER_BONES.length; i++) {
       const boneName = FINGER_BONES[i];
+      if (!boneName) continue;
       const bone = state.fingerChains.left.get(boneName);
       if (!bone) continue;
 
       const angles = eulerAngles[i];
+      if (!angles) continue;
       const euler = new Euler(
         (angles.x * Math.PI) / 180,
         (angles.y * Math.PI) / 180,
