@@ -55,8 +55,8 @@
     map: texture,
     roughness: 0.85,
     metalness: 0.0,
-    emissive: isWhiteboard ? "#605e50" : "#c8a860",
-    emissiveIntensity: isWhiteboard ? 0.15 : 0.25,
+    emissive: isWhiteboard ? "#807a6a" : "#c8a860",
+    emissiveIntensity: isWhiteboard ? 0.22 : 0.25,
     emissiveMap: texture,
   });
 
