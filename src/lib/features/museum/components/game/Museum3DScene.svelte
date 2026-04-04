@@ -648,7 +648,6 @@
       const batch = pendingMounts.splice(0, MAX_MOUNTS_PER_FRAME);
       for (const { category, item } of batch) {
         switch (category) {
-          case "torch": visibleTorches = [...visibleTorches, item]; break;
           case "plaque": visiblePlaques = [...visiblePlaques, item]; break;
           case "performer": visiblePerformers = [...visiblePerformers, item]; break;
           case "exhibitLight": visibleExhibitLights = [...visibleExhibitLights, item]; break;
@@ -715,11 +714,12 @@
       // Sync reactive state for Avatar3D's animation system
       const vel = physicsProvider.getVelocity();
       playerSpeed = Math.sqrt(vel.x * vel.x + vel.z * vel.z);
-      const wasGrounded = playerGrounded;
-      playerGrounded = physicsProvider.isGrounded();
+      const nowGrounded = physicsProvider.isGrounded();
       playerVerticalVelocity = vel.y;
-      // Detect jump impulse: was grounded, now has upward velocity
-      playerJumpRequested = wasGrounded && vel.y > 0.1;
+      // Detect jump: was grounded last frame, not grounded now, moving up.
+      // This catches the exact frame the UCC applied the jump impulse.
+      playerJumpRequested = playerGrounded && !nowGrounded && vel.y > 0;
+      playerGrounded = nowGrounded;
 
 
       const fpsTileX = Math.round(fpsPos.x / TILE_SIZE);
@@ -1340,11 +1340,17 @@
   for (const f of (grid.furniture ?? [])) furnitureGrid.insert(f, f.tileX, f.tileY);
 
   // Visible sets — only these items get rendered
-  let visibleTorches = $state([] as typeof torchPositions);
+  // Torches are NOT proximity-filtered — they mount once at init and stay.
+  // Mounting/unmounting Svelte torch components causes 400-1000ms GPU shader
+  // compilation stutters that make walking unplayable. The initial load absorbs
+  // this cost behind the loading overlay.
+  let visibleTorches = $state(torchPositions);
   let visiblePlaques = $state([] as typeof plaquePlacements);
   let visiblePerformers = $state([] as typeof grid.performers);
-  let visibleExhibitLights = $state([] as typeof exhibitLightPositions);
-  let visibleCeilingLights = $state([] as typeof ceilingLightPositions);
+  // Lights mount once at init — not proximity-filtered (adding/removing lights
+  // causes Three.js to recompile all affected materials' shaders)
+  let visibleExhibitLights = $state(exhibitLightPositions);
+  let visibleCeilingLights = $state(ceilingLightPositions);
   let visibleFurniture = $state([] as NonNullable<typeof grid.furniture>);
 
   type MountCategory = "torch" | "plaque" | "performer" | "exhibitLight" | "ceilingLight" | "furniture";
@@ -1354,13 +1360,11 @@
   let lastCheckTY = -999;
 
   function recomputeVisibility(playerTX: number, playerTY: number): void {
-    // Editor/top-down bypass: show everything
+    // Editor/top-down bypass: show everything (plaques, performers, furniture)
+    // Torches and lights are always fully mounted — no need to set them here
     if (museum3dEditorState.editorActive || !fpsActive) {
-      visibleTorches = torchPositions;
       visiblePlaques = plaquePlacements;
       visiblePerformers = grid.performers;
-      visibleExhibitLights = exhibitLightPositions;
-      visibleCeilingLights = ceilingLightPositions;
       visibleFurniture = grid.furniture ?? [];
       pendingMounts = [];
       return;
@@ -1407,11 +1411,12 @@
       return kept;
     }
 
-    visibleTorches = applyWithBatching("torch", torchGrid, visibleTorches, t => t.id);
+    // Only proximity-filter components that are cheap to mount/unmount.
+    // Torches, exhibit lights, and ceiling lights are NOT filtered because
+    // mounting/unmounting them triggers GPU shader recompilation (400-1000ms stutter).
+    // They mount once at init behind the loading overlay.
     visiblePlaques = applyWithBatching("plaque", plaqueGrid, visiblePlaques, p => p.refId);
     visiblePerformers = applyWithBatching("performer", performerGrid, visiblePerformers, p => p.id);
-    visibleExhibitLights = applyWithBatching("exhibitLight", exhibitLightGrid, visibleExhibitLights, l => l.id);
-    visibleCeilingLights = applyWithBatching("ceilingLight", ceilingLightGrid, visibleCeilingLights, l => l.id);
     visibleFurniture = applyWithBatching("furniture", furnitureGrid, visibleFurniture, f => f.id);
   }
 
@@ -1512,7 +1517,7 @@
     id="museum-player"
     bluePropState={null}
     redPropState={null}
-    position={{ x: playerPosition.x, y: 0.001, z: playerPosition.z }}
+    position={{ x: playerPosition.x, y: playerPosition.y - 0.85 + 0.001, z: playerPosition.z }}
     facingAngle={playerYaw}
     isActive={false}
     isMoving={isMoving}
