@@ -205,6 +205,49 @@ Usage:
       }));
   });
 
+  // Arrow tip z-promotion: detect when behind-arrow's tip is buried under front-arrow's shaft
+  const tipPromotionNeeded = $derived.by(() => {
+    // Need exactly 2 arrows with split data to detect overlap
+    if (motions.length < 2) return false;
+
+    const blue = motions.find(m => m.color === "blue");
+    const red = motions.find(m => m.color === "red");
+    if (!blue || !red) return false;
+
+    const blueAssets = arrowAssets["blue"];
+    const redAssets = arrowAssets["red"];
+    const bluePos = arrowPositions["blue"];
+    const redPos = arrowPositions["red"];
+
+    // Both arrows need split data and positions
+    if (!blueAssets?.tipBBox || !bluePos || !redAssets || !redPos) return false;
+
+    // Transform blue tip bbox to pictograph space
+    // (simplified: offset by arrow position, ignore rotation for AABB approximation)
+    const blueTip = {
+      x: bluePos.x + blueAssets.tipBBox.x - (blueAssets.center?.x ?? 0),
+      y: bluePos.y + blueAssets.tipBBox.y - (blueAssets.center?.y ?? 0),
+      width: blueAssets.tipBBox.width,
+      height: blueAssets.tipBBox.height,
+    };
+
+    // Red arrow overall bbox in pictograph space
+    const redBox = {
+      x: redPos.x - (redAssets.center?.x ?? 0),
+      y: redPos.y - (redAssets.center?.y ?? 0),
+      width: redAssets.viewBox.width,
+      height: redAssets.viewBox.height,
+    };
+
+    // AABB intersection test
+    return (
+      blueTip.x < redBox.x + redBox.width &&
+      blueTip.x + blueTip.width > redBox.x &&
+      blueTip.y < redBox.y + redBox.height &&
+      blueTip.y + blueTip.height > redBox.y
+    );
+  });
+
   // Both motions fully visible — glyphs that depend on both hands use this
   const bothMotionsFullyVisible = $derived(blueMotionVisible && redMotionVisible);
 
@@ -329,24 +372,67 @@ Usage:
       {/each}
 
       <!-- Arrows -->
-      {#each motions as { color, data, opacity } (color)}
-        {#if arrowAssets[color] && arrowPositions[color]}
-          <g opacity={opacity}>
-            <ArrowSvg
-              motionData={data}
-              {color}
-              pictographData={pictograph}
-              arrowAssets={arrowAssets[color]}
-              arrowPosition={arrowPositions[color]}
-              shouldMirror={arrowMirroring[color] || false}
-              showArrow={true}
-              isClickable={arrowsClickable}
-              {cellIndex}
-              {darkMode}
-            />
-          </g>
-        {/if}
-      {/each}
+      {#if tipPromotionNeeded}
+        <!-- Split rendering: shafts first, then tips on top -->
+        {#each motions as { color, data, opacity } (color + "-shaft")}
+          {#if arrowAssets[color] && arrowPositions[color]}
+            <g opacity={opacity}>
+              <ArrowSvg
+                motionData={data}
+                {color}
+                pictographData={pictograph}
+                arrowAssets={arrowAssets[color]}
+                arrowPosition={arrowPositions[color]}
+                shouldMirror={arrowMirroring[color] || false}
+                showArrow={true}
+                isClickable={arrowsClickable}
+                {cellIndex}
+                {darkMode}
+                renderPart="shaft"
+              />
+            </g>
+          {/if}
+        {/each}
+        {#each motions as { color, data, opacity } (color + "-tip")}
+          {#if arrowAssets[color] && arrowPositions[color]}
+            <g opacity={opacity}>
+              <ArrowSvg
+                motionData={data}
+                {color}
+                pictographData={pictograph}
+                arrowAssets={arrowAssets[color]}
+                arrowPosition={arrowPositions[color]}
+                shouldMirror={arrowMirroring[color] || false}
+                showArrow={true}
+                isClickable={arrowsClickable}
+                {cellIndex}
+                {darkMode}
+                renderPart="tip"
+              />
+            </g>
+          {/if}
+        {/each}
+      {:else}
+        <!-- Normal rendering: single combined path per arrow (identical to current behavior) -->
+        {#each motions as { color, data, opacity } (color)}
+          {#if arrowAssets[color] && arrowPositions[color]}
+            <g opacity={opacity}>
+              <ArrowSvg
+                motionData={data}
+                {color}
+                pictographData={pictograph}
+                arrowAssets={arrowAssets[color]}
+                arrowPosition={arrowPositions[color]}
+                shouldMirror={arrowMirroring[color] || false}
+                showArrow={true}
+                isClickable={arrowsClickable}
+                {cellIndex}
+                {darkMode}
+              />
+            </g>
+          {/if}
+        {/each}
+      {/if}
     </g>
 
     <!-- Corner glyphs - positioned at edges of expanded viewBox -->
