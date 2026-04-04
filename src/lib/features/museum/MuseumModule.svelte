@@ -120,14 +120,19 @@
 
   function handleRoomSelect(roomId: string | null) {
     selectedRoom = roomId;
-    // Sync to URL without a full page reload
-    const url = new URL(window.location.href);
+    // Sync to URL without a full page reload — use SvelteKit's goto
+    // to avoid conflicting with the router
+    const params = new URLSearchParams(window.location.search);
     if (roomId) {
-      url.searchParams.set("room", roomId);
+      params.set("room", roomId);
     } else {
-      url.searchParams.delete("room");
+      params.delete("room");
     }
-    window.history.replaceState({}, "", url.toString());
+    const qs = params.toString();
+    const newPath = window.location.pathname + (qs ? `?${qs}` : "");
+    import("$app/navigation").then(({ replaceState }) => {
+      replaceState(newPath, {});
+    });
   }
 
   // ── Grid caching ──
@@ -348,9 +353,11 @@
          WebGL reinit + InstancedMesh rebuild + texture reload must happen from scratch. -->
     <div class="mode-content" class:hidden-mode={mode !== "museum" && mode !== "showroom" && mode !== "3p-test"}>
       {#if mode === "museum" || museumSceneMounted}
-        {#await import("./components/game/DimensionFlipProof.svelte") then { default: DimensionFlipProof }}
-          <DimensionFlipProof grid={liveGrid} onLoadProgress={handleLoadProgress} onAllLoaded={handleAllLoaded} />
-        {/await}
+        {#key selectedRoom}
+          {#await import("./components/game/DimensionFlipProof.svelte") then { default: DimensionFlipProof }}
+            <DimensionFlipProof grid={liveGrid} onLoadProgress={handleLoadProgress} onAllLoaded={handleAllLoaded} />
+          {/await}
+        {/key}
       {/if}
     </div>
 
