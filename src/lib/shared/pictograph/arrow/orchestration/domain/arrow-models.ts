@@ -14,6 +14,10 @@ export interface ArrowAssets {
     fullViewBox?: string;
   };
   readonly center: { x: number; y: number };
+  // Arrow tip z-promotion: pre-split shaft/tip SVG content
+  readonly shaftSrc?: string;
+  readonly tipSrc?: string;
+  readonly tipBBox?: { x: number; y: number; width: number; height: number };
 }
 
 export interface ArrowPosition {

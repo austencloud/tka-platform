@@ -16,6 +16,10 @@ export interface ArrowSvgData {
   imageSrc?: string | undefined;
   viewBox?: string | undefined;
   center?: { x: number; y: number } | undefined;
+  // Arrow tip z-promotion: pre-split shaft/tip SVG content
+  shaftSrc?: string;
+  tipSrc?: string;
+  tipBBox?: { x: number; y: number; width: number; height: number };
 }
 
 export interface SVGDimensions {
