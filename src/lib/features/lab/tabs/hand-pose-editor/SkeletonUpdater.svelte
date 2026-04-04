@@ -49,7 +49,7 @@
       clipConstant !== prevC;
 
     if (changed) {
-      renderer.localClippingEnabled = clipEnabled;
+      renderer.current.localClippingEnabled = clipEnabled;
       clipPlane.normal.set(clipNormal[0], clipNormal[1], clipNormal[2]);
       clipPlane.constant = clipConstant;
 
