@@ -119,9 +119,11 @@
   let selectedRoom = $state<string | null>(getInitialRoom());
 
   function handleRoomSelect(roomId: string | null) {
-    selectedRoom = roomId;
-    // Sync to URL without a full page reload — use SvelteKit's goto
-    // to avoid conflicting with the router
+    // Full page navigation — cleanly tears down the entire WebGL scene
+    // and rebuilds from scratch. SvelteKit's client-side router handles
+    // this without a full browser reload, but the component remounts fresh.
+    // This avoids race conditions from {#key} remount fighting Threlte's
+    // scene lifecycle (duplicate keys, mirror crashes, camera resets).
     const params = new URLSearchParams(window.location.search);
     if (roomId) {
       params.set("room", roomId);
@@ -129,9 +131,9 @@
       params.delete("room");
     }
     const qs = params.toString();
-    const newPath = window.location.pathname + (qs ? `?${qs}` : "");
-    import("$app/navigation").then(({ replaceState }) => {
-      replaceState(newPath, {});
+    const newUrl = window.location.pathname + (qs ? `?${qs}` : "");
+    import("$app/navigation").then(({ goto }) => {
+      goto(newUrl, { invalidateAll: true });
     });
   }
 
@@ -353,11 +355,9 @@
          WebGL reinit + InstancedMesh rebuild + texture reload must happen from scratch. -->
     <div class="mode-content" class:hidden-mode={mode !== "museum" && mode !== "showroom" && mode !== "3p-test"}>
       {#if mode === "museum" || museumSceneMounted}
-        {#key selectedRoom}
-          {#await import("./components/game/DimensionFlipProof.svelte") then { default: DimensionFlipProof }}
-            <DimensionFlipProof grid={liveGrid} onLoadProgress={handleLoadProgress} onAllLoaded={handleAllLoaded} startInFps={selectedRoom !== null} />
-          {/await}
-        {/key}
+        {#await import("./components/game/DimensionFlipProof.svelte") then { default: DimensionFlipProof }}
+          <DimensionFlipProof grid={liveGrid} onLoadProgress={handleLoadProgress} onAllLoaded={handleAllLoaded} startInFps={selectedRoom !== null} />
+        {/await}
       {/if}
     </div>
 
