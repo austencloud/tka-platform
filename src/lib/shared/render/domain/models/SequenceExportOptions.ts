@@ -105,6 +105,13 @@ export interface SequenceExportOptions {
   /** Use 5:7 playing card layout (composeCardImage) for physical card export.
    *  Different from printMode (white background). cardMode = card aspect ratio. */
   cardMode?: boolean;
+
+  /** Render at fixed playing card dimensions with consistent header/footer sizing.
+   *  contentWidth/contentHeight = the content area inside the bleed (e.g. 750×1050 poker). */
+  deckCard?: {
+    contentWidth: number;
+    contentHeight: number;
+  };
 }
 
 export interface BeatRenderOptions {
