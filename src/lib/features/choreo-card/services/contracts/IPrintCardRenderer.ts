@@ -1,5 +1,6 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import type { ElementalTheme } from "../../domain/elemental-theme";
 
 export interface PrintRenderOptions {
   canvasWidth?: number;
@@ -18,6 +19,8 @@ export interface PrintRenderOptions {
   /** Override prop types (reads from settings when not provided) */
   bluePropType?: PropType;
   redPropType?: PropType;
+  /** VTG elemental theme for front frame coloring. Omit for neutral gray. */
+  elementTheme?: ElementalTheme;
 }
 
 export interface IPrintCardRenderer {
