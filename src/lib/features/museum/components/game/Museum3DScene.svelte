@@ -1661,7 +1661,7 @@
 {/if}
 
 <!-- GLTF furniture models (Kenney CC0 kit) -->
-<MuseumFurniture {grid} tileSize={TILE_SIZE} />
+<MuseumFurniture placements={visibleFurniture} tileSize={TILE_SIZE} />
 
 <!-- Mirrors — placed in rooms that historically feature them -->
 {#each grid.wings as wing}
