@@ -32,6 +32,8 @@
   import MuseumMirror from "./MuseumMirror.svelte";
   import MuseumPortal from "./MuseumPortal.svelte";
   import MuseumTorch3D from "./MuseumTorch3D.svelte";
+  import { TorchMaterialCache } from "../../services/implementations/TorchMaterialCache";
+  import { FIXTURE_REGISTRY } from "../../domain/fixture-registry";
   import MuseumPlaque3D from "./MuseumPlaque3D.svelte";
   import MuseumSceneEditor from "./MuseumSceneEditor.svelte";
   import { OrbitControls } from "@threlte/extras";
@@ -43,6 +45,7 @@
 
   // Shared texture generator — one instance for all plaques (caches internally)
   const plaqueGenerator = new PlaqueTextureGenerator();
+  const torchMaterialCache = new TorchMaterialCache();
 
   // Scene reference for fog control — scene may not be available at init,
   // so we defer fog setup to the first frame via $effect
@@ -563,6 +566,7 @@
   let playerPosition = $state({ x: spawnWorldX, y: 0, z: spawnWorldZ });
   let playerGrounded = $state(true);
   let playerVerticalVelocity = $state(0);
+  let playerJumpRequested = $state(false);
   const ROTATION_SPEED = 12;
 
   const avatarState: AvatarState = {
@@ -659,7 +663,7 @@
     const currentTY = Math.round(playerPosition.z / TILE_SIZE);
     const dCheckX = currentTX - lastCheckTX;
     const dCheckY = currentTY - lastCheckTY;
-    if (dCheckX * dCheckX + dCheckY * dCheckY >= 4) {
+    if (dCheckX * dCheckX + dCheckY * dCheckY >= 16) {
       recomputeVisibility(currentTX, currentTY);
     }
 
@@ -711,8 +715,12 @@
       // Sync reactive state for Avatar3D's animation system
       const vel = physicsProvider.getVelocity();
       playerSpeed = Math.sqrt(vel.x * vel.x + vel.z * vel.z);
+      const wasGrounded = playerGrounded;
       playerGrounded = physicsProvider.isGrounded();
       playerVerticalVelocity = vel.y;
+      // Detect jump impulse: was grounded, now has upward velocity
+      playerJumpRequested = wasGrounded && vel.y > 0.1;
+
 
       const fpsTileX = Math.round(fpsPos.x / TILE_SIZE);
       const fpsTileZ = Math.round(fpsPos.z / TILE_SIZE);
@@ -1308,7 +1316,9 @@
   const CELL_SIZE = 8;
   const MOUNT_RADIUS = 30;
   const UNMOUNT_RADIUS = 40;
-  const MAX_MOUNTS_PER_FRAME = 5;
+  // Keep low to avoid stutter while walking. Each torch mount compiles a
+  // flame shader + creates 24 particles — mounting 5 at once causes visible jank.
+  const MAX_MOUNTS_PER_FRAME = 2;
 
   // Build proximity grids — one per component type
   const torchGrid = new ProximityGrid<typeof torchPositions[0]>(CELL_SIZE);
@@ -1512,6 +1522,7 @@
     isGrounded={playerGrounded}
     verticalVelocity={playerVerticalVelocity}
     isCrouching={isCrouching}
+    isJumpRequested={playerJumpRequested}
   />
 {/if}
 
@@ -1632,6 +1643,7 @@
     wallOffsetZ={torch.wallOffsetZ}
     wingTheme={torch.wingTheme}
     baseIntensity={torchLightSet.has(`${torch.x},${torch.z}`) ? 4 : 0}
+    materials={torchMaterialCache.createInstance(FIXTURE_REGISTRY[torch.wingTheme].lightColor)}
   />
 {/each}
 
