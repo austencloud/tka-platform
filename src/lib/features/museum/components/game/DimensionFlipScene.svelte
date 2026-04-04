@@ -131,7 +131,7 @@
   }
 </script>
 
-<T.PerspectiveCamera makeDefault bind:ref={camera} fov={TOP_DOWN.fov} near={0.5} far={200} />
+<T.PerspectiveCamera makeDefault bind:ref={camera} fov={TOP_DOWN_FOV} near={0.5} far={200} />
 
 <T.AmbientLight intensity={0.5} color="#c8b890" />
 <T.DirectionalLight intensity={0.8} position={[5, 15, 5]} color="#fff0d0" />
