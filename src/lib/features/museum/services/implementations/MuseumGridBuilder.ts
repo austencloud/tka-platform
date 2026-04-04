@@ -90,10 +90,12 @@ export class MuseumGridBuilder implements IMuseumGridBuilder {
       this.placeFurniture(room, furniture);
     }
 
-    // Step 8: Spawn position — south end of entrance, centered, facing north
+    // Step 8: Spawn position — center of first room, facing north.
+    // For the full museum the first room is the entrance lobby (player starts
+    // near the south doors). For isolated single-room mode, center is safest.
     const firstRoom = layout.rooms[0]!;
     const spawnX = firstRoom.x + Math.floor(firstRoom.w / 2);
-    const spawnY = firstRoom.y + firstRoom.h - 8;
+    const spawnY = firstRoom.y + Math.floor(firstRoom.h / 2);
 
     const grid: MuseumGrid = {
       width: layout.gridWidth,
