@@ -39,6 +39,8 @@
   let opacityB = $state(0);
   // true means A is the visible layer
   let isAFront = $state(true);
+  // Track whether the first video frame is actually ready to display
+  let firstVideoReady = $state(false);
 
   const CROSSFADE_DURATION = 800; // ms
   const AUTO_ADVANCE_INTERVAL = 5000; // ms
@@ -246,6 +248,33 @@
 
   // ─── Lifecycle ────────────────────────────────────────────────────────────────
 
+  // Watch for videoA becoming available and seed the first video into it.
+  // This handles the race condition where entries are ready before the
+  // video element renders (loading state gates the template).
+  $effect(() => {
+    if (videoA && entries.length > 0 && !firstVideoReady) {
+      const first = entries[0]!;
+      // Only seed if not already loaded
+      if (!videoA.src || videoA.src === "") {
+        videoA.src = first.src;
+        videoA.load();
+        videoA.play().catch(() => {});
+      }
+
+      // Dismiss buffering overlay once video is actually rendering frames.
+      const dismiss = () => { firstVideoReady = true; };
+      videoA.addEventListener("playing", dismiss, { once: true });
+      videoA.addEventListener("timeupdate", dismiss, { once: true });
+
+      // Failsafe: if events somehow don't fire, check readyState after 3s
+      setTimeout(() => {
+        if (!firstVideoReady && videoA && !videoA.paused) {
+          firstVideoReady = true;
+        }
+      }, 3000);
+    }
+  });
+
   onMount(async () => {
     try {
       const firestoreEntries = await loadFromFirestore();
@@ -261,14 +290,6 @@
     }
 
     if (entries.length === 0) return;
-
-    // Seed first video into the front player
-    const first = entries[0];
-    if (videoA && first) {
-      videoA.src = first.src;
-      videoA.load();
-      videoA.play().catch(() => {});
-    }
 
     if (entries.length > 1) {
       startAutoTimer();
@@ -349,6 +370,16 @@
         >
           <track kind="captions" />
         </video>
+
+        <!-- Shimmer overlay while first video buffers -->
+        {#if !firstVideoReady}
+          <div class="video-buffering" aria-label="Video loading">
+            <div class="buffering-shimmer"></div>
+            <div class="buffering-content">
+              <i class="fas fa-play-circle" aria-hidden="true"></i>
+            </div>
+          </div>
+        {/if}
       </div>
 
       <!-- Prev / Next -->
@@ -670,6 +701,56 @@
     transition: opacity 0.05s linear;
   }
 
+  /* ── Video buffering overlay ─────────────────────────────────────────────── */
+
+  .video-buffering {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(
+      135deg,
+      rgba(15, 15, 25, 0.95) 0%,
+      rgba(25, 20, 40, 0.95) 50%,
+      rgba(15, 15, 25, 0.95) 100%
+    );
+    transition: opacity 0.5s ease;
+  }
+
+  .buffering-shimmer {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.03) 40%,
+      rgba(255, 255, 255, 0.06) 50%,
+      rgba(255, 255, 255, 0.03) 60%,
+      transparent 100%
+    );
+    animation: shimmer-slide 2s ease-in-out infinite;
+  }
+
+  .buffering-content {
+    position: relative;
+    z-index: 1;
+    color: rgba(255, 255, 255, 0.25);
+    font-size: 48px;
+    animation: pulse-icon 2s ease-in-out infinite;
+  }
+
+  @keyframes shimmer-slide {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+
+  @keyframes pulse-icon {
+    0%, 100% { opacity: 0.3; transform: scale(1); }
+    50% { opacity: 0.6; transform: scale(1.05); }
+  }
+
   /* ── Placeholder / error ────────────────────────────────────────────────────── */
 
   .placeholder {
@@ -893,6 +974,15 @@
 
     .credit {
       transition: none;
+    }
+
+    .buffering-shimmer {
+      animation: none;
+    }
+
+    .buffering-content {
+      animation: none;
+      opacity: 0.4;
     }
   }
 </style>

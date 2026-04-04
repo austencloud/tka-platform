@@ -350,9 +350,7 @@
     <HeroCarouselSection />
     <main id="main-content">
       <hr class="divider" />
-      <div class="scroll-reveal">
-        <LazyHowTkaWorksSection />
-      </div>
+      <LazyHowTkaWorksSection />
       <hr class="divider" />
       <div class="scroll-reveal">
         <WhatsHereSectionV2 />
