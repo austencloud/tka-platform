@@ -17,6 +17,8 @@
   import type { VideoExportProgress } from "$lib/features/compose/services/contracts/IVideoExportOrchestrator";
   import { estimateExportTime, hasDeviceMetrics } from "../state/export-timing-tracker";
   import EffectsPanel from "$lib/shared/animation-engine/components/effects-panel/EffectsPanel.svelte";
+  import PlaybackModeToggle from "$lib/features/compose/components/controls/PlaybackModeToggle.svelte";
+  import type { PlaybackMode } from "$lib/features/compose/state/animation-panel-state.svelte";
 
   type PanelLayout = "sidebar" | "bottom";
 
@@ -30,7 +32,9 @@
     isPlaying?: boolean;
     bpm?: number;
     renderMode?: '2d' | '3d';
+    playbackMode?: PlaybackMode;
     onPlaybackToggle?: () => void;
+    onPlaybackModeChange?: (mode: PlaybackMode) => void;
     onBpmChange?: (bpm: number) => void;
     onExport: () => void;
     onCancel?: () => void;
@@ -46,7 +50,9 @@
     isPlaying = false,
     bpm = 60,
     renderMode = '2d',
+    playbackMode = "continuous",
     onPlaybackToggle,
+    onPlaybackModeChange,
     onBpmChange,
     onExport,
     onCancel,
@@ -197,6 +203,19 @@
               onPlaybackToggle={onPlaybackToggle ?? (() => {})}
               showPlayback={!!(onPlaybackToggle && onBpmChange)}
             />
+
+            <!-- Playback Mode -->
+            {#if onPlaybackModeChange}
+              <div class="setting-row">
+                <span class="setting-label">Playback</span>
+                <PlaybackModeToggle
+                  {playbackMode}
+                  {isPlaying}
+                  onPlaybackModeChange={onPlaybackModeChange}
+                  onPlaybackToggle={onPlaybackToggle ?? (() => {})}
+                />
+              </div>
+            {/if}
 
             <!-- FPS -->
             <div class="setting-row">
@@ -367,6 +386,18 @@
         onPlaybackToggle={onPlaybackToggle ?? (() => {})}
         showPlayback={!!(onPlaybackToggle && onBpmChange)}
       />
+
+      {#if onPlaybackModeChange}
+        <div class="setting-row">
+          <span class="setting-label">Playback</span>
+          <PlaybackModeToggle
+            {playbackMode}
+            {isPlaying}
+            onPlaybackModeChange={onPlaybackModeChange}
+            onPlaybackToggle={onPlaybackToggle ?? (() => {})}
+          />
+        </div>
+      {/if}
 
       <div class="setting-row">
         <span class="setting-label">FPS</span>
