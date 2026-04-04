@@ -76,6 +76,10 @@
         playerModel: {
           url: "https://pub-f5505ed75927471cb198c54336317370.r2.dev/models/avatars/y-bot.glb",
           scale: 0.01,  // Mixamo models are ~100 units tall, need 0.01 to be ~1m
+          idleAnim: "",
+          walkAnim: "",
+          runAnim: "",
+          jumpAnim: "",
         },
         initPos: new THREE.Vector3(0, 0, 5),
       });

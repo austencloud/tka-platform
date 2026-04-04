@@ -96,6 +96,8 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
     bones: new Map(),
     leftArmChain: null,
     rightArmChain: null,
+    leftLegChain: null,
+    rightLegChain: null,
     fingerChains: null,
   };
 
@@ -168,8 +170,9 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
     this.state.bones = newBones;
     this.skeleton = newSkeleton;
 
-    // Build new arm chains (uses the new bones map)
+    // Build IK chains (uses the new bones map)
     this.buildArmChains();
+    this.buildLegChains();
     this.state.fingerChains = this.buildFingerChains(gltf.scene);
 
     this.state.isLoaded = true;
@@ -299,6 +302,58 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
   }
 
   /**
+   * Build leg IK chains (UpLeg -> Leg -> Foot) for foot planting.
+   * Same pattern as arm chains — two-bone IK with rest directions.
+   */
+  private buildLegChains(): void {
+    // Left leg
+    const leftUpLeg = this.state.bones.get("LeftUpLeg");
+    const leftLeg = this.state.bones.get("LeftLeg");
+    const leftFoot = this.state.bones.get("LeftFoot");
+
+    if (leftUpLeg && leftLeg && leftFoot) {
+      const upperLen = this.getBoneLength(leftUpLeg, leftLeg);
+      const lowerLen = this.getBoneLength(leftLeg, leftFoot);
+      const rootRestDir = this.computeRestDirection(leftUpLeg, leftLeg);
+      const middleRestDir = this.computeRestDirection(leftLeg, leftFoot);
+
+      this.state.leftLegChain = {
+        root: leftUpLeg,
+        middle: leftLeg,
+        effector: leftFoot,
+        totalLength: upperLen + lowerLen,
+        upperLength: upperLen,
+        lowerLength: lowerLen,
+        rootRestDir,
+        middleRestDir,
+      };
+    }
+
+    // Right leg
+    const rightUpLeg = this.state.bones.get("RightUpLeg");
+    const rightLeg = this.state.bones.get("RightLeg");
+    const rightFoot = this.state.bones.get("RightFoot");
+
+    if (rightUpLeg && rightLeg && rightFoot) {
+      const upperLen = this.getBoneLength(rightUpLeg, rightLeg);
+      const lowerLen = this.getBoneLength(rightLeg, rightFoot);
+      const rootRestDir = this.computeRestDirection(rightUpLeg, rightLeg);
+      const middleRestDir = this.computeRestDirection(rightLeg, rightFoot);
+
+      this.state.rightLegChain = {
+        root: rightUpLeg,
+        middle: rightLeg,
+        effector: rightFoot,
+        totalLength: upperLen + lowerLen,
+        upperLength: upperLen,
+        lowerLength: lowerLen,
+        rootRestDir,
+        middleRestDir,
+      };
+    }
+  }
+
+  /**
    * Build finger bone chains for both hands.
    *
    * Uses the skeleton's own bone array (same objects the GPU skinning references)
@@ -406,6 +461,14 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
     return this.state.rightArmChain;
   }
 
+  getLeftLegChain(): BoneChain | null {
+    return this.state.leftLegChain;
+  }
+
+  getRightLegChain(): BoneChain | null {
+    return this.state.rightLegChain;
+  }
+
   getRoot(): Object3D | null {
     return this.state.root;
   }
@@ -441,8 +504,9 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
     // Update matrices after scaling
     this.state.root.updateMatrixWorld(true);
 
-    // Rebuild arm chains with new scale
+    // Rebuild IK chains with new scale
     this.buildArmChains();
+    this.buildLegChains();
   }
 
   /**
@@ -495,6 +559,8 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
       bones: new Map(),
       leftArmChain: null,
       rightArmChain: null,
+      leftLegChain: null,
+      rightLegChain: null,
       fingerChains: null,
     };
     this.skeleton = null;
