@@ -37,6 +37,7 @@
   import { OrbitControls } from "@threlte/extras";
   import { museum3dEditorState } from "../../state/museum-3d-editor-state.svelte";
   import { museumEditorOverrides } from "../../state/museum-editor-overrides";
+  import { ProximityGrid } from "../../services/implementations/ProximityGrid";
   import type { PlaqueContent, PlaqueSize } from "../../services/contracts/IPlaqueTextureGenerator";
   import { PlaqueTextureGenerator } from "../../services/implementations/PlaqueTextureGenerator";
 
@@ -99,22 +100,6 @@
   // ── Progressive mount: break heavy sub-components into stages so the
   // browser can paint between each batch. Without this, mounting all torches,
   // plaques, performers etc. in one frame blocks the main thread for ~6-9s.
-  import { onMount } from "svelte";
-  let mountStage = $state(0);
-  onMount(() => {
-    // Each rAF advances one stage, yielding to the browser between batches.
-    // Stage 0: floors, walls, lighting (instanced meshes — cheap)
-    // Stage 1: plaques + exhibit lights
-    // Stage 2: torches
-    // Stage 3: performers, furniture, mirrors, portals
-    let stage = 0;
-    const advance = () => {
-      stage++;
-      mountStage = stage;
-      if (stage < 4) requestAnimationFrame(advance);
-    };
-    requestAnimationFrame(advance);
-  });
 
   // ── Editor overrides: sync dragged world positions back into grid data ──
   // Bumping this counter triggers Svelte reactivity for performer/exhibit positions.
@@ -653,6 +638,30 @@
 
     // In editor mode, OrbitControls owns the camera — skip all movement/animation
     if (museum3dEditorState.editorActive) return;
+
+    // Drain pending mount queue (max 5 per frame to avoid spikes)
+    if (pendingMounts.length > 0) {
+      const batch = pendingMounts.splice(0, MAX_MOUNTS_PER_FRAME);
+      for (const { category, item } of batch) {
+        switch (category) {
+          case "torch": visibleTorches = [...visibleTorches, item]; break;
+          case "plaque": visiblePlaques = [...visiblePlaques, item]; break;
+          case "performer": visiblePerformers = [...visiblePerformers, item]; break;
+          case "exhibitLight": visibleExhibitLights = [...visibleExhibitLights, item]; break;
+          case "ceilingLight": visibleCeilingLights = [...visibleCeilingLights, item]; break;
+          case "furniture": visibleFurniture = [...visibleFurniture, item]; break;
+        }
+      }
+    }
+
+    // Proximity visibility recheck — when player moves 2+ tiles
+    const currentTX = Math.round(playerPosition.x / TILE_SIZE);
+    const currentTY = Math.round(playerPosition.z / TILE_SIZE);
+    const dCheckX = currentTX - lastCheckTX;
+    const dCheckY = currentTY - lastCheckTY;
+    if (dCheckX * dCheckX + dCheckY * dCheckY >= 4) {
+      recomputeVisibility(currentTX, currentTY);
+    }
 
     // First frame: initialize camera
     if (!initialized) {
@@ -1294,17 +1303,118 @@
   // Torch point light budget — each MuseumTorch3D has its own point light,
   // so we limit to MAX_POINT_LIGHTS torches with lights, rest get visuals only
   const MAX_POINT_LIGHTS = 32;
-  const torchesWithLight = torchPositions.length <= MAX_POINT_LIGHTS
-    ? torchPositions
-    : (() => {
-        const selected: { x: number; z: number }[] = [];
-        const step = torchPositions.length / MAX_POINT_LIGHTS;
-        for (let i = 0; i < MAX_POINT_LIGHTS; i++) {
-          selected.push(torchPositions[Math.floor(i * step)]!);
+
+  // ── Proximity-based rendering ──
+  const CELL_SIZE = 8;
+  const MOUNT_RADIUS = 30;
+  const UNMOUNT_RADIUS = 40;
+  const MAX_MOUNTS_PER_FRAME = 5;
+
+  // Build proximity grids — one per component type
+  const torchGrid = new ProximityGrid<typeof torchPositions[0]>(CELL_SIZE);
+  for (const t of torchPositions) torchGrid.insert(t, t.tileX, t.tileY);
+
+  const plaqueGrid = new ProximityGrid<(typeof plaquePlacements)[0]>(CELL_SIZE);
+  for (const p of plaquePlacements) plaqueGrid.insert(p, p.tileX, p.tileY);
+
+  const performerGrid = new ProximityGrid<typeof grid.performers[0]>(CELL_SIZE);
+  for (const p of grid.performers) performerGrid.insert(p, p.tileX, p.tileY);
+
+  const exhibitLightGrid = new ProximityGrid<typeof exhibitLightPositions[0]>(CELL_SIZE);
+  for (const l of exhibitLightPositions) exhibitLightGrid.insert(l, l.tileX, l.tileY);
+
+  const ceilingLightGrid = new ProximityGrid<typeof ceilingLightPositions[0]>(CELL_SIZE);
+  for (const l of ceilingLightPositions) ceilingLightGrid.insert(l, l.tileX, l.tileY);
+
+  const furnitureGrid = new ProximityGrid<NonNullable<typeof grid.furniture>[0]>(CELL_SIZE);
+  for (const f of (grid.furniture ?? [])) furnitureGrid.insert(f, f.tileX, f.tileY);
+
+  // Visible sets — only these items get rendered
+  let visibleTorches = $state([] as typeof torchPositions);
+  let visiblePlaques = $state([] as typeof plaquePlacements);
+  let visiblePerformers = $state([] as typeof grid.performers);
+  let visibleExhibitLights = $state([] as typeof exhibitLightPositions);
+  let visibleCeilingLights = $state([] as typeof ceilingLightPositions);
+  let visibleFurniture = $state([] as NonNullable<typeof grid.furniture>);
+
+  type MountCategory = "torch" | "plaque" | "performer" | "exhibitLight" | "ceilingLight" | "furniture";
+  let pendingMounts: { category: MountCategory; item: any }[] = [];
+
+  let lastCheckTX = -999;
+  let lastCheckTY = -999;
+
+  function recomputeVisibility(playerTX: number, playerTY: number): void {
+    // Editor/top-down bypass: show everything
+    if (museum3dEditorState.editorActive || !fpsActive) {
+      visibleTorches = torchPositions;
+      visiblePlaques = plaquePlacements;
+      visiblePerformers = grid.performers;
+      visibleExhibitLights = exhibitLightPositions;
+      visibleCeilingLights = ceilingLightPositions;
+      visibleFurniture = grid.furniture ?? [];
+      pendingMounts = [];
+      return;
+    }
+
+    lastCheckTX = playerTX;
+    lastCheckTY = playerTY;
+
+    // Hysteresis: query at mount radius, keep old items within unmount radius
+    function computeTarget<T extends { tileX: number; tileY: number }>(
+      proxGrid: ProximityGrid<T>,
+      current: T[],
+      keyFn: (item: T) => string | number,
+    ): T[] {
+      const fromQuery = proxGrid.queryRadius(playerTX, playerTY, MOUNT_RADIUS);
+      const queryKeys = new Set(fromQuery.map(keyFn));
+      const surviving = current.filter(item => {
+        if (queryKeys.has(keyFn(item))) return false;
+        const dx = item.tileX - playerTX;
+        const dy = item.tileY - playerTY;
+        return dx * dx + dy * dy <= UNMOUNT_RADIUS * UNMOUNT_RADIUS;
+      });
+      return [...fromQuery, ...surviving];
+    }
+
+    // Helper: compute target, apply removals immediately, queue additions
+    function applyWithBatching<T>(
+      category: MountCategory,
+      proxGrid: ProximityGrid<T & { tileX: number; tileY: number }>,
+      current: T[],
+      keyFn: (item: T) => string | number,
+    ): T[] {
+      const target = computeTarget(proxGrid as any, current as any, keyFn as any) as T[];
+      const currentKeys = new Set(current.map(keyFn));
+      const targetKeys = new Set(target.map(keyFn));
+      // Removals: apply immediately
+      const kept = current.filter(item => targetKeys.has(keyFn(item)));
+      // Additions: queue for batched mount
+      for (const item of target) {
+        if (!currentKeys.has(keyFn(item))) {
+          pendingMounts.push({ category, item });
         }
-        return selected;
-      })();
-  const torchLightSet = new Set(torchesWithLight.map(t => `${t.x},${t.z}`));
+      }
+      return kept;
+    }
+
+    visibleTorches = applyWithBatching("torch", torchGrid, visibleTorches, t => t.id);
+    visiblePlaques = applyWithBatching("plaque", plaqueGrid, visiblePlaques, p => p.refId);
+    visiblePerformers = applyWithBatching("performer", performerGrid, visiblePerformers, p => p.id);
+    visibleExhibitLights = applyWithBatching("exhibitLight", exhibitLightGrid, visibleExhibitLights, l => l.id);
+    visibleCeilingLights = applyWithBatching("ceilingLight", ceilingLightGrid, visibleCeilingLights, l => l.id);
+    visibleFurniture = applyWithBatching("furniture", furnitureGrid, visibleFurniture, f => f.id);
+  }
+
+  // Compute initial visible set from spawn
+  recomputeVisibility(grid.spawn.x, grid.spawn.y);
+
+  // Torch light set — derived from visible torches, capped at MAX_POINT_LIGHTS
+  const torchLightSet = $derived.by(() => {
+    const withLight = visibleTorches.length <= MAX_POINT_LIGHTS
+      ? visibleTorches
+      : visibleTorches.slice(0, MAX_POINT_LIGHTS);
+    return new Set(withLight.map(t => `${t.x},${t.z}`));
+  });
 </script>
 
 <!-- Camera (owned by flip animation when not in FPS, by UCC when in FPS, by OrbitControls in editor) -->
@@ -1466,10 +1576,8 @@
   <T is={ceilingMesh} />
 {/if}
 
-<!-- Stage 1: Plaques + exhibit lights -->
-{#if mountStage >= 1}
 <!-- Exhibit plaques: individually textured with readable content -->
-{#each plaquePlacements as plaque (plaque.refId)}
+{#each visiblePlaques as plaque (plaque.refId)}
   {@const plaqueOverride = overrideVersion >= 0 ? museumEditorOverrides.get(`plaque-${plaque.refId}`) : null}
   <MuseumPlaque3D
     worldX={plaqueOverride?.x ?? plaque.worldX}
@@ -1483,7 +1591,7 @@
     generator={plaqueGenerator}
   />
 {/each}
-{#each exhibitLightPositions as pos (pos.id)}
+{#each visibleExhibitLights as pos (pos.id)}
   {#if useSpotLights}
     <T.SpotLight
       position={[pos.x, 2.5, pos.z]}
@@ -1505,7 +1613,7 @@
 {/each}
 
 <!-- Ceiling fluorescent lights — cold white overhead wash for institutional rooms -->
-{#each ceilingLightPositions as cLight (cLight.id)}
+{#each visibleCeilingLights as cLight (cLight.id)}
   <T.PointLight
     position={[cLight.x, WALL_HEIGHT - 0.3, cLight.z]}
     intensity={4}
@@ -1514,12 +1622,9 @@
     decay={1}
   />
 {/each}
-{/if}
 
-<!-- Stage 2: Torches (shader compilation + particles per torch) -->
-{#if mountStage >= 2}
 <!-- Light fixtures — model and effects vary by wing theme/era -->
-{#each torchPositions as torch (torch.id)}
+{#each visibleTorches as torch (torch.id)}
   <MuseumTorch3D
     x={torch.x}
     z={torch.z}
@@ -1529,13 +1634,10 @@
     baseIntensity={torchLightSet.has(`${torch.x},${torch.z}`) ? 4 : 0}
   />
 {/each}
-{/if}
 
-<!-- Stage 3: Performers, furniture, mirrors, portals -->
-{#if mountStage >= 3}
 <!-- Performer stations: 3D mannequins with spinning staves -->
 <!-- overrideVersion dependency ensures reactivity when editor moves objects -->
-{#each grid.performers as performer (performer.id)}
+{#each visiblePerformers as performer (performer.id)}
   {@const posOverride = overrideVersion >= 0 ? museumEditorOverrides.get(`performer-station-${performer.id}`) : null}
   <MuseumPerformerStation3D
     stationId={performer.id}
@@ -1558,11 +1660,6 @@
   <T is={signMesh} />
 {/if}
 
-{/if}
-<!-- end stage 3 -->
-
-<!-- Stage 4: Furniture, mirrors, portals -->
-{#if mountStage >= 4}
 <!-- GLTF furniture models (Kenney CC0 kit) -->
 <MuseumFurniture {grid} tileSize={TILE_SIZE} />
 
@@ -1619,8 +1716,6 @@
     label="Cave"
   />
 {/if}
-{/if}
-<!-- end stage 4 -->
 
 <!-- 3D Scene Editor — click to select, gizmo to transform -->
 {#if museum3dEditorState.editorActive}
