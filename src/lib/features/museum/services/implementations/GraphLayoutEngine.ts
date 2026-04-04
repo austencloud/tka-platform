@@ -19,6 +19,7 @@ import type {
   PlacedRoom,
   LayoutResult,
 } from "../../domain/layout-types";
+import { computeRoomDimensions } from "../../domain/wall-segment-types";
 
 // Direction vectors for placing the next room relative to the current one
 const DIR_VECTORS: Record<string, { dx: number; dy: number }> = {
@@ -44,9 +45,8 @@ export class GraphLayoutEngine implements ILayoutEngine {
       const room = roomMap.get(roomId);
       if (!room) continue;
 
-      // Deterministic sizing: midpoint of min/max
-      const w = room.minWidth + Math.floor((room.maxWidth - room.minWidth) / 2);
-      const h = room.minHeight + Math.floor((room.maxHeight - room.minHeight) / 2);
+      // Dimensions derived from wall segment budgets
+      const { w, h } = computeRoomDimensions(room);
 
       if (i === 0) {
         // First room at origin
@@ -95,8 +95,7 @@ export class GraphLayoutEngine implements ILayoutEngine {
       const childNode = roomMap.get(edge.to);
       if (!parentRoom || !childNode) continue;
 
-      const w = childNode.minWidth + Math.floor((childNode.maxWidth - childNode.minWidth) / 2);
-      const h = childNode.minHeight + Math.floor((childNode.maxHeight - childNode.minHeight) / 2);
+      const { w, h } = computeRoomDimensions(childNode);
       const dir = DIR_VECTORS[edge.fromWall];
       if (!dir) continue;
 
@@ -158,10 +157,8 @@ export class GraphLayoutEngine implements ILayoutEngine {
       theme: room.theme,
       description: room.description,
       devNotes: room.devNotes,
-      exhibits: room.exhibits,
+      walls: room.walls,
       performers: room.performers,
-      torches: room.torches,
-      screens: room.screens,
       furniture: room.furniture,
     };
   }
