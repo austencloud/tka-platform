@@ -79,7 +79,7 @@ Always opens selector panel when clicked
       };
       // Fallback: strip "strict_" prefix and title-case for unmapped legacy values
       return typeMap[currentLOOPType as keyof typeof typeMap] ||
-        currentLOOPType.replace(/^strict_/, "").split("_").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" / ");
+        currentLOOPType.replace(/^strict_/, "").split("_").map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(" / ");
     })()
   );
 </script>

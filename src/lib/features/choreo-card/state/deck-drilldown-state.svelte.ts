@@ -193,7 +193,7 @@ export function createDrillDownState(allDecks: Deck[]) {
 
 			if (counts.length === 1 && counts[0] !== undefined) {
 				// Only one step count available, auto-skip to turns.
-				selections = { ...selections, shape, stepCount: counts[0] };
+				selections = { ...selections, shape, stepCount: counts[0] ?? null };
 				advanceTo('turn', shape.loopTypes.join(' + '));
 			} else {
 				advanceTo('stepcount', shape.loopTypes.join(' + '));
@@ -229,7 +229,7 @@ export function createDrillDownState(allDecks: Deck[]) {
 				selections = {
 					...selections,
 					turnPattern: pattern,
-					reversalPattern: reversals[0],
+					reversalPattern: reversals[0] ?? null,
 				};
 				advanceTo('reversal', pattern);
 			} else {
@@ -246,13 +246,14 @@ export function createDrillDownState(allDecks: Deck[]) {
 			if (!target) return;
 
 			direction = 'backward';
-			currentStep = target.stepId;
+			const stepId = target.stepId;
+			currentStep = stepId;
 
 			// Truncate breadcrumbs to the entries before the target.
 			breadcrumbs = breadcrumbs.slice(0, index);
 
 			// Reset selections for everything after the target step.
-			resetSelectionsAfter(target.stepId);
+			resetSelectionsAfter(stepId);
 		},
 
 		reset() {

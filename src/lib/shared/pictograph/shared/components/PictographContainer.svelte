@@ -244,10 +244,10 @@ with pre-prepared data for better performance.
     showPositions !== undefined ? showPositions : syncedVisibility.positionsGlyph
   );
 
-  // Hand point visibility mode — prop override forces "always" or uses global
-  const effectiveHandPointVisibility = $derived(
+  // Hand point visibility mode — prop override forces show-all or hide-inactive, else use global
+  const effectiveHandPointVisibility = $derived<"all" | "active">(
     showHandPoints !== undefined
-      ? (showHandPoints ? "always" : "never")
+      ? (showHandPoints ? "all" : "active")
       : syncedVisibility.handPointVisibility
   );
 
