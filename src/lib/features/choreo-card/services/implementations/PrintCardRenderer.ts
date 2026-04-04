@@ -35,6 +35,63 @@ export class PrintCardRenderer implements IPrintCardRenderer {
     private readonly theme: string = "nightSky"
   ) {}
 
+  /** Draw a rounded rectangle path (does not fill or stroke) */
+  private roundRectPath(
+    ctx: CanvasRenderingContext2D,
+    x: number, y: number, w: number, h: number, r: number
+  ): void {
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, h, r);
+    ctx.closePath();
+  }
+
+  /** Fill the canvas with diagonal pinstripes */
+  private drawStripes(
+    ctx: CanvasRenderingContext2D,
+    w: number, h: number,
+    accent: string, dark: string,
+    stripeWidth: number = 6
+  ): void {
+    // Fill base with dark color
+    ctx.fillStyle = dark;
+    ctx.fillRect(0, 0, w, h);
+
+    // Draw diagonal accent stripes
+    ctx.fillStyle = accent;
+    const half = stripeWidth / 2;
+    const diagonal = Math.sqrt(w * w + h * h);
+    const count = Math.ceil(diagonal / stripeWidth) + 1;
+
+    ctx.save();
+    ctx.translate(w / 2, h / 2);
+    ctx.rotate(-Math.PI / 4); // 45 degrees
+
+    for (let i = -count; i <= count; i++) {
+      const x = i * stripeWidth;
+      ctx.fillRect(x, -diagonal / 2, half, diagonal);
+    }
+    ctx.restore();
+  }
+
+  /** Draw the edge glow overlay */
+  private drawEdgeGlow(ctx: CanvasRenderingContext2D, w: number, h: number): void {
+    const glowHeight = h * 0.2;
+
+    // Top glow
+    const topGrad = ctx.createLinearGradient(0, 0, 0, glowHeight);
+    topGrad.addColorStop(0, "rgba(255, 255, 255, 0.2)");
+    topGrad.addColorStop(1, "rgba(255, 255, 255, 0)");
+    ctx.fillStyle = topGrad;
+    ctx.fillRect(0, 0, w, glowHeight);
+
+    // Bottom glow
+    const botGrad = ctx.createLinearGradient(0, h - glowHeight, 0, h);
+    botGrad.addColorStop(0, "rgba(255, 255, 255, 0)");
+    botGrad.addColorStop(1, "rgba(255, 255, 255, 0.2)");
+    ctx.fillStyle = botGrad;
+    ctx.fillRect(0, h - glowHeight, w, glowHeight);
+  }
+
   async renderFront(
     sequence: SequenceData,
     options: PrintRenderOptions
@@ -45,6 +102,11 @@ export class PrintCardRenderer implements IPrintCardRenderer {
     const contentW = canvasW - bleed * 2;
     const contentH = canvasH - bleed * 2;
 
+    // Resolve element colors
+    const accent = options.elementTheme?.accentColor ?? "#999999";
+    const dark = options.elementTheme?.darkComplement ?? "#444444";
+
+    // Render the sequence image (keep all existing options)
     const sequenceCanvas = await this.imageComposer.composeSequenceImage(sequence, {
       includeStartPosition: options.includeStartPosition,
       startPositionLayout: options.startPositionLayout ?? "column",
@@ -84,34 +146,48 @@ export class PrintCardRenderer implements IPrintCardRenderer {
       },
     });
 
-    // Wrap in MPC canvas with bleed
+    // Build the card canvas
     const mpcCanvas = document.createElement("canvas");
     mpcCanvas.width = canvasW;
     mpcCanvas.height = canvasH;
-    const mpcCtx = mpcCanvas.getContext("2d")!;
+    const ctx = mpcCanvas.getContext("2d")!;
 
-    // 1. Fill bleed area with neutral gray (cutting guide)
-    mpcCtx.fillStyle = "#808080";
-    mpcCtx.fillRect(0, 0, canvasW, canvasH);
+    const outerRadius = 12;
+    const innerRadius = 8;
 
-    // 2. Fill content area with white
-    mpcCtx.fillStyle = "#ffffff";
-    mpcCtx.fillRect(bleed, bleed, contentW, contentH);
+    // 1. Clip to rounded outer card shape
+    ctx.save();
+    this.roundRectPath(ctx, 0, 0, canvasW, canvasH, outerRadius);
+    ctx.clip();
 
-    // 3. Center sequence in content area with consistent inner margin
-    const innerMargin = 24;
-    const availW = contentW - innerMargin * 2;
-    const availH = contentH - innerMargin * 2;
+    // 2. Draw stripe pattern across entire canvas
+    this.drawStripes(ctx, canvasW, canvasH, accent, dark);
 
-    const scaleX = availW / sequenceCanvas.width;
-    const scaleY = availH / sequenceCanvas.height;
+    // 3. Draw edge glow overlay
+    this.drawEdgeGlow(ctx, canvasW, canvasH);
+
+    // 4. Clip inner content area (rounded rect inside bleed)
+    ctx.save();
+    this.roundRectPath(ctx, bleed, bleed, contentW, contentH, innerRadius);
+    ctx.clip();
+
+    // 5. Fill inner area with white
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(bleed, bleed, contentW, contentH);
+
+    // 6. Draw sequence image edge-to-edge in content area
+    const scaleX = contentW / sequenceCanvas.width;
+    const scaleY = contentH / sequenceCanvas.height;
     const scale = Math.min(scaleX, scaleY);
     const drawW = sequenceCanvas.width * scale;
     const drawH = sequenceCanvas.height * scale;
-    const offsetX = bleed + innerMargin + (availW - drawW) / 2;
-    const offsetY = bleed + innerMargin + (availH - drawH) / 2;
+    const offsetX = bleed + (contentW - drawW) / 2;
+    const offsetY = bleed + (contentH - drawH) / 2;
 
-    mpcCtx.drawImage(sequenceCanvas, offsetX, offsetY, drawW, drawH);
+    ctx.drawImage(sequenceCanvas, offsetX, offsetY, drawW, drawH);
+
+    ctx.restore(); // inner clip
+    ctx.restore(); // outer clip
 
     return mpcCanvas;
   }
