@@ -52,6 +52,29 @@
 
   const vm = getAnimationVisibilityManager();
 
+  // ── Preset persistence ─────────────────────────────────────────────
+  const PRESET_STORAGE_KEY = "tka_active_effect_presets";
+
+  function loadPresetMap(): Record<string, string> {
+    try {
+      const raw = localStorage.getItem(PRESET_STORAGE_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch { /* ignore */ }
+    return {};
+  }
+
+  function savePresetId(effect: string, presetId: string | null): void {
+    try {
+      const map = loadPresetMap();
+      if (presetId) {
+        map[effect] = presetId;
+      } else {
+        delete map[effect];
+      }
+      localStorage.setItem(PRESET_STORAGE_KEY, JSON.stringify(map));
+    } catch { /* ignore */ }
+  }
+
   // Internal state
   let activeEffect = $state("none");
   let customizeOpen = $state(false);
@@ -83,6 +106,15 @@
 
   onMount(() => {
     syncFromVM();
+    // Restore persisted preset for the active effect
+    if (activeEffect !== "none") {
+      const saved = loadPresetMap()[activeEffect];
+      if (saved) {
+        activePresetId = saved;
+        // Re-apply the preset so colors/settings match the selection
+        handlePresetSelect(saved);
+      }
+    }
     vm.registerObserver(syncFromVM);
   });
 
@@ -114,6 +146,7 @@
     if (!preset) return;
     preset.apply(vm);
     activePresetId = presetId;
+    savePresetId(activeEffect, presetId);
   }
 
   const currentSummary = $derived.by(() => {

@@ -4,6 +4,10 @@
  * Each preset sets a different FireColorCurve (4-stop temperature→color gradient)
  * that the WebGL fire renderer uses in its display shader. The curve controls
  * what the flames actually look like — cold embers through hot core.
+ *
+ * Presets are COLOR ONLY — they don't touch intensity, turbulence, or blend.
+ * Those settings are controlled by the sliders and apply uniformly to all presets.
+ * The 4th preset ("Custom") lets users pick their own fire color.
  */
 
 import type { EffectPreset, EffectPresetGroup } from "./types";
@@ -32,22 +36,58 @@ const SPIRIT_CURVE: FireColorCurve = {
   coreColor: [1.0, 0.7, 1.0],
 };
 
-const GHOST_CURVE: FireColorCurve = {
-  coldColor: [0.0, 0.12, 0.1],
-  midColor: [0.0, 0.6, 0.4],
-  hotColor: [0.2, 0.9, 0.7],
-  coreColor: [0.7, 1.0, 0.9],
-};
+// ── Custom fire color persistence ──────────────────────────────────────
+const CUSTOM_FIRE_COLOR_KEY = "tka_custom_fire_color";
+const DEFAULT_CUSTOM_FIRE_COLOR = "#34d399"; // Green fire
+
+export function loadCustomFireColor(): string {
+  try {
+    const raw = localStorage.getItem(CUSTOM_FIRE_COLOR_KEY);
+    if (raw) return raw;
+  } catch { /* ignore */ }
+  return DEFAULT_CUSTOM_FIRE_COLOR;
+}
+
+export function saveCustomFireColor(hex: string): void {
+  try {
+    localStorage.setItem(CUSTOM_FIRE_COLOR_KEY, hex);
+  } catch { /* ignore */ }
+}
+
+/**
+ * Build a 4-stop FireColorCurve from a single hex color.
+ * Cold = darkened hue, mid = saturated hue, hot = brightened, core = washed out bright.
+ */
+export function hexToFireCurve(hex: string): FireColorCurve {
+  const r = parseInt(hex.slice(1, 3), 16) / 255;
+  const g = parseInt(hex.slice(3, 5), 16) / 255;
+  const b = parseInt(hex.slice(5, 7), 16) / 255;
+
+  return {
+    coldColor: [r * 0.25, g * 0.25, b * 0.25],
+    midColor: [r * 0.8, g * 0.8, b * 0.8],
+    hotColor: [Math.min(1, r * 1.1), Math.min(1, g * 1.1), Math.min(1, b * 1.1)],
+    coreColor: [
+      Math.min(1, r * 0.6 + 0.4),
+      Math.min(1, g * 0.6 + 0.4),
+      Math.min(1, b * 0.6 + 0.4),
+    ],
+  };
+}
+
+export function applyCustomFireColor(vm: AnimationVisibilityStateManager, hex: string): void {
+  vm.setFireColorCurve(hexToFireCurve(hex));
+}
+
+// ── Presets (color only — no intensity/turbulence changes) ─────────────
 
 export const FIRE_PRESETS: EffectPreset[] = [
   {
     id: "fire-classic",
-    name: "Classic Fire",
+    name: "Classic",
     previewColor: "#f97316",
     apply: (vm) => {
       vm.setFireColorCurve(CLASSIC_CURVE);
-      vm.setFireIntensity(0.7);
-      vm.setFireColorBlend(0);
     },
   },
   {
@@ -56,28 +96,23 @@ export const FIRE_PRESETS: EffectPreset[] = [
     previewColor: "#60a5fa",
     apply: (vm) => {
       vm.setFireColorCurve(BLUE_CURVE);
-      vm.setFireIntensity(0.7);
-      vm.setFireColorBlend(0);
     },
   },
   {
     id: "fire-spirit",
-    name: "Spirit Fire",
+    name: "Spirit",
     previewColor: "#a855f7",
     apply: (vm) => {
       vm.setFireColorCurve(SPIRIT_CURVE);
-      vm.setFireIntensity(0.85);
-      vm.setFireColorBlend(0);
     },
   },
   {
-    id: "fire-ghost",
-    name: "Ghost Fire",
-    previewColor: "#34d399",
+    id: "fire-custom",
+    name: "Custom",
+    previewColor: "custom",
     apply: (vm) => {
-      vm.setFireColorCurve(GHOST_CURVE);
-      vm.setFireIntensity(0.6);
-      vm.setFireColorBlend(0);
+      const hex = loadCustomFireColor();
+      applyCustomFireColor(vm, hex);
     },
   },
 ];
