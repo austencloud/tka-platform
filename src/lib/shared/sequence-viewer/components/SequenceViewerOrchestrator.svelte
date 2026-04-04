@@ -139,6 +139,10 @@
     handlePublishAction: () => Promise<void>;
     handleUnpublishAction: () => Promise<void>;
 
+    // Playback mode
+    playbackMode: import("$lib/features/compose/state/animation-panel-state.svelte").PlaybackMode;
+    handlePlaybackModeChange: (mode: import("$lib/features/compose/state/animation-panel-state.svelte").PlaybackMode) => void;
+
     // Handlers
     handlePlaybackToggle: () => void;
     handleBpmChange: (bpm: number) => void;
@@ -849,6 +853,17 @@
     if (practiceOrchestrator.isActive()) {
       practiceOrchestrator.adjustBpm(newBpm);
       practiceState.updateProgress(practiceOrchestrator.getProgress());
+    }
+  }
+
+  function handlePlaybackModeChange(mode: import("$lib/features/compose/state/animation-panel-state.svelte").PlaybackMode) {
+    const wasPlaying = isPlayingLocal;
+    if (wasPlaying && playbackController) {
+      playbackController.togglePlayback();
+    }
+    modalAnimationState.setPlaybackMode(mode);
+    if (wasPlaying && playbackController) {
+      setTimeout(() => playbackController?.togglePlayback(), 0);
     }
   }
 
@@ -1687,6 +1702,10 @@
     handleFavoriteToggle,
     handlePublishAction,
     handleUnpublishAction,
+
+    // Playback mode
+    playbackMode: modalAnimationState.playbackMode,
+    handlePlaybackModeChange,
 
     // Handlers
     handlePlaybackToggle,

@@ -426,7 +426,9 @@
                             isPlaying={ctx.isPlayingLocal}
                             bpm={ctx.bpmLocal}
                             renderMode={ctx.renderMode}
+                            playbackMode={ctx.playbackMode}
                             onPlaybackToggle={ctx.handlePlaybackToggle}
+                            onPlaybackModeChange={ctx.handlePlaybackModeChange}
                             onBpmChange={ctx.handleBpmChange}
                             onExport={ctx.handleExport}
                             onCancel={ctx.handleCancelExport}

@@ -51,6 +51,10 @@
     STEP_NUMBER_FONT_RATIO, STEP_NUMBER_FONT_MAX,
   } from "@tka/render-composition";
 
+  // Eagerly initialize the singleton so its constructor (which mutates $state)
+  // runs in the script block, not inside a $derived expression.
+  const compositionManager = getImageCompositionManager();
+
   // ============================================================================
   // GLOBAL CELL URL CACHE
   // Survives component remounts so drag-to-move doesn't re-render all cells.
@@ -492,7 +496,7 @@
     }
     // Check per-length column count from global composition settings (4+ steps only)
     if (stepCount >= 4) {
-      const compositionCols = getImageCompositionManager().getColumnCountForStepCount(stepCount);
+      const compositionCols = compositionManager.getColumnCountForStepCount(stepCount);
       if (compositionCols !== null && compositionCols > 0) {
         return includeStartPosition ? compositionCols + 1 : compositionCols;
       }
@@ -534,7 +538,7 @@
     // mirrors effectiveColumns so the two stay in sync.
     const cols = effectiveColumns;
     const hasCompositionOverride = stepCount >= 4
-      && getImageCompositionManager().getColumnCountForStepCount(stepCount) !== null;
+      && compositionManager.getColumnCountForStepCount(stepCount) !== null;
     if (cols > 0 && (columnCount !== null || isLongSequence || hasCompositionOverride)) {
       const stepsPerRow = includeStartPosition ? cols - 1 : cols;
       const firstRowSteps = Math.min(stepsPerRow, stepCount);
@@ -839,7 +843,7 @@
 
       // Resolve column count: explicit prop > composition setting (4+ steps) > layout table
       const resolvedColumnCount = columnCount
-        ?? (stepCount >= 4 ? getImageCompositionManager().getColumnCountForStepCount(stepCount) : null);
+        ?? (stepCount >= 4 ? compositionManager.getColumnCountForStepCount(stepCount) : null);
 
       if (resolvedColumnCount !== null && resolvedColumnCount > 0) {
         // Manual or composition column override.
