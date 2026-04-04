@@ -1,23 +1,16 @@
 <!--
   DeckBrowser.svelte — Browse and explore curated sequence decks.
 
-  Three levels:
-  0. Collection picker: full-width hero cards for LOOPs, VTG, etc.
-  1. Collection page: filterable deck list with DeckRow components
-  2. Deck interior: filterable sequence grid with family/position chips
+  Two modes:
+  - Drill-down: hierarchical collection/shape/category/turn navigation (DeckDrillDown)
+  - Deck interior: filterable sequence grid with family/position chips
 -->
 <script lang="ts">
-  import type { Deck, DeckFamily } from "../domain/models/Deck";
+  import type { Deck } from "../domain/models/Deck";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import { DIFFICULTY_LEVELS } from "$lib/shared/config/difficulty-styles";
-  import { DeckSortMethod, sortDecks, getDeckSectionKey, DECK_SORT_LABELS, DECK_SORT_ICONS } from "../domain/deck-sort";
-  import DeckRow from "./DeckRow.svelte";
-  import DeckListFilterPanel from "./filters/DeckListFilterPanel.svelte";
   import DeckInteriorFilterPanel from "./filters/DeckInteriorFilterPanel.svelte";
   import ChoreoCard from "./ChoreoCard.svelte";
-  import VtgCollectionView from "./VtgCollectionView.svelte";
-  import VtgFamilyDrillDown from "./VtgFamilyDrillDown.svelte";
-  import LoopCollectionView from "./LoopCollectionView.svelte";
+  import DeckDrillDown from "./drilldown/DeckDrillDown.svelte";
   import PrintPreviewPages from "./print-preview/PrintPreviewPages.svelte";
   import PrintPreviewToolbar from "./print-preview/PrintPreviewToolbar.svelte";
   import { type CardSizeId } from "../domain/card-sizes";
@@ -28,9 +21,6 @@
   interface Props {
     decks: Deck[];
     selectedDeckId: string | null;
-    selectedCollection: string | null;
-    selectedVtgFamily: string | null;
-    vtgActiveView: "family" | "ratio" | "reversal";
     deckSequences: SequenceData[];
     isLoading: boolean;
     handPointsVisible?: boolean;
@@ -38,12 +28,8 @@
     showTKA?: boolean;
     showWord?: boolean;
     includeStartPosition?: boolean;
-    onSelectCollection: (collectionId: string) => void;
     onBackToCollections: () => void;
     onSelectDeck: (deckId: string) => void;
-    onBackToDeckList: () => void;
-    onSelectVtgFamily: (familyId: string | null) => void;
-    onVtgViewChange: (view: "family" | "ratio" | "reversal") => void;
     onSelectSequence: (sequence: SequenceData) => void;
     onLoadFamilySequences: (familyIds: string[]) => void;
     onContextMenu?: (x: number, y: number, rerender: () => void) => void;
@@ -52,9 +38,6 @@
   let {
     decks,
     selectedDeckId,
-    selectedCollection,
-    selectedVtgFamily,
-    vtgActiveView,
     deckSequences,
     isLoading,
     handPointsVisible = true,
@@ -62,12 +45,8 @@
     showTKA = true,
     showWord = true,
     includeStartPosition = true,
-    onSelectCollection,
     onBackToCollections,
     onSelectDeck,
-    onBackToDeckList,
-    onSelectVtgFamily,
-    onVtgViewChange,
     onSelectSequence,
     onLoadFamilySequences,
     onContextMenu,
@@ -145,140 +124,11 @@
   // Derived deck/family lookups
   let selectedDeck = $derived(decks.find((d) => d.id === selectedDeckId) ?? null);
 
-  // When there's only one deck in a collection, skip the list view
-  $effect(() => {
-    if (selectedCollection && !selectedDeckId && !isLoading) {
-      const colDecks = getDecksForCollection(selectedCollection);
-      if (colDecks.length === 1) {
-        onSelectDeck(colDecks[0]!.id);
-      }
-    }
-  });
-
-  // ── Collections (Level 0) ──
-
-  interface CollectionInfo {
-    id: string;
-    label: string;
-    icon: string;
-    color: string;
-    description: string;
+  // ── Drill-down deck selection bridge ──
+  // DeckDrillDown gives us a Deck object; parent expects a deck ID string.
+  function handleDrillDownSelect(deck: Deck) {
+    onSelectDeck(deck.id);
   }
-
-  const COLLECTION_REGISTRY: Record<string, CollectionInfo> = {
-    LOOPs: {
-      id: "LOOPs",
-      label: "LOOPs",
-      icon: "rotate",
-      color: "#36c3ff",
-      description: "Repeating patterns sorted by length, speed, and reversal style",
-    },
-    VTG: {
-      id: "VTG",
-      label: "VTG",
-      icon: "fire",
-      color: "#ff9800",
-      description: "The 6 fundamental two-hand movement families and their variations",
-    },
-  };
-
-  const COLLECTION_ORDER = ["LOOPs", "VTG"];
-
-  function getCollections(): {
-    info: CollectionInfo;
-    deckCount: number;
-    cardCount: number;
-    levelRange: string;
-  }[] {
-    const buckets = new Map<string, Deck[]>();
-    for (const deck of decks) {
-      const col = deck.collection ?? "Other";
-      if (!buckets.has(col)) buckets.set(col, []);
-      buckets.get(col)!.push(deck);
-    }
-
-    const result = [];
-    for (const colName of COLLECTION_ORDER) {
-      if (buckets.has(colName)) {
-        const colDecks = buckets.get(colName)!;
-        const levels = colDecks.map((d) => d.level);
-        const minL = Math.min(...levels);
-        const maxL = Math.max(...levels);
-        result.push({
-          info: COLLECTION_REGISTRY[colName] ?? {
-            id: colName,
-            label: colName,
-            icon: "layer-group",
-            color: "#6366f1",
-            description: "",
-          },
-          deckCount: colDecks.length,
-          cardCount: colDecks.reduce((sum, d) => sum + d.totalSequences, 0),
-          levelRange: minL === maxL ? `L${minL}` : `L${minL}-L${maxL}`,
-        });
-      }
-    }
-    // "Other" catch-all
-    const otherDecks = [...buckets.entries()]
-      .filter(([k]) => !COLLECTION_ORDER.includes(k))
-      .flatMap(([, v]) => v);
-    if (otherDecks.length > 0) {
-      const levels = otherDecks.map((d) => d.level);
-      const minL = Math.min(...levels);
-      const maxL = Math.max(...levels);
-      result.push({
-        info: {
-          id: "Other",
-          label: "Other",
-          icon: "layer-group",
-          color: "#6366f1",
-          description: "",
-        },
-        deckCount: otherDecks.length,
-        cardCount: otherDecks.reduce((sum, d) => sum + d.totalSequences, 0),
-        levelRange: minL === maxL ? `L${minL}` : `L${minL}-L${maxL}`,
-      });
-    }
-    return result;
-  }
-
-  function getDecksForCollection(colId: string): Deck[] {
-    return decks.filter((d) => (d.collection ?? "Other") === colId);
-  }
-
-  function getCollectionVisuals(colId: string): { icon: string; color: string } {
-    const info = COLLECTION_REGISTRY[colId];
-    if (info) return { icon: info.icon, color: info.color };
-    return { icon: "layer-group", color: "#6366f1" };
-  }
-
-  // ── VTG family navigation ──
-  const isVtgCollectionView = $derived(
-    selectedCollection === "VTG" && !selectedDeckId && !selectedVtgFamily,
-  );
-
-  // ── Level 1: Deck List State ──
-
-  let deckListFilters = $state({ level: null as number | null, gridMode: null as string | null });
-  let deckSortMethod = $state(DeckSortMethod.NAME);
-  let deckFiltersOpen = $state(false);
-  let sortOpen = $state(false);
-
-  const filteredDecks = $derived.by(() => {
-    if (!selectedCollection) return [];
-    let result = getDecksForCollection(selectedCollection);
-    if (deckListFilters.level !== null) {
-      result = result.filter((d) => d.level === deckListFilters.level);
-    }
-    if (deckListFilters.gridMode !== null) {
-      result = result.filter((d) => d.gridMode === deckListFilters.gridMode);
-    }
-    return sortDecks(result, deckSortMethod);
-  });
-
-  const hasActiveFilters = $derived(
-    deckListFilters.level !== null || deckListFilters.gridMode !== null,
-  );
 
   // ── Level 2: Deck Interior State ──
 
@@ -366,19 +216,6 @@
     }
   });
 
-  function handleSortClickOutside(event: MouseEvent) {
-    const target = event.target as HTMLElement;
-    if (!target.closest(".sort-wrapper")) {
-      sortOpen = false;
-    }
-  }
-
-  $effect(() => {
-    if (!sortOpen) return;
-    document.addEventListener("click", handleSortClickOutside, true);
-    return () => document.removeEventListener("click", handleSortClickOutside, true);
-  });
-
   function formatCount(n: number): string {
     if (n >= 10_000) return `${(n / 1000).toFixed(1)}k`;
     if (n >= 1_000) return `${(n / 1000).toFixed(1)}k`;
@@ -392,13 +229,12 @@
     <div class="level-container level-interior">
       <div class="top-bar">
         <nav class="breadcrumb" aria-label="Deck navigation">
-          <button class="crumb" onclick={onBackToCollections} type="button">Collections</button>
+          <button class="crumb" onclick={onBackToCollections} type="button">
+            <i class="fas fa-arrow-left" aria-hidden="true" style="margin-right:6px;font-size:11px;"></i>
+            Back to browser
+          </button>
           <span class="crumb-sep" aria-hidden="true">›</span>
-          <button class="crumb" onclick={onBackToDeckList} type="button"
-            >{COLLECTION_REGISTRY[selectedDeck.collection ?? ""]?.label ?? "Decks"}</button
-          >
-          <span class="crumb-sep" aria-hidden="true">›</span>
-          <span class="crumb current">{selectedDeck.name}</span>
+          <span class="crumb current">{selectedDeck.canonicalName || selectedDeck.name}</span>
         </nav>
         <div class="top-bar-actions">
           <!-- View mode toggle -->
@@ -563,223 +399,9 @@
 
     </div>
 
-  {:else if selectedCollection === "VTG" && selectedVtgFamily}
-    <!-- ═══ Level 1.5: VTG Family Drill-Down ═══ -->
-    <div class="level-container level-deck-list">
-      <VtgFamilyDrillDown
-        familyId={selectedVtgFamily}
-        decks={getDecksForCollection("VTG")}
-        {handPointsVisible}
-        {showGrid}
-        {showTKA}
-        {showWord}
-        {includeStartPosition}
-        {onSelectSequence}
-        {onContextMenu}
-        onBack={() => onSelectVtgFamily(null)}
-      />
-    </div>
-
-  {:else if selectedCollection && isVtgCollectionView}
-    <!-- ═══ Level 1: VTG Collection View (Family/Ratio cards) ═══ -->
-    <div class="level-container level-deck-list">
-      <div class="top-bar">
-        <nav class="breadcrumb" aria-label="Deck navigation">
-          <button class="crumb" onclick={onBackToCollections} type="button">Collections</button>
-          <span class="crumb-sep" aria-hidden="true">›</span>
-          <span class="crumb current">VTG</span>
-        </nav>
-      </div>
-
-      {#if isLoading}
-        <div class="loading" role="status" aria-live="polite">
-          <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-          Loading decks...
-        </div>
-      {:else}
-        <VtgCollectionView
-          decks={getDecksForCollection("VTG")}
-          {onSelectDeck}
-          onSelectFamily={(familyId) => onSelectVtgFamily(familyId)}
-          initialView={vtgActiveView}
-          onViewChange={(view) => onVtgViewChange(view)}
-        />
-      {/if}
-    </div>
-
-  {:else if selectedCollection === 'LOOPs'}
-    <!-- ═══ Level 1: LOOPs Collection View ═══ -->
-    <div class="level-container level-deck-list">
-      <div class="top-bar">
-        <nav class="breadcrumb" aria-label="Deck navigation">
-          <button class="crumb" onclick={onBackToCollections} type="button">Collections</button>
-          <span class="crumb-sep" aria-hidden="true">›</span>
-          <span class="crumb current">LOOPs</span>
-        </nav>
-      </div>
-
-      {#if isLoading}
-        <div class="loading" role="status" aria-live="polite">
-          <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-          Loading decks...
-        </div>
-      {:else}
-        <LoopCollectionView
-          decks={filteredDecks}
-          onSelectDeck={(deck) => onSelectDeck(deck.id)}
-        />
-      {/if}
-    </div>
-
-  {:else if selectedCollection}
-    <!-- ═══ Level 1: Collection Page (Deck List) ═══ -->
-    <div class="level-container level-deck-list">
-      <div class="top-bar">
-        <nav class="breadcrumb" aria-label="Deck navigation">
-          <button class="crumb" onclick={onBackToCollections} type="button">Collections</button>
-          <span class="crumb-sep" aria-hidden="true">›</span>
-          <span class="crumb current"
-            >{COLLECTION_REGISTRY[selectedCollection]?.label ?? selectedCollection}</span
-          >
-        </nav>
-        <div class="top-bar-actions">
-          <button
-            class="action-chip"
-            class:active={deckFiltersOpen}
-            onclick={() => { deckFiltersOpen = !deckFiltersOpen; }}
-            type="button"
-            aria-label="Toggle filters"
-          >
-            <i class="fas fa-filter" aria-hidden="true"></i>
-            Filter
-            {#if hasActiveFilters}
-              <span class="filter-badge" aria-hidden="true"></span>
-            {/if}
-          </button>
-          <div class="sort-wrapper">
-            <button
-              class="action-chip"
-              class:active={sortOpen}
-              onclick={() => { sortOpen = !sortOpen; }}
-              type="button"
-              aria-label="Sort decks"
-            >
-              <i class="fas {DECK_SORT_ICONS[deckSortMethod]}" aria-hidden="true"></i>
-              {DECK_SORT_LABELS[deckSortMethod]}
-            </button>
-            {#if sortOpen}
-              <div class="sort-popover" role="listbox" aria-label="Sort by">
-                {#each Object.values(DeckSortMethod) as method}
-                  <button
-                    class="sort-option"
-                    class:selected={deckSortMethod === method}
-                    onclick={() => { deckSortMethod = method; sortOpen = false; }}
-                    role="option"
-                    aria-selected={deckSortMethod === method}
-                    type="button"
-                  >
-                    <i class="fas {DECK_SORT_ICONS[method]}" aria-hidden="true"></i>
-                    <span>{DECK_SORT_LABELS[method]}</span>
-                    {#if deckSortMethod === method}
-                      <i class="fas fa-check" aria-hidden="true"></i>
-                    {/if}
-                  </button>
-                {/each}
-              </div>
-            {/if}
-          </div>
-        </div>
-      </div>
-
-      <DeckListFilterPanel
-        isOpen={deckFiltersOpen}
-        activeLevel={deckListFilters.level}
-        activeGridMode={deckListFilters.gridMode}
-        onLevelChange={(level) => { deckListFilters = { ...deckListFilters, level }; }}
-        onGridModeChange={(gridMode) => { deckListFilters = { ...deckListFilters, gridMode }; }}
-      />
-
-      {#if isLoading}
-        <div class="loading" role="status" aria-live="polite">
-          <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-          Loading decks...
-        </div>
-      {:else if filteredDecks.length === 0}
-        <div class="empty-state" role="status">
-          <i class="fas fa-layer-group empty-icon" aria-hidden="true"></i>
-          <p class="empty-text">No decks match these filters</p>
-          {#if hasActiveFilters}
-            <button
-              class="clear-filters-btn"
-              onclick={() => { deckListFilters = { level: null, gridMode: null }; }}
-              type="button">Clear filters</button
-            >
-          {/if}
-        </div>
-      {:else}
-        {@const visuals = getCollectionVisuals(selectedCollection)}
-        <div class="deck-list">
-          {#each filteredDecks as deck (deck.id)}
-            <DeckRow
-              {deck}
-              accentColor={visuals.color}
-              accentIcon={visuals.icon}
-              onSelect={onSelectDeck}
-            />
-          {/each}
-        </div>
-      {/if}
-    </div>
-
   {:else}
-    <!-- ═══ Level 0: Collection Picker ═══ -->
-    <div class="level-container level-collections">
-      {#if isLoading}
-        <div class="loading" role="status" aria-live="polite">
-          <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-          Loading decks...
-        </div>
-      {:else if decks.length === 0}
-        <div class="empty-state" role="status">
-          <i class="fas fa-layer-group empty-icon" aria-hidden="true"></i>
-          <p class="empty-text">No decks available</p>
-        </div>
-      {:else}
-        {@const collections = getCollections()}
-        <div class="collections-landing">
-          <div class="landing-header">
-            <h2 class="landing-title">Decks</h2>
-            <p class="landing-subtitle">Movement patterns organized into practice-ready collections</p>
-          </div>
-          <div class="collection-stack">
-            {#each collections as col (col.info.id)}
-              <button
-                class="collection-hero"
-                onclick={() => onSelectCollection(col.info.id)}
-                type="button"
-                aria-label="Browse {col.info.label}"
-                style="--accent: {col.info.color}"
-              >
-                <div class="hero-accent-edge"></div>
-                <div class="hero-content">
-                  <div class="hero-icon-wrap">
-                    <i class="fas fa-{col.info.icon}" aria-hidden="true"></i>
-                  </div>
-                  <div class="hero-text">
-                    <h3 class="hero-name">{col.info.label}</h3>
-                    <p class="hero-desc">{col.info.description}</p>
-                    <span class="hero-stat">{col.deckCount} {col.deckCount === 1 ? "deck" : "decks"}</span>
-                  </div>
-                  <div class="hero-arrow">
-                    <i class="fas fa-chevron-right" aria-hidden="true"></i>
-                  </div>
-                </div>
-              </button>
-            {/each}
-          </div>
-        </div>
-      {/if}
-    </div>
+    <!-- ═══ Drill-Down Browser (replaces old level 0 + 1) ═══ -->
+    <DeckDrillDown {decks} onSelectDeck={handleDrillDownSelect} />
   {/if}
 </div>
 
@@ -850,8 +472,6 @@
     min-height: 0;
   }
 
-  .level-collections,
-  .level-deck-list,
   .level-interior { max-width: 1400px; }
 
   /* ── Top Bar ── */
@@ -887,11 +507,6 @@
     border-radius: 0 8px 8px 0;
   }
 
-  .cards-view-container {
-    flex: 1;
-    overflow-y: auto;
-  }
-
   .action-chip {
     display: inline-flex;
     align-items: center;
@@ -912,67 +527,6 @@
   .action-chip.active {
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
     color: var(--theme-text, #fff);
-  }
-
-  .filter-badge {
-    position: absolute;
-    top: -2px;
-    right: -2px;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--theme-accent, #6366f1);
-  }
-
-  /* ── Sort Popover ── */
-
-  .sort-wrapper {
-    position: relative;
-  }
-
-  .sort-popover {
-    position: absolute;
-    top: calc(100% + 8px);
-    right: 0;
-    z-index: 100;
-    display: flex;
-    flex-direction: column;
-    min-width: 160px;
-    padding: 4px;
-    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 8px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-  }
-
-  .sort-option {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 12px;
-    background: none;
-    border: none;
-    color: var(--theme-text, #fff);
-    font: inherit;
-    font-size: var(--font-size-sm, 14px);
-    cursor: pointer;
-    border-radius: 4px;
-    text-align: left;
-    width: 100%;
-  }
-
-  .sort-option:hover {
-    background: rgba(255, 255, 255, 0.08);
-  }
-
-  .sort-option.selected {
-    background: rgba(99, 102, 241, 0.15);
-  }
-
-  .sort-option .fa-check {
-    margin-left: auto;
-    font-size: 12px;
-    color: var(--theme-accent, #6366f1);
   }
 
   /* ── Breadcrumbs ── */
@@ -1040,12 +594,6 @@
 
   /* ── Deck List (Level 1) ── */
 
-  .deck-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
   /* ── Sequence Sections (Level 2) ── */
 
   .sequence-sections {
@@ -1095,148 +643,6 @@
     width: 100%;
     height: 100%;
     border-radius: 0;
-  }
-
-  /* ── Collection Picker (Level 0) ── */
-
-  .collections-landing {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    max-width: 640px;
-    margin: 0 auto;
-    width: 100%;
-    gap: 32px;
-  }
-
-  .landing-header {
-    text-align: center;
-  }
-
-  .landing-title {
-    font-size: 28px;
-    font-weight: 700;
-    color: var(--theme-text, #ffffff);
-    margin: 0 0 8px;
-    letter-spacing: -0.01em;
-  }
-
-  .landing-subtitle {
-    font-size: var(--font-size-min, 14px);
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
-    margin: 0;
-    line-height: 1.5;
-  }
-
-  .collection-stack {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    width: 100%;
-  }
-
-  .collection-hero {
-    position: relative;
-    display: flex;
-    align-items: stretch;
-    padding: 0;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 16px;
-    cursor: pointer;
-    color: var(--theme-text, #fff);
-    font: inherit;
-    text-align: left;
-    overflow: hidden;
-    transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
-  }
-
-  .collection-hero:hover {
-    border-color: color-mix(in srgb, var(--accent) 50%, transparent);
-    transform: translateY(-3px);
-    box-shadow: 0 8px 24px color-mix(in srgb, var(--accent) 15%, transparent);
-  }
-
-  .collection-hero:hover .hero-arrow {
-    color: var(--accent);
-    transform: translateX(3px);
-  }
-
-  .collection-hero:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .collection-hero { transition: none; }
-    .collection-hero:hover { transform: none; }
-  }
-
-  .hero-accent-edge {
-    width: 5px;
-    flex-shrink: 0;
-    background: linear-gradient(180deg, var(--accent), color-mix(in srgb, var(--accent) 30%, transparent));
-  }
-
-  .hero-content {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    padding: 28px 24px;
-    flex: 1;
-    min-width: 0;
-  }
-
-  .hero-icon-wrap {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 56px;
-    height: 56px;
-    border-radius: 14px;
-    background: color-mix(in srgb, var(--accent) 12%, transparent);
-    color: var(--accent);
-    font-size: 1.5rem;
-    flex-shrink: 0;
-  }
-
-  .hero-text {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    flex: 1;
-    min-width: 0;
-  }
-
-  .hero-name {
-    margin: 0;
-    font-size: 20px;
-    font-weight: 700;
-    letter-spacing: 0.01em;
-  }
-
-  .hero-desc {
-    margin: 0;
-    font-size: var(--font-size-min, 14px);
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
-    line-height: 1.4;
-  }
-
-  .hero-stat {
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
-    margin-top: 4px;
-  }
-
-  .hero-arrow {
-    display: flex;
-    align-items: center;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.2));
-    font-size: 14px;
-    flex-shrink: 0;
-    padding-right: 4px;
-    transition: color 0.15s ease, transform 0.15s ease;
   }
 
   /* ── Shared States ── */
@@ -1293,11 +699,6 @@
   @media (max-width: 768px) {
     .level-container {
       padding: 16px;
-    }
-
-    .hero-content {
-      padding: 20px 16px;
-      gap: 14px;
     }
 
     .sequence-grid {
