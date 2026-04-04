@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from "svelte";
   import { T, useTask, useThrelte } from "@threlte/core";
   import {
     MathUtils,
@@ -93,6 +94,28 @@
   // ── Tile scale: each tile = 0.5m in world space ──
   const TILE_SIZE = 0.5;
 
+
+
+  // ── Progressive mount: break heavy sub-components into stages so the
+  // browser can paint between each batch. Without this, mounting all torches,
+  // plaques, performers etc. in one frame blocks the main thread for ~6-9s.
+  import { onMount } from "svelte";
+  let mountStage = $state(0);
+  onMount(() => {
+    // Each rAF advances one stage, yielding to the browser between batches.
+    // Stage 0: floors, walls, lighting (instanced meshes — cheap)
+    // Stage 1: plaques + exhibit lights
+    // Stage 2: torches
+    // Stage 3: performers, furniture, mirrors, portals
+    let stage = 0;
+    const advance = () => {
+      stage++;
+      mountStage = stage;
+      if (stage < 4) requestAnimationFrame(advance);
+    };
+    requestAnimationFrame(advance);
+  });
+
   // ── Editor overrides: sync dragged world positions back into grid data ──
   // Bumping this counter triggers Svelte reactivity for performer/exhibit positions.
   let overrideVersion = $state(0);
@@ -161,13 +184,19 @@
     overrideVersion++;
   }
 
-  // Apply any persisted overrides on mount (from previous editor sessions)
+  // Apply any persisted overrides on mount (from previous editor sessions).
+  // Must use untrack: applyEditorOverrides reads+writes grid.performers/exhibits
+  // which are reactive — without untrack this creates an infinite effect loop.
+  let editorOverridesApplied = false;
   $effect(() => {
-    // Only run once on mount — check if any overrides exist
-    const all = museumEditorOverrides.getAll();
-    if (Object.keys(all).length > 0) {
-      applyEditorOverrides();
-    }
+    if (editorOverridesApplied) return;
+    editorOverridesApplied = true;
+    untrack(() => {
+      const all = museumEditorOverrides.getAll();
+      if (Object.keys(all).length > 0) {
+        applyEditorOverrides();
+      }
+    });
   });
 
   // ── Material colors — more contrast, brighter floors, distinct materials ──
@@ -547,6 +576,8 @@
   let playerSpeed = $state(0);
   let moveDir = $state({ x: 0, z: 0 });
   let playerPosition = $state({ x: spawnWorldX, y: 0, z: spawnWorldZ });
+  let playerGrounded = $state(true);
+  let playerVerticalVelocity = $state(0);
   const ROTATION_SPEED = 12;
 
   const avatarState: AvatarState = {
@@ -668,9 +699,11 @@
         fpsPos.z = teleported.z;
       }
 
-      // Sync reactive speed for Avatar3D's animation timeScale
+      // Sync reactive state for Avatar3D's animation system
       const vel = physicsProvider.getVelocity();
       playerSpeed = Math.sqrt(vel.x * vel.x + vel.z * vel.z);
+      playerGrounded = physicsProvider.isGrounded();
+      playerVerticalVelocity = vel.y;
 
       const fpsTileX = Math.round(fpsPos.x / TILE_SIZE);
       const fpsTileZ = Math.round(fpsPos.z / TILE_SIZE);
@@ -934,6 +967,9 @@
   const floorBuckets = new Map<string, TileBucket>();
   const wallBuckets = new Map<string, TileBucket>(); // keyed by wing wall color
   interface PlaquePlacement {
+    id: number;
+    tileX: number;
+    tileY: number;
     worldX: number;
     worldZ: number;
     yaw: number;
@@ -943,6 +979,7 @@
     size: PlaqueSize;
     refId: string;
   }
+  let nextPlaqueId = 0;
 
   // Rotation and wall-offset lookup per facing direction.
   // Each plaque faces INTO the room, mounted flush against its wall.
@@ -964,16 +1001,30 @@
   const performerPositions: { x: number; z: number }[] = [];
   const pedestalPositions: { x: number; z: number }[] = [];
   const signPositions: { x: number; z: number }[] = [];
-  const torchPositions: { x: number; z: number; wallOffsetX: number; wallOffsetZ: number; wingTheme: WingTheme }[] = [];
+  const torchPositions: { id: number; tileX: number; tileY: number; x: number; z: number; wallOffsetX: number; wallOffsetZ: number; wingTheme: WingTheme }[] = [];
+  let nextTorchId = 0;
 
-  function getWingThemeAt(tileX: number, tileY: number): WingTheme | null {
-    for (const wing of grid.wings) {
-      const b = wing.bounds;
-      if (tileX >= b.x && tileX < b.x + b.width && tileY >= b.y && tileY < b.y + b.height) {
-        return wing.theme;
+  // Pre-build a tile→wing theme lookup map so we don't linear-scan wings
+  // for every wall tile. With 20k+ tiles and 31 wings, the naive O(tiles*wings)
+  // approach was a major contributor to the multi-second init freeze.
+  const wingThemeByTile = new Map<string, WingTheme>();
+  for (const wing of grid.wings) {
+    const b = wing.bounds;
+    for (let tx = b.x; tx < b.x + b.width; tx++) {
+      for (let ty = b.y; ty < b.y + b.height; ty++) {
+        wingThemeByTile.set(tileKey(tx, ty), wing.theme);
       }
     }
-    return null;
+  }
+
+  function getWingThemeAt(tileX: number, tileY: number): WingTheme | null {
+    return wingThemeByTile.get(tileKey(tileX, tileY)) ?? null;
+  }
+
+  // Pre-build exhibit lookup by tile key (avoids O(n) grid.exhibits.find per panel tile)
+  const exhibitByTile = new Map<string, typeof grid.exhibits[0]>();
+  for (const exhibit of grid.exhibits) {
+    exhibitByTile.set(tileKey(exhibit.tileX, exhibit.tileY), exhibit);
   }
 
   function addToWallBucket(color: string, x: number, z: number, theme?: WingTheme): void {
@@ -1021,7 +1072,7 @@
       case "exhibit-panel": {
         addToFloorBucket(FLOOR_COLORS.stone, worldX, worldZ);
         // Look up exhibit definition for this tile to get plaque content and size
-        const exhibitDef = grid.exhibits.find(e => e.tileX === tileX && e.tileY === tileY);
+        const exhibitDef = exhibitByTile.get(tileKey(tileX, tileY));
         const facing = tile.facing ?? "south";
         const plaqueContent: PlaqueContent = exhibitDef?.plaque ?? {
           title: exhibitDef?.id ?? "Exhibit",
@@ -1031,6 +1082,9 @@
         const yaw = PLAQUE_YAW[facing] ?? 0;
         const wallShift = PLAQUE_WALL_SHIFT[facing] ?? { x: 0, z: 0 };
         plaquePlacements.push({
+          id: nextPlaqueId++,
+          tileX,
+          tileY,
           worldX,
           worldZ,
           yaw,
@@ -1081,7 +1135,7 @@
         }
 
         const torchWingTheme = getWingThemeAt(tileX, tileY) ?? "cave";
-        torchPositions.push({ x: worldX, z: worldZ, wallOffsetX, wallOffsetZ, wingTheme: torchWingTheme });
+        torchPositions.push({ id: nextTorchId++, tileX, tileY, x: worldX, z: worldZ, wallOffsetX, wallOffsetZ, wingTheme: torchWingTheme });
         break;
       }
       case "trigger":
@@ -1170,7 +1224,10 @@
   }
 
   // Exhibit spot lighting — populated from plaque placements
-  const exhibitLightPositions: { x: number; z: number }[] = plaquePlacements.map(p => ({
+  const exhibitLightPositions: { id: number; tileX: number; tileY: number; x: number; z: number }[] = plaquePlacements.map((p, i) => ({
+    id: i,
+    tileX: p.tileX,
+    tileY: p.tileY,
     x: p.worldX,
     z: p.worldZ,
   }));
@@ -1178,7 +1235,8 @@
 
   // ── Ceiling fluorescent lights for institutional/retail wings ──
   // Grid of overhead point lights simulating fluorescent panels
-  const ceilingLightPositions: { x: number; z: number }[] = [];
+  const ceilingLightPositions: { id: number; tileX: number; tileY: number; x: number; z: number }[] = [];
+  let nextCeilingLightId = 0;
   for (const wing of grid.wings) {
     if (wing.theme === "institutional" || wing.theme === "retail") {
       const b = wing.bounds;
@@ -1186,6 +1244,9 @@
       for (let dx = 3; dx < b.width - 2; dx += 6) {
         for (let dy = 3; dy < b.height - 2; dy += 8) {
           ceilingLightPositions.push({
+            id: nextCeilingLightId++,
+            tileX: b.x + dx,
+            tileY: b.y + dy,
             x: (b.x + dx) * TILE_SIZE,
             z: (b.y + dy) * TILE_SIZE,
           });
@@ -1338,8 +1399,8 @@
     moveSpeed={playerSpeed}
     moveDirection={moveDir}
     enableLocomotion={true}
-    isGrounded={physicsProvider.isGrounded()}
-    verticalVelocity={physicsProvider.getVelocity().y}
+    isGrounded={playerGrounded}
+    verticalVelocity={playerVerticalVelocity}
     isCrouching={isCrouching}
   />
 {/if}
@@ -1405,6 +1466,8 @@
   <T is={ceilingMesh} />
 {/if}
 
+<!-- Stage 1: Plaques + exhibit lights -->
+{#if mountStage >= 1}
 <!-- Exhibit plaques: individually textured with readable content -->
 {#each plaquePlacements as plaque (plaque.refId)}
   {@const plaqueOverride = overrideVersion >= 0 ? museumEditorOverrides.get(`plaque-${plaque.refId}`) : null}
@@ -1420,7 +1483,7 @@
     generator={plaqueGenerator}
   />
 {/each}
-{#each exhibitLightPositions as pos}
+{#each exhibitLightPositions as pos (pos.id)}
   {#if useSpotLights}
     <T.SpotLight
       position={[pos.x, 2.5, pos.z]}
@@ -1442,7 +1505,7 @@
 {/each}
 
 <!-- Ceiling fluorescent lights — cold white overhead wash for institutional rooms -->
-{#each ceilingLightPositions as cLight}
+{#each ceilingLightPositions as cLight (cLight.id)}
   <T.PointLight
     position={[cLight.x, WALL_HEIGHT - 0.3, cLight.z]}
     intensity={4}
@@ -1451,7 +1514,25 @@
     decay={1}
   />
 {/each}
+{/if}
 
+<!-- Stage 2: Torches (shader compilation + particles per torch) -->
+{#if mountStage >= 2}
+<!-- Light fixtures — model and effects vary by wing theme/era -->
+{#each torchPositions as torch (torch.id)}
+  <MuseumTorch3D
+    x={torch.x}
+    z={torch.z}
+    wallOffsetX={torch.wallOffsetX}
+    wallOffsetZ={torch.wallOffsetZ}
+    wingTheme={torch.wingTheme}
+    baseIntensity={torchLightSet.has(`${torch.x},${torch.z}`) ? 4 : 0}
+  />
+{/each}
+{/if}
+
+<!-- Stage 3: Performers, furniture, mirrors, portals -->
+{#if mountStage >= 3}
 <!-- Performer stations: 3D mannequins with spinning staves -->
 <!-- overrideVersion dependency ensures reactivity when editor moves objects -->
 {#each grid.performers as performer (performer.id)}
@@ -1477,25 +1558,17 @@
   <T is={signMesh} />
 {/if}
 
-<!-- Light fixtures — model and effects vary by wing theme/era -->
-{#each torchPositions as torch}
-  <MuseumTorch3D
-    x={torch.x}
-    z={torch.z}
-    wallOffsetX={torch.wallOffsetX}
-    wallOffsetZ={torch.wallOffsetZ}
-    wingTheme={torch.wingTheme}
-    baseIntensity={torchLightSet.has(`${torch.x},${torch.z}`) ? 4 : 0}
-  />
-{/each}
+{/if}
+<!-- end stage 3 -->
 
+<!-- Stage 4: Furniture, mirrors, portals -->
+{#if mountStage >= 4}
 <!-- GLTF furniture models (Kenney CC0 kit) -->
 <MuseumFurniture {grid} tileSize={TILE_SIZE} />
 
 <!-- Mirrors — placed in rooms that historically feature them -->
 {#each grid.wings as wing}
   {#if wing.theme === "renaissance"}
-    <!-- Renaissance wing: ornate gilded mirror on the east wall -->
     <MuseumMirror
       width={1.8}
       height={2.8}
@@ -1511,7 +1584,6 @@
     />
   {/if}
   {#if wing.theme === "gallery"}
-    <!-- Gallery: dramatic full-height mirror -->
     <MuseumMirror
       width={2.5}
       height={3.5}
@@ -1528,7 +1600,7 @@
   {/if}
 {/each}
 
-<!-- Portal pair — blue in cave, orange in gallery. Each shows the other room. -->
+<!-- Portal pair — blue in cave, orange in gallery -->
 {#if portalCaveWing && portalGalleryWing}
   <MuseumPortal
     position={portalBluePos}
@@ -1547,6 +1619,8 @@
     label="Cave"
   />
 {/if}
+{/if}
+<!-- end stage 4 -->
 
 <!-- 3D Scene Editor — click to select, gizmo to transform -->
 {#if museum3dEditorState.editorActive}
