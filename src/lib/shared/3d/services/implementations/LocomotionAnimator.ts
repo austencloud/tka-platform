@@ -395,11 +395,24 @@ export class LocomotionAnimator implements ILocomotionAnimator {
     const bw = Math.max(0, -dir.z);
     const sl = Math.max(0, -dir.x);
     const sr = Math.max(0, dir.x);
-    const total = fw + bw + sl + sr;
+
+    // When moving backward (S held), use 100% backward animation regardless
+    // of strafe input. Blending backward + strafe produces an awkward hybrid
+    // pose. The physics still moves diagonally — only the animation is pure
+    // backward. This matches how most third-person games handle it.
+    if (bw > 0) {
+      this.targetDirWeights.forward = 0;
+      this.targetDirWeights.backward = 1;
+      this.targetDirWeights.strafeLeft = 0;
+      this.targetDirWeights.strafeRight = 0;
+      return;
+    }
+
+    const total = fw + sl + sr;
     const n = total > 0 ? 1 / total : 0;
 
     this.targetDirWeights.forward = fw * n;
-    this.targetDirWeights.backward = bw * n;
+    this.targetDirWeights.backward = 0;
     this.targetDirWeights.strafeLeft = sl * n;
     this.targetDirWeights.strafeRight = sr * n;
   }
