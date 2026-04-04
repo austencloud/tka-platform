@@ -5,6 +5,7 @@
    * Falls back to procedural geometry when the GLB model hasn't been added yet.
    */
   import { T, useTask } from "@threlte/core";
+  import { onDestroy } from "svelte";
   import {
     PointLight,
     ShaderMaterial,
@@ -295,6 +296,17 @@
   });
 
   const flameY = fixtureY + 0.2;
+
+  onDestroy(() => {
+    fallbackGeo.dispose();
+    fallbackMat.dispose();
+    flameGeo.dispose();
+    flameMat.dispose();
+    coneGeo.dispose();
+    coneMat.dispose();
+    emberGeo.dispose();
+    emberMat.dispose();
+  });
 </script>
 
 <!-- GLTF model (loaded async) -->

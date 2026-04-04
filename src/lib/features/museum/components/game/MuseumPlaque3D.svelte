@@ -1,5 +1,6 @@
 <script lang="ts">
   import { T } from "@threlte/core";
+  import { onDestroy } from "svelte";
   import { CanvasTexture, BoxGeometry, MeshStandardMaterial } from "three";
   import type { PlaqueContent, PlaqueSize } from "../../services/contracts/IPlaqueTextureGenerator";
   import type { PlaqueTextureGenerator } from "../../services/implementations/PlaqueTextureGenerator";
@@ -75,6 +76,14 @@
   // Frame sits directly behind the plaque face. Since the group is rotated
   // by yaw, "behind" in local space is simply -Z.
   const frameBehindDist = dims.d / 2 + FRAME_DEPTH / 2;
+
+  onDestroy(() => {
+    plaqueGeo.dispose();
+    frameGeo.dispose();
+    plaqueMat.dispose();
+    frameMat.dispose();
+    texture.dispose();
+  });
 </script>
 
 <!-- Root group positioned at the plaque's world location — gizmo attaches here -->
