@@ -63,6 +63,9 @@ export class ArrowLifecycleManager implements IArrowLifecycleManager {
         fullViewBox: svgData.dimensions.viewBox || svgData.viewBox,
       },
       center: svgData.center ?? svgData.dimensions.center,
+      shaftSrc: svgData.shaftSrc,
+      tipSrc: svgData.tipSrc,
+      tipBBox: svgData.tipBBox,
     });
   }
 

@@ -44,12 +44,39 @@ const hmrRawSvgCache: Map<string, string> =
 const hmrTransformedSvgCache: Map<string, ArrowSvgData> =
   import.meta.hot?.data?.transformedSvgCache ?? new Map();
 
+// Arrow split manifest - loaded lazily, cached permanently
+let hmrSplitManifest: Record<string, { shaftPath: string; tipPath: string; tipBBox: { x: number; y: number; width: number; height: number } }> | null =
+  import.meta.hot?.data?.splitManifest ?? null;
+let manifestLoadPromise: Promise<void> | null = null;
+
 // Persist caches before HMR disposal
 if (import.meta.hot) {
   import.meta.hot.dispose((data) => {
     data.rawSvgCache = hmrRawSvgCache;
     data.transformedSvgCache = hmrTransformedSvgCache;
+    data.splitManifest = hmrSplitManifest;
+    data.arrowSvgLoaderInstance = hmrArrowSvgLoader;
   });
+}
+
+async function loadSplitManifest(): Promise<void> {
+  if (hmrSplitManifest !== null) return;
+  if (manifestLoadPromise) return manifestLoadPromise;
+
+  manifestLoadPromise = (async () => {
+    try {
+      const response = await fetch("/images/arrows/arrow-split-manifest.json");
+      if (response.ok) {
+        hmrSplitManifest = await response.json();
+      } else {
+        hmrSplitManifest = {};
+      }
+    } catch {
+      hmrSplitManifest = {};
+    }
+  })();
+
+  return manifestLoadPromise;
 }
 
 export class ArrowSvgLoader implements IArrowSvgLoader {
@@ -144,6 +171,28 @@ export class ArrowSvgLoader implements IArrowSvgLoader {
         center: parsedSvg.center ?? undefined,
       },
     };
+
+    // Look up split data from manifest
+    await loadSplitManifest();
+    if (hmrSplitManifest) {
+      // Strip base path to get relative key (e.g. "pro/from_radial/pro_0.0.svg")
+      const manifestKey = path.replace(/^.*\/images\/arrows\//, "");
+      const splitData = hmrSplitManifest[manifestKey];
+      if (splitData) {
+        // Apply color transformation to split paths too
+        result.shaftSrc = this.colorTransformer.applyColorToSvg(
+          splitData.shaftPath,
+          motionData.color,
+          themeMode
+        );
+        result.tipSrc = this.colorTransformer.applyColorToSvg(
+          splitData.tipPath,
+          motionData.color,
+          themeMode
+        );
+        result.tipBBox = splitData.tipBBox;
+      }
+    }
 
     // 🚀 OPTIMIZATION: Cache transformed result
     this.transformedSvgCache.set(transformedCacheKey, result);
@@ -244,12 +293,6 @@ import { ArrowSvgColorTransformer } from "./ArrowSvgColorTransformer";
 // HMR-aware singleton instance
 let hmrArrowSvgLoader: ArrowSvgLoader | null =
   import.meta.hot?.data?.arrowSvgLoaderInstance ?? null;
-
-if (import.meta.hot) {
-  import.meta.hot.dispose((data) => {
-    data.arrowSvgLoaderInstance = hmrArrowSvgLoader;
-  });
-}
 
 function getArrowSvgLoader(): ArrowSvgLoader {
   if (!hmrArrowSvgLoader) {
