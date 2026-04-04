@@ -3,6 +3,7 @@
   import type { CardSizeId } from "../../domain/card-sizes";
   import type { CardPair } from "../../services/contracts/IPrintPDFExporter";
   import type { PrintRenderOptions } from "../../services/contracts/IPrintCardRenderer";
+  import type { ElementalTheme } from "../../domain/elemental-theme";
   import { getPageLayout, CARD_SIZES } from "../../domain/card-sizes";
   import { container } from "$lib/shared/di";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
@@ -18,6 +19,7 @@
     showWord?: boolean;
     includeStartPosition?: boolean;
     handPointsVisible?: boolean;
+    elementTheme?: ElementalTheme;
     onPairsReady?: (pairs: CardPair[]) => void;
     onRenderStateChange?: (state: { isRendering: boolean; progress: number; total: number }) => void;
   }
@@ -32,6 +34,7 @@
     showWord = true,
     includeStartPosition = true,
     handPointsVisible = true,
+    elementTheme,
     onPairsReady,
     onRenderStateChange,
   }: Props = $props();
@@ -76,6 +79,7 @@
           : imageComposition.startPositionLayout,
       handPointsVisible,
       theme,
+      elementTheme,
       bluePropType: settingsService.settings.bluePropType as any,
       redPropType: settingsService.settings.redPropType as any,
     };
@@ -274,7 +278,7 @@
 
   .card-cell {
     overflow: hidden;
-    border-radius: 4px;
+    border-radius: 8px;
     background: #f0f0f0;
   }
 
