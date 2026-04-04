@@ -46,6 +46,7 @@
   const STORAGE_KEY_INCLUDE_START_POS = "choreoCard.includeStartPosition";
   const STORAGE_KEY_SELECTED_DECK = "choreoCard.selectedDeckId";
   const STORAGE_KEY_SELECTED_COLLECTION = "choreoCard.selectedCollection";
+  const STORAGE_KEY_VTG_FAMILY = "choreoCard.vtgFamily";
 
   // Legacy keys for migration
   const LEGACY_KEYS: Record<string, string> = {
@@ -179,7 +180,7 @@
   let decks = $state<Deck[]>([]);
   let selectedDeckId = $state<string | null>(getPersistedString(STORAGE_KEY_SELECTED_DECK));
   let selectedCollection = $state<string | null>(getPersistedString(STORAGE_KEY_SELECTED_COLLECTION));
-  let selectedVtgFamily = $state<string | null>(null);
+  let selectedVtgFamily = $state<string | null>(getPersistedString(STORAGE_KEY_VTG_FAMILY));
   let vtgActiveView = $state<"family" | "ratio" | "reversal">("family");
   let deckSequences = $state<SequenceData[]>([]);
   let isDeckLoading = $state(false);
@@ -495,6 +496,7 @@
     deckSequences = [];
     persist(STORAGE_KEY_SELECTED_COLLECTION, null);
     persist(STORAGE_KEY_SELECTED_DECK, null);
+    persist(STORAGE_KEY_VTG_FAMILY, null);
     pushNavState();
   }
 
@@ -540,6 +542,7 @@
 
   function handleSelectVtgFamily(familyId: string | null) {
     selectedVtgFamily = familyId;
+    persist(STORAGE_KEY_VTG_FAMILY, familyId);
     pushNavState();
   }
 
