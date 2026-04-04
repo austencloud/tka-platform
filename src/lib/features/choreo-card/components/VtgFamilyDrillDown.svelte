@@ -241,6 +241,7 @@
       sequences={allSequences}
       {cardSize}
       theme={selectedTheme}
+      elementTheme={theme}
       isLoading={loading}
       {handPointsVisible}
       {showGrid}
