@@ -25,8 +25,8 @@ export class CorridorRouter implements ICorridorRouter {
     doorPositionMap?: Map<string, { x: number; y: number }>,
   ): CorridorSegment[] {
     const edgeId = `${edge.from}->${edge.to}`;
-    const fromDoor = this.getDoorPosition(fromRoom, edge.fromWall, edgeId, doorPositionMap);
-    const toDoor = this.getDoorPosition(toRoom, edge.toWall, edgeId, doorPositionMap);
+    const fromDoor = this.getDoorPosition(fromRoom, edge.fromWall, `${fromRoom.id}:${edgeId}`, doorPositionMap);
+    const toDoor = this.getDoorPosition(toRoom, edge.toWall, `${toRoom.id}:${edgeId}`, doorPositionMap);
     const width = edge.corridorWidth ?? 4;
 
     return this.routeLShaped(fromDoor, toDoor, edge.fromWall, width);
