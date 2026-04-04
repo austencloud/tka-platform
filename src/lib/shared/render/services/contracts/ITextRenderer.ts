@@ -45,7 +45,9 @@ export interface ITextRenderer {
     difficultyLevel?: number,
     showDifficultyBadge?: boolean,
     darkMode?: boolean,
-    loopComponents?: Set<LOOPComponent>
+    loopComponents?: Set<LOOPComponent>,
+    backgroundColor?: string,
+    borderColor?: string
   ): void;
 
   /**
@@ -68,7 +70,9 @@ export interface ITextRenderer {
       showNotes?: boolean;
       showBirthday?: boolean;
     },
-    customNotesText?: string
+    customNotesText?: string,
+    backgroundColor?: string,
+    borderColor?: string
   ): void;
 
   /**

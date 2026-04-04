@@ -42,6 +42,11 @@ import {
   calculateFooterHeight as sharedFooterHeight,
 } from "@tka/render-composition";
 
+// Deck card header/footer proportions (fraction of content width)
+const DECK_HEADER_RATIO = 0.133;
+const DECK_FOOTER_RATIO = 0.067;
+const DECK_HEADER_BG = "#808080";
+const DECK_BORDER_COLOR = "rgba(0, 0, 0, 0.25)";
 
 export class ImageComposer implements IImageComposer {
   // Create instance directly to avoid DI module loading order issues
@@ -244,12 +249,6 @@ export class ImageComposer implements IImageComposer {
       );
     }
 
-    // Step 2: Calculate canvas dimensions including title space
-    // Scale stepSize by stepScale to maintain proportions between grid and title areas
-    const baseBeatSize = options.stepSize || 120;
-    const stepSize = Math.floor(baseBeatSize * (options.stepScale || 1));
-    const canvasWidth = columns * stepSize;
-
     // Derive word from beat letters if sequence.word is empty
     // This ensures the word displays even when built dynamically in the create module
     const rawWord =
@@ -263,29 +262,60 @@ export class ImageComposer implements IImageComposer {
     // Does NOT truncate - allows full word length when needed for uniqueness
     const derivedWord = simplifyRepeatedWord(rawWord);
 
-    // Calculate header height if word, difficulty, or LOOP glyph should be included
-    // Header is at the TOP of the image - proportional to beat size for balanced layout
     // Must account for loopType here (not just later) so headerHeight is allocated
     const earlyLoopType = options.loopType ?? sequence.loopType;
     const showHeaderForLayout =
       (options.addWord && (derivedWord || options.customName)) ||
       options.addDifficultyLevel ||
       !!earlyLoopType;
-    const headerHeight = showHeaderForLayout
-        ? this.calculateHeaderHeight(stepCount, stepSize, columns)
-        : 0;
 
-    // Calculate footer height if user info should be included
+    // Calculate footer visibility flags
     // Check granular flags if provided, otherwise use addUserInfo for backwards compatibility
     const showCreatorName = options.showCreatorName ?? options.addUserInfo;
     const showNotes = options.showNotes ?? options.addUserInfo;
     const showBirthday = options.showBirthday ?? options.addUserInfo;
     const hasAnyFooterContent = showCreatorName || showNotes || showBirthday;
-    const footerHeight = hasAnyFooterContent
-      ? this.calculateFooterHeight(stepSize, columns)
-      : 0;
 
-    const canvasHeight = rows * stepSize + headerHeight + footerHeight;
+    // Step 2: Calculate canvas dimensions
+    let stepSize: number;
+    let canvasWidth: number;
+    let canvasHeight: number;
+    let headerHeight: number;
+    let footerHeight: number;
+
+    if (options.deckCard) {
+      // ── Deck card mode: fixed canvas, proportional header/footer ──
+      const { contentWidth, contentHeight } = options.deckCard;
+      canvasWidth = contentWidth;
+
+      // Fixed header/footer heights proportional to card width
+      headerHeight = showHeaderForLayout
+        ? Math.floor(contentWidth * DECK_HEADER_RATIO)
+        : 0;
+      footerHeight = hasAnyFooterContent
+        ? Math.floor(contentWidth * DECK_FOOTER_RATIO)
+        : 0;
+
+      // Calculate stepSize backwards from available grid space
+      const availableHeight = contentHeight - headerHeight - footerHeight;
+      stepSize = Math.floor(Math.min(contentWidth / columns, availableHeight / rows));
+
+      canvasHeight = contentHeight;
+    } else {
+      // ── Standard mode: dimensions from stepSize ──
+      const baseBeatSize = options.stepSize || 120;
+      stepSize = Math.floor(baseBeatSize * (options.stepScale || 1));
+      canvasWidth = columns * stepSize;
+
+      headerHeight = showHeaderForLayout
+        ? this.calculateHeaderHeight(stepCount, stepSize, columns)
+        : 0;
+      footerHeight = hasAnyFooterContent
+        ? this.calculateFooterHeight(stepSize, columns)
+        : 0;
+
+      canvasHeight = rows * stepSize + headerHeight + footerHeight;
+    }
 
     const canvas = document.createElement("canvas");
     canvas.width = canvasWidth;
@@ -301,7 +331,18 @@ export class ImageComposer implements IImageComposer {
     // Dark Mode uses dark background (#0a0a0f), normal mode uses white
     const isDarkMode = visibilitySettings.darkMode ?? false;
     ctx.fillStyle = isDarkMode ? "#0a0a0f" : "white";
-    ctx.fillRect(0, headerHeight, canvasWidth, rows * stepSize);
+
+    const gridHeight = rows * stepSize;
+    const gridOffsetY = options.deckCard
+      ? headerHeight + Math.floor((canvasHeight - headerHeight - footerHeight - gridHeight) / 2)
+      : headerHeight;
+
+    if (options.deckCard) {
+      // Fill entire space between header and footer with white
+      ctx.fillRect(0, headerHeight, canvasWidth, canvasHeight - headerHeight - footerHeight);
+    } else {
+      ctx.fillRect(0, headerHeight, canvasWidth, gridHeight);
+    }
 
     // Calculate total items to render for progress tracking
     // Derive start position from beat 1 if missing but requested
@@ -350,7 +391,7 @@ export class ImageComposer implements IImageComposer {
         0,
         stepSize,
         startBeatNumber,
-        headerHeight, // Offset grid below header
+        gridOffsetY, // Offset grid below header (deck card: vertically centered)
         visibilitySettings, // Pass visibility settings
         effectiveBluePropType, // Pass snapshotted blue prop type
         effectiveRedPropType // Pass snapshotted red prop type
@@ -394,7 +435,7 @@ export class ImageComposer implements IImageComposer {
         row,
         stepSize,
         stepNumber,
-        headerHeight, // Offset grid below header
+        gridOffsetY, // Offset grid below header (deck card: vertically centered)
         visibilitySettings, // Pass visibility settings
         effectiveBluePropType, // Pass snapshotted blue prop type
         effectiveRedPropType // Pass snapshotted red prop type
@@ -404,7 +445,7 @@ export class ImageComposer implements IImageComposer {
       const beatDuration = beat.duration ?? 1;
       if (Math.abs(beatDuration - 1.0) > 0.001) {
         const x = col * stepSize;
-        const y = row * stepSize + headerHeight;
+        const y = row * stepSize + gridOffsetY;
         this.drawDurationBadge(ctx, beatDuration, x, y, stepSize, isDarkMode);
       }
 
@@ -425,7 +466,7 @@ export class ImageComposer implements IImageComposer {
           sequence,
           emptyCell,
           stepSize,
-          headerHeight,
+          gridOffsetY,
           isDarkMode,
           effectiveBluePropType,
           effectiveRedPropType
@@ -441,7 +482,7 @@ export class ImageComposer implements IImageComposer {
       stepSize,
       sequence,
       options,
-      headerHeight, // Offset grid below header
+      gridOffsetY, // Offset grid below header (deck card: vertically centered)
       isDarkMode
     );
 
@@ -478,7 +519,9 @@ export class ImageComposer implements IImageComposer {
         difficultyLevel,
         options.addDifficultyLevel, // Only show badge if toggle is on
         isDarkMode, // Dark Mode for dark theme styling
-        showLoopGlyph ? loopComponents : undefined // LOOP glyph badge
+        showLoopGlyph ? loopComponents : undefined,
+        options.deckCard ? DECK_HEADER_BG : undefined,
+        options.deckCard ? DECK_BORDER_COLOR : undefined
       );
     }
 
@@ -505,7 +548,9 @@ export class ImageComposer implements IImageComposer {
           showNotes,
           showBirthday,
         },
-        options.customNotesText // Custom notes text override
+        options.customNotesText,
+        options.deckCard ? DECK_HEADER_BG : undefined,
+        options.deckCard ? DECK_BORDER_COLOR : undefined
       );
     }
 
