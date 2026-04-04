@@ -97,7 +97,8 @@ export class FingerAnimator implements IFingerAnimator {
     hand: "left" | "right"
   ): void {
     const pose = STAFF_GRIP_POSES[gripType];
-    const raw = pose.rotations[boneIndex];
+    // boneIndex is always within [0, FINGER_BONES.length), guaranteed by callers.
+    const raw = pose.rotations[boneIndex]!;
     if (hand === "right") {
       this.scratchQuat.set(raw[0], -raw[1], -raw[2], raw[3]);
     } else {
@@ -115,8 +116,9 @@ export class FingerAnimator implements IFingerAnimator {
 
     for (let i = 0; i < FINGER_BONES.length; i++) {
       this.writeTargetRotation(state.targetGrip, i, hand);
-      state.currentRotations[i].slerp(this.scratchQuat, alpha);
-      state.bones[i].quaternion.copy(state.currentRotations[i]);
+      // Arrays are sized to FINGER_BONES.length in createHandState — index is always valid.
+      state.currentRotations[i]!.slerp(this.scratchQuat, alpha);
+      state.bones[i]!.quaternion.copy(state.currentRotations[i]!);
     }
   }
 
@@ -128,8 +130,9 @@ export class FingerAnimator implements IFingerAnimator {
     state.targetGrip = gripType;
     for (let i = 0; i < FINGER_BONES.length; i++) {
       this.writeTargetRotation(gripType, i, hand);
-      state.currentRotations[i].copy(this.scratchQuat);
-      state.bones[i].quaternion.copy(this.scratchQuat);
+      // Arrays are sized to FINGER_BONES.length in createHandState — index is always valid.
+      state.currentRotations[i]!.copy(this.scratchQuat);
+      state.bones[i]!.quaternion.copy(this.scratchQuat);
     }
   }
 }

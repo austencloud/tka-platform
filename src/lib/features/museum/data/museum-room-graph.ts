@@ -73,6 +73,29 @@ export const MUSEUM_ROOMS: RoomNode[] = [
         facing: "west",
       },
     ],
+    furniture: [
+      // Benches along walls — "sit and absorb" moments
+      // West wall bench, near the midpoint
+      { role: "bench", offsetX: -0.42, offsetY: 0.1, rotationY: Math.PI / 2 },
+      // East wall bench, opposite side
+      { role: "bench", offsetX: 0.42, offsetY: 0.1, rotationY: -Math.PI / 2 },
+      // Bench near the archway approach, west side
+      { role: "bench", offsetX: -0.42, offsetY: -0.3, rotationY: Math.PI / 2 },
+
+      // Guest book podium (pedestal) — center of the hallway
+      { role: "pedestal", offsetX: 0, offsetY: 0.15 },
+
+      // Desk lamp on the podium — warm light pool
+      { role: "lamp", offsetX: 0.02, offsetY: 0.15 },
+
+      // Potted plants flanking the archway approach
+      { role: "plant", offsetX: -0.35, offsetY: -0.4 },
+      { role: "plant", offsetX: 0.35, offsetY: -0.4 },
+
+      // Plant near the entrance doors
+      { role: "plant", offsetX: -0.35, offsetY: 0.42 },
+      { role: "plant", offsetX: 0.35, offsetY: 0.42 },
+    ],
   },
   {
     id: "vulcan-cave",

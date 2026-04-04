@@ -65,7 +65,7 @@
     durationColCount?: number;
     passDividerGridRows?: number[];
   }
-  const MAX_PREVIEW_CACHE = 10;
+  const MAX_PREVIEW_CACHE = 30;
   const globalPreviewCache = new Map<string, CachedPreview>();
 
   function getPreviewCacheKey(
@@ -1665,6 +1665,29 @@
     lastImageKey = `${sequence?.id ?? ""}-${stepLetters}-${stepCount}-${bluePropType}-${redPropType}-${catDogModeEnabled}-${showStepNumbers}-${showNonRadial}-${handPointVis}-${showTKA}-${showReversals}-${durationKey}-cols:${effectiveColumns}`;
     lastContentKey = `${lastImageKey}-${includeStartPosition}`;
     lastEffectRenderKey = `${lastContentKey}-${darkMode}`;
+
+    // Synchronous cache probe: if the global cache already has this exact render,
+    // populate cells immediately so the first paint shows content instead of a
+    // loading skeleton flash. renderAllCells() would also hit the cache, but it's
+    // async — the component renders at least one frame with isLoading=true first.
+    if (sequence?.steps?.length) {
+      const renderOptions = buildRenderOptions();
+      const cacheKey = getPreviewCacheKey(sequence, renderOptions, columnCount, darkMode);
+      const cached = globalPreviewCache.get(cacheKey);
+      if (cached) {
+        cells = cached.cells.map(c => ({ ...c, isLoaded: true }));
+        columns = cached.columns;
+        rows = cached.rows;
+        hasMixedDurations = cached.hasMixedDurations ?? false;
+        durationRows = cached.durationRows ?? [];
+        durationColCount = cached.durationColCount ?? 0;
+        passDividerGridRows = cached.passDividerGridRows ?? [];
+        isLoading = false;
+        hasMounted = true;
+        return;
+      }
+    }
+
     renderAllCells().then(() => {
       hasMounted = true;
     });

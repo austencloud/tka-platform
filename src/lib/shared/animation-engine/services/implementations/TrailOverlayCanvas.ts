@@ -59,6 +59,10 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
   // Track previous tracking mode to detect changes
   private lastTrackingMode: TrackingMode | null = null;
 
+  // Tracks whether a previous center position exists for the center-point
+  // smoothing path (used by clearBuffers to reset inter-sequence state).
+  private hasPrevCenter = false;
+
   // Skip trail capture for the first few frames after initialization so
   // props can settle into their correct starting positions. Without this,
   // the very first frame captures props at an intermediate location (e.g.

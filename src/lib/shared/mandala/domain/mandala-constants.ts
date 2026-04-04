@@ -41,3 +41,17 @@ export const OVERLAP_MIN_RUN = 3;
  * the mandala's coordinate space.
  */
 export const ENGINE_GRID_RADIUS = 150;
+
+/**
+ * Number of frames to skip at the start of rendering (and after seeks/resizes)
+ * so props can settle into their correct positions before we start drawing.
+ * Matches the warmup strategy used by TrailOverlayCanvas.
+ */
+export const OVERLAY_WARMUP_FRAMES = 3;
+
+/**
+ * Per-frame alpha subtracted from low-alpha pixels during smoothAlphaDecay.
+ * Destination-out's multiplicative fade can never reach 0 due to 8-bit integer
+ * rounding; constant subtraction guarantees every pixel eventually reaches 0.
+ */
+export const OVERLAY_ALPHA_DECAY = 2;

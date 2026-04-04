@@ -13,11 +13,6 @@
   import { onDestroy } from "svelte";
   import type { Group } from "three";
   import type { MuseumGrid } from "../../domain/museum-grid-types";
-  import { parseTileKey } from "../../domain/museum-grid-types";
-  import {
-    TILE_MODEL_MAP,
-    FIXED_PLACEMENTS,
-  } from "../../domain/model-placement-map";
   import { MuseumModelLoader } from "../../services/implementations/MuseumModelLoader";
   import type { MuseumModelRole } from "../../services/contracts/IMuseumModelLoader";
 
@@ -31,6 +26,7 @@
   const loader = new MuseumModelLoader();
 
   interface ResolvedPlacement {
+    id: string;
     role: MuseumModelRole;
     worldX: number;
     worldZ: number;
@@ -39,37 +35,20 @@
   }
 
   function collectPlacements(): ResolvedPlacement[] {
-    const placements: ResolvedPlacement[] = [];
-
-    for (const [key, tile] of grid.tiles) {
-      const mapping = TILE_MODEL_MAP[tile.type];
-      if (!mapping) continue;
-      const { x: tileX, y: tileY } = parseTileKey(key);
-      placements.push({
-        role: mapping.role,
-        worldX: tileX * tileSize,
-        worldZ: tileY * tileSize,
-        rotationY: mapping.rotationY,
-        extraY: mapping.extraY,
-      });
-    }
-
-    for (const fixed of FIXED_PLACEMENTS) {
-      placements.push({
-        role: fixed.role,
-        worldX: fixed.worldX * tileSize,
-        worldZ: fixed.worldZ * tileSize,
-        rotationY: fixed.rotationY,
-        extraY: 0,
-      });
-    }
-
-    return placements;
+    return (grid.furniture ?? []).map((f) => ({
+      id: f.id,
+      role: f.role as MuseumModelRole,
+      worldX: f.tileX * tileSize,
+      worldZ: f.tileY * tileSize,
+      rotationY: f.rotationY,
+      extraY: 0,
+    }));
   }
 
   const placements = collectPlacements();
 
   interface LoadedModel {
+    id: string;
     model: Group;
     worldX: number;
     worldZ: number;
@@ -80,6 +59,8 @@
   let loadedModels: LoadedModel[] = $state([]);
 
   async function loadAllModels(): Promise<void> {
+    if (placements.length === 0) return;
+
     // Preload unique role templates (deduplicates network requests)
     const uniqueRoles = [...new Set(placements.map((p) => p.role))];
     await Promise.all(uniqueRoles.map((role) => loader.load(role)));
@@ -89,6 +70,7 @@
     for (const placement of placements) {
       const model = await loader.load(placement.role);
       results.push({
+        id: placement.id,
         model,
         worldX: placement.worldX,
         worldZ: placement.worldZ,
@@ -108,8 +90,9 @@
   });
 </script>
 
-{#each loadedModels as { model, worldX, worldZ, rotationY, extraY }}
+{#each loadedModels as { id, model, worldX, worldZ, rotationY, extraY }}
   <T.Group
+    name={`furniture-${id}`}
     position.x={worldX}
     position.y={extraY}
     position.z={worldZ}

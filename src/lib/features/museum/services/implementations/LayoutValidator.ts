@@ -88,7 +88,7 @@ export class LayoutValidator implements ILayoutValidator {
     const queue: [number, number][] = [[startX, startY]];
     visited.add(startKey);
 
-    const directions = [
+    const directions: [number, number][] = [
       [0, -1], // north
       [0, 1],  // south
       [1, 0],  // east
@@ -125,8 +125,8 @@ export class LayoutValidator implements ILayoutValidator {
 
     for (let i = 0; i < rooms.length; i++) {
       for (let j = i + 1; j < rooms.length; j++) {
-        const a = rooms[i];
-        const b = rooms[j];
+        const a = rooms[i]!;
+        const b = rooms[j]!;
 
         const overlapX = a.x < b.x + b.w && a.x + a.w > b.x;
         const overlapY = a.y < b.y + b.h && a.y + a.h > b.y;

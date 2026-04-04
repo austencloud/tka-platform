@@ -53,6 +53,7 @@ export interface MuseumGrid {
   exhibits: ExhibitDefinition[];
   performers: PerformerDefinition[];
   triggers: TriggerDefinition[];
+  furniture: FurnitureDefinition[];
 }
 
 export interface MuseumGridSerialized {
@@ -65,6 +66,7 @@ export interface MuseumGridSerialized {
   exhibits: ExhibitDefinition[];
   performers: PerformerDefinition[];
   triggers: TriggerDefinition[];
+  furniture: FurnitureDefinition[];
 }
 
 export interface WingRegion {
@@ -99,6 +101,14 @@ export interface PerformerDefinition {
   autoPlay: boolean;
 }
 
+export interface FurnitureDefinition {
+  id: string;
+  role: "bench" | "pedestal" | "bookshelf" | "lamp" | "plant";
+  tileX: number;
+  tileY: number;
+  rotationY: number;
+}
+
 export interface TriggerDefinition {
   id: string;
   tileX: number;
@@ -127,6 +137,7 @@ export function serializeGrid(grid: MuseumGrid): MuseumGridSerialized {
     exhibits: grid.exhibits,
     performers: grid.performers,
     triggers: grid.triggers,
+    furniture: grid.furniture,
   };
 }
 
@@ -145,6 +156,7 @@ export function deserializeGrid(data: MuseumGridSerialized): MuseumGrid {
     exhibits: data.exhibits,
     performers: data.performers,
     triggers: data.triggers,
+    furniture: data.furniture ?? [],
   };
 }
 
@@ -155,8 +167,8 @@ export function tileKey(x: number, y: number): string {
 }
 
 export function parseTileKey(key: string): { x: number; y: number } {
-  const [x, y] = key.split(",").map(Number);
-  return { x, y };
+  const parts = key.split(",");
+  return { x: Number(parts[0]), y: Number(parts[1]) };
 }
 
 export function createEmptyGrid(width: number, height: number): MuseumGrid {
@@ -170,5 +182,6 @@ export function createEmptyGrid(width: number, height: number): MuseumGrid {
     exhibits: [],
     performers: [],
     triggers: [],
+    furniture: [],
   };
 }

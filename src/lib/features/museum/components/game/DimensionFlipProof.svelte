@@ -390,7 +390,7 @@
   <!-- Editor mode badge -->
   {#if museum3dEditorState.editorActive}
     <div class="editor-badge">
-      EDITOR — Orbit: left-drag, Pan: right-drag, Zoom: scroll, Select: click, Focus: double-click, 1/2/3: modes, F2: exit
+      EDITOR — Orbit: drag, Pan: right-drag/WASD, Zoom: scroll, Select: click, Focus: dbl-click, 1/2/3: modes, Ctrl+Z: undo, F2: exit
     </div>
   {/if}
 

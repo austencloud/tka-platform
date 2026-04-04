@@ -72,23 +72,27 @@ export class MuseumPhysicsProvider implements PhysicsProvider {
 		return true;
 	}
 
-	movePlayer(desiredMovement: Vector3, _deltaTime: number): void {
+	movePlayer(desiredMovement: Vector3, deltaTime: number): void {
 		const newX = this.position.x + desiredMovement.x;
 		const newZ = this.position.z + desiredMovement.z;
+
+		// Convert displacement-per-frame to velocity in units/sec
+		// (UCC passes speed*delta as desiredMovement, so divide back out)
+		const dt = deltaTime > 0 ? deltaTime : 1 / 60;
 
 		// XZ collision: try full, then wall-slide per axis
 		if (this.isWalkableAt(newX, newZ)) {
 			this.position.x = newX;
 			this.position.z = newZ;
-			this.velocity = { x: desiredMovement.x, y: desiredMovement.y, z: desiredMovement.z };
+			this.velocity = { x: desiredMovement.x / dt, y: desiredMovement.y / dt, z: desiredMovement.z / dt };
 		} else if (this.isWalkableAt(newX, this.position.z)) {
 			this.position.x = newX;
-			this.velocity = { x: desiredMovement.x, y: desiredMovement.y, z: 0 };
+			this.velocity = { x: desiredMovement.x / dt, y: desiredMovement.y / dt, z: 0 };
 		} else if (this.isWalkableAt(this.position.x, newZ)) {
 			this.position.z = newZ;
-			this.velocity = { x: 0, y: desiredMovement.y, z: desiredMovement.z };
+			this.velocity = { x: 0, y: desiredMovement.y / dt, z: desiredMovement.z / dt };
 		} else {
-			this.velocity = { x: 0, y: desiredMovement.y, z: 0 };
+			this.velocity = { x: 0, y: desiredMovement.y / dt, z: 0 };
 		}
 
 		// Y movement: accept UCC's jump/gravity calculations, clamp at ground

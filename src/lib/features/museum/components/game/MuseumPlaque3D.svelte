@@ -72,31 +72,29 @@
   const nudgeX = wallOffsetX !== 0 ? Math.sign(wallOffsetX) * wallNudge : 0;
   const nudgeZ = wallOffsetZ !== 0 ? Math.sign(wallOffsetZ) * wallNudge : 0;
 
-  // ── Compute frame offset (slightly behind plaque, toward wall) ──
+  // Frame sits directly behind the plaque face. Since the group is rotated
+  // by yaw, "behind" in local space is simply -Z.
   const frameBehindDist = dims.d / 2 + FRAME_DEPTH / 2;
-  const frameOffsetX = -Math.sin(yaw) * frameBehindDist;
-  const frameOffsetZ = -Math.cos(yaw) * frameBehindDist;
 </script>
 
-<!-- Root group for editor selection — clicking face or frame selects both -->
-<T.Group name={`plaque-${refId}`}>
-  <!-- Plaque face — textured mesh at eye level, flush against wall -->
+<!-- Root group positioned at the plaque's world location — gizmo attaches here -->
+<T.Group
+  name={`plaque-${refId}`}
+  position.x={worldX + wallOffsetX + nudgeX}
+  position.y={PLAQUE_Y}
+  position.z={worldZ + wallOffsetZ + nudgeZ}
+  rotation.y={yaw}
+>
+  <!-- Plaque face — local (0,0,0) within the group -->
   <T.Mesh
     geometry={plaqueGeo}
     material={plaqueMat}
-    position.x={worldX + wallOffsetX + nudgeX}
-    position.y={PLAQUE_Y}
-    position.z={worldZ + wallOffsetZ + nudgeZ}
-    rotation.y={yaw}
   />
 
-  <!-- Frame behind the plaque -->
+  <!-- Frame behind the plaque — local -Z offset -->
   <T.Mesh
     geometry={frameGeo}
     material={frameMat}
-    position.x={worldX + wallOffsetX + nudgeX + frameOffsetX}
-    position.y={PLAQUE_Y}
-    position.z={worldZ + wallOffsetZ + nudgeZ + frameOffsetZ}
-    rotation.y={yaw}
+    position.z={-frameBehindDist}
   />
 </T.Group>

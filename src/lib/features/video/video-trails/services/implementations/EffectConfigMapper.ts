@@ -29,6 +29,7 @@ export class EffectConfigMapper implements IEffectConfigMapper {
       patternId: effect.patternId,
       patternSpeed: 1.0,
       primaryColor: effect.color,
+      secondaryColor: "#ffffff",
       brightness: effect.brightness,
       colorMode: "unified",
       blueHandColor: effect.color,

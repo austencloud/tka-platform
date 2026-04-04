@@ -2,6 +2,8 @@
 	import { animationSettings } from "../../../state/animation-settings-state.svelte";
 	import { TrackingMode } from "../../../domain/types/TrailTypes";
 	import { isBilateralProp } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";
+	import { getMotionColor } from "$lib/shared/utils/svg-color-utils";
+	import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 	import { container } from "$lib/shared/di";
 
 	const settingsState = container.items.settingsState;
@@ -49,6 +51,12 @@
 
 	let lineWidth = $derived(animationSettings.trail.lineWidth);
 	let maxOpacity = $derived(animationSettings.trail.maxOpacity);
+	let blueColor = $derived(animationSettings.trail.blueColor);
+	let redColor = $derived(animationSettings.trail.redColor);
+
+	// Default colors for comparison
+	const defaultBlue = getMotionColor(MotionColor.BLUE, "dark");
+	const defaultRed = getMotionColor(MotionColor.RED, "dark");
 
 	function formatWidth(v: number): string {
 		return v.toFixed(1);
@@ -61,11 +69,18 @@
 	const isDefault = $derived(
 		Math.abs(lineWidth - 5) < 0.2 &&
 		Math.abs(maxOpacity - 1.0) < 0.03 &&
-		trackingMode === TrackingMode.RIGHT_END
+		trackingMode === TrackingMode.RIGHT_END &&
+		blueColor === defaultBlue &&
+		redColor === defaultRed
 	);
 
 	function resetDefaults(): void {
-		animationSettings.setTrailAppearance({ lineWidth: 5, maxOpacity: 1.0 });
+		animationSettings.setTrailAppearance({
+			lineWidth: 5,
+			maxOpacity: 1.0,
+			blueColor: defaultBlue,
+			redColor: defaultRed,
+		});
 		animationSettings.setTrackingMode(TrackingMode.RIGHT_END);
 	}
 </script>
@@ -125,6 +140,28 @@
 			}}
 		/>
 		<span class="slider-value">{formatBrightness(maxOpacity)}</span>
+	</div>
+
+	<div class="color-row">
+		<span class="color-label">Colors</span>
+		<div class="color-pickers">
+			<label class="color-picker">
+				<input
+					type="color"
+					value={blueColor}
+					oninput={(e) => animationSettings.setTrailAppearance({ blueColor: (e.target as HTMLInputElement).value })}
+				/>
+				<span class="color-hand">Blue</span>
+			</label>
+			<label class="color-picker">
+				<input
+					type="color"
+					value={redColor}
+					oninput={(e) => animationSettings.setTrailAppearance({ redColor: (e.target as HTMLInputElement).value })}
+				/>
+				<span class="color-hand">Red</span>
+			</label>
+		</div>
 	</div>
 
 	<button
@@ -230,6 +267,64 @@
 		font-family: var(--font-mono, monospace);
 		font-size: var(--font-size-compact, 12px);
 		color: var(--theme-text, white);
+	}
+
+	/* ── Color pickers ── */
+	.color-row {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		min-height: var(--min-touch-target, 44px);
+	}
+
+	.color-label {
+		min-width: 70px;
+		font-size: var(--font-size-compact, 12px);
+		color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+	}
+
+	.color-pickers {
+		display: flex;
+		gap: 12px;
+		flex: 1;
+	}
+
+	.color-picker {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		cursor: pointer;
+	}
+
+	.color-picker input[type="color"] {
+		-webkit-appearance: none;
+		appearance: none;
+		width: 32px;
+		height: 32px;
+		border: 2px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
+		border-radius: 50%;
+		background: none;
+		cursor: pointer;
+		padding: 0;
+	}
+
+	.color-picker input[type="color"]::-webkit-color-swatch-wrapper {
+		padding: 2px;
+	}
+
+	.color-picker input[type="color"]::-webkit-color-swatch {
+		border: none;
+		border-radius: 50%;
+	}
+
+	.color-picker input[type="color"]::-moz-color-swatch {
+		border: none;
+		border-radius: 50%;
+	}
+
+	.color-hand {
+		font-size: var(--font-size-compact, 12px);
+		color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
 	}
 
 	.reset-btn {

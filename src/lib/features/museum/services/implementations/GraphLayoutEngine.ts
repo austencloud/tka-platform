@@ -162,6 +162,7 @@ export class GraphLayoutEngine implements ILayoutEngine {
       performers: room.performers,
       torches: room.torches,
       screens: room.screens,
+      furniture: room.furniture,
     };
   }
 
