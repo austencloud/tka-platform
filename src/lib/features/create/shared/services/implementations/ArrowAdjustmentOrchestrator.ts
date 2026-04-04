@@ -28,6 +28,7 @@ import { globalAdjustmentVersion } from "$lib/shared/pictograph/arrow/positionin
 import type { GlobalArrowAdjustmentInput } from "$lib/shared/pictograph/arrow/positioning/global/domain/GlobalArrowAdjustment";
 import type { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
 import { arrowAdjustmentUndoStack } from "$lib/shared/pictograph/arrow/positioning/global/state/ArrowAdjustmentUndoStack";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 
@@ -35,6 +36,34 @@ const logger = createComponentLogger("ArrowAdjustmentOrchestrator");
 
 export class ArrowAdjustmentOrchestrator implements IArrowAdjustmentOrchestrator {
   private keyGenerator: GlobalAdjustmentKeyGenerator;
+
+  /**
+   * Override propType on pictographData motions to match the render pipeline.
+   * PictographPreparer forces propType from global settings before passing to
+   * SpecialPlacer. Without the same override here, resolveEffectiveOriKey produces
+   * a different oriKey (e.g. "clock_counter" vs "from_layer2"), causing the saved
+   * global adjustment to be invisible to the renderer.
+   */
+  private overridePictographPropTypes(
+    pictographData: PictographData,
+    arrowColor: MotionColor,
+    thisPropType: string,
+    otherPropType: string
+  ): PictographData {
+    const otherColor = (arrowColor === "blue" ? "red" : "blue") as MotionColor;
+    return {
+      ...pictographData,
+      motions: {
+        ...pictographData.motions,
+        [arrowColor]: pictographData.motions[arrowColor]
+          ? { ...pictographData.motions[arrowColor], propType: thisPropType }
+          : undefined,
+        [otherColor]: pictographData.motions[otherColor]
+          ? { ...pictographData.motions[otherColor], propType: otherPropType }
+          : undefined,
+      },
+    } as PictographData;
+  }
 
   constructor(
     private keyboardAdjuster: IKeyboardArrowAdjuster,
@@ -70,10 +99,15 @@ export class ArrowAdjustmentOrchestrator implements IArrowAdjustmentOrchestrator
         ? { propType: thisPropType, otherPropType } // Layer 3: both prop types
         : { propType: thisPropType }; // Layer 2: just this prop
 
+    const arrowColor = selectedArrow.color as MotionColor;
+    const pictographWithPropOverrides = this.overridePictographPropTypes(
+      selectedArrow.pictographData, arrowColor, thisPropType, otherPropType || thisPropType
+    );
+
     return this.keyGenerator.generateKey(
       selectedArrow.motionData,
-      selectedArrow.pictographData,
-      selectedArrow.color as MotionColor,
+      pictographWithPropOverrides,
+      arrowColor,
       keyOptions
     );
   }
@@ -86,11 +120,16 @@ export class ArrowAdjustmentOrchestrator implements IArrowAdjustmentOrchestrator
     const repo = getGlobalAdjustmentRepository();
     if (!repo) return null;
 
+    const arrowColor = selectedArrow.color as MotionColor;
+    const pictographWithPropOverrides = this.overridePictographPropTypes(
+      selectedArrow.pictographData, arrowColor, thisPropType, otherPropType
+    );
+
     // Generate BASE key (layer 1) for cascading lookup
     const baseKey = this.keyGenerator.generateKey(
       selectedArrow.motionData,
-      selectedArrow.pictographData,
-      selectedArrow.color as MotionColor
+      pictographWithPropOverrides,
+      arrowColor
     );
 
     // Use cascading lookup to find adjustment at any layer
@@ -237,7 +276,10 @@ export class ArrowAdjustmentOrchestrator implements IArrowAdjustmentOrchestrator
     // No global adjustment at the target layer - try cascading lookup
     // (a less-specific layer might have an adjustment we should build on)
     const { motionData, pictographData } = selectedArrow;
-    const baseKey = this.keyGenerator.generateKey(motionData, pictographData, arrowColor);
+    const pictographWithPropOverrides = this.overridePictographPropTypes(
+      pictographData, arrowColor, thisPropType, otherPropType
+    );
+    const baseKey = this.keyGenerator.generateKey(motionData, pictographWithPropOverrides, arrowColor);
     const cascadingResult = repo.getAdjustmentCascading(baseKey, thisPropType, otherPropType);
 
     if (cascadingResult) {

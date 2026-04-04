@@ -24,6 +24,7 @@ import {
   type GlobalArrowAdjustmentState,
 } from "../../state/GlobalArrowAdjustmentState.svelte";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
+import { globalAdjustmentVersion } from "../../state/global-adjustment-version.svelte";
 
 const logger = createComponentLogger("GlobalArrowAdjustmentRepository");
 
@@ -74,6 +75,12 @@ export class GlobalArrowAdjustmentRepository
       // Load all adjustments from Firestore
       const adjustments = await this.persister.loadAll();
       this.state.loadAll(adjustments);
+
+      // Bump version so all rendered pictographs re-prepare with the now-available adjustments.
+      // Without this, pictographs that rendered before initialization stay at fallback positions.
+      if (adjustments.length > 0) {
+        globalAdjustmentVersion.increment();
+      }
 
       // Subscribe to real-time updates
       this.unsubscribe = this.persister.subscribe(

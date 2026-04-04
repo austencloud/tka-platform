@@ -319,7 +319,23 @@ function calculateDirection(
     if (letter === "I") {
       return getLetterIDirection(targetMotion.endLocation, targetMotion.color, isRadial);
     }
-    // 2c. Generic shift handler
+    // 2c. Both-shift pairing: when BOTH motions are shift (e.g. letter J),
+    // the shift maps give independent perpendicular directions that may not oppose.
+    // Fix: compute blue's direction from its shift path, red gets the opposite.
+    const otherMotion = targetMotion.color === "blue" ? redMotion : blueMotion;
+    if (isShiftMotion(otherMotion.motionType)) {
+      const blueDirection = getShiftDirection(
+        blueMotion.startLocation,
+        blueMotion.endLocation,
+        "blue",
+        isRadial
+      );
+      if (!blueDirection) return null;
+      return targetMotion.color === "blue"
+        ? blueDirection
+        : getOppositeDirection(blueDirection);
+    }
+    // 2d. Generic shift handler (only one motion is shift)
     return getShiftDirection(
       targetMotion.startLocation,
       targetMotion.endLocation,
