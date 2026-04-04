@@ -171,21 +171,17 @@
 
     <!-- Branding: pinned to top center, between corner badges -->
     <div class="top-brand">
-      <span class="brand">Choreo Card</span>
-      <span class="brand-dot">·</span>
-      <span class="brand-sub">TKA</span>
+      <span class="brand">CHOREO CARDS</span>
     </div>
 
-    <!-- CENTER CONTENT -->
+    <!-- CENTER CONTENT — mandala pinned to true center -->
     <div class="content">
-
-      <!-- Word -->
       <div class="word" style="font-size: {wordFontCqi}cqi;">{d.word}</div>
       {#if hasGreekLetters}
         <div class="pronunciation">{pronunciation}</div>
       {/if}
 
-      <div class="mandala-hero">
+      <div class="mandala-anchor">
         <SequenceMandala
           {sequence}
           mode="card-back"
@@ -195,11 +191,13 @@
         />
       </div>
 
-      <!-- LOOP explanation (if applicable) -->
+      {#if d.vtgRatio}
+        <div class="ratio-label">{d.vtgRatio}</div>
+      {/if}
+
       {#if d.hasLoop}
         <p class="loop-explanation">{loopExplanationText}</p>
       {/if}
-
     </div>
 
     <!-- URL: pinned to bottom center -->
@@ -288,21 +286,10 @@
   }
 
   .brand {
-    font-size: 3.2cqi;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    color: rgba(255, 255, 255, 0.7);
-  }
-
-  .brand-dot {
-    color: rgba(255, 255, 255, 0.3);
-  }
-
-  .brand-sub {
-    font-size: 3.2cqi;
-    font-weight: 500;
-    color: rgba(255, 255, 255, 0.4);
-    letter-spacing: 0.08em;
+    font-size: 2.8cqi;
+    font-weight: 300;
+    letter-spacing: 0.2em;
+    color: rgba(255, 255, 255, 0.6);
   }
 
   /* ═══════ URL (bottom center) ═══════ */
@@ -322,20 +309,21 @@
   /* ═══════ CENTER CONTENT ═══════ */
 
   .content {
-    position: relative;
+    position: absolute;
+    inset: 0;
     z-index: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
     text-align: center;
-    height: 100%;
-    /* Top padding pushes the word to roughly the same vertical
-       position as the front card's header row (~25% from top) */
-    padding: 20cqi 4cqi 10cqi;
+    padding: 0 4cqi;
     box-sizing: border-box;
   }
 
   .word {
+    position: absolute;
+    top: 14%;
     font-family: Georgia, serif;
     font-size: 10.4cqi;
     font-weight: 600;
@@ -345,34 +333,41 @@
   }
 
   .pronunciation {
+    position: absolute;
+    top: calc(14% + 12cqi);
     font-size: 2.6cqi;
     font-style: italic;
     color: rgba(255, 255, 255, 0.4);
-    margin-top: 1.2cqi;
     letter-spacing: 0.02em;
   }
 
-  .spacer { flex: 1; }
-
-  .mandala-hero {
+  .mandala-anchor {
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 0 auto;
-    flex: 1;
-    width: 76cqi;
-    max-height: 76cqi;
+    width: 72cqi;
+    max-height: 72cqi;
   }
 
-  /* Override the mandala's fixed pixel sizing so it fills the hero container */
-  .mandala-hero :global(.mandala-container) {
+  .mandala-anchor :global(.mandala-container) {
     width: 100% !important;
     height: 100% !important;
   }
 
+  .ratio-label {
+    position: absolute;
+    top: calc(50% + 22cqi);
+    font-size: 4cqi;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.85);
+    letter-spacing: 0.04em;
+  }
+
   .loop-explanation {
+    position: absolute;
+    top: calc(50% + 28cqi);
     margin: 0;
-    font-size: 3cqi;
+    font-size: 2.6cqi;
     color: rgba(255, 255, 255, 0.5);
     line-height: 1.6;
     max-width: 76cqi;
