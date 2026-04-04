@@ -119,7 +119,7 @@
           blue: forceProps(firstStep.motions?.blue),
           red: forceProps(firstStep.motions?.red),
         },
-      };
+      } as PictographData;
     }
   }
 
