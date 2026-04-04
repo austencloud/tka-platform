@@ -575,6 +575,8 @@
     function onJumpKey(e: KeyboardEvent) {
       if (e.code === "Space" && fpsActive && playerGrounded) {
         playerJumpRequested = true;
+        // Clear after one full animation frame so Avatar3D's update loop reads it
+        requestAnimationFrame(() => { playerJumpRequested = false; });
       }
     }
     window.addEventListener("keydown", onJumpKey);
@@ -729,9 +731,7 @@
       playerSpeed = Math.sqrt(vel.x * vel.x + vel.z * vel.z);
       playerGrounded = physicsProvider.isGrounded();
       playerVerticalVelocity = vel.y;
-      // playerJumpRequested is set by the keydown handler (same frame as input),
-      // and cleared here after the state machine has consumed it.
-      if (playerJumpRequested) playerJumpRequested = false;
+      // playerJumpRequested is set/cleared by the keydown handler with rAF delay
 
 
       const fpsTileX = Math.round(fpsPos.x / TILE_SIZE);
@@ -1101,30 +1101,39 @@
         break;
       }
       case "exhibit-panel": {
-        addToFloorBucket(FLOOR_COLORS.stone, worldX, worldZ);
-        // Look up exhibit definition for this tile to get plaque content and size
+        // Multi-tile exhibits stamp 2+ tiles with the same refId.
+        // Only create a plaque for the CENTER tile (the one in exhibitByTile).
+        // Other tiles render as wall surface to avoid duplicate keys.
         const exhibitDef = exhibitByTile.get(tileKey(tileX, tileY));
-        const facing = tile.facing ?? "south";
-        const plaqueContent: PlaqueContent = exhibitDef?.plaque ?? {
-          title: exhibitDef?.id ?? "Exhibit",
-          body: "This exhibit is under construction.",
-        };
-        const plaqueSize: PlaqueSize = exhibitDef?.size ?? "standard";
-        const yaw = PLAQUE_YAW[facing] ?? 0;
-        const wallShift = PLAQUE_WALL_SHIFT[facing] ?? { x: 0, z: 0 };
-        plaquePlacements.push({
-          id: nextPlaqueId++,
-          tileX,
-          tileY,
-          worldX,
-          worldZ,
-          yaw,
-          wallOffsetX: wallShift.x,
-          wallOffsetZ: wallShift.z,
-          content: plaqueContent,
-          size: plaqueSize,
-          refId: exhibitDef?.id ?? `exhibit-${tileX}-${tileY}`,
-        });
+        if (exhibitDef) {
+          addToFloorBucket(FLOOR_COLORS.stone, worldX, worldZ);
+          const facing = tile.facing ?? "south";
+          const plaqueContent: PlaqueContent = exhibitDef.plaque ?? {
+            title: exhibitDef.id ?? "Exhibit",
+            body: "This exhibit is under construction.",
+          };
+          const plaqueSize: PlaqueSize = exhibitDef.size ?? "standard";
+          const yaw = PLAQUE_YAW[facing] ?? 0;
+          const wallShift = PLAQUE_WALL_SHIFT[facing] ?? { x: 0, z: 0 };
+          plaquePlacements.push({
+            id: nextPlaqueId++,
+            tileX,
+            tileY,
+            worldX,
+            worldZ,
+            yaw,
+            wallOffsetX: wallShift.x,
+            wallOffsetZ: wallShift.z,
+            content: plaqueContent,
+            size: plaqueSize,
+            refId: exhibitDef.id,
+          });
+        } else {
+          // Non-center tile of a multi-tile exhibit — render as wall
+          const wingTheme = getWingThemeAt(tileX, tileY);
+          const wallColor = wingTheme ? WING_WALL_COLORS[wingTheme] : TILE_TYPE_COLORS.wall!;
+          addToWallBucket(wallColor, worldX, worldZ, wingTheme ?? undefined);
+        }
         break;
       }
       case "performer-station": {

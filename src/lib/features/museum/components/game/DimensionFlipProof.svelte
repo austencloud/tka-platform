@@ -19,9 +19,11 @@
     onLoadProgress?: (progress: number) => void;
     /** Called when all assets are loaded and first frame has rendered */
     onAllLoaded?: () => void;
+    /** Start directly in FPS/3rd-person mode (skip top-down flip) */
+    startInFps?: boolean;
   }
 
-  let { grid, onLoadProgress, onAllLoaded }: Props = $props();
+  let { grid, onLoadProgress, onAllLoaded, startInFps = false }: Props = $props();
 
   // useProgress hooks into Three.js DefaultLoadingManager globally.
   // Every texture and GLTF model automatically reports here.
@@ -380,7 +382,7 @@
         {heldKeys}
         {topDownHeight}
         onPlayerUpdate={handlePlayerUpdate}
-        initialFpsActive={savedHmrState?.isInFPS ?? false}
+        initialFpsActive={savedHmrState?.isInFPS ?? startInFps}
         initialPlayerPos={savedHmrState ? { x: savedHmrState.playerWorldX, z: savedHmrState.playerWorldZ } : undefined}
         initialPlayerYaw={savedHmrState?.playerYaw}
       />
