@@ -655,16 +655,22 @@
       avatarState.setMoveInput({ x: strafeInput, z: forwardInput });
       avatarState.isCrouching = isCrouching;
 
-      // Avatar faces MOVEMENT direction when moving (standard 3rd person convention).
-      // The movement vector is camera-relative: W pushes along camera forward, A/D strafe.
-      // We compute the actual world-space movement direction and face the avatar that way.
-      // When standing still, the avatar keeps its last facing direction.
+      // Avatar facing in third-person:
+      // - Forward (W) or forward+strafe: avatar turns to face movement direction
+      // - Backward only (S): avatar keeps facing forward, plays backward walk animation
+      // - Strafe only (A/D): avatar keeps facing forward, plays strafe animation
+      // - Backward + strafe: avatar keeps facing forward, blends backward + strafe
+      // This matches standard third-person games where backward/strafe don't spin the character.
       if (mode === CameraMode.THIRD_PERSON && hasMovementInput) {
-        // Build movement direction from camera-relative input (same vectors used for position)
-        const moveDirX = _forward.x * forwardInput + _right.x * strafeInput;
-        const moveDirZ = _forward.z * forwardInput + _right.z * strafeInput;
-        const facingAngle = Math.atan2(moveDirX, moveDirZ);
-        avatarState.setFacingAngle(facingAngle);
+        if (forwardInput > 0) {
+          // Moving forward (possibly with strafe): face the movement direction
+          const moveDirX = _forward.x * forwardInput + _right.x * strafeInput;
+          const moveDirZ = _forward.z * forwardInput + _right.z * strafeInput;
+          const facingAngle = Math.atan2(moveDirX, moveDirZ);
+          avatarState.setFacingAngle(facingAngle);
+        }
+        // When moving backward or strafing only, avatar keeps its current facing.
+        // The locomotion system picks up the backward/strafe from moveDirection.
       }
 
       // Lerp the avatar's facing angle toward its target each frame.
