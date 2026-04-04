@@ -345,7 +345,7 @@ export class LocomotionAnimator implements ILocomotionAnimator {
 
   private config: Required<LocomotionConfig> = {
     baseSpeed: 1,
-    blendTime: 0.3,
+    blendTime: 0.15,  // Fast crossfade — snappy walk↔idle transitions
     animationWalkSpeed: 1.57,
   };
 

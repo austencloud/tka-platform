@@ -1156,5 +1156,6 @@ export function buildFullMuseum(): MuseumGrid {
 		exhibits,
 		performers,
 		triggers,
+		furniture: [],
 	};
 }

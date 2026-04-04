@@ -11,6 +11,7 @@ import { createContainer } from "iti";
 import { LibraryRepository } from "$lib/features/library/services/implementations/LibraryRepository";
 import { LibrarySaveService } from "$lib/features/library/services/implementations/LibrarySaveService";
 import { CollectionManager } from "$lib/features/library/services/implementations/CollectionManager";
+import { PublicCollectionLoader } from "$lib/features/library/services/implementations/PublicCollectionLoader";
 import { PublicIndexSyncer } from "$lib/features/library/services/implementations/PublicIndexSyncer";
 import type { IAchievementManager } from "$lib/shared/gamification/services/contracts/IAchievementManager";
 import type { ITagManager } from "$lib/features/library/services/contracts/ITagManager";
@@ -104,6 +105,7 @@ export function createLibraryContainer(deps: {
   return createContainer().add({
     publicIndexSyncer: () => publicIndexSyncer,
     collectionManager: () => new CollectionManager(),
+    publicCollectionLoader: () => new PublicCollectionLoader(),
     contentHasher: () => contentHasher,
     artifactExtractor: () => artifactExtractor,
     soloPropSaveOrchestrator: () =>

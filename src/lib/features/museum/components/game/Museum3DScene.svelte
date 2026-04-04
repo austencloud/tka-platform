@@ -19,7 +19,7 @@
   import type { PerspectiveCamera } from "three";
   import MuseumPostProcessing from "./MuseumPostProcessing.svelte";
   import type { MuseumGrid, TileType, FloorMaterial } from "../../domain/museum-grid-types";
-  import { parseTileKey } from "../../domain/museum-grid-types";
+  import { parseTileKey, tileKey } from "../../domain/museum-grid-types";
   import type { AvatarState, PhysicsProvider } from "$lib/shared/3d/camera/types";
   import { CameraMode } from "$lib/shared/3d/camera/types";
   import UnifiedCameraController from "$lib/shared/3d/camera/UnifiedCameraController.svelte";
@@ -35,6 +35,7 @@
   import MuseumSceneEditor from "./MuseumSceneEditor.svelte";
   import { OrbitControls } from "@threlte/extras";
   import { museum3dEditorState } from "../../state/museum-3d-editor-state.svelte";
+  import { museumEditorOverrides } from "../../state/museum-editor-overrides";
   import type { PlaqueContent, PlaqueSize } from "../../services/contracts/IPlaqueTextureGenerator";
   import { PlaqueTextureGenerator } from "../../services/implementations/PlaqueTextureGenerator";
 
@@ -91,6 +92,83 @@
 
   // ── Tile scale: each tile = 0.5m in world space ──
   const TILE_SIZE = 0.5;
+
+  // ── Editor overrides: sync dragged world positions back into grid data ──
+  // Bumping this counter triggers Svelte reactivity for performer/exhibit positions.
+  let overrideVersion = $state(0);
+
+  /**
+   * Called by MuseumSceneEditor after any drag/undo/redo. Converts world-space
+   * overrides back to tile coordinates and patches grid.performers / grid.exhibits
+   * so the tile-based interaction system uses the new positions.
+   */
+  function applyEditorOverrides() {
+    const allOverrides = museumEditorOverrides.getAll();
+
+    for (const performer of grid.performers) {
+      const override = allOverrides[`performer-station-${performer.id}`];
+      if (override) {
+        const oldKey = tileKey(performer.tileX, performer.tileY);
+        const newTX = Math.round(override.x / TILE_SIZE);
+        const newTY = Math.round(override.z / TILE_SIZE);
+        const newKey = tileKey(newTX, newTY);
+
+        // Move the interactable tile entry so the proximity check works
+        if (oldKey !== newKey) {
+          const oldTile = grid.tiles.get(oldKey);
+          if (oldTile?.type === "performer-station") {
+            grid.tiles.delete(oldKey);
+            grid.tiles.set(newKey, { ...oldTile });
+          }
+        }
+
+        performer.tileX = newTX;
+        performer.tileY = newTY;
+      }
+    }
+
+    for (const exhibit of grid.exhibits) {
+      const override = allOverrides[`plaque-${exhibit.id}`];
+      if (override) {
+        const oldKey = tileKey(exhibit.tileX, exhibit.tileY);
+        const newTX = Math.round(override.x / TILE_SIZE);
+        const newTY = Math.round(override.z / TILE_SIZE);
+        const newKey = tileKey(newTX, newTY);
+
+        // Move the interactable tile entry
+        if (oldKey !== newKey) {
+          const oldTile = grid.tiles.get(oldKey);
+          if (oldTile?.type === "exhibit-panel") {
+            grid.tiles.delete(oldKey);
+            grid.tiles.set(newKey, { ...oldTile, refId: exhibit.id });
+          }
+        }
+
+        exhibit.tileX = newTX;
+        exhibit.tileY = newTY;
+      }
+    }
+
+    for (const furn of (grid.furniture ?? [])) {
+      const override = allOverrides[`furniture-${furn.id}`];
+      if (override) {
+        furn.tileX = Math.round(override.x / TILE_SIZE);
+        furn.tileY = Math.round(override.z / TILE_SIZE);
+      }
+    }
+
+    // Bump version to trigger reactive re-reads of performer/exhibit positions
+    overrideVersion++;
+  }
+
+  // Apply any persisted overrides on mount (from previous editor sessions)
+  $effect(() => {
+    // Only run once on mount — check if any overrides exist
+    const all = museumEditorOverrides.getAll();
+    if (Object.keys(all).length > 0) {
+      applyEditorOverrides();
+    }
+  });
 
   // ── Material colors — more contrast, brighter floors, distinct materials ──
   const FLOOR_COLORS: Record<FloorMaterial, string> = {
@@ -466,6 +544,7 @@
   let fpsInitialPitch = $state(0);
   let isMoving = $state(false);
   let isCrouching = $state(false);
+  let playerSpeed = $state(0);
   let moveDir = $state({ x: 0, z: 0 });
   let playerPosition = $state({ x: spawnWorldX, y: 0, z: spawnWorldZ });
   const ROTATION_SPEED = 12;
@@ -589,6 +668,10 @@
         fpsPos.z = teleported.z;
       }
 
+      // Sync reactive speed for Avatar3D's animation timeScale
+      const vel = physicsProvider.getVelocity();
+      playerSpeed = Math.sqrt(vel.x * vel.x + vel.z * vel.z);
+
       const fpsTileX = Math.round(fpsPos.x / TILE_SIZE);
       const fpsTileZ = Math.round(fpsPos.z / TILE_SIZE);
       updateAtmosphere(fpsTileX, fpsTileZ, delta);
@@ -616,6 +699,7 @@
 
       if (forward !== 0 || strafe !== 0) {
         // Sprint when Shift is held
+
         const isSprinting = heldKeys.has("ShiftLeft") || heldKeys.has("ShiftRight");
         const speed = isSprinting ? TOP_DOWN_MOVE_SPEED * TOP_DOWN_SPRINT_MULTIPLIER : TOP_DOWN_MOVE_SPEED;
 
@@ -632,11 +716,15 @@
         }
 
         physicsProvider.movePlayer({ x: moveX, y: 0, z: moveZ }, delta);
+        const topVel = physicsProvider.getVelocity();
+        playerSpeed = Math.sqrt(topVel.x * topVel.x + topVel.z * topVel.z);
 
         // Update facing direction from movement
         if (Math.abs(moveX) > 0.001 || Math.abs(moveZ) > 0.001) {
           playerYaw = Math.atan2(moveX, moveZ);
         }
+      } else {
+        playerSpeed = 0;
       }
 
       // Read back position from physics provider
@@ -1247,7 +1335,7 @@
     facingAngle={playerYaw}
     isActive={false}
     isMoving={isMoving}
-    moveSpeed={Math.sqrt(physicsProvider.getVelocity().x ** 2 + physicsProvider.getVelocity().z ** 2)}
+    moveSpeed={playerSpeed}
     moveDirection={moveDir}
     enableLocomotion={true}
     isGrounded={physicsProvider.isGrounded()}
@@ -1319,12 +1407,13 @@
 
 <!-- Exhibit plaques: individually textured with readable content -->
 {#each plaquePlacements as plaque (plaque.refId)}
+  {@const plaqueOverride = overrideVersion >= 0 ? museumEditorOverrides.get(`plaque-${plaque.refId}`) : null}
   <MuseumPlaque3D
-    worldX={plaque.worldX}
-    worldZ={plaque.worldZ}
+    worldX={plaqueOverride?.x ?? plaque.worldX}
+    worldZ={plaqueOverride?.z ?? plaque.worldZ}
     yaw={plaque.yaw}
-    wallOffsetX={plaque.wallOffsetX}
-    wallOffsetZ={plaque.wallOffsetZ}
+    wallOffsetX={plaqueOverride ? 0 : plaque.wallOffsetX}
+    wallOffsetZ={plaqueOverride ? 0 : plaque.wallOffsetZ}
     content={plaque.content}
     size={plaque.size}
     refId={plaque.refId}
@@ -1363,13 +1452,14 @@
   />
 {/each}
 
-<!-- Performer station instanced mesh -->
 <!-- Performer stations: 3D mannequins with spinning staves -->
+<!-- overrideVersion dependency ensures reactivity when editor moves objects -->
 {#each grid.performers as performer (performer.id)}
+  {@const posOverride = overrideVersion >= 0 ? museumEditorOverrides.get(`performer-station-${performer.id}`) : null}
   <MuseumPerformerStation3D
     stationId={performer.id}
-    worldX={performer.tileX * TILE_SIZE}
-    worldZ={performer.tileY * TILE_SIZE}
+    worldX={posOverride?.x ?? performer.tileX * TILE_SIZE}
+    worldZ={posOverride?.z ?? performer.tileY * TILE_SIZE}
     facingAngle={FACING_TO_YAW[performer.facing] ?? 0}
     sequenceId={performer.sequenceId}
     autoPlay={performer.autoPlay}
@@ -1460,5 +1550,5 @@
 
 <!-- 3D Scene Editor — click to select, gizmo to transform -->
 {#if museum3dEditorState.editorActive}
-  <MuseumSceneEditor />
+  <MuseumSceneEditor onOverrideChanged={applyEditorOverrides} />
 {/if}

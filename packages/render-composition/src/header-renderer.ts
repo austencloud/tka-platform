@@ -71,7 +71,7 @@ export function renderHeader(ctx: CanvasRenderingContext2D, options: HeaderOptio
       let cursorX = canvasWidth / 2 - totalWidth / 2;
       ctx.textAlign = "left";
       for (let i = 0; i < word.length; i++) {
-        const char = word[i];
+        const char = word[i]!;
         const style = letterStyles[i];
         ctx.fillStyle = style?.dimmed ? dimmedColor : textColor;
         ctx.fillText(char, cursorX, headerHeight / 2);

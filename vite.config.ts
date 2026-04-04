@@ -672,6 +672,7 @@ export default defineConfig({
         globIgnores: [
           "**/data/*.json", // sequence-index.json is 8MB+
           "**/chunks/*.js", // Exclude ALL immutable chunks from precache - they're cached by browser anyway
+          "**/pwa/splash-*.png", // iOS splash screens — only used at launch, not runtime
           // Dev/utility HTML pages - cause Cache.put() errors when precached
           "render-pictograph.html",
           "render-compare.html",

@@ -17,9 +17,10 @@ import type {
   MuseumTile,
   ExhibitDefinition,
   PerformerDefinition,
+  FurnitureDefinition,
   Direction,
 } from "../../domain/museum-grid-types";
-import type { ExhibitPlacement, PerformerPlacement, TorchPlacement } from "../../domain/layout-types";
+import type { ExhibitPlacement, PerformerPlacement, TorchPlacement, FurniturePlacement } from "../../domain/layout-types";
 import { tileKey } from "../../domain/museum-grid-types";
 import { isWalkable } from "../../domain/tile-registry";
 import { placeTile } from "../../data/museum-floor-plan";
@@ -120,6 +121,7 @@ export class MuseumGridBuilder implements IMuseumGridBuilder {
     const tiles = new Map<string, MuseumTile>();
     const exhibits: ExhibitDefinition[] = [];
     const performers: PerformerDefinition[] = [];
+    const furniture: FurnitureDefinition[] = [];
 
     // Phase 1a: Carve room interiors as floor (no walls)
     for (const room of layout.rooms) {
@@ -149,6 +151,7 @@ export class MuseumGridBuilder implements IMuseumGridBuilder {
       this.placeExhibits(tiles, room, exhibits);
       this.placePerformers(tiles, room, performers);
       this.placeTorches(tiles, room);
+      this.placeFurniture(room, furniture);
     }
 
     // Step 4b: Place dev whiteboards (designer notes on anchor walls)
@@ -156,7 +159,7 @@ export class MuseumGridBuilder implements IMuseumGridBuilder {
 
     // Step 5: Determine spawn position — south end of entrance, centered, facing north
     // Player starts at the "doors" end of the grand hallway and walks toward the cave
-    const firstRoom = layout.rooms[0];
+    const firstRoom = layout.rooms[0]!;
     const spawnX = firstRoom.x + Math.floor(firstRoom.w / 2);
     const spawnY = firstRoom.y + firstRoom.h - 8; // 8 tiles from south wall — safely inside the doors
 
@@ -176,6 +179,7 @@ export class MuseumGridBuilder implements IMuseumGridBuilder {
       exhibits,
       performers,
       triggers: [],
+      furniture,
     };
 
     // Step 6: Validate
@@ -296,7 +300,7 @@ export class MuseumGridBuilder implements IMuseumGridBuilder {
     gridWidth: number,
     gridHeight: number,
   ): void {
-    const NEIGHBORS = [
+    const NEIGHBORS: [number, number][] = [
       [-1, -1], [0, -1], [1, -1],
       [-1,  0],          [1,  0],
       [-1,  1], [0,  1], [1,  1],
@@ -588,6 +592,37 @@ export class MuseumGridBuilder implements IMuseumGridBuilder {
         facing: placement.facing,
         sequenceId: content?.sequenceId,
         autoPlay: content?.autoPlay ?? false,
+      });
+    }
+  }
+
+  /**
+   * Places furniture definitions inside a room based on center-relative offsets.
+   * Furniture doesn't stamp tiles — it only produces FurnitureDefinition entries
+   * that the 3D renderer reads to place GLTF models.
+   */
+  private placeFurniture(
+    room: PlacedRoom,
+    furniture: FurnitureDefinition[],
+  ): void {
+    if (!room.furniture) return;
+
+    const centerX = room.x + Math.floor(room.w / 2);
+    const centerY = room.y + Math.floor(room.h / 2);
+    const interiorW = room.w - 2;
+    const interiorH = room.h - 2;
+
+    for (let i = 0; i < room.furniture.length; i++) {
+      const placement = room.furniture[i]!;
+      const px = centerX + Math.floor(placement.offsetX * interiorW);
+      const py = centerY + Math.floor(placement.offsetY * interiorH);
+
+      furniture.push({
+        id: `${room.id}-furniture-${i}`,
+        role: placement.role,
+        tileX: px,
+        tileY: py,
+        rotationY: placement.rotationY ?? 0,
       });
     }
   }

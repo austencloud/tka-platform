@@ -29,8 +29,8 @@ import {
 // ── Defaults ──
 
 const DEFAULT_CONFIG: Required<AnimationStateMachineConfig> = {
-	accelerationTime: 0.15,
-	decelerationTime: 0.2,
+	accelerationTime: 0.08,
+	decelerationTime: 0,  // Instant stop — prevents foot sliding when movement ends
 	landingDuration: 0.4,
 	coyoteGrace: 0.1,
 	verticalThreshold: 0.5,

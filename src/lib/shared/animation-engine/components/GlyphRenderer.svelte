@@ -9,6 +9,19 @@ canvas rendering. This ensures the entire glyph fades as a unified unit.
   // Module-level cache for fetched SVG content to avoid repeated network requests
   // This persists across all component instances and re-renders
   const svgContentCache = new Map<string, string>();
+
+  // Cache for fully serialized glyph SVGs keyed by letter + turns tuple.
+  // Avoids expensive getBBox() + DOM cloning + serialization on every beat change
+  // when the same letter/turns combo was already rendered this session.
+  interface GlyphCacheEntry {
+    svgString: string;
+    width: number;
+    height: number;
+    x: number;
+    y: number;
+  }
+  const serializedGlyphCache = new Map<string, GlyphCacheEntry>();
+  const MAX_GLYPH_CACHE = 60;
 </script>
 
 <script lang="ts">
@@ -74,6 +87,14 @@ canvas rendering. This ensures the entire glyph fades as a unified unit.
     }
 
     try {
+      // Check serialized glyph cache first — avoids getBBox() + DOM cloning + serialization
+      const glyphCacheKey = `${letter}|${turnsTuple}`;
+      const cached = serializedGlyphCache.get(glyphCacheKey);
+      if (cached) {
+        onSvgReady(cached.svgString, cached.width, cached.height, cached.x, cached.y);
+        return;
+      }
+
       // Get the bounding box of the glyph group
       const glyphGroup = svgElement.querySelector(".tka-glyph");
       if (!glyphGroup) {
@@ -180,6 +201,15 @@ canvas rendering. This ensures the entire glyph fades as a unified unit.
 
       const serializer = new XMLSerializer();
       const svgString = serializer.serializeToString(svgCopy);
+
+      // Store in cache so subsequent visits to this letter skip getBBox/cloning/serialization
+      if (serializedGlyphCache.size >= MAX_GLYPH_CACHE) {
+        const oldest = serializedGlyphCache.keys().next().value;
+        if (oldest !== undefined) serializedGlyphCache.delete(oldest);
+      }
+      serializedGlyphCache.set(glyphCacheKey, {
+        svgString, width: viewBoxWidth, height: viewBoxHeight, x: viewBoxX, y: viewBoxY,
+      });
 
       if (onSvgReady) {
         // Pass the glyph bbox dimensions so AnimatorCanvas knows where to draw it

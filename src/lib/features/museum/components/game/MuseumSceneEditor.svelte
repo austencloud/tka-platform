@@ -13,8 +13,17 @@
   import { Raycaster, Vector2, Vector3, Euler, Mesh, type Object3D, type Camera } from "three";
 
   const _tempVec2 = new Vector3();
+  const _worldPos = new Vector3();
   import { onMount, onDestroy } from "svelte";
   import { museum3dEditorState } from "../../state/museum-3d-editor-state.svelte";
+  import { museumEditorOverrides } from "../../state/museum-editor-overrides";
+
+  interface Props {
+    /** Called after any editor drag/undo/redo so the parent can sync grid data */
+    onOverrideChanged?: () => void;
+  }
+
+  let { onOverrideChanged }: Props = $props();
 
   // ── Undo/Redo command stack ──
   interface TransformCommand {
@@ -39,6 +48,19 @@
     dragStartScale = obj.scale.clone();
   }
 
+  /** Save position override for a named object after any transform change */
+  function saveOverrideForObject(obj: Object3D) {
+    if (!obj.name) return;
+    obj.getWorldPosition(_worldPos);
+    museumEditorOverrides.set(obj.name, {
+      x: _worldPos.x,
+      y: _worldPos.y,
+      z: _worldPos.z,
+    });
+    // Notify parent so it can update grid data for interactions
+    onOverrideChanged?.();
+  }
+
   function captureAfterDrag(obj: Object3D) {
     if (!dragStartPos || !dragStartRot || !dragStartScale) return;
     undoStack.push({
@@ -54,6 +76,9 @@
     dragStartPos = null;
     dragStartRot = null;
     dragStartScale = null;
+
+    // Persist the new position as an override
+    saveOverrideForObject(obj);
   }
 
   function undo() {
@@ -63,6 +88,7 @@
     cmd.object.rotation.copy(cmd.beforeRot);
     cmd.object.scale.copy(cmd.beforeScale);
     redoStack.push(cmd);
+    saveOverrideForObject(cmd.object);
   }
 
   function redo() {
@@ -72,6 +98,7 @@
     cmd.object.rotation.copy(cmd.afterRot);
     cmd.object.scale.copy(cmd.afterScale);
     undoStack.push(cmd);
+    saveOverrideForObject(cmd.object);
   }
 
   const ctx = useThrelte();
@@ -130,7 +157,8 @@
         while (walk && walk.type !== "Scene") {
           if (walk.name && (
             walk.name.startsWith("plaque-") ||
-            walk.name.startsWith("performer-station-")
+            walk.name.startsWith("performer-station-") ||
+            walk.name.startsWith("furniture-")
           )) {
             target = walk;
             break;
@@ -215,7 +243,7 @@
     if (event.key === "Shift") panKeys.delete("shift");
   }
 
-  // Each frame: move the orbit target (and camera) based on held keys
+  // Each frame: pan the orbit target (and camera follows via OrbitControls)
   useTask((delta) => {
     if (panKeys.size === 0) return;
     const cam = getCamera();
@@ -228,21 +256,27 @@
 
     if (forward === 0 && strafe === 0 && vertical === 0) return;
 
-    // Get camera's forward/right vectors projected onto the XZ plane
-    const camDir = cam.getWorldDirection(_tempVec2);
-    const sinY = -camDir.x;
-    const cosY = -camDir.z;
+    // Project camera's look direction onto the XZ plane for forward/right
+    cam.getWorldDirection(_tempVec2);
+    const fwdX = _tempVec2.x;
+    const fwdZ = _tempVec2.z;
+    const fwdLen = Math.sqrt(fwdX * fwdX + fwdZ * fwdZ) || 1;
+    // Normalized forward on XZ
+    const nfx = fwdX / fwdLen;
+    const nfz = fwdZ / fwdLen;
+    // Right = forward rotated 90° clockwise on XZ
+    const nrx = -nfz;
+    const nrz = nfx;
 
-    const dx = (sinY * forward + cosY * strafe) * speed;
-    const dz = (cosY * forward - sinY * strafe) * speed;
+    const dx = (nfx * forward + nrx * strafe) * speed;
+    const dz = (nfz * forward + nrz * strafe) * speed;
     const dy = vertical * speed;
 
-    // Move both the camera and the orbit target together (panning, not orbiting)
+    // Move both camera and orbit target together — OrbitControls maintains
+    // the relative offset between camera and target automatically.
     cam.position.x += dx;
     cam.position.y += dy;
     cam.position.z += dz;
-
-    // Also move the orbit target so orbit center stays relative to camera
     museum3dEditorState.panTarget(dx, dy, dz);
   });
 

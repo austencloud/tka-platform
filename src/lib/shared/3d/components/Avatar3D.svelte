@@ -553,15 +553,31 @@
     const sin = Math.sin(facingAngle);
     const gridOffset = -WALL_OFFSET;
 
+    // Use the model root's actual world position for IK target computation.
+    // This accounts for parent group transforms (e.g. museum performer stations
+    // wrap the avatar in a positioned T.Group at worldX/worldZ). Using the
+    // `position` prop alone would miss those parent offsets, causing IK targets
+    // to be in the wrong world-space location → T-pose.
+    const rootWorld = new Vector3();
+    if (cachedRoot) {
+      cachedRoot.getWorldPosition(rootWorld);
+      // rootWorld X/Z include all parent transforms — correct for world space.
+      // For Y, use position.y (grid center / shoulder height) which is the
+      // reference height the prop system orbits around.
+      rootWorld.y = position.y ?? 0;
+    } else {
+      rootWorld.set(position.x, position.y ?? 0, position.z);
+    }
+
     function toWorldPosition(local: { x: number; y: number; z: number }): Vector3 {
       const localX = local.x;
       const localZ = local.z + gridOffset;
       const rotatedX = localX * cos + localZ * sin;
       const rotatedZ = -localX * sin + localZ * cos;
       return new Vector3(
-        rotatedX + position.x,
-        local.y + (position.y ?? 0),
-        rotatedZ + position.z
+        rotatedX + rootWorld.x,
+        local.y + rootWorld.y,
+        rotatedZ + rootWorld.z
       );
     }
 

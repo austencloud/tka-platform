@@ -35,7 +35,7 @@ const BASE_PERM: readonly number[] = [
 ];
 
 for (let i = 0; i < 256; i++) {
-  const v = BASE_PERM[i];
+  const v = BASE_PERM[i]!;
   PERM[i] = v;
   PERM[i + 256] = v;
   PERM_MOD12[i] = v % 12;
@@ -53,7 +53,7 @@ const GRAD2 = new Float32Array([
 /** Dot product of gradient[gi] with (x, y), fetched from the flat table. */
 function dot2(gi: number, x: number, y: number): number {
   const base = gi * 2;
-  return GRAD2[base] * x + GRAD2[base + 1] * y;
+  return GRAD2[base]! * x + GRAD2[base + 1]! * y;
 }
 
 // Skew / unskew factors for 2D simplex.
@@ -91,9 +91,9 @@ export function simplex2d(x: number, y: number): number {
   // Hashed gradient indices — use bitwise AND 255 instead of modulo.
   const ii = i & 255;
   const jj = j & 255;
-  const gi0 = PERM_MOD12[ii      + PERM[jj     ]];
-  const gi1 = PERM_MOD12[ii + i1 + PERM[jj + j1]];
-  const gi2 = PERM_MOD12[ii +  1 + PERM[jj +  1]];
+  const gi0 = PERM_MOD12[ii      + PERM[jj     ]!]!;
+  const gi1 = PERM_MOD12[ii + i1 + PERM[jj + j1]!]!;
+  const gi2 = PERM_MOD12[ii +  1 + PERM[jj +  1]!]!;
 
   // Contribution from corner 0.
   let n0 = 0;

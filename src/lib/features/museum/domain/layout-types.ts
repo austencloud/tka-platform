@@ -61,6 +61,17 @@ export interface TorchPlacement {
   position: number;
 }
 
+export interface FurniturePlacement {
+  /** Semantic role from the model loader (bench, pedestal, lamp, plant, bookshelf) */
+  role: "bench" | "pedestal" | "bookshelf" | "lamp" | "plant";
+  /** -0.5 to 0.5 offset from room center (same system as PerformerPlacement) */
+  offsetX: number;
+  /** -0.5 to 0.5 offset from room center */
+  offsetY: number;
+  /** Y-axis rotation in radians (0 = facing south / +Z) */
+  rotationY?: number;
+}
+
 export interface RoomNode {
   id: string;
   name: string;
@@ -78,6 +89,8 @@ export interface RoomNode {
   torches?: TorchPlacement[];
   /** TV screens showing sequence footage */
   screens?: ScreenPlacement[];
+  /** Furniture models placed relative to room center */
+  furniture?: FurniturePlacement[];
 }
 
 export interface RoomEdge {
@@ -125,6 +138,8 @@ export interface PlacedRoom {
   torches?: TorchPlacement[];
   /** TV screens showing sequence footage */
   screens?: ScreenPlacement[];
+  /** Furniture models placed relative to room center */
+  furniture?: FurniturePlacement[];
 }
 
 export interface CorridorSegment {
