@@ -163,7 +163,9 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
     if (!this.state) return;
 
     if (this.state.isPlaying) {
-      // Pause
+      // Pause — clear animationTarget so resuming doesn't hit the
+      // "already animating to this target" early-return in animateToBeatInternal
+      this.animationTarget = null;
       this.stopStepPlayback();
       this.loopService.stop();
       this.syncIsPlaying(false);

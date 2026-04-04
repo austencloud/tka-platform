@@ -30,6 +30,12 @@ Delegates ALL logic to services (SRP compliant)
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import { getCardColors } from "../shared/domain/card-colors";
   import { spellServiceLoader } from "$lib/features/create/spell/services/implementations/SpellServiceLoader";
+  import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import { resolveAccessTier, getMaxBeats } from "$lib/shared/auth/domain/AccessTier";
+  import { isPremiumOrAbove } from "$lib/shared/auth/domain/models/UserRole";
+  import type { AuthNudgeTrigger } from "$lib/shared/auth/domain/AuthNudgeTrigger";
+  import AuthNudge from "$lib/shared/auth/components/AuthNudge.svelte";
+  import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
   // Card components
   import GridModeCard from "./cards/GridModeCard.svelte";
   import LengthCard from "./cards/LengthCard.svelte";
@@ -97,6 +103,15 @@ Delegates ALL logic to services (SRP compliant)
     currentLevel && loopParamProvider
       ? loopParamProvider.getAllowedTurnsForLevel(currentLevel)
       : []
+  );
+
+  // Beat cap nudge state
+  let showBeatCapNudge = $state(false);
+  const accessTier = $derived(
+    resolveAccessTier(authState.isAuthenticated, isPremiumOrAbove(authState.role))
+  );
+  const beatCapNudgeTrigger = $derived<AuthNudgeTrigger>(
+    accessTier === "guest" ? "beat-cap-guest" : "beat-cap-composer"
   );
 
   // Get card colors based on current background (reactive to background changes)
@@ -414,7 +429,7 @@ Delegates ALL logic to services (SRP compliant)
       {#if card.id === "level"}
         <LevelCard {...card.props as any} color={cardColors.level.color} shadowColor={cardColors.level.shadowColor} />
       {:else if card.id === "length"}
-        <LengthCard {...card.props as any} color={cardColors.length.color} shadowColor={cardColors.length.shadowColor} />
+        <LengthCard {...card.props as any} color={cardColors.length.color} shadowColor={cardColors.length.shadowColor} onBeatCapExceeded={() => { showBeatCapNudge = true; }} />
       {:else if card.id === "word-input"}
         <WordInputCard
           {...card.props as any}
@@ -444,6 +459,16 @@ Delegates ALL logic to services (SRP compliant)
       {/if}
     </div>
   {/each}
+
+  {#if showBeatCapNudge}
+    <div class="beat-cap-nudge-overlay">
+      <AuthNudge
+        trigger={beatCapNudgeTrigger}
+        onCreateAccount={() => { showBeatCapNudge = false; authDrawerState.show(); }}
+        onDismiss={() => { showBeatCapNudge = false; }}
+      />
+    </div>
+  {/if}
 </div>
 
 
@@ -533,6 +558,18 @@ Delegates ALL logic to services (SRP compliant)
       padding-inline: 0; /* Remove mobile padding on desktop */
       align-self: center; /* Center vertically when height is constrained */
     }
+  }
+
+  .beat-cap-nudge-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 100;
+    pointer-events: all;
+    border-radius: 16px;
   }
 
   @media (prefers-reduced-motion: reduce) {

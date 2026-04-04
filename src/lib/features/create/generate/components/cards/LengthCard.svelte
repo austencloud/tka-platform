@@ -18,6 +18,7 @@ In spell mode, shows bridge count as subtitle and allows upward adjustment.
     locked = false,
     minOverride,
     onLengthChange,
+    onBeatCapExceeded,
     subtitle = "",
     color = "radial-gradient(ellipse at top left, var(--card-blue, #3b82f6) 0%, var(--card-blue, #3b82f6) 40%, var(--card-blue-end, #1d4ed8) 100%)",
     shadowColor = "220deg 80% 55%",
@@ -30,6 +31,7 @@ In spell mode, shows bridge count as subtitle and allows upward adjustment.
     locked?: boolean;
     minOverride?: number;
     onLengthChange: (length: number) => void;
+    onBeatCapExceeded?: () => void;
     subtitle?: string;
     color?: string;
     shadowColor?: string;
@@ -56,6 +58,10 @@ In spell mode, shows bridge count as subtitle and allows upward adjustment.
 
   function handleIncrement() {
     if (locked) return;
+    if (currentLength >= MAX_LENGTH) {
+      onBeatCapExceeded?.();
+      return;
+    }
     const newLength = Math.min(currentLength + STEP, MAX_LENGTH);
     onLengthChange(newLength);
   }
