@@ -1,5 +1,17 @@
 <script lang="ts">
 	import type { EffectPresetGroup } from "./presets/types";
+	import {
+		loadCustomTrailColors,
+		saveCustomTrailColors,
+		applyCustomTrailColors,
+		type CustomTrailColors,
+	} from "./presets/trail-presets";
+	import {
+		loadCustomFireColor,
+		saveCustomFireColor,
+		applyCustomFireColor,
+	} from "./presets/fire-presets";
+	import { getAnimationVisibilityManager } from "../../state/animation-visibility-state.svelte";
 
 	interface Props {
 		presetGroup: EffectPresetGroup;
@@ -12,6 +24,30 @@
 	}
 
 	const { presetGroup, activePresetId, onSelectPreset, onCustomize, effectLabel, accentColor, summary }: Props = $props();
+
+	const vm = getAnimationVisibilityManager();
+
+	// ── Trail custom colors ────────────────────────────────────────────
+	let customTrailColors = $state<CustomTrailColors>(loadCustomTrailColors());
+
+	function handleTrailColorChange(which: "blue" | "red", value: string) {
+		customTrailColors = { ...customTrailColors, [which]: value };
+		saveCustomTrailColors(customTrailColors);
+		if (activePresetId === "trail-custom") {
+			applyCustomTrailColors(customTrailColors);
+		}
+	}
+
+	// ── Fire custom color ──────────────────────────────────────────────
+	let customFireColor = $state(loadCustomFireColor());
+
+	function handleFireColorChange(value: string) {
+		customFireColor = value;
+		saveCustomFireColor(value);
+		if (activePresetId === "fire-custom") {
+			applyCustomFireColor(vm, value);
+		}
+	}
 </script>
 
 <div class="presets-section">
@@ -24,6 +60,7 @@
 	>
 		{#each presetGroup.presets as preset (preset.id)}
 			{@const isActive = preset.id === activePresetId}
+			{@const isCustom = preset.previewColor === "custom"}
 			<button
 				class="preset-card"
 				class:active={isActive}
@@ -34,7 +71,26 @@
 				onclick={() => onSelectPreset(preset.id)}
 			>
 				<div class="preview-area">
-					{#if preset.previewColor === "rainbow"}
+					{#if isCustom && preset.id === "trail-custom"}
+						<div class="dual-dots">
+							<div
+								class="dot"
+								style:background={customTrailColors.blue}
+								style:box-shadow="0 0 14px 5px {customTrailColors.blue}80"
+							></div>
+							<div
+								class="dot"
+								style:background={customTrailColors.red}
+								style:box-shadow="0 0 14px 5px {customTrailColors.red}80"
+							></div>
+						</div>
+					{:else if isCustom && preset.id === "fire-custom"}
+						<div
+							class="dot"
+							style:background={customFireColor}
+							style:box-shadow="0 0 14px 5px {customFireColor}80"
+						></div>
+					{:else if preset.previewColor === "rainbow"}
 						<div class="rainbow-dot"></div>
 					{:else if preset.previewColor2}
 						<div class="dual-dots">
@@ -61,6 +117,38 @@
 			</button>
 		{/each}
 	</div>
+
+	{#if activePresetId === "trail-custom"}
+		<div class="custom-color-row">
+			<label class="color-pick">
+				<input
+					type="color"
+					value={customTrailColors.blue}
+					oninput={(e) => handleTrailColorChange("blue", e.currentTarget.value)}
+				/>
+				<span class="color-label">Left</span>
+			</label>
+			<label class="color-pick">
+				<input
+					type="color"
+					value={customTrailColors.red}
+					oninput={(e) => handleTrailColorChange("red", e.currentTarget.value)}
+				/>
+				<span class="color-label">Right</span>
+			</label>
+		</div>
+	{:else if activePresetId === "fire-custom"}
+		<div class="custom-color-row">
+			<label class="color-pick">
+				<input
+					type="color"
+					value={customFireColor}
+					oninput={(e) => handleFireColorChange(e.currentTarget.value)}
+				/>
+				<span class="color-label">Flame Color</span>
+			</label>
+		</div>
+	{/if}
 
 	<div class="summary-row">
 		<div class="summary-dot" style:background={accentColor} style:box-shadow="0 0 6px 2px {accentColor}60"></div>
@@ -226,6 +314,54 @@
 	.customize-btn:focus-visible {
 		outline: 2px solid var(--btn-accent);
 		outline-offset: 2px;
+	}
+
+	/* ── Custom color pickers ── */
+	.custom-color-row {
+		display: flex;
+		justify-content: center;
+		gap: 24px;
+		padding: 10px 0 4px;
+	}
+
+	.color-pick {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 6px;
+		cursor: pointer;
+	}
+
+	.color-pick input[type="color"] {
+		-webkit-appearance: none;
+		appearance: none;
+		width: 40px;
+		height: 40px;
+		border: 2px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
+		border-radius: 50%;
+		background: none;
+		cursor: pointer;
+		padding: 0;
+		overflow: hidden;
+	}
+
+	.color-pick input[type="color"]::-webkit-color-swatch-wrapper {
+		padding: 0;
+	}
+
+	.color-pick input[type="color"]::-webkit-color-swatch {
+		border: none;
+		border-radius: 50%;
+	}
+
+	.color-pick input[type="color"]::-moz-color-swatch {
+		border: none;
+		border-radius: 50%;
+	}
+
+	.color-label {
+		font-size: var(--font-size-compact, 12px);
+		color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
 	}
 
 	/* ── Reduced motion ── */
