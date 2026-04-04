@@ -19,6 +19,7 @@
     includeStartPosition?: boolean;
     handPointsVisible?: boolean;
     onPairsReady?: (pairs: CardPair[]) => void;
+    onRenderStateChange?: (state: { isRendering: boolean; progress: number; total: number }) => void;
   }
 
   let {
@@ -32,6 +33,7 @@
     includeStartPosition = true,
     handPointsVisible = true,
     onPairsReady,
+    onRenderStateChange,
   }: Props = $props();
 
   // Rendered card data: front and back as data URLs, plus label
@@ -134,6 +136,7 @@
     renderTotal = seqs.length;
     renderProgress = 0;
     renderedCards = [];
+    onRenderStateChange?.({ isRendering: true, progress: 0, total: seqs.length });
 
     const renderer = container.items.printCardRenderer;
     const pairs: CardPair[] = [];
@@ -161,11 +164,13 @@
       if (generation !== renderGeneration) return;
       renderProgress = i + 1;
       renderedCards = [...cards];
+      onRenderStateChange?.({ isRendering: true, progress: i + 1, total: seqs.length });
     }
 
     if (generation !== renderGeneration) return;
     isRendering = false;
     onPairsReady?.(pairs);
+    onRenderStateChange?.({ isRendering: false, progress: seqs.length, total: seqs.length });
   }
 </script>
 
