@@ -11,15 +11,17 @@
 
   // ── Loading gate ──
   // An opaque overlay covers the scene until ALL assets (textures, models)
-  // are fully loaded. useProgress() in DimensionFlipProof hooks into
-  // Three.js DefaultLoadingManager and reports real 0-1 progress.
-  // Nothing partial is ever visible — the scene appears complete.
+  // are fully loaded. On repeat visits within the same session, browser HTTP
+  // cache serves assets instantly — skip the overlay entirely.
+  const LOADED_FLAG = "museum-assets-loaded";
+  const wasLoadedBefore = sessionStorage.getItem(LOADED_FLAG) === "1";
+
   // Real progress target from useProgress (jumps in bursts)
-  let targetProgress = $state(0);
+  let targetProgress = $state(wasLoadedBefore ? 1 : 0);
   // Displayed progress — lerps smoothly toward target
-  let displayProgress = $state(0);
-  let allLoaded = $state(false);
-  let showOverlay = $state(true);
+  let displayProgress = $state(wasLoadedBefore ? 1 : 0);
+  let allLoaded = $state(wasLoadedBefore);
+  let showOverlay = $state(!wasLoadedBefore);
   let overlayFading = $state(false);
 
   // Animate the progress bar smoothly via rAF.
@@ -49,13 +51,18 @@
     }
   }
 
-  // Defer heavy 3D component mount until after the first paint.
+  // Defer heavy 3D component mount until AFTER the loading overlay has painted.
+  // Two rAFs aren't enough — they can fire back-to-back before the browser paints
+  // when the main thread is busy with module evaluation. setTimeout(0) properly
+  // yields to the browser's task queue, ensuring the overlay is visible first.
   let deferredReady = $state(false);
   onMount(() => {
+    // rAF ensures we're past the first frame, setTimeout ensures the browser
+    // has actually painted the overlay before we start the heavy 3D mount.
     requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
+      setTimeout(() => {
         deferredReady = true;
-      });
+      }, 0);
     });
     return () => {
       if (rafId !== null) cancelAnimationFrame(rafId);
@@ -74,6 +81,8 @@
     allLoaded = true;
     targetProgress = 1;
     startProgressAnimation();
+    // Mark for fast-start on next visit
+    try { sessionStorage.setItem(LOADED_FLAG, "1"); } catch { /* non-critical */ }
     // Wait for the bar to visually reach 100%, then hold briefly, then reveal
     const waitForBar = () => {
       if (displayProgress >= 0.99) {
@@ -96,8 +105,55 @@
     "3p-test": "3p-test",
   };
 
-  // Build the grid from the room graph
-  const { grid: generatedGrid, validation } = buildMuseumGrid(MUSEUM_ROOMS, MUSEUM_EDGES, GRID_CONFIG);
+  // ── Grid caching ──
+  // The grid build pipeline (layout engine, corridor routing, wall derivation,
+  // exhibit/performer placement) runs every mount. Caching the result to
+  // sessionStorage eliminates this on repeat visits within the same session.
+  // A hash of the input config detects changes and invalidates the cache.
+  const GRID_CACHE_KEY = "museum-grid-cache";
+  const GRID_HASH_KEY = "museum-grid-hash";
+
+  function computeConfigHash(): string {
+    // Simple hash from room/edge/config JSON — changes when layout data changes
+    const input = JSON.stringify({ rooms: MUSEUM_ROOMS, edges: MUSEUM_EDGES, config: GRID_CONFIG });
+    let hash = 0;
+    for (let i = 0; i < input.length; i++) {
+      hash = ((hash << 5) - hash + input.charCodeAt(i)) | 0;
+    }
+    return String(hash);
+  }
+
+  function loadCachedGrid(): MuseumGrid | null {
+    try {
+      const hash = sessionStorage.getItem(GRID_HASH_KEY);
+      if (hash !== computeConfigHash()) return null;
+      const raw = sessionStorage.getItem(GRID_CACHE_KEY);
+      if (!raw) return null;
+      return deserializeGrid(JSON.parse(raw));
+    } catch { return null; }
+  }
+
+  function cacheGrid(grid: MuseumGrid): void {
+    try {
+      sessionStorage.setItem(GRID_HASH_KEY, computeConfigHash());
+      sessionStorage.setItem(GRID_CACHE_KEY, JSON.stringify(serializeGrid(grid)));
+    } catch { /* sessionStorage full — non-critical */ }
+  }
+
+  // Try cached grid first, fall back to fresh build
+  const cached = loadCachedGrid();
+  let generatedGrid: MuseumGrid;
+  let validation: { valid: boolean; errors: string[] };
+
+  if (cached) {
+    generatedGrid = cached;
+    validation = { valid: true, errors: [] };
+  } else {
+    const result = buildMuseumGrid(MUSEUM_ROOMS, MUSEUM_EDGES, GRID_CONFIG);
+    generatedGrid = result.grid;
+    validation = result.validation;
+    cacheGrid(generatedGrid);
+  }
 
   if (!validation.valid) {
     console.error("Museum layout validation failed:", validation.errors);
@@ -140,8 +196,18 @@
     });
   }
 
-  // The "live" grid — starts from generated, can be modified by editor
-  let liveGrid = $state<MuseumGrid>(generatedGrid);
+  // Once the 3D scene has mounted, keep it alive (hidden) across mode switches.
+  // This prevents the 5+ second WebGL reinit freeze on every mode toggle.
+  let museumSceneMounted = $state(false);
+  $effect(() => {
+    if (mode === "museum") museumSceneMounted = true;
+  });
+
+  // The "live" grid — starts from generated, can be modified by editor.
+  // Must use $state.raw: $state would deeply proxy 20k+ tiles, causing a
+  // multi-second freeze on init. The grid is replaced wholesale (not mutated
+  // in place), so shallow reactivity is correct.
+  let liveGrid = $state.raw<MuseumGrid>(generatedGrid);
 
   // Editor state — initialized from the live grid
   const editorState = createEditorState(liveGrid.width, liveGrid.height);
@@ -213,32 +279,50 @@
         {/if}
       </p>
       <div class="overlay-progress-track">
-        <div class="overlay-progress-fill" style:width="{Math.round(displayProgress * 100)}%"></div>
+        {#if displayProgress > 0.01}
+          <!-- Real progress bar (JS-driven, active once Three.js reports progress) -->
+          <div class="overlay-progress-fill" style:width="{Math.round(displayProgress * 100)}%"></div>
+        {:else}
+          <!-- CSS-only indeterminate shimmer (runs on compositor, won't freeze) -->
+          <div class="overlay-progress-indeterminate"></div>
+        {/if}
       </div>
     </div>
   {/if}
 
   <!-- Content renders behind the opaque overlay; deferred to allow first paint -->
   {#if deferredReady}
-    <div class="mode-content">
-      {#if mode === "museum"}
+    <!-- 3D scene stays alive across mode switches (hidden via CSS when inactive).
+         Destroying and recreating it causes a 5+ second freeze every time because
+         WebGL reinit + InstancedMesh rebuild + texture reload must happen from scratch. -->
+    <div class="mode-content" class:hidden-mode={mode !== "museum" && mode !== "showroom" && mode !== "3p-test"}>
+      {#if mode === "museum" || museumSceneMounted}
         {#await import("./components/game/DimensionFlipProof.svelte") then { default: DimensionFlipProof }}
           <DimensionFlipProof grid={liveGrid} onLoadProgress={handleLoadProgress} onAllLoaded={handleAllLoaded} />
         {/await}
-      {:else if mode === "showroom"}
+      {/if}
+    </div>
+
+    <!-- Non-3D modes render separately and unmount normally (they're lightweight) -->
+    {#if mode === "showroom"}
+      <div class="mode-content">
         {#await import("./components/showroom/PropsShowroom.svelte") then { default: PropsShowroom }}
           <PropsShowroom />
         {/await}
-      {:else if mode === "3p-test"}
+      </div>
+    {:else if mode === "3p-test"}
+      <div class="mode-content">
         {#await import("./components/showroom/ThirdPersonTest.svelte") then { default: ThirdPersonTest }}
           <ThirdPersonTest />
         {/await}
-      {:else}
+      </div>
+    {:else if mode === "edit"}
+      <div class="mode-content">
         {#await import("./components/editor/Museum2DEditor.svelte") then { default: Museum2DEditor }}
           <Museum2DEditor />
         {/await}
-      {/if}
-    </div>
+      </div>
+    {/if}
   {/if}
 </div>
 
@@ -255,6 +339,13 @@
   .mode-content {
     flex: 1;
     overflow: hidden;
+  }
+
+  .mode-content.hidden-mode {
+    visibility: hidden;
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
   }
 
   /* Unified loading overlay — covers full module, fades out when ready */
@@ -284,6 +375,7 @@
     font-size: 36px;
     opacity: 0.5;
     animation: overlay-pulse 2s ease-in-out infinite;
+    will-change: opacity;
   }
 
   .overlay-stage {
@@ -312,5 +404,22 @@
   @keyframes overlay-pulse {
     0%, 100% { opacity: 0.3; }
     50% { opacity: 0.6; }
+  }
+
+  /* Indeterminate shimmer — runs on the compositor thread so it animates
+     even while the main thread is blocked initializing the 3D scene. */
+  .overlay-progress-indeterminate {
+    height: 100%;
+    width: 40%;
+    border-radius: 1px;
+    background: rgba(200, 180, 140, 0.6);
+    animation: indeterminate-slide 1.4s ease-in-out infinite;
+    will-change: transform;
+  }
+
+  @keyframes indeterminate-slide {
+    0% { transform: translateX(-100%); }
+    50% { transform: translateX(250%); }
+    100% { transform: translateX(-100%); }
   }
 </style>

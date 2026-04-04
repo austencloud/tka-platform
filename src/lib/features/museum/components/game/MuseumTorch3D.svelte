@@ -3,24 +3,18 @@
    * Museum light fixture: loads a GLTF model per wing theme, with optional
    * flame shader, ember particles, volumetric light cone, and animated point light.
    * Falls back to procedural geometry when the GLB model hasn't been added yet.
+   *
+   * PERFORMANCE: Shader materials are provided by TorchMaterialCache (pre-compiled
+   * once at scene init). Without this, each torch triggers GPU shader compilation
+   * on mount (~200-800ms), causing visible stutter while walking.
    */
   import { T, useTask } from "@threlte/core";
   import { onDestroy } from "svelte";
   import {
     PointLight,
-    ShaderMaterial,
-    PlaneGeometry,
-    ConeGeometry,
-    MeshStandardMaterial,
-    SphereGeometry,
     Points,
     BufferGeometry,
     Float32BufferAttribute,
-    PointsMaterial,
-    AdditiveBlending,
-    DoubleSide,
-    FrontSide,
-    Color,
   } from "three";
   import { Box3, Vector3 } from "three";
   import type { Object3D } from "three";
@@ -28,6 +22,7 @@
   import type { FixtureConfig } from "../../domain/fixture-registry";
   import { FIXTURE_REGISTRY } from "../../domain/fixture-registry";
   import type { WingTheme } from "../../domain/museum-grid-types";
+  import type { TorchMaterials } from "../../services/implementations/TorchMaterialCache";
 
   // Shared loader instance — reuses HTTP cache across all fixture components
   const sharedLoader = new GLTFLoader();
@@ -42,6 +37,8 @@
     distance?: number;
     /** Wing theme determines which fixture model and light color to use */
     wingTheme?: WingTheme;
+    /** Pre-compiled materials from TorchMaterialCache — avoids shader compilation per torch */
+    materials: TorchMaterials;
   }
 
   let {
@@ -53,6 +50,7 @@
     baseIntensity = 4,
     distance = 8,
     wingTheme = "cave" as WingTheme,
+    materials,
   }: Props = $props();
 
   const config: FixtureConfig = FIXTURE_REGISTRY[wingTheme];
@@ -67,18 +65,12 @@
   let gltfModel: Object3D | null = $state(null);
   let modelFailed = $state(false);
 
-  // Target height for fixtures in world units (meters).
-  // config.scale acts as a multiplier on this base size.
   const TARGET_HEIGHT = 0.3;
 
   sharedLoader.load(
     config.modelPath,
     (gltf) => {
       const model = gltf.scene;
-
-      // Auto-scale: measure the model's bounding box and normalize to
-      // TARGET_HEIGHT so every Sketchfab model lands at the same visual
-      // size regardless of its native units.
       const box = new Box3().setFromObject(model);
       const size = new Vector3();
       box.getSize(size);
@@ -87,131 +79,17 @@
         const autoScale = (TARGET_HEIGHT / maxDim) * config.scale;
         model.scale.setScalar(autoScale);
       }
-
       model.position.set(tx, fixtureY, tz);
       gltfModel = model;
     },
     undefined,
     () => {
-      // Model not found — use fallback
       modelFailed = true;
     },
   );
 
-  // ── Fallback: simple emissive sphere when no GLB exists ──
-  const fallbackGeo = new SphereGeometry(0.06, 8, 8);
-  const fallbackMat = new MeshStandardMaterial({
-    color: config.lightColor,
-    emissive: config.lightColor,
-    emissiveIntensity: 3.0,
-  });
-
-  // ── Flame billboard with noise shader (only for fire-based fixtures) ──
-  const flameGeo = new PlaneGeometry(0.2, 0.35);
-  const flameMat = new ShaderMaterial({
-    transparent: true,
-    depthWrite: false,
-    side: DoubleSide,
-    uniforms: {
-      uTime: { value: Math.random() * 100 },
-      uIntensity: { value: 1.0 },
-    },
-    vertexShader: /* glsl */ `
-      varying vec2 vUv;
-      void main() {
-        vUv = uv;
-        vec3 camRight = vec3(viewMatrix[0][0], viewMatrix[1][0], viewMatrix[2][0]);
-        vec3 camUp = vec3(viewMatrix[0][1], viewMatrix[1][1], viewMatrix[2][1]);
-        vec3 billboardPos = camRight * position.x + camUp * position.y;
-        vec4 worldPos = modelMatrix * vec4(0.0, 0.0, 0.0, 1.0);
-        worldPos.xyz += billboardPos;
-        gl_Position = projectionMatrix * viewMatrix * worldPos;
-      }
-    `,
-    fragmentShader: /* glsl */ `
-      uniform float uTime;
-      uniform float uIntensity;
-      varying vec2 vUv;
-
-      float hash(vec2 p) {
-        return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
-      }
-
-      float noise(vec2 p) {
-        vec2 i = floor(p);
-        vec2 f = fract(p);
-        f = f * f * (3.0 - 2.0 * f);
-        float a = hash(i);
-        float b = hash(i + vec2(1.0, 0.0));
-        float c = hash(i + vec2(0.0, 1.0));
-        float d = hash(i + vec2(1.0, 1.0));
-        return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
-      }
-
-      float fbm(vec2 p) {
-        float value = 0.0;
-        float amplitude = 0.5;
-        for (int i = 0; i < 5; i++) {
-          value += amplitude * noise(p);
-          p *= 2.1;
-          amplitude *= 0.5;
-        }
-        return value;
-      }
-
-      void main() {
-        vec2 uv = vUv;
-        float xCenter = abs(uv.x - 0.5) * 2.0;
-        float taper = 1.0 - pow(uv.y, 0.6);
-        float mask = smoothstep(taper, taper - 0.3, xCenter);
-        float vertFade = smoothstep(0.0, 0.15, uv.y) * smoothstep(1.0, 0.4, uv.y);
-        vec2 noiseCoord = vec2(uv.x * 3.0, uv.y * 4.0 - uTime * 2.5);
-        float n = fbm(noiseCoord);
-        float flame = mask * vertFade * (0.6 + 0.4 * n);
-        flame = smoothstep(0.1, 0.6, flame);
-
-        vec3 white = vec3(1.0, 0.95, 0.85);
-        vec3 yellow = vec3(1.0, 0.75, 0.2);
-        vec3 orange = vec3(1.0, 0.4, 0.05);
-        vec3 red = vec3(0.6, 0.1, 0.0);
-        vec3 color = mix(red, orange, smoothstep(0.0, 0.3, flame));
-        color = mix(color, yellow, smoothstep(0.3, 0.6, flame));
-        color = mix(color, white, smoothstep(0.6, 0.9, flame));
-        color *= 1.5 * uIntensity;
-
-        gl_FragColor = vec4(color, flame * 0.9);
-      }
-    `,
-  });
-
-  // ── Volumetric light cone ──
-  const coneGeo = new ConeGeometry(0.4, 0.8, 12, 1, true);
-  const coneMat = new ShaderMaterial({
-    transparent: true,
-    depthWrite: false,
-    side: FrontSide,
-    blending: AdditiveBlending,
-    uniforms: {
-      uColor: { value: new Color(config.lightColor) },
-      uIntensity: { value: 0.15 },
-    },
-    vertexShader: /* glsl */ `
-      varying float vHeight;
-      void main() {
-        vHeight = (position.y + 0.4) / 0.8;
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-      }
-    `,
-    fragmentShader: /* glsl */ `
-      uniform vec3 uColor;
-      uniform float uIntensity;
-      varying float vHeight;
-      void main() {
-        float alpha = vHeight * vHeight * uIntensity;
-        gl_FragColor = vec4(uColor, alpha);
-      }
-    `,
-  });
+  // Use pre-compiled materials from cache (cloned, so uniforms are per-instance)
+  const { flameMat, flameGeo, coneMat, coneGeo, fallbackGeo, fallbackMat, emberMat } = materials;
 
   // ── Ember particles (only for fire-based fixtures) ──
   const EMBER_COUNT = config.hasEmbers ? 24 : 0;
@@ -234,15 +112,6 @@
 
   const emberGeo = new BufferGeometry();
   emberGeo.setAttribute("position", new Float32BufferAttribute(emberPositions, 3));
-  const emberMat = new PointsMaterial({
-    color: "#ffaa40",
-    size: 0.015,
-    transparent: true,
-    opacity: 0.8,
-    blending: AdditiveBlending,
-    depthWrite: false,
-    sizeAttenuation: true,
-  });
   const emberPoints = new Points(emberGeo, emberMat);
 
   // ── Point light ──
@@ -260,7 +129,6 @@
 
     if (light && effectiveIntensity > 0) {
       if (isFireBased) {
-        // Organic flicker for fire-based fixtures
         const slow = Math.sin(elapsed * 1.2) * 0.15;
         const medium = Math.sin(elapsed * 4.7) * 0.1;
         const fast = Math.sin(elapsed * 13.3) * 0.05;
@@ -273,7 +141,6 @@
         flameMat.uniforms.uIntensity!.value = 0.85 + flicker * 0.5;
         (coneMat.uniforms.uIntensity as { value: number }).value = 0.12 + flicker * 0.06;
       } else {
-        // Subtle hum for electric fixtures (fluorescent flicker)
         const hum = Math.sin(elapsed * 120) * 0.02;
         light.intensity = effectiveIntensity + hum * effectiveIntensity;
       }
@@ -298,14 +165,12 @@
   const flameY = fixtureY + 0.2;
 
   onDestroy(() => {
-    fallbackGeo.dispose();
-    fallbackMat.dispose();
-    flameGeo.dispose();
+    // Only dispose per-instance resources. Shared geometries and emberMat
+    // are owned by TorchMaterialCache. Cloned flameMat/coneMat are per-instance.
     flameMat.dispose();
-    coneGeo.dispose();
     coneMat.dispose();
+    fallbackMat.dispose();
     emberGeo.dispose();
-    emberMat.dispose();
   });
 </script>
 
