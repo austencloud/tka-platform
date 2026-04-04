@@ -17,6 +17,9 @@ export function createArrowAssets(data: Partial<ArrowAssets>): ArrowAssets {
     imageSrc: data.imageSrc ?? "",
     viewBox: data.viewBox ?? { width: 0, height: 0 },
     center: data.center ?? { x: 0, y: 0 },
+    shaftSrc: data.shaftSrc,
+    tipSrc: data.tipSrc,
+    tipBBox: data.tipBBox,
   };
 }
 
