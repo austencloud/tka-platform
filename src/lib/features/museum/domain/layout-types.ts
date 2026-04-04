@@ -7,41 +7,12 @@
  */
 
 import type { FloorMaterial, Direction, WingTheme, MuseumGrid } from "./museum-grid-types";
+import type { WallDefinition } from "./wall-segment-types";
 
 // ── Room Graph (input) ──
 
-export interface ExhibitPlacement {
-  /** Which wall this exhibit is mounted on */
-  wall: "north" | "south" | "east" | "west";
-  /** 0.0–1.0 position along the wall (0.5 = center) */
-  position: number;
-  /** Reference ID linking to ExhibitDefinition content */
-  refId: string;
-  /** Which direction the exhibit faces (toward the room interior) */
-  facing: Direction;
-  /** Plaque size: standard (1 tile), large (2 tiles), or dev-whiteboard (3 tiles) */
-  size?: "standard" | "large" | "dev-whiteboard";
-  /** Group ID for exhibits that belong together (relaxes spacing rules within group) */
-  group?: string;
-  /** Whether this exhibit is the anchor piece for the room (used by design validation) */
-  isAnchor?: boolean;
-}
-
 /** Decade label for a sequence screen's content era */
 export type ScreenDecade = "1970s" | "1980s" | "1990s" | "2000s" | "2010s" | "2020s";
-
-export interface ScreenPlacement {
-  /** Which wall the screen is mounted on */
-  wall: "north" | "south" | "east" | "west";
-  /** 0.0–1.0 position along the wall */
-  position: number;
-  /** Reference ID linking to screen content */
-  refId: string;
-  /** Which direction the screen faces (toward the room interior) */
-  facing: Direction;
-  /** Content era for the footage shown on this screen */
-  decade?: ScreenDecade;
-}
 
 export interface PerformerPlacement {
   /** -0.5 to 0.5 offset from room center (0 = center) */
@@ -54,16 +25,9 @@ export interface PerformerPlacement {
   refId: string;
 }
 
-export interface TorchPlacement {
-  /** Which wall this torch is mounted on */
-  wall: "north" | "south" | "east" | "west";
-  /** 0.0–1.0 position along the wall (0.5 = center) */
-  position: number;
-}
-
 export interface FurniturePlacement {
-  /** Semantic role from the model loader (bench, pedestal, lamp, plant, bookshelf) */
-  role: "bench" | "pedestal" | "bookshelf" | "lamp" | "plant";
+  /** Semantic role from the model loader */
+  role: "bench" | "pedestal" | "bookshelf" | "lamp" | "plant" | "scaffolding" | "sign";
   /** -0.5 to 0.5 offset from room center (same system as PerformerPlacement) */
   offsetX: number;
   /** -0.5 to 0.5 offset from room center */
@@ -75,22 +39,25 @@ export interface FurniturePlacement {
 export interface RoomNode {
   id: string;
   name: string;
-  minWidth: number;
-  minHeight: number;
-  maxWidth: number;
-  maxHeight: number;
   material: FloorMaterial;
   theme: WingTheme;
   description?: string;
   /** Designer notes rendered as in-game dev whiteboards */
   devNotes?: string;
-  exhibits?: ExhibitPlacement[];
+  /** Wall segment definitions — ordered arrays of typed segments per wall */
+  walls: {
+    north: WallDefinition;
+    south: WallDefinition;
+    east: WallDefinition;
+    west: WallDefinition;
+  };
   performers?: PerformerPlacement[];
-  torches?: TorchPlacement[];
-  /** TV screens showing sequence footage */
-  screens?: ScreenPlacement[];
   /** Furniture models placed relative to room center */
   furniture?: FurniturePlacement[];
+  /** Minimum interior width override (for rooms needing floor space beyond wall demands) */
+  minInteriorWidth?: number;
+  /** Minimum interior height override */
+  minInteriorHeight?: number;
 }
 
 export interface RoomEdge {
@@ -133,11 +100,14 @@ export interface PlacedRoom {
   description?: string;
   /** Designer notes rendered as in-game dev whiteboards */
   devNotes?: string;
-  exhibits?: ExhibitPlacement[];
+  /** Wall segment definitions (copied from RoomNode) */
+  walls: {
+    north: WallDefinition;
+    south: WallDefinition;
+    east: WallDefinition;
+    west: WallDefinition;
+  };
   performers?: PerformerPlacement[];
-  torches?: TorchPlacement[];
-  /** TV screens showing sequence footage */
-  screens?: ScreenPlacement[];
   /** Furniture models placed relative to room center */
   furniture?: FurniturePlacement[];
 }
