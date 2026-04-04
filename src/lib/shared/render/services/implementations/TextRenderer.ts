@@ -152,7 +152,9 @@ export class TextRenderer implements ITextRenderer {
     difficultyLevel: number = 1,
     showDifficultyBadge: boolean = true,
     darkMode: boolean = false,
-    loopComponents?: Set<LOOPComponent>
+    loopComponents?: Set<LOOPComponent>,
+    backgroundColor?: string,
+    borderColor?: string
   ): void {
     const ctx = canvas.getContext("2d");
     if (!ctx) {
@@ -176,6 +178,8 @@ export class TextRenderer implements ITextRenderer {
       showDifficultyBadge,
       loopComponents: packageComponents,
       darkMode,
+      backgroundColor,
+      borderColor,
     });
   }
 
@@ -196,7 +200,9 @@ export class TextRenderer implements ITextRenderer {
       showNotes?: boolean;
       showBirthday?: boolean;
     },
-    customNotesText?: string
+    customNotesText?: string,
+    backgroundColor?: string,
+    borderColor?: string
   ): void {
     const showCreatorName = showFlags?.showCreatorName ?? true;
     const showNotes = showFlags?.showNotes ?? true;
@@ -235,6 +241,8 @@ export class TextRenderer implements ITextRenderer {
       showCreatorName,
       showNotes,
       showBirthday,
+      backgroundColor,
+      borderColor,
     });
   }
 
