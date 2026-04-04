@@ -506,7 +506,19 @@
           {/if}
         </div>
       {:else}
-        {#if viewMode === 'print'}
+        {#if viewMode === 'print' && filteredSequences.length > 54}
+          <div class="print-filter-prompt">
+            <i class="fas fa-filter" aria-hidden="true"></i>
+            <p>{filteredSequences.length} sequences is too many to preview. Use the Filter button to narrow down by family or starting position (max 54 for print preview).</p>
+            <button
+              class="filter-prompt-btn"
+              type="button"
+              onclick={() => { interiorFiltersOpen = true; }}
+            >
+              <i class="fas fa-filter" aria-hidden="true"></i> Open Filters
+            </button>
+          </div>
+        {:else if viewMode === 'print'}
           <PrintPreviewPages
             sequences={filteredSequences}
             {cardSize}
@@ -772,6 +784,45 @@
 </div>
 
 <style>
+  /* ── Print filter prompt ── */
+
+  .print-filter-prompt {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 48px 24px;
+    text-align: center;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+  }
+
+  .print-filter-prompt i {
+    font-size: 32px;
+    opacity: 0.4;
+  }
+
+  .print-filter-prompt p {
+    margin: 0;
+    font-size: var(--font-size-min, 14px);
+    max-width: 400px;
+    line-height: 1.5;
+  }
+
+  .filter-prompt-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    font-size: var(--font-size-min, 14px);
+    font-weight: 500;
+    color: var(--theme-text, #fff);
+    background: var(--theme-accent, #4a9eff);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+
   /* ── Root ── */
 
   .deck-browser {
