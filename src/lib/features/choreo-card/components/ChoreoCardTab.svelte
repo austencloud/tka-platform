@@ -619,11 +619,6 @@
           onSelectSequence={handleSelectSequence}
           onLoadFamilySequences={handleLoadFamilySequences}
           onContextMenu={openCardContextMenu}
-          onPrintPrep={(overrideDeck, overrideSequences) => {
-            printPrepDeckOverride = overrideDeck ?? null;
-            printPrepSequencesOverride = overrideSequences ?? null;
-            printPrepActive = true;
-          }}
         />
       </main>
     {:else if mode === "designer"}
