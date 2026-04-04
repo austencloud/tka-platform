@@ -259,11 +259,6 @@ export class LocomotionAnimator implements ILocomotionAnimator {
         const action = this.mixer.clipAction(clip);
         action.setLoop(LoopRepeat, Infinity);
         this.setWeight(action, 0);
-        // Backward walk uses the forward clip played in reverse.
-        // Negative timeScale reverses playback without needing a separate animation.
-        if (key === "backward") {
-          action.setEffectiveTimeScale(-1);
-        }
         action.play();
         this.walkActions[key] = action;
       }
@@ -414,21 +409,25 @@ export class LocomotionAnimator implements ILocomotionAnimator {
       this.config.baseSpeed *
       Math.max(0.3, speed / this.config.animationWalkSpeed);
     for (const key of Object.keys(this.walkActions) as DirectionKey[]) {
-      // Backward uses negative timeScale to reverse the forward clip
-      const sign = key === "backward" ? -1 : 1;
-      this.walkActions[key]?.setEffectiveTimeScale(timeScale * sign);
+      this.walkActions[key]?.setEffectiveTimeScale(timeScale);
     }
   }
 
   private applyStateWeights(blendFactor: number): void {
     const state = this.activeState!;
 
+    // The Mixamo jump clip is a full-arc animation (crouch → push → air → land).
+    // Keep it playing through JUMPING, FALLING, and LANDING states instead of
+    // switching to separate fall/land clips that don't match.
+    const isAirborne =
+      state === LocomotionState.JUMPING ||
+      state === LocomotionState.FALLING ||
+      state === LocomotionState.LANDING;
+
     const wantIdle = state === LocomotionState.IDLE ? 1 : 0;
     const wantWalk = state === LocomotionState.WALKING ? 1 : 0;
     const wantCrouch = state === LocomotionState.CROUCHING ? 1 : 0;
-    const wantJump = state === LocomotionState.JUMPING ? 1 : 0;
-    const wantFall = state === LocomotionState.FALLING ? 1 : 0;
-    const wantLand = state === LocomotionState.LANDING ? 1 : 0;
+    const wantJump = isAirborne ? 1 : 0;
 
     // Idle
     this.currentIdleWeight += (wantIdle - this.currentIdleWeight) * blendFactor;
@@ -446,12 +445,12 @@ export class LocomotionAnimator implements ILocomotionAnimator {
     // Other states
     this.blendAction(this.crouchAction, wantCrouch, blendFactor);
     this.blendAction(this.jumpAction, wantJump, blendFactor);
-    this.blendAction(this.fallAction, wantFall, blendFactor);
-    this.blendAction(this.landAction, wantLand, blendFactor);
+    // Fall/land clips unused — the full jump animation covers the entire arc
+    this.blendAction(this.fallAction, 0, blendFactor);
+    this.blendAction(this.landAction, 0, blendFactor);
 
-    // On state entry: snap weights instantly for one-shot clips.
-    // Jump and land must be immediate — no gradual blend. The camera
-    // moves on the same frame as the input, so the animation must too.
+    // On state entry: snap weights instantly for jump.
+    // The camera moves on the same frame as the input, so the animation must too.
     if (state !== this.currentActiveState) {
       if (state === LocomotionState.JUMPING && this.jumpAction) {
         this.jumpAction.reset().play();
@@ -463,10 +462,6 @@ export class LocomotionAnimator implements ILocomotionAnimator {
           this.walkActions[key]?.setEffectiveWeight(0);
           this.currentDirWeights[key] = 0;
         }
-      }
-      if (state === LocomotionState.LANDING && this.landAction) {
-        this.landAction.reset().play();
-        this.landAction.setEffectiveWeight(1);
       }
       this.currentActiveState = state;
     }

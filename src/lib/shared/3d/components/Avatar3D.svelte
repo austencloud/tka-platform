@@ -47,6 +47,8 @@
   import { AnimationStateMachine } from "../services/implementations/AnimationStateMachine";
   import type { IAnimationStateMachine } from "../services/contracts/IAnimationStateMachine";
   import { FingerAnimator } from "$lib/shared/3d/services/implementations/FingerAnimator";
+  import { FootPlanter } from "../services/implementations/FootPlanter";
+  import type { IFootPlanter } from "../services/contracts/IFootPlanter";
   import { ElbowPoleComputer } from "../services/implementations/ElbowPoleComputer";
   import { ClavicleRaiser } from "../services/implementations/ClavicleRaiser";
   import { SpineTwister } from "../services/implementations/SpineTwister";
@@ -86,6 +88,8 @@
     verticalVelocity?: number;
     /** Whether the player is crouching (Ctrl held) */
     isCrouching?: boolean;
+    /** True on the frame jump input was detected (instant animation trigger) */
+    isJumpRequested?: boolean;
   }
 
   let {
@@ -107,6 +111,7 @@
     isGrounded = true,
     verticalVelocity = 0,
     isCrouching = false,
+    isJumpRequested = false,
   }: Props = $props();
 
   // Services (manually instantiated to ensure shared skeleton instance)
@@ -115,6 +120,7 @@
   let animationService: IAvatarAnimator | null = $state(null);
   let locomotionAnimator: ILocomotionAnimator | null = $state(null);
   let stateMachine: IAnimationStateMachine | null = null;
+  let footPlanter: IFootPlanter | null = null;
   let fingerAnimator: FingerAnimator | null = null;
 
   let servicesReady = $state(false);
@@ -214,15 +220,14 @@
         // Load all locomotion animations (idle + 4 directional walks + optional jump/fall/land)
         locomotionAnimator
           .loadAnimations({
-            idle: "/animations/standing-idle.glb",
-            forward: "/animations/walk.glb",
+            idle: "/animations/locomotion-pack/idle.glb",
+            forward: "/animations/locomotion-pack/walk-forward.glb",
             backward: "/animations/walk-backward.glb",
-            strafeLeft: "/animations/strafe-left.glb",
-            strafeRight: "/animations/strafe-right.glb",
-            jump: "/animations/jump-up.glb",
+            strafeLeft: "/animations/locomotion-pack/strafe-left.glb",
+            strafeRight: "/animations/locomotion-pack/strafe-right.glb",
+            jump: "/animations/locomotion-pack/jump.glb",
             fall: "/animations/falling-idle.glb",
             land: "/animations/hard-landing.glb",
-            crouch: "/animations/crouch-idle.glb",
           })
           .catch((err) => {
             console.warn(
@@ -230,6 +235,11 @@
               err.message
             );
           });
+      }
+
+      // Initialize foot planter with leg chains from the loaded skeleton
+      if (enableLocomotion && footPlanter && skeletonService && ikSolver) {
+        footPlanter.initialize(skeletonService, ikSolver);
       }
 
       // Initialize finger animator with mapped finger chains
@@ -282,9 +292,10 @@
       animationService = animator;
       locomotionAnimator = locomotion;
 
-      // State machine for jump/fall/land (only useful with locomotion)
+      // State machine + foot IK (only useful with locomotion)
       if (enableLocomotion) {
         stateMachine = new AnimationStateMachine();
+        footPlanter = new FootPlanter();
       }
 
       const fingers = new FingerAnimator();
@@ -524,6 +535,7 @@
           verticalVelocity,
           isGrounded,
           isCrouching,
+          isJumpRequested,
           moveDirection,
           facingAngle,
         }, delta);
@@ -546,6 +558,14 @@
         });
       }
       locomotionAnimator.update(delta);
+
+      // Foot IK disabled — the two-bone IK solver was designed for arms (wide
+      // range of motion) and produces unnatural results on legs (knees splaying,
+      // feet rotating). Production foot IK requires hinge-constrained knee solver,
+      // foot rotation alignment, and authored animation contact curves — none of
+      // which exist in Three.js or Mixamo. Speed-matched walk animation with
+      // IDLE_EXCLUDE_BONES is the stable baseline.
+      // FootPlanter kept in codebase for future work with a proper leg IK solver.
     }
 
     // 2. IK post-process (blends per-arm based on prop presence)
@@ -618,12 +638,15 @@
   });
 
   onDestroy(() => {
-    // Dispose locomotion animator and state machine
+    // Dispose locomotion animator, state machine, and foot planter
     if (locomotionAnimator) {
       locomotionAnimator.dispose();
     }
     if (stateMachine) {
       stateMachine.dispose();
+    }
+    if (footPlanter) {
+      footPlanter.dispose();
     }
 
     // Dispose finger animator
