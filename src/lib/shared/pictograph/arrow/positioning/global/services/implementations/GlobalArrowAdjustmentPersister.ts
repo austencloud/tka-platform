@@ -68,6 +68,8 @@ export class GlobalArrowAdjustmentPersister
             letter: data.letter,
             turnsTuple: data.turnsTuple,
             arrowKey: data.arrowKey,
+            ...(data.propType && { propType: data.propType }),
+            ...(data.otherPropType && { otherPropType: data.otherPropType }),
             adjustmentX: data.adjustmentX,
             adjustmentY: data.adjustmentY,
             updatedAt: data.updatedAt,
@@ -102,6 +104,8 @@ export class GlobalArrowAdjustmentPersister
       letter: input.letter,
       turnsTuple: input.turnsTuple,
       arrowKey: input.arrowKey,
+      ...(input.propType && { propType: input.propType }),
+      ...(input.otherPropType && { otherPropType: input.otherPropType }),
     });
 
     try {
@@ -114,6 +118,8 @@ export class GlobalArrowAdjustmentPersister
         letter: input.letter,
         turnsTuple: input.turnsTuple,
         arrowKey: input.arrowKey,
+        ...(input.propType && { propType: input.propType }),
+        ...(input.otherPropType && { otherPropType: input.otherPropType }),
         adjustmentX: input.adjustmentX,
         adjustmentY: input.adjustmentY,
         updatedAt: serverTimestamp(),
@@ -274,6 +280,8 @@ export class GlobalArrowAdjustmentPersister
                     letter: data.letter,
                     turnsTuple: data.turnsTuple,
                     arrowKey: data.arrowKey,
+                    ...(data.propType && { propType: data.propType }),
+                    ...(data.otherPropType && { otherPropType: data.otherPropType }),
                     adjustmentX: data.adjustmentX,
                     adjustmentY: data.adjustmentY,
                     updatedAt: data.updatedAt,
