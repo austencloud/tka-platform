@@ -89,11 +89,14 @@
     onReady?: () => void;
   }
 
-  let {
-    grid, flipRequested, heldKeys = new Set(), topDownHeight = 12, onPlayerUpdate,
-    initialFpsActive = false, initialPlayerPos, initialPlayerYaw, resetRequested = 0,
-    onReady,
-  }: Props = $props();
+  const props: Props = $props();
+
+  // Resolve initial-value props as plain consts (used once at init, not reactive)
+  const grid = props.grid;
+  const initialFpsActive = props.initialFpsActive ?? false;
+  const initialPlayerPos = props.initialPlayerPos;
+  const initialPlayerYaw = props.initialPlayerYaw;
+  const onReady = props.onReady;
 
   // ── Tile scale: each tile = 0.5m in world space ──
   const TILE_SIZE = 0.5;
@@ -434,7 +437,7 @@
 
   // ── Top-down camera: zoomed-in follow camera above the player ──
   // Height lerps toward the parent-controlled topDownHeight prop for smooth zoom.
-  let currentTopDownHeight = topDownHeight;
+  let currentTopDownHeight = props.topDownHeight ?? 12;
   const TOP_DOWN_FOV = 50;
   const CAMERA_SMOOTHING = 0.08; // Exponential lerp factor for camera follow
   const ZOOM_SMOOTHING = 0.12; // Lerp factor for zoom height changes
@@ -737,13 +740,13 @@
       const fpsTileX = Math.round(fpsPos.x / TILE_SIZE);
       const fpsTileZ = Math.round(fpsPos.z / TILE_SIZE);
       updateAtmosphere(fpsTileX, fpsTileZ, delta);
-      onPlayerUpdate?.(fpsPos.x, fpsPos.z, fpsTileX, fpsTileZ, yawToFacing(playerYaw), true, playerYaw);
+      props.onPlayerUpdate?.(fpsPos.x, fpsPos.z, fpsTileX, fpsTileZ, yawToFacing(playerYaw), true, playerYaw);
       return;
     }
 
     // Detect new flip request (must check before movement/animation branches)
-    if (flipRequested !== lastFlipCount) {
-      lastFlipCount = flipRequested;
+    if ((props.flipRequested ?? 0) !== lastFlipCount) {
+      lastFlipCount = props.flipRequested ?? 0;
       if (!animating) {
         // Entering FPS: compute target from player position (NOT from top-down camera)
         syncFpsFromPlayer();
@@ -754,15 +757,16 @@
 
     // ── Top-down WASD movement (when not animating) ──
     if (!animating) {
-      const forward = (heldKeys.has("KeyW") || heldKeys.has("ArrowUp") ? 1 : 0) -
-                      (heldKeys.has("KeyS") || heldKeys.has("ArrowDown") ? 1 : 0);
-      const strafe = (heldKeys.has("KeyD") || heldKeys.has("ArrowRight") ? 1 : 0) -
-                     (heldKeys.has("KeyA") || heldKeys.has("ArrowLeft") ? 1 : 0);
+      const keys = props.heldKeys ?? new Set<string>();
+      const forward = (keys.has("KeyW") || keys.has("ArrowUp") ? 1 : 0) -
+                      (keys.has("KeyS") || keys.has("ArrowDown") ? 1 : 0);
+      const strafe = (keys.has("KeyD") || keys.has("ArrowRight") ? 1 : 0) -
+                     (keys.has("KeyA") || keys.has("ArrowLeft") ? 1 : 0);
 
       if (forward !== 0 || strafe !== 0) {
         // Sprint when Shift is held
 
-        const isSprinting = heldKeys.has("ShiftLeft") || heldKeys.has("ShiftRight");
+        const isSprinting = keys.has("ShiftLeft") || keys.has("ShiftRight");
         const speed = isSprinting ? TOP_DOWN_MOVE_SPEED * TOP_DOWN_SPRINT_MULTIPLIER : TOP_DOWN_MOVE_SPEED;
 
         // In top-down, "forward" = -Z (north on screen), "right" = +X (east)
@@ -822,7 +826,7 @@
       TOP_DOWN.position.z += (pos.z - TOP_DOWN.position.z) * CAMERA_SMOOTHING;
 
       // Smooth zoom — lerp height toward the parent-controlled target
-      currentTopDownHeight += (topDownHeight - currentTopDownHeight) * ZOOM_SMOOTHING;
+      currentTopDownHeight += ((props.topDownHeight ?? 12) - currentTopDownHeight) * ZOOM_SMOOTHING;
       TOP_DOWN.position.y = currentTopDownHeight;
 
       // Apply top-down camera position
@@ -837,7 +841,7 @@
       const tileX = Math.round(pos.x / TILE_SIZE);
       const tileZ = Math.round(pos.z / TILE_SIZE);
       updateAtmosphere(tileX, tileZ, delta);
-      onPlayerUpdate?.(pos.x, pos.z, tileX, tileZ, yawToFacing(playerYaw), false, playerYaw);
+      props.onPlayerUpdate?.(pos.x, pos.z, tileX, tileZ, yawToFacing(playerYaw), false, playerYaw);
       return;
     }
 
@@ -887,12 +891,13 @@
 
   // When Q is pressed again while in FPS mode, exit back to top-down
   $effect(() => {
-    if (fpsActive && flipRequested !== lastFlipCount) {
-      lastFlipCount = flipRequested;
+    const flip = props.flipRequested;
+    if (fpsActive && flip !== lastFlipCount) {
+      lastFlipCount = flip;
       syncFpsFromCamera();
       syncPositionFromPhysics();
       // Clear held keys to prevent stale movement (mutate parent's Set)
-      heldKeys.clear();
+      (props.heldKeys ?? new Set()).clear();
       fpsActive = false;
       animating = true;
       goingDown = false;
@@ -902,8 +907,9 @@
   // Reset to spawn when requested (R key or Home)
   let lastResetCount = 0;
   $effect(() => {
-    if (resetRequested !== lastResetCount) {
-      lastResetCount = resetRequested;
+    const reset = props.resetRequested ?? 0;
+    if (reset !== lastResetCount) {
+      lastResetCount = reset;
       const spawnX = grid.spawn.x * TILE_SIZE;
       const spawnZ = grid.spawn.y * TILE_SIZE;
       physicsProvider.teleport!({ x: spawnX, y: 0, z: spawnZ });
@@ -1246,22 +1252,23 @@
     }
   }
 
-  let ceilingMesh: InstancedMesh | null = null;
-  if (allFloorPositions.length > 0) {
+  let ceilingMesh: InstancedMesh | null = $state((() => {
+    if (allFloorPositions.length === 0) return null;
     const ceilingMat = new MeshStandardMaterial({
       color: "#3a3530",          // lighter than walls so it reads as a ceiling catching ambient light
       emissive: "#0a0a08",       // faint self-illumination prevents pitch-black voids between lights
       emissiveIntensity: 0.3,
       roughness: 0.85,           // slight roughness variation — plaster/stone feel
     });
-    ceilingMesh = new InstancedMesh(floorGeo, ceilingMat, allFloorPositions.length);
+    const mesh = new InstancedMesh(floorGeo, ceilingMat, allFloorPositions.length);
     for (let i = 0; i < allFloorPositions.length; i++) {
       dummy.position.set(allFloorPositions[i]!.x, WALL_HEIGHT, allFloorPositions[i]!.z);
       dummy.updateMatrix();
-      ceilingMesh.setMatrixAt(i, dummy.matrix);
+      mesh.setMatrixAt(i, dummy.matrix);
     }
-    ceilingMesh.instanceMatrix.needsUpdate = true;
-  }
+    mesh.instanceMatrix.needsUpdate = true;
+    return mesh;
+  })());
 
   // Exhibit spot lighting — populated from plaque placements
   const exhibitLightPositions: { id: number; tileX: number; tileY: number; x: number; z: number }[] = plaquePlacements.map((p, i) => ({
@@ -1307,7 +1314,7 @@
     performerMesh.instanceMatrix.needsUpdate = true;
   }
 
-  let pedestalMesh: InstancedMesh | null = null;
+  let pedestalMesh: InstancedMesh | null = $state(null);
   if (pedestalPositions.length > 0) {
     const pedestalMat = new MeshStandardMaterial({ color: TILE_TYPE_COLORS.pedestal! });
     pedestalMesh = new InstancedMesh(pedestalGeo, pedestalMat, pedestalPositions.length);
@@ -1319,7 +1326,7 @@
     pedestalMesh.instanceMatrix.needsUpdate = true;
   }
 
-  let signMesh: InstancedMesh | null = null;
+  let signMesh: InstancedMesh | null = $state(null);
   if (signPositions.length > 0) {
     const signMat = new MeshStandardMaterial({ color: TILE_TYPE_COLORS.sign! });
     signMesh = new InstancedMesh(signGeo, signMat, signPositions.length);
@@ -1616,7 +1623,7 @@
 {/if}
 
 <!-- Exhibit plaques: individually textured with readable content -->
-{#each visiblePlaques as plaque (plaque.id)}
+{#each visiblePlaques as plaque (`plaque-${plaque.tileX}-${plaque.tileY}`)}
   {@const plaqueOverride = overrideVersion >= 0 ? museumEditorOverrides.get(`plaque-${plaque.refId}`) : null}
   <MuseumPlaque3D
     worldX={plaqueOverride?.x ?? plaque.worldX}
