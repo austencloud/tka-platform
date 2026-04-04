@@ -793,14 +793,6 @@ export const SOCIAL_TABS: Section[] = [
 ];
 
 export const LAB_TABS: Section[] = [
-  {
-    id: "arrow-splitter",
-    label: "Arrow Splitter",
-    icon: '<i class="fas fa-scissors" aria-hidden="true"></i>',
-    description: "Split arrow SVGs into shaft and tip portions",
-    color: "#06b6d4",
-    gradient: "linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%)",
-  },
   // ascii-pictograph graduated to Retro module (Mar 2026)
   // assemble-lab removed — functionality lives in Create module's Assemble tab
   {
