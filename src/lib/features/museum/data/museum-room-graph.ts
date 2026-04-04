@@ -1,15 +1,20 @@
 /**
- * Museum Room Graph — Phases 1-2
+ * Museum Room Graph
  *
  * Defines the abstract topology of the museum: rooms as nodes, connections
  * as edges. No absolute coordinates here. The layout engine computes positions
  * from this graph + the grid config.
  *
- * Phase 1: Entrance Lobby + Vulcan Cave
- * Phase 2: Egyptian + Renaissance + Victorian wings
+ * Each room declares four walls with ordered segment arrays. The layout engine
+ * sums segment widths + margins to derive room dimensions automatically.
  */
 
 import type { RoomNode, RoomEdge, GridConfig } from "../domain/layout-types";
+import type { WallDefinition } from "../domain/wall-segment-types";
+
+// ── Helper: empty wall with standard margin ──
+
+const EMPTY_WALL: WallDefinition = { segments: [], minMargin: 2 };
 
 // ── Room Definitions ──
 
@@ -17,12 +22,9 @@ export const MUSEUM_ROOMS: RoomNode[] = [
   {
     id: "entrance",
     name: "Entrance Lobby",
-    minWidth: 16,
-    maxWidth: 16,
-    minHeight: 50,
-    maxHeight: 50,
     material: "marble",
     theme: "institutional",
+    minInteriorHeight: 48,
     description:
       "A long marble hallway — the grand entrance to The Kinetic Archive. " +
       "Brass letters above the double doors. A guest book podium with a warm desk lamp " +
@@ -43,56 +45,45 @@ export const MUSEUM_ROOMS: RoomNode[] = [
       "\n" +
       "TONE: Normal museum. Nothing weird yet.\n" +
       "LIGHTING: Cool fluorescent baseline + one warm desk lamp on podium.",
-    exhibits: [
-      // Welcome plaque — near the north archway, east side
-      {
-        wall: "east",
-        position: 0.05,
-        refId: "entrance-welcome",
-        facing: "west",
+    walls: {
+      north: {
+        segments: [
+          { type: "gap", minTiles: 3 },
+          { type: "door", edgeId: "entrance->vulcan-cave", width: 4 },
+          { type: "gap", minTiles: 3 },
+        ],
+        minMargin: 2,
       },
-      // Guest book — center-ish, west wall (podium is center but plaque is on wall)
-      {
-        wall: "west",
-        position: 0.5,
-        refId: "entrance-guest-book",
-        facing: "east",
+      south: EMPTY_WALL,
+      east: {
+        segments: [
+          { type: "gap", minTiles: 3 },
+          { type: "exhibit", refId: "entrance-welcome", size: "standard", facing: "west" },
+          { type: "gap", minTiles: 4 },
+          { type: "exhibit", refId: "entrance-reception", size: "standard", facing: "west" },
+          { type: "gap", minTiles: 3 },
+        ],
+        minMargin: 2,
       },
-      // Bulletin board — west wall, upper third
-      {
-        wall: "west",
-        position: 0.35,
-        refId: "entrance-bulletin",
-        facing: "east",
+      west: {
+        segments: [
+          { type: "gap", minTiles: 3 },
+          { type: "exhibit", refId: "entrance-bulletin", size: "standard", facing: "east" },
+          { type: "gap", minTiles: 4 },
+          { type: "exhibit", refId: "entrance-guest-book", size: "standard", facing: "east" },
+          { type: "gap", minTiles: 3 },
+        ],
+        minMargin: 2,
       },
-      // Reception window — east wall, upper third
-      {
-        wall: "east",
-        position: 0.4,
-        refId: "entrance-reception",
-        facing: "west",
-      },
-    ],
+    },
     furniture: [
-      // Benches along walls — "sit and absorb" moments
-      // West wall bench, near the midpoint
       { role: "bench", offsetX: -0.42, offsetY: 0.1, rotationY: Math.PI / 2 },
-      // East wall bench, opposite side
       { role: "bench", offsetX: 0.42, offsetY: 0.1, rotationY: -Math.PI / 2 },
-      // Bench near the archway approach, west side
       { role: "bench", offsetX: -0.42, offsetY: -0.3, rotationY: Math.PI / 2 },
-
-      // Guest book podium (pedestal) — center of the hallway
       { role: "pedestal", offsetX: 0, offsetY: 0.15 },
-
-      // Desk lamp on the podium — warm light pool
       { role: "lamp", offsetX: 0.02, offsetY: 0.15 },
-
-      // Potted plants flanking the archway approach
       { role: "plant", offsetX: -0.35, offsetY: -0.4 },
       { role: "plant", offsetX: 0.35, offsetY: -0.4 },
-
-      // Plant near the entrance doors
       { role: "plant", offsetX: -0.35, offsetY: 0.42 },
       { role: "plant", offsetX: 0.35, offsetY: 0.42 },
     ],
@@ -100,10 +91,6 @@ export const MUSEUM_ROOMS: RoomNode[] = [
   {
     id: "vulcan-cave",
     name: "Vulcan Cave",
-    minWidth: 26,
-    maxWidth: 32,
-    minHeight: 24,
-    maxHeight: 30,
     material: "stone",
     theme: "cave",
     description:
@@ -124,70 +111,69 @@ export const MUSEUM_ROOMS: RoomNode[] = [
       "TODO: torch flicker particles, cave ambient drip audio\n" +
       "\n" +
       "TONE: Sacred. Like finding cave paintings nobody was supposed to see.",
-    exhibits: [
-      {
-        wall: "north",
-        position: 0.4,
-        refId: "cave-lascaux-1",
-        facing: "south",
+    walls: {
+      north: {
+        segments: [
+          { type: "gap", minTiles: 3 },
+          { type: "torch" },
+          { type: "gap", minTiles: 3 },
+          { type: "exhibit", refId: "cave-lascaux-1", size: "standard", facing: "south" },
+          { type: "gap", minTiles: 3 },
+          { type: "exhibit", refId: "cave-lascaux-2", size: "standard", facing: "south" },
+          { type: "gap", minTiles: 3 },
+        ],
+        minMargin: 2,
       },
-      {
-        wall: "north",
-        position: 0.6,
-        refId: "cave-lascaux-2",
-        facing: "south",
+      south: {
+        segments: [
+          { type: "gap", minTiles: 3 },
+          { type: "door", edgeId: "entrance->vulcan-cave", width: 4 },
+          { type: "gap", minTiles: 3 },
+          { type: "torch" },
+          { type: "gap", minTiles: 3 },
+        ],
+        minMargin: 2,
       },
-      {
-        wall: "west",
-        position: 0.3,
-        refId: "cave-paintings-1",
-        facing: "east",
+      east: {
+        segments: [
+          { type: "gap", minTiles: 3 },
+          { type: "torch" },
+          { type: "gap", minTiles: 4 },
+          { type: "door", edgeId: "vulcan-cave->egyptian", width: 4 },
+          { type: "gap", minTiles: 4 },
+          { type: "torch" },
+          { type: "gap", minTiles: 3 },
+        ],
+        minMargin: 2,
       },
-      {
-        wall: "west",
-        position: 0.6,
-        refId: "cave-paintings-2",
-        facing: "east",
+      west: {
+        segments: [
+          { type: "gap", minTiles: 3 },
+          { type: "torch" },
+          { type: "gap", minTiles: 3 },
+          { type: "exhibit", refId: "cave-paintings-1", size: "standard", facing: "east" },
+          { type: "gap", minTiles: 3 },
+          { type: "exhibit", refId: "cave-paintings-2", size: "standard", facing: "east" },
+          { type: "gap", minTiles: 3 },
+          { type: "exhibit", refId: "cave-marchand", size: "standard", facing: "east" },
+          { type: "gap", minTiles: 3 },
+          { type: "torch" },
+          { type: "gap", minTiles: 3 },
+        ],
+        minMargin: 2,
       },
-      {
-        wall: "west",
-        position: 0.8,
-        refId: "cave-marchand",
-        facing: "east",
-      },
-    ],
+    },
     performers: [
-      {
-        offsetX: -0.15,
-        offsetY: 0.1,
-        facing: "south",
-        refId: "cave-performer-1",
-      },
-      {
-        offsetX: 0.15,
-        offsetY: 0.1,
-        facing: "south",
-        refId: "cave-performer-2",
-      },
-    ],
-    torches: [
-      { wall: "west", position: 0.1 },
-      { wall: "east", position: 0.1 },
-      { wall: "west", position: 0.85 },
-      { wall: "east", position: 0.85 },
-      { wall: "north", position: 0.2 },
-      { wall: "south", position: 0.8 },
+      { offsetX: -0.15, offsetY: 0.1, facing: "south", refId: "cave-performer-1" },
+      { offsetX: 0.15, offsetY: 0.1, facing: "south", refId: "cave-performer-2" },
     ],
   },
+
   // ── Phase 2: Order-era wings ──
 
   {
     id: "egyptian",
     name: "Egyptian Wing",
-    minWidth: 24,
-    maxWidth: 30,
-    minHeight: 20,
-    maxHeight: 26,
     material: "sandstone",
     theme: "classical",
     description:
@@ -208,26 +194,56 @@ export const MUSEUM_ROOMS: RoomNode[] = [
       "TODO: amphora exhibit content\n" +
       "\n" +
       "TONE: Warm but controlled. Library energy. Restricted stacks.",
-    exhibits: [
-      { wall: "north", position: 0.5, refId: "egypt-karnak", facing: "south" },
-      { wall: "west", position: 0.35, refId: "egypt-priesthood", facing: "east" },
-      { wall: "east", position: 0.35, refId: "egypt-amphora", facing: "west" },
-      { wall: "south", position: 0.5, refId: "egypt-controlled", facing: "north" },
-    ],
-    torches: [
-      { wall: "west", position: 0.1 },
-      { wall: "east", position: 0.1 },
-      { wall: "west", position: 0.85 },
-      { wall: "east", position: 0.85 },
-    ],
+    walls: {
+      north: {
+        segments: [
+          { type: "gap", minTiles: 3 },
+          { type: "exhibit", refId: "egypt-karnak", size: "standard", facing: "south" },
+          { type: "gap", minTiles: 3 },
+        ],
+        minMargin: 2,
+      },
+      south: {
+        segments: [
+          { type: "gap", minTiles: 3 },
+          { type: "exhibit", refId: "egypt-controlled", size: "standard", facing: "north" },
+          { type: "gap", minTiles: 4 },
+          { type: "door", edgeId: "egyptian->renaissance", width: 4 },
+          { type: "gap", minTiles: 3 },
+        ],
+        minMargin: 2,
+      },
+      east: {
+        segments: [
+          { type: "gap", minTiles: 3 },
+          { type: "torch" },
+          { type: "gap", minTiles: 3 },
+          { type: "exhibit", refId: "egypt-amphora", size: "standard", facing: "west" },
+          { type: "gap", minTiles: 3 },
+          { type: "torch" },
+          { type: "gap", minTiles: 3 },
+        ],
+        minMargin: 2,
+      },
+      west: {
+        segments: [
+          { type: "gap", minTiles: 3 },
+          { type: "torch" },
+          { type: "gap", minTiles: 3 },
+          { type: "door", edgeId: "vulcan-cave->egyptian", width: 4 },
+          { type: "gap", minTiles: 4 },
+          { type: "exhibit", refId: "egypt-priesthood", size: "standard", facing: "east" },
+          { type: "gap", minTiles: 3 },
+          { type: "torch" },
+          { type: "gap", minTiles: 3 },
+        ],
+        minMargin: 2,
+      },
+    },
   },
   {
     id: "renaissance",
     name: "Renaissance Wing",
-    minWidth: 20,
-    maxWidth: 26,
-    minHeight: 18,
-    maxHeight: 24,
     material: "wood",
     theme: "renaissance",
     description:
@@ -247,24 +263,52 @@ export const MUSEUM_ROOMS: RoomNode[] = [
       "TODO: workshop props (desk, ink pots, quill)\n" +
       "\n" +
       "TONE: Nostalgic. A genius worked here and someone erased the evidence.",
-    exhibits: [
-      { wall: "north", position: 0.5, refId: "ren-codex", facing: "south" },
-      { wall: "west", position: 0.4, refId: "ren-vitruvian", facing: "east" },
-      { wall: "east", position: 0.5, refId: "ren-workshop", facing: "west" },
-      { wall: "south", position: 0.5, refId: "ren-notebooks", facing: "north" },
-    ],
-    torches: [
-      { wall: "north", position: 0.15 },
-      { wall: "north", position: 0.85 },
-    ],
+    walls: {
+      north: {
+        segments: [
+          { type: "gap", minTiles: 3 },
+          { type: "torch" },
+          { type: "gap", minTiles: 3 },
+          { type: "door", edgeId: "egyptian->renaissance", width: 4 },
+          { type: "gap", minTiles: 4 },
+          { type: "exhibit", refId: "ren-codex", size: "standard", facing: "south" },
+          { type: "gap", minTiles: 3 },
+          { type: "torch" },
+          { type: "gap", minTiles: 3 },
+        ],
+        minMargin: 2,
+      },
+      south: {
+        segments: [
+          { type: "gap", minTiles: 3 },
+          { type: "exhibit", refId: "ren-notebooks", size: "standard", facing: "north" },
+          { type: "gap", minTiles: 3 },
+        ],
+        minMargin: 2,
+      },
+      east: {
+        segments: [
+          { type: "gap", minTiles: 3 },
+          { type: "exhibit", refId: "ren-workshop", size: "standard", facing: "west" },
+          { type: "gap", minTiles: 3 },
+        ],
+        minMargin: 2,
+      },
+      west: {
+        segments: [
+          { type: "gap", minTiles: 3 },
+          { type: "exhibit", refId: "ren-vitruvian", size: "standard", facing: "east" },
+          { type: "gap", minTiles: 4 },
+          { type: "door", edgeId: "renaissance->victorian", width: 4 },
+          { type: "gap", minTiles: 3 },
+        ],
+        minMargin: 2,
+      },
+    },
   },
   {
     id: "victorian",
     name: "Victorian Wing",
-    minWidth: 22,
-    maxWidth: 28,
-    minHeight: 20,
-    maxHeight: 26,
     material: "marble",
     theme: "industrial",
     description:
@@ -284,26 +328,57 @@ export const MUSEUM_ROOMS: RoomNode[] = [
       "TODO: gas lamp light effect (warmer, steadier than torches)\n" +
       "\n" +
       "TONE: Distinguished rot. Something is very wrong and everyone is polite about it.",
-    exhibits: [
-      { wall: "north", position: 0.5, refId: "vic-brass", facing: "south" },
-      { wall: "west", position: 0.4, refId: "vic-patents", facing: "east" },
-      { wall: "east", position: 0.4, refId: "vic-portraits", facing: "west" },
-      { wall: "south", position: 0.5, refId: "vic-discredited", facing: "north" },
-    ],
-    torches: [
-      { wall: "west", position: 0.1 },
-      { wall: "east", position: 0.1 },
-    ],
+    walls: {
+      north: {
+        segments: [
+          { type: "gap", minTiles: 3 },
+          { type: "exhibit", refId: "vic-brass", size: "standard", facing: "south" },
+          { type: "gap", minTiles: 4 },
+          { type: "door", edgeId: "victorian->digital", width: 4 },
+          { type: "gap", minTiles: 3 },
+        ],
+        minMargin: 2,
+      },
+      south: {
+        segments: [
+          { type: "gap", minTiles: 3 },
+          { type: "exhibit", refId: "vic-discredited", size: "standard", facing: "north" },
+          { type: "gap", minTiles: 4 },
+          { type: "door", edgeId: "victorian->construction-zone", width: 4 },
+          { type: "gap", minTiles: 3 },
+        ],
+        minMargin: 2,
+      },
+      east: {
+        segments: [
+          { type: "gap", minTiles: 3 },
+          { type: "torch" },
+          { type: "gap", minTiles: 3 },
+          { type: "door", edgeId: "renaissance->victorian", width: 4 },
+          { type: "gap", minTiles: 4 },
+          { type: "exhibit", refId: "vic-portraits", size: "standard", facing: "west" },
+          { type: "gap", minTiles: 3 },
+          { type: "torch" },
+          { type: "gap", minTiles: 3 },
+        ],
+        minMargin: 2,
+      },
+      west: {
+        segments: [
+          { type: "gap", minTiles: 3 },
+          { type: "exhibit", refId: "vic-patents", size: "standard", facing: "east" },
+          { type: "gap", minTiles: 3 },
+        ],
+        minMargin: 2,
+      },
+    },
   },
+
   // ── Phase 3: Digital era + Suppression ──
 
   {
     id: "digital",
     name: "Digital Wing",
-    minWidth: 20,
-    maxWidth: 26,
-    minHeight: 18,
-    maxHeight: 22,
     material: "stone",
     theme: "digital",
     description:
@@ -324,20 +399,50 @@ export const MUSEUM_ROOMS: RoomNode[] = [
       "TODO: BBS printout wall textures\n" +
       "\n" +
       "TONE: Late-night hacker den. The knowledge went underground.",
-    exhibits: [
-      { wall: "north", position: 0.5, refId: "digital-crt", facing: "south" },
-      { wall: "west", position: 0.35, refId: "digital-bbs", facing: "east" },
-      { wall: "east", position: 0.5, refId: "digital-3400", facing: "west" },
-      { wall: "south", position: 0.5, refId: "digital-team", facing: "north" },
-    ],
+    walls: {
+      north: {
+        segments: [
+          { type: "gap", minTiles: 3 },
+          { type: "exhibit", refId: "digital-crt", size: "standard", facing: "south" },
+          { type: "gap", minTiles: 4 },
+          { type: "door", edgeId: "digital->suppression", width: 4 },
+          { type: "gap", minTiles: 3 },
+        ],
+        minMargin: 2,
+      },
+      south: {
+        segments: [
+          { type: "gap", minTiles: 3 },
+          { type: "exhibit", refId: "digital-team", size: "standard", facing: "north" },
+          { type: "gap", minTiles: 4 },
+          { type: "door", edgeId: "victorian->digital", width: 4 },
+          { type: "gap", minTiles: 3 },
+        ],
+        minMargin: 2,
+      },
+      east: {
+        segments: [
+          { type: "gap", minTiles: 3 },
+          { type: "exhibit", refId: "digital-3400", size: "standard", facing: "west" },
+          { type: "gap", minTiles: 3 },
+        ],
+        minMargin: 2,
+      },
+      west: {
+        segments: [
+          { type: "gap", minTiles: 3 },
+          { type: "exhibit", refId: "digital-bbs", size: "standard", facing: "east" },
+          { type: "gap", minTiles: 4 },
+          { type: "rope", edgeId: "digital->vtg-wing", width: 6 },
+          { type: "gap", minTiles: 3 },
+        ],
+        minMargin: 2,
+      },
+    },
   },
   {
     id: "suppression",
     name: "The Suppression",
-    minWidth: 28,
-    maxWidth: 34,
-    minHeight: 24,
-    maxHeight: 30,
     material: "marble",
     theme: "institutional",
     description:
@@ -359,22 +464,52 @@ export const MUSEUM_ROOMS: RoomNode[] = [
       "TODO: fluorescent flicker effect (random, unsettling)\n" +
       "\n" +
       "TONE: Bureaucratic dread. The worst things happen in well-lit offices.",
-    exhibits: [
-      { wall: "north", position: 0.3, refId: "supp-order-1", facing: "south" },
-      { wall: "north", position: 0.5, refId: "supp-order-2", facing: "south" },
-      { wall: "north", position: 0.7, refId: "supp-order-3", facing: "south" },
-      { wall: "west", position: 0.4, refId: "supp-lethe", facing: "east" },
-      { wall: "east", position: 0.4, refId: "supp-youve-seen", facing: "west" },
-      { wall: "south", position: 0.5, refId: "supp-may8", facing: "north" },
-    ],
+    walls: {
+      north: {
+        segments: [
+          { type: "gap", minTiles: 2 },
+          { type: "exhibit", refId: "supp-order-1", size: "standard", facing: "south", group: "order" },
+          { type: "gap", minTiles: 2 },
+          { type: "exhibit", refId: "supp-order-2", size: "standard", facing: "south", group: "order" },
+          { type: "gap", minTiles: 2 },
+          { type: "exhibit", refId: "supp-order-3", size: "standard", facing: "south", group: "order" },
+          { type: "gap", minTiles: 4 },
+          { type: "door", edgeId: "suppression->crumble", width: 4 },
+          { type: "gap", minTiles: 2 },
+        ],
+        minMargin: 2,
+      },
+      south: {
+        segments: [
+          { type: "gap", minTiles: 3 },
+          { type: "exhibit", refId: "supp-may8", size: "standard", facing: "north" },
+          { type: "gap", minTiles: 4 },
+          { type: "door", edgeId: "digital->suppression", width: 4 },
+          { type: "gap", minTiles: 3 },
+        ],
+        minMargin: 2,
+      },
+      east: {
+        segments: [
+          { type: "gap", minTiles: 3 },
+          { type: "exhibit", refId: "supp-youve-seen", size: "standard", facing: "west" },
+          { type: "gap", minTiles: 3 },
+        ],
+        minMargin: 2,
+      },
+      west: {
+        segments: [
+          { type: "gap", minTiles: 3 },
+          { type: "exhibit", refId: "supp-lethe", size: "standard", facing: "east" },
+          { type: "gap", minTiles: 3 },
+        ],
+        minMargin: 2,
+      },
+    },
   },
   {
     id: "vtg-wing",
     name: "The Vulcan Wing",
-    minWidth: 14,
-    maxWidth: 18,
-    minHeight: 12,
-    maxHeight: 14,
     material: "stone",
     theme: "construction",
     description:
@@ -395,8 +530,32 @@ export const MUSEUM_ROOMS: RoomNode[] = [
       "TODO: faded blueprint on the wall showing a massive planned wing\n" +
       "\n" +
       "TONE: Dry institutional humor. The museum can't finish anything either.",
-    exhibits: [
-      { wall: "north", position: 0.5, refId: "vtg-renovation", facing: "south" },
+    walls: {
+      north: {
+        segments: [
+          { type: "gap", minTiles: 3 },
+          { type: "exhibit", refId: "vtg-renovation", size: "standard", facing: "south" },
+          { type: "gap", minTiles: 3 },
+        ],
+        minMargin: 2,
+      },
+      south: EMPTY_WALL,
+      east: {
+        segments: [
+          { type: "gap", minTiles: 3 },
+          { type: "rope", edgeId: "digital->vtg-wing", width: 6 },
+          { type: "gap", minTiles: 3 },
+        ],
+        minMargin: 2,
+      },
+      west: EMPTY_WALL,
+    },
+    furniture: [
+      { role: "scaffolding", offsetX: -0.2, offsetY: -0.1 },
+      { role: "scaffolding", offsetX: 0.25, offsetY: 0.15 },
+      { role: "scaffolding", offsetX: -0.3, offsetY: 0.3 },
+      { role: "scaffolding", offsetX: 0.1, offsetY: -0.3 },
+      { role: "scaffolding", offsetX: 0.35, offsetY: -0.2 },
     ],
   },
 
@@ -405,12 +564,9 @@ export const MUSEUM_ROOMS: RoomNode[] = [
   {
     id: "crumble",
     name: "The Crumble",
-    minWidth: 8,
-    maxWidth: 10,
-    minHeight: 18,
-    maxHeight: 22,
     material: "dirt",
     theme: "construction",
+    minInteriorWidth: 6,
     description:
       "The seam. Water-stained walls. Half-installed exhibits frozen mid-construction. " +
       "Filing cabinets left open, papers scattered. The approval loop that strangled " +
@@ -429,14 +585,30 @@ export const MUSEUM_ROOMS: RoomNode[] = [
       "TODO: water drip particles, ceiling cracks\n" +
       "\n" +
       "TONE: Abandoned mid-sentence. Like finding a half-packed office after a layoff.",
+    walls: {
+      north: {
+        segments: [
+          { type: "gap", minTiles: 3 },
+          { type: "door", edgeId: "crumble->gallery", width: 4 },
+          { type: "gap", minTiles: 3 },
+        ],
+        minMargin: 2,
+      },
+      south: {
+        segments: [
+          { type: "gap", minTiles: 3 },
+          { type: "door", edgeId: "suppression->crumble", width: 4 },
+          { type: "gap", minTiles: 3 },
+        ],
+        minMargin: 2,
+      },
+      east: EMPTY_WALL,
+      west: EMPTY_WALL,
+    },
   },
   {
     id: "gallery",
     name: "K's Gallery",
-    minWidth: 24,
-    maxWidth: 30,
-    minHeight: 22,
-    maxHeight: 28,
     material: "wood",
     theme: "gallery",
     description:
@@ -458,29 +630,59 @@ export const MUSEUM_ROOMS: RoomNode[] = [
       "TODO: practice-wall exhibit with real sequence viewer\n" +
       "\n" +
       "TONE: Like visiting someone's apartment and realizing they're an artist.",
-    exhibits: [
-      { wall: "north", position: 0.5, refId: "gallery-spiral", facing: "south" },
-      { wall: "west", position: 0.4, refId: "gallery-scribes", facing: "east" },
-      { wall: "east", position: 0.4, refId: "gallery-practice", facing: "west" },
-      { wall: "south", position: 0.5, refId: "gallery-k-note", facing: "north" },
-    ],
+    walls: {
+      north: {
+        segments: [
+          { type: "gap", minTiles: 3 },
+          { type: "exhibit", refId: "gallery-spiral", size: "standard", facing: "south" },
+          { type: "gap", minTiles: 4 },
+          { type: "door", edgeId: "gallery->fear", width: 4 },
+          { type: "gap", minTiles: 3 },
+        ],
+        minMargin: 2,
+      },
+      south: {
+        segments: [
+          { type: "gap", minTiles: 3 },
+          { type: "exhibit", refId: "gallery-k-note", size: "standard", facing: "north" },
+          { type: "gap", minTiles: 4 },
+          { type: "door", edgeId: "crumble->gallery", width: 4 },
+          { type: "gap", minTiles: 3 },
+        ],
+        minMargin: 2,
+      },
+      east: {
+        segments: [
+          { type: "gap", minTiles: 3 },
+          { type: "torch" },
+          { type: "gap", minTiles: 3 },
+          { type: "exhibit", refId: "gallery-practice", size: "standard", facing: "west" },
+          { type: "gap", minTiles: 3 },
+          { type: "torch" },
+          { type: "gap", minTiles: 3 },
+        ],
+        minMargin: 2,
+      },
+      west: {
+        segments: [
+          { type: "gap", minTiles: 3 },
+          { type: "torch" },
+          { type: "gap", minTiles: 3 },
+          { type: "exhibit", refId: "gallery-scribes", size: "standard", facing: "east" },
+          { type: "gap", minTiles: 3 },
+          { type: "torch" },
+          { type: "gap", minTiles: 3 },
+        ],
+        minMargin: 2,
+      },
+    },
     performers: [
       { offsetX: 0, offsetY: 0.1, facing: "south", refId: "gallery-scribe" },
-    ],
-    torches: [
-      { wall: "west", position: 0.1 },
-      { wall: "east", position: 0.1 },
-      { wall: "west", position: 0.85 },
-      { wall: "east", position: 0.85 },
     ],
   },
   {
     id: "fear",
     name: "Room of Fear",
-    minWidth: 18,
-    maxWidth: 22,
-    minHeight: 16,
-    maxHeight: 20,
     material: "stone",
     theme: "institutional",
     description:
@@ -501,21 +703,45 @@ export const MUSEUM_ROOMS: RoomNode[] = [
       "TODO: containment exhibit content (Order documents)\n" +
       "\n" +
       "TONE: Government hazmat briefing. Clinical fear.",
-    exhibits: [
-      { wall: "north", position: 0.3, refId: "fear-containment-1", facing: "south" },
-      { wall: "north", position: 0.5, refId: "fear-containment-2", facing: "south" },
-      { wall: "north", position: 0.7, refId: "fear-containment-3", facing: "south" },
-    ],
+    walls: {
+      north: {
+        segments: [
+          { type: "gap", minTiles: 2 },
+          { type: "exhibit", refId: "fear-containment-1", size: "standard", facing: "south" },
+          { type: "gap", minTiles: 2 },
+          { type: "exhibit", refId: "fear-containment-2", size: "standard", facing: "south" },
+          { type: "gap", minTiles: 2 },
+          { type: "exhibit", refId: "fear-containment-3", size: "standard", facing: "south" },
+          { type: "gap", minTiles: 2 },
+        ],
+        minMargin: 2,
+      },
+      south: {
+        segments: [
+          { type: "gap", minTiles: 3 },
+          { type: "door", edgeId: "gallery->fear", width: 4 },
+          { type: "gap", minTiles: 3 },
+        ],
+        minMargin: 2,
+      },
+      east: {
+        segments: [
+          { type: "gap", minTiles: 3 },
+          { type: "door", edgeId: "fear->isolation", width: 4 },
+          { type: "gap", minTiles: 3 },
+        ],
+        minMargin: 2,
+      },
+      west: EMPTY_WALL,
+    },
   },
   {
     id: "isolation",
     name: "Room of Isolation",
-    minWidth: 28,
-    maxWidth: 34,
-    minHeight: 22,
-    maxHeight: 28,
     material: "marble",
     theme: "institutional",
+    minInteriorWidth: 26,
+    minInteriorHeight: 22,
     description:
       "Cubicle walls for flow artists. Three feet apart with walls between them. " +
       "Each person has something whole and beautiful. The problem isn't that anyone's piece " +
@@ -534,16 +760,34 @@ export const MUSEUM_ROOMS: RoomNode[] = [
       "TODO: isolated performer stations (one per cubicle)\n" +
       "\n" +
       "TONE: Office park for artists. Quietly devastating.",
+    walls: {
+      north: EMPTY_WALL,
+      south: EMPTY_WALL,
+      east: {
+        segments: [
+          { type: "gap", minTiles: 3 },
+          { type: "door", edgeId: "isolation->collaboration", width: 4 },
+          { type: "gap", minTiles: 3 },
+        ],
+        minMargin: 2,
+      },
+      west: {
+        segments: [
+          { type: "gap", minTiles: 3 },
+          { type: "door", edgeId: "fear->isolation", width: 4 },
+          { type: "gap", minTiles: 3 },
+        ],
+        minMargin: 2,
+      },
+    },
   },
   {
     id: "collaboration",
     name: "Room of Collaboration",
-    minWidth: 24,
-    maxWidth: 30,
-    minHeight: 20,
-    maxHeight: 26,
     material: "dirt",
     theme: "outdoor",
+    minInteriorWidth: 22,
+    minInteriorHeight: 20,
     description:
       "Birds chirping. Trees. Light. Warmth. Real people spinning together. " +
       "Imperfect technique. Fully alive. The activity that 40,000 years of history " +
@@ -563,6 +807,26 @@ export const MUSEUM_ROOMS: RoomNode[] = [
       "TODO: ambient outdoor audio (wind, birds, distant laughter)\n" +
       "\n" +
       "TONE: Relief. Like walking outside after a long meeting.",
+    walls: {
+      north: EMPTY_WALL,
+      south: {
+        segments: [
+          { type: "gap", minTiles: 3 },
+          { type: "door", edgeId: "collaboration->gift-shop", width: 4 },
+          { type: "gap", minTiles: 3 },
+        ],
+        minMargin: 2,
+      },
+      east: EMPTY_WALL,
+      west: {
+        segments: [
+          { type: "gap", minTiles: 3 },
+          { type: "door", edgeId: "isolation->collaboration", width: 4 },
+          { type: "gap", minTiles: 3 },
+        ],
+        minMargin: 2,
+      },
+    },
     performers: [
       { offsetX: -0.2, offsetY: -0.15, facing: "east", refId: "collab-1" },
       { offsetX: 0.15, offsetY: -0.2, facing: "west", refId: "collab-2" },
@@ -576,10 +840,6 @@ export const MUSEUM_ROOMS: RoomNode[] = [
   {
     id: "gift-shop",
     name: "Gift Shop",
-    minWidth: 20,
-    maxWidth: 24,
-    minHeight: 16,
-    maxHeight: 20,
     material: "marble",
     theme: "retail",
     description:
@@ -600,6 +860,19 @@ export const MUSEUM_ROOMS: RoomNode[] = [
       "TODO: register with mannequin interaction\n" +
       "\n" +
       "TONE: Airport gift shop for a conspiracy. Nobody's buying.",
+    walls: {
+      north: {
+        segments: [
+          { type: "gap", minTiles: 3 },
+          { type: "door", edgeId: "collaboration->gift-shop", width: 4 },
+          { type: "gap", minTiles: 3 },
+        ],
+        minMargin: 2,
+      },
+      south: EMPTY_WALL,
+      east: EMPTY_WALL,
+      west: EMPTY_WALL,
+    },
     performers: [
       { offsetX: 0.35, offsetY: 0, facing: "west", refId: "shop-cashier" },
     ],
@@ -607,10 +880,6 @@ export const MUSEUM_ROOMS: RoomNode[] = [
   {
     id: "construction-zone",
     name: "Construction Zone",
-    minWidth: 14,
-    maxWidth: 18,
-    minHeight: 12,
-    maxHeight: 16,
     material: "dirt",
     theme: "construction",
     description:
@@ -629,17 +898,39 @@ export const MUSEUM_ROOMS: RoomNode[] = [
       "TODO: scaffolding props, caution tape, work light effect\n" +
       "\n" +
       "TONE: Backstage at a theme park. The illusion peels.",
-    exhibits: [
-      { wall: "north", position: 0.5, refId: "cz-staff-only", facing: "south" },
+    walls: {
+      north: {
+        segments: [
+          { type: "gap", minTiles: 3 },
+          { type: "exhibit", refId: "cz-staff-only", size: "standard", facing: "south" },
+          { type: "gap", minTiles: 4 },
+          { type: "door", edgeId: "victorian->construction-zone", width: 4 },
+          { type: "gap", minTiles: 3 },
+        ],
+        minMargin: 2,
+      },
+      south: EMPTY_WALL,
+      east: {
+        segments: [
+          { type: "gap", minTiles: 3 },
+          { type: "door", edgeId: "construction-zone->janitor", width: 3 },
+          { type: "gap", minTiles: 3 },
+        ],
+        minMargin: 2,
+      },
+      west: EMPTY_WALL,
+    },
+    furniture: [
+      { role: "scaffolding", offsetX: -0.25, offsetY: -0.15 },
+      { role: "scaffolding", offsetX: 0.2, offsetY: 0.2 },
+      { role: "scaffolding", offsetX: -0.1, offsetY: 0.35 },
+      { role: "scaffolding", offsetX: 0.3, offsetY: -0.3 },
+      { role: "scaffolding", offsetX: -0.35, offsetY: 0.1 },
     ],
   },
   {
     id: "janitor",
     name: "Janitor's Closet",
-    minWidth: 8,
-    maxWidth: 10,
-    minHeight: 6,
-    maxHeight: 8,
     material: "dirt",
     theme: "construction",
     description:
@@ -662,13 +953,35 @@ export const MUSEUM_ROOMS: RoomNode[] = [
       "TODO: whiteboard with handwritten text texture\n" +
       "\n" +
       "TONE: You found the room where the museum was built. Now what.",
-    exhibits: [
-      { wall: "east", position: 0.5, refId: "janitor-whiteboard", facing: "west" },
-      { wall: "west", position: 0.5, refId: "janitor-mannequin", facing: "east" },
-    ],
-    torches: [
-      { wall: "north", position: 0.5 },
-    ],
+    walls: {
+      north: {
+        segments: [
+          { type: "gap", minTiles: 2 },
+          { type: "torch" },
+          { type: "gap", minTiles: 2 },
+        ],
+        minMargin: 2,
+      },
+      south: EMPTY_WALL,
+      east: {
+        segments: [
+          { type: "gap", minTiles: 2 },
+          { type: "exhibit", refId: "janitor-whiteboard", size: "standard", facing: "west" },
+          { type: "gap", minTiles: 2 },
+        ],
+        minMargin: 2,
+      },
+      west: {
+        segments: [
+          { type: "gap", minTiles: 2 },
+          { type: "door", edgeId: "construction-zone->janitor", width: 3 },
+          { type: "gap", minTiles: 2 },
+          { type: "exhibit", refId: "janitor-mannequin", size: "standard", facing: "east" },
+          { type: "gap", minTiles: 2 },
+        ],
+        minMargin: 2,
+      },
+    },
   },
 ];
 
