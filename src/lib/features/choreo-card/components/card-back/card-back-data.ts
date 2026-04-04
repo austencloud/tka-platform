@@ -15,6 +15,7 @@ import {
 } from "$lib/features/create/generate/circular/domain/models/circular-models";
 import { LOOPTypeResolver } from "$lib/features/create/generate/shared/services/implementations/LOOPTypeResolver";
 import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
+import { VTG_TURNS_RATIO_MAP } from "../../domain/elemental-theme";
 
 // The anatomy grid shows which elements appear in the sequence.
 // Each field is a set of string values; the card renders present
@@ -57,6 +58,8 @@ export interface CardBackData {
   isRotated: boolean;
   /** Starting position info: group, hand locations, and grid mode */
   startPosition: StartPositionInfo | null;
+  /** VTG turn ratio derived from sequence motions, e.g. "3:1" */
+  vtgRatio: string | null;
 }
 
 // Level badge definitions sourced from the canonical difficulty-styles.ts
@@ -321,6 +324,37 @@ function deriveStartPosition(sequence: SequenceData): StartPositionInfo | null {
   return info;
 }
 
+/**
+ * Derive the VTG ratio string from a sequence's motion turn values.
+ * Only returns a ratio if ALL numeric turn values are uniform (same value).
+ * Returns null for mixed turns (common in LOOP sequences where each beat
+ * has different turn values, making a single ratio label misleading).
+ */
+export function deriveVtgRatio(sequence: SequenceData): string | null {
+  let uniformValue: number | null = null;
+  let hasTurns = false;
+
+  for (const step of sequence.steps ?? []) {
+    for (const motion of Object.values(step.motions ?? {})) {
+      if (!motion) continue;
+      const t = motion.turns;
+      if (t === "fl" || typeof t !== "number") continue;
+      hasTurns = true;
+
+      if (uniformValue === null) {
+        uniformValue = t;
+      } else if (t !== uniformValue) {
+        return null; // Mixed turns — ratio is meaningless
+      }
+    }
+  }
+
+  if (!hasTurns) return "1:1";
+
+  const ratio = VTG_TURNS_RATIO_MAP[uniformValue!];
+  return ratio ?? null;
+}
+
 export function deriveCardBackData(
   sequence: SequenceData,
   converter: ISequenceToEntryConverter | null,
@@ -367,5 +401,6 @@ export function deriveCardBackData(
       ? ROTATED_LOOP_TYPES.has(sequence.loopType)
       : false,
     startPosition: deriveStartPosition(sequence),
+    vtgRatio: deriveVtgRatio(sequence),
   };
 }
