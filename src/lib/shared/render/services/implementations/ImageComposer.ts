@@ -45,8 +45,8 @@ import {
 // Deck card header/footer proportions (fraction of content width)
 const DECK_HEADER_RATIO = 0.133;
 const DECK_FOOTER_RATIO = 0.067;
-const DECK_HEADER_BG = "#808080";
-const DECK_BORDER_COLOR = "rgba(0, 0, 0, 0.25)";
+const DECK_HEADER_BG = "rgba(245, 245, 245, 0.98)";
+const DECK_BORDER_COLOR = "rgba(0, 0, 0, 0.1)";
 
 export class ImageComposer implements IImageComposer {
   // Create instance directly to avoid DI module loading order issues
@@ -333,9 +333,13 @@ export class ImageComposer implements IImageComposer {
     ctx.fillStyle = isDarkMode ? "#0a0a0f" : "white";
 
     const gridHeight = rows * stepSize;
+    const gridWidth = columns * stepSize;
     const gridOffsetY = options.deckCard
       ? headerHeight + Math.floor((canvasHeight - headerHeight - footerHeight - gridHeight) / 2)
       : headerHeight;
+    const gridOffsetX = options.deckCard
+      ? Math.floor((canvasWidth - gridWidth) / 2)
+      : 0;
 
     if (options.deckCard) {
       // Fill entire space between header and footer with white
@@ -394,7 +398,8 @@ export class ImageComposer implements IImageComposer {
         gridOffsetY, // Offset grid below header (deck card: vertically centered)
         visibilitySettings, // Pass visibility settings
         effectiveBluePropType, // Pass snapshotted blue prop type
-        effectiveRedPropType // Pass snapshotted red prop type
+        effectiveRedPropType, // Pass snapshotted red prop type
+        gridOffsetX // Horizontal offset (deck card: horizontally centered)
       );
       renderedCount++;
       onProgress?.({
@@ -438,13 +443,14 @@ export class ImageComposer implements IImageComposer {
         gridOffsetY, // Offset grid below header (deck card: vertically centered)
         visibilitySettings, // Pass visibility settings
         effectiveBluePropType, // Pass snapshotted blue prop type
-        effectiveRedPropType // Pass snapshotted red prop type
+        effectiveRedPropType, // Pass snapshotted red prop type
+        gridOffsetX // Horizontal offset (deck card: horizontally centered)
       );
 
       // Draw duration badge when beat has a non-default duration (not 1.0)
       const beatDuration = beat.duration ?? 1;
       if (Math.abs(beatDuration - 1.0) > 0.001) {
-        const x = col * stepSize;
+        const x = col * stepSize + gridOffsetX;
         const y = row * stepSize + gridOffsetY;
         this.drawDurationBadge(ctx, beatDuration, x, y, stepSize, isDarkMode);
       }
@@ -469,7 +475,8 @@ export class ImageComposer implements IImageComposer {
           gridOffsetY,
           isDarkMode,
           effectiveBluePropType,
-          effectiveRedPropType
+          effectiveRedPropType,
+          gridOffsetX
         );
       }
     }
@@ -483,7 +490,8 @@ export class ImageComposer implements IImageComposer {
       sequence,
       options,
       gridOffsetY, // Offset grid below header (deck card: vertically centered)
-      isDarkMode
+      isDarkMode,
+      gridOffsetX // Horizontal offset (deck card: horizontally centered)
     );
 
     // Step 7: Render header with word at the top
@@ -634,7 +642,8 @@ export class ImageComposer implements IImageComposer {
     titleOffset: number = 0,
     visibilitySettings?: PictographVisibilityOptions,
     bluePropType?: PropType,
-    redPropType?: PropType
+    redPropType?: PropType,
+    horizontalOffset: number = 0
   ): Promise<void> {
     try {
       // CRITICAL: Merge prop type overrides into visibility settings.
@@ -656,7 +665,8 @@ export class ImageComposer implements IImageComposer {
           stepSize,
           stepNumber,
           titleOffset,
-          finalVisibilitySettings
+          finalVisibilitySettings,
+          horizontalOffset
         );
         return;
       }
@@ -725,7 +735,7 @@ export class ImageComposer implements IImageComposer {
       }
 
       // Draw base image onto the canvas at the correct position
-      const x = column * stepSize;
+      const x = column * stepSize + horizontalOffset;
       const y = row * stepSize + titleOffset;
       ctx.drawImage(img, x, y, stepSize, stepSize);
 
@@ -737,7 +747,7 @@ export class ImageComposer implements IImageComposer {
     } catch (error) {
       console.error(`❌ Failed to render beat at (${column}, ${row}):`, error);
       // Draw error placeholder
-      const x = column * stepSize;
+      const x = column * stepSize + horizontalOffset;
       const y = row * stepSize + titleOffset;
       ctx.fillStyle = "#ffeeee";
       ctx.fillRect(x + 5, y + 5, stepSize - 10, stepSize - 10);
@@ -863,7 +873,8 @@ export class ImageComposer implements IImageComposer {
     sequence: SequenceData,
     options: Partial<SequenceExportOptions>,
     titleOffset: number = 0,
-    isDarkMode: boolean = false
+    isDarkMode: boolean = false,
+    horizontalOffset: number = 0
   ): void {
     // Dark Mode uses subtle light borders on dark background
     ctx.strokeStyle = isDarkMode ? "rgba(255, 255, 255, 0.15)" : "#e0e0e0";
@@ -881,7 +892,7 @@ export class ImageComposer implements IImageComposer {
     for (let row = 0; row < rows; row++) {
       for (let col = 0; col < columns - 1; col++) {
         if (isOccupied(col, row) && isOccupied(col + 1, row)) {
-          const x = (col + 1) * stepSize;
+          const x = (col + 1) * stepSize + horizontalOffset;
           ctx.beginPath();
           ctx.moveTo(x, row * stepSize + titleOffset);
           ctx.lineTo(x, (row + 1) * stepSize + titleOffset);
@@ -896,8 +907,8 @@ export class ImageComposer implements IImageComposer {
         if (isOccupied(col, row) && isOccupied(col, row + 1)) {
           const y = (row + 1) * stepSize + titleOffset;
           ctx.beginPath();
-          ctx.moveTo(col * stepSize, y);
-          ctx.lineTo((col + 1) * stepSize, y);
+          ctx.moveTo(col * stepSize + horizontalOffset, y);
+          ctx.lineTo((col + 1) * stepSize + horizontalOffset, y);
           ctx.stroke();
         }
       }
@@ -1031,7 +1042,8 @@ export class ImageComposer implements IImageComposer {
     headerHeight: number,
     isDarkMode: boolean,
     bluePropType?: PropType,
-    redPropType?: PropType
+    redPropType?: PropType,
+    horizontalOffset: number = 0
   ): Promise<void> {
     if (!this.qrCodeGenerator) {
       return;
@@ -1056,13 +1068,13 @@ export class ImageComposer implements IImageComposer {
       );
 
       // Calculate position (center in cell)
-      const x = cell.col * stepSize + padding;
+      const x = cell.col * stepSize + horizontalOffset + padding;
       const y = cell.row * stepSize + headerHeight + padding;
 
       // Fill cell background — dark for dark mode, white for light mode
       ctx.fillStyle = isDarkMode ? "#000000" : "#ffffff";
       ctx.fillRect(
-        cell.col * stepSize,
+        cell.col * stepSize + horizontalOffset,
         cell.row * stepSize + headerHeight,
         stepSize,
         stepSize
@@ -1297,7 +1309,8 @@ export class ImageComposer implements IImageComposer {
     stepSize: number,
     stepNumber: number | undefined,
     titleOffset: number,
-    visibilitySettings: PictographVisibilityOptions
+    visibilitySettings: PictographVisibilityOptions,
+    horizontalOffset: number = 0
   ): Promise<void> {
     if (!this.layerCompositor) {
       throw new Error("LayerCompositor not available");
@@ -1353,7 +1366,7 @@ export class ImageComposer implements IImageComposer {
     }
 
     // Draw composited result onto the main canvas
-    const x = column * stepSize;
+    const x = column * stepSize + horizontalOffset;
     const y = row * stepSize + titleOffset;
     ctx.drawImage(result.canvas, x, y, stepSize, stepSize);
 
