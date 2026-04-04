@@ -31,6 +31,7 @@
     onThemeChange: (themeId: string) => void;
     onExportPDF: () => void;
     onExportZIP: () => void;
+    onRerender?: () => void;
   }
 
   let {
@@ -45,6 +46,7 @@
     onThemeChange,
     onExportPDF,
     onExportZIP,
+    onRerender,
   }: Props = $props();
 
   // Progress text shown while rendering cards
@@ -88,6 +90,17 @@
         {progressText}
       </span>
     {:else}
+      {#if onRerender}
+        <button
+          class="export-btn"
+          disabled={isExporting}
+          onclick={onRerender}
+          aria-label="Re-render all cards"
+          title="Re-render all cards"
+        >
+          <i class="fas fa-sync-alt" aria-hidden="true"></i>
+        </button>
+      {/if}
       <button
         class="export-btn"
         disabled={isExporting || totalCards === 0}

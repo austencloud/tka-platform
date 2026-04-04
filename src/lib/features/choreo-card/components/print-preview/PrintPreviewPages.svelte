@@ -20,6 +20,8 @@
     includeStartPosition?: boolean;
     handPointsVisible?: boolean;
     elementTheme?: ElementalTheme;
+    /** Bump to force a full re-render of all cards */
+    rerenderKey?: number;
     onPairsReady?: (pairs: CardPair[]) => void;
     onRenderStateChange?: (state: { isRendering: boolean; progress: number; total: number }) => void;
   }
@@ -35,6 +37,7 @@
     includeStartPosition = true,
     handPointsVisible = true,
     elementTheme,
+    rerenderKey = 0,
     onPairsReady,
     onRenderStateChange,
   }: Props = $props();
@@ -112,6 +115,7 @@
     const _showWord = showWord;
     const _includeStartPosition = includeStartPosition;
     const _handPointsVisible = handPointsVisible;
+    const _rerenderKey = rerenderKey;
 
     // Void unused captures to satisfy linter
     void _cardSize;
@@ -121,6 +125,7 @@
     void _showWord;
     void _includeStartPosition;
     void _handPointsVisible;
+    void _rerenderKey;
 
     const generation = ++renderGeneration;
 

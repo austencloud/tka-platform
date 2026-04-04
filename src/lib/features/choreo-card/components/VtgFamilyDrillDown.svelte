@@ -114,6 +114,7 @@
   let isRendering = $state(false);
   let renderProgress = $state(0);
   let renderTotal = $state(0);
+  let rerenderKey = $state(0);
 
   function setViewMode(mode: ViewMode) {
     viewMode = mode;
@@ -217,6 +218,7 @@
       }}
       onExportPDF={handleExportPDF}
       onExportZIP={handleExportZIP}
+      onRerender={() => { rerenderKey++; }}
     />
   {/if}
 
@@ -242,6 +244,7 @@
       {cardSize}
       theme={selectedTheme}
       elementTheme={theme}
+      {rerenderKey}
       isLoading={loading}
       {handPointsVisible}
       {showGrid}
