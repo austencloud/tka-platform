@@ -3,14 +3,17 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { FamilyRatioGroup } from "../services/contracts/IVtgFamilyAggregator";
   import type { IVtgFamilyAggregator } from "../services/contracts/IVtgFamilyAggregator";
+  import type { CardPair, IPrintPDFExporter } from "../services/contracts/IPrintPDFExporter";
+  import type { IPrintZipExporter } from "../services/contracts/IPrintZipExporter";
   import { VTG_ELEMENTAL_THEMES } from "../domain/elemental-theme";
   import { container } from "$lib/shared/di";
   import ChoreoCard from "./ChoreoCard.svelte";
-  import CardPageLayout from "./card-preview/CardPageLayout.svelte";
+  import PrintPreviewPages from "./print-preview/PrintPreviewPages.svelte";
+  import PrintPreviewToolbar from "./print-preview/PrintPreviewToolbar.svelte";
   import CardSizeToggle from "./card-preview/CardSizeToggle.svelte";
   import type { CardSizeId } from "../domain/card-sizes";
 
-  type ViewMode = 'grid' | 'cards';
+  type ViewMode = 'grid' | 'print';
 
   interface Props {
     familyId: string;
@@ -23,7 +26,6 @@
     onSelectSequence: (sequence: SequenceData) => void;
     onContextMenu?: (x: number, y: number, rerender: () => void) => void;
     onBack: () => void;
-    onPrintPrep?: (overrideDeck?: Deck, overrideSequences?: SequenceData[]) => void;
   }
 
   const {
@@ -37,7 +39,6 @@
     onSelectSequence,
     onContextMenu,
     onBack,
-    onPrintPrep,
   }: Props = $props();
 
   const theme = $derived(
@@ -95,25 +96,70 @@
   }
 
   // ── Card view mode ──────────────────────────────────────────────────────
-  let viewMode = $state<ViewMode>(
-    (typeof window !== 'undefined' ? localStorage.getItem('choreoCard.deckViewMode') : null) as ViewMode ?? 'grid'
-  );
+  // Map legacy 'cards' value to 'print' on read
+  const storedViewMode = typeof window !== 'undefined' ? localStorage.getItem('choreoCard.deckViewMode') : null;
+  const initialViewMode: ViewMode = storedViewMode === 'cards' ? 'print' : (storedViewMode as ViewMode | null) ?? 'grid';
+
+  let viewMode = $state<ViewMode>(initialViewMode);
   let cardSize = $state<CardSizeId>(
     (typeof window !== 'undefined' ? localStorage.getItem('cardPreview.cardSize') : null) as CardSizeId ?? 'poker'
   );
+  let selectedTheme = $state<string>(
+    typeof window !== 'undefined' ? localStorage.getItem('cardPreview.theme') ?? 'nightSky' : 'nightSky'
+  );
+
+  // ── Print preview state ─────────────────────────────────────────────────
+  let renderedPairs = $state<CardPair[]>([]);
+  let isExporting = $state(false);
+  let isRendering = $state(false);
+  let renderProgress = $state(0);
+  let renderTotal = $state(0);
 
   function setViewMode(mode: ViewMode) {
     viewMode = mode;
     if (typeof window !== 'undefined') localStorage.setItem('choreoCard.deckViewMode', mode);
   }
 
-  // Flatten all sequences across ratio groups for card view
+  // Flatten all sequences across ratio groups for print view
   let allSequences = $derived(ratioGroups.flatMap(g => g.sequences));
 
   function turnsLabel(turns: number): string {
     if (turns === 0) return "0 turns";
     if (turns === 1) return "1 turn";
     return `${turns} turns`;
+  }
+
+  function downloadBlob(blob: Blob, filename: string) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function handleExportPDF() {
+    if (renderedPairs.length === 0 || isExporting) return;
+    isExporting = true;
+    try {
+      const pdfExporter = container.items.printPDFExporter as IPrintPDFExporter;
+      const blob = await pdfExporter.exportHomePrintPDF(renderedPairs, familyLabel, cardSize);
+      downloadBlob(blob, `${familyLabel}-${cardSize}.pdf`);
+    } finally {
+      isExporting = false;
+    }
+  }
+
+  async function handleExportZIP() {
+    if (renderedPairs.length === 0 || isExporting) return;
+    isExporting = true;
+    try {
+      const zipExporter = container.items.printZipExporter as IPrintZipExporter;
+      const blob = await zipExporter.exportDeckZIP(renderedPairs, familyLabel);
+      downloadBlob(blob, `${familyLabel}-${cardSize}.zip`);
+    } finally {
+      isExporting = false;
+    }
   }
 </script>
 
@@ -136,50 +182,43 @@
         </button>
         <button
           class="action-chip"
-          class:active={viewMode === 'cards'}
-          onclick={() => setViewMode('cards')}
+          class:active={viewMode === 'print'}
+          onclick={() => setViewMode('print')}
           type="button"
         >
-          <i class="fas fa-id-card" aria-hidden="true"></i> Cards
+          <i class="fas fa-print" aria-hidden="true"></i> Print Preview
         </button>
       </div>
-      {#if viewMode === 'cards'}
+      {#if viewMode === 'grid'}
         <CardSizeToggle selected={cardSize} onchange={(s) => {
           cardSize = s;
           if (typeof window !== 'undefined') localStorage.setItem('cardPreview.cardSize', s);
         }} />
       {/if}
-
-      {#if onPrintPrep}
-        <button
-          class="action-chip"
-          onclick={() => {
-            const syntheticDeck: Deck = {
-              id: `vtg-${familyId}`,
-              name: `VTG ${familyLabel}`,
-              description: `VTG ${familyLabel} sequences`,
-              families: ratioGroups.map(g => ({
-                id: g.ratio,
-                label: `${g.ratio} (${turnsLabel(g.turns)})`,
-                typeCombo: g.ratio,
-                sequenceIds: g.sequences.map(s => s.id),
-              })),
-              totalSequences: allSequences.length,
-              gridMode: 'diamond' as const,
-              level: 1,
-              collection: 'VTG',
-            };
-            onPrintPrep(syntheticDeck, allSequences);
-          }}
-          type="button"
-          aria-label="Print preparation"
-        >
-          <i class="fas fa-print" aria-hidden="true"></i>
-          Print
-        </button>
-      {/if}
     </div>
   </div>
+
+  {#if viewMode === 'print'}
+    <PrintPreviewToolbar
+      {cardSize}
+      {selectedTheme}
+      totalCards={renderedPairs.length}
+      {isRendering}
+      {isExporting}
+      {renderProgress}
+      {renderTotal}
+      onCardSizeChange={(s) => {
+        cardSize = s;
+        if (typeof window !== 'undefined') localStorage.setItem('cardPreview.cardSize', s);
+      }}
+      onThemeChange={(t) => {
+        selectedTheme = t;
+        if (typeof window !== 'undefined') localStorage.setItem('cardPreview.theme', t);
+      }}
+      onExportPDF={handleExportPDF}
+      onExportZIP={handleExportZIP}
+    />
+  {/if}
 
   {#if loading}
     <div class="loading" role="status" aria-live="polite">
@@ -197,21 +236,23 @@
       <p>No sequences found for {familyLabel}</p>
       <button type="button" class="back-btn" onclick={onBack}>Back to VTG</button>
     </div>
-  {:else if viewMode === 'cards'}
-    <CardPageLayout
+  {:else if viewMode === 'print'}
+    <PrintPreviewPages
       sequences={allSequences}
-      families={[]}
-      selectedFamilyIds={[]}
       {cardSize}
-      isLoading={false}
-      isLargeDeck={false}
+      theme={selectedTheme}
+      isLoading={loading}
       {handPointsVisible}
       {showGrid}
       {showTKA}
       {showWord}
       {includeStartPosition}
-      onSelectSequence={(seq) => onSelectSequence(seq)}
-      {onContextMenu}
+      onPairsReady={(pairs) => { renderedPairs = pairs; }}
+      onRenderStateChange={(state) => {
+        isRendering = state.isRendering;
+        renderProgress = state.progress;
+        renderTotal = state.total;
+      }}
     />
   {:else}
     {#each ratioGroups as group (group.ratio)}
