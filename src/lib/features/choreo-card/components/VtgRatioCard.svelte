@@ -17,14 +17,14 @@
   const { deck, onSelect }: Props = $props();
 
   const ratio = $derived(
-    deck.vtgRatio ?? deck.name.match(/\((\d+:\d+)/)?.[1] ?? "1:1",
+    deck.name.match(/\((\d+:\d+)/)?.[1] ?? "1:1",
   );
   const correctLevel = $derived(VTG_RATIO_LEVEL_MAP[ratio] ?? deck.level);
   const levelStyle = $derived(
     DIFFICULTY_LEVELS[correctLevel] ?? DEFAULT_DIFFICULTY_STYLE,
   );
   const turns = $derived(
-    deck.turns ?? VTG_RATIO_TURNS_MAP[ratio] ?? 0,
+    VTG_RATIO_TURNS_MAP[ratio] ?? 0,
   );
   const turnsLabel = $derived(
     turns === 0 ? "0 turns" : turns === 1 ? "1 turn" : `${turns} turns`,

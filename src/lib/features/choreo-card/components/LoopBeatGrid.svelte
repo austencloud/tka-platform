@@ -11,7 +11,7 @@
   const beatGroups = $derived((() => {
     const groups = new Map<number, Deck[]>();
     for (const deck of decks) {
-      const bc = deck.beatCount || 0;
+      const bc = deck.stepCount;
       if (!groups.has(bc)) groups.set(bc, []);
       groups.get(bc)!.push(deck);
     }

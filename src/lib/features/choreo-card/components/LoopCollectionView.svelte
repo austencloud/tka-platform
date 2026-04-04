@@ -39,18 +39,18 @@
 
   // Which loop types have any matching decks
   const populatedLoopTypes = $derived(
-    new Set(decks.map(d => d.loopType || 'rotated'))
+    new Set(decks.map(d => d.loopType))
   );
 
   // Decks filtered by active loop type
   const filteredDecks = $derived(
-    decks.filter(d => (d.loopType || 'rotated') === activeLoopType)
+    decks.filter(d => d.loopType === activeLoopType)
   );
 
   // Count distinct values per axis to hide single-option tabs
-  const distinctBeatCounts = $derived(new Set(filteredDecks.map(d => d.beatCount || 0)).size);
-  const distinctTurnCounts = $derived(new Set(filteredDecks.map(d => d.turns ?? 0)).size);
-  const distinctReversalPatterns = $derived(new Set(filteredDecks.map(d => d.reversalPattern || 'continuous')).size);
+  const distinctBeatCounts = $derived(new Set(filteredDecks.map(d => d.stepCount)).size);
+  const distinctTurnCounts = $derived(new Set(filteredDecks.map(d => d.turnPattern)).size);
+  const distinctReversalPatterns = $derived(new Set(filteredDecks.map(d => d.reversalPattern)).size);
 
   // Axes worth showing (more than one distinct value)
   type AxisDef = { id: AxisView; label: string };
@@ -72,8 +72,7 @@
   // Apply slice type and grid mode filters on top of loop type
   const sliceAndGridFiltered = $derived(
     filteredDecks.filter(d => {
-      const deckSlice = d.sliceType || (d.id.includes('halved') ? 'halved' : d.id.includes('quartered') ? 'quartered' : null);
-      const matchesSlice = !deckSlice || deckSlice === activeSliceType;
+      const matchesSlice = d.sliceType === activeSliceType;
       const matchesGrid = d.gridMode === activeGridMode;
       return matchesSlice && matchesGrid;
     })
@@ -83,9 +82,9 @@
   const drilledDecks = $derived(
     drillFilter
       ? sliceAndGridFiltered.filter(d => {
-          if (drillFilter!.axis === 'beats') return (d.beatCount || 0) === drillFilter!.value;
-          if (drillFilter!.axis === 'turns') return (d.turns ?? 0) === drillFilter!.value;
-          if (drillFilter!.axis === 'reversal') return (d.reversalPattern || 'continuous') === drillFilter!.value;
+          if (drillFilter!.axis === 'beats') return d.stepCount === drillFilter!.value;
+          if (drillFilter!.axis === 'turns') return d.turnPattern === drillFilter!.value;
+          if (drillFilter!.axis === 'reversal') return d.reversalPattern === drillFilter!.value;
           return true;
         })
       : []
@@ -108,17 +107,17 @@
   }
 
   function handleSelectBeatCount(beatCount: number): void {
-    const matching = sliceAndGridFiltered.filter(d => (d.beatCount || 0) === beatCount);
+    const matching = sliceAndGridFiltered.filter(d => d.stepCount === beatCount);
     drillOrSelect('beats', beatCount, matching);
   }
 
-  function handleSelectTurns(turns: number): void {
-    const matching = sliceAndGridFiltered.filter(d => (d.turns ?? 0) === turns);
+  function handleSelectTurns(turns: string): void {
+    const matching = sliceAndGridFiltered.filter(d => d.turnPattern === turns);
     drillOrSelect('turns', turns, matching);
   }
 
   function handleSelectPattern(patternId: string): void {
-    const matching = sliceAndGridFiltered.filter(d => (d.reversalPattern || 'continuous') === patternId);
+    const matching = sliceAndGridFiltered.filter(d => d.reversalPattern === patternId);
     drillOrSelect('reversal', patternId, matching);
   }
 

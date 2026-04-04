@@ -10,16 +10,16 @@ export interface DeckFamily {
 export interface Deck {
   readonly id: string;
   readonly name: string;
+  readonly canonicalName: string;
   readonly description: string;
   readonly families: readonly DeckFamily[];
   readonly totalSequences: number;
   readonly gridMode: GridMode;
   readonly level: number;
-  readonly collection?: string;
-  readonly vtgRatio?: string;
-  readonly turns?: number;
-  readonly reversalPattern?: string;
-  readonly loopType?: string;
-  readonly beatCount?: number;
-  readonly sliceType?: 'halved' | 'quartered';
+  readonly collection: 'LOOPs' | 'VTG';
+  readonly loopType: string;
+  readonly sliceType: 'halved' | 'quartered';
+  readonly stepCount: number;
+  readonly turnPattern: string;
+  readonly reversalPattern: string;
 }

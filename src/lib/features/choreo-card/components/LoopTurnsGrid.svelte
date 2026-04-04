@@ -3,15 +3,15 @@
 
   interface Props {
     decks: Deck[];
-    onSelectTurns: (turns: number) => void;
+    onSelectTurns: (turns: string) => void;
   }
 
   const { decks, onSelectTurns }: Props = $props();
 
   const turnsGroups = $derived((() => {
-    const groups = new Map<number, Deck[]>();
+    const groups = new Map<string, Deck[]>();
     for (const deck of decks) {
-      const t = deck.turns ?? 0;
+      const t = deck.turnPattern;
       if (!groups.has(t)) groups.set(t, []);
       groups.get(t)!.push(deck);
     }
@@ -21,7 +21,7 @@
         deckCount: groupDecks.length,
         totalSequences: groupDecks.reduce((s, d) => s + d.totalSequences, 0),
       }))
-      .sort((a, b) => a.turns - b.turns);
+      .sort((a, b) => a.turns.localeCompare(b.turns));
   })());
 </script>
 
@@ -37,7 +37,7 @@
         onclick={() => onSelectTurns(group.turns)}
       >
         <span class="big-number">{group.turns}</span>
-        <span class="unit-label">{group.turns === 1 ? 'turn' : 'turns'}</span>
+        <span class="unit-label">{group.turns === '1' ? 'turn' : 'turns'}</span>
         <div class="meta">
           <span>{group.totalSequences} sequences</span>
         </div>
