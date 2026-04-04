@@ -13,6 +13,10 @@ export interface FooterOptions {
   showCreatorName?: boolean;
   showNotes?: boolean;
   showBirthday?: boolean;
+  /** Override footer background color */
+  backgroundColor?: string;
+  /** Override footer border color */
+  borderColor?: string;
 }
 
 export function renderFooter(ctx: CanvasRenderingContext2D, options: FooterOptions): void {
@@ -21,16 +25,17 @@ export function renderFooter(ctx: CanvasRenderingContext2D, options: FooterOptio
     userName, notes, birthday,
     darkMode = true,
     showCreatorName = true, showNotes = true, showBirthday = true,
+    backgroundColor, borderColor,
   } = options;
 
   const footerTop = canvasHeight - footerHeight;
 
   // Background
-  ctx.fillStyle = darkMode ? "rgba(10, 10, 15, 0.98)" : "rgba(245, 245, 245, 0.98)";
+  ctx.fillStyle = backgroundColor ?? (darkMode ? "rgba(10, 10, 15, 0.98)" : "rgba(245, 245, 245, 0.98)");
   ctx.fillRect(0, footerTop, canvasWidth, footerHeight);
 
   // Top border
-  ctx.strokeStyle = darkMode ? "rgba(255, 255, 255, 0.15)" : "rgba(0, 0, 0, 0.1)";
+  ctx.strokeStyle = borderColor ?? (darkMode ? "rgba(255, 255, 255, 0.15)" : "rgba(0, 0, 0, 0.1)");
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(0, footerTop + 0.5);

@@ -16,6 +16,10 @@ export interface HeaderOptions {
   loopComponents?: Set<LOOPComponentId>;
   darkMode?: boolean;
   letterStyles?: LetterStyle[];
+  /** Override header background color */
+  backgroundColor?: string;
+  /** Override header border color */
+  borderColor?: string;
 }
 
 export function renderHeader(ctx: CanvasRenderingContext2D, options: HeaderOptions): void {
@@ -23,14 +27,15 @@ export function renderHeader(ctx: CanvasRenderingContext2D, options: HeaderOptio
     canvasWidth, headerHeight, word,
     difficultyLevel = 1, showDifficultyBadge = true,
     loopComponents, darkMode = true, letterStyles,
+    backgroundColor, borderColor,
   } = options;
 
   // Background
-  ctx.fillStyle = darkMode ? "rgba(10, 10, 15, 0.98)" : "rgba(245, 245, 245, 0.98)";
+  ctx.fillStyle = backgroundColor ?? (darkMode ? "rgba(10, 10, 15, 0.98)" : "rgba(245, 245, 245, 0.98)");
   ctx.fillRect(0, 0, canvasWidth, headerHeight);
 
   // Bottom border
-  ctx.strokeStyle = darkMode ? "rgba(255, 255, 255, 0.15)" : "rgba(0, 0, 0, 0.1)";
+  ctx.strokeStyle = borderColor ?? (darkMode ? "rgba(255, 255, 255, 0.15)" : "rgba(0, 0, 0, 0.1)");
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(0, headerHeight - 0.5);
