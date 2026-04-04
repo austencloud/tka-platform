@@ -55,6 +55,7 @@ even when Svelte recreates the component instance.
     // This lets containers like PictographTimeline force dark mode even when
     // the user's global setting is light mode.
     darkMode = undefined,
+    renderPart = undefined,
   } = $props<{
     motionData: MotionData;
     arrowAssets: ArrowAssets;
@@ -68,6 +69,7 @@ even when Svelte recreates the component instance.
     cellIndex?: number | null;
     /** Dark mode override. When set, overrides global AnimationVisibilityStateManager detection. */
     darkMode?: boolean;
+    renderPart?: "shaft" | "tip";
   }>();
 
   // Get centralized visibility manager for dark mode state and cached colors
@@ -468,7 +470,13 @@ even when Svelte recreates the component instance.
   >
     <!-- Position group at calculated coordinates, let SVG handle its own centering -->
     <g transform="translate({-safeCenter.x}, {-safeCenter.y})">
-      {@html arrowAssets.imageSrc}
+      {#if renderPart === "shaft" && arrowAssets.shaftSrc}
+        {@html arrowAssets.shaftSrc}
+      {:else if renderPart === "tip" && arrowAssets.tipSrc}
+        {@html arrowAssets.tipSrc}
+      {:else}
+        {@html arrowAssets.imageSrc}
+      {/if}
     </g>
 
     <!-- Selection highlight overlay -->
