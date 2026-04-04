@@ -51,6 +51,10 @@ export class MuseumGridBuilder implements IMuseumGridBuilder {
     }
 
     // Step 3: Stamp wall segments + collect door positions
+    // Key by "roomId:edgeId" so each room's door gets a unique entry.
+    // Two rooms share the same edgeId for the same connection — without the
+    // room prefix the second room's stamp would overwrite the first, and the
+    // corridor router would get the same position for both endpoints.
     const stamper = new WallSegmentStamper();
     const allDoorPositions = new Map<string, { x: number; y: number }>();
 
@@ -58,7 +62,7 @@ export class MuseumGridBuilder implements IMuseumGridBuilder {
       const result = stamper.stampRoom(tiles, room, edges);
       exhibits.push(...result.exhibits);
       for (const dp of result.doorPositions) {
-        allDoorPositions.set(dp.edgeId, { x: dp.x, y: dp.y });
+        allDoorPositions.set(`${room.id}:${dp.edgeId}`, { x: dp.x, y: dp.y });
       }
     }
 
@@ -124,12 +128,14 @@ export class MuseumGridBuilder implements IMuseumGridBuilder {
   }
 
   /**
-   * Carve room interior as floor tiles only.
-   * No walls — walls are derived later from adjacency.
+   * Carve room interior as floor tiles. The boundary (perimeter) is left
+   * empty so that deriveWalls can turn non-segment boundary tiles into
+   * walls. Wall segments (exhibits, doors, torches, etc.) are stamped onto
+   * the boundary separately by WallSegmentStamper.
    */
   private carveRoomFloor(tiles: Map<string, MuseumTile>, room: PlacedRoom): void {
-    for (let dy = 0; dy < room.h; dy++) {
-      for (let dx = 0; dx < room.w; dx++) {
+    for (let dy = 1; dy < room.h - 1; dy++) {
+      for (let dx = 1; dx < room.w - 1; dx++) {
         tiles.set(tileKey(room.x + dx, room.y + dy), {
           type: "floor",
           material: room.material,
