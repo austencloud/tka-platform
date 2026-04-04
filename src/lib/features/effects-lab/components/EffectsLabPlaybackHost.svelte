@@ -36,6 +36,7 @@
   import type { ISequenceChainingOrchestrator, SourceMode } from "$lib/shared/animation-engine/services/contracts/ISequenceChainingOrchestrator";
 
   import { getEffectDescriptor } from "../domain/EffectDescriptor";
+  import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
 
   import EffectsPanel from "$lib/shared/animation-engine/components/effects-panel/EffectsPanel.svelte";
   import SourceControls from "$lib/shared/animation-engine/components/SourceControls.svelte";
@@ -461,6 +462,7 @@
             word={sequence?.word || sequence?.name || null}
             backgroundAlpha={0}
             focused={true}
+            trailSettings={animationSettings.trail}
           />
         </div>
       {/if}

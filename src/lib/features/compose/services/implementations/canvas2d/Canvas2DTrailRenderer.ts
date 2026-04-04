@@ -636,16 +636,12 @@ export class Canvas2DTrailRenderer {
         const age = currentTime - point.timestamp;
         const rawProgress = Math.min(1, Math.max(0, age / settings.fadeDurationMs));
 
-        // Always use exponential fade (holds brightness longer, then drops sharply)
+        // Exponential fade to zero — holds brightness longer, then drops sharply.
+        // Fades all the way to 0 so stationary trails disappear completely.
         const fadeProgress = Math.pow(rawProgress, FADE_EXPONENT);
 
-        opacity =
-          settings.maxOpacity -
-          fadeProgress * (settings.maxOpacity - settings.minOpacity);
-        opacity = Math.max(
-          settings.minOpacity,
-          Math.min(settings.maxOpacity, opacity)
-        );
+        opacity = settings.maxOpacity * (1 - fadeProgress);
+        opacity = Math.max(0, Math.min(settings.maxOpacity, opacity));
       } else {
         // LOOP_CLEAR and PERSISTENT - gradient from old to new
         opacity =
@@ -688,16 +684,12 @@ export class Canvas2DTrailRenderer {
         const age = currentTime - originalPoint.timestamp;
         const progress = Math.min(1, Math.max(0, age / settings.fadeDurationMs));
 
-        // Always use exponential fade (holds brightness longer, then drops sharply)
+        // Exponential fade to zero — holds brightness longer, then drops sharply.
+        // Fades all the way to 0 so stationary trails disappear completely.
         const fadeProgress = Math.pow(progress, FADE_EXPONENT);
 
-        const opacity =
-          settings.maxOpacity -
-          fadeProgress * (settings.maxOpacity - settings.minOpacity);
-        return Math.max(
-          settings.minOpacity,
-          Math.min(settings.maxOpacity, opacity)
-        );
+        const opacity = settings.maxOpacity * (1 - fadeProgress);
+        return Math.max(0, Math.min(settings.maxOpacity, opacity));
       } else {
         return settings.maxOpacity;
       }
