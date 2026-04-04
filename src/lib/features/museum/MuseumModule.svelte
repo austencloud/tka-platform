@@ -175,9 +175,8 @@
           h: wing.bounds.height,
           material: src?.material ?? "stone",
           theme: wing.theme,
-          exhibits: src?.exhibits,
+          walls: src?.walls,
           performers: src?.performers,
-          torches: src?.torches,
         };
       });
 

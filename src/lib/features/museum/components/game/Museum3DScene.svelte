@@ -567,6 +567,19 @@
   let playerGrounded = $state(true);
   let playerVerticalVelocity = $state(0);
   let playerJumpRequested = $state(false);
+
+  // Detect jump input on the EXACT frame Space is pressed — no physics delay.
+  // The UCC processes the same keypress for physics; we just need the signal
+  // to reach the animation state machine on the same frame.
+  $effect(() => {
+    function onJumpKey(e: KeyboardEvent) {
+      if (e.code === "Space" && fpsActive && playerGrounded) {
+        playerJumpRequested = true;
+      }
+    }
+    window.addEventListener("keydown", onJumpKey);
+    return () => window.removeEventListener("keydown", onJumpKey);
+  });
   const ROTATION_SPEED = 12;
 
   const avatarState: AvatarState = {
@@ -714,12 +727,11 @@
       // Sync reactive state for Avatar3D's animation system
       const vel = physicsProvider.getVelocity();
       playerSpeed = Math.sqrt(vel.x * vel.x + vel.z * vel.z);
-      const nowGrounded = physicsProvider.isGrounded();
+      playerGrounded = physicsProvider.isGrounded();
       playerVerticalVelocity = vel.y;
-      // Detect jump: was grounded last frame, not grounded now, moving up.
-      // This catches the exact frame the UCC applied the jump impulse.
-      playerJumpRequested = playerGrounded && !nowGrounded && vel.y > 0;
-      playerGrounded = nowGrounded;
+      // playerJumpRequested is set by the keydown handler (same frame as input),
+      // and cleared here after the state machine has consumed it.
+      if (playerJumpRequested) playerJumpRequested = false;
 
 
       const fpsTileX = Math.round(fpsPos.x / TILE_SIZE);
