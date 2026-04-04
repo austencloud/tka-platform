@@ -108,6 +108,7 @@ export class PrintCardRenderer implements IPrintCardRenderer {
 
     // Render the sequence image (keep all existing options)
     const sequenceCanvas = await this.imageComposer.composeSequenceImage(sequence, {
+      deckCard: { contentWidth: contentW, contentHeight: contentH },
       includeStartPosition: options.includeStartPosition,
       startPositionLayout: options.startPositionLayout ?? "column",
       addStepNumbers: true,
@@ -175,17 +176,8 @@ export class PrintCardRenderer implements IPrintCardRenderer {
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(bleed, bleed, contentW, contentH);
 
-    // 6. Draw sequence image fitted inside content area
-    // Use Math.min so the entire image (including header/footer) fits without clipping.
-    const scaleX = contentW / sequenceCanvas.width;
-    const scaleY = contentH / sequenceCanvas.height;
-    const scale = Math.min(scaleX, scaleY);
-    const drawW = sequenceCanvas.width * scale;
-    const drawH = sequenceCanvas.height * scale;
-    const offsetX = bleed + (contentW - drawW) / 2;
-    const offsetY = bleed + (contentH - drawH) / 2;
-
-    ctx.drawImage(sequenceCanvas, offsetX, offsetY, drawW, drawH);
+    // 6. Draw sequence image — deckCard mode produces exact content dimensions, draw 1:1
+    ctx.drawImage(sequenceCanvas, bleed, bleed, contentW, contentH);
 
     ctx.restore(); // inner clip
     ctx.restore(); // outer clip
