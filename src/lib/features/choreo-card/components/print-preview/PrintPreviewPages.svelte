@@ -22,6 +22,8 @@
     elementTheme?: ElementalTheme;
     /** Bump to force a full re-render of all cards */
     rerenderKey?: number;
+    /** Right-click context menu on a card cell: (x, y, rerender callback for that card, sequence) */
+    onCardContextMenu?: (x: number, y: number, rerender: () => void, sequence: SequenceData) => void;
     onPairsReady?: (pairs: CardPair[]) => void;
     onRenderStateChange?: (state: { isRendering: boolean; progress: number; total: number }) => void;
   }
@@ -38,6 +40,7 @@
     handPointsVisible = true,
     elementTheme,
     rerenderKey = 0,
+    onCardContextMenu,
     onPairsReady,
     onRenderStateChange,
   }: Props = $props();
@@ -181,6 +184,38 @@
     onPairsReady?.(pairs);
     onRenderStateChange?.({ isRendering: false, progress: seqs.length, total: seqs.length });
   }
+
+  /** Re-render a single card by its index in the sequences array */
+  async function rerenderCard(index: number) {
+    const seq = sequences[index];
+    if (!seq) return;
+
+    const renderer = container.items.printCardRenderer;
+    const stepCount = seq.steps?.length;
+    const options = buildRenderOptions(stepCount);
+
+    const frontCanvas = await renderer.renderFront(seq, options);
+    const backCanvas = await renderer.renderBack(seq, options);
+
+    const label = seq.word || seq.name || `Card ${index + 1}`;
+
+    renderedCards = renderedCards.map((card, i) =>
+      i === index
+        ? { frontUrl: canvasToDataUrl(frontCanvas), backUrl: canvasToDataUrl(backCanvas), label }
+        : card
+    );
+  }
+
+  function handleCardContextMenu(event: MouseEvent, cardIndex: number) {
+    if (!onCardContextMenu) return;
+    event.preventDefault();
+    onCardContextMenu(
+      event.clientX,
+      event.clientY,
+      () => rerenderCard(cardIndex),
+      sequences[cardIndex]!
+    );
+  }
 </script>
 
 <div class="pages-container">
@@ -211,7 +246,11 @@
             style:grid-template-columns="repeat({layout.cols}, {colWidthPct}%)"
           >
             {#each sheet as card, cardIndex (cardIndex)}
-              <div class="card-cell" style:aspect-ratio="{cardAspect}">
+              <div
+                class="card-cell"
+                style:aspect-ratio="{cardAspect}"
+                oncontextmenu={(e) => handleCardContextMenu(e, sheetIndex * layout.cardsPerPage + cardIndex)}
+              >
                 <img src={card.frontUrl} alt="{card.label} front" />
               </div>
             {/each}
@@ -231,6 +270,7 @@
                 style:aspect-ratio="{cardAspect}"
                 style:grid-column="{mirroredCol(cardIndex, layout.cols) + 1}"
                 style:grid-row="{rowOf(cardIndex, layout.cols) + 1}"
+                oncontextmenu={(e) => handleCardContextMenu(e, sheetIndex * layout.cardsPerPage + cardIndex)}
               >
                 <img src={card.backUrl} alt="{card.label} back" />
               </div>

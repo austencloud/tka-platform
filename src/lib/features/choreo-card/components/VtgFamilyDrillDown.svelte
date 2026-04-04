@@ -251,6 +251,7 @@
       {showTKA}
       {showWord}
       {includeStartPosition}
+      onCardContextMenu={onContextMenu ? (x, y, rerender) => onContextMenu(x, y, rerender) : undefined}
       onPairsReady={(pairs) => { renderedPairs = pairs; }}
       onRenderStateChange={(state) => {
         isRendering = state.isRendering;
