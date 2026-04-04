@@ -12,16 +12,23 @@
   import { T } from "@threlte/core";
   import { onDestroy } from "svelte";
   import type { Group } from "three";
-  import type { MuseumGrid } from "../../domain/museum-grid-types";
   import { MuseumModelLoader } from "../../services/implementations/MuseumModelLoader";
   import type { MuseumModelRole } from "../../services/contracts/IMuseumModelLoader";
 
+  interface FurniturePlacement {
+    id: string;
+    role: string;
+    tileX: number;
+    tileY: number;
+    rotationY: number;
+  }
+
   interface Props {
-    grid: MuseumGrid;
+    placements: FurniturePlacement[];
     tileSize: number;
   }
 
-  let { grid, tileSize }: Props = $props();
+  let { placements, tileSize }: Props = $props();
 
   const loader = new MuseumModelLoader();
 
@@ -35,7 +42,7 @@
   }
 
   function collectPlacements(): ResolvedPlacement[] {
-    return (grid.furniture ?? []).map((f) => ({
+    return placements.map((f) => ({
       id: f.id,
       role: f.role as MuseumModelRole,
       worldX: f.tileX * tileSize,
@@ -45,7 +52,7 @@
     }));
   }
 
-  const placements = collectPlacements();
+  const resolved = collectPlacements();
 
   interface LoadedModel {
     id: string;
@@ -59,15 +66,15 @@
   let loadedModels: LoadedModel[] = $state([]);
 
   async function loadAllModels(): Promise<void> {
-    if (placements.length === 0) return;
+    if (resolved.length === 0) return;
 
     // Preload unique role templates (deduplicates network requests)
-    const uniqueRoles = [...new Set(placements.map((p) => p.role))];
+    const uniqueRoles = [...new Set(resolved.map((p) => p.role))];
     await Promise.all(uniqueRoles.map((role) => loader.load(role)));
 
     // Clone for each placement (instant since templates are cached)
     const results: LoadedModel[] = [];
-    for (const placement of placements) {
+    for (const placement of resolved) {
       const model = await loader.load(placement.role);
       results.push({
         id: placement.id,
