@@ -95,6 +95,30 @@
     return canvas.toDataURL("image/png");
   }
 
+  // ── Card render cache ──────────────────────────────────────────────────
+  // Memory cache keyed by (sequence identity + render options).
+  // Survives HMR and prop-change re-triggers. Invalidated when render
+  // options change (different cache key) or explicitly via rerenderKey.
+  interface CachedCard {
+    rendered: RenderedCard;
+    pair: CardPair;
+  }
+  const cardCache = new Map<string, CachedCard>();
+  let lastRerenderKey = 0;
+
+  function buildCacheKey(seq: SequenceData, stepCount: number | undefined): string {
+    const seqId = seq.id ?? seq.word ?? seq.name ?? "";
+    const optsPart = [
+      cardSize, theme, showGrid, showTKA, showWord,
+      includeStartPosition, handPointsVisible,
+      elementTheme?.familyId ?? "none",
+      settingsService.settings.bluePropType,
+      settingsService.settings.redPropType,
+      stepCount,
+    ].join("|");
+    return `${seqId}::${optsPart}`;
+  }
+
   // Compute mirrored column for back pages (long-edge duplex flip)
   function mirroredCol(index: number, cols: number): number {
     const col = index % cols;
@@ -144,6 +168,12 @@
   });
 
   async function renderAll(seqs: SequenceData[], generation: number) {
+    // If rerenderKey changed, flush the cache to force fresh renders
+    if (rerenderKey !== lastRerenderKey) {
+      cardCache.clear();
+      lastRerenderKey = rerenderKey;
+    }
+
     isRendering = true;
     renderTotal = seqs.length;
     renderProgress = 0;
@@ -159,19 +189,31 @@
 
       const seq = seqs[i]!;
       const stepCount = seq.steps?.length;
-      const options = buildRenderOptions(stepCount);
+      const cacheKey = buildCacheKey(seq, stepCount);
+      const cached = cardCache.get(cacheKey);
 
-      const frontCanvas = await renderer.renderFront(seq, options);
-      const backCanvas = await renderer.renderBack(seq, options);
+      if (cached) {
+        // Cache hit — reuse data URLs for display, reuse canvas pair for export
+        cards.push(cached.rendered);
+        pairs.push(cached.pair);
+      } else {
+        // Cache miss — render fresh
+        const options = buildRenderOptions(stepCount);
+        const frontCanvas = await renderer.renderFront(seq, options);
+        const backCanvas = await renderer.renderBack(seq, options);
 
-      const label = seq.word || seq.name || `Card ${i + 1}`;
+        const label = seq.word || seq.name || `Card ${i + 1}`;
+        const card: RenderedCard = {
+          frontUrl: canvasToDataUrl(frontCanvas),
+          backUrl: canvasToDataUrl(backCanvas),
+          label,
+        };
+        const pair: CardPair = { front: frontCanvas, back: backCanvas, label };
 
-      pairs.push({ front: frontCanvas, back: backCanvas, label });
-      cards.push({
-        frontUrl: canvasToDataUrl(frontCanvas),
-        backUrl: canvasToDataUrl(backCanvas),
-        label,
-      });
+        pairs.push(pair);
+        cards.push(card);
+        cardCache.set(cacheKey, { rendered: card, pair });
+      }
 
       if (generation !== renderGeneration) return;
       renderProgress = i + 1;
@@ -194,16 +236,27 @@
     const stepCount = seq.steps?.length;
     const options = buildRenderOptions(stepCount);
 
+    // Invalidate cache for this card
+    const cacheKey = buildCacheKey(seq, stepCount);
+    cardCache.delete(cacheKey);
+
     const frontCanvas = await renderer.renderFront(seq, options);
     const backCanvas = await renderer.renderBack(seq, options);
 
     const label = seq.word || seq.name || `Card ${index + 1}`;
+    const card: RenderedCard = {
+      frontUrl: canvasToDataUrl(frontCanvas),
+      backUrl: canvasToDataUrl(backCanvas),
+      label,
+    };
 
-    renderedCards = renderedCards.map((card, i) =>
-      i === index
-        ? { frontUrl: canvasToDataUrl(frontCanvas), backUrl: canvasToDataUrl(backCanvas), label }
-        : card
-    );
+    // Update cache with fresh render
+    cardCache.set(cacheKey, {
+      rendered: card,
+      pair: { front: frontCanvas, back: backCanvas, label },
+    });
+
+    renderedCards = renderedCards.map((c, i) => i === index ? card : c);
   }
 
   function handleCardContextMenu(event: MouseEvent, cardIndex: number) {
