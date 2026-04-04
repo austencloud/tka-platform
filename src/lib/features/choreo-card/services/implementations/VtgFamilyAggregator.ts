@@ -29,8 +29,8 @@ export class VtgFamilyAggregator implements IVtgFamilyAggregator {
           deck.id,
           family.sequenceIds as string[],
         );
-        const ratio = deck.vtgRatio ?? deck.name.match(/\((\d+:\d+)/)?.[1] ?? "?";
-        const turns = deck.turns ?? VTG_RATIO_TURNS_MAP[ratio] ?? 0;
+        const ratio = deck.name.match(/\((\d+:\d+)/)?.[1] ?? "?";
+        const turns = VTG_RATIO_TURNS_MAP[ratio] ?? 0;
         return { ratio, turns, sequences };
       }),
     );

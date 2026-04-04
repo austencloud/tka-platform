@@ -11,7 +11,7 @@
   const { decks, onSelectDeck }: Props = $props();
 
   function getRatio(deck: Deck): string {
-    return deck.vtgRatio ?? deck.name.match(/\((\d+:\d+)/)?.[1] ?? "1:1";
+    return deck.name.match(/\((\d+:\d+)/)?.[1] ?? "1:1";
   }
 
   function groupByLevel(allDecks: Deck[]): { level: number; decks: Deck[] }[] {
