@@ -22,9 +22,11 @@ export class CorridorRouter implements ICorridorRouter {
     fromRoom: PlacedRoom,
     toRoom: PlacedRoom,
     edge: RoomEdge,
+    doorPositionMap?: Map<string, { x: number; y: number }>,
   ): CorridorSegment[] {
-    const fromDoor = this.getDoorPosition(fromRoom, edge.fromWall);
-    const toDoor = this.getDoorPosition(toRoom, edge.toWall);
+    const edgeId = `${edge.from}->${edge.to}`;
+    const fromDoor = this.getDoorPosition(fromRoom, edge.fromWall, edgeId, doorPositionMap);
+    const toDoor = this.getDoorPosition(toRoom, edge.toWall, edgeId, doorPositionMap);
     const width = edge.corridorWidth ?? 4;
 
     return this.routeLShaped(fromDoor, toDoor, edge.fromWall, width);
@@ -34,7 +36,17 @@ export class CorridorRouter implements ICorridorRouter {
    * Computes the door position on a room wall. The door is centered on the
    * wall, positioned just outside the room's bounding rectangle.
    */
-  private getDoorPosition(room: PlacedRoom, wall: string): DoorPosition {
+  private getDoorPosition(
+    room: PlacedRoom,
+    wall: string,
+    edgeId: string,
+    doorPositionMap?: Map<string, { x: number; y: number }>,
+  ): DoorPosition {
+    // Use stamped door position if available
+    const mapped = doorPositionMap?.get(edgeId);
+    if (mapped) return mapped;
+
+    // Fallback: wall center (for edges without stamped doors)
     const centerX = room.x + Math.floor(room.w / 2);
     const centerY = room.y + Math.floor(room.h / 2);
 
