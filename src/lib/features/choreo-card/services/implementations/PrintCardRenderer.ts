@@ -175,13 +175,14 @@ export class PrintCardRenderer implements IPrintCardRenderer {
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(bleed, bleed, contentW, contentH);
 
-    // 6. Draw sequence image filling full width of content area
-    // Scale to full width so gray header/footer extend edge-to-edge.
-    // Vertical overflow is clipped by the inner content area.
-    const scale = contentW / sequenceCanvas.width;
-    const drawW = contentW;
+    // 6. Draw sequence image fitted inside content area
+    // Use Math.min so the entire image (including header/footer) fits without clipping.
+    const scaleX = contentW / sequenceCanvas.width;
+    const scaleY = contentH / sequenceCanvas.height;
+    const scale = Math.min(scaleX, scaleY);
+    const drawW = sequenceCanvas.width * scale;
     const drawH = sequenceCanvas.height * scale;
-    const offsetX = bleed;
+    const offsetX = bleed + (contentW - drawW) / 2;
     const offsetY = bleed + (contentH - drawH) / 2;
 
     ctx.drawImage(sequenceCanvas, offsetX, offsetY, drawW, drawH);
