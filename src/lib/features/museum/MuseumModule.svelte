@@ -5,6 +5,7 @@
   import type { MuseumGrid } from "./domain/museum-grid-types";
   import { createEditorState } from "./state/editor-state.svelte";
   import { setEditorContext } from "./state/editor-context";
+  import RoomPicker from "./components/RoomPicker.svelte";
 
   import { onMount } from "svelte";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
@@ -105,6 +106,30 @@
     "3p-test": "3p-test",
   };
 
+  // ── Room isolation ──
+  // URL query param `?room=vulcan-cave` filters the museum to a single room.
+  // null = full museum (all rooms + corridors).
+  function getInitialRoom(): string | null {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      return params.get("room") ?? null;
+    } catch { return null; }
+  }
+
+  let selectedRoom = $state<string | null>(getInitialRoom());
+
+  function handleRoomSelect(roomId: string | null) {
+    selectedRoom = roomId;
+    // Sync to URL without a full page reload
+    const url = new URL(window.location.href);
+    if (roomId) {
+      url.searchParams.set("room", roomId);
+    } else {
+      url.searchParams.delete("room");
+    }
+    window.history.replaceState({}, "", url.toString());
+  }
+
   // ── Grid caching ──
   // The grid build pipeline (layout engine, corridor routing, wall derivation,
   // exhibit/performer placement) runs every mount. Caching the result to
@@ -113,9 +138,8 @@
   const GRID_CACHE_KEY = "museum-grid-cache";
   const GRID_HASH_KEY = "museum-grid-hash";
 
-  function computeConfigHash(): string {
-    // Simple hash from room/edge/config JSON — changes when layout data changes
-    const input = JSON.stringify({ rooms: MUSEUM_ROOMS, edges: MUSEUM_EDGES, config: GRID_CONFIG });
+  function computeConfigHash(rooms: typeof MUSEUM_ROOMS, edges: typeof MUSEUM_EDGES): string {
+    const input = JSON.stringify({ rooms, edges, config: GRID_CONFIG });
     let hash = 0;
     for (let i = 0; i < input.length; i++) {
       hash = ((hash << 5) - hash + input.charCodeAt(i)) | 0;
@@ -123,41 +147,58 @@
     return String(hash);
   }
 
-  function loadCachedGrid(): MuseumGrid | null {
+  function loadCachedGrid(rooms: typeof MUSEUM_ROOMS, edges: typeof MUSEUM_EDGES): MuseumGrid | null {
     try {
       const hash = sessionStorage.getItem(GRID_HASH_KEY);
-      if (hash !== computeConfigHash()) return null;
+      if (hash !== computeConfigHash(rooms, edges)) return null;
       const raw = sessionStorage.getItem(GRID_CACHE_KEY);
       if (!raw) return null;
       return deserializeGrid(JSON.parse(raw));
     } catch { return null; }
   }
 
-  function cacheGrid(grid: MuseumGrid): void {
+  function cacheGrid(grid: MuseumGrid, rooms: typeof MUSEUM_ROOMS, edges: typeof MUSEUM_EDGES): void {
     try {
-      sessionStorage.setItem(GRID_HASH_KEY, computeConfigHash());
+      sessionStorage.setItem(GRID_HASH_KEY, computeConfigHash(rooms, edges));
       sessionStorage.setItem(GRID_CACHE_KEY, JSON.stringify(serializeGrid(grid)));
     } catch { /* sessionStorage full — non-critical */ }
   }
 
-  // Try cached grid first, fall back to fresh build
-  const cached = loadCachedGrid();
-  let generatedGrid: MuseumGrid;
-  let validation: { valid: boolean; errors: string[] };
+  // Build grid for the given room filter. When a single room is selected,
+  // we pass only that room and no edges (no corridors needed). When null,
+  // the full museum is built.
+  function buildGridForRoom(roomFilter: string | null): { grid: MuseumGrid; validation: { valid: boolean; errors: string[] } } {
+    const rooms = roomFilter
+      ? MUSEUM_ROOMS.filter(r => r.id === roomFilter)
+      : MUSEUM_ROOMS;
+    const edges = roomFilter ? [] : MUSEUM_EDGES;
 
-  if (cached) {
-    generatedGrid = cached;
-    validation = { valid: true, errors: [] };
-  } else {
-    const result = buildMuseumGrid(MUSEUM_ROOMS, MUSEUM_EDGES, GRID_CONFIG);
-    generatedGrid = result.grid;
-    validation = result.validation;
-    cacheGrid(generatedGrid);
+    // Only use cache for the full museum (isolated rooms are cheap to build)
+    if (!roomFilter) {
+      const cached = loadCachedGrid(rooms, edges);
+      if (cached) return { grid: cached, validation: { valid: true, errors: [] } };
+    }
+
+    const result = buildMuseumGrid(rooms, edges, GRID_CONFIG);
+
+    if (!roomFilter) {
+      cacheGrid(result.grid, rooms, edges);
+    }
+
+    return { grid: result.grid, validation: result.validation };
   }
 
-  if (!validation.valid) {
-    console.error("Museum layout validation failed:", validation.errors);
-  }
+  // Initial grid build
+  let currentBuild = $derived.by(() => buildGridForRoom(selectedRoom));
+
+  // Surface the grid from the reactive build
+  let generatedGrid = $derived(currentBuild.grid);
+
+  $effect(() => {
+    if (!currentBuild.validation.valid) {
+      console.error("Museum layout validation failed:", currentBuild.validation.errors);
+    }
+  });
 
   // Museum design validation (dev only)
   if (import.meta.env.DEV) {
@@ -207,6 +248,12 @@
   // multi-second freeze on init. The grid is replaced wholesale (not mutated
   // in place), so shallow reactivity is correct.
   let liveGrid = $state.raw<MuseumGrid>(generatedGrid);
+
+  // When the room selection changes, the derived generatedGrid updates.
+  // Propagate that to liveGrid so the 3D scene rebuilds.
+  $effect(() => {
+    liveGrid = generatedGrid;
+  });
 
   // Editor state — initialized from the live grid
   const editorState = createEditorState(liveGrid.width, liveGrid.height);
@@ -287,6 +334,11 @@
         {/if}
       </div>
     </div>
+  {/if}
+
+  <!-- Room picker — floating pill bar for room isolation -->
+  {#if mode === "museum" && deferredReady}
+    <RoomPicker {selectedRoom} onSelect={handleRoomSelect} />
   {/if}
 
   <!-- Content renders behind the opaque overlay; deferred to allow first paint -->
