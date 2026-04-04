@@ -1,3 +1,20 @@
+import type { Timestamp } from "firebase/firestore";
+
+/**
+ * DeckMetadata - Configuration for a collection that has been promoted to a deck.
+ * When a user promotes a collection, this metadata controls how the deck
+ * appears in the deck browser and how it prints as physical cards.
+ */
+export interface DeckMetadata {
+  readonly displayName: string;
+  readonly cardBackTemplateId?: string;
+  readonly printConfig?: {
+    readonly cardSize: "poker" | "tarot" | "mini";
+    readonly includeStartPosition: boolean;
+  };
+  readonly promotedAt: Timestamp;
+}
+
 /**
  * LibraryCollection - Named folder for organizing sequences
  *
@@ -86,6 +103,9 @@ export interface LibraryCollection {
    * System collections cannot be deleted or renamed
    */
   readonly systemType?: SystemCollectionType;
+
+  /** Deck promotion metadata - present when this collection has been promoted to a deck */
+  readonly deckMetadata?: DeckMetadata;
 
   /** When created */
   readonly createdAt: Date;
