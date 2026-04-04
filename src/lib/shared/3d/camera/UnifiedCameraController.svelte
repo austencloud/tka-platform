@@ -150,7 +150,14 @@
   let smoothedCamY = 0;
   let smoothedCamZ = 0;
   let smoothedCamInitialized = false;
-  const CAMERA_POSITION_DAMPING = 0.15;
+  // Frame-rate independent damping: higher = more responsive, lower = smoother.
+  // Using exponential decay: factor = 1 - e^(-speed * delta)
+  // At 60fps with speed=8: ~0.12 per frame. At 30fps: ~0.23 per frame.
+  // This produces identical visual smoothing regardless of frame rate.
+  const CAMERA_DAMPING_SPEED = 8;
+  let smoothedLookX = 0;
+  let smoothedLookY = 0;
+  let smoothedLookZ = 0;
 
   // Camera settings (all distances/heights in meters)
   // Orbit mode settings are in Scene3D.svelte's OrbitControls
@@ -746,22 +753,34 @@
         const finalCamY = targetY + cfg.height + Math.sin(pitch) * smoothedCameraDistance * 0.5;
         const finalCamZ = targetZ - Math.cos(yaw) * smoothedCameraDistance * cosPitch;
 
-        // Damp the camera position to absorb jitter from yaw micro-changes, avatar
-        // sub-frame movement, and raycast collision oscillation. On the very first
-        // frame we snap to avoid a visible lerp-from-origin.
+        // Frame-rate independent damping using exponential decay.
+        // Produces identical visual smoothing at 30fps and 60fps.
+        // Also damps the lookAt target to prevent lateral wobble from
+        // position lag vs. instant look-at snap.
+        const dampFactor = 1 - Math.exp(-CAMERA_DAMPING_SPEED * delta);
+        const lookTargetX = targetX;
+        const lookTargetY = targetY + cfg.lookAtHeight;
+        const lookTargetZ = targetZ;
+
         if (!smoothedCamInitialized) {
           smoothedCamX = finalCamX;
           smoothedCamY = finalCamY;
           smoothedCamZ = finalCamZ;
+          smoothedLookX = lookTargetX;
+          smoothedLookY = lookTargetY;
+          smoothedLookZ = lookTargetZ;
           smoothedCamInitialized = true;
         } else {
-          smoothedCamX += (finalCamX - smoothedCamX) * CAMERA_POSITION_DAMPING;
-          smoothedCamY += (finalCamY - smoothedCamY) * CAMERA_POSITION_DAMPING;
-          smoothedCamZ += (finalCamZ - smoothedCamZ) * CAMERA_POSITION_DAMPING;
+          smoothedCamX += (finalCamX - smoothedCamX) * dampFactor;
+          smoothedCamY += (finalCamY - smoothedCamY) * dampFactor;
+          smoothedCamZ += (finalCamZ - smoothedCamZ) * dampFactor;
+          smoothedLookX += (lookTargetX - smoothedLookX) * dampFactor;
+          smoothedLookY += (lookTargetY - smoothedLookY) * dampFactor;
+          smoothedLookZ += (lookTargetZ - smoothedLookZ) * dampFactor;
         }
 
         camera.current.position.set(smoothedCamX, smoothedCamY, smoothedCamZ);
-        camera.current.lookAt(targetX, targetY + cfg.lookAtHeight, targetZ);
+        camera.current.lookAt(smoothedLookX, smoothedLookY, smoothedLookZ);
       }
   });
 
