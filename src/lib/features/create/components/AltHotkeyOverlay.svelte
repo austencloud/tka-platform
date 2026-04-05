@@ -116,7 +116,10 @@
     }, 120);
   }
 
+  let overlayEl: HTMLDivElement | undefined = $state();
+
   // Alt key toggle — instant on keydown, ignore repeats
+  // Also: Escape dismisses, click outside dismisses
   $effect(() => {
     if (isMobile || typeof window === "undefined") return;
 
@@ -132,20 +135,36 @@
           fadeOut = false;
           visible = true;
         }
+        return;
+      }
+
+      // Escape dismisses when open
+      if (e.key === "Escape" && visible) {
+        dismiss();
       }
     }
 
-    // Dismiss if window loses focus while overlay is open
+    // Click outside the overlay dismisses it
+    function onPointerDown(e: PointerEvent) {
+      if (!visible || !overlayEl) return;
+      if (!overlayEl.contains(e.target as Node)) {
+        dismiss();
+      }
+    }
+
+    // Dismiss if window loses focus
     function onBlur() {
       visible = false;
       fadeOut = false;
     }
 
     window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("pointerdown", onPointerDown);
     window.addEventListener("blur", onBlur);
 
     return () => {
       window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("pointerdown", onPointerDown);
       window.removeEventListener("blur", onBlur);
     };
   });
@@ -153,6 +172,7 @@
 
 {#if visible && !isMobile}
   <div
+    bind:this={overlayEl}
     class="alt-overlay"
     class:fade-out={fadeOut}
     role="toolbar"
