@@ -6,7 +6,7 @@ import type {
 } from "../domain/village-types";
 import type { IPersonalityGenerator } from "../services/contracts/IPersonalityGenerator";
 
-const AVATAR_MODELS = ["x-bot", "y-bot", "remy", "ch26"];
+const AVATAR_MODELS = ["x-bot", "y-bot", "remy", "ch26", "ch01", "ch07", "ch10", "ch12", "ch18", "ch21", "ch22", "ch24", "ch34", "ch41", "ch42", "ch44"];
 
 export function createVillageWorld(): World<VillageEntity> {
 	return new World<VillageEntity>();
