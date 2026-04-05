@@ -1,8 +1,13 @@
 <!--
   VillageAvatar — Renders one village entity as an Avatar3D with props.
-  Reads from an AvatarInstanceState wrapper that's synced from the ECS engine.
+
+  Uses the same positioning pattern as MuseumPerformerStation3D:
+  - Outer T.Group at position.y = -STAGE_LIFT cancels Avatar3D's internal offset
+  - Avatar3D position.y = STAGE_LIFT for IK/grid alignment
+  - Net result: feet land at Y=0 (ground plane)
 -->
 <script lang="ts">
+	import { T } from "@threlte/core";
 	import Avatar3D from "$lib/shared/3d/components/Avatar3D.svelte";
 	import Prop3D from "$lib/shared/3d/components/props/Prop3D.svelte";
 	import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
@@ -16,11 +21,10 @@
 
 	const { renderState, isSelected = false }: Props = $props();
 
-	// Avatar3D uses Y=0 as shoulder/grid center. groundY is negative (distance
-	// from shoulder to feet). -groundY lifts the avatar so feet sit on Y=0.
 	const STAGE_LIFT = $derived(-userProportionsState.groundY);
 
-	const position = $derived({
+	// Avatar position: IK targets and prop orbit sit at shoulder height
+	const avatarPosition = $derived({
 		x: renderState.instanceState.position.x,
 		y: STAGE_LIFT,
 		z: renderState.instanceState.position.z,
@@ -39,24 +43,27 @@
 	);
 </script>
 
-<Avatar3D
-	id={renderState.entityId}
-	{bluePropState}
-	{redPropState}
-	{position}
-	{facingAngle}
-	isActive={isSelected}
-	{isMoving}
-	moveSpeed={isMoving ? 0.5 : 0}
-	enableLocomotion={true}
-/>
+<!-- Visual offset group: cancel STAGE_LIFT so feet land on Y=0 ground -->
+<T.Group position.y={-STAGE_LIFT}>
+	<Avatar3D
+		id={renderState.entityId}
+		{bluePropState}
+		{redPropState}
+		position={avatarPosition}
+		{facingAngle}
+		isActive={isSelected}
+		{isMoving}
+		moveSpeed={isMoving ? 0.5 : 0}
+		enableLocomotion={true}
+	/>
+</T.Group>
 
 {#if isPerforming && bluePropState}
 	<Prop3D
 		propType={PropType.STAFF}
 		color="blue"
 		propState={bluePropState}
-		avatarPosition={position}
+		avatarPosition={avatarPosition}
 		{facingAngle}
 	/>
 {/if}
@@ -66,7 +73,7 @@
 		propType={PropType.STAFF}
 		color="red"
 		propState={redPropState}
-		avatarPosition={position}
+		avatarPosition={avatarPosition}
 		{facingAngle}
 	/>
 {/if}
