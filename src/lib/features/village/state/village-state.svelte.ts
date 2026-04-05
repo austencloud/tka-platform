@@ -180,7 +180,7 @@ export function createVillageState(
 	 */
 	function lerpAvatars(): void {
 		const POSITION_LERP = 0.15;
-		const ANGLE_LERP = 0.12;
+		const FACING_LERP = 0.2;
 		const MOVE_THRESHOLD = 0.02;
 
 		for (const renderState of avatarStateMap.values()) {
@@ -198,12 +198,23 @@ export function createVillageState(
 				? Math.min(1, dist * 2)
 				: 0;
 
-			// Lerp facing angle (shortest path)
+			// When moving, face the movement direction. When idle, use engine facing.
 			const currentAngle = inst.facingAngle;
-			let angleDiff = renderState.targetFacingAngle - currentAngle;
+			let targetAngle: number;
+
+			if (dist > MOVE_THRESHOLD) {
+				// Face the direction of actual movement (toward target position)
+				// atan2(dx, dz) gives yaw in XZ plane; add PI because
+				// the avatar model faces -Z at angle 0
+				targetAngle = Math.atan2(dx, dz) + Math.PI;
+			} else {
+				targetAngle = renderState.targetFacingAngle;
+			}
+
+			let angleDiff = targetAngle - currentAngle;
 			while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
 			while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
-			inst.setFacingAngle(currentAngle + angleDiff * ANGLE_LERP);
+			inst.setFacingAngle(currentAngle + angleDiff * FACING_LERP);
 		}
 	}
 
