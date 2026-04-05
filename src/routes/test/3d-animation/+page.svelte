@@ -3,10 +3,10 @@
    * 3D Animation Test Page
    *
    * Sandboxed development environment for the 3D animation system.
-   * Uses Viewer3DModule which includes keyboard shortcuts.
+   * Uses StageWorld which is the unified stage + infinite worlds experience.
    */
 
-  import Viewer3DModule from "$lib/shared/3d/Viewer3DModule.svelte";
+  import StageWorld from "$lib/shared/3d/StageWorld.svelte";
 </script>
 
 <svelte:head>
@@ -14,7 +14,7 @@
 </svelte:head>
 
 <div class="page">
-  <Viewer3DModule />
+  <StageWorld />
 </div>
 
 <style>

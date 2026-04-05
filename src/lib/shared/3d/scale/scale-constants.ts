@@ -92,7 +92,7 @@ export const SCALE = {
 /**
  * Stage-specific constants
  *
- * These apply to the Stage (Viewer3DModule) where performers
+ * These apply to the Stage (StageWorld) where performers
  * demonstrate TKA sequences on a bounded grid.
  */
 export const STAGE = {

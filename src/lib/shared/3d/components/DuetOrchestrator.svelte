@@ -3,7 +3,7 @@
    * DuetOrchestrator
    *
    * Manages duet browser and creator panels.
-   * Extracted from Viewer3DModule to reduce complexity.
+   * Extracted from the 3D viewer to reduce complexity.
    */
 
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
