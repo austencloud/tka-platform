@@ -3,6 +3,7 @@
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import { getCreateModuleContext } from "../shared/context/create-module-context";
   import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/PropTypeDisplayRegistry";
+  import { shiftStartPosition } from "../shared/services/implementations/sequence-transforms/sequence-transforms";
   import type { PropPreset } from "$lib/shared/settings/domain/AppSettings";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 
@@ -70,8 +71,8 @@
       case "shiftStart": {
         const seq = seqState.currentSequence;
         if (seq && seq.steps.length > 1) {
-          const [first, ...rest] = seq.steps;
-          seqState.setCurrentSequence({ ...seq, steps: [...rest, first!] });
+          const shifted = shiftStartPosition(seq, 2);
+          seqState.setCurrentSequence(shifted);
         }
         break;
       }
