@@ -75,11 +75,16 @@
             mode={avatarState.planeMode}
             bluePlane={avatarState.currentBeatBluePlane}
             redPlane={avatarState.currentBeatRedPlane}
+            sequenceBluePlane={avatarState.customBluePlane}
+            sequenceRedPlane={avatarState.customRedPlane}
             currentBeatIndex={avatarState.currentStepIndex}
             totalBeats={avatarState.totalSteps}
             hasBeatOverrides={avatarState.hasBeatOverrides}
+            beatEditMode={avatarState.beatEditMode}
             onModeChange={(mode) => avatarState.setPlaneMode(mode)}
             onHandPlaneChange={(hand, plane) => avatarState.setBeatHandPlane(avatarState.currentStepIndex, hand, plane)}
+            onSequenceHandPlaneChange={(hand, plane) => avatarState.setHandPlane(hand, plane)}
+            onBeatEditModeChange={(enabled) => avatarState.setBeatEditMode(enabled)}
           />
           {#if avatarState.planeMode === 'dual-wheel'}
             <button
@@ -93,7 +98,7 @@
         {/if}
       </div>
       <Viewer3DViewPresets />
-      {#if avatarState && avatarState.totalSteps > 1}
+      {#if avatarState && avatarState.totalSteps > 1 && avatarState.beatEditMode}
         <div class="beat-strip-container">
           <BeatPlaneStrip
             totalBeats={avatarState.totalSteps}
