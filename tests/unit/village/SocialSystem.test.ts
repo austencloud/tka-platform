@@ -85,6 +85,7 @@ describe("SocialSystem", () => {
 
 		entity1.knowledge.knownSequences.set("seq1", {
 			sequenceId: "seq1",
+			sequenceData: null,
 			proficiency: 1,
 			source: "seed",
 			learnedAt: 0,

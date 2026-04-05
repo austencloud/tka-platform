@@ -113,6 +113,7 @@ describe("VillageOrchestrator", () => {
 		const entities = orchestrator.entities;
 		entities[0].knowledge.knownSequences.set("seed1", {
 			sequenceId: "seed1",
+			sequenceData: null,
 			proficiency: 1,
 			source: "seed",
 			learnedAt: 0,
@@ -121,6 +122,7 @@ describe("VillageOrchestrator", () => {
 		});
 		entities[1].knowledge.knownSequences.set("seed2", {
 			sequenceId: "seed2",
+			sequenceData: null,
 			proficiency: 1,
 			source: "seed",
 			learnedAt: 0,

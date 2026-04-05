@@ -12,6 +12,7 @@ export interface IdentityComponent {
 
 export interface LearnedSequence {
 	sequenceId: string;
+	sequenceData: unknown | null; // SequenceData for rendering (null in headless mode)
 	proficiency: number; // 0-1
 	source: "seed" | "taught" | "invented";
 	learnedAt: number; // simulation tick
