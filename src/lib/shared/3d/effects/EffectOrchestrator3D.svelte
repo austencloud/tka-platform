@@ -38,6 +38,9 @@
     staffHalfLength?: number;
     tipEffectMap?: TipEffectMap;
     globalTipEffectMap?: TipEffectMap;
+    avatarPosition?: { x: number; y: number; z: number };
+    facingAngle?: number;
+    gridOffset?: number;
     trailConfig?: {
       color?: string;
       width?: number;
@@ -54,6 +57,9 @@
     staffHalfLength = 0.5,
     tipEffectMap,
     globalTipEffectMap = {},
+    avatarPosition = { x: 0, y: 0, z: 0 },
+    facingAngle = 0,
+    gridOffset = 0,
     trailConfig = {},
   }: Props = $props();
 
@@ -100,12 +106,11 @@
       return;
     }
 
-    // Fixed timestep assumption. Threlte's useTask runs once per
-    // requestAnimationFrame, so ~16.67 ms at 60 fps.
     const dt = 1 / 60;
+    const transforms = { avatarPosition, facingAngle, gridOffset };
 
     if (bluePropState) {
-      const result = tipBridge.update(0, bluePropState, staffHalfLength, dt);
+      const result = tipBridge.update(0, bluePropState, staffHalfLength, dt, transforms);
       blueTipData = result.tips.map((tip, tipIndex) => {
         const resolved = resolveEffect(
           0,
@@ -122,7 +127,7 @@
     }
 
     if (redPropState) {
-      const result = tipBridge.update(1, redPropState, staffHalfLength, dt);
+      const result = tipBridge.update(1, redPropState, staffHalfLength, dt, transforms);
       redTipData = result.tips.map((tip, tipIndex) => {
         const resolved = resolveEffect(
           1,
