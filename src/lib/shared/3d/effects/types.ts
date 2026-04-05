@@ -302,6 +302,30 @@ export const DEFAULT_ALL_EFFECTS: AllEffectConfigs = {
 export type PropId = "blue" | "red";
 
 // =============================================================================
+// Tip Position Data (used by TipPositionBridge3D)
+// =============================================================================
+
+/**
+ * World-space position, velocity, and jerk for a single prop tip.
+ * Uses plain {x,y,z} objects instead of Three.js Vector3 so consumers
+ * (including tests) don't need a Three.js dependency.
+ */
+export interface TipPositionData3D {
+  position: { x: number; y: number; z: number };
+  velocity: { x: number; y: number; z: number };
+  jerk: { x: number; y: number; z: number };
+  speed: number;
+}
+
+/**
+ * Per-tip positions for a single prop (two tips per staff).
+ */
+export interface PropTipPositions3D {
+  tips: TipPositionData3D[];
+  propIndex: number;
+}
+
+// =============================================================================
 // Quality Tier System
 // =============================================================================
 
