@@ -568,16 +568,23 @@ export async function buildRoomChunk(
 
   await yieldToMain();
 
-  // Ceiling batch — all floor positions at WALL_HEIGHT
+  // Ceiling batch — all floor positions at WALL_HEIGHT.
+  // All rooms share identical ceiling appearance, so we cache the material
+  // (same pattern as floor/wall PBR cache) instead of creating one per room.
   const allFloorPositions: { x: number; z: number }[] = [];
   for (const [, bucket] of buckets.floorBuckets) {
     for (const pos of bucket.positions) allFloorPositions.push(pos);
   }
   let ceilingMesh: BatchedMeshData | null = null;
   if (allFloorPositions.length > 0) {
-    const ceilingMat = new MeshStandardMaterial({
-      color: "#3a3530", emissive: "#0a0a08", emissiveIntensity: 0.3, roughness: 0.85,
-    });
+    const ceilingCacheKey = "__ceiling__";
+    let ceilingMat = pbrMaterialCache.get(ceilingCacheKey);
+    if (!ceilingMat) {
+      ceilingMat = new MeshStandardMaterial({
+        color: "#3a3530", emissive: "#0a0a08", emissiveIntensity: 0.3, roughness: 0.85,
+      });
+      pbrMaterialCache.set(ceilingCacheKey, ceilingMat);
+    }
     const { mesh, instanceIds } = buildBatch(floorGeo, ceilingMat, allFloorPositions, WALL_HEIGHT);
     ceilingMesh = { mesh, instanceIds };
   }

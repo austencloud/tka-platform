@@ -19,7 +19,7 @@
   import { T } from "@threlte/core";
   import type { Prop3DProps } from "./Prop3DProps";
   import { PROP_COLORS } from "./Prop3DProps";
-  import { computePropPosition, computePropRotation } from "./prop3d-transforms";
+  import { computePropRotation } from "./prop3d-transforms";
   import { userProportionsState } from "../../state/user-proportions-state.svelte";
   import {
     LAYER_WORLD,
@@ -32,9 +32,6 @@
     visible = true,
     length,
     thickness,
-    avatarPosition = { x: 0, y: 0, z: 0 },
-    facingAngle = 0,
-    gridOffset = 0,
     isActivePlayer = false,
     scale = 1,
   }: Prop3DProps = $props();
@@ -53,13 +50,8 @@
 
   const palette = $derived(PROP_COLORS[color]);
 
-  // Position and rotation via shared transforms
-  const position = $derived.by(() =>
-    computePropPosition(propState, avatarPosition, facingAngle, gridOffset)
-  );
-  const rotation = $derived.by(() =>
-    computePropRotation(propState, facingAngle)
-  );
+  // Rotation only — position handled by PerformerRig scene graph
+  const rotation = $derived(computePropRotation(propState));
 
   // --- Section proportions (fractions of effectiveLength) ---
   // Origin (0,0,0) is the grip point. Club extends upward from there.
@@ -104,7 +96,7 @@
 </script>
 
 {#if visible}
-  <T.Group {position} {rotation} layers={propLayer}>
+  <T.Group {rotation} layers={propLayer}>
     <!-- Handle knob: small sphere below the grip point -->
     <T.Mesh position={[0, -handleKnobOffset, 0]}>
       <T.SphereGeometry args={[handleKnobRadius, 12, 12]} />
@@ -181,7 +173,7 @@
   </T.Group>
 
   <!-- Trail indicator sphere at the grip point -->
-  <T.Mesh {position} layers={propLayer}>
+  <T.Mesh layers={propLayer}>
     <T.SphereGeometry args={[0.015, 8, 8]} />
     <T.MeshBasicMaterial color={palette.main} opacity={0.3} transparent />
   </T.Mesh>

@@ -284,8 +284,7 @@
       e.preventDefault();
       if (viewMode === "top-down") {
         // top-down → first-person: play flip animation into 3D
-        const canvas = document.querySelector<HTMLCanvasElement>("canvas");
-        canvas?.requestPointerLock();
+        // Pointer lock is handled by UCC when it attaches (deferred to avoid blocking)
         flipRequested++;
       } else if (viewMode === "first-person") {
         // first-person → third-person: instant switch, no animation

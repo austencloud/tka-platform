@@ -77,11 +77,6 @@ export interface DerivedMotionData extends MotionData {
   readonly isVisible: boolean;
 }
 
-// TODO: add derivation functions to get the motion type if you know start to end + rotation direction and vica versa
-// TODO: import derivation functionality (already exists somewhere) To get the end orientation based upon the details of the start orientation, the motion type, and the number of turns
-// TODO: Add a derivation function which automatically updates the arrow location based upon the start and end location and the number of turns and the rotation direction
-// TODO: ensure that the arrow and prop placement data get properly updated with the corresponding functions that already exist
-
 /**
  * Factory function to create MotionData with sensible defaults
  *

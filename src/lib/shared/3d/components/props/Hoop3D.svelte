@@ -7,17 +7,13 @@
    * is offset upward by the ring's radius. This means the bottom of the
    * torus touches the origin where the hand holds it.
    *
-   * Uses computeFlatPropRotation because hoops are planar props that
-   * naturally lie in the XY plane, not cylindrical like staves.
+   * Uses computePropRotation (unified for all prop types).
    */
 
   import { T } from "@threlte/core";
   import type { Prop3DProps } from "./Prop3DProps";
   import { PROP_COLORS } from "./Prop3DProps";
-  import {
-    computePropPosition,
-    computeFlatPropRotation,
-  } from "./prop3d-transforms";
+  import { computePropRotation } from "./prop3d-transforms";
   import { userProportionsState } from "../../state/user-proportions-state.svelte";
   import {
     LAYER_WORLD,
@@ -30,9 +26,6 @@
     visible = true,
     length,
     thickness,
-    avatarPosition = { x: 0, y: 0, z: 0 },
-    facingAngle = 0,
-    gridOffset = 0,
     isActivePlayer = false,
     scale = 1,
   }: Prop3DProps = $props();
@@ -57,18 +50,11 @@
   const gripOuterRadius = $derived(staffRadius * 1.4 * scale);
   const gripTubeRadius = $derived(staffRadius * 0.15 * scale);
 
-  const position = $derived(
-    computePropPosition(propState, avatarPosition, facingAngle, gridOffset)
-  );
-
-  // Hoops are planar props — use flat rotation (no 90-degree horizontal tilt)
-  const rotation = $derived(
-    computeFlatPropRotation(propState, facingAngle)
-  );
+  const rotation = $derived(computePropRotation(propState));
 </script>
 
 {#if visible}
-  <T.Group {position} {rotation} layers={propLayer}>
+  <T.Group {rotation} layers={propLayer}>
     <!-- Main hoop ring: center offset upward by ringRadius so the
          bottom of the torus sits at the origin (the grip point) -->
     <T.Mesh position={[0, ringRadius, 0]}>
@@ -88,7 +74,7 @@
   </T.Group>
 
   <!-- Trail indicator sphere at prop position -->
-  <T.Mesh {position} layers={propLayer}>
+  <T.Mesh layers={propLayer}>
     <T.SphereGeometry args={[0.015, 8, 8]} />
     <T.MeshBasicMaterial color={palette.main} opacity={0.3} transparent />
   </T.Mesh>

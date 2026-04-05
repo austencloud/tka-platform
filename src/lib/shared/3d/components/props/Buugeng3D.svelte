@@ -18,7 +18,7 @@
   import { T } from "@threlte/core";
   import type { Prop3DProps } from "./Prop3DProps";
   import { PROP_COLORS } from "./Prop3DProps";
-  import { computePropPosition, computePropRotation } from "./prop3d-transforms";
+  import { computePropRotation } from "./prop3d-transforms";
   import { userProportionsState } from "../../state/user-proportions-state.svelte";
   import {
     LAYER_WORLD,
@@ -31,9 +31,6 @@
     visible = true,
     length,
     thickness,
-    avatarPosition = { x: 0, y: 0, z: 0 },
-    facingAngle = 0,
-    gridOffset = 0,
     isActivePlayer = false,
     scale = 1,
   }: Prop3DProps = $props();
@@ -51,12 +48,7 @@
 
   const palette = $derived(PROP_COLORS[color]);
 
-  const position = $derived.by(() =>
-    computePropPosition(propState, avatarPosition, facingAngle, gridOffset)
-  );
-  const rotation = $derived.by(() =>
-    computePropRotation(propState, facingAngle)
-  );
+  const rotation = $derived(computePropRotation(propState));
 
   // Tube radius: 1.8x base staff radius
   const tubeRadius = $derived(baseRadius * 1.8);
@@ -125,7 +117,7 @@
 </script>
 
 {#if visible}
-  <T.Group {position} {rotation} layers={propLayer}>
+  <T.Group {rotation} layers={propLayer}>
     <!-- Segment 3: center grip section (straight, 0° angle) -->
     <T.Mesh position={[seg3Pos.x, seg3Pos.y, 0]}>
       <T.CylinderGeometry args={[tubeRadius, tubeRadius, segLength, 16, 1]} />
@@ -216,7 +208,7 @@
   </T.Group>
 
   <!-- Trail indicator sphere -->
-  <T.Mesh {position} layers={propLayer}>
+  <T.Mesh layers={propLayer}>
     <T.SphereGeometry args={[0.015, 8, 8]} />
     <T.MeshBasicMaterial color={palette.main} opacity={0.3} transparent />
   </T.Mesh>

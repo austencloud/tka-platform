@@ -11,18 +11,14 @@
    * The fan pivot (grip point) is at origin (0,0,0).
    * The blade extends upward (+Y), the handle extends downward (-Y).
    *
-   * Uses computeFlatPropRotation since fans are planar props,
-   * not cylindrical like staves.
+   * Uses computePropRotation (unified for all prop types).
    */
 
   import { T } from "@threlte/core";
   import { DoubleSide } from "three";
   import type { Prop3DProps } from "./Prop3DProps";
   import { PROP_COLORS } from "./Prop3DProps";
-  import {
-    computePropPosition,
-    computeFlatPropRotation,
-  } from "./prop3d-transforms";
+  import { computePropRotation } from "./prop3d-transforms";
   import { userProportionsState } from "../../state/user-proportions-state.svelte";
   import {
     LAYER_WORLD,
@@ -35,9 +31,6 @@
     visible = true,
     length,
     thickness,
-    avatarPosition = { x: 0, y: 0, z: 0 },
-    facingAngle = 0,
-    gridOffset = 0,
     isActivePlayer = false,
     scale = 1,
   }: Prop3DProps = $props();
@@ -67,13 +60,7 @@
 
   const palette = $derived(PROP_COLORS[color]);
 
-  const position = $derived.by(() =>
-    computePropPosition(propState, avatarPosition, facingAngle, gridOffset)
-  );
-
-  const rotation = $derived.by(() =>
-    computeFlatPropRotation(propState, facingAngle)
-  );
+  const rotation = $derived(computePropRotation(propState));
 
   // Handle: ~12% of staff length, tapered (wider at top, narrower at bottom)
   const handleLength = $derived(staffLength * 0.12);
@@ -118,7 +105,7 @@
 </script>
 
 {#if visible}
-  <T.Group {position} {rotation} layers={propLayer}>
+  <T.Group {rotation} layers={propLayer}>
     <!-- Fan blade: wide arc disc, double-sided with translucency for fabric feel.
          CircleGeometry lies in XY plane by default, extending upward from origin. -->
     <T.Mesh>
@@ -194,7 +181,7 @@
   </T.Group>
 
   <!-- Trail indicator sphere -->
-  <T.Mesh {position} layers={propLayer}>
+  <T.Mesh layers={propLayer}>
     <T.SphereGeometry args={[0.015, 8, 8]} />
     <T.MeshBasicMaterial color={palette.main} opacity={0.3} transparent />
   </T.Mesh>

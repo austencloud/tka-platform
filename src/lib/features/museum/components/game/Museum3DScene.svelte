@@ -436,7 +436,7 @@
   }
 
   // ── Flip animation state ──
-  const DURATION = 1.5;
+  const DURATION = 0.8;
   let progress = initialFpsActive ? 1 : 0;
   let animating = false;
   let goingDown = true;
@@ -824,11 +824,25 @@
     TOP_DOWN.position.z = pos.z;
   }
 
-  // When Q is pressed again while in FPS mode, exit back to top-down
+  // When Q is pressed again while in FPS mode, exit back to top-down.
+  // CRITICAL: Exit pointer lock SYNCHRONOUSLY before starting the flip.
+  // Chrome blocks rAF callbacks for ~4 seconds during pointer lock exit
+  // (notification banner UI). If we let UCC's deferred exit handle it,
+  // the block happens mid-animation. By exiting here, Chrome's freeze
+  // happens on the static FPS view (which the user is already looking at),
+  // then the animation plays at 60fps.
   $effect(() => {
     const flip = props.flipRequested;
     if (fpsActive && flip !== lastFlipCount) {
       lastFlipCount = flip;
+
+      // Exit pointer lock FIRST — Chrome will process this synchronously
+      // and any UI freeze from Chrome's lock-exit notification happens
+      // before we start the flip animation.
+      if (document.pointerLockElement) {
+        document.exitPointerLock();
+      }
+
       syncFpsFromCamera();
       syncPositionFromPhysics();
       // Clear held keys to prevent stale movement (mutate parent's Set)
@@ -1110,6 +1124,13 @@
       }
 
       console.log(`[Museum3D] BatchedMesh scene: ${allSceneMeshes.length} batches added, ${ceilingChunkRefs.length} ceiling batches (GPU frustum culling enabled)`);
+
+      // Seed the streaming manager: all rooms start as "loaded" since we
+      // built them all upfront. This ensures the hysteresis tracking works
+      // correctly when update() starts hiding distant rooms.
+      for (const wingId of prebuiltChunks.keys()) {
+        streamingManager.forceLoad(wingId);
+      }
     }
 
     // Yield so overlay can paint
@@ -1156,19 +1177,90 @@
     props.onGeometryReady?.();
   })();
 
-  // Toggle ceiling visibility per-instance via BatchedMesh.setVisibleAt
-  // Ceilings hidden in top-down so the floor plan is visible
+  // ── Visibility-based room streaming ──
+  // All geometry stays permanently in the scene graph (no add/remove) so the
+  // 2D top-down view can show everything instantly. In FPS mode, distant room
+  // chunks get mesh.visible = false — Three.js skips them entirely (zero draw
+  // calls, zero fragment work). On flip back to top-down, everything goes
+  // visible again with no loading delay.
+  //
+  // This is the pattern indoor games use (Portal, Resident Evil, Dishonored):
+  // "visibility sets" rather than true loading/unloading. The GPU memory cost
+  // stays the same, but per-frame draw calls drop ~80% in FPS mode.
+
+  let activeRoomSet = new Set<string>();
+  // Track last room ID to avoid redundant visibility updates every frame
+  let lastStreamingRoomId: string | null = null;
+
+  /** Set mesh.visible on every mesh in a room chunk */
+  function setChunkVisible(chunk: RoomChunk, visible: boolean): void {
+    for (const { mesh } of chunk.floorMeshes) mesh.visible = visible;
+    for (const { mesh } of chunk.wallMeshes) mesh.visible = visible;
+    // Ceiling visibility is handled separately (hidden in top-down, shown in FPS)
+    // so we only touch it here when hiding the entire room
+    if (chunk.ceilingMesh) chunk.ceilingMesh.mesh.visible = visible && fpsActive;
+    if (chunk.pedestalMesh) chunk.pedestalMesh.visible = visible;
+    if (chunk.signMesh) chunk.signMesh.visible = visible;
+    if (chunk.performerMesh) chunk.performerMesh.visible = visible;
+  }
+
+  /** Show all room chunks — used in top-down mode and during flip animation */
+  function showAllRooms(): void {
+    for (const chunk of prebuiltChunks.values()) {
+      setChunkVisible(chunk, true);
+    }
+    lastStreamingRoomId = null; // Force re-evaluation on next FPS frame
+  }
+
+  // Toggle ceiling visibility when switching between FPS and top-down.
+  // In top-down, ceilings hide so the floor plan is visible.
+  // In FPS, ceilings show — but only for rooms in the active set.
   $effect(() => {
-    for (const cm of ceilingChunkRefs) {
-      for (const id of (cm.instanceIds ?? [])) {
-        cm.mesh.setVisibleAt(id, fpsActive);
+    if (fpsActive) {
+      // FPS: show ceilings only for active rooms
+      for (const [wingId, chunk] of prebuiltChunks) {
+        if (chunk.ceilingMesh) {
+          chunk.ceilingMesh.mesh.visible = activeRoomSet.has(wingId);
+        }
       }
+      // Corridor ceiling always visible
+      if (corridorChunk?.ceilingMesh) {
+        corridorChunk.ceilingMesh.mesh.visible = true;
+      }
+    } else {
+      // Top-down: hide all ceilings so the floor plan is readable,
+      // but make sure all room geometry is visible for the overview
+      for (const cm of ceilingChunkRefs) {
+        cm.mesh.visible = false;
+      }
+      showAllRooms();
     }
   });
 
-  // No streaming — all geometry is in the scene permanently via scene.add().
-  function updateStreaming(_playerTX: number, _playerTZ: number): void {
-    // No-op: all meshes permanently in scene
+  function updateStreaming(playerTX: number, playerTZ: number): void {
+    if (!geometryReady) return;
+
+    // In top-down or during flip animation: everything visible, no streaming
+    if (!fpsActive) return;
+
+    // Determine which room the player is in
+    const currentRoomId = streamingManager.getRoomAtTile(playerTX, playerTZ, grid.wings);
+
+    // Skip if player hasn't moved to a new room
+    if (currentRoomId === lastStreamingRoomId) return;
+    lastStreamingRoomId = currentRoomId;
+
+    // Ask the streaming manager which rooms should be active
+    const { activeSet } = streamingManager.update(currentRoomId);
+    activeRoomSet = activeSet;
+
+    // Toggle visibility on each room chunk
+    for (const [wingId, chunk] of prebuiltChunks) {
+      setChunkVisible(chunk, activeSet.has(wingId));
+    }
+
+    // Corridor is always visible (cheap, connects everything)
+    if (corridorChunk) setChunkVisible(corridorChunk, true);
   }
 
   // Shadow disabled on dynamic lights — toggling castShadow reactively causes
@@ -1315,79 +1407,86 @@
   {/if}
 </T.PerspectiveCamera>
 
-<!-- Player representation (hidden in editor mode) -->
-{#if !fpsActive && !museum3dEditorState.editorActive}
-  <!-- Top-down marker -->
-  <T.Group position.x={playerPosition.x} position.y={0.15} position.z={playerPosition.z}>
-    <T.Mesh rotation.x={-Math.PI / 2}>
-      <T.RingGeometry args={[0.18, 0.28, 16]} />
-      <T.MeshBasicMaterial color="#c8b890" opacity={0.4} transparent={true} />
+<!-- Player representation: top-down marker always mounted, visibility toggled -->
+<T.Group
+  position.x={playerPosition.x}
+  position.y={0.15}
+  position.z={playerPosition.z}
+  visible={!fpsActive && !museum3dEditorState.editorActive}
+>
+  <T.Mesh rotation.x={-Math.PI / 2}>
+    <T.RingGeometry args={[0.18, 0.28, 16]} />
+    <T.MeshBasicMaterial color="#c8b890" opacity={0.4} transparent={true} />
+  </T.Mesh>
+  <T.Mesh rotation.x={-Math.PI / 2}>
+    <T.CircleGeometry args={[0.12, 16]} />
+    <T.MeshBasicMaterial color="#c8b890" opacity={0.8} transparent={true} />
+  </T.Mesh>
+  <T.Group rotation.y={playerYaw}>
+    <T.Mesh position.z={0.35} rotation.x={Math.PI / 2}>
+      <T.ConeGeometry args={[0.06, 0.12, 3]} />
+      <T.MeshBasicMaterial color="#c8b890" opacity={0.6} transparent={true} />
     </T.Mesh>
-    <T.Mesh rotation.x={-Math.PI / 2}>
-      <T.CircleGeometry args={[0.12, 16]} />
-      <T.MeshBasicMaterial color="#c8b890" opacity={0.8} transparent={true} />
-    </T.Mesh>
-    <T.Group rotation.y={playerYaw}>
-      <T.Mesh position.z={0.35} rotation.x={Math.PI / 2}>
-        <T.ConeGeometry args={[0.06, 0.12, 3]} />
-        <T.MeshBasicMaterial color="#c8b890" opacity={0.6} transparent={true} />
-      </T.Mesh>
-    </T.Group>
-    <T.PointLight intensity={2} color="#c8b890" distance={4} position.y={1} />
   </T.Group>
-{:else if lastCameraMode === CameraMode.THIRD_PERSON}
-  <!-- Player avatar (only in third-person — hidden in first-person to avoid seeing own body) -->
-  <Avatar3D
-    id="museum-player"
-    bluePropState={null}
-    redPropState={null}
-    position={{ x: playerPosition.x, y: playerPosition.y - 0.85 + 0.001, z: playerPosition.z }}
-    facingAngle={playerYaw}
-    isActive={false}
-    isMoving={isMoving}
-    moveSpeed={playerSpeed}
-    moveDirection={moveDir}
-    enableLocomotion={true}
-    enableRootMotion={false}
-    isGrounded={playerGrounded}
-    verticalVelocity={playerVerticalVelocity}
-    isCrouching={isCrouching}
-    isJumpRequested={playerJumpRequested}
-  />
-{/if}
+  <T.PointLight intensity={2} color="#c8b890" distance={4} position.y={1} />
+</T.Group>
 
-<!-- UnifiedCameraController: only active when FPS mode is engaged AND not in editor mode -->
-{#if fpsActive && !museum3dEditorState.editorActive}
-  <UnifiedCameraController
-    destinationId="museum"
-    {avatarState}
-    {physicsProvider}
-    enabled={true}
-    moveSpeed={3}
-    initialYaw={fpsInitialYaw}
-    initialPitch={fpsInitialPitch}
-    allowedModes={[CameraMode.FIRST_PERSON, CameraMode.THIRD_PERSON]}
-    disableModeToggle={true}
-    onModeChange={(mode) => {
-      // Remember the user's preferred 3D mode so flipping back from 2D restores it.
-      if (mode === CameraMode.FIRST_PERSON || mode === CameraMode.THIRD_PERSON) {
-        lastCameraMode = mode;
-        try {
-          sessionStorage.setItem(CAMERA_MODE_HMR_KEY, mode === CameraMode.THIRD_PERSON ? "THIRD_PERSON" : "FIRST_PERSON");
-        } catch { /* non-critical */ }
-        // Report to parent so DimensionFlipProof's viewMode stays in sync
-        props.onViewModeChange?.(mode === CameraMode.THIRD_PERSON ? "third-person" : "first-person");
-      }
-    }}
-    onRotationChange={(newYaw, newPitch) => {
-      playerYaw = newYaw;
-      playerPitch = newPitch;
-    }}
-  />
-{/if}
+<!-- Player avatar: always mounted, visible only in third-person FPS mode.
+     Stays initialized so the first Q press doesn't pay skeleton/animation setup cost. -->
+<Avatar3D
+  id="museum-player"
+  bluePropState={null}
+  redPropState={null}
+  position={{ x: playerPosition.x, y: playerPosition.y - 0.85 + 0.001, z: playerPosition.z }}
+  facingAngle={playerYaw}
+  isActive={false}
+  isMoving={fpsActive && lastCameraMode === CameraMode.THIRD_PERSON ? isMoving : false}
+  moveSpeed={playerSpeed}
+  moveDirection={moveDir}
+  enableLocomotion={true}
+  enableRootMotion={false}
+  isGrounded={playerGrounded}
+  verticalVelocity={playerVerticalVelocity}
+  isCrouching={isCrouching}
+  isJumpRequested={playerJumpRequested}
+  visible={fpsActive && lastCameraMode === CameraMode.THIRD_PERSON && !museum3dEditorState.editorActive}
+/>
 
-<!-- Post-processing: bloom, vignette, ACES tone mapping -->
-<MuseumPostProcessing />
+<!-- UnifiedCameraController: always mounted, enabled only in FPS mode.
+     Pre-mounting eliminates first-flip initialization freeze (event listeners,
+     pointer lock setup, camera state sync). -->
+<UnifiedCameraController
+  destinationId="museum"
+  {avatarState}
+  {physicsProvider}
+  enabled={fpsActive && !museum3dEditorState.editorActive}
+  moveSpeed={3}
+  initialYaw={fpsInitialYaw}
+  initialPitch={fpsInitialPitch}
+  allowedModes={[CameraMode.FIRST_PERSON, CameraMode.THIRD_PERSON]}
+  disableModeToggle={true}
+  onModeChange={(mode) => {
+    // Remember the user's preferred 3D mode so flipping back from 2D restores it.
+    if (mode === CameraMode.FIRST_PERSON || mode === CameraMode.THIRD_PERSON) {
+      lastCameraMode = mode;
+      try {
+        sessionStorage.setItem(CAMERA_MODE_HMR_KEY, mode === CameraMode.THIRD_PERSON ? "THIRD_PERSON" : "FIRST_PERSON");
+      } catch { /* non-critical */ }
+      // Report to parent so DimensionFlipProof's viewMode stays in sync
+      props.onViewModeChange?.(mode === CameraMode.THIRD_PERSON ? "third-person" : "first-person");
+    }
+  }}
+  onRotationChange={(newYaw, newPitch) => {
+    playerYaw = newYaw;
+    playerPitch = newPitch;
+  }}
+/>
+
+<!-- Post-processing: bloom in FPS only, plain render everywhere else.
+     Pre-warm behind loading overlay absorbs the shader compilation cost.
+     Bloom off in top-down avoids the render target switch that causes 8s stall.
+     spawnPosition gives the pre-warm a second render from FPS perspective. -->
+<MuseumPostProcessing {geometryReady} {fpsActive} {animating} spawnPosition={{ x: spawnWorldX, z: spawnWorldZ }} />
 
 <!-- Per-room ambient fill lights — fixed pool of MAX_ROOM_LIGHTS slots.
      Slots are always mounted (no shader recompilation). Unused slots have intensity=0. -->
@@ -1470,6 +1569,7 @@
     baseIntensity={torchLightSet.has(`${torch.x},${torch.z}`) ? 4 : 0}
     materials={torchMaterialCache.createInstance(FIXTURE_REGISTRY[torch.wingTheme].lightColor)}
     castShadow={false}
+    playerPosition={playerPosition}
   />
 {/each}
 
@@ -1536,6 +1636,7 @@
     destRotation={portalOrangeRot}
     color="#0088ff"
     label="Gallery"
+    playerPosition={playerPosition}
   />
   <MuseumPortal
     position={portalOrangePos}
@@ -1544,6 +1645,7 @@
     destRotation={portalBlueRot}
     color="#ff8800"
     label="Cave"
+    playerPosition={playerPosition}
   />
 {/if}
 

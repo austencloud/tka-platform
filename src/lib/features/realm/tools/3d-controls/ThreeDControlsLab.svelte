@@ -17,7 +17,6 @@
   import Avatar3D from "$lib/shared/3d/components/Avatar3D.svelte";
   import Prop3D from "$lib/shared/3d/components/props/Prop3D.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
-  import { WALL_OFFSET } from "$lib/shared/3d/domain/constants/performer-positions";
 
   // ── DI services ──────────────────────────────────────────────────────
   const mapper = container.items.planeCoordinateMapper as IPlaneCoordinateMapper;
@@ -127,18 +126,12 @@
           <Prop3D propType={PropType.STAFF}
             propState={bluePropState}
             color="blue"
-            avatarPosition={{ x: 0, y: 0, z: 0 }}
-            facingAngle={0}
-            gridOffset={-WALL_OFFSET}
           />
         {/if}
         {#if redPropState && redVisible}
           <Prop3D propType={PropType.STAFF}
             propState={redPropState}
             color="red"
-            avatarPosition={{ x: 0, y: 0, z: 0 }}
-            facingAngle={0}
-            gridOffset={-WALL_OFFSET}
           />
         {/if}
         {#if showFigure}
