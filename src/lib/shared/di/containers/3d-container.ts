@@ -17,6 +17,8 @@ import { createContainer } from "iti";
 
 // Service implementations
 import { AngleMathCalculator } from "$lib/shared/3d/services/implementations/AngleMathCalculator";
+import { QualityTierDetector } from "$lib/shared/3d/effects/quality/QualityTierDetector";
+import { TipPositionBridge3D } from "$lib/shared/3d/effects/TipPositionBridge3D";
 import { OrientationMapper } from "$lib/shared/3d/services/implementations/OrientationMapper";
 import { MotionCalculator } from "$lib/shared/3d/services/implementations/MotionCalculator";
 import { PlaneCoordinateMapper } from "$lib/shared/3d/services/implementations/PlaneCoordinateMapper";
@@ -77,11 +79,17 @@ export function createAnimation3DContainer(deps: Animation3DContainerDeps) {
   });
 
   // Tier 3: Duet and multi-performer systems
-  const container = tier2.add({
+  const tier3 = tier2.add({
     duetPersister: () => new DuetPersister(deps.browseLoader),
     // Factory function - creates new instance each time (not singleton)
     // Use container.items.performerSynchronizerFactory() to create instances
     performerSynchronizerFactory: () => createPerformerSynchronizer,
+  });
+
+  // Tier 4: 3D effects infrastructure
+  const container = tier3.add({
+    qualityTierDetector: () => new QualityTierDetector(),
+    tipPositionBridge: () => new TipPositionBridge3D(),
   });
 
   return container;
