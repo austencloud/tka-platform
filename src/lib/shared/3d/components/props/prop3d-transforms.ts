@@ -7,6 +7,7 @@
 
 import { Quaternion, Euler, Vector3 } from "three";
 import type { PropState3D } from "../../domain/models/PropState3D";
+import { Plane } from "../../domain/enums/Plane";
 import { getPlaneNormal } from "../../domain/constants/plane-transforms";
 
 /**
@@ -20,7 +21,10 @@ export function computePropPosition(
   gridOffset: number
 ): [number, number, number] {
   const localX = propState.worldPosition.x;
-  const localZ = propState.worldPosition.z + gridOffset;
+  // gridOffset pushes the wall-plane grid forward from the body.
+  // Non-wall planes (wheel, floor) are centered on the body — no offset.
+  const effectiveOffset = propState.plane === Plane.WALL ? gridOffset : 0;
+  const localZ = propState.worldPosition.z + effectiveOffset;
 
   // In dual wheel mode, positions are already in world space (WHEEL = YZ).
   // Skip the facing rotation so they stay as actual wheel planes.
