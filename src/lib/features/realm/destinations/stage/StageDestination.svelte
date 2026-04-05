@@ -14,7 +14,7 @@
 	 * - Visual effects (trails, bloom)
 	 */
 
-	import Viewer3DModule from "$lib/shared/3d/Viewer3DModule.svelte";
+	import StageWorld from "$lib/shared/3d/StageWorld.svelte";
 </script>
 
-<Viewer3DModule />
+<StageWorld />

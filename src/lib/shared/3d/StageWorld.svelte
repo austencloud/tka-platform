@@ -3,7 +3,7 @@
    * StageWorld
    *
    * Unified entry point for the performance stage within an explorable forest world.
-   * This replaces Viewer3DModule for the unified Stage + Infinite Worlds experience.
+   * Unified entry point for the Stage + Infinite Worlds experience.
    *
    * Users can perform sequences on the stage grid at the center, then walk away
    * into the procedural forest terrain. The forest is the default (and only)
