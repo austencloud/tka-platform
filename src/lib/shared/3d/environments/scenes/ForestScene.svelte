@@ -203,28 +203,27 @@
   // Color palettes from background themeColors
   const palettes = {
     autumn: {
-      // From AUTUMN_DRIFT: warm golds, oranges, deep reds
+      // Golden hour dusk — visible through canopy gaps
       sky: {
-        topColor: "#1a0f0a",
-        midColor: "#3d2010",
-        bottomColor: "#0a0808",
+        topColor: "#1a1045", // Deep violet upper sky
+        midColor: "#b5522a", // Warm burnt orange horizon glow
+        bottomColor: "#3d1a10", // Dark warm base
       },
       ground: "#ddccbb", // Light warm tint — lets texture detail show through
       leaves: ["#d97706", "#dc2626", "#ea580c", "#92400e"],
       // No fireflies in autumn
       fireflies: null as string[] | null,
       // Warm amber fog for autumn morning mist (density in meters)
-      fog: { color: "#1a1008", density: 0.036 },
+      fog: { color: "#1a1008", density: 0.028 },
       // Smoke colors (gray with warm tint)
       smoke: ["#443322", "#332211", "#221100"],
     },
     firefly: {
-      // From FIREFLY_FOREST: deep night sky transitioning to forest
-      // Matching the 2D background gradient exactly
+      // Moonlit night — deep blue with teal glow near horizon
       sky: {
-        topColor: "#0a0e18", // Deep night sky (dark blue)
-        midColor: "#0a1612", // Transition to forest
-        bottomColor: "#0a1810", // Dark green at bottom
+        topColor: "#0c1632", // Deep starfield navy
+        midColor: "#1a4a5a", // Cool teal moonlight band
+        bottomColor: "#0d2218", // Dark forest edge
       },
       ground: "#99aa88", // Light green tint — lets texture show in darkness
       // Subtle green leaves barely visible in the dark
@@ -232,7 +231,7 @@
       // Single warm yellow-green like real fireflies
       fireflies: ["#d4e157"],
       // Cool blue-green fog for mysterious night atmosphere (density in meters)
-      fog: { color: "#0a1210", density: 0.044 },
+      fog: { color: "#0a1210", density: 0.034 },
       // Night smoke (darker, cooler)
       smoke: ["#222222", "#1a1a1a", "#111111"],
     },

@@ -61,17 +61,31 @@ export function computePropRotation(
 
 /**
  * Compute world-space rotation for a prop that is naturally flat/planar
- * (like a fan or hoop that lies in the XY plane). No horizontal tilt needed.
+ * (like a fan or hoop that lies in the XY plane).
+ *
+ * Applies the same 90° Z base rotation as cylindrical props so the
+ * fan's blade axis (+Y in local geometry) aligns with the direction
+ * the worldRotation quaternion expects.  Without this, fans appear
+ * rotated 90° relative to their 2D orientation.
  */
 export function computeFlatPropRotation(
   propState: PropState3D,
   facingAngle: number
 ): [number, number, number] {
+  // Same base rotation as staves: align local +Y with the axis
+  // the worldRotation quaternion was computed for.
+  const baseQuat = new Quaternion().setFromEuler(
+    new Euler(0, 0, Math.PI / 2)
+  );
+
   const facingQuat = new Quaternion().setFromEuler(
     new Euler(0, facingAngle, 0)
   );
 
-  const finalQuat = facingQuat.clone().multiply(propState.worldRotation);
+  const finalQuat = facingQuat
+    .clone()
+    .multiply(propState.worldRotation)
+    .multiply(baseQuat);
 
   const euler = new Euler().setFromQuaternion(finalQuat);
   return [euler.x, euler.y, euler.z];

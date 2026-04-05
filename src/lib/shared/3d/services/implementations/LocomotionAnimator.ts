@@ -12,7 +12,7 @@
  * State machine: idle <-> walk (4-way directional) <-> jump/fall/land/crouch.
  */
 
-import type { AnimationAction, Object3D } from "three";
+import type { AnimationAction, Object3D, Bone } from "three";
 import { AnimationMixer, AnimationClip, LoopRepeat, LoopOnce } from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import type {
@@ -50,19 +50,31 @@ function detectClipPrefix(clip: AnimationClip): string {
  *
  * KEEP:
  * - All .quaternion tracks (bone rotations — the core of animation)
- * - Hips .position track (lateral weight-shift that prevents torso tilt)
+ * - Hips .position track when keepHipsPosition is true (for root motion)
  *
  * FILTER OUT:
- * - .position tracks on non-Hips bones (cause root motion displacement)
+ * - Hips .quaternion (Mixamo separate exports bake base orientation)
+ * - .position tracks on non-Hips bones (cause limb displacement)
  * - .scale tracks on any bone (can make meshes disappear)
+ * - Hips .position when keepHipsPosition is false (teleports avatar)
  *
- * This matches the Three.js example's effective behavior — in that example
- * the Soldier.glb only contains quaternion + Hips position tracks, so no
- * filtering is needed. Mixamo separate exports include extra tracks we must skip.
+ * keepHipsPosition = true: Root motion mode. The Hips position track
+ * contains XZ displacement that RootMotionExtractor reads each frame.
+ * The extractor zeros it out after reading so the mesh stays centered.
+ *
+ * keepHipsPosition = false: Legacy mode. All position tracks filtered
+ * out. Code-driven movement only.
+ */
+/**
+ * @param hipsMode - Controls Hips position track handling:
+ *   "strip"    — Remove Hips position entirely (default for idle/jump/fall/land)
+ *   "rootMotion" — Keep and make Z relative to first frame (for walk/run root motion)
+ *   "pose"     — Keep as-is, no baseline subtraction (for crouch — absolute Y is the pose)
  */
 function remapClipToSkeleton(
   clip: AnimationClip,
-  modelPrefix: string
+  modelPrefix: string,
+  hipsMode: "strip" | "rootMotion" | "pose" = "strip"
 ): AnimationClip {
   const clipPrefix = detectClipPrefix(clip);
 
@@ -84,6 +96,9 @@ function remapClipToSkeleton(
       // The locomotion system controls facing via group rotation instead.
       if (coreName === "Hips" && property === "quaternion") return false;
 
+      // Keep Hips position track when needed for root motion or crouch pose.
+      if (coreName === "Hips" && property === "position" && hipsMode !== "strip") return true;
+
       // Keep all other quaternion tracks — bone rotations are the animation.
       // Filter out position/scale tracks (position teleports, scale vanishes).
       if (property === "quaternion") return true;
@@ -91,16 +106,42 @@ function remapClipToSkeleton(
       return false;
     })
     .map((track) => {
-      // Remap bone prefix if needed
-      if (clipPrefix === modelPrefix) return track;
-
       const dotIdx = track.name.indexOf(".");
       const boneName = track.name.slice(0, dotIdx);
       const property = track.name.slice(dotIdx);
       const coreName = clipPrefix ? boneName.slice(clipPrefix.length) : boneName;
 
       const cloned = track.clone();
-      cloned.name = `${modelPrefix}${coreName}${property}`;
+
+      // Remap bone prefix if needed
+      if (clipPrefix !== modelPrefix) {
+        cloned.name = `${modelPrefix}${coreName}${property}`;
+      }
+
+      // Root motion: make Z (vertical in GLB coords) relative to first frame.
+      // Mixamo FBX→GLB Z = absolute hip height (~-100cm). Subtracting the
+      // first keyframe's Z preserves the natural vertical bob (hips go up
+      // and down ~2-3cm per step) while removing the absolute offset that
+      // would slam the avatar underground.
+      if (coreName === "Hips" && property.includes("position") && hipsMode === "rootMotion") {
+        const values = cloned.values as Float32Array;
+        const baseZ = values[2] ?? 0; // First keyframe's Z = rest height
+        for (let i = 2; i < values.length; i += 3) {
+          values[i]! -= baseZ; // Relative offset preserves vertical bob
+        }
+      }
+
+      // Pose mode (crouch): Mixamo FBX→GLB Hips position values are in
+      // centimeters (~85cm) but the skeleton is in meters (~0.85m). Scale
+      // by 0.01 to fix the unit mismatch. This preserves the actual hip
+      // drop from the crouch animation so the body lowers correctly.
+      if (coreName === "Hips" && property.includes("position") && hipsMode === "pose") {
+        const values = cloned.values as Float32Array;
+        for (let i = 0; i < values.length; i++) {
+          values[i]! *= 0.01;
+        }
+      }
+
       return cloned;
     });
 
@@ -139,6 +180,7 @@ export class LocomotionAnimator implements ILocomotionAnimator {
     baseSpeed: 1,
     blendTime: 0.15,
     animationWalkSpeed: 1.57,
+    enableRootMotion: false,
   };
 
   // Blend weights (smoothed each frame)
@@ -225,13 +267,32 @@ export class LocomotionAnimator implements ILocomotionAnimator {
   }
 
   /**
-   * Remap a pending clip's track names to match this model's bone prefix,
-   * then return the remapped clip. This is the ONLY processing we do.
+   * Remap a pending clip's track names to match this model's bone prefix.
+   * When root motion is enabled, keeps Hips position track for locomotion
+   * clips (walk/run) so RootMotionExtractor can read XZ deltas.
    */
   private prepareClip(key: string): AnimationClip | null {
     const raw = this.pendingClips.get(key);
     if (!raw) return null;
-    return remapClipToSkeleton(raw, this.modelPrefix);
+
+    // Determine how to handle the Hips position track:
+    // - Walk/run clips with root motion: keep Hips position, subtract Z baseline
+    // - Crouch: keep Hips position as-is (absolute Y IS the crouched height)
+    // - Everything else: strip Hips position (would teleport the avatar)
+    const isLocomotionClip =
+      key === "forward" ||
+      key === "backward" ||
+      key === "strafeLeft" ||
+      key === "strafeRight";
+
+    // Crouch uses "pose" mode — keeps Hips position track but scales cm→m
+    // (Mixamo FBX→GLB values are in centimeters, skeleton is in meters).
+    // This lets the Hips bone drop to the correct crouched height.
+    let hipsMode: "strip" | "rootMotion" | "pose" = "strip";
+    if (this.config.enableRootMotion && isLocomotionClip) hipsMode = "rootMotion";
+    if (key === "crouch") hipsMode = "pose";
+
+    return remapClipToSkeleton(raw, this.modelPrefix, hipsMode);
   }
 
   /**
@@ -354,6 +415,13 @@ export class LocomotionAnimator implements ILocomotionAnimator {
     this.config = { ...this.config, ...config };
   }
 
+  getHipsBone(): Bone | null {
+    if (!this.root) return null;
+    const hipsName = `${this.modelPrefix}Hips`;
+    const obj = this.root.getObjectByName(hipsName);
+    return (obj as Bone) ?? null;
+  }
+
   dispose(): void {
     if (this.mixer) {
       this.mixer.stopAllAction();
@@ -418,6 +486,17 @@ export class LocomotionAnimator implements ILocomotionAnimator {
   }
 
   private updatePlaybackSpeed(speed: number): void {
+    // With root motion, the animation plays at natural speed (1.0) and
+    // the displacement it produces IS the movement. Speed-matching would
+    // slow the animation while the root motion delta stays the same,
+    // causing feet to slide.
+    if (this.config.enableRootMotion) {
+      for (const key of Object.keys(this.walkActions) as DirectionKey[]) {
+        this.walkActions[key]?.setEffectiveTimeScale(this.config.baseSpeed);
+      }
+      return;
+    }
+
     const timeScale =
       this.config.baseSpeed *
       Math.max(0.3, speed / this.config.animationWalkSpeed);
@@ -433,17 +512,26 @@ export class LocomotionAnimator implements ILocomotionAnimator {
     // jump-up = push off (one-shot), falling-idle = air loop, hard-landing = absorb (one-shot).
     // Physics owns vertical position; animations are purely cosmetic poses.
     const wantIdle = state === LocomotionState.IDLE ? 1 : 0;
-    const wantWalk = state === LocomotionState.WALKING ? 1 : 0;
-    const wantCrouch = state === LocomotionState.CROUCHING ? 1 : 0;
     const wantJump = state === LocomotionState.JUMPING ? 1 : 0;
     const wantFall = state === LocomotionState.FALLING ? 1 : 0;
     const wantLand = state === LocomotionState.LANDING ? 1 : 0;
+
+    // Crouch-walk: when crouching with movement input, blend crouch pose (60%)
+    // with walk directions (40%) at reduced playback speed. This produces a
+    // "hunched walk" without needing a dedicated crouch-walk animation clip.
+    // Without movement, 100% crouch-idle plays normally.
+    const isCrouching = state === LocomotionState.CROUCHING;
+    const hasMovement = Object.values(this.targetDirWeights).some(w => w > 0);
+    const crouchWalking = isCrouching && hasMovement;
+
+    const wantWalk = state === LocomotionState.WALKING ? 1 : crouchWalking ? 0.4 : 0;
+    const wantCrouch = isCrouching ? (crouchWalking ? 0.6 : 1) : 0;
 
     // Idle
     this.currentIdleWeight += (wantIdle - this.currentIdleWeight) * blendFactor;
     this.idleAction?.setEffectiveWeight(this.currentIdleWeight);
 
-    // Walk directions (scaled by wantWalk)
+    // Walk directions (scaled by wantWalk — also drives crouch-walk blend)
     for (const key of Object.keys(this.walkActions) as DirectionKey[]) {
       const dirTarget = this.targetDirWeights[key] * wantWalk;
       const current = this.currentDirWeights[key];
