@@ -1,8 +1,9 @@
 <!--
   VillageAvatar — Renders one village entity as an Avatar3D with props + name label.
 
-  Uses the same positioning pattern as MuseumPerformerStation3D.
-  Computes movement detection from frame-to-frame position deltas.
+  Hides avatar for a brief loading period, then fades in.
+  The useGLTF=true default means Avatar3D loads the real model;
+  we just hide it during the initial load to avoid the fallback flash.
 -->
 <script lang="ts">
 	import { T, useTask } from "@threlte/core";
@@ -13,6 +14,7 @@
 	import { userProportionsState } from "$lib/shared/3d/state/user-proportions-state.svelte";
 	import type { AvatarRenderState } from "../state/village-state.svelte";
 	import type { AvatarId } from "$lib/shared/3d/config/avatar-definitions";
+	import { onMount } from "svelte";
 
 	interface Props {
 		renderState: AvatarRenderState;
@@ -33,7 +35,6 @@
 	let posZ = 0;
 	let prevX = 0;
 	let prevZ = 0;
-	let angle = 0;
 	let moving = false;
 	let speed = 0;
 
@@ -42,6 +43,22 @@
 	let isMoving = $state(false);
 	let moveSpeed = $state(0);
 
+	// Simple fade-in: hide for 2 seconds (model load time), then fade in
+	let showAvatar = $state(false);
+	let labelOpacity = $state(0);
+
+	onMount(() => {
+		const timer = setTimeout(() => {
+			showAvatar = true;
+			// Fade label in over next frames
+			const fadeInterval = setInterval(() => {
+				labelOpacity = Math.min(1, labelOpacity + 0.05);
+				if (labelOpacity >= 1) clearInterval(fadeInterval);
+			}, 16);
+		}, 2000);
+		return () => clearTimeout(timer);
+	});
+
 	useTask(() => {
 		const inst = renderState.instanceState;
 
@@ -49,7 +66,6 @@
 		prevZ = posZ;
 		posX = inst.position.x;
 		posZ = inst.position.z;
-		angle = inst.facingAngle;
 
 		const dx = posX - prevX;
 		const dz = posZ - prevZ;
@@ -59,7 +75,7 @@
 		speed = moving ? frameDist * 60 : 0;
 
 		avatarPosition = { x: posX, y: STAGE_LIFT, z: posZ };
-		facingAngle = angle;
+		facingAngle = inst.facingAngle;
 		isMoving = moving;
 		moveSpeed = speed;
 	});
@@ -74,7 +90,6 @@
 		socialState === "practicing"
 	);
 
-	// Name label color based on state
 	const labelColor = $derived(
 		socialState === "teaching" ? "#4ade80" :
 		socialState === "learning" ? "#60a5fa" :
@@ -98,26 +113,32 @@
 		{moveSpeed}
 		moveDirection={{ x: 0, z: 1 }}
 		enableLocomotion={true}
+		visible={showAvatar}
 	/>
 
 	<!-- Name label floating above head -->
-	<T.Group
-		position.x={avatarPosition.x}
-		position.y={avatarPosition.y + 0.6}
-		position.z={avatarPosition.z}
-	>
-		<HTML center sprite>
-			<div class="name-label" style="color: {labelColor}">
-				{avatarName}
-				<span class="state-indicator">
-					{lifecyclePhase === "elder" ? "🔥" : ""}
-				</span>
-			</div>
-		</HTML>
-	</T.Group>
+	{#if showAvatar}
+		<T.Group
+			position.x={avatarPosition.x}
+			position.y={avatarPosition.y + 0.6}
+			position.z={avatarPosition.z}
+		>
+			<HTML center sprite>
+				<div
+					class="name-label"
+					style="color: {labelColor}; opacity: {labelOpacity}"
+				>
+					{avatarName}
+					<span class="state-indicator">
+						{lifecyclePhase === "elder" ? "🔥" : ""}
+					</span>
+				</div>
+			</HTML>
+		</T.Group>
+	{/if}
 </T.Group>
 
-{#if isPerforming && bluePropState}
+{#if showAvatar && isPerforming && bluePropState}
 	<Prop3D
 		propType={PropType.STAFF}
 		color="blue"
@@ -127,7 +148,7 @@
 	/>
 {/if}
 
-{#if isPerforming && redPropState}
+{#if showAvatar && isPerforming && redPropState}
 	<Prop3D
 		propType={PropType.STAFF}
 		color="red"
