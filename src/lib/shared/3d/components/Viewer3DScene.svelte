@@ -142,6 +142,7 @@
   // The state layer uses Plane enum values as strings so it doesn't need to import
   // the enum — we do the conversion here at the scene boundary.
   const gridVisiblePlanes = $derived(viewer3DState.visiblePlanes as Set<Plane>);
+  const propGridOffset = $derived(GRID_OFFSETS[avatarState.planeMode]);
 
   // Read background type from settings for themed 3D environment
   const backgroundType = $derived.by((): BackgroundType => {
@@ -239,8 +240,6 @@
     isMoving={false}
   />
 </T.Group>
-
-{@const propGridOffset = GRID_OFFSETS[avatarState.planeMode]}
 
 <!-- Blue prop (renders red in mirror mode so your red = their visual red) -->
 {#if bluePropState}
