@@ -71,16 +71,14 @@
   {:else}
     <div class="layer-list">
       {#each cell.layers as layer, index}
-        <div class="layer-chip">
+        <div
+          class="layer-chip"
+          style:--left-color={layer.propColors.left}
+          style:--right-color={layer.propColors.right}
+        >
           <div class="chip-colors">
-            <span
-              class="color-dot"
-              style:background={layer.propColors.left}
-            ></span>
-            <span
-              class="color-dot"
-              style:background={layer.propColors.right}
-            ></span>
+            <span class="color-dot" style:background={layer.propColors.left} style:--dot-color={layer.propColors.left}></span>
+            <span class="color-dot" style:background={layer.propColors.right} style:--dot-color={layer.propColors.right}></span>
           </div>
           <div class="chip-info">
             <span class="chip-name">{getLayerName(layer, index)}</span>
@@ -199,11 +197,15 @@
     display: flex;
     align-items: center;
     gap: clamp(8px, 2cqi, 12px);
-    min-height: 44px;
-    padding: clamp(8px, 2cqi, 12px);
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: clamp(6px, 2cqi, 10px);
+    min-height: 52px;
+    padding: clamp(8px, 2cqi, 12px) clamp(10px, 2.5cqi, 14px);
+    background: linear-gradient(
+      to right,
+      color-mix(in srgb, var(--left-color) 8%, transparent),
+      color-mix(in srgb, var(--right-color) 8%, transparent)
+    );
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
   }
 
   .chip-colors {
@@ -213,10 +215,11 @@
   }
 
   .color-dot {
-    width: clamp(10px, 3cqi, 14px);
-    height: clamp(10px, 3cqi, 14px);
+    width: clamp(12px, 3cqi, 14px);
+    height: clamp(12px, 3cqi, 14px);
     border-radius: 50%;
     border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 0 6px color-mix(in srgb, var(--dot-color, currentColor) 25%, transparent);
   }
 
   .chip-info {
@@ -252,23 +255,26 @@
     justify-content: center;
     width: 44px;
     height: 44px;
-    border: none;
-    background: transparent;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    border-radius: clamp(4px, 1.5cqi, 8px);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.3));
+    border-radius: 8px;
     cursor: pointer;
     transition: background var(--duration-fast, 150ms) ease,
+      border-color var(--duration-fast, 150ms) ease,
       color var(--duration-fast, 150ms) ease;
   }
 
   .chip-action-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.12);
     color: var(--theme-text, white);
   }
 
   .chip-action-btn.danger:hover {
-    background: rgba(239, 68, 68, 0.2);
-    color: rgba(239, 68, 68, 0.9);
+    background: rgba(239, 68, 68, 0.08);
+    border-color: rgba(239, 68, 68, 0.15);
+    color: rgba(239, 68, 68, 0.7);
   }
 
   /* Add / Paste buttons */
@@ -279,7 +285,29 @@
     margin-top: clamp(4px, 1cqi, 8px);
   }
 
-  .add-sequence-btn,
+  .add-sequence-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(6px, 2cqi, 10px);
+    min-height: 44px;
+    padding: clamp(10px, 2.5cqi, 14px);
+    background: rgba(16, 185, 129, 0.04);
+    border: 1px solid rgba(16, 185, 129, 0.1);
+    border-radius: 10px;
+    color: rgba(16, 185, 129, 0.55);
+    font-size: clamp(0.8rem, 2.8cqi, 0.95rem);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--duration-fast, 150ms) ease;
+  }
+
+  .add-sequence-btn:hover {
+    background: rgba(16, 185, 129, 0.08);
+    border-color: rgba(16, 185, 129, 0.2);
+    color: rgba(16, 185, 129, 0.75);
+  }
+
   .paste-btn {
     display: flex;
     align-items: center;
@@ -287,31 +315,20 @@
     gap: clamp(6px, 2cqi, 10px);
     min-height: 44px;
     padding: clamp(10px, 2.5cqi, 14px);
-    background: rgba(16, 185, 129, 0.15);
-    border: 1px dashed rgba(16, 185, 129, 0.4);
-    border-radius: clamp(6px, 2cqi, 10px);
-    color: rgba(16, 185, 129, 0.9);
+    background: rgba(139, 92, 246, 0.04);
+    border: 1px solid rgba(139, 92, 246, 0.1);
+    border-radius: 10px;
+    color: rgba(167, 139, 250, 0.55);
     font-size: clamp(0.8rem, 2.8cqi, 0.95rem);
     font-weight: 500;
     cursor: pointer;
     transition: all var(--duration-fast, 150ms) ease;
   }
 
-  .add-sequence-btn:hover,
   .paste-btn:hover {
-    background: rgba(16, 185, 129, 0.25);
-    border-color: rgba(16, 185, 129, 0.6);
-  }
-
-  .paste-btn {
-    background: rgba(139, 92, 246, 0.1);
-    border-color: rgba(139, 92, 246, 0.3);
-    color: rgba(167, 139, 250, 0.9);
-  }
-
-  .paste-btn:hover {
-    background: rgba(139, 92, 246, 0.2);
-    border-color: rgba(139, 92, 246, 0.5);
+    background: rgba(139, 92, 246, 0.08);
+    border-color: rgba(139, 92, 246, 0.2);
+    color: rgba(167, 139, 250, 0.75);
   }
 
   @media (prefers-reduced-motion: reduce) {
