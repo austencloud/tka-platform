@@ -594,7 +594,7 @@
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 6px;
     padding: 4px 10px;
-    min-height: 28px;
+    min-height: 44px;
     cursor: pointer;
     color: rgba(255, 255, 255, 0.35);
     font-size: var(--font-size-compact, 12px);
@@ -616,8 +616,8 @@
     align-items: center;
     justify-content: center;
     align-self: center;
-    width: 28px;
-    height: 28px;
+    width: 44px;
+    height: 44px;
     flex-shrink: 0;
     background: rgba(255, 255, 255, 0.04);
     border: 1px solid rgba(255, 255, 255, 0.08);
