@@ -66,8 +66,8 @@
 
   {#if currentEffect === "trails"}
     <div class="sub-group">
-      <label class="sub-label">TRAIL MODE</label>
-      <div class="chip-grid" role="radiogroup" aria-label="Trail mode">
+      <span class="sub-label" id="trail-mode-label">TRAIL MODE</span>
+      <div class="chip-grid" role="radiogroup" aria-labelledby="trail-mode-label">
         {#each trailModes as mode}
           <button
             class="chip"

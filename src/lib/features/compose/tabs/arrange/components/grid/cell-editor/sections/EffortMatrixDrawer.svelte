@@ -15,13 +15,7 @@
 
   type Scope = "cell" | "hand" | "tip";
 
-  let {
-    currentMap,
-    bluePropType,
-    redPropType,
-    onUpdateMap,
-    onClose,
-  }: {
+  const allProps: {
     currentMap: TipEffortMap;
     bluePropType: string;
     redPropType: string;
@@ -29,8 +23,14 @@
     onClose: () => void;
   } = $props();
 
-  let scope: Scope = $state(inferScope(currentMap));
-  let localMap: TipEffortMap = $state({ ...currentMap });
+  // Initialize from currentMap via $effect.pre — access through allProps to track reactively.
+  // The drawer mounts fresh each time, so this runs once per lifecycle.
+  let scope: Scope = $state<Scope>("cell");
+  let localMap: TipEffortMap = $state<TipEffortMap>({});
+  $effect.pre(() => {
+    scope = inferScope(allProps.currentMap);
+    localMap = { ...allProps.currentMap };
+  });
 
   const scopes: { value: Scope; label: string; icon: string }[] = [
     { value: "cell", label: "Cell", icon: "fa-border-all" },
@@ -45,8 +45,8 @@
     label: string;
   }
 
-  const blueTipCount = $derived(getTipPoints(bluePropType).points.length);
-  const redTipCount = $derived(getTipPoints(redPropType).points.length);
+  const blueTipCount = $derived(getTipPoints(allProps.bluePropType).points.length);
+  const redTipCount = $derived(getTipPoints(allProps.redPropType).points.length);
 
   const channels: ChannelRow[] = $derived.by(() => {
     if (scope === "cell") {
@@ -66,14 +66,14 @@
       rows.push({
         key: `0-${t}`,
         color: "#3b82f6",
-        label: `Blue ${getTipLabel(bluePropType, t, blueTipCount)}`,
+        label: `Blue ${getTipLabel(allProps.bluePropType, t, blueTipCount)}`,
       });
     }
     for (let t = 0; t < redTipCount; t++) {
       rows.push({
         key: `1-${t}`,
         color: "#ef4444",
-        label: `Red ${getTipLabel(redPropType, t, redTipCount)}`,
+        label: `Red ${getTipLabel(allProps.redPropType, t, redTipCount)}`,
       });
     }
     return rows;
@@ -95,7 +95,7 @@
 
   function setEffort(key: string, effort: EffortId) {
     localMap = { ...localMap, [key]: { effort } };
-    onUpdateMap(localMap);
+    allProps.onUpdateMap(localMap);
   }
 
   function applyToAll(effort: EffortId) {
@@ -104,7 +104,7 @@
       newMap[ch.key] = { effort };
     }
     localMap = newMap;
-    onUpdateMap(localMap);
+    allProps.onUpdateMap(localMap);
   }
 
   function switchScope(newScope: Scope) {
@@ -147,7 +147,7 @@
 
     scope = newScope;
     localMap = newMap;
-    onUpdateMap(localMap);
+    allProps.onUpdateMap(localMap);
   }
 
   function mostCommonEffort(keys: string[]): EffortId {
@@ -189,13 +189,13 @@
         <i class="fas fa-gauge" aria-hidden="true"></i>
         Effort Matrix
       </h3>
-      <button class="done-btn" onclick={onClose}>Done</button>
+      <button class="done-btn" onclick={allProps.onClose}>Done</button>
     </header>
 
     <!-- Scope selector -->
     <div class="scope-section">
-      <label class="scope-label">SCOPE</label>
-      <div class="scope-strip" role="radiogroup" aria-label="Effort scope">
+      <span class="scope-label" id="effort-scope-label">SCOPE</span>
+      <div class="scope-strip" role="radiogroup" aria-labelledby="effort-scope-label">
         {#each scopes as s}
           <button
             class="scope-seg"
