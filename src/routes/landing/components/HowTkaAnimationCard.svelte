@@ -162,8 +162,7 @@
 <div class="animation-card" bind:this={containerRef}>
   {#if animationReady && AnimatorCanvasComponent}
     <div class="canvas-fill">
-      <svelte:component
-        this={AnimatorCanvasComponent}
+      <AnimatorCanvasComponent
         blueProp={animationState.bluePropState}
         redProp={animationState.redPropState}
         gridVisible={true}
@@ -192,7 +191,7 @@
     </div>
   {:else if hasStartedLoading}
     <div class="fallback">
-      <span>Loading...</span>
+      <span>Loading animation...</span>
     </div>
   {/if}
 </div>
@@ -221,10 +220,4 @@
     font-size: var(--font-size-sm, 0.875rem);
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .animation-card {
-      /* Animation won't auto-play with reduced motion preference —
-         the canvas will still render the first frame as a static image */
-    }
-  }
 </style>

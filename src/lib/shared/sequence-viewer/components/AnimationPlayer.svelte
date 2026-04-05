@@ -261,7 +261,7 @@
 
 <div class="animation-player" class:horizontal={layout === "horizontal"}>
 	{#if loading}
-		<div class="state-msg"><ProgressRing percent={-1} size={32} strokeWidth={3} /><span>Loading...</span></div>
+		<div class="state-msg"><ProgressRing percent={-1} size={32} strokeWidth={3} /><span>Loading animation...</span></div>
 	{:else if error}
 		<div class="state-msg error"><span>{error}</span></div>
 	{:else}

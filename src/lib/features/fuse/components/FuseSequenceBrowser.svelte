@@ -146,7 +146,7 @@
 	{#if loading}
 		<div class="state-msg">
 			<i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-			<span>Loading...</span>
+			<span>Loading sequences...</span>
 		</div>
 	{:else if !currentItem}
 		<div class="state-msg">

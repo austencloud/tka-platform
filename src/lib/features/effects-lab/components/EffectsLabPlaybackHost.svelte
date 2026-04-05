@@ -432,7 +432,7 @@
       {:else if loading}
         <div class="loading-state">
           <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
-          <span>Loading...</span>
+          <span>Loading playback...</span>
         </div>
       {:else if error}
         <div class="error-state">

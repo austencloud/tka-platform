@@ -33,7 +33,7 @@
 
   const defaultTitles: Record<StateType, string> = {
     loading: "",
-    error: "Something went wrong",
+    error: "Couldn't load this content",
     empty: "Nothing here yet",
     info: "Information",
   };

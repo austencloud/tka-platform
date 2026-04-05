@@ -330,7 +330,7 @@
   {:else}
     <div class="loading-state">
       <ProgressRing percent={-1} size={32} strokeWidth={3} />
-      <span>Loading...</span>
+      <span>Loading animation...</span>
     </div>
   {/if}
 </div>

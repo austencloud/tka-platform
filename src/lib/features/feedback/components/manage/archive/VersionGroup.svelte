@@ -75,7 +75,7 @@
       {#if isLoading}
         <div class="items-loading">
           <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-          Loading...
+          Loading feedback items...
         </div>
       {:else if feedbackItems.length === 0}
         <div class="items-empty">No feedback items in this release.</div>

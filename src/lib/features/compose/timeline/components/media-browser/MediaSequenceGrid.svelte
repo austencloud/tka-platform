@@ -50,7 +50,7 @@
   {#if isLoading && sequences.length === 0}
     <div class="state-message">
       <ProgressRing percent={-1} size={32} strokeWidth={3} />
-      <span>Loading...</span>
+      <span>Loading sequences...</span>
     </div>
   {:else if error}
     <div class="state-message error">

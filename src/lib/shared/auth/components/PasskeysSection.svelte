@@ -26,7 +26,7 @@
       const res = await listPasskeys();
       passkeys = res.passkeys ?? [];
     } catch (e: unknown) {
-      error = e instanceof Error ? e.message : "Something went wrong";
+      error = e instanceof Error ? e.message : "Could not load passkeys. Try again.";
     } finally {
       loading = false;
     }

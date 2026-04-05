@@ -117,7 +117,7 @@
       {:else}
         <i class="fas fa-exclamation-triangle error-icon" aria-hidden="true"></i>
         <h2>Failed to Load</h2>
-        <p>Something went wrong loading this sequence.</p>
+        <p>This sequence couldn't be loaded. It may be temporarily unavailable.</p>
       {/if}
       <button class="dismiss-button" onclick={dismissError}>
         Go Back

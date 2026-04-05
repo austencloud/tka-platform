@@ -172,7 +172,7 @@
         {#if isChecking}
           <span class="checking-hint">
             <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-            Loading...
+            Checking sequence...
           </span>
         {:else}
           <span class="tap-hint">

@@ -117,7 +117,7 @@
     <!-- Loading state while persistence is being restored -->
     <div class="persistence-loading">
       <ProgressRing percent={-1} size={32} strokeWidth={3} />
-      <p>Loading...</p>
+      <p>Restoring sequence...</p>
     </div>
   {:else if activeToolPanel}
     <!-- Render the appropriate tool panel based on active tab -->
@@ -129,7 +129,7 @@
             {#if isPickerStateLoading}
               <div class="picker-loading">
                 <ProgressRing percent={-1} size={32} strokeWidth={3} />
-                <p>Loading...</p>
+                <p>Loading options...</p>
               </div>
             {:else}
               <ConstructTabContent

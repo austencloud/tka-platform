@@ -160,7 +160,7 @@
 {#if loading}
   <div class="preview-loading">
     <ProgressRing percent={-1} size={24} strokeWidth={2} />
-    <span>Loading...</span>
+    <span>Loading preview...</span>
   </div>
 {:else if error}
   <div class="preview-error">

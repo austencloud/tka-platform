@@ -336,7 +336,7 @@
     {#if loading}
       <div class="placeholder" aria-label="Loading videos">
         <ProgressRing percent={-1} size={32} strokeWidth={3} />
-        <span>Loading...</span>
+        <span>Loading videos...</span>
       </div>
     {:else if loadError || entries.length === 0}
       <div class="placeholder error">
@@ -932,7 +932,6 @@
       font-size: 14px;
     }
 
-    .nav-btn.disabled,
     .nav-btn:disabled {
       opacity: 0;
     }

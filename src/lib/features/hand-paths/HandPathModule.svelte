@@ -70,7 +70,7 @@
   {:else}
     <div class="hand-path-loading">
       <i class="fas fa-circle-notch fa-spin"></i>
-      <span>Loading...</span>
+      <span>Loading hand paths...</span>
     </div>
   {/if}
 </div>

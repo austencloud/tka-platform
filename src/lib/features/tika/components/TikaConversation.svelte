@@ -158,7 +158,7 @@
   {#if status === "error"}
     <div class="error-banner" role="alert">
       <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
-      <span>Something went wrong. Please try again.</span>
+      <span>Tika couldn't respond. Check your connection and try again.</span>
     </div>
   {/if}
 

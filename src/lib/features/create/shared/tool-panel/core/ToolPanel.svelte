@@ -266,7 +266,7 @@
     <!-- Loading state while persistence is being restored -->
     <div class="persistence-loading">
       <ProgressRing percent={-1} size={24} strokeWidth={2} />
-      <p>Loading...</p>
+      <p>Restoring sequence...</p>
     </div>
   {:else if activeToolPanel}
     <!-- Tab Content with Sequential Fade Transitions -->
@@ -282,7 +282,7 @@
               <!-- Loading state while determining which picker to show -->
               <div class="picker-loading">
                 <ProgressRing percent={-1} size={24} strokeWidth={2} />
-                <p>Loading...</p>
+                <p>Loading options...</p>
               </div>
             {:else}
               <ConstructTabContent
