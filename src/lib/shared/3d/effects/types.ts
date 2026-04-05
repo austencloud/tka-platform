@@ -300,3 +300,56 @@ export const DEFAULT_ALL_EFFECTS: AllEffectConfigs = {
  * Prop identifier for effects
  */
 export type PropId = "blue" | "red";
+
+// =============================================================================
+// Quality Tier System
+// =============================================================================
+
+/**
+ * Device capability tiers that determine particle budgets, dynamic light
+ * limits, and feature toggles for all four effects (trails, LED, charcoal, fire).
+ */
+export enum QualityTier {
+  HIGH = "high",
+  MEDIUM = "medium",
+  LOW = "low",
+}
+
+/**
+ * Per-tier limits and feature flags consumed by every effect implementation.
+ */
+export interface QualityTierConfig {
+  tier: QualityTier;
+  maxParticles: number;
+  maxDynamicLights: number;
+  enableShadows: boolean;
+  enableBloom: boolean;
+  enableGroundInteraction: boolean;
+}
+
+export const TIER_CONFIGS: Record<QualityTier, QualityTierConfig> = {
+  [QualityTier.HIGH]: {
+    tier: QualityTier.HIGH,
+    maxParticles: 50000,
+    maxDynamicLights: 4,
+    enableShadows: true,
+    enableBloom: true,
+    enableGroundInteraction: true,
+  },
+  [QualityTier.MEDIUM]: {
+    tier: QualityTier.MEDIUM,
+    maxParticles: 10000,
+    maxDynamicLights: 2,
+    enableShadows: false,
+    enableBloom: true,
+    enableGroundInteraction: false,
+  },
+  [QualityTier.LOW]: {
+    tier: QualityTier.LOW,
+    maxParticles: 2000,
+    maxDynamicLights: 0,
+    enableShadows: false,
+    enableBloom: false,
+    enableGroundInteraction: false,
+  },
+};
