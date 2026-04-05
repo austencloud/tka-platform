@@ -15,6 +15,7 @@
     getBasePropType,
     getAllVariations,
     getPropTypeDisplayInfo,
+    isPropActive,
   } from "$lib/shared/pictograph/prop/domain/PropTypeDisplayRegistry";
   import PropTypeButton from "./PropTypeButton.svelte";
 
@@ -33,7 +34,8 @@
     variant?: "panel" | "inline";
   }>();
 
-  // Family definitions: one base prop per family, grouped by section
+  // Family definitions: one base prop per family, grouped by section.
+  // Deactivated props are filtered out — see DEACTIVATED_PROP_TYPES in registry.
   const PROP_FAMILIES: { label: string; bases: PropType[] }[] = [
     {
       label: "Staves & Clubs",
@@ -53,10 +55,9 @@
       label: "Novelty",
       bases: [
         PropType.CHICKEN,
-        PropType.GUITAR,
         PropType.DOUBLESTAR,
         PropType.EIGHTRINGS,
-        PropType.CONTACTBALL,
+        PropType.DOUBLECONTACTBALL,
         PropType.TORCH,
       ],
     },
@@ -64,13 +65,16 @@
       label: "Singles",
       bases: [PropType.HAND, PropType.SWORD, PropType.QUIAD],
     },
-  ];
+  ].map(section => ({
+    ...section,
+    bases: section.bases.filter(isPropActive),
+  }));
 
   let expandedFamily = $state<PropType | null>(null);
 
   const selectedBase = $derived(getBasePropType(selectedPropType));
   const familyVariants = $derived(
-    expandedFamily ? getAllVariations(expandedFamily) : [],
+    expandedFamily ? getAllVariations(expandedFamily).filter(isPropActive) : [],
   );
 
   // No auto-expand on mount. Grid starts fully visible.
@@ -94,7 +98,7 @@
   }
 
   function variantCount(base: PropType): number | undefined {
-    const count = getAllVariations(base).length;
+    const count = getAllVariations(base).filter(isPropActive).length;
     return count > 1 ? count : undefined;
   }
 </script>
@@ -204,7 +208,7 @@
 
   .grid-title {
     margin: 0;
-    font-size: var(--font-size-xs, 11px);
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     color: var(--theme-text-dim);
     text-transform: uppercase;
@@ -236,7 +240,7 @@
 
   /* Section label -- lightweight text divider */
   .section-label {
-    font-size: var(--font-size-compact, 10px);
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     color: var(--theme-text-dim);
     text-transform: uppercase;
@@ -294,7 +298,7 @@
   }
 
   .variant-label {
-    font-size: var(--font-size-compact, 10px);
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     color: var(--theme-text-dim);
     text-transform: uppercase;
@@ -340,7 +344,7 @@
     }
 
     .section-label {
-      font-size: var(--font-size-xs, 11px);
+      font-size: var(--font-size-compact, 12px);
     }
   }
 
