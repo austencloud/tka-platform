@@ -148,7 +148,7 @@
       bluePropState={bluePropState}
       redPropState={redPropState}
       facingAngle={0}
-      position={{ x: 0, z: 0 }}
+      position={{ x: 0, y: shoulderHeight, z: 0 }}
       isActive={false}
       isMoving={false}
       bluePropAnchorRef={bluePropAnchorRef}
@@ -156,7 +156,9 @@
     />
   {/if}
 
-  <!-- ShoulderAnchor: everything at shoulder height -->
+  <!-- ShoulderAnchor: props and grid live at shoulder height, matching
+       where Avatar3D's shoulders end up (Avatar3D positions itself using
+       position.y=shoulderHeight so shoulders land at y≈shoulderHeight). -->
   <T.Group position.y={shoulderHeight}>
 
     <!-- Grid rendering -->
