@@ -1065,8 +1065,11 @@
 
   (async () => {
     // Build corridor chunk first
-    const cc = await buildRoomChunk(perRoomBuckets.corridorBucket, "__corridor__", null);
+    const corridorDryRun = perRoomBuckets.corridorBucket;
+    console.log(`[Museum3D] Corridor bucket: ${corridorDryRun.totalTiles} tiles, ${corridorDryRun.totalFloorInstances} floor, ${corridorDryRun.totalWallInstances} wall`);
+    const cc = await buildRoomChunk(corridorDryRun, "__corridor__", null);
     corridorChunk = cc;
+    console.log(`[Museum3D] Corridor chunk: ${cc.floorMeshes.length} floor meshes, ${cc.wallMeshes.length} wall meshes`);
     props.onBuildStage?.("Corridors");
 
     // Build ALL room chunks sequentially (yields between phases keep overlay responsive)
