@@ -21,6 +21,7 @@
   import { cameraPreferences } from "$lib/shared/3d/camera/camera-preferences.svelte";
   import MuseumFurniture from "./MuseumFurniture.svelte";
   import MuseumPerformerStation3D from "./MuseumPerformerStation3D.svelte";
+  import TelekineticFormation3D from "./TelekineticFormation3D.svelte";
   import Avatar3D from "$lib/shared/3d/components/Avatar3D.svelte";
   import MuseumMirror from "./MuseumMirror.svelte";
   import MuseumPortal from "./MuseumPortal.svelte";
@@ -1577,15 +1578,25 @@
 <!-- overrideVersion dependency ensures reactivity when editor moves objects -->
 {#each visiblePerformers as performer (performer.id)}
   {@const posOverride = overrideVersion >= 0 ? museumEditorOverrides.get(`performer-station-${performer.id}`) : null}
-  <MuseumPerformerStation3D
-    stationId={performer.id}
-    worldX={posOverride?.x ?? performer.tileX * TILE_SIZE}
-    worldZ={posOverride?.z ?? performer.tileY * TILE_SIZE}
-    facingAngle={FACING_TO_YAW[performer.facing] ?? 0}
-    sequenceId={performer.sequenceId}
-    autoPlay={performer.autoPlay}
-    showGrid={true}
-  />
+  {#if performer.id.includes("telekinetic-formation")}
+    <TelekineticFormation3D
+      stationId={performer.id}
+      worldX={posOverride?.x ?? performer.tileX * TILE_SIZE}
+      worldZ={posOverride?.z ?? performer.tileY * TILE_SIZE}
+      sequenceId={performer.sequenceId}
+      autoPlay={performer.autoPlay}
+    />
+  {:else}
+    <MuseumPerformerStation3D
+      stationId={performer.id}
+      worldX={posOverride?.x ?? performer.tileX * TILE_SIZE}
+      worldZ={posOverride?.z ?? performer.tileY * TILE_SIZE}
+      facingAngle={FACING_TO_YAW[performer.facing] ?? 0}
+      sequenceId={performer.sequenceId}
+      autoPlay={performer.autoPlay}
+      showGrid={true}
+    />
+  {/if}
 {/each}
 
 <!-- Pedestal + sign meshes managed imperatively via scene.add() -->
