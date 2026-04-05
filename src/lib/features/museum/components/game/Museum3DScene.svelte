@@ -988,43 +988,13 @@
   let visibleFurniture = $state<NonNullable<typeof grid.furniture>>([]);
   let useSpotLights = $state(false);
 
-  // Aggregated mesh arrays — derived from loaded chunks for template rendering
-  let floorMeshes = $derived.by(() => {
-    const meshes: InstancedMeshData[] = [];
-    if (corridorChunk) meshes.push(...corridorChunk.floorMeshes);
-    for (const chunk of loadedChunks.values()) meshes.push(...chunk.floorMeshes);
-    return meshes;
-  });
-  let wallMeshes = $derived.by(() => {
-    const meshes: InstancedMeshData[] = [];
-    if (corridorChunk) meshes.push(...corridorChunk.wallMeshes);
-    for (const chunk of loadedChunks.values()) meshes.push(...chunk.wallMeshes);
-    return meshes;
-  });
-  let ceilingMeshes = $derived.by(() => {
-    const meshes: InstancedMesh[] = [];
-    if (corridorChunk?.ceilingMesh) meshes.push(corridorChunk.ceilingMesh);
-    for (const chunk of loadedChunks.values()) {
-      if (chunk.ceilingMesh) meshes.push(chunk.ceilingMesh);
-    }
-    return meshes;
-  });
-  let pedestalMeshes = $derived.by(() => {
-    const meshes: InstancedMesh[] = [];
-    if (corridorChunk?.pedestalMesh) meshes.push(corridorChunk.pedestalMesh);
-    for (const chunk of loadedChunks.values()) {
-      if (chunk.pedestalMesh) meshes.push(chunk.pedestalMesh);
-    }
-    return meshes;
-  });
-  let signMeshes = $derived.by(() => {
-    const meshes: InstancedMesh[] = [];
-    if (corridorChunk?.signMesh) meshes.push(corridorChunk.signMesh);
-    for (const chunk of loadedChunks.values()) {
-      if (chunk.signMesh) meshes.push(chunk.signMesh);
-    }
-    return meshes;
-  });
+  // ── Imperative mesh management ──
+  // Meshes are added directly to the Three.js scene during init, NOT through
+  // Svelte templates. This eliminates reactive overhead (no $derived arrays,
+  // no {#each} template diffing, no Threlte component mounting). Visibility
+  // is controlled with mesh.visible instead of mount/unmount.
+  const allSceneMeshes: InstancedMesh[] = [];     // for cleanup on destroy
+  const ceilingMeshRefs: InstancedMesh[] = [];    // toggle visible with fpsActive
 
   /** Build global proximity grids once from ALL chunks (called after all chunks built) */
   function buildGlobalProximityGrids(): void {
@@ -1042,15 +1012,9 @@
     }
   }
 
-  /** Lightweight plaque grid rebuild — only plaques need per-loaded-chunk filtering */
+  /** No-op — proximity grids are built once globally, not per-active-chunk */
   function rebuildProximityGrids(): void {
-    // Torches and lights are global — their grids don't change with streaming.
-    // Only rebuild plaque grid based on loaded chunks.
-    plaqueGrid = new ProximityGrid<PlaquePlacement>(CELL_SIZE);
-    const activeChunks = [corridorChunk, ...loadedChunks.values()].filter(Boolean) as RoomChunk[];
-    for (const chunk of activeChunks) {
-      for (const p of chunk.plaquePlacements) plaqueGrid.insert(p, p.tileX, p.tileY);
-    }
+    // All grids built once in buildGlobalProximityGrids. Nothing to rebuild.
   }
 
 
@@ -1084,108 +1048,98 @@
     // Build global proximity grids from ALL chunks (torches, lights, plaques)
     buildGlobalProximityGrids();
 
-    // ── Shader warmup: add ALL meshes to Three.js scene, compile, remove ──
-    // renderer.compile() only compiles shaders for objects IN the scene graph.
-    // Svelte reactive rendering hasn't happened yet (we just set state), so we
-    // must add meshes directly to the Three.js scene, bypassing Svelte.
-    props.onBuildStage?.("Compiling shaders");
+    // ── Imperative scene setup: add ALL meshes directly to Three.js ──
+    // No Svelte templates, no reactive arrays, no component mounting.
+    // Just scene.add() for each mesh. This is how game engines do it.
+    props.onBuildStage?.("Adding geometry to scene");
 
     const renderer = (threlteCtx as any).renderer?.current ?? (threlteCtx as any).renderer;
     const sceneObj = (threlteCtx as any).scene?.current ?? (threlteCtx as any).scene;
 
-    if (renderer && sceneObj && camera) {
-      const warmupMeshes: InstancedMesh[] = [];
+    if (sceneObj) {
+      function addChunkToScene(chunk: RoomChunk): void {
+        for (const { mesh } of chunk.floorMeshes) {
+          mesh.receiveShadow = true;
+          sceneObj.add(mesh);
+          allSceneMeshes.push(mesh);
+        }
+        for (const { mesh } of chunk.wallMeshes) {
+          mesh.castShadow = true;
+          mesh.receiveShadow = true;
+          sceneObj.add(mesh);
+          allSceneMeshes.push(mesh);
+        }
+        if (chunk.ceilingMesh) {
+          chunk.ceilingMesh.visible = false; // hidden until FPS mode
+          sceneObj.add(chunk.ceilingMesh);
+          allSceneMeshes.push(chunk.ceilingMesh);
+          ceilingMeshRefs.push(chunk.ceilingMesh);
+        }
+        if (chunk.pedestalMesh) {
+          chunk.pedestalMesh.castShadow = true;
+          chunk.pedestalMesh.receiveShadow = true;
+          sceneObj.add(chunk.pedestalMesh);
+          allSceneMeshes.push(chunk.pedestalMesh);
+        }
+        if (chunk.signMesh) {
+          chunk.signMesh.castShadow = true;
+          chunk.signMesh.receiveShadow = true;
+          sceneObj.add(chunk.signMesh);
+          allSceneMeshes.push(chunk.signMesh);
+        }
+        if (chunk.performerMesh) {
+          sceneObj.add(chunk.performerMesh);
+          allSceneMeshes.push(chunk.performerMesh);
+        }
+      }
 
-      // Add ALL pre-built meshes directly to Three.js scene
+      // Add corridor geometry
+      addChunkToScene(cc);
+      // Add all room geometry
       for (const chunk of prebuiltChunks.values()) {
-        for (const { mesh } of chunk.floorMeshes) { sceneObj.add(mesh); warmupMeshes.push(mesh); }
-        for (const { mesh } of chunk.wallMeshes) { sceneObj.add(mesh); warmupMeshes.push(mesh); }
-        if (chunk.ceilingMesh) { sceneObj.add(chunk.ceilingMesh); warmupMeshes.push(chunk.ceilingMesh); }
-        if (chunk.pedestalMesh) { sceneObj.add(chunk.pedestalMesh); warmupMeshes.push(chunk.pedestalMesh); }
-        if (chunk.signMesh) { sceneObj.add(chunk.signMesh); warmupMeshes.push(chunk.signMesh); }
-        if (chunk.performerMesh) { sceneObj.add(chunk.performerMesh); warmupMeshes.push(chunk.performerMesh); }
-      }
-      // Also corridor
-      if (cc) {
-        for (const { mesh } of cc.floorMeshes) { sceneObj.add(mesh); warmupMeshes.push(mesh); }
-        for (const { mesh } of cc.wallMeshes) { sceneObj.add(mesh); warmupMeshes.push(mesh); }
+        addChunkToScene(chunk);
       }
 
-      // Force GPU to compile every shader program now (behind overlay)
-      renderer.compile(sceneObj, camera);
+      // Force-compile ALL shaders now (behind overlay)
+      if (renderer && camera) {
+        renderer.compile(sceneObj, camera);
+      }
 
-      // Remove all — Svelte template will re-add the active ones
-      for (const mesh of warmupMeshes) sceneObj.remove(mesh);
-
-      console.log(`[Museum3D] Shader warmup: compiled ${warmupMeshes.length} meshes`);
+      console.log(`[Museum3D] Imperative scene: ${allSceneMeshes.length} meshes added directly, ${ceilingMeshRefs.length} ceiling meshes`);
     }
 
     // Yield so overlay can paint
     await new Promise<void>(r => setTimeout(r, 0));
 
-    // Mount ALL torches globally — never per-room. Torch flame shaders cause
-    // 400-1000ms GPU stutter on mount. Pay the cost once behind the overlay.
+    // Mount ALL torches globally — flame shaders compile once behind overlay
     const allTorches: TorchPosition[] = [];
-    for (const chunk of prebuiltChunks.values()) {
-      allTorches.push(...chunk.torchPositions);
-    }
-    if (cc) allTorches.push(...cc.torchPositions);
-    visibleTorches = allTorches;
-
-    // Mount ALL lights globally too (shader recompilation on add/remove)
     const allExhibitLights: LightPosition[] = [];
     const allCeilingLights: LightPosition[] = [];
-    for (const chunk of prebuiltChunks.values()) {
+    const allChunks = [cc, ...prebuiltChunks.values()];
+    for (const chunk of allChunks) {
+      allTorches.push(...chunk.torchPositions);
       allExhibitLights.push(...chunk.exhibitLightPositions);
       allCeilingLights.push(...chunk.ceilingLightPositions);
     }
-    if (cc) {
-      allExhibitLights.push(...cc.exhibitLightPositions);
-      allCeilingLights.push(...cc.ceilingLightPositions);
-    }
+    visibleTorches = allTorches;
     visibleExhibitLights = allExhibitLights;
     visibleCeilingLights = allCeilingLights;
-
-    // Activate ALL rooms — shaders are already compiled, meshes pre-built.
-    // No streaming needed: the 4090 handles all 16 rooms fine. The only
-    // bottleneck was shader compilation, which the warmup step solved.
-    for (const wing of grid.wings) activateRoom(wing.id);
 
     recomputeVisibility(grid.spawn.x, grid.spawn.y);
     geometryReady = true;
     props.onGeometryReady?.();
   })();
 
-  /** Move a pre-built chunk into the active scene (meshes only — torches/lights are global) */
-  function activateRoom(wingId: string): void {
-    if (loadedChunks.has(wingId)) return;
-    const chunk = prebuiltChunks.get(wingId);
-    if (!chunk) return;
+  // Toggle ceiling visibility — ceilings hidden in top-down so the floor plan is visible
+  $effect(() => {
+    for (const mesh of ceilingMeshRefs) {
+      mesh.visible = fpsActive;
+    }
+  });
 
-    const updated = new Map(loadedChunks);
-    updated.set(wingId, chunk);
-    loadedChunks = updated;
-    // Torches and lights are mounted globally — no per-room add/remove
-    rebuildProximityGrids();
-  }
-
-  /** Remove a chunk's meshes from the active scene (torches/lights stay global) */
-  function deactivateRoom(wingId: string): void {
-    if (!loadedChunks.has(wingId)) return;
-
-    const updated = new Map(loadedChunks);
-    updated.delete(wingId);
-    loadedChunks = updated;
-    // Torches and lights stay global — no per-room removal
-    rebuildProximityGrids();
-  }
-
-  // Streaming disabled — all rooms stay active. The shader warmup + pre-build
-  // approach eliminates the transition freeze without needing to stream. The
-  // streaming infrastructure (RoomStreamingManager, activate/deactivate) is
-  // preserved for future use if the museum grows beyond GPU capacity.
+  // No streaming — all geometry is in the scene permanently via scene.add().
   function updateStreaming(_playerTX: number, _playerTZ: number): void {
-    // No-op: all rooms permanently active
+    // No-op: all meshes permanently in scene
   }
 
   // Shadow disabled on dynamic lights — toggling castShadow reactively causes
@@ -1198,11 +1152,11 @@
   let lastCheckTX = -999;
   let lastCheckTY = -999;
 
-  /** All plaque placements across loaded chunks */
+  /** All plaque placements across all chunks */
   function getAllPlaquePlacements(): PlaquePlacement[] {
     const all: PlaquePlacement[] = [];
     if (corridorChunk) all.push(...corridorChunk.plaquePlacements);
-    for (const chunk of loadedChunks.values()) all.push(...chunk.plaquePlacements);
+    for (const chunk of prebuiltChunks.values()) all.push(...chunk.plaquePlacements);
     return all;
   }
 
@@ -1275,10 +1229,10 @@
     return new Set(withLight.map(t => `${t.x},${t.z}`));
   });
 
-  // Room lights derived from loaded chunks — updates when chunks load/unload
+  // Room lights from all pre-built chunks (static after init)
   let roomLights = $derived.by(() => {
     const lights: RoomLight[] = [];
-    for (const chunk of loadedChunks.values()) {
+    for (const chunk of prebuiltChunks.values()) {
       if (chunk.roomLight) lights.push(chunk.roomLight);
     }
     return lights;
@@ -1478,22 +1432,10 @@
 <T.AmbientLight intensity={0.15} color="#c8b890" />
 <T.HemisphereLight intensity={0.3} color="#fff8e0" groundColor="#2a2015" />
 
-<!-- Floor instanced meshes (one per color bucket) -->
-{#each floorMeshes as { mesh }}
-  <T is={mesh} receiveShadow />
-{/each}
-
-<!-- Wall instanced meshes (one per wing theme color) -->
-{#each wallMeshes as { mesh }}
-  <T is={mesh} castShadow receiveShadow />
-{/each}
-
-<!-- Ceiling meshes — visible only in FPS so top-down view shows the floor plan -->
-{#if fpsActive}
-  {#each ceilingMeshes as mesh}
-    <T is={mesh} />
-  {/each}
-{/if}
+<!-- Floor, wall, ceiling, pedestal, sign meshes are added directly to the Three.js
+     scene via scene.add() during init — NOT through Svelte templates. This eliminates
+     reactive overhead (no $derived arrays, no {#each} diffing, no Threlte component
+     mounting/unmounting). Ceiling visibility toggled via mesh.visible in $effect. -->
 
 <!-- Exhibit plaques: individually textured with readable content -->
 {#each visiblePlaques as plaque (plaque.refId)}
@@ -1572,15 +1514,7 @@
   />
 {/each}
 
-<!-- Pedestal instanced meshes (per-room) -->
-{#each pedestalMeshes as mesh}
-  <T is={mesh} castShadow receiveShadow />
-{/each}
-
-<!-- Sign instanced meshes (per-room) -->
-{#each signMeshes as mesh}
-  <T is={mesh} castShadow receiveShadow />
-{/each}
+<!-- Pedestal + sign meshes managed imperatively via scene.add() -->
 
 <!-- GLTF furniture models (Kenney CC0 kit) -->
 <MuseumFurniture placements={visibleFurniture} tileSize={TILE_SIZE} />
