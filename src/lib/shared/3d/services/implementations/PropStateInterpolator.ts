@@ -169,6 +169,11 @@ export class PropStateInterpolator implements IPropStateInterpolator {
       };
     }
 
+    // Pass through world-space rotation flag
+    if (config.worldSpaceRotation) {
+      result.worldSpaceRotation = true;
+    }
+
     // Apply lateral offset (used in dual-wheel mode to separate each
     // hand's wheel plane to opposite sides of the body).
     // For WHEEL planes: offset Z (body-local depth). After the 90° facing

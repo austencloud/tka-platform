@@ -46,6 +46,18 @@ export function computePropRotation(
     new Euler(0, 0, Math.PI / 2)
   );
 
+  // When worldSpaceRotation is set, the rotation quaternion is already in
+  // world space (e.g. dual wheel mode where the hand path traces a circle
+  // in world XY after coordinate transforms). Skip the facing rotation
+  // so the prop spins in the correct world-space plane.
+  if (propState.worldSpaceRotation) {
+    const finalQuat = propState.worldRotation
+      .clone()
+      .multiply(horizontalQuat);
+    const euler = new Euler().setFromQuaternion(finalQuat);
+    return [euler.x, euler.y, euler.z];
+  }
+
   const facingQuat = new Quaternion().setFromEuler(
     new Euler(0, facingAngle, 0)
   );
