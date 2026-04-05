@@ -157,6 +157,26 @@ export function createViewer3DState(deps: {
   // Camera snap callback — registered by Viewer3DCamera, called by Viewer3DViewPresets
   let _snapToFn: ((position: { x: number; y: number; z: number }, target: { x: number; y: number; z: number }) => void) | null = null;
 
+  // When a hand is assigned to a non-wall plane, automatically add that plane's
+  // grid circle to the visible set. The has() check prevents re-writing after
+  // the plane is already present, so there's no infinite loop.
+  $effect(() => {
+    if (!avatarState) return;
+    const blue = avatarState.customBluePlane;
+    const red = avatarState.customRedPlane;
+
+    const needsBlue = blue !== Plane.WALL && !visiblePlanes.has(blue);
+    const needsRed = red !== Plane.WALL && !visiblePlanes.has(red);
+
+    if (needsBlue || needsRed) {
+      const next = new Set(visiblePlanes);
+      if (needsBlue) next.add(blue);
+      if (needsRed) next.add(red);
+      visiblePlanes = next;
+      persistPlanes(visiblePlanes);
+    }
+  });
+
   /**
    * Switch to 3D render mode and load a sequence for the viewer avatar.
    * No-ops silently when WebGL2 is unavailable so callers don't need to
