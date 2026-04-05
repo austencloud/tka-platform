@@ -10,6 +10,7 @@ import type { StepData } from "$lib/features/create/shared/domain/models/StepDat
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
 import type { MotionConfig3D } from "../../domain/models/MotionData3D";
 import type { Plane } from "../../domain/enums/Plane";
+import type { PlaneModeConfig } from "../../domain/constants/plane-mode-configs";
 
 /**
  * Motion configurations for a single beat
@@ -29,7 +30,7 @@ export interface ISequenceConverter {
   /**
    * Extract motion configs from a StepData object
    */
-  beatDataToConfigs(beat: StepData, plane?: Plane): StepMotionConfigs;
+  beatDataToConfigs(beat: StepData, plane?: Plane, modeConfig?: PlaneModeConfig): StepMotionConfigs;
 
   /**
    * Convert an entire sequence to an array of beat motion configs
@@ -37,7 +38,8 @@ export interface ISequenceConverter {
    */
   sequenceToMotionConfigs(
     sequence: SequenceData,
-    plane?: Plane
+    plane?: Plane,
+    modeConfig?: PlaneModeConfig
   ): StepMotionConfigs[];
 
   /**
@@ -45,7 +47,8 @@ export interface ISequenceConverter {
    */
   getStartPositionConfigs(
     sequence: SequenceData,
-    plane?: Plane
+    plane?: Plane,
+    modeConfig?: PlaneModeConfig
   ): StepMotionConfigs | null;
 
   /**
