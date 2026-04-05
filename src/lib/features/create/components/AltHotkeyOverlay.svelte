@@ -5,6 +5,7 @@
   import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/PropTypeDisplayRegistry";
   import { shiftStartPosition } from "../shared/services/implementations/sequence-transforms/sequence-transforms";
   import { setGridRotationDirection } from "$lib/shared/pictograph/grid/state/grid-rotation-state.svelte";
+  import { subDrawerStatePersister } from "../shared/services/implementations/SubDrawerStatePersister";
   import type { PropPreset } from "$lib/shared/settings/domain/AppSettings";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 
@@ -110,18 +111,20 @@
     return propType !== PropType.HAND;
   }
 
-  // Sequence action launchers — open the actions panel then trigger the specific drawer
+  // Sequence action launchers — set the sub-drawer, then open the actions panel
   const actionButtons = [
-    { label: "Duration", icon: "fa-clock", color: "#f472b6", bgTint: "rgba(244,114,182,0.12)" },
-    { label: "Extend", icon: "fa-expand", color: "#38bdf8", bgTint: "rgba(56,189,248,0.12)" },
-    { label: "Turns", icon: "fa-arrows-spin", color: "#fb923c", bgTint: "rgba(251,146,60,0.12)" },
-    { label: "Rotation", icon: "fa-compass", color: "#4ade80", bgTint: "rgba(74,222,128,0.12)" },
+    { label: "Duration", icon: "fa-clock", color: "#f472b6", bgTint: "rgba(244,114,182,0.12)", drawer: "duration" as const },
+    { label: "Extend", icon: "fa-expand", color: "#38bdf8", bgTint: "rgba(56,189,248,0.12)", drawer: "extend" as const },
+    { label: "Turns", icon: "fa-arrows-spin", color: "#fb923c", bgTint: "rgba(251,146,60,0.12)", drawer: "turnPattern" as const },
+    { label: "Rotation", icon: "fa-compass", color: "#4ade80", bgTint: "rgba(74,222,128,0.12)", drawer: "rotationDirection" as const },
   ] as const;
 
-  function openSequenceAction(action: string) {
+  function openSequenceAction(drawer: string) {
     const panelState = ctx.panelState;
     dismiss();
-    // Open the actions panel — user picks the specific action from there
+    // Tell the persister which drawer to open, then open the panel.
+    // SequenceActionsPanel reads the persister on open and restores the drawer.
+    subDrawerStatePersister.setActiveSubDrawer(drawer as any);
     panelState.openSequenceActionsPanel();
   }
 
@@ -255,7 +258,7 @@
           <button
             class="action-item"
             disabled={!hasSequence}
-            onclick={() => openSequenceAction(action.label)}
+            onclick={() => openSequenceAction(action.drawer)}
             title={action.label}
           >
             <span class="icon-badge" style="background: {action.bgTint}; color: {action.color};">

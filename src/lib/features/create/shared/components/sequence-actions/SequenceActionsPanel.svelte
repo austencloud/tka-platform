@@ -159,9 +159,12 @@
   // Shift start mode uses panelState for cross-component coordination
   const isShiftStartMode = $derived(panelState.isShiftStartMode);
 
-  // Sync isOpen with show prop
+  // Sync isOpen with show prop, reset restore flag on close
   $effect(() => {
     isOpen = show;
+    if (!show) {
+      hasRestoredSubDrawer = false;
+    }
   });
 
   // Beat selection state (for displaying in beat grid)
