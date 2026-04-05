@@ -172,6 +172,9 @@ export function createAvatarInstanceState(
   // Beats without an entry use Plane.WALL (the default).
   let beatPlaneOverrides = $state<Map<number, { blue?: Plane; red?: Plane }>>(new Map());
 
+  // Whether we're editing planes per-beat (true) or whole-sequence (false)
+  let beatEditMode = $state(false);
+
   const ROTATION_VARIANTS: Plane[] = [Plane.WALL, Plane.WHEEL, Plane.FLOOR];
   const ROTATION_LABELS: string[] = ["Wall rot", "Wheel rot", "Floor rot"];
   let rotationVariantIndex = $state(loadPersistedRotVariant());
@@ -675,6 +678,8 @@ export function createAvatarInstanceState(
     get currentBeatRedPlane() { return currentBeatPlanes.red; },
     get beatPlaneOverrides() { return beatPlaneOverrides; },
     get hasBeatOverrides() { return beatPlaneOverrides.size > 0; },
+    get beatEditMode() { return beatEditMode; },
+    setBeatEditMode(enabled: boolean) { beatEditMode = enabled; },
     cycleRotationVariant,
     get rotationVariantLabel() {
       return ROTATION_LABELS[rotationVariantIndex];
