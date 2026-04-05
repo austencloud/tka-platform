@@ -116,54 +116,36 @@
     }, 120);
   }
 
-  // Alt key toggle listener (press to show, press again to hide)
+  // Alt key toggle — instant on keydown, ignore repeats
   $effect(() => {
     if (isMobile || typeof window === "undefined") return;
 
-    // Track whether Alt was pressed alone (no other key combined)
-    let altDownAlone = false;
-
     function onKeyDown(e: KeyboardEvent) {
       if (e.key === "Alt") {
+        if (e.repeat) return;
         if (isInputFocused()) return;
         e.preventDefault();
-        altDownAlone = true;
-        return;
-      }
-      // Any other key while Alt is down means it's a combo, not a toggle
-      if (e.altKey) {
-        altDownAlone = false;
-      }
-    }
 
-    function onKeyUp(e: KeyboardEvent) {
-      if (e.key !== "Alt") return;
-      if (!altDownAlone) return;
-
-      // Toggle: if visible, dismiss; if hidden, show
-      if (visible && !fadeOut) {
-        dismiss();
-      } else {
-        fadeOut = false;
-        visible = true;
+        if (visible && !fadeOut) {
+          dismiss();
+        } else {
+          fadeOut = false;
+          visible = true;
+        }
       }
-      altDownAlone = false;
     }
 
     // Dismiss if window loses focus while overlay is open
     function onBlur() {
       visible = false;
       fadeOut = false;
-      altDownAlone = false;
     }
 
     window.addEventListener("keydown", onKeyDown);
-    window.addEventListener("keyup", onKeyUp);
     window.addEventListener("blur", onBlur);
 
     return () => {
       window.removeEventListener("keydown", onKeyDown);
-      window.removeEventListener("keyup", onKeyUp);
       window.removeEventListener("blur", onBlur);
     };
   });
