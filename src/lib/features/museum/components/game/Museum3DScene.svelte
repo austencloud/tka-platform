@@ -1143,16 +1143,10 @@
     visibleExhibitLights = allExhibitLights;
     visibleCeilingLights = allCeilingLights;
 
-    // Now activate only spawn room + adjacent rooms for mesh rendering
-    if (spawnRoomId) {
-      const adjacentIds = streamingManager.getAdjacentRooms(spawnRoomId);
-      for (const roomId of [spawnRoomId, ...adjacentIds]) {
-        activateRoom(roomId);
-      }
-      streamingManager.update(spawnRoomId);
-    } else {
-      for (const wing of grid.wings) activateRoom(wing.id);
-    }
+    // Activate ALL rooms — shaders are already compiled, meshes pre-built.
+    // No streaming needed: the 4090 handles all 16 rooms fine. The only
+    // bottleneck was shader compilation, which the warmup step solved.
+    for (const wing of grid.wings) activateRoom(wing.id);
 
     recomputeVisibility(grid.spawn.x, grid.spawn.y);
     geometryReady = true;
@@ -1183,22 +1177,12 @@
     rebuildProximityGrids();
   }
 
-  // ── Room streaming in game loop ──
-  // Rooms are pre-built — streaming just activates/deactivates them (instant).
-  let lastStreamingRoomId: string | null = spawnRoomId;
-  let streamingFrameCounter = 0;
-
-  function updateStreaming(playerTX: number, playerTZ: number): void {
-    streamingFrameCounter++;
-    if (streamingFrameCounter % 15 !== 0) return;
-
-    const currentRoom = streamingManager.getRoomAtTile(playerTX, playerTZ, grid.wings);
-    if (currentRoom === lastStreamingRoomId) return;
-    lastStreamingRoomId = currentRoom;
-
-    const { toLoad, toDispose } = streamingManager.update(currentRoom);
-    for (const id of toDispose) deactivateRoom(id);
-    for (const id of toLoad) activateRoom(id);
+  // Streaming disabled — all rooms stay active. The shader warmup + pre-build
+  // approach eliminates the transition freeze without needing to stream. The
+  // streaming infrastructure (RoomStreamingManager, activate/deactivate) is
+  // preserved for future use if the museum grows beyond GPU capacity.
+  function updateStreaming(_playerTX: number, _playerTZ: number): void {
+    // No-op: all rooms permanently active
   }
 
   // Shadow disabled on dynamic lights — toggling castShadow reactively causes
