@@ -162,7 +162,7 @@ export function registerGlobalShortcuts(
     id: "global.toggle-dark-mode",
     label: "Toggle Dark Mode",
     description: "Toggle Dark Mode (dark background)",
-    key: "l",
+    key: "d",
     modifiers: [],
     context: "global",
     scope: "view",
