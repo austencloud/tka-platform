@@ -32,7 +32,7 @@
     type AvatarId,
     DEFAULT_AVATAR_ID,
   } from "../config/avatar-definitions";
-  import { WALL_OFFSET } from "../domain/constants/performer-positions";
+
   import { userProportionsState } from "../state/user-proportions-state.svelte";
   import IKFigure3D from "./IKFigure3D.svelte";
   import AvatarLoadingIndicator from "./AvatarLoadingIndicator.svelte";
@@ -98,6 +98,10 @@
     /** Called each frame with the world-space XZ delta from root motion.
      *  The parent applies this to physics for collision-aware movement. */
     onRootMotion?: (worldDelta: { x: number; z: number }) => void;
+    /** PropAnchor group ref for blue hand IK target (from PerformerRig) */
+    bluePropAnchorRef?: import("three").Group;
+    /** PropAnchor group ref for red hand IK target (from PerformerRig) */
+    redPropAnchorRef?: import("three").Group;
   }
 
   let {
@@ -122,6 +126,8 @@
     isJumpRequested = false,
     enableRootMotion = false,
     onRootMotion,
+    bluePropAnchorRef,
+    redPropAnchorRef,
   }: Props = $props();
 
   // Services (manually instantiated to ensure shared skeleton instance)
@@ -650,54 +656,30 @@
     }
 
     // 2. IK post-process (blends per-arm based on prop presence)
-    const cos = Math.cos(facingAngle);
-    const sin = Math.sin(facingAngle);
-    const gridOffset = -WALL_OFFSET;
+    // IK targets: read world positions from PropAnchor groups in PerformerRig.
+    // If refs aren't available (standalone Avatar3D), fall back to prop state positions.
+    const blueIKTarget = new Vector3();
+    const redIKTarget = new Vector3();
 
-    // Use the model root's actual world position for IK target computation.
-    // This accounts for parent group transforms (e.g. museum performer stations
-    // wrap the avatar in a positioned T.Group at worldX/worldZ). Using the
-    // `position` prop alone would miss those parent offsets, causing IK targets
-    // to be in the wrong world-space location → T-pose.
-    const rootWorld = new Vector3();
-    if (cachedRoot) {
-      cachedRoot.getWorldPosition(rootWorld);
-      // rootWorld X/Z include all parent transforms — correct for world space.
-      // For Y, use position.y (grid center / shoulder height) which is the
-      // reference height the prop system orbits around.
-      rootWorld.y = position.y ?? 0;
-    } else {
-      rootWorld.set(position.x, position.y ?? 0, position.z);
+    if (bluePropAnchorRef && bluePropState) {
+      bluePropAnchorRef.updateWorldMatrix(true, false);
+      bluePropAnchorRef.getWorldPosition(blueIKTarget);
+    } else if (bluePropState) {
+      blueIKTarget.copy(bluePropState.worldPosition);
     }
 
-    function toWorldPosition(local: { x: number; y: number; z: number }, skipFacing?: boolean): Vector3 {
-      const localX = local.x;
-      const localZ = local.z + (skipFacing ? 0 : gridOffset);
-
-      if (skipFacing) {
-        // Dual wheel mode: positions are already in world space.
-        // Just add the avatar root offset, no facing rotation or gridOffset.
-        return new Vector3(
-          localX + rootWorld.x,
-          local.y + rootWorld.y,
-          localZ + rootWorld.z
-        );
-      }
-
-      const rotatedX = localX * cos + localZ * sin;
-      const rotatedZ = -localX * sin + localZ * cos;
-      return new Vector3(
-        rotatedX + rootWorld.x,
-        local.y + rootWorld.y,
-        rotatedZ + rootWorld.z
-      );
+    if (redPropAnchorRef && redPropState) {
+      redPropAnchorRef.updateWorldMatrix(true, false);
+      redPropAnchorRef.getWorldPosition(redIKTarget);
+    } else if (redPropState) {
+      redIKTarget.copy(redPropState.worldPosition);
     }
 
     const blueWorldProp = bluePropState
-      ? { ...bluePropState, worldPosition: toWorldPosition(bluePropState.worldPosition, bluePropState.skipFacingTransform) }
+      ? { ...bluePropState, worldPosition: blueIKTarget }
       : null;
     const redWorldProp = redPropState
-      ? { ...redPropState, worldPosition: toWorldPosition(redPropState.worldPosition, redPropState.skipFacingTransform) }
+      ? { ...redPropState, worldPosition: redIKTarget }
       : null;
 
     animationService.setPropsAndBlend(blueWorldProp, redWorldProp);
