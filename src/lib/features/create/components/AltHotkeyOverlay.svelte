@@ -146,9 +146,8 @@
         if (isInputFocused()) return;
         e.preventDefault();
 
-        if (visible && !fadeOut) {
-          dismiss();
-        } else {
+        // Alt only opens — never closes. Use X, Escape, or click outside to dismiss.
+        if (!visible) {
           fadeOut = false;
           visible = true;
         }
