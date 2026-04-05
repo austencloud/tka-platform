@@ -6,24 +6,23 @@
    * <Canvas>. Drives avatar pose purely through the useTask sync loop — the
    * orchestrator controls currentStep and this component puppets the avatar
    * to match. avatarState.play() is never called here.
+   *
+   * All avatar/grid/prop/effect wiring is delegated to PerformerRig, which
+   * owns the unified transform hierarchy. This component handles environment,
+   * lighting, mirror-mode prop swapping, and the puppet-mode sync loop.
    */
 
   import { T, useTask } from "@threlte/core";
   import { Vector3 } from "three";
   import { calculatePropQuaternion } from "../domain/constants/plane-transforms";
-  import Avatar3D from "./Avatar3D.svelte";
-  import Prop3D from "./props/Prop3D.svelte";
-  import Grid3D from "./Grid3D.svelte";
+  import PerformerRig from "./PerformerRig.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { container } from "$lib/shared/di";
   import { BackgroundType } from "@austencloud/backgrounds";
   import Environment3D from "../environments/components/Environment3D.svelte";
-  import EffectOrchestrator3D from "../effects/EffectOrchestrator3D.svelte";
-  import { userProportionsState } from "../state/user-proportions-state.svelte";
   import { getViewer3DContext } from "../context/viewer-3d-context";
   import { Plane } from "../domain/enums/Plane";
   import { PlaneMode } from "../domain/enums/PlaneMode";
-  import { PLANE_MODE_CONFIGS, GRID_OFFSETS } from "../domain/constants/plane-mode-configs";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import type { TipEffectMap } from "$lib/shared/animation-engine/domain/types/TipEffectTypes";
   import type { AvatarInstanceState } from "../state/avatar-instance-state.svelte";
@@ -40,12 +39,6 @@
   let { sequenceData, currentStep, isPlaying, avatarState }: Props = $props();
   const viewer3DState = getViewer3DContext();
 
-  // Avatar3D.position.y serves two purposes: IK target math AND visual placement.
-  // groundY is ~-1.56 (where the avatar's feet naturally sit). We set position.y
-  // to STAGE_LIFT so IK math is correct, then wrap in a Group at -STAGE_LIFT to
-  // push the visual model down so feet land at y=0. Same pattern as MuseumPerformerStation3D.
-  const STAGE_LIFT = $derived(-userProportionsState.groundY);
-  const avatarPosition = $derived({ x: 0, y: STAGE_LIFT, z: 0 });
   // GLTF models face -Z at facingAngle=0 (OpenGL convention).
   // Camera at +Z looks toward -Z and sees the avatar's back.
   // From +Z looking -Z (right-handed): +X = screen right = east ✓
@@ -158,7 +151,6 @@
   // The state layer uses Plane enum values as strings so it doesn't need to import
   // the enum — we do the conversion here at the scene boundary.
   const gridVisiblePlanes = $derived(viewer3DState.visiblePlanes as Set<Plane>);
-  const propGridOffset = $derived(GRID_OFFSETS[avatarState.planeMode]);
 
   // Read background type from settings for themed 3D environment
   const backgroundType = $derived.by((): BackgroundType => {
@@ -181,13 +173,9 @@
   );
 </script>
 
-<!-- 3D Environment (sky, ground, particles - matches user's theme).
-     The environment positions everything at groundY (≈ -1.56m) but the viewer
-     lifts the avatar so feet land at y=0. Shift the environment up to match. -->
+<!-- Environment (no STAGE_LIFT wrapper — sits at ground level) -->
 {#if hasEnvironment}
-  <T.Group position.y={STAGE_LIFT}>
-    <Environment3D {backgroundType} />
-  </T.Group>
+  <Environment3D {backgroundType} />
 {/if}
 
 <!-- Lighting — reduced when the environment provides its own -->
@@ -202,95 +190,19 @@
   </T.Mesh>
 {/if}
 
-<!-- Grid planes (wall/wheel/floor discs) — toggled via viewer state.
-     centerPosition matches avatarPosition so the grid is at shoulder height
-     where the props actually rotate, not at ground level.
-     In dual wheel mode, we render two grids offset laterally (one per hand). -->
-{#if viewer3DState.showGrid}
-  {@const currentPlaneMode = avatarState.planeMode}
-  {@const currentGridOffset = GRID_OFFSETS[currentPlaneMode]}
-  {@const currentModeConfig = PLANE_MODE_CONFIGS[currentPlaneMode]}
-  {#if currentPlaneMode === PlaneMode.DUAL_WHEEL}
-    <!-- Left hand (blue) grid — offset in X (world space, no facing rotation) -->
-    <Grid3D
-      visiblePlanes={new Set([Plane.WHEEL])}
-      centerPosition={{ x: avatarPosition.x + currentModeConfig.blueLateralOffset, y: avatarPosition.y, z: avatarPosition.z }}
-      facingAngle={0}
-      gridOffset={currentGridOffset}
-      planeOpacity={0.10}
-      showLabels={false}
-      gridMode={(sequenceData?.gridMode ?? "diamond") as import("../domain/constants/grid-layout").GridMode}
-    />
-    <!-- Right hand (red) grid — offset in X (world space, no facing rotation) -->
-    <Grid3D
-      visiblePlanes={new Set([Plane.WHEEL])}
-      centerPosition={{ x: avatarPosition.x + currentModeConfig.redLateralOffset, y: avatarPosition.y, z: avatarPosition.z }}
-      facingAngle={0}
-      gridOffset={currentGridOffset}
-      planeOpacity={0.10}
-      showLabels={false}
-      gridMode={(sequenceData?.gridMode ?? "diamond") as import("../domain/constants/grid-layout").GridMode}
-    />
-  {:else}
-    <Grid3D
-      visiblePlanes={gridVisiblePlanes}
-      centerPosition={avatarPosition}
-      {facingAngle}
-      gridOffset={currentGridOffset}
-      planeOpacity={0.12}
-      showLabels={false}
-      gridMode={(sequenceData?.gridMode ?? "diamond") as import("../domain/constants/grid-layout").GridMode}
-    />
-  {/if}
-{/if}
-
-<!-- Avatar wrapped in offset Group: -STAGE_LIFT puts feet at floor y=0 -->
-<T.Group position.y={-STAGE_LIFT}>
-  <Avatar3D
-    id="viewer"
-    bluePropState={bluePropState}
-    redPropState={redPropState}
-    position={avatarPosition}
-    {facingAngle}
-    isActive={false}
-    isMoving={false}
-  />
-</T.Group>
-
-<!-- Blue prop (renders red in mirror mode so your red = their visual red) -->
-{#if bluePropState}
-  <Prop3D
-    propType={isMirror ? redPropType : bluePropType}
-    propState={bluePropState}
-    color={isMirror ? "red" : "blue"}
-    {avatarPosition}
-    {facingAngle}
-    gridOffset={propGridOffset}
-    isActivePlayer={false}
-  />
-{/if}
-
-<!-- Red prop (renders blue in mirror mode) -->
-{#if redPropState}
-  <Prop3D
-    propType={isMirror ? bluePropType : redPropType}
-    propState={redPropState}
-    color={isMirror ? "blue" : "red"}
-    {avatarPosition}
-    {facingAngle}
-    gridOffset={propGridOffset}
-    isActivePlayer={false}
-  />
-{/if}
-
-<!-- 3D Effects Orchestrator (trails, future: fire/LED/sparkle) -->
-<!-- Note: anchor refs not yet wired here — Task 9 will replace this with
-     PerformerRig which provides bluePropAnchorRef/redPropAnchorRef. Until
-     then, TipPositionBridge3D uses the fallback (propState.worldPosition). -->
-<EffectOrchestrator3D
+<!-- Single PerformerRig replaces all sibling wiring (avatar, grid, props, effects) -->
+<PerformerRig
+  position={{ x: 0, z: 0 }}
+  {facingAngle}
+  planeMode={avatarState.planeMode}
+  {avatarState}
+  showGrid={viewer3DState.showGrid}
+  visiblePlanes={gridVisiblePlanes}
+  gridMode={(sequenceData?.gridMode ?? "diamond") as import("../domain/constants/grid-layout").GridMode}
+  bluePropType={isMirror ? redPropType : bluePropType}
+  redPropType={isMirror ? bluePropType : redPropType}
   {bluePropState}
   {redPropState}
+  tipEffectMap={globalTipEffectMap}
   {isPlaying}
-  staffHalfLength={userProportionsState.staffLength / 2}
-  {globalTipEffectMap}
 />
