@@ -51,7 +51,7 @@
       <div class="header-content">
         <h1>Terms of Service</h1>
         <p class="last-updated">
-          Last Updated: January 16, 2026
+          Last Updated: April 4, 2026
         </p>
       </div>
     </header>
@@ -70,9 +70,9 @@
         <h2>2. Description of Service</h2>
         <p>
           TKA Composer is an educational platform that provides tools for
-          learning, creating, and sharing TKA (The Kinetic Alphabet) sequences. The
-          service includes sequence building tools, learning modules, and
-          community features.
+          learning, creating, and sharing TKA (The Kinetic Alphabet) sequences.
+          The service includes sequence building tools, learning modules, and
+          community features. Some features require a paid subscription.
         </p>
       </section>
 
@@ -81,7 +81,8 @@
         <p>
           You are responsible for maintaining the confidentiality of your
           account credentials. You agree to accept responsibility for all
-          activities that occur under your account.
+          activities that occur under your account. You may not share account
+          credentials or allow others to access your account.
         </p>
       </section>
 
@@ -89,9 +90,16 @@
         <h2>4. User Content</h2>
         <p>
           You retain ownership of any sequences, content, or materials you
-          create using TKA Composer. By sharing content publicly, you grant TKA Composer a
-          non-exclusive license to display and distribute that content within
-          the application for the purpose of providing the service.
+          create using TKA Composer. By sharing content publicly, you grant
+          TKA Composer a non-exclusive, worldwide, royalty-free license to
+          display, distribute, and cache that content within the application
+          for the purpose of providing the service.
+        </p>
+        <p>
+          TKA Composer may display publicly shared content in browse galleries,
+          search results, and promotional materials. This license continues
+          after account deletion for content that has already been shared
+          publicly, but you may request removal by contacting us.
         </p>
       </section>
 
@@ -100,55 +108,154 @@
         <p>You agree not to:</p>
         <ul>
           <li>Use the service for any illegal purposes</li>
-          <li>Attempt to gain unauthorized access to the service</li>
-          <li>Interfere with or disrupt the service</li>
+          <li>Attempt to gain unauthorized access to the service or other
+            users' accounts</li>
+          <li>Interfere with or disrupt the service or its infrastructure</li>
           <li>Upload malicious code or harmful content</li>
-          <li>Harass or harm other users</li>
+          <li>Harass, threaten, or harm other users</li>
         </ul>
       </section>
 
+      <section id="automated-access">
+        <h2>6. Automated Access and Data Extraction</h2>
+        <p>You may not:</p>
+        <ul>
+          <li>Use bots, scrapers, crawlers, or other automated tools to
+            access the service or extract data</li>
+          <li>Systematically download, copy, or mirror content from the
+            service beyond normal personal use</li>
+          <li>Use the service's API or interfaces in ways not intended or
+            documented</li>
+          <li>Attempt to reverse-engineer, decompile, or extract the source
+            code of the application from its hosted form</li>
+        </ul>
+        <p>
+          The TKA notation system and sequence data are open knowledge meant
+          to be shared and taught. This restriction targets automated bulk
+          extraction from the hosted service, not the knowledge itself. The
+          sequence dataset is separately available under open license terms
+          as described in the project's LICENSE file.
+        </p>
+      </section>
+
+      <section id="competing-service">
+        <h2>7. Competing Service Restriction</h2>
+        <p>
+          You may not use the service, its source code, or data obtained
+          through the service to build, operate, or contribute to a product
+          or service that competes with TKA Composer. This includes hosting
+          a substantially similar application as a service for others.
+        </p>
+        <p>
+          Building personal tools, educational materials, or research using
+          TKA notation is welcome and encouraged. This restriction targets
+          commercial clones and hosted competitors, not the community.
+        </p>
+      </section>
+
       <section id="intellectual-property">
-        <h2>6. Intellectual Property</h2>
+        <h2>8. Intellectual Property and Trademarks</h2>
         <p>
           The TKA Composer application, including its design, features, and
-          underlying technology, is protected by applicable intellectual property
-          laws. The Kinetic Alphabet notation system is an original work
-          created to represent flow arts movements in written form.
+          underlying technology, is protected by applicable intellectual
+          property laws and licensed under the Elastic License 2.0. The
+          source code is available for inspection but is not open source.
+        </p>
+        <p>
+          "The Kinetic Alphabet", "TKA", "TKA Composer", and associated
+          logos are trademarks of Austen Cloud. You may not use these names
+          to imply endorsement, name a competing product, or create
+          confusion about the origin of your work. Fair use for attribution
+          (e.g., "compatible with TKA notation") is permitted.
+        </p>
+        <p>
+          The TKA notation system itself is an open standard documented
+          under Creative Commons Attribution-ShareAlike 4.0. Anyone can
+          teach, reference, and build upon the notation with attribution.
+        </p>
+      </section>
+
+      <section id="subscriptions">
+        <h2>9. Subscriptions and Payments</h2>
+        <p>
+          Some features require a paid subscription. By subscribing, you
+          agree to pay the applicable fees. Subscriptions renew automatically
+          unless cancelled before the renewal date.
+        </p>
+        <p>
+          Refunds may be issued at the developer's discretion. If you
+          experience a technical issue that prevents access to paid features,
+          contact us and we will work to resolve it or issue a refund.
+        </p>
+        <p>
+          Free-tier functionality may change over time. We will provide
+          reasonable notice before removing features from the free tier.
+        </p>
+      </section>
+
+      <section id="contributions">
+        <h2>10. Code Contributions</h2>
+        <p>
+          By submitting code, pull requests, or other contributions to the
+          TKA project repositories, you assign all intellectual property
+          rights in your contribution to Austen Cloud. You represent that
+          you have the right to make this assignment and that your
+          contribution does not infringe any third-party rights.
+        </p>
+        <p>
+          This assignment allows the project to maintain a unified licensing
+          structure and execute future licensing changes (including the
+          post-mortem open source provision described in the LICENSE file).
         </p>
       </section>
 
       <section id="disclaimers">
-        <h2>7. Disclaimers</h2>
+        <h2>11. Disclaimers</h2>
         <p>
-          TKA Composer is provided "as is" without warranties of any kind. There is
-          no guarantee that the service will be uninterrupted, secure, or
-          error-free. TKA Composer is an independent project maintained outside of
-          regular business hours.
+          TKA Composer is provided "as is" without warranties of any kind,
+          express or implied, including but not limited to warranties of
+          merchantability, fitness for a particular purpose, and
+          non-infringement. There is no guarantee that the service will be
+          uninterrupted, secure, or error-free.
         </p>
       </section>
 
       <section id="liability">
-        <h2>8. Limitation of Liability</h2>
+        <h2>12. Limitation of Liability</h2>
         <p>
-          TKA Composer and its developer shall not be liable for any indirect,
-          incidental, special, or consequential damages arising from your use
-          of the service. To the maximum extent permitted by law, total liability
-          for any claims shall not exceed the amount you paid to use the service
-          (if any).
+          TKA Composer and its developer shall not be liable for any
+          indirect, incidental, special, consequential, or punitive damages
+          arising from your use of the service, including but not limited to
+          loss of data, loss of profits, or interruption of service. To the
+          maximum extent permitted by law, total liability for any claims
+          shall not exceed the amount you paid to use the service in the
+          twelve (12) months preceding the claim.
+        </p>
+      </section>
+
+      <section id="governing-law">
+        <h2>13. Governing Law</h2>
+        <p>
+          These Terms are governed by and construed in accordance with the
+          laws of the State of California, United States, without regard to
+          conflict of law principles. Any disputes arising from these terms
+          or use of the service shall be resolved in the courts of
+          California.
         </p>
       </section>
 
       <section id="changes">
-        <h2>9. Changes to Terms</h2>
+        <h2>14. Changes to Terms</h2>
         <p>
-          These terms may be modified at any time. Continued use of the service
-          after changes constitutes acceptance of the modified terms. Significant
-          changes will be communicated through the app or via email.
+          These terms may be modified at any time. Continued use of the
+          service after changes constitutes acceptance of the modified
+          terms. Significant changes will be communicated through the app
+          or via email at least 30 days before taking effect.
         </p>
       </section>
 
       <section id="contact">
-        <h2>10. Contact</h2>
+        <h2>15. Contact</h2>
         <p>
           For questions about these Terms of Service, email
           <a href="mailto:tkaflowarts@gmail.com">tkaflowarts@gmail.com</a>.

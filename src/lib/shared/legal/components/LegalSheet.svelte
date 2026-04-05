@@ -73,10 +73,9 @@
           <section>
             <h3>2. Description of Service</h3>
             <p>
-              TKA Composer is an educational platform that provides tools for
-              learning, creating, and sharing TKA (The Kinetic Alphabet) sequences. The
-              service includes sequence building tools, learning modules, and
-              community features.
+              TKA Composer is an educational platform for learning, creating,
+              and sharing TKA sequences. Some features require a paid
+              subscription.
             </p>
           </section>
 
@@ -84,16 +83,15 @@
             <h3>3. User Accounts</h3>
             <p>
               You are responsible for maintaining the confidentiality of your
-              account credentials. You agree to accept responsibility for all
-              activities that occur under your account.
+              account credentials and all activities under your account.
             </p>
           </section>
 
           <section>
             <h3>4. User Content</h3>
             <p>
-              You retain ownership of any sequences, content, or materials you
-              create using TKA. By sharing content publicly, you grant TKA a
+              You retain ownership of content you create. By sharing publicly,
+              you grant TKA Composer a non-exclusive, worldwide, royalty-free
               license to display and distribute that content within the
               application.
             </p>
@@ -103,8 +101,8 @@
             <h3>5. Acceptable Use</h3>
             <p>You agree not to:</p>
             <ul>
-              <li>Use the service for any illegal purposes</li>
-              <li>Attempt to gain unauthorized access to the service</li>
+              <li>Use the service for illegal purposes</li>
+              <li>Gain unauthorized access to the service or other accounts</li>
               <li>Interfere with or disrupt the service</li>
               <li>Upload malicious code or harmful content</li>
               <li>Harass or harm other users</li>
@@ -112,47 +110,79 @@
           </section>
 
           <section>
-            <h3>6. Intellectual Property</h3>
+            <h3>6. Automated Access</h3>
             <p>
-              The TKA Composer application, including its design, features, and
-              underlying technology, is owned by TKA Composer and protected by
-              intellectual property laws. The Kinetic Alphabet system and
-              methodology remain the intellectual property of their respective
-              creators.
+              You may not use bots, scrapers, or automated tools to extract
+              data from the service. You may not reverse-engineer or decompile
+              the application. The TKA notation and sequence data are open
+              knowledge; this restriction targets automated bulk extraction
+              from the hosted service.
             </p>
           </section>
 
           <section>
-            <h3>7. Disclaimers</h3>
+            <h3>7. Competing Service</h3>
             <p>
-              TKA Composer is provided "as is" without warranties of any kind. We
-              do not guarantee that the service will be uninterrupted, secure,
-              or error-free.
+              You may not use the service, its source code, or data obtained
+              through it to build or operate a competing product or service.
+              Personal tools and educational materials using TKA notation are
+              welcome.
             </p>
           </section>
 
           <section>
-            <h3>8. Limitation of Liability</h3>
+            <h3>8. Intellectual Property</h3>
             <p>
-              TKA shall not be liable for any indirect, incidental, special, or
-              consequential damages arising from your use of the service.
+              The TKA Composer application is licensed under the Elastic
+              License 2.0. "The Kinetic Alphabet", "TKA", and "TKA Composer"
+              are trademarks of Austen Cloud. The TKA notation system is an
+              open standard under CC BY-SA 4.0.
             </p>
           </section>
 
           <section>
-            <h3>9. Changes to Terms</h3>
+            <h3>9. Subscriptions</h3>
             <p>
-              We reserve the right to modify these terms at any time. Continued
-              use of the service after changes constitutes acceptance of the
-              modified terms.
+              Some features require a paid subscription. Subscriptions renew
+              automatically unless cancelled. Refunds may be issued at the
+              developer's discretion.
             </p>
           </section>
 
           <section>
-            <h3>10. Contact</h3>
+            <h3>10. Code Contributions</h3>
             <p>
-              If you have questions about these Terms of Service, please contact
-              us through the application's support channels.
+              By submitting code contributions to TKA repositories, you assign
+              all intellectual property rights in your contribution to Austen
+              Cloud.
+            </p>
+          </section>
+
+          <section>
+            <h3>11. Disclaimers &amp; Liability</h3>
+            <p>
+              TKA Composer is provided "as is" without warranties of any kind.
+              Total liability shall not exceed the amount you paid in the
+              twelve months preceding the claim.
+            </p>
+          </section>
+
+          <section>
+            <h3>12. Governing Law</h3>
+            <p>
+              These Terms are governed by the laws of the State of California,
+              United States.
+            </p>
+          </section>
+
+          <section>
+            <h3>13. Contact</h3>
+            <p>
+              Questions? Email
+              <a href="mailto:tkaflowarts@gmail.com">tkaflowarts@gmail.com</a>.
+            </p>
+            <p>
+              <a href="/terms">View full Terms of Service</a>
             </p>
           </section>
         {:else}

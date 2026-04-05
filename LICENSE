@@ -76,18 +76,33 @@ The MCP domain knowledge server and related tooling are part of the
 commercial platform.
 
 
-5. Data & Datasets (All Rights Reserved)
-------------------------------------------
+5. Data & Datasets (Mixed Licensing)
+--------------------------------------
+
+5a. Open Sequence Data (CC BY-SA 4.0)
+
+The following data is licensed under Creative Commons
+Attribution-ShareAlike 4.0 International (CC BY-SA 4.0).
+See licenses/CC-BY-SA-4.0.txt for the full text.
+
+  - Sequence datasets (53,000+ enumerated sequences)
+  - Deck composition data (deck lists, sequence groupings)
+  - Pictograph reference data
+
+You are free to share, print, teach from, and redistribute this data
+provided you give attribution to Austen Cloud / The Kinetic Alphabet
+and share any derivative datasets under the same license.
+
+5b. Proprietary Data (All Rights Reserved)
 
 The following data is proprietary and NOT licensed for redistribution:
 
-  - Sequence datasets (53,000+ enumerated sequences)
-  - Deck composition data
-  - Humor training pairs
-  - User-generated content and community submissions
-  - ML training data
+  - Humor training pairs and AI fine-tuning data
+  - ML training data and model weights
+  - User-generated content (owned by the respective users)
+  - Internal analytics and telemetry data
 
-No license is granted for these datasets. Contact
+No license is granted for proprietary data. Contact
 austencloud@gmail.com for commercial licensing inquiries.
 
 
@@ -151,6 +166,22 @@ the author's estate planning documents.
 If you believe this provision has been triggered and the repository has
 not yet been relicensed, contact Fund the Flow Arts directly or file
 a public issue on the GitHub repository.
+
+
+8. Trademarks
+--------------
+
+"The Kinetic Alphabet", "TKA", "TKA Composer", and associated logos
+are trademarks of Austen Cloud. Nothing in any of the licenses above
+(MIT, ELv2, or CC BY-SA 4.0) grants permission to use these
+trademarks. You may not use these names or marks to:
+
+  - Imply endorsement or affiliation with the TKA project
+  - Name a competing product or service
+  - Create confusion about the origin of your product
+
+Fair use for attribution (e.g., "compatible with TKA notation" or
+"based on The Kinetic Alphabet") is permitted.
 
 
 Questions & Commercial Licensing
