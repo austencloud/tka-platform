@@ -10,13 +10,12 @@
 
 	const villageState = getVillageContext();
 
-	// syncFromEngine reads ECS targets each frame, lerpAvatars smoothly interpolates
+	// syncFromEngine reads ECS targets, lerpAvatars smoothly interpolates positions
 	useTask(() => {
 		villageState.syncFromEngine();
 		villageState.lerpAvatars();
 	});
 
-	// Arena ground circle
 	const arenaRadius = 8;
 
 	const avatars = $derived(villageState.avatarList);
