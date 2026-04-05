@@ -202,6 +202,12 @@ export const ROOM_CONTENT: Record<string, RoomContentMap> = {
         },
       },
     },
+    performers: {
+      "egypt-telekinetic-formation": {
+        autoPlay: true,
+        sequenceId: "gallery-spiral-seq",
+      },
+    },
   },
 
   renaissance: {

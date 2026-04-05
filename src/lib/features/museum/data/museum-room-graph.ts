@@ -240,6 +240,9 @@ export const MUSEUM_ROOMS: RoomNode[] = [
         minMargin: 2,
       },
     },
+    performers: [
+      { offsetX: 0, offsetY: 0, facing: "south", refId: "egypt-telekinetic-formation" },
+    ],
   },
   {
     id: "renaissance",
