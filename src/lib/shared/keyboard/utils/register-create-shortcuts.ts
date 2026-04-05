@@ -13,6 +13,7 @@ import { getAnimationPlaybackRef } from "$lib/shared/coordinators/animation-play
 import { executeClearSequenceWorkflow } from "$lib/features/create/shared/utils/clearSequenceWorkflow";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import { getSettings, updateSettings } from "$lib/shared/application/state/app-state.svelte";
+import { shiftStartPosition } from "$lib/features/create/shared/services/implementations/sequence-transforms/sequence-transforms";
 import { container } from "$lib/shared/di";
 import { getAllPropTypes } from "$lib/shared/pictograph/prop/domain/PropTypeDisplayRegistry";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
@@ -616,8 +617,8 @@ export function registerCreateShortcuts(
       const sequenceState = ref.CreateModuleState.getActiveTabSequenceState();
       const sequence = sequenceState?.currentSequence;
       if (!sequence || sequence.steps.length <= 1) return;
-      const [first, ...rest] = sequence.steps;
-      sequenceState.setCurrentSequence({ ...sequence, steps: [...rest, first!] });
+      const shifted = shiftStartPosition(sequence, 2);
+      sequenceState.setCurrentSequence(shifted);
     },
   });
 
