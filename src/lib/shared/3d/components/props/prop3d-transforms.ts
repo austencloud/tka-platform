@@ -8,7 +8,7 @@
 import { Quaternion, Euler, Vector3 } from "three";
 import type { PropState3D } from "../../domain/models/PropState3D";
 import { Plane } from "../../domain/enums/Plane";
-import { getPlaneNormal } from "../../domain/constants/plane-transforms";
+import { getPlaneRight } from "../../domain/constants/plane-transforms";
 
 /**
  * Compute world-space position for a prop, given avatar position,
@@ -49,24 +49,38 @@ export function computePropPosition(
 }
 
 /**
+ * Tilt a +Y cylinder to lie flat on a given plane.
+ *
+ * For WALL (right = +X): tilts Y → -X (staff horizontal in XY)
+ * For WHEEL (right = -Z): tilts Y → +Z (staff horizontal in YZ)
+ * For FLOOR (right = +X): tilts Y → -X (staff horizontal in XZ)
+ *
+ * The negation matches the existing wall convention where staffAngle=0
+ * points the staff toward -right (stage left on wall plane).
+ */
+function getTiltQuat(plane: Plane): Quaternion {
+  const right = getPlaneRight(plane);
+  return new Quaternion().setFromUnitVectors(
+    new Vector3(0, 1, 0),
+    right.clone().negate()
+  );
+}
+
+/**
  * Compute world-space rotation (Euler) for a prop that is naturally
- * vertical (cylinder along Y). Composes: horizontal tilt → world rotation → facing.
+ * vertical (cylinder along Y). Composes: plane-aware tilt → spin → facing.
  */
 export function computePropRotation(
   propState: PropState3D,
   facingAngle: number
 ): [number, number, number] {
-  // Cylinder is vertical by default (along Y). Rotate 90° around Z to make horizontal.
-  const horizontalQuat = new Quaternion().setFromEuler(
-    new Euler(0, 0, Math.PI / 2)
-  );
+  // Tilt the cylinder to lie flat on the prop's plane
+  const tiltQuat = getTiltQuat(propState.plane);
 
   // In dual wheel mode (skipFacingTransform), positions and rotations are
-  // in world space. Use worldRotation directly (which already contains the
-  // correct plane-aware spin from calculatePropQuaternion) — just skip
-  // the facingQuat that would double-rotate everything.
+  // in world space. Apply spin + tilt but skip the facing rotation.
   if (propState.skipFacingTransform) {
-    const finalQuat = propState.worldRotation.clone().multiply(horizontalQuat);
+    const finalQuat = propState.worldRotation.clone().multiply(tiltQuat);
     const euler = new Euler().setFromQuaternion(finalQuat);
     return [euler.x, euler.y, euler.z];
   }
@@ -78,7 +92,7 @@ export function computePropRotation(
   const finalQuat = facingQuat
     .clone()
     .multiply(propState.worldRotation)
-    .multiply(horizontalQuat);
+    .multiply(tiltQuat);
 
   const euler = new Euler().setFromQuaternion(finalQuat);
   return [euler.x, euler.y, euler.z];
@@ -88,20 +102,15 @@ export function computePropRotation(
  * Compute world-space rotation for a prop that is naturally flat/planar
  * (like a fan or hoop that lies in the XY plane).
  *
- * Applies the same 90° Z base rotation as cylindrical props so the
- * fan's blade axis (+Y in local geometry) aligns with the direction
- * the worldRotation quaternion expects.  Without this, fans appear
- * rotated 90° relative to their 2D orientation.
+ * Uses the same plane-aware tilt as cylindrical props so the
+ * fan's blade axis (+Y in local geometry) aligns correctly
+ * regardless of which plane the prop is on.
  */
 export function computeFlatPropRotation(
   propState: PropState3D,
   facingAngle: number
 ): [number, number, number] {
-  // Same base rotation as staves: align local +Y with the axis
-  // the worldRotation quaternion was computed for.
-  const baseQuat = new Quaternion().setFromEuler(
-    new Euler(0, 0, Math.PI / 2)
-  );
+  const tiltQuat = getTiltQuat(propState.plane);
 
   const facingQuat = new Quaternion().setFromEuler(
     new Euler(0, facingAngle, 0)
@@ -110,7 +119,7 @@ export function computeFlatPropRotation(
   const finalQuat = facingQuat
     .clone()
     .multiply(propState.worldRotation)
-    .multiply(baseQuat);
+    .multiply(tiltQuat);
 
   const euler = new Euler().setFromQuaternion(finalQuat);
   return [euler.x, euler.y, euler.z];

@@ -222,22 +222,10 @@ export function calculatePropQuaternion(
   plane: Plane,
   staffAngle: number
 ): Quaternion {
-  // Start with plane base orientation
-  const planeQuat = getPlaneQuaternion(plane);
-
-  // Spin the staff around Z in the plane's LOCAL frame.
-  // planeQuat maps the wall frame (where Z = normal) into the target plane,
-  // so rotating around Z here = rotating around the plane's normal in world space.
-  //
-  // Why Z and not the world-space normal: after horizontalQuat lays the cylinder
-  // along X, a Z-axis spin is always perpendicular to the staff and therefore
-  // visually correct. Using the world-space normal fails for WHEEL (normal = X)
-  // because spinning around X when the staff is also along X is invisible.
-  const staffQuat = new Quaternion().setFromAxisAngle(
-    new Vector3(0, 0, 1),
-    staffAngle
-  );
-
-  // Combine: plane orientation first, then staff spin in local frame
-  return planeQuat.clone().multiply(staffQuat);
+  // Spin the staff around the plane's normal in world space.
+  // This is JUST the rotation component — the tilt that lays the cylinder
+  // flat on the correct plane is handled by computePropRotation's
+  // plane-aware horizontalQuat.
+  const normal = getPlaneNormal(plane);
+  return new Quaternion().setFromAxisAngle(normal, staffAngle);
 }
