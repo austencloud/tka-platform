@@ -180,7 +180,6 @@ export function createVillageState(
 	 */
 	function lerpAvatars(): void {
 		const POSITION_LERP = 0.15;
-		const FACING_LERP = 0.2;
 		const MOVE_THRESHOLD = 0.02;
 
 		for (const renderState of avatarStateMap.values()) {
@@ -190,31 +189,29 @@ export function createVillageState(
 			const dz = renderState.targetZ - inst.position.z;
 			const dist = Math.sqrt(dx * dx + dz * dz);
 
-			inst.position.x += dx * POSITION_LERP;
-			inst.position.z += dz * POSITION_LERP;
-
 			renderState.isMoving = dist > MOVE_THRESHOLD;
 			renderState.moveSpeed = renderState.isMoving
 				? Math.min(1, dist * 2)
 				: 0;
 
-			// When moving, face the movement direction. When idle, use engine facing.
-			const currentAngle = inst.facingAngle;
-			let targetAngle: number;
-
 			if (dist > MOVE_THRESHOLD) {
-				// Face the direction of actual movement (toward target position)
-				// atan2(dx, dz) gives yaw in XZ plane; add PI because
-				// the avatar model faces -Z at angle 0
-				targetAngle = Math.atan2(dx, dz) + Math.PI;
+				// Face movement direction BEFORE moving — no lerp, snap immediately.
+				// atan2(dx, dz) = yaw from +Z axis. Avatar3D rotation.y uses this
+				// convention directly (model faces -Z at 0, +Z at PI).
+				inst.setFacingAngle(Math.atan2(dx, dz));
 			} else {
-				targetAngle = renderState.targetFacingAngle;
+				// Idle — gently lerp toward engine's facing (e.g. facing partner)
+				const currentAngle = inst.facingAngle;
+				let angleDiff =
+					renderState.targetFacingAngle - currentAngle;
+				while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+				while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+				inst.setFacingAngle(currentAngle + angleDiff * 0.1);
 			}
 
-			let angleDiff = targetAngle - currentAngle;
-			while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
-			while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
-			inst.setFacingAngle(currentAngle + angleDiff * FACING_LERP);
+			// Move position AFTER facing is set
+			inst.position.x += dx * POSITION_LERP;
+			inst.position.z += dz * POSITION_LERP;
 		}
 	}
 
