@@ -24,6 +24,7 @@
   import BeatPlaneStrip from "./controls/BeatPlaneStrip.svelte";
   import Viewer3DContextMenuHost from "./context-menu/Viewer3DContextMenuHost.svelte";
   import { getViewer3DContext } from "../context/viewer-3d-context";
+  import { PlaneMode } from "../domain/enums/PlaneMode";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { CameraStateSnapshot } from "../domain/types/CameraStateSnapshot";
 
@@ -49,6 +50,23 @@
   function handleContextMenu(e: MouseEvent) {
     e.preventDefault();
     contextMenuHost?.openContextMenu(e.clientX, e.clientY);
+  }
+
+  function handlePlaneModeChange(mode: PlaneMode) {
+    avatarState?.setPlaneMode(mode);
+
+    // Auto-snap to Side view when entering dual-wheel mode
+    if (mode === PlaneMode.DUAL_WHEEL) {
+      const D = 2.4;
+      const Y = 1.59;
+      const GZ = -0.3;
+      // Stage right = +X, looking at the performer's side profile
+      viewer3DState.setActiveCameraPreset("side");
+      viewer3DState.snapCameraTo(
+        { x: D, y: Y, z: GZ },
+        { x: 0, y: 1.55, z: GZ }
+      );
+    }
   }
 </script>
 
@@ -81,7 +99,7 @@
             totalBeats={avatarState.totalSteps}
             hasBeatOverrides={avatarState.hasBeatOverrides}
             beatEditMode={avatarState.beatEditMode}
-            onModeChange={(mode) => avatarState.setPlaneMode(mode)}
+            onModeChange={handlePlaneModeChange}
             onHandPlaneChange={(hand, plane) => avatarState.setBeatHandPlane(avatarState.currentStepIndex, hand, plane)}
             onSequenceHandPlaneChange={(hand, plane) => avatarState.setHandPlane(hand, plane)}
             onBeatEditModeChange={(enabled) => avatarState.setBeatEditMode(enabled)}

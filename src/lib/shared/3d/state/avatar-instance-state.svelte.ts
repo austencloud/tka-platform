@@ -327,14 +327,10 @@ export function createAvatarInstanceState(
       };
     }
     const base = PLANE_MODE_CONFIGS[mode];
-    if (mode === PlaneMode.DUAL_WHEEL) {
-      const rotPlane = ROTATION_VARIANTS[rotationVariantIndex] ?? Plane.WALL;
-      return {
-        ...base,
-        rotationPlane: rotPlane,
-        skipFacingTransform: true, // Always skip in dual wheel — positions stay in world YZ
-      };
-    }
+    // Dual-wheel no longer needs special overrides — the unified rotation
+    // pipeline handles wheel plane correctly without skipFacingTransform
+    // or rotationPlane overrides. Avatar faces forward, lateral offsets
+    // place each hand's wheel plane to the sides.
     return base;
   }
 

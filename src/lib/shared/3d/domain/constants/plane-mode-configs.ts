@@ -64,14 +64,14 @@ export const PLANE_MODE_CONFIGS: Record<PlaneMode, PlaneModeConfig> = {
     redLateralOffset: 0,
   },
   [PlaneMode.DUAL_WHEEL]: {
-    facingAngle: Math.PI / 2,
+    // Avatar faces forward — no rotation. The lateral offsets place
+    // each hand's wheel plane to the left and right of the body.
+    // No skipFacingTransform, no rotationPlane override — the unified
+    // rotation pipeline (calculatePropQuaternion → computePropRotation)
+    // handles wheel plane rotation correctly.
+    facingAngle: 0,
     bluePlane: Plane.WHEEL,
     redPlane: Plane.WHEEL,
-    // WHEEL positions are already in YZ (world space). Skip the facing
-    // transform so they stay as actual wheel planes instead of getting
-    // rotated back into wall plane (XY). Props spin around X (wheel normal).
-    rotationPlane: Plane.WHEEL,
-    skipFacingTransform: true,
     blueLateralOffset: LATERAL_OFFSET,
     redLateralOffset: -LATERAL_OFFSET,
   },
