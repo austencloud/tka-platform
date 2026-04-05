@@ -305,7 +305,7 @@
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.97));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 12px;
-    padding: 14px 24px;
+    padding: 14px 44px 14px 24px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
     display: flex;
     align-items: flex-start;
@@ -526,23 +526,24 @@
 
   .edit-btn i { font-size: 10px; }
 
-  /* Close button */
+  /* Close button — pinned inside the overlay's top-right corner */
   .close-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 36px;
-    height: 36px;
-    min-width: 36px;
+    width: 28px;
+    height: 28px;
     background: rgba(255, 255, 255, 0.08);
     border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 8px;
+    border-radius: 6px;
     cursor: pointer;
     color: rgba(255, 255, 255, 0.5);
-    font-size: var(--font-size-min, 14px);
+    font-size: var(--font-size-compact, 12px);
     transition: all 150ms ease;
-    align-self: center;
-    flex-shrink: 0;
+    z-index: 1;
   }
 
   .close-btn:hover {
