@@ -39,7 +39,7 @@
       iconColor: "#60a5fa",
       bgTint: "rgba(59,130,246,0.12)",
       description: "Flip left/right",
-      hotkey: "M",
+      hotkey: "Alt+M",
     },
     {
       type: "flip",
@@ -48,7 +48,7 @@
       iconColor: "#a78bfa",
       bgTint: "rgba(168,85,247,0.12)",
       description: "Flip top/bottom",
-      hotkey: "V",
+      hotkey: "Alt+V",
     },
     {
       type: "swapColors",
@@ -57,7 +57,7 @@
       iconColor: "#fb7185",
       bgTint: "rgba(244,63,94,0.12)",
       description: "Switch hands",
-      hotkey: "S",
+      hotkey: "Alt+S",
     },
     {
       type: "invert",
@@ -66,7 +66,7 @@
       iconColor: "#fbbf24",
       bgTint: "rgba(234,179,8,0.12)",
       description: "Reverse direction",
-      hotkey: "I",
+      hotkey: "Alt+I",
     },
     {
       type: "shiftStart",
@@ -75,7 +75,7 @@
       iconColor: "#818cf8",
       bgTint: "rgba(99,102,241,0.12)",
       description: "Advance starting beat",
-      hotkey: "F",
+      hotkey: "Alt+F",
     },
     {
       type: "rewind",
@@ -84,7 +84,7 @@
       iconColor: "#34d399",
       bgTint: "rgba(16,185,129,0.12)",
       description: "Play backwards",
-      hotkey: "\u21e7R",
+      hotkey: "Alt+W",
     },
   ];
 </script>
@@ -108,8 +108,8 @@
   </div>
 
   <!-- Rotate -->
-  <label class="section-label">Rotate</label>
-  <div class="segment-strip rotate-strip">
+  <span class="section-label">Rotate</span>
+  <div class="segment-strip rotate-strip" role="group" aria-label="Rotate">
     <button class="segment-btn rotate-btn" onclick={() => onTransform("rotate45L")}>
       <i class="fas fa-rotate-left" aria-hidden="true"></i>
       45&deg; L
@@ -121,8 +121,8 @@
   </div>
 
   <!-- Rearrange -->
-  <label class="section-label">Rearrange</label>
-  <div class="rearrange-grid">
+  <span class="section-label">Rearrange</span>
+  <div class="rearrange-grid" role="group" aria-label="Rearrange">
     {#each rearrangeButtons as btn}
       <button
         class="rearrange-btn"
