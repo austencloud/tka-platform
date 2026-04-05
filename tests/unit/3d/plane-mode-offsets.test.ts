@@ -55,20 +55,22 @@ describe("lateral offset through PropStateInterpolator", () => {
     endOrientation: Orientation.IN,
   };
 
-  it("no offset produces X=0 on WHEEL plane", () => {
+  it("no offset produces Z=approx 0 on WHEEL plane at NORTH", () => {
+    // WHEEL NORTH: (0, radius, 0) — Z component from -cos(-π/2) * r = 0
     const result = interpolator.calculatePropState(baseConfig, 0);
     expect(result.worldPosition.x).toBeCloseTo(0);
   });
 
-  it("positive lateralOffset shifts worldPosition.x positive", () => {
+  it("WHEEL lateralOffset shifts worldPosition.z (maps to X_world after facing rotation)", () => {
     const result = interpolator.calculatePropState(
       { ...baseConfig, lateralOffset: 0.18 },
       0
     );
-    expect(result.worldPosition.x).toBeCloseTo(0.18);
+    // WHEEL NORTH: Z = -cos(-π/2) * r ≈ 0. Offset adds 0.18.
+    expect(result.worldPosition.z).toBeCloseTo(0.18);
   });
 
-  it("opposing offsets separate hands laterally", () => {
+  it("opposing offsets separate hands in Z", () => {
     const left = interpolator.calculatePropState(
       { ...baseConfig, lateralOffset: 0.18 },
       0
@@ -77,6 +79,7 @@ describe("lateral offset through PropStateInterpolator", () => {
       { ...baseConfig, lateralOffset: -0.18 },
       0
     );
-    expect(left.worldPosition.x - right.worldPosition.x).toBeCloseTo(0.36);
+    // Separation is purely in Z (0.36m apart)
+    expect(left.worldPosition.z - right.worldPosition.z).toBeCloseTo(0.36);
   });
 });

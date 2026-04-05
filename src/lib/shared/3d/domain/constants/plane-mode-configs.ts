@@ -52,10 +52,10 @@ export const PLANE_MODE_CONFIGS: Record<PlaneMode, PlaneModeConfig> = {
     facingAngle: Math.PI / 2,
     bluePlane: Plane.WHEEL,
     redPlane: Plane.WHEEL,
-    // Rotation uses WALL plane math — the facing angle (π/2) already
-    // handles the 90° turn. Using WHEEL would add a second π/2 Y rotation
-    // making the props spin around the wrong axis.
-    rotationPlane: Plane.WALL,
+    // Props spin on the wheel plane (cartwheels). The planeQuat (π/2 Y)
+    // + facingQuat (π/2 Y) compound to π Y, which preserves the correct
+    // wheel-plane spin axis from the audience's perspective.
+    rotationPlane: Plane.WHEEL,
     blueLateralOffset: LATERAL_OFFSET,
     redLateralOffset: -LATERAL_OFFSET,
   },

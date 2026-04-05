@@ -194,20 +194,20 @@
   {@const currentGridOffset = GRID_OFFSETS[currentPlaneMode]}
   {@const currentModeConfig = PLANE_MODE_CONFIGS[currentPlaneMode]}
   {#if currentPlaneMode === PlaneMode.DUAL_WHEEL}
-    <!-- Left hand (blue) grid -->
+    <!-- Left hand (blue) grid — offset in Z (maps to X_world after facing rotation) -->
     <Grid3D
       visiblePlanes={new Set([Plane.WHEEL])}
-      centerPosition={{ x: avatarPosition.x + currentModeConfig.blueLateralOffset, y: avatarPosition.y, z: avatarPosition.z }}
+      centerPosition={{ x: avatarPosition.x, y: avatarPosition.y, z: avatarPosition.z + currentModeConfig.blueLateralOffset }}
       {facingAngle}
       gridOffset={currentGridOffset}
       planeOpacity={0.10}
       showLabels={false}
       gridMode={(sequenceData?.gridMode ?? "diamond") as import("../domain/constants/grid-layout").GridMode}
     />
-    <!-- Right hand (red) grid -->
+    <!-- Right hand (red) grid — offset in Z (maps to X_world after facing rotation) -->
     <Grid3D
       visiblePlanes={new Set([Plane.WHEEL])}
-      centerPosition={{ x: avatarPosition.x + currentModeConfig.redLateralOffset, y: avatarPosition.y, z: avatarPosition.z }}
+      centerPosition={{ x: avatarPosition.x, y: avatarPosition.y, z: avatarPosition.z + currentModeConfig.redLateralOffset }}
       {facingAngle}
       gridOffset={currentGridOffset}
       planeOpacity={0.10}
