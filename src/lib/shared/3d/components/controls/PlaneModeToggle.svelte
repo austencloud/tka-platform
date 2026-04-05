@@ -6,11 +6,14 @@
     mode: PlaneMode;
     bluePlane: Plane;
     redPlane: Plane;
+    currentBeatIndex?: number;
+    totalBeats?: number;
+    hasBeatOverrides?: boolean;
     onModeChange: (mode: PlaneMode) => void;
     onHandPlaneChange: (hand: "blue" | "red", plane: Plane) => void;
   }
 
-  let { mode, bluePlane, redPlane, onModeChange, onHandPlaneChange }: Props = $props();
+  let { mode, bluePlane, redPlane, currentBeatIndex = 0, totalBeats = 0, hasBeatOverrides = false, onModeChange, onHandPlaneChange }: Props = $props();
 
   const primaryPlanes = [Plane.WALL, Plane.WHEEL, Plane.FLOOR];
 
@@ -74,6 +77,18 @@
       {/each}
     </select>
   </div>
+
+  {#if totalBeats > 1}
+    <span class="beat-indicator" title="Editing beat {currentBeatIndex + 1} of {totalBeats}">
+      {currentBeatIndex + 1}/{totalBeats}
+    </span>
+  {/if}
+
+  {#if hasBeatOverrides}
+    <span class="override-badge" title="Some beats have custom plane assignments">
+      <i class="fas fa-layer-group" aria-hidden="true"></i>
+    </span>
+  {/if}
 
   {#if mode !== PlaneMode.WALL || bluePlane !== Plane.WALL || redPlane !== Plane.WALL}
     <button class="reset-btn" onclick={resetToWall} title="Reset both to Wall">
@@ -160,5 +175,24 @@
     background: rgba(59, 130, 246, 0.3);
     border-color: rgba(59, 130, 246, 0.5);
     color: rgba(255, 255, 255, 0.9);
+  }
+
+  .beat-indicator {
+    padding: 4px 6px;
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.5);
+    font-size: var(--font-size-compact, 12px);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .override-badge {
+    display: flex;
+    align-items: center;
+    padding: 4px 6px;
+    color: rgba(139, 92, 246, 0.7);
+    font-size: 10px;
   }
 </style>

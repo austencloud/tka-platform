@@ -21,6 +21,7 @@
   import Viewer3DViewPresets from "./Viewer3DViewPresets.svelte";
   import Viewer3DGridPopover from "./Viewer3DGridPopover.svelte";
   import PlaneModeToggle from "./controls/PlaneModeToggle.svelte";
+  import BeatPlaneStrip from "./controls/BeatPlaneStrip.svelte";
   import Viewer3DContextMenuHost from "./context-menu/Viewer3DContextMenuHost.svelte";
   import { getViewer3DContext } from "../context/viewer-3d-context";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -72,10 +73,13 @@
         {#if avatarState}
           <PlaneModeToggle
             mode={avatarState.planeMode}
-            bluePlane={avatarState.customBluePlane}
-            redPlane={avatarState.customRedPlane}
+            bluePlane={avatarState.currentBeatBluePlane}
+            redPlane={avatarState.currentBeatRedPlane}
+            currentBeatIndex={avatarState.currentStepIndex}
+            totalBeats={avatarState.totalSteps}
+            hasBeatOverrides={avatarState.hasBeatOverrides}
             onModeChange={(mode) => avatarState.setPlaneMode(mode)}
-            onHandPlaneChange={(hand, plane) => avatarState.setHandPlane(hand, plane)}
+            onHandPlaneChange={(hand, plane) => avatarState.setBeatHandPlane(avatarState.currentStepIndex, hand, plane)}
           />
           {#if avatarState.planeMode === 'dual-wheel'}
             <button
@@ -89,6 +93,16 @@
         {/if}
       </div>
       <Viewer3DViewPresets />
+      {#if avatarState && avatarState.totalSteps > 1}
+        <div class="beat-strip-container">
+          <BeatPlaneStrip
+            totalBeats={avatarState.totalSteps}
+            currentBeatIndex={avatarState.currentStepIndex}
+            beatPlaneOverrides={avatarState.beatPlaneOverrides}
+            onBeatClick={(i) => avatarState.goToStep(i)}
+          />
+        </div>
+      {/if}
     {/if}
   {:else}
     <div class="viewer-3d-loading">Loading 3D viewer...</div>
@@ -128,6 +142,21 @@
   }
   .rotation-variant-btn:hover {
     background: rgba(245, 158, 11, 0.15);
+  }
+
+  .beat-strip-container {
+    position: absolute;
+    bottom: 80px;
+    left: 12px;
+    right: 12px;
+    z-index: 10;
+    display: flex;
+    justify-content: center;
+    pointer-events: none;
+  }
+
+  .beat-strip-container :global(.beat-plane-strip) {
+    pointer-events: auto;
   }
 
   .viewer-3d-loading {
