@@ -53,7 +53,8 @@
 		{facingAngle}
 		isActive={isSelected}
 		{isMoving}
-		moveSpeed={isMoving ? 0.5 : 0}
+		moveSpeed={isMoving ? 0.6 : 0}
+		moveDirection={{ x: 0, z: 1 }}
 		enableLocomotion={true}
 	/>
 </T.Group>

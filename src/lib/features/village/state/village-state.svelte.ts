@@ -28,6 +28,10 @@ export interface AvatarRenderState {
 	entityId: string;
 	instanceState: ReturnType<typeof createAvatarInstanceState>;
 	entity: VillageEntity;
+	// Smooth interpolation targets (set by engine, lerped each frame)
+	targetX: number;
+	targetZ: number;
+	targetFacingAngle: number;
 }
 
 export interface VillageState {
@@ -39,6 +43,7 @@ export interface VillageState {
 	readonly speed: number;
 
 	syncFromEngine(): void;
+	lerpAvatars(): void;
 	start(): void;
 	pause(): void;
 	togglePlay(): void;
@@ -125,17 +130,22 @@ export function createVillageState(
 					},
 				);
 
-				renderState = { entityId: entity.id, instanceState, entity };
+				renderState = {
+					entityId: entity.id,
+					instanceState,
+					entity,
+					targetX: entity.transform.x,
+					targetZ: entity.transform.z,
+					targetFacingAngle: entity.transform.facingAngle,
+				};
 				avatarStateMap.set(entity.id, renderState);
 				mapChanged = true;
 			}
 
-			// Sync transform
-			renderState.instanceState.position.x = entity.transform.x;
-			renderState.instanceState.position.z = entity.transform.z;
-			renderState.instanceState.setFacingAngle(
-				entity.transform.facingAngle,
-			);
+			// Set interpolation targets from engine (don't snap — lerp happens in lerpAvatars)
+			renderState.targetX = entity.transform.x;
+			renderState.targetZ = entity.transform.z;
+			renderState.targetFacingAngle = entity.transform.facingAngle;
 
 			// Sync sequence playback for teaching/performing states
 			syncSequencePlayback(entity, renderState);
@@ -155,6 +165,33 @@ export function createVillageState(
 		// Rebuild reactive array from map (new reference triggers Svelte re-render)
 		if (mapChanged) {
 			avatarList = Array.from(avatarStateMap.values());
+		}
+	}
+
+	/**
+	 * Smoothly interpolate avatar positions toward engine targets.
+	 * Called every render frame (60fps) for smooth movement between
+	 * engine ticks (10fps).
+	 */
+	function lerpAvatars(): void {
+		const POSITION_LERP = 0.15; // per-frame blend toward target
+		const ANGLE_LERP = 0.12;
+
+		for (const renderState of avatarStateMap.values()) {
+			const inst = renderState.instanceState;
+
+			// Lerp position
+			const dx = renderState.targetX - inst.position.x;
+			const dz = renderState.targetZ - inst.position.z;
+			inst.position.x += dx * POSITION_LERP;
+			inst.position.z += dz * POSITION_LERP;
+
+			// Lerp facing angle (shortest path)
+			const currentAngle = inst.facingAngle;
+			let angleDiff = renderState.targetFacingAngle - currentAngle;
+			while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+			while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+			inst.setFacingAngle(currentAngle + angleDiff * ANGLE_LERP);
 		}
 	}
 
@@ -245,6 +282,7 @@ export function createVillageState(
 		},
 
 		syncFromEngine,
+		lerpAvatars,
 
 		start() {
 			startTickLoop();
