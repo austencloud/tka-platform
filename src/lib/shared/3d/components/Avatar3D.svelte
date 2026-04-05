@@ -670,9 +670,20 @@
       rootWorld.set(position.x, position.y ?? 0, position.z);
     }
 
-    function toWorldPosition(local: { x: number; y: number; z: number }): Vector3 {
+    function toWorldPosition(local: { x: number; y: number; z: number }, skipFacing?: boolean): Vector3 {
       const localX = local.x;
-      const localZ = local.z + gridOffset;
+      const localZ = local.z + (skipFacing ? 0 : gridOffset);
+
+      if (skipFacing) {
+        // Dual wheel mode: positions are already in world space.
+        // Just add the avatar root offset, no facing rotation or gridOffset.
+        return new Vector3(
+          localX + rootWorld.x,
+          local.y + rootWorld.y,
+          localZ + rootWorld.z
+        );
+      }
+
       const rotatedX = localX * cos + localZ * sin;
       const rotatedZ = -localX * sin + localZ * cos;
       return new Vector3(
@@ -683,10 +694,10 @@
     }
 
     const blueWorldProp = bluePropState
-      ? { ...bluePropState, worldPosition: toWorldPosition(bluePropState.worldPosition) }
+      ? { ...bluePropState, worldPosition: toWorldPosition(bluePropState.worldPosition, bluePropState.skipFacingTransform) }
       : null;
     const redWorldProp = redPropState
-      ? { ...redPropState, worldPosition: toWorldPosition(redPropState.worldPosition) }
+      ? { ...redPropState, worldPosition: toWorldPosition(redPropState.worldPosition, redPropState.skipFacingTransform) }
       : null;
 
     animationService.setPropsAndBlend(blueWorldProp, redWorldProp);
