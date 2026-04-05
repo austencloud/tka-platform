@@ -1067,16 +1067,37 @@
       props.onBuildStage?.(wing.name);
     }
 
-    // Now activate only spawn room + adjacent rooms (instant — no GPU work)
+    // ── Shader warmup: activate ALL rooms, force-compile, then deactivate ──
+    // Three.js compiles shaders lazily on first render. If we only activate
+    // the spawn room's neighbors, walking into a new room later triggers
+    // shader compilation (visible freeze). By temporarily activating ALL
+    // rooms and calling renderer.compile(), we force the GPU to compile
+    // every shader program upfront — behind the loading overlay.
+    props.onBuildStage?.("Compiling shaders");
+
+    // Activate every room temporarily
+    for (const wing of grid.wings) activateRoom(wing.id);
+
+    // Force shader compilation for all active materials
+    const renderer = (threlteCtx as any).renderer?.current ?? (threlteCtx as any).renderer;
+    const scene = (threlteCtx as any).scene?.current ?? (threlteCtx as any).scene;
+    if (renderer && scene && camera) {
+      renderer.compile(scene, camera);
+    }
+
+    // Yield so the overlay can paint the "Compiling shaders" message
+    await new Promise<void>(r => setTimeout(r, 0));
+
+    // Deactivate all rooms, then activate only what we need
+    for (const wing of grid.wings) deactivateRoom(wing.id);
+
     if (spawnRoomId) {
       const adjacentIds = streamingManager.getAdjacentRooms(spawnRoomId);
       for (const roomId of [spawnRoomId, ...adjacentIds]) {
         activateRoom(roomId);
       }
-      // Tell streaming manager these rooms are loaded
       streamingManager.update(spawnRoomId);
     } else {
-      // Fallback: activate all rooms
       for (const wing of grid.wings) activateRoom(wing.id);
     }
 

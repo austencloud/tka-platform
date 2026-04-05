@@ -105,6 +105,6 @@
     position.z={worldZ}
     rotation.y={rotationY}
   >
-    <T is={model} />
+    <T is={model} castShadow receiveShadow />
   </T.Group>
 {/each}

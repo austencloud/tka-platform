@@ -304,19 +304,4 @@
     line-height: 1.5;
   }
 
-  .empty-hint kbd {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 20px;
-    height: 20px;
-    padding: 0 5px;
-    background: rgba(200, 180, 140, 0.1);
-    border: 1px solid rgba(200, 180, 140, 0.2);
-    border-radius: 3px;
-    font-family: monospace;
-    font-size: var(--font-size-compact, 12px);
-    color: rgba(200, 180, 140, 0.5);
-    vertical-align: middle;
-  }
 </style>
