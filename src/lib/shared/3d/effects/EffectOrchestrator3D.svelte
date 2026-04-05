@@ -155,7 +155,7 @@
     // prop and vice versa (the naming follows the avatar's perspective, not the viewer's).
     // Swap so trail colors match the visible prop colors.
     if (redPropState) {
-      const result = tipBridge.update(0, redPropState, staffHalfLength, dt, bluePropAnchorRef);
+      const result = tipBridge.update(0, redPropState, staffHalfLength, dt, redPropAnchorRef);
       blueTipData = result.tips.map((tip, tipIndex) => {
         const resolved = resolveEffect(
           0,
@@ -206,7 +206,7 @@
     }
 
     if (bluePropState) {
-      const result = tipBridge.update(1, bluePropState, staffHalfLength, dt, redPropAnchorRef);
+      const result = tipBridge.update(1, bluePropState, staffHalfLength, dt, bluePropAnchorRef);
       redTipData = result.tips.map((tip, tipIndex) => {
         const resolved = resolveEffect(
           1,

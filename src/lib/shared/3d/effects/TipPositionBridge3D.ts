@@ -46,10 +46,10 @@ export class TipPositionBridge3D implements ITipPositionBridge3D {
 			center.set(propState.worldPosition.x, propState.worldPosition.y, propState.worldPosition.z);
 		}
 
-		// Replicate Staff3D.svelte rotation computation:
-		// facingQuat * worldRotation * horizontalQuat
-		// When reading from scene graph, the facing rotation is already baked
-		// into the ancestor hierarchy, so we only need worldRotation * horizontalQuat.
+		// Staff rotation: facingQuat × worldRotation × horizontalQuat
+		// worldRotation = planeQuat × staffSpin (body-local, no facing).
+		// horizontalQuat lays the cylinder from +Y to -X.
+		// facingQuat comes from the rig's scene graph (PropAnchor inherits it).
 		const rotation = new Quaternion(
 			propState.worldRotation.x,
 			propState.worldRotation.y,
@@ -62,11 +62,13 @@ export class TipPositionBridge3D implements ITipPositionBridge3D {
 
 		let finalQuat: Quaternion;
 		if (propAnchorRef) {
-			// Scene graph already includes facing rotation — just apply
-			// worldRotation (the prop's own orientation) and the horizontal offset.
-			finalQuat = rotation.multiply(horizontalQuat);
+			// PropAnchor's world quaternion includes the rig root's facing rotation.
+			// Compose: parentWorldQuat × worldRotation × horizontalQuat
+			const parentQuat = new Quaternion();
+			propAnchorRef.getWorldQuaternion(parentQuat);
+			finalQuat = parentQuat.multiply(rotation).multiply(horizontalQuat);
 		} else {
-			// Fallback without scene graph: facing angle is unknown, assume 0.
+			// Fallback without scene graph: no facing rotation available.
 			finalQuat = rotation.multiply(horizontalQuat);
 		}
 
