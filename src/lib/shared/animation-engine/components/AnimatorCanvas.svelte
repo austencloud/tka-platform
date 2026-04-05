@@ -90,6 +90,7 @@ Last audit: 2025-12-27
     visibilityManagerOverride = undefined,
     externalToggleDisassemble = undefined,
     externalDisassembled = false,
+    suppress2DOverlays = false,
   }: {
     blueProp: PropState | null;
     redProp: PropState | null;
@@ -140,6 +141,8 @@ Last audit: 2025-12-27
     /** When provided alongside externalToggleDisassemble, controls the context menu label
      * ("Disassemble" vs "Reassemble"). Defaults to false. */
     externalDisassembled?: boolean;
+    /** When true, 2D effect overlays (fire/charcoal/LED/trails) are hidden — 3D mode handles effects */
+    suppress2DOverlays?: boolean;
   } = $props();
 
   // Disassemble mode state machine
@@ -241,20 +244,40 @@ Last audit: 2025-12-27
 
   // Engine instance — wire per-instance visibility manager before initialization
   const engine = new AnimationEngine();
-  if (visibilityManagerOverride) {
-    engine.setVisibilityManager(visibilityManagerOverride);
-  }
 
-  // Visibility manager — use per-instance override when provided
-  const visibilityManager = visibilityManagerOverride ?? getAnimationVisibilityManager();
+  // Sync 2D overlay suppression (for 3D mode)
+  $effect.pre(() => {
+    engine.state.suppress2DOverlays = suppress2DOverlays;
+  });
 
-  let tkaGlyphVisible = $state(visibilityManager.getVisibility("tkaGlyph"));
-  let stepNumbersVisible = $state(visibilityManager.getVisibility("stepNumbers"));
-  let beatPositionVisible = $state(visibilityManager.getVisibility("beatPosition"));
-  let globalDarkMode = $state(visibilityManager.isDarkMode());
-  let wordHeaderVisible = $state(visibilityManager.getVisibility("wordHeader"));
-  let progressBarVisible = $state(visibilityManager.getVisibility("progressBar"));
-  let fireEffectEnabled = $state(visibilityManager.hasEffect("fire"));
+  // Use $derived to read visibilityManagerOverride reactively (avoids state_referenced_locally)
+  const visibilityManager = $derived(visibilityManagerOverride ?? getAnimationVisibilityManager());
+  $effect.pre(() => {
+    // Read through visibilityManager derived (which already tracks visibilityManagerOverride)
+    // to avoid capturing the destructured prop directly
+    const override = visibilityManager !== getAnimationVisibilityManager() ? visibilityManager : null;
+    if (override) {
+      engine.setVisibilityManager(override);
+    }
+  });
+
+  // Initialize visibility state via $effect.pre to avoid state_referenced_locally on visibilityManager
+  let tkaGlyphVisible = $state(false);
+  let stepNumbersVisible = $state(false);
+  let beatPositionVisible = $state(false);
+  let globalDarkMode = $state(false);
+  let wordHeaderVisible = $state(false);
+  let progressBarVisible = $state(false);
+  let fireEffectEnabled = $state(false);
+  $effect.pre(() => {
+    tkaGlyphVisible = visibilityManager.getVisibility("tkaGlyph");
+    stepNumbersVisible = visibilityManager.getVisibility("stepNumbers");
+    beatPositionVisible = visibilityManager.getVisibility("beatPosition");
+    globalDarkMode = visibilityManager.isDarkMode();
+    wordHeaderVisible = visibilityManager.getVisibility("wordHeader");
+    progressBarVisible = visibilityManager.getVisibility("progressBar");
+    fireEffectEnabled = visibilityManager.hasEffect("fire");
+  });
 
   const darkModeEnabled = $derived(
     previewDarkMode !== null ? previewDarkMode : globalDarkMode
@@ -280,10 +303,13 @@ Last audit: 2025-12-27
     fireEffectEnabled = visibilityManager.hasEffect("fire");
   }
 
-  visibilityManager.registerObserver(handleVisibilityChange);
-
-  onDestroy(() => {
-    visibilityManager.unregisterObserver(handleVisibilityChange);
+  // Register/unregister observer reactively so visibilityManager is tracked
+  $effect(() => {
+    const mgr = visibilityManager;
+    mgr.registerObserver(handleVisibilityChange);
+    return () => {
+      mgr.unregisterObserver(handleVisibilityChange);
+    };
   });
 
   // Difficulty level from sequence data

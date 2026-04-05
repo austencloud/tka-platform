@@ -196,6 +196,7 @@
           {trailSettings}
           {onCanvasReady}
           focused={layout.focusedPane === "animation"}
+          suppress2DOverlays={renderMode === '3d'}
         />
 
       {/if}
