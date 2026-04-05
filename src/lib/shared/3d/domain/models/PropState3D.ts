@@ -34,8 +34,8 @@ export interface PropState3D extends PropState2D {
   worldRotation: Quaternion;
   /** Grip type for the hand holding this prop. Scaffolding for Phase 3. */
   gripType?: GripType;
-  /** When true, worldRotation is in world space — skip facingAngle rotation */
-  worldSpaceRotation?: boolean;
+  /** When true, position and rotation are in world space — skip facingAngle transform */
+  skipFacingTransform?: boolean;
 }
 
 /**

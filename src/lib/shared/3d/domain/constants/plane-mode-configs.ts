@@ -31,12 +31,11 @@ export interface PlaneModeConfig {
    */
   rotationPlane: Plane;
   /**
-   * When true, the prop rotation is computed in world space and the
-   * facing angle is NOT applied to the rotation quaternion. Used in
-   * dual wheel mode where the hand path traces a circle in world XY
-   * after coordinate transforms.
+   * When true, the facing angle is NOT applied to prop positions or
+   * rotations. WHEEL coordinates stay in world YZ instead of being
+   * rotated into XY. The facing angle only rotates the avatar's body.
    */
-  worldSpaceRotation?: boolean;
+  skipFacingTransform?: boolean;
   /** X-axis offset for blue hand's plane center (in avatar-local space) */
   blueLateralOffset: number;
   /** X-axis offset for red hand's plane center (in avatar-local space) */
@@ -56,12 +55,11 @@ export const PLANE_MODE_CONFIGS: Record<PlaneMode, PlaneModeConfig> = {
     facingAngle: Math.PI / 2,
     bluePlane: Plane.WHEEL,
     redPlane: Plane.WHEEL,
-    // After coordinate transforms (WHEEL positions + facing rotation),
-    // hand paths trace circles in world XY. Use WALL rotation (spin
-    // around Z) with worldSpaceRotation=true to skip the facing rotation
-    // that would otherwise rotate the spin axis to the wrong plane.
-    rotationPlane: Plane.WALL,
-    worldSpaceRotation: true,
+    // WHEEL positions are already in YZ (world space). Skip the facing
+    // transform so they stay as actual wheel planes instead of getting
+    // rotated back into wall plane (XY). Props spin around X (wheel normal).
+    rotationPlane: Plane.WHEEL,
+    skipFacingTransform: true,
     blueLateralOffset: LATERAL_OFFSET,
     redLateralOffset: -LATERAL_OFFSET,
   },
