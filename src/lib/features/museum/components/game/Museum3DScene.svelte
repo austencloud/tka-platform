@@ -34,15 +34,21 @@
   import { museumEditorOverrides } from "../../state/museum-editor-overrides";
   import { ProximityGrid } from "../../services/implementations/ProximityGrid";
   import { PlaqueTextureGenerator } from "../../services/implementations/PlaqueTextureGenerator";
-  import { buildMuseumGeometry } from "../../services/implementations/MuseumGeometryBuilder";
+  import {
+    bucketMuseumTilesByRoom,
+    buildRoomChunk,
+    disposeRoomChunk,
+  } from "../../services/implementations/MuseumGeometryBuilder";
   import type {
-    MuseumGeometry,
+    RoomChunk,
     InstancedMeshData,
     PlaquePlacement,
     TorchPosition,
     LightPosition,
     RoomLight,
   } from "../../services/implementations/MuseumGeometryBuilder";
+  import { RoomStreamingManager } from "../../services/implementations/RoomStreamingManager";
+  import { MUSEUM_EDGES } from "../../data/museum-room-graph";
 
   // Shared texture generator — one instance for all plaques (caches internally)
   const plaqueGenerator = new PlaqueTextureGenerator();
@@ -563,16 +569,12 @@
     const theme = getWingThemeAt(tileX, tileZ);
 
     if (theme && theme !== currentWingTheme) {
-      console.log(`[Museum3D] 🏛️ Wing transition: ${currentWingTheme} → ${theme}`);
       currentWingTheme = theme;
       const fogCfg = WING_FOG[theme];
       fogColorTarget.set(fogCfg.color);
       fogDensityTarget = fogCfg.density;
       // Update room lights when crossing a room boundary
-      const rlStart = performance.now();
       recomputeNearbyRoomLights(tileX * TILE_SIZE, tileZ * TILE_SIZE);
-      const rlMs = performance.now() - rlStart;
-      if (rlMs > 2) console.warn(`[Museum3D] 💡 Room light recompute took ${rlMs.toFixed(0)}ms`);
     }
 
     // Fog only in FPS — from overhead it just muddies the view with no benefit.
@@ -585,23 +587,9 @@
     }
   }
 
-  // ── DEBUG: Frame timing — logs when a frame takes >100ms to find freeze sources ──
-  let lastFrameTime = performance.now();
-  let frameCount = 0;
-
   // ── Flip animation loop ──
   // When fpsActive, UnifiedCameraController owns the camera — we don't touch it.
   useTask((delta) => {
-    const frameStart = performance.now();
-    const gap = frameStart - lastFrameTime;
-    lastFrameTime = frameStart;
-    frameCount++;
-
-    // Log gaps >100ms — these are the freezes
-    if (gap > 100 && frameCount > 10) {
-      console.warn(`[Museum3D] 🧊 FREEZE: ${gap.toFixed(0)}ms gap between frames (frame #${frameCount})`);
-    }
-
     if (!camera) return;
 
     // In editor mode, OrbitControls owns the camera — skip all movement/animation
@@ -609,7 +597,6 @@
 
     // Drain pending mount queue (max 5 per frame to avoid spikes)
     if (pendingMounts.length > 0) {
-      const mountStart = performance.now();
       const batch = pendingMounts.splice(0, MAX_MOUNTS_PER_FRAME);
       for (const { category, item } of batch) {
         switch (category) {
@@ -620,10 +607,6 @@
           case "furniture": visibleFurniture = [...visibleFurniture, item]; break;
         }
       }
-      const mountMs = performance.now() - mountStart;
-      if (mountMs > 10) {
-        console.warn(`[Museum3D] 🔧 Mount batch took ${mountMs.toFixed(0)}ms — categories: ${batch.map(b => b.category).join(", ")}`);
-      }
     }
 
     // Proximity visibility recheck — when player moves 2+ tiles
@@ -632,12 +615,7 @@
     const dCheckX = currentTX - lastCheckTX;
     const dCheckY = currentTY - lastCheckTY;
     if (dCheckX * dCheckX + dCheckY * dCheckY >= 16) {
-      const proxStart = performance.now();
       recomputeVisibility(currentTX, currentTY);
-      const proxMs = performance.now() - proxStart;
-      if (proxMs > 5) {
-        console.warn(`[Museum3D] 🔍 Proximity recompute took ${proxMs.toFixed(0)}ms at tile (${currentTX}, ${currentTY})`);
-      }
     }
 
     // First frame: initialize camera
@@ -695,6 +673,7 @@
       const fpsTileX = Math.round(fpsPos.x / TILE_SIZE);
       const fpsTileZ = Math.round(fpsPos.z / TILE_SIZE);
       updateAtmosphere(fpsTileX, fpsTileZ, delta);
+      updateStreaming(fpsTileX, fpsTileZ);
       props.onPlayerUpdate?.(fpsPos.x, fpsPos.z, fpsTileX, fpsTileZ, yawToFacing(playerYaw), true, playerYaw);
       const fpsFrameMs = performance.now() - frameStart;
       if (fpsFrameMs > 50) console.warn(`[Museum3D] 🎯 FPS frame logic took ${fpsFrameMs.toFixed(0)}ms`);
@@ -798,6 +777,7 @@
       const tileX = Math.round(pos.x / TILE_SIZE);
       const tileZ = Math.round(pos.z / TILE_SIZE);
       updateAtmosphere(tileX, tileZ, delta);
+      updateStreaming(tileX, tileZ);
       props.onPlayerUpdate?.(pos.x, pos.z, tileX, tileZ, yawToFacing(playerYaw), false, playerYaw);
       return;
     }
@@ -966,24 +946,23 @@
     };
   });
 
-  // ── Async geometry build ──
-  // Geometry is built asynchronously in phases, yielding to the main thread
-  // between each so the loading overlay stays responsive. Empty initially —
-  // meshes appear as each phase completes.
-  let geometryReady = $state(false);
-  let floorMeshes = $state<InstancedMeshData[]>([]);
-  let wallMeshes = $state<InstancedMeshData[]>([]);
-  let ceilingMesh = $state<InstancedMesh | null>(null);
-  let performerMesh = $state<InstancedMesh | null>(null);
-  let pedestalMesh = $state<InstancedMesh | null>(null);
-  let signMesh = $state<InstancedMesh | null>(null);
+  // ── Per-room geometry streaming ──
+  // Instead of loading all 16 rooms at once, we only build geometry for
+  // the current room + adjacent rooms. Corridors are always loaded (cheap).
+  // This reduces GPU shader compilation from ~16 rooms to ~3 rooms on load.
 
-  // These arrays are populated once geometry build completes
-  let plaquePlacements: PlaquePlacement[] = [];
-  let torchPositions: TorchPosition[] = [];
-  let exhibitLightPositions: LightPosition[] = [];
-  let ceilingLightPositions: LightPosition[] = [];
-  let roomLights = $state<RoomLight[]>([]);
+  let geometryReady = $state(false);
+  const streamingManager = new RoomStreamingManager(MUSEUM_EDGES, 5000);
+
+  // Per-room bucketing (pure data, computed once synchronously — fast)
+  const perRoomBuckets = bucketMuseumTilesByRoom(grid);
+
+  // Loaded room chunks — keyed by wingId
+  let loadedChunks = $state<Map<string, RoomChunk>>(new Map());
+  // Corridor chunk — always loaded
+  let corridorChunk = $state<RoomChunk | null>(null);
+  // Rooms currently being built (prevent duplicate builds)
+  const buildingRooms = new Set<string>();
 
   const MAX_POINT_LIGHTS = 32;
 
@@ -993,7 +972,7 @@
   const UNMOUNT_RADIUS = 40;
   const MAX_MOUNTS_PER_FRAME = 2;
 
-  // Proximity grids — built after geometry completes
+  // Proximity grids — rebuilt when chunks load/unload
   let torchGrid = new ProximityGrid<TorchPosition>(CELL_SIZE);
   let plaqueGrid = new ProximityGrid<PlaquePlacement>(CELL_SIZE);
   let performerGrid = new ProximityGrid<typeof grid.performers[0]>(CELL_SIZE);
@@ -1001,11 +980,11 @@
   let ceilingLightGrid = new ProximityGrid<LightPosition>(CELL_SIZE);
   let furnitureGrid = new ProximityGrid<NonNullable<typeof grid.furniture>[0]>(CELL_SIZE);
 
-  // Populate furniture grid immediately (it doesn't depend on geometry build)
+  // Populate furniture and performer grids immediately (not per-room)
   for (const f of (grid.furniture ?? [])) furnitureGrid.insert(f, f.tileX, f.tileY);
   for (const p of grid.performers) performerGrid.insert(p, p.tileX, p.tileY);
 
-  // Visible sets — only these items get rendered. Empty until geometry is ready.
+  // Visible sets — only these items get rendered
   let visibleTorches = $state<TorchPosition[]>([]);
   let visiblePlaques = $state<PlaquePlacement[]>([]);
   let visiblePerformers = $state<typeof grid.performers>([]);
@@ -1014,75 +993,163 @@
   let visibleFurniture = $state<NonNullable<typeof grid.furniture>>([]);
   let useSpotLights = $state(false);
 
-  // Build geometry asynchronously — meshes populate as each phase completes.
-  // Each phase yields to the main thread so the loading overlay stays responsive.
-  buildMuseumGeometry(grid, (phase) => {
-    props.onBuildStage?.(phase);
-  }).then((geo) => {
-    const geoStart = performance.now();
-    console.log(`[Museum3D] 📦 Geometry ready — ${geo.torchPositions.length} torches, ${geo.exhibitLightPositions.length} exhibit lights, ${geo.ceilingLightPositions.length} ceiling lights, ${geo.roomLights.length} room wings (${geo.roomLights.reduce((s, r) => s + r.positions.length, 0)} total room light positions)`);
-    // Populate all mesh state — each assignment triggers Svelte reactivity
-    floorMeshes = geo.floorMeshes;
-    wallMeshes = geo.wallMeshes;
-    ceilingMesh = geo.ceilingMesh;
-    performerMesh = geo.performerMesh;
-    pedestalMesh = geo.pedestalMesh;
-    signMesh = geo.signMesh;
-
-    // Store position data for proximity and interaction systems
-    plaquePlacements = geo.plaquePlacements;
-    torchPositions = geo.torchPositions;
-    exhibitLightPositions = geo.exhibitLightPositions;
-    ceilingLightPositions = geo.ceilingLightPositions;
-    roomLights = geo.roomLights;
-
-    useSpotLights = geo.plaquePlacements.length > 0 && geo.plaquePlacements.length < 20;
-
-    // Build proximity grids now that position data is ready
-    torchGrid = new ProximityGrid<TorchPosition>(CELL_SIZE);
-    for (const t of torchPositions) torchGrid.insert(t, t.tileX, t.tileY);
-
-    plaqueGrid = new ProximityGrid<PlaquePlacement>(CELL_SIZE);
-    for (const p of plaquePlacements) plaqueGrid.insert(p, p.tileX, p.tileY);
-
-    exhibitLightGrid = new ProximityGrid<LightPosition>(CELL_SIZE);
-    for (const l of exhibitLightPositions) exhibitLightGrid.insert(l, l.tileX, l.tileY);
-
-    ceilingLightGrid = new ProximityGrid<LightPosition>(CELL_SIZE);
-    for (const l of ceilingLightPositions) ceilingLightGrid.insert(l, l.tileX, l.tileY);
-
-    // Torches mount all at once (shader compilation absorbed behind loading overlay)
-    visibleTorches = torchPositions;
-    // Lights mount all at once (removing/adding causes shader recompilation)
-    visibleExhibitLights = exhibitLightPositions;
-    visibleCeilingLights = ceilingLightPositions;
-
-    // Compute initial room lights at spawn position
-    recomputeNearbyRoomLights(grid.spawn.x * TILE_SIZE, grid.spawn.y * TILE_SIZE);
-
-    // Compute initial visibility for proximity-filtered items
-    recomputeVisibility(grid.spawn.x, grid.spawn.y);
-
-    // Debug: check for duplicate keys in all visible arrays
-    const checkDupes = (name: string, arr: any[], keyFn: (x: any) => any) => {
-      const keys = arr.map(keyFn);
-      const seen = new Set();
-      for (let i = 0; i < keys.length; i++) {
-        if (seen.has(keys[i])) console.error(`[Museum3D] ❌ DUPLICATE KEY in ${name}: "${keys[i]}" at index ${i}`);
-        seen.add(keys[i]);
-      }
-    };
-    checkDupes("visiblePlaques", visiblePlaques, p => p.id);
-    checkDupes("visibleExhibitLights", visibleExhibitLights, p => p.id);
-    checkDupes("visibleCeilingLights", visibleCeilingLights, p => p.id);
-    checkDupes("visibleTorches", visibleTorches, t => t.id);
-    checkDupes("visiblePerformers", visiblePerformers, p => p.id);
-    checkDupes("visibleFurniture", visibleFurniture, f => f.id);
-
-    console.log(`[Museum3D] ✅ All mounts complete in ${(performance.now() - geoStart).toFixed(0)}ms — roomLightPool active: ${roomLightPool.filter(s => s.intensity > 0).length}/${MAX_ROOM_LIGHTS}`);
-    geometryReady = true;
-    props.onGeometryReady?.();
+  // Aggregated mesh arrays — derived from loaded chunks for template rendering
+  let floorMeshes = $derived.by(() => {
+    const meshes: InstancedMeshData[] = [];
+    if (corridorChunk) meshes.push(...corridorChunk.floorMeshes);
+    for (const chunk of loadedChunks.values()) meshes.push(...chunk.floorMeshes);
+    return meshes;
   });
+  let wallMeshes = $derived.by(() => {
+    const meshes: InstancedMeshData[] = [];
+    if (corridorChunk) meshes.push(...corridorChunk.wallMeshes);
+    for (const chunk of loadedChunks.values()) meshes.push(...chunk.wallMeshes);
+    return meshes;
+  });
+  let ceilingMeshes = $derived.by(() => {
+    const meshes: InstancedMesh[] = [];
+    if (corridorChunk?.ceilingMesh) meshes.push(corridorChunk.ceilingMesh);
+    for (const chunk of loadedChunks.values()) {
+      if (chunk.ceilingMesh) meshes.push(chunk.ceilingMesh);
+    }
+    return meshes;
+  });
+  let pedestalMeshes = $derived.by(() => {
+    const meshes: InstancedMesh[] = [];
+    if (corridorChunk?.pedestalMesh) meshes.push(corridorChunk.pedestalMesh);
+    for (const chunk of loadedChunks.values()) {
+      if (chunk.pedestalMesh) meshes.push(chunk.pedestalMesh);
+    }
+    return meshes;
+  });
+  let signMeshes = $derived.by(() => {
+    const meshes: InstancedMesh[] = [];
+    if (corridorChunk?.signMesh) meshes.push(corridorChunk.signMesh);
+    for (const chunk of loadedChunks.values()) {
+      if (chunk.signMesh) meshes.push(chunk.signMesh);
+    }
+    return meshes;
+  });
+
+  /** Rebuild proximity grids from currently loaded chunks */
+  function rebuildProximityGrids(): void {
+    torchGrid = new ProximityGrid<TorchPosition>(CELL_SIZE);
+    plaqueGrid = new ProximityGrid<PlaquePlacement>(CELL_SIZE);
+    exhibitLightGrid = new ProximityGrid<LightPosition>(CELL_SIZE);
+    ceilingLightGrid = new ProximityGrid<LightPosition>(CELL_SIZE);
+
+    const allChunks = [corridorChunk, ...loadedChunks.values()].filter(Boolean) as RoomChunk[];
+    for (const chunk of allChunks) {
+      for (const t of chunk.torchPositions) torchGrid.insert(t, t.tileX, t.tileY);
+      for (const p of chunk.plaquePlacements) plaqueGrid.insert(p, p.tileX, p.tileY);
+      for (const l of chunk.exhibitLightPositions) exhibitLightGrid.insert(l, l.tileX, l.tileY);
+      for (const l of chunk.ceilingLightPositions) ceilingLightGrid.insert(l, l.tileX, l.tileY);
+    }
+  }
+
+  /** Load a room chunk asynchronously */
+  async function loadRoom(wingId: string): Promise<void> {
+    if (loadedChunks.has(wingId) || buildingRooms.has(wingId)) return;
+    const buckets = perRoomBuckets.roomBuckets.get(wingId);
+    if (!buckets) return;
+
+    buildingRooms.add(wingId);
+    const wing = grid.wings.find(w => w.id === wingId) ?? null;
+    const chunk = await buildRoomChunk(buckets, wingId, wing);
+    buildingRooms.delete(wingId);
+
+    // Update loaded chunks (creates new Map to trigger Svelte reactivity)
+    const updated = new Map(loadedChunks);
+    updated.set(wingId, chunk);
+    loadedChunks = updated;
+
+    // Rebuild proximity grids with new chunk data
+    rebuildProximityGrids();
+
+    // Mount torches/lights immediately (shader compilation is one-time cost)
+    visibleTorches = [...visibleTorches, ...chunk.torchPositions];
+    visibleExhibitLights = [...visibleExhibitLights, ...chunk.exhibitLightPositions];
+    visibleCeilingLights = [...visibleCeilingLights, ...chunk.ceilingLightPositions];
+  }
+
+  /** Dispose a room chunk and remove from scene */
+  function unloadRoom(wingId: string): void {
+    const chunk = loadedChunks.get(wingId);
+    if (!chunk) return;
+
+    disposeRoomChunk(chunk);
+
+    const updated = new Map(loadedChunks);
+    updated.delete(wingId);
+    loadedChunks = updated;
+
+    // Remove this chunk's torches/lights from visible sets
+    const chunkTorchIds = new Set(chunk.torchPositions.map(t => t.id));
+    const chunkExhibitIds = new Set(chunk.exhibitLightPositions.map(l => l.id));
+    const chunkCeilingIds = new Set(chunk.ceilingLightPositions.map(l => l.id));
+    visibleTorches = visibleTorches.filter(t => !chunkTorchIds.has(t.id));
+    visibleExhibitLights = visibleExhibitLights.filter(l => !chunkExhibitIds.has(l.id));
+    visibleCeilingLights = visibleCeilingLights.filter(l => !chunkCeilingIds.has(l.id));
+
+    rebuildProximityGrids();
+  }
+
+  // ── Initial load: corridor + spawn room + adjacent rooms ──
+  props.onBuildStage?.("Tile bucketing");
+
+  // Build corridor chunk first (always loaded, cheap)
+  buildRoomChunk(perRoomBuckets.corridorBucket, "__corridor__", null).then((chunk) => {
+    corridorChunk = chunk;
+    props.onBuildStage?.("Corridors");
+  });
+
+  // Determine spawn room and load it + adjacent rooms
+  const spawnRoomId = streamingManager.getRoomAtTile(grid.spawn.x, grid.spawn.y, grid.wings);
+  if (spawnRoomId) {
+    const adjacentIds = streamingManager.getAdjacentRooms(spawnRoomId);
+    const initialRooms = [spawnRoomId, ...adjacentIds];
+
+    // Load initial rooms sequentially to avoid overwhelming the GPU
+    (async () => {
+      for (const roomId of initialRooms) {
+        await loadRoom(roomId);
+        props.onBuildStage?.(roomId);
+      }
+      // Compute initial visibility
+      recomputeVisibility(grid.spawn.x, grid.spawn.y);
+      geometryReady = true;
+      props.onGeometryReady?.();
+    })();
+  } else {
+    // No spawn room found — load all rooms as fallback
+    (async () => {
+      for (const wing of grid.wings) {
+        await loadRoom(wing.id);
+      }
+      recomputeVisibility(grid.spawn.x, grid.spawn.y);
+      geometryReady = true;
+      props.onGeometryReady?.();
+    })();
+  }
+
+  // ── Room streaming in game loop ──
+  // Every N frames, check if the player has entered a new room and
+  // load/unload room chunks accordingly.
+  let lastStreamingRoomId: string | null = spawnRoomId;
+  let streamingFrameCounter = 0;
+
+  function updateStreaming(playerTX: number, playerTZ: number): void {
+    streamingFrameCounter++;
+    if (streamingFrameCounter % 15 !== 0) return; // Check every 15 frames (~4 Hz)
+
+    const currentRoom = streamingManager.getRoomAtTile(playerTX, playerTZ, grid.wings);
+    if (currentRoom === lastStreamingRoomId) return;
+    lastStreamingRoomId = currentRoom;
+
+    const { toLoad, toDispose } = streamingManager.update(currentRoom);
+    for (const id of toDispose) unloadRoom(id);
+    for (const id of toLoad) loadRoom(id); // async, non-blocking
+  }
 
   // Shadow disabled on dynamic lights — toggling castShadow reactively causes
   // Three.js deallocateRenderTarget crashes, and PBR wall textures already consume
@@ -1094,11 +1161,19 @@
   let lastCheckTX = -999;
   let lastCheckTY = -999;
 
+  /** All plaque placements across loaded chunks */
+  function getAllPlaquePlacements(): PlaquePlacement[] {
+    const all: PlaquePlacement[] = [];
+    if (corridorChunk) all.push(...corridorChunk.plaquePlacements);
+    for (const chunk of loadedChunks.values()) all.push(...chunk.plaquePlacements);
+    return all;
+  }
+
   function recomputeVisibility(playerTX: number, playerTY: number): void {
     // Editor/top-down bypass: show everything (plaques, performers, furniture)
     // Torches and lights are always fully mounted — no need to set them here
     if (museum3dEditorState.editorActive || !fpsActive) {
-      visiblePlaques = plaquePlacements;
+      visiblePlaques = getAllPlaquePlacements();
       visiblePerformers = grid.performers;
       visibleFurniture = grid.furniture ?? [];
       pendingMounts = [];
@@ -1161,6 +1236,15 @@
       ? visibleTorches
       : visibleTorches.slice(0, MAX_POINT_LIGHTS);
     return new Set(withLight.map(t => `${t.x},${t.z}`));
+  });
+
+  // Room lights derived from loaded chunks — updates when chunks load/unload
+  let roomLights = $derived.by(() => {
+    const lights: RoomLight[] = [];
+    for (const chunk of loadedChunks.values()) {
+      if (chunk.roomLight) lights.push(chunk.roomLight);
+    }
+    return lights;
   });
 
   // Per-room ambient lights — fixed-size pool to avoid shader recompilation.
@@ -1367,13 +1451,15 @@
   <T is={mesh} castShadow receiveShadow />
 {/each}
 
-<!-- Ceiling — visible only in FPS so top-down view shows the floor plan -->
-{#if fpsActive && ceilingMesh}
-  <T is={ceilingMesh} />
+<!-- Ceiling meshes — visible only in FPS so top-down view shows the floor plan -->
+{#if fpsActive}
+  {#each ceilingMeshes as mesh}
+    <T is={mesh} />
+  {/each}
 {/if}
 
 <!-- Exhibit plaques: individually textured with readable content -->
-{#each visiblePlaques as plaque (plaque.id)}
+{#each visiblePlaques as plaque (plaque.refId)}
   {@const plaqueOverride = overrideVersion >= 0 ? museumEditorOverrides.get(`plaque-${plaque.refId}`) : null}
   <MuseumPlaque3D
     worldX={plaqueOverride?.x ?? plaque.worldX}
@@ -1387,7 +1473,7 @@
     generator={plaqueGenerator}
   />
 {/each}
-{#each visibleExhibitLights as pos (pos.id)}
+{#each visibleExhibitLights as pos (`${pos.x},${pos.z}`)}
   {#if useSpotLights}
     <T.SpotLight
       position={[pos.x, 2.5, pos.z]}
@@ -1410,7 +1496,7 @@
 {/each}
 
 <!-- Ceiling fluorescent lights — cold white overhead wash for institutional rooms -->
-{#each visibleCeilingLights as cLight (cLight.id)}
+{#each visibleCeilingLights as cLight (`${cLight.x},${cLight.z}`)}
   <T.PointLight
     position={[cLight.x, WALL_HEIGHT - 0.3, cLight.z]}
     intensity={2.5}
@@ -1421,7 +1507,7 @@
 {/each}
 
 <!-- Light fixtures — model and effects vary by wing theme/era -->
-{#each visibleTorches as torch (torch.id)}
+{#each visibleTorches as torch (`${torch.x},${torch.z}`)}
   <MuseumTorch3D
     x={torch.x}
     z={torch.z}
@@ -1449,15 +1535,15 @@
   />
 {/each}
 
-<!-- Pedestal instanced mesh -->
-{#if pedestalMesh}
-  <T is={pedestalMesh} castShadow receiveShadow />
-{/if}
+<!-- Pedestal instanced meshes (per-room) -->
+{#each pedestalMeshes as mesh}
+  <T is={mesh} castShadow receiveShadow />
+{/each}
 
-<!-- Sign instanced mesh -->
-{#if signMesh}
-  <T is={signMesh} castShadow receiveShadow />
-{/if}
+<!-- Sign instanced meshes (per-room) -->
+{#each signMeshes as mesh}
+  <T is={mesh} castShadow receiveShadow />
+{/each}
 
 <!-- GLTF furniture models (Kenney CC0 kit) -->
 <MuseumFurniture placements={visibleFurniture} tileSize={TILE_SIZE} />
