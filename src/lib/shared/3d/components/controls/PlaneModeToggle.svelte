@@ -26,17 +26,20 @@
   .plane-mode-toggle {
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 4px 10px;
-    border-radius: 6px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    color: var(--theme-text, #fff);
+    gap: 5px;
+    padding: 7px 12px;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: rgba(255, 255, 255, 0.6);
     font-size: var(--font-size-compact, 12px);
     cursor: pointer;
-    transition: border-color 0.15s;
+    backdrop-filter: blur(8px);
+    transition: all 0.2s ease;
+    white-space: nowrap;
   }
   .plane-mode-toggle:hover {
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+    background: rgba(0, 0, 0, 0.7);
+    color: rgba(255, 255, 255, 0.9);
   }
 </style>

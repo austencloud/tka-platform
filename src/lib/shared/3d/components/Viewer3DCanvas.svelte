@@ -20,6 +20,7 @@
   import Viewer3DCanvasRef from "./Viewer3DCanvasRef.svelte";
   import Viewer3DViewPresets from "./Viewer3DViewPresets.svelte";
   import Viewer3DGridPopover from "./Viewer3DGridPopover.svelte";
+  import PlaneModeToggle from "./controls/PlaneModeToggle.svelte";
   import Viewer3DContextMenuHost from "./context-menu/Viewer3DContextMenuHost.svelte";
   import { getViewer3DContext } from "../context/viewer-3d-context";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -66,8 +67,14 @@
       />
     </Canvas>
     {#if !hideOverlays}
-      <div class="grid-popover-anchor">
+      <div class="top-controls">
         <Viewer3DGridPopover {sequenceData} />
+        {#if avatarState}
+          <PlaneModeToggle
+            mode={avatarState.planeMode}
+            onModeChange={(mode) => avatarState.setPlaneMode(mode)}
+          />
+        {/if}
       </div>
       <Viewer3DViewPresets />
     {/if}
@@ -85,11 +92,14 @@
     background: #1a1a2e;
   }
 
-  .grid-popover-anchor {
+  .top-controls {
     position: absolute;
     top: 12px;
     right: 12px;
     z-index: 10;
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
   }
 
   .viewer-3d-loading {
