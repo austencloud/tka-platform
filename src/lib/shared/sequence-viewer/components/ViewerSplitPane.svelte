@@ -181,28 +181,23 @@
             hideOverlays={layout.focusedPane === "animation"}
           />
         </div>
-        <div
-          class="canvas-layer canvas-2d-layer"
-          style="visibility:{renderMode === '3d' ? 'hidden' : 'visible'};"
-        >
-          <AnimatorCanvas
-            sequenceData={playback.animationState.sequenceData}
-            currentStep={playback.currentStep}
-            isPlaying={playback.isPlaying}
-            blueProp={playback.animationState.bluePropState}
-            redProp={playback.animationState.redPropState}
-            gridMode={sequence?.gridMode}
-            letter={playback.currentLetter}
-            stepData={playback.currentStepData}
-            word={sequence?.word}
-            bluePropType={propRendering.bluePropType}
-            redPropType={propRendering.redPropType}
-            {trailSettings}
-            {onCanvasReady}
-            focused={layout.focusedPane === "animation"}
-            suppress2DOverlays={renderMode === '3d'}
-          />
-        </div>
+        <AnimatorCanvas
+          sequenceData={playback.animationState.sequenceData}
+          currentStep={playback.currentStep}
+          isPlaying={playback.isPlaying}
+          blueProp={playback.animationState.bluePropState}
+          redProp={playback.animationState.redPropState}
+          gridMode={sequence?.gridMode}
+          letter={playback.currentLetter}
+          stepData={playback.currentStepData}
+          word={sequence?.word}
+          bluePropType={propRendering.bluePropType}
+          redPropType={propRendering.redPropType}
+          {trailSettings}
+          {onCanvasReady}
+          focused={layout.focusedPane === "animation"}
+          suppress2DOverlays={renderMode === '3d'}
+        />
 
       {/if}
 
