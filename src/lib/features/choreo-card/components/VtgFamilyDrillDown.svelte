@@ -452,10 +452,6 @@
     background: #ffffff;
   }
 
-  .playing-card.landscape {
-    aspect-ratio: 7 / 5;
-  }
-
   .playing-card :global(> button) {
     width: 100%;
     height: 100%;

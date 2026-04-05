@@ -37,7 +37,7 @@
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		padding: 26px 18px;
+		padding: 32px 28px;
 		background: rgba(255, 255, 255, 0.015);
 		border: 1.5px solid rgba(255, 255, 255, 0.07);
 		border-radius: 16px;
@@ -94,8 +94,9 @@
 	}
 
 	.element-icon {
-		width: 36px;
-		height: auto;
+		width: 48px;
+		height: 52px;
+		object-fit: contain;
 		opacity: 0.55;
 		margin-bottom: 14px;
 		transition: opacity 0.2s ease-out;
@@ -107,7 +108,7 @@
 	}
 
 	.family-name {
-		font-size: 14px;
+		font-size: 16px;
 		font-weight: 600;
 		margin-bottom: 6px;
 		transition: color 0.2s ease-out;
@@ -118,7 +119,7 @@
 	}
 
 	.element-name {
-		font-size: 10px;
+		font-size: 11px;
 		text-transform: uppercase;
 		letter-spacing: 1.5px;
 		color: var(--ec);

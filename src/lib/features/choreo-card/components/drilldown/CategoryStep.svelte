@@ -2,7 +2,7 @@
 	import type { CategorySelections } from '../../state/deck-drilldown-types';
 	import { VTG_ELEMENTAL_THEMES } from '../../domain/elemental-theme';
 	import ElementalFamilyCard from './ElementalFamilyCard.svelte';
-	import DrillPill from './DrillPill.svelte';
+	import GridModeCard from './GridModeCard.svelte';
 
 	interface Props {
 		onContinue: (category: CategorySelections) => void;
@@ -93,14 +93,9 @@
 	<!-- Grid section -->
 	<div class="section">
 		<span class="section-label">GRID</span>
-		<div class="pill-row">
-			{#each GRID_OPTIONS as g}
-				<DrillPill
-					label={g}
-					selected={selectedGrid === g}
-					onClick={() => selectGrid(g)}
-				/>
-			{/each}
+		<div class="grid-mode-row">
+			<GridModeCard mode="diamond" selected={selectedGrid === 'Diamond'} onClick={() => selectGrid('Diamond')} />
+			<GridModeCard mode="box" selected={selectedGrid === 'Box'} onClick={() => selectGrid('Box')} />
 		</div>
 	</div>
 
@@ -118,7 +113,8 @@
 <style>
 	.category-step {
 		width: 100%;
-		max-width: 700px;
+		max-width: 960px;
+		margin: 0 auto;
 		display: flex;
 		flex-direction: column;
 		gap: 32px;
@@ -159,17 +155,27 @@
 	.elemental-grid {
 		display: grid;
 		grid-template-columns: repeat(3, 1fr);
+		grid-auto-rows: 1fr;
 		gap: 14px;
 		width: 100%;
-		max-width: 660px;
+		max-width: 900px;
 		margin-bottom: 22px;
 	}
 
-	.pill-row {
+	/* Ensure cards stretch to fill grid row height */
+	/* Wrapper divs and cards must stretch to fill grid cells */
+	.elemental-grid > :global(div) {
 		display: flex;
-		flex-wrap: wrap;
+	}
+
+	.elemental-grid > :global(div > .elemental-card) {
+		flex: 1;
+	}
+
+	.grid-mode-row {
+		display: flex;
 		justify-content: center;
-		gap: 10px;
+		gap: 16px;
 	}
 
 	.continue-btn {

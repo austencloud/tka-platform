@@ -10,6 +10,7 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import DeckInteriorFilterPanel from "./filters/DeckInteriorFilterPanel.svelte";
   import ChoreoCard from "./ChoreoCard.svelte";
+  import CardInspectModal from "./CardInspectModal.svelte";
   import DeckDrillDown from "./drilldown/DeckDrillDown.svelte";
   import PrintPreviewPages from "./print-preview/PrintPreviewPages.svelte";
   import PrintPreviewToolbar from "./print-preview/PrintPreviewToolbar.svelte";
@@ -74,6 +75,7 @@
   let renderProgress = $state(0);
   let renderTotal = $state(0);
   let rerenderKey = $state(0);
+  let inspectedSequence = $state<SequenceData | null>(null);
 
   function setViewMode(mode: ViewMode) {
     viewMode = mode;
@@ -367,6 +369,7 @@
             {showWord}
             {includeStartPosition}
             onCardContextMenu={onContextMenu ? (x, y, rerender) => onContextMenu(x, y, rerender) : undefined}
+            onCardClick={(seq) => { inspectedSequence = seq; }}
             onPairsReady={(pairs) => { renderedPairs = pairs; }}
           />
         {:else}
@@ -385,7 +388,7 @@
                         {showTKA}
                         {showWord}
                         {includeStartPosition}
-                        onSelect={() => onSelectSequence(sequence)}
+                        onSelect={() => { inspectedSequence = sequence; }}
                         {onContextMenu}
                       />
                     </div>
@@ -404,6 +407,18 @@
     <DeckDrillDown {decks} onSelectDeck={handleDrillDownSelect} />
   {/if}
 </div>
+
+{#if inspectedSequence}
+  <CardInspectModal
+    sequence={inspectedSequence}
+    {handPointsVisible}
+    {showGrid}
+    {showTKA}
+    {showWord}
+    {includeStartPosition}
+    onClose={() => { inspectedSequence = null; }}
+  />
+{/if}
 
 <style>
   /* ── Print filter prompt ── */
@@ -448,9 +463,8 @@
   /* ── Root ── */
 
   .deck-browser {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
+    flex: 1;
+    min-height: 0;
     overflow-y: auto;
     scrollbar-width: thin;
     scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
@@ -468,8 +482,6 @@
     margin: 0 auto;
     width: 100%;
     gap: 16px;
-    flex: 1;
-    min-height: 0;
   }
 
   .level-interior { max-width: 1400px; }

@@ -14,26 +14,28 @@
     onViewChange?: (view: VtgView) => void;
   }
 
-  const { decks, onSelectDeck, onSelectFamily, initialView = "family", onViewChange }: Props = $props();
+  const props: Props = $props();
 
-  let activeView = $state<VtgView>(initialView);
+  // Initialize via $effect.pre — access through props to track initialView reactively
+  let activeView = $state<VtgView>("family");
+  $effect.pre(() => { activeView = props.initialView ?? "family"; });
 
   function setView(view: VtgView): void {
     activeView = view;
-    onViewChange?.(view);
+    props.onViewChange?.(view);
   }
 
   // Family and Ratio views only show continuous decks.
   // Reversal variants are browsed via the BY REVERSAL view.
   const continuousDecks = $derived(
-    decks.filter(d => !d.reversalPattern || d.reversalPattern === 'continuous')
+    props.decks.filter(d => !d.reversalPattern || d.reversalPattern === 'continuous')
   );
 
   function handleSelectPattern(patternId: string): void {
     // Find the deck matching this reversal pattern and select it
-    const matchingDeck = decks.find(d => d.reversalPattern === patternId);
+    const matchingDeck = props.decks.find(d => d.reversalPattern === patternId);
     if (matchingDeck) {
-      onSelectDeck(matchingDeck.id);
+      props.onSelectDeck(matchingDeck.id);
     }
   }
 </script>
@@ -68,11 +70,11 @@
 
   <div class="grid-content">
     {#if activeView === "family"}
-      <VtgFamilyGrid decks={continuousDecks} {onSelectFamily} />
+      <VtgFamilyGrid decks={continuousDecks} onSelectFamily={props.onSelectFamily} />
     {:else if activeView === "ratio"}
-      <VtgRatioGrid decks={continuousDecks} {onSelectDeck} />
+      <VtgRatioGrid decks={continuousDecks} onSelectDeck={props.onSelectDeck} />
     {:else}
-      <VtgReversalGrid {decks} onSelectPattern={handleSelectPattern} />
+      <VtgReversalGrid decks={props.decks} onSelectPattern={handleSelectPattern} />
     {/if}
   </div>
 </div>

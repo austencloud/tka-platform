@@ -49,21 +49,34 @@ function filterDecks(allDecks: Deck[], sel: DrillSelections): Deck[] {
 
 	if (sel.shape) {
 		const lowerTypes = sel.shape.loopTypes.map((t) => t.toLowerCase());
+		const sliceLower = sel.shape.sliceType.toLowerCase();
+		const gridLower = sel.shape.gridMode.toLowerCase();
 		result = result.filter(
 			(d) =>
 				lowerTypes.includes(d.loopType.toLowerCase()) &&
-				d.sliceType === sel.shape!.sliceType &&
-				d.gridMode === sel.shape!.gridMode
+				d.sliceType.toLowerCase() === sliceLower &&
+				d.gridMode.toLowerCase() === gridLower
 		);
 	}
 
 	if (sel.category) {
 		const familyLower = sel.category.vtgFamily.toLowerCase();
+		const gridLower = sel.category.gridMode.toLowerCase();
+		console.log('[filterDecks] VTG category filter:', { familyLower, gridLower, decksBefore: result.length });
+		if (result.length > 0) {
+			const sample = result[0];
+			console.log('[filterDecks] sample deck:', { id: sample.id, gridMode: sample.gridMode, familyIds: sample.families.map(f => f.id) });
+		}
 		result = result.filter(
 			(d) =>
 				d.families.some((f) => f.id.toLowerCase().includes(familyLower)) &&
-				d.gridMode === sel.category!.gridMode
+				d.gridMode.toLowerCase() === gridLower
 		);
+		console.log('[filterDecks] VTG after filter:', result.length);
+		if (result.length > 0) {
+			console.log('[filterDecks] VTG turnPatterns:', [...new Set(result.map(d => d.turnPattern))]);
+			console.log('[filterDecks] VTG stepCounts:', [...new Set(result.map(d => d.stepCount))]);
+		}
 	}
 
 	if (sel.stepCount !== null) {
@@ -71,11 +84,17 @@ function filterDecks(allDecks: Deck[], sel: DrillSelections): Deck[] {
 	}
 
 	if (sel.turnPattern !== null) {
-		result = result.filter((d) => d.turnPattern === sel.turnPattern);
+		const selTurn = sel.turnPattern.toLowerCase().replace(/\s+/g, '-');
+		result = result.filter((d) => {
+			const deckTurn = d.turnPattern.toLowerCase().replace(/\s+/g, '-');
+			// Match exactly, or match "0t" against "uniform-0t"
+			return deckTurn === selTurn || deckTurn === `uniform-${selTurn}`;
+		});
 	}
 
 	if (sel.reversalPattern !== null) {
-		result = result.filter((d) => d.reversalPattern === sel.reversalPattern);
+		const selRev = sel.reversalPattern.toLowerCase().replace(/\s+/g, '-');
+		result = result.filter((d) => d.reversalPattern.toLowerCase().replace(/\s+/g, '-') === selRev);
 	}
 
 	return result;
@@ -85,13 +104,16 @@ function unique<T>(values: T[]): T[] {
 	return [...new Set(values)];
 }
 
-export function createDrillDownState(allDecks: Deck[]) {
+export function createDrillDownState(allDecksOrGetter: Deck[] | (() => Deck[])) {
+	// Accept either a static array or a getter function for reactive deck loading
+	const getAllDecks = typeof allDecksOrGetter === 'function' ? allDecksOrGetter : () => allDecksOrGetter;
+
 	let selections = $state<DrillSelections>(emptySelections());
 	let breadcrumbs = $state<BreadcrumbSegment[]>([]);
 	let currentStep = $state<DrillStepId>('collection');
 	let direction = $state<'forward' | 'backward'>('forward');
 
-	const filteredDecks = $derived(filterDecks(allDecks, selections));
+	const filteredDecks = $derived(filterDecks(getAllDecks(), selections));
 
 	const selectedDeck = $derived(
 		filteredDecks.length === 1 ? filteredDecks[0] : null
@@ -135,8 +157,12 @@ export function createDrillDownState(allDecks: Deck[]) {
 		};
 	}
 
-	function advanceTo(stepId: DrillStepId, label: string) {
-		breadcrumbs = [...breadcrumbs, { label, stepId: currentStep }];
+	function advanceTo(stepId: DrillStepId, previousLabel: string, currentLabel?: string) {
+		breadcrumbs = [
+			...breadcrumbs,
+			{ label: previousLabel, stepId: currentStep },
+			...(currentLabel ? [{ label: currentLabel, stepId: stepId }] : []),
+		];
 		currentStep = stepId;
 		direction = 'forward';
 	}
@@ -176,9 +202,9 @@ export function createDrillDownState(allDecks: Deck[]) {
 			direction = 'forward';
 
 			if (path === 'LOOPs') {
-				advanceTo('shape', 'LOOPs');
+				advanceTo('shape', 'LOOPs', 'Shape');
 			} else {
-				advanceTo('category', 'VTG');
+				advanceTo('category', 'VTG', 'Category');
 			}
 		},
 
@@ -188,29 +214,29 @@ export function createDrillDownState(allDecks: Deck[]) {
 
 			// Recompute filtered decks after shape selection to check
 			// if step count can be auto-resolved.
-			const afterShape = filterDecks(allDecks, { ...selections, shape });
+			const afterShape = filterDecks(getAllDecks(), { ...selections, shape });
 			const counts = unique(afterShape.map((d) => d.stepCount));
 
 			if (counts.length === 1 && counts[0] !== undefined) {
 				// Only one step count available, auto-skip to turns.
 				selections = { ...selections, shape, stepCount: counts[0] ?? null };
-				advanceTo('turn', shape.loopTypes.join(' + '));
+				advanceTo('turn', shape.loopTypes.join(' + '), 'Turn Pattern');
 			} else {
-				advanceTo('stepcount', shape.loopTypes.join(' + '));
+				advanceTo('stepcount', shape.loopTypes.join(' + '), 'Step Count');
 			}
 		},
 
 		selectCategory(category: CategorySelections) {
-			// VTG decks are always 4 steps.
-			selections = { ...selections, category, stepCount: 4 };
+			// VTG skips step count — don't set it so the filter ignores it.
+			selections = { ...selections, category, stepCount: null };
 			resetSelectionsAfter('category');
-			advanceTo('turn', category.vtgFamily);
+			advanceTo('turn', category.vtgFamily, 'Turn Pattern');
 		},
 
 		selectStepCount(count: number) {
 			selections = { ...selections, stepCount: count };
 			resetSelectionsAfter('stepcount');
-			advanceTo('turn', `${count}-step`);
+			advanceTo('turn', `${count}-step`, 'Turn Pattern');
 		},
 
 		selectTurnPattern(pattern: string) {
@@ -218,7 +244,7 @@ export function createDrillDownState(allDecks: Deck[]) {
 			resetSelectionsAfter('turn');
 
 			// Check if there's only one reversal pattern left.
-			const afterTurn = filterDecks(allDecks, {
+			const afterTurn = filterDecks(getAllDecks(), {
 				...selections,
 				turnPattern: pattern,
 			});
@@ -231,9 +257,9 @@ export function createDrillDownState(allDecks: Deck[]) {
 					turnPattern: pattern,
 					reversalPattern: reversals[0] ?? null,
 				};
-				advanceTo('reversal', pattern);
+				advanceTo('reversal', pattern, 'Reversal Pattern');
 			} else {
-				advanceTo('reversal', pattern);
+				advanceTo('reversal', pattern, 'Reversal Pattern');
 			}
 		},
 
@@ -252,8 +278,12 @@ export function createDrillDownState(allDecks: Deck[]) {
 			// Truncate breadcrumbs to the entries before the target.
 			breadcrumbs = breadcrumbs.slice(0, index);
 
-			// Reset selections for everything after the target step.
-			resetSelectionsAfter(stepId);
+			// Going back to collection resets everything including path.
+			if (stepId === 'collection') {
+				selections = emptySelections();
+			} else {
+				resetSelectionsAfter(stepId);
+			}
 		},
 
 		goTo(stepId: DrillStepId) {

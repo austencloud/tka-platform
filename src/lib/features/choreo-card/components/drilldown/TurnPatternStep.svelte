@@ -5,11 +5,23 @@
 	interface Props {
 		stepCount: number;
 		path: DrillPath;
+		availablePatterns: string[];  // Turn pattern IDs that have actual decks
 		onSelectPattern: (pattern: string) => void;
 		onSelectUniform: () => void;
 	}
 
-	let { stepCount, path, onSelectPattern, onSelectUniform }: Props = $props();
+	let { stepCount, path, availablePatterns, onSelectPattern, onSelectUniform }: Props = $props();
+
+	// Only show pattern cards that have matching decks in Firestore.
+	// Uniform patterns are checked by prefix since there are multiple (uniform-0t, uniform-1t, etc.)
+	const hasUniform = $derived(availablePatterns.some(p => p.toLowerCase().startsWith('uniform')));
+
+	$effect(() => {
+		console.log('[TurnPatternStep] availablePatterns:', availablePatterns, 'hasUniform:', hasUniform, 'stepCount:', stepCount);
+	});
+	const hasPattern = (name: string) => availablePatterns.some(p =>
+		p.toLowerCase().replace(/\s+/g, '-') === name.toLowerCase().replace(/\s+/g, '-')
+	);
 
 	const showComplex = $derived(stepCount >= 8);
 
@@ -92,12 +104,14 @@
 	<h2 class="step-title">Choose a turn pattern</h2>
 
 	<!-- Simple tier -->
+	{#if hasUniform || hasPattern('alternating')}
 	<div class="tier">
 		<div class="tier-header">
 			<span class="tier-name">Simple</span>
 			<span class="tier-line"></span>
 		</div>
 		<div class="card-grid">
+			{#if hasUniform}
 			<TurnPatternCard
 				name="Uniform"
 				description="Same turn value on both hands, every step. Pick a specific value."
@@ -105,6 +119,8 @@
 				meta="0T through 3T &middot; 7 variations &rarr;"
 				onClick={onSelectUniform}
 			/>
+			{/if}
+			{#if hasPattern('alternating')}
 			<TurnPatternCard
 				name="Alternating"
 				description="Both hands alternate 0T and 1T each step. Symmetric."
@@ -112,16 +128,20 @@
 				meta="0T, 1T, 0T, 1T"
 				onClick={() => onSelectPattern('Alternating')}
 			/>
+			{/if}
 		</div>
 	</div>
+	{/if}
 
 	<!-- Medium tier -->
+	{#if hasPattern('alternating-opposition') || hasPattern('blue-leads') || hasPattern('red-leads')}
 	<div class="tier">
 		<div class="tier-header">
 			<span class="tier-name">Medium</span>
 			<span class="tier-line"></span>
 		</div>
 		<div class="card-grid">
+			{#if hasPattern('alternating-opposition')}
 			<TurnPatternCard
 				name="Alt. Opposition"
 				description="When blue is 0T, red is 1T and vice versa. Hands swap each step."
@@ -129,6 +149,8 @@
 				meta="B:0T R:1T, B:1T R:0T"
 				onClick={() => onSelectPattern('Alternating Opposition')}
 			/>
+			{/if}
+			{#if hasPattern('blue-leads')}
 			<TurnPatternCard
 				name="Blue Leads"
 				description="Blue 2T every step, red 1T every step. Blue always double."
@@ -136,6 +158,8 @@
 				meta="B:2T R:1T every step"
 				onClick={() => onSelectPattern('Blue Leads')}
 			/>
+			{/if}
+			{#if hasPattern('red-leads')}
 			<TurnPatternCard
 				name="Red Leads"
 				description="Red 2T every step, blue 1T every step. Red always double."
@@ -143,17 +167,20 @@
 				meta="B:1T R:2T every step"
 				onClick={() => onSelectPattern('Red Leads')}
 			/>
+			{/if}
 		</div>
 	</div>
+	{/if}
 
-	<!-- Complex tier (only for stepCount >= 8) -->
-	{#if showComplex}
+	<!-- Complex tier (only for stepCount >= 8 AND patterns exist) -->
+	{#if showComplex && (hasPattern('pyramid') || hasPattern('contrast') || hasPattern('float-wave'))}
 		<div class="tier">
 			<div class="tier-header">
 				<span class="tier-name">Complex</span>
 				<span class="tier-line"></span>
 			</div>
 			<div class="card-grid">
+				{#if hasPattern('pyramid')}
 				<TurnPatternCard
 					name="Pyramid"
 					description="Both hands ramp 0T→1T→2T→3T then back down."
@@ -161,6 +188,8 @@
 					meta="0T, 1T, 2T, 3T, 3T, 2T, 1T, 0T"
 					onClick={() => onSelectPattern('Pyramid')}
 				/>
+				{/if}
+				{#if hasPattern('contrast')}
 				<TurnPatternCard
 					name="Contrast"
 					description="Blue 3T when red is 0T and vice versa. Maximum opposition."
@@ -168,6 +197,8 @@
 					meta="B:3T R:0T alternating"
 					onClick={() => onSelectPattern('Contrast')}
 				/>
+				{/if}
+				{#if hasPattern('float-wave')}
 				<TurnPatternCard
 					name="Float Wave"
 					description="1T, 2T, then float for 4 steps, then 2T, 1T. Purple = float."
@@ -175,6 +206,7 @@
 					meta="1T, 2T, fl, fl, fl, fl, 2T, 1T"
 					onClick={() => onSelectPattern('Float Wave')}
 				/>
+				{/if}
 			</div>
 		</div>
 	{/if}

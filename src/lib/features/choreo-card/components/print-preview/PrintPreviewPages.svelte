@@ -24,6 +24,8 @@
     rerenderKey?: number;
     /** Right-click context menu on a card cell: (x, y, rerender callback for that card, sequence) */
     onCardContextMenu?: (x: number, y: number, rerender: () => void, sequence: SequenceData) => void;
+    /** Left-click a card to inspect it */
+    onCardClick?: (sequence: SequenceData) => void;
     onPairsReady?: (pairs: CardPair[]) => void;
     onRenderStateChange?: (state: { isRendering: boolean; progress: number; total: number }) => void;
   }
@@ -41,6 +43,7 @@
     elementTheme,
     rerenderKey = 0,
     onCardContextMenu,
+    onCardClick,
     onPairsReady,
     onRenderStateChange,
   }: Props = $props();
@@ -299,9 +302,12 @@
             style:grid-template-columns="repeat({layout.cols}, {colWidthPct}%)"
           >
             {#each sheet as card, cardIndex (cardIndex)}
+              <!-- svelte-ignore a11y_no_static_element_interactions -->
               <div
                 class="card-cell"
+                class:clickable={!!onCardClick}
                 style:aspect-ratio="{cardAspect}"
+                onclick={() => onCardClick?.(sequences[sheetIndex * layout.cardsPerPage + cardIndex]!)}
                 oncontextmenu={(e) => handleCardContextMenu(e, sheetIndex * layout.cardsPerPage + cardIndex)}
               >
                 <img src={card.frontUrl} alt="{card.label} front" />
@@ -318,6 +324,7 @@
             style:grid-template-columns="repeat({layout.cols}, {colWidthPct}%)"
           >
             {#each sheet as card, cardIndex (cardIndex)}
+              <!-- svelte-ignore a11y_no_static_element_interactions -->
               <div
                 class="card-cell"
                 style:aspect-ratio="{cardAspect}"
@@ -378,6 +385,16 @@
     overflow: hidden;
     border-radius: 8px;
     background: #f0f0f0;
+  }
+
+  .card-cell.clickable {
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .card-cell.clickable:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
   }
 
   .card-cell img {

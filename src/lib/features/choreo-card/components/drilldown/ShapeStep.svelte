@@ -2,6 +2,7 @@
 	import type { Deck } from '../../domain/models/Deck';
 	import type { ShapeSelections } from '../../state/deck-drilldown-types';
 	import DrillPill from './DrillPill.svelte';
+	import GridModeCard from './GridModeCard.svelte';
 
 	interface Props {
 		decks: Deck[];
@@ -15,9 +16,17 @@
 	const GRID_OPTIONS = ['Diamond', 'Box'] as const;
 
 	// Derive available values from deck data
+	$effect(() => {
+		console.log('[ShapeStep] decks count:', decks.length);
+		if (decks.length > 0) {
+			console.log('[ShapeStep] first deck loopType:', JSON.stringify(decks[0]?.loopType));
+			console.log('[ShapeStep] all loopTypes:', [...new Set(decks.map(d => d.loopType))]);
+		}
+	});
+
 	let availableLoopTypes = $derived(
 		LOOP_TYPE_ORDER.filter((lt) =>
-			decks.some((d) => d.loopType.toLowerCase() === lt.toLowerCase())
+			decks.some((d) => d.loopType?.toLowerCase() === lt.toLowerCase())
 		)
 	);
 
@@ -129,10 +138,10 @@
 	{#if availableGridModes.length > 0}
 		<div class="pill-group">
 			<span class="group-label">GRID</span>
-			<div class="pill-row">
+			<div class="grid-mode-row">
 				{#each availableGridModes as g}
-					<DrillPill
-						label={g}
+					<GridModeCard
+						mode={g.toLowerCase() as 'diamond' | 'box'}
 						selected={selectedGrid === g}
 						onClick={() => selectGrid(g)}
 					/>
@@ -178,6 +187,12 @@
 		flex-wrap: wrap;
 		justify-content: center;
 		gap: 10px;
+	}
+
+	.grid-mode-row {
+		display: flex;
+		justify-content: center;
+		gap: 16px;
 	}
 
 	.continue-btn {
