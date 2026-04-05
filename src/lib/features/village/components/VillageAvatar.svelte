@@ -8,13 +8,13 @@
 <script lang="ts">
 	import { T, useTask } from "@threlte/core";
 	import { HTML } from "@threlte/extras";
+	import type { Group } from "three";
 	import Avatar3D from "$lib/shared/3d/components/Avatar3D.svelte";
 	import Prop3D from "$lib/shared/3d/components/props/Prop3D.svelte";
 	import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 	import { userProportionsState } from "$lib/shared/3d/state/user-proportions-state.svelte";
 	import type { AvatarRenderState } from "../state/village-state.svelte";
 	import type { AvatarId } from "$lib/shared/3d/config/avatar-definitions";
-	import { onMount } from "svelte";
 
 	interface Props {
 		renderState: AvatarRenderState;
@@ -43,21 +43,14 @@
 	let isMoving = $state(false);
 	let moveSpeed = $state(0);
 
-	// Simple fade-in: hide for 2 seconds (model load time), then fade in
-	let showAvatar = $state(false);
+	// Two-phase loading:
+	// Phase 1: Mount Avatar3D with visible=false so it starts loading the GLTF
+	// Phase 2: After model loads, switch to visible=true
+	// We detect "loaded" by checking if Avatar3D's internal group has a SkinnedMesh
+	let preloading = $state(true);  // Phase 1: invisible preload
+	let showAvatar = $state(false); // Phase 2: visible
 	let labelOpacity = $state(0);
-
-	onMount(() => {
-		const timer = setTimeout(() => {
-			showAvatar = true;
-			// Fade label in over next frames
-			const fadeInterval = setInterval(() => {
-				labelOpacity = Math.min(1, labelOpacity + 0.05);
-				if (labelOpacity >= 1) clearInterval(fadeInterval);
-			}, 16);
-		}, 2000);
-		return () => clearTimeout(timer);
-	});
+	let avatarGroupRef: Group | undefined = $state();
 
 	useTask(() => {
 		const inst = renderState.instanceState;
@@ -78,6 +71,25 @@
 		facingAngle = inst.facingAngle;
 		isMoving = moving;
 		moveSpeed = speed;
+
+		// Detect when GLTF model loads by scanning the group for SkinnedMesh.
+		// Avatar3D is mounted with visible=false during preloading — the
+		// component tree IS rendered (allowing GLTF fetch), just not drawn.
+		if (preloading && avatarGroupRef) {
+			let found = false;
+			avatarGroupRef.traverse((child: any) => {
+				if (child.isSkinnedMesh) found = true;
+			});
+			if (found) {
+				preloading = false;
+				showAvatar = true;
+			}
+		}
+
+		// Fade in label
+		if (showAvatar && labelOpacity < 1) {
+			labelOpacity = Math.min(1, labelOpacity + 0.04);
+		}
 	});
 
 	const bluePropState = $derived(renderState.instanceState.bluePropState);
@@ -100,7 +112,7 @@
 </script>
 
 <!-- Visual offset group: cancel STAGE_LIFT so feet land on Y=0 ground -->
-<T.Group position.y={-STAGE_LIFT}>
+<T.Group position.y={-STAGE_LIFT} bind:ref={avatarGroupRef}>
 	<Avatar3D
 		id={renderState.entityId}
 		avatarId={avatarModelId}
@@ -109,10 +121,10 @@
 		position={avatarPosition}
 		{facingAngle}
 		isActive={isSelected}
-		{isMoving}
-		{moveSpeed}
+		isMoving={showAvatar ? isMoving : false}
+		moveSpeed={showAvatar ? moveSpeed : 0}
 		moveDirection={{ x: 0, z: 1 }}
-		enableLocomotion={true}
+		enableLocomotion={showAvatar}
 		visible={showAvatar}
 	/>
 
