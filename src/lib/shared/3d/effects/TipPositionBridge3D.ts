@@ -3,6 +3,7 @@ import type { PropTipPositions3D, TipPositionData3D } from "./types";
 import type {
 	ITipPositionBridge3D,
 	PropState3DLike,
+	SceneTransforms,
 } from "./contracts/ITipPositionBridge3D";
 
 interface TipHistory {
@@ -30,28 +31,43 @@ export class TipPositionBridge3D implements ITipPositionBridge3D {
 		propState: PropState3DLike,
 		staffHalfLength: number,
 		deltaTime: number,
+		sceneTransforms?: SceneTransforms,
 	): PropTipPositions3D {
+		// Replicate Staff3D.svelte position computation:
+		// 1. Start with body-local position from propState
+		// 2. Add gridOffset in Z (forward offset to grid center)
+		// 3. Rotate around Y by facingAngle
+		// 4. Add avatar world position
+		const localX = propState.worldPosition.x;
+		const localY = propState.worldPosition.y;
+		const localZ = propState.worldPosition.z + (sceneTransforms?.gridOffset ?? 0);
+
+		const angle = sceneTransforms?.facingAngle ?? 0;
+		const cos = Math.cos(angle);
+		const sin = Math.sin(angle);
+		const rotatedX = localX * cos + localZ * sin;
+		const rotatedZ = -localX * sin + localZ * cos;
+
+		const avatarPos = sceneTransforms?.avatarPosition ?? { x: 0, y: 0, z: 0 };
 		const center = new Vector3(
-			propState.worldPosition.x,
-			propState.worldPosition.y,
-			propState.worldPosition.z,
+			rotatedX + avatarPos.x,
+			localY + avatarPos.y,
+			rotatedZ + avatarPos.z,
 		);
 
+		// Replicate Staff3D.svelte rotation computation:
+		// facingQuat * worldRotation * horizontalQuat
+		const facingQuat = new Quaternion().setFromEuler(new Euler(0, angle, 0));
 		const rotation = new Quaternion(
 			propState.worldRotation.x,
 			propState.worldRotation.y,
 			propState.worldRotation.z,
 			propState.worldRotation.w,
 		);
-
-		// Replicate Staff3D.svelte axis computation:
-		// 1. Start with a horizontal quaternion (Z = PI/2)
-		// 2. Multiply by the prop's world rotation
-		// 3. Apply to the Y-up unit vector to get the staff axis
 		const horizontalQuat = this.tempQuat.setFromEuler(
 			new Euler(0, 0, Math.PI / 2),
 		);
-		const finalQuat = rotation.clone().multiply(horizontalQuat);
+		const finalQuat = facingQuat.multiply(rotation).multiply(horizontalQuat);
 		this.tempAxis.set(0, 1, 0).applyQuaternion(finalQuat);
 
 		const positivePos = center

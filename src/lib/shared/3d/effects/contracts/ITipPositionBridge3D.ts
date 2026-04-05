@@ -19,12 +19,19 @@ export interface PropState3DLike {
  * (trails, LED, charcoal, fire) consumes this bridge to know where the prop
  * tips are in 3D space.
  */
+export interface SceneTransforms {
+	avatarPosition: { x: number; y: number; z: number };
+	facingAngle: number;
+	gridOffset: number;
+}
+
 export interface ITipPositionBridge3D {
 	update(
 		propIndex: number,
 		propState: PropState3DLike,
 		staffHalfLength: number,
 		deltaTime: number,
+		sceneTransforms?: SceneTransforms,
 	): PropTipPositions3D;
 
 	reset(): void;

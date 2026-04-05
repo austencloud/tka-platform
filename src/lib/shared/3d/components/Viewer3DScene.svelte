@@ -222,5 +222,8 @@
   {bluePropState}
   {redPropState}
   {isPlaying}
-  staffHalfLength={0.5}
+  staffHalfLength={userProportionsState.staffLength / 2}
+  {avatarPosition}
+  {facingAngle}
+  gridOffset={0.3}
 />

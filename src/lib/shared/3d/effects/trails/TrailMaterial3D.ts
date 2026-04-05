@@ -56,7 +56,7 @@ export function createTrailMaterial(options: TrailMaterialOptions): ShaderMateri
     uniforms: {
       uBaseColor: { value: baseColor },
       uOpacity: { value: options.opacity },
-      uEmissiveStrength: { value: options.emissiveStrength ?? 0.5 },
+      uEmissiveStrength: { value: options.emissiveStrength ?? 1.5 },
     },
     vertexShader,
     fragmentShader,

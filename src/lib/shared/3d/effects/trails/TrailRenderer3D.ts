@@ -91,9 +91,9 @@ export interface TrailRendererConfig {
 const DEFAULT_CONFIG: TrailRendererConfig = {
   maxPoints: 120,
   subdivisions: 4,
-  width: 0.03,
+  width: 0.08,
   color: "#3b82f6",
-  opacity: 0.85,
+  opacity: 1.0,
   rainbow: false,
   qualityTier: "medium" as QualityTier,
   mode: "fade",
