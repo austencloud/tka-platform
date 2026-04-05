@@ -163,7 +163,7 @@ export function registerGlobalShortcuts(
     label: "Toggle Dark Mode",
     description: "Toggle Dark Mode (dark background)",
     key: "d",
-    modifiers: [],
+    modifiers: ["alt"],
     context: "global",
     scope: "view",
     priority: "high",
