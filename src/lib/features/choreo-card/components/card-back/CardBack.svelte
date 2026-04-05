@@ -26,6 +26,8 @@
   import { getCardBackThemeVisuals } from "./card-back-theme-visuals";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
   import StartPositionMiniGrid from "./StartPositionMiniGrid.svelte";
+  import TurnPatternGlyph from "./TurnPatternGlyph.svelte";
+  import ReversalPatternGlyph from "./ReversalPatternGlyph.svelte";
   import SequenceMandala from "$lib/shared/mandala/components/SequenceMandala.svelte";
 
   interface Props { sequence: SequenceData; }
@@ -169,9 +171,10 @@
       />
     </div>
 
-    <!-- Branding: pinned to top center, between corner badges -->
+    <!-- Branding + URL: pinned to top center -->
     <div class="top-brand">
       <span class="brand">CHOREO CARDS</span>
+      <span class="brand-url">tkaflowarts.com</span>
     </div>
 
     <!-- CENTER CONTENT — mandala pinned to true center -->
@@ -200,8 +203,12 @@
       {/if}
     </div>
 
-    <!-- URL: pinned to bottom center -->
-    <div class="bottom-url">tkaflowarts.com</div>
+    <!-- Deck identity glyphs: turn pattern + reversal pattern -->
+    <div class="deck-identity">
+      <TurnPatternGlyph entries={d.turnGlyphEntries} />
+      <div class="glyph-divider"></div>
+      <ReversalPatternGlyph sequence={d.reversalSequence} period={d.reversalPeriod} />
+    </div>
   </div>
 </div>
 
@@ -276,13 +283,13 @@
   .top-brand {
     position: absolute;
     z-index: 2;
-    top: 3.6cqi;
+    top: 3.2cqi;
     left: 0;
     right: 0;
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    gap: 1.2cqi;
+    gap: 0.3cqi;
   }
 
   .brand {
@@ -292,18 +299,29 @@
     color: rgba(255, 255, 255, 0.6);
   }
 
-  /* ═══════ URL (bottom center) ═══════ */
+  .brand-url {
+    font-size: 1.8cqi;
+    color: rgba(255, 255, 255, 0.2);
+    letter-spacing: 0.04em;
+  }
 
-  .bottom-url {
+  /* ═══════ DECK IDENTITY GLYPHS (bottom center) ═══════ */
+
+  .deck-identity {
     position: absolute;
     z-index: 2;
     bottom: 3.6cqi;
-    left: 0;
-    right: 0;
-    text-align: center;
-    font-size: 2.4cqi;
-    color: rgba(255, 255, 255, 0.3);
-    letter-spacing: 0.06em;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 1.6cqi;
+  }
+
+  .glyph-divider {
+    width: 0.3cqi;
+    height: 4cqi;
+    background: rgba(255, 255, 255, 0.07);
   }
 
   /* ═══════ CENTER CONTENT ═══════ */
