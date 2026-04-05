@@ -67,17 +67,20 @@
     TIER_CONFIGS[qualityTierDetector.currentTier],
   );
 
-  // Scene-scoped light pool. Recreated only when tier config changes, which
-  // is rare (user override or auto-downgrade).
-  let lightManager = $state(new DynamicLightManager(scene.current, tierConfig));
+  // Scene-scoped light pool. Deferred until scene.current is available
+  // (Threlte's scene ref may not be populated at component construction time).
+  let lightManager = $state<DynamicLightManager | null>(null);
 
   $effect(() => {
-    // When tierConfig changes, rebuild the light pool with the new budget.
-    // The old manager is disposed to remove its lights from the scene.
+    const s = scene.current;
     const cfg = tierConfig;
-    const prev = lightManager;
-    lightManager = new DynamicLightManager(scene.current, cfg);
-    prev.dispose();
+    if (!s) return;
+
+    // Dispose previous manager if it exists
+    if (lightManager) {
+      lightManager.dispose();
+    }
+    lightManager = new DynamicLightManager(s, cfg);
   });
 
   // Per-tip tracking: each prop has two tips (staff = 2 ends).
@@ -143,7 +146,7 @@
   );
 
   onDestroy(() => {
-    lightManager.dispose();
+    lightManager?.dispose();
     tipBridge.reset();
   });
 </script>
