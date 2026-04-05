@@ -20,10 +20,8 @@
   import ChipGrid from "./ChipGrid.svelte";
   import TransformSection from "./sections/TransformSection.svelte";
   import SpeedSection from "./sections/SpeedSection.svelte";
-  import EffectsSection from "./sections/EffectsSection.svelte";
-  import EffectMatrixDrawer from "./sections/EffectMatrixDrawer.svelte";
-  import EffortSection from "./sections/EffortSection.svelte";
-  import EffortMatrixDrawer from "./sections/EffortMatrixDrawer.svelte";
+  import UnifiedEffectsSection from "./sections/UnifiedEffectsSection.svelte";
+  import UnifiedEffortSection from "./sections/UnifiedEffortSection.svelte";
   import ColorsSection from "./sections/ColorsSection.svelte";
   import OffsetSection from "./sections/OffsetSection.svelte";
   import DisplaySection from "./sections/DisplaySection.svelte";
@@ -67,9 +65,6 @@
   const transformingLayer = $derived(p.transformingLayer ?? null);
 
   const panelState = createCellEditorPanelState();
-
-  let effectMatrixOpen = $state(false);
-  let effortMatrixOpen = $state(false);
 
   // Reset state when the selected cell changes.
   // Track cell.id reactively via $derived to avoid state_referenced_locally warning.
@@ -187,44 +182,30 @@
       onSetSpeed={speed => p.onSetSpeed?.(speed)}
     />
   {:else if panelState.expandedSection === 'effects'}
-    {#if effectMatrixOpen}
-      <EffectMatrixDrawer
-        currentMap={cell.tipEffectMap ?? {}}
-        bluePropType="staff"
-        redPropType="staff"
-        onUpdateMap={map => p.onSetTipEffectMap?.(map)}
-        onClose={() => { effectMatrixOpen = false; }}
-      />
-    {:else}
-      <EffectsSection
-        currentEffect={cell.effect ?? "none"}
-        currentTrailMode={cell.trailMode}
-        onSetEffect={effect => p.onSetEffect?.(effect)}
-        onSetTrailMode={mode => p.onSetTrailMode?.(mode)}
-        onOpenMatrix={() => { effectMatrixOpen = true; }}
-      />
-    {/if}
+    <UnifiedEffectsSection
+      currentEffect={cell.effect ?? "none"}
+      currentTrailMode={cell.trailMode}
+      currentMap={cell.tipEffectMap ?? {}}
+      bluePropType="staff"
+      redPropType="staff"
+      onSetEffect={effect => p.onSetEffect?.(effect)}
+      onSetTrailMode={mode => p.onSetTrailMode?.(mode)}
+      onUpdateMap={map => p.onSetTipEffectMap?.(map)}
+    />
   {:else if panelState.expandedSection === 'colors'}
     <ColorsSection
       currentColors={cell.layers[0]?.propColors ?? { left: '#3b82f6', right: '#ef4444' }}
       onSetColors={colors => p.onSetColors?.(colors)}
     />
   {:else if panelState.expandedSection === 'effort'}
-    {#if effortMatrixOpen}
-      <EffortMatrixDrawer
-        currentMap={cell.tipEffortMap ?? {}}
-        bluePropType="staff"
-        redPropType="staff"
-        onUpdateMap={map => p.onSetTipEffortMap?.(map)}
-        onClose={() => { effortMatrixOpen = false; }}
-      />
-    {:else}
-      <EffortSection
-        currentEffort={cell.effort}
-        onSetEffort={effort => p.onSetEffort?.(effort)}
-        onOpenMatrix={() => { effortMatrixOpen = true; }}
-      />
-    {/if}
+    <UnifiedEffortSection
+      currentEffort={cell.effort}
+      currentMap={cell.tipEffortMap ?? {}}
+      bluePropType="staff"
+      redPropType="staff"
+      onSetEffort={effort => p.onSetEffort?.(effort)}
+      onUpdateMap={map => p.onSetTipEffortMap?.(map)}
+    />
   {:else if panelState.expandedSection === 'offset'}
     <OffsetSection
       currentOffset={cell.beatOffset}
@@ -276,7 +257,7 @@
     align-items: center;
     justify-content: space-between;
     padding-bottom: clamp(8px, 2cqi, 14px);
-    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-bottom: 1px solid rgba(139, 92, 246, 0.12);
   }
 
   .header-left {
@@ -309,9 +290,9 @@
 
   .layer-ratio-badge {
     font-size: clamp(0.65rem, 2cqi, 0.75rem);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    color: rgba(167, 139, 250, 0.8);
     padding: 2px clamp(6px, 1.5cqi, 8px);
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(139, 92, 246, 0.12);
     border-radius: clamp(3px, 1cqi, 4px);
   }
 
@@ -321,16 +302,17 @@
     justify-content: center;
     width: 44px;
     height: 44px;
-    background: transparent;
-    border: none;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     cursor: pointer;
-    border-radius: clamp(4px, 1.5cqi, 8px);
+    border-radius: 10px;
     transition: all var(--duration-fast, 150ms) ease;
   }
 
   .close-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.12);
     color: var(--theme-text, white);
   }
 
@@ -359,25 +341,25 @@
   }
 
   .copy-all-btn {
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    color: var(--theme-text, white);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.6);
   }
 
   .copy-all-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.12);
   }
 
   .clear-all-btn {
-    background: rgba(239, 68, 68, 0.1);
-    border: 1px solid rgba(239, 68, 68, 0.2);
-    color: rgba(239, 68, 68, 0.8);
+    background: rgba(239, 68, 68, 0.06);
+    border: 1px solid rgba(239, 68, 68, 0.1);
+    color: rgba(239, 68, 68, 0.6);
   }
 
   .clear-all-btn:hover {
-    background: rgba(239, 68, 68, 0.2);
-    border-color: rgba(239, 68, 68, 0.4);
+    background: rgba(239, 68, 68, 0.12);
+    border-color: rgba(239, 68, 68, 0.2);
   }
 
   @media (prefers-reduced-motion: reduce) {
