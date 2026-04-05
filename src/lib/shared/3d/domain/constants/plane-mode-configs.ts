@@ -34,12 +34,6 @@ export interface PlaneModeConfig {
    * planes intentionally differ.
    */
   rotationPlane?: Plane;
-  /**
-   * When true, the facing angle is NOT applied to prop positions or
-   * rotations. WHEEL coordinates stay in world YZ instead of being
-   * rotated into XY. The facing angle only rotates the avatar's body.
-   */
-  skipFacingTransform?: boolean;
   /** X-axis offset for blue hand's plane center (in avatar-local space) */
   blueLateralOffset: number;
   /** X-axis offset for red hand's plane center (in avatar-local space) */
@@ -64,11 +58,8 @@ export const PLANE_MODE_CONFIGS: Record<PlaneMode, PlaneModeConfig> = {
     redLateralOffset: 0,
   },
   [PlaneMode.DUAL_WHEEL]: {
-    // Avatar faces forward — no rotation. The lateral offsets place
-    // each hand's wheel plane to the left and right of the body.
-    // No skipFacingTransform, no rotationPlane override — the unified
-    // rotation pipeline (calculatePropQuaternion → computePropRotation)
-    // handles wheel plane rotation correctly.
+    // Avatar stays facing forward. Prop states are swapped in
+    // Viewer3DScene so left hand grabs left prop, right grabs right.
     facingAngle: 0,
     bluePlane: Plane.WHEEL,
     redPlane: Plane.WHEEL,

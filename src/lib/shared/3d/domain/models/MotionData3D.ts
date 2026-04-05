@@ -34,23 +34,10 @@ export interface MotionConfig3D {
   /** Ending orientation */
   endOrientation: Orientation;
   /**
-   * X-axis offset for this hand's plane center, in avatar-local space.
-   * Used in dual-wheel mode to separate each hand's wheel plane laterally.
-   * Default: 0 (no offset, planes centered on body).
-   */
-  lateralOffset?: number;
-  /**
    * Which plane to use for prop ROTATION quaternion calculation.
    * Defaults to `plane` when not specified.
    */
   rotationPlane?: Plane;
-  /**
-   * When true, position and rotation are already in world space — the
-   * facing angle transform is skipped for both. Used in dual-wheel mode
-   * where WHEEL positions (YZ plane) should stay in YZ world space,
-   * not get rotated by the facing angle back into XY (wall).
-   */
-  skipFacingTransform?: boolean;
 }
 
 /**

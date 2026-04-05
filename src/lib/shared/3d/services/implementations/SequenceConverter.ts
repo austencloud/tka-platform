@@ -76,7 +76,6 @@ export class SequenceConverter implements ISequenceConverter {
     const blueOffset = modeConfig?.blueLateralOffset ?? 0;
     const redOffset = modeConfig?.redLateralOffset ?? 0;
     const rotPlane = modeConfig?.rotationPlane;
-    const skipFacing = modeConfig?.skipFacingTransform;
 
     // When a modeConfig is active it is a whole-sequence rendering override
     // (e.g. dual-wheel preset) and must win over any per-beat motion.plane value.
@@ -89,9 +88,7 @@ export class SequenceConverter implements ISequenceConverter {
           ? {
               ...this.motionDataToConfig3D(blueMotion, bluePlane),
               ...(modeConfig ? { plane: bluePlane } : {}),
-              lateralOffset: blueOffset || undefined,
               rotationPlane: rotPlane,
-              skipFacingTransform: skipFacing,
             }
           : null,
       red:
@@ -99,9 +96,7 @@ export class SequenceConverter implements ISequenceConverter {
           ? {
               ...this.motionDataToConfig3D(redMotion, redPlane),
               ...(modeConfig ? { plane: redPlane } : {}),
-              lateralOffset: redOffset || undefined,
               rotationPlane: rotPlane,
-              skipFacingTransform: skipFacing,
             }
           : null,
     };
