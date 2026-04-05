@@ -8,7 +8,6 @@
 
   const ctx = getCreateModuleContext();
 
-  let altHeld = $state(false);
   let visible = $state(false);
   let fadeOut = $state(false);
 
@@ -99,8 +98,8 @@
   }
 
   function handleEditPresets() {
-    altHeld = false;
     visible = false;
+    fadeOut = false;
     navigationState.setCurrentModule("settings", "props");
   }
 
@@ -108,39 +107,53 @@
     return propType !== PropType.HAND;
   }
 
-  // Alt key listener
+  function dismiss() {
+    fadeOut = true;
+    setTimeout(() => {
+      visible = false;
+      fadeOut = false;
+    }, 120);
+  }
+
+  // Alt key toggle listener (press to show, press again to hide)
   $effect(() => {
     if (isMobile || typeof window === "undefined") return;
 
+    // Track whether Alt was pressed alone (no other key combined)
+    let altDownAlone = false;
+
     function onKeyDown(e: KeyboardEvent) {
-      if (e.key !== "Alt") return;
-      if (isInputFocused()) return;
-      e.preventDefault();
-      fadeOut = false;
-      altHeld = true;
-      visible = true;
+      if (e.key === "Alt") {
+        if (isInputFocused()) return;
+        e.preventDefault();
+        altDownAlone = true;
+        return;
+      }
+      // Any other key while Alt is down means it's a combo, not a toggle
+      if (e.altKey) {
+        altDownAlone = false;
+      }
     }
 
     function onKeyUp(e: KeyboardEvent) {
       if (e.key !== "Alt") return;
-      if (!altHeld) return;
-      altHeld = false;
-      fadeOut = true;
-      setTimeout(() => {
-        if (!altHeld) {
-          visible = false;
-          fadeOut = false;
-        }
-      }, 120);
+      if (!altDownAlone) return;
+
+      // Toggle: if visible, dismiss; if hidden, show
+      if (visible && !fadeOut) {
+        dismiss();
+      } else {
+        fadeOut = false;
+        visible = true;
+      }
+      altDownAlone = false;
     }
 
-    // Dismiss if window loses focus while Alt held
+    // Dismiss if window loses focus while overlay is open
     function onBlur() {
-      if (altHeld) {
-        altHeld = false;
-        visible = false;
-        fadeOut = false;
-      }
+      visible = false;
+      fadeOut = false;
+      altDownAlone = false;
     }
 
     window.addEventListener("keydown", onKeyDown);
@@ -165,7 +178,7 @@
     <!-- Alt badge -->
     <div class="alt-badge-section">
       <span class="alt-key-badge">Alt</span>
-      <span class="alt-hint">hold</span>
+      <span class="alt-hint">toggle</span>
     </div>
 
     <div class="divider"></div>
@@ -267,6 +280,11 @@
         {/each}
       </div>
     </div>
+
+    <!-- Close button -->
+    <button class="close-btn" onclick={dismiss} title="Close (Alt)" aria-label="Close shortcut overlay">
+      <i class="fas fa-xmark" aria-hidden="true"></i>
+    </button>
   </div>
 {/if}
 
@@ -499,6 +517,31 @@
   }
 
   .edit-btn i { font-size: 10px; }
+
+  /* Close button */
+  .close-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    cursor: pointer;
+    color: rgba(255, 255, 255, 0.3);
+    font-size: var(--font-size-sm, 14px);
+    transition: all 150ms ease;
+    align-self: center;
+    flex-shrink: 0;
+  }
+
+  .close-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.7);
+    border-color: rgba(255, 255, 255, 0.15);
+  }
 
   @media (prefers-reduced-motion: reduce) {
     .alt-overlay { animation: none; }
