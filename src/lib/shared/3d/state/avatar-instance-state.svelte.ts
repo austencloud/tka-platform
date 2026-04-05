@@ -8,6 +8,8 @@
 import type { MotionConfig3D } from "../domain/models/MotionData3D";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { Plane } from "../domain/enums/Plane";
+import { PlaneMode } from "../domain/enums/PlaneMode";
+import { PLANE_MODE_CONFIGS } from "../domain/constants/plane-mode-configs";
 import { createPlaybackState } from "./playback-state.svelte";
 import type { IPropStateInterpolator } from "../services/contracts/IPropStateInterpolator";
 import type {
@@ -139,6 +141,7 @@ export function createAvatarInstanceState(
   let loadedSequence = $state<SequenceData | null>(null);
   let stepConfigs = $state<StepMotionConfigs[]>([]);
   let currentStepIndex = $state(0);
+  let planeMode = $state<PlaneMode>(PlaneMode.WALL);
 
   // Per-avatar playback with unique persistence key
   const playback = createPlaybackState({
@@ -218,16 +221,19 @@ export function createAvatarInstanceState(
    */
   function loadSequence(sequence: SequenceData) {
     loadedSequence = sequence;
+    const modeConfig = PLANE_MODE_CONFIGS[planeMode];
 
     // Get motion configs (beats 1+) and prepend start position (beat 0)
     // so the full sequence including initial orientation is available.
     const motionConfigs = sequenceConverter.sequenceToMotionConfigs(
       sequence,
-      Plane.WALL
+      Plane.WALL,
+      modeConfig
     );
     const startConfig = sequenceConverter.getStartPositionConfigs(
       sequence,
-      Plane.WALL
+      Plane.WALL,
+      modeConfig
     );
     stepConfigs = startConfig
       ? [startConfig, ...motionConfigs]
@@ -263,6 +269,39 @@ export function createAvatarInstanceState(
     showBlue = false;
     showRed = false;
     playback.reset();
+  }
+
+  /**
+   * Switch between plane modes (wall vs dual wheel).
+   * Re-converts the loaded sequence with the new mode's per-hand
+   * plane assignments and lateral offsets, and rotates the avatar
+   * to match the mode's facing angle.
+   */
+  function setPlaneMode(mode: PlaneMode) {
+    planeMode = mode;
+    const modeConfig = PLANE_MODE_CONFIGS[mode];
+
+    // Rotate avatar to match mode orientation
+    targetFacingAngle = modeConfig.facingAngle;
+
+    // Re-convert loaded sequence with new plane assignments
+    if (loadedSequence) {
+      const motionConfigs = sequenceConverter.sequenceToMotionConfigs(
+        loadedSequence,
+        Plane.WALL,
+        modeConfig
+      );
+      const startConfig = sequenceConverter.getStartPositionConfigs(
+        loadedSequence,
+        Plane.WALL,
+        modeConfig
+      );
+      stepConfigs = startConfig
+        ? [startConfig, ...motionConfigs]
+        : motionConfigs;
+
+      updateVisibilityFromStep(stepConfigs[currentStepIndex] ?? stepConfigs[0]);
+    }
   }
 
   /**
@@ -434,6 +473,10 @@ export function createAvatarInstanceState(
     get loadedSequence() {
       return loadedSequence;
     },
+    get planeMode() {
+      return planeMode;
+    },
+    setPlaneMode,
     get currentStepIndex() {
       return currentStepIndex;
     },
