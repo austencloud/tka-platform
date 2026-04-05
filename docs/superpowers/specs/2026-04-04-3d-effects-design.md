@@ -383,8 +383,8 @@ src/lib/shared/3d/effects/
 ### TipEffectMap (Unchanged)
 The existing per-tip effect assignment system works identically in 3D. The `EffectOrchestrator3D` reads the same `TipEffectMap` that the 2D `AnimationRenderLoop` uses. No changes to assignment UI or persistence.
 
-### Effects Panel (Minor Updates)
-The existing `EffectsPanel.svelte` customize components (fire intensity, trail fade, LED pattern, charcoal burst threshold) should work for 3D too — the parameters map to the same concepts. Any 3D-specific parameters (e.g., ground bounce toggle, smoke toggle) get added to the existing customize panels.
+### Effects UI (Minor Updates)
+The existing effect customization UI in `EffectsSection.svelte` and `EffectMatrixDrawer.svelte` (inside the cell editor) controls fire intensity, trail fade, LED pattern, charcoal burst threshold. These parameters map to the same concepts in 3D. Any 3D-specific parameters (e.g., ground bounce toggle, smoke toggle) get added to the existing customize panels.
 
 ### Sequence Viewer Toggle
 When switching between 2D and 3D:
@@ -443,6 +443,138 @@ Visual correctness of effects verified by eye during development — not by auto
 
 ---
 
+## Migration from Existing 3D Effects
+
+### Existing Files to Replace
+
+The current `src/lib/shared/3d/effects/` directory contains placeholder implementations. These are replaced incrementally as each new effect is built:
+
+| Existing File | Replaced By | Action |
+|---------------|-------------|--------|
+| `EffectsLayer.svelte` | `EffectOrchestrator3D.svelte` | Delete after orchestrator is working |
+| `trails/RibbonTrail3D.svelte` | `trails/Trail3D.svelte` | Delete after new trails work |
+| `trails/TrailRenderer.svelte` | `trails/TrailRenderer3D.ts` | Delete |
+| `particles/FireEmitter.svelte` | `fire/Fire3D.svelte` | Delete after new fire works |
+| `particles/SparkleEmitter.svelte` | No direct replacement (LED covers glow) | Delete |
+| `energy/ElectricityArc.svelte` | No replacement (not one of the four core effects) | Keep for now, evaluate later |
+| `motion/SpeedLines.svelte` | No replacement | Keep |
+| `motion/PropMotionEffects.svelte` | No replacement | Keep |
+| `volumetric-fire/VolumetricFireComponent.svelte` | `fire/Fire3D.svelte` | Delete |
+
+### Config Type Migration
+
+The existing `types.ts` defines `AllEffectConfigs` with six categories: trail, particles, glow, fire, sparkle, electricity. The new system uses four categories matching the 2D system: trails, LED, charcoal, fire.
+
+Migration mapping:
+- `trail` → `trails` (rename, same concept)
+- `fire` → `fire` (same)
+- `particles` + `sparkle` → consolidated into `charcoal` (spark-type particles)
+- `glow` → absorbed into `LED` (glow is what LEDs do)
+- `electricity` → kept as-is (not part of the four core effects, may become a fifth effect later)
+
+The new `types.ts` exports both the legacy `AllEffectConfigs` (deprecated) and the new `Effect3DConfigs` during migration. Once all four effects are built, remove the legacy types.
+
+---
+
+## DI Container Registration
+
+New services register in the existing 3D container at `src/lib/shared/di/containers/`:
+
+```typescript
+// In the 3D effects container
+.add({ qualityTierDetector: () => new QualityTierDetector() })
+.add(({ qualityTierDetector }) => ({
+  dynamicLightManager: () => new DynamicLightManager(qualityTierDetector)
+}))
+.add({ tipPositionBridge: () => new TipPositionBridge3D() })
+```
+
+`QualityTierDetector` and `TipPositionBridge3D` are plain DI services (no scene dependency).
+
+`DynamicLightManager` is a **scene-scoped instance** — it needs access to the Three.js scene to add/remove lights. It's instantiated inside `EffectOrchestrator3D.svelte` using `useThrelte()` to get the scene reference, then passed down to individual effect components via props. It is NOT a global DI singleton because it's tied to a specific Three.js scene lifecycle.
+
+---
+
+## Lifecycle & Disposal
+
+### Initialization
+`EffectOrchestrator3D.svelte` initializes renderers on mount. Each renderer allocates its GPU resources (buffers, textures, geometries, materials).
+
+### Per-Frame Update
+Threlte's `useTask` drives the render loop. Each effect's update method is called with current tip positions and delta time.
+
+### Disposal
+On unmount (user leaves 3D mode or navigates away):
+1. Each renderer's `dispose()` method is called
+2. GPU buffers (`BufferGeometry`, `BufferAttribute`) are disposed
+3. Materials and textures are disposed (`.dispose()`)
+4. `DynamicLightManager` releases all pooled lights from the scene
+5. Particle pools are nulled for GC
+6. Transform feedback objects (if used) are deleted
+
+Svelte's `onDestroy` in each effect's `.svelte` wrapper triggers disposal. The orchestrator calls `dispose()` on all active renderers.
+
+### Mode Switch (3D → 2D)
+Same as disposal. When user switches back to 3D, renderers are re-created fresh. Effect assignments persist (they're stored in `TipEffectMap`, not in the renderers).
+
+---
+
+## 2D Overlay Suppression Mechanism
+
+`AnimationRenderLoop` is a DI service — it can't use Svelte context or runes. The suppression uses a simple boolean flag:
+
+```typescript
+// In AnimationRenderLoop
+private _suppress3DOverlays = false;
+
+set suppress3DOverlays(value: boolean) { this._suppress3DOverlays = value; }
+
+// In the render method, before overlay rendering:
+if (this._suppress3DOverlays) {
+  // Skip fire, charcoal, LED, and trail overlay rendering
+  return;
+}
+```
+
+The flag is set by the Svelte component that manages the 2D/3D toggle (`SequenceViewerOrchestrator.svelte` or `Viewer3DCanvas.svelte`) — it has access to both `viewer3DState` and the DI container's `animationRenderLoop`.
+
+---
+
+## Beat Loop Signal for Trail Clear
+
+Trail renderers in Loop Clear mode need to know when the sequence loops back to beat 1. The signal path:
+
+1. `AnimationRenderLoop` already detects loop wrap-around (it clears fire simulation state on loop)
+2. It fires an existing `onLoopReset` callback
+3. `EffectOrchestrator3D` listens to this same signal (passed as a prop or accessed via DI)
+4. Orchestrator calls `clearTrailBuffer()` on active Trail3D renderers
+
+No new event system needed — piggyback on the existing loop detection in `AnimationRenderLoop`.
+
+---
+
+## Transform Feedback Fallback
+
+Transform feedback (for GPU-side charcoal particle physics on High tier) requires WebGL2 with `OES_texture_float` and reliable transform feedback support. Some mobile WebGL2 implementations have buggy TF.
+
+**Fallback:** If transform feedback initialization fails (caught during shader link), the charcoal renderer falls back to CPU-side physics (same code path as Medium tier). This is transparent — same visual output, slightly more CPU usage.
+
+Detection happens once during `CharcoalRenderer3D` initialization, not per-frame.
+
+---
+
+## Bloom Configuration for LED
+
+The existing `BloomEffect.svelte` wraps `threlte-postprocessing` bloom with configurable threshold, intensity, and radius. For LED:
+
+- **Luminance threshold** must be set high enough that only LED cores trigger bloom (not the entire scene). Target: `0.85` (LED cores render at full brightness `1.0`, scene geometry is typically `< 0.7`).
+- **Intensity** scaled by quality tier: High `1.5`, Medium `1.0`, Low `0` (disabled).
+- **Radius** controls bloom spread: High `0.6`, Medium `0.4`.
+
+The existing `BloomEffect.svelte` already accepts these as props. The `EffectOrchestrator3D` passes LED-appropriate values when LED effects are active. When no LED effects are active, bloom parameters revert to scene defaults.
+
+---
+
 ## Open Questions
 
-None. All four effects have clear techniques, the shared infrastructure is defined, and the quality tier system handles device variation. Ready for implementation planning.
+None. All four effects have clear techniques, the shared infrastructure is defined, migration paths are specified, and the quality tier system handles device variation. Ready for implementation planning.
