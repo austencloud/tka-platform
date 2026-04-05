@@ -32,6 +32,9 @@ export interface AvatarRenderState {
 	targetX: number;
 	targetZ: number;
 	targetFacingAngle: number;
+	// Renderer-computed movement state (updated each lerp frame)
+	isMoving: boolean;
+	moveSpeed: number; // 0-1
 }
 
 export interface VillageState {
@@ -137,6 +140,8 @@ export function createVillageState(
 					targetX: entity.transform.x,
 					targetZ: entity.transform.z,
 					targetFacingAngle: entity.transform.facingAngle,
+					isMoving: false,
+					moveSpeed: 0,
 				};
 				avatarStateMap.set(entity.id, renderState);
 				mapChanged = true;
@@ -174,17 +179,24 @@ export function createVillageState(
 	 * engine ticks (10fps).
 	 */
 	function lerpAvatars(): void {
-		const POSITION_LERP = 0.15; // per-frame blend toward target
+		const POSITION_LERP = 0.15;
 		const ANGLE_LERP = 0.12;
+		const MOVE_THRESHOLD = 0.02;
 
 		for (const renderState of avatarStateMap.values()) {
 			const inst = renderState.instanceState;
 
-			// Lerp position
 			const dx = renderState.targetX - inst.position.x;
 			const dz = renderState.targetZ - inst.position.z;
+			const dist = Math.sqrt(dx * dx + dz * dz);
+
 			inst.position.x += dx * POSITION_LERP;
 			inst.position.z += dz * POSITION_LERP;
+
+			renderState.isMoving = dist > MOVE_THRESHOLD;
+			renderState.moveSpeed = renderState.isMoving
+				? Math.min(1, dist * 2)
+				: 0;
 
 			// Lerp facing angle (shortest path)
 			const currentAngle = inst.facingAngle;
