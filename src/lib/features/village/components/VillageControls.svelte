@@ -32,19 +32,17 @@
 				Reset
 			</button>
 		</div>
-		<div class="row">
-			<span class="label">Speed</span>
-			<div class="speed-buttons">
-				{#each speedOptions as s}
-					<button
-						class="speed-btn"
-						class:active={speed === s}
-						onclick={() => villageState.setSpeed(s)}
-					>
-						{s}x
-					</button>
-				{/each}
-			</div>
+		<span class="label">Speed</span>
+		<div class="speed-buttons">
+			{#each speedOptions as s}
+				<button
+					class="speed-btn"
+					class:active={speed === s}
+					onclick={() => villageState.setSpeed(s)}
+				>
+					{s}x
+				</button>
+			{/each}
 		</div>
 		<div class="stat">
 			Tick: {villageState.orchestrator.currentTick}
@@ -96,7 +94,8 @@
 		background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
 		border-left: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
 		overflow-y: auto;
-		width: 220px;
+		width: 250px;
+		min-width: 250px;
 		font-size: var(--font-size-min, 14px);
 		color: var(--theme-text, #fff);
 	}
@@ -156,7 +155,8 @@
 
 	.speed-buttons {
 		display: flex;
-		gap: 2px;
+		gap: 3px;
+		flex-wrap: wrap;
 	}
 
 	.speed-btn {
