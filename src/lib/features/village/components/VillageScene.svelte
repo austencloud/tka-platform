@@ -10,9 +10,10 @@
 
 	const villageState = getVillageContext();
 
-	// Sync ECS state to render state every frame
+	// syncFromEngine reads ECS targets each frame, lerpAvatars smoothly interpolates
 	useTask(() => {
 		villageState.syncFromEngine();
+		villageState.lerpAvatars();
 	});
 
 	// Arena ground circle
