@@ -30,7 +30,7 @@ export class TrailRingBuffer {
   }
 
   push(point: Vector3, timestamp?: number): void {
-    this.buffer[this.head].copy(point);
+    this.buffer[this.head]!.copy(point);
     this.timestamps[this.head] = timestamp ?? performance.now() / 1000;
     this.head = (this.head + 1) % this.capacity;
     if (this.count < this.capacity) this.count++;
@@ -47,7 +47,7 @@ export class TrailRingBuffer {
     const start = this.count < this.capacity ? 0 : this.head;
     for (let i = 0; i < this.count; i++) {
       const idx = (start + i) % this.capacity;
-      result.push(this.buffer[idx].clone());
+      result.push(this.buffer[idx]!.clone());
     }
     return result;
   }
@@ -55,13 +55,13 @@ export class TrailRingBuffer {
   getPoint(orderedIndex: number): Vector3 {
     const start = this.count < this.capacity ? 0 : this.head;
     const idx = (start + orderedIndex) % this.capacity;
-    return this.buffer[idx];
+    return this.buffer[idx]!;
   }
 
   getTimestamp(orderedIndex: number): number {
     const start = this.count < this.capacity ? 0 : this.head;
     const idx = (start + orderedIndex) % this.capacity;
-    return this.timestamps[idx];
+    return this.timestamps[idx]!;
   }
 }
 
@@ -237,9 +237,9 @@ export class TrailRenderer3D {
         this.alphas[vertexIndex] = alpha;
 
         if (this.config.rainbow) {
-          this.colors[ri] = this.colors[li];
-          this.colors[ri + 1] = this.colors[li + 1];
-          this.colors[ri + 2] = this.colors[li + 2];
+          this.colors[ri] = this.colors[li]!;
+          this.colors[ri + 1] = this.colors[li + 1]!;
+          this.colors[ri + 2] = this.colors[li + 2]!;
         }
 
         vertexIndex++;
