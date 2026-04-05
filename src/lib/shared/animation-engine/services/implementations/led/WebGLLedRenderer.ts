@@ -327,6 +327,10 @@ export class WebGLLedRenderer implements ILedOverlayRenderer {
 		return this.initialized;
 	}
 
+	getCanvas(): HTMLCanvasElement | null {
+		return this.canvas;
+	}
+
 	// ============================================================
 	// Geometry creation
 	// ============================================================

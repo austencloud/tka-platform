@@ -92,8 +92,9 @@ describe("SpineTwister", () => {
     });
   });
 
-  describe("distribution: head rotates most, spine1 least", () => {
-    it("head angle > neck > spine2 > spine1", () => {
+  describe("distribution: twist distributed across spine chain", () => {
+    it("spine2 gets largest share, neck gets smallest", () => {
+      // Weights: spine1=25%, spine2=35%, neck=15%, head=25%
       const result = twister.computeSpineTwist(
         new Vector3(0.4, 1.2, 0),
         new Vector3(0.3, 1.2, 0),
@@ -104,14 +105,19 @@ describe("SpineTwister", () => {
       const neckAngle = angleDegrees(result.neck);
       const headAngle = angleDegrees(result.head);
 
-      expect(headAngle).toBeGreaterThan(neckAngle);
-      expect(neckAngle).toBeGreaterThanOrEqual(spine2Angle);
+      // spine2 (35%) is the largest share
       expect(spine2Angle).toBeGreaterThan(spine1Angle);
+      expect(spine2Angle).toBeGreaterThan(neckAngle);
+      // neck (15%) is the smallest share
+      expect(neckAngle).toBeLessThan(headAngle);
+      expect(neckAngle).toBeLessThan(spine1Angle);
     });
   });
 
   describe("maximum twist capped", () => {
-    it("extreme position doesn't exceed 25 degrees total", () => {
+    it("extreme position doesn't exceed 60 degrees total yaw", () => {
+      // Hands at waist height (below tilt threshold), so only yaw applies.
+      // Max yaw is 60°, distributed across all bones (weights sum to 1.0).
       const result = twister.computeSpineTwist(
         new Vector3(2, 1.2, 0),   // way far left
         new Vector3(2, 1.2, 0),   // both hands way far left
@@ -121,7 +127,7 @@ describe("SpineTwister", () => {
         angleDegrees(result.spine2) +
         angleDegrees(result.neck) +
         angleDegrees(result.head);
-      expect(totalAngle).toBeLessThanOrEqual(26); // 25° + float tolerance
+      expect(totalAngle).toBeLessThanOrEqual(61); // 60° + float tolerance
     });
   });
 

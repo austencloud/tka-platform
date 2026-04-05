@@ -5,7 +5,7 @@
  * Bridges TKA prop states to skeleton IK targets.
  */
 
-import { Vector3, Quaternion, type Bone } from "three";
+import { Vector3, Quaternion } from "three";
 import type {
   IAvatarAnimator,
   HandPose,
@@ -171,7 +171,7 @@ export class AvatarAnimator implements IAvatarAnimator {
           blueProp.worldPosition.y - oy,
           blueProp.worldPosition.z - oz
         ),
-        wristRotation: blueProp.worldRotation.clone(),
+        staffAngle: blueProp.staffRotationAngle,
         plane: blueProp.plane,
         weight: 1,
       };
@@ -184,7 +184,7 @@ export class AvatarAnimator implements IAvatarAnimator {
           redProp.worldPosition.y - oy,
           redProp.worldPosition.z - oz
         ),
-        wristRotation: redProp.worldRotation.clone(),
+        staffAngle: redProp.staffRotationAngle,
         plane: redProp.plane,
         weight: 1,
       };
@@ -245,9 +245,9 @@ export class AvatarAnimator implements IAvatarAnimator {
     this.currentPose.leftHand.weight = this.targetPose.leftHand.weight;
     this.currentPose.rightHand.weight = this.targetPose.rightHand.weight;
 
-    // Wrist rotation snaps directly from prop orientation
-    this.currentPose.leftHand.wristRotation = this.targetPose.leftHand.wristRotation;
-    this.currentPose.rightHand.wristRotation = this.targetPose.rightHand.wristRotation;
+    // Staff angle snaps directly — drives wrist twist
+    this.currentPose.leftHand.staffAngle = this.targetPose.leftHand.staffAngle;
+    this.currentPose.rightHand.staffAngle = this.targetPose.rightHand.staffAngle;
 
     // Plane is discrete — always take the latest target's plane
     this.currentPose.leftHand.plane = this.targetPose.leftHand.plane;
@@ -313,11 +313,13 @@ export class AvatarAnimator implements IAvatarAnimator {
     const result: BodyPose = {
       leftHand: {
         targetPosition: this.currentPose.leftHand.targetPosition.clone(),
+        staffAngle: this.currentPose.leftHand.staffAngle,
         plane: this.currentPose.leftHand.plane,
         weight: this.currentPose.leftHand.weight,
       },
       rightHand: {
         targetPosition: this.currentPose.rightHand.targetPosition.clone(),
+        staffAngle: this.currentPose.rightHand.staffAngle,
         plane: this.currentPose.rightHand.plane,
         weight: this.currentPose.rightHand.weight,
       },
@@ -498,11 +500,6 @@ export class AvatarAnimator implements IAvatarAnimator {
         leftChain.middle.quaternion.copy(animMiddleQuat).slerp(ikMiddleQuat, w);
         leftChain.effector.quaternion.copy(animEffectorQuat).slerp(ikEffectorQuat, w);
 
-        // Apply wrist rotation from prop orientation so the hand
-        // twists to match the staff angle instead of staying in idle pose.
-        if (pose.leftHand.wristRotation) {
-          this.applyWristRotation(leftChain.effector, pose.leftHand.wristRotation, w);
-        }
       }
       // else: weight ~0, skip IK entirely — animation drives the arm
     }
@@ -564,10 +561,6 @@ export class AvatarAnimator implements IAvatarAnimator {
         rightChain.middle.quaternion.copy(animMiddleQuat).slerp(ikMiddleQuat, w);
         rightChain.effector.quaternion.copy(animEffectorQuat).slerp(ikEffectorQuat, w);
 
-        // Apply wrist rotation from prop orientation
-        if (pose.rightHand.wristRotation) {
-          this.applyWristRotation(rightChain.effector, pose.rightHand.wristRotation, w);
-        }
       }
       // else: weight ~0, skip IK entirely — animation drives the arm
     }
@@ -575,34 +568,6 @@ export class AvatarAnimator implements IAvatarAnimator {
     this.skeleton.updateMatrices();
   }
 
-  /**
-   * Convert a prop's world rotation into the effector bone's local space
-   * and blend it with the current bone quaternion by IK weight.
-   *
-   * The prop's worldRotation is in grid-local space (before avatar facing).
-   * The avatar group is already rotated by facingAngle, so the skeleton's
-   * world space matches grid-local space — no extra facing rotation needed.
-   *
-   * To go from world orientation to bone-local: multiply by the inverse
-   * of the parent bone's world quaternion.
-   */
-  private applyWristRotation(
-    effector: Bone,
-    propWorldRotation: Quaternion,
-    ikWeight: number
-  ): void {
-    if (!effector.parent) return;
-
-    // Get parent (forearm) world quaternion
-    const parentWorldQuat = new Quaternion();
-    effector.parent.getWorldQuaternion(parentWorldQuat);
-
-    // Convert prop world rotation to bone-local space
-    const localQuat = parentWorldQuat.invert().multiply(propWorldRotation);
-
-    // Blend between current effector rotation and the prop-driven rotation
-    effector.quaternion.slerp(localQuat, ikWeight);
-  }
 
   addLayer(layer: AnimationLayer): void {
     this.layers.set(layer.id, layer);

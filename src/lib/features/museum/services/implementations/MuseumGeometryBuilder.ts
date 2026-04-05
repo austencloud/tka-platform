@@ -3,7 +3,7 @@ import {
   BoxGeometry,
   CylinderGeometry,
   MeshStandardMaterial,
-  InstancedMesh,
+  BatchedMesh,
   TextureLoader,
   RepeatWrapping,
 } from "three";
@@ -153,9 +153,14 @@ export interface RoomLight {
   distance: number;
 }
 
-export interface InstancedMeshData {
-  mesh: InstancedMesh;
+export interface BatchedMeshData {
+  mesh: BatchedMesh;
+  /** Instance IDs for visibility control (e.g., ceiling toggle) */
+  instanceIds?: number[];
 }
+
+/** @deprecated Use BatchedMeshData */
+export type InstancedMeshData = BatchedMeshData;
 
 /** All data produced by the geometry builder */
 export interface MuseumGeometry {
@@ -474,12 +479,12 @@ export function bucketMuseumTilesByRoom(grid: MuseumGrid): PerRoomBuckets {
 /** One room's worth of Three.js geometry, ready to add/remove from the scene */
 export interface RoomChunk {
   wingId: string;
-  floorMeshes: InstancedMeshData[];
-  wallMeshes: InstancedMeshData[];
-  ceilingMesh: InstancedMesh | null;
-  pedestalMesh: InstancedMesh | null;
-  signMesh: InstancedMesh | null;
-  performerMesh: InstancedMesh | null;
+  floorMeshes: BatchedMeshData[];
+  wallMeshes: BatchedMeshData[];
+  ceilingMesh: BatchedMeshData | null;
+  pedestalMesh: BatchedMesh | null;
+  signMesh: BatchedMesh | null;
+  performerMesh: BatchedMesh | null;
   torchPositions: TorchPosition[];
   plaquePlacements: PlaquePlacement[];
   performerPositions: { x: number; z: number }[];
@@ -511,7 +516,9 @@ function getSharedGeometries() {
 }
 
 /**
- * Build InstancedMeshes for a single room chunk from pre-bucketed data.
+ * Build BatchedMeshes for a single room chunk from pre-bucketed data.
+ * BatchedMesh provides per-instance GPU frustum culling (enabled by default),
+ * per-instance visibility via setVisibleAt(), and built-in raycasting with batchId.
  * Materials use the global PBR cache so textures load once across all rooms.
  */
 export async function buildRoomChunk(
@@ -522,101 +529,91 @@ export async function buildRoomChunk(
   const { floorGeo, wallGeo, pedestalGeo, signGeo, performerGeo } = getSharedGeometries();
   const dummy = new Object3D();
 
-  // Floor meshes
-  const floorMeshes: InstancedMeshData[] = [];
+  /** Create a BatchedMesh from a geometry + positions array */
+  function buildBatch(
+    geo: BoxGeometry | CylinderGeometry,
+    material: MeshStandardMaterial,
+    positions: { x: number; z: number }[],
+    yPos: number,
+  ): { mesh: BatchedMesh; instanceIds: number[] } {
+    const vertCount = geo.getAttribute("position").count;
+    const idxCount = geo.getIndex()?.count ?? vertCount;
+    const batch = new BatchedMesh(positions.length, vertCount, idxCount, material);
+    batch.perObjectFrustumCulled = true;
+    const geoId = batch.addGeometry(geo);
+    const instanceIds: number[] = [];
+    for (const pos of positions) {
+      dummy.position.set(pos.x, yPos, pos.z);
+      dummy.updateMatrix();
+      const id = batch.addInstance(geoId);
+      batch.setMatrixAt(id, dummy.matrix);
+      instanceIds.push(id);
+    }
+    return { mesh: batch, instanceIds };
+  }
+
+  // Floor batches — one per material bucket
+  const floorMeshes: BatchedMeshData[] = [];
   for (const [, bucket] of buckets.floorBuckets) {
+    if (bucket.positions.length === 0) continue;
     const texturePack = bucket.floorMaterial ? FLOOR_TEXTURE_MAP[bucket.floorMaterial] : undefined;
     const material = texturePack
       ? loadPBR(texturePack, 8)
       : new MeshStandardMaterial({ color: bucket.color });
-    const mesh = new InstancedMesh(floorGeo, material, bucket.positions.length);
-    for (let i = 0; i < bucket.positions.length; i++) {
-      dummy.position.set(bucket.positions[i]!.x, 0, bucket.positions[i]!.z);
-      dummy.updateMatrix();
-      mesh.setMatrixAt(i, dummy.matrix);
-    }
-    mesh.instanceMatrix.needsUpdate = true;
-    floorMeshes.push({ mesh });
+    const { mesh, instanceIds } = buildBatch(floorGeo, material, bucket.positions, 0);
+    floorMeshes.push({ mesh, instanceIds });
   }
 
   await yieldToMain();
 
-  // Wall meshes
-  const wallMeshes: InstancedMeshData[] = [];
+  // Wall batches — one per theme/color bucket
+  const wallMeshes: BatchedMeshData[] = [];
   for (const [, bucket] of buckets.wallBuckets) {
+    if (bucket.positions.length === 0) continue;
     const texturePack = bucket.wingTheme ? WALL_TEXTURE_MAP[bucket.wingTheme] : undefined;
     const wallMat = texturePack
       ? loadPBR(texturePack, 4, bucket.color)
       : new MeshStandardMaterial({ color: bucket.color });
-    const mesh = new InstancedMesh(wallGeo, wallMat, bucket.positions.length);
-    for (let i = 0; i < bucket.positions.length; i++) {
-      dummy.position.set(bucket.positions[i]!.x, WALL_Y_CENTER, bucket.positions[i]!.z);
-      dummy.updateMatrix();
-      mesh.setMatrixAt(i, dummy.matrix);
-    }
-    mesh.instanceMatrix.needsUpdate = true;
+    const { mesh, instanceIds } = buildBatch(wallGeo, wallMat, bucket.positions, WALL_Y_CENTER);
     mesh.userData.cameraCollider = true;
     mesh.computeBoundingBox();
     mesh.computeBoundingSphere();
-    wallMeshes.push({ mesh });
+    wallMeshes.push({ mesh, instanceIds });
   }
 
   await yieldToMain();
 
-  // Ceiling
+  // Ceiling batch — all floor positions at WALL_HEIGHT
   const allFloorPositions: { x: number; z: number }[] = [];
   for (const [, bucket] of buckets.floorBuckets) {
     for (const pos of bucket.positions) allFloorPositions.push(pos);
   }
-  let ceilingMesh: InstancedMesh | null = null;
+  let ceilingMesh: BatchedMeshData | null = null;
   if (allFloorPositions.length > 0) {
     const ceilingMat = new MeshStandardMaterial({
       color: "#3a3530", emissive: "#0a0a08", emissiveIntensity: 0.3, roughness: 0.85,
     });
-    ceilingMesh = new InstancedMesh(floorGeo, ceilingMat, allFloorPositions.length);
-    for (let i = 0; i < allFloorPositions.length; i++) {
-      dummy.position.set(allFloorPositions[i]!.x, WALL_HEIGHT, allFloorPositions[i]!.z);
-      dummy.updateMatrix();
-      ceilingMesh.setMatrixAt(i, dummy.matrix);
-    }
-    ceilingMesh.instanceMatrix.needsUpdate = true;
+    const { mesh, instanceIds } = buildBatch(floorGeo, ceilingMat, allFloorPositions, WALL_HEIGHT);
+    ceilingMesh = { mesh, instanceIds };
   }
 
-  // Props
-  let pedestalMesh: InstancedMesh | null = null;
+  // Props — small batches
+  let pedestalMesh: BatchedMesh | null = null;
   if (buckets.pedestalPositions.length > 0) {
     const mat = new MeshStandardMaterial({ color: TILE_TYPE_COLORS.pedestal! });
-    pedestalMesh = new InstancedMesh(pedestalGeo, mat, buckets.pedestalPositions.length);
-    for (let i = 0; i < buckets.pedestalPositions.length; i++) {
-      dummy.position.set(buckets.pedestalPositions[i]!.x, 0.25, buckets.pedestalPositions[i]!.z);
-      dummy.updateMatrix();
-      pedestalMesh.setMatrixAt(i, dummy.matrix);
-    }
-    pedestalMesh.instanceMatrix.needsUpdate = true;
+    pedestalMesh = buildBatch(pedestalGeo, mat, buckets.pedestalPositions, 0.25).mesh;
   }
 
-  let signMesh: InstancedMesh | null = null;
+  let signMesh: BatchedMesh | null = null;
   if (buckets.signPositions.length > 0) {
     const mat = new MeshStandardMaterial({ color: TILE_TYPE_COLORS.sign! });
-    signMesh = new InstancedMesh(signGeo, mat, buckets.signPositions.length);
-    for (let i = 0; i < buckets.signPositions.length; i++) {
-      dummy.position.set(buckets.signPositions[i]!.x, 0.5, buckets.signPositions[i]!.z);
-      dummy.updateMatrix();
-      signMesh.setMatrixAt(i, dummy.matrix);
-    }
-    signMesh.instanceMatrix.needsUpdate = true;
+    signMesh = buildBatch(signGeo, mat, buckets.signPositions, 0.5).mesh;
   }
 
-  let performerMesh: InstancedMesh | null = null;
+  let performerMesh: BatchedMesh | null = null;
   if (buckets.performerPositions.length > 0) {
     const mat = new MeshStandardMaterial({ color: TILE_TYPE_COLORS["performer-station"]! });
-    performerMesh = new InstancedMesh(performerGeo, mat, buckets.performerPositions.length);
-    for (let i = 0; i < buckets.performerPositions.length; i++) {
-      dummy.position.set(buckets.performerPositions[i]!.x, 0.25, buckets.performerPositions[i]!.z);
-      dummy.updateMatrix();
-      performerMesh.setMatrixAt(i, dummy.matrix);
-    }
-    performerMesh.instanceMatrix.needsUpdate = true;
+    performerMesh = buildBatch(performerGeo, mat, buckets.performerPositions, 0.25).mesh;
   }
 
   // Exhibit light positions (from plaques in this chunk)
@@ -680,20 +677,14 @@ export async function buildRoomChunk(
   };
 }
 
-/** Dispose a room chunk's GPU resources (geometries + non-cached materials) */
+/** Dispose a room chunk's GPU resources */
 export function disposeRoomChunk(chunk: RoomChunk): void {
-  function disposeMesh(mesh: InstancedMesh): void {
-    // Don't dispose shared geometry — it's reused across chunks
-    // Don't dispose PBR-cached materials — they're shared
-    // Only dispose the instance matrix buffer
-    mesh.dispose();
-  }
-  for (const { mesh } of chunk.floorMeshes) disposeMesh(mesh);
-  for (const { mesh } of chunk.wallMeshes) disposeMesh(mesh);
-  if (chunk.ceilingMesh) disposeMesh(chunk.ceilingMesh);
-  if (chunk.pedestalMesh) disposeMesh(chunk.pedestalMesh);
-  if (chunk.signMesh) disposeMesh(chunk.signMesh);
-  if (chunk.performerMesh) disposeMesh(chunk.performerMesh);
+  for (const { mesh } of chunk.floorMeshes) mesh.dispose();
+  for (const { mesh } of chunk.wallMeshes) mesh.dispose();
+  if (chunk.ceilingMesh) chunk.ceilingMesh.mesh.dispose();
+  if (chunk.pedestalMesh) chunk.pedestalMesh.dispose();
+  if (chunk.signMesh) chunk.signMesh.dispose();
+  if (chunk.performerMesh) chunk.performerMesh.dispose();
 }
 
 // ── Main builder (legacy — used when streaming is not active) ──

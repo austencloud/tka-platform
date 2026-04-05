@@ -17,6 +17,8 @@ export interface HandPose {
   targetPosition: Vector3;
   /** Target rotation for wrist (optional) */
   wristRotation?: Quaternion;
+  /** Staff rotation angle in radians — used to twist the hand to match the prop angle */
+  staffAngle?: number;
   /** Grip type for fingers — see GripType enum in GripPose.ts */
   gripType?: import("../../domain/models/GripPose").GripType;
   /** Which plane this hand's prop is operating on */

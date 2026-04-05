@@ -195,18 +195,17 @@
     role="toolbar"
     aria-label="Keyboard shortcuts (Alt held)"
   >
-    <!-- Alt badge -->
+    <!-- Alt badge — compact pill -->
     <div class="alt-badge-section">
       <span class="alt-key-badge">Alt</span>
-      <span class="alt-hint">toggle</span>
     </div>
 
     <div class="divider"></div>
 
-    <!-- Rotate section -->
+    <!-- Rotate section — stacked vertically to fill height -->
     <div class="section">
       <span class="section-label">Rotate</span>
-      <div class="rotate-row">
+      <div class="rotate-col">
         {#each rotateButtons as btn}
           <button
             class="rotate-btn"
@@ -229,7 +228,7 @@
     <!-- Transform section -->
     <div class="section">
       <span class="section-label">Transform</span>
-      <div class="transform-row">
+      <div class="transform-grid">
         {#each transforms as t}
           <button
             class="transform-item"
@@ -272,7 +271,7 @@
     <div class="divider"></div>
 
     <!-- Prop presets section -->
-    <div class="section section-grow">
+    <div class="section">
       <div class="section-header">
         <span class="section-label">Props</span>
         <button class="edit-btn" onclick={handleEditPresets} title="Edit prop presets">
@@ -323,7 +322,9 @@
       </div>
     </div>
 
-    <!-- Close button -->
+    <div class="divider"></div>
+
+    <!-- Close button — inline as last flex item -->
     <button class="close-btn" onclick={dismiss} title="Close (Alt)" aria-label="Close shortcut overlay">
       <i class="fas fa-xmark" aria-hidden="true"></i>
     </button>
@@ -342,14 +343,14 @@
     max-width: calc(100vw - 48px);
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.97));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 14px;
-    padding: 16px 24px;
+    border-radius: 12px;
+    padding: 10px 14px;
     box-shadow:
       0 12px 40px rgba(0, 0, 0, 0.5),
       0 0 0 1px rgba(255, 255, 255, 0.04);
     display: flex;
     align-items: stretch;
-    gap: 24px;
+    gap: 14px;
     animation: slideDown 180ms ease-out;
     pointer-events: auto;
   }
@@ -368,31 +369,24 @@
     to { opacity: 0; transform: translateX(-50%) translateY(-8px); }
   }
 
-  /* ===== Alt badge ===== */
+  /* ===== Alt badge — compact pill ===== */
   .alt-badge-section {
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 4px 0;
     flex-shrink: 0;
   }
 
   .alt-key-badge {
     background: rgba(255, 255, 255, 0.06);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    padding: 8px 14px;
+    border-radius: 6px;
+    padding: 4px 10px;
     font-family: monospace;
-    font-size: var(--font-size-min, 14px);
-    color: rgba(255, 255, 255, 0.45);
-    font-weight: 600;
-  }
-
-  .alt-hint {
     font-size: var(--font-size-compact, 12px);
-    color: rgba(255, 255, 255, 0.15);
-    margin-top: 6px;
+    color: rgba(255, 255, 255, 0.35);
+    font-weight: 600;
+    line-height: 1;
   }
 
   /* ===== Dividers ===== */
@@ -410,17 +404,21 @@
   }
 
   /* ===== Sections ===== */
-  .section { flex-shrink: 0; }
-  .section-grow { flex-shrink: 0; }
+  .section {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+  }
 
   .section-label {
-    font-size: var(--font-size-compact, 12px);
+    font-size: 10px;
     text-transform: uppercase;
     letter-spacing: 1.2px;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.25));
     font-weight: 600;
-    margin-bottom: 10px;
+    margin-bottom: 6px;
     display: block;
+    line-height: 1;
   }
 
   .section-header {
@@ -428,7 +426,7 @@
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    margin-bottom: 10px;
+    margin-bottom: 6px;
   }
 
   .section-header .section-label { margin-bottom: 0; }
@@ -440,7 +438,7 @@
   .preset-item {
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
-    border-radius: 10px;
+    border-radius: 8px;
     cursor: pointer;
     color: inherit;
     transition: background 150ms ease, border-color 150ms ease, transform 100ms ease;
@@ -463,31 +461,42 @@
   .transform-item:disabled,
   .action-item:disabled { opacity: 0.3; cursor: default; }
 
-  /* ===== Rotate ===== */
-  .rotate-row { display: flex; gap: 6px; }
+  /* ===== Rotate — stacked vertically ===== */
+  .rotate-col {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+  }
 
   .rotate-btn {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 10px 16px;
-    min-height: 48px;
+    gap: 8px;
+    padding: 6px 10px;
+    min-height: 44px;
+    flex: 1;
   }
 
-  .rotate-icon { background: rgba(59, 130, 246, 0.12); color: #60a5fa; font-size: 15px; }
+  .rotate-icon { background: rgba(59, 130, 246, 0.12); color: #60a5fa; font-size: 14px; }
   .rotate-key { background: rgba(59, 130, 246, 0.2); border-color: rgba(59, 130, 246, 0.3); color: #7ba3ff; }
 
-  /* ===== Transforms ===== */
-  .transform-row { display: flex; gap: 6px; }
+  /* ===== Transforms — 3x2 grid ===== */
+  .transform-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+    flex: 1;
+  }
 
   .transform-item {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 6px;
-    padding: 10px 14px;
-    min-width: 64px;
-    min-height: 48px;
+    gap: 4px;
+    padding: 6px 8px;
+    min-width: 56px;
+    min-height: 44px;
   }
 
   /* ===== Shared icon + label + key ===== */
@@ -495,49 +504,53 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 34px;
-    height: 34px;
-    border-radius: 9px;
-    font-size: 15px;
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    font-size: 13px;
   }
 
   .item-label {
-    font-size: var(--font-size-compact, 12px);
+    font-size: 10px;
     color: rgba(255, 255, 255, 0.55);
     font-weight: 500;
+    line-height: 1;
   }
 
   .key-badge {
-    border-radius: 5px;
-    padding: 2px 8px;
-    font-size: var(--font-size-compact, 12px);
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-size: 10px;
     font-family: monospace;
     font-weight: 600;
     border: 1px solid transparent;
+    line-height: 1.4;
   }
 
-  /* ===== Actions ===== */
+  /* ===== Actions — 2x2 grid ===== */
   .actions-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 6px;
+    gap: 4px;
+    flex: 1;
   }
 
   .action-item {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 6px;
-    padding: 10px 14px;
-    min-height: 48px;
-    min-width: 64px;
+    gap: 4px;
+    padding: 6px 8px;
+    min-height: 44px;
+    min-width: 56px;
   }
 
-  /* ===== Presets ===== */
+  /* ===== Presets — 5x2 grid ===== */
   .preset-row {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
-    gap: 6px;
+    gap: 4px;
+    flex: 1;
   }
 
   .preset-item {
@@ -545,18 +558,18 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 5px;
-    padding: 8px 8px;
-    min-height: 48px;
-    min-width: 48px;
+    gap: 3px;
+    padding: 5px 6px;
+    min-height: 44px;
+    min-width: 44px;
   }
 
   .preset-item.selected { border-color: var(--theme-accent, #a855f7); }
   .preset-item.cat-dog { border-color: rgba(255, 180, 50, 0.2); }
 
   .preset-icon {
-    width: 32px;
-    height: 32px;
+    width: 28px;
+    height: 28px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -565,9 +578,9 @@
   .preset-icon:not(.no-rotate) .prop-svg { transform: rotate(-90deg); }
   .preset-icon.empty { color: rgba(255, 255, 255, 0.2); font-size: var(--font-size-compact, 12px); }
 
-  .prop-svg { width: 28px; height: 28px; object-fit: contain; }
-  .prop-svg.red-prop { filter: hue-rotate(125deg) saturate(1.2); width: 20px; height: 20px; }
-  .prop-svg.blue-prop { width: 20px; height: 20px; }
+  .prop-svg { width: 24px; height: 24px; object-fit: contain; }
+  .prop-svg.red-prop { filter: hue-rotate(125deg) saturate(1.2); width: 18px; height: 18px; }
+  .prop-svg.blue-prop { width: 18px; height: 18px; }
 
   .preset-key { background: rgba(255, 180, 50, 0.2); border-color: rgba(255, 180, 50, 0.3); color: #f5c842; }
   .preset-key.selected-key { background: rgba(168, 85, 247, 0.2); border-color: rgba(168, 85, 247, 0.3); color: #a855f7; }
@@ -576,15 +589,15 @@
   .edit-btn {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 5px;
     background: rgba(255, 255, 255, 0.04);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 7px;
-    padding: 5px 12px;
-    min-height: 30px;
+    border-radius: 6px;
+    padding: 3px 8px;
+    min-height: 22px;
     cursor: pointer;
     color: rgba(255, 255, 255, 0.35);
-    font-size: var(--font-size-compact, 12px);
+    font-size: 10px;
     font-weight: 500;
     transition: all 150ms ease;
   }
@@ -595,26 +608,24 @@
     border-color: rgba(255, 255, 255, 0.18);
   }
 
-  .edit-btn i { font-size: 10px; }
+  .edit-btn i { font-size: 9px; }
 
-  /* ===== Close button ===== */
+  /* ===== Close button — inline flex item ===== */
   .close-btn {
-    position: absolute;
-    top: 10px;
-    right: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 30px;
-    height: 30px;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 8px;
+    align-self: center;
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
     cursor: pointer;
-    color: rgba(255, 255, 255, 0.4);
+    color: rgba(255, 255, 255, 0.3);
     font-size: var(--font-size-compact, 12px);
     transition: all 150ms ease;
-    z-index: 1;
   }
 
   .close-btn:hover {

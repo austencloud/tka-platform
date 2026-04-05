@@ -10,7 +10,7 @@
     FogExp2,
     Color,
   } from "three";
-  import type { InstancedMesh, PerspectiveCamera } from "three";
+  import type { BatchedMesh, PerspectiveCamera } from "three";
   import MuseumPostProcessing from "./MuseumPostProcessing.svelte";
   import type { MuseumGrid } from "../../domain/museum-grid-types";
   import { tileKey } from "../../domain/museum-grid-types";
@@ -40,7 +40,7 @@
   } from "../../services/implementations/MuseumGeometryBuilder";
   import type {
     RoomChunk,
-    InstancedMeshData,
+    BatchedMeshData,
     PlaquePlacement,
     TorchPosition,
     LightPosition,
@@ -993,8 +993,8 @@
   // Svelte templates. This eliminates reactive overhead (no $derived arrays,
   // no {#each} template diffing, no Threlte component mounting). Visibility
   // is controlled with mesh.visible instead of mount/unmount.
-  const allSceneMeshes: InstancedMesh[] = [];     // for cleanup on destroy
-  const ceilingMeshRefs: InstancedMesh[] = [];    // toggle visible with fpsActive
+  const allSceneMeshes: BatchedMesh[] = [];        // for cleanup on destroy
+  const ceilingChunkRefs: BatchedMeshData[] = [];  // toggle per-instance visibility with fpsActive
 
   /** Build global proximity grids once from ALL chunks (called after all chunks built) */
   function buildGlobalProximityGrids(): void {
@@ -1070,10 +1070,14 @@
           allSceneMeshes.push(mesh);
         }
         if (chunk.ceilingMesh) {
-          chunk.ceilingMesh.visible = false; // hidden until FPS mode
-          sceneObj.add(chunk.ceilingMesh);
-          allSceneMeshes.push(chunk.ceilingMesh);
-          ceilingMeshRefs.push(chunk.ceilingMesh);
+          // Start with all ceiling instances hidden (top-down mode)
+          const cm = chunk.ceilingMesh;
+          for (const id of (cm.instanceIds ?? [])) {
+            cm.mesh.setVisibleAt(id, false);
+          }
+          sceneObj.add(cm.mesh);
+          allSceneMeshes.push(cm.mesh);
+          ceilingChunkRefs.push(cm);
         }
         if (chunk.pedestalMesh) {
           chunk.pedestalMesh.castShadow = true;
