@@ -168,6 +168,10 @@ export function createAvatarInstanceState(
   let customBluePlane = $state<Plane>(Plane.WALL);
   let customRedPlane = $state<Plane>(Plane.WALL);
 
+  // Per-beat plane overrides. Key = beat index, value = { blue?, red? }
+  // Beats without an entry use Plane.WALL (the default).
+  let beatPlaneOverrides = $state<Map<number, { blue?: Plane; red?: Plane }>>(new Map());
+
   const ROTATION_VARIANTS: Plane[] = [Plane.WALL, Plane.WHEEL, Plane.FLOOR];
   const ROTATION_LABELS: string[] = ["Wall rot", "Wheel rot", "Floor rot"];
   let rotationVariantIndex = $state(loadPersistedRotVariant());
@@ -250,6 +254,7 @@ export function createAvatarInstanceState(
    */
   function loadSequence(sequence: SequenceData) {
     loadedSequence = sequence;
+    beatPlaneOverrides = new Map(); // Reset per-beat overrides for new sequence
     const modeConfig = getEffectiveModeConfig(planeMode);
 
     // Get motion configs (beats 1+) and prepend start position (beat 0)
@@ -368,6 +373,93 @@ export function createAvatarInstanceState(
     // so each hand rotates on its own position plane)
     reconvertWithConfig(getEffectiveModeConfig(PlaneMode.CUSTOM));
   }
+
+  /**
+   * Set a specific beat's plane for one hand. Switches to CUSTOM mode
+   * and re-applies all per-beat overrides to the step configs.
+   */
+  function setBeatHandPlane(beatIndex: number, hand: "blue" | "red", plane: Plane) {
+    const current = beatPlaneOverrides.get(beatIndex) ?? {};
+    const updated = { ...current, [hand]: plane };
+
+    // If both hands are WALL (or undefined), remove the entry to keep the map clean
+    if ((!updated.blue || updated.blue === Plane.WALL) &&
+        (!updated.red || updated.red === Plane.WALL)) {
+      beatPlaneOverrides.delete(beatIndex);
+    } else {
+      beatPlaneOverrides.set(beatIndex, updated);
+    }
+
+    // Trigger reactivity by reassigning
+    beatPlaneOverrides = new Map(beatPlaneOverrides);
+
+    // Switch to CUSTOM mode if not already
+    if (planeMode !== PlaneMode.CUSTOM) {
+      planeMode = PlaneMode.CUSTOM;
+    }
+
+    // Re-apply overrides to the step configs
+    applyBeatPlaneOverrides();
+  }
+
+  /**
+   * Get the plane assignments for a specific beat.
+   * Returns the override if one exists, otherwise Plane.WALL.
+   */
+  function getBeatPlanes(beatIndex: number): { blue: Plane; red: Plane } {
+    const override = beatPlaneOverrides.get(beatIndex);
+    return {
+      blue: override?.blue ?? Plane.WALL,
+      red: override?.red ?? Plane.WALL,
+    };
+  }
+
+  /**
+   * Re-convert the entire sequence with WALL defaults, then patch in
+   * per-beat plane overrides for any beats that have them.
+   */
+  function applyBeatPlaneOverrides() {
+    if (!loadedSequence) return;
+
+    const motionConfigs = sequenceConverter.sequenceToMotionConfigs(
+      loadedSequence,
+      Plane.WALL
+    );
+    const startConfig = sequenceConverter.getStartPositionConfigs(
+      loadedSequence,
+      Plane.WALL
+    );
+    const allConfigs = startConfig ? [startConfig, ...motionConfigs] : motionConfigs;
+
+    // Patch per-beat overrides into individual configs
+    for (const [beatIdx, override] of beatPlaneOverrides) {
+      const config = allConfigs[beatIdx];
+      if (!config) continue;
+
+      if (override.blue && config.blue) {
+        config.blue = { ...config.blue, plane: override.blue };
+      }
+      if (override.red && config.red) {
+        config.red = { ...config.red, plane: override.red };
+      }
+    }
+
+    stepConfigs = allConfigs;
+    updateVisibilityFromStep(stepConfigs[currentStepIndex] ?? stepConfigs[0]);
+  }
+
+  /**
+   * Clear all per-beat plane overrides, resetting every beat to WALL.
+   */
+  function clearBeatPlaneOverrides() {
+    beatPlaneOverrides = new Map();
+    if (planeMode === PlaneMode.CUSTOM) {
+      setPlaneMode(PlaneMode.WALL);
+    }
+  }
+
+  // Derived: planes for the currently selected beat
+  const currentBeatPlanes = $derived(getBeatPlanes(currentStepIndex));
 
   /**
    * Debug: cycle through rotation plane variants and re-convert.
@@ -575,8 +667,14 @@ export function createAvatarInstanceState(
     },
     setPlaneMode,
     setHandPlane,
+    setBeatHandPlane,
+    clearBeatPlaneOverrides,
     get customBluePlane() { return customBluePlane; },
     get customRedPlane() { return customRedPlane; },
+    get currentBeatBluePlane() { return currentBeatPlanes.blue; },
+    get currentBeatRedPlane() { return currentBeatPlanes.red; },
+    get beatPlaneOverrides() { return beatPlaneOverrides; },
+    get hasBeatOverrides() { return beatPlaneOverrides.size > 0; },
     cycleRotationVariant,
     get rotationVariantLabel() {
       return ROTATION_LABELS[rotationVariantIndex];
