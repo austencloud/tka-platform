@@ -125,7 +125,7 @@
         type="empty"
         icon="fa-list"
         title="No Sequences"
-        message="No sequences yet"
+        message="This creator hasn't published any sequences yet."
       />
     {:else}
       <div class="sequences-grid">

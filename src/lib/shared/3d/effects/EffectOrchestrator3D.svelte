@@ -16,6 +16,8 @@
   import { Vector3 } from "three";
   import { container } from "$lib/shared/di";
   import Trail3D from "./trails/Trail3D.svelte";
+  import Led3D from "./led/Led3D.svelte";
+  import type { LedTipInput } from "./led/LedRenderer3D";
   import { DynamicLightManager } from "./lighting/DynamicLightManager";
   import { TipPositionBridge3D } from "./TipPositionBridge3D";
   import {
@@ -30,6 +32,10 @@
     position: Vector3 | null;
     effect: EffectType;
   }
+
+  // Default LED colors per prop (blue/red) — used when no pattern engine config
+  const LED_BLUE_COLOR = { r: 0.23, g: 0.51, b: 0.96 }; // #3b82f6
+  const LED_RED_COLOR = { r: 0.94, g: 0.27, b: 0.27 }; // #ef4444
 
   interface Props {
     bluePropState: PropState3D | null;
@@ -100,14 +106,22 @@
     { position: null, effect: "none" },
   ]);
 
+  // LED-specific tip inputs (includes color + velocity for the renderer)
+  let blueLedTips = $state<LedTipInput[]>([]);
+  let redLedTips = $state<LedTipInput[]>([]);
+
   useTask(() => {
     if (!isPlaying) {
       tipBridge.reset();
+      blueLedTips = [];
+      redLedTips = [];
       return;
     }
 
     const dt = 1 / 60;
     const transforms = { avatarPosition, facingAngle, gridOffset };
+    const newBlueLeds: LedTipInput[] = [];
+    const newRedLeds: LedTipInput[] = [];
 
     // Note: in the 3D viewer, bluePropState visually corresponds to the red-colored
     // prop and vice versa (the naming follows the avatar's perspective, not the viewer's).
@@ -121,9 +135,26 @@
           tipEffectMap,
           globalTipEffectMap ?? {},
         );
+        const effect = resolved === "none" ? "trails" : resolved;
+
+        // Collect LED tips
+        if (effect === "led") {
+          newBlueLeds.push({
+            position: new Vector3(tip.position.x, tip.position.y, tip.position.z),
+            r: LED_BLUE_COLOR.r,
+            g: LED_BLUE_COLOR.g,
+            b: LED_BLUE_COLOR.b,
+            brightness: 1.0,
+            velocityX: tip.velocity.x,
+            velocityY: tip.velocity.y,
+            velocityZ: tip.velocity.z,
+            speed: tip.speed,
+          });
+        }
+
         return {
           position: new Vector3(tip.position.x, tip.position.y, tip.position.z),
-          effect: resolved === "none" ? "trails" : resolved,
+          effect,
         };
       });
     }
@@ -137,12 +168,32 @@
           tipEffectMap,
           globalTipEffectMap ?? {},
         );
+        const effect = resolved === "none" ? "trails" : resolved;
+
+        // Collect LED tips
+        if (effect === "led") {
+          newRedLeds.push({
+            position: new Vector3(tip.position.x, tip.position.y, tip.position.z),
+            r: LED_RED_COLOR.r,
+            g: LED_RED_COLOR.g,
+            b: LED_RED_COLOR.b,
+            brightness: 1.0,
+            velocityX: tip.velocity.x,
+            velocityY: tip.velocity.y,
+            velocityZ: tip.velocity.z,
+            speed: tip.speed,
+          });
+        }
+
         return {
           position: new Vector3(tip.position.x, tip.position.y, tip.position.z),
-          effect: resolved === "none" ? "trails" : resolved,
+          effect,
         };
       });
     }
+
+    blueLedTips = newBlueLeds;
+    redLedTips = newRedLeds;
   });
 
   // Filter to only tips that have the "trails" effect assigned and a valid position.
@@ -194,3 +245,24 @@
     {lightManager}
   />
 {/each}
+
+<!-- LED effects -->
+{#if blueLedTips.length > 0}
+  <Led3D
+    tips={blueLedTips}
+    propId="blue"
+    enabled={isPlaying}
+    qualityTier={qualityTierDetector.currentTier}
+    {lightManager}
+  />
+{/if}
+
+{#if redLedTips.length > 0}
+  <Led3D
+    tips={redLedTips}
+    propId="red"
+    enabled={isPlaying}
+    qualityTier={qualityTierDetector.currentTier}
+    {lightManager}
+  />
+{/if}

@@ -118,7 +118,7 @@
 
       submitSuccess = true;
     } catch (err) {
-      submitError = err instanceof Error ? err.message : "Something went wrong. Try again.";
+      submitError = err instanceof Error ? err.message : "Submission failed. Check your connection and try again.";
     } finally {
       isSubmitting = false;
     }
@@ -345,7 +345,7 @@
         <button class="primary" onclick={handleSubmit} disabled={isSubmitting}>
           {#if isSubmitting}
             <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
-            Submitting...
+            Submitting application...
           {:else}
             <i class="fas fa-paper-plane" aria-hidden="true"></i>
             Submit festival

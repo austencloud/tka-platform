@@ -695,11 +695,26 @@
       );
     }
 
+    // Apply avatar facing rotation to both position and rotation so the
+    // AvatarAnimator receives everything in consistent world space.
+    const facingQuat = new Quaternion().setFromAxisAngle(
+      new Vector3(0, 1, 0),
+      facingAngle
+    );
+
     const blueWorldProp = bluePropState
-      ? { ...bluePropState, worldPosition: toWorldPosition(bluePropState.worldPosition) }
+      ? {
+          ...bluePropState,
+          worldPosition: toWorldPosition(bluePropState.worldPosition),
+          worldRotation: facingQuat.clone().multiply(bluePropState.worldRotation),
+        }
       : null;
     const redWorldProp = redPropState
-      ? { ...redPropState, worldPosition: toWorldPosition(redPropState.worldPosition) }
+      ? {
+          ...redPropState,
+          worldPosition: toWorldPosition(redPropState.worldPosition),
+          worldRotation: facingQuat.clone().multiply(redPropState.worldRotation),
+        }
       : null;
 
     animationService.setPropsAndBlend(blueWorldProp, redWorldProp);
