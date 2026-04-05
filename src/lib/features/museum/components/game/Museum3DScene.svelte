@@ -1026,19 +1026,30 @@
     return meshes;
   });
 
-  /** Rebuild proximity grids from currently loaded chunks */
-  function rebuildProximityGrids(): void {
+  /** Build global proximity grids once from ALL chunks (called after all chunks built) */
+  function buildGlobalProximityGrids(): void {
     torchGrid = new ProximityGrid<TorchPosition>(CELL_SIZE);
     plaqueGrid = new ProximityGrid<PlaquePlacement>(CELL_SIZE);
     exhibitLightGrid = new ProximityGrid<LightPosition>(CELL_SIZE);
     ceilingLightGrid = new ProximityGrid<LightPosition>(CELL_SIZE);
 
-    const allChunks = [corridorChunk, ...loadedChunks.values()].filter(Boolean) as RoomChunk[];
+    const allChunks = [corridorChunk, ...prebuiltChunks.values()].filter(Boolean) as RoomChunk[];
     for (const chunk of allChunks) {
       for (const t of chunk.torchPositions) torchGrid.insert(t, t.tileX, t.tileY);
       for (const p of chunk.plaquePlacements) plaqueGrid.insert(p, p.tileX, p.tileY);
       for (const l of chunk.exhibitLightPositions) exhibitLightGrid.insert(l, l.tileX, l.tileY);
       for (const l of chunk.ceilingLightPositions) ceilingLightGrid.insert(l, l.tileX, l.tileY);
+    }
+  }
+
+  /** Lightweight plaque grid rebuild — only plaques need per-loaded-chunk filtering */
+  function rebuildProximityGrids(): void {
+    // Torches and lights are global — their grids don't change with streaming.
+    // Only rebuild plaque grid based on loaded chunks.
+    plaqueGrid = new ProximityGrid<PlaquePlacement>(CELL_SIZE);
+    const activeChunks = [corridorChunk, ...loadedChunks.values()].filter(Boolean) as RoomChunk[];
+    for (const chunk of activeChunks) {
+      for (const p of chunk.plaquePlacements) plaqueGrid.insert(p, p.tileX, p.tileY);
     }
   }
 
@@ -1067,30 +1078,72 @@
       props.onBuildStage?.(wing.name);
     }
 
-    // ── Shader warmup: activate ALL rooms, force-compile, then deactivate ──
-    // Three.js compiles shaders lazily on first render. If we only activate
-    // the spawn room's neighbors, walking into a new room later triggers
-    // shader compilation (visible freeze). By temporarily activating ALL
-    // rooms and calling renderer.compile(), we force the GPU to compile
-    // every shader program upfront — behind the loading overlay.
+    // Build global proximity grids from ALL chunks (torches, lights, plaques)
+    buildGlobalProximityGrids();
+
+    // ── Shader warmup: add ALL meshes to Three.js scene, compile, remove ──
+    // renderer.compile() only compiles shaders for objects IN the scene graph.
+    // Svelte reactive rendering hasn't happened yet (we just set state), so we
+    // must add meshes directly to the Three.js scene, bypassing Svelte.
     props.onBuildStage?.("Compiling shaders");
 
-    // Activate every room temporarily
-    for (const wing of grid.wings) activateRoom(wing.id);
-
-    // Force shader compilation for all active materials
     const renderer = (threlteCtx as any).renderer?.current ?? (threlteCtx as any).renderer;
-    const scene = (threlteCtx as any).scene?.current ?? (threlteCtx as any).scene;
-    if (renderer && scene && camera) {
-      renderer.compile(scene, camera);
+    const sceneObj = (threlteCtx as any).scene?.current ?? (threlteCtx as any).scene;
+
+    if (renderer && sceneObj && camera) {
+      const warmupMeshes: InstancedMesh[] = [];
+
+      // Add ALL pre-built meshes directly to Three.js scene
+      for (const chunk of prebuiltChunks.values()) {
+        for (const { mesh } of chunk.floorMeshes) { sceneObj.add(mesh); warmupMeshes.push(mesh); }
+        for (const { mesh } of chunk.wallMeshes) { sceneObj.add(mesh); warmupMeshes.push(mesh); }
+        if (chunk.ceilingMesh) { sceneObj.add(chunk.ceilingMesh); warmupMeshes.push(chunk.ceilingMesh); }
+        if (chunk.pedestalMesh) { sceneObj.add(chunk.pedestalMesh); warmupMeshes.push(chunk.pedestalMesh); }
+        if (chunk.signMesh) { sceneObj.add(chunk.signMesh); warmupMeshes.push(chunk.signMesh); }
+        if (chunk.performerMesh) { sceneObj.add(chunk.performerMesh); warmupMeshes.push(chunk.performerMesh); }
+      }
+      // Also corridor
+      if (cc) {
+        for (const { mesh } of cc.floorMeshes) { sceneObj.add(mesh); warmupMeshes.push(mesh); }
+        for (const { mesh } of cc.wallMeshes) { sceneObj.add(mesh); warmupMeshes.push(mesh); }
+      }
+
+      // Force GPU to compile every shader program now (behind overlay)
+      renderer.compile(sceneObj, camera);
+
+      // Remove all — Svelte template will re-add the active ones
+      for (const mesh of warmupMeshes) sceneObj.remove(mesh);
+
+      console.log(`[Museum3D] Shader warmup: compiled ${warmupMeshes.length} meshes`);
     }
 
-    // Yield so the overlay can paint the "Compiling shaders" message
+    // Yield so overlay can paint
     await new Promise<void>(r => setTimeout(r, 0));
 
-    // Deactivate all rooms, then activate only what we need
-    for (const wing of grid.wings) deactivateRoom(wing.id);
+    // Mount ALL torches globally — never per-room. Torch flame shaders cause
+    // 400-1000ms GPU stutter on mount. Pay the cost once behind the overlay.
+    const allTorches: TorchPosition[] = [];
+    for (const chunk of prebuiltChunks.values()) {
+      allTorches.push(...chunk.torchPositions);
+    }
+    if (cc) allTorches.push(...cc.torchPositions);
+    visibleTorches = allTorches;
 
+    // Mount ALL lights globally too (shader recompilation on add/remove)
+    const allExhibitLights: LightPosition[] = [];
+    const allCeilingLights: LightPosition[] = [];
+    for (const chunk of prebuiltChunks.values()) {
+      allExhibitLights.push(...chunk.exhibitLightPositions);
+      allCeilingLights.push(...chunk.ceilingLightPositions);
+    }
+    if (cc) {
+      allExhibitLights.push(...cc.exhibitLightPositions);
+      allCeilingLights.push(...cc.ceilingLightPositions);
+    }
+    visibleExhibitLights = allExhibitLights;
+    visibleCeilingLights = allCeilingLights;
+
+    // Now activate only spawn room + adjacent rooms for mesh rendering
     if (spawnRoomId) {
       const adjacentIds = streamingManager.getAdjacentRooms(spawnRoomId);
       for (const roomId of [spawnRoomId, ...adjacentIds]) {
@@ -1106,7 +1159,7 @@
     props.onGeometryReady?.();
   })();
 
-  /** Move a pre-built chunk into the active scene (instant — no GPU work) */
+  /** Move a pre-built chunk into the active scene (meshes only — torches/lights are global) */
   function activateRoom(wingId: string): void {
     if (loadedChunks.has(wingId)) return;
     const chunk = prebuiltChunks.get(wingId);
@@ -1115,31 +1168,18 @@
     const updated = new Map(loadedChunks);
     updated.set(wingId, chunk);
     loadedChunks = updated;
-
-    // Add this chunk's torches/lights to visible sets
-    visibleTorches = [...visibleTorches, ...chunk.torchPositions];
-    visibleExhibitLights = [...visibleExhibitLights, ...chunk.exhibitLightPositions];
-    visibleCeilingLights = [...visibleCeilingLights, ...chunk.ceilingLightPositions];
-
+    // Torches and lights are mounted globally — no per-room add/remove
     rebuildProximityGrids();
   }
 
-  /** Remove a chunk from the active scene (keep in prebuiltChunks for reuse) */
+  /** Remove a chunk's meshes from the active scene (torches/lights stay global) */
   function deactivateRoom(wingId: string): void {
-    const chunk = loadedChunks.get(wingId);
-    if (!chunk) return;
+    if (!loadedChunks.has(wingId)) return;
 
     const updated = new Map(loadedChunks);
     updated.delete(wingId);
     loadedChunks = updated;
-
-    const chunkTorchIds = new Set(chunk.torchPositions.map(t => t.id));
-    const chunkExhibitIds = new Set(chunk.exhibitLightPositions.map(l => l.id));
-    const chunkCeilingIds = new Set(chunk.ceilingLightPositions.map(l => l.id));
-    visibleTorches = visibleTorches.filter(t => !chunkTorchIds.has(t.id));
-    visibleExhibitLights = visibleExhibitLights.filter(l => !chunkExhibitIds.has(l.id));
-    visibleCeilingLights = visibleCeilingLights.filter(l => !chunkCeilingIds.has(l.id));
-
+    // Torches and lights stay global — no per-room removal
     rebuildProximityGrids();
   }
 
