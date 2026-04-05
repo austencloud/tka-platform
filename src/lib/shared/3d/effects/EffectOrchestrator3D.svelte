@@ -106,28 +106,35 @@
 
     if (bluePropState) {
       const result = tipBridge.update(0, bluePropState, staffHalfLength, dt);
-      blueTipData = result.tips.map((tip, tipIndex) => ({
-        position: new Vector3(tip.position.x, tip.position.y, tip.position.z),
-        effect: resolveEffect(
+      blueTipData = result.tips.map((tip, tipIndex) => {
+        const resolved = resolveEffect(
           0,
           tipIndex,
           tipEffectMap,
           globalTipEffectMap ?? {},
-        ),
-      }));
+        );
+        return {
+          position: new Vector3(tip.position.x, tip.position.y, tip.position.z),
+          // Default to trails when no effect is explicitly assigned
+          effect: resolved === "none" ? "trails" : resolved,
+        };
+      });
     }
 
     if (redPropState) {
       const result = tipBridge.update(1, redPropState, staffHalfLength, dt);
-      redTipData = result.tips.map((tip, tipIndex) => ({
-        position: new Vector3(tip.position.x, tip.position.y, tip.position.z),
-        effect: resolveEffect(
+      redTipData = result.tips.map((tip, tipIndex) => {
+        const resolved = resolveEffect(
           1,
           tipIndex,
           tipEffectMap,
           globalTipEffectMap ?? {},
-        ),
-      }));
+        );
+        return {
+          position: new Vector3(tip.position.x, tip.position.y, tip.position.z),
+          effect: resolved === "none" ? "trails" : resolved,
+        };
+      });
     }
   });
 
