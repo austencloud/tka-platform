@@ -141,15 +141,33 @@ export function createAvatarInstanceState(
   let loadedSequence = $state<SequenceData | null>(null);
   let stepConfigs = $state<StepMotionConfigs[]>([]);
   let currentStepIndex = $state(0);
-  let planeMode = $state<PlaneMode>(PlaneMode.WALL);
+  // Persist plane mode and rotation variant across HMR / page reloads
+  const PLANE_MODE_KEY = `tka-3d-planeMode-${id}`;
+  const ROT_VARIANT_KEY = `tka-3d-rotVariant-${id}`;
 
-  /**
-   * Debug: cycle through rotation plane variants for dual wheel mode.
-   * 0 = WALL, 1 = WHEEL, 2 = FLOOR. Helps find the correct spin axis.
-   */
+  function loadPersistedPlaneMode(): PlaneMode {
+    try {
+      const v = localStorage.getItem(PLANE_MODE_KEY);
+      if (v === PlaneMode.DUAL_WHEEL) return PlaneMode.DUAL_WHEEL;
+    } catch {}
+    return PlaneMode.WALL;
+  }
+
+  function loadPersistedRotVariant(): number {
+    try {
+      const v = localStorage.getItem(ROT_VARIANT_KEY);
+      if (v !== null) return Math.max(0, Math.min(2, parseInt(v, 10) || 0));
+    } catch {}
+    return 1;
+  }
+
+  let planeMode = $state<PlaneMode>(loadPersistedPlaneMode());
+  let customBluePlane = $state<Plane>(Plane.WALL);
+  let customRedPlane = $state<Plane>(Plane.WALL);
+
   const ROTATION_VARIANTS: Plane[] = [Plane.WALL, Plane.WHEEL, Plane.FLOOR];
   const ROTATION_LABELS: string[] = ["Wall rot", "Wheel rot", "Floor rot"];
-  let rotationVariantIndex = $state(1); // Default to WHEEL
+  let rotationVariantIndex = $state(loadPersistedRotVariant());
 
   // Per-avatar playback with unique persistence key
   const playback = createPlaybackState({
@@ -287,6 +305,16 @@ export function createAvatarInstanceState(
    */
   /** Build an effective mode config with the current rotation variant override */
   function getEffectiveModeConfig(mode: PlaneMode): PlaneModeConfig {
+    if (mode === PlaneMode.CUSTOM) {
+      return {
+        facingAngle: 0,
+        bluePlane: customBluePlane,
+        redPlane: customRedPlane,
+        rotationPlane: Plane.WALL,
+        blueLateralOffset: 0,
+        redLateralOffset: 0,
+      };
+    }
     const base = PLANE_MODE_CONFIGS[mode];
     if (mode === PlaneMode.DUAL_WHEEL) {
       const rotPlane = ROTATION_VARIANTS[rotationVariantIndex] ?? Plane.WALL;
@@ -301,6 +329,14 @@ export function createAvatarInstanceState(
 
   function setPlaneMode(mode: PlaneMode) {
     planeMode = mode;
+
+    // Sync custom plane trackers to the preset's planes when switching away from CUSTOM
+    if (mode !== PlaneMode.CUSTOM) {
+      const config = PLANE_MODE_CONFIGS[mode];
+      customBluePlane = config.bluePlane;
+      customRedPlane = config.redPlane;
+    }
+
     const modeConfig = getEffectiveModeConfig(mode);
 
     // Snap avatar rotation to match mode orientation immediately
@@ -309,6 +345,32 @@ export function createAvatarInstanceState(
 
     // Re-convert loaded sequence with new plane assignments
     reconvertWithConfig(modeConfig);
+  }
+
+  /**
+   * Set a single hand's plane independently. Switches to CUSTOM mode
+   * and rebuilds the sequence with the updated per-hand config.
+   */
+  function setHandPlane(hand: "blue" | "red", plane: Plane) {
+    if (hand === "blue") customBluePlane = plane;
+    else customRedPlane = plane;
+
+    // Switch to CUSTOM mode if not already
+    if (planeMode !== PlaneMode.CUSTOM) {
+      planeMode = PlaneMode.CUSTOM;
+    }
+
+    // Build a custom modeConfig with the current per-hand planes
+    const customConfig: PlaneModeConfig = {
+      facingAngle: 0,
+      bluePlane: customBluePlane,
+      redPlane: customRedPlane,
+      rotationPlane: Plane.WALL,
+      blueLateralOffset: 0,
+      redLateralOffset: 0,
+    };
+
+    reconvertWithConfig(customConfig);
   }
 
   /**
@@ -515,6 +577,9 @@ export function createAvatarInstanceState(
       return planeMode;
     },
     setPlaneMode,
+    setHandPlane,
+    get customBluePlane() { return customBluePlane; },
+    get customRedPlane() { return customRedPlane; },
     cycleRotationVariant,
     get rotationVariantLabel() {
       return ROTATION_LABELS[rotationVariantIndex];
