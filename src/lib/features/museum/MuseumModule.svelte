@@ -7,22 +7,27 @@
   import { setEditorContext } from "./state/editor-context";
   import RoomPicker from "./components/RoomPicker.svelte";
 
-  import { onMount } from "svelte";
+  import { onMount, untrack } from "svelte";
+  import { page } from "$app/stores";
+  import { goto } from "$app/navigation";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
 
   // ── Loading gate ──
-  // An opaque overlay covers the scene until ALL assets (textures, models)
-  // are fully loaded. On repeat visits within the same session, browser HTTP
-  // cache serves assets instantly — skip the overlay entirely.
+  // An opaque overlay covers the scene until ALL assets (textures, models,
+  // geometry) are fully loaded. On repeat visits within the same session,
+  // textures are cached so loading is fast — but geometry still builds async,
+  // so the overlay always shows until handleAllLoaded fires.
   const LOADED_FLAG = "museum-assets-loaded";
   const wasLoadedBefore = sessionStorage.getItem(LOADED_FLAG) === "1";
 
   // Real progress target from useProgress (jumps in bursts)
-  let targetProgress = $state(wasLoadedBefore ? 1 : 0);
+  let targetProgress = $state(wasLoadedBefore ? 0.5 : 0);
   // Displayed progress — lerps smoothly toward target
-  let displayProgress = $state(wasLoadedBefore ? 1 : 0);
-  let allLoaded = $state(wasLoadedBefore);
-  let showOverlay = $state(!wasLoadedBefore);
+  let displayProgress = $state(wasLoadedBefore ? 0.5 : 0);
+  // allLoaded is ONLY set by handleAllLoaded — never pre-set.
+  // The overlay always shows until both geometry + textures are ready.
+  let allLoaded = $state(false);
+  let showOverlay = $state(true);
   let overlayFading = $state(false);
 
   // Animate the progress bar smoothly via rAF.
@@ -70,6 +75,13 @@
     };
   });
 
+  // Build stage label — shown in the overlay while geometry is being built
+  let buildStage = $state("");
+
+  function handleBuildStage(stage: string) {
+    buildStage = stage;
+  }
+
   function handleLoadProgress(progress: number) {
     // Never go backwards — useProgress resets between loading batches
     if (progress > targetProgress) {
@@ -109,21 +121,10 @@
   // ── Room isolation ──
   // URL query param `?room=vulcan-cave` filters the museum to a single room.
   // null = full museum (all rooms + corridors).
-  function getInitialRoom(): string | null {
-    try {
-      const params = new URLSearchParams(window.location.search);
-      return params.get("room") ?? null;
-    } catch { return null; }
-  }
-
-  let selectedRoom = $state<string | null>(getInitialRoom());
+  // Derived from SvelteKit's page store so it updates when goto() navigates.
+  let selectedRoom = $derived($page.url.searchParams.get("room"));
 
   function handleRoomSelect(roomId: string | null) {
-    // Full page navigation — cleanly tears down the entire WebGL scene
-    // and rebuilds from scratch. SvelteKit's client-side router handles
-    // this without a full browser reload, but the component remounts fresh.
-    // This avoids race conditions from {#key} remount fighting Threlte's
-    // scene lifecycle (duplicate keys, mirror crashes, camera resets).
     const params = new URLSearchParams(window.location.search);
     if (roomId) {
       params.set("room", roomId);
@@ -132,9 +133,7 @@
     }
     const qs = params.toString();
     const newUrl = window.location.pathname + (qs ? `?${qs}` : "");
-    import("$app/navigation").then(({ goto }) => {
-      goto(newUrl, { invalidateAll: true });
-    });
+    goto(newUrl, { invalidateAll: true });
   }
 
   // ── Grid caching ──
@@ -146,7 +145,8 @@
   const GRID_HASH_KEY = "museum-grid-hash";
 
   function computeConfigHash(rooms: typeof MUSEUM_ROOMS, edges: typeof MUSEUM_EDGES): string {
-    const input = JSON.stringify({ rooms, edges, config: GRID_CONFIG });
+    // Include a version bump whenever layout logic changes (e.g. ROOM_SCALE)
+    const input = JSON.stringify({ rooms, edges, config: GRID_CONFIG, layoutVersion: 4 });
     let hash = 0;
     for (let i = 0; i < input.length; i++) {
       hash = ((hash << 5) - hash + input.charCodeAt(i)) | 0;
@@ -247,19 +247,19 @@
     });
   }
 
-  // Once the 3D scene has mounted, keep it alive (hidden) across mode switches.
-  // This prevents the 5+ second WebGL reinit freeze on every mode toggle.
-  let museumSceneMounted = $state(false);
-  $effect(() => {
-    if (mode === "museum") museumSceneMounted = true;
-  });
+  // The 3D scene mounts eagerly on module load (behind the loading overlay)
+  // and stays alive across mode switches. This ensures geometry, textures, and
+  // shaders are warm before the user ever navigates to museum mode, eliminating
+  // the multi-second freeze on 2D→3D transitions.
+  // Previously this was gated on mode === "museum" which meant the first switch
+  // to museum mode triggered the full geometry build + shader compilation.
 
   // The "live" grid — starts from generated, can be modified by editor.
   // Must use $state.raw: $state would deeply proxy 20k+ tiles, causing a
   // multi-second freeze on init. The grid is replaced wholesale (not mutated
   // in place), so shallow reactivity is correct.
   // Compute initial value eagerly to avoid capturing $derived in $state.raw initializer.
-  const initialGrid = buildGridForRoom(selectedRoom).grid;
+  const initialGrid = untrack(() => buildGridForRoom(selectedRoom).grid);
   let liveGrid = $state.raw<MuseumGrid>(initialGrid);
 
   // When the room selection changes, the derived generatedGrid updates.
@@ -333,6 +333,8 @@
           Welcome to The Archive
         {:else if displayProgress > 0.01}
           Loading... {Math.round(displayProgress * 100)}%
+        {:else if buildStage}
+          Building {buildStage.toLowerCase()}...
         {:else}
           Entering The Archive...
         {/if}
@@ -356,15 +358,15 @@
 
   <!-- Content renders behind the opaque overlay; deferred to allow first paint -->
   {#if deferredReady}
-    <!-- 3D scene stays alive across mode switches (hidden via CSS when inactive).
-         Destroying and recreating it causes a 5+ second freeze every time because
-         WebGL reinit + InstancedMesh rebuild + texture reload must happen from scratch. -->
+    <!-- 3D scene mounts eagerly and stays alive across ALL mode switches.
+         Hidden via CSS when inactive — geometry, textures, and shaders stay warm
+         so switching to museum mode is instant (no rebuild). -->
     <div class="mode-content" class:hidden-mode={mode !== "museum" && mode !== "showroom" && mode !== "3p-test"}>
-      {#if mode === "museum" || museumSceneMounted}
+      {#key selectedRoom}
         {#await import("./components/game/DimensionFlipProof.svelte") then { default: DimensionFlipProof }}
-          <DimensionFlipProof grid={liveGrid} onLoadProgress={handleLoadProgress} onAllLoaded={handleAllLoaded} startInFps={selectedRoom !== null} />
+          <DimensionFlipProof grid={liveGrid} onLoadProgress={handleLoadProgress} onAllLoaded={handleAllLoaded} onBuildStage={handleBuildStage} startInFps={selectedRoom !== null} />
         {/await}
-      {/if}
+      {/key}
     </div>
 
     <!-- Non-3D modes render separately and unmount normally (they're lightweight) -->

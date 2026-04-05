@@ -17,8 +17,10 @@
     grid: MuseumGrid;
     /** Called with 0-1 progress as assets load */
     onLoadProgress?: (progress: number) => void;
-    /** Called when all assets are loaded and first frame has rendered */
+    /** Called when all assets AND geometry are ready — scene is fully interactive */
     onAllLoaded?: () => void;
+    /** Called during async geometry build with the current phase name */
+    onBuildStage?: (stage: string) => void;
     /** Start directly in FPS/3rd-person mode (skip top-down flip) */
     startInFps?: boolean;
   }
@@ -36,24 +38,39 @@
     props.onLoadProgress?.($progress);
   });
 
-  // Signal when all assets loaded + no longer actively loading.
-  // useProgress can briefly show active=false between batches (textures finish,
-  // then GLTF models start). Debounce 500ms to ensure loading is truly done.
+  // The scene is truly ready when BOTH conditions are met:
+  // 1. Geometry build completed (InstancedMeshes populated)
+  // 2. Textures/models finished loading (Three.js DefaultLoadingManager)
+  // Either can finish first depending on cache state.
   let sceneReady = false;
+  let texturesReady = false;
+  let meshesReady = false;
   let settleTimer: ReturnType<typeof setTimeout> | null = null;
+
+  function checkFullyReady(): void {
+    if (sceneReady) return;
+    if (!texturesReady || !meshesReady) return;
+    sceneReady = true;
+    requestAnimationFrame(() => {
+      props.onAllLoaded?.();
+    });
+  }
+
+  function handleGeometryReady(): void {
+    meshesReady = true;
+    checkFullyReady();
+  }
+
   $effect(() => {
-    if ($finishedOnce && !$active && !sceneReady) {
+    if ($finishedOnce && !$active && !texturesReady) {
       if (settleTimer) clearTimeout(settleTimer);
       settleTimer = setTimeout(() => {
-        if (!sceneReady) {
-          sceneReady = true;
-          requestAnimationFrame(() => {
-            props.onAllLoaded?.();
-          });
+        if (!texturesReady) {
+          texturesReady = true;
+          checkFullyReady();
         }
       }, 500);
     } else if ($active && settleTimer) {
-      // New batch started — cancel the settle timer
       clearTimeout(settleTimer);
       settleTimer = null;
     }
@@ -64,10 +81,15 @@
 
   // ── HMR state restore ──
   // sessionStorage survives Vite HMR remounts but clears on tab close — perfect for this.
+  type ViewMode = "top-down" | "first-person" | "third-person";
+
   interface HmrState {
     playerWorldX: number;
     playerWorldZ: number;
-    isInFPS: boolean;
+    /** Legacy field — kept for backward compatibility with old sessionStorage */
+    isInFPS?: boolean;
+    /** New field — stores the exact view mode */
+    viewMode?: ViewMode;
     topDownHeight: number;
     playerYaw: number;
     isEditorMode?: boolean;
@@ -100,6 +122,8 @@
   // ── Input state ──
   let flipRequested = $state(0);
   let resetRequested = $state(0);
+  // Counter for instant mode switches (first-person → third-person)
+  let modeChangeRequested = $state(0);
   // Plain object (not $state) for key tracking — Museum3DScene reads this every frame
   // in its useTask loop, bypassing Svelte reactivity. A raw Set avoids proxy overhead.
   const heldKeys = new Set<string>();
@@ -107,13 +131,25 @@
   // ── Zoom state (top-down camera height) ──
   let topDownHeight = $state(savedHmrState?.topDownHeight ?? 12);
 
+  // ── View mode: unified Q-cycle state machine ──
+  // Q cycles: top-down → first-person → third-person → top-down
+  function restoreViewMode(): ViewMode {
+    if (!savedHmrState) return "top-down";
+    // New format takes precedence over legacy
+    if (savedHmrState.viewMode) return savedHmrState.viewMode;
+    // Legacy backward compat
+    return savedHmrState.isInFPS ? "first-person" : "top-down";
+  }
+  let viewMode = $state<ViewMode>(restoreViewMode());
+  // Derived for backward compat — template uses isInFPS extensively
+  let isInFPS = $derived(viewMode !== "top-down");
+
   // ── Player state (updated every frame by Museum3DScene callback) ──
   let playerWorldX = $state(savedHmrState?.playerWorldX ?? props.grid.spawn.x * TILE_SIZE);
   let playerWorldZ = $state(savedHmrState?.playerWorldZ ?? props.grid.spawn.y * TILE_SIZE);
   let playerTileX = $state(props.grid.spawn.x);
   let playerTileY = $state(props.grid.spawn.y);
   let playerFacing = $state("south");
-  let isInFPS = $state(savedHmrState?.isInFPS ?? false);
 
   // Restore editor mode from HMR state
   if (savedHmrState?.isEditorMode) {
@@ -136,7 +172,7 @@
         const state: HmrState = {
           playerWorldX,
           playerWorldZ,
-          isInFPS,
+          viewMode,
           topDownHeight,
           playerYaw: lastKnownYaw,
           isEditorMode: museum3dEditorState.editorActive,
@@ -160,7 +196,7 @@
       const state: HmrState = {
         playerWorldX,
         playerWorldZ,
-        isInFPS,
+        viewMode,
         topDownHeight,
         playerYaw: lastKnownYaw,
         isEditorMode: museum3dEditorState.editorActive,
@@ -243,17 +279,21 @@
     // Skip normal controls when editor is active (editor handles its own keys)
     if (museum3dEditorState.editorActive) return;
 
-    // Q: dimension flip
+    // Q: cycle view mode (top-down → first-person → third-person → top-down)
     if (e.key === "q" || e.key === "Q") {
       e.preventDefault();
-      // When flipping INTO 3D, pre-request pointer lock during the keypress
-      // (a valid user gesture). By the time UCC mounts after the animation,
-      // pointer lock is already active so mouse-look works immediately.
-      if (!isInFPS) {
+      if (viewMode === "top-down") {
+        // top-down → first-person: play flip animation into 3D
         const canvas = document.querySelector<HTMLCanvasElement>("canvas");
         canvas?.requestPointerLock();
+        flipRequested++;
+      } else if (viewMode === "first-person") {
+        // first-person → third-person: instant switch, no animation
+        modeChangeRequested++;
+      } else {
+        // third-person → top-down: play flip-back animation
+        flipRequested++;
       }
-      flipRequested++;
       return;
     }
 
@@ -349,13 +389,25 @@
     lastKnownYaw = yaw;
 
     // Detect mode change — flush immediately so HMR captures the transition
-    const modeChanged = isInFPS !== inFPS;
-    isInFPS = inFPS;
-
-    if (modeChanged) {
+    const wasInFPS = viewMode !== "top-down";
+    if (inFPS && !wasInFPS) {
+      // Entered 3D — default to first-person (the flip animation always enters FP)
+      viewMode = "first-person";
+      flushHmrSave();
+    } else if (!inFPS && wasInFPS) {
+      // Exited to top-down
+      viewMode = "top-down";
       flushHmrSave();
     } else {
       scheduleHmrSave();
+    }
+  }
+
+  // Called by Museum3DScene when UCC switches between first-person and third-person
+  function handleViewModeChange(mode: "first-person" | "third-person") {
+    if (viewMode !== mode) {
+      viewMode = mode;
+      flushHmrSave();
     }
   }
 
@@ -385,10 +437,14 @@
         grid={props.grid}
         {flipRequested}
         {resetRequested}
+        {modeChangeRequested}
         {heldKeys}
         {topDownHeight}
         onPlayerUpdate={handlePlayerUpdate}
-        initialFpsActive={savedHmrState?.isInFPS ?? startInFps}
+        onViewModeChange={handleViewModeChange}
+        onBuildStage={props.onBuildStage}
+        onGeometryReady={handleGeometryReady}
+        initialFpsActive={viewMode !== "top-down"}
         initialPlayerPos={savedHmrState ? { x: savedHmrState.playerWorldX, z: savedHmrState.playerWorldZ } : undefined}
         initialPlayerYaw={savedHmrState?.playerYaw}
       />
@@ -421,7 +477,7 @@
   <!-- Controls hint (bottom-right) -->
   {#if !showPanel}
     <div class="controls-hint">
-      <span class="hint-text">WASD move {isInFPS ? "• Mouse look" : "• Scroll zoom"} • Q flip • E examine</span>
+      <span class="hint-text">WASD move {isInFPS ? "• Mouse look" : "• Scroll zoom"} • Q cycle view • E examine</span>
     </div>
   {/if}
 
