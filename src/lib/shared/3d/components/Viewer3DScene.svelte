@@ -240,6 +240,8 @@
   />
 </T.Group>
 
+{@const propGridOffset = GRID_OFFSETS[avatarState.planeMode]}
+
 <!-- Blue prop (renders red in mirror mode so your red = their visual red) -->
 {#if bluePropState}
   <Prop3D
@@ -248,7 +250,7 @@
     color={isMirror ? "red" : "blue"}
     {avatarPosition}
     {facingAngle}
-    gridOffset={0.3}
+    gridOffset={propGridOffset}
     isActivePlayer={false}
   />
 {/if}
@@ -261,7 +263,7 @@
     color={isMirror ? "blue" : "red"}
     {avatarPosition}
     {facingAngle}
-    gridOffset={0.3}
+    gridOffset={propGridOffset}
     isActivePlayer={false}
   />
 {/if}
@@ -274,6 +276,6 @@
   staffHalfLength={userProportionsState.staffLength / 2}
   {avatarPosition}
   {facingAngle}
-  gridOffset={0.3}
+  gridOffset={propGridOffset}
   {globalTipEffectMap}
 />

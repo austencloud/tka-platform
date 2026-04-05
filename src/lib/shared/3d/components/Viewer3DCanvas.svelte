@@ -74,6 +74,15 @@
             mode={avatarState.planeMode}
             onModeChange={(mode) => avatarState.setPlaneMode(mode)}
           />
+          {#if avatarState.planeMode === 'dual-wheel'}
+            <button
+              class="rotation-variant-btn"
+              onclick={() => avatarState.cycleRotationVariant()}
+              title="Cycle rotation axis variant"
+            >
+              {avatarState.rotationVariantLabel}
+            </button>
+          {/if}
         {/if}
       </div>
       <Viewer3DViewPresets />
@@ -100,6 +109,22 @@
     display: flex;
     gap: 8px;
     align-items: flex-start;
+  }
+
+  .rotation-variant-btn {
+    padding: 7px 12px;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    color: #f59e0b;
+    font-size: var(--font-size-compact, 12px);
+    cursor: pointer;
+    backdrop-filter: blur(8px);
+    transition: all 0.2s ease;
+    white-space: nowrap;
+  }
+  .rotation-variant-btn:hover {
+    background: rgba(245, 158, 11, 0.15);
   }
 
   .viewer-3d-loading {

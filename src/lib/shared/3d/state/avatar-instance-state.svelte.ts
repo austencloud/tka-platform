@@ -9,7 +9,7 @@ import type { MotionConfig3D } from "../domain/models/MotionData3D";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { Plane } from "../domain/enums/Plane";
 import { PlaneMode } from "../domain/enums/PlaneMode";
-import { PLANE_MODE_CONFIGS } from "../domain/constants/plane-mode-configs";
+import { PLANE_MODE_CONFIGS, type PlaneModeConfig } from "../domain/constants/plane-mode-configs";
 import { createPlaybackState } from "./playback-state.svelte";
 import type { IPropStateInterpolator } from "../services/contracts/IPropStateInterpolator";
 import type {
@@ -143,6 +143,14 @@ export function createAvatarInstanceState(
   let currentStepIndex = $state(0);
   let planeMode = $state<PlaneMode>(PlaneMode.WALL);
 
+  /**
+   * Debug: cycle through rotation plane variants for dual wheel mode.
+   * 0 = WALL, 1 = WHEEL, 2 = FLOOR. Helps find the correct spin axis.
+   */
+  const ROTATION_VARIANTS: Plane[] = [Plane.WALL, Plane.WHEEL, Plane.FLOOR];
+  const ROTATION_LABELS: string[] = ["Wall rot", "Wheel rot", "Floor rot"];
+  let rotationVariantIndex = $state(1); // Default to WHEEL
+
   // Per-avatar playback with unique persistence key
   const playback = createPlaybackState({
     onCycleComplete: () => handleCycleComplete(),
@@ -221,7 +229,7 @@ export function createAvatarInstanceState(
    */
   function loadSequence(sequence: SequenceData) {
     loadedSequence = sequence;
-    const modeConfig = PLANE_MODE_CONFIGS[planeMode];
+    const modeConfig = getEffectiveModeConfig(planeMode);
 
     // Get motion configs (beats 1+) and prepend start position (beat 0)
     // so the full sequence including initial orientation is available.
@@ -277,32 +285,56 @@ export function createAvatarInstanceState(
    * plane assignments and lateral offsets, and rotates the avatar
    * to match the mode's facing angle.
    */
+  /** Build an effective mode config with the current rotation variant override */
+  function getEffectiveModeConfig(mode: PlaneMode): PlaneModeConfig {
+    const base = PLANE_MODE_CONFIGS[mode];
+    if (mode === PlaneMode.DUAL_WHEEL) {
+      return { ...base, rotationPlane: ROTATION_VARIANTS[rotationVariantIndex] ?? Plane.WHEEL };
+    }
+    return base;
+  }
+
   function setPlaneMode(mode: PlaneMode) {
     planeMode = mode;
-    const modeConfig = PLANE_MODE_CONFIGS[mode];
+    const modeConfig = getEffectiveModeConfig(mode);
 
     // Snap avatar rotation to match mode orientation immediately
     facingAngle = modeConfig.facingAngle;
     targetFacingAngle = modeConfig.facingAngle;
 
     // Re-convert loaded sequence with new plane assignments
-    if (loadedSequence) {
-      const motionConfigs = sequenceConverter.sequenceToMotionConfigs(
-        loadedSequence,
-        Plane.WALL,
-        modeConfig
-      );
-      const startConfig = sequenceConverter.getStartPositionConfigs(
-        loadedSequence,
-        Plane.WALL,
-        modeConfig
-      );
-      stepConfigs = startConfig
-        ? [startConfig, ...motionConfigs]
-        : motionConfigs;
+    reconvertWithConfig(modeConfig);
+  }
 
-      updateVisibilityFromStep(stepConfigs[currentStepIndex] ?? stepConfigs[0]);
-    }
+  /**
+   * Debug: cycle through rotation plane variants and re-convert.
+   * Returns the label of the new variant so the UI can show it.
+   */
+  function cycleRotationVariant(): string {
+    rotationVariantIndex = (rotationVariantIndex + 1) % ROTATION_VARIANTS.length;
+    const modeConfig = getEffectiveModeConfig(planeMode);
+    reconvertWithConfig(modeConfig);
+    return ROTATION_LABELS[rotationVariantIndex] ?? "Unknown";
+  }
+
+  /** Re-convert the loaded sequence with the given mode config */
+  function reconvertWithConfig(modeConfig: PlaneModeConfig) {
+    if (!loadedSequence) return;
+    const motionConfigs = sequenceConverter.sequenceToMotionConfigs(
+      loadedSequence,
+      Plane.WALL,
+      modeConfig
+    );
+    const startConfig = sequenceConverter.getStartPositionConfigs(
+      loadedSequence,
+      Plane.WALL,
+      modeConfig
+    );
+    stepConfigs = startConfig
+      ? [startConfig, ...motionConfigs]
+      : motionConfigs;
+
+    updateVisibilityFromStep(stepConfigs[currentStepIndex] ?? stepConfigs[0]);
   }
 
   /**
@@ -478,6 +510,10 @@ export function createAvatarInstanceState(
       return planeMode;
     },
     setPlaneMode,
+    cycleRotationVariant,
+    get rotationVariantLabel() {
+      return ROTATION_LABELS[rotationVariantIndex];
+    },
     get currentStepIndex() {
       return currentStepIndex;
     },
