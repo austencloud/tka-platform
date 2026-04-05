@@ -28,11 +28,15 @@ export interface PlaneModeConfig {
   redPlane: Plane;
   /**
    * Which plane to use for prop ROTATION quaternion calculation.
-   * In dual wheel mode this is WALL because the facing angle already
-   * rotates the avatar 90 degrees — using WHEEL for rotation too would
-   * double-rotate the props onto the wrong axis.
    */
   rotationPlane: Plane;
+  /**
+   * When true, the prop rotation is computed in world space and the
+   * facing angle is NOT applied to the rotation quaternion. Used in
+   * dual wheel mode where the hand path traces a circle in world XY
+   * after coordinate transforms.
+   */
+  worldSpaceRotation?: boolean;
   /** X-axis offset for blue hand's plane center (in avatar-local space) */
   blueLateralOffset: number;
   /** X-axis offset for red hand's plane center (in avatar-local space) */
@@ -52,10 +56,12 @@ export const PLANE_MODE_CONFIGS: Record<PlaneMode, PlaneModeConfig> = {
     facingAngle: Math.PI / 2,
     bluePlane: Plane.WHEEL,
     redPlane: Plane.WHEEL,
-    // Props spin on the wheel plane (cartwheels). The planeQuat (π/2 Y)
-    // + facingQuat (π/2 Y) compound to π Y, which preserves the correct
-    // wheel-plane spin axis from the audience's perspective.
-    rotationPlane: Plane.WHEEL,
+    // After coordinate transforms (WHEEL positions + facing rotation),
+    // hand paths trace circles in world XY. Use WALL rotation (spin
+    // around Z) with worldSpaceRotation=true to skip the facing rotation
+    // that would otherwise rotate the spin axis to the wrong plane.
+    rotationPlane: Plane.WALL,
+    worldSpaceRotation: true,
     blueLateralOffset: LATERAL_OFFSET,
     redLateralOffset: -LATERAL_OFFSET,
   },

@@ -289,7 +289,15 @@ export function createAvatarInstanceState(
   function getEffectiveModeConfig(mode: PlaneMode): PlaneModeConfig {
     const base = PLANE_MODE_CONFIGS[mode];
     if (mode === PlaneMode.DUAL_WHEEL) {
-      return { ...base, rotationPlane: ROTATION_VARIANTS[rotationVariantIndex] ?? Plane.WHEEL };
+      const rotPlane = ROTATION_VARIANTS[rotationVariantIndex] ?? Plane.WALL;
+      // WALL rotation + worldSpaceRotation=true skips the facing rotation,
+      // keeping the spin in world XY where the hand path actually traces.
+      // Other variants apply the facing rotation for comparison.
+      return {
+        ...base,
+        rotationPlane: rotPlane,
+        worldSpaceRotation: rotPlane === Plane.WALL,
+      };
     }
     return base;
   }

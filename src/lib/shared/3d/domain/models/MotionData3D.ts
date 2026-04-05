@@ -41,11 +41,17 @@ export interface MotionConfig3D {
   lateralOffset?: number;
   /**
    * Which plane to use for prop ROTATION quaternion calculation.
-   * Defaults to `plane` when not specified. In dual-wheel mode this is
-   * set to WALL because the facing angle already rotates the avatar —
-   * using WHEEL for rotation would double-rotate onto the wrong axis.
+   * Defaults to `plane` when not specified.
    */
   rotationPlane?: Plane;
+  /**
+   * When true, the prop's worldRotation is already in world space and
+   * should NOT be further rotated by the avatar's facingAngle. Used in
+   * dual-wheel mode where the hand path traces a circle in world XY
+   * (after coordinate transforms), so the rotation must match world XY
+   * rather than being rotated by the facing angle.
+   */
+  worldSpaceRotation?: boolean;
 }
 
 /**
