@@ -45,13 +45,12 @@ export interface MotionConfig3D {
    */
   rotationPlane?: Plane;
   /**
-   * When true, the prop's worldRotation is already in world space and
-   * should NOT be further rotated by the avatar's facingAngle. Used in
-   * dual-wheel mode where the hand path traces a circle in world XY
-   * (after coordinate transforms), so the rotation must match world XY
-   * rather than being rotated by the facing angle.
+   * When true, position and rotation are already in world space — the
+   * facing angle transform is skipped for both. Used in dual-wheel mode
+   * where WHEEL positions (YZ plane) should stay in YZ world space,
+   * not get rotated by the facing angle back into XY (wall).
    */
-  worldSpaceRotation?: boolean;
+  skipFacingTransform?: boolean;
 }
 
 /**

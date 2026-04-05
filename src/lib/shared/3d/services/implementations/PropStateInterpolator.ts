@@ -169,23 +169,16 @@ export class PropStateInterpolator implements IPropStateInterpolator {
       };
     }
 
-    // Pass through world-space rotation flag
-    if (config.worldSpaceRotation) {
-      result.worldSpaceRotation = true;
+    // Pass through skip-facing flag
+    if (config.skipFacingTransform) {
+      result.skipFacingTransform = true;
     }
 
-    // Apply lateral offset (used in dual-wheel mode to separate each
-    // hand's wheel plane to opposite sides of the body).
-    // For WHEEL planes: offset Z (body-local depth). After the 90° facing
-    // rotation, Z_local maps to X_world, giving left-right separation
-    // from the audience's perspective.
-    // For WALL planes: offset X (body-local lateral).
+    // Apply lateral offset to X. In dual wheel mode (skipFacingTransform),
+    // X stays as X in world space, separating the two wheel planes
+    // left-right. In wall mode, the facing rotation transforms X as needed.
     if (config.lateralOffset) {
-      if (config.plane === Plane.WHEEL) {
-        result.worldPosition.z += config.lateralOffset;
-      } else {
-        result.worldPosition.x += config.lateralOffset;
-      }
+      result.worldPosition.x += config.lateralOffset;
     }
 
     return result;

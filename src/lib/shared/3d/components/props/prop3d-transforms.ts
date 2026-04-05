@@ -21,6 +21,16 @@ export function computePropPosition(
   const localX = propState.worldPosition.x;
   const localZ = propState.worldPosition.z + gridOffset;
 
+  // In dual wheel mode, positions are already in world space (WHEEL = YZ).
+  // Skip the facing rotation so they stay as actual wheel planes.
+  if (propState.skipFacingTransform) {
+    return [
+      localX + avatarPosition.x,
+      propState.worldPosition.y + avatarPosition.y,
+      localZ + avatarPosition.z,
+    ];
+  }
+
   const cos = Math.cos(facingAngle);
   const sin = Math.sin(facingAngle);
   const rotatedX = localX * cos + localZ * sin;
@@ -46,11 +56,9 @@ export function computePropRotation(
     new Euler(0, 0, Math.PI / 2)
   );
 
-  // When worldSpaceRotation is set, the rotation quaternion is already in
-  // world space (e.g. dual wheel mode where the hand path traces a circle
-  // in world XY after coordinate transforms). Skip the facing rotation
-  // so the prop spins in the correct world-space plane.
-  if (propState.worldSpaceRotation) {
+  // In dual wheel mode, rotation is already in world space. Skip the
+  // facing rotation so the prop spins in the WHEEL plane (YZ) as intended.
+  if (propState.skipFacingTransform) {
     const finalQuat = propState.worldRotation
       .clone()
       .multiply(horizontalQuat);
