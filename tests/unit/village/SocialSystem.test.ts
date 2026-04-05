@@ -74,9 +74,10 @@ describe("SocialSystem", () => {
 		const config = createDefaultConfig();
 		const system = new SocialSystem(config);
 
+		// Place far enough apart that they need to walk toward each other
 		entity1.transform.x = 0;
 		entity1.transform.z = 0;
-		entity2.transform.x = 1;
+		entity2.transform.x = 3;
 		entity2.transform.z = 0;
 		entity1.social.state = "seeking";
 		entity2.social.state = "seeking";

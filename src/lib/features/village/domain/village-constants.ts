@@ -50,5 +50,7 @@ export const WALK_SPEED_YOUTH = 1.0;
 export const WALK_SPEED_ADULT = 0.8;
 export const WALK_SPEED_ELDER = 0.5;
 
-export const COLLISION_AVOIDANCE_RADIUS = 1.0;
+export const COLLISION_AVOIDANCE_RADIUS = 2.0;
+export const COLLISION_REPULSION_STRENGTH = 1.5;
+export const PERSONAL_SPACE_RADIUS = 1.5; // stop approaching at this distance
 export const ARRIVAL_THRESHOLD = 0.3;
