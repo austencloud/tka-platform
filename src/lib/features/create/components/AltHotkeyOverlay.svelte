@@ -4,6 +4,7 @@
   import { getCreateModuleContext } from "../shared/context/create-module-context";
   import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/PropTypeDisplayRegistry";
   import { shiftStartPosition } from "../shared/services/implementations/sequence-transforms/sequence-transforms";
+  import { setGridRotationDirection } from "$lib/shared/pictograph/grid/state/grid-rotation-state.svelte";
   import type { PropPreset } from "$lib/shared/settings/domain/AppSettings";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 
@@ -82,6 +83,7 @@
   async function executeRotate(direction: "clockwise" | "counterclockwise") {
     const seqState = getSequenceState();
     if (!seqState?.hasSequence()) return;
+    setGridRotationDirection(direction === "clockwise" ? 1 : -1);
     await seqState.rotateSequence(direction);
   }
 
