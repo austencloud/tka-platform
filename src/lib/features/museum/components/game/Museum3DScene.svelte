@@ -1129,6 +1129,14 @@
     visibleExhibitLights = allExhibitLights;
     visibleCeilingLights = allCeilingLights;
 
+    // Mount ALL performers and plaques globally — GLTF loading + shader
+    // compilation absorbed behind the loading overlay. No per-room mounting
+    // during gameplay = zero stutter when walking into performer rooms.
+    visiblePerformers = grid.performers;
+    visiblePlaques = getAllPlaquePlacements();
+    visibleFurniture = grid.furniture ?? [];
+    useSpotLights = visiblePlaques.length > 0 && visiblePlaques.length < 20;
+
     recomputeVisibility(grid.spawn.x, grid.spawn.y);
     geometryReady = true;
     props.onGeometryReady?.();
@@ -1167,65 +1175,10 @@
     return all;
   }
 
-  function recomputeVisibility(playerTX: number, playerTY: number): void {
-    // Editor/top-down bypass: show everything (plaques, performers, furniture)
-    // Torches and lights are always fully mounted — no need to set them here
-    if (museum3dEditorState.editorActive || !fpsActive) {
-      visiblePlaques = getAllPlaquePlacements();
-      visiblePerformers = grid.performers;
-      visibleFurniture = grid.furniture ?? [];
-      pendingMounts = [];
-      return;
-    }
-
-    lastCheckTX = playerTX;
-    lastCheckTY = playerTY;
-
-    // Hysteresis: query at mount radius, keep old items within unmount radius
-    function computeTarget<T extends { tileX: number; tileY: number }>(
-      proxGrid: ProximityGrid<T>,
-      current: T[],
-      keyFn: (item: T) => string | number,
-    ): T[] {
-      const fromQuery = proxGrid.queryRadius(playerTX, playerTY, MOUNT_RADIUS);
-      const queryKeys = new Set(fromQuery.map(keyFn));
-      const surviving = current.filter(item => {
-        if (queryKeys.has(keyFn(item))) return false;
-        const dx = item.tileX - playerTX;
-        const dy = item.tileY - playerTY;
-        return dx * dx + dy * dy <= UNMOUNT_RADIUS * UNMOUNT_RADIUS;
-      });
-      return [...fromQuery, ...surviving];
-    }
-
-    // Helper: compute target, apply removals immediately, queue additions
-    function applyWithBatching<T>(
-      category: MountCategory,
-      proxGrid: ProximityGrid<T & { tileX: number; tileY: number }>,
-      current: T[],
-      keyFn: (item: T) => string | number,
-    ): T[] {
-      const target = computeTarget(proxGrid as any, current as any, keyFn as any) as T[];
-      const currentKeys = new Set(current.map(keyFn));
-      const targetKeys = new Set(target.map(keyFn));
-      // Removals: apply immediately
-      const kept = current.filter(item => targetKeys.has(keyFn(item)));
-      // Additions: queue for batched mount
-      for (const item of target) {
-        if (!currentKeys.has(keyFn(item))) {
-          pendingMounts.push({ category, item });
-        }
-      }
-      return kept;
-    }
-
-    // Only proximity-filter components that are cheap to mount/unmount.
-    // Torches, exhibit lights, and ceiling lights are NOT filtered because
-    // mounting/unmounting them triggers GPU shader recompilation (400-1000ms stutter).
-    // They mount once at init behind the loading overlay.
-    visiblePlaques = applyWithBatching("plaque", plaqueGrid, visiblePlaques, p => p.refId);
-    visiblePerformers = applyWithBatching("performer", performerGrid, visiblePerformers, p => p.id);
-    visibleFurniture = applyWithBatching("furniture", furnitureGrid, visibleFurniture, f => f.id);
+  function recomputeVisibility(_playerTX: number, _playerTY: number): void {
+    // All components (performers, plaques, furniture, torches, lights) are
+    // mounted globally at init. No proximity-based mount/unmount needed.
+    // This eliminates Svelte component mounting during gameplay entirely.
   }
 
   // Torch light set — derived from visible torches, capped at MAX_POINT_LIGHTS
