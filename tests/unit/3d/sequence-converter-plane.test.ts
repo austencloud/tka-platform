@@ -1,0 +1,72 @@
+import { describe, it, expect } from "vitest";
+import { SequenceConverter } from "$lib/shared/3d/services/implementations/SequenceConverter";
+import { Plane } from "$lib/shared/3d/domain/enums/Plane";
+import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
+
+const converter = new SequenceConverter();
+
+describe("SequenceConverter plane passthrough", () => {
+  it("reads motion.plane when no modeConfig is active", () => {
+    const motion = createMotionData({ plane: Plane.WHEEL });
+    const config = converter.motionDataToConfig3D(motion);
+    expect(config.plane).toBe(Plane.WHEEL);
+  });
+
+  it("defaults to WALL when motion has no plane field", () => {
+    const motion = createMotionData({});
+    const config = converter.motionDataToConfig3D(motion);
+    expect(config.plane).toBe(Plane.WALL);
+  });
+
+  it("modeConfig overrides motion.plane", () => {
+    const motion = createMotionData({ plane: Plane.FLOOR });
+    const modeConfig = {
+      facingAngle: 0,
+      bluePlane: Plane.WHEEL,
+      redPlane: Plane.WHEEL,
+      rotationPlane: Plane.WALL,
+      blueLateralOffset: 0,
+      redLateralOffset: 0,
+    };
+
+    const beat = {
+      stepNumber: 1,
+      motions: {
+        [MotionColor.BLUE]: motion,
+        [MotionColor.RED]: createMotionData({ plane: Plane.FLOOR }),
+      },
+      duration: 1,
+      blueReversal: false,
+      redReversal: false,
+      isBlank: false,
+      id: "test",
+    } as unknown as StepData;
+
+    const result = converter.beatDataToConfigs(beat, Plane.WALL, modeConfig);
+    expect(result.blue?.plane).toBe(Plane.WHEEL);
+  });
+
+  it("uses motion.plane per-hand when modeConfig is absent", () => {
+    const blueMotion = createMotionData({ plane: Plane.FLOOR, color: MotionColor.BLUE });
+    const redMotion = createMotionData({ plane: Plane.WHEEL, color: MotionColor.RED });
+
+    const beat = {
+      stepNumber: 1,
+      motions: {
+        [MotionColor.BLUE]: blueMotion,
+        [MotionColor.RED]: redMotion,
+      },
+      duration: 1,
+      blueReversal: false,
+      redReversal: false,
+      isBlank: false,
+      id: "test",
+    } as unknown as StepData;
+
+    const result = converter.beatDataToConfigs(beat);
+    expect(result.blue?.plane).toBe(Plane.FLOOR);
+    expect(result.red?.plane).toBe(Plane.WHEEL);
+  });
+});

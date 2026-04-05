@@ -30,12 +30,17 @@ export class SequenceConverter implements ISequenceConverter {
    */
   motionDataToConfig3D(
     motion: MotionData,
-    plane: Plane = Plane.WALL
+    fallbackPlane: Plane = Plane.WALL
   ): MotionConfig3D {
     // Handle turns - "fl" (float) becomes 0
     const turns = motion.turns === "fl" ? 0 : (motion.turns as number);
 
-    const config = {
+    // motion.plane is the per-beat authored plane (set in 3D mode).
+    // Fall back to the caller-supplied plane (modeConfig override or WALL default)
+    // only when the motion has no plane of its own.
+    const plane = motion.plane ?? fallbackPlane;
+
+    return {
       plane,
       startLocation: motion.startLocation,
       endLocation: motion.endLocation,
@@ -45,8 +50,6 @@ export class SequenceConverter implements ISequenceConverter {
       startOrientation: motion.startOrientation,
       endOrientation: motion.endOrientation,
     };
-
-    return config;
   }
 
   /**
@@ -75,15 +78,31 @@ export class SequenceConverter implements ISequenceConverter {
     const rotPlane = modeConfig?.rotationPlane;
     const skipFacing = modeConfig?.skipFacingTransform;
 
+    // When a modeConfig is active it is a whole-sequence rendering override
+    // (e.g. dual-wheel preset) and must win over any per-beat motion.plane value.
+    // Without a modeConfig, motion.plane authored on each beat takes precedence
+    // (handled inside motionDataToConfig3D via the fallback chain).
     return {
       stepNumber,
       blue:
         blueMotion && blueMotion.isVisible !== false
-          ? { ...this.motionDataToConfig3D(blueMotion, bluePlane), lateralOffset: blueOffset || undefined, rotationPlane: rotPlane, skipFacingTransform: skipFacing }
+          ? {
+              ...this.motionDataToConfig3D(blueMotion, bluePlane),
+              ...(modeConfig ? { plane: bluePlane } : {}),
+              lateralOffset: blueOffset || undefined,
+              rotationPlane: rotPlane,
+              skipFacingTransform: skipFacing,
+            }
           : null,
       red:
         redMotion && redMotion.isVisible !== false
-          ? { ...this.motionDataToConfig3D(redMotion, redPlane), lateralOffset: redOffset || undefined, rotationPlane: rotPlane, skipFacingTransform: skipFacing }
+          ? {
+              ...this.motionDataToConfig3D(redMotion, redPlane),
+              ...(modeConfig ? { plane: redPlane } : {}),
+              lateralOffset: redOffset || undefined,
+              rotationPlane: rotPlane,
+              skipFacingTransform: skipFacing,
+            }
           : null,
     };
   }
