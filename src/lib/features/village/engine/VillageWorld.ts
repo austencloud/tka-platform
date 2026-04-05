@@ -1,0 +1,84 @@
+import { World } from "miniplex";
+import type {
+	VillageEntity,
+	AvatarVisualTraits,
+	LearnedSequence,
+} from "../domain/village-types";
+import type { IPersonalityGenerator } from "../services/contracts/IPersonalityGenerator";
+
+export function createVillageWorld(): World<VillageEntity> {
+	return new World<VillageEntity>();
+}
+
+export interface CreateAvatarOptions {
+	name: string;
+	generation: number;
+	currentTick: number;
+	lifespanTicks: number;
+	arenaRadius: number;
+	personalityGenerator: IPersonalityGenerator;
+	traitMean: number;
+	traitStdDev: number;
+	seedSequences?: Map<string, LearnedSequence>;
+}
+
+export function createAvatarEntity(
+	world: World<VillageEntity>,
+	options: CreateAvatarOptions,
+): VillageEntity {
+	const angle = Math.random() * Math.PI * 2;
+	const radius = options.arenaRadius * (0.8 + Math.random() * 0.2);
+
+	const visualTraits: AvatarVisualTraits = {
+		skinTone: Math.random(),
+		hairColor: Math.random(),
+		heightScale: 0.9 + Math.random() * 0.2,
+	};
+
+	const personality = options.personalityGenerator.generate(
+		options.traitMean,
+		options.traitStdDev,
+	);
+
+	const entity: VillageEntity = {
+		id: `avatar-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+		identity: {
+			name: options.name,
+			visualTraits,
+			generation: options.generation,
+		},
+		knowledge: {
+			knownSequences: options.seedSequences ?? new Map(),
+			maxCapacity: 5 + Math.floor(personality.curiosity * 5),
+		},
+		personality,
+		lifecycle: {
+			birthTick: options.currentTick,
+			currentAge: 0,
+			lifespan: options.lifespanTicks * (0.8 + Math.random() * 0.4),
+			phase: "youth",
+			knowledgeGlow: 0,
+		},
+		social: {
+			state: "idle",
+			partner: null,
+			teachingProgress: 0,
+			sequenceBeingTransferred: null,
+			currentBeatIndex: 0,
+			frustrationLevel: 0,
+			idleTimer: 0,
+			interactionCooldown: 0,
+		},
+		transform: {
+			x: Math.cos(angle) * radius,
+			z: Math.sin(angle) * radius,
+			facingAngle: angle + Math.PI,
+			targetX: 0,
+			targetZ: 0,
+			speed: 0,
+		},
+	};
+
+	world.add(entity);
+	return entity;
+}

@@ -1,0 +1,167 @@
+import type { World } from "miniplex";
+import type {
+	VillageEntity,
+	VillageEventMap,
+	VillageEventKey,
+	PopulationStats,
+} from "../domain/village-types";
+import type { VillageConfig } from "./VillageConfig";
+import type { ISequenceMutator } from "../services/contracts/ISequenceMutator";
+import type { VillageEventEmitter } from "./VillageEventEmitter";
+import { createVillageWorld } from "./VillageWorld";
+import { PersonalityGenerator } from "../services/implementations/PersonalityGenerator";
+import { LineageTracker } from "../services/implementations/LineageTracker";
+import { LifecycleSystem } from "./systems/LifecycleSystem";
+import { MovementSystem } from "./systems/MovementSystem";
+import { SocialSystem } from "./systems/SocialSystem";
+import { TeachingSystem } from "./systems/TeachingSystem";
+import { RecombinationSystem } from "./systems/RecombinationSystem";
+import { PopulationSystem } from "./systems/PopulationSystem";
+
+export class VillageOrchestrator implements VillageEventEmitter {
+	private world: World<VillageEntity>;
+	private lifecycleSystem: LifecycleSystem;
+	private movementSystem: MovementSystem;
+	private socialSystem: SocialSystem;
+	private teachingSystem: TeachingSystem;
+	private recombinationSystem: RecombinationSystem;
+	private populationSystem: PopulationSystem;
+	private lineageTracker: LineageTracker;
+	private personalityGenerator: PersonalityGenerator;
+
+	private listeners = new Map<string, Set<Function>>();
+	private intervalId: ReturnType<typeof setInterval> | null = null;
+	private _currentTick = 0;
+	private destroyed = false;
+
+	constructor(
+		private config: VillageConfig,
+		mutator: ISequenceMutator,
+	) {
+		this.world = createVillageWorld();
+		this.personalityGenerator = new PersonalityGenerator();
+		this.lineageTracker = new LineageTracker();
+
+		this.lifecycleSystem = new LifecycleSystem(config);
+		this.movementSystem = new MovementSystem(config);
+		this.socialSystem = new SocialSystem(config);
+		this.teachingSystem = new TeachingSystem(config, this);
+		this.recombinationSystem = new RecombinationSystem(
+			config,
+			mutator,
+			this,
+		);
+		this.populationSystem = new PopulationSystem(
+			config,
+			this.personalityGenerator,
+			this.lineageTracker,
+			this,
+		);
+	}
+
+	initialize(): void {
+		this.populationSystem.tick(this.world, 0);
+	}
+
+	tick(): void {
+		if (this.destroyed) return;
+		this._currentTick++;
+
+		this.lifecycleSystem.tick(this.world, this._currentTick);
+		this.socialSystem.tick(this.world, this._currentTick);
+		this.teachingSystem.tick(this.world, this._currentTick);
+		this.recombinationSystem.tick(this.world, this._currentTick);
+		this.movementSystem.tick(this.world);
+		this.populationSystem.tick(this.world, this._currentTick);
+	}
+
+	run(ticksPerSecond: number): void {
+		this.pause();
+		const interval = Math.round(1000 / ticksPerSecond);
+		this.intervalId = setInterval(() => this.tick(), interval);
+	}
+
+	pause(): void {
+		if (this.intervalId !== null) {
+			clearInterval(this.intervalId);
+			this.intervalId = null;
+		}
+	}
+
+	reset(): void {
+		this.pause();
+		this._currentTick = 0;
+		for (const entity of [...this.world.entities]) {
+			this.world.remove(entity);
+		}
+		this.lineageTracker = new LineageTracker();
+		this.populationSystem = new PopulationSystem(
+			this.config,
+			this.personalityGenerator,
+			this.lineageTracker,
+			this,
+		);
+		this.initialize();
+	}
+
+	destroy(): void {
+		this.pause();
+		this.destroyed = true;
+		this.listeners.clear();
+		for (const entity of [...this.world.entities]) {
+			this.world.remove(entity);
+		}
+	}
+
+	// Event emitter
+	emit<K extends VillageEventKey>(
+		event: K,
+		...args: Parameters<VillageEventMap[K]>
+	): void {
+		const handlers = this.listeners.get(event);
+		if (handlers) {
+			for (const handler of handlers) {
+				(handler as Function)(...args);
+			}
+		}
+	}
+
+	on<K extends VillageEventKey>(
+		event: K,
+		handler: VillageEventMap[K],
+	): void {
+		if (!this.listeners.has(event)) {
+			this.listeners.set(event, new Set());
+		}
+		this.listeners.get(event)!.add(handler as Function);
+	}
+
+	off<K extends VillageEventKey>(
+		event: K,
+		handler: VillageEventMap[K],
+	): void {
+		this.listeners.get(event)?.delete(handler as Function);
+	}
+
+	get currentTick(): number {
+		return this._currentTick;
+	}
+	get currentGeneration(): number {
+		return this.populationSystem.currentGeneration;
+	}
+	get entities(): VillageEntity[] {
+		return this.world.entities;
+	}
+	get populationStats(): PopulationStats {
+		return this.lineageTracker.getStats(
+			this.world.entities,
+			this.currentGeneration,
+		);
+	}
+
+	inspectAvatar(entityId: string): VillageEntity | null {
+		return (
+			this.world.entities.find((e) => e.id === entityId) ?? null
+		);
+	}
+}
