@@ -1,0 +1,199 @@
+e:\tka-platform\[32msrc\lib\features\choreo-card\components\print-preview\PrintPreviewPages.svelte[39m:302:15
+[33mWarn[39m: Elements with the 'gridcell' interactive role must have a tabindex value
+https://svelte.dev/e/a11y_interactive_supports_focus (svelte)
+
+e:\tka-platform\[32msrc\lib\features\choreo-card\components\print-preview\PrintPreviewPages.svelte[39m:322:15
+[33mWarn[39m: Elements with the 'gridcell' interactive role must have a tabindex value
+https://svelte.dev/e/a11y_interactive_supports_focus (svelte)
+
+e:\tka-platform\[32msrc\lib\features\choreo-card\components\DeckBrowser.svelte[39m:475:3
+[33mWarn[39m: Unused CSS selector ".level-collections"
+https://svelte.dev/e/css_unused_selector (svelte)
+
+e:\tka-platform\[32msrc\lib\features\choreo-card\components\DeckBrowser.svelte[39m:476:3
+[33mWarn[39m: Unused CSS selector ".level-deck-list"
+https://svelte.dev/e/css_unused_selector (svelte)
+
+e:\tka-platform\[32msrc\lib\features\choreo-card\components\DeckBrowser.svelte[39m:512:3
+[33mWarn[39m: Unused CSS selector ".cards-view-container"
+https://svelte.dev/e/css_unused_selector (svelte)
+
+e:\tka-platform\[32msrc\lib\features\choreo-card\components\DeckBrowser.svelte[39m:539:3
+[33mWarn[39m: Unused CSS selector ".filter-badge"
+https://svelte.dev/e/css_unused_selector (svelte)
+
+e:\tka-platform\[32msrc\lib\features\choreo-card\components\DeckBrowser.svelte[39m:551:3
+[33mWarn[39m: Unused CSS selector ".sort-wrapper"
+https://svelte.dev/e/css_unused_selector (svelte)
+
+e:\tka-platform\[32msrc\lib\features\choreo-card\components\DeckBrowser.svelte[39m:555:3
+[33mWarn[39m: Unused CSS selector ".sort-popover"
+https://svelte.dev/e/css_unused_selector (svelte)
+
+e:\tka-platform\[32msrc\lib\features\choreo-card\components\DeckBrowser.svelte[39m:570:3
+[33mWarn[39m: Unused CSS selector ".sort-option"
+https://svelte.dev/e/css_unused_selector (svelte)
+
+e:\tka-platform\[32msrc\lib\features\choreo-card\components\DeckBrowser.svelte[39m:586:3
+[33mWarn[39m: Unused CSS selector ".sort-option:hover"
+https://svelte.dev/e/css_unused_selector (svelte)
+
+e:\tka-platform\[32msrc\lib\features\choreo-card\components\DeckBrowser.svelte[39m:590:3
+[33mWarn[39m: Unused CSS selector ".sort-option.selected"
+https://svelte.dev/e/css_unused_selector (svelte)
+
+e:\tka-platform\[32msrc\lib\features\choreo-card\components\DeckBrowser.svelte[39m:594:3
+[33mWarn[39m: Unused CSS selector ".sort-option .fa-check"
+https://svelte.dev/e/css_unused_selector (svelte)
+
+e:\tka-platform\[32msrc\lib\features\choreo-card\components\DeckBrowser.svelte[39m:665:3
+[33mWarn[39m: Unused CSS selector ".deck-list"
+https://svelte.dev/e/css_unused_selector (svelte)
+
+e:\tka-platform\[32msrc\lib\features\choreo-card\components\DeckBrowser.svelte[39m:724:3
+[33mWarn[39m: Unused CSS selector ".collections-landing"
+https://svelte.dev/e/css_unused_selector (svelte)
+
+e:\tka-platform\[32msrc\lib\features\choreo-card\components\DeckBrowser.svelte[39m:735:3
+[33mWarn[39m: Unused CSS selector ".landing-header"
+https://svelte.dev/e/css_unused_selector (svelte)
+
+e:\tka-platform\[32msrc\lib\features\choreo-card\components\DeckBrowser.svelte[39m:739:3
+[33mWarn[39m: Unused CSS selector ".landing-title"
+https://svelte.dev/e/css_unused_selector (svelte)
+
+e:\tka-platform\[32msrc\lib\features\choreo-card\components\DeckBrowser.svelte[39m:747:3
+[33mWarn[39m: Unused CSS selector ".landing-subtitle"
+https://svelte.dev/e/css_unused_selector (svelte)
+
+e:\tka-platform\[32msrc\lib\features\choreo-card\components\DeckBrowser.svelte[39m:754:3
+[33mWarn[39m: Unused CSS selector ".collection-stack"
+https://svelte.dev/e/css_unused_selector (svelte)
+
+e:\tka-platform\[32msrc\lib\features\choreo-card\components\DeckBrowser.svelte[39m:761:3
+[33mWarn[39m: Unused CSS selector ".collection-hero"
+https://svelte.dev/e/css_unused_selector (svelte)
+
+e:\tka-platform\[32msrc\lib\features\choreo-card\components\DeckBrowser.svelte[39m:777:3
+[33mWarn[39m: Unused CSS selector ".collection-hero:hover"
+https://svelte.dev/e/css_unused_selector (svelte)
+
+e:\tka-platform\[32msrc\lib\features\choreo-card\components\DeckBrowser.svelte[39m:783:3
+[33mWarn[39m: Unused CSS selector ".collection-hero:hover .hero-arrow"
+https://svelte.dev/e/css_unused_selector (svelte)
+
+e:\tka-platform\[32msrc\lib\features\choreo-card\components\DeckBrowser.svelte[39m:788:3
+[33mWarn[39m: Unused CSS selector ".collection-hero:focus-visible"
+https://svelte.dev/e/css_unused_selector (svelte)
+
+e:\tka-platform\[32msrc\lib\features\choreo-card\components\DeckBrowser.svelte[39m:794:5
+[33mWarn[39m: Unused CSS selector ".collection-hero"
+https://svelte.dev/e/css_unused_selector (svelte)
+
+e:\tka-platform\[32msrc\lib\features\choreo-card\components\DeckBrowser.svelte[39m:795:5
+[33mWarn[39m: Unused CSS selector ".collection-hero:hover"
+https://svelte.dev/e/css_unused_selector (svelte)
+
+e:\tka-platform\[32msrc\lib\features\choreo-card\components\DeckBrowser.svelte[39m:798:3
+[33mWarn[39m: Unused CSS selector ".hero-accent-edge"
+https://svelte.dev/e/css_unused_selector (svelte)
+
+e:\tka-platform\[32msrc\lib\features\choreo-card\components\DeckBrowser.svelte[39m:804:3
+[33mWarn[39m: Unused CSS selector ".hero-content"
+https://svelte.dev/e/css_unused_selector (svelte)
+
+e:\tka-platform\[32msrc\lib\features\choreo-card\components\DeckBrowser.svelte[39m:813:3
+[33mWarn[39m: Unused CSS selector ".hero-icon-wrap"
+https://svelte.dev/e/css_unused_selector (svelte)
+
+e:\tka-platform\[32msrc\lib\features\choreo-card\components\DeckBrowser.svelte[39m:826:3
+[33mWarn[39m: Unused CSS selector ".hero-text"
+https://svelte.dev/e/css_unused_selector (svelte)
+
+e:\tka-platform\[32msrc\lib\features\choreo-card\components\DeckBrowser.svelte[39m:834:3
+[33mWarn[39m: Unused CSS selector ".hero-name"
+https://svelte.dev/e/css_unused_selector (svelte)
+
+e:\tka-platform\[32msrc\lib\features\choreo-card\components\DeckBrowser.svelte[39m:841:3
+[33mWarn[39m: Unused CSS selector ".hero-desc"
+https://svelte.dev/e/css_unused_selector (svelte)
+
+e:\tka-platform\[32msrc\lib\features\choreo-card\components\DeckBrowser.svelte[39m:848:3
+[33mWarn[39m: Unused CSS selector ".hero-stat"
+https://svelte.dev/e/css_unused_selector (svelte)
+
+e:\tka-platform\[32msrc\lib\features\choreo-card\components\DeckBrowser.svelte[39m:854:3
+[33mWarn[39m: Unused CSS selector ".hero-arrow"
+https://svelte.dev/e/css_unused_selector (svelte)
+
+e:\tka-platform\[32msrc\lib\features\choreo-card\components\DeckBrowser.svelte[39m:920:5
+[33mWarn[39m: Unused CSS selector ".hero-content"
+https://svelte.dev/e/css_unused_selector (svelte)
+
+e:\tka-platform\[32msrc\lib\features\choreo-card\components\ChoreoCardTab.svelte[39m:585:12
+[31mError[39m: Object literal may only specify known properties, and 'selectedCollection' does not exist in type 'Props'. (ts)
+
+e:\tka-platform\[32msrc\lib\features\compose\tabs\arrange\components\grid\cell-editor\CellEditorPanel.svelte[39m:61:20
+[31mError[39m: Expected 0 type arguments, but got 1. (ts)
+
+e:\tka-platform\[32msrc\lib\features\compose\tabs\arrange\components\grid\cell-editor\CellEditorPanel.svelte[39m:195:29
+[31mError[39m: Cannot find name 'onSetTipEffectMap'. (ts)
+
+e:\tka-platform\[32msrc\lib\features\compose\tabs\arrange\components\grid\cell-editor\CellEditorPanel.svelte[39m:202:32
+[31mError[39m: Cannot find name 'onSetEffect'. (ts)
+
+e:\tka-platform\[32msrc\lib\features\compose\tabs\arrange\components\grid\cell-editor\CellEditorPanel.svelte[39m:203:33
+[31mError[39m: Cannot find name 'onSetTrailMode'. (ts)
+
+e:\tka-platform\[32msrc\lib\features\compose\tabs\arrange\components\grid\cell-editor\CellEditorPanel.svelte[39m:210:30
+[31mError[39m: Cannot find name 'onSetColors'. (ts)
+
+e:\tka-platform\[32msrc\lib\features\compose\tabs\arrange\components\grid\cell-editor\CellEditorPanel.svelte[39m:218:29
+[31mError[39m: Cannot find name 'onSetTipEffortMap'. (ts)
+
+e:\tka-platform\[32msrc\lib\features\compose\tabs\arrange\components\grid\cell-editor\CellEditorPanel.svelte[39m:224:32
+[31mError[39m: Cannot find name 'onSetEffort'. (ts)
+
+e:\tka-platform\[32msrc\lib\features\compose\tabs\arrange\components\grid\cell-editor\CellEditorPanel.svelte[39m:231:30
+[31mError[39m: Cannot find name 'onSetOffset'. (ts)
+
+e:\tka-platform\[32msrc\lib\features\compose\tabs\arrange\components\grid\cell-editor\CellEditorPanel.svelte[39m:237:34
+[31mError[39m: Cannot find name 'onMediaTypeChange'. (ts)
+
+e:\tka-platform\[32msrc\lib\features\compose\tabs\arrange\components\grid\cell-editor\CellEditorPanel.svelte[39m:244:12
+[31mError[39m: Cannot find name 'onCopyCell'. (ts)
+
+e:\tka-platform\[32msrc\lib\features\compose\tabs\arrange\components\grid\cell-editor\CellEditorPanel.svelte[39m:245:58
+[31mError[39m: Cannot find name 'onCopyCell'. (ts)
+
+e:\tka-platform\[32msrc\lib\features\compose\tabs\arrange\components\grid\cell-editor\CellEditorPanel.svelte[39m:250:57
+[31mError[39m: Cannot find name 'onClearCell'. (ts)
+
+e:\tka-platform\[32msrc\lib\features\festivals\components\discover\TrackerControls.svelte[39m:32:5
+[31mError[39m: Type 'number | ""' is not assignable to type 'string'.
+  Type 'number' is not assignable to type 'string'. (ts)
+
+e:\tka-platform\[32msrc\lib\features\lab\tabs\hand-pose-editor\HandPoseEditor.svelte[39m:354:3
+[33mWarn[39m: Visible, non-interactive elements with a click event must be accompanied by a keyboard event handler. Consider whether an interactive element such as `<button type="button">` or `<a>` might be more appropriate
+https://svelte.dev/e/a11y_click_events_have_key_events (svelte)
+
+e:\tka-platform\[32msrc\lib\features\lab\tabs\hand-pose-editor\HandPoseEditor.svelte[39m:387:3
+[33mWarn[39m: Visible, non-interactive elements with a click event must be accompanied by a keyboard event handler. Consider whether an interactive element such as `<button type="button">` or `<a>` might be more appropriate
+https://svelte.dev/e/a11y_click_events_have_key_events (svelte)
+
+e:\tka-platform\[32msrc\lib\features\museum\components\game\MuseumTorch3D.svelte[39m:153:9
+[31mError[39m: Object is possibly 'undefined'. (ts)
+
+e:\tka-platform\[32msrc\lib\features\museum\components\game\MuseumTorch3D.svelte[39m:154:9
+[31mError[39m: Object is possibly 'undefined'. (ts)
+
+e:\tka-platform\[32msrc\lib\features\museum\components\game\MuseumTorch3D.svelte[39m:155:9
+[31mError[39m: Object is possibly 'undefined'. (ts)
+
+e:\tka-platform\[32msrc\lib\features\museum\MuseumModule.svelte[39m:257:40
+[33mWarn[39m: This reference only captures the initial value of `selectedRoom`. Did you mean to reference it inside a closure instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+
+====================================
+[31msvelte-check found 17 errors and 36 warnings in 8 files
+[39m

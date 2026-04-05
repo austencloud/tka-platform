@@ -99,14 +99,18 @@
   }
 
   // ── Card render cache ──────────────────────────────────────────────────
-  // Memory cache keyed by (sequence identity + render options).
-  // Survives HMR and prop-change re-triggers. Invalidated when render
-  // options change (different cache key) or explicitly via rerenderKey.
+  // Module-level singleton cache keyed by (sequence identity + render options).
+  // Survives component unmount/remount so navigating away from a deck and
+  // returning doesn't re-render all cards. Invalidated when render options
+  // change (different cache key) or explicitly via rerenderKey.
   interface CachedCard {
     rendered: RenderedCard;
     pair: CardPair;
   }
-  const cardCache = new Map<string, CachedCard>();
+
+  // Module-level: persists across component instances
+  const globalCardCache = (globalThis as any).__printCardCache ??= new Map<string, CachedCard>();
+  const cardCache: Map<string, CachedCard> = globalCardCache;
   let lastRerenderKey = 0;
 
   function buildCacheKey(seq: SequenceData, stepCount: number | undefined): string {
@@ -327,9 +331,11 @@
               <!-- svelte-ignore a11y_no_static_element_interactions -->
               <div
                 class="card-cell"
+                class:clickable={!!onCardClick}
                 style:aspect-ratio="{cardAspect}"
                 style:grid-column="{mirroredCol(cardIndex, layout.cols) + 1}"
                 style:grid-row="{rowOf(cardIndex, layout.cols) + 1}"
+                onclick={() => onCardClick?.(sequences[sheetIndex * layout.cardsPerPage + cardIndex]!)}
                 oncontextmenu={(e) => handleCardContextMenu(e, sheetIndex * layout.cardsPerPage + cardIndex)}
               >
                 <img src={card.backUrl} alt="{card.label} back" />

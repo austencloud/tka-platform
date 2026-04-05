@@ -110,7 +110,17 @@
   let blueLedTips = $state<LedTipInput[]>([]);
   let redLedTips = $state<LedTipInput[]>([]);
 
+  let _debugFrameCount = 0;
+
   useTask(() => {
+    // DEBUG: log state every 60 frames (~1 second)
+    if (_debugFrameCount % 60 === 0) {
+      const mapKeys = Object.keys(globalTipEffectMap ?? {});
+      const firstEffect = mapKeys.length > 0 ? (globalTipEffectMap as any)[mapKeys[0]!]?.effect : "empty";
+      console.log(`[Orchestrator] frame=${_debugFrameCount} isPlaying=${isPlaying} map=${firstEffect} blue=${bluePropState ? 'yes' : 'no'} red=${redPropState ? 'yes' : 'no'} blueLeds=${blueLedTips.length} redLeds=${redLedTips.length}`);
+    }
+    _debugFrameCount++;
+
     if (!isPlaying) {
       tipBridge.reset();
       blueLedTips = [];
@@ -246,23 +256,18 @@
   />
 {/each}
 
-<!-- LED effects -->
-{#if blueLedTips.length > 0}
-  <Led3D
-    tips={blueLedTips}
-    propId="blue"
-    enabled={isPlaying}
-    qualityTier={qualityTierDetector.currentTier}
-    {lightManager}
-  />
-{/if}
-
-{#if redLedTips.length > 0}
-  <Led3D
-    tips={redLedTips}
-    propId="red"
-    enabled={isPlaying}
-    qualityTier={qualityTierDetector.currentTier}
-    {lightManager}
-  />
-{/if}
+<!-- LED effects (always mounted — component handles empty tips internally) -->
+<Led3D
+  tips={blueLedTips}
+  propId="blue"
+  enabled={isPlaying}
+  qualityTier={qualityTierDetector.currentTier}
+  {lightManager}
+/>
+<Led3D
+  tips={redLedTips}
+  propId="red"
+  enabled={isPlaying}
+  qualityTier={qualityTierDetector.currentTier}
+  {lightManager}
+/>

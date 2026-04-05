@@ -569,19 +569,6 @@
 
     if (!servicesReady || !animationService || useProceduralFallback) return;
 
-    // DEBUG: measure foot Y to calibrate crouch (remove after tuning)
-    if (isCrouching && cachedRoot && Math.random() < 0.016) {
-      const tmp = new Vector3();
-      const d: Record<string, number> = {};
-      cachedRoot.traverse((obj: any) => {
-        if (obj.isBone && (obj.name.includes("Toe") || obj.name.includes("Foot"))) {
-          obj.getWorldPosition(tmp);
-          d[obj.name] = Math.round(tmp.y * 1000) / 1000;
-        }
-      });
-      console.log("[CrouchFeet]", JSON.stringify(d));
-    }
-
     // 1. Full-body animation (idle/walk/jump/fall/land with arm swing, hip sway)
     // Only runs for locomotion-enabled avatars (player), not exhibit performers
     if (enableLocomotion && locomotionAnimator) {
@@ -695,26 +682,11 @@
       );
     }
 
-    // Apply avatar facing rotation to both position and rotation so the
-    // AvatarAnimator receives everything in consistent world space.
-    const facingQuat = new Quaternion().setFromAxisAngle(
-      new Vector3(0, 1, 0),
-      facingAngle
-    );
-
     const blueWorldProp = bluePropState
-      ? {
-          ...bluePropState,
-          worldPosition: toWorldPosition(bluePropState.worldPosition),
-          worldRotation: facingQuat.clone().multiply(bluePropState.worldRotation),
-        }
+      ? { ...bluePropState, worldPosition: toWorldPosition(bluePropState.worldPosition) }
       : null;
     const redWorldProp = redPropState
-      ? {
-          ...redPropState,
-          worldPosition: toWorldPosition(redPropState.worldPosition),
-          worldRotation: facingQuat.clone().multiply(redPropState.worldRotation),
-        }
+      ? { ...redPropState, worldPosition: toWorldPosition(redPropState.worldPosition) }
       : null;
 
     animationService.setPropsAndBlend(blueWorldProp, redWorldProp);

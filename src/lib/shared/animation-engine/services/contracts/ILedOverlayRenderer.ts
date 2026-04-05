@@ -37,4 +37,9 @@ export interface ILedOverlayRenderer {
 	 * Whether the renderer has been successfully initialized.
 	 */
 	isInitialized(): boolean;
+
+	/**
+	 * Return the underlying canvas element (for clearing when switching render modes).
+	 */
+	getCanvas(): HTMLCanvasElement | null;
 }
