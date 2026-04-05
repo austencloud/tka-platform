@@ -20,6 +20,7 @@
   import Viewer3DCanvasRef from "./Viewer3DCanvasRef.svelte";
   import Viewer3DViewPresets from "./Viewer3DViewPresets.svelte";
   import Viewer3DGridPopover from "./Viewer3DGridPopover.svelte";
+  import Viewer3DContextMenuHost from "./context-menu/Viewer3DContextMenuHost.svelte";
   import { getViewer3DContext } from "../context/viewer-3d-context";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { CameraStateSnapshot } from "../domain/types/CameraStateSnapshot";
@@ -40,9 +41,17 @@
 
   const viewer3DState = getViewer3DContext();
   const avatarState = $derived(viewer3DState.avatarState);
+
+  let contextMenuHost: ReturnType<typeof Viewer3DContextMenuHost> | undefined = $state();
+
+  function handleContextMenu(e: MouseEvent) {
+    e.preventDefault();
+    contextMenuHost?.openContextMenu(e.clientX, e.clientY);
+  }
 </script>
 
-<div class="viewer-3d-canvas">
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<div class="viewer-3d-canvas" oncontextmenu={handleContextMenu}>
   {#if avatarState && sequenceData}
     <Canvas
       createRenderer={(canvas) => new WebGLRenderer({ canvas, preserveDrawingBuffer: true })}
@@ -65,6 +74,7 @@
   {:else}
     <div class="viewer-3d-loading">Loading 3D viewer...</div>
   {/if}
+  <Viewer3DContextMenuHost bind:this={contextMenuHost} />
 </div>
 
 <style>
