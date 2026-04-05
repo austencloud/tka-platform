@@ -30,34 +30,7 @@
 
   const MAX_LAYERS = 4;
 
-  let {
-    cell,
-    cellIndex,
-    clipboardHasData = false,
-    transformingLayer = null,
-    onAddSequence,
-    onRemoveLayer,
-    onEditLayerOffset,
-    onClearCell,
-    onRemoveCell,
-    onMediaTypeChange,
-    onCopyLayer,
-    onCopyCell,
-    onPasteLayer,
-    onTransformLayer,
-    onClose,
-    // New optional callbacks for cell property controls
-    onSetSpeed,
-    onSetEffect,
-    onSetTrailMode,
-    onSetEffort,
-    onSetColors,
-    onSetBlueVisible,
-    onSetRedVisible,
-    onSetOffset,
-    onSetTipEffectMap,
-    onSetTipEffortMap,
-  }: {
+  interface CellEditorProps {
     cell: GridCell;
     cellIndex: number;
     clipboardHasData?: boolean;
@@ -73,7 +46,6 @@
     onPasteLayer?: () => void;
     onTransformLayer?: (layerIndex: number, transformType: TransformType) => void;
     onClose?: () => void;
-    // New optional callbacks
     onSetSpeed?: (speed: number) => void;
     onSetEffect?: (effect: CellEffect) => void;
     onSetTrailMode?: (mode: TrailMode) => void;
@@ -84,20 +56,30 @@
     onSetOffset?: (offset: number) => void;
     onSetTipEffectMap?: (map: TipEffectMap) => void;
     onSetTipEffortMap?: (map: TipEffortMap) => void;
-  } = $props();
+  }
+
+  const p: CellEditorProps = $props();
+  // Access cell through props object (p.cell) in reactive contexts to avoid state_referenced_locally.
+  // Alias other props for convenience since they aren't captured in $derived/$effect closures.
+  const cell = $derived(p.cell);
+  const cellIndex = $derived(p.cellIndex);
+  const clipboardHasData = $derived(p.clipboardHasData ?? false);
+  const transformingLayer = $derived(p.transformingLayer ?? null);
 
   const panelState = createCellEditorPanelState();
 
   let effectMatrixOpen = $state(false);
   let effortMatrixOpen = $state(false);
 
-  // Reset state when the selected cell changes
-  let previousCellId = $state(cell.id);
+  // Reset state when the selected cell changes.
+  // Track cell.id reactively via $derived to avoid state_referenced_locally warning.
+  const currentCellId = $derived(cell.id);
+  let previousCellId: string | null = null;
   $effect(() => {
-    if (cell.id !== previousCellId) {
+    if (previousCellId !== null && currentCellId !== previousCellId) {
       panelState.resetForNewCell();
-      previousCellId = cell.id;
     }
+    previousCellId = currentCellId;
   });
 
   const sizeLabel = $derived(
@@ -110,16 +92,16 @@
 
   function handleToggleBlueVisibility() {
     const current = cell.blueMotionVisible !== false;
-    onSetBlueVisible?.(!current);
+    p.onSetBlueVisible?.(!current);
   }
 
   function handleToggleRedVisibility() {
     const current = cell.redMotionVisible !== false;
-    onSetRedVisible?.(!current);
+    p.onSetRedVisible?.(!current);
   }
 
   function handleTransform(type: TransformType) {
-    onTransformLayer?.(0, type);
+    p.onTransformLayer?.(0, type);
   }
 
   function handleKeydown(e: KeyboardEvent) {
@@ -163,10 +145,10 @@
         {/if}
       </div>
     </div>
-    {#if onClose}
+    {#if p.onClose}
       <button
         class="close-btn"
-        onclick={onClose}
+        onclick={p.onClose}
         title="Close"
         aria-label="Close panel"
       >
@@ -180,10 +162,10 @@
     {cell}
     {clipboardHasData}
     {transformingLayer}
-    {onAddSequence}
-    {onRemoveLayer}
-    {onCopyLayer}
-    {onPasteLayer}
+    onAddSequence={p.onAddSequence}
+    onRemoveLayer={p.onRemoveLayer}
+    onCopyLayer={p.onCopyLayer}
+    onPasteLayer={p.onPasteLayer}
   />
 
   <!-- Control Chips -->
@@ -202,7 +184,7 @@
   {:else if panelState.expandedSection === 'speed'}
     <SpeedSection
       currentSpeed={cell.speedMultiplier ?? 1.0}
-      onSetSpeed={speed => onSetSpeed?.(speed)}
+      onSetSpeed={speed => p.onSetSpeed?.(speed)}
     />
   {:else if panelState.expandedSection === 'effects'}
     {#if effectMatrixOpen}
@@ -210,22 +192,22 @@
         currentMap={cell.tipEffectMap ?? {}}
         bluePropType="staff"
         redPropType="staff"
-        onUpdateMap={map => onSetTipEffectMap?.(map)}
+        onUpdateMap={map => p.onSetTipEffectMap?.(map)}
         onClose={() => { effectMatrixOpen = false; }}
       />
     {:else}
       <EffectsSection
         currentEffect={cell.effect ?? "none"}
         currentTrailMode={cell.trailMode}
-        onSetEffect={effect => onSetEffect?.(effect)}
-        onSetTrailMode={mode => onSetTrailMode?.(mode)}
+        onSetEffect={effect => p.onSetEffect?.(effect)}
+        onSetTrailMode={mode => p.onSetTrailMode?.(mode)}
         onOpenMatrix={() => { effectMatrixOpen = true; }}
       />
     {/if}
   {:else if panelState.expandedSection === 'colors'}
     <ColorsSection
       currentColors={cell.layers[0]?.propColors ?? { left: '#3b82f6', right: '#ef4444' }}
-      onSetColors={colors => onSetColors?.(colors)}
+      onSetColors={colors => p.onSetColors?.(colors)}
     />
   {:else if panelState.expandedSection === 'effort'}
     {#if effortMatrixOpen}
@@ -233,39 +215,39 @@
         currentMap={cell.tipEffortMap ?? {}}
         bluePropType="staff"
         redPropType="staff"
-        onUpdateMap={map => onSetTipEffortMap?.(map)}
+        onUpdateMap={map => p.onSetTipEffortMap?.(map)}
         onClose={() => { effortMatrixOpen = false; }}
       />
     {:else}
       <EffortSection
         currentEffort={cell.effort}
-        onSetEffort={effort => onSetEffort?.(effort)}
+        onSetEffort={effort => p.onSetEffort?.(effort)}
         onOpenMatrix={() => { effortMatrixOpen = true; }}
       />
     {/if}
   {:else if panelState.expandedSection === 'offset'}
     <OffsetSection
       currentOffset={cell.beatOffset}
-      onSetOffset={offset => onSetOffset?.(offset)}
+      onSetOffset={offset => p.onSetOffset?.(offset)}
     />
   {:else if panelState.expandedSection === 'display'}
     <DisplaySection
       currentMediaType={cell.mediaType}
       layerCount={cell.layers.length}
-      onMediaTypeChange={type => onMediaTypeChange(type)}
+      onMediaTypeChange={type => p.onMediaTypeChange(type)}
     />
   {/if}
 
   <!-- Footer actions -->
   {#if cell.layers.length > 0}
     <div class="panel-footer">
-      {#if onCopyCell}
-        <button class="footer-btn copy-all-btn" onclick={onCopyCell}>
+      {#if p.onCopyCell}
+        <button class="footer-btn copy-all-btn" onclick={p.onCopyCell}>
           <i class="fas fa-copy" aria-hidden="true"></i>
           Copy All
         </button>
       {/if}
-      <button class="footer-btn clear-all-btn" onclick={onClearCell}>
+      <button class="footer-btn clear-all-btn" onclick={p.onClearCell}>
         <i class="fas fa-trash-alt" aria-hidden="true"></i>
         Clear All
       </button>
