@@ -10,6 +10,7 @@ import { MotionType } from "$lib/shared/pictograph/shared/domain/enums/pictograp
 import { LOCATION_ANGLES } from "$lib/features/compose/shared/domain/math-constants";
 import type { PropState3D } from "../../domain/models/PropState3D";
 import type { MotionConfig3D } from "../../domain/models/MotionData3D";
+import { Plane } from "../../domain/enums/Plane";
 import {
   planeAngleToWorldPosition,
   calculatePropQuaternion,
@@ -170,10 +171,16 @@ export class PropStateInterpolator implements IPropStateInterpolator {
 
     // Apply lateral offset (used in dual-wheel mode to separate each
     // hand's wheel plane to opposite sides of the body).
-    // Applied in avatar-local X because the avatar group rotation
-    // (facingAngle) is applied later in prop3d-transforms.ts.
+    // For WHEEL planes: offset Z (body-local depth). After the 90° facing
+    // rotation, Z_local maps to X_world, giving left-right separation
+    // from the audience's perspective.
+    // For WALL planes: offset X (body-local lateral).
     if (config.lateralOffset) {
-      result.worldPosition.x += config.lateralOffset;
+      if (config.plane === Plane.WHEEL) {
+        result.worldPosition.z += config.lateralOffset;
+      } else {
+        result.worldPosition.x += config.lateralOffset;
+      }
     }
 
     return result;
