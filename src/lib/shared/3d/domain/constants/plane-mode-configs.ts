@@ -6,7 +6,7 @@ import { PlaneMode } from "../enums/PlaneMode";
  * Should be wide enough to clear the torso and let arms extend
  * naturally without clipping.
  */
-const LATERAL_OFFSET = 0.25;
+const LATERAL_OFFSET = 0.40;
 
 /**
  * Forward offset from body center to grid/prop circle center.
@@ -17,6 +17,7 @@ const LATERAL_OFFSET = 0.25;
 export const GRID_OFFSETS: Record<PlaneMode, number> = {
   [PlaneMode.WALL]: 0.3,
   [PlaneMode.DUAL_WHEEL]: 0,
+  [PlaneMode.CUSTOM]: 0.3,
 };
 
 export interface PlaneModeConfig {
@@ -44,6 +45,14 @@ export interface PlaneModeConfig {
 
 export const PLANE_MODE_CONFIGS: Record<PlaneMode, PlaneModeConfig> = {
   [PlaneMode.WALL]: {
+    facingAngle: 0,
+    bluePlane: Plane.WALL,
+    redPlane: Plane.WALL,
+    rotationPlane: Plane.WALL,
+    blueLateralOffset: 0,
+    redLateralOffset: 0,
+  },
+  [PlaneMode.CUSTOM]: {
     facingAngle: 0,
     bluePlane: Plane.WALL,
     redPlane: Plane.WALL,
