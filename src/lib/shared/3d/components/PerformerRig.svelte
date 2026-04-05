@@ -15,9 +15,9 @@
    *   ├── ShoulderAnchor (T.Group, y=shoulderHeight)
    *   │   ├── GridAnchor (conditional, dual-wheel vs single grid)
    *   │   ├── Blue HandAnchor + PropAnchor
-   *   │   ├── Red HandAnchor + PropAnchor
-   *   │   └── EffectOrchestrator3D (conditional)
+   *   │   └── Red HandAnchor + PropAnchor
    *   └── Extras slot (snippet)
+   *   EffectOrchestrator3D (SIBLING — world space, NOT inside rotated group)
    */
 
   import { T } from "@threlte/core";
@@ -248,19 +248,6 @@
       {/if}
     </T.Group>
 
-    <!-- Effects sit at shoulder level alongside props -->
-    {#if showEffects}
-      <EffectOrchestrator3D
-        {bluePropState}
-        {redPropState}
-        {isPlaying}
-        {staffHalfLength}
-        globalTipEffectMap={tipEffectMap}
-        bluePropAnchorRef={bluePropAnchorRef}
-        redPropAnchorRef={redPropAnchorRef}
-      />
-    {/if}
-
   </T.Group>
 
   <!-- Extras slot: consumer-specific content (platform meshes, labels, etc.) -->
@@ -268,3 +255,19 @@
     {@render extras()}
   {/if}
 </T.Group>
+
+<!-- Effects render in world space — EffectOrchestrator3D reads world positions
+     from PropAnchor refs via getWorldPosition(), so it must NOT be a child of
+     the rig's rotated T.Group. Being inside that group would cause the rig's
+     rotation to be applied a second time, displacing the effects from the props. -->
+{#if showEffects}
+  <EffectOrchestrator3D
+    {bluePropState}
+    {redPropState}
+    {isPlaying}
+    {staffHalfLength}
+    globalTipEffectMap={tipEffectMap}
+    bluePropAnchorRef={bluePropAnchorRef}
+    redPropAnchorRef={redPropAnchorRef}
+  />
+{/if}
