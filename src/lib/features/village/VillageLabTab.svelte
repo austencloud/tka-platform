@@ -40,7 +40,14 @@
 			{ targetPopulation: 6 },
 		);
 		setVillageContext(villageState);
-		// Auto-start so simulation runs immediately (and survives HMR)
+		// Log simulation events
+		villageState.orchestrator.on("teaching:completed", (teacher, learner, seqId) => {
+			console.log(`[Village] ${teacher.identity.name} taught "${seqId}" to ${learner.identity.name}`);
+		});
+		villageState.orchestrator.on("entity:died", (entity) => {
+			console.log(`[Village] ${entity.identity.name} (gen ${entity.identity.generation}) passed. Knew ${entity.knowledge.knownSequences.size} sequences.`);
+		});
+		// Auto-start
 		villageState.start();
 	}
 
