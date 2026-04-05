@@ -16,6 +16,7 @@ import {
 import { LOOPTypeResolver } from "$lib/features/create/generate/shared/services/implementations/LOOPTypeResolver";
 import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
 import { VTG_TURNS_RATIO_MAP } from "../../domain/elemental-theme";
+import { getReversalPattern } from "../../domain/reversal-patterns";
 
 // The anatomy grid shows which elements appear in the sequence.
 // Each field is a set of string values; the card renders present
@@ -44,6 +45,11 @@ export interface LevelBadgeData {
   textColor: string;
 }
 
+export interface TurnGlyphEntry {
+  readonly blue: number;
+  readonly red: number;
+}
+
 export interface CardBackData {
   word: string;
   stepCount: number;
@@ -60,6 +66,12 @@ export interface CardBackData {
   startPosition: StartPositionInfo | null;
   /** VTG turn ratio derived from sequence motions, e.g. "3:1" */
   vtgRatio: string | null;
+  /** Period-compressed turn pattern entries for the footer glyph */
+  turnGlyphEntries: TurnGlyphEntry[];
+  /** Reversal pattern sequence string for the footer glyph */
+  reversalSequence: string;
+  /** Reversal pattern period (columns to display) */
+  reversalPeriod: number;
 }
 
 // Level badge definitions sourced from the canonical difficulty-styles.ts
@@ -379,6 +391,15 @@ export function deriveCardBackData(
 
   const cycle = sequence.orientationCycleCount;
 
+  // Derive turn glyph entries from actual motion data
+  const turnGlyphEntries = deriveTurnGlyphEntries(sequence);
+
+  // Derive reversal pattern glyph data
+  const reversalPatternId = (sequence as any).reversalPattern ?? "continuous";
+  const revPattern = getReversalPattern(reversalPatternId);
+  const reversalSequence = revPattern?.sequence ?? "----";
+  const reversalPeriod = revPattern?.period ?? 1;
+
   return {
     word: simplifyRepeatedWord(sequence.word ?? sequence.name ?? ""),
     stepCount: sequence.sequenceLength ?? sequence.steps?.length ?? 0,
@@ -402,5 +423,48 @@ export function deriveCardBackData(
       : false,
     startPosition: deriveStartPosition(sequence),
     vtgRatio: deriveVtgRatio(sequence),
+    turnGlyphEntries,
+    reversalSequence,
+    reversalPeriod,
   };
+}
+
+/**
+ * Derive turn glyph entries from a sequence's motion data.
+ * Each entry = one step with blue and red turn values.
+ * Detects the repeating period and returns only one period.
+ */
+function deriveTurnGlyphEntries(sequence: SequenceData): TurnGlyphEntry[] {
+  const steps = sequence.steps ?? [];
+  if (steps.length === 0) return [{ blue: 0, red: 0 }];
+
+  const all: TurnGlyphEntry[] = steps.map((step) => {
+    const blueT = step.motions?.blue?.turns;
+    const redT = step.motions?.red?.turns;
+    return {
+      blue: typeof blueT === "number" ? blueT : 0,
+      red: typeof redT === "number" ? redT : 0,
+    };
+  });
+
+  // Detect period: find the smallest repeating unit
+  const period = detectPeriod(all);
+  return all.slice(0, period);
+}
+
+function detectPeriod(entries: TurnGlyphEntry[]): number {
+  const n = entries.length;
+  if (n <= 1) return n;
+
+  outer:
+  for (let p = 1; p <= n; p++) {
+    if (n % p !== 0) continue;
+    for (let i = p; i < n; i++) {
+      const ref = entries[i % p]!;
+      const cur = entries[i]!;
+      if (ref.blue !== cur.blue || ref.red !== cur.red) continue outer;
+    }
+    return p;
+  }
+  return n;
 }
