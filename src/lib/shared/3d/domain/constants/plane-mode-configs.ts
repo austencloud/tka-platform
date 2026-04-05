@@ -29,8 +29,11 @@ export interface PlaneModeConfig {
   redPlane: Plane;
   /**
    * Which plane to use for prop ROTATION quaternion calculation.
+   * When omitted, each hand uses its own position plane for rotation.
+   * Only needed for modes like dual-wheel where rotation and position
+   * planes intentionally differ.
    */
-  rotationPlane: Plane;
+  rotationPlane?: Plane;
   /**
    * When true, the facing angle is NOT applied to prop positions or
    * rotations. WHEEL coordinates stay in world YZ instead of being
@@ -56,7 +59,7 @@ export const PLANE_MODE_CONFIGS: Record<PlaneMode, PlaneModeConfig> = {
     facingAngle: 0,
     bluePlane: Plane.WALL,
     redPlane: Plane.WALL,
-    rotationPlane: Plane.WALL,
+    // No rotationPlane — each hand uses its own plane for rotation
     blueLateralOffset: 0,
     redLateralOffset: 0,
   },
