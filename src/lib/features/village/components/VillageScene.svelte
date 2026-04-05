@@ -18,10 +18,7 @@
 	// Arena ground circle
 	const arenaRadius = 8;
 
-	// Derived avatar list for rendering
-	const avatarEntries = $derived(
-		Array.from(villageState.avatarStates.entries()),
-	);
+	const avatars = $derived(villageState.avatarList);
 </script>
 
 <!-- Lighting -->
@@ -74,9 +71,9 @@
 />
 
 <!-- Village avatars -->
-{#each avatarEntries as [id, renderState] (id)}
+{#each avatars as renderState (renderState.entityId)}
 	<VillageAvatar
 		{renderState}
-		isSelected={villageState.selectedAvatarId === id}
+		isSelected={villageState.selectedAvatarId === renderState.entityId}
 	/>
 {/each}

@@ -32,7 +32,7 @@ export interface AvatarRenderState {
 
 export interface VillageState {
 	readonly orchestrator: VillageOrchestrator;
-	readonly avatarStates: Map<string, AvatarRenderState>;
+	readonly avatarList: AvatarRenderState[];
 	readonly stats: PopulationStats;
 	readonly isRunning: boolean;
 	readonly selectedAvatarId: string | null;
@@ -57,17 +57,9 @@ export function createVillageState(
 	const mutator = new SequenceMutator();
 	const orchestrator = new VillageOrchestrator(config, mutator);
 
-	// Use a plain Map for storage + a version counter for Svelte reactivity.
-	// Map mutations don't reliably trigger $derived in Svelte 5.
+	// Internal map for O(1) lookups during sync; exposed as $state array for reactivity
 	const avatarStateMap = new Map<string, AvatarRenderState>();
-	let avatarVersion = $state(0);
-	let avatarStates = $derived(
-		(() => {
-			// Touch version to create dependency
-			void avatarVersion;
-			return avatarStateMap;
-		})(),
-	);
+	let avatarList = $state<AvatarRenderState[]>([]);
 	let stats = $state<PopulationStats>({
 		alive: 0,
 		averageAge: 0,
@@ -160,9 +152,9 @@ export function createVillageState(
 			}
 		}
 
-		// Bump version to trigger Svelte re-render if map contents changed
+		// Rebuild reactive array from map (new reference triggers Svelte re-render)
 		if (mapChanged) {
-			avatarVersion++;
+			avatarList = Array.from(avatarStateMap.values());
 		}
 	}
 
@@ -236,8 +228,8 @@ export function createVillageState(
 		get orchestrator() {
 			return orchestrator;
 		},
-		get avatarStates() {
-			return avatarStates;
+		get avatarList() {
+			return avatarList;
 		},
 		get stats() {
 			return stats;
@@ -279,7 +271,7 @@ export function createVillageState(
 		reset() {
 			stopTickLoop();
 			avatarStateMap.clear();
-			avatarVersion++;
+			avatarList = [];
 			orchestrator.reset();
 			// Re-seed
 			const newEntities = orchestrator.entities;
@@ -309,7 +301,7 @@ export function createVillageState(
 			stopTickLoop();
 			orchestrator.destroy();
 			avatarStateMap.clear();
-			avatarVersion++;
+			avatarList = [];
 		},
 	};
 }
