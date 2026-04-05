@@ -19,6 +19,8 @@
   import type { FormationPreset } from "../../domain/formation";
   import type { CameraChoreographyState } from "../../state/camera-choreography-state.svelte";
   import type { CameraPosition } from "../../domain/camera-choreography";
+  import PlaneModeToggle from "../controls/PlaneModeToggle.svelte";
+  import type { PlaneMode } from "../../domain/enums/PlaneMode";
 
   interface Props {
     // Camera
@@ -62,6 +64,10 @@
     onPrevStep?: () => void;
     onNextStep?: () => void;
 
+    // Plane mode (optional — only shown in 3D mode)
+    planeMode?: PlaneMode;
+    onPlaneModeChange?: (mode: PlaneMode) => void;
+
     /** Callback to show keyboard shortcuts help */
     onShowHelp?: () => void;
 
@@ -99,6 +105,8 @@
     onLoopChange,
     onPrevStep,
     onNextStep,
+    planeMode,
+    onPlaneModeChange,
     onShowHelp,
     trailing,
   }: Props = $props();
@@ -130,6 +138,10 @@
     {/if}
 
     <SpeedControlBar value={speed} onchange={onSpeedChange} />
+
+    {#if planeMode !== undefined && onPlaneModeChange}
+      <PlaneModeToggle mode={planeMode} onModeChange={onPlaneModeChange} />
+    {/if}
 
     {#if cameraChoreography}
       <CameraChoreographyControls
