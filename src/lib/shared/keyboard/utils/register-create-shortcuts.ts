@@ -484,20 +484,19 @@ export function registerCreateShortcuts(
   });
 
   // ==================== Sequence Transforms ====================
-  // Global hotkeys for sequence transforms - available anytime in CREATE module
+  // Alt+key hotkeys for sequence transforms — require explicit intent, no accidental triggers
 
-  // m - Mirror sequence (flip left/right)
+  // Alt+M — Mirror sequence (flip left/right)
   service.register({
     id: "create.transform-mirror",
     label: "Mirror Sequence",
     description: "Mirror the sequence (flip left and right)",
     key: "m",
-    modifiers: [],
+    modifiers: ["alt"],
     context: "create",
     scope: "sequence-management",
     priority: "medium",
     condition: () => {
-      if (!state.settings.enableSingleKeyShortcuts) return false;
       const ref = getCreateModuleRef();
       if (!ref) return false;
       const sequenceState = ref.CreateModuleState.getActiveTabSequenceState();
@@ -514,18 +513,44 @@ export function registerCreateShortcuts(
     },
   });
 
-  // h - Swap hands (swap colors)
+  // Alt+V — Flip sequence
   service.register({
-    id: "create.transform-swap-hands",
-    label: "Swap Hands",
-    description: "Swap hand movements (left becomes right, right becomes left)",
-    key: "h",
-    modifiers: [],
+    id: "create.transform-flip",
+    label: "Flip Sequence",
+    description: "Flip the sequence",
+    key: "v",
+    modifiers: ["alt"],
     context: "create",
     scope: "sequence-management",
     priority: "medium",
     condition: () => {
-      if (!state.settings.enableSingleKeyShortcuts) return false;
+      const ref = getCreateModuleRef();
+      if (!ref) return false;
+      const sequenceState = ref.CreateModuleState.getActiveTabSequenceState();
+      return sequenceState?.hasSequence() ?? false;
+    },
+    action: async () => {
+      const ref = getCreateModuleRef();
+      if (!ref) return;
+
+      const sequenceState = ref.CreateModuleState.getActiveTabSequenceState();
+      if (!sequenceState?.hasSequence()) return;
+
+      await sequenceState.flipSequence();
+    },
+  });
+
+  // Alt+S — Swap hands (swap colors)
+  service.register({
+    id: "create.transform-swap-hands",
+    label: "Swap Hands",
+    description: "Swap hand movements (left becomes right, right becomes left)",
+    key: "s",
+    modifiers: ["alt"],
+    context: "create",
+    scope: "sequence-management",
+    priority: "medium",
+    condition: () => {
       const ref = getCreateModuleRef();
       if (!ref) return false;
       const sequenceState = ref.CreateModuleState.getActiveTabSequenceState();
@@ -542,18 +567,98 @@ export function registerCreateShortcuts(
     },
   });
 
-  // r - Rotate sequence clockwise (45°)
+  // Alt+I — Invert sequence
+  service.register({
+    id: "create.transform-invert",
+    label: "Invert Sequence",
+    description: "Invert the sequence",
+    key: "i",
+    modifiers: ["alt"],
+    context: "create",
+    scope: "sequence-management",
+    priority: "medium",
+    condition: () => {
+      const ref = getCreateModuleRef();
+      if (!ref) return false;
+      const sequenceState = ref.CreateModuleState.getActiveTabSequenceState();
+      return sequenceState?.hasSequence() ?? false;
+    },
+    action: async () => {
+      const ref = getCreateModuleRef();
+      if (!ref) return;
+
+      const sequenceState = ref.CreateModuleState.getActiveTabSequenceState();
+      if (!sequenceState?.hasSequence()) return;
+
+      await sequenceState.invertSequence();
+    },
+  });
+
+  // Alt+F — Shift start (move first beat to end)
+  service.register({
+    id: "create.transform-shift-start",
+    label: "Shift Start",
+    description: "Move the first beat to the end of the sequence",
+    key: "f",
+    modifiers: ["alt"],
+    context: "create",
+    scope: "sequence-management",
+    priority: "medium",
+    condition: () => {
+      const ref = getCreateModuleRef();
+      if (!ref) return false;
+      const sequenceState = ref.CreateModuleState.getActiveTabSequenceState();
+      return sequenceState?.hasSequence() ?? false;
+    },
+    action: async () => {
+      const ref = getCreateModuleRef();
+      if (!ref) return;
+      const sequenceState = ref.CreateModuleState.getActiveTabSequenceState();
+      const sequence = sequenceState?.currentSequence;
+      if (!sequence || sequence.steps.length <= 1) return;
+      const [first, ...rest] = sequence.steps;
+      sequenceState.setCurrentSequence({ ...sequence, steps: [...rest, first!] });
+    },
+  });
+
+  // Alt+W — Rewind/Reverse sequence
+  service.register({
+    id: "create.transform-rewind",
+    label: "Rewind Sequence",
+    description: "Reverse the sequence to return to start position",
+    key: "w",
+    modifiers: ["alt"],
+    context: "create",
+    scope: "sequence-management",
+    priority: "medium",
+    condition: () => {
+      const ref = getCreateModuleRef();
+      if (!ref) return false;
+      const sequenceState = ref.CreateModuleState.getActiveTabSequenceState();
+      return sequenceState?.hasSequence() ?? false;
+    },
+    action: async () => {
+      const ref = getCreateModuleRef();
+      if (!ref) return;
+
+      const sequenceState = ref.CreateModuleState.getActiveTabSequenceState();
+      if (!sequenceState?.hasSequence()) return;
+
+      await sequenceState.rewindSequence();
+    },
+  });
+
+  // Alt+R — Rotate sequence clockwise (45°)
   service.register({
     id: "create.transform-rotate-cw",
     label: "Rotate Clockwise",
     description: "Rotate the sequence 45° clockwise",
     key: "r",
-    modifiers: [],
+    modifiers: ["alt"],
     context: "create",
     scope: "sequence-management",
     priority: "medium",
     condition: () => {
-      if (!state.settings.enableSingleKeyShortcuts) return false;
       const ref = getCreateModuleRef();
       if (!ref) return false;
       const sequenceState = ref.CreateModuleState.getActiveTabSequenceState();
@@ -570,13 +675,13 @@ export function registerCreateShortcuts(
     },
   });
 
-  // Shift+R - Rotate sequence counter-clockwise (45°)
+  // Alt+L — Rotate sequence counter-clockwise (45°)
   service.register({
     id: "create.transform-rotate-ccw",
     label: "Rotate Counter-Clockwise",
     description: "Rotate the sequence 45° counter-clockwise",
-    key: "R",
-    modifiers: ["shift"],
+    key: "l",
+    modifiers: ["alt"],
     context: "create",
     scope: "sequence-management",
     priority: "medium",
@@ -594,35 +699,6 @@ export function registerCreateShortcuts(
       if (!sequenceState?.hasSequence()) return;
 
       await sequenceState.rotateSequence("counterclockwise");
-    },
-  });
-
-  // w - Rewind/Reverse sequence
-  // Note: KeyboardShortcutManager blocks WASD when an arrow is selected for adjustment
-  service.register({
-    id: "create.transform-rewind",
-    label: "Rewind Sequence",
-    description: "Reverse the sequence to return to start position",
-    key: "w",
-    modifiers: [],
-    context: "create",
-    scope: "sequence-management",
-    priority: "medium",
-    condition: () => {
-      if (!state.settings.enableSingleKeyShortcuts) return false;
-      const ref = getCreateModuleRef();
-      if (!ref) return false;
-      const sequenceState = ref.CreateModuleState.getActiveTabSequenceState();
-      return sequenceState?.hasSequence() ?? false;
-    },
-    action: async () => {
-      const ref = getCreateModuleRef();
-      if (!ref) return;
-
-      const sequenceState = ref.CreateModuleState.getActiveTabSequenceState();
-      if (!sequenceState?.hasSequence()) return;
-
-      await sequenceState.rewindSequence();
     },
   });
 
