@@ -118,6 +118,8 @@ export interface RenderFrameParams {
   sequenceContentHash?: string;
   /** Per-tip effect assignments (global level). Used to filter tips by effect type. */
   tipEffectMap?: TipEffectMap;
+  /** When true, skip fire/charcoal/LED/trail overlay rendering (3D mode handles effects) */
+  suppress2DOverlays?: boolean;
 }
 
 /**

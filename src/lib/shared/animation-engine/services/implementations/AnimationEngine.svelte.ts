@@ -178,6 +178,9 @@ export interface AnimationEngineState {
   currentBluePropType: string;
   currentRedPropType: string;
   currentPropType: string;
+
+  // 3D mode flag — when true, 2D effect overlays (fire/charcoal/LED/trails) are suppressed
+  suppress2DOverlays: boolean;
 }
 
 export class AnimationEngine {
@@ -219,6 +222,7 @@ export class AnimationEngine {
     currentBluePropType: "staff",
     currentRedPropType: "staff",
     currentPropType: "staff",
+    suppress2DOverlays: false,
   });
 
   // ============================================================================
@@ -2132,8 +2136,8 @@ export class AnimationEngine {
     // Fire/charcoal overlay config — pass when either effect is active
     fp.fireConfig = (this.prevHasFireTips || this.prevHasCharcoalTips) ? this.fireConfig : null;
     fp.darkMode = this.prevDarkMode;
-    // Prop colors for colored flames (default blue/red)
-    fp.propColors = DEFAULT_PROP_FLAME_COLORS;
+    // Prop colors for colored flames — use VM's custom colors if set, else default blue/red
+    fp.propColors = this.getVM()?.getFirePropColors() ?? DEFAULT_PROP_FLAME_COLORS;
 
     // LED overlay config
     fp.ledConfig = this.ledConfig.enabled ? this.ledConfig : null;
@@ -2141,6 +2145,9 @@ export class AnimationEngine {
     // Per-tip effect assignments for filtering tips by effect type.
     // Cell-level map (from compose grid) takes priority over the global map.
     fp.tipEffectMap = this.cellTipEffectMap ?? this.getVM()?.getTipEffectMap() ?? {};
+
+    // Suppress 2D effect overlays when 3D mode is active
+    fp.suppress2DOverlays = this.state.suppress2DOverlays ?? false;
 
     // Playback speed for fire cache invalidation
     const vmRef = this.getVM();
