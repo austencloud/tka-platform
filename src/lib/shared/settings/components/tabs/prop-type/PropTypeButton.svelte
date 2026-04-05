@@ -100,6 +100,7 @@
     /* Slightly taller than wide for label space */
     aspect-ratio: 1 / 1.1;
     width: 100%;
+    min-height: 44px;
     overflow: hidden;
   }
 
@@ -177,7 +178,7 @@
     text-overflow: ellipsis;
     max-width: 100%;
     width: 100%;
-    font-size: clamp(9px, 2.5cqi, 11px);
+    font-size: clamp(var(--font-size-compact, 12px), 2.5cqi, var(--font-size-sm, 14px));
     font-weight: 600;
     letter-spacing: -0.1px;
     line-height: 1.2;
@@ -197,7 +198,7 @@
     border-radius: 50%;
     background: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     color: var(--theme-panel-bg, #121218);
-    font-size: 10px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 700;
     display: flex;
     align-items: center;
