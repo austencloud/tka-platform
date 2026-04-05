@@ -113,9 +113,10 @@ export class PropStateInterpolator implements IPropStateInterpolator {
         )
       : this.angleMath.lerpAngle(startStaffAngle, targetStaffAngle, progress);
 
-    // Calculate 3D rotation
+    // Calculate 3D rotation. Use rotationPlane when specified (dual-wheel mode
+    // uses WALL rotation to avoid double-rotating with the facing angle).
     const worldRotation = calculatePropQuaternion(
-      config.plane,
+      config.rotationPlane ?? config.plane,
       staffRotationAngle
     );
 
