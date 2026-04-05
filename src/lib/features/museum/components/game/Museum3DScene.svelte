@@ -1125,19 +1125,33 @@
       allExhibitLights.push(...chunk.exhibitLightPositions);
       allCeilingLights.push(...chunk.ceilingLightPositions);
     }
-    visibleTorches = allTorches;
+    // ── Staggered component mounting ──
+    // Mount Svelte components in groups with yields between each so the
+    // loading overlay stays responsive. Each group triggers a Svelte render
+    // cycle that mounts components + compiles their shaders.
+
+    props.onBuildStage?.("Mounting lights");
     visibleExhibitLights = allExhibitLights;
     visibleCeilingLights = allCeilingLights;
+    await new Promise<void>(r => setTimeout(r, 0));
 
-    // Mount ALL performers and plaques globally — GLTF loading + shader
-    // compilation absorbed behind the loading overlay. No per-room mounting
-    // during gameplay = zero stutter when walking into performer rooms.
-    visiblePerformers = grid.performers;
+    props.onBuildStage?.("Mounting torches");
+    visibleTorches = allTorches;
+    await new Promise<void>(r => setTimeout(r, 0));
+
+    props.onBuildStage?.("Mounting plaques");
     visiblePlaques = getAllPlaquePlacements();
-    visibleFurniture = grid.furniture ?? [];
     useSpotLights = visiblePlaques.length > 0 && visiblePlaques.length < 20;
+    await new Promise<void>(r => setTimeout(r, 0));
 
-    recomputeVisibility(grid.spawn.x, grid.spawn.y);
+    props.onBuildStage?.("Mounting performers");
+    visiblePerformers = grid.performers;
+    await new Promise<void>(r => setTimeout(r, 0));
+
+    props.onBuildStage?.("Mounting furniture");
+    visibleFurniture = grid.furniture ?? [];
+    await new Promise<void>(r => setTimeout(r, 0));
+
     geometryReady = true;
     props.onGeometryReady?.();
   })();
