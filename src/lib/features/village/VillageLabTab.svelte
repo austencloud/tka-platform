@@ -3,12 +3,12 @@
   Mounts Threlte canvas with village scene + control panel sidebar.
 -->
 <script lang="ts">
-	import { onMount, onDestroy } from "svelte";
+	import { onDestroy } from "svelte";
 	import { Canvas } from "@threlte/core";
 	import { container } from "$lib/shared/di";
 	import VillageScene from "./components/VillageScene.svelte";
 	import VillageControls from "./components/VillageControls.svelte";
-	import { createVillageState } from "./state/village-state.svelte";
+	import { createVillageState, type VillageState } from "./state/village-state.svelte";
 	import { setVillageContext } from "./state/village-context";
 	import {
 		MUSEUM_EXHIBIT_SEQUENCES,
@@ -30,29 +30,24 @@
 	const propInterpolator = container.items.propStateInterpolator;
 	const sequenceConverter = container.items.sequenceConverter;
 
-	let villageState = $state<ReturnType<typeof createVillageState> | null>(null);
-	let mounted = $state(false);
-
-	onMount(() => {
-		if (!propInterpolator || !sequenceConverter) return;
-
+	// Create state synchronously during component init — required for setContext
+	let villageState: VillageState | null = null;
+	if (propInterpolator && sequenceConverter) {
 		const seeds = buildSeedSequences();
 		villageState = createVillageState(
 			{ propInterpolator, sequenceConverter },
 			seeds,
 			{ targetPopulation: 6 },
 		);
-
 		setVillageContext(villageState);
-		mounted = true;
-	});
+	}
 
 	onDestroy(() => {
 		villageState?.destroy();
 	});
 </script>
 
-{#if mounted && villageState}
+{#if villageState}
 	<div class="village-lab">
 		<div class="viewport">
 			<Canvas>
@@ -63,7 +58,7 @@
 	</div>
 {:else}
 	<div class="village-loading">
-		<p>Initializing village simulation...</p>
+		<p>3D services not available</p>
 	</div>
 {/if}
 

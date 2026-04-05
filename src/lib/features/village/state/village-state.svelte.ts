@@ -57,7 +57,17 @@ export function createVillageState(
 	const mutator = new SequenceMutator();
 	const orchestrator = new VillageOrchestrator(config, mutator);
 
-	let avatarStates = $state(new Map<string, AvatarRenderState>());
+	// Use a plain Map for storage + a version counter for Svelte reactivity.
+	// Map mutations don't reliably trigger $derived in Svelte 5.
+	const avatarStateMap = new Map<string, AvatarRenderState>();
+	let avatarVersion = $state(0);
+	let avatarStates = $derived(
+		(() => {
+			// Touch version to create dependency
+			void avatarVersion;
+			return avatarStateMap;
+		})(),
+	);
 	let stats = $state<PopulationStats>({
 		alive: 0,
 		averageAge: 0,
@@ -102,11 +112,12 @@ export function createVillageState(
 		stats = orchestrator.populationStats;
 
 		const seenIds = new Set<string>();
+		let mapChanged = false;
 
 		for (const entity of currentEntities) {
 			seenIds.add(entity.id);
 
-			let renderState = avatarStates.get(entity.id);
+			let renderState = avatarStateMap.get(entity.id);
 
 			if (!renderState) {
 				// New entity — create AvatarInstanceState wrapper
@@ -123,7 +134,8 @@ export function createVillageState(
 				);
 
 				renderState = { entityId: entity.id, instanceState, entity };
-				avatarStates.set(entity.id, renderState);
+				avatarStateMap.set(entity.id, renderState);
+				mapChanged = true;
 			}
 
 			// Sync transform
@@ -141,10 +153,16 @@ export function createVillageState(
 		}
 
 		// Remove render states for dead entities
-		for (const [id] of avatarStates) {
+		for (const [id] of avatarStateMap) {
 			if (!seenIds.has(id)) {
-				avatarStates.delete(id);
+				avatarStateMap.delete(id);
+				mapChanged = true;
 			}
+		}
+
+		// Bump version to trigger Svelte re-render if map contents changed
+		if (mapChanged) {
+			avatarVersion++;
 		}
 	}
 
@@ -260,7 +278,8 @@ export function createVillageState(
 		},
 		reset() {
 			stopTickLoop();
-			avatarStates.clear();
+			avatarStateMap.clear();
+			avatarVersion++;
 			orchestrator.reset();
 			// Re-seed
 			const newEntities = orchestrator.entities;
@@ -289,7 +308,8 @@ export function createVillageState(
 		destroy() {
 			stopTickLoop();
 			orchestrator.destroy();
-			avatarStates.clear();
+			avatarStateMap.clear();
+			avatarVersion++;
 		},
 	};
 }
