@@ -18,6 +18,7 @@
   import { container } from "$lib/shared/di";
   import { BackgroundType } from "@austencloud/backgrounds";
   import Environment3D from "../environments/components/Environment3D.svelte";
+  import EffectOrchestrator3D from "../effects/EffectOrchestrator3D.svelte";
   import { userProportionsState } from "../state/user-proportions-state.svelte";
   import { getViewer3DContext } from "../context/viewer-3d-context";
   import { Plane } from "../domain/enums/Plane";
@@ -215,3 +216,11 @@
     isActivePlayer={false}
   />
 {/if}
+
+<!-- 3D Effects Orchestrator (trails, future: fire/LED/sparkle) -->
+<EffectOrchestrator3D
+  {bluePropState}
+  {redPropState}
+  {isPlaying}
+  staffHalfLength={0.5}
+/>
