@@ -11,7 +11,7 @@
 </script>
 
 <nav class="breadcrumb-trail" style="--bc-accent: {accentColor}" aria-label="Drill-down navigation">
-	{#each breadcrumbs as segment, i (segment.stepId)}
+	{#each breadcrumbs as segment, i (i)}
 		{#if i > 0}
 			<span class="separator" aria-hidden="true">›</span>
 		{/if}

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Deck } from '../../domain/models/Deck';
+	import { untrack } from 'svelte';
 	import { createDrillDownState } from '../../state/deck-drilldown-state.svelte';
 	import { setDrillDownContext } from '../../context/deck-drilldown-context';
 	import DrillBreadcrumb from './DrillBreadcrumb.svelte';
@@ -18,7 +19,15 @@
 
 	let { decks, onSelectDeck }: Props = $props();
 
-	const state = createDrillDownState(decks);
+	$effect(() => {
+		console.log('[DeckDrillDown] decks received:', decks.length);
+		if (decks.length > 0) {
+			console.log('[DeckDrillDown] sample deck:', JSON.stringify({ id: decks[0]?.id, collection: decks[0]?.collection, loopType: decks[0]?.loopType }));
+		}
+	});
+
+	// Pass a getter so the state factory can react to async deck loading
+	const state = createDrillDownState(() => decks);
 	setDrillDownContext(state);
 
 	const accentColor = $derived(
@@ -70,6 +79,7 @@
 				<TurnPatternStep
 					stepCount={state.selections.stepCount ?? 4}
 					path={state.selections.path ?? 'LOOPs'}
+					availablePatterns={state.availableTurnPatterns}
 					onSelectPattern={state.selectTurnPattern}
 					onSelectUniform={() => state.goTo('uniform')}
 				/>

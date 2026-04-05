@@ -19,8 +19,14 @@
 		showEllipsis: boolean;
 	}
 
-	const cards: CardData[] = $derived(
-		decks.map((deck) => {
+	// Deduplicate by reversal pattern — one card per unique pattern
+	const cards: CardData[] = $derived.by(() => {
+		const seen = new Map<string, Deck>();
+		for (const deck of decks) {
+			const key = deck.reversalPattern.toLowerCase();
+			if (!seen.has(key)) seen.set(key, deck);
+		}
+		return [...seen.values()].map((deck) => {
 			const pattern = getReversalPattern(deck.reversalPattern);
 			const label = pattern?.label ?? deck.reversalPattern;
 			const description =
@@ -32,8 +38,8 @@
 				.split('');
 			const showEllipsis = period > 8;
 			return { deck, label, description, symbols, showEllipsis };
-		})
-	);
+		});
+	});
 
 	const canonicalPrefix = $derived(
 		breadcrumbs

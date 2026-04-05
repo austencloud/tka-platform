@@ -8,13 +8,13 @@
 	let { onSelect }: Props = $props();
 
 	const values: { label: string; value: number; meta: string; desc: string }[] = [
-		{ label: '0T', value: 0, meta: '1:1', desc: 'No rotation. Positions only.' },
-		{ label: '0.5T', value: 0.5, meta: '2:1', desc: 'Quarter turn every step. Subtle movement.' },
-		{ label: '1T', value: 1, meta: '3:1', desc: 'Both hands 1 full turn every step.' },
-		{ label: '1.5T', value: 1.5, meta: '4:1', desc: 'One and a half turns per step.' },
-		{ label: '2T', value: 2, meta: '5:1', desc: 'Two full turns every step.' },
-		{ label: '2.5T', value: 2.5, meta: '6:1', desc: 'Two and a half turns per step.' },
-		{ label: '3T', value: 3, meta: '7:1', desc: 'Three full turns every step. Maximum rotation.' },
+		{ label: '0t', value: 0, meta: '1:1', desc: 'No rotation. Positions only.' },
+		{ label: '0.5t', value: 0.5, meta: '2:1', desc: 'Quarter turn every step. Subtle movement.' },
+		{ label: '1t', value: 1, meta: '3:1', desc: 'Both hands 1 full turn every step.' },
+		{ label: '1.5t', value: 1.5, meta: '4:1', desc: 'One and a half turns per step.' },
+		{ label: '2t', value: 2, meta: '5:1', desc: 'Two full turns every step.' },
+		{ label: '2.5t', value: 2.5, meta: '6:1', desc: 'Two and a half turns per step.' },
+		{ label: '3t', value: 3, meta: '7:1', desc: 'Three full turns every step. Maximum rotation.' },
 	];
 
 	function entriesFor(v: number): { blue: number; red: number }[] {
@@ -37,7 +37,7 @@
 				description={v.desc}
 				entries={entriesFor(v.value)}
 				meta={v.meta}
-				onClick={() => onSelect(`Uniform ${v.label}`)}
+				onClick={() => onSelect(v.label)}
 			/>
 		{/each}
 	</div>

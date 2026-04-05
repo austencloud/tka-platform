@@ -16,7 +16,17 @@ Supports selecting multiple families simultaneously; "All Families" clears selec
     onFilterChange: (familyIds: string[]) => void;
   }
 
-  let { families, selectedFamilyIds, onFilterChange }: Props = $props();
+  let { families: rawFamilies, selectedFamilyIds, onFilterChange }: Props = $props();
+
+  // Deduplicate families by ID to prevent Svelte keyed-each errors
+  const families = $derived.by(() => {
+    const seen = new Set<string>();
+    return rawFamilies.filter(f => {
+      if (seen.has(f.id)) return false;
+      seen.add(f.id);
+      return true;
+    });
+  });
 
   let isOpen = $state(false);
   let hapticService: IHapticFeedback | null = null;

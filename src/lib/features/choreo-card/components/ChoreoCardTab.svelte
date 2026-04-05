@@ -617,13 +617,22 @@
     background: transparent;
   }
 
+  .main-content {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    gap: var(--spacing-md, 16px);
+    padding: var(--spacing-md, 16px);
+  }
+
   .content-area {
     flex: 1;
     min-width: 0;
+    min-height: 0;
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: var(--border-radius-lg, 12px);
-    overflow: hidden;
+    overflow: auto;
   }
 
   /* Responsive */

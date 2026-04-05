@@ -59,8 +59,8 @@
   let showInfoCard = $state(loadBool(STORAGE_KEYS.infoCard, false));
   let sidebarOpen = $state(loadBool(STORAGE_KEYS.sidebarOpen, false));
   let isExporting = $state(false);
-  let contextMenuHost: CardDesignerContextMenuHost;
-  let activeRerender: (() => void) | undefined;
+  let contextMenuHost: CardDesignerContextMenuHost = $state(undefined as unknown as CardDesignerContextMenuHost);
+  let activeRerender: (() => void) | undefined = $state(undefined);
 
   function handleCardContextMenu(x: number, y: number, rerender: () => void) {
     activeRerender = rerender;
@@ -258,12 +258,12 @@
 {#if isLoading}
   <div class="empty">
     <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-    <span>Loading...</span>
+    <span>Loading card designer...</span>
   </div>
 {:else if sequences.length === 0}
   <div class="empty">
     <i class="fas fa-id-card" aria-hidden="true"></i>
-    <span>No sequences</span>
+    <span>No sequences in your library yet. Create some in the Create module first.</span>
   </div>
 {:else}
   <div class="designer-split">

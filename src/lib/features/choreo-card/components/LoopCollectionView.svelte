@@ -243,11 +243,6 @@
     color: #63b7cd;
   }
 
-  .loop-pill.disabled {
-    opacity: 0.3;
-    cursor: not-allowed;
-  }
-
   .loop-pill:not(.disabled):not(.active):hover {
     border-color: rgba(255, 255, 255, 0.3);
     color: rgba(255, 255, 255, 0.8);
