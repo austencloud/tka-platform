@@ -411,7 +411,7 @@
   }
 
   .section-label {
-    font-size: 10px;
+    font-size: var(--font-size-compact, 12px);
     text-transform: uppercase;
     letter-spacing: 1.2px;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.25));
@@ -504,14 +504,14 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 28px;
-    height: 28px;
-    border-radius: 7px;
-    font-size: 13px;
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    font-size: 14px;
   }
 
   .item-label {
-    font-size: 10px;
+    font-size: var(--font-size-compact, 12px);
     color: rgba(255, 255, 255, 0.55);
     font-weight: 500;
     line-height: 1;
@@ -519,8 +519,8 @@
 
   .key-badge {
     border-radius: 4px;
-    padding: 1px 6px;
-    font-size: 10px;
+    padding: 2px 7px;
+    font-size: var(--font-size-compact, 12px);
     font-family: monospace;
     font-weight: 600;
     border: 1px solid transparent;
@@ -593,11 +593,11 @@
     background: rgba(255, 255, 255, 0.04);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 6px;
-    padding: 3px 8px;
-    min-height: 22px;
+    padding: 4px 10px;
+    min-height: 28px;
     cursor: pointer;
     color: rgba(255, 255, 255, 0.35);
-    font-size: 10px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 500;
     transition: all 150ms ease;
   }
