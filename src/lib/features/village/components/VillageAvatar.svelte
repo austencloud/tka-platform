@@ -16,6 +16,8 @@
 
 	const { renderState, isSelected = false }: Props = $props();
 
+	// Avatar3D uses Y=0 as shoulder/grid center. groundY is negative (distance
+	// from shoulder to feet). -groundY lifts the avatar so feet sit on Y=0.
 	const STAGE_LIFT = $derived(-userProportionsState.groundY);
 
 	const position = $derived({
@@ -28,9 +30,7 @@
 	const bluePropState = $derived(renderState.instanceState.bluePropState);
 	const redPropState = $derived(renderState.instanceState.redPropState);
 
-	// Age-based visual: elder entities move slower (handled by engine),
-	// glow intensity increases with knowledge
-	const glowIntensity = $derived(renderState.entity.lifecycle.knowledgeGlow);
+	const isMoving = $derived(renderState.entity.transform.speed > 0);
 	const isPerforming = $derived(
 		renderState.entity.social.state === "teaching" ||
 		renderState.entity.social.state === "learning" ||
@@ -46,8 +46,9 @@
 	{position}
 	{facingAngle}
 	isActive={isSelected}
-	isMoving={renderState.entity.transform.speed > 0}
-	moveSpeed={renderState.entity.transform.speed > 0 ? 0.5 : 0}
+	{isMoving}
+	moveSpeed={isMoving ? 0.5 : 0}
+	enableLocomotion={true}
 />
 
 {#if isPerforming && bluePropState}
