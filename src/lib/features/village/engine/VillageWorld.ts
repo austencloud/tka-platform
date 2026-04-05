@@ -42,9 +42,14 @@ export function createAvatarEntity(
 		options.traitStdDev,
 	);
 
+	// Pick a model not already used by any living entity
+	const usedModels = new Set(
+		world.entities.map((e) => e.identity.avatarModelId),
+	);
+	const available = AVATAR_MODELS.filter((m) => !usedModels.has(m));
+	const pool = available.length > 0 ? available : AVATAR_MODELS;
 	const avatarModelId =
-		AVATAR_MODELS[Math.floor(Math.random() * AVATAR_MODELS.length)] ??
-		"x-bot";
+		pool[Math.floor(Math.random() * pool.length)] ?? "x-bot";
 
 	const entity: VillageEntity = {
 		id: `avatar-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
