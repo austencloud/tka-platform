@@ -141,14 +141,15 @@
   position.z={position.z}
   rotation.y={facingAngle}
 >
-  <!-- Avatar at local origin — feet sit at ground level (y=0 in rig space) -->
+  <!-- Avatar3D uses groundY (~-1.56) internally to position its mesh,
+       so shoulders end up near y=0 in rig space. No position.y needed. -->
   {#if showAvatar}
     <Avatar3D
       id={avatarState.id}
       bluePropState={bluePropState}
       redPropState={redPropState}
       facingAngle={0}
-      position={{ x: 0, y: shoulderHeight, z: 0 }}
+      position={{ x: 0, z: 0 }}
       isActive={false}
       isMoving={false}
       bluePropAnchorRef={bluePropAnchorRef}
@@ -156,10 +157,11 @@
     />
   {/if}
 
-  <!-- ShoulderAnchor: props and grid live at shoulder height, matching
-       where Avatar3D's shoulders end up (Avatar3D positions itself using
-       position.y=shoulderHeight so shoulders land at y≈shoulderHeight). -->
-  <T.Group position.y={shoulderHeight}>
+  <!-- No ShoulderAnchor offset needed. Avatar3D positions its mesh using
+       groundY so shoulders land near y=0 in rig space. The interpolator
+       outputs positions relative to grid center (also y=0 = shoulder).
+       Everything lives at the same coordinate origin. -->
+  <T.Group>
 
     <!-- Grid rendering -->
     {#if showGrid}
