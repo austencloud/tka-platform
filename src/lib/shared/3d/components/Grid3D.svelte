@@ -28,11 +28,11 @@
     planeOpacity?: number;
     /** Grid mode: diamond or box */
     gridMode?: GridMode;
-    /** Avatar position - grid rotates around this point */
+    /** @deprecated Use parent group for positioning. Kept for transition. */
     centerPosition?: { x: number; y: number; z: number };
-    /** Avatar facing angle - planes rotate with avatar's body orientation */
+    /** @deprecated Use parent group for rotation. Kept for transition. */
     facingAngle?: number;
-    /** Forward offset from avatar to grid center (body-local Z direction) */
+    /** @deprecated Use parent group for offset. Kept for transition. */
     gridOffset?: number;
     /** Optional label for this grid (e.g., "Avatar 1") */
     label?: string;
