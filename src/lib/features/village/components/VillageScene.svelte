@@ -32,14 +32,14 @@
 <!-- Camera controls -->
 <T.PerspectiveCamera
 	makeDefault
-	position={[0, 12, 14]}
+	position={[0, 6, 12]}
 	fov={50}
 >
 	<OrbitControls
 		enableDamping
-		target={[0, 1, 0]}
-		maxPolarAngle={Math.PI / 2.1}
-		minDistance={5}
+		target={[0, 0.8, 0]}
+		maxPolarAngle={Math.PI / 2}
+		minDistance={3}
 		maxDistance={30}
 	/>
 </T.PerspectiveCamera>
