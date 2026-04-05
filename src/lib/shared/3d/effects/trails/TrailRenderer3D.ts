@@ -1,0 +1,269 @@
+import {
+  Vector3,
+  BufferGeometry,
+  BufferAttribute,
+  Mesh,
+  Color,
+  ShaderMaterial,
+} from "three";
+import { createTrailMaterial } from "./TrailMaterial3D";
+import type { QualityTier } from "../types";
+
+export class TrailRingBuffer {
+  private buffer: Vector3[];
+  private timestamps: Float64Array;
+  private head = 0;
+  private count = 0;
+  readonly capacity: number;
+
+  constructor(capacity: number) {
+    this.capacity = capacity;
+    this.buffer = new Array(capacity);
+    this.timestamps = new Float64Array(capacity);
+    for (let i = 0; i < capacity; i++) {
+      this.buffer[i] = new Vector3();
+    }
+  }
+
+  get length(): number {
+    return this.count;
+  }
+
+  push(point: Vector3, timestamp?: number): void {
+    this.buffer[this.head].copy(point);
+    this.timestamps[this.head] = timestamp ?? performance.now() / 1000;
+    this.head = (this.head + 1) % this.capacity;
+    if (this.count < this.capacity) this.count++;
+  }
+
+  clear(): void {
+    this.head = 0;
+    this.count = 0;
+  }
+
+  toOrderedArray(): Vector3[] {
+    if (this.count === 0) return [];
+    const result: Vector3[] = [];
+    const start = this.count < this.capacity ? 0 : this.head;
+    for (let i = 0; i < this.count; i++) {
+      const idx = (start + i) % this.capacity;
+      result.push(this.buffer[idx].clone());
+    }
+    return result;
+  }
+
+  getPoint(orderedIndex: number): Vector3 {
+    const start = this.count < this.capacity ? 0 : this.head;
+    const idx = (start + orderedIndex) % this.capacity;
+    return this.buffer[idx];
+  }
+
+  getTimestamp(orderedIndex: number): number {
+    const start = this.count < this.capacity ? 0 : this.head;
+    const idx = (start + orderedIndex) % this.capacity;
+    return this.timestamps[idx];
+  }
+}
+
+function catmullRom(p0: Vector3, p1: Vector3, p2: Vector3, p3: Vector3, t: number, out: Vector3): Vector3 {
+  const t2 = t * t;
+  const t3 = t2 * t;
+  out.x = 0.5 * (2 * p1.x + (-p0.x + p2.x) * t + (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t2 + (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t3);
+  out.y = 0.5 * (2 * p1.y + (-p0.y + p2.y) * t + (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 + (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t3);
+  out.z = 0.5 * (2 * p1.z + (-p0.z + p2.z) * t + (2 * p0.z - 5 * p1.z + 4 * p2.z - p3.z) * t2 + (-p0.z + 3 * p1.z - 3 * p2.z + p3.z) * t3);
+  return out;
+}
+
+export type TrailMode = "fade" | "loop_clear" | "persistent";
+
+export interface TrailRendererConfig {
+  maxPoints: number;
+  subdivisions: number;
+  width: number;
+  color: string;
+  opacity: number;
+  rainbow: boolean;
+  qualityTier: QualityTier;
+  mode: TrailMode;
+  fadeDuration: number;
+}
+
+const DEFAULT_CONFIG: TrailRendererConfig = {
+  maxPoints: 120,
+  subdivisions: 4,
+  width: 0.03,
+  color: "#3b82f6",
+  opacity: 0.85,
+  rainbow: false,
+  qualityTier: "medium" as QualityTier,
+  mode: "fade",
+  fadeDuration: 2.0,
+};
+
+export class TrailRenderer3D {
+  private ringBuffer: TrailRingBuffer;
+  private geometry: BufferGeometry;
+  private mesh: Mesh;
+  private config: TrailRendererConfig;
+  private positions: Float32Array;
+  private alphas: Float32Array;
+  private colors: Float32Array;
+  private maxVertices: number;
+  private readonly tempVec = new Vector3();
+  private readonly tempTangent = new Vector3();
+  private readonly tempNormal = new Vector3();
+  private readonly tempCR = new Vector3();
+  private readonly tempColor = new Color();
+  private sampleCounter = 0;
+  private sampleRate: number;
+
+  constructor(config: Partial<TrailRendererConfig> = {}) {
+    this.config = { ...DEFAULT_CONFIG, ...config };
+    this.sampleRate = this.config.qualityTier === "low" ? 2 : 1;
+
+    const effectiveMaxPoints = this.config.qualityTier === "low"
+      ? Math.floor(this.config.maxPoints / 2)
+      : this.config.maxPoints;
+
+    this.ringBuffer = new TrailRingBuffer(effectiveMaxPoints);
+
+    const maxInterpolated = (effectiveMaxPoints - 1) * this.config.subdivisions + 1;
+    this.maxVertices = maxInterpolated * 2;
+
+    this.positions = new Float32Array(this.maxVertices * 3);
+    this.alphas = new Float32Array(this.maxVertices);
+    this.colors = new Float32Array(this.maxVertices * 3);
+
+    this.geometry = new BufferGeometry();
+    this.geometry.setAttribute("position", new BufferAttribute(this.positions, 3));
+    this.geometry.setAttribute("alpha", new BufferAttribute(this.alphas, 1));
+    this.geometry.setAttribute("instanceColor", new BufferAttribute(this.colors, 3));
+
+    const material = createTrailMaterial({
+      color: this.config.color,
+      opacity: this.config.opacity,
+      rainbow: this.config.rainbow,
+    });
+
+    this.mesh = new Mesh(this.geometry, material);
+    this.mesh.frustumCulled = false;
+  }
+
+  get object3D(): Mesh {
+    return this.mesh;
+  }
+
+  addPoint(position: Vector3): void {
+    this.sampleCounter++;
+    if (this.sampleCounter % this.sampleRate !== 0) return;
+    this.ringBuffer.push(position);
+  }
+
+  clear(): void {
+    this.ringBuffer.clear();
+  }
+
+  update(cameraPosition: Vector3): void {
+    const pointCount = this.ringBuffer.length;
+    if (pointCount < 2) {
+      this.geometry.setDrawRange(0, 0);
+      return;
+    }
+
+    let vertexIndex = 0;
+    const subdivisions = this.config.subdivisions;
+    const totalSegments = pointCount - 1;
+    const totalInterpolatedPoints = totalSegments * subdivisions + 1;
+
+    for (let seg = 0; seg < totalSegments; seg++) {
+      const numSubdivs = seg === totalSegments - 1 ? subdivisions + 1 : subdivisions;
+
+      for (let sub = 0; sub < numSubdivs; sub++) {
+        const t = sub / subdivisions;
+
+        const i0 = Math.max(0, seg - 1);
+        const i1 = seg;
+        const i2 = Math.min(pointCount - 1, seg + 1);
+        const i3 = Math.min(pointCount - 1, seg + 2);
+
+        const p0 = this.ringBuffer.getPoint(i0);
+        const p1 = this.ringBuffer.getPoint(i1);
+        const p2 = this.ringBuffer.getPoint(i2);
+        const p3 = this.ringBuffer.getPoint(i3);
+
+        catmullRom(p0, p1, p2, p3, t, this.tempVec);
+
+        const tNext = Math.min(t + 0.01, 1);
+        catmullRom(p0, p1, p2, p3, tNext, this.tempCR);
+        this.tempTangent.subVectors(this.tempCR, this.tempVec).normalize();
+
+        const toCamera = this.tempNormal.subVectors(cameraPosition, this.tempVec).normalize();
+        const normal = this.tempNormal.crossVectors(this.tempTangent, toCamera).normalize();
+
+        const progress = (seg * subdivisions + sub) / (totalInterpolatedPoints - 1);
+        const taper = 1.0 - progress * 0.8;
+        const halfWidth = this.config.width * 0.5 * taper;
+
+        let alpha: number;
+        if (this.config.mode === "fade") {
+          const now = performance.now() / 1000;
+          const pointTime = this.ringBuffer.getTimestamp(Math.min(seg, pointCount - 1));
+          const age = now - pointTime;
+          alpha = Math.max(0, 1.0 - age / this.config.fadeDuration);
+        } else {
+          alpha = 1.0 - progress;
+        }
+
+        const li = vertexIndex * 3;
+        this.positions[li] = this.tempVec.x + normal.x * halfWidth;
+        this.positions[li + 1] = this.tempVec.y + normal.y * halfWidth;
+        this.positions[li + 2] = this.tempVec.z + normal.z * halfWidth;
+        this.alphas[vertexIndex] = alpha;
+
+        if (this.config.rainbow) {
+          const hue = progress * 360;
+          this.tempColor.setHSL(hue / 360, 1, 0.5);
+          this.colors[li] = this.tempColor.r;
+          this.colors[li + 1] = this.tempColor.g;
+          this.colors[li + 2] = this.tempColor.b;
+        }
+
+        vertexIndex++;
+
+        const ri = vertexIndex * 3;
+        this.positions[ri] = this.tempVec.x - normal.x * halfWidth;
+        this.positions[ri + 1] = this.tempVec.y - normal.y * halfWidth;
+        this.positions[ri + 2] = this.tempVec.z - normal.z * halfWidth;
+        this.alphas[vertexIndex] = alpha;
+
+        if (this.config.rainbow) {
+          this.colors[ri] = this.colors[li];
+          this.colors[ri + 1] = this.colors[li + 1];
+          this.colors[ri + 2] = this.colors[li + 2];
+        }
+
+        vertexIndex++;
+      }
+    }
+
+    (this.geometry.attributes.position as BufferAttribute).needsUpdate = true;
+    (this.geometry.attributes.alpha as BufferAttribute).needsUpdate = true;
+    if (this.config.rainbow) {
+      (this.geometry.attributes.instanceColor as BufferAttribute).needsUpdate = true;
+    }
+
+    this.geometry.setDrawRange(0, vertexIndex);
+  }
+
+  onLoopReset(): void {
+    if (this.config.mode === "loop_clear") {
+      this.clear();
+    }
+  }
+
+  dispose(): void {
+    this.geometry.dispose();
+    const material = this.mesh.material as ShaderMaterial;
+    material.dispose();
+  }
+}
