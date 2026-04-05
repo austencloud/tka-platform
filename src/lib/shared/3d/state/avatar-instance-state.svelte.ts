@@ -123,11 +123,14 @@ export function createAvatarInstanceState(
   // Whether avatar is currently moving
   let isMoving = $state(false);
 
-  // Current facing angle in radians (0 = facing +Z)
-  let facingAngle = $state(0);
+  // Current facing angle in radians (0 = facing +Z).
+  // Initialize from persisted plane mode so dual-wheel starts at π/2.
+  const _initialPlaneMode = loadPersistedPlaneMode();
+  const _initialFacing = _initialPlaneMode === PlaneMode.DUAL_WHEEL ? Math.PI / 2 : 0;
+  let facingAngle = $state(_initialFacing);
 
   // Target facing angle for smooth rotation
-  let targetFacingAngle = $state(0);
+  let targetFacingAngle = $state(_initialFacing);
 
   // Rotation speed in radians per second — fast enough to feel responsive,
   // slow enough to look smooth. 12 rad/s ≈ 180° in ~0.26s.
@@ -329,6 +332,7 @@ export function createAvatarInstanceState(
 
   function setPlaneMode(mode: PlaneMode) {
     planeMode = mode;
+    try { localStorage.setItem(PLANE_MODE_KEY, mode); } catch {}
 
     // Sync custom plane trackers to the preset's planes when switching away from CUSTOM
     if (mode !== PlaneMode.CUSTOM) {
@@ -379,6 +383,7 @@ export function createAvatarInstanceState(
    */
   function cycleRotationVariant(): string {
     rotationVariantIndex = (rotationVariantIndex + 1) % ROTATION_VARIANTS.length;
+    try { localStorage.setItem(ROT_VARIANT_KEY, String(rotationVariantIndex)); } catch {}
     const modeConfig = getEffectiveModeConfig(planeMode);
     reconvertWithConfig(modeConfig);
     return ROTATION_LABELS[rotationVariantIndex] ?? "Unknown";
