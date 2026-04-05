@@ -148,7 +148,7 @@
 			]
 			question = ''
 		} catch (err) {
-			error = err instanceof Error ? err.message : 'Something went wrong'
+			error = err instanceof Error ? err.message : 'Tika couldn\'t respond. Try asking again.'
 		} finally {
 			isLoading = false
 		}

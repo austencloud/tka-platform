@@ -7,7 +7,7 @@ QuizLoadingState - Loading spinner for quizzes
 
 <div class="loading-state" role="status" aria-live="polite" aria-busy="true">
   <ProgressRing percent={-1} size={32} strokeWidth={3} />
-  <p class="loading-text">Loading...</p>
+  <p class="loading-text">Loading quiz...</p>
 </div>
 
 <style>

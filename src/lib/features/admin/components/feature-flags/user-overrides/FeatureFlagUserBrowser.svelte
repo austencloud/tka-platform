@@ -247,7 +247,7 @@
           >
             {#if isLoadingMore}
               <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
-              Loading...
+              Loading more users...
             {:else}
               <i class="fas fa-chevron-down" aria-hidden="true"></i>
               Load More Users

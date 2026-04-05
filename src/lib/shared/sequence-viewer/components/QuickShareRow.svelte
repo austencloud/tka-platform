@@ -50,7 +50,7 @@
     {:else}
       <i class="fas fa-copy" aria-hidden="true"></i>
     {/if}
-    <span>{copySuccess ? "Copied!" : disabled ? "Loading..." : "Copy"}</span>
+    <span>{copySuccess ? "Copied!" : disabled ? "Preparing link..." : "Copy"}</span>
   </button>
 
   <!-- Download -->

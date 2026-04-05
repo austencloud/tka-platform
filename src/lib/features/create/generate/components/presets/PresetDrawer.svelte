@@ -106,7 +106,7 @@
         <h4 class="section-heading">Community Favorites</h4>
 
         {#if isLoading}
-          <p class="empty-message">Loading...</p>
+          <p class="empty-message">Loading community favorites...</p>
         {:else if communityFavorites.length === 0}
           <p class="empty-message">No community favorites yet</p>
         {:else}

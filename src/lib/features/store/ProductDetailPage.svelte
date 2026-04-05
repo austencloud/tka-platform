@@ -38,7 +38,7 @@
 
   <main class="detail-content">
     {#if state.isLoading}
-      <div class="loading">Loading...</div>
+      <div class="loading">Loading product details...</div>
     {:else if state.error}
       <div class="error">{state.error}</div>
     {:else if state.selectedProduct}

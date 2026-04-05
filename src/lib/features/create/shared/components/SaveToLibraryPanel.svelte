@@ -554,7 +554,7 @@
             >
               {#if isSubmittingToShame}
                 <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-                Submitting...
+                Submitting to Hall of Shame...
               {:else}
                 <i class="fas fa-skull" aria-hidden="true"></i>
                 Hall of Shame

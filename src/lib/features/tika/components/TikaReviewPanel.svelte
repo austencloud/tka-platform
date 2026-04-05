@@ -327,7 +327,7 @@
 			{#if loading}
 				<div class="state-message">
 					<i class="fas fa-spinner fa-spin"></i>
-					<span>Loading...</span>
+					<span>Loading sessions...</span>
 				</div>
 			{:else if error}
 				<div class="state-message error">

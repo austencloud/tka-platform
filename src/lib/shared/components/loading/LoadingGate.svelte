@@ -11,7 +11,7 @@
   interface Props {
     /** Visual variant. Default "bar". */
     variant?: "bar" | "card" | "skeleton";
-    /** Status message. Default "Loading...". */
+    /** Status message. Callers should provide context-specific text. */
     message?: string;
     /** Accent color override. */
     color?: string;

@@ -39,7 +39,7 @@
   const label = $derived(
     allPictographs.length > 0
       ? `${pictograph?.letter ?? "?"} — ${currentIndex + 1} / ${allPictographs.length}`
-      : "Loading...",
+      : "Loading pictographs...",
   );
 
   // Load real pictographs from CSV dataframe

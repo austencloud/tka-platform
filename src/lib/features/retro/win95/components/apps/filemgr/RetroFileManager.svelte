@@ -248,7 +248,7 @@
   const statusPanels = $derived([
     {
       text: libraryLoading && isLibraryDir
-        ? "Loading..."
+        ? "Loading files..."
         : selectedFileIndex >= 0
           ? `1 object(s) — ${currentFiles[selectedFileIndex]?.size.toLocaleString()} bytes`
           : `${currentFiles.length} object(s) — ${totalSize.toLocaleString()} bytes`,

@@ -237,7 +237,7 @@
       {#if isLoading}
         <div class="loading-overlay">
           <i class="fas fa-spinner fa-spin"></i>
-          <span>Loading...</span>
+          <span>Loading firefly forest...</span>
         </div>
       {/if}
       <canvas bind:this={canvas}></canvas>

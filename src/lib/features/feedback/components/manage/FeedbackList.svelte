@@ -103,7 +103,7 @@
       <div class="state-icon error">
         <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
       </div>
-      <h3 class="state-title">Something went wrong</h3>
+      <h3 class="state-title">Couldn't load feedback</h3>
       <p class="state-subtitle">{manageState.error}</p>
       <button
         type="button"

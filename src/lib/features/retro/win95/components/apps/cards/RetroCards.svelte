@@ -133,7 +133,7 @@
   const statusPanels = $derived([
     {
       text: isLoading
-        ? "Loading..."
+        ? "Loading cards..."
         : cards.length === 0
           ? "No cards"
           : `Card ${currentIndex + 1} of ${cards.length}`,

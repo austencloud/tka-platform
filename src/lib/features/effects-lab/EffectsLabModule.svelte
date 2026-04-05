@@ -132,7 +132,7 @@
       {#if PointEditorComponent}
         <PointEditorComponent />
       {:else}
-        <div class="loading">Loading...</div>
+        <div class="loading">Loading point editor...</div>
       {/if}
     {/if}
   </div>

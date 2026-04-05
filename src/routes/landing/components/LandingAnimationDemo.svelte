@@ -574,7 +574,7 @@
             {:else}
               <div class="animation-loading">
                 <ProgressRing percent={-1} size={32} strokeWidth={3} />
-                <span>{isLoading ? "Loading..." : "Initializing..."}</span>
+                <span>{isLoading ? "Loading animation..." : "Initializing..."}</span>
               </div>
             {/if}
           </div>

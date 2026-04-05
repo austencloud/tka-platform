@@ -16,7 +16,7 @@
   disabled={state.isCheckingOut}
 >
   {#if state.isCheckingOut}
-    Processing...
+    Opening checkout...
   {:else}
     Buy Now
   {/if}

@@ -109,7 +109,7 @@ Uses IStartPositionManager to load variations and displays actual pictographs
 
   {#if isLoading}
     <div class="loading-placeholder">
-      <span>Loading...</span>
+      <span>Loading positions...</span>
     </div>
   {:else}
     <!-- All variations in a responsive grid -->

@@ -58,7 +58,7 @@
   const label = $derived(
     allPictographs.length > 0
       ? `${pictograph?.letter ?? "?"} — ${currentIndex + 1} / ${allPictographs.length}`
-      : "Loading...",
+      : "Loading pictographs...",
   );
 
   // ── Load real pictographs ──
@@ -185,7 +185,7 @@
       <i class="fas fa-chevron-right" aria-hidden="true"></i>
     </button>
 
-    <button class="randomize-btn" onclick={randomize} disabled={dataLoading}>
+    <button class="randomize-btn" onclick={randomize} disabled={dataLoading} aria-label="Randomize">
       <i class="fas fa-dice" aria-hidden="true"></i>
     </button>
   </div>

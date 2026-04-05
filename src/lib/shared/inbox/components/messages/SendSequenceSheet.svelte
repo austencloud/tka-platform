@@ -297,7 +297,7 @@
         {#if isLoadingSuggestions}
           <div class="suggestions-loading">
             <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-            <span>Loading...</span>
+            <span>Loading suggestions...</span>
           </div>
         {:else if availableSuggestions.length > 0}
           <div class="suggestions-row-container">

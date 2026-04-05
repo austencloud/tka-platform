@@ -131,7 +131,7 @@
     {#if isLoading}
       <div class="loading-state">
         <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-        <span>Loading...</span>
+        <span>Loading connections...</span>
       </div>
     {:else if error}
       <div class="error-state">

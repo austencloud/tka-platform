@@ -346,7 +346,7 @@
         >
           {#if !canvasReady}
             <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-            Loading...
+            Preparing export...
           {:else}
             <i class="fas {renderMode === '3d' ? 'fa-circle' : 'fa-download'}" aria-hidden="true"></i>
             {exportButtonLabel}
@@ -535,7 +535,7 @@
           >
             {#if !canvasReady}
               <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-              Loading...
+              Preparing export...
             {:else}
               <i class="fas {renderMode === '3d' ? 'fa-circle' : 'fa-download'}" aria-hidden="true"></i>
               {exportButtonLabel}
@@ -1057,7 +1057,4 @@
     }
   }
 
-  .premium-nudge-wrapper {
-    padding: 0.5rem 0;
-  }
 </style>

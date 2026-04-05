@@ -69,7 +69,7 @@
     {:else if trailsState.activeView === "library" && LibraryView}
       <LibraryView />
     {:else}
-      <div class="loading-view">Loading...</div>
+      <div class="loading-view">Loading video trails...</div>
     {/if}
   </div>
 </div>

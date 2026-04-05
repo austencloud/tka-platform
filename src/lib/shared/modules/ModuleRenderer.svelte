@@ -25,6 +25,7 @@
   import type { AuthNudgeTrigger } from "../auth/domain/AuthNudgeTrigger";
   import { authDrawerState } from "../auth/state/auth-drawer-state.svelte";
   import { switchModule } from "../application/state/ui/module-state";
+  import { MODULE_DEFINITIONS } from "../navigation/config/module-definitions";
 
   // Only assign view-transition-name during module switches.
   // If set permanently, ANY view transition on the page captures this element.
@@ -221,7 +222,7 @@
   {:else}
     <div class="module-loading" role="status" aria-live="polite" aria-busy="true">
       <ProgressRing percent={-1} size={32} strokeWidth={3} />
-      <p>Loading...</p>
+      <p>Loading {MODULE_DEFINITIONS.find((m) => m.id === activeModule)?.label ?? activeModule}...</p>
     </div>
   {/if}
 {:else}
@@ -258,7 +259,7 @@
                 aria-busy="true"
               >
                 <ProgressRing percent={-1} size={32} strokeWidth={3} />
-                <p>Loading module...</p>
+                <p>Loading {MODULE_DEFINITIONS.find((m) => m.id === activeModule)?.label ?? activeModule}...</p>
               </div>
             {/if}
           {:then LoadedModule}

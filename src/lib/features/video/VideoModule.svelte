@@ -75,7 +75,7 @@
   {:else}
     <div class="video-loading">
       <i class="fas fa-circle-notch fa-spin"></i>
-      <span>Loading...</span>
+      <span>Loading video tab...</span>
     </div>
   {/if}
 </div>
