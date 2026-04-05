@@ -7,6 +7,8 @@
 <script lang="ts">
 	import { onDestroy } from "svelte";
 	import type { EffectPointEditorState } from "../state/effect-point-editor-state.svelte";
+	import { DEACTIVATED_PROP_TYPES } from "$lib/shared/pictograph/prop/domain/PropTypeDisplayRegistry";
+	import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 
 	interface Props {
 		editorState: EffectPointEditorState;
@@ -19,6 +21,9 @@
 		types: string[];
 	}
 
+	/** Filter out deactivated prop types (uses lowercase enum values for matching). */
+	const deactivatedLower = new Set([...DEACTIVATED_PROP_TYPES].map(p => p.toLowerCase()));
+
 	const PROP_FAMILIES: PropFamily[] = [
 		{ label: "Staff", types: ["staff", "bigstaff", "simple_staff", "staff_v2"] },
 		{ label: "Club", types: ["club", "bigclub"] },
@@ -29,14 +34,15 @@
 		{ label: "Triquetra", types: ["triquetra", "triquetra2"] },
 		{ label: "Sword", types: ["sword"] },
 		{ label: "Chicken", types: ["chicken", "bigchicken"] },
-		{ label: "Guitar", types: ["guitar", "ukulele"] },
 		{ label: "Doublestar", types: ["doublestar", "bigdoublestar"] },
 		{ label: "Eightrings", types: ["eightrings", "bigeightrings"] },
+		{ label: "Double Contact Ball", types: ["doublecontactball"] },
 		{ label: "Quiad", types: ["quiad"] },
 		{ label: "Torch", types: ["torch", "bigtorch"] },
 		{ label: "Poi", types: ["poi"] },
 		{ label: "Hand", types: ["hand"] },
-	];
+	].map(f => ({ ...f, types: f.types.filter(t => !deactivatedLower.has(t)) }))
+	 .filter(f => f.types.length > 0);
 
 	let menuOpen = $state(false);
 	let triggerEl = $state<HTMLButtonElement | null>(null);

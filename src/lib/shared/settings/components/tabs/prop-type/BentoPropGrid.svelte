@@ -81,13 +81,13 @@
   // expandedFamily is driven entirely by user clicks.
 
   function handleFamilyClick(base: PropType) {
-    const variants = getAllVariations(base);
-    if (variants.length === 1) {
-      // Single-prop family: select immediately, collapse any strip
+    const activeVariants = getAllVariations(base).filter(isPropActive);
+    if (activeVariants.length <= 1) {
+      // Single active variant (or none): select immediately, collapse any strip
       onSelect(base);
       expandedFamily = null;
     } else {
-      // Multi-variant family: expand strip without selecting yet.
+      // Multiple active variants: expand strip without selecting yet.
       // Visual highlight comes from expandedFamily check on the button.
       expandedFamily = base;
     }

@@ -41,9 +41,9 @@
 	const canFuse = $derived(leftBrowsingSeq !== null && rightBrowsingSeq !== null);
 
 	// DOM refs for assembly animation
-	let leftPanelEl: HTMLDivElement;
-	let rightPanelEl: HTMLDivElement;
-	let fuseTargetEl: HTMLDivElement;
+	let leftPanelEl: HTMLDivElement = $state(undefined as unknown as HTMLDivElement);
+	let rightPanelEl: HTMLDivElement = $state(undefined as unknown as HTMLDivElement);
+	let fuseTargetEl: HTMLDivElement = $state(undefined as unknown as HTMLDivElement);
 
 	let fuseAssemblyAnimator: IFuseAssemblyAnimator;
 	try {

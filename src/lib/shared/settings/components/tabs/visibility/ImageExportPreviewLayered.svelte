@@ -346,21 +346,6 @@ This gives users a live preview of exactly how their settings affect the exporte
     max-height: 100%;
   }
 
-  .step-number {
-    position: absolute;
-    bottom: 2px;
-    left: 4px;
-    font-size: clamp(8px, 2cqi, 11px);
-    font-weight: 600;
-    color: rgba(0, 0, 0, 0.4);
-    font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-    z-index: 1;
-  }
-
-  .dark-mode .step-number {
-    color: rgba(255, 255, 255, 0.4);
-  }
-
   /* QR code icon — absolute-positioned in bottom-right corner */
   .qr-indicator {
     position: absolute;

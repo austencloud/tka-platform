@@ -25,7 +25,7 @@
 		archiveState: ArchiveState;
 	}
 
-	let { solvedRoom, playerPosition, archiveState }: Props = $props();
+	const props: Props = $props();
 
 	// Set scene background to black (cave darkness)
 	const { scene } = useThrelte();
@@ -39,33 +39,37 @@
 		};
 	});
 
-	// World offset for positioning objects
-	const ox = solvedRoom.worldOffset.x;
-	const oy = solvedRoom.worldOffset.y;
-	const oz = solvedRoom.worldOffset.z;
+	// World offset for positioning objects — $derived to track props.solvedRoom reactively
+	const ox = $derived(props.solvedRoom.worldOffset.x);
+	const oy = $derived(props.solvedRoom.worldOffset.y);
+	const oz = $derived(props.solvedRoom.worldOffset.z);
 
 	// Get exhibit position from solved room objects
-	const exhibitObj = solvedRoom.objectsById.get("tablet-pedestal");
-	const exhibitPosition: [number, number, number] = exhibitObj
-		? [exhibitObj.position[0] + ox, exhibitObj.position[1] + oy, exhibitObj.position[2] + oz]
-		: [0 + ox, 0 + oy, -4.5 + oz];
+	const exhibitPosition = $derived.by(() => {
+		const exhibitObj = props.solvedRoom.objectsById.get("tablet-pedestal");
+		return exhibitObj
+			? [exhibitObj.position[0] + ox, exhibitObj.position[1] + oy, exhibitObj.position[2] + oz] as [number, number, number]
+			: [0 + ox, 0 + oy, -4.5 + oz] as [number, number, number];
+	});
 
 	// Ground Y for exhibit pedestal placement (floor level with world offset)
-	const groundY = oy;
+	const groundY = $derived(oy);
 
 	// Get torch positions from solved room objects
-	const torchObjects = solvedRoom.objects.filter((o) => o.type === "torch-mount");
-	const torchPositions: [number, number, number][] = torchObjects.map((t) => [
-		t.position[0] + ox,
-		t.position[1] + oy,
-		t.position[2] + oz,
-	]);
+	const torchPositions = $derived.by(() => {
+		const torchObjects = props.solvedRoom.objects.filter((o) => o.type === "torch-mount");
+		return torchObjects.map((t) => [
+			t.position[0] + ox,
+			t.position[1] + oy,
+			t.position[2] + oz,
+		] as [number, number, number]);
+	});
 
 	// Interaction detection: is player near the exhibit?
 	const INTERACTION_RADIUS = 3.5;
 	const distanceToExhibit = $derived.by(() => {
-		const dx = playerPosition.x - exhibitPosition[0];
-		const dz = playerPosition.z - exhibitPosition[2];
+		const dx = props.playerPosition.x - exhibitPosition[0];
+		const dz = props.playerPosition.z - exhibitPosition[2];
 		return Math.sqrt(dx * dx + dz * dz);
 	});
 
@@ -73,13 +77,13 @@
 
 	// Update interaction target based on proximity
 	$effect(() => {
-		archiveState.setInteractionTarget(isNearExhibit ? "lascaux-tablets" : null);
+		props.archiveState.setInteractionTarget(isNearExhibit ? "lascaux-tablets" : null);
 	});
 
 	// Handle E key for interaction
 	function handleKeydown(e: KeyboardEvent) {
-		if ((e.key === "e" || e.key === "E") && isNearExhibit && !archiveState.isOverlayOpen) {
-			archiveState.openPlaque(LASCAUX_TABLETS_PLAQUE);
+		if ((e.key === "e" || e.key === "E") && isNearExhibit && !props.archiveState.isOverlayOpen) {
+			props.archiveState.openPlaque(LASCAUX_TABLETS_PLAQUE);
 			document.exitPointerLock();
 		}
 	}

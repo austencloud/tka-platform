@@ -13,6 +13,7 @@
 import type { EffectPreset, EffectPresetGroup } from "./types";
 import type { AnimationVisibilityStateManager } from "../../../state/animation-visibility-state.svelte";
 import type { FireColorCurve } from "../../../domain/types/FireTypes";
+import { hexToFlameColor } from "../../../domain/types/FireTypes";
 
 // RGB values are normalized [0-1] for shader consumption
 const CLASSIC_CURVE: FireColorCurve = {
@@ -37,46 +38,43 @@ const SPIRIT_CURVE: FireColorCurve = {
 };
 
 // ── Custom fire color persistence ──────────────────────────────────────
-const CUSTOM_FIRE_COLOR_KEY = "tka_custom_fire_color";
-const DEFAULT_CUSTOM_FIRE_COLOR = "#34d399"; // Green fire
+const CUSTOM_FIRE_COLORS_KEY = "tka_custom_fire_colors";
 
-export function loadCustomFireColor(): string {
+export interface CustomFireColors {
+  left: string;
+  right: string;
+}
+
+const DEFAULT_CUSTOM_FIRE_COLORS: CustomFireColors = {
+  left: "#34d399",
+  right: "#f97316",
+};
+
+export function loadCustomFireColors(): CustomFireColors {
   try {
-    const raw = localStorage.getItem(CUSTOM_FIRE_COLOR_KEY);
-    if (raw) return raw;
+    const raw = localStorage.getItem(CUSTOM_FIRE_COLORS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed.left && parsed.right) return parsed;
+    }
   } catch { /* ignore */ }
-  return DEFAULT_CUSTOM_FIRE_COLOR;
+  return { ...DEFAULT_CUSTOM_FIRE_COLORS };
 }
 
-export function saveCustomFireColor(hex: string): void {
+export function saveCustomFireColors(colors: CustomFireColors): void {
   try {
-    localStorage.setItem(CUSTOM_FIRE_COLOR_KEY, hex);
+    localStorage.setItem(CUSTOM_FIRE_COLORS_KEY, JSON.stringify(colors));
   } catch { /* ignore */ }
 }
 
-/**
- * Build a 4-stop FireColorCurve from a single hex color.
- * Cold = darkened hue, mid = saturated hue, hot = brightened, core = washed out bright.
- */
-export function hexToFireCurve(hex: string): FireColorCurve {
-  const r = parseInt(hex.slice(1, 3), 16) / 255;
-  const g = parseInt(hex.slice(3, 5), 16) / 255;
-  const b = parseInt(hex.slice(5, 7), 16) / 255;
-
-  return {
-    coldColor: [r * 0.25, g * 0.25, b * 0.25],
-    midColor: [r * 0.8, g * 0.8, b * 0.8],
-    hotColor: [Math.min(1, r * 1.1), Math.min(1, g * 1.1), Math.min(1, b * 1.1)],
-    coreColor: [
-      Math.min(1, r * 0.6 + 0.4),
-      Math.min(1, g * 0.6 + 0.4),
-      Math.min(1, b * 0.6 + 0.4),
-    ],
-  };
-}
-
-export function applyCustomFireColor(vm: AnimationVisibilityStateManager, hex: string): void {
-  vm.setFireColorCurve(hexToFireCurve(hex));
+export function applyCustomFireColors(vm: AnimationVisibilityStateManager, colors: CustomFireColors): void {
+  // Set colorBlend to 1.0 so per-prop colors fully tint the fire
+  vm.setFireColorBlend(1.0);
+  // Set per-prop flame colors
+  vm.setFirePropColors([
+    hexToFlameColor(colors.left),
+    hexToFlameColor(colors.right),
+  ]);
 }
 
 // ── Presets (color only — no intensity/turbulence changes) ─────────────
@@ -88,6 +86,7 @@ export const FIRE_PRESETS: EffectPreset[] = [
     previewColor: "#f97316",
     apply: (vm) => {
       vm.setFireColorCurve(CLASSIC_CURVE);
+      vm.setFirePropColors(null);
     },
   },
   {
@@ -96,6 +95,7 @@ export const FIRE_PRESETS: EffectPreset[] = [
     previewColor: "#60a5fa",
     apply: (vm) => {
       vm.setFireColorCurve(BLUE_CURVE);
+      vm.setFirePropColors(null);
     },
   },
   {
@@ -104,6 +104,7 @@ export const FIRE_PRESETS: EffectPreset[] = [
     previewColor: "#a855f7",
     apply: (vm) => {
       vm.setFireColorCurve(SPIRIT_CURVE);
+      vm.setFirePropColors(null);
     },
   },
   {
@@ -111,8 +112,8 @@ export const FIRE_PRESETS: EffectPreset[] = [
     name: "Custom",
     previewColor: "custom",
     apply: (vm) => {
-      const hex = loadCustomFireColor();
-      applyCustomFireColor(vm, hex);
+      const colors = loadCustomFireColors();
+      applyCustomFireColors(vm, colors);
     },
   },
 ];

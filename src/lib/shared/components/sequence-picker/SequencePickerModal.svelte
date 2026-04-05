@@ -446,7 +446,7 @@
       {:else if sequences.length === 0}
         <div class="state-container empty">
           <i class="fas fa-folder-open" aria-hidden="true"></i>
-          <p>No sequences available</p>
+          <p>No sequences in your library. Create some first in the Create module.</p>
         </div>
       {:else if filteredSequences.length === 0}
         <div class="state-container empty">

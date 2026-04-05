@@ -20,9 +20,9 @@
   import AuthNudge from "$lib/shared/auth/components/AuthNudge.svelte";
   import type { AuthNudgeTrigger } from "$lib/shared/auth/domain/AuthNudgeTrigger";
 
-  let { tabState }: { tabState: AssembleTabState } = $props();
+  const props: { tabState: AssembleTabState } = $props();
 
-  const builderState = $derived(tabState.assembleBuilderState);
+  const builderState = $derived(props.tabState.assembleBuilderState);
 
   // Auth/tier state for beat cap enforcement
   const accessTier = $derived(
@@ -70,20 +70,23 @@
     prevPhaseIdle = currentlyIdle;
   });
 
-  // Load last-used grid preferences from settings
+  // Load last-used grid preferences from settings.
+  // Wrapped in $effect.pre so tabState is read reactively (avoids state_referenced_locally).
   let settingsState: ISettingsState | null = null;
-  try {
-    settingsState = container.items.settingsState as ISettingsState;
-    const saved = settingsState.currentSettings;
-    if (saved.preferredGridMode) {
-      tabState.assembleBuilderState.setGridMode(saved.preferredGridMode);
+  $effect.pre(() => {
+    try {
+      settingsState = container.items.settingsState as ISettingsState;
+      const saved = settingsState.currentSettings;
+      if (saved.preferredGridMode) {
+        props.tabState.assembleBuilderState.setGridMode(saved.preferredGridMode);
+      }
+      if (saved.preferredShowCenter) {
+        props.tabState.assembleBuilderState.setShowCenter(saved.preferredShowCenter);
+      }
+    } catch {
+      // Settings unavailable — use defaults
     }
-    if (saved.preferredShowCenter) {
-      tabState.assembleBuilderState.setShowCenter(saved.preferredShowCenter);
-    }
-  } catch {
-    // Settings unavailable — use defaults
-  }
+  });
 
   // Persist grid mode changes for next session
   $effect(() => {

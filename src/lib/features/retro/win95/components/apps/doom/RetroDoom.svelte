@@ -14,9 +14,7 @@
   /* Props                                                               */
   /* ------------------------------------------------------------------ */
 
-  let {
-    onclose,
-  }: {
+  const props: {
     onclose?: () => void;
   } = $props();
 
@@ -56,8 +54,8 @@
     };
   });
 
-  /* Suppress onclose unused warning — it's here for the window contract */
-  void onclose;
+  // onclose is part of the window contract; read via $effect to track reactively
+  $effect(() => { void props.onclose; });
 </script>
 
 <div class="doom-container">

@@ -255,6 +255,9 @@ function computeUpdates(deckId, currentData) {
     if (currentData.beatCount !== undefined) {
       // Rename: copy beatCount value to stepCount
       updates.stepCount = currentData.beatCount;
+    } else if (deckId.includes("vtg")) {
+      // VTG decks are always 4-step sequences (displayed as 8 via LOOP)
+      updates.stepCount = 4;
     } else {
       // Neither exists — try to infer from name
       const inferred = inferBeatCount(currentData.name || "");

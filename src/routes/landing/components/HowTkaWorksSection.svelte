@@ -382,15 +382,6 @@
     margin-bottom: 20px;
   }
 
-  /* Third row: 2 centered cards */
-  .third-row {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 20px;
-    max-width: 66%;
-    margin: 0 auto;
-  }
-
   /* Individual card */
   .step-card {
     position: relative;
@@ -455,23 +446,6 @@
     overflow: hidden;
   }
 
-  /* Icon-based cards (7, 8) */
-  .icon-frame {
-    width: 100%;
-    max-width: 200px;
-    aspect-ratio: 1;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(255, 255, 255, 0.02);
-  }
-
-  .icon-frame i {
-    font-size: clamp(3rem, 6vw, 4.5rem);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
-  }
-
   /* Card text */
   h3 {
     font-family: var(--landing-heading-font, "Instrument Serif", Georgia, serif);
@@ -501,13 +475,6 @@
     }
 
     .bottom-row {
-      grid-template-columns: 1fr;
-      max-width: 340px;
-      margin-left: auto;
-      margin-right: auto;
-    }
-
-    .third-row {
       grid-template-columns: 1fr;
       max-width: 340px;
       margin-left: auto;

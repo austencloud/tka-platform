@@ -216,6 +216,7 @@
   .bio-preview {
     display: -webkit-box;
     -webkit-line-clamp: 3;
+    line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
     font-size: var(--font-size-sm, 14px);

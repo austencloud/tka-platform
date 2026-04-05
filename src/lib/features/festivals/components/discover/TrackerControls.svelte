@@ -8,7 +8,7 @@
     festival: Festival;
     tracker: UserFestivalTracker | undefined;
   }
-  let { festival, tracker }: Props = $props();
+  const props: Props = $props();
 
   const { state: festivalState } = getFestivalContext();
 
@@ -20,63 +20,64 @@
     { value: "attending", label: "Attending" },
   ];
 
-  const currentStatusIndex = $derived(
-    tracker ? STATUS_STEPS.findIndex(s => s.value === tracker.status) : -1
-  );
+  const currentStatusIndex = $derived.by(() => {
+    const t = props.tracker;
+    return t ? STATUS_STEPS.findIndex(s => s.value === t.status) : -1;
+  });
 
-  let notes = $state(tracker?.notes ?? "");
-  let stipend = $state(tracker?.stipendRequested ?? "");
-
+  // Initialize from tracker prop via $effect to keep in sync — access through props to track reactively
+  let notes = $state("");
+  let stipend = $state("");
   $effect(() => {
-    notes = tracker?.notes ?? "";
-    stipend = tracker?.stipendRequested ?? "";
+    notes = props.tracker?.notes ?? "";
+    stipend = props.tracker?.stipendRequested != null ? String(props.tracker.stipendRequested) : "";
   });
 
   async function setStatus(status: TrackerStatus) {
     const uid = auth.currentUser?.uid;
     if (!uid) return;
-    await festivalState.updateTracker(uid, festival.id, { status });
+    await festivalState.updateTracker(uid, props.festival.id, { status });
   }
 
   function isAppliedAs(role: "instructor" | "performer"): boolean {
-    return tracker?.appliedAs?.includes(role) ?? false;
+    return props.tracker?.appliedAs?.includes(role) ?? false;
   }
 
   async function toggleAppliedAs(role: "instructor" | "performer") {
     const uid = auth.currentUser?.uid;
     if (!uid) return;
-    const current = tracker?.appliedAs ?? [];
+    const current = props.tracker?.appliedAs ?? [];
     const next = current.includes(role)
       ? current.filter(r => r !== role)
       : [...current, role];
-    await festivalState.updateTracker(uid, festival.id, { appliedAs: next });
+    await festivalState.updateTracker(uid, props.festival.id, { appliedAs: next });
   }
 
   function isWorkshopSubmitted(title: string): boolean {
-    return tracker?.workshopsSubmitted?.includes(title) ?? false;
+    return props.tracker?.workshopsSubmitted?.includes(title) ?? false;
   }
 
   async function toggleWorkshop(title: string) {
     const uid = auth.currentUser?.uid;
     if (!uid) return;
-    const current = tracker?.workshopsSubmitted ?? [];
+    const current = props.tracker?.workshopsSubmitted ?? [];
     const next = current.includes(title)
       ? current.filter(t => t !== title)
       : [...current, title];
-    await festivalState.updateTracker(uid, festival.id, { workshopsSubmitted: next });
+    await festivalState.updateTracker(uid, props.festival.id, { workshopsSubmitted: next });
   }
 
   async function saveNotes() {
     const uid = auth.currentUser?.uid;
     if (!uid) return;
-    await festivalState.updateTracker(uid, festival.id, { notes });
+    await festivalState.updateTracker(uid, props.festival.id, { notes });
   }
 
   async function saveStipend() {
     const uid = auth.currentUser?.uid;
     if (!uid) return;
     const value = stipend !== "" ? Number(stipend) : undefined;
-    await festivalState.updateTracker(uid, festival.id, { stipendRequested: value });
+    await festivalState.updateTracker(uid, props.festival.id, { stipendRequested: value });
   }
 </script>
 
@@ -108,7 +109,7 @@
   </div>
 
   <!-- Declined is a separate action -->
-  {#if tracker && tracker.status !== "declined"}
+  {#if props.tracker && props.tracker.status !== "declined"}
     <button
       class="decline-btn"
       onclick={() => setStatus("declined")}
@@ -117,7 +118,7 @@
       <i class="fas fa-times" aria-hidden="true"></i>
       Mark declined
     </button>
-  {:else if tracker?.status === "declined"}
+  {:else if props.tracker?.status === "declined"}
     <button
       class="decline-btn active"
       onclick={() => setStatus("interested")}

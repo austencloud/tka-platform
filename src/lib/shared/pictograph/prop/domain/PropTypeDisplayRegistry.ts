@@ -163,6 +163,27 @@ export const PROP_TYPE_DISPLAY_REGISTRY: Record<PropType, PropTypeDisplayInfo> =
   } as const;
 
 /**
+ * Props temporarily deactivated from selection UIs.
+ * They still exist in the enum, registry, and saved data — just hidden from pickers.
+ * Remove from this set to reactivate.
+ */
+export const DEACTIVATED_PROP_TYPES: ReadonlySet<PropType> = new Set([
+  PropType.BIGFAN,
+  PropType.GUITAR,
+  PropType.UKULELE,
+  PropType.CONTACTBALL,
+  PropType.BIGCONTACTBALL,
+  PropType.BIGDOUBLECONTACTBALL,
+]);
+
+/**
+ * Whether a prop type is currently active (not deactivated).
+ */
+export function isPropActive(propType: PropType): boolean {
+  return !DEACTIVATED_PROP_TYPES.has(propType);
+}
+
+/**
  * Gets all available prop types in display order.
  */
 export function getAllPropTypes(): PropType[] {
@@ -218,9 +239,8 @@ export const VARIANT_PROP_TYPES: PropType[] = [
   PropType.BIGDOUBLESTAR,
   // Eightrings family
   PropType.BIGEIGHTRINGS,
-  // Contact ball family
+  // Contact ball family (DOUBLECONTACTBALL is now standalone)
   PropType.BIGCONTACTBALL,
-  PropType.DOUBLECONTACTBALL,
   PropType.BIGDOUBLECONTACTBALL,
   // Torch family
   PropType.BIGTORCH,
@@ -255,10 +275,10 @@ const VARIANT_TO_BASE: Partial<Record<PropType, PropType>> = {
   [PropType.BIGDOUBLESTAR]: PropType.DOUBLESTAR,
   // Eightrings variations
   [PropType.BIGEIGHTRINGS]: PropType.EIGHTRINGS,
-  // Contact ball variations
+  // Contact ball variations (CONTACTBALL, BIGCONTACTBALL, BIGDOUBLECONTACTBALL deactivated)
   [PropType.BIGCONTACTBALL]: PropType.CONTACTBALL,
-  [PropType.DOUBLECONTACTBALL]: PropType.CONTACTBALL,
   [PropType.BIGDOUBLECONTACTBALL]: PropType.CONTACTBALL,
+  // DOUBLECONTACTBALL is now standalone (not a variant) since its base is deactivated
   // Torch variations
   [PropType.BIGTORCH]: PropType.TORCH,
 };
@@ -279,7 +299,7 @@ const BASE_TO_VARIANTS: Partial<Record<PropType, PropType[]>> = {
   [PropType.GUITAR]: [PropType.UKULELE],
   [PropType.DOUBLESTAR]: [PropType.BIGDOUBLESTAR],
   [PropType.EIGHTRINGS]: [PropType.BIGEIGHTRINGS],
-  [PropType.CONTACTBALL]: [PropType.BIGCONTACTBALL, PropType.DOUBLECONTACTBALL, PropType.BIGDOUBLECONTACTBALL],
+  [PropType.CONTACTBALL]: [PropType.BIGCONTACTBALL, PropType.BIGDOUBLECONTACTBALL],
   [PropType.TORCH]: [PropType.BIGTORCH],
 };
 

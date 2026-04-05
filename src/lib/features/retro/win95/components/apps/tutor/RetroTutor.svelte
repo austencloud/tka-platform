@@ -88,7 +88,10 @@
   /* ------------------------------------------------------------------ */
 
   let quizQuestions: RetroQuizQuestion[] = $state(loadQuizQuestions(5));
-  let quizAnswers: (number | null)[] = $state(quizQuestions.map(() => null));
+  // Use $derived to compute initial answers from quizQuestions (avoids state_referenced_locally)
+  const initialAnswers = $derived(quizQuestions.map(() => null));
+  let quizAnswers: (number | null)[] = $state([]);
+  $effect.pre(() => { quizAnswers = [...initialAnswers]; });
   let quizChecked = $state(false);
 
   const quizScore = $derived(

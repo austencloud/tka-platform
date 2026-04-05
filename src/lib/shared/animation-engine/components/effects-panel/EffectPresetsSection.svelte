@@ -7,9 +7,10 @@
 		type CustomTrailColors,
 	} from "./presets/trail-presets";
 	import {
-		loadCustomFireColor,
-		saveCustomFireColor,
-		applyCustomFireColor,
+		loadCustomFireColors,
+		saveCustomFireColors,
+		applyCustomFireColors,
+		type CustomFireColors,
 	} from "./presets/fire-presets";
 	import { getAnimationVisibilityManager } from "../../state/animation-visibility-state.svelte";
 
@@ -38,14 +39,14 @@
 		}
 	}
 
-	// ── Fire custom color ──────────────────────────────────────────────
-	let customFireColor = $state(loadCustomFireColor());
+	// ── Fire custom colors ─────────────────────────────────────────────
+	let customFireColors = $state<CustomFireColors>(loadCustomFireColors());
 
-	function handleFireColorChange(value: string) {
-		customFireColor = value;
-		saveCustomFireColor(value);
+	function handleFireColorChange(which: "left" | "right", value: string) {
+		customFireColors = { ...customFireColors, [which]: value };
+		saveCustomFireColors(customFireColors);
 		if (activePresetId === "fire-custom") {
-			applyCustomFireColor(vm, value);
+			applyCustomFireColors(vm, customFireColors);
 		}
 	}
 </script>
@@ -85,11 +86,18 @@
 							></div>
 						</div>
 					{:else if isCustom && preset.id === "fire-custom"}
-						<div
-							class="dot"
-							style:background={customFireColor}
-							style:box-shadow="0 0 14px 5px {customFireColor}80"
-						></div>
+						<div class="dual-dots">
+							<div
+								class="dot"
+								style:background={customFireColors.left}
+								style:box-shadow="0 0 14px 5px {customFireColors.left}80"
+							></div>
+							<div
+								class="dot"
+								style:background={customFireColors.right}
+								style:box-shadow="0 0 14px 5px {customFireColors.right}80"
+							></div>
+						</div>
 					{:else if preset.previewColor === "rainbow"}
 						<div class="rainbow-dot"></div>
 					{:else if preset.previewColor2}
@@ -142,10 +150,18 @@
 			<label class="color-pick">
 				<input
 					type="color"
-					value={customFireColor}
-					oninput={(e) => handleFireColorChange(e.currentTarget.value)}
+					value={customFireColors.left}
+					oninput={(e) => handleFireColorChange("left", e.currentTarget.value)}
 				/>
-				<span class="color-label">Flame Color</span>
+				<span class="color-label">Left</span>
+			</label>
+			<label class="color-pick">
+				<input
+					type="color"
+					value={customFireColors.right}
+					oninput={(e) => handleFireColorChange("right", e.currentTarget.value)}
+				/>
+				<span class="color-label">Right</span>
 			</label>
 		</div>
 	{/if}

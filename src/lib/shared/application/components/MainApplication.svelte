@@ -68,6 +68,7 @@
   import { switchModule } from "../state/ui/module-state";
   import { navigationState } from "../../navigation/state/navigation-state.svelte";
   import type { ModuleId } from "../../navigation/domain/types";
+  import { MODULE_DEFINITIONS } from "../../navigation/config/module-definitions";
   import { handleModuleChange } from "../../navigation-coordinator/navigation-coordinator.svelte";
   import { container } from "../../di";
   import { isModuleAccessible } from "../../auth/domain/guest-access-config";
@@ -122,6 +123,14 @@
   // My Feedback Detail drawer state (controlled via global myFeedbackDetailState)
   let feedbackDetailItem = $derived(myFeedbackDetailState.selectedItem);
   let showFeedbackDetail = $derived(myFeedbackDetailState.isOpen);
+
+  // Dynamic browser tab title
+  const pageTitle = $derived(() => {
+    const mod = MODULE_DEFINITIONS.find(
+      (m) => m.id === navigationState.currentModule
+    );
+    return mod ? `${mod.label} | TKA Composer` : "TKA Composer";
+  });
 
   // Global prop drawer (P key shortcut + PropIndicatorButton)
   const catDogMode = $derived(settings?.catDogMode ?? false);
@@ -458,10 +467,10 @@
 </script>
 
 <svelte:head>
-  <title>TKA Composer - A flow arts choreography Toolbox</title>
+  <title>{pageTitle()}</title>
   <meta
     name="description"
-    content="TKA Composer is a revolutionary flow arts choreography toolbox for staffs, fans, and other flow arts. Create, learn, and share movement sequences using The Kinetic Alphabet notation system."
+    content="TKA Composer is a flow arts choreography toolbox for staves, fans, and other props. Create, learn, and share movement sequences using The Kinetic Alphabet notation system."
   />
 </svelte:head>
 

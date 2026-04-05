@@ -93,7 +93,7 @@
   const statusPanels = $derived([
     {
       text: isLoading
-        ? "Loading..."
+        ? "Loading items..."
         : loadError
           ? "Error loading recycle bin"
           : `${items.length + ORDER_FILES.length} object(s)`,
@@ -269,7 +269,7 @@
   <div class="recyclebin-list">
     {#if isLoading}
       <div class="recyclebin-message">
-        <span class="recyclebin-message-text">Loading...</span>
+        <span class="recyclebin-message-text">Loading items...</span>
       </div>
     {:else if loadError}
       <div class="recyclebin-message">

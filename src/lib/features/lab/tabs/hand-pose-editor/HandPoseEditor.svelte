@@ -351,6 +351,7 @@
 
 <div class="editor-layout">
   <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
   <div class="viewport" onclick={(e) => e.stopPropagation()}>
     <Canvas>
       <T.PerspectiveCamera
@@ -384,6 +385,7 @@
   </div>
 
   <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
   <div
     class="controls"
     onclick={(e) => e.stopPropagation()}
