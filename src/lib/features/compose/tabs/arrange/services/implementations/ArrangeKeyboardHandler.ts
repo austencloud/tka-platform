@@ -6,26 +6,11 @@
  */
 
 import type { GridCell } from "../../state/arrange-grid-state.svelte";
-import type { TransformType } from "../../../../compose/domain/types";
 import type {
   IArrangeKeyboardHandler,
   KeyboardContext,
   KeyboardCallbacks,
 } from "../contracts/IArrangeKeyboardHandler";
-
-/** Bare-key → transform mapping (no modifiers). R cycles rotation each press. */
-const KEY_TO_TRANSFORM: Record<string, TransformType> = {
-  r: "rotate90",
-  m: "mirror",
-  v: "flip",
-  s: "swapColors",
-  i: "invert",
-};
-
-/** Shift+key → transform mapping. */
-const SHIFT_KEY_TO_TRANSFORM: Record<string, TransformType> = {
-  R: "rewind",
-};
 
 export class ArrangeKeyboardHandler implements IArrangeKeyboardHandler {
   handleKeyDown(
@@ -108,7 +93,7 @@ export class ArrangeKeyboardHandler implements IArrangeKeyboardHandler {
           }
           return true;
         }
-        break; // Bare "v" → fall through to transform handling below
+        return false;
 
       case "z":
       case "Z":
@@ -134,34 +119,6 @@ export class ArrangeKeyboardHandler implements IArrangeKeyboardHandler {
 
       default:
         break;
-    }
-
-    // Transform hotkeys — only when no Ctrl/Meta, cell selected with layers
-    if (e.ctrlKey || e.metaKey) return false;
-
-    const hasLayers =
-      context.selectedCell !== null &&
-      context.selectedCell.layers.length > 0;
-
-    if (!hasLayers) return false;
-
-    // Shift+key transforms (Shift+R = rewind)
-    if (e.shiftKey) {
-      const shiftTransform = SHIFT_KEY_TO_TRANSFORM[e.key];
-      if (shiftTransform) {
-        e.preventDefault();
-        callbacks.transformLayer(0, shiftTransform);
-        return true;
-      }
-      return false;
-    }
-
-    // Bare key transforms (r/m/v/s/i)
-    const transform = KEY_TO_TRANSFORM[e.key.toLowerCase()];
-    if (transform) {
-      e.preventDefault();
-      callbacks.transformLayer(0, transform);
-      return true;
     }
 
     return false;
