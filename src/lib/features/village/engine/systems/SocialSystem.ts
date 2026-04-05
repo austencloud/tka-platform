@@ -5,6 +5,7 @@ import {
 	IDLE_THRESHOLD_BASE,
 	INTERACTION_COOLDOWN_BASE,
 	INVENTION_BASE_PROBABILITY,
+	PERSONAL_SPACE_RADIUS,
 } from "../../domain/village-constants";
 
 const SEEK_RADIUS = 5;
@@ -118,17 +119,40 @@ export class SocialSystem {
 			return best;
 		});
 
-		entity.social.state = "approaching";
-		entity.social.partner = partner.id;
-		entity.transform.targetX = partner.transform.x;
-		entity.transform.targetZ = partner.transform.z;
-		entity.transform.speed = 1;
+		// Approach to conversation distance, not exact position.
+		// Each avatar walks to a point PERSONAL_SPACE_RADIUS from the midpoint.
+		const midX = (entity.transform.x + partner.transform.x) / 2;
+		const midZ = (entity.transform.z + partner.transform.z) / 2;
+		const pairDist = this.distance(entity, partner);
+		const halfStop = PERSONAL_SPACE_RADIUS * 0.5;
 
-		partner.social.state = "approaching";
-		partner.social.partner = entity.id;
-		partner.transform.targetX = entity.transform.x;
-		partner.transform.targetZ = entity.transform.z;
-		partner.transform.speed = 1;
+		if (pairDist > PERSONAL_SPACE_RADIUS) {
+			// Walk toward partner but stop at personal space
+			const toPartnerX = partner.transform.x - entity.transform.x;
+			const toPartnerZ = partner.transform.z - entity.transform.z;
+			const norm = Math.sqrt(toPartnerX * toPartnerX + toPartnerZ * toPartnerZ) || 1;
+
+			entity.social.state = "approaching";
+			entity.social.partner = partner.id;
+			entity.transform.targetX = midX - (toPartnerX / norm) * halfStop;
+			entity.transform.targetZ = midZ - (toPartnerZ / norm) * halfStop;
+			entity.transform.speed = 1;
+
+			partner.social.state = "approaching";
+			partner.social.partner = entity.id;
+			partner.transform.targetX = midX + (toPartnerX / norm) * halfStop;
+			partner.transform.targetZ = midZ + (toPartnerZ / norm) * halfStop;
+			partner.transform.speed = 1;
+		} else {
+			// Already close enough — skip to interaction
+			entity.social.state = "approaching";
+			entity.social.partner = partner.id;
+			entity.transform.speed = 0;
+
+			partner.social.state = "approaching";
+			partner.social.partner = entity.id;
+			partner.transform.speed = 0;
+		}
 	}
 
 	private handleApproaching(

@@ -7,6 +7,7 @@ import {
 	WALK_SPEED_ELDER,
 	ARRIVAL_THRESHOLD,
 	COLLISION_AVOIDANCE_RADIUS,
+	COLLISION_REPULSION_STRENGTH,
 } from "../../domain/village-constants";
 
 const PHASE_SPEED: Record<LifecyclePhase, number> = {
@@ -14,8 +15,6 @@ const PHASE_SPEED: Record<LifecyclePhase, number> = {
 	adult: WALK_SPEED_ADULT,
 	elder: WALK_SPEED_ELDER,
 };
-
-const FACING_LERP_RATE = 0.15;
 
 export class MovementSystem {
 	constructor(private config: VillageConfig) {}
@@ -37,7 +36,7 @@ export class MovementSystem {
 			const nx = dx / dist;
 			const nz = dz / dist;
 
-			// Collision avoidance
+			// Collision avoidance — steer away from nearby avatars
 			let steerX = 0;
 			let steerZ = 0;
 			for (const other of world.entities) {
@@ -46,11 +45,13 @@ export class MovementSystem {
 				const oz = entity.transform.z - other.transform.z;
 				const oDist = Math.sqrt(ox * ox + oz * oz);
 				if (oDist < COLLISION_AVOIDANCE_RADIUS && oDist > 0.01) {
-					const repulsion =
+					// Repulsion increases sharply as distance decreases
+					const overlap =
 						(COLLISION_AVOIDANCE_RADIUS - oDist) /
 						COLLISION_AVOIDANCE_RADIUS;
-					steerX += (ox / oDist) * repulsion * 0.5;
-					steerZ += (oz / oDist) * repulsion * 0.5;
+					const force = overlap * overlap * COLLISION_REPULSION_STRENGTH;
+					steerX += (ox / oDist) * force;
+					steerZ += (oz / oDist) * force;
 				}
 			}
 
@@ -59,7 +60,8 @@ export class MovementSystem {
 			const moveMag = Math.sqrt(moveX * moveX + moveZ * moveZ) || 1;
 
 			const phaseSpeed = PHASE_SPEED[entity.lifecycle.phase];
-			const step = entity.transform.speed * phaseSpeed * 0.1;
+			// 0.3 per tick base step (3x previous 0.1) for natural walking pace
+			const step = entity.transform.speed * phaseSpeed * 0.3;
 
 			entity.transform.x += (moveX / moveMag) * step;
 			entity.transform.z += (moveZ / moveMag) * step;
@@ -73,21 +75,6 @@ export class MovementSystem {
 				entity.transform.x *= scale;
 				entity.transform.z *= scale;
 			}
-
-			// Facing angle lerp
-			const targetAngle = Math.atan2(moveZ, moveX);
-			entity.transform.facingAngle = lerpAngle(
-				entity.transform.facingAngle,
-				targetAngle,
-				FACING_LERP_RATE,
-			);
 		}
 	}
-}
-
-function lerpAngle(from: number, to: number, t: number): number {
-	let diff = to - from;
-	while (diff > Math.PI) diff -= Math.PI * 2;
-	while (diff < -Math.PI) diff += Math.PI * 2;
-	return from + diff * t;
 }
