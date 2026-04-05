@@ -27,9 +27,28 @@
   function resetToWall() {
     onModeChange(PlaneMode.WALL);
   }
+
+  function toggleDualWheel() {
+    if (mode === PlaneMode.DUAL_WHEEL) {
+      onModeChange(PlaneMode.WALL);
+    } else {
+      onModeChange(PlaneMode.DUAL_WHEEL);
+    }
+  }
+
+  const isDualWheel = $derived(mode === PlaneMode.DUAL_WHEEL);
 </script>
 
 <div class="plane-controls">
+  <button
+    class="preset-btn"
+    class:active={isDualWheel}
+    onclick={toggleDualWheel}
+    title={isDualWheel ? "Switch to wall mode" : "Switch to dual wheel mode"}
+  >
+    DW
+  </button>
+
   <div class="hand-plane">
     <span class="hand-dot" style="background: #4a90d9;"></span>
     <select
@@ -118,5 +137,28 @@
   .reset-btn:hover {
     color: rgba(255, 255, 255, 0.8);
     border-color: rgba(255, 255, 255, 0.2);
+  }
+
+  .preset-btn {
+    padding: 4px 8px;
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: rgba(255, 255, 255, 0.5);
+    font-size: var(--font-size-compact, 12px);
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.15s;
+  }
+
+  .preset-btn:hover {
+    border-color: rgba(255, 255, 255, 0.3);
+    color: rgba(255, 255, 255, 0.8);
+  }
+
+  .preset-btn.active {
+    background: rgba(59, 130, 246, 0.3);
+    border-color: rgba(59, 130, 246, 0.5);
+    color: rgba(255, 255, 255, 0.9);
   }
 </style>

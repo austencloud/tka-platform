@@ -57,18 +57,12 @@ export function computePropRotation(
     new Euler(0, 0, Math.PI / 2)
   );
 
-  // In dual wheel mode, position and rotation are in world space.
-  // The worldRotation from calculatePropQuaternion includes a planeQuat
-  // that orients into the plane's local frame — but we're already in
-  // world space, so that extra rotation puts the spin on the wrong axis.
-  // Instead, rotate the staff directly around the plane's normal vector.
+  // In dual wheel mode (skipFacingTransform), positions and rotations are
+  // in world space. Use worldRotation directly (which already contains the
+  // correct plane-aware spin from calculatePropQuaternion) — just skip
+  // the facingQuat that would double-rotate everything.
   if (propState.skipFacingTransform) {
-    const normal = getPlaneNormal(propState.plane);
-    const staffQuat = new Quaternion().setFromAxisAngle(
-      normal,
-      propState.staffRotationAngle
-    );
-    const finalQuat = staffQuat.multiply(horizontalQuat);
+    const finalQuat = propState.worldRotation.clone().multiply(horizontalQuat);
     const euler = new Euler().setFromQuaternion(finalQuat);
     return [euler.x, euler.y, euler.z];
   }

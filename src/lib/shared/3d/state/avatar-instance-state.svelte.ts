@@ -313,7 +313,7 @@ export function createAvatarInstanceState(
         facingAngle: 0,
         bluePlane: customBluePlane,
         redPlane: customRedPlane,
-        rotationPlane: Plane.WALL,
+        // No rotationPlane — each hand rotates on its own position plane
         blueLateralOffset: 0,
         redLateralOffset: 0,
       };
@@ -364,17 +364,9 @@ export function createAvatarInstanceState(
       planeMode = PlaneMode.CUSTOM;
     }
 
-    // Build a custom modeConfig with the current per-hand planes
-    const customConfig: PlaneModeConfig = {
-      facingAngle: 0,
-      bluePlane: customBluePlane,
-      redPlane: customRedPlane,
-      rotationPlane: Plane.WALL,
-      blueLateralOffset: 0,
-      redLateralOffset: 0,
-    };
-
-    reconvertWithConfig(customConfig);
+    // Re-convert using the effective config (which omits rotationPlane
+    // so each hand rotates on its own position plane)
+    reconvertWithConfig(getEffectiveModeConfig(PlaneMode.CUSTOM));
   }
 
   /**
