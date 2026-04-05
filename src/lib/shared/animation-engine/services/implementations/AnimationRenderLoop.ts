@@ -417,7 +417,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     });
 
     // Route trail rendering through the overlay canvas
-    if (this.trailOverlay && effectiveTrailsVisible) {
+    if (this.trailOverlay && effectiveTrailsVisible && !params.suppress2DOverlays) {
       const now = performance.now();
       const dt = this.lastTrailFrameTime > 0
         ? (now - this.lastTrailFrameTime) / 1000
@@ -494,7 +494,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       (activeFireRenderer && params.fireConfig != null) || activeCharcoalRenderer
     );
 
-    if (hasActiveOverlay && !this.fireDisabledByError) {
+    if (hasActiveOverlay && !this.fireDisabledByError && !params.suppress2DOverlays) {
       try {
         // Reset tip tracker on loop to prevent velocity spike from position teleport.
         // Without this, the position delta (end-of-sequence → start-of-sequence) produces
@@ -589,7 +589,8 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       this.ledRenderer?.isInitialized() &&
       this.ledTipTracker &&
       params.ledConfig?.enabled &&
-      !this.ledDisabledByError
+      !this.ledDisabledByError &&
+      !params.suppress2DOverlays
     ) {
       try {
         const tipTrackerConfig: LedTipTrackerConfig = {
