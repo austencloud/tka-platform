@@ -201,6 +201,7 @@ UserSettings/
 # Staging models and textures (large binary files)
 static/models/staging/
 static/models/vegetation/
+static/models/avatars/
 static/textures/terrain/
 static/textures/water/
 
