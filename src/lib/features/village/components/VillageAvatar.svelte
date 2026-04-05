@@ -9,8 +9,6 @@
 	import { T, useTask } from "@threlte/core";
 	import { HTML } from "@threlte/extras";
 	import Avatar3D from "$lib/shared/3d/components/Avatar3D.svelte";
-	import Prop3D from "$lib/shared/3d/components/props/Prop3D.svelte";
-	import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 	import { userProportionsState } from "$lib/shared/3d/state/user-proportions-state.svelte";
 	import type { AvatarRenderState } from "../state/village-state.svelte";
 	import type { AvatarId } from "$lib/shared/3d/config/avatar-definitions";
@@ -140,25 +138,9 @@
 	{/if}
 </T.Group>
 
-{#if showAvatar && isPerforming && bluePropState}
-	<Prop3D
-		propType={PropType.STAFF}
-		color="blue"
-		propState={bluePropState}
-		avatarPosition={avatarPosition}
-		{facingAngle}
-	/>
-{/if}
-
-{#if showAvatar && isPerforming && redPropState}
-	<Prop3D
-		propType={PropType.STAFF}
-		color="red"
-		propState={redPropState}
-		avatarPosition={avatarPosition}
-		{facingAngle}
-	/>
-{/if}
+<!-- Props are driven by Avatar3D's bluePropState/redPropState through IK.
+     External Prop3D rendering will be added when teaching choreography
+     is properly integrated with the avatar's transform chain. -->
 
 <style>
 	.name-label {
