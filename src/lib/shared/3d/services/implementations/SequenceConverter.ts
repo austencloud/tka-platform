@@ -73,17 +73,17 @@ export class SequenceConverter implements ISequenceConverter {
     const blueOffset = modeConfig?.blueLateralOffset ?? 0;
     const redOffset = modeConfig?.redLateralOffset ?? 0;
     const rotPlane = modeConfig?.rotationPlane;
-    const wsRotation = modeConfig?.worldSpaceRotation;
+    const skipFacing = modeConfig?.skipFacingTransform;
 
     return {
       stepNumber,
       blue:
         blueMotion && blueMotion.isVisible !== false
-          ? { ...this.motionDataToConfig3D(blueMotion, bluePlane), lateralOffset: blueOffset || undefined, rotationPlane: rotPlane, worldSpaceRotation: wsRotation }
+          ? { ...this.motionDataToConfig3D(blueMotion, bluePlane), lateralOffset: blueOffset || undefined, rotationPlane: rotPlane, skipFacingTransform: skipFacing }
           : null,
       red:
         redMotion && redMotion.isVisible !== false
-          ? { ...this.motionDataToConfig3D(redMotion, redPlane), lateralOffset: redOffset || undefined, rotationPlane: rotPlane, worldSpaceRotation: wsRotation }
+          ? { ...this.motionDataToConfig3D(redMotion, redPlane), lateralOffset: redOffset || undefined, rotationPlane: rotPlane, skipFacingTransform: skipFacing }
           : null,
     };
   }
