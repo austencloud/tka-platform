@@ -169,18 +169,6 @@ export class PropStateInterpolator implements IPropStateInterpolator {
       };
     }
 
-    // Pass through skip-facing flag
-    if (config.skipFacingTransform) {
-      result.skipFacingTransform = true;
-    }
-
-    // Apply lateral offset to X. In dual wheel mode (skipFacingTransform),
-    // X stays as X in world space, separating the two wheel planes
-    // left-right. In wall mode, the facing rotation transforms X as needed.
-    if (config.lateralOffset) {
-      result.worldPosition.x += config.lateralOffset;
-    }
-
     return result;
   }
 }
