@@ -22,6 +22,7 @@ import type {
   ISequenceConverter,
   StepMotionConfigs,
 } from "../contracts/ISequenceConverter";
+import type { PlaneModeConfig } from "../../domain/constants/plane-mode-configs";
 
 export class SequenceConverter implements ISequenceConverter {
   /**
@@ -53,7 +54,8 @@ export class SequenceConverter implements ISequenceConverter {
    */
   beatDataToConfigs(
     beat: StepData | StartPositionData,
-    plane: Plane = Plane.WALL
+    plane: Plane = Plane.WALL,
+    modeConfig?: PlaneModeConfig
   ): StepMotionConfigs {
     const blueMotion = beat.motions?.[MotionColor.BLUE];
     const redMotion = beat.motions?.[MotionColor.RED];
@@ -64,15 +66,22 @@ export class SequenceConverter implements ISequenceConverter {
         ? 0
         : (beat as StepData).stepNumber ?? 0;
 
+    // If a mode config is provided, use per-hand planes and offsets.
+    // Otherwise fall back to the single plane for both hands (current behavior).
+    const bluePlane = modeConfig?.bluePlane ?? plane;
+    const redPlane = modeConfig?.redPlane ?? plane;
+    const blueOffset = modeConfig?.blueLateralOffset ?? 0;
+    const redOffset = modeConfig?.redLateralOffset ?? 0;
+
     return {
       stepNumber,
       blue:
         blueMotion && blueMotion.isVisible !== false
-          ? this.motionDataToConfig3D(blueMotion, plane)
+          ? { ...this.motionDataToConfig3D(blueMotion, bluePlane), lateralOffset: blueOffset || undefined }
           : null,
       red:
         redMotion && redMotion.isVisible !== false
-          ? this.motionDataToConfig3D(redMotion, plane)
+          ? { ...this.motionDataToConfig3D(redMotion, redPlane), lateralOffset: redOffset || undefined }
           : null,
     };
   }
@@ -83,7 +92,8 @@ export class SequenceConverter implements ISequenceConverter {
    */
   sequenceToMotionConfigs(
     sequence: SequenceData,
-    plane: Plane = Plane.WALL
+    plane: Plane = Plane.WALL,
+    modeConfig?: PlaneModeConfig
   ): StepMotionConfigs[] {
     if (!sequence.steps || sequence.steps.length === 0) {
       return [];
@@ -91,7 +101,7 @@ export class SequenceConverter implements ISequenceConverter {
 
     const configs = sequence.steps
       .filter((beat) => beat.stepNumber !== 0)
-      .map((beat) => this.beatDataToConfigs(beat, plane))
+      .map((beat) => this.beatDataToConfigs(beat, plane, modeConfig))
       .sort((a, b) => a.stepNumber - b.stepNumber);
 
     return configs;
@@ -102,17 +112,18 @@ export class SequenceConverter implements ISequenceConverter {
    */
   getStartPositionConfigs(
     sequence: SequenceData,
-    plane: Plane = Plane.WALL
+    plane: Plane = Plane.WALL,
+    modeConfig?: PlaneModeConfig
   ): StepMotionConfigs | null {
     // Try startPosition field first
     if (sequence.startPosition) {
-      return this.beatDataToConfigs(sequence.startPosition, plane);
+      return this.beatDataToConfigs(sequence.startPosition, plane, modeConfig);
     }
 
     // Fall back to beat 0 in steps array
     const step0 = sequence.steps?.find((beat) => beat.stepNumber === 0);
     if (step0) {
-      return this.beatDataToConfigs(step0, plane);
+      return this.beatDataToConfigs(step0, plane, modeConfig);
     }
 
     return null;
