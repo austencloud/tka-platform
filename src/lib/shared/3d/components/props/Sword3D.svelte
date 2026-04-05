@@ -12,7 +12,7 @@
   import { T } from "@threlte/core";
   import type { Prop3DProps } from "./Prop3DProps";
   import { PROP_COLORS, METAL_COLORS } from "./Prop3DProps";
-  import { computePropPosition, computePropRotation } from "./prop3d-transforms";
+  import { computePropRotation } from "./prop3d-transforms";
   import { userProportionsState } from "../../state/user-proportions-state.svelte";
   import {
     LAYER_WORLD,
@@ -25,9 +25,6 @@
     visible = true,
     length,
     thickness,
-    avatarPosition = { x: 0, y: 0, z: 0 },
-    facingAngle = 0,
-    gridOffset = 0,
     isActivePlayer = false,
     scale = 1,
   }: Prop3DProps = $props();
@@ -82,15 +79,11 @@
   const pommelRadius = $derived(staffRadius * 1.4);
   const pommelY = $derived(-(handleLength + pommelRadius * 0.4));
 
-  const position = $derived(
-    computePropPosition(propState, avatarPosition, facingAngle, gridOffset)
-  );
-
-  const rotation = $derived(computePropRotation(propState, facingAngle));
+  const rotation = $derived(computePropRotation(propState));
 </script>
 
 {#if visible}
-  <T.Group {position} {rotation} layers={propLayer} scale={scale}>
+  <T.Group {rotation} layers={propLayer} scale={scale}>
     <!-- Lower blade: wider section near the guard -->
     <T.Mesh position={[0, lowerBladeCenterY, 0]}>
       <T.BoxGeometry
@@ -177,7 +170,7 @@
   </T.Group>
 
   <!-- Trail indicator sphere -->
-  <T.Mesh {position} layers={propLayer}>
+  <T.Mesh layers={propLayer}>
     <T.SphereGeometry args={[0.015, 8, 8]} />
     <T.MeshBasicMaterial color={palette.main} opacity={0.3} transparent />
   </T.Mesh>

@@ -1101,6 +1101,24 @@
       "overallGrade": "A+",
       "notes": null,
       "issues": []
+    },
+    "features/museum": {
+      "lastAuditedAt": "2026-04-05T19:14:08.491Z",
+      "name": "Museum",
+      "type": "module",
+      "grades": {
+        "architecture": "A+",
+        "codeQuality": "C",
+        "svelte5": "A+",
+        "accessibility": "C",
+        "uxStates": "B",
+        "uiConsistency": "C",
+        "performance": "C",
+        "security": "A+"
+      },
+      "overallGrade": "B",
+      "notes": null,
+      "issues": []
     }
   },
   "targets": [],

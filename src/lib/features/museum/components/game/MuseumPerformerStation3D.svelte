@@ -3,16 +3,15 @@
    * MuseumPerformerStation3D
    *
    * A 3D mannequin at a museum performer station that plays a TKA sequence
-   * with spinning staves. Follows the exact same composition pattern as
-   * PerformerPlatform.svelte (the proven working implementation).
+   * with spinning staves. Uses PerformerRig for the unified transform hierarchy
+   * — no manual STAGE_LIFT math, no sibling Avatar3D/Prop3D/Grid3D calls.
    */
   import { untrack } from "svelte";
   import { T } from "@threlte/core";
   import * as THREE from "three";
-  import Avatar3D from "$lib/shared/3d/components/Avatar3D.svelte";
-  import Prop3D from "$lib/shared/3d/components/props/Prop3D.svelte";
-  import Grid3D from "$lib/shared/3d/components/Grid3D.svelte";
+  import PerformerRig from "$lib/shared/3d/components/PerformerRig.svelte";
   import { Plane } from "$lib/shared/3d/domain/enums/Plane";
+  import { PlaneMode } from "$lib/shared/3d/domain/enums/PlaneMode";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { createAvatarInstanceState } from "$lib/shared/3d/state/avatar-instance-state.svelte";
   import { container } from "$lib/shared/di";
@@ -20,7 +19,6 @@
   import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
   import type { GridMode } from "$lib/shared/3d/domain/constants/grid-layout";
   import { MUSEUM_EXHIBIT_SEQUENCES, type MuseumSequenceData } from "../../data/museum-exhibit-sequences";
-  import { userProportionsState } from "$lib/shared/3d/state/user-proportions-state.svelte";
 
   interface Props {
     stationId: string;
@@ -42,21 +40,9 @@
   const autoPlay = props.autoPlay ?? false;
   const showGrid = props.showGrid ?? false;
 
-  // The 3D avatar system uses Y=0 as grid center (shoulder height).
-  // The stage floor is at groundY (≈ -1.56). For the museum (floor at Y=0),
-  // we lift the avatar by -groundY so its feet land on the museum floor.
-  //
-  // STAGE_LIFT = shoulder height above floor. PLATFORM_HEIGHT = the pedestal
-  // the performer stands on. avatarLocalPosition.y includes both so that
-  // the IK targets, prop orbit center, and grid all align with the avatar's
-  // visual shoulder height on top of the platform.
+  // Platform height — passed as groundOffset to PerformerRig so the entire
+  // transform hierarchy (avatar, props, grid) is lifted onto the pedestal.
   const PLATFORM_HEIGHT = 0.3; // matches cylinder geometry (height 0.3, center at 0.15)
-  const STAGE_LIFT = -userProportionsState.groundY; // ≈ 1.56m
-
-  // World position includes platform height so IK, props, and grid all
-  // sit at shoulder height above the platform — not 0.3m below it.
-  // Avatar position is relative to the station group (which is at worldX, 0, worldZ)
-  const avatarLocalPosition = $derived({ x: 0, y: STAGE_LIFT + PLATFORM_HEIGHT, z: 0 });
 
   // Build a minimal SequenceData from the museum manifest
   function buildSequenceData(museumSeq: MuseumSequenceData): SequenceData {
@@ -150,77 +136,26 @@
 
 <!-- Station root group — positioned at world coords, children use local coords -->
 <T.Group name={`performer-station-${stationId}`} position.x={worldX} position.z={worldZ}>
-
-<!-- Circular platform (local y=0.15, x/z=0 since group handles world position) -->
-<T.Mesh
-  position.y={0.15}
-  castShadow
-  receiveShadow
->
-  <T.CylinderGeometry args={[0.8, 0.9, 0.3, 24]} />
-  <T.MeshStandardMaterial color={platformColor} roughness={0.85} />
-</T.Mesh>
-
-<!--
-  Performer positioning:
-
-  avatarLocalPosition.y = STAGE_LIFT + PLATFORM_HEIGHT (≈ 1.86m)
-    → IK targets and prop orbit at shoulder height above the platform ✓
-    → Grid3D center at the same point ✓
-
-  Avatar visual model needs feet at PLATFORM_HEIGHT (0.3m, platform top).
-  Avatar3D internally computes groupY = position.y - feetOffset.
-  The outer Group at -(STAGE_LIFT + PLATFORM_HEIGHT) + PLATFORM_HEIGHT = -STAGE_LIFT
-  cancels the stage lift, leaving feet at PLATFORM_HEIGHT.
--->
-{#if performerState}
-  <!-- Visual offset: cancel STAGE_LIFT so feet land on platform top -->
-  <T.Group position.y={-STAGE_LIFT}>
-    <Avatar3D
-      id={`museum-${stationId}`}
-      bluePropState={performerState.bluePropState}
-      redPropState={performerState.redPropState}
-      position={avatarLocalPosition}
+  {#if performerState}
+    <PerformerRig
+      position={{ x: 0, z: 0 }}
       {facingAngle}
-      isActive={false}
-      isMoving={false}
-    />
-  </T.Group>
-
-  <!-- Props OUTSIDE the Group — already at correct world Y -->
-  {#if performerState.bluePropState}
-    <Prop3D propType={bluePropType}
-      propState={performerState.bluePropState}
-      color="blue"
-      avatarPosition={avatarLocalPosition}
-      {facingAngle}
-      gridOffset={0.3}
-      isActivePlayer={false}
-    />
-  {/if}
-
-  {#if performerState.redPropState}
-    <Prop3D propType={redPropType}
-      propState={performerState.redPropState}
-      color="red"
-      avatarPosition={avatarLocalPosition}
-      {facingAngle}
-      gridOffset={0.3}
-      isActivePlayer={false}
-    />
-  {/if}
-
-  <!-- Grid planes at shoulder height — same centerPosition as props -->
-  {#if showGrid}
-    <Grid3D
+      planeMode={PlaneMode.WALL}
+      avatarState={performerState}
+      {showGrid}
       visiblePlanes={new Set([Plane.WALL])}
-      centerPosition={avatarLocalPosition}
-      {facingAngle}
-      gridOffset={0.3}
-      planeOpacity={0.12}
-      showLabels={false}
       gridMode={(resolvedSequence?.gridMode ?? "diamond") as GridMode}
-    />
+      {bluePropType}
+      {redPropType}
+      groundOffset={PLATFORM_HEIGHT}
+    >
+      {#snippet extras()}
+        <!-- Circular platform -->
+        <T.Mesh position.y={0.15} castShadow receiveShadow>
+          <T.CylinderGeometry args={[0.8, 0.9, 0.3, 24]} />
+          <T.MeshStandardMaterial color={platformColor} roughness={0.85} />
+        </T.Mesh>
+      {/snippet}
+    </PerformerRig>
   {/if}
-{/if}
 </T.Group>

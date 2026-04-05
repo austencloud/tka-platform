@@ -8,7 +8,6 @@
 <script lang="ts">
 	import { T, useTask } from "@threlte/core";
 	import { HTML } from "@threlte/extras";
-	import type { Group } from "three";
 	import Avatar3D from "$lib/shared/3d/components/Avatar3D.svelte";
 	import Prop3D from "$lib/shared/3d/components/props/Prop3D.svelte";
 	import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
@@ -43,14 +42,14 @@
 	let isMoving = $state(false);
 	let moveSpeed = $state(0);
 
-	// Two-phase loading:
-	// Phase 1: Mount Avatar3D with visible=false so it starts loading the GLTF
-	// Phase 2: After model loads, switch to visible=true
-	// We detect "loaded" by checking if Avatar3D's internal group has a SkinnedMesh
-	let preloading = $state(true);  // Phase 1: invisible preload
-	let showAvatar = $state(false); // Phase 2: visible
+	// Hide during initial GLTF load to prevent procedural fallback flash.
+	// Avatar3D visible=false prevents rendering while GLTF fetches.
+	// After enough frames for the model to load, switch to visible.
+	let frameCount = 0;
+	let showAvatar = $state(false);
 	let labelOpacity = $state(0);
-	let avatarGroupRef: Group | undefined = $state();
+	// 180 frames @ 60fps = 3 seconds — generous for local 50-100MB GLBs
+	const LOAD_FRAMES = 180;
 
 	useTask(() => {
 		const inst = renderState.instanceState;
@@ -72,22 +71,13 @@
 		isMoving = moving;
 		moveSpeed = speed;
 
-		// Detect when GLTF model loads by scanning the group for SkinnedMesh.
-		// Avatar3D is mounted with visible=false during preloading — the
-		// component tree IS rendered (allowing GLTF fetch), just not drawn.
-		if (preloading && avatarGroupRef) {
-			let found = false;
-			avatarGroupRef.traverse((child: any) => {
-				if (child.isSkinnedMesh) found = true;
-			});
-			if (found) {
-				preloading = false;
+		// Count frames until we reveal the avatar (GLTF should be loaded by then)
+		if (!showAvatar) {
+			frameCount++;
+			if (frameCount >= LOAD_FRAMES) {
 				showAvatar = true;
 			}
-		}
-
-		// Fade in label
-		if (showAvatar && labelOpacity < 1) {
+		} else if (labelOpacity < 1) {
 			labelOpacity = Math.min(1, labelOpacity + 0.04);
 		}
 	});
@@ -112,7 +102,7 @@
 </script>
 
 <!-- Visual offset group: cancel STAGE_LIFT so feet land on Y=0 ground -->
-<T.Group position.y={-STAGE_LIFT} bind:ref={avatarGroupRef}>
+<T.Group position.y={-STAGE_LIFT}>
 	<Avatar3D
 		id={renderState.entityId}
 		avatarId={avatarModelId}

@@ -17,7 +17,7 @@
    * - Kinematic (default): Uses avatarState.updateMovement() for simple movement
    * - Physics-based: Uses PhysicsProvider for collision-detected movement (Rapier, etc.)
    */
-  import { onMount, onDestroy } from "svelte";
+  import { onDestroy } from "svelte";
   import { useTask, useThrelte } from "@threlte/core";
   import { Vector3, Raycaster, Mesh, PerspectiveCamera } from "three";
   import { CameraMode, getNextCameraMode, isGameMode, type PhysicsProvider, type AvatarState } from "./types";
@@ -100,7 +100,7 @@
   // Input capabilities for detecting touch vs mouse
   const inputCaps = getInputCapabilities();
 
-  // Cached canvas reference (set in onMount, used in onDestroy when renderer.current may be gone)
+  // Cached canvas reference (set on attach, used in detach when renderer.current may be gone)
   let cachedCanvas: HTMLCanvasElement | null = null;
 
   // Drag-to-look state (used when pointer lock isn't available - touch, DevTools simulation)
@@ -380,33 +380,73 @@
     keys.clear();
   }
 
-  onMount(() => {
-    console.log(`[CameraCtrl] MOUNT: enabled=${enabled} mode=${mode} destId=${destinationId}`);
-    if (!enabled) { console.log(`[CameraCtrl] MOUNT ABORTED: not enabled`); return; }
+  // Canvas attachment is reactive: attach when enabled becomes true,
+  // detach when it becomes false. This allows pre-mounting the component
+  // in disabled state (e.g., during museum loading) so the first enable
+  // doesn't pay full mount cost.
+  let attached = false;
 
-    // WebGPU renderer initializes asynchronously — renderer.current?.domElement
-    // may be null even though the canvas exists in the DOM. Try the renderer first,
-    // fall back to DOM query, then poll if neither works.
-    function findCanvas(): HTMLCanvasElement | null {
-      return (renderer.current?.domElement as HTMLCanvasElement | undefined)
-        ?? document.querySelector<HTMLCanvasElement>("canvas[data-engine]")
-        ?? null;
+  function findCanvas(): HTMLCanvasElement | null {
+    return (renderer.current?.domElement as HTMLCanvasElement | undefined)
+      ?? document.querySelector<HTMLCanvasElement>("canvas[data-engine]")
+      ?? null;
+  }
+
+  function detachFromCanvas() {
+    if (!attached) return;
+    attached = false;
+    const canvas = cachedCanvas;
+    window.removeEventListener("keydown", handleKeyDown);
+    window.removeEventListener("keyup", handleKeyUp);
+    window.removeEventListener("blur", handleBlur);
+    document.removeEventListener("mousemove", handleMouseMove);
+    document.removeEventListener("pointerlockchange", handlePointerLockChange);
+    canvas?.removeEventListener("click", handleCanvasClick);
+    canvas?.removeEventListener("wheel", handleWheel);
+    canvas?.removeEventListener("pointerdown", handlePointerDown);
+    document.removeEventListener("pointerup", handlePointerUp);
+    document.removeEventListener("pointercancel", handlePointerUp);
+    document.removeEventListener("pointermove", handlePointerMove);
+    inputCaps.destroy();
+    keys.clear();
+    // Defer pointer lock exit to next frame so the Svelte effect cascade
+    // and flip animation can proceed without browser pointer lock overhead
+    if (document.pointerLockElement) {
+      requestAnimationFrame(() => {
+        if (document.pointerLockElement) {
+          document.exitPointerLock();
+        }
+      });
     }
+    console.log(`[CameraCtrl] DETACHED`);
+  }
 
-    const canvas = findCanvas();
-    if (canvas) {
-      attachToCanvas(canvas);
-    } else {
-      // Poll until available (WebGPU init is async)
-      let attempts = 0;
-      const maxAttempts = 50;
-      function tryAttach() {
-        const c = findCanvas();
-        if (c) { attachToCanvas(c); return; }
-        if (++attempts < maxAttempts) setTimeout(tryAttach, 100);
-        else console.warn(`[CameraCtrl] MOUNT FAILED: no canvas after ${maxAttempts} attempts`);
-      }
-      setTimeout(tryAttach, 100);
+  $effect(() => {
+    if (enabled && !attached) {
+      // Defer attachment to next microtask so the Svelte effect cascade
+      // (ceiling toggle, Avatar3D visibility, etc.) completes first.
+      // This prevents event listener setup from blocking the flip animation frame.
+      console.log(`[CameraCtrl] ENABLING (deferred): mode=${mode} destId=${destinationId}`);
+      queueMicrotask(() => {
+        if (!enabled || attached) return; // guard: state may have changed
+        const canvas = findCanvas();
+        if (canvas) {
+          attachToCanvas(canvas);
+          attached = true;
+        } else {
+          let attempts = 0;
+          const maxAttempts = 50;
+          function tryAttach() {
+            const c = findCanvas();
+            if (c) { attachToCanvas(c); attached = true; return; }
+            if (++attempts < maxAttempts) setTimeout(tryAttach, 100);
+            else console.warn(`[CameraCtrl] ENABLE FAILED: no canvas after ${maxAttempts} attempts`);
+          }
+          setTimeout(tryAttach, 100);
+        }
+      });
+    } else if (!enabled && attached) {
+      detachFromCanvas();
     }
   });
 
@@ -419,17 +459,20 @@
     // Sync pointer lock state — it may already be held if requested before UCC mounted
     isPointerLocked = document.pointerLockElement === canvas;
 
-    // Auto-request pointer lock if mounting into a game mode (e.g., after museum Q-flip).
-    // The original Q keypress was a valid user gesture, and browsers allow pointer lock
-    // requests within a short window after the gesture. If it fails, the user can click.
-    // Guard: during SvelteKit client-side navigation, the canvas may be detached from
-    // the document, causing WrongDocumentError.
-    if (isGameMode(mode) && !isPointerLocked && inputCaps.canUsePointerLock() && canvas.isConnected) {
-      try { canvas.requestPointerLock(); } catch { /* canvas detached during navigation */ }
-    }
-
     // Initialize input capabilities tracking
     inputCaps.init();
+
+    // Defer pointer lock to next frame so event listener attachment and the
+    // rest of the Svelte effect cascade complete first. This prevents the
+    // browser's pointer lock flow from blocking the main thread during the
+    // flip animation completion.
+    if (isGameMode(mode) && !isPointerLocked && inputCaps.canUsePointerLock() && canvas.isConnected) {
+      requestAnimationFrame(() => {
+        if (cachedCanvas?.isConnected) {
+          try { cachedCanvas.requestPointerLock(); } catch { /* canvas detached */ }
+        }
+      });
+    }
 
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keyup", handleKeyUp);
@@ -448,29 +491,8 @@
   }
 
   onDestroy(() => {
-    console.log(`[CameraCtrl] DESTROY: mode=${mode} destId=${destinationId} pointerLocked=${!!document.pointerLockElement}`);
-    const canvas = cachedCanvas ?? renderer.current?.domElement;
-
-    // Cleanup input capabilities
-    inputCaps.destroy();
-
-    window.removeEventListener("keydown", handleKeyDown);
-    window.removeEventListener("keyup", handleKeyUp);
-    window.removeEventListener("blur", handleBlur);
-    document.removeEventListener("mousemove", handleMouseMove);
-    document.removeEventListener("pointerlockchange", handlePointerLockChange);
-    canvas?.removeEventListener("click", handleCanvasClick);
-    canvas?.removeEventListener("wheel", handleWheel);
-
-    // Cleanup pointer event listeners
-    canvas?.removeEventListener("pointerdown", handlePointerDown);
-    document.removeEventListener("pointerup", handlePointerUp);
-    document.removeEventListener("pointercancel", handlePointerUp);
-    document.removeEventListener("pointermove", handlePointerMove);
-
-    if (document.pointerLockElement) {
-      document.exitPointerLock();
-    }
+    console.log(`[CameraCtrl] DESTROY: mode=${mode} destId=${destinationId}`);
+    detachFromCanvas();
   });
 
   // Notify parent of rotation changes (for MCP bridge)

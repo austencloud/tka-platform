@@ -13,7 +13,7 @@
   import { useGltf } from "@threlte/extras";
   import { untrack } from "svelte";
   import { recolorPropModel } from "./prop-model-recolor";
-  import { computePropPosition, computePropRotation } from "./prop3d-transforms";
+  import { computePropRotation } from "./prop3d-transforms";
   import { userProportionsState } from "../../state/user-proportions-state.svelte";
   import {
     LAYER_WORLD,
@@ -28,9 +28,6 @@
     propState: PropState3D;
     color: "blue" | "red";
     visible?: boolean;
-    avatarPosition?: { x: number; y: number; z: number };
-    facingAngle?: number;
-    gridOffset?: number;
     isActivePlayer?: boolean;
     /** Extra scale multiplier (for big variants) */
     extraScale?: number;
@@ -68,13 +65,8 @@
     }
   });
 
-  // Transform calculations (same pipeline as procedural props)
-  const position = $derived.by(() =>
-    computePropPosition(props.propState, props.avatarPosition ?? { x: 0, y: 0, z: 0 }, props.facingAngle ?? 0, props.gridOffset ?? 0)
-  );
-  const rotation = $derived.by(() =>
-    computePropRotation(props.propState, props.facingAngle ?? 0)
-  );
+  // Rotation only — position is handled by the parent PerformerRig scene graph
+  const rotation = $derived(computePropRotation(props.propState));
 
   // Combined scale: model's authored scale × big variant multiplier × user proportions ratio
   const effectiveScale = $derived.by((): [number, number, number] => {
@@ -84,7 +76,7 @@
 </script>
 
 {#if (props.visible ?? true) && coloredScene}
-  <T.Group {position} {rotation} layers={propLayer}>
+  <T.Group {rotation} layers={propLayer}>
     <T.Group
       scale={effectiveScale}
       position.y={props.modelEntry.gripOffsetY}

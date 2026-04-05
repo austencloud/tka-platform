@@ -1,7 +1,18 @@
 <script lang="ts">
   /**
    * Post-processing pipeline for the museum 3D scene.
-   * Adds bloom, vignette, and ACES filmic tone mapping.
+   *
+   * Bloom + vignette + ACES tone mapping run ONLY in FPS mode. Top-down and
+   * flip animation use plain gl.render(). This is both a design choice (bloom
+   * is cinematic immersion — wasted on a tactical overhead view) and a perf
+   * requirement: running bloom in top-down then switching to plain render
+   * during the flip causes Chrome to stall for 8+ seconds on render target
+   * state transitions. By keeping bloom exclusively in FPS, the only
+   * composer↔plain switch is one clean transition at the end of each flip.
+   *
+   * The first-ever composer.render() triggers GPU shader compilation in
+   * UnrealBloomPass (~2-6 seconds). We pre-warm this behind the loading
+   * overlay so it's invisible to the player.
    */
   import { useThrelte, useTask } from "@threlte/core";
   import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
@@ -9,8 +20,21 @@
   import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
   import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass.js";
   import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
-  import { ACESFilmicToneMapping, Vector2 } from "three";
-  import type { WebGLRenderer, Scene, Camera } from "three";
+  import { ACESFilmicToneMapping, Vector2, Vector3 } from "three";
+  import type { WebGLRenderer, Scene, Camera, PerspectiveCamera } from "three";
+
+  interface Props {
+    /** All geometry is in the scene — safe to pre-warm bloom shaders */
+    geometryReady?: boolean;
+    /** Player is in first-person/third-person mode — bloom is active */
+    fpsActive?: boolean;
+    /** Camera is mid-flip between top-down and FPS — skip bloom */
+    animating?: boolean;
+    /** Spawn position for FPS pre-warm (world coordinates) */
+    spawnPosition?: { x: number; z: number };
+  }
+
+  const props: Props = $props();
 
   const VignetteShader = {
     uniforms: {
@@ -56,7 +80,7 @@
   };
 
   let composer: EffectComposer | undefined;
-  let initialized = false;
+  let bloomPreWarmed = false;
   let lastW = 0;
   let lastH = 0;
   const sizeVec = new Vector2();
@@ -67,11 +91,11 @@
     const cam = getCamera();
     if (!gl || !sc || !cam) return;
 
-    if (!initialized) {
-      // Disable Threlte's auto-render so EffectComposer takes over
+    // Build the EffectComposer once, but don't render through it yet
+    if (!composer) {
+      // Disable Threlte's auto-render so we control the render loop
       try { (ctx as any).autoRender?.set?.(false); } catch { /* ok */ }
 
-      // ACES filmic tone mapping for cinematic color response
       gl.toneMapping = ACESFilmicToneMapping;
       gl.toneMappingExposure = 1.1;
 
@@ -82,13 +106,72 @@
       c.addPass(new OutputPass());
 
       composer = c;
-      initialized = true;
     }
 
-    if (!composer) return;
+    // Pre-warm: first-ever composer.render() triggers GPU shader compilation
+    // (~2-6s). We render from BOTH camera perspectives (top-down + FPS) to
+    // force all shader variants to compile. Without the FPS pre-warm, the
+    // first bloom render in FPS mode causes a ~1s stutter as new shader
+    // variants compile for the close-up perspective.
+    if (!bloomPreWarmed) {
+      if (props.geometryReady) {
+        bloomPreWarmed = true;
+        console.log("[PostProcess] Pre-warming bloom shaders behind overlay...");
+        const t0 = performance.now();
+        gl.getSize(sizeVec);
+        const dpr = gl.getPixelRatio();
+        composer.setSize(Math.floor(sizeVec.x * dpr), Math.floor(sizeVec.y * dpr));
+        composer.setPixelRatio(1);
+        lastW = Math.floor(sizeVec.x * dpr);
+        lastH = Math.floor(sizeVec.y * dpr);
 
-    // Sync composer size with renderer every frame — the canvas may resize
-    // after init (layout shifts, fullscreen, etc.)
+        // Pass 1: top-down perspective (current camera position)
+        composer.render();
+
+        // Pass 2: FPS perspective — move camera to spawn at eye height,
+        // render through bloom, then restore. Forces GPU to compile shader
+        // variants for the close-up FPS frustum (different from top-down).
+        const perspCam = cam as PerspectiveCamera;
+        if (perspCam.isPerspectiveCamera && props.spawnPosition) {
+          const savedPos = perspCam.position.clone();
+          const savedFov = perspCam.fov;
+          const savedQuat = perspCam.quaternion.clone();
+
+          perspCam.position.set(props.spawnPosition.x, 1.6, props.spawnPosition.z);
+          perspCam.fov = 65;
+          perspCam.lookAt(
+            props.spawnPosition.x,
+            1.6,
+            props.spawnPosition.z + 5,
+          );
+          perspCam.updateProjectionMatrix();
+          composer.render();
+
+          // Restore camera to top-down position
+          perspCam.position.copy(savedPos);
+          perspCam.fov = savedFov;
+          perspCam.quaternion.copy(savedQuat);
+          perspCam.updateProjectionMatrix();
+        }
+
+        console.log(`[PostProcess] Pre-warm complete: ${(performance.now() - t0).toFixed(0)}ms (absorbed by overlay)`);
+        return;
+      }
+      // Geometry still loading — plain render
+      gl.render(sc, cam);
+      return;
+    }
+
+    // Bloom runs ONLY in FPS mode (not animating).
+    // Top-down and flip animation get plain render. This avoids the
+    // composer↔plain render target switch in top-down mode, which causes
+    // Chrome to stall for 8+ seconds on subsequent flips.
+    if (!props.fpsActive || props.animating) {
+      gl.render(sc, cam);
+      return;
+    }
+
+    // FPS mode: render through EffectComposer (bloom + vignette + tone mapping)
     gl.getSize(sizeVec);
     const dpr = gl.getPixelRatio();
     const w = Math.floor(sizeVec.x * dpr);

@@ -19,11 +19,11 @@ export interface Prop3DProps {
   length?: number;
   /** Prop thickness (radius of the main body) */
   thickness?: number;
-  /** Avatar world position - rotation pivot point */
+  /** @deprecated Position is now handled by PerformerRig scene graph */
   avatarPosition?: { x: number; y: number; z: number };
-  /** Avatar facing angle - props rotate with avatar's body orientation */
+  /** @deprecated Facing rotation is now inherited from PerformerRig parent group */
   facingAngle?: number;
-  /** Forward offset from avatar to grid center (body-local Z direction) */
+  /** @deprecated Grid offset is now handled by PerformerRig scene graph */
   gridOffset?: number;
   /** Whether this prop belongs to the active player (hidden in first-person) */
   isActivePlayer?: boolean;

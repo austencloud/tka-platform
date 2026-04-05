@@ -43,6 +43,8 @@
     label?: string;
     /** Render target resolution */
     textureSize?: number;
+    /** Player world position — portal only renders when player is nearby */
+    playerPosition?: { x: number; y: number; z: number };
   }
 
   const props: Props = $props();
@@ -57,6 +59,14 @@
   const color = props.color ?? "#0088ff";
   const label = props.label ?? "";
   const textureSize = props.textureSize ?? 256;
+
+  // Portal render-to-texture is expensive (full scene render per portal per frame).
+  // Two optimizations: skip frames when player is far away, and reduce render
+  // frequency even when nearby. At 256x256 the visual difference is imperceptible.
+  const PROXIMITY_RADIUS = 8; // world units — ~16 tiles
+  const PROXIMITY_RADIUS_SQ = PROXIMITY_RADIUS * PROXIMITY_RADIUS;
+  const RENDER_EVERY_N_FRAMES = 3;
+  let frameCounter = 0;
 
   const threlteCtx = useThrelte();
   // Threlte 8 wraps scene and renderer in CurrentWritable<T> (has a .current property)
@@ -118,10 +128,27 @@
     };
   });
 
-  // Each frame: render the scene from the virtual camera into the render target.
-  // This runs every frame in the main stage (before the render stage), so the
-  // texture is ready when Threlte draws the main scene.
-  useTask((delta) => {
+  // Render the scene from the virtual camera into the render target.
+  // Two perf wins: skip frames (every 3rd) and skip entirely when
+  // the player is far away. Each portal render is a full scene draw
+  // call, so skipping 2 portals x 2/3 frames saves ~4 scene renders
+  // out of every 3 frames.
+  useTask(() => {
+    frameCounter++;
+
+    // Skip frames — at 60fps, rendering every 3rd frame = 20fps portal texture.
+    // At 256x256, the reduced update rate is visually imperceptible.
+    if (frameCounter % RENDER_EVERY_N_FRAMES !== 0) return;
+
+    // Proximity gate — don't render portal texture if player is far away.
+    // The portal surface still shows the last captured frame (frozen).
+    const pp = props.playerPosition;
+    if (pp) {
+      const dx = pp.x - position[0];
+      const dz = pp.z - position[2];
+      if (dx * dx + dz * dz > PROXIMITY_RADIUS_SQ) return;
+    }
+
     const gl = getRenderer();
     if (!gl || !gl.render) return;
     const scn = getScene();

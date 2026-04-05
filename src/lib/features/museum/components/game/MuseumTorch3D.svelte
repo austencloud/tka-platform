@@ -24,8 +24,13 @@
   import type { WingTheme } from "../../domain/museum-grid-types";
   import type { TorchMaterials } from "../../services/implementations/TorchMaterialCache";
 
-  // Shared loader instance — reuses HTTP cache across all fixture components
+  // Shared loader + template cache. Without this, each of ~30 torches triggers
+  // independent GLTF parsing (draco decode, buffer construction, scene graph build).
+  // The cache stores the already-scaled model template per path — cloning a template
+  // is orders of magnitude cheaper than re-parsing the GLB.
   const sharedLoader = new GLTFLoader();
+  const modelTemplateCache = new Map<string, Object3D>();
+  const modelPendingCache = new Map<string, Promise<Object3D>>();
 
   interface Props {
     x: number;
@@ -41,6 +46,8 @@
     materials: TorchMaterials;
     /** Enable shadow casting on the point light (expensive — use sparingly) */
     castShadow?: boolean;
+    /** Player world position — ember particles skip animation when far away */
+    playerPosition?: { x: number; y: number; z: number };
   }
 
   const props: Props = $props();
@@ -64,32 +71,61 @@
   const tz = z + wallOffsetZ;
   const fixtureY = y + config.yOffset;
 
-  // ── GLTF model loading ──
+  // ── GLTF model loading (template-cached) ──
+  // First torch for a given model path parses the GLB and stores the scaled
+  // template. All subsequent torches clone the template (cheap deep copy that
+  // shares GPU vertex buffers). Also deduplicates in-flight fetches so 30
+  // torches mounting simultaneously don't trigger 30 parallel HTTP requests.
   let gltfModel: Object3D | null = $state(null);
   let modelFailed = $state(false);
 
   const TARGET_HEIGHT = 0.3;
 
-  sharedLoader.load(
-    config.modelPath,
-    (gltf) => {
-      const model = gltf.scene;
-      const box = new Box3().setFromObject(model);
-      const size = new Vector3();
-      box.getSize(size);
-      const maxDim = Math.max(size.x, size.y, size.z);
-      if (maxDim > 0) {
-        const autoScale = (TARGET_HEIGHT / maxDim) * config.scale;
-        model.scale.setScalar(autoScale);
-      }
+  async function loadCachedModel(): Promise<Object3D> {
+    const cached = modelTemplateCache.get(config.modelPath);
+    if (cached) return cached.clone();
+
+    let pending = modelPendingCache.get(config.modelPath);
+    if (!pending) {
+      pending = new Promise<Object3D>((resolve, reject) => {
+        sharedLoader.load(
+          config.modelPath,
+          (gltf) => {
+            const template = gltf.scene;
+            const box = new Box3().setFromObject(template);
+            const size = new Vector3();
+            box.getSize(size);
+            const maxDim = Math.max(size.x, size.y, size.z);
+            if (maxDim > 0) {
+              const autoScale = (TARGET_HEIGHT / maxDim) * config.scale;
+              template.scale.setScalar(autoScale);
+            }
+            modelTemplateCache.set(config.modelPath, template);
+            modelPendingCache.delete(config.modelPath);
+            resolve(template);
+          },
+          undefined,
+          (err) => {
+            modelPendingCache.delete(config.modelPath);
+            reject(err);
+          },
+        );
+      });
+      modelPendingCache.set(config.modelPath, pending);
+    }
+
+    const template = await pending;
+    return template.clone();
+  }
+
+  loadCachedModel()
+    .then((model) => {
       model.position.set(tx, fixtureY, tz);
       gltfModel = model;
-    },
-    undefined,
-    () => {
+    })
+    .catch(() => {
       modelFailed = true;
-    },
-  );
+    });
 
   // Use pre-compiled materials from cache (cloned, so uniforms are per-instance)
   const { flameMat, flameGeo, coneMat, coneGeo, fallbackGeo, fallbackMat, emberMat } = materials;
@@ -122,6 +158,11 @@
   let elapsed = Math.random() * 100;
   const isFireBased = config.hasFlame;
 
+  // Ember particles are pure cosmetic detail — invisible beyond ~5 world units.
+  // Skipping their per-frame position updates for distant torches saves ~700
+  // particle calculations per frame across ~30 torches.
+  const EMBER_PROXIMITY_SQ = 5 * 5; // 5 world units squared
+
   // ── Animation loop ──
   useTask((delta) => {
     elapsed += delta;
@@ -149,8 +190,16 @@
       }
     }
 
-    // Animate embers
+    // Animate embers only when player is nearby — distant embers are
+    // sub-pixel and invisible, so updating their positions is pure waste.
     if (EMBER_COUNT > 0) {
+      const pp = props.playerPosition;
+      if (pp) {
+        const dx = pp.x - tx;
+        const dz = pp.z - tz;
+        if (dx * dx + dz * dz > EMBER_PROXIMITY_SQ) return;
+      }
+
       for (let i = 0; i < EMBER_COUNT; i++) {
         emberPositions[i * 3] = (emberPositions[i * 3] ?? 0) + (emberDrifts[i * 2] ?? 0) * delta;
         emberPositions[i * 3 + 1] = (emberPositions[i * 3 + 1] ?? 0) + (emberSpeeds[i] ?? 0) * delta;
