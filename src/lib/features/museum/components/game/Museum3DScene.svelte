@@ -37,7 +37,6 @@
   import {
     bucketMuseumTilesByRoom,
     buildRoomChunk,
-    disposeRoomChunk,
   } from "../../services/implementations/MuseumGeometryBuilder";
   import type {
     RoomChunk,
@@ -675,8 +674,6 @@
       updateAtmosphere(fpsTileX, fpsTileZ, delta);
       updateStreaming(fpsTileX, fpsTileZ);
       props.onPlayerUpdate?.(fpsPos.x, fpsPos.z, fpsTileX, fpsTileZ, yawToFacing(playerYaw), true, playerYaw);
-      const fpsFrameMs = performance.now() - frameStart;
-      if (fpsFrameMs > 50) console.warn(`[Museum3D] 🎯 FPS frame logic took ${fpsFrameMs.toFixed(0)}ms`);
       return;
     }
 
@@ -961,8 +958,6 @@
   let loadedChunks = $state<Map<string, RoomChunk>>(new Map());
   // Corridor chunk — always loaded
   let corridorChunk = $state<RoomChunk | null>(null);
-  // Rooms currently being built (prevent duplicate builds)
-  const buildingRooms = new Set<string>();
 
   const MAX_POINT_LIGHTS = 32;
 
@@ -1047,43 +1042,76 @@
     }
   }
 
-  /** Load a room chunk asynchronously */
-  async function loadRoom(wingId: string): Promise<void> {
-    if (loadedChunks.has(wingId) || buildingRooms.has(wingId)) return;
-    const buckets = perRoomBuckets.roomBuckets.get(wingId);
-    if (!buckets) return;
 
-    buildingRooms.add(wingId);
-    const wing = grid.wings.find(w => w.id === wingId) ?? null;
-    const chunk = await buildRoomChunk(buckets, wingId, wing);
-    buildingRooms.delete(wingId);
+  // ── Pre-build ALL room chunks behind the loading overlay ──
+  // Build every room's geometry upfront so room transitions are instant.
+  // The overlay stays visible until all chunks are built + textures loaded.
+  // This is ~300ms of JS work + GPU shader compilation (absorbed by overlay).
+  const prebuiltChunks = new Map<string, RoomChunk>();
+  const spawnRoomId = streamingManager.getRoomAtTile(grid.spawn.x, grid.spawn.y, grid.wings);
 
-    // Update loaded chunks (creates new Map to trigger Svelte reactivity)
+  props.onBuildStage?.("Tile bucketing");
+
+  (async () => {
+    // Build corridor chunk first
+    const cc = await buildRoomChunk(perRoomBuckets.corridorBucket, "__corridor__", null);
+    corridorChunk = cc;
+    props.onBuildStage?.("Corridors");
+
+    // Build ALL room chunks sequentially (yields between phases keep overlay responsive)
+    for (const wing of grid.wings) {
+      const buckets = perRoomBuckets.roomBuckets.get(wing.id);
+      if (!buckets) continue;
+      const chunk = await buildRoomChunk(buckets, wing.id, wing);
+      prebuiltChunks.set(wing.id, chunk);
+      props.onBuildStage?.(wing.name);
+    }
+
+    // Now activate only spawn room + adjacent rooms (instant — no GPU work)
+    if (spawnRoomId) {
+      const adjacentIds = streamingManager.getAdjacentRooms(spawnRoomId);
+      for (const roomId of [spawnRoomId, ...adjacentIds]) {
+        activateRoom(roomId);
+      }
+      // Tell streaming manager these rooms are loaded
+      streamingManager.update(spawnRoomId);
+    } else {
+      // Fallback: activate all rooms
+      for (const wing of grid.wings) activateRoom(wing.id);
+    }
+
+    recomputeVisibility(grid.spawn.x, grid.spawn.y);
+    geometryReady = true;
+    props.onGeometryReady?.();
+  })();
+
+  /** Move a pre-built chunk into the active scene (instant — no GPU work) */
+  function activateRoom(wingId: string): void {
+    if (loadedChunks.has(wingId)) return;
+    const chunk = prebuiltChunks.get(wingId);
+    if (!chunk) return;
+
     const updated = new Map(loadedChunks);
     updated.set(wingId, chunk);
     loadedChunks = updated;
 
-    // Rebuild proximity grids with new chunk data
-    rebuildProximityGrids();
-
-    // Mount torches/lights immediately (shader compilation is one-time cost)
+    // Add this chunk's torches/lights to visible sets
     visibleTorches = [...visibleTorches, ...chunk.torchPositions];
     visibleExhibitLights = [...visibleExhibitLights, ...chunk.exhibitLightPositions];
     visibleCeilingLights = [...visibleCeilingLights, ...chunk.ceilingLightPositions];
+
+    rebuildProximityGrids();
   }
 
-  /** Dispose a room chunk and remove from scene */
-  function unloadRoom(wingId: string): void {
+  /** Remove a chunk from the active scene (keep in prebuiltChunks for reuse) */
+  function deactivateRoom(wingId: string): void {
     const chunk = loadedChunks.get(wingId);
     if (!chunk) return;
-
-    disposeRoomChunk(chunk);
 
     const updated = new Map(loadedChunks);
     updated.delete(wingId);
     loadedChunks = updated;
 
-    // Remove this chunk's torches/lights from visible sets
     const chunkTorchIds = new Set(chunk.torchPositions.map(t => t.id));
     const chunkExhibitIds = new Set(chunk.exhibitLightPositions.map(l => l.id));
     const chunkCeilingIds = new Set(chunk.ceilingLightPositions.map(l => l.id));
@@ -1094,61 +1122,22 @@
     rebuildProximityGrids();
   }
 
-  // ── Initial load: corridor + spawn room + adjacent rooms ──
-  props.onBuildStage?.("Tile bucketing");
-
-  // Build corridor chunk first (always loaded, cheap)
-  buildRoomChunk(perRoomBuckets.corridorBucket, "__corridor__", null).then((chunk) => {
-    corridorChunk = chunk;
-    props.onBuildStage?.("Corridors");
-  });
-
-  // Determine spawn room and load it + adjacent rooms
-  const spawnRoomId = streamingManager.getRoomAtTile(grid.spawn.x, grid.spawn.y, grid.wings);
-  if (spawnRoomId) {
-    const adjacentIds = streamingManager.getAdjacentRooms(spawnRoomId);
-    const initialRooms = [spawnRoomId, ...adjacentIds];
-
-    // Load initial rooms sequentially to avoid overwhelming the GPU
-    (async () => {
-      for (const roomId of initialRooms) {
-        await loadRoom(roomId);
-        props.onBuildStage?.(roomId);
-      }
-      // Compute initial visibility
-      recomputeVisibility(grid.spawn.x, grid.spawn.y);
-      geometryReady = true;
-      props.onGeometryReady?.();
-    })();
-  } else {
-    // No spawn room found — load all rooms as fallback
-    (async () => {
-      for (const wing of grid.wings) {
-        await loadRoom(wing.id);
-      }
-      recomputeVisibility(grid.spawn.x, grid.spawn.y);
-      geometryReady = true;
-      props.onGeometryReady?.();
-    })();
-  }
-
   // ── Room streaming in game loop ──
-  // Every N frames, check if the player has entered a new room and
-  // load/unload room chunks accordingly.
+  // Rooms are pre-built — streaming just activates/deactivates them (instant).
   let lastStreamingRoomId: string | null = spawnRoomId;
   let streamingFrameCounter = 0;
 
   function updateStreaming(playerTX: number, playerTZ: number): void {
     streamingFrameCounter++;
-    if (streamingFrameCounter % 15 !== 0) return; // Check every 15 frames (~4 Hz)
+    if (streamingFrameCounter % 15 !== 0) return;
 
     const currentRoom = streamingManager.getRoomAtTile(playerTX, playerTZ, grid.wings);
     if (currentRoom === lastStreamingRoomId) return;
     lastStreamingRoomId = currentRoom;
 
     const { toLoad, toDispose } = streamingManager.update(currentRoom);
-    for (const id of toDispose) unloadRoom(id);
-    for (const id of toLoad) loadRoom(id); // async, non-blocking
+    for (const id of toDispose) deactivateRoom(id);
+    for (const id of toLoad) activateRoom(id);
   }
 
   // Shadow disabled on dynamic lights — toggling castShadow reactively causes
