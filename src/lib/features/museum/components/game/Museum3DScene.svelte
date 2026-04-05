@@ -1109,7 +1109,7 @@
         renderer.compile(sceneObj, camera);
       }
 
-      console.log(`[Museum3D] Imperative scene: ${allSceneMeshes.length} meshes added directly, ${ceilingMeshRefs.length} ceiling meshes`);
+      console.log(`[Museum3D] BatchedMesh scene: ${allSceneMeshes.length} batches added, ${ceilingChunkRefs.length} ceiling batches (GPU frustum culling enabled)`);
     }
 
     // Yield so overlay can paint
@@ -1134,10 +1134,13 @@
     props.onGeometryReady?.();
   })();
 
-  // Toggle ceiling visibility — ceilings hidden in top-down so the floor plan is visible
+  // Toggle ceiling visibility per-instance via BatchedMesh.setVisibleAt
+  // Ceilings hidden in top-down so the floor plan is visible
   $effect(() => {
-    for (const mesh of ceilingMeshRefs) {
-      mesh.visible = fpsActive;
+    for (const cm of ceilingChunkRefs) {
+      for (const id of (cm.instanceIds ?? [])) {
+        cm.mesh.setVisibleAt(id, fpsActive);
+      }
     }
   });
 
