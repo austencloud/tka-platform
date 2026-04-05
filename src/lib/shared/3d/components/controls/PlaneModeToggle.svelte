@@ -1,45 +1,122 @@
 <script lang="ts">
+  import { Plane } from "../../domain/enums/Plane";
   import { PlaneMode } from "../../domain/enums/PlaneMode";
 
   interface Props {
     mode: PlaneMode;
+    bluePlane: Plane;
+    redPlane: Plane;
     onModeChange: (mode: PlaneMode) => void;
+    onHandPlaneChange: (hand: "blue" | "red", plane: Plane) => void;
   }
 
-  let { mode, onModeChange }: Props = $props();
+  let { mode, bluePlane, redPlane, onModeChange, onHandPlaneChange }: Props = $props();
 
-  function toggle() {
-    const next = mode === PlaneMode.WALL ? PlaneMode.DUAL_WHEEL : PlaneMode.WALL;
-    onModeChange(next);
+  const primaryPlanes = [Plane.WALL, Plane.WHEEL, Plane.FLOOR];
+
+  const planeLabels: Record<string, string> = {
+    [Plane.WALL]: "Wall",
+    [Plane.WHEEL]: "Wheel",
+    [Plane.FLOOR]: "Floor",
+  };
+
+  function handlePlaneChange(hand: "blue" | "red", value: string) {
+    onHandPlaneChange(hand, value as Plane);
+  }
+
+  function resetToWall() {
+    onModeChange(PlaneMode.WALL);
   }
 </script>
 
-<button
-  class="plane-mode-toggle"
-  onclick={toggle}
-  title={mode === PlaneMode.WALL ? "Switch to dual wheel mode" : "Switch to wall mode"}
->
-  <span class="label">{mode === PlaneMode.WALL ? "Wall" : "Dual Wheel"}</span>
-</button>
+<div class="plane-controls">
+  <div class="hand-plane">
+    <span class="hand-dot" style="background: #4a90d9;"></span>
+    <select
+      value={bluePlane}
+      onchange={(e) => handlePlaneChange("blue", e.currentTarget.value)}
+      class="plane-select"
+    >
+      {#each primaryPlanes as p}
+        <option value={p}>{planeLabels[p]}</option>
+      {/each}
+    </select>
+  </div>
+
+  <div class="hand-plane">
+    <span class="hand-dot" style="background: #d94a4a;"></span>
+    <select
+      value={redPlane}
+      onchange={(e) => handlePlaneChange("red", e.currentTarget.value)}
+      class="plane-select"
+    >
+      {#each primaryPlanes as p}
+        <option value={p}>{planeLabels[p]}</option>
+      {/each}
+    </select>
+  </div>
+
+  {#if mode !== PlaneMode.WALL || bluePlane !== Plane.WALL || redPlane !== Plane.WALL}
+    <button class="reset-btn" onclick={resetToWall} title="Reset both to Wall">
+      <i class="fas fa-undo" aria-hidden="true"></i>
+    </button>
+  {/if}
+</div>
 
 <style>
-  .plane-mode-toggle {
+  .plane-controls {
     display: flex;
     align-items: center;
-    gap: 5px;
-    padding: 7px 12px;
-    border-radius: 8px;
+    gap: 6px;
+  }
+
+  .hand-plane {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .hand-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .plane-select {
+    padding: 4px 6px;
+    border-radius: 6px;
     background: rgba(0, 0, 0, 0.5);
     border: 1px solid rgba(255, 255, 255, 0.15);
-    color: rgba(255, 255, 255, 0.6);
+    color: rgba(255, 255, 255, 0.8);
     font-size: var(--font-size-compact, 12px);
     cursor: pointer;
     backdrop-filter: blur(8px);
-    transition: all 0.2s ease;
-    white-space: nowrap;
+    outline: none;
   }
-  .plane-mode-toggle:hover {
-    background: rgba(0, 0, 0, 0.7);
-    color: rgba(255, 255, 255, 0.9);
+
+  .plane-select:hover {
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+
+  .plane-select option {
+    background: #1a1a2e;
+    color: #fff;
+  }
+
+  .reset-btn {
+    padding: 4px 8px;
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .reset-btn:hover {
+    color: rgba(255, 255, 255, 0.8);
+    border-color: rgba(255, 255, 255, 0.2);
   }
 </style>

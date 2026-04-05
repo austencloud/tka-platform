@@ -72,7 +72,10 @@
         {#if avatarState}
           <PlaneModeToggle
             mode={avatarState.planeMode}
+            bluePlane={avatarState.customBluePlane}
+            redPlane={avatarState.customRedPlane}
             onModeChange={(mode) => avatarState.setPlaneMode(mode)}
+            onHandPlaneChange={(hand, plane) => avatarState.setHandPlane(hand, plane)}
           />
           {#if avatarState.planeMode === 'dual-wheel'}
             <button
