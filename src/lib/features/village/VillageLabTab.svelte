@@ -40,6 +40,8 @@
 			{ targetPopulation: 6 },
 		);
 		setVillageContext(villageState);
+		// Auto-start so simulation runs immediately (and survives HMR)
+		villageState.start();
 	}
 
 	onDestroy(() => {
