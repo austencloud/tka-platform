@@ -677,6 +677,8 @@
         onPrevStep={() => activeState?.prevStep()}
         onNextStep={() => activeState?.nextStep()}
         onShowHelp={() => keyboardShortcutState.openHelp()}
+        planeMode={activeState?.planeMode}
+        onPlaneModeChange={(mode) => activeState?.setPlaneMode(mode)}
       >
         {#snippet trailing()}
           <button
