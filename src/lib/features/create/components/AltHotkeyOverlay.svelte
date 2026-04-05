@@ -110,6 +110,21 @@
     return propType !== PropType.HAND;
   }
 
+  // Sequence action launchers — open the actions panel then trigger the specific drawer
+  const actionButtons = [
+    { label: "Duration", icon: "fa-clock", color: "#f472b6", bgTint: "rgba(244,114,182,0.12)" },
+    { label: "Extend", icon: "fa-expand", color: "#38bdf8", bgTint: "rgba(56,189,248,0.12)" },
+    { label: "Turns", icon: "fa-arrows-spin", color: "#fb923c", bgTint: "rgba(251,146,60,0.12)" },
+    { label: "Rotation", icon: "fa-compass", color: "#4ade80", bgTint: "rgba(74,222,128,0.12)" },
+  ] as const;
+
+  function openSequenceAction(action: string) {
+    const panelState = ctx.panelState;
+    dismiss();
+    // Open the actions panel — user picks the specific action from there
+    panelState.openSequenceActionsPanel();
+  }
+
   function dismiss() {
     fadeOut = true;
     setTimeout(() => {
@@ -227,6 +242,28 @@
             </span>
             <span class="item-label">{t.label}</span>
             <span class="key-badge" style="background: {t.keyBg}; border-color: {t.keyBorder}; color: {t.keyColor};">{t.key}</span>
+          </button>
+        {/each}
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Actions section -->
+    <div class="section">
+      <span class="section-label">Actions</span>
+      <div class="actions-grid">
+        {#each actionButtons as action}
+          <button
+            class="action-item"
+            disabled={!hasSequence}
+            onclick={() => openSequenceAction(action.label)}
+            title={action.label}
+          >
+            <span class="icon-badge" style="background: {action.bgTint}; color: {action.color};">
+              <i class="fas {action.icon}" aria-hidden="true"></i>
+            </span>
+            <span class="item-label">{action.label}</span>
           </button>
         {/each}
       </div>
@@ -455,6 +492,37 @@
     border: 1px solid transparent;
   }
 
+  /* Actions grid */
+  .actions-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+  }
+
+  .action-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 8px;
+    min-height: 44px;
+    min-width: 56px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+    border-radius: 8px;
+    cursor: pointer;
+    color: inherit;
+    transition: background 150ms ease, border-color 150ms ease;
+  }
+
+  .action-item:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.07);
+    border-color: rgba(255, 255, 255, 0.15);
+  }
+
+  .action-item:active:not(:disabled) { transform: scale(0.97); }
+  .action-item:disabled { opacity: 0.3; cursor: default; }
+
   .preset-row {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
@@ -555,6 +623,6 @@
   @media (prefers-reduced-motion: reduce) {
     .alt-overlay { animation: none; }
     .alt-overlay.fade-out { animation: none; opacity: 0; }
-    .rotate-btn, .transform-item, .preset-item, .edit-btn { transition: none; }
+    .rotate-btn, .transform-item, .action-item, .preset-item, .edit-btn { transition: none; }
   }
 </style>
