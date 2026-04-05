@@ -126,6 +126,8 @@ export class PropStateInterpolator implements IPropStateInterpolator {
       (config.motionType !== MotionType.STATIC &&
         getAnimationVisibilityManager().getPathShape() === "linear");
 
+    let result: PropState3D;
+
     if (useLinear) {
       const { worldPosition, centerPathAngle } = this.interpolateDashPosition(
         config,
@@ -134,7 +136,29 @@ export class PropStateInterpolator implements IPropStateInterpolator {
         progress
       );
 
-      return {
+      result = {
+        plane: config.plane,
+        centerPathAngle,
+        staffRotationAngle,
+        worldPosition,
+        worldRotation,
+      };
+    } else {
+      // All other motions: interpolate along circular path
+      const centerPathAngle = this.interpolateCenterPath(
+        startCenterAngle,
+        endCenterAngle,
+        progress
+      );
+
+      // Convert to 3D position (fixed radius for circular motion)
+      const worldPosition = planeAngleToWorldPosition(
+        config.plane,
+        centerPathAngle,
+        GRID_RADIUS_3D
+      );
+
+      result = {
         plane: config.plane,
         centerPathAngle,
         staffRotationAngle,
@@ -143,26 +167,14 @@ export class PropStateInterpolator implements IPropStateInterpolator {
       };
     }
 
-    // All other motions: interpolate along circular path
-    const centerPathAngle = this.interpolateCenterPath(
-      startCenterAngle,
-      endCenterAngle,
-      progress
-    );
+    // Apply lateral offset (used in dual-wheel mode to separate each
+    // hand's wheel plane to opposite sides of the body).
+    // Applied in avatar-local X because the avatar group rotation
+    // (facingAngle) is applied later in prop3d-transforms.ts.
+    if (config.lateralOffset) {
+      result.worldPosition.x += config.lateralOffset;
+    }
 
-    // Convert to 3D position (fixed radius for circular motion)
-    const worldPosition = planeAngleToWorldPosition(
-      config.plane,
-      centerPathAngle,
-      GRID_RADIUS_3D
-    );
-
-    return {
-      plane: config.plane,
-      centerPathAngle,
-      staffRotationAngle,
-      worldPosition,
-      worldRotation,
-    };
+    return result;
   }
 }

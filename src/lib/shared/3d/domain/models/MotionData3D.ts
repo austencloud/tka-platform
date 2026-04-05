@@ -33,6 +33,12 @@ export interface MotionConfig3D {
   startOrientation: Orientation;
   /** Ending orientation */
   endOrientation: Orientation;
+  /**
+   * X-axis offset for this hand's plane center, in avatar-local space.
+   * Used in dual-wheel mode to separate each hand's wheel plane laterally.
+   * Default: 0 (no offset, planes centered on body).
+   */
+  lateralOffset?: number;
 }
 
 /**
