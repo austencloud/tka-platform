@@ -111,10 +111,10 @@
 		position={avatarPosition}
 		{facingAngle}
 		isActive={isSelected}
-		isMoving={showAvatar ? isMoving : false}
-		moveSpeed={showAvatar ? moveSpeed : 0}
+		{isMoving}
+		{moveSpeed}
 		moveDirection={{ x: 0, z: 1 }}
-		enableLocomotion={showAvatar}
+		enableLocomotion={true}
 		visible={showAvatar}
 	/>
 
