@@ -162,21 +162,6 @@ export interface BatchedMeshData {
 /** @deprecated Use BatchedMeshData */
 export type InstancedMeshData = BatchedMeshData;
 
-/** All data produced by the geometry builder */
-export interface MuseumGeometry {
-  floorMeshes: InstancedMeshData[];
-  wallMeshes: InstancedMeshData[];
-  ceilingMesh: InstancedMesh | null;
-  performerMesh: InstancedMesh | null;
-  pedestalMesh: InstancedMesh | null;
-  signMesh: InstancedMesh | null;
-  plaquePlacements: PlaquePlacement[];
-  performerPositions: { x: number; z: number }[];
-  torchPositions: TorchPosition[];
-  exhibitLightPositions: LightPosition[];
-  ceilingLightPositions: LightPosition[];
-  roomLights: RoomLight[];
-}
 
 // ── Yield helper ──
 
@@ -687,14 +672,7 @@ export function disposeRoomChunk(chunk: RoomChunk): void {
   if (chunk.performerMesh) chunk.performerMesh.dispose();
 }
 
-// ── Main builder (legacy — used when streaming is not active) ──
-
-/**
- * Builds all museum geometry asynchronously, yielding to the main thread
- * between phases so the loading overlay stays responsive.
- *
- * @param onProgress Called with (phase) as each phase completes
- */
+/* Legacy buildMuseumGeometry removed — replaced by buildRoomChunk with BatchedMesh.
 export async function buildMuseumGeometry(
   grid: MuseumGrid,
   onProgress?: (phase: string) => void,
@@ -905,7 +883,7 @@ export async function buildMuseumGeometry(
     ceilingLightPositions,
     roomLights,
   };
-}
+} */
 
 // Re-export constants for Museum3DScene
 export { TILE_SIZE, WALL_HEIGHT, TILE_TYPE_COLORS, WING_WALL_COLORS, FLOOR_COLORS };
