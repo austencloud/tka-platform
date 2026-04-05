@@ -50,7 +50,11 @@
 		const frameDist = Math.sqrt(dx * dx + dz * dz);
 
 		moving = frameDist > 0.001;
-		speed = moving ? Math.min(1, frameDist * 15) : 0;
+		// Convert per-frame distance to velocity matching the locomotion animator.
+		// animationWalkSpeed=1.57 is the speed at which the walk cycle plays 1:1.
+		// At 60fps, frameDist of ~0.045 = ~2.7 m/s actual velocity.
+		// moveSpeed = velocity so the animator can compute timeScale = speed/1.57.
+		speed = moving ? frameDist * 60 : 0; // frameDist per frame → units per second
 
 		// Update $state values for Avatar3D props
 		avatarPosition = { x: posX, y: STAGE_LIFT, z: posZ };
