@@ -11,6 +11,7 @@
 
   import { T } from "@threlte/core";
   import { useGltf } from "@threlte/extras";
+  import { untrack } from "svelte";
   import { recolorPropModel } from "./prop-model-recolor";
   import { computePropPosition, computePropRotation } from "./prop3d-transforms";
   import { userProportionsState } from "../../state/user-proportions-state.svelte";
@@ -35,22 +36,12 @@
     extraScale?: number;
   }
 
-  let {
-    modelEntry,
-    propState,
-    color,
-    visible = true,
-    avatarPosition = { x: 0, y: 0, z: 0 },
-    facingAngle = 0,
-    gridOffset = 0,
-    isActivePlayer = false,
-    extraScale = 1,
-  }: Props = $props();
+  const props: Props = $props();
 
-  const propLayer = $derived(isActivePlayer ? LAYER_PLAYER_BODY : LAYER_WORLD);
+  const propLayer = $derived(props.isActivePlayer ? LAYER_PLAYER_BODY : LAYER_WORLD);
 
-  // Load the GLTF model
-  const gltf = useGltf(modelEntry.modelUrl);
+  // Load the GLTF model — useGltf is a one-time hook call, untrack to suppress warning
+  const gltf = useGltf(untrack(() => props.modelEntry.modelUrl));
 
   // Clone and recolor the scene when the model loads or color changes.
   // We need a fresh clone for each color to avoid shared material mutation.
@@ -65,34 +56,38 @@
     }
 
     // Re-clone whenever the color changes
-    if (color !== lastColor || !coloredScene) {
+    if (props.color !== lastColor || !coloredScene) {
       const clone = loaded.scene.clone(true);
-      recolorPropModel(clone, color);
+      recolorPropModel(clone, props.color);
+      // Enable shadow casting on all prop meshes
+      clone.traverse((child: any) => {
+        if (child.isMesh) child.castShadow = true;
+      });
       coloredScene = clone;
-      lastColor = color;
+      lastColor = props.color;
     }
   });
 
   // Transform calculations (same pipeline as procedural props)
   const position = $derived.by(() =>
-    computePropPosition(propState, avatarPosition, facingAngle, gridOffset)
+    computePropPosition(props.propState, props.avatarPosition ?? { x: 0, y: 0, z: 0 }, props.facingAngle ?? 0, props.gridOffset ?? 0)
   );
   const rotation = $derived.by(() =>
-    computePropRotation(propState, facingAngle)
+    computePropRotation(props.propState, props.facingAngle ?? 0)
   );
 
   // Combined scale: model's authored scale × big variant multiplier × user proportions ratio
   const effectiveScale = $derived.by((): [number, number, number] => {
-    const s = modelEntry.scale * extraScale;
+    const s = props.modelEntry.scale * (props.extraScale ?? 1);
     return [s, s, s];
   });
 </script>
 
-{#if visible && coloredScene}
+{#if (props.visible ?? true) && coloredScene}
   <T.Group {position} {rotation} layers={propLayer}>
     <T.Group
       scale={effectiveScale}
-      position.y={modelEntry.gripOffsetY}
+      position.y={props.modelEntry.gripOffsetY}
     >
       <T is={coloredScene} />
     </T.Group>

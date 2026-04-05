@@ -2,13 +2,19 @@
   /**
    * SkyGradient Primitive
    *
-   * Sets the scene background to a gradient using a canvas texture.
-   * This is more reliable than a mesh-based approach.
+   * Renders a large inverted sphere with a vertical gradient shader.
+   * Lives in 3D space so it's visible through gaps in geometry (trees, buildings)
+   * and doesn't depend on scene.background timing.
    */
 
-  import { useThrelte } from "@threlte/core";
-  import { CanvasTexture } from "three";
-  import { onMount, onDestroy } from "svelte";
+  import { T } from "@threlte/core";
+  import {
+    SphereGeometry,
+    ShaderMaterial,
+    BackSide,
+    Color,
+    AdditiveBlending,
+  } from "three";
 
   interface Props {
     /** Top color of gradient */
@@ -17,61 +23,69 @@
     bottomColor?: string;
     /** Optional middle color for 3-stop gradient */
     midColor?: string;
+    /** Radius of the sky dome */
+    radius?: number;
   }
 
   let {
     topColor = "#1e1b4b",
     bottomColor = "#0a0a12",
     midColor,
+    radius = 80,
   }: Props = $props();
 
-  const { scene } = useThrelte();
-  let texture: CanvasTexture | null = null;
-  let originalBackground: typeof scene.current.background = null;
+  const geometry = new SphereGeometry(radius, 32, 32);
 
-  function createGradientTexture(): CanvasTexture {
-    const canvas = document.createElement("canvas");
-    canvas.width = 2;
-    canvas.height = 256;
-    const ctx = canvas.getContext("2d")!;
+  const material = $derived.by(() => {
+    const top = new Color(topColor);
+    const mid = midColor ? new Color(midColor) : null;
+    const bottom = new Color(bottomColor);
 
-    const gradient = ctx.createLinearGradient(0, 0, 0, 256);
-    gradient.addColorStop(0, topColor);
-    if (midColor) {
-      gradient.addColorStop(0.5, midColor);
-    }
-    gradient.addColorStop(1, bottomColor);
+    return new ShaderMaterial({
+      uniforms: {
+        uTopColor: { value: top },
+        uMidColor: { value: mid ?? new Color().lerpColors(top, bottom, 0.5) },
+        uBottomColor: { value: bottom },
+        uHasMid: { value: mid ? 1.0 : 0.0 },
+      },
+      vertexShader: /* glsl */ `
+        varying vec3 vWorldPosition;
+        void main() {
+          vec4 worldPos = modelMatrix * vec4(position, 1.0);
+          vWorldPosition = worldPos.xyz;
+          gl_Position = projectionMatrix * viewMatrix * worldPos;
+        }
+      `,
+      fragmentShader: /* glsl */ `
+        uniform vec3 uTopColor;
+        uniform vec3 uMidColor;
+        uniform vec3 uBottomColor;
+        uniform float uHasMid;
+        varying vec3 vWorldPosition;
 
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, 2, 256);
+        void main() {
+          // Normalize height: 0 = bottom, 1 = top of sphere
+          float h = normalize(vWorldPosition).y * 0.5 + 0.5;
 
-    return new CanvasTexture(canvas);
-  }
+          vec3 color;
+          if (uHasMid > 0.5) {
+            // 3-stop gradient: bottom → mid → top
+            if (h < 0.5) {
+              color = mix(uBottomColor, uMidColor, h * 2.0);
+            } else {
+              color = mix(uMidColor, uTopColor, (h - 0.5) * 2.0);
+            }
+          } else {
+            color = mix(uBottomColor, uTopColor, h);
+          }
 
-  onMount(() => {
-    // Store original background
-    originalBackground = scene.current.background;
-
-    // Create and set gradient texture
-    texture = createGradientTexture();
-    scene.current.background = texture;
-  });
-
-  onDestroy(() => {
-    if (scene.current) {
-      scene.current.background = originalBackground;
-    }
-    texture?.dispose();
-  });
-
-  // Update when colors change
-  $effect(() => {
-    if (texture && scene.current) {
-      texture.dispose();
-      texture = createGradientTexture();
-      scene.current.background = texture;
-    }
+          gl_FragColor = vec4(color, 1.0);
+        }
+      `,
+      side: BackSide,
+      depthWrite: false,
+    });
   });
 </script>
 
-<!-- No visual output - this sets scene.background directly -->
+<T.Mesh {geometry} {material} renderOrder={-1} frustumCulled={false} />

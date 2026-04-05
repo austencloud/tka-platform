@@ -43,6 +43,15 @@ export const SCALE = {
 	/** Multiplier for sprint (RUN_SPEED / WALK_SPEED) */
 	SPRINT_MULTIPLIER: 2.0,
 
+	/** Crouch speed multiplier (fraction of walk speed) */
+	CROUCH_MULTIPLIER: 0.4,
+
+	/** Eye height while crouching (meters) — roughly 60% of standing */
+	CROUCH_EYE_HEIGHT: 0.95,
+
+	/** Capsule half-height while crouching (standing = 0.55, crouch shrinks to fit under geometry) */
+	CROUCH_HALF_HEIGHT: 0.25,
+
 	// ─────────────────────────────────────────────────────────────────
 	// Camera Settings
 	// ─────────────────────────────────────────────────────────────────

@@ -53,6 +53,7 @@ interface AnimationVisibilitySettings {
   fireIntensity: number; // User intensity slider value (0.0-1.0)
   fireTurbulence: number; // Curl noise turbulence strength (0.0-1.0), how much idle fire flickers
   fireColorCurve: FireColorCurve | null; // Custom 4-stop color gradient (null = use default)
+  firePropColors: [import("../domain/types/FireTypes").PropFlameColor, import("../domain/types/FireTypes").PropFlameColor] | null; // Per-hand flame colors (null = default blue/red)
 
   // Charcoal Effect tuning
   charcoalParams: import("../domain/types/CharcoalSparkTypes").CharcoalSparkParams; // Charcoal spark tuning params
@@ -155,6 +156,7 @@ export class AnimationVisibilityStateManager {
       fireIntensity: 0.7, // 0-1 range, 0.7 = normal fire
       fireTurbulence: 0.5, // 0-1 range, how much idle fire flickers
       fireColorCurve: null, // null = use default BASE_COLOR_CURVE
+      firePropColors: null, // null = default blue/red
 
       // Charcoal Effect tuning
       charcoalParams: { ...DEFAULT_CHARCOAL_PARAMS }, // Default charcoal spark params
@@ -663,6 +665,16 @@ export class AnimationVisibilityStateManager {
 
   setFireColorCurve(curve: FireColorCurve | null): void {
     this.settings.fireColorCurve = curve;
+    this.saveToStorage();
+    this.notifyObservers();
+  }
+
+  getFirePropColors(): [import("../domain/types/FireTypes").PropFlameColor, import("../domain/types/FireTypes").PropFlameColor] | null {
+    return this.settings.firePropColors;
+  }
+
+  setFirePropColors(colors: [import("../domain/types/FireTypes").PropFlameColor, import("../domain/types/FireTypes").PropFlameColor] | null): void {
+    this.settings.firePropColors = colors;
     this.saveToStorage();
     this.notifyObservers();
   }

@@ -114,6 +114,12 @@ export interface PhysicsProvider {
 	getVelocity(): Vector3;
 
 	/**
+	 * Apply animation-driven XZ movement (root motion).
+	 * Delta is in world space. Only handles XZ; Y stays physics-driven.
+	 */
+	applyRootMotion?(worldDelta: { x: number; z: number }): void;
+
+	/**
 	 * Teleport the player to a position (bypasses physics)
 	 */
 	teleport?(position: Vector3): void;
@@ -133,6 +139,12 @@ export interface PhysicsProvider {
 	 * Set noclip mode explicitly
 	 */
 	setNoclip?(enabled: boolean): void;
+
+	/**
+	 * Resize the player capsule for crouching (shorter) or standing (normal).
+	 * Keeps feet planted at the same world Y position.
+	 */
+	setCrouch?(crouching: boolean): void;
 }
 
 /**

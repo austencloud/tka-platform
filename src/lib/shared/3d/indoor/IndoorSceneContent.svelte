@@ -56,14 +56,7 @@
     children: Snippet;
   }
 
-  let {
-    room,
-    eyeHeight = 1.7,
-    moveSpeed = 2.5,
-    gravity = -9.81,
-    onPositionChange,
-    children,
-  }: Props = $props();
+  const props: Props = $props();
 
   // ============================================================================
   // STATE
@@ -76,14 +69,20 @@
   let isInitialized = $state(false);
 
   // Player state (reactive, read by UCC)
-  const offset = room.worldOffset;
-  const spawnX = room.spawnPoint.x + offset.x;
-  const spawnY = room.spawnPoint.y + offset.y;
-  const spawnZ = room.spawnPoint.z + offset.z;
+  // Use $derived so the compiler tracks props.room as a reactive prop read
+  const offset = $derived(props.room.worldOffset);
+  const spawnX = $derived(props.room.spawnPoint.x + offset.x);
+  const spawnY = $derived(props.room.spawnPoint.y + offset.y);
+  const spawnZ = $derived(props.room.spawnPoint.z + offset.z);
 
-  let playerPosition = $state({ x: spawnX, y: spawnY, z: spawnZ });
-  let playerYaw = $state(room.spawnFacing);
-  let targetPlayerYaw = $state(room.spawnFacing);
+  let playerPosition = $state({ x: 0, y: 0, z: 0 });
+  let playerYaw = $state(0);
+  let targetPlayerYaw = $state(0);
+  $effect.pre(() => {
+    playerPosition = { x: spawnX, y: spawnY, z: spawnZ };
+    playerYaw = props.room.spawnFacing;
+    targetPlayerYaw = props.room.spawnFacing;
+  });
   let isMoving = $state(false);
   let cameraMode = $state(CameraMode.FIRST_PERSON);
   const ROTATION_SPEED = 12;
@@ -141,12 +140,12 @@
   onMount(async () => {
     // 1. Initialize physics world
     physicsState = createPhysicsWorldState();
-    await initPhysicsWorld(physicsState, { x: 0, y: gravity, z: 0 });
+    await initPhysicsWorld(physicsState, { x: 0, y: props.gravity ?? -9.81, z: 0 });
 
     if (isDisposed) return;
 
     // 2. Create static colliders for room geometry
-    for (const collider of room.colliders) {
+    for (const collider of props.room.colliders) {
       createRigidBody(
         physicsState,
         {
@@ -190,7 +189,7 @@
     stepPhysics(physicsState, Math.min(delta, 1 / 30));
 
     // Report position to parent
-    onPositionChange?.(playerPosition);
+    props.onPositionChange?.(playerPosition);
   });
 
   // ============================================================================
@@ -214,14 +213,14 @@
   // ============================================================================
 
   const wallMats = $derived(
-    room.walls.map((w) => getWallMaterial(w.materialId)),
+    props.room.walls.map((w) => getWallMaterial(w.materialId)),
   );
-  const floorMat = $derived(getFloorMaterial(room.floor.materialId));
-  const ceilingMat = $derived(getCeilingMaterial(room.ceiling.materialId));
+  const floorMat = $derived(getFloorMaterial(props.room.floor.materialId));
+  const ceilingMat = $derived(getCeilingMaterial(props.room.ceiling.materialId));
 
-  const ox = room.worldOffset.x;
-  const oy = room.worldOffset.y;
-  const oz = room.worldOffset.z;
+  const ox = $derived(props.room.worldOffset.x);
+  const oy = $derived(props.room.worldOffset.y);
+  const oz = $derived(props.room.worldOffset.z);
 </script>
 
 <!-- UnifiedCameraController — handles ALL input, camera, movement, jumping, pointer lock -->
@@ -231,7 +230,7 @@
     {avatarState}
     {physicsProvider}
     enabled={true}
-    initialYaw={room.spawnFacing}
+    initialYaw={props.room.spawnFacing}
     onModeChange={(mode) => {
       cameraMode = mode;
     }}
@@ -242,7 +241,7 @@
 {/if}
 
 <!-- Walls -->
-{#each room.walls as wall, i}
+{#each props.room.walls as wall, i}
   <T.Mesh
     position.x={wall.position[0] + ox}
     position.y={wall.position[1] + oy}
@@ -261,11 +260,11 @@
 
 <!-- Floor -->
 <T.Mesh
-  position.x={room.floor.position[0] + ox}
-  position.y={room.floor.position[1] + oy}
-  position.z={room.floor.position[2] + oz}
+  position.x={props.room.floor.position[0] + ox}
+  position.y={props.room.floor.position[1] + oy}
+  position.z={props.room.floor.position[2] + oz}
 >
-  <T.BoxGeometry args={room.floor.size} />
+  <T.BoxGeometry args={props.room.floor.size} />
   <T.MeshStandardMaterial
     color={floorMat.color}
     roughness={floorMat.roughness}
@@ -276,11 +275,11 @@
 
 <!-- Ceiling -->
 <T.Mesh
-  position.x={room.ceiling.position[0] + ox}
-  position.y={room.ceiling.position[1] + oy}
-  position.z={room.ceiling.position[2] + oz}
+  position.x={props.room.ceiling.position[0] + ox}
+  position.y={props.room.ceiling.position[1] + oy}
+  position.z={props.room.ceiling.position[2] + oz}
 >
-  <T.BoxGeometry args={room.ceiling.size} />
+  <T.BoxGeometry args={props.room.ceiling.size} />
   <T.MeshStandardMaterial
     color={ceilingMat.color}
     roughness={ceilingMat.roughness}
@@ -290,7 +289,7 @@
 </T.Mesh>
 
 <!-- Entrance wall segments (flanking the opening) -->
-{#each room.entrance.segments as seg}
+{#each props.room.entrance.segments as seg}
   {@const mat = getWallMaterial(seg.materialId)}
   <T.Mesh
     position.x={seg.position[0] + ox}
@@ -309,9 +308,9 @@
 {/each}
 
 <!-- Corridor (if present) -->
-{#if room.entrance.corridor}
+{#if props.room.entrance.corridor}
   <!-- Corridor walls -->
-  {#each room.entrance.corridor.walls as cWall}
+  {#each props.room.entrance.corridor.walls as cWall}
     {@const mat = getWallMaterial(cWall.materialId)}
     <T.Mesh
       position.x={cWall.position[0] + ox}
@@ -330,13 +329,13 @@
   {/each}
 
   <!-- Corridor floor -->
-  {@const corridorFloorMat = getFloorMaterial(room.entrance.corridor.floor.materialId)}
+  {@const corridorFloorMat = getFloorMaterial(props.room.entrance.corridor.floor.materialId)}
   <T.Mesh
-    position.x={room.entrance.corridor.floor.position[0] + ox}
-    position.y={room.entrance.corridor.floor.position[1] + oy}
-    position.z={room.entrance.corridor.floor.position[2] + oz}
+    position.x={props.room.entrance.corridor.floor.position[0] + ox}
+    position.y={props.room.entrance.corridor.floor.position[1] + oy}
+    position.z={props.room.entrance.corridor.floor.position[2] + oz}
   >
-    <T.BoxGeometry args={room.entrance.corridor.floor.size} />
+    <T.BoxGeometry args={props.room.entrance.corridor.floor.size} />
     <T.MeshStandardMaterial
       color={corridorFloorMat.color}
       roughness={corridorFloorMat.roughness}
@@ -346,13 +345,13 @@
   </T.Mesh>
 
   <!-- Corridor ceiling -->
-  {@const corridorCeilMat = getCeilingMaterial(room.entrance.corridor.ceiling.materialId)}
+  {@const corridorCeilMat = getCeilingMaterial(props.room.entrance.corridor.ceiling.materialId)}
   <T.Mesh
-    position.x={room.entrance.corridor.ceiling.position[0] + ox}
-    position.y={room.entrance.corridor.ceiling.position[1] + oy}
-    position.z={room.entrance.corridor.ceiling.position[2] + oz}
+    position.x={props.room.entrance.corridor.ceiling.position[0] + ox}
+    position.y={props.room.entrance.corridor.ceiling.position[1] + oy}
+    position.z={props.room.entrance.corridor.ceiling.position[2] + oz}
   >
-    <T.BoxGeometry args={room.entrance.corridor.ceiling.size} />
+    <T.BoxGeometry args={props.room.entrance.corridor.ceiling.size} />
     <T.MeshStandardMaterial
       color={corridorCeilMat.color}
       roughness={corridorCeilMat.roughness}
@@ -363,4 +362,4 @@
 {/if}
 
 <!-- Wing-specific content (pedestals, displays, lights, etc.) -->
-{@render children()}
+{@render props.children()}

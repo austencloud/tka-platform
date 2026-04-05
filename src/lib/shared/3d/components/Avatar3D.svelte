@@ -46,6 +46,8 @@
   import type { ILocomotionAnimator } from "../services/contracts/ILocomotionAnimator";
   import { AnimationStateMachine } from "../services/implementations/AnimationStateMachine";
   import type { IAnimationStateMachine } from "../services/contracts/IAnimationStateMachine";
+  import { RootMotionExtractor } from "../services/implementations/RootMotionExtractor";
+  import type { IRootMotionExtractor } from "../services/contracts/IRootMotionExtractor";
   import { FingerAnimator } from "$lib/shared/3d/services/implementations/FingerAnimator";
   import { FootPlanter } from "../services/implementations/FootPlanter";
   import type { IFootPlanter } from "../services/contracts/IFootPlanter";
@@ -90,6 +92,12 @@
     isCrouching?: boolean;
     /** True on the frame jump input was detected (instant animation trigger) */
     isJumpRequested?: boolean;
+    /** Enable root motion: animation drives XZ movement instead of code.
+     *  Requires animations downloaded with In Place OFF. */
+    enableRootMotion?: boolean;
+    /** Called each frame with the world-space XZ delta from root motion.
+     *  The parent applies this to physics for collision-aware movement. */
+    onRootMotion?: (worldDelta: { x: number; z: number }) => void;
   }
 
   let {
@@ -112,6 +120,8 @@
     verticalVelocity = 0,
     isCrouching = false,
     isJumpRequested = false,
+    enableRootMotion = false,
+    onRootMotion,
   }: Props = $props();
 
   // Services (manually instantiated to ensure shared skeleton instance)
@@ -120,6 +130,7 @@
   let animationService: IAvatarAnimator | null = $state(null);
   let locomotionAnimator: ILocomotionAnimator | null = $state(null);
   let stateMachine: IAnimationStateMachine | null = null;
+  let rootMotionExtractor: IRootMotionExtractor | null = null;
   let footPlanter: IFootPlanter | null = null;
   let fingerAnimator: FingerAnimator | null = null;
 
@@ -145,11 +156,15 @@
   // If position.y is provided (e.g., from terrain/physics), use it directly
   // Otherwise, use groundY from user proportions (for flat stage mode)
   // feetOffset adjusts so feet touch the ground (it's negative)
-  const groupY = $derived(
+  const baseGroupY = $derived(
     position.y !== undefined && position.y !== 0
       ? position.y - feetOffset  // Use provided Y (terrain mode)
       : defaultGroundY - feetOffset  // Use stage groundY (stage mode)
   );
+
+  // No mesh offset needed — the crouch animation's Hips position track (scaled
+  // from cm to m in LocomotionAnimator) handles the body drop directly.
+  const groupY = $derived(baseGroupY);
 
   // Load a GLTF model for a specific avatar
   // Uses hot-swap pattern: keeps old avatar visible until new one is ready
@@ -177,6 +192,15 @@
       // Update cached root AFTER everything is ready
       // This ensures Threlte only sees the swap when the new model is complete
       cachedRoot = skeletonService.getRoot();
+
+      // Enable shadow casting on all meshes in the avatar
+      if (cachedRoot) {
+        cachedRoot.traverse((child: any) => {
+          if (child.isMesh) {
+            child.castShadow = true;
+          }
+        });
+      }
 
       currentLoadedAvatarId = targetAvatarId;
       modelLoaded = true;
@@ -215,19 +239,37 @@
       // Only for avatars that walk around (player) — exhibit performers
       // use IK only and don't need idle/walk animations.
       if (enableLocomotion && locomotionAnimator && cachedRoot) {
+        // Enable root motion track preservation if configured
+        if (enableRootMotion) {
+          locomotionAnimator.configure({ enableRootMotion: true });
+        }
         locomotionAnimator.initialize(cachedRoot);
 
+        // Initialize root motion extractor with the Hips bone
+        if (enableRootMotion && rootMotionExtractor && locomotionAnimator.getHipsBone) {
+          const hipsBone = locomotionAnimator.getHipsBone();
+          if (hipsBone) {
+            rootMotionExtractor.initialize(hipsBone);
+          }
+        }
+
         // Load all locomotion animations (idle + 4 directional walks + optional jump/fall/land)
+        // Root motion animations (-rm suffix) downloaded with In Place OFF
+        // so Hips bone has XZ displacement for animation-driven movement.
+        const animBase = "/animations/locomotion-pack/";
+        const rmSuffix = enableRootMotion ? "-rm" : "";
+
         locomotionAnimator
           .loadAnimations({
-            idle: "/animations/locomotion-pack/idle.glb",
-            forward: "/animations/locomotion-pack/walk-forward.glb",
-            backward: "/animations/locomotion-pack/walk-backward.glb",
-            strafeLeft: "/animations/locomotion-pack/strafe-left.glb",
-            strafeRight: "/animations/locomotion-pack/strafe-right.glb",
-            jump: "/animations/jump-up.glb",
-            fall: "/animations/falling-idle.glb",
-            land: "/animations/hard-landing.glb",
+            idle: `${animBase}idle${rmSuffix}.glb`,
+            forward: `${animBase}walk-forward${rmSuffix}.glb`,
+            backward: `${animBase}walk-backward${rmSuffix}.glb`,
+            strafeLeft: `${animBase}strafe-left${rmSuffix}.glb`,
+            strafeRight: `${animBase}strafe-right${rmSuffix}.glb`,
+            jump: enableRootMotion ? `${animBase}jump-up-rm.glb` : "/animations/jump-up.glb",
+            fall: enableRootMotion ? `${animBase}falling-idle-rm.glb` : "/animations/falling-idle.glb",
+            land: enableRootMotion ? `${animBase}falling-to-landing-rm.glb` : "/animations/hard-landing.glb",
+            crouch: "/animations/crouch-idle.glb",
           })
           .catch((err) => {
             console.warn(
@@ -292,10 +334,13 @@
       animationService = animator;
       locomotionAnimator = locomotion;
 
-      // State machine + foot IK (only useful with locomotion)
+      // State machine + foot IK + root motion (only useful with locomotion)
       if (enableLocomotion) {
         stateMachine = new AnimationStateMachine();
         footPlanter = new FootPlanter();
+        if (enableRootMotion) {
+          rootMotionExtractor = new RootMotionExtractor();
+        }
       }
 
       const fingers = new FingerAnimator();
@@ -524,6 +569,19 @@
 
     if (!servicesReady || !animationService || useProceduralFallback) return;
 
+    // DEBUG: measure foot Y to calibrate crouch (remove after tuning)
+    if (isCrouching && cachedRoot && Math.random() < 0.016) {
+      const tmp = new Vector3();
+      const d: Record<string, number> = {};
+      cachedRoot.traverse((obj: any) => {
+        if (obj.isBone && (obj.name.includes("Toe") || obj.name.includes("Foot"))) {
+          obj.getWorldPosition(tmp);
+          d[obj.name] = Math.round(tmp.y * 1000) / 1000;
+        }
+      });
+      console.log("[CrouchFeet]", JSON.stringify(d));
+    }
+
     // 1. Full-body animation (idle/walk/jump/fall/land with arm swing, hip sway)
     // Only runs for locomotion-enabled avatars (player), not exhibit performers
     if (enableLocomotion && locomotionAnimator) {
@@ -558,6 +616,42 @@
         });
       }
       locomotionAnimator.update(delta);
+
+      // Root motion: after the mixer writes Hips position from the clip,
+      // extract the lateral + forward delta and zero it out so the mesh
+      // stays centered. Then rotate by facing angle to get world-space XZ.
+      //
+      // Coordinate mapping (Mixamo FBX→GLB via Blender):
+      //   delta.x = lateral (positive = character's left)
+      //   delta.forward = forward/backward (positive = character's forward)
+      //
+      // World-space mapping (Three.js, Y-up):
+      //   worldX = lateral rotated by facing angle
+      //   worldZ = forward rotated by facing angle
+      //
+      // The values are in Mixamo centimeters. Our scene uses ~0.01 scale
+      // factor (Mixamo 100cm hip height → ~1.0 scene units), so we need
+      // to convert. The model's scale handles the visual, but root motion
+      // displacement needs the same conversion.
+      if (rootMotionExtractor?.isReady() && onRootMotion) {
+        const localDelta = rootMotionExtractor.extract();
+        if (localDelta.x !== 0 || localDelta.forward !== 0) {
+          // Convert Mixamo centimeters to scene units.
+          // Our avatar is scaled to ~avatarHeight scene units for ~170cm Mixamo model.
+          // So 1 Mixamo cm ≈ avatarHeight/170 scene units.
+          const cmToScene = avatarHeight / 170;
+          const dx = localDelta.x * cmToScene;
+          const df = localDelta.forward * cmToScene;
+
+          // Rotate local-space delta to world space using facing angle
+          const cos = Math.cos(facingAngle);
+          const sin = Math.sin(facingAngle);
+          onRootMotion({
+            x: dx * cos + df * sin,
+            z: -dx * sin + df * cos,
+          });
+        }
+      }
 
       // Foot IK disabled — the two-bone IK solver was designed for arms (wide
       // range of motion) and produces unnatural results on legs (knees splaying,
@@ -644,6 +738,9 @@
     }
     if (stateMachine) {
       stateMachine.dispose();
+    }
+    if (rootMotionExtractor) {
+      rootMotionExtractor.dispose();
     }
     if (footPlanter) {
       footPlanter.dispose();

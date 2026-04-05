@@ -5,7 +5,7 @@
  * Bridges TKA prop states to skeleton IK targets.
  */
 
-import { Vector3, Quaternion } from "three";
+import { Vector3, Quaternion, type Bone } from "three";
 import type {
   IAvatarAnimator,
   HandPose,
@@ -19,7 +19,7 @@ import type { IAvatarSkeletonBuilder, BoneName } from "../contracts/IAvatarSkele
 import type { PropState3D } from "../../domain/models/PropState3D";
 import type { IElbowPoleComputer } from "../contracts/IElbowPoleComputer";
 import type { IClavicleRaiser } from "../contracts/IClavicleRaiser";
-import type { ISpineTwister, SpineTwistResult } from "../contracts/ISpineTwister";
+import type { ISpineTwister } from "../contracts/ISpineTwister";
 
 export class AvatarAnimator implements IAvatarAnimator {
   private currentPose: BodyPose;
@@ -171,6 +171,7 @@ export class AvatarAnimator implements IAvatarAnimator {
           blueProp.worldPosition.y - oy,
           blueProp.worldPosition.z - oz
         ),
+        wristRotation: blueProp.worldRotation.clone(),
         plane: blueProp.plane,
         weight: 1,
       };
@@ -183,6 +184,7 @@ export class AvatarAnimator implements IAvatarAnimator {
           redProp.worldPosition.y - oy,
           redProp.worldPosition.z - oz
         ),
+        wristRotation: redProp.worldRotation.clone(),
         plane: redProp.plane,
         weight: 1,
       };
@@ -227,23 +229,25 @@ export class AvatarAnimator implements IAvatarAnimator {
   }
 
   private blendToTarget(_deltaTime: number): void {
-    // Lerp positions
-    this.currentPose.leftHand.targetPosition.lerp(
-      this.targetPose.leftHand.targetPosition,
-      this.smoothingFactor
+    // Hands snap directly to prop positions — no lerp.
+    // This keeps the wrist bones strictly locked to the grid prop location
+    // so they never visually detach. Body systems (clavicle, spine twist,
+    // pole vectors) still use smoothingFactor for natural motion.
+    this.currentPose.leftHand.targetPosition.copy(
+      this.targetPose.leftHand.targetPosition
     );
-    this.currentPose.rightHand.targetPosition.lerp(
-      this.targetPose.rightHand.targetPosition,
-      this.smoothingFactor
+    this.currentPose.rightHand.targetPosition.copy(
+      this.targetPose.rightHand.targetPosition
     );
 
-    // Lerp weights
-    this.currentPose.leftHand.weight +=
-      (this.targetPose.leftHand.weight - this.currentPose.leftHand.weight) *
-      this.smoothingFactor;
-    this.currentPose.rightHand.weight +=
-      (this.targetPose.rightHand.weight - this.currentPose.rightHand.weight) *
-      this.smoothingFactor;
+    // Weights also snap — no gradual ramp on the pose weight itself.
+    // (IK blend weight still ramps via ikBlendSpeed in update().)
+    this.currentPose.leftHand.weight = this.targetPose.leftHand.weight;
+    this.currentPose.rightHand.weight = this.targetPose.rightHand.weight;
+
+    // Wrist rotation snaps directly from prop orientation
+    this.currentPose.leftHand.wristRotation = this.targetPose.leftHand.wristRotation;
+    this.currentPose.rightHand.wristRotation = this.targetPose.rightHand.wristRotation;
 
     // Plane is discrete — always take the latest target's plane
     this.currentPose.leftHand.plane = this.targetPose.leftHand.plane;
@@ -374,11 +378,11 @@ export class AvatarAnimator implements IAvatarAnimator {
     // Works with whatever bones are available (some models lack Spine2/upper_chest).
     if (!this.spineRestCached) {
       let anyFound = false;
-      const cacheSpineBone = (boneName: BoneName, key: "spine1" | "spine2" | "neck" | "head") => {
+      const cacheSpineBone = (boneName: BoneName, key: "spine1" | "spine2" | "neck" | "head" | "hips") => {
         const bone = state.bones.get(boneName);
         if (bone) {
           this.spineTwistRestQuats[key].copy(bone.quaternion);
-          this.availableSpineBones.add(boneName);
+          if (key !== "hips") this.availableSpineBones.add(boneName);
           anyFound = true;
         }
       };
@@ -386,10 +390,13 @@ export class AvatarAnimator implements IAvatarAnimator {
       cacheSpineBone("Spine2", "spine2");
       cacheSpineBone("Neck", "neck");
       cacheSpineBone("Head", "head");
+      cacheSpineBone("Hips", "hips");
       if (anyFound) this.spineRestCached = true;
     }
 
     // Spine twist: rotate torso toward cross-body hand positions.
+    // Each bone gets its own weighted fraction of the twist, distributed
+    // anatomically up the chain. Hips counter-rotate for grounding.
     // Scale twist by max IK weight so it fades out when both arms are in animation mode.
     const maxIKWeight = Math.max(this.leftArmIK.weight, this.rightArmIK.weight);
 
@@ -401,17 +408,34 @@ export class AvatarAnimator implements IAvatarAnimator {
         this.availableSpineBones
       );
 
-      const spine1Bone = state.bones.get("Spine1");
-      if (spine1Bone) {
-        const fullTwist = this.makeFullSpineTwist(twistResult);
+      // Apply twist to each bone individually for a natural spinal curve.
+      // Each bone gets its own weighted quaternion from SpineTwister.
+      const applySpineTwist = (
+        boneName: BoneName,
+        key: "spine1" | "spine2" | "neck" | "head" | "hips",
+        twistQuat: Quaternion
+      ) => {
+        const bone = state.bones.get(boneName);
+        if (!bone) return;
+
         // Scale from identity toward full twist based on max IK weight
-        const scaledTwist = new Quaternion().slerp(fullTwist, maxIKWeight);
-        this.spineTwistQuats.spine1.slerp(scaledTwist, this.smoothingFactor);
-        spine1Bone.quaternion
-          .copy(this.spineTwistRestQuats.spine1)
-          .multiply(this.spineTwistQuats.spine1);
-        spine1Bone.updateMatrixWorld(true);
-      }
+        const scaledTwist = new Quaternion().slerp(twistQuat, maxIKWeight);
+        this.spineTwistQuats[key].slerp(scaledTwist, this.smoothingFactor);
+        bone.quaternion
+          .copy(this.spineTwistRestQuats[key])
+          .multiply(this.spineTwistQuats[key]);
+      };
+
+      applySpineTwist("Spine1", "spine1", twistResult.spine1);
+      applySpineTwist("Spine2", "spine2", twistResult.spine2);
+      applySpineTwist("Neck", "neck", twistResult.neck);
+      applySpineTwist("Head", "head", twistResult.head);
+      applySpineTwist("Hips", "hips", twistResult.hips);
+
+      // Update world matrices after all spine bones are adjusted,
+      // so IK solves against the twisted skeleton
+      const hipsBoneForUpdate = state.bones.get("Hips");
+      if (hipsBoneForUpdate) hipsBoneForUpdate.updateMatrixWorld(true);
     }
 
     const leftTarget = pose.leftHand.targetPosition;
@@ -473,6 +497,12 @@ export class AvatarAnimator implements IAvatarAnimator {
         leftChain.root.quaternion.copy(animRootQuat).slerp(ikRootQuat, w);
         leftChain.middle.quaternion.copy(animMiddleQuat).slerp(ikMiddleQuat, w);
         leftChain.effector.quaternion.copy(animEffectorQuat).slerp(ikEffectorQuat, w);
+
+        // Apply wrist rotation from prop orientation so the hand
+        // twists to match the staff angle instead of staying in idle pose.
+        if (pose.leftHand.wristRotation) {
+          this.applyWristRotation(leftChain.effector, pose.leftHand.wristRotation, w);
+        }
       }
       // else: weight ~0, skip IK entirely — animation drives the arm
     }
@@ -533,11 +563,45 @@ export class AvatarAnimator implements IAvatarAnimator {
         rightChain.root.quaternion.copy(animRootQuat).slerp(ikRootQuat, w);
         rightChain.middle.quaternion.copy(animMiddleQuat).slerp(ikMiddleQuat, w);
         rightChain.effector.quaternion.copy(animEffectorQuat).slerp(ikEffectorQuat, w);
+
+        // Apply wrist rotation from prop orientation
+        if (pose.rightHand.wristRotation) {
+          this.applyWristRotation(rightChain.effector, pose.rightHand.wristRotation, w);
+        }
       }
       // else: weight ~0, skip IK entirely — animation drives the arm
     }
 
     this.skeleton.updateMatrices();
+  }
+
+  /**
+   * Convert a prop's world rotation into the effector bone's local space
+   * and blend it with the current bone quaternion by IK weight.
+   *
+   * The prop's worldRotation is in grid-local space (before avatar facing).
+   * The avatar group is already rotated by facingAngle, so the skeleton's
+   * world space matches grid-local space — no extra facing rotation needed.
+   *
+   * To go from world orientation to bone-local: multiply by the inverse
+   * of the parent bone's world quaternion.
+   */
+  private applyWristRotation(
+    effector: Bone,
+    propWorldRotation: Quaternion,
+    ikWeight: number
+  ): void {
+    if (!effector.parent) return;
+
+    // Get parent (forearm) world quaternion
+    const parentWorldQuat = new Quaternion();
+    effector.parent.getWorldQuaternion(parentWorldQuat);
+
+    // Convert prop world rotation to bone-local space
+    const localQuat = parentWorldQuat.invert().multiply(propWorldRotation);
+
+    // Blend between current effector rotation and the prop-driven rotation
+    effector.quaternion.slerp(localQuat, ikWeight);
   }
 
   addLayer(layer: AnimationLayer): void {
@@ -581,20 +645,6 @@ export class AvatarAnimator implements IAvatarAnimator {
 
   setSmoothingFactor(factor: number): void {
     this.smoothingFactor = Math.max(0, Math.min(1, factor));
-  }
-
-  /**
-   * Combine all spine twist weights into a single quaternion.
-   * Since we only apply twist to Spine1 (children inherit naturally),
-   * we sum all the individual bone rotations into one.
-   */
-  private makeFullSpineTwist(result: SpineTwistResult): Quaternion {
-    const combined = new Quaternion();
-    combined.multiply(result.spine1);
-    combined.multiply(result.spine2);
-    combined.multiply(result.neck);
-    combined.multiply(result.head);
-    return combined;
   }
 
   /** Debug toggle: disable pole vectors to compare old vs new elbow behavior */

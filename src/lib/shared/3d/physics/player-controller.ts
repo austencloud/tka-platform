@@ -14,6 +14,7 @@ import type {
 } from "./types";
 import { DEFAULT_PLAYER_CONFIG } from "./types";
 import { castRay } from "./rapier-world";
+import { SCALE } from "../scale/scale-constants";
 
 // ============================================================================
 // PLAYER CONTROLLER CREATION
@@ -236,6 +237,46 @@ export function setNoclip(playerState: PlayerControllerState, enabled: boolean):
 		// Reset velocity when disabling to prevent momentum carryover
 		playerState.velocity = { x: 0, y: 0, z: 0 };
 	}
+}
+
+// ============================================================================
+// CROUCH COLLIDER
+// ============================================================================
+
+/**
+ * Resize the player capsule between standing and crouching heights.
+ *
+ * Uses Rapier's setHalfHeight() to mutate the existing collider in place —
+ * no destroy/recreate overhead. The rigid body is repositioned so the capsule
+ * bottom (feet) stays at the same world Y. When un-crouching, the body is
+ * pushed up by the height difference so it doesn't clip into the floor.
+ */
+export function setCrouch(
+	physicsState: PhysicsWorldState,
+	playerState: PlayerControllerState,
+	crouching: boolean,
+): void {
+	if (!playerState.rigidBody || !playerState.collider) return;
+
+	const standHalf = DEFAULT_PLAYER_CONFIG.halfHeight;
+	const crouchHalf = SCALE.CROUCH_HALF_HEIGHT;
+	const radius = DEFAULT_PLAYER_CONFIG.radius;
+	const targetHalf = crouching ? crouchHalf : standHalf;
+
+	// Only resize if the half-height actually changed
+	const currentHalf = playerState.collider.halfHeight();
+	if (Math.abs(currentHalf - targetHalf) < 0.01) return;
+
+	// Keep feet planted: adjust body Y by the height difference
+	const pos = playerState.rigidBody.translation();
+	const oldBottom = pos.y - (currentHalf + radius);
+	const newY = oldBottom + targetHalf + radius;
+
+	// Mutate collider shape in place (no alloc, no remove/create)
+	playerState.collider.setHalfHeight(targetHalf);
+
+	// Reposition so feet stay grounded
+	playerState.rigidBody.setTranslation({ x: pos.x, y: newY, z: pos.z }, true);
 }
 
 // ============================================================================

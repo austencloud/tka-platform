@@ -60,7 +60,10 @@ export class AnimationStateMachine implements IAnimationStateMachine {
 		return {
 			state: this.state,
 			animationSpeed: this.smoothedSpeed,
-			isMoving: this.state === LocomotionState.WALKING,
+			// Crouch-walking needs directional weights too — report isMoving
+			// whenever there's movement input in any grounded locomotion state.
+			isMoving: this.state === LocomotionState.WALKING
+				|| (this.state === LocomotionState.CROUCHING && input.hasMovementInput),
 			moveDirection: input.moveDirection,
 			facingAngle: input.facingAngle,
 		};

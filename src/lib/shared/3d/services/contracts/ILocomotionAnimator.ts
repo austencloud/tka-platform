@@ -8,7 +8,7 @@
  * overrides arm bones when props are held.
  */
 
-import type { Object3D, AnimationClip } from "three";
+import type { Object3D, AnimationClip, Bone } from "three";
 import type { LocomotionState } from "./IAnimationStateMachine";
 
 /**
@@ -59,6 +59,12 @@ export interface LocomotionConfig {
    * so feet match actual ground movement. Default: 1.4
    */
   animationWalkSpeed?: number;
+  /**
+   * Enable root motion: keep Hips position track in animations so
+   * RootMotionExtractor can read XZ displacement each frame.
+   * When false (default), Hips position is filtered out as before.
+   */
+  enableRootMotion?: boolean;
 }
 
 export interface ILocomotionAnimator {
@@ -103,6 +109,13 @@ export interface ILocomotionAnimator {
    * If never called, LocomotionAnimator works exactly as before (backward compatible).
    */
   setActiveState?(state: LocomotionState): void;
+
+  /**
+   * Get the Hips bone from the loaded skeleton. Used by
+   * RootMotionExtractor to read position deltas each frame.
+   * Returns null if the model isn't loaded yet.
+   */
+  getHipsBone?(): Bone | null;
 
   /**
    * Clean up all resources (mixer, actions, clips)

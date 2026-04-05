@@ -11,7 +11,7 @@
 
 import type { PhysicsProvider, Vector3 } from "../camera/types";
 import type { PhysicsWorldState, PlayerControllerState } from "./types";
-import { movePlayer, getPlayerPosition, teleportPlayer, toggleNoclip, setNoclip } from "./player-controller";
+import { movePlayer, getPlayerPosition, teleportPlayer, toggleNoclip, setNoclip, setCrouch } from "./player-controller";
 
 export class RapierPhysicsProvider implements PhysicsProvider {
 	constructor(
@@ -74,6 +74,14 @@ export class RapierPhysicsProvider implements PhysicsProvider {
 	 */
 	setNoclip(enabled: boolean): void {
 		setNoclip(this.playerState, enabled);
+	}
+
+	/**
+	 * Swap the player capsule between standing and crouching heights.
+	 * Keeps feet at the same world Y so the transition feels grounded.
+	 */
+	setCrouch(crouching: boolean): void {
+		setCrouch(this.physicsState, this.playerState, crouching);
 	}
 }
 
