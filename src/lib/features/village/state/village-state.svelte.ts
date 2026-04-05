@@ -195,18 +195,21 @@ export function createVillageState(
 				: 0;
 
 			if (dist > MOVE_THRESHOLD) {
-				// Face movement direction BEFORE moving — no lerp, snap immediately.
-				// atan2(dx, dz) = yaw from +Z axis. Avatar3D rotation.y uses this
-				// convention directly (model faces -Z at 0, +Z at PI).
-				inst.setFacingAngle(Math.atan2(dx, dz));
+				// Face movement direction. atan2(X, Z) = yaw from +Z axis,
+				// matching UnifiedCameraController convention. facingAngle=0 = face +Z.
+				// Must use snapFacingAngle (not setFacingAngle) because the village
+				// doesn't call updateLocomotion() which lerps toward the target.
+				inst.snapFacingAngle(Math.atan2(dx, dz));
 			} else {
-				// Idle — gently lerp toward engine's facing (e.g. facing partner)
+				// Idle — snap toward engine's facing (e.g. facing partner during teaching)
 				const currentAngle = inst.facingAngle;
 				let angleDiff =
 					renderState.targetFacingAngle - currentAngle;
 				while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
 				while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
-				inst.setFacingAngle(currentAngle + angleDiff * 0.1);
+				if (Math.abs(angleDiff) > 0.01) {
+					inst.snapFacingAngle(currentAngle + angleDiff * 0.1);
+				}
 			}
 
 			// Move position AFTER facing is set
