@@ -109,8 +109,11 @@
     const dt = 1 / 60;
     const transforms = { avatarPosition, facingAngle, gridOffset };
 
-    if (bluePropState) {
-      const result = tipBridge.update(0, bluePropState, staffHalfLength, dt, transforms);
+    // Note: in the 3D viewer, bluePropState visually corresponds to the red-colored
+    // prop and vice versa (the naming follows the avatar's perspective, not the viewer's).
+    // Swap so trail colors match the visible prop colors.
+    if (redPropState) {
+      const result = tipBridge.update(0, redPropState, staffHalfLength, dt, transforms);
       blueTipData = result.tips.map((tip, tipIndex) => {
         const resolved = resolveEffect(
           0,
@@ -120,14 +123,13 @@
         );
         return {
           position: new Vector3(tip.position.x, tip.position.y, tip.position.z),
-          // Default to trails when no effect is explicitly assigned
           effect: resolved === "none" ? "trails" : resolved,
         };
       });
     }
 
-    if (redPropState) {
-      const result = tipBridge.update(1, redPropState, staffHalfLength, dt, transforms);
+    if (bluePropState) {
+      const result = tipBridge.update(1, bluePropState, staffHalfLength, dt, transforms);
       redTipData = result.tips.map((tip, tipIndex) => {
         const resolved = resolveEffect(
           1,
