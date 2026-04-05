@@ -41,6 +41,7 @@
   import { setSideBySideLayout } from "$lib/shared/application/state/animation-visibility-state.svelte";
   import { onMount, setContext, tick } from "svelte";
   import ErrorBanner from "./ErrorBanner.svelte";
+  import AltHotkeyOverlay from "../../components/AltHotkeyOverlay.svelte";
   import type { CreateModuleOrchestrators } from "../types/create-module-services";
   import type { ICreateModuleInitializer } from "../services/contracts/ICreateModuleInitializer";
   import type { ICreateModuleHandlers } from "../services/contracts/ICreateModuleHandlers";
@@ -696,6 +697,9 @@
 {#if error}
   <ErrorBanner message={error} onDismiss={clearError} />
 {:else if CreateModuleState && constructTabState && services}
+  <!-- Alt Hotkey Overlay (desktop only, shows on Alt hold) -->
+  <AltHotkeyOverlay />
+
   <div class="create-tab">
     <StandardWorkspaceLayout
       {shouldUseSideBySideLayout}
