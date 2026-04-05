@@ -37,13 +37,19 @@ export class PopulationSystem {
 			}
 		}
 
+		if (toRemove.length > 0) {
+			// Deaths mean the next generation has arrived
+			this.generation++;
+			this.emitter.emit("generation:changed", this.generation);
+		}
+
 		for (const entity of toRemove) {
 			this.lineageTracker.recordDeath(entity);
 			this.emitter.emit("entity:died", entity);
 			world.remove(entity);
 		}
 
-		// Spawn to maintain population
+		// Spawn replacements as new generation
 		while (world.entities.length < this.config.targetPopulation) {
 			const name =
 				AVATAR_NAMES[this.nameIndex % AVATAR_NAMES.length] ?? "Unknown";
