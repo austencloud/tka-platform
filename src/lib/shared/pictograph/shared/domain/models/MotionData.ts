@@ -8,6 +8,7 @@
 // IMPORTANT: Import directly from specific files to avoid circular dependencies
 // DO NOT import from barrel exports (../../../arrow, ../../../prop) as they import MotionData
 import { type ArrowPlacementData } from "../../../arrow/positioning/placement/domain/ArrowPlacementData";
+import { Plane } from "$lib/shared/3d/domain/enums/Plane";
 import { createArrowPlacementData } from "../../../arrow/positioning/placement/domain/createArrowPlacementData";
 import { GridLocation, GridMode } from "../../../grid/domain/enums/grid-enums";
 import { type PropPlacementData } from "../../../prop/domain/models/PropPlacementData";
@@ -54,6 +55,11 @@ export interface MotionData {
   // Direction of skew: + goes further, - goes less far than normal
   // Only meaningful when skewSteps > 0
   readonly skewDir?: SkewDirection | null;
+
+  // Which 3D plane this motion is performed on.
+  // Absent/undefined = Plane.WALL (backward compatible).
+  // Only used by the 3D viewer — 2D pictographs ignore this field.
+  readonly plane?: Plane;
 }
 
 /**
@@ -110,5 +116,6 @@ export function createMotionData(data: Partial<MotionData> = {}): MotionData {
     handPath: data.handPath ?? null,
     skewSteps: data.skewSteps ?? null,
     skewDir: data.skewDir ?? null,
+    plane: data.plane ?? undefined,
   };
 }
