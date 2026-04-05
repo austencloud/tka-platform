@@ -12,8 +12,12 @@
    */
 
   import { getViewer3DContext } from "../context/viewer-3d-context";
+  import { PlaneMode } from "../domain/enums/PlaneMode";
 
   const viewer3DState = getViewer3DContext();
+
+  // In dual-wheel mode, Learn/Mirror don't apply — always view from stage right (Side).
+  const isDualWheel = $derived(viewer3DState.avatarState?.planeMode === PlaneMode.DUAL_WHEEL);
 
   // Grid center: avatar faces -Z, so grid offset is at -0.3 Z
   const GRID_CENTER = { x: 0, y: 1.55, z: -0.3 };
@@ -86,23 +90,25 @@
 </script>
 
 <div class="presets-bar">
-  <!-- Learn / Mirror toggle -->
-  <div class="mode-toggle">
-    <button
-      class="mode-button"
-      class:active={!viewer3DState.mirrorMode}
-      onclick={() => handleModeToggle(false)}
-      aria-label="Learn mode: same direction"
-    >Learn</button>
-    <button
-      class="mode-button"
-      class:active={viewer3DState.mirrorMode}
-      onclick={() => handleModeToggle(true)}
-      aria-label="Mirror mode: face to face"
-    >Mirror</button>
-  </div>
+  <!-- Learn / Mirror toggle — hidden in dual-wheel mode (not applicable) -->
+  {#if !isDualWheel}
+    <div class="mode-toggle">
+      <button
+        class="mode-button"
+        class:active={!viewer3DState.mirrorMode}
+        onclick={() => handleModeToggle(false)}
+        aria-label="Learn mode: same direction"
+      >Learn</button>
+      <button
+        class="mode-button"
+        class:active={viewer3DState.mirrorMode}
+        onclick={() => handleModeToggle(true)}
+        aria-label="Mirror mode: face to face"
+      >Mirror</button>
+    </div>
 
-  <div class="separator"></div>
+    <div class="separator"></div>
+  {/if}
 
   <!-- Camera angle presets -->
   <div class="camera-presets">
@@ -117,7 +123,13 @@
   </div>
 </div>
 
-<div class="view-sublabel">{sublabel}</div>
+<div class="view-sublabel">
+  {#if isDualWheel}
+    Dual wheel · viewed from stage right
+  {:else}
+    {sublabel}
+  {/if}
+</div>
 
 <style>
   .presets-bar {
