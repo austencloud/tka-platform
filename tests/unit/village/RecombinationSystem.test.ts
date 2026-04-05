@@ -1,0 +1,143 @@
+import { describe, it, expect, vi } from "vitest";
+import { RecombinationSystem } from "$lib/features/village/engine/systems/RecombinationSystem";
+import {
+	createVillageWorld,
+	createAvatarEntity,
+} from "$lib/features/village/engine/VillageWorld";
+import { PersonalityGenerator } from "$lib/features/village/services/implementations/PersonalityGenerator";
+import { createDefaultConfig } from "$lib/features/village/engine/VillageConfig";
+import type { ISequenceMutator } from "$lib/features/village/services/contracts/ISequenceMutator";
+import type {
+	LearnedSequence,
+	VillageEventMap,
+	VillageEventKey,
+} from "$lib/features/village/domain/village-types";
+
+function makeMockMutator(): ISequenceMutator {
+	return {
+		tryInventFrom: vi.fn().mockReturnValue({
+			success: true,
+			sequence: null,
+			mutationType: "mirror",
+			inventedId: `invented-${Math.random().toString(36).slice(2, 6)}`,
+		}),
+	};
+}
+
+function makeEmitter() {
+	const events: Record<string, unknown[][]> = {};
+	return {
+		events,
+		emitter: {
+			emit<K extends VillageEventKey>(
+				event: K,
+				...args: Parameters<VillageEventMap[K]>
+			) {
+				if (!events[event]) events[event] = [];
+				events[event].push(args);
+			},
+		},
+	};
+}
+
+function makeInventor(world: ReturnType<typeof createVillageWorld>) {
+	const gen = new PersonalityGenerator();
+	const entity = createAvatarEntity(world, {
+		name: "Inventor",
+		generation: 1,
+		currentTick: 0,
+		lifespanTicks: 600,
+		arenaRadius: 8,
+		personalityGenerator: gen,
+		traitMean: 0.5,
+		traitStdDev: 0.15,
+	});
+
+	entity.knowledge.knownSequences.set("seq1", {
+		sequenceId: "seq1",
+		proficiency: 1,
+		source: "seed",
+		learnedAt: 0,
+		learnedFrom: null,
+		lineage: [],
+	} as LearnedSequence);
+	entity.knowledge.knownSequences.set("seq2", {
+		sequenceId: "seq2",
+		proficiency: 1,
+		source: "seed",
+		learnedAt: 0,
+		learnedFrom: null,
+		lineage: [],
+	} as LearnedSequence);
+
+	entity.social.state = "inventing";
+	return entity;
+}
+
+describe("RecombinationSystem", () => {
+	it("processes entities in inventing state", () => {
+		const world = createVillageWorld();
+		makeInventor(world);
+
+		const mutator = makeMockMutator();
+		const { emitter } = makeEmitter();
+		const config = createDefaultConfig();
+		const system = new RecombinationSystem(config, mutator, emitter);
+
+		system.tick(world, 10);
+
+		expect(mutator.tryInventFrom).toHaveBeenCalled();
+	});
+
+	it("adds invented sequence to knowledge", () => {
+		const world = createVillageWorld();
+		const entity = makeInventor(world);
+
+		const mutator = makeMockMutator();
+		const { emitter, events } = makeEmitter();
+		const config = createDefaultConfig();
+		const system = new RecombinationSystem(config, mutator, emitter);
+
+		system.tick(world, 10);
+
+		expect(entity.knowledge.knownSequences.size).toBe(3);
+		expect(events["sequence:invented"]?.length).toBe(1);
+	});
+
+	it("transitions to idle after inventing", () => {
+		const world = createVillageWorld();
+		const entity = makeInventor(world);
+
+		const mutator = makeMockMutator();
+		const { emitter } = makeEmitter();
+		const config = createDefaultConfig();
+		const system = new RecombinationSystem(config, mutator, emitter);
+
+		system.tick(world, 10);
+
+		expect(entity.social.state).toBe("idle");
+	});
+
+	it("skips if mutation fails", () => {
+		const world = createVillageWorld();
+		const entity = makeInventor(world);
+
+		const mutator: ISequenceMutator = {
+			tryInventFrom: vi.fn().mockReturnValue({
+				success: false,
+				sequence: null,
+				mutationType: "mirror",
+				inventedId: "",
+			}),
+		};
+		const { emitter, events } = makeEmitter();
+		const config = createDefaultConfig();
+		const system = new RecombinationSystem(config, mutator, emitter);
+
+		system.tick(world, 10);
+
+		expect(entity.knowledge.knownSequences.size).toBe(2);
+		expect(events["sequence:invented"]).toBeUndefined();
+		expect(entity.social.state).toBe("idle");
+	});
+});

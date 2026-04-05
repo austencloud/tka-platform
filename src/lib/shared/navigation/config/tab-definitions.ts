@@ -929,6 +929,14 @@ export const LAB_TABS: Section[] = [
     color: "#f59e0b",
     gradient: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)",
   },
+  {
+    id: "village",
+    label: "Village",
+    icon: '<i class="fas fa-users" style="color: #e8a87c;" aria-hidden="true"></i>',
+    description: "Generational cultural simulation",
+    color: "#e8a87c",
+    gradient: "linear-gradient(135deg, #e8a87c 0%, #d4886a 100%)",
+  },
 ];
 
 // REMOVED: LANDING_PAGE_TABS - LandingPreviewModule now handles its own internal tabs

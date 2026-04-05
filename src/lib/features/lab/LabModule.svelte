@@ -36,6 +36,7 @@
     // retro, ascii-pictograph, retro-pictograph graduated to Retro module (Mar 2026)
     "phrase-effort": () => import("$lib/features/phrase-effort-lab/PhraseEffortLabModule.svelte"),
     "mandala-drawing": () => import("./tabs/MandalaDrawingLab.svelte"),
+    village: () => import("$lib/features/village/VillageLabTab.svelte"),
     // hand-path-explorer, hand-path-builder graduated to Hand Paths module (Mar 2026)
     // video-trails, video-lab graduated to Video module (Mar 2026)
   };
