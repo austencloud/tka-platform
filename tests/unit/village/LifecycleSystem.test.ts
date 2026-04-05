@@ -85,6 +85,7 @@ describe("LifecycleSystem", () => {
 
 		entity.knowledge.knownSequences.set("seq1", {
 			sequenceId: "seq1",
+			sequenceData: null,
 			proficiency: 1,
 			source: "seed",
 			learnedAt: 0,
@@ -93,6 +94,7 @@ describe("LifecycleSystem", () => {
 		});
 		entity.knowledge.knownSequences.set("seq2", {
 			sequenceId: "seq2",
+			sequenceData: null,
 			proficiency: 1,
 			source: "seed",
 			learnedAt: 0,

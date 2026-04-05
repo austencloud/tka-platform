@@ -88,6 +88,7 @@ export class TeachingSystem {
 
 		const learned: LearnedSequence = {
 			sequenceId,
+			sequenceData: teacherKnowledge.sequenceData,
 			proficiency: learner.social.teachingProgress,
 			source: "taught",
 			learnedAt: currentTick,

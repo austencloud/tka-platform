@@ -31,6 +31,7 @@ function makeTeacherLearnerPair(
 
 	const learned: LearnedSequence = {
 		sequenceId: "seq1",
+		sequenceData: null,
 		proficiency: 1,
 		source: "seed",
 		learnedAt: 0,

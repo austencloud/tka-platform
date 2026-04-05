@@ -42,6 +42,7 @@ export class RecombinationSystem {
 				) {
 					const learned: LearnedSequence = {
 						sequenceId: newId,
+						sequenceData: null,
 						proficiency: 0.5,
 						source: "invented",
 						learnedAt: currentTick,
