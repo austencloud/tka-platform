@@ -186,15 +186,15 @@
 
   // Note: Services are resolved at module scope from ITI container
 
-  // Restore sub-drawer state AFTER parent drawer has opened and registered
-  // Watch for when isOpen becomes true, then restore with delay
+  // Restore sub-drawer state when panel opens.
+  // Opens the sub-drawer immediately so user goes straight to
+  // Duration/Extend/Turns/Rotation without seeing the actions grid first.
   let hasRestoredSubDrawer = false;
   $effect(() => {
     if (isOpen && !hasRestoredSubDrawer && subDrawerPersister) {
       hasRestoredSubDrawer = true;
       const restoredSubDrawer = subDrawerPersister.getActiveSubDrawer();
-      // Wait for parent drawer to fully register, then open sub-drawer
-      setTimeout(() => {
+      if (restoredSubDrawer) {
         if (restoredSubDrawer === "help") helpMode = "selecting";
         else if (restoredSubDrawer === "turnPattern")
           showTurnPatternDrawer = true;
@@ -202,9 +202,8 @@
           showRotationDirectionDrawer = true;
         else if (restoredSubDrawer === "duration") showDurationDrawer = true;
         else if (restoredSubDrawer === "extend") showExtendDrawer = true;
-        // Mark restoration complete so auto-save can clear when user closes sub-drawers
         restorationComplete = true;
-      }, 100);
+      }
     }
   });
 
