@@ -1,0 +1,116 @@
+import { QualityTier, TIER_CONFIGS } from "../types";
+import type { QualityTierConfig } from "../types";
+import type {
+  GPUCapabilities,
+  IQualityTierDetector,
+} from "./contracts/IQualityTierDetector";
+
+const STORAGE_KEY = "tka-3d-quality-tier-override";
+
+export class QualityTierDetector implements IQualityTierDetector {
+  private detectedTier: QualityTier = QualityTier.MEDIUM;
+  private overrideTier: QualityTier | null = null;
+
+  constructor() {
+    this.loadOverride();
+  }
+
+  get currentTier(): QualityTier {
+    return this.overrideTier ?? this.detectedTier;
+  }
+
+  get currentConfig(): QualityTierConfig {
+    return TIER_CONFIGS[this.currentTier];
+  }
+
+  detectFromCapabilities(capabilities: GPUCapabilities): QualityTier {
+    if (capabilities.isWebGPU) {
+      this.detectedTier = QualityTier.HIGH;
+    } else if (
+      capabilities.floatTextures &&
+      capabilities.hardwareConcurrency >= 8 &&
+      capabilities.maxTextureUnits >= 16
+    ) {
+      this.detectedTier = QualityTier.HIGH;
+    } else if (
+      capabilities.floatTextures &&
+      capabilities.hardwareConcurrency >= 4
+    ) {
+      this.detectedTier = QualityTier.MEDIUM;
+    } else {
+      this.detectedTier = QualityTier.LOW;
+    }
+    return this.currentTier;
+  }
+
+  detectFromRenderer(renderer: unknown): QualityTier {
+    const gl = renderer as {
+      capabilities?: {
+        maxTextures?: number;
+        floatFragmentTextures?: boolean;
+        isWebGPU?: boolean;
+      };
+    };
+    const caps = gl?.capabilities;
+    return this.detectFromCapabilities({
+      maxTextureUnits: caps?.maxTextures ?? 8,
+      floatTextures: caps?.floatFragmentTextures ?? false,
+      hardwareConcurrency:
+        typeof navigator !== "undefined"
+          ? navigator.hardwareConcurrency ?? 4
+          : 4,
+      isWebGPU: caps?.isWebGPU ?? false,
+    });
+  }
+
+  setOverride(tier: QualityTier): void {
+    this.overrideTier = tier;
+    this.persistOverride(tier);
+  }
+
+  clearOverride(): void {
+    this.overrideTier = null;
+    this.removePersistedOverride();
+  }
+
+  downgrade(): void {
+    const order = [QualityTier.HIGH, QualityTier.MEDIUM, QualityTier.LOW];
+    const currentIndex = order.indexOf(this.currentTier);
+    if (currentIndex < order.length - 1) {
+      this.detectedTier = order[currentIndex + 1];
+    }
+  }
+
+  private loadOverride(): void {
+    if (typeof localStorage === "undefined") return;
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (
+        stored &&
+        Object.values(QualityTier).includes(stored as QualityTier)
+      ) {
+        this.overrideTier = stored as QualityTier;
+      }
+    } catch {
+      // localStorage unavailable
+    }
+  }
+
+  private persistOverride(tier: QualityTier): void {
+    if (typeof localStorage === "undefined") return;
+    try {
+      localStorage.setItem(STORAGE_KEY, tier);
+    } catch {
+      // localStorage unavailable
+    }
+  }
+
+  private removePersistedOverride(): void {
+    if (typeof localStorage === "undefined") return;
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      // localStorage unavailable
+    }
+  }
+}
