@@ -1,6 +1,6 @@
 <script lang="ts">
   import { container } from "$lib/shared/di";
-  import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
+  import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
   import { getCreateModuleContext } from "../shared/context/create-module-context";
   import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/PropTypeDisplayRegistry";
   import { shiftStartPosition } from "../shared/services/implementations/sequence-transforms/sequence-transforms";
@@ -93,15 +93,15 @@
       bluePropType: preset.bluePropType,
       redPropType: preset.redPropType,
       catDogMode: preset.catDogMode,
-      blueBuugengFlipped: preset.blueBuugengFlipped,
-      redBuugengFlipped: preset.redBuugengFlipped,
+      blueBuugengFlipped: preset.blueBuugengFlipped ?? false,
+      redBuugengFlipped: preset.redBuugengFlipped ?? false,
     });
   }
 
   function handleEditPresets() {
     visible = false;
     fadeOut = false;
-    navigationState.setCurrentModule("settings", "props");
+    handleModuleChange("settings", "props");
   }
 
   function needsRotation(propType: string): boolean {
