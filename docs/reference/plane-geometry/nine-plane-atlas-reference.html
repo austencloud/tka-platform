@@ -1,0 +1,298 @@
+<h2>The Nine-Plane Atlas</h2>
+<p class="subtitle">Complete mapping of the atomic structure of 3D prop manipulation</p>
+
+<!-- Coordinate system reference -->
+<div style="padding:1rem; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:8px; margin-bottom:2rem; font-size:13px;">
+  <strong style="opacity:0.6;">Coordinate system:</strong> X = stage right, Y = up, Z = toward audience. Performer faces +Z.
+</div>
+
+<!-- PRIMARY PLANES -->
+<h3 style="opacity:0.5; font-size:13px; text-transform:uppercase; letter-spacing:1px; margin-bottom:1rem;">3 Primary Planes (axis-aligned)</h3>
+
+<div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:1rem; margin-bottom:2rem;">
+  <div style="padding:1.2rem; background:rgba(147,51,234,0.1); border:1px solid rgba(147,51,234,0.3); border-radius:8px;">
+    <div style="font-weight:700; color:#c4b5fd; font-size:18px;">Wall</div>
+    <div style="font-size:12px; opacity:0.5; margin-bottom:0.75rem;">XY plane</div>
+    <div style="font-size:13px; line-height:1.6;">
+      <div><strong>Normal:</strong> (0, 0, 1)</div>
+      <div><strong>Vantage:</strong> From behind</div>
+      <div style="margin-top:0.5rem;">
+        <span style="opacity:0.6;">Diamond:</span> N↑ S↓ E→ W←<br>
+        <span style="opacity:0.6;">Box:</span> NE↗ SE↘ SW↙ NW↖
+      </div>
+    </div>
+  </div>
+
+  <div style="padding:1.2rem; background:rgba(59,130,246,0.1); border:1px solid rgba(59,130,246,0.3); border-radius:8px;">
+    <div style="font-weight:700; color:#93c5fd; font-size:18px;">Wheel</div>
+    <div style="font-size:12px; opacity:0.5; margin-bottom:0.75rem;">YZ plane</div>
+    <div style="font-size:13px; line-height:1.6;">
+      <div><strong>Normal:</strong> (1, 0, 0)</div>
+      <div><strong>Vantage:</strong> From stage right</div>
+      <div style="margin-top:0.5rem;">
+        <span style="opacity:0.6;">Diamond:</span> N↑ S↓ E=audience W=upstage<br>
+        <span style="opacity:0.6;">Box:</span> NE↗ SE↘ SW↙ NW↖
+      </div>
+    </div>
+  </div>
+
+  <div style="padding:1.2rem; background:rgba(34,197,94,0.1); border:1px solid rgba(34,197,94,0.3); border-radius:8px;">
+    <div style="font-weight:700; color:#86efac; font-size:18px;">Floor</div>
+    <div style="font-size:12px; opacity:0.5; margin-bottom:0.75rem;">XZ plane</div>
+    <div style="font-size:13px; line-height:1.6;">
+      <div><strong>Normal:</strong> (0, 1, 0)</div>
+      <div><strong>Vantage:</strong> From above</div>
+      <div style="margin-top:0.5rem;">
+        <span style="opacity:0.6;">Diamond:</span> N=audience S=upstage E→ W←<br>
+        <span style="opacity:0.6;">Box:</span> NE↗ SE↘ SW↙ NW↖
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DIAMOND MODE GATES -->
+<h3 style="opacity:0.5; font-size:13px; text-transform:uppercase; letter-spacing:1px; margin-bottom:1rem;">Diamond Mode Gate Table (primaries only)</h3>
+
+<table style="width:100%; border-collapse:collapse; margin-bottom:2rem; font-size:14px;">
+  <thead>
+    <tr style="border-bottom:2px solid rgba(255,255,255,0.12);">
+      <th style="text-align:left; padding:8px; opacity:0.5; font-size:12px;">3D Position</th>
+      <th style="text-align:left; padding:8px; opacity:0.5; font-size:12px;">Coordinates</th>
+      <th style="text-align:left; padding:8px; opacity:0.5; font-size:12px;">Plane A</th>
+      <th style="text-align:left; padding:8px; opacity:0.5; font-size:12px;">Label A</th>
+      <th style="text-align:left; padding:8px; opacity:0.5; font-size:12px;">Plane B</th>
+      <th style="text-align:left; padding:8px; opacity:0.5; font-size:12px;">Label B</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+      <td style="padding:8px; font-weight:600;">Up</td>
+      <td style="padding:8px; opacity:0.5; font-family:monospace;">(0, r, 0)</td>
+      <td style="padding:8px; color:#c4b5fd;">Wall</td>
+      <td style="padding:8px;">N</td>
+      <td style="padding:8px; color:#93c5fd;">Wheel</td>
+      <td style="padding:8px;">N</td>
+    </tr>
+    <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+      <td style="padding:8px; font-weight:600;">Down</td>
+      <td style="padding:8px; opacity:0.5; font-family:monospace;">(0, -r, 0)</td>
+      <td style="padding:8px; color:#c4b5fd;">Wall</td>
+      <td style="padding:8px;">S</td>
+      <td style="padding:8px; color:#93c5fd;">Wheel</td>
+      <td style="padding:8px;">S</td>
+    </tr>
+    <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+      <td style="padding:8px; font-weight:600;">Stage Right</td>
+      <td style="padding:8px; opacity:0.5; font-family:monospace;">(r, 0, 0)</td>
+      <td style="padding:8px; color:#c4b5fd;">Wall</td>
+      <td style="padding:8px;">E</td>
+      <td style="padding:8px; color:#86efac;">Floor</td>
+      <td style="padding:8px;">E</td>
+    </tr>
+    <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+      <td style="padding:8px; font-weight:600;">Stage Left</td>
+      <td style="padding:8px; opacity:0.5; font-family:monospace;">(-r, 0, 0)</td>
+      <td style="padding:8px; color:#c4b5fd;">Wall</td>
+      <td style="padding:8px;">W</td>
+      <td style="padding:8px; color:#86efac;">Floor</td>
+      <td style="padding:8px;">W</td>
+    </tr>
+    <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+      <td style="padding:8px; font-weight:600;">Downstage</td>
+      <td style="padding:8px; opacity:0.5; font-family:monospace;">(0, 0, r)</td>
+      <td style="padding:8px; color:#93c5fd;">Wheel</td>
+      <td style="padding:8px;">E</td>
+      <td style="padding:8px; color:#86efac;">Floor</td>
+      <td style="padding:8px;">N</td>
+    </tr>
+    <tr>
+      <td style="padding:8px; font-weight:600;">Upstage</td>
+      <td style="padding:8px; opacity:0.5; font-family:monospace;">(0, 0, -r)</td>
+      <td style="padding:8px; color:#93c5fd;">Wheel</td>
+      <td style="padding:8px;">W</td>
+      <td style="padding:8px; color:#86efac;">Floor</td>
+      <td style="padding:8px;">S</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- FUSION PLANES -->
+<h3 style="opacity:0.5; font-size:13px; text-transform:uppercase; letter-spacing:1px; margin-bottom:1rem;">6 Fusion Planes (45° between primaries)</h3>
+
+<!-- Shield subset -->
+<div style="margin-bottom:1.5rem;">
+  <h4 style="color:#b4a0e8; margin-bottom:0.75rem;">
+    Subset 1: Shields
+    <span style="font-weight:400; opacity:0.5; font-size:13px;"> — Wall ↔ Wheel (rotate around Y axis)</span>
+  </h4>
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+    <div style="padding:1rem; background:linear-gradient(135deg, rgba(147,51,234,0.08), rgba(59,130,246,0.08)); border:1px solid rgba(120,80,200,0.25); border-radius:8px;">
+      <div style="font-weight:700; color:#b4a0e8;">Right Shield</div>
+      <div style="font-size:12px; opacity:0.5; margin-bottom:0.5rem;">45° CW from Wall toward Wheel</div>
+      <div style="font-size:13px; line-height:1.6;">
+        <div><strong>Normal:</strong> (1, 0, 1)/√2</div>
+        <div><strong>Physical:</strong> Shield angled 45° to the right — tilted between facing audience and facing stage left</div>
+        <div style="margin-top:0.5rem; opacity:0.7;">Circle passes through: (0, ±r, 0) = Up/Down</div>
+      </div>
+    </div>
+    <div style="padding:1rem; background:linear-gradient(135deg, rgba(147,51,234,0.08), rgba(59,130,246,0.08)); border:1px solid rgba(120,80,200,0.25); border-radius:8px;">
+      <div style="font-weight:700; color:#b4a0e8;">Left Shield</div>
+      <div style="font-size:12px; opacity:0.5; margin-bottom:0.5rem;">45° CCW from Wall toward Wheel</div>
+      <div style="font-size:13px; line-height:1.6;">
+        <div><strong>Normal:</strong> (-1, 0, 1)/√2</div>
+        <div><strong>Physical:</strong> Shield angled 45° to the left — tilted between facing audience and facing stage right</div>
+        <div style="margin-top:0.5rem; opacity:0.7;">Circle passes through: (0, ±r, 0) = Up/Down</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Ramp subset -->
+<div style="margin-bottom:1.5rem;">
+  <h4 style="color:#a8d4a0; margin-bottom:0.75rem;">
+    Subset 2: Ramps
+    <span style="font-weight:400; opacity:0.5; font-size:13px;"> — Wall ↔ Floor (rotate around X axis)</span>
+  </h4>
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+    <div style="padding:1rem; background:linear-gradient(135deg, rgba(147,51,234,0.08), rgba(34,197,94,0.08)); border:1px solid rgba(100,160,80,0.25); border-radius:8px;">
+      <div style="font-weight:700; color:#a8d4a0;">Forward Ramp</div>
+      <div style="font-size:12px; opacity:0.5; margin-bottom:0.5rem;">45° tilt: top toward audience</div>
+      <div style="font-size:13px; line-height:1.6;">
+        <div><strong>Normal:</strong> (0, 1, -1)/√2</div>
+        <div><strong>Physical:</strong> Ramp descending from eyes toward audience's feet — like a skateboard ramp dropping toward the crowd</div>
+        <div style="margin-top:0.5rem; opacity:0.7;">Circle passes through: (±r, 0, 0) = Stage R/L</div>
+      </div>
+    </div>
+    <div style="padding:1rem; background:linear-gradient(135deg, rgba(147,51,234,0.08), rgba(34,197,94,0.08)); border:1px solid rgba(100,160,80,0.25); border-radius:8px;">
+      <div style="font-weight:700; color:#a8d4a0;">Backward Ramp</div>
+      <div style="font-size:12px; opacity:0.5; margin-bottom:0.5rem;">45° tilt: top away from audience</div>
+      <div style="font-size:13px; line-height:1.6;">
+        <div><strong>Normal:</strong> (0, 1, 1)/√2</div>
+        <div><strong>Physical:</strong> Ramp descending from eyes away from audience — like leaning back into a slope behind you</div>
+        <div style="margin-top:0.5rem; opacity:0.7;">Circle passes through: (±r, 0, 0) = Stage R/L</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Sundial subset -->
+<div style="margin-bottom:2rem;">
+  <h4 style="color:#7dd3c0; margin-bottom:0.75rem;">
+    Subset 3: Sundials
+    <span style="font-weight:400; opacity:0.5; font-size:13px;"> — Wheel ↔ Floor (rotate around Z axis)</span>
+  </h4>
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+    <div style="padding:1rem; background:linear-gradient(135deg, rgba(59,130,246,0.08), rgba(34,197,94,0.08)); border:1px solid rgba(46,160,170,0.25); border-radius:8px;">
+      <div style="font-weight:700; color:#7dd3c0;">Right Sundial</div>
+      <div style="font-size:12px; opacity:0.5; margin-bottom:0.5rem;">45° tilt: top toward stage right</div>
+      <div style="font-size:13px; line-height:1.6;">
+        <div><strong>Normal:</strong> (1, 1, 0)/√2</div>
+        <div><strong>Physical:</strong> Tilted disc leaning to the right — like a coin about to fall rightward</div>
+        <div style="margin-top:0.5rem; opacity:0.7;">Circle passes through: (0, 0, ±r) = Downstage/Upstage</div>
+      </div>
+    </div>
+    <div style="padding:1rem; background:linear-gradient(135deg, rgba(59,130,246,0.08), rgba(34,197,94,0.08)); border:1px solid rgba(46,160,170,0.25); border-radius:8px;">
+      <div style="font-weight:700; color:#7dd3c0;">Left Sundial</div>
+      <div style="font-size:12px; opacity:0.5; margin-bottom:0.5rem;">45° tilt: top toward stage left</div>
+      <div style="font-size:13px; line-height:1.6;">
+        <div><strong>Normal:</strong> (-1, 1, 0)/√2</div>
+        <div><strong>Physical:</strong> Tilted disc leaning to the left — like a coin about to fall leftward</div>
+        <div style="margin-top:0.5rem; opacity:0.7;">Circle passes through: (0, 0, ±r) = Downstage/Upstage</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SHARED AXIS POINTS -->
+<h3 style="opacity:0.5; font-size:13px; text-transform:uppercase; letter-spacing:1px; margin-bottom:1rem;">Fusion Gate Points — where fusions meet primaries</h3>
+
+<div style="padding:1.2rem; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:8px; margin-bottom:1.5rem;">
+  <p style="margin:0 0 1rem; opacity:0.7; font-size:14px;">Each fusion plane's circle passes through exactly 2 of the 6 axis points (the diamond-mode positions). Those are the points where a fusion meets a primary — the gates for box mode.</p>
+
+  <table style="width:100%; border-collapse:collapse; font-size:13px;">
+    <thead>
+      <tr style="border-bottom:2px solid rgba(255,255,255,0.1);">
+        <th style="text-align:left; padding:6px; opacity:0.5;">Fusion</th>
+        <th style="text-align:left; padding:6px; opacity:0.5;">Rotation axis</th>
+        <th style="text-align:left; padding:6px; opacity:0.5;">Passes through</th>
+        <th style="text-align:left; padding:6px; opacity:0.5;">Shared with primaries</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
+        <td style="padding:6px; color:#b4a0e8;">Right Shield</td>
+        <td style="padding:6px;">Y axis</td>
+        <td style="padding:6px;">Up (0,r,0) &amp; Down (0,-r,0)</td>
+        <td style="padding:6px; opacity:0.7;">Wall N, Wheel N, Wall S, Wheel S</td>
+      </tr>
+      <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
+        <td style="padding:6px; color:#b4a0e8;">Left Shield</td>
+        <td style="padding:6px;">Y axis</td>
+        <td style="padding:6px;">Up (0,r,0) &amp; Down (0,-r,0)</td>
+        <td style="padding:6px; opacity:0.7;">Wall N, Wheel N, Wall S, Wheel S</td>
+      </tr>
+      <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
+        <td style="padding:6px; color:#a8d4a0;">Forward Ramp</td>
+        <td style="padding:6px;">X axis</td>
+        <td style="padding:6px;">Stage R (r,0,0) &amp; Stage L (-r,0,0)</td>
+        <td style="padding:6px; opacity:0.7;">Wall E, Floor E, Wall W, Floor W</td>
+      </tr>
+      <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
+        <td style="padding:6px; color:#a8d4a0;">Backward Ramp</td>
+        <td style="padding:6px;">X axis</td>
+        <td style="padding:6px;">Stage R (r,0,0) &amp; Stage L (-r,0,0)</td>
+        <td style="padding:6px; opacity:0.7;">Wall E, Floor E, Wall W, Floor W</td>
+      </tr>
+      <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
+        <td style="padding:6px; color:#7dd3c0;">Right Sundial</td>
+        <td style="padding:6px;">Z axis</td>
+        <td style="padding:6px;">Downstage (0,0,r) &amp; Upstage (0,0,-r)</td>
+        <td style="padding:6px; opacity:0.7;">Wheel E, Floor N, Wheel W, Floor S</td>
+      </tr>
+      <tr>
+        <td style="padding:6px; color:#7dd3c0;">Left Sundial</td>
+        <td style="padding:6px;">Z axis</td>
+        <td style="padding:6px;">Downstage (0,0,r) &amp; Upstage (0,0,-r)</td>
+        <td style="padding:6px; opacity:0.7;">Wheel E, Floor N, Wheel W, Floor S</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- BOX MODE GATE TABLE -->
+<h3 style="opacity:0.5; font-size:13px; text-transform:uppercase; letter-spacing:1px; margin-bottom:1rem;">Box Mode Gate Table (needs geometric verification)</h3>
+
+<div style="padding:1.2rem; background:rgba(251,191,36,0.06); border:1px solid rgba(251,191,36,0.15); border-radius:8px; margin-bottom:1.5rem;">
+  <p style="margin:0 0 1rem; opacity:0.7; font-size:14px;">
+    <strong style="color:#fbbf24;">Open question:</strong> Which specific fusion plane passes through each box-mode intercardinal position? The fusion circles have their own intercardinal points at 45° — do those align with the primary circles' box-mode positions?
+  </p>
+  <p style="margin:0; opacity:0.7; font-size:14px;">
+    For example: Wall box NE is at 3D position (r/√2, r/√2, 0). The Right Shield circle passes through (0, r, 0) and (0, -r, 0) and has other points at 45° — does one of those points land at (r/√2, r/√2, 0)?
+  </p>
+</div>
+
+<!-- DEPTH LAYERS -->
+<h3 style="margin-top:2rem;">Implementation Depth Layers</h3>
+
+<div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:1rem; margin-top:1rem;">
+  <div style="padding:1.2rem; background:rgba(34,197,94,0.08); border:1px solid rgba(34,197,94,0.2); border-radius:8px;">
+    <div style="font-size:12px; opacity:0.4; text-transform:uppercase; letter-spacing:1px;">Layer 1 — Free</div>
+    <div style="font-size:28px; font-weight:700; color:#4ade80; margin:0.5rem 0;">1</div>
+    <div style="font-size:14px;">Wall plane only</div>
+    <div style="font-size:12px; opacity:0.5; margin-top:0.5rem;">Current behavior. 95% of users.</div>
+  </div>
+  <div style="padding:1.2rem; background:rgba(251,191,36,0.08); border:1px solid rgba(251,191,36,0.2); border-radius:8px;">
+    <div style="font-size:12px; opacity:0.4; text-transform:uppercase; letter-spacing:1px;">Layer 2 — Premium</div>
+    <div style="font-size:28px; font-weight:700; color:#fbbf24; margin:0.5rem 0;">3</div>
+    <div style="font-size:14px;">Wall + Wheel + Floor</div>
+    <div style="font-size:12px; opacity:0.5; margin-top:0.5rem;">Diamond mode gate switching. Per-hand per-beat.</div>
+  </div>
+  <div style="padding:1.2rem; background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.2); border-radius:8px;">
+    <div style="font-size:12px; opacity:0.4; text-transform:uppercase; letter-spacing:1px;">Layer 3 — Premium Advanced</div>
+    <div style="font-size:28px; font-weight:700; color:#ef4444; margin:0.5rem 0;">9</div>
+    <div style="font-size:14px;">All planes + fusions</div>
+    <div style="font-size:12px; opacity:0.5; margin-top:0.5rem;">Box mode gate switching. Full 3D notation. The complete system.</div>
+  </div>
+</div>
+
+<p style="margin-top:2rem; opacity:0.5; text-align:center;">Continuing in terminal...</p>
