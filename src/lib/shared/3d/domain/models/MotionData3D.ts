@@ -39,6 +39,13 @@ export interface MotionConfig3D {
    * Default: 0 (no offset, planes centered on body).
    */
   lateralOffset?: number;
+  /**
+   * Which plane to use for prop ROTATION quaternion calculation.
+   * Defaults to `plane` when not specified. In dual-wheel mode this is
+   * set to WALL because the facing angle already rotates the avatar —
+   * using WHEEL for rotation would double-rotate onto the wrong axis.
+   */
+  rotationPlane?: Plane;
 }
 
 /**

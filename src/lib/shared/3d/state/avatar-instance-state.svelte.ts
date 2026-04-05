@@ -281,7 +281,8 @@ export function createAvatarInstanceState(
     planeMode = mode;
     const modeConfig = PLANE_MODE_CONFIGS[mode];
 
-    // Rotate avatar to match mode orientation
+    // Snap avatar rotation to match mode orientation immediately
+    facingAngle = modeConfig.facingAngle;
     targetFacingAngle = modeConfig.facingAngle;
 
     // Re-convert loaded sequence with new plane assignments

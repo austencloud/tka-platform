@@ -22,6 +22,10 @@
   import { userProportionsState } from "../state/user-proportions-state.svelte";
   import { getViewer3DContext } from "../context/viewer-3d-context";
   import { Plane } from "../domain/enums/Plane";
+  import { PlaneMode } from "../domain/enums/PlaneMode";
+  import { PLANE_MODE_CONFIGS, GRID_OFFSETS } from "../domain/constants/plane-mode-configs";
+  import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
+  import type { TipEffectMap } from "$lib/shared/animation-engine/domain/types/TipEffectTypes";
   import type { AvatarInstanceState } from "../state/avatar-instance-state.svelte";
   import type { PropState3D } from "../domain/models/PropState3D";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -45,7 +49,25 @@
   // GLTF models face -Z at facingAngle=0 (OpenGL convention).
   // Camera at +Z looks toward -Z and sees the avatar's back.
   // From +Z looking -Z (right-handed): +X = screen right = east ✓
-  const facingAngle = 0;
+  // In dual wheel mode, the avatar turns 90° — read from avatar state.
+  const facingAngle = $derived(avatarState.facingAngle);
+
+  // Read the global tip effect map so the 3D orchestrator knows which effect
+  // each tip should use (trails, led, fire, etc.).
+  // The visibility manager uses an observer pattern (not Svelte runes), so we
+  // bridge it into reactive state with $state + registerObserver.
+  const visibilityManager = getAnimationVisibilityManager();
+  let globalTipEffectMap = $state<TipEffectMap>(visibilityManager.getTipEffectMap());
+
+  $effect(() => {
+    // Sync on mount and whenever visibility settings change
+    const updateMap = () => {
+      globalTipEffectMap = visibilityManager.getTipEffectMap();
+    };
+    visibilityManager.registerObserver(updateMap);
+    updateMap();
+    return () => visibilityManager.unregisterObserver(updateMap);
+  });
 
   // Puppet-mode sync loop: convert the orchestrator's floating-point currentStep
   // into avatar beat index + sub-beat progress each frame.
@@ -165,17 +187,44 @@
 
 <!-- Grid planes (wall/wheel/floor discs) — toggled via viewer state.
      centerPosition matches avatarPosition so the grid is at shoulder height
-     where the props actually rotate, not at ground level. -->
+     where the props actually rotate, not at ground level.
+     In dual wheel mode, we render two grids offset laterally (one per hand). -->
 {#if viewer3DState.showGrid}
-  <Grid3D
-    visiblePlanes={gridVisiblePlanes}
-    centerPosition={avatarPosition}
-    {facingAngle}
-    gridOffset={0.3}
-    planeOpacity={0.12}
-    showLabels={false}
-    gridMode={(sequenceData?.gridMode ?? "diamond") as import("../domain/constants/grid-layout").GridMode}
-  />
+  {@const currentPlaneMode = avatarState.planeMode}
+  {@const currentGridOffset = GRID_OFFSETS[currentPlaneMode]}
+  {@const currentModeConfig = PLANE_MODE_CONFIGS[currentPlaneMode]}
+  {#if currentPlaneMode === PlaneMode.DUAL_WHEEL}
+    <!-- Left hand (blue) grid -->
+    <Grid3D
+      visiblePlanes={new Set([Plane.WHEEL])}
+      centerPosition={{ x: avatarPosition.x + currentModeConfig.blueLateralOffset, y: avatarPosition.y, z: avatarPosition.z }}
+      {facingAngle}
+      gridOffset={currentGridOffset}
+      planeOpacity={0.10}
+      showLabels={false}
+      gridMode={(sequenceData?.gridMode ?? "diamond") as import("../domain/constants/grid-layout").GridMode}
+    />
+    <!-- Right hand (red) grid -->
+    <Grid3D
+      visiblePlanes={new Set([Plane.WHEEL])}
+      centerPosition={{ x: avatarPosition.x + currentModeConfig.redLateralOffset, y: avatarPosition.y, z: avatarPosition.z }}
+      {facingAngle}
+      gridOffset={currentGridOffset}
+      planeOpacity={0.10}
+      showLabels={false}
+      gridMode={(sequenceData?.gridMode ?? "diamond") as import("../domain/constants/grid-layout").GridMode}
+    />
+  {:else}
+    <Grid3D
+      visiblePlanes={gridVisiblePlanes}
+      centerPosition={avatarPosition}
+      {facingAngle}
+      gridOffset={currentGridOffset}
+      planeOpacity={0.12}
+      showLabels={false}
+      gridMode={(sequenceData?.gridMode ?? "diamond") as import("../domain/constants/grid-layout").GridMode}
+    />
+  {/if}
 {/if}
 
 <!-- Avatar wrapped in offset Group: -STAGE_LIFT puts feet at floor y=0 -->
@@ -226,4 +275,5 @@
   {avatarPosition}
   {facingAngle}
   gridOffset={0.3}
+  {globalTipEffectMap}
 />
