@@ -1,30 +1,23 @@
 <script lang="ts">
   import { untrack } from "svelte";
   import { T, useTask, useThrelte } from "@threlte/core";
+  import { PCFSoftShadowMap } from "three";
   import {
     MathUtils,
     Vector3,
     Quaternion,
     Euler,
-    Object3D,
-    BoxGeometry,
-    CylinderGeometry,
-    MeshStandardMaterial,
-    InstancedMesh,
-    TextureLoader,
-    RepeatWrapping,
     FogExp2,
     Color,
   } from "three";
-  import type { Texture } from "three";
-  import type { PerspectiveCamera } from "three";
+  import type { InstancedMesh, PerspectiveCamera } from "three";
   import MuseumPostProcessing from "./MuseumPostProcessing.svelte";
-  import type { MuseumGrid, TileType, FloorMaterial } from "../../domain/museum-grid-types";
-  import { parseTileKey, tileKey } from "../../domain/museum-grid-types";
+  import type { MuseumGrid } from "../../domain/museum-grid-types";
+  import { tileKey } from "../../domain/museum-grid-types";
   import type { AvatarState, PhysicsProvider } from "$lib/shared/3d/camera/types";
   import { CameraMode } from "$lib/shared/3d/camera/types";
   import UnifiedCameraController from "$lib/shared/3d/camera/UnifiedCameraController.svelte";
-  import { createMuseumPhysicsProvider } from "../../services/implementations/MuseumPhysicsProvider";
+  import { createMuseumPhysicsProvider, MuseumPhysicsProvider } from "../../services/implementations/MuseumPhysicsProvider";
   import { cameraPreferences } from "$lib/shared/3d/camera/camera-preferences.svelte";
   import MuseumFurniture from "./MuseumFurniture.svelte";
   import MuseumPerformerStation3D from "./MuseumPerformerStation3D.svelte";
@@ -40,8 +33,16 @@
   import { museum3dEditorState } from "../../state/museum-3d-editor-state.svelte";
   import { museumEditorOverrides } from "../../state/museum-editor-overrides";
   import { ProximityGrid } from "../../services/implementations/ProximityGrid";
-  import type { PlaqueContent, PlaqueSize } from "../../services/contracts/IPlaqueTextureGenerator";
   import { PlaqueTextureGenerator } from "../../services/implementations/PlaqueTextureGenerator";
+  import { buildMuseumGeometry } from "../../services/implementations/MuseumGeometryBuilder";
+  import type {
+    MuseumGeometry,
+    InstancedMeshData,
+    PlaquePlacement,
+    TorchPosition,
+    LightPosition,
+    RoomLight,
+  } from "../../services/implementations/MuseumGeometryBuilder";
 
   // Shared texture generator — one instance for all plaques (caches internally)
   const plaqueGenerator = new PlaqueTextureGenerator();
@@ -54,6 +55,15 @@
   $effect(() => {
     const sc = (threlteCtx as any).scene?.current ?? (threlteCtx as any).scene;
     if (sc && sc.fog !== sceneFog) sc.fog = sceneFog;
+  });
+
+  // Enable shadow maps on the renderer
+  $effect(() => {
+    const renderer = (threlteCtx as any).renderer?.current ?? (threlteCtx as any).renderer;
+    if (renderer && !renderer.shadowMap.enabled) {
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = PCFSoftShadowMap;
+    }
   });
 
   // Track current wing for ambient/fog transitions
@@ -85,8 +95,16 @@
     initialPlayerYaw?: number;
     /** Increment to teleport player back to spawn */
     resetRequested?: number;
+    /** Increment to trigger instant first-person → third-person switch */
+    modeChangeRequested?: number;
     /** Called once on the first rendered frame — signals the 3D scene is interactive */
     onReady?: () => void;
+    /** Called when view mode changes between first-person and third-person */
+    onViewModeChange?: (mode: "first-person" | "third-person") => void;
+    /** Called during async geometry build with the current phase name */
+    onBuildStage?: (stage: string) => void;
+    /** Called when async geometry build completes — all meshes are ready to render */
+    onGeometryReady?: () => void;
   }
 
   const props: Props = $props();
@@ -190,41 +208,7 @@
     });
   });
 
-  // ── Material colors — more contrast, brighter floors, distinct materials ──
-  const FLOOR_COLORS: Record<FloorMaterial, string> = {
-    stone: "#3a3530",    // warm grey stone
-    marble: "#e0d8c8",   // bright beige-cream — government building marble
-    wood: "#4a3820",     // warm brown planks
-    dirt: "#352a1e",     // earthy dark
-    sandstone: "#4a3e2a", // warm tan
-  };
-
-  const TILE_TYPE_COLORS: Partial<Record<TileType, string>> = {
-    wall: "#2a2420",      // dark but readable walls
-    door: "#4a3e28",      // visible doorways
-    "exhibit-panel": "#1a1a18", // warm dark museum plaque
-    "performer-station": "#1a3a1a", // green stage
-    pedestal: "#4a3e30",  // warm pedestal
-    sign: "#2a3040",      // blue-grey sign
-  };
-
-  // ── Wing-themed wall tints — each theme gets a distinct wall color ──
   import type { WingTheme } from "../../domain/museum-grid-types";
-
-  const WING_WALL_COLORS: Record<WingTheme, string> = {
-    cave: "#2a1e14",         // dark stone, torchlight warmth
-    classical: "#3a3020",    // sandstone, oil lamp warmth
-    renaissance: "#2e2818",  // dark wood paneling
-    industrial: "#282828",   // grey iron/steel
-    digital: "#141428",      // dark with blue tinge
-    institutional: "#e8e4e0", // warm off-white — painted drywall under fluorescents
-    gallery: "#201820",      // deep purple-black (dramatic)
-    modern: "#1a1a1a",       // pure dark
-    futuristic: "#141420",   // dark with slight blue
-    outdoor: "#2a3020",      // natural green tinge
-    construction: "#2e2a1e", // dusty beige
-    retail: "#2a2220",       // warm commercial
-  };
 
   // ── Per-wing fog settings — density and color vary by atmosphere ──
   const WING_FOG: Record<WingTheme, { density: number; color: string }> = {
@@ -242,81 +226,8 @@
     retail:        { density: 0.02, color: "#141210" },   // clear
   };
 
-  // ── Per-wing ambient light — bright enough to actually see the exhibits ──
-  const WING_AMBIENT: Record<WingTheme, { color: string; intensity: number }> = {
-    cave:          { color: "#8a6030", intensity: 0.8 },   // warm amber — torch-warmed stone
-    classical:     { color: "#a08050", intensity: 1.0 },   // golden — oil lamp warmth
-    renaissance:   { color: "#907050", intensity: 1.0 },   // warm wood tones
-    industrial:    { color: "#808080", intensity: 0.9 },   // neutral grey — gas lamps
-    digital:       { color: "#4060a0", intensity: 0.9 },   // cool blue — CRT screens
-    institutional: { color: "#d0d8e0", intensity: 2.0 },   // aggressively bright — DMV energy
-    gallery:       { color: "#a09080", intensity: 0.9 },   // warm neutral — spotlight room
-    modern:        { color: "#606060", intensity: 0.8 },   // minimal
-    futuristic:    { color: "#506080", intensity: 0.8 },   // cool
-    outdoor:       { color: "#90a080", intensity: 1.2 },   // natural daylight
-    construction:  { color: "#908060", intensity: 0.85 },  // dusty warm
-    retail:        { color: "#a09080", intensity: 1.0 },   // commercial bright
-  };
-
-  // ── PBR Texture Loading ──
-  const textureLoader = new TextureLoader();
-
-  /** Texture pack name -> FloorMaterial / WingTheme mapping */
-  const FLOOR_TEXTURE_MAP: Partial<Record<FloorMaterial, string>> = {
-    stone: "Rock035",
-    marble: "Marble006",
-    wood: "WoodFloor007",
-    sandstone: "Rock003",
-  };
-
-  const WALL_TEXTURE_MAP: Partial<Record<WingTheme, string>> = {
-    cave: "Rock035",
-    classical: "Rock003",
-    renaissance: "Rock003",
-    gallery: "Plaster001",
-    // institutional walls use no texture — solid off-white like a painted government wall
-    modern: "Plaster001",
-  };
-
-  /** Cache loaded materials so the same texture pack isn't loaded twice */
-  const pbrMaterialCache = new Map<string, MeshStandardMaterial>();
-
-  function loadPBR(packName: string, tileRepeat: number = 8, tintColor?: string): MeshStandardMaterial {
-    const cacheKey = `${packName}_${tileRepeat}_${tintColor ?? "none"}`;
-    const cached = pbrMaterialCache.get(cacheKey);
-    if (cached) return cached;
-
-    const basePath = `/assets/museum/textures/${packName.toLowerCase()}`;
-    const prefix = `${packName}_1K-JPG`;
-
-    const colorTex = textureLoader.load(`${basePath}/${prefix}_Color.jpg`);
-    const normalTex = textureLoader.load(`${basePath}/${prefix}_NormalGL.jpg`);
-    const roughnessTex = textureLoader.load(`${basePath}/${prefix}_Roughness.jpg`);
-
-    const textures: Texture[] = [colorTex, normalTex, roughnessTex];
-    for (const t of textures) {
-      t.wrapS = RepeatWrapping;
-      t.wrapT = RepeatWrapping;
-      t.repeat.set(tileRepeat, tileRepeat);
-    }
-
-    // No fade-in needed — loading gate holds everything behind an opaque
-    // overlay until all assets are loaded. Scene appears fully textured.
-    const mat = new MeshStandardMaterial({
-      map: colorTex,
-      normalMap: normalTex,
-      roughnessMap: roughnessTex,
-      color: tintColor ?? "#ffffff",
-    });
-
-    pbrMaterialCache.set(cacheKey, mat);
-    return mat;
-  }
-
-  // Wall height — 4.5m mimics a real museum gallery ceiling (typical range 3.6–5m).
-  // At eye height ~1.6m the ceiling sits ~2.9m above the player — spacious but not cavernous.
+  // Wall height — used for ceiling light placement in the template
   const WALL_HEIGHT = 4.5;
-  const WALL_Y_CENTER = WALL_HEIGHT / 2;
 
   // ── Helpers ──
   function yawToFacing(yaw: number): string {
@@ -620,27 +531,48 @@
   };
 
   // Physics provider for grid-based wall collision
-  const physicsProvider: PhysicsProvider = createMuseumPhysicsProvider(
+  const physicsProvider = createMuseumPhysicsProvider(
     grid,
     TILE_SIZE,
     { x: spawnWorldX, y: 0, z: spawnWorldZ }
-  );
+  ) as MuseumPhysicsProvider;
+
+  // Root motion disabled — code-driven movement for responsive controls.
+  // The root motion infrastructure is preserved for future A/B testing.
+  // To re-enable: set rootMotionEnabled = fpsActive and enableRootMotion={true} on Avatar3D.
 
   // Initialize FPS target at spawn (must be after physicsProvider is created)
   syncFpsFromPlayer();
 
-  // ── Atmospheric updates: fog and ambient light smoothly transition per wing ──
-  // Ambient light reference — we'll update its color/intensity per frame
-  let ambientLightRef: { color: Color; intensity: number } | null = null;
+  // Simple wing theme lookup — used once per frame for atmosphere transitions.
+  // Not performance-critical (the hot path tile→theme lookup is in MuseumGeometryBuilder).
+  function getWingThemeAt(tileX: number, tileY: number): WingTheme | null {
+    for (const wing of grid.wings) {
+      const b = wing.bounds;
+      if (tileX >= b.x && tileX < b.x + b.width && tileY >= b.y && tileY < b.y + b.height) {
+        return wing.theme;
+      }
+    }
+    return null;
+  }
+
+  // ── Atmospheric updates: fog smoothly transitions per wing ──
+  // (Ambient light is now per-room static PointLights from the geometry builder)
 
   function updateAtmosphere(tileX: number, tileZ: number, delta: number): void {
     const theme = getWingThemeAt(tileX, tileZ);
 
     if (theme && theme !== currentWingTheme) {
+      console.log(`[Museum3D] 🏛️ Wing transition: ${currentWingTheme} → ${theme}`);
       currentWingTheme = theme;
       const fogCfg = WING_FOG[theme];
       fogColorTarget.set(fogCfg.color);
       fogDensityTarget = fogCfg.density;
+      // Update room lights when crossing a room boundary
+      const rlStart = performance.now();
+      recomputeNearbyRoomLights(tileX * TILE_SIZE, tileZ * TILE_SIZE);
+      const rlMs = performance.now() - rlStart;
+      if (rlMs > 2) console.warn(`[Museum3D] 💡 Room light recompute took ${rlMs.toFixed(0)}ms`);
     }
 
     // Fog only in FPS — from overhead it just muddies the view with no benefit.
@@ -653,9 +585,23 @@
     }
   }
 
+  // ── DEBUG: Frame timing — logs when a frame takes >100ms to find freeze sources ──
+  let lastFrameTime = performance.now();
+  let frameCount = 0;
+
   // ── Flip animation loop ──
   // When fpsActive, UnifiedCameraController owns the camera — we don't touch it.
   useTask((delta) => {
+    const frameStart = performance.now();
+    const gap = frameStart - lastFrameTime;
+    lastFrameTime = frameStart;
+    frameCount++;
+
+    // Log gaps >100ms — these are the freezes
+    if (gap > 100 && frameCount > 10) {
+      console.warn(`[Museum3D] 🧊 FREEZE: ${gap.toFixed(0)}ms gap between frames (frame #${frameCount})`);
+    }
+
     if (!camera) return;
 
     // In editor mode, OrbitControls owns the camera — skip all movement/animation
@@ -663,6 +609,7 @@
 
     // Drain pending mount queue (max 5 per frame to avoid spikes)
     if (pendingMounts.length > 0) {
+      const mountStart = performance.now();
       const batch = pendingMounts.splice(0, MAX_MOUNTS_PER_FRAME);
       for (const { category, item } of batch) {
         switch (category) {
@@ -673,6 +620,10 @@
           case "furniture": visibleFurniture = [...visibleFurniture, item]; break;
         }
       }
+      const mountMs = performance.now() - mountStart;
+      if (mountMs > 10) {
+        console.warn(`[Museum3D] 🔧 Mount batch took ${mountMs.toFixed(0)}ms — categories: ${batch.map(b => b.category).join(", ")}`);
+      }
     }
 
     // Proximity visibility recheck — when player moves 2+ tiles
@@ -681,7 +632,12 @@
     const dCheckX = currentTX - lastCheckTX;
     const dCheckY = currentTY - lastCheckTY;
     if (dCheckX * dCheckX + dCheckY * dCheckY >= 16) {
+      const proxStart = performance.now();
       recomputeVisibility(currentTX, currentTY);
+      const proxMs = performance.now() - proxStart;
+      if (proxMs > 5) {
+        console.warn(`[Museum3D] 🔍 Proximity recompute took ${proxMs.toFixed(0)}ms at tile (${currentTX}, ${currentTY})`);
+      }
     }
 
     // First frame: initialize camera
@@ -736,11 +692,12 @@
       playerVerticalVelocity = vel.y;
       // playerJumpRequested is set/cleared by the keydown handler with rAF delay
 
-
       const fpsTileX = Math.round(fpsPos.x / TILE_SIZE);
       const fpsTileZ = Math.round(fpsPos.z / TILE_SIZE);
       updateAtmosphere(fpsTileX, fpsTileZ, delta);
       props.onPlayerUpdate?.(fpsPos.x, fpsPos.z, fpsTileX, fpsTileZ, yawToFacing(playerYaw), true, playerYaw);
+      const fpsFrameMs = performance.now() - frameStart;
+      if (fpsFrameMs > 50) console.warn(`[Museum3D] 🎯 FPS frame logic took ${fpsFrameMs.toFixed(0)}ms`);
       return;
     }
 
@@ -851,8 +808,9 @@
       progress = Math.min(progress + step, 1);
       if (progress >= 1) {
         animating = false;
-        // Restore the user's last 3D mode (first-person or third-person) before UCC mounts
-        cameraPreferences.setModeForDestination("museum", lastCameraMode);
+        // Q cycle always enters first-person from top-down. Third-person is the next Q press.
+        lastCameraMode = CameraMode.FIRST_PERSON;
+        cameraPreferences.setModeForDestination("museum", CameraMode.FIRST_PERSON);
         // Snapshot yaw/pitch ONCE for UCC's initialYaw/initialPitch.
         // Do NOT pass live playerYaw — it creates a feedback loop with $effect.pre.
         fpsInitialYaw = playerYaw;
@@ -901,6 +859,25 @@
       fpsActive = false;
       animating = true;
       goingDown = false;
+    }
+  });
+
+  // Instant mode switch (first-person → third-person) triggered by parent's Q cycle
+  let lastModeChangeCount = 0;
+  $effect(() => {
+    const modeChange = props.modeChangeRequested ?? 0;
+    if (modeChange !== lastModeChangeCount) {
+      lastModeChangeCount = modeChange;
+      if (fpsActive) {
+        // Switch to third-person via camera preferences — UCC reacts automatically
+        // via its $effect.pre that syncs mode from cameraPreferences
+        lastCameraMode = CameraMode.THIRD_PERSON;
+        cameraPreferences.setModeForDestination("museum", CameraMode.THIRD_PERSON);
+        try {
+          sessionStorage.setItem(CAMERA_MODE_HMR_KEY, "THIRD_PERSON");
+        } catch { /* non-critical */ }
+        props.onViewModeChange?.("third-person");
+      }
     }
   });
 
@@ -989,401 +966,127 @@
     };
   });
 
-  // ── Bucket tiles by render category ──
-  interface TileBucket {
-    positions: { x: number; z: number }[];
-    color: string;
-    /** Floor material type — used to select PBR textures */
-    floorMaterial?: FloorMaterial;
-    /** Wing theme — used to select wall PBR textures */
-    wingTheme?: WingTheme;
-  }
+  // ── Async geometry build ──
+  // Geometry is built asynchronously in phases, yielding to the main thread
+  // between each so the loading overlay stays responsive. Empty initially —
+  // meshes appear as each phase completes.
+  let geometryReady = $state(false);
+  let floorMeshes = $state<InstancedMeshData[]>([]);
+  let wallMeshes = $state<InstancedMeshData[]>([]);
+  let ceilingMesh = $state<InstancedMesh | null>(null);
+  let performerMesh = $state<InstancedMesh | null>(null);
+  let pedestalMesh = $state<InstancedMesh | null>(null);
+  let signMesh = $state<InstancedMesh | null>(null);
 
-  const floorBuckets = new Map<string, TileBucket>();
-  const wallBuckets = new Map<string, TileBucket>(); // keyed by wing wall color
-  interface PlaquePlacement {
-    id: number;
-    tileX: number;
-    tileY: number;
-    worldX: number;
-    worldZ: number;
-    yaw: number;
-    wallOffsetX: number;
-    wallOffsetZ: number;
-    content: PlaqueContent;
-    size: PlaqueSize;
-    refId: string;
-  }
-  let nextPlaqueId = 0;
+  // These arrays are populated once geometry build completes
+  let plaquePlacements: PlaquePlacement[] = [];
+  let torchPositions: TorchPosition[] = [];
+  let exhibitLightPositions: LightPosition[] = [];
+  let ceilingLightPositions: LightPosition[] = [];
+  let roomLights = $state<RoomLight[]>([]);
 
-  // Rotation and wall-offset lookup per facing direction.
-  // Each plaque faces INTO the room, mounted flush against its wall.
-  const PLAQUE_YAW: Record<string, number> = {
-    south: 0,                // on north wall, faces south
-    north: Math.PI,          // on south wall, faces north
-    east: Math.PI / 2,       // on west wall, faces east
-    west: -Math.PI / 2,      // on east wall, faces west
-  };
-  // Shift the plaque inward from its wall tile so it's visible inside the room.
-  // With wall segment budgets, exhibit-panel tiles sit ON the boundary (wall row),
-  // so the shift moves them inward toward the room interior.
-  const PLAQUE_WALL_SHIFT: Record<string, { x: number; z: number }> = {
-    south: { x: 0, z: TILE_SIZE * 0.4 },   // on north wall, shift south (into room)
-    north: { x: 0, z: -TILE_SIZE * 0.4 },   // on south wall, shift north (into room)
-    east: { x: TILE_SIZE * 0.4, z: 0 },     // on west wall, shift east (into room)
-    west: { x: -TILE_SIZE * 0.4, z: 0 },    // on east wall, shift west (into room)
-  };
-
-  const plaquePlacements: PlaquePlacement[] = [];
-  const performerPositions: { x: number; z: number }[] = [];
-  const pedestalPositions: { x: number; z: number }[] = [];
-  const signPositions: { x: number; z: number }[] = [];
-  const torchPositions: { id: number; tileX: number; tileY: number; x: number; z: number; wallOffsetX: number; wallOffsetZ: number; wingTheme: WingTheme }[] = [];
-  let nextTorchId = 0;
-
-  // Pre-build a tile→wing theme lookup map so we don't linear-scan wings
-  // for every wall tile. With 20k+ tiles and 31 wings, the naive O(tiles*wings)
-  // approach was a major contributor to the multi-second init freeze.
-  const wingThemeByTile = new Map<string, WingTheme>();
-  for (const wing of grid.wings) {
-    const b = wing.bounds;
-    for (let tx = b.x; tx < b.x + b.width; tx++) {
-      for (let ty = b.y; ty < b.y + b.height; ty++) {
-        wingThemeByTile.set(tileKey(tx, ty), wing.theme);
-      }
-    }
-  }
-
-  function getWingThemeAt(tileX: number, tileY: number): WingTheme | null {
-    return wingThemeByTile.get(tileKey(tileX, tileY)) ?? null;
-  }
-
-  // Pre-build exhibit lookup by tile key (avoids O(n) grid.exhibits.find per panel tile)
-  const exhibitByTile = new Map<string, typeof grid.exhibits[0]>();
-  for (const exhibit of grid.exhibits) {
-    exhibitByTile.set(tileKey(exhibit.tileX, exhibit.tileY), exhibit);
-  }
-
-  function addToWallBucket(color: string, x: number, z: number, theme?: WingTheme): void {
-    let bucket = wallBuckets.get(color);
-    if (!bucket) {
-      bucket = { positions: [], color, wingTheme: theme };
-      wallBuckets.set(color, bucket);
-    }
-    bucket.positions.push({ x, z });
-  }
-
-  function addToFloorBucket(color: string, x: number, z: number, material?: FloorMaterial): void {
-    let bucket = floorBuckets.get(color);
-    if (!bucket) {
-      bucket = { positions: [], color, floorMaterial: material };
-      floorBuckets.set(color, bucket);
-    }
-    bucket.positions.push({ x, z });
-  }
-
-  // Process all tiles
-  for (const [key, tile] of grid.tiles) {
-    const { x: tileX, y: tileY } = parseTileKey(key);
-    const worldX = tileX * TILE_SIZE;
-    const worldZ = tileY * TILE_SIZE;
-
-    switch (tile.type) {
-      case "floor":
-      case "corridor": {
-        const material = tile.material ?? "stone";
-        const color = FLOOR_COLORS[material];
-        addToFloorBucket(color, worldX, worldZ, material);
-        break;
-      }
-      case "door": {
-        addToFloorBucket(TILE_TYPE_COLORS.door!, worldX, worldZ);
-        break;
-      }
-      case "wall": {
-        const wingTheme = getWingThemeAt(tileX, tileY);
-        const wallColor = wingTheme ? WING_WALL_COLORS[wingTheme] : TILE_TYPE_COLORS.wall!;
-        addToWallBucket(wallColor, worldX, worldZ, wingTheme ?? undefined);
-        break;
-      }
-      case "exhibit-panel": {
-        // Multi-tile exhibits stamp 2+ tiles with the same refId.
-        // Only create a plaque for the CENTER tile (the one in exhibitByTile).
-        // Other tiles render as wall surface to avoid duplicate keys.
-        const exhibitDef = exhibitByTile.get(tileKey(tileX, tileY));
-        if (exhibitDef) {
-          addToFloorBucket(FLOOR_COLORS.stone, worldX, worldZ);
-          const facing = tile.facing ?? "south";
-          const plaqueContent: PlaqueContent = exhibitDef.plaque ?? {
-            title: exhibitDef.id ?? "Exhibit",
-            body: "This exhibit is under construction.",
-          };
-          const plaqueSize: PlaqueSize = exhibitDef.size ?? "standard";
-          const yaw = PLAQUE_YAW[facing] ?? 0;
-          const wallShift = PLAQUE_WALL_SHIFT[facing] ?? { x: 0, z: 0 };
-          plaquePlacements.push({
-            id: nextPlaqueId++,
-            tileX,
-            tileY,
-            worldX,
-            worldZ,
-            yaw,
-            wallOffsetX: wallShift.x,
-            wallOffsetZ: wallShift.z,
-            content: plaqueContent,
-            size: plaqueSize,
-            refId: exhibitDef.id,
-          });
-        } else {
-          // Non-center tile of a multi-tile exhibit — render as wall
-          const wingTheme = getWingThemeAt(tileX, tileY);
-          const wallColor = wingTheme ? WING_WALL_COLORS[wingTheme] : TILE_TYPE_COLORS.wall!;
-          addToWallBucket(wallColor, worldX, worldZ, wingTheme ?? undefined);
-        }
-        break;
-      }
-      case "performer-station": {
-        addToFloorBucket(FLOOR_COLORS.stone, worldX, worldZ);
-        performerPositions.push({ x: worldX, z: worldZ });
-        break;
-      }
-      case "pedestal": {
-        addToFloorBucket(FLOOR_COLORS.stone, worldX, worldZ);
-        pedestalPositions.push({ x: worldX, z: worldZ });
-        break;
-      }
-      case "sign": {
-        addToFloorBucket(FLOOR_COLORS.stone, worldX, worldZ);
-        signPositions.push({ x: worldX, z: worldZ });
-        break;
-      }
-      case "torch": {
-        addToFloorBucket(FLOOR_COLORS.stone, worldX, worldZ);
-
-        // Detect which adjacent tile is a wall to offset the torch into the room.
-        // Check all 4 cardinal neighbors — the wall direction is where we find a wall tile.
-        let wallOffsetX = 0;
-        let wallOffsetZ = 0;
-        const neighbors = [
-          { dx: 0, dy: -1, ox: 0, oz: -1 },  // north neighbor → wall is north, offset south
-          { dx: 0, dy: 1, ox: 0, oz: 1 },     // south neighbor → wall is south, offset north
-          { dx: -1, dy: 0, ox: -1, oz: 0 },   // west neighbor → wall is west, offset east
-          { dx: 1, dy: 0, ox: 1, oz: 0 },     // east neighbor → wall is east, offset west
-        ];
-        for (const n of neighbors) {
-          const neighborTile = grid.tiles.get(`${tileX + n.dx},${tileY + n.dy}`);
-          if (neighborTile && neighborTile.type === "wall") {
-            // Offset AWAY from the wall (into the room)
-            wallOffsetX = -n.ox * TILE_SIZE * 0.35;
-            wallOffsetZ = -n.oz * TILE_SIZE * 0.35;
-            break;
-          }
-        }
-
-        const torchWingTheme = getWingThemeAt(tileX, tileY) ?? "cave";
-        torchPositions.push({ id: nextTorchId++, tileX, tileY, x: worldX, z: worldZ, wallOffsetX, wallOffsetZ, wingTheme: torchWingTheme });
-        break;
-      }
-      case "trigger":
-        break;
-      case "rope":
-      case "scaffolding":
-        addToFloorBucket(FLOOR_COLORS.stone, worldX, worldZ);
-        break;
-    }
-  }
-
-  // ── Build InstancedMesh data ──
-  const dummy = new Object3D();
-
-  const floorGeo = new BoxGeometry(TILE_SIZE - 0.02, 0.05, TILE_SIZE - 0.02);
-  const wallGeo = new BoxGeometry(TILE_SIZE, WALL_HEIGHT, TILE_SIZE);
-  const performerGeo = new CylinderGeometry(TILE_SIZE * 0.2, TILE_SIZE * 0.2, 0.5, 8);
-  const pedestalGeo = new BoxGeometry(TILE_SIZE * 0.7, 0.5, TILE_SIZE * 0.7);
-  const signGeo = new BoxGeometry(TILE_SIZE * 0.6, 0.4, 0.06);
-  // Torch sphere geo removed — torches now use MuseumTorch3D with full flame shader
-
-  interface InstancedMeshData {
-    mesh: InstancedMesh;
-  }
-
-  const floorMeshes: InstancedMeshData[] = [];
-
-  for (const [, bucket] of floorBuckets) {
-    // Use PBR texture if we have one for this floor material, otherwise fall back to solid color
-    const texturePack = bucket.floorMaterial ? FLOOR_TEXTURE_MAP[bucket.floorMaterial] : undefined;
-    const material = texturePack
-      ? loadPBR(texturePack, 8)
-      : new MeshStandardMaterial({ color: bucket.color });
-    const mesh = new InstancedMesh(floorGeo, material, bucket.positions.length);
-
-    for (let i = 0; i < bucket.positions.length; i++) {
-      dummy.position.set(bucket.positions[i]!.x, 0, bucket.positions[i]!.z);
-      dummy.updateMatrix();
-      mesh.setMatrixAt(i, dummy.matrix);
-    }
-    mesh.instanceMatrix.needsUpdate = true;
-    floorMeshes.push({ mesh });
-  }
-
-  // Wall meshes — one per wing theme color, with PBR textures where available
-  const wallMeshes: InstancedMeshData[] = [];
-  for (const [, bucket] of wallBuckets) {
-    const texturePack = bucket.wingTheme ? WALL_TEXTURE_MAP[bucket.wingTheme] : undefined;
-    const wallMat = texturePack
-      ? loadPBR(texturePack, 4, bucket.color)
-      : new MeshStandardMaterial({ color: bucket.color });
-    const mesh = new InstancedMesh(wallGeo, wallMat, bucket.positions.length);
-    for (let i = 0; i < bucket.positions.length; i++) {
-      dummy.position.set(bucket.positions[i]!.x, WALL_Y_CENTER, bucket.positions[i]!.z);
-      dummy.updateMatrix();
-      mesh.setMatrixAt(i, dummy.matrix);
-    }
-    mesh.instanceMatrix.needsUpdate = true;
-    wallMeshes.push({ mesh });
-  }
-
-  // Ceiling mesh — flat plane at wall height, covers all walkable tiles.
-  // Visible only in FPS mode so the top-down view isn't obscured.
-  const allFloorPositions: { x: number; z: number }[] = [];
-  for (const [, bucket] of floorBuckets) {
-    for (const pos of bucket.positions) {
-      allFloorPositions.push(pos);
-    }
-  }
-
-  let ceilingMesh: InstancedMesh | null = $state((() => {
-    if (allFloorPositions.length === 0) return null;
-    const ceilingMat = new MeshStandardMaterial({
-      color: "#3a3530",          // lighter than walls so it reads as a ceiling catching ambient light
-      emissive: "#0a0a08",       // faint self-illumination prevents pitch-black voids between lights
-      emissiveIntensity: 0.3,
-      roughness: 0.85,           // slight roughness variation — plaster/stone feel
-    });
-    const mesh = new InstancedMesh(floorGeo, ceilingMat, allFloorPositions.length);
-    for (let i = 0; i < allFloorPositions.length; i++) {
-      dummy.position.set(allFloorPositions[i]!.x, WALL_HEIGHT, allFloorPositions[i]!.z);
-      dummy.updateMatrix();
-      mesh.setMatrixAt(i, dummy.matrix);
-    }
-    mesh.instanceMatrix.needsUpdate = true;
-    return mesh;
-  })());
-
-  // Exhibit spot lighting — populated from plaque placements
-  const exhibitLightPositions: { id: number; tileX: number; tileY: number; x: number; z: number }[] = plaquePlacements.map((p, i) => ({
-    id: i,
-    tileX: p.tileX,
-    tileY: p.tileY,
-    x: p.worldX,
-    z: p.worldZ,
-  }));
-  const useSpotLights = plaquePlacements.length > 0 && plaquePlacements.length < 20;
-
-  // ── Ceiling fluorescent lights for institutional/retail wings ──
-  // Grid of overhead point lights simulating fluorescent panels
-  const ceilingLightPositions: { id: number; tileX: number; tileY: number; x: number; z: number }[] = [];
-  let nextCeilingLightId = 0;
-  for (const wing of grid.wings) {
-    if (wing.theme === "institutional" || wing.theme === "retail") {
-      const b = wing.bounds;
-      // Place lights in a grid: every 6 tiles across, every 8 tiles along
-      for (let dx = 3; dx < b.width - 2; dx += 6) {
-        for (let dy = 3; dy < b.height - 2; dy += 8) {
-          ceilingLightPositions.push({
-            id: nextCeilingLightId++,
-            tileX: b.x + dx,
-            tileY: b.y + dy,
-            x: (b.x + dx) * TILE_SIZE,
-            z: (b.y + dy) * TILE_SIZE,
-          });
-        }
-      }
-    }
-  }
-
-  let performerMesh: InstancedMesh | null = null;
-  if (performerPositions.length > 0) {
-    const performerMat = new MeshStandardMaterial({ color: TILE_TYPE_COLORS["performer-station"]! });
-    performerMesh = new InstancedMesh(performerGeo, performerMat, performerPositions.length);
-    for (let i = 0; i < performerPositions.length; i++) {
-      dummy.position.set(performerPositions[i]!.x, 0.25, performerPositions[i]!.z);
-      dummy.updateMatrix();
-      performerMesh.setMatrixAt(i, dummy.matrix);
-    }
-    performerMesh.instanceMatrix.needsUpdate = true;
-  }
-
-  let pedestalMesh: InstancedMesh | null = $state((() => {
-    if (pedestalPositions.length === 0) return null;
-    const pedestalMat = new MeshStandardMaterial({ color: TILE_TYPE_COLORS.pedestal! });
-    const mesh = new InstancedMesh(pedestalGeo, pedestalMat, pedestalPositions.length);
-    for (let i = 0; i < pedestalPositions.length; i++) {
-      dummy.position.set(pedestalPositions[i]!.x, 0.25, pedestalPositions[i]!.z);
-      dummy.updateMatrix();
-      mesh.setMatrixAt(i, dummy.matrix);
-    }
-    mesh.instanceMatrix.needsUpdate = true;
-    return mesh;
-  })());
-
-  let signMesh: InstancedMesh | null = $state((() => {
-    if (signPositions.length === 0) return null;
-    const signMat = new MeshStandardMaterial({ color: TILE_TYPE_COLORS.sign! });
-    const mesh = new InstancedMesh(signGeo, signMat, signPositions.length);
-    for (let i = 0; i < signPositions.length; i++) {
-      dummy.position.set(signPositions[i]!.x, 0.5, signPositions[i]!.z);
-      dummy.updateMatrix();
-      mesh.setMatrixAt(i, dummy.matrix);
-    }
-    mesh.instanceMatrix.needsUpdate = true;
-    return mesh;
-  })());
-
-  // Torch point light budget — each MuseumTorch3D has its own point light,
-  // so we limit to MAX_POINT_LIGHTS torches with lights, rest get visuals only
   const MAX_POINT_LIGHTS = 32;
 
   // ── Proximity-based rendering ──
   const CELL_SIZE = 8;
   const MOUNT_RADIUS = 30;
   const UNMOUNT_RADIUS = 40;
-  // Keep low to avoid stutter while walking. Each torch mount compiles a
-  // flame shader + creates 24 particles — mounting 5 at once causes visible jank.
   const MAX_MOUNTS_PER_FRAME = 2;
 
-  // Build proximity grids — one per component type
-  const torchGrid = new ProximityGrid<typeof torchPositions[0]>(CELL_SIZE);
-  for (const t of torchPositions) torchGrid.insert(t, t.tileX, t.tileY);
+  // Proximity grids — built after geometry completes
+  let torchGrid = new ProximityGrid<TorchPosition>(CELL_SIZE);
+  let plaqueGrid = new ProximityGrid<PlaquePlacement>(CELL_SIZE);
+  let performerGrid = new ProximityGrid<typeof grid.performers[0]>(CELL_SIZE);
+  let exhibitLightGrid = new ProximityGrid<LightPosition>(CELL_SIZE);
+  let ceilingLightGrid = new ProximityGrid<LightPosition>(CELL_SIZE);
+  let furnitureGrid = new ProximityGrid<NonNullable<typeof grid.furniture>[0]>(CELL_SIZE);
 
-  const plaqueGrid = new ProximityGrid<(typeof plaquePlacements)[0]>(CELL_SIZE);
-  for (const p of plaquePlacements) plaqueGrid.insert(p, p.tileX, p.tileY);
-
-  const performerGrid = new ProximityGrid<typeof grid.performers[0]>(CELL_SIZE);
+  // Populate furniture grid immediately (it doesn't depend on geometry build)
+  for (const f of (grid.furniture ?? [])) furnitureGrid.insert(f, f.tileX, f.tileY);
   for (const p of grid.performers) performerGrid.insert(p, p.tileX, p.tileY);
 
-  const exhibitLightGrid = new ProximityGrid<typeof exhibitLightPositions[0]>(CELL_SIZE);
-  for (const l of exhibitLightPositions) exhibitLightGrid.insert(l, l.tileX, l.tileY);
+  // Visible sets — only these items get rendered. Empty until geometry is ready.
+  let visibleTorches = $state<TorchPosition[]>([]);
+  let visiblePlaques = $state<PlaquePlacement[]>([]);
+  let visiblePerformers = $state<typeof grid.performers>([]);
+  let visibleExhibitLights = $state<LightPosition[]>([]);
+  let visibleCeilingLights = $state<LightPosition[]>([]);
+  let visibleFurniture = $state<NonNullable<typeof grid.furniture>>([]);
+  let useSpotLights = $state(false);
 
-  const ceilingLightGrid = new ProximityGrid<typeof ceilingLightPositions[0]>(CELL_SIZE);
-  for (const l of ceilingLightPositions) ceilingLightGrid.insert(l, l.tileX, l.tileY);
+  // Build geometry asynchronously — meshes populate as each phase completes.
+  // Each phase yields to the main thread so the loading overlay stays responsive.
+  buildMuseumGeometry(grid, (phase) => {
+    props.onBuildStage?.(phase);
+  }).then((geo) => {
+    const geoStart = performance.now();
+    console.log(`[Museum3D] 📦 Geometry ready — ${geo.torchPositions.length} torches, ${geo.exhibitLightPositions.length} exhibit lights, ${geo.ceilingLightPositions.length} ceiling lights, ${geo.roomLights.length} room wings (${geo.roomLights.reduce((s, r) => s + r.positions.length, 0)} total room light positions)`);
+    // Populate all mesh state — each assignment triggers Svelte reactivity
+    floorMeshes = geo.floorMeshes;
+    wallMeshes = geo.wallMeshes;
+    ceilingMesh = geo.ceilingMesh;
+    performerMesh = geo.performerMesh;
+    pedestalMesh = geo.pedestalMesh;
+    signMesh = geo.signMesh;
 
-  const furnitureGrid = new ProximityGrid<NonNullable<typeof grid.furniture>[0]>(CELL_SIZE);
-  for (const f of (grid.furniture ?? [])) furnitureGrid.insert(f, f.tileX, f.tileY);
+    // Store position data for proximity and interaction systems
+    plaquePlacements = geo.plaquePlacements;
+    torchPositions = geo.torchPositions;
+    exhibitLightPositions = geo.exhibitLightPositions;
+    ceilingLightPositions = geo.ceilingLightPositions;
+    roomLights = geo.roomLights;
 
-  // Visible sets — only these items get rendered
-  // Torches are NOT proximity-filtered — they mount once at init and stay.
-  // Mounting/unmounting Svelte torch components causes 400-1000ms GPU shader
-  // compilation stutters that make walking unplayable. The initial load absorbs
-  // this cost behind the loading overlay.
-  let visibleTorches = $state(torchPositions);
-  let visiblePlaques = $state([] as typeof plaquePlacements);
-  let visiblePerformers = $state([] as typeof grid.performers);
-  // Lights mount once at init — not proximity-filtered (adding/removing lights
-  // causes Three.js to recompile all affected materials' shaders)
-  let visibleExhibitLights = $state(exhibitLightPositions);
-  let visibleCeilingLights = $state(ceilingLightPositions);
-  let visibleFurniture = $state([] as NonNullable<typeof grid.furniture>);
+    useSpotLights = geo.plaquePlacements.length > 0 && geo.plaquePlacements.length < 20;
+
+    // Build proximity grids now that position data is ready
+    torchGrid = new ProximityGrid<TorchPosition>(CELL_SIZE);
+    for (const t of torchPositions) torchGrid.insert(t, t.tileX, t.tileY);
+
+    plaqueGrid = new ProximityGrid<PlaquePlacement>(CELL_SIZE);
+    for (const p of plaquePlacements) plaqueGrid.insert(p, p.tileX, p.tileY);
+
+    exhibitLightGrid = new ProximityGrid<LightPosition>(CELL_SIZE);
+    for (const l of exhibitLightPositions) exhibitLightGrid.insert(l, l.tileX, l.tileY);
+
+    ceilingLightGrid = new ProximityGrid<LightPosition>(CELL_SIZE);
+    for (const l of ceilingLightPositions) ceilingLightGrid.insert(l, l.tileX, l.tileY);
+
+    // Torches mount all at once (shader compilation absorbed behind loading overlay)
+    visibleTorches = torchPositions;
+    // Lights mount all at once (removing/adding causes shader recompilation)
+    visibleExhibitLights = exhibitLightPositions;
+    visibleCeilingLights = ceilingLightPositions;
+
+    // Compute initial room lights at spawn position
+    recomputeNearbyRoomLights(grid.spawn.x * TILE_SIZE, grid.spawn.y * TILE_SIZE);
+
+    // Compute initial visibility for proximity-filtered items
+    recomputeVisibility(grid.spawn.x, grid.spawn.y);
+
+    // Debug: check for duplicate keys in all visible arrays
+    const checkDupes = (name: string, arr: any[], keyFn: (x: any) => any) => {
+      const keys = arr.map(keyFn);
+      const seen = new Set();
+      for (let i = 0; i < keys.length; i++) {
+        if (seen.has(keys[i])) console.error(`[Museum3D] ❌ DUPLICATE KEY in ${name}: "${keys[i]}" at index ${i}`);
+        seen.add(keys[i]);
+      }
+    };
+    checkDupes("visiblePlaques", visiblePlaques, p => p.id);
+    checkDupes("visibleExhibitLights", visibleExhibitLights, p => p.id);
+    checkDupes("visibleCeilingLights", visibleCeilingLights, p => p.id);
+    checkDupes("visibleTorches", visibleTorches, t => t.id);
+    checkDupes("visiblePerformers", visiblePerformers, p => p.id);
+    checkDupes("visibleFurniture", visibleFurniture, f => f.id);
+
+    console.log(`[Museum3D] ✅ All mounts complete in ${(performance.now() - geoStart).toFixed(0)}ms — roomLightPool active: ${roomLightPool.filter(s => s.intensity > 0).length}/${MAX_ROOM_LIGHTS}`);
+    geometryReady = true;
+    props.onGeometryReady?.();
+  });
+
+  // Shadow disabled on dynamic lights — toggling castShadow reactively causes
+  // Three.js deallocateRenderTarget crashes, and PBR wall textures already consume
+  // most of the 16 WebGL texture units. Shadows are still received by floors/walls.
 
   type MountCategory = "torch" | "plaque" | "performer" | "exhibitLight" | "ceilingLight" | "furniture";
   let pendingMounts: { category: MountCategory; item: any }[] = [];
@@ -1452,9 +1155,6 @@
     visibleFurniture = applyWithBatching("furniture", furnitureGrid, visibleFurniture, f => f.id);
   }
 
-  // Compute initial visible set from spawn
-  recomputeVisibility(grid.spawn.x, grid.spawn.y);
-
   // Torch light set — derived from visible torches, capped at MAX_POINT_LIGHTS
   const torchLightSet = $derived.by(() => {
     const withLight = visibleTorches.length <= MAX_POINT_LIGHTS
@@ -1462,6 +1162,49 @@
       : visibleTorches.slice(0, MAX_POINT_LIGHTS);
     return new Set(withLight.map(t => `${t.x},${t.z}`));
   });
+
+  // Per-room ambient lights — fixed-size pool to avoid shader recompilation.
+  // Three.js recompiles every material's shader when lights are added/removed from
+  // the scene graph (20-30 second freeze). Instead, we keep MAX_ROOM_LIGHTS slots
+  // always mounted and update their position/color/intensity reactively. Unused
+  // slots get intensity=0 — they're still in the shader but cost nothing to render.
+  interface RoomLightSlot { x: number; z: number; color: string; intensity: number; distance: number; }
+  const MAX_ROOM_LIGHTS = 16;
+  const ROOM_LIGHT_PROXIMITY = 15; // world units — roughly 30 tiles
+
+  // Initialize pool with all slots off (intensity=0) at origin
+  const EMPTY_SLOT: RoomLightSlot = { x: 0, z: 0, color: "#000000", intensity: 0, distance: 1 };
+  let roomLightPool = $state<RoomLightSlot[]>(Array.from({ length: MAX_ROOM_LIGHTS }, () => ({ ...EMPTY_SLOT })));
+
+  function recomputeNearbyRoomLights(px: number, pz: number): void {
+    if (roomLights.length === 0) return;
+    const nearby: (RoomLightSlot & { distSq: number })[] = [];
+    for (const light of roomLights) {
+      for (const pos of light.positions) {
+        const dx = pos.x - px;
+        const dz = pos.z - pz;
+        const distSq = dx * dx + dz * dz;
+        if (distSq <= ROOM_LIGHT_PROXIMITY * ROOM_LIGHT_PROXIMITY) {
+          nearby.push({ x: pos.x, z: pos.z, color: light.color, intensity: light.intensity, distance: light.distance, distSq });
+        }
+      }
+    }
+    if (nearby.length > MAX_ROOM_LIGHTS) {
+      nearby.sort((a, b) => a.distSq - b.distSq);
+    }
+
+    // Update pool slots in-place — active slots get real values, rest get zeroed
+    const newPool: RoomLightSlot[] = [];
+    for (let i = 0; i < MAX_ROOM_LIGHTS; i++) {
+      if (i < nearby.length) {
+        const n = nearby[i]!;
+        newPool.push({ x: n.x, z: n.z, color: n.color, intensity: n.intensity, distance: n.distance });
+      } else {
+        newPool.push({ ...EMPTY_SLOT });
+      }
+    }
+    roomLightPool = newPool;
+  }
 </script>
 
 <!-- Camera (owned by flip animation when not in FPS, by UCC when in FPS, by OrbitControls in editor) -->
@@ -1556,6 +1299,7 @@
     moveSpeed={playerSpeed}
     moveDirection={moveDir}
     enableLocomotion={true}
+    enableRootMotion={false}
     isGrounded={playerGrounded}
     verticalVelocity={playerVerticalVelocity}
     isCrouching={isCrouching}
@@ -1574,6 +1318,7 @@
     initialYaw={fpsInitialYaw}
     initialPitch={fpsInitialPitch}
     allowedModes={[CameraMode.FIRST_PERSON, CameraMode.THIRD_PERSON]}
+    disableModeToggle={true}
     onModeChange={(mode) => {
       // Remember the user's preferred 3D mode so flipping back from 2D restores it.
       if (mode === CameraMode.FIRST_PERSON || mode === CameraMode.THIRD_PERSON) {
@@ -1581,6 +1326,8 @@
         try {
           sessionStorage.setItem(CAMERA_MODE_HMR_KEY, mode === CameraMode.THIRD_PERSON ? "THIRD_PERSON" : "FIRST_PERSON");
         } catch { /* non-critical */ }
+        // Report to parent so DimensionFlipProof's viewMode stays in sync
+        props.onViewModeChange?.(mode === CameraMode.THIRD_PERSON ? "third-person" : "first-person");
       }
     }}
     onRotationChange={(newYaw, newPitch) => {
@@ -1593,30 +1340,31 @@
 <!-- Post-processing: bloom, vignette, ACES tone mapping -->
 <MuseumPostProcessing />
 
-<!-- Lighting — per-wing ambient tint smoothly transitions as player moves -->
-<T.AmbientLight
-  intensity={currentWingTheme ? WING_AMBIENT[currentWingTheme].intensity : 0.4}
-  color={currentWingTheme ? WING_AMBIENT[currentWingTheme].color : "#c8b890"}
-/>
-<T.DirectionalLight
-  intensity={1.2}
-  position={[gridCenterX, 30, gridCenterZ]}
-  color="#fff0d0"
-/>
-<T.HemisphereLight
-  intensity={0.6}
-  color="#fff8e0"
-  groundColor="#2a2015"
-/>
+<!-- Per-room ambient fill lights — fixed pool of MAX_ROOM_LIGHTS slots.
+     Slots are always mounted (no shader recompilation). Unused slots have intensity=0. -->
+{#each roomLightPool as slot, i (i)}
+  <T.PointLight
+    position={[slot.x, WALL_HEIGHT - 0.5, slot.z]}
+    color={slot.color}
+    intensity={slot.intensity}
+    distance={slot.distance}
+    decay={2}
+  />
+{/each}
+
+<!-- Global baseline — dim enough that rooms define their own character,
+     bright enough that corridors and doorways aren't pitch black -->
+<T.AmbientLight intensity={0.15} color="#c8b890" />
+<T.HemisphereLight intensity={0.3} color="#fff8e0" groundColor="#2a2015" />
 
 <!-- Floor instanced meshes (one per color bucket) -->
 {#each floorMeshes as { mesh }}
-  <T is={mesh} />
+  <T is={mesh} receiveShadow />
 {/each}
 
 <!-- Wall instanced meshes (one per wing theme color) -->
 {#each wallMeshes as { mesh }}
-  <T is={mesh} />
+  <T is={mesh} castShadow receiveShadow />
 {/each}
 
 <!-- Ceiling — visible only in FPS so top-down view shows the floor plan -->
@@ -1625,7 +1373,7 @@
 {/if}
 
 <!-- Exhibit plaques: individually textured with readable content -->
-{#each visiblePlaques as plaque (`plaque-${plaque.tileX}-${plaque.tileY}`)}
+{#each visiblePlaques as plaque (plaque.id)}
   {@const plaqueOverride = overrideVersion >= 0 ? museumEditorOverrides.get(`plaque-${plaque.refId}`) : null}
   <MuseumPlaque3D
     worldX={plaqueOverride?.x ?? plaque.worldX}
@@ -1649,6 +1397,7 @@
       distance={4}
       angle={0.4}
       penumbra={0.5}
+      castShadow={false}
     />
   {:else}
     <T.PointLight
@@ -1664,10 +1413,10 @@
 {#each visibleCeilingLights as cLight (cLight.id)}
   <T.PointLight
     position={[cLight.x, WALL_HEIGHT - 0.3, cLight.z]}
-    intensity={4}
+    intensity={2.5}
     color="#e8ecf0"
-    distance={16}
-    decay={1}
+    distance={12}
+    decay={1.5}
   />
 {/each}
 
@@ -1681,6 +1430,7 @@
     wingTheme={torch.wingTheme}
     baseIntensity={torchLightSet.has(`${torch.x},${torch.z}`) ? 4 : 0}
     materials={torchMaterialCache.createInstance(FIXTURE_REGISTRY[torch.wingTheme].lightColor)}
+    castShadow={false}
   />
 {/each}
 
@@ -1701,12 +1451,12 @@
 
 <!-- Pedestal instanced mesh -->
 {#if pedestalMesh}
-  <T is={pedestalMesh} />
+  <T is={pedestalMesh} castShadow receiveShadow />
 {/if}
 
 <!-- Sign instanced mesh -->
 {#if signMesh}
-  <T is={signMesh} />
+  <T is={signMesh} castShadow receiveShadow />
 {/if}
 
 <!-- GLTF furniture models (Kenney CC0 kit) -->

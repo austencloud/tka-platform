@@ -56,25 +56,22 @@
     externalPitch?: number | null;
     /** Restrict which modes the V-key cycle includes. If omitted, all modes are allowed. */
     allowedModes?: CameraMode[];
+    /** When true, disable the V-key mode toggle (parent controls mode externally via Q cycle) */
+    disableModeToggle?: boolean;
   }
 
-  let {
-    destinationId,
-    avatarState,
-    physicsProvider = null,
-    enabled = true,
-    onModeChange,
-    moveSpeed = SCALE.WALK_SPEED,
-    sprintMultiplier = SCALE.SPRINT_MULTIPLIER,
-    jumpForce = SCALE.JUMP_VELOCITY,
-    gravity = Math.abs(SCALE.GRAVITY) * 2.5, // Amplified for game feel
-    onRotationChange,
-    initialYaw = 0,
-    initialPitch = 0.3,
-    externalYaw = null,
-    externalPitch = null,
-    allowedModes,
-  }: Props = $props();
+  const props: Props = $props();
+
+  // Convenience aliases for props used frequently (these are $derived, safe in closures)
+  const destinationId = $derived(props.destinationId);
+  const avatarState = $derived(props.avatarState);
+  const physicsProvider = $derived(props.physicsProvider ?? null);
+  const enabled = $derived(props.enabled ?? true);
+  const moveSpeed = $derived(props.moveSpeed ?? SCALE.WALK_SPEED);
+  const sprintMultiplier = $derived(props.sprintMultiplier ?? SCALE.SPRINT_MULTIPLIER);
+  const jumpForce = $derived(props.jumpForce ?? SCALE.JUMP_VELOCITY);
+  const gravity = $derived(props.gravity ?? Math.abs(SCALE.GRAVITY) * 2.5);
+  const allowedModes = $derived(props.allowedModes);
 
   // Derived: are we using physics-based movement?
   const usePhysics = $derived(physicsProvider !== null);
@@ -82,15 +79,19 @@
   const { renderer, camera, scene } = useThrelte();
 
   // Current camera mode — load from preferences once on init, not continuously.
-  const _initMode = cameraPreferences.getModeForDestination(destinationId);
-  console.log(`[CameraCtrl] INIT mode=${_initMode} destId=${destinationId}`);
-  let mode = $state<CameraMode>(_initMode);
+  // Access destinationId through $derived alias so the compiler tracks it reactively.
+  const _initMode = $derived(cameraPreferences.getModeForDestination(destinationId));
+  let mode = $state<CameraMode>(CameraMode.ORBIT);
+  // Sync mode from preferences when destination changes
+  $effect.pre(() => {
+    mode = _initMode;
+  });
 
   // Camera state (for game modes - orbit mode uses Scene3D's OrbitControls)
   // Use initial values from props for HMR restoration
   let yaw = $state(0);
   let pitch = $state(0);
-  $effect.pre(() => { yaw = initialYaw; pitch = initialPitch; });
+  $effect.pre(() => { yaw = props.initialYaw ?? 0; pitch = props.initialPitch ?? 0.3; });
   let isPointerLocked = $state(false);
 
   // Movement keys
@@ -112,6 +113,12 @@
   // Noclip mode state (synced with physics provider)
   let noclipEnabled = $state(false);
 
+  // Crouch camera offset — smoothly lerps between 0 (standing) and the delta
+  // between standing and crouching eye height so the viewpoint drops gradually.
+  let crouchHeightOffset = 0;
+  const CROUCH_HEIGHT_DROP = SCALE.EYE_HEIGHT - SCALE.CROUCH_EYE_HEIGHT; // ~0.65m
+  const CROUCH_LERP_SPEED = 8; // same responsiveness as camera damping
+
   // Scene bounds (used by kinematic path - physics uses colliders instead)
   const SCENE_BOUNDS = {
     minX: -50.0,  // 50 meters (large for exploration)
@@ -129,18 +136,14 @@
   const rayOrigin = new Vector3();
   const rayDirection = new Vector3();
   const desiredCamPos = new Vector3();
-  // Minimum distance to keep camera from terrain surface (prevents near-plane clipping)
-  const CAMERA_COLLISION_OFFSET = 0.5;
-  // Minimum camera distance from player (so we don't get stuck inside the player)
-  const MIN_CAMERA_DISTANCE = 0.8;
-
-  // Smoothed camera distance for third-person mode (prevents jitter at wall collisions).
-  // Instead of snapping instantly to the raycast-safe distance, we lerp toward it each frame.
-  // Pulling IN (wall hit) is fast so you don't clip through geometry.
-  // Pulling OUT (wall cleared) is slow so the camera doesn't oscillate at corridor junctions.
-  let smoothedCameraDistance = 3.0; // Must match SETTINGS.thirdPerson.distance
-  const CAMERA_LERP_IN = 0.25;   // Fast pull-in when wall detected
-  const CAMERA_LERP_OUT = 0.04;  // Slow pull-out when wall clears
+  // Spring arm camera collision (matches ecctrl/Unreal spring arm pattern)
+  const CAMERA_COLLISION_OFFSET = 0.3;
+  const MIN_CAMERA_DISTANCE = 0.5;
+  let smoothedCameraDistance = 5.0; // Must match SETTINGS.thirdPerson.distance
+  let desiredDistance = 5.0;        // User-controlled via scroll wheel
+  // Time-based lerp speeds (used with exponential decay for framerate independence)
+  const CAMERA_PULL_IN_SPEED = 10;   // Fast pull-in when wall detected (~100ms)
+  const CAMERA_RECOVERY_SPEED = 3;   // Slower recovery when wall clears (~333ms)
 
   // Smoothed camera POSITION for third-person mode (prevents jitter from yaw micro-changes,
   // avatar sub-frame movement, and raycast collision oscillation). Instead of snapping the
@@ -165,7 +168,10 @@
     lookSensitivity: SCALE.MOUSE_SENSITIVITY,
     // Third person
     thirdPerson: {
-      distance: 3.0,        // 3 meters behind avatar
+      distance: 5.0,        // 5 meters behind avatar (more environment focus)
+      minDistance: 1.5,      // Closest zoom
+      maxDistance: 10.0,     // Furthest zoom
+      zoomSpeed: 0.5,       // Meters per scroll tick
       height: 1.15,         // Camera 2m above feet = 2.0 - CAPSULE_HALF_EXTENT
       lookAtHeight: 0.35,   // Look at chest 1.2m above feet = 1.2 - CAPSULE_HALF_EXTENT
       minPitch: -1.2,       // Allow looking up ~69 degrees
@@ -188,7 +194,7 @@
       attempts++;
     } while (allowedModes && !allowedModes.includes(mode) && attempts < 3);
 
-    onModeChange?.(mode);
+    props.onModeChange?.(mode);
 
     // If entering orbit, exit pointer lock
     if (mode === CameraMode.ORBIT && isPointerLocked) {
@@ -200,7 +206,7 @@
     if (mode !== CameraMode.ORBIT) {
       cameraPreferences.setModeForDestination(destinationId, CameraMode.ORBIT);
       mode = CameraMode.ORBIT;
-      onModeChange?.(mode);
+      props.onModeChange?.(mode);
     }
   }
 
@@ -209,7 +215,8 @@
     if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
 
     // V key cycles camera mode (works without pointer lock)
-    if (e.code === "KeyV") {
+    // Disabled in museum context where Q handles the full view cycle
+    if (e.code === "KeyV" && !props.disableModeToggle) {
       e.preventDefault();
       cycleMode();
       return;
@@ -237,7 +244,7 @@
     if (isGameMode(mode)) {
       keys.add(e.code);
 
-      if (["KeyW", "KeyA", "KeyS", "KeyD", "Space", "ShiftLeft", "ShiftRight", "ControlLeft", "ControlRight", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.code)) {
+      if (["KeyW", "KeyA", "KeyS", "KeyD", "KeyC", "Space", "ShiftLeft", "ShiftRight", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.code)) {
         e.preventDefault();
       }
     }
@@ -275,8 +282,14 @@
   }
 
   function handleWheel(e: WheelEvent) {
-    // Orbit mode zoom is handled by Scene3D's OrbitControls
-    // This handler is no longer needed but kept for potential future use
+    if (mode !== CameraMode.THIRD_PERSON) return;
+    e.preventDefault();
+    const cfg = SETTINGS.thirdPerson;
+    const scrollDir = Math.sign(e.deltaY);
+    desiredDistance = Math.max(
+      cfg.minDistance,
+      Math.min(cfg.maxDistance, desiredDistance + scrollDir * cfg.zoomSpeed)
+    );
   }
 
   function handlePointerDown(e: PointerEvent) {
@@ -350,14 +363,16 @@
     }
 
     // Always notify parent of current mode on click.
-    onModeChange?.(mode);
+    props.onModeChange?.(mode);
 
     const canLock = isGameMode(mode) && inputCaps.canUsePointerLock();
     console.log(`[CameraCtrl] POINTER LOCK CHECK: isGameMode=${isGameMode(mode)} canUsePointerLock=${inputCaps.canUsePointerLock()} → requesting=${canLock}`);
     if (canLock) {
       const canvas = cachedCanvas ?? renderer.current?.domElement;
       console.log(`[CameraCtrl] REQUESTING POINTER LOCK on canvas=${!!canvas}`);
-      canvas?.requestPointerLock();
+      if (canvas?.isConnected) {
+        try { canvas.requestPointerLock(); } catch { /* canvas detached during navigation */ }
+      }
     }
   }
 
@@ -407,8 +422,10 @@
     // Auto-request pointer lock if mounting into a game mode (e.g., after museum Q-flip).
     // The original Q keypress was a valid user gesture, and browsers allow pointer lock
     // requests within a short window after the gesture. If it fails, the user can click.
-    if (isGameMode(mode) && !isPointerLocked && inputCaps.canUsePointerLock()) {
-      canvas.requestPointerLock();
+    // Guard: during SvelteKit client-side navigation, the canvas may be detached from
+    // the document, causing WrongDocumentError.
+    if (isGameMode(mode) && !isPointerLocked && inputCaps.canUsePointerLock() && canvas.isConnected) {
+      try { canvas.requestPointerLock(); } catch { /* canvas detached during navigation */ }
     }
 
     // Initialize input capabilities tracking
@@ -458,20 +475,22 @@
 
   // Notify parent of rotation changes (for MCP bridge)
   $effect(() => {
-    onRotationChange?.(yaw, pitch);
+    props.onRotationChange?.(yaw, pitch);
   });
 
   // Handle external rotation changes (from MCP)
   $effect(() => {
-    if (externalYaw !== null && externalYaw !== undefined) {
-      yaw = externalYaw;
+    const extYaw = props.externalYaw;
+    if (extYaw !== null && extYaw !== undefined) {
+      yaw = extYaw;
     }
   });
 
   $effect(() => {
-    if (externalPitch !== null && externalPitch !== undefined) {
+    const extPitch = props.externalPitch;
+    if (extPitch !== null && extPitch !== undefined) {
       const config = mode === CameraMode.FIRST_PERSON ? SETTINGS.firstPerson : SETTINGS.thirdPerson;
-      pitch = Math.max(config.minPitch, Math.min(config.maxPitch, externalPitch));
+      pitch = Math.max(config.minPitch, Math.min(config.maxPitch, extPitch));
     }
   });
 
@@ -523,7 +542,7 @@
                        (keys.has("KeyA") || keys.has("ArrowLeft") ? 1 : 0);
     const isSprinting = keys.has("ShiftLeft") || keys.has("ShiftRight");
     const isJumping = keys.has("Space");
-    const isCrouching = keys.has("ControlLeft") || keys.has("ControlRight");
+    const isCrouching = keys.has("KeyC");
     const hasMovementInput = forwardInput !== 0 || strafeInput !== 0;
 
     // === UNIFIED DIRECTION CALCULATION ===
@@ -542,8 +561,12 @@
     // For noclip: get the actual camera facing direction (includes pitch)
     cam.getWorldDirection(_forward3D);
 
-    // Calculate speed
-    const speed = isSprinting ? moveSpeed * sprintMultiplier : moveSpeed;
+    // Calculate speed (crouch overrides sprint — can't sprint while crouching)
+    const speed = isCrouching
+      ? moveSpeed * SCALE.CROUCH_MULTIPLIER
+      : isSprinting
+        ? moveSpeed * sprintMultiplier
+        : moveSpeed;
 
     // Check noclip state early so we can use the right forward vector
     const isNoclip = usePhysics && physicsProvider?.isNoclipEnabled?.() || false;
@@ -655,6 +678,9 @@
       avatarState.setMoveInput({ x: strafeInput, z: forwardInput });
       avatarState.isCrouching = isCrouching;
 
+      // Swap physics collider height when crouch state changes
+      physicsProvider?.setCrouch?.(isCrouching);
+
       // Avatar facing in third-person:
       // - Forward (W) or forward+strafe: avatar turns to face movement direction
       // - Backward only (S): avatar keeps facing forward, plays backward walk animation
@@ -677,6 +703,11 @@
       // This produces smooth body rotation in third-person mode.
       avatarState.updateLocomotion?.(delta);
 
+      // Smoothly interpolate crouch camera offset (framerate-independent exponential decay)
+      const crouchTarget = isCrouching ? CROUCH_HEIGHT_DROP : 0;
+      const crouchBlend = 1 - Math.exp(-CROUCH_LERP_SPEED * delta);
+      crouchHeightOffset += (crouchTarget - crouchHeightOffset) * crouchBlend;
+
       if (mode === CameraMode.FIRST_PERSON) {
         // First-person: camera IS the avatar's eyes
         // Avatar always faces where you're looking — snap, don't lerp
@@ -684,7 +715,7 @@
 
         const cfg = SETTINGS.firstPerson;
         const camX = targetX + Math.sin(yaw) * cfg.forwardOffset;
-        const camY = targetY + cfg.height;
+        const camY = targetY + cfg.height - crouchHeightOffset;
         const camZ = targetZ + Math.cos(yaw) * cfg.forwardOffset;
 
         camera.current.position.set(camX, camY, camZ);
@@ -704,18 +735,20 @@
         const cfg = SETTINGS.thirdPerson;
         const cosPitch = Math.cos(pitch);
 
-        // The ideal (uncollided) distance from the player
-        let targetDistance = cfg.distance;
+        // The ideal (uncollided) distance from the player (user-adjustable via scroll)
+        let targetDistance = desiredDistance;
 
         // Raycast from player to desired camera position to detect terrain collision
-        if (scene.current) {
+        // Threlte 8.x: scene may be a direct Scene object or a ref with .current
+        const sceneToCast = (scene as any)?.current ?? scene;
+        if (sceneToCast?.children) {
           // Start ray from player's head area (slightly above center)
           rayOrigin.set(targetX, targetY + cfg.lookAtHeight, targetZ);
 
           // Desired camera position at full distance
-          const desiredCamX = targetX - Math.sin(yaw) * cfg.distance * cosPitch;
-          const desiredCamY = targetY + cfg.height + Math.sin(pitch) * cfg.distance * 0.5;
-          const desiredCamZ = targetZ - Math.cos(yaw) * cfg.distance * cosPitch;
+          const desiredCamX = targetX - Math.sin(yaw) * desiredDistance * cosPitch;
+          const desiredCamY = targetY + cfg.height + Math.sin(pitch) * desiredDistance * 0.5;
+          const desiredCamZ = targetZ - Math.cos(yaw) * desiredDistance * cosPitch;
           desiredCamPos.set(desiredCamX, desiredCamY, desiredCamZ);
 
           // Direction from player to camera
@@ -726,33 +759,30 @@
           cameraRaycaster.far = distanceToCamera;
 
           // Raycast against all meshes in the scene
-          const intersects = cameraRaycaster.intersectObjects(scene.current.children, true);
+          const intersects = cameraRaycaster.intersectObjects(sceneToCast.children, true);
 
-          // Find first terrain/solid mesh intersection (ignore non-physical objects)
+          // Only collide with wall meshes tagged with userData.cameraCollider.
+          // This prevents pedestals, signs, plaques, furniture, portals, and
+          // other scene objects from permanently clamping the camera distance.
           for (const intersection of intersects) {
-            if (intersection.object instanceof Mesh && intersection.object.visible) {
-              // Don't collide with the avatar itself
-              const objName = intersection.object.name || "";
-              const parentName = intersection.object.parent?.name || "";
-              if (objName.includes("avatar") || parentName.includes("avatar") ||
-                  objName.includes("Avatar") || parentName.includes("Avatar")) {
-                continue;
-              }
+            if (!intersection.object.userData?.cameraCollider) continue;
+            if (!intersection.object.visible) continue;
 
-              // Hit terrain — clamp the target distance so camera stays in front of the wall
-              const safeDistance = Math.max(intersection.distance - CAMERA_COLLISION_OFFSET, MIN_CAMERA_DISTANCE);
-              targetDistance = Math.min(targetDistance, safeDistance);
-              break;
-            }
+            const safeDistance = Math.max(intersection.distance - CAMERA_COLLISION_OFFSET, MIN_CAMERA_DISTANCE);
+            targetDistance = Math.min(targetDistance, safeDistance);
+            break;
           }
         }
 
-        // Smooth the camera distance: fast pull-in, slow pull-out
-        const lerpFactor = targetDistance < smoothedCameraDistance ? CAMERA_LERP_IN : CAMERA_LERP_OUT;
-        smoothedCameraDistance += (targetDistance - smoothedCameraDistance) * lerpFactor;
+        // Spring arm lerp: asymmetric, time-based (framerate independent).
+        // Pull-in is fast (avoid clipping), recovery is slower (feels natural).
+        const speed = targetDistance < smoothedCameraDistance
+          ? CAMERA_PULL_IN_SPEED
+          : CAMERA_RECOVERY_SPEED;
+        smoothedCameraDistance += (targetDistance - smoothedCameraDistance) * (1 - Math.exp(-speed * delta));
 
         // Clamp to valid range
-        smoothedCameraDistance = Math.max(MIN_CAMERA_DISTANCE, Math.min(cfg.distance, smoothedCameraDistance));
+        smoothedCameraDistance = Math.max(MIN_CAMERA_DISTANCE, Math.min(desiredDistance, smoothedCameraDistance));
 
         // Place camera at smoothed distance along the yaw/pitch direction
         const finalCamX = targetX - Math.sin(yaw) * smoothedCameraDistance * cosPitch;
