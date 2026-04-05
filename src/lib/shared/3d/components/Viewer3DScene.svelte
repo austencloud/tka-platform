@@ -98,7 +98,11 @@
   // Mirror mode: swap blue↔red AND mirror X positions so the performer
   // appears to do the same visual shapes from the front (face to face).
   // Your red = their red, your left = their right.
-  const isMirror = $derived(viewer3DState.mirrorMode);
+  // Mirror mode is disabled in dual-wheel — Learn/Mirror doesn't apply
+  // when viewing side-on with independent wheel planes per hand.
+  const isMirror = $derived(
+    viewer3DState.mirrorMode && avatarState.planeMode !== PlaneMode.DUAL_WHEEL
+  );
 
   function mirrorPropState(state: PropState3D | null): PropState3D | null {
     if (!state) return null;
@@ -115,10 +119,22 @@
 
   const rawBlue = $derived(avatarState.bluePropState);
   const rawRed = $derived(avatarState.redPropState);
+  const isDualWheelMode = $derived(avatarState.planeMode === PlaneMode.DUAL_WHEEL);
 
-  // In mirror mode: swap hands AND mirror positions
-  const bluePropState = $derived(isMirror ? mirrorPropState(rawRed) : rawBlue);
-  const redPropState = $derived(isMirror ? mirrorPropState(rawBlue) : rawRed);
+  // Dual-wheel: swap prop states so left hand (bluePropState) gets the left-side
+  // prop (rawRed = visual blue at -X) and right hand (redPropState) gets the
+  // right-side prop (rawBlue = visual red at +X). No avatar rotation needed.
+  // Mirror mode (disabled in dual-wheel): swap hands AND mirror positions.
+  const bluePropState = $derived(
+    isMirror ? mirrorPropState(rawRed) :
+    isDualWheelMode ? rawRed :
+    rawBlue
+  );
+  const redPropState = $derived(
+    isMirror ? mirrorPropState(rawBlue) :
+    isDualWheelMode ? rawBlue :
+    rawRed
+  );
 
   // Resolve prop type: prefer sequence's intended prop, fall back to settings
   const bluePropType = $derived.by((): PropType => {
@@ -268,13 +284,13 @@
 {/if}
 
 <!-- 3D Effects Orchestrator (trails, future: fire/LED/sparkle) -->
+<!-- Note: anchor refs not yet wired here — Task 9 will replace this with
+     PerformerRig which provides bluePropAnchorRef/redPropAnchorRef. Until
+     then, TipPositionBridge3D uses the fallback (propState.worldPosition). -->
 <EffectOrchestrator3D
   {bluePropState}
   {redPropState}
   {isPlaying}
   staffHalfLength={userProportionsState.staffLength / 2}
-  {avatarPosition}
-  {facingAngle}
-  gridOffset={propGridOffset}
   {globalTipEffectMap}
 />

@@ -13,12 +13,13 @@
 
   import { useThrelte, useTask } from "@threlte/core";
   import { onDestroy } from "svelte";
-  import { Vector3 } from "three";
+  import { Vector3, Color, Group } from "three";
   import { container } from "$lib/shared/di";
   import Trail3D from "./trails/Trail3D.svelte";
-  import Led3D from "./led/Led3D.svelte";
-  import type { LedTipInput } from "./led/LedRenderer3D";
-  import { DynamicLightManager } from "./lighting/DynamicLightManager";
+  import { LedRenderer3D, type LedTipInput } from "./led/LedRenderer3D";
+  import { CharcoalRenderer3D, type CharcoalTipInput } from "./charcoal/CharcoalRenderer3D";
+  import { FireRenderer3D, type FireTipInput } from "./fire/FireRenderer3D";
+  import { DynamicLightManager, type LightHandle } from "./lighting/DynamicLightManager";
   import { TipPositionBridge3D } from "./TipPositionBridge3D";
   import {
     resolveEffect,
@@ -44,9 +45,8 @@
     staffHalfLength?: number;
     tipEffectMap?: TipEffectMap;
     globalTipEffectMap?: TipEffectMap;
-    avatarPosition?: { x: number; y: number; z: number };
-    facingAngle?: number;
-    gridOffset?: number;
+    bluePropAnchorRef?: Group;
+    redPropAnchorRef?: Group;
     trailConfig?: {
       color?: string;
       width?: number;
@@ -63,21 +63,41 @@
     staffHalfLength = 0.5,
     tipEffectMap,
     globalTipEffectMap = {},
-    avatarPosition = { x: 0, y: 0, z: 0 },
-    facingAngle = 0,
-    gridOffset = 0,
+    bluePropAnchorRef,
+    redPropAnchorRef,
     trailConfig = {},
   }: Props = $props();
 
-  const { scene } = useThrelte();
+  const { scene, camera } = useThrelte();
   const qualityTierDetector = container.items.qualityTierDetector;
   const tipBridge = new TipPositionBridge3D();
+
+  // LED renderers managed directly (bypasses Svelte prop propagation timing)
+  let blueLedRenderer: LedRenderer3D | null = null;
+  let redLedRenderer: LedRenderer3D | null = null;
+
+  let blueLedLightHandle: LightHandle | null = null;
+  let redLedLightHandle: LightHandle | null = null;
+  const ledCentroid = new Vector3();
+  const ledColor = new Color();
+
+  // Charcoal renderer (single instance — all tips share one particle pool)
+  let charcoalRenderer: CharcoalRenderer3D | null = null;
+
+  // Fire renderer (single instance — all tips share one particle pool)
+  let fireRenderer: FireRenderer3D | null = null;
+
 
   // Reactive so it responds to runtime tier changes (e.g. user override or
   // auto-downgrade after frame budget miss).
   const tierConfig: QualityTierConfig = $derived(
     TIER_CONFIGS[qualityTierDetector.currentTier],
   );
+
+  // Threlte's scene.current is only available inside reactive contexts ($effect),
+  // NOT inside useTask imperative callbacks. Capture the reference here so
+  // useTask can use it for LED renderer initialization.
+  let sceneRef: import("three").Scene | null = null;
 
   // Scene-scoped light pool. Deferred until scene.current is available
   // (Threlte's scene ref may not be populated at component construction time).
@@ -87,6 +107,8 @@
     const s = scene.current;
     const cfg = tierConfig;
     if (!s) return;
+
+    sceneRef = s;
 
     // Dispose previous manager if it exists
     if (lightManager) {
@@ -106,38 +128,34 @@
     { position: null, effect: "none" },
   ]);
 
-  // LED-specific tip inputs (includes color + velocity for the renderer)
-  let blueLedTips = $state<LedTipInput[]>([]);
-  let redLedTips = $state<LedTipInput[]>([]);
-
-  let _debugFrameCount = 0;
+  // Mutable arrays for effect tips — updated directly in useTask, read by
+  // renderers in the SAME frame tick (bypasses Svelte's batched prop updates).
+  const blueLedTips: LedTipInput[] = [];
+  const redLedTips: LedTipInput[] = [];
+  const charcoalTips: CharcoalTipInput[] = [];
+  const fireTips: FireTipInput[] = [];
 
   useTask(() => {
-    // DEBUG: log state every 60 frames (~1 second)
-    if (_debugFrameCount % 60 === 0) {
-      const mapKeys = Object.keys(globalTipEffectMap ?? {});
-      const firstEffect = mapKeys.length > 0 ? (globalTipEffectMap as any)[mapKeys[0]!]?.effect : "empty";
-      console.log(`[Orchestrator] frame=${_debugFrameCount} isPlaying=${isPlaying} map=${firstEffect} blue=${bluePropState ? 'yes' : 'no'} red=${redPropState ? 'yes' : 'no'} blueLeds=${blueLedTips.length} redLeds=${redLedTips.length}`);
-    }
-    _debugFrameCount++;
-
     if (!isPlaying) {
       tipBridge.reset();
-      blueLedTips = [];
-      redLedTips = [];
+      blueLedRenderer?.reset();
+      redLedRenderer?.reset();
+      charcoalRenderer?.reset();
+      fireRenderer?.reset();
       return;
     }
 
     const dt = 1 / 60;
-    const transforms = { avatarPosition, facingAngle, gridOffset };
-    const newBlueLeds: LedTipInput[] = [];
-    const newRedLeds: LedTipInput[] = [];
+    blueLedTips.length = 0;
+    redLedTips.length = 0;
+    charcoalTips.length = 0;
+    fireTips.length = 0;
 
     // Note: in the 3D viewer, bluePropState visually corresponds to the red-colored
     // prop and vice versa (the naming follows the avatar's perspective, not the viewer's).
     // Swap so trail colors match the visible prop colors.
     if (redPropState) {
-      const result = tipBridge.update(0, redPropState, staffHalfLength, dt, transforms);
+      const result = tipBridge.update(0, redPropState, staffHalfLength, dt, bluePropAnchorRef);
       blueTipData = result.tips.map((tip, tipIndex) => {
         const resolved = resolveEffect(
           0,
@@ -147,14 +165,32 @@
         );
         const effect = resolved === "none" ? "trails" : resolved;
 
-        // Collect LED tips
         if (effect === "led") {
-          newBlueLeds.push({
+          blueLedTips.push({
             position: new Vector3(tip.position.x, tip.position.y, tip.position.z),
             r: LED_BLUE_COLOR.r,
             g: LED_BLUE_COLOR.g,
             b: LED_BLUE_COLOR.b,
             brightness: 1.0,
+            velocityX: tip.velocity.x,
+            velocityY: tip.velocity.y,
+            velocityZ: tip.velocity.z,
+            speed: tip.speed,
+          });
+        } else if (effect === "charcoal") {
+          charcoalTips.push({
+            position: new Vector3(tip.position.x, tip.position.y, tip.position.z),
+            velocityX: tip.velocity.x,
+            velocityY: tip.velocity.y,
+            velocityZ: tip.velocity.z,
+            speed: tip.speed,
+            jerk: tip.jerk.x * tip.jerk.x + tip.jerk.y * tip.jerk.y + tip.jerk.z * tip.jerk.z > 0
+              ? Math.sqrt(tip.jerk.x * tip.jerk.x + tip.jerk.y * tip.jerk.y + tip.jerk.z * tip.jerk.z)
+              : 0,
+          });
+        } else if (effect === "fire") {
+          fireTips.push({
+            position: new Vector3(tip.position.x, tip.position.y, tip.position.z),
             velocityX: tip.velocity.x,
             velocityY: tip.velocity.y,
             velocityZ: tip.velocity.z,
@@ -170,7 +206,7 @@
     }
 
     if (bluePropState) {
-      const result = tipBridge.update(1, bluePropState, staffHalfLength, dt, transforms);
+      const result = tipBridge.update(1, bluePropState, staffHalfLength, dt, redPropAnchorRef);
       redTipData = result.tips.map((tip, tipIndex) => {
         const resolved = resolveEffect(
           1,
@@ -180,14 +216,32 @@
         );
         const effect = resolved === "none" ? "trails" : resolved;
 
-        // Collect LED tips
         if (effect === "led") {
-          newRedLeds.push({
+          redLedTips.push({
             position: new Vector3(tip.position.x, tip.position.y, tip.position.z),
             r: LED_RED_COLOR.r,
             g: LED_RED_COLOR.g,
             b: LED_RED_COLOR.b,
             brightness: 1.0,
+            velocityX: tip.velocity.x,
+            velocityY: tip.velocity.y,
+            velocityZ: tip.velocity.z,
+            speed: tip.speed,
+          });
+        } else if (effect === "charcoal") {
+          charcoalTips.push({
+            position: new Vector3(tip.position.x, tip.position.y, tip.position.z),
+            velocityX: tip.velocity.x,
+            velocityY: tip.velocity.y,
+            velocityZ: tip.velocity.z,
+            speed: tip.speed,
+            jerk: tip.jerk.x * tip.jerk.x + tip.jerk.y * tip.jerk.y + tip.jerk.z * tip.jerk.z > 0
+              ? Math.sqrt(tip.jerk.x * tip.jerk.x + tip.jerk.y * tip.jerk.y + tip.jerk.z * tip.jerk.z)
+              : 0,
+          });
+        } else if (effect === "fire") {
+          fireTips.push({
+            position: new Vector3(tip.position.x, tip.position.y, tip.position.z),
             velocityX: tip.velocity.x,
             velocityY: tip.velocity.y,
             velocityZ: tip.velocity.z,
@@ -202,8 +256,69 @@
       });
     }
 
-    blueLedTips = newBlueLeds;
-    redLedTips = newRedLeds;
+    // LED rendering — direct imperative update in the same frame tick.
+    // scene.current is NOT available inside useTask in this Threlte version.
+    // Get the scene from the camera's parent chain instead.
+    const cam = camera.current;
+    if (cam) {
+      // Walk up to the root Scene object
+      let root = cam.parent;
+      while (root?.parent) root = root.parent;
+
+      if (root) {
+        // Capture scene ref for cleanup
+        if (!sceneRef) sceneRef = root as import("three").Scene;
+
+        // Initialize LED renderers lazily
+        if (!blueLedRenderer) {
+          blueLedRenderer = new LedRenderer3D(qualityTierDetector.currentTier);
+          blueLedRenderer.initialize(root as import("three").Scene);
+        }
+        if (!redLedRenderer) {
+          redLedRenderer = new LedRenderer3D(qualityTierDetector.currentTier);
+          redLedRenderer.initialize(root as import("three").Scene);
+        }
+        const now = performance.now() / 1000;
+
+        // Update blue LED renderer
+        if (blueLedTips.length > 0) {
+          blueLedRenderer.update(blueLedTips, cam, now);
+        } else {
+          blueLedRenderer.reset();
+        }
+
+        // Update red LED renderer
+        if (redLedTips.length > 0) {
+          redLedRenderer.update(redLedTips, cam, now);
+        } else {
+          redLedRenderer.reset();
+        }
+
+        // Charcoal renderer (single pool for all tips)
+        if (!charcoalRenderer) {
+          charcoalRenderer = new CharcoalRenderer3D(qualityTierDetector.currentTier);
+          charcoalRenderer.initialize(root as import("three").Scene);
+        }
+
+        if (charcoalTips.length > 0) {
+          charcoalRenderer.update(charcoalTips, dt);
+        } else {
+          charcoalRenderer.reset();
+        }
+
+        // Fire renderer
+        if (!fireRenderer) {
+          fireRenderer = new FireRenderer3D(qualityTierDetector.currentTier);
+          fireRenderer.initialize(root as import("three").Scene);
+        }
+
+        if (fireTips.length > 0) {
+          fireRenderer.update(fireTips, dt);
+        } else {
+          fireRenderer.reset();
+        }
+      }
+    }
   });
 
   // Filter to only tips that have the "trails" effect assigned and a valid position.
@@ -223,6 +338,10 @@
   onDestroy(() => {
     lightManager?.dispose();
     tipBridge.reset();
+    blueLedRenderer?.dispose();
+    redLedRenderer?.dispose();
+    charcoalRenderer?.dispose();
+    fireRenderer?.dispose();
   });
 </script>
 
@@ -256,18 +375,7 @@
   />
 {/each}
 
-<!-- LED effects (always mounted — component handles empty tips internally) -->
-<Led3D
-  tips={blueLedTips}
-  propId="blue"
-  enabled={isPlaying}
-  qualityTier={qualityTierDetector.currentTier}
-  {lightManager}
-/>
-<Led3D
-  tips={redLedTips}
-  propId="red"
-  enabled={isPlaying}
-  qualityTier={qualityTierDetector.currentTier}
-  {lightManager}
-/>
+<!-- LED effects are managed imperatively by the orchestrator's useTask
+     (LedRenderer3D instances added directly to the Three.js scene).
+     This bypasses Svelte's batched prop propagation so LED data flows
+     in the same frame tick as the tip position computation. -->

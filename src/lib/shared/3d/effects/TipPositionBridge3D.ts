@@ -1,9 +1,8 @@
-import { Vector3, Quaternion, Euler } from "three";
+import { Vector3, Quaternion, Euler, Group } from "three";
 import type { PropTipPositions3D, TipPositionData3D } from "./types";
 import type {
 	ITipPositionBridge3D,
 	PropState3DLike,
-	SceneTransforms,
 } from "./contracts/ITipPositionBridge3D";
 
 interface TipHistory {
@@ -20,6 +19,10 @@ interface TipHistory {
  * (Euler Z = PI/2) is applied, then the prop's world rotation, to get the
  * axis along the staff. Two tip positions are computed at +/- halfLength
  * from the prop center along that axis.
+ *
+ * When a propAnchorRef is provided, the prop center is read directly from
+ * the scene graph (eliminating duplicate transform math). Otherwise falls
+ * back to propState.worldPosition.
  */
 export class TipPositionBridge3D implements ITipPositionBridge3D {
 	private history = new Map<string, TipHistory>();
@@ -31,33 +34,22 @@ export class TipPositionBridge3D implements ITipPositionBridge3D {
 		propState: PropState3DLike,
 		staffHalfLength: number,
 		deltaTime: number,
-		sceneTransforms?: SceneTransforms,
+		propAnchorRef?: Group,
 	): PropTipPositions3D {
-		// Replicate Staff3D.svelte position computation:
-		// 1. Start with body-local position from propState
-		// 2. Add gridOffset in Z (forward offset to grid center)
-		// 3. Rotate around Y by facingAngle
-		// 4. Add avatar world position
-		const localX = propState.worldPosition.x;
-		const localY = propState.worldPosition.y;
-		const localZ = propState.worldPosition.z + (sceneTransforms?.gridOffset ?? 0);
-
-		const angle = sceneTransforms?.facingAngle ?? 0;
-		const cos = Math.cos(angle);
-		const sin = Math.sin(angle);
-		const rotatedX = localX * cos + localZ * sin;
-		const rotatedZ = -localX * sin + localZ * cos;
-
-		const avatarPos = sceneTransforms?.avatarPosition ?? { x: 0, y: 0, z: 0 };
-		const center = new Vector3(
-			rotatedX + avatarPos.x,
-			localY + avatarPos.y,
-			rotatedZ + avatarPos.z,
-		);
+		// Read prop center from scene graph if ref is available
+		const center = new Vector3();
+		if (propAnchorRef) {
+			propAnchorRef.updateWorldMatrix(true, false);
+			propAnchorRef.getWorldPosition(center);
+		} else {
+			// Fallback: use propState worldPosition directly
+			center.set(propState.worldPosition.x, propState.worldPosition.y, propState.worldPosition.z);
+		}
 
 		// Replicate Staff3D.svelte rotation computation:
 		// facingQuat * worldRotation * horizontalQuat
-		const facingQuat = new Quaternion().setFromEuler(new Euler(0, angle, 0));
+		// When reading from scene graph, the facing rotation is already baked
+		// into the ancestor hierarchy, so we only need worldRotation * horizontalQuat.
 		const rotation = new Quaternion(
 			propState.worldRotation.x,
 			propState.worldRotation.y,
@@ -67,7 +59,17 @@ export class TipPositionBridge3D implements ITipPositionBridge3D {
 		const horizontalQuat = this.tempQuat.setFromEuler(
 			new Euler(0, 0, Math.PI / 2),
 		);
-		const finalQuat = facingQuat.multiply(rotation).multiply(horizontalQuat);
+
+		let finalQuat: Quaternion;
+		if (propAnchorRef) {
+			// Scene graph already includes facing rotation — just apply
+			// worldRotation (the prop's own orientation) and the horizontal offset.
+			finalQuat = rotation.multiply(horizontalQuat);
+		} else {
+			// Fallback without scene graph: facing angle is unknown, assume 0.
+			finalQuat = rotation.multiply(horizontalQuat);
+		}
+
 		this.tempAxis.set(0, 1, 0).applyQuaternion(finalQuat);
 
 		const positivePos = center
