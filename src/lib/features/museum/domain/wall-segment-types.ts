@@ -109,10 +109,15 @@ export function computeRoomDimensions(room: {
 	const eastLen = computeWallLength(room.walls.east);
 	const westLen = computeWallLength(room.walls.west);
 
-	const w =
-		Math.max(northLen, southLen, room.minInteriorWidth ?? 0) + 2;
-	const h =
-		Math.max(eastLen, westLen, room.minInteriorHeight ?? 0) + 2;
+	// Scale factor: makes ALL rooms proportionally larger.
+	// 1.0 = original size, 1.5 = 50% bigger, 2.0 = double.
+	const ROOM_SCALE = 1.5;
+
+	const baseW = Math.max(northLen, southLen, room.minInteriorWidth ?? 0);
+	const baseH = Math.max(eastLen, westLen, room.minInteriorHeight ?? 0);
+
+	const w = Math.ceil(baseW * ROOM_SCALE) + 2;
+	const h = Math.ceil(baseH * ROOM_SCALE) + 2;
 
 	return { w, h };
 }

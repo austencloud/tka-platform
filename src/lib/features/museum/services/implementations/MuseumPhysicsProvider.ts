@@ -38,6 +38,9 @@ export class MuseumPhysicsProvider implements PhysicsProvider {
 	private position: Vector3;
 	private velocity: Vector3 = { x: 0, y: 0, z: 0 };
 
+	/** When true, movePlayer ignores XZ — animation drives XZ via applyRootMotion instead. */
+	rootMotionEnabled = false;
+
 	constructor(
 		private grid: MuseumGrid,
 		private tileSize: number,
@@ -73,26 +76,32 @@ export class MuseumPhysicsProvider implements PhysicsProvider {
 	}
 
 	movePlayer(desiredMovement: Vector3, deltaTime: number): void {
-		const newX = this.position.x + desiredMovement.x;
-		const newZ = this.position.z + desiredMovement.z;
-
-		// Convert displacement-per-frame to velocity in units/sec
-		// (UCC passes speed*delta as desiredMovement, so divide back out)
 		const dt = deltaTime > 0 ? deltaTime : 1 / 60;
 
-		// XZ collision: try full, then wall-slide per axis
-		if (this.isWalkableAt(newX, newZ)) {
-			this.position.x = newX;
-			this.position.z = newZ;
-			this.velocity = { x: desiredMovement.x / dt, y: desiredMovement.y / dt, z: desiredMovement.z / dt };
-		} else if (this.isWalkableAt(newX, this.position.z)) {
-			this.position.x = newX;
-			this.velocity = { x: desiredMovement.x / dt, y: desiredMovement.y / dt, z: 0 };
-		} else if (this.isWalkableAt(this.position.x, newZ)) {
-			this.position.z = newZ;
-			this.velocity = { x: 0, y: desiredMovement.y / dt, z: desiredMovement.z / dt };
-		} else {
+		if (this.rootMotionEnabled) {
+			// Root motion mode: ignore XZ from code — animation drives XZ
+			// via applyRootMotion(). Zero XZ velocity here; applyRootMotion
+			// will set accurate XZ velocity when it runs.
 			this.velocity = { x: 0, y: desiredMovement.y / dt, z: 0 };
+		} else {
+			// Code-driven mode: apply XZ from UCC/top-down input
+			const newX = this.position.x + desiredMovement.x;
+			const newZ = this.position.z + desiredMovement.z;
+
+			// XZ collision: try full, then wall-slide per axis
+			if (this.isWalkableAt(newX, newZ)) {
+				this.position.x = newX;
+				this.position.z = newZ;
+				this.velocity = { x: desiredMovement.x / dt, y: desiredMovement.y / dt, z: desiredMovement.z / dt };
+			} else if (this.isWalkableAt(newX, this.position.z)) {
+				this.position.x = newX;
+				this.velocity = { x: desiredMovement.x / dt, y: desiredMovement.y / dt, z: 0 };
+			} else if (this.isWalkableAt(this.position.x, newZ)) {
+				this.position.z = newZ;
+				this.velocity = { x: 0, y: desiredMovement.y / dt, z: desiredMovement.z / dt };
+			} else {
+				this.velocity = { x: 0, y: desiredMovement.y / dt, z: 0 };
+			}
 		}
 
 		// Y movement: accept UCC's jump/gravity calculations, clamp at ground
@@ -100,6 +109,33 @@ export class MuseumPhysicsProvider implements PhysicsProvider {
 		if (this.position.y < STANDING_Y) {
 			this.position.y = STANDING_Y;
 		}
+	}
+
+	/**
+	 * Apply animation-driven XZ movement (root motion). Same collision
+	 * logic as movePlayer, but only handles XZ — Y stays physics-driven.
+	 * The delta is already in world space (caller rotates by facing angle).
+	 */
+	applyRootMotion(worldDelta: { x: number; z: number }): void {
+		const prevX = this.position.x;
+		const prevZ = this.position.z;
+		const newX = prevX + worldDelta.x;
+		const newZ = prevZ + worldDelta.z;
+
+		// Wall-slide collision (same as movePlayer)
+		if (this.isWalkableAt(newX, newZ)) {
+			this.position.x = newX;
+			this.position.z = newZ;
+		} else if (this.isWalkableAt(newX, this.position.z)) {
+			this.position.x = newX;
+		} else if (this.isWalkableAt(this.position.x, newZ)) {
+			this.position.z = newZ;
+		}
+
+		// Compute velocity from actual displacement (for speed reporting)
+		const dt = 1 / 60; // approximate frame time
+		this.velocity.x = (this.position.x - prevX) / dt;
+		this.velocity.z = (this.position.z - prevZ) / dt;
 	}
 
 	getPlayerPosition(): Vector3 {

@@ -39,6 +39,8 @@
     wingTheme?: WingTheme;
     /** Pre-compiled materials from TorchMaterialCache — avoids shader compilation per torch */
     materials: TorchMaterials;
+    /** Enable shadow casting on the point light (expensive — use sparingly) */
+    castShadow?: boolean;
   }
 
   const props: Props = $props();
@@ -150,9 +152,9 @@
     // Animate embers
     if (EMBER_COUNT > 0) {
       for (let i = 0; i < EMBER_COUNT; i++) {
-        emberPositions[i * 3] += (emberDrifts[i * 2] ?? 0) * delta;
-        emberPositions[i * 3 + 1] += (emberSpeeds[i] ?? 0) * delta;
-        emberPositions[i * 3 + 2] += (emberDrifts[i * 2 + 1] ?? 0) * delta;
+        emberPositions[i * 3] = (emberPositions[i * 3] ?? 0) + (emberDrifts[i * 2] ?? 0) * delta;
+        emberPositions[i * 3 + 1] = (emberPositions[i * 3 + 1] ?? 0) + (emberSpeeds[i] ?? 0) * delta;
+        emberPositions[i * 3 + 2] = (emberPositions[i * 3 + 2] ?? 0) + (emberDrifts[i * 2 + 1] ?? 0) * delta;
         if (emberPositions[i * 3 + 1]! > 0.6) {
           resetEmber(i, 0);
           emberDrifts[i * 2] = (Math.random() - 0.5) * 0.15;
@@ -231,5 +233,11 @@
     color={config.lightColor}
     {distance}
     decay={2}
+    castShadow={props.castShadow ?? false}
+    shadow.mapSize.width={512}
+    shadow.mapSize.height={512}
+    shadow.bias={-0.005}
+    shadow.camera.near={0.2}
+    shadow.camera.far={distance}
   />
 {/if}

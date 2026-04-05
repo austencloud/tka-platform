@@ -154,6 +154,7 @@
 <!-- Circular platform (local y=0.15, x/z=0 since group handles world position) -->
 <T.Mesh
   position.y={0.15}
+  castShadow
   receiveShadow
 >
   <T.CylinderGeometry args={[0.8, 0.9, 0.3, 24]} />
