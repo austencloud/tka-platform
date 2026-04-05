@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Nine-Plane Atlas — 3D Viewer v2</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0a1a; color: #fff; font-family: system-ui, sans-serif; overflow: hidden; }
+  canvas { display: block; }
+
+  #controls {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    background: rgba(15, 15, 30, 0.92);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    padding: 16px;
+    width: 280px;
+    max-height: calc(100vh - 32px);
+    overflow-y: auto;
+    z-index: 10;
+    backdrop-filter: blur(12px);
+  }
+
+  #controls h2 {
+    font-size: 15px;
+    margin-bottom: 4px;
+    color: rgba(255,255,255,0.8);
+  }
+
+  #controls .subtitle {
+    font-size: 11px;
+    opacity: 0.4;
+    margin-bottom: 12px;
+  }
+
+  .section-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    opacity: 0.4;
+    margin: 14px 0 6px;
+  }
+
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .toggle-row:hover { opacity: 0.9; }
+
+  .toggle-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2px solid currentColor;
+    flex-shrink: 0;
+    transition: background 0.15s;
+  }
+
+  .toggle-dot.active { background: currentColor; }
+
+  .toggle-label { font-size: 13px; flex: 1; }
+  .toggle-sub { font-size: 10px; opacity: 0.4; }
+
+  #info {
+    position: fixed;
+    bottom: 16px;
+    left: 16px;
+    background: rgba(15, 15, 30, 0.85);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 12px;
+    opacity: 0.6;
+    z-index: 10;
+  }
+
+  #hover-info {
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    left: 300px;
+    background: rgba(15, 15, 30, 0.92);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 13px;
+    z-index: 10;
+    display: none;
+  }
+
+  .stats {
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    font-size: 11px;
+    line-height: 1.6;
+    opacity: 0.5;
+  }
+</style>
+</head>
+<body>
+
+<div id="controls">
+  <h2>Nine-Plane Atlas</h2>
+  <div class="subtitle">3 primaries + 6 fusions + 3 grid layers</div>
+
+  <div class="section-label">Primaries (axis-aligned)</div>
+  <div class="toggle-row" onclick="togglePlane('wall')">
+    <div class="toggle-dot active" id="dot-wall" style="color:#a78bfa;"></div>
+    <span class="toggle-label" style="color:#a78bfa;">Wall</span>
+    <span class="toggle-sub">XY</span>
+  </div>
+  <div class="toggle-row" onclick="togglePlane('wheel')">
+    <div class="toggle-dot active" id="dot-wheel" style="color:#60a5fa;"></div>
+    <span class="toggle-label" style="color:#60a5fa;">Wheel</span>
+    <span class="toggle-sub">YZ</span>
+  </div>
+  <div class="toggle-row" onclick="togglePlane('floor')">
+    <div class="toggle-dot active" id="dot-floor" style="color:#4ade80;"></div>
+    <span class="toggle-label" style="color:#4ade80;">Floor</span>
+    <span class="toggle-sub">XZ</span>
+  </div>
+
+  <div class="section-label">Shields (Wall ↔ Wheel)</div>
+  <div class="toggle-row" onclick="togglePlane('rightShield')">
+    <div class="toggle-dot" id="dot-rightShield" style="color:#c084fc;"></div>
+    <span class="toggle-label" style="color:#c084fc;">Right Shield</span>
+    <span class="toggle-sub">45° R</span>
+  </div>
+  <div class="toggle-row" onclick="togglePlane('leftShield')">
+    <div class="toggle-dot" id="dot-leftShield" style="color:#818cf8;"></div>
+    <span class="toggle-label" style="color:#818cf8;">Left Shield</span>
+    <span class="toggle-sub">45° L</span>
+  </div>
+
+  <div class="section-label">Ramps (Wall ↔ Floor)</div>
+  <div class="toggle-row" onclick="togglePlane('forwardRamp')">
+    <div class="toggle-dot" id="dot-forwardRamp" style="color:#86efac;"></div>
+    <span class="toggle-label" style="color:#86efac;">Forward Ramp</span>
+    <span class="toggle-sub">↗ audience</span>
+  </div>
+  <div class="toggle-row" onclick="togglePlane('backwardRamp')">
+    <div class="toggle-dot" id="dot-backwardRamp" style="color:#6ee7b7;"></div>
+    <span class="toggle-label" style="color:#6ee7b7;">Backward Ramp</span>
+    <span class="toggle-sub">↙ upstage</span>
+  </div>
+
+  <div class="section-label">Sundials (Wheel ↔ Floor)</div>
+  <div class="toggle-row" onclick="togglePlane('rightSundial')">
+    <div class="toggle-dot" id="dot-rightSundial" style="color:#5eead4;"></div>
+    <span class="toggle-label" style="color:#5eead4;">Right Sundial</span>
+    <span class="toggle-sub">tilt R</span>
+  </div>
+  <div class="toggle-row" onclick="togglePlane('leftSundial')">
+    <div class="toggle-dot" id="dot-leftSundial" style="color:#2dd4bf;"></div>
+    <span class="toggle-label" style="color:#2dd4bf;">Left Sundial</span>
+    <span class="toggle-sub">tilt L</span>
+  </div>
+
+  <div class="section-label">Grid Positions</div>
+  <div class="toggle-row" onclick="togglePoints('diamond')">
+    <div class="toggle-dot active" id="dot-diamondPts" style="color:#fbbf24;"></div>
+    <span class="toggle-label">Diamond <span style="opacity:0.5">(6 pts, 2-plane gates)</span></span>
+  </div>
+  <div class="toggle-row" onclick="togglePoints('box')">
+    <div class="toggle-dot" id="dot-boxPts" style="color:#f97316;"></div>
+    <span class="toggle-label">Box <span style="opacity:0.5">(12 pts, 2-plane gates)</span></span>
+  </div>
+  <div class="toggle-row" onclick="togglePoints('triagonal')">
+    <div class="toggle-dot" id="dot-triagonalPts" style="color:#f43f5e;"></div>
+    <span class="toggle-label">Triagonal <span style="opacity:0.5">(8 pts, 3-plane gates)</span></span>
+  </div>
+  <div class="toggle-row" onclick="togglePoints('avatar')">
+    <div class="toggle-dot active" id="dot-avatarPt" style="color:#666;"></div>
+    <span class="toggle-label" style="opacity:0.6">Avatar reference</span>
+  </div>
+
+  <div class="stats">
+    <div><strong>Diamond:</strong> 6 axis endpoints → 2 primaries each</div>
+    <div><strong>Box:</strong> 12 face diagonals → 1 primary + 1 fusion each</div>
+    <div><strong>Triagonal:</strong> 8 cube corners → 3 fusions each</div>
+    <div style="margin-top:6px;"><strong>Total: 26 unique positions on 9 planes</strong></div>
+  </div>
+</div>
+
+<div id="info">
+  Drag to orbit · Scroll to zoom · Right-drag to pan
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0a0a1a);
+
+const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
+camera.position.set(2.5, 2, 3);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+document.body.appendChild(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+
+// Lighting
+scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+const dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
+dirLight.position.set(3, 5, 4);
+scene.add(dirLight);
+
+const R = 1.0;
+const S2 = 1 / Math.sqrt(2);
+const S3 = 1 / Math.sqrt(3);
+const SEGMENTS = 128;
+
+// ─── Helpers ───
+
+function createCircleRing(normal, color, opacity = 0.7) {
+  const geometry = new THREE.BufferGeometry();
+  const points = [];
+  const up = new THREE.Vector3(0, 0, 1);
+  const quat = new THREE.Quaternion().setFromUnitVectors(up, normal.clone().normalize());
+
+  for (let i = 0; i <= SEGMENTS; i++) {
+    const angle = (i / SEGMENTS) * Math.PI * 2;
+    const p = new THREE.Vector3(Math.cos(angle) * R, Math.sin(angle) * R, 0).applyQuaternion(quat);
+    points.push(p.x, p.y, p.z);
+  }
+
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(points, 3));
+  return new THREE.Line(geometry, new THREE.LineBasicMaterial({ color: new THREE.Color(color), transparent: true, opacity }));
+}
+
+function createDisc(normal, color, opacity = 0.04) {
+  const mesh = new THREE.Mesh(
+    new THREE.CircleGeometry(R, 64),
+    new THREE.MeshBasicMaterial({ color: new THREE.Color(color), transparent: true, opacity, side: THREE.DoubleSide, depthWrite: false })
+  );
+  mesh.quaternion.copy(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), normal.clone().normalize()));
+  return mesh;
+}
+
+function createPoint(position, color, size = 0.04) {
+  const mesh = new THREE.Mesh(
+    new THREE.SphereGeometry(size, 16, 16),
+    new THREE.MeshStandardMaterial({ color: new THREE.Color(color), emissive: new THREE.Color(color), emissiveIntensity: 0.5 })
+  );
+  mesh.position.copy(position);
+  return mesh;
+}
+
+function createLabel(text, position, color = '#ffffff', size = 0.055) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512; canvas.height = 64;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = color;
+  ctx.font = 'bold 32px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, 256, 32);
+  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(canvas), transparent: true, depthTest: false }));
+  sprite.position.copy(position);
+  sprite.scale.set(size * 8, size, 1);
+  return sprite;
+}
+
+// ─── Axes ───
+function addAxis(dir, label) {
+  const pts = [new THREE.Vector3(), dir.clone().multiplyScalar(1.5)];
+  scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: 0x444444, transparent: true, opacity: 0.2 })));
+  scene.add(createLabel(label, dir.clone().multiplyScalar(1.62), '#555555', 0.04));
+}
+addAxis(new THREE.Vector3(1,0,0), '+X Stage R');
+addAxis(new THREE.Vector3(-1,0,0), '-X Stage L');
+addAxis(new THREE.Vector3(0,1,0), '+Y Up');
+addAxis(new THREE.Vector3(0,-1,0), '-Y Down');
+addAxis(new THREE.Vector3(0,0,1), '+Z Audience');
+addAxis(new THREE.Vector3(0,0,-1), '-Z Upstage');
+
+// ─── Plane definitions ───
+
+const planeDefs = {
+  wall:          { normal: new THREE.Vector3(0, 0, 1),      color: '#a78bfa' },
+  wheel:         { normal: new THREE.Vector3(1, 0, 0),      color: '#60a5fa' },
+  floor:         { normal: new THREE.Vector3(0, 1, 0),      color: '#4ade80' },
+  rightShield:   { normal: new THREE.Vector3(S2, 0, S2),    color: '#c084fc' },
+  leftShield:    { normal: new THREE.Vector3(-S2, 0, S2),   color: '#818cf8' },
+  forwardRamp:   { normal: new THREE.Vector3(0, S2, -S2),   color: '#86efac' },
+  backwardRamp:  { normal: new THREE.Vector3(0, S2, S2),    color: '#6ee7b7' },
+  rightSundial:  { normal: new THREE.Vector3(S2, S2, 0),    color: '#5eead4' },
+  leftSundial:   { normal: new THREE.Vector3(-S2, S2, 0),   color: '#2dd4bf' },
+};
+
+const planeGroups = {};
+const planeState = {};
+
+for (const [key, def] of Object.entries(planeDefs)) {
+  const group = new THREE.Group();
+  group.add(createCircleRing(def.normal, def.color, 0.7));
+  group.add(createDisc(def.normal, def.color, 0.04));
+  scene.add(group);
+  planeGroups[key] = group;
+  const isPrimary = ['wall', 'wheel', 'floor'].includes(key);
+  group.visible = isPrimary;
+  planeState[key] = isPrimary;
+}
+
+// ─── DIAMOND positions (6 axis endpoints) ───
+
+const diamondData = [
+  { pos: [0, R, 0],    label: 'Up (Wall N / Wheel N)',         gates: 'Wall + Wheel' },
+  { pos: [0, -R, 0],   label: 'Down (Wall S / Wheel S)',       gates: 'Wall + Wheel' },
+  { pos: [R, 0, 0],    label: 'Stage R (Wall E / Floor E)',    gates: 'Wall + Floor' },
+  { pos: [-R, 0, 0],   label: 'Stage L (Wall W / Floor W)',    gates: 'Wall + Floor' },
+  { pos: [0, 0, R],    label: 'Audience (Wheel E / Floor N)',  gates: 'Wheel + Floor' },
+  { pos: [0, 0, -R],   label: 'Upstage (Wheel W / Floor S)',   gates: 'Wheel + Floor' },
+];
+
+const diamondGroup = new THREE.Group();
+for (const d of diamondData) {
+  const p = new THREE.Vector3(...d.pos);
+  diamondGroup.add(createPoint(p, '#fbbf24', 0.05));
+  diamondGroup.add(createLabel(d.label, p.clone().multiplyScalar(1.18), '#fbbf24', 0.04));
+}
+scene.add(diamondGroup);
+
+// ─── BOX positions (12 face diagonals) ───
+
+const boxData = [
+  // Wall box (XY plane, z=0)
+  { pos: [R*S2, R*S2, 0],    label: 'Wall NE',  gates: 'Wall + L.Sundial' },
+  { pos: [R*S2, -R*S2, 0],   label: 'Wall SE',  gates: 'Wall + R.Sundial' },
+  { pos: [-R*S2, -R*S2, 0],  label: 'Wall SW',  gates: 'Wall + L.Sundial' },
+  { pos: [-R*S2, R*S2, 0],   label: 'Wall NW',  gates: 'Wall + R.Sundial' },
+  // Wheel box (YZ plane, x=0)
+  { pos: [0, R*S2, R*S2],    label: 'Wheel NE', gates: 'Wheel + Fwd.Ramp' },
+  { pos: [0, -R*S2, R*S2],   label: 'Wheel SE', gates: 'Wheel + Bwd.Ramp' },
+  { pos: [0, -R*S2, -R*S2],  label: 'Wheel SW', gates: 'Wheel + Fwd.Ramp' },
+  { pos: [0, R*S2, -R*S2],   label: 'Wheel NW', gates: 'Wheel + Bwd.Ramp' },
+  // Floor box (XZ plane, y=0)
+  { pos: [R*S2, 0, R*S2],    label: 'Floor NE', gates: 'Floor + L.Shield' },
+  { pos: [R*S2, 0, -R*S2],   label: 'Floor SE', gates: 'Floor + R.Shield' },
+  { pos: [-R*S2, 0, -R*S2],  label: 'Floor SW', gates: 'Floor + L.Shield' },
+  { pos: [-R*S2, 0, R*S2],   label: 'Floor NW', gates: 'Floor + R.Shield' },
+];
+
+const boxGroup = new THREE.Group();
+for (const b of boxData) {
+  const p = new THREE.Vector3(...b.pos);
+  boxGroup.add(createPoint(p, '#f97316', 0.04));
+  boxGroup.add(createLabel(b.label, p.clone().multiplyScalar(1.14), '#f97316', 0.035));
+}
+boxGroup.visible = false;
+scene.add(boxGroup);
+
+// ─── TRIAGONAL positions (8 cube corners) ───
+
+const triagonalData = [
+  { pos: [R*S3, R*S3, R*S3],       label: '+++',  gates: 'L.Shield + Fwd.Ramp + L.Sundial' },
+  { pos: [R*S3, R*S3, -R*S3],      label: '++-',  gates: 'R.Shield + Bwd.Ramp + L.Sundial' },
+  { pos: [R*S3, -R*S3, R*S3],      label: '+-+',  gates: 'L.Shield + Bwd.Ramp + R.Sundial' },
+  { pos: [R*S3, -R*S3, -R*S3],     label: '+--',  gates: 'R.Shield + Fwd.Ramp + R.Sundial' },
+  { pos: [-R*S3, R*S3, R*S3],      label: '-++',  gates: 'R.Shield + Fwd.Ramp + R.Sundial' },
+  { pos: [-R*S3, R*S3, -R*S3],     label: '-+-',  gates: 'L.Shield + Bwd.Ramp + R.Sundial' },
+  { pos: [-R*S3, -R*S3, R*S3],     label: '--+',  gates: 'R.Shield + Bwd.Ramp + L.Sundial' },
+  { pos: [-R*S3, -R*S3, -R*S3],    label: '---',  gates: 'L.Shield + Fwd.Ramp + L.Sundial' },
+];
+
+const triagonalGroup = new THREE.Group();
+for (const t of triagonalData) {
+  const p = new THREE.Vector3(...t.pos);
+  // Larger, distinct shape — octahedron
+  const geo = new THREE.OctahedronGeometry(0.045);
+  const mat = new THREE.MeshStandardMaterial({ color: 0xf43f5e, emissive: 0xf43f5e, emissiveIntensity: 0.4 });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.position.copy(p);
+  triagonalGroup.add(mesh);
+  triagonalGroup.add(createLabel(t.gates, p.clone().multiplyScalar(1.22), '#f43f5e', 0.03));
+}
+triagonalGroup.visible = false;
+scene.add(triagonalGroup);
+
+// ─── Avatar reference ───
+
+const avatarGroup = new THREE.Group();
+const bodyMat = new THREE.MeshStandardMaterial({ color: 0x666666, transparent: true, opacity: 0.3 });
+const body = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.025, 0.5, 8), bodyMat);
+body.position.y = -0.35;
+avatarGroup.add(body);
+const head = new THREE.Mesh(new THREE.SphereGeometry(0.055, 16, 16), bodyMat);
+head.position.y = -0.05;
+avatarGroup.add(head);
+const arrow = new THREE.ArrowHelper(new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, -0.15, 0), 0.25, 0x555555, 0.05, 0.035);
+avatarGroup.add(arrow);
+scene.add(avatarGroup);
+
+// Center dot
+scene.add(createPoint(new THREE.Vector3(), '#333333', 0.015));
+
+// ─── Toggles ───
+
+window.togglePlane = (key) => {
+  planeState[key] = !planeState[key];
+  planeGroups[key].visible = planeState[key];
+  document.getElementById('dot-' + key).classList.toggle('active', planeState[key]);
+};
+
+window.togglePoints = (type) => {
+  const map = { diamond: diamondGroup, box: boxGroup, triagonal: triagonalGroup, avatar: avatarGroup };
+  const dotMap = { diamond: 'dot-diamondPts', box: 'dot-boxPts', triagonal: 'dot-triagonalPts', avatar: 'dot-avatarPt' };
+  const g = map[type];
+  g.visible = !g.visible;
+  document.getElementById(dotMap[type]).classList.toggle('active', g.visible);
+};
+
+// ─── Animate ───
+
+function animate() {
+  requestAnimationFrame(animate);
+  controls.update();
+  renderer.render(scene, camera);
+}
+animate();
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+</script>
+</body>
+</html>
