@@ -8,6 +8,7 @@ export interface IdentityComponent {
 	name: string;
 	visualTraits: AvatarVisualTraits;
 	generation: number;
+	avatarModelId: string; // "x-bot", "y-bot", "remy", "ch26"
 }
 
 export interface LearnedSequence {

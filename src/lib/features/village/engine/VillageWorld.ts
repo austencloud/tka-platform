@@ -6,6 +6,8 @@ import type {
 } from "../domain/village-types";
 import type { IPersonalityGenerator } from "../services/contracts/IPersonalityGenerator";
 
+const AVATAR_MODELS = ["x-bot", "y-bot", "remy", "ch26"];
+
 export function createVillageWorld(): World<VillageEntity> {
 	return new World<VillageEntity>();
 }
@@ -40,12 +42,17 @@ export function createAvatarEntity(
 		options.traitStdDev,
 	);
 
+	const avatarModelId =
+		AVATAR_MODELS[Math.floor(Math.random() * AVATAR_MODELS.length)] ??
+		"x-bot";
+
 	const entity: VillageEntity = {
 		id: `avatar-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
 		identity: {
 			name: options.name,
 			visualTraits,
 			generation: options.generation,
+			avatarModelId,
 		},
 		knowledge: {
 			knownSequences: options.seedSequences ?? new Map(),

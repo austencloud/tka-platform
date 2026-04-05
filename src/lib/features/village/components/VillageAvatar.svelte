@@ -1,16 +1,18 @@
 <!--
-  VillageAvatar — Renders one village entity as an Avatar3D with props.
+  VillageAvatar — Renders one village entity as an Avatar3D with props + name label.
 
   Uses the same positioning pattern as MuseumPerformerStation3D.
-  Computes its own movement detection by tracking position deltas each frame.
+  Computes movement detection from frame-to-frame position deltas.
 -->
 <script lang="ts">
 	import { T, useTask } from "@threlte/core";
+	import { HTML } from "@threlte/extras";
 	import Avatar3D from "$lib/shared/3d/components/Avatar3D.svelte";
 	import Prop3D from "$lib/shared/3d/components/props/Prop3D.svelte";
 	import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 	import { userProportionsState } from "$lib/shared/3d/state/user-proportions-state.svelte";
 	import type { AvatarRenderState } from "../state/village-state.svelte";
+	import type { AvatarId } from "$lib/shared/3d/config/avatar-definitions";
 
 	interface Props {
 		renderState: AvatarRenderState;
@@ -20,8 +22,13 @@
 	const { renderState, isSelected = false }: Props = $props();
 
 	const STAGE_LIFT = $derived(-userProportionsState.groundY);
+	const avatarModelId = $derived(
+		renderState.entity.identity.avatarModelId as AvatarId,
+	);
+	const avatarName = $derived(renderState.entity.identity.name);
+	const lifecyclePhase = $derived(renderState.entity.lifecycle.phase);
+	const socialState = $derived(renderState.entity.social.state);
 
-	// Mutable refs updated by useTask — Avatar3D reads these as props
 	let posX = 0;
 	let posZ = 0;
 	let prevX = 0;
@@ -30,7 +37,6 @@
 	let moving = false;
 	let speed = 0;
 
-	// Position object for Avatar3D (recreated each frame for prop change detection)
 	let avatarPosition = $state({ x: 0, y: 0, z: 0 });
 	let facingAngle = $state(0);
 	let isMoving = $state(false);
@@ -50,13 +56,8 @@
 		const frameDist = Math.sqrt(dx * dx + dz * dz);
 
 		moving = frameDist > 0.001;
-		// Convert per-frame distance to velocity matching the locomotion animator.
-		// animationWalkSpeed=1.57 is the speed at which the walk cycle plays 1:1.
-		// At 60fps, frameDist of ~0.045 = ~2.7 m/s actual velocity.
-		// moveSpeed = velocity so the animator can compute timeScale = speed/1.57.
-		speed = moving ? frameDist * 60 : 0; // frameDist per frame → units per second
+		speed = moving ? frameDist * 60 : 0;
 
-		// Update $state values for Avatar3D props
 		avatarPosition = { x: posX, y: STAGE_LIFT, z: posZ };
 		facingAngle = angle;
 		isMoving = moving;
@@ -67,10 +68,19 @@
 	const redPropState = $derived(renderState.instanceState.redPropState);
 
 	const isPerforming = $derived(
-		renderState.entity.social.state === "teaching" ||
-		renderState.entity.social.state === "learning" ||
-		renderState.entity.social.state === "performing" ||
-		renderState.entity.social.state === "practicing"
+		socialState === "teaching" ||
+		socialState === "learning" ||
+		socialState === "performing" ||
+		socialState === "practicing"
+	);
+
+	// Name label color based on state
+	const labelColor = $derived(
+		socialState === "teaching" ? "#4ade80" :
+		socialState === "learning" ? "#60a5fa" :
+		socialState === "performing" ? "#e8a87c" :
+		socialState === "seeking" ? "#fbbf24" :
+		"#ffffff"
 	);
 </script>
 
@@ -78,6 +88,7 @@
 <T.Group position.y={-STAGE_LIFT}>
 	<Avatar3D
 		id={renderState.entityId}
+		avatarId={avatarModelId}
 		{bluePropState}
 		{redPropState}
 		position={avatarPosition}
@@ -88,6 +99,22 @@
 		moveDirection={{ x: 0, z: 1 }}
 		enableLocomotion={true}
 	/>
+
+	<!-- Name label floating above head -->
+	<T.Group
+		position.x={avatarPosition.x}
+		position.y={avatarPosition.y + 0.6}
+		position.z={avatarPosition.z}
+	>
+		<HTML center sprite>
+			<div class="name-label" style="color: {labelColor}">
+				{avatarName}
+				<span class="state-indicator">
+					{lifecyclePhase === "elder" ? "🔥" : ""}
+				</span>
+			</div>
+		</HTML>
+	</T.Group>
 </T.Group>
 
 {#if isPerforming && bluePropState}
@@ -109,3 +136,18 @@
 		{facingAngle}
 	/>
 {/if}
+
+<style>
+	.name-label {
+		font-size: 11px;
+		font-family: monospace;
+		text-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
+		white-space: nowrap;
+		pointer-events: none;
+		user-select: none;
+	}
+
+	.state-indicator {
+		margin-left: 2px;
+	}
+</style>
