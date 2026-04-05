@@ -72,6 +72,9 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
   // Track quality tier for fire adaptive quality
   private previousQualityTier: QualityTier | null = null;
 
+  // Track 2D overlay suppression state to clear canvases on transition
+  private wasSuppressed: boolean = false;
+
   // Frame drop diagnostics — logs slow frames to console for debugging.
   // Disabled by default. Enable via browser console: window.__TKA_FRAME_DROP_LOG = true
   private frameDropLoggingEnabled = false;
@@ -415,6 +418,36 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
         redColor: colors?.red ?? "#f97316",
       };
     });
+
+    // When entering 3D suppression mode, clear all overlay canvases so stale
+    // frames don't bleed through. The 3D layer sits on top via z-index, but
+    // WebGL overlay canvases can show through if not cleared.
+    if (params.suppress2DOverlays && !this.wasSuppressed) {
+      this.wasSuppressed = true;
+      // Clear all overlay canvases so stale frames don't show through the 3D layer
+      const overlayCanvases = [
+        this.fireRenderer?.isInitialized() ? this.fireRenderer.getCanvas() : null,
+        this.charcoalRenderer?.isInitialized() ? this.charcoalRenderer.getCanvas() : null,
+        this.ledRenderer?.isInitialized() ? this.ledRenderer.getCanvas() : null,
+      ];
+      for (const canvas of overlayCanvases) {
+        if (!canvas) continue;
+        const gl = canvas.getContext("webgl2") || canvas.getContext("webgl");
+        if (gl) {
+          gl.clear(gl.COLOR_BUFFER_BIT);
+        }
+      }
+      // Clear trail overlay (Canvas2D)
+      if (this.trailOverlay) {
+        const trailCanvas = (this.trailOverlay as any).canvas as HTMLCanvasElement | undefined;
+        if (trailCanvas) {
+          const ctx = trailCanvas.getContext("2d");
+          if (ctx) ctx.clearRect(0, 0, trailCanvas.width, trailCanvas.height);
+        }
+      }
+    } else if (!params.suppress2DOverlays && this.wasSuppressed) {
+      this.wasSuppressed = false;
+    }
 
     // Route trail rendering through the overlay canvas
     if (this.trailOverlay && effectiveTrailsVisible && !params.suppress2DOverlays) {
