@@ -5,8 +5,9 @@
  * transform pipeline: body-local → facing rotation → world offset.
  */
 
-import { Quaternion, Euler } from "three";
+import { Quaternion, Euler, Vector3 } from "three";
 import type { PropState3D } from "../../domain/models/PropState3D";
+import { getPlaneNormal } from "../../domain/constants/plane-transforms";
 
 /**
  * Compute world-space position for a prop, given avatar position,
@@ -56,12 +57,18 @@ export function computePropRotation(
     new Euler(0, 0, Math.PI / 2)
   );
 
-  // In dual wheel mode, rotation is already in world space. Skip the
-  // facing rotation so the prop spins in the WHEEL plane (YZ) as intended.
+  // In dual wheel mode, position and rotation are in world space.
+  // The worldRotation from calculatePropQuaternion includes a planeQuat
+  // that orients into the plane's local frame — but we're already in
+  // world space, so that extra rotation puts the spin on the wrong axis.
+  // Instead, rotate the staff directly around the plane's normal vector.
   if (propState.skipFacingTransform) {
-    const finalQuat = propState.worldRotation
-      .clone()
-      .multiply(horizontalQuat);
+    const normal = getPlaneNormal(propState.plane);
+    const staffQuat = new Quaternion().setFromAxisAngle(
+      normal,
+      propState.staffRotationAngle
+    );
+    const finalQuat = staffQuat.multiply(horizontalQuat);
     const euler = new Euler().setFromQuaternion(finalQuat);
     return [euler.x, euler.y, euler.z];
   }
