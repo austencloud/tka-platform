@@ -77,7 +77,8 @@ export class QualityTierDetector implements IQualityTierDetector {
     const order = [QualityTier.HIGH, QualityTier.MEDIUM, QualityTier.LOW];
     const currentIndex = order.indexOf(this.currentTier);
     if (currentIndex < order.length - 1) {
-      this.detectedTier = order[currentIndex + 1];
+      // Index is guaranteed valid by the bounds check above
+      this.detectedTier = order[currentIndex + 1] as QualityTier;
     }
   }
 
