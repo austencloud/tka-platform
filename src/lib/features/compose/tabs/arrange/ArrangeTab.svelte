@@ -18,14 +18,11 @@
    */
 
   import { arrangeGridState, type GridCell } from "./state/arrange-grid-state.svelte";
-  import GridLayoutControls from "./components/grid/GridLayoutControls.svelte";
   import CompositionGrid from "./components/grid/CompositionGrid.svelte";
-  import CellEditorPanel from "./components/grid/cell-editor/CellEditorPanel.svelte";
-  import PlaybackBar from "./components/shared/PlaybackBar.svelte";
+  import ArrangeSidebar from "./components/sidebar/ArrangeSidebar.svelte";
   import StaggerControls from "./components/shared/StaggerControls.svelte";
   import SequencePickerModal from "$lib/shared/components/sequence-picker/SequencePickerModal.svelte";
   import SaveCompositionModal from "./components/grid/SaveCompositionModal.svelte";
-  import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { CellMediaType } from "../../compose/domain/types";
@@ -309,10 +306,6 @@
     showSaveModal = false;
   }
 
-  function handleDrawerClose() {
-    gridState.deselectCell();
-  }
-
   // Undo/redo with toast feedback
   function handleUndo() {
     const desc = gridState.undo();
@@ -423,61 +416,16 @@
         />
       </div>
 
-      <!-- Right: Control Panel -->
-      <div class="control-panel">
-        <!-- Grid Layout Controls -->
-        <div class="panel-section grid-section">
-          <GridLayoutControls
-            gridRows={gridState.gridRows}
-            gridCols={gridState.gridCols}
-            hasContent={gridState.hasAnyLayers}
-            onSetGridRows={handleSetGridRows}
-            onSetGridCols={handleSetGridCols}
-            onSetDimensions={handleSetDimensions}
-            onPresetLayout={handlePresetLayout}
-          />
-        </div>
-
-        <!-- Playback Controls -->
-        {#if gridState.hasAnyLayers}
-          <div class="panel-section playback-section">
-            <PlaybackBar
-              isPlaying={gridState.isPlaying}
-              currentBeat={gridState.currentBeat}
-              totalBeats={gridState.totalBeats}
-              bpm={gridState.bpm}
-              skipStartPosition={gridState.skipStartPosition}
-              onPlayPause={handlePlayPause}
-              onStop={handleStop}
-              onStepHalfBack={handleStepHalfBack}
-              onStepHalfFwd={handleStepHalfFwd}
-              onStepFullBack={handleStepFullBack}
-              onStepFullFwd={handleStepFullFwd}
-              onBpmChange={handleBpmChange}
-              onToggleLoop={handleToggleLoop}
-            />
-          </div>
-        {/if}
-      </div>
-    </div>
-  {/if}
-
-  <!-- Cell editor drawer (slides from right) -->
-  <Drawer
-    isOpen={selectedCell !== null}
-    placement="right"
-    ariaLabel="Edit cell {selectedCell ? gridState.getCellDisplayIndex(selectedCell.id) + 1 : ''}"
-    class="cell-editor-drawer"
-    backdropClass="cell-editor-backdrop"
-    showHandle={true}
-    closeOnBackdrop={false}
-    trapFocus={false}
-    preventScroll={false}
-    onclose={handleDrawerClose}
-  >
-    {#if selectedCell && selectedCellId !== null}
-      <CellEditorPanel
-        cell={selectedCell}
+      <!-- Right: Unified Sidebar -->
+      <ArrangeSidebar
+        gridRows={gridState.gridRows}
+        gridCols={gridState.gridCols}
+        hasContent={gridState.hasAnyLayers}
+        onSetGridRows={handleSetGridRows}
+        onSetGridCols={handleSetGridCols}
+        onSetDimensions={handleSetDimensions}
+        onPresetLayout={handlePresetLayout}
+        selectedCell={selectedCell}
         cellIndex={selectedCell ? gridState.getCellDisplayIndex(selectedCell.id) : 0}
         clipboardHasData={gridState.clipboard !== null}
         transformingLayer={gridState.transformingLayer}
@@ -490,20 +438,33 @@
         onCopyCell={handleCopyCell}
         onPasteLayer={handlePasteLayer}
         onTransformLayer={handleTransformLayer}
-
-        onSetSpeed={(speed) => gridState.setCellSpeed(selectedCell.id, speed)}
-        onSetEffect={(effect) => gridState.setCellEffect(selectedCell.id, effect)}
-        onSetTrailMode={(mode) => gridState.setCellTrailMode(selectedCell.id, mode)}
-        onSetEffort={(effort) => gridState.setCellEffort(selectedCell.id, effort)}
-        onSetBlueVisible={(visible) => gridState.setCellMotionVisibility(selectedCell.id, 'blue', visible)}
-        onSetRedVisible={(visible) => gridState.setCellMotionVisibility(selectedCell.id, 'red', visible)}
-        onSetOffset={(offset) => gridState.setCellBeatOffset(selectedCell.id, offset)}
-        onSetColors={(colors) => gridState.setCellPropColors(selectedCell.id, colors)}
-        onSetTipEffectMap={(map) => gridState.setCellTipEffectMap(selectedCell.id, map)}
-        onSetTipEffortMap={(map) => gridState.setCellTipEffortMap(selectedCell.id, map)}
+        onSetSpeed={selectedCell ? (speed) => gridState.setCellSpeed(selectedCell.id, speed) : undefined}
+        onSetEffect={selectedCell ? (effect) => gridState.setCellEffect(selectedCell.id, effect) : undefined}
+        onSetTrailMode={selectedCell ? (mode) => gridState.setCellTrailMode(selectedCell.id, mode) : undefined}
+        onSetEffort={selectedCell ? (effort) => gridState.setCellEffort(selectedCell.id, effort) : undefined}
+        onSetBlueVisible={selectedCell ? (visible) => gridState.setCellMotionVisibility(selectedCell.id, 'blue', visible) : undefined}
+        onSetRedVisible={selectedCell ? (visible) => gridState.setCellMotionVisibility(selectedCell.id, 'red', visible) : undefined}
+        onSetOffset={selectedCell ? (offset) => gridState.setCellBeatOffset(selectedCell.id, offset) : undefined}
+        onSetColors={selectedCell ? (colors) => gridState.setCellPropColors(selectedCell.id, colors) : undefined}
+        onSetTipEffectMap={selectedCell ? (map) => gridState.setCellTipEffectMap(selectedCell.id, map) : undefined}
+        onSetTipEffortMap={selectedCell ? (map) => gridState.setCellTipEffortMap(selectedCell.id, map) : undefined}
+        hasAnyLayers={gridState.hasAnyLayers}
+        isPlaying={gridState.isPlaying}
+        currentBeat={gridState.currentBeat}
+        totalBeats={gridState.totalBeats}
+        bpm={gridState.bpm}
+        skipStartPosition={gridState.skipStartPosition}
+        onPlayPause={handlePlayPause}
+        onStop={handleStop}
+        onStepHalfBack={handleStepHalfBack}
+        onStepHalfFwd={handleStepHalfFwd}
+        onStepFullBack={handleStepFullBack}
+        onStepFullFwd={handleStepFullFwd}
+        onBpmChange={handleBpmChange}
+        onToggleLoop={handleToggleLoop}
       />
-    {/if}
-  </Drawer>
+    </div>
+  {/if}
 
   <!-- Sequence picker modal -->
   <SequencePickerModal
@@ -579,7 +540,7 @@
   /* ====== DESKTOP SPLIT-VIEW ====== */
   .desktop-content {
     display: grid;
-    grid-template-columns: 1fr clamp(220px, 16vw, 300px);
+    grid-template-columns: 1fr clamp(280px, 20vw, 340px);
     gap: var(--spacing-lg);
     height: 100%;
     padding: var(--spacing-lg);
@@ -634,42 +595,17 @@
     outline-offset: 2px;
   }
 
-  /* Control panel - right side */
-  .control-panel {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-md);
-    min-height: 0;
-    overflow-y: auto;
-  }
-
-  .panel-section {
-    padding: var(--spacing-md);
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: var(--border-radius-lg);
-  }
-
-  /* Grid section doesn't need extra padding - component handles it */
-  .panel-section.grid-section {
-    padding: 0;
-  }
-
-  .playback-section {
-    margin-top: auto;
-  }
-
-  /* Larger screens: wider control panel */
+/* Larger screens: wider sidebar */
   @media (min-width: 1200px) {
     .desktop-content {
-      grid-template-columns: 1fr clamp(240px, 18vw, 320px);
+      grid-template-columns: 1fr clamp(300px, 20vw, 360px);
     }
   }
 
-  /* Medium screens: narrower control panel */
+  /* Medium screens: slightly narrower */
   @media (max-width: 1024px) and (min-width: 768px) {
     .desktop-content {
-      grid-template-columns: 1fr clamp(200px, 14vw, 260px);
+      grid-template-columns: 1fr clamp(260px, 18vw, 320px);
       gap: var(--spacing-md);
       padding: var(--spacing-md);
     }
@@ -688,16 +624,4 @@
     }
   }
 
-  /* Cell editor drawer overrides */
-  :global(.cell-editor-backdrop) {
-    background: transparent !important;
-    backdrop-filter: none !important;
-    pointer-events: none !important;
-  }
-
-  :global(.cell-editor-drawer[data-placement="right"]) {
-    width: clamp(280px, 22vw, 360px) !important;
-    max-width: 90vw !important;
-    height: 100% !important;
-  }
 </style>
