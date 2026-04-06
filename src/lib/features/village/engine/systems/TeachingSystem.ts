@@ -94,9 +94,18 @@ export class TeachingSystem {
 			learnedAt: currentTick,
 			learnedFrom: teacher.id,
 			lineage: [...teacherKnowledge.lineage, teacher.id],
+			lastUsedTick: currentTick,
 		};
 
 		learner.knowledge.knownSequences.set(sequenceId, learned);
+
+		// Update teacher's lastUsedTick and ego
+		const teacherSeq = teacher.knowledge.knownSequences.get(sequenceId);
+		if (teacherSeq) {
+			teacherSeq.lastUsedTick = currentTick;
+		}
+		teacher.personality.ego = Math.min(1, teacher.personality.ego + 0.05);
+
 		this.emitter.emit("teaching:completed", teacher, learner, sequenceId);
 
 		learner.social.state = "practicing";

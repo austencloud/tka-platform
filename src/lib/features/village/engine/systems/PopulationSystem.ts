@@ -8,11 +8,13 @@ import { createAvatarEntity } from "../VillageWorld";
 import {
 	AVATAR_NAMES,
 	PASSING_DURATION_TICKS,
+	REINCARNATION_PROBABILITY,
 } from "../../domain/village-constants";
 
 export class PopulationSystem {
 	private generation = 1;
 	private nameIndex = 0;
+	private recentDeaths: VillageEntity[] = [];
 
 	constructor(
 		private config: VillageConfig,
@@ -44,6 +46,10 @@ export class PopulationSystem {
 		}
 
 		for (const entity of toRemove) {
+			// Shallow copy before removal for reincarnation
+			this.recentDeaths.push({ ...entity, knowledge: { ...entity.knowledge, knownSequences: new Map(entity.knowledge.knownSequences) }, personality: { ...entity.personality } });
+			if (this.recentDeaths.length > 10) this.recentDeaths.shift();
+
 			this.lineageTracker.recordDeath(entity);
 			this.emitter.emit("entity:died", entity);
 			world.remove(entity);
@@ -66,9 +72,67 @@ export class PopulationSystem {
 				traitStdDev: this.config.traitDistribution.stdDev,
 			});
 
+			// Reincarnation echo: newly spawned entity may carry traits from a recent death
+			if (
+				this.recentDeaths.length > 0 &&
+				Math.random() < REINCARNATION_PROBABILITY
+			) {
+				const source =
+					this.recentDeaths[this.recentDeaths.length - 1]!;
+				this.applyReincarnationEcho(newEntity, source, currentTick);
+				this.emitter.emit(
+					"reincarnation:detected",
+					newEntity,
+					source.id,
+				);
+			}
+
 			this.lineageTracker.recordBirth(newEntity);
 			this.emitter.emit("entity:born", newEntity);
 		}
+	}
+
+	private applyReincarnationEcho(
+		newEntity: VillageEntity,
+		source: VillageEntity,
+		_currentTick: number,
+	): void {
+		// Bias personality 20% toward source
+		const blend = 0.2;
+		const p = newEntity.personality;
+		const s = source.personality;
+		p.learnSpeed = p.learnSpeed * (1 - blend) + s.learnSpeed * blend;
+		p.sociability = p.sociability * (1 - blend) + s.sociability * blend;
+		p.creativity = p.creativity * (1 - blend) + s.creativity * blend;
+		p.patience = p.patience * (1 - blend) + s.patience * blend;
+		p.curiosity = p.curiosity * (1 - blend) + s.curiosity * blend;
+
+		// Echo one sequence at fragment-level proficiency
+		const sourceSequences = [
+			...source.knowledge.knownSequences.entries(),
+		];
+		if (sourceSequences.length > 0) {
+			const [seqId, seqData] =
+				sourceSequences[
+					Math.floor(Math.random() * sourceSequences.length)
+				]!;
+			newEntity.knowledge.knownSequences.set(seqId, {
+				sequenceId: seqId,
+				sequenceData: seqData.sequenceData,
+				proficiency: 0.15,
+				source: "echo",
+				learnedAt: 0,
+				learnedFrom: source.id,
+				lineage: [...seqData.lineage, source.id],
+				lastUsedTick: 0,
+			});
+		}
+
+		// Store echo metadata for rendering layer
+		(newEntity as any)._reincarnationEcho = {
+			sourceEntityId: source.id,
+			sourceName: source.identity.name,
+		};
 	}
 
 	incrementGeneration(): void {

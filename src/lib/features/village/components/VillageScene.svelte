@@ -6,19 +6,31 @@
 	import { T, useTask } from "@threlte/core";
 	import { OrbitControls } from "@threlte/extras";
 	import VillageAvatar from "./VillageAvatar.svelte";
-	import { getVillageContext } from "../state/village-context";
+	import VillageDeathMark from "./VillageDeathMark.svelte";
+	import VillageEventToast from "./VillageEventToast.svelte";
+	import VillageMonument from "./VillageMonument.svelte";
+	import VillageJamCircle from "./VillageJamCircle.svelte";
+	import { getVillageContext, getVillageVisualContext } from "../state/village-context";
 
 	const villageState = getVillageContext();
+	const visualState = getVillageVisualContext();
 
 	// syncFromEngine reads ECS targets, lerpAvatars smoothly interpolates positions
 	useTask(() => {
 		villageState.syncFromEngine();
 		villageState.lerpAvatars();
+		visualState.pruneToasts();
+		visualState.tickDeathMarks(villageState.orchestrator.currentTick);
 	});
 
 	const arenaRadius = 8;
 
 	const avatars = $derived(villageState.avatarList);
+	const monuments = $derived(villageState.orchestrator.monuments);
+	const activeJams = $derived(villageState.orchestrator.activeJams);
+	const currentTick = $derived(villageState.orchestrator.currentTick);
+	const deathMarks = $derived(visualState.deathMarks);
+	const toasts = $derived(visualState.toasts);
 </script>
 
 <!-- Lighting -->
@@ -70,6 +82,23 @@
 	position.y={0.005}
 />
 
+<!-- Death marks (fading red circles at death locations) -->
+{#each deathMarks as mark (mark.id)}
+	<VillageDeathMark {mark} {currentTick} />
+{/each}
+
+<!-- Monuments (hexagonal pillars marking surviving sequences) -->
+{#if visualState.showMonuments}
+	{#each monuments as monument (monument.sequenceId)}
+		<VillageMonument {monument} />
+	{/each}
+{/if}
+
+<!-- Jam circles (pulsing white ground rings for active jams) -->
+{#each activeJams as jam (jam.formedAtTick)}
+	<VillageJamCircle {jam} />
+{/each}
+
 <!-- Village avatars -->
 {#each avatars as renderState (renderState.entityId)}
 	<VillageAvatar
@@ -77,3 +106,10 @@
 		isSelected={villageState.selectedAvatarId === renderState.entityId}
 	/>
 {/each}
+
+<!-- Event toasts (floating text) -->
+{#if visualState.showToasts}
+	{#each toasts as toast (toast.id)}
+		<VillageEventToast {toast} />
+	{/each}
+{/if}

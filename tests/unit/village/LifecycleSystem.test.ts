@@ -91,6 +91,7 @@ describe("LifecycleSystem", () => {
 			learnedAt: 0,
 			learnedFrom: null,
 			lineage: [],
+			lastUsedTick: 0,
 		});
 		entity.knowledge.knownSequences.set("seq2", {
 			sequenceId: "seq2",
@@ -100,6 +101,7 @@ describe("LifecycleSystem", () => {
 			learnedAt: 0,
 			learnedFrom: null,
 			lineage: [],
+			lastUsedTick: 0,
 		});
 
 		system.tick(world, 1);

@@ -119,6 +119,7 @@ describe("VillageOrchestrator", () => {
 			learnedAt: 0,
 			learnedFrom: null,
 			lineage: [],
+			lastUsedTick: 0,
 		});
 		entities[1].knowledge.knownSequences.set("seed2", {
 			sequenceId: "seed2",
@@ -128,6 +129,7 @@ describe("VillageOrchestrator", () => {
 			learnedAt: 0,
 			learnedFrom: null,
 			lineage: [],
+			lastUsedTick: 0,
 		});
 
 		// Place all entities near each other to encourage interaction
@@ -141,9 +143,10 @@ describe("VillageOrchestrator", () => {
 		}
 
 		const stats = orchestrator.populationStats;
-		// At minimum the seeded entities still have their knowledge
-		// (lifespanTicks=600, we only tick 500 times, so they haven't died)
-		expect(stats.totalKnowledge).toBeGreaterThanOrEqual(2);
+		// Seeded entities may die (lifespan varies 80-120% of base) and
+		// decay system erodes unused sequences, so we just check the
+		// simulation is still running with living entities
+		expect(stats.totalKnowledge).toBeGreaterThanOrEqual(1);
 		expect(stats.alive).toBe(6);
 	});
 

@@ -76,6 +76,8 @@ export function createAvatarEntity(
 			partner: null,
 			teachingProgress: 0,
 			sequenceBeingTransferred: null,
+			performingSequenceId: null,
+			inJam: false,
 			currentBeatIndex: 0,
 			frustrationLevel: 0,
 			idleTimer: 0,
