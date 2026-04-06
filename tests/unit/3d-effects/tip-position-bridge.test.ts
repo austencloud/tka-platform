@@ -14,7 +14,8 @@ function makePropState(x: number, y: number, z: number) {
 describe("TipPositionBridge3D", () => {
 	it("computes two tip positions from prop state", () => {
 		const bridge = new TipPositionBridge3D();
-		const result = bridge.update(0, makePropState(0, 1, 0), 0.5, 1 / 60);
+		const center = { x: 0, y: 1, z: 0 };
+		const result = bridge.update(0, makePropState(0, 1, 0), center, 0.5, 1 / 60);
 		expect(result.tips.length).toBe(2);
 		expect(result.propIndex).toBe(0);
 	});
@@ -22,7 +23,8 @@ describe("TipPositionBridge3D", () => {
 	it("tips are separated by staff length along the computed axis", () => {
 		const bridge = new TipPositionBridge3D();
 		const halfLen = 0.5;
-		const result = bridge.update(0, makePropState(0, 0, 0), halfLen, 1 / 60);
+		const center = { x: 0, y: 0, z: 0 };
+		const result = bridge.update(0, makePropState(0, 0, 0), center, halfLen, 1 / 60);
 
 		const tip0 = result.tips[0].position;
 		const tip1 = result.tips[1].position;
@@ -37,8 +39,10 @@ describe("TipPositionBridge3D", () => {
 
 	it("computes velocity from position changes", () => {
 		const bridge = new TipPositionBridge3D();
-		bridge.update(0, makePropState(0, 1, 0), 0.5, 1 / 60);
-		const result = bridge.update(0, makePropState(1, 1, 0), 0.5, 1 / 60);
+		const center1 = { x: 0, y: 1, z: 0 };
+		const center2 = { x: 1, y: 1, z: 0 };
+		bridge.update(0, makePropState(0, 1, 0), center1, 0.5, 1 / 60);
+		const result = bridge.update(0, makePropState(1, 1, 0), center2, 0.5, 1 / 60);
 
 		// Velocity should be non-zero after center moved
 		const tip = result.tips[0];
@@ -50,8 +54,10 @@ describe("TipPositionBridge3D", () => {
 
 	it("velocity magnitude matches speed field", () => {
 		const bridge = new TipPositionBridge3D();
-		bridge.update(0, makePropState(0, 0, 0), 0.5, 1 / 60);
-		const result = bridge.update(0, makePropState(1, 0, 0), 0.5, 1 / 60);
+		const center1 = { x: 0, y: 0, z: 0 };
+		const center2 = { x: 1, y: 0, z: 0 };
+		bridge.update(0, makePropState(0, 0, 0), center1, 0.5, 1 / 60);
+		const result = bridge.update(0, makePropState(1, 0, 0), center2, 0.5, 1 / 60);
 
 		const tip = result.tips[0];
 		const computedSpeed = Math.sqrt(
@@ -62,7 +68,8 @@ describe("TipPositionBridge3D", () => {
 
 	it("returns zero velocity on first frame", () => {
 		const bridge = new TipPositionBridge3D();
-		const result = bridge.update(0, makePropState(5, 3, 1), 0.5, 1 / 60);
+		const center = { x: 5, y: 3, z: 1 };
+		const result = bridge.update(0, makePropState(5, 3, 1), center, 0.5, 1 / 60);
 		expect(result.tips[0].speed).toBe(0);
 		expect(result.tips[1].speed).toBe(0);
 	});
@@ -72,11 +79,11 @@ describe("TipPositionBridge3D", () => {
 		const dt = 1 / 60;
 
 		// Frame 1: stationary
-		bridge.update(0, makePropState(0, 0, 0), 0.5, dt);
+		bridge.update(0, makePropState(0, 0, 0), { x: 0, y: 0, z: 0 }, 0.5, dt);
 		// Frame 2: start moving (velocity appears, jerk should be non-zero)
-		bridge.update(0, makePropState(1, 0, 0), 0.5, dt);
+		bridge.update(0, makePropState(1, 0, 0), { x: 1, y: 0, z: 0 }, 0.5, dt);
 		// Frame 3: stop moving (velocity drops, jerk should be non-zero again)
-		const result = bridge.update(0, makePropState(1, 0, 0), 0.5, dt);
+		const result = bridge.update(0, makePropState(1, 0, 0), { x: 1, y: 0, z: 0 }, 0.5, dt);
 
 		const tip = result.tips[0];
 		const jerkMag = Math.sqrt(
@@ -87,12 +94,12 @@ describe("TipPositionBridge3D", () => {
 
 	it("resets history", () => {
 		const bridge = new TipPositionBridge3D();
-		bridge.update(0, makePropState(0, 0, 0), 0.5, 1 / 60);
-		bridge.update(0, makePropState(10, 0, 0), 0.5, 1 / 60);
+		bridge.update(0, makePropState(0, 0, 0), { x: 0, y: 0, z: 0 }, 0.5, 1 / 60);
+		bridge.update(0, makePropState(10, 0, 0), { x: 10, y: 0, z: 0 }, 0.5, 1 / 60);
 		bridge.reset();
 
 		// After reset, should be like first frame again
-		const result = bridge.update(0, makePropState(0, 0, 0), 0.5, 1 / 60);
+		const result = bridge.update(0, makePropState(0, 0, 0), { x: 0, y: 0, z: 0 }, 0.5, 1 / 60);
 		expect(result.tips[0].speed).toBe(0);
 		expect(result.tips[1].speed).toBe(0);
 	});
@@ -100,18 +107,20 @@ describe("TipPositionBridge3D", () => {
 	it("tracks multiple props independently", () => {
 		const bridge = new TipPositionBridge3D();
 		const dt = 1 / 60;
+		const origin = { x: 0, y: 0, z: 0 };
 
 		// Prop 0 stationary, prop 1 moving
-		bridge.update(0, makePropState(0, 0, 0), 0.5, dt);
-		bridge.update(1, makePropState(0, 0, 0), 0.5, dt);
+		bridge.update(0, makePropState(0, 0, 0), origin, 0.5, dt);
+		bridge.update(1, makePropState(0, 0, 0), origin, 0.5, dt);
 
-		bridge.update(0, makePropState(0, 0, 0), 0.5, dt); // still stationary
-		const movingResult = bridge.update(1, makePropState(5, 0, 0), 0.5, dt);
+		bridge.update(0, makePropState(0, 0, 0), origin, 0.5, dt); // still stationary
+		const movingResult = bridge.update(1, makePropState(5, 0, 0), { x: 5, y: 0, z: 0 }, 0.5, dt);
 
 		// Prop 1 should have velocity, prop 0 should not
 		const stationaryResult = bridge.update(
 			0,
 			makePropState(0, 0, 0),
+			origin,
 			0.5,
 			dt,
 		);

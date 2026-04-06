@@ -5,15 +5,20 @@
    * (which provides PropState3D per frame) and the visual effect components
    * (Trail3D, and eventually Fire3D, LED3D, etc.).
    *
+   * Renders in rig-local space: receives hand positions and prop states,
+   * computes rig-local tip positions via TipPositionBridge3D, and adds
+   * imperative meshes to an effectsParentRef (a T.Group inside the rig).
+   *
    * Each frame it:
-   *   1. Feeds prop states through TipPositionBridge3D to get world-space tip positions
-   *   2. Resolves which effect each tip is assigned via resolveEffect()
-   *   3. Passes tip positions to the appropriate renderer components
+   *   1. Computes rig-local center for each prop (handPos + propState.worldPosition)
+   *   2. Feeds prop states through TipPositionBridge3D to get rig-local tip positions
+   *   3. Resolves which effect each tip is assigned via resolveEffect()
+   *   4. Passes tip positions to the appropriate renderer components
    */
 
   import { useThrelte, useTask } from "@threlte/core";
   import { onDestroy } from "svelte";
-  import { Vector3, Color, Group } from "three";
+  import { Vector3, Color, Object3D } from "three";
   import { container } from "$lib/shared/di";
   import Trail3D from "./trails/Trail3D.svelte";
   import { LedRenderer3D, type LedTipInput } from "./led/LedRenderer3D";
@@ -45,8 +50,12 @@
     staffHalfLength?: number;
     tipEffectMap?: TipEffectMap;
     globalTipEffectMap?: TipEffectMap;
-    bluePropAnchorRef?: Group;
-    redPropAnchorRef?: Group;
+    /** Rig-local hand position for blue prop (from PerformerRig HandAnchor) */
+    blueHandPos?: { x: number; y: number; z: number };
+    /** Rig-local hand position for red prop (from PerformerRig HandAnchor) */
+    redHandPos?: { x: number; y: number; z: number };
+    /** Parent Object3D to add imperative meshes to (rig group). Falls back to scene root. */
+    effectsParentRef?: Object3D;
     trailConfig?: {
       color?: string;
       width?: number;
@@ -63,8 +72,9 @@
     staffHalfLength = 0.5,
     tipEffectMap,
     globalTipEffectMap = {},
-    bluePropAnchorRef,
-    redPropAnchorRef,
+    blueHandPos = { x: 0, y: 0, z: 0 },
+    redHandPos = { x: 0, y: 0, z: 0 },
+    effectsParentRef,
     trailConfig = {},
   }: Props = $props();
 
@@ -94,27 +104,20 @@
     TIER_CONFIGS[qualityTierDetector.currentTier],
   );
 
-  // Threlte's scene.current is only available inside reactive contexts ($effect),
-  // NOT inside useTask imperative callbacks. Capture the reference here so
-  // useTask can use it for LED renderer initialization.
-  let sceneRef: import("three").Scene | null = null;
-
-  // Scene-scoped light pool. Deferred until scene.current is available
-  // (Threlte's scene ref may not be populated at component construction time).
+  // Scene-scoped light pool. Deferred until effectsParentRef or scene.current
+  // is available.
   let lightManager = $state<DynamicLightManager | null>(null);
 
   $effect(() => {
-    const s = scene.current;
+    const parent = effectsParentRef ?? scene.current;
     const cfg = tierConfig;
-    if (!s) return;
-
-    sceneRef = s;
+    if (!parent) return;
 
     // Dispose previous manager if it exists
     if (lightManager) {
       lightManager.dispose();
     }
-    lightManager = new DynamicLightManager(s, cfg);
+    lightManager = new DynamicLightManager(parent, cfg);
   });
 
   // Per-tip tracking: each prop has two tips (staff = 2 ends).
@@ -151,11 +154,24 @@
     charcoalTips.length = 0;
     fireTips.length = 0;
 
-    // Note: in the 3D viewer, bluePropState visually corresponds to the red-colored
-    // prop and vice versa (the naming follows the avatar's perspective, not the viewer's).
-    // Swap so trail colors match the visible prop colors.
-    if (redPropState) {
-      const result = tipBridge.update(0, redPropState, staffHalfLength, dt, redPropAnchorRef);
+    // Compute rig-local center for each prop.
+    // Note the swap: blue visual trail uses redPropState (the naming convention
+    // swap from the 3D prop color swap — bluePropState visually corresponds to
+    // the red-colored prop and vice versa).
+    const blueRigCenter = redPropState ? {
+      x: blueHandPos.x + redPropState.worldPosition.x,
+      y: blueHandPos.y + redPropState.worldPosition.y,
+      z: blueHandPos.z + redPropState.worldPosition.z,
+    } : null;
+
+    const redRigCenter = bluePropState ? {
+      x: redHandPos.x + bluePropState.worldPosition.x,
+      y: redHandPos.y + bluePropState.worldPosition.y,
+      z: redHandPos.z + bluePropState.worldPosition.z,
+    } : null;
+
+    if (redPropState && blueRigCenter) {
+      const result = tipBridge.update(0, redPropState, blueRigCenter, staffHalfLength, dt);
       blueTipData = result.tips.map((tip, tipIndex) => {
         const resolved = resolveEffect(
           0,
@@ -205,8 +221,8 @@
       });
     }
 
-    if (bluePropState) {
-      const result = tipBridge.update(1, bluePropState, staffHalfLength, dt, bluePropAnchorRef);
+    if (bluePropState && redRigCenter) {
+      const result = tipBridge.update(1, bluePropState, redRigCenter, staffHalfLength, dt);
       redTipData = result.tips.map((tip, tipIndex) => {
         const resolved = resolveEffect(
           1,
@@ -257,66 +273,66 @@
     }
 
     // LED rendering — direct imperative update in the same frame tick.
-    // scene.current is NOT available inside useTask in this Threlte version.
-    // Get the scene from the camera's parent chain instead.
+    // Determine the parent for imperative meshes: effectsParentRef (rig group)
+    // or fall back to scene root via camera parent chain.
     const cam = camera.current;
-    if (cam) {
+    let imperativeParent: Object3D | null = effectsParentRef ?? null;
+
+    if (!imperativeParent && cam) {
       // Walk up to the root Scene object
       let root = cam.parent;
       while (root?.parent) root = root.parent;
+      imperativeParent = root;
+    }
 
-      if (root) {
-        // Capture scene ref for cleanup
-        if (!sceneRef) sceneRef = root as import("three").Scene;
+    if (imperativeParent) {
+      // Initialize LED renderers lazily
+      if (!blueLedRenderer) {
+        blueLedRenderer = new LedRenderer3D(qualityTierDetector.currentTier);
+        blueLedRenderer.initialize(imperativeParent);
+      }
+      if (!redLedRenderer) {
+        redLedRenderer = new LedRenderer3D(qualityTierDetector.currentTier);
+        redLedRenderer.initialize(imperativeParent);
+      }
+      const now = performance.now() / 1000;
 
-        // Initialize LED renderers lazily
-        if (!blueLedRenderer) {
-          blueLedRenderer = new LedRenderer3D(qualityTierDetector.currentTier);
-          blueLedRenderer.initialize(root as import("three").Scene);
-        }
-        if (!redLedRenderer) {
-          redLedRenderer = new LedRenderer3D(qualityTierDetector.currentTier);
-          redLedRenderer.initialize(root as import("three").Scene);
-        }
-        const now = performance.now() / 1000;
+      // Update blue LED renderer
+      if (blueLedTips.length > 0) {
+        blueLedRenderer.update(blueLedTips, cam!, now);
+      } else {
+        blueLedRenderer.reset();
+      }
 
-        // Update blue LED renderer
-        if (blueLedTips.length > 0) {
-          blueLedRenderer.update(blueLedTips, cam, now);
-        } else {
-          blueLedRenderer.reset();
-        }
+      // Update red LED renderer
+      if (redLedTips.length > 0) {
+        redLedRenderer.update(redLedTips, cam!, now);
+      } else {
+        redLedRenderer.reset();
+      }
 
-        // Update red LED renderer
-        if (redLedTips.length > 0) {
-          redLedRenderer.update(redLedTips, cam, now);
-        } else {
-          redLedRenderer.reset();
-        }
+      // Charcoal renderer (single pool for all tips)
+      if (!charcoalRenderer) {
+        charcoalRenderer = new CharcoalRenderer3D(qualityTierDetector.currentTier);
+        charcoalRenderer.initialize(imperativeParent);
+      }
 
-        // Charcoal renderer (single pool for all tips)
-        if (!charcoalRenderer) {
-          charcoalRenderer = new CharcoalRenderer3D(qualityTierDetector.currentTier);
-          charcoalRenderer.initialize(root as import("three").Scene);
-        }
+      if (charcoalTips.length > 0) {
+        charcoalRenderer.update(charcoalTips, dt);
+      } else {
+        charcoalRenderer.reset();
+      }
 
-        if (charcoalTips.length > 0) {
-          charcoalRenderer.update(charcoalTips, dt);
-        } else {
-          charcoalRenderer.reset();
-        }
+      // Fire renderer
+      if (!fireRenderer) {
+        fireRenderer = new FireRenderer3D(qualityTierDetector.currentTier);
+        fireRenderer.initialize(imperativeParent);
+      }
 
-        // Fire renderer
-        if (!fireRenderer) {
-          fireRenderer = new FireRenderer3D(qualityTierDetector.currentTier);
-          fireRenderer.initialize(root as import("three").Scene);
-        }
-
-        if (fireTips.length > 0) {
-          fireRenderer.update(fireTips, dt);
-        } else {
-          fireRenderer.reset();
-        }
+      if (fireTips.length > 0) {
+        fireRenderer.update(fireTips, dt);
+      } else {
+        fireRenderer.reset();
       }
     }
   });
@@ -375,7 +391,7 @@
   />
 {/each}
 
-<!-- LED effects are managed imperatively by the orchestrator's useTask
-     (LedRenderer3D instances added directly to the Three.js scene).
-     This bypasses Svelte's batched prop propagation so LED data flows
+<!-- LED, charcoal, and fire effects are managed imperatively by the orchestrator's
+     useTask — renderer instances add meshes to the effectsParentRef (rig group).
+     This bypasses Svelte's batched prop propagation so effect data flows
      in the same frame tick as the tip position computation. -->

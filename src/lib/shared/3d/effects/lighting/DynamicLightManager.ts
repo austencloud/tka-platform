@@ -1,4 +1,4 @@
-import { PointLight, Color, Scene, Vector3 } from "three";
+import { PointLight, Color, Object3D, Vector3 } from "three";
 import type { QualityTierConfig } from "../types";
 
 export interface LightHandle {
@@ -13,21 +13,21 @@ export interface LightHandle {
  * Scene-scoped: instantiate one per 3D scene, not as a DI singleton.
  */
 export class DynamicLightManager {
-  private scene: Scene;
+  private parent: Object3D;
   private maxLights: number;
   private pool: PointLight[] = [];
   private activeHandles = new Map<number, PointLight>();
   private nextId = 0;
 
-  constructor(scene: Scene, tierConfig: QualityTierConfig) {
-    this.scene = scene;
+  constructor(parent: Object3D, tierConfig: QualityTierConfig) {
+    this.parent = parent;
     this.maxLights = tierConfig.maxDynamicLights;
 
     // Pre-allocate the full pool so no runtime allocations happen
     for (let i = 0; i < this.maxLights; i++) {
       const light = new PointLight(0xffffff, 0, 10);
       light.visible = false;
-      this.scene.add(light);
+      this.parent.add(light);
       this.pool.push(light);
     }
   }
@@ -95,7 +95,7 @@ export class DynamicLightManager {
 
   dispose(): void {
     for (const light of this.pool) {
-      this.scene.remove(light);
+      this.parent.remove(light);
       light.dispose();
     }
     this.pool = [];

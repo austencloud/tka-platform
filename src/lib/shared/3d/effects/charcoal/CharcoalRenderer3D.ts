@@ -16,7 +16,7 @@ import {
   BufferGeometry,
   BufferAttribute,
   Points,
-  type Scene,
+  Object3D,
 } from "three";
 import { createCharcoalMaterial, type CharcoalMaterialOptions } from "./CharcoalMaterial3D";
 import { QualityTier } from "../types";
@@ -105,7 +105,7 @@ export class CharcoalRenderer3D {
   private qualityTier: QualityTier;
   private points: Points | null = null;
   private geometry: BufferGeometry | null = null;
-  private scene: Scene | null = null;
+  private parent: Object3D | null = null;
 
   // Pre-allocated attribute arrays
   private positions: Float32Array;
@@ -138,9 +138,9 @@ export class CharcoalRenderer3D {
     this.temps = new Float32Array(this.poolSize);
   }
 
-  initialize(scene: Scene, materialOptions?: CharcoalMaterialOptions): void {
+  initialize(parent: Object3D, materialOptions?: CharcoalMaterialOptions): void {
     if (this.points) return;
-    this.scene = scene;
+    this.parent = parent;
 
     this.geometry = new BufferGeometry();
     // Use BufferAttribute directly (not Float32BufferAttribute) to keep the
@@ -155,7 +155,7 @@ export class CharcoalRenderer3D {
     this.points.frustumCulled = false;
     this.points.renderOrder = 99;
 
-    scene.add(this.points);
+    parent.add(this.points);
   }
 
   /**
@@ -324,7 +324,7 @@ export class CharcoalRenderer3D {
 
   dispose(): void {
     if (this.points) {
-      this.scene?.remove(this.points);
+      this.parent?.remove(this.points);
       this.geometry?.dispose();
       if (Array.isArray(this.points.material)) {
         this.points.material.forEach((m) => m.dispose());
@@ -334,6 +334,6 @@ export class CharcoalRenderer3D {
       this.points = null;
       this.geometry = null;
     }
-    this.scene = null;
+    this.parent = null;
   }
 }

@@ -1,4 +1,4 @@
-import { Vector3, Quaternion, Euler, Group } from "three";
+import { Vector3, Quaternion, Euler } from "three";
 import type { PropTipPositions3D, TipPositionData3D } from "./types";
 import type {
 	ITipPositionBridge3D,
@@ -12,7 +12,7 @@ interface TipHistory {
 }
 
 /**
- * Converts 3D prop animation state into per-tip world-space positions with
+ * Converts 3D prop animation state into per-tip rig-local positions with
  * velocity and jerk computed via finite differencing.
  *
  * The staff axis math replicates Staff3D.svelte: a horizontal quaternion
@@ -20,9 +20,10 @@ interface TipHistory {
  * axis along the staff. Two tip positions are computed at +/- halfLength
  * from the prop center along that axis.
  *
- * When a propAnchorRef is provided, the prop center is read directly from
- * the scene graph (eliminating duplicate transform math). Otherwise falls
- * back to propState.worldPosition.
+ * Operates in rig-local space: the caller provides a rig-local center
+ * position (handAnchorPos + propState.worldPosition). No scene graph refs
+ * are read. The rig's T.Group rotation.y handles facing, so no facing
+ * quaternion is needed here.
  */
 export class TipPositionBridge3D implements ITipPositionBridge3D {
 	private history = new Map<string, TipHistory>();
@@ -32,24 +33,14 @@ export class TipPositionBridge3D implements ITipPositionBridge3D {
 	update(
 		propIndex: number,
 		propState: PropState3DLike,
+		rigLocalCenter: { x: number; y: number; z: number },
 		staffHalfLength: number,
 		deltaTime: number,
-		propAnchorRef?: Group,
 	): PropTipPositions3D {
-		// Read prop center from scene graph if ref is available
-		const center = new Vector3();
-		if (propAnchorRef) {
-			propAnchorRef.updateWorldMatrix(true, false);
-			propAnchorRef.getWorldPosition(center);
-		} else {
-			// Fallback: use propState worldPosition directly
-			center.set(propState.worldPosition.x, propState.worldPosition.y, propState.worldPosition.z);
-		}
+		const center = new Vector3(rigLocalCenter.x, rigLocalCenter.y, rigLocalCenter.z);
 
-		// Staff rotation: facingQuat × worldRotation × horizontalQuat
-		// worldRotation = planeQuat × staffSpin (body-local, no facing).
-		// horizontalQuat lays the cylinder from +Y to -X.
-		// facingQuat comes from the rig's scene graph (PropAnchor inherits it).
+		// Staff axis in rig-local space: worldRotation × horizontalQuat.
+		// No facing rotation needed — the rig's T.Group rotation.y handles that.
 		const rotation = new Quaternion(
 			propState.worldRotation.x,
 			propState.worldRotation.y,
@@ -59,27 +50,11 @@ export class TipPositionBridge3D implements ITipPositionBridge3D {
 		const horizontalQuat = this.tempQuat.setFromEuler(
 			new Euler(0, 0, Math.PI / 2),
 		);
-
-		let finalQuat: Quaternion;
-		if (propAnchorRef) {
-			// PropAnchor's world quaternion includes the rig root's facing rotation.
-			// Compose: parentWorldQuat × worldRotation × horizontalQuat
-			const parentQuat = new Quaternion();
-			propAnchorRef.getWorldQuaternion(parentQuat);
-			finalQuat = parentQuat.multiply(rotation).multiply(horizontalQuat);
-		} else {
-			// Fallback without scene graph: no facing rotation available.
-			finalQuat = rotation.multiply(horizontalQuat);
-		}
-
+		const finalQuat = rotation.multiply(horizontalQuat);
 		this.tempAxis.set(0, 1, 0).applyQuaternion(finalQuat);
 
-		const positivePos = center
-			.clone()
-			.add(this.tempAxis.clone().multiplyScalar(staffHalfLength));
-		const negativePos = center
-			.clone()
-			.sub(this.tempAxis.clone().multiplyScalar(staffHalfLength));
+		const positivePos = center.clone().add(this.tempAxis.clone().multiplyScalar(staffHalfLength));
+		const negativePos = center.clone().sub(this.tempAxis.clone().multiplyScalar(staffHalfLength));
 
 		const tips: TipPositionData3D[] = [
 			this.computeTipData(propIndex, 0, positivePos, deltaTime),

@@ -16,8 +16,9 @@
    *   │   ├── GridAnchor (conditional, dual-wheel vs single grid)
    *   │   ├── Blue HandAnchor + PropAnchor
    *   │   └── Red HandAnchor + PropAnchor
+   *   ├── EffectsGroup (T.Group — rig-local, inherits facing)
+   *   │   └── EffectOrchestrator3D
    *   └── Extras slot (snippet)
-   *   EffectOrchestrator3D (SIBLING — world space, NOT inside rotated group)
    */
 
   import { T } from "@threlte/core";
@@ -129,9 +130,13 @@
   });
 
   // PropAnchor refs — these are the Three.js Group objects that Avatar3D
-  // and EffectOrchestrator3D will read world positions from (Tasks 7, 8).
+  // reads world positions from for IK targeting.
   let bluePropAnchorRef = $state<Group | undefined>(undefined);
   let redPropAnchorRef = $state<Group | undefined>(undefined);
+
+  // Effects group ref — imperative renderers (LED, charcoal, fire) add their
+  // meshes to this group so they inherit the rig's transform.
+  let effectsGroupRef = $state<Group | undefined>(undefined);
 </script>
 
 <!-- Root: position in world space, apply facing rotation -->
@@ -250,24 +255,27 @@
 
   </T.Group>
 
+  <!-- Effects render in rig-local space — same coordinate system as props.
+       The rig's T.Group rotation.y handles facing, so effect positions
+       computed from handPos + propState.worldPosition are correct without
+       any manual facing math. -->
+  {#if showEffects}
+    <T.Group bind:ref={effectsGroupRef}>
+      <EffectOrchestrator3D
+        {bluePropState}
+        {redPropState}
+        {isPlaying}
+        {staffHalfLength}
+        globalTipEffectMap={tipEffectMap}
+        {blueHandPos}
+        {redHandPos}
+        effectsParentRef={effectsGroupRef}
+      />
+    </T.Group>
+  {/if}
+
   <!-- Extras slot: consumer-specific content (platform meshes, labels, etc.) -->
   {#if extras}
     {@render extras()}
   {/if}
 </T.Group>
-
-<!-- Effects render in world space — EffectOrchestrator3D reads world positions
-     from PropAnchor refs via getWorldPosition(), so it must NOT be a child of
-     the rig's rotated T.Group. Being inside that group would cause the rig's
-     rotation to be applied a second time, displacing the effects from the props. -->
-{#if showEffects}
-  <EffectOrchestrator3D
-    {bluePropState}
-    {redPropState}
-    {isPlaying}
-    {staffHalfLength}
-    globalTipEffectMap={tipEffectMap}
-    bluePropAnchorRef={bluePropAnchorRef}
-    redPropAnchorRef={redPropAnchorRef}
-  />
-{/if}
