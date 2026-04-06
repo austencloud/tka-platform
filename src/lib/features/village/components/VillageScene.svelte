@@ -11,6 +11,7 @@
 	import VillageMonument from "./VillageMonument.svelte";
 	import VillageJamCircle from "./VillageJamCircle.svelte";
 	import VillageDroppedProp from "./VillageDroppedProp.svelte";
+	import VillagePropWall from "./VillagePropWall.svelte";
 	import { getVillageContext, getVillageVisualContext } from "../state/village-context";
 
 	const villageState = getVillageContext();
@@ -32,6 +33,7 @@
 	const currentTick = $derived(villageState.orchestrator.currentTick);
 	const deathMarks = $derived(visualState.deathMarks);
 	const droppedProps = $derived(villageState.orchestrator.droppedProps);
+	const propWall = $derived(villageState.orchestrator.propWall);
 	const toasts = $derived(visualState.toasts);
 	const schools = $derived(villageState.orchestrator.schools ?? []);
 
@@ -101,6 +103,9 @@
 {#each droppedProps as drop (drop.artifact.id)}
 	<VillageDroppedProp {drop} />
 {/each}
+
+<!-- Prop wall (retired props display) -->
+<VillagePropWall artifacts={propWall} />
 
 <!-- Monuments (hexagonal pillars marking surviving sequences) -->
 {#if visualState.showMonuments}
