@@ -82,6 +82,7 @@ describe("MonumentSystem", () => {
 				learnedFrom: null,
 				lineage: [],
 				lastUsedTick: 0,
+				style: { amplitudeScale: 1.0, tempoOffset: 0 },
 			});
 			carriers.push(e);
 		}
@@ -114,6 +115,7 @@ describe("MonumentSystem", () => {
 				learnedFrom: null,
 				lineage: [],
 				lastUsedTick: 0,
+				style: { amplitudeScale: 1.0, tempoOffset: 0 },
 			});
 		}
 
@@ -152,6 +154,7 @@ describe("MonumentSystem", () => {
 				learnedFrom: null,
 				lineage: [],
 				lastUsedTick: 0,
+				style: { amplitudeScale: 1.0, tempoOffset: 0 },
 			});
 		}
 
@@ -175,6 +178,7 @@ describe("MonumentSystem", () => {
 			learnedFrom: null,
 			lineage: [],
 			lastUsedTick: 250,
+			style: { amplitudeScale: 1.0, tempoOffset: 0 },
 		});
 
 		system.tick(world, 300);
@@ -203,6 +207,7 @@ describe("MonumentSystem", () => {
 				learnedFrom: null,
 				lineage: [],
 				lastUsedTick: 0,
+				style: { amplitudeScale: 1.0, tempoOffset: 0 },
 			});
 		}
 

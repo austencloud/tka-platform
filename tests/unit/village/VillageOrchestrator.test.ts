@@ -120,6 +120,7 @@ describe("VillageOrchestrator", () => {
 			learnedFrom: null,
 			lineage: [],
 			lastUsedTick: 0,
+			style: { amplitudeScale: 1.0, tempoOffset: 0 },
 		});
 		entities[1].knowledge.knownSequences.set("seed2", {
 			sequenceId: "seed2",
@@ -130,6 +131,7 @@ describe("VillageOrchestrator", () => {
 			learnedFrom: null,
 			lineage: [],
 			lastUsedTick: 0,
+			style: { amplitudeScale: 1.0, tempoOffset: 0 },
 		});
 
 		// Place all entities near each other to encourage interaction

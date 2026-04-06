@@ -71,6 +71,7 @@ describe("GiftIntegration", () => {
 			learnedFrom: null,
 			lineage: [],
 			lastUsedTick: 0,
+			style: { amplitudeScale: 1.0, tempoOffset: 0 },
 		});
 
 		// Force Math.random to always return a low value (triggering the gift)
@@ -115,6 +116,7 @@ describe("GiftIntegration", () => {
 			learnedFrom: null,
 			lineage: ["prev-teacher"],
 			lastUsedTick: 0,
+			style: { amplitudeScale: 1.0, tempoOffset: 0 },
 		});
 
 		vi.spyOn(Math, "random").mockReturnValue(0.001);
@@ -154,6 +156,7 @@ describe("GiftIntegration", () => {
 			learnedFrom: null,
 			lineage: [],
 			lastUsedTick: 0,
+			style: { amplitudeScale: 1.0, tempoOffset: 0 },
 		});
 
 		vi.spyOn(Math, "random").mockReturnValue(0.001);
@@ -191,6 +194,7 @@ describe("GiftIntegration", () => {
 			learnedFrom: null,
 			lineage: [],
 			lastUsedTick: 0,
+			style: { amplitudeScale: 1.0, tempoOffset: 0 },
 		};
 
 		gifter.knowledge.knownSequences.set("seq1", { ...sharedSeq });

@@ -59,6 +59,7 @@ export class ProximityLearningSystem {
 							? [...teacherKnowledge.lineage, adult.id]
 							: [adult.id],
 						lastUsedTick: currentTick,
+						style: { amplitudeScale: 1.0, tempoOffset: 0 },
 					});
 					this.absorptionProgress.delete(key);
 				} else {

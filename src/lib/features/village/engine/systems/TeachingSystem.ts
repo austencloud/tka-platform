@@ -95,6 +95,7 @@ export class TeachingSystem {
 			learnedFrom: teacher.id,
 			lineage: [...teacherKnowledge.lineage, teacher.id],
 			lastUsedTick: currentTick,
+			style: { amplitudeScale: 1.0, tempoOffset: 0 },
 		};
 
 		learner.knowledge.knownSequences.set(sequenceId, learned);

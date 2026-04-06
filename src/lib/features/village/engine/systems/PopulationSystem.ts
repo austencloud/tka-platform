@@ -125,6 +125,7 @@ export class PopulationSystem {
 				learnedFrom: source.id,
 				lineage: [...seqData.lineage, source.id],
 				lastUsedTick: 0,
+				style: { amplitudeScale: 1.0, tempoOffset: 0 },
 			});
 		}
 

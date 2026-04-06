@@ -11,6 +11,11 @@ export interface IdentityComponent {
 	avatarModelId: string; // "x-bot", "y-bot", "remy", "ch26"
 }
 
+export interface StyleSignature {
+	amplitudeScale: number; // 0.8-1.2, how big the movements are
+	tempoOffset: number; // -0.1 to 0.1, slightly faster/slower
+}
+
 export interface LearnedSequence {
 	sequenceId: string;
 	sequenceData: unknown | null; // SequenceData for rendering (null in headless mode)
@@ -20,6 +25,7 @@ export interface LearnedSequence {
 	learnedFrom: string | null; // entity id
 	lineage: string[]; // chain of entity ids
 	lastUsedTick: number; // updated on teaching, performing, practicing
+	style: StyleSignature; // teaching lineage drift
 }
 
 export interface KnowledgeComponent {
@@ -121,6 +127,14 @@ export interface VillageEventMap {
 	"monument:dimmed": (sequenceId: string) => void;
 	"monument:relit": (sequenceId: string) => void;
 	"reincarnation:detected": (newEntity: VillageEntity, sourceEntityId: string) => void;
+	"school:formed": (school: StyleSchool) => void;
+	"school:dissolved": (schoolId: string) => void;
+}
+
+export interface StyleSchool {
+	id: string; // hash of founding teacher's entity id
+	color: string; // derived tint color
+	memberIds: Set<string>; // entity ids in this school
 }
 
 export type VillageEventKey = keyof VillageEventMap;

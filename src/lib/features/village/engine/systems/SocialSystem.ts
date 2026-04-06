@@ -279,6 +279,7 @@ export class SocialSystem {
 						learnedAt: currentTick,
 						lineage: [...giftable.lineage, entity.id],
 						lastUsedTick: currentTick,
+						style: { amplitudeScale: 1.0, tempoOffset: 0 },
 					});
 					this.emitter.emit("teaching:completed", entity, partner, giftable.sequenceId);
 				}

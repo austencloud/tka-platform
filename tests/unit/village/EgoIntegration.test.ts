@@ -66,6 +66,7 @@ describe("EgoIntegration", () => {
 			learnedFrom: null,
 			lineage: [],
 			lastUsedTick: 0,
+			style: { amplitudeScale: 1.0, tempoOffset: 0 },
 		};
 		teacher.knowledge.knownSequences.set("seq1", seq);
 
@@ -125,6 +126,7 @@ describe("EgoIntegration", () => {
 			learnedFrom: null,
 			lineage: [],
 			lastUsedTick: 0,
+			style: { amplitudeScale: 1.0, tempoOffset: 0 },
 		});
 
 		// Force them into approaching state so they can arrive and attempt teaching
