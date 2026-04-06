@@ -31,6 +31,14 @@
 	const currentTick = $derived(villageState.orchestrator.currentTick);
 	const deathMarks = $derived(visualState.deathMarks);
 	const toasts = $derived(visualState.toasts);
+	const schools = $derived(villageState.orchestrator.schools ?? []);
+
+	function getSchoolColor(entityId: string): string | null {
+		for (const school of schools) {
+			if (school.memberIds.has(entityId)) return school.color;
+		}
+		return null;
+	}
 </script>
 
 <!-- Lighting -->
@@ -104,6 +112,7 @@
 	<VillageAvatar
 		{renderState}
 		isSelected={villageState.selectedAvatarId === renderState.entityId}
+		schoolColor={getSchoolColor(renderState.entityId)}
 	/>
 {/each}
 
