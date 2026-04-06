@@ -89,7 +89,8 @@
 		villageState.orchestrator.on("monument:placed", (_seqId, x, z) => {
 			vs.pushToast("A monument rises", "#e8a87c", x, z, 3000);
 		});
-		villageState.orchestrator.on("monument:relit", (_seqId) => {
+		villageState.orchestrator.on("monument:relit", (seqId) => {
+			vs.triggerRelight(seqId);
 			vs.pushToast("Knowledge resurrected", "#f8fafc", 0, 0, 3000);
 		});
 		villageState.orchestrator.on("jam:formed", (performers, location) => {
@@ -99,6 +100,17 @@
 				location.x,
 				location.z,
 			);
+		});
+		villageState.orchestrator.on("school:formed", (school) => {
+			vs.pushToast(
+				`A style school formed (${school.memberIds.size} members)`,
+				school.color,
+				0, 0,
+				3000,
+			);
+		});
+		villageState.orchestrator.on("school:dissolved", (_schoolId) => {
+			vs.pushToast("A style school dissolved", "#6b7280", 0, 0, 2000);
 		});
 
 		// Auto-start
