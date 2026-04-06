@@ -34,6 +34,9 @@
   import type { GridMode } from "../domain/constants/grid-layout";
   import type { TipEffectMap } from "$lib/shared/animation-engine/domain/types/TipEffectTypes";
 
+  // Constant sets to avoid allocating new Set objects on every reactive update.
+  const WHEEL_ONLY = new Set([Plane.WHEEL]);
+
   interface Props {
     /** World position (x/z). y=0 is ground level. */
     position: { x: number; z: number };
@@ -104,14 +107,14 @@
   // HandAnchor positions in rig-local space.
   // Wall mode: both hands at z=gridOffset (grid center is forward of body).
   // Dual-wheel: hands at lateral offsets, z=0 (grid at solar plexus).
+  // HandAnchor positions only vary in x (lateral) and z (forward offset).
+  // y is always 0 — hands orbit at the same height as the rig origin.
   const blueHandPos = $derived({
     x: modeConfig.blueLateralOffset,
-    y: 0,
     z: isDualWheel ? 0 : gridOffset,
   });
   const redHandPos = $derived({
     x: modeConfig.redLateralOffset,
-    y: 0,
     z: isDualWheel ? 0 : gridOffset,
   });
 
@@ -152,7 +155,7 @@
     {#if isDualWheel}
       <T.Group position.x={modeConfig.blueLateralOffset}>
         <Grid3D
-          visiblePlanes={new Set([Plane.WHEEL])}
+          visiblePlanes={WHEEL_ONLY}
           planeOpacity={0.10}
           showLabels={false}
           {gridMode}
@@ -160,7 +163,7 @@
       </T.Group>
       <T.Group position.x={modeConfig.redLateralOffset}>
         <Grid3D
-          visiblePlanes={new Set([Plane.WHEEL])}
+          visiblePlanes={WHEEL_ONLY}
           planeOpacity={0.10}
           showLabels={false}
           {gridMode}
@@ -181,7 +184,6 @@
   <!-- Blue HandAnchor + PropAnchor -->
   <T.Group
     position.x={blueHandPos.x}
-    position.y={blueHandPos.y}
     position.z={blueHandPos.z}
   >
     {#if bluePropState}
@@ -205,7 +207,6 @@
   <!-- Red HandAnchor + PropAnchor -->
   <T.Group
     position.x={redHandPos.x}
-    position.y={redHandPos.y}
     position.z={redHandPos.z}
   >
     {#if redPropState}
