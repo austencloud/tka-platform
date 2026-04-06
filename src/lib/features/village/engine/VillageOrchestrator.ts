@@ -22,6 +22,7 @@ import { PerformanceSystem } from "./systems/PerformanceSystem";
 import { FuneralSystem } from "./systems/FuneralSystem";
 import { MonumentSystem } from "./systems/MonumentSystem";
 import { ProximityLearningSystem } from "./systems/ProximityLearningSystem";
+import { StyleDriftSystem } from "./systems/StyleDriftSystem";
 
 export class VillageOrchestrator implements VillageEventEmitter {
 	private world: World<VillageEntity>;
@@ -36,6 +37,7 @@ export class VillageOrchestrator implements VillageEventEmitter {
 	private funeralSystem: FuneralSystem;
 	monumentSystem: MonumentSystem;
 	private proximityLearningSystem: ProximityLearningSystem;
+	private styleDriftSystem: StyleDriftSystem;
 	private lineageTracker: LineageTracker;
 	private personalityGenerator: PersonalityGenerator;
 
@@ -72,6 +74,7 @@ export class VillageOrchestrator implements VillageEventEmitter {
 		this.funeralSystem = new FuneralSystem(this);
 		this.monumentSystem = new MonumentSystem(this);
 		this.proximityLearningSystem = new ProximityLearningSystem();
+		this.styleDriftSystem = new StyleDriftSystem(this);
 
 		// Wire funeral system to death events
 		this.on("entity:died", (deceased) => {
@@ -94,6 +97,7 @@ export class VillageOrchestrator implements VillageEventEmitter {
 		this.proximityLearningSystem.tick(this.world, this._currentTick);
 		this.decaySystem.tick(this.world, this._currentTick);
 		this.recombinationSystem.tick(this.world, this._currentTick);
+		this.styleDriftSystem.tick(this.world, this._currentTick);
 		this.movementSystem.tick(this.world);
 		this.monumentSystem.tick(this.world, this._currentTick);
 		this.populationSystem.tick(this.world, this._currentTick);
@@ -130,6 +134,7 @@ export class VillageOrchestrator implements VillageEventEmitter {
 		this.funeralSystem = new FuneralSystem(this);
 		this.monumentSystem = new MonumentSystem(this);
 		this.proximityLearningSystem = new ProximityLearningSystem();
+		this.styleDriftSystem = new StyleDriftSystem(this);
 		this.initialize();
 	}
 
@@ -194,6 +199,10 @@ export class VillageOrchestrator implements VillageEventEmitter {
 
 	get activeJams() {
 		return this.performanceSystem.activeJams;
+	}
+
+	get schools() {
+		return this.styleDriftSystem.schools;
 	}
 
 	inspectAvatar(entityId: string): VillageEntity | null {
