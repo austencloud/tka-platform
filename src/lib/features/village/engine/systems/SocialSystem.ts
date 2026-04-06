@@ -6,6 +6,7 @@ import {
 	IDLE_THRESHOLD_BASE,
 	INTERACTION_COOLDOWN_BASE,
 	INVENTION_BASE_PROBABILITY,
+	MAKER_CRAFT_DURATION,
 	MOURNING_DURATION,
 	PERSONAL_SPACE_RADIUS,
 	STYLE_INCOMPATIBILITY_REFUSE_CHANCE,
@@ -56,6 +57,9 @@ export class SocialSystem {
 				case "jamming":
 					this.handleJamming(entity);
 					break;
+				case "commissioning":
+					this.handleCommissioning(entity);
+					break;
 				case "mourning":
 					this.handleMourning(entity);
 					break;
@@ -70,6 +74,8 @@ export class SocialSystem {
 		entity: VillageEntity,
 		world: World<VillageEntity>,
 	): void {
+		if (entity.identity.role === "maker") return; // makers don't interact socially
+
 		entity.social.idleTimer++;
 
 		const threshold =
@@ -358,6 +364,16 @@ export class SocialSystem {
 		entity.social.idleTimer++;
 		if (entity.social.idleTimer > MOURNING_DURATION) {
 			entity.social.state = "idle";
+			entity.social.idleTimer = 0;
+			entity.social.interactionCooldown = INTERACTION_COOLDOWN_BASE;
+		}
+	}
+
+	private handleCommissioning(entity: VillageEntity): void {
+		entity.social.idleTimer++;
+		if (entity.social.idleTimer > MAKER_CRAFT_DURATION) {
+			entity.social.state = "idle";
+			entity.social.partner = null;
 			entity.social.idleTimer = 0;
 			entity.social.interactionCooldown = INTERACTION_COOLDOWN_BASE;
 		}

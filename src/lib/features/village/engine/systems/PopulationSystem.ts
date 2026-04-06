@@ -7,6 +7,7 @@ import type { VillageEventEmitter } from "../VillageEventEmitter";
 import { createAvatarEntity } from "../VillageWorld";
 import {
 	AVATAR_NAMES,
+	MAKER_POSITION_ANGLE,
 	PASSING_DURATION_TICKS,
 	REINCARNATION_PROBABILITY,
 } from "../../domain/village-constants";
@@ -55,8 +56,9 @@ export class PopulationSystem {
 			world.remove(entity);
 		}
 
-		// Spawn replacements as new generation
-		while (world.entities.length < this.config.targetPopulation) {
+		// Spawn replacements as new generation (maker doesn't count toward target)
+		const spinnerCount = () => world.entities.filter((e) => e.identity.role !== "maker").length;
+		while (spinnerCount() < this.config.targetPopulation) {
 			const name =
 				AVATAR_NAMES[this.nameIndex % AVATAR_NAMES.length] ?? "Unknown";
 			this.nameIndex++;
@@ -90,6 +92,42 @@ export class PopulationSystem {
 			this.lineageTracker.recordBirth(newEntity);
 			this.emitter.emit("entity:born", newEntity);
 		}
+
+		this.ensureMaker(world, currentTick);
+	}
+
+	private ensureMaker(world: World<VillageEntity>, currentTick: number): void {
+		const hasMaker = world.entities.some(
+			(e) => e.identity.role === "maker" && e.social.state !== "passing",
+		);
+		if (hasMaker) return;
+
+		const name = "The Maker";
+		const maker = createAvatarEntity(world, {
+			name,
+			generation: this.generation,
+			currentTick,
+			lifespanTicks: this.config.lifespanTicks * 1.5,
+			arenaRadius: this.config.arenaRadius,
+			personalityGenerator: this.personalityGenerator,
+			traitMean: 0.5,
+			traitStdDev: 0.15,
+		});
+
+		maker.identity.role = "maker";
+		maker.personality.patience = 0.9;
+		maker.personality.sociability = 0.2;
+		maker.personality.creativity = 0.8;
+
+		const makerAngle = MAKER_POSITION_ANGLE;
+		maker.transform.x = Math.cos(makerAngle) * (this.config.arenaRadius - 1);
+		maker.transform.z = Math.sin(makerAngle) * (this.config.arenaRadius - 1);
+		maker.transform.targetX = maker.transform.x;
+		maker.transform.targetZ = maker.transform.z;
+		maker.transform.speed = 0;
+
+		this.lineageTracker.recordBirth(maker);
+		this.emitter.emit("entity:born", maker);
 	}
 
 	private applyReincarnationEcho(

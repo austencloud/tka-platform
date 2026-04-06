@@ -57,9 +57,10 @@ describe("PopulationSystem", () => {
 		system.tick(world, 100);
 
 		expect(events["entity:died"]?.length).toBe(1);
-		expect(events["entity:born"]?.length).toBe(1);
-		expect(world.entities.length).toBe(1);
-		expect(world.entities[0].id).not.toBe(entity.id);
+		// 1 replacement spinner + 1 maker spawned
+		expect(events["entity:born"]?.length).toBe(2);
+		expect(world.entities.length).toBe(2);
+		expect(world.entities.some((e) => e.id === entity.id)).toBe(false);
 	});
 
 	it("spawns new entities to maintain target population", () => {
@@ -72,7 +73,8 @@ describe("PopulationSystem", () => {
 
 		system.tick(world, 0);
 
-		expect(world.entities.length).toBe(4);
+		// 4 spinners + 1 maker
+		expect(world.entities.length).toBe(5);
 	});
 
 	it("increments passing timer for passing entities", () => {
