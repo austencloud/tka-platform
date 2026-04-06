@@ -9,6 +9,7 @@ import {
 	FRUSTRATION_DECAY_RATE,
 	FRUSTRATION_GIVE_UP_THRESHOLD,
 	INTERACTION_COOLDOWN_BASE,
+	STYLE_MUTATION_STDDEV,
 } from "../../domain/village-constants";
 
 export class TeachingSystem {
@@ -95,7 +96,7 @@ export class TeachingSystem {
 			learnedFrom: teacher.id,
 			lineage: [...teacherKnowledge.lineage, teacher.id],
 			lastUsedTick: currentTick,
-			style: { amplitudeScale: 1.0, tempoOffset: 0 },
+			style: this.inheritStyle(teacherKnowledge.style),
 		};
 
 		learner.knowledge.knownSequences.set(sequenceId, learned);
@@ -119,6 +120,34 @@ export class TeachingSystem {
 		teacher.social.partner = null;
 		teacher.social.sequenceBeingTransferred = null;
 		teacher.social.interactionCooldown = INTERACTION_COOLDOWN_BASE;
+	}
+
+	private inheritStyle(teacherStyle: {
+		amplitudeScale: number;
+		tempoOffset: number;
+	}): { amplitudeScale: number; tempoOffset: number } {
+		// Box-Muller transform for gaussian random
+		const u1 = Math.random();
+		const u2 = Math.random();
+		const z0 = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+		const z1 = Math.sqrt(-2 * Math.log(u1)) * Math.sin(2 * Math.PI * u2);
+
+		return {
+			amplitudeScale: Math.max(
+				0.8,
+				Math.min(
+					1.2,
+					teacherStyle.amplitudeScale + z0 * STYLE_MUTATION_STDDEV,
+				),
+			),
+			tempoOffset: Math.max(
+				-0.1,
+				Math.min(
+					0.1,
+					teacherStyle.tempoOffset + z1 * STYLE_MUTATION_STDDEV,
+				),
+			),
+		};
 	}
 
 	private resetToIdle(entity: VillageEntity): void {
