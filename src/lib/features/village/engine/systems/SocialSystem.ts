@@ -1,17 +1,22 @@
 import type { World } from "miniplex";
-import type { VillageEntity } from "../../domain/village-types";
+import type { VillageEntity, LearnedSequence } from "../../domain/village-types";
 import type { VillageConfig } from "../VillageConfig";
+import type { VillageEventEmitter } from "../VillageEventEmitter";
 import {
 	IDLE_THRESHOLD_BASE,
 	INTERACTION_COOLDOWN_BASE,
 	INVENTION_BASE_PROBABILITY,
+	MOURNING_DURATION,
 	PERSONAL_SPACE_RADIUS,
 } from "../../domain/village-constants";
 
 const SEEK_RADIUS = 5;
 
 export class SocialSystem {
-	constructor(private config: VillageConfig) {}
+	constructor(
+		private config: VillageConfig,
+		private emitter: VillageEventEmitter,
+	) {}
 
 	tick(world: World<VillageEntity>, _currentTick: number): void {
 		for (const entity of world.entities) {
@@ -35,13 +40,25 @@ export class SocialSystem {
 					this.handleApproaching(entity, world);
 					break;
 				case "socializing":
-					this.handleSocializing(entity);
+					this.handleSocializing(entity, world, _currentTick);
 					break;
 				case "practicing":
 					this.handlePracticing(entity);
 					break;
 				case "performing":
 					this.handlePerforming(entity);
+					break;
+				case "watching":
+					this.handleWatching(entity);
+					break;
+				case "jamming":
+					this.handleJamming(entity);
+					break;
+				case "mourning":
+					this.handleMourning(entity);
+					break;
+				case "pilgrim":
+					// PilgrimageSystem handles movement; SocialSystem just skips
 					break;
 			}
 		}
@@ -72,6 +89,10 @@ export class SocialSystem {
 		} else if (hasSequences && roll < 0.2) {
 			entity.social.state = "performing";
 			entity.social.idleTimer = 0;
+			// Pick highest-proficiency sequence to perform
+			const bestSeq = [...entity.knowledge.knownSequences.entries()]
+				.sort((a, b) => b[1].proficiency - a[1].proficiency)[0];
+			entity.social.performingSequenceId = bestSeq?.[0] ?? null;
 		} else if (roll < 0.6 + entity.personality.sociability * 0.3) {
 			entity.social.state = "seeking";
 		} else {
@@ -187,6 +208,27 @@ export class SocialSystem {
 					: partner;
 			const learner = teacher === entity ? partner : entity;
 
+			// Ego gates: divas never teach, high-ego demands hierarchy
+			if (teacher.personality.ego > 0.9) {
+				// Diva mode: skip teaching, just socialize
+				entity.social.state = "socializing";
+				partner.social.state = "socializing";
+				entity.social.idleTimer = 0;
+				partner.social.idleTimer = 0;
+				return;
+			}
+			if (
+				teacher.personality.ego > 0.7 &&
+				learner.knowledge.knownSequences.size >= teacher.knowledge.knownSequences.size
+			) {
+				// Ego demands hierarchy: won't teach someone who knows as much
+				entity.social.state = "socializing";
+				partner.social.state = "socializing";
+				entity.social.idleTimer = 0;
+				partner.social.idleTimer = 0;
+				return;
+			}
+
 			const novelSequenceId = this.findNovelSequenceId(learner, teacher);
 			if (novelSequenceId) {
 				teacher.social.state = "teaching";
@@ -216,14 +258,49 @@ export class SocialSystem {
 		partner.social.idleTimer = 0;
 	}
 
-	private handleSocializing(entity: VillageEntity): void {
+	private handleSocializing(
+		entity: VillageEntity,
+		world: World<VillageEntity>,
+		currentTick: number,
+	): void {
 		entity.social.idleTimer++;
+
+		// Gift check: high-sociability entities can spontaneously gift a sequence
+		if (entity.personality.sociability > 0.8 && entity.social.partner) {
+			const partner = world.entities.find((e) => e.id === entity.social.partner);
+			if (partner && Math.random() < entity.personality.sociability * 0.03) {
+				const giftable = this.findGiftableSequence(entity, partner);
+				if (giftable) {
+					partner.knowledge.knownSequences.set(giftable.sequenceId, {
+						...giftable,
+						proficiency: giftable.proficiency * 0.4,
+						source: "gifted",
+						learnedFrom: entity.id,
+						learnedAt: currentTick,
+						lineage: [...giftable.lineage, entity.id],
+						lastUsedTick: currentTick,
+					});
+					this.emitter.emit("teaching:completed", entity, partner, giftable.sequenceId);
+				}
+			}
+		}
+
 		if (entity.social.idleTimer > 15) {
 			entity.social.state = "idle";
 			entity.social.partner = null;
 			entity.social.idleTimer = 0;
 			entity.social.interactionCooldown = INTERACTION_COOLDOWN_BASE;
 		}
+	}
+
+	private findGiftableSequence(
+		gifter: VillageEntity,
+		receiver: VillageEntity,
+	): LearnedSequence | null {
+		for (const [id, seq] of gifter.knowledge.knownSequences) {
+			if (!receiver.knowledge.knownSequences.has(id)) return seq;
+		}
+		return null;
 	}
 
 	private handlePracticing(entity: VillageEntity): void {
@@ -236,11 +313,37 @@ export class SocialSystem {
 	}
 
 	private handlePerforming(entity: VillageEntity): void {
+		if (entity.social.inJam) return; // jam system manages duration
 		entity.social.idleTimer++;
 		const maxDuration = entity.lifecycle.phase === "elder" ? 40 : 25;
 		if (entity.social.idleTimer > maxDuration) {
 			entity.social.state = "idle";
+			entity.social.performingSequenceId = null;
 			entity.social.idleTimer = 0;
+		}
+	}
+
+	private handleWatching(entity: VillageEntity): void {
+		// Watchers stay put until the performer they're watching stops
+		entity.social.idleTimer++;
+		if (entity.social.idleTimer > 50) {
+			entity.social.state = "idle";
+			entity.social.partner = null;
+			entity.social.idleTimer = 0;
+		}
+	}
+
+	private handleJamming(entity: VillageEntity): void {
+		// Jam watchers stay in place; PerformanceSystem manages exit
+		entity.social.idleTimer++;
+	}
+
+	private handleMourning(entity: VillageEntity): void {
+		entity.social.idleTimer++;
+		if (entity.social.idleTimer > MOURNING_DURATION) {
+			entity.social.state = "idle";
+			entity.social.idleTimer = 0;
+			entity.social.interactionCooldown = INTERACTION_COOLDOWN_BASE;
 		}
 	}
 

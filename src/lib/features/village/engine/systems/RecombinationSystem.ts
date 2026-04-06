@@ -48,6 +48,7 @@ export class RecombinationSystem {
 						learnedAt: currentTick,
 						learnedFrom: null,
 						lineage: [],
+						lastUsedTick: currentTick,
 					};
 					entity.knowledge.knownSequences.set(newId, learned);
 					this.emitter.emit("sequence:invented", entity, newId);

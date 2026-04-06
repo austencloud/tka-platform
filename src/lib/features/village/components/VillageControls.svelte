@@ -3,9 +3,12 @@
   Time controls, population stats, and avatar inspector.
 -->
 <script lang="ts">
-	import { getVillageContext } from "../state/village-context";
+	import { getVillageContext, getVillageVisualContext } from "../state/village-context";
+	import VillageTimelineStrip from "./VillageTimelineStrip.svelte";
+	import { DECAY_GRACE_PERIOD } from "../domain/village-constants";
 
 	const villageState = getVillageContext();
+	const visualState = getVillageVisualContext();
 
 	const stats = $derived(villageState.stats);
 	const isRunning = $derived(villageState.isRunning);
@@ -17,6 +20,30 @@
 			? villageState.orchestrator.inspectAvatar(selectedId)
 			: null,
 	);
+
+	const monumentCount = $derived(villageState.orchestrator.monuments.length);
+	const activeJamCount = $derived(villageState.orchestrator.activeJams.length);
+	const relitCount = $derived(
+		villageState.orchestrator.monuments.filter(
+			(m) => m.extinctAtTick === null && m.cohortsSurvived.size > 3,
+		).length,
+	);
+
+	const currentTick = $derived(villageState.orchestrator.currentTick);
+
+	// Timeline history tracking
+	let knowledgeHistory = $state<number[]>([]);
+	let timelineEvents = $state<{ tick: number; type: "extinction" | "invention" | "reincarnation" }[]>([]);
+	let lastHistoryTick = 0;
+
+	// Sample knowledge every 10 ticks for the sparkline
+	$effect(() => {
+		const tick = currentTick;
+		if (tick - lastHistoryTick >= 10) {
+			lastHistoryTick = tick;
+			knowledgeHistory = [...knowledgeHistory.slice(-49), stats.totalKnowledge];
+		}
+	});
 
 	const speedOptions = [0.5, 1, 2, 5, 10, 50];
 </script>
@@ -59,6 +86,11 @@
 		<div class="stat">Total Knowledge: {stats.totalKnowledge}</div>
 		<div class="stat">Unique Sequences: {stats.uniqueSequences}</div>
 		<div class="stat">Extinct: {stats.extinctionCount}</div>
+		<div class="stat">Monuments: {monumentCount}</div>
+		<div class="stat">Active Jams: {activeJamCount}</div>
+		{#if relitCount > 0}
+			<div class="stat">Recovered: {relitCount}</div>
+		{/if}
 	</div>
 
 	{#if selectedEntity}
@@ -67,6 +99,7 @@
 			<div class="stat">Gen {selectedEntity.identity.generation}</div>
 			<div class="stat">Age: {(selectedEntity.lifecycle.currentAge * 100).toFixed(0)}% ({selectedEntity.lifecycle.phase})</div>
 			<div class="stat">State: {selectedEntity.social.state}</div>
+			<div class="stat">Ego: {selectedEntity.personality.ego.toFixed(2)}</div>
 			<div class="stat">Knows: {selectedEntity.knowledge.knownSequences.size} sequences</div>
 			<div class="traits">
 				<div>Learn: {selectedEntity.personality.learnSpeed.toFixed(2)}</div>
@@ -75,6 +108,26 @@
 				<div>Patience: {selectedEntity.personality.patience.toFixed(2)}</div>
 				<div>Curious: {selectedEntity.personality.curiosity.toFixed(2)}</div>
 			</div>
+
+			<!-- Sequence list with decay bars -->
+			{#if selectedEntity.knowledge.knownSequences.size > 0}
+				<div class="sequence-list">
+					{#each [...selectedEntity.knowledge.knownSequences.entries()] as [seqId, seq]}
+						<div class="sequence-row">
+							<span class="seq-id" title={seqId}>{seqId.slice(0, 12)}</span>
+							<span class="seq-prof">{(seq.proficiency * 100).toFixed(0)}%</span>
+							<span class="seq-source">({seq.source})</span>
+							<div class="decay-bar" title="Time until decay starts">
+								<div
+									class="decay-fill"
+									style="width: {Math.max(0, Math.min(100, ((DECAY_GRACE_PERIOD - (currentTick - seq.lastUsedTick)) / DECAY_GRACE_PERIOD) * 100))}%"
+								></div>
+							</div>
+						</div>
+					{/each}
+				</div>
+			{/if}
+
 			<button
 				class="control-btn"
 				onclick={() => villageState.selectAvatar(null)}
@@ -83,6 +136,33 @@
 			</button>
 		</div>
 	{/if}
+
+	<!-- Toggles -->
+	<div class="section">
+		<h3>Display</h3>
+		<label class="toggle">
+			<input type="checkbox" checked={visualState.showToasts} onchange={(e) => visualState.setShowToasts(e.currentTarget.checked)} />
+			Show toasts
+		</label>
+		<label class="toggle">
+			<input type="checkbox" checked={visualState.showMonuments} onchange={(e) => visualState.setShowMonuments(e.currentTarget.checked)} />
+			Show monuments
+		</label>
+		<label class="toggle">
+			<input type="checkbox" checked={visualState.showCircleRings} onchange={(e) => visualState.setShowCircleRings(e.currentTarget.checked)} />
+			Show circle rings
+		</label>
+		<label class="toggle">
+			<input type="checkbox" checked={visualState.showReincarnationGlow} onchange={(e) => visualState.setShowReincarnationGlow(e.currentTarget.checked)} />
+			Show reincarnation glow
+		</label>
+	</div>
+
+	<!-- Timeline strip -->
+	<div class="section">
+		<h3>Timeline</h3>
+		<VillageTimelineStrip {knowledgeHistory} events={timelineEvents} />
+	</div>
 </div>
 
 <style>
@@ -172,5 +252,65 @@
 	.speed-btn.active {
 		background: rgba(232, 168, 124, 0.2);
 		border-color: #e8a87c;
+	}
+
+	.sequence-list {
+		display: flex;
+		flex-direction: column;
+		gap: 3px;
+		margin-top: 4px;
+	}
+
+	.sequence-row {
+		display: flex;
+		align-items: center;
+		gap: 4px;
+		font-size: 11px;
+		opacity: 0.8;
+	}
+
+	.seq-id {
+		flex: 1;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.seq-prof {
+		min-width: 32px;
+		text-align: right;
+	}
+
+	.seq-source {
+		opacity: 0.5;
+		font-size: 10px;
+	}
+
+	.decay-bar {
+		width: 40px;
+		height: 4px;
+		background: rgba(255, 255, 255, 0.1);
+		border-radius: 2px;
+		overflow: hidden;
+	}
+
+	.decay-fill {
+		height: 100%;
+		background: #4ade80;
+		border-radius: 2px;
+		transition: width 0.3s ease;
+	}
+
+	.toggle {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		font-size: var(--font-size-compact, 12px);
+		opacity: 0.8;
+		cursor: pointer;
+	}
+
+	.toggle input {
+		cursor: pointer;
 	}
 </style>

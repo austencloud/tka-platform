@@ -27,6 +27,19 @@
 	const avatarName = $derived(renderState.entity.identity.name);
 	const lifecyclePhase = $derived(renderState.entity.lifecycle.phase);
 	const socialState = $derived(renderState.entity.social.state);
+	const knowledgeGlow = $derived(renderState.entity.lifecycle.knowledgeGlow);
+
+	// Visual aging: height scale varies by lifecycle phase
+	const heightScale = $derived(
+		lifecyclePhase === "youth" ? 0.7 :
+		lifecyclePhase === "elder" ? 0.95 :
+		1.0
+	);
+
+	// Death fade: passing entities lerp opacity to 0
+	const isPassing = $derived(socialState === "passing");
+	let deathOpacity = $state(1);
+	const DEATH_FADE_RATE = 0.02; // per frame, ~50 frames to fully fade
 
 	let posX = 0;
 	let posZ = 0;
@@ -78,6 +91,11 @@
 		} else if (labelOpacity < 1) {
 			labelOpacity = Math.min(1, labelOpacity + 0.04);
 		}
+
+		// Death fade
+		if (isPassing) {
+			deathOpacity = Math.max(0, deathOpacity - DEATH_FADE_RATE);
+		}
 	});
 
 	const bluePropState = $derived(renderState.instanceState.bluePropState);
@@ -94,13 +112,29 @@
 		socialState === "teaching" ? "#4ade80" :
 		socialState === "learning" ? "#60a5fa" :
 		socialState === "performing" ? "#e8a87c" :
+		socialState === "jamming" ? "#e8a87c" :
 		socialState === "seeking" ? "#fbbf24" :
+		socialState === "watching" ? "#fbbf24" :
+		socialState === "mourning" ? "#ef4444" :
+		socialState === "passing" ? "#ef4444" :
 		"#ffffff"
+	);
+
+	// Phase indicator appended to name
+	const phaseIndicator = $derived(
+		lifecyclePhase === "youth" ? " (y)" :
+		lifecyclePhase === "elder" ? " (e)" :
+		""
+	);
+
+	// Youth names tinted sage green
+	const nameTint = $derived(
+		lifecyclePhase === "youth" ? "#86efac" : labelColor
 	);
 </script>
 
 <!-- Visual offset group: cancel STAGE_LIFT so feet land on Y=0 ground -->
-<T.Group position.y={-STAGE_LIFT}>
+<T.Group position.y={-STAGE_LIFT} scale.y={heightScale}>
 	<Avatar3D
 		id={renderState.entityId}
 		avatarId={avatarModelId}
@@ -113,11 +147,28 @@
 		{moveSpeed}
 		moveDirection={{ x: 0, z: 1 }}
 		enableLocomotion={true}
-		visible={showAvatar}
+		visible={showAvatar && deathOpacity > 0.01}
 	/>
 
+	<!-- Elder knowledge glow: soft emissive sphere -->
+	{#if lifecyclePhase === "elder" && knowledgeGlow > 0 && showAvatar}
+		<T.Mesh
+			position.x={avatarPosition.x}
+			position.y={avatarPosition.y + 0.3}
+			position.z={avatarPosition.z}
+		>
+			<T.IcosahedronGeometry args={[0.4, 1]} />
+			<T.MeshBasicMaterial
+				color="#f8fafc"
+				transparent
+				opacity={knowledgeGlow * 0.3 * deathOpacity}
+				depthWrite={false}
+			/>
+		</T.Mesh>
+	{/if}
+
 	<!-- Name label floating above head -->
-	{#if showAvatar}
+	{#if showAvatar && deathOpacity > 0.1}
 		<T.Group
 			position.x={avatarPosition.x}
 			position.y={avatarPosition.y + 0.6}
@@ -126,12 +177,13 @@
 			<HTML center sprite>
 				<div
 					class="name-label"
-					style="color: {labelColor}; opacity: {labelOpacity}"
+					style="color: {nameTint}; opacity: {labelOpacity * deathOpacity}"
 				>
 					{avatarName}
-					<span class="state-indicator">
-						{lifecyclePhase === "elder" ? "🔥" : ""}
-					</span>
+					<span class="phase-indicator">{phaseIndicator}</span>
+					{#if lifecyclePhase === "elder"}
+						<span class="state-indicator">🔥</span>
+					{/if}
 				</div>
 			</HTML>
 		</T.Group>
@@ -150,6 +202,10 @@
 		white-space: nowrap;
 		pointer-events: none;
 		user-select: none;
+	}
+
+	.phase-indicator {
+		opacity: 0.6;
 	}
 
 	.state-indicator {

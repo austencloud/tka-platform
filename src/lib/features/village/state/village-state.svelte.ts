@@ -100,6 +100,7 @@ export function createVillageState(
 			learnedAt: 0,
 			learnedFrom: null,
 			lineage: [],
+			lastUsedTick: 0,
 		});
 	}
 
@@ -356,6 +357,7 @@ export function createVillageState(
 						learnedAt: 0,
 						learnedFrom: null,
 						lineage: [],
+						lastUsedTick: 0,
 					},
 				);
 			}

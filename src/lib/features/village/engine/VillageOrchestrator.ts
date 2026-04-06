@@ -17,6 +17,11 @@ import { SocialSystem } from "./systems/SocialSystem";
 import { TeachingSystem } from "./systems/TeachingSystem";
 import { RecombinationSystem } from "./systems/RecombinationSystem";
 import { PopulationSystem } from "./systems/PopulationSystem";
+import { DecaySystem } from "./systems/DecaySystem";
+import { PerformanceSystem } from "./systems/PerformanceSystem";
+import { FuneralSystem } from "./systems/FuneralSystem";
+import { MonumentSystem } from "./systems/MonumentSystem";
+import { ProximityLearningSystem } from "./systems/ProximityLearningSystem";
 
 export class VillageOrchestrator implements VillageEventEmitter {
 	private world: World<VillageEntity>;
@@ -26,6 +31,11 @@ export class VillageOrchestrator implements VillageEventEmitter {
 	private teachingSystem: TeachingSystem;
 	private recombinationSystem: RecombinationSystem;
 	private populationSystem: PopulationSystem;
+	private decaySystem: DecaySystem;
+	private performanceSystem: PerformanceSystem;
+	private funeralSystem: FuneralSystem;
+	monumentSystem: MonumentSystem;
+	private proximityLearningSystem: ProximityLearningSystem;
 	private lineageTracker: LineageTracker;
 	private personalityGenerator: PersonalityGenerator;
 
@@ -44,7 +54,7 @@ export class VillageOrchestrator implements VillageEventEmitter {
 
 		this.lifecycleSystem = new LifecycleSystem(config);
 		this.movementSystem = new MovementSystem(config);
-		this.socialSystem = new SocialSystem(config);
+		this.socialSystem = new SocialSystem(config, this);
 		this.teachingSystem = new TeachingSystem(config, this);
 		this.recombinationSystem = new RecombinationSystem(
 			config,
@@ -57,6 +67,16 @@ export class VillageOrchestrator implements VillageEventEmitter {
 			this.lineageTracker,
 			this,
 		);
+		this.decaySystem = new DecaySystem(this);
+		this.performanceSystem = new PerformanceSystem(config, this);
+		this.funeralSystem = new FuneralSystem(this);
+		this.monumentSystem = new MonumentSystem(this);
+		this.proximityLearningSystem = new ProximityLearningSystem();
+
+		// Wire funeral system to death events
+		this.on("entity:died", (deceased) => {
+			this.funeralSystem.onDeath(deceased, this.world, this._currentTick);
+		});
 	}
 
 	initialize(): void {
@@ -69,9 +89,13 @@ export class VillageOrchestrator implements VillageEventEmitter {
 
 		this.lifecycleSystem.tick(this.world, this._currentTick);
 		this.socialSystem.tick(this.world, this._currentTick);
+		this.performanceSystem.tick(this.world, this._currentTick);
 		this.teachingSystem.tick(this.world, this._currentTick);
+		this.proximityLearningSystem.tick(this.world, this._currentTick);
+		this.decaySystem.tick(this.world, this._currentTick);
 		this.recombinationSystem.tick(this.world, this._currentTick);
 		this.movementSystem.tick(this.world);
+		this.monumentSystem.tick(this.world, this._currentTick);
 		this.populationSystem.tick(this.world, this._currentTick);
 	}
 
@@ -101,6 +125,11 @@ export class VillageOrchestrator implements VillageEventEmitter {
 			this.lineageTracker,
 			this,
 		);
+		this.decaySystem = new DecaySystem(this);
+		this.performanceSystem = new PerformanceSystem(this.config, this);
+		this.funeralSystem = new FuneralSystem(this);
+		this.monumentSystem = new MonumentSystem(this);
+		this.proximityLearningSystem = new ProximityLearningSystem();
 		this.initialize();
 	}
 
@@ -157,6 +186,14 @@ export class VillageOrchestrator implements VillageEventEmitter {
 			this.world.entities,
 			this.currentGeneration,
 		);
+	}
+
+	get monuments() {
+		return this.monumentSystem.monuments;
+	}
+
+	get activeJams() {
+		return this.performanceSystem.activeJams;
 	}
 
 	inspectAvatar(entityId: string): VillageEntity | null {
