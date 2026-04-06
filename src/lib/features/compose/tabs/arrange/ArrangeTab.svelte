@@ -490,7 +490,7 @@
         onCopyCell={handleCopyCell}
         onPasteLayer={handlePasteLayer}
         onTransformLayer={handleTransformLayer}
-        onClose={handleDrawerClose}
+
         onSetSpeed={(speed) => gridState.setCellSpeed(selectedCell.id, speed)}
         onSetEffect={(effect) => gridState.setCellEffect(selectedCell.id, effect)}
         onSetTrailMode={(mode) => gridState.setCellTrailMode(selectedCell.id, mode)}
