@@ -12,6 +12,8 @@ import type { MuseumGrid, MuseumTile, FloorMaterial, TileType } from "../../doma
 import type { WingTheme } from "../../domain/museum-grid-types";
 import { parseTileKey, tileKey } from "../../domain/museum-grid-types";
 import type { PlaqueContent, PlaqueSize } from "../contracts/IPlaqueTextureGenerator";
+import { MANUAL_PLACEMENTS } from '../../data/museum-manual-placements';
+import { getPlaceableObject } from '../../domain/placeable-object-registry';
 
 // ── Constants ──
 
@@ -682,11 +684,43 @@ export async function buildRoomChunk(
     };
   }
 
+  // Append manual placements for this room
+  const torchPositions = [...buckets.torchPositions];
+  if (wingId) {
+    const manualPlacements = MANUAL_PLACEMENTS[wingId] ?? [];
+    let nextManualId = torchPositions.length;
+    for (const mp of manualPlacements) {
+      const objDef = getPlaceableObject(mp.objectDefId);
+      if (!objDef || objDef.category !== 'fixture') continue;
+
+      const worldX = mp.tileX * TILE_SIZE;
+      const worldZ = mp.tileY * TILE_SIZE;
+
+      let wallOffsetX = 0;
+      let wallOffsetZ = 0;
+      if (mp.wallFacing === 'north') wallOffsetZ = -TILE_SIZE * 0.35;
+      else if (mp.wallFacing === 'south') wallOffsetZ = TILE_SIZE * 0.35;
+      else if (mp.wallFacing === 'west') wallOffsetX = -TILE_SIZE * 0.35;
+      else if (mp.wallFacing === 'east') wallOffsetX = TILE_SIZE * 0.35;
+
+      torchPositions.push({
+        id: nextManualId++,
+        tileX: mp.tileX,
+        tileY: mp.tileY,
+        x: worldX,
+        z: worldZ,
+        wallOffsetX,
+        wallOffsetZ,
+        wingTheme: objDef.wingTheme ?? 'cave',
+      });
+    }
+  }
+
   return {
     wingId,
     floorMeshes, wallMeshes, ceilingMesh,
     pedestalMesh, signMesh, performerMesh,
-    torchPositions: buckets.torchPositions,
+    torchPositions,
     plaquePlacements: buckets.plaquePlacements,
     performerPositions: buckets.performerPositions,
     exhibitLightPositions, ceilingLightPositions, sunlightPositions,
