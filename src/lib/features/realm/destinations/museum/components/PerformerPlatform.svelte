@@ -1,12 +1,20 @@
 <script lang="ts">
+  /**
+   * PerformerPlatform — Museum exhibit slot with animated performer.
+   *
+   * Uses PerformerRig for unified avatar + prop + grid hierarchy.
+   * Platform disc is a sibling outside the rig (independent of groundOffset).
+   */
   import { T } from "@threlte/core";
   import * as THREE from "three";
   import type { ExhibitSlot } from "../domain/museum-types";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import Avatar3D from "$lib/shared/3d/components/Avatar3D.svelte";
-  import Prop3D from "$lib/shared/3d/components/props/Prop3D.svelte";
+  import PerformerRig from "$lib/shared/3d/components/PerformerRig.svelte";
+  import { Plane } from "$lib/shared/3d/domain/enums/Plane";
+  import { PlaneMode } from "$lib/shared/3d/domain/enums/PlaneMode";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { createAvatarInstanceState } from "$lib/shared/3d/state/avatar-instance-state.svelte";
+  import { userProportionsState } from "$lib/shared/3d/state/user-proportions-state.svelte";
   import { container } from "$lib/shared/di";
 
   interface Props {
@@ -19,7 +27,12 @@
   let { slot, isPopulated, playerPosition, sequence = null }: Props = $props();
 
   const ACTIVATION_DISTANCE = 15; // meters
-  const platformColor = new THREE.Color(0x6b5b4f); // dark stone
+  const PLATFORM_HEIGHT = 0.3;    // matches cylinder geometry
+  const platformColor = new THREE.Color(0x6b5b4f);
+
+  // Avatar3D positions feet at groundY (below rig origin). Offset by -groundY
+  // to bring feet to floor level, then add platform height to stand on top.
+  const groundOffset = $derived(-userProportionsState.groundY + PLATFORM_HEIGHT + slot.position.y);
 
   const isActive = $derived.by(() => {
     const dx = playerPosition.x - slot.position.x;
@@ -58,58 +71,36 @@
 </script>
 
 {#if slot.type === "performer"}
-  <!-- Circular platform -->
-  <T.Mesh
-    position.x={slot.position.x}
-    position.y={slot.position.y + 0.15}
-    position.z={slot.position.z}
-    receiveShadow
-  >
-    <T.CylinderGeometry args={[1.0, 1.1, 0.3, 32]} />
-    <T.MeshStandardMaterial color={platformColor} roughness={0.85} />
-  </T.Mesh>
-
-  <!-- Avatar performer — renders when populated, nearby, and sequence loaded -->
-  {#if isPopulated && isActive && sequence}
-    <Avatar3D
-      id={`museum-${slot.id}`}
-      bluePropState={performerState.bluePropState}
-      redPropState={performerState.redPropState}
-      position={{ x: slot.position.x, y: slot.position.y + 0.3, z: slot.position.z }}
-      facingAngle={slot.rotationY}
-      isActive={false}
-      isMoving={false}
-    />
-
-    {#if performerState.bluePropState}
-      <Prop3D propType={PropType.STAFF}
-        propState={performerState.bluePropState}
-        color="blue"
-        avatarPosition={{ x: slot.position.x, y: slot.position.y + 0.3, z: slot.position.z }}
-        facingAngle={slot.rotationY}
-        gridOffset={-0.5}
-        isActivePlayer={false}
-      />
-    {/if}
-    {#if performerState.redPropState}
-      <Prop3D propType={PropType.STAFF}
-        propState={performerState.redPropState}
-        color="red"
-        avatarPosition={{ x: slot.position.x, y: slot.position.y + 0.3, z: slot.position.z }}
-        facingAngle={slot.rotationY}
-        gridOffset={-0.5}
-        isActivePlayer={false}
-      />
-    {/if}
-  {:else if isPopulated && isActive}
-    <!-- Capsule placeholder when sequence data not yet loaded -->
+  <!-- Station group — positioned at world coords -->
+  <T.Group position.x={slot.position.x} position.z={slot.position.z}>
+    <!-- Circular platform at floor level (outside rig — independent of groundOffset) -->
     <T.Mesh
-      position.x={slot.position.x}
-      position.y={slot.position.y + 1.2}
-      position.z={slot.position.z}
+      position.y={slot.position.y + 0.15}
+      receiveShadow
     >
-      <T.CapsuleGeometry args={[0.25, 0.9, 8, 16]} />
-      <T.MeshStandardMaterial color={0xa78bfa} opacity={0.6} transparent />
+      <T.CylinderGeometry args={[1.0, 1.1, 0.3, 32]} />
+      <T.MeshStandardMaterial color={platformColor} roughness={0.85} />
     </T.Mesh>
-  {/if}
+
+    <!-- Animated performer on platform -->
+    {#if isPopulated && isActive && sequence}
+      <PerformerRig
+        position={{ x: 0, z: 0 }}
+        facingAngle={slot.rotationY}
+        planeMode={PlaneMode.WALL}
+        avatarState={performerState}
+        showGrid={false}
+        visiblePlanes={new Set([Plane.WALL])}
+        bluePropType={PropType.STAFF}
+        redPropType={PropType.STAFF}
+        {groundOffset}
+      />
+    {:else if isPopulated && isActive}
+      <!-- Capsule placeholder when sequence data not yet loaded -->
+      <T.Mesh position.y={slot.position.y + 1.2}>
+        <T.CapsuleGeometry args={[0.25, 0.9, 8, 16]} />
+        <T.MeshStandardMaterial color={0xa78bfa} opacity={0.6} transparent />
+      </T.Mesh>
+    {/if}
+  </T.Group>
 {/if}

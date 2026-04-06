@@ -146,8 +146,8 @@
     }
   }
 
-  // Grid positions match avatar positions - rotation pivot is at the avatar
-  // The gridOffset prop on Grid3D handles the forward offset in body-local space
+  // Grid positions match avatar positions — rotation pivot is at the avatar.
+  // Grid offset is applied via parent T.Group, not Grid3D props.
   const gridPositions = $derived(
     avatarPositions.length > 0 ? avatarPositions : [{ x: 0, y: 0, z: 0 }]
   );
@@ -261,14 +261,18 @@
   <!-- Grid planes - one per avatar position, rotating with avatar facing -->
   {#if showGrid}
     {#each gridPositions as pos, i}
-      <Grid3D
-        {visiblePlanes}
-        {showLabels}
-        {gridMode}
-        centerPosition={pos}
-        facingAngle={pos.facingAngle ?? 0}
-        {gridOffset}
-      />
+      <T.Group
+        position={[pos.x, pos.y, pos.z]}
+        rotation.y={pos.facingAngle ?? 0}
+      >
+        <T.Group position.z={gridOffset}>
+          <Grid3D
+            {visiblePlanes}
+            {showLabels}
+            {gridMode}
+          />
+        </T.Group>
+      </T.Group>
     {/each}
   {/if}
 

@@ -157,24 +157,29 @@
     charcoalTips.length = 0;
     fireTips.length = 0;
 
-    // Compute rig-local center for each prop.
-    // Note the swap: blue visual trail uses redPropState (the naming convention
-    // swap from the 3D prop color swap — bluePropState visually corresponds to
-    // the red-colored prop and vice versa).
-    const blueRigCenter = redPropState ? {
-      x: blueHandPos.x + redPropState.worldPosition.x,
-      y: redPropState.worldPosition.y,
-      z: blueHandPos.z + redPropState.worldPosition.z,
+    // COLOR SWAP: The animation engine names props from the avatar's perspective
+    // (avatar's left hand = "blue"), but the 3D viewer looks AT the avatar, so
+    // the viewer's left = avatar's right. To make the blue trail appear on the
+    // visually-blue prop, we swap: visual blue uses redPropState, visual red
+    // uses bluePropState.
+    const visualBlueProp = redPropState;
+    const visualRedProp = bluePropState;
+
+    // Compute rig-local center for each visual prop.
+    const blueRigCenter = visualBlueProp ? {
+      x: blueHandPos.x + visualBlueProp.worldPosition.x,
+      y: visualBlueProp.worldPosition.y,
+      z: blueHandPos.z + visualBlueProp.worldPosition.z,
     } : null;
 
-    const redRigCenter = bluePropState ? {
-      x: redHandPos.x + bluePropState.worldPosition.x,
-      y: bluePropState.worldPosition.y,
-      z: redHandPos.z + bluePropState.worldPosition.z,
+    const redRigCenter = visualRedProp ? {
+      x: redHandPos.x + visualRedProp.worldPosition.x,
+      y: visualRedProp.worldPosition.y,
+      z: redHandPos.z + visualRedProp.worldPosition.z,
     } : null;
 
-    if (redPropState && blueRigCenter) {
-      const result = tipBridge.update(0, redPropState, blueRigCenter, staffHalfLength, dt);
+    if (visualBlueProp && blueRigCenter) {
+      const result = tipBridge.update(0, visualBlueProp, blueRigCenter, staffHalfLength, dt);
       blueTipData = result.tips.map((tip, tipIndex) => {
         const resolved = resolveEffect(
           0,
@@ -224,8 +229,8 @@
       });
     }
 
-    if (bluePropState && redRigCenter) {
-      const result = tipBridge.update(1, bluePropState, redRigCenter, staffHalfLength, dt);
+    if (visualRedProp && redRigCenter) {
+      const result = tipBridge.update(1, visualRedProp, redRigCenter, staffHalfLength, dt);
       redTipData = result.tips.map((tip, tipIndex) => {
         const resolved = resolveEffect(
           1,

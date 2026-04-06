@@ -103,15 +103,13 @@
       />
 
       <!-- Grid plane for reference -->
-      <Grid3D
-        centerPosition={{
-          x: galleryState.playerPosition.x,
-          y: 0,
-          z: galleryState.playerPosition.z
-        }}
-        facingAngle={avatarState.facingAngle}
-        visiblePlanes={floorPlaneSet}
-      />
+      <T.Group
+        position.x={galleryState.playerPosition.x}
+        position.z={galleryState.playerPosition.z}
+        rotation.y={avatarState.facingAngle}
+      >
+        <Grid3D visiblePlanes={floorPlaneSet} />
+      </T.Group>
     {/if}
 
     <!-- Lighting -->
