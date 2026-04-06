@@ -2,28 +2,21 @@
   /**
    * PerformerRig — Unified 3D Transform Hierarchy
    *
-   * Replaces the sibling-based scene graph where avatar, grid, props, and
-   * effects each independently computed their world positions. Instead,
-   * everything is a child of this component's transform hierarchy, so
-   * position, facing, and shoulder height are inherited through the scene
-   * graph automatically. No manual cos/sin. No STAGE_LIFT trick. No
-   * skipFacingTransform flag.
+   * One T.Group owns position + facingAngle. Avatar, grid, props, and
+   * effects are all children. The scene graph guarantees frame-perfect
+   * attachment. No manual cos/sin. No STAGE_LIFT trick.
    *
    * Hierarchy:
    *   PerformerRig (T.Group) — position=[x, groundOffset, z], rotation.y=facingAngle
    *   ├── Avatar3D (conditional)
-   *   ├── ShoulderAnchor (T.Group, y=shoulderHeight)
-   *   │   ├── GridAnchor (conditional, dual-wheel vs single grid)
-   *   │   ├── Blue HandAnchor + PropAnchor
-   *   │   └── Red HandAnchor + PropAnchor
-   *   ├── EffectsGroup (T.Group — rig-local, inherits facing)
-   *   │   └── EffectOrchestrator3D
-   *   └── Extras slot (snippet)
+   *   ├── Grid (conditional, dual-wheel renders two wheel grids)
+   *   ├── Blue HandAnchor → PropAnchor
+   *   ├── Red HandAnchor → PropAnchor
+   *   └── EffectsGroup → EffectOrchestrator3D
    */
 
   import { T } from "@threlte/core";
   import type { Group } from "three";
-  import type { Snippet } from "svelte";
   import Avatar3D from "./Avatar3D.svelte";
   import Grid3D from "./Grid3D.svelte";
   import Prop3D from "./props/Prop3D.svelte";
@@ -46,8 +39,6 @@
     position: { x: number; z: number };
     /** Avatar body facing direction (radians, 0 = +Z toward audience) */
     facingAngle: number;
-    /** Height from ground to shoulder (meters). Drives ShoulderAnchor y. */
-    shoulderHeight?: number;
     /** Determines grid offset, lateral hand positions */
     planeMode: PlaneMode;
     /** Avatar instance that provides prop states, step configs, etc. */
@@ -78,15 +69,11 @@
 
     // Vertical offset (museum platforms, stages)
     groundOffset?: number;
-
-    // Extension point for consumer-specific content (e.g. platform meshes, labels)
-    extras?: Snippet;
   }
 
   let {
     position,
     facingAngle,
-    shoulderHeight = -userProportionsState.groundY,
     planeMode,
     avatarState,
     showAvatar = true,
@@ -103,7 +90,6 @@
     isPlaying = false,
     staffHalfLength = userProportionsState.staffLength / 2,
     groundOffset = 0,
-    extras,
   }: Props = $props();
 
   // Resolve prop states: use overrides (for mirror mode) or avatarState defaults
@@ -115,7 +101,7 @@
   const gridOffset = $derived(GRID_OFFSETS[planeMode]);
   const isDualWheel = $derived(planeMode === PlaneMode.DUAL_WHEEL);
 
-  // HandAnchor positions relative to ShoulderAnchor.
+  // HandAnchor positions in rig-local space.
   // Wall mode: both hands at z=gridOffset (grid center is forward of body).
   // Dual-wheel: hands at lateral offsets, z=0 (grid at solar plexus).
   const blueHandPos = $derived({
@@ -129,13 +115,12 @@
     z: isDualWheel ? 0 : gridOffset,
   });
 
-  // PropAnchor refs — these are the Three.js Group objects that Avatar3D
-  // reads world positions from for IK targeting.
+  // PropAnchor refs — Avatar3D reads world positions from these for IK targeting.
   let bluePropAnchorRef = $state<Group | undefined>(undefined);
   let redPropAnchorRef = $state<Group | undefined>(undefined);
 
-  // Effects group ref — imperative renderers (LED, charcoal, fire) add their
-  // meshes to this group so they inherit the rig's transform.
+  // Effects group ref — imperative renderers add meshes here so they
+  // inherit the rig's transform.
   let effectsGroupRef = $state<Group | undefined>(undefined);
 </script>
 
@@ -147,7 +132,7 @@
   rotation.y={facingAngle}
 >
   <!-- Avatar3D uses groundY (~-1.56) internally to position its mesh,
-       so shoulders end up near y=0 in rig space. No position.y needed. -->
+       so shoulders end up near y=0 in rig space. -->
   {#if showAvatar}
     <Avatar3D
       id={avatarState.id}
@@ -162,103 +147,86 @@
     />
   {/if}
 
-  <!-- No ShoulderAnchor offset needed. Avatar3D positions its mesh using
-       groundY so shoulders land near y=0 in rig space. The interpolator
-       outputs positions relative to grid center (also y=0 = shoulder).
-       Everything lives at the same coordinate origin. -->
-  <T.Group>
-
-    <!-- Grid rendering -->
-    {#if showGrid}
-      {#if isDualWheel}
-        <!-- Dual-wheel: two grids offset laterally (one per hand) -->
+  <!-- Grid -->
+  {#if showGrid}
+    {#if isDualWheel}
+      <T.Group position.x={modeConfig.blueLateralOffset}>
         <Grid3D
           visiblePlanes={new Set([Plane.WHEEL])}
-          centerPosition={{ x: modeConfig.blueLateralOffset, y: 0, z: 0 }}
-          facingAngle={0}
-          gridOffset={0}
           planeOpacity={0.10}
           showLabels={false}
           {gridMode}
         />
+      </T.Group>
+      <T.Group position.x={modeConfig.redLateralOffset}>
         <Grid3D
           visiblePlanes={new Set([Plane.WHEEL])}
-          centerPosition={{ x: modeConfig.redLateralOffset, y: 0, z: 0 }}
-          facingAngle={0}
-          gridOffset={0}
           planeOpacity={0.10}
           showLabels={false}
           {gridMode}
         />
-      {:else}
-        <!-- Single grid: centered on body, offset forward by gridOffset -->
+      </T.Group>
+    {:else}
+      <T.Group position.z={gridOffset}>
         <Grid3D
           {visiblePlanes}
-          centerPosition={{ x: 0, y: 0, z: 0 }}
-          facingAngle={0}
-          gridOffset={gridOffset}
           planeOpacity={0.12}
           showLabels={false}
           {gridMode}
         />
-      {/if}
+      </T.Group>
     {/if}
+  {/if}
 
-    <!-- Blue hand: HandAnchor positions the hand's grid center -->
-    <T.Group
-      position.x={blueHandPos.x}
-      position.y={blueHandPos.y}
-      position.z={blueHandPos.z}
-    >
-      <!-- PropAnchor: positioned at the interpolated prop location relative to hand -->
-      {#if bluePropState}
-        <T.Group
-          bind:ref={bluePropAnchorRef}
-          position.x={bluePropState.worldPosition.x}
-          position.y={bluePropState.worldPosition.y}
-          position.z={bluePropState.worldPosition.z}
-        >
-          {#if showProps}
-            <Prop3D
-              propType={bluePropType}
-              propState={bluePropState}
-              color="blue"
-            />
-          {/if}
-        </T.Group>
-      {/if}
-    </T.Group>
-
-    <!-- Red hand: same pattern as blue -->
-    <T.Group
-      position.x={redHandPos.x}
-      position.y={redHandPos.y}
-      position.z={redHandPos.z}
-    >
-      {#if redPropState}
-        <T.Group
-          bind:ref={redPropAnchorRef}
-          position.x={redPropState.worldPosition.x}
-          position.y={redPropState.worldPosition.y}
-          position.z={redPropState.worldPosition.z}
-        >
-          {#if showProps}
-            <Prop3D
-              propType={redPropType}
-              propState={redPropState}
-              color="red"
-            />
-          {/if}
-        </T.Group>
-      {/if}
-    </T.Group>
-
+  <!-- Blue HandAnchor + PropAnchor -->
+  <T.Group
+    position.x={blueHandPos.x}
+    position.y={blueHandPos.y}
+    position.z={blueHandPos.z}
+  >
+    {#if bluePropState}
+      <T.Group
+        bind:ref={bluePropAnchorRef}
+        position.x={bluePropState.worldPosition.x}
+        position.y={bluePropState.worldPosition.y}
+        position.z={bluePropState.worldPosition.z}
+      >
+        {#if showProps}
+          <Prop3D
+            propType={bluePropType}
+            propState={bluePropState}
+            color="blue"
+          />
+        {/if}
+      </T.Group>
+    {/if}
   </T.Group>
 
-  <!-- Effects render in rig-local space — same coordinate system as props.
-       The rig's T.Group rotation.y handles facing, so effect positions
-       computed from handPos + propState.worldPosition are correct without
-       any manual facing math. -->
+  <!-- Red HandAnchor + PropAnchor -->
+  <T.Group
+    position.x={redHandPos.x}
+    position.y={redHandPos.y}
+    position.z={redHandPos.z}
+  >
+    {#if redPropState}
+      <T.Group
+        bind:ref={redPropAnchorRef}
+        position.x={redPropState.worldPosition.x}
+        position.y={redPropState.worldPosition.y}
+        position.z={redPropState.worldPosition.z}
+      >
+        {#if showProps}
+          <Prop3D
+            propType={redPropType}
+            propState={redPropState}
+            color="red"
+          />
+        {/if}
+      </T.Group>
+    {/if}
+  </T.Group>
+
+  <!-- Effects in rig-local space -->
   {#if showEffects}
     <T.Group bind:ref={effectsGroupRef}>
       <EffectOrchestrator3D
@@ -272,10 +240,5 @@
         effectsParentRef={effectsGroupRef}
       />
     </T.Group>
-  {/if}
-
-  <!-- Extras slot: consumer-specific content (platform meshes, labels, etc.) -->
-  {#if extras}
-    {@render extras()}
   {/if}
 </T.Group>
