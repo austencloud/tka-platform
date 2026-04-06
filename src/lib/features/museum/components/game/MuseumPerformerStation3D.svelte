@@ -14,6 +14,7 @@
   import { PlaneMode } from "$lib/shared/3d/domain/enums/PlaneMode";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { createAvatarInstanceState } from "$lib/shared/3d/state/avatar-instance-state.svelte";
+  import { userProportionsState } from "$lib/shared/3d/state/user-proportions-state.svelte";
   import { container } from "$lib/shared/di";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
@@ -40,9 +41,14 @@
   const autoPlay = props.autoPlay ?? false;
   const showGrid = props.showGrid ?? false;
 
-  // Platform height — passed as groundOffset to PerformerRig so the entire
-  // transform hierarchy (avatar, props, grid) is lifted onto the pedestal.
+  // Platform height — the physical pedestal disc.
   const PLATFORM_HEIGHT = 0.3; // matches cylinder geometry (height 0.3, center at 0.15)
+
+  // Avatar3D "stage mode" positions feet at groundY (≈ -1.4m below rig origin),
+  // designed for the viewer where the ground plane IS at that Y. In the museum,
+  // the floor is at y=0, so we offset by -groundY to bring feet to floor level,
+  // then add PLATFORM_HEIGHT to stand on top of the pedestal.
+  const museumGroundOffset = $derived(-userProportionsState.groundY + PLATFORM_HEIGHT);
 
   // Build a minimal SequenceData from the museum manifest
   function buildSequenceData(museumSeq: MuseumSequenceData): SequenceData {
@@ -136,6 +142,12 @@
 
 <!-- Station root group — positioned at world coords, children use local coords -->
 <T.Group name={`performer-station-${stationId}`} position.x={worldX} position.z={worldZ}>
+  <!-- Circular platform at floor level (not inside rig — independent of groundOffset) -->
+  <T.Mesh position.y={0.15} castShadow receiveShadow>
+    <T.CylinderGeometry args={[0.8, 0.9, 0.3, 24]} />
+    <T.MeshStandardMaterial color={platformColor} roughness={0.85} />
+  </T.Mesh>
+
   {#if performerState}
     <PerformerRig
       position={{ x: 0, z: 0 }}
@@ -147,15 +159,7 @@
       gridMode={(resolvedSequence?.gridMode ?? "diamond") as GridMode}
       {bluePropType}
       {redPropType}
-      groundOffset={PLATFORM_HEIGHT}
-    >
-      {#snippet extras()}
-        <!-- Circular platform -->
-        <T.Mesh position.y={0.15} castShadow receiveShadow>
-          <T.CylinderGeometry args={[0.8, 0.9, 0.3, 24]} />
-          <T.MeshStandardMaterial color={platformColor} roughness={0.85} />
-        </T.Mesh>
-      {/snippet}
-    </PerformerRig>
+      groundOffset={museumGroundOffset}
+    />
   {/if}
 </T.Group>
