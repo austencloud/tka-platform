@@ -6,6 +6,22 @@
 	import { getVillageContext, getVillageVisualContext } from "../state/village-context";
 	import VillageTimelineStrip from "./VillageTimelineStrip.svelte";
 	import { DECAY_GRACE_PERIOD } from "../domain/village-constants";
+	import type { VillageEntity } from "../domain/village-types";
+
+	function getAverageStyle(entity: VillageEntity): { amplitudeScale: number; tempoOffset: number } {
+		const sequences = [...entity.knowledge.knownSequences.values()];
+		if (sequences.length === 0) return { amplitudeScale: 1.0, tempoOffset: 0 };
+		let ampSum = 0;
+		let tempoSum = 0;
+		for (const seq of sequences) {
+			ampSum += seq.style.amplitudeScale;
+			tempoSum += seq.style.tempoOffset;
+		}
+		return {
+			amplitudeScale: ampSum / sequences.length,
+			tempoOffset: tempoSum / sequences.length,
+		};
+	}
 
 	const villageState = getVillageContext();
 	const visualState = getVillageVisualContext();
@@ -88,6 +104,7 @@
 		<div class="stat">Extinct: {stats.extinctionCount}</div>
 		<div class="stat">Monuments: {monumentCount}</div>
 		<div class="stat">Active Jams: {activeJamCount}</div>
+		<div class="stat">Schools: {villageState.orchestrator.schools?.length ?? 0}</div>
 		{#if relitCount > 0}
 			<div class="stat">Recovered: {relitCount}</div>
 		{/if}
@@ -100,6 +117,11 @@
 			<div class="stat">Age: {(selectedEntity.lifecycle.currentAge * 100).toFixed(0)}% ({selectedEntity.lifecycle.phase})</div>
 			<div class="stat">State: {selectedEntity.social.state}</div>
 			<div class="stat">Ego: {selectedEntity.personality.ego.toFixed(2)}</div>
+			{#if selectedEntity.knowledge.knownSequences.size > 0}
+				{@const avgStyle = getAverageStyle(selectedEntity)}
+				<div class="stat">Style Amp: {avgStyle.amplitudeScale.toFixed(2)}</div>
+				<div class="stat">Style Tempo: {avgStyle.tempoOffset.toFixed(3)}</div>
+			{/if}
 			<div class="stat">Knows: {selectedEntity.knowledge.knownSequences.size} sequences</div>
 			<div class="traits">
 				<div>Learn: {selectedEntity.personality.learnSpeed.toFixed(2)}</div>
@@ -155,6 +177,10 @@
 		<label class="toggle">
 			<input type="checkbox" checked={visualState.showReincarnationGlow} onchange={(e) => visualState.setShowReincarnationGlow(e.currentTarget.checked)} />
 			Show reincarnation glow
+		</label>
+		<label class="toggle">
+			<input type="checkbox" checked={visualState.showSchoolTints} onchange={(e) => visualState.setShowSchoolTints(e.currentTarget.checked)} />
+			Show school tints
 		</label>
 	</div>
 
