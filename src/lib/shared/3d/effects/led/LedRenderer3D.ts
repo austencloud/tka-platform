@@ -22,7 +22,6 @@ import {
   Matrix4,
   Quaternion,
   Object3D,
-  type Scene,
   type Camera,
 } from "three";
 import { createLedMaterial, type LedMaterialOptions } from "./LedMaterial3D";
@@ -128,7 +127,7 @@ export class LedRenderer3D {
   private trails: Map<string, LedTrailRing> = new Map();
   private qualityTier: QualityTier;
   private trailLength: number;
-  private scene: Scene | null = null;
+  private parent: Object3D | null = null;
 
   /** Maximum velocity elongation factor */
   private static readonly MAX_STRETCH = 1.5;
@@ -148,9 +147,9 @@ export class LedRenderer3D {
     this.instanceStretches = new Float32Array(MAX_INSTANCES * 2);
   }
 
-  initialize(scene: Scene, materialOptions?: LedMaterialOptions): void {
+  initialize(parent: Object3D, materialOptions?: LedMaterialOptions): void {
     if (this.mesh) return;
-    this.scene = scene;
+    this.parent = parent;
 
     const geometry = new PlaneGeometry(LED_SPRITE_SIZE, LED_SPRITE_SIZE);
     const material = createLedMaterial(materialOptions);
@@ -175,7 +174,7 @@ export class LedRenderer3D {
     this.mesh.count = 0;
     this.mesh.renderOrder = 100; // Render after scene geometry
 
-    scene.add(this.mesh);
+    parent.add(this.mesh);
   }
 
   /**
@@ -350,7 +349,7 @@ export class LedRenderer3D {
 
   dispose(): void {
     if (this.mesh) {
-      this.scene?.remove(this.mesh);
+      this.parent?.remove(this.mesh);
       this.mesh.geometry.dispose();
       if (Array.isArray(this.mesh.material)) {
         this.mesh.material.forEach((m) => m.dispose());
@@ -360,6 +359,6 @@ export class LedRenderer3D {
       this.mesh = null;
     }
     this.trails.clear();
-    this.scene = null;
+    this.parent = null;
   }
 }

@@ -11,7 +11,7 @@
  * is always ~0. All direction math uses XY, not XZ.
  */
 
-import { Vector3, Quaternion, type Scene, PointLight } from "three";
+import { Vector3, Quaternion, Object3D, PointLight } from "three";
 import { VolumetricFireMesh } from "./VolumetricFireMesh";
 import { type FireColorPreset } from "./FireColorCurve3D";
 import { QualityTier } from "../types";
@@ -60,7 +60,7 @@ interface TipState {
 
 export class FireRenderer3D {
   private meshes: VolumetricFireMesh[] = [];
-  private scene: Scene | null = null;
+  private parent: Object3D | null = null;
   private qualityTier: QualityTier;
   private preset: FireColorPreset;
 
@@ -89,9 +89,9 @@ export class FireRenderer3D {
     }
   }
 
-  initialize(scene: Scene): void {
+  initialize(parent: Object3D): void {
     if (this.meshes.length > 0) return;
-    this.scene = scene;
+    this.parent = parent;
 
     for (let i = 0; i < MAX_FIRE_TIPS; i++) {
       const mesh = new VolumetricFireMesh({
@@ -99,13 +99,13 @@ export class FireRenderer3D {
         qualityTier: this.qualityTier,
       });
       mesh.visible = false;
-      scene.add(mesh);
+      parent.add(mesh);
       this.meshes.push(mesh);
 
       if (this.lightEnabled) {
         const light = new PointLight(0xff8822, 0, 3.0, 2.0);
         light.visible = false;
-        scene.add(light);
+        parent.add(light);
         this.lights.push(light);
       }
     }
@@ -266,15 +266,15 @@ export class FireRenderer3D {
 
   dispose(): void {
     for (const mesh of this.meshes) {
-      this.scene?.remove(mesh);
+      this.parent?.remove(mesh);
       mesh.dispose();
     }
     for (const light of this.lights) {
-      this.scene?.remove(light);
+      this.parent?.remove(light);
       light.dispose();
     }
     this.meshes = [];
     this.lights = [];
-    this.scene = null;
+    this.parent = null;
   }
 }
