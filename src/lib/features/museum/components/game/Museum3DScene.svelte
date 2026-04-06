@@ -9,6 +9,7 @@
     Euler,
     FogExp2,
     Color,
+    Object3D,
   } from "three";
   import type { BatchedMesh, PerspectiveCamera } from "three";
   import MuseumPostProcessing from "./MuseumPostProcessing.svelte";
@@ -30,6 +31,9 @@
   import { FIXTURE_REGISTRY } from "../../domain/fixture-registry";
   import MuseumPlaque3D from "./MuseumPlaque3D.svelte";
   import MuseumSceneEditor from "./MuseumSceneEditor.svelte";
+  import PlacementPickerPanel from '../editor/PlacementPickerPanel.svelte';
+  import PlacementGhost from '../editor/PlacementGhost.svelte';
+  import { PlacementPersister } from '../../services/implementations/PlacementPersister';
   import { OrbitControls } from "@threlte/extras";
   import { museum3dEditorState } from "../../state/museum-3d-editor-state.svelte";
   import { museumEditorOverrides } from "../../state/museum-editor-overrides";
@@ -53,6 +57,7 @@
   // Shared texture generator — one instance for all plaques (caches internally)
   const plaqueGenerator = new PlaqueTextureGenerator();
   const torchMaterialCache = new TorchMaterialCache();
+  const placementPersister = new PlacementPersister();
 
   // Scene reference for fog control — scene may not be available at init,
   // so we defer fog setup to the first frame via $effect
@@ -195,8 +200,46 @@
       }
     }
 
+    // Sync imperative performer mesh instances to match editor overrides.
+    // Uses performerMeshLookup (built at init) to find the right instance.
+    const dummy = new Object3D();
+    for (const performer of grid.performers) {
+      const override = allOverrides[`performer-station-${performer.id}`];
+      if (!override) continue;
+      const entry = performerMeshLookup.get(performer.id);
+      if (!entry) continue;
+      dummy.position.set(override.x, 0.25, override.z);
+      dummy.updateMatrix();
+      entry.chunk.performerMesh!.setMatrixAt(entry.instanceIdx, dummy.matrix);
+      entry.chunk.performerMesh!.instanceMatrix.needsUpdate = true;
+    }
+
     // Bump version to trigger reactive re-reads of performer/exhibit positions
     overrideVersion++;
+  }
+
+  function handlePlace(worldX: number, worldZ: number, yaw: number, wallFacing: string | null): void {
+    const def = museum3dEditorState.placementDef;
+    if (!def) return;
+
+    const tileX = Math.round(worldX / TILE_SIZE);
+    const tileY = Math.round(worldZ / TILE_SIZE);
+    const wing = grid.wings.find(w => {
+      const b = w.bounds;
+      return tileX >= b.x && tileX < b.x + b.width && tileY >= b.y && tileY < b.y + b.height;
+    });
+    const roomId = wing?.id ?? 'unknown';
+
+    const placement = {
+      id: `${roomId}-${def.id}-${Date.now()}`,
+      objectDefId: def.id,
+      tileX,
+      tileY,
+      wallFacing: wallFacing as any,
+      yaw,
+    };
+
+    placementPersister.save(roomId, placement);
   }
 
   // Apply any persisted overrides on mount (from previous editor sessions).
@@ -1043,6 +1086,9 @@
   // The overlay stays visible until all chunks are built + textures loaded.
   // This is ~300ms of JS work + GPU shader compilation (absorbed by overlay).
   const prebuiltChunks = new Map<string, RoomChunk>();
+  // Maps performer ID → { chunk, instanceIdx } for editor mesh updates.
+  // Built once after all chunks are created, before any overrides.
+  const performerMeshLookup = new Map<string, { chunk: RoomChunk; instanceIdx: number }>();
   const spawnRoomId = streamingManager.getRoomAtTile(grid.spawn.x, grid.spawn.y, grid.wings);
 
   props.onBuildStage?.("Tile bucketing");
@@ -1067,6 +1113,42 @@
 
     // Build global proximity grids from ALL chunks (torches, lights, plaques)
     buildGlobalProximityGrids();
+
+    // Build performer mesh lookup: match each grid performer to its chunk instance
+    // by comparing initial world positions (before any editor overrides).
+    for (const performer of grid.performers) {
+      const perfWorldX = performer.tileX * TILE_SIZE;
+      const perfWorldZ = performer.tileY * TILE_SIZE;
+      for (const chunk of prebuiltChunks.values()) {
+        if (!chunk.performerMesh) continue;
+        for (let idx = 0; idx < chunk.performerPositions.length; idx++) {
+          const pos = chunk.performerPositions[idx]!;
+          if (Math.abs(pos.x - perfWorldX) < 0.3 && Math.abs(pos.z - perfWorldZ) < 0.3) {
+            performerMeshLookup.set(performer.id, { chunk, instanceIdx: idx });
+            break;
+          }
+        }
+        if (performerMeshLookup.has(performer.id)) break;
+      }
+    }
+
+    // Apply any persisted editor overrides to the performer meshes NOW
+    // (the $effect that runs at mount fires before chunks exist, so it
+    // can't update meshes — we catch up here after the lookup is built).
+    const persistedOverrides = museumEditorOverrides.getAll();
+    if (Object.keys(persistedOverrides).length > 0) {
+      const d = new Object3D();
+      for (const performer of grid.performers) {
+        const override = persistedOverrides[`performer-station-${performer.id}`];
+        if (!override) continue;
+        const entry = performerMeshLookup.get(performer.id);
+        if (!entry?.chunk.performerMesh) continue;
+        d.position.set(override.x, 0.25, override.z);
+        d.updateMatrix();
+        entry.chunk.performerMesh.setMatrixAt(entry.instanceIdx, d.matrix);
+        entry.chunk.performerMesh.instanceMatrix.needsUpdate = true;
+      }
+    }
 
     // ── Imperative scene setup: add ALL meshes directly to Three.js ──
     // No Svelte templates, no reactive arrays, no component mounting.
@@ -1694,4 +1776,8 @@
 <!-- 3D Scene Editor — click to select, gizmo to transform -->
 {#if museum3dEditorState.editorActive}
   <MuseumSceneEditor onOverrideChanged={applyEditorOverrides} />
+  <PlacementPickerPanel />
+  {#if museum3dEditorState.placementDef}
+    <PlacementGhost def={museum3dEditorState.placementDef} onPlace={handlePlace} />
+  {/if}
 {/if}

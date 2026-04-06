@@ -174,6 +174,8 @@
   function handlePointerDown(event: PointerEvent) {
     if (event.button !== 0) return; // Left click only
     if (gizmoDragging) return;
+    // Don't interfere with placement mode — PlacementGhost handles clicks
+    if (museum3dEditorState.placementDef) return;
 
     // Defer so TransformControls processes first
     requestAnimationFrame(() => {
