@@ -70,22 +70,11 @@
   //
   // stepConfigs now includes the start position at index 0, so the mapping
   // is direct: 2D beat N → 3D index N (no offset needed).
-  let _diagOnce = false;
   useTask(() => {
     const beatIndex = Math.floor(currentStep);
     const subBeatProgress = currentStep - beatIndex;
     avatarState.goToStep(beatIndex);
     avatarState.setProgress(subBeatProgress);
-
-    if (!_diagOnce && avatarState.bluePropState) {
-      _diagOnce = true;
-      const b = avatarState.bluePropState;
-      const r = avatarState.redPropState;
-      console.log(`[DIAG:Scene] currentStep=${currentStep.toFixed(2)} beatIndex=${beatIndex}`);
-      console.log(`[DIAG:Scene] blue worldPos: x=${b.worldPosition.x.toFixed(3)} y=${b.worldPosition.y.toFixed(3)}`);
-      if (r) console.log(`[DIAG:Scene] red worldPos: x=${r.worldPosition.x.toFixed(3)} y=${r.worldPosition.y.toFixed(3)}`);
-      console.log(`[DIAG:Scene] blue staffAngle=${b.staffRotationAngle.toFixed(3)} centerPath=${b.centerPathAngle.toFixed(3)}`);
-    }
   });
 
   // Mirror mode: swap blue↔red AND mirror X positions so the performer

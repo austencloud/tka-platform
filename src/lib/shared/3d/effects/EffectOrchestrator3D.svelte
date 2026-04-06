@@ -50,10 +50,10 @@
     staffHalfLength?: number;
     tipEffectMap?: TipEffectMap;
     globalTipEffectMap?: TipEffectMap;
-    /** Rig-local hand position for blue prop (from PerformerRig HandAnchor) */
-    blueHandPos?: { x: number; y: number; z: number };
-    /** Rig-local hand position for red prop (from PerformerRig HandAnchor) */
-    redHandPos?: { x: number; y: number; z: number };
+    /** Rig-local hand position for blue prop (from PerformerRig HandAnchor). y is always 0. */
+    blueHandPos?: { x: number; z: number };
+    /** Rig-local hand position for red prop (from PerformerRig HandAnchor). y is always 0. */
+    redHandPos?: { x: number; z: number };
     /** Parent Object3D to add imperative meshes to (rig group). Falls back to scene root. */
     effectsParentRef?: Object3D;
     trailConfig?: {
@@ -72,8 +72,8 @@
     staffHalfLength = 0.5,
     tipEffectMap,
     globalTipEffectMap = {},
-    blueHandPos = { x: 0, y: 0, z: 0 },
-    redHandPos = { x: 0, y: 0, z: 0 },
+    blueHandPos = { x: 0, z: 0 },
+    redHandPos = { x: 0, z: 0 },
     effectsParentRef,
     trailConfig = {},
   }: Props = $props();
@@ -163,13 +163,13 @@
     // the red-colored prop and vice versa).
     const blueRigCenter = redPropState ? {
       x: blueHandPos.x + redPropState.worldPosition.x,
-      y: blueHandPos.y + redPropState.worldPosition.y,
+      y: redPropState.worldPosition.y,
       z: blueHandPos.z + redPropState.worldPosition.z,
     } : null;
 
     const redRigCenter = bluePropState ? {
       x: redHandPos.x + bluePropState.worldPosition.x,
-      y: redHandPos.y + bluePropState.worldPosition.y,
+      y: bluePropState.worldPosition.y,
       z: redHandPos.z + bluePropState.worldPosition.z,
     } : null;
 
