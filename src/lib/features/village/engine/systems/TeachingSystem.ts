@@ -10,6 +10,7 @@ import {
 	FRUSTRATION_GIVE_UP_THRESHOLD,
 	INTERACTION_COOLDOWN_BASE,
 	STYLE_MUTATION_STDDEV,
+	PROP_PREFERENCE_TRANSFER_CHANCE,
 } from "../../domain/village-constants";
 
 export class TeachingSystem {
@@ -107,6 +108,11 @@ export class TeachingSystem {
 			teacherSeq.lastUsedTick = currentTick;
 		}
 		teacher.personality.ego = Math.min(1, teacher.personality.ego + 0.05);
+
+		// Prop preference spread: 30% chance teaching transfers prop preference
+		if (Math.random() < PROP_PREFERENCE_TRANSFER_CHANCE) {
+			learner.prop.propPreference = teacher.prop.propPreference;
+		}
 
 		this.emitter.emit("teaching:completed", teacher, learner, sequenceId);
 

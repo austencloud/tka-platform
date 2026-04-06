@@ -23,6 +23,7 @@ import { FuneralSystem } from "./systems/FuneralSystem";
 import { MonumentSystem } from "./systems/MonumentSystem";
 import { ProximityLearningSystem } from "./systems/ProximityLearningSystem";
 import { StyleDriftSystem } from "./systems/StyleDriftSystem";
+import { PropSystem } from "./systems/PropSystem";
 
 export class VillageOrchestrator implements VillageEventEmitter {
 	private world: World<VillageEntity>;
@@ -38,6 +39,7 @@ export class VillageOrchestrator implements VillageEventEmitter {
 	monumentSystem: MonumentSystem;
 	private proximityLearningSystem: ProximityLearningSystem;
 	private styleDriftSystem: StyleDriftSystem;
+	propSystem: PropSystem;
 	private lineageTracker: LineageTracker;
 	private personalityGenerator: PersonalityGenerator;
 
@@ -75,6 +77,7 @@ export class VillageOrchestrator implements VillageEventEmitter {
 		this.monumentSystem = new MonumentSystem(this);
 		this.proximityLearningSystem = new ProximityLearningSystem();
 		this.styleDriftSystem = new StyleDriftSystem(this);
+		this.propSystem = new PropSystem(this);
 
 		// Wire funeral system to death events
 		this.on("entity:died", (deceased) => {
@@ -98,6 +101,7 @@ export class VillageOrchestrator implements VillageEventEmitter {
 		this.decaySystem.tick(this.world, this._currentTick);
 		this.recombinationSystem.tick(this.world, this._currentTick);
 		this.styleDriftSystem.tick(this.world, this._currentTick);
+		this.propSystem.tick(this.world, this._currentTick);
 		this.movementSystem.tick(this.world);
 		this.monumentSystem.tick(this.world, this._currentTick);
 		this.populationSystem.tick(this.world, this._currentTick);
@@ -135,6 +139,7 @@ export class VillageOrchestrator implements VillageEventEmitter {
 		this.monumentSystem = new MonumentSystem(this);
 		this.proximityLearningSystem = new ProximityLearningSystem();
 		this.styleDriftSystem = new StyleDriftSystem(this);
+		this.propSystem = new PropSystem(this);
 		this.initialize();
 	}
 
@@ -203,6 +208,14 @@ export class VillageOrchestrator implements VillageEventEmitter {
 
 	get schools() {
 		return this.styleDriftSystem.schools;
+	}
+
+	get droppedProps() {
+		return this.propSystem.droppedProps;
+	}
+
+	get propWall() {
+		return this.propSystem.propWall;
 	}
 
 	inspectAvatar(entityId: string): VillageEntity | null {
