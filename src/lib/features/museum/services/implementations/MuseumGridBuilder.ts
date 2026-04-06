@@ -239,8 +239,14 @@ export class MuseumGridBuilder implements IMuseumGridBuilder {
       const px = centerX + Math.floor(placement.offsetX * interiorW);
       const py = centerY + Math.floor(placement.offsetY * interiorH);
 
+      // Telekinetic formations have their own large platform — skip the
+      // small performer-station cylinder marker so it doesn't linger
+      // when the editor drags the formation to a new position.
+      const tileType = placement.refId.includes("telekinetic-formation")
+        ? "floor" as const
+        : "performer-station" as const;
       this.placeTile(tiles, px, py, {
-        type: "performer-station",
+        type: tileType,
         refId: placement.refId,
         facing: placement.facing,
       });
