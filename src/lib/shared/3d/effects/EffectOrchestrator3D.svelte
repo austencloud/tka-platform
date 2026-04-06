@@ -17,7 +17,7 @@
    */
 
   import { useThrelte, useTask } from "@threlte/core";
-  import { onDestroy } from "svelte";
+  import { onDestroy, untrack } from "svelte";
   import { Vector3, Color, Object3D } from "three";
   import { container } from "$lib/shared/di";
   import Trail3D from "./trails/Trail3D.svelte";
@@ -113,10 +113,13 @@
     const cfg = tierConfig;
     if (!parent) return;
 
-    // Dispose previous manager if it exists
-    if (lightManager) {
-      lightManager.dispose();
-    }
+    // Dispose previous manager if it exists.
+    // untrack prevents reading lightManager from re-triggering this effect.
+    untrack(() => {
+      if (lightManager) {
+        lightManager.dispose();
+      }
+    });
     lightManager = new DynamicLightManager(parent, cfg);
   });
 
