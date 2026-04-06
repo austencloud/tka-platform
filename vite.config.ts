@@ -1,3 +1,4 @@
+import { museumPlacementPlugin } from './src/lib/features/museum/dev/museum-placement-plugin';
 import { sveltekit } from "@sveltejs/kit/vite";
 import { SvelteKitPWA } from "@vite-pwa/sveltekit";
 // Paraglide removed - using lightweight JSON-based i18n in $lib/shared/i18n/
@@ -818,6 +819,7 @@ export default defineConfig({
     i18nHmrPlugin(), // 🌐 Auto-reload translations when locale JSON changes
     webpWasmDevPlugin(),
     webpStaticCopyPlugin(),
+    museumPlacementPlugin(), // Dev-only: writes placement data to disk via POST /__museum-placements
     // 📊 Bundle analyzer - generates stats.html when ANALYZE=true
     process.env.ANALYZE === "true" &&
       visualizer({
