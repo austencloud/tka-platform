@@ -37,12 +37,6 @@
     propState: PropState3D;
     color: "blue" | "red";
     visible?: boolean;
-    /** @deprecated Position is now handled by PerformerRig scene graph */
-    avatarPosition?: { x: number; y: number; z: number };
-    /** @deprecated Facing rotation is now inherited from PerformerRig parent group */
-    facingAngle?: number;
-    /** @deprecated Grid offset is now handled by PerformerRig scene graph */
-    gridOffset?: number;
     isActivePlayer?: boolean;
   }
 
@@ -51,9 +45,6 @@
     propState,
     color,
     visible = true,
-    avatarPosition = { x: 0, y: 0, z: 0 },
-    facingAngle = 0,
-    gridOffset = 0,
     isActivePlayer = false,
   }: Props = $props();
 

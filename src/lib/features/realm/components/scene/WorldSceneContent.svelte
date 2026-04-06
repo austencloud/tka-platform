@@ -1131,38 +1131,55 @@
     moveDirection={avatarState.moveDirection ?? { x: 0, z: 1 }}
   />
 
-  <!-- Props when sequence is loaded -->
-  {#if performerState?.bluePropState}
-    <Prop3D
-      propType={PropType.STAFF}
-      propState={performerState.bluePropState}
-      color="blue"
-      avatarPosition={{ x: playerPosition.x, y: 0, z: playerPosition.z }}
-      facingAngle={playerYaw}
-      gridOffset={-0.5}
-      isActivePlayer={true}
-    />
-  {/if}
-  {#if performerState?.redPropState}
-    <Prop3D
-      propType={PropType.STAFF}
-      propState={performerState.redPropState}
-      color="red"
-      avatarPosition={{ x: playerPosition.x, y: 0, z: playerPosition.z }}
-      facingAngle={playerYaw}
-      gridOffset={-0.5}
-      isActivePlayer={true}
-    />
-  {/if}
+  <!-- Props when sequence is loaded — positioned via parent group -->
+  <T.Group
+    position.x={playerPosition.x}
+    position.z={playerPosition.z}
+    rotation.y={playerYaw}
+  >
+    <T.Group position.z={-0.5}>
+      {#if performerState?.bluePropState}
+        <T.Group
+          position.x={performerState.bluePropState.worldPosition.x}
+          position.y={performerState.bluePropState.worldPosition.y}
+          position.z={performerState.bluePropState.worldPosition.z}
+        >
+          <Prop3D
+            propType={PropType.STAFF}
+            propState={performerState.bluePropState}
+            color="blue"
+            isActivePlayer={true}
+          />
+        </T.Group>
+      {/if}
+      {#if performerState?.redPropState}
+        <T.Group
+          position.x={performerState.redPropState.worldPosition.x}
+          position.y={performerState.redPropState.worldPosition.y}
+          position.z={performerState.redPropState.worldPosition.z}
+        >
+          <Prop3D
+            propType={PropType.STAFF}
+            propState={performerState.redPropState}
+            color="red"
+            isActivePlayer={true}
+          />
+        </T.Group>
+      {/if}
+    </T.Group>
+  </T.Group>
 {/if}
 
 <!-- Grid Planes (optional) -->
 {#if isInitialized && isReadyToRender && showAvatar && showGridPlanes}
-  <Grid3D
-    centerPosition={playerPosition}
-    facingAngle={playerYaw}
-    visiblePlanes={activePlaneSet}
-  />
+  <T.Group
+    position.x={playerPosition.x}
+    position.y={playerPosition.y}
+    position.z={playerPosition.z}
+    rotation.y={playerYaw}
+  >
+    <Grid3D visiblePlanes={activePlaneSet} />
+  </T.Group>
 {/if}
 
 <!-- Museum Pavilions (only when museum realm is active) -->
