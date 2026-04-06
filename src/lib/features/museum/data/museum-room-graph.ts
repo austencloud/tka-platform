@@ -241,7 +241,7 @@ export const MUSEUM_ROOMS: RoomNode[] = [
       },
     },
     performers: [
-      { offsetX: 0, offsetY: 0, facing: "south", refId: "egypt-telekinetic-formation" },
+      { offsetX: 0.25, offsetY: -0.25, facing: "south", refId: "egypt-telekinetic-formation" },
     ],
   },
   {

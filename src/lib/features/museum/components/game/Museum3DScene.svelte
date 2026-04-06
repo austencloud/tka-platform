@@ -227,7 +227,7 @@
     gallery:       { density: 0.02, color: "#0e0a10" },   // minimal
     modern:        { density: 0.03, color: "#0a0a0a" },   // slight
     futuristic:    { density: 0.03, color: "#0a0a10" },   // slight cool
-    outdoor:       { density: 0.01, color: "#1a2010" },   // nearly clear
+    outdoor:       { density: 0.008, color: "#2a2418" },  // warm haze, nearly clear
     construction:  { density: 0.04, color: "#14120a" },   // dusty
     retail:        { density: 0.02, color: "#141210" },   // clear
   };
@@ -604,6 +604,7 @@
           case "performer": visiblePerformers = [...visiblePerformers, item]; break;
           case "exhibitLight": visibleExhibitLights = [...visibleExhibitLights, item]; break;
           case "ceilingLight": visibleCeilingLights = [...visibleCeilingLights, item]; break;
+          case "sunlight": visibleSunlights = [...visibleSunlights, item]; break;
           case "furniture": visibleFurniture = [...visibleFurniture, item]; break;
         }
       }
@@ -988,6 +989,7 @@
   let performerGrid = new ProximityGrid<typeof grid.performers[0]>(CELL_SIZE);
   let exhibitLightGrid = new ProximityGrid<LightPosition>(CELL_SIZE);
   let ceilingLightGrid = new ProximityGrid<LightPosition>(CELL_SIZE);
+  let sunlightGrid = new ProximityGrid<LightPosition>(CELL_SIZE);
   let furnitureGrid = new ProximityGrid<NonNullable<typeof grid.furniture>[0]>(CELL_SIZE);
 
   // Populate furniture and performer grids immediately (not per-room)
@@ -1000,6 +1002,7 @@
   let visiblePerformers = $state<typeof grid.performers>([]);
   let visibleExhibitLights = $state<LightPosition[]>([]);
   let visibleCeilingLights = $state<LightPosition[]>([]);
+  let visibleSunlights = $state<LightPosition[]>([]);
   let visibleFurniture = $state<NonNullable<typeof grid.furniture>>([]);
   let useSpotLights = $state(false);
 
@@ -1017,6 +1020,7 @@
     plaqueGrid = new ProximityGrid<PlaquePlacement>(CELL_SIZE);
     exhibitLightGrid = new ProximityGrid<LightPosition>(CELL_SIZE);
     ceilingLightGrid = new ProximityGrid<LightPosition>(CELL_SIZE);
+    sunlightGrid = new ProximityGrid<LightPosition>(CELL_SIZE);
 
     const allChunks = [corridorChunk, ...prebuiltChunks.values()].filter(Boolean) as RoomChunk[];
     for (const chunk of allChunks) {
@@ -1024,6 +1028,7 @@
       for (const p of chunk.plaquePlacements) plaqueGrid.insert(p, p.tileX, p.tileY);
       for (const l of chunk.exhibitLightPositions) exhibitLightGrid.insert(l, l.tileX, l.tileY);
       for (const l of chunk.ceilingLightPositions) ceilingLightGrid.insert(l, l.tileX, l.tileY);
+      for (const l of chunk.sunlightPositions) sunlightGrid.insert(l, l.tileX, l.tileY);
     }
   }
 
@@ -1141,11 +1146,13 @@
     const allTorches: TorchPosition[] = [];
     const allExhibitLights: LightPosition[] = [];
     const allCeilingLights: LightPosition[] = [];
+    const allSunlights: LightPosition[] = [];
     const allChunks = [cc, ...prebuiltChunks.values()];
     for (const chunk of allChunks) {
       allTorches.push(...chunk.torchPositions);
       allExhibitLights.push(...chunk.exhibitLightPositions);
       allCeilingLights.push(...chunk.ceilingLightPositions);
+      allSunlights.push(...chunk.sunlightPositions);
     }
     // ── Staggered component mounting ──
     // Mount Svelte components in groups with yields between each so the
@@ -1155,6 +1162,7 @@
     props.onBuildStage?.("Mounting lights");
     visibleExhibitLights = allExhibitLights;
     visibleCeilingLights = allCeilingLights;
+    visibleSunlights = allSunlights;
     await new Promise<void>(r => setTimeout(r, 0));
 
     props.onBuildStage?.("Mounting torches");
@@ -1268,7 +1276,7 @@
   // Three.js deallocateRenderTarget crashes, and PBR wall textures already consume
   // most of the 16 WebGL texture units. Shadows are still received by floors/walls.
 
-  type MountCategory = "torch" | "plaque" | "performer" | "exhibitLight" | "ceilingLight" | "furniture";
+  type MountCategory = "torch" | "plaque" | "performer" | "exhibitLight" | "ceilingLight" | "sunlight" | "furniture";
   let pendingMounts: { category: MountCategory; item: any }[] = [];
 
   let lastCheckTX = -999;
@@ -1556,6 +1564,29 @@
     color="#e8ecf0"
     distance={12}
     decay={1.5}
+  />
+{/each}
+
+<!-- Sunlight shafts — warm golden pools for outdoor rooms.
+     Each spot has a bright downward SpotLight (the sun shaft) plus a
+     soft PointLight fill to brighten the surrounding ground. -->
+{#each visibleSunlights as sun (`${sun.x},${sun.z}`)}
+  <T.SpotLight
+    position={[sun.x + 2, WALL_HEIGHT + 3, sun.z - 1]}
+    target-position={[sun.x, 0, sun.z]}
+    intensity={5}
+    color="#fff4d6"
+    distance={18}
+    angle={0.5}
+    penumbra={0.8}
+    castShadow={false}
+  />
+  <T.PointLight
+    position={[sun.x, 2.5, sun.z]}
+    intensity={1.5}
+    color="#ffe8b0"
+    distance={8}
+    decay={2}
   />
 {/each}
 

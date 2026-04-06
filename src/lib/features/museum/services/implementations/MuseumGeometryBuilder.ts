@@ -62,7 +62,7 @@ const WING_AMBIENT: Record<WingTheme, { color: string; intensity: number }> = {
   gallery:       { color: "#a09080", intensity: 0.9 },
   modern:        { color: "#606060", intensity: 0.8 },
   futuristic:    { color: "#506080", intensity: 0.8 },
-  outdoor:       { color: "#90a080", intensity: 1.2 },
+  outdoor:       { color: "#c8b880", intensity: 1.6 },
   construction:  { color: "#908060", intensity: 0.85 },
   retail:        { color: "#a09080", intensity: 1.0 },
 };
@@ -475,6 +475,7 @@ export interface RoomChunk {
   performerPositions: { x: number; z: number }[];
   exhibitLightPositions: LightPosition[];
   ceilingLightPositions: LightPosition[];
+  sunlightPositions: LightPosition[];
   roomLight: RoomLight | null;
 }
 
@@ -629,6 +630,30 @@ export async function buildRoomChunk(
     }
   }
 
+  // Sunlight shafts (for outdoor wings) — warm directional pools of light
+  // simulating sunlight streaming down through open sky
+  const sunlightPositions: LightPosition[] = [];
+  if (wing && wing.theme === "outdoor") {
+    const b = wing.bounds;
+    let nextId = 0;
+    // Place sunlight pools in a scattered pattern across the room
+    const stepX = Math.max(4, Math.floor(b.width / 3));
+    const stepY = Math.max(4, Math.floor(b.height / 3));
+    for (let dx = 3; dx < b.width - 2; dx += stepX) {
+      for (let dy = 3; dy < b.height - 2; dy += stepY) {
+        // Offset slightly for organic feel (not a perfect grid)
+        const jitterX = (nextId % 3 - 1) * 0.8;
+        const jitterZ = (nextId % 2 === 0 ? 0.5 : -0.5);
+        sunlightPositions.push({
+          id: nextId++,
+          tileX: b.x + dx, tileY: b.y + dy,
+          x: (b.x + dx) * TILE_SIZE + jitterX,
+          z: (b.y + dy) * TILE_SIZE + jitterZ,
+        });
+      }
+    }
+  }
+
   // Room ambient fill light
   let roomLight: RoomLight | null = null;
   if (wing) {
@@ -664,7 +689,7 @@ export async function buildRoomChunk(
     torchPositions: buckets.torchPositions,
     plaquePlacements: buckets.plaquePlacements,
     performerPositions: buckets.performerPositions,
-    exhibitLightPositions, ceilingLightPositions,
+    exhibitLightPositions, ceilingLightPositions, sunlightPositions,
     roomLight,
   };
 }
