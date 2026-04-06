@@ -81,6 +81,28 @@ export const YOUTH_ABSORPTION_THRESHOLD = 0.3;
 export const REINCARNATION_PROBABILITY = 0.3;
 export const REINCARNATION_AFFINITY_BOOST = 3.0;
 
+// Prop system
+export const VILLAGE_PROP_TYPES = ["staff", "fan", "club", "poi", "torch"];
+export const PROP_PREFERENCE_TRANSFER_CHANCE = 0.3;
+export const PROP_WEAR_LIFESPAN = 500;
+export const PROP_WEAR_VISUAL_THRESHOLD = 0.8;
+
+export const PROP_WEAR_PROFILES: Record<
+	string,
+	import("./village-types").WearProfile
+> = {
+	staff: { wearRate: 0.0005, failureMode: "crack", repairTicks: 20 },
+	fan: { wearRate: 0.0008, failureMode: "fabric-tear", repairTicks: 30 },
+	poi: { wearRate: 0.0003, failureMode: "tangle", repairTicks: 5 },
+	torch: { wearRate: 0.001, failureMode: "fuel-depleted", repairTicks: 10 },
+	club: { wearRate: 0.0004, failureMode: "grip-worn", repairTicks: 15 },
+};
+
+// Prop maker
+export const MAKER_CRAFT_DURATION = 30;
+export const MAKER_POSITION_ANGLE = Math.PI;
+export const PROP_WALL_MAX_DISPLAY = 12;
+
 // Style drift
 export const STYLE_MUTATION_STDDEV = 0.02;
 export const STYLE_SIMILARITY_THRESHOLD = 0.08;

@@ -5,6 +5,7 @@ import type {
 	LearnedSequence,
 } from "../domain/village-types";
 import type { IPersonalityGenerator } from "../services/contracts/IPersonalityGenerator";
+import { VILLAGE_PROP_TYPES } from "../domain/village-constants";
 
 const AVATAR_MODELS = ["x-bot", "y-bot", "remy", "ch26", "ch01", "ch07", "ch10", "ch12", "ch18", "ch21", "ch22", "ch24", "ch34", "ch41", "ch42", "ch44"];
 
@@ -58,6 +59,7 @@ export function createAvatarEntity(
 			visualTraits,
 			generation: options.generation,
 			avatarModelId,
+			role: "spinner",
 		},
 		knowledge: {
 			knownSequences: options.seedSequences ?? new Map(),
@@ -91,7 +93,33 @@ export function createAvatarEntity(
 			targetZ: 0,
 			speed: 0,
 		},
+		prop: {
+			heldProp: {
+				id: `prop-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+				propType:
+					VILLAGE_PROP_TYPES[
+						Math.floor(Math.random() * VILLAGE_PROP_TYPES.length)
+					],
+				createdAtTick: options.currentTick,
+				createdBy: "",
+				ownershipChain: [],
+				totalBeatsPerformed: 0,
+				wear: 0,
+				favoriteSequenceId: null,
+				customHue: Math.floor(Math.random() * 360),
+				broken: false,
+			},
+			propPreference:
+				VILLAGE_PROP_TYPES[
+					Math.floor(Math.random() * VILLAGE_PROP_TYPES.length)
+				],
+		},
 	};
+
+	// Fix up prop references now that entity.id is known
+	entity.prop.heldProp!.createdBy = entity.id;
+	entity.prop.heldProp!.ownershipChain = [entity.id];
+	entity.prop.heldProp!.propType = entity.prop.propPreference;
 
 	world.add(entity);
 	return entity;
