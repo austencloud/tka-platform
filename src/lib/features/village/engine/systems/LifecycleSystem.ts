@@ -27,6 +27,9 @@ export class LifecycleSystem {
 				entity.lifecycle.phase = "elder";
 			}
 
+			// Natural ego decay: humility through aging
+			entity.personality.ego = Math.max(0, entity.personality.ego - 0.002);
+
 			// Knowledge glow: 0-1 based on sequences known vs capacity
 			entity.lifecycle.knowledgeGlow = Math.min(
 				1,

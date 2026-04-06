@@ -7,6 +7,12 @@ import {
 import { PersonalityGenerator } from "$lib/features/village/services/implementations/PersonalityGenerator";
 import { createDefaultConfig } from "$lib/features/village/engine/VillageConfig";
 import { IDLE_THRESHOLD_BASE } from "$lib/features/village/domain/village-constants";
+import type { VillageEventEmitter } from "$lib/features/village/engine/VillageEventEmitter";
+
+const mockEmitter: VillageEventEmitter = {
+	emit: () => {},
+	on: () => {},
+};
 
 function makeEntity(
 	world: ReturnType<typeof createVillageWorld>,
@@ -29,7 +35,7 @@ describe("SocialSystem", () => {
 		const world = createVillageWorld();
 		const entity = makeEntity(world);
 		const config = createDefaultConfig();
-		const system = new SocialSystem(config);
+		const system = new SocialSystem(config, mockEmitter);
 		entity.social.state = "idle";
 		entity.social.idleTimer = 0;
 
@@ -42,7 +48,7 @@ describe("SocialSystem", () => {
 		const world = createVillageWorld();
 		const entity = makeEntity(world);
 		const config = createDefaultConfig();
-		const system = new SocialSystem(config);
+		const system = new SocialSystem(config, mockEmitter);
 		entity.social.state = "idle";
 		entity.social.idleTimer = IDLE_THRESHOLD_BASE + 1;
 		entity.social.interactionCooldown = 0;
@@ -58,7 +64,7 @@ describe("SocialSystem", () => {
 		const world = createVillageWorld();
 		const entity = makeEntity(world);
 		const config = createDefaultConfig();
-		const system = new SocialSystem(config);
+		const system = new SocialSystem(config, mockEmitter);
 		entity.social.state = "idle";
 		entity.social.interactionCooldown = 5;
 
@@ -72,7 +78,7 @@ describe("SocialSystem", () => {
 		const entity1 = makeEntity(world, "A");
 		const entity2 = makeEntity(world, "B");
 		const config = createDefaultConfig();
-		const system = new SocialSystem(config);
+		const system = new SocialSystem(config, mockEmitter);
 
 		// Place far enough apart that they need to walk toward each other
 		entity1.transform.x = 0;
@@ -92,6 +98,7 @@ describe("SocialSystem", () => {
 			learnedAt: 0,
 			learnedFrom: null,
 			lineage: [],
+			lastUsedTick: 0,
 		});
 
 		system.tick(world, 1);
@@ -106,7 +113,7 @@ describe("SocialSystem", () => {
 		const world = createVillageWorld();
 		const entity = makeEntity(world);
 		const config = createDefaultConfig();
-		const system = new SocialSystem(config);
+		const system = new SocialSystem(config, mockEmitter);
 
 		entity.social.state = "wandering";
 		entity.transform.speed = 0;
@@ -120,7 +127,7 @@ describe("SocialSystem", () => {
 		const world = createVillageWorld();
 		const entity = makeEntity(world);
 		const config = createDefaultConfig();
-		const system = new SocialSystem(config);
+		const system = new SocialSystem(config, mockEmitter);
 
 		entity.social.state = "passing";
 

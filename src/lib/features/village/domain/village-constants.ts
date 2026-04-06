@@ -54,3 +54,29 @@ export const COLLISION_AVOIDANCE_RADIUS = 2.0;
 export const COLLISION_REPULSION_STRENGTH = 1.5;
 export const PERSONAL_SPACE_RADIUS = 1.5; // stop approaching at this distance
 export const ARRIVAL_THRESHOLD = 0.3;
+
+// Decay system
+export const DECAY_GRACE_PERIOD = 200;
+export const DECAY_PER_TICK = 0.001;
+export const FORGET_THRESHOLD = 0.1;
+
+// Performance & jams
+export const PERFORMANCE_ATTRACTION_RADIUS = 6;
+export const JAM_WATCHER_THRESHOLD = 3;
+export const CREATIVITY_JAM_BOOST = 0.2;
+
+// Funerals
+export const FUNERAL_RADIUS = 5;
+export const MOURNING_DURATION = 30;
+
+// Monuments
+export const MONUMENT_GENERATION_THRESHOLD = 3;
+
+// Proximity learning (youth)
+export const PROXIMITY_LEARNING_RADIUS = 5;
+export const YOUTH_ABSORPTION_RATE = 0.005;
+export const YOUTH_ABSORPTION_THRESHOLD = 0.3;
+
+// Reincarnation
+export const REINCARNATION_PROBABILITY = 0.3;
+export const REINCARNATION_AFFINITY_BOOST = 3.0;

@@ -15,10 +15,11 @@ export interface LearnedSequence {
 	sequenceId: string;
 	sequenceData: unknown | null; // SequenceData for rendering (null in headless mode)
 	proficiency: number; // 0-1
-	source: "seed" | "taught" | "invented";
+	source: "seed" | "taught" | "invented" | "fragmented" | "gifted" | "echo";
 	learnedAt: number; // simulation tick
 	learnedFrom: string | null; // entity id
 	lineage: string[]; // chain of entity ids
+	lastUsedTick: number; // updated on teaching, performing, practicing
 }
 
 export interface KnowledgeComponent {
@@ -32,6 +33,7 @@ export interface PersonalityComponent {
 	creativity: number; // 0-1
 	patience: number; // 0-1
 	curiosity: number; // 0-1
+	ego: number; // 0-1, grows from teaching/performing, gates teaching willingness
 }
 
 export type LifecyclePhase = "youth" | "adult" | "elder";
@@ -55,13 +57,19 @@ export type AvatarBehaviorState =
 	| "performing"
 	| "socializing"
 	| "inventing"
-	| "passing";
+	| "passing"
+	| "watching"
+	| "jamming"
+	| "mourning"
+	| "pilgrim";
 
 export interface SocialComponent {
 	state: AvatarBehaviorState;
 	partner: string | null;
 	teachingProgress: number;
 	sequenceBeingTransferred: string | null;
+	performingSequenceId: string | null; // which sequence is active during "performing" state
+	inJam: boolean; // suppresses auto-expire timer in SocialSystem
 	currentBeatIndex: number;
 	frustrationLevel: number;
 	idleTimer: number;
@@ -103,7 +111,16 @@ export interface VillageEventMap {
 	"teaching:fumble": (learner: VillageEntity, beatIndex: number) => void;
 	"sequence:invented": (inventor: VillageEntity, sequenceId: string) => void;
 	"sequence:extinct": (sequenceId: string) => void;
+	"sequence:forgotten": (entity: VillageEntity, sequenceId: string) => void;
+	"sequence:resurrected": (entity: VillageEntity, sequenceId: string) => void;
 	"generation:changed": (generation: number) => void;
+	"jam:formed": (performers: VillageEntity[], location: { x: number; z: number }) => void;
+	"jam:dissolved": (location: { x: number; z: number }) => void;
+	"funeral:started": (deceased: VillageEntity, mourners: VillageEntity[]) => void;
+	"monument:placed": (sequenceId: string, x: number, z: number) => void;
+	"monument:dimmed": (sequenceId: string) => void;
+	"monument:relit": (sequenceId: string) => void;
+	"reincarnation:detected": (newEntity: VillageEntity, sourceEntityId: string) => void;
 }
 
 export type VillageEventKey = keyof VillageEventMap;
