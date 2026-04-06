@@ -6,6 +6,7 @@
 	import { T } from "@threlte/core";
 	import { HTML } from "@threlte/extras";
 	import type { Monument } from "../engine/systems/MonumentSystem";
+	import { getVillageVisualContext } from "../state/village-context";
 
 	interface Props {
 		monument: Monument;
@@ -13,11 +14,18 @@
 
 	const { monument }: Props = $props();
 
+	const visualState = getVillageVisualContext();
+
 	const isExtinct = $derived(monument.extinctAtTick !== null);
+	const isRelighting = $derived(visualState.relightingMonuments.has(monument.sequenceId));
 	const height = $derived(
 		Math.min(0.8, 0.3 + monument.cohortsSurvived.size * 0.1),
 	);
-	const emissiveIntensity = $derived(isExtinct ? 0.1 : 0.5);
+	const emissiveIntensity = $derived(
+		isRelighting ? 2.0 :
+		isExtinct ? 0.1 :
+		0.5
+	);
 	const materialOpacity = $derived(isExtinct ? 0.4 : 1.0);
 	const color = $derived(isExtinct ? "#6b7280" : "#e8a87c");
 

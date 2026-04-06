@@ -31,6 +31,7 @@ export interface VillageVisualState {
 	readonly showMonuments: boolean;
 	readonly showCircleRings: boolean;
 	readonly showReincarnationGlow: boolean;
+	readonly showSchoolTints: boolean;
 
 	// Event toasts
 	readonly toasts: VillageEventToast[];
@@ -38,11 +39,15 @@ export interface VillageVisualState {
 	// Death marks
 	readonly deathMarks: DeathMark[];
 
+	// Relight flash — sequenceIds currently mid-flash
+	readonly relightingMonuments: Set<string>;
+
 	// Toggle setters
 	setShowToasts(v: boolean): void;
 	setShowMonuments(v: boolean): void;
 	setShowCircleRings(v: boolean): void;
 	setShowReincarnationGlow(v: boolean): void;
+	setShowSchoolTints(v: boolean): void;
 
 	// Toast management
 	pushToast(text: string, color: string, worldX: number, worldZ: number, duration?: number): void;
@@ -51,6 +56,9 @@ export interface VillageVisualState {
 	// Death mark management
 	addDeathMark(entity: VillageEntity, currentTick: number): void;
 	tickDeathMarks(currentTick: number): void;
+
+	// Relight flash — spikes emissive on a monument for 1300ms
+	triggerRelight(sequenceId: string): void;
 }
 
 let toastIdCounter = 0;
@@ -60,22 +68,27 @@ export function createVillageVisualState(): VillageVisualState {
 	let showMonuments = $state(true);
 	let showCircleRings = $state(true);
 	let showReincarnationGlow = $state(true);
+	let showSchoolTints = $state(true);
 
 	let toasts = $state<VillageEventToast[]>([]);
 	let deathMarks = $state<DeathMark[]>([]);
+	let relightingMonuments = $state<Set<string>>(new Set());
 
 	return {
 		get showToasts() { return showToasts; },
 		get showMonuments() { return showMonuments; },
 		get showCircleRings() { return showCircleRings; },
 		get showReincarnationGlow() { return showReincarnationGlow; },
+		get showSchoolTints() { return showSchoolTints; },
 		get toasts() { return toasts; },
 		get deathMarks() { return deathMarks; },
+		get relightingMonuments() { return relightingMonuments; },
 
 		setShowToasts(v) { showToasts = v; },
 		setShowMonuments(v) { showMonuments = v; },
 		setShowCircleRings(v) { showCircleRings = v; },
 		setShowReincarnationGlow(v) { showReincarnationGlow = v; },
+		setShowSchoolTints(v) { showSchoolTints = v; },
 
 		pushToast(text, color, worldX, worldZ, duration = 2000) {
 			if (!showToasts) return;
@@ -123,6 +136,15 @@ export function createVillageVisualState(): VillageVisualState {
 			if (alive.length !== deathMarks.length) {
 				deathMarks = alive;
 			}
+		},
+
+		triggerRelight(sequenceId: string) {
+			relightingMonuments = new Set([...relightingMonuments, sequenceId]);
+			setTimeout(() => {
+				relightingMonuments = new Set(
+					[...relightingMonuments].filter((id) => id !== sequenceId),
+				);
+			}, 1300);
 		},
 	};
 }
