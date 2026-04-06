@@ -6,6 +6,7 @@ import type {
 } from "../../domain/village-types";
 import type { VillageEventEmitter } from "../VillageEventEmitter";
 import {
+	MAKER_CRAFT_DURATION,
 	PROP_WEAR_PROFILES,
 	PROP_WEAR_LIFESPAN,
 	PROP_WALL_MAX_DISPLAY,
@@ -24,6 +25,7 @@ export class PropSystem {
 	tick(world: World<VillageEntity>, currentTick: number): void {
 		this.accumulateWear(world, currentTick);
 		this.handlePickups(world, currentTick);
+		this.handleCrafting(world, currentTick);
 	}
 
 	onEntityDied(entity: VillageEntity): void {
@@ -119,5 +121,65 @@ export class PropSystem {
 		}
 
 		this.droppedProps = remainingDrops;
+	}
+
+	private handleCrafting(world: World<VillageEntity>, currentTick: number): void {
+		const maker = world.entities.find(
+			(e) => e.identity.role === "maker" && e.social.state !== "passing",
+		);
+		if (!maker) return;
+
+		// Propless entities near the maker enter commissioning state
+		for (const entity of world.entities) {
+			if (entity.prop.heldProp !== null) continue;
+			if (entity.identity.role === "maker") continue;
+			if (entity.social.state === "passing" || entity.social.state === "commissioning") continue;
+
+			const dx = entity.transform.x - maker.transform.x;
+			const dz = entity.transform.z - maker.transform.z;
+			const dist = Math.sqrt(dx * dx + dz * dz);
+
+			if (dist <= 2.0) {
+				entity.social.state = "commissioning";
+				entity.social.partner = maker.id;
+				entity.social.idleTimer = 0;
+				entity.transform.speed = 0;
+			}
+		}
+
+		// Check for craft completion — entity has waited long enough
+		for (const entity of world.entities) {
+			if (entity.social.state !== "commissioning") continue;
+			if (entity.social.idleTimer < MAKER_CRAFT_DURATION) continue;
+
+			const newProp: PropArtifact = {
+				id: `prop-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+				propType: entity.prop.propPreference,
+				createdAtTick: currentTick,
+				createdBy: maker.id,
+				ownershipChain: [entity.id],
+				totalBeatsPerformed: 0,
+				wear: 0,
+				favoriteSequenceId: null,
+				customHue: Math.floor(Math.random() * 360),
+				broken: false,
+			};
+			entity.prop.heldProp = newProp;
+			entity.social.state = "idle";
+			entity.social.partner = null;
+			entity.social.idleTimer = 0;
+			this.emitter.emit("prop:crafted", maker, newProp);
+		}
+
+		// Propless entities pathfind toward maker
+		for (const entity of world.entities) {
+			if (entity.prop.heldProp !== null) continue;
+			if (entity.identity.role === "maker") continue;
+			if (entity.social.state === "commissioning" || entity.social.state === "passing") continue;
+
+			entity.transform.targetX = maker.transform.x;
+			entity.transform.targetZ = maker.transform.z;
+			entity.transform.speed = 1;
+		}
 	}
 }

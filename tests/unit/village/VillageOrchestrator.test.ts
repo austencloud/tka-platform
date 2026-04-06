@@ -23,7 +23,8 @@ describe("VillageOrchestrator", () => {
 		);
 		orchestrator.initialize();
 
-		expect(orchestrator.entities.length).toBe(6);
+		// 6 spinners + 1 maker
+		expect(orchestrator.entities.length).toBe(7);
 	});
 
 	it("advances time on tick", () => {
@@ -54,7 +55,8 @@ describe("VillageOrchestrator", () => {
 			orchestrator.tick();
 		}
 
-		expect(orchestrator.entities.length).toBe(4);
+		// 4 spinners + 1 maker
+		expect(orchestrator.entities.length).toBe(5);
 	});
 
 	it("emits events that can be subscribed to", () => {
@@ -68,7 +70,8 @@ describe("VillageOrchestrator", () => {
 
 		orchestrator.initialize();
 
-		expect(births.length).toBe(2);
+		// 2 spinners + 1 maker
+		expect(births.length).toBe(3);
 	});
 
 	it("produces population stats", () => {
@@ -80,7 +83,8 @@ describe("VillageOrchestrator", () => {
 		orchestrator.initialize();
 
 		const stats = orchestrator.populationStats;
-		expect(stats.alive).toBe(4);
+		// 4 spinners + 1 maker
+		expect(stats.alive).toBe(5);
 		expect(stats.averageAge).toBeGreaterThanOrEqual(0);
 	});
 
@@ -149,7 +153,8 @@ describe("VillageOrchestrator", () => {
 		// decay system erodes unused sequences, so we just check the
 		// simulation is still running with living entities
 		expect(stats.totalKnowledge).toBeGreaterThanOrEqual(1);
-		expect(stats.alive).toBe(6);
+		// 6 spinners + 1 maker
+		expect(stats.alive).toBe(7);
 	});
 
 	it("inspects avatar by id", () => {
