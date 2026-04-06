@@ -10,6 +10,7 @@
 	import VillageEventToast from "./VillageEventToast.svelte";
 	import VillageMonument from "./VillageMonument.svelte";
 	import VillageJamCircle from "./VillageJamCircle.svelte";
+	import VillageDroppedProp from "./VillageDroppedProp.svelte";
 	import { getVillageContext, getVillageVisualContext } from "../state/village-context";
 
 	const villageState = getVillageContext();
@@ -30,6 +31,7 @@
 	const activeJams = $derived(villageState.orchestrator.activeJams);
 	const currentTick = $derived(villageState.orchestrator.currentTick);
 	const deathMarks = $derived(visualState.deathMarks);
+	const droppedProps = $derived(villageState.orchestrator.droppedProps);
 	const toasts = $derived(visualState.toasts);
 	const schools = $derived(villageState.orchestrator.schools ?? []);
 
@@ -93,6 +95,11 @@
 <!-- Death marks (fading red circles at death locations) -->
 {#each deathMarks as mark (mark.id)}
 	<VillageDeathMark {mark} {currentTick} />
+{/each}
+
+<!-- Dropped props (pulsing ground props at death locations) -->
+{#each droppedProps as drop (drop.artifact.id)}
+	<VillageDroppedProp {drop} />
 {/each}
 
 <!-- Monuments (hexagonal pillars marking surviving sequences) -->
