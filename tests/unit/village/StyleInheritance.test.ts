@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { TeachingSystem } from "$lib/features/village/engine/systems/TeachingSystem";
+import { SocialSystem } from "$lib/features/village/engine/systems/SocialSystem";
 import {
 	createVillageWorld,
 	createAvatarEntity,
@@ -132,5 +133,108 @@ describe("StyleInheritance", () => {
 			tempoDeltas.reduce((a, b) => a + b, 0) / tempoDeltas.length;
 		expect(Math.abs(meanAmp)).toBeLessThan(0.05);
 		expect(Math.abs(meanTempo)).toBeLessThan(0.05);
+	});
+});
+
+describe("Style Compatibility", () => {
+	it("probabilistically refuses teaching when styles are too different", () => {
+		const gen = new PersonalityGenerator();
+		const config = createDefaultConfig();
+
+		let refusedCount = 0;
+		let teachingCount = 0;
+		const trials = 200;
+
+		for (let trial = 0; trial < trials; trial++) {
+			const world = createVillageWorld();
+			const { emitter } = makeEmitter();
+			const social = new SocialSystem(config, emitter);
+
+			const opts = {
+				generation: 1,
+				currentTick: 0,
+				lifespanTicks: 600,
+				arenaRadius: 8,
+				personalityGenerator: gen,
+				traitMean: 0.5,
+				traitStdDev: 0.15,
+			};
+
+			const entityA = createAvatarEntity(world, { ...opts, name: "A" });
+			const entityB = createAvatarEntity(world, { ...opts, name: "B" });
+
+			// Give entity A a sequence with low amplitude / negative tempo
+			entityA.knowledge.knownSequences.set("seq-shared", {
+				sequenceId: "seq-shared",
+				sequenceData: null,
+				proficiency: 1,
+				source: "seed",
+				learnedAt: 0,
+				learnedFrom: null,
+				lineage: [],
+				lastUsedTick: 0,
+				style: { amplitudeScale: 0.8, tempoOffset: -0.1 },
+			});
+			// Also give A a novel sequence to teach B
+			entityA.knowledge.knownSequences.set("seq-novel", {
+				sequenceId: "seq-novel",
+				sequenceData: null,
+				proficiency: 1,
+				source: "seed",
+				learnedAt: 0,
+				learnedFrom: null,
+				lineage: [],
+				lastUsedTick: 0,
+				style: { amplitudeScale: 0.8, tempoOffset: -0.1 },
+			});
+
+			// Give entity B a sequence with high amplitude / positive tempo
+			// Euclidean distance: sqrt((1.2-0.8)^2 + (0.1-(-0.1))^2) = sqrt(0.16+0.04) = sqrt(0.2) ≈ 0.447
+			entityB.knowledge.knownSequences.set("seq-shared", {
+				sequenceId: "seq-shared",
+				sequenceData: null,
+				proficiency: 1,
+				source: "seed",
+				learnedAt: 0,
+				learnedFrom: null,
+				lineage: [],
+				lastUsedTick: 0,
+				style: { amplitudeScale: 1.2, tempoOffset: 0.1 },
+			});
+
+			// Set up approaching state — both stopped, facing each other
+			entityA.social.state = "approaching";
+			entityA.social.partner = entityB.id;
+			entityA.transform.speed = 0;
+
+			entityB.social.state = "approaching";
+			entityB.social.partner = entityA.id;
+			entityB.transform.speed = 0;
+
+			// Low ego so ego gates don't interfere
+			entityA.personality.ego = 0.3;
+			entityB.personality.ego = 0.3;
+
+			social.tick(world, trial);
+
+			if (entityA.social.state === "socializing") {
+				refusedCount++;
+			} else if (
+				entityA.social.state === "teaching" ||
+				entityA.social.state === "learning"
+			) {
+				teachingCount++;
+			}
+		}
+
+		// With 10% refuse chance and 200 trials, we expect ~20 refusals.
+		// Statistically, having at least 1 of each is near-certain.
+		expect(refusedCount).toBeGreaterThan(0);
+		expect(teachingCount).toBeGreaterThan(0);
+
+		// Sanity check: refused should be a minority (roughly 10%)
+		const refuseRate = refusedCount / trials;
+		expect(refuseRate).toBeLessThan(0.3);
+		expect(refuseRate).toBeGreaterThan(0.01);
 	});
 });

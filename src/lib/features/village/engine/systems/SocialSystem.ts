@@ -8,6 +8,8 @@ import {
 	INVENTION_BASE_PROBABILITY,
 	MOURNING_DURATION,
 	PERSONAL_SPACE_RADIUS,
+	STYLE_INCOMPATIBILITY_REFUSE_CHANCE,
+	STYLE_INCOMPATIBILITY_THRESHOLD,
 } from "../../domain/village-constants";
 
 const SEEK_RADIUS = 5;
@@ -229,6 +231,19 @@ export class SocialSystem {
 				return;
 			}
 
+			// Style compatibility gate
+			const styleDist = this.styleDistance(teacher, learner);
+			if (
+				styleDist > STYLE_INCOMPATIBILITY_THRESHOLD &&
+				Math.random() < STYLE_INCOMPATIBILITY_REFUSE_CHANCE
+			) {
+				entity.social.state = "socializing";
+				partner.social.state = "socializing";
+				entity.social.idleTimer = 0;
+				partner.social.idleTimer = 0;
+				return;
+			}
+
 			const novelSequenceId = this.findNovelSequenceId(learner, teacher);
 			if (novelSequenceId) {
 				teacher.social.state = "teaching";
@@ -355,6 +370,32 @@ export class SocialSystem {
 		entity.transform.targetZ = Math.sin(angle) * dist;
 		entity.transform.speed = 1;
 		entity.social.state = "wandering";
+	}
+
+	private getAverageStyle(entity: VillageEntity): {
+		amplitudeScale: number;
+		tempoOffset: number;
+	} {
+		const sequences = [...entity.knowledge.knownSequences.values()];
+		if (sequences.length === 0) return { amplitudeScale: 1.0, tempoOffset: 0 };
+		let ampSum = 0;
+		let tempoSum = 0;
+		for (const seq of sequences) {
+			ampSum += seq.style.amplitudeScale;
+			tempoSum += seq.style.tempoOffset;
+		}
+		return {
+			amplitudeScale: ampSum / sequences.length,
+			tempoOffset: tempoSum / sequences.length,
+		};
+	}
+
+	private styleDistance(a: VillageEntity, b: VillageEntity): number {
+		const styleA = this.getAverageStyle(a);
+		const styleB = this.getAverageStyle(b);
+		const dAmp = styleA.amplitudeScale - styleB.amplitudeScale;
+		const dTempo = styleA.tempoOffset - styleB.tempoOffset;
+		return Math.sqrt(dAmp * dAmp + dTempo * dTempo);
 	}
 
 	private distance(a: VillageEntity, b: VillageEntity): number {
