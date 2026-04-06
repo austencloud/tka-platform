@@ -9,6 +9,7 @@ export interface IdentityComponent {
 	visualTraits: AvatarVisualTraits;
 	generation: number;
 	avatarModelId: string; // "x-bot", "y-bot", "remy", "ch26"
+	role: "spinner" | "maker";
 }
 
 export interface StyleSignature {
@@ -67,7 +68,8 @@ export type AvatarBehaviorState =
 	| "watching"
 	| "jamming"
 	| "mourning"
-	| "pilgrim";
+	| "pilgrim"
+	| "commissioning";
 
 export interface SocialComponent {
 	state: AvatarBehaviorState;
@@ -91,6 +93,37 @@ export interface VillageTransformComponent {
 	speed: number;
 }
 
+export interface PropArtifact {
+	id: string;
+	propType: string;
+	createdAtTick: number;
+	createdBy: string;
+	ownershipChain: string[];
+	totalBeatsPerformed: number;
+	wear: number;
+	favoriteSequenceId: string | null;
+	customHue: number;
+	broken: boolean;
+}
+
+export interface PropComponent {
+	heldProp: PropArtifact | null;
+	propPreference: string;
+}
+
+export interface WearProfile {
+	wearRate: number;
+	failureMode: string;
+	repairTicks: number;
+}
+
+export interface DroppedProp {
+	artifact: PropArtifact;
+	x: number;
+	z: number;
+	droppedAtTick: number;
+}
+
 export interface VillageEntity {
 	id: string;
 	identity: IdentityComponent;
@@ -99,6 +132,7 @@ export interface VillageEntity {
 	lifecycle: LifecycleComponent;
 	social: SocialComponent;
 	transform: VillageTransformComponent;
+	prop: PropComponent;
 }
 
 export interface VillageEventMap {
@@ -129,6 +163,10 @@ export interface VillageEventMap {
 	"reincarnation:detected": (newEntity: VillageEntity, sourceEntityId: string) => void;
 	"school:formed": (school: StyleSchool) => void;
 	"school:dissolved": (schoolId: string) => void;
+	"prop:dropped": (artifact: PropArtifact, x: number, z: number) => void;
+	"prop:pickedUp": (entity: VillageEntity, artifact: PropArtifact) => void;
+	"prop:broken": (entity: VillageEntity, artifact: PropArtifact) => void;
+	"prop:crafted": (maker: VillageEntity, artifact: PropArtifact) => void;
 }
 
 export interface StyleSchool {
