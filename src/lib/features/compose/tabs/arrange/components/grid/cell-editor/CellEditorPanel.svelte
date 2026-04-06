@@ -43,7 +43,7 @@
     onCopyCell?: () => void;
     onPasteLayer?: () => void;
     onTransformLayer?: (layerIndex: number, transformType: TransformType) => void;
-    onClose?: () => void;
+
     onSetSpeed?: (speed: number) => void;
     onSetEffect?: (effect: CellEffect) => void;
     onSetTrailMode?: (mode: TrailMode) => void;
@@ -140,16 +140,6 @@
         {/if}
       </div>
     </div>
-    {#if p.onClose}
-      <button
-        class="close-btn"
-        onclick={p.onClose}
-        title="Close"
-        aria-label="Close panel"
-      >
-        <i class="fas fa-times" aria-hidden="true"></i>
-      </button>
-    {/if}
   </header>
 
   <!-- Layers -->
@@ -242,13 +232,9 @@
     display: flex;
     flex-direction: column;
     gap: clamp(12px, 3cqi, 20px);
-    padding: clamp(12px, 3cqi, 20px);
-    height: 100%;
-    overflow-y: auto;
+    padding: clamp(10px, 2.5cqi, 16px);
     container-type: inline-size;
     container-name: celleditorpanel;
-    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
-    border-left: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
   }
 
   /* Header */
@@ -294,26 +280,6 @@
     padding: 2px clamp(6px, 1.5cqi, 8px);
     background: rgba(139, 92, 246, 0.12);
     border-radius: clamp(3px, 1cqi, 4px);
-  }
-
-  .close-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 44px;
-    height: 44px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    cursor: pointer;
-    border-radius: 10px;
-    transition: all var(--duration-fast, 150ms) ease;
-  }
-
-  .close-btn:hover {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.12);
-    color: var(--theme-text, white);
   }
 
   /* Footer */
@@ -363,7 +329,6 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .close-btn,
     .footer-btn {
       transition: none;
     }
