@@ -8,6 +8,7 @@
  */
 import { Vector3, type Object3D } from "three";
 import type { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import type { PlaceableObjectDef } from '../domain/placeable-object-registry';
 
 const _tempVec = new Vector3();
 
@@ -23,6 +24,8 @@ let selectedObject: Object3D | null = $state(null);
 let gizmoMode: "translate" | "rotate" | "scale" = $state("translate");
 let orbitControls: OrbitControls | null = null;
 let targetAnimationId: number | null = null;
+let placementDef: PlaceableObjectDef | null = $state(null);
+let ghostValid = $state(false);
 
 /** Smoothly animate the orbit target to a new position over ~300ms */
 function animateOrbitTarget(x: number, y: number, z: number) {
@@ -76,6 +79,8 @@ export const museum3dEditorState = {
   get editorActive() { return editorActive; },
   get selectedObject() { return selectedObject; },
   get gizmoMode() { return gizmoMode; },
+  get placementDef() { return placementDef; },
+  get ghostValid() { return ghostValid; },
 
   select(obj: Object3D) {
     selectedObject = obj;
@@ -94,11 +99,28 @@ export const museum3dEditorState = {
     gizmoMode = mode;
   },
 
+  startPlacement(def: PlaceableObjectDef) {
+    placementDef = def;
+    ghostValid = false;
+    selectedObject = null;
+  },
+
+  stopPlacement() {
+    placementDef = null;
+    ghostValid = false;
+  },
+
+  setGhostValid(valid: boolean) {
+    ghostValid = valid;
+  },
+
   toggle() {
     editorActive = !editorActive;
     if (!editorActive) {
       selectedObject = null;
       gizmoMode = "translate";
+      placementDef = null;
+      ghostValid = false;
     }
   },
 
