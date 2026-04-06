@@ -16,9 +16,10 @@
 	interface Props {
 		renderState: AvatarRenderState;
 		isSelected?: boolean;
+		schoolColor?: string | null;
 	}
 
-	const { renderState, isSelected = false }: Props = $props();
+	const { renderState, isSelected = false, schoolColor = null }: Props = $props();
 
 	const STAGE_LIFT = $derived(-userProportionsState.groundY);
 	const avatarModelId = $derived(
@@ -79,6 +80,13 @@
 
 		avatarPosition = { x: posX, y: STAGE_LIFT, z: posZ };
 		facingAngle = inst.facingAngle;
+
+		// Youth wobble: slight facing angle oscillation for youthful energy
+		if (renderState.entity.lifecycle.phase === "youth") {
+			const wobbleAngle = Math.sin(performance.now() * 0.001 * Math.PI) * 0.05; // ~2.8 degrees
+			facingAngle += wobbleAngle;
+		}
+
 		isMoving = moving;
 		moveSpeed = speed;
 
@@ -177,7 +185,7 @@
 			<HTML center sprite>
 				<div
 					class="name-label"
-					style="color: {nameTint}; opacity: {labelOpacity * deathOpacity}"
+					style="color: {nameTint}; opacity: {labelOpacity * deathOpacity}{schoolColor ? `; border-bottom: 2px solid ${schoolColor}; padding-bottom: 1px` : ''}"
 				>
 					{avatarName}
 					<span class="phase-indicator">{phaseIndicator}</span>
