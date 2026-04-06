@@ -453,7 +453,11 @@
   <!-- Editor mode badge -->
   {#if museum3dEditorState.editorActive}
     <div class="editor-badge">
-      EDITOR — Orbit: drag, Pan: right-drag/WASD, Zoom: scroll, Select: click, Focus: dbl-click, 1/2/3: modes, Ctrl+Z: undo, F2: exit
+      {#if museum3dEditorState.placementDef}
+        PLACING: {museum3dEditorState.placementDef.label} — Click wall to place · ESC cancel · Right-click delete
+      {:else}
+        EDITOR — Orbit: drag, Pan: right-drag/WASD, Zoom: scroll, Select: click, Focus: dbl-click, 1/2/3: modes, Ctrl+Z: undo, F2: exit
+      {/if}
     </div>
   {/if}
 

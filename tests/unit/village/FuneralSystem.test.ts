@@ -97,6 +97,7 @@ describe("FuneralSystem", () => {
 			learnedFrom: null,
 			lineage: [],
 			lastUsedTick: 0,
+			style: { amplitudeScale: 1.0, tempoOffset: 0 },
 		});
 
 		// Place them close together
@@ -138,6 +139,7 @@ describe("FuneralSystem", () => {
 			learnedFrom: null,
 			lineage: [],
 			lastUsedTick: 0,
+			style: { amplitudeScale: 1.0, tempoOffset: 0 },
 		});
 
 		// A curious entity within double funeral radius but not mourning range
@@ -186,6 +188,7 @@ describe("FuneralSystem", () => {
 			learnedFrom: null,
 			lineage: [],
 			lastUsedTick: 0,
+			style: { amplitudeScale: 1.0, tempoOffset: 0 },
 		});
 
 		// Learner already knows it
@@ -198,6 +201,7 @@ describe("FuneralSystem", () => {
 			learnedFrom: "someone",
 			lineage: [],
 			lastUsedTick: 50,
+			style: { amplitudeScale: 1.0, tempoOffset: 0 },
 		});
 
 		teacher.transform.x = 0;

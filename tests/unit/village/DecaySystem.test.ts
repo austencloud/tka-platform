@@ -64,6 +64,7 @@ describe("DecaySystem", () => {
 			learnedFrom: null,
 			lineage: [],
 			lastUsedTick: 100,
+			style: { amplitudeScale: 1.0, tempoOffset: 0 },
 		});
 
 		// Tick within grace period (elapsed = 150, grace = 200)
@@ -88,6 +89,7 @@ describe("DecaySystem", () => {
 			learnedFrom: null,
 			lineage: [],
 			lastUsedTick: 0,
+			style: { amplitudeScale: 1.0, tempoOffset: 0 },
 		});
 
 		// Tick well past grace period
@@ -116,6 +118,7 @@ describe("DecaySystem", () => {
 			learnedFrom: null,
 			lineage: [],
 			lastUsedTick: 0,
+			style: { amplitudeScale: 1.0, tempoOffset: 0 },
 		};
 
 		patientEntity.knowledge.knownSequences.set("seq1", { ...baseSeq });
@@ -150,6 +153,7 @@ describe("DecaySystem", () => {
 			learnedFrom: null,
 			lineage: [],
 			lastUsedTick: 0,
+			style: { amplitudeScale: 1.0, tempoOffset: 0 },
 		});
 
 		// Tick many times past grace period to drive proficiency below threshold
@@ -180,6 +184,7 @@ describe("DecaySystem", () => {
 			learnedFrom: null,
 			lineage: [],
 			lastUsedTick: 0,
+			style: { amplitudeScale: 1.0, tempoOffset: 0 },
 		});
 
 		// Sequence ID containing structural mutation keywords
@@ -192,6 +197,7 @@ describe("DecaySystem", () => {
 			learnedFrom: null,
 			lineage: [],
 			lastUsedTick: 0,
+			style: { amplitudeScale: 1.0, tempoOffset: 0 },
 		});
 
 		const tick = DECAY_GRACE_PERIOD + 50;
@@ -223,6 +229,7 @@ describe("DecaySystem", () => {
 			learnedFrom: null,
 			lineage: [],
 			lastUsedTick: 0,
+			style: { amplitudeScale: 1.0, tempoOffset: 0 },
 		});
 
 		for (let t = DECAY_GRACE_PERIOD + 1; t < DECAY_GRACE_PERIOD + 200; t++) {

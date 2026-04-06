@@ -52,6 +52,7 @@ export class FuneralSystem {
 						learnedFrom: deceased.id,
 						lineage: [...teacherKnowledge.lineage, deceased.id],
 						lastUsedTick: currentTick,
+						style: { amplitudeScale: 1.0, tempoOffset: 0 },
 					});
 				}
 				learner.social.state = "idle";

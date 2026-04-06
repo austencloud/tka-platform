@@ -136,6 +136,7 @@ describe("PerformanceSystem", () => {
 			learnedFrom: null,
 			lineage: [],
 			lastUsedTick: 0,
+			style: { amplitudeScale: 1.0, tempoOffset: 0 },
 		});
 
 		// Create enough watchers to hit JAM_WATCHER_THRESHOLD
@@ -156,6 +157,7 @@ describe("PerformanceSystem", () => {
 				learnedFrom: null,
 				lineage: [],
 				lastUsedTick: 0,
+				style: { amplitudeScale: 1.0, tempoOffset: 0 },
 			});
 			watchers.push(w);
 		}
@@ -217,6 +219,7 @@ describe("PerformanceSystem", () => {
 			learnedFrom: null,
 			lineage: [],
 			lastUsedTick: 0,
+			style: { amplitudeScale: 1.0, tempoOffset: 0 },
 		});
 
 		performer2.social.state = "performing";
@@ -231,6 +234,7 @@ describe("PerformanceSystem", () => {
 			learnedFrom: null,
 			lineage: [],
 			lastUsedTick: 0,
+			style: { amplitudeScale: 1.0, tempoOffset: 0 },
 		});
 
 		// Create watchers so jam doesn't dissolve (need 4+ total participants)

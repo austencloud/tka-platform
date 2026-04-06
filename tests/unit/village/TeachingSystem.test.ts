@@ -38,6 +38,7 @@ function makeTeacherLearnerPair(
 		learnedFrom: null,
 		lineage: [],
 		lastUsedTick: 0,
+		style: { amplitudeScale: 1.0, tempoOffset: 0 },
 	};
 	teacher.knowledge.knownSequences.set("seq1", learned);
 

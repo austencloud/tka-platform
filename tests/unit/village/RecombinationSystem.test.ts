@@ -62,6 +62,7 @@ function makeInventor(world: ReturnType<typeof createVillageWorld>) {
 		learnedFrom: null,
 		lineage: [],
 		lastUsedTick: 0,
+		style: { amplitudeScale: 1.0, tempoOffset: 0 },
 	});
 	entity.knowledge.knownSequences.set("seq2", {
 		sequenceId: "seq2",
@@ -72,6 +73,7 @@ function makeInventor(world: ReturnType<typeof createVillageWorld>) {
 		learnedFrom: null,
 		lineage: [],
 		lastUsedTick: 0,
+		style: { amplitudeScale: 1.0, tempoOffset: 0 },
 	});
 
 	entity.social.state = "inventing";

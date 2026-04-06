@@ -47,6 +47,7 @@ describe("ProximityLearningSystem", () => {
 			learnedFrom: null,
 			lineage: [],
 			lastUsedTick: 0,
+			style: { amplitudeScale: 1.0, tempoOffset: 0 },
 		});
 
 		const youth = makeEntity(world, "Youth");
@@ -94,6 +95,7 @@ describe("ProximityLearningSystem", () => {
 			learnedFrom: null,
 			lineage: [],
 			lastUsedTick: 0,
+			style: { amplitudeScale: 1.0, tempoOffset: 0 },
 		});
 
 		const youthClose = makeEntity(world1, "YouthClose");
@@ -118,6 +120,7 @@ describe("ProximityLearningSystem", () => {
 			learnedFrom: null,
 			lineage: [],
 			lastUsedTick: 0,
+			style: { amplitudeScale: 1.0, tempoOffset: 0 },
 		});
 
 		const youthFar = makeEntity(world2, "YouthFar");
@@ -166,6 +169,7 @@ describe("ProximityLearningSystem", () => {
 			learnedFrom: null,
 			lineage: [],
 			lastUsedTick: 0,
+			style: { amplitudeScale: 1.0, tempoOffset: 0 },
 		});
 
 		const youth = makeEntity(world, "Youth");
@@ -200,6 +204,7 @@ describe("ProximityLearningSystem", () => {
 			learnedFrom: null,
 			lineage: [],
 			lastUsedTick: 0,
+			style: { amplitudeScale: 1.0, tempoOffset: 0 },
 		});
 
 		const youth = makeEntity(world, "Youth");

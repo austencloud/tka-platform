@@ -101,6 +101,7 @@ export function createVillageState(
 			learnedFrom: null,
 			lineage: [],
 			lastUsedTick: 0,
+			style: { amplitudeScale: 1.0, tempoOffset: 0 },
 		});
 	}
 
@@ -358,6 +359,7 @@ export function createVillageState(
 						learnedFrom: null,
 						lineage: [],
 						lastUsedTick: 0,
+						style: { amplitudeScale: 1.0, tempoOffset: 0 },
 					},
 				);
 			}
