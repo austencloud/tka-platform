@@ -9,7 +9,8 @@
 	import VillageScene from "./components/VillageScene.svelte";
 	import VillageControls from "./components/VillageControls.svelte";
 	import { createVillageState, type VillageState } from "./state/village-state.svelte";
-	import { setVillageContext } from "./state/village-context";
+	import { setVillageContext, setVillageVisualContext } from "./state/village-context";
+	import { createVillageVisualState, type VillageVisualState } from "./state/village-visual-state.svelte";
 	import {
 		MUSEUM_EXHIBIT_SEQUENCES,
 	} from "$lib/features/museum/data/museum-exhibit-sequences";
@@ -32,6 +33,7 @@
 
 	// Create state synchronously during component init — required for setContext
 	let villageState: VillageState | null = null;
+	let visualState: VillageVisualState | null = null;
 	if (propInterpolator && sequenceConverter) {
 		const seeds = buildSeedSequences();
 		villageState = createVillageState(
@@ -39,14 +41,66 @@
 			seeds,
 			{ targetPopulation: 6 },
 		);
+		visualState = createVillageVisualState();
 		setVillageContext(villageState);
-		// Log simulation events
+		setVillageVisualContext(visualState);
+
+		const vs = visualState; // capture for closures
+
+		// Wire ECS events to visual toasts and death marks
 		villageState.orchestrator.on("teaching:completed", (teacher, learner, seqId) => {
 			console.log(`[Village] ${teacher.identity.name} taught "${seqId}" to ${learner.identity.name}`);
+			vs.pushToast(
+				`${teacher.identity.name} taught ${learner.identity.name}`,
+				"#4ade80",
+				(teacher.transform.x + learner.transform.x) / 2,
+				(teacher.transform.z + learner.transform.z) / 2,
+			);
 		});
 		villageState.orchestrator.on("entity:died", (entity) => {
 			console.log(`[Village] ${entity.identity.name} (gen ${entity.identity.generation}) passed. Knew ${entity.knowledge.knownSequences.size} sequences.`);
+			vs.addDeathMark(entity, villageState!.orchestrator.currentTick);
 		});
+		villageState.orchestrator.on("sequence:invented", (inventor, seqId) => {
+			vs.pushToast(
+				`${inventor.identity.name} invented something new`,
+				"#fbbf24",
+				inventor.transform.x,
+				inventor.transform.z,
+				3000,
+			);
+		});
+		villageState.orchestrator.on("sequence:forgotten", (entity, _seqId) => {
+			vs.pushToast(
+				`${entity.identity.name} forgot a sequence`,
+				"#ef4444",
+				entity.transform.x,
+				entity.transform.z,
+			);
+		});
+		villageState.orchestrator.on("sequence:extinct", (_seqId) => {
+			vs.pushToast(
+				"A sequence was lost forever",
+				"#ef4444",
+				0, 0,
+				4000,
+			);
+		});
+		villageState.orchestrator.on("monument:placed", (_seqId, x, z) => {
+			vs.pushToast("A monument rises", "#e8a87c", x, z, 3000);
+		});
+		villageState.orchestrator.on("monument:relit", (_seqId) => {
+			vs.pushToast("Knowledge resurrected", "#f8fafc", 0, 0, 3000);
+		});
+		villageState.orchestrator.on("jam:formed", (performers, location) => {
+			vs.pushToast(
+				`Jam session (${performers.length} performers)`,
+				"#ffffff",
+				location.x,
+				location.z,
+			);
+		});
+
 		// Auto-start
 		villageState.start();
 	}

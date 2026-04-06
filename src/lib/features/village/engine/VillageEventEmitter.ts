@@ -5,4 +5,8 @@ export interface VillageEventEmitter {
 		event: K,
 		...args: Parameters<VillageEventMap[K]>
 	): void;
+	on<K extends VillageEventKey>(
+		event: K,
+		handler: VillageEventMap[K],
+	): void;
 }

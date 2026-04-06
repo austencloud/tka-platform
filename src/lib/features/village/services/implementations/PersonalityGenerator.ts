@@ -9,6 +9,7 @@ export class PersonalityGenerator implements IPersonalityGenerator {
 			creativity: this.clampedNormal(mean, stdDev),
 			patience: this.clampedNormal(mean, stdDev),
 			curiosity: this.clampedNormal(mean, stdDev),
+			ego: 0,
 		};
 	}
 
