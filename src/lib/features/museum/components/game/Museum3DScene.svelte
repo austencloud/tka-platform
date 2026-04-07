@@ -1374,30 +1374,15 @@
     for (const l of chunk.sunlightPositions) sunlightGrid.insert(l, l.tileX, l.tileY);
   }
 
+  // Rooms that have been built stay in the scene graph permanently — we only
+  // toggle mesh.visible. This prevents the "void through doorways" problem
+  // where removing geometry from the scene exposes black nothingness. GPU memory
+  // for visited rooms is kept, but draw calls drop to zero when invisible.
+  // At 160+ rooms, add LRU disposal for rooms visited long ago.
   function deactivateRoom(roomId: string): void {
     const chunk = activeRoomChunks.get(roomId);
     if (!chunk) return;
-
-    const sceneObj = (threlteCtx as any).scene?.current ?? (threlteCtx as any).scene;
-    if (sceneObj) {
-      for (const { mesh } of chunk.floorMeshes) { sceneObj.remove(mesh); mesh.dispose(); }
-      for (const { mesh } of chunk.wallMeshes) { sceneObj.remove(mesh); mesh.dispose(); }
-      if (chunk.ceilingMesh) { sceneObj.remove(chunk.ceilingMesh.mesh); chunk.ceilingMesh.mesh.dispose(); }
-      if (chunk.pedestalMesh) { sceneObj.remove(chunk.pedestalMesh); chunk.pedestalMesh.dispose(); }
-      if (chunk.signMesh) { sceneObj.remove(chunk.signMesh); chunk.signMesh.dispose(); }
-    }
-
-    // Remove from allSceneMeshes tracking
-    for (const { mesh } of chunk.floorMeshes) {
-      const i = allSceneMeshes.indexOf(mesh);
-      if (i !== -1) allSceneMeshes.splice(i, 1);
-    }
-    for (const { mesh } of chunk.wallMeshes) {
-      const i = allSceneMeshes.indexOf(mesh);
-      if (i !== -1) allSceneMeshes.splice(i, 1);
-    }
-
-    activeRoomChunks.delete(roomId);
+    setChunkVisible(chunk, false);
   }
 
   props.onBuildStage?.("Tile bucketing");
@@ -1553,11 +1538,16 @@
     }
     currentPlayerRoomId = detectedRoomId;
 
+    // When in a corridor (detectedRoomId === null), keep the last room's
+    // active set. This prevents rooms from going invisible while walking
+    // between them. The lifecycle only updates when entering an actual room.
+    if (!detectedRoomId) return;
+
     // Skip if player hasn't moved to a new room
     if (detectedRoomId === lastStreamingRoomId) return;
     lastStreamingRoomId = detectedRoomId;
 
-    if (detectedRoomId && detectedRoomId !== lastPlayerRoomId) {
+    if (detectedRoomId !== lastPlayerRoomId) {
       lastPlayerRoomId = detectedRoomId;
       const update = lifecycleManager.onPlayerEnteredRoom(detectedRoomId);
 
@@ -1567,23 +1557,21 @@
         activateRoom(roomId, priority);
       }
 
-      // Deactivate rooms the player has moved away from
+      // Hide rooms the player has moved away from (geometry stays in scene)
       for (const roomId of update.toCache) {
         deactivateRoom(roomId);
       }
 
-      // Update active set for visibility toggling
-      const newActiveSet = new Set<string>();
-      for (const roomId of activeRoomChunks.keys()) newActiveSet.add(roomId);
-      activeRoomSet = newActiveSet;
+      // Active set = all rooms in the lifecycle update's priorities (current + adjacent)
+      activeRoomSet = new Set(update.priorities.keys());
     }
 
-    // Toggle visibility on each active room chunk
+    // Toggle visibility: active rooms visible, others hidden
     for (const [wingId, chunk] of activeRoomChunks) {
       setChunkVisible(chunk, activeRoomSet.has(wingId));
     }
 
-    // Corridor is always visible (cheap, connects everything)
+    // Corridor is always visible
     if (corridorChunk) setChunkVisible(corridorChunk, true);
   }
 
