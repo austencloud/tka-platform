@@ -243,6 +243,7 @@ export class MuseumGridBuilder implements IMuseumGridBuilder {
         type: "performer-station",
         refId: placement.refId,
         facing: placement.facing,
+        material: room.material,
       });
 
       const content = ROOM_CONTENT[room.id]?.performers?.[placement.refId];
