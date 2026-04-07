@@ -309,44 +309,40 @@
     museum3dEditorState.setGhostValid(isValid);
     ghostMaterial.color.copy(isValid ? COLOR_VALID : COLOR_INVALID);
 
-    // Check if hovering a deletable manual placement (for glow effect)
-    const scnForHover = getScene();
-    if (scnForHover) {
-      const allHits = raycaster.intersectObjects(scnForHover.children, true);
-      let newHoverId: string | null = null;
-      for (const h of allHits) {
-        if (isGhostOrGizmo(h.object)) continue;
-        const id = findManualPlacementId(h.object);
-        if (id) { newHoverId = id; break; }
-      }
+    // Check if hovering a deletable manual placement (reuse existing raycast results)
+    let newHoverId: string | null = null;
+    for (const h of intersections) {
+      if (isGhostOrGizmo(h.object)) continue;
+      const id = findManualPlacementId(h.object);
+      if (id) { newHoverId = id; break; }
+    }
 
-      if (newHoverId !== hoveredPlacementId) {
-        // Clear old highlight
-        if (hoveredObject) {
-          hoveredObject.traverse((child) => {
-            if ((child as any).isMesh && child.userData.__originalEmissive !== undefined) {
-              (child as any).material.emissive?.setHex(child.userData.__originalEmissive);
-              delete child.userData.__originalEmissive;
+    if (newHoverId !== hoveredPlacementId) {
+      // Clear old highlight
+      if (hoveredObject) {
+        hoveredObject.traverse((child) => {
+          if ((child as any).isMesh && child.userData.__originalEmissive !== undefined) {
+            (child as any).material.emissive?.setHex(child.userData.__originalEmissive);
+            delete child.userData.__originalEmissive;
+          }
+        });
+      }
+      // Apply new highlight
+      if (newHoverId && scn) {
+        const group = scn.getObjectByName(`manual-placement-${newHoverId}`);
+        if (group) {
+          group.traverse((child) => {
+            if ((child as any).isMesh && (child as any).material?.emissive) {
+              child.userData.__originalEmissive = (child as any).material.emissive.getHex();
+              (child as any).material.emissive.setHex(0xff4444);
             }
           });
+          hoveredObject = group;
         }
-        // Apply new highlight
-        if (newHoverId) {
-          const group = scnForHover.getObjectByName(`manual-placement-${newHoverId}`);
-          if (group) {
-            group.traverse((child) => {
-              if ((child as any).isMesh && (child as any).material?.emissive) {
-                child.userData.__originalEmissive = (child as any).material.emissive.getHex();
-                (child as any).material.emissive.setHex(0xff4444);
-              }
-            });
-            hoveredObject = group;
-          }
-        } else {
-          hoveredObject = null;
-        }
-        hoveredPlacementId = newHoverId;
+      } else {
+        hoveredObject = null;
       }
+      hoveredPlacementId = newHoverId;
     }
 
     _moveCount++;
