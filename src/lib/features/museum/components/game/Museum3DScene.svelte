@@ -247,7 +247,7 @@
         wallOffsetZ,
         wingTheme: (wing?.theme ?? 'cave') as import("../../domain/museum-grid-types").WingTheme,
       };
-      visibleTorches = [...visibleTorches, newTorch];
+      manualTorches = [...manualTorches, newTorch];
     }
   }
 
@@ -1050,6 +1050,7 @@
 
   // Visible sets — only these items get rendered
   let visibleTorches = $state<TorchPosition[]>([]);
+  let manualTorches = $state<TorchPosition[]>([]);
   let visiblePlaques = $state<PlaquePlacement[]>([]);
   let visiblePerformers = $state<typeof grid.performers>([]);
   let visibleExhibitLights = $state<LightPosition[]>([]);
@@ -1649,6 +1650,21 @@
     wallOffsetZ={torch.wallOffsetZ}
     wingTheme={torch.wingTheme}
     baseIntensity={torchLightSet.has(`${torch.x},${torch.z}`) ? 4 : 0}
+    materials={torchMaterialCache.createInstance(FIXTURE_REGISTRY[torch.wingTheme].lightColor)}
+    castShadow={false}
+    playerPosition={playerPosition}
+  />
+{/each}
+
+<!-- Manually placed fixtures — separate array to avoid re-diffing all auto-placed torches -->
+{#each manualTorches as torch (`manual-${torch.id}`)}
+  <MuseumTorch3D
+    x={torch.x}
+    z={torch.z}
+    wallOffsetX={torch.wallOffsetX}
+    wallOffsetZ={torch.wallOffsetZ}
+    wingTheme={torch.wingTheme}
+    baseIntensity={4}
     materials={torchMaterialCache.createInstance(FIXTURE_REGISTRY[torch.wingTheme].lightColor)}
     castShadow={false}
     playerPosition={playerPosition}
