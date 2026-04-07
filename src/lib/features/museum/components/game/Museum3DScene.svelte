@@ -34,6 +34,7 @@
   import MuseumSceneEditor from "./MuseumSceneEditor.svelte";
   import PlacementGhost from '../editor/PlacementGhost.svelte';
   import { PlacementPersister } from '../../services/implementations/PlacementPersister';
+  import { preloadAllFixtureModels, addTorchToScene, removeTorchFromScene } from './MuseumTorch3D.svelte';
   import { OrbitControls } from "@threlte/extras";
   import { museum3dEditorState } from "../../state/museum-3d-editor-state.svelte";
   import { museumEditorOverrides } from "../../state/museum-editor-overrides";
@@ -206,8 +207,24 @@
     overrideVersion++;
   }
 
-  // ── Placement history for undo ──
-  let placementHistory: { torch: TorchPosition; roomId: string; placementId: string }[] = [];
+  // Preload all fixture GLTF models when entering editor mode so the ghost
+  // preview shows the real model and placement is instant (synchronous clone).
+  $effect(() => {
+    if (museum3dEditorState.editorActive) {
+      preloadAllFixtureModels();
+    }
+  });
+
+  // ── Imperative placement — bypass Svelte for instant torch appearance ──
+  // Instead of pushing to a reactive array (which triggers component mount, async
+  // model loading, shader compilation), we clone the cached GLTF model and add it
+  // directly to the Three.js scene. This makes placement feel instant.
+
+  let placementHistory: { placementId: string; roomId: string }[] = [];
+
+  function getSceneObj() {
+    return (threlteCtx as any).scene?.current ?? (threlteCtx as any).scene;
+  }
 
   function handlePlace(worldX: number, worldZ: number, yaw: number, wallFacing: string | null): void {
     const def = museum3dEditorState.placementDef;
@@ -220,9 +237,10 @@
       return tileX >= b.x && tileX < b.x + b.width && tileY >= b.y && tileY < b.y + b.height;
     });
     const roomId = wing?.id ?? 'unknown';
+    const placementId = `${roomId}-${def.id}-${Date.now()}`;
 
     const placement = {
-      id: `${roomId}-${def.id}-${Date.now()}`,
+      id: placementId,
       objectDefId: def.id,
       tileX,
       tileY,
@@ -230,9 +248,10 @@
       yaw,
     };
 
+    // Persist (fire-and-forget)
     placementPersister.save(roomId, placement);
 
-    // Instantly add fixture to live scene
+    // Instantly add to scene imperatively
     if (def.category === 'fixture') {
       let wallOffsetX = 0;
       let wallOffsetZ = 0;
@@ -241,36 +260,30 @@
       else if (wallFacing === 'west') wallOffsetX = -TILE_SIZE * 0.35;
       else if (wallFacing === 'east') wallOffsetX = TILE_SIZE * 0.35;
 
-      const newTorch: TorchPosition = {
-        id: Date.now(),
-        tileX,
-        tileY,
-        x: tileX * TILE_SIZE,
-        z: tileY * TILE_SIZE,
-        wallOffsetX,
-        wallOffsetZ,
-        wingTheme: (wing?.theme ?? 'cave') as import("../../domain/museum-grid-types").WingTheme,
-        placementId: placement.id,
-      };
+      const scn = getSceneObj();
+      if (scn) {
+        const wingTheme = (def.wingTheme ?? wing?.theme ?? 'cave') as import("../../domain/museum-grid-types").WingTheme;
+        addTorchToScene(
+          scn,
+          tileX * TILE_SIZE, tileY * TILE_SIZE,
+          wallOffsetX, wallOffsetZ,
+          wingTheme,
+          placementId,
+        );
+      }
 
-      placementHistory.push({ torch: newTorch, roomId, placementId: placement.id });
-      manualTorches = [...manualTorches, newTorch];
+      placementHistory.push({ placementId, roomId });
     }
   }
 
   function handleDelete(placementId: string): void {
-    const torch = manualTorches.find(t => t.placementId === placementId);
-    if (!torch) return;
+    const scn = getSceneObj();
+    if (scn) removeTorchFromScene(scn, placementId);
 
-    // Find the room this torch belongs to
-    const wing = grid.wings.find(w => {
-      const b = w.bounds;
-      return torch.tileX >= b.x && torch.tileX < b.x + b.width
-          && torch.tileY >= b.y && torch.tileY < b.y + b.height;
-    });
-    const roomId = wing?.id ?? 'unknown';
+    // Find room from history or scan wings
+    const entry = placementHistory.find(h => h.placementId === placementId);
+    const roomId = entry?.roomId ?? 'unknown';
 
-    manualTorches = manualTorches.filter(t => t.placementId !== placementId);
     placementHistory = placementHistory.filter(h => h.placementId !== placementId);
     placementPersister.remove(roomId, placementId);
   }
@@ -279,7 +292,8 @@
     const entry = placementHistory.pop();
     if (!entry) return;
 
-    manualTorches = manualTorches.filter(t => t.placementId !== entry.placementId);
+    const scn = getSceneObj();
+    if (scn) removeTorchFromScene(scn, entry.placementId);
     placementPersister.remove(entry.roomId, entry.placementId);
   }
 
@@ -1082,7 +1096,7 @@
 
   // Visible sets — only these items get rendered
   let visibleTorches = $state<TorchPosition[]>([]);
-  let manualTorches = $state<TorchPosition[]>([]);
+  // manualTorches removed — placed torches are added imperatively to the scene
   let visiblePlaques = $state<PlaquePlacement[]>([]);
   let visiblePerformers = $state<typeof grid.performers>([]);
   let visibleExhibitLights = $state<LightPosition[]>([]);
@@ -1280,7 +1294,7 @@
   // "visibility sets" rather than true loading/unloading. The GPU memory cost
   // stays the same, but per-frame draw calls drop ~80% in FPS mode.
 
-  let activeRoomSet = new Set<string>();
+  let activeRoomSet = $state(new Set<string>());
 
   // Collaboration room center — for positioning the live Village sim
   const collabWing = $derived(grid.wings.find((w) => w.id === "collaboration"));
@@ -1290,7 +1304,11 @@
   const collabCenterZ = $derived(
     collabWing ? (collabWing.bounds.y + collabWing.bounds.height / 2) * TILE_SIZE : 0,
   );
-  const showVillageEmbed = $derived(activeRoomSet.has("collaboration"));
+  // Track which room the player is in (updated every streaming check)
+  let currentPlayerRoomId = $state<string | null>(null);
+  const showVillageEmbed = $derived(
+    currentPlayerRoomId === "collaboration" || activeRoomSet.has("collaboration"),
+  );
   // Track last room ID to avoid redundant visibility updates every frame
   let lastStreamingRoomId: string | null = null;
 
@@ -1346,14 +1364,15 @@
     if (!fpsActive) return;
 
     // Determine which room the player is in
-    const currentRoomId = streamingManager.getRoomAtTile(playerTX, playerTZ, grid.wings);
+    const detectedRoomId = streamingManager.getRoomAtTile(playerTX, playerTZ, grid.wings);
+    currentPlayerRoomId = detectedRoomId;
 
     // Skip if player hasn't moved to a new room
-    if (currentRoomId === lastStreamingRoomId) return;
-    lastStreamingRoomId = currentRoomId;
+    if (detectedRoomId === lastStreamingRoomId) return;
+    lastStreamingRoomId = detectedRoomId;
 
     // Ask the streaming manager which rooms should be active
-    const { activeSet } = streamingManager.update(currentRoomId);
+    const { activeSet } = streamingManager.update(detectedRoomId);
     activeRoomSet = activeSet;
 
     // Toggle visibility on each room chunk
@@ -1698,25 +1717,10 @@
   />
 {/each}
 
-<!-- Manually placed fixtures — separate array to avoid re-diffing all auto-placed torches -->
-{#each manualTorches as torch (`manual-${torch.id}`)}
-  <T.Group
-    name={`manual-placement-${torch.id}`}
-    userData={{ __manualPlacementId: torch.placementId }}
-  >
-    <MuseumTorch3D
-      x={torch.x}
-      z={torch.z}
-      wallOffsetX={torch.wallOffsetX}
-      wallOffsetZ={torch.wallOffsetZ}
-      wingTheme={torch.wingTheme}
-      baseIntensity={4}
-      materials={torchMaterialCache.createInstance(FIXTURE_REGISTRY[torch.wingTheme].lightColor)}
-      castShadow={false}
-      playerPosition={playerPosition}
-    />
-  </T.Group>
-{/each}
+<!-- Manually placed fixtures are added imperatively via addTorchToScene() —
+     no Svelte {#each} needed. This bypasses component mount overhead for
+     instant placement. The groups are named `manual-placement-{id}` and
+     removed via removeTorchFromScene() on delete/undo. -->
 
 <!-- Performer stations: 3D mannequins with spinning staves -->
 <!-- overrideVersion dependency ensures reactivity when editor moves objects -->
