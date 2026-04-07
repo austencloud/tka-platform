@@ -226,14 +226,6 @@
     const { registerCacheClearShortcut } = await import("$lib/shared/utils/cache-buster");
     registerCacheClearShortcut();
 
-    // Cookie cleanup
-    try {
-      const { cleanupOldCookies } = await import("$lib/shared/auth/utils/cookieCleanup");
-      await cleanupOldCookies();
-    } catch (error) {
-      console.error("[App Init] Cookie cleanup failed:", error);
-    }
-
     // Firestore + Auth
     try {
       const { getFirestoreInstance } = await import("$lib/shared/auth/firebase");

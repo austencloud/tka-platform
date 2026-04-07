@@ -1053,7 +1053,6 @@ export default defineConfig({
         // "**/messages/**" — NOT ignored: i18nHmrPlugin watches these for live translation reload
         "**/scripts/**",
         "**/tests/**",
-        "**/.netlify/**",
         "**/.playwright-mcp/**",
         "**/.wrangler/**",
         "**/.husky/**",

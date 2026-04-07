@@ -12,7 +12,6 @@ export default tseslint.config(
       ".svelte-kit/",
       "dist/",
       "dev-dist/",
-      ".netlify/",
       "node_modules/",
       "**/*.generated.*",
       "**/*.svelte",
