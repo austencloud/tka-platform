@@ -72,6 +72,9 @@
 
     // Vertical offset (museum platforms, stages)
     groundOffset?: number;
+
+    // Avatar model selection
+    avatarId?: import("../config/avatar-definitions").AvatarId;
   }
 
   let {
@@ -93,6 +96,7 @@
     isPlaying = false,
     staffHalfLength = userProportionsState.staffLength / 2,
     groundOffset = 0,
+    avatarId,
   }: Props = $props();
 
   // Resolve prop states: use overrides (for mirror mode) or avatarState defaults
@@ -139,6 +143,7 @@
   {#if showAvatar}
     <Avatar3D
       id={avatarState.id}
+      {avatarId}
       bluePropState={bluePropState}
       redPropState={redPropState}
       facingAngle={0}

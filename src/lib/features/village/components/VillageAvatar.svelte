@@ -14,6 +14,7 @@
 	import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 	import type { TipEffectMap } from "$lib/shared/animation-engine/domain/types/TipEffectTypes";
 	import type { AvatarRenderState } from "../state/village-state.svelte";
+	import type { AvatarId } from "$lib/shared/3d/config/avatar-definitions";
 
 	interface Props {
 		renderState: AvatarRenderState;
@@ -24,6 +25,9 @@
 	const { renderState, isSelected = false, schoolColor = null }: Props = $props();
 
 	const STAGE_LIFT = $derived(-userProportionsState.groundY);
+	const avatarModelId = $derived(
+		renderState.entity.identity.avatarModelId as AvatarId,
+	);
 	const avatarName = $derived(renderState.entity.identity.name);
 	const lifecyclePhase = $derived(renderState.entity.lifecycle.phase);
 	const socialState = $derived(renderState.entity.social.state);
@@ -149,13 +153,14 @@
 	);
 </script>
 
-<!-- Visual offset group: cancel STAGE_LIFT so feet land on Y=0 ground -->
-<T.Group position.y={-STAGE_LIFT} scale.y={heightScale}>
+<!-- Height scaling group. PerformerRig handles Y positioning internally. -->
+<T.Group scale.y={heightScale}>
 	<PerformerRig
 		position={{ x: avatarPosition.x, z: avatarPosition.z }}
 		{facingAngle}
 		planeMode={PlaneMode.WALL}
 		avatarState={renderState.instanceState}
+		avatarId={avatarModelId}
 		showAvatar={showAvatar && deathOpacity > 0.01}
 		showGrid={false}
 		showProps={true}
