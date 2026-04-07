@@ -460,9 +460,9 @@
   {#if museum3dEditorState.editorActive}
     <div class="editor-badge">
       {#if museum3dEditorState.placementDef}
-        PLACING: {museum3dEditorState.placementDef.label} — Click wall to place · ESC cancel · Right-click delete
+        PLACING: {museum3dEditorState.placementDef.label}
       {:else}
-        EDITOR — Orbit: drag, Pan: right-drag/WASD, Zoom: scroll, Select: click, Focus: dbl-click, 1/2/3: modes, Ctrl+Z: undo, F2: exit
+        EDITOR · F2 exit
       {/if}
     </div>
   {/if}
@@ -570,21 +570,22 @@
     height: 100%;
   }
 
-  /* Editor mode badge */
+  /* Editor mode badge — small pill, top-left, not obtrusive */
   .editor-badge {
     position: absolute;
     top: 16px;
-    left: 50%;
-    transform: translateX(-50%);
-    padding: 8px 20px;
-    background: rgba(255, 60, 60, 0.85);
-    color: white;
-    font-size: 13px;
-    font-weight: 600;
-    border-radius: 6px;
-    letter-spacing: 0.5px;
+    left: 16px;
+    padding: 5px 14px;
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 11px;
+    font-weight: 500;
+    border-radius: 20px;
+    letter-spacing: 0.3px;
     z-index: 100;
     pointer-events: none;
+    backdrop-filter: blur(4px);
   }
 
   /* Wing label */

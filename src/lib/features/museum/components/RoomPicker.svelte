@@ -1,13 +1,12 @@
 <script lang="ts">
   /**
-   * RoomPicker — floating pill bar for isolating individual museum rooms.
+   * RoomPicker — teleport button + overlay for jumping between museum rooms.
    *
-   * Sits at the top center of the museum 3D view. Each pill represents a room.
-   * Clicking a pill filters the museum to show only that room. "Full Museum"
-   * restores the complete connected layout.
+   * A small compass button in the top-right opens a grid overlay of all rooms.
+   * Clicking a room teleports the player there and closes the overlay.
+   * "Full Museum" restores the complete connected layout.
    *
-   * The selected room is synced to the URL query param `?room=<id>` so users
-   * can share links to specific rooms.
+   * The selected room is synced to the URL query param `?room=<id>`.
    */
 
   interface Props {
@@ -17,7 +16,8 @@
 
   const { selectedRoom, onSelect }: Props = $props();
 
-  // Room ordering follows the main path, then side branches
+  let open = $state(false);
+
   const ROOM_ORDER: { id: string; name: string; theme: string }[] = [
     { id: "entrance", name: "Entrance Lobby", theme: "institutional" },
     { id: "vulcan-cave", name: "Vulcan Cave", theme: "cave" },
@@ -32,7 +32,6 @@
     { id: "isolation", name: "Room of Isolation", theme: "institutional" },
     { id: "collaboration", name: "Room of Collaboration", theme: "outdoor" },
     { id: "gift-shop", name: "Gift Shop", theme: "retail" },
-    // Side branches
     { id: "vtg-wing", name: "Vulcan Wing", theme: "construction" },
     { id: "construction-zone", name: "Construction Zone", theme: "construction" },
     { id: "janitor", name: "Janitor's Closet", theme: "construction" },
@@ -54,84 +53,192 @@
   function getThemeColor(theme: string): string {
     return WING_THEME_COLORS[theme] ?? "#888";
   }
+
+  function handleSelect(roomId: string | null): void {
+    onSelect(roomId);
+    open = false;
+  }
+
+  function handleKeyDown(event: KeyboardEvent): void {
+    if (event.key === "Escape" && open) {
+      open = false;
+      event.stopPropagation();
+    }
+  }
 </script>
 
-<div class="room-picker">
-  <button
-    class="room-pill"
-    class:active={selectedRoom === null}
-    onclick={() => onSelect(null)}
-  >
-    Full Museum
-  </button>
+<svelte:window onkeydown={handleKeyDown} />
 
-  {#each ROOM_ORDER as room}
-    <button
-      class="room-pill"
-      class:active={selectedRoom === room.id}
-      style:--pill-accent={getThemeColor(room.theme)}
-      onclick={() => onSelect(room.id)}
-    >
-      {room.name}
-    </button>
-  {/each}
-</div>
+<!-- Teleport button -->
+<button class="teleport-btn" onclick={() => { open = !open; }} aria-label="Teleport to room">
+  <i class="fas fa-compass" aria-hidden="true"></i>
+</button>
+
+<!-- Overlay -->
+{#if open}
+  <!-- Backdrop -->
+  <button class="backdrop" onclick={() => { open = false; }} aria-label="Close room picker"></button>
+
+  <div class="room-overlay">
+    <div class="overlay-header">
+      <span class="overlay-title">Teleport to Room</span>
+      <button class="close-btn" onclick={() => { open = false; }} aria-label="Close">
+        <i class="fas fa-times" aria-hidden="true"></i>
+      </button>
+    </div>
+
+    <div class="room-grid">
+      <button
+        class="room-card"
+        class:active={selectedRoom === null}
+        onclick={() => handleSelect(null)}
+      >
+        <span class="room-icon"><i class="fas fa-border-all" aria-hidden="true"></i></span>
+        <span class="room-name">Full Museum</span>
+      </button>
+
+      {#each ROOM_ORDER as room}
+        <button
+          class="room-card"
+          class:active={selectedRoom === room.id}
+          style:--card-accent={getThemeColor(room.theme)}
+          onclick={() => handleSelect(room.id)}
+        >
+          <span class="room-icon" style:color={getThemeColor(room.theme)}>
+            <i class="fas fa-door-open" aria-hidden="true"></i>
+          </span>
+          <span class="room-name">{room.name}</span>
+        </button>
+      {/each}
+    </div>
+  </div>
+{/if}
 
 <style>
-  .room-picker {
+  .teleport-btn {
     position: absolute;
-    top: 12px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 100;
-    display: flex;
-    flex-direction: row;
-    gap: 4px;
-    padding: 4px 8px;
-    border-radius: 20px;
+    top: 16px;
+    right: 16px;
+    z-index: 90;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.15);
     background: rgba(0, 0, 0, 0.5);
     backdrop-filter: blur(8px);
-    overflow-x: auto;
-    max-width: 90vw;
-    scrollbar-width: none;
-  }
-
-  .room-picker::-webkit-scrollbar {
-    display: none;
-  }
-
-  .room-pill {
-    flex-shrink: 0;
-    padding: 4px 12px;
-    border-radius: 16px;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    background: transparent;
-    color: var(--theme-text, #ffffff);
-    font-size: var(--font-size-compact, 12px);
-    font-family: inherit;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 18px;
     cursor: pointer;
-    white-space: nowrap;
-    border-left: 3px solid var(--pill-accent, transparent);
-    transition: background 0.15s ease, border-color 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s, border-color 0.15s;
   }
 
-  .room-pill:hover {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
+  .teleport-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.25);
+    color: #fff;
   }
 
-  .room-pill.active {
-    background: color-mix(in srgb, var(--pill-accent, #888) 20%, transparent);
-    border-color: var(--pill-accent, rgba(255, 255, 255, 0.3));
+  .backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    background: rgba(0, 0, 0, 0.4);
+    border: none;
+    cursor: default;
   }
 
-  /* "Full Museum" pill has no accent border */
-  .room-pill:first-child {
-    border-left: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+  .room-overlay {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 201;
+    width: min(600px, 90vw);
+    max-height: 80vh;
+    background: rgba(18, 18, 28, 0.97);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 20px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
   }
 
-  .room-pill.active:first-child {
-    background: rgba(255, 255, 255, 0.12);
-    border-color: rgba(255, 255, 255, 0.3);
+  .overlay-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .overlay-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  .close-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: transparent;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .close-btn:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.8);
+  }
+
+  .room-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 8px;
+  }
+
+  .room-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 16px 8px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.03);
+    color: rgba(255, 255, 255, 0.7);
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.12s, border-color 0.12s;
+  }
+
+  .room-card:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.12);
+    color: #fff;
+  }
+
+  .room-card.active {
+    background: color-mix(in srgb, var(--card-accent, #888) 15%, transparent);
+    border-color: var(--card-accent, rgba(255, 255, 255, 0.25));
+    color: #fff;
+  }
+
+  .room-icon {
+    font-size: 20px;
+  }
+
+  .room-name {
+    font-size: 12px;
+    text-align: center;
+    line-height: 1.3;
   }
 </style>
