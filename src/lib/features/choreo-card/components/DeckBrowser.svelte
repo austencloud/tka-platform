@@ -416,6 +416,7 @@
     {showTKA}
     {showWord}
     {includeStartPosition}
+    {onContextMenu}
     onClose={() => { inspectedSequence = null; }}
   />
 {/if}

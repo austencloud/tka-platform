@@ -14,6 +14,7 @@
     showWord?: boolean;
     includeStartPosition?: boolean;
     onClose: () => void;
+    onContextMenu?: (x: number, y: number, rerender: () => void) => void;
   }
 
   let {
@@ -24,6 +25,7 @@
     showWord = true,
     includeStartPosition = true,
     onClose,
+    onContextMenu,
   }: Props = $props();
 
   let focusedCard = $state<"front" | "back" | null>(null);
@@ -72,8 +74,9 @@
         {includeStartPosition}
         startPositionLayout="row"
         showBirthday={true}
-        showQRCode={false}
+        showQRCode={true}
         showInfoCard={false}
+        onCardContextMenu={onContextMenu}
       />
     </div>
 
@@ -117,7 +120,7 @@
     gap: 20px;
     width: 90vw;
     height: 90vh;
-    max-width: 700px;
+    max-width: 1600px;
   }
 
   .modal-header {
