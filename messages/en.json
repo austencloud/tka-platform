@@ -1508,7 +1508,6 @@
   "auth_link_email": "Link Email",
   "auth_verifying": "Verifying...",
   "auth_verify_with_password": "Verify with Password",
-  "auth_verify_with_passkey": "Verify with Passkey",
   "auth_sending": "Sending...",
   "auth_send_magic_link": "Send Magic Link",
   "form_verify_password_hint": "Use the eye icon to verify your password",
