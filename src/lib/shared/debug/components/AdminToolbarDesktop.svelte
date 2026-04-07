@@ -15,6 +15,14 @@
   import RobustAvatar from "$lib/shared/components/avatar/RobustAvatar.svelte";
   import type { QuickAccessUser } from "../services/contracts/IQuickAccessPersister";
   import type { PreviewUserProfile } from "../state/user-preview-state.svelte";
+  import type { UserRole } from "$lib/shared/auth/domain/models/UserRole";
+
+  const ROLE_CONFIG: { role: UserRole; label: string; icon: string; color: string }[] = [
+    { role: "admin", label: "Admin", icon: "fas fa-crown", color: "#ffd700" },
+    { role: "tester", label: "Tester", icon: "fas fa-flask", color: "#10b981" },
+    { role: "premium", label: "Premium", icon: "fas fa-gem", color: "#a855f7" },
+    { role: "user", label: "Free User", icon: "fas fa-user", color: "#64748b" },
+  ];
 
   interface Props {
     quickAccessUsers: QuickAccessUser[];
@@ -50,6 +58,9 @@
     isClearingThumbnailCache: boolean;
     onShowPwaBanner: () => void;
     onClose: () => void;
+    currentRole: UserRole;
+    effectiveRole: UserRole;
+    onSwitchRole: (role: UserRole) => void;
   }
 
   let {
@@ -81,7 +92,49 @@
     isClearingThumbnailCache,
     onShowPwaBanner,
     onClose,
+    currentRole,
+    effectiveRole,
+    onSwitchRole,
   }: Props = $props();
+
+  // Responsive: show inline action buttons when they fit, dropdown when they don't.
+  // A hidden measuring strip always renders the action buttons offscreen.
+  // We compare its width against the available space (toolbar minus fixed items).
+  let measureEl: HTMLElement | null = $state(null);
+  let toolbarEl: HTMLElement | null = $state(null);
+  let useInline = $state(true);
+
+  $effect(() => {
+    if (!measureEl || !toolbarEl) return;
+
+    function checkFit() {
+      if (!measureEl || !toolbarEl) return;
+      // The measure strip has the same action buttons. We need to check if
+      // adding them to the toolbar would fit. The toolbar already has:
+      // branding + roles + divider + users + search + spacer + right section
+      // So: available = toolbar width - (everything except action buttons)
+      // Simplification: the right section (dropdown + close) is ~100px.
+      // The left items (branding + roles + users + search) we can measure from
+      // the toolbar's existing children before the spacer.
+      const spacer = toolbarEl.querySelector(".toolbar-spacer") as HTMLElement;
+      if (!spacer) return;
+      // Everything before the spacer is fixed content
+      let fixedWidth = 0;
+      for (const child of toolbarEl.children) {
+        if (child === spacer) break;
+        fixedWidth += (child as HTMLElement).offsetWidth + 6; // 6 = gap
+      }
+      // Right section (close button, potential dropdown)
+      const rightSection = toolbarEl.querySelector(".toolbar-right") as HTMLElement;
+      const rightWidth = rightSection ? 50 : 0; // just the close button when inline
+      const available = toolbarEl.clientWidth - fixedWidth - rightWidth - 12;
+      useInline = measureEl.scrollWidth <= available;
+    }
+
+    checkFit();
+    window.addEventListener("resize", checkFit);
+    return () => window.removeEventListener("resize", checkFit);
+  });
 
   // Debug actions dropdown state
   let isActionsOpen = $state(false);
@@ -147,52 +200,31 @@
 <svelte:window onclick={handleClickOutside} />
 
 <div class="admin-toolbar" transition:slide={{ duration: 150 }}>
-  <div class="toolbar-row">
-    <!-- LEFT SECTION -->
-    <div class="toolbar-left">
-      <!-- Branding -->
-      <div class="toolbar-branding">
-        <i class="fas fa-shield-alt" aria-hidden="true"></i>
-        <span class="branding-text">Admin</span>
-      </div>
-
-      <!-- Quick Access (only shown when NOT previewing) -->
-      {#if !isUserPreview}
-        <div class="quick-access">
-          <span class="quick-access-label">Quick switch:</span>
-          {#each quickAccessUsers as user (user.uid)}
-            <button
-              type="button"
-              class="quick-chip"
-              onclick={() => onSelectUser(user)}
-              title="Preview as {user.displayName}"
-            >
-              <RobustAvatar
-                src={user.photoURL}
-                name={user.displayName}
-                customSize={26}
-                alt=""
-              />
-              <span class="chip-name">{user.displayName}</span>
-            </button>
-          {/each}
-
-          <!-- Search button -->
-          <button
-            type="button"
-            class="search-btn"
-            class:active={isSearchOpen}
-            onclick={onToggleSearch}
-            title="Search users"
-          >
-            <i class="fas fa-search" aria-hidden="true"></i>
-          </button>
-        </div>
-      {/if}
+  <!-- Hidden measuring element — always rendered offscreen to get natural button width -->
+  {#if !isUserPreview}
+    <div class="measure-strip" bind:this={measureEl} aria-hidden="true">
+      <span class="action-chip"><i class="fas fa-wand-magic-sparkles"></i><span>Preview First Run</span></span>
+      <span class="action-chip"><i class="fas fa-graduation-cap"></i><span>Preview Tutorial</span></span>
+      <span class="action-chip"><i class="fas fa-door-open"></i><span>Reset Intro</span></span>
+      <span class="action-chip"><i class="fas fa-circle-question"></i><span>Reset Help Discovery</span></span>
+      <span class="action-chip"><i class="fas fa-mobile-screen"></i><span>PWA Banner</span></span>
+      <span class="toolbar-divider"></span>
+      <span class="action-chip"><i class="fas fa-cloud-arrow-down"></i><span>Clear Cloud Thumbnails</span></span>
+      <span class="action-chip"><i class="fas fa-database"></i><span>Clear Pictograph Cache</span></span>
+      <span class="action-chip"><i class="fas fa-robot"></i><span>Clear TIKA Cache</span></span>
+      <span class="action-chip"><i class="fas fa-images"></i><span>Clear Thumbnail Cache</span></span>
     </div>
+  {/if}
 
-    <!-- CENTER SECTION (preview indicator) -->
+  <div class="toolbar-row" bind:this={toolbarEl}>
     {#if isUserPreview && previewProfile}
+      <!-- PREVIEW MODE: three-column layout -->
+      <div class="toolbar-left">
+        <div class="toolbar-branding">
+          <i class="fas fa-shield-alt" aria-hidden="true"></i>
+          <span class="branding-text">Admin</span>
+        </div>
+      </div>
       <div class="toolbar-center">
         <div class="preview-label">
           <i class="fas fa-eye" aria-hidden="true"></i>
@@ -225,14 +257,111 @@
         </button>
       </div>
     {:else}
-      <!-- Empty center when not previewing -->
-      <div class="toolbar-center"></div>
+      <!-- NORMAL MODE: flat single row — everything is a direct child -->
+
+      <!-- Branding -->
+      <div class="toolbar-branding">
+        <i class="fas fa-shield-alt" aria-hidden="true"></i>
+        <span class="branding-text">Admin</span>
+      </div>
+
+      <!-- Role switch chips -->
+      {#each ROLE_CONFIG as { role, label, icon, color } (role)}
+        <button
+          type="button"
+          class="role-chip"
+          class:active={effectiveRole === role}
+          class:overridden={effectiveRole === role && currentRole !== role}
+          onclick={() => onSwitchRole(role)}
+          title={effectiveRole === role && currentRole !== role
+            ? `Viewing as ${label} (actual: ${currentRole}). Click to reset.`
+            : `Switch to ${label} view`}
+          style="--role-color: {color}"
+        >
+          <i class={icon} aria-hidden="true"></i>
+          <span class="chip-name">{label}</span>
+        </button>
+      {/each}
+
+      <div class="toolbar-divider"></div>
+
+      <!-- User quick access -->
+      {#each quickAccessUsers as user (user.uid)}
+        <button
+          type="button"
+          class="quick-chip"
+          onclick={() => onSelectUser(user)}
+          title="Preview as {user.displayName}"
+        >
+          <RobustAvatar
+            src={user.photoURL}
+            name={user.displayName}
+            customSize={26}
+            alt=""
+          />
+          <span class="chip-name">{user.displayName}</span>
+        </button>
+      {/each}
+
+      <!-- Search button -->
+      <button
+        type="button"
+        class="search-btn"
+        class:active={isSearchOpen}
+        onclick={onToggleSearch}
+        title="Search users"
+      >
+        <i class="fas fa-search" aria-hidden="true"></i>
+      </button>
+
+      <!-- Spacer pushes actions to the right -->
+      <div class="toolbar-spacer"></div>
+
+      <!-- Inline action buttons (when they fit) -->
+      {#if useInline}
+        <button type="button" class="action-chip" onclick={handleFirstRun} title="Preview First Run Wizard">
+          <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
+          <span>Preview First Run</span>
+        </button>
+        <button type="button" class="action-chip" onclick={handleCreateTutorial} title="Preview Create Tutorial">
+          <i class="fas fa-graduation-cap" aria-hidden="true"></i>
+          <span>Preview Tutorial</span>
+        </button>
+        <button type="button" class="action-chip" onclick={handleResetIntro} disabled={!canResetIntro} title="Reset Tab Intro{currentIntroTitle ? ` (${currentIntroTitle})` : ''}">
+          <i class="fas fa-door-open" aria-hidden="true"></i>
+          <span>Reset Intro</span>
+        </button>
+        <button type="button" class="action-chip" onclick={handleResetHelpDiscovery} title="Reset Help Button Discovery">
+          <i class="fas fa-circle-question" aria-hidden="true"></i>
+          <span>Reset Help Discovery</span>
+        </button>
+        <button type="button" class="action-chip" onclick={handleShowPwaBanner} title="Show PWA Migration Banner">
+          <i class="fas fa-mobile-screen" aria-hidden="true"></i>
+          <span>PWA Banner</span>
+        </button>
+        <div class="toolbar-divider"></div>
+        <button type="button" class="action-chip danger" onclick={handleClearCloudThumbnails} disabled={isClearingThumbnails} title="Clear Cloud Thumbnails">
+          {#if isClearingThumbnails}<i class="fas fa-spinner fa-spin" aria-hidden="true"></i>{:else}<i class="fas fa-cloud-arrow-down" aria-hidden="true"></i>{/if}
+          <span>Clear Cloud Thumbnails</span>
+        </button>
+        <button type="button" class="action-chip danger" onclick={handleClearLocalCache} disabled={isClearingLocalCache} title="Clear Pictograph Cache">
+          {#if isClearingLocalCache}<i class="fas fa-spinner fa-spin" aria-hidden="true"></i>{:else}<i class="fas fa-database" aria-hidden="true"></i>{/if}
+          <span>Clear Pictograph Cache</span>
+        </button>
+        <button type="button" class="action-chip danger" onclick={handleClearTikaCache} disabled={isClearingTikaCache} title="Clear TIKA Cache">
+          {#if isClearingTikaCache}<i class="fas fa-spinner fa-spin" aria-hidden="true"></i>{:else}<i class="fas fa-robot" aria-hidden="true"></i>{/if}
+          <span>Clear TIKA Cache</span>
+        </button>
+        <button type="button" class="action-chip danger" onclick={handleClearThumbnailCache} disabled={isClearingThumbnailCache} title="Clear Thumbnail Cache">
+          {#if isClearingThumbnailCache}<i class="fas fa-spinner fa-spin" aria-hidden="true"></i>{:else}<i class="fas fa-images" aria-hidden="true"></i>{/if}
+          <span>Clear Thumbnail Cache</span>
+        </button>
+      {/if}
     {/if}
 
-    <!-- RIGHT SECTION -->
+    <!-- RIGHT: dropdown (fallback when inline doesn't fit) + close -->
     <div class="toolbar-right">
-      <!-- Debug Actions Dropdown -->
-      <div class="actions-menu">
+      <div class="actions-menu" class:hidden={useInline && !isUserPreview}>
         <button
           type="button"
           class="actions-trigger"
@@ -424,22 +553,20 @@
   .toolbar-row {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     padding: 4px 12px;
     height: var(--min-touch-target);
-    /* Note: no overflow:hidden here - dropdown needs to escape */
+    flex-wrap: nowrap;
   }
 
-  /* Three-column layout: left and right flex equally, center is fixed content */
+  /* Three-column layout used only in preview mode */
   .toolbar-left {
     flex: 1;
     display: flex;
     align-items: center;
     gap: 8px;
     min-width: 0;
-    justify-content: flex-start;
     height: 40px;
-    /* Note: no overflow:hidden - allow content to escape if needed */
   }
 
   .toolbar-center {
@@ -451,14 +578,23 @@
   }
 
   .toolbar-right {
-    flex: 1;
+    flex: 0 0 auto;
     display: flex;
     align-items: center;
     gap: 8px;
-    min-width: 0;
-    justify-content: flex-end;
     height: 40px;
-    /* Note: no overflow:hidden here - dropdown needs to escape */
+  }
+
+  .toolbar-spacer {
+    flex: 1 1 auto;
+    min-width: 8px;
+  }
+
+  .toolbar-divider {
+    width: 1px;
+    height: 22px;
+    background: rgba(255, 255, 255, 0.12);
+    flex-shrink: 0;
   }
 
   .toolbar-branding {
@@ -542,47 +678,44 @@
   }
 
   /* ============================================
-     QUICK ACCESS (when NOT previewing)
+     CHIPS (role switch + quick access users)
      ============================================ */
-  .quick-access {
+
+  .role-chip {
     display: flex;
     align-items: center;
-    gap: 8px;
-    flex-shrink: 1;
-    min-width: 0;
-    max-width: 600px;
-    height: 40px;
-    overflow-x: auto;
-    overflow-y: hidden;
-  }
-
-  .quick-access {
-    scrollbar-width: thin;
-    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
-  }
-
-  .quick-access::-webkit-scrollbar {
-    width: 8px;
-  }
-
-  .quick-access::-webkit-scrollbar-track {
-    background: var(--scrollbar-track, transparent);
-  }
-
-  .quick-access::-webkit-scrollbar-thumb {
-    background: var(--scrollbar-thumb, rgba(255, 255, 255, 0.2));
-    border-radius: 4px;
-  }
-
-  .quick-access::-webkit-scrollbar-thumb:hover {
-    background: var(--scrollbar-thumb-hover, rgba(255, 255, 255, 0.35));
-  }
-
-  .quick-access-label {
-    font-size: var(--font-size-compact);
+    gap: 5px;
+    height: 32px;
+    padding: 0 10px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
     color: var(--theme-text-dim);
-    white-space: nowrap;
+    font-size: var(--font-size-compact);
+    cursor: pointer;
+    transition: all var(--duration-fast);
     flex-shrink: 0;
+  }
+
+  .role-chip i {
+    font-size: 11px;
+    color: var(--role-color);
+  }
+
+  .role-chip:hover {
+    background: color-mix(in srgb, var(--role-color) 12%, transparent);
+    border-color: color-mix(in srgb, var(--role-color) 30%, transparent);
+    color: var(--theme-text);
+  }
+
+  .role-chip.active {
+    background: color-mix(in srgb, var(--role-color) 18%, transparent);
+    border-color: color-mix(in srgb, var(--role-color) 45%, transparent);
+    color: white;
+  }
+
+  .role-chip.overridden {
+    border-style: dashed;
   }
 
   .quick-chip {
@@ -798,12 +931,74 @@
     color: rgba(255, 255, 255, 0.5);
   }
 
+  /* ============================================
+     ACTION CHIPS (debug actions)
+     ============================================ */
+  .action-chip {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    height: 32px;
+    padding: 0 10px;
+    background: rgba(139, 92, 246, 0.08);
+    border: 1px solid rgba(139, 92, 246, 0.2);
+    border-radius: 6px;
+    color: #c4b5fd;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--duration-fast);
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  .action-chip i {
+    font-size: 11px;
+  }
+
+  .action-chip:hover:not(:disabled) {
+    background: rgba(139, 92, 246, 0.18);
+    border-color: rgba(139, 92, 246, 0.4);
+    color: white;
+  }
+
+  .action-chip:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+
+  .action-chip.danger {
+    background: rgba(239, 68, 68, 0.08);
+    border-color: rgba(239, 68, 68, 0.2);
+    color: #fca5a5;
+  }
+
+  .action-chip.danger:hover:not(:disabled) {
+    background: rgba(239, 68, 68, 0.18);
+    border-color: rgba(239, 68, 68, 0.4);
+    color: white;
+  }
+
+
+  /* Hidden measuring strip — renders buttons offscreen to get natural width */
+  .measure-strip {
+    position: absolute;
+    top: -9999px;
+    left: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    pointer-events: none;
+    visibility: hidden;
+  }
+
+  .actions-menu.hidden {
+    display: none;
+  }
+
   /* Progressive collapse: 900-1200px */
   @media (max-width: 1200px) {
-    .quick-access {
-      max-width: 350px;
-    }
-
     .trigger-label {
       display: none;
     }
@@ -817,19 +1012,15 @@
   @media (max-width: 900px) {
     .toolbar-row {
       padding: 4px 8px;
-      gap: 6px;
+      gap: 4px;
     }
 
     .branding-text {
       display: none;
     }
 
-    .quick-access {
-      max-width: 200px;
-    }
-
     .chip-name {
-      max-width: 60px;
+      display: none;
     }
   }
 </style>
