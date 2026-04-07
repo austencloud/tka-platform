@@ -76,6 +76,8 @@
   let renderTotal = $state(0);
   let rerenderKey = $state(0);
   let inspectedSequence = $state<SequenceData | null>(null);
+  let inspectedFrontImageUrl = $state<string | null>(null);
+  let inspectedRerender = $state<(() => Promise<string | null>) | null>(null);
 
   function setViewMode(mode: ViewMode) {
     viewMode = mode;
@@ -369,7 +371,11 @@
             {showWord}
             {includeStartPosition}
             onCardContextMenu={onContextMenu ? (x, y, rerender) => onContextMenu(x, y, rerender) : undefined}
-            onCardClick={(seq) => { inspectedSequence = seq; }}
+            onCardClick={(seq, frontUrl, rerender) => {
+              inspectedFrontImageUrl = frontUrl ?? null;
+              inspectedRerender = rerender ?? null;
+              inspectedSequence = seq;
+            }}
             onPairsReady={(pairs) => { renderedPairs = pairs; }}
           />
         {:else}
@@ -379,7 +385,7 @@
                 <h3 class="section-header">{group.label} <span class="section-count">({group.sequences.length})</span></h3>
                 <div class="sequence-grid">
                   {#each group.sequences as sequence (sequence.id)}
-                    <div class="playing-card">
+                    <div class="playing-card" data-seq-id={sequence.id}>
                       <ChoreoCard
                         {sequence}
                         printMode={true}
@@ -388,7 +394,11 @@
                         {showTKA}
                         {showWord}
                         {includeStartPosition}
-                        onSelect={() => { inspectedSequence = sequence; }}
+                        onSelect={() => {
+                          const cardEl = document.querySelector(`[data-seq-id="${sequence.id}"]`);
+                          inspectedFrontImageUrl = (cardEl?.querySelector('img') as HTMLImageElement)?.src ?? null;
+                          inspectedSequence = sequence;
+                        }}
                         {onContextMenu}
                       />
                     </div>
@@ -416,8 +426,17 @@
     {showTKA}
     {showWord}
     {includeStartPosition}
-    {onContextMenu}
-    onClose={() => { inspectedSequence = null; }}
+    onContextMenu={onContextMenu ? (x, y, _rerender) => {
+      onContextMenu(x, y, () => {
+        if (inspectedRerender) {
+          inspectedRerender().then(newUrl => {
+            if (newUrl) inspectedFrontImageUrl = newUrl;
+          });
+        }
+      });
+    } : undefined}
+    frontImageUrl={inspectedFrontImageUrl}
+    onClose={() => { inspectedSequence = null; inspectedFrontImageUrl = null; inspectedRerender = null; }}
   />
 {/if}
 
@@ -643,7 +662,7 @@
 
   .playing-card {
     aspect-ratio: 5 / 7;
-    border-radius: 10px;
+    border-radius: 5%;
     overflow: hidden;
     box-shadow:
       0 4px 20px rgba(0, 0, 0, 0.3),

@@ -24,8 +24,8 @@
     rerenderKey?: number;
     /** Right-click context menu on a card cell: (x, y, rerender callback for that card, sequence) */
     onCardContextMenu?: (x: number, y: number, rerender: () => void, sequence: SequenceData) => void;
-    /** Left-click a card to inspect it */
-    onCardClick?: (sequence: SequenceData) => void;
+    /** Left-click a card to inspect it (includes the pre-rendered front image URL and a rerender callback) */
+    onCardClick?: (sequence: SequenceData, frontImageUrl?: string, rerender?: () => Promise<string | null>) => void;
     onPairsReady?: (pairs: CardPair[]) => void;
     onRenderStateChange?: (state: { isRendering: boolean; progress: number; total: number }) => void;
   }
@@ -235,9 +235,9 @@
   }
 
   /** Re-render a single card by its index in the sequences array */
-  async function rerenderCard(index: number) {
+  async function rerenderCard(index: number): Promise<string | null> {
     const seq = sequences[index];
-    if (!seq) return;
+    if (!seq) return null;
 
     const renderer = container.items.printCardRenderer;
     const stepCount = seq.steps?.length;
@@ -264,6 +264,7 @@
     });
 
     renderedCards = renderedCards.map((c, i) => i === index ? card : c);
+    return card.frontUrl;
   }
 
   function handleCardContextMenu(event: MouseEvent, cardIndex: number) {
@@ -311,7 +312,10 @@
                 class="card-cell"
                 class:clickable={!!onCardClick}
                 style:aspect-ratio="{cardAspect}"
-                onclick={() => onCardClick?.(sequences[sheetIndex * layout.cardsPerPage + cardIndex]!)}
+                onclick={() => {
+                  const idx = sheetIndex * layout.cardsPerPage + cardIndex;
+                  onCardClick?.(sequences[idx]!, card.frontUrl, () => rerenderCard(idx));
+                }}
                 oncontextmenu={(e) => handleCardContextMenu(e, sheetIndex * layout.cardsPerPage + cardIndex)}
               >
                 <img src={card.frontUrl} alt="{card.label} front" />
@@ -335,7 +339,10 @@
                 style:aspect-ratio="{cardAspect}"
                 style:grid-column="{mirroredCol(cardIndex, layout.cols) + 1}"
                 style:grid-row="{rowOf(cardIndex, layout.cols) + 1}"
-                onclick={() => onCardClick?.(sequences[sheetIndex * layout.cardsPerPage + cardIndex]!)}
+                onclick={() => {
+                  const idx = sheetIndex * layout.cardsPerPage + cardIndex;
+                  onCardClick?.(sequences[idx]!, card.frontUrl, () => rerenderCard(idx));
+                }}
                 oncontextmenu={(e) => handleCardContextMenu(e, sheetIndex * layout.cardsPerPage + cardIndex)}
               >
                 <img src={card.backUrl} alt="{card.label} back" />
