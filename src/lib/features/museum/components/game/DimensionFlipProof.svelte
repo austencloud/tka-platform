@@ -8,6 +8,8 @@
   import { SOLID_TYPES } from "../../services/implementations/MuseumPhysicsProvider";
   import { museum3dEditorState } from "../../state/museum-3d-editor-state.svelte";
   import PlacementPickerPanel from "../editor/PlacementPickerPanel.svelte";
+  import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
+  import type { ModuleId } from "$lib/shared/navigation/state/navigation-state.svelte";
   import PlaqueView from "../panel/PlaqueView.svelte";
   import SequenceView from "../panel/SequenceView.svelte";
   import SequenceBrowserOverlay from "$lib/features/realm/destinations/museum/overlay/SequenceBrowserOverlay.svelte";
@@ -456,18 +458,14 @@
     <PlacementPickerPanel />
   {/if}
 
-  <!-- Editor mode badge -->
-  {#if museum3dEditorState.editorActive}
-    <div class="editor-badge">
-      {#if museum3dEditorState.placementDef}
-        PLACING: {museum3dEditorState.placementDef.label}
-      {:else}
-        EDITOR · F2 exit
-      {/if}
-    </div>
+  <!-- Back button (top-left, non-editor mode) -->
+  {#if !museum3dEditorState.editorActive && !showPanel}
+    <button class="museum-back-btn" onclick={() => handleModuleChange('create' as ModuleId)} aria-label="Back to app">
+      <i class="fas fa-arrow-left" aria-hidden="true"></i>
+    </button>
   {/if}
 
-  <!-- Wing label (top-left) — hidden in editor mode to avoid overlapping badge -->
+  <!-- Wing label (top-left, offset when back button visible) — hidden in editor mode -->
   {#if currentWing && !showPanel && !museum3dEditorState.editorActive}
     <div class="wing-label" class:fps={isInFPS}>
       <i class="fas fa-location-dot" aria-hidden="true"></i>
@@ -570,29 +568,37 @@
     height: 100%;
   }
 
-  /* Editor mode badge — small pill, top-left, not obtrusive */
-  .editor-badge {
+  /* Back button — top-left circle, takes you out of the museum */
+  .museum-back-btn {
     position: absolute;
     top: 16px;
     left: 16px;
-    padding: 5px 14px;
-    background: rgba(0, 0, 0, 0.6);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(6px);
     color: rgba(255, 255, 255, 0.7);
-    font-size: 11px;
-    font-weight: 500;
-    border-radius: 20px;
-    letter-spacing: 0.3px;
-    z-index: 100;
-    pointer-events: none;
-    backdrop-filter: blur(4px);
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 90;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .museum-back-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
   }
 
   /* Wing label */
   .wing-label {
     position: absolute;
     top: 16px;
-    left: 16px;
+    left: 66px;
     display: flex;
     align-items: center;
     gap: 8px;
