@@ -9,6 +9,8 @@
   const sharedLoader = new GLTFLoader();
   const modelTemplateCache = new Map<string, Object3D>();
   const modelPendingCache = new Map<string, Promise<Object3D>>();
+
+  export { modelTemplateCache };
 </script>
 
 <script lang="ts">
