@@ -10,6 +10,8 @@
   import { Plane, PLANE_COLORS } from "../domain/enums/Plane";
   import { getViewer3DContext } from "../context/viewer-3d-context";
   import Viewer3DViewPresets from "./Viewer3DViewPresets.svelte";
+  import { fly, scale } from "svelte/transition";
+  import { cubicOut, backOut } from "svelte/easing";
 
   let open = $state(false);
   let rootEl = $state<HTMLDivElement | null>(null);
@@ -68,6 +70,8 @@
       tabindex="-1"
       onclick={(e) => e.stopPropagation()}
       onkeydown={(e) => { if (e.key === 'Escape') open = false; }}
+      in:scale={{ duration: 250, start: 0.9, opacity: 0, easing: backOut }}
+      out:scale={{ duration: 180, start: 0.95, opacity: 0, easing: cubicOut }}
     >
       <!-- Camera presets -->
       <div class="section">
@@ -144,6 +148,7 @@
     z-index: 100;
     min-width: 200px;
     border-radius: 10px;
+    transform-origin: top right;
     background: rgba(14, 14, 24, 0.95);
     border: 1px solid rgba(255, 255, 255, 0.12);
     backdrop-filter: blur(12px);
