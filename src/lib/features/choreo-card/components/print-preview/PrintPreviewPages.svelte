@@ -20,6 +20,8 @@
     includeStartPosition?: boolean;
     handPointsVisible?: boolean;
     elementTheme?: ElementalTheme;
+    /** Left-side footer label (e.g. "VTG SS 1:1" for deck cards) */
+    leftLabel?: string;
     /** Bump to force a full re-render of all cards */
     rerenderKey?: number;
     /** Right-click context menu on a card cell: (x, y, rerender callback for that card, sequence) */
@@ -41,6 +43,7 @@
     includeStartPosition = true,
     handPointsVisible = true,
     elementTheme,
+    leftLabel,
     rerenderKey = 0,
     onCardContextMenu,
     onCardClick,
@@ -91,6 +94,7 @@
       elementTheme,
       bluePropType: settingsService.settings.bluePropType as any,
       redPropType: settingsService.settings.redPropType as any,
+      leftLabel,
     };
   }
 
@@ -122,6 +126,7 @@
       settingsService.settings.bluePropType,
       settingsService.settings.redPropType,
       stepCount,
+      leftLabel ?? "",
     ].join("|");
     return `${seqId}::${optsPart}`;
   }

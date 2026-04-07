@@ -125,8 +125,23 @@
     }
   }
 
+  // VTG category abbreviation lookup (loopType on VTG decks = VTG category ID)
+  const VTG_ABBREVIATIONS: Record<string, string> = {
+    "split-same": "SS", "tog-same": "TS",
+    "split-opp": "SO", "tog-opp": "TO",
+    "quarter-same": "QS", "quarter-opp": "QO",
+  };
+
   // Derived deck/family lookups
   let selectedDeck = $derived(decks.find((d) => d.id === selectedDeckId) ?? null);
+
+  // VTG deck label for card footer (e.g. "VTG SS 1:1")
+  const deckLeftLabel = $derived.by(() => {
+    if (!selectedDeck) return undefined;
+    const abbr = VTG_ABBREVIATIONS[selectedDeck.loopType];
+    if (!abbr) return undefined;
+    return `VTG ${abbr} ${selectedDeck.turnPattern}`;
+  });
 
   // ── Drill-down deck selection bridge ──
   // DeckDrillDown gives us a Deck object; parent expects a deck ID string.
@@ -370,6 +385,7 @@
             {showTKA}
             {showWord}
             {includeStartPosition}
+            leftLabel={deckLeftLabel}
             onCardContextMenu={onContextMenu ? (x, y, rerender) => onContextMenu(x, y, rerender) : undefined}
             onCardClick={(seq, frontUrl, rerender) => {
               inspectedFrontImageUrl = frontUrl ?? null;
