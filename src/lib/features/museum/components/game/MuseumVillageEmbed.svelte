@@ -133,15 +133,15 @@
 		<VillageEffectCircle {circle} />
 	{/each}
 
-	<!-- Village avatars with LOD -->
-	{#each avatars as renderState (renderState.entityId)}
+	<!-- Village avatars with LOD + staggered reveal -->
+	{#each avatars as renderState, i (renderState.entityId)}
 		{@const pos = renderState.instanceState.position}
 		{@const lod = getAvatarLOD(pos.x, pos.z)}
 		{#if lod !== "minimal"}
 			<VillageAvatar
 				{renderState}
 				schoolColor={getSchoolColor(renderState.entityId)}
-				loadFrames={60}
+				loadFrames={60 + i * 90}
 			/>
 		{/if}
 	{/each}

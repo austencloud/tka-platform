@@ -31,7 +31,12 @@
   import MuseumMirror from "./MuseumMirror.svelte";
   import MuseumPortal from "./MuseumPortal.svelte";
   import MuseumVillageEmbed from "./MuseumVillageEmbed.svelte";
+  import { preloadVillageAvatarModels } from "../../services/implementations/MuseumVillageManager";
   import MuseumTorch3D from "./MuseumTorch3D.svelte";
+
+  // Start preloading village avatar models immediately — they'll be cached
+  // by the time the player reaches the Room of Collaboration
+  preloadVillageAvatarModels();
   import { TorchMaterialCache } from "../../services/implementations/TorchMaterialCache";
   import { FIXTURE_REGISTRY } from "../../domain/fixture-registry";
   import MuseumPlaque3D from "./MuseumPlaque3D.svelte";
