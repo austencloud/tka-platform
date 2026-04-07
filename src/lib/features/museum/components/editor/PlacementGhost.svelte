@@ -360,6 +360,11 @@
     if (event.button !== 0) return;
     if (!valid) return;
 
+    // CRITICAL: stop the event from reaching the camera controller,
+    // which otherwise switches to third-person mode + pointer lock (7s thread block)
+    event.stopImmediatePropagation();
+    event.preventDefault();
+
     const yaw = yawFromQuaternion(ghostQuat);
     const facing = lastSurface === "wall" ? wallFacingFromNormal(lastHitNormal) : "none";
     onPlace(ghostX, ghostZ, yaw, facing);
@@ -411,9 +416,11 @@
     const ren = getRenderer();
     domEl = ren?.domElement ?? null;
     if (!domEl) return;
+    // Use capture phase so placement clicks fire BEFORE the camera controller
+    // (which otherwise switches to third-person + pointer lock, blocking 7s)
     domEl.addEventListener("pointermove", onPointerMove);
-    domEl.addEventListener("pointerdown", onPointerDown);
-    domEl.addEventListener("contextmenu", onContextMenu);
+    domEl.addEventListener("pointerdown", onPointerDown, true);
+    domEl.addEventListener("contextmenu", onContextMenu, true);
     window.addEventListener("keydown", onKeyDown);
   });
 
@@ -432,8 +439,8 @@
 
     if (domEl) {
       domEl.removeEventListener("pointermove", onPointerMove);
-      domEl.removeEventListener("pointerdown", onPointerDown);
-      domEl.removeEventListener("contextmenu", onContextMenu);
+      domEl.removeEventListener("pointerdown", onPointerDown, true);
+      domEl.removeEventListener("contextmenu", onContextMenu, true);
     }
     window.removeEventListener("keydown", onKeyDown);
     ghostMaterial.dispose();
