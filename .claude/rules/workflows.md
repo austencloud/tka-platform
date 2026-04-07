@@ -5,12 +5,12 @@
 These commands load their full workflow via skills. See the skill for details:
 
 - `/check` - TypeScript error analysis and fixing
-- `/fb` - Claim and work on feedback items
-- `/release` - Create a new release version
+- `/fb` - Claim and work on feedback items (`node scripts/fetch-feedback.js list|claim|mine|<id>`)
+- `/release` - Create a new release version (`node scripts/release.js --dry-run`)
 - `/done` - Mark feedback completed or auto-create
 - `/ai-bust` - Scan text for AI writing patterns
-- `/monolith` - Detect and decompose monolithic files
-- `/deadcode` - Find and remove unused code
+- `/monolith` - Detect monolithic files (`npx -p @austencloud/code-quality ac-monolith --auto-claim`)
+- `/deadcode` - Find unused code (`npx -p @austencloud/code-quality ac-deadcode --auto-claim`)
 - `/concepts` - Learn tab concept lesson development and tracking
 - `/lab` - Triage lab tabs: graduate, keep, archive, or delete experiments
 - `/skill-audit` - Audit a skill against writing-skills quality standards
