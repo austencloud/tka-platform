@@ -53,7 +53,7 @@
 	// 8 concurrent parses = 2-3 second freeze. Mounting one at a time = 8 small
 	// hitches spread across 16 seconds, each barely noticeable.
 	let mountedAvatarCount = $state(0);
-	const MOUNT_INTERVAL_MS = 2000; // 2 seconds between each avatar mount
+	const MOUNT_INTERVAL_MS = 500; // Reduced from 2000ms — models are cached, parsing hitches are small
 
 	if (manager) {
 		// Force an initial sync so avatarList is populated
