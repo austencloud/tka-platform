@@ -7,6 +7,7 @@
   import type { MuseumGrid, ExhibitDefinition, PerformerDefinition, WingRegion } from "../../domain/museum-grid-types";
   import { SOLID_TYPES } from "../../services/implementations/MuseumPhysicsProvider";
   import { museum3dEditorState } from "../../state/museum-3d-editor-state.svelte";
+  import PlacementPickerPanel from "../editor/PlacementPickerPanel.svelte";
   import PlaqueView from "../panel/PlaqueView.svelte";
   import SequenceView from "../panel/SequenceView.svelte";
   import SequenceBrowserOverlay from "$lib/features/realm/destinations/museum/overlay/SequenceBrowserOverlay.svelte";
@@ -449,6 +450,11 @@
       />
     </Canvas>
   </div>
+
+  <!-- Placement picker panel (HTML overlay, outside Canvas) -->
+  {#if museum3dEditorState.editorActive}
+    <PlacementPickerPanel />
+  {/if}
 
   <!-- Editor mode badge -->
   {#if museum3dEditorState.editorActive}
