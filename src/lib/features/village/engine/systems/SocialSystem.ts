@@ -13,9 +13,13 @@ import {
 	STYLE_INCOMPATIBILITY_THRESHOLD,
 } from "../../domain/village-constants";
 
+import type { VillageDecisionEngine } from "../llm/VillageDecisionEngine";
+
 const SEEK_RADIUS = 5;
 
 export class SocialSystem {
+	decisionEngine: VillageDecisionEngine | null = null;
+
 	constructor(
 		private config: VillageConfig,
 		private emitter: VillageEventEmitter,
@@ -74,7 +78,16 @@ export class SocialSystem {
 		entity: VillageEntity,
 		world: World<VillageEntity>,
 	): void {
-		if (entity.identity.role === "maker") return; // makers don't interact socially
+		if (entity.identity.role === "maker") return;
+
+		// Check for pending LLM decision first
+		if (this.decisionEngine) {
+			const pending = this.decisionEngine.consumeDecision(entity.id);
+			if (pending) {
+				this.applyIdleDecision(entity, pending.action, world);
+				return;
+			}
+		}
 
 		entity.social.idleTimer++;
 
@@ -85,6 +98,23 @@ export class SocialSystem {
 
 		entity.social.idleTimer = 0;
 
+		// If LLM enabled, fire async decision and wait
+		if (this.decisionEngine?.enabled) {
+			this.decisionEngine.requestIdleDecision(
+				entity,
+				world.entities,
+				"normal", // TODO: read from season system
+				world.entities.length,
+				0,
+			);
+			return; // entity stays idle until response arrives
+		}
+
+		// Deterministic fallback (original probability rolls)
+		this.rollIdleDecision(entity, world);
+	}
+
+	private rollIdleDecision(entity: VillageEntity, world: World<VillageEntity>): void {
 		const roll = Math.random();
 		const hasSequences = entity.knowledge.knownSequences.size > 0;
 		const canInvent = entity.knowledge.knownSequences.size >= 2;
@@ -95,17 +125,42 @@ export class SocialSystem {
 		) {
 			entity.social.state = "inventing";
 		} else if (hasSequences && roll < 0.2) {
-			entity.social.state = "performing";
-			entity.social.idleTimer = 0;
-			// Pick highest-proficiency sequence to perform
-			const bestSeq = [...entity.knowledge.knownSequences.entries()]
-				.sort((a, b) => b[1].proficiency - a[1].proficiency)[0];
-			entity.social.performingSequenceId = bestSeq?.[0] ?? null;
+			this.startPerforming(entity);
 		} else if (roll < 0.6 + entity.personality.sociability * 0.3) {
 			entity.social.state = "seeking";
 		} else {
 			this.startWandering(entity);
 		}
+	}
+
+	private applyIdleDecision(entity: VillageEntity, action: string, world: World<VillageEntity>): void {
+		switch (action) {
+			case "seek":
+				entity.social.state = "seeking";
+				break;
+			case "perform":
+				this.startPerforming(entity);
+				break;
+			case "invent":
+				if (entity.knowledge.knownSequences.size >= 2) {
+					entity.social.state = "inventing";
+				} else {
+					entity.social.state = "seeking"; // can't invent, seek instead
+				}
+				break;
+			case "wander":
+			default:
+				this.startWandering(entity);
+				break;
+		}
+	}
+
+	private startPerforming(entity: VillageEntity): void {
+		entity.social.state = "performing";
+		entity.social.idleTimer = 0;
+		const bestSeq = [...entity.knowledge.knownSequences.entries()]
+			.sort((a, b) => b[1].proficiency - a[1].proficiency)[0];
+		entity.social.performingSequenceId = bestSeq?.[0] ?? null;
 	}
 
 	private handleWandering(entity: VillageEntity): void {

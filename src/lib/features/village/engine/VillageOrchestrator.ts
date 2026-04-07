@@ -87,6 +87,7 @@ export class VillageOrchestrator implements VillageEventEmitter {
 		this.circleSystem = new CircleSystem(this);
 		this.seasonSys = new SeasonSystem(config, this);
 		this.decisionEngine = new VillageDecisionEngine();
+		this.socialSystem.decisionEngine = this.decisionEngine;
 
 		// Wire funeral system to death events
 		this.on("entity:died", (deceased) => {
@@ -170,6 +171,7 @@ export class VillageOrchestrator implements VillageEventEmitter {
 		this.propSystem = new PropSystem(this);
 		this.circleSystem = new CircleSystem(this);
 		this.seasonSys = new SeasonSystem(this.config, this);
+		this.decisionEngine.reset();
 		this.initialize();
 	}
 
