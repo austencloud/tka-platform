@@ -41,6 +41,7 @@
 
   function handleCameraPreset(presetId: string) {
     const pos = CAMERA_POSITIONS[presetId];
+    if (!pos) return;
     viewer3DState.setActiveCameraPreset(presetId);
     viewer3DState.snapCameraTo(pos, GRID_CENTER);
   }
@@ -71,7 +72,7 @@
 
   .preset-button {
     padding: 6px 11px;
-    min-height: var(--min-touch-target, 44px);
+    min-height: var(--min-touch-target-compact, 32px);
     border: 1px solid transparent;
     border-radius: 6px;
     background: transparent;
