@@ -23,6 +23,7 @@
 	import { container } from "$lib/shared/di";
 	import { MUSEUM_EXHIBIT_SEQUENCES } from "../../data/museum-exhibit-sequences";
 	import ForestScene from "$lib/shared/3d/environments/scenes/ForestScene.svelte";
+	import { userProportionsState } from "$lib/shared/3d/state/user-proportions-state.svelte";
 	import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 	import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 
@@ -33,6 +34,10 @@
 	}
 
 	const { centerX, centerZ }: Props = $props();
+
+	// ForestScene positions its ground plane at groundY (~-1.56).
+	// Lift the entire forest up so the grass covers the museum floor at y=0.
+	const forestLift = $derived(-userProportionsState.groundY);
 
 	// Museum-specific seed sequences: the same ones the static performers used
 	const COLLAB_SEQUENCE_IDS = [
@@ -72,7 +77,7 @@
 				targetPopulation: 8,
 				arenaRadius: 8,          // spacious campfire clearing in the forest
 				lifespanTicks: 400,      // shorter — visitor should see a lifecycle
-				ticksPerSecond: 5,       // slower — time to observe
+				ticksPerSecond: 10,      // normal speed — entities need to move visibly
 			},
 		);
 		visualState = createVillageVisualState();
@@ -123,8 +128,10 @@
 
 <!-- Position the entire village at the collaboration room's center in museum world space -->
 <T.Group position.x={centerX} position.z={centerZ}>
-	<!-- Forest environment: trees, campfire, night sky, fog -->
-	<ForestScene variant="firefly" />
+	<!-- Forest environment: lifted so grass ground plane covers the museum floor -->
+	<T.Group position.y={forestLift}>
+		<ForestScene variant="firefly" />
+	</T.Group>
 
 	<!-- Subtle arena edge ring on the forest floor -->
 	<T.Mesh rotation.x={-Math.PI / 2} position.y={0.02}>
