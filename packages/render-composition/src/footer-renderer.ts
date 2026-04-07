@@ -2,6 +2,9 @@ import {
   FOOTER_FONT_SCALE, FOOTER_MARGIN_SCALE, FOOTER_TEXT_Y_SCALE,
 } from "./dimensions.js";
 
+/** System-generated author identifiers — suppress creator name for these */
+const SYSTEM_AUTHORS = new Set(["TKA Enumerator"]);
+
 export interface FooterOptions {
   canvasWidth: number;
   canvasHeight: number;
@@ -17,6 +20,8 @@ export interface FooterOptions {
   backgroundColor?: string;
   /** Override footer border color */
   borderColor?: string;
+  /** Left-side label override (e.g. "VTG SS 1:1" for deck cards) */
+  leftLabel?: string;
 }
 
 export function renderFooter(ctx: CanvasRenderingContext2D, options: FooterOptions): void {
@@ -26,6 +31,7 @@ export function renderFooter(ctx: CanvasRenderingContext2D, options: FooterOptio
     darkMode = true,
     showCreatorName = true, showNotes = true, showBirthday = true,
     backgroundColor, borderColor,
+    leftLabel,
   } = options;
 
   const footerTop = canvasHeight - footerHeight;
@@ -48,30 +54,30 @@ export function renderFooter(ctx: CanvasRenderingContext2D, options: FooterOptio
   ctx.fillStyle = darkMode ? "#ffffff" : "black";
   ctx.textBaseline = "middle";
 
-  // Left: username (bold)
-  if (showCreatorName && userName?.trim()) {
+  // Left: leftLabel override > username (bold), suppressed for system authors
+  if (leftLabel?.trim()) {
+    ctx.font = `bold ${fontSize}px Georgia, serif`;
+    ctx.textAlign = "left";
+    ctx.fillText(leftLabel, margin, yPosition);
+  } else if (showCreatorName && userName?.trim() && !SYSTEM_AUTHORS.has(userName.trim())) {
     ctx.font = `bold ${fontSize}px Georgia, serif`;
     ctx.textAlign = "left";
     ctx.fillText(userName, margin, yPosition);
   }
 
-  // Right: date (manual formatting — no Intl.DateTimeFormat for cross-env consistency)
+  // Right: year only
   if (showBirthday) {
     const dateToUse = birthday || new Date();
-    const month = dateToUse.getMonth() + 1;
-    const day = dateToUse.getDate();
-    const year = dateToUse.getFullYear();
-    const formatted = `${month}-${day}-${year}`;
-    const rightText = birthday ? `🎂 ${formatted}` : formatted;
+    const year = dateToUse.getFullYear().toString();
 
     ctx.font = `${fontSize}px Georgia, serif`;
     ctx.textAlign = "right";
-    ctx.fillText(rightText, canvasWidth - margin, yPosition);
+    ctx.fillText(year, canvasWidth - margin, yPosition);
   }
 
-  // Center: notes
+  // Center: notes or brand name
   if (showNotes) {
-    const centerText = notes?.trim() || "Created using TKA Composer";
+    const centerText = notes?.trim() || "The Kinetic Alphabet";
     ctx.font = `${fontSize}px Georgia, serif`;
     ctx.textAlign = "center";
     ctx.fillText(centerText, canvasWidth / 2, yPosition);

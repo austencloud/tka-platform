@@ -558,7 +558,8 @@ export class ImageComposer implements IImageComposer {
         },
         options.customNotesText,
         options.deckCard ? DECK_HEADER_BG : undefined,
-        options.deckCard ? DECK_BORDER_COLOR : undefined
+        options.deckCard ? DECK_BORDER_COLOR : undefined,
+        options.leftLabel
       );
     }
 
