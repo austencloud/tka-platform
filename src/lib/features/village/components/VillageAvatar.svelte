@@ -1,17 +1,19 @@
 <!--
-  VillageAvatar — Renders one village entity as an Avatar3D with props + name label.
+  VillageAvatar — Renders one village entity via PerformerRig with props, effects + name label.
 
   Hides avatar for a brief loading period, then fades in.
-  The useGLTF=true default means Avatar3D loads the real model;
-  we just hide it during the initial load to avoid the fallback flash.
+  PerformerRig manages Avatar3D + Prop3D + EffectOrchestrator3D as a
+  coordinated hierarchy. Effect rendering is driven by the entity's effect affinity.
 -->
 <script lang="ts">
 	import { T, useTask } from "@threlte/core";
 	import { HTML } from "@threlte/extras";
-	import Avatar3D from "$lib/shared/3d/components/Avatar3D.svelte";
+	import PerformerRig from "$lib/shared/3d/components/PerformerRig.svelte";
 	import { userProportionsState } from "$lib/shared/3d/state/user-proportions-state.svelte";
+	import { PlaneMode } from "$lib/shared/3d/domain/enums/PlaneMode";
+	import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+	import type { TipEffectMap } from "$lib/shared/animation-engine/domain/types/TipEffectTypes";
 	import type { AvatarRenderState } from "../state/village-state.svelte";
-	import type { AvatarId } from "$lib/shared/3d/config/avatar-definitions";
 
 	interface Props {
 		renderState: AvatarRenderState;
@@ -22,9 +24,6 @@
 	const { renderState, isSelected = false, schoolColor = null }: Props = $props();
 
 	const STAGE_LIFT = $derived(-userProportionsState.groundY);
-	const avatarModelId = $derived(
-		renderState.entity.identity.avatarModelId as AvatarId,
-	);
 	const avatarName = $derived(renderState.entity.identity.name);
 	const lifecyclePhase = $derived(renderState.entity.lifecycle.phase);
 	const socialState = $derived(renderState.entity.social.state);
@@ -42,20 +41,11 @@
 	let deathOpacity = $state(1);
 	const DEATH_FADE_RATE = 0.02; // per frame, ~50 frames to fully fade
 
-	let posX = 0;
-	let posZ = 0;
-	let prevX = 0;
-	let prevZ = 0;
-	let moving = false;
-	let speed = 0;
-
 	let avatarPosition = $state({ x: 0, y: 0, z: 0 });
 	let facingAngle = $state(0);
-	let isMoving = $state(false);
-	let moveSpeed = $state(0);
 
 	// Hide during initial GLTF load to prevent procedural fallback flash.
-	// Avatar3D visible=false prevents rendering while GLTF fetches.
+	// PerformerRig showAvatar=false prevents rendering while GLTF fetches.
 	// After enough frames for the model to load, switch to visible.
 	let frameCount = 0;
 	let showAvatar = $state(false);
@@ -66,19 +56,7 @@
 	useTask(() => {
 		const inst = renderState.instanceState;
 
-		prevX = posX;
-		prevZ = posZ;
-		posX = inst.position.x;
-		posZ = inst.position.z;
-
-		const dx = posX - prevX;
-		const dz = posZ - prevZ;
-		const frameDist = Math.sqrt(dx * dx + dz * dz);
-
-		moving = frameDist > 0.001;
-		speed = moving ? frameDist * 60 : 0;
-
-		avatarPosition = { x: posX, y: STAGE_LIFT, z: posZ };
+		avatarPosition = { x: inst.position.x, y: STAGE_LIFT, z: inst.position.z };
 		facingAngle = inst.facingAngle;
 
 		// Youth wobble: slight facing angle oscillation for youthful energy
@@ -86,9 +64,6 @@
 			const wobbleAngle = Math.sin(performance.now() * 0.001 * Math.PI) * 0.05; // ~2.8 degrees
 			facingAngle += wobbleAngle;
 		}
-
-		isMoving = moving;
-		moveSpeed = speed;
 
 		// Count frames until we reveal the avatar (GLTF should be loaded by then)
 		if (!showAvatar) {
@@ -105,16 +80,6 @@
 			deathOpacity = Math.max(0, deathOpacity - DEATH_FADE_RATE);
 		}
 	});
-
-	const bluePropState = $derived(renderState.instanceState.bluePropState);
-	const redPropState = $derived(renderState.instanceState.redPropState);
-
-	const isPerforming = $derived(
-		socialState === "teaching" ||
-		socialState === "learning" ||
-		socialState === "performing" ||
-		socialState === "practicing"
-	);
 
 	const labelColor = $derived(
 		socialState === "teaching" ? "#4ade80" :
@@ -145,23 +110,59 @@
 			? ` [${renderState.entity.prop.heldProp.propType.charAt(0).toUpperCase()}]`
 			: " [—]"
 	);
+
+	// Effect rendering: only show during active performance states
+	const isActiveForEffects = $derived(
+		socialState === "performing" ||
+		socialState === "practicing" ||
+		socialState === "jamming"
+	);
+
+	// Map entity's effect affinity to TipEffectMap
+	const affinityToEffect: Record<string, string> = {
+		fire: "fire",
+		led: "led",
+		charcoal: "charcoal",
+		trails: "trails",
+		pure: "none",
+	};
+
+	const tipEffectMap = $derived<TipEffectMap>(
+		isActiveForEffects
+			? { "*": { effect: (affinityToEffect[renderState.entity.effect.affinity] ?? "none") as any } }
+			: {}
+	);
+
+	// Map entity's held prop to PropType enum
+	const propTypeMap: Record<string, PropType> = {
+		staff: PropType.STAFF,
+		fan: PropType.FAN,
+		club: PropType.CLUB,
+		poi: PropType.POI,
+		torch: PropType.TORCH,
+	};
+
+	const propType = $derived(
+		renderState.entity.prop.heldProp
+			? (propTypeMap[renderState.entity.prop.heldProp.propType] ?? PropType.STAFF)
+			: PropType.STAFF
+	);
 </script>
 
 <!-- Visual offset group: cancel STAGE_LIFT so feet land on Y=0 ground -->
 <T.Group position.y={-STAGE_LIFT} scale.y={heightScale}>
-	<Avatar3D
-		id={renderState.entityId}
-		avatarId={avatarModelId}
-		{bluePropState}
-		{redPropState}
-		position={avatarPosition}
+	<PerformerRig
+		position={{ x: avatarPosition.x, z: avatarPosition.z }}
 		{facingAngle}
-		isActive={isSelected}
-		{isMoving}
-		{moveSpeed}
-		moveDirection={{ x: 0, z: 1 }}
-		enableLocomotion={true}
-		visible={showAvatar && deathOpacity > 0.01}
+		planeMode={PlaneMode.WALL}
+		avatarState={renderState.instanceState}
+		showAvatar={showAvatar && deathOpacity > 0.01}
+		showGrid={false}
+		showProps={true}
+		showEffects={isActiveForEffects}
+		{tipEffectMap}
+		bluePropType={propType}
+		redPropType={propType}
 	/>
 
 	<!-- Elder knowledge glow: soft emissive sphere -->
@@ -204,10 +205,6 @@
 		</T.Group>
 	{/if}
 </T.Group>
-
-<!-- Props are driven by Avatar3D's bluePropState/redPropState through IK.
-     External Prop3D rendering will be added when teaching choreography
-     is properly integrated with the avatar's transform chain. -->
 
 <style>
 	.name-label {
