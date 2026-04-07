@@ -1366,6 +1366,11 @@
     addChunkToScene(chunk);
     activeRoomChunks.set(roomId, chunk);
 
+    // Make immediately visible if this room is in the current active set
+    // (e.g. adjacent room finished building while player is in the lobby)
+    const shouldBeVisible = activeRoomSet.has(roomId);
+    setChunkVisible(chunk, shouldBeVisible);
+
     // Update proximity grids so fixtures in this room become discoverable
     for (const t of chunk.torchPositions) torchGrid.insert(t, t.tileX, t.tileY);
     for (const p of chunk.plaquePlacements) plaqueGrid.insert(p, p.tileX, p.tileY);
@@ -1386,6 +1391,10 @@
   }
 
   props.onBuildStage?.("Tile bucketing");
+
+  // Declare streaming state before the IIFE so it can be set during initial load
+  let activeRoomSet = $state(new Set<string>());
+  let lastPlayerRoomId: string | null = null;
 
   // ── Initial load: lobby + corridors, then adjacent rooms in background ──
   (async () => {
@@ -1438,6 +1447,9 @@
     // 6. Build adjacent rooms in background (don't block the player)
     if (spawnRoomId) {
       const update = lifecycleManager.onPlayerEnteredRoom(spawnRoomId);
+      // Set the active set NOW so adjacent rooms are visible as soon as they finish building
+      activeRoomSet = new Set(update.priorities.keys());
+      lastPlayerRoomId = spawnRoomId;
       for (const roomId of update.toActivate) {
         if (roomId !== spawnRoomId) {
           activateRoom(roomId, 1); // fire-and-forget — loads in background
@@ -1456,7 +1468,6 @@
   })();
 
   // ── Room streaming: activate/deactivate rooms as the player moves ──
-  let activeRoomSet = $state(new Set<string>());
 
   // Collaboration room center — for positioning the live Village sim
   const collabWing = $derived(grid.wings.find((w) => w.id === "collaboration"));
@@ -1518,8 +1529,6 @@
       showAllRooms();
     }
   });
-
-  let lastPlayerRoomId: string | null = null;
 
   function updateStreaming(playerTX: number, playerTZ: number): void {
     if (!geometryReady) return;
