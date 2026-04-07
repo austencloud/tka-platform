@@ -3,7 +3,8 @@
    * Viewer3DViewPresets
    *
    * Camera angle presets for the 3D viewer: Main, Front, Side, Top, 3/4.
-   * Front is the former "mirror" main position — same scene, no color swapping.
+   * All presets look at the grid center (shoulder height, forward of avatar).
+   * Distance is computed from FOV + viewport size so the grid fills the view.
    *
    * Accepts a `compact` boolean for smaller sizing when rendered inside the gear popover.
    */
@@ -14,20 +15,42 @@
 
   const viewer3DState = getViewer3DContext();
 
-  // Grid center: avatar faces -Z, grid offset is at -0.3 Z
+  // Grid center in world space: avatar at origin, grid 0.3m forward at shoulder height
   const GRID_CENTER = { x: 0, y: 1.55, z: -0.3 };
+  const GZ = GRID_CENTER.z;
+  const GY = GRID_CENTER.y;
 
-  const D = 2.4;   // approximate aligned distance
-  const Y = 1.59;  // approximate aligned Y
-  const GZ = -0.3; // grid center Z
+  // Compute camera distance so the grid nicely fills the viewport.
+  // Grid radius in 3D = 0.52m, we want it to occupy ~46% of viewport width.
+  // Uses the same FOV (50°) as Viewer3DCamera.
+  const FOV_DEG = 50;
+  const GRID_RADIUS = 0.52;
+  const GRID_FILL_FRACTION = 0.46;
 
-  const CAMERA_POSITIONS: Record<string, { x: number; y: number; z: number }> = {
-    main:         { x: 0,         y: Y,       z: GZ - D },
-    front:        { x: 0,         y: Y,       z: GZ + D },
-    side:         { x: D,         y: Y,       z: GZ },
-    top:          { x: 0,         y: GRID_CENTER.y + 3.0, z: GZ - 0.01 },
-    threequarter: { x: D * 0.6,   y: Y + 1.0, z: GZ - D * 0.8 },
-  };
+  function computeDistance(): number {
+    if (typeof document === "undefined") return 3.0;
+    // Find the 3D pane to get aspect ratio
+    const pane = document.querySelector(".viewer-3d-canvas");
+    if (!pane) return 3.0;
+    const rect = pane.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return 3.0;
+    const aspect = rect.width / rect.height;
+    const vFovRad = (FOV_DEG / 2) * Math.PI / 180;
+    const hFovHalf = Math.atan(Math.tan(vFovRad) * aspect);
+    const visibleWidthPerMeter = 2 * Math.tan(hFovHalf);
+    return (GRID_RADIUS * 2) / (GRID_FILL_FRACTION * visibleWidthPerMeter);
+  }
+
+  function getPresetPositions(): Record<string, { x: number; y: number; z: number }> {
+    const D = computeDistance();
+    return {
+      main:         { x: 0,         y: GY,       z: GZ - D },
+      front:        { x: 0,         y: GY,       z: GZ + D },
+      side:         { x: D,         y: GY,       z: GZ },
+      top:          { x: 0,         y: GY + D,   z: GZ - 0.01 },
+      threequarter: { x: D * 0.55,  y: GY + D * 0.4, z: GZ - D * 0.75 },
+    };
+  }
 
   const CAMERA_PRESETS: { id: string; label: string }[] = [
     { id: "main",         label: "Main" },
@@ -40,7 +63,8 @@
   const activeCameraPreset = $derived(viewer3DState.activeCameraPreset);
 
   function handleCameraPreset(presetId: string) {
-    const pos = CAMERA_POSITIONS[presetId];
+    const positions = getPresetPositions();
+    const pos = positions[presetId];
     if (!pos) return;
     viewer3DState.setActiveCameraPreset(presetId);
     viewer3DState.snapCameraTo(pos, GRID_CENTER);
