@@ -1,123 +1,52 @@
 <!--
-  MuseumVillageEmbed — Live Village simulation inside the Room of Collaboration.
+  MuseumVillageEmbed — Pure visual renderer for the persistent Village sim.
 
-  Creates its own VillageOrchestrator, seeded with museum exhibit sequences.
-  Renders village avatars, monuments, death marks, jam circles, and effect circles
-  in museum world space. No control panel, no toasts, no timeline.
-
-  Mounted when the collaboration room enters the active streaming set.
-  Destroyed when the player leaves.
+  Does NOT own the orchestrator. Reads from MuseumVillageManager which
+  persists across room transitions. Walking away and back: village has
+  progressed, no GLTF reload, no population reset.
 -->
 <script lang="ts">
-	import { onDestroy } from "svelte";
-	import { T, useTask } from "@threlte/core";
+	import { T, useTask, useThrelte } from "@threlte/core";
 	import VillageAvatar from "$lib/features/village/components/VillageAvatar.svelte";
 	import VillageDeathMark from "$lib/features/village/components/VillageDeathMark.svelte";
 	import VillageMonument from "$lib/features/village/components/VillageMonument.svelte";
 	import VillageJamCircle from "$lib/features/village/components/VillageJamCircle.svelte";
 	import VillageEffectCircle from "$lib/features/village/components/VillageEffectCircle.svelte";
 	import VillageDroppedProp from "$lib/features/village/components/VillageDroppedProp.svelte";
-	import { createVillageState, type VillageState } from "$lib/features/village/state/village-state.svelte";
-	import { createVillageVisualState, type VillageVisualState } from "$lib/features/village/state/village-visual-state.svelte";
 	import { setVillageContext, setVillageVisualContext } from "$lib/features/village/state/village-context";
-	import { container } from "$lib/shared/di";
-	import { MUSEUM_EXHIBIT_SEQUENCES } from "../../data/museum-exhibit-sequences";
 	import ForestScene from "$lib/shared/3d/environments/scenes/ForestScene.svelte";
 	import { userProportionsState } from "$lib/shared/3d/state/user-proportions-state.svelte";
-	import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-	import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
+	import {
+		getMuseumVillageManager,
+		setMuseumVillageVisible,
+	} from "../../services/implementations/MuseumVillageManager";
+	import { onDestroy } from "svelte";
+	import { Vector3 } from "three";
 
 	interface Props {
-		/** Center of the collaboration room in museum world coordinates */
 		centerX: number;
 		centerZ: number;
+		/** Museum camera position for LOD calculations */
+		cameraPosition?: { x: number; y: number; z: number };
 	}
 
-	const { centerX, centerZ }: Props = $props();
+	const { centerX, centerZ, cameraPosition }: Props = $props();
 
-	// ForestScene positions its ground plane at groundY (~-1.56).
-	// Lift the entire forest up so the grass covers the museum floor at y=0.
 	const forestLift = $derived(-userProportionsState.groundY);
 
-	// Museum-specific seed sequences: the same ones the static performers used
-	const COLLAB_SEQUENCE_IDS = [
-		"performer-cave-seq",
-		"gallery-spiral-seq",
-		"gallery-scribes-seq",
-		"gallery-practice-seq",
-	];
+	// Get or create the persistent village manager
+	const manager = getMuseumVillageManager();
 
-	function buildSeedSequences(): SequenceData[] {
-		return COLLAB_SEQUENCE_IDS
-			.map((id) => {
-				const museumSeq = MUSEUM_EXHIBIT_SEQUENCES[id];
-				if (!museumSeq) return null;
-				return {
-					id: `museum-village-${id}`,
-					word: museumSeq.word,
-					steps: museumSeq.steps as readonly StepData[],
-					isCircular: true,
-				} as SequenceData;
-			})
-			.filter((s): s is SequenceData => s !== null);
+	if (manager) {
+		setVillageContext(manager.villageState);
+		setVillageVisualContext(manager.visualState);
+		setMuseumVillageVisible(true);
 	}
 
-	const propInterpolator = container.items.propStateInterpolator;
-	const sequenceConverter = container.items.sequenceConverter;
+	const villageState = manager?.villageState ?? null;
+	const visualState = manager?.visualState ?? null;
 
-	// HMR preservation: stash village state in module scope so it survives hot reloads.
-	// On remount, reuse the existing orchestrator — no GLTF reload, no population reset.
-	let villageState: VillageState | null = null;
-	let visualState: VillageVisualState | null = null;
-
-	// Check for HMR-preserved state
-	const hmrKey = "__museum_village_state__";
-	const hmrState = (import.meta.hot?.data as any)?.[hmrKey] as {
-		villageState: VillageState;
-		visualState: VillageVisualState;
-	} | undefined;
-
-	if (hmrState) {
-		// Reuse existing sim — no GLTF reload needed
-		villageState = hmrState.villageState;
-		visualState = hmrState.visualState;
-		setVillageContext(villageState);
-		setVillageVisualContext(visualState);
-	} else if (propInterpolator && sequenceConverter) {
-		const seeds = buildSeedSequences();
-		villageState = createVillageState(
-			{ propInterpolator, sequenceConverter },
-			seeds,
-			{
-				targetPopulation: 8,
-				arenaRadius: 8,          // spacious campfire clearing in the forest
-				lifespanTicks: 400,      // shorter — visitor should see a lifecycle
-				ticksPerSecond: 7,       // moderate speed — visible movement, not frantic
-			},
-		);
-		visualState = createVillageVisualState();
-		setVillageContext(villageState);
-		setVillageVisualContext(visualState);
-
-		// Wire death marks (no toasts in museum — too noisy)
-		villageState.orchestrator.on("entity:died", (entity) => {
-			visualState!.addDeathMark(entity, villageState!.orchestrator.currentTick);
-		});
-
-		// Wire monument relight flash
-		villageState.orchestrator.on("monument:relit", (seqId) => {
-			visualState!.triggerRelight(seqId);
-		});
-
-		villageState.start();
-	}
-
-	// Preserve state across HMR
-	if (import.meta.hot && villageState && visualState) {
-		import.meta.hot.data[hmrKey] = { villageState, visualState };
-	}
-
-	// Per-frame sync
+	// Per-frame sync (only when visible)
 	useTask(() => {
 		if (!villageState || !visualState) return;
 		villageState.syncFromEngine();
@@ -141,21 +70,34 @@
 		return null;
 	}
 
+	// LOD: compute distance from camera to each avatar for detail levels
+	const LOD_FULL = 8;      // full: avatar + props + effects
+	const LOD_REDUCED = 15;  // reduced: avatar + props, no effects
+
+	function getAvatarLOD(avatarX: number, avatarZ: number): "full" | "reduced" | "minimal" {
+		if (!cameraPosition) return "full";
+		const dx = (centerX + avatarX) - cameraPosition.x;
+		const dz = (centerZ + avatarZ) - cameraPosition.z;
+		const dist = Math.sqrt(dx * dx + dz * dz);
+		if (dist < LOD_FULL) return "full";
+		if (dist < LOD_REDUCED) return "reduced";
+		return "minimal";
+	}
+
 	onDestroy(() => {
-		// Don't destroy on HMR — the stashed state will be reused on remount
-		if (import.meta.hot) return;
-		villageState?.destroy();
+		// Pause the sim when leaving — don't destroy
+		setMuseumVillageVisible(false);
 	});
 </script>
 
-<!-- Position the entire village at the collaboration room's center in museum world space -->
+{#if manager}
 <T.Group position.x={centerX} position.z={centerZ}>
-	<!-- Forest environment: lifted so grass ground plane sits just above the museum floor -->
+	<!-- Forest environment -->
 	<T.Group position.y={forestLift + 0.05}>
 		<ForestScene variant="firefly" />
 	</T.Group>
 
-	<!-- Subtle arena edge ring on the forest floor -->
+	<!-- Subtle arena edge ring -->
 	<T.Mesh rotation.x={-Math.PI / 2} position.y={0.02}>
 		<T.RingGeometry args={[7.8, 8, 64]} />
 		<T.MeshBasicMaterial
@@ -191,11 +133,17 @@
 		<VillageEffectCircle {circle} />
 	{/each}
 
-	<!-- Village avatars -->
+	<!-- Village avatars with LOD -->
 	{#each avatars as renderState (renderState.entityId)}
-		<VillageAvatar
-			{renderState}
-			schoolColor={getSchoolColor(renderState.entityId)}
-		/>
+		{@const pos = renderState.instanceState.position}
+		{@const lod = getAvatarLOD(pos.x, pos.z)}
+		{#if lod !== "minimal"}
+			<VillageAvatar
+				{renderState}
+				schoolColor={getSchoolColor(renderState.entityId)}
+				loadFrames={60}
+			/>
+		{/if}
 	{/each}
 </T.Group>
+{/if}
