@@ -11,6 +11,7 @@ import {
 	INTERACTION_COOLDOWN_BASE,
 	STYLE_MUTATION_STDDEV,
 	PROP_PREFERENCE_TRANSFER_CHANCE,
+	AFFINITY_TRANSFER_STRENGTH,
 } from "../../domain/village-constants";
 
 export class TeachingSystem {
@@ -112,6 +113,13 @@ export class TeachingSystem {
 		// Prop preference spread: 30% chance teaching transfers prop preference
 		if (Math.random() < PROP_PREFERENCE_TRANSFER_CHANCE) {
 			learner.prop.propPreference = teacher.prop.propPreference;
+		}
+
+		// Effect affinity inheritance
+		const transferStrength = teacher.effect.affinityStrength * AFFINITY_TRANSFER_STRENGTH;
+		if (transferStrength > learner.effect.affinityStrength) {
+			learner.effect.affinity = teacher.effect.affinity;
+			learner.effect.affinityStrength = transferStrength;
 		}
 
 		this.emitter.emit("teaching:completed", teacher, learner, sequenceId);

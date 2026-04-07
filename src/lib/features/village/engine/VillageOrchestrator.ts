@@ -24,6 +24,8 @@ import { MonumentSystem } from "./systems/MonumentSystem";
 import { ProximityLearningSystem } from "./systems/ProximityLearningSystem";
 import { StyleDriftSystem } from "./systems/StyleDriftSystem";
 import { PropSystem } from "./systems/PropSystem";
+import { CircleSystem } from "./systems/CircleSystem";
+import { SeasonSystem } from "./systems/SeasonSystem";
 
 export class VillageOrchestrator implements VillageEventEmitter {
 	private world: World<VillageEntity>;
@@ -40,6 +42,8 @@ export class VillageOrchestrator implements VillageEventEmitter {
 	private proximityLearningSystem: ProximityLearningSystem;
 	private styleDriftSystem: StyleDriftSystem;
 	propSystem: PropSystem;
+	circleSystem: CircleSystem;
+	private seasonSys: SeasonSystem;
 	private lineageTracker: LineageTracker;
 	private personalityGenerator: PersonalityGenerator;
 
@@ -78,6 +82,8 @@ export class VillageOrchestrator implements VillageEventEmitter {
 		this.proximityLearningSystem = new ProximityLearningSystem();
 		this.styleDriftSystem = new StyleDriftSystem(this);
 		this.propSystem = new PropSystem(this);
+		this.circleSystem = new CircleSystem(this);
+		this.seasonSys = new SeasonSystem(config, this);
 
 		// Wire funeral system to death events
 		this.on("entity:died", (deceased) => {
@@ -96,6 +102,7 @@ export class VillageOrchestrator implements VillageEventEmitter {
 		this.lifecycleSystem.tick(this.world, this._currentTick);
 		this.socialSystem.tick(this.world, this._currentTick);
 		this.performanceSystem.tick(this.world, this._currentTick);
+		this.circleSystem.tick(this.world, this._currentTick);
 		this.teachingSystem.tick(this.world, this._currentTick);
 		this.proximityLearningSystem.tick(this.world, this._currentTick);
 		this.decaySystem.tick(this.world, this._currentTick);
@@ -104,6 +111,7 @@ export class VillageOrchestrator implements VillageEventEmitter {
 		this.propSystem.tick(this.world, this._currentTick);
 		this.movementSystem.tick(this.world);
 		this.monumentSystem.tick(this.world, this._currentTick);
+		this.seasonSys.tick(this.world, this._currentTick);
 		this.populationSystem.tick(this.world, this._currentTick);
 	}
 
@@ -140,6 +148,8 @@ export class VillageOrchestrator implements VillageEventEmitter {
 		this.proximityLearningSystem = new ProximityLearningSystem();
 		this.styleDriftSystem = new StyleDriftSystem(this);
 		this.propSystem = new PropSystem(this);
+		this.circleSystem = new CircleSystem(this);
+		this.seasonSys = new SeasonSystem(this.config, this);
 		this.initialize();
 	}
 
@@ -216,6 +226,14 @@ export class VillageOrchestrator implements VillageEventEmitter {
 
 	get propWall() {
 		return this.propSystem.propWall;
+	}
+
+	get effectCircles() {
+		return this.circleSystem.circles;
+	}
+
+	get currentSeason() {
+		return this.seasonSys.currentSeason;
 	}
 
 	inspectAvatar(entityId: string): VillageEntity | null {
