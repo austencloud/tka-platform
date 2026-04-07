@@ -3,12 +3,113 @@
   // Without this, each of ~30 torches would create its own GLTFLoader
   // and independently fetch+parse the same GLB files.
   import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-  import { Box3, Vector3 } from "three";
-  import type { Object3D } from "three";
+  import { Box3, Vector3, PointLight, Group } from "three";
+  import type { Object3D, Scene } from "three";
+  import { FIXTURE_REGISTRY, type FixtureConfig } from "../../domain/fixture-registry";
+  import type { WingTheme } from "../../domain/museum-grid-types";
 
   const sharedLoader = new GLTFLoader();
   const modelTemplateCache = new Map<string, Object3D>();
   const modelPendingCache = new Map<string, Promise<Object3D>>();
+
+  const TARGET_HEIGHT = 0.3;
+
+  /** Load and cache a single model. Returns the template (do NOT mutate — clone it). */
+  function loadModel(modelPath: string, scale: number): Promise<Object3D> {
+    const cached = modelTemplateCache.get(modelPath);
+    if (cached) return Promise.resolve(cached);
+
+    let pending = modelPendingCache.get(modelPath);
+    if (!pending) {
+      pending = new Promise<Object3D>((resolve, reject) => {
+        sharedLoader.load(
+          modelPath,
+          (gltf) => {
+            const template = gltf.scene;
+            const box = new Box3().setFromObject(template);
+            const size = new Vector3();
+            box.getSize(size);
+            const maxDim = Math.max(size.x, size.y, size.z);
+            if (maxDim > 0) {
+              const autoScale = (TARGET_HEIGHT / maxDim) * scale;
+              template.scale.setScalar(autoScale);
+            }
+            modelTemplateCache.set(modelPath, template);
+            modelPendingCache.delete(modelPath);
+            resolve(template);
+          },
+          undefined,
+          (err) => {
+            modelPendingCache.delete(modelPath);
+            reject(err);
+          },
+        );
+      });
+      modelPendingCache.set(modelPath, pending);
+    }
+    return pending;
+  }
+
+  /** Preload ALL fixture models so the editor ghost + instant placement work. */
+  export async function preloadAllFixtureModels(): Promise<void> {
+    const entries = Object.entries(FIXTURE_REGISTRY) as [WingTheme, FixtureConfig][];
+    const unique = new Map<string, number>();
+    for (const [, config] of entries) {
+      if (!unique.has(config.modelPath)) {
+        unique.set(config.modelPath, config.scale);
+      }
+    }
+    await Promise.allSettled(
+      [...unique.entries()].map(([path, scale]) => loadModel(path, scale))
+    );
+  }
+
+  /**
+   * Instantly add a torch to the scene imperatively — no Svelte component overhead.
+   * Returns the Group so it can be removed later (for undo/delete).
+   */
+  export function addTorchToScene(
+    scene: Scene,
+    x: number, z: number,
+    wallOffsetX: number, wallOffsetZ: number,
+    wingTheme: WingTheme,
+    placementId: string,
+  ): Group | null {
+    const config = FIXTURE_REGISTRY[wingTheme];
+    const template = modelTemplateCache.get(config.modelPath);
+
+    const group = new Group();
+    group.name = `manual-placement-${placementId}`;
+    group.userData.__manualPlacementId = placementId;
+
+    const tx = x + wallOffsetX;
+    const tz = z + wallOffsetZ;
+    const fixtureY = 1.25 + config.yOffset;
+
+    if (template) {
+      const model = template.clone();
+      model.position.set(tx, fixtureY, tz);
+      group.add(model);
+    }
+
+    // Point light for the torch
+    const light = new PointLight(config.lightColor, config.lightIntensity, 8, 2);
+    light.position.set(tx, fixtureY + 0.2, tz);
+    group.add(light);
+
+    scene.add(group);
+    return group;
+  }
+
+  /** Remove an imperatively-added torch group from the scene. */
+  export function removeTorchFromScene(scene: Scene, placementId: string): boolean {
+    const obj = scene.getObjectByName(`manual-placement-${placementId}`);
+    if (obj) {
+      scene.remove(obj);
+      return true;
+    }
+    return false;
+  }
 
   export { modelTemplateCache };
 </script>
