@@ -47,6 +47,10 @@
 
 	let avatarPosition = $state({ x: 0, y: 0, z: 0 });
 	let facingAngle = $state(0);
+	let isMoving = $state(false);
+	let moveSpeed = $state(0);
+	let prevX = 0;
+	let prevZ = 0;
 
 	// Hide during initial GLTF load to prevent procedural fallback flash.
 	// PerformerRig showAvatar=false prevents rendering while GLTF fetches.
@@ -59,8 +63,19 @@
 
 	useTask(() => {
 		const inst = renderState.instanceState;
+		const posX = inst.position.x;
+		const posZ = inst.position.z;
 
-		avatarPosition = { x: inst.position.x, y: STAGE_LIFT, z: inst.position.z };
+		// Movement detection for walk animation
+		const dx = posX - prevX;
+		const dz = posZ - prevZ;
+		const frameDist = Math.sqrt(dx * dx + dz * dz);
+		isMoving = frameDist > 0.001;
+		moveSpeed = isMoving ? frameDist * 60 : 0;
+		prevX = posX;
+		prevZ = posZ;
+
+		avatarPosition = { x: posX, y: STAGE_LIFT, z: posZ };
 		facingAngle = inst.facingAngle;
 
 		// Youth wobble: slight facing angle oscillation for youthful energy
@@ -166,6 +181,9 @@
 		showGrid={false}
 		showProps={true}
 		showEffects={isActiveForEffects}
+		enableLocomotion={true}
+		{isMoving}
+		{moveSpeed}
 		{tipEffectMap}
 		bluePropType={propType}
 		redPropType={propType}

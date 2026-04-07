@@ -75,6 +75,11 @@
 
     // Avatar model selection
     avatarId?: import("../config/avatar-definitions").AvatarId;
+
+    // Locomotion (walk/idle animation)
+    enableLocomotion?: boolean;
+    isMoving?: boolean;
+    moveSpeed?: number;
   }
 
   let {
@@ -97,6 +102,9 @@
     staffHalfLength = userProportionsState.staffLength / 2,
     groundOffset = 0,
     avatarId,
+    enableLocomotion = false,
+    isMoving = false,
+    moveSpeed = 0,
   }: Props = $props();
 
   // Resolve prop states: use overrides (for mirror mode) or avatarState defaults
@@ -149,7 +157,9 @@
       facingAngle={0}
       position={{ x: 0, z: 0 }}
       isActive={false}
-      isMoving={false}
+      {isMoving}
+      {moveSpeed}
+      {enableLocomotion}
       bluePropAnchorRef={bluePropAnchorRef}
       redPropAnchorRef={redPropAnchorRef}
     />
