@@ -19,7 +19,15 @@ export function museumPlacementPlugin(): Plugin {
         req.on('data', chunk => { body += chunk; });
         req.on('end', () => {
           try {
-            const { content } = JSON.parse(body);
+            // Persister sends raw TypeScript content as text/plain,
+            // or JSON { content: "..." } — handle both
+            let content: string;
+            try {
+              const parsed = JSON.parse(body);
+              content = parsed.content;
+            } catch {
+              content = body;
+            }
             const fullPath = resolve(process.cwd(), PLACEMENTS_PATH);
             writeFileSync(fullPath, content, 'utf-8');
             res.statusCode = 200;
