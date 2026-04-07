@@ -227,6 +227,28 @@
     };
 
     placementPersister.save(roomId, placement);
+
+    // Instantly add torch to live scene so it renders without waiting for HMR
+    if (def.id === 'torch' || def.id.includes('torch')) {
+      let wallOffsetX = 0;
+      let wallOffsetZ = 0;
+      if (wallFacing === 'north') wallOffsetZ = -TILE_SIZE * 0.35;
+      else if (wallFacing === 'south') wallOffsetZ = TILE_SIZE * 0.35;
+      else if (wallFacing === 'west') wallOffsetX = -TILE_SIZE * 0.35;
+      else if (wallFacing === 'east') wallOffsetX = TILE_SIZE * 0.35;
+
+      const newTorch: TorchPosition = {
+        id: Date.now(),
+        tileX,
+        tileY,
+        x: tileX * TILE_SIZE,
+        z: tileY * TILE_SIZE,
+        wallOffsetX,
+        wallOffsetZ,
+        wingTheme: (wing?.theme ?? 'cave') as import("../../domain/museum-grid-types").WingTheme,
+      };
+      visibleTorches = [...visibleTorches, newTorch];
+    }
   }
 
   // Apply any persisted overrides on mount (from previous editor sessions).
