@@ -308,9 +308,9 @@
     ghostMaterial.color.copy(isValid ? COLOR_VALID : COLOR_INVALID);
 
     // Check if hovering a deletable manual placement (for glow effect)
-    const scn = getScene();
-    if (scn) {
-      const allHits = raycaster.intersectObjects(scn.children, true);
+    const scnForHover = getScene();
+    if (scnForHover) {
+      const allHits = raycaster.intersectObjects(scnForHover.children, true);
       let newHoverId: string | null = null;
       for (const h of allHits) {
         if (isGhostOrGizmo(h.object)) continue;
@@ -330,7 +330,7 @@
         }
         // Apply new highlight
         if (newHoverId) {
-          const group = scn.getObjectByName(`manual-placement-${newHoverId}`);
+          const group = scnForHover.getObjectByName(`manual-placement-${newHoverId}`);
           if (group) {
             group.traverse((child) => {
               if ((child as any).isMesh && (child as any).material?.emissive) {
