@@ -356,14 +356,14 @@
   }
 
   function onPointerDown(event: PointerEvent): void {
-    // Left-click only
     if (event.button !== 0) return;
-    if (!valid) return;
 
-    // CRITICAL: stop the event from reaching the camera controller,
-    // which otherwise switches to third-person mode + pointer lock (7s thread block)
+    // ALWAYS stop the camera controller from seeing clicks in placement mode,
+    // even on invalid surfaces. Otherwise it switches to third-person + pointer lock.
     event.stopImmediatePropagation();
     event.preventDefault();
+
+    if (!valid) return;
 
     const yaw = yawFromQuaternion(ghostQuat);
     const facing = lastSurface === "wall" ? wallFacingFromNormal(lastHitNormal) : "none";
