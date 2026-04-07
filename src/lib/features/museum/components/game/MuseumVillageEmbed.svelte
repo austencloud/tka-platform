@@ -36,6 +36,7 @@
 
 	// Get or create the persistent village manager
 	const manager = getMuseumVillageManager();
+	console.log("[MuseumVillage] Embed mounted, manager:", manager ? "ready" : "null");
 
 	if (manager) {
 		setVillageContext(manager.villageState);
@@ -55,9 +56,12 @@
 	const MOUNT_INTERVAL_MS = 2000; // 2 seconds between each avatar mount
 
 	if (manager) {
+		// Force an initial sync so avatarList is populated
+		villageState!.syncFromEngine();
+
 		// Stagger mounting: schedule one avatar every MOUNT_INTERVAL_MS
-		const totalAvatars = villageState?.avatarList.length ?? 0;
-		for (let i = 0; i < Math.max(totalAvatars, 10); i++) {
+		// Use 10 as cap (targetPopulation 8 + maker + margin)
+		for (let i = 0; i < 10; i++) {
 			setTimeout(() => {
 				mountedAvatarCount = i + 1;
 			}, i * MOUNT_INTERVAL_MS);
