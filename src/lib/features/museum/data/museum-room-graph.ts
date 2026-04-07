@@ -789,8 +789,8 @@ export const MUSEUM_ROOMS: RoomNode[] = [
     name: "Room of Collaboration",
     material: "dirt",
     theme: "outdoor",
-    minInteriorWidth: 100,
-    minInteriorHeight: 90,
+    minInteriorWidth: 60,
+    minInteriorHeight: 55,
     description:
       "Birds chirping. Trees. Light. Warmth. Real people spinning together. " +
       "Imperfect technique. Fully alive. The activity that 40,000 years of history " +
