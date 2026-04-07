@@ -108,28 +108,6 @@ export function getMuseumVillageManager() {
 		visualState.triggerRelight(seqId);
 	});
 
-	// Stagger initial spawn: push entities far out and set them walking inward.
-	// They arrive at different times instead of all popping in at once.
-	const entities = villageState.orchestrator.entities;
-	for (let i = 0; i < entities.length; i++) {
-		const entity = entities[i];
-		if (entity.identity.role === "maker") continue;
-
-		// Spread spawn positions in a ring beyond the arena edge
-		const spawnAngle = (i / entities.length) * Math.PI * 2 + Math.random() * 0.5;
-		const spawnRadius = 10 + i * 1.5; // stagger distance: each entity further out
-		entity.transform.x = Math.cos(spawnAngle) * spawnRadius;
-		entity.transform.z = Math.sin(spawnAngle) * spawnRadius;
-
-		// Walk toward a point near the center
-		const targetAngle = spawnAngle + Math.PI + (Math.random() - 0.5) * 0.5;
-		const targetDist = Math.random() * 4;
-		entity.transform.targetX = Math.cos(targetAngle) * targetDist;
-		entity.transform.targetZ = Math.sin(targetAngle) * targetDist;
-		entity.transform.speed = 1;
-		entity.social.state = "wandering";
-	}
-
 	// Start ticking immediately — sim runs in background
 	villageState.start();
 
