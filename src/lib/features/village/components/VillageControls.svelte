@@ -105,6 +105,8 @@
 		<div class="stat">Monuments: {monumentCount}</div>
 		<div class="stat">Active Jams: {activeJamCount}</div>
 		<div class="stat">Schools: {villageState.orchestrator.schools?.length ?? 0}</div>
+		<div class="stat">Dropped Props: {villageState.orchestrator.droppedProps.length}</div>
+		<div class="stat">Prop Wall: {villageState.orchestrator.propWall.length}</div>
 		{#if relitCount > 0}
 			<div class="stat">Recovered: {relitCount}</div>
 		{/if}
@@ -121,6 +123,14 @@
 				{@const avgStyle = getAverageStyle(selectedEntity)}
 				<div class="stat">Style Amp: {avgStyle.amplitudeScale.toFixed(2)}</div>
 				<div class="stat">Style Tempo: {avgStyle.tempoOffset.toFixed(3)}</div>
+			{/if}
+			{#if selectedEntity.prop.heldProp}
+				<div class="stat">Prop: {selectedEntity.prop.heldProp.propType}</div>
+				<div class="stat">Wear: {(selectedEntity.prop.heldProp.wear * 100).toFixed(0)}%</div>
+				<div class="stat">Beats: {selectedEntity.prop.heldProp.totalBeatsPerformed}</div>
+				<div class="stat">Owners: {selectedEntity.prop.heldProp.ownershipChain.length}</div>
+			{:else}
+				<div class="stat">Prop: none (seeking maker)</div>
 			{/if}
 			<div class="stat">Knows: {selectedEntity.knowledge.knownSequences.size} sequences</div>
 			<div class="traits">
