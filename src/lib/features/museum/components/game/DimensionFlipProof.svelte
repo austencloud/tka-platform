@@ -455,7 +455,7 @@
 
   <!-- Placement picker panel (HTML overlay, outside Canvas) -->
   {#if museum3dEditorState.editorActive}
-    <PlacementPickerPanel />
+    <PlacementPickerPanel currentRoomName={currentWing?.name} />
   {/if}
 
   <!-- Back button (top-left, non-editor mode) -->

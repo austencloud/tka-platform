@@ -217,6 +217,11 @@
     return n.z > 0 ? "south" : "north";
   }
 
+  // ── Hover glow state for deletable manual placements ──
+
+  let hoveredPlacementId: string | null = null;
+  let hoveredObject: Object3D | null = null;
+
   // ── Stored hit data for click handler ──
 
   let lastHitNormal = new Vector3();
@@ -301,6 +306,46 @@
     valid = isValid;
     museum3dEditorState.setGhostValid(isValid);
     ghostMaterial.color.copy(isValid ? COLOR_VALID : COLOR_INVALID);
+
+    // Check if hovering a deletable manual placement (for glow effect)
+    const scn = getScene();
+    if (scn) {
+      const allHits = raycaster.intersectObjects(scn.children, true);
+      let newHoverId: string | null = null;
+      for (const h of allHits) {
+        if (isGhostOrGizmo(h.object)) continue;
+        const id = findManualPlacementId(h.object);
+        if (id) { newHoverId = id; break; }
+      }
+
+      if (newHoverId !== hoveredPlacementId) {
+        // Clear old highlight
+        if (hoveredObject) {
+          hoveredObject.traverse((child) => {
+            if ((child as any).isMesh && child.userData.__originalEmissive !== undefined) {
+              (child as any).material.emissive?.setHex(child.userData.__originalEmissive);
+              delete child.userData.__originalEmissive;
+            }
+          });
+        }
+        // Apply new highlight
+        if (newHoverId) {
+          const group = scn.getObjectByName(`manual-placement-${newHoverId}`);
+          if (group) {
+            group.traverse((child) => {
+              if ((child as any).isMesh && (child as any).material?.emissive) {
+                child.userData.__originalEmissive = (child as any).material.emissive.getHex();
+                (child as any).material.emissive.setHex(0xff4444);
+              }
+            });
+            hoveredObject = group;
+          }
+        } else {
+          hoveredObject = null;
+        }
+        hoveredPlacementId = newHoverId;
+      }
+    }
   }
 
   function onPointerDown(event: PointerEvent): void {
@@ -366,6 +411,18 @@
   });
 
   onDestroy(() => {
+    // Clear any active hover highlight
+    if (hoveredObject) {
+      hoveredObject.traverse((child) => {
+        if ((child as any).isMesh && child.userData.__originalEmissive !== undefined) {
+          (child as any).material.emissive?.setHex(child.userData.__originalEmissive);
+          delete child.userData.__originalEmissive;
+        }
+      });
+      hoveredObject = null;
+      hoveredPlacementId = null;
+    }
+
     if (domEl) {
       domEl.removeEventListener("pointermove", onPointerMove);
       domEl.removeEventListener("pointerdown", onPointerDown);

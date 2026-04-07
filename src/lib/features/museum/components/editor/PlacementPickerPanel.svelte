@@ -4,6 +4,12 @@
 	import { handleModuleChange } from '$lib/shared/navigation-coordinator/navigation-coordinator.svelte';
 	import type { ModuleId } from '$lib/shared/navigation/state/navigation-state.svelte';
 
+	interface Props {
+		currentRoomName?: string;
+		placedCount?: number;
+	}
+	const { currentRoomName, placedCount = 0 }: Props = $props();
+
 	const fixtures = $derived(PLACEABLE_OBJECTS.filter((o) => o.category === 'fixture'));
 	const furniture = $derived(PLACEABLE_OBJECTS.filter((o) => o.category === 'furniture'));
 
@@ -20,13 +26,48 @@
 	}
 
 	function iconForDef(def: PlaceableObjectDef): string {
-		if (def.category === 'fixture') return '🔥';
-		// Rotate through a small set of furniture icons by index
-		const furnitureIcons = ['🪑', '🪴', '📚', '🪔'];
-		const idx = furniture.indexOf(def);
-		return furnitureIcons[idx % furnitureIcons.length];
+		if (def.category === 'furniture') {
+			const furnitureIcons = ['🪑', '🪴', '📚', '🪔'];
+			const idx = furniture.indexOf(def);
+			return furnitureIcons[idx % furnitureIcons.length];
+		}
+		// Distinct icons per fixture wing theme
+		const fixtureIcons: Record<string, string> = {
+			cave: '🔥',
+			classical: '🏺',
+			renaissance: '🕯️',
+			industrial: '⚙️',
+			digital: '💡',
+			institutional: '🔦',
+			gallery: '🏮',
+			modern: '💫',
+			futuristic: '🌀',
+			outdoor: '🎋',
+			construction: '🔧',
+			retail: '🛒',
+		};
+		return fixtureIcons[def.wingTheme ?? ''] ?? '🔥';
+	}
+
+	function handleKeyDown(event: KeyboardEvent): void {
+		// Number keys 1-9 quick-select fixtures
+		const num = parseInt(event.key);
+		if (num >= 1 && num <= 9) {
+			const allItems = [...fixtures, ...furniture];
+			const idx = num - 1;
+			if (idx < allItems.length) {
+				const def = allItems[idx];
+				if (museum3dEditorState.placementDef?.id === def.id) {
+					museum3dEditorState.stopPlacement();
+				} else {
+					museum3dEditorState.startPlacement(def);
+				}
+			}
+		}
 	}
 </script>
+
+<svelte:window onkeydown={handleKeyDown} />
 
 <div class="placement-picker">
 	<div class="picker-header">
@@ -45,16 +86,29 @@
 		</button>
 	</div>
 
+	{#if currentRoomName}
+		<div class="room-indicator">
+			<i class="fas fa-location-dot" aria-hidden="true"></i>
+			<span>{currentRoomName}</span>
+			{#if placedCount > 0}
+				<span class="placed-count">{placedCount} placed</span>
+			{/if}
+		</div>
+	{/if}
+
 	{#if fixtures.length > 0}
 		<div class="picker-category">Wall Fixtures</div>
 		<div class="picker-grid">
-			{#each fixtures as def (def.id)}
+			{#each fixtures as def, index (def.id)}
 				<button
 					class="picker-item"
 					class:selected={isSelected(def)}
 					onclick={() => handleClick(def)}
 					title={def.label}
 				>
+					{#if index < 9}
+						<span class="key-hint">{index + 1}</span>
+					{/if}
 					<span class="item-icon">{iconForDef(def)}</span>
 					<span class="item-label">{def.label}</span>
 				</button>
@@ -65,13 +119,17 @@
 	{#if furniture.length > 0}
 		<div class="picker-category">Floor Objects</div>
 		<div class="picker-grid">
-			{#each furniture as def (def.id)}
+			{@const fixtureCount = fixtures.length}
+			{#each furniture as def, index (def.id)}
 				<button
 					class="picker-item"
 					class:selected={isSelected(def)}
 					onclick={() => handleClick(def)}
 					title={def.label}
 				>
+					{#if fixtureCount + index < 9}
+						<span class="key-hint">{fixtureCount + index + 1}</span>
+					{/if}
 					<span class="item-icon">{iconForDef(def)}</span>
 					<span class="item-label">{def.label}</span>
 				</button>
@@ -81,7 +139,7 @@
 
 	<div class="picker-hint">
 		<p>Click to select, click again to cancel</p>
-		<p><kbd>ESC</kbd> cancel placement</p>
+		<p><kbd>1-9</kbd> quick-select • <kbd>ESC</kbd> cancel</p>
 		<p><kbd>Right-click</kbd> delete object</p>
 	</div>
 </div>
@@ -189,6 +247,7 @@
 	}
 
 	.picker-item {
+		position: relative;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
@@ -266,5 +325,35 @@
 		border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
 		border-radius: 3px;
 		color: var(--theme-text-secondary, rgba(255, 255, 255, 0.6));
+	}
+
+	.key-hint {
+		position: absolute;
+		top: 4px;
+		right: 4px;
+		font-size: 9px;
+		color: rgba(255, 255, 255, 0.3);
+		font-weight: 600;
+	}
+
+	.room-indicator {
+		padding: 8px 12px;
+		font-size: 11px;
+		color: rgba(255, 255, 255, 0.5);
+		border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		flex-shrink: 0;
+	}
+
+	.room-indicator i {
+		font-size: 10px;
+	}
+
+	.placed-count {
+		margin-left: auto;
+		font-size: 10px;
+		color: rgba(255, 255, 255, 0.3);
 	}
 </style>
