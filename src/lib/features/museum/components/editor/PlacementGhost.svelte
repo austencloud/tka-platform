@@ -366,6 +366,12 @@
     onPlace(ghostX, ghostZ, yaw, facing);
   }
 
+  /** Block the click event from reaching the camera controller (which listens on "click") */
+  function onClickCapture(event: MouseEvent): void {
+    event.stopImmediatePropagation();
+    event.preventDefault();
+  }
+
   function onContextMenu(event: MouseEvent): void {
     event.preventDefault();
 
@@ -412,10 +418,12 @@
     const ren = getRenderer();
     domEl = ren?.domElement ?? null;
     if (!domEl) return;
-    // Use capture phase so placement clicks fire BEFORE the camera controller
-    // (which otherwise switches to third-person + pointer lock, blocking 7s)
+    // Use capture phase so placement clicks fire BEFORE the camera controller.
+    // Must intercept BOTH pointerdown AND click — the camera controller listens
+    // on "click" (not pointerdown), and stopping pointerdown doesn't prevent click.
     domEl.addEventListener("pointermove", onPointerMove);
     domEl.addEventListener("pointerdown", onPointerDown, true);
+    domEl.addEventListener("click", onClickCapture, true);
     domEl.addEventListener("contextmenu", onContextMenu, true);
     window.addEventListener("keydown", onKeyDown);
   });
@@ -436,6 +444,7 @@
     if (domEl) {
       domEl.removeEventListener("pointermove", onPointerMove);
       domEl.removeEventListener("pointerdown", onPointerDown, true);
+      domEl.removeEventListener("click", onClickCapture, true);
       domEl.removeEventListener("contextmenu", onContextMenu, true);
     }
     window.removeEventListener("keydown", onKeyDown);
