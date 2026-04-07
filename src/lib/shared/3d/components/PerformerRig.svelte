@@ -61,7 +61,7 @@
     bluePropType?: PropType;
     redPropType?: PropType;
 
-    // Prop state overrides (for mirror mode — caller swaps before passing)
+    // Prop state overrides (for dual-wheel mode — caller swaps before passing)
     bluePropState?: PropState3D | null;
     redPropState?: PropState3D | null;
 
@@ -107,7 +107,7 @@
     moveSpeed = 0,
   }: Props = $props();
 
-  // Resolve prop states: use overrides (for mirror mode) or avatarState defaults
+  // Resolve prop states: use overrides (for dual-wheel swap) or avatarState defaults
   const bluePropState = $derived(bluePropStateOverride ?? avatarState.bluePropState);
   const redPropState = $derived(redPropStateOverride ?? avatarState.redPropState);
 
