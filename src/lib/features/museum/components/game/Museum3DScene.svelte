@@ -206,6 +206,9 @@
     overrideVersion++;
   }
 
+  // ── Placement history for undo ──
+  let placementHistory: { torch: TorchPosition; roomId: string; placementId: string }[] = [];
+
   function handlePlace(worldX: number, worldZ: number, yaw: number, wallFacing: string | null): void {
     const def = museum3dEditorState.placementDef;
     if (!def) return;
@@ -247,9 +250,37 @@
         wallOffsetX,
         wallOffsetZ,
         wingTheme: (wing?.theme ?? 'cave') as import("../../domain/museum-grid-types").WingTheme,
+        placementId: placement.id,
       };
+
+      placementHistory.push({ torch: newTorch, roomId, placementId: placement.id });
       manualTorches = [...manualTorches, newTorch];
     }
+  }
+
+  function handleDelete(placementId: string): void {
+    const torch = manualTorches.find(t => t.placementId === placementId);
+    if (!torch) return;
+
+    // Find the room this torch belongs to
+    const wing = grid.wings.find(w => {
+      const b = w.bounds;
+      return torch.tileX >= b.x && torch.tileX < b.x + b.width
+          && torch.tileY >= b.y && torch.tileY < b.y + b.height;
+    });
+    const roomId = wing?.id ?? 'unknown';
+
+    manualTorches = manualTorches.filter(t => t.placementId !== placementId);
+    placementHistory = placementHistory.filter(h => h.placementId !== placementId);
+    placementPersister.remove(roomId, placementId);
+  }
+
+  function handlePlacementUndo(): void {
+    const entry = placementHistory.pop();
+    if (!entry) return;
+
+    manualTorches = manualTorches.filter(t => t.placementId !== entry.placementId);
+    placementPersister.remove(entry.roomId, entry.placementId);
   }
 
   // Apply any persisted overrides on mount (from previous editor sessions).
@@ -1669,17 +1700,22 @@
 
 <!-- Manually placed fixtures — separate array to avoid re-diffing all auto-placed torches -->
 {#each manualTorches as torch (`manual-${torch.id}`)}
-  <MuseumTorch3D
-    x={torch.x}
-    z={torch.z}
-    wallOffsetX={torch.wallOffsetX}
-    wallOffsetZ={torch.wallOffsetZ}
-    wingTheme={torch.wingTheme}
-    baseIntensity={4}
-    materials={torchMaterialCache.createInstance(FIXTURE_REGISTRY[torch.wingTheme].lightColor)}
-    castShadow={false}
-    playerPosition={playerPosition}
-  />
+  <T.Group
+    name={`manual-placement-${torch.id}`}
+    userData={{ __manualPlacementId: torch.placementId }}
+  >
+    <MuseumTorch3D
+      x={torch.x}
+      z={torch.z}
+      wallOffsetX={torch.wallOffsetX}
+      wallOffsetZ={torch.wallOffsetZ}
+      wingTheme={torch.wingTheme}
+      baseIntensity={4}
+      materials={torchMaterialCache.createInstance(FIXTURE_REGISTRY[torch.wingTheme].lightColor)}
+      castShadow={false}
+      playerPosition={playerPosition}
+    />
+  </T.Group>
 {/each}
 
 <!-- Performer stations: 3D mannequins with spinning staves -->
@@ -1781,6 +1817,11 @@
 {#if museum3dEditorState.editorActive}
   <MuseumSceneEditor onOverrideChanged={applyEditorOverrides} />
   {#if museum3dEditorState.placementDef}
-    <PlacementGhost def={museum3dEditorState.placementDef} onPlace={handlePlace} />
+    <PlacementGhost
+      def={museum3dEditorState.placementDef}
+      onPlace={handlePlace}
+      onDelete={handleDelete}
+      onUndo={handlePlacementUndo}
+    />
   {/if}
 {/if}

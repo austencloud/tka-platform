@@ -135,6 +135,8 @@ export interface TorchPosition {
   wallOffsetX: number;
   wallOffsetZ: number;
   wingTheme: WingTheme;
+  /** Persistence ID from PlacementPersister — only set on manually placed torches */
+  placementId?: string;
 }
 
 export interface LightPosition {
