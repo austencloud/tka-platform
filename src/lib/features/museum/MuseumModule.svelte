@@ -11,7 +11,7 @@
   import { page } from "$app/stores";
   import { goto } from "$app/navigation";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
-  import { setDesktopSidebarVisible } from "$lib/shared/layout/desktop-sidebar-state.svelte";
+  import { setDesktopSidebarForcedHidden } from "$lib/shared/layout/desktop-sidebar-state.svelte";
 
   // ── Loading gate ──
   // An opaque overlay covers the scene until ALL assets (textures, models,
@@ -64,8 +64,9 @@
   // yields to the browser's task queue, ensuring the overlay is visible first.
   let deferredReady = $state(false);
   onMount(() => {
-    // Museum is a full-screen immersive experience — hide the desktop sidebar
-    setDesktopSidebarVisible(false);
+    // Museum is a full-screen immersive experience — suppress sidebar
+    // even across viewport recalculations and HMR
+    setDesktopSidebarForcedHidden(true);
 
     // rAF ensures we're past the first frame, setTimeout ensures the browser
     // has actually painted the overlay before we start the heavy 3D mount.
@@ -77,7 +78,7 @@
     return () => {
       if (rafId !== null) cancelAnimationFrame(rafId);
       // Restore sidebar when leaving museum
-      setDesktopSidebarVisible(true);
+      setDesktopSidebarForcedHidden(false);
     };
   });
 
