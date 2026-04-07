@@ -614,17 +614,19 @@ Last audit: 2025-12-27
       </div>
     {/if}
 
-    <div class="progress-slot">
-      <SegmentedSequenceProgressBar
-        steps={sequenceData?.steps ?? []}
-        currentStep={currentStep}
-        visible={progressBarVisible && !hideProgressBar}
-        darkMode={darkModeEnabled}
-        variant={progressBarVariant}
-        showLabels={progressBarVariant === "labeled" || progressBarVariant === "gradient-labeled"}
-        onSeek={onProgressBarSeek}
-      />
-    </div>
+    {#if !suppress2DOverlays}
+      <div class="progress-slot">
+        <SegmentedSequenceProgressBar
+          steps={sequenceData?.steps ?? []}
+          currentStep={currentStep}
+          visible={progressBarVisible && !hideProgressBar}
+          darkMode={darkModeEnabled}
+          variant={progressBarVariant}
+          showLabels={progressBarVariant === "labeled" || progressBarVariant === "gradient-labeled"}
+          onSeek={onProgressBarSeek}
+        />
+      </div>
+    {/if}
   </div>
 
   {#if !disableContextMenu}
