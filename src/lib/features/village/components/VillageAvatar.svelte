@@ -139,6 +139,12 @@
 	const nameTint = $derived(
 		lifecyclePhase === "youth" ? "#86efac" : labelColor
 	);
+
+	const propIndicator = $derived(
+		renderState.entity.prop.heldProp
+			? ` [${renderState.entity.prop.heldProp.propType.charAt(0).toUpperCase()}]`
+			: " [—]"
+	);
 </script>
 
 <!-- Visual offset group: cancel STAGE_LIFT so feet land on Y=0 ground -->
@@ -192,6 +198,7 @@
 					{#if lifecyclePhase === "elder"}
 						<span class="state-indicator">🔥</span>
 					{/if}
+					<span class="prop-indicator">{propIndicator}</span>
 				</div>
 			</HTML>
 		</T.Group>
@@ -218,5 +225,10 @@
 
 	.state-indicator {
 		margin-left: 2px;
+	}
+
+	.prop-indicator {
+		opacity: 0.5;
+		font-size: 9px;
 	}
 </style>

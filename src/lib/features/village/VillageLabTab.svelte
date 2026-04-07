@@ -112,6 +112,23 @@
 		villageState.orchestrator.on("school:dissolved", (_schoolId) => {
 			vs.pushToast("A style school dissolved", "#6b7280", 0, 0, 2000);
 		});
+		villageState.orchestrator.on("prop:broken", (entity, artifact) => {
+			vs.pushToast(
+				`${entity.identity.name}'s ${artifact.propType} broke`,
+				"#ef4444",
+				entity.transform.x,
+				entity.transform.z,
+			);
+		});
+		villageState.orchestrator.on("prop:crafted", (maker, artifact) => {
+			vs.pushToast(
+				`${maker.identity.name} crafted a ${artifact.propType}`,
+				"#4ade80",
+				maker.transform.x,
+				maker.transform.z,
+				3000,
+			);
+		});
 
 		// Auto-start
 		villageState.start();
