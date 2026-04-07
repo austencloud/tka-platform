@@ -70,6 +70,21 @@
         {avatarState}
       />
     </Canvas>
+    <!-- Progress bar at very bottom of 3D viewport -->
+    {#if sequenceData?.steps?.length}
+      {@const totalSteps = sequenceData.steps.length}
+      {@const progress = Math.min(Math.max(currentStep / totalSteps, 0), 1) * 100}
+      <div class="viewer-progress-bar">
+        <div class="viewer-progress-fill" style="width: {progress}%"></div>
+        {#each Array(totalSteps) as _, i}
+          <div
+            class="viewer-progress-tick"
+            class:past={currentStep >= i + 1}
+            style="left: {((i + 1) / totalSteps) * 100}%"
+          ></div>
+        {/each}
+      </div>
+    {/if}
     {#if !hideOverlays}
       {#if fullScreen}
         <!-- Full-screen: back button + controls in one header row -->
@@ -113,6 +128,36 @@
 </div>
 
 <style>
+  .viewer-progress-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.08);
+    z-index: 5;
+    overflow: visible;
+  }
+
+  .viewer-progress-fill {
+    height: 100%;
+    background: rgba(139, 139, 255, 0.5);
+    transition: width 0.15s ease;
+  }
+
+  .viewer-progress-tick {
+    position: absolute;
+    top: -1px;
+    width: 1px;
+    height: 5px;
+    background: rgba(255, 255, 255, 0.12);
+    transform: translateX(-0.5px);
+  }
+
+  .viewer-progress-tick.past {
+    background: rgba(139, 139, 255, 0.35);
+  }
+
   .viewer-3d-canvas {
     width: 100%;
     height: 100%;
