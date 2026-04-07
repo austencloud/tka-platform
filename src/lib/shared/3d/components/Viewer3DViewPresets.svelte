@@ -43,12 +43,14 @@
 
   function getPresetPositions(): Record<string, { x: number; y: number; z: number }> {
     const D = computeDistance();
+    // Avatar faces -Z. Camera at +Z sees the avatar's back (Main/behind).
+    // Camera at -Z sees the avatar's face (Front).
     return {
-      main:         { x: 0,         y: GY,       z: GZ - D },
-      front:        { x: 0,         y: GY,       z: GZ + D },
-      side:         { x: D,         y: GY,       z: GZ },
-      top:          { x: 0,         y: GY + D,   z: GZ - 0.01 },
-      threequarter: { x: D * 0.55,  y: GY + D * 0.4, z: GZ - D * 0.75 },
+      main:         { x: 0,         y: GY,           z: GZ + D },       // behind performer (+Z)
+      front:        { x: 0,         y: GY,           z: GZ - D },       // facing performer (-Z)
+      side:         { x: D,         y: GY,           z: GZ },           // stage right (+X)
+      top:          { x: 0,         y: GY + D,       z: GZ + 0.01 },    // overhead, slight +Z bias
+      threequarter: { x: D * 0.55,  y: GY + D * 0.4, z: GZ + D * 0.75 }, // elevated behind-right
     };
   }
 
@@ -66,6 +68,11 @@
     const positions = getPresetPositions();
     const pos = positions[presetId];
     if (!pos) return;
+
+    // DEBUG: log preset positions and target
+    const D = computeDistance();
+    console.log(`[CameraPreset] "${presetId}" → pos:`, pos, `target:`, GRID_CENTER, `distance: ${D.toFixed(3)}`);
+
     viewer3DState.setActiveCameraPreset(presetId);
     viewer3DState.snapCameraTo(pos, GRID_CENTER);
   }
