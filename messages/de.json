@@ -179,7 +179,6 @@
   "auth_sign_up": "Registrieren",
   "auth_signin_subtitle": "Melden Sie sich an, um auf Ihre Bibliothek zuzugreifen und Ihren Fortschritt zu verfolgen.",
   "auth_signup_subtitle": "Melde dich bei TKA an, um deinen Fortschritt zu speichern und auf deine Bibliothek zuzugreifen.",
-  "auth_verify_with_passkey": "Mit Passkey bestätigen",
   "auth_verify_with_password": "Mit Passwort bestätigen",
   "auth_verifying": "Überprüfen...",
   "auth_welcome": "Willkommen bei TKA",

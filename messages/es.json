@@ -179,7 +179,6 @@
   "auth_sign_up": "Inscribirse",
   "auth_signin_subtitle": "Inicia sesión para acceder a tu biblioteca y realizar un seguimiento de tu progreso.",
   "auth_signup_subtitle": "Únete a TKA para guardar tu progreso y acceder a tu biblioteca",
-  "auth_verify_with_passkey": "Verificar con passkey",
   "auth_verify_with_password": "Verificar con contraseña",
   "auth_verifying": "Verificando...",
   "auth_welcome": "Bienvenido a TKA",

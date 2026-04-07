@@ -179,7 +179,6 @@
   "auth_sign_up": "注册",
   "auth_signin_subtitle": "登录以访问您的资料库并跟踪您的进度",
   "auth_signup_subtitle": "加入TKA即可保存您的学习进度并访问您的资料库",
-  "auth_verify_with_passkey": "使用通行密钥验证",
   "auth_verify_with_password": "使用密码验证",
   "auth_verifying": "验证中...",
   "auth_welcome": "欢迎来到TKA",
