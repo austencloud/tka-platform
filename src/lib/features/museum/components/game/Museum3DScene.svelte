@@ -228,8 +228,8 @@
 
     placementPersister.save(roomId, placement);
 
-    // Instantly add torch to live scene so it renders without waiting for HMR
-    if (def.id === 'torch' || def.id.includes('torch')) {
+    // Instantly add fixture to live scene so it renders without waiting for HMR
+    if (def.category === 'fixture') {
       let wallOffsetX = 0;
       let wallOffsetZ = 0;
       if (wallFacing === 'north') wallOffsetZ = -TILE_SIZE * 0.35;
