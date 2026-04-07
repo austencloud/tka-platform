@@ -47,25 +47,34 @@
 	const villageState = manager?.villageState ?? null;
 	const visualState = manager?.visualState ?? null;
 
-	// Progressive avatar mounting: mount one avatar every ~2 seconds to spread
+	// Progressive avatar mounting: mount one avatar per idle callback to spread
 	// out the GLTF parsing cost. The actual freeze is from GLTFLoader.parse(),
 	// not from the network (models are preloaded). Mounting all 8 at once causes
-	// 8 concurrent parses = 2-3 second freeze. Mounting one at a time = 8 small
-	// hitches spread across 16 seconds, each barely noticeable.
+	// 8 concurrent parses = 2-3 second freeze. Using requestIdleCallback means
+	// each mount only happens when the browser has spare time, so frame drops
+	// are avoided entirely rather than just spread out.
 	let mountedAvatarCount = $state(0);
-	const MOUNT_INTERVAL_MS = 500; // Reduced from 2000ms — models are cached, parsing hitches are small
 
 	if (manager) {
 		// Force an initial sync so avatarList is populated
 		villageState!.syncFromEngine();
 
-		// Stagger mounting: schedule one avatar every MOUNT_INTERVAL_MS
-		// Use 10 as cap (targetPopulation 8 + maker + margin)
-		for (let i = 0; i < 10; i++) {
-			setTimeout(() => {
-				mountedAvatarCount = i + 1;
-			}, i * MOUNT_INTERVAL_MS);
+		const totalToMount = 10;
+
+		function mountNextAvatar(deadline?: IdleDeadline): void {
+			// Only mount if we have enough idle time (>5ms) to avoid jank
+			if (deadline && deadline.timeRemaining() < 5) {
+				requestIdleCallback(mountNextAvatar);
+				return;
+			}
+
+			if (mountedAvatarCount < totalToMount) {
+				mountedAvatarCount++;
+				requestIdleCallback(mountNextAvatar);
+			}
 		}
+
+		requestIdleCallback(mountNextAvatar);
 	}
 
 	// Per-frame sync (only when visible)
