@@ -196,7 +196,7 @@
             isPlaying={playback.isPlaying}
             bluePropType={propRendering.bluePropType != null ? String(propRendering.bluePropType) : null}
             redPropType={propRendering.redPropType != null ? String(propRendering.redPropType) : null}
-            hideOverlays={layout.focusedPane === "animation"}
+            hideOverlays={false}
             fullScreen={layout.focusedPane === "animation"}
             onExitFullScreen={onUnfocusPane}
           />
