@@ -5,7 +5,7 @@ import type {
 	LearnedSequence,
 } from "../domain/village-types";
 import type { IPersonalityGenerator } from "../services/contracts/IPersonalityGenerator";
-import { VILLAGE_PROP_TYPES } from "../domain/village-constants";
+import { VILLAGE_PROP_TYPES, EFFECT_AFFINITIES } from "../domain/village-constants";
 
 const AVATAR_MODELS = ["x-bot", "y-bot", "remy", "ch26", "ch01", "ch07", "ch10", "ch12", "ch18", "ch21", "ch22", "ch24", "ch34", "ch41", "ch42", "ch44"];
 
@@ -113,6 +113,11 @@ export function createAvatarEntity(
 				VILLAGE_PROP_TYPES[
 					Math.floor(Math.random() * VILLAGE_PROP_TYPES.length)
 				],
+		},
+		effect: {
+			affinity: EFFECT_AFFINITIES[Math.floor(Math.random() * EFFECT_AFFINITIES.length)],
+			affinityStrength: 0.5 + Math.random() * 0.5,
+			exposureHistory: new Map(),
 		},
 	};
 

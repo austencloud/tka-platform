@@ -109,3 +109,22 @@ export const STYLE_SIMILARITY_THRESHOLD = 0.08;
 export const STYLE_SCHOOL_MIN_MEMBERS = 3;
 export const STYLE_INCOMPATIBILITY_REFUSE_CHANCE = 0.1;
 export const STYLE_INCOMPATIBILITY_THRESHOLD = 0.3;
+
+// Effect circles
+export const EFFECT_AFFINITIES: import("./village-types").EffectAffinity[] = ["fire", "led", "charcoal", "trails", "pure"];
+export const CIRCLE_RADIUS = 4;
+export const CIRCLE_MIN_MEMBERS = 3;
+export const AFFINITY_TRANSFER_STRENGTH = 0.6;
+export const AFFINITY_EXPOSURE_THRESHOLD = 5;
+
+export const CIRCLE_COLORS: Record<import("./village-types").EffectAffinity, string> = {
+	fire: "#f97316",
+	led: "#3b82f6",
+	charcoal: "#6b7280",
+	trails: "#a855f7",
+	pure: "#f8fafc",
+};
+
+// Seasons
+export const SEASON_DURATION = 300;
+export const SEASON_CYCLE: import("./village-types").Season[] = ["normal", "festival", "normal", "winter", "normal", "migration"];

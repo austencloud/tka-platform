@@ -124,6 +124,26 @@ export interface DroppedProp {
 	droppedAtTick: number;
 }
 
+export type EffectAffinity = "fire" | "led" | "charcoal" | "trails" | "pure";
+
+export interface EffectComponent {
+	affinity: EffectAffinity;
+	affinityStrength: number;
+	exposureHistory: Map<EffectAffinity, number>;
+}
+
+export interface EffectCircle {
+	id: string;
+	affinity: EffectAffinity;
+	centerX: number;
+	centerZ: number;
+	radius: number;
+	memberIds: Set<string>;
+	formedAtTick: number;
+}
+
+export type Season = "normal" | "festival" | "winter" | "migration";
+
 export interface VillageEntity {
 	id: string;
 	identity: IdentityComponent;
@@ -133,6 +153,7 @@ export interface VillageEntity {
 	social: SocialComponent;
 	transform: VillageTransformComponent;
 	prop: PropComponent;
+	effect: EffectComponent;
 }
 
 export interface VillageEventMap {
@@ -167,6 +188,9 @@ export interface VillageEventMap {
 	"prop:pickedUp": (entity: VillageEntity, artifact: PropArtifact) => void;
 	"prop:broken": (entity: VillageEntity, artifact: PropArtifact) => void;
 	"prop:crafted": (maker: VillageEntity, artifact: PropArtifact) => void;
+	"circle:formed": (circle: EffectCircle) => void;
+	"circle:dissolved": (circleId: string) => void;
+	"season:changed": (season: Season) => void;
 }
 
 export interface StyleSchool {
