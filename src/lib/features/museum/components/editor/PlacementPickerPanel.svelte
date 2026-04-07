@@ -119,7 +119,6 @@
 	{#if furniture.length > 0}
 		<div class="picker-category">Floor Objects</div>
 		<div class="picker-grid">
-			{@const fixtureCount = fixtures.length}
 			{#each furniture as def, index (def.id)}
 				<button
 					class="picker-item"
@@ -127,8 +126,8 @@
 					onclick={() => handleClick(def)}
 					title={def.label}
 				>
-					{#if fixtureCount + index < 9}
-						<span class="key-hint">{fixtureCount + index + 1}</span>
+					{#if fixtures.length + index < 9}
+						<span class="key-hint">{fixtures.length + index + 1}</span>
 					{/if}
 					<span class="item-icon">{iconForDef(def)}</span>
 					<span class="item-label">{def.label}</span>
