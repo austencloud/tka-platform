@@ -72,6 +72,22 @@
   const isOpen = $derived(adminToolbarState.isOpen);
   const isSearchOpen = $derived(adminToolbarState.isSearchOpen);
 
+  // Derived - Role switching
+  const currentRole = $derived(featureFlagService.userRole);
+  const effectiveRole = $derived(featureFlagService.effectiveRole);
+
+  function switchRole(role: UserRole) {
+    // If clicking the already-active override, clear it (return to real role)
+    if (featureFlagService.debugRoleOverride === role) {
+      featureFlagService.setDebugRoleOverride(null);
+    } else if (role === currentRole) {
+      // Clicking your actual role clears any override
+      featureFlagService.setDebugRoleOverride(null);
+    } else {
+      featureFlagService.setDebugRoleOverride(role);
+    }
+  }
+
   // Derived - Preview state
   const isUserPreview = $derived(userPreviewState.isActive);
   const previewProfile = $derived(userPreviewState.data.profile);
@@ -430,6 +446,9 @@
     {isClearingThumbnailCache}
     onShowPwaBanner={showPwaMigrationBanner}
     onClose={handleClose}
+    {currentRole}
+    {effectiveRole}
+    onSwitchRole={switchRole}
   />
 {/if}
 
