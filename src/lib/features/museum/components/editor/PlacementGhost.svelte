@@ -41,8 +41,13 @@
   const { def, onPlace }: Props = $props();
 
   // ── Threlte context ──
+  // useThrelte() may return raw objects or CurrentWritable wrappers depending
+  // on version. Use the ?.current ?? fallback pattern the codebase uses elsewhere.
 
-  const { scene, camera, renderer } = useThrelte();
+  const threlteCtx = useThrelte();
+  function getScene() { return (threlteCtx as any).scene?.current ?? (threlteCtx as any).scene; }
+  function getCamera() { return (threlteCtx as any).camera?.current ?? (threlteCtx as any).camera; }
+  function getRenderer() { return (threlteCtx as any).renderer?.current ?? (threlteCtx as any).renderer; }
 
   // ── Ghost state ──
 
@@ -51,6 +56,7 @@
   let ghostZ = $state(0);
   let ghostQuat: [number, number, number, number] = $state([0, 0, 0, 1]);
   let valid = $state(false);
+  let visible = $state(false);
   let ghostMesh: Object3D | null = null;
 
   // ── Reusable Three.js objects (avoid per-frame allocation) ──
@@ -156,10 +162,11 @@
   // ── Wall facing direction string ──
 
   function wallFacingFromNormal(n: Vector3): string {
+    // Return Direction-compatible values matching museum-grid-types
     const ax = Math.abs(n.x);
     const az = Math.abs(n.z);
-    if (ax > az) return n.x > 0 ? "+x" : "-x";
-    return n.z > 0 ? "+z" : "-z";
+    if (ax > az) return n.x > 0 ? "east" : "west";
+    return n.z > 0 ? "south" : "north";
   }
 
   // ── Stored hit data for click handler ──
@@ -170,24 +177,30 @@
   // ── Event handlers ──
 
   function onPointerMove(event: PointerEvent): void {
-    const domElement = renderer.current.domElement;
+    const ren = getRenderer();
+    if (!ren?.domElement) return;
+    const domElement = ren.domElement;
     const rect = domElement.getBoundingClientRect();
     pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
     pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
-    const cam = camera.current;
-    if (!cam) return;
+    const cam = getCamera();
+    const scn = getScene();
+    if (!cam || !scn) return;
 
     raycaster.setFromCamera(pointer, cam);
-    const intersections = raycaster.intersectObjects(scene.current.children, true);
+    const intersections = raycaster.intersectObjects(scn.children, true);
     const hit = filterIntersections(intersections);
 
     if (!hit || !hit.face) {
       valid = false;
+      visible = false;
       museum3dEditorState.setGhostValid(false);
       ghostMaterial.color.copy(COLOR_INVALID);
       return;
     }
+
+    visible = true;
 
     // Transform face normal to world space
     hitNormal.copy(hit.face.normal);
@@ -260,17 +273,22 @@
 
   // ── Lifecycle: register and clean up DOM event listeners ──
 
+  let domEl: HTMLCanvasElement | null = null;
+
   onMount(() => {
-    const domElement = renderer.current.domElement;
-    domElement.addEventListener("pointermove", onPointerMove);
-    domElement.addEventListener("pointerdown", onPointerDown);
+    const ren = getRenderer();
+    domEl = ren?.domElement ?? null;
+    if (!domEl) return;
+    domEl.addEventListener("pointermove", onPointerMove);
+    domEl.addEventListener("pointerdown", onPointerDown);
     window.addEventListener("keydown", onKeyDown);
   });
 
   onDestroy(() => {
-    const domElement = renderer.current.domElement;
-    domElement.removeEventListener("pointermove", onPointerMove);
-    domElement.removeEventListener("pointerdown", onPointerDown);
+    if (domEl) {
+      domEl.removeEventListener("pointermove", onPointerMove);
+      domEl.removeEventListener("pointerdown", onPointerDown);
+    }
     window.removeEventListener("keydown", onKeyDown);
     ghostMaterial.dispose();
     ghostGeometry.dispose();
@@ -288,6 +306,7 @@
   }
 </script>
 
+{#if visible}
 <T.Mesh
   oncreate={onGhostCreate}
   geometry={ghostGeometry}
@@ -296,3 +315,4 @@
   quaternion={ghostQuat}
   scale={[def.scale, def.scale, def.scale]}
 />
+{/if}
