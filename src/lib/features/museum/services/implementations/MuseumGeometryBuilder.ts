@@ -14,6 +14,7 @@ import { parseTileKey, tileKey } from "../../domain/museum-grid-types";
 import type { PlaqueContent, PlaqueSize } from "../contracts/IPlaqueTextureGenerator";
 import { MANUAL_PLACEMENTS } from '../../data/museum-manual-placements';
 import { getPlaceableObject } from '../../domain/placeable-object-registry';
+import type { BatchTransfer } from "../../workers/geometry-worker-protocol";
 
 // ── Constants ──
 
@@ -942,6 +943,68 @@ export async function buildMuseumGeometry(
     roomLights,
   };
 } */
+
+/**
+ * Reconstruct a MuseumGeometryDryRun from worker-transferred Float32Array batches.
+ * This lets the main thread feed worker results into the existing buildRoomChunk().
+ */
+export function dryRunFromWorkerTransfer(
+  floorBatches: BatchTransfer[],
+  wallBatches: BatchTransfer[],
+  pedestalPositions: Float32Array,
+  signPositions: Float32Array,
+  totalFloorInstances: number,
+  totalWallInstances: number,
+): MuseumGeometryDryRun {
+  const floorBuckets = new Map<string, TileBucket>();
+  for (const batch of floorBatches) {
+    const positions: { x: number; z: number }[] = [];
+    for (let i = 0; i < batch.positions.length; i += 2) {
+      positions.push({ x: batch.positions[i]!, z: batch.positions[i + 1]! });
+    }
+    floorBuckets.set(batch.color, {
+      positions,
+      color: batch.color,
+      floorMaterial: batch.floorMaterial as FloorMaterial | undefined,
+    });
+  }
+
+  const wallBuckets = new Map<string, TileBucket>();
+  for (const batch of wallBatches) {
+    const positions: { x: number; z: number }[] = [];
+    for (let i = 0; i < batch.positions.length; i += 2) {
+      positions.push({ x: batch.positions[i]!, z: batch.positions[i + 1]! });
+    }
+    wallBuckets.set(batch.color, {
+      positions,
+      color: batch.color,
+      wingTheme: batch.wingTheme as WingTheme | undefined,
+    });
+  }
+
+  const pedPositions: { x: number; z: number }[] = [];
+  for (let i = 0; i < pedestalPositions.length; i += 2) {
+    pedPositions.push({ x: pedestalPositions[i]!, z: pedestalPositions[i + 1]! });
+  }
+
+  const sgnPositions: { x: number; z: number }[] = [];
+  for (let i = 0; i < signPositions.length; i += 2) {
+    sgnPositions.push({ x: signPositions[i]!, z: signPositions[i + 1]! });
+  }
+
+  return {
+    floorBuckets,
+    wallBuckets,
+    plaquePlacements: [], // Plaques come from the descriptor, not the worker
+    performerPositions: [],
+    pedestalPositions: pedPositions,
+    signPositions: sgnPositions,
+    torchPositions: [], // Torches come from the descriptor, not the worker
+    totalFloorInstances,
+    totalWallInstances,
+    totalTiles: totalFloorInstances + totalWallInstances,
+  };
+}
 
 // Re-export constants for Museum3DScene
 export { TILE_SIZE, WALL_HEIGHT, TILE_TYPE_COLORS, WING_WALL_COLORS, FLOOR_COLORS };
