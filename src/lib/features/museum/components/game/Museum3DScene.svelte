@@ -1427,6 +1427,9 @@
     // Determine which room the player is in
     const detectedRoomId = streamingManager.getRoomAtTile(playerTX, playerTZ, grid.wings);
     currentPlayerRoomId = detectedRoomId;
+    if (detectedRoomId === "collaboration") {
+      console.log("[Museum3D] Player in collaboration room — showVillageEmbed:", true);
+    }
 
     // Skip if player hasn't moved to a new room
     if (detectedRoomId === lastStreamingRoomId) return;
