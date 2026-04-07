@@ -206,6 +206,7 @@
   }
 
   function handlePlace(worldX: number, worldZ: number, yaw: number, wallFacing: string | null): void {
+    const t0 = performance.now();
     const def = museum3dEditorState.placementDef;
     if (!def) return;
 
@@ -226,7 +227,10 @@
       yaw,
     };
 
+    const t1 = performance.now();
+    // Fire-and-forget — don't await the file write
     placementPersister.save(roomId, placement);
+    const t2 = performance.now();
 
     // Instantly add fixture to live scene so it renders without waiting for HMR
     if (def.category === 'fixture') {
@@ -247,7 +251,20 @@
         wallOffsetZ,
         wingTheme: (wing?.theme ?? 'cave') as import("../../domain/museum-grid-types").WingTheme,
       };
+      const t3 = performance.now();
       manualTorches = [...manualTorches, newTorch];
+      const t4 = performance.now();
+      console.log(`[Placement] prep=${(t1-t0).toFixed(1)}ms save=${(t2-t1).toFixed(1)}ms build=${(t3-t2).toFixed(1)}ms assign=${(t4-t3).toFixed(1)}ms total=${(t4-t0).toFixed(1)}ms`);
+
+      // Track when the torch actually renders
+      requestAnimationFrame(() => {
+        const t5 = performance.now();
+        console.log(`[Placement] first-frame=${(t5-t0).toFixed(1)}ms after click`);
+        requestAnimationFrame(() => {
+          const t6 = performance.now();
+          console.log(`[Placement] second-frame=${(t6-t0).toFixed(1)}ms after click`);
+        });
+      });
     }
   }
 

@@ -118,8 +118,11 @@
     return template.clone();
   }
 
+  const _torchMountTime = performance.now();
   loadCachedModel()
     .then((model) => {
+      const _loadDone = performance.now();
+      console.log(`[Torch3D] model load=${(_loadDone - _torchMountTime).toFixed(1)}ms (${config.modelPath})`);
       model.position.set(tx, fixtureY, tz);
       gltfModel = model;
     })
