@@ -231,6 +231,7 @@
   }
 
   function handlePlace(worldX: number, worldZ: number, yaw: number, wallFacing: string | null): void {
+    const T0 = performance.now();
     const def = museum3dEditorState.placementDef;
     if (!def) return;
 
@@ -252,8 +253,10 @@
       yaw,
     };
 
+    const T1 = performance.now();
     // Persist (fire-and-forget)
     placementPersister.save(roomId, placement);
+    const T2 = performance.now();
 
     // Instantly add to scene imperatively
     if (def.category === 'fixture') {
@@ -267,6 +270,7 @@
       const scn = getSceneObj();
       if (scn) {
         const wingTheme = (def.wingTheme ?? wing?.theme ?? 'cave') as import("../../domain/museum-grid-types").WingTheme;
+        const T3 = performance.now();
         addTorchToScene(
           scn,
           tileX * TILE_SIZE, tileY * TILE_SIZE,
@@ -274,6 +278,14 @@
           wingTheme,
           placementId,
         );
+        const T4 = performance.now();
+        console.log(`[Place] prep=${(T1-T0).toFixed(1)}ms save=${(T2-T1).toFixed(1)}ms addToScene=${(T4-T3).toFixed(1)}ms total=${(T4-T0).toFixed(1)}ms`);
+        requestAnimationFrame(() => {
+          console.log(`[Place] first-rAF=${(performance.now()-T0).toFixed(1)}ms`);
+          requestAnimationFrame(() => {
+            console.log(`[Place] second-rAF=${(performance.now()-T0).toFixed(1)}ms`);
+          });
+        });
 
         // Pulse effect — golden ring that expands and fades
         const tx = tileX * TILE_SIZE + wallOffsetX;
