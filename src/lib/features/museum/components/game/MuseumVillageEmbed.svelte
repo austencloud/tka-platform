@@ -46,6 +46,24 @@
 	const villageState = manager?.villageState ?? null;
 	const visualState = manager?.visualState ?? null;
 
+	// Progressive avatar mounting: mount one avatar every ~2 seconds to spread
+	// out the GLTF parsing cost. The actual freeze is from GLTFLoader.parse(),
+	// not from the network (models are preloaded). Mounting all 8 at once causes
+	// 8 concurrent parses = 2-3 second freeze. Mounting one at a time = 8 small
+	// hitches spread across 16 seconds, each barely noticeable.
+	let mountedAvatarCount = $state(0);
+	const MOUNT_INTERVAL_MS = 2000; // 2 seconds between each avatar mount
+
+	if (manager) {
+		// Stagger mounting: schedule one avatar every MOUNT_INTERVAL_MS
+		const totalAvatars = villageState?.avatarList.length ?? 0;
+		for (let i = 0; i < Math.max(totalAvatars, 10); i++) {
+			setTimeout(() => {
+				mountedAvatarCount = i + 1;
+			}, i * MOUNT_INTERVAL_MS);
+		}
+	}
+
 	// Per-frame sync (only when visible)
 	useTask(() => {
 		if (!villageState || !visualState) return;
@@ -54,7 +72,9 @@
 		visualState.tickDeathMarks(villageState.orchestrator.currentTick);
 	});
 
-	const avatars = $derived(villageState?.avatarList ?? []);
+	const allAvatars = $derived(villageState?.avatarList ?? []);
+	// Only expose the first N avatars for rendering
+	const avatars = $derived(allAvatars.slice(0, mountedAvatarCount));
 	const monuments = $derived(villageState?.orchestrator.monuments ?? []);
 	const activeJams = $derived(villageState?.orchestrator.activeJams ?? []);
 	const droppedProps = $derived(villageState?.orchestrator.droppedProps ?? []);
@@ -133,15 +153,15 @@
 		<VillageEffectCircle {circle} />
 	{/each}
 
-	<!-- Village avatars with LOD + staggered reveal -->
-	{#each avatars as renderState, i (renderState.entityId)}
+	<!-- Village avatars: progressively mounted one every 2s to avoid parse freeze -->
+	{#each avatars as renderState (renderState.entityId)}
 		{@const pos = renderState.instanceState.position}
 		{@const lod = getAvatarLOD(pos.x, pos.z)}
 		{#if lod !== "minimal"}
 			<VillageAvatar
 				{renderState}
 				schoolColor={getSchoolColor(renderState.entityId)}
-				loadFrames={60 + i * 90}
+				loadFrames={30}
 			/>
 		{/if}
 	{/each}
