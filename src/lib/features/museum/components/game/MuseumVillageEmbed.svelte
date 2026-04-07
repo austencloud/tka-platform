@@ -161,7 +161,7 @@
 			<VillageAvatar
 				{renderState}
 				schoolColor={getSchoolColor(renderState.entityId)}
-				loadFrames={30}
+				loadFrames={100}
 			/>
 		{/if}
 	{/each}
