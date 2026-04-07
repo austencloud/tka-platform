@@ -2,7 +2,7 @@
   /**
    * IndoorScene
    *
-   * Lightweight Threlte scene for enclosed indoor rooms. Wraps GalleryCanvas
+   * Lightweight Threlte scene for enclosed indoor rooms. Wraps WebGPUCanvas
    * (WebGPU support) and delegates physics, camera, input, and mesh rendering
    * to IndoorSceneContent (which has access to useThrelte() context).
    *
@@ -13,7 +13,7 @@
    */
 
   import { type Snippet } from "svelte";
-  import GalleryCanvas from "$lib/features/realm/destinations/gallery/components/GalleryCanvas.svelte";
+  import WebGPUCanvas from "$lib/shared/3d/rendering/WebGPUCanvas.svelte";
   import IndoorSceneContent from "./IndoorSceneContent.svelte";
   import type { SolvedRoom } from "./domain/room-types";
 
@@ -36,8 +36,8 @@
   }: Props = $props();
 </script>
 
-<GalleryCanvas renderingBackend="webgpu-auto" autoRender={true} toneMapping={undefined}>
+<WebGPUCanvas renderingBackend="webgpu-auto" autoRender={true} toneMapping={undefined}>
   <IndoorSceneContent {room} {eyeHeight} {moveSpeed} {gravity} {onPositionChange}>
     {@render children()}
   </IndoorSceneContent>
-</GalleryCanvas>
+</WebGPUCanvas>

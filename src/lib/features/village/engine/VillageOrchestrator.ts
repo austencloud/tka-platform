@@ -26,6 +26,7 @@ import { StyleDriftSystem } from "./systems/StyleDriftSystem";
 import { PropSystem } from "./systems/PropSystem";
 import { CircleSystem } from "./systems/CircleSystem";
 import { SeasonSystem } from "./systems/SeasonSystem";
+import { VillageDecisionEngine } from "./llm/VillageDecisionEngine";
 
 export class VillageOrchestrator implements VillageEventEmitter {
 	private world: World<VillageEntity>;
@@ -44,6 +45,7 @@ export class VillageOrchestrator implements VillageEventEmitter {
 	propSystem: PropSystem;
 	circleSystem: CircleSystem;
 	private seasonSys: SeasonSystem;
+	readonly decisionEngine: VillageDecisionEngine;
 	private lineageTracker: LineageTracker;
 	private personalityGenerator: PersonalityGenerator;
 
@@ -84,10 +86,28 @@ export class VillageOrchestrator implements VillageEventEmitter {
 		this.propSystem = new PropSystem(this);
 		this.circleSystem = new CircleSystem(this);
 		this.seasonSys = new SeasonSystem(config, this);
+		this.decisionEngine = new VillageDecisionEngine();
 
 		// Wire funeral system to death events
 		this.on("entity:died", (deceased) => {
 			this.funeralSystem.onDeath(deceased, this.world, this._currentTick);
+			this.decisionEngine.eventLog.addEvent(deceased.id, "Passed away");
+			// Notify nearby entities about the death
+			for (const e of this.world.entities) {
+				if (e.id === deceased.id) continue;
+				const dx = e.transform.x - deceased.transform.x;
+				const dz = e.transform.z - deceased.transform.z;
+				if (Math.sqrt(dx * dx + dz * dz) < 6) {
+					this.decisionEngine.eventLog.addEvent(e.id, `${deceased.identity.name} died nearby`);
+				}
+			}
+		});
+		this.on("teaching:completed", (teacher, learner, seqId) => {
+			this.decisionEngine.eventLog.addEvent(teacher.id, `Taught ${learner.identity.name}`);
+			this.decisionEngine.eventLog.addEvent(learner.id, `Learned from ${teacher.identity.name}`);
+		});
+		this.on("sequence:invented", (inventor) => {
+			this.decisionEngine.eventLog.addEvent(inventor.id, "Invented a new sequence");
 		});
 	}
 

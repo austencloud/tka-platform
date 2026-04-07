@@ -307,6 +307,7 @@
       width 300ms cubic-bezier(0.4, 0, 0.2, 1) !important;
     top: 0 !important;
     height: 100vh !important;
+    height: 100dvh !important;
     background: color-mix(in srgb, var(--theme-panel-bg) 70%, transparent) !important;
     backdrop-filter: blur(20px) !important;
     border: none !important;
@@ -359,7 +360,9 @@
   /* Mobile full-height bottom sheet */
   :global(.sequence-panel-drawer.drawer-content[data-placement="bottom"]) {
     max-height: 100vh !important;
+    max-height: 100dvh !important;
     height: 100vh !important;
+    height: 100dvh !important;
     border-top-left-radius: 16px !important;
     border-top-right-radius: 16px !important;
   }
@@ -368,7 +371,9 @@
   :global(.sequence-panel-drawer.with-nav-offset.drawer-content[data-placement="bottom"]) {
     bottom: var(--primary-nav-height, 64px) !important;
     max-height: calc(100vh - var(--primary-nav-height, 64px)) !important;
+    max-height: calc(100dvh - var(--primary-nav-height, 64px)) !important;
     height: calc(100vh - var(--primary-nav-height, 64px)) !important;
+    height: calc(100dvh - var(--primary-nav-height, 64px)) !important;
   }
 
   /* Mobile: Offset backdrop for nav clicks */

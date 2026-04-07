@@ -54,7 +54,6 @@ import type { ModerationContainer } from "./containers/moderation-container";
 import type { LibraryContainer } from "./containers/library-container";
 import type { QRContainer } from "./containers/qr-container";
 import type { Animation3DContainer } from "./containers/3d-container";
-import type { GalleryContainer } from "./containers/gallery-container";
 import type { DelightContainer } from "./containers/delight-container";
 import type { PoiLabContainer } from "./containers/poi-lab-container";
 import type { LandingPreviewContainer } from "./containers/landing-preview-container";
@@ -130,7 +129,6 @@ type ModerationItems = ItemsOf<ModerationContainer>;
 type LibraryItems = ItemsOf<LibraryContainer>;
 type QRItems = ItemsOf<QRContainer>;
 type Animation3DItems = ItemsOf<Animation3DContainer>;
-type GalleryItems = ItemsOf<GalleryContainer>;
 type DelightItems = ItemsOf<DelightContainer>;
 type PoiLabItems = ItemsOf<PoiLabContainer>;
 type LandingPreviewItems = ItemsOf<LandingPreviewContainer>;
@@ -208,7 +206,6 @@ export type IAppContainerItems =
 	SequenceMandalaItems &
 	QRItems &
 	Animation3DItems &
-	GalleryItems &
 	BackgroundBuilderItems &
 	DelightItems &
 	PoiLabItems &
