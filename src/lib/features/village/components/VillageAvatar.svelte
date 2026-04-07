@@ -20,9 +20,11 @@
 		renderState: AvatarRenderState;
 		isSelected?: boolean;
 		schoolColor?: string | null;
+		/** Frames to wait for GLTF load before showing avatar. Default 180. */
+		loadFrames?: number;
 	}
 
-	const { renderState, isSelected = false, schoolColor = null }: Props = $props();
+	const { renderState, isSelected = false, schoolColor = null, loadFrames = 180 }: Props = $props();
 
 	const STAGE_LIFT = $derived(-userProportionsState.groundY);
 	const avatarModelId = $derived(
@@ -58,8 +60,7 @@
 	let frameCount = 0;
 	let showAvatar = $state(false);
 	let labelOpacity = $state(0);
-	// 180 frames @ 60fps = 3 seconds — generous for local 50-100MB GLBs
-	const LOAD_FRAMES = 180;
+	const LOAD_FRAMES = loadFrames;
 
 	useTask(() => {
 		const inst = renderState.instanceState;
