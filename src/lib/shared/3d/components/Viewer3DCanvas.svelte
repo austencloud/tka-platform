@@ -20,11 +20,10 @@
   import Viewer3DCanvasRef from "./Viewer3DCanvasRef.svelte";
   import Viewer3DViewPresets from "./Viewer3DViewPresets.svelte";
   import Viewer3DGridPopover from "./Viewer3DGridPopover.svelte";
-  import PlaneModeToggle from "./controls/PlaneModeToggle.svelte";
+  import Viewer3DGearPopover from "./Viewer3DGearPopover.svelte";
   import BeatPlaneStrip from "./controls/BeatPlaneStrip.svelte";
   import Viewer3DContextMenuHost from "./context-menu/Viewer3DContextMenuHost.svelte";
   import { getViewer3DContext } from "../context/viewer-3d-context";
-  import { PlaneMode } from "../domain/enums/PlaneMode";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { CameraStateSnapshot } from "../domain/types/CameraStateSnapshot";
 
@@ -35,11 +34,13 @@
     bluePropType?: string | null;
     redPropType?: string | null;
     hideOverlays?: boolean;
+    fullScreen?: boolean;
+    onExitFullScreen?: () => void;
     onRendererReady?: (renderer: unknown) => void;
     onCameraStateChange?: (state: CameraStateSnapshot) => void;
   }
 
-  let { sequenceData, currentStep, isPlaying, hideOverlays = false, onCameraStateChange }: Props =
+  let { sequenceData, currentStep, isPlaying, hideOverlays = false, fullScreen = false, onExitFullScreen, onCameraStateChange }: Props =
     $props();
 
   const viewer3DState = getViewer3DContext();
@@ -52,22 +53,6 @@
     contextMenuHost?.openContextMenu(e.clientX, e.clientY);
   }
 
-  function handlePlaneModeChange(mode: PlaneMode) {
-    avatarState?.setPlaneMode(mode);
-
-    // Auto-snap to Side view when entering dual-wheel mode
-    if (mode === PlaneMode.DUAL_WHEEL) {
-      const D = 2.4;
-      const Y = 1.59;
-      const GZ = -0.3;
-      // Stage right = +X, looking at the performer's side profile
-      viewer3DState.setActiveCameraPreset("side");
-      viewer3DState.snapCameraTo(
-        { x: D, y: Y, z: GZ },
-        { x: 0, y: 1.55, z: GZ }
-      );
-    }
-  }
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -86,36 +71,27 @@
       />
     </Canvas>
     {#if !hideOverlays}
-      <div class="top-controls">
-        <Viewer3DGridPopover {sequenceData} />
-        {#if avatarState}
-          <PlaneModeToggle
-            mode={avatarState.planeMode}
-            bluePlane={avatarState.currentBeatBluePlane}
-            redPlane={avatarState.currentBeatRedPlane}
-            sequenceBluePlane={avatarState.customBluePlane}
-            sequenceRedPlane={avatarState.customRedPlane}
-            currentBeatIndex={avatarState.currentStepIndex}
-            totalBeats={avatarState.totalSteps}
-            hasBeatOverrides={avatarState.hasBeatOverrides}
-            beatEditMode={avatarState.beatEditMode}
-            onModeChange={handlePlaneModeChange}
-            onHandPlaneChange={(hand, plane) => avatarState.setBeatHandPlane(avatarState.currentStepIndex, hand, plane)}
-            onSequenceHandPlaneChange={(hand, plane) => avatarState.setHandPlane(hand, plane)}
-            onBeatEditModeChange={(enabled) => avatarState.setBeatEditMode(enabled)}
-          />
-          {#if avatarState.planeMode === 'dual-wheel'}
-            <button
-              class="rotation-variant-btn"
-              onclick={() => avatarState.cycleRotationVariant()}
-              title="Cycle rotation axis variant"
-            >
-              {avatarState.rotationVariantLabel}
-            </button>
-          {/if}
-        {/if}
-      </div>
-      <Viewer3DViewPresets />
+      {#if fullScreen}
+        <!-- Full-screen: show controls directly on viewport -->
+        <div class="top-controls">
+          <Viewer3DGridPopover {sequenceData} />
+          <Viewer3DViewPresets />
+        </div>
+        <button
+          class="back-button"
+          onclick={() => onExitFullScreen?.()}
+          aria-label="Exit full-screen"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+          </svg>
+        </button>
+      {:else}
+        <!-- Half-screen: gear icon only -->
+        <div class="top-controls">
+          <Viewer3DGearPopover />
+        </div>
+      {/if}
       {#if avatarState && avatarState.totalSteps > 1 && avatarState.beatEditMode}
         <div class="beat-strip-container">
           <BeatPlaneStrip
@@ -151,20 +127,28 @@
     align-items: flex-start;
   }
 
-  .rotation-variant-btn {
-    padding: 7px 12px;
-    border-radius: 8px;
+  .back-button {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    z-index: 10;
+    width: var(--min-touch-target-compact, 32px);
+    height: var(--min-touch-target-compact, 32px);
+    border-radius: 7px;
     background: rgba(0, 0, 0, 0.5);
-    border: 1px solid rgba(245, 158, 11, 0.3);
-    color: #f59e0b;
-    font-size: var(--font-size-compact, 12px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255, 255, 255, 0.7);
     cursor: pointer;
     backdrop-filter: blur(8px);
     transition: all 0.2s ease;
-    white-space: nowrap;
   }
-  .rotation-variant-btn:hover {
-    background: rgba(245, 158, 11, 0.15);
+
+  .back-button:hover {
+    background: rgba(0, 0, 0, 0.7);
+    color: rgba(255, 255, 255, 0.95);
   }
 
   .beat-strip-container {
