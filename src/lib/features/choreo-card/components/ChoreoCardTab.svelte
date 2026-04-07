@@ -589,6 +589,7 @@
           {showTKA}
           {showWord}
           {includeStartPosition}
+          vtgFamilyId={selectedVtgFamily}
           onBackToCollections={handleBackToCollections}
           onSelectDeck={handleSelectDeck}
           onSelectSequence={handleSelectSequence}

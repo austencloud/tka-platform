@@ -3,7 +3,7 @@ import {
 } from "./dimensions.js";
 
 /** System-generated author identifiers — suppress creator name for these */
-const SYSTEM_AUTHORS = new Set(["TKA Enumerator"]);
+const SYSTEM_AUTHORS = new Set(["TKA Enumerator", "TKA System", "TKA Gallery"]);
 
 export interface FooterOptions {
   canvasWidth: number;
