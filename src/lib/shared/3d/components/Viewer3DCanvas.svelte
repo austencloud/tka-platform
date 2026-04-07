@@ -88,7 +88,9 @@
     {#if !hideOverlays}
       {#if fullScreen}
         <!-- Full-screen: back button + controls in one header row -->
-        <div class="fullscreen-header">
+        <!-- stopPropagation prevents clicks on controls from triggering tap-to-collapse -->
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
+        <div class="fullscreen-header" onclick={(e) => e.stopPropagation()} onpointerdown={(e) => e.stopPropagation()}>
           <button
             class="back-button"
             onclick={() => onExitFullScreen?.()}
@@ -106,7 +108,8 @@
         </div>
       {:else}
         <!-- Half-screen: gear icon only -->
-        <div class="top-controls">
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
+        <div class="top-controls" onclick={(e) => e.stopPropagation()} onpointerdown={(e) => e.stopPropagation()}>
           <Viewer3DGearPopover />
         </div>
       {/if}
