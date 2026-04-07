@@ -321,20 +321,27 @@ export function bucketMuseumTiles(grid: MuseumGrid): MuseumGeometryDryRun {
         }
         break;
       }
-      case "performer-station":
-        addToFloorBucket(FLOOR_COLORS.stone, worldX, worldZ);
+      case "performer-station": {
+        const mat = tile.material ?? "stone";
+        addToFloorBucket(FLOOR_COLORS[mat], worldX, worldZ, mat);
         performerPositions.push({ x: worldX, z: worldZ });
         break;
-      case "pedestal":
-        addToFloorBucket(FLOOR_COLORS.stone, worldX, worldZ);
+      }
+      case "pedestal": {
+        const mat = tile.material ?? "stone";
+        addToFloorBucket(FLOOR_COLORS[mat], worldX, worldZ, mat);
         pedestalPositions.push({ x: worldX, z: worldZ });
         break;
-      case "sign":
-        addToFloorBucket(FLOOR_COLORS.stone, worldX, worldZ);
+      }
+      case "sign": {
+        const mat = tile.material ?? "stone";
+        addToFloorBucket(FLOOR_COLORS[mat], worldX, worldZ, mat);
         signPositions.push({ x: worldX, z: worldZ });
         break;
+      }
       case "torch": {
-        addToFloorBucket(FLOOR_COLORS.stone, worldX, worldZ);
+        const mat = tile.material ?? "stone";
+        addToFloorBucket(FLOOR_COLORS[mat], worldX, worldZ, mat);
         let wallOffsetX = 0;
         let wallOffsetZ = 0;
         const neighbors = [
@@ -471,7 +478,8 @@ export interface RoomChunk {
   ceilingMesh: BatchedMeshData | null;
   pedestalMesh: BatchedMesh | null;
   signMesh: BatchedMesh | null;
-  performerMesh: BatchedMesh | null;
+  /** @deprecated No longer rendered — MuseumPerformerStation3D owns the visual platform */
+  performerMesh: null;
   torchPositions: TorchPosition[];
   plaquePlacements: PlaquePlacement[];
   performerPositions: { x: number; z: number }[];
@@ -486,20 +494,18 @@ let sharedFloorGeo: BoxGeometry | null = null;
 let sharedWallGeo: BoxGeometry | null = null;
 let sharedPedestalGeo: BoxGeometry | null = null;
 let sharedSignGeo: BoxGeometry | null = null;
-let sharedPerformerGeo: CylinderGeometry | null = null;
+// Performer geo removed — MuseumPerformerStation3D renders its own platform
 
 function getSharedGeometries() {
   if (!sharedFloorGeo) sharedFloorGeo = new BoxGeometry(TILE_SIZE - 0.02, 0.05, TILE_SIZE - 0.02);
   if (!sharedWallGeo) sharedWallGeo = new BoxGeometry(TILE_SIZE, WALL_HEIGHT, TILE_SIZE);
   if (!sharedPedestalGeo) sharedPedestalGeo = new BoxGeometry(TILE_SIZE * 0.7, 0.5, TILE_SIZE * 0.7);
   if (!sharedSignGeo) sharedSignGeo = new BoxGeometry(TILE_SIZE * 0.6, 0.4, 0.06);
-  if (!sharedPerformerGeo) sharedPerformerGeo = new CylinderGeometry(TILE_SIZE * 0.2, TILE_SIZE * 0.2, 0.5, 8);
   return {
     floorGeo: sharedFloorGeo,
     wallGeo: sharedWallGeo,
     pedestalGeo: sharedPedestalGeo,
     signGeo: sharedSignGeo,
-    performerGeo: sharedPerformerGeo,
   };
 }
 
@@ -514,7 +520,7 @@ export async function buildRoomChunk(
   wingId: string,
   wing: { bounds: { x: number; y: number; width: number; height: number }; theme: WingTheme } | null,
 ): Promise<RoomChunk> {
-  const { floorGeo, wallGeo, pedestalGeo, signGeo, performerGeo } = getSharedGeometries();
+  const { floorGeo, wallGeo, pedestalGeo, signGeo } = getSharedGeometries();
   const dummy = new Object3D();
 
   /** Create a BatchedMesh from a geometry + positions array */
@@ -605,11 +611,7 @@ export async function buildRoomChunk(
     signMesh = buildBatch(signGeo, mat, buckets.signPositions, 0.5).mesh;
   }
 
-  let performerMesh: BatchedMesh | null = null;
-  if (buckets.performerPositions.length > 0) {
-    const mat = new MeshStandardMaterial({ color: TILE_TYPE_COLORS["performer-station"]! });
-    performerMesh = buildBatch(performerGeo, mat, buckets.performerPositions, 0.25).mesh;
-  }
+  // Performer mesh intentionally skipped — MuseumPerformerStation3D renders its own platform
 
   // Exhibit light positions (from plaques in this chunk)
   const exhibitLightPositions: LightPosition[] = buckets.plaquePlacements.map((p, i) => ({
@@ -719,7 +721,7 @@ export async function buildRoomChunk(
   return {
     wingId,
     floorMeshes, wallMeshes, ceilingMesh,
-    pedestalMesh, signMesh, performerMesh,
+    pedestalMesh, signMesh, performerMesh: null,
     torchPositions,
     plaquePlacements: buckets.plaquePlacements,
     performerPositions: buckets.performerPositions,
@@ -735,7 +737,7 @@ export function disposeRoomChunk(chunk: RoomChunk): void {
   if (chunk.ceilingMesh) chunk.ceilingMesh.mesh.dispose();
   if (chunk.pedestalMesh) chunk.pedestalMesh.dispose();
   if (chunk.signMesh) chunk.signMesh.dispose();
-  if (chunk.performerMesh) chunk.performerMesh.dispose();
+  // performerMesh is always null — platform rendered by MuseumPerformerStation3D
 }
 
 /* Legacy buildMuseumGeometry removed — replaced by buildRoomChunk with BatchedMesh.
@@ -830,22 +832,10 @@ export async function buildMuseumGeometry(
   onProgress?.("Ceiling geometry");
   await yieldToMain();
 
-  // ── Phase 5: Pedestals, signs, performers ──
+  // ── Phase 5: Pedestals, signs ──
   const pedestalGeo = new BoxGeometry(TILE_SIZE * 0.7, 0.5, TILE_SIZE * 0.7);
   const signGeo = new BoxGeometry(TILE_SIZE * 0.6, 0.4, 0.06);
-  const performerGeo = new CylinderGeometry(TILE_SIZE * 0.2, TILE_SIZE * 0.2, 0.5, 8);
-
-  let performerMesh: InstancedMesh | null = null;
-  if (performerPositions.length > 0) {
-    const performerMat = new MeshStandardMaterial({ color: TILE_TYPE_COLORS["performer-station"]! });
-    performerMesh = new InstancedMesh(performerGeo, performerMat, performerPositions.length);
-    for (let i = 0; i < performerPositions.length; i++) {
-      dummy.position.set(performerPositions[i]!.x, 0.25, performerPositions[i]!.z);
-      dummy.updateMatrix();
-      performerMesh.setMatrixAt(i, dummy.matrix);
-    }
-    performerMesh.instanceMatrix.needsUpdate = true;
-  }
+  // Performer geo intentionally skipped — MuseumPerformerStation3D renders its own platform
 
   let pedestalMesh: InstancedMesh | null = null;
   if (pedestalPositions.length > 0) {
@@ -939,7 +929,7 @@ export async function buildMuseumGeometry(
     floorMeshes,
     wallMeshes,
     ceilingMesh,
-    performerMesh,
+    performerMesh: null,
     pedestalMesh,
     signMesh,
     plaquePlacements,

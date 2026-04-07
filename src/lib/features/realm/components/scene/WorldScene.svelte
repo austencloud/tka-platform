@@ -3,7 +3,7 @@
    * WorldScene
    *
    * Threlte-based scene for Infinite Worlds that enables full avatar parity
-   * with Stage and Gallery. Uses the same GalleryCanvas pattern for WebGPU support.
+   * with Stage and Gallery. Uses the same WebGPUCanvas pattern for WebGPU support.
    *
    * Architecture:
    * - Threlte Canvas with WebGPU (falls back to WebGL)
@@ -13,7 +13,7 @@
    * - Full Avatar3D, Staff3D, Grid3D support
    */
 
-  import GalleryCanvas from "$lib/features/realm/destinations/gallery/components/GalleryCanvas.svelte";
+  import WebGPUCanvas from "$lib/shared/3d/rendering/WebGPUCanvas.svelte";
   import WorldSceneContent from "./WorldSceneContent.svelte";
   import DebugPanelTabs from "../debug/DebugPanelTabs.svelte";
   import VirtualJoystick from "$lib/shared/components/touch/VirtualJoystick.svelte";
@@ -414,7 +414,7 @@
 </script>
 
 <div class="realm-world">
-  <GalleryCanvas
+  <WebGPUCanvas
     renderingBackend="webgpu-auto"
     autoRender={true}
     toneMapping={undefined}
@@ -458,7 +458,7 @@
       onModeChange={(mode) => (cameraMode = mode)}
       performerState={activePerformerState}
     />
-  </GalleryCanvas>
+  </WebGPUCanvas>
 
   <!-- UI Overlays (outside Threlte Canvas) -->
   {#if showTouchUI}

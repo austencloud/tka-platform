@@ -14,5 +14,10 @@ export interface ManualPlacement {
  * The geometry builder reads this at build time to merge with auto-placed objects.
  */
 export const MANUAL_PLACEMENTS: Record<string, ManualPlacement[]> = {
-  // Populated by editor — do not edit manually
+  "egyptian": [
+    { id: "egyptian-modern-fixture-1775532654513", objectDefId: "modern-fixture", tileX: 2, tileY: 12, wallFacing: "east", yaw: 1.5708 },
+    { id: "egyptian-modern-fixture-1775532655873", objectDefId: "modern-fixture", tileX: 13, tileY: 3, wallFacing: "south", yaw: 0.0000 },
+    { id: "egyptian-modern-fixture-1775532661166", objectDefId: "modern-fixture", tileX: 3, tileY: 5, wallFacing: "east", yaw: 1.5708 },
+    { id: "egyptian-modern-fixture-1775532667228", objectDefId: "modern-fixture", tileX: 15, tileY: 3, wallFacing: "south", yaw: 0.0000 },
+  ],
 };

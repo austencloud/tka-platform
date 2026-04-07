@@ -89,23 +89,7 @@ export const DESTINATIONS: Destination[] = [
 		component: () => import("../../../features/realm/destinations/stage/StageDestination.svelte"),
 		enabled: false, // Will be ported to Realm
 	},
-	{
-		id: "gallery",
-		name: "Gallery",
-		description:
-			"Browse sequences in a procedural museum with friends. Multiplayer social experience",
-		icon: "fa-building-columns",
-		color: "#06b6d4",
-		supportsMultiplayer: true,
-		supportsPhysics: true,
-		defaultCameraMode: CameraMode.FIRST_PERSON,
-		category: "social",
-		tags: ["museum", "multiplayer", "social", "exhibits"],
-		component: () =>
-			import("../../../features/realm/destinations/gallery/GalleryDestination.svelte"),
-		enabled: false, // Will be completely redone
-	},
-	{
+{
 		id: "hannons-camp",
 		name: "Hannon's Camp",
 		description:

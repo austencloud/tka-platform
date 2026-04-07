@@ -70,7 +70,6 @@ import { createPromoContainer } from "./containers/promo-container";
 import { createLibraryContainer } from "./containers/library-container";
 import { createQRContainer } from "./containers/qr-container";
 import { createAnimation3DContainer } from "./containers/3d-container";
-import { createGalleryContainer } from "./containers/gallery-container";
 import { createDelightContainer } from "./containers/delight-container";
 import { backgroundBuilderContainer } from "./containers/background-builder-container";
 import { createPoiLabContainer } from "./containers/poi-lab-container";
@@ -289,11 +288,6 @@ const animation3DContainer = typeof window !== 'undefined' ? createAnimation3DCo
   browseLoader: browseContainer.items.browseLoader,
 }) : null as any;
 
-// Gallery container needs libraryRepository
-const galleryContainer = typeof window !== 'undefined' ? createGalleryContainer(
-  libraryContainer.items.libraryRepository
-) : null as any;
-
 // Delight container needs hapticFeedback from core
 const delightContainer = typeof window !== 'undefined' ? createDelightContainer(
   coreContainer.items.hapticFeedback
@@ -433,7 +427,6 @@ function buildAppContainer(): any {
   c = c.add(sequenceMandalaContainer.items);
   c = c.add(qrContainer.items);
   c = c.add(animation3DContainer.items);
-  c = c.add(galleryContainer.items);
   c = c.add(backgroundBuilderContainer.items);
   c = c.add(delightContainer.items);
   c = c.add(poiLabContainer.items);

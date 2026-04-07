@@ -199,19 +199,7 @@
       }
     }
 
-    // Sync imperative performer mesh instances to match editor overrides.
-    // Uses performerMeshLookup (built at init) to find the right instance.
-    const dummy = new Object3D();
-    for (const performer of grid.performers) {
-      const override = allOverrides[`performer-station-${performer.id}`];
-      if (!override) continue;
-      const entry = performerMeshLookup.get(performer.id);
-      if (!entry) continue;
-      dummy.position.set(override.x, 0.25, override.z);
-      dummy.updateMatrix();
-      entry.chunk.performerMesh!.setMatrixAt(entry.instanceIdx, dummy.matrix);
-      entry.chunk.performerMesh!.instanceMatrix.needsUpdate = true;
-    }
+    // No batched performer mesh to sync — MuseumPerformerStation3D handles its own position
 
     // Bump version to trigger reactive re-reads of performer/exhibit positions
     overrideVersion++;
@@ -1085,9 +1073,7 @@
   // The overlay stays visible until all chunks are built + textures loaded.
   // This is ~300ms of JS work + GPU shader compilation (absorbed by overlay).
   const prebuiltChunks = new Map<string, RoomChunk>();
-  // Maps performer ID → { chunk, instanceIdx } for editor mesh updates.
-  // Built once after all chunks are created, before any overrides.
-  const performerMeshLookup = new Map<string, { chunk: RoomChunk; instanceIdx: number }>();
+  // performerMeshLookup removed — no batched performer mesh to update
   const spawnRoomId = streamingManager.getRoomAtTile(grid.spawn.x, grid.spawn.y, grid.wings);
 
   props.onBuildStage?.("Tile bucketing");
@@ -1112,42 +1098,6 @@
 
     // Build global proximity grids from ALL chunks (torches, lights, plaques)
     buildGlobalProximityGrids();
-
-    // Build performer mesh lookup: match each grid performer to its chunk instance
-    // by comparing initial world positions (before any editor overrides).
-    for (const performer of grid.performers) {
-      const perfWorldX = performer.tileX * TILE_SIZE;
-      const perfWorldZ = performer.tileY * TILE_SIZE;
-      for (const chunk of prebuiltChunks.values()) {
-        if (!chunk.performerMesh) continue;
-        for (let idx = 0; idx < chunk.performerPositions.length; idx++) {
-          const pos = chunk.performerPositions[idx]!;
-          if (Math.abs(pos.x - perfWorldX) < 0.3 && Math.abs(pos.z - perfWorldZ) < 0.3) {
-            performerMeshLookup.set(performer.id, { chunk, instanceIdx: idx });
-            break;
-          }
-        }
-        if (performerMeshLookup.has(performer.id)) break;
-      }
-    }
-
-    // Apply any persisted editor overrides to the performer meshes NOW
-    // (the $effect that runs at mount fires before chunks exist, so it
-    // can't update meshes — we catch up here after the lookup is built).
-    const persistedOverrides = museumEditorOverrides.getAll();
-    if (Object.keys(persistedOverrides).length > 0) {
-      const d = new Object3D();
-      for (const performer of grid.performers) {
-        const override = persistedOverrides[`performer-station-${performer.id}`];
-        if (!override) continue;
-        const entry = performerMeshLookup.get(performer.id);
-        if (!entry?.chunk.performerMesh) continue;
-        d.position.set(override.x, 0.25, override.z);
-        d.updateMatrix();
-        entry.chunk.performerMesh.setMatrixAt(entry.instanceIdx, d.matrix);
-        entry.chunk.performerMesh.instanceMatrix.needsUpdate = true;
-      }
-    }
 
     // ── Imperative scene setup: add ALL meshes directly to Three.js ──
     // No Svelte templates, no reactive arrays, no component mounting.
@@ -1192,10 +1142,7 @@
           sceneObj.add(chunk.signMesh);
           allSceneMeshes.push(chunk.signMesh);
         }
-        if (chunk.performerMesh) {
-          sceneObj.add(chunk.performerMesh);
-          allSceneMeshes.push(chunk.performerMesh);
-        }
+        // performerMesh removed — MuseumPerformerStation3D renders its own platform
       }
 
       // Add corridor geometry
@@ -1291,7 +1238,7 @@
     if (chunk.ceilingMesh) chunk.ceilingMesh.mesh.visible = visible && fpsActive;
     if (chunk.pedestalMesh) chunk.pedestalMesh.visible = visible;
     if (chunk.signMesh) chunk.signMesh.visible = visible;
-    if (chunk.performerMesh) chunk.performerMesh.visible = visible;
+    // performerMesh always null — platform rendered by MuseumPerformerStation3D
   }
 
   /** Show all room chunks — used in top-down mode and during flip animation */

@@ -333,6 +333,7 @@
     padding: 0;
     overflow-y: auto;
     max-height: calc(100vh - 80px);
+    max-height: calc(100dvh - 80px);
   }
 
   /* Letter sheet drawer */
@@ -343,6 +344,7 @@
       opacity 350ms cubic-bezier(0.32, 0.72, 0, 1) !important;
     top: 0 !important;
     height: 100vh !important;
+    height: 100dvh !important;
     background: var(--theme-panel-bg) !important;
     border: none !important;
     border-left: 1px solid var(--theme-stroke) !important;
@@ -365,6 +367,7 @@
       opacity 350ms cubic-bezier(0.32, 0.72, 0, 1) !important;
     top: 0 !important;
     height: 100vh !important;
+    height: 100dvh !important;
     background: var(--theme-panel-bg) !important;
     border: none !important;
     border-left: 1px solid var(--theme-stroke) !important;
@@ -387,6 +390,7 @@
       opacity 350ms cubic-bezier(0.32, 0.72, 0, 1) !important;
     top: 0 !important;
     height: 100vh !important;
+    height: 100dvh !important;
     background: var(--theme-panel-bg) !important;
     border: none !important;
     border-left: 1px solid var(--theme-stroke) !important;

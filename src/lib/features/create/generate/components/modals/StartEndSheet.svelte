@@ -357,6 +357,7 @@ End Position: Single select (for freeform mode only)
 
   .start-end-content.desktop-layout {
     height: 100vh;
+    height: 100dvh;
   }
 
   @keyframes gradientFlow {

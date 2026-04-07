@@ -247,7 +247,9 @@
     width: 100% !important;
     /* Default: full height on narrow mobile */
     height: 100vh !important;
+    height: 100dvh !important;
     max-height: 100vh !important;
+    max-height: 100dvh !important;
   }
 
   /* Widescreen devices (Z-Fold unfolded, tablets): content-sized drawer */
@@ -255,6 +257,7 @@
     :global(.module-switcher-drawer[data-placement="bottom"]) {
       height: auto !important;
       max-height: 85vh !important;
+      max-height: 85dvh !important;
       border-radius: var(--sheet-radius-large, 20px) var(--sheet-radius-large, 20px) 0 0;
     }
   }
@@ -264,6 +267,7 @@
     top: 0 !important;
     bottom: 0 !important;
     height: 100vh !important;
+    height: 100dvh !important;
     width: 320px !important;
     max-width: 85vw !important;
   }

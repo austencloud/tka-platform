@@ -168,6 +168,7 @@
   .settings-panel.side-drawer {
     width: min(400px, 90vw);
     max-height: 100vh;
+    max-height: 100dvh;
   }
 
   .panel-header {

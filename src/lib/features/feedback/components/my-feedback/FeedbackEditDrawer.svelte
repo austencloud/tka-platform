@@ -283,6 +283,7 @@
     max-width: 90vw;
     height: 100%;
     max-height: 100vh;
+    max-height: 100dvh;
     background: var(--theme-panel-bg);
     border-left: 1px solid var(--theme-stroke, var(--theme-stroke));
   }
@@ -290,6 +291,7 @@
   /* Bottom sheet (mobile) styling */
   :global(.drawer-content.feedback-edit-drawer.bottom-sheet) {
     max-height: 85vh;
+    max-height: 85dvh;
     background: var(--theme-panel-bg);
     border-top: 1px solid var(--theme-stroke, var(--theme-stroke));
   }

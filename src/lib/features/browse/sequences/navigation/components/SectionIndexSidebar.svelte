@@ -211,7 +211,9 @@
     position: sticky;
     top: 0;
     height: 100vh;
+    height: 100dvh;
     max-height: 100vh;
+    max-height: 100dvh;
     overflow: hidden;
     border-right: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
     background: var(--theme-panel-bg, #12121c);

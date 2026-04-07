@@ -403,6 +403,7 @@
 		height: 100%;
 		max-width: 100vw;
 		max-height: 100vh;
+		max-height: 100dvh;
 		display: flex;
 		flex-direction: column;
 		background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
