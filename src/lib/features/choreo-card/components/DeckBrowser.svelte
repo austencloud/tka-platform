@@ -34,6 +34,8 @@
     onSelectSequence: (sequence: SequenceData) => void;
     onLoadFamilySequences: (familyIds: string[]) => void;
     onContextMenu?: (x: number, y: number, rerender: () => void) => void;
+    /** VTG family ID from drilldown context (e.g. "split-same") for footer labels */
+    vtgFamilyId?: string | null;
   }
 
   let {
@@ -51,6 +53,7 @@
     onSelectSequence,
     onLoadFamilySequences,
     onContextMenu,
+    vtgFamilyId,
   }: Props = $props();
 
   // ── Card view mode ──────────────────────────────────────────────────────
@@ -136,11 +139,21 @@
   let selectedDeck = $derived(decks.find((d) => d.id === selectedDeckId) ?? null);
 
   // VTG deck label for card footer (e.g. "VTG SS 1:1")
+  // Uses vtgFamilyId from drilldown context (preferred), falling back to deck's loopType
   const deckLeftLabel = $derived.by(() => {
     if (!selectedDeck) return undefined;
-    const abbr = VTG_ABBREVIATIONS[selectedDeck.loopType];
+    // Try drilldown context first (VTG path provides familyId like "split-same")
+    const familyAbbr = vtgFamilyId ? VTG_ABBREVIATIONS[vtgFamilyId] : undefined;
+    // Fall back to deck-level loopType (LOOP decks whose loopType matches a VTG category)
+    const deckAbbr = VTG_ABBREVIATIONS[selectedDeck.loopType];
+    const abbr = familyAbbr ?? deckAbbr;
     if (!abbr) return undefined;
-    return `VTG ${abbr} ${selectedDeck.turnPattern}`;
+    // Include turn pattern if it looks like a clean ratio (e.g. "1:1")
+    const turn = selectedDeck.turnPattern;
+    if (turn && /^\d+:\d+$/.test(turn)) {
+      return `VTG ${abbr} ${turn}`;
+    }
+    return `VTG ${abbr}`;
   });
 
   // ── Drill-down deck selection bridge ──

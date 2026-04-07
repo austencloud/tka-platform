@@ -38,12 +38,13 @@ describe("renderFooter", () => {
   });
 
   it("suppresses creator name for system authors", () => {
-    const ctx = createMockCtx();
-    renderFooter(ctx, { canvasWidth: 900, canvasHeight: 1000, footerHeight: 50, userName: "TKA Enumerator", showCreatorName: true });
-    // Should NOT render "TKA Enumerator" as creator name
-    const calls = (ctx.fillText as ReturnType<typeof vi.fn>).mock.calls;
-    const userNameRendered = calls.some(([text]: [string]) => text === "TKA Enumerator");
-    expect(userNameRendered).toBe(false);
+    for (const sysAuthor of ["TKA Enumerator", "TKA System", "TKA Gallery"]) {
+      const ctx = createMockCtx();
+      renderFooter(ctx, { canvasWidth: 900, canvasHeight: 1000, footerHeight: 50, userName: sysAuthor, showCreatorName: true });
+      const calls = (ctx.fillText as ReturnType<typeof vi.fn>).mock.calls;
+      const rendered = calls.some(([text]: [string]) => text === sysAuthor);
+      expect(rendered, `${sysAuthor} should be suppressed`).toBe(false);
+    }
   });
 
   it("renders leftLabel instead of username when provided", () => {
