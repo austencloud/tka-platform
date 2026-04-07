@@ -10,6 +10,10 @@
     FogExp2,
     Color,
     Object3D,
+    RingGeometry,
+    MeshBasicMaterial,
+    Mesh,
+    DoubleSide,
   } from "three";
   import type { BatchedMesh, PerspectiveCamera } from "three";
   import MuseumPostProcessing from "./MuseumPostProcessing.svelte";
@@ -270,6 +274,46 @@
           wingTheme,
           placementId,
         );
+
+        // Pulse effect — golden ring that expands and fades
+        const tx = tileX * TILE_SIZE + wallOffsetX;
+        const tz = tileY * TILE_SIZE + wallOffsetZ;
+        const fixtureY = 1.25;
+        let normalX = 0, normalZ = 0;
+        if (wallFacing === 'north') normalZ = -1;
+        else if (wallFacing === 'south') normalZ = 1;
+        else if (wallFacing === 'west') normalX = -1;
+        else if (wallFacing === 'east') normalX = 1;
+
+        const ring = new RingGeometry(0.05, 0.08, 32);
+        const ringMat = new MeshBasicMaterial({
+          color: 0xffcc44,
+          transparent: true,
+          opacity: 0.8,
+          side: DoubleSide,
+          depthWrite: false,
+        });
+        const ringMesh = new Mesh(ring, ringMat);
+        ringMesh.position.set(tx, fixtureY, tz);
+        ringMesh.lookAt(tx + normalX, fixtureY, tz + normalZ);
+        scn.add(ringMesh);
+
+        const startTime = performance.now();
+        const animatePulse = () => {
+          const elapsed = performance.now() - startTime;
+          const t = Math.min(elapsed / 400, 1);
+          const scale = 1 + t * 4;
+          ringMesh.scale.setScalar(scale);
+          ringMat.opacity = 0.8 * (1 - t);
+          if (t < 1) {
+            requestAnimationFrame(animatePulse);
+          } else {
+            scn.remove(ringMesh);
+            ring.dispose();
+            ringMat.dispose();
+          }
+        };
+        requestAnimationFrame(animatePulse);
       }
 
       placementHistory.push({ placementId, roomId });
