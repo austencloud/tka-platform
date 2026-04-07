@@ -26,6 +26,7 @@
   import Avatar3D from "$lib/shared/3d/components/Avatar3D.svelte";
   import MuseumMirror from "./MuseumMirror.svelte";
   import MuseumPortal from "./MuseumPortal.svelte";
+  import MuseumVillageEmbed from "./MuseumVillageEmbed.svelte";
   import MuseumTorch3D from "./MuseumTorch3D.svelte";
   import { TorchMaterialCache } from "../../services/implementations/TorchMaterialCache";
   import { FIXTURE_REGISTRY } from "../../domain/fixture-registry";
@@ -1249,6 +1250,16 @@
   // stays the same, but per-frame draw calls drop ~80% in FPS mode.
 
   let activeRoomSet = new Set<string>();
+
+  // Collaboration room center — for positioning the live Village sim
+  const collabWing = $derived(grid.wings.find((w) => w.id === "collaboration"));
+  const collabCenterX = $derived(
+    collabWing ? (collabWing.bounds.x + collabWing.bounds.width / 2) * TILE_SIZE : 0,
+  );
+  const collabCenterZ = $derived(
+    collabWing ? (collabWing.bounds.y + collabWing.bounds.height / 2) * TILE_SIZE : 0,
+  );
+  const showVillageEmbed = $derived(activeRoomSet.has("collaboration"));
   // Track last room ID to avoid redundant visibility updates every frame
   let lastStreamingRoomId: string | null = null;
 
@@ -1673,9 +1684,12 @@
 
 <!-- Performer stations: 3D mannequins with spinning staves -->
 <!-- overrideVersion dependency ensures reactivity when editor moves objects -->
+<!-- Collaboration room performers are replaced by the live village sim -->
 {#each visiblePerformers as performer (performer.id)}
-  {@const posOverride = overrideVersion >= 0 ? museumEditorOverrides.get(`performer-station-${performer.id}`) : null}
-  {#if performer.id.includes("telekinetic-formation")}
+  {#if showVillageEmbed && performer.id.startsWith("collab-")}
+    <!-- Skip: replaced by MuseumVillageEmbed -->
+  {:else if performer.id.includes("telekinetic-formation")}
+    {@const posOverride = overrideVersion >= 0 ? museumEditorOverrides.get(`performer-station-${performer.id}`) : null}
     <TelekineticFormation3D
       stationId={performer.id}
       worldX={posOverride?.x ?? performer.tileX * TILE_SIZE}
@@ -1684,6 +1698,7 @@
       autoPlay={performer.autoPlay}
     />
   {:else}
+    {@const posOverride = overrideVersion >= 0 ? museumEditorOverrides.get(`performer-station-${performer.id}`) : null}
     <MuseumPerformerStation3D
       stationId={performer.id}
       worldX={posOverride?.x ?? performer.tileX * TILE_SIZE}
@@ -1695,6 +1710,11 @@
     />
   {/if}
 {/each}
+
+<!-- Live Village simulation in the Room of Collaboration -->
+{#if showVillageEmbed}
+  <MuseumVillageEmbed centerX={collabCenterX} centerZ={collabCenterZ} />
+{/if}
 
 <!-- Pedestal + sign meshes managed imperatively via scene.add() -->
 
