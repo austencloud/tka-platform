@@ -9,7 +9,6 @@
   import { container } from "$lib/shared/di";
   import type { IAuthenticator } from "../../../auth/services/contracts/IAuthenticator";
   import type { IAccountManager } from "../../../auth/services/contracts/IAccountManager";
-  import type { IStepUpAuthCoordinator } from "../../../auth/services/contracts/IStepUpAuthCoordinator";
   import { onMount } from "svelte";
   import {
     createProfileSettingsState,
@@ -19,11 +18,8 @@
   import ConnectedAccountsPreview from "../../../navigation/components/profile-settings/ConnectedAccountsPreview.svelte";
   import AccountSettingsSection from "../../../navigation/components/profile-settings/AccountSettingsSection.svelte";
   import DangerZone from "../../../navigation/components/profile-settings/DangerZone.svelte";
-  import AccountSecuritySection from "../../../auth/components/AccountSecuritySection.svelte";
-  import SecurityPreview from "../../../auth/components/SecurityPreview.svelte";
   import SubscriptionCard from "./profile/SubscriptionCard.svelte";
   import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
-  import PasskeyStepUpModal from "../../../auth/components/PasskeyStepUpModal.svelte";
   import GlassCard from "./profile/GlassCard.svelte";
   import ProfileHeroSection from "./profile/ProfileHeroSection.svelte";
   import StorageSection from "./profile/StorageSection.svelte";
@@ -85,7 +81,6 @@
   let hapticService = $state<IHapticFeedback | null>(null);
   let authService = $state<IAuthenticator | null>(null);
   let accountManager = $state<IAccountManager | null>(null);
-  let stepUpCoordinator = $state<IStepUpAuthCoordinator | null>(null);
 
   // Cache clearing state
   let clearingCache = $state(false);
@@ -117,7 +112,6 @@
     hapticService = container.items.hapticFeedback;
     authService = container.items.authenticator;
     accountManager = container.items.accountManager;
-    stepUpCoordinator = container.items.stepUpAuthCoordinator;
 
     setTimeout(() => (isVisible = true), 30);
 
@@ -175,16 +169,10 @@
     }
   }
 
-  async function handleDeleteAccount() {
+  async function handleDeleteAccount(password: string) {
     if (!accountManager) return;
 
-    // This is called after the user has typed "DELETE" to confirm
-    try {
-      await accountManager.deleteAccount();
-    } catch (error) {
-      console.error("Failed to delete account:", error);
-      alert("Failed to delete account. Please try again.");
-    }
+    await accountManager.deleteAccount(password);
   }
 
   async function handleClearCache() {
@@ -349,20 +337,6 @@
           </GlassCard>
         {/if}
 
-        <!-- Security - MFA factors from Firebase Auth -->
-        <GlassCard
-          icon="fas fa-shield-alt"
-          title="Security"
-          subtitle="View security settings"
-        >
-          {#snippet children()}
-            <SecurityPreview
-              mfaFactors={previewAuthData?.multiFactor?.enrolledFactors ?? null}
-              loading={isLoadingAuthData}
-            />
-          {/snippet}
-        </GlassCard>
-
         <!-- Password - show if user has password provider -->
         {#if previewAuthData?.providers.some((p) => p.providerId === "password")}
           <GlassCard
@@ -446,20 +420,6 @@
           isClearing={clearingCache}
         />
 
-        <!-- Row 2: Complex cards (expand to 50% each) -->
-        <!-- Security -->
-        {#if authService}
-          <GlassCard
-            icon="fas fa-shield-alt"
-            title="Security"
-            subtitle="Secure your account"
-          >
-            {#snippet children()}
-              <AccountSecuritySection {hapticService} />
-            {/snippet}
-          </GlassCard>
-        {/if}
-
         <!-- Connected Accounts -->
         <GlassCard
           icon="fas fa-link"
@@ -496,15 +456,6 @@
     <AuthPrompt onFacebookAuth={handleFacebookAuth} />
   {/if}
 </div>
-
-{#if stepUpCoordinator}
-  <PasskeyStepUpModal
-    isOpen={stepUpCoordinator.showStepUpModal}
-    allowPassword={profileState.hasPasswordProvider(authState.user)}
-    onSuccess={() => stepUpCoordinator?.handleSuccess()}
-    onCancel={() => stepUpCoordinator?.handleCancel()}
-  />
-{/if}
 
 <!-- Profile Photo Picker Drawer -->
 <ProfilePhotoPicker
