@@ -105,6 +105,8 @@
 		<div class="stat">Monuments: {monumentCount}</div>
 		<div class="stat">Active Jams: {activeJamCount}</div>
 		<div class="stat">Schools: {villageState.orchestrator.schools?.length ?? 0}</div>
+		<div class="stat">Season: {villageState.orchestrator.currentSeason ?? "normal"}</div>
+		<div class="stat">Effect Circles: {villageState.orchestrator.effectCircles?.length ?? 0}</div>
 		<div class="stat">Dropped Props: {villageState.orchestrator.droppedProps.length}</div>
 		<div class="stat">Prop Wall: {villageState.orchestrator.propWall.length}</div>
 		{#if relitCount > 0}
@@ -124,6 +126,7 @@
 				<div class="stat">Style Amp: {avgStyle.amplitudeScale.toFixed(2)}</div>
 				<div class="stat">Style Tempo: {avgStyle.tempoOffset.toFixed(3)}</div>
 			{/if}
+			<div class="stat">Effect: {selectedEntity.effect.affinity} ({(selectedEntity.effect.affinityStrength * 100).toFixed(0)}%)</div>
 			{#if selectedEntity.prop.heldProp}
 				<div class="stat">Prop: {selectedEntity.prop.heldProp.propType}</div>
 				<div class="stat">Wear: {(selectedEntity.prop.heldProp.wear * 100).toFixed(0)}%</div>

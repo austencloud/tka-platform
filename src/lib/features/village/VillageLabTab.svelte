@@ -129,6 +129,31 @@
 				3000,
 			);
 		});
+		villageState.orchestrator.on("circle:formed", (circle) => {
+			const circleColors: Record<string, string> = {
+				fire: "#f97316", led: "#3b82f6", charcoal: "#6b7280",
+				trails: "#a855f7", pure: "#f8fafc",
+			};
+			vs.pushToast(
+				`${circle.affinity} circle formed`,
+				circleColors[circle.affinity] ?? "#fff",
+				circle.centerX,
+				circle.centerZ,
+				3000,
+			);
+		});
+		villageState.orchestrator.on("season:changed", (season) => {
+			const seasonColors: Record<string, string> = {
+				normal: "#ffffff", festival: "#fbbf24",
+				winter: "#60a5fa", migration: "#a855f7",
+			};
+			vs.pushToast(
+				`Season: ${season}`,
+				seasonColors[season] ?? "#fff",
+				0, 0,
+				4000,
+			);
+		});
 
 		// Auto-start
 		villageState.start();

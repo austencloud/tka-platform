@@ -12,6 +12,7 @@
 	import VillageJamCircle from "./VillageJamCircle.svelte";
 	import VillageDroppedProp from "./VillageDroppedProp.svelte";
 	import VillagePropWall from "./VillagePropWall.svelte";
+	import VillageEffectCircle from "./VillageEffectCircle.svelte";
 	import { getVillageContext, getVillageVisualContext } from "../state/village-context";
 
 	const villageState = getVillageContext();
@@ -36,6 +37,7 @@
 	const propWall = $derived(villageState.orchestrator.propWall);
 	const toasts = $derived(visualState.toasts);
 	const schools = $derived(villageState.orchestrator.schools ?? []);
+	const effectCircles = $derived(villageState.orchestrator.effectCircles ?? []);
 
 	function getSchoolColor(entityId: string): string | null {
 		for (const school of schools) {
@@ -118,6 +120,13 @@
 {#each activeJams as jam (jam.formedAtTick)}
 	<VillageJamCircle {jam} />
 {/each}
+
+<!-- Effect circles (steady colored rings by affinity, with point lights) -->
+{#if visualState.showCircleRings}
+	{#each effectCircles as circle (circle.id)}
+		<VillageEffectCircle {circle} />
+	{/each}
+{/if}
 
 <!-- Village avatars -->
 {#each avatars as renderState (renderState.entityId)}
