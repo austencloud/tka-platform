@@ -22,6 +22,7 @@
 	import { setVillageContext, setVillageVisualContext } from "$lib/features/village/state/village-context";
 	import { container } from "$lib/shared/di";
 	import { MUSEUM_EXHIBIT_SEQUENCES } from "../../data/museum-exhibit-sequences";
+	import ForestScene from "$lib/shared/3d/environments/scenes/ForestScene.svelte";
 	import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 	import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
 
@@ -68,8 +69,8 @@
 			{ propInterpolator, sequenceConverter },
 			seeds,
 			{
-				targetPopulation: 6,
-				arenaRadius: 4,          // compact campfire in the museum room
+				targetPopulation: 8,
+				arenaRadius: 8,          // spacious campfire clearing in the forest
 				lifespanTicks: 400,      // shorter — visitor should see a lifecycle
 				ticksPerSecond: 5,       // slower — time to observe
 			},
@@ -122,13 +123,16 @@
 
 <!-- Position the entire village at the collaboration room's center in museum world space -->
 <T.Group position.x={centerX} position.z={centerZ}>
-	<!-- Subtle arena edge ring on the museum floor (no ground plane — museum floor IS the ground) -->
-	<T.Mesh rotation.x={-Math.PI / 2} position.y={0.01}>
-		<T.RingGeometry args={[3.9, 4, 64]} />
+	<!-- Forest environment: trees, campfire, night sky, fog -->
+	<ForestScene variant="firefly" />
+
+	<!-- Subtle arena edge ring on the forest floor -->
+	<T.Mesh rotation.x={-Math.PI / 2} position.y={0.02}>
+		<T.RingGeometry args={[7.8, 8, 64]} />
 		<T.MeshBasicMaterial
 			color="#e8a87c"
 			transparent
-			opacity={0.15}
+			opacity={0.1}
 			depthWrite={false}
 		/>
 	</T.Mesh>
