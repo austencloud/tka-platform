@@ -1,3 +1,16 @@
+<script module lang="ts">
+  // Module-scoped: shared across ALL MuseumTorch3D instances.
+  // Without this, each of ~30 torches would create its own GLTFLoader
+  // and independently fetch+parse the same GLB files.
+  import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+  import { Box3, Vector3 } from "three";
+  import type { Object3D } from "three";
+
+  const sharedLoader = new GLTFLoader();
+  const modelTemplateCache = new Map<string, Object3D>();
+  const modelPendingCache = new Map<string, Promise<Object3D>>();
+</script>
+
 <script lang="ts">
   /**
    * Museum light fixture: loads a GLTF model per wing theme, with optional
@@ -16,21 +29,10 @@
     BufferGeometry,
     Float32BufferAttribute,
   } from "three";
-  import { Box3, Vector3 } from "three";
-  import type { Object3D } from "three";
-  import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
   import type { FixtureConfig } from "../../domain/fixture-registry";
   import { FIXTURE_REGISTRY } from "../../domain/fixture-registry";
   import type { WingTheme } from "../../domain/museum-grid-types";
   import type { TorchMaterials } from "../../services/implementations/TorchMaterialCache";
-
-  // Shared loader + template cache. Without this, each of ~30 torches triggers
-  // independent GLTF parsing (draco decode, buffer construction, scene graph build).
-  // The cache stores the already-scaled model template per path — cloning a template
-  // is orders of magnitude cheaper than re-parsing the GLB.
-  const sharedLoader = new GLTFLoader();
-  const modelTemplateCache = new Map<string, Object3D>();
-  const modelPendingCache = new Map<string, Promise<Object3D>>();
 
   interface Props {
     x: number;
@@ -118,11 +120,8 @@
     return template.clone();
   }
 
-  const _torchMountTime = performance.now();
   loadCachedModel()
     .then((model) => {
-      const _loadDone = performance.now();
-      console.log(`[Torch3D] model load=${(_loadDone - _torchMountTime).toFixed(1)}ms (${config.modelPath})`);
       model.position.set(tx, fixtureY, tz);
       gltfModel = model;
     })
