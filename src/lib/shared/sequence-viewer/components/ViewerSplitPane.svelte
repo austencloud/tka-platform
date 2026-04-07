@@ -84,9 +84,26 @@
     rerenderTrigger = 0,
   }: Props = $props();
 
-  function handleAnimationClick() {
-    // In 3D mode, don't intercept clicks — OrbitControls needs them
-    if (renderMode === '3d') return;
+  let pointerDownPos: { x: number; y: number } | null = null;
+
+  function handlePointerDown(e: PointerEvent) {
+    pointerDownPos = { x: e.clientX, y: e.clientY };
+  }
+
+  function handleAnimationClick(e: MouseEvent) {
+    // For 3D mode, only expand on tap (no significant drag movement).
+    // OrbitControls use drag — a click without movement means "tap to expand".
+    if (renderMode === '3d' && pointerDownPos) {
+      const dx = Math.abs(e.clientX - pointerDownPos.x);
+      const dy = Math.abs(e.clientY - pointerDownPos.y);
+      // If pointer moved more than 5px, it was a drag (orbit), not a tap
+      if (dx > 5 || dy > 5) {
+        pointerDownPos = null;
+        return;
+      }
+    }
+    pointerDownPos = null;
+
     if (layout.focusedPane === "animation") {
       onUnfocusPane();
     } else {
@@ -135,6 +152,7 @@
     data-hidden={layout.focusedPane === "image"}
     role="button"
     tabindex="0"
+    onpointerdown={handlePointerDown}
     onclick={handleAnimationClick}
     onkeydown={(e) => handleKeydown(e, "animation")}
     aria-label={layout.focusedPane === "animation" ? "Exit focus mode" : "Focus on animation"}
@@ -179,6 +197,8 @@
             bluePropType={propRendering.bluePropType != null ? String(propRendering.bluePropType) : null}
             redPropType={propRendering.redPropType != null ? String(propRendering.redPropType) : null}
             hideOverlays={layout.focusedPane === "animation"}
+            fullScreen={layout.focusedPane === "animation"}
+            onExitFullScreen={onUnfocusPane}
           />
         </div>
         <AnimatorCanvas
