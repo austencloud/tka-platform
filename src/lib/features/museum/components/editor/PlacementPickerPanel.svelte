@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { PLACEABLE_OBJECTS, type PlaceableObjectDef } from '../../domain/placeable-object-registry';
 	import { museum3dEditorState } from '../../state/museum-3d-editor-state.svelte';
+	import { handleModuleChange } from '$lib/shared/navigation-coordinator/navigation-coordinator.svelte';
+	import type { ModuleId } from '$lib/shared/navigation/state/navigation-state.svelte';
 
 	const fixtures = $derived(PLACEABLE_OBJECTS.filter((o) => o.category === 'fixture'));
 	const furniture = $derived(PLACEABLE_OBJECTS.filter((o) => o.category === 'furniture'));
@@ -27,7 +29,21 @@
 </script>
 
 <div class="placement-picker">
-	<div class="picker-title">Place Object</div>
+	<div class="picker-header">
+		<button class="back-btn" onclick={() => handleModuleChange('create' as ModuleId)} aria-label="Back to app">
+			<i class="fas fa-arrow-left" aria-hidden="true"></i>
+		</button>
+		<span class="header-label">
+			{#if museum3dEditorState.placementDef}
+				Placing: {museum3dEditorState.placementDef.label}
+			{:else}
+				Editor
+			{/if}
+		</span>
+		<button class="exit-btn" onclick={() => museum3dEditorState.toggle()} aria-label="Exit editor">
+			F2
+		</button>
+	</div>
 
 	{#if fixtures.length > 0}
 		<div class="picker-category">Wall Fixtures</div>
@@ -97,14 +113,61 @@
 		border-radius: 3px;
 	}
 
-	.picker-title {
-		padding: 14px 12px 10px;
-		font-size: 13px;
-		font-weight: 600;
-		color: var(--theme-text, #ffffff);
-		letter-spacing: 0.02em;
+	.picker-header {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		padding: 10px 10px;
 		border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
 		flex-shrink: 0;
+	}
+
+	.back-btn {
+		width: 30px;
+		height: 30px;
+		border-radius: 6px;
+		border: 1px solid rgba(255, 255, 255, 0.1);
+		background: transparent;
+		color: rgba(255, 255, 255, 0.6);
+		font-size: 13px;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+	}
+
+	.back-btn:hover {
+		background: rgba(255, 255, 255, 0.06);
+		color: #fff;
+	}
+
+	.header-label {
+		flex: 1;
+		font-size: 12px;
+		font-weight: 500;
+		color: rgba(255, 255, 255, 0.7);
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.exit-btn {
+		padding: 3px 8px;
+		border-radius: 4px;
+		border: 1px solid rgba(255, 255, 255, 0.1);
+		background: transparent;
+		color: rgba(255, 255, 255, 0.5);
+		font-size: 10px;
+		font-family: inherit;
+		font-weight: 600;
+		cursor: pointer;
+		flex-shrink: 0;
+	}
+
+	.exit-btn:hover {
+		background: rgba(255, 255, 255, 0.06);
+		color: #fff;
 	}
 
 	.picker-category {
