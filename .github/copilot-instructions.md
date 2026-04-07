@@ -487,7 +487,6 @@ gh release create vX.Y.Z --title "vX.Y.Z" --notes "changelog here"
 - `src/lib/shared/inversify/container.ts` - DI container initialization
 - `src/lib/shared/inversify/types.ts` - Service symbols
 - `src/lib/shared/settings/utils/background-theme-calculator.ts` - Theme variables
-- `netlify.toml` - Deployment config
 - `vite.config.ts` - Build configuration
 
 ---
