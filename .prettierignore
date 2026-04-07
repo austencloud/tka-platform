@@ -1,6 +1,5 @@
 # Generated files
 .svelte-kit/
-.netlify/
 # 🚨 CRITICAL: Prettier patterns work like .gitignore with leading /
 # Use /build/ to ONLY ignore root-level build output directory.
 # Without the leading /, it would match src/lib/modules/build/ source code too!
