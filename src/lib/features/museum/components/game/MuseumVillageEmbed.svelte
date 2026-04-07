@@ -128,8 +128,8 @@
 
 <!-- Position the entire village at the collaboration room's center in museum world space -->
 <T.Group position.x={centerX} position.z={centerZ}>
-	<!-- Forest environment: lifted so grass ground plane covers the museum floor -->
-	<T.Group position.y={forestLift}>
+	<!-- Forest environment: lifted so grass ground plane sits just above the museum floor -->
+	<T.Group position.y={forestLift + 0.05}>
 		<ForestScene variant="firefly" />
 	</T.Group>
 
