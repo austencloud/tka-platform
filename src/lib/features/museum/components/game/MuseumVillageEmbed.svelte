@@ -65,10 +65,25 @@
 	const propInterpolator = container.items.propStateInterpolator;
 	const sequenceConverter = container.items.sequenceConverter;
 
+	// HMR preservation: stash village state in module scope so it survives hot reloads.
+	// On remount, reuse the existing orchestrator — no GLTF reload, no population reset.
 	let villageState: VillageState | null = null;
 	let visualState: VillageVisualState | null = null;
 
-	if (propInterpolator && sequenceConverter) {
+	// Check for HMR-preserved state
+	const hmrKey = "__museum_village_state__";
+	const hmrState = (import.meta.hot?.data as any)?.[hmrKey] as {
+		villageState: VillageState;
+		visualState: VillageVisualState;
+	} | undefined;
+
+	if (hmrState) {
+		// Reuse existing sim — no GLTF reload needed
+		villageState = hmrState.villageState;
+		visualState = hmrState.visualState;
+		setVillageContext(villageState);
+		setVillageVisualContext(visualState);
+	} else if (propInterpolator && sequenceConverter) {
 		const seeds = buildSeedSequences();
 		villageState = createVillageState(
 			{ propInterpolator, sequenceConverter },
@@ -77,7 +92,7 @@
 				targetPopulation: 8,
 				arenaRadius: 8,          // spacious campfire clearing in the forest
 				lifespanTicks: 400,      // shorter — visitor should see a lifecycle
-				ticksPerSecond: 10,      // normal speed — entities need to move visibly
+				ticksPerSecond: 7,       // moderate speed — visible movement, not frantic
 			},
 		);
 		visualState = createVillageVisualState();
@@ -95,6 +110,11 @@
 		});
 
 		villageState.start();
+	}
+
+	// Preserve state across HMR
+	if (import.meta.hot && villageState && visualState) {
+		import.meta.hot.data[hmrKey] = { villageState, visualState };
 	}
 
 	// Per-frame sync
@@ -122,6 +142,8 @@
 	}
 
 	onDestroy(() => {
+		// Don't destroy on HMR — the stashed state will be reused on remount
+		if (import.meta.hot) return;
 		villageState?.destroy();
 	});
 </script>
