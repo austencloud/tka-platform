@@ -467,8 +467,8 @@
     </div>
   {/if}
 
-  <!-- Wing label (top-left) -->
-  {#if currentWing && !showPanel}
+  <!-- Wing label (top-left) — hidden in editor mode to avoid overlapping badge -->
+  {#if currentWing && !showPanel && !museum3dEditorState.editorActive}
     <div class="wing-label" class:fps={isInFPS}>
       <i class="fas fa-location-dot" aria-hidden="true"></i>
       <span>{currentWing.name}</span>
