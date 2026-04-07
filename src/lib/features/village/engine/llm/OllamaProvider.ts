@@ -7,7 +7,7 @@ import type { IInferenceProvider } from "./village-llm-types";
 export class OllamaProvider implements IInferenceProvider {
 	readonly name = "ollama" as const;
 	private baseUrl = "http://localhost:11434";
-	private model = "qwen3:8b";
+	private model = "llama3.1:8b";
 
 	async infer(prompt: string): Promise<string> {
 		const controller = new AbortController();
@@ -30,7 +30,9 @@ export class OllamaProvider implements IInferenceProvider {
 			});
 
 			const data = await response.json();
-			return (data.response ?? "").trim().toLowerCase();
+			// qwen3 may put content in "thinking" field instead of "response"
+			const text = data.response || data.thinking || "";
+			return text.trim().toLowerCase();
 		} finally {
 			clearTimeout(timeout);
 		}
