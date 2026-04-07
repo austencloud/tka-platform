@@ -26,6 +26,10 @@
     showBirthday: boolean;
     showQRCode: boolean;
     showInfoCard: boolean;
+    /** Use print layout (matching the grid view) instead of 5:7 card layout */
+    printMode?: boolean;
+    /** Pre-rendered front image URL — displays this instead of re-rendering */
+    frontImageUrl?: string | null;
     onCardContextMenu?: (x: number, y: number, rerender: () => void) => void;
   }
 
@@ -42,6 +46,8 @@
     showBirthday,
     showQRCode,
     showInfoCard,
+    printMode = false,
+    frontImageUrl,
     onCardContextMenu,
   }: Props = $props();
 
@@ -69,14 +75,20 @@
     return () => ro.disconnect();
   });
 
+  // When the container is wider than tall, lay out side by side
+  const isHorizontal = $derived(cW > cH * 1.2);
+
   // Front card image natural aspect ratio (width / height), detected by polling
   let cardAspect = $state(0);
 
-  // The front card is landscape when the sequence image is meaningfully wider
-  // than tall (aspect > 1.3). Near-square images (like 16-beat grids) fit
-  // better in portrait. Default to landscape for the initial render.
-  const frontIsLandscape = $derived(cardAspect > 0 ? cardAspect > 1.3 : false);
-  const frontAR = $derived(frontIsLandscape ? CARD_LANDSCAPE : CARD_PORTRAIT);
+  // Print mode: both front and back use 5:7 so they match as a physical card pair.
+  // Card mode: detect from the rendered image aspect ratio.
+  const frontIsLandscape = $derived(
+    printMode ? false : (cardAspect > 0 ? cardAspect > 1.3 : false)
+  );
+  const frontAR = $derived(
+    printMode ? CARD_PORTRAIT : (frontIsLandscape ? CARD_LANDSCAPE : CARD_PORTRAIT)
+  );
 
   // Flex distribution: focused card gets 70%, other gets 30%, or 50/50
   const frontFlex = $derived(
@@ -86,32 +98,38 @@
     focusedCard === "back" ? 7 : focusedCard === "front" ? 3 : 5,
   );
 
-  // Compute slot heights from flex proportions
+  // Compute slot sizes from flex proportions along the layout axis
   const totalFlex = $derived(frontFlex + backFlex);
-  const availH = $derived(Math.max(0, cH - GAP));
-  const frontSlotH = $derived(totalFlex > 0 ? (availH * frontFlex) / totalFlex : 0);
-  const backSlotH = $derived(totalFlex > 0 ? (availH * backFlex) / totalFlex : 0);
+  const availMain = $derived(Math.max(0, (isHorizontal ? cW : cH) - GAP));
+  const frontSlotMain = $derived(totalFlex > 0 ? (availMain * frontFlex) / totalFlex : 0);
+  const backSlotMain = $derived(totalFlex > 0 ? (availMain * backFlex) / totalFlex : 0);
 
-  // Front card: fit within slot using its aspect ratio
+  // Cross-axis is the full container dimension perpendicular to layout direction
+  const crossAxis = $derived(isHorizontal ? cH : cW);
+
+  // Front card: fit within its slot
   const frontLayout = $derived.by(() => {
-    if (cW === 0 || frontSlotH === 0) return { w: 0, h: 0 };
-    // Fit card with frontAR into (cW, frontSlotH)
-    let h = frontSlotH;
+    const slotW = isHorizontal ? frontSlotMain : crossAxis;
+    const slotH = isHorizontal ? crossAxis : frontSlotMain;
+    if (slotW === 0 || slotH === 0) return { w: 0, h: 0 };
+    let h = slotH;
     let w = h * frontAR;
-    if (w > cW) {
-      w = cW;
+    if (w > slotW) {
+      w = slotW;
       h = w / frontAR;
     }
     return { w: Math.floor(w), h: Math.floor(h) };
   });
 
-  // Back card: fit within slot using 5:7 aspect ratio (same approach as front)
+  // Back card: fit within its slot using 5:7 aspect ratio
   const backLayout = $derived.by(() => {
-    if (cW === 0 || backSlotH === 0) return { w: 0, h: 0 };
-    let h = backSlotH;
+    const slotW = isHorizontal ? backSlotMain : crossAxis;
+    const slotH = isHorizontal ? crossAxis : backSlotMain;
+    if (slotW === 0 || slotH === 0) return { w: 0, h: 0 };
+    let h = slotH;
     let w = h * BACK_AR;
-    if (w > cW) {
-      w = cW;
+    if (w > slotW) {
+      w = slotW;
       h = w / BACK_AR;
     }
     return { w: Math.floor(w), h: Math.floor(h) };
@@ -150,7 +168,7 @@
   }
 </script>
 
-<div class="preview-stack" bind:this={containerEl}>
+<div class="preview-stack" class:horizontal={isHorizontal} class:print-mode={printMode} bind:this={containerEl}>
   <!-- Front card slot -->
   <button
     class="card-slot front-slot"
@@ -176,7 +194,9 @@
           {startPositionLayout}
           showQRCodes={showQRCode}
           showBirthday={showBirthday}
-          cardMode={true}
+          printMode={printMode}
+          cardMode={!printMode}
+          preRenderedImageUrl={printMode ? frontImageUrl : undefined}
           onContextMenu={onCardContextMenu}
         />
       {/if}
@@ -214,6 +234,11 @@
     overflow: hidden;
   }
 
+  .preview-stack.horizontal {
+    flex-direction: row;
+    justify-content: center;
+  }
+
   .card-slot {
     display: flex;
     align-items: center;
@@ -227,12 +252,37 @@
     min-height: 0;
   }
 
+  .horizontal .card-slot {
+    height: 100%;
+    min-width: 0;
+  }
+
   .card-frame {
-    border-radius: 12px;
+    border-radius: 5%;
     overflow: hidden;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
     transition:
       width 300ms ease,
       height 300ms ease;
+    container-type: inline-size;
+  }
+
+  .preview-stack.print-mode .card-frame {
+    background: #ffffff;
+  }
+
+  /* Back card has dark content — transparent bg so corners don't show white */
+  .preview-stack.print-mode .back-frame {
+    background: transparent;
+  }
+
+  /* CardBack's .border-frame uses cqi units that scale too large at preview size.
+     Match the outer card-frame's radius so the gradient border follows the curve. */
+  .card-frame :global(.border-frame) {
+    border-radius: 5%;
+  }
+
+  .card-frame :global(.back) {
+    border-radius: 3.5%;
   }
 </style>

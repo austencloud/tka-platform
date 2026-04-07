@@ -15,6 +15,8 @@
     includeStartPosition?: boolean;
     onClose: () => void;
     onContextMenu?: (x: number, y: number, rerender: () => void) => void;
+    /** Pre-rendered front image URL from the grid card — shows this instead of re-rendering */
+    frontImageUrl?: string | null;
   }
 
   let {
@@ -26,6 +28,7 @@
     includeStartPosition = true,
     onClose,
     onContextMenu,
+    frontImageUrl,
   }: Props = $props();
 
   let focusedCard = $state<"front" | "back" | null>(null);
@@ -76,6 +79,8 @@
         showBirthday={true}
         showQRCode={true}
         showInfoCard={false}
+        printMode={true}
+        {frontImageUrl}
         onCardContextMenu={onContextMenu}
       />
     </div>

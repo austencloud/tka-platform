@@ -217,7 +217,7 @@
     width: 100%;
     height: 100%;
     border-radius: 2.4cqi;
-    padding: 0.8cqi;
+    padding: 2cqi;
     box-sizing: border-box;
     overflow: hidden;
     container-type: inline-size;

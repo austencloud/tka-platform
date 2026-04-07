@@ -38,6 +38,8 @@
     cardMode?: boolean;
     /** Override the notes text in the card footer (e.g. VTG description) */
     customNotesText?: string;
+    /** Pre-rendered image URL — displays this instead of rendering via PropAwareThumbnail */
+    preRenderedImageUrl?: string | null;
     onSelect?: (sequence: SequenceData) => void;
     onContextMenu?: (x: number, y: number, rerender: () => void) => void;
   }
@@ -56,17 +58,24 @@
     handPathMode = false,
     cardMode = false,
     customNotesText,
+    preRenderedImageUrl: preRenderedImageUrlProp,
     onSelect,
     onContextMenu,
   }: Props = $props();
+
+  // Local override so re-render can clear the pre-rendered URL
+  let preRenderedCleared = $state(false);
+  const usePreRendered = $derived(!!preRenderedImageUrlProp && !preRenderedCleared);
 
   let hapticService: IHapticFeedback;
   let sequenceToEntryConverter: ISequenceToEntryConverter;
   let thumbnailRef: PropAwareThumbnail;
 
   export function rerender(): void {
+    preRenderedCleared = true;
     thumbnailRef?.forceRerender();
   }
+
 
   onMount(() => {
     hapticService = container.items.hapticFeedback;
@@ -162,32 +171,42 @@
   type="button"
 >
   <div class="card-content">
-    <PropAwareThumbnail
-      bind:this={thumbnailRef}
-      {sequence}
-      bluePropType={propSettings.bluePropType}
-      redPropType={propSettings.redPropType}
-      catDogModeEnabled={propSettings.catDogMode}
-      lightMode={printMode || cardMode}
-      variant="wordcard"
-      addWord={showWord}
-      addDifficultyLevel={handPathMode ? false : undefined}
-      {includeStartPosition}
-      {startPositionLayout}
-      {showBirthday}
-      visibility={visibilitySettings}
-      {cardMode}
-      {customNotesText}
-    />
-    {#if hasLoopPattern && !handPathMode}
-      <div class="loop-overlay">
-        <LOOPIconStrip
-          activeComponents={loopComponents}
-          size={14}
-          darkMode={!printMode && !cardMode}
-          showFreeformWhenEmpty={false}
-        />
-      </div>
+    {#if usePreRendered}
+      <img
+        class="pre-rendered-image"
+        src={preRenderedImageUrlProp}
+        alt="Preview of {sequence.name}"
+        draggable="false"
+      />
+    {:else}
+      <PropAwareThumbnail
+        bind:this={thumbnailRef}
+        {sequence}
+        bluePropType={propSettings.bluePropType}
+        redPropType={propSettings.redPropType}
+        catDogModeEnabled={propSettings.catDogMode}
+        lightMode={printMode || cardMode}
+        variant="wordcard"
+        addWord={showWord}
+        addDifficultyLevel={handPathMode ? false : undefined}
+        {includeStartPosition}
+        {startPositionLayout}
+        {showBirthday}
+        userName={sequence.author ?? ""}
+        visibility={visibilitySettings}
+        {cardMode}
+        {customNotesText}
+      />
+      {#if hasLoopPattern && !handPathMode}
+        <div class="loop-overlay">
+          <LOOPIconStrip
+            activeComponents={loopComponents}
+            size={14}
+            darkMode={!printMode && !cardMode}
+            showFreeformWhenEmpty={false}
+          />
+        </div>
+      {/if}
     {/if}
   </div>
 </button>
@@ -225,6 +244,12 @@
   .choreo-card:focus-visible {
     outline: 2px solid var(--theme-accent, #6366f1);
     outline-offset: 2px;
+  }
+
+  .pre-rendered-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
 
   /* PropAwareThumbnail scales to fit within the card cell */
