@@ -202,7 +202,8 @@ export class TextRenderer implements ITextRenderer {
     },
     customNotesText?: string,
     backgroundColor?: string,
-    borderColor?: string
+    borderColor?: string,
+    leftLabel?: string
   ): void {
     const showCreatorName = showFlags?.showCreatorName ?? true;
     const showNotes = showFlags?.showNotes ?? true;
@@ -221,7 +222,7 @@ export class TextRenderer implements ITextRenderer {
         ? customNotesText
         : userInfo.notes && userInfo.notes.trim() !== ""
           ? userInfo.notes
-          : undefined; // package will default to "Created using TKA Composer"
+          : undefined; // package will default to "The Kinetic Alphabet"
 
     // Resolve the date to display
     const birthday = userInfo.birthday
@@ -243,6 +244,7 @@ export class TextRenderer implements ITextRenderer {
       showBirthday,
       backgroundColor,
       borderColor,
+      leftLabel,
     });
   }
 

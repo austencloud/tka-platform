@@ -72,7 +72,8 @@ export interface ITextRenderer {
     },
     customNotesText?: string,
     backgroundColor?: string,
-    borderColor?: string
+    borderColor?: string,
+    leftLabel?: string
   ): void;
 
   /**
