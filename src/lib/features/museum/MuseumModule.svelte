@@ -7,55 +7,21 @@
   import { setEditorContext } from "./state/editor-context";
   import RoomPicker from "./components/RoomPicker.svelte";
 
-  import { onMount, onDestroy, untrack } from "svelte";
+  import { onMount, untrack } from "svelte";
   import { page } from "$app/stores";
   import { goto } from "$app/navigation";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import { setDesktopSidebarForcedHidden } from "$lib/shared/layout/desktop-sidebar-state.svelte";
 
   // ── Loading gate ──
-  // An opaque overlay covers the scene until ALL assets (textures, models,
-  // geometry) are fully loaded. On repeat visits within the same session,
-  // textures are cached so loading is fast — but geometry still builds async,
-  // so the overlay always shows until handleAllLoaded fires.
-  const LOADED_FLAG = "museum-assets-loaded";
-  const wasLoadedBefore = sessionStorage.getItem(LOADED_FLAG) === "1";
-
-  // Real progress target from useProgress (jumps in bursts)
-  let targetProgress = $state(wasLoadedBefore ? 0.5 : 0);
-  // Displayed progress — lerps smoothly toward target
-  let displayProgress = $state(wasLoadedBefore ? 0.5 : 0);
-  // allLoaded is ONLY set by handleAllLoaded — never pre-set.
-  // The overlay always shows until both geometry + textures are ready.
-  let allLoaded = $state(false);
+  // A brief fade-from-black covers the scene until the lobby is ready
+  // (~200ms via worker). No progress bar needed — the load is fast.
   let showOverlay = $state(true);
   let overlayFading = $state(false);
 
-  // Animate the progress bar smoothly via rAF.
-  // Even if real progress jumps 0% → 100% in one frame (cached assets),
-  // the bar fills over ~600ms so the user sees motion.
-  let rafId: number | null = null;
-  let lastTime = 0;
-  const FILL_SPEED = 2.0; // units per second (0-1 scale, so 2.0 = full bar in 500ms)
-
-  function tickProgress(now: number) {
-    if (!lastTime) lastTime = now;
-    const dt = (now - lastTime) / 1000;
-    lastTime = now;
-
-    if (displayProgress < targetProgress) {
-      displayProgress = Math.min(targetProgress, displayProgress + FILL_SPEED * dt);
-      rafId = requestAnimationFrame(tickProgress);
-    } else {
-      rafId = null;
-    }
-  }
-
-  function startProgressAnimation() {
-    if (rafId === null) {
-      lastTime = 0;
-      rafId = requestAnimationFrame(tickProgress);
-    }
+  function handleAllLoaded() {
+    overlayFading = true;
+    setTimeout(() => { showOverlay = false; }, 600);
   }
 
   // Defer heavy 3D component mount until AFTER the loading overlay has painted.
@@ -76,46 +42,10 @@
       }, 0);
     });
     return () => {
-      if (rafId !== null) cancelAnimationFrame(rafId);
       // Restore sidebar when leaving museum
       setDesktopSidebarForcedHidden(false);
     };
   });
-
-  // Build stage label — shown in the overlay while geometry is being built
-  let buildStage = $state("");
-
-  function handleBuildStage(stage: string) {
-    buildStage = stage;
-  }
-
-  function handleLoadProgress(progress: number) {
-    // Never go backwards — useProgress resets between loading batches
-    if (progress > targetProgress) {
-      targetProgress = progress;
-      startProgressAnimation();
-    }
-  }
-
-  function handleAllLoaded() {
-    allLoaded = true;
-    targetProgress = 1;
-    startProgressAnimation();
-    // Mark for fast-start on next visit
-    try { sessionStorage.setItem(LOADED_FLAG, "1"); } catch { /* non-critical */ }
-    // Wait for the bar to visually reach 100%, then hold briefly, then reveal
-    const waitForBar = () => {
-      if (displayProgress >= 0.99) {
-        setTimeout(() => {
-          overlayFading = true;
-          setTimeout(() => { showOverlay = false; }, 800);
-        }, 400);
-      } else {
-        requestAnimationFrame(waitForBar);
-      }
-    };
-    requestAnimationFrame(waitForBar);
-  }
 
   // Map sidebar tab IDs to internal modes
   const TAB_TO_MODE: Record<string, string> = {
@@ -286,8 +216,10 @@
   const VALID_MODES: Set<string> = new Set(["museum", "edit", "showroom", "3p-test"]);
 
   function getInitialMode(): ModuleMode {
+    const urlMode = new URLSearchParams(window.location.search).get("mode");
+    if (urlMode === "edit") return "edit";
     const saved = localStorage.getItem(LAST_MODE_KEY);
-    if (saved && VALID_MODES.has(saved)) return saved as ModuleMode;
+    if (saved && VALID_MODES.has(saved) && saved !== "edit") return saved as ModuleMode;
     return "museum";
   }
   let mode = $state(getInitialMode());
@@ -316,44 +248,14 @@
     liveGrid = deserializeGrid(editorState.exportGrid());
     mode = "museum";
   }
-
-  function handleKeydown(e: KeyboardEvent) {
-    if (e.key === "Tab" && !e.ctrlKey && !e.altKey) {
-      e.preventDefault();
-      if (mode === "museum") switchToEdit();
-      else switchToMuseum();
-    }
-  }
 </script>
 
-<svelte:window onkeydown={handleKeydown} />
-
 <div class="museum-module">
-  <!-- Loading gate — opaque until all assets loaded -->
+  <!-- Loading gate — brief fade-from-black until lobby is ready -->
   {#if showOverlay}
-    <div class="museum-loading-overlay" class:fading={overlayFading} role="status" aria-busy={!allLoaded}>
+    <div class="museum-loading-overlay" class:fading={overlayFading} role="status">
       <div class="overlay-icon">
         <i class="fas fa-landmark" aria-hidden="true"></i>
-      </div>
-      <p class="overlay-stage">
-        {#if displayProgress >= 0.99 && allLoaded}
-          Welcome to The Archive
-        {:else if displayProgress > 0.01}
-          Loading... {Math.round(displayProgress * 100)}%
-        {:else if buildStage}
-          Building {buildStage.toLowerCase()}...
-        {:else}
-          Entering The Archive...
-        {/if}
-      </p>
-      <div class="overlay-progress-track">
-        {#if displayProgress > 0.01}
-          <!-- Real progress bar (JS-driven, active once Three.js reports progress) -->
-          <div class="overlay-progress-fill" style:width="{Math.round(displayProgress * 100)}%"></div>
-        {:else}
-          <!-- CSS-only indeterminate shimmer (runs on compositor, won't freeze) -->
-          <div class="overlay-progress-indeterminate"></div>
-        {/if}
       </div>
     </div>
   {/if}
@@ -371,7 +273,7 @@
     <div class="mode-content" class:hidden-mode={mode !== "museum" && mode !== "showroom" && mode !== "3p-test"}>
       {#key selectedRoom}
         {#await import("./components/game/DimensionFlipProof.svelte") then { default: DimensionFlipProof }}
-          <DimensionFlipProof grid={liveGrid} onLoadProgress={handleLoadProgress} onAllLoaded={handleAllLoaded} onBuildStage={handleBuildStage} startInFps={selectedRoom !== null} />
+          <DimensionFlipProof grid={liveGrid} onAllLoaded={handleAllLoaded} startInFps={selectedRoom !== null} />
         {/await}
       {/key}
     </div>
@@ -451,48 +353,9 @@
     will-change: opacity;
   }
 
-  .overlay-stage {
-    margin: 0;
-    font-size: 16px;
-    letter-spacing: 0.04em;
-    opacity: 0.6;
-    min-height: 1.4em;
-    text-align: center;
-  }
-
-  .overlay-progress-track {
-    width: 160px;
-    height: 2px;
-    border-radius: 1px;
-    background: rgba(200, 180, 140, 0.12);
-    overflow: hidden;
-  }
-
-  .overlay-progress-fill {
-    height: 100%;
-    background: rgba(200, 180, 140, 0.6);
-    border-radius: 1px;
-  }
-
   @keyframes overlay-pulse {
     0%, 100% { opacity: 0.3; }
     50% { opacity: 0.6; }
   }
 
-  /* Indeterminate shimmer — runs on the compositor thread so it animates
-     even while the main thread is blocked initializing the 3D scene. */
-  .overlay-progress-indeterminate {
-    height: 100%;
-    width: 40%;
-    border-radius: 1px;
-    background: rgba(200, 180, 140, 0.6);
-    animation: indeterminate-slide 1.4s ease-in-out infinite;
-    will-change: transform;
-  }
-
-  @keyframes indeterminate-slide {
-    0% { transform: translateX(-100%); }
-    50% { transform: translateX(250%); }
-    100% { transform: translateX(-100%); }
-  }
 </style>
