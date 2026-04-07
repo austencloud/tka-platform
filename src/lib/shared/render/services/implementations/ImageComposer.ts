@@ -921,7 +921,7 @@ export class ImageComposer implements IImageComposer {
       for (let col = 0; col < columns; col++) {
         if (!isOccupied(col, row)) continue;
 
-        const x = col * stepSize;
+        const x = col * stepSize + horizontalOffset;
         const y = row * stepSize + titleOffset;
 
         // Top edge: draw if no occupied cell above

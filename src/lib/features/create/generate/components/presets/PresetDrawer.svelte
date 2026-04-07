@@ -156,6 +156,18 @@
     --sheet-shadow: 0 -4px 24px rgba(0, 0, 0, 0.5);
   }
 
+  /* Full-screen bottom sheet on mobile — covers bottom nav */
+  :global(.drawer-content.preset-drawer-sheet[data-placement="bottom"]) {
+    height: 100vh;
+    height: 100dvh;
+    min-height: 100vh;
+    min-height: 100dvh;
+    max-height: 100vh;
+    max-height: 100dvh;
+    border-radius: 0;
+  }
+
+  /* Right-side panel on desktop */
   :global(.drawer-content.preset-drawer-sheet[data-placement="right"]) {
     --sheet-width: min(400px, 90vw);
   }
