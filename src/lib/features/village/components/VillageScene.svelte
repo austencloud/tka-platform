@@ -68,15 +68,15 @@
 >
 	<OrbitControls
 		enableDamping
-		target={[0, groundLevel + 0.8, 0]}
+		target={[0, 0.8, 0]}
 		maxPolarAngle={Math.PI / 2}
 		minDistance={3}
 		maxDistance={30}
 	/>
 </T.PerspectiveCamera>
 
-<!-- Everything drops to groundLevel so avatar feet meet the ground plane -->
-<T.Group position.y={groundLevel}>
+<!-- Scene content group -->
+<T.Group>
 	<!-- Arena ground plane -->
 	<T.Mesh rotation.x={-Math.PI / 2} receiveShadow>
 		<T.CircleGeometry args={[arenaRadius, 64]} />

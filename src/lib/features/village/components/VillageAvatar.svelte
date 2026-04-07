@@ -161,6 +161,7 @@
 		planeMode={PlaneMode.WALL}
 		avatarState={renderState.instanceState}
 		avatarId={avatarModelId}
+		groundOffset={STAGE_LIFT}
 		showAvatar={showAvatar && deathOpacity > 0.01}
 		showGrid={false}
 		showProps={true}
