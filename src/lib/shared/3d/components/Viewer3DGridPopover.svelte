@@ -17,9 +17,10 @@
 
   interface Props {
     sequenceData: SequenceData | null;
+    popoverAlign?: 'left' | 'right';
   }
 
-  let { sequenceData }: Props = $props();
+  let { sequenceData, popoverAlign = 'right' }: Props = $props();
 
   const viewer3DState = getViewer3DContext();
 
@@ -95,6 +96,7 @@
   {#if open}
     <div
       class="grid-popover"
+      class:align-left={popoverAlign === 'left'}
       role="dialog"
       aria-label="Grid plane visibility"
       tabindex="-1"
@@ -184,6 +186,11 @@
     position: absolute;
     top: calc(100% + 8px);
     right: 0;
+  }
+
+  .grid-popover.align-left {
+    right: auto;
+    left: 0;
     z-index: 100;
     min-width: 156px;
     border-radius: 10px;

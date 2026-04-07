@@ -72,20 +72,23 @@
     </Canvas>
     {#if !hideOverlays}
       {#if fullScreen}
-        <!-- Full-screen: show controls directly on viewport -->
-        <div class="top-controls">
-          <Viewer3DGridPopover {sequenceData} />
-          <Viewer3DViewPresets />
+        <!-- Full-screen: back button + controls in one header row -->
+        <div class="fullscreen-header">
+          <button
+            class="back-button"
+            onclick={() => onExitFullScreen?.()}
+            aria-label="Exit full-screen"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+          </button>
+          <div class="header-spacer"></div>
+          <div class="top-controls">
+            <Viewer3DGridPopover {sequenceData} popoverAlign="left" />
+            <Viewer3DViewPresets />
+          </div>
         </div>
-        <button
-          class="back-button"
-          onclick={() => onExitFullScreen?.()}
-          aria-label="Exit full-screen"
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M19 12H5M12 19l-7-7 7-7"/>
-          </svg>
-        </button>
       {:else}
         <!-- Half-screen: gear icon only -->
         <div class="top-controls">
@@ -127,14 +130,26 @@
     align-items: flex-start;
   }
 
-  .back-button {
+  .fullscreen-header {
     position: absolute;
     top: 12px;
     left: 12px;
+    right: 12px;
     z-index: 10;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .header-spacer {
+    flex: 1;
+  }
+
+  .back-button {
+    flex-shrink: 0;
     width: var(--min-touch-target-compact, 32px);
     height: var(--min-touch-target-compact, 32px);
-    border-radius: 7px;
+    border-radius: 50%;
     background: rgba(0, 0, 0, 0.5);
     border: 1px solid rgba(255, 255, 255, 0.15);
     display: flex;
