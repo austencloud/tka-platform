@@ -19,8 +19,6 @@ import { RippleEffect } from "../../application/services/implementations/RippleE
 import { Authenticator } from "../../auth/services/implementations/Authenticator";
 import { ProfilePictureManager } from "../../auth/services/implementations/ProfilePictureManager";
 import { UserDocumentManager } from "../../auth/services/implementations/UserDocumentManager";
-import { ProfileApiClient } from "../../auth/services/implementations/ProfileApiClient";
-import { StepUpAuthCoordinator } from "../../auth/services/implementations/StepUpAuthCoordinator.svelte";
 import { AccountManager } from "../../auth/services/implementations/AccountManager";
 import { UsernameValidator } from "../../auth/services/implementations/UsernameValidator";
 
@@ -114,9 +112,6 @@ const usernameValidator = new UsernameValidator();
 const userDocumentManager = new UserDocumentManager(profilePictureManager, usernameValidator);
 const subscriptionManager = new SubscriptionManager();
 const premiumGateChecker = new PremiumGateChecker();
-const profileApiClient = new ProfileApiClient();
-const stepUpAuthCoordinator = new StepUpAuthCoordinator();
-
 // Settings services (singletons)
 const firebaseSettingsPersister = new FirebaseSettingsPersister();
 
@@ -175,18 +170,11 @@ export const coreContainer = createContainer()
     userDocumentManager: () => userDocumentManager,
     subscriptionManager: () => subscriptionManager,
     premiumGateChecker: () => premiumGateChecker,
-    profileApiClient: () => profileApiClient,
-    stepUpAuthCoordinator: () => stepUpAuthCoordinator,
     usernameValidator: () => usernameValidator,
   })
-  // === ACCOUNT MANAGER (depends on auth services above) ===
+  // === ACCOUNT MANAGER ===
   .add((deps) => ({
-    accountManager: () =>
-      new AccountManager(
-        deps.profileApiClient,
-        deps.stepUpAuthCoordinator,
-        deps.hapticFeedback
-      ),
+    accountManager: () => new AccountManager(deps.hapticFeedback),
   }))
   // === MOBILE SERVICES ===
   .add({
