@@ -1646,7 +1646,7 @@
     generator={plaqueGenerator}
   />
 {/each}
-{#each visibleExhibitLights as pos (`${pos.x},${pos.z}`)}
+{#each visibleExhibitLights as pos, i (`${pos.x},${pos.z},${i}`)}
   {#if useSpotLights}
     <T.SpotLight
       position={[pos.x, 2.5, pos.z]}
@@ -1669,7 +1669,7 @@
 {/each}
 
 <!-- Ceiling fluorescent lights — cold white overhead wash for institutional rooms -->
-{#each visibleCeilingLights as cLight (`${cLight.x},${cLight.z}`)}
+{#each visibleCeilingLights as cLight, i (`${cLight.x},${cLight.z},${i}`)}
   <T.PointLight
     position={[cLight.x, WALL_HEIGHT - 0.3, cLight.z]}
     intensity={2.5}
@@ -1682,7 +1682,7 @@
 <!-- Sunlight shafts — warm golden pools for outdoor rooms.
      Each spot has a bright downward SpotLight (the sun shaft) plus a
      soft PointLight fill to brighten the surrounding ground. -->
-{#each visibleSunlights as sun (`${sun.x},${sun.z}`)}
+{#each visibleSunlights as sun, i (`${sun.x},${sun.z},${i}`)}
   <T.SpotLight
     position={[sun.x + 2, WALL_HEIGHT + 3, sun.z - 1]}
     target-position={[sun.x, 0, sun.z]}
@@ -1703,7 +1703,7 @@
 {/each}
 
 <!-- Light fixtures — model and effects vary by wing theme/era -->
-{#each visibleTorches as torch (`${torch.x},${torch.z}`)}
+{#each visibleTorches as torch, i (`${torch.x},${torch.z},${i}`)}
   <MuseumTorch3D
     x={torch.x}
     z={torch.z}
