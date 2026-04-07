@@ -31,7 +31,6 @@
   import { FIXTURE_REGISTRY } from "../../domain/fixture-registry";
   import MuseumPlaque3D from "./MuseumPlaque3D.svelte";
   import MuseumSceneEditor from "./MuseumSceneEditor.svelte";
-  import PlacementPickerPanel from '../editor/PlacementPickerPanel.svelte';
   import PlacementGhost from '../editor/PlacementGhost.svelte';
   import { PlacementPersister } from '../../services/implementations/PlacementPersister';
   import { OrbitControls } from "@threlte/extras";
@@ -1776,7 +1775,6 @@
 <!-- 3D Scene Editor — click to select, gizmo to transform -->
 {#if museum3dEditorState.editorActive}
   <MuseumSceneEditor onOverrideChanged={applyEditorOverrides} />
-  <PlacementPickerPanel />
   {#if museum3dEditorState.placementDef}
     <PlacementGhost def={museum3dEditorState.placementDef} onPlace={handlePlace} />
   {/if}

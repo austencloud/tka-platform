@@ -511,7 +511,18 @@ export function getModuleDefinitions() {
 
 type HistoryState = { moduleId: ModuleId; sectionId?: string };
 
+/** Modules whose default tab should not appear in the URL (full-screen experiences) */
+const CLEAN_URL_MODULES: Set<string> = new Set(["museum"]);
+
 function buildPath(moduleId: ModuleId, sectionId?: string) {
+  // For clean-URL modules, omit the default section from the path
+  if (CLEAN_URL_MODULES.has(moduleId)) {
+    const moduleDef = getModuleDefinitions().find(m => m.id === moduleId);
+    const defaultSection = moduleDef?.sections?.[0]?.id;
+    if (!sectionId || sectionId === defaultSection) {
+      return `/${moduleId}`;
+    }
+  }
   return sectionId ? `/${moduleId}/${sectionId}` : `/${moduleId}`;
 }
 

@@ -75,8 +75,8 @@ export function setViewportWidth(width: number) {
  * Currently empty because all modules need the module switcher button on mobile.
  */
 const MODULES_WITHOUT_NAV: Set<string> = new Set([
-  // Currently empty - all modules get navigation by default
-  // If you need to hide nav for a specific module, add it here with a comment explaining why
+  // Museum is a full-screen immersive experience — no nav chrome
+  "museum",
 ]);
 
 /**
