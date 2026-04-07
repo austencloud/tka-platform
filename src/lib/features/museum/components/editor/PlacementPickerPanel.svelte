@@ -30,7 +30,7 @@
 
 <div class="placement-picker">
 	<div class="picker-header">
-		<button class="back-btn" onclick={() => handleModuleChange('create' as ModuleId)} aria-label="Back to app">
+		<button class="back-btn" onclick={() => { museum3dEditorState.toggle(); handleModuleChange('create' as ModuleId); }} aria-label="Back to app">
 			<i class="fas fa-arrow-left" aria-hidden="true"></i>
 		</button>
 		<span class="header-label">

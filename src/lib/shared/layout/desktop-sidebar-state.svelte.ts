@@ -38,7 +38,17 @@ export function setDesktopSidebarVisible(visible: boolean) {
  *  even when viewport recalculations fire. */
 export function setDesktopSidebarForcedHidden(hidden: boolean) {
   desktopSidebarState.forcedHidden = hidden;
-  if (hidden) desktopSidebarState.isVisible = false;
+  if (hidden) {
+    desktopSidebarState.isVisible = false;
+  } else {
+    // Recalculate visibility based on current viewport conditions
+    const shouldShow = shouldShowDesktopSidebar(
+      desktopSidebarState.isDesktopDevice,
+      typeof window !== 'undefined' ? window.innerWidth : 0,
+      desktopSidebarState.isSideBySideLayout,
+    );
+    desktopSidebarState.isVisible = shouldShow;
+  }
 }
 
 export function setDesktopSidebarWidth(width: number) {
