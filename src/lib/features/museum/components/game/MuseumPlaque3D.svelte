@@ -1,5 +1,5 @@
 <script module lang="ts">
-  import { BoxGeometry, MeshStandardMaterial } from "three";
+  import { BoxGeometry, CanvasTexture, MeshStandardMaterial } from "three";
 
   // ── Module-level caches — shared across all plaque instances ──
   // Keyed by size string; only 3 possible sizes so at most 3 entries.
@@ -47,7 +47,6 @@
 <script lang="ts">
   import { T } from "@threlte/core";
   import { onDestroy } from "svelte";
-  import { CanvasTexture, MeshStandardMaterial } from "three";
   import type { PlaqueContent, PlaqueSize } from "../../services/contracts/IPlaqueTextureGenerator";
   import type { PlaqueTextureGenerator } from "../../services/implementations/PlaqueTextureGenerator";
 

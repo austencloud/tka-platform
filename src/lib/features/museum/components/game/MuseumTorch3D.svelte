@@ -127,14 +127,10 @@
   import { T, useTask } from "@threlte/core";
   import { onDestroy } from "svelte";
   import {
-    PointLight,
     Points,
     BufferGeometry,
     Float32BufferAttribute,
   } from "three";
-  import type { FixtureConfig } from "../../domain/fixture-registry";
-  import { FIXTURE_REGISTRY } from "../../domain/fixture-registry";
-  import type { WingTheme } from "../../domain/museum-grid-types";
   import type { TorchMaterials } from "../../services/implementations/TorchMaterialCache";
 
   interface Props {
@@ -183,8 +179,6 @@
   // torches mounting simultaneously don't trigger 30 parallel HTTP requests.
   let gltfModel: Object3D | null = $state(null);
   let modelFailed = $state(false);
-
-  const TARGET_HEIGHT = 0.3;
 
   async function loadCachedModel(): Promise<Object3D> {
     const cached = modelTemplateCache.get(config.modelPath);
