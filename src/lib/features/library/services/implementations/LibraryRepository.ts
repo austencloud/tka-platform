@@ -395,9 +395,11 @@ export class LibraryRepository implements ILibraryRepository {
     // IMPORTANT: birthday is set once on creation and NEVER changes
     const rawWriteData = {
       ...libSeq,
-      // Steps are derived from compositional fields on read — don't persist
+      // Steps are derived from compositional fields on read — don't persist.
+      // startPosition IS persisted because it's NOT derivable from compositional
+      // fields — without it the 3D viewer has no start pose to show.
       steps: undefined,
-      startPosition: undefined,
+      startPosition: libSeq.startPosition ?? undefined,
       startingPosition: undefined,
       startingPositionGroup: undefined,
       contentHash: incomingHash,

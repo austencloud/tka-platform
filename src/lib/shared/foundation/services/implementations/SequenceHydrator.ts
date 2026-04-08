@@ -3,6 +3,7 @@ import type { IStepDeriver } from "../contracts/IStepDeriver";
 import type { ISequenceDecomposer } from "../contracts/ISequenceDecomposer";
 import type { SequenceData } from "../../domain/models/SequenceData";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import { MotionColor, MotionType, RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
 export class SequenceHydrator implements ISequenceHydrator {
 	constructor(
@@ -62,7 +63,47 @@ export class SequenceHydrator implements ISequenceHydrator {
 				sequence.stepPairings,
 				{ bluePropType: PropType.STAFF, redPropType: PropType.STAFF, catDogMode: false }
 			);
-			return { ...sequence, steps };
+
+			// Derive startPosition if missing — compositional fields don't store it,
+			// and without it the 3D viewer has no beat-0 config (avatar plays ahead).
+			let startPosition = sequence.startPosition;
+			if (!startPosition && steps.length > 0) {
+				const first = steps[0];
+				const blueMotion = first?.motions?.blue;
+				const redMotion = first?.motions?.red;
+				if (blueMotion || redMotion) {
+					startPosition = {
+						isStartPosition: true as const,
+						id: `start-${sequence.id}`,
+						letter: first.letter ?? null,
+						endPosition: first.startPosition ?? first.endPosition ?? null,
+						motions: {
+							...(blueMotion && {
+								[MotionColor.BLUE]: {
+									...blueMotion,
+									endLocation: blueMotion.startLocation,
+									endOrientation: blueMotion.startOrientation,
+									motionType: MotionType.STATIC,
+									rotationDirection: RotationDirection.NO_ROTATION,
+									turns: 0,
+								},
+							}),
+							...(redMotion && {
+								[MotionColor.RED]: {
+									...redMotion,
+									endLocation: redMotion.startLocation,
+									endOrientation: redMotion.startOrientation,
+									motionType: MotionType.STATIC,
+									rotationDirection: RotationDirection.NO_ROTATION,
+									turns: 0,
+								},
+							}),
+						},
+					};
+				}
+			}
+
+			return { ...sequence, steps, ...(startPosition && { startPosition }) };
 		}
 
 		// Compositional fields missing — steps won't be derived.
