@@ -230,7 +230,8 @@
     <div class="module-gate" style="display: flex; align-items: center; justify-content: center; height: 100%;">
       <AuthNudge
         trigger={getModuleNudgeTrigger(activeModule!)}
-        onCreateAccount={() => authDrawerState.show()}
+        onCreateAccount={() => authDrawerState.show("signup")}
+        onLogin={() => authDrawerState.show("signin")}
         onDismiss={() => switchModule("create")}
       />
     </div>

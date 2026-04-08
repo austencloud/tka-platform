@@ -1,4 +1,10 @@
 <!-- Main Application Layout -->
+<script module lang="ts">
+  // Module-level: survives component remounts so we never show the auth
+  // spinner again after the app has loaded once in this session.
+  let _mainInterfaceShown = false;
+</script>
+
 <script lang="ts">
   import AchievementNotificationToast from "../../gamification/components/AchievementNotificationToast.svelte";
   import XPToast from "../../gamification/components/XPToast.svelte";
@@ -101,13 +107,14 @@
   // Once shown, never tear it down for auth loading — the loading spinner
   // is only for initial app startup, not mid-session auth transitions
   // (e.g., guest signing up mid-session should NOT destroy MainInterface).
-  let mainInterfaceShown = $state(false);
-  const showAuthLoadingSpinner = $derived(authLoading && !mainInterfaceShown);
+  // Module-level so it survives component remounts (e.g., navigating from
+  // /p/[code] back to a main app route remounts MainApplication fresh).
+  const showAuthLoadingSpinner = $derived(authLoading && !_mainInterfaceShown);
 
   // Mark MainInterface as shown once auth loading completes for the first time
   $effect(() => {
     if (!authLoading && !initializationError) {
-      mainInterfaceShown = true;
+      _mainInterfaceShown = true;
     }
   });
 
@@ -499,7 +506,7 @@
     <!-- Auth Loading State (initial load only — never tears down MainInterface once shown) -->
     <div class="auth-loading">
       <div class="auth-loading-spinner"></div>
-      <p>Checking authentication...</p>
+      <p>Warming up...</p>
     </div>
   {:else}
     <!-- MainInterface always mounted — guest restrictions via context -->
@@ -559,6 +566,7 @@
     {#if !isAuthenticated}
       <AuthDrawer
         open={authDrawerState.open}
+        initialMode={authDrawerState.initialMode}
         onClose={() => authDrawerState.hide()}
       />
     {/if}
