@@ -56,12 +56,21 @@
 		onSelectDeck(deck, drillState.selections.category?.vtgFamily ?? null);
 	}
 
-	// On desktop, auto-open when filters narrow to exactly 1 deck
+	// On desktop, auto-open when filters narrow to exactly 1 deck.
+	// Track which deck ID we already auto-opened to avoid re-triggering
+	// when the user navigates back to change a filter.
+	let autoOpenedDeckId = $state<string | null>(null);
+
 	$effect(() => {
 		if (!isDesktop) return;
 		const single = drillState.selectedDeck;
-		if (single) {
+		if (single && single.id !== autoOpenedDeckId) {
+			autoOpenedDeckId = single.id;
 			handleDeckSelect(single);
+		}
+		// Reset when filters change away from a single result
+		if (!single) {
+			autoOpenedDeckId = null;
 		}
 	});
 </script>
