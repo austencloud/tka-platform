@@ -9,18 +9,25 @@ import type { RoomEdge } from "$lib/features/museum/domain/layout-types";
 /**
  * Test graph:
  *
- *   lobby ── room-a ── room-c
+ *   lobby ── room-a ── room-c ── room-d
  *     └───── room-b
  *
  * lobby is adjacent to room-a and room-b.
  * room-a is adjacent to lobby and room-c.
  * room-b is adjacent to lobby only.
- * room-c is adjacent to room-a only.
+ * room-c is adjacent to room-a and room-d.
+ * room-d is adjacent to room-c only.
+ *
+ * With 2-hop adjacency:
+ * - From lobby: hop1={room-a, room-b}, hop2={room-c} (via room-a). room-d is 3 hops away.
+ * - From room-a: hop1={lobby, room-c}, hop2={room-b, room-d} (via lobby and room-c).
+ * - From room-c: hop1={room-a, room-d}, hop2={lobby} (via room-a). room-b is 3 hops away.
  */
 const EDGES: RoomEdge[] = [
   { from: "lobby", to: "room-a", type: "main-path", fromWall: "north", toWall: "south" },
   { from: "lobby", to: "room-b", type: "side-branch", fromWall: "east", toWall: "west" },
   { from: "room-a", to: "room-c", type: "main-path", fromWall: "north", toWall: "south" },
+  { from: "room-c", to: "room-d", type: "main-path", fromWall: "north", toWall: "south" },
 ];
 
 /** Minimal stub that satisfies the RoomDescriptor shape. */
@@ -57,6 +64,7 @@ describe("RoomLifecycleManager", () => {
       expect(manager.getRoomState("room-a")).toBe(RoomState.Unvisited);
       expect(manager.getRoomState("room-b")).toBe(RoomState.Unvisited);
       expect(manager.getRoomState("room-c")).toBe(RoomState.Unvisited);
+      expect(manager.getRoomState("room-d")).toBe(RoomState.Unvisited);
     });
 
     it("unknown room also reports Unvisited", () => {
@@ -67,26 +75,32 @@ describe("RoomLifecycleManager", () => {
   // ── getAllRoomIds ───────────────────────────────────────────────────────────
 
   describe("getAllRoomIds()", () => {
-    it("returns all 4 rooms derived from the edges", () => {
+    it("returns all 5 rooms derived from the edges", () => {
       const ids = manager.getAllRoomIds();
-      expect(ids).toHaveLength(4);
+      expect(ids).toHaveLength(5);
       expect(ids).toContain("lobby");
       expect(ids).toContain("room-a");
       expect(ids).toContain("room-b");
       expect(ids).toContain("room-c");
+      expect(ids).toContain("room-d");
     });
   });
 
   // ── Entering lobby ─────────────────────────────────────────────────────────
 
   describe("entering lobby (first visit)", () => {
-    it("activates lobby, room-a, and room-b — but NOT room-c", () => {
+    it("activates lobby, room-a, room-b (1 hop), and room-c (2 hops)", () => {
       const update = manager.onPlayerEnteredRoom("lobby");
 
       expect(update.toActivate).toContain("lobby");
       expect(update.toActivate).toContain("room-a");
       expect(update.toActivate).toContain("room-b");
-      expect(update.toActivate).not.toContain("room-c");
+      expect(update.toActivate).toContain("room-c");
+    });
+
+    it("does NOT activate room-d (3 hops from lobby)", () => {
+      const update = manager.onPlayerEnteredRoom("lobby");
+      expect(update.toActivate).not.toContain("room-d");
     });
 
     it("produces no rooms to cache on first entry", () => {
@@ -110,20 +124,25 @@ describe("RoomLifecycleManager", () => {
       expect(manager.getRoomState("room-b")).toBe(RoomState.Active);
     });
 
-    it("leaves room-c as Unvisited — it's two hops away", () => {
+    it("sets 2-hop room (room-c) to Active after entry", () => {
       manager.onPlayerEnteredRoom("lobby");
-      expect(manager.getRoomState("room-c")).toBe(RoomState.Unvisited);
+      expect(manager.getRoomState("room-c")).toBe(RoomState.Active);
+    });
+
+    it("leaves room-d as Unvisited — it's three hops away", () => {
+      manager.onPlayerEnteredRoom("lobby");
+      expect(manager.getRoomState("room-d")).toBe(RoomState.Unvisited);
     });
   });
 
   // ── Moving from lobby to room-a ────────────────────────────────────────────
 
   describe("moving from lobby → room-a", () => {
-    it("caches room-b because it left the active set", () => {
+    it("does NOT cache room-b because it's 2 hops from room-a (via lobby)", () => {
       manager.onPlayerEnteredRoom("lobby");
       const update = manager.onPlayerEnteredRoom("room-a");
 
-      expect(update.toCache).toContain("room-b");
+      expect(update.toCache).not.toContain("room-b");
     });
 
     it("does NOT cache lobby or room-a (still adjacent)", () => {
@@ -134,33 +153,55 @@ describe("RoomLifecycleManager", () => {
       expect(update.toCache).not.toContain("room-a");
     });
 
-    it("activates room-c (first visit, one hop from room-a)", () => {
+    it("activates room-d (2 hops from room-a via room-c)", () => {
       manager.onPlayerEnteredRoom("lobby");
       const update = manager.onPlayerEnteredRoom("room-a");
 
-      expect(update.toActivate).toContain("room-c");
+      expect(update.toActivate).toContain("room-d");
     });
 
-    it("sets room-b state to Cached", () => {
+    it("does NOT re-activate room-c (already active from lobby entry)", () => {
       manager.onPlayerEnteredRoom("lobby");
-      manager.onPlayerEnteredRoom("room-a");
-      expect(manager.getRoomState("room-b")).toBe(RoomState.Cached);
+      const update = manager.onPlayerEnteredRoom("room-a");
+
+      expect(update.toActivate).not.toContain("room-c");
     });
 
-    it("sets room-c state to Active", () => {
+    it("sets room-d state to Active", () => {
       manager.onPlayerEnteredRoom("lobby");
       manager.onPlayerEnteredRoom("room-a");
-      expect(manager.getRoomState("room-c")).toBe(RoomState.Active);
+      expect(manager.getRoomState("room-d")).toBe(RoomState.Active);
+    });
+  });
+
+  // ── Moving further: room-a → room-c (room-b should cache) ─────────────────
+
+  describe("moving from room-a → room-c", () => {
+    it("caches room-b because it's 3 hops from room-c", () => {
+      manager.onPlayerEnteredRoom("lobby");
+      manager.onPlayerEnteredRoom("room-a");
+      const update = manager.onPlayerEnteredRoom("room-c");
+
+      expect(update.toCache).toContain("room-b");
+    });
+
+    it("keeps lobby active (2 hops from room-c via room-a)", () => {
+      manager.onPlayerEnteredRoom("lobby");
+      manager.onPlayerEnteredRoom("room-a");
+      const update = manager.onPlayerEnteredRoom("room-c");
+
+      expect(update.toCache).not.toContain("lobby");
     });
   });
 
   // ── Returning to lobby (room-b cache hit) ──────────────────────────────────
 
-  describe("returning to lobby after visiting room-a (room-b was cached)", () => {
+  describe("returning to lobby after visiting room-c (room-b was cached)", () => {
     beforeEach(() => {
       manager.onPlayerEnteredRoom("lobby");
       manager.onPlayerEnteredRoom("room-a");
-      // Store a descriptor for room-b so the cache hit is detectable.
+      manager.onPlayerEnteredRoom("room-c");
+      // room-b is now Cached. Store a descriptor so the cache hit is detectable.
       manager.cacheDescriptor("room-b", makeDescriptor("room-b"));
     });
 
@@ -188,15 +229,20 @@ describe("RoomLifecycleManager", () => {
       expect(update.priorities.get("lobby")).toBe(0);
     });
 
-    it("adjacent rooms get priority 1", () => {
+    it("direct adjacent rooms get priority 1", () => {
       const update = manager.onPlayerEnteredRoom("lobby");
       expect(update.priorities.get("room-a")).toBe(1);
       expect(update.priorities.get("room-b")).toBe(1);
     });
 
-    it("non-adjacent rooms are absent from priorities", () => {
+    it("2-hop rooms get priority 2", () => {
       const update = manager.onPlayerEnteredRoom("lobby");
-      expect(update.priorities.has("room-c")).toBe(false);
+      expect(update.priorities.get("room-c")).toBe(2);
+    });
+
+    it("3-hop rooms are absent from priorities", () => {
+      const update = manager.onPlayerEnteredRoom("lobby");
+      expect(update.priorities.has("room-d")).toBe(false);
     });
   });
 

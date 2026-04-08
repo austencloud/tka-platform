@@ -1131,6 +1131,42 @@
   let geometryReady = $state(false);
   const lifecycleManager = new RoomLifecycleManager(MUSEUM_EDGES);
 
+  // BFS from spawn room to assign build priority by graph distance.
+  // Closer rooms get lower priority numbers → built first by the worker.
+  function computeDistancesFromSpawn(spawn: string | null, allRoomIds: string[]): Map<string, number> {
+    const dist = new Map<string, number>();
+    if (!spawn) {
+      for (const id of allRoomIds) dist.set(id, 99);
+      return dist;
+    }
+    // Build adjacency from edges
+    const adj = new Map<string, Set<string>>();
+    for (const e of MUSEUM_EDGES) {
+      if (!adj.has(e.from)) adj.set(e.from, new Set());
+      if (!adj.has(e.to)) adj.set(e.to, new Set());
+      adj.get(e.from)!.add(e.to);
+      adj.get(e.to)!.add(e.from);
+    }
+    // BFS
+    const queue = [spawn];
+    dist.set(spawn, 0);
+    while (queue.length > 0) {
+      const current = queue.shift()!;
+      const d = dist.get(current)!;
+      for (const neighbor of adj.get(current) ?? []) {
+        if (!dist.has(neighbor)) {
+          dist.set(neighbor, d + 1);
+          queue.push(neighbor);
+        }
+      }
+    }
+    // Any room not reachable from spawn gets max distance
+    for (const id of allRoomIds) {
+      if (!dist.has(id)) dist.set(id, 99);
+    }
+    return dist;
+  }
+
   // Per-room bucketing (pure data, computed once synchronously — fast)
   const perRoomBuckets = bucketMuseumTilesByRoom(grid);
 
@@ -1358,18 +1394,14 @@
     const wing = grid.wings.find((w) => w.id === roomId) ?? null;
     const chunk = await buildRoomChunk(dryRun, roomId, wing);
 
-    // Cache descriptor for fast rebuilds on return visits
-    if (originalBuckets && wing) {
-      lifecycleManager.cacheDescriptor(roomId, createRoomDescriptor(roomId, originalBuckets, wing.theme));
-    }
-
     addChunkToScene(chunk);
     activeRoomChunks.set(roomId, chunk);
 
-    // Make immediately visible if this room is in the current active set
-    // (e.g. adjacent room finished building while player is in the lobby)
-    const shouldBeVisible = activeRoomSet.has(roomId);
-    setChunkVisible(chunk, shouldBeVisible);
+    // Always visible once built — no visibility toggling. All rooms stay
+    // visible permanently. With 16 rooms using instanced geometry, GPU cost
+    // is negligible. This eliminates every "walls pop in" artifact.
+    console.log("[Museum] activateRoom done:", roomId);
+    setChunkVisible(chunk, true);
 
     // Update proximity grids so fixtures in this room become discoverable
     for (const t of chunk.torchPositions) torchGrid.insert(t, t.tileX, t.tileY);
@@ -1379,26 +1411,23 @@
     for (const l of chunk.sunlightPositions) sunlightGrid.insert(l, l.tileX, l.tileY);
   }
 
-  // Rooms that have been built stay in the scene graph permanently — we only
-  // toggle mesh.visible. This prevents the "void through doorways" problem
-  // where removing geometry from the scene exposes black nothingness. GPU memory
-  // for visited rooms is kept, but draw calls drop to zero when invisible.
-  // At 160+ rooms, add LRU disposal for rooms visited long ago.
-  function deactivateRoom(roomId: string): void {
-    const chunk = activeRoomChunks.get(roomId);
-    if (!chunk) return;
-    setChunkVisible(chunk, false);
-  }
-
   props.onBuildStage?.("Tile bucketing");
 
-  // Declare streaming state before the IIFE so it can be set during initial load
-  let activeRoomSet = $state(new Set<string>());
   let lastPlayerRoomId: string | null = null;
 
-  // ── Initial load: lobby + corridors, then adjacent rooms in background ──
+  // ── Initial load: lobby first, then ALL rooms progressively via worker ──
+  //
+  // Strategy: build lobby + corridors immediately so the player can walk.
+  // Then queue ALL remaining rooms through the worker in priority order:
+  //   priority 0 = lobby (already built)
+  //   priority 1 = direct neighbors of lobby
+  //   priority 2 = 2 hops from lobby
+  //   priority 3 = everything else
+  // Each room becomes visible the instant it finishes building. No visibility
+  // toggling, no pop-in. The worker processes ~50ms per room, so all 16 rooms
+  // are done in <1 second while the player explores the lobby.
   (async () => {
-    // 1. Build corridors on main thread (cheap and always visible)
+    // 1. Build corridors on main thread (cheap, always visible)
     const corridorDryRun = perRoomBuckets.corridorBucket;
     props.onBuildStage?.("Building corridors");
     const cc = await buildRoomChunk(corridorDryRun, "__corridor__", null);
@@ -1407,9 +1436,12 @@
     const sceneObj = (threlteCtx as any).scene?.current ?? (threlteCtx as any).scene;
     if (sceneObj) addChunkToScene(cc);
 
-    // 2. Build lobby via worker (highest priority)
+    // 2. Build lobby via worker (highest priority — blocks until done)
     props.onBuildStage?.("Building lobby");
-    if (spawnRoomId) await activateRoom(spawnRoomId, 0);
+    if (spawnRoomId) {
+      lastPlayerRoomId = spawnRoomId;
+      await activateRoom(spawnRoomId, 0);
+    }
 
     // 3. Compile shaders for lobby only
     const renderer = (threlteCtx as any).renderer?.current ?? (threlteCtx as any).renderer;
@@ -1444,17 +1476,21 @@
     geometryReady = true;
     props.onGeometryReady?.();
 
-    // 6. Build adjacent rooms in background (don't block the player)
-    if (spawnRoomId) {
-      const update = lifecycleManager.onPlayerEnteredRoom(spawnRoomId);
-      // Set the active set NOW so adjacent rooms are visible as soon as they finish building
-      activeRoomSet = new Set(update.priorities.keys());
-      lastPlayerRoomId = spawnRoomId;
-      for (const roomId of update.toActivate) {
-        if (roomId !== spawnRoomId) {
-          activateRoom(roomId, 1); // fire-and-forget — loads in background
-        }
-      }
+    // 6. Build ALL remaining rooms progressively via worker.
+    //    Assign priorities by graph distance from the spawn room so nearby
+    //    rooms finish first (what the player is most likely to see).
+    const allRoomIds = [...perRoomBuckets.roomBuckets.keys()];
+    const distances = computeDistancesFromSpawn(spawnRoomId, allRoomIds);
+    const sortedRooms = allRoomIds
+      .filter((id) => id !== spawnRoomId)
+      .sort((a, b) => (distances.get(a) ?? 99) - (distances.get(b) ?? 99));
+
+    console.log("[Museum] Initial load — spawn:", spawnRoomId);
+    console.log("[Museum] Building all rooms progressively:", sortedRooms.map((id) => `${id}(d=${distances.get(id)})`));
+
+    for (const roomId of sortedRooms) {
+      const dist = distances.get(roomId) ?? 99;
+      activateRoom(roomId, dist); // fire-and-forget — loads in background
     }
 
     // 7. Compile shaders for newly added rooms during idle time
@@ -1479,11 +1515,12 @@
   );
   // Track which room the player is in (updated every streaming check)
   let currentPlayerRoomId = $state<string | null>(null);
-  const showVillageEmbed = $derived(
-    currentPlayerRoomId === "collaboration" || activeRoomSet.has("collaboration"),
-  );
-  // Track last room ID to avoid redundant visibility updates every frame
-  let lastStreamingRoomId: string | null = null;
+  // Mount the village embed as soon as geometry is ready so GLTF avatar
+  // parsing happens in the background via requestIdleCallback while the
+  // player explores other rooms. Always visible once mounted — it sits
+  // inside the collaboration room's walls, so it's only visible when
+  // looking into that room. No visibility toggle = no pop-in.
+  const villageEmbedMounted = $derived(geometryReady);
 
   /** Set mesh.visible on every mesh in a room chunk */
   function setChunkVisible(chunk: RoomChunk, visible: boolean): void {
@@ -1502,7 +1539,7 @@
     for (const chunk of activeRoomChunks.values()) {
       setChunkVisible(chunk, true);
     }
-    lastStreamingRoomId = null; // Force re-evaluation on next FPS frame
+    lastPlayerRoomId = null; // Force re-evaluation on next FPS frame
   }
 
   // Toggle ceiling visibility when switching between FPS and top-down.
@@ -1510,13 +1547,10 @@
   // In FPS, ceilings show — but only for rooms in the active set.
   $effect(() => {
     if (fpsActive) {
-      // FPS: show ceilings only for active rooms
-      for (const [wingId, chunk] of activeRoomChunks) {
-        if (chunk.ceilingMesh) {
-          chunk.ceilingMesh.mesh.visible = activeRoomSet.has(wingId);
-        }
+      // FPS: show all ceilings (all rooms always visible)
+      for (const chunk of activeRoomChunks.values()) {
+        if (chunk.ceilingMesh) chunk.ceilingMesh.mesh.visible = true;
       }
-      // Corridor ceiling always visible
       if (corridorChunk?.ceilingMesh) {
         corridorChunk.ceilingMesh.mesh.visible = true;
       }
@@ -1532,8 +1566,6 @@
 
   function updateStreaming(playerTX: number, playerTZ: number): void {
     if (!geometryReady) return;
-
-    // In top-down or during flip animation: everything visible, no streaming
     if (!fpsActive) return;
 
     // Detect which room the player is in by tile coordinate
@@ -1547,41 +1579,13 @@
     }
     currentPlayerRoomId = detectedRoomId;
 
-    // When in a corridor (detectedRoomId === null), keep the last room's
-    // active set. This prevents rooms from going invisible while walking
-    // between them. The lifecycle only updates when entering an actual room.
-    if (!detectedRoomId) return;
-
-    // Skip if player hasn't moved to a new room
-    if (detectedRoomId === lastStreamingRoomId) return;
-    lastStreamingRoomId = detectedRoomId;
-
-    if (detectedRoomId !== lastPlayerRoomId) {
+    // Track room transitions for the UI label. No visibility toggling —
+    // all rooms stay visible once built. The progressive initial load
+    // ensures every room is built within ~1 second of entering the museum.
+    if (detectedRoomId && detectedRoomId !== lastPlayerRoomId) {
       lastPlayerRoomId = detectedRoomId;
-      const update = lifecycleManager.onPlayerEnteredRoom(detectedRoomId);
-
-      // Activate new rooms via the worker
-      for (const roomId of update.toActivate) {
-        const priority = update.priorities.get(roomId) ?? 1;
-        activateRoom(roomId, priority);
-      }
-
-      // Hide rooms the player has moved away from (geometry stays in scene)
-      for (const roomId of update.toCache) {
-        deactivateRoom(roomId);
-      }
-
-      // Active set = all rooms in the lifecycle update's priorities (current + adjacent)
-      activeRoomSet = new Set(update.priorities.keys());
+      console.log("[Museum] Player entered room:", detectedRoomId);
     }
-
-    // Toggle visibility: active rooms visible, others hidden
-    for (const [wingId, chunk] of activeRoomChunks) {
-      setChunkVisible(chunk, activeRoomSet.has(wingId));
-    }
-
-    // Corridor is always visible
-    if (corridorChunk) setChunkVisible(corridorChunk, true);
   }
 
   // Shadow disabled on dynamic lights — toggling castShadow reactively causes
@@ -1926,7 +1930,7 @@
 <!-- overrideVersion dependency ensures reactivity when editor moves objects -->
 <!-- Collaboration room performers are replaced by the live village sim -->
 {#each visiblePerformers as performer (performer.id)}
-  {#if showVillageEmbed && performer.id.startsWith("collab-")}
+  {#if villageEmbedMounted && performer.id.startsWith("collab-")}
     <!-- Skip: replaced by MuseumVillageEmbed -->
   {:else if performer.id.includes("telekinetic-formation")}
     {@const posOverride = overrideVersion >= 0 ? museumEditorOverrides.get(`performer-station-${performer.id}`) : null}
@@ -1951,9 +1955,12 @@
   {/if}
 {/each}
 
-<!-- Live Village simulation in the Room of Collaboration -->
-{#if showVillageEmbed}
-  <MuseumVillageEmbed centerX={collabCenterX} centerZ={collabCenterZ} />
+<!-- Live Village simulation in the Room of Collaboration.
+     Mounted early so avatar GLTF parsing happens in the background.
+     Always visible — sits inside room walls, only seen when looking in. -->
+{#if villageEmbedMounted}
+  {@const nearCollab = currentPlayerRoomId === "collaboration"}
+  <MuseumVillageEmbed centerX={collabCenterX} centerZ={collabCenterZ} showLabels={nearCollab} />
 {/if}
 
 <!-- Pedestal + sign meshes managed imperatively via scene.add() -->

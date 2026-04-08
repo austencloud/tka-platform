@@ -66,11 +66,27 @@ export class RoomLifecycleManager implements IRoomLifecycleManager {
   }
 
   onPlayerEnteredRoom(roomId: string): LifecycleUpdate {
-    // The desired active set is the current room plus all direct neighbors.
+    // The desired active set is the current room, direct neighbors (1 hop),
+    // AND neighbors-of-neighbors (2 hops). Two hops ensures the player never
+    // sees an unloaded room through a corridor-doorway chain: when you stand
+    // in room A and look through room B's doorway, room C is already built.
     const desiredActive = new Set<string>([roomId]);
+    const hop1 = new Set<string>();
     const neighbors = this.adjacency.get(roomId);
     if (neighbors) {
-      for (const neighbor of neighbors) desiredActive.add(neighbor);
+      for (const neighbor of neighbors) {
+        desiredActive.add(neighbor);
+        hop1.add(neighbor);
+      }
+    }
+    // Second hop: neighbors of neighbors
+    for (const hop1Room of hop1) {
+      const hop2Neighbors = this.adjacency.get(hop1Room);
+      if (hop2Neighbors) {
+        for (const hop2Room of hop2Neighbors) {
+          desiredActive.add(hop2Room);
+        }
+      }
     }
 
     const toActivate: string[] = [];
@@ -91,8 +107,14 @@ export class RoomLifecycleManager implements IRoomLifecycleManager {
         this.states.set(id, RoomState.Active);
       }
 
-      // Assign priority: current room = 0, neighbors = 1.
-      priorities.set(id, id === roomId ? 0 : 1);
+      // Assign priority: current room = 0, direct neighbors = 1, 2-hop = 2.
+      if (id === roomId) {
+        priorities.set(id, 0);
+      } else if (hop1.has(id)) {
+        priorities.set(id, 1);
+      } else {
+        priorities.set(id, 2);
+      }
     }
 
     // Rooms that were active but are no longer in the desired set → cache them.
