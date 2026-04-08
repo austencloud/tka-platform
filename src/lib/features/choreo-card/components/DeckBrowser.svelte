@@ -81,6 +81,23 @@
     onSelectDeck(deck.id, drillState.selections.category?.vtgFamily ?? null);
   }
 
+  // On desktop, reactively sync the drill state's single-deck result with
+  // the selected deck. Changing any sidebar filter (including reversal)
+  // that narrows to 1 deck automatically switches to it.
+  $effect(() => {
+    if (!isDesktop) return;
+    const single = drillState.selectedDeck;
+    if (single) {
+      // Only call onSelectDeck if it's a different deck than currently viewed
+      if (single.id !== selectedDeckId) {
+        onSelectDeck(single.id, drillState.selections.category?.vtgFamily ?? null);
+      }
+    } else if (selectedDeckId && drillState.selections.path) {
+      // Filters changed to produce multiple/zero results — deselect deck
+      onBackToCollections();
+    }
+  });
+
   // ── Card view mode ──────────────────────────────────────────────────────
   type ViewMode = 'grid' | 'print';
   function readViewMode(): ViewMode {
