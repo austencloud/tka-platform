@@ -14,6 +14,7 @@
   import DeckDrillDown from "./drilldown/DeckDrillDown.svelte";
   import DeckFilterSidebar from "./drilldown/sidebar/DeckFilterSidebar.svelte";
   import DeckResultsPanel from "./drilldown/DeckResultsPanel.svelte";
+  import MotionTypePills from "./MotionTypePills.svelte";
   import { createDrillDownState } from "../state/deck-drilldown-state.svelte";
   import { setDrillDownContext } from "../context/deck-drilldown-context";
   import PrintPreviewPages from "./print-preview/PrintPreviewPages.svelte";
@@ -569,7 +570,7 @@
                     onLoadFamilySequences([family.id]);
                   }}
                 >
-                  <span class="picker-label">{family.label || family.typeCombo}</span>
+                  <span class="picker-label"><MotionTypePills label={family.label || family.typeCombo} fontSize="11px" /></span>
                   <span class="picker-count">{family.sequenceIds.length}</span>
                 </button>
               {/each}
@@ -618,7 +619,7 @@
                     }
                   }}
                 >
-                  <span class="picker-label">{group.label}</span>
+                  <span class="picker-label"><MotionTypePills label={group.label} fontSize="11px" /></span>
                   <span class="picker-count">{group.count}</span>
                 </button>
               {/each}
@@ -650,7 +651,7 @@
           <div class="sequence-sections">
             {#each sequenceGroups as group (group.label)}
               <section class="seq-section">
-                <h3 class="section-header">{group.label} <span class="section-count">({group.sequences.length})</span></h3>
+                <h3 class="section-header"><MotionTypePills label={group.label} /> <span class="section-count">({group.sequences.length})</span></h3>
                 <div class="sequence-grid">
                   {#each group.sequences as sequence (sequence.id)}
                     <div class="playing-card" data-seq-id={sequence.id}>
