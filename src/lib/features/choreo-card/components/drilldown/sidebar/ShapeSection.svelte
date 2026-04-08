@@ -2,7 +2,6 @@
   import type { Deck } from '../../../domain/models/Deck';
   import type { ShapeSelections } from '../../../state/deck-drilldown-types';
   import DrillPill from '../DrillPill.svelte';
-  import GridModeCard from '../GridModeCard.svelte';
   import SidebarFilterSection from './SidebarFilterSection.svelte';
 
   interface Props {
@@ -127,10 +126,10 @@
   {#if availableGridModes.length > 0}
     <div class="sub-group">
       <span class="sub-label">GRID</span>
-      <div class="grid-row">
+      <div class="pill-row">
         {#each availableGridModes as g}
-          <GridModeCard
-            mode={g.toLowerCase() as 'diamond' | 'box'}
+          <DrillPill
+            label={g}
             selected={selectedGrid === g}
             onClick={() => selectGrid(g)}
           />
@@ -162,19 +161,5 @@
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
-  }
-
-  .grid-row {
-    display: flex;
-    gap: 8px;
-  }
-
-  .grid-row :global(.grid-mode-card) {
-    padding: 10px 16px;
-  }
-
-  .grid-row :global(.grid-svg) {
-    width: 40px;
-    height: 40px;
   }
 </style>
