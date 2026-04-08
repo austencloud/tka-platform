@@ -84,17 +84,10 @@ export function updateRotationDirection(
     return;
   }
 
-  // CRITICAL: Flip motion type when rotation direction changes (legacy behavior)
-  // PRO ↔ ANTI flip is what causes the pictograph's letter to potentially change
-  let newMotionType = currentMotion.motionType;
-  if (currentMotion.motionType === MotionType.PRO) {
-    newMotionType = MotionType.ANTI;
-    logger.log(`Flipping motion type: PRO → ANTI`);
-  } else if (currentMotion.motionType === MotionType.ANTI) {
-    newMotionType = MotionType.PRO;
-    logger.log(`Flipping motion type: ANTI → PRO`);
-  }
-  // Note: DASH, STATIC, FLOAT don't flip
+  // Motion type stays the same — changing rotation direction only changes
+  // which way the prop spins (cw↔ccw), not the motion category (pro/anti).
+  // Anti stays anti, pro stays pro.
+  const newMotionType = currentMotion.motionType;
 
   // Recalculate endOrientation based on new rotation direction and motion type
   const tempMotionData = createMotionData({

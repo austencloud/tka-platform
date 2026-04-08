@@ -210,8 +210,14 @@ export function createGenerationConfigState(
   const isLoopEnabled = $derived(config.loopEnabled);
 
   // Simple update function with persistence
+  // Strips undefined values so callers (e.g. Firestore favorite configs missing
+  // newer fields like loopEnabled) can't accidentally overwrite current values.
   function updateConfig(updates: Partial<UIGenerationConfig>) {
-    config = { ...config, ...updates };
+    const cleaned: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(updates)) {
+      if (v !== undefined) cleaned[k] = v;
+    }
+    config = { ...config, ...cleaned };
 
     // Auto-clear duration template if it's no longer valid for the current length
     if (config.durationTemplateId) {
