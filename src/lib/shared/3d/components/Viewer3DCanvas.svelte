@@ -21,9 +21,11 @@
   import Viewer3DViewPresets from "./Viewer3DViewPresets.svelte";
   import Viewer3DGridPopover from "./Viewer3DGridPopover.svelte";
   import Viewer3DGearPopover from "./Viewer3DGearPopover.svelte";
+  import PlaneModeToggle from "./controls/PlaneModeToggle.svelte";
   import BeatPlaneStrip from "./controls/BeatPlaneStrip.svelte";
   import Viewer3DContextMenuHost from "./context-menu/Viewer3DContextMenuHost.svelte";
   import { getViewer3DContext } from "../context/viewer-3d-context";
+
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { CameraStateSnapshot } from "../domain/types/CameraStateSnapshot";
 
@@ -102,8 +104,28 @@
           </button>
           <div class="header-spacer"></div>
           <div class="top-controls">
-            <Viewer3DGridPopover {sequenceData} popoverAlign="left" />
-            <Viewer3DViewPresets />
+            <div class="combined-bar">
+              <Viewer3DGridPopover {sequenceData} popoverAlign="left" flat />
+              {#if avatarState}
+                <PlaneModeToggle
+                  mode={avatarState.planeMode}
+                  bluePlane={avatarState.currentBeatBluePlane}
+                  redPlane={avatarState.currentBeatRedPlane}
+                  sequenceBluePlane={avatarState.customBluePlane}
+                  sequenceRedPlane={avatarState.customRedPlane}
+                  currentBeatIndex={avatarState.currentStepIndex}
+                  totalBeats={avatarState.totalSteps}
+                  hasBeatOverrides={avatarState.hasBeatOverrides}
+                  beatEditMode={avatarState.beatEditMode}
+                  onModeChange={(mode) => avatarState.setPlaneMode(mode)}
+                  onHandPlaneChange={(hand, plane) => avatarState.setBeatHandPlane(avatarState.currentStepIndex, hand, plane)}
+                  onSequenceHandPlaneChange={(hand, plane) => avatarState.setHandPlane(hand, plane)}
+                  onBeatEditModeChange={(enabled) => avatarState.setBeatEditMode(enabled)}
+                />
+              {/if}
+              <div class="bar-divider"></div>
+              <Viewer3DViewPresets flat />
+            </div>
           </div>
         </div>
       {:else}
@@ -176,6 +198,25 @@
     display: flex;
     gap: 8px;
     align-items: flex-start;
+  }
+
+  .combined-bar {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 4px;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(8px);
+  }
+
+  .bar-divider {
+    width: 1px;
+    height: 18px;
+    background: rgba(255, 255, 255, 0.12);
+    margin: 0 2px;
+    flex-shrink: 0;
   }
 
   .fullscreen-header {

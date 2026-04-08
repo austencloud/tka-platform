@@ -71,19 +71,28 @@
   useTask(() => {
     const beatIndex = Math.floor(currentStep);
     const subBeatProgress = currentStep - beatIndex;
-    avatarState.goToStep(beatIndex);
-    avatarState.setProgress(subBeatProgress);
+
+    // When currentStep exceeds the last valid index (end of sequence or
+    // end-position hold), show the final step at full progress instead of
+    // clamping the index and resetting progress to 0 (which causes a jerk).
+    if (beatIndex >= avatarState.totalSteps) {
+      avatarState.goToStep(avatarState.totalSteps - 1);
+      avatarState.setProgress(1);
+    } else {
+      avatarState.goToStep(beatIndex);
+      avatarState.setProgress(subBeatProgress);
+    }
   });
 
   const rawBlue = $derived(avatarState.bluePropState);
   const rawRed = $derived(avatarState.redPropState);
   const isDualWheelMode = $derived(avatarState.planeMode === PlaneMode.DUAL_WHEEL);
 
-  // Dual-wheel: swap prop states so left hand (bluePropState) gets the left-side
-  // prop (rawRed = visual blue at -X) and right hand (redPropState) gets the
-  // right-side prop (rawBlue = visual red at +X).
-  const bluePropState = $derived(isDualWheelMode ? rawRed : rawBlue);
-  const redPropState = $derived(isDualWheelMode ? rawBlue : rawRed);
+  // No swap needed: blue prop → LeftHand bone → blueLateralOffset (+X),
+  // red prop → RightHand bone → redLateralOffset (-X). The hand anchor
+  // positions in PerformerRig already place each hand at the correct grid.
+  const bluePropState = $derived(rawBlue);
+  const redPropState = $derived(rawRed);
 
   // Resolve prop type: prefer sequence's intended prop, fall back to settings
   const bluePropType = $derived.by((): PropType => {

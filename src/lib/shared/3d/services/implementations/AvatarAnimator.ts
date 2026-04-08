@@ -633,15 +633,20 @@ export class AvatarAnimator implements IAvatarAnimator {
     return this._clavicleRaiseEnabled;
   }
 
-  /** Debug toggle: disable spine twist to compare old vs new torso behavior */
-  toggleSpineTwist(): boolean {
-    this._spineTwistEnabled = !this._spineTwistEnabled;
-    if (!this._spineTwistEnabled) {
+  /** Set spine twist enabled/disabled */
+  setSpineTwistEnabled(enabled: boolean): void {
+    this._spineTwistEnabled = enabled;
+    if (!enabled) {
       this.spineTwistQuats.spine1.identity();
       this.spineTwistQuats.spine2.identity();
       this.spineTwistQuats.neck.identity();
       this.spineTwistQuats.head.identity();
     }
+  }
+
+  /** Debug toggle: disable spine twist to compare old vs new torso behavior */
+  toggleSpineTwist(): boolean {
+    this.setSpineTwistEnabled(!this._spineTwistEnabled);
     return this._spineTwistEnabled;
   }
 }
