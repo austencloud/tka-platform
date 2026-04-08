@@ -21,8 +21,9 @@ import {
 } from "$lib/features/compose/shared/domain/math-constants";
 import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import { getTipPoints } from "$lib/shared/animation-engine/domain/types/PropTipPoints";
+import { isBilateralProp } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";
 import {
-	DEFAULT_TIP_INSET_PX,
 	BASE_SAMPLES_PER_BEAT,
 	MANDALA_GRID_RADIUS,
 	ENGINE_GRID_RADIUS,
@@ -429,20 +430,41 @@ function generatePathPoints(
 	return points;
 }
 
-// ─── Staff tip offsets ──────────────────────────────────────────────────────
+// ─── Prop tip offsets ───────────────────────────────────────────────────────
 
-// Default staff: left tip at dx=-150 (tipIndex 0), right tip at dx=+150 (tipIndex 1).
-// Inset by DEFAULT_TIP_INSET_PX so 0-turn motions still produce visible lobes
-// instead of collapsing to a single line.
+// Look up tip attachment points for the given prop type from the unified
+// PropTipPoints registry. Falls back to staff tips when prop type is unknown
+// or has no tip points defined (e.g. contact ball, hand).
+// Props are already shortened to produce visible lobes on 0-turn motions,
+// so no additional inset is applied here.
 
-function getStaffTipOffsets(): { left: TipOffset; right: TipOffset } {
-	const halfLength = ENGINE_GRID_RADIUS; // 150
-	const inset = DEFAULT_TIP_INSET_PX;
+function getTipOffsetsForProp(propType: string | undefined): TipOffset[] {
+	const config = getTipPoints(propType);
+	const points = config.points;
 
-	return {
-		left: { dx: -(halfLength - inset), dy: 0 },
-		right: { dx: halfLength - inset, dy: 0 },
-	};
+	// Props with no tips (contact ball, hand) fall back to staff
+	if (points.length === 0) {
+		const fallback = getTipPoints("staff").points;
+		return fallback;
+	}
+
+	// Unilateral props (fan, club, hoop, triad) trace only their primary tip —
+	// the center/outermost point — matching the trail system's behavior.
+	if (propType && !isBilateralProp(propType) && points.length > 1) {
+		const middleIndex = Math.floor(points.length / 2);
+		return [points[middleIndex]!];
+	}
+
+	// Bilateral props with exactly 2 tips (staff, buugeng) use both as-is.
+	// Bilateral props with 4+ tips (doublestar, quiad) use only the 2 tips
+	// closest to the vertical center axis (smallest |dx|) — the horizontal
+	// tips trace redundant paths that clutter the mandala.
+	if (points.length > 2) {
+		const sorted = [...points].sort((a, b) => Math.abs(a.dx) - Math.abs(b.dx));
+		return [sorted[0]!, sorted[1]!];
+	}
+
+	return points;
 }
 
 // ─── Overlap detection (spatial hash) ──────────────────────────────────────
@@ -526,41 +548,34 @@ function extractOverlapSegments(
 }
 
 /**
- * Detect purple overlap segments across all 4 tip-pair combinations
- * (blue-left vs red-left, blue-left vs red-right, etc.)
- * and return deduplicated purple SVG paths.
+ * Detect purple overlap segments across all tip-pair combinations between
+ * blue and red hands. For staff (2 tips each) this produces 4 combinations;
+ * for fan (5 tips each) it produces 25, etc. Each blue tip is checked
+ * against each red tip for spatial proximity.
  */
 function computePurplePaths(
-	blueLeftPoints: MandalaPoint[],
-	blueRightPoints: MandalaPoint[],
-	redLeftPoints: MandalaPoint[],
-	redRightPoints: MandalaPoint[],
+	bluePointSets: MandalaPoint[][],
+	redPointSets: MandalaPoint[][],
 ): SVGPathData[] {
 	const purple: SVGPathData[] = [];
 	let tipIndex = 0;
 
-	// All 4 combinations: each blue tip against each red tip
-	const pairs: [MandalaPoint[], MandalaPoint[]][] = [
-		[blueLeftPoints, redLeftPoints],
-		[blueLeftPoints, redRightPoints],
-		[blueRightPoints, redLeftPoints],
-		[blueRightPoints, redRightPoints],
-	];
+	for (const bluePoints of bluePointSets) {
+		for (const redPoints of redPointSets) {
+			if (bluePoints.length === 0 || redPoints.length === 0) continue;
 
-	for (const [queryPoints, refPoints] of pairs) {
-		if (queryPoints.length === 0 || refPoints.length === 0) continue;
+			const mask = detectOverlapMask(bluePoints, redPoints, OVERLAP_THRESHOLD);
+			const segments = extractOverlapSegments(bluePoints, mask, OVERLAP_MIN_RUN);
 
-		const mask = detectOverlapMask(queryPoints, refPoints, OVERLAP_THRESHOLD);
-		const segments = extractOverlapSegments(queryPoints, mask, OVERLAP_MIN_RUN);
-
-		for (const segment of segments) {
-			const d = pointsToSVGPath(segment);
-			if (d) {
-				purple.push({ d, tipIndex });
+			for (const segment of segments) {
+				const d = pointsToSVGPath(segment);
+				if (d) {
+					purple.push({ d, tipIndex });
+				}
 			}
-		}
 
-		tipIndex++;
+			tipIndex++;
+		}
 	}
 
 	return purple;
@@ -618,66 +633,47 @@ export class MandalaGeometryCalculator implements IMandalaGeometryCalculator {
 			return { blue: [], red: [], purple: [] };
 		}
 
-		// For this initial implementation, default to staff tip offsets.
-		// The prop type parameters are accepted for future tip-lookup wiring.
-		const tips = getStaffTipOffsets();
+		// Look up tip attachment points for each hand's prop type.
+		// Different props have different numbers of tips — staff has 2,
+		// fan has 5, club has 1, etc. Each tip traces its own mandala path.
+		const blueTips = getTipOffsetsForProp(_bluePropType);
+		const redTips = getTipOffsetsForProp(_redPropType);
 
 		const gridRadius = MANDALA_GRID_RADIUS;
 		const samplesPerBeat = BASE_SAMPLES_PER_BEAT;
 
 		// Generate points for each hand + tip combination
-		const blueLeftPoints = generatePathPoints(
-			stepsWithMotions,
-			"blue",
-			tips.left,
-			gridRadius,
-			samplesPerBeat
-		);
-		const blueRightPoints = generatePathPoints(
-			stepsWithMotions,
-			"blue",
-			tips.right,
-			gridRadius,
-			samplesPerBeat
-		);
-		const redLeftPoints = generatePathPoints(
-			stepsWithMotions,
-			"red",
-			tips.left,
-			gridRadius,
-			samplesPerBeat
-		);
-		const redRightPoints = generatePathPoints(
-			stepsWithMotions,
-			"red",
-			tips.right,
-			gridRadius,
-			samplesPerBeat
-		);
+		const bluePointSets: MandalaPoint[][] = [];
+		const redPointSets: MandalaPoint[][] = [];
+
+		for (const tip of blueTips) {
+			bluePointSets.push(
+				generatePathPoints(stepsWithMotions, "blue", tip, gridRadius, samplesPerBeat)
+			);
+		}
+
+		for (const tip of redTips) {
+			redPointSets.push(
+				generatePathPoints(stepsWithMotions, "red", tip, gridRadius, samplesPerBeat)
+			);
+		}
 
 		// Convert point arrays to SVG path data
 		const blue: SVGPathData[] = [];
 		const red: SVGPathData[] = [];
 
-		const blueLeftD = pointsToSVGPath(blueLeftPoints);
-		if (blueLeftD) blue.push({ d: blueLeftD, tipIndex: 0 });
+		for (let i = 0; i < bluePointSets.length; i++) {
+			const d = pointsToSVGPath(bluePointSets[i]!);
+			if (d) blue.push({ d, tipIndex: i });
+		}
 
-		const blueRightD = pointsToSVGPath(blueRightPoints);
-		if (blueRightD) blue.push({ d: blueRightD, tipIndex: 1 });
-
-		const redLeftD = pointsToSVGPath(redLeftPoints);
-		if (redLeftD) red.push({ d: redLeftD, tipIndex: 0 });
-
-		const redRightD = pointsToSVGPath(redRightPoints);
-		if (redRightD) red.push({ d: redRightD, tipIndex: 1 });
+		for (let i = 0; i < redPointSets.length; i++) {
+			const d = pointsToSVGPath(redPointSets[i]!);
+			if (d) red.push({ d, tipIndex: i });
+		}
 
 		// Detect purple overlap segments across all tip-pair combinations
-		const purple = computePurplePaths(
-			blueLeftPoints,
-			blueRightPoints,
-			redLeftPoints,
-			redRightPoints,
-		);
+		const purple = computePurplePaths(bluePointSets, redPointSets);
 
 		const result: MandalaPaths = { blue, red, purple };
 
