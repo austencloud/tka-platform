@@ -158,6 +158,9 @@ export class PublicIndexSyncer implements IPublicIndexSyncer {
         blueSoloHash: sequence.blueSoloHash,
         redSoloHash: sequence.redSoloHash,
         ...(sequence.creatorIntent && { creatorIntent: sequence.creatorIntent }),
+        // Start position — not derivable from compositional fields, needed for
+        // correct 3D avatar orientation at beat 0.
+        ...(sequence.startPosition && { startPosition: sequence.startPosition }),
       };
 
       // Strip undefined fields — Firestore rejects them in setDoc
