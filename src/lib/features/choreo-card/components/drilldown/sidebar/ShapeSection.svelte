@@ -17,6 +17,10 @@
   const SLICE_OPTIONS = ['Halved', 'Quartered'] as const;
   const GRID_OPTIONS = ['Diamond', 'Box'] as const;
 
+  function capitalize(s: string): string {
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  }
+
   let availableLoopTypes = $derived(
     LOOP_TYPE_ORDER.filter((lt) =>
       decks.some((d) => d.loopType?.toLowerCase() === lt.toLowerCase())
@@ -29,69 +33,56 @@
     )
   );
 
-  let selectedLoopTypes = $state<string[]>(
-    currentShape ? currentShape.loopTypes.map(t => t.charAt(0).toUpperCase() + t.slice(1)) : []
+  // Read displayed values from the drill state (props), with sensible defaults
+  const displayLoopTypes: string[] = $derived(
+    currentShape
+      ? currentShape.loopTypes.map(t => capitalize(t))
+      : (availableLoopTypes.length > 0 ? [availableLoopTypes[0]!] : [])
   );
-  let selectedSlice = $state<string>(
-    currentShape ? currentShape.sliceType.charAt(0).toUpperCase() + currentShape.sliceType.slice(1) : 'Halved'
+  const displaySlice: string = $derived(
+    currentShape ? capitalize(currentShape.sliceType) : 'Halved'
   );
-  let selectedGrid = $state<string>(
-    currentShape ? currentShape.gridMode.charAt(0).toUpperCase() + currentShape.gridMode.slice(1) : ''
+  const displayGrid: string = $derived(
+    currentShape ? capitalize(currentShape.gridMode) : (availableGridModes[0] ?? 'Diamond')
   );
-
-  $effect(() => {
-    if (selectedLoopTypes.length === 0 && availableLoopTypes.length > 0) {
-      selectedLoopTypes = [availableLoopTypes[0]!];
-    }
-  });
-
-  $effect(() => {
-    if (!selectedGrid && availableGridModes.length > 0) {
-      selectedGrid = availableGridModes[0]!;
-    }
-  });
 
   let rotatedSelected = $derived(
-    selectedLoopTypes.some((lt) => lt.toLowerCase() === 'rotated')
+    displayLoopTypes.some((lt) => lt?.toLowerCase() === 'rotated')
   );
   let quarteredLocked = $derived(!rotatedSelected);
 
-  $effect(() => {
-    if (quarteredLocked && selectedSlice === 'Quartered') {
-      selectedSlice = 'Halved';
-    }
-  });
-
-  function emitSelection(): void {
-    if (selectedLoopTypes.length === 0 || !selectedGrid) return;
+  function emitShape(loopTypes: string[], slice: string, grid: string): void {
+    if (loopTypes.length === 0 || !grid) return;
+    // Force Halved if Quartered is locked
+    const effectiveSlice = (!loopTypes.some(lt => lt.toLowerCase() === 'rotated') && slice === 'Quartered')
+      ? 'Halved' : slice;
     onSelectShape({
-      loopTypes: selectedLoopTypes.map((lt) => lt.toLowerCase()),
-      sliceType: selectedSlice.toLowerCase() as 'halved' | 'quartered',
-      gridMode: selectedGrid.toLowerCase(),
+      loopTypes: loopTypes.map((lt) => lt.toLowerCase()),
+      sliceType: effectiveSlice.toLowerCase() as 'halved' | 'quartered',
+      gridMode: grid.toLowerCase(),
     });
   }
 
   function toggleLoopType(lt: string): void {
-    const idx = selectedLoopTypes.indexOf(lt);
+    const current = [...displayLoopTypes];
+    const idx = current.indexOf(lt);
+    let next: string[];
     if (idx >= 0) {
-      if (selectedLoopTypes.length > 1) {
-        selectedLoopTypes = selectedLoopTypes.filter((_, i) => i !== idx);
-      }
+      if (current.length <= 1) return;
+      next = current.filter((_, i) => i !== idx);
     } else {
-      selectedLoopTypes = [...selectedLoopTypes, lt];
+      next = [...current, lt];
     }
-    emitSelection();
+    emitShape(next, displaySlice, displayGrid);
   }
 
   function selectSlice(s: string): void {
     if (s === 'Quartered' && quarteredLocked) return;
-    selectedSlice = s;
-    emitSelection();
+    emitShape([...displayLoopTypes], s, displayGrid);
   }
 
   function selectGrid(g: string): void {
-    selectedGrid = g;
-    emitSelection();
+    emitShape([...displayLoopTypes], displaySlice, g);
   }
 </script>
 
@@ -102,7 +93,7 @@
       {#each availableLoopTypes as lt}
         <DrillPill
           label={lt}
-          selected={selectedLoopTypes.includes(lt)}
+          selected={displayLoopTypes.includes(lt)}
           onClick={() => toggleLoopType(lt)}
         />
       {/each}
@@ -115,7 +106,7 @@
       {#each SLICE_OPTIONS as s}
         <DrillPill
           label={s}
-          selected={selectedSlice === s}
+          selected={displaySlice === s}
           locked={s === 'Quartered' && quarteredLocked}
           onClick={() => selectSlice(s)}
         />
@@ -130,7 +121,7 @@
         {#each availableGridModes as g}
           <DrillPill
             label={g}
-            selected={selectedGrid === g}
+            selected={displayGrid === g}
             onClick={() => selectGrid(g)}
           />
         {/each}
