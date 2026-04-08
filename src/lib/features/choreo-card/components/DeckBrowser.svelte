@@ -12,12 +12,17 @@
   import ChoreoCard from "./ChoreoCard.svelte";
   import CardInspectModal from "./CardInspectModal.svelte";
   import DeckDrillDown from "./drilldown/DeckDrillDown.svelte";
+  import DeckFilterSidebar from "./drilldown/sidebar/DeckFilterSidebar.svelte";
+  import DeckResultsPanel from "./drilldown/DeckResultsPanel.svelte";
+  import { createDrillDownState } from "../state/deck-drilldown-state.svelte";
+  import { setDrillDownContext } from "../context/deck-drilldown-context";
   import PrintPreviewPages from "./print-preview/PrintPreviewPages.svelte";
   import PrintPreviewToolbar from "./print-preview/PrintPreviewToolbar.svelte";
   import { type CardSizeId } from "../domain/card-sizes";
   import type { IPrintPDFExporter, CardPair } from "../services/contracts/IPrintPDFExporter";
   import type { IPrintZipExporter } from "../services/contracts/IPrintZipExporter";
   import { container } from "$lib/shared/di";
+  import { BREAKPOINTS } from "$lib/shared/device/domain/constants/device-constants";
 
   interface Props {
     decks: Deck[];
@@ -55,6 +60,26 @@
     onContextMenu,
     vtgFamilyId,
   }: Props = $props();
+
+  // ── Desktop detection ───────────────────────────────────────────────────
+  let isDesktop = $state(false);
+
+  $effect(() => {
+    if (typeof window === 'undefined') return;
+    const mq = window.matchMedia(`(min-width: ${BREAKPOINTS.DESKTOP}px)`);
+    isDesktop = mq.matches;
+    const handler = (e: MediaQueryListEvent) => { isDesktop = e.matches; };
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  });
+
+  // ── Drill-down state (owned here so sidebar survives deck selection) ───
+  const drillState = createDrillDownState(() => decks);
+  setDrillDownContext(drillState);
+
+  function handleSidebarDeckSelect(deck: Deck) {
+    onSelectDeck(deck.id, drillState.selections.category?.vtgFamily ?? null);
+  }
 
   // ── Card view mode ──────────────────────────────────────────────────────
   type ViewMode = 'grid' | 'print';
@@ -371,83 +396,118 @@
   }
 </script>
 
-<div class="deck-browser">
-  {#if selectedDeck || (selectedDeckId && decks.length === 0)}
-    <!-- ═══ Level 2: Deck Interior (or restoring a persisted deck) ═══ -->
-    {#if !selectedDeck}
-      <!-- Decks still loading — hold position, don't flash the drilldown -->
-      <div class="loading" role="status" aria-live="polite">
-        <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-        Loading deck...
-      </div>
-    {:else}
-    <div class="level-container level-interior">
-      <div class="top-bar">
-        <nav class="breadcrumb" aria-label="Deck navigation">
-          <button class="crumb" onclick={onBackToCollections} type="button">
-            <i class="fas fa-arrow-left" aria-hidden="true" style="margin-right:6px;font-size:11px;"></i>
-            Back to browser
-          </button>
-          <span class="crumb-sep" aria-hidden="true">›</span>
-          <span class="crumb current">{tkaDesignation}</span>
-          {#if vtgDesignation}
-            <span class="crumb-sep" aria-hidden="true">·</span>
-            <span class="crumb vtg-label">{vtgDesignation}</span>
-          {/if}
-        </nav>
-        <div class="top-bar-actions">
-          <!-- View mode toggle -->
-          <div class="view-toggle" role="radiogroup" aria-label="View mode">
-            <button
-              class="action-chip"
-              class:active={viewMode === 'grid'}
-              onclick={() => setViewMode('grid')}
-              type="button"
-              role="radio"
-              aria-checked={viewMode === 'grid'}
-            >
-              <i class="fas fa-th" aria-hidden="true"></i>
-              Grid
-            </button>
-            <button
-              class="action-chip"
-              class:active={viewMode === 'print'}
-              onclick={() => setViewMode('print')}
-              type="button"
-              role="radio"
-              aria-checked={viewMode === 'print'}
-            >
-              <i class="fas fa-print" aria-hidden="true"></i>
-              Print Preview
-            </button>
+<div class="deck-browser" class:desktop-integrated={isDesktop}>
+  {#if isDesktop}
+    <!-- ═══ Desktop: Sidebar + inline right panel ═══ -->
+    <div class="desktop-split">
+      <DeckFilterSidebar state={drillState} allDecks={decks} />
+
+      <div class="desktop-right-panel">
+        {#if selectedDeck}
+          <!-- Deck interior rendered inline next to sidebar -->
+          {@render deckInterior()}
+        {:else if selectedDeckId && decks.length === 0}
+          <div class="loading" role="status" aria-live="polite">
+            <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+            Loading deck...
           </div>
+        {:else}
+          <DeckResultsPanel
+            decks={drillState.filteredDecks}
+            onSelectDeck={handleSidebarDeckSelect}
+          />
+        {/if}
+      </div>
+    </div>
 
-          {#if viewMode === 'print'}
-            <PrintPreviewToolbar
-              {cardSize}
-              totalCards={filteredSequences.length}
-              {isRendering}
-              {isExporting}
-              {renderProgress}
-              {renderTotal}
-              onCardSizeChange={setCardSize}
-              onExportPDF={handleExportPDF}
-              onExportZIP={handleExportZIP}
-              onRerender={() => { rerenderKey++; }}
-            />
-          {/if}
+  {:else}
+    <!-- ═══ Mobile: Full-page switching ═══ -->
+    {#if selectedDeck || (selectedDeckId && decks.length === 0)}
+      {#if !selectedDeck}
+        <div class="loading" role="status" aria-live="polite">
+          <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+          Loading deck...
+        </div>
+      {:else}
+        <div class="level-container level-interior">
+          <div class="top-bar">
+            <nav class="breadcrumb" aria-label="Deck navigation">
+              <button class="crumb" onclick={onBackToCollections} type="button">
+                <i class="fas fa-arrow-left" aria-hidden="true" style="margin-right:6px;font-size:11px;"></i>
+                Back to browser
+              </button>
+              <span class="crumb-sep" aria-hidden="true">›</span>
+              <span class="crumb current">{tkaDesignation}</span>
+              {#if vtgDesignation}
+                <span class="crumb-sep" aria-hidden="true">·</span>
+                <span class="crumb vtg-label">{vtgDesignation}</span>
+              {/if}
+            </nav>
+          </div>
+          {@render deckInterior()}
+        </div>
+      {/if}
+    {:else}
+      <DeckDrillDown {decks} onSelectDeck={handleDrillDownSelect} />
+    {/if}
+  {/if}
+</div>
 
+<!-- Shared deck interior content used by both desktop and mobile -->
+{#snippet deckInterior()}
+  {#if selectedDeck}
+    <div class="interior-content">
+      <div class="top-bar-actions">
+        <div class="view-toggle" role="radiogroup" aria-label="View mode">
           <button
             class="action-chip"
-            class:active={interiorFiltersOpen}
-            onclick={() => { interiorFiltersOpen = !interiorFiltersOpen; }}
+            class:active={viewMode === 'grid'}
+            onclick={() => setViewMode('grid')}
             type="button"
-            aria-label="Toggle filters"
+            role="radio"
+            aria-checked={viewMode === 'grid'}
           >
-            <i class="fas fa-filter" aria-hidden="true"></i>
-            Filter
+            <i class="fas fa-th" aria-hidden="true"></i>
+            Grid
+          </button>
+          <button
+            class="action-chip"
+            class:active={viewMode === 'print'}
+            onclick={() => setViewMode('print')}
+            type="button"
+            role="radio"
+            aria-checked={viewMode === 'print'}
+          >
+            <i class="fas fa-print" aria-hidden="true"></i>
+            Print Preview
           </button>
         </div>
+
+        {#if viewMode === 'print'}
+          <PrintPreviewToolbar
+            {cardSize}
+            totalCards={filteredSequences.length}
+            {isRendering}
+            {isExporting}
+            {renderProgress}
+            {renderTotal}
+            onCardSizeChange={setCardSize}
+            onExportPDF={handleExportPDF}
+            onExportZIP={handleExportZIP}
+            onRerender={() => { rerenderKey++; }}
+          />
+        {/if}
+
+        <button
+          class="action-chip"
+          class:active={interiorFiltersOpen}
+          onclick={() => { interiorFiltersOpen = !interiorFiltersOpen; }}
+          type="button"
+          aria-label="Toggle filters"
+        >
+          <i class="fas fa-filter" aria-hidden="true"></i>
+          Filter
+        </button>
       </div>
 
       <p class="deck-meta-line">
@@ -478,7 +538,6 @@
         </div>
       {:else if filteredSequences.length === 0}
         {#if isLargeDeck && interiorFilters.familyIds.length === 0 && viewMode === 'print'}
-          <!-- Large deck, print preview, no family selected — show family picker -->
           <div class="print-subgroup-picker">
             <p class="picker-heading">
               {formatCount(selectedDeck.totalSequences)} sequences — pick a family to preview
@@ -601,15 +660,9 @@
           </div>
         {/if}
       {/if}
-
     </div>
-    {/if}
-
-  {:else}
-    <!-- ═══ Drill-Down Browser (replaces old level 0 + 1) ═══ -->
-    <DeckDrillDown {decks} onSelectDeck={handleDrillDownSelect} />
   {/if}
-</div>
+{/snippet}
 
 {#if inspectedSequence}
   <CardInspectModal
@@ -693,6 +746,25 @@
     overflow-y: auto;
     scrollbar-width: thin;
     scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+  }
+
+  .desktop-split {
+    display: flex;
+    gap: 20px;
+    padding: 16px 20px;
+    height: 100%;
+  }
+
+  .desktop-right-panel {
+    flex: 1;
+    min-width: 0;
+    overflow-y: auto;
+  }
+
+  .interior-content {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
   }
 
   .deck-browser::-webkit-scrollbar { width: 8px; }
