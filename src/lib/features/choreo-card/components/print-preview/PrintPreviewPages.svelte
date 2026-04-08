@@ -3,7 +3,7 @@
   import type { CardSizeId } from "../../domain/card-sizes";
   import type { CardPair } from "../../services/contracts/IPrintPDFExporter";
   import type { PrintRenderOptions } from "../../services/contracts/IPrintCardRenderer";
-  import type { ElementalTheme } from "../../domain/elemental-theme";
+  import { type ElementalTheme, VTG_ELEMENTAL_THEMES } from "../../domain/elemental-theme";
   import { getPageLayout, CARD_SIZES } from "../../domain/card-sizes";
   import { container } from "$lib/shared/di";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
@@ -20,8 +20,10 @@
     includeStartPosition?: boolean;
     handPointsVisible?: boolean;
     elementTheme?: ElementalTheme;
-    /** Left-side footer label (e.g. "VTG SS 1:1" for deck cards) */
+    /** Left-side footer label (e.g. "QS 1:1" for deck cards) */
     leftLabel?: string;
+    /** VTG family ID for elemental icon loading (e.g. "quarter-same") */
+    elementFamilyId?: string;
     /** Bump to force a full re-render of all cards */
     rerenderKey?: number;
     /** Right-click context menu on a card cell: (x, y, rerender callback for that card, sequence) */
@@ -44,6 +46,7 @@
     handPointsVisible = true,
     elementTheme,
     leftLabel,
+    elementFamilyId,
     rerenderKey = 0,
     onCardContextMenu,
     onCardClick,
@@ -62,6 +65,18 @@
   let renderProgress = $state(0);
   let renderTotal = $state(0);
   let isRendering = $state(false);
+
+  // Pre-load elemental icon for footer rendering
+  let loadedElementIcon: HTMLImageElement | null = $state(null);
+  $effect(() => {
+    if (!elementFamilyId) { loadedElementIcon = null; return; }
+    const theme = VTG_ELEMENTAL_THEMES.find(t => t.familyId === elementFamilyId);
+    if (!theme) { loadedElementIcon = null; return; }
+    const img = new Image();
+    img.src = theme.iconPath;
+    img.onload = () => { loadedElementIcon = img; };
+    img.onerror = () => { loadedElementIcon = null; };
+  });
 
   let layout = $derived(getPageLayout(cardSize));
   let sizeSpec = $derived(CARD_SIZES[cardSize]);
@@ -95,6 +110,7 @@
       bluePropType: settingsService.settings.bluePropType as any,
       redPropType: settingsService.settings.redPropType as any,
       leftLabel,
+      elementIcon: loadedElementIcon ?? undefined,
     };
   }
 
@@ -125,8 +141,10 @@
       elementTheme?.familyId ?? "none",
       settingsService.settings.bluePropType,
       settingsService.settings.redPropType,
+      settingsService.settings.backgroundType ?? "",
       stepCount,
       leftLabel ?? "",
+      elementFamilyId ?? "",
     ].join("|");
     return `${seqId}::${optsPart}`;
   }
@@ -155,6 +173,7 @@
     const _includeStartPosition = includeStartPosition;
     const _handPointsVisible = handPointsVisible;
     const _rerenderKey = rerenderKey;
+    const _bgType = settingsService.settings.backgroundType;
 
     // Void unused captures to satisfy linter
     void _cardSize;
@@ -165,6 +184,7 @@
     void _includeStartPosition;
     void _handPointsVisible;
     void _rerenderKey;
+    void _bgType;
 
     const generation = ++renderGeneration;
 
@@ -186,8 +206,33 @@
       lastRerenderKey = rerenderKey;
     }
 
-    isRendering = true;
     renderTotal = seqs.length;
+
+    // Fast path: check if every card is already cached
+    const allCached = seqs.every((seq) => {
+      const key = buildCacheKey(seq, seq.steps?.length);
+      return cardCache.has(key);
+    });
+
+    if (allCached) {
+      // All cache hits — populate instantly, no progressive rendering
+      const cards: RenderedCard[] = [];
+      const pairs: CardPair[] = [];
+      for (const seq of seqs) {
+        const cached = cardCache.get(buildCacheKey(seq, seq.steps?.length))!;
+        cards.push(cached.rendered);
+        pairs.push(cached.pair);
+      }
+      renderedCards = cards;
+      renderProgress = seqs.length;
+      isRendering = false;
+      onPairsReady?.(pairs);
+      onRenderStateChange?.({ isRendering: false, progress: seqs.length, total: seqs.length });
+      return;
+    }
+
+    // Slow path: render uncached cards progressively
+    isRendering = true;
     renderProgress = 0;
     renderedCards = [];
     onRenderStateChange?.({ isRendering: true, progress: 0, total: seqs.length });
@@ -205,11 +250,9 @@
       const cached = cardCache.get(cacheKey);
 
       if (cached) {
-        // Cache hit — reuse data URLs for display, reuse canvas pair for export
         cards.push(cached.rendered);
         pairs.push(cached.pair);
       } else {
-        // Cache miss — render fresh
         const options = buildRenderOptions(stepCount);
         const frontCanvas = await renderer.renderFront(seq, options);
         const backCanvas = await renderer.renderBack(seq, options);
@@ -401,7 +444,8 @@
 
   .card-cell {
     overflow: hidden;
-    border-radius: 8px;
+    /* Standard playing card corner radius: ~3mm on 63.5mm = 4.72% of width */
+    border-radius: 4.72%;
     background: #f0f0f0;
   }
 

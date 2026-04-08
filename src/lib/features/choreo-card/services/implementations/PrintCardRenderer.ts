@@ -25,6 +25,12 @@ const MPC_BLEED = 36;
 const CONTENT_WIDTH = MPC_WIDTH - MPC_BLEED * 2;   // 750
 const CONTENT_HEIGHT = MPC_HEIGHT - MPC_BLEED * 2;  // 1050
 
+// Standard playing card corner radius: ~3mm on 63.5mm width = 4.72%
+// Applied to MPC canvas width for realistic proportions
+const CARD_RADIUS_PCT = 0.0472;
+const OUTER_RADIUS = Math.round(MPC_WIDTH * CARD_RADIUS_PCT);  // ~39px
+const INNER_RADIUS = Math.round(CONTENT_WIDTH * CARD_RADIUS_PCT); // ~35px
+
 export class PrintCardRenderer implements IPrintCardRenderer {
   constructor(
     private readonly imageComposer: IImageComposer,
@@ -131,6 +137,7 @@ export class PrintCardRenderer implements IPrintCardRenderer {
       showNotes: true,
       showBirthday: true,
       leftLabel: options.leftLabel,
+      elementIcon: options.elementIcon,
       loopType: sequence.loopType ?? undefined,
       showLoopGlyph: !!sequence.loopType,
       ...(options.bluePropType && { bluePropTypeOverride: options.bluePropType }),
@@ -153,8 +160,8 @@ export class PrintCardRenderer implements IPrintCardRenderer {
     mpcCanvas.height = canvasH;
     const ctx = mpcCanvas.getContext("2d")!;
 
-    const outerRadius = 12;
-    const innerRadius = 8;
+    const outerRadius = OUTER_RADIUS;
+    const innerRadius = INNER_RADIUS;
 
     // 1. Clip to rounded outer card shape
     ctx.save();

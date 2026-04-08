@@ -27,7 +27,7 @@
 >
   <div class="icon-area">
     <img
-      src={theme.svgPath}
+      src={theme.iconPath}
       alt="{theme.element} element"
       class="element-icon"
       width="64"

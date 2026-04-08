@@ -258,7 +258,8 @@
   }
 
   .card-frame {
-    border-radius: 5%;
+    /* Standard playing card corner radius: ~3mm on 63.5mm = 4.72% of width */
+    border-radius: 4.72%;
     overflow: hidden;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
     transition:
@@ -279,7 +280,7 @@
   /* CardBack's .border-frame uses cqi units that scale too large at preview size.
      Match the outer card-frame's radius so the gradient border follows the curve. */
   .card-frame :global(.border-frame) {
-    border-radius: 5%;
+    border-radius: 4.72%;
   }
 
   .card-frame :global(.back) {
