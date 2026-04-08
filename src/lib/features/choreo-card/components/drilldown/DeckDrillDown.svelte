@@ -55,6 +55,15 @@
 	function handleDeckSelect(deck: Deck) {
 		onSelectDeck(deck, drillState.selections.category?.vtgFamily ?? null);
 	}
+
+	// On desktop, auto-open when filters narrow to exactly 1 deck
+	$effect(() => {
+		if (!isDesktop) return;
+		const single = drillState.selectedDeck;
+		if (single) {
+			handleDeckSelect(single);
+		}
+	});
 </script>
 
 <div class="drilldown" class:desktop={isDesktop} style="--accent:{accentColor};--accent-rgb:{accentRgb}">
