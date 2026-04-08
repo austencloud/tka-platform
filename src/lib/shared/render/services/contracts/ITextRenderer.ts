@@ -73,7 +73,8 @@ export interface ITextRenderer {
     customNotesText?: string,
     backgroundColor?: string,
     borderColor?: string,
-    leftLabel?: string
+    leftLabel?: string,
+    elementIcon?: CanvasImageSource
   ): void;
 
   /**

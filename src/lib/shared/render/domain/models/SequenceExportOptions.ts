@@ -35,8 +35,10 @@ export interface SequenceExportOptions {
   showNotes?: boolean; // Bottom-center: notes text
   showBirthday?: boolean; // Bottom-right: birthday date
   customNotesText?: string; // Custom text for center notes (default: "The Kinetic Alphabet")
-  /** Left-side label override (e.g. "VTG SS 1:1" for deck cards) */
+  /** Left-side label override (e.g. "QS 1:1" for deck cards) */
   leftLabel?: string;
+  /** Pre-loaded elemental icon image to draw in footer before the left label */
+  elementIcon?: CanvasImageSource;
 
   // Prop type override (optional)
   // If provided, overrides the prop type for all steps in the sequence
