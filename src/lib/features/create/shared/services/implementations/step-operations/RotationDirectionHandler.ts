@@ -84,10 +84,15 @@ export function updateRotationDirection(
     return;
   }
 
-  // Motion type stays the same — changing rotation direction only changes
-  // which way the prop spins (cw↔ccw), not the motion category (pro/anti).
-  // Anti stays anti, pro stays pro.
-  const newMotionType = currentMotion.motionType;
+  // For shifts (pro/anti), motion type is DERIVED from the relationship
+  // between rotation direction and hand orbital direction.
+  // PRO = prop spins the same way the hand orbits.
+  // ANTI = prop spins opposite to the hand orbit.
+  // For non-shifts (dash/static/float), motion type is unchanged.
+  const newMotionType = deriveMotionType(
+    currentMotion,
+    newRotationDirection
+  );
 
   // Recalculate endOrientation based on new rotation direction and motion type
   const tempMotionData = createMotionData({
@@ -350,4 +355,77 @@ export async function recalculateLetterForBeat(
   } catch (error) {
     logger.error(`Failed to recalculate letter for beat ${stepNumber}:`, error);
   }
+}
+
+// ============================================================================
+// MOTION TYPE DERIVATION
+// ============================================================================
+
+// CW hand orbital pairs: startLocation → endLocation traces a clockwise arc
+const CW_PAIRS: [string, string][] = [
+  ["s", "w"], ["w", "n"], ["n", "e"], ["e", "s"],
+  ["ne", "se"], ["se", "sw"], ["sw", "nw"], ["nw", "ne"],
+];
+
+// CCW hand orbital pairs
+const CCW_PAIRS: [string, string][] = [
+  ["w", "s"], ["n", "w"], ["e", "n"], ["s", "e"],
+  ["ne", "nw"], ["nw", "sw"], ["sw", "se"], ["se", "ne"],
+];
+
+/**
+ * Derive the hand's orbital direction from start/end grid locations.
+ * Returns "cw", "ccw", or null (for dash/static hand paths).
+ */
+function deriveHandOrbitalDirection(
+  startLocation: string,
+  endLocation: string
+): RotationDirection | null {
+  const s = startLocation.toLowerCase();
+  const e = endLocation.toLowerCase();
+
+  if (CW_PAIRS.some(([a, b]) => a === s && b === e))
+    return RotationDirection.CLOCKWISE;
+  if (CCW_PAIRS.some(([a, b]) => a === s && b === e))
+    return RotationDirection.COUNTER_CLOCKWISE;
+
+  return null;
+}
+
+/**
+ * Derive motion type from the relationship between rotation direction and
+ * hand orbital direction.
+ *
+ * For shifts (PRO/ANTI):
+ *   PRO  = prop spins the same direction as the hand orbits
+ *   ANTI = prop spins opposite to the hand orbit
+ *
+ * For non-shifts (DASH/STATIC/FLOAT): motion type is unchanged.
+ */
+function deriveMotionType(
+  motion: MotionData,
+  newRotationDirection: RotationDirection
+): MotionType {
+  // Only shifts (PRO/ANTI) have their motion type determined by rotation
+  if (
+    motion.motionType !== MotionType.PRO &&
+    motion.motionType !== MotionType.ANTI
+  ) {
+    return motion.motionType;
+  }
+
+  const handDirection = deriveHandOrbitalDirection(
+    motion.startLocation,
+    motion.endLocation
+  );
+
+  // If hand path isn't a shift arc (dash/static trajectory), keep as-is
+  if (!handDirection) {
+    return motion.motionType;
+  }
+
+  // PRO = rotation matches hand orbit, ANTI = opposite
+  return newRotationDirection === handDirection
+    ? MotionType.PRO
+    : MotionType.ANTI;
 }
