@@ -8,6 +8,12 @@
 
   let { decks, onSelectDeck }: Props = $props();
 
+  const MAX_COMFORTABLE = 24;
+
+  const totalSequences = $derived(
+    decks.reduce((sum, d) => sum + d.totalSequences, 0)
+  );
+
   function formatCount(n: number): string {
     if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
     return String(n);
@@ -17,35 +23,40 @@
     return s.charAt(0).toUpperCase() + s.slice(1);
   }
 
-  // Build a short label showing only what differentiates this deck from siblings.
-  // The sidebar already shows collection/shape/grid/steps, so the card only needs
-  // the parts that vary across the result set: step count, turn pattern, reversal.
+  function formatTurn(turn: string): string {
+    const m = turn.match(/^uniform[- ](\d+(?:\.\d+)?)t$/i);
+    return m ? `${m[1]}T` : capitalize(turn.replace(/-/g, ' '));
+  }
+
+  // Only show the axes that actually vary across the current result set.
+  // If every card shares the same turn pattern, don't show it — the sidebar
+  // already told you. Only label what distinguishes THIS card from its siblings.
+  const varyingAxes = $derived.by(() => {
+    if (decks.length <= 1) return { stepCount: false, turn: false, reversal: false, slice: false, grid: false };
+    return {
+      stepCount: new Set(decks.map(d => d.stepCount)).size > 1,
+      turn: new Set(decks.map(d => d.turnPattern)).size > 1,
+      reversal: new Set(decks.map(d => d.reversalPattern)).size > 1,
+      slice: new Set(decks.map(d => d.sliceType)).size > 1,
+      grid: new Set(decks.map(d => d.gridMode)).size > 1,
+    };
+  });
+
   function shortLabel(deck: Deck): string {
     const parts: string[] = [];
+    const v = varyingAxes;
 
-    // Include step count if the result set has multiple
-    const stepCounts = new Set(decks.map(d => d.stepCount));
-    if (stepCounts.size > 1) parts.push(`${deck.stepCount}-Step`);
+    if (v.stepCount) parts.push(`${deck.stepCount}-Step`);
+    if (v.slice) parts.push(capitalize(deck.sliceType));
+    if (v.turn) parts.push(formatTurn(deck.turnPattern));
+    if (v.reversal) parts.push(capitalize(deck.reversalPattern.replace(/-/g, ' ')));
+    if (v.grid) parts.push(capitalize(deck.gridMode));
 
-    // Turn pattern — format "uniform-0t" → "0T", others capitalize
-    const turn = deck.turnPattern;
-    const uniformMatch = turn.match(/^uniform[- ](\d+(?:\.\d+)?)t$/i);
-    if (uniformMatch) {
-      parts.push(`${uniformMatch[1]}T`);
-    } else {
-      parts.push(capitalize(turn.replace(/-/g, ' ')));
+    // If nothing varies (e.g., single deck), show a meaningful fallback
+    if (parts.length === 0) {
+      parts.push(formatTurn(deck.turnPattern));
+      parts.push(capitalize(deck.reversalPattern.replace(/-/g, ' ')));
     }
-
-    // Reversal pattern
-    parts.push(capitalize(deck.reversalPattern.replace(/-/g, ' ')));
-
-    // Slice type if mixed
-    const sliceTypes = new Set(decks.map(d => d.sliceType));
-    if (sliceTypes.size > 1) parts.push(capitalize(deck.sliceType));
-
-    // Grid mode if mixed
-    const gridModes = new Set(decks.map(d => d.gridMode));
-    if (gridModes.size > 1) parts.push(capitalize(deck.gridMode));
 
     return parts.join(' · ');
   }
@@ -58,26 +69,34 @@
     {:else if decks.length === 1}
       <span>1 deck — click to open</span>
     {:else}
-      <span>{decks.length} decks match</span>
+      <span>{decks.length} decks</span>
     {/if}
   </div>
 
-  <div class="deck-grid">
-    {#each decks as deck, i (deck.id)}
-      <button
-        class="deck-card"
-        style="animation-delay: {Math.min(i * 30, 300)}ms"
-        onclick={() => onSelectDeck(deck)}
-        aria-label="Open {deck.canonicalName ?? deck.name} with {deck.totalSequences} sequences"
-      >
-        <span class="deck-name">{shortLabel(deck)}</span>
-        <div class="deck-meta">
-          <span>{formatCount(deck.totalSequences)} seq</span>
-          <span>{deck.families.length} families</span>
-        </div>
-      </button>
-    {/each}
-  </div>
+  {#if decks.length > MAX_COMFORTABLE}
+    <div class="narrow-prompt">
+      <p class="narrow-title">Too many decks to browse</p>
+      <p class="narrow-hint">Use the filters to narrow down. Try selecting a step count or turn pattern.</p>
+      <p class="narrow-count">{decks.length} decks across {formatCount(totalSequences)} sequences</p>
+    </div>
+  {:else}
+    <div class="deck-grid">
+      {#each decks as deck, i (deck.id)}
+        <button
+          class="deck-card"
+          style="animation-delay: {Math.min(i * 30, 300)}ms"
+          onclick={() => onSelectDeck(deck)}
+          aria-label="Open {shortLabel(deck)} with {deck.totalSequences} sequences"
+        >
+          <span class="deck-name">{shortLabel(deck)}</span>
+          <div class="deck-meta">
+            <span>{formatCount(deck.totalSequences)} seq</span>
+            <span>{deck.families.length} families</span>
+          </div>
+        </button>
+      {/each}
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -96,8 +115,8 @@
 
   .deck-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 14px;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 16px;
     align-content: start;
     flex: 1;
     overflow-y: auto;
@@ -108,8 +127,8 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 10px;
-    padding: 24px 16px;
+    gap: 12px;
+    padding: 32px 20px;
     background: rgba(255, 255, 255, 0.02);
     border: 1px solid rgba(255, 255, 255, 0.07);
     border-radius: 12px;
@@ -117,7 +136,7 @@
     font-family: inherit;
     color: var(--theme-text, #ffffff);
     text-align: center;
-    min-height: 100px;
+    min-height: 120px;
     animation: card-enter 0.25s ease-out both;
     transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
   }
@@ -134,7 +153,7 @@
   }
 
   .deck-name {
-    font-size: 13px;
+    font-size: 16px;
     font-weight: 600;
     line-height: 1.3;
   }
@@ -144,6 +163,36 @@
     gap: 10px;
     font-size: 11px;
     color: rgba(255, 255, 255, 0.35);
+  }
+
+  .narrow-prompt {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    flex: 1;
+    text-align: center;
+    padding: 48px 24px;
+  }
+
+  .narrow-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.5);
+  }
+
+  .narrow-hint {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.35);
+    max-width: 320px;
+    line-height: 1.5;
+  }
+
+  .narrow-count {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.2);
+    margin-top: 8px;
   }
 
   @keyframes card-enter {
