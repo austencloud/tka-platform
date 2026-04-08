@@ -13,6 +13,10 @@ import {
   SWAPPED_POSITION_MAP,
   SWAPPED_LOOP_VALIDATION_SET,
 } from "../position-maps/strict-loop-position-maps.js";
+import {
+  getHandRotationDirection,
+  getLocationMapForHandRotation,
+} from "../position-maps/circular-position-maps.js";
 import { gridPositionDeriver } from "../../core/positions/GridPositionDeriver.js";
 import { updateStepOrientations } from "./orientation-helpers.js";
 
@@ -134,11 +138,22 @@ export class StrictSwappedExecutor implements ILOOPExecutor {
   ): MotionData {
     const startLocation = previousMotion.endLocation;
 
-    // For STATIC motions, end = start (no movement)
-    const endLocation =
-      matchingMotion.motionType === "static"
-        ? startLocation
-        : matchingMotion.endLocation;
+    // Derive end location from the seed's hand path direction, applied to
+    // the new start location. Previously this used matchingMotion.endLocation
+    // directly, which decoupled the end from the start and could produce
+    // physically impossible arcs (e.g. pro e→w) when the swapped motion
+    // starts from a different location than the seed.
+    let endLocation: string;
+    if (matchingMotion.startLocation === matchingMotion.endLocation) {
+      endLocation = startLocation;
+    } else {
+      const seedHandDir = getHandRotationDirection(
+        matchingMotion.startLocation,
+        matchingMotion.endLocation,
+      );
+      const locationMap = getLocationMapForHandRotation(seedHandDir);
+      endLocation = locationMap[startLocation] || startLocation;
+    }
 
     return {
       ...matchingMotion,
