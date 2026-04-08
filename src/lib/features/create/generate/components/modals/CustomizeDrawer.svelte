@@ -64,26 +64,18 @@
     --sheet-shadow: 0 -4px 24px rgba(0, 0, 0, 0.5);
   }
 
-  /* Full-screen bottom sheet on mobile — covers bottom nav */
+  /* Bottom sheet on mobile — auto-size to content, don't take full screen */
   :global(.drawer-content.customize-drawer-sheet[data-placement="bottom"]) {
-    height: 100vh;
-    height: 100dvh;
-    min-height: 100vh;
-    min-height: 100dvh;
-    max-height: 100vh;
-    max-height: 100dvh;
-    border-radius: 0;
+    height: auto;
+    min-height: auto;
+    max-height: 85dvh;
   }
 
-  /* Right-side panel on desktop — match other create module drawers */
-  :global(.drawer-content.customize-drawer-sheet[data-placement="right"]) {
-    --sheet-width: min(480px, 90vw);
-  }
+  /* Right-side panel on desktop — use full create panel width like LOOP drawer */
 
   .customize-drawer-content {
     display: flex;
     flex-direction: column;
-    height: 100%;
     padding: 12px 16px calc(16px + env(safe-area-inset-bottom, 0px));
     background: linear-gradient(
       135deg,

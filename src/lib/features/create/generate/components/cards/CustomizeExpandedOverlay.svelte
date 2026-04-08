@@ -535,12 +535,11 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
     border: 1.5px solid rgba(255, 255, 255, 0.08);
   }
 
-  /* The active/expanded section fills remaining space */
+  /* The active/expanded section gets column layout but doesn't stretch */
   .accordion-section:has(.accordion-header.active) {
-    flex: 1;
-    min-height: 0;
     display: flex;
     flex-direction: column;
+    min-height: 0;
   }
 
   .accordion-header {

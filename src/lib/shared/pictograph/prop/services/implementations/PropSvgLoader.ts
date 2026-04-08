@@ -83,9 +83,7 @@ export class PropSvgLoader implements IPropSvgLoader {
    * @param propData - Prop placement data
    * @param motionData - Motion data including prop type
    * @param useGridVersion - If true, loads grid-centered SVGs from props/animated/ (for animation canvas).
-   *   If false (default), loads from props/ which are sized for pictograph rendering.
-   *   The animated/ versions are wider (300px) with ghost-half centering for the animation canvas.
-   *   The props/ versions are the correct size for pictograph grids.
+   *   If false (default), loads from props/pictograph/ which are sized for pictograph rendering.
    * @param options - Optional settings including themeMode for color selection
    */
   async loadPropSvg(
@@ -103,10 +101,9 @@ export class PropSvgLoader implements IPropSvgLoader {
       const themeMode = options?.themeMode ?? this.getCurrentThemeMode();
 
       // Create cache key including color AND theme mode for transformed prop cache
-      // Three prop SVG folders, each independently maintained:
+      // Two prop SVG folders:
       //   /images/props/animated/    → animation canvas (wider viewBox for rotation)
       //   /images/props/pictograph/  → pictograph grid rendering
-      //   /images/props/buttons/     → UI thumbnails, prop selectors
       const path = useGridVersion
         ? `/images/props/animated/${propType}.svg`
         : `/images/props/pictograph/${propType}.svg`;
