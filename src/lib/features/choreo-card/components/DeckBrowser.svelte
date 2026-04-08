@@ -30,7 +30,7 @@
     showWord?: boolean;
     includeStartPosition?: boolean;
     onBackToCollections: () => void;
-    onSelectDeck: (deckId: string) => void;
+    onSelectDeck: (deckId: string, vtgFamily?: string | null) => void;
     onSelectSequence: (sequence: SequenceData) => void;
     onLoadFamilySequences: (familyIds: string[]) => void;
     onContextMenu?: (x: number, y: number, rerender: () => void) => void;
@@ -128,38 +128,120 @@
     }
   }
 
-  // VTG category abbreviation lookup (loopType on VTG decks = VTG category ID)
+  // VTG category abbreviation lookup
   const VTG_ABBREVIATIONS: Record<string, string> = {
     "split-same": "SS", "tog-same": "TS",
     "split-opp": "SO", "tog-opp": "TO",
     "quarter-same": "QS", "quarter-opp": "QO",
   };
 
+  // VTG turn value → ratio string (0 turns = "1:1", 1 turn = "3:1", etc.)
+  const TURNS_TO_RATIO: Record<number, string> = {
+    0: "1:1", 0.5: "2:1", 1: "3:1", 1.5: "4:1", 2: "5:1", 2.5: "6:1", 3: "7:1",
+  };
+
   // Derived deck/family lookups
   let selectedDeck = $derived(decks.find((d) => d.id === selectedDeckId) ?? null);
 
-  // VTG deck label for card footer (e.g. "VTG SS 1:1")
-  // Uses vtgFamilyId from drilldown context (preferred), falling back to deck's loopType
-  const deckLeftLabel = $derived.by(() => {
-    if (!selectedDeck) return undefined;
-    // Try drilldown context first (VTG path provides familyId like "split-same")
-    const familyAbbr = vtgFamilyId ? VTG_ABBREVIATIONS[vtgFamilyId] : undefined;
-    // Fall back to deck-level loopType (LOOP decks whose loopType matches a VTG category)
-    const deckAbbr = VTG_ABBREVIATIONS[selectedDeck.loopType];
-    const abbr = familyAbbr ?? deckAbbr;
-    if (!abbr) return undefined;
-    // Include turn pattern if it looks like a clean ratio (e.g. "1:1")
-    const turn = selectedDeck.turnPattern;
-    if (turn && /^\d+:\d+$/.test(turn)) {
-      return `VTG ${abbr} ${turn}`;
+  // All known VTG family keys for scanning deck data
+  const VTG_FAMILY_KEYS = Object.keys(VTG_ABBREVIATIONS);
+
+  // Resolve VTG family ID from drilldown context, localStorage, or deck data
+  const resolvedVtgFamilyId = $derived.by(() => {
+    // 1. Drilldown context (set during navigation)
+    if (vtgFamilyId) return vtgFamilyId;
+    // 2. Deck's loopType matches a VTG family directly
+    if (selectedDeck && VTG_ABBREVIATIONS[selectedDeck.loopType]) return selectedDeck.loopType;
+    // 3. For VTG decks, infer from family IDs (e.g. family.id contains "quarter-same")
+    if (selectedDeck?.collection === "VTG") {
+      for (const key of VTG_FAMILY_KEYS) {
+        if (selectedDeck.families.some((f) => f.id.toLowerCase().includes(key))) {
+          return key;
+        }
+      }
     }
-    return `VTG ${abbr}`;
+    return undefined;
+  });
+
+  // Human-readable VTG family names for breadcrumbs
+  const VTG_FAMILY_LABELS: Record<string, string> = {
+    "split-same": "Split-Same", "tog-same": "Tog-Same",
+    "split-opp": "Split-Opp", "tog-opp": "Tog-Opp",
+    "quarter-same": "Quarter-Same", "quarter-opp": "Quarter-Opp",
+  };
+
+  // Format turn pattern for TKA display: "uniform-0t" → "0T", "uniform-1t" → "1T"
+  function formatTurnForTKA(turn: string): string {
+    const m = turn.match(/^uniform[- ](\d+)t$/i);
+    if (m) return `${m[1]}T`;
+    // Already clean (e.g. "0T", "1:1") — capitalize
+    return turn.replace(/^(\d+)t$/i, "$1T");
+  }
+
+  // TKA designation: mechanical properties from deck fields
+  // e.g. "Halved Rotated 0T Continuous Diamond"
+  const tkaDesignation = $derived.by(() => {
+    if (!selectedDeck) return "";
+    const parts: string[] = [];
+    if (selectedDeck.sliceType) parts.push(capitalize(selectedDeck.sliceType));
+    // VTG decks are always rotated LOOPs — use that when loopType is missing
+    const loopType = selectedDeck.loopType || (selectedDeck.collection === "VTG" ? "rotated" : "");
+    if (loopType) parts.push(capitalize(loopType));
+    if (selectedDeck.stepCount) parts.push(`${selectedDeck.stepCount}-Step`);
+    if (selectedDeck.turnPattern) parts.push(formatTurnForTKA(selectedDeck.turnPattern));
+    if (selectedDeck.reversalPattern) parts.push(capitalize(selectedDeck.reversalPattern));
+    if (selectedDeck.gridMode) parts.push(capitalize(selectedDeck.gridMode));
+    return parts.join(" ") || selectedDeck.canonicalName || selectedDeck.name;
+  });
+
+  // VTG designation: family name + ratio
+  // e.g. "VTG Tog-Same 1:1"
+  const vtgDesignation = $derived.by(() => {
+    if (!selectedDeck || !resolvedVtgFamilyId) return "";
+    const label = VTG_FAMILY_LABELS[resolvedVtgFamilyId] ?? resolvedVtgFamilyId;
+    const turn = selectedDeck.turnPattern;
+    if (turn) {
+      const uniformMatch = turn.match(/^uniform[- ](\d+)t$/i);
+      if (uniformMatch) {
+        const turns = parseInt(uniformMatch[1], 10);
+        const ratio = TURNS_TO_RATIO[turns];
+        if (ratio) return `VTG ${label} ${ratio}`;
+      }
+      if (/^\d+:\d+$/.test(turn)) return `VTG ${label} ${turn}`;
+    }
+    return `VTG ${label}`;
+  });
+
+  function capitalize(s: string): string {
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  }
+
+  // VTG deck label for card footer (e.g. "QS 1:1")
+  // Icon replaces the "VTG" prefix — just abbreviation + ratio
+  const deckLeftLabel = $derived.by(() => {
+    if (!selectedDeck || !resolvedVtgFamilyId) return undefined;
+    const abbr = VTG_ABBREVIATIONS[resolvedVtgFamilyId];
+    if (!abbr) return undefined;
+    // Parse turn pattern into VTG ratio format
+    const turn = selectedDeck.turnPattern;
+    if (turn) {
+      // Already in ratio format (e.g. "1:1")
+      if (/^\d+:\d+$/.test(turn)) return `${abbr} ${turn}`;
+      // VTG uniform format (e.g. "uniform-0t" = 0 turns → ratio "1:1")
+      const uniformMatch = turn.match(/^uniform[- ](\d+)t$/i);
+      if (uniformMatch) {
+        const turns = parseInt(uniformMatch[1], 10);
+        const ratio = TURNS_TO_RATIO[turns] ?? `${turns}t`;
+        return `${abbr} ${ratio}`;
+      }
+    }
+    return abbr;
   });
 
   // ── Drill-down deck selection bridge ──
   // DeckDrillDown gives us a Deck object; parent expects a deck ID string.
-  function handleDrillDownSelect(deck: Deck) {
-    onSelectDeck(deck.id);
+  function handleDrillDownSelect(deck: Deck, vtgFamily?: string | null) {
+    onSelectDeck(deck.id, vtgFamily);
   }
 
   // ── Level 2: Deck Interior State ──
@@ -188,6 +270,40 @@
   });
 
   const isLargeDeck = $derived(selectedDeck ? selectedDeck.totalSequences >= 500 : false);
+
+  const PRINT_PREVIEW_MAX = 128;
+
+  // When print preview has too many sequences, compute subgroup options for drill-down
+  const printSubgroups = $derived.by((): { label: string; count: number; familyId?: string; position?: string }[] => {
+    if (viewMode !== 'print' || !selectedDeck || filteredSequences.length <= PRINT_PREVIEW_MAX) return [];
+
+    // If no family filter active, offer families as subgroups.
+    // Use the deck's family metadata for counts — sequences may not be fully loaded yet.
+    if (interiorFilters.familyIds.length === 0) {
+      return selectedDeck.families
+        .map(f => ({
+          label: f.label || f.typeCombo,
+          count: f.sequenceIds.length,
+          familyId: f.id,
+        }))
+        .filter(g => g.count > 0)
+        .sort((a, b) => b.count - a.count);
+    }
+
+    // Family filter is active but still too many — offer position subgroups
+    const posGroups: Record<string, number> = {};
+    for (const seq of filteredSequences) {
+      const gridPos = seq.startPosition?.gridPosition ?? seq.startPosition?.startPosition ?? "";
+      const group = gridPos.startsWith("alpha") ? "alpha"
+        : gridPos.startsWith("beta") ? "beta"
+        : gridPos.startsWith("gamma") ? "gamma"
+        : "other";
+      posGroups[group] = (posGroups[group] ?? 0) + 1;
+    }
+    return ["alpha", "beta", "gamma"]
+      .filter(g => posGroups[g] && posGroups[g] > 0)
+      .map(g => ({ label: START_POS_LABELS[g] ?? g, count: posGroups[g]!, position: g }));
+  });
 
   // Group sequences for display
   interface SequenceGroup {
@@ -256,8 +372,15 @@
 </script>
 
 <div class="deck-browser">
-  {#if selectedDeck}
-    <!-- ═══ Level 2: Deck Interior ═══ -->
+  {#if selectedDeck || (selectedDeckId && decks.length === 0)}
+    <!-- ═══ Level 2: Deck Interior (or restoring a persisted deck) ═══ -->
+    {#if !selectedDeck}
+      <!-- Decks still loading — hold position, don't flash the drilldown -->
+      <div class="loading" role="status" aria-live="polite">
+        <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+        Loading deck...
+      </div>
+    {:else}
     <div class="level-container level-interior">
       <div class="top-bar">
         <nav class="breadcrumb" aria-label="Deck navigation">
@@ -266,7 +389,11 @@
             Back to browser
           </button>
           <span class="crumb-sep" aria-hidden="true">›</span>
-          <span class="crumb current">{selectedDeck.canonicalName || selectedDeck.name}</span>
+          <span class="crumb current">{tkaDesignation}</span>
+          {#if vtgDesignation}
+            <span class="crumb-sep" aria-hidden="true">·</span>
+            <span class="crumb vtg-label">{vtgDesignation}</span>
+          {/if}
         </nav>
         <div class="top-bar-actions">
           <!-- View mode toggle -->
@@ -298,17 +425,12 @@
           {#if viewMode === 'print'}
             <PrintPreviewToolbar
               {cardSize}
-              {selectedTheme}
               totalCards={filteredSequences.length}
               {isRendering}
               {isExporting}
               {renderProgress}
               {renderTotal}
               onCardSizeChange={setCardSize}
-              onThemeChange={(id) => {
-                selectedTheme = id;
-                if (typeof window !== 'undefined') localStorage.setItem('cardPreview.theme', id);
-              }}
               onExportPDF={handleExportPDF}
               onExportZIP={handleExportZIP}
               onRerender={() => { rerenderKey++; }}
@@ -355,14 +477,39 @@
           Loading sequences...
         </div>
       {:else if filteredSequences.length === 0}
-        <div class="empty-state" role="status">
-          <i class="fas fa-file-alt empty-icon" aria-hidden="true"></i>
-          {#if isLargeDeck && interiorFilters.familyIds.length === 0}
+        {#if isLargeDeck && interiorFilters.familyIds.length === 0 && viewMode === 'print'}
+          <!-- Large deck, print preview, no family selected — show family picker -->
+          <div class="print-subgroup-picker">
+            <p class="picker-heading">
+              {formatCount(selectedDeck.totalSequences)} sequences — pick a family to preview
+            </p>
+            <div class="picker-grid">
+              {#each selectedDeck.families as family (family.id)}
+                <button
+                  class="picker-card"
+                  type="button"
+                  onclick={() => {
+                    interiorFilters = { ...interiorFilters, familyIds: [family.id] };
+                    onLoadFamilySequences([family.id]);
+                  }}
+                >
+                  <span class="picker-label">{family.label || family.typeCombo}</span>
+                  <span class="picker-count">{family.sequenceIds.length}</span>
+                </button>
+              {/each}
+            </div>
+          </div>
+        {:else if isLargeDeck && interiorFilters.familyIds.length === 0}
+          <div class="empty-state" role="status">
+            <i class="fas fa-file-alt empty-icon" aria-hidden="true"></i>
             <p class="empty-text">
               This deck has {formatCount(selectedDeck.totalSequences)} sequences.
               Select a family to explore.
             </p>
-          {:else}
+          </div>
+        {:else}
+          <div class="empty-state" role="status">
+            <i class="fas fa-file-alt empty-icon" aria-hidden="true"></i>
             <p class="empty-text">No sequences match these filters</p>
             <button
               class="clear-filters-btn"
@@ -371,20 +518,35 @@
               }}
               type="button">Clear filters</button
             >
-          {/if}
-        </div>
+          </div>
+        {/if}
       {:else}
-        {#if viewMode === 'print' && filteredSequences.length > 54}
-          <div class="print-filter-prompt">
-            <i class="fas fa-filter" aria-hidden="true"></i>
-            <p>{filteredSequences.length} sequences is too many to preview. Use the Filter button to narrow down by family or starting position (max 54 for print preview).</p>
-            <button
-              class="filter-prompt-btn"
-              type="button"
-              onclick={() => { interiorFiltersOpen = true; }}
-            >
-              <i class="fas fa-filter" aria-hidden="true"></i> Open Filters
-            </button>
+        {#if viewMode === 'print' && filteredSequences.length > PRINT_PREVIEW_MAX}
+          <div class="print-subgroup-picker">
+            <p class="picker-heading">
+              {filteredSequences.length} sequences — pick a
+              {printSubgroups[0]?.familyId ? 'family' : 'starting position'}
+              to preview
+            </p>
+            <div class="picker-grid">
+              {#each printSubgroups as group (group.label)}
+                <button
+                  class="picker-card"
+                  type="button"
+                  onclick={() => {
+                    if (group.familyId) {
+                      interiorFilters = { ...interiorFilters, familyIds: [group.familyId] };
+                      if (isLargeDeck) onLoadFamilySequences([group.familyId]);
+                    } else if (group.position) {
+                      interiorFilters = { ...interiorFilters, position: group.position };
+                    }
+                  }}
+                >
+                  <span class="picker-label">{group.label}</span>
+                  <span class="picker-count">{group.count}</span>
+                </button>
+              {/each}
+            </div>
           </div>
         {:else if viewMode === 'print'}
           <PrintPreviewPages
@@ -399,6 +561,7 @@
             {showWord}
             {includeStartPosition}
             leftLabel={deckLeftLabel}
+            elementFamilyId={resolvedVtgFamilyId}
             onCardContextMenu={onContextMenu ? (x, y, rerender) => onContextMenu(x, y, rerender) : undefined}
             onCardClick={(seq, frontUrl, rerender) => {
               inspectedFrontImageUrl = frontUrl ?? null;
@@ -440,6 +603,7 @@
       {/if}
 
     </div>
+    {/if}
 
   {:else}
     <!-- ═══ Drill-Down Browser (replaces old level 0 + 1) ═══ -->
@@ -470,43 +634,55 @@
 {/if}
 
 <style>
-  /* ── Print filter prompt ── */
+  /* ── Print subgroup picker ── */
 
-  .print-filter-prompt {
+  .print-subgroup-picker {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
     gap: 16px;
-    padding: 48px 24px;
-    text-align: center;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    padding: 32px 24px;
   }
 
-  .print-filter-prompt i {
-    font-size: 32px;
-    opacity: 0.4;
-  }
-
-  .print-filter-prompt p {
+  .picker-heading {
     margin: 0;
     font-size: var(--font-size-min, 14px);
-    max-width: 400px;
-    line-height: 1.5;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    text-align: center;
   }
 
-  .filter-prompt-btn {
-    display: inline-flex;
+  .picker-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 10px;
+  }
+
+  .picker-card {
+    display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 10px 20px;
-    font-size: var(--font-size-min, 14px);
-    font-weight: 500;
-    color: var(--theme-text, #fff);
-    background: var(--theme-accent, #4a9eff);
-    border: none;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 8px;
+    color: var(--theme-text, #fff);
+    font: inherit;
+    font-size: var(--font-size-min, 14px);
     cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+
+  .picker-card:hover {
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.25));
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .picker-label {
+    font-weight: 500;
+  }
+
+  .picker-count {
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
   }
 
   /* ── Root ── */
@@ -643,6 +819,14 @@
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.25));
     font-size: 14px;
     padding: 0 2px;
+  }
+
+  .crumb.vtg-label {
+    color: var(--theme-accent, #b763cd);
+    cursor: default;
+    font-weight: 500;
+    background: rgba(183, 99, 205, 0.1);
+    border-color: rgba(183, 99, 205, 0.25);
   }
 
   /* ── Deck meta line ── */

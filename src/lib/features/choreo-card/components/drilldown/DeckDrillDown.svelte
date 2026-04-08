@@ -14,7 +14,7 @@
 
 	interface Props {
 		decks: Deck[];
-		onSelectDeck: (deck: Deck) => void;
+		onSelectDeck: (deck: Deck, vtgFamily?: string | null) => void;
 	}
 
 	let { decks, onSelectDeck }: Props = $props();
@@ -47,7 +47,7 @@
 	);
 
 	function handleDeckSelect(deck: Deck) {
-		onSelectDeck(deck);
+		onSelectDeck(deck, state.selections.category?.vtgFamily ?? null);
 	}
 </script>
 
