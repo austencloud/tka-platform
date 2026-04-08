@@ -17,14 +17,18 @@ export type CollisionZone =
   | "arm-through-face"
   | "arms-through-each-other";
 
+/** How bad the violation is */
+export type CollisionSeverity = "graze" | "clip" | "penetrate";
+
 /** A single detected collision event */
 export interface CollisionEvent {
   zone: CollisionZone;
+  severity: CollisionSeverity;
   /** Which beat index this occurred on */
   beatIndex: number;
   /** 0-1 progress within the beat */
   beatProgress: number;
-  /** Distance between the two colliding elements (meters). Negative = penetrating. */
+  /** Distance between the two colliding elements (meters). Positive = penetrating. */
   penetrationDepth: number;
   /** Description for the console log */
   description: string;
