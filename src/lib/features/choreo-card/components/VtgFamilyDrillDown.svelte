@@ -210,7 +210,6 @@
   {#if viewMode === 'print'}
     <PrintPreviewToolbar
       {cardSize}
-      {selectedTheme}
       totalCards={renderedPairs.length}
       {isRendering}
       {isExporting}
@@ -219,10 +218,6 @@
       onCardSizeChange={(s) => {
         cardSize = s;
         if (typeof window !== 'undefined') localStorage.setItem('cardPreview.cardSize', s);
-      }}
-      onThemeChange={(t) => {
-        selectedTheme = t;
-        if (typeof window !== 'undefined') localStorage.setItem('cardPreview.theme', t);
       }}
       onExportPDF={handleExportPDF}
       onExportZIP={handleExportZIP}
