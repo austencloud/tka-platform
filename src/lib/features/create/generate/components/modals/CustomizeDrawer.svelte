@@ -76,6 +76,7 @@
   .customize-drawer-content {
     display: flex;
     flex-direction: column;
+    height: 100%;
     padding: 12px 16px calc(16px + env(safe-area-inset-bottom, 0px));
     background: linear-gradient(
       135deg,
