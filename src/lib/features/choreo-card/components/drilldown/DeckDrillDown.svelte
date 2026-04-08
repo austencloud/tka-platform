@@ -162,8 +162,7 @@
 
 	.drilldown.desktop {
 		max-width: none;
-		margin: 0;
-		padding: 16px 24px;
+		padding: 20px;
 	}
 
 	@keyframes stepIn {
