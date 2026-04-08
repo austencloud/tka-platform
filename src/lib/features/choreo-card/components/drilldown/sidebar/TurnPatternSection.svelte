@@ -40,7 +40,7 @@
   }
 
   function handleUniformValue(label: string): void {
-    uniformExpanded = false;
+    // Keep expanded so user can see which value is selected
     onSelectPattern(label);
   }
 
