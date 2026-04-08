@@ -1,6 +1,5 @@
 <script lang="ts">
 	import type { Deck } from '../../domain/models/Deck';
-	import { untrack } from 'svelte';
 	import { createDrillDownState } from '../../state/deck-drilldown-state.svelte';
 	import { setDrillDownContext } from '../../context/deck-drilldown-context';
 	import DrillBreadcrumb from './DrillBreadcrumb.svelte';
@@ -11,6 +10,9 @@
 	import TurnPatternStep from './TurnPatternStep.svelte';
 	import UniformSubStep from './UniformSubStep.svelte';
 	import ReversalPatternStep from './ReversalPatternStep.svelte';
+	import DeckFilterSidebar from './sidebar/DeckFilterSidebar.svelte';
+	import DeckResultsPanel from './DeckResultsPanel.svelte';
+	import { BREAKPOINTS } from '$lib/shared/device/domain/constants/device-constants';
 
 	interface Props {
 		decks: Deck[];
@@ -19,16 +21,20 @@
 
 	let { decks, onSelectDeck }: Props = $props();
 
-	$effect(() => {
-		console.log('[DeckDrillDown] decks received:', decks.length);
-		if (decks.length > 0) {
-			console.log('[DeckDrillDown] sample deck:', JSON.stringify({ id: decks[0]?.id, collection: decks[0]?.collection, loopType: decks[0]?.loopType }));
-		}
-	});
-
 	// Pass a getter so the state factory can react to async deck loading
 	const state = createDrillDownState(() => decks);
 	setDrillDownContext(state);
+
+	let isDesktop = $state(false);
+
+	$effect(() => {
+		if (typeof window === 'undefined') return;
+		const mq = window.matchMedia(`(min-width: ${BREAKPOINTS.DESKTOP}px)`);
+		isDesktop = mq.matches;
+		const handler = (e: MediaQueryListEvent) => { isDesktop = e.matches; };
+		mq.addEventListener('change', handler);
+		return () => mq.removeEventListener('change', handler);
+	});
 
 	const accentColor = $derived(
 		state.selections.path === 'VTG' ? '#b763cd' : '#63b7cd'
@@ -51,49 +57,59 @@
 	}
 </script>
 
-<div class="drilldown" style="--accent:{accentColor};--accent-rgb:{accentRgb}">
+<div class="drilldown" class:desktop={isDesktop} style="--accent:{accentColor};--accent-rgb:{accentRgb}">
 	<div class="ambient-glow {glowClass}"></div>
 
-	{#if state.breadcrumbs.length > 0}
-		<DrillBreadcrumb
-			breadcrumbs={state.breadcrumbs}
-			accentColor={accentColor}
-			onNavigate={state.goBackTo}
-		/>
-	{/if}
-
-	{#key state.currentStep}
-		<div class="step-content">
-			{#if state.currentStep === 'collection'}
-				<CollectionStep decks={decks} onSelectPath={state.selectPath} />
-			{:else if state.currentStep === 'shape'}
-				<ShapeStep decks={state.filteredDecks} onContinue={state.selectShape} />
-			{:else if state.currentStep === 'category'}
-				<CategoryStep onContinue={state.selectCategory} />
-			{:else if state.currentStep === 'stepcount'}
-				<StepCountStep
-					availableCounts={state.availableStepCounts}
-					onSelect={state.selectStepCount}
-				/>
-			{:else if state.currentStep === 'turn'}
-				<TurnPatternStep
-					stepCount={state.selections.stepCount ?? 4}
-					path={state.selections.path ?? 'LOOPs'}
-					availablePatterns={state.availableTurnPatterns}
-					onSelectPattern={state.selectTurnPattern}
-					onSelectUniform={() => state.goTo('uniform')}
-				/>
-			{:else if state.currentStep === 'uniform'}
-				<UniformSubStep onSelect={state.selectTurnPattern} />
-			{:else if state.currentStep === 'reversal'}
-				<ReversalPatternStep
-					decks={state.filteredDecks}
-					breadcrumbs={state.breadcrumbs}
-					onSelectDeck={handleDeckSelect}
-				/>
-			{/if}
+	{#if isDesktop}
+		<div class="desktop-layout">
+			<DeckFilterSidebar {state} allDecks={decks} />
+			<DeckResultsPanel
+				decks={state.filteredDecks}
+				onSelectDeck={handleDeckSelect}
+			/>
 		</div>
-	{/key}
+	{:else}
+		{#if state.breadcrumbs.length > 0}
+			<DrillBreadcrumb
+				breadcrumbs={state.breadcrumbs}
+				accentColor={accentColor}
+				onNavigate={state.goBackTo}
+			/>
+		{/if}
+
+		{#key state.currentStep}
+			<div class="step-content">
+				{#if state.currentStep === 'collection'}
+					<CollectionStep decks={decks} onSelectPath={state.selectPath} />
+				{:else if state.currentStep === 'shape'}
+					<ShapeStep decks={state.filteredDecks} onContinue={state.selectShape} />
+				{:else if state.currentStep === 'category'}
+					<CategoryStep onContinue={state.selectCategory} />
+				{:else if state.currentStep === 'stepcount'}
+					<StepCountStep
+						availableCounts={state.availableStepCounts}
+						onSelect={state.selectStepCount}
+					/>
+				{:else if state.currentStep === 'turn'}
+					<TurnPatternStep
+						stepCount={state.selections.stepCount ?? 4}
+						path={state.selections.path ?? 'LOOPs'}
+						availablePatterns={state.availableTurnPatterns}
+						onSelectPattern={state.selectTurnPattern}
+						onSelectUniform={() => state.goTo('uniform')}
+					/>
+				{:else if state.currentStep === 'uniform'}
+					<UniformSubStep onSelect={state.selectTurnPattern} />
+				{:else if state.currentStep === 'reversal'}
+					<ReversalPatternStep
+						decks={state.filteredDecks}
+						breadcrumbs={state.breadcrumbs}
+						onSelectDeck={handleDeckSelect}
+					/>
+				{/if}
+			</div>
+		{/key}
+	{/if}
 </div>
 
 <style>
@@ -135,6 +151,17 @@
 
 	.step-content {
 		animation: stepIn 250ms ease-out;
+	}
+
+	.desktop-layout {
+		display: flex;
+		gap: 24px;
+		flex: 1;
+		min-height: 0;
+	}
+
+	.drilldown.desktop {
+		padding: 24px 32px;
 	}
 
 	@keyframes stepIn {
