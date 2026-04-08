@@ -6,6 +6,7 @@
 -->
 <script lang="ts">
   import RobustAvatar from "$lib/shared/components/avatar/RobustAvatar.svelte";
+  import ProfileColorPicker from "./ProfileColorPicker.svelte";
   import type { User } from "firebase/auth";
 
   interface Props {
@@ -18,6 +19,10 @@
     onGoogleClick: () => void;
     onFacebookClick: () => void;
     onDismissError: () => void;
+    /** Current profile accent color */
+    profileColor?: string;
+    /** Called when user picks a new accent color */
+    onColorChange?: (color: string) => void;
     /** Whether to use larger modal styling */
     isModal?: boolean;
   }
@@ -32,6 +37,8 @@
     onGoogleClick,
     onFacebookClick,
     onDismissError,
+    profileColor = "#8b5cf6",
+    onColorChange,
     isModal = false,
   }: Props = $props();
 
@@ -42,7 +49,7 @@
 <div class="photo-options" class:modal-style={isModal}>
   <!-- Current user avatar -->
   <div class="panel-header">
-    <div class="avatar-preview-wrapper">
+    <div class="avatar-preview-wrapper" style="--ring-accent: {profileColor}">
       <RobustAvatar
         src={user?.photoURL}
         name={user?.displayName || user?.email}
@@ -89,15 +96,14 @@
           <span class="option-label">Use Google Photo</span>
           <span class="option-desc">From your Google account</span>
         </div>
-        {#if googlePhotoUrl}
-          <img
+        <div class="option-preview-avatar">
+          <RobustAvatar
             src={googlePhotoUrl}
+            googleId={providerIds.googleId}
             alt="Google profile"
-            class="option-preview-img"
-            referrerpolicy="no-referrer"
-            crossorigin="anonymous"
+            size="sm"
           />
-        {/if}
+        </div>
       </button>
     {/if}
 
@@ -118,6 +124,16 @@
       </button>
     {/if}
   </div>
+
+  <!-- Profile accent color picker -->
+  {#if onColorChange}
+    <div class="color-section-divider"></div>
+    <ProfileColorPicker
+      selectedColor={profileColor}
+      {onColorChange}
+      {saving}
+    />
+  {/if}
 </div>
 
 <style>
@@ -149,7 +165,13 @@
     border-radius: 50%;
     overflow: hidden;
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
-    border: 2px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+    border: 3px solid var(--ring-accent, var(--theme-stroke-strong, rgba(255, 255, 255, 0.2)));
+  }
+
+  .color-section-divider {
+    height: 1px;
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    margin: var(--spacing-md, 16px) 0;
   }
 
   .avatar-preview-wrapper :global(.robust-avatar) {
@@ -282,6 +304,12 @@
     object-fit: cover;
     flex-shrink: 0;
     background: var(--theme-card-bg);
+  }
+
+  .option-preview-avatar {
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
   }
 
   .option-arrow {

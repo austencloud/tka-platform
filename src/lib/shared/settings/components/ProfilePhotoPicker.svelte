@@ -38,9 +38,15 @@
     isOpen: boolean;
     onClose: () => void;
     onPhotoSelected: (photoData: PhotoSelection) => Promise<void>;
+    /** Current profile accent color */
+    profileColor?: string;
+    /** Called when user picks a new accent color */
+    onColorChange?: (color: string) => void;
+    /** Persisted Google photo URL from Firestore (survives avatar switches) */
+    savedGooglePhotoUrl?: string | null;
   }
 
-  let { isOpen = $bindable(), onClose, onPhotoSelected }: Props = $props();
+  let { isOpen = $bindable(), onClose, onPhotoSelected, profileColor, onColorChange, savedGooglePhotoUrl }: Props = $props();
 
   // ============ STATE ============
 
@@ -64,13 +70,15 @@
     user ? profilePictureManager.getProviderIds(user) : {}
   );
 
-  // Get Google photo from provider data directly
+  // Get Google photo URL. Priority:
+  // 1. Live provider data (freshest, but null after avatar switch)
+  // 2. Saved URL from Firestore (persisted on first login, survives avatar switches)
   const googlePhotoUrl = $derived.by(() => {
     if (!user) return null;
     const googleProvider = user.providerData.find(
       (p) => p.providerId === "google.com"
     );
-    return googleProvider?.photoURL ?? null;
+    return googleProvider?.photoURL || savedGooglePhotoUrl || null;
   });
 
   // ============ LAYOUT DETECTION ============
@@ -94,7 +102,6 @@
 
   const layout = $derived(detectLayout(viewportWidth, viewportHeight));
   const isDesktop = $derived(layout.isDesktop);
-  const useSideBySide = $derived(layout.useSideBySide);
   const useWizardMode = $derived(layout.useWizardMode);
 
   const selectedGradient = $derived(
@@ -257,11 +264,11 @@
   <BaseModal
     open={isOpen}
     onclose={handleClose}
-    size={useSideBySide ? "xl" : "lg"}
+    size="lg"
     labelledBy="photo-picker-title"
     class="profile-photo-modal"
   >
-    <div class="modal-layout" class:tabbed-modal={!useSideBySide}>
+    <div class="modal-layout tabbed-modal">
       <header class="modal-header">
         <h2 id="photo-picker-title">Profile Photo</h2>
         <button class="close-btn" onclick={handleClose} aria-label="Close">
@@ -269,86 +276,53 @@
         </button>
       </header>
 
-      {#if useSideBySide}
-        <!-- Side-by-side layout: left shows current photo, right shows avatar generator -->
-        <div class="modal-panels">
-          <div class="panel choose-panel">
-            <PhotoOptionsList
-              {user}
-              {providerIds}
-              {googlePhotoUrl}
-              {saving}
-              {errorMessage}
-              onUploadClick={triggerFileUpload}
-              onGoogleClick={useGooglePhoto}
-              onFacebookClick={useFacebookPhoto}
-              onDismissError={() => (errorMessage = null)}
-              isModal
-            />
-          </div>
+      <div class="modal-tabbed-body">
+        {#if activeTab === "options"}
+          <PhotoOptionsList
+            {user}
+            {providerIds}
+            {googlePhotoUrl}
+            {saving}
+            {errorMessage}
+            onUploadClick={triggerFileUpload}
+            onGoogleClick={useGooglePhoto}
+            onFacebookClick={useFacebookPhoto}
+            onDismissError={() => (errorMessage = null)}
+            {profileColor}
+            {onColorChange}
+            isModal
+          />
+        {:else}
+          <AvatarGenerator
+            {selectedGradientId}
+            {selectedProp}
+            {saving}
+            onGradientChange={handleGradientChange}
+            onPropChange={handlePropChange}
+            onSave={useGeneratedAvatar}
+            compact
+          />
+        {/if}
+      </div>
 
-          <div class="panel-divider"></div>
-
-          <div class="panel generate-panel">
-            <AvatarGenerator
-              {selectedGradientId}
-              {selectedProp}
-              {saving}
-              onGradientChange={handleGradientChange}
-              onPropChange={handlePropChange}
-              onSave={useGeneratedAvatar}
-              isModal
-            />
-          </div>
-        </div>
-      {:else}
-        <!-- Tabbed layout -->
-        <div class="modal-tabbed-body">
-          {#if activeTab === "options"}
-            <PhotoOptionsList
-              {user}
-              {providerIds}
-              {googlePhotoUrl}
-              {saving}
-              {errorMessage}
-              onUploadClick={triggerFileUpload}
-              onGoogleClick={useGooglePhoto}
-              onFacebookClick={useFacebookPhoto}
-              onDismissError={() => (errorMessage = null)}
-              isModal
-            />
-          {:else}
-            <AvatarGenerator
-              {selectedGradientId}
-              {selectedProp}
-              {saving}
-              onGradientChange={handleGradientChange}
-              onPropChange={handlePropChange}
-              onSave={useGeneratedAvatar}
-              compact
-            />
-          {/if}
-        </div>
-
-        <div class="modal-tab-switcher">
-          <button
-            class="tab-btn"
-            class:active={activeTab === "options"}
-            onclick={() => (activeTab = "options")}
-          >
-            <i class="fas fa-image"></i>
-            <span>Choose Photo</span>
-          </button>
-          <button
-            class="tab-btn"
-            class:active={activeTab === "generate"}
-            onclick={() => (activeTab = "generate")}
-          >
-            <i class="fas fa-magic"></i>
-            <span>Create Avatar</span>
-          </button>
-        </div>
-      {/if}
+      <div class="modal-tab-switcher">
+        <button
+          class="tab-btn"
+          class:active={activeTab === "options"}
+          onclick={() => (activeTab = "options")}
+        >
+          <i class="fas fa-image"></i>
+          <span>Choose Photo</span>
+        </button>
+        <button
+          class="tab-btn"
+          class:active={activeTab === "generate"}
+          onclick={() => (activeTab = "generate")}
+        >
+          <i class="fas fa-magic"></i>
+          <span>Create Avatar</span>
+        </button>
+      </div>
     </div>
   </BaseModal>
 {:else}
@@ -396,6 +370,8 @@
             onGoogleClick={useGooglePhoto}
             onFacebookClick={useFacebookPhoto}
             onDismissError={() => (errorMessage = null)}
+            {profileColor}
+            {onColorChange}
           />
         {:else if useWizardMode}
           <AvatarGeneratorWizard
@@ -464,6 +440,8 @@
     display: flex;
     flex-direction: column;
     height: 100%;
+    min-height: 0;
+    overflow: hidden;
     color: var(--theme-text, #ffffff);
   }
 
@@ -482,47 +460,6 @@
     margin: 0;
   }
 
-  .modal-panels {
-    display: flex;
-    flex: 1;
-    min-height: 0;
-  }
-
-  .modal-panels .panel {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    padding: var(--modal-padding, 24px);
-    min-width: 0;
-    min-height: 0;
-    overflow-y: auto;
-  }
-
-  .modal-panels .panel::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  .modal-panels .panel::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  .modal-panels .panel::-webkit-scrollbar-thumb {
-    background: var(--scrollbar-thumb, rgba(255, 255, 255, 0.15));
-    border-radius: 3px;
-  }
-
-  .modal-panels .panel-divider {
-    width: 1px;
-    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    flex-shrink: 0;
-    align-self: stretch;
-  }
-
-  .modal-panels .choose-panel {
-    justify-content: center;
-  }
-
-  /* Tabbed modal */
   .tabbed-modal .modal-tabbed-body {
     flex: 1;
     padding: var(--modal-padding, 24px);
