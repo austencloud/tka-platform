@@ -339,16 +339,10 @@ export class RotationDirectionPatternManager implements IRotationDirectionPatter
       return { motion: null };
     }
 
-    // CRITICAL: Flip motion type when rotation direction changes (PRO ↔ ANTI)
-    let newMotionType = motionType;
-    if (motionType === MotionType.PRO) {
-      newMotionType = MotionType.ANTI;
-      logger.log(`Beat ${stepIndex + 1} ${color}: Flipping PRO → ANTI`);
-    } else if (motionType === MotionType.ANTI) {
-      newMotionType = MotionType.PRO;
-      logger.log(`Beat ${stepIndex + 1} ${color}: Flipping ANTI → PRO`);
-    }
-    // Note: DASH, STATIC don't flip
+    // Motion type stays the same — a reversal only changes which direction
+    // the prop spins (cw↔ccw), not the motion category (pro/anti/dash/static).
+    // Anti stays anti, pro stays pro.
+    const newMotionType = motionType;
 
     // Recalculate end orientation
     // Using direct import instead of container for HMR performance
