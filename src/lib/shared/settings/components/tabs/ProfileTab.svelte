@@ -88,6 +88,12 @@
   // Pronouns loaded from Firestore
   let userPronouns = $state("");
 
+  // Profile accent color loaded from Firestore
+  let profileColor = $state("#8b5cf6");
+
+  // Google photo URL persisted in Firestore (survives avatar switches)
+  let savedGooglePhotoUrl = $state<string | null>(null);
+
   // Photo picker state
   let showPhotoPicker = $state(false);
 
@@ -123,7 +129,14 @@
         const userDocRef = doc(firestore, "users", user.uid);
         const userDoc = await getDoc(userDocRef);
         if (userDoc.exists()) {
-          userPronouns = userDoc.data()?.pronouns || "";
+          const data = userDoc.data();
+          userPronouns = data?.pronouns || "";
+          if (data?.profileColor) {
+            profileColor = data.profileColor;
+          }
+          if (data?.googlePhotoURL) {
+            savedGooglePhotoUrl = data.googlePhotoURL;
+          }
         }
       } catch (err) {
         console.error("Failed to load pronouns:", err);
@@ -200,6 +213,21 @@
   function handleOpenPhotoPicker() {
     hapticService?.trigger("selection");
     showPhotoPicker = true;
+  }
+
+  async function handleColorChange(color: string) {
+    // Optimistic update so the ring color changes instantly
+    profileColor = color;
+
+    const user = authState.user;
+    if (!user) return;
+
+    try {
+      const userDocumentManager = container.items.userDocumentManager;
+      await userDocumentManager.updateProfileColor(user.uid, color);
+    } catch (err) {
+      console.error("Failed to save profile color:", err);
+    }
   }
 
   /**
@@ -378,6 +406,7 @@
         onSignOut={handleSignOut}
         onAvatarClick={handleOpenPhotoPicker}
         pronouns={userPronouns}
+        {profileColor}
       />
 
       <!-- Settings Grid - Flexbox for natural fill behavior -->
@@ -462,6 +491,9 @@
   bind:isOpen={showPhotoPicker}
   onClose={() => (showPhotoPicker = false)}
   onPhotoSelected={handlePhotoSelected}
+  {profileColor}
+  onColorChange={handleColorChange}
+  {savedGooglePhotoUrl}
 />
 
 <style>

@@ -71,7 +71,8 @@
 
   // Track load state
   let imageLoaded = $state(false);
-  let imageFailed = $state(false);
+  let primaryFailed = $state(false);
+  let fallbackFailed = $state(false);
 
   // The primary URL to try
   const primaryUrl = $derived(src && isValidImageUrl(src) ? src : null);
@@ -84,8 +85,12 @@
   // Generated initials avatar as final fallback
   const initialsAvatar = $derived(generateAvatarUrl(name, dimension));
 
-  // What URL should we display?
-  const displayUrl = $derived(primaryUrl || googleFallbackUrl);
+  // Try primary first, then Google fallback if primary fails
+  const displayUrl = $derived.by(() => {
+    if (primaryUrl && !primaryFailed) return primaryUrl;
+    if (googleFallbackUrl && !fallbackFailed) return googleFallbackUrl;
+    return null;
+  });
 
   // Get initials for the placeholder
   const initials = $derived.by(() => {
@@ -102,25 +107,31 @@
     // When src changes, reset the load state
     const _src = src;
     imageLoaded = false;
-    imageFailed = false;
+    primaryFailed = false;
+    fallbackFailed = false;
   });
 
   function handleLoad(event: Event) {
     imageLoaded = true;
-    imageFailed = false;
     const img = event.currentTarget as HTMLImageElement;
     onload?.(img);
   }
 
   function handleError() {
-    imageFailed = true;
+    // If primary just failed, try the fallback
+    if (primaryUrl && !primaryFailed) {
+      primaryFailed = true;
+      return;
+    }
+    // Fallback also failed — show initials
+    fallbackFailed = true;
     imageLoaded = false;
     onerror?.();
   }
 
   // Determine what to show
-  const showImage = $derived(displayUrl && !imageFailed);
-  const showInitials = $derived(!displayUrl || imageFailed);
+  const showImage = $derived(!!displayUrl);
+  const showInitials = $derived(!displayUrl);
 </script>
 
 <div

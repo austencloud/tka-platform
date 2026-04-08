@@ -69,6 +69,8 @@ interface FirestoreUserData extends DocumentData {
   instagramUsername?: string;
   pronouns?: string;
   lastActivityDate?: Timestamp;
+  // Profile accent color
+  profileColor?: string;
   // Admin-related fields
   role?: UserRole;
   isDisabled?: boolean;
@@ -801,6 +803,9 @@ export class UserRepository implements IUserRepository {
       const instagramUsername = data.instagramUsername ?? undefined;
       const pronouns = data.pronouns ?? undefined;
 
+      // Profile accent color
+      const profileColor = data.profileColor ?? undefined;
+
       // Admin-related fields
       const role = data.role ?? "user";
       const isDisabled = data.isDisabled ?? false;
@@ -828,6 +833,7 @@ export class UserRepository implements IUserRepository {
         isFollowing,
         instagramUsername,
         pronouns,
+        profileColor,
         totalXP,
         currentLevel,
         achievementCount,
