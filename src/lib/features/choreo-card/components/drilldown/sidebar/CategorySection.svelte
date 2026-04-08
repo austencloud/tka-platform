@@ -25,26 +25,24 @@
   const sameFamilies = VTG_ELEMENTAL_THEMES.filter((t) => t.familyId.endsWith('-same'));
   const oppFamilies = VTG_ELEMENTAL_THEMES.filter((t) => t.familyId.endsWith('-opp'));
 
-  let selectedFamily = $state<string>(currentCategory?.vtgFamily ?? '');
-  let selectedGrid = $state<string>(
+  // Read from props — no local state
+  const displayFamily = $derived(currentCategory?.vtgFamily ?? '');
+  const displayGrid = $derived(
     currentCategory ? currentCategory.gridMode.charAt(0).toUpperCase() + currentCategory.gridMode.slice(1) : 'Diamond'
   );
 
   function selectFamily(familyId: string): void {
-    selectedFamily = familyId;
-    emitSelection();
+    onSelectCategory({
+      vtgFamily: familyId,
+      gridMode: displayGrid.toLowerCase(),
+    });
   }
 
   function selectGrid(g: string): void {
-    selectedGrid = g;
-    emitSelection();
-  }
-
-  function emitSelection(): void {
-    if (!selectedFamily || !selectedGrid) return;
+    if (!displayFamily) return;
     onSelectCategory({
-      vtgFamily: selectedFamily,
-      gridMode: selectedGrid.toLowerCase(),
+      vtgFamily: displayFamily,
+      gridMode: g.toLowerCase(),
     });
   }
 </script>
@@ -59,7 +57,7 @@
           familyLabel={FAMILY_LABELS[theme.familyId] ?? theme.familyId}
           element={theme.element}
           accentColor={theme.accentColor}
-          selected={selectedFamily === theme.familyId}
+          selected={displayFamily === theme.familyId}
           onClick={() => selectFamily(theme.familyId)}
         />
       {/each}
@@ -75,7 +73,7 @@
           familyLabel={FAMILY_LABELS[theme.familyId] ?? theme.familyId}
           element={theme.element}
           accentColor={theme.accentColor}
-          selected={selectedFamily === theme.familyId}
+          selected={displayFamily === theme.familyId}
           onClick={() => selectFamily(theme.familyId)}
         />
       {/each}
@@ -85,8 +83,8 @@
   <div class="sub-group">
     <span class="sub-label">GRID</span>
     <div class="pill-row">
-      <DrillPill label="Diamond" selected={selectedGrid === 'Diamond'} onClick={() => selectGrid('Diamond')} />
-      <DrillPill label="Box" selected={selectedGrid === 'Box'} onClick={() => selectGrid('Box')} />
+      <DrillPill label="Diamond" selected={displayGrid === 'Diamond'} onClick={() => selectGrid('Diamond')} />
+      <DrillPill label="Box" selected={displayGrid === 'Box'} onClick={() => selectGrid('Box')} />
     </div>
   </div>
 </SidebarFilterSection>
