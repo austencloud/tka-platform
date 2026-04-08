@@ -126,8 +126,9 @@ export function planeAngleToWorldPosition(
       return new Vector3(-cos_a * radius, -sin_a * radius, 0);
 
     case Plane.WHEEL:
-      // YZ plane: X=0, Y=up, Z=toward audience
-      return new Vector3(0, -sin_a * radius, -cos_a * radius);
+      // YZ plane: X=0, Y=up, Z mirrored so positions match the pictograph
+      // when viewed from the performer's right side (-X direction).
+      return new Vector3(0, -sin_a * radius, cos_a * radius);
 
     case Plane.FLOOR:
       // Same X negate as wall
@@ -226,9 +227,6 @@ export function calculatePropQuaternion(
   // local frame where Z is the normal). We spin around Z in this local frame,
   // then transform to world space using planeQuat.
   //
-  // This ensures the same angle value produces the same visual orientation
-  // on any plane — "IN at North" always points toward center regardless of
-  // which plane the prop is on.
   const planeQuat = getPlaneQuaternion(plane);
   const staffQuat = new Quaternion().setFromAxisAngle(
     new Vector3(0, 0, 1),

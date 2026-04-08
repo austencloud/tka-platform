@@ -8,8 +8,10 @@
    */
 
   import { Plane, PLANE_COLORS } from "../domain/enums/Plane";
+  import { PlaneMode } from "../domain/enums/PlaneMode";
   import { getViewer3DContext } from "../context/viewer-3d-context";
   import Viewer3DViewPresets from "./Viewer3DViewPresets.svelte";
+  import PlaneModeToggle from "./controls/PlaneModeToggle.svelte";
   import { fly, scale } from "svelte/transition";
   import { cubicOut, backOut } from "svelte/easing";
 
@@ -17,6 +19,7 @@
   let rootEl = $state<HTMLDivElement | null>(null);
 
   const viewer3DState = getViewer3DContext();
+  const avatarState = $derived(viewer3DState.avatarState);
 
   const PLANES: { plane: Plane; label: string }[] = [
     { plane: Plane.WALL, label: "Wall" },
@@ -106,6 +109,30 @@
           {/each}
         </div>
       </div>
+
+      <div class="divider"></div>
+
+      <!-- Plane mode: per-hand plane selectors -->
+      {#if avatarState}
+        <div class="section">
+          <div class="section-label">Hand Planes</div>
+          <PlaneModeToggle
+            mode={avatarState.planeMode}
+            bluePlane={avatarState.currentBeatBluePlane}
+            redPlane={avatarState.currentBeatRedPlane}
+            sequenceBluePlane={avatarState.customBluePlane}
+            sequenceRedPlane={avatarState.customRedPlane}
+            currentBeatIndex={avatarState.currentStepIndex}
+            totalBeats={avatarState.totalSteps}
+            hasBeatOverrides={avatarState.hasBeatOverrides}
+            beatEditMode={avatarState.beatEditMode}
+            onModeChange={(mode) => avatarState.setPlaneMode(mode)}
+            onHandPlaneChange={(hand, plane) => avatarState.setBeatHandPlane(avatarState.currentStepIndex, hand, plane)}
+            onSequenceHandPlaneChange={(hand, plane) => avatarState.setHandPlane(hand, plane)}
+            onBeatEditModeChange={(enabled) => avatarState.setBeatEditMode(enabled)}
+          />
+        </div>
+      {/if}
     </div>
   {/if}
 </div>
@@ -223,4 +250,5 @@
   .plane-check {
     flex-shrink: 0;
   }
+
 </style>

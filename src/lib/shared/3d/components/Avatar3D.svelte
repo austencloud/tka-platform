@@ -102,6 +102,8 @@
     bluePropAnchorRef?: import("three").Group;
     /** PropAnchor group ref for red hand IK target (from PerformerRig) */
     redPropAnchorRef?: import("three").Group;
+    /** Disable spine twist (dual-wheel: wide lateral targets twist the torso/feet) */
+    disableSpineTwist?: boolean;
   }
 
   let {
@@ -128,6 +130,7 @@
     onRootMotion,
     bluePropAnchorRef,
     redPropAnchorRef,
+    disableSpineTwist = false,
   }: Props = $props();
 
   // Services (manually instantiated to ensure shared skeleton instance)
@@ -574,6 +577,12 @@
     }
 
     if (!servicesReady || !animationService || useProceduralFallback) return;
+
+    // Disable spine twist in dual-wheel mode — wide lateral IK targets
+    // twist the torso and shift the feet on the ground.
+    if ('setSpineTwistEnabled' in animationService) {
+      (animationService as any).setSpineTwistEnabled(!disableSpineTwist);
+    }
 
     // 1. Full-body animation (idle/walk/jump/fall/land with arm swing, hip sway)
     // Only runs for locomotion-enabled avatars (player), not exhibit performers
