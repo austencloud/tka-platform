@@ -26,6 +26,42 @@
   const collectionDecks = $derived(
     hasPath ? allDecks.filter(d => d.collection === state.selections.path) : []
   );
+
+  // Decks filtered by everything EXCEPT reversal — so the reversal section
+  // can show all available options, not just the one already selected.
+  const decksBeforeReversal = $derived.by(() => {
+    let result = allDecks;
+    const sel = state.selections;
+    if (sel.path) result = result.filter(d => d.collection === sel.path);
+    if (sel.shape) {
+      const lowerTypes = sel.shape.loopTypes.map(t => t.toLowerCase());
+      const sliceLower = sel.shape.sliceType.toLowerCase();
+      const gridLower = sel.shape.gridMode.toLowerCase();
+      result = result.filter(d =>
+        lowerTypes.includes(d.loopType?.toLowerCase()) &&
+        d.sliceType.toLowerCase() === sliceLower &&
+        d.gridMode.toLowerCase() === gridLower
+      );
+    }
+    if (sel.category) {
+      const familyLower = sel.category.vtgFamily.toLowerCase();
+      const gridLower = sel.category.gridMode.toLowerCase();
+      result = result.filter(d =>
+        d.families.some(f => f.id.toLowerCase().includes(familyLower)) &&
+        d.gridMode.toLowerCase() === gridLower
+      );
+    }
+    if (sel.stepCount !== null) result = result.filter(d => d.stepCount === sel.stepCount);
+    if (sel.turnPattern !== null) {
+      const selTurn = sel.turnPattern.toLowerCase().replace(/\s+/g, '-');
+      result = result.filter(d => {
+        const deckTurn = d.turnPattern.toLowerCase().replace(/\s+/g, '-');
+        return deckTurn === selTurn || deckTurn === `uniform-${selTurn}`;
+      });
+    }
+    // Deliberately NOT filtering by reversalPattern
+    return result;
+  });
 </script>
 
 <aside class="filter-sidebar" style="--accent: {accentColor}; --accent-rgb: {state.selections.path === 'VTG' ? '183,99,205' : '99,183,205'}">
@@ -75,7 +111,7 @@
     />
 
     <ReversalSection
-      filteredDecks={state.filteredDecks}
+      filteredDecks={decksBeforeReversal}
       selectedPattern={state.selections.reversalPattern}
       {accentColor}
       onSelectPattern={state.selectReversalPattern}
