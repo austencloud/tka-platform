@@ -23,6 +23,23 @@
     return s.charAt(0).toUpperCase() + s.slice(1);
   }
 
+  // Some decks encode the turn ratio in the ID (e.g., "...-8beat-2to1" = 0.5T)
+  // Map ratio suffixes to human-readable turn values
+  const RATIO_TO_TURN: Record<string, string> = {
+    '': '0T', '2to1': '0.5T', '3to1': '1T', '4to1': '1.5T',
+    '5to1': '2T', '6to1': '2.5T', '7to1': '3T',
+  };
+
+  function extractRatioLabel(deck: Deck): string | null {
+    const m = deck.id.match(/(\d+to\d+)$/);
+    if (m && RATIO_TO_TURN[m[1]]) return RATIO_TO_TURN[m[1]]!;
+    // No ratio suffix = base deck (0T)
+    if (decks.some(d => d.id !== deck.id && d.id.match(/\d+to\d+$/))) {
+      return '0T';
+    }
+    return null;
+  }
+
   function formatTurn(turn: string): string {
     const m = turn.match(/^uniform[- ](\d+(?:\.\d+)?)t$/i);
     return m ? `${m[1]}T` : capitalize(turn.replace(/-/g, ' '));
@@ -52,9 +69,15 @@
     if (v.reversal) parts.push(capitalize(deck.reversalPattern.replace(/-/g, ' ')));
     if (v.grid) parts.push(capitalize(deck.gridMode));
 
-    // If nothing varies (e.g., single deck), show a meaningful fallback
+    // If nothing varies by field, the decks differ by turn ratio embedded in the ID
+    // (e.g., "...-8beat-2to1" vs "...-8beat-3to1" which are 0.5T vs 1T)
     if (parts.length === 0) {
-      parts.push(formatTurn(deck.turnPattern));
+      const ratioLabel = extractRatioLabel(deck);
+      if (ratioLabel) {
+        parts.push(ratioLabel);
+      } else {
+        parts.push(formatTurn(deck.turnPattern));
+      }
       parts.push(capitalize(deck.reversalPattern.replace(/-/g, ' ')));
     }
 
