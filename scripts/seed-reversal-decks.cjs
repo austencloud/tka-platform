@@ -168,17 +168,14 @@ function applyReversalToSequence(steps, patternId) {
     const blue = step.motions?.blue;
     const red = step.motions?.red;
 
-    // Beat 1 (beatIndex 0): no reversal, just record the running state
+    // Record the pre-reversal state so the first step's running state
+    // is initialized before we apply any reversal to it.
     if (beatIndex === 0) {
-      step.blueReversal = false;
-      step.redReversal = false;
       if (blue) { runBlueType = blue.motionType; runBlueRotDir = blue.rotationDirection; }
       if (red) { runRedType = red.motionType; runRedRotDir = red.rotationDirection; }
-      beatIndex++;
-      continue;
     }
 
-    const symbol = seq[(beatIndex - 1) % seq.length];
+    const symbol = seq[beatIndex % seq.length];
     const blueReversed = symbol === "P" || symbol === "B";
     const redReversed = symbol === "P" || symbol === "R";
 
