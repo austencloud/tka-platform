@@ -62,21 +62,11 @@ function filterDecks(allDecks: Deck[], sel: DrillSelections): Deck[] {
 	if (sel.category) {
 		const familyLower = sel.category.vtgFamily.toLowerCase();
 		const gridLower = sel.category.gridMode.toLowerCase();
-		console.log('[filterDecks] VTG category filter:', { familyLower, gridLower, decksBefore: result.length });
-		if (result.length > 0) {
-			const sample = result[0];
-			console.log('[filterDecks] sample deck:', { id: sample.id, gridMode: sample.gridMode, familyIds: sample.families.map(f => f.id) });
-		}
 		result = result.filter(
 			(d) =>
 				d.families.some((f) => f.id.toLowerCase().includes(familyLower)) &&
 				d.gridMode.toLowerCase() === gridLower
 		);
-		console.log('[filterDecks] VTG after filter:', result.length);
-		if (result.length > 0) {
-			console.log('[filterDecks] VTG turnPatterns:', [...new Set(result.map(d => d.turnPattern))]);
-			console.log('[filterDecks] VTG stepCounts:', [...new Set(result.map(d => d.stepCount))]);
-		}
 	}
 
 	if (sel.stepCount !== null) {

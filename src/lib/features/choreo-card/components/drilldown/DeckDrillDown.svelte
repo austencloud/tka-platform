@@ -22,8 +22,8 @@
 	let { decks, onSelectDeck }: Props = $props();
 
 	// Pass a getter so the state factory can react to async deck loading
-	const state = createDrillDownState(() => decks);
-	setDrillDownContext(state);
+	const drillState = createDrillDownState(() => decks);
+	setDrillDownContext(drillState);
 
 	let isDesktop = $state(false);
 
@@ -37,23 +37,23 @@
 	});
 
 	const accentColor = $derived(
-		state.selections.path === 'VTG' ? '#b763cd' : '#63b7cd'
+		drillState.selections.path === 'VTG' ? '#b763cd' : '#63b7cd'
 	);
 
 	const accentRgb = $derived(
-		state.selections.path === 'VTG' ? '183,99,205' : '99,183,205'
+		drillState.selections.path === 'VTG' ? '183,99,205' : '99,183,205'
 	);
 
 	const glowClass = $derived(
-		state.selections.path === 'VTG'
+		drillState.selections.path === 'VTG'
 			? 'vtg'
-			: state.selections.path === 'LOOPs'
+			: drillState.selections.path === 'LOOPs'
 				? 'loops'
 				: ''
 	);
 
 	function handleDeckSelect(deck: Deck) {
-		onSelectDeck(deck, state.selections.category?.vtgFamily ?? null);
+		onSelectDeck(deck, drillState.selections.category?.vtgFamily ?? null);
 	}
 </script>
 
@@ -64,46 +64,46 @@
 		<div class="desktop-layout">
 			<DeckFilterSidebar {state} allDecks={decks} />
 			<DeckResultsPanel
-				decks={state.filteredDecks}
+				decks={drillState.filteredDecks}
 				onSelectDeck={handleDeckSelect}
 			/>
 		</div>
 	{:else}
-		{#if state.breadcrumbs.length > 0}
+		{#if drillState.breadcrumbs.length > 0}
 			<DrillBreadcrumb
-				breadcrumbs={state.breadcrumbs}
+				breadcrumbs={drillState.breadcrumbs}
 				accentColor={accentColor}
-				onNavigate={state.goBackTo}
+				onNavigate={drillState.goBackTo}
 			/>
 		{/if}
 
-		{#key state.currentStep}
+		{#key drillState.currentStep}
 			<div class="step-content">
-				{#if state.currentStep === 'collection'}
-					<CollectionStep decks={decks} onSelectPath={state.selectPath} />
-				{:else if state.currentStep === 'shape'}
-					<ShapeStep decks={state.filteredDecks} onContinue={state.selectShape} />
-				{:else if state.currentStep === 'category'}
-					<CategoryStep onContinue={state.selectCategory} />
-				{:else if state.currentStep === 'stepcount'}
+				{#if drillState.currentStep === 'collection'}
+					<CollectionStep decks={decks} onSelectPath={drillState.selectPath} />
+				{:else if drillState.currentStep === 'shape'}
+					<ShapeStep decks={drillState.filteredDecks} onContinue={drillState.selectShape} />
+				{:else if drillState.currentStep === 'category'}
+					<CategoryStep onContinue={drillState.selectCategory} />
+				{:else if drillState.currentStep === 'stepcount'}
 					<StepCountStep
-						availableCounts={state.availableStepCounts}
+						availableCounts={drillState.availableStepCounts}
 						onSelect={state.selectStepCount}
 					/>
-				{:else if state.currentStep === 'turn'}
+				{:else if drillState.currentStep === 'turn'}
 					<TurnPatternStep
-						stepCount={state.selections.stepCount ?? 4}
-						path={state.selections.path ?? 'LOOPs'}
+						stepCount={drillState.selections.stepCount ?? 4}
+						path={drillState.selections.path ?? 'LOOPs'}
 						availablePatterns={state.availableTurnPatterns}
 						onSelectPattern={state.selectTurnPattern}
 						onSelectUniform={() => state.goTo('uniform')}
 					/>
-				{:else if state.currentStep === 'uniform'}
+				{:else if drillState.currentStep === 'uniform'}
 					<UniformSubStep onSelect={state.selectTurnPattern} />
-				{:else if state.currentStep === 'reversal'}
+				{:else if drillState.currentStep === 'reversal'}
 					<ReversalPatternStep
-						decks={state.filteredDecks}
-						breadcrumbs={state.breadcrumbs}
+						decks={drillState.filteredDecks}
+						breadcrumbs={drillState.breadcrumbs}
 						onSelectDeck={handleDeckSelect}
 					/>
 				{/if}
