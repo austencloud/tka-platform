@@ -16,10 +16,11 @@
 
   interface Props {
     open: boolean;
+    initialMode?: "signin" | "signup";
     onClose: () => void;
   }
 
-  let { open, onClose }: Props = $props();
+  let { open, initialMode = "signup", onClose }: Props = $props();
 
   // Detect mobile via matchMedia so the drawer placement switches correctly.
   // This reactive derivation reads window width on mount and on resize.
@@ -51,6 +52,14 @@
 
   let authMode = $state<"signin" | "signup">("signup");
   let showEmailAuth = $state(false);
+
+  // Sync authMode when drawer opens with a specific initial mode
+  $effect(() => {
+    if (open) {
+      authMode = initialMode;
+      showEmailAuth = false;
+    }
+  });
 
   // Tier progression data derived from domain constants
   const tiers: Array<{ key: keyof typeof ACCESS_TIER_LABELS; subtitle: string; isCurrent?: boolean }> = [
