@@ -92,10 +92,7 @@ Card-based architecture with integrated Generate button:
         : favoriteState.communityFavorites.find((f) => f.userId === id);
 
     if (fav) {
-      console.log("[PresetDebug] fav.config:", JSON.stringify(fav.config, null, 2));
-      console.log("[PresetDebug] loopEnabled:", fav.config.loopEnabled, "loopType:", fav.config.loopType);
       configState.updateConfig(fav.config);
-      console.log("[PresetDebug] after update, configState.config:", JSON.stringify(configState.config, null, 2));
       if (fav.startEndOptions) {
         startEndState.setOptions(fav.startEndOptions);
       }

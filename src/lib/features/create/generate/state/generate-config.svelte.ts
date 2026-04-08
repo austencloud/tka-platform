@@ -209,13 +209,26 @@ export function createGenerationConfigState(
   const isFreeformMode = $derived(config.mode === GenerationMode.FREEFORM);
   const isLoopEnabled = $derived(config.loopEnabled);
 
+  // Migrate legacy "strict_*" loop types stored in older Firestore favorites
+  // or localStorage configs. Same table used in loadConfig().
+  const STRICT_LOOP_MIGRATION: Record<string, string> = {
+    strict_rotated: "rotated",
+    strict_mirrored: "mirrored",
+    strict_swapped: "swapped",
+    strict_inverted: "inverted",
+  };
+
   // Simple update function with persistence
   // Strips undefined values so callers (e.g. Firestore favorite configs missing
   // newer fields like loopEnabled) can't accidentally overwrite current values.
+  // Also migrates legacy "strict_*" loop types to their modern equivalents.
   function updateConfig(updates: Partial<UIGenerationConfig>) {
     const cleaned: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(updates)) {
       if (v !== undefined) cleaned[k] = v;
+    }
+    if (typeof cleaned.loopType === "string" && cleaned.loopType in STRICT_LOOP_MIGRATION) {
+      cleaned.loopType = STRICT_LOOP_MIGRATION[cleaned.loopType];
     }
     config = { ...config, ...cleaned };
 

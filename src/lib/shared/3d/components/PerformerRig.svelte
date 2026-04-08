@@ -163,6 +163,8 @@
       bluePropAnchorRef={bluePropAnchorRef}
       redPropAnchorRef={redPropAnchorRef}
       disableSpineTwist={isDualWheel}
+      beatIndex={avatarState.currentStepIndex}
+      beatProgress={avatarState.progress}
     />
   {/if}
 
