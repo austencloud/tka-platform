@@ -4,6 +4,8 @@
 -->
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import { container as di } from "$lib/shared/di";
+  import html2canvas from "html2canvas";
   import CardPreviewStack from "./designer/CardPreviewStack.svelte";
 
   interface Props {
@@ -32,8 +34,53 @@
   }: Props = $props();
 
   let focusedCard = $state<"front" | "back" | null>(null);
+  let stackEl: HTMLDivElement | undefined = $state();
+
+  // Copy state
+  let copyDataState = $state<"idle" | "success" | "error">("idle");
+  let copyImageState = $state<"idle" | "copying" | "success" | "error">("idle");
 
   const word = $derived(sequence.word ?? sequence.name ?? '');
+
+  /** Copy sequence data in Claude-optimized compact format */
+  async function copySequenceData() {
+    try {
+      const copier = di.items.claudeCodeCopier;
+      const result = await copier.copyForClaude(sequence);
+      copyDataState = result.success ? "success" : "error";
+      setTimeout(() => { copyDataState = "idle"; }, 2000);
+    } catch {
+      copyDataState = "error";
+      setTimeout(() => { copyDataState = "idle"; }, 2000);
+    }
+  }
+
+  /** Capture the card stack as a PNG image and copy to clipboard */
+  async function copyCardImage() {
+    if (copyImageState === "copying" || !stackEl) return;
+    copyImageState = "copying";
+    try {
+      const canvas = await html2canvas(stackEl, {
+        backgroundColor: null,
+        scale: 2,
+        useCORS: true,
+      });
+      const blob = await new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob(
+          (b) => b ? resolve(b) : reject(new Error("toBlob returned null")),
+          "image/png",
+        );
+      });
+      await navigator.clipboard.write([
+        new ClipboardItem({ "image/png": blob }),
+      ]);
+      copyImageState = "success";
+      setTimeout(() => { copyImageState = "idle"; }, 2000);
+    } catch {
+      copyImageState = "error";
+      setTimeout(() => { copyImageState = "idle"; }, 2000);
+    }
+  }
 
   function handleKeydown(e: KeyboardEvent) {
     if (e.key === 'Escape') onClose();
@@ -65,7 +112,7 @@
     </div>
 
     <!-- Card stack — reuses the designer's CardPreviewStack -->
-    <div class="stack-wrapper">
+    <div class="stack-wrapper" bind:this={stackEl}>
       <CardPreviewStack
         {sequence}
         {focusedCard}
@@ -85,12 +132,41 @@
       />
     </div>
 
-    <!-- Keyboard hints -->
-    <div class="hints">
-      <span><kbd>Esc</kbd> close</span>
-      <span><kbd>Space</kbd> cycle focus</span>
-      <span><kbd>&uarr;</kbd> front</span>
-      <span><kbd>&darr;</kbd> back</span>
+    <!-- Actions + keyboard hints -->
+    <div class="bottom-bar">
+      <div class="copy-actions">
+        <button class="copy-btn" onclick={copySequenceData} aria-label="Copy sequence data">
+          {#if copyDataState === "success"}
+            <i class="fas fa-check"></i> Copied
+          {:else if copyDataState === "error"}
+            <i class="fas fa-times"></i> Failed
+          {:else}
+            <i class="fas fa-code"></i> Copy Data
+          {/if}
+        </button>
+        <button
+          class="copy-btn"
+          onclick={copyCardImage}
+          disabled={copyImageState === "copying"}
+          aria-label="Copy card image"
+        >
+          {#if copyImageState === "copying"}
+            <i class="fas fa-spinner fa-spin"></i> Capturing...
+          {:else if copyImageState === "success"}
+            <i class="fas fa-check"></i> Copied
+          {:else if copyImageState === "error"}
+            <i class="fas fa-times"></i> Failed
+          {:else}
+            <i class="fas fa-image"></i> Copy Image
+          {/if}
+        </button>
+      </div>
+      <div class="hints">
+        <span><kbd>Esc</kbd> close</span>
+        <span><kbd>Space</kbd> cycle focus</span>
+        <span><kbd>&uarr;</kbd> front</span>
+        <span><kbd>&darr;</kbd> back</span>
+      </div>
     </div>
   </div>
 
@@ -175,6 +251,44 @@
   .close-btn:hover {
     background: rgba(255, 255, 255, 0.12);
     color: #fff;
+  }
+
+  .bottom-bar {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+
+  .copy-actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  .copy-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.04);
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .copy-btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.8);
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+
+  .copy-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
   }
 
   .hints {
