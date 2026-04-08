@@ -28,9 +28,13 @@
 		centerZ: number;
 		/** Museum camera position for LOD calculations */
 		cameraPosition?: { x: number; y: number; z: number };
+		/** Whether the player is close enough that labels should be shown.
+		 *  When false, HTML name labels are hidden to prevent them from
+		 *  rendering through museum walls (CSS2D ignores occlusion). */
+		showLabels?: boolean;
 	}
 
-	const { centerX, centerZ, cameraPosition }: Props = $props();
+	const { centerX, centerZ, cameraPosition, showLabels = true }: Props = $props();
 
 	const forestLift = $derived(-userProportionsState.groundY);
 
@@ -175,6 +179,7 @@
 				{renderState}
 				schoolColor={getSchoolColor(renderState.entityId)}
 				loadFrames={100}
+				showLabel={showLabels}
 			/>
 		{/if}
 	{/each}

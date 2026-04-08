@@ -22,9 +22,13 @@
 		schoolColor?: string | null;
 		/** Frames to wait for GLTF load before showing avatar. Default 180. */
 		loadFrames?: number;
+		/** Whether to show the floating name label. Default true. Set to false
+		 *  when the avatar is far from the camera (e.g. in museum context where
+		 *  CSS2D labels would render through walls). */
+		showLabel?: boolean;
 	}
 
-	const { renderState, isSelected = false, schoolColor = null, loadFrames = 180 }: Props = $props();
+	const { renderState, isSelected = false, schoolColor = null, loadFrames = 180, showLabel = true }: Props = $props();
 
 	const STAGE_LIFT = $derived(-userProportionsState.groundY);
 	const avatarModelId = $derived(
@@ -208,7 +212,7 @@
 	{/if}
 
 	<!-- Name label floating above head -->
-	{#if showAvatar && deathOpacity > 0.1}
+	{#if showLabel && showAvatar && deathOpacity > 0.1}
 		<T.Group
 			position.x={avatarPosition.x}
 			position.y={avatarPosition.y + 0.6}
