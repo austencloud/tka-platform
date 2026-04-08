@@ -203,7 +203,8 @@ export class TextRenderer implements ITextRenderer {
     customNotesText?: string,
     backgroundColor?: string,
     borderColor?: string,
-    leftLabel?: string
+    leftLabel?: string,
+    elementIcon?: CanvasImageSource
   ): void {
     const showCreatorName = showFlags?.showCreatorName ?? true;
     const showNotes = showFlags?.showNotes ?? true;
@@ -245,6 +246,7 @@ export class TextRenderer implements ITextRenderer {
       backgroundColor,
       borderColor,
       leftLabel,
+      elementIcon,
     });
   }
 

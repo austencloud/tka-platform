@@ -102,8 +102,9 @@ export class ThumbnailRenderer implements IThumbnailRenderer {
         ...renderOptions,
         birthday,
         loopType: resolvedLoopType ?? undefined,
-        // Hand path mode: suppress LOOP glyph (hand paths don't have LOOP patterns)
-        showLoopGlyph: renderOptions.visibilityOverrides?.handPathMode ? false : undefined,
+        // Suppress LOOP glyph: hand path mode (no LOOP patterns) or when difficulty badge
+        // is off (both are sorting metadata that lives on the card back, not front)
+        showLoopGlyph: (renderOptions.visibilityOverrides?.handPathMode || input.addDifficultyLevel === false) ? false : undefined,
         // Card mode: use 5:7 playing card layout for physical card export
         cardMode: input.cardMode ?? false,
       },
