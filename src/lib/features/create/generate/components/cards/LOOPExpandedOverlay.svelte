@@ -247,8 +247,8 @@ Animates forward in z-axis and expands to fill the container space
 
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    padding: 16px;
+    gap: 10px;
+    padding: 12px;
 
     /* Solid background matching the card theme */
     background: linear-gradient(
@@ -263,7 +263,8 @@ Animates forward in z-axis and expands to fill the container space
       0 8px 32px rgba(0, 0, 0, 0.4),
       0 0 24px color-mix(in srgb, var(--theme-accent) 30%, transparent);
 
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
   }
 
   .overlay-header {

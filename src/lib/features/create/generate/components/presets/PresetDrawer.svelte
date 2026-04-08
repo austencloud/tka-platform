@@ -156,26 +156,18 @@
     --sheet-shadow: 0 -4px 24px rgba(0, 0, 0, 0.5);
   }
 
-  /* Full-screen bottom sheet on mobile — covers bottom nav */
+  /* Bottom sheet on mobile — auto-size to content, don't take full screen */
   :global(.drawer-content.preset-drawer-sheet[data-placement="bottom"]) {
-    height: 100vh;
-    height: 100dvh;
-    min-height: 100vh;
-    min-height: 100dvh;
-    max-height: 100vh;
-    max-height: 100dvh;
-    border-radius: 0;
+    height: auto;
+    min-height: auto;
+    max-height: 85dvh;
   }
 
-  /* Right-side panel on desktop */
-  :global(.drawer-content.preset-drawer-sheet[data-placement="right"]) {
-    --sheet-width: min(400px, 90vw);
-  }
+  /* Right-side panel on desktop — use full create panel width like LOOP drawer */
 
   .preset-drawer-content {
     display: flex;
     flex-direction: column;
-    height: 100%;
     padding: 12px 16px calc(16px + env(safe-area-inset-bottom, 0px));
     background: linear-gradient(
       135deg,

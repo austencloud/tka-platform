@@ -33,6 +33,12 @@ const PART_SIZE = 10 * 1024 * 1024;
 /** Upload up to 3 parts at a time */
 const MAX_CONCURRENT_PARTS = 3;
 
+/** Retry attempts for transient network errors */
+const MAX_RETRIES = 3;
+
+/** Base delay between retries (doubles each attempt) */
+const RETRY_BASE_DELAY_MS = 1000;
+
 /** localStorage key for multipart resume state */
 const STORAGE_KEY = "tka-multipart-uploads";
 
@@ -105,7 +111,7 @@ function purgeStaleEntries(): void {
 // XHR upload helper (supports progress and abort)
 // ============================================================================
 
-function xhrPut(
+function xhrPutOnce(
   url: string,
   body: Blob,
   contentType: string,
@@ -150,16 +156,56 @@ function xhrPut(
       // Extract the R2 host from the presigned URL for diagnostics
       let host = "unknown";
       try { host = new URL(url).host; } catch { /* ignore */ }
-      reject(new Error(
+      const err = new Error(
         `Network error during upload to ${host}. ` +
         `This usually means CORS is not configured on the R2 bucket to allow PUT from ${location.origin}. ` +
         `Check the bucket's CORS settings in the Cloudflare dashboard.`
-      ));
+      );
+      (err as any).isNetworkError = true;
+      reject(err);
     };
-    xhr.ontimeout = () => reject(new Error("Upload timed out"));
+    xhr.ontimeout = () => {
+      const err = new Error("Upload timed out");
+      (err as any).isNetworkError = true;
+      reject(err);
+    };
 
     xhr.send(body);
   });
+}
+
+async function xhrPut(
+  url: string,
+  body: Blob,
+  contentType: string,
+  options?: {
+    onProgress?: (loaded: number, total: number) => void;
+    signal?: AbortSignal;
+  }
+): Promise<{ etag: string }> {
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    try {
+      return await xhrPutOnce(url, body, contentType, options);
+    } catch (error: any) {
+      const isAbort = error?.name === "AbortError";
+      const isNetworkError = error?.isNetworkError === true;
+      const isLastAttempt = attempt === MAX_RETRIES - 1;
+
+      // Don't retry user-initiated aborts or non-network errors (like HTTP 4xx/5xx)
+      if (isAbort || !isNetworkError || isLastAttempt) {
+        throw error;
+      }
+
+      const delay = RETRY_BASE_DELAY_MS * Math.pow(2, attempt);
+      console.warn(
+        `R2 upload attempt ${attempt + 1}/${MAX_RETRIES} failed (network error), retrying in ${delay}ms...`
+      );
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+  }
+
+  // Unreachable, but TypeScript needs it
+  throw new Error("Upload failed after retries");
 }
 
 // ============================================================================

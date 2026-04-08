@@ -81,6 +81,8 @@ Usage:
     darkMode = undefined,
     // Print Mode: uses pure white background for professional print output (Choreo Cards)
     printMode = false,
+    // Transparent background: grid and props float on parent's background
+    transparentBackground = false,
     // Toggle callbacks (for interactive visibility controls)
     onToggleTKA = undefined,
     onToggleVTG = undefined,
@@ -128,6 +130,8 @@ Usage:
     darkMode?: boolean;
     /** Print Mode: pure white background for professional print (Choreo Cards). */
     printMode?: boolean;
+    /** Transparent background — grid and props float on parent's background */
+    transparentBackground?: boolean;
     onToggleTKA?: () => void;
     onToggleVTG?: () => void;
     onToggleElemental?: () => void;
@@ -331,7 +335,7 @@ Usage:
     style="pointer-events: none;"
   >
     <!-- Background - fills entire expanded viewBox -->
-    <rect width={expandedWidth} height={BASE_SIZE} fill={printMode ? "#ffffff" : darkMode === true ? "#0a0a0f" : darkMode === false ? "#d8d8d2" : "var(--dm-pictograph-bg)"} pointer-events="none" />
+    <rect width={expandedWidth} height={BASE_SIZE} fill={transparentBackground ? "none" : printMode ? "#ffffff" : darkMode === true ? "#0a0a0f" : darkMode === false ? "#d8d8d2" : "var(--dm-pictograph-bg)"} pointer-events="none" />
 
     <!-- Core content (grid, props, arrows) - centered in expanded viewBox -->
     <g transform="translate({coreContentOffset}, 0)">

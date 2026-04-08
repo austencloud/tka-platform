@@ -1,7 +1,6 @@
 <!--
 LOOPComponentGrid.svelte - Grid layout for LOOP component selection buttons
-Quick Apply mode: Single column with descriptions
-Build Combo mode: 2x2 grid, compact
+Compact 3x2 grid (icon + label) so all 6 items fit on mobile without scrolling
 -->
 <script lang="ts">
   import {
@@ -20,8 +19,9 @@ Build Combo mode: 2x2 grid, compact
     onToggleComponent: (component: LOOPComponent) => void;
   }>();
 
-  // Show descriptions in Quick Apply mode (single-select)
-  const showDescriptions = $derived(!isMultiSelectMode);
+  // Compact grid in both modes — descriptions removed to fit all 6 items
+  // on small mobile screens (e.g. Z Fold 6 portrait in browser)
+  const showDescriptions = false;
 </script>
 
 <div class="loop-component-grid" class:with-descriptions={showDescriptions}>
@@ -41,19 +41,10 @@ Build Combo mode: 2x2 grid, compact
     display: grid;
     width: 100%;
     margin: 0 auto;
-    gap: 12px;
+    gap: 8px;
     flex-shrink: 0;
-  }
-
-  /* Build Combo mode: 2x2 grid, compact buttons */
-  .loop-component-grid:not(.with-descriptions) {
-    grid-template-columns: repeat(2, 1fr);
-    grid-auto-rows: 90px;
-  }
-
-  /* Quick Apply mode: single column with descriptions */
-  .loop-component-grid.with-descriptions {
-    grid-template-columns: 1fr;
-    grid-auto-rows: auto;
+    /* 3 columns x 2 rows — fits all 6 items on small mobile screens */
+    grid-template-columns: repeat(3, 1fr);
+    grid-auto-rows: minmax(64px, auto);
   }
 </style>

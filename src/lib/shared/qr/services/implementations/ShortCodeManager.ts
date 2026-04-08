@@ -172,7 +172,7 @@ export class ShortCodeManager implements IShortCodeManager {
           createdAt: new Date().toISOString(),
           createdBy: "system",
           scanCount: 0,
-          sequenceName: sequence.word || sequence.name,
+          sequenceName: sequence.word || sequence.name || "",
         };
         // Only set optional fields if defined (Firestore rejects undefined values)
         if (sequence.id) record.sequenceId = sequence.id;
@@ -186,14 +186,16 @@ export class ShortCodeManager implements IShortCodeManager {
         // by owner path. Embed the essential sequence data directly in the
         // shortcode record so we can hydrate without searching deck collections.
         if (!sequence.ownerId && sequence.steps && sequence.steps.length > 0) {
-          record.sequenceData = {
-            word: sequence.word,
+          const seqData: Record<string, unknown> = {
             steps: sequence.steps,
-            startPosition: sequence.startPosition,
-            gridMode: sequence.gridMode,
-            isCircular: sequence.isCircular,
-            loopType: sequence.loopType,
           };
+          if (sequence.word != null) seqData.word = sequence.word;
+          if (sequence.startPosition != null) seqData.startPosition = sequence.startPosition;
+          if (sequence.gridMode != null) seqData.gridMode = sequence.gridMode;
+          if (sequence.isCircular != null) seqData.isCircular = sequence.isCircular;
+          if (sequence.loopType != null) seqData.loopType = sequence.loopType;
+          // JSON round-trip strips undefined values that Firestore rejects
+          record.sequenceData = JSON.parse(JSON.stringify(seqData));
         }
 
         await setDoc(docRef, record);

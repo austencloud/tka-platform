@@ -2220,7 +2220,6 @@
     font-family: Georgia, serif;
     font-weight: bold;
     color: #000;
-    text-transform: uppercase;
     letter-spacing: 0.05em;
     white-space: nowrap;
     overflow: hidden;
