@@ -62,7 +62,7 @@
 
 	{#if isDesktop}
 		<div class="desktop-layout">
-			<DeckFilterSidebar {state} allDecks={decks} />
+			<DeckFilterSidebar state={drillState} allDecks={decks} />
 			<DeckResultsPanel
 				decks={drillState.filteredDecks}
 				onSelectDeck={handleDeckSelect}
@@ -88,18 +88,18 @@
 				{:else if drillState.currentStep === 'stepcount'}
 					<StepCountStep
 						availableCounts={drillState.availableStepCounts}
-						onSelect={state.selectStepCount}
+						onSelect={drillState.selectStepCount}
 					/>
 				{:else if drillState.currentStep === 'turn'}
 					<TurnPatternStep
 						stepCount={drillState.selections.stepCount ?? 4}
 						path={drillState.selections.path ?? 'LOOPs'}
-						availablePatterns={state.availableTurnPatterns}
-						onSelectPattern={state.selectTurnPattern}
-						onSelectUniform={() => state.goTo('uniform')}
+						availablePatterns={drillState.availableTurnPatterns}
+						onSelectPattern={drillState.selectTurnPattern}
+						onSelectUniform={() => drillState.goTo('uniform')}
 					/>
 				{:else if drillState.currentStep === 'uniform'}
-					<UniformSubStep onSelect={state.selectTurnPattern} />
+					<UniformSubStep onSelect={drillState.selectTurnPattern} />
 				{:else if drillState.currentStep === 'reversal'}
 					<ReversalPatternStep
 						decks={drillState.filteredDecks}
@@ -161,7 +161,9 @@
 	}
 
 	.drilldown.desktop {
-		padding: 24px 32px;
+		max-width: none;
+		margin: 0;
+		padding: 16px 24px;
 	}
 
 	@keyframes stepIn {

@@ -12,6 +12,43 @@
     if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
     return String(n);
   }
+
+  function capitalize(s: string): string {
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  }
+
+  // Build a short label showing only what differentiates this deck from siblings.
+  // The sidebar already shows collection/shape/grid/steps, so the card only needs
+  // the parts that vary across the result set: step count, turn pattern, reversal.
+  function shortLabel(deck: Deck): string {
+    const parts: string[] = [];
+
+    // Include step count if the result set has multiple
+    const stepCounts = new Set(decks.map(d => d.stepCount));
+    if (stepCounts.size > 1) parts.push(`${deck.stepCount}-Step`);
+
+    // Turn pattern — format "uniform-0t" → "0T", others capitalize
+    const turn = deck.turnPattern;
+    const uniformMatch = turn.match(/^uniform[- ](\d+(?:\.\d+)?)t$/i);
+    if (uniformMatch) {
+      parts.push(`${uniformMatch[1]}T`);
+    } else {
+      parts.push(capitalize(turn.replace(/-/g, ' ')));
+    }
+
+    // Reversal pattern
+    parts.push(capitalize(deck.reversalPattern.replace(/-/g, ' ')));
+
+    // Slice type if mixed
+    const sliceTypes = new Set(decks.map(d => d.sliceType));
+    if (sliceTypes.size > 1) parts.push(capitalize(deck.sliceType));
+
+    // Grid mode if mixed
+    const gridModes = new Set(decks.map(d => d.gridMode));
+    if (gridModes.size > 1) parts.push(capitalize(deck.gridMode));
+
+    return parts.join(' · ');
+  }
 </script>
 
 <div class="results-panel">
@@ -33,7 +70,7 @@
         onclick={() => onSelectDeck(deck)}
         aria-label="Open {deck.canonicalName ?? deck.name} with {deck.totalSequences} sequences"
       >
-        <span class="deck-name">{deck.canonicalName || deck.name}</span>
+        <span class="deck-name">{shortLabel(deck)}</span>
         <div class="deck-meta">
           <span>{formatCount(deck.totalSequences)} seq</span>
           <span>{deck.families.length} families</span>

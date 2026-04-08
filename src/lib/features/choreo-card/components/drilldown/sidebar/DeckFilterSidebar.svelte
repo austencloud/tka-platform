@@ -29,6 +29,13 @@
 </script>
 
 <aside class="filter-sidebar" style="--accent: {accentColor}; --accent-rgb: {state.selections.path === 'VTG' ? '183,99,205' : '99,183,205'}">
+  <div class="sidebar-header">
+    <span class="sidebar-title">Filter Decks</span>
+    {#if hasPath}
+      <button class="clear-btn" onclick={state.reset} type="button">Clear all</button>
+    {/if}
+  </div>
+
   <CollectionSection
     selectedPath={state.selections.path}
     {accentColor}
@@ -82,10 +89,47 @@
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
     overflow-y: auto;
     max-height: calc(100vh - 120px);
     padding-right: 8px;
+  }
+
+  .sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 4px;
+  }
+
+  .sidebar-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.6);
+  }
+
+  .clear-btn {
+    font-size: 12px;
+    color: var(--accent, #63b7cd);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background 0.15s ease;
+  }
+
+  .clear-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  /* Compact DrillPills for sidebar — 36px min-height preserves pointer accessibility */
+  .filter-sidebar :global(.drill-pill) {
+    padding: 8px 16px;
+    font-size: 13px;
+    border-radius: 8px;
+    min-height: 36px;
   }
 
   .filter-sidebar::-webkit-scrollbar {

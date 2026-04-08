@@ -2,7 +2,7 @@
   import type { CategorySelections } from '../../../state/deck-drilldown-types';
   import { VTG_ELEMENTAL_THEMES } from '../../../domain/elemental-theme';
   import ElementalFamilyCard from '../ElementalFamilyCard.svelte';
-  import GridModeCard from '../GridModeCard.svelte';
+  import DrillPill from '../DrillPill.svelte';
   import SidebarFilterSection from './SidebarFilterSection.svelte';
 
   interface Props {
@@ -84,9 +84,9 @@
 
   <div class="sub-group">
     <span class="sub-label">GRID</span>
-    <div class="grid-row">
-      <GridModeCard mode="diamond" selected={selectedGrid === 'Diamond'} onClick={() => selectGrid('Diamond')} />
-      <GridModeCard mode="box" selected={selectedGrid === 'Box'} onClick={() => selectGrid('Box')} />
+    <div class="pill-row">
+      <DrillPill label="Diamond" selected={selectedGrid === 'Diamond'} onClick={() => selectGrid('Diamond')} />
+      <DrillPill label="Box" selected={selectedGrid === 'Box'} onClick={() => selectGrid('Box')} />
     </div>
   </div>
 </SidebarFilterSection>
@@ -133,17 +133,9 @@
     font-size: 9px;
   }
 
-  .grid-row {
+  .pill-row {
     display: flex;
-    gap: 8px;
-  }
-
-  .grid-row :global(.grid-mode-card) {
-    padding: 10px 16px;
-  }
-
-  .grid-row :global(.grid-svg) {
-    width: 40px;
-    height: 40px;
+    flex-wrap: wrap;
+    gap: 6px;
   }
 </style>
