@@ -3,7 +3,7 @@
   import { getPoiContext } from "../context/poi-context";
   import type { PoiDeviceInfo } from "../domain/DeviceTypes";
 
-  const state = getPoiContext();
+  const poi = getPoiContext();
 
   let scanning = $state(false);
   let error = $state<string | null>(null);
@@ -12,7 +12,7 @@
     scanning = true;
     error = null;
     try {
-      await state.scanDevices();
+      await poi.scanDevices();
     } catch (err) {
       error = err instanceof Error ? err.message : "Scan failed";
     } finally {
@@ -23,7 +23,7 @@
   async function handleConnect(device: PoiDeviceInfo): Promise<void> {
     error = null;
     try {
-      await state.connectDevice(device);
+      await poi.connectDevice(device);
     } catch (err) {
       error = err instanceof Error ? err.message : "Connection failed";
     }
@@ -32,7 +32,7 @@
   async function handleUpload(deviceId: string): Promise<void> {
     error = null;
     try {
-      await state.uploadToDevice(deviceId);
+      await poi.uploadToDevice(deviceId);
     } catch (err) {
       error = err instanceof Error ? err.message : "Upload failed";
     }
@@ -41,7 +41,7 @@
   async function handleUploadAll(): Promise<void> {
     error = null;
     try {
-      await state.uploadToAll();
+      await poi.uploadToAll();
     } catch (err) {
       error = err instanceof Error ? err.message : "Upload failed";
     }
@@ -64,13 +64,13 @@
     <div class="error-msg">{error}</div>
   {/if}
 
-  {#if state.connectedDevices.length === 0}
+  {#if poi.connectedDevices.length === 0}
     <div class="empty-state">
       No devices found. Click Scan to search for BLE poi.
     </div>
   {:else}
     <div class="device-list">
-      {#each state.connectedDevices as device}
+      {#each poi.connectedDevices as device}
         <div class="device-card">
           <div class="device-info">
             <span class="device-name">{device.name}</span>
@@ -80,29 +80,29 @@
             <button
               class="action-btn"
               onclick={() => handleUpload(device.id)}
-              disabled={!state.activePattern || state.uploadProgress !== null}
+              disabled={!poi.activePattern || poi.uploadProgress !== null}
             >
-              {state.uploadProgress !== null ? `${Math.round(state.uploadProgress)}%` : "Upload"}
+              {poi.uploadProgress !== null ? `${Math.round(poi.uploadProgress)}%` : "Upload"}
             </button>
           </div>
         </div>
       {/each}
     </div>
 
-    {#if state.connectedDevices.length > 1 && state.activePattern}
+    {#if poi.connectedDevices.length > 1 && poi.activePattern}
       <button
         class="upload-all-btn"
         onclick={handleUploadAll}
-        disabled={state.uploadProgress !== null}
+        disabled={poi.uploadProgress !== null}
       >
         Upload to All
       </button>
     {/if}
   {/if}
 
-  {#if state.uploadProgress !== null}
+  {#if poi.uploadProgress !== null}
     <div class="progress-bar">
-      <div class="progress-fill" style:width="{state.uploadProgress}%"></div>
+      <div class="progress-fill" style:width="{poi.uploadProgress}%"></div>
     </div>
   {/if}
 </div>
