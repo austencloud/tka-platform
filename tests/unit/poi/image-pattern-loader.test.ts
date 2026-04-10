@@ -25,38 +25,51 @@ if (typeof globalThis.ImageData === "undefined") {
 describe("ImagePatternLoader", () => {
   const loader = new ImagePatternLoader();
 
-  it("converts a 3x2 image to a 3-LED 2-frame pattern", () => {
-    // 3 rows (height/LEDs) x 2 columns (width/frames)
-    // Pixel layout (RGBA):
-    //   (0,0)=red   (1,0)=green
-    //   (0,1)=blue  (1,1)=white
-    //   (0,2)=black (1,2)=yellow
-    const data = new Uint8ClampedArray([
-      255, 0, 0, 255,     0, 255, 0, 255,   // row 0: red, green
-      0, 0, 255, 255,     255, 255, 255, 255, // row 1: blue, white
-      0, 0, 0, 255,       255, 255, 0, 255,   // row 2: black, yellow
-    ]);
-    const imageData = new ImageData(data, 2, 3);
+  describe("disc mode (default)", () => {
+    it("uses polar sampling — frameCount based on circumference", () => {
+      const size = 10;
+      const data = new Uint8ClampedArray(size * size * 4);
+      for (let i = 0; i < size * size; i++) {
+        data[i * 4] = 255;
+        data[i * 4 + 3] = 255;
+      }
+      const imageData = new ImageData(data, size, size);
+      const pattern = loader.fromImageData(imageData, 8);
 
-    const pattern = loader.fromImageData(imageData, 3);
+      expect(pattern.ledCount).toBe(8);
+      expect(pattern.frameCount).toBeGreaterThanOrEqual(180);
+      expect(pattern.metadata.source).toBe("image-upload");
+    });
 
-    expect(pattern.ledCount).toBe(3);
-    expect(pattern.frameCount).toBe(2);
+    it("samples solid color uniformly", () => {
+      const size = 20;
+      const data = new Uint8ClampedArray(size * size * 4);
+      for (let i = 0; i < size * size; i++) {
+        data[i * 4 + 1] = 200;
+        data[i * 4 + 3] = 255;
+      }
+      const imageData = new ImageData(data, size, size);
+      const pattern = loader.fromDiscImage(imageData, 10);
 
-    // Frame 0 (column 0): red, blue, black
-    expect(getPixel(pattern, 0, 0)).toEqual({ r: 255, g: 0, b: 0 });
-    expect(getPixel(pattern, 0, 1)).toEqual({ r: 0, g: 0, b: 255 });
-    expect(getPixel(pattern, 0, 2)).toEqual({ r: 0, g: 0, b: 0 });
-
-    // Frame 1 (column 1): green, white, yellow
-    expect(getPixel(pattern, 1, 0)).toEqual({ r: 0, g: 255, b: 0 });
-    expect(getPixel(pattern, 1, 1)).toEqual({ r: 255, g: 255, b: 255 });
-    expect(getPixel(pattern, 1, 2)).toEqual({ r: 255, g: 255, b: 0 });
+      const midLed = Math.floor(pattern.ledCount / 2);
+      expect(pattern.frames[0]!.colors[midLed * 3 + 1]).toBeGreaterThan(150);
+    });
   });
 
-  it("sets metadata source to image-upload", () => {
-    const imageData = new ImageData(new Uint8ClampedArray(4 * 4), 2, 2);
-    const pattern = loader.fromImageData(imageData, 2);
-    expect(pattern.metadata.source).toBe("image-upload");
+  describe("strip mode", () => {
+    it("maps columns to frames and rows to LEDs", () => {
+      const data = new Uint8ClampedArray([
+        255, 0, 0, 255,     0, 255, 0, 255,
+        0, 0, 255, 255,     255, 255, 255, 255,
+        0, 0, 0, 255,       255, 255, 0, 255,
+      ]);
+      const imageData = new ImageData(data, 2, 3);
+      const pattern = loader.fromStripImage(imageData, 3);
+
+      expect(pattern.ledCount).toBe(3);
+      expect(pattern.frameCount).toBe(2);
+      expect(getPixel(pattern, 0, 0)).toEqual({ r: 255, g: 0, b: 0 });
+      expect(getPixel(pattern, 1, 2)).toEqual({ r: 255, g: 255, b: 0 });
+    });
   });
 });

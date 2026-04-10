@@ -19,9 +19,11 @@
 
   let canvasRef = $state<HTMLCanvasElement | null>(null);
   let playing = $state(true);
-  let rpm = $state(120);
-  let showFullDisc = $state(false);
   let animFrameId = $state(0);
+
+  // rpm and showFullDisc are persisted in poi state
+  const rpm = $derived(poi.rpm);
+  const showFullDisc = $derived(poi.showFullDisc);
 
   // Pre-rendered disc image (static, rebuilt when pattern changes)
   let discCanvas: OffscreenCanvas | null = null;
@@ -41,7 +43,7 @@
     const cx = size / 2;
     const cy = size / 2;
     const outerRadius = size / 2 - 4;
-    const innerRadius = outerRadius * 0.08;
+    const innerRadius = outerRadius * 0.15; // Hub matches real poi hardware
 
     const { ledCount, frameCount, frames } = pattern;
     const angleStep = (Math.PI * 2) / frameCount;
@@ -76,7 +78,7 @@
   });
 
   /** Number of wedge segments to draw in the persistence trail */
-  const TRAIL_SEGMENTS = 40;
+  const TRAIL_SEGMENTS = 64;
 
   // Animation loop
   $effect(() => {
@@ -124,77 +126,84 @@
       }
 
       if (showFullDisc) {
-        // Static mode: show full disc without fade
+        // Static mode: subtle ambient glow behind the disc
+        const ambientGlow = ctx.createRadialGradient(cx, cy, drawRadius * 0.8, cx, cy, drawRadius * 1.15);
+        ambientGlow.addColorStop(0, "rgba(100, 180, 255, 0.06)");
+        ambientGlow.addColorStop(1, "transparent");
+        ctx.fillStyle = ambientGlow;
+        ctx.fillRect(0, 0, w, h);
+
         ctx.save();
         ctx.translate(cx, cy);
         ctx.drawImage(discCanvas, -drawRadius, -drawRadius, drawRadius * 2, drawRadius * 2);
         ctx.restore();
       } else {
         // POV mode: persistence window sweeps around the fixed disc.
-        // The staff is at staffAngle. The trail extends backwards.
-        // persistenceArc = how much of the circle is visible based on
-        // how long light persists vs how fast the staff is spinning.
-        const rps = rpm / 60; // rotations per second
+        const rps = rpm / 60;
         const persistence = poi.persistenceDuration;
-        // What fraction of a full rotation does the persistence cover?
-        // At 120 RPM (2 rps) with 120ms persistence: 2 * 0.12 = 0.24 of the circle
         const persistenceFraction = Math.min(rps * persistence, 1.0);
         const persistenceArc = persistenceFraction * Math.PI * 2;
-
         const segmentArc = persistenceArc / TRAIL_SEGMENTS;
 
-        // Draw trail segments from oldest (faintest) to newest (brightest)
-        // so newer segments paint over older ones
+        // Bloom layer: faint, slightly larger copy of the trail for glow
+        ctx.save();
+        ctx.globalAlpha = 0.15;
+        ctx.filter = `blur(${Math.round(drawRadius * 0.02)}px)`;
         for (let i = TRAIL_SEGMENTS - 1; i >= 0; i--) {
-          // Alpha: 1.0 at leading edge (i=0), fading to 0 at trailing edge
           const t = i / TRAIL_SEGMENTS;
-          // Quadratic fade feels more natural than linear
           const alpha = (1.0 - t) * (1.0 - t);
+          if (alpha < 0.05) continue;
 
+          const segEnd = staffAngle - i * segmentArc;
+          const segStart = segEnd - segmentArc;
+
+          ctx.save();
+          ctx.globalAlpha = alpha * 0.3;
+          ctx.beginPath();
+          ctx.moveTo(cx, cy);
+          ctx.arc(cx, cy, drawRadius * 1.04, segStart, segEnd);
+          ctx.closePath();
+          ctx.clip();
+          ctx.drawImage(discCanvas, cx - drawRadius, cy - drawRadius, drawRadius * 2, drawRadius * 2);
+          ctx.restore();
+        }
+        ctx.restore();
+
+        // Main trail segments with fade
+        for (let i = TRAIL_SEGMENTS - 1; i >= 0; i--) {
+          const t = i / TRAIL_SEGMENTS;
+          const alpha = (1.0 - t) * (1.0 - t);
           if (alpha < 0.01) continue;
 
-          // This segment's angular range on the fixed disc
           const segEnd = staffAngle - i * segmentArc;
           const segStart = segEnd - segmentArc;
 
           ctx.save();
           ctx.globalAlpha = alpha;
-
-          // Clip to this wedge
           ctx.beginPath();
           ctx.moveTo(cx, cy);
           ctx.arc(cx, cy, drawRadius + 2, segStart, segEnd);
           ctx.closePath();
           ctx.clip();
-
-          // Draw the full disc (only the clipped wedge is visible)
-          ctx.drawImage(
-            discCanvas,
-            cx - drawRadius, cy - drawRadius,
-            drawRadius * 2, drawRadius * 2,
-          );
-
+          ctx.drawImage(discCanvas, cx - drawRadius, cy - drawRadius, drawRadius * 2, drawRadius * 2);
           ctx.restore();
         }
 
-        // Pixel poi staff: render each LED as a glowing segment along the radius
+        // Pixel poi staff: glowing LED strip along the radius
         const pattern = poi.activePattern;
         if (pattern) {
-          const innerR = drawRadius * 0.08;
+          const innerR = drawRadius * 0.15;
           const stripLength = drawRadius - innerR;
           const { ledCount, frameCount, frames } = pattern;
 
-          // Which frame is at this angle?
           const normalizedAngle = ((staffAngle + Math.PI / 2) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
           const frameIdx = Math.floor((normalizedAngle / (Math.PI * 2)) * frameCount) % frameCount;
           const frame = frames[frameIdx]!;
 
-          // LED segment dimensions
           const segLength = stripLength / ledCount;
           const staffWidth = Math.max(4 * dpr, drawRadius * 0.025);
           const cosA = Math.cos(staffAngle);
           const sinA = Math.sin(staffAngle);
-          // Perpendicular direction for width
           const perpX = -sinA;
           const perpY = cosA;
           const halfW = staffWidth / 2;
@@ -208,12 +217,12 @@
             const rStart = innerR + led * segLength;
             const rEnd = rStart + segLength;
 
-            // Glow: draw a wider, semi-transparent version first
+            // Outer glow halo
             ctx.save();
-            ctx.globalAlpha = 0.4;
+            ctx.globalAlpha = 0.25;
             ctx.fillStyle = `rgb(${r},${g},${b})`;
+            const glowW = halfW * 3;
             ctx.beginPath();
-            const glowW = halfW * 2.5;
             ctx.moveTo(cx + cosA * rStart - perpX * glowW, cy + sinA * rStart - perpY * glowW);
             ctx.lineTo(cx + cosA * rEnd - perpX * glowW, cy + sinA * rEnd - perpY * glowW);
             ctx.lineTo(cx + cosA * rEnd + perpX * glowW, cy + sinA * rEnd + perpY * glowW);
@@ -222,8 +231,11 @@
             ctx.fill();
             ctx.restore();
 
-            // Core: bright center
-            ctx.fillStyle = `rgb(${Math.min(255, r + 40)},${Math.min(255, g + 40)},${Math.min(255, b + 40)})`;
+            // Bright core
+            const coreR = Math.min(255, r + 50);
+            const coreG = Math.min(255, g + 50);
+            const coreB = Math.min(255, b + 50);
+            ctx.fillStyle = `rgb(${coreR},${coreG},${coreB})`;
             ctx.beginPath();
             ctx.moveTo(cx + cosA * rStart - perpX * halfW, cy + sinA * rStart - perpY * halfW);
             ctx.lineTo(cx + cosA * rEnd - perpX * halfW, cy + sinA * rEnd - perpY * halfW);
@@ -233,13 +245,30 @@
             ctx.fill();
           }
         }
+
+        // Outer rim glow — faint ring at the disc edge
+        const rimGlow = ctx.createRadialGradient(cx, cy, drawRadius * 0.92, cx, cy, drawRadius * 1.08);
+        rimGlow.addColorStop(0, "transparent");
+        rimGlow.addColorStop(0.5, "rgba(120, 180, 255, 0.04)");
+        rimGlow.addColorStop(1, "transparent");
+        ctx.fillStyle = rimGlow;
+        ctx.beginPath();
+        ctx.arc(cx, cy, drawRadius * 1.1, 0, Math.PI * 2);
+        ctx.fill();
       }
 
-      // Center hub
+      // Center hub — dark disc matching real poi hardware
+      const hubRadius = drawRadius * 0.15;
       ctx.beginPath();
-      ctx.arc(cx, cy, 3 * dpr, 0, Math.PI * 2);
-      ctx.fillStyle = showFullDisc ? "#333" : "#555";
+      ctx.arc(cx, cy, hubRadius, 0, Math.PI * 2);
+      ctx.fillStyle = "#0a0a0a";
       ctx.fill();
+      // Subtle rim on the hub
+      ctx.beginPath();
+      ctx.arc(cx, cy, hubRadius, 0, Math.PI * 2);
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
+      ctx.lineWidth = 1;
+      ctx.stroke();
 
       animFrameId = requestAnimationFrame(draw);
     }
@@ -251,20 +280,6 @@
     };
   });
 
-  const TRAIL_PRESETS = [
-    { label: "Real", value: 0.12, description: "Human eye persistence (~120ms)" },
-    { label: "Dreamy", value: 0.3, description: "Long glow, soft image" },
-    { label: "Full", value: 1.0, description: "See the whole pattern" },
-  ] as const;
-
-  function setTrailPreset(seconds: number): void {
-    poi.setPersistenceDuration(seconds);
-  }
-
-  // Which preset is active (within tolerance)?
-  const activeTrailPreset = $derived(
-    TRAIL_PRESETS.find((p) => Math.abs(p.value - poi.persistenceDuration) < 0.015)?.label ?? null
-  );
 </script>
 
 <div class="spin-preview">
@@ -287,7 +302,7 @@
     <button
       class="icon-btn"
       class:active={showFullDisc}
-      onclick={() => { showFullDisc = !showFullDisc; }}
+      onclick={() => { poi.setShowFullDisc(!showFullDisc); }}
       aria-label={showFullDisc ? "POV mode" : "Full disc"}
       title={showFullDisc ? "Switch to POV simulation" : "Show full pattern disc"}
     >
@@ -301,26 +316,11 @@
       max={600}
       step={5}
       unit=" rpm"
-      onchange={(v) => { rpm = Math.round(v); }}
+      onchange={(v) => { poi.setRpm(Math.round(v)); }}
     />
-  </div>
 
-  <div class="trail-bar">
-    <span class="trail-label">Trail</span>
-    <div class="trail-presets">
-      {#each TRAIL_PRESETS as preset}
-        <button
-          class="trail-chip"
-          class:active={activeTrailPreset === preset.label}
-          onclick={() => setTrailPreset(preset.value)}
-          title={preset.description}
-        >
-          {preset.label}
-        </button>
-      {/each}
-    </div>
     <ScrubValue
-      label=""
+      label="Trail"
       value={poi.persistenceDuration * 1000}
       min={30}
       max={1000}
@@ -341,12 +341,13 @@
 
   .canvas-frame {
     position: relative;
-    background: #0a0a0a;
-    border-radius: 8px;
-    border: 1px solid var(--theme-stroke, rgba(255 255 255 / 0.1));
+    background: #050508;
+    border-radius: 12px;
+    border: 1px solid rgba(100, 160, 255, 0.12);
     overflow: hidden;
     width: 100%;
-    padding-bottom: 100%; /* 1:1 aspect ratio via padding trick */
+    padding-bottom: 100%;
+    box-shadow: 0 0 20px rgba(80, 140, 255, 0.06), inset 0 0 30px rgba(0, 0, 0, 0.4);
   }
 
   .spin-canvas {
@@ -388,44 +389,4 @@
     background: color-mix(in srgb, var(--theme-accent, #3b82f6) 20%, transparent);
   }
 
-  .trail-bar {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .trail-label {
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-secondary, #94a3b8);
-    min-width: 30px;
-    user-select: none;
-  }
-
-  .trail-presets {
-    display: flex;
-    gap: 0.25rem;
-  }
-
-  .trail-chip {
-    padding: 0.2rem 0.5rem;
-    border: 1px solid var(--theme-stroke, rgba(255 255 255 / 0.12));
-    border-radius: 12px;
-    background: transparent;
-    color: var(--theme-text-secondary, #94a3b8);
-    font-size: 11px;
-    cursor: pointer;
-    transition: all 0.15s;
-    white-space: nowrap;
-  }
-
-  .trail-chip:hover {
-    border-color: var(--theme-accent, #3b82f6);
-    color: var(--theme-text-primary, #e2e8f0);
-  }
-
-  .trail-chip.active {
-    border-color: var(--theme-accent, #3b82f6);
-    background: color-mix(in srgb, var(--theme-accent, #3b82f6) 18%, transparent);
-    color: var(--theme-text-primary, #e2e8f0);
-  }
 </style>

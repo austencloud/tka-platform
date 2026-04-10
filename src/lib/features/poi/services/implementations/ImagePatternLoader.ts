@@ -3,16 +3,130 @@ import type { StripPattern, StripFrame } from "../../domain/StripPattern";
 
 /**
  * Converts raster images into StripPattern data.
- * Image height maps to ledCount, image width maps to frameCount.
- * Uses OffscreenCanvas for resizing when the source height differs
- * from the target LED count.
+ *
+ * Two modes:
+ * - **Disc mode** (default): Tiles the image around the disc with pre-warping
+ *   so each copy appears undistorted. Same approach as Ignis Pixel Utility.
+ *   The image repeats N times around the circle, wider at the outer edge,
+ *   narrower near the hub — compensating for the polar geometry.
+ *
+ * - **Strip mode**: Raw import — each column = one frame, each row = one LED.
+ *   For pre-made POV strip images from other tools.
  */
 export class ImagePatternLoader implements IImagePatternLoader {
+  /**
+   * Hub fraction — must match the disc renderer's innerRadius ratio.
+   */
+  static readonly HUB_FRACTION = 0.15;
+
+  /**
+   * Default: tiled disc mapping with pre-warping.
+   */
   fromImageData(imageData: ImageData, targetLedCount: number): StripPattern {
+    return this.fromDiscImage(imageData, targetLedCount);
+  }
+
+  /**
+   * Tiled + pre-warped disc mapping.
+   *
+   * 1. Calculates how many times the image tiles around the disc based on
+   *    its aspect ratio (so each copy has correct proportions at mid-radius).
+   * 2. For each strip pixel (frame, led), maps to the source image with
+   *    radius-dependent horizontal scaling — wider at outer edge, narrower
+   *    near hub — so the disc preview shows undistorted copies.
+   */
+  fromDiscImage(imageData: ImageData, targetLedCount: number): StripPattern {
+    const { width: imgW, height: imgH, data: pixelData } = imageData;
+
+    const hubFrac = ImagePatternLoader.HUB_FRACTION;
+    const ringHeight = 1.0 - hubFrac; // 0.85
+
+    // How many tiles around the disc?
+    // At mid-radius, the image should have correct aspect ratio.
+    const midR = (hubFrac + 1.0) / 2;
+    const imageAspect = imgW / imgH;
+    const tileCount = Math.max(1, Math.round(
+      (2 * Math.PI * midR) / (ringHeight * imageAspect)
+    ));
+
+    // Angular span of one tile
+    const tileAngle = (2 * Math.PI) / tileCount;
+
+    // Frame count: enough for smooth rendering without being excessive
+    // ~4px per LED at outer circumference gives good quality
+    const frameCount = Math.max(360, Math.min(1440, tileCount * imgW));
+
+    const frames: StripFrame[] = [];
+
+    for (let f = 0; f < frameCount; f++) {
+      const angle = (f / frameCount) * 2 * Math.PI;
+      const colors = new Uint8Array(targetLedCount * 3);
+
+      for (let led = 0; led < targetLedCount; led++) {
+        const t = (led + 0.5) / targetLedCount;
+
+        // Straight angle-to-x mapping: angle within tile → image x
+        // The polar geometry naturally makes the image wider at the outer
+        // edge and narrower near the hub (same as Ignis pre-warp effect)
+        const srcX = ((angle % tileAngle) / tileAngle) * (imgW - 1);
+        const srcY = t * (imgH - 1);
+
+        // Bilinear interpolation
+        const x0 = Math.floor(srcX);
+        const y0 = Math.floor(srcY);
+        const x1 = Math.min(x0 + 1, imgW - 1);
+        const y1 = Math.min(y0 + 1, imgH - 1);
+        const fx = srcX - x0;
+        const fy = srcY - y0;
+
+        const idx00 = (y0 * imgW + x0) * 4;
+        const idx10 = (y0 * imgW + x1) * 4;
+        const idx01 = (y1 * imgW + x0) * 4;
+        const idx11 = (y1 * imgW + x1) * 4;
+
+        const w00 = (1 - fx) * (1 - fy);
+        const w10 = fx * (1 - fy);
+        const w01 = (1 - fx) * fy;
+        const w11 = fx * fy;
+
+        const offset = led * 3;
+        colors[offset] = Math.round(
+          pixelData[idx00]! * w00 + pixelData[idx10]! * w10 +
+          pixelData[idx01]! * w01 + pixelData[idx11]! * w11
+        );
+        colors[offset + 1] = Math.round(
+          pixelData[idx00 + 1]! * w00 + pixelData[idx10 + 1]! * w10 +
+          pixelData[idx01 + 1]! * w01 + pixelData[idx11 + 1]! * w11
+        );
+        colors[offset + 2] = Math.round(
+          pixelData[idx00 + 2]! * w00 + pixelData[idx10 + 2]! * w10 +
+          pixelData[idx01 + 2]! * w01 + pixelData[idx11 + 2]! * w11
+        );
+      }
+
+      frames.push({ colors });
+    }
+
+    return {
+      ledCount: targetLedCount,
+      frameCount,
+      frames,
+      metadata: {
+        name: "Image Upload",
+        source: "image-upload",
+        createdAt: Date.now(),
+      },
+    };
+  }
+
+  /**
+   * Strip mode — each column = one frame, each row = one LED.
+   * For importing pre-made POV strip images from other tools.
+   */
+  fromStripImage(imageData: ImageData, targetLedCount: number): StripPattern {
     const sourceHeight = imageData.height;
     const sourceWidth = imageData.width;
 
-    // Resize if source height doesn't match target LED count
     let pixelData: Uint8ClampedArray;
     let width: number;
     let height: number;
@@ -20,7 +134,6 @@ export class ImagePatternLoader implements IImagePatternLoader {
     if (sourceHeight !== targetLedCount) {
       const canvas = new OffscreenCanvas(sourceWidth, targetLedCount);
       const ctx = canvas.getContext("2d")!;
-      // Draw source image scaled to target height
       const tempCanvas = new OffscreenCanvas(sourceWidth, sourceHeight);
       const tempCtx = tempCanvas.getContext("2d")!;
       tempCtx.putImageData(imageData, 0, 0);
@@ -35,17 +148,15 @@ export class ImagePatternLoader implements IImagePatternLoader {
       height = sourceHeight;
     }
 
-    // Each column of the image = one frame
     const frames: StripFrame[] = [];
     for (let col = 0; col < width; col++) {
       const colors = new Uint8Array(height * 3);
       for (let row = 0; row < height; row++) {
-        const srcIdx = (row * width + col) * 4; // RGBA
+        const srcIdx = (row * width + col) * 4;
         const dstIdx = row * 3;
-        colors[dstIdx] = pixelData[srcIdx]!;     // R
-        colors[dstIdx + 1] = pixelData[srcIdx + 1]!; // G
-        colors[dstIdx + 2] = pixelData[srcIdx + 2]!; // B
-        // Alpha channel is ignored — fully transparent pixels become black
+        colors[dstIdx] = pixelData[srcIdx]!;
+        colors[dstIdx + 1] = pixelData[srcIdx + 1]!;
+        colors[dstIdx + 2] = pixelData[srcIdx + 2]!;
       }
       frames.push({ colors });
     }
@@ -56,7 +167,7 @@ export class ImagePatternLoader implements IImagePatternLoader {
       frames,
       metadata: {
         name: "Image Upload",
-        source: "image-upload",
+        source: "image-strip",
         createdAt: Date.now(),
       },
     };

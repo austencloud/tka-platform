@@ -13,6 +13,7 @@
   import PovSpinPreview from "$lib/features/poi/components/PovSpinPreview.svelte";
   import StripPatternExporter from "$lib/features/poi/components/StripPatternExporter.svelte";
   import DevicePanel from "$lib/features/poi/components/DevicePanel.svelte";
+  import ScrubValue from "$lib/features/poi/components/ScrubValue.svelte";
 
   const poi = createPoiState(
     container.items.stripPatternEngine,
@@ -20,28 +21,21 @@
   );
   setPoiContext(poi);
 
-  // Generate initial pattern on mount
-  poi.generateFromPreset();
-
-  function handlePersistenceChange(e: Event): void {
-    const value = parseFloat((e.target as HTMLInputElement).value);
-    poi.setPersistenceDuration(value);
+  // Generate initial pattern on mount (skip if restoring an uploaded image)
+  if (!poi.hasUploadedImage) {
+    poi.generateFromPreset();
   }
 
-  function handleLedCountChange(e: Event): void {
-    const value = parseInt((e.target as HTMLInputElement).value, 10);
-    if (value > 0 && value <= 256) {
-      poi.setLedCount(value);
-      poi.generateFromPreset();
-    }
+  function setLedCount(v: number): void {
+    const clamped = Math.round(Math.max(1, Math.min(256, v)));
+    poi.setLedCount(clamped);
+    poi.generateFromPreset();
   }
 
-  function handleFrameCountChange(e: Event): void {
-    const value = parseInt((e.target as HTMLInputElement).value, 10);
-    if (value > 0 && value <= 500) {
-      poi.setFrameCount(value);
-      poi.generateFromPreset();
-    }
+  function setFrameCount(v: number): void {
+    const clamped = Math.round(Math.max(2, Math.min(500, v)));
+    poi.setFrameCount(clamped);
+    poi.generateFromPreset();
   }
 </script>
 
@@ -54,43 +48,23 @@
       <div class="params-section">
         <h3 class="section-title">Parameters</h3>
 
-        <label class="param-row">
-          <span class="param-label">LEDs</span>
-          <input
-            type="number"
-            class="param-input"
-            value={poi.ledCount}
-            min="1"
-            max="256"
-            onchange={handleLedCountChange}
-          />
-        </label>
+        <ScrubValue
+          label="LEDs"
+          value={poi.ledCount}
+          min={1}
+          max={256}
+          step={1}
+          onchange={setLedCount}
+        />
 
-        <label class="param-row">
-          <span class="param-label">Frames</span>
-          <input
-            type="number"
-            class="param-input"
-            value={poi.frameCount}
-            min="2"
-            max="500"
-            onchange={handleFrameCountChange}
-          />
-        </label>
-
-        <label class="param-row">
-          <span class="param-label">Persistence</span>
-          <input
-            type="range"
-            class="param-slider"
-            min="0.05"
-            max="0.5"
-            step="0.01"
-            value={poi.persistenceDuration}
-            oninput={handlePersistenceChange}
-          />
-          <span class="param-value">{Math.round(poi.persistenceDuration * 1000)}ms</span>
-        </label>
+        <ScrubValue
+          label="Frames"
+          value={poi.frameCount}
+          min={2}
+          max={500}
+          step={1}
+          onchange={setFrameCount}
+        />
       </div>
 
       <PovPreview />
@@ -152,40 +126,6 @@
     border: 1px solid var(--theme-stroke, rgba(255 255 255 / 0.1));
     border-radius: 8px;
     background: var(--theme-card-bg, rgba(255 255 255 / 0.05));
-  }
-
-  .param-row {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .param-label {
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-secondary, #94a3b8);
-    min-width: 80px;
-  }
-
-  .param-input {
-    width: 80px;
-    padding: 0.25rem 0.5rem;
-    border: 1px solid var(--theme-stroke, rgba(255 255 255 / 0.15));
-    border-radius: 4px;
-    background: rgba(0 0 0 / 0.2);
-    color: var(--theme-text-primary, #e2e8f0);
-    font-size: var(--font-size-compact, 12px);
-  }
-
-  .param-slider {
-    flex: 1;
-    accent-color: var(--theme-accent, #3b82f6);
-  }
-
-  .param-value {
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-secondary, #94a3b8);
-    min-width: 45px;
-    text-align: right;
   }
 
   .bottom-row {
