@@ -937,6 +937,14 @@ export const LAB_TABS: Section[] = [
     color: "#e8a87c",
     gradient: "linear-gradient(135deg, #e8a87c 0%, #d4886a 100%)",
   },
+  {
+    id: "pov-pattern",
+    label: "POV Pattern",
+    icon: '<i class="fas fa-lightbulb" style="color: #06b6d4;" aria-hidden="true"></i>',
+    description: "LED strip pattern engine for pixel poi",
+    color: "#06b6d4",
+    gradient: "linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%)",
+  },
 ];
 
 // REMOVED: LANDING_PAGE_TABS - LandingPreviewModule now handles its own internal tabs
