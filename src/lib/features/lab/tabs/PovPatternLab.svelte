@@ -10,6 +10,7 @@
   import { setPoiContext } from "$lib/features/poi/context/poi-context";
   import PatternPicker from "$lib/features/poi/components/PatternPicker.svelte";
   import PovPreview from "$lib/features/poi/components/PovPreview.svelte";
+  import PovSpinPreview from "$lib/features/poi/components/PovSpinPreview.svelte";
   import StripPatternExporter from "$lib/features/poi/components/StripPatternExporter.svelte";
   import DevicePanel from "$lib/features/poi/components/DevicePanel.svelte";
 
@@ -92,20 +93,22 @@
         </label>
       </div>
 
-      <StripPatternExporter />
-    </div>
-
-    <!-- Right column: preview + devices -->
-    <div class="preview-column">
       <PovPreview />
 
-      {#if poi.activePattern}
-        <div class="pattern-stats">
-          <span>{poi.activePattern.metadata.name}</span>
-          <span class="stat-dim">{poi.activePattern.metadata.source}</span>
-        </div>
-      {/if}
+      <div class="bottom-row">
+        <StripPatternExporter />
+        {#if poi.activePattern}
+          <div class="pattern-stats">
+            <span>{poi.activePattern.metadata.name}</span>
+            <span class="stat-dim">{poi.activePattern.metadata.source}</span>
+          </div>
+        {/if}
+      </div>
+    </div>
 
+    <!-- Right column: spinning disc (hero) + devices -->
+    <div class="preview-column">
+      <PovSpinPreview />
       <DevicePanel />
     </div>
   </div>
@@ -184,14 +187,22 @@
     text-align: right;
   }
 
+  .bottom-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
   .pattern-stats {
     display: flex;
-    justify-content: space-between;
+    gap: 0.5rem;
+    align-items: center;
     padding: 0.5rem 0.75rem;
     border-radius: 6px;
     background: var(--theme-card-bg, rgba(255 255 255 / 0.05));
     font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-primary, #e2e8f0);
+    flex: 1;
   }
 
   .stat-dim {
