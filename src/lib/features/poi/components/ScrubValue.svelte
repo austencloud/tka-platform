@@ -131,7 +131,9 @@
       onpointerup={handlePointerUp}
       onwheel={handleWheel}
     >
+      <span class="scrub-arrows" aria-hidden="true">&#x25C2;</span>
       {displayValue}{unit}
+      <span class="scrub-arrows" aria-hidden="true">&#x25B8;</span>
     </span>
   {/if}
 </div>
@@ -146,44 +148,62 @@
   .scrub-label {
     font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-secondary, #94a3b8);
-    min-width: 40px;
+    white-space: nowrap;
     user-select: none;
   }
 
   .scrub-display {
-    font-size: var(--font-size-min, 14px);
-    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
     color: var(--theme-text-primary, #e2e8f0);
     cursor: ew-resize;
     user-select: none;
-    padding: 0.25rem 0.5rem;
+    padding: 0.2rem 0.4rem;
     border-radius: 4px;
-    border: 1px solid transparent;
+    border: 1px solid var(--theme-stroke, rgba(255 255 255 / 0.12));
+    background: rgba(255 255 255 / 0.04);
     transition: border-color 0.15s, background 0.15s;
-    min-width: 60px;
+    min-width: 50px;
     text-align: center;
     touch-action: none;
+    white-space: nowrap;
+  }
+
+  .scrub-arrows {
+    font-size: 8px;
+    color: var(--theme-text-secondary, #94a3b8);
+    opacity: 0.5;
+    transition: opacity 0.15s;
   }
 
   .scrub-display:hover {
-    border-color: var(--theme-stroke, rgba(255 255 255 / 0.15));
-    background: rgba(255 255 255 / 0.04);
+    border-color: var(--theme-accent, #3b82f6);
+    background: rgba(255 255 255 / 0.07);
+  }
+
+  .scrub-display:hover .scrub-arrows {
+    opacity: 1;
   }
 
   .scrub-display:active {
     border-color: var(--theme-accent, #3b82f6);
-    background: rgba(255 255 255 / 0.06);
+    background: rgba(255 255 255 / 0.1);
   }
 
   .scrub-input {
-    font-size: var(--font-size-min, 14px);
-    font-weight: 500;
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
     color: var(--theme-text-primary, #e2e8f0);
     background: rgba(0 0 0 / 0.3);
     border: 1px solid var(--theme-accent, #3b82f6);
     border-radius: 4px;
-    padding: 0.25rem 0.5rem;
-    min-width: 60px;
+    padding: 0.2rem 0.4rem;
+    min-width: 50px;
     text-align: center;
     outline: none;
   }

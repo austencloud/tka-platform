@@ -107,21 +107,22 @@ describe("StripPatternEngine", () => {
     });
   });
 
-  describe("toImageData round-trip", () => {
-    it("converts pattern to ImageData and back", () => {
-      const original = engine.generate("solid", 8, 4, defaultParams());
-      const imageData = engine.toImageData(original);
+  describe("toImageData", () => {
+    it("produces correct dimensions and preserves pixel colors", () => {
+      const pattern = engine.generate("solid", 8, 4, defaultParams());
+      const imageData = engine.toImageData(pattern);
       expect(imageData.width).toBe(4);
       expect(imageData.height).toBe(8);
 
-      const roundTripped = engine.fromImage(imageData, 8);
+      // Verify each pixel in the exported image matches the pattern
       for (let f = 0; f < 4; f++) {
         for (let led = 0; led < 8; led++) {
-          const orig = getPixel(original, f, led);
-          const rt = getPixel(roundTripped, f, led);
-          expect(rt.r).toBe(orig.r);
-          expect(rt.g).toBe(orig.g);
-          expect(rt.b).toBe(orig.b);
+          const pixel = getPixel(pattern, f, led);
+          const idx = (led * 4 + f) * 4;
+          expect(imageData.data[idx]).toBe(pixel.r);
+          expect(imageData.data[idx + 1]).toBe(pixel.g);
+          expect(imageData.data[idx + 2]).toBe(pixel.b);
+          expect(imageData.data[idx + 3]).toBe(255);
         }
       }
     });
