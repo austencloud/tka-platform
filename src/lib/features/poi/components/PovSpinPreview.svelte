@@ -189,6 +189,8 @@
     border: 1px solid var(--theme-stroke, rgba(255 255 255 / 0.1));
     overflow: hidden;
     aspect-ratio: 1;
+    min-width: 0;
+    max-width: 100%;
   }
 
   .spin-canvas {
