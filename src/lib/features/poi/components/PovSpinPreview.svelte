@@ -92,34 +92,44 @@
       startTime = now;
 
       if (playing) {
-        // RPM to radians per second: rpm * 2π / 60
         currentAngle += (rpm * Math.PI * 2) / 60 * dt;
+      }
+
+      // Match canvas pixel size to its CSS display size (avoid blurry scaling)
+      const rect = canvas.getBoundingClientRect();
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const displayW = Math.round(rect.width * dpr);
+      const displayH = Math.round(rect.height * dpr);
+      if (canvas.width !== displayW || canvas.height !== displayH) {
+        canvas.width = displayW;
+        canvas.height = displayH;
       }
 
       const w = canvas.width;
       const h = canvas.height;
 
-      // Dark background
       ctx.fillStyle = "#0a0a0a";
       ctx.fillRect(0, 0, w, h);
 
       if (discCanvas) {
+        // Scale disc to fit the canvas with padding
+        const drawSize = Math.min(w, h) * 0.92;
         ctx.save();
         ctx.translate(w / 2, h / 2);
         ctx.rotate(currentAngle);
         ctx.drawImage(
           discCanvas,
-          -discCanvas.width / 2,
-          -discCanvas.height / 2,
-          discCanvas.width,
-          discCanvas.height,
+          -drawSize / 2,
+          -drawSize / 2,
+          drawSize,
+          drawSize,
         );
         ctx.restore();
       }
 
       // Center dot (hub)
       ctx.beginPath();
-      ctx.arc(w / 2, h / 2, 3, 0, Math.PI * 2);
+      ctx.arc(w / 2, h / 2, 3 * dpr, 0, Math.PI * 2);
       ctx.fillStyle = "#333";
       ctx.fill();
 
@@ -142,8 +152,6 @@
   <div class="canvas-frame">
     <canvas
       bind:this={canvasRef}
-      width={400}
-      height={400}
       class="spin-canvas"
     ></canvas>
   </div>
@@ -181,19 +189,18 @@
   }
 
   .canvas-frame {
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    position: relative;
     background: #0a0a0a;
     border-radius: 8px;
     border: 1px solid var(--theme-stroke, rgba(255 255 255 / 0.1));
     overflow: hidden;
-    aspect-ratio: 1;
-    min-width: 0;
-    max-width: 100%;
+    width: 100%;
+    padding-bottom: 100%; /* 1:1 aspect ratio via padding trick */
   }
 
   .spin-canvas {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
     display: block;
