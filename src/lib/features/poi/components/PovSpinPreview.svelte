@@ -176,22 +176,62 @@
           ctx.restore();
         }
 
-        // Staff line: bright white line at the leading edge
-        ctx.save();
-        ctx.strokeStyle = "rgba(255, 255, 255, 0.6)";
-        ctx.lineWidth = 1.5 * dpr;
-        ctx.beginPath();
-        const innerR = drawRadius * 0.08;
-        ctx.moveTo(
-          cx + Math.cos(staffAngle) * innerR,
-          cy + Math.sin(staffAngle) * innerR,
-        );
-        ctx.lineTo(
-          cx + Math.cos(staffAngle) * drawRadius,
-          cy + Math.sin(staffAngle) * drawRadius,
-        );
-        ctx.stroke();
-        ctx.restore();
+        // Pixel poi staff: render each LED as a glowing segment along the radius
+        const pattern = poi.activePattern;
+        if (pattern) {
+          const innerR = drawRadius * 0.08;
+          const stripLength = drawRadius - innerR;
+          const { ledCount, frameCount, frames } = pattern;
+
+          // Which frame is at this angle?
+          const normalizedAngle = ((staffAngle + Math.PI / 2) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
+          const frameIdx = Math.floor((normalizedAngle / (Math.PI * 2)) * frameCount) % frameCount;
+          const frame = frames[frameIdx]!;
+
+          // LED segment dimensions
+          const segLength = stripLength / ledCount;
+          const staffWidth = Math.max(4 * dpr, drawRadius * 0.025);
+          const cosA = Math.cos(staffAngle);
+          const sinA = Math.sin(staffAngle);
+          // Perpendicular direction for width
+          const perpX = -sinA;
+          const perpY = cosA;
+          const halfW = staffWidth / 2;
+
+          for (let led = 0; led < ledCount; led++) {
+            const offset = led * 3;
+            const r = frame.colors[offset]!;
+            const g = frame.colors[offset + 1]!;
+            const b = frame.colors[offset + 2]!;
+
+            const rStart = innerR + led * segLength;
+            const rEnd = rStart + segLength;
+
+            // Glow: draw a wider, semi-transparent version first
+            ctx.save();
+            ctx.globalAlpha = 0.4;
+            ctx.fillStyle = `rgb(${r},${g},${b})`;
+            ctx.beginPath();
+            const glowW = halfW * 2.5;
+            ctx.moveTo(cx + cosA * rStart - perpX * glowW, cy + sinA * rStart - perpY * glowW);
+            ctx.lineTo(cx + cosA * rEnd - perpX * glowW, cy + sinA * rEnd - perpY * glowW);
+            ctx.lineTo(cx + cosA * rEnd + perpX * glowW, cy + sinA * rEnd + perpY * glowW);
+            ctx.lineTo(cx + cosA * rStart + perpX * glowW, cy + sinA * rStart + perpY * glowW);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+
+            // Core: bright center
+            ctx.fillStyle = `rgb(${Math.min(255, r + 40)},${Math.min(255, g + 40)},${Math.min(255, b + 40)})`;
+            ctx.beginPath();
+            ctx.moveTo(cx + cosA * rStart - perpX * halfW, cy + sinA * rStart - perpY * halfW);
+            ctx.lineTo(cx + cosA * rEnd - perpX * halfW, cy + sinA * rEnd - perpY * halfW);
+            ctx.lineTo(cx + cosA * rEnd + perpX * halfW, cy + sinA * rEnd + perpY * halfW);
+            ctx.lineTo(cx + cosA * rStart + perpX * halfW, cy + sinA * rStart + perpY * halfW);
+            ctx.closePath();
+            ctx.fill();
+          }
+        }
       }
 
       // Center hub
@@ -212,6 +252,11 @@
 
   function handleRpmChange(e: Event): void {
     rpm = parseInt((e.target as HTMLInputElement).value, 10);
+  }
+
+  function handlePersistenceChange(e: Event): void {
+    const value = parseFloat((e.target as HTMLInputElement).value);
+    poi.setPersistenceDuration(value);
   }
 </script>
 
@@ -254,6 +299,22 @@
         class="rpm-slider"
       />
       <span class="rpm-value">{rpm}</span>
+    </label>
+  </div>
+
+  <div class="spin-controls">
+    <label class="rpm-control">
+      <span class="rpm-label">Trail</span>
+      <input
+        type="range"
+        min="0.03"
+        max="1.0"
+        step="0.01"
+        value={poi.persistenceDuration}
+        oninput={handlePersistenceChange}
+        class="rpm-slider"
+      />
+      <span class="rpm-value">{Math.round(poi.persistenceDuration * 1000)}ms</span>
     </label>
   </div>
 </div>

@@ -113,7 +113,7 @@ export function createPoiState(
     setActivePresetId(id: string) { activePresetId = id; },
     setLedCount(n: number) { ledCount = n; },
     setFrameCount(n: number) { frameCount = n; },
-    setPersistenceDuration(s: number) { persistenceDuration = Math.max(0.05, Math.min(0.5, s)); },
+    setPersistenceDuration(s: number) { persistenceDuration = Math.max(0.03, Math.min(1.0, s)); },
     setPatternParams(p: PatternParams) { patternParams = p; },
     setPrimaryColor(c: RGBColor) { patternParams = { ...patternParams, primaryColor: c }; },
     setSecondaryColor(c: RGBColor) { patternParams = { ...patternParams, secondaryColor: c }; },
