@@ -13,6 +13,9 @@
    * All six cards derive from the same loaded AABB sequence.
    */
   import { onMount } from "svelte";
+  import { doc, getDoc } from "firebase/firestore";
+  import { getFirestoreInstance } from "$lib/shared/auth/firebase";
+  import { getPublicSequencesPath } from "$lib/features/library/data/firestore-paths";
   import { container } from "$lib/shared/di";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
@@ -25,6 +28,8 @@
   import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
   import { Letter } from "$lib/shared/foundation/domain/models/Letter";
   import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
+  import type { ISequenceHydrator } from "$lib/shared/foundation/services/contracts/ISequenceHydrator";
+  import type { PublicSequenceIndex } from "$lib/features/library/domain/models/PublicSequenceIndex";
   import HowTkaAnimationCard from "./HowTkaAnimationCard.svelte";
 
   interface Props {
@@ -60,7 +65,6 @@
   }
 
   const LANDING_SEQUENCE_ID = "seq_1774721810120_yigllpcr6";
-  const LANDING_SEQUENCE_OWNER = "PBp3GSBO6igCKPwJyLZNmVEmamI3";
 
   function setupFromSequence(full: SequenceData) {
     sequence = full;
@@ -125,25 +129,53 @@
 
   onMount(async () => {
     try {
-      // Load the specific AABB sequence directly from Firestore, then use
-      // browseLoader's mapping by injecting the sourceRef into its cache.
-      const browseLoader = container.items.browseLoader as any;
-      const sourceRef = `users/${LANDING_SEQUENCE_OWNER}/sequences/${LANDING_SEQUENCE_ID}`;
+      // Read directly from publicSequences (readable by anyone, no auth required)
+      // instead of users/{owner}/sequences/{id} which requires authentication.
+      const firestore = await getFirestoreInstance();
+      const docRef = doc(firestore, getPublicSequencesPath(), LANDING_SEQUENCE_ID);
+      const snap = await getDoc(docRef);
 
-      // Inject the direct path so browseLoader can find and map it
-      if (browseLoader.sourceRefCache) {
-        browseLoader.sourceRefCache.set(`id:${LANDING_SEQUENCE_ID}`, sourceRef);
-      }
-
-      const full = await browseLoader.loadFullSequenceData("AABB", LANDING_SEQUENCE_ID);
-
-      if (!full || !full.steps || full.steps.length === 0) {
-        console.warn("[HowTkaWorks] Landing sequence not found or empty");
+      if (!snap.exists()) {
+        console.warn("[HowTkaWorks] Landing sequence not found in publicSequences");
         loaded = true;
         return;
       }
 
-      setupFromSequence(full);
+      const data = snap.data() as PublicSequenceIndex;
+
+      // Hydrate compositional fields into full steps
+      const seq: SequenceData = {
+        id: snap.id,
+        name: data.name,
+        word: data.word,
+        steps: [],
+        thumbnails: [...data.thumbnails],
+        sequenceLength: data.sequenceLength,
+        level: data.level,
+        isFavorite: false,
+        isCircular: false,
+        tags: [...data.tags],
+        metadata: {},
+        ownerId: data.ownerId,
+        blueSoloProp: data.blueSoloProp,
+        redSoloProp: data.redSoloProp,
+        stepPairings: data.stepPairings,
+        bluePathHash: data.bluePathHash,
+        redPathHash: data.redPathHash,
+        blueSoloHash: data.blueSoloHash,
+        redSoloHash: data.redSoloHash,
+      };
+
+      if (data.blueSoloProp && data.redSoloProp && data.stepPairings) {
+        const hydrator = container.items.sequenceHydrator as ISequenceHydrator;
+        const hydrated = hydrator.hydrate(seq);
+        if (hydrated.steps && hydrated.steps.length > 0) {
+          setupFromSequence({ ...hydrated, sequenceLength: hydrated.steps.length });
+          return;
+        }
+      }
+
+      console.warn("[HowTkaWorks] Landing sequence has no compositional data to hydrate");
     } catch (e) {
       console.error("[HowTkaWorks] Failed to load AABB:", e);
     } finally {
