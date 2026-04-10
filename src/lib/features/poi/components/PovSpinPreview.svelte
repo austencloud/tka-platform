@@ -13,6 +13,7 @@
 -->
 <script lang="ts">
   import { getPoiContext } from "../context/poi-context";
+  import ScrubValue from "./ScrubValue.svelte";
 
   const poi = getPoiContext();
 
@@ -250,14 +251,20 @@
     };
   });
 
-  function handleRpmChange(e: Event): void {
-    rpm = parseInt((e.target as HTMLInputElement).value, 10);
+  const TRAIL_PRESETS = [
+    { label: "Real", value: 0.12, description: "Human eye persistence (~120ms)" },
+    { label: "Dreamy", value: 0.3, description: "Long glow, soft image" },
+    { label: "Full", value: 1.0, description: "See the whole pattern" },
+  ] as const;
+
+  function setTrailPreset(seconds: number): void {
+    poi.setPersistenceDuration(seconds);
   }
 
-  function handlePersistenceChange(e: Event): void {
-    const value = parseFloat((e.target as HTMLInputElement).value);
-    poi.setPersistenceDuration(value);
-  }
+  // Which preset is active (within tolerance)?
+  const activeTrailPreset = $derived(
+    TRAIL_PRESETS.find((p) => Math.abs(p.value - poi.persistenceDuration) < 0.015)?.label ?? null
+  );
 </script>
 
 <div class="spin-preview">
@@ -268,9 +275,9 @@
     ></canvas>
   </div>
 
-  <div class="spin-controls">
+  <div class="controls-bar">
     <button
-      class="transport-btn"
+      class="icon-btn"
       onclick={() => { playing = !playing; }}
       aria-label={playing ? "Pause" : "Play"}
     >
@@ -278,7 +285,7 @@
     </button>
 
     <button
-      class="transport-btn"
+      class="icon-btn"
       class:active={showFullDisc}
       onclick={() => { showFullDisc = !showFullDisc; }}
       aria-label={showFullDisc ? "POV mode" : "Full disc"}
@@ -287,35 +294,41 @@
       <i class="fas {showFullDisc ? 'fa-eye' : 'fa-compact-disc'}" aria-hidden="true"></i>
     </button>
 
-    <label class="rpm-control">
-      <span class="rpm-label">RPM</span>
-      <input
-        type="range"
-        min="10"
-        max="600"
-        step="10"
-        value={rpm}
-        oninput={handleRpmChange}
-        class="rpm-slider"
-      />
-      <span class="rpm-value">{rpm}</span>
-    </label>
+    <ScrubValue
+      label="Spin"
+      value={rpm}
+      min={10}
+      max={600}
+      step={5}
+      unit=" rpm"
+      onchange={(v) => { rpm = Math.round(v); }}
+    />
   </div>
 
-  <div class="spin-controls">
-    <label class="rpm-control">
-      <span class="rpm-label">Trail</span>
-      <input
-        type="range"
-        min="0.03"
-        max="1.0"
-        step="0.01"
-        value={poi.persistenceDuration}
-        oninput={handlePersistenceChange}
-        class="rpm-slider"
-      />
-      <span class="rpm-value">{Math.round(poi.persistenceDuration * 1000)}ms</span>
-    </label>
+  <div class="trail-bar">
+    <span class="trail-label">Trail</span>
+    <div class="trail-presets">
+      {#each TRAIL_PRESETS as preset}
+        <button
+          class="trail-chip"
+          class:active={activeTrailPreset === preset.label}
+          onclick={() => setTrailPreset(preset.value)}
+          title={preset.description}
+        >
+          {preset.label}
+        </button>
+      {/each}
+    </div>
+    <ScrubValue
+      label=""
+      value={poi.persistenceDuration * 1000}
+      min={30}
+      max={1000}
+      step={5}
+      unit="ms"
+      format={(v) => String(Math.round(v))}
+      onchange={(v) => poi.setPersistenceDuration(v / 1000)}
+    />
   </div>
 </div>
 
@@ -344,13 +357,13 @@
     display: block;
   }
 
-  .spin-controls {
+  .controls-bar {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.5rem;
   }
 
-  .transport-btn {
+  .icon-btn {
     width: 36px;
     height: 36px;
     border: 1px solid var(--theme-stroke, rgba(255 255 255 / 0.15));
@@ -363,39 +376,56 @@
     justify-content: center;
     font-size: 12px;
     transition: border-color 0.15s;
+    flex-shrink: 0;
   }
 
-  .transport-btn:hover {
+  .icon-btn:hover {
     border-color: var(--theme-accent, #3b82f6);
   }
 
-  .transport-btn.active {
+  .icon-btn.active {
     border-color: var(--theme-accent, #3b82f6);
     background: color-mix(in srgb, var(--theme-accent, #3b82f6) 20%, transparent);
   }
 
-  .rpm-control {
+  .trail-bar {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    flex: 1;
   }
 
-  .rpm-label {
+  .trail-label {
     font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-secondary, #94a3b8);
     min-width: 30px;
+    user-select: none;
   }
 
-  .rpm-slider {
-    flex: 1;
-    accent-color: var(--theme-accent, #3b82f6);
+  .trail-presets {
+    display: flex;
+    gap: 0.25rem;
   }
 
-  .rpm-value {
-    font-size: var(--font-size-compact, 12px);
+  .trail-chip {
+    padding: 0.2rem 0.5rem;
+    border: 1px solid var(--theme-stroke, rgba(255 255 255 / 0.12));
+    border-radius: 12px;
+    background: transparent;
     color: var(--theme-text-secondary, #94a3b8);
-    min-width: 30px;
-    text-align: right;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+
+  .trail-chip:hover {
+    border-color: var(--theme-accent, #3b82f6);
+    color: var(--theme-text-primary, #e2e8f0);
+  }
+
+  .trail-chip.active {
+    border-color: var(--theme-accent, #3b82f6);
+    background: color-mix(in srgb, var(--theme-accent, #3b82f6) 18%, transparent);
+    color: var(--theme-text-primary, #e2e8f0);
   }
 </style>
