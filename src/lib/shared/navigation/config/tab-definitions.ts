@@ -945,6 +945,14 @@ export const LAB_TABS: Section[] = [
     color: "#06b6d4",
     gradient: "linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%)",
   },
+  {
+    id: "collision-lab",
+    label: "Collision Lab",
+    icon: '<i class="fas fa-shield-halved" style="color: #ef4444;" aria-hidden="true"></i>',
+    description: "Catalog and label 3D poses for collision safety",
+    color: "#ef4444",
+    gradient: "linear-gradient(135deg, #f87171 0%, #ef4444 100%)",
+  },
 ];
 
 // REMOVED: LANDING_PAGE_TABS - LandingPreviewModule now handles its own internal tabs

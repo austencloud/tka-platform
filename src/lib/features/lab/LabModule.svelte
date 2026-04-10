@@ -38,6 +38,7 @@
     "mandala-drawing": () => import("./tabs/MandalaDrawingLab.svelte"),
     village: () => import("$lib/features/village/VillageLabTab.svelte"),
     "pov-pattern": () => import("./tabs/PovPatternLab.svelte"),
+    "collision-lab": () => import("./tabs/collision-lab/CollisionLab.svelte"),
     // hand-path-explorer, hand-path-builder graduated to Hand Paths module (Mar 2026)
     // video-trails, video-lab graduated to Video module (Mar 2026)
   };
