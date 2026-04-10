@@ -1,12 +1,15 @@
 <!--
-  PovSpinPreview.svelte — Spinning disc visualization of a StripPattern.
+  PovSpinPreview.svelte — Spinning POV simulation of a StripPattern.
 
-  Renders what the pattern looks like when the poi spins at a given RPM.
-  Each radial slice is one frame column, each pixel along the radius is one LED.
-  This is the same visualization used in Ignis Pixel Utility and Lighttoys Composer.
+  Simulates real persistence-of-vision physics: a single staff line sweeps
+  around the circle, and the trail of light fades behind it. Your eye
+  integrates the fading trail into the full image — just like watching
+  a pixel poi performer in a dark room.
 
-  The disc is rendered to an OffscreenCanvas once when the pattern changes,
-  then the animated version rotates and re-composites at 60fps for the spin effect.
+  The disc image (all frames mapped to angles) is pre-rendered once.
+  Each animation frame, only the persistence window is drawn — a wedge
+  from the staff's current angle backwards, with alpha fading from
+  bright (leading edge) to black (trailing edge).
 -->
 <script lang="ts">
   import { getPoiContext } from "../context/poi-context";
@@ -16,6 +19,7 @@
   let canvasRef = $state<HTMLCanvasElement | null>(null);
   let playing = $state(true);
   let rpm = $state(120);
+  let showFullDisc = $state(false);
   let animFrameId = $state(0);
 
   // Pre-rendered disc image (static, rebuilt when pattern changes)
@@ -36,20 +40,16 @@
     const cx = size / 2;
     const cy = size / 2;
     const outerRadius = size / 2 - 4;
-    const innerRadius = outerRadius * 0.08; // Small center hole like real poi
+    const innerRadius = outerRadius * 0.08;
 
     const { ledCount, frameCount, frames } = pattern;
-
-    // Draw each pixel as a tiny arc segment
-    // Angular resolution: one slice per frame
     const angleStep = (Math.PI * 2) / frameCount;
-    // Radial resolution: one ring per LED
     const radiusStep = (outerRadius - innerRadius) / ledCount;
 
     for (let f = 0; f < frameCount; f++) {
       const frame = frames[f]!;
-      const startAngle = f * angleStep - Math.PI / 2; // Start from top
-      const endAngle = startAngle + angleStep + 0.002; // Tiny overlap to prevent seams
+      const startAngle = f * angleStep - Math.PI / 2;
+      const endAngle = startAngle + angleStep + 0.002;
 
       for (let led = 0; led < ledCount; led++) {
         const offset = led * 3;
@@ -57,11 +57,10 @@
         const g = frame.colors[offset + 1]!;
         const b = frame.colors[offset + 2]!;
 
-        // Skip black pixels for performance
         if (r === 0 && g === 0 && b === 0) continue;
 
         const rInner = innerRadius + led * radiusStep;
-        const rOuter = rInner + radiusStep + 0.5; // Slight overlap
+        const rOuter = rInner + radiusStep + 0.5;
 
         ctx.beginPath();
         ctx.arc(cx, cy, rOuter, startAngle, endAngle);
@@ -75,27 +74,30 @@
     discCanvas = oc;
   });
 
-  // Animation loop: draw the disc (optionally rotating) to the visible canvas
+  /** Number of wedge segments to draw in the persistence trail */
+  const TRAIL_SEGMENTS = 40;
+
+  // Animation loop
   $effect(() => {
     const canvas = canvasRef;
     if (!canvas) return;
 
     const ctx = canvas.getContext("2d")!;
-    let startTime = performance.now();
-    let currentAngle = 0;
+    let prevTime = performance.now();
+    let staffAngle = 0;
 
     function draw() {
       if (!canvas || !ctx) return;
 
       const now = performance.now();
-      const dt = (now - startTime) / 1000;
-      startTime = now;
+      const dt = (now - prevTime) / 1000;
+      prevTime = now;
 
       if (playing) {
-        currentAngle += (rpm * Math.PI * 2) / 60 * dt;
+        staffAngle += (rpm * Math.PI * 2) / 60 * dt;
       }
 
-      // Match canvas pixel size to its CSS display size (avoid blurry scaling)
+      // Sync canvas pixels to display size
       const rect = canvas.getBoundingClientRect();
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       const displayW = Math.round(rect.width * dpr);
@@ -107,30 +109,95 @@
 
       const w = canvas.width;
       const h = canvas.height;
+      const cx = w / 2;
+      const cy = h / 2;
+      const drawRadius = Math.min(w, h) * 0.46;
 
+      // Black background
       ctx.fillStyle = "#0a0a0a";
       ctx.fillRect(0, 0, w, h);
 
-      if (discCanvas) {
-        // Scale disc to fit the canvas with padding
-        const drawSize = Math.min(w, h) * 0.92;
+      if (!discCanvas) {
+        animFrameId = requestAnimationFrame(draw);
+        return;
+      }
+
+      if (showFullDisc) {
+        // Static mode: show full disc without fade
         ctx.save();
-        ctx.translate(w / 2, h / 2);
-        ctx.rotate(currentAngle);
-        ctx.drawImage(
-          discCanvas,
-          -drawSize / 2,
-          -drawSize / 2,
-          drawSize,
-          drawSize,
+        ctx.translate(cx, cy);
+        ctx.drawImage(discCanvas, -drawRadius, -drawRadius, drawRadius * 2, drawRadius * 2);
+        ctx.restore();
+      } else {
+        // POV mode: persistence window sweeps around the fixed disc.
+        // The staff is at staffAngle. The trail extends backwards.
+        // persistenceArc = how much of the circle is visible based on
+        // how long light persists vs how fast the staff is spinning.
+        const rps = rpm / 60; // rotations per second
+        const persistence = poi.persistenceDuration;
+        // What fraction of a full rotation does the persistence cover?
+        // At 120 RPM (2 rps) with 120ms persistence: 2 * 0.12 = 0.24 of the circle
+        const persistenceFraction = Math.min(rps * persistence, 1.0);
+        const persistenceArc = persistenceFraction * Math.PI * 2;
+
+        const segmentArc = persistenceArc / TRAIL_SEGMENTS;
+
+        // Draw trail segments from oldest (faintest) to newest (brightest)
+        // so newer segments paint over older ones
+        for (let i = TRAIL_SEGMENTS - 1; i >= 0; i--) {
+          // Alpha: 1.0 at leading edge (i=0), fading to 0 at trailing edge
+          const t = i / TRAIL_SEGMENTS;
+          // Quadratic fade feels more natural than linear
+          const alpha = (1.0 - t) * (1.0 - t);
+
+          if (alpha < 0.01) continue;
+
+          // This segment's angular range on the fixed disc
+          const segEnd = staffAngle - i * segmentArc;
+          const segStart = segEnd - segmentArc;
+
+          ctx.save();
+          ctx.globalAlpha = alpha;
+
+          // Clip to this wedge
+          ctx.beginPath();
+          ctx.moveTo(cx, cy);
+          ctx.arc(cx, cy, drawRadius + 2, segStart, segEnd);
+          ctx.closePath();
+          ctx.clip();
+
+          // Draw the full disc (only the clipped wedge is visible)
+          ctx.drawImage(
+            discCanvas,
+            cx - drawRadius, cy - drawRadius,
+            drawRadius * 2, drawRadius * 2,
+          );
+
+          ctx.restore();
+        }
+
+        // Staff line: bright white line at the leading edge
+        ctx.save();
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.6)";
+        ctx.lineWidth = 1.5 * dpr;
+        ctx.beginPath();
+        const innerR = drawRadius * 0.08;
+        ctx.moveTo(
+          cx + Math.cos(staffAngle) * innerR,
+          cy + Math.sin(staffAngle) * innerR,
         );
+        ctx.lineTo(
+          cx + Math.cos(staffAngle) * drawRadius,
+          cy + Math.sin(staffAngle) * drawRadius,
+        );
+        ctx.stroke();
         ctx.restore();
       }
 
-      // Center dot (hub)
+      // Center hub
       ctx.beginPath();
-      ctx.arc(w / 2, h / 2, 3 * dpr, 0, Math.PI * 2);
-      ctx.fillStyle = "#333";
+      ctx.arc(cx, cy, 3 * dpr, 0, Math.PI * 2);
+      ctx.fillStyle = showFullDisc ? "#333" : "#555";
       ctx.fill();
 
       animFrameId = requestAnimationFrame(draw);
@@ -163,6 +230,16 @@
       aria-label={playing ? "Pause" : "Play"}
     >
       <i class="fas {playing ? 'fa-pause' : 'fa-play'}" aria-hidden="true"></i>
+    </button>
+
+    <button
+      class="transport-btn"
+      class:active={showFullDisc}
+      onclick={() => { showFullDisc = !showFullDisc; }}
+      aria-label={showFullDisc ? "POV mode" : "Full disc"}
+      title={showFullDisc ? "Switch to POV simulation" : "Show full pattern disc"}
+    >
+      <i class="fas {showFullDisc ? 'fa-eye' : 'fa-compact-disc'}" aria-hidden="true"></i>
     </button>
 
     <label class="rpm-control">
@@ -229,6 +306,11 @@
 
   .transport-btn:hover {
     border-color: var(--theme-accent, #3b82f6);
+  }
+
+  .transport-btn.active {
+    border-color: var(--theme-accent, #3b82f6);
+    background: color-mix(in srgb, var(--theme-accent, #3b82f6) 20%, transparent);
   }
 
   .rpm-control {
