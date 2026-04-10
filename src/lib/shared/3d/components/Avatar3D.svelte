@@ -56,7 +56,7 @@
   import { SpineTwister } from "../services/implementations/SpineTwister";
   import { GripType } from "$lib/shared/3d/domain/models/GripPose";
   import { CollisionDetector } from "../services/implementations/CollisionDetector";
-  import type { BodySnapshot } from "../services/contracts/ICollisionDetector";
+  import type { BodySnapshot, CollisionEvent } from "../services/contracts/ICollisionDetector";
 
   // Default Z position for avatars
   // Placing avatar at z=0 (same as grid plane) so hands are exactly at prop positions
@@ -110,6 +110,9 @@
     beatIndex?: number;
     /** 0-1 progress within current beat for collision detection logging */
     beatProgress?: number;
+    /** Optional callback invoked each frame with the collision detector's events.
+     *  Lets parent components surface collision state without duplicating detection. */
+    onCollisionEvents?: (events: CollisionEvent[]) => void;
   }
 
   let {
@@ -139,6 +142,7 @@
     disableSpineTwist = false,
     beatIndex = 0,
     beatProgress = 0,
+    onCollisionEvents,
   }: Props = $props();
 
   // Services (manually instantiated to ensure shared skeleton instance)
@@ -732,13 +736,14 @@
       leftChain?.effector.getWorldPosition(_boneVecs.leftHand);
       rightChain?.effector.getWorldPosition(_boneVecs.rightHand);
 
-      collisionDetector.detect(
+      const events = collisionDetector.detect(
         _boneVecs as BodySnapshot,
         blueWorldProp?.worldPosition ?? null,
         redWorldProp?.worldPosition ?? null,
         beatIndex,
         beatProgress
       );
+      onCollisionEvents?.(events);
     }
 
     // 3. Finger grips
