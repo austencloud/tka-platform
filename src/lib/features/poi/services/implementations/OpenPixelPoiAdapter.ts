@@ -168,19 +168,19 @@ class OpenPixelPoiConnection implements IPoiConnection {
     const chunks = chunkPacket(packet);
 
     for (let i = 0; i < chunks.length; i++) {
-      await this.txChar.writeValueWithoutResponse(chunks[i]!);
+      await this.txChar.writeValueWithoutResponse(chunks[i]! as BufferSource);
       onProgress?.(((i + 1) / chunks.length) * 100);
     }
   }
 
   async setBrightness(level: number): Promise<void> {
     const packet = buildBrightnessPacket(level);
-    await this.txChar.writeValueWithoutResponse(packet);
+    await this.txChar.writeValueWithoutResponse(packet as BufferSource);
   }
 
   async setSpeed(hz: number): Promise<void> {
     const packet = buildSpeedPacket(hz);
-    await this.txChar.writeValueWithoutResponse(packet);
+    await this.txChar.writeValueWithoutResponse(packet as BufferSource);
   }
 
   disconnect(): void {
