@@ -18,7 +18,7 @@
 
   import { useThrelte, useTask } from "@threlte/core";
   import { onDestroy, untrack } from "svelte";
-  import { Vector3, Color, Object3D } from "three";
+  import { Vector3, Color, Object3D, Quaternion, Euler } from "three";
   import { container } from "$lib/shared/di";
   import Trail3D from "./trails/Trail3D.svelte";
   import { LedRenderer3D, type LedTipInput } from "./led/LedRenderer3D";
@@ -26,6 +26,8 @@
   import { FireRenderer3D, type FireTipInput } from "./fire/FireRenderer3D";
   import { DynamicLightManager, type LightHandle } from "./lighting/DynamicLightManager";
   import { TipPositionBridge3D } from "./TipPositionBridge3D";
+  import { PovStripRenderer3D } from "./poi/PovStripRenderer3D";
+  import type { StripPattern } from "$lib/features/poi/domain/StripPattern";
   import {
     resolveEffect,
     type TipEffectMap,
@@ -63,6 +65,10 @@
       maxPoints?: number;
       rainbow?: boolean;
     };
+    /** Active strip pattern for POV LED rendering. When set, LED effect uses PovStripRenderer3D instead of LedRenderer3D. */
+    activeStripPattern?: StripPattern | null;
+    /** POV persistence duration in seconds */
+    povPersistenceDuration?: number;
   }
 
   let {
@@ -76,6 +82,8 @@
     redHandPos = { x: 0, z: 0 },
     effectsParentRef,
     trailConfig = {},
+    activeStripPattern = null,
+    povPersistenceDuration = 0.12,
   }: Props = $props();
 
   const { scene, camera } = useThrelte();
@@ -96,6 +104,14 @@
 
   // Fire renderer (single instance — all tips share one particle pool)
   let fireRenderer: FireRenderer3D | null = null;
+
+  // POV strip renderers — used when a StripPattern is active
+  let bluePovRenderer: PovStripRenderer3D | null = null;
+  let redPovRenderer: PovStripRenderer3D | null = null;
+
+  // Reusable vectors for staff axis computation
+  const _staffAxis = new Vector3();
+  const _staffCenter = new Vector3();
 
 
   // Reactive so it responds to runtime tier changes (e.g. user override or
@@ -146,6 +162,8 @@
       tipBridge.reset();
       blueLedRenderer?.reset();
       redLedRenderer?.reset();
+      bluePovRenderer?.reset();
+      redPovRenderer?.reset();
       charcoalRenderer?.reset();
       fireRenderer?.reset();
       return;
@@ -294,29 +312,94 @@
     }
 
     if (imperativeParent) {
-      // Initialize LED renderers lazily
-      if (!blueLedRenderer) {
-        blueLedRenderer = new LedRenderer3D(qualityTierDetector.currentTier);
-        blueLedRenderer.initialize(imperativeParent);
-      }
-      if (!redLedRenderer) {
-        redLedRenderer = new LedRenderer3D(qualityTierDetector.currentTier);
-        redLedRenderer.initialize(imperativeParent);
-      }
       const now = performance.now() / 1000;
+      const hasPovPattern = activeStripPattern != null;
 
-      // Update blue LED renderer
-      if (blueLedTips.length > 0) {
-        blueLedRenderer.update(blueLedTips, cam!, now);
-      } else {
-        blueLedRenderer.reset();
-      }
+      if (hasPovPattern) {
+        // POV Strip Mode: full 200-LED strip with persistence-of-vision trails
 
-      // Update red LED renderer
-      if (redLedTips.length > 0) {
-        redLedRenderer.update(redLedTips, cam!, now);
+        // Initialize POV renderers lazily
+        if (!bluePovRenderer) {
+          bluePovRenderer = new PovStripRenderer3D(qualityTierDetector.currentTier);
+          bluePovRenderer.initialize(imperativeParent);
+        }
+        if (!redPovRenderer) {
+          redPovRenderer = new PovStripRenderer3D(qualityTierDetector.currentTier);
+          redPovRenderer.initialize(imperativeParent);
+        }
+        bluePovRenderer.setPersistenceDuration(povPersistenceDuration);
+        redPovRenderer.setPersistenceDuration(povPersistenceDuration);
+
+        // Compute staff axis + rotation angle for blue prop
+        if (blueLedTips.length > 0 && bluePropState) {
+          const rotation = bluePropState.worldRotation;
+          const horizontalQuat = new Quaternion().setFromEuler(new Euler(0, 0, Math.PI / 2));
+          const finalQuat = rotation.clone().multiply(horizontalQuat);
+          _staffAxis.set(0, 1, 0).applyQuaternion(finalQuat).normalize();
+
+          _staffCenter.copy(bluePropState.worldPosition);
+
+          // Rotation angle: extract from the quaternion's Z-axis rotation
+          const euler = new Euler().setFromQuaternion(rotation, "ZYX");
+          const rotAngle = euler.z;
+
+          bluePovRenderer.update(
+            _staffAxis, _staffCenter, staffHalfLength,
+            rotAngle, activeStripPattern!, cam!, now, 1.0,
+          );
+        } else {
+          bluePovRenderer.reset();
+        }
+
+        // Compute staff axis + rotation angle for red prop
+        if (redLedTips.length > 0 && redPropState) {
+          const rotation = redPropState.worldRotation;
+          const horizontalQuat = new Quaternion().setFromEuler(new Euler(0, 0, Math.PI / 2));
+          const finalQuat = rotation.clone().multiply(horizontalQuat);
+          _staffAxis.set(0, 1, 0).applyQuaternion(finalQuat).normalize();
+
+          _staffCenter.copy(redPropState.worldPosition);
+
+          const euler = new Euler().setFromQuaternion(rotation, "ZYX");
+          const rotAngle = euler.z;
+
+          redPovRenderer.update(
+            _staffAxis, _staffCenter, staffHalfLength,
+            rotAngle, activeStripPattern!, cam!, now, 1.0,
+          );
+        } else {
+          redPovRenderer.reset();
+        }
+
+        // Suppress legacy LED renderers while POV is active
+        blueLedRenderer?.reset();
+        redLedRenderer?.reset();
       } else {
-        redLedRenderer.reset();
+        // Legacy 2-point LED mode (unchanged)
+        if (!blueLedRenderer) {
+          blueLedRenderer = new LedRenderer3D(qualityTierDetector.currentTier);
+          blueLedRenderer.initialize(imperativeParent);
+        }
+        if (!redLedRenderer) {
+          redLedRenderer = new LedRenderer3D(qualityTierDetector.currentTier);
+          redLedRenderer.initialize(imperativeParent);
+        }
+
+        if (blueLedTips.length > 0) {
+          blueLedRenderer.update(blueLedTips, cam!, now);
+        } else {
+          blueLedRenderer.reset();
+        }
+
+        if (redLedTips.length > 0) {
+          redLedRenderer.update(redLedTips, cam!, now);
+        } else {
+          redLedRenderer.reset();
+        }
+
+        // Suppress POV renderers while legacy mode is active
+        bluePovRenderer?.reset();
+        redPovRenderer?.reset();
       }
 
       // Charcoal renderer (single pool for all tips)
@@ -364,6 +447,8 @@
     tipBridge.reset();
     blueLedRenderer?.dispose();
     redLedRenderer?.dispose();
+    bluePovRenderer?.dispose();
+    redPovRenderer?.dispose();
     charcoalRenderer?.dispose();
     fireRenderer?.dispose();
   });
