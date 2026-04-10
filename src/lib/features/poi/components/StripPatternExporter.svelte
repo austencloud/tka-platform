@@ -2,10 +2,10 @@
 <script lang="ts">
   import { getPoiContext } from "../context/poi-context";
 
-  const state = getPoiContext();
+  const poi = getPoiContext();
 
   function downloadPng(): void {
-    const imageData = state.toImageData();
+    const imageData = poi.toImageData();
     if (!imageData) return;
 
     const canvas = new OffscreenCanvas(imageData.width, imageData.height);
@@ -16,14 +16,14 @@
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${state.activePattern?.metadata.name ?? "pattern"}.png`;
+      a.download = `${poi.activePattern?.metadata.name ?? "pattern"}.png`;
       a.click();
       URL.revokeObjectURL(url);
     });
   }
 </script>
 
-{#if state.activePattern}
+{#if poi.activePattern}
   <button class="export-btn" onclick={downloadPng}>
     <i class="fas fa-download" aria-hidden="true"></i>
     Export PNG

@@ -2,16 +2,16 @@
 <script lang="ts">
   import { getPoiContext } from "../context/poi-context";
 
-  const state = getPoiContext();
+  const poi = getPoiContext();
 
   let canvasRef = $state<HTMLCanvasElement | null>(null);
 
   $effect(() => {
-    const pattern = state.activePattern;
+    const pattern = poi.activePattern;
     const canvas = canvasRef;
     if (!canvas || !pattern) return;
 
-    const imageData = state.toImageData();
+    const imageData = poi.toImageData();
     if (!imageData) return;
 
     canvas.width = imageData.width;
@@ -23,14 +23,14 @@
 
 <div class="pov-preview">
   <h3 class="section-title">POV Preview</h3>
-  {#if state.activePattern}
+  {#if poi.activePattern}
     <div class="preview-frame">
       <canvas
         bind:this={canvasRef}
         class="preview-canvas"
       ></canvas>
       <div class="preview-info">
-        {state.activePattern.ledCount} LEDs x {state.activePattern.frameCount} frames
+        {poi.activePattern.ledCount} LEDs x {poi.activePattern.frameCount} frames
       </div>
     </div>
   {:else}

@@ -2,13 +2,13 @@
 <script lang="ts">
   import { getPoiContext } from "../context/poi-context";
 
-  const state = getPoiContext();
+  const poi = getPoiContext();
 
   let dragOver = $state(false);
 
   function handlePresetSelect(presetId: string): void {
-    state.setActivePresetId(presetId);
-    state.generateFromPreset();
+    poi.setActivePresetId(presetId);
+    poi.generateFromPreset();
   }
 
   async function handleFileDrop(e: DragEvent): Promise<void> {
@@ -16,7 +16,7 @@
     dragOver = false;
     const file = e.dataTransfer?.files[0];
     if (file && file.type.startsWith("image/")) {
-      await state.loadFromFile(file);
+      await poi.loadFromFile(file);
     }
   }
 
@@ -24,7 +24,7 @@
     const input = e.target as HTMLInputElement;
     const file = input.files?.[0];
     if (file) {
-      await state.loadFromFile(file);
+      await poi.loadFromFile(file);
       input.value = ""; // Reset for re-upload of same file
     }
   }
@@ -35,10 +35,10 @@
 
   <!-- Preset Grid -->
   <div class="preset-grid">
-    {#each state.presets as preset}
+    {#each poi.presets as preset}
       <button
         class="preset-card"
-        class:active={state.activePresetId === preset.id}
+        class:active={poi.activePresetId === preset.id}
         onclick={() => handlePresetSelect(preset.id)}
       >
         <div
