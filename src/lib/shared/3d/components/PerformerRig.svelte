@@ -61,7 +61,7 @@
     bluePropType?: PropType;
     redPropType?: PropType;
 
-    // Prop state overrides (for mirror mode — caller swaps before passing)
+    // Prop state overrides (for dual-wheel mode — caller swaps before passing)
     bluePropState?: PropState3D | null;
     redPropState?: PropState3D | null;
 
@@ -75,6 +75,11 @@
 
     // Avatar model selection
     avatarId?: import("../config/avatar-definitions").AvatarId;
+
+    // Locomotion (walk/idle animation)
+    enableLocomotion?: boolean;
+    isMoving?: boolean;
+    moveSpeed?: number;
   }
 
   let {
@@ -97,9 +102,12 @@
     staffHalfLength = userProportionsState.staffLength / 2,
     groundOffset = 0,
     avatarId,
+    enableLocomotion = false,
+    isMoving = false,
+    moveSpeed = 0,
   }: Props = $props();
 
-  // Resolve prop states: use overrides (for mirror mode) or avatarState defaults
+  // Resolve prop states: use overrides (for dual-wheel swap) or avatarState defaults
   const bluePropState = $derived(bluePropStateOverride ?? avatarState.bluePropState);
   const redPropState = $derived(redPropStateOverride ?? avatarState.redPropState);
 
@@ -110,15 +118,15 @@
 
   // HandAnchor positions in rig-local space.
   // Wall mode: both hands at z=gridOffset (grid center is forward of body).
-  // Dual-wheel: hands at lateral offsets, z=0 (grid at solar plexus).
-  // HandAnchor positions only vary in x (lateral) and z (forward offset).
-  // y is always 0 — hands orbit at the same height as the rig origin.
+  // Dual-wheel: hands at half staff length laterally so endpoints touch
+  // when staves are held out horizontally. z=0 (grid at solar plexus).
+  const dualWheelOffset = $derived(staffHalfLength);
   const blueHandPos = $derived({
-    x: modeConfig.blueLateralOffset,
+    x: isDualWheel ? dualWheelOffset : modeConfig.blueLateralOffset,
     z: isDualWheel ? 0 : gridOffset,
   });
   const redHandPos = $derived({
-    x: modeConfig.redLateralOffset,
+    x: isDualWheel ? -dualWheelOffset : modeConfig.redLateralOffset,
     z: isDualWheel ? 0 : gridOffset,
   });
 
@@ -149,9 +157,14 @@
       facingAngle={0}
       position={{ x: 0, z: 0 }}
       isActive={false}
-      isMoving={false}
+      {isMoving}
+      {moveSpeed}
+      {enableLocomotion}
       bluePropAnchorRef={bluePropAnchorRef}
       redPropAnchorRef={redPropAnchorRef}
+      disableSpineTwist={isDualWheel}
+      beatIndex={avatarState.currentStepIndex}
+      beatProgress={avatarState.progress}
     />
   {/if}
 

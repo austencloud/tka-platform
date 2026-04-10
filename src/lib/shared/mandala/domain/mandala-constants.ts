@@ -24,8 +24,12 @@ export const RED_FILL = "rgba(248, 113, 113, 0.2)";
 export const PURPLE_STROKE = "#a78bfa";
 export const PURPLE_FILL = "rgba(167, 139, 250, 0.2)";
 
-/** Distance threshold in mandala coordinate units for overlap detection */
-export const OVERLAP_THRESHOLD = 4;
+/** Distance threshold in mandala coordinate units for overlap detection.
+ * This is the spatial hash cell size; the 3×3 neighborhood check makes
+ * the effective radius ~3× this value. Keep small so only truly
+ * coincident paths (same trajectory) trigger purple — not parallel
+ * paths that happen to be nearby (e.g. Sigma-Z dashes). */
+export const OVERLAP_THRESHOLD = 1.5;
 
 /** Sliding window size for proximity search (indices, not distance) */
 export const OVERLAP_WINDOW_SIZE = 20;

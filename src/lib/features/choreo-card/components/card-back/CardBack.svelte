@@ -1,18 +1,17 @@
 <!--
-  V5 "Deck" — Theme-aware printed card back with corner badges
+  V7 "Brand-forward" — Choreo Cards branding as the hero, flexible content slots.
 
-  Designed for physical 2.5" x 3.5" playing cards. Fills its parent
-  container and scales proportionally using container query units (cqi).
-  All dimensions are relative to the container's inline size, so the
-  card looks correct at any rendered size.
+  Designed for physical printed cards. Fills its parent container and
+  scales proportionally using container query units (cqi).
 
-  Four corners for quick sorting when fanning cards:
-    Top-left:     Level badge
-    Top-right:    LOOP icons
-    Bottom-left:  Step count
-    Bottom-right: Starting position (alpha, beta, gamma)
+  Layout: full flex column with three rows.
+    Header:  Turn glyph | "CHOREO CARDS" branding | Reversal glyph
+    Content: Mandala (fixed center), deck designation labels (TKA + VTG)
+    Footer:  Start position pictograph (left, shows props for chaining) | (future: duration) | step count
 
-  Center: word, mandala (for LOOP sequences), LOOP explanation, branding, URL.
+  Level badge and LOOP icons are NOT on the physical card — they live in the
+  software's sequence viewer. This keeps the printed card as its own clean
+  artifact that doesn't try to mirror the software UI.
 -->
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -20,12 +19,11 @@
   import type { ILOOPExplainer } from "../../services/contracts/ILOOPExplainer";
   import { container as di } from "$lib/shared/di";
   import { onMount } from "svelte";
-  import LOOPIconStrip from "$lib/shared/components/LOOPIconStrip.svelte";
   import CardBackDecorations from "./CardBackDecorations.svelte";
   import { deriveCardBackData } from "./card-back-data";
   import { getCardBackThemeVisuals } from "./card-back-theme-visuals";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
-  import StartPositionMiniGrid from "./StartPositionMiniGrid.svelte";
+  import StartPositionPictograph from "./StartPositionPictograph.svelte";
   import TurnPatternGlyph from "./TurnPatternGlyph.svelte";
   import ReversalPatternGlyph from "./ReversalPatternGlyph.svelte";
   import SequenceMandala from "$lib/shared/mandala/components/SequenceMandala.svelte";
@@ -42,173 +40,71 @@
 
   const d = $derived(deriveCardBackData(sequence, converter, explainer));
 
-  const loopExplanationText = $derived(
-    d.loopExplanation?.summary ?? (d.hasLoop ? "Loops back each cycle." : "")
-  );
+  // Deck designation labels shown below the mandala
+  const hasDesignation = $derived(!!d.tkaDesignation || !!d.vtgDesignation);
 
   const theme = $derived(getCardBackThemeVisuals(settingsService.settings.backgroundType));
-
-  // Pronunciation guide: spell out Greek letters and dash suffixes
-  const LETTER_NAMES: Record<string, string> = {
-    "Σ": "Sigma", "Δ": "Delta", "Θ": "Theta", "Ω": "Omega",
-    "Φ": "Phi", "Ψ": "Psi", "Λ": "Lambda",
-    "Σ-": "Sigma Dash", "Δ-": "Delta Dash", "Θ-": "Theta Dash", "Ω-": "Omega Dash",
-    "Φ-": "Phi Dash", "Ψ-": "Psi Dash", "Λ-": "Lambda Dash",
-    "α": "alpha", "β": "beta", "γ": "gamma",
-    "ζ": "zeta", "η": "eta", "τ": "tau", "τ-": "Tau Dash",
-    "μ": "mu", "ν": "nu", "⊕": "terra",
-    // Latin dash variants
-    "W-": "W Dash", "X-": "X Dash", "Y-": "Y Dash", "Z-": "Z Dash",
-  };
-
-  // Letters that trigger the pronunciation hint (Greek + dash suffixes)
-  const NEEDS_HINT = new Set([
-    ...Object.keys(LETTER_NAMES),
-    "-", // dash suffix on any letter signals TKA-specific naming
-  ]);
-
-  /** True if the word contains any character that needs a pronunciation hint */
-  const hasGreekLetters = $derived.by(() => {
-    const word = d.word;
-    for (let i = 0; i < word.length; i++) {
-      const ch = word[i]!;
-      if (ch in LETTER_NAMES) return true;
-      if (i + 1 < word.length && word[i + 1] === "-" && (ch + "-") in LETTER_NAMES) return true;
-    }
-    return false;
-  });
-
-  /**
-   * Build a pronunciation string: "B · Delta- · W · Phi"
-   * Only shown when the word contains Greek letters.
-   */
-  const pronunciation = $derived.by(() => {
-    if (!hasGreekLetters) return "";
-    const parts: string[] = [];
-    const word = d.word;
-    let i = 0;
-    while (i < word.length) {
-      // Check for dash-suffix variants first (e.g. "Σ-")
-      if (i + 1 < word.length && word[i + 1] === "-") {
-        const twoChar = word[i] + "-";
-        if (LETTER_NAMES[twoChar]) {
-          parts.push(LETTER_NAMES[twoChar]!);
-          i += 2;
-          continue;
-        }
-      }
-      const ch = word[i]!;
-      if (LETTER_NAMES[ch]) {
-        parts.push(LETTER_NAMES[ch]!);
-      } else {
-        parts.push(ch);
-      }
-      i++;
-    }
-    return parts.join(" · ");
-  });
-
-  // ── Auto-shrink word to fit on one line ──────────────────────────
-  // Wide characters (Θ, Ω, Φ, W, M) count as ~1.3 units, narrow ones
-  // (-, I, l) as ~0.5, everything else as 1. At 10.4cqi, roughly 9
-  // width-units fit inside the .content padding. Scale down for longer words.
-  const WIDE = new Set(["Θ", "Ω", "Φ", "W", "M", "Σ", "Δ", "Λ", "Ψ"]);
-  const NARROW = new Set(["-", "I", "l", "i", "·"]);
-
-  const wordFontCqi = $derived.by(() => {
-    const word = d.word;
-    if (!word) return 10.4;
-
-    let widthUnits = 0;
-    for (const ch of word) {
-      if (WIDE.has(ch)) widthUnits += 1.3;
-      else if (NARROW.has(ch)) widthUnits += 0.5;
-      else widthUnits += 1;
-    }
-
-    const maxUnits = 12;
-    if (widthUnits <= maxUnits) return 10.4;
-    return Math.max(10.4 * (maxUnits / widthUnits), 3);
-  });
 </script>
 
 <!-- Outer: themed gradient border -->
 <div class="border-frame" style="background: {theme.borderGradient};">
-  <!-- Inner: themed background with decorative elements -->
+  <!-- Inner: full flex column — header, content, footer all flow naturally -->
   <div class="back" style="background: {theme.background};">
     <CardBackDecorations theme={settingsService.settings.backgroundType ?? "nightSky"} />
 
-    <!-- CORNER BADGES — visible when fanning cards -->
-
-    <!-- Top-left: Level -->
-    <div class="corner top-left">
-      <span
-        class="corner-badge level-badge"
-        style="background: {d.level.gradient}; color: {d.level.textColor};"
-      >
-        {d.level.number}
-      </span>
-    </div>
-
-    <!-- Top-right: LOOP icons -->
-    {#if d.hasLoop}
-      <div class="corner top-right">
-        <LOOPIconStrip activeComponents={d.loopComponents} size={26} darkMode={false} />
+    <!-- HEADER: turn glyph | branding | reversal glyph -->
+    <header class="card-header">
+      <div class="header-left">
+        <TurnPatternGlyph entries={d.turnGlyphEntries} />
       </div>
-    {/if}
+      <div class="header-center">
+        <span class="brand">CHOREO CARDS</span>
+        <span class="brand-url">tkaflowarts.com</span>
+      </div>
+      <div class="header-right">
+        <ReversalPatternGlyph sequence={d.reversalSequence} period={d.reversalPeriod} />
+      </div>
+    </header>
 
-    <!-- Bottom-left: Step count -->
-    <div class="corner bottom-left">
-      <span class="corner-label">{d.stepCount}</span>
-      <span class="corner-sublabel">steps</span>
-    </div>
-
-    <!-- Bottom-right: Starting position mini-grid -->
-    <div class="corner bottom-right">
-      <StartPositionMiniGrid
-        info={d.startPosition ?? { group: null, blueLocation: null, redLocation: null, gridMode: "box" }}
-        size={40}
-      />
-    </div>
-
-    <!-- Branding + URL: pinned to top center -->
-    <div class="top-brand">
-      <span class="brand">CHOREO CARDS</span>
-      <span class="brand-url">tkaflowarts.com</span>
-    </div>
-
-    <!-- CENTER CONTENT — mandala pinned to true center -->
+    <!-- CENTER CONTENT: mandala always at same center point, text floats below -->
     <div class="content">
-      <div class="word" style="font-size: {wordFontCqi}cqi;">{d.word}</div>
-      {#if hasGreekLetters}
-        <div class="pronunciation">{pronunciation}</div>
-      {/if}
-
-      <div class="mandala-anchor">
-        <SequenceMandala
-          {sequence}
-          mode="card-back"
-          style="stroke"
-          show="both"
-          size={380}
-        />
+      <div class="mandala-zone">
+        <div class="mandala-anchor">
+          <SequenceMandala
+            {sequence}
+            mode="card-back"
+            style="stroke"
+            show="both"
+            size={380}
+          />
+        </div>
       </div>
 
-      {#if d.vtgRatio}
-        <div class="ratio-label">{d.vtgRatio}</div>
-      {/if}
-
-      {#if d.hasLoop}
-        <p class="loop-explanation">{loopExplanationText}</p>
+      {#if hasDesignation}
+        <div class="content-text">
+          {#if d.tkaDesignation}
+            <p class="deck-designation">{d.tkaDesignation}</p>
+          {/if}
+          {#if d.vtgDesignation}
+            <p class="deck-designation vtg">{d.vtgDesignation}</p>
+          {/if}
+        </div>
       {/if}
     </div>
 
-    <!-- Deck identity glyphs: turn pattern + reversal pattern -->
-    <div class="deck-identity">
-      <TurnPatternGlyph entries={d.turnGlyphEntries} />
-      <div class="glyph-divider"></div>
-      <ReversalPatternGlyph sequence={d.reversalSequence} period={d.reversalPeriod} />
-    </div>
+    <!-- FOOTER: starting position (left, for chaining) | (future: duration) | step count -->
+    <footer class="card-footer">
+      <div class="footer-left">
+        {#if sequence.startPosition}
+          <StartPositionPictograph pictographData={sequence.startPosition} />
+        {/if}
+      </div>
+      <div class="footer-center"></div>
+      <div class="footer-right">
+        <span class="corner-label">{d.stepCount}</span>
+        <span class="corner-sublabel">steps</span>
+      </div>
+    </footer>
   </div>
 </div>
 
@@ -217,11 +113,15 @@
     width: 100%;
     height: 100%;
     border-radius: 2.4cqi;
-    padding: 0.8cqi;
+    padding: 2cqi;
     box-sizing: border-box;
     overflow: hidden;
     container-type: inline-size;
   }
+
+  /* ═══════ CARD SHELL ═══════
+     Full flex column: header → content → footer.
+     No absolute positioning for layout elements. Everything flows. */
 
   .back {
     position: relative;
@@ -232,131 +132,74 @@
     overflow: hidden;
     border-radius: 1.6cqi;
     box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    padding: 3.2cqi;
+    gap: 1.5cqi;
   }
 
-  /* ═══════ CORNER BADGES ═══════ */
+  /* ═══════ HEADER ═══════ */
 
-  .corner {
-    position: absolute;
-    z-index: 2;
+  .card-header {
+    flex-shrink: 0;
     display: flex;
     align-items: center;
-    gap: 0.8cqi;
-  }
-
-  .top-left { top: 3.2cqi; left: 3.2cqi; }
-  .top-right { top: 3.2cqi; right: 3.2cqi; }
-  .bottom-left { bottom: 3.2cqi; left: 3.2cqi; flex-direction: column; }
-  .bottom-right { bottom: 3.2cqi; right: 3.2cqi; }
-
-  .corner-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 8cqi;
-    height: 8cqi;
-    border-radius: 50%;
-    border: 1.5px solid rgba(0, 0, 0, 0.3);
-    font-family: Cambria, serif;
-    font-size: 4.8cqi;
-    font-weight: bold;
-    padding-bottom: 0.2cqi;
-  }
-
-  .corner-label {
-    font-size: 6cqi;
-    font-weight: 700;
-    color: rgba(255, 255, 255, 0.65);
-    line-height: 1;
-  }
-
-  .corner-sublabel {
-    font-size: 2.2cqi;
-    font-weight: 500;
-    color: rgba(255, 255, 255, 0.4);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-  }
-
-  /* ═══════ BRANDING (top center) ═══════ */
-
-  .top-brand {
-    position: absolute;
+    justify-content: space-between;
     z-index: 2;
-    top: 3.2cqi;
-    left: 0;
-    right: 0;
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+  }
+
+  .header-center {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 0.3cqi;
   }
 
+  .header-right {
+    display: flex;
+    align-items: center;
+  }
+
   .brand {
-    font-size: 2.8cqi;
-    font-weight: 300;
-    letter-spacing: 0.2em;
-    color: rgba(255, 255, 255, 0.6);
+    font-size: 4cqi;
+    font-weight: 400;
+    letter-spacing: 0.22em;
+    color: rgba(255, 255, 255, 0.85);
   }
 
   .brand-url {
-    font-size: 1.8cqi;
-    color: rgba(255, 255, 255, 0.2);
+    font-size: 2.8cqi;
+    color: rgba(255, 255, 255, 0.5);
     letter-spacing: 0.04em;
   }
 
-  /* ═══════ DECK IDENTITY GLYPHS (bottom center) ═══════ */
-
-  .deck-identity {
-    position: absolute;
-    z-index: 2;
-    bottom: 3.6cqi;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    align-items: center;
-    gap: 1.6cqi;
-  }
-
-  .glyph-divider {
-    width: 0.3cqi;
-    height: 4cqi;
-    background: rgba(255, 255, 255, 0.07);
-  }
-
-  /* ═══════ CENTER CONTENT ═══════ */
+  /* ═══════ CENTER CONTENT ═══════
+     Optional slots flow top-to-bottom. The mandala-zone uses flex:1 to
+     absorb remaining vertical space. Remove a slot and the rest reflow. */
 
   .content {
+    flex: 1;
+    min-height: 0;
+    z-index: 1;
+    position: relative;
+  }
+
+  /* Mandala fills the entire content area and centers itself.
+     Its position never changes regardless of what text is below it. */
+  .mandala-zone {
     position: absolute;
     inset: 0;
-    z-index: 1;
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
-    text-align: center;
-    padding: 0 4cqi;
-    box-sizing: border-box;
-  }
-
-  .word {
-    position: absolute;
-    top: 14%;
-    font-family: Georgia, serif;
-    font-size: 10.4cqi;
-    font-weight: 600;
-    letter-spacing: 0.05em;
-    line-height: 1;
-    white-space: nowrap;
-  }
-
-  .pronunciation {
-    position: absolute;
-    top: calc(14% + 12cqi);
-    font-size: 2.6cqi;
-    font-style: italic;
-    color: rgba(255, 255, 255, 0.4);
-    letter-spacing: 0.02em;
+    /* Slight upward bias so the visual weight sits above center,
+       leaving room for text at the bottom without feeling cramped. */
+    padding-bottom: 6cqi;
   }
 
   .mandala-anchor {
@@ -364,7 +207,8 @@
     align-items: center;
     justify-content: center;
     width: 72cqi;
-    max-height: 72cqi;
+    max-height: 100%;
+    aspect-ratio: 1;
   }
 
   .mandala-anchor :global(.mandala-container) {
@@ -372,40 +216,88 @@
     height: 100% !important;
   }
 
-  .ratio-label {
+  /* Text floats at the bottom of the content area, overlaying
+     the mandala zone. Present or absent, mandala stays put. */
+  .content-text {
     position: absolute;
-    top: calc(50% + 22cqi);
-    font-size: 4cqi;
-    font-weight: 500;
-    color: rgba(255, 255, 255, 0.85);
-    letter-spacing: 0.04em;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1cqi;
+    text-align: center;
   }
 
-  .loop-explanation {
-    position: absolute;
-    top: calc(50% + 28cqi);
+  .deck-designation {
     margin: 0;
-    font-size: 2.6cqi;
-    color: rgba(255, 255, 255, 0.5);
-    line-height: 1.6;
-    max-width: 76cqi;
+    font-size: 2.8cqi;
+    color: rgba(255, 255, 255, 0.55);
+    line-height: 1.4;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    text-align: center;
   }
+
+  .deck-designation.vtg {
+    color: rgba(255, 255, 255, 0.45);
+    font-size: 2.5cqi;
+  }
+
+  /* ═══════ FOOTER ROW ═══════ */
+
+  .card-footer {
+    flex-shrink: 0;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    z-index: 2;
+  }
+
+  .footer-left {
+    display: flex;
+    align-items: center;
+  }
+
+  .footer-center {
+    display: flex;
+    align-items: center;
+    gap: 1.6cqi;
+  }
+
+  .footer-right {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .corner-label {
+    font-size: 6cqi;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.75);
+    line-height: 1;
+  }
+
+  .corner-sublabel {
+    font-size: 2.8cqi;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.55);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
 
   /* ═══════ CHILD COMPONENT OVERRIDES ═══════ */
 
-  /* LOOPIconStrip uses inline font-size in px — override to scale with card */
-  .top-right :global(.loop-icon-strip i) {
-    font-size: 5.2cqi !important;
+  .footer-left :global(.start-pos-picto) {
+    width: 12cqi !important;
+    height: 12cqi !important;
   }
 
-  .top-right :global(.loop-icon-strip) {
-    gap: 0.8cqi !important;
-  }
-
-  /* StartPositionMiniGrid SVG — override inline width/height to scale */
-  .bottom-right :global(svg) {
-    width: 8cqi !important;
-    height: 8cqi !important;
+  .footer-left :global(.start-pos-picto svg) {
+    width: 100% !important;
+    height: 100% !important;
   }
 
 </style>

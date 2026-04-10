@@ -6,6 +6,11 @@
    * Raycasts against scene surfaces to classify floor vs wall hits, snaps to
    * tile grid, orients wall objects to face outward, and signals valid/invalid
    * placement via color. Left-click on a valid surface calls onPlace; ESC cancels.
+   * Right-click on a manually placed torch deletes it. Ctrl+Z undoes last placement.
+   *
+   * When the GLTF model is already cached (loaded by MuseumTorch3D), the ghost
+   * clones that model and applies the translucent ghost material. Otherwise it
+   * falls back to a simple box geometry.
    */
   import { T, useThrelte } from "@threlte/core";
   import { onMount, onDestroy } from "svelte";
@@ -17,11 +22,15 @@
     MeshStandardMaterial,
     BoxGeometry,
     Color,
+    Group,
     type Intersection,
     type Object3D,
+    type Mesh,
   } from "three";
   import type { PlaceableObjectDef } from "../../domain/placeable-object-registry";
   import { museum3dEditorState } from "../../state/museum-3d-editor-state.svelte";
+  import { modelTemplateCache } from "../game/MuseumTorch3D.svelte";
+  import { FIXTURE_REGISTRY } from "../../domain/fixture-registry";
 
   // ── Constants ──
 
@@ -36,9 +45,11 @@
   interface Props {
     def: PlaceableObjectDef;
     onPlace: (worldX: number, worldZ: number, yaw: number, wallFacing: string) => void;
+    onDelete: (placementId: string) => void;
+    onUndo: () => void;
   }
 
-  const { def, onPlace }: Props = $props();
+  const { def, onPlace, onDelete, onUndo }: Props = $props();
 
   // ── Threlte context ──
   // useThrelte() may return raw objects or CurrentWritable wrappers depending
@@ -57,7 +68,6 @@
   let ghostQuat: [number, number, number, number] = $state([0, 0, 0, 1]);
   let valid = $state(false);
   let visible = $state(false);
-  let ghostMesh: Object3D | null = null;
 
   // ── Reusable Three.js objects (avoid per-frame allocation) ──
 
@@ -77,6 +87,32 @@
   });
 
   const ghostGeometry = new BoxGeometry(0.15, 0.3, 0.1);
+
+  // ── GLTF ghost model (cloned from MuseumTorch3D's cache) ──
+
+  let ghostModel = $state<Group | null>(null);
+
+  function buildGhostFromCache(): Group | null {
+    const wingTheme = def.wingTheme ?? 'cave';
+    const config = FIXTURE_REGISTRY[wingTheme];
+    const template = modelTemplateCache.get(config.modelPath);
+    if (!template) return null;
+
+    const clone = template.clone() as unknown as Group;
+    clone.traverse((child) => {
+      if ((child as Mesh).isMesh) {
+        (child as Mesh).material = ghostMaterial;
+      }
+    });
+    return clone;
+  }
+
+  // Attempt to build ghost model on mount and when def changes
+  $effect(() => {
+    // Read def.wingTheme to track changes
+    const _theme = def.wingTheme;
+    ghostModel = buildGhostFromCache();
+  });
 
   // ── Surface classification ──
 
@@ -128,6 +164,18 @@
     return null;
   }
 
+  // ── Find manual placement ID from raycast hit ──
+
+  function findManualPlacementId(obj: Object3D): string | null {
+    let current: Object3D | null = obj;
+    while (current) {
+      const id = current.userData?.__manualPlacementId;
+      if (id != null) return String(id);
+      current = current.parent;
+    }
+    return null;
+  }
+
   // ── Snap helpers ──
 
   function snapToTileGrid(v: number): number {
@@ -169,6 +217,11 @@
     return n.z > 0 ? "south" : "north";
   }
 
+  // ── Hover glow state for deletable manual placements ──
+
+  let hoveredPlacementId: string | null = null;
+  let hoveredObject: Object3D | null = null;
+
   // ── Stored hit data for click handler ──
 
   let lastHitNormal = new Vector3();
@@ -176,7 +229,9 @@
 
   // ── Event handlers ──
 
+  let _moveCount = 0;
   function onPointerMove(event: PointerEvent): void {
+    const _t0 = performance.now();
     const ren = getRenderer();
     if (!ren?.domElement) return;
     const domElement = ren.domElement;
@@ -253,11 +308,57 @@
     valid = isValid;
     museum3dEditorState.setGhostValid(isValid);
     ghostMaterial.color.copy(isValid ? COLOR_VALID : COLOR_INVALID);
+
+    // Check if hovering a deletable manual placement (reuse existing raycast results)
+    let newHoverId: string | null = null;
+    for (const h of intersections) {
+      if (isGhostOrGizmo(h.object)) continue;
+      const id = findManualPlacementId(h.object);
+      if (id) { newHoverId = id; break; }
+    }
+
+    if (newHoverId !== hoveredPlacementId) {
+      // Clear old highlight
+      if (hoveredObject) {
+        hoveredObject.traverse((child) => {
+          if ((child as any).isMesh && child.userData.__originalEmissive !== undefined) {
+            (child as any).material.emissive?.setHex(child.userData.__originalEmissive);
+            delete child.userData.__originalEmissive;
+          }
+        });
+      }
+      // Apply new highlight
+      if (newHoverId && scn) {
+        const group = scn.getObjectByName(`manual-placement-${newHoverId}`);
+        if (group) {
+          group.traverse((child) => {
+            if ((child as any).isMesh && (child as any).material?.emissive) {
+              child.userData.__originalEmissive = (child as any).material.emissive.getHex();
+              (child as any).material.emissive.setHex(0xff4444);
+            }
+          });
+          hoveredObject = group;
+        }
+      } else {
+        hoveredObject = null;
+      }
+      hoveredPlacementId = newHoverId;
+    }
+
+    _moveCount++;
+    if (_moveCount % 30 === 0) {
+      console.log(`[Ghost] onPointerMove=${(performance.now() - _t0).toFixed(1)}ms (sample #${_moveCount})`);
+    }
   }
 
   function onPointerDown(event: PointerEvent): void {
-    // Left-click only
     if (event.button !== 0) return;
+
+    // ALWAYS stop the camera controller from seeing clicks in placement mode,
+    // even on invalid surfaces. Otherwise it switches to third-person + pointer lock.
+    event.stopImmediatePropagation();
+    event.preventDefault();
+
     if (!valid) return;
 
     const yaw = yawFromQuaternion(ghostQuat);
@@ -265,9 +366,47 @@
     onPlace(ghostX, ghostZ, yaw, facing);
   }
 
+  /** Block the click event from reaching the camera controller (which listens on "click") */
+  function onClickCapture(event: MouseEvent): void {
+    event.stopImmediatePropagation();
+    event.preventDefault();
+  }
+
+  function onContextMenu(event: MouseEvent): void {
+    event.preventDefault();
+
+    const ren = getRenderer();
+    if (!ren?.domElement) return;
+    const rect = ren.domElement.getBoundingClientRect();
+    pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+    const cam = getCamera();
+    const scn = getScene();
+    if (!cam || !scn) return;
+
+    raycaster.setFromCamera(pointer, cam);
+    const intersections = raycaster.intersectObjects(scn.children, true);
+
+    // Walk through intersections looking for a manually placed object
+    for (const hit of intersections) {
+      const placementId = findManualPlacementId(hit.object);
+      if (placementId) {
+        onDelete(placementId);
+        return;
+      }
+    }
+  }
+
   function onKeyDown(event: KeyboardEvent): void {
     if (event.key === "Escape") {
       museum3dEditorState.stopPlacement();
+    }
+
+    // Ctrl+Z / Cmd+Z to undo last placement
+    if (event.key === "z" && (event.ctrlKey || event.metaKey) && !event.shiftKey) {
+      event.preventDefault();
+      onUndo();
     }
   }
 
@@ -279,27 +418,44 @@
     const ren = getRenderer();
     domEl = ren?.domElement ?? null;
     if (!domEl) return;
+    // Use capture phase so placement clicks fire BEFORE the camera controller.
+    // Must intercept BOTH pointerdown AND click — the camera controller listens
+    // on "click" (not pointerdown), and stopping pointerdown doesn't prevent click.
     domEl.addEventListener("pointermove", onPointerMove);
-    domEl.addEventListener("pointerdown", onPointerDown);
+    domEl.addEventListener("pointerdown", onPointerDown, true);
+    domEl.addEventListener("click", onClickCapture, true);
+    domEl.addEventListener("contextmenu", onContextMenu, true);
     window.addEventListener("keydown", onKeyDown);
   });
 
   onDestroy(() => {
+    // Clear any active hover highlight
+    if (hoveredObject) {
+      hoveredObject.traverse((child) => {
+        if ((child as any).isMesh && child.userData.__originalEmissive !== undefined) {
+          (child as any).material.emissive?.setHex(child.userData.__originalEmissive);
+          delete child.userData.__originalEmissive;
+        }
+      });
+      hoveredObject = null;
+      hoveredPlacementId = null;
+    }
+
     if (domEl) {
       domEl.removeEventListener("pointermove", onPointerMove);
-      domEl.removeEventListener("pointerdown", onPointerDown);
+      domEl.removeEventListener("pointerdown", onPointerDown, true);
+      domEl.removeEventListener("click", onClickCapture, true);
+      domEl.removeEventListener("contextmenu", onContextMenu, true);
     }
     window.removeEventListener("keydown", onKeyDown);
     ghostMaterial.dispose();
     ghostGeometry.dispose();
   });
 
-  // ── Mark the ghost mesh so raycasting can skip it ──
+  // ── Mark the ghost group so raycasting can skip it ──
 
   function onGhostCreate(ref: Object3D): void {
-    ghostMesh = ref;
     ref.userData.__isPlacementGhost = true;
-    // Also mark all descendants
     ref.traverse((child) => {
       child.userData.__isPlacementGhost = true;
     });
@@ -307,12 +463,19 @@
 </script>
 
 {#if visible}
-<T.Mesh
-  oncreate={onGhostCreate}
-  geometry={ghostGeometry}
-  material={ghostMaterial}
-  position={[ghostX, ghostY, ghostZ]}
-  quaternion={ghostQuat}
-  scale={[def.scale, def.scale, def.scale]}
-/>
+  <T.Group
+    oncreate={onGhostCreate}
+    position={[ghostX, ghostY, ghostZ]}
+    quaternion={ghostQuat}
+  >
+    {#if ghostModel}
+      <T is={ghostModel} />
+    {:else}
+      <T.Mesh
+        geometry={ghostGeometry}
+        material={ghostMaterial}
+        scale={[def.scale, def.scale, def.scale]}
+      />
+    {/if}
+  </T.Group>
 {/if}

@@ -525,10 +525,12 @@
     }
   }
 
-  async function handleSelectDeck(deckId: string) {
+  async function handleSelectDeck(deckId: string, vtgFamily?: string | null) {
     selectedDeckId = deckId;
+    selectedVtgFamily = vtgFamily ?? null;
     deckSequences = [];
     persist(STORAGE_KEY_SELECTED_DECK, deckId);
+    persist(STORAGE_KEY_VTG_FAMILY, vtgFamily ?? null);
     pushNavState();
     await handleSelectDeckSequences(deckId);
   }
@@ -589,6 +591,7 @@
           {showTKA}
           {showWord}
           {includeStartPosition}
+          vtgFamilyId={selectedVtgFamily}
           onBackToCollections={handleBackToCollections}
           onSelectDeck={handleSelectDeck}
           onSelectSequence={handleSelectSequence}

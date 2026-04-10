@@ -80,6 +80,13 @@ export interface UserFeatureOverrides {
 const CORE_USER_MODULES: ModuleId[] = ["create", "browse", "settings", "feedback"];
 
 /**
+ * Tabs that are still in development — visible to admins only,
+ * regardless of the parent module's role.
+ * Format: "moduleId:tabId"
+ */
+const ADMIN_ONLY_TABS: string[] = ["create:assemble", "create:fuse"];
+
+/**
  * Get the default role for a feature
  * Used by FeatureFlagService to determine minimum role requirements
  *
@@ -102,9 +109,16 @@ export function getDefaultFeatureRole(
     }
   }
 
-  // Tabs inherit parent module role if available
-  if (featureId.startsWith("tab:") && parentModuleRole) {
-    return parentModuleRole;
+  // Check if this tab is explicitly admin-only (in development)
+  if (featureId.startsWith("tab:")) {
+    const tabKey = featureId.replace("tab:", "");
+    if (ADMIN_ONLY_TABS.includes(tabKey)) {
+      return "admin";
+    }
+    // Otherwise inherit parent module role
+    if (parentModuleRole) {
+      return parentModuleRole;
+    }
   }
 
   // Default to admin (secure by default)

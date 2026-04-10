@@ -15,15 +15,6 @@
 	const SLICE_OPTIONS = ['Halved', 'Quartered'] as const;
 	const GRID_OPTIONS = ['Diamond', 'Box'] as const;
 
-	// Derive available values from deck data
-	$effect(() => {
-		console.log('[ShapeStep] decks count:', decks.length);
-		if (decks.length > 0) {
-			console.log('[ShapeStep] first deck loopType:', JSON.stringify(decks[0]?.loopType));
-			console.log('[ShapeStep] all loopTypes:', [...new Set(decks.map(d => d.loopType))]);
-		}
-	});
-
 	let availableLoopTypes = $derived(
 		LOOP_TYPE_ORDER.filter((lt) =>
 			decks.some((d) => d.loopType?.toLowerCase() === lt.toLowerCase())

@@ -757,7 +757,8 @@
     <div class="beat-cap-nudge-overlay">
       <AuthNudge
         trigger={beatCapNudgeTrigger}
-        onCreateAccount={() => { showBeatCapNudge = false; authDrawerState.show(); }}
+        onCreateAccount={() => { showBeatCapNudge = false; authDrawerState.show("signup"); }}
+        onLogin={() => { showBeatCapNudge = false; authDrawerState.show("signin"); }}
         onDismiss={() => { showBeatCapNudge = false; }}
       />
     </div>

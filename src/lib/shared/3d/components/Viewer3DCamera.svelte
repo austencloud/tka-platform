@@ -17,9 +17,12 @@
 
   const viewer3DState = getViewer3DContext();
 
-  // Grid center in 3D world space (shoulder height + gridOffset in -Z with facingAngle=0)
-  const GRID_CENTER_Y = 1.55;
-  const GRID_CENTER_Z = -0.3;
+  // Grid center in 3D world space.
+  // Y=0 is shoulder height (proportions reference). Grid T.Group is at
+  // position.z = gridOffset = +0.3 inside PerformerRig (which has no rotation
+  // in wall mode). Positive Z is behind the GLTF model that faces -Z.
+  const GRID_CENTER_Y = 0;
+  const GRID_CENTER_Z = 0.3;
   const GRID_RADIUS_3D = 0.52; // meters
   const FOV_DEG = 50;
 
@@ -29,7 +32,7 @@
    */
   function computeAlignedPosition(): { position: { x: number; y: number; z: number }; target: { x: number; y: number; z: number } } {
     const target = { x: 0, y: GRID_CENTER_Y, z: GRID_CENTER_Z };
-    const fallback = { position: { x: 0, y: 1.59, z: -2.5 }, target };
+    const fallback = { position: { x: 0, y: 0, z: -2.5 }, target };
 
     if (typeof document === "undefined") return fallback;
 
@@ -83,7 +86,7 @@
     const cameraYOffset = yOffsetPct * visibleHeightAtDist;
 
     const cameraY = GRID_CENTER_Y + cameraYOffset;
-    // Camera behind avatar = -Z direction
+    // Camera in front of avatar (facing -Z toward the performer)
     const cameraZ = GRID_CENTER_Z - dist;
 
     return {

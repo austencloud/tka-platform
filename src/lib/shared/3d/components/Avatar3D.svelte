@@ -55,6 +55,8 @@
   import { ClavicleRaiser } from "../services/implementations/ClavicleRaiser";
   import { SpineTwister } from "../services/implementations/SpineTwister";
   import { GripType } from "$lib/shared/3d/domain/models/GripPose";
+  import { CollisionDetector } from "../services/implementations/CollisionDetector";
+  import type { BodySnapshot } from "../services/contracts/ICollisionDetector";
 
   // Default Z position for avatars
   // Placing avatar at z=0 (same as grid plane) so hands are exactly at prop positions
@@ -102,6 +104,12 @@
     bluePropAnchorRef?: import("three").Group;
     /** PropAnchor group ref for red hand IK target (from PerformerRig) */
     redPropAnchorRef?: import("three").Group;
+    /** Disable spine twist (dual-wheel: wide lateral targets twist the torso/feet) */
+    disableSpineTwist?: boolean;
+    /** Current beat index for collision detection logging */
+    beatIndex?: number;
+    /** 0-1 progress within current beat for collision detection logging */
+    beatProgress?: number;
   }
 
   let {
@@ -128,6 +136,9 @@
     onRootMotion,
     bluePropAnchorRef,
     redPropAnchorRef,
+    disableSpineTwist = false,
+    beatIndex = 0,
+    beatProgress = 0,
   }: Props = $props();
 
   // Services (manually instantiated to ensure shared skeleton instance)
@@ -139,6 +150,16 @@
   let rootMotionExtractor: IRootMotionExtractor | null = null;
   let footPlanter: IFootPlanter | null = null;
   let fingerAnimator: FingerAnimator | null = null;
+
+  // Collision detection — logs when props/arms clip through the avatar body
+  const collisionDetector = new CollisionDetector();
+  const _boneVecs = {
+    head: new Vector3(), neck: new Vector3(),
+    spine2: new Vector3(), spine1: new Vector3(), hips: new Vector3(),
+    leftShoulder: new Vector3(), rightShoulder: new Vector3(),
+    leftElbow: new Vector3(), rightElbow: new Vector3(),
+    leftHand: new Vector3(), rightHand: new Vector3(),
+  };
 
   let servicesReady = $state(false);
   let modelLoaded = $state(false);
@@ -575,6 +596,12 @@
 
     if (!servicesReady || !animationService || useProceduralFallback) return;
 
+    // Disable spine twist in dual-wheel mode — wide lateral IK targets
+    // twist the torso and shift the feet on the ground.
+    if ('setSpineTwistEnabled' in animationService) {
+      (animationService as any).setSpineTwistEnabled(!disableSpineTwist);
+    }
+
     // 1. Full-body animation (idle/walk/jump/fall/land with arm swing, hip sway)
     // Only runs for locomotion-enabled avatars (player), not exhibit performers
     if (enableLocomotion && locomotionAnimator) {
@@ -685,6 +712,35 @@
     animationService.setPropsAndBlend(blueWorldProp, redWorldProp);
     animationService.update(delta);
 
+    // 2b. Collision detection — run after IK so bones are at final positions
+    if (collisionDetector.enabled && skeletonService) {
+      const state = skeletonService.getState();
+      const bones = state.bones;
+      const leftChain = skeletonService.getLeftArmChain();
+      const rightChain = skeletonService.getRightArmChain();
+
+      // Snapshot all bone world positions (reuses pre-allocated vectors)
+      bones.get("Head")?.getWorldPosition(_boneVecs.head);
+      bones.get("Neck")?.getWorldPosition(_boneVecs.neck);
+      bones.get("Spine2")?.getWorldPosition(_boneVecs.spine2);
+      bones.get("Spine1")?.getWorldPosition(_boneVecs.spine1);
+      bones.get("Hips")?.getWorldPosition(_boneVecs.hips);
+      bones.get("LeftShoulder")?.getWorldPosition(_boneVecs.leftShoulder);
+      bones.get("RightShoulder")?.getWorldPosition(_boneVecs.rightShoulder);
+      leftChain?.middle.getWorldPosition(_boneVecs.leftElbow);
+      rightChain?.middle.getWorldPosition(_boneVecs.rightElbow);
+      leftChain?.effector.getWorldPosition(_boneVecs.leftHand);
+      rightChain?.effector.getWorldPosition(_boneVecs.rightHand);
+
+      collisionDetector.detect(
+        _boneVecs as BodySnapshot,
+        blueWorldProp?.worldPosition ?? null,
+        redWorldProp?.worldPosition ?? null,
+        beatIndex,
+        beatProgress
+      );
+    }
+
     // 3. Finger grips
     if (fingerAnimator?.isReady()) {
       const leftGrip = bluePropState ? GripType.SQUARE : GripType.IDLE;
@@ -735,6 +791,8 @@
     if (skeletonService && !useProceduralFallback) {
       skeletonService.dispose();
     }
+
+    collisionDetector.dispose();
   });
 </script>
 

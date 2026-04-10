@@ -1,3 +1,10 @@
+<script module lang="ts">
+  // Module-scoped GLTFLoader — shared across all instances so models survive
+  // realm navigation/remount without re-fetching from the network.
+  import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+  export const gltfLoader = new GLTFLoader();
+</script>
+
 <script lang="ts">
   /**
    * WorldSceneContent
@@ -76,7 +83,6 @@
     type Scene,
     type Material,
   } from "three";
-  import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
   // Terrain texturing system
   // Texture-based approach using real PBR textures from AmbientCG
@@ -221,7 +227,6 @@
 
   // Campground objects placed in spawn clearing
   let campgroundObjects: Object3D[] = [];
-  const gltfLoader = new GLTFLoader();
 
   // Museum state (created once, only used when museum realm is active)
   const isMuseumRealm = $derived(activeConfig.id === "museum-grounds");

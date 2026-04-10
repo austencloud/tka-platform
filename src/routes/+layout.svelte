@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Snippet, Component } from "svelte";
   import { onMount, setContext } from "svelte";
-  import { onNavigate } from "$app/navigation";
+  import { afterNavigate, onNavigate } from "$app/navigation";
   import { detectSiteMode, type SiteMode } from "../config/domains";
   import { consumeSkipNextViewTransition } from "$lib/shared/transitions/sequence-drawer-state.svelte";
   import "../app.css";
@@ -336,6 +336,29 @@
     return () => {
       appCleanup?.();
     };
+  });
+
+  // Upgrade from landing mode → app mode when navigating to an app route.
+  // This happens when a user scans a QR code (/p/[code] = landing mode),
+  // then dismisses the viewer and lands on an app route like /browse/gallery.
+  // Without this, auth/DI/Firestore are never initialized and the app
+  // shows "Warming up..." forever.
+  let appModeUpgradeStarted = false;
+  afterNavigate(() => {
+    if (siteMode !== "landing" || appModeUpgradeStarted) return;
+    const newMode = detectSiteMode();
+    if (newMode === "app") {
+      appModeUpgradeStarted = true;
+      siteMode = "app";
+      initAppMode()
+        .then((cleanup) => {
+          appCleanup = cleanup;
+        })
+        .catch((error) => {
+          console.error("[Layout] App mode upgrade failed:", error);
+          containerError = String(error);
+        });
+    }
   });
 </script>
 

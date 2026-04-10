@@ -8,11 +8,17 @@
   All loading is tracked by Three.js DefaultLoadingManager, which
   useProgress() reads globally. No manual progress reporting needed.
 -->
+<script module lang="ts">
+  import { MuseumModelLoader } from "../../services/implementations/MuseumModelLoader";
+
+  // One loader shared across all mounts and HMR cycles. The internal
+  // GLB cache survives remounts so furniture models are never re-fetched.
+  const loader = new MuseumModelLoader();
+</script>
+
 <script lang="ts">
   import { T } from "@threlte/core";
-  import { onDestroy } from "svelte";
   import type { Group } from "three";
-  import { MuseumModelLoader } from "../../services/implementations/MuseumModelLoader";
   import type { MuseumModelRole } from "../../services/contracts/IMuseumModelLoader";
 
   interface FurniturePlacement {
@@ -29,8 +35,6 @@
   }
 
   let { placements, tileSize }: Props = $props();
-
-  const loader = new MuseumModelLoader();
 
   interface ResolvedPlacement {
     id: string;
@@ -90,10 +94,6 @@
 
   loadAllModels().catch((err) => {
     console.error("[MuseumFurniture] Failed to load models:", err);
-  });
-
-  onDestroy(() => {
-    loader.dispose();
   });
 </script>
 

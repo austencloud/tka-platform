@@ -142,7 +142,64 @@ export class SequenceConverter implements ISequenceConverter {
       return this.beatDataToConfigs(step0, plane, modeConfig);
     }
 
+    // Fall back to legacy startingPosition field
+    if (sequence.startingPosition) {
+      return this.beatDataToConfigs(sequence.startingPosition, plane, modeConfig);
+    }
+
+    // Last resort: derive a static start config from the first motion step's
+    // starting angles. Without this, stepConfigs has no start entry at index 0
+    // and the puppet sync loop's direct mapping (beat N → index N) is off by one.
+    const firstStep = sequence.steps?.find((beat) => beat.stepNumber !== 0);
+    if (firstStep) {
+      return this.deriveStartConfigFromStep(firstStep, plane, modeConfig);
+    }
+
     return null;
+  }
+
+  /**
+   * Derive a static start position config from a motion step's starting angles.
+   * The prop sits at startLocation with startOrientation and doesn't move.
+   */
+  private deriveStartConfigFromStep(
+    step: StepData | StartPositionData,
+    plane: Plane,
+    modeConfig?: PlaneModeConfig
+  ): StepMotionConfigs {
+    const blueMotion = step.motions?.[MotionColor.BLUE];
+    const redMotion = step.motions?.[MotionColor.RED];
+
+    const bluePlane = modeConfig?.bluePlane ?? plane;
+    const redPlane = modeConfig?.redPlane ?? plane;
+
+    return {
+      stepNumber: 0,
+      blue: blueMotion
+        ? {
+            plane: bluePlane,
+            startLocation: blueMotion.startLocation,
+            endLocation: blueMotion.startLocation, // static — no movement
+            motionType: MotionType.STATIC,
+            rotationDirection: RotationDirection.NO_ROTATION,
+            turns: 0,
+            startOrientation: blueMotion.startOrientation,
+            endOrientation: blueMotion.startOrientation,
+          }
+        : null,
+      red: redMotion
+        ? {
+            plane: redPlane,
+            startLocation: redMotion.startLocation,
+            endLocation: redMotion.startLocation,
+            motionType: MotionType.STATIC,
+            rotationDirection: RotationDirection.NO_ROTATION,
+            turns: 0,
+            startOrientation: redMotion.startOrientation,
+            endOrientation: redMotion.startOrientation,
+          }
+        : null,
+    };
   }
 
   /**

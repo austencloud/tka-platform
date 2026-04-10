@@ -37,8 +37,8 @@ export interface PropTipConfig {
 
 const STAFF_TIP_POINTS: PropTipConfig = {
   points: [
-    { dx: -150, dy: 0 },
-    { dx: 150, dy: 0 },
+    { dx: -135, dy: 0 },
+    { dx: 135, dy: 0 },
   ],
 };
 
@@ -63,11 +63,11 @@ const BIGCLUB_TIP_POINTS: PropTipConfig = {
 
 const FAN_TIP_POINTS: PropTipConfig = {
   points: [
-    { dx: 77, dy: -92 },
-    { dx: 109, dy: -51 },
-    { dx: 120, dy: 0 },
-    { dx: 109, dy: 51 },
-    { dx: 77, dy: 92 },
+    { dx: 67, dy: -80 },
+    { dx: 95, dy: -45 },
+    { dx: 105, dy: 0 },
+    { dx: 95, dy: 45 },
+    { dx: 67, dy: 80 },
   ],
 };
 

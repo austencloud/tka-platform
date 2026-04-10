@@ -72,10 +72,13 @@ cat > .release-changelog.json << 'EOF'
 ]
 EOF
 
-node scripts/release.js --confirm --changelog .release-changelog.json --highlights 1,3
+node scripts/release.js --confirm --changelog .release-changelog.json --highlights 1,3 --version X.Y.Z --from-main
 ```
 
-The `--highlights` flag selects which items appear in "What's New" modal (1-based indices).
+**REQUIRED flags:**
+- `--version X.Y.Z` — always specify explicitly. The script's auto-suggestion is often wrong.
+- `--from-main` — we release from main, not develop.
+- `--highlights` — 1-based indices for "What's New" modal items.
 
 ## Step 6: Push and Create GitHub Release
 

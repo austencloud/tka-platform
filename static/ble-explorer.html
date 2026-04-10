@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BLE Poi Explorer — Read-Only Recon</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Courier New', monospace;
+      background: #0a0a0a;
+      color: #00ff88;
+      padding: 24px;
+      line-height: 1.6;
+    }
+    h1 { color: #fff; font-size: 20px; margin-bottom: 4px; }
+    .subtitle { color: #666; font-size: 13px; margin-bottom: 24px; }
+    .warning {
+      background: #1a1a00;
+      border: 1px solid #ffaa00;
+      color: #ffaa00;
+      padding: 12px 16px;
+      border-radius: 6px;
+      margin-bottom: 24px;
+      font-size: 13px;
+    }
+    button {
+      background: #00ff88;
+      color: #0a0a0a;
+      border: none;
+      padding: 10px 24px;
+      border-radius: 6px;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-right: 8px;
+      margin-bottom: 8px;
+    }
+    button:hover { background: #00cc6a; }
+    button:disabled { background: #333; color: #666; cursor: not-allowed; }
+    button.disconnect { background: #ff4444; color: #fff; }
+    button.disconnect:hover { background: #cc3333; }
+    #log {
+      background: #111;
+      border: 1px solid #222;
+      border-radius: 6px;
+      padding: 16px;
+      margin-top: 16px;
+      max-height: 70vh;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      font-size: 13px;
+    }
+    .log-info { color: #00ff88; }
+    .log-uuid { color: #4488ff; }
+    .log-value { color: #ffaa00; }
+    .log-error { color: #ff4444; }
+    .log-header { color: #fff; font-weight: bold; margin-top: 12px; }
+    .log-known { color: #ff88ff; }
+    .log-dim { color: #555; }
+    .controls { margin-bottom: 16px; }
+    .status {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      margin-left: 12px;
+    }
+    .status-disconnected { background: #331111; color: #ff4444; }
+    .status-connected { background: #113311; color: #00ff88; }
+    .status-scanning { background: #333311; color: #ffaa00; }
+  </style>
+</head>
+<body>
+  <h1>BLE Poi Explorer <span id="status" class="status status-disconnected">disconnected</span></h1>
+  <p class="subtitle">Read-only reconnaissance. No writes. Your poi are safe.</p>
+
+  <div class="warning">
+    READ-ONLY MODE — This page will NEVER write data to your device.
+    All operations are passive discovery (scan, connect, read characteristics).
+  </div>
+
+  <div class="controls">
+    <button id="scanBtn" onclick="startScan()">Scan for Poi</button>
+    <button id="deepBtn" onclick="deepEnumerate()" disabled>Deep Enumerate</button>
+    <button id="disconnectBtn" class="disconnect" onclick="doDisconnect()" disabled>Disconnect</button>
+    <button onclick="copyLog()">Copy Log</button>
+    <button onclick="clearLog()">Clear</button>
+  </div>
+
+  <div id="log"></div>
+
+  <script>
+    // Known BLE service UUIDs for identification
+    const KNOWN_SERVICES = {
+      '6e400001-b5a3-f393-e0a9-e50e24dcca9e': 'Nordic UART Service (same as Open-Pixel-Poi!)',
+      '0000180a-0000-1000-8000-00805f9b34fb': 'Device Information Service',
+      '0000180f-0000-1000-8000-00805f9b34fb': 'Battery Service',
+      '00001800-0000-1000-8000-00805f9b34fb': 'Generic Access',
+      '00001801-0000-1000-8000-00805f9b34fb': 'Generic Attribute',
+      '0000fff0-0000-1000-8000-00805f9b34fb': 'Custom Service (0xFFF0)',
+      '0000ffe0-0000-1000-8000-00805f9b34fb': 'Custom Service (0xFFE0)',
+    };
+
+    const KNOWN_CHARACTERISTICS = {
+      '6e400002-b5a3-f393-e0a9-e50e24dcca9e': 'Nordic UART RX (write to device)',
+      '6e400003-b5a3-f393-e0a9-e50e24dcca9e': 'Nordic UART TX (read from device)',
+      '6e400004-b5a3-f393-e0a9-e50e24dcca9e': 'Nordic UART Notify',
+      '00002a29-0000-1000-8000-00805f9b34fb': 'Manufacturer Name',
+      '00002a24-0000-1000-8000-00805f9b34fb': 'Model Number',
+      '00002a25-0000-1000-8000-00805f9b34fb': 'Serial Number',
+      '00002a26-0000-1000-8000-00805f9b34fb': 'Firmware Revision',
+      '00002a27-0000-1000-8000-00805f9b34fb': 'Hardware Revision',
+      '00002a28-0000-1000-8000-00805f9b34fb': 'Software Revision',
+      '00002a19-0000-1000-8000-00805f9b34fb': 'Battery Level',
+      '00002a00-0000-1000-8000-00805f9b34fb': 'Device Name',
+      '00002a01-0000-1000-8000-00805f9b34fb': 'Appearance',
+    };
+
+    const PROPERTY_NAMES = ['broadcast', 'read', 'writeWithoutResponse', 'write', 'notify', 'indicate', 'authenticatedSignedWrites'];
+
+    let device = null;
+    let server = null;
+    const logEl = document.getElementById('log');
+
+    function log(text, cls = 'log-info') {
+      const span = document.createElement('span');
+      span.className = cls;
+      span.textContent = text + '\n';
+      logEl.appendChild(span);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    function setStatus(text, cls) {
+      const el = document.getElementById('status');
+      el.textContent = text;
+      el.className = `status status-${cls}`;
+    }
+
+    function formatUUID(uuid) {
+      return uuid.length > 8 ? uuid : `0x${uuid.toUpperCase()}`;
+    }
+
+    function identifyService(uuid) {
+      const normalized = uuid.toLowerCase();
+      return KNOWN_SERVICES[normalized] || null;
+    }
+
+    function identifyCharacteristic(uuid) {
+      const normalized = uuid.toLowerCase();
+      return KNOWN_CHARACTERISTICS[normalized] || null;
+    }
+
+    function getProperties(char) {
+      const props = [];
+      for (const p of PROPERTY_NAMES) {
+        if (char.properties[p]) props.push(p);
+      }
+      return props;
+    }
+
+    function bytesToHex(buffer) {
+      return Array.from(new Uint8Array(buffer))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join(' ');
+    }
+
+    function bytesToAscii(buffer) {
+      const bytes = new Uint8Array(buffer);
+      let str = '';
+      for (const b of bytes) {
+        str += (b >= 32 && b < 127) ? String.fromCharCode(b) : '.';
+      }
+      return str;
+    }
+
+    async function startScan() {
+      if (!navigator.bluetooth) {
+        log('Web Bluetooth not supported in this browser. Use Chrome.', 'log-error');
+        return;
+      }
+
+      try {
+        setStatus('scanning...', 'scanning');
+        log('\n=== SCANNING FOR BLE DEVICES ===', 'log-header');
+        log('A browser dialog will appear. Select your poi.', 'log-dim');
+
+        // Request device with broad filters to find anything
+        device = await navigator.bluetooth.requestDevice({
+          acceptAllDevices: true,
+          optionalServices: [
+            '6e400001-b5a3-f393-e0a9-e50e24dcca9e', // Nordic UART
+            'device_information',                       // 0x180A
+            'battery_service',                          // 0x180F
+            'generic_access',                           // 0x1800
+            0xFFF0, 0xFFE0, 0xFFF1, 0xFFE1,           // Common custom services
+          ],
+        });
+
+        log(`\nDevice found: ${device.name || '(unnamed)'}`, 'log-header');
+        log(`  ID: ${device.id}`, 'log-dim');
+
+        device.addEventListener('gattserverdisconnected', () => {
+          log('\n--- Device disconnected ---', 'log-error');
+          setStatus('disconnected', 'disconnected');
+          document.getElementById('deepBtn').disabled = true;
+          document.getElementById('disconnectBtn').disabled = true;
+        });
+
+        log('\nConnecting to GATT server...', 'log-info');
+        server = await device.gatt.connect();
+        setStatus('connected', 'connected');
+        log('Connected!', 'log-info');
+
+        document.getElementById('deepBtn').disabled = false;
+        document.getElementById('disconnectBtn').disabled = false;
+
+        // Auto-enumerate
+        await enumerate();
+
+      } catch (err) {
+        if (err.name === 'NotFoundError') {
+          log('Scan cancelled by user.', 'log-dim');
+        } else {
+          log(`Scan error: ${err.message}`, 'log-error');
+        }
+        setStatus('disconnected', 'disconnected');
+      }
+    }
+
+    async function enumerate() {
+      if (!server || !server.connected) {
+        log('Not connected.', 'log-error');
+        return;
+      }
+
+      try {
+        log('\n=== ENUMERATING SERVICES ===', 'log-header');
+        const services = await server.getPrimaryServices();
+        log(`Found ${services.length} service(s)\n`, 'log-info');
+
+        for (const service of services) {
+          const uuid = service.uuid;
+          const known = identifyService(uuid);
+
+          log(`\nSERVICE: ${formatUUID(uuid)}`, 'log-uuid');
+          if (known) log(`  IDENTIFIED: ${known}`, 'log-known');
+
+          try {
+            const chars = await service.getCharacteristics();
+            log(`  ${chars.length} characteristic(s):`, 'log-info');
+
+            for (const char of chars) {
+              const cUuid = char.uuid;
+              const cKnown = identifyCharacteristic(cUuid);
+              const props = getProperties(char);
+
+              log(`\n    CHAR: ${formatUUID(cUuid)}`, 'log-uuid');
+              if (cKnown) log(`      IDENTIFIED: ${cKnown}`, 'log-known');
+              log(`      Properties: [${props.join(', ')}]`, 'log-info');
+
+              // Only READ if the characteristic supports it — never write
+              if (char.properties.read) {
+                try {
+                  const value = await char.readValue();
+                  const hex = bytesToHex(value.buffer);
+                  const ascii = bytesToAscii(value.buffer);
+                  log(`      Value (hex): ${hex}`, 'log-value');
+                  log(`      Value (ascii): ${ascii}`, 'log-value');
+                  log(`      Value (length): ${value.byteLength} bytes`, 'log-dim');
+                } catch (readErr) {
+                  log(`      Read failed: ${readErr.message}`, 'log-dim');
+                }
+              }
+            }
+          } catch (charErr) {
+            log(`  Could not enumerate characteristics: ${charErr.message}`, 'log-error');
+          }
+        }
+
+        log('\n=== ENUMERATION COMPLETE ===', 'log-header');
+        log('Review the UUIDs above. If you see Nordic UART (6e4000xx-b5a3-...),', 'log-info');
+        log('these poi likely speak the same protocol as Open-Pixel-Poi.', 'log-info');
+
+      } catch (err) {
+        log(`Enumeration error: ${err.message}`, 'log-error');
+      }
+    }
+
+    async function deepEnumerate() {
+      if (!server || !server.connected) {
+        log('Not connected.', 'log-error');
+        return;
+      }
+
+      log('\n=== DEEP ENUMERATION (descriptors + notify listen) ===', 'log-header');
+
+      try {
+        const services = await server.getPrimaryServices();
+
+        for (const service of services) {
+          const chars = await service.getCharacteristics();
+
+          for (const char of chars) {
+            const props = getProperties(char);
+
+            // Read descriptors
+            try {
+              const descriptors = await char.getDescriptors();
+              if (descriptors.length > 0) {
+                log(`\n    CHAR ${formatUUID(char.uuid)} descriptors:`, 'log-uuid');
+                for (const desc of descriptors) {
+                  log(`      Descriptor: ${formatUUID(desc.uuid)}`, 'log-info');
+                  try {
+                    const val = await desc.readValue();
+                    const hex = bytesToHex(val.buffer);
+                    const ascii = bytesToAscii(val.buffer);
+                    log(`        Value (hex): ${hex}`, 'log-value');
+                    log(`        Value (ascii): ${ascii}`, 'log-value');
+                  } catch (e) {
+                    log(`        Read failed: ${e.message}`, 'log-dim');
+                  }
+                }
+              }
+            } catch (e) {
+              // Descriptor enumeration not supported for this char
+            }
+
+            // Listen to notifications for 3 seconds (read-only, just observing)
+            if (char.properties.notify) {
+              try {
+                log(`\n    Listening for notifications on ${formatUUID(char.uuid)} (3s)...`, 'log-info');
+                let notifyCount = 0;
+
+                const handler = (event) => {
+                  const value = event.target.value;
+                  const hex = bytesToHex(value.buffer);
+                  const ascii = bytesToAscii(value.buffer);
+                  notifyCount++;
+                  log(`      Notification #${notifyCount}: (hex) ${hex}`, 'log-value');
+                  log(`                        (ascii) ${ascii}`, 'log-value');
+                };
+
+                char.addEventListener('characteristicvaluechanged', handler);
+                await char.startNotifications();
+
+                await new Promise(r => setTimeout(r, 3000));
+
+                await char.stopNotifications();
+                char.removeEventListener('characteristicvaluechanged', handler);
+
+                if (notifyCount === 0) {
+                  log(`      No notifications received in 3s`, 'log-dim');
+                } else {
+                  log(`      Received ${notifyCount} notification(s)`, 'log-info');
+                }
+              } catch (e) {
+                log(`      Notify listen failed: ${e.message}`, 'log-dim');
+              }
+            }
+          }
+        }
+
+        log('\n=== DEEP ENUMERATION COMPLETE ===', 'log-header');
+      } catch (err) {
+        log(`Deep enumeration error: ${err.message}`, 'log-error');
+      }
+    }
+
+    function doDisconnect() {
+      if (device && device.gatt.connected) {
+        device.gatt.disconnect();
+        log('\nDisconnected by user.', 'log-info');
+      }
+      setStatus('disconnected', 'disconnected');
+      document.getElementById('deepBtn').disabled = true;
+      document.getElementById('disconnectBtn').disabled = true;
+    }
+
+    function copyLog() {
+      const text = logEl.innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        log('Log copied to clipboard.', 'log-dim');
+      });
+    }
+
+    function clearLog() {
+      logEl.innerHTML = '';
+    }
+
+    // Initial message
+    log('BLE Poi Explorer — Read-Only Recon Tool');
+    log('========================================\n');
+    log('This tool will NEVER write to your device.', 'log-value');
+    log('All operations: scan, connect, read, listen.\n');
+    log('Click "Scan for Poi" to begin.', 'log-info');
+    log('Chrome will show a device picker — select your Ignis Pixel Poi.', 'log-dim');
+    log('');
+    log('What we\'re looking for:', 'log-header');
+    log('  - Nordic UART Service (6e400001-b5a3-...) = Open-Pixel-Poi compatible', 'log-known');
+    log('  - Device Information Service (0x180A) = manufacturer/model/firmware', 'log-info');
+    log('  - Battery Service (0x180F) = battery level', 'log-info');
+    log('  - Unknown custom services = Ignis-proprietary protocol', 'log-uuid');
+  </script>
+</body>
+</html>

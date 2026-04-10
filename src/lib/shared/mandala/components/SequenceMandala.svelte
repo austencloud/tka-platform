@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { container } from "$lib/shared/di";
 	import { onMount } from "svelte";
+	import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
 	import type {
 		MandalaMode,
 		MandalaRenderOptions,
@@ -37,10 +38,14 @@
 		renderer = container.items.mandalaRenderer;
 	});
 
-	// Derive geometry from sequence steps — recomputes whenever sequence changes
+	// Derive geometry from sequence steps — recomputes whenever sequence or
+	// prop type changes, so switching from staff to fan redraws the mandala
+	// with the fan's 5-tip geometry instead of the staff's 2-tip geometry.
 	const paths = $derived.by((): MandalaPaths | null => {
 		if (!calculator || !sequence?.steps) return null;
-		return calculator.calculate(sequence.steps);
+		const blueProp = settingsService.settings.bluePropType;
+		const redProp = settingsService.settings.redPropType;
+		return calculator.calculate(sequence.steps, blueProp, redProp);
 	});
 
 	// Derive render options — card-back mode omits grid dots and background for a clean embed

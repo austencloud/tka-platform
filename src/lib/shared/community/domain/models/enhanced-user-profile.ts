@@ -40,6 +40,9 @@ export interface UserProfile {
     redPropType: PropType;
   } | null;
 
+  // Profile accent color (hex, e.g. "#8b5cf6") for avatar ring and cards
+  profileColor?: string;
+
   // Admin-related fields
   role?: UserRole;
   isDisabled?: boolean;

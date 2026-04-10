@@ -18,6 +18,8 @@ node_modules/
 /build/**
 # App-level build directories (landing, etc.)
 apps/*/build/**
+# Netlify (no longer used)
+.netlify/
 # Cloudflare Wrangler local dev files
 .wrangler/
 dist/

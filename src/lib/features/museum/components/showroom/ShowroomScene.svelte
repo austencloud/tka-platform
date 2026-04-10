@@ -1,20 +1,10 @@
-<script lang="ts">
-  import { T, useTask } from "@threlte/core";
+<script module lang="ts">
   import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
   import {
     BoxGeometry,
     MeshStandardMaterial,
     TextureLoader,
-    RepeatWrapping,
-    Vector3,
-    type Group,
-    type PerspectiveCamera,
   } from "three";
-  import type { AvatarState } from "$lib/shared/3d/camera/types";
-  import { CameraMode } from "$lib/shared/3d/camera/types";
-  import UnifiedCameraController from "$lib/shared/3d/camera/UnifiedCameraController.svelte";
-  import { cameraPreferences } from "$lib/shared/3d/camera/camera-preferences.svelte";
-  import MuseumMirror from "../game/MuseumMirror.svelte";
 
   // ── Model catalog ──
   const MODEL_BASE = "/assets/museum/models/furniture";
@@ -46,8 +36,30 @@
   const PEDESTAL_HEIGHT = 0.4;
   const MODEL_SCALE = 2.0; // Scale up Kenney models for visibility
 
-  // ── Load all models ──
+  // ── Shared loaders — instantiated once for the lifetime of the module ──
   const loader = new GLTFLoader();
+  const texLoader = new TextureLoader();
+
+  // ── Shared pedestal geometry and material — created once, reused across all mounts ──
+  const pedestalGeo = new BoxGeometry(1.2, PEDESTAL_HEIGHT, 1.2);
+  const pedestalMat = new MeshStandardMaterial({ color: "#3a3028", roughness: 0.85 });
+
+  export { MODEL_BASE, MODELS, COLS, SPACING, PEDESTAL_HEIGHT, MODEL_SCALE, loader, texLoader, pedestalGeo, pedestalMat };
+</script>
+
+<script lang="ts">
+  import { T, useTask } from "@threlte/core";
+  import {
+    RepeatWrapping,
+    type Group,
+  } from "three";
+  import type { AvatarState } from "$lib/shared/3d/camera/types";
+  import { CameraMode } from "$lib/shared/3d/camera/types";
+  import UnifiedCameraController from "$lib/shared/3d/camera/UnifiedCameraController.svelte";
+  import { cameraPreferences } from "$lib/shared/3d/camera/camera-preferences.svelte";
+  import MuseumMirror from "../game/MuseumMirror.svelte";
+
+  // ── Load all models ──
   interface LoadedItem {
     name: string;
     model: Group;
@@ -96,10 +108,6 @@
   const floorWidth = COLS * SPACING + 4;
   const floorDepth = Math.ceil(MODELS.length / COLS) * SPACING + 8;
 
-  // Pedestal geometry (shared)
-  const pedestalGeo = new BoxGeometry(1.2, PEDESTAL_HEIGHT, 1.2);
-  const pedestalMat = new MeshStandardMaterial({ color: "#3a3028", roughness: 0.85 });
-
   // ── Texture gallery (along left wall, X = -4) ──
   const TEX_BASE = "/assets/museum/textures";
   const TEXTURES = [
@@ -109,8 +117,6 @@
     { id: "woodfloor007", label: "Wood Floor", folder: "WoodFloor007_1K-JPG" },
     { id: "plaster001", label: "Plaster", folder: "Plaster001_1K-JPG" },
   ];
-
-  const texLoader = new TextureLoader();
 
   interface TextureSwatch {
     label: string;

@@ -20,11 +20,12 @@
   import Viewer3DCanvasRef from "./Viewer3DCanvasRef.svelte";
   import Viewer3DViewPresets from "./Viewer3DViewPresets.svelte";
   import Viewer3DGridPopover from "./Viewer3DGridPopover.svelte";
+  import Viewer3DGearPopover from "./Viewer3DGearPopover.svelte";
   import PlaneModeToggle from "./controls/PlaneModeToggle.svelte";
   import BeatPlaneStrip from "./controls/BeatPlaneStrip.svelte";
   import Viewer3DContextMenuHost from "./context-menu/Viewer3DContextMenuHost.svelte";
   import { getViewer3DContext } from "../context/viewer-3d-context";
-  import { PlaneMode } from "../domain/enums/PlaneMode";
+
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { CameraStateSnapshot } from "../domain/types/CameraStateSnapshot";
 
@@ -35,11 +36,13 @@
     bluePropType?: string | null;
     redPropType?: string | null;
     hideOverlays?: boolean;
+    fullScreen?: boolean;
+    onExitFullScreen?: () => void;
     onRendererReady?: (renderer: unknown) => void;
     onCameraStateChange?: (state: CameraStateSnapshot) => void;
   }
 
-  let { sequenceData, currentStep, isPlaying, hideOverlays = false, onCameraStateChange }: Props =
+  let { sequenceData, currentStep, isPlaying, hideOverlays = false, fullScreen = false, onExitFullScreen, onCameraStateChange }: Props =
     $props();
 
   const viewer3DState = getViewer3DContext();
@@ -52,22 +55,6 @@
     contextMenuHost?.openContextMenu(e.clientX, e.clientY);
   }
 
-  function handlePlaneModeChange(mode: PlaneMode) {
-    avatarState?.setPlaneMode(mode);
-
-    // Auto-snap to Side view when entering dual-wheel mode
-    if (mode === PlaneMode.DUAL_WHEEL) {
-      const D = 2.4;
-      const Y = 1.59;
-      const GZ = -0.3;
-      // Stage right = +X, looking at the performer's side profile
-      viewer3DState.setActiveCameraPreset("side");
-      viewer3DState.snapCameraTo(
-        { x: D, y: Y, z: GZ },
-        { x: 0, y: 1.55, z: GZ }
-      );
-    }
-  }
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -85,37 +72,69 @@
         {avatarState}
       />
     </Canvas>
-    {#if !hideOverlays}
-      <div class="top-controls">
-        <Viewer3DGridPopover {sequenceData} />
-        {#if avatarState}
-          <PlaneModeToggle
-            mode={avatarState.planeMode}
-            bluePlane={avatarState.currentBeatBluePlane}
-            redPlane={avatarState.currentBeatRedPlane}
-            sequenceBluePlane={avatarState.customBluePlane}
-            sequenceRedPlane={avatarState.customRedPlane}
-            currentBeatIndex={avatarState.currentStepIndex}
-            totalBeats={avatarState.totalSteps}
-            hasBeatOverrides={avatarState.hasBeatOverrides}
-            beatEditMode={avatarState.beatEditMode}
-            onModeChange={handlePlaneModeChange}
-            onHandPlaneChange={(hand, plane) => avatarState.setBeatHandPlane(avatarState.currentStepIndex, hand, plane)}
-            onSequenceHandPlaneChange={(hand, plane) => avatarState.setHandPlane(hand, plane)}
-            onBeatEditModeChange={(enabled) => avatarState.setBeatEditMode(enabled)}
-          />
-          {#if avatarState.planeMode === 'dual-wheel'}
-            <button
-              class="rotation-variant-btn"
-              onclick={() => avatarState.cycleRotationVariant()}
-              title="Cycle rotation axis variant"
-            >
-              {avatarState.rotationVariantLabel}
-            </button>
-          {/if}
-        {/if}
+    <!-- Progress bar at very bottom of 3D viewport -->
+    {#if sequenceData?.steps?.length}
+      {@const totalSteps = sequenceData.steps.length}
+      {@const progress = Math.min(Math.max(currentStep / totalSteps, 0), 1) * 100}
+      <div class="viewer-progress-bar">
+        <div class="viewer-progress-fill" style="width: {progress}%"></div>
+        {#each Array(totalSteps) as _, i}
+          <div
+            class="viewer-progress-tick"
+            class:past={currentStep >= i + 1}
+            style="left: {((i + 1) / totalSteps) * 100}%"
+          ></div>
+        {/each}
       </div>
-      <Viewer3DViewPresets />
+    {/if}
+    {#if !hideOverlays}
+      {#if fullScreen}
+        <!-- Full-screen: back button + controls in one header row -->
+        <!-- stopPropagation prevents clicks on controls from triggering tap-to-collapse -->
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
+        <div class="fullscreen-header" onclick={(e) => e.stopPropagation()} onpointerdown={(e) => e.stopPropagation()}>
+          <button
+            class="back-button"
+            onclick={() => onExitFullScreen?.()}
+            aria-label="Exit full-screen"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+          </button>
+          <div class="header-spacer"></div>
+          <div class="top-controls">
+            <div class="combined-bar">
+              <Viewer3DGridPopover {sequenceData} popoverAlign="left" flat />
+              {#if avatarState}
+                <PlaneModeToggle
+                  mode={avatarState.planeMode}
+                  bluePlane={avatarState.currentBeatBluePlane}
+                  redPlane={avatarState.currentBeatRedPlane}
+                  sequenceBluePlane={avatarState.customBluePlane}
+                  sequenceRedPlane={avatarState.customRedPlane}
+                  currentBeatIndex={avatarState.currentStepIndex}
+                  totalBeats={avatarState.totalSteps}
+                  hasBeatOverrides={avatarState.hasBeatOverrides}
+                  beatEditMode={avatarState.beatEditMode}
+                  onModeChange={(mode) => avatarState.setPlaneMode(mode)}
+                  onHandPlaneChange={(hand, plane) => avatarState.setBeatHandPlane(avatarState.currentStepIndex, hand, plane)}
+                  onSequenceHandPlaneChange={(hand, plane) => avatarState.setHandPlane(hand, plane)}
+                  onBeatEditModeChange={(enabled) => avatarState.setBeatEditMode(enabled)}
+                />
+              {/if}
+              <div class="bar-divider"></div>
+              <Viewer3DViewPresets flat />
+            </div>
+          </div>
+        </div>
+      {:else}
+        <!-- Half-screen: gear icon only -->
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
+        <div class="top-controls" onclick={(e) => e.stopPropagation()} onpointerdown={(e) => e.stopPropagation()}>
+          <Viewer3DGearPopover />
+        </div>
+      {/if}
       {#if avatarState && avatarState.totalSteps > 1 && avatarState.beatEditMode}
         <div class="beat-strip-container">
           <BeatPlaneStrip
@@ -134,6 +153,36 @@
 </div>
 
 <style>
+  .viewer-progress-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.08);
+    z-index: 5;
+    overflow: visible;
+  }
+
+  .viewer-progress-fill {
+    height: 100%;
+    background: rgba(139, 139, 255, 0.5);
+    transition: width 0.15s ease;
+  }
+
+  .viewer-progress-tick {
+    position: absolute;
+    top: -1px;
+    width: 1px;
+    height: 5px;
+    background: rgba(255, 255, 255, 0.12);
+    transform: translateX(-0.5px);
+  }
+
+  .viewer-progress-tick.past {
+    background: rgba(139, 139, 255, 0.35);
+  }
+
   .viewer-3d-canvas {
     width: 100%;
     height: 100%;
@@ -151,20 +200,59 @@
     align-items: flex-start;
   }
 
-  .rotation-variant-btn {
-    padding: 7px 12px;
+  .combined-bar {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 4px;
     border-radius: 8px;
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(8px);
+  }
+
+  .bar-divider {
+    width: 1px;
+    height: 18px;
+    background: rgba(255, 255, 255, 0.12);
+    margin: 0 2px;
+    flex-shrink: 0;
+  }
+
+  .fullscreen-header {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    right: 12px;
+    z-index: 10;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .header-spacer {
+    flex: 1;
+  }
+
+  .back-button {
+    flex-shrink: 0;
+    width: var(--min-touch-target-compact, 32px);
+    height: var(--min-touch-target-compact, 32px);
+    border-radius: 50%;
     background: rgba(0, 0, 0, 0.5);
-    border: 1px solid rgba(245, 158, 11, 0.3);
-    color: #f59e0b;
-    font-size: var(--font-size-compact, 12px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255, 255, 255, 0.7);
     cursor: pointer;
     backdrop-filter: blur(8px);
     transition: all 0.2s ease;
-    white-space: nowrap;
   }
-  .rotation-variant-btn:hover {
-    background: rgba(245, 158, 11, 0.15);
+
+  .back-button:hover {
+    background: rgba(0, 0, 0, 0.7);
+    color: rgba(255, 255, 255, 0.95);
   }
 
   .beat-strip-container {

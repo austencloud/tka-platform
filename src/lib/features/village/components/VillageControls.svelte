@@ -197,6 +197,35 @@
 		</label>
 	</div>
 
+	<!-- LLM Decision Engine -->
+	<div class="section">
+		<h3>AI Decisions</h3>
+		<label class="toggle">
+			<input
+				type="checkbox"
+				checked={villageState.orchestrator.decisionEngine.enabled}
+				onchange={(e) => villageState.orchestrator.decisionEngine.setEnabled(e.currentTarget.checked)}
+			/>
+			Enable LLM
+		</label>
+		<div class="stat">
+			Provider: {villageState.orchestrator.decisionEngine.providerName}
+			{#if villageState.orchestrator.decisionEngine.isLLMActive()}
+				<span style="color: #4ade80;">connected</span>
+			{/if}
+		</div>
+		<div class="stat">
+			Pending: {villageState.orchestrator.decisionEngine.pendingDecisions.size}
+		</div>
+		{#if villageState.orchestrator.decisionEngine.debugLog.length > 0}
+			<div class="llm-log">
+				{#each villageState.orchestrator.decisionEngine.debugLog.slice(-8) as line}
+					<div class="log-line">{line}</div>
+				{/each}
+			</div>
+		{/if}
+	</div>
+
 	<!-- Timeline strip -->
 	<div class="section">
 		<h3>Timeline</h3>
@@ -351,5 +380,20 @@
 
 	.toggle input {
 		cursor: pointer;
+	}
+
+	.llm-log {
+		margin-top: 4px;
+		max-height: 120px;
+		overflow-y: auto;
+		scrollbar-width: thin;
+	}
+
+	.log-line {
+		font-size: 10px;
+		font-family: monospace;
+		opacity: 0.6;
+		line-height: 1.3;
+		word-break: break-all;
 	}
 </style>

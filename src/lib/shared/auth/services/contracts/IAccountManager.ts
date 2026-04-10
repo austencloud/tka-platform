@@ -3,22 +3,22 @@
  */
 export interface IAccountManager {
   /**
-   * Changes the user's password
-   * @param currentPassword - Current password (for re-authentication)
+   * Changes the user's password.
+   * Re-authenticates with current password, then updates to new password.
+   * @param currentPassword - Current password for re-authentication
    * @param newPassword - New password (min 8 characters)
-   * @throws Error if password validation fails or update fails
    */
   changePassword(currentPassword: string, newPassword: string): Promise<void>;
 
   /**
-   * Deletes the user's account permanently
-   * @throws Error if deletion fails
+   * Deletes the user's account permanently.
+   * Re-authenticates with password, cleans up Firestore user doc, then deletes Firebase auth account.
+   * @param currentPassword - Current password for re-authentication
    */
-  deleteAccount(): Promise<void>;
+  deleteAccount(currentPassword: string): Promise<void>;
 
   /**
    * Clears all cached data (IndexedDB, localStorage, cookies) and reloads the page
-   * @throws Error if cache clearing fails
    */
   clearCache(): Promise<void>;
 }

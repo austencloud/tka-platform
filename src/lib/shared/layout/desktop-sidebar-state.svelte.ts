@@ -13,6 +13,9 @@ export const desktopSidebarState = $state({
   // Sidebar visibility - controlled by viewport and layout conditions
   isVisible: false,
 
+  // Module-level suppression — when true, sidebar stays hidden regardless of viewport
+  forcedHidden: false,
+
   // Sidebar collapsed state - toggled by user
   isCollapsed: false,
 
@@ -29,6 +32,23 @@ export const desktopSidebarState = $state({
 // Helper functions
 export function setDesktopSidebarVisible(visible: boolean) {
   desktopSidebarState.isVisible = visible;
+}
+
+/** Modules that need full-screen (museum) call this to suppress the sidebar
+ *  even when viewport recalculations fire. */
+export function setDesktopSidebarForcedHidden(hidden: boolean) {
+  desktopSidebarState.forcedHidden = hidden;
+  if (hidden) {
+    desktopSidebarState.isVisible = false;
+  } else {
+    // Recalculate visibility based on current viewport conditions
+    const shouldShow = shouldShowDesktopSidebar(
+      desktopSidebarState.isDesktopDevice,
+      typeof window !== 'undefined' ? window.innerWidth : 0,
+      desktopSidebarState.isSideBySideLayout,
+    );
+    desktopSidebarState.isVisible = shouldShow;
+  }
 }
 
 export function setDesktopSidebarWidth(width: number) {
@@ -80,11 +100,9 @@ export function updateDesktopSidebarVisibility(
   viewportWidth: number,
   isSideBySideLayout: boolean
 ) {
-  const shouldShow = shouldShowDesktopSidebar(
-    isDesktop,
-    viewportWidth,
-    isSideBySideLayout
-  );
+  const shouldShow = desktopSidebarState.forcedHidden
+    ? false
+    : shouldShowDesktopSidebar(isDesktop, viewportWidth, isSideBySideLayout);
   setDesktopSidebarVisible(shouldShow);
   setIsDesktopDevice(isDesktop);
   setIsSideBySideLayout(isSideBySideLayout);

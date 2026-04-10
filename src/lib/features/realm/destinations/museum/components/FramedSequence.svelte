@@ -1,6 +1,15 @@
+<script module lang="ts">
+  import * as THREE from "three";
+
+  // One TextureLoader shared across all FramedSequence instances.
+  // Creating a loader per-instance (or per prop change inside a $effect)
+  // was wasteful — the loader itself is stateless and safe to share.
+  const sharedLoader = new THREE.TextureLoader();
+  sharedLoader.setCrossOrigin("anonymous");
+</script>
+
 <script lang="ts">
   import { T } from "@threlte/core";
-  import * as THREE from "three";
   import type { ExhibitSlot } from "../domain/museum-types";
 
   interface Props {
@@ -25,9 +34,7 @@
   let loadError = $state(false);
 
   $effect(() => {
-    const loader = new THREE.TextureLoader();
-    loader.setCrossOrigin("anonymous");
-    loader.load(
+    sharedLoader.load(
       thumbnailUrl,
       (tex) => {
         tex.minFilter = THREE.LinearFilter;

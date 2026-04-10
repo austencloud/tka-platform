@@ -156,9 +156,14 @@
     --sheet-shadow: 0 -4px 24px rgba(0, 0, 0, 0.5);
   }
 
-  :global(.drawer-content.preset-drawer-sheet[data-placement="right"]) {
-    --sheet-width: min(400px, 90vw);
+  /* Bottom sheet on mobile — auto-size to content, don't take full screen */
+  :global(.drawer-content.preset-drawer-sheet[data-placement="bottom"]) {
+    height: auto;
+    min-height: auto;
+    max-height: 85dvh;
   }
+
+  /* Right-side panel on desktop — use full create panel width like LOOP drawer */
 
   .preset-drawer-content {
     display: flex;

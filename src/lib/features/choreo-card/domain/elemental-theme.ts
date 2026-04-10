@@ -3,7 +3,7 @@ export interface ElementalTheme {
   readonly element: string;
   readonly accentColor: string;
   readonly darkComplement: string;
-  readonly svgPath: string;
+  readonly iconPath: string;
 }
 
 export const VTG_ELEMENTAL_THEMES: readonly ElementalTheme[] = [
@@ -12,42 +12,42 @@ export const VTG_ELEMENTAL_THEMES: readonly ElementalTheme[] = [
     element: "water",
     accentColor: "#63b7cd",
     darkComplement: "#1a5276",
-    svgPath: "/images/elements/water.svg",
+    iconPath: "/images/elements/water.png",
   },
   {
     familyId: "tog-same",
     element: "earth",
     accentColor: "#75A874",
     darkComplement: "#2a4a29",
-    svgPath: "/images/elements/earth.svg",
+    iconPath: "/images/elements/earth.png",
   },
   {
     familyId: "quarter-same",
     element: "sun",
     accentColor: "#ffde17",
     darkComplement: "#7a6a00",
-    svgPath: "/images/elements/sun.svg",
+    iconPath: "/images/elements/sun.png",
   },
   {
     familyId: "split-opp",
     element: "fire",
     accentColor: "#f2673a",
     darkComplement: "#6b1a0a",
-    svgPath: "/images/elements/fire.svg",
+    iconPath: "/images/elements/fire.png",
   },
   {
     familyId: "tog-opp",
     element: "air",
     accentColor: "#78b7e3",
     darkComplement: "#1a4a6b",
-    svgPath: "/images/elements/air.svg",
+    iconPath: "/images/elements/air.png",
   },
   {
     familyId: "quarter-opp",
     element: "moon",
     accentColor: "#6a4199",
     darkComplement: "#2a1540",
-    svgPath: "/images/elements/moon.svg",
+    iconPath: "/images/elements/moon.png",
   },
 ] as const;
 

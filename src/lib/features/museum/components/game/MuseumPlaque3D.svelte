@@ -1,7 +1,52 @@
+<script module lang="ts">
+  import { BoxGeometry, CanvasTexture, MeshStandardMaterial } from "three";
+
+  // ── Module-level caches — shared across all plaque instances ──
+  // Keyed by size string; only 3 possible sizes so at most 3 entries.
+  const geoCache = new Map<string, { plaqueGeo: BoxGeometry; frameGeo: BoxGeometry }>();
+
+  // Keyed by isWhiteboard boolean; only 2 possible values.
+  const frameMatCache = new Map<boolean, MeshStandardMaterial>();
+
+  const FRAME_PAD = 0.05;
+  const FRAME_DEPTH = 0.04;
+
+  const PLAQUE_DIMS_MODULE: Record<string, { w: number; h: number; d: number }> = {
+    standard: { w: 0.9, h: 1.2, d: 0.05 },
+    large: { w: 1.4, h: 1.2, d: 0.05 },
+    "dev-whiteboard": { w: 2.5, h: 2.0, d: 0.04 },
+  };
+
+  function getOrCreateGeos(size: string): { plaqueGeo: BoxGeometry; frameGeo: BoxGeometry } {
+    let entry = geoCache.get(size);
+    if (!entry) {
+      const dims = PLAQUE_DIMS_MODULE[size];
+      entry = {
+        plaqueGeo: new BoxGeometry(dims.w, dims.h, dims.d),
+        frameGeo: new BoxGeometry(dims.w + FRAME_PAD * 2, dims.h + FRAME_PAD * 2, FRAME_DEPTH),
+      };
+      geoCache.set(size, entry);
+    }
+    return entry;
+  }
+
+  function getOrCreateFrameMat(isWhiteboard: boolean): MeshStandardMaterial {
+    let mat = frameMatCache.get(isWhiteboard);
+    if (!mat) {
+      mat = new MeshStandardMaterial({
+        color: isWhiteboard ? "#ccccbb" : "#8a7040",
+        metalness: isWhiteboard ? 0.1 : 0.6,
+        roughness: isWhiteboard ? 0.6 : 0.4,
+      });
+      frameMatCache.set(isWhiteboard, mat);
+    }
+    return mat;
+  }
+</script>
+
 <script lang="ts">
   import { T } from "@threlte/core";
   import { onDestroy } from "svelte";
-  import { CanvasTexture, BoxGeometry, MeshStandardMaterial } from "three";
   import type { PlaqueContent, PlaqueSize } from "../../services/contracts/IPlaqueTextureGenerator";
   import type { PlaqueTextureGenerator } from "../../services/implementations/PlaqueTextureGenerator";
 
@@ -37,28 +82,19 @@
     "dev-whiteboard": { w: 2.5, h: 2.0, d: 0.04 },
   };
 
-  // Frame is slightly larger than the plaque in every dimension
-  const FRAME_PAD = 0.05;
-  const FRAME_DEPTH = 0.04;
   const PLAQUE_Y = 1.2; // eye level
 
-  // ── Generate texture from content ──
+  // ── Shared geometries and frame material from module cache ──
+  const { plaqueGeo, frameGeo } = getOrCreateGeos(size);
+  const isWhiteboard = size === "dev-whiteboard";
+  const frameMat = getOrCreateFrameMat(isWhiteboard);
+
+  // ── Generate texture from content (per-instance — unique canvas per plaque) ──
   const canvas = generator.generateCanvas(content, size, refId);
   const texture = new CanvasTexture(canvas as unknown as HTMLCanvasElement);
   texture.needsUpdate = true;
 
-  // ── Geometries ──
-  const dims = PLAQUE_DIMS[size];
-  const plaqueGeo = new BoxGeometry(dims.w, dims.h, dims.d);
-  const frameGeo = new BoxGeometry(
-    dims.w + FRAME_PAD * 2,
-    dims.h + FRAME_PAD * 2,
-    FRAME_DEPTH,
-  );
-
-  // ── Materials ──
-  const isWhiteboard = size === "dev-whiteboard";
-
+  // ── Per-instance material — cannot be shared because it owns a unique texture ──
   const plaqueMat = new MeshStandardMaterial({
     map: texture,
     roughness: 0.85,
@@ -68,15 +104,10 @@
     emissiveMap: texture,
   });
 
-  const frameMat = new MeshStandardMaterial({
-    color: isWhiteboard ? "#ccccbb" : "#8a7040",
-    metalness: isWhiteboard ? 0.1 : 0.6,
-    roughness: isWhiteboard ? 0.6 : 0.4,
-  });
-
   // ── Push plaque flush against wall ──
   // The wallOffset from parent positions the plaque center on the tile.
   // Add an extra nudge so the plaque back face touches the wall surface.
+  const dims = PLAQUE_DIMS[size];
   const wallNudge = dims.d / 2 + 0.01; // half plaque depth + tiny gap
   const nudgeX = wallOffsetX !== 0 ? Math.sign(wallOffsetX) * wallNudge : 0;
   const nudgeZ = wallOffsetZ !== 0 ? Math.sign(wallOffsetZ) * wallNudge : 0;
@@ -86,10 +117,9 @@
   const frameBehindDist = dims.d / 2 + FRAME_DEPTH / 2;
 
   onDestroy(() => {
-    plaqueGeo.dispose();
-    frameGeo.dispose();
+    // Only dispose per-instance resources.
+    // plaqueGeo, frameGeo, and frameMat are shared via module cache — do NOT dispose them here.
     plaqueMat.dispose();
-    frameMat.dispose();
     texture.dispose();
   });
 </script>
