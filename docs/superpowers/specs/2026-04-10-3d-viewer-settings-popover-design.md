@@ -203,6 +203,14 @@ This redesign removes three user-facing controls from the popover. Their state i
 
 **Compatibility note:** The underlying state model (`avatarState.beatEditMode`, `avatarState.setBeatHandPlane`, `avatarState.hasBeatOverrides`) still exists. Removing these from the popover does not delete them from the model — it just means no control in this popover exposes them. If a beat with per-beat overrides is loaded, the popover will display the sequence-wide defaults, not the beat overrides. Any beat overrides persist in the model until cleared by other means.
 
+**Open question for the implementation plan:** when the user changes a sequence-wide plane assignment via this popover, what should happen to existing per-beat overrides for that hand?
+
+- **Option A (preserve overrides):** Sequence-wide becomes the new default, but beats that explicitly overrode this hand's plane keep their overrides. This respects the mental model that beat overrides are intentional exceptions.
+- **Option B (clear overrides):** Changing sequence-wide wipes all beat overrides for that hand. Simpler mental model ("the popover controls everything") but destroys deliberate per-beat work.
+- **Option C (indicator + preserve, with a way to clear):** Preserve overrides (Option A), but if any beats have overrides, show a subtle indicator on the popover (e.g., a badge on the reset button) and have the reset button clear sequence-wide AND beat overrides.
+
+Recommend Option C — preserve by default (safest), indicate their existence so the user knows they're there, and make reset the explicit "clear everything" action.
+
 ## Out of Scope
 
 The following came up during brainstorming but are explicitly not part of this redesign:
