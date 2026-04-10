@@ -3,7 +3,7 @@
   import type { CardSizeId } from "../../domain/card-sizes";
   import type { CardPair } from "../../services/contracts/IPrintPDFExporter";
   import type { PrintRenderOptions } from "../../services/contracts/IPrintCardRenderer";
-  import type { ElementalTheme } from "../../domain/elemental-theme";
+  import { type ElementalTheme, VTG_ELEMENTAL_THEMES } from "../../domain/elemental-theme";
   import { getPageLayout, CARD_SIZES } from "../../domain/card-sizes";
   import { container } from "$lib/shared/di";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
@@ -20,12 +20,16 @@
     includeStartPosition?: boolean;
     handPointsVisible?: boolean;
     elementTheme?: ElementalTheme;
+    /** Left-side footer label (e.g. "QS 1:1" for deck cards) */
+    leftLabel?: string;
+    /** VTG family ID for elemental icon loading (e.g. "quarter-same") */
+    elementFamilyId?: string;
     /** Bump to force a full re-render of all cards */
     rerenderKey?: number;
     /** Right-click context menu on a card cell: (x, y, rerender callback for that card, sequence) */
     onCardContextMenu?: (x: number, y: number, rerender: () => void, sequence: SequenceData) => void;
-    /** Left-click a card to inspect it */
-    onCardClick?: (sequence: SequenceData) => void;
+    /** Left-click a card to inspect it (includes the pre-rendered front image URL and a rerender callback) */
+    onCardClick?: (sequence: SequenceData, frontImageUrl?: string, rerender?: () => Promise<string | null>) => void;
     onPairsReady?: (pairs: CardPair[]) => void;
     onRenderStateChange?: (state: { isRendering: boolean; progress: number; total: number }) => void;
   }
@@ -41,6 +45,8 @@
     includeStartPosition = true,
     handPointsVisible = true,
     elementTheme,
+    leftLabel,
+    elementFamilyId,
     rerenderKey = 0,
     onCardContextMenu,
     onCardClick,
@@ -59,6 +65,18 @@
   let renderProgress = $state(0);
   let renderTotal = $state(0);
   let isRendering = $state(false);
+
+  // Pre-load elemental icon for footer rendering
+  let loadedElementIcon: HTMLImageElement | null = $state(null);
+  $effect(() => {
+    if (!elementFamilyId) { loadedElementIcon = null; return; }
+    const theme = VTG_ELEMENTAL_THEMES.find(t => t.familyId === elementFamilyId);
+    if (!theme) { loadedElementIcon = null; return; }
+    const img = new Image();
+    img.src = theme.iconPath;
+    img.onload = () => { loadedElementIcon = img; };
+    img.onerror = () => { loadedElementIcon = null; };
+  });
 
   let layout = $derived(getPageLayout(cardSize));
   let sizeSpec = $derived(CARD_SIZES[cardSize]);
@@ -91,6 +109,8 @@
       elementTheme,
       bluePropType: settingsService.settings.bluePropType as any,
       redPropType: settingsService.settings.redPropType as any,
+      leftLabel,
+      elementIcon: loadedElementIcon ?? undefined,
     };
   }
 
@@ -121,7 +141,10 @@
       elementTheme?.familyId ?? "none",
       settingsService.settings.bluePropType,
       settingsService.settings.redPropType,
+      settingsService.settings.backgroundType ?? "",
       stepCount,
+      leftLabel ?? "",
+      elementFamilyId ?? "",
     ].join("|");
     return `${seqId}::${optsPart}`;
   }
@@ -150,6 +173,7 @@
     const _includeStartPosition = includeStartPosition;
     const _handPointsVisible = handPointsVisible;
     const _rerenderKey = rerenderKey;
+    const _bgType = settingsService.settings.backgroundType;
 
     // Void unused captures to satisfy linter
     void _cardSize;
@@ -160,6 +184,7 @@
     void _includeStartPosition;
     void _handPointsVisible;
     void _rerenderKey;
+    void _bgType;
 
     const generation = ++renderGeneration;
 
@@ -181,8 +206,33 @@
       lastRerenderKey = rerenderKey;
     }
 
-    isRendering = true;
     renderTotal = seqs.length;
+
+    // Fast path: check if every card is already cached
+    const allCached = seqs.every((seq) => {
+      const key = buildCacheKey(seq, seq.steps?.length);
+      return cardCache.has(key);
+    });
+
+    if (allCached) {
+      // All cache hits — populate instantly, no progressive rendering
+      const cards: RenderedCard[] = [];
+      const pairs: CardPair[] = [];
+      for (const seq of seqs) {
+        const cached = cardCache.get(buildCacheKey(seq, seq.steps?.length))!;
+        cards.push(cached.rendered);
+        pairs.push(cached.pair);
+      }
+      renderedCards = cards;
+      renderProgress = seqs.length;
+      isRendering = false;
+      onPairsReady?.(pairs);
+      onRenderStateChange?.({ isRendering: false, progress: seqs.length, total: seqs.length });
+      return;
+    }
+
+    // Slow path: render uncached cards progressively
+    isRendering = true;
     renderProgress = 0;
     renderedCards = [];
     onRenderStateChange?.({ isRendering: true, progress: 0, total: seqs.length });
@@ -200,11 +250,9 @@
       const cached = cardCache.get(cacheKey);
 
       if (cached) {
-        // Cache hit — reuse data URLs for display, reuse canvas pair for export
         cards.push(cached.rendered);
         pairs.push(cached.pair);
       } else {
-        // Cache miss — render fresh
         const options = buildRenderOptions(stepCount);
         const frontCanvas = await renderer.renderFront(seq, options);
         const backCanvas = await renderer.renderBack(seq, options);
@@ -235,9 +283,9 @@
   }
 
   /** Re-render a single card by its index in the sequences array */
-  async function rerenderCard(index: number) {
+  async function rerenderCard(index: number): Promise<string | null> {
     const seq = sequences[index];
-    if (!seq) return;
+    if (!seq) return null;
 
     const renderer = container.items.printCardRenderer;
     const stepCount = seq.steps?.length;
@@ -264,6 +312,7 @@
     });
 
     renderedCards = renderedCards.map((c, i) => i === index ? card : c);
+    return card.frontUrl;
   }
 
   function handleCardContextMenu(event: MouseEvent, cardIndex: number) {
@@ -311,7 +360,10 @@
                 class="card-cell"
                 class:clickable={!!onCardClick}
                 style:aspect-ratio="{cardAspect}"
-                onclick={() => onCardClick?.(sequences[sheetIndex * layout.cardsPerPage + cardIndex]!)}
+                onclick={() => {
+                  const idx = sheetIndex * layout.cardsPerPage + cardIndex;
+                  onCardClick?.(sequences[idx]!, card.frontUrl, () => rerenderCard(idx));
+                }}
                 oncontextmenu={(e) => handleCardContextMenu(e, sheetIndex * layout.cardsPerPage + cardIndex)}
               >
                 <img src={card.frontUrl} alt="{card.label} front" />
@@ -335,7 +387,10 @@
                 style:aspect-ratio="{cardAspect}"
                 style:grid-column="{mirroredCol(cardIndex, layout.cols) + 1}"
                 style:grid-row="{rowOf(cardIndex, layout.cols) + 1}"
-                onclick={() => onCardClick?.(sequences[sheetIndex * layout.cardsPerPage + cardIndex]!)}
+                onclick={() => {
+                  const idx = sheetIndex * layout.cardsPerPage + cardIndex;
+                  onCardClick?.(sequences[idx]!, card.frontUrl, () => rerenderCard(idx));
+                }}
                 oncontextmenu={(e) => handleCardContextMenu(e, sheetIndex * layout.cardsPerPage + cardIndex)}
               >
                 <img src={card.backUrl} alt="{card.label} back" />
@@ -389,7 +444,8 @@
 
   .card-cell {
     overflow: hidden;
-    border-radius: 8px;
+    /* Standard playing card corner radius: ~3mm on 63.5mm = 4.72% of width */
+    border-radius: 4.72%;
     background: #f0f0f0;
   }
 

@@ -71,6 +71,12 @@ export class UserDocumentManager implements IUserDocumentManager {
       // Get provider IDs for reliable profile picture URLs
       const providerIds = this.profilePictureService.getProviderIds(user);
 
+      // Capture the Google provider's photo URL separately so we can
+      // always offer "Use Google Photo" even after the user switches to
+      // a generated avatar (which overwrites user.photoURL).
+      const googleProvider = user.providerData.find(p => p.providerId === "google.com");
+      const googlePhotoURL = googleProvider?.photoURL || null;
+
       if (!userDoc.exists()) {
         // NEW USER: Generate unique username and claim it
         const baseUsername = user.email?.split("@")[0] || user.uid.substring(0, 8);
@@ -86,8 +92,9 @@ export class UserDocumentManager implements IUserDocumentManager {
           usernameLowercase,
           photoURL: user.photoURL || null,
           avatar: user.photoURL || null,
-          // Store provider IDs for reliable profile picture construction
+          // Store provider IDs and original photo URLs for reliable restoration
           googleId: providerIds.googleId || null,
+          googlePhotoURL: googlePhotoURL,
           facebookId: providerIds.facebookId || null,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
@@ -159,6 +166,14 @@ export class UserDocumentManager implements IUserDocumentManager {
           lastActivityDate: serverTimestamp(),
         };
 
+        // Only update googlePhotoURL if we have a fresh one from the provider.
+        // Don't null it out — the provider's photoURL becomes null after the
+        // user switches to a generated avatar, but we want to keep the
+        // original so "Use Google Photo" always works.
+        if (googlePhotoURL) {
+          updateData.googlePhotoURL = googlePhotoURL;
+        }
+
         // Add usernameLowercase if missing (backfill for existing users)
         if (existingUsername && !existingData?.usernameLowercase) {
           updateData.usernameLowercase = formatUsername(existingUsername);
@@ -209,6 +224,31 @@ export class UserDocumentManager implements IUserDocumentManager {
         error
       );
       // Don't throw - this shouldn't block the main operation
+    }
+  }
+
+  /**
+   * Update the user's profile accent color in Firestore.
+   * This color appears as the ring around the avatar and on profile cards.
+   */
+  async updateProfileColor(userId: string, color: string): Promise<void> {
+    try {
+      const firestore = await getFirestoreInstance();
+      const userDocRef = doc(firestore, `users/${userId}`);
+
+      await setDoc(
+        userDocRef,
+        {
+          profileColor: color,
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true }
+      );
+    } catch (error) {
+      console.error(
+        `❌ [UserDocumentManager] Failed to update profileColor:`,
+        error
+      );
     }
   }
 }

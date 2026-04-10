@@ -264,10 +264,11 @@ export class ImageComposer implements IImageComposer {
 
     // Must account for loopType here (not just later) so headerHeight is allocated
     const earlyLoopType = options.loopType ?? sequence.loopType;
+    const earlyShowLoopGlyph = options.showLoopGlyph !== false && !!earlyLoopType;
     const showHeaderForLayout =
       (options.addWord && (derivedWord || options.customName)) ||
       options.addDifficultyLevel ||
-      !!earlyLoopType;
+      earlyShowLoopGlyph;
 
     // Calculate footer visibility flags
     // Check granular flags if provided, otherwise use addUserInfo for backwards compatibility
@@ -558,7 +559,9 @@ export class ImageComposer implements IImageComposer {
         },
         options.customNotesText,
         options.deckCard ? DECK_HEADER_BG : undefined,
-        options.deckCard ? DECK_BORDER_COLOR : undefined
+        options.deckCard ? DECK_BORDER_COLOR : undefined,
+        options.leftLabel,
+        options.elementIcon
       );
     }
 
@@ -921,7 +924,7 @@ export class ImageComposer implements IImageComposer {
       for (let col = 0; col < columns; col++) {
         if (!isOccupied(col, row)) continue;
 
-        const x = col * stepSize;
+        const x = col * stepSize + horizontalOffset;
         const y = row * stepSize + titleOffset;
 
         // Top edge: draw if no occupied cell above
@@ -1429,13 +1432,14 @@ export class ImageComposer implements IImageComposer {
 
     // Determine header height
     const earlyLoopType = options.loopType ?? sequence.loopType;
+    const earlyShowLoopGlyph = options.showLoopGlyph !== false && !!earlyLoopType;
     const rawWord = (sequence.steps ?? [])
       .map((s: StepData) => s.letter ?? "")
       .join("");
     const showHeader =
       (options.addWord && (rawWord || options.customName)) ||
       options.addDifficultyLevel ||
-      !!earlyLoopType;
+      earlyShowLoopGlyph;
     const headerHeight = showHeader
       ? this.calculateHeaderHeight(stepCount, stepSize, columns)
       : 0;

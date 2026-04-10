@@ -284,7 +284,23 @@ export async function initializeAuthListener() {
   cleanupAuthListener = onAuthStateChanged(
     auth,
     async (user) => {
-      _state.loading = true;
+      // Never set loading = true here. The initial state already has
+      // loading: true, and subsequent callbacks (token refresh, re-auth)
+      // must not re-block the UI. We only set loading = false when done.
+
+      // Safety timeout: if auth processing hangs (bad network, Firestore
+      // unreachable), force loading = false after 8 seconds so the app
+      // is never stuck on the loading spinner indefinitely.
+      const safetyTimeout = setTimeout(() => {
+        if (_state.loading) {
+          console.warn("⚠️ [authState] Auth processing timed out — unblocking UI");
+          _state = {
+            ..._state,
+            loading: false,
+            initialized: true,
+          };
+        }
+      }, 8000);
 
       // CRITICAL: Initialize Firestore before any services try to use it
       // This prevents race condition errors with the lazy-loaded Firestore Proxy
@@ -369,6 +385,8 @@ export async function initializeAuthListener() {
           );
         }
       }
+
+      clearTimeout(safetyTimeout);
 
       _state = {
         user,

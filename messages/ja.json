@@ -179,7 +179,6 @@
   "auth_sign_up": "サインアップ",
   "auth_signin_subtitle": "ライブラリにアクセスして進捗状況を追跡するにはサインインしてください",
   "auth_signup_subtitle": "TKAに参加して進捗を保存し、ライブラリにアクセスしてください",
-  "auth_verify_with_passkey": "パスキーで確認",
   "auth_verify_with_password": "パスワードで確認",
   "auth_verifying": "確認中...",
   "auth_welcome": "TKAへようこそ",

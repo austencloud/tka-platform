@@ -24,16 +24,36 @@ describe("renderFooter", () => {
     expect(ctx.fillText).toHaveBeenCalledWith("Austen Cloud", expect.any(Number), expect.any(Number));
   });
 
-  it("renders default notes when none provided", () => {
+  it("renders default brand name when no notes provided", () => {
     const ctx = createMockCtx();
     renderFooter(ctx, { canvasWidth: 900, canvasHeight: 1000, footerHeight: 50, showNotes: true });
-    expect(ctx.fillText).toHaveBeenCalledWith("Created using TKA Composer", 450, expect.any(Number));
+    expect(ctx.fillText).toHaveBeenCalledWith("The Kinetic Alphabet", 450, expect.any(Number));
   });
 
-  it("formats birthday with cake emoji", () => {
+  it("renders year only for date", () => {
     const ctx = createMockCtx();
     const bday = new Date(2026, 2, 28); // March 28, 2026
     renderFooter(ctx, { canvasWidth: 900, canvasHeight: 1000, footerHeight: 50, birthday: bday, showBirthday: true });
-    expect(ctx.fillText).toHaveBeenCalledWith("🎂 3-28-2026", expect.any(Number), expect.any(Number));
+    expect(ctx.fillText).toHaveBeenCalledWith("2026", expect.any(Number), expect.any(Number));
+  });
+
+  it("suppresses creator name for system authors", () => {
+    for (const sysAuthor of ["TKA Enumerator", "TKA System", "TKA Gallery"]) {
+      const ctx = createMockCtx();
+      renderFooter(ctx, { canvasWidth: 900, canvasHeight: 1000, footerHeight: 50, userName: sysAuthor, showCreatorName: true });
+      const calls = (ctx.fillText as ReturnType<typeof vi.fn>).mock.calls;
+      const rendered = calls.some(([text]: [string]) => text === sysAuthor);
+      expect(rendered, `${sysAuthor} should be suppressed`).toBe(false);
+    }
+  });
+
+  it("renders leftLabel instead of username when provided", () => {
+    const ctx = createMockCtx();
+    renderFooter(ctx, { canvasWidth: 900, canvasHeight: 1000, footerHeight: 50, userName: "Austen Cloud", leftLabel: "VTG SS 1:1", showCreatorName: true });
+    const calls = (ctx.fillText as ReturnType<typeof vi.fn>).mock.calls;
+    const leftLabelRendered = calls.some(([text]: [string]) => text === "VTG SS 1:1");
+    const userNameRendered = calls.some(([text]: [string]) => text === "Austen Cloud");
+    expect(leftLabelRendered).toBe(true);
+    expect(userNameRendered).toBe(false);
   });
 });

@@ -24,8 +24,8 @@ export interface PropDimensions {
  */
 export const PROP_DIMENSIONS: Record<string, PropDimensions> = {
   // Staff family
-  staff: { width: 300, height: 92.33 },
-  simple_staff: { width: 300, height: 92.33 },
+  staff: { width: 270, height: 83.1 },
+  simple_staff: { width: 270, height: 83.1 },
   bigstaff: { width: 600, height: 54.5 },
   staff_v2: { width: 300, height: 48.6 },
 

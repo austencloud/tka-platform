@@ -507,16 +507,18 @@ Last audit: 2025-12-27
   onpointercancel={cancelLongPress}
 >
   <div class="content-wrapper" bind:this={contentWrapperEl} data-dark-mode={darkModeEnabled ? "true" : "false"}>
-    <div class="header-slot">
-      <WordHeader
-        {word}
-        visible={wordHeaderVisible}
-        darkMode={darkModeEnabled}
-        activeStepNumber={currentStep >= 1 && currentStep < (sequenceData?.steps?.length ?? 0) + 0.99 ? Math.floor(currentStep) : null}
-        difficultyLevel={computedDifficultyLevel}
-        loopComponents={computedLoopComponents}
-      />
-    </div>
+    {#if !suppress2DOverlays}
+      <div class="header-slot">
+        <WordHeader
+          {word}
+          visible={wordHeaderVisible}
+          darkMode={darkModeEnabled}
+          activeStepNumber={currentStep >= 1 && currentStep < (sequenceData?.steps?.length ?? 0) + 0.99 ? Math.floor(currentStep) : null}
+          difficultyLevel={computedDifficultyLevel}
+          loopComponents={computedLoopComponents}
+        />
+      </div>
+    {/if}
 
     <div
       class="canvas-wrapper"
@@ -524,31 +526,33 @@ Last audit: 2025-12-27
       data-transparent={backgroundAlpha === 0 ? "true" : "false"}
       data-dark-mode={darkModeEnabled ? "true" : "false"}
     >
-      <GlyphOverlay
-        {letter}
-        {displayedLetter}
-        {displayedTurnsTuple}
-        {displayedStepNumber}
-        {displayedMusicalPosition}
-        {stepData}
-        tkaGlyphVisible={effectiveTkaGlyphVisible}
-        stepNumbersVisible={effectiveBeatNumbersVisible}
-        beatPositionVisible={effectiveBeatPositionVisible}
-        darkMode={darkModeEnabled}
-        isAtStartPosition={!hideStepNumbers && currentStep < 1 && sequenceData !== null}
-        isAtEndPosition={
-          !hideStepNumbers &&
-          sequenceData !== null &&
-          !effectiveIsSeamlesslyLoopable &&
-          currentStep >= (sequenceData.steps?.length ?? 0) + 0.99
-        }
-      />
+      {#if !suppress2DOverlays}
+        <GlyphOverlay
+          {letter}
+          {displayedLetter}
+          {displayedTurnsTuple}
+          {displayedStepNumber}
+          {displayedMusicalPosition}
+          {stepData}
+          tkaGlyphVisible={effectiveTkaGlyphVisible}
+          stepNumbersVisible={effectiveBeatNumbersVisible}
+          beatPositionVisible={effectiveBeatPositionVisible}
+          darkMode={darkModeEnabled}
+          isAtStartPosition={!hideStepNumbers && currentStep < 1 && sequenceData !== null}
+          isAtEndPosition={
+            !hideStepNumbers &&
+            sequenceData !== null &&
+            !effectiveIsSeamlesslyLoopable &&
+            currentStep >= (sequenceData.steps?.length ?? 0) + 0.99
+          }
+        />
 
-      <ProgressOverlay
-        {isPreRendering}
-        {preRenderProgress}
-        {preRenderedFramesReady}
-      />
+        <ProgressOverlay
+          {isPreRendering}
+          {preRenderProgress}
+          {preRenderedFramesReady}
+        />
+      {/if}
     </div>
 
     <!-- Split canvases: blue-only and red-only, expand below hero during disassemble -->
@@ -610,17 +614,19 @@ Last audit: 2025-12-27
       </div>
     {/if}
 
-    <div class="progress-slot">
-      <SegmentedSequenceProgressBar
-        steps={sequenceData?.steps ?? []}
-        currentStep={currentStep}
-        visible={progressBarVisible && !hideProgressBar}
-        darkMode={darkModeEnabled}
-        variant={progressBarVariant}
-        showLabels={progressBarVariant === "labeled" || progressBarVariant === "gradient-labeled"}
-        onSeek={onProgressBarSeek}
-      />
-    </div>
+    {#if !suppress2DOverlays}
+      <div class="progress-slot">
+        <SegmentedSequenceProgressBar
+          steps={sequenceData?.steps ?? []}
+          currentStep={currentStep}
+          visible={progressBarVisible && !hideProgressBar}
+          darkMode={darkModeEnabled}
+          variant={progressBarVariant}
+          showLabels={progressBarVariant === "labeled" || progressBarVariant === "gradient-labeled"}
+          onSeek={onProgressBarSeek}
+        />
+      </div>
+    {/if}
   </div>
 
   {#if !disableContextMenu}

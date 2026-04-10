@@ -21,6 +21,10 @@ export interface PrintRenderOptions {
   redPropType?: PropType;
   /** VTG elemental theme for front frame coloring. Omit for neutral gray. */
   elementTheme?: ElementalTheme;
+  /** Left-side footer label (e.g. "QS 1:1" for deck cards) */
+  leftLabel?: string;
+  /** Pre-loaded elemental icon image for footer */
+  elementIcon?: CanvasImageSource;
 }
 
 export interface IPrintCardRenderer {

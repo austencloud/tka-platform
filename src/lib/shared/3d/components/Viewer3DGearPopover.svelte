@@ -1,0 +1,254 @@
+<script lang="ts">
+  /**
+   * Viewer3DGearPopover
+   *
+   * Single gear icon for half-screen 3D mode. Opens a popover with:
+   * 1. Camera presets (Main, Front, Side, Top, 3/4)
+   * 2. Grid plane toggles (Wall, Wheel, Floor)
+   */
+
+  import { Plane, PLANE_COLORS } from "../domain/enums/Plane";
+  import { PlaneMode } from "../domain/enums/PlaneMode";
+  import { getViewer3DContext } from "../context/viewer-3d-context";
+  import Viewer3DViewPresets from "./Viewer3DViewPresets.svelte";
+  import PlaneModeToggle from "./controls/PlaneModeToggle.svelte";
+  import { fly, scale } from "svelte/transition";
+  import { cubicOut, backOut } from "svelte/easing";
+
+  let open = $state(false);
+  let rootEl = $state<HTMLDivElement | null>(null);
+
+  const viewer3DState = getViewer3DContext();
+  const avatarState = $derived(viewer3DState.avatarState);
+
+  const PLANES: { plane: Plane; label: string }[] = [
+    { plane: Plane.WALL, label: "Wall" },
+    { plane: Plane.WHEEL, label: "Wheel" },
+    { plane: Plane.FLOOR, label: "Floor" },
+  ];
+
+  function toggleOpen(e: MouseEvent) {
+    e.stopPropagation();
+    open = !open;
+  }
+
+  function handlePlaneClick(e: MouseEvent, plane: Plane) {
+    e.stopPropagation();
+    viewer3DState.togglePlane(plane);
+  }
+
+  function handleOutsideClick(e: MouseEvent) {
+    if (!open) return;
+    const target = e.target as Node;
+    if (rootEl && !rootEl.contains(target)) {
+      open = false;
+    }
+  }
+
+  const anyPlaneVisible = $derived(viewer3DState.visiblePlanes.size > 0);
+</script>
+
+<svelte:window onclick={handleOutsideClick} />
+
+<div class="gear-root" bind:this={rootEl}>
+  <button
+    class="gear-button"
+    class:active={open}
+    onclick={toggleOpen}
+    aria-label="3D viewer settings"
+    aria-expanded={open}
+    aria-haspopup="true"
+  >
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+      <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+      <circle cx="12" cy="12" r="3"/>
+    </svg>
+  </button>
+
+  {#if open}
+    <div
+      class="gear-popover"
+      role="dialog"
+      aria-label="3D viewer settings"
+      tabindex="-1"
+      onclick={(e) => e.stopPropagation()}
+      onkeydown={(e) => { if (e.key === 'Escape') open = false; }}
+      in:scale={{ duration: 250, start: 0.9, opacity: 0, easing: backOut }}
+      out:scale={{ duration: 180, start: 0.95, opacity: 0, easing: cubicOut }}
+    >
+      <!-- Camera presets -->
+      <div class="section">
+        <div class="section-label">Camera</div>
+        <Viewer3DViewPresets compact />
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Grid planes -->
+      <div class="section">
+        <div class="section-label">Grid Planes</div>
+        <div class="plane-list">
+          {#each PLANES as { plane, label }}
+            {@const isVisible = viewer3DState.visiblePlanes.has(plane)}
+            {@const color = PLANE_COLORS[plane]}
+            <button
+              class="plane-row"
+              class:plane-active={isVisible}
+              onclick={(e) => handlePlaneClick(e, plane)}
+              aria-pressed={isVisible}
+              aria-label="{label} plane — {isVisible ? 'visible' : 'hidden'}"
+            >
+              <span class="plane-dot" style="background: {color}; box-shadow: 0 0 4px {color}60;"></span>
+              <span class="plane-label">{label}</span>
+              {#if isVisible}
+                <svg class="plane-check" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#a3e635" stroke-width="2.5">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+              {/if}
+            </button>
+          {/each}
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Plane mode: per-hand plane selectors -->
+      {#if avatarState}
+        <div class="section">
+          <div class="section-label">Hand Planes</div>
+          <PlaneModeToggle
+            mode={avatarState.planeMode}
+            bluePlane={avatarState.currentBeatBluePlane}
+            redPlane={avatarState.currentBeatRedPlane}
+            sequenceBluePlane={avatarState.customBluePlane}
+            sequenceRedPlane={avatarState.customRedPlane}
+            currentBeatIndex={avatarState.currentStepIndex}
+            totalBeats={avatarState.totalSteps}
+            hasBeatOverrides={avatarState.hasBeatOverrides}
+            beatEditMode={avatarState.beatEditMode}
+            onModeChange={(mode) => avatarState.setPlaneMode(mode)}
+            onHandPlaneChange={(hand, plane) => avatarState.setBeatHandPlane(avatarState.currentStepIndex, hand, plane)}
+            onSequenceHandPlaneChange={(hand, plane) => avatarState.setHandPlane(hand, plane)}
+            onBeatEditModeChange={(enabled) => avatarState.setBeatEditMode(enabled)}
+          />
+        </div>
+      {/if}
+    </div>
+  {/if}
+</div>
+
+<style>
+  .gear-root {
+    position: relative;
+  }
+
+  .gear-button {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255, 255, 255, 0.6);
+    cursor: pointer;
+    backdrop-filter: blur(8px);
+    transition: all 0.2s ease;
+  }
+
+  .gear-button:hover {
+    background: rgba(0, 0, 0, 0.7);
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  .gear-button.active {
+    background: rgba(139, 139, 255, 0.2);
+    border-color: rgba(139, 139, 255, 0.3);
+    color: #fff;
+  }
+
+  .gear-popover {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    z-index: 100;
+    min-width: 200px;
+    border-radius: 10px;
+    transform-origin: top right;
+    background: rgba(14, 14, 24, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    padding: 10px;
+  }
+
+  .section {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .section-label {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: rgba(255, 255, 255, 0.35);
+    font-weight: 600;
+  }
+
+  .divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.08);
+    margin: 8px 0;
+  }
+
+  .plane-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .plane-row {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 6px;
+    border-radius: 5px;
+    background: transparent;
+    border: 1px solid transparent;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 10px;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+    text-align: left;
+  }
+
+  .plane-row:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.85);
+  }
+
+  .plane-row.plane-active {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  .plane-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .plane-label {
+    flex: 1;
+  }
+
+  .plane-check {
+    flex-shrink: 0;
+  }
+
+</style>

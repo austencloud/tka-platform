@@ -10,7 +10,7 @@ import type { ILOOPExecutor } from "./ILOOPExecutor.js";
 import type { SequenceStep, MotionData } from "../../core/types/sequence-engine-types.js";
 import type { SliceSize } from "../loop-types.js";
 import {
-  INVERTED_LOOP_VALIDATION_SET,
+  SWAPPED_LOOP_VALIDATION_SET,
   SWAPPED_POSITION_MAP,
   getInvertedLetter,
 } from "../position-maps/strict-loop-position-maps.js";
@@ -55,7 +55,7 @@ export class SwappedInvertedExecutor implements ILOOPExecutor {
     const endPos = sequence[sequence.length - 1]!.endPosition;
     if (!startPos || !endPos) throw new Error("Sequence steps must have valid positions");
     const key = `${startPos},${endPos}`;
-    if (!INVERTED_LOOP_VALIDATION_SET.has(key)) {
+    if (!SWAPPED_LOOP_VALIDATION_SET.has(key)) {
       throw new Error(`Invalid position pair for swapped-inverted LOOP: ${startPos} -> ${endPos}`);
     }
   }

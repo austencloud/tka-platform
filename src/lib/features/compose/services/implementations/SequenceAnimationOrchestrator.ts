@@ -77,9 +77,11 @@ export class SequenceAnimationOrchestrator implements ISequenceAnimationOrchestr
     try {
       // Start position is derived from steps[0] - no separate storage needed
 
-      // Store motion steps (beat 1+)
+      // Store motion steps (beat 1+). Filter out step 0 (start position) which
+      // is handled separately by the start position duration logic. Including it
+      // here would double-count it and shift all beat indices by one.
       const steps = (sequenceData.steps ?? [])
-        .filter((beat): beat is StepData => !!beat)
+        .filter((beat): beat is StepData => !!beat && beat.stepNumber !== 0)
         .map((beat, index) => ({
           ...beat,
           stepNumber:

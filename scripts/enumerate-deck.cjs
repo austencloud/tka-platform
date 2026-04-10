@@ -222,17 +222,20 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
       case "swapped":
         return SWAPPED_LOOP_VALIDATION_SET;
       case "inverted":
-      case "swapped_inverted":
       case "rewound":
         return INVERTED_LOOP_VALIDATION_SET;
+      case "swapped_inverted":
+        // Swap changes the position constraint — seed must end at swapped(start).
+        // Inversion only affects motion types, not positions.
+        return SWAPPED_LOOP_VALIDATION_SET;
       case "mirrored_swapped":
         return MIRRORED_SWAPPED_VALIDATION_SET;
       case "mirrored_inverted":
         return MIRRORED_INVERTED_VALIDATION_SET;
       case "rotated_swapped":
-        return sl === "quartered"
-          ? ROTATED_SWAPPED_QUARTERED_VALIDATION_SET
-          : ROTATED_SWAPPED_HALVED_VALIDATION_SET;
+        // Swap only changes which color does what — it doesn't change the
+        // position constraint. The rotation alone determines the endpoint.
+        return sl === "quartered" ? QUARTERED_LOOPS_CW : HALVED_LOOPS;
       case "rotated_inverted":
         return sl === "quartered" ? QUARTERED_LOOPS_CW : HALVED_LOOPS;
       case "mirrored_rotated":
@@ -241,6 +244,10 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
         // These use composed position constraints — fall back to HALVED_LOOPS
         // for halved, QUARTERED_LOOPS_CW for quartered (rotation is the base constraint)
         return sl === "quartered" ? QUARTERED_LOOPS_CW : HALVED_LOOPS;
+      case "mirrored_swapped_inverted":
+        // Mirror + swap + invert: the three position transformations cancel out,
+        // so the net position constraint is identity (start == end).
+        return INVERTED_LOOP_VALIDATION_SET;
       default:
         console.error(`No validation set for LOOP type "${lt}"`);
         process.exit(1);
@@ -856,15 +863,7 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
         for (let i = 0; i < beatStepsForReversal.length; i++) {
           const step = beatStepsForReversal[i];
 
-          // Beat 1 (i=0) keeps its continuous motion — no reversal.
-          // Reversals begin on beat 2.
-          if (i === 0) {
-            step.blueReversal = false;
-            step.redReversal = false;
-            continue;
-          }
-
-          const symbol = patternDef.sequence[(i - 1) % patternDef.sequence.length];
+          const symbol = patternDef.sequence[i % patternDef.sequence.length];
           const blueReversed = symbol === 'P' || symbol === 'B';
           const redReversed  = symbol === 'P' || symbol === 'R';
 

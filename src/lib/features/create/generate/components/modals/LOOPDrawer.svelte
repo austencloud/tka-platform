@@ -90,6 +90,7 @@
     border-left: 1px solid color-mix(in srgb, var(--theme-accent) 50%, transparent);
   }
 
+
   /* Override LOOPExpandedOverlay's absolute positioning when inside drawer */
   .loop-drawer-content > :global(.loop-expanded-overlay) {
     position: static;

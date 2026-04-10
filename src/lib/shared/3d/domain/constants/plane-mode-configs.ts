@@ -18,6 +18,7 @@ export const GRID_OFFSETS: Record<PlaneMode, number> = {
   [PlaneMode.WALL]: 0.3,
   [PlaneMode.DUAL_WHEEL]: 0,
   [PlaneMode.CUSTOM]: 0.3,
+  [PlaneMode.CONJOINED_WHEEL]: 0,
 };
 
 export interface PlaneModeConfig {
@@ -58,11 +59,21 @@ export const PLANE_MODE_CONFIGS: Record<PlaneMode, PlaneModeConfig> = {
     redLateralOffset: 0,
   },
   [PlaneMode.DUAL_WHEEL]: {
-    // Avatar stays facing forward. Prop states are swapped in
-    // Viewer3DScene so left hand grabs left prop, right grabs right.
+    // Avatar stays facing forward. Each hand is at its lateral offset.
+    // No rotationPlane — each hand uses its own plane (WHEEL) for rotation.
     facingAngle: 0,
     bluePlane: Plane.WHEEL,
     redPlane: Plane.WHEEL,
+    blueLateralOffset: LATERAL_OFFSET,
+    redLateralOffset: -LATERAL_OFFSET,
+  },
+  [PlaneMode.CONJOINED_WHEEL]: {
+    // Dual-wheel hand paths with wall-plane rotation — creates a
+    // "conjoined grid" visual. Discovered accidentally 2026-04-07.
+    facingAngle: 0,
+    bluePlane: Plane.WHEEL,
+    redPlane: Plane.WHEEL,
+    rotationPlane: Plane.WALL,
     blueLateralOffset: LATERAL_OFFSET,
     redLateralOffset: -LATERAL_OFFSET,
   },

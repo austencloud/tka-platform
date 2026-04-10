@@ -7,6 +7,13 @@ const PLACEMENTS_PATH = 'src/lib/features/museum/data/museum-manual-placements.t
 export function museumPlacementPlugin(): Plugin {
   return {
     name: 'museum-placement-writer',
+    handleHotUpdate({ file }: { file: string }) {
+      if (file.includes('museum-manual-placements')) {
+        // Suppress HMR — the placement was already added to the live scene
+        return [];
+      }
+      return undefined;
+    },
     configureServer(server) {
       server.middlewares.use('/__museum-placements', (req, res) => {
         if (req.method !== 'POST') {

@@ -16,9 +16,6 @@
 	// Uniform patterns are checked by prefix since there are multiple (uniform-0t, uniform-1t, etc.)
 	const hasUniform = $derived(availablePatterns.some(p => p.toLowerCase().startsWith('uniform')));
 
-	$effect(() => {
-		console.log('[TurnPatternStep] availablePatterns:', availablePatterns, 'hasUniform:', hasUniform, 'stepCount:', stepCount);
-	});
 	const hasPattern = (name: string) => availablePatterns.some(p =>
 		p.toLowerCase().replace(/\s+/g, '-') === name.toLowerCase().replace(/\s+/g, '-')
 	);

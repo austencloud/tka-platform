@@ -41,9 +41,17 @@
     onBack,
   }: Props = $props();
 
+  // VTG abbreviation for card footer labels
+  const VTG_ABBREVIATIONS: Record<string, string> = {
+    "split-same": "SS", "tog-same": "TS",
+    "split-opp": "SO", "tog-opp": "TO",
+    "quarter-same": "QS", "quarter-opp": "QO",
+  };
+
   const theme = $derived(
     VTG_ELEMENTAL_THEMES.find((t) => t.familyId === familyId),
   );
+  const vtgAbbreviation = $derived(VTG_ABBREVIATIONS[familyId]);
   const familyLabel = $derived(
     theme
       ? `${theme.familyId.split("-").map((w) => (w[0]?.toUpperCase() ?? "") + w.slice(1)).join("-")} (${theme.element[0]?.toUpperCase()}${theme.element.slice(1)})`
@@ -202,7 +210,6 @@
   {#if viewMode === 'print'}
     <PrintPreviewToolbar
       {cardSize}
-      {selectedTheme}
       totalCards={renderedPairs.length}
       {isRendering}
       {isExporting}
@@ -211,10 +218,6 @@
       onCardSizeChange={(s) => {
         cardSize = s;
         if (typeof window !== 'undefined') localStorage.setItem('cardPreview.cardSize', s);
-      }}
-      onThemeChange={(t) => {
-        selectedTheme = t;
-        if (typeof window !== 'undefined') localStorage.setItem('cardPreview.theme', t);
       }}
       onExportPDF={handleExportPDF}
       onExportZIP={handleExportZIP}
@@ -251,6 +254,7 @@
       {showTKA}
       {showWord}
       {includeStartPosition}
+      leftLabel={vtgAbbreviation ? `VTG ${vtgAbbreviation}` : undefined}
       onCardContextMenu={onContextMenu ? (x, y, rerender) => onContextMenu(x, y, rerender) : undefined}
       onPairsReady={(pairs) => { renderedPairs = pairs; }}
       onRenderStateChange={(state) => {

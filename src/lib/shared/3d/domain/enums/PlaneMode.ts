@@ -12,4 +12,6 @@ export enum PlaneMode {
   DUAL_WHEEL = "dual-wheel",
   /** Per-hand independent plane selection — not a preset, user picks each hand's plane */
   CUSTOM = "custom",
+  /** Dual-wheel hand paths with wall-plane rotation — creates a "conjoined grid" visual. Discovered accidentally 2026-04-07. */
+  CONJOINED_WHEEL = "conjoined_wheel",
 }

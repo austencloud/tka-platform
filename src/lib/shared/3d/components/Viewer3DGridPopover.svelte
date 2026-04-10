@@ -17,9 +17,11 @@
 
   interface Props {
     sequenceData: SequenceData | null;
+    popoverAlign?: 'left' | 'right';
+    flat?: boolean;
   }
 
-  let { sequenceData }: Props = $props();
+  let { sequenceData, popoverAlign = 'right', flat = false }: Props = $props();
 
   const viewer3DState = getViewer3DContext();
 
@@ -78,12 +80,13 @@
     bind:this={buttonEl}
     class="grid-trigger"
     class:active={anyVisible}
+    class:flat
     onclick={toggleOpen}
     aria-label={anyVisible ? "Grid planes active — click to adjust" : "Show grid planes"}
     aria-expanded={open}
     aria-haspopup="true"
   >
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
       <circle cx="12" cy="12" r="10" />
       <line x1="2" y1="12" x2="22" y2="12" />
       <line x1="12" y1="2" x2="12" y2="22" />
@@ -95,6 +98,7 @@
   {#if open}
     <div
       class="grid-popover"
+      class:align-left={popoverAlign === 'left'}
       role="dialog"
       aria-label="Grid plane visibility"
       tabindex="-1"
@@ -158,25 +162,42 @@
     display: flex;
     align-items: center;
     gap: 5px;
-    padding: 7px 12px;
+    padding: 6px 11px;
+    min-height: var(--min-touch-target-compact, 32px);
     border-radius: 8px;
-    background: rgba(0, 0, 0, 0.5);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     color: rgba(255, 255, 255, 0.6);
     font-size: var(--font-size-compact, 12px);
+    font-weight: 500;
     cursor: pointer;
     backdrop-filter: blur(8px);
     transition: all 0.2s ease;
     white-space: nowrap;
   }
   .grid-trigger:hover {
-    background: rgba(0, 0, 0, 0.7);
     color: rgba(255, 255, 255, 0.9);
+    background: rgba(255, 255, 255, 0.08);
   }
   .grid-trigger.active {
-    color: #f59e0b;
-    border-color: rgba(245, 158, 11, 0.3);
-    background: rgba(245, 158, 11, 0.1);
+    color: #fff;
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+
+  /* Flat variant: renders like a preset button inside a shared bar */
+  .grid-trigger.flat {
+    background: transparent;
+    border-color: transparent;
+    backdrop-filter: none;
+    border-radius: 6px;
+  }
+  .grid-trigger.flat:hover {
+    background: rgba(255, 255, 255, 0.08);
+  }
+  .grid-trigger.flat.active {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.2);
   }
 
   /* ── Popover panel ── */
@@ -184,6 +205,11 @@
     position: absolute;
     top: calc(100% + 8px);
     right: 0;
+  }
+
+  .grid-popover.align-left {
+    right: auto;
+    left: 0;
     z-index: 100;
     min-width: 156px;
     border-radius: 10px;

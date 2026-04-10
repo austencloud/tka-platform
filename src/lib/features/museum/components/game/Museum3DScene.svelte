@@ -10,6 +10,10 @@
     FogExp2,
     Color,
     Object3D,
+    RingGeometry,
+    MeshBasicMaterial,
+    Mesh,
+    DoubleSide,
   } from "three";
   import type { BatchedMesh, PerspectiveCamera } from "three";
   import MuseumPostProcessing from "./MuseumPostProcessing.svelte";
@@ -26,13 +30,20 @@
   import Avatar3D from "$lib/shared/3d/components/Avatar3D.svelte";
   import MuseumMirror from "./MuseumMirror.svelte";
   import MuseumPortal from "./MuseumPortal.svelte";
+  import MuseumVillageEmbed from "./MuseumVillageEmbed.svelte";
+  import { preloadVillageAvatarModels } from "../../services/implementations/MuseumVillageManager";
   import MuseumTorch3D from "./MuseumTorch3D.svelte";
+
+  // Start preloading village avatar models immediately — they'll be cached
+  // by the time the player reaches the Room of Collaboration
+  preloadVillageAvatarModels();
   import { TorchMaterialCache } from "../../services/implementations/TorchMaterialCache";
   import { FIXTURE_REGISTRY } from "../../domain/fixture-registry";
   import MuseumPlaque3D from "./MuseumPlaque3D.svelte";
   import MuseumSceneEditor from "./MuseumSceneEditor.svelte";
   import PlacementGhost from '../editor/PlacementGhost.svelte';
   import { PlacementPersister } from '../../services/implementations/PlacementPersister';
+  import { preloadAllFixtureModels, addTorchToScene, removeTorchFromScene } from './MuseumTorch3D.svelte';
   import { OrbitControls } from "@threlte/extras";
   import { museum3dEditorState } from "../../state/museum-3d-editor-state.svelte";
   import { museumEditorOverrides } from "../../state/museum-editor-overrides";
@@ -50,7 +61,12 @@
     LightPosition,
     RoomLight,
   } from "../../services/implementations/MuseumGeometryBuilder";
-  import { RoomStreamingManager } from "../../services/implementations/RoomStreamingManager";
+  import { RoomLifecycleManager } from "../../services/implementations/RoomLifecycleManager";
+  import { createRoomDescriptor } from "../../domain/room-descriptor";
+  import type { SerializedBucketEntry } from "../../domain/room-descriptor";
+  import { dryRunFromWorkerTransfer } from "../../services/implementations/MuseumGeometryBuilder";
+  import type { MuseumGeometryDryRun } from "../../services/implementations/MuseumGeometryBuilder";
+  import type { RoomBuiltResponse } from "../../workers/geometry-worker-protocol";
   import { MUSEUM_EDGES } from "../../data/museum-room-graph";
 
   // Shared texture generator — one instance for all plaques (caches internally)
@@ -205,7 +221,27 @@
     overrideVersion++;
   }
 
+  // Preload all fixture GLTF models when entering editor mode so the ghost
+  // preview shows the real model and placement is instant (synchronous clone).
+  $effect(() => {
+    if (museum3dEditorState.editorActive) {
+      preloadAllFixtureModels();
+    }
+  });
+
+  // ── Imperative placement — bypass Svelte for instant torch appearance ──
+  // Instead of pushing to a reactive array (which triggers component mount, async
+  // model loading, shader compilation), we clone the cached GLTF model and add it
+  // directly to the Three.js scene. This makes placement feel instant.
+
+  let placementHistory: { placementId: string; roomId: string }[] = [];
+
+  function getSceneObj() {
+    return (threlteCtx as any).scene?.current ?? (threlteCtx as any).scene;
+  }
+
   function handlePlace(worldX: number, worldZ: number, yaw: number, wallFacing: string | null): void {
+    const T0 = performance.now();
     const def = museum3dEditorState.placementDef;
     if (!def) return;
 
@@ -216,9 +252,10 @@
       return tileX >= b.x && tileX < b.x + b.width && tileY >= b.y && tileY < b.y + b.height;
     });
     const roomId = wing?.id ?? 'unknown';
+    const placementId = `${roomId}-${def.id}-${Date.now()}`;
 
     const placement = {
-      id: `${roomId}-${def.id}-${Date.now()}`,
+      id: placementId,
       objectDefId: def.id,
       tileX,
       tileY,
@@ -226,7 +263,104 @@
       yaw,
     };
 
+    const T1 = performance.now();
+    // Persist (fire-and-forget)
     placementPersister.save(roomId, placement);
+    const T2 = performance.now();
+
+    // Instantly add to scene imperatively
+    if (def.category === 'fixture') {
+      let wallOffsetX = 0;
+      let wallOffsetZ = 0;
+      if (wallFacing === 'north') wallOffsetZ = -TILE_SIZE * 0.35;
+      else if (wallFacing === 'south') wallOffsetZ = TILE_SIZE * 0.35;
+      else if (wallFacing === 'west') wallOffsetX = -TILE_SIZE * 0.35;
+      else if (wallFacing === 'east') wallOffsetX = TILE_SIZE * 0.35;
+
+      const scn = getSceneObj();
+      if (scn) {
+        const wingTheme = (def.wingTheme ?? wing?.theme ?? 'cave') as import("../../domain/museum-grid-types").WingTheme;
+        const T3 = performance.now();
+        addTorchToScene(
+          scn,
+          tileX * TILE_SIZE, tileY * TILE_SIZE,
+          wallOffsetX, wallOffsetZ,
+          wingTheme,
+          placementId,
+        );
+        const T4 = performance.now();
+        console.log(`[Place] prep=${(T1-T0).toFixed(1)}ms save=${(T2-T1).toFixed(1)}ms addToScene=${(T4-T3).toFixed(1)}ms total=${(T4-T0).toFixed(1)}ms`);
+        requestAnimationFrame(() => {
+          console.log(`[Place] first-rAF=${(performance.now()-T0).toFixed(1)}ms`);
+          requestAnimationFrame(() => {
+            console.log(`[Place] second-rAF=${(performance.now()-T0).toFixed(1)}ms`);
+          });
+        });
+
+        // Pulse effect — golden ring that expands and fades
+        const tx = tileX * TILE_SIZE + wallOffsetX;
+        const tz = tileY * TILE_SIZE + wallOffsetZ;
+        const fixtureY = 1.25;
+        let normalX = 0, normalZ = 0;
+        if (wallFacing === 'north') normalZ = -1;
+        else if (wallFacing === 'south') normalZ = 1;
+        else if (wallFacing === 'west') normalX = -1;
+        else if (wallFacing === 'east') normalX = 1;
+
+        const ring = new RingGeometry(0.05, 0.08, 32);
+        const ringMat = new MeshBasicMaterial({
+          color: 0xffcc44,
+          transparent: true,
+          opacity: 0.8,
+          side: DoubleSide,
+          depthWrite: false,
+        });
+        const ringMesh = new Mesh(ring, ringMat);
+        ringMesh.position.set(tx, fixtureY, tz);
+        ringMesh.lookAt(tx + normalX, fixtureY, tz + normalZ);
+        scn.add(ringMesh);
+
+        const startTime = performance.now();
+        const animatePulse = () => {
+          const elapsed = performance.now() - startTime;
+          const t = Math.min(elapsed / 400, 1);
+          const scale = 1 + t * 4;
+          ringMesh.scale.setScalar(scale);
+          ringMat.opacity = 0.8 * (1 - t);
+          if (t < 1) {
+            requestAnimationFrame(animatePulse);
+          } else {
+            scn.remove(ringMesh);
+            ring.dispose();
+            ringMat.dispose();
+          }
+        };
+        requestAnimationFrame(animatePulse);
+      }
+
+      placementHistory.push({ placementId, roomId });
+    }
+  }
+
+  function handleDelete(placementId: string): void {
+    const scn = getSceneObj();
+    if (scn) removeTorchFromScene(scn, placementId);
+
+    // Find room from history or scan wings
+    const entry = placementHistory.find(h => h.placementId === placementId);
+    const roomId = entry?.roomId ?? 'unknown';
+
+    placementHistory = placementHistory.filter(h => h.placementId !== placementId);
+    placementPersister.remove(roomId, placementId);
+  }
+
+  function handlePlacementUndo(): void {
+    const entry = placementHistory.pop();
+    if (!entry) return;
+
+    const scn = getSceneObj();
+    if (scn) removeTorchFromScene(scn, entry.placementId);
+    placementPersister.remove(entry.roomId, entry.placementId);
   }
 
   // Apply any persisted overrides on mount (from previous editor sessions).
@@ -995,15 +1129,122 @@
   // This reduces GPU shader compilation from ~16 rooms to ~3 rooms on load.
 
   let geometryReady = $state(false);
-  const streamingManager = new RoomStreamingManager(MUSEUM_EDGES, 5000);
+  const lifecycleManager = new RoomLifecycleManager(MUSEUM_EDGES);
+
+  // BFS from spawn room to assign build priority by graph distance.
+  // Closer rooms get lower priority numbers → built first by the worker.
+  function computeDistancesFromSpawn(spawn: string | null, allRoomIds: string[]): Map<string, number> {
+    const dist = new Map<string, number>();
+    if (!spawn) {
+      for (const id of allRoomIds) dist.set(id, 99);
+      return dist;
+    }
+    // Build adjacency from edges
+    const adj = new Map<string, Set<string>>();
+    for (const e of MUSEUM_EDGES) {
+      if (!adj.has(e.from)) adj.set(e.from, new Set());
+      if (!adj.has(e.to)) adj.set(e.to, new Set());
+      adj.get(e.from)!.add(e.to);
+      adj.get(e.to)!.add(e.from);
+    }
+    // BFS
+    const queue = [spawn];
+    dist.set(spawn, 0);
+    while (queue.length > 0) {
+      const current = queue.shift()!;
+      const d = dist.get(current)!;
+      for (const neighbor of adj.get(current) ?? []) {
+        if (!dist.has(neighbor)) {
+          dist.set(neighbor, d + 1);
+          queue.push(neighbor);
+        }
+      }
+    }
+    // Any room not reachable from spawn gets max distance
+    for (const id of allRoomIds) {
+      if (!dist.has(id)) dist.set(id, 99);
+    }
+    return dist;
+  }
 
   // Per-room bucketing (pure data, computed once synchronously — fast)
   const perRoomBuckets = bucketMuseumTilesByRoom(grid);
 
-  // Loaded room chunks — keyed by wingId
-  let loadedChunks = $state<Map<string, RoomChunk>>(new Map());
   // Corridor chunk — always loaded
   let corridorChunk = $state<RoomChunk | null>(null);
+
+  // ── Geometry Web Worker — all room building happens off main thread ──
+  const geometryWorker = new Worker(
+    new URL("../../workers/geometry-worker.ts", import.meta.url),
+    { type: "module" }
+  );
+
+  const pendingBuilds = new Map<string, (response: RoomBuiltResponse) => void>();
+
+  geometryWorker.onmessage = (event: MessageEvent) => {
+    const msg = event.data;
+    if (msg.type === "room-built") {
+      const resolve = pendingBuilds.get(msg.roomId);
+      if (resolve) {
+        pendingBuilds.delete(msg.roomId);
+        resolve(msg as RoomBuiltResponse);
+      }
+    }
+  };
+
+  function serializeBucketsForWorker(buckets: MuseumGeometryDryRun) {
+    const floorEntries: SerializedBucketEntry[] = [];
+    for (const [, bucket] of buckets.floorBuckets) {
+      floorEntries.push({ color: bucket.color, positions: [...bucket.positions], floorMaterial: bucket.floorMaterial });
+    }
+    const wallEntries: SerializedBucketEntry[] = [];
+    for (const [, bucket] of buckets.wallBuckets) {
+      wallEntries.push({ color: bucket.color, positions: [...bucket.positions], wingTheme: bucket.wingTheme });
+    }
+    return {
+      floorEntries,
+      wallEntries,
+      pedestalPositions: [...buckets.pedestalPositions],
+      signPositions: [...buckets.signPositions],
+      performerPositions: [...buckets.performerPositions],
+      totalFloorInstances: buckets.totalFloorInstances,
+      totalWallInstances: buckets.totalWallInstances,
+    };
+  }
+
+  function requestRoomBuild(roomId: string, priority: number): Promise<RoomBuiltResponse> {
+    return new Promise((resolve) => {
+      pendingBuilds.set(roomId, resolve);
+      const cached = lifecycleManager.getCachedDescriptor(roomId);
+      const buckets = perRoomBuckets.roomBuckets.get(roomId);
+      const wing = grid.wings.find((w) => w.id === roomId);
+
+      if (cached && wing) {
+        geometryWorker.postMessage({
+          type: "rebuild-from-cache",
+          roomId,
+          buckets: cached.tileBuckets,
+          wing: { bounds: wing.bounds, theme: wing.theme },
+          priority,
+        });
+      } else if (buckets && wing) {
+        geometryWorker.postMessage({
+          type: "build-room",
+          roomId,
+          buckets: serializeBucketsForWorker(buckets),
+          wing: { bounds: wing.bounds, theme: wing.theme },
+          priority,
+        });
+      }
+    });
+  }
+
+  // Clean up geometry worker on component destroy
+  $effect(() => {
+    return () => {
+      geometryWorker.terminate();
+    };
+  });
 
   const MAX_POINT_LIGHTS = 32;
 
@@ -1028,6 +1269,7 @@
 
   // Visible sets — only these items get rendered
   let visibleTorches = $state<TorchPosition[]>([]);
+  // manualTorches removed — placed torches are added imperatively to the scene
   let visiblePlaques = $state<PlaquePlacement[]>([]);
   let visiblePerformers = $state<typeof grid.performers>([]);
   let visibleExhibitLights = $state<LightPosition[]>([]);
@@ -1052,7 +1294,7 @@
     ceilingLightGrid = new ProximityGrid<LightPosition>(CELL_SIZE);
     sunlightGrid = new ProximityGrid<LightPosition>(CELL_SIZE);
 
-    const allChunks = [corridorChunk, ...prebuiltChunks.values()].filter(Boolean) as RoomChunk[];
+    const allChunks = [corridorChunk, ...activeRoomChunks.values()].filter(Boolean) as RoomChunk[];
     for (const chunk of allChunks) {
       for (const t of chunk.torchPositions) torchGrid.insert(t, t.tileX, t.tileY);
       for (const p of chunk.plaquePlacements) plaqueGrid.insert(p, p.tileX, p.tileY);
@@ -1068,166 +1310,217 @@
   }
 
 
-  // ── Pre-build ALL room chunks behind the loading overlay ──
-  // Build every room's geometry upfront so room transitions are instant.
-  // The overlay stays visible until all chunks are built + textures loaded.
-  // This is ~300ms of JS work + GPU shader compilation (absorbed by overlay).
-  const prebuiltChunks = new Map<string, RoomChunk>();
-  // performerMeshLookup removed — no batched performer mesh to update
-  const spawnRoomId = streamingManager.getRoomAtTile(grid.spawn.x, grid.spawn.y, grid.wings);
+  // ── Progressive room loading ──
+  // Instead of building all 16 rooms upfront, we build the lobby + corridors
+  // first, signal ready, then build adjacent rooms in the background via the
+  // geometry Web Worker. Rooms are added/removed from the scene as the player
+  // moves through the museum.
+  const activeRoomChunks = new Map<string, RoomChunk>();
+
+  // Determine spawn room from tile coordinates
+  function getRoomAtTile(tileX: number, tileY: number): string | null {
+    for (const wing of grid.wings) {
+      const b = wing.bounds;
+      if (tileX >= b.x && tileX < b.x + b.width && tileY >= b.y && tileY < b.y + b.height) {
+        return wing.id;
+      }
+    }
+    return null;
+  }
+
+  const spawnRoomId = getRoomAtTile(grid.spawn.x, grid.spawn.y);
+
+  /** Add a room chunk's meshes to the Three.js scene */
+  function addChunkToScene(chunk: RoomChunk): void {
+    const sceneObj = (threlteCtx as any).scene?.current ?? (threlteCtx as any).scene;
+    if (!sceneObj) return;
+    for (const { mesh } of chunk.floorMeshes) {
+      mesh.receiveShadow = true;
+      sceneObj.add(mesh);
+      allSceneMeshes.push(mesh);
+    }
+    for (const { mesh } of chunk.wallMeshes) {
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      sceneObj.add(mesh);
+      allSceneMeshes.push(mesh);
+    }
+    if (chunk.ceilingMesh) {
+      const cm = chunk.ceilingMesh;
+      for (const id of (cm.instanceIds ?? [])) {
+        cm.mesh.setVisibleAt(id, false);
+      }
+      sceneObj.add(cm.mesh);
+      allSceneMeshes.push(cm.mesh);
+      ceilingChunkRefs.push(cm);
+    }
+    if (chunk.pedestalMesh) {
+      chunk.pedestalMesh.castShadow = true;
+      chunk.pedestalMesh.receiveShadow = true;
+      sceneObj.add(chunk.pedestalMesh);
+      allSceneMeshes.push(chunk.pedestalMesh);
+    }
+    if (chunk.signMesh) {
+      chunk.signMesh.castShadow = true;
+      chunk.signMesh.receiveShadow = true;
+      sceneObj.add(chunk.signMesh);
+      allSceneMeshes.push(chunk.signMesh);
+    }
+  }
+
+  async function activateRoom(roomId: string, priority: number): Promise<void> {
+    if (activeRoomChunks.has(roomId)) return;
+
+    const workerResult = await requestRoomBuild(roomId, priority);
+
+    const dryRun = dryRunFromWorkerTransfer(
+      workerResult.floorBatches,
+      workerResult.wallBatches,
+      workerResult.pedestalPositions,
+      workerResult.signPositions,
+      workerResult.totalFloorInstances,
+      workerResult.totalWallInstances,
+    );
+
+    // Merge fixture data from original buckets (torches, plaques, performers
+    // are not sent through the worker — they're non-geometry data)
+    const originalBuckets = perRoomBuckets.roomBuckets.get(roomId);
+    if (originalBuckets) {
+      dryRun.plaquePlacements = originalBuckets.plaquePlacements;
+      dryRun.torchPositions = originalBuckets.torchPositions;
+      dryRun.performerPositions = originalBuckets.performerPositions;
+    }
+
+    const wing = grid.wings.find((w) => w.id === roomId) ?? null;
+    const chunk = await buildRoomChunk(dryRun, roomId, wing);
+
+    addChunkToScene(chunk);
+    activeRoomChunks.set(roomId, chunk);
+
+    // Always visible once built — no visibility toggling. All rooms stay
+    // visible permanently. With 16 rooms using instanced geometry, GPU cost
+    // is negligible. This eliminates every "walls pop in" artifact.
+    console.log("[Museum] activateRoom done:", roomId);
+    setChunkVisible(chunk, true);
+
+    // Update proximity grids so fixtures in this room become discoverable
+    for (const t of chunk.torchPositions) torchGrid.insert(t, t.tileX, t.tileY);
+    for (const p of chunk.plaquePlacements) plaqueGrid.insert(p, p.tileX, p.tileY);
+    for (const l of chunk.exhibitLightPositions) exhibitLightGrid.insert(l, l.tileX, l.tileY);
+    for (const l of chunk.ceilingLightPositions) ceilingLightGrid.insert(l, l.tileX, l.tileY);
+    for (const l of chunk.sunlightPositions) sunlightGrid.insert(l, l.tileX, l.tileY);
+  }
 
   props.onBuildStage?.("Tile bucketing");
 
+  let lastPlayerRoomId: string | null = null;
+
+  // ── Initial load: lobby first, then ALL rooms progressively via worker ──
+  //
+  // Strategy: build lobby + corridors immediately so the player can walk.
+  // Then queue ALL remaining rooms through the worker in priority order:
+  //   priority 0 = lobby (already built)
+  //   priority 1 = direct neighbors of lobby
+  //   priority 2 = 2 hops from lobby
+  //   priority 3 = everything else
+  // Each room becomes visible the instant it finishes building. No visibility
+  // toggling, no pop-in. The worker processes ~50ms per room, so all 16 rooms
+  // are done in <1 second while the player explores the lobby.
   (async () => {
-    // Build corridor chunk first
+    // 1. Build corridors on main thread (cheap, always visible)
     const corridorDryRun = perRoomBuckets.corridorBucket;
-    console.log(`[Museum3D] Corridor bucket: ${corridorDryRun.totalTiles} tiles, ${corridorDryRun.totalFloorInstances} floor, ${corridorDryRun.totalWallInstances} wall`);
+    props.onBuildStage?.("Building corridors");
     const cc = await buildRoomChunk(corridorDryRun, "__corridor__", null);
     corridorChunk = cc;
-    console.log(`[Museum3D] Corridor chunk: ${cc.floorMeshes.length} floor meshes, ${cc.wallMeshes.length} wall meshes`);
-    props.onBuildStage?.("Corridors");
 
-    // Build ALL room chunks sequentially (yields between phases keep overlay responsive)
-    for (const wing of grid.wings) {
-      const buckets = perRoomBuckets.roomBuckets.get(wing.id);
-      if (!buckets) continue;
-      const chunk = await buildRoomChunk(buckets, wing.id, wing);
-      prebuiltChunks.set(wing.id, chunk);
-      props.onBuildStage?.(wing.name);
-    }
-
-    // Build global proximity grids from ALL chunks (torches, lights, plaques)
-    buildGlobalProximityGrids();
-
-    // ── Imperative scene setup: add ALL meshes directly to Three.js ──
-    // No Svelte templates, no reactive arrays, no component mounting.
-    // Just scene.add() for each mesh. This is how game engines do it.
-    props.onBuildStage?.("Adding geometry to scene");
-
-    const renderer = (threlteCtx as any).renderer?.current ?? (threlteCtx as any).renderer;
     const sceneObj = (threlteCtx as any).scene?.current ?? (threlteCtx as any).scene;
+    if (sceneObj) addChunkToScene(cc);
 
-    if (sceneObj) {
-      function addChunkToScene(chunk: RoomChunk): void {
-        for (const { mesh } of chunk.floorMeshes) {
-          mesh.receiveShadow = true;
-          sceneObj.add(mesh);
-          allSceneMeshes.push(mesh);
-        }
-        for (const { mesh } of chunk.wallMeshes) {
-          mesh.castShadow = true;
-          mesh.receiveShadow = true;
-          sceneObj.add(mesh);
-          allSceneMeshes.push(mesh);
-        }
-        if (chunk.ceilingMesh) {
-          // Start with all ceiling instances hidden (top-down mode)
-          const cm = chunk.ceilingMesh;
-          for (const id of (cm.instanceIds ?? [])) {
-            cm.mesh.setVisibleAt(id, false);
-          }
-          sceneObj.add(cm.mesh);
-          allSceneMeshes.push(cm.mesh);
-          ceilingChunkRefs.push(cm);
-        }
-        if (chunk.pedestalMesh) {
-          chunk.pedestalMesh.castShadow = true;
-          chunk.pedestalMesh.receiveShadow = true;
-          sceneObj.add(chunk.pedestalMesh);
-          allSceneMeshes.push(chunk.pedestalMesh);
-        }
-        if (chunk.signMesh) {
-          chunk.signMesh.castShadow = true;
-          chunk.signMesh.receiveShadow = true;
-          sceneObj.add(chunk.signMesh);
-          allSceneMeshes.push(chunk.signMesh);
-        }
-        // performerMesh removed — MuseumPerformerStation3D renders its own platform
-      }
-
-      // Add corridor geometry
-      addChunkToScene(cc);
-      // Add all room geometry
-      for (const chunk of prebuiltChunks.values()) {
-        addChunkToScene(chunk);
-      }
-
-      // Force-compile ALL shaders now (behind overlay)
-      if (renderer && camera) {
-        renderer.compile(sceneObj, camera);
-      }
-
-      console.log(`[Museum3D] BatchedMesh scene: ${allSceneMeshes.length} batches added, ${ceilingChunkRefs.length} ceiling batches (GPU frustum culling enabled)`);
-
-      // Seed the streaming manager: all rooms start as "loaded" since we
-      // built them all upfront. This ensures the hysteresis tracking works
-      // correctly when update() starts hiding distant rooms.
-      for (const wingId of prebuiltChunks.keys()) {
-        streamingManager.forceLoad(wingId);
-      }
+    // 2. Build lobby via worker (highest priority — blocks until done)
+    props.onBuildStage?.("Building lobby");
+    if (spawnRoomId) {
+      lastPlayerRoomId = spawnRoomId;
+      await activateRoom(spawnRoomId, 0);
     }
 
-    // Yield so overlay can paint
-    await new Promise<void>(r => setTimeout(r, 0));
-
-    // Mount ALL torches globally — flame shaders compile once behind overlay
-    const allTorches: TorchPosition[] = [];
-    const allExhibitLights: LightPosition[] = [];
-    const allCeilingLights: LightPosition[] = [];
-    const allSunlights: LightPosition[] = [];
-    const allChunks = [cc, ...prebuiltChunks.values()];
-    for (const chunk of allChunks) {
-      allTorches.push(...chunk.torchPositions);
-      allExhibitLights.push(...chunk.exhibitLightPositions);
-      allCeilingLights.push(...chunk.ceilingLightPositions);
-      allSunlights.push(...chunk.sunlightPositions);
+    // 3. Compile shaders for lobby only
+    const renderer = (threlteCtx as any).renderer?.current ?? (threlteCtx as any).renderer;
+    if (renderer && camera && sceneObj) {
+      renderer.compile(sceneObj, camera);
     }
-    // ── Staggered component mounting ──
-    // Mount Svelte components in groups with yields between each so the
-    // loading overlay stays responsive. Each group triggers a Svelte render
-    // cycle that mounts components + compiles their shaders.
 
-    props.onBuildStage?.("Mounting lights");
-    visibleExhibitLights = allExhibitLights;
-    visibleCeilingLights = allCeilingLights;
-    visibleSunlights = allSunlights;
-    await new Promise<void>(r => setTimeout(r, 0));
-
-    props.onBuildStage?.("Mounting torches");
-    visibleTorches = allTorches;
-    await new Promise<void>(r => setTimeout(r, 0));
-
-    props.onBuildStage?.("Mounting plaques");
+    // 4. Mount fixtures for currently loaded rooms
+    props.onBuildStage?.("Mounting fixtures");
+    const lobbyChunks = [cc, ...activeRoomChunks.values()];
+    const initTorches: TorchPosition[] = [];
+    const initExhibitLights: LightPosition[] = [];
+    const initCeilingLights: LightPosition[] = [];
+    const initSunlights: LightPosition[] = [];
+    for (const chunk of lobbyChunks) {
+      initTorches.push(...chunk.torchPositions);
+      initExhibitLights.push(...chunk.exhibitLightPositions);
+      initCeilingLights.push(...chunk.ceilingLightPositions);
+      initSunlights.push(...chunk.sunlightPositions);
+    }
+    visibleExhibitLights = initExhibitLights;
+    visibleCeilingLights = initCeilingLights;
+    visibleSunlights = initSunlights;
+    visibleTorches = initTorches;
     visiblePlaques = getAllPlaquePlacements();
     useSpotLights = visiblePlaques.length > 0 && visiblePlaques.length < 20;
-    await new Promise<void>(r => setTimeout(r, 0));
-
-    props.onBuildStage?.("Mounting performers");
     visiblePerformers = grid.performers;
-    await new Promise<void>(r => setTimeout(r, 0));
-
-    props.onBuildStage?.("Mounting furniture");
     visibleFurniture = grid.furniture ?? [];
     await new Promise<void>(r => setTimeout(r, 0));
 
+    // 5. Signal ready — player can move
     geometryReady = true;
     props.onGeometryReady?.();
+
+    // 6. Build ALL remaining rooms progressively via worker.
+    //    Assign priorities by graph distance from the spawn room so nearby
+    //    rooms finish first (what the player is most likely to see).
+    const allRoomIds = [...perRoomBuckets.roomBuckets.keys()];
+    const distances = computeDistancesFromSpawn(spawnRoomId, allRoomIds);
+    const sortedRooms = allRoomIds
+      .filter((id) => id !== spawnRoomId)
+      .sort((a, b) => (distances.get(a) ?? 99) - (distances.get(b) ?? 99));
+
+    console.log("[Museum] Initial load — spawn:", spawnRoomId);
+    console.log("[Museum] Building all rooms progressively:", sortedRooms.map((id) => `${id}(d=${distances.get(id)})`));
+
+    for (const roomId of sortedRooms) {
+      const dist = distances.get(roomId) ?? 99;
+      activateRoom(roomId, dist); // fire-and-forget — loads in background
+    }
+
+    // 7. Compile shaders for newly added rooms during idle time
+    if (typeof requestIdleCallback !== "undefined") {
+      requestIdleCallback(() => {
+        const r2 = (threlteCtx as any).renderer?.current ?? (threlteCtx as any).renderer;
+        const s2 = (threlteCtx as any).scene?.current ?? (threlteCtx as any).scene;
+        if (r2 && camera && s2) r2.compile(s2, camera);
+      });
+    }
   })();
 
-  // ── Visibility-based room streaming ──
-  // All geometry stays permanently in the scene graph (no add/remove) so the
-  // 2D top-down view can show everything instantly. In FPS mode, distant room
-  // chunks get mesh.visible = false — Three.js skips them entirely (zero draw
-  // calls, zero fragment work). On flip back to top-down, everything goes
-  // visible again with no loading delay.
-  //
-  // This is the pattern indoor games use (Portal, Resident Evil, Dishonored):
-  // "visibility sets" rather than true loading/unloading. The GPU memory cost
-  // stays the same, but per-frame draw calls drop ~80% in FPS mode.
+  // ── Room streaming: activate/deactivate rooms as the player moves ──
 
-  let activeRoomSet = new Set<string>();
-  // Track last room ID to avoid redundant visibility updates every frame
-  let lastStreamingRoomId: string | null = null;
+  // Collaboration room center — for positioning the live Village sim
+  const collabWing = $derived(grid.wings.find((w) => w.id === "collaboration"));
+  const collabCenterX = $derived(
+    collabWing ? (collabWing.bounds.x + collabWing.bounds.width / 2) * TILE_SIZE : 0,
+  );
+  const collabCenterZ = $derived(
+    collabWing ? (collabWing.bounds.y + collabWing.bounds.height / 2) * TILE_SIZE : 0,
+  );
+  // Track which room the player is in (updated every streaming check)
+  let currentPlayerRoomId = $state<string | null>(null);
+  // Mount the village embed as soon as geometry is ready so GLTF avatar
+  // parsing happens in the background via requestIdleCallback while the
+  // player explores other rooms. Always visible once mounted — it sits
+  // inside the collaboration room's walls, so it's only visible when
+  // looking into that room. No visibility toggle = no pop-in.
+  const villageEmbedMounted = $derived(geometryReady);
 
   /** Set mesh.visible on every mesh in a room chunk */
   function setChunkVisible(chunk: RoomChunk, visible: boolean): void {
@@ -1241,12 +1534,12 @@
     // performerMesh always null — platform rendered by MuseumPerformerStation3D
   }
 
-  /** Show all room chunks — used in top-down mode and during flip animation */
+  /** Show all active room chunks — used in top-down mode and during flip animation */
   function showAllRooms(): void {
-    for (const chunk of prebuiltChunks.values()) {
+    for (const chunk of activeRoomChunks.values()) {
       setChunkVisible(chunk, true);
     }
-    lastStreamingRoomId = null; // Force re-evaluation on next FPS frame
+    lastPlayerRoomId = null; // Force re-evaluation on next FPS frame
   }
 
   // Toggle ceiling visibility when switching between FPS and top-down.
@@ -1254,13 +1547,10 @@
   // In FPS, ceilings show — but only for rooms in the active set.
   $effect(() => {
     if (fpsActive) {
-      // FPS: show ceilings only for active rooms
-      for (const [wingId, chunk] of prebuiltChunks) {
-        if (chunk.ceilingMesh) {
-          chunk.ceilingMesh.mesh.visible = activeRoomSet.has(wingId);
-        }
+      // FPS: show all ceilings (all rooms always visible)
+      for (const chunk of activeRoomChunks.values()) {
+        if (chunk.ceilingMesh) chunk.ceilingMesh.mesh.visible = true;
       }
-      // Corridor ceiling always visible
       if (corridorChunk?.ceilingMesh) {
         corridorChunk.ceilingMesh.mesh.visible = true;
       }
@@ -1276,28 +1566,26 @@
 
   function updateStreaming(playerTX: number, playerTZ: number): void {
     if (!geometryReady) return;
-
-    // In top-down or during flip animation: everything visible, no streaming
     if (!fpsActive) return;
 
-    // Determine which room the player is in
-    const currentRoomId = streamingManager.getRoomAtTile(playerTX, playerTZ, grid.wings);
-
-    // Skip if player hasn't moved to a new room
-    if (currentRoomId === lastStreamingRoomId) return;
-    lastStreamingRoomId = currentRoomId;
-
-    // Ask the streaming manager which rooms should be active
-    const { activeSet } = streamingManager.update(currentRoomId);
-    activeRoomSet = activeSet;
-
-    // Toggle visibility on each room chunk
-    for (const [wingId, chunk] of prebuiltChunks) {
-      setChunkVisible(chunk, activeSet.has(wingId));
+    // Detect which room the player is in by tile coordinate
+    let detectedRoomId: string | null = null;
+    for (const wing of grid.wings) {
+      const b = wing.bounds;
+      if (playerTX >= b.x && playerTX < b.x + b.width && playerTZ >= b.y && playerTZ < b.y + b.height) {
+        detectedRoomId = wing.id;
+        break;
+      }
     }
+    currentPlayerRoomId = detectedRoomId;
 
-    // Corridor is always visible (cheap, connects everything)
-    if (corridorChunk) setChunkVisible(corridorChunk, true);
+    // Track room transitions for the UI label. No visibility toggling —
+    // all rooms stay visible once built. The progressive initial load
+    // ensures every room is built within ~1 second of entering the museum.
+    if (detectedRoomId && detectedRoomId !== lastPlayerRoomId) {
+      lastPlayerRoomId = detectedRoomId;
+      console.log("[Museum] Player entered room:", detectedRoomId);
+    }
   }
 
   // Shadow disabled on dynamic lights — toggling castShadow reactively causes
@@ -1314,7 +1602,7 @@
   function getAllPlaquePlacements(): PlaquePlacement[] {
     const all: PlaquePlacement[] = [];
     if (corridorChunk) all.push(...corridorChunk.plaquePlacements);
-    for (const chunk of prebuiltChunks.values()) all.push(...chunk.plaquePlacements);
+    for (const chunk of activeRoomChunks.values()) all.push(...chunk.plaquePlacements);
     return all;
   }
 
@@ -1332,10 +1620,10 @@
     return new Set(withLight.map(t => `${t.x},${t.z}`));
   });
 
-  // Room lights from all pre-built chunks (static after init)
+  // Room lights from all active chunks (updates as rooms load/unload)
   let roomLights = $derived.by(() => {
     const lights: RoomLight[] = [];
-    for (const chunk of prebuiltChunks.values()) {
+    for (const chunk of activeRoomChunks.values()) {
       if (chunk.roomLight) lights.push(chunk.roomLight);
     }
     return lights;
@@ -1562,7 +1850,7 @@
     generator={plaqueGenerator}
   />
 {/each}
-{#each visibleExhibitLights as pos (`${pos.x},${pos.z}`)}
+{#each visibleExhibitLights as pos, i (`${pos.x},${pos.z},${i}`)}
   {#if useSpotLights}
     <T.SpotLight
       position={[pos.x, 2.5, pos.z]}
@@ -1585,7 +1873,7 @@
 {/each}
 
 <!-- Ceiling fluorescent lights — cold white overhead wash for institutional rooms -->
-{#each visibleCeilingLights as cLight (`${cLight.x},${cLight.z}`)}
+{#each visibleCeilingLights as cLight, i (`${cLight.x},${cLight.z},${i}`)}
   <T.PointLight
     position={[cLight.x, WALL_HEIGHT - 0.3, cLight.z]}
     intensity={2.5}
@@ -1598,7 +1886,7 @@
 <!-- Sunlight shafts — warm golden pools for outdoor rooms.
      Each spot has a bright downward SpotLight (the sun shaft) plus a
      soft PointLight fill to brighten the surrounding ground. -->
-{#each visibleSunlights as sun (`${sun.x},${sun.z}`)}
+{#each visibleSunlights as sun, i (`${sun.x},${sun.z},${i}`)}
   <T.SpotLight
     position={[sun.x + 2, WALL_HEIGHT + 3, sun.z - 1]}
     target-position={[sun.x, 0, sun.z]}
@@ -1619,7 +1907,7 @@
 {/each}
 
 <!-- Light fixtures — model and effects vary by wing theme/era -->
-{#each visibleTorches as torch (`${torch.x},${torch.z}`)}
+{#each visibleTorches as torch, i (`${torch.x},${torch.z},${i}`)}
   <MuseumTorch3D
     x={torch.x}
     z={torch.z}
@@ -1633,11 +1921,19 @@
   />
 {/each}
 
+<!-- Manually placed fixtures are added imperatively via addTorchToScene() —
+     no Svelte {#each} needed. This bypasses component mount overhead for
+     instant placement. The groups are named `manual-placement-{id}` and
+     removed via removeTorchFromScene() on delete/undo. -->
+
 <!-- Performer stations: 3D mannequins with spinning staves -->
 <!-- overrideVersion dependency ensures reactivity when editor moves objects -->
+<!-- Collaboration room performers are replaced by the live village sim -->
 {#each visiblePerformers as performer (performer.id)}
-  {@const posOverride = overrideVersion >= 0 ? museumEditorOverrides.get(`performer-station-${performer.id}`) : null}
-  {#if performer.id.includes("telekinetic-formation")}
+  {#if villageEmbedMounted && performer.id.startsWith("collab-")}
+    <!-- Skip: replaced by MuseumVillageEmbed -->
+  {:else if performer.id.includes("telekinetic-formation")}
+    {@const posOverride = overrideVersion >= 0 ? museumEditorOverrides.get(`performer-station-${performer.id}`) : null}
     <TelekineticFormation3D
       stationId={performer.id}
       worldX={posOverride?.x ?? performer.tileX * TILE_SIZE}
@@ -1646,6 +1942,7 @@
       autoPlay={performer.autoPlay}
     />
   {:else}
+    {@const posOverride = overrideVersion >= 0 ? museumEditorOverrides.get(`performer-station-${performer.id}`) : null}
     <MuseumPerformerStation3D
       stationId={performer.id}
       worldX={posOverride?.x ?? performer.tileX * TILE_SIZE}
@@ -1657,6 +1954,14 @@
     />
   {/if}
 {/each}
+
+<!-- Live Village simulation in the Room of Collaboration.
+     Mounted early so avatar GLTF parsing happens in the background.
+     Always visible — sits inside room walls, only seen when looking in. -->
+{#if villageEmbedMounted}
+  {@const nearCollab = currentPlayerRoomId === "collaboration"}
+  <MuseumVillageEmbed centerX={collabCenterX} centerZ={collabCenterZ} showLabels={nearCollab} />
+{/if}
 
 <!-- Pedestal + sign meshes managed imperatively via scene.add() -->
 
@@ -1723,6 +2028,11 @@
 {#if museum3dEditorState.editorActive}
   <MuseumSceneEditor onOverrideChanged={applyEditorOverrides} />
   {#if museum3dEditorState.placementDef}
-    <PlacementGhost def={museum3dEditorState.placementDef} onPlace={handlePlace} />
+    <PlacementGhost
+      def={museum3dEditorState.placementDef}
+      onPlace={handlePlace}
+      onDelete={handleDelete}
+      onUndo={handlePlacementUndo}
+    />
   {/if}
 {/if}

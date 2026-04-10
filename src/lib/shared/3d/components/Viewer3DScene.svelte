@@ -9,12 +9,10 @@
    *
    * All avatar/grid/prop/effect wiring is delegated to PerformerRig, which
    * owns the unified transform hierarchy. This component handles environment,
-   * lighting, mirror-mode prop swapping, and the puppet-mode sync loop.
+   * lighting, dual-wheel prop swapping, and the puppet-mode sync loop.
    */
 
   import { T, useTask } from "@threlte/core";
-  import { Vector3 } from "three";
-  import { calculatePropQuaternion } from "../domain/constants/plane-transforms";
   import PerformerRig from "./PerformerRig.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { container } from "$lib/shared/di";
@@ -73,50 +71,28 @@
   useTask(() => {
     const beatIndex = Math.floor(currentStep);
     const subBeatProgress = currentStep - beatIndex;
-    avatarState.goToStep(beatIndex);
-    avatarState.setProgress(subBeatProgress);
+
+    // When currentStep exceeds the last valid index (end of sequence or
+    // end-position hold), show the final step at full progress instead of
+    // clamping the index and resetting progress to 0 (which causes a jerk).
+    if (beatIndex >= avatarState.totalSteps) {
+      avatarState.goToStep(avatarState.totalSteps - 1);
+      avatarState.setProgress(1);
+    } else {
+      avatarState.goToStep(beatIndex);
+      avatarState.setProgress(subBeatProgress);
+    }
   });
-
-  // Mirror mode: swap blue↔red AND mirror X positions so the performer
-  // appears to do the same visual shapes from the front (face to face).
-  // Your red = their red, your left = their right.
-  // Mirror mode is disabled in dual-wheel — Learn/Mirror doesn't apply
-  // when viewing side-on with independent wheel planes per hand.
-  const isMirror = $derived(
-    viewer3DState.mirrorMode && avatarState.planeMode !== PlaneMode.DUAL_WHEEL
-  );
-
-  function mirrorPropState(state: PropState3D | null): PropState3D | null {
-    if (!state) return null;
-    // Mirror X position (east↔west)
-    const mirroredPos = new Vector3(-state.worldPosition.x, state.worldPosition.y, state.worldPosition.z);
-    // Mirror the staff rotation: π - angle preserves IN/OUT orientation
-    // (the offset from center path) while reversing the rotation direction
-    // (CW↔CCW). This is because reflecting across the Y axis in the wall
-    // plane maps angle θ to π - θ.
-    const mirroredAngle = Math.PI - state.staffRotationAngle;
-    const mirroredRot = calculatePropQuaternion(state.plane, mirroredAngle);
-    return { ...state, worldPosition: mirroredPos, worldRotation: mirroredRot, staffRotationAngle: mirroredAngle };
-  }
 
   const rawBlue = $derived(avatarState.bluePropState);
   const rawRed = $derived(avatarState.redPropState);
   const isDualWheelMode = $derived(avatarState.planeMode === PlaneMode.DUAL_WHEEL);
 
-  // Dual-wheel: swap prop states so left hand (bluePropState) gets the left-side
-  // prop (rawRed = visual blue at -X) and right hand (redPropState) gets the
-  // right-side prop (rawBlue = visual red at +X). No avatar rotation needed.
-  // Mirror mode (disabled in dual-wheel): swap hands AND mirror positions.
-  const bluePropState = $derived(
-    isMirror ? mirrorPropState(rawRed) :
-    isDualWheelMode ? rawRed :
-    rawBlue
-  );
-  const redPropState = $derived(
-    isMirror ? mirrorPropState(rawBlue) :
-    isDualWheelMode ? rawBlue :
-    rawRed
-  );
+  // No swap needed: blue prop → LeftHand bone → blueLateralOffset (+X),
+  // red prop → RightHand bone → redLateralOffset (-X). The hand anchor
+  // positions in PerformerRig already place each hand at the correct grid.
+  const bluePropState = $derived(rawBlue);
+  const redPropState = $derived(rawRed);
 
   // Resolve prop type: prefer sequence's intended prop, fall back to settings
   const bluePropType = $derived.by((): PropType => {
@@ -188,8 +164,8 @@
   showGrid={viewer3DState.showGrid}
   visiblePlanes={gridVisiblePlanes}
   gridMode={(sequenceData?.gridMode ?? "diamond") as import("../domain/constants/grid-layout").GridMode}
-  bluePropType={isMirror ? redPropType : bluePropType}
-  redPropType={isMirror ? bluePropType : redPropType}
+  {bluePropType}
+  {redPropType}
   {bluePropState}
   {redPropState}
   tipEffectMap={globalTipEffectMap}

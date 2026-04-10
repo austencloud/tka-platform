@@ -179,7 +179,6 @@
   "auth_sign_up": "اشتراك",
   "auth_signin_subtitle": "سجّل الدخول للوصول إلى مكتبتك وتتبع تقدمك",
   "auth_signup_subtitle": "انضم إلى TKA لحفظ تقدمك والوصول إلى مكتبتك",
-  "auth_verify_with_passkey": "التحقق بمفتاح المرور",
   "auth_verify_with_password": "التحقق بكلمة المرور",
   "auth_verifying": "جارٍ التحقق...",
   "auth_welcome": "أهلا بكم في TKA",

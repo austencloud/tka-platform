@@ -10,9 +10,11 @@
     disabled?: boolean;
     onAvatarClick?: () => void;
     pronouns?: string;
+    /** Profile accent color for avatar ring */
+    profileColor?: string;
   }
 
-  let { user, onSignOut, disabled = false, onAvatarClick, pronouns }: Props = $props();
+  let { user, onSignOut, disabled = false, onAvatarClick, pronouns, profileColor }: Props = $props();
 
   const reducedMotion = typeof window !== "undefined"
     ? window.matchMedia("(prefers-reduced-motion: reduce)").matches
@@ -24,6 +26,7 @@
     {#if onAvatarClick && !disabled}
       <button
         class="avatar-wrapper clickable"
+        style:--profile-accent={profileColor}
         onclick={onAvatarClick}
         aria-label="Change profile photo"
       >
@@ -118,11 +121,11 @@
     padding: 3px;
     background: linear-gradient(
       135deg,
-      var(--theme-accent) 0%,
-      var(--theme-accent-strong) 100%
+      var(--profile-accent, var(--theme-accent)) 0%,
+      color-mix(in srgb, var(--profile-accent, var(--theme-accent-strong)) 80%, black) 100%
     );
     box-shadow: 0 0 32px
-      color-mix(in srgb, var(--theme-accent) 25%, transparent);
+      color-mix(in srgb, var(--profile-accent, var(--theme-accent)) 25%, transparent);
     flex-shrink: 0;
     border: none;
   }
@@ -135,7 +138,7 @@
   .avatar-wrapper.clickable:hover {
     transform: scale(1.03);
     box-shadow: 0 0 40px
-      color-mix(in srgb, var(--theme-accent) 35%, transparent);
+      color-mix(in srgb, var(--profile-accent, var(--theme-accent)) 35%, transparent);
   }
 
   .avatar-wrapper.clickable:hover .avatar-edit-badge {
@@ -155,7 +158,7 @@
     width: 28px;
     height: 28px;
     border-radius: 50%;
-    background: var(--theme-accent, #6366f1);
+    background: var(--profile-accent, var(--theme-accent, #6366f1));
     display: flex;
     align-items: center;
     justify-content: center;

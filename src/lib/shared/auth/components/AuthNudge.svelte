@@ -5,15 +5,16 @@
   interface Props {
     trigger: AuthNudgeTrigger;
     onCreateAccount: () => void;
+    onLogin: () => void;
     onDismiss: () => void;
   }
 
-  let { trigger, onCreateAccount, onDismiss }: Props = $props();
+  let { trigger, onCreateAccount, onLogin, onDismiss }: Props = $props();
 
   const text = $derived(AUTH_NUDGE_TEXTS[trigger]);
   const isScribeNudge = $derived(trigger === "beat-cap-composer");
   const buttonText = $derived(
-    isScribeNudge ? "Become a Scribe" : "Create Account \u2014 free"
+    isScribeNudge ? "Become a Scribe" : "Create Account — free"
   );
 </script>
 
@@ -24,6 +25,10 @@
       {buttonText}
     </button>
     <button class="auth-nudge-dismiss" onclick={onDismiss}>Not now</button>
+  </div>
+  <div class="auth-nudge-login">
+    <span class="login-text">Already have an account?</span>
+    <button class="login-link" onclick={onLogin}>Log in</button>
   </div>
 </div>
 
@@ -79,5 +84,33 @@
 
   .auth-nudge-dismiss:hover {
     color: var(--theme-text, #ffffff);
+  }
+
+  .auth-nudge-login {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    margin-top: 8px;
+    font-size: var(--font-size-compact, 12px);
+  }
+
+  .login-text {
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.45));
+  }
+
+  .login-link {
+    background: none;
+    border: none;
+    color: var(--theme-accent, #3b82f6);
+    cursor: pointer;
+    font-size: var(--font-size-compact, 12px);
+    padding: 0;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  .login-link:hover {
+    opacity: 0.8;
   }
 </style>

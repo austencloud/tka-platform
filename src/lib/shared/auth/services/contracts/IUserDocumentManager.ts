@@ -30,4 +30,14 @@ export interface IUserDocumentManager {
    * @returns Promise that resolves when document is updated
    */
   updatePhotoURL(userId: string, photoURL: string): Promise<void>;
+
+  /**
+   * Update the user's profile accent color.
+   * This color is used for the avatar ring and profile card accents.
+   *
+   * @param userId - The user's UID
+   * @param color - CSS hex color value (e.g. "#8b5cf6")
+   * @returns Promise that resolves when document is updated
+   */
+  updateProfileColor(userId: string, color: string): Promise<void>;
 }

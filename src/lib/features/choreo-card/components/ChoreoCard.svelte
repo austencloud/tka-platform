@@ -1,23 +1,17 @@
 <!--
-  ChoreoCard.svelte - Sequence card for print preview
+  ChoreoCard.svelte - Card front for Choreo Cards
 
   Displays a sequence thumbnail using PropAwareThumbnail with Firebase caching.
-  Choreo cards always include user data footer (creator name, notes, birthday).
-  In print mode, uses light background for paper preview.
-  Shows LOOP primitive icons when sequence uses a LOOP pattern (detected algorithmically).
+  The front is the "reading" face: word, pictographs, footer.
+  Level badge and LOOP icons live on the card back (the "sorting" face).
 -->
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
-  import type { ISequenceToEntryConverter } from "../services/contracts/ISequenceToEntryConverter";
   import { container } from "$lib/shared/di";
-  import { loopDetector } from "$lib/features/loop-labeler/services/implementations/LOOPDetector";
   import { onMount } from "svelte";
   import PropAwareThumbnail from "$lib/features/browse/sequences/display/components/PropAwareThumbnail.svelte";
-  import LOOPIconStrip from "$lib/shared/components/LOOPIconStrip.svelte";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
-  import { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
-  import type { ComponentId } from "$lib/features/loop-labeler/domain/constants/loop-components";
 
   interface Props {
     sequence: SequenceData;
@@ -38,6 +32,8 @@
     cardMode?: boolean;
     /** Override the notes text in the card footer (e.g. VTG description) */
     customNotesText?: string;
+    /** Pre-rendered image URL — displays this instead of rendering via PropAwareThumbnail */
+    preRenderedImageUrl?: string | null;
     onSelect?: (sequence: SequenceData) => void;
     onContextMenu?: (x: number, y: number, rerender: () => void) => void;
   }
@@ -56,64 +52,27 @@
     handPathMode = false,
     cardMode = false,
     customNotesText,
+    preRenderedImageUrl: preRenderedImageUrlProp,
     onSelect,
     onContextMenu,
   }: Props = $props();
 
+  // Local override so re-render can clear the pre-rendered URL
+  let preRenderedCleared = $state(false);
+  const usePreRendered = $derived(!!preRenderedImageUrlProp && !preRenderedCleared);
+
   let hapticService: IHapticFeedback;
-  let sequenceToEntryConverter: ISequenceToEntryConverter;
   let thumbnailRef: PropAwareThumbnail;
 
   export function rerender(): void {
+    preRenderedCleared = true;
     thumbnailRef?.forceRerender();
   }
 
+
   onMount(() => {
     hapticService = container.items.hapticFeedback;
-    sequenceToEntryConverter = container.items.sequenceToEntryConverter;
   });
-
-  // Map ComponentId (loop-labeler format) to LOOPComponent (icon strip format)
-  function componentIdToLOOPComponent(id: ComponentId): LOOPComponent | null {
-    const mapping: Record<string, LOOPComponent> = {
-      rotated: LOOPComponent.ROTATED,
-      mirrored: LOOPComponent.MIRRORED,
-      flipped: LOOPComponent.FLIPPED,
-      swapped: LOOPComponent.SWAPPED,
-      inverted: LOOPComponent.INVERTED,
-      rewound: LOOPComponent.REWOUND,
-    };
-    return mapping[id] ?? null;
-  }
-
-  // Detect LOOP pattern from sequence steps algorithmically
-  const loopComponents = $derived.by(() => {
-    if (!sequenceToEntryConverter || !sequence.steps?.length) {
-      return new Set<LOOPComponent>();
-    }
-
-    try {
-      // Convert SequenceData to SequenceEntry format for LOOP detection
-      const entry = sequenceToEntryConverter.convert(sequence);
-      const result = loopDetector.detectLOOP(entry);
-
-      // Convert detected components to LOOPComponent enum
-      const components = new Set<LOOPComponent>();
-      for (const componentId of result.components) {
-        const mapped = componentIdToLOOPComponent(componentId);
-        if (mapped) {
-          components.add(mapped);
-        }
-      }
-      return components;
-    } catch {
-      // If detection fails, return empty set
-      return new Set<LOOPComponent>();
-    }
-  });
-
-  // Only show LOOP icons if sequence has a LOOP pattern
-  const hasLoopPattern = $derived(loopComponents.size > 0);
 
   // Get prop settings from global state
   const propSettings = $derived({
@@ -162,32 +121,32 @@
   type="button"
 >
   <div class="card-content">
-    <PropAwareThumbnail
-      bind:this={thumbnailRef}
-      {sequence}
-      bluePropType={propSettings.bluePropType}
-      redPropType={propSettings.redPropType}
-      catDogModeEnabled={propSettings.catDogMode}
-      lightMode={printMode || cardMode}
-      variant="wordcard"
-      addWord={showWord}
-      addDifficultyLevel={handPathMode ? false : undefined}
-      {includeStartPosition}
-      {startPositionLayout}
-      {showBirthday}
-      visibility={visibilitySettings}
-      {cardMode}
-      {customNotesText}
-    />
-    {#if hasLoopPattern && !handPathMode}
-      <div class="loop-overlay">
-        <LOOPIconStrip
-          activeComponents={loopComponents}
-          size={14}
-          darkMode={!printMode && !cardMode}
-          showFreeformWhenEmpty={false}
-        />
-      </div>
+    {#if usePreRendered}
+      <img
+        class="pre-rendered-image"
+        src={preRenderedImageUrlProp}
+        alt="Preview of {sequence.name}"
+        draggable="false"
+      />
+    {:else}
+      <PropAwareThumbnail
+        bind:this={thumbnailRef}
+        {sequence}
+        bluePropType={propSettings.bluePropType}
+        redPropType={propSettings.redPropType}
+        catDogModeEnabled={propSettings.catDogMode}
+        lightMode={printMode || cardMode}
+        variant="wordcard"
+        addWord={showWord}
+        addDifficultyLevel={false}
+        {includeStartPosition}
+        {startPositionLayout}
+        {showBirthday}
+        userName={sequence.author ?? ""}
+        visibility={visibilitySettings}
+        {cardMode}
+        {customNotesText}
+      />
     {/if}
   </div>
 </button>
@@ -225,6 +184,12 @@
   .choreo-card:focus-visible {
     outline: 2px solid var(--theme-accent, #6366f1);
     outline-offset: 2px;
+  }
+
+  .pre-rendered-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
 
   /* PropAwareThumbnail scales to fit within the card cell */
@@ -277,24 +242,6 @@
     display: flex;
     align-items: center;
     justify-content: center;
-  }
-
-  /* LOOP icons overlay - positioned top-right */
-  .loop-overlay {
-    position: absolute;
-    top: 4px;
-    right: 4px;
-    z-index: 1;
-    pointer-events: none;
-    background: rgba(0, 0, 0, 0.5);
-    padding: 3px 6px;
-    border-radius: 4px;
-  }
-
-  /* Light background for print mode */
-  .choreo-card.print-mode .loop-overlay {
-    background: rgba(255, 255, 255, 0.85);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
   }
 
   @media (prefers-reduced-motion: reduce) {

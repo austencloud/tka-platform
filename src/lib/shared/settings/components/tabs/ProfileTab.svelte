@@ -9,7 +9,6 @@
   import { container } from "$lib/shared/di";
   import type { IAuthenticator } from "../../../auth/services/contracts/IAuthenticator";
   import type { IAccountManager } from "../../../auth/services/contracts/IAccountManager";
-  import type { IStepUpAuthCoordinator } from "../../../auth/services/contracts/IStepUpAuthCoordinator";
   import { onMount } from "svelte";
   import {
     createProfileSettingsState,
@@ -19,11 +18,8 @@
   import ConnectedAccountsPreview from "../../../navigation/components/profile-settings/ConnectedAccountsPreview.svelte";
   import AccountSettingsSection from "../../../navigation/components/profile-settings/AccountSettingsSection.svelte";
   import DangerZone from "../../../navigation/components/profile-settings/DangerZone.svelte";
-  import AccountSecuritySection from "../../../auth/components/AccountSecuritySection.svelte";
-  import SecurityPreview from "../../../auth/components/SecurityPreview.svelte";
   import SubscriptionCard from "./profile/SubscriptionCard.svelte";
   import type { IHapticFeedback } from "../../../application/services/contracts/IHapticFeedback";
-  import PasskeyStepUpModal from "../../../auth/components/PasskeyStepUpModal.svelte";
   import GlassCard from "./profile/GlassCard.svelte";
   import ProfileHeroSection from "./profile/ProfileHeroSection.svelte";
   import StorageSection from "./profile/StorageSection.svelte";
@@ -85,13 +81,18 @@
   let hapticService = $state<IHapticFeedback | null>(null);
   let authService = $state<IAuthenticator | null>(null);
   let accountManager = $state<IAccountManager | null>(null);
-  let stepUpCoordinator = $state<IStepUpAuthCoordinator | null>(null);
 
   // Cache clearing state
   let clearingCache = $state(false);
 
   // Pronouns loaded from Firestore
   let userPronouns = $state("");
+
+  // Profile accent color loaded from Firestore
+  let profileColor = $state("#8b5cf6");
+
+  // Google photo URL persisted in Firestore (survives avatar switches)
+  let savedGooglePhotoUrl = $state<string | null>(null);
 
   // Photo picker state
   let showPhotoPicker = $state(false);
@@ -117,7 +118,6 @@
     hapticService = container.items.hapticFeedback;
     authService = container.items.authenticator;
     accountManager = container.items.accountManager;
-    stepUpCoordinator = container.items.stepUpAuthCoordinator;
 
     setTimeout(() => (isVisible = true), 30);
 
@@ -129,7 +129,14 @@
         const userDocRef = doc(firestore, "users", user.uid);
         const userDoc = await getDoc(userDocRef);
         if (userDoc.exists()) {
-          userPronouns = userDoc.data()?.pronouns || "";
+          const data = userDoc.data();
+          userPronouns = data?.pronouns || "";
+          if (data?.profileColor) {
+            profileColor = data.profileColor;
+          }
+          if (data?.googlePhotoURL) {
+            savedGooglePhotoUrl = data.googlePhotoURL;
+          }
         }
       } catch (err) {
         console.error("Failed to load pronouns:", err);
@@ -175,16 +182,10 @@
     }
   }
 
-  async function handleDeleteAccount() {
+  async function handleDeleteAccount(password: string) {
     if (!accountManager) return;
 
-    // This is called after the user has typed "DELETE" to confirm
-    try {
-      await accountManager.deleteAccount();
-    } catch (error) {
-      console.error("Failed to delete account:", error);
-      alert("Failed to delete account. Please try again.");
-    }
+    await accountManager.deleteAccount(password);
   }
 
   async function handleClearCache() {
@@ -212,6 +213,21 @@
   function handleOpenPhotoPicker() {
     hapticService?.trigger("selection");
     showPhotoPicker = true;
+  }
+
+  async function handleColorChange(color: string) {
+    // Optimistic update so the ring color changes instantly
+    profileColor = color;
+
+    const user = authState.user;
+    if (!user) return;
+
+    try {
+      const userDocumentManager = container.items.userDocumentManager;
+      await userDocumentManager.updateProfileColor(user.uid, color);
+    } catch (err) {
+      console.error("Failed to save profile color:", err);
+    }
   }
 
   /**
@@ -349,20 +365,6 @@
           </GlassCard>
         {/if}
 
-        <!-- Security - MFA factors from Firebase Auth -->
-        <GlassCard
-          icon="fas fa-shield-alt"
-          title="Security"
-          subtitle="View security settings"
-        >
-          {#snippet children()}
-            <SecurityPreview
-              mfaFactors={previewAuthData?.multiFactor?.enrolledFactors ?? null}
-              loading={isLoadingAuthData}
-            />
-          {/snippet}
-        </GlassCard>
-
         <!-- Password - show if user has password provider -->
         {#if previewAuthData?.providers.some((p) => p.providerId === "password")}
           <GlassCard
@@ -404,6 +406,7 @@
         onSignOut={handleSignOut}
         onAvatarClick={handleOpenPhotoPicker}
         pronouns={userPronouns}
+        {profileColor}
       />
 
       <!-- Settings Grid - Flexbox for natural fill behavior -->
@@ -446,20 +449,6 @@
           isClearing={clearingCache}
         />
 
-        <!-- Row 2: Complex cards (expand to 50% each) -->
-        <!-- Security -->
-        {#if authService}
-          <GlassCard
-            icon="fas fa-shield-alt"
-            title="Security"
-            subtitle="Secure your account"
-          >
-            {#snippet children()}
-              <AccountSecuritySection {hapticService} />
-            {/snippet}
-          </GlassCard>
-        {/if}
-
         <!-- Connected Accounts -->
         <GlassCard
           icon="fas fa-link"
@@ -497,20 +486,14 @@
   {/if}
 </div>
 
-{#if stepUpCoordinator}
-  <PasskeyStepUpModal
-    isOpen={stepUpCoordinator.showStepUpModal}
-    allowPassword={profileState.hasPasswordProvider(authState.user)}
-    onSuccess={() => stepUpCoordinator?.handleSuccess()}
-    onCancel={() => stepUpCoordinator?.handleCancel()}
-  />
-{/if}
-
 <!-- Profile Photo Picker Drawer -->
 <ProfilePhotoPicker
   bind:isOpen={showPhotoPicker}
   onClose={() => (showPhotoPicker = false)}
   onPhotoSelected={handlePhotoSelected}
+  {profileColor}
+  onColorChange={handleColorChange}
+  {savedGooglePhotoUrl}
 />
 
 <style>

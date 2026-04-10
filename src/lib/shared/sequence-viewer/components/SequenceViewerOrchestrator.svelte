@@ -950,8 +950,9 @@
   let wasPlayingBeforeImageExport = false;
 
   function enterEditMode(pane: 'animation' | 'image' | 'video-upload') {
-    // Auto-exit 3D when entering export mode (export works on 2D canvas only)
-    if (viewer3DState.renderMode === '3d') {
+    // 3D viewer stays in 3D when expanding to full-screen.
+    // Only exit 3D for image/video-upload export (those need the 2D canvas).
+    if (viewer3DState.renderMode === '3d' && pane !== 'animation') {
       viewer3DState.exit3D();
     }
     hapticService?.trigger("selection");

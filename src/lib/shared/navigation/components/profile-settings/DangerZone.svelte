@@ -12,18 +12,22 @@
   const ctx = getProfileSettingsContext();
 
   let { onDeleteAccount, hapticService, userIdentifier } = $props<{
-    onDeleteAccount: () => Promise<void>;
+    onDeleteAccount: (password: string) => Promise<void>;
     hapticService: IHapticFeedback | null;
     userIdentifier: string;
   }>();
 
   let isExpanded = $state(false);
   let confirmationText = $state("");
+  let deletePassword = $state("");
+  let deleteError = $state("");
+  let isDeleting = $state(false);
 
-  // Require exact match of their username/email (case-insensitive)
+  // Require exact match of their username/email (case-insensitive) AND a password
   let isConfirmationValid = $derived(
     confirmationText.toLowerCase().trim() ===
-      userIdentifier.toLowerCase().trim()
+      userIdentifier.toLowerCase().trim() &&
+    deletePassword.length > 0
   );
 
   function toggleExpanded() {
@@ -32,6 +36,8 @@
     if (!isExpanded) {
       ctx.ui.showDeleteConfirmation = false;
       confirmationText = "";
+      deletePassword = "";
+      deleteError = "";
     }
   }
 
@@ -44,12 +50,23 @@
     hapticService?.trigger("selection");
     ctx.ui.showDeleteConfirmation = false;
     confirmationText = "";
+    deletePassword = "";
+    deleteError = "";
   }
 
-  function handleConfirmDelete() {
-    if (!isConfirmationValid) return;
+  async function handleConfirmDelete() {
+    if (!isConfirmationValid || isDeleting) return;
     hapticService?.trigger("warning");
-    onDeleteAccount();
+    isDeleting = true;
+    deleteError = "";
+    try {
+      await onDeleteAccount(deletePassword);
+    } catch (e: unknown) {
+      deleteError = e instanceof Error ? e.message : "Failed to delete account";
+      hapticService?.trigger("error");
+    } finally {
+      isDeleting = false;
+    }
   }
 </script>
 
@@ -105,6 +122,29 @@
             />
           </div>
 
+          <div class="confirmation-input-section">
+            <label for="delete-password" class="confirmation-label">
+              Enter your <strong>password</strong> to confirm:
+            </label>
+            <input
+              id="delete-password"
+              type="password"
+              class="confirmation-input"
+              class:valid={deletePassword.length > 0}
+              placeholder="Your current password"
+              bind:value={deletePassword}
+              autocomplete="current-password"
+              disabled={isDeleting}
+            />
+          </div>
+
+          {#if deleteError}
+            <p class="error-message" role="alert">
+              <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+              {deleteError}
+            </p>
+          {/if}
+
           <div class="button-row">
             <button class="button button--secondary" onclick={handleCancel}>
               Cancel
@@ -112,10 +152,10 @@
             <button
               class="button button--danger-confirm"
               onclick={handleConfirmDelete}
-              disabled={!isConfirmationValid}
+              disabled={!isConfirmationValid || isDeleting}
             >
               <i class="fas fa-trash-alt" aria-hidden="true"></i>
-              Yes, Delete Forever
+              {isDeleting ? "Deleting..." : "Yes, Delete Forever"}
             </button>
           </div>
         </div>
@@ -393,5 +433,21 @@
     .button:focus-visible {
       outline: 3px solid white;
     }
+  }
+
+  .error-message {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 12px 0;
+    padding: 10px 14px;
+    border-radius: 8px;
+    background: rgba(239, 68, 68, 0.12);
+    color: var(--semantic-error);
+    font-size: var(--font-size-compact);
+  }
+
+  .error-message i {
+    flex-shrink: 0;
   }
 </style>

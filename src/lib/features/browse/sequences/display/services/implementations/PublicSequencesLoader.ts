@@ -412,9 +412,46 @@ export class PublicSequencesLoader implements IBrowseLoader {
     // the compositional model is the single source of truth.
     try {
       const hydrator = container.items.sequenceHydrator as ISequenceHydrator;
-      return hydrator.hydrate(seq);
+      const hydrated = hydrator.hydrate(seq);
+
+      // Normalize: ensure step 0 (start position) is separated from the steps
+      // array. Gallery sequences from Firebase may store it inline, which causes
+      // the animation orchestrator to count an extra beat and shift all indices.
+      return this.normalizeStartPosition(hydrated);
     } catch {
-      return seq;
+      return this.normalizeStartPosition(seq);
     }
+  }
+
+  /**
+   * Ensure step 0 (start position) is not mixed into the steps array.
+   * Firestore data may use the legacy format where beat 0 sits alongside
+   * motion beats, which throws off the animation orchestrator's indexing.
+   */
+  private normalizeStartPosition(seq: SequenceData): SequenceData {
+    if (!seq.steps?.length) return seq;
+
+    const hasStep0 = seq.steps.some((s) => s.stepNumber === 0);
+    if (!hasStep0) return seq;
+
+    const steps = seq.steps.filter((s) => s.stepNumber !== 0);
+
+    // If no startPosition is set, derive it from the step 0 entry
+    if (!seq.startPosition && !seq.startingPosition) {
+      const step0 = seq.steps.find((s) => s.stepNumber === 0)!;
+      return {
+        ...seq,
+        steps,
+        startPosition: {
+          isStartPosition: true,
+          id: step0.id || `start-${seq.id}`,
+          letter: step0.letter ?? null,
+          endPosition: step0.endPosition ?? step0.startPosition ?? null,
+          motions: step0.motions,
+        },
+      };
+    }
+
+    return { ...seq, steps };
   }
 }

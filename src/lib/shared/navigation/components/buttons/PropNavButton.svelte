@@ -1,21 +1,56 @@
 <!-- PropNavButton - Circular prop type button for bottom/side navigation -->
+<!-- Tap: toggle prop drawer. Long-press (touch only): open quick feedback panel. -->
 <script lang="ts">
+  import { onMount } from "svelte";
   import NavButton from "./NavButton.svelte";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/PropTypeDisplayRegistry";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { propDrawerState } from "$lib/shared/settings/state/prop-drawer-state.svelte";
+  import { quickFeedbackState } from "$lib/features/feedback/state/quick-feedback-state.svelte";
+  import { container } from "$lib/shared/di";
+  import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
+
+  const LONG_PRESS_MS = 500;
+
+  let hapticService: IHapticFeedback | undefined;
+  let longPressTimer: ReturnType<typeof setTimeout> | null = null;
+  let suppressClick = $state(false);
+
+  onMount(() => {
+    hapticService = container.items.hapticFeedback;
+  });
 
   const settings = $derived(getSettings());
   const bluePropType = $derived(settings.bluePropType ?? PropType.STAFF);
   const displayInfo = $derived(getPropTypeDisplayInfo(bluePropType));
 
-  // Build an <img> tag string for NavButton's {@html icon} renderer
   const iconHtml = $derived(
     `<img src="${displayInfo.image}" alt="${displayInfo.label}" style="width: 26px; height: 26px; object-fit: contain; filter: brightness(1.3) saturate(1.3);" />`
   );
 
+  function startLongPress(event: PointerEvent) {
+    if (event.pointerType === "mouse") return;
+    clearLongPress();
+    longPressTimer = setTimeout(() => {
+      suppressClick = true;
+      hapticService?.trigger("selection");
+      quickFeedbackState.toggle();
+    }, LONG_PRESS_MS);
+  }
+
+  function clearLongPress() {
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      longPressTimer = null;
+    }
+  }
+
   function handleClick() {
+    if (suppressClick) {
+      suppressClick = false;
+      return;
+    }
     propDrawerState.toggle();
   }
 </script>
@@ -23,6 +58,11 @@
 <div
   class="prop-nav-button-wrapper"
   onclick={handleClick}
+  onpointerdown={startLongPress}
+  onpointerup={clearLongPress}
+  onpointerleave={clearLongPress}
+  onpointercancel={clearLongPress}
+  oncontextmenu={(e) => e.preventDefault()}
   onkeydown={(e) => e.key === "Enter" && handleClick()}
   role="button"
   tabindex="0"

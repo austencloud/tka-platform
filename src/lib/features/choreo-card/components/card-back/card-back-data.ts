@@ -72,6 +72,10 @@ export interface CardBackData {
   reversalSequence: string;
   /** Reversal pattern period (columns to display) */
   reversalPeriod: number;
+  /** TKA deck designation, e.g. "Halved Rotated 0T Continuous Diamond" */
+  tkaDesignation: string | null;
+  /** VTG deck designation, e.g. "VTG Split-Same 1:1" */
+  vtgDesignation: string | null;
 }
 
 // Level badge definitions sourced from the canonical difficulty-styles.ts
@@ -367,6 +371,50 @@ export function deriveVtgRatio(sequence: SequenceData): string | null {
   return ratio ?? null;
 }
 
+/**
+ * Derive the uniform turn format string (e.g. "0T", "1T") from turn glyph entries.
+ * Returns null if turns are mixed (different values across beats or between hands).
+ */
+function deriveUniformTurnFormat(entries: TurnGlyphEntry[]): string | null {
+  if (entries.length === 0) return null;
+  const first = entries[0]!;
+  // Check all entries have the same value for both hands
+  if (first.blue !== first.red) return null;
+  for (const entry of entries) {
+    if (entry.blue !== first.blue || entry.red !== first.red) return null;
+  }
+  return `${first.blue}T`;
+}
+
+/**
+ * Build the TKA deck designation string from sequence properties.
+ * Format: "{Halved|Quartered} {LoopType} {TurnPattern} {ReversalPattern} {GridMode}"
+ * Only built for LOOP sequences — returns null for non-LOOP sequences.
+ */
+function deriveTkaDesignation(
+  sliceName: string | null,
+  loopLabel: string | null,
+  turnFormat: string | null,
+  reversalLabel: string,
+  gridMode: string | null,
+): string | null {
+  // Need at least a loop label to form a designation
+  if (!loopLabel) return null;
+
+  const parts: string[] = [];
+  if (sliceName) parts.push(sliceName);
+  parts.push(loopLabel);
+  if (turnFormat) parts.push(turnFormat);
+  parts.push(reversalLabel);
+  if (gridMode) parts.push(capitalize(gridMode));
+
+  return parts.join(" ");
+}
+
+function capitalize(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
 export function deriveCardBackData(
   sequence: SequenceData,
   converter: ISequenceToEntryConverter | null,
@@ -400,6 +448,23 @@ export function deriveCardBackData(
   const reversalSequence = revPattern?.sequence ?? "----";
   const reversalPeriod = revPattern?.period ?? 1;
 
+  const loopLabel = sequence.loopType
+    ? LOOP_TYPE_LABELS[sequence.loopType] ?? null
+    : null;
+  const sliceName = cycle === 4 ? "Quartered" : cycle === 2 ? "Halved" : null;
+  const vtgRatio = deriveVtgRatio(sequence);
+
+  // Build deck designation strings for the card back content area
+  const turnFormat = deriveUniformTurnFormat(turnGlyphEntries);
+  const reversalLabel = revPattern?.label ?? "Continuous";
+  const gridMode = sequence.gridMode ?? null;
+  const tkaDesignation = deriveTkaDesignation(
+    sliceName, loopLabel, turnFormat, reversalLabel, gridMode,
+  );
+  // VTG designation: show ratio when available (family classification
+  // requires per-letter lookup that isn't available at the sequence level)
+  const vtgDesignation = vtgRatio ? `VTG ${vtgRatio}` : null;
+
   return {
     word: simplifyRepeatedWord(sequence.word ?? sequence.name ?? ""),
     stepCount: sequence.sequenceLength ?? sequence.steps?.length ?? 0,
@@ -407,11 +472,9 @@ export function deriveCardBackData(
     anatomy,
     hasLoop: loopComponents.size > 0,
     loopComponents,
-    loopLabel: sequence.loopType
-      ? LOOP_TYPE_LABELS[sequence.loopType] ?? null
-      : null,
+    loopLabel,
     loopExplanation,
-    sliceName: cycle === 4 ? "Quartered" : cycle === 2 ? "Halved" : null,
+    sliceName,
     sliceDetail:
       cycle === 4
         ? "4 reps, 90° each"
@@ -422,10 +485,12 @@ export function deriveCardBackData(
       ? ROTATED_LOOP_TYPES.has(sequence.loopType)
       : false,
     startPosition: deriveStartPosition(sequence),
-    vtgRatio: deriveVtgRatio(sequence),
+    vtgRatio,
     turnGlyphEntries,
     reversalSequence,
     reversalPeriod,
+    tkaDesignation,
+    vtgDesignation,
   };
 }
 

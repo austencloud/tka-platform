@@ -159,19 +159,20 @@
   }
 
   .hand-dot {
-    width: 8px;
-    height: 8px;
+    width: 10px;
+    height: 10px;
     border-radius: 50%;
     flex-shrink: 0;
   }
 
   .plane-select {
-    padding: 4px 6px;
+    padding: 4px 10px;
+    min-height: var(--min-touch-target, 44px);
     border-radius: 6px;
     background: rgba(0, 0, 0, 0.5);
     border: 1px solid rgba(255, 255, 255, 0.15);
     color: rgba(255, 255, 255, 0.8);
-    font-size: var(--font-size-compact, 12px);
+    font-size: var(--font-size-min, 14px);
     cursor: pointer;
     backdrop-filter: blur(8px);
     outline: none;
@@ -187,14 +188,19 @@
   }
 
   .reset-btn {
-    padding: 4px 8px;
+    padding: 4px 10px;
+    min-height: var(--min-touch-target, 44px);
+    min-width: var(--min-touch-target, 44px);
     border-radius: 6px;
     background: rgba(0, 0, 0, 0.5);
     border: 1px solid rgba(255, 255, 255, 0.1);
     color: rgba(255, 255, 255, 0.4);
-    font-size: 11px;
+    font-size: var(--font-size-min, 14px);
     cursor: pointer;
     transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .reset-btn:hover {
@@ -203,12 +209,13 @@
   }
 
   .preset-btn {
-    padding: 4px 8px;
+    padding: 4px 12px;
+    min-height: var(--min-touch-target, 44px);
     border-radius: 6px;
     background: rgba(0, 0, 0, 0.5);
     border: 1px solid rgba(255, 255, 255, 0.15);
     color: rgba(255, 255, 255, 0.5);
-    font-size: var(--font-size-compact, 12px);
+    font-size: var(--font-size-min, 14px);
     cursor: pointer;
     font-weight: 600;
     transition: all 0.15s;
@@ -226,12 +233,13 @@
   }
 
   .mode-toggle {
-    padding: 4px 8px;
+    padding: 4px 12px;
+    min-height: var(--min-touch-target, 44px);
     border-radius: 6px;
     background: rgba(0, 0, 0, 0.5);
     border: 1px solid rgba(255, 255, 255, 0.12);
     color: rgba(255, 255, 255, 0.45);
-    font-size: var(--font-size-compact, 12px);
+    font-size: var(--font-size-min, 14px);
     cursor: pointer;
     font-weight: 600;
     transition: all 0.15s;

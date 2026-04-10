@@ -359,8 +359,19 @@ Delegates ALL logic to services (SRP compliant)
   }
 
   // Build cards using service - reactive to all dependencies
+  // Read LOOP-related properties explicitly so Svelte tracks them as
+  // direct dependencies of this derived. Without this, toggling loopEnabled
+  // or loopType via a preset (parent-driven config update) may not cause
+  // the card list to recalculate because Svelte doesn't always track deep
+  // property reads that happen inside a called method like buildCardDescriptors.
   let cards = $derived.by((): CardDescriptor[] => {
     if (!cardConfigService || !currentLevel) return [];
+
+    // Explicit reads so Svelte registers these as reactive dependencies.
+    // The slice-size card's visibility depends on both values.
+    const loopEnabled = config.loopEnabled;
+    const _loopType = config.loopType;
+    void _loopType;
 
     return cardConfigService.buildCardDescriptors(
       config,
@@ -412,7 +423,7 @@ Delegates ALL logic to services (SRP compliant)
       allowedIntensityValues,
       isGenerating,
       hasSettingsChanged,
-      config.loopEnabled
+      loopEnabled
     );
   });
 
@@ -464,7 +475,8 @@ Delegates ALL logic to services (SRP compliant)
     <div class="beat-cap-nudge-overlay">
       <AuthNudge
         trigger={beatCapNudgeTrigger}
-        onCreateAccount={() => { showBeatCapNudge = false; authDrawerState.show(); }}
+        onCreateAccount={() => { showBeatCapNudge = false; authDrawerState.show("signup"); }}
+        onLogin={() => { showBeatCapNudge = false; authDrawerState.show("signin"); }}
         onDismiss={() => { showBeatCapNudge = false; }}
       />
     </div>

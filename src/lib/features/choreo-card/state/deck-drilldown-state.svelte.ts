@@ -62,21 +62,11 @@ function filterDecks(allDecks: Deck[], sel: DrillSelections): Deck[] {
 	if (sel.category) {
 		const familyLower = sel.category.vtgFamily.toLowerCase();
 		const gridLower = sel.category.gridMode.toLowerCase();
-		console.log('[filterDecks] VTG category filter:', { familyLower, gridLower, decksBefore: result.length });
-		if (result.length > 0) {
-			const sample = result[0];
-			console.log('[filterDecks] sample deck:', { id: sample.id, gridMode: sample.gridMode, familyIds: sample.families.map(f => f.id) });
-		}
 		result = result.filter(
 			(d) =>
 				d.families.some((f) => f.id.toLowerCase().includes(familyLower)) &&
 				d.gridMode.toLowerCase() === gridLower
 		);
-		console.log('[filterDecks] VTG after filter:', result.length);
-		if (result.length > 0) {
-			console.log('[filterDecks] VTG turnPatterns:', [...new Set(result.map(d => d.turnPattern))]);
-			console.log('[filterDecks] VTG stepCounts:', [...new Set(result.map(d => d.stepCount))]);
-		}
 	}
 
 	if (sel.stepCount !== null) {
@@ -104,13 +94,43 @@ function unique<T>(values: T[]): T[] {
 	return [...new Set(values)];
 }
 
+// ── Session persistence for HMR survival ──
+// Drill-down selections are ephemeral navigation state, but losing them on
+// every HMR cycle is annoying. sessionStorage keeps them alive within a tab
+// session without polluting localStorage across sessions.
+const SESSION_KEY = 'deckDrillDown.state';
+
+interface PersistedDrillState {
+	selections: DrillSelections;
+	breadcrumbs: BreadcrumbSegment[];
+	currentStep: DrillStepId;
+}
+
+function saveToSession(data: PersistedDrillState): void {
+	try {
+		sessionStorage.setItem(SESSION_KEY, JSON.stringify(data));
+	} catch { /* quota exceeded — ignore */ }
+}
+
+function loadFromSession(): PersistedDrillState | null {
+	try {
+		const raw = sessionStorage.getItem(SESSION_KEY);
+		if (!raw) return null;
+		return JSON.parse(raw) as PersistedDrillState;
+	} catch {
+		return null;
+	}
+}
+
 export function createDrillDownState(allDecksOrGetter: Deck[] | (() => Deck[])) {
 	// Accept either a static array or a getter function for reactive deck loading
 	const getAllDecks = typeof allDecksOrGetter === 'function' ? allDecksOrGetter : () => allDecksOrGetter;
 
-	let selections = $state<DrillSelections>(emptySelections());
-	let breadcrumbs = $state<BreadcrumbSegment[]>([]);
-	let currentStep = $state<DrillStepId>('collection');
+	const restored = typeof window !== 'undefined' ? loadFromSession() : null;
+
+	let selections = $state<DrillSelections>(restored?.selections ?? emptySelections());
+	let breadcrumbs = $state<BreadcrumbSegment[]>(restored?.breadcrumbs ?? []);
+	let currentStep = $state<DrillStepId>(restored?.currentStep ?? 'collection');
 	let direction = $state<'forward' | 'backward'>('forward');
 
 	const filteredDecks = $derived(filterDecks(getAllDecks(), selections));
@@ -130,6 +150,11 @@ export function createDrillDownState(allDecksOrGetter: Deck[] | (() => Deck[])) 
 	const availableReversalPatterns = $derived(
 		unique(filteredDecks.map((d) => d.reversalPattern)).sort()
 	);
+
+	// Persist drill-down state to sessionStorage so HMR doesn't reset navigation
+	$effect(() => {
+		saveToSession({ selections, breadcrumbs, currentStep });
+	});
 
 	// Resets all selection fields that come after the given step in the
 	// current path's step sequence. Leaves earlier selections intact.
@@ -296,6 +321,7 @@ export function createDrillDownState(allDecksOrGetter: Deck[] | (() => Deck[])) 
 			breadcrumbs = [];
 			currentStep = 'collection';
 			direction = 'forward';
+			try { sessionStorage.removeItem(SESSION_KEY); } catch { /* ignore */ }
 		},
 	};
 }

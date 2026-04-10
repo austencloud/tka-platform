@@ -1,6 +1,5 @@
 <script lang="ts">
 	import type { Deck } from '../../domain/models/Deck';
-	import { untrack } from 'svelte';
 	import { createDrillDownState } from '../../state/deck-drilldown-state.svelte';
 	import { setDrillDownContext } from '../../context/deck-drilldown-context';
 	import DrillBreadcrumb from './DrillBreadcrumb.svelte';
@@ -11,89 +10,106 @@
 	import TurnPatternStep from './TurnPatternStep.svelte';
 	import UniformSubStep from './UniformSubStep.svelte';
 	import ReversalPatternStep from './ReversalPatternStep.svelte';
+	import DeckFilterSidebar from './sidebar/DeckFilterSidebar.svelte';
+	import DeckResultsPanel from './DeckResultsPanel.svelte';
+	import { BREAKPOINTS } from '$lib/shared/device/domain/constants/device-constants';
 
 	interface Props {
 		decks: Deck[];
-		onSelectDeck: (deck: Deck) => void;
+		onSelectDeck: (deck: Deck, vtgFamily?: string | null) => void;
 	}
 
 	let { decks, onSelectDeck }: Props = $props();
 
+	// Pass a getter so the state factory can react to async deck loading
+	const drillState = createDrillDownState(() => decks);
+	setDrillDownContext(drillState);
+
+	let isDesktop = $state(false);
+
 	$effect(() => {
-		console.log('[DeckDrillDown] decks received:', decks.length);
-		if (decks.length > 0) {
-			console.log('[DeckDrillDown] sample deck:', JSON.stringify({ id: decks[0]?.id, collection: decks[0]?.collection, loopType: decks[0]?.loopType }));
-		}
+		if (typeof window === 'undefined') return;
+		const mq = window.matchMedia(`(min-width: ${BREAKPOINTS.DESKTOP}px)`);
+		isDesktop = mq.matches;
+		const handler = (e: MediaQueryListEvent) => { isDesktop = e.matches; };
+		mq.addEventListener('change', handler);
+		return () => mq.removeEventListener('change', handler);
 	});
 
-	// Pass a getter so the state factory can react to async deck loading
-	const state = createDrillDownState(() => decks);
-	setDrillDownContext(state);
-
 	const accentColor = $derived(
-		state.selections.path === 'VTG' ? '#b763cd' : '#63b7cd'
+		drillState.selections.path === 'VTG' ? '#b763cd' : '#63b7cd'
 	);
 
 	const accentRgb = $derived(
-		state.selections.path === 'VTG' ? '183,99,205' : '99,183,205'
+		drillState.selections.path === 'VTG' ? '183,99,205' : '99,183,205'
 	);
 
 	const glowClass = $derived(
-		state.selections.path === 'VTG'
+		drillState.selections.path === 'VTG'
 			? 'vtg'
-			: state.selections.path === 'LOOPs'
+			: drillState.selections.path === 'LOOPs'
 				? 'loops'
 				: ''
 	);
 
 	function handleDeckSelect(deck: Deck) {
-		onSelectDeck(deck);
+		onSelectDeck(deck, drillState.selections.category?.vtgFamily ?? null);
 	}
 </script>
 
-<div class="drilldown" style="--accent:{accentColor};--accent-rgb:{accentRgb}">
+<div class="drilldown" class:desktop={isDesktop} style="--accent:{accentColor};--accent-rgb:{accentRgb}">
 	<div class="ambient-glow {glowClass}"></div>
 
-	{#if state.breadcrumbs.length > 0}
-		<DrillBreadcrumb
-			breadcrumbs={state.breadcrumbs}
-			accentColor={accentColor}
-			onNavigate={state.goBackTo}
-		/>
-	{/if}
-
-	{#key state.currentStep}
-		<div class="step-content">
-			{#if state.currentStep === 'collection'}
-				<CollectionStep decks={decks} onSelectPath={state.selectPath} />
-			{:else if state.currentStep === 'shape'}
-				<ShapeStep decks={state.filteredDecks} onContinue={state.selectShape} />
-			{:else if state.currentStep === 'category'}
-				<CategoryStep onContinue={state.selectCategory} />
-			{:else if state.currentStep === 'stepcount'}
-				<StepCountStep
-					availableCounts={state.availableStepCounts}
-					onSelect={state.selectStepCount}
-				/>
-			{:else if state.currentStep === 'turn'}
-				<TurnPatternStep
-					stepCount={state.selections.stepCount ?? 4}
-					path={state.selections.path ?? 'LOOPs'}
-					availablePatterns={state.availableTurnPatterns}
-					onSelectPattern={state.selectTurnPattern}
-					onSelectUniform={() => state.goTo('uniform')}
-				/>
-			{:else if state.currentStep === 'uniform'}
-				<UniformSubStep onSelect={state.selectTurnPattern} />
-			{:else if state.currentStep === 'reversal'}
-				<ReversalPatternStep
-					decks={state.filteredDecks}
-					breadcrumbs={state.breadcrumbs}
-					onSelectDeck={handleDeckSelect}
-				/>
-			{/if}
+	{#if isDesktop}
+		<div class="desktop-layout">
+			<DeckFilterSidebar state={drillState} allDecks={decks} />
+			<DeckResultsPanel
+				decks={drillState.filteredDecks}
+				onSelectDeck={handleDeckSelect}
+			/>
 		</div>
-	{/key}
+	{:else}
+		{#if drillState.breadcrumbs.length > 0}
+			<DrillBreadcrumb
+				breadcrumbs={drillState.breadcrumbs}
+				accentColor={accentColor}
+				onNavigate={drillState.goBackTo}
+			/>
+		{/if}
+
+		{#key drillState.currentStep}
+			<div class="step-content">
+				{#if drillState.currentStep === 'collection'}
+					<CollectionStep decks={decks} onSelectPath={drillState.selectPath} />
+				{:else if drillState.currentStep === 'shape'}
+					<ShapeStep decks={drillState.filteredDecks} onContinue={drillState.selectShape} />
+				{:else if drillState.currentStep === 'category'}
+					<CategoryStep onContinue={drillState.selectCategory} />
+				{:else if drillState.currentStep === 'stepcount'}
+					<StepCountStep
+						availableCounts={drillState.availableStepCounts}
+						onSelect={drillState.selectStepCount}
+					/>
+				{:else if drillState.currentStep === 'turn'}
+					<TurnPatternStep
+						stepCount={drillState.selections.stepCount ?? 4}
+						path={drillState.selections.path ?? 'LOOPs'}
+						availablePatterns={drillState.availableTurnPatterns}
+						onSelectPattern={drillState.selectTurnPattern}
+						onSelectUniform={() => drillState.goTo('uniform')}
+					/>
+				{:else if drillState.currentStep === 'uniform'}
+					<UniformSubStep onSelect={drillState.selectTurnPattern} />
+				{:else if drillState.currentStep === 'reversal'}
+					<ReversalPatternStep
+						decks={drillState.filteredDecks}
+						breadcrumbs={drillState.breadcrumbs}
+						onSelectDeck={handleDeckSelect}
+					/>
+				{/if}
+			</div>
+		{/key}
+	{/if}
 </div>
 
 <style>
@@ -135,6 +151,19 @@
 
 	.step-content {
 		animation: stepIn 250ms ease-out;
+	}
+
+	.desktop-layout {
+		display: flex;
+		gap: 24px;
+		flex: 1;
+		min-height: 0;
+	}
+
+	.drilldown.desktop {
+		max-width: none;
+		margin: 0;
+		padding: 16px 24px;
 	}
 
 	@keyframes stepIn {

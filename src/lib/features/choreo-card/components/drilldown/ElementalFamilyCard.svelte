@@ -22,7 +22,7 @@
 	<span class="glow-bg"></span>
 	<img
 		class="element-icon"
-		src="/images/elements/{element}.svg"
+		src="/images/elements/{element}.png"
 		alt="{element} element"
 		width="36"
 		height="36"
