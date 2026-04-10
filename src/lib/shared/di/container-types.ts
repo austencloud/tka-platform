@@ -56,6 +56,7 @@ import type { QRContainer } from "./containers/qr-container";
 import type { Animation3DContainer } from "./containers/3d-container";
 import type { DelightContainer } from "./containers/delight-container";
 import type { PoiLabContainer } from "./containers/poi-lab-container";
+import type { PoiContainer } from "./containers/poi-container";
 import type { LandingPreviewContainer } from "./containers/landing-preview-container";
 import type { HallOfShameContainer } from "./containers/hall-of-shame-container";
 import type { AttributionContainer } from "./containers/attribution-container";
@@ -131,6 +132,7 @@ type QRItems = ItemsOf<QRContainer>;
 type Animation3DItems = ItemsOf<Animation3DContainer>;
 type DelightItems = ItemsOf<DelightContainer>;
 type PoiLabItems = ItemsOf<PoiLabContainer>;
+type PoiItems = ItemsOf<PoiContainer>;
 type LandingPreviewItems = ItemsOf<LandingPreviewContainer>;
 type HallOfShameItems = ItemsOf<HallOfShameContainer>;
 type AttributionItems = ItemsOf<AttributionContainer>;
@@ -209,6 +211,7 @@ export type IAppContainerItems =
 	BackgroundBuilderItems &
 	DelightItems &
 	PoiLabItems &
+	PoiItems &
 	LandingPreviewItems &
 	ModerationItems &
 	HallOfShameItems &

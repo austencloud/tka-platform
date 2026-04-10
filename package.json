@@ -119,6 +119,7 @@
     "@types/pngjs": "^6.0.5",
     "@types/sortablejs": "^1.15.9",
     "@types/three": "^0.182.0",
+    "@types/web-bluetooth": "^0.0.21",
     "@vite-pwa/sveltekit": "^1.1.0",
     "@vitest/browser": "^4.0.16",
     "canvas": "^3.2.0",

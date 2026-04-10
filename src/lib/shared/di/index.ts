@@ -73,6 +73,7 @@ import { createAnimation3DContainer } from "./containers/3d-container";
 import { createDelightContainer } from "./containers/delight-container";
 import { backgroundBuilderContainer } from "./containers/background-builder-container";
 import { createPoiLabContainer } from "./containers/poi-lab-container";
+import { createPoiContainer } from "./containers/poi-container";
 import { createLandingPreviewContainer } from "./containers/landing-preview-container";
 import { createModerationContainer } from "./containers/moderation-container";
 import { createHallOfShameContainer } from "./containers/hall-of-shame-container";
@@ -296,6 +297,9 @@ const delightContainer = typeof window !== 'undefined' ? createDelightContainer(
 // Poi lab container - self-contained, no external dependencies
 const poiLabContainer = typeof window !== 'undefined' ? createPoiLabContainer() : null as any;
 
+// Poi pattern engine + hardware adapters container
+const poiContainer = typeof window !== 'undefined' ? createPoiContainer() : null as any;
+
 // Landing preview container - self-contained, no external dependencies
 const landingPreviewContainer = typeof window !== 'undefined' ? createLandingPreviewContainer() : null as any;
 
@@ -430,6 +434,7 @@ function buildAppContainer(): any {
   c = c.add(backgroundBuilderContainer.items);
   c = c.add(delightContainer.items);
   c = c.add(poiLabContainer.items);
+  c = c.add(poiContainer.items);
   c = c.add(landingPreviewContainer.items);
   c = c.add(moderationContainer.items);
   c = c.add(hallOfShameContainer.items);
