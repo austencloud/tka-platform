@@ -52,6 +52,7 @@
 <style>
   .formation-bar {
     display: flex;
+    flex-wrap: wrap;
     background: var(--theme-panel-bg);
     border: 1px solid var(--theme-stroke);
     border-radius: 12px;
@@ -70,8 +71,8 @@
     align-items: center;
     justify-content: center;
     gap: 4px;
-    flex: 1;
-    min-width: var(--min-touch-target);
+    flex: 1 1 64px;
+    min-width: 64px;
     min-height: var(--min-touch-target);
     padding: 6px 8px;
     background: transparent;
