@@ -6,18 +6,28 @@
    * the same scene used by the sequence viewer, so we get the forest
    * environment, grid planes, orbit controls, and lighting for free.
    *
-   * We add on top:
-   *   - Two visible props (Prop3D) positioned at the hand grid targets
-   *   - An Avatar3D whose root position is driven by the current stance
-   *     variant's (footOffsetX, footOffsetZ) — translating the root
-   *     moves the whole body as a rigid unit, which is what we want
-   *     since foot IK is disabled
-   *   - The animator's external spine pitch for lean-forward variants
-   *   - A collision-event callback that pipes the detector's per-frame
-   *     output into state
+   * The scene graph mirrors PerformerRig's structure:
+   *
+   *   Scene3D (owns camera, environment, grid visual)
+   *     rig T.Group [footOffset, facing]
+   *       Avatar3D (rig-local position=0)
+   *       grid-forward T.Group [z=gridOffset]
+   *         blue PropAnchor T.Group [grid-local pos]
+   *           Prop3D (blue)
+   *         red PropAnchor T.Group [grid-local pos]
+   *           Prop3D (red)
+   *
+   * This nesting is the whole trick for correct IK. Avatar3D reads the
+   * PropAnchor refs' world positions as IK targets, and Three.js computes
+   * those via the transform chain — so the props always sit on the visible
+   * grid regardless of where the avatar is standing or which way it faces.
+   *
+   * Scene3D also gets `avatarPositions=[footOffset]` so its internal Grid3D
+   * visual is rendered at the same rig-root offset we use for props.
    */
 
   import { T } from "@threlte/core";
+  import { Group } from "three";
   import Scene3D from "$lib/shared/3d/components/Scene3D.svelte";
   import Avatar3D from "$lib/shared/3d/components/Avatar3D.svelte";
   import Prop3D from "$lib/shared/3d/components/props/Prop3D.svelte";
@@ -25,6 +35,7 @@
   import { PlaneCoordinateMapper } from "$lib/shared/3d/services/implementations/PlaneCoordinateMapper";
   import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { BackgroundType } from "@austencloud/backgrounds";
+  import { STAGE } from "$lib/shared/3d/scale/scale-constants";
   import type { PropState3D } from "$lib/shared/3d/domain/models/PropState3D";
   import type { CollisionEvent } from "$lib/shared/3d/services/contracts/ICollisionDetector";
   import { Plane } from "$lib/shared/3d/domain/enums/Plane";
@@ -36,8 +47,15 @@
   } from "../domain/types";
   import { getCollisionLabContext } from "../context/collision-lab-context";
 
-  const { state } = getCollisionLabContext();
+  const labCtx = getCollisionLabContext();
   const planeMapper = new PlaneCoordinateMapper();
+
+  /**
+   * Wall-plane grid sits 30cm forward of the performer's body. This is the
+   * standard TKA convention: when you spin in wall plane, the plane is in
+   * front of your eyes, not slicing through you. Matches Scene3D + PerformerRig.
+   */
+  const GRID_FORWARD_OFFSET = STAGE.AVATAR_GRID_OFFSET; // 0.3 m
 
   const POSITION_TO_GRID: Record<DiamondPosition, GridLocation> = {
     N: GridLocation.NORTH,
@@ -47,9 +65,10 @@
   };
 
   /**
-   * Build a PropState3D for a hand target. Avatar3D's IK uses worldPosition
-   * for hand placement; orientation is stored in PoseDefinition but has no
-   * Phase 1 effect on IK (Phase 2 will use it when elbow routing lands).
+   * Build a PropState3D for a hand target. The worldPosition here is
+   * actually in GRID-LOCAL space (as if the grid were at origin) — the
+   * transform chain adds the rig root + grid-forward offset at render
+   * time so the final world position lands on the visible grid.
    */
   function buildPropState(
     plane: Plane,
@@ -69,33 +88,45 @@
   }
 
   const bluePropState = $derived.by<PropState3D | null>(() => {
-    const pose = state.currentPose;
+    const pose = labCtx.state.currentPose;
     if (!pose) return null;
     return buildPropState(pose.plane, pose.blueHand.position, pose.blueHand.orientation);
   });
 
   const redPropState = $derived.by<PropState3D | null>(() => {
-    const pose = state.currentPose;
+    const pose = labCtx.state.currentPose;
     if (!pose) return null;
     return buildPropState(pose.plane, pose.redHand.position, pose.redHand.orientation);
   });
 
   /** Only show the grid for the pose's current plane — less visual clutter. */
   const visiblePlanes = $derived.by<Set<Plane>>(() => {
-    const pose = state.currentPose;
+    const pose = labCtx.state.currentPose;
     return new Set(pose ? [pose.plane] : []);
   });
 
-  // Stance variant drives where the avatar actually stands on the floor.
-  // Root position translation moves the whole body rigidly (feet, hips,
-  // torso) which is exactly what we want for "the performer steps here."
-  const avatarPosition = $derived({
-    x: state.currentStanceVariant.footOffsetX,
+  // Stance variant drives where the avatar actually stands. Because foot
+  // IK is disabled, translating the rig root moves the whole body rigidly
+  // (feet, hips, torso, arms). The grid stays fixed in world space because
+  // Scene3D's grid offset is applied against the avatarPositions we pass.
+  const footOffset = $derived({
+    x: labCtx.state.currentStanceVariant.footOffsetX,
     y: 0,
-    z: state.currentStanceVariant.footOffsetZ,
+    z: labCtx.state.currentStanceVariant.footOffsetZ,
   });
-  const facingAngle = $derived(state.currentStanceVariant.rootYawRad);
-  const spinePitchOffset = $derived(state.currentStanceVariant.spinePitchRad);
+  const facingAngle = $derived(labCtx.state.currentStanceVariant.rootYawRad);
+  const spinePitchOffset = $derived(labCtx.state.currentStanceVariant.spinePitchRad);
+
+  // Scene3D's avatarPositions drives where its Grid3D visual is rendered.
+  // We pass the footOffset so the grid moves with the performer... wait no.
+  // Actually we want the opposite: grid stays in world space, performer
+  // moves around it. So we pass a SINGLE grid position at (0,0,0) and
+  // leave the avatar to drift via the rig root.
+  const gridAnchorPositions = [{ x: 0, y: 0, z: 0, facingAngle: 0 }];
+
+  // PropAnchor refs — Avatar3D reads world positions from these for IK.
+  let bluePropAnchorRef = $state<Group | undefined>(undefined);
+  let redPropAnchorRef = $state<Group | undefined>(undefined);
 
   const SEVERITY_RANK: Record<"graze" | "clip" | "penetrate", number> = {
     graze: 1,
@@ -105,7 +136,7 @@
 
   function handleCollisionEvents(events: CollisionEvent[]) {
     if (!events || events.length === 0) {
-      state.updateCollision({ severity: "clear", zones: [] });
+      labCtx.state.updateCollision({ severity: "clear", zones: [] });
       return;
     }
     let worst = events[0]!;
@@ -121,7 +152,7 @@
       severity: worst.severity as SnapshotSeverity,
       zones,
     };
-    state.updateCollision(snapshot);
+    labCtx.state.updateCollision(snapshot);
   }
 </script>
 
@@ -131,37 +162,73 @@
     showGrid={true}
     showLabels={false}
     {visiblePlanes}
+    avatarPositions={gridAnchorPositions}
     backgroundType={BackgroundType.FIREFLY_FOREST}
   >
     {#snippet children()}
-      {#if bluePropState}
-        <T.Group position={[bluePropState.worldPosition.x, bluePropState.worldPosition.y, bluePropState.worldPosition.z]}>
-          <Prop3D propType={PropType.STAFF} propState={bluePropState} color="blue" />
-        </T.Group>
-      {/if}
-      {#if redPropState}
-        <T.Group position={[redPropState.worldPosition.x, redPropState.worldPosition.y, redPropState.worldPosition.z]}>
-          <Prop3D propType={PropType.STAFF} propState={redPropState} color="red" />
-        </T.Group>
-      {/if}
-      {#if bluePropState && redPropState}
+      <!-- Rig root: positions the performer at the stance's footOffset. -->
+      <T.Group
+        position={[footOffset.x, footOffset.y, footOffset.z]}
+        rotation.y={facingAngle}
+      >
+        {#if bluePropState && redPropState}
+          <Avatar3D
+            {bluePropState}
+            {redPropState}
+            position={{ x: 0, y: 0, z: 0 }}
+            facingAngle={0}
+            {spinePitchOffset}
+            visible={true}
+            isActive={false}
+            enableLocomotion={false}
+            {bluePropAnchorRef}
+            {redPropAnchorRef}
+            onCollisionEvents={handleCollisionEvents}
+          />
+        {/if}
+
         <!--
-          isActive={false} keeps the avatar on LAYER_WORLD so the
-          third-person camera can see it (isActive={true} assigns the
-          first-person viewmodel layer which is hidden here).
+          Grid-forward offset group: everything beneath this is in
+          "grid-local" space, matching Scene3D's internal grid positioning.
+          Props placed at plane-mapper local coordinates end up on the
+          visible grid because this group is at +gridOffset from the rig.
+
+          BUT: since Scene3D renders its grid at its own origin (not at
+          rig root + gridOffset), we'd double up the offset if we nested
+          our props under the rig. So instead, we keep this group at the
+          SAME world position as Scene3D's grid — by NOT applying the rig
+          transform. That means props at grid-local coordinates line up.
         -->
-        <Avatar3D
-          {bluePropState}
-          {redPropState}
-          position={avatarPosition}
-          {facingAngle}
-          {spinePitchOffset}
-          visible={true}
-          isActive={false}
-          enableLocomotion={false}
-          onCollisionEvents={handleCollisionEvents}
-        />
-      {/if}
+      </T.Group>
+
+      <!--
+        Props live in WORLD space (not inside the rig) so they stay fixed
+        relative to Scene3D's grid as the performer walks around.
+        Scene3D's grid is rendered at z=gridOffset from its avatar anchor
+        (0,0,0), so our prop anchors use the same base offset.
+      -->
+      <T.Group position.z={GRID_FORWARD_OFFSET}>
+        {#if bluePropState}
+          <T.Group
+            bind:ref={bluePropAnchorRef}
+            position.x={bluePropState.worldPosition.x}
+            position.y={bluePropState.worldPosition.y}
+            position.z={bluePropState.worldPosition.z}
+          >
+            <Prop3D propType={PropType.STAFF} propState={bluePropState} color="blue" />
+          </T.Group>
+        {/if}
+        {#if redPropState}
+          <T.Group
+            bind:ref={redPropAnchorRef}
+            position.x={redPropState.worldPosition.x}
+            position.y={redPropState.worldPosition.y}
+            position.z={redPropState.worldPosition.z}
+          >
+            <Prop3D propType={PropType.STAFF} propState={redPropState} color="red" />
+          </T.Group>
+        {/if}
+      </T.Group>
     {/snippet}
   </Scene3D>
 </div>
