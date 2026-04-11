@@ -138,5 +138,81 @@ describe("HingeConstrainedLegIKSolver", () => {
       expect(chain.middle.quaternion.equals(origKneeQuat)).toBe(true);
       expect(chain.root.quaternion.equals(origHipQuat)).toBe(true);
     });
+
+    it("knee bends toward poleDirection, not away", () => {
+      const chain = buildSyntheticLeg();
+      const target = new Vector3(0, 0.2, 0.3);
+
+      solver.solve({
+        chain,
+        footTarget: target,
+        groundNormal: new Vector3(0, 1, 0),
+        footForward: new Vector3(0, 0, 1),
+        kneeHingeAxis: new Vector3(1, 0, 0),
+        poleDirection: new Vector3(0, 0, 1), // knee should bend forward (+Z)
+        weight: 1,
+      });
+
+      const hipWorld = getWorldPos(chain.root);
+      const kneeWorld = getWorldPos(chain.middle);
+      const footWorld = getWorldPos(chain.effector);
+
+      // Knee should displace in +Z (forward) relative to the hip-foot chord
+      const chord = new Vector3().addVectors(hipWorld, footWorld).multiplyScalar(0.5);
+      const kneeOffset = new Vector3().subVectors(kneeWorld, chord);
+      expect(kneeOffset.z).toBeGreaterThan(0);
+    });
+
+    it("knee flips to correct side when hinge axis is backwards", () => {
+      const chain = buildSyntheticLeg();
+      const target = new Vector3(0, 0.2, 0.3);
+
+      solver.solve({
+        chain,
+        footTarget: target,
+        groundNormal: new Vector3(0, 1, 0),
+        footForward: new Vector3(0, 0, 1),
+        kneeHingeAxis: new Vector3(-1, 0, 0), // flipped — would normally bend backward
+        poleDirection: new Vector3(0, 0, 1),  // but we asked for forward
+        weight: 1,
+      });
+
+      const hipWorld = getWorldPos(chain.root);
+      const kneeWorld = getWorldPos(chain.middle);
+      const footWorld = getWorldPos(chain.effector);
+
+      // Even with a flipped hinge axis, the knee should bend forward
+      const chord = new Vector3().addVectors(hipWorld, footWorld).multiplyScalar(0.5);
+      const kneeOffset = new Vector3().subVectors(kneeWorld, chord);
+      expect(kneeOffset.z).toBeGreaterThan(0);
+
+      // Foot still reaches target
+      expect(footWorld.distanceTo(target)).toBeLessThan(1e-3);
+    });
+
+    it("weight=0.5 produces an intermediate pose", () => {
+      const chain = buildSyntheticLeg();
+
+      // Capture foot position BEFORE any solve (original pose — leg straight down)
+      const origFootWorld = getWorldPos(chain.effector);
+
+      const target = new Vector3(0, 0.2, 0.3);
+
+      solver.solve({
+        chain,
+        footTarget: target,
+        groundNormal: new Vector3(0, 1, 0),
+        footForward: new Vector3(0, 0, 1),
+        kneeHingeAxis: new Vector3(1, 0, 0),
+        poleDirection: new Vector3(0, 0, 1),
+        weight: 0.5,
+      });
+
+      const blendedFootWorld = getWorldPos(chain.effector);
+
+      // At weight=0.5, foot should be between original and target
+      expect(blendedFootWorld.distanceTo(origFootWorld)).toBeGreaterThan(0.01);
+      expect(blendedFootWorld.distanceTo(target)).toBeGreaterThan(0.01);
+    });
   });
 });
