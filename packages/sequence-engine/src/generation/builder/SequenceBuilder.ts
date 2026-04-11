@@ -21,6 +21,7 @@ import type {
   ConstraintSet,
   ConstraintReport,
   IConstraint,
+  IVariationConstraint,
 } from "../constraints/types.js";
 import type { SequenceStep, Orientation } from "../../core/types/sequence-engine-types.js";
 import {
@@ -49,6 +50,7 @@ import {
   QUARTER_POSITION_MAP_CCW,
 } from "../../loop/position-maps/circular-position-maps.js";
 import { VERTICAL_MIRROR_POSITION_MAP } from "../../loop/position-maps/strict-loop-position-maps.js";
+import { PositionReachabilityAnalyzer, type ReachabilityResult } from "../reachability/PositionReachabilityAnalyzer.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -419,6 +421,24 @@ export class SequenceBuilder {
         : undefined,
     };
 
+    // Pre-filter variations by hard constraints for reachability analysis.
+    // This only runs once (not per-retry) since hard constraints don't change.
+    // Uses the same Type6 exclusion as BeamSearch (α, β, γ are start positions only).
+    const allVariationsForReach = this.variationProvider.getAllVariations(options.gridMode);
+    const TYPE_6_LETTERS = ["α", "β", "γ"];
+    let nonType6ForReachability = allVariationsForReach.filter(
+      (p) => !TYPE_6_LETTERS.includes(p.letter),
+    );
+    if (options.mustNotContainLetters && options.mustNotContainLetters.length > 0) {
+      const excluded = new Set(options.mustNotContainLetters);
+      nonType6ForReachability = nonType6ForReachability.filter(
+        (p) => !excluded.has(p.letter),
+      );
+    }
+    const hardConstraintFiltered = this.filterByHardConstraints(
+      nonType6ForReachability, constraintSet.hard,
+    );
+
     const maxRetries = needsLoopTargeting && !effectiveStartPosition ? 10 : 1;
     let searchResult: BeamSearchResult | undefined;
     let lastError: string | undefined;
@@ -448,6 +468,29 @@ export class SequenceBuilder {
         requiredEndPositions = new Set([options.endPosition]);
       }
 
+      // Backward reachability analysis: when we have a goal (LOOP endpoint)
+      // AND hard constraints that filter the variation space, pre-compute
+      // which positions at each beat can participate in a valid path to the
+      // goal. This prevents the beam search from wasting lanes on doomed paths
+      // and fails fast when constraints are provably impossible.
+      let reachability: ReachabilityResult | undefined;
+      if (requiredEndPositions && requiredEndPositions.size > 0 && constraintSet.hard.length > 0) {
+        const analyzer = new PositionReachabilityAnalyzer();
+        reachability = analyzer.analyze(
+          length,
+          requiredEndPositions,
+          hardConstraintFiltered,
+          searchOptions.blockedStartPositions,
+        );
+
+        if (!reachability.feasible) {
+          throw new Error(
+            `No valid ${length}-beat path exists: beat ${reachability.emptyBeatIndex! + 1} ` +
+            `has no reachable positions given the current constraints`,
+          );
+        }
+      }
+
       const beamSearch = new BeamSearch(this.variationProvider, options.gridMode);
       const propContinuity = this.resolveEffectivePropContinuity(options);
       const result = beamSearch.searchByLength(
@@ -460,6 +503,7 @@ export class SequenceBuilder {
         searchOptions,
         turnAllocation,
         propContinuity,
+        reachability,
       );
 
       if (result.success || result.steps.length > 0) {
@@ -491,6 +535,11 @@ export class SequenceBuilder {
       );
       constraintSet.soft.push(new ContinuityConstraint("maximize"));
 
+      // Recompute hard-constraint-filtered variations after removing continuity
+      const demotedHardFiltered = this.filterByHardConstraints(
+        nonType6ForReachability, constraintSet.hard,
+      );
+
       for (let attempt = 0; attempt < maxRetries; attempt++) {
         let requiredEndPositions: Set<string> | undefined;
         let loopPositionMap: Record<string, string[]> | undefined;
@@ -509,6 +558,25 @@ export class SequenceBuilder {
           requiredEndPositions = new Set([options.endPosition]);
         }
 
+        // Recompute reachability with the demoted constraint set
+        let reachabilityRetry: ReachabilityResult | undefined;
+        if (requiredEndPositions && requiredEndPositions.size > 0 && constraintSet.hard.length > 0) {
+          const analyzer = new PositionReachabilityAnalyzer();
+          reachabilityRetry = analyzer.analyze(
+            length,
+            requiredEndPositions,
+            demotedHardFiltered,
+            searchOptions.blockedStartPositions,
+          );
+
+          if (!reachabilityRetry.feasible) {
+            throw new Error(
+              `No valid ${length}-beat path exists: beat ${reachabilityRetry.emptyBeatIndex! + 1} ` +
+              `has no reachable positions given the current constraints`,
+            );
+          }
+        }
+
         const beamSearch = new BeamSearch(this.variationProvider, options.gridMode);
         const propContinuity = this.resolveEffectivePropContinuity(options);
         const result = beamSearch.searchByLength(
@@ -521,6 +589,7 @@ export class SequenceBuilder {
           searchOptions,
           turnAllocation,
           propContinuity,
+          reachabilityRetry,
         );
 
         if (result.success || result.steps.length > 0) {
@@ -872,6 +941,30 @@ export class SequenceBuilder {
 
     if (axisPositions.length === 0) return undefined;
     return axisPositions[Math.floor(Math.random() * axisPositions.length)];
+  }
+
+  /**
+   * Filter variations by hard constraints using the couldSatisfy() fast path.
+   * Returns only variations that pass all hard constraint checks — the set of
+   * transitions the beam search could actually use.
+   */
+  private filterByHardConstraints(
+    variations: PictographData[],
+    hardConstraints: IConstraint[],
+  ): PictographData[] {
+    if (hardConstraints.length === 0) return variations;
+
+    return variations.filter((v) =>
+      hardConstraints.every((c) => {
+        const asVariation = c as IVariationConstraint;
+        if (typeof asVariation.couldSatisfy === "function") {
+          return asVariation.couldSatisfy(v);
+        }
+        // Constraints without couldSatisfy (e.g. PositionContinuityConstraint)
+        // can't pre-filter individual variations — assume they pass.
+        return true;
+      }),
+    );
   }
 
   /**

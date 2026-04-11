@@ -33,6 +33,7 @@ import { getLetterTransitionGraph } from "../../core/transition-graph/LetterTran
 import { calculateEndOrientation } from "../../core/orientation/OrientationCalculator.js";
 import type { Orientation } from "../../core/types/sequence-engine-types.js";
 import { LetterClassifier } from "../../core/letters/LetterClassifier.js";
+import type { ReachabilityResult } from "../reachability/PositionReachabilityAnalyzer.js";
 
 /**
  * PropContinuity mode for rotation direction resolution.
@@ -371,6 +372,7 @@ export class BeamSearch {
     },
     turnAllocation?: TurnAllocation,
     propContinuity?: PropContinuityMode,
+    reachability?: ReachabilityResult,
   ): BeamSearchResult {
     const config: BeamSearchConfig = {
       ...DEFAULT_BEAM_CONFIG,
@@ -508,12 +510,22 @@ export class BeamSearch {
           (p) => p.startPosition === state.currentEndPosition,
         );
 
-        // On the final beat, if a LOOP requires a specific end position,
-        // only keep candidates that land there. This is a HARD requirement —
-        // if no candidate can reach the required position, this beam state
-        // is dead (the LOOP executor would reject it anyway).
+        // Reachability-guided filtering: if we pre-computed which positions
+        // are viable at each beat, filter candidates so their endPosition
+        // lands in the reachable set for the NEXT beat. This prevents the
+        // beam from wasting lanes on paths that dead-end at a future beat.
+        //
+        // On the final beat, filter to the LOOP-required end positions
+        // directly (the reachability backward pass already encodes this,
+        // but we keep the explicit check as a fallback for when reachability
+        // wasn't computed).
         const isFinalBeat = i === length - 1;
-        if (isFinalBeat && requiredEndPositions && requiredEndPositions.size > 0) {
+        if (reachability && !isFinalBeat) {
+          const nextReachable = reachability.reachableAt[i + 1];
+          candidates = candidates.filter(
+            (p) => nextReachable.has(p.endPosition),
+          );
+        } else if (isFinalBeat && requiredEndPositions && requiredEndPositions.size > 0) {
           candidates = candidates.filter(
             (p) => requiredEndPositions.has(p.endPosition),
           );

@@ -197,3 +197,10 @@ export {
   type TransitionMatrix,
   type WordFeasibility,
 } from "./constraints/analysis/index.js";
+
+// Reachability analysis (backward arc consistency for LOOP targeting)
+export {
+  PositionReachabilityAnalyzer,
+  type ReachabilityResult,
+} from "./reachability/PositionReachabilityAnalyzer.js";
+export { PositionTransitionGraph } from "./reachability/PositionTransitionGraph.js";
