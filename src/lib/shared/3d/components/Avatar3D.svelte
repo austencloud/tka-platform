@@ -51,6 +51,8 @@
   import { FingerAnimator } from "$lib/shared/3d/services/implementations/FingerAnimator";
   import { FootPlanter } from "../services/implementations/FootPlanter";
   import type { IFootPlanter } from "../services/contracts/IFootPlanter";
+  import { HingeConstrainedLegIKSolver } from "../services/implementations/HingeConstrainedLegIKSolver";
+  import { ContactCurveCache } from "../services/implementations/ContactCurveCache";
   import { ElbowPoleComputer } from "../services/implementations/ElbowPoleComputer";
   import { ClavicleRaiser } from "../services/implementations/ClavicleRaiser";
   import { SpineTwister } from "../services/implementations/SpineTwister";
@@ -158,6 +160,8 @@
   let stateMachine: IAnimationStateMachine | null = null;
   let rootMotionExtractor: IRootMotionExtractor | null = null;
   let footPlanter: IFootPlanter | null = null;
+  let legIKSolver: HingeConstrainedLegIKSolver | null = null;
+  let contactCurveCache: ContactCurveCache | null = null;
   let fingerAnimator: FingerAnimator | null = null;
 
   // Collision detection — logs when props/arms clip through the avatar body
@@ -376,9 +380,11 @@
           });
       }
 
-      // Initialize foot planter with leg chains from the loaded skeleton
-      if (enableLocomotion && footPlanter && skeletonService && ikSolver) {
-        footPlanter.initialize(skeletonService, ikSolver);
+      // Initialize foot planter with leg chains from the loaded skeleton.
+      // FootPlanter uses the hinge-constrained leg IK solver (not the generic
+      // ikSolver, which is still used by arm IK elsewhere in this file).
+      if (enableLocomotion && footPlanter && skeletonService && legIKSolver && contactCurveCache) {
+        footPlanter.initialize(skeletonService, legIKSolver, contactCurveCache);
       }
 
       // Initialize finger animator with mapped finger chains
@@ -435,6 +441,8 @@
       if (enableLocomotion) {
         stateMachine = new AnimationStateMachine();
         footPlanter = new FootPlanter();
+        legIKSolver = new HingeConstrainedLegIKSolver();
+        contactCurveCache = new ContactCurveCache();
         if (enableRootMotion) {
           rootMotionExtractor = new RootMotionExtractor();
         }

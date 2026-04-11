@@ -16,7 +16,8 @@
 
 import type { LocomotionState } from "./IAnimationStateMachine";
 import type { IAvatarSkeletonBuilder } from "./IAvatarSkeletonBuilder";
-import type { IIKSolver } from "./IIKSolver";
+import type { ILegIKSolver } from "./ILegIKSolver";
+import type { IContactCurveCache } from "./IContactCurveCache";
 
 /**
  * Per-frame input from the movement system.
@@ -54,10 +55,14 @@ export interface FootPlanterConfig {
 
 export interface IFootPlanter {
   /**
-   * Initialize with skeleton and IK solver references.
+   * Initialize with skeleton, leg IK solver, and contact curve cache references.
    * Must be called after the GLTF model is loaded and leg chains are built.
    */
-  initialize(skeleton: IAvatarSkeletonBuilder, ikSolver: IIKSolver): void;
+  initialize(
+    skeleton: IAvatarSkeletonBuilder,
+    legIKSolver: ILegIKSolver,
+    contactCurveCache: IContactCurveCache
+  ): void;
 
   /**
    * Run foot planting IK. Call each frame AFTER LocomotionAnimator.update()
