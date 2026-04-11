@@ -29,10 +29,10 @@ export class CanvasFrameCapturer implements ICanvasFrameCapturer {
     }
   }
 
-  async capture(
+  capture(
     canvas: HTMLCanvasElement,
     timestampMicros: number
-  ): Promise<CapturedFrame> {
+  ): CapturedFrame {
     const width = canvas.width;
     const height = canvas.height;
 

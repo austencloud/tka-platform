@@ -28,6 +28,13 @@ export interface ICanvasFrameCapturer {
   /**
    * Capture a single frame from the given canvas.
    *
+   * Synchronous by design: the underlying browser primitives
+   * (`new VideoFrame(canvas)` and `CanvasRenderingContext2D.getImageData`)
+   * both return immediately. Returning synchronously is load-bearing for
+   * callers that need to preserve message ordering with the encoder worker
+   * — a Promise-wrapped API would defer `addFrame` calls to microtasks and
+   * could let a following `finish` message overtake them.
+   *
    * @param canvas  The source canvas. Its width/height determine the
    *                captured frame dimensions.
    * @param timestampMicros  Presentation timestamp in microseconds. The
@@ -36,5 +43,5 @@ export interface ICanvasFrameCapturer {
   capture(
     canvas: HTMLCanvasElement,
     timestampMicros: number
-  ): Promise<CapturedFrame>;
+  ): CapturedFrame;
 }
