@@ -18,6 +18,7 @@ import {
   getExportDimensions,
   calculateBitrate,
 } from "$lib/features/compose/shared/domain/video-export-calculations";
+import type { ICanvasFrameCapturer } from "$lib/shared/video-export/services/contracts/ICanvasFrameCapturer";
 
 /** Keyframe interval — emit a keyframe every N frames for seek performance. */
 const KEYFRAME_INTERVAL = 30;
@@ -29,7 +30,10 @@ export class Realtime3DExporter implements IRealtime3DExporter {
   private shouldCancel = false;
   private rafHandle: number | null = null;
 
-  constructor(private readonly backgroundEncoder: IBackgroundVideoEncoder) {}
+  constructor(
+    private readonly backgroundEncoder: IBackgroundVideoEncoder,
+    private readonly capturer: ICanvasFrameCapturer
+  ) {}
 
   async export3D(
     webglCanvas: HTMLCanvasElement,

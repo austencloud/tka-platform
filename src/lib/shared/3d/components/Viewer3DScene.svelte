@@ -87,6 +87,13 @@
         p.setProgress(subBeatProgress);
       }
     }
+
+    // Drive formation transitions. transitionToFormation (called from the
+    // Performers tab) kicks off an animation but doesn't run its own frame
+    // loop — this tick is what actually walks positions toward the target
+    // slots over the 500ms window. Without it, applyFormationFromUI flips
+    // activeFormation but nothing visibly moves.
+    performerManager.updateFormationTransition();
   });
 
   // ---------------------------------------------------------------
