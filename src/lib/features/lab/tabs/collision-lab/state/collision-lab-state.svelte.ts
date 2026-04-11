@@ -6,19 +6,24 @@
  * uses getter accessors so consumers can destructure in templates without
  * losing reactivity.
  *
+ * The reviewer adjusts the performer's floor position (footOffsetX,
+ * footOffsetZ), body yaw, and spine pitch as live sliders — no preset
+ * variant indices. When they commit a label with labelCurrent(), the
+ * current stance values are captured inline in the PoseLabel.
+ *
  * Services are passed in as arguments — never resolved from the container
  * inside the factory. This matches the state-management rule.
  */
 
 import type { IPoseEnumerator } from "../services/contracts/IPoseEnumerator";
 import type { IPoseLabelRepository } from "../services/contracts/IPoseLabelRepository";
-import type { IStanceVariantProvider } from "../services/contracts/IStanceVariantProvider";
 import type {
   PoseDefinition,
   PoseLabel,
   LabelStatus,
   HandOrientation,
   CollisionSnapshot,
+  StancePose,
 } from "../domain/types";
 import { Plane } from "$lib/shared/3d/domain/enums/Plane";
 
@@ -47,10 +52,16 @@ function matchesStatusFilter(
   return label.status === filter;
 }
 
+const CENTER_STANCE: StancePose = {
+  footOffsetX: 0,
+  footOffsetZ: 0,
+  rootYawRad: 0,
+  spinePitchRad: 0,
+};
+
 export async function createCollisionLabState(
   poseEnumerator: IPoseEnumerator,
-  labelRepo: IPoseLabelRepository,
-  stanceProvider: IStanceVariantProvider
+  labelRepo: IPoseLabelRepository
 ) {
   const allPoses: PoseDefinition[] = poseEnumerator.enumerateDiamondInOut();
   const initialLabels = await labelRepo.loadAll();
@@ -63,9 +74,14 @@ export async function createCollisionLabState(
   let redOrientationFilter = $state<OrientationFilter>("all");
   let statusFilter = $state<StatusFilter>("all");
 
-  // Cursor + variant
+  // Cursor
   let cursorIndex = $state(0);
-  let currentVariantIndex = $state(0);
+
+  // Live stance values — the reviewer moves these via sliders.
+  let footOffsetX = $state(0);
+  let footOffsetZ = $state(0);
+  let rootYawRad = $state(0);
+  let spinePitchRad = $state(0);
 
   // Collision state
   let currentCollision = $state<CollisionSnapshot | null>(null);
@@ -88,7 +104,12 @@ export async function createCollisionLabState(
     currentPose ? labels[currentPose.id] ?? null : null
   );
 
-  const currentStanceVariant = $derived(stanceProvider.getVariant(currentVariantIndex));
+  const currentStance = $derived<StancePose>({
+    footOffsetX,
+    footOffsetZ,
+    rootYawRad,
+    spinePitchRad,
+  });
 
   const progress = $derived({
     total: allPoses.length,
@@ -99,14 +120,39 @@ export async function createCollisionLabState(
     skipped: countLabels(labels, (s) => s === "skip"),
   });
 
+  /**
+   * When the cursor lands on a new pose, seed the stance sliders from
+   * whatever was previously saved for that pose (if anything). New poses
+   * start from the center stance. This lets the reviewer see the last
+   * known good stance for a pose when revisiting it.
+   */
+  function seedStanceFromLabel(pose: PoseDefinition | null) {
+    if (!pose) {
+      Object.assign(
+        { footOffsetX, footOffsetZ, rootYawRad, spinePitchRad },
+        CENTER_STANCE
+      );
+      footOffsetX = CENTER_STANCE.footOffsetX;
+      footOffsetZ = CENTER_STANCE.footOffsetZ;
+      rootYawRad = CENTER_STANCE.rootYawRad;
+      spinePitchRad = CENTER_STANCE.spinePitchRad;
+      return;
+    }
+    const prior = labels[pose.id];
+    const stance = prior?.stance ?? CENTER_STANCE;
+    footOffsetX = stance.footOffsetX;
+    footOffsetZ = stance.footOffsetZ;
+    rootYawRad = stance.rootYawRad;
+    spinePitchRad = stance.spinePitchRad;
+  }
+
   return {
     // Readers
     get allPoses() { return allPoses; },
     get filteredPoses() { return filteredPoses; },
     get currentPose() { return currentPose; },
     get currentLabel() { return currentLabel; },
-    get currentStanceVariant() { return currentStanceVariant; },
-    get currentVariantIndex() { return currentVariantIndex; },
+    get currentStance() { return currentStance; },
     get currentCollision() { return currentCollision; },
     get labels() { return labels; },
     get progress() { return progress; },
@@ -115,27 +161,37 @@ export async function createCollisionLabState(
     get blueOrientationFilter() { return blueOrientationFilter; },
     get redOrientationFilter() { return redOrientationFilter; },
     get statusFilter() { return statusFilter; },
-    get stanceVariants() { return stanceProvider.getAll(); },
+    get footOffsetX() { return footOffsetX; },
+    get footOffsetZ() { return footOffsetZ; },
+    get rootYawRad() { return rootYawRad; },
+    get spinePitchRad() { return spinePitchRad; },
 
     // Cursor
     stepForward() {
       if (filteredPoses.length === 0) return;
       cursorIndex = Math.min(cursorIndex + 1, filteredPoses.length - 1);
-      currentVariantIndex = 0;
+      seedStanceFromLabel(filteredPoses[cursorIndex] ?? null);
     },
     stepBackward() {
       cursorIndex = Math.max(cursorIndex - 1, 0);
-      currentVariantIndex = 0;
+      seedStanceFromLabel(filteredPoses[cursorIndex] ?? null);
     },
     jumpTo(index: number) {
       const max = Math.max(0, filteredPoses.length - 1);
       cursorIndex = Math.max(0, Math.min(index, max));
-      currentVariantIndex = 0;
+      seedStanceFromLabel(filteredPoses[cursorIndex] ?? null);
     },
 
-    // Variant
-    setVariant(index: number) {
-      currentVariantIndex = Math.max(0, Math.min(index, stanceProvider.count() - 1));
+    // Stance setters
+    setFootOffsetX(v: number) { footOffsetX = v; },
+    setFootOffsetZ(v: number) { footOffsetZ = v; },
+    setRootYawRad(v: number) { rootYawRad = v; },
+    setSpinePitchRad(v: number) { spinePitchRad = v; },
+    resetStance() {
+      footOffsetX = 0;
+      footOffsetZ = 0;
+      rootYawRad = 0;
+      spinePitchRad = 0;
     },
 
     // Filters — all reset cursor to 0
@@ -170,7 +226,12 @@ export async function createCollisionLabState(
         [pose.id]: {
           poseId: pose.id,
           status,
-          stanceVariantIndex: currentVariantIndex,
+          stance: {
+            footOffsetX,
+            footOffsetZ,
+            rootYawRad,
+            spinePitchRad,
+          },
           armRouting: "auto",
           collisionSnapshot: currentCollision,
           labeledAt: Date.now(),
@@ -182,7 +243,7 @@ export async function createCollisionLabState(
       if (status === "clear" || status === "unreachable") {
         if (cursorIndex < filteredPoses.length - 1) {
           cursorIndex += 1;
-          currentVariantIndex = 0;
+          seedStanceFromLabel(filteredPoses[cursorIndex] ?? null);
         }
       }
     },

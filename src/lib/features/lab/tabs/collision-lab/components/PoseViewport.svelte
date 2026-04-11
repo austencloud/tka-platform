@@ -105,17 +105,17 @@
     return new Set(pose ? [pose.plane] : []);
   });
 
-  // Stance variant drives where the avatar actually stands. Because foot
-  // IK is disabled, translating the rig root moves the whole body rigidly
-  // (feet, hips, torso, arms). The grid stays fixed in world space because
-  // Scene3D's grid offset is applied against the avatarPositions we pass.
+  // The reviewer drives these live via sliders in StanceControls. Because
+  // foot IK is disabled, translating the rig root moves the whole body
+  // rigidly (feet, hips, torso, arms). The props and grid stay fixed in
+  // world space, so the performer walks around them.
   const footOffset = $derived({
-    x: labCtx.state.currentStanceVariant.footOffsetX,
+    x: labCtx.state.footOffsetX,
     y: 0,
-    z: labCtx.state.currentStanceVariant.footOffsetZ,
+    z: labCtx.state.footOffsetZ,
   });
-  const facingAngle = $derived(labCtx.state.currentStanceVariant.rootYawRad);
-  const spinePitchOffset = $derived(labCtx.state.currentStanceVariant.spinePitchRad);
+  const facingAngle = $derived(labCtx.state.rootYawRad);
+  const spinePitchOffset = $derived(labCtx.state.spinePitchRad);
 
   // Scene3D's avatarPositions drives where its Grid3D visual is rendered.
   // We pass the footOffset so the grid moves with the performer... wait no.

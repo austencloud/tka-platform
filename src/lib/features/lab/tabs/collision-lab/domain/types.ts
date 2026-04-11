@@ -59,10 +59,26 @@ export interface CollisionSnapshot {
   zones: CollisionSnapshotZone[];
 }
 
+/**
+ * The exact floor position and upper-body adjustment that was active
+ * when the reviewer committed a label. Captured inline so labels are
+ * self-describing — no external preset table needed.
+ */
+export interface StancePose {
+  /** Side-to-side offset in meters. Positive = performer's right. */
+  footOffsetX: number;
+  /** Depth offset in meters. Positive = toward audience (forward). */
+  footOffsetZ: number;
+  /** Body yaw in radians around the Y axis. Positive = turn left. */
+  rootYawRad: number;
+  /** Forward torso lean in radians (0 = upright, positive = leaned in). */
+  spinePitchRad: number;
+}
+
 export interface PoseLabel {
   poseId: string;
   status: LabelStatus;
-  stanceVariantIndex: number;
+  stance: StancePose;
   armRouting: ArmRouting;
   collisionSnapshot: CollisionSnapshot | null;
   notes?: string;
@@ -77,21 +93,13 @@ export interface PoseLabelsFile {
   labels: Record<string, PoseLabel>;
 }
 
-export interface StanceVariant {
-  index: number;
-  description: string;
-  /** Body rotation around the Y axis in radians, applied to avatar root */
-  rootYawRad: number;
-  /** Forward torso lean in radians, applied to spine bones */
-  spinePitchRad: number;
-  /**
-   * Floor offset (meters) — where the avatar actually stands relative to
-   * the grid center. Positive X = performer's right, positive Z = toward
-   * audience. Translating the root here moves the whole body as a rigid
-   * unit (feet, hips, torso) because foot IK is disabled — this is
-   * exactly what we want: the props stay at their world grid points and
-   * the body walks around them.
-   */
-  footOffsetX: number;
-  footOffsetZ: number;
-}
+/**
+ * Bounds for the floor-offset sliders in the stance controls panel.
+ * 60 cm in each direction is more than enough to reach any reasonable
+ * "safe zone" around the grid for a single-performer catalog.
+ */
+export const STANCE_BOUNDS = {
+  footOffset: { min: -0.6, max: 0.6, step: 0.02 }, // 2 cm steps
+  rootYawDeg: { min: -45, max: 45, step: 1 },
+  spinePitchDeg: { min: -10, max: 40, step: 1 },
+} as const;
