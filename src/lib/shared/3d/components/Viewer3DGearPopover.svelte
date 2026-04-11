@@ -49,7 +49,10 @@
     });
   });
 
-  const avatarState = $derived(viewer3DState.avatarState);
+  // Reads performer 0 for the Planes tab's current-state display. Plane
+  // edits are routed through setHandPlaneScoped so they respect the current
+  // selection scope (see handleHandSlotClick / handleResetPlanesClick).
+  const avatarState = $derived(viewer3DState.performerManager.performers[0] ?? null);
 
   const PLANES: { plane: Plane; label: string }[] = [
     { plane: Plane.WALL, label: "Wall" },
@@ -109,17 +112,19 @@
     const currentPlane = hand === "blue" ? bluePlane : redPlane;
     // No-op if this hand is already on this plane
     if (currentPlane === plane) return;
-    avatarState.setHandPlane(hand, plane);
+    viewer3DState.setHandPlaneScoped(hand, plane);
   }
 
   function handleResetPlanesClick(e: MouseEvent) {
     e.stopPropagation();
     if (!avatarState) return;
-    // Reset sequence-wide planes to Wall
-    avatarState.setHandPlane("blue", Plane.WALL);
-    avatarState.setHandPlane("red", Plane.WALL);
-    // Clear any per-beat overrides that exist
-    avatarState.clearBeatPlaneOverrides();
+    // Reset sequence-wide planes to Wall on every performer in scope.
+    viewer3DState.setHandPlaneScoped("blue", Plane.WALL);
+    viewer3DState.setHandPlaneScoped("red", Plane.WALL);
+    // Clear per-beat overrides on every performer in scope.
+    for (const p of viewer3DState.scopedPerformers()) {
+      p.clearBeatPlaneOverrides();
+    }
     // Clear any force-shown planes
     for (const { plane } of PLANES) {
       if (isForceShown(plane)) {
