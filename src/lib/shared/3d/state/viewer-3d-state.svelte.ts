@@ -14,10 +14,10 @@ import type { IPropStateInterpolator } from "../services/contracts/IPropStateInt
 import type { ISequenceConverter } from "../services/contracts/ISequenceConverter";
 import type { CameraStateSnapshot } from "../domain/types/CameraStateSnapshot";
 import { Plane } from "../domain/enums/Plane";
-import {
-  createAvatarInstanceState,
-  type AvatarInstanceState,
-} from "./avatar-instance-state.svelte";
+import type { AvatarInstanceState } from "./avatar-instance-state.svelte";
+import { createPerformerManager, type PerformerManager } from "./performer-manager.svelte";
+import { DEFAULT_AVATAR_ID } from "../config/avatar-definitions";
+import { STAGE } from "$lib/shared/3d/scale/scale-constants";
 
 // ============================================
 // Persistence
@@ -127,7 +127,23 @@ export function createViewer3DState(deps: {
   const _persistedCamera = loadPersistedCamera();
 
   let renderMode = $state<"2d" | "3d">("2d"); // Actual restore happens via enter3D call from orchestrator
-  let avatarState = $state<AvatarInstanceState | null>(null);
+
+  // Performer manager — single source of truth for multi-performer state.
+  // The viewer passes its viewer-specific cap (8) while realm/museum/duet
+  // keep their shared cap (4) by not passing maxPerformers at all.
+  const performerManager: PerformerManager = createPerformerManager({
+    propInterpolator: deps.propInterpolator,
+    sequenceConverter: deps.sequenceConverter,
+    initialAvatarId: DEFAULT_AVATAR_ID,
+    maxPerformers: STAGE.MAX_VIEWER_PERFORMERS,
+  });
+
+  // Transitional shim: existing components read `viewer3DState.avatarState`.
+  // Until all call sites are migrated (Task 14), this getter exposes
+  // performer[0] so nothing breaks. Do NOT add new call sites that read it.
+  function getAvatarStateShim(): AvatarInstanceState | null {
+    return performerManager.performers[0] ?? null;
+  }
   let effectToggles = $state<Record<string, boolean>>({
     fire: false,
     led: false,
@@ -152,16 +168,23 @@ export function createViewer3DState(deps: {
   // Camera snap callback — registered by Viewer3DCamera, called by Viewer3DViewPresets
   let _snapToFn: ((position: { x: number; y: number; z: number }, target: { x: number; y: number; z: number }) => void) | null = null;
 
-  // When a hand is assigned to a non-wall plane, automatically add that plane's
-  // grid circle to the visible set. The has() check prevents re-writing after
-  // the plane is already present, so there's no infinite loop.
+  // When a hand is assigned to a plane, automatically add that plane's grid
+  // circle to the visible set so the plane actually renders. The has() check
+  // prevents re-writing after the plane is already present, so there's no
+  // infinite loop. Wall is included — the new popover treats visiblePlanes as
+  // authoritative, so every assigned plane must be in the set.
+  // When a hand is assigned to a plane, automatically add that plane's grid
+  // circle to the visible set so the plane actually renders. Driven by
+  // performer 0 for now — full per-performer plane tracking lands in
+  // Task 14's scope work.
   $effect(() => {
-    if (!avatarState) return;
-    const blue = avatarState.customBluePlane;
-    const red = avatarState.customRedPlane;
+    const primary = performerManager.performers[0];
+    if (!primary) return;
+    const blue = primary.customBluePlane;
+    const red = primary.customRedPlane;
 
-    const needsBlue = blue !== Plane.WALL && !visiblePlanes.has(blue);
-    const needsRed = red !== Plane.WALL && !visiblePlanes.has(red);
+    const needsBlue = !visiblePlanes.has(blue);
+    const needsRed = !visiblePlanes.has(red);
 
     if (needsBlue || needsRed) {
       const next = new Set(visiblePlanes);
@@ -180,16 +203,11 @@ export function createViewer3DState(deps: {
    */
   function enter3D(sequenceData: SequenceData) {
     if (!_webgl2Available) return;
-    if (!avatarState) {
-      avatarState = createAvatarInstanceState(
-        { id: "viewer", positionX: 0 },
-        {
-          propInterpolator: deps.propInterpolator,
-          sequenceConverter: deps.sequenceConverter,
-        }
-      );
+    if (performerManager.performers.length === 0) {
+      performerManager.initialize();
     }
-    avatarState.loadSequence(sequenceData);
+    const primary = performerManager.performers[0];
+    primary?.loadSequence(sequenceData);
     renderMode = "3d";
     persistMode("3d");
   }
@@ -226,8 +244,7 @@ export function createViewer3DState(deps: {
    * Call when the viewer component is unmounted.
    */
   function dispose() {
-    avatarState?.destroy();
-    avatarState = null;
+    performerManager.destroy();
   }
 
   /**
@@ -264,8 +281,12 @@ export function createViewer3DState(deps: {
     get renderMode() {
       return renderMode;
     },
+    /** @deprecated transitional — use `performerManager.performers[i]` instead. Removed in Task 14. */
     get avatarState() {
-      return avatarState;
+      return getAvatarStateShim();
+    },
+    get performerManager() {
+      return performerManager;
     },
     get effectToggles() {
       return effectToggles;
