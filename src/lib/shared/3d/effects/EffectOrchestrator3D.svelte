@@ -35,15 +35,27 @@
   } from "$lib/shared/animation-engine/domain/types/TipEffectTypes";
   import { TIER_CONFIGS, type QualityTierConfig } from "./types";
   import type { PropState3D } from "../domain/models/PropState3D";
+  import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
+  import { createEffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
+  import {
+    resolveTrails3D,
+    resolveLed3D,
+  } from "$lib/shared/effects/translators/webgl3d-translator";
 
   interface TipDatum {
     position: Vector3 | null;
     effect: EffectType;
   }
 
-  // Default LED colors per prop (blue/red) — used when no pattern engine config
-  const LED_BLUE_COLOR = { r: 0.23, g: 0.51, b: 0.96 }; // #3b82f6
-  const LED_RED_COLOR = { r: 0.94, g: 0.27, b: 0.27 }; // #ef4444
+  function hexToRgb(hex: string): { r: number; g: number; b: number } {
+    const clean = hex.replace("#", "");
+    const bigint = parseInt(clean, 16);
+    return {
+      r: ((bigint >> 16) & 255) / 255,
+      g: ((bigint >> 8) & 255) / 255,
+      b: (bigint & 255) / 255,
+    };
+  }
 
   interface Props {
     bluePropState: PropState3D | null;
@@ -89,6 +101,11 @@
   const { scene, camera } = useThrelte();
   const qualityTierDetector = container.items.qualityTierDetector;
   const tipBridge = new TipPositionBridge3D();
+
+  // Canonical effect config — read from context, or create a default-seeded
+  // local state as a fallback so this component still works when mounted
+  // outside a viewer that sets the context explicitly.
+  const effectsState = getEffectsConfigContext() ?? createEffectsConfigState();
 
   // LED renderers managed directly (bypasses Svelte prop propagation timing)
   let blueLedRenderer: LedRenderer3D | null = null;
@@ -169,19 +186,29 @@
       return;
     }
 
+    const resolvedLed = resolveLed3D(
+      effectsState.led,
+      effectsState.overrides?.led3D as Partial<Parameters<typeof resolveLed3D>[1]> | undefined,
+    );
+    const blueLedRgb = hexToRgb(resolvedLed.primaryColor);
+    const redLedRgb = hexToRgb(
+      resolvedLed.colorMode === "prop-matched"
+        ? resolvedLed.secondaryColor
+        : resolvedLed.primaryColor,
+    );
+
     const dt = 1 / 60;
     blueLedTips.length = 0;
     redLedTips.length = 0;
     charcoalTips.length = 0;
     fireTips.length = 0;
 
-    // COLOR SWAP: The animation engine names props from the avatar's perspective
-    // (avatar's left hand = "blue"), but the 3D viewer looks AT the avatar, so
-    // the viewer's left = avatar's right. To make the blue trail appear on the
-    // visually-blue prop, we swap: visual blue uses redPropState, visual red
-    // uses bluePropState.
-    const visualBlueProp = redPropState;
-    const visualRedProp = bluePropState;
+    // PerformerRig renders the blue-colored prop using bluePropState at
+    // blueHandPos, and the red-colored prop using redPropState at redHandPos.
+    // Effects must follow that same mapping or the blue trail ends up on the
+    // red prop and vice versa.
+    const visualBlueProp = bluePropState;
+    const visualRedProp = redPropState;
 
     // Compute rig-local center for each visual prop.
     const blueRigCenter = visualBlueProp ? {
@@ -210,9 +237,9 @@
         if (effect === "led") {
           blueLedTips.push({
             position: new Vector3(tip.position.x, tip.position.y, tip.position.z),
-            r: LED_BLUE_COLOR.r,
-            g: LED_BLUE_COLOR.g,
-            b: LED_BLUE_COLOR.b,
+            r: blueLedRgb.r,
+            g: blueLedRgb.g,
+            b: blueLedRgb.b,
             brightness: 1.0,
             velocityX: tip.velocity.x,
             velocityY: tip.velocity.y,
@@ -261,9 +288,9 @@
         if (effect === "led") {
           redLedTips.push({
             position: new Vector3(tip.position.x, tip.position.y, tip.position.z),
-            r: LED_RED_COLOR.r,
-            g: LED_RED_COLOR.g,
-            b: LED_RED_COLOR.b,
+            r: redLedRgb.r,
+            g: redLedRgb.g,
+            b: redLedRgb.b,
             brightness: 1.0,
             velocityX: tip.velocity.x,
             velocityY: tip.velocity.y,
@@ -455,14 +482,15 @@
 </script>
 
 {#each blueTrailTips as tip, i (i)}
+  {@const resolvedTrails = resolveTrails3D(effectsState.trails, effectsState.overrides?.trails3D as Partial<Parameters<typeof resolveTrails3D>[1]> | undefined)}
   <Trail3D
     tipPosition={tip.position}
-    color={trailConfig.color ?? "#3b82f6"}
+    color={resolvedTrails.rainbow ? "rainbow" : resolvedTrails.blueColor}
     propId="blue"
-    width={trailConfig.width}
-    opacity={trailConfig.opacity}
-    maxPoints={trailConfig.maxPoints}
-    rainbow={trailConfig.rainbow}
+    width={resolvedTrails.tubeRadius}
+    opacity={resolvedTrails.brightness}
+    maxPoints={resolvedTrails.maxPoints}
+    rainbow={resolvedTrails.rainbow}
     enabled={isPlaying}
     qualityTier={qualityTierDetector.currentTier}
     {lightManager}
@@ -470,14 +498,15 @@
 {/each}
 
 {#each redTrailTips as tip, i (i)}
+  {@const resolvedTrails = resolveTrails3D(effectsState.trails, effectsState.overrides?.trails3D as Partial<Parameters<typeof resolveTrails3D>[1]> | undefined)}
   <Trail3D
     tipPosition={tip.position}
-    color={trailConfig.color ?? "#ef4444"}
+    color={resolvedTrails.rainbow ? "rainbow" : resolvedTrails.redColor}
     propId="red"
-    width={trailConfig.width}
-    opacity={trailConfig.opacity}
-    maxPoints={trailConfig.maxPoints}
-    rainbow={trailConfig.rainbow}
+    width={resolvedTrails.tubeRadius}
+    opacity={resolvedTrails.brightness}
+    maxPoints={resolvedTrails.maxPoints}
+    rainbow={resolvedTrails.rainbow}
     enabled={isPlaying}
     qualityTier={qualityTierDetector.currentTier}
     {lightManager}
