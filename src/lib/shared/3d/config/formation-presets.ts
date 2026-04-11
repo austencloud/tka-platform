@@ -205,13 +205,96 @@ function generateDiagonalSlots(count: number): FormationSlot[] {
 }
 
 /**
+ * Solo formation — single performer centered behind the wall plane.
+ */
+function generateSoloSlots(_count: number): FormationSlot[] {
+  return [{ index: 0, position: { x: 0, z: FORMATION_WALL_OFFSET } }];
+}
+
+/**
+ * Tunnel stack formation — conga line along -Z, all facing the audience.
+ * 1.2m between stacked performers.
+ */
+function generateTunnelStackSlots(count: number): FormationSlot[] {
+  const depth = DEFAULT_FORMATION_SPACING * 0.6; // 1.2m
+  return Array.from({ length: count }, (_, i) => ({
+    index: i,
+    position: { x: 0, z: FORMATION_WALL_OFFSET + i * -depth },
+  }));
+}
+
+/**
+ * Back-to-back formation — both performers at origin, facing opposite directions.
+ */
+function generateBackToBackSlots(count: number): FormationSlot[] {
+  if (count < 2) return generateSoloSlots(count);
+  return [
+    {
+      index: 0,
+      position: { x: 0, z: FORMATION_WALL_OFFSET },
+      facingAngle: 0,
+    },
+    {
+      index: 1,
+      position: { x: 0, z: FORMATION_WALL_OFFSET },
+      facingAngle: Math.PI,
+    },
+  ];
+}
+
+/**
+ * Facing-each-other formation — performers at ±0.5m, facing inward.
+ */
+function generateFacingEachOtherSlots(count: number): FormationSlot[] {
+  if (count < 2) return generateSoloSlots(count);
+  return [
+    {
+      index: 0,
+      position: { x: -0.5, z: FORMATION_WALL_OFFSET },
+      facingAngle: Math.PI / 2,
+    },
+    {
+      index: 1,
+      position: { x: 0.5, z: FORMATION_WALL_OFFSET },
+      facingAngle: -Math.PI / 2,
+    },
+  ];
+}
+
+/**
+ * Stage left/right formation — performers at ±2.5m, facing the audience.
+ */
+function generateStageLRSlots(count: number): FormationSlot[] {
+  if (count < 2) return generateSoloSlots(count);
+  return [
+    { index: 0, position: { x: -2.5, z: FORMATION_WALL_OFFSET } },
+    { index: 1, position: { x: 2.5, z: FORMATION_WALL_OFFSET } },
+  ];
+}
+
+/**
+ * Side-by-side formation — evenly spaced along X with 1.8m between consecutive slots.
+ */
+function generateSideBySideSlots(count: number): FormationSlot[] {
+  const spacing = 1.8;
+  return Array.from({ length: count }, (_, i) => ({
+    index: i,
+    position: { x: (i - (count - 1) / 2) * spacing, z: FORMATION_WALL_OFFSET },
+  }));
+}
+
+/**
  * Get slots for a formation preset
  */
 export function getSlotsForPreset(
   preset: FormationPreset,
   performerCount: number
 ): FormationSlot[] {
-  const count = Math.max(1, Math.min(4, performerCount));
+  // grid-2x2 stays clamped to 4 because it's specifically a 2x2 shape.
+  // All other presets support up to 8 for the standalone 3D viewer.
+  const isGrid = preset === "grid-2x2";
+  const upperBound = isGrid ? 4 : 8;
+  const count = Math.max(1, Math.min(upperBound, performerCount));
 
   switch (preset) {
     case "grid-2x2":
@@ -225,8 +308,19 @@ export function getSlotsForPreset(
     case "diagonal":
       return generateDiagonalSlots(count);
     case "custom":
-      // Custom formations return empty - should be filled by user
       return generateGrid2x2Slots(count);
+    case "solo":
+      return generateSoloSlots(count);
+    case "tunnel-stack":
+      return generateTunnelStackSlots(count);
+    case "back-to-back":
+      return generateBackToBackSlots(count);
+    case "facing-each-other":
+      return generateFacingEachOtherSlots(count);
+    case "stage-lr":
+      return generateStageLRSlots(count);
+    case "side-by-side":
+      return generateSideBySideSlots(count);
     default:
       return generateGrid2x2Slots(count);
   }
@@ -261,6 +355,12 @@ export function createFormationFromPreset(
     "v-shape": "V-Shape",
     diagonal: "Diagonal",
     custom: "Custom",
+    solo: "Solo",
+    "tunnel-stack": "Tunnel Stack",
+    "back-to-back": "Back-to-Back",
+    "facing-each-other": "Facing Each Other",
+    "stage-lr": "Stage L/R",
+    "side-by-side": "Side-by-Side",
   };
 
   return createFormation(
@@ -276,11 +376,17 @@ export function createFormationFromPreset(
  * All available formation presets (excluding custom)
  */
 export const FORMATION_PRESETS: FormationPreset[] = [
+  "solo",
   "grid-2x2",
   "line",
   "circle",
   "v-shape",
   "diagonal",
+  "tunnel-stack",
+  "back-to-back",
+  "facing-each-other",
+  "stage-lr",
+  "side-by-side",
 ];
 
 /**
@@ -324,7 +430,63 @@ export const FORMATION_PRESET_INFO: FormationPresetInfo[] = [
     description: "Staggered diagonal line",
     icon: "slash",
   },
+  {
+    id: "solo",
+    name: "Solo",
+    description: "Single performer, centered",
+    icon: "user",
+  },
+  {
+    id: "tunnel-stack",
+    name: "Tunnel Stack",
+    description: "Conga line behind each other",
+    icon: "layer-group",
+  },
+  {
+    id: "back-to-back",
+    name: "Back-to-Back",
+    description: "Two performers, opposite facings",
+    icon: "user-friends",
+  },
+  {
+    id: "facing-each-other",
+    name: "Facing Each Other",
+    description: "Two performers, facing inward",
+    icon: "people-arrows",
+  },
+  {
+    id: "stage-lr",
+    name: "Stage L/R",
+    description: "Left and right of stage",
+    icon: "arrows-alt-h",
+  },
+  {
+    id: "side-by-side",
+    name: "Side-by-Side",
+    description: "Evenly spaced in one row",
+    icon: "grip-lines",
+  },
 ];
+
+/**
+ * Valid performer counts per preset. Used by the viewer's formation picker
+ * to gray out presets that don't match the current performer count.
+ * "custom" accepts any count in the viewer-specific range [1, 8].
+ */
+export const PRESET_VALID_COUNTS: Record<FormationPreset, number[]> = {
+  solo: [1],
+  "grid-2x2": [1, 2, 3, 4],
+  line: [1, 2, 3, 4, 5, 6, 7, 8],
+  circle: [1, 2, 3, 4, 5, 6, 7, 8],
+  "v-shape": [1, 2, 3, 4, 5, 7],
+  diagonal: [1, 2, 3, 4, 5, 6, 7, 8],
+  "tunnel-stack": [2, 3, 4, 5, 6, 7, 8],
+  "back-to-back": [2],
+  "facing-each-other": [2],
+  "stage-lr": [2],
+  "side-by-side": [2, 3, 4, 5, 6, 7, 8],
+  custom: [1, 2, 3, 4, 5, 6, 7, 8],
+};
 
 /**
  * Get the default formation for a given performer count

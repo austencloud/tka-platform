@@ -9,12 +9,20 @@
  * Formation type presets
  */
 export type FormationPreset =
-  | "grid-2x2" // Current default - 2x2 grid
+  // Existing
+  | "grid-2x2" // 2x2 grid
   | "line" // Single row, evenly spaced
   | "circle" // Performers face center
   | "v-shape" // V/chevron formation
   | "diagonal" // Staggered diagonal line
-  | "custom"; // User-defined positions
+  | "custom" // User-defined positions
+  // New (2026-04-11 multi-avatar foundation)
+  | "solo" // Single performer, centered
+  | "tunnel-stack" // Conga line along -Z
+  | "back-to-back" // Two performers, opposite facings
+  | "facing-each-other" // Two performers, facing inward
+  | "stage-lr" // Left and right of stage
+  | "side-by-side"; // Evenly spaced in one row
 
 /**
  * Formation facing mode - determines how performers orient
