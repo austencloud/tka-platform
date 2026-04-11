@@ -265,9 +265,16 @@
   .pose-viewport {
     width: 100%;
     height: 100%;
-    min-height: 400px;
+    /* No min-height: the parent grid cell dictates size so the viewer
+       shares vertical space with the candidate grid in split-screen
+       layout. The Scene3D container also needs its default min-height
+       override so this constraint actually takes effect. */
     background: var(--theme-panel-bg);
     border-radius: 8px;
     overflow: hidden;
+  }
+  .pose-viewport :global(.scene-container) {
+    min-height: 0;
+    height: 100%;
   }
 </style>

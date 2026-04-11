@@ -53,7 +53,18 @@ export interface CollisionEvent {
 
 /** Bone positions snapshot needed for collision checks */
 export interface BodySnapshot {
+  /**
+   * Raw head bone (Mixamo `Head`) world position. Note this sits at the
+   * base of the skull under the chin, NOT at the visual face center.
+   * For head/face collision checks, use `face` instead.
+   */
   head: Vector3;
+  /**
+   * Derived face sphere center: the head bone offset forward + up so the
+   * collision sphere sits where the actual face is. Computed by the caller
+   * from the avatar's shoulder line so it rotates correctly with the body.
+   */
+  face: Vector3;
   neck: Vector3;
   spine2: Vector3;
   spine1: Vector3;

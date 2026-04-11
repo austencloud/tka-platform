@@ -103,11 +103,13 @@ export class CollisionDetector implements ICollisionDetector {
     if (blueProp) propPairs.push({ label: "Blue", seg: blueProp });
     if (redProp) propPairs.push({ label: "Red", seg: redProp });
 
-    // 1. Props through head — segment (staff shaft) vs sphere (head).
-    //    Catches the common case where the grip is above the head but the
-    //    staff shaft passes through it.
+    // 1. Props through head — segment (staff shaft) vs sphere (face).
+    //    Uses body.face, not body.head, because the Mixamo Head bone sits
+    //    at the base of the skull — the actual face is ~8 cm forward of it.
+    //    Without this offset the staff can visibly pierce the face while
+    //    the bone-based distance check stays ~14 cm away.
     for (const { label, seg } of propPairs) {
-      const closest = this.pointToSegmentDistance(body.head, seg.a, seg.b);
+      const closest = this.pointToSegmentDistance(body.face, seg.a, seg.b);
       const threshold = HEAD_RADIUS + seg.radius;
       if (closest < threshold) {
         const depth = threshold - closest;
@@ -172,15 +174,17 @@ export class CollisionDetector implements ICollisionDetector {
       }
     }
 
-    // 3. Arms through face — forearm segment (elbow→hand) vs head sphere
-    const leftArmDist = this.pointToSegmentDistance(body.head, body.leftElbow, body.leftHand);
+    // 3. Arms through face — forearm segment (elbow→hand) vs face sphere.
+    //    Uses body.face so the collision zone matches where the visual
+    //    face actually is, not where the Mixamo head joint sits.
+    const leftArmDist = this.pointToSegmentDistance(body.face, body.leftElbow, body.leftHand);
     const leftArmThreshold = HEAD_RADIUS + ARM_SEGMENT_RADIUS + PROP_BODY_THRESHOLD;
     if (leftArmDist < leftArmThreshold) {
       const penetration = leftArmThreshold - leftArmDist;
       events.push(this.makeEvent("arm-through-face", beatIndex, beatProgress, penetration,
         `L forearm → face (${(leftArmDist * 100).toFixed(1)}cm from center, ${(penetration * 100).toFixed(1)}cm deep)`));
     }
-    const rightArmDist = this.pointToSegmentDistance(body.head, body.rightElbow, body.rightHand);
+    const rightArmDist = this.pointToSegmentDistance(body.face, body.rightElbow, body.rightHand);
     const rightArmThreshold = HEAD_RADIUS + ARM_SEGMENT_RADIUS + PROP_BODY_THRESHOLD;
     if (rightArmDist < rightArmThreshold) {
       const penetration = rightArmThreshold - rightArmDist;

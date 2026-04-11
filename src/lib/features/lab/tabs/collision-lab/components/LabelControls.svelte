@@ -71,16 +71,18 @@
   .controls {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    padding: 16px;
+    gap: 10px;
+    padding: 12px 14px;
     background: var(--theme-card-bg);
     border: 1px solid var(--theme-stroke);
     border-radius: 8px;
+    height: 100%;
+    box-sizing: border-box;
   }
   .current {
     display: flex;
     justify-content: space-between;
-    font-size: 14px;
+    font-size: 12px;
   }
   .current-label {
     opacity: 0.7;
@@ -98,13 +100,13 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 10px 12px;
+    padding: 8px 10px;
     background: var(--theme-panel-bg);
     border: 2px solid transparent;
     border-radius: 6px;
     cursor: pointer;
     color: inherit;
-    font-size: 14px;
+    font-size: 12px;
     text-align: left;
   }
   .status-btn:hover {
