@@ -101,7 +101,7 @@
     enableRootMotion?: boolean;
     /** Called each frame with the world-space XZ delta from root motion.
      *  The parent applies this to physics for collision-aware movement. */
-    onRootMotion?: (worldDelta: { x: number; z: number }) => void;
+    onRootMotion?: (worldDelta: { x: number; z: number; yawDelta: number }) => void;
     /** PropAnchor group ref for blue hand IK target (from PerformerRig) */
     bluePropAnchorRef?: import("three").Group;
     /** PropAnchor group ref for red hand IK target (from PerformerRig) */
@@ -733,7 +733,7 @@
       // displacement needs the same conversion.
       if (rootMotionExtractor?.isReady() && onRootMotion) {
         const localDelta = rootMotionExtractor.extract();
-        if (localDelta.x !== 0 || localDelta.forward !== 0) {
+        if (localDelta.x !== 0 || localDelta.forward !== 0 || localDelta.yawDelta !== 0) {
           // Convert Mixamo centimeters to scene units.
           // Our avatar is scaled to ~avatarHeight scene units for ~170cm Mixamo model.
           // So 1 Mixamo cm ≈ avatarHeight/170 scene units.
@@ -741,12 +741,15 @@
           const dx = localDelta.x * cmToScene;
           const df = localDelta.forward * cmToScene;
 
-          // Rotate local-space delta to world space using facing angle
+          // Rotate local-space translation delta to world space using facing angle.
+          // yawDelta is left in its local radian form — the consumer (PerformerRig)
+          // integrates it into rotation.y directly.
           const cos = Math.cos(facingAngle);
           const sin = Math.sin(facingAngle);
           onRootMotion({
             x: dx * cos + df * sin,
             z: -dx * sin + df * cos,
+            yawDelta: localDelta.yawDelta,
           });
         }
       }
