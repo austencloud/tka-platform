@@ -15,7 +15,7 @@
   const { state } = getCollisionLabContext();
 
   const planeOptions: Array<{ value: "all" | Plane; label: string }> = [
-    { value: "all", label: "All planes" },
+    { value: "all", label: "Any" },
     { value: Plane.WALL, label: "Wall" },
     { value: Plane.WHEEL, label: "Wheel" },
     { value: Plane.FLOOR, label: "Floor" },
@@ -49,13 +49,26 @@
 <div class="scrubber">
   <div class="filters">
     <div class="filter-group">
-      <label>Plane</label>
+      <label>Blue plane</label>
       <div class="chips">
         {#each planeOptions as opt}
           <button
             class="chip"
-            class:active={state.planeFilter === opt.value}
-            onclick={() => state.setPlaneFilter(opt.value)}
+            class:active={state.bluePlaneFilter === opt.value}
+            onclick={() => state.setBluePlaneFilter(opt.value)}
+          >{opt.label}</button>
+        {/each}
+      </div>
+    </div>
+
+    <div class="filter-group">
+      <label>Red plane</label>
+      <div class="chips">
+        {#each planeOptions as opt}
+          <button
+            class="chip"
+            class:active={state.redPlaneFilter === opt.value}
+            onclick={() => state.setRedPlaneFilter(opt.value)}
           >{opt.label}</button>
         {/each}
       </div>
@@ -85,6 +98,16 @@
           >{opt.label}</button>
         {/each}
       </div>
+    </div>
+
+    <div class="filter-group">
+      <label>&nbsp;</label>
+      <button
+        class="chip cross-plane"
+        class:active={state.crossPlaneOnly}
+        onclick={() => state.setCrossPlaneOnly(!state.crossPlaneOnly)}
+        title="Show only poses where the two hands are on different planes"
+      >Cross-plane only</button>
     </div>
   </div>
 

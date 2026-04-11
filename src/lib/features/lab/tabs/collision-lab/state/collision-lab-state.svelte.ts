@@ -185,10 +185,11 @@ function computeReachability(
     };
   }
 
+  // Each hand can be on its own plane in the full cross-plane catalog.
   // Blue prop → performer's left hand → LeftShoulder (+X in rig-local)
   // Red prop  → performer's right hand → RightShoulder (-X in rig-local)
-  const blueWorld = propWorldPos(pose.plane, pose.blueHand.position);
-  const redWorld = propWorldPos(pose.plane, pose.redHand.position);
+  const blueWorld = propWorldPos(pose.blueHand.plane, pose.blueHand.position);
+  const redWorld = propWorldPos(pose.redHand.plane, pose.redHand.position);
 
   // Reach budget: distance at neutral stance + tolerance.
   // At neutral, the grid is calibrated to be reachable by design, so the
@@ -236,11 +237,18 @@ export async function createCollisionLabState(
 
   let labels = $state<Record<string, PoseLabel>>(initialLabels);
 
-  // Filters
-  let planeFilter = $state<PlaneFilter>("all");
+  // Filters — each hand has its own plane filter since planes are per-hand
+  let bluePlaneFilter = $state<PlaneFilter>("all");
+  let redPlaneFilter = $state<PlaneFilter>("all");
   let blueOrientationFilter = $state<OrientationFilter>("all");
   let redOrientationFilter = $state<OrientationFilter>("all");
   let statusFilter = $state<StatusFilter>("all");
+  /**
+   * "cross-plane only" convenience filter: show only poses where the
+   * two hands are on different planes. Those are the problem cases the
+   * lab exists to solve.
+   */
+  let crossPlaneOnly = $state(false);
 
   // Cursor
   let cursorIndex = $state(0);
@@ -257,9 +265,11 @@ export async function createCollisionLabState(
   const filteredPoses = $derived(
     allPoses.filter(
       (p) =>
-        (planeFilter === "all" || p.plane === planeFilter) &&
+        (bluePlaneFilter === "all" || p.blueHand.plane === bluePlaneFilter) &&
+        (redPlaneFilter === "all" || p.redHand.plane === redPlaneFilter) &&
         (blueOrientationFilter === "all" || p.blueHand.orientation === blueOrientationFilter) &&
         (redOrientationFilter === "all" || p.redHand.orientation === redOrientationFilter) &&
+        (!crossPlaneOnly || p.blueHand.plane !== p.redHand.plane) &&
         matchesStatusFilter(labels[p.id], statusFilter)
     )
   );
@@ -330,10 +340,12 @@ export async function createCollisionLabState(
     get labels() { return labels; },
     get progress() { return progress; },
     get cursorIndex() { return cursorIndex; },
-    get planeFilter() { return planeFilter; },
+    get bluePlaneFilter() { return bluePlaneFilter; },
+    get redPlaneFilter() { return redPlaneFilter; },
     get blueOrientationFilter() { return blueOrientationFilter; },
     get redOrientationFilter() { return redOrientationFilter; },
     get statusFilter() { return statusFilter; },
+    get crossPlaneOnly() { return crossPlaneOnly; },
     get footOffsetX() { return footOffsetX; },
     get footOffsetZ() { return footOffsetZ; },
     get rootYawRad() { return rootYawRad; },
@@ -368,8 +380,16 @@ export async function createCollisionLabState(
     },
 
     // Filters — all reset cursor to 0
-    setPlaneFilter(p: PlaneFilter) {
-      planeFilter = p;
+    setBluePlaneFilter(p: PlaneFilter) {
+      bluePlaneFilter = p;
+      cursorIndex = 0;
+    },
+    setRedPlaneFilter(p: PlaneFilter) {
+      redPlaneFilter = p;
+      cursorIndex = 0;
+    },
+    setCrossPlaneOnly(v: boolean) {
+      crossPlaneOnly = v;
       cursorIndex = 0;
     },
     setBlueOrientationFilter(o: OrientationFilter) {

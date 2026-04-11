@@ -29,10 +29,10 @@ async function setup() {
 }
 
 describe("collision-lab-state", () => {
-  it("exposes all 192 poses on creation", async () => {
+  it("exposes all 576 poses on creation", async () => {
     const { state } = await setup();
-    expect(state.allPoses.length).toBe(192);
-    expect(state.filteredPoses.length).toBe(192);
+    expect(state.allPoses.length).toBe(576);
+    expect(state.filteredPoses.length).toBe(576);
     expect(state.cursorIndex).toBe(0);
     expect(state.currentPose?.id).toBe(state.allPoses[0]!.id);
   });
@@ -55,14 +55,38 @@ describe("collision-lab-state", () => {
     expect(state.cursorIndex).toBe(0);
   });
 
-  it("setPlaneFilter restricts filteredPoses and resets cursor", async () => {
+  it("setBluePlaneFilter restricts filteredPoses and resets cursor", async () => {
     const { state } = await setup();
     state.stepForward();
     state.stepForward();
-    state.setPlaneFilter(Plane.WALL);
+    state.setBluePlaneFilter(Plane.WALL);
     expect(state.cursorIndex).toBe(0);
-    expect(state.filteredPoses.every((p) => p.plane === Plane.WALL)).toBe(true);
+    expect(state.filteredPoses.every((p) => p.blueHand.plane === Plane.WALL)).toBe(true);
+    // Blue locked to wall: 1 × 4 × 2 × 3 × 4 × 2 = 192
+    expect(state.filteredPoses.length).toBe(192);
+  });
+
+  it("crossPlaneOnly filter shows only different-plane poses", async () => {
+    const { state } = await setup();
+    state.setCrossPlaneOnly(true);
+    expect(state.filteredPoses.length).toBe(384); // 576 - 192 same-plane
+    expect(
+      state.filteredPoses.every((p) => p.blueHand.plane !== p.redHand.plane)
+    ).toBe(true);
+  });
+
+  it("setting both plane filters narrows to a single cross-plane slice", async () => {
+    const { state } = await setup();
+    state.setBluePlaneFilter(Plane.WALL);
+    state.setRedPlaneFilter(Plane.WHEEL);
+    // 1 × 4 × 2 × 1 × 4 × 2 = 64
     expect(state.filteredPoses.length).toBe(64);
+    expect(
+      state.filteredPoses.every(
+        (p) =>
+          p.blueHand.plane === Plane.WALL && p.redHand.plane === Plane.WHEEL
+      )
+    ).toBe(true);
   });
 
   it("labelCurrent writes a label and auto-advances on 'clear'", async () => {

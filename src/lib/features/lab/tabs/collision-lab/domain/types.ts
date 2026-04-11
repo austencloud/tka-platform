@@ -10,18 +10,22 @@ import type { Plane } from "$lib/shared/3d/domain/enums/Plane";
 export type DiamondPosition = "N" | "E" | "S" | "W";
 export type HandOrientation = "in" | "out"; // radial | antiradial
 
-export interface PoseDefinition {
-  /** Stable id of the form "wall-Ni-Eo" — plane-bluePos+blueOri-redPos+redOri */
-  id: string;
+export interface HandState {
   plane: Plane;
-  blueHand: {
-    position: DiamondPosition;
-    orientation: HandOrientation;
-  };
-  redHand: {
-    position: DiamondPosition;
-    orientation: HandOrientation;
-  };
+  position: DiamondPosition;
+  orientation: HandOrientation;
+}
+
+export interface PoseDefinition {
+  /**
+   * Stable id encoding both hands' (plane, position, orientation).
+   * Format: `{bluePlaneLetter}{bluePos}{blueOri}-{redPlaneLetter}{redPos}{redOri}`
+   * where plane letter is w=wall, h=wheel, f=floor.
+   * Example: `wNi-hEo` = blue on wall at N (in), red on wheel at E (out).
+   */
+  id: string;
+  blueHand: HandState;
+  redHand: HandState;
 }
 
 export type LabelStatus =
