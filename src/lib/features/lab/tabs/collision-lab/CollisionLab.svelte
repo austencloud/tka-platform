@@ -46,11 +46,24 @@
     "4": "skip",
   };
 
+  // 9 floor-position variants laid out on a 3x3 keyboard grid that mirrors
+  // the physical floor layout (viewed from above, camera looking down):
+  //
+  //   q [8 NW]  w [7 N]   e [6 NE]
+  //   a [7 W ]  s [0 C]   d [3 E ]
+  //   z [8 SW]  x [1 S]   c [2 SE]
+  //
+  // Indices reference the DefaultStanceVariantProvider enumeration.
   const variantHotkeys: Record<string, number> = {
-    q: 0,
-    w: 1,
-    e: 2,
-    r: 3,
+    s: 0, // center
+    x: 1, // step back (toward audience)
+    c: 2, // step back-right
+    d: 3, // step right
+    e: 4, // step right-forward
+    w: 5, // step forward (into grid)
+    q: 6, // step forward-left
+    a: 7, // step left
+    z: 8, // step left-back
   };
 
   function handleKeydown(ev: KeyboardEvent) {
