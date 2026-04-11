@@ -144,6 +144,7 @@ let wasmEncoder: H264MP4Encoder | null = null;
 // ---------------------------------------------------------------------------
 
 let cancelled = false;
+let encoderErrored = false;
 let frameDurationMicros = 0;
 let encoderWidth = 0;
 let encoderHeight = 0;
@@ -268,6 +269,7 @@ function cleanup(): void {
   encoderHeight = 0;
   sourceWidth = 0;
   sourceHeight = 0;
+  encoderErrored = false;
 }
 
 // ---------------------------------------------------------------------------
@@ -288,12 +290,21 @@ async function handleConfigWebCodecs(config: ExportConfig): Promise<void> {
 
   const localMuxer = muxer;
 
-  // Create WebCodecs VideoEncoder
+  // Create WebCodecs VideoEncoder.
+  //
+  // When the encoder hits an internal error (e.g. hardware encoder refusing
+  // a frame, queue overflow), the browser transitions it to the "closed"
+  // state and fires the error callback. We track that in encoderErrored so
+  // subsequent frame messages bail out cleanly instead of trying
+  // encoder.encode() on a dead codec — which would throw "Cannot call
+  // 'encode' on a closed codec" for every remaining frame, drowning the
+  // original error in noise.
   encoder = new VideoEncoder({
     output: (chunk, meta) => {
       localMuxer.addVideoChunk(chunk, meta);
     },
     error: (e) => {
+      encoderErrored = true;
       post({
         type: "error",
         error: `VideoEncoder error: ${e.message}`,
@@ -314,7 +325,7 @@ async function handleConfigWebCodecs(config: ExportConfig): Promise<void> {
 }
 
 function handleFrameWebCodecs(msg: FrameMessageLegacy): void {
-  if (!encoder) return;
+  if (!encoder || encoderErrored || encoder.state !== "configured") return;
 
   // If the source dimensions differ from the encoder dimensions (odd -> even
   // rounding), create a new ImageData with the padded size. Extra pixels are
@@ -354,7 +365,21 @@ function handleFrameWebCodecs(msg: FrameMessageLegacy): void {
 }
 
 function handleFrameCapturedWebCodecs(msg: FrameMessageCaptured): void {
-  if (!encoder) return;
+  // Bail if the encoder is gone or has already errored. Without this guard
+  // every remaining frame in flight would try to encode on a dead codec
+  // and throw "Cannot call 'encode' on a closed codec", spamming the main
+  // thread and drowning the original error. The main thread relies on the
+  // first error message it received to surface the real failure.
+  //
+  // We must still close any VideoFrame we own in the bail path, otherwise
+  // the frame leaks through to GC and Chrome logs
+  // "VideoFrame was garbage collected without being closed".
+  if (!encoder || encoderErrored || encoder.state !== "configured") {
+    if (msg.frame.kind === "video-frame") {
+      msg.frame.frame.close();
+    }
+    return;
+  }
 
   let videoFrame: VideoFrame | null = null;
   try {
@@ -377,6 +402,16 @@ function handleFrameCapturedWebCodecs(msg: FrameMessageCaptured): void {
     }
 
     encoder.encode(videoFrame, { keyFrame: msg.isKeyframe });
+  } catch (err) {
+    // Defensive: if encode() throws synchronously (e.g. the codec entered
+    // the closed state between our state check above and this call), flip
+    // encoderErrored so subsequent frames bail cleanly. Don't rethrow —
+    // the error callback will surface the real cause.
+    encoderErrored = true;
+    post({
+      type: "error",
+      error: `VideoEncoder error: ${err instanceof Error ? err.message : String(err)}`,
+    });
   } finally {
     // Invariant: every VideoFrame the worker owns must be closed exactly
     // once. encoder.encode() does NOT take ownership — the caller closes.
@@ -412,6 +447,15 @@ function handleFrameCapturedWasm(msg: FrameMessageCaptured): void {
 async function handleFinishWebCodecs(): Promise<void> {
   if (!encoder || !muxer) {
     post({ type: "error", error: "Cannot finish: encoder not active" });
+    return;
+  }
+
+  // If the encoder died mid-export, don't try to flush a dead codec — the
+  // error callback already reported the root cause. Posting another error
+  // here would overwrite it with a less-informative "Cannot call 'flush'
+  // on a closed codec" message.
+  if (encoderErrored || encoder.state !== "configured") {
+    cleanup();
     return;
   }
 
