@@ -162,6 +162,11 @@ export function createViewer3DState(deps: {
   // realm/museum/duet keep their simpler index-only model. null = "All".
   let selectedPerformerIndex = $state<number | null>(null);
 
+  // Suppresses performer raycast picks while the user is orbiting the camera.
+  // OrbitControls onstart/onend in Viewer3DCamera flip this flag so a drag
+  // that ends near a performer's body doesn't accidentally select them.
+  let isCameraDragging = $state(false);
+
   /**
    * Return the set of performers that should receive scoped writes.
    * - null selection → every performer
@@ -549,6 +554,12 @@ export function createViewer3DState(deps: {
     },
     get selectedPerformerIndex() {
       return selectedPerformerIndex;
+    },
+    get isCameraDragging() {
+      return isCameraDragging;
+    },
+    setCameraDragging(value: boolean) {
+      isCameraDragging = value;
     },
     scopedPerformers,
     selectPerformerScope,
