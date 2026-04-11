@@ -144,7 +144,26 @@
 
       <!-- Unified Planes matrix -->
       <div class="section">
-        <div class="section-label">Planes</div>
+        <div class="section-header">
+          <div class="section-label">Planes</div>
+          {#if isNonDefault}
+            <button
+              class="reset-btn"
+              class:with-overrides={hasBeatOverrides}
+              onclick={handleResetClick}
+              aria-label={hasBeatOverrides ? 'Reset all planes and clear beat overrides' : 'Reset all planes'}
+              title={hasBeatOverrides ? 'Reset all planes and clear beat overrides' : 'Reset all planes'}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 7v6h6"/>
+                <path d="M21 17a9 9 0 0 0-15-6.7L3 13"/>
+              </svg>
+              {#if hasBeatOverrides}
+                <span class="override-badge" aria-hidden="true"></span>
+              {/if}
+            </button>
+          {/if}
+        </div>
         <div class="plane-matrix">
           {#each PLANES as { plane, label }}
             {@const implicit = isImplicit(plane)}
@@ -189,25 +208,6 @@
           {/each}
         </div>
 
-        {#if isNonDefault}
-          <div class="reset-row">
-            <button
-              class="reset-btn"
-              class:with-overrides={hasBeatOverrides}
-              onclick={handleResetClick}
-              aria-label={hasBeatOverrides ? 'Reset all planes and clear beat overrides' : 'Reset all planes'}
-              title={hasBeatOverrides ? 'Reset all planes and clear beat overrides' : 'Reset all planes'}
-            >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M3 7v6h6"/>
-                <path d="M21 17a9 9 0 0 0-15-6.7L3 13"/>
-              </svg>
-              {#if hasBeatOverrides}
-                <span class="override-badge" aria-hidden="true"></span>
-              {/if}
-            </button>
-          </div>
-        {/if}
       </div>
     </div>
   {/if}
@@ -273,6 +273,18 @@
     margin-bottom: 6px;
   }
 
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    min-height: 20px;
+  }
+
+  .section-header .section-label {
+    margin-bottom: 0;
+  }
+
   .divider {
     height: 1px;
     background: rgba(255, 255, 255, 0.08);
@@ -289,8 +301,8 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 6px 12px;
-    min-height: 48px;
+    padding: 3px 10px;
+    min-height: 40px;
     border-radius: 8px;
     background: rgba(0, 0, 0, 0.45);
     border: 1px solid rgba(255, 255, 255, 0.08);
@@ -405,19 +417,14 @@
     border-color: rgba(255, 255, 255, 0.5);
   }
 
-  /* Reset button — only rendered when state is non-default */
-  .reset-row {
-    display: flex;
-    justify-content: flex-end;
-    margin-top: 8px;
-  }
-
+  /* Reset button — lives in the Planes section header, top-right.
+     Only rendered when state is non-default. */
   .reset-btn {
-    width: 32px;
-    height: 32px;
+    width: 20px;
+    height: 20px;
     border-radius: 50%;
     background: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: none;
     color: rgba(255, 255, 255, 0.4);
     cursor: pointer;
     display: flex;
@@ -425,20 +432,19 @@
     justify-content: center;
     padding: 0;
     position: relative;
-    transition: all 0.15s ease;
+    transition: color 0.15s ease;
   }
 
   .reset-btn:hover {
     color: rgba(255, 255, 255, 0.9);
-    border-color: rgba(255, 255, 255, 0.25);
   }
 
   .reset-btn.with-overrides .override-badge {
     position: absolute;
     top: -2px;
     right: -2px;
-    width: 8px;
-    height: 8px;
+    width: 7px;
+    height: 7px;
     border-radius: 50%;
     background: #f59e0b;
     border: 1.5px solid rgba(14, 14, 24, 1);
