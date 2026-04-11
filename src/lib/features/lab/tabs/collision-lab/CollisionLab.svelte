@@ -18,7 +18,7 @@
   import PoseScrubber from "./components/PoseScrubber.svelte";
   import CollisionReadout from "./components/CollisionReadout.svelte";
   import LabelControls from "./components/LabelControls.svelte";
-  import StanceVariantPicker from "./components/StanceVariantPicker.svelte";
+  import StanceControls from "./components/StanceControls.svelte";
   import type { LabelStatus } from "./domain/types";
 
   let labState = $state<CollisionLabState | null>(null);
@@ -46,25 +46,8 @@
     "4": "skip",
   };
 
-  // 9 floor-position variants laid out on a 3x3 keyboard grid that mirrors
-  // the physical floor layout (viewed from above, camera looking down):
-  //
-  //   q [8 NW]  w [7 N]   e [6 NE]
-  //   a [7 W ]  s [0 C]   d [3 E ]
-  //   z [8 SW]  x [1 S]   c [2 SE]
-  //
-  // Indices reference the DefaultStanceVariantProvider enumeration.
-  const variantHotkeys: Record<string, number> = {
-    s: 0, // center
-    x: 1, // step back (toward audience)
-    c: 2, // step back-right
-    d: 3, // step right
-    e: 4, // step right-forward
-    w: 5, // step forward (into grid)
-    q: 6, // step forward-left
-    a: 7, // step left
-    z: 8, // step left-back
-  };
+  // Stance is now adjusted via sliders in StanceControls; no preset hotkeys.
+  // The only single-key shortcut for stance is `0` → reset to center.
 
   function handleKeydown(ev: KeyboardEvent) {
     const s = labState;
@@ -88,8 +71,8 @@
       ev.preventDefault();
       return;
     }
-    if (ev.key in variantHotkeys) {
-      s.setVariant(variantHotkeys[ev.key]!);
+    if (ev.key === "0") {
+      s.resetStance();
       ev.preventDefault();
     }
   }
@@ -98,8 +81,7 @@
     try {
       const enumerator = container.items.diamondPoseEnumerator;
       const repo = container.items.collisionLabPoseLabelRepository;
-      const stance = container.items.collisionLabStanceVariantProvider;
-      labState = await createCollisionLabState(enumerator, repo, stance);
+      labState = await createCollisionLabState(enumerator, repo);
     } catch (e) {
       loadError = (e as Error).message;
       console.error("CollisionLab: failed to initialize", e);
@@ -126,7 +108,7 @@
     <aside class="sidebar">
       <CollisionReadout />
       <LabelControls />
-      <StanceVariantPicker />
+      <StanceControls />
       {#if labState.currentPose}
         <div class="pose-id">ID: <code>{labState.currentPose.id}</code></div>
       {/if}
