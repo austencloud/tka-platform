@@ -1,6 +1,6 @@
 // src/lib/shared/3d/services/implementations/HingeConstrainedLegIKSolver.ts
 
-import { Vector3, Quaternion } from "three";
+import { Vector3, Quaternion, Matrix4 } from "three";
 import type { ILegIKSolver, LegIKInput } from "../contracts/ILegIKSolver";
 
 /**
@@ -39,6 +39,11 @@ export class HingeConstrainedLegIKSolver implements ILegIKSolver {
   private readonly tempCurrentFootWorld = new Vector3();
   private readonly tempChordMidpoint = new Vector3();
   private readonly tempKneeOffset = new Vector3();
+  private readonly tempForwardOnPlane = new Vector3();
+  private readonly tempRight = new Vector3();
+  private readonly tempBasisMatrix = new Matrix4();
+  private readonly tempDesiredWorldQuat = new Quaternion();
+  private readonly tempFootParentWorldQuat = new Quaternion();
 
   solve(input: LegIKInput): void {
     const { chain, footTarget, kneeHingeAxis, weight } = input;
@@ -137,6 +142,48 @@ export class HingeConstrainedLegIKSolver implements ILegIKSolver {
     hip.updateMatrixWorld(true);
     knee.updateMatrixWorld(true);
     foot.updateMatrixWorld(true);
+
+    // Foot rotation alignment: set the foot's world rotation such that
+    // the foot's local +Y axis points along groundNormal and the foot's
+    // local +Z axis points along footForward (with Gram-Schmidt to
+    // guarantee orthogonality when footForward isn't exactly perpendicular
+    // to groundNormal).
+    {
+      const up = input.groundNormal; // assumed unit-length or normalized internally
+      // Project footForward onto the plane perpendicular to up
+      this.tempForwardOnPlane
+        .copy(input.footForward)
+        .addScaledVector(up, -input.footForward.dot(up));
+
+      if (this.tempForwardOnPlane.lengthSq() >= 1e-6) {
+        this.tempForwardOnPlane.normalize();
+        this.tempRight
+          .crossVectors(up, this.tempForwardOnPlane)
+          .normalize();
+
+        // Build a basis matrix: right = X, up = Y, forwardOnPlane = Z
+        this.tempBasisMatrix.makeBasis(
+          this.tempRight,
+          up,
+          this.tempForwardOnPlane,
+        );
+        this.tempDesiredWorldQuat.setFromRotationMatrix(this.tempBasisMatrix);
+
+        // Convert desired world quat to foot's local quat:
+        // local = parent_world^-1 * desired_world
+        if (foot.parent) {
+          foot.parent.getWorldQuaternion(this.tempFootParentWorldQuat);
+          foot.quaternion
+            .copy(this.tempFootParentWorldQuat)
+            .invert()
+            .multiply(this.tempDesiredWorldQuat);
+        } else {
+          foot.quaternion.copy(this.tempDesiredWorldQuat);
+        }
+        foot.updateMatrixWorld(true);
+      }
+      // Degenerate case: footForward parallel to groundNormal — skip alignment
+    }
 
     if (weight < 1) {
       // Weight blending: slerp from original rotation toward the solved

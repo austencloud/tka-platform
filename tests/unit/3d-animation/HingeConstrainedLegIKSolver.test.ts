@@ -215,4 +215,50 @@ describe("HingeConstrainedLegIKSolver", () => {
       expect(blendedFootWorld.distanceTo(target)).toBeGreaterThan(0.01);
     });
   });
+
+  describe("foot rotation alignment", () => {
+    it("aligns foot forward vector with footForward input", () => {
+      const chain = buildSyntheticLeg();
+      const target = new Vector3(0, 0.2, 0.3);
+      const desiredForward = new Vector3(0, 0, 1);
+
+      solver.solve({
+        chain,
+        footTarget: target,
+        groundNormal: new Vector3(0, 1, 0),
+        footForward: desiredForward,
+        kneeHingeAxis: new Vector3(1, 0, 0),
+        poleDirection: new Vector3(0, 0, 1),
+        weight: 1,
+      });
+
+      // Foot's world-space +Z axis should align with desiredForward
+      const footWorldForward = new Vector3(0, 0, 1).applyQuaternion(
+        chain.effector.getWorldQuaternion(new Quaternion())
+      );
+      expect(footWorldForward.dot(desiredForward)).toBeGreaterThan(0.7);
+    });
+
+    it("aligns foot sole with ground normal", () => {
+      const chain = buildSyntheticLeg();
+      const target = new Vector3(0, 0.2, 0.3);
+      const groundNormal = new Vector3(0, 1, 0);
+
+      solver.solve({
+        chain,
+        footTarget: target,
+        groundNormal,
+        footForward: new Vector3(0, 0, 1),
+        kneeHingeAxis: new Vector3(1, 0, 0),
+        poleDirection: new Vector3(0, 0, 1),
+        weight: 1,
+      });
+
+      // Foot's world-space +Y (local up) should align with ground normal
+      const footWorldUp = new Vector3(0, 1, 0).applyQuaternion(
+        chain.effector.getWorldQuaternion(new Quaternion())
+      );
+      expect(footWorldUp.dot(groundNormal)).toBeGreaterThan(0.9);
+    });
+  });
 });
