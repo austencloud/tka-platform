@@ -80,6 +80,16 @@
     enableLocomotion?: boolean;
     isMoving?: boolean;
     moveSpeed?: number;
+
+    /** When true, facingAngle is driven by root motion yawDelta from
+     *  the animation clip (accumulated each frame). When false (default),
+     *  facingAngle is consumer-authoritative — the rig rotation matches
+     *  whatever the consumer passes in. */
+    animationDrivenYaw?: boolean;
+    /** Callback fired after each yawDelta integration when animationDrivenYaw
+     *  is true. The consumer receives the new accumulated angle so it can
+     *  sync its own sequence/state representation if needed. */
+    onYawIntegrated?: (newAngle: number) => void;
   }
 
   let {
@@ -105,7 +115,27 @@
     enableLocomotion = false,
     isMoving = false,
     moveSpeed = 0,
+    animationDrivenYaw = false,
+    onYawIntegrated,
   }: Props = $props();
+
+  // Animation-driven yaw accumulator. When animationDrivenYaw is true, the
+  // rig's rotation is advanced by yawDelta from Avatar3D's onRootMotion
+  // callback each frame (the turn clip drives the rotation). When the flag
+  // is false, this mirrors the consumer's facingAngle directly so the rig
+  // behaves exactly as before.
+  let accumulatedYaw = $state(facingAngle);
+
+  // When the consumer changes facingAngle externally (e.g., scrubbing the
+  // timeline, snapping to a new beat), sync the accumulator. In animation-
+  // driven mode we only re-sync on explicit external changes, not on
+  // internal integrations — otherwise the external sync would immediately
+  // undo every yawDelta increment.
+  $effect(() => {
+    if (!animationDrivenYaw) {
+      accumulatedYaw = facingAngle;
+    }
+  });
 
   // Resolve prop states: use overrides (for dual-wheel swap) or avatarState defaults
   const bluePropState = $derived(bluePropStateOverride ?? avatarState.bluePropState);
@@ -144,7 +174,7 @@
   position.x={position.x}
   position.y={groundOffset}
   position.z={position.z}
-  rotation.y={facingAngle}
+  rotation.y={animationDrivenYaw ? accumulatedYaw : facingAngle}
 >
   <!-- Avatar3D uses groundY (~-1.56) internally to position its mesh,
        so shoulders end up near y=0 in rig space. -->
@@ -165,6 +195,14 @@
       disableSpineTwist={isDualWheel}
       beatIndex={avatarState.currentStepIndex}
       beatProgress={avatarState.progress}
+      onRootMotion={animationDrivenYaw
+        ? (delta) => {
+            if (delta.yawDelta !== 0) {
+              accumulatedYaw += delta.yawDelta;
+              onYawIntegrated?.(accumulatedYaw);
+            }
+          }
+        : undefined}
     />
   {/if}
 
