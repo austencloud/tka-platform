@@ -18,6 +18,7 @@
  */
 
 import { Muxer, ArrayBufferTarget } from "mp4-muxer";
+import type { CapturedFrame } from "$lib/shared/video-export/domain/CapturedFrame";
 
 // ---------------------------------------------------------------------------
 // WebCodecs feature detection
@@ -53,13 +54,22 @@ interface ConfigMessage {
   config: ExportConfig;
 }
 
-interface FrameMessage {
+interface FrameMessageLegacy {
   type: "frame";
   imageData: ImageData;
   frameIndex: number;
   timestampMicros: number;
   isKeyframe: boolean;
 }
+
+interface FrameMessageCaptured {
+  type: "frame-captured";
+  frame: CapturedFrame;
+  frameIndex: number;
+  isKeyframe: boolean;
+}
+
+type FrameMessage = FrameMessageLegacy | FrameMessageCaptured;
 
 interface FinishMessage {
   type: "finish";
@@ -302,7 +312,7 @@ async function handleConfigWebCodecs(config: ExportConfig): Promise<void> {
   });
 }
 
-function handleFrameWebCodecs(msg: FrameMessage): void {
+function handleFrameWebCodecs(msg: FrameMessageLegacy): void {
   if (!encoder) return;
 
   // If the source dimensions differ from the encoder dimensions (odd -> even
@@ -397,7 +407,7 @@ async function handleConfigWasm(config: ExportConfig): Promise<void> {
   wasmEncoder.initialize();
 }
 
-function handleFrameWasm(msg: FrameMessage): void {
+function handleFrameWasm(msg: FrameMessageLegacy): void {
   if (!wasmEncoder) return;
 
   // Pad to even dimensions if needed, then pass RGBA data to the WASM encoder
