@@ -35,6 +35,17 @@ export class BackgroundVideoEncoder implements IBackgroundVideoEncoder {
   private finishResolve: ((blob: Blob) => void) | null = null;
   private finishReject: ((reason: Error) => void) | null = null;
 
+  /**
+   * First error the worker reported during this export. We track it
+   * persistently so that (a) later cascade errors don't overwrite the
+   * root-cause message, (b) addFrameCaptured can bail cheaply once the
+   * encoder is known dead, and (c) finish() can fail fast with the
+   * original reason instead of waiting for yet another worker roundtrip.
+   *
+   * Cleared when initialize() starts a fresh export.
+   */
+  private firstError: Error | null = null;
+
   onProgress: ((frameIndex: number, totalFrames: number) => void) | null = null;
 
   // ---------------------------------------------------------------------------
@@ -46,6 +57,7 @@ export class BackgroundVideoEncoder implements IBackgroundVideoEncoder {
     this.terminateWorker();
 
     this.totalFrames = config.totalFrames;
+    this.firstError = null;
 
     // Spawn the worker. Vite resolves the URL at build time via
     // `new URL("...", import.meta.url)` so the worker file is bundled correctly.
@@ -107,10 +119,12 @@ export class BackgroundVideoEncoder implements IBackgroundVideoEncoder {
     frameIndex: number,
     isKeyframe: boolean
   ): void {
-    if (!this.worker) {
-      // Worker was disposed (e.g., viewer closed during export). The export
-      // loop will check shouldCancel on the next iteration and abort cleanly.
-      // Release the frame handle ourselves so it doesn't leak.
+    // Bail fast if the worker is gone OR if the encoder has already
+    // reported an error. After the first error, every subsequent frame
+    // is a waste of GPU memory and postMessage bandwidth — the worker's
+    // encoder is closed and will reject them anyway. Close the VideoFrame
+    // handle ourselves so it doesn't leak through to GC.
+    if (!this.worker || this.firstError !== null) {
       if (frame.kind === "video-frame") {
         frame.frame.close();
       }
@@ -147,6 +161,14 @@ export class BackgroundVideoEncoder implements IBackgroundVideoEncoder {
   async finish(): Promise<Blob> {
     if (!this.worker) {
       throw new Error("Export cancelled");
+    }
+
+    // If the encoder already died mid-export, fail fast with the real
+    // error from the encoder's error callback. Without this guard we'd
+    // post {type:"finish"} to the worker, hit the worker's errored-state
+    // bail path, and reject with the less-informative fallback message.
+    if (this.firstError !== null) {
+      throw this.firstError;
     }
 
     return new Promise<Blob>((resolve, reject) => {
@@ -209,15 +231,25 @@ export class BackgroundVideoEncoder implements IBackgroundVideoEncoder {
       }
 
       case "error": {
-        const error = new Error(response.error);
+        // Preserve the FIRST error we see as the root cause. Later errors
+        // are almost always cascades from the first (e.g. "Cannot call
+        // 'encode' on a closed codec" follow-ups after the encoder has
+        // already died). The first error is the informative one.
+        if (this.firstError === null) {
+          this.firstError = new Error(response.error);
+        }
 
-        // Route the error to whichever promise is currently in flight
+        // Route the first/root-cause error to whichever promise is
+        // currently in flight. If no promise is in flight (frame capture
+        // is still running and finish() hasn't been called yet), the
+        // error stays in firstError and addFrameCaptured/finish will
+        // surface it on the next call.
         if (this.initReject) {
-          this.initReject(error);
+          this.initReject(this.firstError);
           this.initResolve = null;
           this.initReject = null;
         } else if (this.finishReject) {
-          this.finishReject(error);
+          this.finishReject(this.firstError);
           this.finishResolve = null;
           this.finishReject = null;
         }
