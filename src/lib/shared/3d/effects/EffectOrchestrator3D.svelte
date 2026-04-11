@@ -70,6 +70,11 @@
     redHandPos?: { x: number; z: number };
     /** Parent Object3D to add imperative meshes to (rig group). Falls back to scene root. */
     effectsParentRef?: Object3D;
+    /**
+     * @deprecated Ignored — trail parameters now come from EffectsConfigState
+     * via context. Left in place so parent components don't break; removed
+     * in Phase B when callers migrate.
+     */
     trailConfig?: {
       color?: string;
       width?: number;
@@ -192,7 +197,7 @@
     );
     const blueLedRgb = hexToRgb(resolvedLed.primaryColor);
     const redLedRgb = hexToRgb(
-      resolvedLed.colorMode === "prop-matched"
+      resolvedLed.colorMode === "prop-matched" || resolvedLed.colorMode === "per-hand"
         ? resolvedLed.secondaryColor
         : resolvedLed.primaryColor,
     );
