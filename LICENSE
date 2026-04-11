@@ -7,6 +7,37 @@ This repository contains multiple components under different licenses.
 See below for which license applies to which code.
 
 
+NO WARRANTY — READ THIS BEFORE USING
+======================================
+
+THIS SOFTWARE, DOCUMENTATION, NOTATION SYSTEM, AND ASSOCIATED DATA ARE
+PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT.
+
+FLOW ARTS INVOLVE PHYSICAL ACTIVITY AND CARRY INHERENT RISK OF INJURY.
+THE KINETIC ALPHABET IS A NOTATION AND EDUCATIONAL SYSTEM, NOT A
+SUBSTITUTE FOR IN-PERSON INSTRUCTION, PHYSICAL CONDITIONING, OR COMMON
+SENSE. IN NO EVENT SHALL THE AUTHOR, COPYRIGHT HOLDER, CONTRIBUTORS, OR
+DISTRIBUTORS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY —
+INCLUDING BUT NOT LIMITED TO PHYSICAL INJURY, PROPERTY DAMAGE, LOST
+PROFITS, OR CONSEQUENTIAL DAMAGES — ARISING FROM THE USE OF, INABILITY
+TO USE, OR PRACTICE OF TECHNIQUES DESCRIBED IN THIS SOFTWARE, ITS
+DOCUMENTATION, OR THE NOTATION SYSTEM IT DESCRIBES.
+
+YOU ASSUME ALL RISK ASSOCIATED WITH THE PRACTICE OF FLOW ARTS AND THE
+USE OF THIS SOFTWARE. IF YOU ARE UNSURE WHETHER A TECHNIQUE IS SAFE
+FOR YOUR SKILL LEVEL, SEEK IN-PERSON INSTRUCTION FROM A QUALIFIED
+TEACHER BEFORE ATTEMPTING IT. DO NOT ATTEMPT FIRE, LED, OR OTHER
+SPECIALIZED PROP TECHNIQUES WITHOUT APPROPRIATE SAFETY TRAINING AND
+EQUIPMENT.
+
+This disclaimer applies in addition to the warranty and liability
+disclaimers contained in each individual license below (MIT, Elastic
+License 2.0, CC BY-SA 4.0). Where permitted by applicable law, the
+broadest possible interpretation of these disclaimers shall apply.
+
+
 1. Foundation Packages (MIT License)
 -------------------------------------
 
@@ -52,7 +83,8 @@ Elastic License 2.0. See licenses/ELv2.txt for the full text.
 This includes but is not limited to:
   - The 55+ feature modules (src/lib/features/)
   - Avatar animation system (3D rendering, hand poses, leg animation)
-  - TIKA conversational AI tutor
+  - TIKA conversational AI tutor (in-app experience; the standalone
+    MCP server for TIKA is covered separately in Section 4)
   - Museum / gamification layer
   - Premium gating and subscription system
   - All UI components, layouts, and styling
@@ -129,7 +161,7 @@ that upon his death or permanent incapacitation:
       License 2.0 (Sections 3 and 4 above) shall be automatically
       relicensed under the MIT License (licenses/MIT.txt).
 
-  (b) ALL proprietary datasets (Section 5 above) shall be released
+  (b) ALL proprietary datasets (Section 5b above) shall be released
       under the Creative Commons Attribution-ShareAlike 4.0
       International License (licenses/CC-BY-SA-4.0.txt).
 
@@ -139,33 +171,104 @@ The purpose of this provision is to ensure that The Kinetic Alphabet
 and all associated tools, knowledge, and data become freely available
 to the global flow arts community and the public at large, in
 perpetuity, should the original author no longer be able to steward
-them.
+them. This reflects the author's belief that closing a project behind
+a locked door after death is antithetical to the open-source ethos.
 
-Designated Executor: Fund the Flow Arts, Inc.
-  501(c)(3) nonprofit, EIN 27-5073279
-  https://fundtheflowarts.org
+7.1 Definition of Triggering Event
+-----------------------------------
 
-Fund the Flow Arts is designated as the organizational executor of
-this provision. Their responsibilities upon the triggering event are:
+"Death" means the legal death of the author as established by a death
+certificate or equivalent official record.
 
-  1. Verify the triggering event (death or permanent incapacitation
-     of Austen Cloud)
-  2. Change all LICENSE files in this repository and any related
-     repositories under github.com/austencloud to reflect the
-     relicensing described in (a), (b), and (c) above
+"Permanent incapacitation" means any of the following:
+
+  (i)   A court of competent jurisdiction finds the author legally
+        incapacitated or appoints a guardian or conservator over his
+        person or estate;
+  (ii)  Two licensed physicians independently certify in writing that
+        the author is permanently unable to manage his affairs; OR
+  (iii) A period of 180 consecutive days during which BOTH of the
+        following are true: the author is unreachable at
+        austencloud@gmail.com, AND the author has made no commits or
+        other public activity under the github.com/austencloud account.
+
+Any of the three conditions above is sufficient, independently, to
+establish permanent incapacitation for purposes of this provision.
+
+7.2 Scope of Affected Repositories
+------------------------------------
+
+This provision applies to:
+
+  - This repository (github.com/austencloud/tka-platform)
+  - Any repository owned by github.com/austencloud that is tagged with
+    the GitHub topic `tka`
+  - Any repository explicitly listed in a file named
+    POST_MORTEM_REPOS.txt at the root of this repository (if such a
+    file exists at the time of the triggering event)
+
+Personal repositories, experiments, and unrelated projects under
+github.com/austencloud are NOT included unless they satisfy one of the
+conditions above.
+
+7.3 Executor and Community Fallback
+-------------------------------------
+
+Primary Executor: To be named in the author's estate planning
+documents. Until such designation is recorded and publicly announced,
+the primary executor position is unfilled and the community fallback
+mechanism (below) is the sole path to activation.
+
+Upon a triggering event, the primary executor (if named) is authorized
+and instructed to:
+
+  1. Verify the triggering event per Section 7.1
+  2. Update all LICENSE files in repositories within scope (per
+     Section 7.2) to reflect the relicensing described in (a), (b),
+     and (c) above
   3. Publish a public announcement to the flow arts community
-  4. Ensure continued public access to the repository
+  4. Ensure continued public access to the affected repositories
 
-Fund the Flow Arts is NOT responsible for ongoing maintenance,
-development, or hosting of the software. Their role is solely to
-execute the relicensing. The community maintains the code thereafter.
+Community Fallback: If no primary executor has acted within twelve
+(12) months of a verified triggering event — or if no primary
+executor has ever been named — any individual may initiate the
+relicensing by:
 
-This declaration of intent is supplemented by binding instructions in
-the author's estate planning documents.
+  1. Opening a public GitHub issue in this repository titled
+     "Post-Mortem Provision Activation" and presenting evidence of the
+     triggering event (e.g., death certificate, court order, physician
+     letters, or documentation of the 180-day unreachable period);
+  2. Waiting a minimum of ninety (90) days for public comment and
+     objection on that issue;
+  3. If no credible objection is raised, submitting a pull request
+     that updates the LICENSE files in all repositories within scope
+     per Section 7.2.
 
-If you believe this provision has been triggered and the repository has
-not yet been relicensed, contact Fund the Flow Arts directly or file
-a public issue on the GitHub repository.
+This community fallback exists to ensure the provision cannot be
+silently ignored. It reflects the author's intent that the work
+become freely available even if no designated person remains to act.
+
+7.4 Reversibility
+-------------------
+
+This provision is a declaration of present intent and may be modified
+or revoked by the author at any time prior to a triggering event by
+committing a change to this LICENSE file under the author's own
+GitHub authorship. After a triggering event, this provision is
+irrevocable.
+
+7.5 Estate Planning Note
+--------------------------
+
+This declaration is intended to be supplemented by, but does not
+require, corresponding instructions in the author's estate planning
+documents. The community fallback mechanism in Section 7.3 ensures
+the provision is self-executing even in the absence of such documents
+or a named executor.
+
+If you believe this provision has been triggered and the repository
+has not yet been relicensed, open a public GitHub issue as described
+in the Community Fallback mechanism above.
 
 
 8. Trademarks
@@ -182,6 +285,25 @@ trademarks. You may not use these names or marks to:
 
 Fair use for attribution (e.g., "compatible with TKA notation" or
 "based on The Kinetic Alphabet") is permitted.
+
+
+9. Governing Law
+-----------------
+
+This licensing overview document, and any disputes arising from its
+interpretation or from the relationships it establishes (including
+the post-mortem provision in Section 7 and the trademark terms in
+Section 8), shall be governed by and construed in accordance with
+the laws of the State of Illinois, United States, without regard to
+its conflict of law provisions. Exclusive venue for any such disputes
+shall lie in the state or federal courts located in Cook County,
+Illinois.
+
+The individual software licenses referenced above (MIT License,
+Elastic License 2.0, and Creative Commons Attribution-ShareAlike 4.0
+International) are governed by their own terms. Nothing in this
+section is intended to override the choice-of-law provisions (or
+absence thereof) in those licenses.
 
 
 Questions & Commercial Licensing

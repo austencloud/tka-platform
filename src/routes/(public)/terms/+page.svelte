@@ -51,7 +51,7 @@
       <div class="header-content">
         <h1>Terms of Service</h1>
         <p class="last-updated">
-          Last Updated: April 4, 2026
+          Last Updated: April 10, 2026
         </p>
       </div>
     </header>
@@ -87,19 +87,48 @@
       </section>
 
       <section id="user-content">
-        <h2>4. User Content</h2>
+        <h2>4. User Content (Including Videos)</h2>
         <p>
-          You retain ownership of any sequences, content, or materials you
-          create using TKA Composer. By sharing content publicly, you grant
-          TKA Composer a non-exclusive, worldwide, royalty-free license to
-          display, distribute, and cache that content within the application
-          for the purpose of providing the service.
+          You retain ownership of any sequences, videos, images, audio, or
+          other content you create, upload, or share using TKA Composer. By
+          uploading or sharing content through the service, you grant TKA
+          Composer a non-exclusive, worldwide, royalty-free, sublicensable
+          license to:
+        </p>
+        <ul>
+          <li>Store, host, back up, cache, and display your content</li>
+          <li>Transcode, resize, compress, and re-encode videos, images, and
+            audio for compatibility and performance across devices</li>
+          <li>Generate derivative technical files such as thumbnails, preview
+            frames, and lower-resolution versions for display purposes</li>
+          <li>Sublicense the above rights to service providers (such as
+            content delivery networks, storage providers, and hosting
+            platforms) strictly for the purpose of operating the service</li>
+        </ul>
+        <p>
+          This license is granted solely for the purpose of providing the
+          TKA Composer service and is limited to uses reasonably necessary
+          to host, display, and deliver your content to the users and
+          audiences you choose. TKA Composer will not use your private
+          content for promotional purposes without your explicit consent.
         </p>
         <p>
-          TKA Composer may display publicly shared content in browse galleries,
-          search results, and promotional materials. This license continues
-          after account deletion for content that has already been shared
-          publicly, but you may request removal by contacting us.
+          If you share content publicly (for example, in browse galleries,
+          community features, or public profiles), you grant an additional
+          license for TKA Composer to display that content to other users
+          and in promotional materials referencing the service. This
+          public-sharing license continues after account deletion for
+          content that has already been shared publicly, but you may
+          request removal of your publicly shared content at any time by
+          contacting us.
+        </p>
+        <p>
+          You represent and warrant that you have all necessary rights to
+          upload and share any content you submit, and that your content
+          does not infringe the copyright, trademark, privacy, publicity,
+          or other rights of any third party. See Section 9 below for the
+          DMCA notice and takedown procedure if you believe content on the
+          service infringes your rights.
         </p>
       </section>
 
@@ -112,8 +141,19 @@
             users' accounts</li>
           <li>Interfere with or disrupt the service or its infrastructure</li>
           <li>Upload malicious code or harmful content</li>
+          <li>Upload content that infringes the copyright, trademark,
+            privacy, publicity, or other rights of any third party</li>
           <li>Harass, threaten, or harm other users</li>
         </ul>
+        <p>
+          TKA Composer reserves the right, but is not obligated, to remove,
+          restrict, or refuse to display any content that violates these
+          Terms or that we determine, in our sole discretion, to be harmful,
+          inappropriate, or incompatible with the purpose of the service.
+          We may take this action with or without prior notice. Removal of
+          content does not limit any other rights or remedies available to
+          us under these Terms or applicable law.
+        </p>
       </section>
 
       <section id="automated-access">
@@ -175,8 +215,84 @@
         </p>
       </section>
 
+      <section id="dmca">
+        <h2>9. Copyright and DMCA Notice &amp; Takedown</h2>
+        <p>
+          TKA Composer respects the intellectual property rights of others
+          and expects its users to do the same. If you are a copyright owner
+          (or authorized to act on behalf of one) and you believe that
+          content hosted on TKA Composer infringes your copyright, please
+          send a written notice to our designated agent that includes the
+          information required by 17 U.S.C. § 512(c)(3):
+        </p>
+        <ol>
+          <li>A physical or electronic signature of the copyright owner or a
+            person authorized to act on their behalf</li>
+          <li>Identification of the copyrighted work claimed to have been
+            infringed</li>
+          <li>Identification of the material that is claimed to be
+            infringing, with information reasonably sufficient to permit us
+            to locate the material (e.g., a URL within the service)</li>
+          <li>Your contact information (full name, mailing address,
+            telephone number, and email address)</li>
+          <li>A statement that you have a good-faith belief that use of the
+            material in the manner complained of is not authorized by the
+            copyright owner, its agent, or the law</li>
+          <li>A statement, made under penalty of perjury, that the
+            information in the notice is accurate and that you are the
+            copyright owner or authorized to act on behalf of the owner</li>
+        </ol>
+        <p>
+          Send DMCA notices to our designated agent:
+        </p>
+        <p style="padding-left: 1rem;">
+          Austen Cloud<br />
+          Email: <a href="mailto:austencloud@gmail.com">austencloud@gmail.com</a><br />
+          Subject line: "DMCA Takedown Notice"
+        </p>
+        <p>
+          Upon receipt of a valid notice, TKA Composer will expeditiously
+          remove or disable access to the allegedly infringing material and
+          take reasonable steps to notify the user who uploaded it.
+        </p>
+        <p>
+          <strong>Counter-Notice.</strong> If you believe your content was
+          removed or disabled as a result of mistake or misidentification,
+          you may submit a counter-notice to the designated agent above
+          containing:
+        </p>
+        <ol>
+          <li>Your physical or electronic signature</li>
+          <li>Identification of the material that was removed and the
+            location at which it previously appeared</li>
+          <li>A statement under penalty of perjury that you have a
+            good-faith belief the material was removed as a result of
+            mistake or misidentification</li>
+          <li>Your name, address, and telephone number, and a statement
+            that you consent to the jurisdiction of the federal district
+            court for the judicial district in which your address is
+            located (or, if your address is outside the United States, the
+            state or federal courts of Cook County, Illinois), and that
+            you will accept service of process from the person who
+            provided the original notice or their agent</li>
+        </ol>
+        <p>
+          <strong>Repeat Infringers.</strong> In accordance with the DMCA
+          and other applicable law, TKA Composer will, in appropriate
+          circumstances, terminate the accounts of users who are determined
+          to be repeat infringers of copyright.
+        </p>
+        <p>
+          <strong>False Claims.</strong> Under 17 U.S.C. § 512(f), any
+          person who knowingly materially misrepresents that material is
+          infringing, or that material was removed or disabled by mistake,
+          may be liable for damages. Please do not submit frivolous or
+          abusive notices.
+        </p>
+      </section>
+
       <section id="subscriptions">
-        <h2>9. Subscriptions and Payments</h2>
+        <h2>10. Subscriptions and Payments</h2>
         <p>
           Some features require a paid subscription. By subscribing, you
           agree to pay the applicable fees. Subscriptions renew automatically
@@ -194,23 +310,39 @@
       </section>
 
       <section id="contributions">
-        <h2>10. Code Contributions</h2>
+        <h2>11. Code Contributions</h2>
         <p>
-          By submitting code, pull requests, or other contributions to the
-          TKA project repositories, you assign all intellectual property
-          rights in your contribution to Austen Cloud. You represent that
-          you have the right to make this assignment and that your
-          contribution does not infringe any third-party rights.
+          By submitting code, pull requests, patches, documentation,
+          translations, or other contributions to the TKA project
+          repositories, you agree that your contribution is governed by the
+          inbound-equals-outbound licensing terms described in the
+          <code>CONTRIBUTING.md</code> file at the root of the repository.
+          In summary:
         </p>
+        <ul>
+          <li>Your contribution is licensed under the same license as the
+            file(s) you modify (MIT or Elastic License 2.0, per the root
+            <code>LICENSE</code> file). You retain ownership of your
+            contribution.</li>
+          <li>You grant Austen Cloud the right to relicense your
+            contribution under the terms of the Post-Mortem Open Source
+            Provision (Section 7 of the root <code>LICENSE</code> file),
+            which relicenses Elastic-License code to MIT and proprietary
+            data to CC BY-SA 4.0 upon a triggering event.</li>
+          <li>You represent that you wrote the contribution or otherwise
+            have the right to submit it, and that it does not infringe the
+            rights of any third party.</li>
+          <li>You provide your contribution on an "as is" basis, without
+            warranty.</li>
+        </ul>
         <p>
-          This assignment allows the project to maintain a unified licensing
-          structure and execute future licensing changes (including the
-          post-mortem open source provision described in the LICENSE file).
+          See <code>CONTRIBUTING.md</code> in the repository for the full
+          terms.
         </p>
       </section>
 
       <section id="disclaimers">
-        <h2>11. Disclaimers</h2>
+        <h2>12. Disclaimers</h2>
         <p>
           TKA Composer is provided "as is" without warranties of any kind,
           express or implied, including but not limited to warranties of
@@ -221,7 +353,7 @@
       </section>
 
       <section id="liability">
-        <h2>12. Limitation of Liability</h2>
+        <h2>13. Limitation of Liability</h2>
         <p>
           TKA Composer and its developer shall not be liable for any
           indirect, incidental, special, consequential, or punitive damages
@@ -234,18 +366,27 @@
       </section>
 
       <section id="governing-law">
-        <h2>13. Governing Law</h2>
+        <h2>14. Governing Law</h2>
         <p>
           These Terms are governed by and construed in accordance with the
-          laws of the State of California, United States, without regard to
-          conflict of law principles. Any disputes arising from these terms
-          or use of the service shall be resolved in the courts of
-          California.
+          laws of the State of Illinois, United States, without regard to
+          conflict of law principles. Exclusive venue for any dispute
+          arising from these Terms or your use of the service shall lie in
+          the state or federal courts located in Cook County, Illinois, and
+          you consent to the personal jurisdiction of those courts.
+        </p>
+        <p>
+          This governing-law clause is intentionally aligned with Section 9
+          of the project's root <code>LICENSE</code> file so that the
+          licensing relationship and the service relationship are governed
+          by the same law. The individual software licenses referenced in
+          the <code>LICENSE</code> file (MIT, Elastic License 2.0, and
+          CC BY-SA 4.0) are governed by their own terms.
         </p>
       </section>
 
       <section id="changes">
-        <h2>14. Changes to Terms</h2>
+        <h2>15. Changes to Terms</h2>
         <p>
           These terms may be modified at any time. Continued use of the
           service after changes constitutes acceptance of the modified
@@ -255,10 +396,13 @@
       </section>
 
       <section id="contact">
-        <h2>15. Contact</h2>
+        <h2>16. Contact</h2>
         <p>
           For questions about these Terms of Service, email
-          <a href="mailto:tkaflowarts@gmail.com">tkaflowarts@gmail.com</a>.
+          <a href="mailto:austencloud@gmail.com">austencloud@gmail.com</a>.
+        </p>
+        <p>
+          For DMCA notices and takedown requests, see Section 9 above.
         </p>
       </section>
     </div>

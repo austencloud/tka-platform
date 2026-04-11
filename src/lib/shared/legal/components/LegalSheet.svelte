@@ -61,6 +61,15 @@
         </p>
 
         {#if type === "terms"}
+          <div class="summary-banner">
+            <p>
+              <strong>This is a summary for quick reference.</strong> The
+              full and authoritative Terms of Service are at
+              <a href="/terms">/terms</a>. In case of any difference between
+              this summary and the full terms, the full terms control.
+            </p>
+          </div>
+
           <section>
             <h3>1. Acceptance of Terms</h3>
             <p>
@@ -88,12 +97,14 @@
           </section>
 
           <section>
-            <h3>4. User Content</h3>
+            <h3>4. User Content (Including Videos)</h3>
             <p>
-              You retain ownership of content you create. By sharing publicly,
-              you grant TKA Composer a non-exclusive, worldwide, royalty-free
-              license to display and distribute that content within the
-              application.
+              You retain ownership of sequences, videos, images, and other
+              content you upload. You grant TKA Composer the rights needed
+              to host, display, transcode, back up, and deliver your content
+              through the service, including sublicensing those rights to
+              service providers (CDNs, storage). See the full terms for the
+              complete license grant and DMCA takedown procedure.
             </p>
           </section>
 
@@ -138,6 +149,11 @@
               are trademarks of Austen Cloud. The TKA notation system is an
               open standard under CC BY-SA 4.0.
             </p>
+            <p>
+              If you believe content on the service infringes your copyright,
+              send a DMCA notice per the procedure in
+              <a href="/terms#dmca">the full terms</a>.
+            </p>
           </section>
 
           <section>
@@ -152,9 +168,12 @@
           <section>
             <h3>10. Code Contributions</h3>
             <p>
-              By submitting code contributions to TKA repositories, you assign
-              all intellectual property rights in your contribution to Austen
-              Cloud.
+              By submitting code contributions to TKA repositories, you agree
+              to the inbound=outbound terms in
+              <code>CONTRIBUTING.md</code>: your contribution is licensed
+              under the same license as the file you modify, and you grant
+              Austen Cloud the right to relicense it under the Post-Mortem
+              Open Source Provision. You retain ownership of your work.
             </p>
           </section>
 
@@ -170,8 +189,8 @@
           <section>
             <h3>12. Governing Law</h3>
             <p>
-              These Terms are governed by the laws of the State of California,
-              United States.
+              These Terms are governed by the laws of the State of Illinois,
+              United States. Exclusive venue is Cook County, Illinois.
             </p>
           </section>
 
@@ -179,7 +198,7 @@
             <h3>13. Contact</h3>
             <p>
               Questions? Email
-              <a href="mailto:tkaflowarts@gmail.com">tkaflowarts@gmail.com</a>.
+              <a href="mailto:austencloud@gmail.com">austencloud@gmail.com</a>.
             </p>
             <p>
               <a href="/terms">View full Terms of Service</a>
@@ -200,6 +219,11 @@
               <li>
                 <strong>Usage Data:</strong> How you interact with the application,
                 including sequences you create and features you use
+              </li>
+              <li>
+                <strong>User-Uploaded Content:</strong> Sequences, videos,
+                images, and other content you upload or share, along with
+                associated metadata (upload time, file size, format)
               </li>
               <li>
                 <strong>Device Information:</strong> Browser type, device type, and
@@ -423,6 +447,26 @@
     color: rgba(255, 255, 255, 0.5);
     font-size: 0.875rem;
     margin: 0 0 24px 0;
+  }
+
+  .summary-banner {
+    background: rgba(129, 140, 248, 0.08);
+    border: 1px solid rgba(129, 140, 248, 0.25);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin: 0 0 24px 0;
+  }
+
+  .summary-banner p {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+
+  .summary-banner a {
+    color: #a5b4fc;
+    text-decoration: underline;
   }
 
   section {
