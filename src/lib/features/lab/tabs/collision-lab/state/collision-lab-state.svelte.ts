@@ -24,8 +24,12 @@ import type {
   HandOrientation,
   CollisionSnapshot,
   StancePose,
+  DiamondPosition,
 } from "../domain/types";
 import { Plane } from "$lib/shared/3d/domain/enums/Plane";
+import { PlaneCoordinateMapper } from "$lib/shared/3d/services/implementations/PlaneCoordinateMapper";
+import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import { STAGE } from "$lib/shared/3d/scale/scale-constants";
 
 type PlaneFilter = Plane | "all";
 type OrientationFilter = HandOrientation | "all";
@@ -58,6 +62,170 @@ const CENTER_STANCE: StancePose = {
   rootYawRad: 0,
   spinePitchRad: 0,
 };
+
+// ──────────────────────────────────────────────────────────────────────
+// Reachability check
+// ──────────────────────────────────────────────────────────────────────
+
+/**
+ * Approximate shoulder half-width in scene units (meters).
+ * Mixamo base avatar has shoulder width ≈ 44 cm for a 188 cm model,
+ * so half-width ≈ 22 cm. Close enough for a conservative reach check.
+ */
+const SHOULDER_HALF_WIDTH = 0.22;
+
+/**
+ * Tolerance added to the neutral-stance distance before we flag a stance
+ * as unreachable. Accounts for the small extra reach contributed by
+ * torso twist and anatomical wiggle that the strict math can't model
+ * without running full IK. 5 cm is generous without being a lie.
+ */
+const REACH_TOLERANCE_M = 0.05;
+
+const POSITION_TO_GRID: Record<DiamondPosition, GridLocation> = {
+  N: GridLocation.NORTH,
+  E: GridLocation.EAST,
+  S: GridLocation.SOUTH,
+  W: GridLocation.WEST,
+};
+
+const reachMapper = new PlaneCoordinateMapper();
+
+interface ShoulderPos {
+  x: number;
+  y: number;
+  z: number;
+}
+
+/** Rest shoulder positions in rig-local space (shoulders at y=0). */
+const REST_LEFT_SHOULDER: ShoulderPos = { x: SHOULDER_HALF_WIDTH, y: 0, z: 0 };
+const REST_RIGHT_SHOULDER: ShoulderPos = { x: -SHOULDER_HALF_WIDTH, y: 0, z: 0 };
+
+function rotateAndTranslateShoulder(
+  rest: ShoulderPos,
+  yawRad: number,
+  footOffsetX: number,
+  footOffsetZ: number
+): ShoulderPos {
+  const cos = Math.cos(yawRad);
+  const sin = Math.sin(yawRad);
+  return {
+    x: rest.x * cos + rest.z * sin + footOffsetX,
+    y: rest.y,
+    z: -rest.x * sin + rest.z * cos + footOffsetZ,
+  };
+}
+
+interface Vec3Lite {
+  x: number;
+  y: number;
+  z: number;
+}
+
+function distance3(a: Vec3Lite, b: Vec3Lite): number {
+  const dx = a.x - b.x;
+  const dy = a.y - b.y;
+  const dz = a.z - b.z;
+  return Math.sqrt(dx * dx + dy * dy + dz * dz);
+}
+
+/**
+ * Compute the prop's world position for a given (plane, cardinal) pair.
+ * The plane mapper returns grid-local coordinates; we add the standard
+ * grid-forward offset (0.3 m) to get world coordinates relative to the
+ * performer's default rig root at world origin. Blue and red props are
+ * at the same y in rig space (y=0 = shoulder height).
+ */
+function propWorldPos(plane: Plane, position: DiamondPosition): Vec3Lite {
+  const loc = POSITION_TO_GRID[position];
+  const local = reachMapper.gridLocationToPosition3D(plane, loc);
+  return {
+    x: local.x,
+    y: local.y,
+    z: local.z + STAGE.AVATAR_GRID_OFFSET,
+  };
+}
+
+export interface ReachabilityInfo {
+  reachable: boolean;
+  /** Distance from the left shoulder to the blue prop (meters). */
+  blueDistance: number;
+  /** Distance from the right shoulder to the red prop (meters). */
+  redDistance: number;
+  /** Reach budget for the left shoulder at this pose (meters). */
+  blueBudget: number;
+  /** Reach budget for the right shoulder at this pose (meters). */
+  redBudget: number;
+  /** How much the left hand is beyond budget, meters (0 if reachable). */
+  blueExcess: number;
+  /** How much the right hand is beyond budget, meters (0 if reachable). */
+  redExcess: number;
+}
+
+/**
+ * Per-pose reach budget is the neutral-stance distance + tolerance. This
+ * auto-calibrates against the known-reachable default stance, so we
+ * don't have to hard-code an arm length that depends on avatar height.
+ */
+function computeReachability(
+  pose: PoseDefinition | null,
+  footOffsetX: number,
+  footOffsetZ: number,
+  rootYawRad: number
+): ReachabilityInfo {
+  if (!pose) {
+    return {
+      reachable: true,
+      blueDistance: 0,
+      redDistance: 0,
+      blueBudget: 0,
+      redBudget: 0,
+      blueExcess: 0,
+      redExcess: 0,
+    };
+  }
+
+  // Blue prop → performer's left hand → LeftShoulder (+X in rig-local)
+  // Red prop  → performer's right hand → RightShoulder (-X in rig-local)
+  const blueWorld = propWorldPos(pose.plane, pose.blueHand.position);
+  const redWorld = propWorldPos(pose.plane, pose.redHand.position);
+
+  // Reach budget: distance at neutral stance + tolerance.
+  // At neutral, the grid is calibrated to be reachable by design, so the
+  // neutral distance is an upper bound on what IK was designed to solve.
+  const blueBudget = distance3(REST_LEFT_SHOULDER, blueWorld) + REACH_TOLERANCE_M;
+  const redBudget = distance3(REST_RIGHT_SHOULDER, redWorld) + REACH_TOLERANCE_M;
+
+  // Current shoulder positions after stance transform
+  const currentLeft = rotateAndTranslateShoulder(
+    REST_LEFT_SHOULDER,
+    rootYawRad,
+    footOffsetX,
+    footOffsetZ
+  );
+  const currentRight = rotateAndTranslateShoulder(
+    REST_RIGHT_SHOULDER,
+    rootYawRad,
+    footOffsetX,
+    footOffsetZ
+  );
+
+  const blueDistance = distance3(currentLeft, blueWorld);
+  const redDistance = distance3(currentRight, redWorld);
+
+  const blueExcess = Math.max(0, blueDistance - blueBudget);
+  const redExcess = Math.max(0, redDistance - redBudget);
+
+  return {
+    reachable: blueExcess === 0 && redExcess === 0,
+    blueDistance,
+    redDistance,
+    blueBudget,
+    redBudget,
+    blueExcess,
+    redExcess,
+  };
+}
 
 export async function createCollisionLabState(
   poseEnumerator: IPoseEnumerator,
@@ -111,6 +279,10 @@ export async function createCollisionLabState(
     spinePitchRad,
   });
 
+  const currentReachability = $derived<ReachabilityInfo>(
+    computeReachability(currentPose, footOffsetX, footOffsetZ, rootYawRad)
+  );
+
   const progress = $derived({
     total: allPoses.length,
     labeled: countLabels(labels, (s) => s !== "unlabeled"),
@@ -153,6 +325,7 @@ export async function createCollisionLabState(
     get currentPose() { return currentPose; },
     get currentLabel() { return currentLabel; },
     get currentStance() { return currentStance; },
+    get currentReachability() { return currentReachability; },
     get currentCollision() { return currentCollision; },
     get labels() { return labels; },
     get progress() { return progress; },
@@ -221,6 +394,18 @@ export async function createCollisionLabState(
     labelCurrent(status: LabelStatus) {
       const pose = currentPose;
       if (!pose) return;
+      // "clear" and "needs-adjustment" both make claims about the stance
+      // (that it works, or that it ALMOST works). If the hand can't even
+      // reach the prop, neither claim is meaningful — silently refuse so
+      // we don't corrupt the dataset with physically impossible labels.
+      // "skip" and "unreachable" are statements about the pose itself,
+      // not the current stance, so they're always allowed.
+      if (
+        (status === "clear" || status === "needs-adjustment") &&
+        !currentReachability.reachable
+      ) {
+        return;
+      }
       const next: Record<string, PoseLabel> = {
         ...labels,
         [pose.id]: {

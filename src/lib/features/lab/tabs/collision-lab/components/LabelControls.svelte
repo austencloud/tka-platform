@@ -27,6 +27,19 @@
   ];
 
   const currentStatus = $derived<LabelStatus>(state.currentLabel?.status ?? "unlabeled");
+
+  /**
+   * Clear and Needs-adjustment both claim the stance works. If the hand
+   * can't physically reach the prop from the current stance, those two
+   * labels would be dishonest — disable them. Skip and Unreachable stay
+   * available since they classify the pose itself, not the stance.
+   */
+  function isDisabled(status: LabelStatus): boolean {
+    if (status === "clear" || status === "needs-adjustment") {
+      return !state.currentReachability.reachable;
+    }
+    return false;
+  }
 </script>
 
 <div class="controls">
@@ -39,8 +52,13 @@
       <button
         class="status-btn"
         class:active={currentStatus === btn.status}
+        class:disabled={isDisabled(btn.status)}
+        disabled={isDisabled(btn.status)}
         style="--btn-color: {btn.color};"
         onclick={() => state.labelCurrent(btn.status)}
+        title={isDisabled(btn.status)
+          ? "Stance is out of reach — hand can't physically touch the prop. Adjust stance or use Skip/Unreachable."
+          : ""}
       >
         <span class="hotkey">{btn.hotkey}</span>
         <span class="label">{btn.label}</span>
@@ -95,6 +113,16 @@
   .status-btn.active {
     border-color: var(--btn-color);
     background: color-mix(in srgb, var(--btn-color) 15%, transparent);
+  }
+  .status-btn.disabled,
+  .status-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    filter: grayscale(50%);
+  }
+  .status-btn.disabled:hover,
+  .status-btn:disabled:hover {
+    border-color: transparent;
   }
   .hotkey {
     font-family: monospace;
