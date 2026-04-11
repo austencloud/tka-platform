@@ -52,8 +52,11 @@ export function createPerformerManager(deps: PerformerManagerDeps) {
   let activePerformerIndex = $state(0);
   let syncState: AvatarSyncState | null = $state(null);
 
-  // Formation manager for flexible positioning
-  const formationManager: IFormationManager = createFormationManager(1);
+  // Formation manager for flexible positioning. Pass maxPerformers through
+  // so the standalone viewer's 8-performer cap reaches the formation
+  // engine — otherwise its internal clamp drops performers 5-8 from
+  // slot calculations and they never move on preset apply.
+  const formationManager: IFormationManager = createFormationManager(1, maxPerformers);
 
   // Derived: active performer state
   const activeState = $derived(performerStates[activePerformerIndex] ?? null);

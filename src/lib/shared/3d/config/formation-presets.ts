@@ -133,9 +133,22 @@ function generateCircleSlots(count: number): FormationSlot[] {
 }
 
 /**
- * Generate slots for V-shape/chevron formation
+ * Generate slots for V-shape/chevron formation.
  *
- * Leader in front, others trailing in V pattern
+ * Shape evolves with count:
+ *  - 1: single center
+ *  - 2: side-by-side (no chevron yet)
+ *  - 3: classic V — leader at front, pair behind
+ *  - 4: T-shape — leader, pair, center tail
+ *  - 5: widening V — leader, 2 widening pairs
+ *  - 6: widening V + tail — leader, 2 pairs, deeper tail
+ *  - 7: widening V — leader, 3 widening pairs
+ *  - 8: widening V + tail — leader, 3 pairs, deeper tail
+ *
+ * Algorithm: leader at (0, offset), then floor((count-1)/2) full pairs at
+ * successively wider lateral offsets and deeper z, followed by an optional
+ * center tail when (count-1) is odd. Preserves the historical 1-4 layouts
+ * and extends cleanly through 8.
  */
 function generateVShapeSlots(count: number): FormationSlot[] {
   const spacing = DEFAULT_FORMATION_SPACING;
@@ -153,29 +166,38 @@ function generateVShapeSlots(count: number): FormationSlot[] {
     ];
   }
 
-  // Leader at front
-  slots.push({ index: 0, position: { x: 0, z: offset } });
-
-  // Others form V behind
   const vSpacing = spacing * 0.7;
   const vDepth = spacing * 0.6;
 
-  if (count >= 2) {
+  // Leader at the apex
+  slots.push({ index: 0, position: { x: 0, z: offset } });
+
+  // Body splits into full pairs (one left, one right, widening with depth)
+  // plus an optional center tail one row deeper when (count-1) is odd.
+  const bodyCount = count - 1;
+  const fullPairs = Math.floor(bodyCount / 2);
+  const hasTail = bodyCount % 2 === 1;
+
+  let nextIndex = 1;
+  for (let row = 1; row <= fullPairs; row++) {
+    const rowHalfWidth = vSpacing * row;
+    const rowZ = -vDepth * row + offset;
+
     slots.push({
-      index: 1,
-      position: { x: -vSpacing, z: -vDepth + offset },
+      index: nextIndex++,
+      position: { x: -rowHalfWidth, z: rowZ },
+    });
+    slots.push({
+      index: nextIndex++,
+      position: { x: rowHalfWidth, z: rowZ },
     });
   }
-  if (count >= 3) {
+
+  if (hasTail) {
+    const tailZ = -vDepth * (fullPairs + 1) + offset;
     slots.push({
-      index: 2,
-      position: { x: vSpacing, z: -vDepth + offset },
-    });
-  }
-  if (count >= 4) {
-    slots.push({
-      index: 3,
-      position: { x: 0, z: -vDepth * 2 + offset },
+      index: nextIndex++,
+      position: { x: 0, z: tailZ },
     });
   }
 
@@ -475,16 +497,19 @@ export const FORMATION_PRESET_INFO: FormationPresetInfo[] = [
 /**
  * Valid performer counts per preset. Used by the viewer's formation picker
  * to gray out presets that don't match the current performer count.
- * "custom" accepts any count in the viewer-specific range [1, 8].
- * "v-shape" is capped at 4 because the generator only defines positions
- * for 1-4 performers; scaling it beyond that is a follow-up.
+ *
+ * - "custom" accepts any count in the viewer-specific range [1, 8].
+ * - "grid-2x2" stays capped at 4 because it's definitionally a 2x2 shape.
+ * - "back-to-back", "facing-each-other", and "stage-lr" stay capped at 2
+ *   because their semantics require exactly two performers.
+ * - Everything else scales through 8 (the viewer's MAX_VIEWER_PERFORMERS).
  */
 export const PRESET_VALID_COUNTS: Record<FormationPreset, number[]> = {
   solo: [1],
   "grid-2x2": [1, 2, 3, 4],
   line: [1, 2, 3, 4, 5, 6, 7, 8],
   circle: [1, 2, 3, 4, 5, 6, 7, 8],
-  "v-shape": [1, 2, 3, 4],
+  "v-shape": [1, 2, 3, 4, 5, 6, 7, 8],
   diagonal: [1, 2, 3, 4, 5, 6, 7, 8],
   "tunnel-stack": [2, 3, 4, 5, 6, 7, 8],
   "back-to-back": [2],
