@@ -1,0 +1,163 @@
+<script lang="ts">
+  /**
+   * PerformerChipStrip
+   *
+   * Compact performer selector pinned above the gear popover's tab bar.
+   * Renders:
+   *   [All] · [1] [2] [3] ... [+]
+   *
+   * - "All" chip: pinned leftmost, pill shape, selected when
+   *   `selectedPerformerIndex === null`.
+   * - Performer chips: one per performer, numbered 1-N, colored by index,
+   *   selected when `selectedPerformerIndex === i`.
+   * - "+" chip: rightmost, enabled when `count < MAX_VIEWER_PERFORMERS`.
+   *
+   * Hidden entirely when only one performer exists (scope doesn't matter).
+   */
+
+  import { getViewer3DContext } from "../../context/viewer-3d-context";
+  import { STAGE } from "$lib/shared/3d/scale/scale-constants";
+
+  const viewer3DState = getViewer3DContext();
+  const performers = $derived(viewer3DState.performerManager.performers);
+  const selectedIndex = $derived(viewer3DState.selectedPerformerIndex);
+  const visible = $derived(performers.length >= 2);
+  const canAdd = $derived(performers.length < STAGE.MAX_VIEWER_PERFORMERS);
+
+  // Chip tint colors, cycled by performer index.
+  // Blue, red, purple, orange, emerald, pink, cyan, yellow — matches the
+  // tunnel layer colors used in Compose cell layers for visual consistency.
+  const CHIP_COLORS = [
+    "#3b82f6", "#ef4444", "#8b5cf6", "#f97316",
+    "#10b981", "#ec4899", "#06b6d4", "#eab308",
+  ];
+
+  function chipColor(i: number): string {
+    return CHIP_COLORS[i % CHIP_COLORS.length] ?? "#6b7280";
+  }
+
+  function selectAll(): void {
+    viewer3DState.selectPerformerScope(null);
+  }
+
+  function selectPerformer(i: number): void {
+    viewer3DState.selectPerformerScope(i);
+  }
+
+  function addPerformer(): void {
+    viewer3DState.spawnPerformerFromUI();
+  }
+</script>
+
+{#if visible}
+  <div class="chip-strip" role="toolbar" aria-label="Performer selection">
+    <button
+      type="button"
+      class="chip chip-all"
+      class:active={selectedIndex === null}
+      aria-pressed={selectedIndex === null}
+      aria-label="Select all performers"
+      onclick={selectAll}
+    >
+      All
+    </button>
+
+    <span class="separator" aria-hidden="true">·</span>
+
+    {#each performers as _, i (i)}
+      <button
+        type="button"
+        class="chip chip-performer"
+        class:active={selectedIndex === i}
+        aria-pressed={selectedIndex === i}
+        aria-label={`Select performer ${i + 1}`}
+        style="--chip-color: {chipColor(i)}"
+        onclick={() => selectPerformer(i)}
+      >
+        {i + 1}
+      </button>
+    {/each}
+
+    <button
+      type="button"
+      class="chip chip-add"
+      aria-label="Add performer"
+      disabled={!canAdd}
+      onclick={addPerformer}
+    >
+      +
+    </button>
+  </div>
+{/if}
+
+<style>
+  .chip-strip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .chip {
+    min-width: 28px;
+    height: 28px;
+    padding: 0 10px;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.82);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .chip:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  .chip:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+
+  .chip-all {
+    padding: 0 14px;
+    font-weight: 600;
+  }
+
+  .chip-performer {
+    width: 28px;
+    padding: 0;
+    border-color: var(--chip-color, rgba(255, 255, 255, 0.18));
+  }
+
+  .chip-performer.active {
+    background: var(--chip-color, rgba(255, 255, 255, 0.18));
+    color: #fff;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3);
+  }
+
+  .chip-all.active {
+    background: rgba(139, 139, 255, 0.3);
+    border-color: rgba(139, 139, 255, 0.6);
+    color: #fff;
+  }
+
+  .chip-add {
+    width: 28px;
+    padding: 0;
+    font-size: 16px;
+    line-height: 1;
+  }
+
+  .separator {
+    color: rgba(255, 255, 255, 0.3);
+    font-size: 14px;
+    padding: 0 2px;
+  }
+</style>
