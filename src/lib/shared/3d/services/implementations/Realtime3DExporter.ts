@@ -130,13 +130,42 @@ export class Realtime3DExporter implements IRealtime3DExporter {
           // Draw the WebGL canvas onto the offscreen canvas at export resolution.
           // The WebGL canvas preserveDrawingBuffer should be true for this to work
           // reliably; the caller is responsible for that configuration.
+          // Scale the live WebGL canvas onto the offscreen canvas at the
+          // export resolution. This is a GPU-accelerated canvas→canvas
+          // blit; the expensive step was the following pixel readback,
+          // which we now skip entirely by handing the offscreen canvas to
+          // the capturer as a zero-copy handle.
           offCtx.drawImage(webglCanvas, 0, 0, width, height);
-          const imageData = offCtx.getImageData(0, 0, width, height);
 
           const timestampMicros = Math.round((frameIndex / fps) * 1_000_000);
           const isKeyframe = frameIndex % KEYFRAME_INTERVAL === 0;
 
-          this.backgroundEncoder.addFrame(imageData, frameIndex, timestampMicros, isKeyframe);
+          // Freeze the current frameIndex into a local so the capture
+          // promise resolves against the correct index even after the
+          // RAF loop has incremented frameIndex below.
+          const capturedIndex = frameIndex;
+
+          // Fire-and-forget capture. On the VideoFrame path the promise
+          // is effectively already-resolved — `new VideoFrame(canvas)` is
+          // a synchronous constructor and the async wrapper in the
+          // ICanvasFrameCapturer interface exists only for symmetry with
+          // the ImageData fallback (whose `getImageData` is also synchronous
+          // in practice). Frame ordering is preserved because postMessage
+          // is synchronous and the worker processes messages in arrival
+          // order, so fire-and-forget is safe here.
+          //
+          // We deliberately do NOT await inside the RAF tick. Awaiting
+          // would push the next RAF callback past the next vsync and
+          // drift the capture out of lockstep with live playback.
+          void this.capturer
+            .capture(offscreen, timestampMicros)
+            .then((frame) => {
+              this.backgroundEncoder.addFrameCaptured(
+                frame,
+                capturedIndex,
+                isKeyframe
+              );
+            });
 
           onProgress({
             progress: frameIndex / totalFrames,
