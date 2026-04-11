@@ -21,6 +21,11 @@
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import { TrackingMode } from "$lib/shared/animation-engine/domain/types/TrailTypes";
   import { isBilateralProp } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";
+  import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
+  import { createEffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
+  import { setEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
+  import { snapshotConfigFromVm, bindVmToEffectsConfig } from "$lib/shared/effects/compat/vm-shim";
+  import { seedTrailsFromAnimationSettings } from "$lib/shared/effects/compat/animation-settings-shim";
 
   // Derive trail settings from the global singleton so canvas settings changes
   // (e.g. switching from "one end" to "both ends") propagate to this canvas.
@@ -50,6 +55,31 @@
     }
 
     return settings;
+  });
+
+  // Canonical effects config — single source of truth for both 2D canvas
+  // and 3D viewer effect parameters. Seeded from existing state (vm +
+  // animationSettings) and kept in sync via a compat shim while Phase A
+  // is in flight. Shim deleted in Phase B.
+  const effectsVm = getAnimationVisibilityManager();
+  const effectsConfigState = createEffectsConfigState(snapshotConfigFromVm(effectsVm));
+  seedTrailsFromAnimationSettings(effectsConfigState);
+  setEffectsConfigContext(effectsConfigState);
+
+  $effect(() => {
+    const dispose = bindVmToEffectsConfig(effectsVm, effectsConfigState);
+    return dispose;
+  });
+
+  // Re-seed trails when animationSettings changes (runes track deps).
+  $effect(() => {
+    // Touch the fields Svelte needs to track for the $effect to re-run.
+    animationSettings.trail.lineWidth;
+    animationSettings.trail.maxOpacity;
+    animationSettings.trail.blueColor;
+    animationSettings.trail.redColor;
+    animationSettings.trail.trackingMode;
+    seedTrailsFromAnimationSettings(effectsConfigState);
   });
 
   interface Props {
