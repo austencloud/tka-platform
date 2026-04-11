@@ -2,26 +2,32 @@
   /**
    * PoseViewport
    *
-   * Renders the current collision-lab pose in a Threlte canvas with a
-   * single avatar and both props. Receives collision events from the
-   * avatar and forwards them to state.
+   * Renders the current collision-lab pose inside the shared Scene3D —
+   * the same scene used by the sequence viewer, so we get the forest
+   * environment, grid planes, orbit controls, and lighting for free.
    *
-   * The stance variant's root yaw is applied via the `facingAngle` prop
-   * on Avatar3D. Spine pitch is NOT applied in Phase 1 — there is no
-   * existing hook to inject spine bone offsets without modifying the
-   * skeleton service. For now the "leaned forward" variant is visually
-   * identical to "neutral"; when spine override lands, wire it here.
+   * We add on top:
+   *   - Two visible props (Prop3D) positioned at the hand grid targets
+   *   - An Avatar3D whose root position is driven by the current stance
+   *     variant's (footOffsetX, footOffsetZ) — translating the root
+   *     moves the whole body as a rigid unit, which is what we want
+   *     since foot IK is disabled
+   *   - The animator's external spine pitch for lean-forward variants
+   *   - A collision-event callback that pipes the detector's per-frame
+   *     output into state
    */
 
-  import { Canvas, T } from "@threlte/core";
-  import { OrbitControls } from "@threlte/extras";
-  import { Quaternion, Vector3 } from "three";
+  import { T } from "@threlte/core";
+  import Scene3D from "$lib/shared/3d/components/Scene3D.svelte";
   import Avatar3D from "$lib/shared/3d/components/Avatar3D.svelte";
+  import Prop3D from "$lib/shared/3d/components/props/Prop3D.svelte";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { PlaneCoordinateMapper } from "$lib/shared/3d/services/implementations/PlaneCoordinateMapper";
   import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import { BackgroundType } from "@austencloud/backgrounds";
   import type { PropState3D } from "$lib/shared/3d/domain/models/PropState3D";
   import type { CollisionEvent } from "$lib/shared/3d/services/contracts/ICollisionDetector";
-  import type { Plane } from "$lib/shared/3d/domain/enums/Plane";
+  import { Plane } from "$lib/shared/3d/domain/enums/Plane";
   import type {
     DiamondPosition,
     CollisionSnapshot,
@@ -42,8 +48,8 @@
 
   /**
    * Build a PropState3D for a hand target. Avatar3D's IK uses worldPosition
-   * for hand placement; orientation is stored in PropDefinition but has no
-   * Phase 1 effect on IK — Phase 2 will use it when elbow routing is wired.
+   * for hand placement; orientation is stored in PoseDefinition but has no
+   * Phase 1 effect on IK (Phase 2 will use it when elbow routing lands).
    */
   function buildPropState(
     plane: Plane,
@@ -74,6 +80,20 @@
     return buildPropState(pose.plane, pose.redHand.position, pose.redHand.orientation);
   });
 
+  /** Only show the grid for the pose's current plane — less visual clutter. */
+  const visiblePlanes = $derived.by<Set<Plane>>(() => {
+    const pose = state.currentPose;
+    return new Set(pose ? [pose.plane] : []);
+  });
+
+  // Stance variant drives where the avatar actually stands on the floor.
+  // Root position translation moves the whole body rigidly (feet, hips,
+  // torso) which is exactly what we want for "the performer steps here."
+  const avatarPosition = $derived({
+    x: state.currentStanceVariant.footOffsetX,
+    y: 0,
+    z: state.currentStanceVariant.footOffsetZ,
+  });
   const facingAngle = $derived(state.currentStanceVariant.rootYawRad);
   const spinePitchOffset = $derived(state.currentStanceVariant.spinePitchRad);
 
@@ -106,40 +126,44 @@
 </script>
 
 <div class="pose-viewport">
-  <Canvas>
-    <T.Color attach="background" args={["#1a1f2e"]} />
-    <T.PerspectiveCamera makeDefault position={[0, 1.4, 3.5]} fov={35}>
-      <OrbitControls
-        target={[0, 1.2, 0]}
-        enableDamping
-        dampingFactor={0.1}
-        minDistance={1}
-        maxDistance={8}
-        enablePan
-      />
-    </T.PerspectiveCamera>
-    <T.AmbientLight intensity={0.6} />
-    <T.DirectionalLight position={[3, 5, 4]} intensity={0.8} />
-
-    {#if bluePropState && redPropState}
-      <!--
-        isActive={false} is important here: isActive={true} assigns the
-        avatar to LAYER_PLAYER_BODY (layer 1), which is the first-person
-        viewmodel layer — hidden from the default camera (layer 0). We
-        want a third-person demo figure, so we leave it on LAYER_WORLD.
-      -->
-      <Avatar3D
-        {bluePropState}
-        {redPropState}
-        {facingAngle}
-        {spinePitchOffset}
-        visible={true}
-        isActive={false}
-        enableLocomotion={false}
-        onCollisionEvents={handleCollisionEvents}
-      />
-    {/if}
-  </Canvas>
+  <Scene3D
+    cameraPreset="perspective"
+    showGrid={true}
+    showLabels={false}
+    {visiblePlanes}
+    backgroundType={BackgroundType.FIREFLY_FOREST}
+  >
+    {#snippet children()}
+      {#if bluePropState}
+        <T.Group position={[bluePropState.worldPosition.x, bluePropState.worldPosition.y, bluePropState.worldPosition.z]}>
+          <Prop3D propType={PropType.STAFF} propState={bluePropState} color="blue" />
+        </T.Group>
+      {/if}
+      {#if redPropState}
+        <T.Group position={[redPropState.worldPosition.x, redPropState.worldPosition.y, redPropState.worldPosition.z]}>
+          <Prop3D propType={PropType.STAFF} propState={redPropState} color="red" />
+        </T.Group>
+      {/if}
+      {#if bluePropState && redPropState}
+        <!--
+          isActive={false} keeps the avatar on LAYER_WORLD so the
+          third-person camera can see it (isActive={true} assigns the
+          first-person viewmodel layer which is hidden here).
+        -->
+        <Avatar3D
+          {bluePropState}
+          {redPropState}
+          position={avatarPosition}
+          {facingAngle}
+          {spinePitchOffset}
+          visible={true}
+          isActive={false}
+          enableLocomotion={false}
+          onCollisionEvents={handleCollisionEvents}
+        />
+      {/if}
+    {/snippet}
+  </Scene3D>
 </div>
 
 <style>

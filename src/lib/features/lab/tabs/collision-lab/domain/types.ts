@@ -84,4 +84,14 @@ export interface StanceVariant {
   rootYawRad: number;
   /** Forward torso lean in radians, applied to spine bones */
   spinePitchRad: number;
+  /**
+   * Floor offset (meters) — where the avatar actually stands relative to
+   * the grid center. Positive X = performer's right, positive Z = toward
+   * audience. Translating the root here moves the whole body as a rigid
+   * unit (feet, hips, torso) because foot IK is disabled — this is
+   * exactly what we want: the props stay at their world grid points and
+   * the body walks around them.
+   */
+  footOffsetX: number;
+  footOffsetZ: number;
 }

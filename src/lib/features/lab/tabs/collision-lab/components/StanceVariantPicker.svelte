@@ -13,7 +13,7 @@
 </script>
 
 <div class="picker">
-  <h4 class="title">Stance variant</h4>
+  <h4 class="title">Floor position (where the performer stands)</h4>
   <div class="variants">
     {#each state.stanceVariants as variant}
       <button
@@ -46,7 +46,7 @@
   }
   .variants {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 1fr 1fr;
     gap: 6px;
   }
   .variant {
