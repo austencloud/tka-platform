@@ -33,7 +33,10 @@
   import Prop3D from "$lib/shared/3d/components/props/Prop3D.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { PlaneCoordinateMapper } from "$lib/shared/3d/services/implementations/PlaneCoordinateMapper";
+  import { OrientationMapper } from "$lib/shared/3d/services/implementations/OrientationMapper";
+  import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import { LOCATION_ANGLES } from "$lib/features/compose/shared/domain/math-constants";
   import { BackgroundType } from "@austencloud/backgrounds";
   import { STAGE } from "$lib/shared/3d/scale/scale-constants";
   import type { PropState3D } from "$lib/shared/3d/domain/models/PropState3D";
@@ -49,6 +52,7 @@
 
   const labCtx = getCollisionLabContext();
   const planeMapper = new PlaneCoordinateMapper();
+  const orientationMapper = new OrientationMapper();
 
   /**
    * Wall-plane grid sits 30cm forward of the performer's body. This is the
@@ -65,22 +69,33 @@
   };
 
   /**
-   * Build a PropState3D for a hand target. The worldPosition here is
-   * actually in GRID-LOCAL space (as if the grid were at origin) — the
-   * transform chain adds the rig root + grid-forward offset at render
-   * time so the final world position lands on the visible grid.
+   * Build a PropState3D for a hand target. The worldPosition is in
+   * GRID-LOCAL space (the parent T.Group adds the grid-forward offset).
+   *
+   * The staff rotation is derived from the OrientationMapper:
+   *   in  (radial)     → staffAngle = centerPathAngle + π
+   *   out (antiradial) → staffAngle = centerPathAngle
+   *
+   * centerPathAngle comes from LOCATION_ANGLES for the cardinal position
+   * (e.g. NORTH = -π/2). This is the same pipeline the sequence viewer
+   * uses, so staff visuals match everywhere.
    */
   function buildPropState(
     plane: Plane,
     position: DiamondPosition,
-    _orientation: "in" | "out"
+    orientation: "in" | "out"
   ): PropState3D {
     const loc = POSITION_TO_GRID[position];
+    const centerPathAngle = LOCATION_ANGLES[loc];
+    const staffAngle = orientationMapper.mapOrientationToAngle(
+      orientation === "in" ? Orientation.IN : Orientation.OUT,
+      centerPathAngle
+    );
     const worldPosition = planeMapper.gridLocationToPosition3D(plane, loc);
-    const worldRotation = planeMapper.calculatePropRotation(plane, 0);
+    const worldRotation = planeMapper.calculatePropRotation(plane, staffAngle);
     return {
-      centerPathAngle: 0,
-      staffRotationAngle: 0,
+      centerPathAngle,
+      staffRotationAngle: staffAngle,
       plane,
       worldPosition,
       worldRotation,
