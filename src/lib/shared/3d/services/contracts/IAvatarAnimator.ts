@@ -151,4 +151,14 @@ export interface IAvatarAnimator {
    * Set the smoothing factor (0-1, higher = smoother but laggier)
    */
   setSmoothingFactor(factor: number): void;
+
+  /**
+   * Set an extra forward pitch (radians) to apply to Spine1 each frame.
+   * Composed on top of the spine twist rest pose before arm IK runs, so
+   * the arms solve against a leaned-forward torso. Pass 0 to disable.
+   *
+   * Used by features that need to override the torso tilt without
+   * touching the twist logic — e.g., collision-lab stance variants.
+   */
+  setExternalSpinePitch(radians: number): void;
 }

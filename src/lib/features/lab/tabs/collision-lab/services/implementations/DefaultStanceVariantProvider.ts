@@ -24,7 +24,7 @@ const VARIANTS: StanceVariant[] = [
     index: 1,
     description: "Leaned forward",
     rootYawRad: 0,
-    spinePitchRad: 10 * DEG,
+    spinePitchRad: 20 * DEG,
   },
   {
     index: 2,
@@ -47,7 +47,7 @@ export class DefaultStanceVariantProvider implements IStanceVariantProvider {
 
   getVariant(index: number): StanceVariant {
     const clamped = Math.max(0, Math.min(index, VARIANTS.length - 1));
-    return VARIANTS[clamped];
+    return VARIANTS[clamped]!;
   }
 
   count(): number {
