@@ -144,6 +144,51 @@ export function createViewer3DState(deps: {
   function getAvatarStateShim(): AvatarInstanceState | null {
     return performerManager.performers[0] ?? null;
   }
+
+  // Viewer-specific selection scope. Lives on top of PerformerManager so
+  // realm/museum/duet keep their simpler index-only model. null = "All".
+  let selectedPerformerIndex = $state<number | null>(null);
+
+  /**
+   * Return the set of performers that should receive scoped writes.
+   * - null selection → every performer
+   * - valid index   → single performer
+   * - bad index     → empty (caller should no-op)
+   */
+  function scopedPerformers(): AvatarInstanceState[] {
+    if (selectedPerformerIndex === null) return performerManager.performers;
+    const p = performerManager.performers[selectedPerformerIndex];
+    return p ? [p] : [];
+  }
+
+  /**
+   * Set the current selection scope. Pass null for "All".
+   * Out-of-bounds indices are allowed — scopedPerformers() will return []
+   * so individual write helpers no-op cleanly.
+   */
+  function selectPerformerScope(index: number | null): void {
+    selectedPerformerIndex = index;
+  }
+
+  /**
+   * Fan-out: assign a hand plane on every performer in the current scope.
+   * Used by the Planes tab when "All" is selected or a single performer is picked.
+   */
+  function setHandPlaneScoped(hand: "blue" | "red", plane: Plane): void {
+    for (const p of scopedPerformers()) {
+      p.setHandPlane(hand, plane);
+    }
+  }
+
+  /**
+   * Fan-out: load a sequence onto every performer in the current scope.
+   * The viewer's "change sequence for this performer" control routes here.
+   */
+  function loadSequenceScoped(sequenceData: SequenceData): void {
+    for (const p of scopedPerformers()) {
+      p.loadSequence(sequenceData);
+    }
+  }
   let effectToggles = $state<Record<string, boolean>>({
     fire: false,
     led: false,
@@ -285,6 +330,13 @@ export function createViewer3DState(deps: {
     get performerManager() {
       return performerManager;
     },
+    get selectedPerformerIndex() {
+      return selectedPerformerIndex;
+    },
+    scopedPerformers,
+    selectPerformerScope,
+    setHandPlaneScoped,
+    loadSequenceScoped,
     get effectToggles() {
       return effectToggles;
     },
