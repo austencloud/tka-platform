@@ -1,7 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { AnimationVisibilityStateManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
-import { snapshotConfigFromVm } from "$lib/shared/effects/compat/vm-shim";
+import { snapshotConfigFromVm, bindVmToEffectsConfig } from "$lib/shared/effects/compat/vm-shim";
 import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
+import { createEffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
 
 describe("snapshotConfigFromVm", () => {
   it("returns a full EffectsConfig from a fresh vm", () => {
@@ -33,5 +34,51 @@ describe("snapshotConfigFromVm", () => {
     vm.setActiveEffect("fire");
     const config = snapshotConfigFromVm(vm);
     expect(config.tipEffectMap["*"]?.effect).toBe("fire");
+  });
+});
+
+describe("bindVmToEffectsConfig", () => {
+  it("propagates vm.setFireIntensity into canonical state", () => {
+    const vm = new AnimationVisibilityStateManager({ ephemeral: true });
+    const state = createEffectsConfigState();
+    const dispose = bindVmToEffectsConfig(vm, state);
+
+    vm.setFireIntensity(0.92);
+
+    expect(state.config.fire.intensity).toBe(0.92);
+    dispose();
+  });
+
+  it("propagates vm.setLedPrimaryColor into canonical state", () => {
+    const vm = new AnimationVisibilityStateManager({ ephemeral: true });
+    const state = createEffectsConfigState();
+    const dispose = bindVmToEffectsConfig(vm, state);
+
+    vm.setLedPrimaryColor("#123456");
+
+    expect(state.config.led.primaryColor).toBe("#123456");
+    dispose();
+  });
+
+  it("propagates vm.setActiveEffect into canonical tipEffectMap", () => {
+    const vm = new AnimationVisibilityStateManager({ ephemeral: true });
+    const state = createEffectsConfigState();
+    const dispose = bindVmToEffectsConfig(vm, state);
+
+    vm.setActiveEffect("fire");
+
+    expect(state.config.tipEffectMap["*"]?.effect).toBe("fire");
+    dispose();
+  });
+
+  it("dispose stops propagation", () => {
+    const vm = new AnimationVisibilityStateManager({ ephemeral: true });
+    const state = createEffectsConfigState();
+    const dispose = bindVmToEffectsConfig(vm, state);
+    dispose();
+
+    vm.setFireIntensity(0.99);
+
+    expect(state.config.fire.intensity).not.toBe(0.99);
   });
 });
