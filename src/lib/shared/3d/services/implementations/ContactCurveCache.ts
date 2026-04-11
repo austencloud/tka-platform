@@ -33,9 +33,17 @@ export class ContactCurveCache implements IContactCurveCache {
     const i1 = Math.min(curve.frameCount - 1, i0 + 1);
     const t = floatIndex - i0;
 
+    // `register()` validates that leftFoot.length === rightFoot.length === frameCount,
+    // and i0/i1 are clamped to [0, frameCount-1] above, so these indexed accesses are
+    // always in-bounds. The non-null assertions satisfy noUncheckedIndexedAccess.
+    const l0 = curve.leftFoot[i0]!;
+    const l1 = curve.leftFoot[i1]!;
+    const r0 = curve.rightFoot[i0]!;
+    const r1 = curve.rightFoot[i1]!;
+
     return {
-      leftFoot: curve.leftFoot[i0] * (1 - t) + curve.leftFoot[i1] * t,
-      rightFoot: curve.rightFoot[i0] * (1 - t) + curve.rightFoot[i1] * t,
+      leftFoot: l0 * (1 - t) + l1 * t,
+      rightFoot: r0 * (1 - t) + r1 * t,
       hasCurve: true,
     };
   }
