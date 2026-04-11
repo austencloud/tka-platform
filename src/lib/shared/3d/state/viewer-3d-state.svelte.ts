@@ -168,23 +168,20 @@ export function createViewer3DState(deps: {
   // Camera snap callback — registered by Viewer3DCamera, called by Viewer3DViewPresets
   let _snapToFn: ((position: { x: number; y: number; z: number }, target: { x: number; y: number; z: number }) => void) | null = null;
 
-  // When a hand is assigned to a plane, automatically add that plane's grid
-  // circle to the visible set so the plane actually renders. The has() check
-  // prevents re-writing after the plane is already present, so there's no
-  // infinite loop. Wall is included — the new popover treats visiblePlanes as
-  // authoritative, so every assigned plane must be in the set.
-  // When a hand is assigned to a plane, automatically add that plane's grid
-  // circle to the visible set so the plane actually renders. Driven by
-  // performer 0 for now — full per-performer plane tracking lands in
-  // Task 14's scope work.
+  // When a hand is assigned to a non-wall plane, automatically add that
+  // plane's grid circle to visiblePlanes so the plane actually renders.
+  // Driven by performer 0 for now — full per-performer plane tracking
+  // lands in Task 14's scope work. WALL is deliberately excluded so that
+  // the grid stays hidden by default on first 3D entry; users must
+  // explicitly toggle the grid on to see the wall plane.
   $effect(() => {
     const primary = performerManager.performers[0];
     if (!primary) return;
     const blue = primary.customBluePlane;
     const red = primary.customRedPlane;
 
-    const needsBlue = !visiblePlanes.has(blue);
-    const needsRed = !visiblePlanes.has(red);
+    const needsBlue = blue !== Plane.WALL && !visiblePlanes.has(blue);
+    const needsRed = red !== Plane.WALL && !visiblePlanes.has(red);
 
     if (needsBlue || needsRed) {
       const next = new Set(visiblePlanes);
