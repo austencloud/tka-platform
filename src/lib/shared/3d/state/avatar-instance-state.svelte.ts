@@ -382,6 +382,7 @@ export function createAvatarInstanceState(
     else customRedPlane = plane;
 
     planeMode = derivePlaneModeFromHands(customBluePlane, customRedPlane);
+    try { localStorage.setItem(PLANE_MODE_KEY, planeMode); } catch {}
 
     reconvertWithConfig(getEffectiveModeConfig(planeMode));
   }
@@ -389,6 +390,10 @@ export function createAvatarInstanceState(
   /**
    * Set a specific beat's plane for one hand. Switches to CUSTOM mode
    * and re-applies all per-beat overrides to the step configs.
+   *
+   * Always forces CUSTOM — per-beat overrides are intentional deviations
+   * from the sequence-wide setting, so they can never map to a preset mode
+   * regardless of what the global hand assignment would derive.
    */
   function setBeatHandPlane(beatIndex: number, hand: "blue" | "red", plane: Plane) {
     const current = beatPlaneOverrides.get(beatIndex) ?? {};
