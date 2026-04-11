@@ -3,6 +3,8 @@
 
   Place this once at the app root. It listens to error state and displays
   a modal when errors occur, with options to dismiss or report as a bug.
+
+  Wide two-column layout on desktop, single column on mobile.
 -->
 <script lang="ts">
   import { getCurrentError, dismissError } from "../state/error-state.svelte";
@@ -10,11 +12,71 @@
   import type { IErrorHandler } from "$lib/shared/application/services/contracts/IErrorHandler";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
-  let showDetails = $state(false);
   let userComment = $state("");
   let isReporting = $state(false);
+  let copied = $state(false);
 
   const error = $derived(getCurrentError());
+
+  const additionalData = $derived(
+    error?.context.additionalData &&
+      Object.keys(error.context.additionalData).length > 0
+      ? error.context.additionalData
+      : null,
+  );
+
+  const hasParams = $derived(
+    !!(error?.context.module || error?.context.action || additionalData),
+  );
+
+  function formatParamValue(value: unknown): string {
+    if (value === null || value === undefined) return "—";
+    if (Array.isArray(value)) return value.length ? value.join(", ") : "—";
+    return String(value);
+  }
+
+  function formatParamLabel(key: string): string {
+    return key
+      .replace(/([A-Z])/g, " $1")
+      .replace(/^./, (s) => s.toUpperCase())
+      .trim();
+  }
+
+  function buildCopyText(): string {
+    if (!error) return "";
+    const lines: string[] = [];
+    lines.push(`Error: ${error.message}`);
+    if (error.context.module) lines.push(`Module: ${error.context.module}`);
+    if (error.context.action) lines.push(`Action: ${error.context.action}`);
+    if (additionalData) {
+      lines.push("");
+      lines.push("Parameters:");
+      for (const [key, value] of Object.entries(additionalData)) {
+        const display = formatParamValue(value);
+        if (display !== "—")
+          lines.push(`  ${formatParamLabel(key)}: ${display}`);
+      }
+    }
+    if (error.technicalDetails) {
+      lines.push("");
+      lines.push(`Details: ${error.technicalDetails}`);
+    }
+    if (error.stack) {
+      lines.push("");
+      lines.push(error.stack);
+    }
+    return lines.join("\n");
+  }
+
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(buildCopyText());
+      copied = true;
+      setTimeout(() => (copied = false), 2000);
+    } catch {
+      toast.error("Failed to copy to clipboard");
+    }
+  }
 
   const severityConfig: Record<
     string,
@@ -46,17 +108,11 @@
     },
   };
 
-  function getConfig(severity: string): {
-    icon: string;
-    color: string;
-    bg: string;
-    title: string;
-  } {
+  function getConfig(severity: string) {
     return severityConfig[severity] ?? severityConfig.error!;
   }
 
   function handleDismiss() {
-    showDetails = false;
     userComment = "";
     dismissError();
   }
@@ -66,7 +122,8 @@
 
     isReporting = true;
     try {
-      const errorService = container.items.errorHandler as IErrorHandler | undefined;
+      const errorService = container.items
+        .errorHandler as IErrorHandler | undefined;
       if (!errorService) {
         toast.error("Unable to submit bug report - service unavailable");
         return;
@@ -74,7 +131,7 @@
 
       const feedbackId = await errorService.reportBug(
         error.id,
-        userComment || undefined
+        userComment || undefined,
       );
 
       if (feedbackId) {
@@ -106,6 +163,7 @@
   <div class="error-overlay" onclick={handleDismiss} aria-hidden="true">
     <div
       class="error-modal"
+      class:has-params={hasParams}
       style="--error-color: {config.color}; --error-bg: {config.bg}"
       onclick={(e) => e.stopPropagation()}
       onkeydown={(e) => e.stopPropagation()}
@@ -115,11 +173,19 @@
       aria-describedby="error-message"
       tabindex="-1"
     >
+      <!-- Header spans full width -->
       <div class="error-header">
         <div class="error-icon-wrapper">
           <i class="fas {config.icon} error-icon" aria-hidden="true"></i>
         </div>
         <h2 id="error-title" class="error-title">{config.title}</h2>
+        <button class="copy-button" onclick={handleCopy}>
+          <i
+            class="fas {copied ? 'fa-check' : 'fa-copy'}"
+            aria-hidden="true"
+          ></i>
+          {copied ? "Copied" : "Copy all"}
+        </button>
         <button
           class="close-button"
           onclick={handleDismiss}
@@ -129,42 +195,42 @@
         </button>
       </div>
 
-      <div class="error-content">
-        <p id="error-message" class="error-message">{error.message}</p>
-
-        {#if error.context.module || error.context.action}
-          <div class="error-context">
-            {#if error.context.module}
-              <span class="context-chip">
-                <i class="fas fa-cube" aria-hidden="true"></i>
-                {error.context.module}
-              </span>
-            {/if}
-            {#if error.context.action}
-              <span class="context-chip">
-                <i class="fas fa-bolt" aria-hidden="true"></i>
-                {error.context.action}
-              </span>
-            {/if}
+      <!-- Two-column body on wide screens -->
+      <div class="error-body">
+        <!-- Left column: what was I doing -->
+        {#if hasParams}
+          <div class="error-left">
+            <p class="error-message" id="error-message">{error.message}</p>
+            <div class="params-grid">
+              {#if error.context.module}
+                <span class="param-label">Module</span>
+                <span class="param-value">{error.context.module}</span>
+              {/if}
+              {#if error.context.action}
+                <span class="param-label">Action</span>
+                <span class="param-value">{error.context.action}</span>
+              {/if}
+              {#if additionalData}
+                {#each Object.entries(additionalData) as [key, value]}
+                  {@const display = formatParamValue(value)}
+                  {#if display !== "—"}
+                    <span class="param-label">{formatParamLabel(key)}</span>
+                    <span class="param-value">{display}</span>
+                  {/if}
+                {/each}
+              {/if}
+            </div>
           </div>
         {/if}
 
-        {#if error.technicalDetails || error.stack}
-          <button
-            class="details-toggle"
-            onclick={() => (showDetails = !showDetails)}
-            aria-expanded={showDetails}
-            aria-controls="error-technical-details"
-          >
-            <i
-              class="fas fa-chevron-{showDetails ? 'up' : 'down'}"
-              aria-hidden="true"
-            ></i>
-            {showDetails ? "Hide" : "Show"} technical details
-          </button>
+        <!-- Right column (or only column if no params): error details + report -->
+        <div class="error-right">
+          {#if !hasParams}
+            <p class="error-message" id="error-message">{error.message}</p>
+          {/if}
 
-          {#if showDetails}
-            <div id="error-technical-details" class="technical-details">
+          {#if error.technicalDetails || error.stack}
+            <div class="technical-details">
               {#if error.technicalDetails}
                 <p class="detail-text">{error.technicalDetails}</p>
               {/if}
@@ -173,21 +239,25 @@
               {/if}
             </div>
           {/if}
-        {/if}
 
-        {#if error.reportable}
-          <div class="report-section">
-            <p class="report-prompt">What were you trying to do?</p>
-            <textarea
-              class="comment-input"
-              placeholder="e.g. I was saving a 16-beat sequence and clicked Save..."
-              bind:value={userComment}
-              rows="2"
-            ></textarea>
-          </div>
-        {/if}
+          {#if error.reportable}
+            <div class="report-section">
+              <label class="report-label" for="error-comment"
+                >What were you trying to do?</label
+              >
+              <textarea
+                id="error-comment"
+                class="comment-input"
+                placeholder="e.g. I was generating a 16-beat circular sequence..."
+                bind:value={userComment}
+                rows="3"
+              ></textarea>
+            </div>
+          {/if}
+        </div>
       </div>
 
+      <!-- Footer spans full width -->
       <div class="error-actions">
         <button class="action-button dismiss-button" onclick={handleDismiss}>
           Dismiss
@@ -224,7 +294,7 @@
     background: rgba(0, 0, 0, 0.6);
     backdrop-filter: blur(4px);
     animation: fadeIn var(--duration-normal) ease-out;
-    padding: 20px;
+    padding: 24px;
   }
 
   @keyframes fadeIn {
@@ -243,10 +313,15 @@
     box-shadow:
       0 0 30px rgba(0, 0, 0, 0.5),
       0 0 60px var(--error-bg);
-    max-width: 480px;
     width: 100%;
+    max-width: 480px;
     animation: slideUp var(--duration-normal) ease-out;
     overflow: hidden;
+  }
+
+  /* When there are params to show, go wide on desktop */
+  .error-modal.has-params {
+    max-width: 1100px;
   }
 
   @keyframes slideUp {
@@ -259,6 +334,8 @@
       transform: translateY(0);
     }
   }
+
+  /* ── Header ── */
 
   .error-header {
     display: flex;
@@ -273,15 +350,16 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 36px;
     background: var(--error-bg);
-    border-radius: 10px;
+    border-radius: 8px;
     border: 1px solid var(--error-color);
+    flex-shrink: 0;
   }
 
   .error-icon {
-    font-size: var(--font-size-xl);
+    font-size: var(--font-size-lg);
     color: var(--error-color);
   }
 
@@ -293,127 +371,156 @@
     color: var(--error-color);
   }
 
+  .copy-button {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: transparent;
+    border: 1px solid var(--theme-stroke);
+    border-radius: 6px;
+    font-size: var(--font-size-compact);
+    color: var(--theme-text-dim);
+    cursor: pointer;
+    transition: all var(--duration-fast);
+    flex-shrink: 0;
+  }
+
+  .copy-button:hover {
+    background: var(--theme-card-hover-bg);
+    color: var(--theme-text);
+  }
+
   .close-button {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: var(--min-touch-target); /* WCAG AA touch target */
+    width: var(--min-touch-target);
     height: var(--min-touch-target);
     background: transparent;
     border: none;
     border-radius: 8px;
-    color: var(--theme-text-dim, var(--theme-text-dim));
+    color: var(--theme-text-dim);
     cursor: pointer;
     transition: all var(--duration-fast);
+    flex-shrink: 0;
   }
 
   .close-button:hover {
     background: var(--theme-card-hover-bg);
-    color: var(--theme-text, var(--theme-text));
-  }
-
-  .error-content {
-    padding: 20px;
-  }
-
-  .error-message {
-    margin: 0 0 16px;
-    font-size: var(--font-size-sm);
-    line-height: 1.5;
-    color: var(--theme-text, var(--theme-text));
-  }
-
-  .error-context {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 16px;
-  }
-
-  .context-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 4px 10px;
-    background: var(--theme-card-bg, var(--theme-card-bg));
-    border: 1px solid var(--theme-stroke, var(--theme-stroke));
-    border-radius: 6px;
-    font-size: var(--font-size-compact);
-    color: var(--theme-text-dim, var(--theme-text-dim));
-  }
-
-  .context-chip i {
-    font-size: var(--font-size-compact);
-    opacity: 0.7;
-  }
-
-  .details-toggle {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 0;
-    background: transparent;
-    border: none;
-    color: var(--theme-text-dim, var(--theme-text-dim));
-    font-size: var(--font-size-compact);
-    cursor: pointer;
-    transition: color var(--duration-fast);
-  }
-
-  .details-toggle:hover {
     color: var(--theme-text);
   }
 
+  /* ── Body: two-column on wide, stacked on narrow ── */
+
+  .error-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .has-params .error-body {
+    flex-direction: row;
+  }
+
+  .error-left {
+    flex: 0 0 38%;
+    padding: 24px;
+    border-right: 1px solid var(--theme-stroke);
+  }
+
+  .error-right {
+    flex: 1;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* ── Error message ── */
+
+  .error-message {
+    margin: 0 0 16px;
+    font-size: var(--font-size-base, 15px);
+    font-weight: 500;
+    line-height: 1.4;
+    color: var(--theme-text);
+  }
+
+  /* ── Params grid ── */
+
+  .params-grid {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 6px 16px;
+    font-size: var(--font-size-sm);
+    align-items: baseline;
+  }
+
+  .param-label {
+    color: var(--theme-text-dim);
+    white-space: nowrap;
+  }
+
+  .param-value {
+    color: var(--theme-text);
+    font-weight: 500;
+    word-break: break-word;
+  }
+
+  /* ── Technical details (always visible on desktop) ── */
+
   .technical-details {
-    margin-top: 12px;
-    padding: 12px;
+    padding: 14px;
     background: rgba(0, 0, 0, 0.3);
-    border-radius: 8px;
+    border-radius: 10px;
     border: 1px solid var(--theme-stroke);
   }
 
   .detail-text {
     margin: 0 0 8px;
-    font-size: var(--font-size-compact);
-    color: var(--theme-text, var(--theme-text-dim));
+    font-size: var(--font-size-sm);
+    color: var(--theme-text);
+    font-weight: 500;
   }
 
   .stack-trace {
     margin: 0;
-    padding: 8px;
+    padding: 10px;
     background: rgba(0, 0, 0, 0.3);
-    border-radius: 4px;
+    border-radius: 6px;
     font-family: "Fira Code", "Consolas", monospace;
     font-size: var(--font-size-compact);
     line-height: 1.4;
-    color: var(--theme-text-dim, var(--theme-text-dim));
+    color: var(--theme-text-dim);
     overflow-x: auto;
-    max-height: 150px;
+    max-height: 300px;
     white-space: pre-wrap;
     word-break: break-all;
   }
 
+  /* ── Report section ── */
+
   .report-section {
-    margin-top: 16px;
-    padding-top: 16px;
-    border-top: 1px solid var(--theme-stroke);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
   }
 
-  .report-prompt {
-    margin: 0 0 8px;
+  .report-label {
     font-size: var(--font-size-compact);
-    color: var(--theme-text-dim, var(--theme-text-dim));
+    color: var(--theme-text-dim);
   }
 
   .comment-input {
     width: 100%;
     padding: 10px 12px;
     background: rgba(0, 0, 0, 0.3);
-    border: 1px solid var(--theme-stroke, var(--theme-stroke));
+    border: 1px solid var(--theme-stroke);
     border-radius: 8px;
     font-family: inherit;
     font-size: var(--font-size-sm);
-    color: var(--theme-text, var(--theme-text));
+    color: var(--theme-text);
     resize: vertical;
     min-height: 60px;
   }
@@ -426,6 +533,8 @@
     outline: none;
     border-color: var(--error-color);
   }
+
+  /* ── Footer ── */
 
   .error-actions {
     display: flex;
@@ -457,7 +566,7 @@
 
   .dismiss-button:hover {
     background: var(--theme-card-hover-bg);
-    color: var(--theme-text, white);
+    color: white;
   }
 
   .report-button {
@@ -474,25 +583,41 @@
     cursor: not-allowed;
   }
 
-  /* Mobile adjustments */
-  @media (max-width: 480px) {
+  /* ── Mobile: stack columns, bottom sheet ── */
+
+  @media (max-width: 700px) {
     .error-overlay {
       padding: 12px;
       align-items: flex-end;
     }
 
-    .error-modal {
+    .error-modal,
+    .error-modal.has-params {
+      max-width: 100%;
       border-radius: 16px 16px 0 0;
       max-height: 90vh;
       overflow-y: auto;
     }
 
-    .error-header {
-      padding: 14px 16px;
+    .has-params .error-body {
+      flex-direction: column;
     }
 
-    .error-content {
+    .error-left {
+      width: 100%;
+      border-right: none;
+      border-bottom: 1px solid var(--theme-stroke);
+      max-height: none;
       padding: 16px;
+    }
+
+    .error-right {
+      max-height: none;
+      padding: 16px;
+    }
+
+    .error-header {
+      padding: 14px 16px;
     }
 
     .error-actions {
