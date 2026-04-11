@@ -52,18 +52,25 @@
   .readout {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    padding: 16px;
+    gap: 10px;
+    padding: 12px 14px;
     background: var(--theme-card-bg);
     border: 1px solid var(--theme-stroke);
     border-radius: 8px;
+    height: 100%;
+    box-sizing: border-box;
   }
   .severity-badge {
-    padding: 8px 16px;
-    border-radius: 6px;
+    /*
+      Opt out of flex-column's default stretch so the pill sizes to its
+      content instead of spanning the full panel width. Also tightened
+      padding + font so it sits in proportion with the neighboring panels.
+    */
+    align-self: flex-start;
+    padding: 5px 14px;
+    border-radius: 999px;
     font-weight: 700;
-    font-size: 16px;
-    text-align: center;
+    font-size: 13px;
     color: white;
     letter-spacing: 0.5px;
   }
@@ -78,8 +85,8 @@
   .zones li {
     display: flex;
     justify-content: space-between;
-    font-size: 14px;
-    padding: 6px 8px;
+    font-size: 12px;
+    padding: 4px 8px;
     background: var(--theme-panel-bg);
     border-radius: 4px;
   }
@@ -92,8 +99,7 @@
   }
   .empty {
     margin: 0;
-    font-size: 14px;
-    opacity: 0.7;
-    text-align: center;
+    font-size: 12px;
+    opacity: 0.6;
   }
 </style>

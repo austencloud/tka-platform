@@ -18,6 +18,15 @@
 import type { IPoseEnumerator } from "../services/contracts/IPoseEnumerator";
 import type { IPoseLabelRepository } from "../services/contracts/IPoseLabelRepository";
 import type {
+  IStanceOptimizer,
+  OptimizerBounds,
+  OptimizerInput,
+  OptimizerResult,
+} from "../services/contracts/IStanceOptimizer";
+import type { SimPropTarget, SimResult } from "../services/contracts/IStanceSimulator";
+import type { ICandidateGenerator } from "../services/contracts/ICandidateGenerator";
+import { REACH_FEASIBILITY_TOLERANCE } from "../services/implementations/StanceSimulator";
+import type {
   PoseDefinition,
   PoseLabel,
   LabelStatus,
@@ -25,11 +34,17 @@ import type {
   CollisionSnapshot,
   StancePose,
   DiamondPosition,
+  CandidateSet,
 } from "../domain/types";
 import { Plane } from "$lib/shared/3d/domain/enums/Plane";
 import { PlaneCoordinateMapper } from "$lib/shared/3d/services/implementations/PlaneCoordinateMapper";
+import { OrientationMapper } from "$lib/shared/3d/services/implementations/OrientationMapper";
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { LOCATION_ANGLES } from "$lib/features/compose/shared/domain/math-constants";
 import { STAGE } from "$lib/shared/3d/scale/scale-constants";
+import { STANCE_BOUNDS } from "../domain/types";
+import { Vector3, Quaternion, Euler } from "three";
 
 type PlaneFilter = Plane | "all";
 type OrientationFilter = HandOrientation | "all";
@@ -67,21 +82,6 @@ const CENTER_STANCE: StancePose = {
 // Reachability check
 // ──────────────────────────────────────────────────────────────────────
 
-/**
- * Approximate shoulder half-width in scene units (meters).
- * Mixamo base avatar has shoulder width ≈ 44 cm for a 188 cm model,
- * so half-width ≈ 22 cm. Close enough for a conservative reach check.
- */
-const SHOULDER_HALF_WIDTH = 0.22;
-
-/**
- * Tolerance added to the neutral-stance distance before we flag a stance
- * as unreachable. Accounts for the small extra reach contributed by
- * torso twist and anatomical wiggle that the strict math can't model
- * without running full IK. 5 cm is generous without being a lie.
- */
-const REACH_TOLERANCE_M = 0.05;
-
 const POSITION_TO_GRID: Record<DiamondPosition, GridLocation> = {
   N: GridLocation.NORTH,
   E: GridLocation.EAST,
@@ -90,61 +90,98 @@ const POSITION_TO_GRID: Record<DiamondPosition, GridLocation> = {
 };
 
 const reachMapper = new PlaneCoordinateMapper();
+const reachOrientationMapper = new OrientationMapper();
 
-interface ShoulderPos {
-  x: number;
-  y: number;
-  z: number;
-}
+// Half a standard staff length in scene units — used to place the tip
+// points of the prop when building optimizer targets. 43 cm each side
+// of the grip for an 86 cm staff, which matches Austen's default props.
+const STAFF_HALF_LENGTH = 0.43;
+const STAFF_RADIUS = 0.012;
 
-/** Rest shoulder positions in rig-local space (shoulders at y=0). */
-const REST_LEFT_SHOULDER: ShoulderPos = { x: SHOULDER_HALF_WIDTH, y: 0, z: 0 };
-const REST_RIGHT_SHOULDER: ShoulderPos = { x: -SHOULDER_HALF_WIDTH, y: 0, z: 0 };
-
-function rotateAndTranslateShoulder(
-  rest: ShoulderPos,
-  yawRad: number,
-  footOffsetX: number,
-  footOffsetZ: number
-): ShoulderPos {
-  const cos = Math.cos(yawRad);
-  const sin = Math.sin(yawRad);
-  return {
-    x: rest.x * cos + rest.z * sin + footOffsetX,
-    y: rest.y,
-    z: -rest.x * sin + rest.z * cos + footOffsetZ,
-  };
-}
-
-interface Vec3Lite {
-  x: number;
-  y: number;
-  z: number;
-}
-
-function distance3(a: Vec3Lite, b: Vec3Lite): number {
-  const dx = a.x - b.x;
-  const dy = a.y - b.y;
-  const dz = a.z - b.z;
-  return Math.sqrt(dx * dx + dy * dy + dz * dz);
-}
+// Base horizontal quaternion — same one prop3d-transforms uses to lay a
+// +Y cylinder along the horizontal axis before worldRotation is applied.
+// We need this so the simulator's prop tip positions match where the live
+// rig actually renders the staff.
+const STAFF_HORIZONTAL_QUAT = new Quaternion().setFromEuler(
+  new Euler(0, 0, Math.PI / 2)
+);
 
 /**
- * Compute the prop's world position for a given (plane, cardinal) pair.
- * The plane mapper returns grid-local coordinates; we add the standard
- * grid-forward offset (0.3 m) to get world coordinates relative to the
- * performer's default rig root at world origin. Blue and red props are
- * at the same y in rig space (y=0 = shoulder height).
+ * Convert one hand of a PoseDefinition into a SimPropTarget the optimizer
+ * can consume. Matches PoseViewport's buildPropState pipeline so the
+ * simulator and the live 3D rig see the same grip positions and staff
+ * orientations.
  */
-function propWorldPos(plane: Plane, position: DiamondPosition): Vec3Lite {
+function handToPropTarget(
+  plane: Plane,
+  position: DiamondPosition,
+  orientation: HandOrientation
+): SimPropTarget {
   const loc = POSITION_TO_GRID[position];
+  const centerPathAngle = LOCATION_ANGLES[loc];
+  const staffAngle = reachOrientationMapper.mapOrientationToAngle(
+    orientation === "in" ? Orientation.IN : Orientation.OUT,
+    centerPathAngle
+  );
   const local = reachMapper.gridLocationToPosition3D(plane, loc);
+  const worldRotation = reachMapper.calculatePropRotation(plane, staffAngle);
+
+  // Compute the staff axis direction by applying the horizontal quat +
+  // world rotation to +Y, matching Staff3D.computePropRotation's pipeline.
+  const axis = new Vector3(0, 1, 0)
+    .applyQuaternion(STAFF_HORIZONTAL_QUAT)
+    .applyQuaternion(worldRotation)
+    .multiplyScalar(STAFF_HALF_LENGTH);
+
+  const grip = new Vector3(
+    local.x,
+    local.y,
+    local.z + STAGE.AVATAR_GRID_OFFSET
+  );
   return {
-    x: local.x,
-    y: local.y,
-    z: local.z + STAGE.AVATAR_GRID_OFFSET,
+    gripWorld: grip,
+    tipAWorld: grip.clone().add(axis),
+    tipBWorld: grip.clone().sub(axis),
+    radius: STAFF_RADIUS,
   };
 }
+
+/** Build the optimizer input for a full pose (both hands). */
+function poseToOptimizerInput(pose: PoseDefinition): OptimizerInput {
+  return {
+    blue: handToPropTarget(
+      pose.blueHand.plane,
+      pose.blueHand.position,
+      pose.blueHand.orientation
+    ),
+    red: handToPropTarget(
+      pose.redHand.plane,
+      pose.redHand.position,
+      pose.redHand.orientation
+    ),
+  };
+}
+
+/** Bounds passed to the optimizer — mirrors the slider ranges exactly so
+ *  the optimizer can't propose a stance the reviewer couldn't set manually. */
+const OPTIMIZER_BOUNDS: OptimizerBounds = {
+  footOffsetX: {
+    min: STANCE_BOUNDS.footOffset.min,
+    max: STANCE_BOUNDS.footOffset.max,
+  },
+  footOffsetZ: {
+    min: STANCE_BOUNDS.footOffset.min,
+    max: STANCE_BOUNDS.footOffset.max,
+  },
+  rootYawRad: {
+    min: (STANCE_BOUNDS.rootYawDeg.min * Math.PI) / 180,
+    max: (STANCE_BOUNDS.rootYawDeg.max * Math.PI) / 180,
+  },
+  spinePitchRad: {
+    min: (STANCE_BOUNDS.spinePitchDeg.min * Math.PI) / 180,
+    max: (STANCE_BOUNDS.spinePitchDeg.max * Math.PI) / 180,
+  },
+};
 
 export interface ReachabilityInfo {
   reachable: boolean;
@@ -163,66 +200,60 @@ export interface ReachabilityInfo {
 }
 
 /**
- * Per-pose reach budget is the neutral-stance distance + tolerance. This
- * auto-calibrates against the known-reachable default stance, so we
- * don't have to hard-code an arm length that depends on avatar height.
+ * Baseline ReachabilityInfo used when there is no pose selected or no
+ * simulator wired up. Treated as trivially reachable so the UI doesn't
+ * gate user actions on a check we can't actually run.
  */
-function computeReachability(
-  pose: PoseDefinition | null,
-  footOffsetX: number,
-  footOffsetZ: number,
-  rootYawRad: number
+const UNKNOWN_REACHABILITY: ReachabilityInfo = {
+  reachable: true,
+  blueDistance: 0,
+  redDistance: 0,
+  blueBudget: 0,
+  redBudget: 0,
+  blueExcess: 0,
+  redExcess: 0,
+};
+
+/**
+ * Map a pure-JS simulator result into the UI-facing ReachabilityInfo shape.
+ *
+ * Budget = max arm reach (upper + forearm), pulled from the simulator's
+ * anthropometric geometry. Excess = shortfall reported by the IK — already
+ * tolerance-adjusted (anything within REACH_FEASIBILITY_TOLERANCE is 0).
+ * Distance = budget + excess when the hand can't quite reach, or
+ * stretch*budget when it can (stretch is the used fraction of the reach
+ * envelope, between 0 and 1).
+ *
+ * The legacy neutral-distance "budget" is gone — it produced false
+ * negatives the moment a rotated stance moved a shoulder AWAY from its
+ * target, which happens all the time for cross-plane poses where the
+ * performer has to step toward one prop and away from the other.
+ */
+function reachabilityFromSimResult(
+  simResult: SimResult,
+  armLengthM: number
 ): ReachabilityInfo {
-  if (!pose) {
-    return {
-      reachable: true,
-      blueDistance: 0,
-      redDistance: 0,
-      blueBudget: 0,
-      redBudget: 0,
-      blueExcess: 0,
-      redExcess: 0,
-    };
-  }
-
-  // Each hand can be on its own plane in the full cross-plane catalog.
-  // Blue prop → performer's left hand → LeftShoulder (+X in rig-local)
-  // Red prop  → performer's right hand → RightShoulder (-X in rig-local)
-  const blueWorld = propWorldPos(pose.blueHand.plane, pose.blueHand.position);
-  const redWorld = propWorldPos(pose.redHand.plane, pose.redHand.position);
-
-  // Reach budget: distance at neutral stance + tolerance.
-  // At neutral, the grid is calibrated to be reachable by design, so the
-  // neutral distance is an upper bound on what IK was designed to solve.
-  const blueBudget = distance3(REST_LEFT_SHOULDER, blueWorld) + REACH_TOLERANCE_M;
-  const redBudget = distance3(REST_RIGHT_SHOULDER, redWorld) + REACH_TOLERANCE_M;
-
-  // Current shoulder positions after stance transform
-  const currentLeft = rotateAndTranslateShoulder(
-    REST_LEFT_SHOULDER,
-    rootYawRad,
-    footOffsetX,
-    footOffsetZ
-  );
-  const currentRight = rotateAndTranslateShoulder(
-    REST_RIGHT_SHOULDER,
-    rootYawRad,
-    footOffsetX,
-    footOffsetZ
-  );
-
-  const blueDistance = distance3(currentLeft, blueWorld);
-  const redDistance = distance3(currentRight, redWorld);
-
-  const blueExcess = Math.max(0, blueDistance - blueBudget);
-  const redExcess = Math.max(0, redDistance - redBudget);
-
+  // Raw shortfall (what the UI displays as "X cm short"). Anything
+  // within the simulator's REACH_FEASIBILITY_TOLERANCE (3 cm) is still
+  // considered reachable — see the tolerance rationale in StanceSimulator.
+  const blueExcess = simResult.reachShortfall.blue;
+  const redExcess = simResult.reachShortfall.red;
+  const blueDistance =
+    blueExcess > 0
+      ? armLengthM + blueExcess
+      : simResult.reachStretch.blue * armLengthM;
+  const redDistance =
+    redExcess > 0
+      ? armLengthM + redExcess
+      : simResult.reachStretch.red * armLengthM;
   return {
-    reachable: blueExcess === 0 && redExcess === 0,
+    reachable:
+      blueExcess <= REACH_FEASIBILITY_TOLERANCE &&
+      redExcess <= REACH_FEASIBILITY_TOLERANCE,
     blueDistance,
     redDistance,
-    blueBudget,
-    redBudget,
+    blueBudget: armLengthM,
+    redBudget: armLengthM,
     blueExcess,
     redExcess,
   };
@@ -230,12 +261,48 @@ function computeReachability(
 
 export async function createCollisionLabState(
   poseEnumerator: IPoseEnumerator,
-  labelRepo: IPoseLabelRepository
+  labelRepo: IPoseLabelRepository,
+  optimizer: IStanceOptimizer | null = null,
+  candidateGenerator: ICandidateGenerator | null = null
 ) {
   const allPoses: PoseDefinition[] = poseEnumerator.enumerateDiamondInOut();
   const initialLabels = await labelRepo.loadAll();
 
   let labels = $state<Record<string, PoseLabel>>(initialLabels);
+
+  // Last optimizer run for the current pose — exposed so the UI can show
+  // reach shortfall, collision depths, and convergence metrics without
+  // re-running the solver.
+  let lastOptimizerResult = $state<OptimizerResult | null>(null);
+
+  // Whether to auto-seed stance from the optimizer when stepping onto a
+  // new pose that doesn't already have a saved label. Default true when
+  // an optimizer is provided — reviewers can turn it off to label from
+  // scratch.
+  let autoSeedEnabled = $state(optimizer !== null);
+
+  // Cached candidate sets, keyed by pose id. When the reviewer steps onto
+  // a pose the first time we generate six diverse candidates and cache
+  // them here so stepping away and back doesn't re-run six optimizations.
+  // Invalidated when the reviewer clicks "Different options" or "Refine".
+  let candidateCache = $state<Record<string, CandidateSet>>({});
+
+  // Cached optimizer results from a full-catalog scan. Populated by
+  // `scanAllForFeasibility()`. Lets the UI filter/navigate by feasibility
+  // without paying to re-run the solver on each candidate.
+  let scanCache = $state<Record<string, OptimizerResult>>({});
+  /** Progress tracking for an in-flight scan (for the UI progress bar). */
+  let scanProgress = $state<{ done: number; total: number; running: boolean }>({
+    done: 0,
+    total: 0,
+    running: false,
+  });
+  /**
+   * "infeasible only" filter: after a scan, only show poses whose cached
+   * optimizer result was infeasible. Useful for systematically reviewing
+   * the poses the AI couldn't solve on its own.
+   */
+  let infeasibleOnly = $state(false);
 
   // Filters — each hand has its own plane filter since planes are per-hand
   let bluePlaneFilter = $state<PlaneFilter>("all");
@@ -270,7 +337,8 @@ export async function createCollisionLabState(
         (blueOrientationFilter === "all" || p.blueHand.orientation === blueOrientationFilter) &&
         (redOrientationFilter === "all" || p.redHand.orientation === redOrientationFilter) &&
         (!crossPlaneOnly || p.blueHand.plane !== p.redHand.plane) &&
-        matchesStatusFilter(labels[p.id], statusFilter)
+        matchesStatusFilter(labels[p.id], statusFilter) &&
+        (!infeasibleOnly || scanCache[p.id]?.feasible === false)
     )
   );
 
@@ -289,9 +357,24 @@ export async function createCollisionLabState(
     spinePitchRad,
   });
 
-  const currentReachability = $derived<ReachabilityInfo>(
-    computeReachability(currentPose, footOffsetX, footOffsetZ, rootYawRad)
-  );
+  // Reachability is answered by the pure-JS simulator, not a hand-rolled
+  // shoulder-to-target measurement. The simulator runs a proper analytic
+  // IK solve using the avatar's actual anthropometric arm length, so it
+  // agrees with what the live rig can reach instead of a false "neutral
+  // stance distance" budget that fails the moment the performer rotates.
+  const currentReachability = $derived.by<ReachabilityInfo>(() => {
+    if (!currentPose || !optimizer) return UNKNOWN_REACHABILITY;
+    const simInput = poseToOptimizerInput(currentPose);
+    const simResult = optimizer.simulator.evaluate(
+      currentStance,
+      simInput.blue,
+      simInput.red
+    );
+    const armLengthM =
+      optimizer.simulator.restPose.upperArmLength +
+      optimizer.simulator.restPose.forearmLength;
+    return reachabilityFromSimResult(simResult, armLengthM);
+  });
 
   const progress = $derived({
     total: allPoses.length,
@@ -303,29 +386,123 @@ export async function createCollisionLabState(
   });
 
   /**
-   * When the cursor lands on a new pose, seed the stance sliders from
-   * whatever was previously saved for that pose (if anything). New poses
-   * start from the center stance. This lets the reviewer see the last
-   * known good stance for a pose when revisiting it.
+   * Apply a StancePose to the live slider state.
    */
-  function seedStanceFromLabel(pose: PoseDefinition | null) {
-    if (!pose) {
-      Object.assign(
-        { footOffsetX, footOffsetZ, rootYawRad, spinePitchRad },
-        CENTER_STANCE
-      );
-      footOffsetX = CENTER_STANCE.footOffsetX;
-      footOffsetZ = CENTER_STANCE.footOffsetZ;
-      rootYawRad = CENTER_STANCE.rootYawRad;
-      spinePitchRad = CENTER_STANCE.spinePitchRad;
-      return;
-    }
-    const prior = labels[pose.id];
-    const stance = prior?.stance ?? CENTER_STANCE;
+  function applyStance(stance: StancePose) {
     footOffsetX = stance.footOffsetX;
     footOffsetZ = stance.footOffsetZ;
     rootYawRad = stance.rootYawRad;
     spinePitchRad = stance.spinePitchRad;
+  }
+
+  /**
+   * Run the optimizer on the given pose starting from the center stance.
+   * Returns the result without mutating anything — callers decide whether
+   * to apply it.
+   */
+  function runOptimizer(pose: PoseDefinition): OptimizerResult | null {
+    if (!optimizer) return null;
+    const input = poseToOptimizerInput(pose);
+    return optimizer.optimize(input, CENTER_STANCE, OPTIMIZER_BOUNDS);
+  }
+
+  /**
+   * Ensure a CandidateSet exists for the given pose, generating one if
+   * not yet cached. Returns null when the candidate generator isn't
+   * wired up (tests and legacy callers).
+   *
+   * The cached set survives stepping away and back to the same pose.
+   * It is invalidated when the reviewer explicitly asks for "Different
+   * options" or "Refine" via the action methods below.
+   */
+  function ensureCandidatesFor(pose: PoseDefinition): CandidateSet | null {
+    if (!candidateGenerator) return null;
+    const cached = candidateCache[pose.id];
+    if (cached) return cached;
+    const input = poseToOptimizerInput(pose);
+    const prior = labels[pose.id]?.stance;
+    const set = candidateGenerator.generateDiverse(
+      pose,
+      input,
+      OPTIMIZER_BOUNDS,
+      prior
+    );
+    candidateCache = { ...candidateCache, [pose.id]: set };
+    return set;
+  }
+
+  /**
+   * When the cursor lands on a pose, figure out what to put on the live
+   * stance sliders:
+   *   1. If a prior label exists and we don't have candidates yet,
+   *      build a candidate set with the prior as candidate 0 and five
+   *      fresh alternatives. Apply the prior stance to the live sliders
+   *      as the starting preview — but leave pickedIndex null so the
+   *      reviewer can still choose something different.
+   *   2. If the candidate generator isn't available (tests), fall back
+   *      to the old behavior: apply the prior's stance if it exists,
+   *      otherwise run the optimizer once, otherwise center stance.
+   *   3. If we already have a cached picked candidate, apply that.
+   */
+  function seedStanceFromLabel(pose: PoseDefinition | null) {
+    if (!pose) {
+      applyStance(CENTER_STANCE);
+      lastOptimizerResult = null;
+      return;
+    }
+
+    // New flow: generate (or reuse) candidates for this pose.
+    const set = ensureCandidatesFor(pose);
+    if (set) {
+      if (set.pickedIndex !== null && set.candidates[set.pickedIndex]) {
+        applyStance(set.candidates[set.pickedIndex]!.stance);
+      } else if (set.candidates[0]) {
+        // No explicit pick yet — preview the first candidate so the
+        // viewer shows a meaningful pose while the reviewer decides.
+        applyStance(set.candidates[0].stance);
+      } else {
+        applyStance(CENTER_STANCE);
+      }
+      lastOptimizerResult = null;
+      return;
+    }
+
+    // Legacy fallback: no candidate generator wired up.
+    const prior = labels[pose.id];
+    if (prior) {
+      applyStance(prior.stance);
+      lastOptimizerResult = null;
+      return;
+    }
+    if (autoSeedEnabled && optimizer) {
+      const result = runOptimizer(pose);
+      if (result) {
+        lastOptimizerResult = result;
+        applyStance(result.stance);
+        return;
+      }
+    }
+    applyStance(CENTER_STANCE);
+    lastOptimizerResult = null;
+  }
+
+  // If we start with a candidate generator (or fallback optimizer) and
+  // the first pose is unlabeled, seed it immediately so the reviewer
+  // sees meaningful content the moment they open the lab.
+  if (allPoses.length > 0) {
+    const first = allPoses[0]!;
+    if (candidateGenerator) {
+      const set = ensureCandidatesFor(first);
+      if (set && set.candidates[0]) {
+        applyStance(set.candidates[0].stance);
+      }
+    } else if (optimizer && autoSeedEnabled && !initialLabels[first.id]) {
+      const result = runOptimizer(first);
+      if (result) {
+        lastOptimizerResult = result;
+        applyStance(result.stance);
+      }
+    }
   }
 
   return {
@@ -350,6 +527,51 @@ export async function createCollisionLabState(
     get footOffsetZ() { return footOffsetZ; },
     get rootYawRad() { return rootYawRad; },
     get spinePitchRad() { return spinePitchRad; },
+    get lastOptimizerResult() { return lastOptimizerResult; },
+    get autoSeedEnabled() { return autoSeedEnabled; },
+    get hasOptimizer() { return optimizer !== null; },
+    get hasCandidateGenerator() { return candidateGenerator !== null; },
+    /**
+     * The candidate set for the current pose, or null if no candidate
+     * generator is wired up. Lazily generated on first read via the
+     * cache — stepping away and back returns the same set.
+     */
+    get currentCandidateSet(): CandidateSet | null {
+      if (!currentPose) return null;
+      return candidateCache[currentPose.id] ?? null;
+    },
+    get scanCache() { return scanCache; },
+    get scanProgress() { return scanProgress; },
+    get infeasibleOnly() { return infeasibleOnly; },
+    /**
+     * Count of infeasible poses discovered by the last scan. Used by
+     * the UI to show the reviewer how many problem cases remain.
+     */
+    get infeasibleCount() {
+      let n = 0;
+      for (const id in scanCache) {
+        if (scanCache[id] && !scanCache[id]!.feasible) n++;
+      }
+      return n;
+    },
+    /**
+     * Look up the cached scan result for the current pose, if any.
+     * Returns null if the pose hasn't been scanned, or if the result
+     * was computed but the pose is no longer the current one.
+     */
+    get currentScanResult(): OptimizerResult | null {
+      if (!currentPose) return null;
+      return scanCache[currentPose.id] ?? null;
+    },
+    /**
+     * The current pose's cursor index within the ORIGINAL allPoses array,
+     * independent of filters. Lets the UI display "pose 15 / 576" so the
+     * reviewer can reference specific poses in conversation.
+     */
+    get currentPoseGlobalIndex(): number {
+      if (!currentPose) return -1;
+      return allPoses.findIndex((p) => p.id === currentPose.id);
+    },
 
     // Cursor
     stepForward() {
@@ -414,18 +636,33 @@ export async function createCollisionLabState(
     labelCurrent(status: LabelStatus) {
       const pose = currentPose;
       if (!pose) return;
-      // "clear" and "needs-adjustment" both make claims about the stance
-      // (that it works, or that it ALMOST works). If the hand can't even
-      // reach the prop, neither claim is meaningful — silently refuse so
-      // we don't corrupt the dataset with physically impossible labels.
+      // "clear" makes a positive claim about the stance ("this works — no
+      // collisions, fully reaches both grips"). We refuse to record that
+      // claim if the hand literally can't reach, because it'd corrupt the
+      // dataset with a physically impossible label.
+      //
+      // "needs-adjustment" means exactly the opposite — it's a reviewer
+      // bookmark for "come back to this one, I'm not settled yet". It's the
+      // CORRECT label for a reach that's close but not quite working, so we
+      // DON'T gate it on reachability.
+      //
       // "skip" and "unreachable" are statements about the pose itself,
       // not the current stance, so they're always allowed.
-      if (
-        (status === "clear" || status === "needs-adjustment") &&
-        !currentReachability.reachable
-      ) {
+      if (status === "clear" && !currentReachability.reachable) {
         return;
       }
+      // Capture the candidate context at time of labeling. If the
+      // reviewer dragged sliders after picking, pickedIndex goes to
+      // null so we can see later that the saved stance is a manual
+      // adjustment. candidateStances holds the full history of what
+      // the reviewer was shown for this pose.
+      const set = candidateCache[pose.id];
+      const pickedIndex = set
+        ? set.manuallyAdjusted
+          ? null
+          : set.pickedIndex
+        : undefined;
+      const candidateStances = set ? set.history : undefined;
       const next: Record<string, PoseLabel> = {
         ...labels,
         [pose.id]: {
@@ -437,6 +674,8 @@ export async function createCollisionLabState(
             rootYawRad,
             spinePitchRad,
           },
+          candidateStances,
+          pickedIndex,
           armRouting: "auto",
           collisionSnapshot: currentCollision,
           labeledAt: Date.now(),
@@ -444,12 +683,15 @@ export async function createCollisionLabState(
       };
       labels = next;
       labelRepo.save(next);
-      // Auto-advance on terminal positive/negative statuses only
-      if (status === "clear" || status === "unreachable") {
-        if (cursorIndex < filteredPoses.length - 1) {
-          cursorIndex += 1;
-          seedStanceFromLabel(filteredPoses[cursorIndex] ?? null);
-        }
+      // Auto-advance on every label. The reviewer has just made a
+      // decision — clear / needs-adjustment / unreachable / skip —
+      // and wants to move on to the next pose. "Needs adjustment"
+      // is a bookmark status, not a "stay here" status; the reviewer
+      // can scrub back to it later via the pose stepper. Auto-advance
+      // keeps the labeling flow moving at roughly one pose per click.
+      if (cursorIndex < filteredPoses.length - 1) {
+        cursorIndex += 1;
+        seedStanceFromLabel(filteredPoses[cursorIndex] ?? null);
       }
     },
 
@@ -457,7 +699,325 @@ export async function createCollisionLabState(
     exportLabels() {
       labelRepo.exportJson(labels);
     },
+
+    // Optimizer controls
+    setAutoSeedEnabled(v: boolean) {
+      autoSeedEnabled = v;
+    },
+    /**
+     * Manually re-run the optimizer on the current pose and apply the
+     * result to the stance sliders. Useful when the reviewer has moved
+     * sliders away from the AI seed and wants to get back to it, or
+     * after adjusting some higher-level setting that affects the loss.
+     */
+    reoptimizeCurrent() {
+      const pose = currentPose;
+      if (!pose) return;
+      const result = runOptimizer(pose);
+      if (result) {
+        lastOptimizerResult = result;
+        applyStance(result.stance);
+      }
+    },
+
+    // ----------------------------------------------------------------
+    // Multiple-choice candidate controls
+    // ----------------------------------------------------------------
+
+    /**
+     * Pick a candidate from the current candidate set. Applies its
+     * stance to the live sliders and records the choice so the UI can
+     * highlight which card is active. Clears `manuallyAdjusted` — the
+     * reviewer has explicitly agreed with this stance.
+     */
+    pickCandidate(index: number) {
+      const pose = currentPose;
+      if (!pose) return;
+      const set = candidateCache[pose.id];
+      if (!set) return;
+      if (index < 0 || index >= set.candidates.length) return;
+      const candidate = set.candidates[index]!;
+      applyStance(candidate.stance);
+      candidateCache = {
+        ...candidateCache,
+        [pose.id]: { ...set, pickedIndex: index, manuallyAdjusted: false },
+      };
+    },
+
+    /**
+     * Throw out the current candidate set and generate six fresh ones
+     * using diverse seeds. Used when the reviewer rejects all current
+     * options via the "Different options" button.
+     *
+     * The rejected candidates are concatenated into `history` so the
+     * full preference trail is preserved if the reviewer eventually
+     * gives up on the pose.
+     */
+    regenerateDiverse() {
+      const pose = currentPose;
+      if (!pose || !candidateGenerator) return;
+      const existing = candidateCache[pose.id];
+      const input = poseToOptimizerInput(pose);
+      const prior = labels[pose.id]?.stance;
+      const fresh = candidateGenerator.generateDiverse(
+        pose,
+        input,
+        OPTIMIZER_BOUNDS,
+        prior
+      );
+      // Append existing history to the new set so we keep a continuous
+      // record of everything the reviewer has seen for this pose.
+      if (existing) {
+        fresh.history = [...existing.history, ...fresh.history];
+      }
+      candidateCache = { ...candidateCache, [pose.id]: fresh };
+      if (fresh.candidates[0]) applyStance(fresh.candidates[0].stance);
+    },
+
+    /**
+     * Generate six refinements around the currently-picked stance.
+     * Requires a pick to exist; no-op otherwise.
+     */
+    regenerateRefine() {
+      const pose = currentPose;
+      if (!pose || !candidateGenerator) return;
+      const existing = candidateCache[pose.id];
+      if (!existing || existing.pickedIndex === null) return;
+      const picked = existing.candidates[existing.pickedIndex];
+      if (!picked) return;
+      const input = poseToOptimizerInput(pose);
+      const refined = candidateGenerator.generateRefinements(
+        pose,
+        input,
+        OPTIMIZER_BOUNDS,
+        picked.stance,
+        existing.history
+      );
+      candidateCache = { ...candidateCache, [pose.id]: refined };
+      if (refined.candidates[0]) applyStance(refined.candidates[0].stance);
+    },
+
+    /**
+     * Mark the current pose as unreachable after the reviewer has
+     * rejected all seen candidates. Records the full history so a
+     * future analyst can see exactly which stances the reviewer tried.
+     */
+    giveUpOnPose() {
+      const pose = currentPose;
+      if (!pose) return;
+      const set = candidateCache[pose.id];
+      const history = set?.history ?? [];
+      const next: Record<string, PoseLabel> = {
+        ...labels,
+        [pose.id]: {
+          poseId: pose.id,
+          status: "unreachable",
+          stance: {
+            footOffsetX,
+            footOffsetZ,
+            rootYawRad,
+            spinePitchRad,
+          },
+          candidateStances: history,
+          pickedIndex: null,
+          armRouting: "auto",
+          collisionSnapshot: currentCollision,
+          labeledAt: Date.now(),
+        },
+      };
+      labels = next;
+      labelRepo.save(next);
+      if (cursorIndex < filteredPoses.length - 1) {
+        cursorIndex += 1;
+        seedStanceFromLabel(filteredPoses[cursorIndex] ?? null);
+      }
+    },
+
+    /**
+     * Called by the slider UI when the reviewer drags a stance control
+     * after picking a candidate. Records that the committed stance no
+     * longer matches any candidate exactly, so the label gets saved
+     * with `pickedIndex: null`.
+     */
+    markManuallyAdjusted() {
+      const pose = currentPose;
+      if (!pose) return;
+      const set = candidateCache[pose.id];
+      if (!set) return;
+      candidateCache = {
+        ...candidateCache,
+        [pose.id]: { ...set, manuallyAdjusted: true },
+      };
+    },
+
+    /**
+     * Run the optimizer on every unlabeled pose and cache the result.
+     * Returns when the whole catalog has been scanned. Use `scanProgress`
+     * to drive a UI spinner while this runs.
+     *
+     * The scan yields to the event loop every 8 evaluations so the UI
+     * stays responsive — you can cancel by navigating away or by calling
+     * scanCache = {} in devtools.
+     */
+    async scanAllForFeasibility(): Promise<void> {
+      if (!optimizer) return;
+      const toScan = allPoses.filter((p) => !labels[p.id]);
+      scanProgress = { done: 0, total: toScan.length, running: true };
+      const fresh: Record<string, OptimizerResult> = { ...scanCache };
+      for (let i = 0; i < toScan.length; i++) {
+        const pose = toScan[i]!;
+        const result = runOptimizer(pose);
+        if (result) fresh[pose.id] = result;
+        scanProgress = { done: i + 1, total: toScan.length, running: true };
+        // Yield every 8 evals so the browser can repaint. Each optimize
+        // call is ~35 ms, so 8 of them is ~280 ms — well under the limit
+        // where users feel a freeze.
+        if (i % 8 === 7) await new Promise((r) => setTimeout(r, 0));
+      }
+      scanCache = fresh;
+      scanProgress = { done: toScan.length, total: toScan.length, running: false };
+    },
+
+    /**
+     * Clear the scan cache. Useful when the reviewer wants to rerun a
+     * scan after changing the optimizer weights or after merging new
+     * labels from another session.
+     */
+    clearScanCache() {
+      scanCache = {};
+      scanProgress = { done: 0, total: 0, running: false };
+    },
+
+    setInfeasibleOnly(v: boolean) {
+      infeasibleOnly = v;
+      cursorIndex = 0;
+    },
+
+    /**
+     * Jump forward through filteredPoses to the next pose whose cached
+     * optimizer result was infeasible. If none is found, does nothing.
+     * Runs the optimizer on-the-fly for any pose that hasn't been cached
+     * yet, so this works even before a full scan.
+     */
+    jumpToNextInfeasible() {
+      if (!optimizer || filteredPoses.length === 0) return;
+      const start = cursorIndex;
+      for (let offset = 1; offset <= filteredPoses.length; offset++) {
+        const next = (start + offset) % filteredPoses.length;
+        const pose = filteredPoses[next]!;
+        let result = scanCache[pose.id];
+        if (!result) {
+          const fresh = runOptimizer(pose);
+          if (fresh) {
+            scanCache = { ...scanCache, [pose.id]: fresh };
+            result = fresh;
+          }
+        }
+        if (result && !result.feasible) {
+          cursorIndex = next;
+          seedStanceFromLabel(pose);
+          return;
+        }
+      }
+    },
+
+    /**
+     * Build a JSON-safe diagnostic report for the CURRENT pose. Captures
+     * everything I (Claude) would need to debug why a specific pose is
+     * misbehaving: pose definition, stance, reachability, optimizer
+     * result, rest-pose geometry, and bounds.
+     *
+     * Returned as an object; the UI layer serializes to JSON and writes
+     * to the clipboard.
+     */
+    buildDiagnosticReport() {
+      const pose = currentPose;
+      if (!pose) return { error: "no-current-pose" };
+      const simInput = poseToOptimizerInput(pose);
+      const fresh = optimizer
+        ? optimizer.optimize(simInput, CENTER_STANCE, OPTIMIZER_BOUNDS)
+        : null;
+      const currentSimResult = optimizer
+        ? optimizer.simulator.evaluate(currentStance, simInput.blue, simInput.red)
+        : null;
+      return {
+        schemaVersion: 1,
+        timestamp: Date.now(),
+        poseId: pose.id,
+        poseIndex: allPoses.findIndex((p) => p.id === pose.id),
+        totalPoses: allPoses.length,
+        poseDefinition: {
+          blueHand: pose.blueHand,
+          redHand: pose.redHand,
+        },
+        propTargets: {
+          blue: {
+            grip: vec3ToPlain(simInput.blue.gripWorld),
+            tipA: vec3ToPlain(simInput.blue.tipAWorld),
+            tipB: vec3ToPlain(simInput.blue.tipBWorld),
+          },
+          red: {
+            grip: vec3ToPlain(simInput.red.gripWorld),
+            tipA: vec3ToPlain(simInput.red.tipAWorld),
+            tipB: vec3ToPlain(simInput.red.tipBWorld),
+          },
+        },
+        currentStance: {
+          footOffsetX,
+          footOffsetZ,
+          rootYawRad,
+          rootYawDeg: (rootYawRad * 180) / Math.PI,
+          spinePitchRad,
+          spinePitchDeg: (spinePitchRad * 180) / Math.PI,
+        },
+        currentReachability: { ...currentReachability },
+        currentSimResult: currentSimResult
+          ? {
+              feasible: currentSimResult.feasible,
+              reachShortfall: currentSimResult.reachShortfall,
+              reachStretch: currentSimResult.reachStretch,
+              balanceMargin: currentSimResult.balanceMargin,
+              jointViolationRad: currentSimResult.jointViolationRad,
+              totalCollisionDepth: currentSimResult.totalCollisionDepth,
+              collisions: currentSimResult.collisions.map((c) => ({
+                zone: c.zone,
+                depthCm: c.depth * 100,
+                description: c.description,
+              })),
+            }
+          : null,
+        freshOptimizerRun: fresh
+          ? {
+              feasible: fresh.feasible,
+              loss: fresh.loss,
+              evaluations: fresh.evaluations,
+              stance: {
+                footOffsetX: fresh.stance.footOffsetX,
+                footOffsetZ: fresh.stance.footOffsetZ,
+                rootYawRad: fresh.stance.rootYawRad,
+                rootYawDeg: (fresh.stance.rootYawRad * 180) / Math.PI,
+                spinePitchRad: fresh.stance.spinePitchRad,
+                spinePitchDeg: (fresh.stance.spinePitchRad * 180) / Math.PI,
+              },
+              reachShortfall: fresh.simResult.reachShortfall,
+              balanceMargin: fresh.simResult.balanceMargin,
+              totalCollisionDepth: fresh.simResult.totalCollisionDepth,
+              collisions: fresh.simResult.collisions.map((c) => ({
+                zone: c.zone,
+                depthCm: c.depth * 100,
+                description: c.description,
+              })),
+            }
+          : null,
+        priorLabel: labels[pose.id] ?? null,
+        bounds: OPTIMIZER_BOUNDS,
+      };
+    },
   };
+}
+
+function vec3ToPlain(v: Vector3): { x: number; y: number; z: number } {
+  return { x: v.x, y: v.y, z: v.z };
 }
 
 export type CollisionLabState = Awaited<ReturnType<typeof createCollisionLabState>>;

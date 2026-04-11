@@ -19,6 +19,8 @@
   import CollisionReadout from "./components/CollisionReadout.svelte";
   import LabelControls from "./components/LabelControls.svelte";
   import StanceControls from "./components/StanceControls.svelte";
+  import DiagnosticPanel from "./components/DiagnosticPanel.svelte";
+  import CandidateGrid from "./components/CandidateGrid.svelte";
   import type { LabelStatus } from "./domain/types";
 
   let labState = $state<CollisionLabState | null>(null);
@@ -81,7 +83,14 @@
     try {
       const enumerator = container.items.diamondPoseEnumerator;
       const repo = container.items.collisionLabPoseLabelRepository;
-      labState = await createCollisionLabState(enumerator, repo);
+      const optimizer = container.items.stanceOptimizer;
+      const candidateGenerator = container.items.stanceCandidateGenerator;
+      labState = await createCollisionLabState(
+        enumerator,
+        repo,
+        optimizer,
+        candidateGenerator
+      );
     } catch (e) {
       loadError = (e as Error).message;
       console.error("CollisionLab: failed to initialize", e);
@@ -102,17 +111,38 @@
   <div class="loading">Loading pose catalog…</div>
 {:else}
   <div class="collision-lab">
-    <div class="main">
+    <!--
+      Split-screen main area: big viewer on the left, 2×3 candidate grid
+      on the right. Both fill the remaining viewport height. The grid is
+      wide enough that all six cards are visible without scrolling.
+    -->
+    <div class="viewer">
       <PoseViewport />
     </div>
-    <aside class="sidebar">
+    <div class="grid">
+      <CandidateGrid />
+    </div>
+
+    <!--
+      Sliders: always visible so the reviewer can see the current stance
+      values. Disabled state only dims opacity when no candidate is picked.
+    -->
+    <div class="sliders">
+      <StanceControls />
+    </div>
+
+    <!--
+      Bottom toolbar row: diagnostic tools + collision readout + label
+      buttons, all side by side. Everything the reviewer needs without
+      scrolling or collapsing.
+    -->
+    <div class="bottom-bar">
+      <DiagnosticPanel />
       <CollisionReadout />
       <LabelControls />
-      <StanceControls />
-      {#if labState.currentPose}
-        <div class="pose-id">ID: <code>{labState.currentPose.id}</code></div>
-      {/if}
-    </aside>
+    </div>
+
+    <!-- Pose scrubber (nav + filters + progress) lives at the very bottom. -->
     <footer class="footer">
       <PoseScrubber />
     </footer>
@@ -122,39 +152,71 @@
 <style>
   .collision-lab {
     display: grid;
-    grid-template-columns: 1fr 320px;
-    grid-template-rows: 1fr auto;
+    /* Viewer slightly wider than the grid so candidates aren't cramped
+       but the big preview still gets prominence. */
+    grid-template-columns: 1.2fr 1fr;
+    /* Rows: [viewer+grid] fills available space, everything else sizes
+       to its content. */
+    grid-template-rows: minmax(0, 1fr) auto auto auto;
     grid-template-areas:
-      "main sidebar"
+      "viewer grid"
+      "sliders sliders"
+      "bottombar bottombar"
       "footer footer";
-    gap: 12px;
-    padding: 12px;
+    gap: 10px;
+    padding: 10px;
     width: 100%;
     height: 100%;
     box-sizing: border-box;
+    container-type: inline-size;
   }
-  .main {
-    grid-area: main;
+  .viewer {
+    grid-area: viewer;
     min-height: 0;
+    min-width: 0;
   }
-  .sidebar {
-    grid-area: sidebar;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    overflow-y: auto;
+  .grid {
+    grid-area: grid;
+    min-height: 0;
+    min-width: 0;
+    overflow: hidden;
+  }
+  .sliders {
+    grid-area: sliders;
+  }
+  .bottom-bar {
+    grid-area: bottombar;
+    display: grid;
+    /*
+      Three equal columns so diagnostic / collision / labels each take
+      one-third of the width. Avoids the old `auto 1fr auto` that
+      stretched the collision readout to a giant pill in the middle.
+    */
+    grid-template-columns: minmax(260px, 1fr) minmax(240px, 1fr) minmax(280px, 1fr);
+    gap: 10px;
+    align-items: stretch;
   }
   .footer {
     grid-area: footer;
   }
-  .pose-id {
-    font-size: 12px;
-    opacity: 0.6;
-    padding: 0 8px;
+
+  /* Stack vertically on narrow screens (tablet / portrait). */
+  @container (max-width: 900px) {
+    .collision-lab {
+      grid-template-columns: 1fr;
+      grid-template-rows: minmax(280px, 0.9fr) minmax(280px, 1fr) auto auto auto;
+      grid-template-areas:
+        "viewer"
+        "grid"
+        "sliders"
+        "bottombar"
+        "footer";
+    }
+    .bottom-bar {
+      grid-template-columns: 1fr;
+    }
   }
-  .pose-id code {
-    font-family: monospace;
-  }
+
   .loading,
   .error {
     padding: 32px;

@@ -1,6 +1,11 @@
 import { describe, it, expect } from "vitest";
 import { createCollisionLabState } from "$lib/features/lab/tabs/collision-lab/state/collision-lab-state.svelte";
 import { DiamondPoseEnumerator } from "$lib/features/lab/tabs/collision-lab/services/implementations/DiamondPoseEnumerator";
+import {
+  StanceSimulator,
+  restPoseFromHeight,
+} from "$lib/features/lab/tabs/collision-lab/services/implementations/StanceSimulator";
+import { StanceOptimizer } from "$lib/features/lab/tabs/collision-lab/services/implementations/StanceOptimizer";
 import type {
   PoseLabel,
   CollisionSnapshot,
@@ -25,6 +30,15 @@ async function setup() {
   const enumerator = new DiamondPoseEnumerator();
   const repo = new InMemoryLabelRepo();
   const state = await createCollisionLabState(enumerator, repo);
+  return { state, repo };
+}
+
+async function setupWithOptimizer() {
+  const enumerator = new DiamondPoseEnumerator();
+  const repo = new InMemoryLabelRepo();
+  const simulator = new StanceSimulator(restPoseFromHeight(1.7));
+  const optimizer = new StanceOptimizer(simulator);
+  const state = await createCollisionLabState(enumerator, repo, optimizer);
   return { state, repo };
 }
 
@@ -179,7 +193,11 @@ describe("collision-lab-state", () => {
   });
 
   it("stepping far from the grid makes the pose unreachable", async () => {
-    const { state } = await setup();
+    // Reachability is answered by the simulator, which needs an optimizer
+    // (the state factory pulls the simulator from optimizer.simulator). The
+    // no-optimizer fallback is intentionally "unknown → reachable", so we
+    // use setupWithOptimizer here to actually exercise the reach check.
+    const { state } = await setupWithOptimizer();
     // 80 cm lateral step is well beyond slider range but useful to force
     // the reach envelope boundary for the test
     state.setFootOffsetX(0.8);
@@ -187,9 +205,9 @@ describe("collision-lab-state", () => {
   });
 
   it("labelCurrent refuses 'clear' when the stance is unreachable", async () => {
-    const { state, repo } = await setup();
+    const { state, repo } = await setupWithOptimizer();
     const firstId = state.currentPose!.id;
-    state.setFootOffsetX(0.8); // force unreachable
+    state.setFootOffsetX(0.8); // force unreachable (simulator-backed check)
     state.labelCurrent("clear");
     // Label was NOT written and cursor did NOT advance
     expect(repo.store[firstId]).toBeUndefined();
@@ -210,5 +228,75 @@ describe("collision-lab-state", () => {
     state.setFootOffsetX(0.8); // force unreachable
     state.labelCurrent("skip");
     expect(repo.store[firstId]?.status).toBe("skip");
+  });
+
+  it("hasOptimizer is false when no optimizer is provided", async () => {
+    const { state } = await setup();
+    expect(state.hasOptimizer).toBe(false);
+    expect(state.autoSeedEnabled).toBe(false);
+    expect(state.lastOptimizerResult).toBe(null);
+  });
+});
+
+describe("collision-lab-state optimizer integration", () => {
+  it("hasOptimizer is true when an optimizer is supplied", async () => {
+    const { state } = await setupWithOptimizer();
+    expect(state.hasOptimizer).toBe(true);
+    expect(state.autoSeedEnabled).toBe(true);
+  });
+
+  it("seeds the initial pose's stance from the optimizer on creation", async () => {
+    const { state } = await setupWithOptimizer();
+    // The first pose should have a fresh optimizer result stashed away.
+    expect(state.lastOptimizerResult).not.toBe(null);
+    expect(state.lastOptimizerResult!.feasible).toBeTypeOf("boolean");
+  });
+
+  it("runs the optimizer when stepping onto an unlabeled pose", async () => {
+    const { state } = await setupWithOptimizer();
+    state.stepForward();
+    // lastOptimizerResult should have been refreshed for the new pose.
+    expect(state.lastOptimizerResult).not.toBe(null);
+  });
+
+  it("skips the optimizer when a pose already has a saved label", async () => {
+    const { state } = await setupWithOptimizer();
+    // Reset off the auto-seed first so we're labeling a known stance.
+    // "needs-adjustment" is accepted regardless of reachability (it's a
+    // "come back to this" bookmark), so the specific slider values here
+    // don't have to produce a physically reachable pose.
+    state.resetStance();
+    state.setFootOffsetX(0.05);
+    state.setFootOffsetZ(-0.05);
+    state.labelCurrent("needs-adjustment"); // no auto-advance, stays on pose 0
+    state.stepForward(); // now on pose 1, optimizer runs
+    state.stepBackward(); // back on pose 0 — label exists, optimizer MUST NOT run
+    expect(state.footOffsetX).toBe(0.05);
+    expect(state.footOffsetZ).toBe(-0.05);
+    expect(state.lastOptimizerResult).toBe(null);
+  });
+
+  it("setAutoSeedEnabled(false) stops the optimizer from running on step", async () => {
+    const { state } = await setupWithOptimizer();
+    state.setAutoSeedEnabled(false);
+    state.stepForward();
+    // Optimizer should NOT run on step when disabled.
+    // Result from the INITIAL auto-seed (pose 0) is cleared when we step off.
+    // Check that stance is center on the new pose:
+    expect(state.footOffsetX).toBe(0);
+    expect(state.footOffsetZ).toBe(0);
+    expect(state.rootYawRad).toBe(0);
+    expect(state.spinePitchRad).toBe(0);
+  });
+
+  it("reoptimizeCurrent re-runs the optimizer on demand", async () => {
+    const { state } = await setupWithOptimizer();
+    // Move sliders away from the seed
+    state.setFootOffsetX(0.3);
+    // Re-optimize should pull them back
+    state.reoptimizeCurrent();
+    // Can't assert an exact value (optimizer is deterministic but pose-dependent),
+    // but the reoptimize should produce a new result.
+    expect(state.lastOptimizerResult).not.toBe(null);
   });
 });
