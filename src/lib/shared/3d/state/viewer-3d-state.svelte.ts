@@ -262,13 +262,6 @@ export function createViewer3DState(deps: {
     maxPerformers: STAGE.MAX_VIEWER_PERFORMERS,
   });
 
-  // Transitional shim: existing components read `viewer3DState.avatarState`.
-  // Until all call sites are migrated (Task 14), this getter exposes
-  // performer[0] so nothing breaks. Do NOT add new call sites that read it.
-  function getAvatarStateShim(): AvatarInstanceState | null {
-    return performerManager.performers[0] ?? null;
-  }
-
   // Viewer-specific selection scope. Lives on top of PerformerManager so
   // realm/museum/duet keep their simpler index-only model. null = "All".
   let selectedPerformerIndex = $state<number | null>(null);
@@ -718,10 +711,6 @@ export function createViewer3DState(deps: {
     },
     get renderMode() {
       return renderMode;
-    },
-    /** @deprecated transitional — use `performerManager.performers[i]` instead. Removed in Task 14. */
-    get avatarState() {
-      return getAvatarStateShim();
     },
     get performerManager() {
       return performerManager;

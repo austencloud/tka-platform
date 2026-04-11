@@ -18,7 +18,8 @@
   const { compact = false, flat = false, grid = false }: { compact?: boolean; flat?: boolean; grid?: boolean } = $props();
 
   const viewer3DState = getViewer3DContext();
-  const avatarState = $derived(viewer3DState.avatarState);
+  // Used only to read planeMode for dual-wheel detection. Reads performer 0.
+  const avatarState = $derived(viewer3DState.performerManager.performers[0] ?? null);
   const isDualWheel = $derived(avatarState?.planeMode === PlaneMode.DUAL_WHEEL);
 
   // Grid center in world space — depends on plane mode.

@@ -43,7 +43,10 @@
     $props();
 
   const viewer3DState = getViewer3DContext();
-  const avatarState = $derived(viewer3DState.avatarState);
+  // Primary performer — gates the Canvas on performer[0] existing. Multi-
+  // performer rendering iterates inside Viewer3DScene itself, but the Canvas
+  // still waits on this to avoid mounting WebGL before any performer exists.
+  const avatarState = $derived(viewer3DState.performerManager.performers[0] ?? null);
 
   let contextMenuHost: ReturnType<typeof Viewer3DContextMenuHost> | undefined = $state();
 
