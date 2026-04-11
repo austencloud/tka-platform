@@ -140,32 +140,23 @@ export class Realtime3DExporter implements IRealtime3DExporter {
           const timestampMicros = Math.round((frameIndex / fps) * 1_000_000);
           const isKeyframe = frameIndex % KEYFRAME_INTERVAL === 0;
 
-          // Freeze the current frameIndex into a local so the capture
-          // promise resolves against the correct index even after the
-          // RAF loop has incremented frameIndex below.
-          const capturedIndex = frameIndex;
-
-          // Fire-and-forget capture. On the VideoFrame path the promise
-          // is effectively already-resolved — `new VideoFrame(canvas)` is
-          // a synchronous constructor and the async wrapper in the
-          // ICanvasFrameCapturer interface exists only for symmetry with
-          // the ImageData fallback (whose `getImageData` is also synchronous
-          // in practice). Frame ordering is preserved because postMessage
-          // is synchronous and the worker processes messages in arrival
-          // order, so fire-and-forget is safe here.
-          //
-          // We deliberately do NOT await inside the RAF tick. Awaiting
-          // would push the next RAF callback past the next vsync and
-          // drift the capture out of lockstep with live playback.
-          void this.capturer
-            .capture(offscreen, timestampMicros)
-            .then((frame) => {
-              this.backgroundEncoder.addFrameCaptured(
-                frame,
-                capturedIndex,
-                isKeyframe
-              );
-            });
+          // Synchronous capture → synchronous addFrame. This ordering is
+          // load-bearing: the capture loop below will call
+          // backgroundEncoder.finish() the instant it runs out of frames,
+          // and finish() posts {type: "finish"} to the worker. If the
+          // capture were promise-based and we wrapped addFrame in .then(),
+          // the last batch of frame-captured messages would drain as
+          // microtasks *after* finish has already been posted, letting the
+          // worker flush the encoder and then crash on the late frames
+          // ("Cannot call 'flush' on a closed codec" + VideoFrame GC leaks).
+          // Keeping capture synchronous guarantees every frame-captured
+          // message is posted before finish.
+          const frame = this.capturer.capture(offscreen, timestampMicros);
+          this.backgroundEncoder.addFrameCaptured(
+            frame,
+            frameIndex,
+            isKeyframe
+          );
 
           onProgress({
             progress: frameIndex / totalFrames,
