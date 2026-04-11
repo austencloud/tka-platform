@@ -50,6 +50,9 @@ describe("formation-presets: new presets", () => {
     it("falls back to solo when count < 2", () => {
       const slots = getSlotsForPreset("back-to-back", 1);
       expect(slots.length).toBe(1);
+      // Solo shape: single centered slot with no explicit facing.
+      expect(slots[0]!.position.x).toBe(0);
+      expect(slots[0]!.facingAngle).toBeUndefined();
     });
   });
 
@@ -66,6 +69,8 @@ describe("formation-presets: new presets", () => {
     it("falls back to solo when count < 2", () => {
       const slots = getSlotsForPreset("facing-each-other", 1);
       expect(slots.length).toBe(1);
+      expect(slots[0]!.position.x).toBe(0);
+      expect(slots[0]!.facingAngle).toBeUndefined();
     });
   });
 
@@ -115,6 +120,14 @@ describe("formation-presets: new presets", () => {
       for (const count of PRESET_VALID_COUNTS[preset]) {
         it(`${preset} @ count=${count}: positions finite and within [-10, 10]`, () => {
           const slots = getSlotsForPreset(preset, count);
+
+          // Variable-count presets should return exactly `count` slots; fixed-
+          // cardinality presets (back-to-back, facing-each-other, stage-lr) always
+          // return 2. solo always returns 1.
+          const fixedTwo = new Set(["back-to-back", "facing-each-other", "stage-lr"]);
+          const expectedLength = preset === "solo" ? 1 : fixedTwo.has(preset) ? 2 : count;
+          expect(slots.length).toBe(expectedLength);
+
           for (const s of slots) {
             expect(Number.isFinite(s.position.x)).toBe(true);
             expect(Number.isFinite(s.position.z)).toBe(true);

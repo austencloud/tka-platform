@@ -1,7 +1,10 @@
 /**
  * Formation Presets
  *
- * Built-in formation definitions for 1-4 performers.
+ * Built-in formation definitions for 1-8 performers. grid-2x2 still clamps
+ * to 4 since it's a 2x2 shape; all other presets scale up to the viewer's
+ * MAX_VIEWER_PERFORMERS cap.
+ *
  * Each preset adapts to the number of performers present.
  */
 
@@ -13,6 +16,7 @@ import {
   DEFAULT_FORMATION_SPACING,
   FORMATION_WALL_OFFSET,
 } from "../domain/formation";
+import { STAGE } from "$lib/shared/3d/scale/scale-constants";
 
 /**
  * Generate slots for grid-2x2 formation (current default)
@@ -291,9 +295,9 @@ export function getSlotsForPreset(
   performerCount: number
 ): FormationSlot[] {
   // grid-2x2 stays clamped to 4 because it's specifically a 2x2 shape.
-  // All other presets support up to 8 for the standalone 3D viewer.
+  // All other presets support up to STAGE.MAX_VIEWER_PERFORMERS for the standalone 3D viewer.
   const isGrid = preset === "grid-2x2";
-  const upperBound = isGrid ? 4 : 8;
+  const upperBound = isGrid ? 4 : STAGE.MAX_VIEWER_PERFORMERS;
   const count = Math.max(1, Math.min(upperBound, performerCount));
 
   switch (preset) {
@@ -472,13 +476,15 @@ export const FORMATION_PRESET_INFO: FormationPresetInfo[] = [
  * Valid performer counts per preset. Used by the viewer's formation picker
  * to gray out presets that don't match the current performer count.
  * "custom" accepts any count in the viewer-specific range [1, 8].
+ * "v-shape" is capped at 4 because the generator only defines positions
+ * for 1-4 performers; scaling it beyond that is a follow-up.
  */
 export const PRESET_VALID_COUNTS: Record<FormationPreset, number[]> = {
   solo: [1],
   "grid-2x2": [1, 2, 3, 4],
   line: [1, 2, 3, 4, 5, 6, 7, 8],
   circle: [1, 2, 3, 4, 5, 6, 7, 8],
-  "v-shape": [1, 2, 3, 4, 5, 7],
+  "v-shape": [1, 2, 3, 4],
   diagonal: [1, 2, 3, 4, 5, 6, 7, 8],
   "tunnel-stack": [2, 3, 4, 5, 6, 7, 8],
   "back-to-back": [2],
