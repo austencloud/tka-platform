@@ -14,6 +14,7 @@
    */
 
   import { Canvas, T } from "@threlte/core";
+  import { OrbitControls } from "@threlte/extras";
   import { Quaternion, Vector3 } from "three";
   import Avatar3D from "$lib/shared/3d/components/Avatar3D.svelte";
   import { PlaneCoordinateMapper } from "$lib/shared/3d/services/implementations/PlaneCoordinateMapper";
@@ -108,7 +109,14 @@
   <Canvas>
     <T.Color attach="background" args={["#1a1f2e"]} />
     <T.PerspectiveCamera makeDefault position={[0, 1.4, 3.5]} fov={35}>
-      <T.Object3D position={[0, 1.2, 0]} />
+      <OrbitControls
+        target={[0, 1.2, 0]}
+        enableDamping
+        dampingFactor={0.1}
+        minDistance={1}
+        maxDistance={8}
+        enablePan
+      />
     </T.PerspectiveCamera>
     <T.AmbientLight intensity={0.6} />
     <T.DirectionalLight position={[3, 5, 4]} intensity={0.8} />
