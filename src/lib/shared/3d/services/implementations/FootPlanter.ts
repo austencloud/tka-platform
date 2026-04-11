@@ -18,15 +18,17 @@
  * bend forward, not backward like elbows).
  */
 
-import { Vector3, Quaternion } from "three";
+import { Vector3 } from "three";
 import type {
   IFootPlanter,
   FootPlanterInput,
   FootPlanterConfig,
 } from "../contracts/IFootPlanter";
 import type { IAvatarSkeletonBuilder, BoneChain } from "../contracts/IAvatarSkeletonBuilder";
-import type { IIKSolver, IKTarget } from "../contracts/IIKSolver";
+import type { ILegIKSolver, LegIKInput } from "../contracts/ILegIKSolver";
+import type { IContactCurveCache } from "../contracts/IContactCurveCache";
 import { LocomotionState } from "../contracts/IAnimationStateMachine";
+import { KneeHingeAxisCalibrator } from "./KneeHingeAxisCalibrator";
 
 // ── Defaults ──
 
@@ -70,7 +72,8 @@ function createFootState(): FootState {
 
 export class FootPlanter implements IFootPlanter {
   private skeleton: IAvatarSkeletonBuilder | null = null;
-  private ikSolver: IIKSolver | null = null;
+  private legIKSolver: ILegIKSolver | null = null;
+  private contactCurveCache: IContactCurveCache | null = null;
   private config: Required<FootPlanterConfig> = { ...DEFAULT_CONFIG };
 
   private leftFoot: FootState = createFootState();
@@ -79,32 +82,54 @@ export class FootPlanter implements IFootPlanter {
   private leftLegChain: BoneChain | null = null;
   private rightLegChain: BoneChain | null = null;
 
-  // Knees bend forward — the pole hint tells the IK solver which
-  // direction the "elbow" (knee) should point.
-  private readonly kneePoleHint = new Vector3(0, 0, 1);
+  // Per-leg hinge axes derived from bind-pose rest directions at init time.
+  // These never change during playback — the knee is a hinge, not a ball joint.
+  private leftKneeHingeAxis = new Vector3(1, 0, 0);
+  private rightKneeHingeAxis = new Vector3(1, 0, 0);
 
   // Reusable vectors to avoid per-frame allocation
   private readonly tempFootWorld = new Vector3();
   private readonly tempHipsWorld = new Vector3();
   private readonly tempTarget = new Vector3();
+  private readonly poleDirection = new Vector3(0, 0, 1);
+  private readonly worldUp = new Vector3(0, 1, 0);
 
   private initialized = false;
   private firstFrame = true;
 
-  initialize(skeleton: IAvatarSkeletonBuilder, ikSolver: IIKSolver): void {
+  initialize(
+    skeleton: IAvatarSkeletonBuilder,
+    legIKSolver: ILegIKSolver,
+    contactCurveCache: IContactCurveCache
+  ): void {
     this.skeleton = skeleton;
-    this.ikSolver = ikSolver;
+    this.legIKSolver = legIKSolver;
+    this.contactCurveCache = contactCurveCache;
     this.leftLegChain = skeleton.getLeftLegChain();
     this.rightLegChain = skeleton.getRightLegChain();
     this.initialized = !!(this.leftLegChain && this.rightLegChain);
 
     if (!this.initialized) {
       console.warn("[FootPlanter] Leg chains not available — foot IK disabled");
+      return;
+    }
+
+    // Derive per-leg hinge axes from bind-pose rest directions
+    const calibrator = new KneeHingeAxisCalibrator();
+    if (this.leftLegChain) {
+      this.leftKneeHingeAxis.copy(
+        calibrator.compute(this.leftLegChain.rootRestDir, this.leftLegChain.middleRestDir)
+      );
+    }
+    if (this.rightLegChain) {
+      this.rightKneeHingeAxis.copy(
+        calibrator.compute(this.rightLegChain.rootRestDir, this.rightLegChain.middleRestDir)
+      );
     }
   }
 
   update(delta: number, input: FootPlanterInput): void {
-    if (!this.initialized || !this.skeleton || !this.ikSolver) return;
+    if (!this.initialized || !this.skeleton || !this.legIKSolver) return;
     if (!this.leftLegChain || !this.rightLegChain) return;
 
     // Skip foot planting during airborne states — let the animation play freely
@@ -159,8 +184,8 @@ export class FootPlanter implements IFootPlanter {
     this.adjustPelvisHeight(input.groundY);
 
     // 6. Solve and apply leg IK for each foot
-    this.applyFootIK(this.leftLegChain, this.leftFoot, input.groundY);
-    this.applyFootIK(this.rightLegChain, this.rightFoot, input.groundY);
+    this.applyFootIK(this.leftLegChain, this.leftFoot, input.groundY, this.leftKneeHingeAxis);
+    this.applyFootIK(this.rightLegChain, this.rightFoot, input.groundY, this.rightKneeHingeAxis);
 
   }
 
@@ -174,7 +199,8 @@ export class FootPlanter implements IFootPlanter {
 
   dispose(): void {
     this.skeleton = null;
-    this.ikSolver = null;
+    this.legIKSolver = null;
+    this.contactCurveCache = null;
     this.leftLegChain = null;
     this.rightLegChain = null;
     this.initialized = false;
@@ -336,43 +362,35 @@ export class FootPlanter implements IFootPlanter {
   // ── Foot IK solve ──
 
   /**
-   * Solve two-bone IK for one leg and blend with the animation pose.
+   * Solve two-bone IK for one leg using the hinge-constrained leg solver.
+   * The solver handles weight blending internally, so no slerp is needed here.
    */
   private applyFootIK(
     chain: BoneChain,
     foot: FootState,
-    groundY: number
+    groundY: number,
+    hingeAxis: Vector3
   ): void {
-    if (foot.ikWeight < 0.001 || !this.ikSolver) return;
+    if (foot.ikWeight < 0.001 || !this.legIKSolver) return;
 
-    // Save animation-driven quaternions before IK overwrites them
-    const animRootQuat = chain.root.quaternion.clone();
-    const animMiddleQuat = chain.middle.quaternion.clone();
-
-    // Build IK target: the locked ground position
+    // Build IK target: the locked ground position, snapped to ground Y
     this.tempTarget.copy(foot.lockTarget);
-    // Ensure target Y is at ground level
     this.tempTarget.y = groundY + this.config.footHeightOffset;
 
-    const target: IKTarget = {
-      position: this.tempTarget,
-      weight: 1,
-      poleHint: this.kneePoleHint,
+    const input: LegIKInput = {
+      chain,
+      footTarget: this.tempTarget,
+      groundNormal: this.worldUp,
+      footForward: this.poleDirection,
+      kneeHingeAxis: hingeAxis,
+      poleDirection: this.poleDirection,
+      weight: foot.ikWeight,
     };
 
-    // Solve IK — this overwrites chain.root and chain.middle quaternions
-    this.ikSolver.solveAndApply(chain, target);
+    this.legIKSolver.solve(input);
 
-    // Read the IK result
-    const ikRootQuat = chain.root.quaternion.clone();
-    const ikMiddleQuat = chain.middle.quaternion.clone();
-
-    // Blend: slerp from animation pose toward IK solution
-    const w = foot.ikWeight;
-    chain.root.quaternion.copy(animRootQuat).slerp(ikRootQuat, w);
-    chain.middle.quaternion.copy(animMiddleQuat).slerp(ikMiddleQuat, w);
-
-    // Update matrices from hip down so foot world position reflects the blend
+    // ILegIKSolver does its own weight blending, so no slerp here.
+    // Update matrices from hip down so foot world position reflects the solve.
     chain.root.updateMatrixWorld(true);
   }
 }
