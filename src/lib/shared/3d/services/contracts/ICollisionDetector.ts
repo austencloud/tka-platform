@@ -14,8 +14,25 @@ import type { Vector3, Bone } from "three";
 export type CollisionZone =
   | "prop-through-head"
   | "prop-through-torso"
+  | "prop-through-arm"
+  | "prop-through-prop"
   | "arm-through-face"
   | "arms-through-each-other";
+
+/**
+ * A prop represented as a line segment between its two endpoints.
+ * For a staff, this is tip-to-tip (~1 m). Point-based detection misses
+ * the common case where the grip is outside the body but the staff
+ * shaft passes straight through it.
+ */
+export interface PropSegment {
+  /** One end of the prop (world space). */
+  a: Vector3;
+  /** Other end of the prop (world space). */
+  b: Vector3;
+  /** Radius of the prop for collision purposes (staff thickness). */
+  radius: number;
+}
 
 /** How bad the violation is */
 export type CollisionSeverity = "graze" | "clip" | "penetrate";
@@ -53,11 +70,15 @@ export interface ICollisionDetector {
   /**
    * Run all collision checks for the current frame.
    * Call after IK has been applied (bones are at final positions).
+   *
+   * Props are passed as line segments (tip-to-tip), not grip points,
+   * so the checks can catch shaft-through-body collisions where the
+   * grip is clear of the body but the staff shaft is not.
    */
   detect(
     body: BodySnapshot,
-    bluePropPos: Vector3 | null,
-    redPropPos: Vector3 | null,
+    blueProp: PropSegment | null,
+    redProp: PropSegment | null,
     beatIndex: number,
     beatProgress: number
   ): CollisionEvent[];

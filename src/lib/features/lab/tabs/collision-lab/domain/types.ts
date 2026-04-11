@@ -48,6 +48,8 @@ export type CollisionZoneType =
   | "arm-through-face"
   | "prop-through-torso"
   | "prop-through-head"
+  | "prop-through-arm"
+  | "prop-through-prop"
   | "arms-through-each-other";
 
 export type SnapshotSeverity = "clear" | "graze" | "clip" | "penetrate";
