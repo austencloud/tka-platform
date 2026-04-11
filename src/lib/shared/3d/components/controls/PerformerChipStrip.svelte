@@ -12,7 +12,9 @@
    *   selected when `selectedPerformerIndex === i`.
    * - "+" chip: rightmost, enabled when `count < MAX_VIEWER_PERFORMERS`.
    *
-   * Hidden entirely when only one performer exists (scope doesn't matter).
+   * Visible whenever at least one performer exists — the "+" chip is the
+   * only affordance for spawning a second performer, so hiding the strip
+   * at count 1 would trap the user with no way to grow the group.
    */
 
   import { getViewer3DContext } from "../../context/viewer-3d-context";
@@ -21,7 +23,7 @@
   const viewer3DState = getViewer3DContext();
   const performers = $derived(viewer3DState.performerManager.performers);
   const selectedIndex = $derived(viewer3DState.selectedPerformerIndex);
-  const visible = $derived(performers.length >= 2);
+  const visible = $derived(performers.length >= 1);
   const canAdd = $derived(performers.length < STAGE.MAX_VIEWER_PERFORMERS);
 
   // Chip tint colors, cycled by performer index.
