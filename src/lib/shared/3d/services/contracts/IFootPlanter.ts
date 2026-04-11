@@ -29,6 +29,12 @@ export interface FootPlanterInput {
   locomotionState: LocomotionState;
   /** Whether the avatar is currently moving */
   isMoving: boolean;
+  /** Name of the currently playing clip (for contact curve lookup).
+   *  When undefined, FootPlanter falls back to velocity-based detection. */
+  currentClipName?: string;
+  /** Phase 0-1 through the current clip (for contact curve sampling).
+   *  Only used when currentClipName is set and has a registered curve. */
+  currentClipPhase?: number;
 }
 
 /**

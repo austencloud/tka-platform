@@ -173,8 +173,8 @@ export class FootPlanter implements IFootPlanter {
     this.rightFoot.prevWorldPos.copy(rightFootPos);
 
     // 3. Detect contact phase and manage lock targets
-    this.updateContactPhase(this.leftFoot, leftFootPos, input, this.leftLegChain);
-    this.updateContactPhase(this.rightFoot, rightFootPos, input, this.rightLegChain);
+    this.updateContactPhase(this.leftFoot, leftFootPos, input, this.leftLegChain, true);
+    this.updateContactPhase(this.rightFoot, rightFootPos, input, this.rightLegChain, false);
 
     // 4. Blend IK weights (smooth ramp in/out)
     this.updateIKWeight(this.leftFoot, delta);
@@ -239,8 +239,41 @@ export class FootPlanter implements IFootPlanter {
     foot: FootState,
     currentPos: Vector3,
     input: FootPlanterInput,
-    legChain: BoneChain
+    legChain: BoneChain,
+    isLeftFoot: boolean
   ): void {
+    // Contact curve path: if the current clip has authored curves, use them
+    // instead of velocity detection. Curves are authoritative because turn
+    // clips have pivot feet with zero velocity for their entire stance phase —
+    // the velocity heuristic would either lock too aggressively or miss the
+    // planting entirely depending on how the threshold is tuned.
+    if (
+      this.contactCurveCache &&
+      input.currentClipName &&
+      input.currentClipPhase !== undefined &&
+      this.contactCurveCache.has(input.currentClipName)
+    ) {
+      const sample = this.contactCurveCache.getContactAt(
+        input.currentClipName,
+        input.currentClipPhase
+      );
+      const contactValue = isLeftFoot ? sample.leftFoot : sample.rightFoot;
+      const shouldLock = contactValue > 0.5;
+
+      if (shouldLock && !foot.isLocked) {
+        foot.lockTarget.set(
+          currentPos.x,
+          input.groundY + this.config.footHeightOffset,
+          currentPos.z
+        );
+        foot.isLocked = true;
+      } else if (!shouldLock) {
+        foot.isLocked = false;
+      }
+      return;
+    }
+
+    // Velocity fallback (existing behavior — preserved exactly)
     const threshold = this.config.contactVelocityThreshold;
 
     if (foot.smoothedVelocity < threshold) {
