@@ -21,7 +21,7 @@ import type {
   RootMotionDelta,
 } from "../contracts/IRootMotionExtractor";
 
-const ZERO_DELTA: RootMotionDelta = { x: 0, forward: 0 };
+const ZERO_DELTA: RootMotionDelta = { x: 0, forward: 0, yawDelta: 0 };
 
 export class RootMotionExtractor implements IRootMotionExtractor {
   private hipsBone: Bone | null = null;
@@ -30,6 +30,8 @@ export class RootMotionExtractor implements IRootMotionExtractor {
   // X = lateral, Y = forward (Mixamo FBX→GLB coordinate mapping).
   private prevX = 0;
   private prevY = 0;
+  // Previous frame's Hips yaw rotation (local Z after FBX→GLB conversion).
+  private prevYaw = 0;
   private hasPrevious = false;
 
   // Rest-pose Hips position — captured before any animation plays.
@@ -46,6 +48,7 @@ export class RootMotionExtractor implements IRootMotionExtractor {
     this.restX = hipsBone.position.x;
     this.restY = hipsBone.position.y;
     this.restZ = hipsBone.position.z;
+    this.prevYaw = hipsBone.rotation.z;
   }
 
   extract(): RootMotionDelta {
@@ -55,18 +58,28 @@ export class RootMotionExtractor implements IRootMotionExtractor {
     //   position.x = lateral (left/right)
     //   position.y = forward/backward (root motion axis!)
     //   position.z = absolute hip height (~-100cm in Mixamo units)
+    //   rotation.z = yaw (vertical-axis rotation, also Z not Y)
     const currentX = this.hipsBone.position.x;
     const currentY = this.hipsBone.position.y;
+    const currentYaw = this.hipsBone.rotation.z;
 
     let delta: RootMotionDelta;
 
     if (!this.hasPrevious) {
-      delta = ZERO_DELTA;
+      delta = { x: 0, forward: 0, yawDelta: 0 };
       this.hasPrevious = true;
     } else {
+      const rawYawDelta = currentYaw - this.prevYaw;
+      // Clamp absurd deltas (loop boundary) — same pattern as translation.
+      // 0.5 rad/frame at 60fps = 30 rad/sec = ~1700°/sec, faster than any
+      // realistic turn. Values above this are assumed to be loop boundaries.
+      const MAX_YAW_PER_FRAME = 0.5;
+      const yawDelta = Math.abs(rawYawDelta) > MAX_YAW_PER_FRAME ? 0 : rawYawDelta;
+
       delta = {
         x: currentX - this.prevX,
         forward: currentY - this.prevY,
+        yawDelta,
       };
 
       // Clamp absurd deltas — loop boundary where Hips jumps from
@@ -74,17 +87,20 @@ export class RootMotionExtractor implements IRootMotionExtractor {
       // ~2.3cm/frame in Mixamo units. 15cm is generous headroom.
       const MAX_FRAME_DELTA = 15;
       if (Math.abs(delta.x) > MAX_FRAME_DELTA || Math.abs(delta.forward) > MAX_FRAME_DELTA) {
-        delta = ZERO_DELTA;
+        delta = { x: 0, forward: 0, yawDelta: delta.yawDelta };
       }
     }
 
     // Remember absolute position for next frame's delta calculation.
     this.prevX = currentX;
     this.prevY = currentY;
+    this.prevYaw = currentYaw;
 
     // Restore Hips XY to rest position (zero out root motion displacement).
     // Keep Z untouched — the animation's relative Z contains the natural
     // vertical hip bob during walking (hips rise and fall ~2-3cm per step).
+    // Note: rotation.z is NOT restored — the clip's yaw curve drives the
+    // authored rotation, and consumers integrate the delta into the rig.
     this.hipsBone.position.x = this.restX;
     this.hipsBone.position.y = this.restY;
 
@@ -95,6 +111,7 @@ export class RootMotionExtractor implements IRootMotionExtractor {
     this.hasPrevious = false;
     this.prevX = 0;
     this.prevY = 0;
+    this.prevYaw = 0;
   }
 
   isReady(): boolean {
