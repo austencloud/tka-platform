@@ -244,6 +244,25 @@
                 </div>
 
                 <div class="drawer-header-actions">
+                  {#if ctx.viewer3DState?.webgl2Available && isVideoExportActive}
+                    <button
+                      type="button"
+                      class="dimension-chip"
+                      class:is-3d={ctx.renderMode === '3d'}
+                      onclick={() => {
+                        if (ctx.renderMode === '3d') {
+                          ctx.viewer3DState.exit3D();
+                        } else if (ctx.effectiveSequence) {
+                          ctx.viewer3DState.enter3D(ctx.effectiveSequence);
+                        }
+                      }}
+                      aria-label={ctx.renderMode === '3d' ? 'Switch to 2D' : 'Switch to 3D'}
+                      title={ctx.renderMode === '3d' ? 'Switch to 2D' : 'Switch to 3D'}
+                    >
+                      <i class="fas fa-cube" aria-hidden="true"></i>
+                      3D
+                    </button>
+                  {/if}
                   {#if !isMobileWidth}
                     <button
                       type="button"
@@ -348,6 +367,7 @@
                   <ViewerSplitPane
                     sequence={ctx.effectiveSequence}
                     renderMode={ctx.renderMode}
+                    isExporting={ctx.isExporting}
                     playback={ctx.splitPanePlayback}
                     imageComposition={isImageExportActive
                       ? {
