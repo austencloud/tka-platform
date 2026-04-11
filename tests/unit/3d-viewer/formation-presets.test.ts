@@ -175,4 +175,56 @@ describe("formation-presets: new presets", () => {
       expect(ids).toContain("side-by-side");
     });
   });
+
+  // ---------------------------------------------------------------------
+  // v-shape scaling: generator now supports 5-8, used to cap at 4.
+  // Guards against a regression where counts > 4 silently drop extra slots.
+  // ---------------------------------------------------------------------
+  describe("v-shape scaling 5-8", () => {
+    it("produces exactly `count` slots for every count in 1..8", () => {
+      for (let n = 1; n <= 8; n++) {
+        const slots = getSlotsForPreset("v-shape", n);
+        expect(slots.length).toBe(n);
+      }
+    });
+
+    it("keeps index 0 at the apex (x=0, z=offset) for count >= 3", () => {
+      for (let n = 3; n <= 8; n++) {
+        const slots = getSlotsForPreset("v-shape", n);
+        const leader = slots.find((s) => s.index === 0)!;
+        expect(leader.position.x).toBeCloseTo(0, 6);
+        expect(leader.position.z).toBeCloseTo(FORMATION_WALL_OFFSET, 6);
+      }
+    });
+
+    it("forms mirrored pairs at each row (left/right symmetric around x=0)", () => {
+      // For counts 5 and 7 the chevron is all full pairs (no tail), so
+      // summing x across all body performers should yield 0.
+      for (const n of [5, 7]) {
+        const slots = getSlotsForPreset("v-shape", n);
+        const bodySumX = slots
+          .filter((s) => s.index > 0)
+          .reduce((sum, s) => sum + s.position.x, 0);
+        expect(bodySumX).toBeCloseTo(0, 6);
+      }
+    });
+
+    it("placement stays within the ±10m stage bounds for every count", () => {
+      for (let n = 1; n <= 8; n++) {
+        const slots = getSlotsForPreset("v-shape", n);
+        for (const s of slots) {
+          expect(Number.isFinite(s.position.x)).toBe(true);
+          expect(Number.isFinite(s.position.z)).toBe(true);
+          expect(s.position.x).toBeGreaterThanOrEqual(-10);
+          expect(s.position.x).toBeLessThanOrEqual(10);
+          expect(s.position.z).toBeGreaterThanOrEqual(-10);
+          expect(s.position.z).toBeLessThanOrEqual(10);
+        }
+      }
+    });
+
+    it("extends v-shape valid counts through 8 in PRESET_VALID_COUNTS", () => {
+      expect(PRESET_VALID_COUNTS["v-shape"]).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
+    });
+  });
 });

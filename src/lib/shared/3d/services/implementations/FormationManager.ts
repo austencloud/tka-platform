@@ -38,14 +38,22 @@ function easeInOutCubic(t: number): number {
 }
 
 /**
- * Create a FormationManager instance with reactive state
+ * Create a FormationManager instance with reactive state.
+ *
+ * `maxPerformers` caps the internal `performerCount` value. Realm / museum /
+ * duet keep the historical cap of 4 by omitting this parameter. The standalone
+ * 3D viewer passes 8 via PerformerManager so formations actually compute
+ * slots for performers 5-8 — otherwise getAllPerformerPositions() returns
+ * only the first 4 indices and the extra performers never move when a
+ * preset is applied.
  */
 export function createFormationManager(
-  initialPerformerCount: number = 1
+  initialPerformerCount: number = 1,
+  maxPerformers: number = 4
 ): IFormationManager {
   // Internal state using Svelte 5 runes would be ideal,
   // but for now we use plain mutable state since this is a service
-  let performerCount = Math.max(1, Math.min(4, initialPerformerCount));
+  let performerCount = Math.max(1, Math.min(maxPerformers, initialPerformerCount));
   let currentFormation = getDefaultFormation(performerCount);
   let activeTransition: FormationTransition | null = null;
 
@@ -181,7 +189,7 @@ export function createFormationManager(
     },
 
     setPerformerCount(count: number): void {
-      const newCount = Math.max(1, Math.min(4, count));
+      const newCount = Math.max(1, Math.min(maxPerformers, count));
       if (newCount === performerCount) return;
 
       performerCount = newCount;
