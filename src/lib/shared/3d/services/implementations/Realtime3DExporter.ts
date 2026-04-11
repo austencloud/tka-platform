@@ -97,7 +97,13 @@ export class Realtime3DExporter implements IRealtime3DExporter {
     const offscreen = document.createElement("canvas");
     offscreen.width = width;
     offscreen.height = height;
-    const offCtx = offscreen.getContext("2d", { willReadFrequently: true });
+    // Intentionally omit `willReadFrequently` — we no longer read pixels
+    // back to CPU (the old getImageData path did). With the VideoFrame
+    // capture path, we want the canvas to stay GPU-resident so drawImage
+    // is a GPU→GPU blit and `new VideoFrame(offscreen)` hands a GPU texture
+    // straight to the hardware encoder. Setting willReadFrequently:true
+    // would force a CPU-backed canvas and re-introduce a per-frame upload.
+    const offCtx = offscreen.getContext("2d");
     if (!offCtx) {
       throw new Error("Failed to create 2D context for export scaling canvas");
     }
