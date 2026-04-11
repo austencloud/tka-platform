@@ -12,12 +12,20 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { IPropStateInterpolator } from "../services/contracts/IPropStateInterpolator";
 import type { ISequenceConverter } from "../services/contracts/ISequenceConverter";
+import type {
+  IViewer3DUndoManager,
+  PerformerSnapshot,
+  ViewerSnapshot,
+} from "../services/contracts/IViewer3DUndoManager";
 import type { CameraStateSnapshot } from "../domain/types/CameraStateSnapshot";
 import { Plane } from "../domain/enums/Plane";
 import type { AvatarInstanceState } from "./avatar-instance-state.svelte";
 import { createPerformerManager, type PerformerManager } from "./performer-manager.svelte";
 import { DEFAULT_AVATAR_ID } from "../config/avatar-definitions";
 import { STAGE } from "$lib/shared/3d/scale/scale-constants";
+import type { FormationPreset } from "../domain/formation";
+import { calculateFacingAngle } from "../domain/formation";
+import { PRESET_VALID_COUNTS, createFormationFromPreset } from "../config/formation-presets";
 
 // ============================================
 // Persistence
@@ -121,12 +129,17 @@ function detectWebGL2(): boolean {
 export function createViewer3DState(deps: {
   propInterpolator: IPropStateInterpolator;
   sequenceConverter: ISequenceConverter;
+  viewer3DUndoManager: IViewer3DUndoManager;
 }) {
   const _webgl2Available = detectWebGL2();
   const _persistedMode = _webgl2Available ? loadPersistedMode() : "2d";
   const _persistedCamera = loadPersistedCamera();
 
-  let renderMode = $state<"2d" | "3d">("2d"); // Actual restore happens via enter3D call from orchestrator
+  // Synchronously restore the last render mode from localStorage so that
+  // closing and reopening the sequence drawer keeps the user in 3D if that's
+  // where they were. The orchestrator still fires enter3D() once the sequence
+  // is available so the primary performer gets its sequence data loaded.
+  let renderMode = $state<"2d" | "3d">(_persistedMode);
 
   // Performer manager — single source of truth for multi-performer state.
   // The viewer passes its viewer-specific cap (8) while realm/museum/duet
@@ -189,6 +202,210 @@ export function createViewer3DState(deps: {
       p.loadSequence(sequenceData);
     }
   }
+
+  // Track the most recently applied formation preset so undo snapshots can
+  // record it. Starts as "manual" until the user picks a preset.
+  let activeFormation = $state<FormationPreset | "manual">("manual");
+
+  /**
+   * Serialize the current viewer state into a ViewerSnapshot. Used by the
+   * undo manager to capture before/after states around mutations.
+   */
+  function captureViewerSnapshot(): ViewerSnapshot {
+    const performerSnapshots: PerformerSnapshot[] = performerManager.performers.map((p) => ({
+      id: p.id,
+      position: { x: p.position.x, z: p.position.z },
+      facingAngle: p.facingAngle,
+      customBluePlane: p.customBluePlane,
+      customRedPlane: p.customRedPlane,
+      // AvatarInstanceState does not currently expose a sequenceRef on its
+      // public surface. For v1 we snapshot null — undo of a sequence change
+      // is out of scope. The field remains on the snapshot shape for future
+      // expansion.
+      sequenceRef: null,
+    }));
+
+    return {
+      performers: performerSnapshots,
+      selectedPerformerIndex,
+      activeFormation,
+      timestamp: Date.now(),
+    };
+  }
+
+  /**
+   * Restore a snapshot onto the live state. Called by undo/redo.
+   * Handles: performer count (spawn/remove to match), per-performer
+   * position/facing/plane assignments, active formation, selection.
+   * Does NOT restore sequenceRef — out of scope for v1.
+   */
+  function restoreViewerSnapshot(snap: ViewerSnapshot): void {
+    // 1. Match performer count by spawning or removing.
+    while (performerManager.performers.length < snap.performers.length) {
+      performerManager.addPerformer();
+    }
+    while (performerManager.performers.length > snap.performers.length) {
+      performerManager.removePerformer();
+    }
+
+    // 2. Restore each performer's editable state.
+    snap.performers.forEach((ps, i) => {
+      const p = performerManager.performers[i];
+      if (!p) return;
+      p.position.x = ps.position.x;
+      p.position.z = ps.position.z;
+      p.setFacingAngle(ps.facingAngle);
+      p.setHandPlane("blue", ps.customBluePlane);
+      p.setHandPlane("red", ps.customRedPlane);
+    });
+
+    // 3. Restore top-level viewer state.
+    activeFormation = snap.activeFormation;
+    selectedPerformerIndex = snap.selectedPerformerIndex;
+  }
+
+  // Coalescing window for spatial edits (position/facing nudges). A held
+  // numeric spinner shouldn't flood the undo stack with 60 entries/sec.
+  const SPATIAL_COALESCE_WINDOW_MS = 300;
+  let lastSpatialEntryId: string | null = null;
+  let lastSpatialTimestamp: number = 0;
+
+  /**
+   * Spawn a new performer. Copies the currently-selected performer's plane
+   * assignments onto the new one (or performer 0 if scope is "All"). Records
+   * an undo entry of type "spawn".
+   */
+  function spawnPerformerFromUI(): void {
+    if (performerManager.performers.length >= STAGE.MAX_VIEWER_PERFORMERS) return;
+
+    const before = captureViewerSnapshot();
+    const entryId = deps.viewer3DUndoManager.pushSnapshot("spawn", before);
+
+    const sourceIndex = selectedPerformerIndex ?? 0;
+    const source = performerManager.performers[sourceIndex];
+
+    performerManager.addPerformer();
+
+    const newIndex = performerManager.performers.length - 1;
+    const newPerf = performerManager.performers[newIndex];
+    if (newPerf && source && source !== newPerf) {
+      newPerf.setHandPlane("blue", source.customBluePlane);
+      newPerf.setHandPlane("red", source.customRedPlane);
+    }
+
+    selectedPerformerIndex = newIndex;
+    deps.viewer3DUndoManager.completeEntry(entryId, captureViewerSnapshot());
+  }
+
+  /**
+   * Remove the last performer. PerformerManager only supports removing the
+   * last one today (spec Open Question #6 tracks index-specific remove).
+   * Records an undo entry of type "remove".
+   */
+  function removePerformerFromUI(): void {
+    if (performerManager.performers.length <= 1) return;
+
+    const before = captureViewerSnapshot();
+    const entryId = deps.viewer3DUndoManager.pushSnapshot("remove", before);
+
+    const removedIndex = performerManager.performers.length - 1;
+    performerManager.removePerformer();
+
+    if (selectedPerformerIndex !== null && selectedPerformerIndex >= removedIndex) {
+      selectedPerformerIndex = Math.max(0, removedIndex - 1);
+    }
+
+    deps.viewer3DUndoManager.completeEntry(entryId, captureViewerSnapshot());
+  }
+
+  /**
+   * Apply a formation preset. No-ops if the preset's valid counts don't
+   * include the current performer count. Records an undo entry of type
+   * "formation". Uses PerformerManager's existing smooth transition.
+   *
+   * `transitionToFormation` kicks off an animated transition — the live
+   * performer positions only reach their targets after ~500ms of frame
+   * updates. To make redo work correctly, we synthesize the afterState
+   * from the target formation slots rather than re-reading live positions.
+   */
+  function applyFormationFromUI(preset: FormationPreset): void {
+    const count = performerManager.performers.length;
+    if (!PRESET_VALID_COUNTS[preset]?.includes(count)) return;
+
+    const before = captureViewerSnapshot();
+    const entryId = deps.viewer3DUndoManager.pushSnapshot("formation", before);
+
+    const targetFormation = createFormationFromPreset(preset, count);
+    const afterPerformers: PerformerSnapshot[] = performerManager.performers.map((p, i) => {
+      const slot = targetFormation.slots.find((s) => s.index === i);
+      const facing = slot ? calculateFacingAngle(slot, targetFormation) : p.facingAngle;
+      return {
+        id: p.id,
+        position: slot
+          ? { x: slot.position.x, z: slot.position.z }
+          : { x: p.position.x, z: p.position.z },
+        facingAngle: facing,
+        customBluePlane: p.customBluePlane,
+        customRedPlane: p.customRedPlane,
+        sequenceRef: null,
+      };
+    });
+
+    performerManager.transitionToFormation(preset, 500);
+    activeFormation = preset;
+
+    deps.viewer3DUndoManager.completeEntry(entryId, {
+      performers: afterPerformers,
+      selectedPerformerIndex,
+      activeFormation: preset,
+      timestamp: Date.now(),
+    });
+  }
+
+  /**
+   * Record a spatial edit (position or facing nudge). Coalesces consecutive
+   * edits within 300ms onto the same undo entry so a held spinner doesn't
+   * flood the stack.
+   */
+  function recordSpatialEdit(): void {
+    const now = Date.now();
+    const withinWindow =
+      lastSpatialEntryId !== null && now - lastSpatialTimestamp < SPATIAL_COALESCE_WINDOW_MS;
+
+    if (withinWindow && lastSpatialEntryId) {
+      deps.viewer3DUndoManager.completeEntry(lastSpatialEntryId, captureViewerSnapshot());
+      lastSpatialTimestamp = now;
+      return;
+    }
+
+    const before = captureViewerSnapshot();
+    const id = deps.viewer3DUndoManager.pushSnapshot("spatial", before);
+    deps.viewer3DUndoManager.completeEntry(id, before);
+    lastSpatialEntryId = id;
+    lastSpatialTimestamp = now;
+  }
+
+  /**
+   * Undo the last mutation. Restores the entry's beforeState.
+   */
+  function undo(): void {
+    const entry = deps.viewer3DUndoManager.undo();
+    if (!entry) return;
+    restoreViewerSnapshot(entry.beforeState);
+    // A fresh undo action closes any spatial coalescing window.
+    lastSpatialEntryId = null;
+  }
+
+  /**
+   * Redo the most recently undone mutation. Restores the entry's afterState.
+   */
+  function redo(): void {
+    const entry = deps.viewer3DUndoManager.redo();
+    if (!entry || !entry.afterState) return;
+    restoreViewerSnapshot(entry.afterState);
+    lastSpatialEntryId = null;
+  }
+
   let effectToggles = $state<Record<string, boolean>>({
     fire: false,
     led: false,
@@ -337,6 +554,21 @@ export function createViewer3DState(deps: {
     selectPerformerScope,
     setHandPlaneScoped,
     loadSequenceScoped,
+    get canUndo() {
+      return deps.viewer3DUndoManager.canUndo;
+    },
+    get canRedo() {
+      return deps.viewer3DUndoManager.canRedo;
+    },
+    get activeFormation() {
+      return activeFormation;
+    },
+    spawnPerformerFromUI,
+    removePerformerFromUI,
+    applyFormationFromUI,
+    recordSpatialEdit,
+    undo,
+    redo,
     get effectToggles() {
       return effectToggles;
     },

@@ -307,6 +307,7 @@
   const viewer3DState = createViewer3DState({
     propInterpolator: container.items.propStateInterpolator,
     sequenceConverter: container.items.sequenceConverter,
+    viewer3DUndoManager: container.items.viewer3DUndoManager,
   });
   setViewer3DContext(viewer3DState);
 
