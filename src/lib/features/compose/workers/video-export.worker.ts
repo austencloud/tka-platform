@@ -309,6 +309,7 @@ async function handleConfigWebCodecs(config: ExportConfig): Promise<void> {
     height: encoderHeight,
     bitrate: config.bitrate,
     framerate: config.fps,
+    hardwareAcceleration: "prefer-hardware",
   });
 }
 
