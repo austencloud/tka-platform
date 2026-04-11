@@ -116,6 +116,13 @@ export const STAGE = {
 	/** Maximum performers supported */
 	MAX_PERFORMERS: 4,
 
+	/**
+	 * Viewer-specific max performers. The standalone 3D viewer allows up to 8,
+	 * while realm/museum/duet continue to use the shared MAX_PERFORMERS = 4.
+	 * Wired into createPerformerManager via its optional maxPerformers dep.
+	 */
+	MAX_VIEWER_PERFORMERS: 8,
+
 	/** Offset behind grid plane where avatar stands (facing the grid) */
 	AVATAR_GRID_OFFSET: 0.3,
 
