@@ -2,17 +2,21 @@
   /**
    * Viewer3DGearPopover
    *
-   * Single gear icon for half-screen 3D mode. Opens a popover with:
-   * 1. Camera presets (Main, Front, Side, Top, 3/4)
-   * 2. Grid plane toggles (Wall, Wheel, Floor)
+   * Single gear icon for the sequence-viewer 3D popover. Contains:
+   * 1. Camera presets (2×3 grid)
+   * 2. Unified Planes matrix — one row per plane, showing which hands are
+   *    on it and whether it's visible. The plane color dot doubles as the
+   *    visibility toggle. Hand slots on the right are drop targets for
+   *    assigning each hand to a plane.
+   *
+   * Sequence-wide only — per-beat plane overrides are not editable here.
+   * PlaneMode is derived from the hand assignments in setHandPlane.
    */
 
   import { Plane, PLANE_COLORS } from "../domain/enums/Plane";
-  import { PlaneMode } from "../domain/enums/PlaneMode";
   import { getViewer3DContext } from "../context/viewer-3d-context";
   import Viewer3DViewPresets from "./Viewer3DViewPresets.svelte";
-  import PlaneModeToggle from "./controls/PlaneModeToggle.svelte";
-  import { fly, scale } from "svelte/transition";
+  import { scale } from "svelte/transition";
   import { cubicOut, backOut } from "svelte/easing";
 
   let open = $state(false);
@@ -27,14 +31,70 @@
     { plane: Plane.FLOOR, label: "Floor" },
   ];
 
+  // Sequence-wide hand plane assignments (falls back to Wall if no avatar)
+  const bluePlane = $derived(avatarState?.customBluePlane ?? Plane.WALL);
+  const redPlane = $derived(avatarState?.customRedPlane ?? Plane.WALL);
+
+  // A plane is "implicit" when a hand is on it — visibility is locked on
+  function isImplicit(plane: Plane): boolean {
+    return bluePlane === plane || redPlane === plane;
+  }
+
+  // A plane is "force-shown" when it's in visiblePlanes but no hand is on it
+  function isForceShown(plane: Plane): boolean {
+    return viewer3DState.visiblePlanes.has(plane) && !isImplicit(plane);
+  }
+
+  // A plane is visually "visible" if it's either implicit or force-shown
+  function isVisible(plane: Plane): boolean {
+    return isImplicit(plane) || isForceShown(plane);
+  }
+
+  // Reset is only offered when any state deviates from defaults
+  const isNonDefault = $derived(
+    (avatarState?.customBluePlane ?? Plane.WALL) !== Plane.WALL ||
+    (avatarState?.customRedPlane ?? Plane.WALL) !== Plane.WALL ||
+    (avatarState?.hasBeatOverrides ?? false) ||
+    PLANES.some(({ plane }) => isForceShown(plane))
+  );
+
+  const hasBeatOverrides = $derived(avatarState?.hasBeatOverrides ?? false);
+
   function toggleOpen(e: MouseEvent) {
     e.stopPropagation();
     open = !open;
   }
 
-  function handlePlaneClick(e: MouseEvent, plane: Plane) {
+  function handlePlaneToggleClick(e: MouseEvent, plane: Plane) {
     e.stopPropagation();
+    // Locked when a hand is on the plane
+    if (isImplicit(plane)) return;
     viewer3DState.togglePlane(plane);
+  }
+
+  function handleHandSlotClick(e: MouseEvent, hand: "blue" | "red", plane: Plane) {
+    e.stopPropagation();
+    if (!avatarState) return;
+    const currentPlane = hand === "blue" ? bluePlane : redPlane;
+    // No-op if this hand is already on this plane
+    if (currentPlane === plane) return;
+    avatarState.setHandPlane(hand, plane);
+  }
+
+  function handleResetClick(e: MouseEvent) {
+    e.stopPropagation();
+    if (!avatarState) return;
+    // Reset sequence-wide planes to Wall
+    avatarState.setHandPlane("blue", Plane.WALL);
+    avatarState.setHandPlane("red", Plane.WALL);
+    // Clear any per-beat overrides that exist
+    avatarState.clearBeatPlaneOverrides();
+    // Clear any force-shown planes
+    for (const { plane } of PLANES) {
+      if (isForceShown(plane)) {
+        viewer3DState.togglePlane(plane);
+      }
+    }
   }
 
   function handleOutsideClick(e: MouseEvent) {
@@ -44,8 +104,6 @@
       open = false;
     }
   }
-
-  const anyPlaneVisible = $derived(viewer3DState.visiblePlanes.size > 0);
 </script>
 
 <svelte:window onclick={handleOutsideClick} />
@@ -79,60 +137,78 @@
       <!-- Camera presets -->
       <div class="section">
         <div class="section-label">Camera</div>
-        <Viewer3DViewPresets compact />
+        <Viewer3DViewPresets grid />
       </div>
 
       <div class="divider"></div>
 
-      <!-- Grid planes -->
+      <!-- Unified Planes matrix -->
       <div class="section">
-        <div class="section-label">Grid Planes</div>
-        <div class="plane-list">
+        <div class="section-label">Planes</div>
+        <div class="plane-matrix">
           {#each PLANES as { plane, label }}
-            {@const isVisible = viewer3DState.visiblePlanes.has(plane)}
+            {@const implicit = isImplicit(plane)}
+            {@const visible = isVisible(plane)}
             {@const color = PLANE_COLORS[plane]}
-            <button
+            <div
               class="plane-row"
-              class:plane-active={isVisible}
-              onclick={(e) => handlePlaneClick(e, plane)}
-              aria-pressed={isVisible}
-              aria-label="{label} plane — {isVisible ? 'visible' : 'hidden'}"
+              class:with-hand={implicit}
+              class:hidden-row={!visible}
             >
-              <span class="plane-dot" style="background: {color}; box-shadow: 0 0 4px {color}60;"></span>
-              <span class="plane-label">{label}</span>
-              {#if isVisible}
-                <svg class="plane-check" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#a3e635" stroke-width="2.5">
-                  <polyline points="20 6 9 17 4 12"/>
-                </svg>
-              {/if}
-            </button>
+              <div class="plane-left">
+                <button
+                  class="plane-toggle"
+                  class:visible
+                  class:hidden={!visible}
+                  class:implicit
+                  style="--dot-color: {color};"
+                  onclick={(e) => handlePlaneToggleClick(e, plane)}
+                  aria-pressed={visible}
+                  aria-disabled={implicit}
+                  aria-label={`${label} plane — ${implicit ? 'locked visible, hand assigned' : (visible ? 'force-shown, click to hide' : 'hidden, click to show')}`}
+                ></button>
+                <span class="plane-label">{label}</span>
+              </div>
+              <div class="plane-right">
+                <button
+                  class="hand-slot blue"
+                  class:filled={bluePlane === plane}
+                  onclick={(e) => handleHandSlotClick(e, "blue", plane)}
+                  aria-pressed={bluePlane === plane}
+                  aria-label={`Blue hand on ${label}`}
+                ></button>
+                <button
+                  class="hand-slot red"
+                  class:filled={redPlane === plane}
+                  onclick={(e) => handleHandSlotClick(e, "red", plane)}
+                  aria-pressed={redPlane === plane}
+                  aria-label={`Red hand on ${label}`}
+                ></button>
+              </div>
+            </div>
           {/each}
         </div>
+
+        {#if isNonDefault}
+          <div class="reset-row">
+            <button
+              class="reset-btn"
+              class:with-overrides={hasBeatOverrides}
+              onclick={handleResetClick}
+              aria-label={hasBeatOverrides ? 'Reset all planes and clear beat overrides' : 'Reset all planes'}
+              title={hasBeatOverrides ? 'Reset all planes and clear beat overrides' : 'Reset all planes'}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 7v6h6"/>
+                <path d="M21 17a9 9 0 0 0-15-6.7L3 13"/>
+              </svg>
+              {#if hasBeatOverrides}
+                <span class="override-badge" aria-hidden="true"></span>
+              {/if}
+            </button>
+          </div>
+        {/if}
       </div>
-
-      <div class="divider"></div>
-
-      <!-- Plane mode: per-hand plane selectors -->
-      {#if avatarState}
-        <div class="section">
-          <div class="section-label">Hand Planes</div>
-          <PlaneModeToggle
-            mode={avatarState.planeMode}
-            bluePlane={avatarState.currentBeatBluePlane}
-            redPlane={avatarState.currentBeatRedPlane}
-            sequenceBluePlane={avatarState.customBluePlane}
-            sequenceRedPlane={avatarState.customRedPlane}
-            currentBeatIndex={avatarState.currentStepIndex}
-            totalBeats={avatarState.totalSteps}
-            hasBeatOverrides={avatarState.hasBeatOverrides}
-            beatEditMode={avatarState.beatEditMode}
-            onModeChange={(mode) => avatarState.setPlaneMode(mode)}
-            onHandPlaneChange={(hand, plane) => avatarState.setBeatHandPlane(avatarState.currentStepIndex, hand, plane)}
-            onSequenceHandPlaneChange={(hand, plane) => avatarState.setHandPlane(hand, plane)}
-            onBeatEditModeChange={(enabled) => avatarState.setBeatEditMode(enabled)}
-          />
-        </div>
-      {/if}
     </div>
   {/if}
 </div>
@@ -173,82 +249,198 @@
     top: calc(100% + 8px);
     right: 0;
     z-index: 100;
-    min-width: 200px;
+    width: 288px;
     border-radius: 10px;
     transform-origin: top right;
     background: rgba(14, 14, 24, 0.95);
     border: 1px solid rgba(255, 255, 255, 0.12);
     backdrop-filter: blur(12px);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-    padding: 10px;
+    padding: 12px;
   }
 
   .section {
     display: flex;
     flex-direction: column;
-    gap: 5px;
   }
 
   .section-label {
-    font-size: 9px;
+    font-size: 10px;
     text-transform: uppercase;
-    letter-spacing: 1px;
-    color: rgba(255, 255, 255, 0.35);
+    letter-spacing: 1.2px;
+    color: rgba(255, 255, 255, 0.4);
     font-weight: 600;
+    margin-bottom: 6px;
   }
 
   .divider {
     height: 1px;
     background: rgba(255, 255, 255, 0.08);
-    margin: 8px 0;
+    margin: 12px 0 10px 0;
   }
 
-  .plane-list {
+  .plane-matrix {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 4px;
   }
 
   .plane-row {
-    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 12px;
+    min-height: 48px;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .plane-row.with-hand {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.14);
+  }
+
+  .plane-row.hidden-row {
+    opacity: 0.55;
+  }
+
+  .plane-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .plane-right {
     display: flex;
     align-items: center;
     gap: 6px;
-    padding: 4px 6px;
-    border-radius: 5px;
-    background: transparent;
-    border: 1px solid transparent;
-    color: rgba(255, 255, 255, 0.5);
-    font-size: 10px;
+    flex-shrink: 0;
+  }
+
+  /* Plane toggle — round 32px color dot that doubles as visibility control */
+  .plane-toggle {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
     cursor: pointer;
-    transition: background 0.15s ease, color 0.15s ease;
-    text-align: left;
+    border: 2px solid;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    background: transparent;
+    flex-shrink: 0;
+    padding: 0;
   }
 
-  .plane-row:hover {
-    background: rgba(255, 255, 255, 0.06);
-    color: rgba(255, 255, 255, 0.85);
+  .plane-toggle.visible {
+    background: var(--dot-color);
+    border-color: var(--dot-color);
+    box-shadow: 0 0 12px color-mix(in srgb, var(--dot-color) 50%, transparent);
   }
 
-  .plane-row.plane-active {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.1);
-    color: rgba(255, 255, 255, 0.9);
+  .plane-toggle.hidden {
+    background: transparent;
+    border-color: color-mix(in srgb, var(--dot-color) 50%, transparent);
   }
 
-  .plane-dot {
+  .plane-toggle.implicit {
+    cursor: default;
+  }
+
+  .plane-toggle.implicit::after {
+    content: '';
     width: 7px;
     height: 7px;
     border-radius: 50%;
-    flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.65);
+  }
+
+  .plane-toggle:hover:not(.implicit) {
+    transform: scale(1.08);
   }
 
   .plane-label {
-    flex: 1;
+    font-size: 13px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.88);
   }
 
-  .plane-check {
+  .plane-row.hidden-row .plane-label {
+    color: rgba(255, 255, 255, 0.55);
+  }
+
+  /* Hand slots — 32px round dashed/filled circles */
+  .hand-slot {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px dashed;
+    cursor: pointer;
+    background: transparent;
+    transition: border-color 0.15s ease;
     flex-shrink: 0;
+    padding: 0;
   }
 
+  .hand-slot.blue { border-color: rgba(74, 144, 217, 0.4); }
+  .hand-slot.red { border-color: rgba(217, 74, 74, 0.4); }
+
+  .hand-slot.filled.blue {
+    background: #4a90d9;
+    border: 2px solid #4a90d9;
+    box-shadow: 0 0 10px rgba(74, 144, 217, 0.6);
+  }
+
+  .hand-slot.filled.red {
+    background: #d94a4a;
+    border: 2px solid #d94a4a;
+    box-shadow: 0 0 10px rgba(217, 74, 74, 0.6);
+  }
+
+  .hand-slot:hover:not(.filled) {
+    border-color: rgba(255, 255, 255, 0.5);
+  }
+
+  /* Reset button — only rendered when state is non-default */
+  .reset-row {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 8px;
+  }
+
+  .reset-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.4);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    position: relative;
+    transition: all 0.15s ease;
+  }
+
+  .reset-btn:hover {
+    color: rgba(255, 255, 255, 0.9);
+    border-color: rgba(255, 255, 255, 0.25);
+  }
+
+  .reset-btn.with-overrides .override-badge {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #f59e0b;
+    border: 1.5px solid rgba(14, 14, 24, 1);
+  }
 </style>
