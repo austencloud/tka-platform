@@ -94,23 +94,30 @@
 
 <style>
   .chip-strip {
+    /* Flex row so chips line up left-to-right; wrap kicks in only if the
+       popover is narrower than expected, but with 22px chips + the pinned
+       add button we comfortably fit All + 8 performers + the add button at
+       340px popover width. */
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 6px;
-    padding: 8px 12px;
+    gap: 4px;
+    padding: 8px 10px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   }
 
   .chip {
-    min-width: 28px;
-    height: 28px;
-    padding: 0 10px;
-    border-radius: 14px;
+    flex: 0 0 auto;
+    box-sizing: border-box;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 8px;
+    border-radius: 11px;
     border: 1px solid rgba(255, 255, 255, 0.18);
     background: rgba(255, 255, 255, 0.06);
     color: rgba(255, 255, 255, 0.82);
-    font-size: 13px;
-    font-weight: 500;
+    font-size: 11px;
+    font-weight: 600;
     cursor: pointer;
     display: inline-flex;
     align-items: center;
@@ -128,12 +135,12 @@
   }
 
   .chip-all {
-    padding: 0 14px;
-    font-weight: 600;
+    padding: 0 10px;
+    letter-spacing: 0.3px;
   }
 
   .chip-performer {
-    width: 28px;
+    width: 22px;
     padding: 0;
     border-color: var(--chip-color, rgba(255, 255, 255, 0.18));
   }
@@ -151,15 +158,20 @@
   }
 
   .chip-add {
-    width: 28px;
+    /* Pinned to the right edge so the add button stays in the same
+       viewport position as performers are spawned. Without this the button
+       shifts right by one chip-width per click and the user has to chase
+       it with their cursor. */
+    margin-left: auto;
+    width: 22px;
     padding: 0;
-    font-size: 16px;
+    font-size: 14px;
     line-height: 1;
   }
 
   .separator {
     color: rgba(255, 255, 255, 0.3);
-    font-size: 14px;
-    padding: 0 2px;
+    font-size: 12px;
+    padding: 0 1px;
   }
 </style>

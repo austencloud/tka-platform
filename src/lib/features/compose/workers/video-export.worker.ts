@@ -450,12 +450,25 @@ async function handleFinishWebCodecs(): Promise<void> {
     return;
   }
 
-  // If the encoder died mid-export, don't try to flush a dead codec — the
-  // error callback already reported the root cause. Posting another error
-  // here would overwrite it with a less-informative "Cannot call 'flush'
-  // on a closed codec" message.
+  // If the encoder died mid-export, don't try to flush a dead codec.
+  // Post an error so the main thread's finish() promise rejects and the
+  // UI can surface the failure — without this, the promise hangs forever
+  // and the export UI freezes at 100% showing the Cancel button.
+  //
+  // The encoder's own error callback may have already fired and posted
+  // the root-cause message, but we can't count on that: the callback is
+  // asynchronous and may not have run by the time we get here. Posting
+  // a dedicated finish-time error is the only thing that guarantees the
+  // main thread's finish-side promise resolves.
   if (encoderErrored || encoder.state !== "configured") {
     cleanup();
+    post({
+      type: "error",
+      error:
+        "Encoder stopped accepting frames before export could finish " +
+        "(the hardware encoder may have rejected the frame rate or " +
+        "resolution — try a lower fps/resolution combination).",
+    });
     return;
   }
 

@@ -1,7 +1,8 @@
 /**
  * Performer Position Calculator
  *
- * Calculates default positions for 1-4 performers in a 2x2 grid arrangement.
+ * Default spawn positions for 1-8 performers arranged into rows of two.
+ * Odd counts put a lone performer centered at the rear of their row.
  * All performers face the same direction (toward camera).
  */
 
@@ -21,49 +22,56 @@ const GRID_SPACING = STAGE.PERFORMER_SPACING;
 export const WALL_OFFSET = -STAGE.AVATAR_GRID_OFFSET;
 
 /**
- * Default 2x2 grid positions (all facing same direction)
+ * Default grid positions for counts 1-8. Shape evolves row-by-row:
  *
- *   [1] [2]     Front row (z = 0)
- *   [3] [4]     Back row (z = -GRID_SPACING)
+ *   count 1 → [0]
+ *   count 2 → [0] [1]
+ *   count 3 → [0] [1]        count 4 → [0] [1]
+ *                 [2]                      [2] [3]
+ *   count 5 → [0] [1]        count 6 → [0] [1]
+ *                 [2] [3]                   [2] [3]
+ *                     [4]                   [4] [5]
+ *   count 7 → [0] [1]        count 8 → [0] [1]
+ *                 [2] [3]                   [2] [3]
+ *                 [4] [5]                   [4] [5]
+ *                     [6]                   [6] [7]
  *
- * For 1 performer: centered at origin
- * For 2 performers: side by side in front row
- * For 3 performers: 2 front, 1 back-center
- * For 4 performers: full 2x2 grid
+ * Row n lives at z = -n * GRID_SPACING + WALL_OFFSET. Paired performers
+ * sit at ±GRID_SPACING/2; a lone last-row performer sits at x=0 (centered).
+ * Counts beyond 8 are clamped — the viewer's MAX_VIEWER_PERFORMERS cap
+ * already enforces this at the manager level, but the function stays safe
+ * for any caller.
  */
 export function getDefaultPositions(count: number): PerformerPosition[] {
   if (count <= 0) return [];
-  if (count > 4) count = 4;
+  if (count > 8) count = 8;
 
-  // Single performer: centered, offset back from wall plane
   if (count === 1) {
     return [{ x: 0, z: WALL_OFFSET }];
   }
 
-  // Two performers: side by side
-  if (count === 2) {
-    return [
-      { x: -GRID_SPACING / 2, z: WALL_OFFSET }, // Left
-      { x: GRID_SPACING / 2, z: WALL_OFFSET }, // Right
-    ];
+  const positions: PerformerPosition[] = [];
+  const lastRow = Math.floor((count - 1) / 2);
+  const lastRowIsSingleton = count % 2 === 1;
+
+  for (let i = 0; i < count; i++) {
+    const row = Math.floor(i / 2);
+    const col = i % 2;
+    const rowZ = -row * GRID_SPACING + WALL_OFFSET;
+
+    // A lone performer in the final row gets centered; otherwise the pair
+    // sits at ±GRID_SPACING/2.
+    if (row === lastRow && lastRowIsSingleton) {
+      positions.push({ x: 0, z: rowZ });
+    } else {
+      positions.push({
+        x: (col === 0 ? -1 : 1) * (GRID_SPACING / 2),
+        z: rowZ,
+      });
+    }
   }
 
-  // Three performers: 2 front, 1 back center
-  if (count === 3) {
-    return [
-      { x: -GRID_SPACING / 2, z: WALL_OFFSET }, // Front-left
-      { x: GRID_SPACING / 2, z: WALL_OFFSET }, // Front-right
-      { x: 0, z: -GRID_SPACING + WALL_OFFSET }, // Back-center
-    ];
-  }
-
-  // Four performers: full 2x2 grid
-  return [
-    { x: -GRID_SPACING / 2, z: WALL_OFFSET }, // Front-left
-    { x: GRID_SPACING / 2, z: WALL_OFFSET }, // Front-right
-    { x: -GRID_SPACING / 2, z: -GRID_SPACING + WALL_OFFSET }, // Back-left
-    { x: GRID_SPACING / 2, z: -GRID_SPACING + WALL_OFFSET }, // Back-right
-  ];
+  return positions;
 }
 
 /**
