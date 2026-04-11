@@ -105,19 +105,32 @@
   const bluePropState = $derived.by<PropState3D | null>(() => {
     const pose = labCtx.state.currentPose;
     if (!pose) return null;
-    return buildPropState(pose.plane, pose.blueHand.position, pose.blueHand.orientation);
+    return buildPropState(
+      pose.blueHand.plane,
+      pose.blueHand.position,
+      pose.blueHand.orientation
+    );
   });
 
   const redPropState = $derived.by<PropState3D | null>(() => {
     const pose = labCtx.state.currentPose;
     if (!pose) return null;
-    return buildPropState(pose.plane, pose.redHand.position, pose.redHand.orientation);
+    return buildPropState(
+      pose.redHand.plane,
+      pose.redHand.position,
+      pose.redHand.orientation
+    );
   });
 
-  /** Only show the grid for the pose's current plane — less visual clutter. */
+  /**
+   * Show the grid for both hands' planes. For same-plane poses this is
+   * a single plane; for cross-plane poses (the main reason this lab
+   * exists) it's two planes — a wall + wheel intersection, for example.
+   */
   const visiblePlanes = $derived.by<Set<Plane>>(() => {
     const pose = labCtx.state.currentPose;
-    return new Set(pose ? [pose.plane] : []);
+    if (!pose) return new Set();
+    return new Set([pose.blueHand.plane, pose.redHand.plane]);
   });
 
   // The reviewer drives these live via sliders in StanceControls. Because

@@ -9,42 +9,43 @@ import type {
 describe("DiamondPoseEnumerator", () => {
   const enumerator = new DiamondPoseEnumerator();
 
-  it("enumerates exactly 192 poses", () => {
+  it("enumerates exactly 576 poses (cross-plane × cross-plane)", () => {
     const poses = enumerator.enumerateDiamondInOut();
-    expect(poses).toHaveLength(192);
+    expect(poses).toHaveLength(576);
   });
 
   it("generates unique ids for every pose", () => {
     const poses = enumerator.enumerateDiamondInOut();
     const ids = new Set(poses.map((p) => p.id));
-    expect(ids.size).toBe(192);
+    expect(ids.size).toBe(576);
   });
 
-  it("every combination of (plane, blue, red) appears exactly once", () => {
+  it("every combination of (bluePlane, bluePos, blueOri, redPlane, redPos, redOri) appears exactly once", () => {
     const poses = enumerator.enumerateDiamondInOut();
     const planes: Plane[] = [Plane.WALL, Plane.WHEEL, Plane.FLOOR];
     const positions: DiamondPosition[] = ["N", "E", "S", "W"];
     const orientations: HandOrientation[] = ["in", "out"];
 
-    for (const plane of planes) {
-      for (const bluePos of positions) {
-        for (const blueOri of orientations) {
-          for (const redPos of positions) {
-            for (const redOri of orientations) {
-              const match = poses.filter(
-                (p) =>
-                  p.plane === plane &&
-                  p.blueHand.position === bluePos &&
-                  p.blueHand.orientation === blueOri &&
-                  p.redHand.position === redPos &&
-                  p.redHand.orientation === redOri
-              );
-              expect(match).toHaveLength(1);
-            }
-          }
-        }
-      }
-    }
+    let matches = 0;
+    for (const bPlane of planes)
+      for (const bPos of positions)
+        for (const bOri of orientations)
+          for (const rPlane of planes)
+            for (const rPos of positions)
+              for (const rOri of orientations) {
+                const match = poses.filter(
+                  (p) =>
+                    p.blueHand.plane === bPlane &&
+                    p.blueHand.position === bPos &&
+                    p.blueHand.orientation === bOri &&
+                    p.redHand.plane === rPlane &&
+                    p.redHand.position === rPos &&
+                    p.redHand.orientation === rOri
+                );
+                expect(match).toHaveLength(1);
+                matches++;
+              }
+    expect(matches).toBe(576);
   });
 
   it("produces the same order on repeated calls (deterministic)", () => {
@@ -53,17 +54,42 @@ describe("DiamondPoseEnumerator", () => {
     expect(a.map((p) => p.id)).toEqual(b.map((p) => p.id));
   });
 
-  it("encodes ids as {plane}-{bluePos}{blueOriFirstLetter}-{redPos}{redOriFirstLetter}", () => {
+  it("encodes ids with both planes, e.g., wNi-hEo for blue-wall-N-in / red-wheel-E-out", () => {
     const poses = enumerator.enumerateDiamondInOut();
-    const wallNiEo = poses.find((p) => p.id === "wall-Ni-Eo");
-    expect(wallNiEo).toBeDefined();
-    expect(wallNiEo!.plane).toBe(Plane.WALL);
-    expect(wallNiEo!.blueHand).toEqual({ position: "N", orientation: "in" });
-    expect(wallNiEo!.redHand).toEqual({ position: "E", orientation: "out" });
+    const wNi_hEo = poses.find((p) => p.id === "wNi-hEo");
+    expect(wNi_hEo).toBeDefined();
+    expect(wNi_hEo!.blueHand).toEqual({
+      plane: Plane.WALL,
+      position: "N",
+      orientation: "in",
+    });
+    expect(wNi_hEo!.redHand).toEqual({
+      plane: Plane.WHEEL,
+      position: "E",
+      orientation: "out",
+    });
   });
 
-  it("first pose is wall-Ni-Ni (plane outermost loop, innermost loops at first value)", () => {
+  it("first pose is wNi-wNi (outermost loop at first value)", () => {
     const poses = enumerator.enumerateDiamondInOut();
-    expect(poses[0].id).toBe("wall-Ni-Ni");
+    expect(poses[0]!.id).toBe("wNi-wNi");
+  });
+
+  it("includes same-plane poses (single-plane combos are a subset)", () => {
+    const poses = enumerator.enumerateDiamondInOut();
+    const samePlane = poses.filter(
+      (p) => p.blueHand.plane === p.redHand.plane
+    );
+    // 3 planes × 4 × 2 × 4 × 2 = 192
+    expect(samePlane).toHaveLength(192);
+  });
+
+  it("includes cross-plane poses (the main reason for this lab)", () => {
+    const poses = enumerator.enumerateDiamondInOut();
+    const crossPlane = poses.filter(
+      (p) => p.blueHand.plane !== p.redHand.plane
+    );
+    // 576 - 192 = 384
+    expect(crossPlane).toHaveLength(384);
   });
 });
