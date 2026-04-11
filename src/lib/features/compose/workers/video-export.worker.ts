@@ -352,6 +352,62 @@ function handleFrameWebCodecs(msg: FrameMessageLegacy): void {
   frame.close();
 }
 
+function handleFrameCapturedWebCodecs(msg: FrameMessageCaptured): void {
+  if (!encoder) return;
+
+  let videoFrame: VideoFrame | null = null;
+  try {
+    if (msg.frame.kind === "video-frame") {
+      // Fast path — the main thread handed us a ready-to-encode VideoFrame
+      // constructed from the source canvas.
+      videoFrame = msg.frame.frame;
+    } else {
+      // Fallback path — wrap the ImageData in a VideoFrame. This is only
+      // reached when the main thread has no VideoFrame constructor at all,
+      // which also means this worker should have taken the WASM branch;
+      // we handle it here for safety but it should never fire in practice.
+      videoFrame = new VideoFrame(msg.frame.data.data.buffer, {
+        format: "RGBA",
+        codedWidth: msg.frame.width,
+        codedHeight: msg.frame.height,
+        timestamp: msg.frame.timestampMicros,
+        duration: frameDurationMicros,
+      });
+    }
+
+    encoder.encode(videoFrame, { keyFrame: msg.isKeyframe });
+  } finally {
+    // Invariant: every VideoFrame the worker owns must be closed exactly
+    // once. encoder.encode() does NOT take ownership — the caller closes.
+    videoFrame?.close();
+  }
+}
+
+function handleFrameCapturedWasm(msg: FrameMessageCaptured): void {
+  if (!wasmEncoder) return;
+
+  // WASM path needs raw RGBA bytes. A video-frame kind here means the
+  // main thread incorrectly sent a GPU handle to a worker that can't
+  // consume one — treat it as an error so the mismatch surfaces in tests.
+  if (msg.frame.kind !== "image-data") {
+    post({
+      type: "error",
+      error: "WASM encoder requires image-data frames; got video-frame",
+    });
+    return;
+  }
+
+  const paddedData = padRgbaData(
+    msg.frame.data.data,
+    msg.frame.width,
+    msg.frame.height,
+    encoderWidth,
+    encoderHeight
+  );
+
+  wasmEncoder.addFrameRgba(paddedData);
+}
+
 async function handleFinishWebCodecs(): Promise<void> {
   if (!encoder || !muxer) {
     post({ type: "error", error: "Cannot finish: encoder not active" });
@@ -473,6 +529,17 @@ async function handleConfig(config: ExportConfig): Promise<void> {
 function handleFrame(msg: FrameMessage): void {
   if (cancelled) return;
 
+  if (msg.type === "frame-captured") {
+    if (hasWebCodecs) {
+      handleFrameCapturedWebCodecs(msg);
+    } else {
+      handleFrameCapturedWasm(msg);
+    }
+    post({ type: "progress", frameIndex: msg.frameIndex });
+    return;
+  }
+
+  // Legacy imageData path — kept alive until both pipelines migrate.
   if (hasWebCodecs) {
     handleFrameWebCodecs(msg);
   } else {
@@ -520,6 +587,7 @@ self.onmessage = async (event: MessageEvent<ExportWorkerMessage>) => {
         break;
 
       case "frame":
+      case "frame-captured":
         handleFrame(msg);
         break;
 
