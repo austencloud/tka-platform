@@ -46,6 +46,7 @@
   import type { ILocomotionAnimator } from "../services/contracts/ILocomotionAnimator";
   import { AnimationStateMachine } from "../services/implementations/AnimationStateMachine";
   import type { IAnimationStateMachine } from "../services/contracts/IAnimationStateMachine";
+  import { LocomotionState } from "../services/contracts/IAnimationStateMachine";
   import { RootMotionExtractor } from "../services/implementations/RootMotionExtractor";
   import type { IRootMotionExtractor } from "../services/contracts/IRootMotionExtractor";
   import { FingerAnimator } from "$lib/shared/3d/services/implementations/FingerAnimator";
@@ -119,6 +120,12 @@
      *  Positive values lean the torso forward. Used by the collision lab's
      *  lean-forward stance variant. 0 = no external pitch. */
     spinePitchOffset?: number;
+    /** When true, FootPlanter runs after LocomotionAnimator to pin feet
+     *  to the ground via hinge-constrained leg IK. Required for the
+     *  sequence viewer performer and standing museum NPCs. Leave false
+     *  for the museum FPS player, which prefers code-driven responsive
+     *  movement and doesn't benefit from contact-phase locking. */
+    enableFootPlanting?: boolean;
   }
 
   let {
@@ -150,7 +157,14 @@
     beatProgress = 0,
     onCollisionEvents,
     spinePitchOffset = 0,
+    enableFootPlanting = false,
   }: Props = $props();
+
+  // Current locomotion state — tracked so FootPlanter can decide when to
+  // fade IK out (airborne states skip foot planting). Updated each frame
+  // inside the state machine branch when locomotion is enabled. Defaults
+  // to IDLE for avatars without a state machine (exhibit performers).
+  let currentLocomotionState: LocomotionState = LocomotionState.IDLE;
 
   // Services (manually instantiated to ensure shared skeleton instance)
   let skeletonService: IAvatarSkeletonBuilder | null = $state(null);
@@ -383,7 +397,9 @@
       // Initialize foot planter with leg chains from the loaded skeleton.
       // FootPlanter uses the hinge-constrained leg IK solver (not the generic
       // ikSolver, which is still used by arm IK elsewhere in this file).
-      if (enableLocomotion && footPlanter && skeletonService && legIKSolver && contactCurveCache) {
+      // Gated on enableFootPlanting — off by default so the museum FPS player
+      // (which wants responsive code-driven movement) isn't affected.
+      if (enableFootPlanting && footPlanter && skeletonService && legIKSolver && contactCurveCache) {
         footPlanter.initialize(skeletonService, legIKSolver, contactCurveCache);
       }
 
@@ -704,6 +720,8 @@
           facingAngle: stateOutput.facingAngle,
           moveDirection: stateOutput.moveDirection,
         });
+        // Track state for FootPlanter (airborne states skip foot planting)
+        currentLocomotionState = stateOutput.state;
       } else {
         // Legacy path (no state machine)
         locomotionAnimator.setLocomotion({
@@ -754,13 +772,21 @@
         }
       }
 
-      // Foot IK disabled — the two-bone IK solver was designed for arms (wide
-      // range of motion) and produces unnatural results on legs (knees splaying,
-      // feet rotating). Production foot IK requires hinge-constrained knee solver,
-      // foot rotation alignment, and authored animation contact curves — none of
-      // which exist in Three.js or Mixamo. Speed-matched walk animation with
-      // IDLE_EXCLUDE_BONES is the stable baseline.
-      // FootPlanter kept in codebase for future work with a proper leg IK solver.
+      // Foot planting IK — pins feet to the ground during contact phases
+      // using hinge-constrained leg IK and contact curves for clips that
+      // have them. Velocity-threshold detection is used as a fallback for
+      // clips without authored curves. Gated on enableFootPlanting so the
+      // museum FPS player stays fully code-driven.
+      if (enableFootPlanting && footPlanter?.isReady()) {
+        footPlanter.update(delta, {
+          groundY: 0, // Rig-local ground; PerformerRig handles world offset
+          locomotionState: currentLocomotionState,
+          isMoving,
+          // currentClipName / currentClipPhase omitted in Phase 1 — velocity
+          // fallback handles idle + walk. Phase 2 populates these when turn
+          // clips play.
+        });
+      }
     }
 
     // 2. IK post-process (blends per-arm based on prop presence)
