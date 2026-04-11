@@ -337,8 +337,59 @@
   // Used to show "just completed" beat in glyph/highlight instead of "about to start" beat
   let arrivedViaStepping = $state(false);
 
-  // Edit mode (single source of truth for export state)
-  let editingPane = $state<'animation' | 'image' | 'video-upload' | null>(null);
+  // Edit mode (single source of truth for export state).
+  //
+  // Persisted across HMR remounts via sessionStorage, scoped by sequence ID
+  // and guarded by a short TTL. HMR tears down the orchestrator and mounts a
+  // fresh copy within milliseconds — both the sequence ID and timestamp still
+  // match, so the user lands back in Download Animation / Record Scene / etc.
+  // A normal drawer close + reopen takes much longer than the TTL (or opens a
+  // different sequence), so the user gets fresh state as before.
+  const EDITING_PANE_SESSION_KEY = "tka-viewer-editing-pane";
+  const EDITING_PANE_TTL_MS = 2000;
+  type PersistedEditingPane = {
+    pane: 'animation' | 'image' | 'video-upload';
+    ts: number;
+    sequenceId: string | null;
+  };
+  function loadRecentEditingPane(currentSequenceId: string | null): 'animation' | 'image' | 'video-upload' | null {
+    if (typeof sessionStorage === "undefined") return null;
+    try {
+      const raw = sessionStorage.getItem(EDITING_PANE_SESSION_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw) as PersistedEditingPane;
+      const fresh = Date.now() - parsed.ts <= EDITING_PANE_TTL_MS;
+      const sameSequence = parsed.sequenceId === currentSequenceId;
+      if (!fresh || !sameSequence) {
+        sessionStorage.removeItem(EDITING_PANE_SESSION_KEY);
+        return null;
+      }
+      return parsed.pane ?? null;
+    } catch {
+      return null;
+    }
+  }
+  function persistEditingPane(pane: 'animation' | 'image' | 'video-upload' | null, sequenceId: string | null) {
+    if (typeof sessionStorage === "undefined") return;
+    try {
+      if (pane === null) {
+        sessionStorage.removeItem(EDITING_PANE_SESSION_KEY);
+      } else {
+        const payload: PersistedEditingPane = { pane, ts: Date.now(), sequenceId };
+        sessionStorage.setItem(EDITING_PANE_SESSION_KEY, JSON.stringify(payload));
+      }
+    } catch {
+      // storage unavailable or full
+    }
+  }
+  let editingPane = $state<'animation' | 'image' | 'video-upload' | null>(
+    loadRecentEditingPane(sequence?.id ?? null)
+  );
+  // Refresh the stored timestamp whenever editingPane changes so the TTL
+  // window stays aligned with the most recent mount/transition.
+  $effect(() => {
+    persistEditingPane(editingPane, sequence?.id ?? null);
+  });
 
   // Video-synced playback: when a beat-mapped video is playing, the choreo card's
   // gold border follows the video's beat position instead of the animation clock.
@@ -743,18 +794,28 @@
     }
   });
 
-  // Enter 3D mode on first load — URL param takes priority, then persisted preference.
-  // One-shot: only runs once when sequence first becomes available. Using a flag
-  // prevents re-triggering when enter3D writes to $state (which would cause an
-  // infinite effect_update_depth_exceeded loop).
+  // Restore 3D mode on first load of THIS orchestrator instance. The drawer
+  // unmounts this component when it closes, so this effect runs again on every
+  // reopen — which is what lets 3D mode persist across drawer close/reopen.
+  //
+  // viewer3DState.renderMode is already synchronously init'd from localStorage
+  // by the factory (so the chip/label shows the right mode immediately). This
+  // effect's job is to load the sequence into the primary performer once the
+  // sequence prop is available. The _3dRestored flag gates it to one-shot per
+  // mount so enter3D's state writes don't trigger an infinite effect loop.
   let _3dRestored = false;
   $effect(() => {
     if (_3dRestored) return;
-    const shouldStart3D = initialRenderMode === '3d' || viewer3DState.preferredMode === '3d';
-    if (shouldStart3D && viewer3DState.webgl2Available && sequence) {
+    if (!sequence) return;
+    if (!viewer3DState.webgl2Available) {
       _3dRestored = true;
+      return;
+    }
+    const shouldBe3D = initialRenderMode === '3d' || viewer3DState.renderMode === '3d';
+    if (shouldBe3D) {
       viewer3DState.enter3D(sequence);
     }
+    _3dRestored = true;
   });
 
   // ============================================================================

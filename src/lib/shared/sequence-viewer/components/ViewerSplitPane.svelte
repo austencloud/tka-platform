@@ -100,6 +100,13 @@
     onCanvasReady: (canvas: HTMLCanvasElement | null) => void;
     onChoreoCardContextMenu?: (x: number, y: number) => void;
     rerenderTrigger?: number;
+    /**
+     * When true, the tap-to-focus handlers on both panes are suppressed
+     * so the user can't accidentally resize the canvas mid-export. Resizing
+     * the 3D canvas during a recording causes the source shape to change
+     * under the frame grabber, producing a squished/expanding video.
+     */
+    isExporting?: boolean;
   }
 
   let {
@@ -116,6 +123,7 @@
     onCanvasReady,
     onChoreoCardContextMenu,
     rerenderTrigger = 0,
+    isExporting = false,
   }: Props = $props();
 
   let pointerDownPos: { x: number; y: number } | null = null;
@@ -125,6 +133,15 @@
   }
 
   function handleAnimationClick(e: MouseEvent) {
+    // Freeze layout during export — a pane-focus toggle resizes the 3D
+    // canvas under the frame grabber, which corrupts the video. Orbit
+    // camera drags still go through because OrbitControls intercepts
+    // pointer events before click fires.
+    if (isExporting) {
+      pointerDownPos = null;
+      return;
+    }
+
     // For 3D mode, only expand on tap (no significant drag movement).
     // OrbitControls use drag — a click without movement means "tap to expand".
     if (renderMode === '3d' && pointerDownPos) {
@@ -146,6 +163,9 @@
   }
 
   function handlePreviewClick() {
+    // Same reasoning as handleAnimationClick — don't let the user trigger
+    // a layout transition while a video or image export is running.
+    if (isExporting) return;
     if (layout.focusedPane === "image") {
       onUnfocusPane();
     } else {
