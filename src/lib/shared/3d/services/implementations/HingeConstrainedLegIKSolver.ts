@@ -32,8 +32,10 @@ export class HingeConstrainedLegIKSolver implements ILegIKSolver {
   private readonly tempLocalAimRot = new Quaternion();
   private readonly tempOrigHipQuat = new Quaternion();
   private readonly tempOrigKneeQuat = new Quaternion();
+  private readonly tempOrigFootQuat = new Quaternion();
   private readonly tempSolvedHip = new Quaternion();
   private readonly tempSolvedKnee = new Quaternion();
+  private readonly tempSolvedFoot = new Quaternion();
   private readonly tempBendQuat = new Quaternion();
   private readonly tempFlipQuat = new Quaternion();
   private readonly tempCurrentFootWorld = new Vector3();
@@ -57,6 +59,7 @@ export class HingeConstrainedLegIKSolver implements ILegIKSolver {
 
     this.tempOrigHipQuat.copy(hip.quaternion);
     this.tempOrigKneeQuat.copy(knee.quaternion);
+    this.tempOrigFootQuat.copy(foot.quaternion);
 
     hip.getWorldPosition(this.tempHipWorld);
     const hipWorld = this.tempHipWorld;
@@ -190,12 +193,21 @@ export class HingeConstrainedLegIKSolver implements ILegIKSolver {
       // rotation. Save the solved rotations first — otherwise restoring
       // origHipQuat into hip.quaternion and then slerping toward
       // hip.quaternion would self-slerp and silently discard the solve.
+      //
+      // The foot must be blended alongside hip and knee. Otherwise during
+      // FootPlanter contact blend ramps (weight < 1), the foot would snap
+      // to fully-aligned while the rest of the leg is partially blended —
+      // producing a visible kink at the ankle.
       this.tempSolvedHip.copy(hip.quaternion);
       this.tempSolvedKnee.copy(knee.quaternion);
+      this.tempSolvedFoot.copy(foot.quaternion);
       hip.quaternion.copy(this.tempOrigHipQuat).slerp(this.tempSolvedHip, weight);
       knee.quaternion
         .copy(this.tempOrigKneeQuat)
         .slerp(this.tempSolvedKnee, weight);
+      foot.quaternion
+        .copy(this.tempOrigFootQuat)
+        .slerp(this.tempSolvedFoot, weight);
       hip.updateMatrixWorld(true);
       knee.updateMatrixWorld(true);
       foot.updateMatrixWorld(true);
