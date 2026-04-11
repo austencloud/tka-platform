@@ -27,6 +27,7 @@ import { SequenceConverter } from "$lib/shared/3d/services/implementations/Seque
 import { Animation3DPersister } from "$lib/shared/3d/services/implementations/Animation3DPersister";
 import { DuetPersister } from "$lib/shared/3d/services/implementations/DuetPersister";
 import { createPerformerSynchronizer } from "$lib/shared/3d/services/implementations/PerformerSynchronizer";
+import { Viewer3DUndoManager } from "$lib/shared/3d/services/implementations/Viewer3DUndoManager";
 
 // External dependency types
 import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
@@ -84,6 +85,9 @@ export function createAnimation3DContainer(deps: Animation3DContainerDeps) {
     // Factory function - creates new instance each time (not singleton)
     // Use container.items.performerSynchronizerFactory() to create instances
     performerSynchronizerFactory: () => createPerformerSynchronizer,
+    // Snapshot-based undo for the standalone 3D viewer. Singleton scoped to
+    // the container; the viewer state factory consumes it via its deps.
+    viewer3DUndoManager: () => new Viewer3DUndoManager(),
   });
 
   // Tier 4: 3D effects infrastructure
