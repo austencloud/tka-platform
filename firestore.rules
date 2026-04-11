@@ -396,6 +396,16 @@ service cloud.firestore {
       }
 
       // -------------------------------------------------------------------------
+      // POI IMAGE LIBRARY (Private)
+      // -------------------------------------------------------------------------
+      // Images the user uploaded in the POV Pattern Lab. Each doc stores the
+      // metadata (name, dimensions, Storage URL); the binary lives in
+      // /users/{uid}/poi-images/{id}.{ext} in Cloud Storage.
+      match /poi-images/{imageId} {
+        allow read, create, update, delete: if isOwner(userId);
+      }
+
+      // -------------------------------------------------------------------------
       // SOCIAL SUBCOLLECTIONS (Following/Followers)
       // -------------------------------------------------------------------------
       // Users can read anyone's following/followers lists (public social graph)

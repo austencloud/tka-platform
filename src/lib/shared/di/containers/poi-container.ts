@@ -3,6 +3,7 @@ import { ImagePatternLoader } from "$lib/features/poi/services/implementations/I
 import { StripPatternEngine } from "$lib/features/poi/services/implementations/StripPatternEngine";
 import { OpenPixelPoiAdapter } from "$lib/features/poi/services/implementations/OpenPixelPoiAdapter";
 import { PoiDeviceManager } from "$lib/features/poi/services/implementations/PoiDeviceManager";
+import { PoiImageLibrary } from "$lib/features/poi/services/implementations/PoiImageLibrary";
 
 /**
  * Poi (LED strip pattern engine + hardware adapters) DI container.
@@ -13,6 +14,7 @@ export function createPoiContainer() {
     .add({
       imagePatternLoader: () => new ImagePatternLoader(),
       openPixelPoiAdapter: () => new OpenPixelPoiAdapter(),
+      poiImageLibrary: () => new PoiImageLibrary(),
     })
     .add(({ imagePatternLoader, openPixelPoiAdapter }) => ({
       stripPatternEngine: () => new StripPatternEngine(imagePatternLoader),

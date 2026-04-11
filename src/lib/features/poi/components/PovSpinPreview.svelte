@@ -13,6 +13,7 @@
 -->
 <script lang="ts">
   import { getPoiContext } from "../context/poi-context";
+  import type { StripPattern } from "../domain/StripPattern";
   import ScrubValue from "./ScrubValue.svelte";
 
   const poi = getPoiContext();
@@ -25,18 +26,14 @@
   const rpm = $derived(poi.rpm);
   const showFullDisc = $derived(poi.showFullDisc);
 
-  // Pre-rendered disc image (static, rebuilt when pattern changes)
-  let discCanvas: OffscreenCanvas | null = null;
+  const DISC_SIZE = 512;
 
-  // Render the full disc to an offscreen canvas whenever the pattern changes
-  $effect(() => {
-    const pattern = poi.activePattern;
-    if (!pattern) {
-      discCanvas = null;
-      return;
-    }
-
-    const size = 512;
+  // Pre-render the full disc image for one pattern. Each frame of the
+  // pattern becomes an angular wedge; each LED becomes a concentric ring
+  // within that wedge. The result is the spinnable disc the POV trail
+  // sweeps over.
+  function renderDiscToCanvas(pattern: StripPattern): OffscreenCanvas {
+    const size = DISC_SIZE;
     const oc = new OffscreenCanvas(size, size);
     const ctx = oc.getContext("2d")!;
 
@@ -74,7 +71,44 @@
       }
     }
 
-    discCanvas = oc;
+    return oc;
+  }
+
+  // Two pre-rendered disc canvases + one reusable compositing canvas.
+  // During a crossfade the draw loop alpha-composites secondary and
+  // primary into the blend canvas (which is mathematically per-pixel
+  // RGB lerp), then uses that as the source for the trail rendering.
+  let primaryDiscCanvas: OffscreenCanvas | null = null;
+  let secondaryDiscCanvas: OffscreenCanvas | null = null;
+  let blendDiscCanvas: OffscreenCanvas | null = null;
+
+  // ── Performance-critical indirection ────────────────────────────────
+  // `poi.blendInfo` is a $derived that re-evaluates every animation frame
+  // during timeline playback (because it depends on playheadBeat). The
+  // returned object is NEW each frame, but its `.primary` and `.secondary`
+  // fields are stable StripPattern references that only change at clip
+  // boundaries. These intermediate $deriveds extract those fields so
+  // Svelte's reference-equality memoization kicks in: the downstream
+  // effects that rebuild the disc canvases then only fire at real clip
+  // changes instead of every rAF tick. Without this indirection each
+  // frame would trigger two 512×512 canvas rebuilds and the spin would
+  // visibly stutter.
+  const primaryPattern = $derived(poi.blendInfo.primary);
+  const secondaryPattern = $derived(poi.blendInfo.secondary);
+
+  // Rebuild primary disc only when the incoming pattern reference changes.
+  $effect(() => {
+    primaryDiscCanvas = primaryPattern
+      ? renderDiscToCanvas(primaryPattern)
+      : null;
+  });
+
+  // Rebuild secondary disc only when the outgoing pattern reference changes.
+  // During non-blend moments secondary is null, so this stays cheap.
+  $effect(() => {
+    secondaryDiscCanvas = secondaryPattern
+      ? renderDiscToCanvas(secondaryPattern)
+      : null;
   });
 
   /** Number of wedge segments to draw in the persistence trail */
@@ -120,7 +154,34 @@
       ctx.fillStyle = "#0a0a0a";
       ctx.fillRect(0, 0, w, h);
 
-      if (!discCanvas) {
+      // Resolve which pre-rendered disc the trail should sweep over.
+      // During a crossfade we alpha-composite secondary (outgoing) and
+      // primary (incoming) into a reusable blend canvas — source-over
+      // with alpha is mathematically per-pixel RGB lerp, so the blend
+      // walks smoothly between the two patterns. Outside transitions
+      // it's just the primary disc.
+      const info = poi.blendInfo;
+      let discToUse: OffscreenCanvas | null = primaryDiscCanvas;
+      if (
+        info.secondary &&
+        secondaryDiscCanvas &&
+        primaryDiscCanvas &&
+        info.blendT < 1
+      ) {
+        if (!blendDiscCanvas) {
+          blendDiscCanvas = new OffscreenCanvas(DISC_SIZE, DISC_SIZE);
+        }
+        const bctx = blendDiscCanvas.getContext("2d")!;
+        bctx.clearRect(0, 0, DISC_SIZE, DISC_SIZE);
+        bctx.globalAlpha = 1 - info.blendT;
+        bctx.drawImage(secondaryDiscCanvas, 0, 0);
+        bctx.globalAlpha = info.blendT;
+        bctx.drawImage(primaryDiscCanvas, 0, 0);
+        bctx.globalAlpha = 1;
+        discToUse = blendDiscCanvas;
+      }
+
+      if (!discToUse) {
         animFrameId = requestAnimationFrame(draw);
         return;
       }
@@ -135,7 +196,7 @@
 
         ctx.save();
         ctx.translate(cx, cy);
-        ctx.drawImage(discCanvas, -drawRadius, -drawRadius, drawRadius * 2, drawRadius * 2);
+        ctx.drawImage(discToUse, -drawRadius, -drawRadius, drawRadius * 2, drawRadius * 2);
         ctx.restore();
       } else {
         // POV mode: persistence window sweeps around the fixed disc.
@@ -164,7 +225,7 @@
           ctx.arc(cx, cy, drawRadius * 1.04, segStart, segEnd);
           ctx.closePath();
           ctx.clip();
-          ctx.drawImage(discCanvas, cx - drawRadius, cy - drawRadius, drawRadius * 2, drawRadius * 2);
+          ctx.drawImage(discToUse, cx - drawRadius, cy - drawRadius, drawRadius * 2, drawRadius * 2);
           ctx.restore();
         }
         ctx.restore();
@@ -185,22 +246,40 @@
           ctx.arc(cx, cy, drawRadius + 2, segStart, segEnd);
           ctx.closePath();
           ctx.clip();
-          ctx.drawImage(discCanvas, cx - drawRadius, cy - drawRadius, drawRadius * 2, drawRadius * 2);
+          ctx.drawImage(discToUse, cx - drawRadius, cy - drawRadius, drawRadius * 2, drawRadius * 2);
           ctx.restore();
         }
 
-        // Pixel poi staff: glowing LED strip along the radius
-        const pattern = poi.activePattern;
-        if (pattern) {
+        // Pixel poi staff: glowing LED strip along the radius. During a
+        // crossfade we blend the outgoing and incoming clips' LED colors
+        // per-LED at the same cycle phase, so the leading edge visually
+        // matches the disc composite behind it.
+        const primaryPattern = info.primary;
+        const secondaryPattern = info.secondary;
+        if (primaryPattern) {
           const innerR = drawRadius * 0.15;
           const stripLength = drawRadius - innerR;
-          const { ledCount, frameCount, frames } = pattern;
+          const { ledCount, frameCount, frames } = primaryPattern;
 
           const normalizedAngle = ((staffAngle + Math.PI / 2) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
           const frameIdx = Math.floor((normalizedAngle / (Math.PI * 2)) * frameCount) % frameCount;
           const frame = frames[frameIdx]!;
 
-          const segLength = stripLength / ledCount;
+          // Outgoing-clip frame sampled at the same angular phase —
+          // guards against ledCount / frameCount mismatch between the
+          // two clips so we never read past either buffer.
+          let secondaryFrame: { colors: Uint8Array } | null = null;
+          let safeLedCount = ledCount;
+          const blendT = info.blendT;
+          const oneMinusT = 1 - blendT;
+          if (secondaryPattern && blendT < 1) {
+            const s = secondaryPattern;
+            const sFrameIdx = Math.floor((normalizedAngle / (Math.PI * 2)) * s.frameCount) % s.frameCount;
+            secondaryFrame = s.frames[sFrameIdx]!;
+            safeLedCount = Math.min(ledCount, s.ledCount);
+          }
+
+          const segLength = stripLength / safeLedCount;
           const staffWidth = Math.max(4 * dpr, drawRadius * 0.025);
           const cosA = Math.cos(staffAngle);
           const sinA = Math.sin(staffAngle);
@@ -208,11 +287,19 @@
           const perpY = cosA;
           const halfW = staffWidth / 2;
 
-          for (let led = 0; led < ledCount; led++) {
+          for (let led = 0; led < safeLedCount; led++) {
             const offset = led * 3;
-            const r = frame.colors[offset]!;
-            const g = frame.colors[offset + 1]!;
-            const b = frame.colors[offset + 2]!;
+            let r = frame.colors[offset]!;
+            let g = frame.colors[offset + 1]!;
+            let b = frame.colors[offset + 2]!;
+            if (secondaryFrame) {
+              const sr = secondaryFrame.colors[offset]!;
+              const sg = secondaryFrame.colors[offset + 1]!;
+              const sb = secondaryFrame.colors[offset + 2]!;
+              r = Math.round(sr * oneMinusT + r * blendT);
+              g = Math.round(sg * oneMinusT + g * blendT);
+              b = Math.round(sb * oneMinusT + b * blendT);
+            }
 
             const rStart = innerR + led * segLength;
             const rEnd = rStart + segLength;

@@ -38,7 +38,7 @@
     {#each poi.presets as preset}
       <button
         class="preset-card"
-        class:active={poi.activePresetId === preset.id}
+        class:active={!poi.hasUploadedImage && poi.activePresetId === preset.id}
         onclick={() => handlePresetSelect(preset.id)}
       >
         <div
@@ -52,10 +52,13 @@
     {/each}
   </div>
 
-  <!-- Image Upload -->
+  <!-- Image Upload — active state when an image is currently loaded,
+       so it's visually obvious that the image (not a preset) is what
+       will be painted onto the timeline. -->
   <div
     class="upload-zone"
     class:drag-over={dragOver}
+    class:active={poi.hasUploadedImage}
     role="button"
     tabindex="0"
     ondragover={(e) => { e.preventDefault(); dragOver = true; }}
@@ -64,7 +67,13 @@
   >
     <label class="upload-label">
       <i class="fas fa-image" aria-hidden="true"></i>
-      <span>Drop image or click to upload</span>
+      <span>
+        {#if poi.hasUploadedImage && poi.activePattern}
+          {poi.activePattern.metadata.name || "Image loaded"}
+        {:else}
+          Drop image or click to upload
+        {/if}
+      </span>
       <input
         type="file"
         accept="image/png,image/bmp,image/jpeg"
@@ -142,6 +151,17 @@
   .upload-zone.drag-over {
     border-color: var(--theme-accent, #3b82f6);
     background: color-mix(in srgb, var(--theme-accent, #3b82f6) 8%, transparent);
+  }
+
+  .upload-zone.active {
+    border-color: var(--theme-accent, #3b82f6);
+    border-style: solid;
+    background: color-mix(in srgb, var(--theme-accent, #3b82f6) 15%, transparent);
+  }
+
+  .upload-zone.active .upload-label {
+    color: var(--theme-text-primary, #e2e8f0);
+    font-weight: 600;
   }
 
   .upload-label {
