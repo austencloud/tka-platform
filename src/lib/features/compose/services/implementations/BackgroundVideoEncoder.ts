@@ -20,6 +20,7 @@ import type {
   ExportWorkerMessage,
   ExportWorkerResponse,
 } from "../../workers/video-export.worker";
+import type { CapturedFrame } from "$lib/shared/video-export/domain/CapturedFrame";
 
 export class BackgroundVideoEncoder implements IBackgroundVideoEncoder {
   private worker: Worker | null = null;
@@ -99,6 +100,48 @@ export class BackgroundVideoEncoder implements IBackgroundVideoEncoder {
     };
 
     this.worker.postMessage(message, [buffer]);
+  }
+
+  addFrameCaptured(
+    frame: CapturedFrame,
+    frameIndex: number,
+    isKeyframe: boolean
+  ): void {
+    if (!this.worker) {
+      // Worker was disposed (e.g., viewer closed during export). The export
+      // loop will check shouldCancel on the next iteration and abort cleanly.
+      // Release the frame handle ourselves so it doesn't leak.
+      if (frame.kind === "video-frame") {
+        frame.frame.close();
+      }
+      return;
+    }
+
+    // Branch by kind so postMessage transferables are correct. The worker
+    // closes every VideoFrame after encode(); we close here only when the
+    // worker is unreachable (see early-return above).
+    if (frame.kind === "video-frame") {
+      this.worker.postMessage(
+        {
+          type: "frame-captured",
+          frame,
+          frameIndex,
+          isKeyframe,
+        },
+        [frame.frame]
+      );
+    } else {
+      // image-data: transfer the underlying ArrayBuffer.
+      this.worker.postMessage(
+        {
+          type: "frame-captured",
+          frame,
+          frameIndex,
+          isKeyframe,
+        },
+        [frame.data.data.buffer]
+      );
+    }
   }
 
   async finish(): Promise<Blob> {
