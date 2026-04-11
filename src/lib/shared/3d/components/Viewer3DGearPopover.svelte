@@ -2,12 +2,13 @@
   /**
    * Viewer3DGearPopover
    *
-   * Single gear icon for the sequence-viewer 3D popover. Contains:
-   * 1. Camera presets (2×3 grid)
-   * 2. Unified Planes matrix — one row per plane, showing which hands are
-   *    on it and whether it's visible. The plane color dot doubles as the
-   *    visibility toggle. Hand slots on the right are drop targets for
-   *    assigning each hand to a plane.
+   * Single gear icon for the sequence-viewer 3D popover. Opens a popover
+   * with a tab bar for multiple settings domains:
+   *
+   * - Camera: viewing angle presets (front, back, left, right, top, 3/4)
+   * - Planes: which plane each hand is on, plus force-show visibility
+   * - Avatar: (planned) multi-avatar / variation presets — stub for now
+   * - Effects: (planned) prop effects (trails, fire, sparkles) — stub for now
    *
    * Sequence-wide only — per-beat plane overrides are not editable here.
    * PlaneMode is derived from the hand assignments in setHandPlane.
@@ -19,7 +20,17 @@
   import { scale } from "svelte/transition";
   import { cubicOut, backOut } from "svelte/easing";
 
+  type TabId = "camera" | "planes" | "avatar" | "effects";
+
+  const TABS: { id: TabId; label: string; disabled?: boolean }[] = [
+    { id: "camera", label: "Camera" },
+    { id: "planes", label: "Planes" },
+    { id: "avatar", label: "Avatar", disabled: true },
+    { id: "effects", label: "Effects", disabled: true },
+  ];
+
   let open = $state(false);
+  let activeTab = $state<TabId>("camera");
   let rootEl = $state<HTMLDivElement | null>(null);
 
   const viewer3DState = getViewer3DContext();
@@ -51,7 +62,7 @@
   }
 
   // Reset is only offered when any state deviates from defaults
-  const isNonDefault = $derived(
+  const isPlaneStateNonDefault = $derived(
     (avatarState?.customBluePlane ?? Plane.WALL) !== Plane.WALL ||
     (avatarState?.customRedPlane ?? Plane.WALL) !== Plane.WALL ||
     (avatarState?.hasBeatOverrides ?? false) ||
@@ -63,6 +74,11 @@
   function toggleOpen(e: MouseEvent) {
     e.stopPropagation();
     open = !open;
+  }
+
+  function selectTab(e: MouseEvent, tabId: TabId) {
+    e.stopPropagation();
+    activeTab = tabId;
   }
 
   function handlePlaneToggleClick(e: MouseEvent, plane: Plane) {
@@ -81,7 +97,7 @@
     avatarState.setHandPlane(hand, plane);
   }
 
-  function handleResetClick(e: MouseEvent) {
+  function handleResetPlanesClick(e: MouseEvent) {
     e.stopPropagation();
     if (!avatarState) return;
     // Reset sequence-wide planes to Wall
@@ -134,81 +150,114 @@
       in:scale={{ duration: 250, start: 0.9, opacity: 0, easing: backOut }}
       out:scale={{ duration: 180, start: 0.95, opacity: 0, easing: cubicOut }}
     >
-      <!-- Camera presets -->
-      <div class="section">
-        <div class="section-label">Camera</div>
-        <Viewer3DViewPresets grid />
+      <!-- Tab bar -->
+      <div class="tab-bar" role="tablist">
+        {#each TABS as tab}
+          <button
+            class="tab-btn"
+            class:active={activeTab === tab.id}
+            disabled={tab.disabled}
+            onclick={(e) => selectTab(e, tab.id)}
+            role="tab"
+            aria-selected={activeTab === tab.id}
+            aria-controls="tab-panel-{tab.id}"
+            title={tab.disabled ? `${tab.label} (coming soon)` : tab.label}
+          >
+            {tab.label}
+          </button>
+        {/each}
       </div>
 
-      <div class="divider"></div>
+      <!-- Camera tab -->
+      {#if activeTab === "camera"}
+        <div class="tab-panel" id="tab-panel-camera" role="tabpanel">
+          <Viewer3DViewPresets grid />
+        </div>
+      {/if}
 
-      <!-- Unified Planes matrix -->
-      <div class="section">
-        <div class="section-header">
-          <div class="section-label">Planes</div>
-          {#if isNonDefault}
-            <button
-              class="reset-btn"
-              class:with-overrides={hasBeatOverrides}
-              onclick={handleResetClick}
-              aria-label={hasBeatOverrides ? 'Reset all planes and clear beat overrides' : 'Reset all planes'}
-              title={hasBeatOverrides ? 'Reset all planes and clear beat overrides' : 'Reset all planes'}
-            >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M3 7v6h6"/>
-                <path d="M21 17a9 9 0 0 0-15-6.7L3 13"/>
-              </svg>
-              {#if hasBeatOverrides}
-                <span class="override-badge" aria-hidden="true"></span>
-              {/if}
-            </button>
+      <!-- Planes tab -->
+      {#if activeTab === "planes"}
+        <div class="tab-panel" id="tab-panel-planes" role="tabpanel">
+          <div class="plane-matrix">
+            {#each PLANES as { plane, label }}
+              {@const implicit = isImplicit(plane)}
+              {@const visible = isVisible(plane)}
+              {@const color = PLANE_COLORS[plane]}
+              <div
+                class="plane-row"
+                class:with-hand={implicit}
+                class:hidden-row={!visible}
+              >
+                <div class="plane-left">
+                  <button
+                    class="plane-toggle"
+                    class:visible
+                    class:hidden={!visible}
+                    class:implicit
+                    style="--dot-color: {color};"
+                    onclick={(e) => handlePlaneToggleClick(e, plane)}
+                    aria-pressed={visible}
+                    aria-disabled={implicit}
+                    aria-label={`${label} plane — ${implicit ? 'locked visible, hand assigned' : (visible ? 'force-shown, click to hide' : 'hidden, click to show')}`}
+                  ></button>
+                  <span class="plane-label">{label}</span>
+                </div>
+                <div class="plane-right">
+                  <button
+                    class="hand-slot blue"
+                    class:filled={bluePlane === plane}
+                    onclick={(e) => handleHandSlotClick(e, "blue", plane)}
+                    aria-pressed={bluePlane === plane}
+                    aria-label={`Blue hand on ${label}`}
+                  ></button>
+                  <button
+                    class="hand-slot red"
+                    class:filled={redPlane === plane}
+                    onclick={(e) => handleHandSlotClick(e, "red", plane)}
+                    aria-pressed={redPlane === plane}
+                    aria-label={`Red hand on ${label}`}
+                  ></button>
+                </div>
+              </div>
+            {/each}
+          </div>
+
+          {#if isPlaneStateNonDefault}
+            <div class="tab-footer">
+              <button
+                class="reset-btn"
+                class:with-overrides={hasBeatOverrides}
+                onclick={handleResetPlanesClick}
+                aria-label={hasBeatOverrides ? 'Reset all planes and clear beat overrides' : 'Reset all planes'}
+                title={hasBeatOverrides ? 'Reset all planes and clear beat overrides' : 'Reset all planes'}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 7v6h6"/>
+                  <path d="M21 17a9 9 0 0 0-15-6.7L3 13"/>
+                </svg>
+                Reset
+                {#if hasBeatOverrides}
+                  <span class="override-badge" aria-hidden="true"></span>
+                {/if}
+              </button>
+            </div>
           {/if}
         </div>
-        <div class="plane-matrix">
-          {#each PLANES as { plane, label }}
-            {@const implicit = isImplicit(plane)}
-            {@const visible = isVisible(plane)}
-            {@const color = PLANE_COLORS[plane]}
-            <div
-              class="plane-row"
-              class:with-hand={implicit}
-              class:hidden-row={!visible}
-            >
-              <div class="plane-left">
-                <button
-                  class="plane-toggle"
-                  class:visible
-                  class:hidden={!visible}
-                  class:implicit
-                  style="--dot-color: {color};"
-                  onclick={(e) => handlePlaneToggleClick(e, plane)}
-                  aria-pressed={visible}
-                  aria-disabled={implicit}
-                  aria-label={`${label} plane — ${implicit ? 'locked visible, hand assigned' : (visible ? 'force-shown, click to hide' : 'hidden, click to show')}`}
-                ></button>
-                <span class="plane-label">{label}</span>
-              </div>
-              <div class="plane-right">
-                <button
-                  class="hand-slot blue"
-                  class:filled={bluePlane === plane}
-                  onclick={(e) => handleHandSlotClick(e, "blue", plane)}
-                  aria-pressed={bluePlane === plane}
-                  aria-label={`Blue hand on ${label}`}
-                ></button>
-                <button
-                  class="hand-slot red"
-                  class:filled={redPlane === plane}
-                  onclick={(e) => handleHandSlotClick(e, "red", plane)}
-                  aria-pressed={redPlane === plane}
-                  aria-label={`Red hand on ${label}`}
-                ></button>
-              </div>
-            </div>
-          {/each}
-        </div>
+      {/if}
 
-      </div>
+      <!-- Avatar tab (stub) -->
+      {#if activeTab === "avatar"}
+        <div class="tab-panel" id="tab-panel-avatar" role="tabpanel">
+          <div class="placeholder">Coming soon</div>
+        </div>
+      {/if}
+
+      <!-- Effects tab (stub) -->
+      {#if activeTab === "effects"}
+        <div class="tab-panel" id="tab-panel-effects" role="tabpanel">
+          <div class="placeholder">Coming soon</div>
+        </div>
+      {/if}
     </div>
   {/if}
 </div>
@@ -256,41 +305,66 @@
     border: 1px solid rgba(255, 255, 255, 0.12);
     backdrop-filter: blur(12px);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-    padding: 12px;
+    padding: 8px;
   }
 
-  .section {
+  /* Tab bar — segmented pill at the top of the popover */
+  .tab-bar {
     display: flex;
-    flex-direction: column;
+    gap: 2px;
+    padding: 3px;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    margin-bottom: 10px;
   }
 
-  .section-label {
-    font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: 1.2px;
-    color: rgba(255, 255, 255, 0.4);
+  .tab-btn {
+    flex: 1;
+    padding: 6px 4px;
+    min-height: 32px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 11px;
     font-weight: 600;
-    margin-bottom: 6px;
+    letter-spacing: 0.3px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
   }
 
-  .section-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 6px;
-    min-height: 20px;
+  .tab-btn:hover:not(:disabled):not(.active) {
+    color: rgba(255, 255, 255, 0.85);
+    background: rgba(255, 255, 255, 0.06);
   }
 
-  .section-header .section-label {
-    margin-bottom: 0;
+  .tab-btn.active {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: #fff;
   }
 
-  .divider {
-    height: 1px;
-    background: rgba(255, 255, 255, 0.08);
-    margin: 12px 0 10px 0;
+  .tab-btn:disabled {
+    color: rgba(255, 255, 255, 0.2);
+    cursor: not-allowed;
   }
 
+  /* Tab panels — the content area below the tab bar */
+  .tab-panel {
+    padding: 4px 0 0 0;
+  }
+
+  .placeholder {
+    padding: 32px 12px;
+    text-align: center;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.3);
+    font-style: italic;
+  }
+
+  /* Plane matrix */
   .plane-matrix {
     display: flex;
     flex-direction: column;
@@ -417,32 +491,42 @@
     border-color: rgba(255, 255, 255, 0.5);
   }
 
-  /* Reset button — lives in the Planes section header, top-right.
+  /* Tab footer — right-aligned action area below the panel content */
+  .tab-footer {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 8px;
+  }
+
+  /* Reset button — labeled icon-text button in the panel footer.
      Only rendered when state is non-default. */
   .reset-btn {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: transparent;
-    border: none;
-    color: rgba(255, 255, 255, 0.4);
-    cursor: pointer;
     display: flex;
     align-items: center;
-    justify-content: center;
-    padding: 0;
+    gap: 5px;
+    padding: 5px 10px;
+    min-height: 28px;
+    border-radius: 6px;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
     position: relative;
-    transition: color 0.15s ease;
+    transition: all 0.15s ease;
   }
 
   .reset-btn:hover {
-    color: rgba(255, 255, 255, 0.9);
+    color: rgba(255, 255, 255, 0.95);
+    border-color: rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.04);
   }
 
   .reset-btn.with-overrides .override-badge {
     position: absolute;
-    top: -2px;
-    right: -2px;
+    top: -3px;
+    right: -3px;
     width: 7px;
     height: 7px;
     border-radius: 50%;
