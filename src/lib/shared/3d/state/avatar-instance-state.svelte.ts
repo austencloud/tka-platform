@@ -28,6 +28,22 @@ import { SCALE } from "$lib/shared/3d/scale/scale-constants";
 const FIGURE_Z = 0;
 
 /**
+ * Derive the PlaneMode that matches a given pair of hand-plane assignments.
+ *
+ * When both hands are on the same preset plane, use the matching preset mode
+ * (WALL or DUAL_WHEEL) so the renderer produces the intended spatial layout.
+ * DUAL_WHEEL is required when both hands are on WHEEL — a single wheel plane
+ * can't hold both hands without overlap through the avatar.
+ *
+ * Any other combination falls back to CUSTOM (per-hand independent).
+ */
+export function derivePlaneModeFromHands(bluePlane: Plane, redPlane: Plane): PlaneMode {
+  if (bluePlane === Plane.WALL && redPlane === Plane.WALL) return PlaneMode.WALL;
+  if (bluePlane === Plane.WHEEL && redPlane === Plane.WHEEL) return PlaneMode.DUAL_WHEEL;
+  return PlaneMode.CUSTOM;
+}
+
+/**
  * Check if a sequence is seamlessly loopable (ends where it starts).
  * Mirrors SequenceLoopabilityChecker logic from the 2D animator.
  */
@@ -356,21 +372,18 @@ export function createAvatarInstanceState(
   }
 
   /**
-   * Set a single hand's plane independently. Switches to CUSTOM mode
-   * and rebuilds the sequence with the updated per-hand config.
+   * Set a single hand's plane independently. The PlaneMode is derived from
+   * the combined assignment — both hands on Wheel becomes DUAL_WHEEL (needed
+   * for lateral rendering), both on Wall becomes WALL, anything else becomes
+   * CUSTOM. Re-converts the sequence with the effective config.
    */
   function setHandPlane(hand: "blue" | "red", plane: Plane) {
     if (hand === "blue") customBluePlane = plane;
     else customRedPlane = plane;
 
-    // Switch to CUSTOM mode if not already
-    if (planeMode !== PlaneMode.CUSTOM) {
-      planeMode = PlaneMode.CUSTOM;
-    }
+    planeMode = derivePlaneModeFromHands(customBluePlane, customRedPlane);
 
-    // Re-convert using the effective config (which omits rotationPlane
-    // so each hand rotates on its own position plane)
-    reconvertWithConfig(getEffectiveModeConfig(PlaneMode.CUSTOM));
+    reconvertWithConfig(getEffectiveModeConfig(planeMode));
   }
 
   /**
