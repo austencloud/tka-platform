@@ -299,28 +299,48 @@ async function handleConfigWebCodecs(config: ExportConfig): Promise<void> {
   // encoder.encode() on a dead codec — which would throw "Cannot call
   // 'encode' on a closed codec" for every remaining frame, drowning the
   // original error in noise.
+  //
+  // The error message we post includes the encoder state and the last
+  // known queue size at the time of failure. Hardware encoders typically
+  // error when the internal queue overflows — seeing "queueSize=N" in the
+  // error tells us exactly which failure mode we hit.
   encoder = new VideoEncoder({
     output: (chunk, meta) => {
       localMuxer.addVideoChunk(chunk, meta);
     },
     error: (e) => {
       encoderErrored = true;
+      const state = encoder?.state ?? "null";
+      const queueSize = encoder?.encodeQueueSize ?? -1;
       post({
         type: "error",
-        error: `VideoEncoder error: ${e.message}`,
+        error: `VideoEncoder error: ${e.message} (state=${state}, queueSize=${queueSize})`,
       });
     },
   });
 
   const codec = selectCodec(encoderWidth, encoderHeight);
 
+  // Omit `hardwareAcceleration` entirely — this is the spec default
+  // (`"no-preference"`) and it's what production encoders should use.
+  //
+  // Why NOT "prefer-hardware":
+  // The older version of this config forced "prefer-hardware" to save
+  // a few ms/frame. In practice that choice was invisible compared to
+  // its downside: hardware H.264 encoders have tight internal queues and
+  // enter the closed state the moment a complex scene (collision lab,
+  // full audience, multi-performer effects) overwhelms them. Once closed,
+  // there's no recovery — the entire export fails near 100%.
+  //
+  // With "no-preference" the browser picks hardware when it's safe and
+  // transparently uses software when it isn't, which is exactly the
+  // correctness/speed tradeoff we actually want.
   await encoder.configure({
     codec,
     width: encoderWidth,
     height: encoderHeight,
     bitrate: config.bitrate,
     framerate: config.fps,
-    hardwareAcceleration: "prefer-hardware",
   });
 }
 
