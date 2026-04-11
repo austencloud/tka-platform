@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { BUILT_IN_TRAIL_PRESETS } from "$lib/shared/effects/domain/presets/built-in-trail-presets";
 import { BUILT_IN_FIRE_PRESETS } from "$lib/shared/effects/domain/presets/built-in-fire-presets";
 import { BUILT_IN_LED_PRESETS } from "$lib/shared/effects/domain/presets/built-in-led-presets";
+import { BUILT_IN_CHARCOAL_PRESETS } from "$lib/shared/effects/domain/presets/built-in-charcoal-presets";
 
 describe("BUILT_IN_TRAIL_PRESETS", () => {
   it("contains default, neon, ember presets", () => {
@@ -94,5 +95,23 @@ describe("BUILT_IN_LED_PRESETS", () => {
   it("led-prop-colors uses prop-matched color mode", () => {
     const propMatch = BUILT_IN_LED_PRESETS.find((p) => p.id === "led-prop-colors");
     expect(propMatch?.patch.led?.colorMode).toBe("prop-matched");
+  });
+});
+
+describe("BUILT_IN_CHARCOAL_PRESETS", () => {
+  it("contains at least 4 presets", () => {
+    expect(BUILT_IN_CHARCOAL_PRESETS.length).toBeGreaterThanOrEqual(4);
+  });
+
+  it("every preset has effectType charcoal and semantic fields in 0-1", () => {
+    for (const p of BUILT_IN_CHARCOAL_PRESETS) {
+      expect(p.effectType).toBe("charcoal");
+      expect(p.builtIn).toBe(true);
+      const c = p.patch.charcoal!;
+      for (const k of ["intensity", "spread", "glow"] as const) {
+        expect(c[k]).toBeGreaterThanOrEqual(0);
+        expect(c[k]).toBeLessThanOrEqual(1);
+      }
+    }
   });
 });
