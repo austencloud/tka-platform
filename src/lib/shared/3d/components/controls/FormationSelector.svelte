@@ -99,13 +99,16 @@
   }
 
   .formation-btn i {
-    font-size: 1rem;
+    font-size: 0.95rem;
   }
 
   .label {
-    font-size: var(--font-size-compact, 0.75rem);
+    font-size: 0.68rem;
     font-weight: 500;
-    white-space: nowrap;
+    line-height: 1.1;
+    text-align: center;
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
 
   @media (max-width: 600px) {
@@ -115,10 +118,6 @@
 
     .formation-btn {
       padding: 4px 6px;
-    }
-
-    .label {
-      display: none;
     }
   }
 </style>

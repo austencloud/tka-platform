@@ -325,7 +325,7 @@
     top: calc(100% + 8px);
     right: 0;
     z-index: 100;
-    width: 288px;
+    width: 340px;
     border-radius: 10px;
     transform-origin: top right;
     background: rgba(14, 14, 24, 0.95);

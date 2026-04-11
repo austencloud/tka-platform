@@ -170,7 +170,10 @@ export function createAnimatorContainer(externalDeps: AnimatorContainerDependenc
     }))
     .add((ctx) => ({
       realtime3DExporter: () =>
-        new Realtime3DExporter(ctx.backgroundVideoEncoder),
+        new Realtime3DExporter(
+          ctx.backgroundVideoEncoder,
+          ctx.canvasFrameCapturer
+        ),
     }))
     .add(() => ({
       tunnelModeSequenceManager: () =>
