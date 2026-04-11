@@ -13,6 +13,7 @@
    * The parent must have called setViewer3DContext() before mounting this.
    */
 
+  import { untrack } from "svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import Viewer3DCanvas from "./Viewer3DCanvas.svelte";
   import Viewer3DEffectPills from "./Viewer3DEffectPills.svelte";
@@ -38,6 +39,9 @@
   });
 
   // Re-seed trails when animationSettings changes (runes track deps).
+  // The reads above establish reactive dependencies; the write happens inside
+  // `untrack` so the state mutation on effectsConfigState doesn't get tracked
+  // as part of this effect's own dependency set (which would loop).
   $effect(() => {
     // Touch the fields Svelte needs to track for the $effect to re-run.
     animationSettings.trail.lineWidth;
@@ -45,7 +49,7 @@
     animationSettings.trail.blueColor;
     animationSettings.trail.redColor;
     animationSettings.trail.trackingMode;
-    seedTrailsFromAnimationSettings(effectsConfigState);
+    untrack(() => seedTrailsFromAnimationSettings(effectsConfigState));
   });
 
   interface Props {
