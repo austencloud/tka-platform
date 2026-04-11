@@ -33,6 +33,11 @@ export interface PerformerManagerDeps {
   propInterpolator: IPropStateInterpolator;
   sequenceConverter: ISequenceConverter;
   initialAvatarId: AvatarId;
+  /**
+   * Optional cap override. Defaults to the shared STAGE.MAX_PERFORMERS (4).
+   * The standalone 3D viewer passes STAGE.MAX_VIEWER_PERFORMERS (8).
+   */
+  maxPerformers?: number;
 }
 
 /**
@@ -40,6 +45,7 @@ export interface PerformerManagerDeps {
  */
 export function createPerformerManager(deps: PerformerManagerDeps) {
   const { propInterpolator, sequenceConverter, initialAvatarId } = deps;
+  const maxPerformers = deps.maxPerformers ?? MAX_PERFORMERS;
 
   // Performer states (1-4 performers)
   let performerStates = $state<AvatarInstanceState[]>([]);
@@ -151,7 +157,7 @@ export function createPerformerManager(deps: PerformerManagerDeps) {
    * Add a new performer
    */
   function addPerformer() {
-    if (performerStates.length >= MAX_PERFORMERS) return;
+    if (performerStates.length >= maxPerformers) return;
 
     const newPerformer = createPerformer(performerStates.length);
     performerStates = [...performerStates, newPerformer];
@@ -224,7 +230,7 @@ export function createPerformerManager(deps: PerformerManagerDeps) {
    * Ensure we have at least N performers
    */
   function ensurePerformerCount(count: number) {
-    while (performerStates.length < count && performerStates.length < MAX_PERFORMERS) {
+    while (performerStates.length < count && performerStates.length < maxPerformers) {
       addPerformer();
     }
   }
@@ -261,7 +267,7 @@ export function createPerformerManager(deps: PerformerManagerDeps) {
       return performerStates.length;
     },
     get maxPerformers() {
-      return MAX_PERFORMERS;
+      return maxPerformers;
     },
 
     // Formation state
