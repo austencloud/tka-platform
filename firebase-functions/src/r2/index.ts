@@ -123,6 +123,25 @@ function requireAuth(request: { auth?: { uid: string } }): string {
   return request.auth.uid;
 }
 
+/**
+ * Wrap R2 client calls so AWS SDK / network errors propagate as
+ * HttpsError("internal", realMessage) instead of Firebase's default
+ * opaque "INTERNAL" with no details.
+ */
+async function wrapR2<T>(operation: string, fn: () => Promise<T>): Promise<T> {
+  try {
+    return await fn();
+  } catch (error: unknown) {
+    if (error instanceof HttpsError) throw error;
+    const message = error instanceof Error ? error.message : String(error);
+    const name = (error as { name?: string })?.name ?? "UnknownError";
+    throw new HttpsError(
+      "internal",
+      `R2 ${operation} failed: [${name}] ${message}`
+    );
+  }
+}
+
 // ============================================================================
 // r2PresignUrl
 // ============================================================================
@@ -163,12 +182,8 @@ export const r2PresignUrl = onCall(
     );
     const bucket = secret.bucketName();
 
-    const presignedUrl = await getPresignedPutUrl(
-      client,
-      bucket,
-      key,
-      contentType,
-      PRESIGN_EXPIRES_SINGLE
+    const presignedUrl = await wrapR2("presign-url", () =>
+      getPresignedPutUrl(client, bucket, key, contentType, PRESIGN_EXPIRES_SINGLE)
     );
 
     const publicUrl = `${secret.publicUrl()}/${key}`;
@@ -213,7 +228,9 @@ export const r2MultipartStart = onCall(
     );
     const bucket = secret.bucketName();
 
-    const uploadId = await createMultipartUpload(client, bucket, key, contentType);
+    const uploadId = await wrapR2("multipart-start", () =>
+      createMultipartUpload(client, bucket, key, contentType)
+    );
 
     return { uploadId, key };
   }
@@ -247,13 +264,8 @@ export const r2MultipartPartUrl = onCall(
     );
     const bucket = secret.bucketName();
 
-    const presignedUrl = await getMultipartPartUrl(
-      client,
-      bucket,
-      key,
-      uploadId,
-      partNumber,
-      PRESIGN_EXPIRES_MULTIPART
+    const presignedUrl = await wrapR2("multipart-part-url", () =>
+      getMultipartPartUrl(client, bucket, key, uploadId, partNumber, PRESIGN_EXPIRES_MULTIPART)
     );
 
     return { presignedUrl };
@@ -288,7 +300,9 @@ export const r2MultipartComplete = onCall(
     );
     const bucket = secret.bucketName();
 
-    await completeMultipartUploadHelper(client, bucket, key, uploadId, parts);
+    await wrapR2("multipart-complete", () =>
+      completeMultipartUploadHelper(client, bucket, key, uploadId, parts)
+    );
 
     const publicUrl = `${secret.publicUrl()}/${key}`;
 
@@ -323,7 +337,9 @@ export const r2MultipartAbort = onCall(
     );
     const bucket = secret.bucketName();
 
-    await abortMultipartUploadHelper(client, bucket, key, uploadId);
+    await wrapR2("multipart-abort", () =>
+      abortMultipartUploadHelper(client, bucket, key, uploadId)
+    );
 
     return { success: true };
   }
@@ -356,7 +372,9 @@ export const r2MultipartListParts = onCall(
     );
     const bucket = secret.bucketName();
 
-    return listMultipartParts(client, bucket, key, uploadId);
+    return wrapR2("multipart-list-parts", () =>
+      listMultipartParts(client, bucket, key, uploadId)
+    );
   }
 );
 
@@ -384,7 +402,9 @@ export const r2DeleteObject = onCall(
     );
     const bucket = secret.bucketName();
 
-    await deleteObjectHelper(client, bucket, key);
+    await wrapR2("delete-object", () =>
+      deleteObjectHelper(client, bucket, key)
+    );
 
     return { success: true };
   }
@@ -422,7 +442,9 @@ export const r2DeleteByPrefix = onCall(
     );
     const bucket = secret.bucketName();
 
-    const deletedCount = await deleteByPrefixHelper(client, bucket, prefix);
+    const deletedCount = await wrapR2("delete-by-prefix", () =>
+      deleteByPrefixHelper(client, bucket, prefix)
+    );
 
     return { deletedCount };
   }
