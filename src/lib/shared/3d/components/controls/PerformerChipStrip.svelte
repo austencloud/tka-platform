@@ -94,14 +94,13 @@
 
 <style>
   .chip-strip {
-    /* Flex row so chips line up left-to-right; wrap kicks in only if the
-       popover is narrower than expected, but with 22px chips + the pinned
-       add button we comfortably fit All + 8 performers + the add button at
-       340px popover width. */
+    /* Flex row with wrap so the strip degrades gracefully at 7-8 performers
+       when the full row overflows. Common counts (1-6) sit on a single row.
+       The pinned add button stays at the right edge regardless. */
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 4px;
+    gap: 5px;
     padding: 8px 10px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   }
@@ -109,14 +108,14 @@
   .chip {
     flex: 0 0 auto;
     box-sizing: border-box;
-    min-width: 22px;
-    height: 22px;
-    padding: 0 8px;
-    border-radius: 11px;
+    min-width: 28px;
+    height: 28px;
+    padding: 0 10px;
+    border-radius: 14px;
     border: 1px solid rgba(255, 255, 255, 0.18);
     background: rgba(255, 255, 255, 0.06);
     color: rgba(255, 255, 255, 0.82);
-    font-size: 11px;
+    font-size: 13px;
     font-weight: 600;
     cursor: pointer;
     display: inline-flex;
@@ -135,12 +134,12 @@
   }
 
   .chip-all {
-    padding: 0 10px;
+    padding: 0 12px;
     letter-spacing: 0.3px;
   }
 
   .chip-performer {
-    width: 22px;
+    width: 28px;
     padding: 0;
     border-color: var(--chip-color, rgba(255, 255, 255, 0.18));
   }
@@ -163,15 +162,15 @@
        shifts right by one chip-width per click and the user has to chase
        it with their cursor. */
     margin-left: auto;
-    width: 22px;
+    width: 28px;
     padding: 0;
-    font-size: 14px;
+    font-size: 16px;
     line-height: 1;
   }
 
   .separator {
     color: rgba(255, 255, 255, 0.3);
-    font-size: 12px;
+    font-size: 13px;
     padding: 0 1px;
   }
 </style>
