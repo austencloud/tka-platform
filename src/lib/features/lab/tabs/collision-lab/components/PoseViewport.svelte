@@ -74,6 +74,7 @@
   });
 
   const facingAngle = $derived(state.currentStanceVariant.rootYawRad);
+  const spinePitchOffset = $derived(state.currentStanceVariant.spinePitchRad);
 
   const SEVERITY_RANK: Record<"graze" | "clip" | "penetrate", number> = {
     graze: 1,
@@ -116,6 +117,7 @@
         {bluePropState}
         {redPropState}
         {facingAngle}
+        {spinePitchOffset}
         visible={true}
         isActive={true}
         enableLocomotion={false}

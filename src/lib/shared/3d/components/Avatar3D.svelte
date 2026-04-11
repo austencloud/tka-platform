@@ -113,6 +113,10 @@
     /** Optional callback invoked each frame with the collision detector's events.
      *  Lets parent components surface collision state without duplicating detection. */
     onCollisionEvents?: (events: CollisionEvent[]) => void;
+    /** Extra forward pitch (radians) applied to Spine1 before arm IK runs.
+     *  Positive values lean the torso forward. Used by the collision lab's
+     *  lean-forward stance variant. 0 = no external pitch. */
+    spinePitchOffset?: number;
   }
 
   let {
@@ -143,6 +147,7 @@
     beatIndex = 0,
     beatProgress = 0,
     onCollisionEvents,
+    spinePitchOffset = 0,
   }: Props = $props();
 
   // Services (manually instantiated to ensure shared skeleton instance)
@@ -714,6 +719,9 @@
       : null;
 
     animationService.setPropsAndBlend(blueWorldProp, redWorldProp);
+    // Push optional external spine pitch (e.g., lean-forward stance variants)
+    // before the animator runs IK so the arms solve against the leaned torso.
+    animationService.setExternalSpinePitch(spinePitchOffset);
     animationService.update(delta);
 
     // 2b. Collision detection — run after IK so bones are at final positions

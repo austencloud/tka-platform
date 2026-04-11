@@ -185,19 +185,20 @@ The catalog is generated once and committed as `diamond-in-out-catalog.json`. Th
 
 **Phase 1 variants are upper-body orientation changes**, all of which are achievable today by manipulating root transform and spine bone rotations without touching legs. Feet stay at their default Mixamo idle positions.
 
-| Index | Description         | Root yaw | Spine lean  | Effect                                        |
-| ----- | ------------------- | -------- | ----------- | --------------------------------------------- |
-| 0     | Neutral             | 0°       | 0°          | Default Mixamo idle stance                    |
-| 1     | Leaned forward      | 0°       | +10° pitch  | Torso tilts forward; shoulders move forward   |
-| 2     | Rotated left        | +15°     | 0°          | Whole upper body rotates left at hips         |
-| 3     | Rotated right       | -15°     | 0°          | Whole upper body rotates right at hips        |
+| Index | Description         | Root yaw | Spine pitch  | Effect                                        |
+| ----- | ------------------- | -------- | ------------ | --------------------------------------------- |
+| 0     | Neutral             | 0°       | 0°           | Default Mixamo idle stance                    |
+| 1     | Leaned forward      | 0°       | +20° pitch   | Spine1 tilts forward; shoulders move forward  |
+| 2     | Rotated left        | +15°     | 0°           | Whole upper body rotates left                 |
+| 3     | Rotated right       | -15°     | 0°           | Whole upper body rotates right                |
 
-These variants move the shoulders, which is what actually matters for collision — the hands still IK to the same world target, but the elbow geometry and arm routing shift. This is an honest minimum: variants only change things we can actually change today, and the reviewer can flag poses whose collisions are not resolvable by any of the four as `needs-adjustment` with a note indicating what *would* fix them (e.g., "needs left foot back").
+These variants move the shoulders, which is what actually matters for collision — the hands still IK to the same world target, but because the shoulders are now in a different position, the elbow geometry and arm routing shift. Reviewers can flag poses whose collisions are not resolvable by any of the four as `needs-adjustment` with a note indicating what *would* fix them (e.g., "needs left foot back").
 
-Variants are defined as constants in `DefaultStanceVariantProvider`. Applying a variant:
-1. Sets the avatar root node's yaw rotation
-2. Sets a spine pitch offset that the skeleton service applies to the spine1/spine2 bones before upper-body IK runs
-3. Upper-body IK (shoulders → elbows → hands) then solves against the pose's hand targets with the shifted shoulder positions
+**Implementation:**
+- Yaw is applied via Avatar3D's existing `facingAngle` prop.
+- Pitch is applied via a new `setExternalSpinePitch(radians)` method on `IAvatarAnimator`. The animator composes the pitch onto Spine1 **inside its per-frame update, after spine twist but before arm IK solves**. This is the critical order: the arms solve against the already-leaned torso, so hands reach the same grid points from different shoulder positions. Applying pitch after IK would rigidly rotate the arms along with Spine1 and the hands would fly off the targets.
+- `Avatar3D` gains a new optional `spinePitchOffset` prop that it forwards to the animator each frame.
+- When the pitch is 0, the path is a no-op (cheap early-out), so non-lab consumers of Avatar3D are unaffected.
 
 Four variants is intentionally small — enough to cover Phase 1's accessible stance space, and narrow enough that the reviewer can cycle through all four in seconds. More can be added later without schema change since `stanceVariantIndex` is just an integer, and the variant library can expand when proper leg IK is implemented.
 

@@ -77,6 +77,12 @@ export class AvatarAnimator implements IAvatarAnimator {
   /** Which spine/head bones the model actually has — used for weight redistribution */
   private availableSpineBones = new Set<string>();
 
+  /**
+   * Extra forward pitch (radians) applied to Spine1 each frame. Composed
+   * on top of the twist rest pose before arm IK runs. 0 = disabled.
+   */
+  private externalSpinePitchRad = 0;
+
   constructor(
     private ikSolver: IIKSolver,
     private skeleton: IAvatarSkeletonBuilder,
@@ -440,6 +446,34 @@ export class AvatarAnimator implements IAvatarAnimator {
       if (hipsBoneForUpdate) hipsBoneForUpdate.updateMatrixWorld(true);
     }
 
+    // External spine pitch: optional extra forward lean applied to Spine1.
+    // Runs whether or not spine twist is enabled so lean-forward stances
+    // work in both modes. Composed ON TOP of whatever the twist block set
+    // (or the rest pose, if twist didn't run). Applied BEFORE arm IK so
+    // the arms solve against the leaned-forward shoulders.
+    if (Math.abs(this.externalSpinePitchRad) > 0.0001 && this.spineRestCached) {
+      const spine1Bone = state.bones.get("Spine1");
+      if (spine1Bone) {
+        // If the twist block didn't run this frame, reset spine1 to its
+        // cached rest quat before applying pitch so we don't accumulate
+        // from the previous frame's rotation.
+        const twistRan =
+          this._spineTwistEnabled &&
+          this.spineTwister !== null &&
+          maxIKWeight > 0.001;
+        if (!twistRan) {
+          spine1Bone.quaternion.copy(this.spineTwistRestQuats.spine1);
+        }
+        const pitchQuat = new Quaternion().setFromAxisAngle(
+          new Vector3(1, 0, 0),
+          this.externalSpinePitchRad
+        );
+        spine1Bone.quaternion.multiply(pitchQuat);
+        const hipsBoneForUpdate = state.bones.get("Hips");
+        if (hipsBoneForUpdate) hipsBoneForUpdate.updateMatrixWorld(true);
+      }
+    }
+
     const leftTarget = pose.leftHand.targetPosition;
     const rightTarget = pose.rightHand.targetPosition;
 
@@ -610,6 +644,10 @@ export class AvatarAnimator implements IAvatarAnimator {
 
   setSmoothingFactor(factor: number): void {
     this.smoothingFactor = Math.max(0, Math.min(1, factor));
+  }
+
+  setExternalSpinePitch(radians: number): void {
+    this.externalSpinePitchRad = radians;
   }
 
   /** Debug toggle: disable pole vectors to compare old vs new elbow behavior */
