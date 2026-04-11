@@ -17,6 +17,8 @@
   const RAD2DEG = 180 / Math.PI;
   const DEG2RAD = Math.PI / 180;
 
+  const reach = $derived(labCtx.state.currentReachability);
+
   function onFootX(e: Event) {
     labCtx.state.setFootOffsetX(parseFloat((e.target as HTMLInputElement).value));
   }
@@ -39,6 +41,24 @@
     <button class="reset" onclick={() => labCtx.state.resetStance()}>
       Reset
     </button>
+  </div>
+
+  <div class="reach-badge" class:unreachable={!reach.reachable}>
+    {#if reach.reachable}
+      <span class="dot ok"></span>
+      Hands can reach props
+    {:else}
+      <span class="dot bad"></span>
+      <div class="reach-details">
+        <span>Out of reach</span>
+        {#if reach.blueExcess > 0}
+          <small>Blue hand: {(reach.blueExcess * 100).toFixed(0)} cm short</small>
+        {/if}
+        {#if reach.redExcess > 0}
+          <small>Red hand: {(reach.redExcess * 100).toFixed(0)} cm short</small>
+        {/if}
+      </div>
+    {/if}
   </div>
 
   <div class="slider">
@@ -158,5 +178,44 @@
   .slider input[type="range"] {
     width: 100%;
     margin: 0;
+  }
+  .reach-badge {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px 10px;
+    background: color-mix(in srgb, #22c55e 10%, var(--theme-panel-bg));
+    border: 1px solid color-mix(in srgb, #22c55e 40%, transparent);
+    border-radius: 6px;
+    font-size: 12px;
+  }
+  .reach-badge.unreachable {
+    background: color-mix(in srgb, #ef4444 12%, var(--theme-panel-bg));
+    border-color: color-mix(in srgb, #ef4444 50%, transparent);
+    color: #fca5a5;
+  }
+  .reach-badge .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-top: 4px;
+    flex-shrink: 0;
+  }
+  .reach-badge .dot.ok {
+    background: #22c55e;
+    box-shadow: 0 0 6px #22c55e;
+  }
+  .reach-badge .dot.bad {
+    background: #ef4444;
+    box-shadow: 0 0 6px #ef4444;
+  }
+  .reach-details {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .reach-details small {
+    opacity: 0.85;
+    font-size: 11px;
   }
 </style>

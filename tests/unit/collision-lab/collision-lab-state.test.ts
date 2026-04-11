@@ -87,9 +87,11 @@ describe("collision-lab-state", () => {
 
   it("labelCurrent captures the live stance values and collision snapshot", async () => {
     const { state, repo } = await setup();
-    state.setFootOffsetX(0.15);
-    state.setFootOffsetZ(-0.2);
-    state.setRootYawRad(0.3);
+    // Small offsets that stay within the reach envelope so labelCurrent
+    // actually writes (it refuses clear/needs-adjustment when unreachable)
+    state.setFootOffsetX(0.05);
+    state.setFootOffsetZ(-0.05);
+    state.setRootYawRad(0);
     state.setSpinePitchRad(0.1);
     const snapshot: CollisionSnapshot = {
       severity: "clip",
@@ -101,26 +103,28 @@ describe("collision-lab-state", () => {
     const id = state.currentPose!.id;
     state.labelCurrent("needs-adjustment");
     expect(repo.store[id]?.stance).toEqual({
-      footOffsetX: 0.15,
-      footOffsetZ: -0.2,
-      rootYawRad: 0.3,
+      footOffsetX: 0.05,
+      footOffsetZ: -0.05,
+      rootYawRad: 0,
       spinePitchRad: 0.1,
     });
     expect(repo.store[id]?.collisionSnapshot?.severity).toBe("clip");
   });
 
   it("stepping onto a pose with a prior label seeds the stance sliders", async () => {
-    const { state } = await setup();
-    // Label pose 0 with a non-default stance
-    state.setFootOffsetX(0.25);
-    state.setFootOffsetZ(-0.1);
+    const { state, repo } = await setup();
+    // Tiny offsets that stay within reach so labelCurrent writes
+    state.setFootOffsetX(0.03);
+    state.setFootOffsetZ(-0.02);
+    const id = state.currentPose!.id;
     state.labelCurrent("needs-adjustment"); // no auto-advance
+    expect(repo.store[id]).toBeDefined(); // sanity check
     // Walk away and back
     state.stepForward(); // cursor at 1, stance reset
     expect(state.footOffsetX).toBe(0);
     state.stepBackward(); // cursor back at 0, stance reseeded from label
-    expect(state.footOffsetX).toBe(0.25);
-    expect(state.footOffsetZ).toBe(-0.1);
+    expect(state.footOffsetX).toBe(0.03);
+    expect(state.footOffsetZ).toBe(-0.02);
   });
 
   it("resetStance returns all axes to zero", async () => {
@@ -141,5 +145,46 @@ describe("collision-lab-state", () => {
     state.labelCurrent("clear"); // advances to 2
     expect(state.progress.labeled).toBe(2);
     expect(state.progress.clear).toBe(2);
+  });
+
+  it("default stance is always reachable", async () => {
+    const { state } = await setup();
+    expect(state.currentReachability.reachable).toBe(true);
+    expect(state.currentReachability.blueExcess).toBe(0);
+    expect(state.currentReachability.redExcess).toBe(0);
+  });
+
+  it("stepping far from the grid makes the pose unreachable", async () => {
+    const { state } = await setup();
+    // 80 cm lateral step is well beyond slider range but useful to force
+    // the reach envelope boundary for the test
+    state.setFootOffsetX(0.8);
+    expect(state.currentReachability.reachable).toBe(false);
+  });
+
+  it("labelCurrent refuses 'clear' when the stance is unreachable", async () => {
+    const { state, repo } = await setup();
+    const firstId = state.currentPose!.id;
+    state.setFootOffsetX(0.8); // force unreachable
+    state.labelCurrent("clear");
+    // Label was NOT written and cursor did NOT advance
+    expect(repo.store[firstId]).toBeUndefined();
+    expect(state.cursorIndex).toBe(0);
+  });
+
+  it("labelCurrent allows 'unreachable' even when the stance is unreachable", async () => {
+    const { state, repo } = await setup();
+    const firstId = state.currentPose!.id;
+    state.setFootOffsetX(0.8); // force unreachable
+    state.labelCurrent("unreachable");
+    expect(repo.store[firstId]?.status).toBe("unreachable");
+  });
+
+  it("labelCurrent allows 'skip' even when the stance is unreachable", async () => {
+    const { state, repo } = await setup();
+    const firstId = state.currentPose!.id;
+    state.setFootOffsetX(0.8); // force unreachable
+    state.labelCurrent("skip");
+    expect(repo.store[firstId]?.status).toBe("skip");
   });
 });
