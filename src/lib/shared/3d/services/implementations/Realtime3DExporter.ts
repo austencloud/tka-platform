@@ -22,8 +22,8 @@ import {
 /** Keyframe interval — emit a keyframe every N frames for seek performance. */
 const KEYFRAME_INTERVAL = 30;
 
-/** Aspect ratio for the 3D viewport (square by default, matching the stage). */
-const DEFAULT_ASPECT_RATIO = 1;
+/** Fallback aspect ratio if the live canvas has zero size at capture time. */
+const FALLBACK_ASPECT_RATIO = 16 / 9;
 
 export class Realtime3DExporter implements IRealtime3DExporter {
   private shouldCancel = false;
@@ -43,8 +43,20 @@ export class Realtime3DExporter implements IRealtime3DExporter {
 
     const { fps, resolution, loopCount } = options;
 
-    // Compute export pixel dimensions (square viewport)
-    const { width, height } = getExportDimensions(resolution, DEFAULT_ASPECT_RATIO);
+    // Derive aspect ratio from the live WebGL canvas so the exported video
+    // preserves whatever shape the user actually sees. `canvas.width/height`
+    // is the backing store set by the renderer (honors DPR), which is the
+    // true shape of the rendered image. Hardcoding a square here was the
+    // reason exported videos came out smushed whenever the 3D viewer was
+    // resized wider than tall.
+    const liveWidth = webglCanvas.width;
+    const liveHeight = webglCanvas.height;
+    const aspectRatio =
+      liveWidth > 0 && liveHeight > 0
+        ? liveWidth / liveHeight
+        : FALLBACK_ASPECT_RATIO;
+
+    const { width, height } = getExportDimensions(resolution, aspectRatio);
     const bitrate = calculateBitrate(width, height, fps);
 
     // Total duration accounts for loop count. The caller's getTotalDurationSeconds
