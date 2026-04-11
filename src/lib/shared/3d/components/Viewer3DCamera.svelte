@@ -197,6 +197,10 @@
     dampingFactor={0.1}
     minDistance={1}
     maxDistance={25}
-    onend={handleEnd}
+    onstart={() => viewer3DState.setCameraDragging(true)}
+    onend={() => {
+      viewer3DState.setCameraDragging(false);
+      handleEnd();
+    }}
   />
 </T.PerspectiveCamera>

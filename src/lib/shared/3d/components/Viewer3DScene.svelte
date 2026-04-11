@@ -12,7 +12,8 @@
    * lighting, dual-wheel prop swapping, and the puppet-mode sync loop.
    */
 
-  import { T, useTask } from "@threlte/core";
+  import { T, useTask, useThrelte } from "@threlte/core";
+  import { onMount, onDestroy } from "svelte";
   import PerformerRig from "./PerformerRig.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { container } from "$lib/shared/di";
@@ -20,12 +21,12 @@
   import Environment3D from "../environments/components/Environment3D.svelte";
   import { getViewer3DContext } from "../context/viewer-3d-context";
   import { Plane } from "../domain/enums/Plane";
-  import { PlaneMode } from "../domain/enums/PlaneMode";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import type { TipEffectMap } from "$lib/shared/animation-engine/domain/types/TipEffectTypes";
   import type { AvatarInstanceState } from "../state/avatar-instance-state.svelte";
-  import type { PropState3D } from "../domain/models/PropState3D";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import { Raycaster, Vector2 } from "three";
+  import type { Object3D, Scene } from "three";
 
   interface Props {
     sequenceData: SequenceData | null;
@@ -35,13 +36,15 @@
   }
 
   let { sequenceData, currentStep, isPlaying, avatarState }: Props = $props();
-  const viewer3DState = getViewer3DContext();
+  // The `avatarState` prop is kept for backward-compat with Viewer3DCanvas;
+  // Task 14 removes it. The scene now iterates viewer3DState.performerManager.
+  void avatarState;
 
-  // GLTF models face -Z at facingAngle=0 (OpenGL convention).
-  // Camera at +Z looks toward -Z and sees the avatar's back.
-  // From +Z looking -Z (right-handed): +X = screen right = east ✓
-  // In dual wheel mode, the avatar turns 90° — read from avatar state.
-  const facingAngle = $derived(avatarState.facingAngle);
+  const viewer3DState = getViewer3DContext();
+  const { renderer, camera, scene } = useThrelte();
+
+  // All performers from the manager — the scene renders one rig per entry.
+  const performerManager = $derived(viewer3DState.performerManager);
 
   // Read the global tip effect map so the 3D orchestrator knows which effect
   // each tip should use (trails, led, fire, etc.).
@@ -72,27 +75,95 @@
     const beatIndex = Math.floor(currentStep);
     const subBeatProgress = currentStep - beatIndex;
 
-    // When currentStep exceeds the last valid index (end of sequence or
-    // end-position hold), show the final step at full progress instead of
-    // clamping the index and resetting progress to 0 (which causes a jerk).
-    if (beatIndex >= avatarState.totalSteps) {
-      avatarState.goToStep(avatarState.totalSteps - 1);
-      avatarState.setProgress(1);
-    } else {
-      avatarState.goToStep(beatIndex);
-      avatarState.setProgress(subBeatProgress);
+    // Drive every performer through the same beat/sub-beat so they stay in
+    // lockstep. (v1 design: all performers share the same source sequence.
+    // Per-performer offsets come later.)
+    for (const p of performerManager.performers) {
+      if (beatIndex >= p.totalSteps) {
+        p.goToStep(p.totalSteps - 1);
+        p.setProgress(1);
+      } else {
+        p.goToStep(beatIndex);
+        p.setProgress(subBeatProgress);
+      }
     }
   });
 
-  const rawBlue = $derived(avatarState.bluePropState);
-  const rawRed = $derived(avatarState.redPropState);
-  const isDualWheelMode = $derived(avatarState.planeMode === PlaneMode.DUAL_WHEEL);
+  // ---------------------------------------------------------------
+  // Raycasting: let users click a performer's body in 3D to select them.
+  // ---------------------------------------------------------------
+  const raycaster = new Raycaster();
+  const pointer = new Vector2();
 
-  // No swap needed: blue prop → LeftHand bone → blueLateralOffset (+X),
-  // red prop → RightHand bone → redLateralOffset (-X). The hand anchor
-  // positions in PerformerRig already place each hand at the correct grid.
-  const bluePropState = $derived(rawBlue);
-  const redPropState = $derived(rawRed);
+  /**
+   * Convert a DOM pointer event into normalized device coordinates (-1..1),
+   * matching the canvas the renderer is drawing into.
+   */
+  function setPointerFromEvent(e: PointerEvent): void {
+    const canvas = _raycasterCanvas ?? renderer?.current?.domElement;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+    pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+  }
+
+  /**
+   * Walk up the parent chain of a hit Object3D looking for a node whose
+   * `userData.performerIndex` is set by the iteration template below.
+   * Returns the performer index or null.
+   */
+  function findPerformerIndexFromHit(obj: Object3D | null): number | null {
+    let cur: Object3D | null = obj;
+    while (cur) {
+      const idx = (cur.userData as { performerIndex?: number } | undefined)?.performerIndex;
+      if (typeof idx === "number") return idx;
+      cur = cur.parent;
+    }
+    return null;
+  }
+
+  /**
+   * Hit-test the whole scene, then resolve the first performer hit. Returns
+   * the performer index that was hit, or null for empty-space / non-performer.
+   */
+  function hitTestPerformers(e: PointerEvent): number | null {
+    const activeCamera = camera.current;
+    if (!activeCamera) return null;
+    const sceneRoot: Scene | null = scene.current ?? null;
+    if (!sceneRoot) return null;
+
+    setPointerFromEvent(e);
+    raycaster.setFromCamera(pointer, activeCamera);
+    const hits = raycaster.intersectObjects(sceneRoot.children, true);
+
+    for (const hit of hits) {
+      const idx = findPerformerIndexFromHit(hit.object);
+      if (idx !== null) return idx;
+    }
+    return null;
+  }
+
+  // Attach the pointerdown listener to the renderer's DOM canvas. Suppress
+  // clicks during camera orbit so ending a drag doesn't steal the selection.
+  // Uses onMount/onDestroy (same pattern as ManualRaycaster) since
+  // renderer.current is available at mount time, not as a reactive binding.
+  let _raycasterCanvas: HTMLCanvasElement | null = null;
+
+  function onPointerDown(e: PointerEvent): void {
+    if (viewer3DState.isCameraDragging) return;
+    const idx = hitTestPerformers(e);
+    viewer3DState.selectPerformerScope(idx);
+  }
+
+  onMount(() => {
+    _raycasterCanvas = renderer?.current?.domElement ?? null;
+    if (!_raycasterCanvas) return;
+    _raycasterCanvas.addEventListener("pointerdown", onPointerDown);
+  });
+
+  onDestroy(() => {
+    _raycasterCanvas?.removeEventListener("pointerdown", onPointerDown);
+  });
 
   // Resolve prop type: prefer sequence's intended prop, fall back to settings
   const bluePropType = $derived.by((): PropType => {
@@ -155,19 +226,40 @@
   </T.Mesh>
 {/if}
 
-<!-- Single PerformerRig replaces all sibling wiring (avatar, grid, props, effects) -->
-<PerformerRig
-  position={{ x: 0, z: 0 }}
-  {facingAngle}
-  planeMode={avatarState.planeMode}
-  {avatarState}
-  showGrid={viewer3DState.showGrid}
-  visiblePlanes={gridVisiblePlanes}
-  gridMode={(sequenceData?.gridMode ?? "diamond") as import("../domain/constants/grid-layout").GridMode}
-  {bluePropType}
-  {redPropType}
-  {bluePropState}
-  {redPropState}
-  tipEffectMap={globalTipEffectMap}
-  {isPlaying}
-/>
+<!-- One PerformerRig per performer. Each group is tagged with userData.performerIndex
+     so the scene raycaster can resolve which performer was clicked. -->
+{#each performerManager.performers as performer, i (performer.id)}
+  <T.Group userData={{ performerIndex: i }}>
+    <PerformerRig
+      position={performer.position}
+      facingAngle={performer.facingAngle}
+      planeMode={performer.planeMode}
+      avatarState={performer}
+      showGrid={viewer3DState.showGrid}
+      visiblePlanes={gridVisiblePlanes}
+      gridMode={(sequenceData?.gridMode ?? "diamond") as import("../domain/constants/grid-layout").GridMode}
+      {bluePropType}
+      {redPropType}
+      bluePropState={performer.bluePropState}
+      redPropState={performer.redPropState}
+      tipEffectMap={globalTipEffectMap}
+      {isPlaying}
+    />
+
+    {#if viewer3DState.selectedPerformerIndex === i || viewer3DState.selectedPerformerIndex === null}
+      <!-- Ground-disc selection indicator. Gray when scope is "All",
+           lavender when this specific performer is selected. -->
+      <T.Mesh
+        position={[performer.position.x, 0.01, performer.position.z]}
+        rotation={[-Math.PI / 2, 0, 0]}
+      >
+        <T.CircleGeometry args={[0.45, 32]} />
+        <T.MeshBasicMaterial
+          color={viewer3DState.selectedPerformerIndex === null ? 0x6b7280 : 0x8b8bff}
+          transparent
+          opacity={0.35}
+        />
+      </T.Mesh>
+    {/if}
+  </T.Group>
+{/each}
