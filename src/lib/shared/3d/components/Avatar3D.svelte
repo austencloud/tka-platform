@@ -17,7 +17,7 @@
 
   import { onMount, onDestroy, untrack } from "svelte";
   import { T, useTask } from "@threlte/core";
-  import { Vector3, Quaternion } from "three";
+  import { Vector3, Quaternion, Euler } from "three";
   import type { IAvatarSkeletonBuilder } from "../services/contracts/IAvatarSkeletonBuilder";
   import type { IIKSolver } from "../services/contracts/IIKSolver";
   import type { IAvatarAnimator } from "../services/contracts/IAvatarAnimator";
@@ -56,7 +56,7 @@
   import { SpineTwister } from "../services/implementations/SpineTwister";
   import { GripType } from "$lib/shared/3d/domain/models/GripPose";
   import { CollisionDetector } from "../services/implementations/CollisionDetector";
-  import type { BodySnapshot, CollisionEvent } from "../services/contracts/ICollisionDetector";
+  import type { BodySnapshot, CollisionEvent, PropSegment } from "../services/contracts/ICollisionDetector";
 
   // Default Z position for avatars
   // Placing avatar at z=0 (same as grid plane) so hands are exactly at prop positions
@@ -169,6 +169,58 @@
     leftElbow: new Vector3(), rightElbow: new Vector3(),
     leftHand: new Vector3(), rightHand: new Vector3(),
   };
+
+  /**
+   * Base rotation from the staff's local-Y axis to the "horizontal" axis
+   * used in computePropRotation. Matches the HORIZONTAL_QUAT used by
+   * prop3d-transforms so the segment math agrees with what Staff3D renders.
+   * A staff is modeled as a +Y cylinder at rest, rotated 90° around Z
+   * (Y → -X) before the prop's worldRotation is applied.
+   */
+  const STAFF_HORIZONTAL_QUAT = new Quaternion().setFromEuler(
+    new Euler(0, 0, Math.PI / 2)
+  );
+  const _tmpAxis = new Vector3();
+  const _tmpFacingQuat = new Quaternion();
+  const _blueSegA = new Vector3();
+  const _blueSegB = new Vector3();
+  const _redSegA = new Vector3();
+  const _redSegB = new Vector3();
+
+  const blueSeg: PropSegment = { a: _blueSegA, b: _blueSegB, radius: 0.012 };
+  const redSeg: PropSegment = { a: _redSegA, b: _redSegB, radius: 0.012 };
+
+  /**
+   * Build a staff segment (tip-to-tip) from a prop's grip center, its
+   * rotation state, and the avatar's facing. Writes into the passed
+   * Vector3s to avoid per-frame allocation.
+   *
+   * Composition mirrors prop3d-transforms.computePropRotation:
+   *   cylinderLocalY → HORIZONTAL_QUAT → worldRotation → facingRotation
+   *
+   * The result is the final world direction of the cylinder's +Y axis.
+   * Multiplied by halfLength and added/subtracted from the grip gives
+   * the two tip positions.
+   */
+  function buildStaffSegment(
+    gripCenter: Vector3,
+    worldRotation: Quaternion,
+    avatarFacingAngle: number,
+    halfLength: number,
+    outA: Vector3,
+    outB: Vector3
+  ): void {
+    _tmpAxis.set(0, 1, 0);
+    _tmpAxis.applyQuaternion(STAFF_HORIZONTAL_QUAT);
+    _tmpAxis.applyQuaternion(worldRotation);
+    _tmpFacingQuat.setFromAxisAngle(_unitY, avatarFacingAngle);
+    _tmpAxis.applyQuaternion(_tmpFacingQuat);
+    _tmpAxis.multiplyScalar(halfLength);
+    outA.copy(gripCenter).add(_tmpAxis);
+    outB.copy(gripCenter).sub(_tmpAxis);
+  }
+
+  const _unitY = new Vector3(0, 1, 0);
 
   let servicesReady = $state(false);
   let modelLoaded = $state(false);
@@ -744,10 +796,41 @@
       leftChain?.effector.getWorldPosition(_boneVecs.leftHand);
       rightChain?.effector.getWorldPosition(_boneVecs.rightHand);
 
+      // Build staff segments (tip-to-tip) for shaft-through-body checks.
+      // A staff is a line, not a point — point-based collision would miss
+      // the common case where the grip is above the head but the shaft
+      // passes through it.
+      const halfStaffLength = userProportionsState.staffLength / 2;
+      let blueSegOrNull: PropSegment | null = null;
+      let redSegOrNull: PropSegment | null = null;
+
+      if (blueWorldProp) {
+        buildStaffSegment(
+          blueWorldProp.worldPosition,
+          bluePropState!.worldRotation,
+          facingAngle,
+          halfStaffLength,
+          _blueSegA,
+          _blueSegB
+        );
+        blueSegOrNull = blueSeg;
+      }
+      if (redWorldProp) {
+        buildStaffSegment(
+          redWorldProp.worldPosition,
+          redPropState!.worldRotation,
+          facingAngle,
+          halfStaffLength,
+          _redSegA,
+          _redSegB
+        );
+        redSegOrNull = redSeg;
+      }
+
       const events = collisionDetector.detect(
         _boneVecs as BodySnapshot,
-        blueWorldProp?.worldPosition ?? null,
-        redWorldProp?.worldPosition ?? null,
+        blueSegOrNull,
+        redSegOrNull,
         beatIndex,
         beatProgress
       );

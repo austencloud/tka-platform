@@ -25,6 +25,7 @@ import type {
   CollisionEvent,
   CollisionZone,
   CollisionSeverity,
+  PropSegment,
 } from "../contracts/ICollisionDetector";
 
 // Bounding radii for body parts (meters, scene scale)
@@ -90,43 +91,84 @@ export class CollisionDetector implements ICollisionDetector {
 
   detect(
     body: BodySnapshot,
-    bluePropPos: Vector3 | null,
-    redPropPos: Vector3 | null,
+    blueProp: PropSegment | null,
+    redProp: PropSegment | null,
     beatIndex: number,
     beatProgress: number
   ): CollisionEvent[] {
     if (!this.enabled) return [];
 
     const events: CollisionEvent[] = [];
+    const propPairs: Array<{ label: "Blue" | "Red"; seg: PropSegment }> = [];
+    if (blueProp) propPairs.push({ label: "Blue", seg: blueProp });
+    if (redProp) propPairs.push({ label: "Red", seg: redProp });
 
-    // 1. Props through head
-    if (bluePropPos) {
-      const d = this.pointToSphereOverlap(bluePropPos, body.head, HEAD_RADIUS);
-      if (d > 0) {
-        events.push(this.makeEvent("prop-through-head", beatIndex, beatProgress, d,
-          `Blue prop → head (${(d * 100).toFixed(1)}cm deep)`));
+    // 1. Props through head — segment (staff shaft) vs sphere (head).
+    //    Catches the common case where the grip is above the head but the
+    //    staff shaft passes through it.
+    for (const { label, seg } of propPairs) {
+      const closest = this.pointToSegmentDistance(body.head, seg.a, seg.b);
+      const threshold = HEAD_RADIUS + seg.radius;
+      if (closest < threshold) {
+        const depth = threshold - closest;
+        events.push(this.makeEvent("prop-through-head", beatIndex, beatProgress, depth,
+          `${label} staff shaft → head (${(closest * 100).toFixed(1)}cm clearance, ${(depth * 100).toFixed(1)}cm deep)`));
       }
     }
-    if (redPropPos) {
-      const d = this.pointToSphereOverlap(redPropPos, body.head, HEAD_RADIUS);
-      if (d > 0) {
-        events.push(this.makeEvent("prop-through-head", beatIndex, beatProgress, d,
-          `Red prop → head (${(d * 100).toFixed(1)}cm deep)`));
-      }
-    }
 
-    // 2. Props through torso (check against spine chain: spine1 → spine2 → neck)
-    const spineCenters = [body.spine1, body.spine2, body.neck];
-    for (const propPos of [bluePropPos, redPropPos]) {
-      if (!propPos) continue;
-      const label = propPos === bluePropPos ? "Blue" : "Red";
+    // 2. Props through torso — segment (staff) vs each spine sphere.
+    //    Torso is approximated as a chain of spheres along the spine so
+    //    the check works regardless of body yaw/tilt.
+    const spineCenters = [body.hips, body.spine1, body.spine2, body.neck];
+    for (const { label, seg } of propPairs) {
+      let worstDepth = 0;
       for (const center of spineCenters) {
-        const d = this.pointToSphereOverlap(propPos, center, TORSO_RADIUS);
-        if (d > 0) {
-          events.push(this.makeEvent("prop-through-torso", beatIndex, beatProgress, d,
-            `${label} prop → torso (${(d * 100).toFixed(1)}cm deep)`));
-          break;
+        const closest = this.pointToSegmentDistance(center, seg.a, seg.b);
+        const threshold = TORSO_RADIUS + seg.radius;
+        if (closest < threshold) {
+          const depth = threshold - closest;
+          if (depth > worstDepth) worstDepth = depth;
         }
+      }
+      if (worstDepth > 0) {
+        events.push(this.makeEvent("prop-through-torso", beatIndex, beatProgress, worstDepth,
+          `${label} staff shaft → torso (${(worstDepth * 100).toFixed(1)}cm deep)`));
+      }
+    }
+
+    // 2b. Props through arms — segment (staff) vs segment (upper arm and forearm).
+    //     Catches the case where the staff passes through the OTHER arm.
+    const armSegments: Array<{ name: string; a: Vector3; b: Vector3 }> = [
+      { name: "L upper arm", a: body.leftShoulder, b: body.leftElbow },
+      { name: "L forearm",   a: body.leftElbow,    b: body.leftHand },
+      { name: "R upper arm", a: body.rightShoulder, b: body.rightElbow },
+      { name: "R forearm",   a: body.rightElbow,    b: body.rightHand },
+    ];
+    for (const { label, seg } of propPairs) {
+      for (const arm of armSegments) {
+        const closest = this.segmentToSegmentDistance(seg.a, seg.b, arm.a, arm.b);
+        const threshold = ARM_SEGMENT_RADIUS + seg.radius;
+        if (closest < threshold) {
+          const depth = threshold - closest;
+          events.push(this.makeEvent("prop-through-arm", beatIndex, beatProgress, depth,
+            `${label} staff → ${arm.name} (${(depth * 100).toFixed(1)}cm deep)`));
+          break; // one arm hit per prop is enough
+        }
+      }
+    }
+
+    // 2c. Prop through prop — two staves crossing each other mid-shaft.
+    //     Common collision when both hands reach across the body.
+    if (blueProp && redProp) {
+      const closest = this.segmentToSegmentDistance(
+        blueProp.a, blueProp.b,
+        redProp.a,  redProp.b
+      );
+      const threshold = blueProp.radius + redProp.radius + PROP_BODY_THRESHOLD;
+      if (closest < threshold) {
+        const depth = threshold - closest;
+        events.push(this.makeEvent("prop-through-prop", beatIndex, beatProgress, depth,
+          `Staffs cross (${(closest * 100).toFixed(1)}cm gap, ${(depth * 100).toFixed(1)}cm overlap)`));
       }
     }
 
