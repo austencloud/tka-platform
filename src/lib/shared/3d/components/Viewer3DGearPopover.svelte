@@ -19,13 +19,17 @@
   import Viewer3DViewPresets from "./Viewer3DViewPresets.svelte";
   import { scale } from "svelte/transition";
   import { cubicOut, backOut } from "svelte/easing";
+  import PerformerChipStrip from "./controls/PerformerChipStrip.svelte";
+  import PerformerTab from "./controls/PerformerTab.svelte";
+  import { createViewer3DKeyboardHandler } from "../keyboard/Viewer3DKeyboardHandler";
+  import { onMount } from "svelte";
 
-  type TabId = "camera" | "planes" | "avatar" | "effects";
+  type TabId = "camera" | "planes" | "performers" | "effects";
 
   const TABS: { id: TabId; label: string; disabled?: boolean }[] = [
     { id: "camera", label: "Camera" },
     { id: "planes", label: "Planes" },
-    { id: "avatar", label: "Avatar", disabled: true },
+    { id: "performers", label: "Performers" },
     { id: "effects", label: "Effects", disabled: true },
   ];
 
@@ -34,6 +38,17 @@
   let rootEl = $state<HTMLDivElement | null>(null);
 
   const viewer3DState = getViewer3DContext();
+
+  // Bind Ctrl+Z / Ctrl+Shift+Z to viewer undo/redo while the component
+  // is mounted. The handler ignores events inside editable fields so it
+  // won't conflict with text inputs elsewhere in the viewer.
+  onMount(() => {
+    return createViewer3DKeyboardHandler({
+      undo: () => viewer3DState.undo(),
+      redo: () => viewer3DState.redo(),
+    });
+  });
+
   const avatarState = $derived(viewer3DState.avatarState);
 
   const PLANES: { plane: Plane; label: string }[] = [
@@ -150,6 +165,8 @@
       in:scale={{ duration: 250, start: 0.9, opacity: 0, easing: backOut }}
       out:scale={{ duration: 180, start: 0.95, opacity: 0, easing: cubicOut }}
     >
+      <PerformerChipStrip />
+
       <!-- Tab bar -->
       <div class="tab-bar" role="tablist">
         {#each TABS as tab}
@@ -250,10 +267,10 @@
         </div>
       {/if}
 
-      <!-- Avatar tab (stub) -->
-      {#if activeTab === "avatar"}
-        <div class="tab-panel" id="tab-panel-avatar" role="tabpanel">
-          <div class="placeholder">Coming soon</div>
+      <!-- Performers tab -->
+      {#if activeTab === "performers"}
+        <div class="tab-panel" id="tab-panel-performers" role="tabpanel">
+          <PerformerTab />
         </div>
       {/if}
 
