@@ -106,6 +106,7 @@
 
 <div class="pose-viewport">
   <Canvas>
+    <T.Color attach="background" args={["#1a1f2e"]} />
     <T.PerspectiveCamera makeDefault position={[0, 1.4, 3.5]} fov={35}>
       <T.Object3D position={[0, 1.2, 0]} />
     </T.PerspectiveCamera>
@@ -113,13 +114,19 @@
     <T.DirectionalLight position={[3, 5, 4]} intensity={0.8} />
 
     {#if bluePropState && redPropState}
+      <!--
+        isActive={false} is important here: isActive={true} assigns the
+        avatar to LAYER_PLAYER_BODY (layer 1), which is the first-person
+        viewmodel layer — hidden from the default camera (layer 0). We
+        want a third-person demo figure, so we leave it on LAYER_WORLD.
+      -->
       <Avatar3D
         {bluePropState}
         {redPropState}
         {facingAngle}
         {spinePitchOffset}
         visible={true}
-        isActive={true}
+        isActive={false}
         enableLocomotion={false}
         onCollisionEvents={handleCollisionEvents}
       />

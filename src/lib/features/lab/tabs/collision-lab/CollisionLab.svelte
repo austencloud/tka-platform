@@ -24,6 +24,21 @@
   let labState = $state<CollisionLabState | null>(null);
   let loadError = $state<string | null>(null);
 
+  // Context must be registered during synchronous component initialization.
+  // The holder uses a getter so child components see the state once it's
+  // loaded. Children are gated on labState != null in the template below,
+  // so the "state not ready" error path should never fire in practice.
+  setCollisionLabContext({
+    get state() {
+      if (!labState) {
+        throw new Error(
+          "collision-lab state accessed before initialization completed"
+        );
+      }
+      return labState;
+    },
+  });
+
   const hotkeyToStatus: Record<string, LabelStatus> = {
     "1": "clear",
     "2": "needs-adjustment",
@@ -71,9 +86,7 @@
       const enumerator = container.items.diamondPoseEnumerator;
       const repo = container.items.collisionLabPoseLabelRepository;
       const stance = container.items.collisionLabStanceVariantProvider;
-      const created = await createCollisionLabState(enumerator, repo, stance);
-      labState = created;
-      setCollisionLabContext({ state: created });
+      labState = await createCollisionLabState(enumerator, repo, stance);
     } catch (e) {
       loadError = (e as Error).message;
       console.error("CollisionLab: failed to initialize", e);

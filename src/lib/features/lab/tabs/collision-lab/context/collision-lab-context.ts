@@ -11,8 +11,15 @@ import type { CollisionLabState } from "../state/collision-lab-state.svelte";
 
 const KEY = Symbol("collision-lab-context");
 
+/**
+ * Context is set synchronously during component initialization, but the
+ * state itself is async (awaits labelRepo.loadAll). The holder uses a
+ * getter so children see the current state once it's ready — they gate
+ * on `state != null` in the root component before mounting, so they
+ * never observe the null value.
+ */
 export interface CollisionLabContext {
-  state: CollisionLabState;
+  readonly state: CollisionLabState;
 }
 
 export function setCollisionLabContext(ctx: CollisionLabContext): void {
