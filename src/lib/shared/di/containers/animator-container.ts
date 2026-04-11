@@ -60,6 +60,7 @@ import type { ISequenceTransformer } from "$lib/features/create/shared/services/
 import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
 import type { ISequenceLoopabilityChecker } from "$lib/features/compose/services/contracts/ISequenceLoopabilityChecker";
 import { Realtime3DExporter } from "$lib/shared/3d/services/implementations/Realtime3DExporter";
+import { CanvasFrameCapturer } from "$lib/shared/video-export/services/implementations/CanvasFrameCapturer";
 
 /**
  * External dependencies that must be provided from other containers
@@ -148,6 +149,9 @@ export function createAnimatorContainer(externalDeps: AnimatorContainerDependenc
           externalDeps.dimensionCalculator,
           externalDeps.layoutCalculator
         ),
+    }))
+    .add(() => ({
+      canvasFrameCapturer: () => new CanvasFrameCapturer(),
     }))
     .add(() => ({
       exportGlyphPrerenderer: () =>
