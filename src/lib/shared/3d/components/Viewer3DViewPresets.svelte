@@ -15,7 +15,7 @@
   import { GRID_OFFSETS } from "../domain/constants/plane-mode-configs";
   import { userProportionsState } from "../state/user-proportions-state.svelte";
 
-  const { compact = false, flat = false }: { compact?: boolean; flat?: boolean } = $props();
+  const { compact = false, flat = false, grid = false }: { compact?: boolean; flat?: boolean; grid?: boolean } = $props();
 
   const viewer3DState = getViewer3DContext();
   const avatarState = $derived(viewer3DState.avatarState);
@@ -85,9 +85,9 @@
   const activePresets: { id: string; label: string }[] = [
     { id: "main",         label: "Front" },
     { id: "back",         label: "Back" },
+    { id: "top",          label: "Top" },
     { id: "left",         label: "Left" },
     { id: "right",        label: "Right" },
-    { id: "top",          label: "Top" },
     { id: "threequarter", label: "3/4" },
   ];
 
@@ -118,7 +118,7 @@
     >{preset.label}</button>
   {/each}
 {:else}
-  <div class="presets-bar" class:compact>
+  <div class="presets-bar" class:compact class:grid>
     {#each activePresets as preset}
       <button
         class="preset-button"
@@ -170,5 +170,17 @@
     color: #fff;
     background: rgba(255, 255, 255, 0.12);
     border-color: rgba(255, 255, 255, 0.2);
+  }
+
+  .presets-bar.grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 3px;
+  }
+
+  .grid .preset-button {
+    min-height: 36px;
+    padding: 8px 10px;
+    font-size: 13px;
   }
 </style>
