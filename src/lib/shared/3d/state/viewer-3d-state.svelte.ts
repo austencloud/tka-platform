@@ -37,6 +37,20 @@ const STORAGE_KEY_VISIBLE_PLANES = "tka-viewer3d-visiblePlanes";
 const STORAGE_KEY_PRESET = "tka-viewer3d-activePreset";
 const STORAGE_KEY_CAM_PRESET = "tka-viewer3d-cameraPreset";
 
+// New multi-performer persistence keys (v2). The old
+// STORAGE_KEY_VISIBLE_PLANES is migrated to the first entry of the new
+// performers array on first load.
+const STORAGE_KEY_PERFORMERS = "tka-viewer3d-performers";
+const STORAGE_KEY_ACTIVE_FORMATION = "tka-viewer3d-activeFormation";
+const STORAGE_KEY_SELECTED_INDEX = "tka-viewer3d-selectedIndex";
+
+interface StoredPerformerSnapshot {
+  position: { x: number; z: number };
+  facingAngle: number;
+  customBluePlane: Plane;
+  customRedPlane: Plane;
+}
+
 function loadPersistedMode(): "2d" | "3d" {
   if (typeof localStorage === "undefined") return "2d";
   try {
@@ -100,6 +114,103 @@ function persistPlanes(planes: Set<Plane>) {
     localStorage.setItem(STORAGE_KEY_VISIBLE_PLANES, JSON.stringify([...planes]));
   } catch {
     // Storage full or unavailable
+  }
+}
+
+function loadPersistedPerformers(): StoredPerformerSnapshot[] | null {
+  if (typeof localStorage === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_PERFORMERS);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return null;
+    return parsed as StoredPerformerSnapshot[];
+  } catch {
+    return null;
+  }
+}
+
+function persistPerformers(snapshots: StoredPerformerSnapshot[]): void {
+  if (typeof localStorage === "undefined") return;
+  try {
+    localStorage.setItem(STORAGE_KEY_PERFORMERS, JSON.stringify(snapshots));
+  } catch {
+    // Quota exceeded or unavailable
+  }
+}
+
+function loadPersistedActiveFormation(): FormationPreset | "manual" | null {
+  if (typeof localStorage === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_ACTIVE_FORMATION);
+    return raw as FormationPreset | "manual" | null;
+  } catch {
+    return null;
+  }
+}
+
+function persistActiveFormation(value: FormationPreset | "manual"): void {
+  if (typeof localStorage === "undefined") return;
+  try {
+    localStorage.setItem(STORAGE_KEY_ACTIVE_FORMATION, value);
+  } catch {
+    // Quota exceeded or unavailable
+  }
+}
+
+function loadPersistedSelectedIndex(): number | null {
+  if (typeof localStorage === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_SELECTED_INDEX);
+    if (raw === null || raw === "null") return null;
+    const n = parseInt(raw, 10);
+    return Number.isNaN(n) ? null : n;
+  } catch {
+    return null;
+  }
+}
+
+function persistSelectedIndex(value: number | null): void {
+  if (typeof localStorage === "undefined") return;
+  try {
+    localStorage.setItem(
+      STORAGE_KEY_SELECTED_INDEX,
+      value === null ? "null" : String(value),
+    );
+  } catch {
+    // Quota exceeded or unavailable
+  }
+}
+
+/**
+ * One-time migration: if the old single-avatar visiblePlanes key exists and
+ * the new per-performer key does not, construct a single-performer snapshot
+ * from the old data and save it to the new key. Delete the old key so the
+ * migration never runs twice.
+ */
+function migrateLegacyPlanesIfNeeded(): void {
+  if (typeof localStorage === "undefined") return;
+  try {
+    const hasNew = localStorage.getItem(STORAGE_KEY_PERFORMERS);
+    if (hasNew) return;
+    const hasOld = localStorage.getItem(STORAGE_KEY_VISIBLE_PLANES);
+    if (!hasOld) return;
+
+    const planes = JSON.parse(hasOld) as Plane[];
+    const blue = planes[0] ?? Plane.WALL;
+    const red = planes[1] ?? blue;
+    const snapshots: StoredPerformerSnapshot[] = [
+      {
+        position: { x: 0, z: 0 },
+        facingAngle: 0,
+        customBluePlane: blue,
+        customRedPlane: red,
+      },
+    ];
+    localStorage.setItem(STORAGE_KEY_PERFORMERS, JSON.stringify(snapshots));
+    localStorage.removeItem(STORAGE_KEY_VISIBLE_PLANES);
+  } catch {
+    // Migration is best-effort; fall back to fresh state on any failure.
   }
 }
 
@@ -459,6 +570,33 @@ export function createViewer3DState(deps: {
     }
   });
 
+  // ---------------------------------------------------------------
+  // Persistence effects — serialize state to localStorage reactively.
+  // ---------------------------------------------------------------
+
+  // Serialize the performer array whenever performer count, position,
+  // facing angle, or hand planes change. The rune tracker re-runs this
+  // on any write reached through the expression below.
+  $effect(() => {
+    const snapshots: StoredPerformerSnapshot[] = performerManager.performers.map((p) => ({
+      position: { x: p.position.x, z: p.position.z },
+      facingAngle: p.facingAngle,
+      customBluePlane: p.customBluePlane,
+      customRedPlane: p.customRedPlane,
+    }));
+    persistPerformers(snapshots);
+  });
+
+  // Persist active formation preset.
+  $effect(() => {
+    persistActiveFormation(activeFormation);
+  });
+
+  // Persist which performer is currently selected (null = "All").
+  $effect(() => {
+    persistSelectedIndex(selectedPerformerIndex);
+  });
+
   /**
    * Switch to 3D render mode and load a sequence for the viewer avatar.
    * No-ops silently when WebGL2 is unavailable so callers don't need to
@@ -467,11 +605,47 @@ export function createViewer3DState(deps: {
    */
   function enter3D(sequenceData: SequenceData) {
     if (!_webgl2Available) return;
+
+    // One-time migration of the deprecated visiblePlanes key. Idempotent —
+    // returns immediately once the new key exists.
+    migrateLegacyPlanesIfNeeded();
+
+    // Initialize the manager on first entry.
     if (performerManager.performers.length === 0) {
       performerManager.initialize();
     }
-    const primary = performerManager.performers[0];
-    primary?.loadSequence(sequenceData);
+
+    // Restore persisted performers, if any. Each additional snapshot beyond
+    // the first one spawns a new performer via the manager so the count
+    // matches the saved state before we overwrite their fields.
+    const persisted = loadPersistedPerformers();
+    if (persisted && persisted.length > 0) {
+      while (performerManager.performers.length < persisted.length) {
+        performerManager.addPerformer();
+      }
+      persisted.forEach((snap, i) => {
+        const p = performerManager.performers[i];
+        if (!p) return;
+        p.position.x = snap.position.x;
+        p.position.z = snap.position.z;
+        p.setFacingAngle(snap.facingAngle);
+        p.setHandPlane("blue", snap.customBluePlane);
+        p.setHandPlane("red", snap.customRedPlane);
+      });
+    }
+
+    // Load sequence onto every restored performer. (v1: all performers
+    // share the same source sequence; per-performer offsets come later.)
+    for (const p of performerManager.performers) {
+      p.loadSequence(sequenceData);
+    }
+
+    // Restore viewer-level state.
+    const savedFormation = loadPersistedActiveFormation();
+    if (savedFormation) activeFormation = savedFormation;
+    const savedSelection = loadPersistedSelectedIndex();
+    selectedPerformerIndex = savedSelection;
+
     renderMode = "3d";
     persistMode("3d");
   }
