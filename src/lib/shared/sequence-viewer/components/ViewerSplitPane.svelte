@@ -6,6 +6,7 @@
   Supports focus mode (tap to expand one pane).
 -->
 <script lang="ts">
+  import { untrack } from "svelte";
   import { fade } from "svelte/transition";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type {
@@ -72,6 +73,9 @@
   });
 
   // Re-seed trails when animationSettings changes (runes track deps).
+  // The reads above establish reactive dependencies; the write happens inside
+  // `untrack` so the state mutation on effectsConfigState doesn't get tracked
+  // as part of this effect's own dependency set (which would loop).
   $effect(() => {
     // Touch the fields Svelte needs to track for the $effect to re-run.
     animationSettings.trail.lineWidth;
@@ -79,7 +83,7 @@
     animationSettings.trail.blueColor;
     animationSettings.trail.redColor;
     animationSettings.trail.trackingMode;
-    seedTrailsFromAnimationSettings(effectsConfigState);
+    untrack(() => seedTrailsFromAnimationSettings(effectsConfigState));
   });
 
   interface Props {
