@@ -199,7 +199,12 @@
                     aria-pressed={visible}
                     aria-disabled={implicit}
                     aria-label={`${label} plane — ${implicit ? 'locked visible, hand assigned' : (visible ? 'force-shown, click to hide' : 'hidden, click to show')}`}
-                  ></button>
+                  >
+                    <i
+                      class="plane-eye {visible ? 'fas fa-eye' : 'fas fa-eye-slash'}"
+                      aria-hidden="true"
+                    ></i>
+                  </button>
                   <span class="plane-label">{label}</span>
                 </div>
                 <div class="plane-right">
@@ -420,29 +425,30 @@
     background: transparent;
     flex-shrink: 0;
     padding: 0;
+    color: #fff;
+  }
+
+  .plane-eye {
+    font-size: 12px;
+    line-height: 1;
+    text-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
   }
 
   .plane-toggle.visible {
     background: var(--dot-color);
     border-color: var(--dot-color);
     box-shadow: 0 0 12px color-mix(in srgb, var(--dot-color) 50%, transparent);
+    color: #fff;
   }
 
   .plane-toggle.hidden {
     background: transparent;
     border-color: color-mix(in srgb, var(--dot-color) 50%, transparent);
+    color: var(--dot-color);
   }
 
   .plane-toggle.implicit {
     cursor: default;
-  }
-
-  .plane-toggle.implicit::after {
-    content: '';
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.65);
   }
 
   .plane-toggle:hover:not(.implicit) {

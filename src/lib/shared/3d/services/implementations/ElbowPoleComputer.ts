@@ -61,17 +61,23 @@ export class ElbowPoleComputer implements IElbowPoleComputer {
     const localX = handTarget.x - bodyCenter.x;
     const localY = handTarget.y - bodyCenter.y;
 
-    // sideSign: +1 for left arm (skeleton left = +X), -1 for right arm
-    const sideSign = side === "left" ? 1 : -1;
+    // TKA/Mixamo convention: character's right = +X, so the character's
+    // LEFT shoulder sits at -X and the RIGHT shoulder at +X.
+    // sideSign points in each arm's natural outward direction.
+    // Left arm: -1 (outward is -X). Right arm: +1 (outward is +X).
+    const sideSign = side === "left" ? -1 : 1;
 
-    // Cross-body factor: high when hand is on the wrong side
-    // Left arm's "wrong side" is -X, right arm's is +X
+    // Cross-body factor: high when the hand is on the WRONG side of the
+    // body centerline. Left arm's wrong side is +X; right arm's is -X.
+    // For left  (sideSign=-1): localX>0 → crossBody = -localX*-1 / half = localX/half > 0 ✓
+    // For right (sideSign=+1): localX<0 → crossBody = -localX*+1 / half = -localX/half > 0 ✓
     const crossBody = Math.max(0, Math.min(1,
       (-localX * sideSign) / SHOULDER_HALF_WIDTH
     ));
     pole.z += crossBody * 0.8;
 
-    // Low position: add outward X bias to prevent elbow pinch
+    // Low position: add OUTWARD X bias so the elbow flares away from the
+    // torso instead of pinching into it. Outward = sideSign direction.
     const lowFactor = Math.max(0, Math.min(1, -localY * 2));
     pole.x += sideSign * lowFactor * 0.3;
 
@@ -95,8 +101,9 @@ export class ElbowPoleComputer implements IElbowPoleComputer {
     side: "left" | "right",
     bodyCenter: Vector3
   ): Vector3 {
-    // Left arm outward = +X, right arm outward = -X
-    const outwardSign = side === "left" ? 1 : -1;
+    // TKA/Mixamo convention: character's right = +X, left shoulder at -X.
+    // Left arm outward = -X, right arm outward = +X.
+    const outwardSign = side === "left" ? -1 : 1;
     const pole = new Vector3(outwardSign, 0, 0); // Base: lateral outward
 
     const localZ = handTarget.z - bodyCenter.z;
@@ -137,8 +144,9 @@ export class ElbowPoleComputer implements IElbowPoleComputer {
       1 - horizontalDist / SHOULDER_HALF_WIDTH
     ));
 
-    // Near center: push elbow outward
-    const outwardSign = side === "left" ? 1 : -1;
+    // Near center: push elbow outward.
+    // TKA/Mixamo convention: left outward = -X, right outward = +X.
+    const outwardSign = side === "left" ? -1 : 1;
     pole.x += outwardSign * centerProximity * 0.5;
 
     // Also add a slight forward bias to avoid degenerate cases

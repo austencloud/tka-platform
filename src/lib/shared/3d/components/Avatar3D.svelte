@@ -163,12 +163,21 @@
   // Collision detection — logs when props/arms clip through the avatar body
   const collisionDetector = new CollisionDetector();
   const _boneVecs = {
-    head: new Vector3(), neck: new Vector3(),
+    head: new Vector3(), face: new Vector3(), neck: new Vector3(),
     spine2: new Vector3(), spine1: new Vector3(), hips: new Vector3(),
     leftShoulder: new Vector3(), rightShoulder: new Vector3(),
     leftElbow: new Vector3(), rightElbow: new Vector3(),
     leftHand: new Vector3(), rightHand: new Vector3(),
   };
+  // Scratch vectors for deriving the face center from the shoulder line.
+  // The Mixamo Head bone is at the base of the skull, so we push the face
+  // collision sphere forward (toward the actual face) and up (toward the
+  // center of the cranium). Deriving forward from the shoulder line means
+  // the offset rotates correctly no matter how the outer rig is yawed.
+  const _faceRight = new Vector3();
+  const _faceForward = new Vector3();
+  const FACE_FORWARD_OFFSET = 0.08; // 8 cm forward from head bone
+  const FACE_UP_OFFSET = 0.05;      // 5 cm up from head bone
 
   /**
    * Base rotation from the staff's local-Y axis to the "horizontal" axis
@@ -795,6 +804,25 @@
       rightChain?.middle.getWorldPosition(_boneVecs.rightElbow);
       leftChain?.effector.getWorldPosition(_boneVecs.leftHand);
       rightChain?.effector.getWorldPosition(_boneVecs.rightHand);
+
+      // Derive the face center from the shoulder line. The character's
+      // right direction is (rightShoulder - leftShoulder); crossing that
+      // with world-up gives a forward vector that stays correct as the
+      // outer rig rotates in yaw. Face = head + 8 cm forward + 5 cm up.
+      _faceRight.subVectors(_boneVecs.rightShoulder, _boneVecs.leftShoulder);
+      if (_faceRight.lengthSq() > 1e-6) {
+        _faceRight.normalize();
+        // forward = cross(right, worldUp). With right=(1,0,0) and up=(0,1,0)
+        // this gives (0,0,1) — matches the character facing +Z.
+        _faceForward.crossVectors(_faceRight, _unitY).normalize();
+      } else {
+        // Degenerate (shoulders at same point) — fall back to +Z forward.
+        _faceForward.set(0, 0, 1);
+      }
+      _boneVecs.face
+        .copy(_boneVecs.head)
+        .addScaledVector(_faceForward, FACE_FORWARD_OFFSET);
+      _boneVecs.face.y += FACE_UP_OFFSET;
 
       // Build staff segments (tip-to-tip) for shaft-through-body checks.
       // A staff is a line, not a point — point-based collision would miss

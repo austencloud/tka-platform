@@ -24,6 +24,7 @@
   import { EffectComposer } from "threlte-postprocessing";
   import * as THREE from "three";
   import Grid3D from "./Grid3D.svelte";
+  import Stage3D from "./Stage3D.svelte";
   import ManualRaycaster from "./ManualRaycaster.svelte";
   import BloomEffect from "../effects/post-processing/BloomEffect.svelte";
   import Environment3D from "../environments/components/Environment3D.svelte";
@@ -62,6 +63,16 @@
     showGrid?: boolean;
     /** Whether to show grid point labels */
     showLabels?: boolean;
+    /**
+     * Whether to render the performance stage platform under the
+     * performer. Defaults to true so every 3D viewer gets a clear
+     * audience-direction reference (warm footlights downstage, colored
+     * side cues, sunk at the current ground level). Set false for
+     * first-person mode or scenes where a stage would clutter the view.
+     */
+    showStage?: boolean;
+    /** Side length of the stage platform in meters. Default 3m. */
+    stageSize?: number;
     /** Grid mode: diamond or box */
     gridMode?: GridMode;
     /** Camera position preset */
@@ -115,6 +126,8 @@
     visiblePlanes = new Set([Plane.WALL, Plane.WHEEL, Plane.FLOOR]),
     showGrid = true,
     showLabels = true,
+    showStage = true,
+    stageSize = 3.0,
     gridMode = "diamond",
     cameraPreset = "perspective",
     customCameraPosition = null,
@@ -256,6 +269,16 @@
   {:else}
     <!-- 3D Environment (sky, ground, particles - matches 2D theme) -->
     <Environment3D {backgroundType} />
+  {/if}
+
+  <!--
+    Performance stage platform. Sits at the current ground level (from
+    user proportions) with warm footlights on the downstage edge for an
+    unambiguous audience-direction cue. Rendered before the grid so the
+    grid lines sit visibly on top of the plank.
+  -->
+  {#if showStage}
+    <Stage3D size={stageSize} />
   {/if}
 
   <!-- Grid planes - one per avatar position, rotating with avatar facing -->

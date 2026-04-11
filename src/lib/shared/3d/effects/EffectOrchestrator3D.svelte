@@ -41,6 +41,10 @@
     resolveTrails3D,
     resolveLed3D,
   } from "$lib/shared/effects/translators/webgl3d-translator";
+  import { evaluatePattern } from "$lib/shared/animation-engine/domain/patterns/evaluator";
+  import { createReusableContext } from "$lib/shared/animation-engine/domain/patterns/context";
+  import { ledBrightnessToFloat } from "$lib/shared/animation-engine/domain/types/LedTypes";
+  import { PROP_COLORS } from "../components/props/Prop3DProps";
 
   interface TipDatum {
     position: Vector3 | null;
@@ -135,6 +139,34 @@
   const _staffAxis = new Vector3();
   const _staffCenter = new Vector3();
 
+  // Reusable LED pattern evaluation context. Rebuilt fields per-tip per-frame
+  // so patterns like rainbow/breathe/sparkle animate in 3D the same way they
+  // do in 2D. Without this, patternId was ignored and every LED got painted
+  // with the static primaryColor hex.
+  const _ledEvalCtx = createReusableContext();
+  // Module-monotonic start time so the LED pattern animates continuously
+  // across play/pause and across sequence changes — avoids the reset-to-0
+  // "flash" you'd get from using raw performance.now() wall-clock seconds.
+  const _ledStartMs = performance.now();
+
+  // Previous-frame tip position cache for LED sub-frame supersampling.
+  // At 60fps a fast-moving LED covers ~12cm per frame, which looks like
+  // a string of widely-spaced dots. Interpolating N points per real frame
+  // between prev→current gives an effective 60·N Hz sample rate that
+  // reads as a continuous glowing arc, matching how real LEDs look to
+  // the human eye (persistence of vision integrates continuous emission).
+  // Keyed by `${propIndex}-${tipIndex}`. Cleared on playback reset.
+  const _ledPrevPositions = new Map<string, Vector3>();
+
+  // Supersample count per quality tier. Higher = smoother fast motion at
+  // the cost of more instances drawn per frame. At HIGH, 4 staff tips × 8
+  // supersamples = 32 active LED instances per frame, well within budget.
+  const LED_SUPERSAMPLE_BY_TIER: Record<string, number> = {
+    high: 8,
+    medium: 4,
+    low: 1,
+  };
+
 
   // Reactive so it responds to runtime tier changes (e.g. user override or
   // auto-downgrade after frame budget miss).
@@ -188,6 +220,9 @@
       redPovRenderer?.reset();
       charcoalRenderer?.reset();
       fireRenderer?.reset();
+      // Drop the LED prev-position cache so resume/scrub doesn't draw an
+      // 8-sample bridge from the stale pre-pause position to the new one.
+      _ledPrevPositions.clear();
       return;
     }
 
@@ -195,12 +230,102 @@
       effectsState.led,
       effectsState.overrides?.led3D as Partial<Parameters<typeof resolveLed3D>[1]> | undefined,
     );
-    const blueLedRgb = hexToRgb(resolvedLed.primaryColor);
-    const redLedRgb = hexToRgb(
-      resolvedLed.colorMode === "prop-matched" || resolvedLed.colorMode === "per-hand"
-        ? resolvedLed.secondaryColor
-        : resolvedLed.primaryColor,
-    );
+    // Pattern evaluator needs both colors in normalized LedColor form — it
+    // decides internally whether to interpolate between them or ignore them
+    // entirely (e.g. rainbow ignores both).
+    //
+    // "prop-matched" mode is a contract: the blue prop shows canonical blue,
+    // the red prop shows canonical red, regardless of what primaryColor/
+    // secondaryColor currently are. The 2D side enforces this by hardcoding
+    // in resolveHandColor(); we do the same here so switching *from* a
+    // single-color preset (green glow) *to* prop-matched doesn't leak the
+    // old primary color onto the blue prop. Colors match PROP_COLORS so the
+    // LEDs visually line up with the rendered prop material exactly.
+    let blueBaseColor: { r: number; g: number; b: number };
+    let redBaseColor: { r: number; g: number; b: number };
+    if (resolvedLed.colorMode === "prop-matched") {
+      blueBaseColor = hexToRgb(PROP_COLORS.blue.main);
+      redBaseColor = hexToRgb(PROP_COLORS.red.main);
+    } else if (resolvedLed.colorMode === "per-hand") {
+      blueBaseColor = hexToRgb(resolvedLed.primaryColor);
+      redBaseColor = hexToRgb(resolvedLed.secondaryColor);
+    } else {
+      // unified: both props use the same primary color
+      blueBaseColor = hexToRgb(resolvedLed.primaryColor);
+      redBaseColor = hexToRgb(resolvedLed.primaryColor);
+    }
+    // Each prop has 2 tips; 2 props total = 4 LEDs for pattern indexing.
+    const TOTAL_LEDS = 4;
+    const ledTimeSeconds = (performance.now() - _ledStartMs) / 1000;
+    // Brightness is stored as a discrete 1-5 level and needs to be mapped
+    // to the 0.2-1.0 alpha multiplier the shader expects. The 2D side
+    // calls the same helper so both backends track the slider identically.
+    const ledBrightness = ledBrightnessToFloat(resolvedLed.brightness);
+    const ledSupersampleCount =
+      LED_SUPERSAMPLE_BY_TIER[qualityTierDetector.currentTier] ?? 4;
+
+    /**
+     * Push N interpolated LED samples between the previous-frame tip position
+     * and the current-frame tip position into the given output array. On the
+     * first frame (no prev) we just push a single sample at the current
+     * position. All samples share the same pattern-evaluated color and the
+     * same velocity, since they all represent points along a single motion
+     * arc within a single frame.
+     */
+    function pushSupersampledLed(
+      out: LedTipInput[],
+      key: string,
+      current: { x: number; y: number; z: number },
+      velocity: { x: number; y: number; z: number },
+      speed: number,
+      r: number,
+      g: number,
+      b: number,
+    ): void {
+      const prev = _ledPrevPositions.get(key);
+      const N = ledSupersampleCount;
+      if (!prev || N <= 1) {
+        out.push({
+          position: new Vector3(current.x, current.y, current.z),
+          r,
+          g,
+          b,
+          brightness: ledBrightness,
+          velocityX: velocity.x,
+          velocityY: velocity.y,
+          velocityZ: velocity.z,
+          speed,
+        });
+      } else {
+        // Emit N samples at t = 1/N, 2/N, …, N/N so the final sample is
+        // exactly the current position (keeps the leading-edge LED where
+        // the physics sim says it should be).
+        for (let i = 1; i <= N; i++) {
+          const t = i / N;
+          const x = prev.x + (current.x - prev.x) * t;
+          const y = prev.y + (current.y - prev.y) * t;
+          const z = prev.z + (current.z - prev.z) * t;
+          out.push({
+            position: new Vector3(x, y, z),
+            r,
+            g,
+            b,
+            brightness: ledBrightness,
+            velocityX: velocity.x,
+            velocityY: velocity.y,
+            velocityZ: velocity.z,
+            speed,
+          });
+        }
+      }
+      // Cache current position for next frame's interpolation start point.
+      let cached = _ledPrevPositions.get(key);
+      if (!cached) {
+        cached = new Vector3();
+        _ledPrevPositions.set(key, cached);
+      }
+      cached.set(current.x, current.y, current.z);
+    }
 
     const dt = 1 / 60;
     blueLedTips.length = 0;
@@ -240,17 +365,34 @@
         const effect = resolved === "none" ? "trails" : resolved;
 
         if (effect === "led") {
-          blueLedTips.push({
-            position: new Vector3(tip.position.x, tip.position.y, tip.position.z),
-            r: blueLedRgb.r,
-            g: blueLedRgb.g,
-            b: blueLedRgb.b,
-            brightness: 1.0,
-            velocityX: tip.velocity.x,
-            velocityY: tip.velocity.y,
-            velocityZ: tip.velocity.z,
-            speed: tip.speed,
-          });
+          // Run the LED pattern evaluator for this specific tip so
+          // patterns like rainbow/breathe/sparkle animate over time
+          // and vary across the 4-LED layout. Without this call, the
+          // 3D viewer ignored patternId entirely.
+          _ledEvalCtx.time = ledTimeSeconds;
+          _ledEvalCtx.ledIndex = tipIndex; // 0,1 for blue's two tips
+          _ledEvalCtx.totalLeds = TOTAL_LEDS;
+          _ledEvalCtx.speed = resolvedLed.patternSpeed;
+          _ledEvalCtx.primaryColor = blueBaseColor;
+          _ledEvalCtx.secondaryColor = redBaseColor;
+          _ledEvalCtx.propIndex = 0;
+          _ledEvalCtx.tipIndex = tipIndex;
+          _ledEvalCtx.x = tip.position.x;
+          _ledEvalCtx.y = tip.position.y;
+          _ledEvalCtx.velocityX = tip.velocity.x;
+          _ledEvalCtx.velocityY = tip.velocity.y;
+          _ledEvalCtx.speedMagnitude = tip.speed;
+          const color = evaluatePattern(resolvedLed.patternId, _ledEvalCtx);
+          pushSupersampledLed(
+            blueLedTips,
+            `0-${tipIndex}`,
+            tip.position,
+            tip.velocity,
+            tip.speed,
+            color.r,
+            color.g,
+            color.b,
+          );
         } else if (effect === "charcoal") {
           charcoalTips.push({
             position: new Vector3(tip.position.x, tip.position.y, tip.position.z),
@@ -291,17 +433,33 @@
         const effect = resolved === "none" ? "trails" : resolved;
 
         if (effect === "led") {
-          redLedTips.push({
-            position: new Vector3(tip.position.x, tip.position.y, tip.position.z),
-            r: redLedRgb.r,
-            g: redLedRgb.g,
-            b: redLedRgb.b,
-            brightness: 1.0,
-            velocityX: tip.velocity.x,
-            velocityY: tip.velocity.y,
-            velocityZ: tip.velocity.z,
-            speed: tip.speed,
-          });
+          // Same pattern evaluator call for red prop's tips. The red prop
+          // uses ledIndex 2/3 so the pattern's spatial offset (used by
+          // rainbow, chase, wave, etc.) spans the full 4-LED layout.
+          _ledEvalCtx.time = ledTimeSeconds;
+          _ledEvalCtx.ledIndex = 2 + tipIndex;
+          _ledEvalCtx.totalLeds = TOTAL_LEDS;
+          _ledEvalCtx.speed = resolvedLed.patternSpeed;
+          _ledEvalCtx.primaryColor = redBaseColor;
+          _ledEvalCtx.secondaryColor = blueBaseColor;
+          _ledEvalCtx.propIndex = 1;
+          _ledEvalCtx.tipIndex = tipIndex;
+          _ledEvalCtx.x = tip.position.x;
+          _ledEvalCtx.y = tip.position.y;
+          _ledEvalCtx.velocityX = tip.velocity.x;
+          _ledEvalCtx.velocityY = tip.velocity.y;
+          _ledEvalCtx.speedMagnitude = tip.speed;
+          const color = evaluatePattern(resolvedLed.patternId, _ledEvalCtx);
+          pushSupersampledLed(
+            redLedTips,
+            `1-${tipIndex}`,
+            tip.position,
+            tip.velocity,
+            tip.speed,
+            color.r,
+            color.g,
+            color.b,
+          );
         } else if (effect === "charcoal") {
           charcoalTips.push({
             position: new Vector3(tip.position.x, tip.position.y, tip.position.z),
