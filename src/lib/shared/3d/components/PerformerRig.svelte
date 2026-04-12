@@ -33,6 +33,8 @@
   import type { AvatarInstanceState } from "../state/avatar-instance-state.svelte";
   import type { GridMode } from "../domain/constants/grid-layout";
   import type { TipEffectMap } from "$lib/shared/animation-engine/domain/types/TipEffectTypes";
+  import type { TurnRequest } from "../services/contracts/ITurnAnimator";
+  import { derivePlaneModeFromHands } from "../state/avatar-instance-state.svelte";
 
   // Constant sets to avoid allocating new Set objects on every reactive update.
   const WHEEL_ONLY = new Set([Plane.WHEEL]);
@@ -90,6 +92,15 @@
      *  is true. The consumer receives the new accumulated angle so it can
      *  sync its own sequence/state representation if needed. */
     onYawIntegrated?: (newAngle: number) => void;
+    /** Enable idle/walk locomotion animation on the avatar.
+     *  When true, the avatar breathes/sways while standing. */
+    enableRootMotion?: boolean;
+    /** Enable foot planting IK on the avatar. Pins feet to the
+     *  ground during contact phases. */
+    enableFootPlanting?: boolean;
+    /** Externally provided turn request. When null, PerformerRig
+     *  derives its own from per-beat heading changes. */
+    turnRequestOverride?: TurnRequest | null;
   }
 
   let {
@@ -117,6 +128,9 @@
     moveSpeed = 0,
     animationDrivenYaw = false,
     onYawIntegrated,
+    enableRootMotion = false,
+    enableFootPlanting = false,
+    turnRequestOverride,
   }: Props = $props();
 
   // Animation-driven yaw accumulator. When animationDrivenYaw is true, the
@@ -126,17 +140,6 @@
   // behaves exactly as before.
   let accumulatedYaw = $state(facingAngle);
 
-  // When the consumer changes facingAngle externally (e.g., scrubbing the
-  // timeline, snapping to a new beat), sync the accumulator. In animation-
-  // driven mode we only re-sync on explicit external changes, not on
-  // internal integrations — otherwise the external sync would immediately
-  // undo every yawDelta increment.
-  $effect(() => {
-    if (!animationDrivenYaw) {
-      accumulatedYaw = facingAngle;
-    }
-  });
-
   // Resolve prop states: use overrides (for dual-wheel swap) or avatarState defaults
   const bluePropState = $derived(bluePropStateOverride ?? avatarState.bluePropState);
   const redPropState = $derived(redPropStateOverride ?? avatarState.redPropState);
@@ -145,6 +148,86 @@
   const modeConfig = $derived(PLANE_MODE_CONFIGS[planeMode]);
   const gridOffset = $derived(GRID_OFFSETS[planeMode]);
   const isDualWheel = $derived(planeMode === PlaneMode.DUAL_WHEEL);
+
+  // ── Turn scheduling ──
+  // Derive per-beat heading from the avatar's plane mode configuration.
+  // When consecutive beats have different headings (from per-beat plane
+  // overrides), schedule a turn during that beat.
+
+  // Track the target heading of the active turn. When the turn completes
+  // (turnRequest goes null), snap the consumer's facing angle to the
+  // target heading so the sync effect picks up the correct post-turn
+  // angle instead of snapping back to the pre-turn heading.
+  let turnTargetHeading: number | null = $state(null);
+
+  function getHeadingForBeat(beatIndex: number): number {
+    const override = avatarState.beatPlaneOverrides.get(beatIndex);
+    if (override) {
+      const mode = derivePlaneModeFromHands(
+        override.blue ?? Plane.WALL,
+        override.red ?? Plane.WALL
+      );
+      return PLANE_MODE_CONFIGS[mode].facingAngle;
+    }
+    return PLANE_MODE_CONFIGS[avatarState.planeMode].facingAngle;
+  }
+
+  const turnRequest = $derived.by((): TurnRequest | null => {
+    // External override takes precedence
+    if (turnRequestOverride !== undefined) return turnRequestOverride;
+
+    // No sequence loaded or single-beat → no turns
+    if (!avatarState.hasSequence || avatarState.totalSteps <= 1) return null;
+
+    const currentIdx = avatarState.currentStepIndex;
+    // Beat 0 is the start position — no "from" heading to compare
+    if (currentIdx === 0) return null;
+
+    const currentHeading = getHeadingForBeat(currentIdx);
+    const prevHeading = getHeadingForBeat(currentIdx - 1);
+
+    // Compute shortest-path angle
+    let delta = currentHeading - prevHeading;
+    while (delta > Math.PI) delta -= 2 * Math.PI;
+    while (delta < -Math.PI) delta += 2 * Math.PI;
+
+    // Skip tiny or zero heading changes
+    if (Math.abs(delta) < 0.01) return null;
+
+    return {
+      fromHeading: prevHeading,
+      toHeading: currentHeading,
+      phase: avatarState.progress,
+    };
+  });
+
+  // When a turn is active, enable animation-driven yaw so the rig
+  // rotates from the turn clip's root motion rather than snapping.
+  const effectiveAnimDrivenYaw = $derived(animationDrivenYaw || turnRequest !== null);
+
+  // Turn completion snap: when turnRequest goes null after being active,
+  // snap avatarState to the post-turn heading so the sync effect below
+  // reads the correct angle instead of reverting to pre-turn heading.
+  $effect(() => {
+    if (turnRequest) {
+      turnTargetHeading = turnRequest.toHeading;
+    } else if (turnTargetHeading !== null) {
+      // Turn just completed — snap avatarState to post-turn heading
+      avatarState.snapFacingAngle(turnTargetHeading);
+      turnTargetHeading = null;
+    }
+  });
+
+  // When the consumer changes facingAngle externally (e.g., scrubbing the
+  // timeline, snapping to a new beat), sync the accumulator. In animation-
+  // driven mode we only re-sync on explicit external changes, not on
+  // internal integrations — otherwise the external sync would immediately
+  // undo every yawDelta increment.
+  $effect(() => {
+    if (!effectiveAnimDrivenYaw) {
+      accumulatedYaw = facingAngle;
+    }
+  });
 
   // HandAnchor positions in rig-local space.
   // Wall mode: both hands at z=gridOffset (grid center is forward of body).
@@ -174,7 +257,7 @@
   position.x={position.x}
   position.y={groundOffset}
   position.z={position.z}
-  rotation.y={animationDrivenYaw ? accumulatedYaw : facingAngle}
+  rotation.y={effectiveAnimDrivenYaw ? accumulatedYaw : facingAngle}
 >
   <!-- Avatar3D uses groundY (~-1.56) internally to position its mesh,
        so shoulders end up near y=0 in rig space. -->
@@ -190,12 +273,15 @@
       {isMoving}
       {moveSpeed}
       {enableLocomotion}
+      {enableRootMotion}
+      {enableFootPlanting}
+      turnRequest={turnRequest}
       bluePropAnchorRef={bluePropAnchorRef}
       redPropAnchorRef={redPropAnchorRef}
       disableSpineTwist={isDualWheel}
       beatIndex={avatarState.currentStepIndex}
       beatProgress={avatarState.progress}
-      onRootMotion={animationDrivenYaw
+      onRootMotion={effectiveAnimDrivenYaw
         ? (delta) => {
             if (delta.yawDelta !== 0) {
               accumulatedYaw += delta.yawDelta;
