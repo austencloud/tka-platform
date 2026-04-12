@@ -72,7 +72,19 @@ interface ZoneStats {
 }
 
 export class CollisionDetector implements ICollisionDetector {
+  /** Detection itself — when false, detect() returns [] and no stats are collected. */
   enabled = true;
+
+  /**
+   * Console output toggle — separate from `enabled` so detection can still run
+   * (events are returned, UIs like the Collision Lab still get data) while the
+   * per-frame warn/error spam stays out of the console. Off by default because
+   * Avatar3D runs this every frame in every 3D session, not just the lab.
+   *
+   * Flip on from DevTools when you want to see the logs:
+   *     __collisionDetector.logEnabled = true
+   */
+  logEnabled = false;
 
   /** Filter: only log this severity or worse. "graze" = all, "clip" = skip grazes, "penetrate" = worst only */
   minSeverity: CollisionSeverity = "graze";
@@ -299,6 +311,10 @@ export class CollisionDetector implements ICollisionDetector {
   }
 
   private logThrottled(event: CollisionEvent): void {
+    // Console output is opt-in — detection still runs and populates stats,
+    // but we don't spam warn/error on every frame unless someone asked to see them.
+    if (!this.logEnabled) return;
+
     // Filter by minimum severity
     if (this.severityRank(event.severity) < this.severityRank(this.minSeverity)) return;
 
@@ -329,32 +345,36 @@ export class CollisionDetector implements ICollisionDetector {
   private printSummary(): void {
     if (!this.enabled || this.zoneStats.size === 0) return;
 
-    const lines = [
-      "%c[Collision Summary]",
-      "",
-    ];
-    const styleArgs: string[] = ["font-weight: bold; font-size: 13px;"];
+    // Print the rollup only if logging is on. We still reset below so
+    // stats don't accumulate forever when logging is silenced.
+    if (this.logEnabled) {
+      const lines = [
+        "%c[Collision Summary]",
+        "",
+      ];
+      const styleArgs: string[] = ["font-weight: bold; font-size: 13px;"];
 
-    // Sort zones by worst penetration (most severe first)
-    const sorted = Array.from(this.zoneStats.entries())
-      .sort((a, b) => b[1].worstPenetration - a[1].worstPenetration);
+      // Sort zones by worst penetration (most severe first)
+      const sorted = Array.from(this.zoneStats.entries())
+        .sort((a, b) => b[1].worstPenetration - a[1].worstPenetration);
 
-    for (const [zone, stats] of sorted) {
-      const beats = Array.from(stats.beats).sort((a, b) => a - b);
-      const worstCm = (stats.worstPenetration * 100).toFixed(1);
-      const worstSeverity = this.classifySeverity(stats.worstPenetration);
-      const badge = SEVERITY_BADGE[worstSeverity];
+      for (const [zone, stats] of sorted) {
+        const beats = Array.from(stats.beats).sort((a, b) => a - b);
+        const worstCm = (stats.worstPenetration * 100).toFixed(1);
+        const worstSeverity = this.classifySeverity(stats.worstPenetration);
+        const badge = SEVERITY_BADGE[worstSeverity];
 
-      lines.push(
-        `  ${badge} ${zone}` +
-        `\n    ${stats.totalFrames} frames | beats [${beats.join(", ")}]` +
-        `\n    worst: ${worstCm}cm deep at beat ${stats.worstBeat}` +
-        `\n    breakdown: ${stats.severityCounts.penetrate} penetrate, ${stats.severityCounts.clip} clip, ${stats.severityCounts.graze} graze` +
-        `\n`
-      );
+        lines.push(
+          `  ${badge} ${zone}` +
+          `\n    ${stats.totalFrames} frames | beats [${beats.join(", ")}]` +
+          `\n    worst: ${worstCm}cm deep at beat ${stats.worstBeat}` +
+          `\n    breakdown: ${stats.severityCounts.penetrate} penetrate, ${stats.severityCounts.clip} clip, ${stats.severityCounts.graze} graze` +
+          `\n`
+        );
+      }
+
+      console.log(lines.join("\n"), ...styleArgs);
     }
-
-    console.log(lines.join("\n"), ...styleArgs);
 
     // Reset for next interval
     this.zoneStats.clear();
