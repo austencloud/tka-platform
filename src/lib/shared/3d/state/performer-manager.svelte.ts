@@ -103,20 +103,37 @@ export function createPerformerManager(deps: PerformerManagerDeps) {
   }
 
   /**
-   * Update all performer positions based on formation
+   * Update all performer positions based on formation.
+   *
+   * Some presets are capped (grid-2x2 at 4, back-to-back/facing/stage-lr at 2).
+   * When the performer count exceeds the preset's cap, the formation manager
+   * returns slots only for the covered indices. Performers beyond the cap
+   * would otherwise freeze at whatever position they spawned at, drifting
+   * based on spawn history. Fall back to the default row-pair layout for
+   * any index the preset doesn't cover — this produces a seamless 2-column
+   * grid for grid-2x2 at counts 5-8 (since grid-2x2's 4 slots align exactly
+   * with rows 0-1 of the row-pair default).
    */
   function updatePositions() {
-    // Update formation manager's performer count
     formationManager.setPerformerCount(performerStates.length);
 
-    // Apply positions from formation manager
     const positions = formationManager.getAllPerformerPositions();
+    const defaults = getDefaultPositions(performerStates.length);
+
     performerStates.forEach((performer, i) => {
       const pos = positions.find((p) => p.index === i);
       if (pos) {
         performer.position.x = pos.position.x;
         performer.position.z = pos.position.z;
         performer.setFacingAngle(pos.facingAngle);
+      } else {
+        const fallback = defaults[i];
+        if (fallback) {
+          performer.position.x = fallback.x;
+          performer.position.z = fallback.z;
+          // Leave facing unchanged — the default layout doesn't imply a
+          // specific facing, and new performers already face the audience.
+        }
       }
     });
   }
@@ -137,21 +154,33 @@ export function createPerformerManager(deps: PerformerManagerDeps) {
   }
 
   /**
-   * Update formation transition (called each frame when transitioning)
+   * Update formation transition (called each frame when transitioning).
+   * Uses the same default-layout fallback as updatePositions — if the
+   * target preset doesn't cover an index, that performer stays at its
+   * default row-pair slot instead of drifting.
    */
   function updateFormationTransition() {
     if (!formationManager.isTransitioning) return;
 
     formationManager.updateTransition(performance.now());
 
-    // Apply interpolated positions
     const positions = formationManager.getAllPerformerPositions();
+    const defaults = getDefaultPositions(performerStates.length);
+
     performerStates.forEach((performer, i) => {
       const pos = positions.find((p) => p.index === i);
       if (pos) {
         performer.position.x = pos.position.x;
         performer.position.z = pos.position.z;
         performer.setFacingAngle(pos.facingAngle);
+      } else {
+        const fallback = defaults[i];
+        if (fallback) {
+          performer.position.x = fallback.x;
+          performer.position.z = fallback.z;
+          // Leave facing unchanged — the default layout doesn't imply a
+          // specific facing, and new performers already face the audience.
+        }
       }
     });
   }
