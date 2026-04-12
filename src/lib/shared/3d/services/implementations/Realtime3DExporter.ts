@@ -19,6 +19,7 @@ import {
   calculateBitrate,
 } from "$lib/features/compose/shared/domain/video-export-calculations";
 import type { ICanvasFrameCapturer } from "$lib/shared/video-export/services/contracts/ICanvasFrameCapturer";
+import { ExportDiagnostics } from "$lib/shared/video-export/domain/ExportDiagnostics";
 
 /** Keyframe interval — emit a keyframe every N frames for seek performance. */
 const KEYFRAME_INTERVAL = 30;
@@ -116,10 +117,19 @@ export class Realtime3DExporter implements IRealtime3DExporter {
     let frameIndex = 0;
     let startTime: number | null = null;
 
+    const diag = new ExportDiagnostics(
+      width,
+      height,
+      fps,
+      totalFrames,
+      this.capturer.preferredKind
+    );
+
     return new Promise<Blob>((resolve, reject) => {
       const captureFrame = (timestamp: number) => {
         if (this.shouldCancel) {
           stopPlayback();
+          diag.finish();
           reject(new Error("Export cancelled"));
           return;
         }
@@ -128,41 +138,41 @@ export class Realtime3DExporter implements IRealtime3DExporter {
           startTime = timestamp;
         }
 
+        diag.rafTick(timestamp);
+
         const elapsedMs = timestamp - startTime;
         const expectedFrame = Math.floor(elapsedMs / frameDurationMs);
 
         // Capture all frames we've fallen behind on (typically just one)
         while (frameIndex <= expectedFrame && frameIndex < totalFrames) {
-          // Draw the WebGL canvas onto the offscreen canvas at export resolution.
-          // The WebGL canvas preserveDrawingBuffer should be true for this to work
-          // reliably; the caller is responsible for that configuration.
+          diag.startFrame();
+
           // Scale the live WebGL canvas onto the offscreen canvas at the
-          // export resolution. This is a GPU-accelerated canvas→canvas
+          // export resolution. This is a GPU-accelerated canvas-to-canvas
           // blit; the expensive step was the following pixel readback,
           // which we now skip entirely by handing the offscreen canvas to
           // the capturer as a zero-copy handle.
           offCtx.drawImage(webglCanvas, 0, 0, width, height);
+          diag.markDrawImage();
 
           const timestampMicros = Math.round((frameIndex / fps) * 1_000_000);
           const isKeyframe = frameIndex % KEYFRAME_INTERVAL === 0;
 
-          // Synchronous capture → synchronous addFrame. This ordering is
-          // load-bearing: the capture loop below will call
-          // backgroundEncoder.finish() the instant it runs out of frames,
-          // and finish() posts {type: "finish"} to the worker. If the
-          // capture were promise-based and we wrapped addFrame in .then(),
-          // the last batch of frame-captured messages would drain as
-          // microtasks *after* finish has already been posted, letting the
-          // worker flush the encoder and then crash on the late frames
-          // ("Cannot call 'flush' on a closed codec" + VideoFrame GC leaks).
-          // Keeping capture synchronous guarantees every frame-captured
-          // message is posted before finish.
+          // Synchronous capture followed by synchronous addFrame. This
+          // ordering is load-bearing: the capture loop calls finish() the
+          // instant it runs out of frames, and finish() posts
+          // {type: "finish"} to the worker. If the capture were async and
+          // wrapped in .then(), frame-captured messages would drain as
+          // microtasks AFTER finish was posted, crashing the worker.
           const frame = this.capturer.capture(offscreen, timestampMicros);
+          diag.markCapture();
+
           this.backgroundEncoder.addFrameCaptured(
             frame,
             frameIndex,
             isKeyframe
           );
+          diag.markAddFrame();
 
           onProgress({
             progress: frameIndex / totalFrames,
@@ -177,6 +187,7 @@ export class Realtime3DExporter implements IRealtime3DExporter {
         if (frameIndex >= totalFrames) {
           // All frames captured — stop playback and finalize
           stopPlayback();
+          diag.finish();
           this.backgroundEncoder
             .finish()
             .then((blob) => {
