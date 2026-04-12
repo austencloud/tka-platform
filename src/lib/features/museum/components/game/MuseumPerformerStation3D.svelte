@@ -160,9 +160,6 @@
       {bluePropType}
       {redPropType}
       groundOffset={museumGroundOffset}
-      enableLocomotion={true}
-      enableRootMotion={true}
-      enableFootPlanting={true}
     />
   {/if}
 </T.Group>
