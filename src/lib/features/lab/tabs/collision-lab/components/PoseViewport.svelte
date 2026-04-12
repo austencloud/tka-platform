@@ -137,20 +137,25 @@
   // foot IK is disabled, translating the rig root moves the whole body
   // rigidly (feet, hips, torso, arms). The props and grid stay fixed in
   // world space, so the performer walks around them.
+  //
+  // Y is lifted by STAGE.STAGE_DECK_HEIGHT so the avatar's feet land on
+  // the raised wooden stage deck instead of the bare ground below.
   const footOffset = $derived({
     x: labCtx.state.footOffsetX,
-    y: 0,
+    y: STAGE.STAGE_DECK_HEIGHT,
     z: labCtx.state.footOffsetZ,
   });
   const facingAngle = $derived(labCtx.state.rootYawRad);
   const spinePitchOffset = $derived(labCtx.state.spinePitchRad);
 
   // Scene3D's avatarPositions drives where its Grid3D visual is rendered.
-  // We pass the footOffset so the grid moves with the performer... wait no.
-  // Actually we want the opposite: grid stays in world space, performer
-  // moves around it. So we pass a SINGLE grid position at (0,0,0) and
-  // leave the avatar to drift via the rig root.
-  const gridAnchorPositions = [{ x: 0, y: 0, z: 0, facingAngle: 0 }];
+  // We want the grid to stay in world XZ (performer walks around it)
+  // but to be lifted onto the stage deck alongside the performer,
+  // otherwise the avatar's hands reach for prop targets floating below
+  // the deck. Y tracks STAGE.STAGE_DECK_HEIGHT just like the rig root.
+  const gridAnchorPositions = [
+    { x: 0, y: STAGE.STAGE_DECK_HEIGHT, z: 0, facingAngle: 0 },
+  ];
 
   // PropAnchor refs — Avatar3D reads world positions from these for IK.
   let bluePropAnchorRef = $state<Group | undefined>(undefined);
@@ -185,13 +190,25 @@
 </script>
 
 <div class="pose-viewport">
+  <!--
+    Camera sits upstage of the performer (negative Z + elevated) so the
+    view looks forward past the avatar toward the downstage audience.
+    The default `perspective` preset sits downstage-right, which means
+    the seated audience arc is literally behind the camera and invisible.
+    A director's-view angle from behind fixes that and also makes the
+    "performer facing the audience" relationship read at a glance.
+  -->
   <Scene3D
     cameraPreset="perspective"
+    customCameraPosition={[2.2, 2.8, -4.0]}
+    customCameraTarget={[0, 0.2, 1.1]}
     showGrid={true}
     showLabels={false}
     {visiblePlanes}
     avatarPositions={gridAnchorPositions}
     backgroundType={BackgroundType.FIREFLY_FOREST}
+    showAudience={true}
+    audienceCount={6}
   >
     {#snippet children()}
       <!-- Rig root: positions the performer at the stance's footOffset. -->
@@ -232,10 +249,11 @@
       <!--
         Props live in WORLD space (not inside the rig) so they stay fixed
         relative to Scene3D's grid as the performer walks around.
-        Scene3D's grid is rendered at z=gridOffset from its avatar anchor
-        (0,0,0), so our prop anchors use the same base offset.
+        Scene3D's grid is rendered at y=STAGE_DECK_HEIGHT z=gridOffset
+        from its avatar anchor, so our prop anchors match that Y to
+        keep the target rings sitting on the raised deck.
       -->
-      <T.Group position.z={GRID_FORWARD_OFFSET}>
+      <T.Group position={[0, STAGE.STAGE_DECK_HEIGHT, GRID_FORWARD_OFFSET]}>
         {#if bluePropState}
           <T.Group
             bind:ref={bluePropAnchorRef}
