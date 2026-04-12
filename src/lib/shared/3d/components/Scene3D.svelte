@@ -25,6 +25,7 @@
   import * as THREE from "three";
   import Grid3D from "./Grid3D.svelte";
   import Stage3D from "./Stage3D.svelte";
+  import SeatedAudience3D from "./SeatedAudience3D.svelte";
   import ManualRaycaster from "./ManualRaycaster.svelte";
   import BloomEffect from "../effects/post-processing/BloomEffect.svelte";
   import Environment3D from "../environments/components/Environment3D.svelte";
@@ -73,6 +74,16 @@
     showStage?: boolean;
     /** Side length of the stage platform in meters. Default 3m. */
     stageSize?: number;
+    /**
+     * Whether to render a seated audience arc on the downstage side
+     * of the stage. Off by default because the character + animation
+     * downloads cost several megabytes; opt in from consumers that
+     * benefit from the extra spatial cue (collision lab, sequence
+     * viewer).
+     */
+    showAudience?: boolean;
+    /** Number of seated audience members to render. Default 6. */
+    audienceCount?: number;
     /** Grid mode: diamond or box */
     gridMode?: GridMode;
     /** Camera position preset */
@@ -128,6 +139,8 @@
     showLabels = true,
     showStage = true,
     stageSize = 3.0,
+    showAudience = false,
+    audienceCount = 6,
     gridMode = "diamond",
     cameraPreset = "perspective",
     customCameraPosition = null,
@@ -279,6 +292,17 @@
   -->
   {#if showStage}
     <Stage3D size={stageSize} />
+  {/if}
+
+  <!--
+    Seated audience arc on the downstage side of the stage. Opt-in
+    (off by default) because the character + animation FBX downloads
+    are a few megabytes. When enabled, audience members all face the
+    performer at origin so the "downstage = audience" relationship
+    becomes literal instead of implied.
+  -->
+  {#if showAudience}
+    <SeatedAudience3D count={audienceCount} />
   {/if}
 
   <!-- Grid planes - one per avatar position, rotating with avatar facing -->

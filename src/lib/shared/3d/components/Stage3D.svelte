@@ -2,11 +2,10 @@
   /**
    * Stage3D
    *
-   * A rectangular performance stage centered at world origin. Renders
-   * at the current ground level (derived from user proportions — the
-   * Mixamo rig origin is at shoulder height, so ground is a negative Y)
-   * so the avatar's feet actually stand on top of it instead of floating
-   * 1.5m above.
+   * A rustic wooden performance stage centered at world origin. Styled
+   * as a low campground/festival platform — individual plank strips
+   * sitting on short thick legs, raised about 25cm above the ground so
+   * it reads as a real physical thing rather than a floating panel.
    *
    * Two jobs:
    *   1. Give the performer a clearly-bounded floor so viewers can see
@@ -15,7 +14,7 @@
    *      main viewer).
    *   2. Make "downstage" visually obvious — a warm glowing footlight
    *      strip along the +Z edge (toward the audience), plus color-coded
-   *      side cues on stage-left (+X, green) and stage-right (-X, red),
+   *      side cues on stage-right (+X, red) and stage-left (-X, green),
    *      so rotation is readable at a glance.
    *
    * Convention (matches Mixamo + collision lab + sequence viewer):
@@ -28,6 +27,7 @@
 
   import { T } from "@threlte/core";
   import { userProportionsState } from "../state/user-proportions-state.svelte";
+  import { STAGE } from "../scale/scale-constants";
 
   interface Props {
     /**
@@ -51,55 +51,172 @@
   // avatar's shoulder-origin Mixamo rig).
   const groundY = $derived(overrideGroundY ?? userProportionsState.groundY);
 
-  // Stage plank dimensions. Top surface sits just barely above the
-  // ground to avoid z-fighting with any terrain underneath while still
-  // reading as "at the floor".
-  const THICKNESS = 0.06;
-  const TOP_EPSILON = 0.005;
+  // ─── Stage geometry constants (all in meters) ─────────────────────
 
-  // Edge strips ("footlights") sit just above the plank top.
+  /**
+   * Height of the deck top above the ground. Shared with consumers
+   * (PoseViewport, sequence viewer) via STAGE.STAGE_DECK_HEIGHT so
+   * everyone agrees on where to put the performer's feet.
+   */
+  const DECK_HEIGHT = STAGE.STAGE_DECK_HEIGHT;
+
+  /** Thickness of each plank. */
+  const PLANK_THICKNESS = 0.055;
+
+  /** Width of each plank strip (front-to-back face). */
+  const PLANK_WIDTH = 0.34;
+
+  /**
+   * Small gap between adjacent planks to read as individual boards.
+   * Also helps fake the "between-planks shadow" look.
+   */
+  const PLANK_GAP = 0.012;
+
+  /** Support leg dimensions (thick wooden posts under the corners). */
+  const LEG_THICKNESS = 0.14;
+  const LEG_INSET = 0.22;
+
+  /** Cross-beam (skirt) that wraps the perimeter just below the deck. */
+  const SKIRT_HEIGHT = 0.11;
+  const SKIRT_THICKNESS = 0.05;
+
+  /** Edge "footlight" strip dimensions, sitting on top of the deck. */
   const STRIP_HEIGHT = 0.035;
   const STRIP_WIDTH = 0.05;
 
-  // Corner posts rise from the plank top; tall enough to read as a
-  // stage boundary from an overhead view, short enough not to obstruct
-  // the big viewer camera.
-  const POST_HEIGHT = 0.22;
-  const POST_THICKNESS = 0.05;
-
   const halfSize = $derived(size / 2);
 
-  // Y offsets inside the stage group. The group itself is positioned
-  // at (0, groundY, 0), so these are all local-to-group.
-  const PLANK_TOP_LOCAL = TOP_EPSILON;
-  const PLANK_CENTER_LOCAL = PLANK_TOP_LOCAL - THICKNESS / 2;
-  const STRIP_CENTER_LOCAL = PLANK_TOP_LOCAL + STRIP_HEIGHT / 2;
-  const POST_CENTER_LOCAL = PLANK_TOP_LOCAL + POST_HEIGHT / 2;
+  /**
+   * Deck top Y in the local frame of the stage group (which is
+   * positioned at (0, groundY, 0)). Everything else on the deck is
+   * measured from this surface.
+   */
+  const DECK_TOP = DECK_HEIGHT;
+
+  // ─── Plank layout ─────────────────────────────────────────────────
+  //
+  // Lay planks running along the X axis, stacked in Z. The count is
+  // chosen so each plank is PLANK_WIDTH wide with PLANK_GAP between
+  // them, covering the full stage depth. Leftover space is absorbed
+  // by small outer margins.
+  //
+  // Each plank gets a slightly different brown shade so the deck reads
+  // as real wood rather than a flat sheet. The shade table is short
+  // and deterministic (cycled by index), so the look is reproducible.
+
+  const PLANK_COLORS = [
+    "#6a4a2b",
+    "#5a3f24",
+    "#755132",
+    "#4f3720",
+    "#664329",
+    "#7a5737",
+  ];
+
+  interface Plank {
+    z: number;
+    color: string;
+  }
+
+  const planks = $derived.by<Plank[]>(() => {
+    const stride = PLANK_WIDTH + PLANK_GAP;
+    const count = Math.max(1, Math.round(size / stride));
+    const totalSpan = count * PLANK_WIDTH + (count - 1) * PLANK_GAP;
+    const start = -totalSpan / 2 + PLANK_WIDTH / 2;
+    const result: Plank[] = [];
+    for (let i = 0; i < count; i++) {
+      result.push({
+        z: start + i * stride,
+        color: PLANK_COLORS[i % PLANK_COLORS.length]!,
+      });
+    }
+    return result;
+  });
+
+  // Corner leg positions (inset from the edge so they read as supports
+  // peeking out under the deck rather than flush with the sides).
+  const legPositions = $derived<Array<[number, number]>>([
+    [halfSize - LEG_INSET, halfSize - LEG_INSET],
+    [-(halfSize - LEG_INSET), halfSize - LEG_INSET],
+    [halfSize - LEG_INSET, -(halfSize - LEG_INSET)],
+    [-(halfSize - LEG_INSET), -(halfSize - LEG_INSET)],
+  ]);
+
+  const legCenterY = DECK_TOP - PLANK_THICKNESS - DECK_HEIGHT / 2 + 0.02;
+
+  // Skirt beams wrap around the perimeter just below the deck top.
+  const skirtCenterY = DECK_TOP - PLANK_THICKNESS - SKIRT_HEIGHT / 2;
+  const skirtInset = LEG_THICKNESS * 0.3;
 </script>
 
 <T.Group position={[0, groundY, 0]}>
   <!--
-    Main stage plank. Dark stained wood so it reads clearly against
-    the firefly forest background without competing for attention.
-    Sits with top surface just above ground level and bottom sunk
-    slightly into the terrain to hide the edge.
+    Support legs. Thick wooden posts at each corner, inset from the
+    edge of the deck. Visible as short stubs peeking out beneath the
+    skirt — they sell the "real raised platform" feel.
   -->
-  <T.Mesh position.y={PLANK_CENTER_LOCAL} receiveShadow>
-    <T.BoxGeometry args={[size, THICKNESS, size]} />
-    <T.MeshStandardMaterial
-      color="#3a2d1f"
-      roughness={0.85}
-      metalness={0.05}
-    />
+  {#each legPositions as [x, z]}
+    <T.Mesh position={[x, legCenterY, z]} castShadow>
+      <T.BoxGeometry args={[LEG_THICKNESS, DECK_HEIGHT, LEG_THICKNESS]} />
+      <T.MeshStandardMaterial
+        color="#3d2a18"
+        roughness={0.92}
+        metalness={0.02}
+      />
+    </T.Mesh>
+  {/each}
+
+  <!--
+    Perimeter skirt beams: a low cross-beam around the stage below
+    the deck top, bridging the corner legs. Four box meshes forming
+    a frame. Matches the legs in color so it reads as one support
+    structure.
+  -->
+  <T.Mesh position={[0, skirtCenterY, halfSize - skirtInset]}>
+    <T.BoxGeometry args={[size - skirtInset * 2, SKIRT_HEIGHT, SKIRT_THICKNESS]} />
+    <T.MeshStandardMaterial color="#3d2a18" roughness={0.9} />
   </T.Mesh>
+  <T.Mesh position={[0, skirtCenterY, -(halfSize - skirtInset)]}>
+    <T.BoxGeometry args={[size - skirtInset * 2, SKIRT_HEIGHT, SKIRT_THICKNESS]} />
+    <T.MeshStandardMaterial color="#3d2a18" roughness={0.9} />
+  </T.Mesh>
+  <T.Mesh position={[halfSize - skirtInset, skirtCenterY, 0]}>
+    <T.BoxGeometry args={[SKIRT_THICKNESS, SKIRT_HEIGHT, size - skirtInset * 2]} />
+    <T.MeshStandardMaterial color="#3d2a18" roughness={0.9} />
+  </T.Mesh>
+  <T.Mesh position={[-(halfSize - skirtInset), skirtCenterY, 0]}>
+    <T.BoxGeometry args={[SKIRT_THICKNESS, SKIRT_HEIGHT, size - skirtInset * 2]} />
+    <T.MeshStandardMaterial color="#3d2a18" roughness={0.9} />
+  </T.Mesh>
+
+  <!--
+    The deck itself: a row of individual plank meshes running along
+    the X axis, stacked in Z. Small gaps between planks read as
+    floorboard seams. Each plank gets a slightly different brown
+    tone so the surface feels like real wood.
+  -->
+  {#each planks as plank (plank.z)}
+    <T.Mesh
+      position={[0, DECK_TOP - PLANK_THICKNESS / 2, plank.z]}
+      receiveShadow
+      castShadow
+    >
+      <T.BoxGeometry args={[size, PLANK_THICKNESS, PLANK_WIDTH]} />
+      <T.MeshStandardMaterial
+        color={plank.color}
+        roughness={0.88}
+        metalness={0.03}
+      />
+    </T.Mesh>
+  {/each}
 
   <!--
     Downstage (+Z) footlight strip: warm bright yellow, emissive so it
     glows like a real stage footlight. Strongest visual cue for the
     audience direction.
   -->
-  <T.Mesh position={[0, STRIP_CENTER_LOCAL, halfSize]}>
-    <T.BoxGeometry args={[size * 0.96, STRIP_HEIGHT, STRIP_WIDTH]} />
+  <T.Mesh position={[0, DECK_TOP + STRIP_HEIGHT / 2, halfSize - 0.01]}>
+    <T.BoxGeometry args={[size * 0.94, STRIP_HEIGHT, STRIP_WIDTH]} />
     <T.MeshStandardMaterial
       color="#ffb347"
       emissive="#ffb347"
@@ -110,11 +227,11 @@
 
   <!--
     Upstage (-Z) back marker: dim cool blue so "behind" is distinct
-    from "front" even in an overhead view. Much dimmer than the
+    from "front" even from an overhead view. Much dimmer than the
     footlights so the audience direction still dominates.
   -->
-  <T.Mesh position={[0, STRIP_CENTER_LOCAL, -halfSize]}>
-    <T.BoxGeometry args={[size * 0.96, STRIP_HEIGHT, STRIP_WIDTH]} />
+  <T.Mesh position={[0, DECK_TOP + STRIP_HEIGHT / 2, -(halfSize - 0.01)]}>
+    <T.BoxGeometry args={[size * 0.94, STRIP_HEIGHT, STRIP_WIDTH]} />
     <T.MeshStandardMaterial
       color="#3d5a80"
       emissive="#3d5a80"
@@ -124,15 +241,12 @@
   </T.Mesh>
 
   <!--
-    Theater convention for stage-left / stage-right is measured from
-    the performer's perspective when they face the audience. TKA
-    convention: character-right = +X, forward = +Z (toward audience).
-    So the performer's RIGHT side (= stage-right, red port light) is
-    the +X edge, and the performer's LEFT (= stage-left, green
-    starboard light) is the -X edge.
+    Stage-right (+X = character-right = red port light) and stage-left
+    (-X = character-left = green starboard light). Theater convention
+    measured from the performer's POV when facing the audience.
   -->
-  <T.Mesh position={[halfSize, STRIP_CENTER_LOCAL, 0]}>
-    <T.BoxGeometry args={[STRIP_WIDTH, STRIP_HEIGHT, size * 0.96]} />
+  <T.Mesh position={[halfSize - 0.01, DECK_TOP + STRIP_HEIGHT / 2, 0]}>
+    <T.BoxGeometry args={[STRIP_WIDTH, STRIP_HEIGHT, size * 0.94]} />
     <T.MeshStandardMaterial
       color="#f87171"
       emissive="#f87171"
@@ -140,8 +254,8 @@
       toneMapped={false}
     />
   </T.Mesh>
-  <T.Mesh position={[-halfSize, STRIP_CENTER_LOCAL, 0]}>
-    <T.BoxGeometry args={[STRIP_WIDTH, STRIP_HEIGHT, size * 0.96]} />
+  <T.Mesh position={[-(halfSize - 0.01), DECK_TOP + STRIP_HEIGHT / 2, 0]}>
+    <T.BoxGeometry args={[STRIP_WIDTH, STRIP_HEIGHT, size * 0.94]} />
     <T.MeshStandardMaterial
       color="#4ade80"
       emissive="#4ade80"
@@ -151,30 +265,14 @@
   </T.Mesh>
 
   <!--
-    Directional markers on the stage floor. Text rendering via
-    troika-three-text has worker issues in Vite dev mode and sometimes
-    fails to rehydrate, so compass cues are done with simple geometry
-    instead — reliable to render and readable at any camera angle.
-    TKA convention: character-right = +X, forward = +Z (audience).
-
-    The downstage half gets a large triangular arrow pointing at the
-    audience — unmistakable. The other three cardinals get small
-    dot markers in the matching edge colors so a quick glance at any
-    edge tells you which direction you're looking at.
-  -->
-  {@const markerY = PLANK_TOP_LOCAL + 0.002}
-  {@const markerInset = 0.38}
-
-  <!--
     Big orange triangle on the downstage half of the floor, pointing
     at the audience. CircleGeometry with segments=3 gives an
     equilateral triangle; thetaStart=-π/2 places the first vertex at
     local -Y so after lay-flat (rotation.x = -π/2) the apex points
-    at world +Z (downstage). Bright emissive so it pops against the
-    dark plank.
+    at world +Z (downstage).
   -->
   <T.Mesh
-    position={[0, markerY, halfSize * 0.35]}
+    position={[0, DECK_TOP + 0.003, halfSize * 0.35]}
     rotation={[-Math.PI / 2, 0, 0]}
   >
     <T.CircleGeometry args={[0.55, 3, -Math.PI / 2]} />
@@ -187,12 +285,13 @@
   </T.Mesh>
 
   <!--
-    Small cardinal dots at the other three edges. Each is a flat
-    disc tinted to match the nearest edge strip so the reviewer can
-    instantly associate compass direction with edge color.
+    Small cardinal dots at the other three edges, tinted to match the
+    corresponding edge strip so direction is legible at a glance.
   -->
+  {@const dotInset = 0.38}
+  {@const dotY = DECK_TOP + 0.003}
   <T.Mesh
-    position={[0, markerY, -(halfSize - markerInset)]}
+    position={[0, dotY, -(halfSize - dotInset)]}
     rotation={[-Math.PI / 2, 0, 0]}
   >
     <T.CircleGeometry args={[0.14, 24]} />
@@ -204,7 +303,7 @@
     />
   </T.Mesh>
   <T.Mesh
-    position={[halfSize - markerInset, markerY, 0]}
+    position={[halfSize - dotInset, dotY, 0]}
     rotation={[-Math.PI / 2, 0, 0]}
   >
     <T.CircleGeometry args={[0.14, 24]} />
@@ -216,7 +315,7 @@
     />
   </T.Mesh>
   <T.Mesh
-    position={[-(halfSize - markerInset), markerY, 0]}
+    position={[-(halfSize - dotInset), dotY, 0]}
     rotation={[-Math.PI / 2, 0, 0]}
   >
     <T.CircleGeometry args={[0.14, 24]} />
@@ -227,25 +326,4 @@
       toneMapped={false}
     />
   </T.Mesh>
-
-  <!--
-    Corner posts: short vertical spikes at each corner. Give the stage
-    a sense of physical presence and keep the bounds visible when the
-    camera tilts low.
-  -->
-  {#each [
-    [halfSize, halfSize],
-    [-halfSize, halfSize],
-    [halfSize, -halfSize],
-    [-halfSize, -halfSize],
-  ] as [x, z]}
-    <T.Mesh position={[x, POST_CENTER_LOCAL, z]}>
-      <T.BoxGeometry args={[POST_THICKNESS, POST_HEIGHT, POST_THICKNESS]} />
-      <T.MeshStandardMaterial
-        color="#1a1410"
-        roughness={0.8}
-        metalness={0.1}
-      />
-    </T.Mesh>
-  {/each}
 </T.Group>

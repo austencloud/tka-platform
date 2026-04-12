@@ -126,6 +126,15 @@ export const STAGE = {
 	/** Offset behind grid plane where avatar stands (facing the grid) */
 	AVATAR_GRID_OFFSET: 0.3,
 
+	/**
+	 * Height of the wooden performance stage deck above the ground.
+	 * Set to 0 for a flush stage, or a positive value for a raised
+	 * platform that the performer visibly stands on. Consumers that
+	 * render an avatar on top of the stage should offset their rig
+	 * root by this amount so the avatar's feet land on the deck top.
+	 */
+	STAGE_DECK_HEIGHT: 0.22,
+
 	// ─────────────────────────────────────────────────────────────────
 	// Camera Presets (meters from origin)
 	// ─────────────────────────────────────────────────────────────────

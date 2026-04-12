@@ -103,18 +103,22 @@
 
   const visiblePlanes = $derived(new Set<Plane>([bluePlane, redPlane]));
 
+  // Lift the rig root onto the stage deck so the avatar's feet stand
+  // on top of the raised wooden platform instead of the bare ground.
   const footOffset = $derived({
     x: stance.footOffsetX,
-    y: 0,
+    y: STAGE.STAGE_DECK_HEIGHT,
     z: stance.footOffsetZ,
   });
   const facingAngle = $derived(stance.rootYawRad);
   const spinePitchOffset = $derived(stance.spinePitchRad);
 
   // Scene3D expects an anchor for its internal Grid3D visual. Single
-  // anchor at the world origin so the grid stays fixed in space while
-  // the performer walks around it.
-  const gridAnchorPositions = [{ x: 0, y: 0, z: 0, facingAngle: 0 }];
+  // anchor on the stage deck (raised by STAGE_DECK_HEIGHT) so the grid
+  // sits on top of the wooden platform alongside the performer.
+  const gridAnchorPositions = [
+    { x: 0, y: STAGE.STAGE_DECK_HEIGHT, z: 0, facingAngle: 0 },
+  ];
 
   /**
    * Close-up camera framing for the thumbnail. The default `perspective`
@@ -166,8 +170,9 @@
       <!--
         Props live in world space (not inside the rig) so they stay
         fixed relative to the grid as the performer walks around.
+        Y matches STAGE_DECK_HEIGHT so prop targets sit on the deck.
       -->
-      <T.Group position.z={GRID_FORWARD_OFFSET}>
+      <T.Group position={[0, STAGE.STAGE_DECK_HEIGHT, GRID_FORWARD_OFFSET]}>
         <T.Group
           bind:ref={bluePropAnchorRef}
           position.x={bluePropState.worldPosition.x}
