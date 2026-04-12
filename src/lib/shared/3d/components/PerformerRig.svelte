@@ -289,6 +289,14 @@
             }
           }
         : undefined}
+      onTurnYaw={turnRequest
+        ? (yawDelta) => {
+            // Direct yaw from turn clip — no root motion needed.
+            // Set absolute rotation from fromHeading + clip's yaw.
+            accumulatedYaw = turnRequest.fromHeading + yawDelta;
+            onYawIntegrated?.(accumulatedYaw);
+          }
+        : undefined}
     />
   {/if}
 
