@@ -251,9 +251,6 @@
       redPropState={performer.redPropState}
       tipEffectMap={globalTipEffectMap}
       {isPlaying}
-      enableLocomotion={true}
-      enableRootMotion={true}
-      enableFootPlanting={true}
     />
 
     {#if viewer3DState.selectedPerformerIndex === i || viewer3DState.selectedPerformerIndex === null}
