@@ -57,6 +57,8 @@
   import { ElbowPoleComputer } from "../services/implementations/ElbowPoleComputer";
   import { ClavicleRaiser } from "../services/implementations/ClavicleRaiser";
   import { SpineTwister } from "../services/implementations/SpineTwister";
+  import { ClipBasedTurnAnimator } from "../services/implementations/ClipBasedTurnAnimator";
+  import type { TurnRequest } from "../services/contracts/ITurnAnimator";
   import { GripType } from "$lib/shared/3d/domain/models/GripPose";
   import { CollisionDetector } from "../services/implementations/CollisionDetector";
   import type { BodySnapshot, CollisionEvent, PropSegment } from "../services/contracts/ICollisionDetector";
@@ -126,6 +128,10 @@
      *  for the museum FPS player, which prefers code-driven responsive
      *  movement and doesn't benefit from contact-phase locking. */
     enableFootPlanting?: boolean;
+    /** Active turn request — when set, the turn clip overlay applies bone
+     *  rotations from the sampled turn clip between locomotion and root
+     *  motion in the animation pipeline. Null means no turn is active. */
+    turnRequest?: TurnRequest | null;
   }
 
   let {
@@ -158,6 +164,7 @@
     onCollisionEvents,
     spinePitchOffset = 0,
     enableFootPlanting = false,
+    turnRequest: turnRequestProp = null,
   }: Props = $props();
 
   // Current locomotion state — tracked so FootPlanter can decide when to
@@ -176,6 +183,7 @@
   let footPlanter: IFootPlanter | null = null;
   let legIKSolver: HingeConstrainedLegIKSolver | null = null;
   let contactCurveCache: ContactCurveCache | null = null;
+  let turnAnimator: ClipBasedTurnAnimator | null = null;
   let fingerAnimator: FingerAnimator | null = null;
 
   // Collision detection — logs when props/arms clip through the avatar body
@@ -394,6 +402,29 @@
           });
       }
 
+      // Load and bake turn clips (async — isReady() gates usage in frame loop)
+      if (turnAnimator && cachedRoot) {
+        const turnsBase = "/animations/turns/";
+        turnAnimator
+          .initialize(cachedRoot, [
+            { angleDeg: 90, glbUrl: `${turnsBase}turn-left-90.glb`, contactUrl: `${turnsBase}turn-left-90.contact.json`, clipName: "turn-left-90" },
+            { angleDeg: -90, glbUrl: `${turnsBase}turn-right-90.glb`, contactUrl: `${turnsBase}turn-right-90.contact.json`, clipName: "turn-right-90" },
+            { angleDeg: 180, glbUrl: `${turnsBase}turn-left-180.glb`, contactUrl: `${turnsBase}turn-left-180.contact.json`, clipName: "turn-left-180" },
+            { angleDeg: -180, glbUrl: `${turnsBase}turn-right-180.glb`, contactUrl: `${turnsBase}turn-right-180.contact.json`, clipName: "turn-right-180" },
+          ])
+          .then(() => {
+            // Register turn clip contact curves so FootPlanter can query them
+            if (contactCurveCache && turnAnimator) {
+              for (const curve of turnAnimator.getContactCurves()) {
+                contactCurveCache.register(curve);
+              }
+            }
+          })
+          .catch((err) => {
+            console.warn("[Avatar3D] Failed to load turn clips:", err);
+          });
+      }
+
       // Initialize foot planter with leg chains from the loaded skeleton.
       // FootPlanter uses the hinge-constrained leg IK solver (not the generic
       // ikSolver, which is still used by arm IK elsewhere in this file).
@@ -459,6 +490,7 @@
         footPlanter = new FootPlanter();
         legIKSolver = new HingeConstrainedLegIKSolver();
         contactCurveCache = new ContactCurveCache();
+        turnAnimator = new ClipBasedTurnAnimator();
         if (enableRootMotion) {
           rootMotionExtractor = new RootMotionExtractor();
         }
@@ -733,6 +765,41 @@
       }
       locomotionAnimator.update(delta);
 
+      // Turn clip overlay — when a turn is active, overwrite lower-body
+      // and spine bones with the turn clip's authored pose at the current
+      // phase. The idle animation's hip sway is suspended on these bones;
+      // the turn clip's own authored motion takes over. When turnRequest
+      // is null, idle resumes driving all bones.
+      let currentTurnClipName: string | undefined;
+      let currentTurnPhase: number | undefined;
+
+      if (turnRequestProp && turnAnimator?.isReady() && skeletonService) {
+        const sample = turnAnimator.sample(turnRequestProp);
+        const bones = skeletonService.getState().bones;
+
+        // Apply bone rotations — overwrite animation pose for lower body
+        for (const [boneName, quat] of sample.boneRotations) {
+          const bone = bones.get(boneName as import("../services/contracts/IAvatarSkeletonBuilder").BoneName);
+          if (bone) {
+            bone.quaternion.copy(quat);
+          }
+        }
+
+        // Apply Hips position for root motion yaw extraction
+        if (sample.hipsPosition) {
+          const hipsBone = bones.get("Hips");
+          if (hipsBone) {
+            hipsBone.position.copy(sample.hipsPosition);
+          }
+        }
+
+        // Track clip info for FootPlanter contact curve lookup
+        if (sample.clipName) {
+          currentTurnClipName = sample.clipName;
+          currentTurnPhase = turnRequestProp.phase;
+        }
+      }
+
       // Root motion: after the mixer writes Hips position from the clip,
       // extract the lateral + forward delta and zero it out so the mesh
       // stays centered. Then rotate by facing angle to get world-space XZ.
@@ -782,9 +849,8 @@
           groundY: 0, // Rig-local ground; PerformerRig handles world offset
           locomotionState: currentLocomotionState,
           isMoving,
-          // currentClipName / currentClipPhase omitted in Phase 1 — velocity
-          // fallback handles idle + walk. Phase 2 populates these when turn
-          // clips play.
+          currentClipName: currentTurnClipName,
+          currentClipPhase: currentTurnPhase,
         });
       }
     }
