@@ -97,6 +97,8 @@ export interface Video3DExportDependencies {
   advance(): void;
   /** Switch between 'always' (live) and 'manual' (offline) render modes */
   setRenderMode(mode: "always" | "manual"): void;
+  /** Tell the puppet loop to skip/resume performer state updates */
+  setExporting(value: boolean): void;
 }
 
 /**

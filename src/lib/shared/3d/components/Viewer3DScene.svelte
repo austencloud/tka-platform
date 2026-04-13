@@ -101,12 +101,17 @@
   // stepConfigs now includes the start position at index 0, so the mapping
   // is direct: 2D beat N → 3D index N (no offset needed).
   useTask(() => {
+    // During offline export, the exporter drives performer state
+    // deterministically before each advance() call. The puppet loop
+    // must NOT overwrite those values with the live currentStep
+    // (which isn't advancing because playback is paused).
+    // IK (Avatar3D useTask) and effects (EffectOrchestrator useTask)
+    // still run normally during advance() — only the puppet loop skips.
+    if (viewer3DState.isExporting) return;
+
     const beatIndex = Math.floor(currentStep);
     const subBeatProgress = currentStep - beatIndex;
 
-    // Drive every performer through the same beat/sub-beat so they stay in
-    // lockstep. (v1 design: all performers share the same source sequence.
-    // Per-performer offsets come later.)
     for (const p of performerManager.performers) {
       if (beatIndex >= p.totalSteps) {
         p.goToStep(p.totalSteps - 1);

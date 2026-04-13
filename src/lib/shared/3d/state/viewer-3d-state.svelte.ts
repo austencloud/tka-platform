@@ -547,8 +547,12 @@ export function createViewer3DState(deps: {
   let threlteAdvance = $state<(() => void) | null>(null);
   let threlteRenderMode = $state<{ set(mode: string): void } | null>(null);
 
-  // When false, Viewer3DScene and Avatar3D skip their useTask loops so the
-  // offline exporter can drive the scene deterministically frame-by-frame.
+  // When true, the puppet loop in Viewer3DScene skips performer state updates
+  // so the offline exporter can drive performers deterministically. IK and
+  // effects still run normally during advance().
+  let isExporting = $state(false);
+
+  // Legacy — kept for any remaining references but no longer used for gating.
   let autoRenderEnabled = $state(true);
 
   // Callback slot for the effect orchestrator's per-frame update function.
@@ -869,6 +873,12 @@ export function createViewer3DState(deps: {
     },
     get threlteRenderMode() {
       return threlteRenderMode;
+    },
+    get isExporting() {
+      return isExporting;
+    },
+    set isExporting(value: boolean) {
+      isExporting = value;
     },
     get autoRenderEnabled() {
       return autoRenderEnabled;
