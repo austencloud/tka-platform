@@ -9,7 +9,7 @@ import type {
   ImageExportOptions,
 } from "../contracts/ISequenceModalExporter";
 import type { VideoExportProgress, IVideoExportOrchestrator } from "$lib/features/compose/services/contracts/IVideoExportOrchestrator";
-import type { IRealtime3DExporter } from "$lib/shared/3d/services/contracts/IRealtime3DExporter";
+import type { IOffline3DExporter } from "$lib/shared/3d/services/contracts/IOffline3DExporter";
 import type { ISequenceRenderer } from "$lib/shared/render/services/contracts/ISequenceRenderer";
 import { container } from "$lib/shared/di";
 import { recordExportThroughput } from "../../state/export-timing-tracker";
@@ -27,7 +27,7 @@ export class SequenceModalExporter implements ISequenceModalExporter {
   // Lazy-loaded services
   private _videoExportOrchestrator: IVideoExportOrchestrator | null = null;
   private _sequenceRenderer: ISequenceRenderer | null = null;
-  private _activeRealtime3DExporter: IRealtime3DExporter | null = null;
+  private _activeExporter: IOffline3DExporter | null = null;
 
   private get videoExportOrchestrator(): IVideoExportOrchestrator | null {
     if (!this._videoExportOrchestrator) {
@@ -126,24 +126,34 @@ export class SequenceModalExporter implements ISequenceModalExporter {
     deps: Video3DExportDependencies,
     callbacks: ExportCallbacks
   ): Promise<void> {
-    const exporter = container.items.realtime3DExporter as IRealtime3DExporter;
+    const exporter = container.items.offline3DExporter as IOffline3DExporter;
     if (!exporter) {
       this._error = "3D export services not ready.";
       return;
     }
 
-    this._activeRealtime3DExporter = exporter;
+    this._activeExporter = exporter;
     this._isExporting = true;
     this._error = null;
     this._progress = { progress: 0, stage: "capturing" };
     this.revokePreviewUrl();
 
     try {
-      const blob = await exporter.export3D(
-        deps.webglCanvas,
-        deps.startPlayback,
-        deps.stopPlayback,
-        deps.getTotalDurationSeconds,
+      const blob = await exporter.exportOffline(
+        {
+          webglCanvas: deps.webglCanvas,
+          renderer: deps.renderer,
+          scene: deps.scene,
+          camera: deps.camera,
+          performers: deps.performers,
+          updateFormationTransition: deps.updateFormationTransition,
+          updateEffects: deps.updateEffects,
+          beatsPerSecond: deps.beatsPerSecond,
+          totalDurationSeconds: deps.totalDurationSeconds,
+          cameraKeyframes: deps.cameraKeyframes,
+          pauseAutoRender: deps.pauseAutoRender,
+          resumeAutoRender: deps.resumeAutoRender,
+        },
         (progress) => {
           this._progress = progress;
           if (progress.stage === "complete") {
@@ -168,7 +178,7 @@ export class SequenceModalExporter implements ISequenceModalExporter {
         callbacks.onError(this._error);
       }
     } finally {
-      this._activeRealtime3DExporter = null;
+      this._activeExporter = null;
       this._isExporting = false;
       this._progress = null;
     }
@@ -235,8 +245,8 @@ export class SequenceModalExporter implements ISequenceModalExporter {
 
   cancel(): void {
     this.videoExportOrchestrator?.cancelExport();
-    this._activeRealtime3DExporter?.cancel();
-    this._activeRealtime3DExporter = null;
+    this._activeExporter?.cancel();
+    this._activeExporter = null;
     this._isExporting = false;
     this._progress = null;
   }

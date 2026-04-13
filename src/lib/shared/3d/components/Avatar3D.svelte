@@ -62,6 +62,11 @@
   import { GripType } from "$lib/shared/3d/domain/models/GripPose";
   import { CollisionDetector } from "../services/implementations/CollisionDetector";
   import type { BodySnapshot, CollisionEvent, PropSegment } from "../services/contracts/ICollisionDetector";
+  import { tryGetViewer3DContext } from "../context/viewer-3d-context";
+
+  // Safe access to viewer3DState — Avatar3D is used in contexts (museum, realm)
+  // where the viewer3D context may not exist. We only need autoRenderEnabled.
+  const viewer3DState = tryGetViewer3DContext();
 
   // Default Z position for avatars
   // Placing avatar at z=0 (same as grid plane) so hands are exactly at prop positions
@@ -488,6 +493,12 @@
       animationService = animator;
       locomotionAnimator = locomotion;
 
+      // Exhibit performers with planted feet: skip Hips counter-rotation
+      // so the SpineTwister doesn't cascade yaw into the leg chain.
+      if (enableFootPlanting) {
+        animator.setSkipHipsTwist(true);
+      }
+
       // State machine + foot IK + root motion (only useful with locomotion)
       if (enableLocomotion) {
         stateMachine = new AnimationStateMachine();
@@ -718,6 +729,10 @@
 
   // Update animation each frame
   useTask((delta) => {
+    // Skip the animation loop when offline export is driving the scene
+    // deterministically — the exporter calls goToStep/setProgress directly.
+    if (viewer3DState && !viewer3DState.autoRenderEnabled) return;
+
     // Update mocap mixer if playing (runs independently of IK)
     const mixer = (window as any).__getMocapMixer?.();
     if (mixer) {
@@ -857,6 +872,7 @@
           currentClipPhase: currentTurnPhase,
         });
       }
+
     }
 
     // 2. IK post-process (blends per-arm based on prop presence)

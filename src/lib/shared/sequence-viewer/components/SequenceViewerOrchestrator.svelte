@@ -236,6 +236,7 @@
   import type { LibrarySequence } from "$lib/features/library/domain/models/LibrarySequence";
   import { createViewer3DState } from "$lib/shared/3d/state/viewer-3d-state.svelte";
   import { setViewer3DContext } from "$lib/shared/3d/context/viewer-3d-context";
+  import { CameraKeyframeBuffer } from "$lib/shared/video-export/domain/CameraKeyframe";
 
   // ============================================================================
   // PROPS
@@ -1132,31 +1133,45 @@
     const webglCanvas = viewer3DState.webglCanvas;
 
     if (exportType === "animation" && is3DMode && webglCanvas && playbackController) {
-      const pc = playbackController; // narrow for closures
       const opts = exportOptions.getVideoOptions();
       const secondsPerBeat = 1.0 / modalAnimationState.speed;
+      const beatsPerSecond = modalAnimationState.speed;
       const steps = effectiveSequence?.steps ?? [];
       const totalDurationUnits = steps.reduce((sum, s) => sum + (s.duration ?? 1), 0);
       const startDur = opts.includeStartPosition ? 1 : 0;
       const endDur = opts.includeEndHold ? 1 : 0;
-      const totalSec = (startDur + totalDurationUnits + endDur) * secondsPerBeat * opts.loopCount;
+      const singleLoopSec = (startDur + totalDurationUnits + endDur) * secondsPerBeat;
 
-      // 3-2-1 countdown before recording
-      for (let c = 3; c >= 1; c--) {
-        countdownValue = c;
-        await new Promise((r) => setTimeout(r, 800));
-        if (!editingPane) { countdownValue = 0; return; } // user cancelled
+      // Gather Threlte internals from viewer3DState
+      const threlteRenderer = viewer3DState.threlteRenderer;
+      const threlteScene = viewer3DState.threlteScene;
+      const threlteCamera = viewer3DState.threlteCamera;
+      if (!threlteRenderer || !threlteScene || !threlteCamera) {
+        showToast("3D scene not ready for export. Please try again.", "error");
+        return;
       }
-      countdownValue = 0;
 
-      // Start recording indicator
-      isRecording3D = true;
-      recordingElapsed = 0;
-      recordingTotal = totalSec;
-      const recordStart = performance.now();
-      recordingTimer = setInterval(() => {
-        recordingElapsed = Math.min((performance.now() - recordStart) / 1000, totalSec);
-      }, 100);
+      // Quick export: capture a static camera keyframe from the current position.
+      // Pass 1 (live camera recording) will be added in a future task.
+      const cameraKeyframes = new CameraKeyframeBuffer();
+      cameraKeyframes.captureStatic(threlteCamera);
+
+      // Gather performers from the performer manager
+      const performers = viewer3DState.performerManager.performers.map((p) => ({
+        goToStep: (index: number) => p.goToStep(index),
+        setProgress: (value: number) => p.setProgress(value),
+        totalSteps: p.totalSteps,
+      }));
+
+      // Formation transition updater
+      const updateFormationTransition = (timestamp: number) => {
+        viewer3DState.performerManager.updateFormationTransition();
+      };
+
+      // Effect orchestrator update — registered by EffectOrchestrator3D
+      const updateEffects = (dt: number) => {
+        viewer3DState.updateEffects?.(dt);
+      };
 
       try {
         await sequenceModalExporter.export3DAnimation(
@@ -1169,16 +1184,17 @@
           },
           {
             webglCanvas,
-            startPlayback: () => {
-              pc.jumpToStep(0);
-              if (!isPlayingLocal) pc.togglePlayback();
-            },
-            stopPlayback: () => {
-              if (isPlayingLocal) pc.togglePlayback();
-            },
-            getTotalDurationSeconds: () => {
-              return (startDur + totalDurationUnits + endDur) * secondsPerBeat;
-            },
+            renderer: threlteRenderer,
+            scene: threlteScene,
+            camera: threlteCamera,
+            performers,
+            updateFormationTransition,
+            updateEffects,
+            beatsPerSecond,
+            totalDurationSeconds: singleLoopSec,
+            cameraKeyframes,
+            pauseAutoRender: () => viewer3DState.pauseAutoRender(),
+            resumeAutoRender: () => viewer3DState.resumeAutoRender(),
           },
           callbacks
         );
