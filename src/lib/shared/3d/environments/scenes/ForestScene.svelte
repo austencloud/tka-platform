@@ -15,6 +15,7 @@
   import { userProportionsState } from "../../state/user-proportions-state.svelte";
   import VolumetricFireComponent from "../../effects/volumetric-fire/VolumetricFireComponent.svelte";
   import { Vector3, FogExp2, Color } from "three";
+  import { getSceneFeatureContext } from "../../scene-features/context/scene-feature-context";
 
   interface Props {
     /** Color variant: autumn (warm) or firefly (cool green) */
@@ -50,6 +51,15 @@
   // ========================================
   // All positions and scales in METERS (1 unit = 1 meter)
   // ========================================
+
+  // Scene feature context — gate campfire/tent visibility and report loading readiness
+  let sceneFeatures: ReturnType<typeof getSceneFeatureContext> | null = null;
+  try {
+    sceneFeatures = getSceneFeatureContext();
+  } catch {
+    // ForestScene may be rendered outside the scene feature system (e.g. standalone environments).
+    // In that case, all features are shown and no readiness reporting is needed.
+  }
 
   // Campfire position - further out from stage, to the right
   const campfirePosition = { x: 5.5, z: -3.5 };
@@ -252,6 +262,15 @@
       }
     };
   });
+
+  // Report environment readiness when all forest GLBs have loaded
+  $effect(() => {
+    if (!sceneFeatures) return;
+    const allLoaded = $tree1 && $tree2 && $tree3 && $rock1 && $rock2 && $bush1 && $bush2 && $campfire && $tent && $fallenLog && $fallenLogSmall;
+    if (allLoaded) {
+      sceneFeatures.reportReady("environment");
+    }
+  });
 </script>
 
 <!-- Sky gradient background -->
@@ -359,7 +378,7 @@
 {/if}
 
 <!-- Campfire with warm point lights and fire particles -->
-{#if $campfire}
+{#if $campfire && (sceneFeatures?.isEnabled("campfire") ?? true)}
   <T
     is={$campfire.scene.clone()}
     position.x={campfirePosition.x}
@@ -421,7 +440,7 @@
 {/if}
 
 <!-- Cozy tent -->
-{#if $tent}
+{#if $tent && (sceneFeatures?.isEnabled("tent") ?? true)}
   <T
     is={$tent.scene.clone()}
     position.x={tentPosition.x}

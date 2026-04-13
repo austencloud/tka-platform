@@ -14,6 +14,7 @@
   import { userProportionsState } from "../state/user-proportions-state.svelte";
   import { seatedAudienceLoader } from "../services/implementations/SeatedAudienceLoader";
   import SeatedFigure3D from "./SeatedFigure3D.svelte";
+  import { getSceneFeatureContext } from "../scene-features/context/scene-feature-context";
 
   interface Props {
     count?: number;
@@ -42,6 +43,13 @@
     "/animations/sitting-idle-a.fbx",
     "/animations/sitting-idle-b.fbx",
   ] as const;
+
+  let sceneFeatures: ReturnType<typeof getSceneFeatureContext> | null = null;
+  try {
+    sceneFeatures = getSceneFeatureContext();
+  } catch {
+    // May be rendered outside scene feature system
+  }
 
   interface Seat {
     x: number;
@@ -73,7 +81,9 @@
 
   // Preload FBX animations so retargeting is fast once GLBs finish
   onMount(() => {
-    seatedAudienceLoader.preloadAnimations(ANIMATION_URLS);
+    seatedAudienceLoader.preloadAnimations(ANIMATION_URLS).then(() => {
+      sceneFeatures?.reportReady("audience");
+    });
   });
 </script>
 
