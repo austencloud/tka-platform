@@ -25,16 +25,7 @@ import type { WriteContainer } from "./containers/write-container";
 import type { MandalaContainer } from "./containers/mandala-container";
 import type { SequenceMandalaContainer } from "./containers/sequence-mandala-container";
 import type { BackgroundBuilderContainerType } from "./containers/background-builder-container";
-import type { TrigridLabContainer } from "./containers/trigrid-lab-container";
-import type { MultiGridContainer } from "./containers/multi-grid-container";
-import type { EffectsLabContainer } from "./containers/effects-lab-container";
-import type { ArenaContainer } from "./containers/arena-container";
-import type { AssembleContainer } from "./containers/assemble-container";
-import type { FuseContainer } from "./containers/fuse-container";
-import type { LabContainer } from "./containers/lab-container";
 import type { CompositionContainer } from "./containers/composition-container";
-import type { VideoTrailsContainer } from "./containers/video-trails-container";
-import type { VideoInfraContainer } from "./containers/video-infra-container";
 
 // ============================================================================
 // Container type imports — factory (ReturnType<typeof create...>) containers
@@ -45,7 +36,7 @@ import type { PromoContainer } from "./containers/promo-container";
 import type { RenderContainer } from "./containers/render-container";
 import type { ShareContainer } from "./containers/share-container";
 import type { BrowseContainer } from "./containers/browse-container";
-import type { BuildContainer } from "./containers/build-container";
+import type { CreateContainer } from "./containers/create-container";
 import type { TrainContainer } from "./containers/train-container";
 import type { Skel2TKAContainer } from "./containers/skel2tka-container";
 import type { AdminContainer } from "./containers/admin-container";
@@ -55,29 +46,19 @@ import type { LibraryContainer } from "./containers/library-container";
 import type { QRContainer } from "./containers/qr-container";
 import type { Animation3DContainer } from "./containers/3d-container";
 import type { DelightContainer } from "./containers/delight-container";
-import type { PoiLabContainer } from "./containers/poi-lab-container";
-import type { CollisionLabContainer } from "./containers/collision-lab-container";
-import type { PoiContainer } from "./containers/poi-container";
-import type { LandingPreviewContainer } from "./containers/landing-preview-container";
-import type { HallOfShameContainer } from "./containers/hall-of-shame-container";
 import type { AttributionContainer } from "./containers/attribution-container";
 import type { VoiceControlContainer } from "./containers/voice-control-container";
-import type { ComposeBrowseContainer } from "./containers/compose-browse-container";
-import type { ComposeArrangeContainer } from "./containers/compose-arrange-container";
 import type { VoiceSessionContainer } from "./containers/voice-session-container";
 import type { WatchContainer } from "./containers/watch-container";
 import type { LanSyncContainer } from "./containers/lan-sync-container";
 import type { ConnectContainer } from "./containers/connect-container";
 import type { DeviceSyncContainer } from "./containers/device-sync-container";
-import type { MuseumContainer } from "./containers/museum-container";
 import type { PushContainer } from "./containers/push-container";
 import type { OfflineContainer } from "./containers/offline-container";
-import type { FestivalContainer } from "./containers/festival-container";
-import type { StoreContainer } from "./containers/store-container";
 import type { PlatformContainerType } from "./containers/platform-container";
 // Containers that already export items types directly (["items"])
 import type { NavigationContainerItems } from "./containers/navigation-container";
-import type { AnimatorContainerItems } from "./containers/animator-container";
+import type { ComposeCoreContainerItems } from "./containers/compose-core-container";
 import type { LoopLabelerContainerItems } from "./containers/loop-labeler-container";
 
 // ============================================================================
@@ -107,15 +88,6 @@ type WriteItems = ItemsOf<WriteContainer>;
 type MandalaItems = ItemsOf<MandalaContainer>;
 type SequenceMandalaItems = ItemsOf<SequenceMandalaContainer>;
 type BackgroundBuilderItems = ItemsOf<BackgroundBuilderContainerType>;
-type TrigridLabItems = ItemsOf<TrigridLabContainer>;
-type MultiGridItems = ItemsOf<MultiGridContainer>;
-type EffectsLabItems = ItemsOf<EffectsLabContainer>;
-type ArenaItems = ItemsOf<ArenaContainer>;
-type AssembleItems = ItemsOf<AssembleContainer>;
-type FuseItems = ItemsOf<FuseContainer>;
-type LabItems = ItemsOf<LabContainer>;
-type VideoTrailsItems = ItemsOf<VideoTrailsContainer>;
-type VideoInfraItems = ItemsOf<VideoInfraContainer>;
 
 // Factory containers
 type FeedbackItems = ItemsOf<FeedbackContainer>;
@@ -133,34 +105,24 @@ type LibraryItems = ItemsOf<LibraryContainer>;
 type QRItems = ItemsOf<QRContainer>;
 type Animation3DItems = ItemsOf<Animation3DContainer>;
 type DelightItems = ItemsOf<DelightContainer>;
-type PoiLabItems = ItemsOf<PoiLabContainer>;
-type CollisionLabItems = ItemsOf<CollisionLabContainer>;
-type PoiItems = ItemsOf<PoiContainer>;
-type LandingPreviewItems = ItemsOf<LandingPreviewContainer>;
-type HallOfShameItems = ItemsOf<HallOfShameContainer>;
 type AttributionItems = ItemsOf<AttributionContainer>;
 type VoiceControlItems = ItemsOf<VoiceControlContainer>;
-type ComposeBrowseItems = ItemsOf<ComposeBrowseContainer>;
-type ComposeArrangeItems = ItemsOf<ComposeArrangeContainer>;
 type VoiceSessionItems = ItemsOf<VoiceSessionContainer>;
 type WatchItems = ItemsOf<WatchContainer>;
 type LanSyncItems = ItemsOf<LanSyncContainer>;
 type ConnectItems = ItemsOf<ConnectContainer>;
 type DeviceSyncItems = ItemsOf<DeviceSyncContainer>;
-type MuseumItems = ItemsOf<MuseumContainer>;
 type PushItems = ItemsOf<PushContainer>;
 type OfflineItems = ItemsOf<OfflineContainer>;
-type FestivalItems = ItemsOf<FestivalContainer>;
-type StoreItems = ItemsOf<StoreContainer>;
 type PlatformNativeItems = ItemsOf<PlatformContainerType>;
 // ============================================================================
 // Upsert conflict handling
 //
-// buildContainer registers `loopDetector` (line 564) which loopLabelerContainer
-// later overwrites via upsert (line 387 in index.ts). Omit the overwritten key
-// from the earlier container so the intersection reflects runtime (last writer wins).
+// createModuleContainer registers `loopDetector` which loopLabelerContainer
+// later overwrites via upsert. Omit the overwritten key from the earlier
+// container so the intersection reflects runtime (last writer wins).
 // ============================================================================
-type BuildItemsClean = Omit<ItemsOf<BuildContainer>, "loopDetector">;
+type CreateItemsClean = Omit<ItemsOf<CreateContainer>, "loopDetector">;
 
 // ============================================================================
 // Standalone services added directly in buildAppContainer()
@@ -188,9 +150,9 @@ export type IAppContainerItems =
 	DataItems &
 	NavigationContainerItems &
 	RenderItems &
-	AnimatorContainerItems &
-	// Create / Build (with loopDetector omitted — overwritten by loop-labeler)
-	BuildItemsClean &
+	ComposeCoreContainerItems &
+	// Create module (with loopDetector omitted — overwritten by loop-labeler)
+	CreateItemsClean &
 	// Browse (upsert, but no actual key conflicts remain after browse* prefix rename)
 	BrowseItems &
 	TrainItems &
@@ -214,43 +176,19 @@ export type IAppContainerItems =
 	Animation3DItems &
 	BackgroundBuilderItems &
 	DelightItems &
-	PoiLabItems &
-	CollisionLabItems &
-	PoiItems &
-	LandingPreviewItems &
 	ModerationItems &
-	HallOfShameItems &
 	WatchItems &
 	LanSyncItems &
 	DeviceSyncItems &
 	ConnectItems &
-TrigridLabItems &
-	MultiGridItems &
 	// Attribution (proxy keys match container items)
 	AttributionItems &
 	VoiceControlItems &
 	VoiceSessionItems &
-	ComposeBrowseItems &
-	ComposeArrangeItems &
-	Skel2TKAItems &
-	LabItems &
-	AssembleItems &
-	FuseItems &
-	ArenaItems &
-	EffectsLabItems &
-	MuseumItems &
 	// Push notifications (FCM token management)
 	PushItems &
 	// Offline caching (proactive gallery + thumbnail prefetch)
 	OfflineItems &
-	// Video Trails services (endpoint detection, tip adaptation, export)
-	VideoTrailsItems &
-	// Shared video infrastructure (source provider, training data, frame extraction)
-	VideoInfraItems &
-	// Festival Hub (discovery, attendance, tracker, portfolio, submissions)
-	FestivalItems &
-	// Physical merch store (products, Stripe checkout)
-	StoreItems &
 	// Native platform (Capacitor) services
 	PlatformNativeItems &
 	// Standalone services
