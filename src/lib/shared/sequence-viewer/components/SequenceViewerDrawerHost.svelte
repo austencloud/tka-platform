@@ -41,7 +41,7 @@
   import DeleteConfirmDialog from "./DeleteConfirmDialog.svelte";
   import VideoPanel from "./video-panel/VideoPanel.svelte";
   import type { ICollaborativeVideoManager } from "$lib/shared/video-collaboration/services/contracts/ICollaborativeVideoManager";
-  import ChoreoCardContextMenuHost from "./choreo-card-context-menu/ChoreoCardContextMenuHost.svelte";
+  import ChoreoCardGearPopover from "./gear-popover/ChoreoCardGearPopover.svelte";
   import CardSettingsModal from "$lib/features/choreo-card/components/CardSettingsModal.svelte";
   import {
     openSendSequenceSheet,
@@ -131,8 +131,7 @@
   let deleteConfirmOpen = $state(false);
   let isDeleting = $state(false);
 
-  // ChoreoCard context menu + settings modal
-  let choreoCardMenuHost: ChoreoCardContextMenuHost | undefined = $state();
+  // ChoreoCard settings modal
   let cardSettingsOpen = $state(false);
   let rerenderTrigger = $state(0);
 
@@ -338,6 +337,10 @@
                       {ctx.renderMode === '3d' ? '3D' : '3D'}
                     </button>
                   {/if}
+                  <ChoreoCardGearPopover
+                    stepCount={overlay.sequence?.steps?.length ?? 0}
+                    onOpenSettings={() => { cardSettingsOpen = true; }}
+                  />
                   {#if authState.isAdmin}
                     <button
                       type="button"
@@ -400,26 +403,19 @@
                     onUnfocusPane={ctx.exitEditMode}
                     onStepClick={ctx.handleStepClick}
                     onCanvasReady={ctx.handleCanvasReady}
-                    onChoreoCardContextMenu={(x, y) => choreoCardMenuHost?.openContextMenu(x, y)}
                     {rerenderTrigger}
                   />
-                  {#if ctx.renderMode === '3d' && (ctx.countdownValue > 0 || ctx.isRecording3D)}
+                  {#if ctx.renderMode === '3d' && (ctx.countdownValue > 0 || ctx.isRecording3D || ctx.isExporting)}
                     <Recording3DOverlay
                       countdownValue={ctx.countdownValue}
                       isRecording={ctx.isRecording3D}
                       elapsed={ctx.recordingElapsed}
-                      total={ctx.recordingTotal}
+                      onStop={ctx.handleStopRecording}
+                      exportProgress={ctx.exportProgress}
+                      isExporting={ctx.isExporting}
+                      onCancelExport={ctx.handleCancelExport}
                     />
                   {/if}
-                  <ChoreoCardContextMenuHost
-                    bind:this={choreoCardMenuHost}
-                    onOpenSettings={() => { cardSettingsOpen = true; }}
-                    onRerender={() => { rerenderTrigger++; }}
-                    isExportMode={isImageExportActive}
-                    exportOptions={ctx.exportOptions}
-                    onSendTo={overlay.sequence ? handleSendTo : undefined}
-                    stepCount={overlay.sequence?.steps?.length ?? 0}
-                  />
                   <CardSettingsModal bind:open={cardSettingsOpen} sequence={overlay.sequence} />
                   {#if isAnyExportActive}
                     <div class="export-panel-container" class:sidebar={!isMobileWidth && (isVideoExportActive || isVideoUploadActive)}>
