@@ -132,10 +132,6 @@
      *  rotations from the sampled turn clip between locomotion and root
      *  motion in the animation pipeline. Null means no turn is active. */
     turnRequest?: TurnRequest | null;
-    /** Called each frame during a turn with the accumulated yaw delta
-     *  from phase 0 to the current phase. Bypasses root motion extraction
-     *  so turn yaw works without enableRootMotion. */
-    onTurnYaw?: (yawDelta: number) => void;
   }
 
   let {
@@ -169,7 +165,6 @@
     spinePitchOffset = 0,
     enableFootPlanting = false,
     turnRequest: turnRequestProp = null,
-    onTurnYaw,
   }: Props = $props();
 
   // Current locomotion state — tracked so FootPlanter can decide when to
@@ -803,10 +798,6 @@
           currentTurnClipName = sample.clipName;
           currentTurnPhase = turnRequestProp.phase;
         }
-
-        // Report yaw directly to PerformerRig — bypasses root motion
-        // extraction so turn yaw works without enableRootMotion.
-        onTurnYaw?.(sample.yawDelta);
       }
 
       // Root motion: after the mixer writes Hips position from the clip,
