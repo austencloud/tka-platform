@@ -22,6 +22,9 @@
   import BeatPlaneStrip from "./controls/BeatPlaneStrip.svelte";
   import Viewer3DContextMenuHost from "./context-menu/Viewer3DContextMenuHost.svelte";
   import { getViewer3DContext } from "../context/viewer-3d-context";
+  import { createSceneFeatureState } from "../scene-features/state/scene-feature-state.svelte";
+  import { setSceneFeatureContext } from "../scene-features/context/scene-feature-context";
+  import SceneLoadingCurtain from "../scene-features/components/SceneLoadingCurtain.svelte";
 
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { CameraStateSnapshot } from "../domain/types/CameraStateSnapshot";
@@ -43,6 +46,8 @@
     $props();
 
   const viewer3DState = getViewer3DContext();
+  const sceneFeatureState = createSceneFeatureState();
+  setSceneFeatureContext(sceneFeatureState);
   // Primary performer — gates the Canvas on performer[0] existing. Multi-
   // performer rendering iterates inside Viewer3DScene itself, but the Canvas
   // still waits on this to avoid mounting WebGL before any performer exists.
@@ -72,6 +77,7 @@
         {avatarState}
       />
     </Canvas>
+    <SceneLoadingCurtain />
     <!-- Progress bar at very bottom of 3D viewport -->
     {#if sequenceData?.steps?.length}
       {@const totalSteps = sequenceData.steps.length}
