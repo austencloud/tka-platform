@@ -2,7 +2,7 @@
  * Video Export Calculation Helpers
  *
  * Shared dimension and bitrate calculations used by both the 2D
- * VideoExportOrchestrator and the 3D Realtime3DExporter.
+ * VideoExportOrchestrator and the 3D Offline3DExporter.
  */
 
 /**
