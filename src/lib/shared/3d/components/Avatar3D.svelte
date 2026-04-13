@@ -729,10 +729,6 @@
 
   // Update animation each frame
   useTask((delta) => {
-    // Skip the animation loop when offline export is driving the scene
-    // deterministically — the exporter calls goToStep/setProgress directly.
-    if (viewer3DState && !viewer3DState.autoRenderEnabled) return;
-
     // Update mocap mixer if playing (runs independently of IK)
     const mixer = (window as any).__getMocapMixer?.();
     if (mixer) {

@@ -1143,10 +1143,10 @@
       const singleLoopSec = (startDur + totalDurationUnits + endDur) * secondsPerBeat;
 
       // Gather Threlte internals from viewer3DState
-      const threlteRenderer = viewer3DState.threlteRenderer;
-      const threlteScene = viewer3DState.threlteScene;
       const threlteCamera = viewer3DState.threlteCamera;
-      if (!threlteRenderer || !threlteScene || !threlteCamera) {
+      const threlteAdvance = viewer3DState.threlteAdvance;
+      const threlteRenderMode = viewer3DState.threlteRenderMode;
+      if (!threlteCamera || !threlteAdvance || !threlteRenderMode) {
         showToast("3D scene not ready for export. Please try again.", "error");
         return;
       }
@@ -1163,16 +1163,6 @@
         totalSteps: p.totalSteps,
       }));
 
-      // Formation transition updater
-      const updateFormationTransition = (timestamp: number) => {
-        viewer3DState.performerManager.updateFormationTransition();
-      };
-
-      // Effect orchestrator update — registered by EffectOrchestrator3D
-      const updateEffects = (dt: number) => {
-        viewer3DState.updateEffects?.(dt);
-      };
-
       try {
         await sequenceModalExporter.export3DAnimation(
           {
@@ -1184,17 +1174,13 @@
           },
           {
             webglCanvas,
-            renderer: threlteRenderer,
-            scene: threlteScene,
             camera: threlteCamera,
             performers,
-            updateFormationTransition,
-            updateEffects,
             beatsPerSecond,
             totalDurationSeconds: singleLoopSec,
             cameraKeyframes,
-            pauseAutoRender: () => viewer3DState.pauseAutoRender(),
-            resumeAutoRender: () => viewer3DState.resumeAutoRender(),
+            advance: threlteAdvance,
+            setRenderMode: (mode: "always" | "manual") => threlteRenderMode.set(mode),
           },
           callbacks
         );

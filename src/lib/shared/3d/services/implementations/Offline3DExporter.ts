@@ -1,3 +1,18 @@
+/**
+ * Offline 3D Exporter
+ *
+ * Renders every frame deterministically by setting performer state and camera
+ * position, then calling Threlte's advance() to run the full pipeline (puppet
+ * loop, IK solve, effects, render) for one frame. Output quality is independent
+ * of real-time scene performance — a scene that renders at 8.5fps live will
+ * still produce a smooth 30fps export, it just takes longer.
+ *
+ * Lifecycle:
+ *   1. Switch Threlte to 'manual' render mode
+ *   2. For each frame: set state, advance(), capture, encode
+ *   3. Restore 'always' render mode
+ */
+
 import type { IBackgroundVideoEncoder } from "$lib/features/compose/services/contracts/IBackgroundVideoEncoder";
 import type { VideoExportProgress } from "$lib/features/compose/services/contracts/IVideoExportOrchestrator";
 import type {
@@ -53,6 +68,7 @@ export class Offline3DExporter implements IOffline3DExporter {
       );
     }
 
+    // Initialize the background encoder (spins up the Web Worker)
     await this.backgroundEncoder.initialize({
       width,
       height,
@@ -78,11 +94,13 @@ export class Offline3DExporter implements IOffline3DExporter {
       this.capturer.preferredKind
     );
 
-    // Pause Threlte's render loop — we're taking manual control
-    deps.pauseAutoRender();
-
-    const dt = 1 / fps;
     const keyframes = deps.cameraKeyframes.keyframes;
+
+    // Switch Threlte to manual render mode. In this mode, only advance()
+    // triggers a frame — RAF-driven rendering stops completely. The full
+    // pipeline (useTask callbacks for puppet loop, IK, effects + render)
+    // runs exactly once per advance() call.
+    deps.setRenderMode("manual");
 
     try {
       for (let frameIndex = 0; frameIndex < totalFrames; frameIndex++) {
@@ -109,10 +127,7 @@ export class Offline3DExporter implements IOffline3DExporter {
           }
         }
 
-        // 2. Update formation transitions with deterministic timestamp
-        deps.updateFormationTransition(animationTime * 1000);
-
-        // 3. Interpolate camera from recorded keyframes
+        // 2. Interpolate camera from recorded keyframes
         const cam = this.cameraInterpolator.interpolate(keyframes, animationTime);
         deps.camera.position.set(cam.position[0], cam.position[1], cam.position[2]);
         deps.camera.quaternion.set(
@@ -126,13 +141,15 @@ export class Offline3DExporter implements IOffline3DExporter {
 
         diag.markDrawImage();
 
-        // 4. Tick effects with deterministic delta
-        deps.updateEffects(dt);
+        // 3. Advance one full Threlte frame. This runs every useTask
+        //    callback (Viewer3DScene puppet loop reads our performer
+        //    state, Avatar3D runs IK, EffectOrchestrator ticks effects)
+        //    then renders the scene. The result is a complete frame with
+        //    correct poses, effects, and lighting — identical to what
+        //    the live viewer produces.
+        deps.advance();
 
-        // 5. Force render
-        deps.renderer.render(deps.scene, deps.camera);
-
-        // 6. Capture frame
+        // 4. Capture the rendered frame
         const timestampMicros = Math.round(animationTime * 1_000_000);
         const isKeyframe = frameIndex % KEYFRAME_INTERVAL === 0;
         const frame = this.capturer.capture(deps.webglCanvas, timestampMicros);
@@ -141,7 +158,7 @@ export class Offline3DExporter implements IOffline3DExporter {
         this.backgroundEncoder.addFrameCaptured(frame, frameIndex, isKeyframe);
         diag.markAddFrame();
 
-        // 7. Report progress
+        // 5. Report progress
         onProgress({
           progress: frameIndex / totalFrames,
           stage: "capturing",
@@ -149,13 +166,14 @@ export class Offline3DExporter implements IOffline3DExporter {
           totalFrames,
         });
 
-        // 8. Yield to event loop so the browser can paint progress and
-        // handle cancel button clicks. Cost: ~4ms per frame.
+        // 6. Yield to event loop so the browser can paint progress
+        //    updates and handle cancel button clicks.
         await new Promise<void>((resolve) => setTimeout(resolve, 0));
       }
 
       diag.finish();
 
+      // Finalize encoding
       const blob = await this.backgroundEncoder.finish();
       onProgress({ progress: 1, stage: "complete", totalFrames });
       return blob;
@@ -170,7 +188,8 @@ export class Offline3DExporter implements IOffline3DExporter {
       }
       throw err;
     } finally {
-      deps.resumeAutoRender();
+      // Always restore live rendering
+      deps.setRenderMode("always");
     }
   }
 

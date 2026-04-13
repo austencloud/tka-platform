@@ -541,6 +541,11 @@ export function createViewer3DState(deps: {
   let threlteRenderer = $state<{ render(scene: any, camera: any): void } | null>(null);
   let threlteScene = $state<any>(null);
   let threlteCamera = $state<any>(null);
+  // Threlte's advance() runs all useTask callbacks + renders one frame.
+  // Used by the offline exporter instead of raw renderer.render() so the
+  // full animation pipeline (puppet loop, IK, effects) runs each frame.
+  let threlteAdvance = $state<(() => void) | null>(null);
+  let threlteRenderMode = $state<{ set(mode: string): void } | null>(null);
 
   // When false, Viewer3DScene and Avatar3D skip their useTask loops so the
   // offline exporter can drive the scene deterministically frame-by-frame.
@@ -843,17 +848,27 @@ export function createViewer3DState(deps: {
       return threlteCamera;
     },
     /**
-     * Register the Three.js renderer, scene, and camera refs from
-     * Viewer3DScene so offline export can drive rendering directly.
+     * Register the Three.js renderer, scene, camera, and Threlte's advance()
+     * from Viewer3DScene so offline export can drive the full render pipeline.
      */
     registerThrelteInternals(refs: {
       renderer: { render(scene: any, camera: any): void };
       scene: any;
       camera: any;
+      advance: () => void;
+      renderMode: { set(mode: string): void };
     }) {
       threlteRenderer = refs.renderer;
       threlteScene = refs.scene;
       threlteCamera = refs.camera;
+      threlteAdvance = refs.advance;
+      threlteRenderMode = refs.renderMode;
+    },
+    get threlteAdvance() {
+      return threlteAdvance;
+    },
+    get threlteRenderMode() {
+      return threlteRenderMode;
     },
     get autoRenderEnabled() {
       return autoRenderEnabled;

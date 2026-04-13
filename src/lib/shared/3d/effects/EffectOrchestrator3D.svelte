@@ -644,10 +644,10 @@
     }
   });
 
-  // Threlte render-loop: call the extracted update function each frame,
-  // gated on autoRenderEnabled so the offline exporter can suppress it.
+  // Threlte render-loop: call the extracted update function each frame.
+  // During offline export, Threlte is in 'manual' render mode so this
+  // only fires when advance() is called — no gating needed.
   useTask((delta) => {
-    if (_viewer3DCtx && !_viewer3DCtx.autoRenderEnabled) return;
     updateEffectsFrame(delta);
   });
 

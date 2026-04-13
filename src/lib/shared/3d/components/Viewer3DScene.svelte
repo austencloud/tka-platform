@@ -46,21 +46,29 @@
 
   const viewer3DState = getViewer3DContext();
   const sceneFeatures = getSceneFeatureContext();
-  const { renderer, camera, scene } = useThrelte();
+  const { renderer, camera, scene, advance, renderMode } = useThrelte();
 
   // When the stage is visible, lift performers onto the deck surface
   const stageGroundOffset = $derived(
     sceneFeatures.isEnabled("stage") ? STAGE.STAGE_DECK_HEIGHT : 0
   );
 
-  // Register Threlte internals so the offline exporter can drive rendering
-  // directly without coupling to Threlte's reactive layer.
-  // Threlte exposes renderer and scene as direct objects (not CurrentWritable),
-  // but camera is a CurrentWritable with .current.
+  // Register Threlte internals so the offline exporter can drive the full
+  // render pipeline. Threlte exposes renderer and scene as direct objects
+  // (not CurrentWritable), but camera is a CurrentWritable with .current.
+  // advance() triggers all useTask callbacks + renders one frame when
+  // renderMode is 'manual' — this is what the offline exporter uses
+  // instead of raw renderer.render() to get IK, effects, etc.
   $effect(() => {
     const cam = camera.current;
     if (renderer && scene && cam) {
-      viewer3DState.registerThrelteInternals({ renderer, scene, camera: cam });
+      viewer3DState.registerThrelteInternals({
+        renderer,
+        scene,
+        camera: cam,
+        advance,
+        renderMode,
+      });
     }
   });
 
@@ -93,10 +101,6 @@
   // stepConfigs now includes the start position at index 0, so the mapping
   // is direct: 2D beat N → 3D index N (no offset needed).
   useTask(() => {
-    // Skip the puppet loop when offline export is driving the scene
-    // deterministically frame-by-frame.
-    if (!viewer3DState.autoRenderEnabled) return;
-
     const beatIndex = Math.floor(currentStep);
     const subBeatProgress = currentStep - beatIndex;
 
