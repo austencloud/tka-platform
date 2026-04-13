@@ -143,6 +143,22 @@ export class FootPlanter implements IFootPlanter {
       return;
     }
 
+    // Skip foot planting during idle when no turn clip is active.
+    // The idle animation already places feet correctly on the ground.
+    // Running IK over the idle pose replaces the mixer's knee rotations
+    // with hinge-only rotations, producing mangled poses ("pretzel bug").
+    // Foot planting only helps during walking (prevents foot sliding) and
+    // turns (plants the pivot foot via authored contact curves).
+    if (
+      input.locomotionState === LocomotionState.IDLE &&
+      !input.isMoving &&
+      !input.currentClipName
+    ) {
+      this.fadeOutFoot(this.leftFoot, delta);
+      this.fadeOutFoot(this.rightFoot, delta);
+      return;
+    }
+
     // 1. Read current foot positions from animation
     this.leftLegChain.effector.getWorldPosition(this.tempFootWorld);
     const leftFootPos = this.tempFootWorld.clone();

@@ -362,10 +362,14 @@
       // Only for avatars that walk around (player) — exhibit performers
       // use IK only and don't need idle/walk animations.
       if (enableLocomotion && locomotionAnimator && cachedRoot) {
-        // Enable root motion track preservation if configured
-        if (enableRootMotion) {
-          locomotionAnimator.configure({ enableRootMotion: true });
-        }
+        // Configure before initialize so clips are prepared correctly
+        locomotionAnimator.configure({
+          ...(enableRootMotion && { enableRootMotion: true }),
+          // Exhibit performers: strip leg bones from idle clip so feet
+          // stay planted during sequence playback. The FPS player keeps
+          // full leg animation for responsive movement.
+          ...(enableFootPlanting && { stripLegBones: true }),
+        });
         locomotionAnimator.initialize(cachedRoot);
 
         // Initialize root motion extractor with the Hips bone

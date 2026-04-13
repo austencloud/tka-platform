@@ -65,6 +65,13 @@ export interface LocomotionConfig {
    * When false (default), Hips position is filtered out as before.
    */
   enableRootMotion?: boolean;
+  /**
+   * Strip leg bone rotation tracks from the idle clip so feet stay
+   * perfectly planted. Used for exhibit performers that stand in
+   * place during sequence playback — upper body gets idle sway but
+   * legs remain in bind pose. Default: false.
+   */
+  stripLegBones?: boolean;
 }
 
 export interface ILocomotionAnimator {

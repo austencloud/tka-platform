@@ -71,10 +71,20 @@ function detectClipPrefix(clip: AnimationClip): string {
  *   "rootMotion" — Keep and make Z relative to first frame (for walk/run root motion)
  *   "pose"     — Keep as-is, no baseline subtraction (for crouch — absolute Y is the pose)
  */
+/**
+ * Leg bone names to strip when stripLegBones is true.
+ * Exhibit performers don't need leg animation — feet stay planted.
+ */
+const LEG_BONE_NAMES = new Set([
+  "LeftUpLeg", "LeftLeg", "LeftFoot", "LeftToeBase",
+  "RightUpLeg", "RightLeg", "RightFoot", "RightToeBase",
+]);
+
 function remapClipToSkeleton(
   clip: AnimationClip,
   modelPrefix: string,
-  hipsMode: "strip" | "rootMotion" | "pose" = "strip"
+  hipsMode: "strip" | "rootMotion" | "pose" = "strip",
+  stripLegBones = false
 ): AnimationClip {
   const clipPrefix = detectClipPrefix(clip);
 
@@ -90,6 +100,9 @@ function remapClipToSkeleton(
       // Skip bones that don't exist on our models
       if (coreName.endsWith("_End")) return false;
       if (/Hand.*4$/.test(coreName)) return false;
+
+      // Strip leg bones for exhibit performers — feet stay perfectly planted
+      if (stripLegBones && LEG_BONE_NAMES.has(coreName)) return false;
 
       // Skip Hips quaternion — Mixamo separate exports bake the character's
       // base orientation into this track, which lays the avatar flat on its back.
@@ -187,6 +200,7 @@ export class LocomotionAnimator implements ILocomotionAnimator {
     blendTime: 0.15,
     animationWalkSpeed: 1.57,
     enableRootMotion: false,
+    stripLegBones: false,
   };
 
   // Blend weights (smoothed each frame)
@@ -298,7 +312,11 @@ export class LocomotionAnimator implements ILocomotionAnimator {
     if (this.config.enableRootMotion && isLocomotionClip) hipsMode = "rootMotion";
     if (key === "crouch") hipsMode = "pose";
 
-    return remapClipToSkeleton(raw, this.modelPrefix, hipsMode);
+    // Strip leg bones from idle clip for exhibit performers so feet
+    // stay perfectly planted during sequence playback.
+    const stripLegs = this.config.stripLegBones && key === "idle";
+
+    return remapClipToSkeleton(raw, this.modelPrefix, hipsMode, stripLegs);
   }
 
   /**
