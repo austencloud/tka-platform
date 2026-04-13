@@ -55,12 +55,12 @@
 
   // Register Threlte internals so the offline exporter can drive rendering
   // directly without coupling to Threlte's reactive layer.
+  // Threlte exposes renderer and scene as direct objects (not CurrentWritable),
+  // but camera is a CurrentWritable with .current.
   $effect(() => {
-    const r = renderer.current;
-    const s = scene.current;
-    const c = camera.current;
-    if (r && s && c) {
-      viewer3DState.registerThrelteInternals({ renderer: r, scene: s, camera: c });
+    const cam = camera.current;
+    if (renderer && scene && cam) {
+      viewer3DState.registerThrelteInternals({ renderer, scene, camera: cam });
     }
   });
 
