@@ -132,9 +132,7 @@
     voteResult = side;
 
     // Haptic feedback on mobile
-    if (navigator.vibrate) {
-      navigator.vibrate(10);
-    }
+    container.items.hapticFeedback.trigger("selection");
 
     try {
       await orchestrator.vote(winnerId);
