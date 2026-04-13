@@ -74,10 +74,6 @@ export interface ImageExportDependencies {
  */
 export interface Video3DExportDependencies {
   webglCanvas: HTMLCanvasElement;
-  /** Three.js WebGLRenderer (from useThrelte().renderer) */
-  renderer: { render(scene: any, camera: any): void };
-  /** Three.js Scene (from useThrelte().scene) */
-  scene: any;
   /** Three.js PerspectiveCamera (from useThrelte().camera) */
   camera: {
     position: { x: number; y: number; z: number; set(x: number, y: number, z: number): void };
@@ -91,20 +87,16 @@ export interface Video3DExportDependencies {
     setProgress(value: number): void;
     totalSteps: number;
   }>;
-  /** Formation transition updater */
-  updateFormationTransition(timestamp: number): void;
-  /** Effect orchestrator update (receives dt in seconds) */
-  updateEffects(dt: number): void;
   /** Beats per second for converting animation time to currentStep */
   beatsPerSecond: number;
   /** Total animation duration in seconds (single loop, no start/end hold) */
   totalDurationSeconds: number;
   /** Camera keyframe buffer from pass 1 (or static capture) */
   cameraKeyframes: import("$lib/shared/video-export/domain/CameraKeyframe").CameraKeyframeBuffer;
-  /** Callback to pause Threlte's auto-render loop */
-  pauseAutoRender(): void;
-  /** Callback to resume Threlte's auto-render loop */
-  resumeAutoRender(): void;
+  /** Threlte advance() — runs full pipeline + render for one frame */
+  advance(): void;
+  /** Switch between 'always' (live) and 'manual' (offline) render modes */
+  setRenderMode(mode: "always" | "manual"): void;
 }
 
 /**

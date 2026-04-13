@@ -142,17 +142,13 @@ export class SequenceModalExporter implements ISequenceModalExporter {
       const blob = await exporter.exportOffline(
         {
           webglCanvas: deps.webglCanvas,
-          renderer: deps.renderer,
-          scene: deps.scene,
           camera: deps.camera,
           performers: deps.performers,
-          updateFormationTransition: deps.updateFormationTransition,
-          updateEffects: deps.updateEffects,
           beatsPerSecond: deps.beatsPerSecond,
           totalDurationSeconds: deps.totalDurationSeconds,
           cameraKeyframes: deps.cameraKeyframes,
-          pauseAutoRender: deps.pauseAutoRender,
-          resumeAutoRender: deps.resumeAutoRender,
+          advance: deps.advance,
+          setRenderMode: deps.setRenderMode,
         },
         (progress) => {
           this._progress = progress;
