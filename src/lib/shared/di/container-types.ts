@@ -74,6 +74,7 @@ import type { PushContainer } from "./containers/push-container";
 import type { OfflineContainer } from "./containers/offline-container";
 import type { FestivalContainer } from "./containers/festival-container";
 import type { StoreContainer } from "./containers/store-container";
+import type { PlatformContainerType } from "./containers/platform-container";
 // Containers that already export items types directly (["items"])
 import type { NavigationContainerItems } from "./containers/navigation-container";
 import type { AnimatorContainerItems } from "./containers/animator-container";
@@ -151,6 +152,7 @@ type PushItems = ItemsOf<PushContainer>;
 type OfflineItems = ItemsOf<OfflineContainer>;
 type FestivalItems = ItemsOf<FestivalContainer>;
 type StoreItems = ItemsOf<StoreContainer>;
+type PlatformNativeItems = ItemsOf<PlatformContainerType>;
 // ============================================================================
 // Upsert conflict handling
 //
@@ -249,5 +251,7 @@ TrigridLabItems &
 	FestivalItems &
 	// Physical merch store (products, Stripe checkout)
 	StoreItems &
+	// Native platform (Capacitor) services
+	PlatformNativeItems &
 	// Standalone services
 	StandaloneItems;
