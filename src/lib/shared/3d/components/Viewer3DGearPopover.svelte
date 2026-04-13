@@ -23,13 +23,15 @@
   import PerformerTab from "./controls/PerformerTab.svelte";
   import { createViewer3DKeyboardHandler } from "../keyboard/Viewer3DKeyboardHandler";
   import { onMount } from "svelte";
+  import SceneFeatureToggles from "../scene-features/components/SceneFeatureToggles.svelte";
 
-  type TabId = "camera" | "planes" | "performers" | "effects";
+  type TabId = "camera" | "planes" | "performers" | "scene" | "effects";
 
   const TABS: { id: TabId; label: string; disabled?: boolean }[] = [
     { id: "camera", label: "Camera" },
     { id: "planes", label: "Planes" },
     { id: "performers", label: "Performers" },
+    { id: "scene", label: "Scene" },
     { id: "effects", label: "Effects", disabled: true },
   ];
 
@@ -276,6 +278,13 @@
       {#if activeTab === "performers"}
         <div class="tab-panel" id="tab-panel-performers" role="tabpanel">
           <PerformerTab />
+        </div>
+      {/if}
+
+      <!-- Scene tab -->
+      {#if activeTab === "scene"}
+        <div class="tab-panel" role="tabpanel">
+          <SceneFeatureToggles />
         </div>
       {/if}
 
