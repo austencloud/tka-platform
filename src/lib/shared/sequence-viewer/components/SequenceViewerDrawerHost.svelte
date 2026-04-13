@@ -42,6 +42,7 @@
   import VideoPanel from "./video-panel/VideoPanel.svelte";
   import type { ICollaborativeVideoManager } from "$lib/shared/video-collaboration/services/contracts/ICollaborativeVideoManager";
   import ChoreoCardGearPopover from "./gear-popover/ChoreoCardGearPopover.svelte";
+  import ChoreoCardContextMenuHost from "./choreo-card-context-menu/ChoreoCardContextMenuHost.svelte";
   import CardSettingsModal from "$lib/features/choreo-card/components/CardSettingsModal.svelte";
   import {
     openSendSequenceSheet,
@@ -131,9 +132,10 @@
   let deleteConfirmOpen = $state(false);
   let isDeleting = $state(false);
 
-  // ChoreoCard settings modal
+  // ChoreoCard settings modal + context menu
   let cardSettingsOpen = $state(false);
   let rerenderTrigger = $state(0);
+  let choreoCardMenuHost: ChoreoCardContextMenuHost | undefined = $state();
 
   // Sync overlay state to drawer state
   $effect(() => {
@@ -404,6 +406,7 @@
                     onStepClick={ctx.handleStepClick}
                     onCanvasReady={ctx.handleCanvasReady}
                     {rerenderTrigger}
+                    onChoreoCardContextMenu={(x, y) => choreoCardMenuHost?.openContextMenu(x, y)}
                   />
                   {#if ctx.renderMode === '3d' && (ctx.countdownValue > 0 || ctx.isRecording3D || ctx.isExporting)}
                     <Recording3DOverlay
@@ -417,6 +420,15 @@
                     />
                   {/if}
                   <CardSettingsModal bind:open={cardSettingsOpen} sequence={overlay.sequence} />
+                  <ChoreoCardContextMenuHost
+                    bind:this={choreoCardMenuHost}
+                    onOpenSettings={() => { cardSettingsOpen = true; }}
+                    onRerender={() => { rerenderTrigger++; }}
+                    isExportMode={isImageExportActive}
+                    exportOptions={ctx.exportOptions}
+                    onSendTo={overlay.sequence ? handleSendTo : undefined}
+                    stepCount={overlay.sequence?.steps?.length ?? 0}
+                  />
                   {#if isAnyExportActive}
                     <div class="export-panel-container" class:sidebar={!isMobileWidth && (isVideoExportActive || isVideoUploadActive)}>
                       {#if isVideoExportActive}

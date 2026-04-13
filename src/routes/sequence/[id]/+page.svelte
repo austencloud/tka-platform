@@ -53,6 +53,7 @@
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import LoadingGate from "$lib/shared/components/loading/LoadingGate.svelte";
   import ChoreoCardGearPopover from "$lib/shared/sequence-viewer/components/gear-popover/ChoreoCardGearPopover.svelte";
+  import ChoreoCardContextMenuHost from "$lib/shared/sequence-viewer/components/choreo-card-context-menu/ChoreoCardContextMenuHost.svelte";
   import CardSettingsModal from "$lib/features/choreo-card/components/CardSettingsModal.svelte";
   import {
     openSendSequenceSheet,
@@ -115,8 +116,9 @@
   let deleteConfirmOpen = $state(false);
   let isDeleting = $state(false);
 
-  // ChoreoCard settings modal
+  // ChoreoCard settings modal + context menu
   let cardSettingsOpen = $state(false);
+  let choreoCardMenuHost: ChoreoCardContextMenuHost | undefined = $state();
 
   // DrawerStack registration - blocks pull-to-refresh on mobile
   const drawerId = generateDrawerId();
@@ -603,10 +605,19 @@
                 onUnfocusPane={ctx.exitEditMode}
                 onStepClick={ctx.handleStepClick}
                 onCanvasReady={ctx.handleCanvasReady}
+                onChoreoCardContextMenu={(x, y) => choreoCardMenuHost?.openContextMenu(x, y)}
               />
               <ChoreoCardGearPopover
                 stepCount={sequence?.steps?.length ?? 0}
                 onOpenSettings={() => { cardSettingsOpen = true; }}
+              />
+              <ChoreoCardContextMenuHost
+                bind:this={choreoCardMenuHost}
+                onOpenSettings={() => { cardSettingsOpen = true; }}
+                isExportMode={isImageExportActive}
+                exportOptions={ctx.exportOptions}
+                onSendTo={sequence ? handleSendTo : undefined}
+                stepCount={sequence?.steps?.length ?? 0}
               />
               <CardSettingsModal bind:open={cardSettingsOpen} {sequence} />
               {#if isAnyExportActive}
