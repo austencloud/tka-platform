@@ -20,7 +20,6 @@
   import Viewer3DCanvasRef from "./Viewer3DCanvasRef.svelte";
   import Viewer3DGearPopover from "./Viewer3DGearPopover.svelte";
   import BeatPlaneStrip from "./controls/BeatPlaneStrip.svelte";
-  import Viewer3DContextMenuHost from "./context-menu/Viewer3DContextMenuHost.svelte";
   import { getViewer3DContext } from "../context/viewer-3d-context";
   import { createSceneFeatureState } from "../scene-features/state/scene-feature-state.svelte";
   import { setSceneFeatureContext } from "../scene-features/context/scene-feature-context";
@@ -53,17 +52,11 @@
   // still waits on this to avoid mounting WebGL before any performer exists.
   const avatarState = $derived(viewer3DState.performerManager.performers[0] ?? null);
 
-  let contextMenuHost: ReturnType<typeof Viewer3DContextMenuHost> | undefined = $state();
-
-  function handleContextMenu(e: MouseEvent) {
-    e.preventDefault();
-    contextMenuHost?.openContextMenu(e.clientX, e.clientY);
-  }
 
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="viewer-3d-canvas" oncontextmenu={handleContextMenu}>
+<div class="viewer-3d-canvas">
   {#if avatarState && sequenceData}
     <Canvas
       createRenderer={(canvas) => new WebGLRenderer({ canvas, preserveDrawingBuffer: true })}
@@ -134,7 +127,6 @@
   {:else}
     <div class="viewer-3d-loading">Loading 3D viewer...</div>
   {/if}
-  <Viewer3DContextMenuHost bind:this={contextMenuHost} />
 </div>
 
 <style>
