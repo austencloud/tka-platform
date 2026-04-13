@@ -211,7 +211,7 @@
   const charcoalTips: CharcoalTipInput[] = [];
   const fireTips: FireTipInput[] = [];
 
-  useTask(() => {
+  useTask((delta) => {
     if (!isPlaying) {
       tipBridge.reset();
       blueLedRenderer?.reset();
@@ -327,7 +327,10 @@
       cached.set(current.x, current.y, current.z);
     }
 
-    const dt = 1 / 60;
+    // Use actual frame delta from Threlte's render loop. Clamp to avoid
+    // physics explosions after tab-switch or debugger pause (same safeguard
+    // as CharcoalRenderer and FireRenderer use internally).
+    const dt = Math.min(delta, 1 / 15);
     blueLedTips.length = 0;
     redLedTips.length = 0;
     charcoalTips.length = 0;
