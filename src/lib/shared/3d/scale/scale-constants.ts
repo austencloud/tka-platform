@@ -133,7 +133,7 @@ export const STAGE = {
 	 * render an avatar on top of the stage should offset their rig
 	 * root by this amount so the avatar's feet land on the deck top.
 	 */
-	STAGE_DECK_HEIGHT: 0.22,
+	STAGE_DECK_HEIGHT: 0.55,
 
 	// ─────────────────────────────────────────────────────────────────
 	// Camera Presets (meters from origin)
@@ -159,6 +159,13 @@ export const STAGE = {
 
 	/** Maximum orbit distance */
 	ORBIT_MAX_DISTANCE: 10.0,
+
+	/**
+	 * Maximum polar angle for orbit controls (radians from zenith).
+	 * π/2 keeps the camera at or above the orbit target's Y level,
+	 * preventing the camera from going underground.
+	 */
+	ORBIT_MAX_POLAR_ANGLE: Math.PI / 2,
 
 	// ─────────────────────────────────────────────────────────────────
 	// First Person Camera

@@ -72,8 +72,10 @@
      * first-person mode or scenes where a stage would clutter the view.
      */
     showStage?: boolean;
-    /** Side length of the stage platform in meters. Default 3m. */
-    stageSize?: number;
+    /** Width of the stage platform along X in meters. Default 6m. */
+    stageWidth?: number;
+    /** Depth of the stage platform along Z in meters. Default 4.5m. */
+    stageDepth?: number;
     /**
      * Whether to render a seated audience arc on the downstage side
      * of the stage. Off by default because the character + animation
@@ -138,7 +140,8 @@
     showGrid = true,
     showLabels = true,
     showStage = true,
-    stageSize = 3.0,
+    stageWidth = 6.0,
+    stageDepth = 4.5,
     showAudience = false,
     audienceCount = 6,
     gridMode = "diamond",
@@ -291,7 +294,7 @@
     grid lines sit visibly on top of the plank.
   -->
   {#if showStage}
-    <Stage3D size={stageSize} />
+    <Stage3D width={stageWidth} depth={stageDepth} />
   {/if}
 
   <!--
@@ -386,6 +389,7 @@
             dampingFactor={0.05}
             minDistance={STAGE.ORBIT_MIN_DISTANCE}
             maxDistance={STAGE.ORBIT_MAX_DISTANCE}
+            maxPolarAngle={STAGE.ORBIT_MAX_POLAR_ANGLE}
             target={cameraTarget}
             onchange={handleCameraChange}
           />

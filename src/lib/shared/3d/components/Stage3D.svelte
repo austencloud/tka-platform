@@ -4,8 +4,8 @@
    *
    * A rustic wooden performance stage centered at world origin. Styled
    * as a low campground/festival platform — individual plank strips
-   * sitting on short thick legs, raised about 25cm above the ground so
-   * it reads as a real physical thing rather than a floating panel.
+   * sitting on short thick legs, raised above the ground so it reads
+   * as a real physical thing rather than a floating panel.
    *
    * Two jobs:
    *   1. Give the performer a clearly-bounded floor so viewers can see
@@ -30,12 +30,12 @@
   import { STAGE } from "../scale/scale-constants";
 
   interface Props {
-    /**
-     * Side length of the square stage in meters. Default 3m gives
-     * comfortable room for a ±1m foot offset range without crowding
-     * the performer against the stage edges.
-     */
-    size?: number;
+    /** Width of the stage along the X axis in meters. Default 6m. */
+    width?: number;
+    /** Depth of the stage along the Z axis in meters. Default 4.5m. */
+    depth?: number;
+    /** Height of the deck above the ground in meters. Default from STAGE constant. */
+    height?: number;
     /**
      * Override ground Y if the consumer knows its scene places the
      * floor somewhere other than userProportionsState.groundY (e.g.
@@ -44,7 +44,7 @@
     overrideGroundY?: number;
   }
 
-  let { size = 3.0, overrideGroundY }: Props = $props();
+  let { width = 6.0, depth = 4.5, height = STAGE.STAGE_DECK_HEIGHT, overrideGroundY }: Props = $props();
 
   // Ground level tracks the visible floor of whatever environment is
   // active. For the default forest floor this is ~-1.5 (below the
@@ -53,12 +53,8 @@
 
   // ─── Stage geometry constants (all in meters) ─────────────────────
 
-  /**
-   * Height of the deck top above the ground. Shared with consumers
-   * (PoseViewport, sequence viewer) via STAGE.STAGE_DECK_HEIGHT so
-   * everyone agrees on where to put the performer's feet.
-   */
-  const DECK_HEIGHT = STAGE.STAGE_DECK_HEIGHT;
+  // Alias for readability — matches the prop value
+  const DECK_HEIGHT = $derived(height);
 
   /** Thickness of each plank. */
   const PLANK_THICKNESS = 0.055;
@@ -84,14 +80,15 @@
   const STRIP_HEIGHT = 0.035;
   const STRIP_WIDTH = 0.05;
 
-  const halfSize = $derived(size / 2);
+  const halfW = $derived(width / 2);
+  const halfD = $derived(depth / 2);
 
   /**
    * Deck top Y in the local frame of the stage group (which is
    * positioned at (0, groundY, 0)). Everything else on the deck is
    * measured from this surface.
    */
-  const DECK_TOP = DECK_HEIGHT;
+  const DECK_TOP = $derived(DECK_HEIGHT);
 
   // ─── Plank layout ─────────────────────────────────────────────────
   //
@@ -120,7 +117,7 @@
 
   const planks = $derived.by<Plank[]>(() => {
     const stride = PLANK_WIDTH + PLANK_GAP;
-    const count = Math.max(1, Math.round(size / stride));
+    const count = Math.max(1, Math.round(depth / stride));
     const totalSpan = count * PLANK_WIDTH + (count - 1) * PLANK_GAP;
     const start = -totalSpan / 2 + PLANK_WIDTH / 2;
     const result: Plank[] = [];
@@ -136,17 +133,65 @@
   // Corner leg positions (inset from the edge so they read as supports
   // peeking out under the deck rather than flush with the sides).
   const legPositions = $derived<Array<[number, number]>>([
-    [halfSize - LEG_INSET, halfSize - LEG_INSET],
-    [-(halfSize - LEG_INSET), halfSize - LEG_INSET],
-    [halfSize - LEG_INSET, -(halfSize - LEG_INSET)],
-    [-(halfSize - LEG_INSET), -(halfSize - LEG_INSET)],
+    [halfW - LEG_INSET, halfD - LEG_INSET],
+    [-(halfW - LEG_INSET), halfD - LEG_INSET],
+    [halfW - LEG_INSET, -(halfD - LEG_INSET)],
+    [-(halfW - LEG_INSET), -(halfD - LEG_INSET)],
   ]);
 
-  const legCenterY = DECK_TOP - PLANK_THICKNESS - DECK_HEIGHT / 2 + 0.02;
+  const legCenterY = $derived(DECK_TOP - PLANK_THICKNESS - DECK_HEIGHT / 2 + 0.02);
 
   // Skirt beams wrap around the perimeter just below the deck top.
-  const skirtCenterY = DECK_TOP - PLANK_THICKNESS - SKIRT_HEIGHT / 2;
+  const skirtCenterY = $derived(DECK_TOP - PLANK_THICKNESS - SKIRT_HEIGHT / 2);
   const skirtInset = LEG_THICKNESS * 0.3;
+
+  // ─── Downstage corner torches ────────────────────────────────────────
+  //
+  // Wooden posts with glowing flames at the two front corners of the
+  // stage. They sit ON the deck (base at DECK_TOP) and rise upward.
+
+  const TORCH_HEIGHT = 1.4;
+  const TORCH_POST_RADIUS = 0.04;
+
+  // Positions are in local stage-group space (Y=0 is ground level).
+  // Posts sit at the outer corners of the deck.
+  const torchPositions = $derived([
+    { x: halfW, z: halfD },    // stage-right downstage corner
+    { x: -halfW, z: halfD },   // stage-left downstage corner
+  ]);
+
+  // ─── Upstage stairs (-Z edge) ──────────────────────────────────────
+  //
+  // Three steps descending from the deck top to the ground. Each step
+  // is narrower (in Z depth) than the deck planks and uses the same
+  // wood color palette so they read as part of the same structure.
+
+  const STAIR_WIDTH = 0.8;        // X extent — centered on stage
+  const STAIR_DEPTH = 0.22;       // Z extent per tread
+  const STEP_COUNT = 3;
+  const stepHeight = $derived(DECK_TOP / STEP_COUNT); // Even divisions to reach ground
+
+  interface StairStep {
+    y: number;   // center Y of this step box
+    z: number;   // center Z position
+    height: number;
+    color: string;
+  }
+
+  const stairSteps = $derived.by<StairStep[]>(() => {
+    const steps: StairStep[] = [];
+    for (let i = 0; i < STEP_COUNT; i++) {
+      // Step 0 is the highest (closest to deck), step N-1 is the lowest
+      const topOfStep = DECK_TOP - i * stepHeight;
+      steps.push({
+        y: topOfStep - stepHeight / 2,
+        z: -(halfD + STAIR_DEPTH * (i + 0.5)),
+        height: stepHeight,
+        color: PLANK_COLORS[(i + 2) % PLANK_COLORS.length]!,
+      });
+    }
+    return steps;
+  });
 </script>
 
 <T.Group position={[0, groundY, 0]}>
@@ -172,20 +217,22 @@
     a frame. Matches the legs in color so it reads as one support
     structure.
   -->
-  <T.Mesh position={[0, skirtCenterY, halfSize - skirtInset]}>
-    <T.BoxGeometry args={[size - skirtInset * 2, SKIRT_HEIGHT, SKIRT_THICKNESS]} />
+  <!-- Front and back beams (run along X) -->
+  <T.Mesh position={[0, skirtCenterY, halfD - skirtInset]}>
+    <T.BoxGeometry args={[width - skirtInset * 2, SKIRT_HEIGHT, SKIRT_THICKNESS]} />
     <T.MeshStandardMaterial color="#3d2a18" roughness={0.9} />
   </T.Mesh>
-  <T.Mesh position={[0, skirtCenterY, -(halfSize - skirtInset)]}>
-    <T.BoxGeometry args={[size - skirtInset * 2, SKIRT_HEIGHT, SKIRT_THICKNESS]} />
+  <T.Mesh position={[0, skirtCenterY, -(halfD - skirtInset)]}>
+    <T.BoxGeometry args={[width - skirtInset * 2, SKIRT_HEIGHT, SKIRT_THICKNESS]} />
     <T.MeshStandardMaterial color="#3d2a18" roughness={0.9} />
   </T.Mesh>
-  <T.Mesh position={[halfSize - skirtInset, skirtCenterY, 0]}>
-    <T.BoxGeometry args={[SKIRT_THICKNESS, SKIRT_HEIGHT, size - skirtInset * 2]} />
+  <!-- Side beams (run along Z) -->
+  <T.Mesh position={[halfW - skirtInset, skirtCenterY, 0]}>
+    <T.BoxGeometry args={[SKIRT_THICKNESS, SKIRT_HEIGHT, depth - skirtInset * 2]} />
     <T.MeshStandardMaterial color="#3d2a18" roughness={0.9} />
   </T.Mesh>
-  <T.Mesh position={[-(halfSize - skirtInset), skirtCenterY, 0]}>
-    <T.BoxGeometry args={[SKIRT_THICKNESS, SKIRT_HEIGHT, size - skirtInset * 2]} />
+  <T.Mesh position={[-(halfW - skirtInset), skirtCenterY, 0]}>
+    <T.BoxGeometry args={[SKIRT_THICKNESS, SKIRT_HEIGHT, depth - skirtInset * 2]} />
     <T.MeshStandardMaterial color="#3d2a18" roughness={0.9} />
   </T.Mesh>
 
@@ -201,7 +248,7 @@
       receiveShadow
       castShadow
     >
-      <T.BoxGeometry args={[size, PLANK_THICKNESS, PLANK_WIDTH]} />
+      <T.BoxGeometry args={[width, PLANK_THICKNESS, PLANK_WIDTH]} />
       <T.MeshStandardMaterial
         color={plank.color}
         roughness={0.88}
@@ -215,8 +262,8 @@
     glows like a real stage footlight. Strongest visual cue for the
     audience direction.
   -->
-  <T.Mesh position={[0, DECK_TOP + STRIP_HEIGHT / 2, halfSize - 0.01]}>
-    <T.BoxGeometry args={[size * 0.94, STRIP_HEIGHT, STRIP_WIDTH]} />
+  <T.Mesh position={[0, DECK_TOP + STRIP_HEIGHT / 2, halfD - 0.01]}>
+    <T.BoxGeometry args={[width * 0.94, STRIP_HEIGHT, STRIP_WIDTH]} />
     <T.MeshStandardMaterial
       color="#ffb347"
       emissive="#ffb347"
@@ -230,8 +277,8 @@
     from "front" even from an overhead view. Much dimmer than the
     footlights so the audience direction still dominates.
   -->
-  <T.Mesh position={[0, DECK_TOP + STRIP_HEIGHT / 2, -(halfSize - 0.01)]}>
-    <T.BoxGeometry args={[size * 0.94, STRIP_HEIGHT, STRIP_WIDTH]} />
+  <T.Mesh position={[0, DECK_TOP + STRIP_HEIGHT / 2, -(halfD - 0.01)]}>
+    <T.BoxGeometry args={[width * 0.94, STRIP_HEIGHT, STRIP_WIDTH]} />
     <T.MeshStandardMaterial
       color="#3d5a80"
       emissive="#3d5a80"
@@ -245,8 +292,8 @@
     (-X = character-left = green starboard light). Theater convention
     measured from the performer's POV when facing the audience.
   -->
-  <T.Mesh position={[halfSize - 0.01, DECK_TOP + STRIP_HEIGHT / 2, 0]}>
-    <T.BoxGeometry args={[STRIP_WIDTH, STRIP_HEIGHT, size * 0.94]} />
+  <T.Mesh position={[halfW - 0.01, DECK_TOP + STRIP_HEIGHT / 2, 0]}>
+    <T.BoxGeometry args={[STRIP_WIDTH, STRIP_HEIGHT, depth * 0.94]} />
     <T.MeshStandardMaterial
       color="#f87171"
       emissive="#f87171"
@@ -254,8 +301,8 @@
       toneMapped={false}
     />
   </T.Mesh>
-  <T.Mesh position={[-(halfSize - 0.01), DECK_TOP + STRIP_HEIGHT / 2, 0]}>
-    <T.BoxGeometry args={[STRIP_WIDTH, STRIP_HEIGHT, size * 0.94]} />
+  <T.Mesh position={[-(halfW - 0.01), DECK_TOP + STRIP_HEIGHT / 2, 0]}>
+    <T.BoxGeometry args={[STRIP_WIDTH, STRIP_HEIGHT, depth * 0.94]} />
     <T.MeshStandardMaterial
       color="#4ade80"
       emissive="#4ade80"
@@ -272,7 +319,7 @@
     at world +Z (downstage).
   -->
   <T.Mesh
-    position={[0, DECK_TOP + 0.003, halfSize * 0.35]}
+    position={[0, DECK_TOP + 0.003, halfD * 0.35]}
     rotation={[-Math.PI / 2, 0, 0]}
   >
     <T.CircleGeometry args={[0.55, 3, -Math.PI / 2]} />
@@ -291,7 +338,7 @@
   {@const dotInset = 0.38}
   {@const dotY = DECK_TOP + 0.003}
   <T.Mesh
-    position={[0, dotY, -(halfSize - dotInset)]}
+    position={[0, dotY, -(halfD - dotInset)]}
     rotation={[-Math.PI / 2, 0, 0]}
   >
     <T.CircleGeometry args={[0.14, 24]} />
@@ -303,7 +350,7 @@
     />
   </T.Mesh>
   <T.Mesh
-    position={[halfSize - dotInset, dotY, 0]}
+    position={[halfW - dotInset, dotY, 0]}
     rotation={[-Math.PI / 2, 0, 0]}
   >
     <T.CircleGeometry args={[0.14, 24]} />
@@ -315,7 +362,7 @@
     />
   </T.Mesh>
   <T.Mesh
-    position={[-(halfSize - dotInset), dotY, 0]}
+    position={[-(halfW - dotInset), dotY, 0]}
     rotation={[-Math.PI / 2, 0, 0]}
   >
     <T.CircleGeometry args={[0.14, 24]} />
@@ -326,4 +373,65 @@
       toneMapped={false}
     />
   </T.Mesh>
+
+  <!--
+    Downstage corner torches: wooden posts with glowing flames rising
+    from the front corners of the deck.
+  -->
+  {#each torchPositions as torch}
+    <!-- Wooden post — base sits on deck top -->
+    <T.Mesh
+      position={[torch.x, DECK_TOP + TORCH_HEIGHT / 2, torch.z]}
+    >
+      <T.CylinderGeometry args={[TORCH_POST_RADIUS, TORCH_POST_RADIUS * 1.3, TORCH_HEIGHT, 8]} />
+      <T.MeshStandardMaterial color="#3d2a18" roughness={0.9} />
+    </T.Mesh>
+    <!-- Flame holder (wider cap at top of post) -->
+    <T.Mesh
+      position={[torch.x, DECK_TOP + TORCH_HEIGHT - 0.05, torch.z]}
+    >
+      <T.CylinderGeometry args={[0.08, 0.06, 0.1, 8]} />
+      <T.MeshStandardMaterial color="#2a1a0c" roughness={0.85} metalness={0.15} />
+    </T.Mesh>
+    <!-- Glowing flame -->
+    <T.Mesh
+      position={[torch.x, DECK_TOP + TORCH_HEIGHT + 0.08, torch.z]}
+    >
+      <T.SphereGeometry args={[0.1, 8, 6]} />
+      <T.MeshStandardMaterial
+        color="#ff8822"
+        emissive="#ff6600"
+        emissiveIntensity={2.5}
+        toneMapped={false}
+      />
+    </T.Mesh>
+    <!-- Torch point light -->
+    <T.PointLight
+      position={[torch.x, DECK_TOP + TORCH_HEIGHT + 0.15, torch.z]}
+      color="#ff7722"
+      intensity={15}
+      distance={8}
+      decay={1.5}
+    />
+  {/each}
+
+  <!--
+    Upstage stairs: three steps descending from deck to ground at the
+    back (-Z) edge. Lets the performer "walk up" onto the stage from
+    the forest floor. Same wood tones as the deck planks.
+  -->
+  {#each stairSteps as step}
+    <T.Mesh
+      position={[0, step.y, step.z]}
+      castShadow
+      receiveShadow
+    >
+      <T.BoxGeometry args={[STAIR_WIDTH, step.height, STAIR_DEPTH]} />
+      <T.MeshStandardMaterial
+        color={step.color}
+        roughness={0.88}
+        metalness={0.03}
+      />
+    </T.Mesh>
+  {/each}
 </T.Group>
