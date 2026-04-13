@@ -151,6 +151,12 @@
     // Mark container ready so children can render
     containerReady = true;
 
+    // Initialize native Capacitor plugins (status bar, keyboard, splash, lifecycle).
+    // No-op on web — the isNative check inside returns immediately.
+    container.items.nativeInitializer.initialize().catch((err: unknown) =>
+      console.warn("[Layout] Native init skipped:", err)
+    );
+
     // Prefetch browse data so it's ready before the user navigates there.
     // Uses requestIdleCallback to avoid competing with the active module's load.
     const prefetchBrowseData = () => {
