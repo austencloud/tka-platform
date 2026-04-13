@@ -52,7 +52,7 @@
   import { getIabBannerVisible, IAB_BANNER_HEIGHT } from "$lib/shared/auth/state/iab-banner-state.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import LoadingGate from "$lib/shared/components/loading/LoadingGate.svelte";
-  import ChoreoCardContextMenuHost from "$lib/shared/sequence-viewer/components/choreo-card-context-menu/ChoreoCardContextMenuHost.svelte";
+  import ChoreoCardGearPopover from "$lib/shared/sequence-viewer/components/gear-popover/ChoreoCardGearPopover.svelte";
   import CardSettingsModal from "$lib/features/choreo-card/components/CardSettingsModal.svelte";
   import {
     openSendSequenceSheet,
@@ -115,8 +115,7 @@
   let deleteConfirmOpen = $state(false);
   let isDeleting = $state(false);
 
-  // ChoreoCard context menu + settings modal
-  let choreoCardMenuHost: ChoreoCardContextMenuHost | undefined = $state();
+  // ChoreoCard settings modal
   let cardSettingsOpen = $state(false);
 
   // DrawerStack registration - blocks pull-to-refresh on mobile
@@ -604,15 +603,10 @@
                 onUnfocusPane={ctx.exitEditMode}
                 onStepClick={ctx.handleStepClick}
                 onCanvasReady={ctx.handleCanvasReady}
-                onChoreoCardContextMenu={(x, y) => choreoCardMenuHost?.openContextMenu(x, y)}
               />
-              <ChoreoCardContextMenuHost
-                bind:this={choreoCardMenuHost}
-                onOpenSettings={() => { cardSettingsOpen = true; }}
-                isExportMode={isImageExportActive}
-                exportOptions={ctx.exportOptions}
-                onSendTo={sequence ? handleSendTo : undefined}
+              <ChoreoCardGearPopover
                 stepCount={sequence?.steps?.length ?? 0}
+                onOpenSettings={() => { cardSettingsOpen = true; }}
               />
               <CardSettingsModal bind:open={cardSettingsOpen} {sequence} />
               {#if isAnyExportActive}
