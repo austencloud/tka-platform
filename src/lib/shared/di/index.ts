@@ -26,6 +26,7 @@ import { compositionContainer } from "./containers/composition-container";
 import { coreContainer } from "./containers/core-container";
 import { dataContainer } from "./containers/data-container";
 import { keyboardContainer } from "./containers/keyboard-container";
+import { platformContainer } from "./containers/platform-container";
 
 // ============================================================================
 // DIRECT PICTOGRAPH IMPORTS (migrated away from DI container)
@@ -487,6 +488,8 @@ function buildAppContainer(): any {
   c = c.add(festivalContainer.items);
   // Physical merch store (products, Stripe checkout)
   c = c.add(storeContainer.items);
+  // Native platform (Capacitor) detection and initialization
+  c = c.add(platformContainer.items);
   // Print Prep services (MPC card export — depend on render + build containers)
   c = c.add({
     cardBackDomRenderer: () => new CardBackDomRendererImpl(),
