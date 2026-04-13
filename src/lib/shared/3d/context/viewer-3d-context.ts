@@ -17,3 +17,15 @@ export function setViewer3DContext(state: Viewer3DState) {
 export function getViewer3DContext(): Viewer3DState {
   return getContext<Viewer3DState>(KEY);
 }
+
+/**
+ * Attempt to get the viewer3D context. Returns null if the context
+ * hasn't been set (e.g. Avatar3D rendered inside museum or realm).
+ */
+export function tryGetViewer3DContext(): Viewer3DState | null {
+  try {
+    return getContext<Viewer3DState>(KEY);
+  } catch {
+    return null;
+  }
+}

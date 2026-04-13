@@ -536,6 +536,21 @@ export function createViewer3DState(deps: {
   let visiblePlanes = $state<Set<Plane>>(loadPersistedPlanes() ?? new Set());
   let webglCanvas = $state<HTMLCanvasElement | null>(null);
 
+  // Threlte scene internals — registered by Viewer3DScene so the offline
+  // exporter can drive rendering without coupling to Threlte's reactive layer.
+  let threlteRenderer = $state<{ render(scene: any, camera: any): void } | null>(null);
+  let threlteScene = $state<any>(null);
+  let threlteCamera = $state<any>(null);
+
+  // When false, Viewer3DScene and Avatar3D skip their useTask loops so the
+  // offline exporter can drive the scene deterministically frame-by-frame.
+  let autoRenderEnabled = $state(true);
+
+  // Callback slot for the effect orchestrator's per-frame update function.
+  // Registered by EffectOrchestrator3D via $effect, called by the offline
+  // exporter with a deterministic dt each frame.
+  let updateEffectsCallback = $state<((dt: number) => void) | null>(null);
+
   // Camera snap callback — registered by Viewer3DCamera, called by Viewer3DViewPresets
   let _snapToFn: ((position: { x: number; y: number; z: number }, target: { x: number; y: number; z: number }) => void) | null = null;
 
@@ -816,6 +831,44 @@ export function createViewer3DState(deps: {
     },
     setWebglCanvas(canvas: HTMLCanvasElement | null) {
       webglCanvas = canvas;
+    },
+    // Threlte scene internals for offline export
+    get threlteRenderer() {
+      return threlteRenderer;
+    },
+    get threlteScene() {
+      return threlteScene;
+    },
+    get threlteCamera() {
+      return threlteCamera;
+    },
+    /**
+     * Register the Three.js renderer, scene, and camera refs from
+     * Viewer3DScene so offline export can drive rendering directly.
+     */
+    registerThrelteInternals(refs: {
+      renderer: { render(scene: any, camera: any): void };
+      scene: any;
+      camera: any;
+    }) {
+      threlteRenderer = refs.renderer;
+      threlteScene = refs.scene;
+      threlteCamera = refs.camera;
+    },
+    get autoRenderEnabled() {
+      return autoRenderEnabled;
+    },
+    pauseAutoRender() {
+      autoRenderEnabled = false;
+    },
+    resumeAutoRender() {
+      autoRenderEnabled = true;
+    },
+    get updateEffects() {
+      return updateEffectsCallback;
+    },
+    set updateEffects(fn: ((dt: number) => void) | null) {
+      updateEffectsCallback = fn;
     },
     enter3D,
     exit3D,

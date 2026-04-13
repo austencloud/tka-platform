@@ -18,6 +18,7 @@
 
   import { useThrelte, useTask } from "@threlte/core";
   import { onDestroy, untrack } from "svelte";
+  import { tryGetViewer3DContext } from "../context/viewer-3d-context";
   import { Vector3, Color, Object3D, Quaternion, Euler } from "three";
   import { container } from "$lib/shared/di";
   import Trail3D from "./trails/Trail3D.svelte";
@@ -211,7 +212,15 @@
   const charcoalTips: CharcoalTipInput[] = [];
   const fireTips: FireTipInput[] = [];
 
-  useTask((delta) => {
+  // Viewer3D context for offline export gating — null when rendered outside
+  // the sequence viewer (museum, realm).
+  const _viewer3DCtx = tryGetViewer3DContext();
+
+  /**
+   * Core per-frame effect update logic. Extracted from useTask so the
+   * offline exporter can call it with a deterministic dt.
+   */
+  function updateEffectsFrame(delta: number): void {
     if (!isPlaying) {
       tipBridge.reset();
       blueLedRenderer?.reset();
@@ -619,6 +628,27 @@
         fireRenderer.reset();
       }
     }
+  }
+
+  // Register the effect update function on viewer3DState so the offline
+  // exporter can call it with deterministic dt each frame.
+  $effect(() => {
+    if (_viewer3DCtx) {
+      _viewer3DCtx.updateEffects = updateEffectsFrame;
+      return () => {
+        // Only clear if we're still the registered callback
+        if (_viewer3DCtx.updateEffects === updateEffectsFrame) {
+          _viewer3DCtx.updateEffects = null;
+        }
+      };
+    }
+  });
+
+  // Threlte render-loop: call the extracted update function each frame,
+  // gated on autoRenderEnabled so the offline exporter can suppress it.
+  useTask((delta) => {
+    if (_viewer3DCtx && !_viewer3DCtx.autoRenderEnabled) return;
+    updateEffectsFrame(delta);
   });
 
   // Filter to only tips that have the "trails" effect assigned and a valid position.

@@ -68,13 +68,43 @@ export interface ImageExportDependencies {
 }
 
 /**
- * Dependencies required for 3D video exports
+ * Dependencies required for 3D video exports (offline two-pass pipeline).
+ * The caller gathers these from the live 3D scene; SequenceModalExporter
+ * forwards them into Offline3DExportDependencies.
  */
 export interface Video3DExportDependencies {
   webglCanvas: HTMLCanvasElement;
-  startPlayback: () => void;
-  stopPlayback: () => void;
-  getTotalDurationSeconds: () => number;
+  /** Three.js WebGLRenderer (from useThrelte().renderer) */
+  renderer: { render(scene: any, camera: any): void };
+  /** Three.js Scene (from useThrelte().scene) */
+  scene: any;
+  /** Three.js PerspectiveCamera (from useThrelte().camera) */
+  camera: {
+    position: { x: number; y: number; z: number; set(x: number, y: number, z: number): void };
+    quaternion: { x: number; y: number; z: number; w: number; set(x: number, y: number, z: number, w: number): void };
+    fov: number;
+    updateProjectionMatrix(): void;
+  };
+  /** All performer instances to drive animation */
+  performers: Array<{
+    goToStep(index: number): void;
+    setProgress(value: number): void;
+    totalSteps: number;
+  }>;
+  /** Formation transition updater */
+  updateFormationTransition(timestamp: number): void;
+  /** Effect orchestrator update (receives dt in seconds) */
+  updateEffects(dt: number): void;
+  /** Beats per second for converting animation time to currentStep */
+  beatsPerSecond: number;
+  /** Total animation duration in seconds (single loop, no start/end hold) */
+  totalDurationSeconds: number;
+  /** Camera keyframe buffer from pass 1 (or static capture) */
+  cameraKeyframes: import("$lib/shared/video-export/domain/CameraKeyframe").CameraKeyframeBuffer;
+  /** Callback to pause Threlte's auto-render loop */
+  pauseAutoRender(): void;
+  /** Callback to resume Threlte's auto-render loop */
+  resumeAutoRender(): void;
 }
 
 /**
