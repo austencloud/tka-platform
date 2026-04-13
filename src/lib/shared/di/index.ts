@@ -55,8 +55,8 @@ import { sequenceMandalaContainer } from "./containers/sequence-mandala-containe
 // FACTORY CONTAINERS (export function createXyzContainer(deps)...)
 // These need to be called with their dependencies
 // ============================================================================
-import { createBuildContainer, configureLazyBuildContainer } from "./containers/build-container";
-import { createAnimatorContainer } from "./containers/animator-container";
+import { createCreateContainer, configureLazyCreateContainer } from "./containers/create-container";
+import { createComposeCoreContainer } from "./containers/compose-core-container";
 import { createLoopLabelerContainer } from "./containers/loop-labeler-container";
 import { createBrowseContainer } from "./containers/browse-container";
 import { createNavigationContainer } from "./containers/navigation-container";
@@ -73,36 +73,16 @@ import { createQRContainer } from "./containers/qr-container";
 import { createAnimation3DContainer } from "./containers/3d-container";
 import { createDelightContainer } from "./containers/delight-container";
 import { backgroundBuilderContainer } from "./containers/background-builder-container";
-import { createPoiLabContainer } from "./containers/poi-lab-container";
-import { createCollisionLabContainer } from "./containers/collision-lab-container";
-import { createPoiContainer } from "./containers/poi-container";
-import { createLandingPreviewContainer } from "./containers/landing-preview-container";
 import { createModerationContainer } from "./containers/moderation-container";
-import { createHallOfShameContainer } from "./containers/hall-of-shame-container";
 import { createWatchContainer } from "./containers/watch-container";
 import { createLanSyncContainer } from "./containers/lan-sync-container";
 import { createConnectContainer } from "./containers/connect-container";
 import { createDeviceSyncContainer } from "./containers/device-sync-container";
-import { trigridLabContainer } from "./containers/trigrid-lab-container";
-import { multiGridContainer } from "./containers/multi-grid-container";
 import { createAttributionContainer } from "./containers/attribution-container";
 import { createVoiceControlContainer } from "./containers/voice-control-container";
-import { createComposeBrowseContainer } from "./containers/compose-browse-container";
-import { createComposeArrangeContainer } from "./containers/compose-arrange-container";
 import { createVoiceSessionContainer } from "./containers/voice-session-container";
-import { createSkel2TKAContainer } from "./containers/skel2tka-container";
-import { labContainer } from "./containers/lab-container";
-import { assembleContainer } from "./containers/assemble-container";
-import { fuseContainer } from "./containers/fuse-container";
-import { arenaContainer } from "./containers/arena-container";
-import { effectsLabContainer } from "./containers/effects-lab-container";
-import { videoTrailsContainer } from "./containers/video-trails-container";
-import { videoInfraContainer } from "./containers/video-infra-container";
-import { createMuseumContainer } from "./containers/museum-container";
 import { createPushContainer } from "./containers/push-container";
 import { createOfflineContainer } from "./containers/offline-container";
-import { festivalContainer } from "./containers/festival-container";
-import { createStoreContainer } from "./containers/store-container";
 // Deep link resolution for cross-tab/cross-user URLs
 import { DeepLinkResolver } from "../application/services/implementations/DeepLinkResolver";
 
@@ -119,10 +99,18 @@ import { SequenceDataProvider } from "../sequence-viewer/services/implementation
 import type { IAppContainerItems } from "./container-types";
 
 // ============================================================================
-// INSTANTIATE FACTORY CONTAINERS WITH STUB DEPENDENCIES
-// NOTE: This is a temporary fix to get the app compiling.
-// Proper dependency wiring should be done in a follow-up task.
+// BOOT PROFILER — time each container factory for startup optimization
 // ============================================================================
+const _diStart = typeof window !== 'undefined' ? performance.now() : 0;
+const _diTimings: Array<{ name: string; duration: number }> = [];
+
+function _timeContainer<T>(name: string, factory: () => T): T {
+  if (typeof window === 'undefined') return factory();
+  const t0 = performance.now();
+  const result = factory();
+  _diTimings.push({ name, duration: performance.now() - t0 });
+  return result;
+}
 
 // ============================================================================
 // BROWSER-ONLY CONTAINER INSTANTIATION
@@ -131,28 +119,28 @@ import type { IAppContainerItems } from "./container-types";
 // ============================================================================
 
 // Containers with no dependencies - just call them
-const feedbackContainer = typeof window !== 'undefined' ? createFeedbackContainer() : null as any;
-const gamificationContainer = typeof window !== 'undefined' ? createGamificationContainer() : null as any;
-const promoContainer = typeof window !== 'undefined' ? createPromoContainer() : null as any;
+const feedbackContainer = typeof window !== 'undefined' ? _timeContainer('feedback', createFeedbackContainer) : null as any;
+const gamificationContainer = typeof window !== 'undefined' ? _timeContainer('gamification', createGamificationContainer) : null as any;
+const promoContainer = typeof window !== 'undefined' ? _timeContainer('promo', createPromoContainer) : null as any;
 
 // Render container needs fileDownloader from core
-const renderContainer = typeof window !== 'undefined' ? createRenderContainer(
+const renderContainer = typeof window !== 'undefined' ? _timeContainer('render', () => createRenderContainer(
   coreContainer.items.fileDownloader
-) : null as any;
+)) : null as any;
 
 // Navigation container needs external deps from pictograph and data containers
-const navigationContainer = typeof window !== 'undefined' ? createNavigationContainer({
+const navigationContainer = typeof window !== 'undefined' ? _timeContainer('navigation', () => createNavigationContainer({
   motionQueryHandler,
   gridModeDeriver,
   gridPositionDeriver,
   persistenceService: dataContainer.items.persistenceService,
-}) : null as any;
+})) : null as any;
 
 // Share container needs sequenceRenderer from render
-const shareContainer = typeof window !== 'undefined' ? createShareContainer(renderContainer.items.sequenceRenderer) : null as any;
+const shareContainer = typeof window !== 'undefined' ? _timeContainer('share', () => createShareContainer(renderContainer.items.sequenceRenderer)) : null as any;
 
 // Browse container needs multiple external deps
-const browseContainer = typeof window !== 'undefined' ? createBrowseContainer({
+const browseContainer = typeof window !== 'undefined' ? _timeContainer('browse', () => createBrowseContainer({
   wordDeriver: coreContainer.items.wordDeriver,
   deviceDetector: coreContainer.items.deviceDetector,
   sequenceRenderer: renderContainer.items.sequenceRenderer,
@@ -160,10 +148,10 @@ const browseContainer = typeof window !== 'undefined' ? createBrowseContainer({
   cloudThumbnailCache: shareContainer.items.cloudThumbnailCache,
   sheetRouter: navigationContainer.items.sheetRouter,
   collaborativeVideoManager: shareContainer.items.collaborativeVideoManager,
-}) : null as any;
+})) : null as any;
 
-// Build container needs many external deps
-const buildContainer = typeof window !== 'undefined' ? createBuildContainer({
+// Create module container needs many external deps
+const createModuleContainer = typeof window !== 'undefined' ? _timeContainer('create', () => createCreateContainer({
   deviceDetector: coreContainer.items.deviceDetector,
   viewportManager: coreContainer.items.viewportManager,
   gridPositionDeriver,
@@ -188,12 +176,12 @@ const buildContainer = typeof window !== 'undefined' ? createBuildContainer({
   sharer: shareContainer.items.sharer,
   // Animation services (from data container to avoid circular deps)
   sequenceLoopabilityChecker: dataContainer.items.sequenceLoopabilityChecker,
-}) : null as any;
+})) : null as any;
 
-// Configure lazy build container for HMR-optimized access pattern
-// Components can use getBuildContainer() instead of container.items for better HMR
+// Configure lazy create container for HMR-optimized access pattern
+// Components can use getCreateContainer() instead of container.items for better HMR
 if (typeof window !== 'undefined') {
-  configureLazyBuildContainer(() => ({
+  configureLazyCreateContainer(() => ({
     deviceDetector: coreContainer.items.deviceDetector,
     viewportManager: coreContainer.items.viewportManager,
     gridPositionDeriver,
@@ -219,52 +207,49 @@ if (typeof window !== 'undefined') {
   }));
 }
 
-// Animator container needs multiple external deps
-const animatorContainer = typeof window !== 'undefined' ? createAnimatorContainer({
+// Compose core container needs multiple external deps
+const composeCoreContainer = typeof window !== 'undefined' ? _timeContainer('compose-core', () => createComposeCoreContainer({
   imageComposer: renderContainer.items.imageComposer,
   dimensionCalculator: renderContainer.items.dimensionCalculator,
   layoutCalculator: renderContainer.items.layoutCalculator,
   svgImageConverter: coreContainer.items.svgImageConverter,
   fileDownloader: coreContainer.items.fileDownloader,
   sequenceRepository: dataContainer.items.sequenceRepository,
-  sequenceTransformer: buildContainer.items.sequenceTransformer,
+  sequenceTransformer: createModuleContainer.items.sequenceTransformer,
   browseLoader: browseContainer.items.browseLoader,
   sequenceLoopabilityChecker: dataContainer.items.sequenceLoopabilityChecker,
-}) : null as any;
+})) : null as any;
 
 // Loop labeler container needs sequenceAnalyzer from build
-const loopLabelerContainer = typeof window !== 'undefined' ? createLoopLabelerContainer({
-  sequenceAnalyzer: buildContainer.items.sequenceAnalyzer,
-}) : null as any;
+const loopLabelerContainer = typeof window !== 'undefined' ? _timeContainer('loop-labeler', () => createLoopLabelerContainer({
+  sequenceAnalyzer: createModuleContainer.items.sequenceAnalyzer,
+})) : null as any;
 
 // Train container needs achievementManager from gamification
-const trainContainer = typeof window !== 'undefined' ? createTrainContainer(
+const trainContainer = typeof window !== 'undefined' ? _timeContainer('train', () => createTrainContainer(
   gamificationContainer.items.achievementManager
-) : null as any;
-
-// Skel2TKA container - self-contained with its own IMAGE mode MediaPipe instance
-const skel2tkaContainer = typeof window !== 'undefined' ? createSkel2TKAContainer() : null as any;
+)) : null as any;
 
 // Admin container needs activityLogger and presenceTracker
-const adminContainer = typeof window !== 'undefined' ? createAdminContainer({
+const adminContainer = typeof window !== 'undefined' ? _timeContainer('admin', () => createAdminContainer({
   activityLogger: analyticsContainer.items.activityLogger,
   presenceTracker: presenceContainer.items.presenceTracker,
-}) : null as any;
+})) : null as any;
 
 // Learn container needs letterQueryHandler from pictograph
-const learnContainer = typeof window !== 'undefined' ? createLearnContainer(
+const learnContainer = typeof window !== 'undefined' ? _timeContainer('learn', () => createLearnContainer(
   letterQueryHandler
-) : null as any;
+)) : null as any;
 
 // Moderation container - self-contained, must be before library for content moderation
-const moderationContainer = typeof window !== 'undefined' ? createModerationContainer() : null as any;
+const moderationContainer = typeof window !== 'undefined' ? _timeContainer('moderation', createModerationContainer) : null as any;
 
 // Library container needs multiple deps including content moderation
-const libraryContainer = typeof window !== 'undefined' ? createLibraryContainer({
+const libraryContainer = typeof window !== 'undefined' ? _timeContainer('library', () => createLibraryContainer({
   libraryRepository: {
     achievementManager: gamificationContainer.items.achievementManager,
     tagManager: coreContainer.items.tagManager,
-    orientationCycleDetector: buildContainer.items.orientationCycleDetector,
+    orientationCycleDetector: createModuleContainer.items.orientationCycleDetector,
     conflictResolver: coreContainer.items.conflictResolver,
   },
   librarySaveService: {
@@ -277,93 +262,66 @@ const libraryContainer = typeof window !== 'undefined' ? createLibraryContainer(
     contentAppealManager: moderationContainer.items.contentAppealManager,
     browseLoader: browseContainer.items.browseLoader,
   },
-}) : null as any;
+})) : null as any;
 
 // QR container needs browseLoader and sequenceEncoder for dual-mode (online/offline)
-const qrContainer = typeof window !== 'undefined' ? createQRContainer({
+const qrContainer = typeof window !== 'undefined' ? _timeContainer('qr', () => createQRContainer({
   browseLoader: browseContainer.items.browseLoader,
   sequenceEncoder: navigationContainer.items.sequenceEncoder,
   hashMatcher: navigationContainer.items.publicSequenceHashMatcher,
-}) : null as any;
+})) : null as any;
 
 // Animation 3D container needs browseLoader
-const animation3DContainer = typeof window !== 'undefined' ? createAnimation3DContainer({
+const animation3DContainer = typeof window !== 'undefined' ? _timeContainer('animation-3d', () => createAnimation3DContainer({
   browseLoader: browseContainer.items.browseLoader,
-}) : null as any;
+})) : null as any;
 
 // Delight container needs hapticFeedback from core
-const delightContainer = typeof window !== 'undefined' ? createDelightContainer(
+const delightContainer = typeof window !== 'undefined' ? _timeContainer('delight', () => createDelightContainer(
   coreContainer.items.hapticFeedback
-) : null as any;
-
-// Poi lab container - self-contained, no external dependencies
-const poiLabContainer = typeof window !== 'undefined' ? createPoiLabContainer() : null as any;
-
-// Collision lab container - self-contained, browser-only (uses localStorage)
-const collisionLabContainer = typeof window !== 'undefined' ? createCollisionLabContainer() : null as any;
-
-// Poi pattern engine + hardware adapters container
-const poiContainer = typeof window !== 'undefined' ? createPoiContainer() : null as any;
-
-// Landing preview container - self-contained, no external dependencies
-const landingPreviewContainer = typeof window !== 'undefined' ? createLandingPreviewContainer() : null as any;
-
-// Hall of Shame container - self-contained, no external dependencies
-const hallOfShameContainer = typeof window !== 'undefined' ? createHallOfShameContainer() : null as any;
+)) : null as any;
 
 // Attribution container - self-contained, captures how users find the app
-const attributionContainer = typeof window !== 'undefined' ? createAttributionContainer() : null as any;
+const attributionContainer = typeof window !== 'undefined' ? _timeContainer('attribution', createAttributionContainer) : null as any;
 
 // Voice control container - "Hey Tika" wake word + command dispatch
-const voiceControlContainer = typeof window !== 'undefined' ? createVoiceControlContainer() : null as any;
-
-// Compose Browse container - self-contained, no external dependencies
-const composeBrowseContainer = typeof window !== 'undefined' ? createComposeBrowseContainer() : null as any;
-
-// Compose Arrange container - beat calculation, persistence, playback, transforms
-const composeArrangeContainer = typeof window !== 'undefined' ? createComposeArrangeContainer() : null as any;
-
-// Museum container - self-contained, no external dependencies
-const museumContainer = typeof window !== 'undefined' ? createMuseumContainer() : null as any;
+const voiceControlContainer = typeof window !== 'undefined' ? _timeContainer('voice-control', createVoiceControlContainer) : null as any;
 
 // Push notification container - FCM token management, self-contained
-const pushContainer = typeof window !== 'undefined' ? createPushContainer() : null as any;
+const pushContainer = typeof window !== 'undefined' ? _timeContainer('push', createPushContainer) : null as any;
 
 // Voice session recording, formatting, persistence, analysis, and replay
-const voiceSessionContainer = typeof window !== 'undefined' ? createVoiceSessionContainer({
+const voiceSessionContainer = typeof window !== 'undefined' ? _timeContainer('voice-session', () => createVoiceSessionContainer({
   commandInterpreter: voiceControlContainer.items.commandInterpreter,
-}) : null as any;
+})) : null as any;
 
 
 // Watch container - needs collaborativeVideoManager from share and browseLoader from browse
-const watchContainer = typeof window !== 'undefined' ? createWatchContainer({
+const watchContainer = typeof window !== 'undefined' ? _timeContainer('watch', () => createWatchContainer({
   collaborativeVideoManager: shareContainer.items.collaborativeVideoManager,
   browseLoader: browseContainer.items.browseLoader,
-}) : null as any;
+})) : null as any;
 
 // LAN Sync container - self-contained, no external dependencies
-const lanSyncContainer = typeof window !== 'undefined' ? createLanSyncContainer() : null as any;
+const lanSyncContainer = typeof window !== 'undefined' ? _timeContainer('lan-sync', createLanSyncContainer) : null as any;
 
 // Device Sync container - needs peerConnectionManager from lan-sync
-const deviceSyncContainer = typeof window !== 'undefined' ? createDeviceSyncContainer({
+const deviceSyncContainer = typeof window !== 'undefined' ? _timeContainer('device-sync', () => createDeviceSyncContainer({
   peerConnectionManager: lanSyncContainer.items.peerConnectionManager,
-}) : null as any;
+})) : null as any;
 
 // Connect container - needs lanSyncCoordinator from lan-sync
-const connectContainer = typeof window !== 'undefined' ? createConnectContainer({
+const connectContainer = typeof window !== 'undefined' ? _timeContainer('connect', () => createConnectContainer({
   lanSyncCoordinator: lanSyncContainer.items.lanSyncCoordinator,
-}) : null as any;
-
-// Store container - physical merch store, self-contained
-const storeContainer = typeof window !== 'undefined' ? createStoreContainer() : null as any;
+})) : null as any;
 
 // Offline container - needs networkStatusMonitor from device-sync and
 // galleryOfflineCache + thumbnailLocalCache from browse
-const offlineContainer = typeof window !== 'undefined' ? createOfflineContainer({
+const offlineContainer = typeof window !== 'undefined' ? _timeContainer('offline', () => createOfflineContainer({
   networkStatusMonitor: deviceSyncContainer.items.networkStatusMonitor,
   galleryOfflineCache: browseContainer.items.galleryOfflineCache,
   thumbnailLocalCache: browseContainer.items.thumbnailLocalCache,
-}) : null as any;
+})) : null as any;
 
 // DeepLinkResolver - needs sequenceRepository from data and browseLoader from browse
 const deepLinkResolver = typeof window !== 'undefined' ? new DeepLinkResolver(
@@ -409,10 +367,10 @@ function buildAppContainer(): any {
   c = c.add(navigationContainer.items);
   // Rendering
   c = c.add(renderContainer.items);
-  // Animation
-  c = c.add(animatorContainer.items);
-  // Features
-  c = c.add(buildContainer.items);
+  // Compose core (animation pipeline, video export)
+  c = c.add(composeCoreContainer.items);
+  // Create module (sequence construction, generation, option picker)
+  c = c.add(createModuleContainer.items);
   // NOTE: browseContainer has naming conflicts (filterPersister, navigator)
   // Using upsert to allow overwriting - these should be renamed in a follow-up
   c = c.upsert(browseContainer.items);
@@ -438,18 +396,11 @@ function buildAppContainer(): any {
   c = c.add(animation3DContainer.items);
   c = c.add(backgroundBuilderContainer.items);
   c = c.add(delightContainer.items);
-  c = c.add(poiLabContainer.items);
-  c = c.add(collisionLabContainer.items);
-  c = c.add(poiContainer.items);
-  c = c.add(landingPreviewContainer.items);
   c = c.add(moderationContainer.items);
-  c = c.add(hallOfShameContainer.items);
   c = c.add(watchContainer.items);
   c = c.add(lanSyncContainer.items);
   c = c.add(deviceSyncContainer.items);
   c = c.add(connectContainer.items);
-  c = c.add(trigridLabContainer.items);
-  c = c.add(multiGridContainer.items);
   // Attribution tracking services
   c = c.add({
     attributionCapture: () => attributionContainer?.items?.attributionCapture,
@@ -460,34 +411,10 @@ function buildAppContainer(): any {
   c = c.add(voiceControlContainer.items);
   // Voice session recording + analysis
   c = c.add(voiceSessionContainer.items);
-  c = c.add(composeBrowseContainer.items);
-  c = c.add(composeArrangeContainer.items);
-  // Skel2TKA video-to-notation pipeline
-  c = c.add(skel2tkaContainer.items);
-  // Lab module services (screenshot capture, etc.)
-  c = c.add(labContainer.items);
-  // Assemble lab services (grid hit targets, beat motion derivation)
-  c = c.add(assembleContainer.items);
-  // Fuse services (merge two hand paths into a combined sequence)
-  c = c.add(fuseContainer.items);
-  // Arena module services (pairwise ranking)
-  c = c.add(arenaContainer.items);
-  // Effects Lab services (fire + LED point override providers, fuel sources)
-  c = c.add(effectsLabContainer.items);
-  // Video Trails services (endpoint detection, tip adaptation, export)
-  c = c.add(videoTrailsContainer.items);
-  // Shared video infrastructure (source provider, training data, frame extraction)
-  c = c.add(videoInfraContainer.items);
-  // Museum services (persistence, interaction detection)
-  c = c.add(museumContainer.items);
   // Push notification services (FCM token management)
   c = c.add(pushContainer.items);
   // Offline caching (proactive gallery + thumbnail prefetch)
   c = c.add(offlineContainer.items);
-  // Festival Hub (discovery, attendance, tracker, portfolio, submissions)
-  c = c.add(festivalContainer.items);
-  // Physical merch store (products, Stripe checkout)
-  c = c.add(storeContainer.items);
   // Native platform (Capacitor) detection and initialization
   c = c.add(platformContainer.items);
   // Print Prep services (MPC card export — depend on render + build containers)
@@ -502,8 +429,8 @@ function buildAppContainer(): any {
       renderContainer.items.imageComposer,
       ctx.cardBackDomRenderer,
       ctx.infoCardCanvasRenderer,
-      buildContainer.items.sequenceToEntryConverter,
-      buildContainer.items.loopExplainer,
+      createModuleContainer.items.sequenceToEntryConverter,
+      createModuleContainer.items.loopExplainer,
     ),
   }));
 
@@ -516,8 +443,31 @@ function buildAppContainer(): any {
 
 // Cast to the composed type. The null branch only executes in SSR/Node where
 // no consumer code runs, so the non-null assertion is safe for all browser consumers.
+const _buildStart = typeof window !== 'undefined' ? performance.now() : 0;
 export const container = (typeof window !== 'undefined' ? buildAppContainer() : null) as unknown as
   { items: IAppContainerItems };
+
+// Log DI container timing breakdown
+if (typeof window !== 'undefined') {
+  const totalDI = performance.now() - _diStart;
+  const buildTime = performance.now() - _buildStart;
+
+  // Sort by duration descending
+  const sorted = [..._diTimings].sort((a, b) => b.duration - a.duration);
+
+  console.group(
+    `%c🏗️ DI Container — ${Math.round(totalDI)}ms total (factories: ${Math.round(totalDI - buildTime)}ms, compose: ${Math.round(buildTime)}ms)`,
+    "font-size: 13px; font-weight: bold; color: #81c784;"
+  );
+  console.table(
+    sorted.map((t) => ({
+      Container: t.name,
+      "Duration (ms)": +t.duration.toFixed(2),
+      "% of Total": `${((t.duration / totalDI) * 100).toFixed(1)}%`,
+    }))
+  );
+  console.groupEnd();
+}
 
 // Late binding: Inject QR generator into ImageComposer after container is fully composed
 // This resolves the circular dependency between render-container and qr-container
