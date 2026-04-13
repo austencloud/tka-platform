@@ -41,7 +41,6 @@
   import DeleteConfirmDialog from "./DeleteConfirmDialog.svelte";
   import VideoPanel from "./video-panel/VideoPanel.svelte";
   import type { ICollaborativeVideoManager } from "$lib/shared/video-collaboration/services/contracts/ICollaborativeVideoManager";
-  import ChoreoCardGearPopover from "./gear-popover/ChoreoCardGearPopover.svelte";
   import ChoreoCardContextMenuHost from "./choreo-card-context-menu/ChoreoCardContextMenuHost.svelte";
   import CardSettingsModal from "$lib/features/choreo-card/components/CardSettingsModal.svelte";
   import {
@@ -339,10 +338,6 @@
                       {ctx.renderMode === '3d' ? '3D' : '3D'}
                     </button>
                   {/if}
-                  <ChoreoCardGearPopover
-                    stepCount={overlay.sequence?.steps?.length ?? 0}
-                    onOpenSettings={() => { cardSettingsOpen = true; }}
-                  />
                   {#if authState.isAdmin}
                     <button
                       type="button"

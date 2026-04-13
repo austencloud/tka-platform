@@ -52,7 +52,6 @@
   import RouteViewerHeader from "../../sequence/[id]/RouteViewerHeader.svelte";
   import DeleteConfirmDialog from "$lib/shared/sequence-viewer/components/DeleteConfirmDialog.svelte";
   import LoadingGate from "$lib/shared/components/loading/LoadingGate.svelte";
-  import ChoreoCardGearPopover from "$lib/shared/sequence-viewer/components/gear-popover/ChoreoCardGearPopover.svelte";
   import ChoreoCardContextMenuHost from "$lib/shared/sequence-viewer/components/choreo-card-context-menu/ChoreoCardContextMenuHost.svelte";
   import CardSettingsModal from "$lib/features/choreo-card/components/CardSettingsModal.svelte";
 
@@ -573,10 +572,6 @@
                 onStepClick={ctx.handleStepClick}
                 onCanvasReady={ctx.handleCanvasReady}
                 onChoreoCardContextMenu={(x, y) => choreoCardMenuHost?.openContextMenu(x, y)}
-              />
-              <ChoreoCardGearPopover
-                stepCount={sequence?.steps?.length ?? 0}
-                onOpenSettings={() => { cardSettingsOpen = true; }}
               />
               <ChoreoCardContextMenuHost
                 bind:this={choreoCardMenuHost}
