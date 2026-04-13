@@ -351,13 +351,15 @@
     padding: 3px;
     border-radius: 8px;
     background: rgba(0, 0, 0, 0.45);
+    overflow-x: auto;
+    scrollbar-width: none;
     border: 1px solid rgba(255, 255, 255, 0.08);
     margin-bottom: 10px;
   }
 
   .tab-btn {
-    flex: 1;
-    padding: 6px 4px;
+    flex: 0 0 auto;
+    padding: 6px 10px;
     min-height: 32px;
     border: 1px solid transparent;
     border-radius: 6px;
