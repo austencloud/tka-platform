@@ -3,7 +3,7 @@
    * SceneFeatureToggles
    *
    * Content for the "Scene" tab in Viewer3DGearPopover.
-   * Renders a toggle per scene feature from the registry.
+   * Renders chip-style toggles for each scene feature.
    */
 
   import { getSceneFeatureContext } from "../context/scene-feature-context";
@@ -15,98 +15,49 @@
   }
 </script>
 
-<div class="scene-toggles">
+<div class="scene-chips">
   {#each sceneFeatures.features as feature (feature.key)}
     {@const enabled = sceneFeatures.isEnabled(feature.key)}
     <button
-      class="toggle-row"
-      class:enabled
+      class="chip"
+      class:active={enabled}
       onclick={() => handleToggle(feature.key)}
       aria-pressed={enabled}
     >
-      <span class="toggle-label">{feature.label}</span>
-      <span class="toggle-indicator" class:on={enabled}>
-        <span class="toggle-dot"></span>
-      </span>
+      {feature.label}
     </button>
   {/each}
-
-  <button class="reset-link" onclick={() => sceneFeatures.reset()}>
-    Reset to defaults
-  </button>
 </div>
 
 <style>
-  .scene-toggles {
+  .scene-chips {
     display: flex;
-    flex-direction: column;
-    gap: 2px;
+    flex-wrap: wrap;
+    gap: 6px;
     padding: 4px 0;
   }
 
-  .toggle-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 6px 8px;
-    border: none;
-    background: transparent;
-    border-radius: 6px;
+  .chip {
+    padding: 5px 12px;
+    border-radius: 100px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.04);
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 13px;
+    font-weight: 500;
     cursor: pointer;
-    transition: background 0.15s ease;
+    transition: all 0.15s ease;
+    white-space: nowrap;
   }
 
-  .toggle-row:hover {
-    background: rgba(255, 255, 255, 0.06);
+  .chip:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.08);
   }
 
-  .toggle-label {
-    color: rgba(255, 255, 255, 0.8);
-    font-size: var(--font-size-min, 14px);
-  }
-
-  .toggle-indicator {
-    width: 32px;
-    height: 18px;
-    border-radius: 9px;
-    background: rgba(255, 255, 255, 0.12);
-    position: relative;
-    transition: background 0.2s ease;
-    flex-shrink: 0;
-  }
-
-  .toggle-indicator.on {
-    background: rgba(139, 139, 255, 0.5);
-  }
-
-  .toggle-dot {
-    position: absolute;
-    top: 2px;
-    left: 2px;
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.7);
-    transition: transform 0.2s ease;
-  }
-
-  .toggle-indicator.on .toggle-dot {
-    transform: translateX(14px);
-    background: #fff;
-  }
-
-  .reset-link {
-    margin-top: 8px;
-    padding: 4px 8px;
-    border: none;
-    background: transparent;
-    color: rgba(255, 255, 255, 0.35);
-    font-size: 12px;
-    cursor: pointer;
-    text-align: left;
-  }
-
-  .reset-link:hover {
-    color: rgba(255, 255, 255, 0.6);
+  .chip.active {
+    border-color: color-mix(in srgb, #8b8bff 40%, transparent);
+    background: color-mix(in srgb, #8b8bff 15%, transparent);
+    color: rgba(255, 255, 255, 0.9);
   }
 </style>

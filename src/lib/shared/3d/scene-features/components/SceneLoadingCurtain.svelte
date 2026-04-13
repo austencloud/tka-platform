@@ -3,8 +3,9 @@
    * SceneLoadingCurtain
    *
    * Dark overlay with drifting firefly dots and a progress bar.
-   * Covers the 3D canvas until all enabled async scene features
-   * have reported their assets loaded. Crossfades out over 400ms.
+   * Covers the 3D canvas until all initially-enabled async scene
+   * features have reported their assets loaded. Only shows on first
+   * load — toggling features mid-session does NOT bring it back.
    */
 
   import { getSceneFeatureContext } from "../context/scene-feature-context";
@@ -12,8 +13,20 @@
 
   const sceneFeatures = getSceneFeatureContext();
 
-  const ready = $derived(sceneFeatures.allEnabledReady);
   const progress = $derived(sceneFeatures.readyProgress);
+
+  // Track whether the initial load has completed. Once it has,
+  // the curtain never comes back — even if the user toggles on
+  // a new async feature that hasn't loaded yet.
+  let initialLoadComplete = $state(false);
+
+  $effect(() => {
+    if (sceneFeatures.allEnabledReady && !initialLoadComplete) {
+      initialLoadComplete = true;
+    }
+  });
+
+  const showCurtain = $derived(!initialLoadComplete);
 
   const fireflies = Array.from({ length: 8 }, (_, i) => ({
     id: i,
@@ -24,7 +37,7 @@
   }));
 </script>
 
-{#if !ready}
+{#if showCurtain}
   <div class="curtain" transition:fade={{ duration: 400 }}>
     {#each fireflies as fly (fly.id)}
       <div

@@ -21,6 +21,7 @@
   import Environment3D from "../environments/components/Environment3D.svelte";
   import { getViewer3DContext } from "../context/viewer-3d-context";
   import { getSceneFeatureContext } from "../scene-features/context/scene-feature-context";
+  import { STAGE } from "../scale/scale-constants";
   import Stage3D from "./Stage3D.svelte";
   import SeatedAudience3D from "./SeatedAudience3D.svelte";
   import { Plane } from "../domain/enums/Plane";
@@ -46,6 +47,11 @@
   const viewer3DState = getViewer3DContext();
   const sceneFeatures = getSceneFeatureContext();
   const { renderer, camera, scene } = useThrelte();
+
+  // When the stage is visible, lift performers onto the deck surface
+  const stageGroundOffset = $derived(
+    sceneFeatures.isEnabled("stage") ? STAGE.STAGE_DECK_HEIGHT : 0
+  );
 
   // Register Threlte internals so the offline exporter can drive rendering
   // directly without coupling to Threlte's reactive layer.
@@ -268,6 +274,7 @@
   <T.Group userData={{ performerIndex: i }}>
     <PerformerRig
       position={performer.position}
+      groundOffset={stageGroundOffset}
       facingAngle={performer.facingAngle}
       planeMode={performer.planeMode}
       avatarState={performer}
