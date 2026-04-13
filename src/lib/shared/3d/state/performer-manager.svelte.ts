@@ -159,10 +159,10 @@ export function createPerformerManager(deps: PerformerManagerDeps) {
    * target preset doesn't cover an index, that performer stays at its
    * default row-pair slot instead of drifting.
    */
-  function updateFormationTransition() {
+  function updateFormationTransition(timestamp?: number) {
     if (!formationManager.isTransitioning) return;
 
-    formationManager.updateTransition(performance.now());
+    formationManager.updateTransition(timestamp ?? performance.now());
 
     const positions = formationManager.getAllPerformerPositions();
     const defaults = getDefaultPositions(performerStates.length);
