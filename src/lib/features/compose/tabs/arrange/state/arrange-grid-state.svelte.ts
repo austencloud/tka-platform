@@ -28,6 +28,7 @@ import type { Composition } from "../../../compose/domain/types";
 import { TrailMode } from "$lib/shared/animation-engine/domain/types/TrailTypes";
 import type { TipEffectMap, TipEffortMap } from "$lib/shared/animation-engine/domain/types/TipEffectTypes";
 import { container } from "$lib/shared/di";
+import { createComposeArrangeContainer } from "$lib/shared/di/containers/compose-arrange-container";
 import type {
   ArrangeUndoOperationType,
   ArrangeGridSnapshot,
@@ -122,11 +123,12 @@ const DEFAULT_GRID_COLS = 2;
 function createArrangeGridState() {
   const serializer = new ArrangeGridSerializer();
 
-  // Services from DI
-  const beatCalculator = container.items.arrangeBeatCalculator;
-  const persister = container.items.arrangeGridPersister;
-  const playbackEngine = container.items.arrangePlaybackEngine;
-  const layerTransformer = container.items.arrangeLayerTransformer;
+  // Services from lazy compose-arrange container (loaded on-demand, not at app startup)
+  const arrangeItems = createComposeArrangeContainer().items;
+  const beatCalculator = arrangeItems.arrangeBeatCalculator;
+  const persister = arrangeItems.arrangeGridPersister;
+  const playbackEngine = arrangeItems.arrangePlaybackEngine;
+  const layerTransformer = arrangeItems.arrangeLayerTransformer;
 
   const initialConfig = persister.load();
 
