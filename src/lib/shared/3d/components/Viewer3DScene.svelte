@@ -20,6 +20,9 @@
   import { BackgroundType } from "@austencloud/backgrounds";
   import Environment3D from "../environments/components/Environment3D.svelte";
   import { getViewer3DContext } from "../context/viewer-3d-context";
+  import { getSceneFeatureContext } from "../scene-features/context/scene-feature-context";
+  import Stage3D from "./Stage3D.svelte";
+  import SeatedAudience3D from "./SeatedAudience3D.svelte";
   import { Plane } from "../domain/enums/Plane";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import type { TipEffectMap } from "$lib/shared/animation-engine/domain/types/TipEffectTypes";
@@ -41,7 +44,19 @@
   void avatarState;
 
   const viewer3DState = getViewer3DContext();
+  const sceneFeatures = getSceneFeatureContext();
   const { renderer, camera, scene } = useThrelte();
+
+  // Register Threlte internals so the offline exporter can drive rendering
+  // directly without coupling to Threlte's reactive layer.
+  $effect(() => {
+    const r = renderer.current;
+    const s = scene.current;
+    const c = camera.current;
+    if (r && s && c) {
+      viewer3DState.registerThrelteInternals({ renderer: r, scene: s, camera: c });
+    }
+  });
 
   // All performers from the manager — the scene renders one rig per entry.
   const performerManager = $derived(viewer3DState.performerManager);
@@ -72,6 +87,10 @@
   // stepConfigs now includes the start position at index 0, so the mapping
   // is direct: 2D beat N → 3D index N (no offset needed).
   useTask(() => {
+    // Skip the puppet loop when offline export is driving the scene
+    // deterministically frame-by-frame.
+    if (!viewer3DState.autoRenderEnabled) return;
+
     const beatIndex = Math.floor(currentStep);
     const subBeatProgress = currentStep - beatIndex;
 
@@ -216,9 +235,19 @@
   );
 </script>
 
-<!-- Environment (no STAGE_LIFT wrapper — sits at ground level) -->
-{#if hasEnvironment}
+<!-- Environment (gated by scene feature toggle) -->
+{#if hasEnvironment && sceneFeatures.isEnabled("environment")}
   <Environment3D {backgroundType} />
+{/if}
+
+<!-- Performance stage (gated by scene feature toggle) -->
+{#if sceneFeatures.isEnabled("stage")}
+  <Stage3D />
+{/if}
+
+<!-- Seated audience (gated by scene feature toggle) -->
+{#if sceneFeatures.isEnabled("audience")}
+  <SeatedAudience3D />
 {/if}
 
 <!-- Lighting — reduced when the environment provides its own -->
@@ -242,7 +271,7 @@
       facingAngle={performer.facingAngle}
       planeMode={performer.planeMode}
       avatarState={performer}
-      showGrid={viewer3DState.showGrid}
+      showGrid={viewer3DState.showGrid && sceneFeatures.isEnabled("grid")}
       visiblePlanes={gridVisiblePlanes}
       gridMode={(sequenceData?.gridMode ?? "diamond") as import("../domain/constants/grid-layout").GridMode}
       {bluePropType}
