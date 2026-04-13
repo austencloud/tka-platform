@@ -49,8 +49,12 @@
     SnapshotSeverity,
   } from "../domain/types";
   import { getCollisionLabContext } from "../context/collision-lab-context";
+  import { createSceneFeatureState } from "$lib/shared/3d/scene-features/state/scene-feature-state.svelte";
+  import { setSceneFeatureContext } from "$lib/shared/3d/scene-features/context/scene-feature-context";
 
   const labCtx = getCollisionLabContext();
+  const sceneFeatureState = createSceneFeatureState({ audience: true });
+  setSceneFeatureContext(sceneFeatureState);
   const planeMapper = new PlaneCoordinateMapper();
   const orientationMapper = new OrientationMapper();
 
@@ -207,8 +211,6 @@
     {visiblePlanes}
     avatarPositions={gridAnchorPositions}
     backgroundType={BackgroundType.FIREFLY_FOREST}
-    showAudience={true}
-    audienceCount={6}
   >
     {#snippet children()}
       <!-- Rig root: positions the performer at the stance's footOffset. -->
