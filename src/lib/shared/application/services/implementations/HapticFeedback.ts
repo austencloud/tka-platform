@@ -18,6 +18,7 @@ import type {
   HapticFeedbackType,
   IHapticFeedback,
 } from "../contracts/IHapticFeedback";
+import type { IPlatformDetector } from "$lib/shared/platform/services/contracts/IPlatformDetector";
 
 // Feedback patterns (in milliseconds for Vibration API)
 // For iOS, these map to number of haptic pulses
@@ -64,7 +65,11 @@ export class HapticFeedback implements IHapticFeedback {
   // Effort-to-haptic pattern converter (lazy-initialized)
   private effortMapper: EffortHapticMapper | null = null;
 
-  constructor() {
+  // Capacitor native platform detector (optional — null on web-only builds)
+  private nativePlatformDetector: IPlatformDetector | null;
+
+  constructor(nativePlatformDetector?: IPlatformDetector) {
+    this.nativePlatformDetector = nativePlatformDetector ?? null;
     this.initializeService();
   }
 
@@ -79,6 +84,12 @@ export class HapticFeedback implements IHapticFeedback {
 
     // Update throttle time
     this.lastFeedbackTime = Date.now();
+
+    // Native Capacitor: Use Taptic Engine (iOS) / Android vibration directly
+    if (this.nativePlatformDetector?.isNative) {
+      this.triggerNativeHaptic(type);
+      return true;
+    }
 
     // iOS Safari: Use checkbox hack
     if (this.supportsIOSHaptic) {
@@ -128,6 +139,7 @@ export class HapticFeedback implements IHapticFeedback {
   }
 
   public isSupported(): boolean {
+    if (this.nativePlatformDetector?.isNative) return true;
     return this.supportsVibrationAPI || this.supportsIOSHaptic;
   }
 
@@ -323,6 +335,38 @@ export class HapticFeedback implements IHapticFeedback {
         error
       );
       this.supportsIOSHaptic = false;
+    }
+  }
+
+  /**
+   * Trigger haptic feedback via Capacitor's native Haptics plugin.
+   * Uses Taptic Engine on iOS and standard vibration on Android.
+   */
+  private async triggerNativeHaptic(type: HapticFeedbackType): Promise<boolean> {
+    try {
+      const { Haptics, ImpactStyle, NotificationType } = await import(
+        "@capacitor/haptics"
+      );
+
+      switch (type) {
+        case "selection":
+          await Haptics.impact({ style: ImpactStyle.Light });
+          break;
+        case "success":
+          await Haptics.notification({ type: NotificationType.Success });
+          break;
+        case "warning":
+          await Haptics.notification({ type: NotificationType.Warning });
+          break;
+        case "error":
+          await Haptics.notification({ type: NotificationType.Error });
+          break;
+        default:
+          await Haptics.impact({ style: ImpactStyle.Medium });
+      }
+      return true;
+    } catch {
+      return false;
     }
   }
 
