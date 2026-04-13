@@ -14,6 +14,7 @@ import { ErrorHandler } from "../../application/services/implementations/ErrorHa
 import { HapticFeedback } from "../../application/services/implementations/HapticFeedback";
 import { ResourceTracker } from "../../application/services/implementations/ResourceTracker";
 import { RippleEffect } from "../../application/services/implementations/RippleEffect";
+import { platformContainer } from "./platform-container";
 
 // Auth services
 import { Authenticator } from "../../auth/services/implementations/Authenticator";
@@ -160,7 +161,7 @@ export const coreContainer = createContainer()
     resourceTracker: () => new ResourceTracker(),
     componentManager: () => new ComponentManager(),
     errorHandler: () => new ErrorHandler(),
-    hapticFeedback: () => new HapticFeedback(),
+    hapticFeedback: () => new HapticFeedback(platformContainer.items.nativePlatformDetector),
     rippleEffect: () => new RippleEffect(),
   })
   // === AUTH SERVICES (mix of singletons and transient) ===
