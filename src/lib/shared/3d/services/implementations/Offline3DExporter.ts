@@ -96,10 +96,14 @@ export class Offline3DExporter implements IOffline3DExporter {
 
     const keyframes = deps.cameraKeyframes.keyframes;
 
+    // Tell the puppet loop to stop overwriting performer state — we drive
+    // performers deterministically. IK and effects still run during advance().
+    deps.setExporting(true);
+
     // Switch Threlte to manual render mode. In this mode, only advance()
     // triggers a frame — RAF-driven rendering stops completely. The full
-    // pipeline (useTask callbacks for puppet loop, IK, effects + render)
-    // runs exactly once per advance() call.
+    // pipeline (useTask callbacks for IK, effects + render) runs exactly
+    // once per advance() call.
     deps.setRenderMode("manual");
 
     try {
@@ -189,6 +193,7 @@ export class Offline3DExporter implements IOffline3DExporter {
       throw err;
     } finally {
       // Always restore live rendering
+      deps.setExporting(false);
       deps.setRenderMode("always");
     }
   }

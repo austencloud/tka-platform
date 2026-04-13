@@ -149,6 +149,7 @@ export class SequenceModalExporter implements ISequenceModalExporter {
           cameraKeyframes: deps.cameraKeyframes,
           advance: deps.advance,
           setRenderMode: deps.setRenderMode,
+          setExporting: deps.setExporting,
         },
         (progress) => {
           this._progress = progress;

@@ -48,6 +48,12 @@ export interface Offline3DExportDependencies {
    * In manual mode, only advance() triggers rendering.
    */
   setRenderMode(mode: "always" | "manual"): void;
+  /**
+   * Signal the puppet loop to skip performer state updates.
+   * The exporter drives performers deterministically; this prevents the
+   * live puppet loop from overwriting those values during advance().
+   */
+  setExporting(value: boolean): void;
 }
 
 export interface IOffline3DExporter {

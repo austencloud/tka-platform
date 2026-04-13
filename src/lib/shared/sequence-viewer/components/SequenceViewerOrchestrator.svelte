@@ -1181,6 +1181,7 @@
             cameraKeyframes,
             advance: threlteAdvance,
             setRenderMode: (mode: "always" | "manual") => threlteRenderMode.set(mode),
+            setExporting: (value: boolean) => { viewer3DState.isExporting = value; },
           },
           callbacks
         );
