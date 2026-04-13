@@ -14,6 +14,7 @@
   import { Vector3 } from "three";
   import { getViewer3DContext } from "../context/viewer-3d-context";
   import type { CameraStateSnapshot } from "../domain/types/CameraStateSnapshot";
+  import { STAGE } from "../scale/scale-constants";
 
   const viewer3DState = getViewer3DContext();
 
@@ -197,6 +198,7 @@
     dampingFactor={0.1}
     minDistance={1}
     maxDistance={25}
+    maxPolarAngle={STAGE.ORBIT_MAX_POLAR_ANGLE}
     onstart={() => viewer3DState.setCameraDragging(true)}
     onend={() => {
       viewer3DState.setCameraDragging(false);

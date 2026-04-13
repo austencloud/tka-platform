@@ -51,13 +51,14 @@
   // All positions and scales in METERS (1 unit = 1 meter)
   // ========================================
 
-  // Campfire position - to the right and forward of performer
-  const campfirePosition = { x: 3.0, z: -2.25 };
+  // Campfire position - further out from stage, to the right
+  const campfirePosition = { x: 5.5, z: -3.5 };
   const campfireScale = 2.5;
 
-  // Tent position - behind and to the left of performer
-  const tentPosition = { x: -3.25, z: 2.5 };
+  // Tent position - upstage-left, well clear of the audience arc
+  const tentPosition = { x: -5.0, z: -4.0 };
   const tentScale = 2.25;
+
 
   // Point light and fire emitter heights above campfire
   const campfireLightHeight = 0.75;
@@ -69,7 +70,7 @@
   const fireEmitterHeight = fireHalfHeight; // Position fire so bottom touches ground
 
   // Clearing radius - how far the inner ring of trees is from center
-  const clearingRadius = 10;
+  const clearingRadius = 14;
 
   // Multiple rings of trees to create depth - a true forest clearing feel
   // Ring 1: Inner edge of clearing (sparse, largest trees)
@@ -80,29 +81,29 @@
   // Tree rings in meters
   const treeRings = [
     {
-      radius: 10,
-      count: 16,
+      radius: 14,
+      count: 20,
       scaleBase: 1.4,
       scaleVariation: 0.4,
       radiusJitter: 1.0,
     },
     {
-      radius: 13,
-      count: 24,
+      radius: 17.5,
+      count: 28,
       scaleBase: 1.25,
       scaleVariation: 0.35,
       radiusJitter: 1.5,
     },
     {
-      radius: 16.5,
-      count: 32,
+      radius: 21,
+      count: 36,
       scaleBase: 1.1,
       scaleVariation: 0.3,
       radiusJitter: 1.75,
     },
     {
-      radius: 20.5,
-      count: 40,
+      radius: 25,
+      count: 44,
       scaleBase: 0.9,
       scaleVariation: 0.25,
       radiusJitter: 2.0,
@@ -427,6 +428,6 @@
     position.y={groundY}
     position.z={tentPosition.z}
     scale={tentScale}
-    rotation.y={Math.PI * 0.3}
+    rotation.y={Math.PI * 0.65}
   />
 {/if}
