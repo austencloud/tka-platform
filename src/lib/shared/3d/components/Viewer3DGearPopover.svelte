@@ -24,15 +24,16 @@
   import { createViewer3DKeyboardHandler } from "../keyboard/Viewer3DKeyboardHandler";
   import { onMount } from "svelte";
   import SceneFeatureToggles from "../scene-features/components/SceneFeatureToggles.svelte";
+  import Viewer3DVisibilityToggles from "./controls/Viewer3DVisibilityToggles.svelte";
 
-  type TabId = "camera" | "planes" | "performers" | "scene" | "effects";
+  type TabId = "camera" | "planes" | "performers" | "scene" | "visibility";
 
   const TABS: { id: TabId; label: string; disabled?: boolean }[] = [
     { id: "camera", label: "Camera" },
     { id: "planes", label: "Planes" },
     { id: "performers", label: "Performers" },
     { id: "scene", label: "Scene" },
-    { id: "effects", label: "Effects", disabled: true },
+    { id: "visibility", label: "Visibility" },
   ];
 
   let open = $state(false);
@@ -288,10 +289,10 @@
         </div>
       {/if}
 
-      <!-- Effects tab (stub) -->
-      {#if activeTab === "effects"}
-        <div class="tab-panel" id="tab-panel-effects" role="tabpanel">
-          <div class="placeholder">Coming soon</div>
+      <!-- Visibility tab -->
+      {#if activeTab === "visibility"}
+        <div class="tab-panel" id="tab-panel-visibility" role="tabpanel">
+          <Viewer3DVisibilityToggles />
         </div>
       {/if}
     </div>
