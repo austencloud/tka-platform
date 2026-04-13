@@ -134,9 +134,12 @@ export class FireRenderer3D {
           state.windOffsetZ = 0;
           state.initialized = true;
         } else {
-          state.smoothVelX += (tip.velocityX - state.smoothVelX) * VELOCITY_SMOOTHING;
-          state.smoothVelY += (tip.velocityY - state.smoothVelY) * VELOCITY_SMOOTHING;
-          state.smoothVelZ += (tip.velocityZ - state.smoothVelZ) * VELOCITY_SMOOTHING;
+          // Frame-rate-independent EMA: at dt=1/60 this equals VELOCITY_SMOOTHING
+          // exactly. At other frame rates it preserves the same ~183ms response time.
+          const emaFactor = 1 - Math.pow(1 - VELOCITY_SMOOTHING, safeDt * 60);
+          state.smoothVelX += (tip.velocityX - state.smoothVelX) * emaFactor;
+          state.smoothVelY += (tip.velocityY - state.smoothVelY) * emaFactor;
+          state.smoothVelZ += (tip.velocityZ - state.smoothVelZ) * emaFactor;
         }
 
         const svx = state.smoothVelX;
@@ -154,9 +157,11 @@ export class FireRenderer3D {
         // Positive sign: adding velocity to the noise sample position shifts
         // the visual fire texture OPPOSITE to the offset direction. So (+svx)
         // here makes the flame visually trail BEHIND the motion.
-        state.windOffsetX = state.windOffsetX * WIND_DECAY + svx * WIND_STRENGTH * safeDt;
-        state.windOffsetY = state.windOffsetY * WIND_DECAY + svy * WIND_STRENGTH * safeDt;
-        state.windOffsetZ = state.windOffsetZ * WIND_DECAY + svz * WIND_STRENGTH * safeDt;
+        // Frame-rate-independent decay: at dt=1/60 this equals WIND_DECAY exactly.
+        const windDecay = Math.pow(WIND_DECAY, safeDt * 60);
+        state.windOffsetX = state.windOffsetX * windDecay + svx * WIND_STRENGTH * safeDt;
+        state.windOffsetY = state.windOffsetY * windDecay + svy * WIND_STRENGTH * safeDt;
+        state.windOffsetZ = state.windOffsetZ * windDecay + svz * WIND_STRENGTH * safeDt;
 
         mesh.setWindOffset(state.windOffsetX, state.windOffsetY, state.windOffsetZ);
 
