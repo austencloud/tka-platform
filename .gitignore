@@ -2,6 +2,10 @@
 .worktrees/
 .claude/worktrees/
 
+# Capacitor native projects (commit when CI is ready)
+# ios/
+# android/
+
 # Debug artifacts
 debug-screenshots/
 
