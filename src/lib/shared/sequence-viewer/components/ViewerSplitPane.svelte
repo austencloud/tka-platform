@@ -98,7 +98,6 @@
     onUnfocusPane: () => void;
     onStepClick: (stepIndex: number) => void;
     onCanvasReady: (canvas: HTMLCanvasElement | null) => void;
-    onChoreoCardContextMenu?: (x: number, y: number) => void;
     rerenderTrigger?: number;
     /**
      * When true, the tap-to-focus handlers on both panes are suppressed
@@ -121,7 +120,6 @@
     onUnfocusPane,
     onStepClick,
     onCanvasReady,
-    onChoreoCardContextMenu,
     rerenderTrigger = 0,
     isExporting = false,
   }: Props = $props();
@@ -331,7 +329,6 @@
           bluePropType={propRendering.bluePropType}
           redPropType={propRendering.redPropType}
           catDogModeEnabled={propRendering.catDogModeEnabled}
-          onContextMenu={onChoreoCardContextMenu}
           {rerenderTrigger}
         />
 
