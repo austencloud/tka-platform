@@ -151,8 +151,6 @@
     fitWidth?: boolean;  // Always constrain by width (mobile export: let parent scroll for tall cards)
     // Render progress callback (loaded cells, total cells)
     onRenderProgress?: (loaded: number, total: number) => void;
-    // Context menu callback (right-click / long-press)
-    onContextMenu?: (x: number, y: number) => void;
     // Increment to force a full re-render (clears caches and re-renders all cells)
     rerenderTrigger?: number;
     // Suppress solo mode header ("Blue Prop Path" / "Red Hand Path")
@@ -185,23 +183,9 @@
     forceContain = false,
     fitWidth = false,
     onRenderProgress,
-    onContextMenu,
     rerenderTrigger = 0,
     hideSoloHeader = false,
   }: Props = $props();
-
-  // Long-press for touch context menu (matches animation canvas pattern)
-  let longPressTimer: ReturnType<typeof setTimeout> | null = null;
-  let longPressOrigin: { x: number; y: number } | null = null;
-  let longPressFired = false;
-
-  function cancelLongPress(): void {
-    if (longPressTimer !== null) {
-      clearTimeout(longPressTimer);
-      longPressTimer = null;
-    }
-    longPressOrigin = null;
-  }
 
   // Constants
   // Render at high resolution for crisp display on 4K monitors
@@ -1328,11 +1312,6 @@
     return items;
   });
 
-  function handleContextMenu(e: MouseEvent) {
-    e.preventDefault();
-    contextMenuState = { open: true, x: e.clientX, y: e.clientY };
-  }
-
   function closeContextMenu() {
     contextMenuState = { open: false };
   }
@@ -1699,7 +1678,6 @@
 
   onDestroy(() => {
     clearCellUrls();
-    cancelLongPress();
     if (crossfadeTimer) clearTimeout(crossfadeTimer);
     if (resizeObserver) {
       resizeObserver.disconnect();
@@ -1735,42 +1713,6 @@
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="choreo-card-root" class:dark-mode={activeDarkMode} class:scroll-mode={needsScroll} class:force-contain={forceContain} bind:this={containerElement}
-  oncontextmenu={(e: MouseEvent) => {
-    e.preventDefault();
-    // If the long-press timer already opened the menu, don't open it again
-    if (longPressFired) {
-      longPressFired = false;
-      return;
-    }
-    // Parent menu takes priority — don't also open inline menus
-    if (onContextMenu) {
-      onContextMenu(e.clientX, e.clientY);
-      return;
-    }
-    handleContextMenu(e);
-  }}
-  onpointerdown={(e: PointerEvent) => {
-    if (e.button !== 0 || e.pointerType === "mouse" || !onContextMenu) return;
-    longPressFired = false;
-    const x = e.clientX;
-    const y = e.clientY;
-    longPressOrigin = { x, y };
-    longPressTimer = setTimeout(() => {
-      longPressTimer = null;
-      longPressOrigin = null;
-      longPressFired = true;
-      onContextMenu(x, y);
-    }, 500);
-  }}
-  onpointermove={(e: PointerEvent) => {
-    if (longPressOrigin) {
-      const dx = e.clientX - longPressOrigin.x;
-      const dy = e.clientY - longPressOrigin.y;
-      if (dx * dx + dy * dy > 100) cancelLongPress();
-    }
-  }}
-  onpointerup={() => cancelLongPress()}
-  onpointercancel={() => cancelLongPress()}
 >
   {#if isLoading && cells.length === 0}
     <div class="loading-placeholder">
