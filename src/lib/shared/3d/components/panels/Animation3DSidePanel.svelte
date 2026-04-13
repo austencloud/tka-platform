@@ -2,15 +2,12 @@
   /**
    * Animation3DSidePanel - Collapsible sidebar for 3D animation
    *
-   * Contains: sequence loader, beat info, effects, grid settings.
+   * Contains: sequence loader, beat info, effects, environment, avatar settings.
    * Sections are collapsible to avoid content overflow.
    */
 
   import { t } from "$lib/shared/i18n/i18n.svelte";
-  import type { GridMode } from "../../domain/constants/grid-layout";
   import type { AvatarId } from "../../config/avatar-definitions";
-  import { Plane } from "../../domain/enums/Plane";
-  import GridSettingsPanel from "../controls/GridSettingsPanel.svelte";
   import EffectsSettingsPanel from "../controls/EffectsSettingsPanel.svelte";
   import EnvironmentSettingsPanel from "../controls/EnvironmentSettingsPanel.svelte";
   import AvatarSettingsPanel from "../controls/AvatarSettingsPanel.svelte";
@@ -25,10 +22,6 @@
     currentStepIndex: number;
     /** Total steps */
     totalSteps: number;
-    /** Grid mode */
-    gridMode: GridMode;
-    /** Visible planes */
-    visiblePlanes: Set<Plane>;
     /** Whether avatar is visible */
     showFigure: boolean;
     /** Selected avatar ID */
@@ -36,8 +29,6 @@
 
     // Callbacks
     onLoadSequence: () => void;
-    onGridModeChange: (mode: GridMode) => void;
-    onPlaneToggle: (plane: Plane) => void;
     onToggleFigure: () => void;
     onAvatarChange: (id: AvatarId) => void;
   }
@@ -47,13 +38,9 @@
     hasSequence,
     currentStepIndex,
     totalSteps,
-    gridMode,
-    visiblePlanes,
     showFigure,
     avatarId,
     onLoadSequence,
-    onGridModeChange,
-    onPlaneToggle,
     onToggleFigure,
     onAvatarChange,
   }: Props = $props();
@@ -203,37 +190,6 @@
       {/if}
     </section>
 
-    <!-- Grid Section -->
-    <section class="collapsible-section">
-      <button
-        class="section-header"
-        onclick={() => {
-          const next = new Set(expandedSections);
-          next.has("grid") ? next.delete("grid") : next.add("grid");
-          expandedSections = next;
-        }}
-        aria-expanded={expandedSections.has("grid")}
-        aria-label={expandedSections.has("grid") ? "Collapse grid settings" : "Expand grid settings"}
-      >
-        <i class="fas fa-border-all" aria-hidden="true"></i>
-        <span>{t("viewer3d_grid")}</span>
-        <i
-          class="fas fa-chevron-down chevron"
-          class:rotated={!expandedSections.has("grid")}
-          aria-hidden="true"
-        ></i>
-      </button>
-      {#if expandedSections.has("grid")}
-        <div class="section-content">
-          <GridSettingsPanel
-            {gridMode}
-            {visiblePlanes}
-            {onGridModeChange}
-            {onPlaneToggle}
-          />
-        </div>
-      {/if}
-    </section>
   </div>
 </aside>
 
