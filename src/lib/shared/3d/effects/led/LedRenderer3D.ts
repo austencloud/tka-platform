@@ -36,10 +36,13 @@ const MAX_INSTANCES = 1024;
 /** LED sprite size in world units — large enough to read as glowing orbs */
 const LED_SPRITE_SIZE = 0.35;
 
-/** Trail history per LED point by quality tier */
+/** Ring buffer capacity per quality tier. Sized to hold at least
+ *  TRAIL_FADE_DURATION seconds of trail at up to 120fps. The actual
+ *  visible trail length is controlled by time-based eviction in
+ *  getOrdered(), not by capacity. */
 const TRAIL_LENGTH: Record<QualityTier, number> = {
-  [QualityTier.HIGH]: 32,
-  [QualityTier.MEDIUM]: 16,
+  [QualityTier.HIGH]: 128,
+  [QualityTier.MEDIUM]: 64,
   [QualityTier.LOW]: 0,
 };
 
@@ -88,14 +91,17 @@ class LedTrailRing {
     if (this._count < this.capacity) this._count++;
   }
 
-  /** Get trail entries oldest-first */
-  getOrdered(): LedTrailEntry[] {
+  /** Get trail entries oldest-first, excluding entries older than maxAge seconds */
+  getOrdered(currentTime: number, maxAge: number): LedTrailEntry[] {
     if (this._count === 0) return [];
     const result: LedTrailEntry[] = [];
     const start = this._count < this.capacity ? 0 : this.head;
     for (let i = 0; i < this._count; i++) {
       const idx = (start + i) % this.capacity;
-      result.push(this.buffer[idx]!);
+      const entry = this.buffer[idx]!;
+      if (currentTime - entry.timestamp <= maxAge) {
+        result.push(entry);
+      }
     }
     return result;
   }
@@ -235,7 +241,7 @@ export class LedRenderer3D {
         trail.push(tip.position.clone(), currentTime, tip.r, tip.g, tip.b);
 
         // Render trail ghosts
-        const entries = trail.getOrdered();
+        const entries = trail.getOrdered(currentTime, LedRenderer3D.TRAIL_FADE_DURATION);
         // Skip the most recent entry (it's the current position)
         for (let e = 0; e < entries.length - 1 && instanceIndex < MAX_INSTANCES; e++) {
           const entry = entries[e]!;
