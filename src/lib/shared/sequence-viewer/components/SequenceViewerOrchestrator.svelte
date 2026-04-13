@@ -1151,12 +1151,41 @@
         return;
       }
 
-      // Quick export: capture a static camera keyframe from the current position.
-      // Pass 1 (live camera recording) will be added in a future task.
+      // ── Pass 1: Camera Performance Recording ──
+      // Play the animation at normal speed while recording camera transforms
+      // at 60Hz. The user can orbit/zoom/pan freely during this phase.
       const cameraKeyframes = new CameraKeyframeBuffer();
-      cameraKeyframes.captureStatic(threlteCamera);
+      const totalRecordingSec = singleLoopSec * opts.loopCount;
 
-      // Gather performers from the performer manager
+      // Jump to start and begin playback
+      const pc = playbackController!;
+      pc.jumpToStep(0);
+      if (!isPlayingLocal) pc.togglePlayback();
+
+      // Start camera recording
+      cameraKeyframes.startRecording(threlteCamera);
+      isRecording3D = true;
+      recordingElapsed = 0;
+      recordingTimer = setInterval(() => { recordingElapsed += 0.1; }, 100);
+
+      // Wait for the animation to play through
+      await new Promise<void>((resolve) => {
+        const checkInterval = setInterval(() => {
+          if (recordingElapsed >= totalRecordingSec) {
+            clearInterval(checkInterval);
+            resolve();
+          }
+        }, 50);
+      });
+
+      // Stop playback and recording
+      if (isPlayingLocal) pc.togglePlayback();
+      cameraKeyframes.stopRecording();
+      isRecording3D = false;
+      if (recordingTimer) { clearInterval(recordingTimer); recordingTimer = null; }
+
+      // ── Pass 2: Deterministic Offline Render ──
+      // Render every frame using recorded camera keyframes + deterministic time.
       const performers = viewer3DState.performerManager.performers.map((p) => ({
         goToStep: (index: number) => p.goToStep(index),
         setProgress: (value: number) => p.setProgress(value),
