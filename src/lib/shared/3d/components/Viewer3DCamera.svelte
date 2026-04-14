@@ -15,6 +15,7 @@
   import { getViewer3DContext } from "../context/viewer-3d-context";
   import type { CameraStateSnapshot } from "../domain/types/CameraStateSnapshot";
   import { STAGE } from "../scale/scale-constants";
+  import { userProportionsState } from "../state/user-proportions-state.svelte";
 
   const viewer3DState = getViewer3DContext();
 
@@ -107,6 +108,22 @@
 
   let controlsRef: any = $state(null);
 
+  /**
+   * Keep the orbit camera above the ground plane. Recomputes the
+   * maximum polar angle each frame based on the current orbit radius
+   * so you can get close to the ground without clipping through it.
+   */
+  function clampCameraAboveGround() {
+    if (!controlsRef) return;
+    const camera = controlsRef.object;
+    if (!camera) return;
+
+    const r = camera.position.distanceTo(controlsRef.target);
+    const floorY = userProportionsState.groundY + STAGE.ORBIT_GROUND_BUFFER;
+    const cosTheta = (floorY - controlsRef.target.y) / r;
+    controlsRef.maxPolarAngle = Math.acos(Math.max(-1, Math.min(1, cosTheta)));
+  }
+
   // Debounce persistence — only save after user stops orbiting for 500ms.
   // This avoids the infinite loop from writing $state on every onchange frame.
   let saveTimer: ReturnType<typeof setTimeout> | null = null;
@@ -198,7 +215,8 @@
     dampingFactor={0.1}
     minDistance={1}
     maxDistance={25}
-    maxPolarAngle={STAGE.ORBIT_MAX_POLAR_ANGLE}
+    maxPolarAngle={Math.PI / 2}
+    onchange={clampCameraAboveGround}
     onstart={() => viewer3DState.setCameraDragging(true)}
     onend={() => {
       viewer3DState.setCameraDragging(false);
