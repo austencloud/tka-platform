@@ -1,0 +1,446 @@
+<script lang="ts">
+  /**
+   * ScenePreview
+   *
+   * Standalone Threlte canvas that renders the currently-selected scene
+   * from SceneLabState. Three camera modes:
+   *
+   * - Orbit: standard OrbitControls (drag to rotate, scroll to zoom). Good
+   *   for external-view tuning.
+   * - Walk: grounded avatar that walks around with WASD. Gravity applies,
+   *   feet planted on snow. V cycles 1st/3rd person — in 3rd person you see
+   *   the character walking. Uses the kinematic fallback path (no Rapier).
+   * - Fly: noclip free-fly — frictionless, no gravity, ground is irrelevant.
+   *   First-person only, no visible avatar. For aerial scene exploration.
+   */
+
+  import { Canvas, T } from "@threlte/core";
+  import { OrbitControls } from "@threlte/extras";
+  import { WebGLRenderer, PCFSoftShadowMap } from "three";
+  import type { OrbitControls as OrbitControlsImpl } from "three/examples/jsm/controls/OrbitControls.js";
+  import ForestScene from "$lib/shared/3d/environments/scenes/ForestScene.svelte";
+  import WinterScene from "$lib/shared/3d/environments/scenes/WinterScene.svelte";
+  import UnifiedCameraController from "$lib/shared/3d/camera/UnifiedCameraController.svelte";
+  import Avatar3D from "$lib/shared/3d/components/Avatar3D.svelte";
+  import { CameraMode } from "$lib/shared/3d/camera/types";
+  import { cameraPreferences } from "$lib/shared/3d/camera/camera-preferences.svelte";
+  import { userProportionsState } from "$lib/shared/3d/state/user-proportions-state.svelte";
+  import { getSceneLabContext } from "../context/scene-lab-context";
+  import { createSceneLabPlayerState } from "../state/scene-lab-player-state.svelte";
+
+  const { state: labState } = getSceneLabContext();
+
+  // Player state — shared by walk + fly modes so position persists across toggles.
+  const player = createSceneLabPlayerState();
+
+  type CamMode = "orbit" | "walk" | "fly";
+  let camMode = $state<CamMode>("orbit");
+  let pointerLocked = $state(false);
+
+  // The UnifiedCameraController tracks FIRST_PERSON vs THIRD_PERSON internally
+  // (toggled by V). We mirror it here so the avatar body can hide itself in
+  // first-person (no self-nose) and appear in third-person.
+  // Default Walk to third-person so the player sees their avatar on arrival.
+  cameraPreferences.setModeForDestination(
+    "scene-lab-walk",
+    CameraMode.THIRD_PERSON
+  );
+  let activeCameraMode = $state<CameraMode>(CameraMode.THIRD_PERSON);
+
+  // The UnifiedCameraController's kinematic fallback hardcodes ground at y=0
+  // and feet at y=-0.85 (capsule center convention). TKA scenes render their
+  // ground plane at userProportionsState.groundY (~-1.5m) using a shoulder-
+  // centric convention where y=0 is shoulder level. We bridge the two by
+  // shifting the scene content up so its ground lands where the controller
+  // expects feet — then avatar and scene agree on where the floor is.
+  const CAPSULE_HALF_EXTENT = 0.85;
+  const sceneShiftY = $derived(
+    -userProportionsState.groundY - CAPSULE_HALF_EXTENT
+  );
+
+  // Avatar renders only in Walk mode's third-person. Fly mode is always
+  // first-person with no body. In first-person we hide the body so the
+  // player doesn't see their own shoulders through the camera.
+  const avatarBodyVisible = $derived(
+    camMode === "walk" && activeCameraMode === CameraMode.THIRD_PERSON
+  );
+
+  // Dispatch a synthetic V keydown so the mode pill matches the keyboard
+  // shortcut's behavior exactly.
+  function togglePersonMode() {
+    const evt = new KeyboardEvent("keydown", { code: "KeyV", bubbles: true });
+    window.dispatchEvent(evt);
+  }
+
+  // Keep the camera from slipping underground while orbiting.
+  const MIN_CAMERA_Y = 0.1;
+  let controlsRef = $state<OrbitControlsImpl | undefined>(undefined);
+  let clamping = false;
+
+  function clampBelowGround() {
+    if (!controlsRef || clamping) return;
+    const camera = controlsRef.object;
+    const target = controlsRef.target;
+    if (!camera || !target) return;
+
+    let changed = false;
+
+    if (camera.position.y < MIN_CAMERA_Y) {
+      const delta = MIN_CAMERA_Y - camera.position.y;
+      camera.position.y += delta;
+      target.y += delta;
+      changed = true;
+    }
+
+    if (target.y < 0) {
+      target.y = 0;
+      changed = true;
+    }
+
+    if (changed) {
+      clamping = true;
+      controlsRef.update?.();
+      clamping = false;
+    }
+  }
+
+  function createRenderer(canvas: HTMLCanvasElement) {
+    const renderer = new WebGLRenderer({
+      canvas,
+      antialias: true,
+      alpha: false,
+      powerPreference: "high-performance",
+    });
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = PCFSoftShadowMap;
+    return renderer;
+  }
+
+  // Listen for pointer-lock so the HUD can show/hide its instruction hint.
+  $effect(() => {
+    if (camMode === "orbit") {
+      pointerLocked = false;
+      return;
+    }
+    const handler = () => {
+      pointerLocked = document.pointerLockElement !== null;
+    };
+    document.addEventListener("pointerlockchange", handler);
+    return () => document.removeEventListener("pointerlockchange", handler);
+  });
+</script>
+
+<div class="scene-preview">
+  <Canvas {createRenderer}>
+    <T.PerspectiveCamera
+      makeDefault
+      position={[0, 3, 12]}
+      fov={55}
+      near={0.1}
+      far={200}
+    >
+      {#if camMode === "orbit"}
+        <OrbitControls
+          bind:ref={controlsRef}
+          enableDamping
+          dampingFactor={0.05}
+          minDistance={2}
+          maxDistance={40}
+          maxPolarAngle={Math.PI / 2}
+          rotateSpeed={0.6}
+          panSpeed={2.5}
+          zoomSpeed={2.0}
+          target={[0, 1.5, 0]}
+          onchange={clampBelowGround}
+        />
+      {/if}
+    </T.PerspectiveCamera>
+
+    {#if camMode === "walk"}
+      <!-- Walk: kinematic fallback (physicsProvider=null) gives gravity +
+           ground clamp + WASD horizontal walk. Both 1st and 3rd person
+           allowed; Space jumps when grounded. -->
+      <UnifiedCameraController
+        destinationId="scene-lab-walk"
+        avatarState={player.avatarState}
+        enabled={true}
+        allowedModes={[CameraMode.FIRST_PERSON, CameraMode.THIRD_PERSON]}
+        onModeChange={(m) => (activeCameraMode = m)}
+      />
+    {:else if camMode === "fly"}
+      <!-- Fly: physicsProvider always reports noclip, so controller takes its
+           full-3D-forward path — no gravity, pitch lifts you. First-person
+           only, no avatar body. -->
+      <UnifiedCameraController
+        destinationId="scene-lab-fly"
+        avatarState={player.avatarState}
+        physicsProvider={player.physicsProvider}
+        enabled={true}
+        allowedModes={[CameraMode.FIRST_PERSON]}
+        disableModeToggle={true}
+        moveSpeed={8}
+        sprintMultiplier={2.5}
+        gravity={0}
+        jumpForce={0}
+      />
+    {/if}
+
+    <!-- Scene + avatar live in a shifted group so the TKA shoulder-centric
+         ground lines up with the controller's "ground at y=0" assumption.
+         Without this the avatar floats 1.5m above the visible snow. -->
+    <T.Group position.y={camMode === "walk" ? sceneShiftY : 0}>
+      {#if labState.sceneId === "winter"}
+        <WinterScene config={labState.winterConfig} />
+      {:else if labState.sceneId === "forest-firefly"}
+        <ForestScene variant="firefly" config={labState.forestFireflyConfig} />
+      {:else if labState.sceneId === "forest-autumn"}
+        <ForestScene variant="autumn" config={labState.forestAutumnConfig} />
+      {/if}
+
+      {#if camMode === "walk"}
+        <Avatar3D
+          id="scene-lab-player"
+          bluePropState={null}
+          redPropState={null}
+          visible={avatarBodyVisible}
+          position={player.avatarState.position}
+          facingAngle={player.avatarState.facingAngle}
+          isMoving={player.avatarState.isMoving}
+          moveDirection={player.avatarState.moveDirection ?? { x: 0, z: 1 }}
+          enableLocomotion={true}
+        />
+      {/if}
+    </T.Group>
+  </Canvas>
+
+  <!-- Mode toggle, top-left of the preview -->
+  <div class="cam-toggle">
+    <button
+      class:active={camMode === "orbit"}
+      onclick={() => (camMode = "orbit")}
+      title="Orbit — drag to rotate, scroll to zoom"
+    >
+      <i class="fas fa-rotate"></i> Orbit
+    </button>
+    <button
+      class:active={camMode === "walk"}
+      onclick={() => {
+        camMode = "walk";
+        player.resetSpawn();
+      }}
+      title="Walk — grounded avatar, WASD to walk, V for 1st/3rd person"
+    >
+      <i class="fas fa-person-walking"></i> Walk
+    </button>
+    <button
+      class:active={camMode === "fly"}
+      onclick={() => {
+        camMode = "fly";
+        player.resetSpawn();
+      }}
+      title="Fly — noclip free-flight, WASD + look direction"
+    >
+      <i class="fas fa-feather"></i> Fly
+    </button>
+  </div>
+
+  <!-- First/third-person pill, shown only in walk mode -->
+  {#if camMode === "walk"}
+    <div class="person-toggle">
+      <button
+        class:active={activeCameraMode === CameraMode.FIRST_PERSON}
+        onclick={() => {
+          if (activeCameraMode !== CameraMode.FIRST_PERSON) togglePersonMode();
+        }}
+        title="First person (V)"
+      >
+        <i class="fas fa-eye"></i> 1st
+      </button>
+      <button
+        class:active={activeCameraMode === CameraMode.THIRD_PERSON}
+        onclick={() => {
+          if (activeCameraMode !== CameraMode.THIRD_PERSON) togglePersonMode();
+        }}
+        title="Third person — see your avatar (V)"
+      >
+        <i class="fas fa-user"></i> 3rd
+      </button>
+    </div>
+  {/if}
+
+  <!-- Hint overlay when in a game mode without pointer lock -->
+  {#if (camMode === "walk" || camMode === "fly") && !pointerLocked}
+    <div class="fly-hint">
+      <div class="fly-hint-card">
+        <strong>Click to look around</strong>
+        {#if camMode === "walk"}
+          <div class="keys">
+            <kbd>WASD</kbd> walk &middot;
+            <kbd>Space</kbd> jump &middot;
+            <kbd>Shift</kbd> sprint &middot;
+            <kbd>V</kbd> 1st/3rd person &middot;
+            <kbd>Esc</kbd> release
+          </div>
+        {:else}
+          <div class="keys">
+            <kbd>WASD</kbd> move &middot;
+            <kbd>Shift</kbd> sprint &middot;
+            <kbd>Esc</kbd> release
+          </div>
+          <div class="fly-hint-note">
+            Look up or down while holding <kbd>W</kbd> to fly vertically.
+          </div>
+        {/if}
+      </div>
+    </div>
+  {/if}
+</div>
+
+<style>
+  .scene-preview {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: #0a0a1a;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .cam-toggle {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    display: flex;
+    gap: 2px;
+    padding: 2px;
+    background: rgba(10, 14, 26, 0.82);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    backdrop-filter: blur(6px);
+    z-index: 10;
+  }
+
+  .cam-toggle button {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    color: rgba(255, 255, 255, 0.65);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 150ms ease;
+  }
+
+  .cam-toggle button:hover {
+    color: rgba(255, 255, 255, 0.9);
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .cam-toggle button.active {
+    background: color-mix(in srgb, #38bdf8 20%, transparent);
+    color: #7dd3fc;
+  }
+
+  .cam-toggle button:focus-visible {
+    outline: 2px solid #38bdf8;
+    outline-offset: 2px;
+  }
+
+  .person-toggle {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    display: flex;
+    gap: 2px;
+    padding: 2px;
+    background: rgba(10, 14, 26, 0.82);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    backdrop-filter: blur(6px);
+    z-index: 10;
+  }
+
+  .person-toggle button {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    color: rgba(255, 255, 255, 0.65);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 150ms ease;
+  }
+
+  .person-toggle button:hover {
+    color: rgba(255, 255, 255, 0.9);
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .person-toggle button.active {
+    background: color-mix(in srgb, #38bdf8 20%, transparent);
+    color: #7dd3fc;
+  }
+
+  .fly-hint {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 9;
+  }
+
+  .fly-hint-card {
+    padding: 16px 22px;
+    background: rgba(10, 14, 26, 0.72);
+    border: 1px solid rgba(125, 211, 252, 0.25);
+    border-radius: 12px;
+    backdrop-filter: blur(8px);
+    color: rgba(255, 255, 255, 0.92);
+    font-size: 14px;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  }
+
+  .fly-hint-card strong {
+    display: block;
+    margin-bottom: 6px;
+    color: #7dd3fc;
+    font-size: 15px;
+    font-weight: 700;
+  }
+
+  .fly-hint-card .keys {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.65);
+  }
+
+  .fly-hint-note {
+    margin-top: 6px;
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.5);
+    font-style: italic;
+  }
+
+  kbd {
+    display: inline-block;
+    padding: 1px 6px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 4px;
+    font-family: ui-monospace, "SF Mono", monospace;
+    font-size: 10px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.85);
+    margin: 0 2px;
+  }
+</style>
