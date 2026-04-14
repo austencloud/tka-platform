@@ -1,16 +1,20 @@
 /**
  * Offline 3D Exporter
  *
- * Renders every frame deterministically by setting performer state and camera
- * position, then calling Threlte's advance() to run the full pipeline (puppet
- * loop, IK solve, effects, render) for one frame. Output quality is independent
- * of real-time scene performance — a scene that renders at 8.5fps live will
- * still produce a smooth 30fps export, it just takes longer.
+ * Renders every frame deterministically by setting performer state and
+ * camera position, then waiting for Threlte's normal frame pipeline
+ * (useTask → IK → effects → render) to complete via requestAnimationFrame.
  *
- * Lifecycle:
- *   1. Switch Threlte to 'manual' render mode
- *   2. For each frame: set state, advance(), capture, encode
- *   3. Restore 'always' render mode
+ * Key insight: Threlte's advance() does NOT run useTask callbacks
+ * synchronously — it schedules them. Calling advance() 200 times in a
+ * loop only triggers ~8 task executions. Instead, we stay in "always"
+ * render mode and use rAF to pace one export frame per browser frame.
+ * This guarantees every frame gets the full pipeline: puppet loop
+ * distributes state, IK solves arm poses, effects tick, scene renders.
+ *
+ * Output quality is independent of real-time scene performance — a scene
+ * that renders at 8.5fps live will still produce smooth 30fps export,
+ * it just takes proportionally longer to render.
  */
 
 import type { IBackgroundVideoEncoder } from "$lib/features/compose/services/contracts/IBackgroundVideoEncoder";
@@ -96,15 +100,15 @@ export class Offline3DExporter implements IOffline3DExporter {
 
     const keyframes = deps.cameraKeyframes.keyframes;
 
-    // Tell the puppet loop to stop overwriting performer state — we drive
-    // performers deterministically. IK and effects still run during advance().
+    // Signal export mode. The puppet loop reads exportCurrentStep
+    // instead of the live component prop.
     deps.setExporting(true);
 
-    // Switch Threlte to manual render mode. In this mode, only advance()
-    // triggers a frame — RAF-driven rendering stops completely. The full
-    // pipeline (useTask callbacks for IK, effects + render) runs exactly
-    // once per advance() call.
-    deps.setRenderMode("manual");
+    // Stay in "always" render mode — Threlte's normal rAF loop handles
+    // task execution (puppet loop, IK, effects) and rendering. We pace
+    // the export with requestAnimationFrame, setting state before each
+    // browser frame and capturing after Threlte renders.
+    // DO NOT switch to manual mode — advance() doesn't run tasks reliably.
 
     try {
       for (let frameIndex = 0; frameIndex < totalFrames; frameIndex++) {
@@ -117,19 +121,10 @@ export class Offline3DExporter implements IOffline3DExporter {
         const animationTime = frameIndex / fps;
         const currentStep = animationTime * deps.beatsPerSecond;
 
-        // 1. Set animation state for every performer
-        const beatIndex = Math.floor(currentStep);
-        const subBeatProgress = currentStep - beatIndex;
-
-        for (const performer of deps.performers) {
-          if (beatIndex >= performer.totalSteps) {
-            performer.goToStep(performer.totalSteps - 1);
-            performer.setProgress(1);
-          } else {
-            performer.goToStep(beatIndex);
-            performer.setProgress(subBeatProgress);
-          }
-        }
+        // 1. Set the animation step for the puppet loop to distribute.
+        //    The puppet loop runs in Threlte's useTask during the next
+        //    rAF tick and calls goToStep/setProgress on performers.
+        deps.setExportCurrentStep(currentStep);
 
         // 2. Interpolate camera from recorded keyframes
         const cam = this.cameraInterpolator.interpolate(keyframes, animationTime);
@@ -145,13 +140,15 @@ export class Offline3DExporter implements IOffline3DExporter {
 
         diag.markDrawImage();
 
-        // 3. Advance one full Threlte frame. This runs every useTask
-        //    callback (Viewer3DScene puppet loop reads our performer
-        //    state, Avatar3D runs IK, EffectOrchestrator ticks effects)
-        //    then renders the scene. The result is a complete frame with
-        //    correct poses, effects, and lighting — identical to what
-        //    the live viewer produces.
-        deps.advance();
+        // 3. Wait for Threlte's next frame to complete. This ensures:
+        //    - Puppet loop distributes exportCurrentStep to performers
+        //    - Avatar3D's IK solves arm poses toward prop targets
+        //    - EffectOrchestrator ticks fire/LED/trail effects
+        //    - Three.js renders the complete scene to the canvas
+        // We wait for TWO rAF ticks: the first lets Svelte flush the
+        // $state changes into component props, the second lets Threlte
+        // run its full pipeline with the updated props.
+        await this.waitForRender();
 
         // 4. Capture the rendered frame
         const timestampMicros = Math.round(animationTime * 1_000_000);
@@ -169,10 +166,6 @@ export class Offline3DExporter implements IOffline3DExporter {
           currentFrame: frameIndex,
           totalFrames,
         });
-
-        // 6. Yield to event loop so the browser can paint progress
-        //    updates and handle cancel button clicks.
-        await new Promise<void>((resolve) => setTimeout(resolve, 0));
       }
 
       diag.finish();
@@ -192,10 +185,26 @@ export class Offline3DExporter implements IOffline3DExporter {
       }
       throw err;
     } finally {
-      // Always restore live rendering
+      // Always restore live state
+      deps.setExportCurrentStep(null);
       deps.setExporting(false);
-      deps.setRenderMode("always");
     }
+  }
+
+  /**
+   * Wait for two requestAnimationFrame callbacks to ensure:
+   * 1. First rAF: Svelte flushes $state → $derived → component props
+   * 2. Second rAF: Threlte runs useTask (puppet loop, IK, effects) + renders
+   * The canvas contains the fully rendered frame after this resolves.
+   */
+  private waitForRender(): Promise<void> {
+    return new Promise((resolve) => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          resolve();
+        });
+      });
+    });
   }
 
   cancel(): void {

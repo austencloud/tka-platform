@@ -143,13 +143,13 @@ export class SequenceModalExporter implements ISequenceModalExporter {
         {
           webglCanvas: deps.webglCanvas,
           camera: deps.camera,
-          performers: deps.performers,
           beatsPerSecond: deps.beatsPerSecond,
           totalDurationSeconds: deps.totalDurationSeconds,
           cameraKeyframes: deps.cameraKeyframes,
           advance: deps.advance,
           setRenderMode: deps.setRenderMode,
           setExporting: deps.setExporting,
+          setExportCurrentStep: deps.setExportCurrentStep,
         },
         (progress) => {
           this._progress = progress;
