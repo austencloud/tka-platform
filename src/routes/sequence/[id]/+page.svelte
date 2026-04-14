@@ -45,7 +45,7 @@
   import ExportImagePanel from "$lib/shared/sequence-viewer/components/ExportImagePanel.svelte";
   import VideoPreviewPanel from "$lib/shared/sequence-viewer/components/VideoPreviewPanel.svelte";
   import PracticeProgressIndicator from "$lib/shared/sequence-viewer/components/PracticeProgressIndicator.svelte";
-  import RouteViewerHeader from "./RouteViewerHeader.svelte";
+  import RouteViewerHeader from "$lib/shared/sequence-viewer/components/RouteViewerHeader.svelte";
   import DeleteConfirmDialog from "$lib/shared/sequence-viewer/components/DeleteConfirmDialog.svelte";
   import Viewer3DFullscreen from "$lib/shared/3d/components/Viewer3DFullscreen.svelte";
 

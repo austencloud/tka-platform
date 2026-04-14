@@ -18,6 +18,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { goto, replaceState } from "$app/navigation";
+  import { browser } from "$app/environment";
   import { onMount, onDestroy } from "svelte";
   import { fade } from "svelte/transition";
   import { container } from "$lib/shared/di";
@@ -49,7 +50,7 @@
   import ExportImagePanel from "$lib/shared/sequence-viewer/components/ExportImagePanel.svelte";
   import VideoPreviewPanel from "$lib/shared/sequence-viewer/components/VideoPreviewPanel.svelte";
   import PracticeProgressIndicator from "$lib/shared/sequence-viewer/components/PracticeProgressIndicator.svelte";
-  import RouteViewerHeader from "../../sequence/[id]/RouteViewerHeader.svelte";
+  import RouteViewerHeader from "$lib/shared/sequence-viewer/components/RouteViewerHeader.svelte";
   import DeleteConfirmDialog from "$lib/shared/sequence-viewer/components/DeleteConfirmDialog.svelte";
   import LoadingGate from "$lib/shared/components/loading/LoadingGate.svelte";
   import ChoreoCardContextMenuHost from "$lib/shared/sequence-viewer/components/choreo-card-context-menu/ChoreoCardContextMenuHost.svelte";
@@ -410,9 +411,17 @@
   // EXPORT HELPERS
   // ============================================================================
 
-  // No URL param updates needed for QR viewer — it's a read-only landing
-  function updateUrlParam(_key: string, _value: string) {
-    // Intentionally empty. QR scan viewers don't need URL state persistence.
+  // Persist transient viewer state (bpm, time, render mode, etc.) to the URL so
+  // reloads and shares preserve it. This is the same shape used by /sequence/[id].
+  function updateUrlParam(key: string, value: string) {
+    if (!browser) return;
+    const parsed = new URL(window.location.href);
+    if (value === "" || value == null) {
+      parsed.searchParams.delete(key);
+    } else {
+      parsed.searchParams.set(key, value);
+    }
+    window.history.replaceState({}, "", parsed.toString());
   }
 </script>
 
