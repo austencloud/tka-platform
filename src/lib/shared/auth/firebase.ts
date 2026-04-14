@@ -18,6 +18,7 @@
 import { initializeApp, getApps, type FirebaseApp } from "firebase/app";
 import {
   getAuth,
+  initializeAuth,
   type Auth,
   browserLocalPersistence,
   indexedDBLocalPersistence,
@@ -188,9 +189,25 @@ export function getAuthSync(): Auth {
  * Legacy auth export for backward compatibility
  * New code should use getAuthInstance()
  *
+ * Initialized via initializeAuth so persistence is configured atomically
+ * during construction. This avoids the IndexedDB race that caused setPersistence
+ * to hang for 5+ seconds on every refresh (firebase-js-sdk #8626).
+ *
  * @deprecated Use getAuthInstance() for HMR safety
  */
-export const auth: Auth = getAuth(app);
+function initAuthWithPersistence(): Auth {
+  // initializeAuth can only run once per Firebase app — fall back to getAuth
+  // if it's already been initialized (e.g., via HMR or another call site).
+  try {
+    return initializeAuth(app, {
+      persistence: [indexedDBLocalPersistence, browserLocalPersistence],
+    });
+  } catch {
+    return getAuth(app);
+  }
+}
+
+export const auth: Auth = initAuthWithPersistence();
 
 // Register with HMR manager
 hmrManager.setAuth(auth);
@@ -478,41 +495,21 @@ if (typeof window !== "undefined") {
 
 // ============================================================================
 // AUTH PERSISTENCE
+//
+// Persistence is now configured atomically by initializeAuth() above.
+// This function exists for backward compatibility — it resolves immediately
+// because there's nothing to wait for. Previously this Promise.raced
+// setPersistence with a 5-second timeout, which fired on every refresh
+// because setPersistence races with IndexedDB setup (firebase-js-sdk #8626).
 // ============================================================================
 
-let authPersistenceReady: Promise<void> | null = null;
-
-if (typeof window !== "undefined") {
-  authPersistenceReady = setPersistence(auth, indexedDBLocalPersistence)
-    .catch(() => {
-      debug.warn("IndexedDB persistence failed, using localStorage");
-      return setPersistence(auth, browserLocalPersistence);
-    })
-    .then(() => {
-      debug.success("Auth persistence configured");
-    })
-    .catch((error) => {
-      debug.error("Failed to set persistence:", error);
-    });
-}
-
-/**
- * Wait for auth persistence to be configured
- */
 export async function ensureAuthPersistence(): Promise<void> {
-  if (authPersistenceReady) {
-    // Timeout after 5s — setPersistence can hang if IndexedDB is in a bad state
-    await Promise.race([
-      authPersistenceReady,
-      new Promise<void>((resolve) =>
-        setTimeout(() => {
-          console.warn("⚠️ [firebase] Auth persistence timed out after 5s — continuing without it");
-          resolve();
-        }, 5000)
-      ),
-    ]);
-  }
+  // No-op: persistence is configured during initializeAuth(), no waiting needed.
 }
+
+// Keep setPersistence imported for any code that needs to switch persistence
+// (e.g., session-only mode for Remember Me unchecked). Not used at boot.
+void setPersistence;
 
 // ============================================================================
 // EXPORTS
