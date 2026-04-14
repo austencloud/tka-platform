@@ -56,9 +56,17 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO
 
-      - name: Upload archive artifact
+      - name: Package unsigned IPA for sideloading
+        run: |
+          mkdir -p build/Payload
+          cp -R build/App.xcarchive/Products/Applications/App.app build/Payload/
+          cd build
+          zip -qr TKAComposer-unsigned.ipa Payload
+          ls -la TKAComposer-unsigned.ipa
+
+      - name: Upload IPA artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ios-archive
-          path: build/App.xcarchive
+          name: ios-ipa-unsigned
+          path: build/TKAComposer-unsigned.ipa
           retention-days: 7
