@@ -25,7 +25,6 @@
   interface Props {
     bpm: number;
     isPlaying: boolean;
-    isLoggedIn: boolean;
     controlsVisible?: boolean;
     landscape?: boolean;
     practiceActive?: boolean;
@@ -38,7 +37,6 @@
     onRestartToStart?: () => void;
     onSave: () => void;
     onEdit: () => void;
-    onGetApp?: () => void;
     onExportVideo?: () => void;
     onExportImage?: () => void;
     onPracticeStart?: () => void;
@@ -61,7 +59,6 @@
   let {
     bpm,
     isPlaying,
-    isLoggedIn,
     controlsVisible = true,
     landscape = false,
     practiceActive = false,
@@ -74,7 +71,6 @@
     onRestartToStart,
     onSave,
     onEdit,
-    onGetApp,
     onExportVideo,
     onExportImage,
     onPracticeStart,
@@ -194,38 +190,36 @@
     <div class="landscape-divider" aria-hidden="true"></div>
 
     <!-- Action buttons -->
-    {#if isLoggedIn}
-      {#if onFavorite}
-        <button
-          type="button"
-          class="landscape-btn"
-          class:favorited={isFavorite}
-          onclick={onFavorite}
-          aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
-        >
-          <i class="fas fa-heart" aria-hidden="true"></i>
-        </button>
-      {/if}
-      {#if isOwned && !isSaved}
-        <button
-          type="button"
-          class="landscape-btn save"
-          onclick={onSave}
-          aria-label="Save"
-        >
-          <i class="fas fa-floppy-disk" aria-hidden="true"></i>
-        </button>
-      {/if}
+    {#if onFavorite}
       <button
         type="button"
-        class="landscape-btn edit"
-        onclick={onEdit}
-        aria-label="Remix"
+        class="landscape-btn"
+        class:favorited={isFavorite}
+        onclick={onFavorite}
+        aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
       >
-        <i class="fas fa-pen-to-square" aria-hidden="true"></i>
+        <i class="fas fa-heart" aria-hidden="true"></i>
       </button>
     {/if}
-    {#if isLoggedIn && onVideoUpload}
+    {#if !isSaved}
+      <button
+        type="button"
+        class="landscape-btn save"
+        onclick={onSave}
+        aria-label="Save"
+      >
+        <i class="fas fa-floppy-disk" aria-hidden="true"></i>
+      </button>
+    {/if}
+    <button
+      type="button"
+      class="landscape-btn edit"
+      onclick={onEdit}
+      aria-label="Remix"
+    >
+      <i class="fas fa-pen-to-square" aria-hidden="true"></i>
+    </button>
+    {#if onVideoUpload}
       <button
         type="button"
         class="landscape-btn video"
@@ -311,53 +305,41 @@
         </div>
 
         <div class="mid-actions-group">
-          {#if isLoggedIn}
-            {#if onFavorite}
-              <button
-                type="button"
-                class="mid-action-btn"
-                class:favorited={isFavorite}
-                onclick={onFavorite}
-                aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
-              >
-                <i class="fas fa-heart" aria-hidden="true"></i>
-              </button>
-            {/if}
-
-            {#if isOwned && !isSaved}
-              <button
-                type="button"
-                class="mid-action-btn save"
-                onclick={onSave}
-                aria-label="Save sequence"
-              >
-                <i class="fas fa-floppy-disk" aria-hidden="true"></i>
-              </button>
-            {/if}
-
-            {#if isOwned && isSaved}
-              <button
-                type="button"
-                class="mid-action-btn edit"
-                onclick={onEdit}
-                aria-label="Remix"
-              >
-                <i class="fas fa-pen-to-square" aria-hidden="true"></i>
-              </button>
-            {/if}
-          {:else}
+          {#if onFavorite}
             <button
               type="button"
-              class="mid-get-app-btn"
-              onclick={onGetApp}
-              aria-label="Get TKA Composer"
+              class="mid-action-btn"
+              class:favorited={isFavorite}
+              onclick={onFavorite}
+              aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
             >
-              <i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i>
-              <span>Get App</span>
+              <i class="fas fa-heart" aria-hidden="true"></i>
             </button>
           {/if}
 
-          {#if isLoggedIn && onVideoUpload}
+          {#if !isSaved}
+            <button
+              type="button"
+              class="mid-action-btn save"
+              onclick={onSave}
+              aria-label="Save sequence"
+            >
+              <i class="fas fa-floppy-disk" aria-hidden="true"></i>
+            </button>
+          {/if}
+
+          {#if isOwned && isSaved}
+            <button
+              type="button"
+              class="mid-action-btn edit"
+              onclick={onEdit}
+              aria-label="Remix"
+            >
+              <i class="fas fa-pen-to-square" aria-hidden="true"></i>
+            </button>
+          {/if}
+
+          {#if onVideoUpload}
             <button
               type="button"
               class="mid-action-btn video"
@@ -388,12 +370,12 @@
           <!-- Overflow menu for secondary actions — self-hides when no items -->
           <ViewerOverflowMenu
             {isPublished}
-            onCopyLink={isLoggedIn ? onCopyLink : undefined}
+            {onCopyLink}
             {linkCopied}
-            onPropsOpen={isLoggedIn ? onPropsOpen : undefined}
-            onPublish={isLoggedIn && isOwned && isSaved ? onPublish : undefined}
-            onUnpublish={isLoggedIn && isOwned && isSaved ? onUnpublish : undefined}
-            onDeleteRequest={isLoggedIn && isOwned && isSaved ? onDeleteRequest : undefined}
+            {onPropsOpen}
+            onPublish={isOwned && isSaved ? onPublish : undefined}
+            onUnpublish={isOwned && isSaved ? onUnpublish : undefined}
+            onDeleteRequest={isOwned && isSaved ? onDeleteRequest : undefined}
           />
         </div>
       </div>
@@ -448,69 +430,57 @@
       <!-- Right: action buttons — takes whatever space it needs -->
       <div class="footer-side footer-right">
         <div class="actions-section">
-          {#if isLoggedIn}
-            <!-- Favorite heart -->
-            {#if onFavorite}
-              <button
-                type="button"
-                class="action-btn"
-                class:favorited={isFavorite}
-                onclick={onFavorite}
-                aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
-              >
-                <i class="fas fa-heart" aria-hidden="true"></i>
-                <span>{isFavorite ? "Favorited" : "Favorite"}</span>
-              </button>
-            {/if}
-
-            {#if onCopyLink}
-              <button
-                type="button"
-                class="action-btn"
-                class:copied={linkCopied}
-                onclick={onCopyLink}
-                aria-label={linkCopied ? "Link copied" : "Copy shareable link"}
-              >
-                <i class="fas {linkCopied ? 'fa-check' : 'fa-link'}" aria-hidden="true"></i>
-                <span>{linkCopied ? "Copied" : "Copy Link"}</span>
-              </button>
-            {/if}
-
-            <!-- Save (only when unsaved) -->
-            {#if isOwned && !isSaved}
-              <button
-                type="button"
-                class="action-btn save"
-                onclick={onSave}
-                aria-label="Save sequence"
-              >
-                <i class="fas fa-floppy-disk" aria-hidden="true"></i>
-                <span>Save</span>
-              </button>
-            {/if}
-
-            <!-- Remix -->
+          <!-- Favorite heart -->
+          {#if onFavorite}
             <button
               type="button"
-              class="action-btn edit"
-              onclick={onEdit}
-              aria-label="Remix"
+              class="action-btn"
+              class:favorited={isFavorite}
+              onclick={onFavorite}
+              aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
             >
-              <i class="fas fa-pen-to-square" aria-hidden="true"></i>
-              <span>Remix</span>
-            </button>
-          {:else}
-            <button
-              type="button"
-              class="action-btn get-app"
-              onclick={onGetApp}
-              aria-label="Get TKA Composer"
-            >
-              <i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i>
-              <span>Get App</span>
+              <i class="fas fa-heart" aria-hidden="true"></i>
+              <span>{isFavorite ? "Favorited" : "Favorite"}</span>
             </button>
           {/if}
-          {#if isLoggedIn && onVideoUpload}
+
+          {#if onCopyLink}
+            <button
+              type="button"
+              class="action-btn"
+              class:copied={linkCopied}
+              onclick={onCopyLink}
+              aria-label={linkCopied ? "Link copied" : "Copy shareable link"}
+            >
+              <i class="fas {linkCopied ? 'fa-check' : 'fa-link'}" aria-hidden="true"></i>
+              <span>{linkCopied ? "Copied" : "Copy Link"}</span>
+            </button>
+          {/if}
+
+          <!-- Save (only when unsaved) -->
+          {#if !isSaved}
+            <button
+              type="button"
+              class="action-btn save"
+              onclick={onSave}
+              aria-label="Save sequence"
+            >
+              <i class="fas fa-floppy-disk" aria-hidden="true"></i>
+              <span>Save</span>
+            </button>
+          {/if}
+
+          <!-- Remix -->
+          <button
+            type="button"
+            class="action-btn edit"
+            onclick={onEdit}
+            aria-label="Remix"
+          >
+            <i class="fas fa-pen-to-square" aria-hidden="true"></i>
+            <span>Remix</span>
+          </button>
+          {#if onVideoUpload}
             <button
               type="button"
               class="action-btn video"
@@ -887,56 +857,18 @@
     position: relative;
   }
 
-  /* Get App pill button (logged-out state) */
-  .mid-get-app-btn {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    height: 44px;
-    padding: 0 16px;
-    background: rgba(34, 197, 94, 0.1);
-    border: 1.5px solid rgba(34, 197, 94, 0.25);
-    border-radius: 22px;
-    color: #22c55e;
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 600;
-    cursor: pointer;
-    transition: all var(--duration-fast, 150ms) ease;
-    -webkit-tap-highlight-color: transparent;
-    white-space: nowrap;
-  }
-
-  @media (hover: hover) and (pointer: fine) {
-    .mid-get-app-btn:hover {
-      background: rgba(34, 197, 94, 0.2);
-      border-color: rgba(34, 197, 94, 0.4);
-    }
-  }
-
-  .mid-get-app-btn:active {
-    transform: scale(0.95);
-    transition-duration: 0ms;
-  }
-
-  .mid-get-app-btn:focus-visible {
-    outline: 2px solid var(--theme-accent, #6366f1);
-    outline-offset: 2px;
-  }
-
   /* Mid-layout reduced motion */
   @media (prefers-reduced-motion: reduce) {
     .mid-step-btn,
     .mid-play-btn,
-    .mid-action-btn,
-    .mid-get-app-btn {
+    .mid-action-btn {
       transition: none;
     }
 
     .mid-step-btn:active,
     .mid-play-btn:active,
     .mid-play-btn:hover,
-    .mid-action-btn:active,
-    .mid-get-app-btn:active {
+    .mid-action-btn:active {
       transform: none;
     }
   }
@@ -1110,17 +1042,6 @@
   .action-btn.edit:hover {
     background: rgba(245, 158, 11, 0.2);
     border-color: rgba(245, 158, 11, 0.4);
-  }
-
-  .action-btn.get-app {
-    background: rgba(34, 197, 94, 0.1);
-    border-color: rgba(34, 197, 94, 0.25);
-    color: #22c55e;
-  }
-
-  .action-btn.get-app:hover {
-    background: rgba(34, 197, 94, 0.2);
-    border-color: rgba(34, 197, 94, 0.4);
   }
 
   .action-btn.delete {
