@@ -131,6 +131,9 @@
    * Same logic as the original layout, but loaded dynamically.
    */
   async function initAppMode() {
+    const { bootProfiler } = await import("$lib/shared/analytics/boot-profiler");
+    bootProfiler.mark("total-init");
+
     // Progress: SvelteKit has hydrated and onMount is running
     if (typeof (window as any).__tkaLoadProgress === "function") {
       (window as any).__tkaLoadProgress(72, "Starting up...");
@@ -143,7 +146,9 @@
     }
 
     // Load DI container — this triggers all service registration
+    bootProfiler.mark("di-container");
     const { container } = await import("$lib/shared/di");
+    bootProfiler.end("di-container");
 
     // Populate the deferred container reference (context was set synchronously above)
     containerRef = container;
@@ -199,8 +204,10 @@
     }
 
     // Analytics: PostHog
+    bootProfiler.mark("posthog");
     const { initPostHog } = await import("$lib/shared/analytics/services/posthog");
     initPostHog();
+    bootProfiler.end("posthog");
 
     // Attribution tracking
     try {
@@ -213,8 +220,10 @@
     }
 
     // i18n
+    bootProfiler.mark("i18n");
     const { initI18n } = await import("$lib/shared/i18n/i18n.svelte.js");
     initI18n();
+    bootProfiler.end("i18n");
 
     // Modal URL state
     const { initModalUrlState, cleanupModalUrlState } = await import("$lib/shared/application/state/ui/modal-url-state.svelte");
@@ -233,6 +242,7 @@
     registerCacheClearShortcut();
 
     // Firestore + Auth
+    bootProfiler.mark("firestore-init");
     try {
       const { getFirestoreInstance } = await import("$lib/shared/auth/firebase");
       await getFirestoreInstance();
@@ -240,20 +250,26 @@
     } catch (error) {
       console.error("[App Init] Firestore initialization failed:", error);
     }
+    bootProfiler.end("firestore-init");
 
+    bootProfiler.mark("auth-init");
     const { authState } = await import("$lib/shared/auth/state/authState.svelte");
     await authState.initialize();
+    bootProfiler.end("auth-init");
     (window as any).__tkaLoadProgress?.(80, "Checking session...");
 
     // Web Vitals
+    bootProfiler.mark("web-vitals");
     try {
       const { initWebVitals } = await import("$lib/shared/analytics/web-vitals");
       await initWebVitals();
     } catch (error) {
       console.warn("Web Vitals tracking failed to initialize:", error);
     }
+    bootProfiler.end("web-vitals");
 
     // Cloud thumbnail manifest
+    bootProfiler.mark("thumbnail-manifest");
     try {
       const { CloudThumbnailCache } = await import(
         "$lib/features/browse/sequences/display/services/implementations/CloudThumbnailCache"
@@ -263,8 +279,10 @@
     } catch (error) {
       console.warn("Cloud thumbnail manifest failed to load:", error);
     }
+    bootProfiler.end("thumbnail-manifest");
 
     // Load app-only UI components in parallel
+    bootProfiler.mark("ui-components");
     const [
       warningBannerMod,
       emailBannerMod,
@@ -280,6 +298,7 @@
       import("$lib/features/moderation/components/ReportUserModal.svelte"),
       import("$lib/shared/application/components/ModalUrlRestorer.svelte"),
     ]);
+    bootProfiler.end("ui-components");
 
     WarningBannerComp = warningBannerMod.default;
     EmailVerificationBannerComp = emailBannerMod.default;
@@ -287,6 +306,9 @@
     InAppBrowserPromptComp = inAppMod.default;
     ReportUserModalComp = reportMod.default;
     ModalUrlRestorerComp = modalRestorerMod.default;
+
+    bootProfiler.end("total-init");
+    bootProfiler.summary();
 
     // Return cleanup
     return () => {
