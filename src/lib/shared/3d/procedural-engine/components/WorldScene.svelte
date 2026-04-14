@@ -539,7 +539,7 @@
       class="controls-overlay"
       onclick={() => {
         cameraMode = CameraMode.THIRD_PERSON;
-        cameraPreferences.setModeForDestination("realm", CameraMode.THIRD_PERSON);
+        cameraPreferences.setModeForDestination(activeConfig.id, CameraMode.THIRD_PERSON);
       }}
     >
       <h2>{activeConfig.name}</h2>

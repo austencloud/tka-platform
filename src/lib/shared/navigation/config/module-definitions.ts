@@ -21,7 +21,6 @@ import {
   CHOREO_CARD_TABS,
   FESTIVAL_TABS,
   RETRO_TABS,
-  REALM_TABS,
   ARCHIVE_TABS,
   LEVELS_TABS,
   HAND_PATH_TABS,
@@ -44,6 +43,10 @@ const MODULE_ID_MIGRATIONS: Record<string, ModuleId> = {
   "poi-lab": "levels",
   // Museum renamed from museum-2d to museum (Mar 2026)
   "museum-2d": "museum",
+  // Realm module dissolved (Apr 2026) — deep links redirect to museum (the most
+  // polished former destination). Campground + 3D Controls moved to Lab;
+  // Archive promoted to its own main module.
+  realm: "museum",
   mandala: "lab",
   "background-builder": "lab",
   "landing-preview": "lab",
@@ -237,13 +240,13 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     sections: ARCHIVE_TABS,
   },
   {
-    id: "realm",
-    label: "Realm",
-    icon: '<i class="fas fa-vr-cardboard" style="color: #06b6d4;" aria-hidden="true"></i>',
-    color: "#06b6d4",
-    description: "3D destinations: stage, gallery, procedural worlds",
+    id: "archive",
+    label: "Archive",
+    icon: '<i class="fas fa-scroll" style="color: #c8a050;" aria-hidden="true"></i>',
+    color: "#c8a050",
+    description: "Walk through 40,000 years of kinetic history",
     isMain: true,
-    sections: REALM_TABS,
+    sections: [],
   },
   {
     id: "retro",

@@ -659,7 +659,8 @@ export function initializeNavigationHistory() {
     const isHmrRemount =
       typeof sessionStorage !== "undefined" &&
       sessionStorage.getItem("tka-nav-session-active") === "1";
-    const isHeavyweight = pathNav.moduleId === "realm";
+    const isHeavyweight =
+      pathNav.moduleId === "museum" || pathNav.moduleId === "archive";
 
     if (!isHmrRemount && isHeavyweight) {
       // Redirect to default module instead of re-mounting heavy 3D content

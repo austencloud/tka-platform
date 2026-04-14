@@ -670,25 +670,6 @@ export const ARCHIVE_TABS: Section[] = [
   },
 ];
 
-export const REALM_TABS: Section[] = [
-  {
-    id: "realm-world",
-    label: "Realm",
-    icon: '<i class="fas fa-earth-americas" aria-hidden="true"></i>',
-    description: "Campground clearing with procedural forest",
-    color: "#10b981",
-    gradient: "linear-gradient(135deg, #34d399 0%, #10b981 100%)",
-  },
-  {
-    id: "3d-controls",
-    label: "3D Controls",
-    icon: '<i class="fas fa-cube" aria-hidden="true"></i>',
-    description: "Adjust grid positions, turns, planes, and motion types",
-    color: "#06b6d4",
-    gradient: "linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%)",
-  },
-];
-
 // Lab tabs configuration (admin-only, temporary experiments)
 // All experimental modules consolidated here instead of cluttering the sidebar
 export const LEVELS_TABS: Section[] = [
