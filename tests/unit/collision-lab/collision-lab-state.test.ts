@@ -111,16 +111,16 @@ describe("collision-lab-state", () => {
     expect(state.cursorIndex).toBe(1);
   });
 
-  it("labelCurrent does NOT auto-advance on 'needs-adjustment'", async () => {
+  it("labelCurrent auto-advances on 'needs-adjustment'", async () => {
     const { state } = await setup();
     state.labelCurrent("needs-adjustment");
-    expect(state.cursorIndex).toBe(0);
+    expect(state.cursorIndex).toBe(1);
   });
 
-  it("labelCurrent does NOT auto-advance on 'skip'", async () => {
+  it("labelCurrent auto-advances on 'skip'", async () => {
     const { state } = await setup();
     state.labelCurrent("skip");
-    expect(state.cursorIndex).toBe(0);
+    expect(state.cursorIndex).toBe(1);
   });
 
   it("labelCurrent captures the live stance values and collision snapshot", async () => {
@@ -155,12 +155,12 @@ describe("collision-lab-state", () => {
     state.setFootOffsetX(0.03);
     state.setFootOffsetZ(-0.02);
     const id = state.currentPose!.id;
-    state.labelCurrent("needs-adjustment"); // no auto-advance
+    state.labelCurrent("needs-adjustment"); // auto-advances to 1
     expect(repo.store[id]).toBeDefined(); // sanity check
-    // Walk away and back
-    state.stepForward(); // cursor at 1, stance reset
-    expect(state.footOffsetX).toBe(0);
-    state.stepBackward(); // cursor back at 0, stance reseeded from label
+    expect(state.cursorIndex).toBe(1);
+    // Step back to pose 0 where label exists — stance reseeded from label
+    state.stepBackward();
+    expect(state.cursorIndex).toBe(0);
     expect(state.footOffsetX).toBe(0.03);
     expect(state.footOffsetZ).toBe(-0.02);
   });
@@ -268,9 +268,9 @@ describe("collision-lab-state optimizer integration", () => {
     state.resetStance();
     state.setFootOffsetX(0.05);
     state.setFootOffsetZ(-0.05);
-    state.labelCurrent("needs-adjustment"); // no auto-advance, stays on pose 0
-    state.stepForward(); // now on pose 1, optimizer runs
-    state.stepBackward(); // back on pose 0 — label exists, optimizer MUST NOT run
+    state.labelCurrent("needs-adjustment"); // auto-advances to pose 1
+    // Step back to pose 0 — label exists, optimizer MUST NOT run
+    state.stepBackward();
     expect(state.footOffsetX).toBe(0.05);
     expect(state.footOffsetZ).toBe(-0.05);
     expect(state.lastOptimizerResult).toBe(null);

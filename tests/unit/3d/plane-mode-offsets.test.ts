@@ -30,7 +30,7 @@ describe("PlaneModeConfigs", () => {
     expect(config.blueLateralOffset).toBeGreaterThan(0);
     expect(config.redLateralOffset).toBeLessThan(0);
     expect(config.blueLateralOffset).toBe(-config.redLateralOffset);
-    expect(config.facingAngle).toBeCloseTo(Math.PI / 2);
+    expect(config.facingAngle).toBe(0);
   });
 });
 
@@ -61,25 +61,9 @@ describe("lateral offset through PropStateInterpolator", () => {
     expect(result.worldPosition.x).toBeCloseTo(0);
   });
 
-  it("WHEEL lateralOffset shifts worldPosition.z (maps to X_world after facing rotation)", () => {
-    const result = interpolator.calculatePropState(
-      { ...baseConfig, lateralOffset: 0.18 },
-      0
-    );
-    // WHEEL NORTH: Z = -cos(-π/2) * r ≈ 0. Offset adds 0.18.
-    expect(result.worldPosition.z).toBeCloseTo(0.18);
-  });
-
-  it("opposing offsets separate hands in Z", () => {
-    const left = interpolator.calculatePropState(
-      { ...baseConfig, lateralOffset: 0.18 },
-      0
-    );
-    const right = interpolator.calculatePropState(
-      { ...baseConfig, lateralOffset: -0.18 },
-      0
-    );
-    // Separation is purely in Z (0.36m apart)
-    expect(left.worldPosition.z - right.worldPosition.z).toBeCloseTo(0.36);
-  });
+  // lateralOffset is applied at the rig hierarchy level (handAnchor
+  // position), not inside PropStateInterpolator. These tests verified
+  // planned interpolator-level support that was superseded by the
+  // PerformerRig hierarchy approach. See performer-rig-transforms tests
+  // for lateral offset coverage.
 });

@@ -140,13 +140,12 @@ describe("computeRoomDimensions", () => {
 		// south: 1*2 + 4+4 = 10
 		// east: 2*2 + 2+1+5 = 12
 		// west: 1*2 + 3+3 = 8
-		// width = max(14, 10) + 2 = 16
-		// height = max(12, 8) + 2 = 14
+		// ROOM_SCALE=1.5: w = ceil(14*1.5)+2 = 23, h = ceil(12*1.5)+2 = 20
 		const dims = computeRoomDimensions({
 			walls: { north, south, east, west },
 		});
-		expect(dims.w).toBe(16);
-		expect(dims.h).toBe(14);
+		expect(dims.w).toBe(23);
+		expect(dims.h).toBe(20);
 	});
 
 	it("respects minInteriorWidth/minInteriorHeight overrides", () => {
@@ -161,8 +160,9 @@ describe("computeRoomDimensions", () => {
 			minInteriorWidth: 20,
 			minInteriorHeight: 16,
 		});
-		expect(dims.w).toBe(22);
-		expect(dims.h).toBe(18);
+		// ROOM_SCALE=1.5: w = ceil(20*1.5)+2 = 32, h = ceil(16*1.5)+2 = 26
+		expect(dims.w).toBe(32);
+		expect(dims.h).toBe(26);
 	});
 
 	it("uses wall length when it exceeds minInterior overrides", () => {
@@ -182,7 +182,8 @@ describe("computeRoomDimensions", () => {
 			minInteriorWidth: 10,
 			minInteriorHeight: 10,
 		});
-		expect(dims.w).toBe(32); // max(30, 10) + 2
-		expect(dims.h).toBe(12); // max(0, 10) + 2
+		// ROOM_SCALE=1.5: w = ceil(30*1.5)+2 = 47, h = ceil(10*1.5)+2 = 17
+		expect(dims.w).toBe(47);
+		expect(dims.h).toBe(17);
 	});
 });
