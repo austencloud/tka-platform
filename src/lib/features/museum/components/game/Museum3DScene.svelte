@@ -1517,10 +1517,14 @@
   let currentPlayerRoomId = $state<string | null>(null);
   // Mount the village embed as soon as geometry is ready so GLTF avatar
   // parsing happens in the background via requestIdleCallback while the
-  // player explores other rooms. Always visible once mounted — it sits
-  // inside the collaboration room's walls, so it's only visible when
-  // looking into that room. No visibility toggle = no pop-in.
-  const villageEmbedMounted = $derived(geometryReady);
+  // player explores other rooms. It sits inside the collaboration room's
+  // walls, so it's only seen when looking in — no pop-in.
+  //
+  // Gated on the grid actually containing a collaboration wing. Without
+  // this guard, quick-traveling to a single-room view (e.g. Vulcan Cave)
+  // mounts the embed with collabCenterX/Z defaulting to (0,0), so the
+  // forest + avatars pile up at world origin inside the wrong room.
+  const villageEmbedMounted = $derived(geometryReady && !!collabWing);
 
   /** Set mesh.visible on every mesh in a room chunk */
   function setChunkVisible(chunk: RoomChunk, visible: boolean): void {
