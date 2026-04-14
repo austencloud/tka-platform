@@ -161,7 +161,9 @@
     handleVideoUpload: () => Promise<void>;
     handleShare: () => void;
     handleDelete: () => Promise<void>;
-    handleGetApp: () => void;
+    handleOpenInBrowser: (pendingType?: PendingActionType | null) => void;
+    /** Called by footer action buttons; if signed in, runs realHandler; else captures intent + opens sign-in sheet. */
+    invokeGatedAction: (type: PendingActionType, realHandler: (() => void) | (() => Promise<void>) | undefined) => void;
     handleUnifiedDarkModeToggle: () => void;
     handlePracticeStart: () => void;
     handlePracticeStop: () => void;
@@ -237,6 +239,8 @@
   import { createViewer3DState } from "$lib/shared/3d/state/viewer-3d-state.svelte";
   import { setViewer3DContext } from "$lib/shared/3d/context/viewer-3d-context";
   import { CameraKeyframeBuffer } from "$lib/shared/video-export/domain/CameraKeyframe";
+  import type { PendingActionType } from "$lib/shared/sequence-viewer/services/contracts/IPendingActionQueue";
+  import SignInSheet from "./SignInSheet.svelte";
 
   // ============================================================================
   // PROPS
@@ -303,6 +307,69 @@
   let playbackController = $state<IAnimationPlaybackController | null>(null);
   let sequenceDataProvider: ISequenceDataProvider | null = null;
   let hapticService: IHapticFeedback | null = null;
+
+  // Viewer-auth services (pending-action queue + webview detection)
+  const pendingActionQueue = container.items.pendingActionQueue;
+  const webviewDetector = container.items.webviewDetector;
+
+  // Sign-in sheet state
+  let signInSheetOpen = $state(false);
+  let signInSheetReason = $state<PendingActionType | null>(null);
+
+  function openSignInSheet(reason: PendingActionType) {
+    signInSheetReason = reason;
+    signInSheetOpen = true;
+  }
+
+  function closeSignInSheet() {
+    signInSheetOpen = false;
+    signInSheetReason = null;
+    pendingActionQueue.clear();
+    if (browser) {
+      const parsed = new URL(window.location.href);
+      if (parsed.searchParams.has("pending")) {
+        parsed.searchParams.delete("pending");
+        window.history.replaceState({}, "", parsed.toString());
+      }
+    }
+  }
+
+  // Called by footer action buttons. If signed in, runs the real handler.
+  // If not, captures the intent, writes `?pending=` to the URL so a reload or
+  // cross-browser handoff preserves it, and opens the sign-in sheet.
+  function invokeGatedAction(
+    type: PendingActionType,
+    realHandler: (() => void) | (() => Promise<void>) | undefined,
+  ) {
+    if (authState.isAuthenticated) {
+      void realHandler?.();
+      return;
+    }
+    const sequenceId = sequence?.id ?? sequence?.word ?? "";
+    if (!sequenceId) return;
+
+    pendingActionQueue.enqueue({ type, sequenceId });
+    if (browser) {
+      const parsed = new URL(window.location.href);
+      parsed.searchParams.set("pending", type);
+      window.history.replaceState({}, "", parsed.toString());
+    }
+    openSignInSheet(type);
+  }
+
+  function onSignInSheetPrimary() {
+    if (webviewDetector.isInAppWebview) {
+      handleOpenInBrowser(signInSheetReason);
+      return;
+    }
+    // Kick off Google sign-in via the Authenticator service. The replay
+    // effect below fires when authState.isAuthenticated flips to true.
+    void container.items.authenticator.signInWithGoogle().catch((err) => {
+      console.error("[Viewer] sign-in failed:", err);
+    });
+    // Close optimistically but keep the queue so replay can run
+    signInSheetOpen = false;
+  }
 
   // 3D viewer state — created once, distributed via Svelte context
   const viewer3DState = createViewer3DState({
@@ -707,6 +774,17 @@
   let visibilityObserver: (() => void) | undefined;
 
   onMount(() => {
+    // Bootstrap pending-action queue from ?pending= URL param. If we have a
+    // pending action left over from a pre-auth redirect, surface the sheet
+    // so the user knows their intent was captured and can complete sign-in.
+    if (browser) {
+      pendingActionQueue.bootstrapFromUrl(new URL(window.location.href));
+      const pending = pendingActionQueue.peek();
+      if (pending && !authState.isAuthenticated) {
+        openSignInSheet(pending.type);
+      }
+    }
+
     // Keyboard handler
     window.addEventListener("keydown", handleKeydown, { capture: true });
     keydownCleanup = () => window.removeEventListener("keydown", handleKeydown, { capture: true });
@@ -1144,9 +1222,11 @@
 
       // Gather Threlte internals from viewer3DState
       const threlteCamera = viewer3DState.threlteCamera;
-      const threlteAdvance = viewer3DState.threlteAdvance;
-      const threlteRenderMode = viewer3DState.threlteRenderMode;
-      if (!threlteCamera || !threlteAdvance || !threlteRenderMode) {
+      const threlteRenderer = viewer3DState.threlteRenderer;
+      const threlteRunFrame = viewer3DState.threlteRunFrame;
+      const threltePauseAutoLoop = viewer3DState.threltePauseAutoLoop;
+      const threlteResumeAutoLoop = viewer3DState.threlteResumeAutoLoop;
+      if (!threlteCamera || !threlteRenderer || !threlteRunFrame || !threltePauseAutoLoop || !threlteResumeAutoLoop) {
         showToast("3D scene not ready for export. Please try again.", "error");
         return;
       }
@@ -1199,6 +1279,7 @@
             resolution: opts.resolution,
             includeStartPosition: opts.includeStartPosition,
             includeEndHold: opts.includeEndHold,
+            quality: opts.quality,
           },
           {
             webglCanvas,
@@ -1206,8 +1287,10 @@
             beatsPerSecond,
             totalDurationSeconds: recordedDuration,
             cameraKeyframes,
-            advance: threlteAdvance,
-            setRenderMode: (mode: "always" | "manual") => threlteRenderMode.set(mode),
+            renderer: threlteRenderer,
+            runFrame: threlteRunFrame,
+            pauseAutoLoop: threltePauseAutoLoop,
+            resumeAutoLoop: threlteResumeAutoLoop,
             setExporting: (value: boolean) => { viewer3DState.isExporting = value; },
             setExportCurrentStep: (step: number | null) => { viewer3DState.exportCurrentStep = step; },
           },
@@ -1307,6 +1390,37 @@
       if (Math.abs(playback.speed - currentSpeed) > 0.01) {
         playbackController.setSpeed(playback.speed);
       }
+    }
+  });
+
+  // Replay the pending action once the user finishes signing in. The queue
+  // may have been populated by this component (guest tapped Save), by the
+  // URL param (cross-browser handoff from an in-app webview), or by another
+  // tab that set the param before redirecting here.
+  $effect(() => {
+    if (!authState.isAuthenticated) return;
+    const pending = pendingActionQueue.drain();
+    if (!pending) return;
+
+    if (browser) {
+      const parsed = new URL(window.location.href);
+      if (parsed.searchParams.has("pending")) {
+        parsed.searchParams.delete("pending");
+        window.history.replaceState({}, "", parsed.toString());
+      }
+    }
+
+    try {
+      switch (pending.type) {
+        case "save":     void handleSave(); break;
+        case "favorite": handleFavoriteToggle(); break;
+        case "publish":  void handlePublishAction(); break;
+        case "remix":    handleEdit(); break;
+        case "sendTo":   handleShare(); break;
+      }
+      signInSheetOpen = false;
+    } catch (err) {
+      console.error("[Viewer] pending-action replay failed:", err);
     }
   });
 
@@ -1563,18 +1677,26 @@
     }
   }
 
-  function handleGetApp() {
+  // Escape an in-app webview (Instagram, Facebook, etc.) into a real browser
+  // so sign-in can complete. When a pending action is supplied, appends
+  // `?pending=<type>` so the destination page's pending-action queue picks it
+  // up and replays the action after auth.
+  function handleOpenInBrowser(pendingType: PendingActionType | null = null) {
     hapticService?.trigger("selection");
-    // Open the current URL in a real browser (strips in-app browser context)
-    const url = browser ? window.location.href : "";
-    if (url) {
-      // Attempt intent-based open for Android in-app browsers
-      try {
-        window.location.href = `intent://${url.replace(/^https?:\/\//, "")}#Intent;scheme=https;end`;
-      } catch {
-        // Fallback: open in current window (this usually opens a real browser from IAB)
-        window.open(url, "_blank");
-      }
+    const baseUrl = browser ? window.location.href : "";
+    if (!baseUrl) return;
+
+    let url = baseUrl;
+    if (pendingType) {
+      const parsed = new URL(baseUrl);
+      parsed.searchParams.set("pending", pendingType);
+      url = parsed.toString();
+    }
+
+    try {
+      window.location.href = `intent://${url.replace(/^https?:\/\//, "")}#Intent;scheme=https;end`;
+    } catch {
+      window.open(url, "_blank");
     }
   }
 
@@ -1821,7 +1943,8 @@
     handleVideoUpload,
     handleShare,
     handleDelete,
-    handleGetApp,
+    handleOpenInBrowser,
+    invokeGatedAction,
     handleUnifiedDarkModeToggle,
     handlePracticeStart,
     handlePracticeStop,
@@ -1876,6 +1999,16 @@
 <div class="sr-only" role="status" aria-live="polite" aria-atomic="true">
   {accessibilityHelper.announcement}
 </div>
+
+<!-- Pending-action sign-in sheet. Appears when a guest taps a gated action
+     or arrives with a ?pending= URL param after a browser handoff. -->
+<SignInSheet
+  open={signInSheetOpen}
+  reason={signInSheetReason}
+  webviewMode={webviewDetector.isInAppWebview}
+  onPrimaryAction={onSignInSheetPrimary}
+  onDismiss={closeSignInSheet}
+/>
 
 <style>
   .sr-only {
