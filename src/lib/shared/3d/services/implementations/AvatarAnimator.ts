@@ -73,6 +73,8 @@ export class AvatarAnimator implements IAvatarAnimator {
     rightUpLeg: new Quaternion(),
   };
   private _spineTwistEnabled = true;
+  /** When true, skip SpineTwister's Hips counter-rotation so planted legs don't slide. */
+  private _skipHipsTwist = false;
   private spineRestCached = false;
   /** Which spine/head bones the model actually has — used for weight redistribution */
   private availableSpineBones = new Set<string>();
@@ -438,7 +440,12 @@ export class AvatarAnimator implements IAvatarAnimator {
       applySpineTwist("Spine2", "spine2", twistResult.spine2);
       applySpineTwist("Neck", "neck", twistResult.neck);
       applySpineTwist("Head", "head", twistResult.head);
-      applySpineTwist("Hips", "hips", twistResult.hips);
+      // Skip Hips counter-rotation for exhibit performers — when leg bones
+      // are stripped for foot planting, hip yaw cascades to the feet and
+      // makes them slide on the ground.
+      if (!this._skipHipsTwist) {
+        applySpineTwist("Hips", "hips", twistResult.hips);
+      }
 
       // Update world matrices after all spine bones are adjusted,
       // so IK solves against the twisted skeleton
@@ -669,6 +676,11 @@ export class AvatarAnimator implements IAvatarAnimator {
       this.rightClavicleQuat.identity();
     }
     return this._clavicleRaiseEnabled;
+  }
+
+  /** Skip Hips counter-rotation (exhibit performers with planted feet) */
+  setSkipHipsTwist(skip: boolean): void {
+    this._skipHipsTwist = skip;
   }
 
   /** Set spine twist enabled/disabled */
