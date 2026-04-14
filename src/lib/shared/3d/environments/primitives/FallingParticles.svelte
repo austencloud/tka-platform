@@ -83,9 +83,9 @@
     },
     snow: {
       gravity: 0.075,
-      swayAmount: 0.1,
+      swayAmount: 0.18,
       blending: AdditiveBlending,
-      shape: "circle",
+      shape: "snowflake",
       pulses: false,
     },
     petals: {
@@ -137,6 +137,15 @@
       shape: "circle", // Soft puffs
       pulses: false,
     },
+    steam: {
+      // Like smoke but from heat hitting cold air — rises faster, drifts more,
+      // fades wispier. Used by the winter campfire.
+      gravity: -0.18,
+      swayAmount: 0.45,
+      blending: AdditiveBlending,
+      shape: "circle",
+      pulses: false,
+    },
   };
 
   const config = $derived(typeConfigs[type]);
@@ -166,7 +175,7 @@
   // Fragment shader with shape support
   const fragmentShader = `
     uniform vec3 uColors[4];
-    uniform float uShape; // 0=circle, 1=diamond, 2=petal, 3=star, 4=glow
+    uniform float uShape; // 0=circle 1=diamond 2=petal 3=star 4=glow 5=snowflake
 
     varying float vRotation;
     varying float vColorIndex;
@@ -201,11 +210,41 @@
         float angle = atan(rotated.y, rotated.x);
         float star = dist * (1.0 + 0.3 * sin(angle * 5.0));
         alpha = 1.0 - smoothstep(0.25, 0.4, star);
-      } else {
+      } else if (uShape < 4.5) {
         // Glow (fireflies) - soft radial gradient with bright core
         float core = 1.0 - smoothstep(0.0, 0.15, dist);
         float halo = (1.0 - smoothstep(0.1, 0.5, dist)) * 0.6;
         alpha = core + halo;
+      } else {
+        // Snowflake — four per-particle variants keyed to vColorIndex so the
+        // field reads as real snow (mix of crystals, sparkles, soft blurs).
+        float variant = floor(vColorIndex);
+        float angle = atan(rotated.y, rotated.x);
+        float shapeAlpha = 0.0;
+
+        if (variant < 0.5) {
+          // Classic 6-armed crystalline flake
+          float arms = cos(angle * 6.0);
+          float detail = cos(angle * 12.0);
+          float armMask = dist + (1.0 - arms) * 0.14 + (1.0 - detail) * 0.03;
+          shapeAlpha = 1.0 - smoothstep(0.22, 0.42, armMask);
+        } else if (variant < 1.5) {
+          // 8-armed delicate flake (thinner arms, tighter)
+          float arms = cos(angle * 8.0);
+          float armMask = dist + (1.0 - arms) * 0.09;
+          shapeAlpha = 1.0 - smoothstep(0.20, 0.36, armMask);
+        } else if (variant < 2.5) {
+          // Tiny bright sparkle — short cross-spikes + bright core
+          float spikes = max(0.0, cos(angle * 4.0) - 0.3);
+          shapeAlpha = spikes * (1.0 - smoothstep(0.0, 0.32, dist)) * 1.2;
+        } else {
+          // Soft round flake (far-away / out-of-focus feel)
+          shapeAlpha = (1.0 - smoothstep(0.15, 0.38, dist)) * 0.65;
+        }
+
+        // Gentle inner glow on every variant
+        float core = 1.0 - smoothstep(0.0, 0.10, dist);
+        alpha = min(shapeAlpha + core * 0.35, 1.0);
       }
 
       if (alpha < 0.01) discard;
@@ -274,6 +313,8 @@
         return 3;
       case "glow":
         return 4;
+      case "snowflake":
+        return 5;
       default:
         return 0;
     }

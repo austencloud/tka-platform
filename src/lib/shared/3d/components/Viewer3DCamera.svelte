@@ -111,6 +111,48 @@
   // This avoids the infinite loop from writing $state on every onchange frame.
   let saveTimer: ReturnType<typeof setTimeout> | null = null;
 
+  // Minimum camera height above ground (y=0). The orbit's maxPolarAngle stops
+  // the camera from swinging under the floor, but right-click panning slides
+  // both camera and target on the screen plane — nothing in OrbitControls
+  // stops that from diving underground. We clamp on every change so panning,
+  // keyboard nudges, and dollying all bottom out just above the floor.
+  const MIN_CAMERA_Y = 0.05;
+
+  // Guard against re-entering clamp when we ourselves call controls.update()
+  // (which re-fires the 'change' event).
+  let clamping = false;
+
+  function clampBelowGround() {
+    if (!controlsRef || clamping) return;
+    const camera = controlsRef.object;
+    const target = controlsRef.target;
+    if (!camera || !target) return;
+
+    let changed = false;
+
+    if (camera.position.y < MIN_CAMERA_Y) {
+      // Shift both camera and target by the same delta so the view direction
+      // is preserved — otherwise a pure camera-only clamp would tilt the view
+      // up sharply as the user keeps dragging into the floor.
+      const delta = MIN_CAMERA_Y - camera.position.y;
+      camera.position.y += delta;
+      target.y += delta;
+      changed = true;
+    }
+
+    if (target.y < 0) {
+      // If panning dragged the target itself below ground, bring it flush.
+      target.y = 0;
+      changed = true;
+    }
+
+    if (changed) {
+      clamping = true;
+      controlsRef.update?.();
+      clamping = false;
+    }
+  }
+
   function handleEnd() {
     if (!controlsRef) return;
     const camera = controlsRef.object;
@@ -199,9 +241,12 @@
     minDistance={1}
     maxDistance={25}
     maxPolarAngle={STAGE.ORBIT_MAX_POLAR_ANGLE}
+    screenSpacePanning={false}
     onstart={() => viewer3DState.setCameraDragging(true)}
+    onchange={clampBelowGround}
     onend={() => {
       viewer3DState.setCameraDragging(false);
+      clampBelowGround();
       handleEnd();
     }}
   />
