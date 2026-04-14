@@ -96,9 +96,7 @@ nul
 # TypeScript
 .tsbuildinfo
 
-# Package manager lock files
-# pnpm-lock.yaml is auto-generated and large; commit only when intentional
-pnpm-lock.yaml
+# Package manager lock files (pnpm-lock.yaml IS committed for reproducible CI builds)
 
 # Generated thumbnail cache (synced from cloud during release, NOT committed to git)
 static/thumbnails/
