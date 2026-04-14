@@ -249,6 +249,7 @@
   import { CameraKeyframeBuffer } from "$lib/shared/video-export/domain/CameraKeyframe";
   import type { PendingActionType } from "$lib/shared/sequence-viewer/services/contracts/IPendingActionQueue";
   import SignInSheet from "./SignInSheet.svelte";
+  import GoogleOneTap from "$lib/shared/auth/components/GoogleOneTap.svelte";
 
   // ============================================================================
   // PROPS
@@ -370,17 +371,26 @@
       handleOpenInBrowser(signInSheetReason);
       return;
     }
-    // Cancel any in-flight Google One Tap prompt. FedCM + popup compete for
-    // the same credential channel, and leaving One Tap running causes
-    // signInWithPopup to fail with auth/argument-error.
-    try {
-      window.google?.accounts?.id?.cancel();
-    } catch {
-      /* google script may not have loaded; safe to ignore */
+
+    // Prefer Google One Tap (FedCM) — it's the only flow that works reliably
+    // on mobile web, where signInWithPopup is blocked by most browsers. The
+    // app has a <GoogleOneTap /> mounted at root that already registered the
+    // credential callback; we just need to invoke the prompt. The replay
+    // effect below fires once the callback drives authState.isAuthenticated
+    // to true.
+    const oneTap = window.google?.accounts?.id;
+    if (oneTap) {
+      try {
+        oneTap.prompt();
+        signInSheetOpen = false;
+        return;
+      } catch {
+        // FedCM cooldown or disabled — fall through to popup.
+      }
     }
 
+    // Desktop fallback: popup. Mirrors SocialAuthCompact's pattern.
     try {
-      // Mirror SocialAuthCompact: set persistence atomically before popup.
       try {
         await setPersistence(auth, indexedDBLocalPersistence);
       } catch {
@@ -390,13 +400,11 @@
       provider.addScope("email");
       provider.addScope("profile");
       await signInWithPopup(auth, provider);
-      // Replay effect fires when authState.isAuthenticated flips true.
       signInSheetOpen = false;
     } catch (err) {
       const code = (err as { code?: string })?.code;
       if (code === "auth/popup-closed-by-user" || code === "auth/cancelled-popup-request") {
-        // User dismissed — leave sheet open so they can retry.
-        return;
+        return; // user dismissed — leave sheet open for retry
       }
       console.error("[Viewer] Google sign-in failed:", err);
       showToast({ message: "Sign-in failed. Please try again.", type: "error", duration: 3000 });
@@ -2041,6 +2049,13 @@
   onPrimaryAction={onSignInSheetPrimary}
   onDismiss={closeSignInSheet}
 />
+
+<!-- Loads the Google Identity Services script and registers the FedCM
+     credential callback. The sheet's primary button invokes `prompt()` on
+     this to show Google's native One Tap card — the only sign-in flow that
+     works reliably on mobile web. autoPrompt is false so it doesn't appear
+     unprompted; we trigger it on user click. -->
+<GoogleOneTap autoPrompt={false} />
 
 <style>
   .sr-only {
