@@ -65,7 +65,10 @@
 
   $effect(() => {
     const seq = overlay.sequence;
-    if (!seq?.id) {
+    // Guests can't read collaborative videos (Firestore rules require auth).
+    // Skip the fetch to avoid a "Missing or insufficient permissions" console
+    // error on every QR-scan / logged-out viewer open.
+    if (!seq?.id || !authState.isAuthenticated) {
       videoCount = 0;
       return;
     }
