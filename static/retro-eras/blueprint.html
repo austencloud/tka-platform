@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TKA Blueprint — Letter A</title>
+  <title>TKA Blueprint</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -22,6 +22,9 @@
     body.embed canvas { width: 100%; height: auto; }
     body.embed .caption, body.embed .controls, body.embed .scene > :not(canvas) { display: none; }
   </style>
+  <script src="./_shared/pictograph-geometry.js"></script>
+  <script src="./_shared/pictograph-bridge.js"></script>
+  <script src="./_shared/pictograph-stylize.js"></script>
 </head>
 <body>
 <canvas id="blueprint" width="500" height="500"></canvas>
@@ -42,11 +45,23 @@
   const RED_HAND    = 'rgba(255,180,160,0.90)';  // hand tint — red (warm)
   const TITLE_BG    = 'rgba(0,30,70,0.85)';
 
+  // Blueprint is special — we unify every pictograph class to the same bright
+  // cyan so the canonical recolor simply normalizes everything, and the
+  // 'blueprint' edge treatment then produces the two-tone cyanotype look.
+  const BLUEPRINT_PALETTE = {
+    blue:       '#C8E4FF',
+    red:        '#C8E4FF',
+    structural: '#C8E4FF',
+    bg:         null,
+  };
+
   // ─── Layout ────────────────────────────────────────────────────────────────
   const CX = 250, CY = 230;   // shifted up slightly so title block fits
   const UNIT = 80;            // half-grid unit: distance from center to each grid point
 
-  // Grid points (diamond layout)
+  // Grid points (diamond layout).  UPPERCASE keys are this file's internal
+  // convention — our helpers map the lowercase TKA domain compass names
+  // (n, ne, e, ...) into these keys via ptsKey().
   //        N
   //   W         E
   //        S
@@ -138,7 +153,7 @@
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       const mx = (ax+bx)/2, my = (ay+by)/2;
-      // Small white bg for legibility
+      // Small bg for legibility
       const tw = ctx.measureText(label).width + 4;
       ctx.fillStyle = BG;
       ctx.fillRect(mx - tw/2, my - 5, tw, 10);
@@ -148,20 +163,13 @@
     ctx.restore();
   }
 
-  function blockText(text, x, y, size, color, align) {
-    ctx.save();
-    ctx.font = `bold ${size || 10}px "Courier New", monospace`;
-    ctx.fillStyle = color || INK;
-    ctx.textAlign = align || 'left';
-    ctx.textBaseline = 'top';
-    ctx.letterSpacing = '1px';
-    ctx.fillText(text, x, y);
-    ctx.restore();
+  // ─── Background + blueprint chrome (era-voice pieces) ──────────────────────
+  function drawBlueprintBackground() {
+    ctx.fillStyle = BG;
+    ctx.fillRect(0, 0, W, H);
   }
 
-  // ─── Draw graph-paper background grid ──────────────────────────────────────
-
-  function drawGrid() {
+  function drawGraphPaper() {
     const GRID_STEP = 10;
     ctx.save();
     ctx.strokeStyle = GRID_LINE;
@@ -175,77 +183,75 @@
     ctx.restore();
   }
 
-  // ─── Background ────────────────────────────────────────────────────────────
-  ctx.fillStyle = BG;
-  ctx.fillRect(0, 0, W, H);
-  drawGrid();
+  function drawBorder() {
+    // Outer border
+    ctx.save();
+    ctx.strokeStyle = INK;
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(10, 10, W - 20, H - 20);
+    ctx.restore();
 
-  // ─── Outer border ──────────────────────────────────────────────────────────
-  ctx.save();
-  ctx.strokeStyle = INK;
-  ctx.lineWidth = 1.5;
-  ctx.strokeRect(10, 10, W - 20, H - 20);
-  ctx.restore();
+    // Inner border (double-border effect)
+    ctx.save();
+    ctx.strokeStyle = INK_DIM;
+    ctx.lineWidth = 0.6;
+    ctx.strokeRect(15, 15, W - 30, H - 30);
+    ctx.restore();
 
-  // Inner border (double-border effect)
-  ctx.save();
-  ctx.strokeStyle = INK_DIM;
-  ctx.lineWidth = 0.6;
-  ctx.strokeRect(15, 15, W - 30, H - 30);
-  ctx.restore();
+    // Center origin crosshair + concentric rings
+    for (const r of [4, 12, 25, UNIT/2]) {
+      circle(CX, CY, r, INK_FAINT, 0.5);
+    }
+    crosshair(CX, CY, 18, INK_DIM, 0.8);
 
-  // ─── Center origin crosshair + concentric rings ────────────────────────────
-  for (const r of [4, 12, 25, UNIT/2]) {
-    circle(CX, CY, r, INK_FAINT, 0.5);
-  }
-  crosshair(CX, CY, 18, INK_DIM, 0.8);
+    // Grid point crosshairs + cardinal labels
+    const gridLabels = { N:'N', S:'S', E:'E', W:'W' };
+    const labelOffsets = {
+      N: {dx:  6, dy: -14},
+      S: {dx:  6, dy:   4},
+      E: {dx:  6, dy:  -6},
+      W: {dx:-22, dy:  -6},
+    };
 
-  // ─── Grid point crosshairs ─────────────────────────────────────────────────
-  const gridLabels = { N:'N', S:'S', E:'E', W:'W' };
-  const labelOffsets = {
-    N: {dx:  6, dy: -14},
-    S: {dx:  6, dy:   4},
-    E: {dx:  6, dy:  -6},
-    W: {dx:-22, dy:  -6},
-  };
-
-  for (const [name, pt] of Object.entries(pts)) {
-    if (name === 'C') continue;
-    const isCardinal = name in gridLabels;
-    crosshair(pt.x, pt.y, isCardinal ? 7 : 4, isCardinal ? INK_DIM : INK_FAINT, 0.7);
-    if (isCardinal) {
-      circle(pt.x, pt.y, 3.5, INK_DIM, 0.6);
-      const off = labelOffsets[name];
-      ctx.save();
-      ctx.fillStyle = INK_DIM;
-      ctx.font = '8px "Courier New", monospace';
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(name, pt.x + off.dx, pt.y + off.dy + 5);
-      ctx.restore();
+    for (const [name, pt] of Object.entries(pts)) {
+      if (name === 'C') continue;
+      const isCardinal = name in gridLabels;
+      crosshair(pt.x, pt.y, isCardinal ? 7 : 4, isCardinal ? INK_DIM : INK_FAINT, 0.7);
+      if (isCardinal) {
+        circle(pt.x, pt.y, 3.5, INK_DIM, 0.6);
+        const off = labelOffsets[name];
+        ctx.save();
+        ctx.fillStyle = INK_DIM;
+        ctx.font = '8px "Courier New", monospace';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(name, pt.x + off.dx, pt.y + off.dy + 5);
+        ctx.restore();
+      }
     }
   }
 
-  // ─── Diagonal grid lines (diamond reference) ───────────────────────────────
-  ctx.save();
-  ctx.strokeStyle = INK_FAINT;
-  ctx.lineWidth = 0.5;
-  ctx.setLineDash([4, 4]);
-  // N to E
-  ctx.beginPath(); ctx.moveTo(pts.N.x, pts.N.y); ctx.lineTo(pts.E.x, pts.E.y); ctx.stroke();
-  // E to S
-  ctx.beginPath(); ctx.moveTo(pts.E.x, pts.E.y); ctx.lineTo(pts.S.x, pts.S.y); ctx.stroke();
-  // S to W
-  ctx.beginPath(); ctx.moveTo(pts.S.x, pts.S.y); ctx.lineTo(pts.W.x, pts.W.y); ctx.stroke();
-  // W to N
-  ctx.beginPath(); ctx.moveTo(pts.W.x, pts.W.y); ctx.lineTo(pts.N.x, pts.N.y); ctx.stroke();
-  ctx.restore();
+  function drawDiagonals() {
+    ctx.save();
+    ctx.strokeStyle = INK_FAINT;
+    ctx.lineWidth = 0.5;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.moveTo(pts.N.x, pts.N.y); ctx.lineTo(pts.E.x, pts.E.y); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(pts.E.x, pts.E.y); ctx.lineTo(pts.S.x, pts.S.y); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(pts.S.x, pts.S.y); ctx.lineTo(pts.W.x, pts.W.y); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(pts.W.x, pts.W.y); ctx.lineTo(pts.N.x, pts.N.y); ctx.stroke();
+    ctx.restore();
+  }
 
-  // ─── Staff lines ───────────────────────────────────────────────────────────
-  // Letter A:  blue staff at NORTH, red staff at SOUTH
-  // (each staff is a line through a grid point, oriented along the diamond axis)
-  // Diamond orientation: staves run NW–SE through their anchor point
+  function drawUnitDimensions() {
+    dimLine(CX, CY, pts.N.x, pts.N.y,  'UNIT=80px', INK_DIM, -28, 0);
+    dimLine(CX, CY, pts.S.x, pts.S.y,  'UNIT=80px', INK_DIM,  28, 0);
+  }
 
+  // ─── Fallback-only: dimension-annotated "staff" (hand-position marker) ─────
+  // In other eras the staff is a line. Here it's a technical annotation at
+  // a single point — a short diagonal rule with dimension ticks and a label.
+  // We pass the hand's endLocation point in.
   function drawStaff(px, py, color, label, labelSide) {
     const len = 52;
     // Diamond axis: 45-degree angle NW–SE
@@ -305,124 +311,186 @@
     ctx.restore();
   }
 
-  drawStaff(pts.N.x, pts.N.y, BLUE_HAND, 'BLUE HAND', 'right');
-  drawStaff(pts.S.x, pts.S.y, RED_HAND,  'RED HAND',  'left');
+  // ─── Fallback-only data-driven helpers ─────────────────────────────────────
+  //
+  // Each hand's motion annotation and staff marker are drawn from motion data
+  // via PictographGeometry (loaded in the head) instead of hardcoded Letter A
+  // geometry. Only used when no canonical bitmap is available.
 
-  // ─── PRO motion arcs ───────────────────────────────────────────────────────
-  // Letter A:
-  //   Blue (north): pro = curves from W to N  (CCW quarter arc, center at NW)
-  //   Red  (south): pro = curves from E to S  (CW  quarter arc, center at SE)
+  function handLoc(h)    { return String(h && (h.location    || h.startLocation) || '').toLowerCase(); }
+  function handEndLoc(h) { return String(h && h.endLocation || '').toLowerCase(); }
 
-  // The arc center is at the diagonal corner, radius = UNIT
+  // Map lowercase TKA domain compass names (n, ne, e, ...) to the uppercase
+  // keys used in this file's `pts` lookup object.
+  function ptsKey(loc) { return String(loc || '').toUpperCase(); }
 
-  function drawProArc(arcCX, arcCY, startAngle, endAngle, color, label, arcLabel) {
-    const R = UNIT;
+  function drawStaffForHand(hand, color, labelSide) {
+    if (!hand) return;
+    const key = ptsKey(handEndLoc(hand));
+    const pt = pts[key];
+    if (!pt) return;
+    // Use the TKA color name + the endpoint location as the annotation label.
+    const colorLabel = String(hand.color || '').toUpperCase() || (color === BLUE_HAND ? 'BLUE' : 'RED');
+    const label = `${colorLabel} HAND @ ${key}`;
+    drawStaff(pt.x, pt.y, color, label, labelSide);
+  }
 
-    // Dashed radius lines from center to arc endpoints
+  function drawArrowForHand(hand, color) {
+    if (!hand || hand.motionType === 'static' || !window.PictographGeometry) return;
+    const G = window.PictographGeometry;
+    const startKey = ptsKey(handLoc(hand));
+    const endKey   = ptsKey(handEndLoc(hand));
+    const s = pts[startKey];
+    const e = pts[endKey];
+    if (!s || !e) return;
+
+    // Dash motion: straight dimension line with a technical tick arrowhead.
+    if (hand.motionType === 'dash') {
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.setLineDash([6, 3]);
+      ctx.beginPath();
+      ctx.moveTo(s.x, s.y);
+      ctx.lineTo(e.x, e.y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+
+      // Technical tick arrowhead at endpoint
+      const len = Math.hypot(e.x - s.x, e.y - s.y) || 1;
+      const tx = (e.x - s.x) / len, ty = (e.y - s.y) / len;
+      const nx = -ty, ny = tx;
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(e.x - tx * 8 + nx * 6, e.y - ty * 8 + ny * 6);
+      ctx.lineTo(e.x, e.y);
+      ctx.lineTo(e.x - tx * 8 - nx * 6, e.y - ty * 8 - ny * 6);
+      ctx.stroke();
+      ctx.restore();
+
+      // Dimension label along the line
+      const mx = (s.x + e.x) / 2, my = (s.y + e.y) / 2;
+      const nOff = 10;
+      ctx.save();
+      ctx.fillStyle = color;
+      ctx.font = '7px "Courier New", monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const lblX = mx + nx * nOff, lblY = my + ny * nOff;
+      const dashLabel = `${startKey}→${endKey} DASH`;
+      const tw = ctx.measureText(dashLabel).width + 4;
+      ctx.fillStyle = BG;
+      ctx.fillRect(lblX - tw/2, lblY - 5, tw, 10);
+      ctx.fillStyle = color;
+      ctx.fillText(dashLabel, lblX, lblY);
+      ctx.restore();
+      return;
+    }
+
+    // Arc motion (pro / anti / float): quarter-arc centered on the diagonal
+    // corner between the start and end grid points.
+    const dir = G.handDirection(hand) || 'cw';
+    const startA = G.locationAngle(handLoc(hand));
+    const endA   = G.locationAngle(handEndLoc(hand));
+    if (startA == null || endA == null) return;
+    const anticlockwise = (dir === 'ccw');
+
+    // Radius = distance from canvas center to grid point.
+    const R = Math.hypot(s.x - CX, s.y - CY);
+
+    // Dashed radius lines from center to arc endpoints (dimension construction
+    // lines — this is a technical drawing, not a motion illustration).
     ctx.save();
     ctx.strokeStyle = color;
     ctx.lineWidth = 0.7;
     ctx.setLineDash([4, 4]);
-    // radius to start
     ctx.beginPath();
-    ctx.moveTo(arcCX, arcCY);
-    ctx.lineTo(arcCX + Math.cos(startAngle) * R, arcCY + Math.sin(startAngle) * R);
+    ctx.moveTo(CX, CY);
+    ctx.lineTo(CX + Math.cos(startA) * R, CY + Math.sin(startA) * R);
     ctx.stroke();
-    // radius to end
     ctx.beginPath();
-    ctx.moveTo(arcCX, arcCY);
-    ctx.lineTo(arcCX + Math.cos(endAngle) * R, arcCY + Math.sin(endAngle) * R);
+    ctx.moveTo(CX, CY);
+    ctx.lineTo(CX + Math.cos(endA) * R, CY + Math.sin(endA) * R);
     ctx.stroke();
     ctx.restore();
 
-    // Crosshair at arc center
-    crosshair(arcCX, arcCY, 9, color, 0.8);
-    circle(arcCX, arcCY, 2.5, color, 0.9);
-
-    // Arc label at center
-    ctx.save();
-    ctx.fillStyle = color;
-    ctx.font = '7px "Courier New", monospace';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(arcLabel, arcCX, arcCY - 14);
-    ctx.restore();
-
-    // Main arc (thick)
+    // The arc itself
     ctx.save();
     ctx.strokeStyle = color;
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 1.8;
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
     ctx.beginPath();
-    ctx.arc(arcCX, arcCY, R, startAngle, endAngle, false);
+    ctx.arc(CX, CY, R, startA, endA, anticlockwise);
     ctx.stroke();
     ctx.restore();
 
-    // Arrowhead at end of arc
-    const endX = arcCX + Math.cos(endAngle) * R;
-    const endY = arcCY + Math.sin(endAngle) * R;
-    // Tangent direction at end (perpendicular to radius, clockwise)
-    const tangX =  Math.sin(endAngle);
-    const tangY = -Math.cos(endAngle);
-
+    // Technical tick arrowhead at arc endpoint.  Tangent direction follows
+    // the arc's travel direction (opposite sign for anticlockwise).
+    let tx, ty;
+    if (anticlockwise) { tx =  Math.sin(endA); ty = -Math.cos(endA); }
+    else               { tx = -Math.sin(endA); ty =  Math.cos(endA); }
+    const nx = -ty, ny = tx;
     ctx.save();
     ctx.strokeStyle = color;
     ctx.lineWidth = 1.5;
-    ctx.lineCap = 'round';
-    const aLen = 9;
-    const aW   = 4;
     ctx.beginPath();
-    ctx.moveTo(endX, endY);
-    ctx.lineTo(endX - tangX*aLen + tangY*aW, endY - tangY*aLen - tangX*aW);
-    ctx.moveTo(endX, endY);
-    ctx.lineTo(endX - tangX*aLen - tangY*aW, endY - tangY*aLen + tangX*aW);
+    ctx.moveTo(e.x - tx * 8 + nx * 6, e.y - ty * 8 + ny * 6);
+    ctx.lineTo(e.x, e.y);
+    ctx.lineTo(e.x - tx * 8 - nx * 6, e.y - ty * 8 - ny * 6);
     ctx.stroke();
     ctx.restore();
 
-    // Radius dimension label along one radius line
-    const midAngle = (startAngle + endAngle) / 2;
+    // Radius dimension label along the arc midpoint radius
+    // We pick an angle halfway through the arc's travel in the actual direction.
+    let midA;
+    if (anticlockwise) {
+      // Canvas anticlockwise means angle decreases. Walk backwards from startA.
+      let delta = startA - endA;
+      while (delta < 0) delta += Math.PI * 2;
+      midA = startA - delta / 2;
+    } else {
+      let delta = endA - startA;
+      while (delta < 0) delta += Math.PI * 2;
+      midA = startA + delta / 2;
+    }
     const midR = R * 0.55;
     ctx.save();
     ctx.fillStyle = color;
     ctx.font = '6px "Courier New", monospace';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('R=' + R, arcCX + Math.cos(midAngle) * midR, arcCY + Math.sin(midAngle) * midR - 6);
+    ctx.fillText('R=' + Math.round(R), CX + Math.cos(midA) * midR, CY + Math.sin(midA) * midR - 6);
+    ctx.restore();
+
+    // Arc label (start→end + direction) placed just outside the arc midpoint
+    ctx.save();
+    ctx.fillStyle = color;
+    ctx.font = '7px "Courier New", monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const labelR = R + 14;
+    const lx = CX + Math.cos(midA) * labelR;
+    const ly = CY + Math.sin(midA) * labelR;
+    const arcLabel = `${startKey}→${endKey} ${dir.toUpperCase()}`;
+    const tw = ctx.measureText(arcLabel).width + 4;
+    ctx.fillStyle = BG;
+    ctx.fillRect(lx - tw/2, ly - 5, tw, 10);
+    ctx.fillStyle = color;
+    ctx.fillText(arcLabel, lx, ly);
     ctx.restore();
   }
 
-  // Blue: W→N (pro), arc center at NW corner, go from W-direction angle to N-direction angle
-  // NW corner is at (CX - UNIT, CY - UNIT)
-  // From NW center: W point is directly east (+x direction → angle 0)
-  //                 N point is directly south (+y direction → angle π/2)
-  // So arc goes from 0 to π/2 (CW = false = CCW in canvas coords)
-  drawProArc(pts.NW.x, pts.NW.y, 0, Math.PI/2, BLUE_HAND, 'BLUE W→N', 'ARC CTR NW');
-
-  // Red: E→S (pro), arc center at SE corner
-  // From SE center: E point is directly west (−x → angle π)
-  //                 S point is directly north (−y → angle 3π/2 = -π/2)
-  // Arc goes from π to 3π/2 (CCW), which in canvas is from π going forward to 3π/2
-  drawProArc(pts.SE.x, pts.SE.y, Math.PI, 3*Math.PI/2, RED_HAND, 'RED E→S', 'ARC CTR SE');
-
-  // ─── Dimension annotations ─────────────────────────────────────────────────
-  // Staff length dimension (horizontal, above everything)
-  // Blue staff spans from NW-corner direction through N, length 2*52 px diagonal
-  // We'll annotate the vertical span (N point is at top of drawing area)
-  dimLine(CX, CY, pts.N.x, pts.N.y,  'UNIT=80px', INK_DIM, -28, 0);
-  dimLine(CX, CY, pts.S.x, pts.S.y,  'UNIT=80px', INK_DIM,  28, 0);
-
-  // ─── Motion type labels ────────────────────────────────────────────────────
-  // Annotation banners for each hand
-
+  // ─── Annotation badge (corner callout box) ─────────────────────────────────
   function annotationBadge(x, y, lines, color) {
     ctx.save();
     const lineH = 10;
     const pad = 5;
-    const maxW = Math.max(...lines.map(l => {
-      ctx.font = '7px "Courier New", monospace';
-      return ctx.measureText(l).width;
-    }));
+    ctx.font = '7px "Courier New", monospace';
+    const maxW = Math.max(...lines.map(l => ctx.measureText(l).width));
     const bw = maxW + pad * 2;
     const bh = lines.length * lineH + pad * 2;
 
@@ -440,165 +508,263 @@
       ctx.fillText(line, x + pad, y + pad + i * lineH);
     });
     ctx.restore();
+    return { w: bw, h: bh };
   }
 
-  // Blue hand annotation — top-left area
-  annotationBadge(20, 25, [
-    'BLUE HAND — PRO',
-    'START: W',
-    'END:   N',
-    'MOTION: SHIFT',
-    'TYPE: 1',
-  ], BLUE_HAND);
+  function handBadgeLines(hand, fallbackColorName) {
+    if (!hand) return [];
+    const colorName = (hand.color || fallbackColorName || '').toString().toUpperCase();
+    const motion = (hand.motionType || '').toString().toUpperCase() || '—';
+    const start  = ptsKey(handLoc(hand))    || '—';
+    const end    = ptsKey(handEndLoc(hand)) || '—';
+    const motionFamily = motion === 'DASH' ? 'DASH'
+                       : motion === 'STATIC' ? 'STATIC'
+                       : 'SHIFT';
+    return [
+      `${colorName} HAND — ${motion}`,
+      `START: ${start}`,
+      `END:   ${end}`,
+      `MOTION: ${motionFamily}`,
+      `TURNS: ${hand.turns != null ? hand.turns : 0}`,
+    ];
+  }
 
-  // Red hand annotation — top-right area
-  const redBadgeLines = [
-    'RED HAND — PRO',
-    'START: E',
-    'END:   S',
-    'MOTION: SHIFT',
-    'TYPE: 1',
-  ];
-  ctx.save();
-  ctx.font = '7px "Courier New", monospace';
-  const redMaxW = Math.max(...redBadgeLines.map(l => ctx.measureText(l).width)) + 10;
-  ctx.restore();
-  annotationBadge(W - 20 - redMaxW, 25, redBadgeLines, RED_HAND);
+  function drawHandBadges(data) {
+    const blueLines = handBadgeLines(data.blueHand, 'blue');
+    const redLines  = handBadgeLines(data.redHand,  'red');
 
-  // ─── Letter A label (large, center-top) ────────────────────────────────────
-  ctx.save();
-  ctx.font = 'bold 48px "Courier New", monospace';
-  ctx.fillStyle = INK;
-  ctx.globalAlpha = 0.08;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('A', CX, CY);
-  ctx.globalAlpha = 1;
-  ctx.restore();
+    if (blueLines.length) annotationBadge(20, 25, blueLines, BLUE_HAND);
 
-  // Grid mode label
-  ctx.save();
-  ctx.font = '8px "Courier New", monospace';
-  ctx.fillStyle = INK_DIM;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'top';
-  ctx.fillText('GRID: DIAMOND MODE', CX, 17);
-  ctx.restore();
+    if (redLines.length) {
+      ctx.save();
+      ctx.font = '7px "Courier New", monospace';
+      const redMaxW = Math.max(...redLines.map(l => ctx.measureText(l).width)) + 10;
+      ctx.restore();
+      annotationBadge(W - 20 - redMaxW, 25, redLines, RED_HAND);
+    }
+  }
 
-  // ─── Title block (bottom-right) ────────────────────────────────────────────
-  const TB_X = W - 185, TB_Y = H - 78, TB_W = 170, TB_H = 62;
+  function drawGhostLetter(letter) {
+    const l = String(letter || '?');
+    ctx.save();
+    ctx.font = 'bold 48px "Courier New", monospace';
+    ctx.fillStyle = INK;
+    ctx.globalAlpha = 0.08;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(l, CX, CY);
+    ctx.globalAlpha = 1;
+    ctx.restore();
+  }
 
-  ctx.save();
-  ctx.fillStyle = TITLE_BG;
-  ctx.fillRect(TB_X, TB_Y, TB_W, TB_H);
-  ctx.strokeStyle = INK;
-  ctx.lineWidth = 1;
-  ctx.strokeRect(TB_X, TB_Y, TB_W, TB_H);
-  ctx.restore();
+  function drawGridModeLabel(gridMode) {
+    const mode = String(gridMode || 'diamond').toUpperCase();
+    ctx.save();
+    ctx.font = '8px "Courier New", monospace';
+    ctx.fillStyle = INK_DIM;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText(`GRID: ${mode} MODE`, CX, 17);
+    ctx.restore();
+  }
 
-  // Horizontal dividers inside title block
-  ctx.save();
-  ctx.strokeStyle = INK_DIM;
-  ctx.lineWidth = 0.5;
-  ctx.beginPath();
-  ctx.moveTo(TB_X, TB_Y + 20); ctx.lineTo(TB_X + TB_W, TB_Y + 20);
-  ctx.moveTo(TB_X, TB_Y + 40); ctx.lineTo(TB_X + TB_W, TB_Y + 40);
-  ctx.stroke();
-  // Vertical divider in lower two rows
-  ctx.beginPath();
-  ctx.moveTo(TB_X + 85, TB_Y + 20); ctx.lineTo(TB_X + 85, TB_Y + TB_H);
-  ctx.stroke();
-  ctx.restore();
+  function drawTitleBlock(letter) {
+    const l = String(letter || '?');
+    const TB_X = W - 185, TB_Y = H - 78, TB_W = 170, TB_H = 62;
 
-  // Title block text
-  ctx.save();
-  ctx.fillStyle = INK;
-  ctx.font = 'bold 8px "Courier New", monospace';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('TKA PICTOGRAPH — LETTER A', TB_X + TB_W/2, TB_Y + 10);
+    ctx.save();
+    ctx.fillStyle = TITLE_BG;
+    ctx.fillRect(TB_X, TB_Y, TB_W, TB_H);
+    ctx.strokeStyle = INK;
+    ctx.lineWidth = 1;
+    ctx.strokeRect(TB_X, TB_Y, TB_W, TB_H);
+    ctx.restore();
 
-  ctx.font = '7px "Courier New", monospace';
-  ctx.fillStyle = INK_DIM;
-  ctx.textAlign = 'left';
-  ctx.fillText('SCALE: 1:1', TB_X + 5, TB_Y + 30);
-  ctx.fillText('DWG NO: 001', TB_X + 5, TB_Y + 50);
-  ctx.fillText('DATE: 1852', TB_X + 90, TB_Y + 30);
-  ctx.fillText('REV: A', TB_X + 90, TB_Y + 50);
-  ctx.restore();
-
-  // ─── Bottom-left: drawn-by block ───────────────────────────────────────────
-  const SB_X = 15, SB_Y = H - 78, SB_W = 160, SB_H = 62;
-
-  ctx.save();
-  ctx.fillStyle = TITLE_BG;
-  ctx.fillRect(SB_X, SB_Y, SB_W, SB_H);
-  ctx.strokeStyle = INK;
-  ctx.lineWidth = 1;
-  ctx.strokeRect(SB_X, SB_Y, SB_W, SB_H);
-  ctx.restore();
-
-  ctx.save();
-  ctx.strokeStyle = INK_DIM;
-  ctx.lineWidth = 0.5;
-  ctx.beginPath();
-  ctx.moveTo(SB_X, SB_Y + 20); ctx.lineTo(SB_X + SB_W, SB_Y + 20);
-  ctx.stroke();
-  ctx.restore();
-
-  ctx.save();
-  ctx.fillStyle = INK;
-  ctx.font = 'bold 8px "Courier New", monospace';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('KINETIC ANNOTATION SYSTEM', SB_X + SB_W/2, SB_Y + 10);
-
-  ctx.fillStyle = INK_DIM;
-  ctx.font = '7px "Courier New", monospace';
-  ctx.textAlign = 'left';
-  ctx.fillText('CLASS: TYPE 1 — BOTH HANDS SHIFT', SB_X + 5, SB_Y + 32);
-  ctx.fillText('MOTION: PRO / PRO', SB_X + 5, SB_Y + 44);
-  ctx.fillText('START POS: BETA  END POS: ALPHA', SB_X + 5, SB_Y + 56);
-  ctx.restore();
-
-  // ─── Fold marks (corner tick marks on border) ──────────────────────────────
-  const foldLen = 10;
-  const corners = [[10,10],[W-10,10],[10,H-10],[W-10,H-10]];
-  const foldDirs = [
-    [foldLen,0,0,foldLen],
-    [-foldLen,0,0,foldLen],
-    [foldLen,0,0,-foldLen],
-    [-foldLen,0,0,-foldLen],
-  ];
-  ctx.save();
-  ctx.strokeStyle = INK;
-  ctx.lineWidth = 1;
-  corners.forEach(([cx,cy],[dx1,dy1,dx2,dy2]) => {
+    // Horizontal dividers inside title block
+    ctx.save();
+    ctx.strokeStyle = INK_DIM;
+    ctx.lineWidth = 0.5;
     ctx.beginPath();
-    ctx.moveTo(cx,cy); ctx.lineTo(cx+dx1,cy+dy1);
-    ctx.moveTo(cx,cy); ctx.lineTo(cx+dx2,cy+dy2);
+    ctx.moveTo(TB_X, TB_Y + 20); ctx.lineTo(TB_X + TB_W, TB_Y + 20);
+    ctx.moveTo(TB_X, TB_Y + 40); ctx.lineTo(TB_X + TB_W, TB_Y + 40);
     ctx.stroke();
-  });
-  ctx.restore();
+    // Vertical divider in lower two rows
+    ctx.beginPath();
+    ctx.moveTo(TB_X + 85, TB_Y + 20); ctx.lineTo(TB_X + 85, TB_Y + TB_H);
+    ctx.stroke();
+    ctx.restore();
 
-  // ─── Sheet number (top-right corner) ───────────────────────────────────────
-  ctx.save();
-  ctx.fillStyle = INK_DIM;
-  ctx.font = '7px "Courier New", monospace';
-  ctx.textAlign = 'right';
-  ctx.textBaseline = 'top';
-  ctx.fillText('SHEET 1 OF 1', W - 20, 20);
-  ctx.restore();
+    // Title block text
+    ctx.save();
+    ctx.fillStyle = INK;
+    ctx.font = 'bold 8px "Courier New", monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(`TKA PICTOGRAPH — LETTER ${l}`, TB_X + TB_W/2, TB_Y + 10);
 
-  // ─── Copyright / watermark note (tiny, bottom center) ──────────────────────
-  ctx.save();
-  ctx.fillStyle = INK_FAINT;
-  ctx.font = '6px "Courier New", monospace';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'bottom';
-  ctx.fillText('PREPARED BY: DEPARTMENT OF KINETIC STUDIES  ·  ANNO DOMINI MDCCCLII', W/2, H - 17);
-  ctx.restore();
+    ctx.font = '7px "Courier New", monospace';
+    ctx.fillStyle = INK_DIM;
+    ctx.textAlign = 'left';
+    ctx.fillText('SCALE: 1:1', TB_X + 5, TB_Y + 30);
+    ctx.fillText('DWG NO: 001', TB_X + 5, TB_Y + 50);
+    ctx.fillText('DATE: 1852', TB_X + 90, TB_Y + 30);
+    ctx.fillText('REV: A', TB_X + 90, TB_Y + 50);
+    ctx.restore();
+  }
 
+  function drawDrawnByBlock(data) {
+    const SB_X = 15, SB_Y = H - 78, SB_W = 160, SB_H = 62;
+    const gridMode = String((data && data.gridMode) || 'diamond').toUpperCase();
+    const blueMotion = (data && data.blueHand && data.blueHand.motionType || '—').toString().toUpperCase();
+    const redMotion  = (data && data.redHand  && data.redHand.motionType  || '—').toString().toUpperCase();
+
+    ctx.save();
+    ctx.fillStyle = TITLE_BG;
+    ctx.fillRect(SB_X, SB_Y, SB_W, SB_H);
+    ctx.strokeStyle = INK;
+    ctx.lineWidth = 1;
+    ctx.strokeRect(SB_X, SB_Y, SB_W, SB_H);
+    ctx.restore();
+
+    ctx.save();
+    ctx.strokeStyle = INK_DIM;
+    ctx.lineWidth = 0.5;
+    ctx.beginPath();
+    ctx.moveTo(SB_X, SB_Y + 20); ctx.lineTo(SB_X + SB_W, SB_Y + 20);
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.save();
+    ctx.fillStyle = INK;
+    ctx.font = 'bold 8px "Courier New", monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('KINETIC ANNOTATION SYSTEM', SB_X + SB_W/2, SB_Y + 10);
+
+    ctx.fillStyle = INK_DIM;
+    ctx.font = '7px "Courier New", monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText(`CLASS: KINETIC PICTOGRAPH`, SB_X + 5, SB_Y + 32);
+    ctx.fillText(`MOTION: ${blueMotion} / ${redMotion}`, SB_X + 5, SB_Y + 44);
+    ctx.fillText(`GRID: ${gridMode}`, SB_X + 5, SB_Y + 56);
+    ctx.restore();
+  }
+
+  function drawFoldMarks() {
+    const foldLen = 10;
+    ctx.save();
+    ctx.strokeStyle = INK;
+    ctx.lineWidth = 1;
+    // Top-left
+    ctx.beginPath();
+    ctx.moveTo(10, 10); ctx.lineTo(10 + foldLen, 10);
+    ctx.moveTo(10, 10); ctx.lineTo(10, 10 + foldLen);
+    ctx.stroke();
+    // Top-right
+    ctx.beginPath();
+    ctx.moveTo(W - 10, 10); ctx.lineTo(W - 10 - foldLen, 10);
+    ctx.moveTo(W - 10, 10); ctx.lineTo(W - 10, 10 + foldLen);
+    ctx.stroke();
+    // Bottom-left
+    ctx.beginPath();
+    ctx.moveTo(10, H - 10); ctx.lineTo(10 + foldLen, H - 10);
+    ctx.moveTo(10, H - 10); ctx.lineTo(10, H - 10 - foldLen);
+    ctx.stroke();
+    // Bottom-right
+    ctx.beginPath();
+    ctx.moveTo(W - 10, H - 10); ctx.lineTo(W - 10 - foldLen, H - 10);
+    ctx.moveTo(W - 10, H - 10); ctx.lineTo(W - 10, H - 10 - foldLen);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawSheetNumber() {
+    ctx.save();
+    ctx.fillStyle = INK_DIM;
+    ctx.font = '7px "Courier New", monospace';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'top';
+    ctx.fillText('SHEET 1 OF 1', W - 20, 20);
+    ctx.restore();
+  }
+
+  function drawWatermark() {
+    ctx.save();
+    ctx.fillStyle = INK_FAINT;
+    ctx.font = '6px "Courier New", monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('PREPARED BY: DEPARTMENT OF KINETIC STUDIES  ·  ANNO DOMINI MDCCCLII', W/2, H - 17);
+    ctx.restore();
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Render — called on every pictograph update
+  //
+  // Two paths:
+  //   1. Canonical bitmap available (parent rendered via Canvas2DDirectRenderer):
+  //      recolor into a unified cyan palette, apply the 'blueprint' edge
+  //      treatment so every drawn pixel becomes bright cyan and everything
+  //      else transparent, composite onto the cyanotype background. This
+  //      path inherits all correct motion semantics — pro vs anti, turns
+  //      indicators, dashes, floats — from the canonical renderer without
+  //      reimplementing them here. No pixelation — blueprints are crisp.
+  //
+  //   2. No canonical (standalone page open, or canonical render failed):
+  //      fall back to the original dimension-annotated markers + dashed
+  //      construction lines so the page still produces a meaningful image.
+  //
+  // Era chrome (background, graph paper, border, diagonals, title blocks,
+  // badges, watermark) is drawn identically either way — that's where this
+  // era's voice lives.
+  // ─────────────────────────────────────────────────────────────────────────
+  function render(data, canonical, meta) {
+    // ── Background + blueprint chrome ──
+    drawBlueprintBackground();     // dark cyan background fill
+    drawGraphPaper();              // faint grid pattern
+    drawBorder();                  // double border, crosshairs
+    drawDiagonals();               // reference diagonals
+    drawUnitDimensions();          // 80-unit dimLines
+
+    // ── Pictograph core ──
+    if (canonical && window.PictographStylize) {
+      // No pixelate for blueprint — crisp technical linework
+      const styled = window.PictographStylize.recolor(canonical, BLUEPRINT_PALETTE, W);
+      window.PictographStylize.edgeTreatment(styled, 'blueprint');
+      ctx.drawImage(styled, 0, 0, W, H);
+    } else {
+      drawStaffForHand(data.blueHand, BLUE_HAND, 'left');
+      drawStaffForHand(data.redHand,  RED_HAND,  'right');
+      drawArrowForHand(data.blueHand, BLUE_HAND);
+      drawArrowForHand(data.redHand,  RED_HAND);
+    }
+
+    // ── Title blocks + annotations on top ──
+    drawHandBadges(data);           // top-left/right data badges
+    drawGhostLetter(data.letter);   // large watermark letter
+    drawGridModeLabel(data.gridMode);
+    drawTitleBlock(data.letter);    // bottom-right title block
+    drawDrawnByBlock(data);         // bottom-left
+    drawFoldMarks();                // registration ticks
+    drawSheetNumber();
+    drawWatermark();
+  }
+
+  // ─── Default pictograph — Letter A (what the page rendered before the
+  //     data-driven refactor). Also used when this HTML is opened directly
+  //     without a parent posting pictograph data.
+  const DEFAULT_PICTOGRAPH = {
+    letter: 'A', gridMode: 'diamond',
+    blueHand: { color:'blue', location:'w', endLocation:'n', motionType:'pro', rotationDirection:'cw', orientation:'in', turns:0 },
+    redHand:  { color:'red',  location:'e', endLocation:'s', motionType:'pro', rotationDirection:'cw', orientation:'in', turns:0 },
+  };
+
+  render(DEFAULT_PICTOGRAPH, null, null);
+  if (window.PictographBridge) {
+    window.PictographBridge.onPictograph(function(data, canonical, meta) {
+      render(data, canonical, meta);
+    });
+  }
 })();
 </script>
 <script>if(location.search.includes("embed"))document.body.classList.add("embed")</script>

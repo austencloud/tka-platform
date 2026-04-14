@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bauhaus Pictograph A — TKA</title>
+  <title>Bauhaus Pictograph — TKA</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -21,6 +21,11 @@
 </head>
 <body>
 <canvas id="canvas" width="500" height="500"></canvas>
+
+<script src="./_shared/pictograph-geometry.js"></script>
+<script src="./_shared/pictograph-bridge.js"></script>
+<script src="./_shared/pictograph-stylize.js"></script>
+
 <script>
 const canvas = document.getElementById('canvas');
 const ctx    = canvas.getContext('2d');
@@ -34,13 +39,24 @@ const C = {
   yellow: '#F0C400',
 };
 
+// Palette handed to PictographStylize.recolor() when the canonical pipeline
+// is available. These are the pure Bauhaus primaries the threshold edge
+// treatment will snap every pixel to.
+const BAUHAUS_PALETTE = {
+  blue:       '#0046D4',   // primary blue
+  red:        '#D0282C',   // primary red
+  structural: '#0A0A0A',   // black
+  bg:         null,
+};
+
 const W = 500, H = 500;
 
 // Grid center — shifted left for asymmetric Bauhaus composition
 const CX = 210, CY = 240;
 const R  = 130;  // radius to grid points
 
-// Convert compass direction to {x,y}
+// Convert uppercase compass direction to {x,y} — preserved for the grid dot /
+// compass label layout below.
 function gp(dir) {
   const deg = { N:-90, NE:-45, E:0, SE:45, S:90, SW:135, W:180, NW:-135 };
   const a = deg[dir] * Math.PI / 180;
@@ -60,184 +76,105 @@ function arrowhead(tipX, tipY, tx, ty, len, wid, color) {
   ctx.fill();
 }
 
-// ─── 1. Cream background ──────────────────────────────────────────────────────
-ctx.fillStyle = C.cream;
-ctx.fillRect(0, 0, W, H);
+// ─── Data-driven helpers ─────────────────────────────────────────────────────
+// Normalize the TKA location fields to the lowercase keys PictographGeometry
+// expects. The hand object may carry `location` or `startLocation`.
+function handLoc(hand)    { return String(hand.location    || hand.startLocation || '').toLowerCase(); }
+function handEndLoc(hand) { return String(hand.endLocation || '').toLowerCase(); }
 
-// ─── 2. Bauhaus structural elements ──────────────────────────────────────────
-// Thick vertical black bar — right compositional anchor
-ctx.fillStyle = C.black;
-ctx.fillRect(430, 0, 70, H);
-
-// Yellow block — bottom-left
-ctx.fillStyle = C.yellow;
-ctx.fillRect(0, 415, 55, 85);
-
-// Red accent bar — top right
-ctx.fillStyle = C.red;
-ctx.fillRect(340, 55, 90, 12);
-
-// Frame rules — top and left edges (open composition, Bauhaus style)
-ctx.strokeStyle = C.black;
-ctx.lineWidth = 2.5;
-ctx.beginPath();
-ctx.moveTo(0, 0); ctx.lineTo(430, 0);
-ctx.moveTo(0, 0); ctx.lineTo(0, H);
-ctx.stroke();
-
-// Thin horizontal rule below header
-ctx.fillStyle = C.black;
-ctx.fillRect(0, 50, 430, 2);
-
-// Thin rule above footer
-ctx.fillRect(0, 418, 430, 1.5);
-
-// ─── 3. Header text ───────────────────────────────────────────────────────────
-ctx.fillStyle = C.black;
-ctx.font = '700 11px "Futura", "Century Gothic", "Gill Sans MT", sans-serif';
-ctx.textAlign = 'left';
-ctx.textBaseline = 'middle';
-ctx.fillText('KINETIC ALPHABET', 16, 30);
-
-// ─── 4. "PICTOGRAPH A" vertically in black bar ────────────────────────────────
-ctx.save();
-ctx.translate(462, 400);
-ctx.rotate(-Math.PI / 2);
-ctx.fillStyle = C.cream;
-ctx.font = '700 10px "Futura", "Century Gothic", "Gill Sans MT", sans-serif';
-ctx.textAlign = 'left';
-ctx.textBaseline = 'middle';
-ctx.fillText('PICTOGRAPH  A', 0, 0);
-ctx.restore();
-
-// ─── 5. Footer text ───────────────────────────────────────────────────────────
-ctx.fillStyle = C.black;
-ctx.font = '600 9.5px "Futura", "Century Gothic", "Gill Sans MT", sans-serif';
-ctx.textAlign = 'left';
-ctx.textBaseline = 'middle';
-ctx.fillText('1923', 16, 432);
-ctx.fillText('TYPE 1  ·  PRO', 65, 432);
-ctx.textAlign = 'right';
-ctx.fillText('NO. 01', 422, 432);
-
-// ─── 6. Grid dots ─────────────────────────────────────────────────────────────
-function drawDots() {
-  ['N','NE','E','SE','S','SW','W','NW'].forEach(dir => {
-    const p = gp(dir);
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
-    ctx.fillStyle = C.black;
-    ctx.fill();
-  });
+// Map the hand's color to the Bauhaus palette, with a sensible default.
+function paletteColorFor(hand, fallback) {
+  if (!hand) return fallback;
+  if (hand.color === 'blue') return C.blue;
+  if (hand.color === 'red')  return C.red;
+  return fallback;
 }
-drawDots();
 
-// ─── 7. Compass labels ────────────────────────────────────────────────────────
-ctx.font = '700 8px "Futura", "Century Gothic", "Gill Sans MT", sans-serif';
-ctx.fillStyle = C.black;
-ctx.textAlign = 'center';
-ctx.textBaseline = 'middle';
-[
-  { dir:'N', ox: 0,   oy:-17 },
-  { dir:'E', ox: 17,  oy:  0 },
-  { dir:'S', ox: 0,   oy: 17 },
-  { dir:'W', ox:-17,  oy:  0 },
-].forEach(({ dir, ox, oy }) => {
-  const p = gp(dir);
-  ctx.fillText(dir, p.x + ox, p.y + oy);
-});
+// ─── Draw a flat, block-style stave at the hand's end location ──────────────
+// Matches the original Bauhaus stave aesthetic: solid rectangle along the
+// staff's long axis, with a perpendicular cap at the outer end.
+function drawStaffForHand(hand, color) {
+  if (!hand || !window.PictographGeometry) return;
+  const G = window.PictographGeometry;
+  const endLoc = handEndLoc(hand);
+  const center = G.locationPoint(endLoc, CX, CY, R);
+  const axisAngle = G.staffAxisAngle(endLoc, hand.orientation || 'in');
 
-// ─── 8. Staves — clean flat rectangles ───────────────────────────────────────
-function drawStave(dir, color) {
-  const p   = gp(dir);
-  const ang = Math.atan2(p.y - CY, p.x - CX);
+  // Dimensions chosen to match the original drawStave():
+  //   shaft runs from 14px off-center out to (R - 10)px, with a perpendicular
+  //   cap at the outer end.
   const startD = 14, endD = R - 10, halfW = 7, capW = 10;
 
   ctx.save();
   ctx.translate(CX, CY);
-  ctx.rotate(ang);
+  ctx.rotate(axisAngle);
   ctx.fillStyle = color;
+  // Shaft
   ctx.fillRect(startD, -halfW, endD - startD, halfW * 2);
+  // Outer cap
   ctx.fillRect(endD - capW, -halfW - 3, capW, halfW * 2 + 6);
   ctx.restore();
 }
 
-drawStave('N', C.blue);
-drawStave('S', C.red);
+// ─── Draw an arrow (arc or dash) for a hand's motion ─────────────────────────
+function drawArrowForHand(hand, color) {
+  if (!hand || hand.motionType === 'static' || !window.PictographGeometry) return;
+  const G = window.PictographGeometry;
+  const startLoc = handLoc(hand);
+  const endLoc   = handEndLoc(hand);
+  const s = G.locationPoint(startLoc, CX, CY, R);
+  const e = G.locationPoint(endLoc,   CX, CY, R);
 
-// ─── 9. Center hub — solid black square ──────────────────────────────────────
-const hs = 18;
-ctx.fillStyle = C.black;
-ctx.fillRect(CX - hs/2, CY - hs/2, hs, hs);
+  if (hand.motionType === 'dash') {
+    // Straight Bauhaus-style line with arrowhead — thick, flat, no curves.
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 6;
+    ctx.lineCap = 'butt';
+    ctx.beginPath();
+    ctx.moveTo(s.x, s.y);
+    ctx.lineTo(e.x, e.y);
+    ctx.stroke();
+    ctx.restore();
+    const len = Math.hypot(e.x - s.x, e.y - s.y) || 1;
+    arrowhead(e.x, e.y, (e.x - s.x) / len, (e.y - s.y) / len, 18, 11, color);
+    return;
+  }
 
-// ─── 10. Pro motion arcs ─────────────────────────────────────────────────────
-//
-// Blue hand: W → N  (NW quarter arc)
-//   Draw from N(270°) to W(180°), CCW (decreasing angle: 270→225→180)
-//   Arrowhead tip lands at N, tangent direction at N for CCW = east (+x)
-//
-// Red hand: E → S  (SE quarter arc)
-//   Draw from E(0°) to S(90°), CW (increasing angle: 0→45→90)
-//   Arrowhead tip lands at S, tangent direction at S for CW = west (-x)
-//   [d/dθ(cosθ, sinθ) at θ=90° = (-sin90, cos90) = (-1, 0)]
+  // Arc — pro / anti / float. Resolve visual direction, then draw via
+  // ctx.arc with the correct `anticlockwise` flag.
+  const dir = G.handDirection(hand) || 'cw';
+  const startA = G.locationAngle(startLoc);
+  const endA   = G.locationAngle(endLoc);
+  if (startA == null || endA == null) return;
 
-// Arc radius equals grid radius — arcs run exactly from grid dot to grid dot
-const arcR = R;
-
-// Blue: NW arc — N(270°) to W(180°) CCW
-// Tail at W, tip at N. Draw from N→W CCW (270→225→180).
-// Arrowhead tip at N, pointing east (+x) — the direction of arc travel at N for CCW.
-// CCW tangent at θ: (-sinθ, cosθ). At θ=270°: (1, 0) = east. ✓
-{
-  const sa = 270 * Math.PI / 180;  // N
-  const ea = 180 * Math.PI / 180;  // W
+  // In canvas coords (y-down): visual CW = angle increasing = ctx.arc
+  // anticlockwise=false. Visual CCW = anticlockwise=true.
+  const anticlockwise = (dir === 'ccw');
 
   ctx.save();
-  ctx.strokeStyle = C.blue;
+  ctx.strokeStyle = color;
   ctx.lineWidth = 6;
   ctx.lineCap = 'butt';
   ctx.beginPath();
-  ctx.arc(CX, CY, arcR, sa, ea, true);
+  ctx.arc(CX, CY, R, startA, endA, anticlockwise);
   ctx.stroke();
   ctx.restore();
 
-  const tipX = CX + arcR * Math.cos(sa);
-  const tipY = CY + arcR * Math.sin(sa);
-  arrowhead(tipX, tipY, 1, 0, 18, 11, C.blue);
+  // Arrowhead at the arc's END, tangent to the circle at that point.
+  // Derivative of (cos θ, sin θ) at θ is (-sin θ, cos θ) — that's the CCW
+  // tangent. Negate for CW.
+  let tanX, tanY;
+  if (anticlockwise) { tanX =  Math.sin(endA); tanY = -Math.cos(endA); }
+  else               { tanX = -Math.sin(endA); tanY =  Math.cos(endA); }
+  arrowhead(e.x, e.y, tanX, tanY, 18, 11, color);
 }
 
-// Red: SE arc — E(0°) to S(90°) CW
-// Tail at E, tip at S. Draw from E→S CW (0→45→90).
-// Arrowhead tip at S, pointing west (-x) — CW tangent at θ=90°: (-sin90, cos90) = (-1,0). ✓
-{
-  const sa = 0  * Math.PI / 180;  // E
-  const ea = 90 * Math.PI / 180;  // S
-
-  ctx.save();
-  ctx.strokeStyle = C.red;
-  ctx.lineWidth = 6;
-  ctx.lineCap = 'butt';
-  ctx.beginPath();
-  ctx.arc(CX, CY, arcR, sa, ea, false);
-  ctx.stroke();
-  ctx.restore();
-
-  const tipX = CX + arcR * Math.cos(ea);
-  const tipY = CY + arcR * Math.sin(ea);
-  arrowhead(tipX, tipY, -1, 0, 18, 11, C.red);
-}
-
-// ─── 11. Redraw staves and dots on top of arcs ────────────────────────────────
-drawStave('N', C.blue);
-drawStave('S', C.red);
-ctx.fillStyle = C.black;
-ctx.fillRect(CX - hs/2, CY - hs/2, hs, hs);
-drawDots();
-
-// ─── 12. Bauhaus geometric letter "A" ────────────────────────────────────────
-// Constructed from filled polygons — diagonal legs + horizontal crossbar
-// No curves, no serifs. Pure geometric form.
-
+// ─── Bauhaus geometric letter "A" ────────────────────────────────────────────
+// Constructed from filled polygons — diagonal legs + horizontal crossbar.
+// No curves, no serifs. Pure geometric form. Kept for legacy use if we want
+// to fall back to drawing the letter glyph directly; the data-driven render
+// below uses plain text for arbitrary letters.
 function drawBauhausA(ox, oy, size, color) {
   ctx.save();
   ctx.fillStyle = color;
@@ -272,31 +209,269 @@ function drawBauhausA(ox, oy, size, color) {
   ctx.restore();
 }
 
-// Large A — black, lower right
-drawBauhausA(305, 312, 102, C.black);
+// Big letter glyph — uses the geometric A construction for the letter 'A',
+// and falls back to a heavy Futura-style fill for any other character so
+// every pictograph in the alphabet renders something readable.
+function drawBigLetter(letter, ox, oy, size, color) {
+  const ch = String(letter || '').trim().charAt(0).toUpperCase();
+  if (ch === 'A') {
+    drawBauhausA(ox, oy, size, color);
+    return;
+  }
+  ctx.save();
+  ctx.fillStyle = color;
+  // Approximate the Bauhaus A's visual weight (size ≈ cap height).
+  ctx.font = `900 ${size}px "Futura", "Century Gothic", "Gill Sans MT", sans-serif`;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillText(ch, ox, oy);
+  ctx.restore();
+}
 
-// Small red A — top left (catalog marker)
-drawBauhausA(18, 62, 28, C.red);
+function drawSmallLetter(letter, ox, oy, size, color) {
+  const ch = String(letter || '').trim().charAt(0).toUpperCase();
+  if (ch === 'A') {
+    drawBauhausA(ox, oy, size, color);
+    return;
+  }
+  ctx.save();
+  ctx.fillStyle = color;
+  ctx.font = `900 ${size}px "Futura", "Century Gothic", "Gill Sans MT", sans-serif`;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillText(ch, ox, oy);
+  ctx.restore();
+}
 
-// ─── 13. Compositional accent circle ─────────────────────────────────────────
-ctx.beginPath();
-ctx.arc(385, 372, 22, 0, Math.PI * 2);
-ctx.strokeStyle = C.black;
-ctx.lineWidth = 3;
-ctx.stroke();
-ctx.beginPath();
-ctx.arc(385, 372, 5, 0, Math.PI * 2);
-ctx.fillStyle = C.black;
-ctx.fill();
+// ─── Chrome primitives ───────────────────────────────────────────────────────
+// Each of these paints one piece of the Bauhaus frame. They're factored out
+// so the canonical and fallback render paths can share the same structural
+// composition.
 
-// ─── 14. Diagonal tension line ────────────────────────────────────────────────
-ctx.strokeStyle = C.black;
-ctx.lineWidth = 1.5;
-ctx.beginPath();
-ctx.moveTo(0, 418);
-ctx.lineTo(55, 390);
-ctx.stroke();
+function drawBackground() {
+  ctx.fillStyle = C.cream;
+  ctx.fillRect(0, 0, W, H);
+}
 
+function drawBlackBar() {
+  // Thick vertical black bar — right compositional anchor.
+  ctx.fillStyle = C.black;
+  ctx.fillRect(430, 0, 70, H);
+}
+
+function drawYellowBlock() {
+  // Yellow block — bottom-left.
+  ctx.fillStyle = C.yellow;
+  ctx.fillRect(0, 415, 55, 85);
+}
+
+function drawRedAccent() {
+  // Red accent bar — top right.
+  ctx.fillStyle = C.red;
+  ctx.fillRect(340, 55, 90, 12);
+}
+
+function drawFrameRules() {
+  // Frame rules — top and left edges (open composition, Bauhaus style).
+  ctx.strokeStyle = C.black;
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.moveTo(0, 0); ctx.lineTo(430, 0);
+  ctx.moveTo(0, 0); ctx.lineTo(0, H);
+  ctx.stroke();
+
+  // Thin horizontal rule below header
+  ctx.fillStyle = C.black;
+  ctx.fillRect(0, 50, 430, 2);
+
+  // Thin rule above footer
+  ctx.fillRect(0, 418, 430, 1.5);
+}
+
+function drawHeader() {
+  ctx.fillStyle = C.black;
+  ctx.font = '700 11px "Futura", "Century Gothic", "Gill Sans MT", sans-serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('KINETIC ALPHABET', 16, 30);
+}
+
+function drawVerticalLabel(letter) {
+  const ch = String(letter || '').toUpperCase() || 'A';
+  ctx.save();
+  ctx.translate(462, 400);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillStyle = C.cream;
+  ctx.font = '700 10px "Futura", "Century Gothic", "Gill Sans MT", sans-serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(`PICTOGRAPH  ${ch}`, 0, 0);
+  ctx.restore();
+}
+
+function drawFooter() {
+  ctx.fillStyle = C.black;
+  ctx.font = '600 9.5px "Futura", "Century Gothic", "Gill Sans MT", sans-serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('1923', 16, 432);
+  ctx.fillText('TYPE 1  ·  PRO', 65, 432);
+  ctx.textAlign = 'right';
+  ctx.fillText('NO. 01', 422, 432);
+}
+
+function drawGridDots() {
+  ['N','NE','E','SE','S','SW','W','NW'].forEach(dir => {
+    const p = gp(dir);
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
+    ctx.fillStyle = C.black;
+    ctx.fill();
+  });
+}
+
+function drawCompassLabels() {
+  ctx.font = '700 8px "Futura", "Century Gothic", "Gill Sans MT", sans-serif';
+  ctx.fillStyle = C.black;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  [
+    { dir:'N', ox: 0,   oy:-17 },
+    { dir:'E', ox: 17,  oy:  0 },
+    { dir:'S', ox: 0,   oy: 17 },
+    { dir:'W', ox:-17,  oy:  0 },
+  ].forEach(({ dir, ox, oy }) => {
+    const p = gp(dir);
+    ctx.fillText(dir, p.x + ox, p.y + oy);
+  });
+}
+
+function drawCenterHub() {
+  const hs = 18;
+  ctx.fillStyle = C.black;
+  ctx.fillRect(CX - hs/2, CY - hs/2, hs, hs);
+}
+
+function drawBigLetterGlyph(letter) {
+  const ch = String(letter || '').toUpperCase() || 'A';
+  drawBigLetter(ch, 305, 312, 102, C.black);
+}
+
+function drawSmallLetterGlyph(letter) {
+  const ch = String(letter || '').toUpperCase() || 'A';
+  drawSmallLetter(ch, 18, 62, 28, C.red);
+}
+
+function drawAccentCircle() {
+  ctx.beginPath();
+  ctx.arc(385, 372, 22, 0, Math.PI * 2);
+  ctx.strokeStyle = C.black;
+  ctx.lineWidth = 3;
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(385, 372, 5, 0, Math.PI * 2);
+  ctx.fillStyle = C.black;
+  ctx.fill();
+}
+
+function drawDiagonalTensionLine() {
+  ctx.strokeStyle = C.black;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(0, 418);
+  ctx.lineTo(55, 390);
+  ctx.stroke();
+}
+
+// ─── Full scene render ───────────────────────────────────────────────────────
+// Two paths:
+//
+//   1. Canonical bitmap available (parent rendered via Canvas2DDirectRenderer):
+//      recolor into pure Bauhaus primaries, run the threshold edge treatment
+//      so every pixel snaps to blue / red / structural black with no
+//      anti-aliased halos, then composite in a single full-opacity pass.
+//      This gives the clean geometric shapes Bauhaus demands while inheriting
+//      correct motion semantics (pro vs anti, dashes, turns indicators) from
+//      the canonical renderer.
+//
+//   2. No canonical (standalone page open, or canonical render failed):
+//      fall back to the original data-driven arrow + staff rendering so the
+//      page still produces a meaningful image.
+//
+// Era chrome (background, black bar, yellow block, red accent, frame rules,
+// header, footer, big letter, accent circle, tension line) is drawn
+// identically either way.
+function render(data, canonical /* ImageBitmap | null */, meta /* object | null */) {
+  const letter = String((data && data.letter) || '').toUpperCase() || 'A';
+  const blue = data && data.blueHand;
+  const red  = data && data.redHand;
+  const blueColor = paletteColorFor(blue, C.blue);
+  const redColor  = paletteColorFor(red,  C.red);
+
+  // Background + geometric chrome (always drawn first)
+  drawBackground();
+  drawBlackBar();
+  drawYellowBlock();
+  drawRedAccent();
+  drawFrameRules();
+  drawHeader();
+  drawVerticalLabel(letter);
+  drawFooter();
+
+  // Grid chrome
+  drawGridDots();
+  drawCompassLabels();
+
+  if (canonical && window.PictographStylize) {
+    // Path 1: recolor canonical to Bauhaus primaries, threshold to hard
+    // edges, composite once at full opacity. No pixelation — Bauhaus is
+    // about clean geometric shapes, not chunky blocks.
+    const styled = window.PictographStylize.recolor(canonical, BAUHAUS_PALETTE, W);
+    window.PictographStylize.edgeTreatment(styled, 'threshold');
+    ctx.drawImage(styled, 0, 0, W, H);
+  } else {
+    // Fallback: original data-driven arrow + staff rendering
+    if (blue) drawArrowForHand(blue, blueColor);
+    if (red)  drawArrowForHand(red,  redColor);
+    if (blue) drawStaffForHand(blue, blueColor);
+    if (red)  drawStaffForHand(red,  redColor);
+  }
+
+  // Chrome on top of pictograph
+  drawCenterHub();
+  drawGridDots();  // redraw so dots sit above arcs at the grid points
+  drawBigLetterGlyph(letter);
+  drawSmallLetterGlyph(letter);
+  drawAccentCircle();
+  drawDiagonalTensionLine();
+}
+
+// ─── Default pictograph — Letter A. Rendered immediately so the page isn't
+//     blank when opened standalone; replaced by whatever the parent posts.
+const DEFAULT_PICTOGRAPH = {
+  letter: 'A',
+  gridMode: 'diamond',
+  blueHand: {
+    color: 'blue',
+    location: 'w', endLocation: 'n',
+    motionType: 'pro', rotationDirection: 'cw',
+    orientation: 'in', turns: 0,
+  },
+  redHand: {
+    color: 'red',
+    location: 'e', endLocation: 's',
+    motionType: 'pro', rotationDirection: 'cw',
+    orientation: 'in', turns: 0,
+  },
+};
+
+render(DEFAULT_PICTOGRAPH, null, null);
+
+if (window.PictographBridge) {
+  window.PictographBridge.onPictograph(function(data, canonical, meta) {
+    render(data, canonical, meta);
+  });
+}
 </script>
 <script>if(location.search.includes("embed"))document.body.classList.add("embed")</script>
 </body>
