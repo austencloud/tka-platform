@@ -341,6 +341,18 @@
           // Non-critical
         }
 
+        // Record session start for attribution prompt trigger. On first-ever
+        // boot this also locks in the "eligibleAfter" date so the deferred
+        // prompt actually becomes eligible instead of drifting forward.
+        try {
+          const trigger = (container.items as any).attributionPromptTrigger;
+          if (trigger && typeof trigger.recordSessionStart === "function") {
+            trigger.recordSessionStart();
+          }
+        } catch {
+          // Non-critical
+        }
+
         // Check if deferred prompts should show (after app settles)
         setTimeout(() => {
           getAttributionPromptState().checkAndMaybeShow();

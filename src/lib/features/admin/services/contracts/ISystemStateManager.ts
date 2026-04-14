@@ -6,6 +6,8 @@
  * and guaranteeing data consistency across all views.
  */
 
+import type { UserAttribution } from "$lib/shared/attribution/domain/types";
+
 export interface CachedUserMetadata {
   id: string;
   displayName: string;
@@ -23,6 +25,8 @@ export interface CachedUserMetadata {
   createdAt: Date | null;
   disabled: boolean;
   role: string;
+  /** Attribution record captured at signup + any self-reported updates. Null for older accounts. */
+  attribution: UserAttribution | null;
 }
 
 export interface CachedChallenge {
