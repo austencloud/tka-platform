@@ -36,6 +36,9 @@
   <canvas id="mosaic" width="500" height="500"></canvas>
   <div class="caption">TKA · Letter A · Pompeian Floor Mosaic · c. 500 BC</div>
 
+  <script src="./_shared/pictograph-geometry.js"></script>
+  <script src="./_shared/pictograph-bridge.js"></script>
+  <script src="./_shared/pictograph-stylize.js"></script>
   <script>
     const canvas = document.getElementById('mosaic');
     const ctx = canvas.getContext('2d');
@@ -43,6 +46,16 @@
     const W = 500;
     const H = 500;
     const T = 9; // tessera size in pixels
+
+    // ── Canonical-compose palette (Path 1 pipeline) ─────────────────────────
+    // Maps the canonical pictograph's color classes into mosaic tesserae tones
+    // so blue/red props land on tiles that harmonize with the stone aesthetic.
+    const MOSAIC_PALETTE = {
+      blue:       '#304a6a',  // tesserae blue
+      red:        '#8a3020',  // tesserae red
+      structural: '#e8d7a8',  // cream grout
+      bg:         null,       // grout background shows through
+    };
     const COLS = Math.ceil(W / T);
     const ROWS = Math.ceil(H / T);
     const GROUT = 1.5; // grout line width
@@ -83,6 +96,14 @@
     // Tessera grid — each cell stores a palette key
     // ─────────────────────────────────────────────
     const grid = Array.from({ length: ROWS }, () => Array(COLS).fill('cream'));
+
+    function resetGrid() {
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          grid[r][c] = 'cream';
+        }
+      }
+    }
 
     function setTile(col, row, palette) {
       if (row >= 0 && row < ROWS && col >= 0 && col < COLS) {
@@ -352,89 +373,119 @@
       };
     });
 
-    function drawPictograph() {
-      // ── 1. Background grid circle boundary ──────────
-      // Subtle outer ring
+    // ── Helpers for data-driven hand rendering ─────────────────────────────
+    function handLoc(h)    { return String((h && (h.location || h.startLocation)) || '').toLowerCase(); }
+    function handEndLoc(h) { return String((h && h.endLocation) || '').toLowerCase(); }
+
+    function drawStaffForHand(hand, palette) {
+      if (!hand || !window.PictographGeometry) return;
+      const G = window.PictographGeometry;
+      const end = handEndLoc(hand);
+      if (!end) return;
+      const center = G.locationPoint(end, CX, CY, RADIUS);
+      const axis = G.staffAxisAngle(end, hand.orientation || 'in');
+      const length = RADIUS * 1.0;
+      const { a, b } = G.staffEndpoints(center, axis, length);
+      paintLine(a.x, a.y, b.x, b.y, palette, 2);
+    }
+
+    function drawArrowForHand(hand, palette) {
+      if (!hand || hand.motionType === 'static' || !window.PictographGeometry) return;
+      const G = window.PictographGeometry;
+      const startLoc = handLoc(hand);
+      const endLoc = handEndLoc(hand);
+      if (!startLoc || !endLoc) return;
+      const s = G.locationPoint(startLoc, CX, CY, RADIUS);
+      const e = G.locationPoint(endLoc,   CX, CY, RADIUS);
+
+      if (hand.motionType === 'dash') {
+        paintLine(s.x, s.y, e.x, e.y, palette, 2);
+        drawArrowhead(e.x, e.y, s.x, s.y, palette);
+        return;
+      }
+
+      // Arc — use paintCurve with control point pulled outward along the
+      // arc's mid-angle so the Bezier bows past the perimeter (mosaic-style
+      // sweep, like the original hardcoded letter-A arcs).
+      const dir = G.handDirection(hand) || 'cw';
+      const angles = G.arcAngles(startLoc, endLoc, dir);
+      if (!angles) return;
+      const midA = (angles.startA + angles.endA) / 2;
+      const ctrlR = RADIUS * 1.35;
+      const ctrl = { x: CX + Math.cos(midA) * ctrlR, y: CY + Math.sin(midA) * ctrlR };
+      paintCurve(s.x, s.y, ctrl.x, ctrl.y, e.x, e.y, palette, 2);
+
+      // Tangent of quadratic Bezier at t=1 is the direction from ctrl → end.
+      drawArrowhead(e.x, e.y, ctrl.x, ctrl.y, palette);
+    }
+
+    // ── Broken out so the canonical-compose path can keep all the grid/chrome
+    //    pieces but skip the staff + arrow tile painting (canonical pixels
+    //    supply those once we composite on top of the rasterized mosaic).
+    function drawBorder() {
+      drawGreekKeyBorder();
+    }
+
+    function drawGridDots() {
+      // Background grid circle boundary ring first — dark outer, olive inner.
       paintRing(CX, CY, RADIUS + 14, RADIUS + 6, 'charcoal');
       paintRing(CX, CY, RADIUS + 5, RADIUS - 1, 'olive');
 
-      // ── 2. Grid dots at the 8 points ─────────────────
+      // 8 cardinal/intercardinal anchor dots — outer dark, inner color, gold core.
       DIRECTIONS.forEach(d => {
         const p = GRID_POINTS[d];
-        paintCircle(p.x, p.y, 12, 'charcoal'); // outer dark
-        paintCircle(p.x, p.y, 8, 'olive');      // inner color
-        paintCircle(p.x, p.y, 4, 'gold');       // center highlight
+        paintCircle(p.x, p.y, 12, 'charcoal');
+        paintCircle(p.x, p.y, 8, 'olive');
+        paintCircle(p.x, p.y, 4, 'gold');
       });
 
-      // Center dot
+      // Center dot.
       paintCircle(CX, CY, 10, 'charcoal');
       paintCircle(CX, CY, 6, 'gold');
+    }
 
-      // ── 3. Grid lines (thin single-tile lines) ────────
-      // The 4 lines connecting opposite points
+    function drawGridLines() {
       const pairs = [['n','s'],['e','w'],['ne','sw'],['nw','se']];
       pairs.forEach(([a, b]) => {
         paintLine(GRID_POINTS[a].x, GRID_POINTS[a].y,
                   GRID_POINTS[b].x, GRID_POINTS[b].y, 'charcoal', 0);
       });
-
-      // ── 4. Blue staff (north) ─────────────────────────
-      // Staff is a line from center outward past north, representing
-      // the position north with a short line through the grid point
-      const blueSE = { x: CX + 20, y: CY + 20 }; // shaft origin near center
-      const blueN  = GRID_POINTS['n'];
-      // Staff line: thicker, from just below center to above north
-      paintLine(CX - 5, CY + 12, blueN.x, blueN.y - 18, 'blue', 2);
-
-      // ── 5. Red staff (south) ──────────────────────────
-      const redN2  = { x: CX + 5, y: CY - 12 };
-      const redS   = GRID_POINTS['s'];
-      paintLine(redN2.x, redN2.y, redS.x, redS.y + 18, 'red', 2);
-
-      // ── 6. Blue pro arrow: W → N (curves counterclockwise) ──────
-      // PRO motion curves outward. Blue hand starts at W, ends at N.
-      // The control point sweeps the arc outward to the NW quadrant.
-      const bStart = GRID_POINTS['w'];
-      const bEnd   = GRID_POINTS['n'];
-      const bCtrl  = {
-        x: CX - RADIUS * 1.35,
-        y: CY - RADIUS * 1.35,
-      };
-      paintCurve(bStart.x, bStart.y, bCtrl.x, bCtrl.y, bEnd.x, bEnd.y, 'blue', 2);
-      // Arrowhead at N end — small cluster pointing NE
-      drawArrowhead(bEnd.x, bEnd.y, bCtrl.x, bCtrl.y, bEnd.x, bEnd.y, 'blue');
-
-      // ── 7. Red pro arrow: E → S (curves clockwise) ───────────────
-      const rStart = GRID_POINTS['e'];
-      const rEnd   = GRID_POINTS['s'];
-      const rCtrl  = {
-        x: CX + RADIUS * 1.35,
-        y: CY + RADIUS * 1.35,
-      };
-      paintCurve(rStart.x, rStart.y, rCtrl.x, rCtrl.y, rEnd.x, rEnd.y, 'red', 2);
-      drawArrowhead(rEnd.x, rEnd.y, rCtrl.x, rCtrl.y, rEnd.x, rEnd.y, 'red');
-
-      // ── 8. Starting position dots on the arrow paths ──
-      // Small dot at W (blue start) and E (red start)
-      paintCircle(bStart.x, bStart.y, 10, 'charcoal');
-      paintCircle(bStart.x, bStart.y, 6, 'blue');
-      paintCircle(rStart.x, rStart.y, 10, 'charcoal');
-      paintCircle(rStart.x, rStart.y, 6, 'red');
     }
 
-    function drawArrowhead(tx, ty, ctrlX, ctrlY, endX, endY, palette) {
-      // Approximate tangent direction at end of curve
-      const dx = endX - ctrlX;
-      const dy = endY - ctrlY;
+    function drawStartDots(data) {
+      if (!window.PictographGeometry) return;
+      const G = window.PictographGeometry;
+      const blue = data && data.blueHand;
+      const red  = data && data.redHand;
+      if (blue && blue.motionType !== 'static') {
+        const bStart = G.locationPoint(handLoc(blue), CX, CY, RADIUS);
+        paintCircle(bStart.x, bStart.y, 10, 'charcoal');
+        paintCircle(bStart.x, bStart.y, 6, 'blue');
+      }
+      if (red && red.motionType !== 'static') {
+        const rStart = G.locationPoint(handLoc(red), CX, CY, RADIUS);
+        paintCircle(rStart.x, rStart.y, 10, 'charcoal');
+        paintCircle(rStart.x, rStart.y, 6, 'red');
+      }
+    }
+
+    // Reseed the RNG per render so each pictograph produces stable scatter
+    // across tile variation, micro-rotation, and aging effects.
+    function seedRng(_data) {
+      seed = 42;
+    }
+
+    // Arrowhead painted in tile-space. (tipX, tipY) is the point; (fromX, fromY)
+    // is any preceding point on the path so we can take the tangent direction.
+    function drawArrowhead(tipX, tipY, fromX, fromY, palette) {
+      const dx = tipX - fromX;
+      const dy = tipY - fromY;
       const mag = Math.sqrt(dx * dx + dy * dy) || 1;
       const ux = dx / mag;
       const uy = dy / mag;
 
-      // Two "wings" of the arrowhead
       const size = 18;
       const wing = 10;
-      const tipX = tx;
-      const tipY = ty;
       const baseX = tipX - ux * size;
       const baseY = tipY - uy * size;
       const leftX  = baseX - uy * wing;
@@ -447,43 +498,74 @@
     }
 
     // ─────────────────────────────────────────────
-    // Letter "A" in corner
+    // Letter glyph in corner
+    //
+    // Letter A has a hand-authored pixel bitmap that reads perfectly in the
+    // tile-space aesthetic. For any other letter we fall back to a charcoal
+    // painted glyph in the same corner — the tile grain is lost for non-A
+    // but the letter still reads. We paint the fallback onto the canvas
+    // AFTER tile rasterization, via a small deferred flag.
     // ─────────────────────────────────────────────
-    function drawLetterA() {
-      // 7x9 pixel font bitmap for "A"
-      const A = [
-        '  XXX  ',
-        ' XXXXX ',
-        'XX   XX',
-        'XX   XX',
-        'XXXXXXX',
-        'XX   XX',
-        'XX   XX',
-        'XX   XX',
-        'XX   XX',
-      ];
+    const LETTER_A_BITMAP = [
+      '  XXX  ',
+      ' XXXXX ',
+      'XX   XX',
+      'XX   XX',
+      'XXXXXXX',
+      'XX   XX',
+      'XX   XX',
+      'XX   XX',
+      'XX   XX',
+    ];
 
-      const scale = 2; // each pixel = 2 tiles
-      const ox = 9;  // column offset (top-left corner area)
-      const oy = 9;  // row offset
+    let pendingFallbackLetter = null;
 
-      A.forEach((row, r) => {
-        for (let c = 0; c < row.length; c++) {
-          if (row[c] === 'X') {
-            for (let sr = 0; sr < scale; sr++) {
-              for (let sc = 0; sc < scale; sc++) {
-                setTile(ox + c * scale + sc, oy + r * scale + sr, 'charcoal');
+    function drawLetter(letter) {
+      const L = String(letter || '').toUpperCase();
+      pendingFallbackLetter = null;
+
+      if (L === 'A') {
+        const scale = 2; // each pixel = 2 tiles
+        const ox = 9;    // column offset (top-left corner area)
+        const oy = 9;    // row offset
+        LETTER_A_BITMAP.forEach((row, r) => {
+          for (let c = 0; c < row.length; c++) {
+            if (row[c] === 'X') {
+              for (let sr = 0; sr < scale; sr++) {
+                for (let sc = 0; sc < scale; sc++) {
+                  setTile(ox + c * scale + sc, oy + r * scale + sr, 'charcoal');
+                }
               }
             }
           }
-        }
-      });
+        });
+        return;
+      }
+
+      // Non-A letters: queue a canvas-space fallback (drawn after tile raster).
+      pendingFallbackLetter = L;
+    }
+
+    function drawFallbackLetter() {
+      if (!pendingFallbackLetter) return;
+      // Corner position mirrors the A bitmap's footprint:
+      // ox=9, oy=9 tiles, bitmap is 14 tiles wide and 18 tiles tall.
+      const x = (9 + 14 / 2) * T;
+      const y = (9 + 18 / 2) * T;
+      const size = 16 * T; // fills the same corner patch as the bitmap
+      ctx.save();
+      ctx.fillStyle = '#2A2217'; // charcoal-ish, matches tile palette
+      ctx.font = `bold ${size}px "Georgia", serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(pendingFallbackLetter, x, y);
+      ctx.restore();
     }
 
     // ─────────────────────────────────────────────
     // Render all tesserae to canvas
     // ─────────────────────────────────────────────
-    function render() {
+    function rasterizeTiles() {
       // Fill background first
       ctx.fillStyle = GROUT_COLOR;
       ctx.fillRect(0, 0, W, H);
@@ -581,14 +663,75 @@
     }
 
     // ─────────────────────────────────────────────
-    // Main build sequence
+    // Main build sequence — data-driven
     // ─────────────────────────────────────────────
-    drawGreekKeyBorder();
-    drawPictograph();
-    drawLetterA();
-    render();
-    drawVignette();
-    drawAgingEffects();
+    function render(data, canonical, meta) {
+      // Reset seed + tile grid so every re-render is deterministic and
+      // doesn't accumulate tiles from a previous pictograph.
+      seed = 42;
+      resetGrid();
+      seedRng(data);
+
+      const d = data || {};
+
+      // Grid + border chrome always paints into tile space.
+      drawGreekKeyBorder();
+      drawGridLines();
+      drawGridDots();
+      drawStartDots(d);
+
+      // Tile painting of staves + arrows runs only in fallback mode. When a
+      // canonical pictograph bitmap is available, we composite pixelated /
+      // recolored pixels over the rasterized mosaic instead.
+      if (!canonical || !window.PictographStylize) {
+        drawStaffForHand(d.blueHand, 'blue');
+        drawStaffForHand(d.redHand,  'red');
+        drawArrowForHand(d.blueHand, 'blue');
+        drawArrowForHand(d.redHand,  'red');
+      }
+      drawLetter(String(d.letter || 'A'));
+
+      rasterizeTiles();        // tile buffer → canvas
+      drawFallbackLetter();
+
+      // Canonical composite on top of rasterized tiles (Path 1 pipeline).
+      if (canonical && window.PictographStylize) {
+        const chunky = window.PictographStylize.pixelate(canonical, W, 54);
+        const styled = window.PictographStylize.recolor(chunky, MOSAIC_PALETTE, W);
+        window.PictographStylize.edgeTreatment(styled, 'quantize');
+        ctx.drawImage(styled, 0, 0, W, H);
+      }
+
+      drawVignette();
+      drawAgingEffects();
+    }
+
+    // Default pictograph — Letter A. Also used when this HTML is opened
+    // directly without a parent posting pictograph data.
+    const DEFAULT_PICTOGRAPH = {
+      letter: 'A',
+      gridMode: 'diamond',
+      blueHand: {
+        color: 'blue',
+        location: 'w', endLocation: 'n',
+        motionType: 'pro', rotationDirection: 'cw',
+        orientation: 'in', turns: 0,
+      },
+      redHand: {
+        color: 'red',
+        location: 'e', endLocation: 's',
+        motionType: 'pro', rotationDirection: 'cw',
+        orientation: 'in', turns: 0,
+      },
+    };
+
+    render(DEFAULT_PICTOGRAPH, null, null);
+
+    if (window.PictographBridge) {
+      window.PictographBridge.onPictograph(function(data, canonical, meta) {
+        render(data, canonical, meta);
+      });
+    }
 
   </script>
 <script>if(location.search.includes("embed"))document.body.classList.add("embed")</script>
