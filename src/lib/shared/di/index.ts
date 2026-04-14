@@ -27,6 +27,7 @@ import { coreContainer } from "./containers/core-container";
 import { dataContainer } from "./containers/data-container";
 import { keyboardContainer } from "./containers/keyboard-container";
 import { platformContainer } from "./containers/platform-container";
+import { viewerAuthContainer } from "./containers/viewer-auth-container";
 
 // ============================================================================
 // DIRECT PICTOGRAPH IMPORTS (migrated away from DI container)
@@ -70,7 +71,8 @@ import { createLearnContainer } from "./containers/learn-container";
 import { createPromoContainer } from "./containers/promo-container";
 import { createLibraryContainer } from "./containers/library-container";
 import { createQRContainer } from "./containers/qr-container";
-import { createAnimation3DContainer } from "./containers/3d-container";
+import { create3DEngineContainer } from "./containers/3d-engine-container";
+import { createViewer3DContainer } from "./containers/viewer-3d-container";
 import { createDelightContainer } from "./containers/delight-container";
 import { backgroundBuilderContainer } from "./containers/background-builder-container";
 import { createModerationContainer } from "./containers/moderation-container";
@@ -271,10 +273,13 @@ const qrContainer = typeof window !== 'undefined' ? _timeContainer('qr', () => c
   hashMatcher: navigationContainer.items.publicSequenceHashMatcher,
 })) : null as any;
 
-// Animation 3D container needs browseLoader
-const animation3DContainer = typeof window !== 'undefined' ? _timeContainer('animation-3d', () => createAnimation3DContainer({
+// 3D engine container — infrastructure shared by every 3D surface
+const engine3DContainer = typeof window !== 'undefined' ? _timeContainer('3d-engine', () => create3DEngineContainer({
   browseLoader: browseContainer.items.browseLoader,
 })) : null as any;
+
+// Viewer-specific 3D services (undo/redo scoped to sequence viewer session)
+const viewer3DContainer = typeof window !== 'undefined' ? _timeContainer('viewer-3d', createViewer3DContainer) : null as any;
 
 // Delight container needs hapticFeedback from core
 const delightContainer = typeof window !== 'undefined' ? _timeContainer('delight', () => createDelightContainer(
@@ -393,7 +398,8 @@ function buildAppContainer(): any {
   c = c.add(mandalaContainer.items);
   c = c.add(sequenceMandalaContainer.items);
   c = c.add(qrContainer.items);
-  c = c.add(animation3DContainer.items);
+  c = c.add(engine3DContainer.items);
+  c = c.add(viewer3DContainer.items);
   c = c.add(backgroundBuilderContainer.items);
   c = c.add(delightContainer.items);
   c = c.add(moderationContainer.items);
@@ -417,6 +423,8 @@ function buildAppContainer(): any {
   c = c.add(offlineContainer.items);
   // Native platform (Capacitor) detection and initialization
   c = c.add(platformContainer.items);
+  // Viewer auth (pending-action queue + in-app-webview detection)
+  c = c.add(viewerAuthContainer.items);
   // Print Prep services (MPC card export — depend on render + build containers)
   c = c.add({
     cardBackDomRenderer: () => new CardBackDomRendererImpl(),
