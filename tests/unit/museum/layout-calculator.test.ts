@@ -12,8 +12,8 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { calculateMuseumLayout } from "$lib/features/realm/destinations/museum/domain/layout-calculator";
-import type { ExhibitSlot, PavilionLayout } from "$lib/features/realm/destinations/museum/domain/museum-types";
+import { calculateMuseumLayout } from "$lib/features/museum/scenes/procedural/domain/layout-calculator";
+import type { ExhibitSlot, PavilionLayout } from "$lib/features/museum/scenes/procedural/domain/museum-types";
 
 // ---------------------------------------------------------------------------
 // Helpers

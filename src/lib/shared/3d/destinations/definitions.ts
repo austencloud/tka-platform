@@ -1,8 +1,9 @@
 /**
  * Destination Definitions - Registry of all 3D destinations
  *
- * Central registry for Stage, Gallery, Worlds, and future destinations.
- * Used by the Realm module to display destination picker.
+ * Central registry consumed by the destination manager. Each destination
+ * lives in its own feature folder; the procedural engine at
+ * shared/3d/procedural-engine/ is the shared infrastructure they compose on.
  */
 
 import { CameraMode } from "../camera/types";
@@ -12,10 +13,10 @@ import type { Destination, DestinationCategory } from "./types";
  * All available 3D destinations
  */
 export const DESTINATIONS: Destination[] = [
-	// Single destination - campground clearing with procedural forest
+	// Campground clearing surrounded by procedural forest (was id: "realm")
 	{
-		id: "realm",
-		name: "Realm",
+		id: "campground",
+		name: "Campground",
 		description:
 			"Campground clearing surrounded by procedural forest terrain",
 		icon: "fa-earth-americas",
@@ -26,7 +27,7 @@ export const DESTINATIONS: Destination[] = [
 		category: "exploration",
 		tags: ["procedural", "terrain", "campground", "exploration"],
 		component: () =>
-			import("../../../features/realm/RealmDestination.svelte"),
+			import("../../../features/campground/CampgroundDestination.svelte"),
 		enabled: true,
 	},
 	{
@@ -40,7 +41,7 @@ export const DESTINATIONS: Destination[] = [
 		defaultCameraMode: CameraMode.FIRST_PERSON,
 		category: "exploration",
 		tags: ["museum", "narrative", "lore", "archive", "kinetic-history"],
-		component: () => import("../../../features/realm/destinations/archive/ArchiveDestination.svelte"),
+		component: () => import("../../../features/archive/ArchiveDestination.svelte"),
 		enabled: true,
 	},
 	{
@@ -54,7 +55,7 @@ export const DESTINATIONS: Destination[] = [
 		defaultCameraMode: CameraMode.FIRST_PERSON,
 		category: "social",
 		tags: ["museum", "gallery", "curation", "exhibits"],
-		component: () => import("../../../features/realm/destinations/museum/MuseumDestination.svelte"),
+		component: () => import("../../../features/museum/scenes/procedural/MuseumDestination.svelte"),
 		enabled: true,
 	},
 	{
@@ -70,26 +71,11 @@ export const DESTINATIONS: Destination[] = [
 		category: "creative",
 		tags: ["controls", "dev", "tuning", "props"],
 		component: () =>
-			import("../../../features/realm/tools/3d-controls/ThreeDControlsLab.svelte"),
+			import("../../../features/lab/tools/3d-controls/ThreeDControlsLab.svelte"),
 		enabled: true,
 	},
 	// Disabled destinations (kept for future re-enabling)
 	{
-		id: "stage",
-		name: "Stage",
-		description:
-			"Multi-performer choreography viewer with synchronized playback and timeline editing",
-		icon: "fa-theater-masks",
-		color: "#8b5cf6",
-		supportsMultiplayer: false,
-		supportsPhysics: false,
-		defaultCameraMode: CameraMode.THIRD_PERSON,
-		category: "performance",
-		tags: ["choreography", "avatars", "performance", "timeline"],
-		component: () => import("../../../features/realm/destinations/stage/StageDestination.svelte"),
-		enabled: false, // Will be ported to Realm
-	},
-{
 		id: "hannons-camp",
 		name: "Hannon's Camp",
 		description:
@@ -102,7 +88,7 @@ export const DESTINATIONS: Destination[] = [
 		category: "exploration",
 		tags: ["real-terrain", "festival", "kinetic-fire", "ohio"],
 		component: () =>
-			import("../../../features/realm/HannonsCampDestination.svelte"),
+			import("../../../features/hannons-camp/HannonsCampDestination.svelte"),
 		enabled: false,
 	},
 	// Future destinations:
