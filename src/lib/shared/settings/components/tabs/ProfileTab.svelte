@@ -94,8 +94,12 @@
   // Google photo URL persisted in Firestore (survives avatar switches)
   let savedGooglePhotoUrl = $state<string | null>(null);
 
-  // Photo picker state
-  let showPhotoPicker = $state(false);
+  // Photo picker state — survives refresh/HMR via sessionStorage
+  const PHOTO_PICKER_KEY = "tka_photo_picker_open";
+  let showPhotoPicker = $state(
+    typeof sessionStorage !== "undefined" &&
+      sessionStorage.getItem(PHOTO_PICKER_KEY) === "1"
+  );
 
   // Entry animation
   let isVisible = $state(false);
@@ -213,6 +217,7 @@
   function handleOpenPhotoPicker() {
     hapticService?.trigger("selection");
     showPhotoPicker = true;
+    sessionStorage.setItem(PHOTO_PICKER_KEY, "1");
   }
 
   async function handleColorChange(color: string) {
@@ -489,7 +494,10 @@
 <!-- Profile Photo Picker Drawer -->
 <ProfilePhotoPicker
   bind:isOpen={showPhotoPicker}
-  onClose={() => (showPhotoPicker = false)}
+  onClose={() => {
+    showPhotoPicker = false;
+    sessionStorage.removeItem(PHOTO_PICKER_KEY);
+  }}
   onPhotoSelected={handlePhotoSelected}
   {profileColor}
   onColorChange={handleColorChange}

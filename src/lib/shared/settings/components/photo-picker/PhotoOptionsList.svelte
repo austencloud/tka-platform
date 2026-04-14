@@ -171,7 +171,7 @@
   .color-section-divider {
     height: 1px;
     background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    margin: var(--spacing-md, 16px) 0;
+    margin: var(--spacing-sm, 8px) 0;
   }
 
   .avatar-preview-wrapper :global(.robust-avatar) {

@@ -2,8 +2,9 @@
   ProfileColorPicker.svelte
 
   A compact color swatch picker for the user's profile accent color.
-  This color is used for the avatar ring and profile card accents.
-  Users pick from curated presets or enter a custom hex value.
+  Collapsed by default — shows the current color and a "Change" button.
+  Expanding reveals preset swatches plus a custom color swatch that
+  opens the native OS color picker.
 -->
 <script lang="ts">
   interface Props {
@@ -14,10 +15,7 @@
 
   let { selectedColor, onColorChange, saving = false }: Props = $props();
 
-  // Curated color presets organized by tone.
-  // Each row is a visual group in the picker grid.
   const COLOR_PRESETS = [
-    // Vibrant
     { hex: "#ef4444", name: "Red" },
     { hex: "#f97316", name: "Orange" },
     { hex: "#eab308", name: "Yellow" },
@@ -26,7 +24,6 @@
     { hex: "#3b82f6", name: "Blue" },
     { hex: "#8b5cf6", name: "Violet" },
     { hex: "#ec4899", name: "Pink" },
-    // Muted / Earth
     { hex: "#d97706", name: "Amber" },
     { hex: "#65a30d", name: "Lime" },
     { hex: "#0d9488", name: "Teal" },
@@ -37,124 +34,89 @@
     { hex: "#059669", name: "Emerald" },
   ];
 
-  let showCustomInput = $state(false);
-  let customHex = $state("");
-  $effect(() => { customHex = selectedColor; });
-
-  // Whether the current selection matches a preset
-  const isPreset = $derived(
-    COLOR_PRESETS.some((p) => p.hex.toLowerCase() === selectedColor.toLowerCase())
-  );
+  let expanded = $state(false);
+  let nativePickerRef: HTMLInputElement | undefined = $state();
 
   function handlePresetClick(hex: string) {
-    showCustomInput = false;
     onColorChange(hex);
   }
 
-  function handleCustomSubmit() {
-    // Normalize: accept "#abc", "#aabbcc", "abc", "aabbcc"
-    let value = customHex.trim().replace(/^#/, "");
-    if (/^[0-9a-fA-F]{3}$/.test(value)) {
-      value = value
-        .split("")
-        .map((c) => c + c)
-        .join("");
-    }
-    if (/^[0-9a-fA-F]{6}$/.test(value)) {
-      onColorChange(`#${value}`);
-    }
+  function openNativePicker() {
+    nativePickerRef?.click();
   }
 
-  function handleCustomKeydown(e: KeyboardEvent) {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      handleCustomSubmit();
-    }
+  function handleNativeInput(e: Event) {
+    const value = (e.target as HTMLInputElement).value;
+    onColorChange(value);
   }
 </script>
 
 <div class="profile-color-picker">
-  <h4 class="picker-label">Profile Color</h4>
-  <p class="picker-desc">Ring color around your avatar</p>
-
-  <div class="color-grid" role="radiogroup" aria-label="Profile color presets">
-    {#each COLOR_PRESETS as preset (preset.hex)}
-      {@const isSelected =
-        preset.hex.toLowerCase() === selectedColor.toLowerCase()}
-      <button
-        class="color-swatch"
-        class:selected={isSelected}
-        style="--swatch-color: {preset.hex}"
-        onclick={() => handlePresetClick(preset.hex)}
-        disabled={saving}
-        role="radio"
-        aria-checked={isSelected}
-        aria-label={preset.name}
-        title={preset.name}
-      >
-        {#if isSelected}
-          <i class="fas fa-check" aria-hidden="true"></i>
-        {/if}
-      </button>
-    {/each}
-  </div>
-
-  <!-- Custom color toggle -->
+  <!-- Collapsed: single row with current color + change button -->
   <button
-    class="custom-toggle"
-    class:active={showCustomInput || !isPreset}
-    onclick={() => {
-      showCustomInput = !showCustomInput;
-      customHex = selectedColor;
-    }}
+    class="color-toggle-row"
+    onclick={() => (expanded = !expanded)}
     disabled={saving}
   >
     <div
-      class="custom-preview"
+      class="current-color-dot"
       style="background: {selectedColor}"
       aria-hidden="true"
     ></div>
-    <span>Custom color</span>
-    <i
-      class="fas {showCustomInput ? 'fa-chevron-up' : 'fa-chevron-down'}"
-      aria-hidden="true"
-    ></i>
+    <div class="toggle-text">
+      <span class="toggle-label">Profile Color</span>
+      <span class="toggle-desc">Ring color around your avatar</span>
+    </div>
+    <span class="toggle-action">{expanded ? "Done" : "Change"}</span>
   </button>
 
-  {#if showCustomInput}
-    <div class="custom-input-row">
-      <input
-        type="color"
-        value={selectedColor}
-        oninput={(e) => {
-          const value = (e.target as HTMLInputElement).value;
-          customHex = value;
-          onColorChange(value);
-        }}
-        disabled={saving}
-        class="native-color-input"
-        aria-label="Pick a custom color"
-      />
-      <input
-        type="text"
-        bind:value={customHex}
-        onkeydown={handleCustomKeydown}
-        onblur={handleCustomSubmit}
-        placeholder="#8b5cf6"
-        maxlength="7"
-        disabled={saving}
-        class="hex-input"
-        aria-label="Custom hex color"
-      />
+  <!-- Expanded: preset grid + custom picker swatch -->
+  {#if expanded}
+    <div class="color-grid" role="radiogroup" aria-label="Profile color presets">
+      {#each COLOR_PRESETS as preset (preset.hex)}
+        {@const isSelected =
+          preset.hex.toLowerCase() === selectedColor.toLowerCase()}
+        <button
+          class="color-swatch"
+          class:selected={isSelected}
+          style="--swatch-color: {preset.hex}"
+          onclick={() => handlePresetClick(preset.hex)}
+          disabled={saving}
+          role="radio"
+          aria-checked={isSelected}
+          aria-label={preset.name}
+          title={preset.name}
+        >
+          {#if isSelected}
+            <i class="fas fa-check" aria-hidden="true"></i>
+          {/if}
+        </button>
+      {/each}
+
+      <!-- Custom color swatch — opens native OS picker -->
       <button
-        class="apply-btn"
-        onclick={handleCustomSubmit}
+        class="color-swatch custom-swatch"
+        style="--swatch-color: {selectedColor}"
+        onclick={openNativePicker}
         disabled={saving}
-        aria-label="Apply custom color"
+        aria-label="Pick a custom color"
+        title="Custom color"
       >
-        <i class="fas fa-check" aria-hidden="true"></i>
+        <i class="fas fa-eyedropper" aria-hidden="true"></i>
       </button>
     </div>
+
+    <!-- Hidden native color input — triggered by the custom swatch -->
+    <input
+      bind:this={nativePickerRef}
+      type="color"
+      value={selectedColor}
+      oninput={handleNativeInput}
+      disabled={saving}
+      class="hidden-color-input"
+      aria-hidden="true"
+      tabindex="-1"
+    />
   {/if}
 </div>
 
@@ -165,17 +127,65 @@
     gap: var(--spacing-sm, 8px);
   }
 
-  .picker-label {
+  /* ═══════ Toggle Row (collapsed state) ═══════ */
+
+  .color-toggle-row {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm, 10px);
+    padding: 8px 14px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: var(--radius-sm, 8px);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    min-height: var(--min-touch-target, 44px);
+    width: 100%;
+    text-align: left;
+  }
+
+  .color-toggle-row:hover:not(:disabled) {
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+  }
+
+  .color-toggle-row:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .current-color-dot {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    flex-shrink: 0;
+  }
+
+  .toggle-text {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+  }
+
+  .toggle-label {
     font-size: var(--font-size-sm, 14px);
     font-weight: 600;
-    margin: 0;
     color: var(--theme-text, #ffffff);
   }
 
-  .picker-desc {
+  .toggle-desc {
     font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    margin: 0;
+  }
+
+  .toggle-action {
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 500;
+    color: var(--theme-accent, #6366f1);
+    flex-shrink: 0;
   }
 
   /* ═══════ Color Grid ═══════ */
@@ -183,13 +193,14 @@
   .color-grid {
     display: grid;
     grid-template-columns: repeat(8, 1fr);
-    gap: 6px;
+    gap: 8px;
+    padding: 4px 0;
   }
 
   .color-swatch {
     aspect-ratio: 1;
-    min-width: 28px;
-    min-height: 28px;
+    width: 100%;
+    max-width: 42px;
     border-radius: 50%;
     border: 2px solid transparent;
     background: var(--swatch-color);
@@ -231,135 +242,39 @@
     filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
   }
 
-  /* ═══════ Custom Color Toggle ═══════ */
-
-  .custom-toggle {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-sm, 8px);
-    padding: 8px 12px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: var(--radius-sm, 8px);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-    font-size: var(--font-size-compact, 12px);
-    cursor: pointer;
-    transition: all 0.15s ease;
-    min-height: var(--min-touch-target, 44px);
+  /* The custom-color swatch: conic gradient background with eyedropper icon */
+  .custom-swatch {
+    background: conic-gradient(
+      #ef4444, #f97316, #eab308, #22c55e,
+      #06b6d4, #3b82f6, #8b5cf6, #ec4899, #ef4444
+    ) !important;
+    border-color: rgba(255, 255, 255, 0.15);
   }
 
-  .custom-toggle:hover:not(:disabled) {
-    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
-    color: var(--theme-text, #ffffff);
+  .custom-swatch:hover:not(:disabled) {
+    border-color: rgba(255, 255, 255, 0.5);
   }
 
-  .custom-toggle.active {
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+  .custom-swatch i {
+    font-size: 11px;
   }
 
-  .custom-toggle:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  .custom-preview {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    flex-shrink: 0;
-  }
-
-  .custom-toggle span {
-    flex: 1;
-    text-align: left;
-  }
-
-  .custom-toggle i {
-    font-size: 10px;
-    opacity: 0.5;
-  }
-
-  /* ═══════ Custom Input Row ═══════ */
-
-  .custom-input-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .native-color-input {
-    width: 40px;
-    height: 40px;
-    min-width: var(--min-touch-target, 44px);
-    min-height: var(--min-touch-target, 44px);
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: var(--radius-sm, 8px);
-    background: transparent;
-    cursor: pointer;
-    padding: 2px;
-  }
-
-  .native-color-input::-webkit-color-swatch-wrapper {
+  /* Hidden native input — only used to trigger the OS picker dialog */
+  .hidden-color-input {
+    position: absolute;
+    width: 0;
+    height: 0;
     padding: 0;
-  }
-
-  .native-color-input::-webkit-color-swatch {
     border: none;
-    border-radius: 6px;
-  }
-
-  .hex-input {
-    flex: 1;
-    padding: 8px 12px;
-    min-height: var(--min-touch-target, 44px);
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: var(--radius-sm, 8px);
-    color: var(--theme-text, #ffffff);
-    font-size: var(--font-size-sm, 14px);
-    font-family: monospace;
-  }
-
-  .hex-input:focus {
-    outline: none;
-    border-color: var(--theme-accent, #6366f1);
-  }
-
-  .hex-input:disabled {
-    opacity: 0.5;
-  }
-
-  .apply-btn {
-    width: 40px;
-    height: 40px;
-    min-width: var(--min-touch-target, 44px);
-    min-height: var(--min-touch-target, 44px);
-    border-radius: var(--radius-sm, 8px);
-    background: var(--theme-accent, #6366f1);
-    border: none;
-    color: white;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: opacity 0.15s ease;
-  }
-
-  .apply-btn:hover:not(:disabled) {
-    opacity: 0.85;
-  }
-
-  .apply-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+    opacity: 0;
+    pointer-events: none;
   }
 
   /* ═══════ Accessibility ═══════ */
 
   @media (prefers-reduced-motion: reduce) {
     .color-swatch,
-    .custom-toggle {
+    .color-toggle-row {
       transition: none;
     }
 

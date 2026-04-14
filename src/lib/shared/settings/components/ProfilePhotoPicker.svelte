@@ -264,7 +264,7 @@
   <BaseModal
     open={isOpen}
     onclose={handleClose}
-    size="lg"
+    size="fit"
     labelledBy="photo-picker-title"
     class="profile-photo-modal"
   >
@@ -439,9 +439,7 @@
   .modal-layout {
     display: flex;
     flex-direction: column;
-    height: 100%;
     min-height: 0;
-    overflow: hidden;
     color: var(--theme-text, #ffffff);
   }
 
@@ -461,9 +459,7 @@
   }
 
   .tabbed-modal .modal-tabbed-body {
-    flex: 1;
     padding: var(--modal-padding, 24px);
-    overflow-y: auto;
     min-height: 0;
   }
 
