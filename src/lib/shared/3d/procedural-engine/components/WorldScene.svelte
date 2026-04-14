@@ -15,7 +15,6 @@
 
   import WebGPUCanvas from "$lib/shared/3d/rendering/WebGPUCanvas.svelte";
   import WorldSceneContent from "./WorldSceneContent.svelte";
-  import DebugPanelTabs from "$lib/features/realm/components/debug/DebugPanelTabs.svelte";
   import VirtualJoystick from "$lib/shared/components/touch/VirtualJoystick.svelte";
 
   import type { PhysicsWorldState, PlayerControllerState } from "$lib/shared/3d/physics/types";
@@ -478,91 +477,7 @@
     </div>
   {/if}
 
-  {#if debugPanelVisible}
-    <DebugPanelTabs
-      position={playerPosition}
-      biome={currentBiome}
-      texturesEnabled={terrainTexturesEnabled}
-      texturesLoaded={true}
-      {fogEnabled}
-      {waterVisible}
-      atmosphereState={atmosphereManager?.getState() ?? null}
-      waterState={waterManager?.getState() ?? null}
-      {fps}
-      {chunkStats}
-      vegetationStats={vegetationCount}
-      {colliderCount}
-      seed={worldSeedEncoded}
-      {viewDistance}
-      {chunkSize}
-      {treesEnabled}
-      {grassEnabled}
-      {rocksEnabled}
-      {bushesEnabled}
-      {noclipEnabled}
-      {isGrounded}
-      {walkSpeed}
-      {sprintSpeed}
-      cameraMode={cameraMode === CameraMode.FIRST_PERSON ? "first-person" : cameraMode === CameraMode.THIRD_PERSON ? "third-person" : "orbit"}
-      {fov}
-      {sensitivity}
-      onTeleport={(x, y, z) => {
-        if (playerController) {
-          teleportPlayer(playerController, { x, y, z });
-        }
-      }}
-      onToggleWater={() => {
-        waterVisible = !waterVisible;
-        waterManager?.setVisible(waterVisible);
-      }}
-      onToggleFog={() => {
-        fogEnabled = !fogEnabled;
-        atmosphereManager?.setFogEnabled(fogEnabled);
-      }}
-      onToggleTextures={() => {
-        terrainTexturesEnabled = !terrainTexturesEnabled;
-      }}
-      onToggleTrees={() => {
-        treesEnabled = !treesEnabled;
-        // TODO: Wire to vegetation manager
-      }}
-      onToggleGrass={() => {
-        grassEnabled = !grassEnabled;
-        // TODO: Wire to vegetation manager
-      }}
-      onToggleRocks={() => {
-        rocksEnabled = !rocksEnabled;
-        // TODO: Wire to vegetation manager
-      }}
-      onToggleBushes={() => {
-        bushesEnabled = !bushesEnabled;
-        // TODO: Wire to vegetation manager
-      }}
-      onToggleNoclip={() => {
-        if (physicsProvider?.toggleNoclip) {
-          noclipEnabled = physicsProvider.toggleNoclip();
-        }
-      }}
-      onViewDistanceChange={(distance) => {
-        viewDistance = distance;
-        // TODO: Wire to chunk manager
-      }}
-      onModeChange={(mode) => {
-        cameraMode = mode === "first-person" ? CameraMode.FIRST_PERSON : mode === "third-person" ? CameraMode.THIRD_PERSON : CameraMode.ORBIT;
-      }}
-      onFovChange={(newFov) => {
-        fov = newFov;
-        // TODO: Wire to camera
-      }}
-      onSensitivityChange={(newSensitivity) => {
-        sensitivity = newSensitivity;
-        // TODO: Wire to camera controller
-      }}
-      onClose={() => {
-        debugPanelVisible = false;
-      }}
-    />
-  {/if}
+  <!-- DebugPanelTabs removed; replaced by scene-feature gear popover system -->
 
   {#if hannonsLoaded && zoneBounds}
     <div class="zone-overlay">

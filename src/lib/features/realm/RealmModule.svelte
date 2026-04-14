@@ -7,11 +7,11 @@
   import { REALM_TABS } from "$lib/shared/navigation/config/tab-definitions";
 
   const tabComponents: Record<string, () => Promise<{ default: any }>> = {
-    "realm-world": () => import("./RealmDestination.svelte"),
-    archive: () => import("./destinations/archive/ArchiveDestination.svelte"),
-    museum: () => import("./destinations/museum/MuseumDestination.svelte"),
+    "realm-world": () => import("$lib/features/campground/CampgroundDestination.svelte"),
+    archive: () => import("$lib/features/archive/ArchiveDestination.svelte"),
+    museum: () => import("$lib/features/museum/scenes/procedural/MuseumDestination.svelte"),
     "museum-2d": () => import("$lib/features/museum/MuseumModule.svelte"),
-    "3d-controls": () => import("./tools/3d-controls/ThreeDControlsLab.svelte"),
+    "3d-controls": () => import("$lib/features/lab/tools/3d-controls/ThreeDControlsLab.svelte"),
   };
 
   const activeTab = $derived(navigationState.activeTab || REALM_TABS[0]?.id || "realm-world");

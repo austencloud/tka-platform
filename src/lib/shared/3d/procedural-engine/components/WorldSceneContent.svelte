@@ -59,10 +59,10 @@
   import type { RealmConfig } from "../core/world-config";
 
   // Museum
-  import MuseumGrounds from "$lib/features/realm/destinations/museum/components/MuseumGrounds.svelte";
-  import { createMuseumState } from "$lib/features/realm/destinations/museum/state/museum-state.svelte";
-  import { InteractionDetector } from "$lib/features/realm/destinations/museum/services/implementations/InteractionDetector";
-  import { setActiveMuseumState } from "$lib/features/realm/destinations/museum/state/museum-state-bridge.svelte";
+  import MuseumGrounds from "$lib/features/museum/scenes/procedural/components/MuseumGrounds.svelte";
+  import { createMuseumState } from "$lib/features/museum/scenes/procedural/state/museum-state.svelte";
+  import { InteractionDetector } from "$lib/features/museum/scenes/procedural/services/implementations/InteractionDetector";
+  import { setActiveMuseumState } from "$lib/features/museum/scenes/procedural/state/museum-state-bridge.svelte";
 
   // Archive (The Kinetic Archive) — standalone via ArchiveDestination + IndoorScene
 

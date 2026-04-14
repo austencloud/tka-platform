@@ -12,7 +12,7 @@
   import type { ModuleId } from "$lib/shared/navigation/state/navigation-state.svelte";
   import PlaqueView from "../panel/PlaqueView.svelte";
   import SequenceView from "../panel/SequenceView.svelte";
-  import SequenceBrowserOverlay from "$lib/features/realm/destinations/museum/overlay/SequenceBrowserOverlay.svelte";
+  import SequenceBrowserOverlay from "$lib/features/museum/scenes/procedural/overlay/SequenceBrowserOverlay.svelte";
 
   import { onMount } from "svelte";
 
