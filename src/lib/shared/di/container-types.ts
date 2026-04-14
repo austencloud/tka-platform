@@ -44,7 +44,8 @@ import type { LearnContainer } from "./containers/learn-container";
 import type { ModerationContainer } from "./containers/moderation-container";
 import type { LibraryContainer } from "./containers/library-container";
 import type { QRContainer } from "./containers/qr-container";
-import type { Animation3DContainer } from "./containers/3d-container";
+import type { Engine3DContainer } from "./containers/3d-engine-container";
+import type { Viewer3DContainer } from "./containers/viewer-3d-container";
 import type { DelightContainer } from "./containers/delight-container";
 import type { AttributionContainer } from "./containers/attribution-container";
 import type { VoiceControlContainer } from "./containers/voice-control-container";
@@ -56,6 +57,7 @@ import type { DeviceSyncContainer } from "./containers/device-sync-container";
 import type { PushContainer } from "./containers/push-container";
 import type { OfflineContainer } from "./containers/offline-container";
 import type { PlatformContainerType } from "./containers/platform-container";
+import type { ViewerAuthContainer } from "./containers/viewer-auth-container";
 // Containers that already export items types directly (["items"])
 import type { NavigationContainerItems } from "./containers/navigation-container";
 import type { ComposeCoreContainerItems } from "./containers/compose-core-container";
@@ -103,7 +105,8 @@ type LearnItems = ItemsOf<LearnContainer>;
 type ModerationItems = ItemsOf<ModerationContainer>;
 type LibraryItems = ItemsOf<LibraryContainer>;
 type QRItems = ItemsOf<QRContainer>;
-type Animation3DItems = ItemsOf<Animation3DContainer>;
+type Engine3DItems = ItemsOf<Engine3DContainer>;
+type Viewer3DItems = ItemsOf<Viewer3DContainer>;
 type DelightItems = ItemsOf<DelightContainer>;
 type AttributionItems = ItemsOf<AttributionContainer>;
 type VoiceControlItems = ItemsOf<VoiceControlContainer>;
@@ -115,6 +118,7 @@ type DeviceSyncItems = ItemsOf<DeviceSyncContainer>;
 type PushItems = ItemsOf<PushContainer>;
 type OfflineItems = ItemsOf<OfflineContainer>;
 type PlatformNativeItems = ItemsOf<PlatformContainerType>;
+type ViewerAuthItems = ItemsOf<ViewerAuthContainer>;
 // ============================================================================
 // Upsert conflict handling
 //
@@ -173,7 +177,8 @@ export type IAppContainerItems =
 	MandalaItems &
 	SequenceMandalaItems &
 	QRItems &
-	Animation3DItems &
+	Engine3DItems &
+	Viewer3DItems &
 	BackgroundBuilderItems &
 	DelightItems &
 	ModerationItems &
@@ -191,5 +196,7 @@ export type IAppContainerItems =
 	OfflineItems &
 	// Native platform (Capacitor) services
 	PlatformNativeItems &
+	// Viewer auth (pending-action queue + webview detection)
+	ViewerAuthItems &
 	// Standalone services
 	StandaloneItems;
