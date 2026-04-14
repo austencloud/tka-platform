@@ -258,57 +258,56 @@
     bootProfiler.end("auth-init");
     (window as any).__tkaLoadProgress?.(80, "Checking session...");
 
-    // Web Vitals
-    bootProfiler.mark("web-vitals");
-    try {
-      const { initWebVitals } = await import("$lib/shared/analytics/web-vitals");
-      await initWebVitals();
-    } catch (error) {
-      console.warn("Web Vitals tracking failed to initialize:", error);
-    }
-    bootProfiler.end("web-vitals");
-
-    // Cloud thumbnail manifest
-    bootProfiler.mark("thumbnail-manifest");
-    try {
-      const { CloudThumbnailCache } = await import(
-        "$lib/features/browse/sequences/display/services/implementations/CloudThumbnailCache"
-      );
-      const cache = new CloudThumbnailCache();
-      await cache.loadManifest();
-    } catch (error) {
-      console.warn("Cloud thumbnail manifest failed to load:", error);
-    }
-    bootProfiler.end("thumbnail-manifest");
-
-    // Load app-only UI components in parallel
-    bootProfiler.mark("ui-components");
-    const [
-      warningBannerMod,
-      emailBannerMod,
-      fullscreenMod,
-      inAppMod,
-      reportMod,
-      modalRestorerMod,
-    ] = await Promise.all([
-      import("$lib/features/moderation/components/WarningBanner.svelte"),
-      import("$lib/shared/auth/components/EmailVerificationBanner.svelte"),
-      import("$lib/shared/components/FullscreenPrompt.svelte"),
-      import("$lib/shared/auth/components/InAppBrowserPrompt.svelte"),
-      import("$lib/features/moderation/components/ReportUserModal.svelte"),
-      import("$lib/shared/application/components/ModalUrlRestorer.svelte"),
-    ]);
-    bootProfiler.end("ui-components");
-
-    WarningBannerComp = warningBannerMod.default;
-    EmailVerificationBannerComp = emailBannerMod.default;
-    FullscreenPromptComp = fullscreenMod.default;
-    InAppBrowserPromptComp = inAppMod.default;
-    ReportUserModalComp = reportMod.default;
-    ModalUrlRestorerComp = modalRestorerMod.default;
-
     bootProfiler.end("total-init");
     bootProfiler.summary();
+
+    // ========================================================================
+    // BACKGROUND INIT — fire-and-forget. The UI is interactive at this point;
+    // these are observability + secondary banners that don't need to block.
+    // Each is wrapped to log its own timing without holding up the boot.
+    // ========================================================================
+    const runDeferred = () => {
+      // Web Vitals — analytics, never user-visible
+      bootProfiler.mark("web-vitals");
+      import("$lib/shared/analytics/web-vitals")
+        .then(({ initWebVitals }) => initWebVitals())
+        .catch((error) => console.warn("Web Vitals failed:", error))
+        .finally(() => bootProfiler.end("web-vitals"));
+
+      // Cloud thumbnail manifest — only needed when user visits browse
+      bootProfiler.mark("thumbnail-manifest");
+      import("$lib/features/browse/sequences/display/services/implementations/CloudThumbnailCache")
+        .then(({ CloudThumbnailCache }) => new CloudThumbnailCache().loadManifest())
+        .catch((error) => console.warn("Cloud thumbnail manifest failed:", error))
+        .finally(() => bootProfiler.end("thumbnail-manifest"));
+
+      // Secondary UI components (banners, prompts) — slot in when ready
+      bootProfiler.mark("ui-components");
+      Promise.all([
+        import("$lib/features/moderation/components/WarningBanner.svelte"),
+        import("$lib/shared/auth/components/EmailVerificationBanner.svelte"),
+        import("$lib/shared/components/FullscreenPrompt.svelte"),
+        import("$lib/shared/auth/components/InAppBrowserPrompt.svelte"),
+        import("$lib/features/moderation/components/ReportUserModal.svelte"),
+        import("$lib/shared/application/components/ModalUrlRestorer.svelte"),
+      ])
+        .then(([warning, email, full, inApp, report, modal]) => {
+          WarningBannerComp = warning.default;
+          EmailVerificationBannerComp = email.default;
+          FullscreenPromptComp = full.default;
+          InAppBrowserPromptComp = inApp.default;
+          ReportUserModalComp = report.default;
+          ModalUrlRestorerComp = modal.default;
+        })
+        .catch((error) => console.warn("UI components failed:", error))
+        .finally(() => bootProfiler.end("ui-components"));
+    };
+
+    if (typeof requestIdleCallback !== "undefined") {
+      requestIdleCallback(runDeferred);
+    } else {
+      setTimeout(runDeferred, 0);
+    }
 
     // Return cleanup
     return () => {

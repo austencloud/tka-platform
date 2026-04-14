@@ -955,6 +955,21 @@ export default defineConfig({
       "reflect-metadata",
       "zod",
 
+      // Firebase: pre-bundle every subpath used at boot to prevent the
+      // "optimized dependencies changed — reloading" cycle. Vite triggers
+      // a full page reload whenever it discovers an unbundled dep mid-session.
+      "firebase/app",
+      "firebase/auth",
+      "firebase/firestore",
+      "firebase/storage",
+      "firebase/database",
+      "firebase/functions",
+      "firebase/messaging",
+      "firebase/analytics",
+
+      // ITI: DI container — used in shared/di/index.ts on every page
+      "iti",
+
       // UI components (lightweight)
       "bits-ui",
       "embla-carousel-svelte",
