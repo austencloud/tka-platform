@@ -159,13 +159,23 @@
     {#if camMode === "walk"}
       <!-- Walk: kinematic fallback (physicsProvider=null) gives gravity +
            ground clamp + WASD horizontal walk. Both 1st and 3rd person
-           allowed; Space jumps when grounded. -->
+           allowed; Space jumps when grounded. If the controller flips to
+           ORBIT (Esc / pointer-lock-lost), we pop camMode back to "orbit"
+           so the outer state stays coherent instead of leaving the
+           controller stranded. -->
       <UnifiedCameraController
         destinationId="scene-lab-walk"
         avatarState={player.avatarState}
         enabled={true}
         allowedModes={[CameraMode.FIRST_PERSON, CameraMode.THIRD_PERSON]}
-        onModeChange={(m) => (activeCameraMode = m)}
+        onModeChange={(m) => {
+          console.log("[SceneLab] UCC mode →", m);
+          if (m === CameraMode.ORBIT) {
+            camMode = "orbit";
+            return;
+          }
+          activeCameraMode = m;
+        }}
       />
     {:else if camMode === "fly"}
       <!-- Fly: physicsProvider always reports noclip, so controller takes its
@@ -198,11 +208,14 @@
       {/if}
 
       {#if camMode === "walk"}
+        <!-- TEMP: keep avatar always visible in Walk mode while we debug
+             the disappearing issue. The proper first-person self-hide can
+             come back once we confirm the basic render is stable. -->
         <Avatar3D
           id="scene-lab-player"
           bluePropState={null}
           redPropState={null}
-          visible={avatarBodyVisible}
+          visible={true}
           position={player.avatarState.position}
           facingAngle={player.avatarState.facingAngle}
           isMoving={player.avatarState.isMoving}
