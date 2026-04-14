@@ -36,6 +36,9 @@
   <canvas id="canvas" width="500" height="500"></canvas>
   <div class="caption">TKA Letter A · Egyptian Scribe · c. 3000 BC</div>
 
+  <script src="./_shared/pictograph-geometry.js"></script>
+  <script src="./_shared/pictograph-bridge.js"></script>
+  <script src="./_shared/pictograph-stylize.js"></script>
   <script>
   (function () {
     const canvas = document.getElementById('canvas');
@@ -54,6 +57,17 @@
     const GOLD_DARK     = '#8B6914';
     const CREAM         = '#EDD9A0';
     const SHADOW        = 'rgba(26,15,0,0.35)';
+
+    // ─── Canonical-compose palette (Path 1 pipeline) ─────────────────────────
+    // Maps the canonical pictograph's class colors onto the era's pigments.
+    // When a parent posts a canonical bitmap via PictographBridge, we recolor
+    // it with these values instead of redrawing the pictograph from scratch.
+    const EGYPTIAN_PALETTE = {
+      blue:       LAPIS,       // #2E5090
+      red:        VERMILLION,  // #C13B2A
+      structural: BLACK,       // #1A0F00
+      bg:         null,        // transparent — sandstone shows through
+    };
 
     // ─── Sandstone background with texture ───────────────────────────────────
     function drawBackground() {
@@ -219,11 +233,33 @@
 
       ctx.shadowColor = 'transparent';
 
-      // Letter "A" in hieroglyph style — wedge/ox glyph shape
-      drawHieroglyphA(cx, cy);
+      // Letter glyph — scaled to fit the cartouche
+      drawCartoucheLetter(currentLetter, cx, cy);
 
       ctx.restore();
     }
+
+    function drawCartoucheLetter(letter, cx, cy) {
+      // Generic letter rendering — works for any alphabet entry.
+      // Falls back to the original ox-arm hieroglyph for Letter A specifically
+      // so that canonical Letter A keeps its bespoke look.
+      if (letter === 'A') {
+        drawHieroglyphA(cx, cy);
+        return;
+      }
+      ctx.save();
+      ctx.fillStyle = BLACK;
+      ctx.strokeStyle = BLACK;
+      ctx.lineWidth = 1;
+      ctx.font = 'bold 22px Georgia, serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(String(letter || '?'), cx, cy + 1);
+      ctx.restore();
+    }
+
+    // Which letter to render inside the cartouche — updated per render(data).
+    let currentLetter = 'A';
 
     function drawHieroglyphA(cx, cy) {
       // Stylized vulture / arm glyph for "A" — simplified as a wedge arm shape
@@ -409,18 +445,10 @@
     }
 
     // ─── Motion arrow in Egyptian flat style ─────────────────────────────────
-    // Pro motion: curves from start to end, with bold Egyptian arrowhead
-    function drawProArrow(startAngle, endAngle, color) {
-      // Arc drawn from startAngle to endAngle around the grid center
-      // Blue: W->N (270->360 degrees), Red: E->S (0->90 degrees)
-      // We draw a thick arc on the grid circle, then add arrowhead
-
-      const startRad = startAngle * Math.PI / 180;
-      const endRad   = endAngle   * Math.PI / 180;
-
-      // Arrow travels counter-clockwise for blue (W to N: 270->360=0),
-      // clockwise for red (E to S: 0->90).
-
+    // Takes raw canvas radians for start/end angles plus an explicit
+    // `anticlockwise` flag (same meaning as ctx.arc's 6th parameter). The
+    // caller resolves motion direction; this function only draws.
+    function drawMotionArc(startRad, endRad, anticlockwise, color) {
       ctx.save();
       ctx.strokeStyle = color;
       ctx.lineWidth = 8;
@@ -434,10 +462,7 @@
       ctx.shadowOffsetY = 2;
 
       const arrowR = GR * 0.72;  // slightly inside grid radius
-
-      // Determine arc direction
-      const isBlue = (color === LAPIS);
-      const ccw = isBlue; // blue goes CCW (W to N), red goes CW (E to S)
+      const ccw = !!anticlockwise;
 
       ctx.beginPath();
       ctx.arc(GCX, GCY, arrowR, startRad, endRad, ccw);
@@ -788,8 +813,114 @@
       ctx.restore();
     }
 
+    // ─── Data-driven helpers ─────────────────────────────────────────────────
+    //
+    // Each hand's arrow and staff are drawn from motion data, not hardcoded
+    // letter-A geometry. PictographGeometry (loaded in the head) resolves
+    // grid locations, hand direction, and staff axis angles.
+
+    function handLoc(hand) {
+      // Accept both lowercase TKA domain names (n, ne, ...) and uppercase
+      // compass names used internally by this file.
+      return String(hand.location || hand.startLocation || '').toLowerCase();
+    }
+    function handEndLoc(hand) {
+      return String(hand.endLocation || '').toLowerCase();
+    }
+
+    function drawArrowForHand(hand, color) {
+      if (!hand || hand.motionType === 'static' || !window.PictographGeometry) return;
+      const G = window.PictographGeometry;
+      const s = G.locationPoint(handLoc(hand),   GCX, GCY, GR);
+      const e = G.locationPoint(handEndLoc(hand), GCX, GCY, GR);
+
+      if (hand.motionType === 'dash') {
+        // Straight line with Egyptian arrowhead
+        ctx.save();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 8;
+        ctx.lineCap = 'butt';
+        ctx.shadowColor = 'rgba(0,0,0,0.3)';
+        ctx.shadowBlur = 3;
+        ctx.shadowOffsetX = 2;
+        ctx.shadowOffsetY = 2;
+        ctx.beginPath();
+        ctx.moveTo(s.x, s.y);
+        ctx.lineTo(e.x, e.y);
+        ctx.stroke();
+        ctx.shadowColor = 'transparent';
+        // Black underlay
+        ctx.globalCompositeOperation = 'destination-over';
+        ctx.strokeStyle = BLACK;
+        ctx.lineWidth = 12;
+        ctx.beginPath();
+        ctx.moveTo(s.x, s.y);
+        ctx.lineTo(e.x, e.y);
+        ctx.stroke();
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.restore();
+
+        const len = Math.hypot(e.x - s.x, e.y - s.y) || 1;
+        drawEgyptianArrowhead(e.x, e.y, (e.x - s.x) / len, (e.y - s.y) / len, color);
+        return;
+      }
+
+      // Arc motion (pro / anti / float)
+      const dir = G.handDirection(hand) || 'cw';
+      const startA = G.locationAngle(handLoc(hand));
+      const endA   = G.locationAngle(handEndLoc(hand));
+      if (startA == null || endA == null) return;
+
+      // In canvas (y-down): visual CW = angle increasing = ctx.arc anticlockwise=false.
+      const anticlockwise = (dir === 'ccw');
+      drawMotionArc(startA, endA, anticlockwise, color);
+    }
+
+    function drawStaffForHand(hand, color) {
+      if (!hand || !window.PictographGeometry) return;
+      const G = window.PictographGeometry;
+      const center = G.locationPoint(handEndLoc(hand), GCX, GCY, GR);
+      const axis = G.staffAxisAngle(handEndLoc(hand), hand.orientation || 'in');
+      const length = GR * 1.2;
+      const { a, b } = G.staffEndpoints(center, axis, length);
+      drawStaff(a.x, a.y, b.x, b.y, color);
+    }
+
+    function handDirectionForHand(hand) {
+      // Used to orient the decorative hand profile at the prop's end.
+      const endLoc = handEndLoc(hand);
+      const a = window.PictographGeometry && window.PictographGeometry.locationAngle(endLoc);
+      if (a == null) return 'right';
+      // Map radial angle to the closest of up/down/left/right.
+      const ax = Math.cos(a), ay = Math.sin(a);
+      if (Math.abs(ay) > Math.abs(ax)) return ay < 0 ? 'up' : 'down';
+      return ax < 0 ? 'left' : 'right';
+    }
+
     // ─── Render everything ────────────────────────────────────────────────────
-    function render() {
+    //
+    // Two paths:
+    //   1. Canonical bitmap available (parent app posted a pre-rendered
+    //      pictograph via the bridge): pixelate it to a sharp hieroglyphic
+    //      scale, recolor into the Egyptian pigments, apply a hard-edge
+    //      treatment. This inherits all correct motion semantics from the
+    //      canonical renderer — pro vs anti, dashes, turn indicators, floats.
+    //
+    //   2. No canonical (page opened directly, or canonical render failed):
+    //      fall back to the original data-driven rendering so the standalone
+    //      page still produces a complete scene.
+    //
+    // The Egyptian chrome — sandstone, border band, cartouche, title, motion
+    // feather glyphs, center ankh, bottom glyph strip, vignette — is drawn
+    // identically either way. That's where the era's voice lives.
+    function render(data, canonical, meta) {
+      const blue = data.blueHand;
+      const red  = data.redHand;
+
+      // Update the cartouche letter BEFORE drawing the cartouche so it picks
+      // up the right glyph on this frame.
+      currentLetter = String(data.letter || '?');
+
       // 1. Sandstone background
       drawBackground();
 
@@ -799,87 +930,56 @@
       // 3. Inner panel (recessed stone)
       drawInnerPanel();
 
-      // 4. Cartouche + letter A at top
+      // 4. Cartouche + letter glyph at top
       drawCartouche();
 
       // 5. Title divider
       drawTitleArea();
 
-      // 6. Grid (faint lines + grid point rosettes)
-      drawGrid();
+      // 6. Pictograph core — canonical (Path 1) or data-driven fallback
+      if (canonical && window.PictographStylize) {
+        // Path 1: pixelate + recolor + hard-edge treatment.
+        //   1. pixelate — downsample canonical to 180px then upsample with
+        //      nearest neighbor. 180 is sharp (crisp hieroglyphic feel), not
+        //      blocky the way cave painting's 90 would be.
+        //   2. recolor — map canonical's blue/red/structural classes to
+        //      lapis / vermillion / black (BG stays transparent so the
+        //      sandstone panel shows through).
+        //   3. edgeTreatment 'flat' — hard-edged pixels, no soft gradients.
+        //      Egyptian flat-profile tomb art has no blur.
+        // Single composite pass, alpha 1.0 — crisp, not layered.
+        const chunky = window.PictographStylize.pixelate(canonical, W, 180);
+        const styled = window.PictographStylize.recolor(chunky, EGYPTIAN_PALETTE, W);
+        window.PictographStylize.edgeTreatment(styled, 'flat');
+        ctx.drawImage(styled, 0, 0, W, H);
+      } else {
+        // Fallback: original data-driven pictograph rendering
+        drawGrid();
+        drawArrowForHand(blue, LAPIS);
+        drawArrowForHand(red,  VERMILLION);
+        drawStaffForHand(blue, LAPIS);
+        drawStaffForHand(red,  VERMILLION);
+        if (window.PictographGeometry) {
+          const G = window.PictographGeometry;
+          const bluePt = G.locationPoint(handEndLoc(blue), GCX, GCY, GR);
+          const redPt  = G.locationPoint(handEndLoc(red),  GCX, GCY, GR);
+          drawHand(bluePt.x, bluePt.y, LAPIS,     handDirectionForHand(blue));
+          drawHand(redPt.x,  redPt.y,  VERMILLION, handDirectionForHand(red));
+        }
+      }
 
-      // 7. Pro motion arrows UNDER staves
-      // Blue (lapis): W -> N  = 180° -> 270°  but N is -90° in canvas coords
-      // In canvas: right=0°, down=90°, left=180°, up=270° (-90°)
-      // W = 180°, N = -90° (or 270°)
-      // Blue staff is at N, so the arrow approaches N from W going CCW
-      // startAngle=180 (W), endAngle=270 (N in canvas = -90° -> 270°)
-      // We use actual canvas angles: N=-90°=270°, E=0°, S=90°, W=180°
-
-      // Blue arrow: W (180°) -> N (270°) counter-clockwise
-      // In canvas, CCW = going from 180 to 270 counter-clockwise passes through 90, 0...
-      // Actually: W=180°, going CCW means decreasing angle: 180 -> 90 -> 0 -> 270 (=N)
-      // That's a 270° sweep — too long. Instead:
-      // Going CW from W(180) to N(270) is only 90°. But the brief says "pro" = CCW.
-      // Let's use the shorter arc that looks like a pro curve:
-      // Blue: from W to N = short arc going through NW. That's 270->180 reversed...
-      // In canvas terms: N is at angle -Math.PI/2 (or 3π/2), W is at Math.PI.
-      // Going from W(π) to N(-π/2) = going CW (decreasing from π): π -> π/2 -> 0 -> -π/2? No.
-      // Going CW in canvas = increasing angle. N=270° (3π/2 or -π/2 equiv), W=180°(π).
-      // CW from W(180) to N(270): that goes through S(90)... that's wrong direction.
-      // Going CCW (decreasing): W(180) -> NW(225? no)
-      // Let me just think in degrees: N=270 (or -90), E=0, S=90, W=180.
-      // From W(180) going CCW (decreasing) to N(270): 180 -> 135(NW) -> ... hmm NW would be 225.
-      // Actually in standard canvas: N=270°, NE=315°, E=0°, SE=45°, S=90°, SW=135°, W=180°, NW=225°
-      // Blue: W(180) -> N(270) going CCW.
-      //   CCW in canvas = ctx.arc(x,y,r,start,end,true)
-      //   From 180° to 270° CCW means going: 180->135->90->45->0->315->270. That's 270° sweep passing through S. Too long.
-      //   CW from 180° to 270°: 180->225(NW)->270(N). 90° sweep through NW. This is what we want.
-      // Red: E(0°) -> S(90°) CW: 0->45->90. 90° sweep through SE. This is what we want.
-      // So: blue is CW through NW, red is CW through SE.
-
-      drawProArrow(Math.PI, 3*Math.PI/2, LAPIS);       // Blue: W->N (CW, through NW)
-      drawProArrow(0, Math.PI/2, VERMILLION);            // Red: E->S (CW, through SE)
-
-      // 8. Staves
-      // Letter A: blue staff at N, red staff at S
-      // Staves drawn vertically through center — blue from N, red from S
-      // Each staff runs from center outward to its hand position
-      // Blue staff: from center going up to N
-      // Red staff: from center going down to S
-      // Actually staves typically run parallel; for letter A both are radial.
-      // Blue at N: staff pointing N from center (runs N-S axis, blue end at N)
-      // Red at S: staff pointing S from center (runs N-S axis, red end at S)
-      // To make it interesting / Egyptian profile: slight inward lean
-      const staffOffset = 20; // horizontal separation
-      drawStaff(
-        GCX - staffOffset, GCY + GR * 0.55,
-        GCX - staffOffset, GCY - GR * 0.85,
-        LAPIS
-      );
-      drawStaff(
-        GCX + staffOffset, GCY - GR * 0.55,
-        GCX + staffOffset, GCY + GR * 0.85,
-        VERMILLION
-      );
-
-      // 9. Hand dots at staff tips
-      // Blue hand: top of blue staff (N)
-      drawHand(GCX - staffOffset, GCY - GR * 0.85, LAPIS, 'up');
-      // Red hand: bottom of red staff (S)
-      drawHand(GCX + staffOffset, GCY + GR * 0.85, VERMILLION, 'down');
-
-      // 10. Pro motion labels (feather glyphs beside arrows)
+      // 7. Pro motion labels (feather glyphs beside arrows) — purely
+      //    decorative, drawn on top of the pictograph in both paths.
       drawMotionLabel(GCX - GR * 0.8, GCY - GR * 0.5, LAPIS);
       drawMotionLabel(GCX + GR * 0.8, GCY + GR * 0.5, VERMILLION);
 
-      // 11. Center ankh symbol
+      // 8. Center ankh symbol
       drawCenterSymbol();
 
-      // 12. Bottom divider + glyph strip
+      // 9. Bottom divider + glyph strip
       drawBottomArea();
 
-      // 13. Aged vignette (dark corners, simulating old stone)
+      // 10. Aged vignette (dark corners, simulating old stone)
       drawVignette();
     }
 
@@ -895,7 +995,33 @@
       ctx.fillRect(0, 0, W, H);
     }
 
-    render();
+    // ─── Default pictograph — Letter A (what the page rendered before the
+    //     data-driven refactor). Also used when this HTML is opened directly
+    //     without a parent posting pictograph data.
+    const DEFAULT_PICTOGRAPH = {
+      letter: 'A',
+      gridMode: 'diamond',
+      blueHand: {
+        color: 'blue',
+        location: 'w', endLocation: 'n',
+        motionType: 'pro', rotationDirection: 'cw',
+        orientation: 'in', turns: 0,
+      },
+      redHand: {
+        color: 'red',
+        location: 'e', endLocation: 's',
+        motionType: 'pro', rotationDirection: 'cw',
+        orientation: 'in', turns: 0,
+      },
+    };
+
+    render(DEFAULT_PICTOGRAPH, null, null);
+
+    if (window.PictographBridge) {
+      window.PictographBridge.onPictograph(function(data, canonical, meta) {
+        render(data, canonical, meta);
+      });
+    }
   })();
   </script>
 <script>if(location.search.includes("embed"))document.body.classList.add("embed")</script>

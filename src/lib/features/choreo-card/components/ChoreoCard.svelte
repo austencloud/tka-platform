@@ -62,7 +62,7 @@
   const usePreRendered = $derived(!!preRenderedImageUrlProp && !preRenderedCleared);
 
   let hapticService: IHapticFeedback;
-  let thumbnailRef: PropAwareThumbnail;
+  let thumbnailRef: PropAwareThumbnail | undefined = $state();
 
   export function rerender(): void {
     preRenderedCleared = true;

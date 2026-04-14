@@ -274,3 +274,7 @@ flowtrails/
 
 # Superpowers brainstorm sessions (ephemeral design explorations)
 .superpowers/brainstorm/
+
+# Museum soundscape audio files (reproducible via scripts/fetch-soundscapes.cjs)
+static/audio/soundscapes/
+src/lib/features/museum/audio/soundscape-candidates.generated.json

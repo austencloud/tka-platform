@@ -1,0 +1,377 @@
+<script lang="ts">
+  /**
+   * WinterControls
+   *
+   * Param sliders and color inputs bound to the live WinterSceneConfig.
+   * Mutations propagate through Svelte 5's deep $state reactivity.
+   */
+
+  import ParamPanel from "./ParamPanel.svelte";
+  import ParamSlider from "./ParamSlider.svelte";
+  import ParamColor from "./ParamColor.svelte";
+  import { getSceneLabContext } from "../context/scene-lab-context";
+
+  const { state } = getSceneLabContext();
+  const cfg = $derived(state.winterConfig);
+</script>
+
+<ParamPanel title="Sky">
+  <ParamColor
+    label="Top"
+    value={cfg.sky.topColor}
+    onChange={(v) => (state.winterConfig.sky.topColor = v)}
+  />
+  <ParamColor
+    label="Mid"
+    value={cfg.sky.midColor ?? "#000000"}
+    onChange={(v) => (state.winterConfig.sky.midColor = v)}
+  />
+  <ParamColor
+    label="Bottom"
+    value={cfg.sky.bottomColor}
+    onChange={(v) => (state.winterConfig.sky.bottomColor = v)}
+  />
+</ParamPanel>
+
+<ParamPanel title="Fog">
+  <ParamColor
+    label="Color"
+    value={cfg.fog.color}
+    onChange={(v) => (state.winterConfig.fog.color = v)}
+  />
+  <ParamSlider
+    label="Density"
+    value={cfg.fog.density}
+    min={0}
+    max={0.1}
+    step={0.001}
+    onChange={(v) => (state.winterConfig.fog.density = v)}
+  />
+</ParamPanel>
+
+<ParamPanel title="Ground">
+  <ParamColor
+    label="Color"
+    value={cfg.ground.color}
+    onChange={(v) => (state.winterConfig.ground.color = v)}
+  />
+  <ParamSlider
+    label="Size"
+    value={cfg.ground.size}
+    min={10}
+    max={100}
+    step={5}
+    unit="m"
+    onChange={(v) => (state.winterConfig.ground.size = v)}
+  />
+</ParamPanel>
+
+<ParamPanel title="Snowfall">
+  <ParamSlider
+    label="Density"
+    value={cfg.snow.count}
+    min={0}
+    max={2000}
+    step={10}
+    unit="flakes"
+    onChange={(v) => (state.winterConfig.snow.count = v)}
+  />
+  <ParamSlider
+    label="Fall speed"
+    value={cfg.snow.speed}
+    min={0}
+    max={1.5}
+    step={0.01}
+    unit="m/s"
+    onChange={(v) => (state.winterConfig.snow.speed = v)}
+  />
+  <ParamSlider
+    label="Min size"
+    value={cfg.snow.sizeRange[0]}
+    min={0.01}
+    max={0.3}
+    step={0.005}
+    unit="m"
+    onChange={(v) => (state.winterConfig.snow.sizeRange[0] = v)}
+  />
+  <ParamSlider
+    label="Max size"
+    value={cfg.snow.sizeRange[1]}
+    min={0.02}
+    max={0.5}
+    step={0.005}
+    unit="m"
+    onChange={(v) => (state.winterConfig.snow.sizeRange[1] = v)}
+  />
+  <ParamSlider
+    label="Area width"
+    value={cfg.snow.area.width}
+    min={5}
+    max={80}
+    step={1}
+    unit="m"
+    onChange={(v) => (state.winterConfig.snow.area.width = v)}
+  />
+  <ParamSlider
+    label="Area height"
+    value={cfg.snow.area.height}
+    min={2}
+    max={30}
+    step={1}
+    unit="m"
+    onChange={(v) => (state.winterConfig.snow.area.height = v)}
+  />
+  <ParamSlider
+    label="Area depth"
+    value={cfg.snow.area.depth}
+    min={5}
+    max={80}
+    step={1}
+    unit="m"
+    onChange={(v) => (state.winterConfig.snow.area.depth = v)}
+  />
+  {#each cfg.snow.colors as _, i}
+    <ParamColor
+      label={`Flake ${i + 1}`}
+      value={cfg.snow.colors[i]!}
+      onChange={(v) => (state.winterConfig.snow.colors[i] = v)}
+    />
+  {/each}
+</ParamPanel>
+
+<ParamPanel title="Trees (rings)">
+  <ParamSlider
+    label="Clearing radius"
+    value={cfg.clearingRadius}
+    min={6}
+    max={30}
+    step={0.5}
+    unit="m"
+    onChange={(v) => (state.winterConfig.clearingRadius = v)}
+  />
+  {#each cfg.treeRings as _, i}
+    <div class="ring-group">
+      <div class="ring-label">Ring {i + 1}</div>
+      <ParamSlider
+        label="Radius"
+        value={cfg.treeRings[i]!.radius}
+        min={8}
+        max={40}
+        step={0.5}
+        unit="m"
+        onChange={(v) => (state.winterConfig.treeRings[i]!.radius = v)}
+      />
+      <ParamSlider
+        label="Count"
+        value={cfg.treeRings[i]!.count}
+        min={0}
+        max={80}
+        step={1}
+        onChange={(v) => (state.winterConfig.treeRings[i]!.count = v)}
+      />
+      <ParamSlider
+        label="Scale base"
+        value={cfg.treeRings[i]!.scaleBase}
+        min={0.3}
+        max={2.5}
+        step={0.05}
+        onChange={(v) => (state.winterConfig.treeRings[i]!.scaleBase = v)}
+      />
+    </div>
+  {/each}
+</ParamPanel>
+
+{#if cfg.pond}
+  <ParamPanel title="Frozen pond" defaultOpen={false}>
+    <ParamSlider
+      label="Enabled"
+      value={cfg.pond.enabled ? 1 : 0}
+      min={0}
+      max={1}
+      step={1}
+      onChange={(v) => {
+        if (state.winterConfig.pond) state.winterConfig.pond.enabled = v > 0.5;
+      }}
+    />
+    <ParamColor
+      label="Ice color"
+      value={cfg.pond.color}
+      onChange={(v) => {
+        if (state.winterConfig.pond) state.winterConfig.pond.color = v;
+      }}
+    />
+    <ParamSlider
+      label="Radius"
+      value={cfg.pond.radius}
+      min={1}
+      max={15}
+      step={0.25}
+      unit="m"
+      onChange={(v) => {
+        if (state.winterConfig.pond) state.winterConfig.pond.radius = v;
+      }}
+    />
+    <ParamSlider
+      label="Roughness"
+      value={cfg.pond.roughness}
+      min={0}
+      max={1}
+      step={0.01}
+      onChange={(v) => {
+        if (state.winterConfig.pond) state.winterConfig.pond.roughness = v;
+      }}
+    />
+    <ParamSlider
+      label="Pos X"
+      value={cfg.pond.position.x}
+      min={-20}
+      max={20}
+      step={0.25}
+      unit="m"
+      onChange={(v) => {
+        if (state.winterConfig.pond) state.winterConfig.pond.position.x = v;
+      }}
+    />
+    <ParamSlider
+      label="Pos Z"
+      value={cfg.pond.position.z}
+      min={-20}
+      max={20}
+      step={0.25}
+      unit="m"
+      onChange={(v) => {
+        if (state.winterConfig.pond) state.winterConfig.pond.position.z = v;
+      }}
+    />
+  </ParamPanel>
+{/if}
+
+{#if cfg.campfire}
+  <ParamPanel title="Campfire" defaultOpen={false}>
+    <ParamSlider
+      label="Enabled"
+      value={cfg.campfire.enabled ? 1 : 0}
+      min={0}
+      max={1}
+      step={1}
+      onChange={(v) => {
+        if (state.winterConfig.campfire)
+          state.winterConfig.campfire.enabled = v > 0.5;
+      }}
+    />
+    <ParamSlider
+      label="Fire scale"
+      value={cfg.campfire.fireScale}
+      min={0.3}
+      max={2}
+      step={0.05}
+      onChange={(v) => {
+        if (state.winterConfig.campfire) state.winterConfig.campfire.fireScale = v;
+      }}
+    />
+    <ParamSlider
+      label="Primary light intensity"
+      value={cfg.campfire.primaryLight.intensity}
+      min={0}
+      max={150}
+      step={1}
+      onChange={(v) => {
+        if (state.winterConfig.campfire)
+          state.winterConfig.campfire.primaryLight.intensity = v;
+      }}
+    />
+    <ParamSlider
+      label="Fill light intensity"
+      value={cfg.campfire.fillLight.intensity}
+      min={0}
+      max={100}
+      step={1}
+      onChange={(v) => {
+        if (state.winterConfig.campfire)
+          state.winterConfig.campfire.fillLight.intensity = v;
+      }}
+    />
+    <ParamColor
+      label="Primary color"
+      value={cfg.campfire.primaryLight.color}
+      onChange={(v) => {
+        if (state.winterConfig.campfire)
+          state.winterConfig.campfire.primaryLight.color = v;
+      }}
+    />
+  </ParamPanel>
+{/if}
+
+<ParamPanel title="Hemisphere light" defaultOpen={false}>
+  <ParamColor
+    label="Sky"
+    value={cfg.hemisphereLight.skyColor}
+    onChange={(v) => (state.winterConfig.hemisphereLight.skyColor = v)}
+  />
+  <ParamColor
+    label="Ground"
+    value={cfg.hemisphereLight.groundColor}
+    onChange={(v) => (state.winterConfig.hemisphereLight.groundColor = v)}
+  />
+  <ParamSlider
+    label="Intensity"
+    value={cfg.hemisphereLight.intensity}
+    min={0}
+    max={3}
+    step={0.05}
+    onChange={(v) => (state.winterConfig.hemisphereLight.intensity = v)}
+  />
+</ParamPanel>
+
+{#if cfg.moonLight}
+  <ParamPanel title="Moon (directional light)" defaultOpen={false}>
+    <ParamSlider
+      label="Enabled"
+      value={cfg.moonLight.enabled ? 1 : 0}
+      min={0}
+      max={1}
+      step={1}
+      onChange={(v) => {
+        if (state.winterConfig.moonLight)
+          state.winterConfig.moonLight.enabled = v > 0.5;
+      }}
+    />
+    <ParamColor
+      label="Color"
+      value={cfg.moonLight.color}
+      onChange={(v) => {
+        if (state.winterConfig.moonLight) state.winterConfig.moonLight.color = v;
+      }}
+    />
+    <ParamSlider
+      label="Intensity"
+      value={cfg.moonLight.intensity}
+      min={0}
+      max={3}
+      step={0.05}
+      onChange={(v) => {
+        if (state.winterConfig.moonLight)
+          state.winterConfig.moonLight.intensity = v;
+      }}
+    />
+  </ParamPanel>
+{/if}
+
+<style>
+  .ring-group {
+    margin: 4px 0 8px;
+    padding: 4px 8px;
+    background: rgba(255, 255, 255, 0.02);
+    border-left: 2px solid var(--theme-accent, #38bdf8);
+    border-radius: 4px;
+  }
+
+  .ring-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    margin-bottom: 4px;
+  }
+</style>

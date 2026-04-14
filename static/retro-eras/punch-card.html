@@ -22,6 +22,9 @@
 </head>
 <body>
 <canvas id="c"></canvas>
+<script src="./_shared/pictograph-geometry.js"></script>
+<script src="./_shared/pictograph-bridge.js"></script>
+<script src="./_shared/pictograph-stylize.js"></script>
 <script>
 (function () {
   // ────────────────────────────────────────────────────────────────────────────
@@ -32,37 +35,13 @@
   const COLS    = 80;   // printable character columns
   const MARGIN  = 38;   // tractor-feed strip width on each side
 
-  // We'll fill a "lines" array, then set canvas height to fit exactly.
-  const lines   = [];   // each entry: { text, col, bold } — one per row
-
-  // Helpers to push content
-  const push  = (text, col = 0, bold = false) => lines.push({ text, col, bold });
-  const pushB = (text, col = 0) => push(text, col, true);
-  const blank = () => push('');
-  const rule  = (ch = '=') => pushB(ch.repeat(COLS));
-  const dashes = () => push('-'.repeat(COLS));
-
-  function centre (str, bold = false) {
-    const col = Math.max(0, Math.floor((COLS - str.length) / 2));
-    push(str, col, bold);
-  }
-
-  // ────────────────────────────────────────────────────────────────────────────
-  // ASCII pictograph art buffer  (55 cols × 37 rows)
-  // ────────────────────────────────────────────────────────────────────────────
+  // ASCII art buffer dimensions
   const AC = 55;
   const AR = 37;
-  const buf = Array.from({ length: AR }, () => Array(AC).fill(' '));
 
-  function put (r, c, ch) {
-    if (r >= 0 && r < AR && c >= 0 && c < AC) buf[r][c] = ch;
-  }
-  function blank2 (r, c, ch) {
-    if (r >= 0 && r < AR && c >= 0 && c < AC && buf[r][c] === ' ') buf[r][c] = ch;
-  }
-
-  // Grid points — (row, col) inside art buffer
-  // Diamond layout:  N top-centre, S bottom-centre, E/W mid-sides
+  // ────────────────────────────────────────────────────────────────────────────
+  // Grid points — (row, col) inside art buffer. Diamond layout.
+  // ────────────────────────────────────────────────────────────────────────────
   const G = {
     N:  [1,  27],
     NE: [7,  44],
@@ -75,234 +54,461 @@
     C:  [18, 27],
   };
 
-  // Thin grid lines using middle-dot
-  function gline (r1, c1, r2, c2) {
-    const steps = Math.max(Math.abs(r2-r1), Math.abs(c2-c1));
-    for (let i = 1; i < steps; i++) {
-      const r = Math.round(r1 + (r2-r1)*i/steps);
-      const c = Math.round(c1 + (c2-c1)*i/steps);
-      blank2(r, c, '\xb7');
+  // Grid perimeter geometry in CHARACTER space. Rows are ~13px tall, columns
+  // ~8px wide, so the ASCII perimeter isn't a true circle — we calibrate the
+  // row radius and column radius to match the existing G[] anchor points.
+  //   N is 17 rows above center; E is 25 cols right of center.
+  const GRID_CENTER_R = 18;
+  const GRID_CENTER_C = 27;
+  const GRID_R_ROWS   = 17;
+  const GRID_R_COLS   = 25;
+
+  // Map a lowercase compass location to its [row, col] in G[].
+  function handLoc(h)    { return String(h && (h.location)    || '').toLowerCase(); }
+  function handEndLoc(h) { return String(h && (h.endLocation) || '').toLowerCase(); }
+  function gKey(loc)     { return String(loc || '').toUpperCase(); }
+  function gridCell(loc) {
+    const k = gKey(loc);
+    return G[k] || null;
+  }
+
+  // Return [row, col] on the grid perimeter for a given canvas angle.
+  // Canvas: 0=E, PI/2=S, -PI/2=N. Rows grow downward, matching sin().
+  function anglePoint(angleRad) {
+    const r = GRID_CENTER_R + Math.round(Math.sin(angleRad) * GRID_R_ROWS);
+    const c = GRID_CENTER_C + Math.round(Math.cos(angleRad) * GRID_R_COLS);
+    return [r, c];
+  }
+
+  // ────────────────────────────────────────────────────────────────────────────
+  // Canonical → ASCII — downsample the 500px canonical render down to the
+  // AC×AR character grid and classify each cell by its dominant color class.
+  // This is Path 1: the canonical renderer already resolved every motion
+  // semantic correctly (pro vs anti, dash vs arc, orientation), so we just
+  // translate pixel classes into printer characters.
+  //
+  //   '#' — blue-dominant pixel (blue hand ink)
+  //   '@' — red-dominant pixel  (red hand ink)
+  //   '.' — structural (grid lines / letter / anything non-colored)
+  //
+  // Chosen for visual weight: '#' and '@' are the heaviest printable ASCII
+  // glyphs, matching the bold ink of the two hand colors. '.' is the lightest
+  // printable glyph, fitting the thin structural grid.
+  // ────────────────────────────────────────────────────────────────────────────
+  function canonicalToAscii(canonical, buf, put) {
+    const tmp = document.createElement('canvas');
+    tmp.width = AC;
+    tmp.height = AR;
+    const tctx = tmp.getContext('2d');
+    tctx.imageSmoothingEnabled = true;
+    tctx.drawImage(canonical, 0, 0, AC, AR);
+    const d = tctx.getImageData(0, 0, AC, AR).data;
+
+    for (let r = 0; r < AR; r++) {
+      for (let c = 0; c < AC; c++) {
+        const i = (r * AC + c) * 4;
+        const red = d[i], green = d[i + 1], blue = d[i + 2], a = d[i + 3];
+        if (a < 30) continue;
+        if (Math.max(red, green, blue) < 60) continue;
+
+        let ch;
+        if (blue > red * 1.4 && blue > green * 1.4)      ch = '#';
+        else if (red > green * 1.4 && red > blue * 1.4)  ch = '@';
+        else                                              ch = '.';
+
+        put(r, c, ch);
+      }
     }
   }
 
-  // Outer diamond + cross + diagonals
-  gline(...G.N, ...G.NE); gline(...G.NE, ...G.E);
-  gline(...G.E, ...G.SE); gline(...G.SE, ...G.S);
-  gline(...G.S, ...G.SW); gline(...G.SW, ...G.W);
-  gline(...G.W, ...G.NW); gline(...G.NW, ...G.N);
-  gline(...G.N,  ...G.S);
-  gline(...G.E,  ...G.W);
-  gline(...G.NE, ...G.SW);
-  gline(...G.NW, ...G.SE);
+  // ────────────────────────────────────────────────────────────────────────────
+  // Render — rebuilds the entire line-printer page for the given pictograph.
+  // ────────────────────────────────────────────────────────────────────────────
+  function render(data, canonical, meta) {
+    // Fresh ASCII buffer on every render so nothing leaks between updates.
+    const buf = Array.from({ length: AR }, () => Array(AC).fill(' '));
 
-  // Grid dots (stamps — will restore after drawing staves/arcs)
-  const stampGrid = () => {
-    for (const [pos, [r,c]] of Object.entries(G)) {
-      if (pos === 'C')                            put(r, c, 'O');
-      else if (['N','S','E','W'].includes(pos))   put(r, c, '+');
-      else                                        put(r, c, '*');
+    function put (r, c, ch) {
+      if (r >= 0 && r < AR && c >= 0 && c < AC) buf[r][c] = ch;
     }
+    function blank2 (r, c, ch) {
+      if (r >= 0 && r < AR && c >= 0 && c < AC && buf[r][c] === ' ') buf[r][c] = ch;
+    }
+    // Bresenham-ish line using middle-dot (safe variant — never overwrites chars)
+    function gline (r1, c1, r2, c2, ch) {
+      const marker = ch || '\xb7';
+      const steps = Math.max(Math.abs(r2-r1), Math.abs(c2-c1));
+      for (let i = 1; i < steps; i++) {
+        const r = Math.round(r1 + (r2-r1)*i/steps);
+        const c = Math.round(c1 + (c2-c1)*i/steps);
+        blank2(r, c, marker);
+      }
+    }
+    // Force-paint line variant (overwrites whatever is underneath). Used for
+    // staves and arrows where we want solid ink, not a background dot.
+    function glineSolid (r1, c1, r2, c2, ch) {
+      const steps = Math.max(Math.abs(r2-r1), Math.abs(c2-c1), 1);
+      for (let i = 0; i <= steps; i++) {
+        const r = Math.round(r1 + (r2-r1)*i/steps);
+        const c = Math.round(c1 + (c2-c1)*i/steps);
+        put(r, c, ch);
+      }
+    }
+
+    if (canonical) {
+      // Path 1: the canonical 500px render is the source of truth. Downsample
+      // it into the character grid and classify each cell by color class.
+      canonicalToAscii(canonical, buf, put);
+    } else {
+      // Fallback: data-driven ASCII drawing. Kept intact for standalone opens
+      // or when the parent couldn't provide a canonical bitmap.
+
+      // ── Grid lines (middle-dot) — drawn first so staves/arrows paint over ──
+      gline(...G.N, ...G.NE); gline(...G.NE, ...G.E);
+      gline(...G.E, ...G.SE); gline(...G.SE, ...G.S);
+      gline(...G.S, ...G.SW); gline(...G.SW, ...G.W);
+      gline(...G.W, ...G.NW); gline(...G.NW, ...G.N);
+      gline(...G.N,  ...G.S);
+      gline(...G.E,  ...G.W);
+      gline(...G.NE, ...G.SW);
+      gline(...G.NW, ...G.SE);
+
+      // ── Arrows (arcs / dashes) — drawn before staves so the prop sits on top ──
+      drawArrowForHand(buf, data.blueHand, '#', '^', '>');
+      drawArrowForHand(buf, data.redHand,  '@', 'v', '<');
+
+      // ── Staves — drawn last so they're the most visible ink on the page ──
+      drawStaffForHand(buf, data.blueHand, '#', '|');
+      drawStaffForHand(buf, data.redHand,  '@', '|');
+
+      // ── Grid dots (anchors) — drawn on top so the grid stays legible ──
+      for (const [pos, [r,c]] of Object.entries(G)) {
+        if (pos === 'C')                            put(r, c, 'O');
+        else if (['N','S','E','W'].includes(pos))   put(r, c, '+');
+        else                                        put(r, c, '*');
+      }
+    }
+
+    // Compass labels in the buffer (N, E, W). S is drawn as a separate
+    // line below the art because it falls on the very last row already.
+    // Drawn for both paths so the printout chrome is consistent.
+    put(0,  26, 'N');
+    put(18,  0, 'W');
+    put(18, 54, 'E');
+
+    // ────────────────────────────────────────────────────────────────────────
+    // Staff / arrow helpers — closed over `buf`, `put`, `gline`, `glineSolid`.
+    // ────────────────────────────────────────────────────────────────────────
+    function drawStaffForHand(_buf, hand, bodyCh, shaftCh) {
+      if (!hand || !window.PictographGeometry) return;
+      const endLoc = handEndLoc(hand);
+      const cell = gridCell(endLoc);
+      if (!cell) return;
+
+      const G_ = window.PictographGeometry;
+      const axis = G_.staffAxisAngle(endLoc, hand.orientation || 'in');
+
+      // Staff length in character cells. Shorter in the col direction because
+      // columns are narrower than rows — the eye expects a roughly square feel.
+      const halfRows = 8;
+      const halfCols = 8;
+      const dr = Math.sin(axis);
+      const dc = Math.cos(axis);
+      const r0 = cell[0] - Math.round(dr * halfRows);
+      const c0 = cell[1] - Math.round(dc * halfCols);
+      const r1 = cell[0] + Math.round(dr * halfRows);
+      const c1 = cell[1] + Math.round(dc * halfCols);
+
+      // Shaft in '|' (or dash) along the axis, then a bold body marker at the
+      // endpoints and center so the stave reads even at this resolution.
+      glineSolid(r0, c0, r1, c1, shaftCh);
+      put(cell[0], cell[1], bodyCh);
+      // Bold every 4th cell along the run to evoke the original striped stave
+      const steps = Math.max(Math.abs(r1-r0), Math.abs(c1-c0), 1);
+      for (let i = 0; i <= steps; i++) {
+        if (i % 4 !== 0) continue;
+        const rr = Math.round(r0 + (r1-r0)*i/steps);
+        const cc = Math.round(c0 + (c1-c0)*i/steps);
+        put(rr, cc, bodyCh);
+      }
+    }
+
+    function drawArrowForHand(_buf, hand, bodyCh, headUp, headRight) {
+      if (!hand || !window.PictographGeometry) return;
+      const G_ = window.PictographGeometry;
+      const archetype = G_.motionArchetype(hand);
+      if (archetype === 'none' || archetype === 'static') return;
+
+      if (archetype === 'dash') {
+        const s = gridCell(handLoc(hand));
+        const e = gridCell(handEndLoc(hand));
+        if (!s || !e) return;
+        glineSolid(s[0], s[1], e[0], e[1], bodyCh);
+        // Arrowhead: pick a character whose visual direction matches travel.
+        const dr = e[0] - s[0];
+        const dc = e[1] - s[1];
+        const head =
+          Math.abs(dc) > Math.abs(dr)
+            ? (dc > 0 ? '>' : '<')
+            : (dr > 0 ? 'v' : '^');
+        put(e[0], e[1], head);
+        return;
+      }
+
+      // Arc — sample along the perimeter in character space
+      const dir = G_.handDirection(hand) || 'cw';
+      const angles = G_.arcAngles(handLoc(hand), handEndLoc(hand), dir);
+      if (!angles) return;
+
+      const steps = 24;
+      let prev = null;
+      for (let i = 0; i <= steps; i++) {
+        const t = i / steps;
+        const a = angles.startA + (angles.endA - angles.startA) * t;
+        const pt = anglePoint(a);
+        if (prev) glineSolid(prev[0], prev[1], pt[0], pt[1], bodyCh);
+        prev = pt;
+      }
+      if (prev) {
+        // Arrowhead at the final sample — direction from penultimate → final
+        const tPrev = (steps - 1) / steps;
+        const aPrev = angles.startA + (angles.endA - angles.startA) * tPrev;
+        const prevPt = anglePoint(aPrev);
+        const dr = prev[0] - prevPt[0];
+        const dc = prev[1] - prevPt[1];
+        const head =
+          Math.abs(dc) > Math.abs(dr)
+            ? (dc > 0 ? '>' : '<')
+            : (dr > 0 ? 'v' : '^');
+        put(prev[0], prev[1], head);
+      }
+    }
+
+    // ────────────────────────────────────────────────────────────────────────
+    // Build the printed line list from the populated art buffer.
+    // ────────────────────────────────────────────────────────────────────────
+    const lines = [];
+    const push  = (text, col = 0, bold = false) => lines.push({ text, col, bold });
+    const pushB = (text, col = 0) => push(text, col, true);
+    const blank = () => push('');
+    const rule  = (ch = '=') => pushB(ch.repeat(COLS));
+    const dashes = () => push('-'.repeat(COLS));
+    function centre (str, bold = false) {
+      const col = Math.max(0, Math.floor((COLS - str.length) / 2));
+      push(str, col, bold);
+    }
+
+    // Metadata derived from the pictograph
+    const letter = String(data.letter || '?');
+    const blue = data.blueHand || {};
+    const red  = data.redHand  || {};
+    const mt   = (blue.motionType || 'static').toString().toUpperCase();
+    const word = letter;
+
+    // Today's printout date — keep the 1976 fixed stamp; the "batch job" id
+    // shifts per letter so each printout looks like its own run.
+    const stampDate = '12/15/1976';
+    const batchBase = 197612150000;
+    let batchOffset = 0;
+    for (const c of (letter + (blue.endLocation || '') + (red.endLocation || ''))) {
+      batchOffset = (batchOffset * 31 + c.charCodeAt(0)) % 9999;
+    }
+    const batchId = (batchBase + batchOffset).toString();
+
+    // ── Header ────────────────────────────────────────────────────────────
+    pushB(`*** TKA PICTOGRAPH SYSTEM V2.1 ***  LETTER: ${letter}  DATE: ${stampDate}  PAGE 1 OF 1 ***`);
+    rule('=');
+    push(`PROGRAM: PICTOGRAPH-GEN      RUN BY: AUSTEN/CLOUD      BATCH JOB: ${batchId}`);
+    dashes();
+
+    // ── Legend ────────────────────────────────────────────────────────────
+    push('  LEGEND:  # = BLUE HAND (PRO-MOTION)     @ = RED HAND (PRO-MOTION)     + = CARDINAL');
+    push('           * = INTERCARDINAL POINT         O = CENTRE POSITION           \xb7 = GRID LINE');
+    dashes();
+
+    // ── Pictograph title + blank ──────────────────────────────────────────
+    centre(`[ PICTOGRAPH OUTPUT — LETTER: ${letter} ]`, true);
+    blank();
+
+    // ── Art buffer rows ───────────────────────────────────────────────────
+    const artColOffset = Math.floor((COLS - AC) / 2);
+    for (let r = 0; r < AR; r++) {
+      push(buf[r].join(''), artColOffset);
+    }
+    // S label row (below buffer)
+    const sRow = ' '.repeat(artColOffset + 26) + 'v';
+    push(sRow);
+    const sLabel = ' '.repeat(artColOffset + 26) + 'S';
+    push(sLabel);
+    blank();
+
+    // ── Metadata ──────────────────────────────────────────────────────────
+    const blueEnd = String(blue.endLocation || '?').toUpperCase();
+    const redEnd  = String(red.endLocation  || '?').toUpperCase();
+    const bluePath = String(blue.motionType || '?').toUpperCase();
+    const redPath  = String(red.motionType  || '?').toUpperCase();
+    const turns = String(blue.turns != null ? blue.turns : 0);
+    dashes();
+    push(`  BEAT: 1 OF 1    BLUE: ${blueEnd} / ${bluePath}    RED: ${redEnd} / ${redPath}    MOTION-TYPE: ${mt}    TURNS: ${turns}`);
+    push(`  START POSITION: ALPHA    END POSITION: ALPHA    WORD: ${word}`);
+    dashes();
+    blank();
+
+    // ── Block letter (dot-matrix style) ───────────────────────────────────
+    centre('[ BLOCK LETTER REFERENCE ]');
+    blank();
+    const dotLetter = buildDotMatrixLetter(letter);
+    const aBcol = Math.floor((COLS - dotLetter[0].length) / 2);
+    for (const line of dotLetter) pushB(line, aBcol);
+    blank();
+
+    // ── Footer ────────────────────────────────────────────────────────────
+    rule('=');
+    push('  RECORD COUNT: 1    ERRORS: 0    WARNINGS: 0    STATUS: NORMAL TERMINATION');
+    rule('=');
+    centre('E N D   O F   R E P O R T', true);
+    rule('=');
+    blank();
+
+    // ────────────────────────────────────────────────────────────────────────
+    // Paint the line-printer page to the canvas.
+    // ────────────────────────────────────────────────────────────────────────
+    paintPage(lines);
+  }
+
+  // ────────────────────────────────────────────────────────────────────────────
+  // Dot-matrix letter reference. 'A' matches the original hand-crafted glyph.
+  // Every other letter falls back to a bold "BLOCK LETTER: X" banner so the
+  // reader still gets a readable reference without us shipping a full font.
+  // ────────────────────────────────────────────────────────────────────────────
+  function buildDotMatrixLetter(letter) {
+    if (letter === 'A') {
+      return [
+        '  #####  ',
+        ' ##   ## ',
+        ' ##   ## ',
+        ' ####### ',
+        ' ##   ## ',
+        ' ##   ## ',
+        ' ##   ## ',
+      ];
+    }
+    // Generic framed block for any other letter
+    const L = String(letter || '?').slice(0, 4);
+    const inner = `   ${L}   `;
+    const bar   = '#'.repeat(inner.length);
+    return [
+      bar,
+      '#' + ' '.repeat(inner.length - 2) + '#',
+      '#' + inner.slice(1, -1) + '#',
+      '#' + ' '.repeat(inner.length - 2) + '#',
+      bar,
+    ];
+  }
+
+  // ────────────────────────────────────────────────────────────────────────────
+  // Canvas painting — the green-bar paper, tractor holes, and the text pass.
+  // Extracted so `render()` can call it on every update.
+  // ────────────────────────────────────────────────────────────────────────────
+  function paintPage(lines) {
+    const TOTAL_ROWS = lines.length;
+    const CANVAS_W   = MARGIN * 2 + COLS * CHAR_W;
+    const CANVAS_H   = 14 + TOTAL_ROWS * CHAR_H + 16;  // baseline offset + bottom pad
+    const STRIPE_H   = CHAR_H * 3;
+
+    const canvas = document.getElementById('c');
+    canvas.width  = CANVAS_W;
+    canvas.height = CANVAS_H;
+    const ctx = canvas.getContext('2d');
+
+    const PAPER_L = MARGIN;
+    const PAPER_R = CANVAS_W - MARGIN;
+
+    // Green-bar paper
+    ctx.fillStyle = '#a8a8a8';
+    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+    for (let y = 0, band = 0; y < CANVAS_H; y += STRIPE_H, band++) {
+      ctx.fillStyle = band % 2 === 0 ? '#ffffff' : '#dff0de';
+      ctx.fillRect(PAPER_L, y, PAPER_R - PAPER_L, Math.min(STRIPE_H, CANVAS_H - y));
+    }
+
+    // Tractor-feed holes
+    const HOLE_STEP = 22;
+    const HOLE_R    = 5.5;
+    const cxL = MARGIN / 2;
+    const cxR = CANVAS_W - MARGIN / 2;
+    for (let y = HOLE_STEP / 2; y < CANVAS_H; y += HOLE_STEP) {
+      for (const cx of [cxL, cxR]) {
+        ctx.beginPath();
+        ctx.arc(cx, y, HOLE_R, 0, Math.PI * 2);
+        ctx.fillStyle   = '#606060';
+        ctx.fill();
+        ctx.strokeStyle = '#444';
+        ctx.lineWidth   = 0.7;
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(cx, y, HOLE_R - 2, 0, Math.PI * 2);
+        ctx.strokeStyle = '#888';
+        ctx.lineWidth   = 0.5;
+        ctx.stroke();
+      }
+    }
+
+    // Edge perforation lines
+    ctx.strokeStyle = '#909090';
+    ctx.lineWidth   = 0.5;
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath();
+    ctx.moveTo(PAPER_L, 0); ctx.lineTo(PAPER_L, CANVAS_H);
+    ctx.moveTo(PAPER_R, 0); ctx.lineTo(PAPER_R, CANVAS_H);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Text pass
+    ctx.textBaseline = 'alphabetic';
+    lines.forEach(({ text, col, bold }, rowIdx) => {
+      const x = PAPER_L + col * CHAR_W + 2;
+      const y = 14 + rowIdx * CHAR_H;
+      ctx.font = bold
+        ? `bold ${CHAR_H - 2}px "Courier New", Courier, monospace`
+        : `${CHAR_H - 2}px "Courier New", Courier, monospace`;
+      ctx.fillStyle = '#0d0d0d';
+      ctx.fillText(text, x, y);
+      if (bold) {
+        ctx.fillStyle = '#0d0d0d';
+        ctx.fillText(text, x + 0.5, y);
+      }
+    });
+  }
+
+  // ────────────────────────────────────────────────────────────────────────────
+  // Default pictograph — rendered immediately so the page isn't blank before a
+  // parent posts data. Also used when this HTML is opened directly.
+  // ────────────────────────────────────────────────────────────────────────────
+  const DEFAULT_PICTOGRAPH = {
+    letter: 'A',
+    gridMode: 'diamond',
+    blueHand: {
+      color: 'blue',
+      location: 'w', endLocation: 'n',
+      motionType: 'pro', rotationDirection: 'cw',
+      orientation: 'in', turns: 0,
+    },
+    redHand: {
+      color: 'red',
+      location: 'e', endLocation: 's',
+      motionType: 'pro', rotationDirection: 'cw',
+      orientation: 'in', turns: 0,
+    },
   };
 
-  // ── Blue stave: vertical at North, from row 2 to 17 (just above centre) ──
-  for (let r = 2; r <= 17; r++) {
-    put(r, 27, (r % 4 === 1) ? '#' : '|');
+  render(DEFAULT_PICTOGRAPH, null, null);
+
+  if (window.PictographBridge) {
+    window.PictographBridge.onPictograph(function (data, canonical, meta) {
+      render(data, canonical, meta);
+    });
   }
-
-  // ── Red stave: vertical at South, from row 19 to 34 (just below centre) ─
-  for (let r = 19; r <= 34; r++) {
-    put(r, 27, (r % 4 === 1) ? '@' : '|');
-  }
-
-  // ── Blue hand PRO arc: W → N  (sweeps through NW quadrant) ───────────────
-  // Characters: # (blue hand)
-  // Path traced from W(18,2) upward-and-right through NW zone to N(1,27)
-  const blueArc = [
-    [18, 3], [17, 3], [16, 3],
-    [15, 4], [14, 5], [13, 6],
-    [12, 7], [11, 8], [10, 9],
-    [9, 10], [8, 11],
-    [7, 13], [6, 15],
-    [5, 17], [4, 19],
-    [3, 22], [2, 25],
-  ];
-  for (const [r,c] of blueArc) blank2(r, c, '#');
-
-  // Blue arrowhead + tail
-  put(0, 27, '^');   // arrowhead at N pointing up
-  put(18, 1, '>');   // tail at W pointing right into arc
-
-  // ── Red hand PRO arc: E → S  (sweeps through SE quadrant) ───────────────
-  // Characters: @ (red hand)
-  // Path traced from E(18,52) downward-and-left through SE zone to S(35,27)
-  const redArc = [
-    [18, 51], [19, 51], [20, 50],
-    [21, 49], [22, 48], [23, 46],
-    [24, 45], [25, 43],
-    [26, 42], [27, 40],
-    [28, 38], [29, 36],
-    [30, 34], [31, 32],
-    [32, 30], [33, 29],
-    [34, 28],
-  ];
-  for (const [r,c] of redArc) blank2(r, c, '@');
-
-  // Red arrowhead + tail
-  put(36, 27, 'v');   // arrowhead at S pointing down (row 36 = below art, handled later)
-  put(18, 53, '<');   // tail at E pointing left into arc
-
-  // Restore grid anchors on top of everything
-  stampGrid();
-
-  // Compass labels
-  put(0,  26, 'N');
-  put(18,  0, 'W');
-  put(18, 54, 'E');
-  // S label placed as a separate art line after the buffer
-
-  // ────────────────────────────────────────────────────────────────────────────
-  // Build content lines
-  // ────────────────────────────────────────────────────────────────────────────
-
-  // ── Header ────────────────────────────────────────────────────────────────
-  pushB('*** TKA PICTOGRAPH SYSTEM V2.1 ***  LETTER: A  DATE: 12/15/1976  PAGE 1 OF 1 ***');
-  rule('=');
-  push('PROGRAM: PICTOGRAPH-GEN      RUN BY: AUSTEN/CLOUD      BATCH JOB: 197612150001');
-  dashes();
-
-  // ── Legend ────────────────────────────────────────────────────────────────
-  push('  LEGEND:  # = BLUE HAND (PRO-MOTION)     @ = RED HAND (PRO-MOTION)     + = CARDINAL');
-  push('           * = INTERCARDINAL POINT         O = CENTRE POSITION           · = GRID LINE');
-  dashes();
-
-  // ── Pictograph title + blank ───────────────────────────────────────────────
-  centre('[ PICTOGRAPH OUTPUT — LETTER: A ]', true);
-  blank();
-
-  // ── Art buffer rows ────────────────────────────────────────────────────────
-  const artColOffset = Math.floor((COLS - AC) / 2);
-  for (let r = 0; r < AR; r++) {
-    push(buf[r].join(''), artColOffset);
-  }
-  // S label + arrowhead row (below buffer)
-  const sRow = ' '.repeat(artColOffset + 26) + 'v';
-  push(sRow);
-  const sLabel = ' '.repeat(artColOffset + 26) + 'S';
-  push(sLabel);
-  blank();
-
-  // ── Metadata ───────────────────────────────────────────────────────────────
-  dashes();
-  push('  BEAT: 1 OF 1    BLUE: NORTH / PRO    RED: SOUTH / PRO    MOTION-TYPE: 1    TURNS: 0');
-  push('  START POSITION: ALPHA    END POSITION: ALPHA    WORD: A');
-  dashes();
-  blank();
-
-  // ── Block letter A (dot-matrix style) ─────────────────────────────────────
-  centre('[ BLOCK LETTER REFERENCE ]');
-  blank();
-
-  // 7x5 dot-matrix letter A — each '#' = dot-matrix pin fired
-  const dotA = [
-    '  #####  ',
-    ' ##   ## ',
-    ' ##   ## ',
-    ' ####### ',
-    ' ##   ## ',
-    ' ##   ## ',
-    ' ##   ## ',
-  ];
-  const aBcol = Math.floor((COLS - dotA[0].length) / 2);
-  for (const line of dotA) pushB(line, aBcol);
-  blank();
-
-  // ── Footer ─────────────────────────────────────────────────────────────────
-  rule('=');
-  push('  RECORD COUNT: 1    ERRORS: 0    WARNINGS: 0    STATUS: NORMAL TERMINATION');
-  rule('=');
-  centre('E N D   O F   R E P O R T', true);
-  rule('=');
-  blank();
-
-  // ────────────────────────────────────────────────────────────────────────────
-  // Canvas sizing & rendering
-  // ────────────────────────────────────────────────────────────────────────────
-  const TOTAL_ROWS = lines.length;
-  const CANVAS_W   = MARGIN * 2 + COLS * CHAR_W;
-  const CANVAS_H   = 14 + TOTAL_ROWS * CHAR_H + 16;  // top baseline offset + bottom pad
-  const STRIPE_H   = CHAR_H * 3;
-
-  const canvas = document.getElementById('c');
-  canvas.width  = CANVAS_W;
-  canvas.height = CANVAS_H;
-  const ctx = canvas.getContext('2d');
-
-  const PAPER_L = MARGIN;
-  const PAPER_R = CANVAS_W - MARGIN;
-
-  // ── Green-bar paper ─────────────────────────────────────────────────────────
-  ctx.fillStyle = '#a8a8a8';
-  ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
-
-  for (let y = 0, band = 0; y < CANVAS_H; y += STRIPE_H, band++) {
-    ctx.fillStyle = band % 2 === 0 ? '#ffffff' : '#dff0de';
-    ctx.fillRect(PAPER_L, y, PAPER_R - PAPER_L, Math.min(STRIPE_H, CANVAS_H - y));
-  }
-
-  // ── Tractor-feed holes ──────────────────────────────────────────────────────
-  const HOLE_STEP = 22;
-  const HOLE_R    = 5.5;
-  const cxL = MARGIN / 2;
-  const cxR = CANVAS_W - MARGIN / 2;
-  for (let y = HOLE_STEP / 2; y < CANVAS_H; y += HOLE_STEP) {
-    for (const cx of [cxL, cxR]) {
-      // Punched hole: dark circle
-      ctx.beginPath();
-      ctx.arc(cx, y, HOLE_R, 0, Math.PI * 2);
-      ctx.fillStyle   = '#606060';
-      ctx.fill();
-      ctx.strokeStyle = '#444';
-      ctx.lineWidth   = 0.7;
-      ctx.stroke();
-      // Inner highlight ring
-      ctx.beginPath();
-      ctx.arc(cx, y, HOLE_R - 2, 0, Math.PI * 2);
-      ctx.strokeStyle = '#888';
-      ctx.lineWidth   = 0.5;
-      ctx.stroke();
-    }
-  }
-
-  // ── Edge perforation lines ──────────────────────────────────────────────────
-  ctx.strokeStyle = '#909090';
-  ctx.lineWidth   = 0.5;
-  ctx.setLineDash([3, 3]);
-  ctx.beginPath();
-  ctx.moveTo(PAPER_L, 0); ctx.lineTo(PAPER_L, CANVAS_H);
-  ctx.moveTo(PAPER_R, 0); ctx.lineTo(PAPER_R, CANVAS_H);
-  ctx.stroke();
-  ctx.setLineDash([]);
-
-  // ── Text rendering ──────────────────────────────────────────────────────────
-  ctx.textBaseline = 'alphabetic';
-
-  lines.forEach(({ text, col, bold }, rowIdx) => {
-    const x = PAPER_L + col * CHAR_W + 2;
-    const y = 14 + rowIdx * CHAR_H;
-
-    ctx.font      = bold
-      ? `bold ${CHAR_H - 2}px "Courier New", Courier, monospace`
-      : `${CHAR_H - 2}px "Courier New", Courier, monospace`;
-    ctx.fillStyle = '#0d0d0d';
-    ctx.fillText(text, x, y);
-
-    // Double-strike simulation for bold (authentic line-printer look)
-    if (bold) {
-      ctx.fillStyle = '#0d0d0d';
-      ctx.fillText(text, x + 0.5, y);
-    }
-  });
-
 })();
 </script>
 <script>if(location.search.includes("embed"))document.body.classList.add("embed")</script>

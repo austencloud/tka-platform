@@ -2,21 +2,22 @@
   /**
    * Club3D Component
    *
-   * Renders a realistic 3D juggling club with the grip point at origin (0,0,0).
-   * The club body extends upward (+Y) from the hand, with a small handle knob
-   * extending slightly below (-Y).
+   * Renders a realistic 3D juggling club using LatheGeometry — a single smooth
+   * mesh created by revolving a spline profile around the Y-axis. The grip
+   * point sits at origin (0,0,0).
    *
-   * Anatomy from bottom to top:
-   * - Handle knob: small sphere just below the grip point
-   * - Handle: thin cylindrical grip section (~15% of length)
-   * - Neck: tapered section widening from handle to body (~30% of length)
-   * - Body: wide "belly" of the club (~40% of length)
-   * - Head: tapered tip with sphere cap (~15% of length)
+   * Profile based on real juggling club proportions (Henrys Delphin reference):
+   * - Knob: rounded bulge at the bottom of the handle
+   * - Handle: thin cylindrical grip section
+   * - Neck: smooth taper widening into the body
+   * - Body/Barrel: widest point with a gentle teardrop bulge
+   * - Tip: tapers to a rounded cap
    *
    * Overall length is ~65% of staff length since clubs are shorter than staves.
    */
 
   import { T } from "@threlte/core";
+  import { Vector2, LatheGeometry, CatmullRomCurve3, Vector3 } from "three";
   import type { Prop3DProps } from "./Prop3DProps";
   import { PROP_COLORS } from "./Prop3DProps";
   import { computePropRotation } from "./prop3d-transforms";
@@ -38,7 +39,6 @@
 
   const propLayer = $derived(isActivePlayer ? LAYER_PLAYER_BODY : LAYER_WORLD);
 
-  // Clubs are ~65% of staff length
   const CLUB_LENGTH_RATIO = 0.65;
 
   const effectiveLength = $derived(
@@ -49,117 +49,86 @@
   );
 
   const palette = $derived(PROP_COLORS[color]);
-
-  // Rotation only — position handled by PerformerRig scene graph
   const rotation = $derived(computePropRotation(propState));
 
-  // --- Section proportions (fractions of effectiveLength) ---
-  // Origin (0,0,0) is the grip point. Club extends upward from there.
-
-  // Handle knob: small sphere just below grip
-  const handleKnobOffset = $derived(effectiveLength * 0.05);
-  const handleKnobRadius = $derived(baseRadius * 1.5);
-
-  // Handle section: thin grip cylinder from origin up to 15%
-  const handleLength = $derived(effectiveLength * 0.15);
-  const handleRadius = $derived(baseRadius * 0.7);
-  const handleCenterY = $derived(handleLength / 2);
-
-  // Neck taper: widens from handle to body, 15% to 45%
-  const neckLength = $derived(effectiveLength * 0.30);
-  const neckRadiusBottom = $derived(baseRadius * 0.7); // matches handle top
-  const neckRadiusTop = $derived(baseRadius * 2.5); // matches body bottom
-  const neckCenterY = $derived(handleLength + neckLength / 2);
-
-  // Body: wide belly, 45% to 85%
-  const bodyLength = $derived(effectiveLength * 0.40);
-  const bodyRadius = $derived(baseRadius * 2.5);
-  const bodyCenterY = $derived(handleLength + neckLength + bodyLength / 2);
-
-  // Head taper: narrows from body to tip, 85% to 100%
-  const headLength = $derived(effectiveLength * 0.15);
-  const headRadiusBottom = $derived(baseRadius * 2.5); // matches body top
-  const headRadiusTop = $derived(baseRadius * 0.6); // tapers to near-point
-  const headCenterY = $derived(
-    handleLength + neckLength + bodyLength + headLength / 2
-  );
-
-  // Tip cap: small sphere at the very top
-  const tipCapRadius = $derived(baseRadius * 0.7);
-  const tipCapY = $derived(
-    handleLength + neckLength + bodyLength + headLength
-  );
-
-  // Grip ring at origin (white torus, where the hand holds)
+  // Grip ring dimensions
   const gripOuterRadius = $derived(baseRadius * 1.3);
   const gripTubeRadius = $derived(baseRadius * 0.15);
+
+  /**
+   * Build a smooth club profile using CatmullRom spline interpolation.
+   *
+   * We define control points as (radius, height) pairs normalized to the
+   * club's effective length, then sample the spline densely for LatheGeometry.
+   * The profile is rotationally symmetric — LatheGeometry handles the rest.
+   *
+   * Real club proportions (from Henrys Delphin, ~52cm total):
+   *   Knob: 2cm ball at base
+   *   Handle: 18cm thin grip (~35% of length)
+   *   Neck: 4cm taper (~8%)
+   *   Body: 22cm barrel with teardrop bulge (~42%)
+   *   Tip: 6cm taper to rounded cap (~12%)
+   */
+  function buildClubProfile(len: number, rad: number): Vector2[] {
+    // Control points: [radius, height] — height 0 = bottom of knob
+    // Knob sits below origin; origin is at knobHeight
+    const knobHeight = len * 0.04;
+
+    const controlPoints = [
+      // --- Knob (rounded bulge at bottom) ---
+      new Vector3(0, 0, 0), // bottom center (closed)
+      new Vector3(rad * 1.4, knobHeight * 0.5, 0), // knob widest
+      new Vector3(rad * 0.9, knobHeight, 0), // knob top, narrowing into handle
+
+      // --- Handle (thin cylindrical grip, ~35% of length) ---
+      new Vector3(rad * 0.75, knobHeight + len * 0.02, 0),
+      new Vector3(rad * 0.7, knobHeight + len * 0.10, 0),
+      new Vector3(rad * 0.7, knobHeight + len * 0.25, 0),
+      new Vector3(rad * 0.7, knobHeight + len * 0.34, 0),
+
+      // --- Neck (smooth taper outward, ~8% of length) ---
+      new Vector3(rad * 0.9, knobHeight + len * 0.38, 0),
+      new Vector3(rad * 1.6, knobHeight + len * 0.42, 0),
+
+      // --- Body/Barrel (teardrop bulge, ~42% of length) ---
+      new Vector3(rad * 2.3, knobHeight + len * 0.48, 0),
+      new Vector3(rad * 2.6, knobHeight + len * 0.55, 0), // peak width
+      new Vector3(rad * 2.65, knobHeight + len * 0.62, 0), // widest point slightly above center
+      new Vector3(rad * 2.5, knobHeight + len * 0.70, 0),
+      new Vector3(rad * 2.2, knobHeight + len * 0.76, 0),
+
+      // --- Tip taper (~12% of length) ---
+      new Vector3(rad * 1.6, knobHeight + len * 0.82, 0),
+      new Vector3(rad * 1.0, knobHeight + len * 0.88, 0),
+      new Vector3(rad * 0.5, knobHeight + len * 0.94, 0),
+      new Vector3(rad * 0.2, knobHeight + len * 0.98, 0),
+      new Vector3(0, knobHeight + len, 0), // tip center (closed)
+    ];
+
+    // Interpolate with CatmullRom for smooth curves between control points
+    const curve = new CatmullRomCurve3(controlPoints, false, "catmullrom", 0.5);
+    const samples = curve.getPoints(80);
+
+    // Convert to Vector2 (radius, height) for LatheGeometry and shift so
+    // origin sits at the grip point (top of knob / bottom of handle)
+    return samples.map((p) => new Vector2(Math.max(p.x, 0), p.y - knobHeight));
+  }
+
+  // Rebuild geometry when dimensions change
+  const clubGeometry = $derived.by(() => {
+    const profile = buildClubProfile(effectiveLength, baseRadius);
+    const geom = new LatheGeometry(profile, 32);
+    geom.computeVertexNormals();
+    return geom;
+  });
 </script>
 
 {#if visible}
   <T.Group {rotation} layers={propLayer}>
-    <!-- Handle knob: small sphere below the grip point -->
-    <T.Mesh position={[0, -handleKnobOffset, 0]}>
-      <T.SphereGeometry args={[handleKnobRadius, 12, 12]} />
-      <T.MeshStandardMaterial
-        color={palette.dark}
-        roughness={0.4}
-        metalness={0.15}
-      />
-    </T.Mesh>
-
-    <!-- Handle: thin cylindrical grip section (origin to 15%) -->
-    <T.Mesh position={[0, handleCenterY, 0]}>
-      <T.CylinderGeometry
-        args={[handleRadius, handleRadius, handleLength, 16, 1]}
-      />
-      <T.MeshStandardMaterial
-        color={palette.dark}
-        roughness={0.5}
-        metalness={0.1}
-      />
-    </T.Mesh>
-
-    <!-- Neck taper: widens from handle to body (15% to 45%) -->
-    <T.Mesh position={[0, neckCenterY, 0]}>
-      <T.CylinderGeometry
-        args={[neckRadiusTop, neckRadiusBottom, neckLength, 16, 1]}
-      />
+    <!-- Club body: single smooth lathe mesh -->
+    <T.Mesh geometry={clubGeometry}>
       <T.MeshStandardMaterial
         color={palette.main}
-        roughness={0.3}
-        metalness={0.2}
-      />
-    </T.Mesh>
-
-    <!-- Body: wide belly of the club (45% to 85%) -->
-    <T.Mesh position={[0, bodyCenterY, 0]}>
-      <T.CylinderGeometry
-        args={[bodyRadius, bodyRadius, bodyLength, 16, 1]}
-      />
-      <T.MeshStandardMaterial
-        color={palette.main}
-        roughness={0.3}
-        metalness={0.2}
-      />
-    </T.Mesh>
-
-    <!-- Head taper: narrows from body to tip (85% to 100%) -->
-    <T.Mesh position={[0, headCenterY, 0]}>
-      <T.CylinderGeometry
-        args={[headRadiusTop, headRadiusBottom, headLength, 16, 1]}
-      />
-      <T.MeshStandardMaterial
-        color={palette.main}
-        roughness={0.3}
-        metalness={0.2}
-      />
-    </T.Mesh>
-
-    <!-- Tip cap: rounded sphere at the very top -->
-    <T.Mesh position={[0, tipCapY, 0]}>
-      <T.SphereGeometry args={[tipCapRadius, 12, 12]} />
-      <T.MeshStandardMaterial
-        color={palette.dark}
         roughness={0.3}
         metalness={0.2}
       />

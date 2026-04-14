@@ -25,9 +25,17 @@
 </head>
 <body>
 <canvas id="c" width="500" height="500"></canvas>
+<script src="./_shared/pictograph-geometry.js"></script>
+<script src="./_shared/pictograph-bridge.js"></script>
+<script src="./_shared/pictograph-stylize.js"></script>
 <script>
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
+
+// ─── Grid geometry (shared across all draw functions) ──────────────────────
+const CX = 250;
+const CY = 250;
+const OUTER_R = 150;
 
 // ─── Palette ───────────────────────────────────────────────────────────────
 const WASHI    = '#F5EDDC';
@@ -37,8 +45,41 @@ const SUMI     = '#1A1A1A';
 const SEAL_RED = '#C0291A';
 const GOLD_HNT = '#C8974A';  // warm ochre accent
 
+// Palette used by Path 1 (canonical recolor pipeline). Maps the canonical
+// renderer's blue/red/structural classes into this era's ink palette.
+const WOODBLOCK_PALETTE = {
+  blue:       '#1E3A6A',  // indigo
+  red:        '#B82410',  // sumi red
+  structural: '#1A0F08',  // sumi black
+  bg:         null,       // transparent — washi paper shows through
+};
+
 // ─── Utilities ─────────────────────────────────────────────────────────────
 function lerp(a, b, t) { return a + (b - a) * t; }
+
+// ── Seeded PRNG (Mulberry32) — reseeded per render for determinism ────────
+let rng = mulberry32(0xF00DBABE);
+function mulberry32(seed) {
+  return function() {
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+function seedFor(data) {
+  // Stable hash so navigating forward/back reproduces the same pigment
+  // scatter/wobble for each letter.
+  const b = data && data.blueHand ? data.blueHand : {};
+  const r = data && data.redHand  ? data.redHand  : {};
+  const s = `${data && data.letter}|${b.location}|${b.endLocation}|${b.motionType}|${r.location}|${r.endLocation}|${r.motionType}`;
+  let h = 0xF00DBABE;
+  for (let i = 0; i < s.length; i++) {
+    h = (h ^ s.charCodeAt(i)) * 16777619 >>> 0;
+  }
+  return h;
+}
 
 // Draw a stroke that varies width along its length — simulates wood-cut pressure
 function woodStroke(pts, widths, color, grain = true) {
@@ -188,24 +229,17 @@ function drawBokashi() {
 
 // ─── Step 4: 8-point grid dots ───────────────────────────────────────────────
 function drawGridDots() {
-  // Diamond grid: 8 cardinal/intercardinal points on a radius around center
-  const cx = 250, cy = 250;
-  const outerR = 150;
-  const dirs = [
-    [0,   -1,  'N'],
-    [0.707, -0.707, 'NE'],
-    [1,    0,  'E'],
-    [0.707, 0.707, 'SE'],
-    [0,    1,  'S'],
-    [-0.707, 0.707, 'SW'],
-    [-1,   0,  'W'],
-    [-0.707,-0.707,'NW'],
-  ];
+  // Diamond grid: 8 cardinal/intercardinal points on a radius around center.
+  // Locations resolved via PictographGeometry so the grid matches every other
+  // era renderer exactly.
+  const G = window.PictographGeometry;
+  const locs = ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'];
 
   ctx.save();
-  dirs.forEach(([dx, dy, label]) => {
-    const x = cx + dx * outerR;
-    const y = cy + dy * outerR;
+  locs.forEach((loc) => {
+    const pt = G ? G.locationPoint(loc, CX, CY, OUTER_R) : { x: CX, y: CY };
+    const x = pt.x;
+    const y = pt.y;
 
     // Outer glow ring (mon-style)
     ctx.beginPath();
@@ -240,7 +274,7 @@ function drawGridDots() {
 
   // Center dot
   ctx.beginPath();
-  ctx.arc(cx, cy, 4, 0, Math.PI*2);
+  ctx.arc(CX, CY, 4, 0, Math.PI*2);
   ctx.fillStyle = SUMI + '55';
   ctx.fill();
 
@@ -248,80 +282,59 @@ function drawGridDots() {
 }
 
 // ─── Step 5: Staff lines (thick ink strokes) ─────────────────────────────────
-function drawStaves() {
-  const cx = 250, cy = 250;
+// Data-driven helpers so both hands are drawn the same way. Staff position
+// comes from the hand's endLocation + orientation via PictographGeometry.
 
-  // BLUE staff: vertical, north point to some center-ish extent
-  // In letter A: blue is at North. Staff is oriented so one end points north.
-  // We render each staff as a bold ink line with wood-grain variation.
+function handLoc(h)    { return String((h && (h.location    || h.startLocation)) || '').toLowerCase(); }
+function handEndLoc(h) { return String((h && h.endLocation)    || '').toLowerCase(); }
 
-  // Blue staff — vertical, centered, north end up
-  // Runs from (cx, cy-180) to (cx, cy+40) — mostly upper half
-  {
-    const x0 = cx, y0 = cy - 175;
-    const x1 = cx, y1 = cy +  40;
-    const steps = 60;
-    const pts = [];
-    for (let i = 0; i <= steps; i++) {
-      const t  = i / steps;
-      // slight S-curve to mimic brush variation
-      const bx = x0 + (x1 - x0) * t + Math.sin(t * Math.PI) * 2;
-      const by = y0 + (y1 - y0) * t;
-      pts.push([bx, by]);
-    }
-    // Main shaft — thick
-    woodStroke(pts, [12, 7], INDIGO, true);
-    // Bokashi: gradient fill over the stroke
-    const grad = ctx.createLinearGradient(x0, y0, x1, y1);
-    grad.addColorStop(0,   INDIGO + 'FF');
-    grad.addColorStop(0.5, INDIGO + 'CC');
-    grad.addColorStop(1,   INDIGO + '88');
-    woodStroke(pts, [8, 4], grad, false);
+function drawStaffForHand(hand, mainColor) {
+  if (!hand || !window.PictographGeometry) return;
+  const G = window.PictographGeometry;
+  const endLoc = handEndLoc(hand);
+  const center = G.locationPoint(endLoc, CX, CY, OUTER_R);
+  const axis   = G.staffAxisAngle(endLoc, hand.orientation || 'in');
+  const length = OUTER_R * 1.1;
+  const { a, b } = G.staffEndpoints(center, axis, length);
 
-    // Rounded end caps (tapered like a brush stroke)
-    ctx.save();
-    ctx.fillStyle = INDIGO;
-    ctx.beginPath();
-    ctx.ellipse(x0 + 1, y0, 4, 7, 0.1, 0, Math.PI*2);
-    ctx.fill();
-    ctx.fillStyle = INDIGO + 'BB';
-    ctx.beginPath();
-    ctx.ellipse(x1, y1, 3, 5, 0, 0, Math.PI*2);
-    ctx.fill();
-    ctx.restore();
+  // Build a slightly S-curved polyline along the axis for that brush-stroke
+  // warble. The sine is applied PERPENDICULAR to the staff axis so the curve
+  // reads the same regardless of orientation.
+  const steps = 60;
+  const pts = [];
+  const dx = b.x - a.x, dy = b.y - a.y;
+  const len = Math.sqrt(dx*dx + dy*dy) || 1;
+  const nx = -dy / len, ny = dx / len; // perpendicular unit vector
+  for (let i = 0; i <= steps; i++) {
+    const t  = i / steps;
+    const bend = Math.sin(t * Math.PI) * 2;
+    const bx = a.x + dx * t + nx * bend;
+    const by = a.y + dy * t + ny * bend;
+    pts.push([bx, by]);
   }
 
-  // Red staff — horizontal, center height, south end outward
-  // Runs from (cx-40, cy) to (cx+175, cy) — right half
-  {
-    const x0 = cx - 40, y0 = cy;
-    const x1 = cx + 175, y1 = cy;
-    const steps = 60;
-    const pts = [];
-    for (let i = 0; i <= steps; i++) {
-      const t  = i / steps;
-      const bx = x0 + (x1 - x0) * t;
-      const by = y0 + (y1 - y0) * t + Math.sin(t * Math.PI) * 2;
-      pts.push([bx, by]);
-    }
-    woodStroke(pts, [12, 7], VERMIL, true);
-    const grad = ctx.createLinearGradient(x0, y0, x1, y1);
-    grad.addColorStop(0,   VERMIL + 'AA');
-    grad.addColorStop(0.4, VERMIL + 'FF');
-    grad.addColorStop(1,   VERMIL + 'CC');
-    woodStroke(pts, [8, 4], grad, false);
+  // Main shaft — thick ink
+  woodStroke(pts, [12, 7], mainColor, true);
 
-    ctx.save();
-    ctx.fillStyle = VERMIL + 'BB';
-    ctx.beginPath();
-    ctx.ellipse(x0, y0, 5, 3, 0, 0, Math.PI*2);
-    ctx.fill();
-    ctx.fillStyle = VERMIL;
-    ctx.beginPath();
-    ctx.ellipse(x1, y1 - 1, 7, 4, 0.1, 0, Math.PI*2);
-    ctx.fill();
-    ctx.restore();
-  }
+  // Bokashi wash — linear gradient along the shaft
+  const grad = ctx.createLinearGradient(a.x, a.y, b.x, b.y);
+  grad.addColorStop(0,   mainColor + 'FF');
+  grad.addColorStop(0.5, mainColor + 'CC');
+  grad.addColorStop(1,   mainColor + '88');
+  woodStroke(pts, [8, 4], grad, false);
+
+  // Tapered end caps — small ellipses oriented along the axis
+  const capAngle = Math.atan2(dy, dx);
+  ctx.save();
+  ctx.fillStyle = mainColor;
+  ctx.beginPath();
+  ctx.ellipse(a.x, a.y, 7, 4, capAngle, 0, Math.PI*2);
+  ctx.fill();
+  ctx.fillStyle = mainColor + 'BB';
+  ctx.beginPath();
+  ctx.ellipse(b.x, b.y, 5, 3, capAngle, 0, Math.PI*2);
+  ctx.fill();
+  ctx.restore();
 }
 
 // ─── Step 6: Motion arrows (calligraphic curves) ─────────────────────────────
@@ -368,186 +381,164 @@ function addGrainToPath(pts, color, baseAlpha = 0.15) {
   }
 }
 
-function drawArrows() {
-  const cx = 250, cy = 250;
-  const R  = 150;  // grid radius
+// Per-hand arrow painter. Preserves the four-pass woodblock style:
+//   1. Sumi shadow underlay
+//   2. Bold main-color stroke, tapering thick → thin
+//   3. Bokashi wash in the hand's "light" color
+//   4. Wood grain ticks + arrowhead + origin dot
+// Handles dash motions as a straight shadow/stroke/wash/arrowhead set.
 
-  // ── Blue arrow: W → N (upper-left quadrant, counterclockwise)
-  // W is at angle π (left), N is at angle -π/2 (up)
-  // Arc center is at the pivot = the CORNER between W and N on the grid box
-  // For a circular grid: center is at (cx - R, cy - R) with radius R
-  // Arc sweeps from the point closest to W, curving up to N.
-  // Actually for a quarter-circle arc in the upper-left:
-  //   arc center = (cx, cy) with r=R, from angle=π to angle=-π/2 going counterclockwise
-  {
-    const startA = Math.PI;           // West
-    const endA   = -Math.PI / 2;     // North
-    const pts    = arcPoints(cx, cy, R, startA, endA, 48);
-    // (counterclockwise, so going from W up and over to N — upper arc)
+function paintWoodblockPath(pts, mainColor, lightColor) {
+  // Shadow underlay
+  ctx.save();
+  ctx.strokeStyle = SUMI + '33';
+  ctx.lineWidth   = 18;
+  ctx.lineCap     = 'round';
+  ctx.beginPath();
+  ctx.moveTo(pts[0][0], pts[0][1]);
+  for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+  ctx.stroke();
+  ctx.restore();
 
-    // Shadow/outline for depth
-    ctx.save();
-    ctx.strokeStyle = SUMI + '33';
-    ctx.lineWidth   = 18;
+  // Main stroke — thick at start, thin at end
+  for (let i = 0; i < pts.length - 1; i++) {
+    const t  = i / (pts.length - 2);
+    const w  = lerp(14, 3, t);
+    ctx.beginPath();
+    ctx.moveTo(pts[i][0], pts[i][1]);
+    ctx.lineTo(pts[i+1][0], pts[i+1][1]);
+    ctx.strokeStyle = mainColor;
+    ctx.lineWidth   = w;
     ctx.lineCap     = 'round';
-    ctx.beginPath();
-    ctx.moveTo(pts[0][0], pts[0][1]);
-    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
     ctx.stroke();
-    ctx.restore();
-
-    // Main stroke — thick at start, thin at end
-    for (let i = 0; i < pts.length - 1; i++) {
-      const t  = i / (pts.length - 2);
-      const w  = lerp(14, 3, t);
-      ctx.beginPath();
-      ctx.moveTo(pts[i][0], pts[i][1]);
-      ctx.lineTo(pts[i+1][0], pts[i+1][1]);
-      ctx.strokeStyle = INDIGO;
-      ctx.lineWidth   = w;
-      ctx.lineCap     = 'round';
-      ctx.stroke();
-    }
-
-    // Bokashi — lighter wash layer
-    for (let i = 0; i < pts.length - 1; i++) {
-      const t  = i / (pts.length - 2);
-      const w  = lerp(8, 1.5, t);
-      ctx.beginPath();
-      ctx.moveTo(pts[i][0], pts[i][1]);
-      ctx.lineTo(pts[i+1][0], pts[i+1][1]);
-      const alpha = Math.floor(lerp(0.4, 0.15, t) * 255).toString(16).padStart(2,'0');
-      ctx.strokeStyle = '#6BA3C8' + alpha;
-      ctx.lineWidth   = w * 0.7;
-      ctx.lineCap     = 'round';
-      ctx.stroke();
-    }
-
-    addGrainToPath(pts, INDIGO, 0.12);
-
-    // Arrowhead at N end
-    const last  = pts[pts.length - 1];
-    const prev  = pts[pts.length - 5];
-    const angle = Math.atan2(last[1] - prev[1], last[0] - prev[0]);
-    drawArrowhead(last[0], last[1], angle, 18, INDIGO);
-
-    // Origin dot at W end
-    ctx.beginPath();
-    ctx.arc(pts[0][0], pts[0][1], 7, 0, Math.PI*2);
-    ctx.fillStyle = INDIGO + 'BB';
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(pts[0][0], pts[0][1], 4, 0, Math.PI*2);
-    ctx.fillStyle = INDIGO;
-    ctx.fill();
   }
 
-  // ── Red arrow: E → S (lower-right quadrant, clockwise)
-  // E is at angle 0, S is at angle π/2
-  {
-    const startA = 0;              // East
-    const endA   = Math.PI / 2;   // South
-    const pts    = arcPoints(cx, cy, R, startA, endA, 48);
-
-    // Shadow
-    ctx.save();
-    ctx.strokeStyle = SUMI + '33';
-    ctx.lineWidth   = 18;
+  // Bokashi — lighter wash layer in the hand's "light" shade
+  for (let i = 0; i < pts.length - 1; i++) {
+    const t  = i / (pts.length - 2);
+    const w  = lerp(8, 1.5, t);
+    ctx.beginPath();
+    ctx.moveTo(pts[i][0], pts[i][1]);
+    ctx.lineTo(pts[i+1][0], pts[i+1][1]);
+    const alpha = Math.floor(lerp(0.4, 0.13, t) * 255).toString(16).padStart(2,'0');
+    ctx.strokeStyle = lightColor + alpha;
+    ctx.lineWidth   = w * 0.7;
     ctx.lineCap     = 'round';
-    ctx.beginPath();
-    ctx.moveTo(pts[0][0], pts[0][1]);
-    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
     ctx.stroke();
-    ctx.restore();
-
-    // Main stroke
-    for (let i = 0; i < pts.length - 1; i++) {
-      const t  = i / (pts.length - 2);
-      const w  = lerp(14, 3, t);
-      ctx.beginPath();
-      ctx.moveTo(pts[i][0], pts[i][1]);
-      ctx.lineTo(pts[i+1][0], pts[i+1][1]);
-      ctx.strokeStyle = VERMIL;
-      ctx.lineWidth   = w;
-      ctx.lineCap     = 'round';
-      ctx.stroke();
-    }
-
-    // Bokashi wash
-    for (let i = 0; i < pts.length - 1; i++) {
-      const t  = i / (pts.length - 2);
-      const w  = lerp(8, 1.5, t);
-      ctx.beginPath();
-      ctx.moveTo(pts[i][0], pts[i][1]);
-      ctx.lineTo(pts[i+1][0], pts[i+1][1]);
-      const alpha = Math.floor(lerp(0.4, 0.12, t) * 255).toString(16).padStart(2,'0');
-      ctx.strokeStyle = '#E8806A' + alpha;
-      ctx.lineWidth   = w * 0.7;
-      ctx.lineCap     = 'round';
-      ctx.stroke();
-    }
-
-    addGrainToPath(pts, VERMIL, 0.12);
-
-    // Arrowhead at S end
-    const last  = pts[pts.length - 1];
-    const prev  = pts[pts.length - 5];
-    const angle = Math.atan2(last[1] - prev[1], last[0] - prev[0]);
-    drawArrowhead(last[0], last[1], angle, 18, VERMIL);
-
-    // Origin dot at E end
-    ctx.beginPath();
-    ctx.arc(pts[0][0], pts[0][1], 7, 0, Math.PI*2);
-    ctx.fillStyle = VERMIL + 'BB';
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(pts[0][0], pts[0][1], 4, 0, Math.PI*2);
-    ctx.fillStyle = VERMIL;
-    ctx.fill();
   }
+
+  addGrainToPath(pts, mainColor, 0.12);
 }
 
-// ─── Step 7: Letter "A" in calligraphic brush style ─────────────────────────
-function drawLetterA() {
-  // Render in upper-right area — won't overlap main pictograph
-  const bx = 390, by = 60;
+function drawArrowForHand(hand, mainColor, lightColor) {
+  if (!hand || hand.motionType === 'static' || !window.PictographGeometry) return;
+  const G = window.PictographGeometry;
 
-  ctx.save();
-
-  // Character: brushstroke "A" — rendered as a thick-to-thin calligraphic glyph
-  // Left diagonal stroke (thick): top-center down-left
-  function brushLine(x0, y0, x1, y1, w0, w1, color, steps = 20) {
+  // Dash — straight line across the grid
+  if (hand.motionType === 'dash') {
+    const s = G.locationPoint(handLoc(hand),    CX, CY, OUTER_R);
+    const e = G.locationPoint(handEndLoc(hand), CX, CY, OUTER_R);
+    // Build a straight polyline so the same paint pipeline applies.
+    const steps = 48;
     const pts = [];
     for (let i = 0; i <= steps; i++) {
       const t = i / steps;
-      pts.push([lerp(x0, x1, t), lerp(y0, y1, t)]);
+      pts.push([lerp(s.x, e.x, t), lerp(s.y, e.y, t)]);
     }
-    woodStroke(pts, [w0, w1], color, true);
+    paintWoodblockPath(pts, mainColor, lightColor);
+
+    // Arrowhead at destination
+    const last  = pts[pts.length - 1];
+    const prev  = pts[pts.length - 5];
+    const angle = Math.atan2(last[1] - prev[1], last[0] - prev[0]);
+    drawArrowhead(last[0], last[1], angle, 18, mainColor);
+
+    // Origin dot at start
+    ctx.beginPath();
+    ctx.arc(pts[0][0], pts[0][1], 7, 0, Math.PI*2);
+    ctx.fillStyle = mainColor + 'BB';
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(pts[0][0], pts[0][1], 4, 0, Math.PI*2);
+    ctx.fillStyle = mainColor;
+    ctx.fill();
+    return;
   }
 
-  const scale = 1.0;
-  const ox = bx, oy = by;
+  // Arc — pro / anti / float
+  const dir = G.handDirection(hand) || 'cw';
+  const angles = G.arcAngles(handLoc(hand), handEndLoc(hand), dir);
+  if (!angles) return;
+  const pts = arcPoints(CX, CY, OUTER_R, angles.startA, angles.endA, 48);
 
-  // Left stroke: top (ox, oy) → bottom-left (ox-22, oy+52)
-  brushLine(ox, oy+2,       ox-20, oy+52, 3*scale, 8*scale, SUMI);
+  paintWoodblockPath(pts, mainColor, lightColor);
 
-  // Right stroke: top (ox, oy) → bottom-right (ox+22, oy+52)
-  brushLine(ox, oy+2,       ox+20, oy+52, 3*scale, 8*scale, SUMI);
+  // Arrowhead at destination end of the arc
+  const last  = pts[pts.length - 1];
+  const prev  = pts[pts.length - 5];
+  const angle = Math.atan2(last[1] - prev[1], last[0] - prev[0]);
+  drawArrowhead(last[0], last[1], angle, 18, mainColor);
 
-  // Crossbar: (ox-10, oy+30) → (ox+10, oy+30)
-  brushLine(ox-12, oy+28,   ox+12, oy+28, 5*scale, 5*scale, SUMI);
+  // Origin dot at starting grid location
+  ctx.beginPath();
+  ctx.arc(pts[0][0], pts[0][1], 7, 0, Math.PI*2);
+  ctx.fillStyle = mainColor + 'BB';
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(pts[0][0], pts[0][1], 4, 0, Math.PI*2);
+  ctx.fillStyle = mainColor;
+  ctx.fill();
+}
 
-  // Serif ticks on left foot
-  brushLine(ox-22, oy+52,   ox-30, oy+52, 5*scale, 1*scale, SUMI);
-  brushLine(ox-22, oy+52,   ox-14, oy+52, 5*scale, 1*scale, SUMI);
-  // Serif ticks on right foot
-  brushLine(ox+20, oy+52,   ox+28, oy+52, 5*scale, 1*scale, SUMI);
-  brushLine(ox+20, oy+52,   ox+12, oy+52, 5*scale, 1*scale, SUMI);
+// ─── Step 7: Letter glyph in calligraphic brush style ───────────────────────
+// Renders in upper-right. For letter 'A' we keep the handcrafted brush-stroke
+// glyph. For any other letter we fall back to a bold serif fillText in the
+// same ink color, positioned at the same spot.
 
-  // Subtle red accent mark (like a Japanese character reading mark)
+function brushLine(x0, y0, x1, y1, w0, w1, color, steps = 20) {
+  const pts = [];
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps;
+    pts.push([lerp(x0, x1, t), lerp(y0, y1, t)]);
+  }
+  woodStroke(pts, [w0, w1], color, true);
+}
+
+function drawLetter(letter) {
+  const bx = 390, by = 60;
+  ctx.save();
+
+  if (letter === 'A') {
+    const scale = 1.0;
+    const ox = bx, oy = by;
+
+    // Left stroke: top → bottom-left
+    brushLine(ox, oy+2,       ox-20, oy+52, 3*scale, 8*scale, SUMI);
+    // Right stroke: top → bottom-right
+    brushLine(ox, oy+2,       ox+20, oy+52, 3*scale, 8*scale, SUMI);
+    // Crossbar
+    brushLine(ox-12, oy+28,   ox+12, oy+28, 5*scale, 5*scale, SUMI);
+    // Serif ticks on left foot
+    brushLine(ox-22, oy+52,   ox-30, oy+52, 5*scale, 1*scale, SUMI);
+    brushLine(ox-22, oy+52,   ox-14, oy+52, 5*scale, 1*scale, SUMI);
+    // Serif ticks on right foot
+    brushLine(ox+20, oy+52,   ox+28, oy+52, 5*scale, 1*scale, SUMI);
+    brushLine(ox+20, oy+52,   ox+12, oy+52, 5*scale, 1*scale, SUMI);
+  } else {
+    // Fallback for other letters — bold serif rendered in sumi ink, centered
+    // roughly in the same footprint as the brush-stroke A (~60px tall).
+    ctx.font = 'bold 54px "Times New Roman", serif';
+    ctx.fillStyle = SUMI;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillText(String(letter || '?'), bx, by + 50);
+  }
+
+  // Subtle red accent mark (like a Japanese character reading mark) — kept
+  // for both branches as part of the decorative print framing.
   ctx.fillStyle = VERMIL + 'CC';
   ctx.beginPath();
-  ctx.arc(ox + 28, oy + 12, 3, 0, Math.PI * 2);
+  ctx.arc(bx + 28, by + 12, 3, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.restore();
@@ -707,18 +698,74 @@ function drawVignette() {
 }
 
 // ─── Compose everything ──────────────────────────────────────────────────────
-(function render() {
+//
+// Two paths:
+//   1. Canonical bitmap available — pixelate + recolor into the woodblock
+//      palette, apply a grain edge treatment, then composite. The canonical
+//      renderer carries all motion semantics (pro/anti, turns, dashes,
+//      floats) so they're inherited for free.
+//
+//   2. No canonical — fall back to the hand-crafted woodblock pipeline so
+//      the page still renders when opened standalone.
+//
+// Era chrome (washi, bokashi, border, decoration, letter, hanko, vignette)
+// is drawn identically either way — that's where this era's voice lives.
+function render(data, canonical, meta) {
   drawWashi();
   drawBokashi();
   drawBorder();
   drawDecoration();
-  drawGridDots();
-  drawStaves();
-  drawArrows();
-  drawLetterA();
+
+  // Reseed so each pictograph produces stable scatter
+  rng = mulberry32(seedFor(data));
+
+  if (canonical && window.PictographStylize) {
+    // Path 1: pixelate to 160px blocks, recolor into this era's ink palette,
+    // apply a fiber-grain edge treatment, then composite onto the washi.
+    const chunky = window.PictographStylize.pixelate(canonical, 500, 160);
+    const styled = window.PictographStylize.recolor(chunky, WOODBLOCK_PALETTE, 500);
+    window.PictographStylize.edgeTreatment(styled, 'grain', rng);
+    ctx.drawImage(styled, 0, 0, 500, 500);
+  } else {
+    // Fallback: hand-crafted woodblock pipeline
+    drawGridDots();
+    drawStaffForHand(data.blueHand, INDIGO);
+    drawStaffForHand(data.redHand,  VERMIL);
+    drawArrowForHand(data.blueHand, INDIGO, '#6BA3C8');
+    drawArrowForHand(data.redHand,  VERMIL, '#E8806A');
+  }
+
+  drawLetter(String(data.letter || 'A'));
   drawHanko();
   drawVignette();
-})();
+}
+
+// Default pictograph — Letter A (what the page rendered before the data-driven
+// refactor). Also used when this HTML is opened directly without a parent.
+const DEFAULT_PICTOGRAPH = {
+  letter: 'A',
+  gridMode: 'diamond',
+  blueHand: {
+    color: 'blue',
+    location: 'w', endLocation: 'n',
+    motionType: 'pro', rotationDirection: 'cw',
+    orientation: 'in', turns: 0,
+  },
+  redHand: {
+    color: 'red',
+    location: 'e', endLocation: 's',
+    motionType: 'pro', rotationDirection: 'cw',
+    orientation: 'in', turns: 0,
+  },
+};
+
+render(DEFAULT_PICTOGRAPH, null, null);
+
+if (window.PictographBridge) {
+  window.PictographBridge.onPictograph(function(data, canonical, meta) {
+    render(data, canonical, meta);
+  });
+}
 </script>
 <script>if(location.search.includes("embed"))document.body.classList.add("embed")</script>
 </body>
