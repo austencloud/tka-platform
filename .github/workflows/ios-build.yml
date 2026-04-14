@@ -34,7 +34,11 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build web app (PWA disabled)
-        run: DISABLE_PWA=true pnpm run build
+        env:
+          POSTHOG_PERSONAL_API_KEY: "ci-placeholder-unused-on-native"
+          POSTHOG_PROJECT_ID: "ci-placeholder-unused-on-native"
+          DISABLE_PWA: "true"
+        run: pnpm run build
 
       - name: Add iOS platform
         run: npx cap add ios
