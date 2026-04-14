@@ -200,7 +200,15 @@
 
 <script lang="ts">
   import { onMount, onDestroy, type Snippet } from "svelte";
-  import { goto } from "$app/navigation";
+  import { goto, replaceState } from "$app/navigation";
+  import {
+    GoogleAuthProvider,
+    browserLocalPersistence,
+    indexedDBLocalPersistence,
+    setPersistence,
+    signInWithPopup,
+  } from "firebase/auth";
+  import { auth } from "$lib/shared/auth/firebase";
   import { browser } from "$app/environment";
   import { container } from "$lib/shared/di";
   import { createSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
@@ -329,7 +337,7 @@
       const parsed = new URL(window.location.href);
       if (parsed.searchParams.has("pending")) {
         parsed.searchParams.delete("pending");
-        window.history.replaceState({}, "", parsed.toString());
+        replaceState(parsed, {});
       }
     }
   }
@@ -352,21 +360,47 @@
     if (browser) {
       const parsed = new URL(window.location.href);
       parsed.searchParams.set("pending", type);
-      window.history.replaceState({}, "", parsed.toString());
+      replaceState(parsed, {});
     }
     openSignInSheet(type);
   }
 
-  function onSignInSheetPrimary() {
+  async function onSignInSheetPrimary() {
     if (webviewDetector.isInAppWebview) {
       handleOpenInBrowser(signInSheetReason);
       return;
     }
-    // Delegate to the existing auth drawer — it handles Google One Tap, popup
-    // fallback, persistence, and error messaging. When auth flips true, the
-    // replay effect below drains the pending queue and fires the real action.
-    signInSheetOpen = false;
-    authDrawerState.show("signin");
+    // Cancel any in-flight Google One Tap prompt. FedCM + popup compete for
+    // the same credential channel, and leaving One Tap running causes
+    // signInWithPopup to fail with auth/argument-error.
+    try {
+      window.google?.accounts?.id?.cancel();
+    } catch {
+      /* google script may not have loaded; safe to ignore */
+    }
+
+    try {
+      // Mirror SocialAuthCompact: set persistence atomically before popup.
+      try {
+        await setPersistence(auth, indexedDBLocalPersistence);
+      } catch {
+        await setPersistence(auth, browserLocalPersistence);
+      }
+      const provider = new GoogleAuthProvider();
+      provider.addScope("email");
+      provider.addScope("profile");
+      await signInWithPopup(auth, provider);
+      // Replay effect fires when authState.isAuthenticated flips true.
+      signInSheetOpen = false;
+    } catch (err) {
+      const code = (err as { code?: string })?.code;
+      if (code === "auth/popup-closed-by-user" || code === "auth/cancelled-popup-request") {
+        // User dismissed — leave sheet open so they can retry.
+        return;
+      }
+      console.error("[Viewer] Google sign-in failed:", err);
+      showToast({ message: "Sign-in failed. Please try again.", type: "error", duration: 3000 });
+    }
   }
 
   // 3D viewer state — created once, distributed via Svelte context
@@ -1404,7 +1438,7 @@
       const parsed = new URL(window.location.href);
       if (parsed.searchParams.has("pending")) {
         parsed.searchParams.delete("pending");
-        window.history.replaceState({}, "", parsed.toString());
+        replaceState(parsed, {});
       }
     }
 
