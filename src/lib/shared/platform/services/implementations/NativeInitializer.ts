@@ -18,10 +18,15 @@ export class NativeInitializer implements INativeInitializer {
 	private async initStatusBar(): Promise<void> {
 		const { StatusBar, Style } = await import("@capacitor/status-bar");
 		await StatusBar.setStyle({ style: Style.Dark });
-		await StatusBar.setOverlaysWebView({ overlay: true });
 
 		if (this.platformDetector.isAndroid) {
+			// Don't overlay on Android — let the system handle status bar space.
+			// The WebView's env(safe-area-inset-top) isn't reliable in Android WebView.
+			await StatusBar.setOverlaysWebView({ overlay: false });
 			await StatusBar.setBackgroundColor({ color: "#0b1d2a" });
+		} else {
+			// iOS handles safe area insets natively via env() — overlay is safe
+			await StatusBar.setOverlaysWebView({ overlay: true });
 		}
 	}
 
