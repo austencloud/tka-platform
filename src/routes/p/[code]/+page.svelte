@@ -635,7 +635,6 @@
             <ViewerFooter
               bpm={ctx.bpmLocal}
               isPlaying={ctx.isPlayingLocal}
-              isLoggedIn={ctx.isLoggedIn}
               practiceActive={ctx.practiceActive}
               onBpmChange={ctx.handleBpmChange}
               onPlayPause={ctx.handlePlaybackToggle}
@@ -644,9 +643,8 @@
               onStepHalfBack={ctx.stepHalfBeatBackward}
               onStepHalfForward={ctx.stepHalfBeatForward}
               onRestartToStart={ctx.restartToStart}
-              onSave={ctx.handleSave}
-              onEdit={ctx.handleEdit}
-              onGetApp={ctx.handleGetApp}
+              onSave={() => ctx.invokeGatedAction("save", ctx.handleSave)}
+              onEdit={() => ctx.invokeGatedAction("remix", ctx.handleEdit)}
               onPracticeStart={ctx.handlePracticeStart}
               onPracticeStop={ctx.handlePracticeStop}
               isOwned={ctx.isOwned}
@@ -654,8 +652,8 @@
               isSaved={ctx.isSaved}
               isPublished={ctx.isPublished}
               isFavorite={ctx.isFavorite}
-              onFavorite={ctx.handleFavoriteToggle}
-              onPublish={ctx.handlePublishAction}
+              onFavorite={() => ctx.invokeGatedAction("favorite", ctx.handleFavoriteToggle)}
+              onPublish={() => ctx.invokeGatedAction("publish", ctx.handlePublishAction)}
               onUnpublish={ctx.handleUnpublishAction}
             />
             {#if ctx.practiceActive}
