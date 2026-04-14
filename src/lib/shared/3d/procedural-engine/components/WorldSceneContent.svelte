@@ -48,15 +48,15 @@
   import { Plane } from "$lib/shared/3d/domain/enums/Plane";
 
   // World systems
-  import { type ChunkState } from "../../core/chunk-manager";
-  import { createHybridChunkManager, type HybridChunkManager } from "../../core/hybrid-chunk-manager";
-  import { SeededNoise, getBiome } from "../../generation/seed-generator";
-  import { type ImportedTerrainData, isPointInPolygon } from "../../generation/real-terrain-zone";
-  import { VegetationManager } from "../../rendering/instanced-vegetation";
-  import { AtmosphereManager } from "../../rendering/atmosphere";
-  import { WaterManager } from "../../rendering/water";
-  import { DrainageWaterManager } from "../../rendering/drainage-water";
-  import type { RealmConfig } from "../../core/realm-config";
+  import { type ChunkState } from "../core/chunk-manager";
+  import { createHybridChunkManager, type HybridChunkManager } from "../core/hybrid-chunk-manager";
+  import { SeededNoise, getBiome } from "../generation/seed-generator";
+  import { type ImportedTerrainData, isPointInPolygon } from "../generation/real-terrain-zone";
+  import { VegetationManager } from "../rendering/instanced-vegetation";
+  import { AtmosphereManager } from "../rendering/atmosphere";
+  import { WaterManager } from "../rendering/water";
+  import { DrainageWaterManager } from "../rendering/drainage-water";
+  import type { RealmConfig } from "../core/world-config";
 
   // Museum
   import MuseumGrounds from "$lib/features/realm/destinations/museum/components/MuseumGrounds.svelte";
@@ -65,8 +65,6 @@
   import { setActiveMuseumState } from "$lib/features/realm/destinations/museum/state/museum-state-bridge.svelte";
 
   // Archive (The Kinetic Archive) — standalone via ArchiveDestination + IndoorScene
-
-  import hannonsTerrainData from "../../data/hannons-camp-terrain.json";
 
   import {
     BufferGeometry,
@@ -92,7 +90,7 @@
     createTerrainFallbackMaterial,
     disposeTerrainTextures,
     type TerrainTextureConfig,
-  } from "../../rendering/terrain-texture-material";
+  } from "../rendering/terrain-texture-material";
 
   // Feature flag for terrain texturing system
   // Set to true to enable PBR terrain textures (grass, rock, dirt, sand)
@@ -150,6 +148,11 @@
 
     /** Performer state for sequence playback (optional) */
     performerState?: import("$lib/shared/3d/state/avatar-instance-state.svelte").AvatarInstanceState | null;
+
+    /** Real-world terrain data for destinations like Hannon's Camp.
+     *  The engine does not know about specific destinations — callers
+     *  import the JSON and pass it in. Required when autoLoadHannons is true. */
+    terrainData?: ImportedTerrainData | null;
   }
 
   let {
@@ -192,6 +195,7 @@
     onModeChange,
     terrainTexturesEnabled = $bindable(true),
     performerState = null,
+    terrainData = null,
   }: Props = $props();
 
   // Get Threlte context
@@ -862,8 +866,12 @@
 
   function loadHannonsCamp(): void {
     if (!chunkManager) return;
+    if (!terrainData) {
+      console.warn("[WorldSceneContent] autoLoadHannons=true but no terrainData prop provided");
+      return;
+    }
 
-    const boundary = (hannonsTerrainData as ImportedTerrainData).boundary;
+    const boundary = terrainData.boundary;
     let minX = Infinity, maxX = -Infinity;
     let minZ = Infinity, maxZ = -Infinity;
 
@@ -880,7 +888,7 @@
     zoneBounds = { minX, maxX, minZ, maxZ };
     zoneBoundary = boundary.map(p => ({ x: p.worldX, z: p.worldZ }));
 
-    chunkManager.loadRealTerrainZone(hannonsTerrainData as ImportedTerrainData);
+    chunkManager.loadRealTerrainZone(terrainData);
     hannonsLoaded = true;
 
     // Teleport player to center

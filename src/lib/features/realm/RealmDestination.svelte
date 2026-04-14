@@ -6,8 +6,8 @@
 	 * Walk out into procedurally generated forest terrain.
 	 */
 
-	import WorldScene from "./components/scene/WorldScene.svelte";
-	import { PERFORMANCE_STAGE_CONFIG } from "./core/realm-definitions";
+	import WorldScene from "$lib/shared/3d/procedural-engine/components/WorldScene.svelte";
+	import { PERFORMANCE_STAGE_CONFIG } from "$lib/shared/3d/procedural-engine/core/world-definitions";
 </script>
 
 <WorldScene realmConfig={PERFORMANCE_STAGE_CONFIG} />

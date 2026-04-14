@@ -1,6 +1,6 @@
 <script lang="ts">
-  import WorldScene from "$lib/features/realm/components/scene/WorldScene.svelte";
-  import { MUSEUM_GROUNDS_CONFIG } from "$lib/features/realm/core/realm-definitions";
+  import WorldScene from "$lib/shared/3d/procedural-engine/components/WorldScene.svelte";
+  import { MUSEUM_GROUNDS_CONFIG } from "$lib/shared/3d/procedural-engine/core/world-definitions";
   import { getActiveMuseumState } from "./state/museum-state-bridge.svelte";
   import InteractionPrompt from "./components/InteractionPrompt.svelte";
   import SequenceBrowserOverlay from "./overlay/SequenceBrowserOverlay.svelte";

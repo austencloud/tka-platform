@@ -15,8 +15,8 @@
    * <StageWorld showDebug={true} />
    */
 
-  import WorldScene from "$lib/features/realm/components/scene/WorldScene.svelte";
-  import { PERFORMANCE_STAGE_CONFIG } from "$lib/features/realm/core/realm-definitions";
+  import WorldScene from "$lib/shared/3d/procedural-engine/components/WorldScene.svelte";
+  import { PERFORMANCE_STAGE_CONFIG } from "$lib/shared/3d/procedural-engine/core/world-definitions";
 
   interface Props {
     /** Show debug info overlay */

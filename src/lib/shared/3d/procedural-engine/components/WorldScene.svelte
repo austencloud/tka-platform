@@ -15,7 +15,7 @@
 
   import WebGPUCanvas from "$lib/shared/3d/rendering/WebGPUCanvas.svelte";
   import WorldSceneContent from "./WorldSceneContent.svelte";
-  import DebugPanelTabs from "../debug/DebugPanelTabs.svelte";
+  import DebugPanelTabs from "$lib/features/realm/components/debug/DebugPanelTabs.svelte";
   import VirtualJoystick from "$lib/shared/components/touch/VirtualJoystick.svelte";
 
   import type { PhysicsWorldState, PlayerControllerState } from "$lib/shared/3d/physics/types";
@@ -25,13 +25,13 @@
   import { CameraMode } from "$lib/shared/3d/camera/types";
   import { cameraPreferences } from "$lib/shared/3d/camera/camera-preferences.svelte";
 
-  import { type HybridChunkManager } from "../../core/hybrid-chunk-manager";
-  import { generateWorldSeed, encodeSeed, SeededNoise } from "../../generation/seed-generator";
-  import { VegetationManager } from "../../rendering/instanced-vegetation";
-  import { AtmosphereManager } from "../../rendering/atmosphere";
-  import { WaterManager } from "../../rendering/water";
-  import type { RealmConfig } from "../../core/realm-config";
-  import { getDefaultRealmConfig } from "../../core/realm-definitions";
+  import { type HybridChunkManager } from "../core/hybrid-chunk-manager";
+  import { generateWorldSeed, encodeSeed, SeededNoise } from "../generation/seed-generator";
+  import { VegetationManager } from "../rendering/instanced-vegetation";
+  import { AtmosphereManager } from "../rendering/atmosphere";
+  import { WaterManager } from "../rendering/water";
+  import type { RealmConfig } from "../core/world-config";
+  import { getDefaultRealmConfig } from "../core/world-definitions";
   import { getInputCapabilities } from "$lib/shared/input/InputCapabilities.svelte";
   import { onMount, onDestroy } from "svelte";
   import { browser } from "$app/environment";
@@ -64,6 +64,8 @@
     autoLoadHannons?: boolean;
     /** Enable stage mode - flat performance area with grid planes */
     stageMode?: boolean;
+    /** Real-world terrain data (destinations import their own JSON and pass it down) */
+    terrainData?: import("../generation/real-terrain-zone").ImportedTerrainData | null;
   }
 
   let {
@@ -72,6 +74,7 @@
     showDebug = false,
     autoLoadHannons = false,
     stageMode = false,
+    terrainData = null,
   }: Props = $props();
 
   // Use provided realm config or default
@@ -425,6 +428,7 @@
       {worldNoise}
       {autoLoadHannons}
       {stageMode}
+      {terrainData}
       bind:physicsState
       bind:terrainPhysics
       bind:playerController
