@@ -81,12 +81,6 @@ export interface Video3DExportDependencies {
     fov: number;
     updateProjectionMatrix(): void;
   };
-  /** All performer instances to drive animation */
-  performers: Array<{
-    goToStep(index: number): void;
-    setProgress(value: number): void;
-    totalSteps: number;
-  }>;
   /** Beats per second for converting animation time to currentStep */
   beatsPerSecond: number;
   /** Total animation duration in seconds (single loop, no start/end hold) */
@@ -94,11 +88,13 @@ export interface Video3DExportDependencies {
   /** Camera keyframe buffer from pass 1 (or static capture) */
   cameraKeyframes: import("$lib/shared/video-export/domain/CameraKeyframe").CameraKeyframeBuffer;
   /** Threlte advance() — runs full pipeline + render for one frame */
-  advance(): void;
+  advance(delta?: number): void;
   /** Switch between 'always' (live) and 'manual' (offline) render modes */
   setRenderMode(mode: "always" | "manual"): void;
-  /** Tell the puppet loop to skip/resume performer state updates */
+  /** Signal export mode to the puppet loop */
   setExporting(value: boolean): void;
+  /** Set the animation step for the puppet loop to distribute each frame */
+  setExportCurrentStep(step: number | null): void;
 }
 
 /**

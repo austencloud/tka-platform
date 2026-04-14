@@ -544,13 +544,18 @@ export function createViewer3DState(deps: {
   // Threlte's advance() runs all useTask callbacks + renders one frame.
   // Used by the offline exporter instead of raw renderer.render() so the
   // full animation pipeline (puppet loop, IK, effects) runs each frame.
-  let threlteAdvance = $state<(() => void) | null>(null);
+  let threlteAdvance = $state<((delta?: number) => void) | null>(null);
   let threlteRenderMode = $state<{ set(mode: string): void } | null>(null);
 
   // When true, the puppet loop in Viewer3DScene skips performer state updates
   // so the offline exporter can drive performers deterministically. IK and
   // effects still run normally during advance().
   let isExporting = $state(false);
+  // During offline export, the exporter sets this to the desired animation
+  // step each frame. The puppet loop reads it instead of the component prop
+  // `currentStep`, keeping the state distribution inside useTask where
+  // Svelte's $derived chain resolves correctly.
+  let exportCurrentStep = $state<number | null>(null);
 
   // Legacy — kept for any remaining references but no longer used for gating.
   let autoRenderEnabled = $state(true);
@@ -859,7 +864,7 @@ export function createViewer3DState(deps: {
       renderer: { render(scene: any, camera: any): void };
       scene: any;
       camera: any;
-      advance: () => void;
+      advance: (delta?: number) => void;
       renderMode: { set(mode: string): void };
     }) {
       threlteRenderer = refs.renderer;
@@ -879,6 +884,12 @@ export function createViewer3DState(deps: {
     },
     set isExporting(value: boolean) {
       isExporting = value;
+    },
+    get exportCurrentStep() {
+      return exportCurrentStep;
+    },
+    set exportCurrentStep(value: number | null) {
+      exportCurrentStep = value;
     },
     get autoRenderEnabled() {
       return autoRenderEnabled;

@@ -140,8 +140,28 @@
   // behaves exactly as before.
   let accumulatedYaw = $state(facingAngle);
 
+  // [EXPORT-DIAG] Frame counter for PerformerRig logging
+  let _rigDiagCounter = 0;
+
   // Resolve prop states: use overrides (for dual-wheel swap) or avatarState defaults
-  const bluePropState = $derived(bluePropStateOverride ?? avatarState.bluePropState);
+  const bluePropState = $derived.by(() => {
+    const result = bluePropStateOverride ?? avatarState.bluePropState;
+
+    // [EXPORT-DIAG] Log what PerformerRig's $derived resolves to
+    if ((globalThis as any).__exportDiagEnabled && _rigDiagCounter % 10 === 0) {
+      console.log(
+        `[EXPORT-DIAG] PerformerRig.bluePropState $derived id=${avatarState.id} ` +
+        `frame=${_rigDiagCounter} ` +
+        `hasOverride=${!!bluePropStateOverride} ` +
+        `avatarState.currentStepIndex=${avatarState.currentStepIndex} ` +
+        `avatarState.progress=${avatarState.progress.toFixed(4)} ` +
+        `result=${result ? `pos(${result.worldPosition.x.toFixed(3)},${result.worldPosition.y.toFixed(3)},${result.worldPosition.z.toFixed(3)})` : 'null'}`
+      );
+    }
+    _rigDiagCounter++;
+
+    return result;
+  });
   const redPropState = $derived(redPropStateOverride ?? avatarState.redPropState);
 
   // Derive mode config and grid offset from the current plane mode

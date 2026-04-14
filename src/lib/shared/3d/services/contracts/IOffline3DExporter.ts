@@ -24,12 +24,6 @@ export interface Offline3DExportDependencies {
     fov: number;
     updateProjectionMatrix(): void;
   };
-  /** All performer instances to drive animation */
-  performers: Array<{
-    goToStep(index: number): void;
-    setProgress(value: number): void;
-    totalSteps: number;
-  }>;
   /** Beats per second for converting animation time to currentStep */
   beatsPerSecond: number;
   /** Total animation duration in seconds (single loop, no start/end hold) */
@@ -42,18 +36,23 @@ export interface Offline3DExportDependencies {
    * we set performer state + camera, then call advance() to get one complete
    * rendered frame through the full pipeline.
    */
-  advance(): void;
+  advance(delta?: number): void;
   /**
    * Switch Threlte between 'always' (live) and 'manual' (offline) render modes.
    * In manual mode, only advance() triggers rendering.
    */
   setRenderMode(mode: "always" | "manual"): void;
   /**
-   * Signal the puppet loop to skip performer state updates.
-   * The exporter drives performers deterministically; this prevents the
-   * live puppet loop from overwriting those values during advance().
+   * Signal that offline export is active. The puppet loop reads
+   * exportCurrentStep instead of the live component prop.
    */
   setExporting(value: boolean): void;
+  /**
+   * Set the current animation step for the puppet loop to distribute.
+   * The puppet loop reads this value during advance() and calls
+   * goToStep/setProgress on performers — same code path as live playback.
+   */
+  setExportCurrentStep(step: number | null): void;
 }
 
 export interface IOffline3DExporter {

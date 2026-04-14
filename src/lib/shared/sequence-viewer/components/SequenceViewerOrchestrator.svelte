@@ -191,8 +191,8 @@
     isRecording3D: boolean;
     /** Elapsed seconds of the current 3D recording */
     recordingElapsed: number;
-    /** Total expected duration of the 3D recording */
-    recordingTotal: number;
+    /** Stop the current 3D recording and proceed to export */
+    handleStopRecording: () => void;
   }
 </script>
 
@@ -415,8 +415,8 @@
   let countdownValue = $state(0);
   let isRecording3D = $state(false);
   let recordingElapsed = $state(0);
-  let recordingTotal = $state(0);
   let recordingTimer: ReturnType<typeof setInterval> | null = null;
+  let resolveRecording: (() => void) | null = null;
 
   // Duration of a single sequence playthrough (for export UI)
   const singlePlayDuration = $derived.by(() => {
@@ -1153,9 +1153,8 @@
 
       // ── Pass 1: Camera Performance Recording ──
       // Play the animation at normal speed while recording camera transforms
-      // at 60Hz. The user can orbit/zoom/pan freely during this phase.
+      // at 60Hz. The user can orbit/zoom/pan freely and stop whenever ready.
       const cameraKeyframes = new CameraKeyframeBuffer();
-      const totalRecordingSec = singleLoopSec * opts.loopCount;
 
       // Jump to start and begin playback
       const pc = playbackController!;
@@ -1168,35 +1167,35 @@
       recordingElapsed = 0;
       recordingTimer = setInterval(() => { recordingElapsed += 0.1; }, 100);
 
-      // Wait for the animation to play through
+      // Wait until the user clicks "Stop Recording"
       await new Promise<void>((resolve) => {
-        const checkInterval = setInterval(() => {
-          if (recordingElapsed >= totalRecordingSec) {
-            clearInterval(checkInterval);
-            resolve();
-          }
-        }, 50);
+        resolveRecording = resolve;
       });
 
       // Stop playback and recording
       if (isPlayingLocal) pc.togglePlayback();
       cameraKeyframes.stopRecording();
       isRecording3D = false;
+      resolveRecording = null;
       if (recordingTimer) { clearInterval(recordingTimer); recordingTimer = null; }
 
       // ── Pass 2: Deterministic Offline Render ──
-      // Render every frame using recorded camera keyframes + deterministic time.
-      const performers = viewer3DState.performerManager.performers.map((p) => ({
-        goToStep: (index: number) => p.goToStep(index),
-        setProgress: (value: number) => p.setProgress(value),
-        totalSteps: p.totalSteps,
-      }));
+      // The puppet loop in Viewer3DScene distributes animation state —
+      // the exporter just sets exportCurrentStep each frame and calls advance().
+
+      // Use the actual recorded duration — the user decides how long to record.
+      // loopCount=1 because the recording already spans whatever the user captured.
+      const recordedDuration = cameraKeyframes.duration;
+      if (recordedDuration <= 0) {
+        showToast("Recording too short. Please try again.", "error");
+        return;
+      }
 
       try {
         await sequenceModalExporter.export3DAnimation(
           {
             fps: opts.fps,
-            loopCount: opts.loopCount,
+            loopCount: 1,
             resolution: opts.resolution,
             includeStartPosition: opts.includeStartPosition,
             includeEndHold: opts.includeEndHold,
@@ -1204,13 +1203,13 @@
           {
             webglCanvas,
             camera: threlteCamera,
-            performers,
             beatsPerSecond,
-            totalDurationSeconds: singleLoopSec,
+            totalDurationSeconds: recordedDuration,
             cameraKeyframes,
             advance: threlteAdvance,
             setRenderMode: (mode: "always" | "manual") => threlteRenderMode.set(mode),
             setExporting: (value: boolean) => { viewer3DState.isExporting = value; },
+            setExportCurrentStep: (step: number | null) => { viewer3DState.exportCurrentStep = step; },
           },
           callbacks
         );
@@ -1785,7 +1784,9 @@
     countdownValue,
     isRecording3D,
     recordingElapsed,
-    recordingTotal,
+    handleStopRecording: () => {
+      if (resolveRecording) resolveRecording();
+    },
 
     // Auth (?guest=1 overrides to unauthenticated view for debugging shared link UX)
     isLoggedIn: forceGuest ? false : authState.isAuthenticated,

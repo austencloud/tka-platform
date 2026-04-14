@@ -100,34 +100,63 @@
   //
   // stepConfigs now includes the start position at index 0, so the mapping
   // is direct: 2D beat N → 3D index N (no offset needed).
-  useTask(() => {
-    // During offline export, the exporter drives performer state
-    // deterministically before each advance() call. The puppet loop
-    // must NOT overwrite those values with the live currentStep
-    // (which isn't advancing because playback is paused).
-    // IK (Avatar3D useTask) and effects (EffectOrchestrator useTask)
-    // still run normally during advance() — only the puppet loop skips.
-    if (viewer3DState.isExporting) return;
+  // [EXPORT-DIAG] Frame counter for sampled logging during export
+  let _puppetDiagCounter = 0;
 
-    const beatIndex = Math.floor(currentStep);
-    const subBeatProgress = currentStep - beatIndex;
+  useTask(() => {
+    // During offline export, the exporter sets exportCurrentStep on
+    // viewer3DState each frame. We read it here instead of the component
+    // prop `currentStep` (which is frozen because playback is paused).
+    // This keeps state distribution inside useTask — the same code path
+    // as live playback — so the $derived chain (currentStepIndex →
+    // bluePropState → Avatar3D props) resolves within the same advance().
+    const step = viewer3DState.isExporting
+      ? viewer3DState.exportCurrentStep ?? currentStep
+      : currentStep;
+
+    const beatIndex = Math.floor(step);
+    const subBeatProgress = step - beatIndex;
+
+    // [EXPORT-DIAG] Log what the puppet loop reads and distributes
+    if (viewer3DState.isExporting && _puppetDiagCounter % 10 === 0) {
+      console.log(
+        `[EXPORT-DIAG] PuppetLoop frame=${_puppetDiagCounter} ` +
+        `exportCurrentStep=${viewer3DState.exportCurrentStep?.toFixed(4)} ` +
+        `componentProp=${currentStep.toFixed(4)} ` +
+        `resolvedStep=${step.toFixed(4)} beatIndex=${beatIndex} subBeat=${subBeatProgress.toFixed(4)}`
+      );
+    }
 
     for (const p of performerManager.performers) {
-      if (beatIndex >= p.totalSteps) {
-        p.goToStep(p.totalSteps - 1);
-        p.setProgress(1);
-      } else {
-        p.goToStep(beatIndex);
-        p.setProgress(subBeatProgress);
+      const wrappedBeat = p.totalSteps > 0 && beatIndex >= p.totalSteps
+        ? beatIndex % p.totalSteps
+        : beatIndex;
+      p.goToStep(wrappedBeat);
+      p.setProgress(subBeatProgress);
+
+      // [EXPORT-DIAG] After setting state, read back what the performer actually has
+      if (viewer3DState.isExporting && _puppetDiagCounter % 10 === 0) {
+        const blue = p.bluePropState;
+        const red = p.redPropState;
+        console.log(
+          `[EXPORT-DIAG] PuppetLoop performer=${p.id} ` +
+          `afterGoToStep: currentStepIndex=${p.currentStepIndex} progress=${p.progress.toFixed(4)} ` +
+          `bluePropState=${blue ? `pos(${blue.worldPosition.x.toFixed(3)},${blue.worldPosition.y.toFixed(3)},${blue.worldPosition.z.toFixed(3)})` : 'null'} ` +
+          `redPropState=${red ? `pos(${red.worldPosition.x.toFixed(3)},${red.worldPosition.y.toFixed(3)},${red.worldPosition.z.toFixed(3)})` : 'null'}`
+        );
       }
     }
+
+    if (viewer3DState.isExporting) _puppetDiagCounter++;
 
     // Drive formation transitions. transitionToFormation (called from the
     // Performers tab) kicks off an animation but doesn't run its own frame
     // loop — this tick is what actually walks positions toward the target
     // slots over the 500ms window. Without it, applyFormationFromUI flips
     // activeFormation but nothing visibly moves.
-    performerManager.updateFormationTransition();
+    if (!viewer3DState.isExporting) {
+      performerManager.updateFormationTransition();
+    }
   });
 
   // ---------------------------------------------------------------

@@ -191,6 +191,9 @@
   let turnAnimator: ClipBasedTurnAnimator | null = null;
   let fingerAnimator: FingerAnimator | null = null;
 
+  // [EXPORT-DIAG] Frame counter for Avatar3D useTask logging
+  let _avatar3dDiagCounter = 0;
+
   // Collision detection — logs when props/arms clip through the avatar body
   const collisionDetector = new CollisionDetector();
   const _boneVecs = {
@@ -869,6 +872,19 @@
         });
       }
 
+    }
+
+    // [EXPORT-DIAG] Log what prop state Avatar3D's useTask actually sees
+    if ((globalThis as any).__exportDiagEnabled) {
+      if (!(_avatar3dDiagCounter % 10)) {
+        console.log(
+          `[EXPORT-DIAG] Avatar3D.useTask id=${id} frame=${_avatar3dDiagCounter} ` +
+          `bluePropState=${bluePropState ? `pos(${bluePropState.worldPosition.x.toFixed(3)},${bluePropState.worldPosition.y.toFixed(3)},${bluePropState.worldPosition.z.toFixed(3)})` : 'null'} ` +
+          `redPropState=${redPropState ? `pos(${redPropState.worldPosition.x.toFixed(3)},${redPropState.worldPosition.y.toFixed(3)},${redPropState.worldPosition.z.toFixed(3)})` : 'null'} ` +
+          `beatIndex=${beatIndex} beatProgress=${beatProgress.toFixed(4)}`
+        );
+      }
+      _avatar3dDiagCounter++;
     }
 
     // 2. IK post-process (blends per-arm based on prop presence)

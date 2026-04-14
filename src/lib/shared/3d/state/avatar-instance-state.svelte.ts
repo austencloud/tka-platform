@@ -255,12 +255,28 @@ export function createAvatarInstanceState(
     currentStep?.red ?? null
   );
 
+  // [EXPORT-DIAG] Counter for sampled logging in $derived
+  let _derivedDiagCounter = 0;
+
   // Computed prop states
-  const bluePropState = $derived(
-    activeBlueConfig
-      ? propInterpolator.calculatePropState(activeBlueConfig, playback.progress)
-      : null
-  );
+  const bluePropState = $derived.by(() => {
+    if (!activeBlueConfig) return null;
+    const prog = playback.progress;
+    const result = propInterpolator.calculatePropState(activeBlueConfig, prog);
+
+    // [EXPORT-DIAG] Log what inputs the $derived chain sees
+    // We check a global flag since we can't easily access viewer3DState here
+    if ((globalThis as any).__exportDiagEnabled && _derivedDiagCounter % 10 === 0) {
+      console.log(
+        `[EXPORT-DIAG] bluePropState $derived id=${id} ` +
+        `currentStepIndex=${currentStepIndex} progress=${prog.toFixed(4)} ` +
+        `resultPos=(${result.worldPosition.x.toFixed(3)},${result.worldPosition.y.toFixed(3)},${result.worldPosition.z.toFixed(3)})`
+      );
+    }
+    _derivedDiagCounter++;
+
+    return result;
+  });
   const redPropState = $derived(
     activeRedConfig
       ? propInterpolator.calculatePropState(activeRedConfig, playback.progress)
@@ -530,13 +546,29 @@ export function createAvatarInstanceState(
     updateVisibilityFromStep(stepConfigs[currentStepIndex]);
   }
 
+  // [EXPORT-DIAG] Counter for goToStep/setProgress logging
+  let _goToStepDiagCounter = 0;
+
   /**
    * Jump to specific beat
    */
   function goToStep(index: number) {
     if (stepConfigs.length === 0) return;
+    const prevIndex = currentStepIndex;
+    const prevProgress = playback.progress;
     currentStepIndex = Math.max(0, Math.min(index, stepConfigs.length - 1));
     playback.reset();
+
+    // [EXPORT-DIAG] Log the reset — this sets progress=0
+    if ((globalThis as any).__exportDiagEnabled && _goToStepDiagCounter % 10 === 0) {
+      console.log(
+        `[EXPORT-DIAG] goToStep id=${id} index=${index} ` +
+        `prevIndex=${prevIndex} prevProgress=${prevProgress.toFixed(4)} ` +
+        `afterReset: currentStepIndex=${currentStepIndex} progress=${playback.progress.toFixed(4)}`
+      );
+    }
+    _goToStepDiagCounter++;
+
     updateVisibilityFromStep(stepConfigs[currentStepIndex]);
   }
 
