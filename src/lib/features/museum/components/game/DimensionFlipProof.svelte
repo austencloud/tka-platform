@@ -26,6 +26,8 @@
     onBuildStage?: (stage: string) => void;
     /** Start directly in FPS/3rd-person mode (skip top-down flip) */
     startInFps?: boolean;
+    /** Fired when the player enters a new wing (or leaves all wings). */
+    onWingChange?: (wingId: string | null) => void;
   }
 
   const props: Props = $props();
@@ -137,10 +139,12 @@
   // ── View mode: unified Q-cycle state machine ──
   // Q cycles: top-down → first-person → third-person → top-down
   function restoreViewMode(): ViewMode {
+    // When the parent forces 3D on mount (quick-travel into a single room),
+    // honor that over stale sessionStorage. Prevents the 2D → 3D → 2D flash
+    // that happens when HMR state lags behind the latest movement.
+    if (startInFps) return "first-person";
     if (!savedHmrState) return "top-down";
-    // New format takes precedence over legacy
     if (savedHmrState.viewMode) return savedHmrState.viewMode;
-    // Legacy backward compat
     return savedHmrState.isInFPS ? "first-person" : "top-down";
   }
   let viewMode = $state<ViewMode>(restoreViewMode());
@@ -232,6 +236,17 @@
       }
     }
     return null;
+  });
+
+  // Notify parent when the player crosses a wing boundary so the soundscape
+  // player can crossfade to the new room's ambient track.
+  let lastNotifiedWingId: string | null = null;
+  $effect(() => {
+    const id = currentWing?.id ?? null;
+    if (id !== lastNotifiedWingId) {
+      lastNotifiedWingId = id;
+      props.onWingChange?.(id);
+    }
   });
 
   // ── Interaction detection: is the player facing an interactable tile? ──

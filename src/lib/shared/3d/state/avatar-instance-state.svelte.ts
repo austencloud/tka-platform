@@ -19,6 +19,12 @@ import type {
 import type { AvatarId } from "../config/avatar-definitions";
 import { DEFAULT_AVATAR_ID } from "../config/avatar-definitions";
 import { SCALE } from "$lib/shared/3d/scale/scale-constants";
+import { applyEffort } from "$lib/features/effort-lab/domain/effort-easing-unified";
+import type { EffortId } from "$lib/features/effort-lab/domain/effort-types";
+import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
+import type { EffortTimeline } from "$lib/features/phrase-effort-lab/domain/effort-timeline-types";
+import { findPhraseAtBeat } from "$lib/features/phrase-effort-lab/domain/effort-timeline-types";
+import { PhraseInterpolator } from "$lib/features/phrase-effort-lab/services/implementations/PhraseInterpolator";
 
 // ============================================
 // Position Constants (all in meters)
@@ -255,31 +261,80 @@ export function createAvatarInstanceState(
     currentStep?.red ?? null
   );
 
-  // [EXPORT-DIAG] Counter for sampled logging in $derived
-  let _derivedDiagCounter = 0;
+  // Effort easing: the 2D animator lets the user pick named easing profiles
+  // (glide, punch, elastic, etc.) that reshape how progress flows within
+  // each beat. The same curves apply cleanly here — we just transform the
+  // raw progress that feeds into prop interpolation.
+  const phraseInterpolator = new PhraseInterpolator();
+  const effortManager = getAnimationVisibilityManager();
+  let effortPreset = $state<EffortId>(effortManager.getEffortPreset());
+  const handleEffortChange = () => {
+    effortPreset = effortManager.getEffortPreset();
+  };
+  effortManager.registerObserver(handleEffortChange);
+
+  // Timeline is sequence-scoped. Newer sequences store it under creatorIntent;
+  // older ones use the top-level field.
+  const effortTimeline = $derived<EffortTimeline | null>(
+    loadedSequence?.creatorIntent?.effortTimeline ??
+      loadedSequence?.effortTimeline ??
+      null
+  );
+
+  // Resolves the active configs + eased progress for the current frame.
+  // In phrase mode, easing can smear across beat boundaries, so the blue/red
+  // configs here may come from a different step than currentStepIndex — this
+  // matches how the 2D orchestrator picks a target step inside a phrase.
+  // stepConfigs[0] is the start pose, so motion beat N lives at stepConfigs[N].
+  const easedFrame = $derived.by(() => {
+    const timeline = effortTimeline;
+    const rawProgress = playback.progress;
+
+    if (!timeline?.phrases?.length) {
+      return {
+        blue: activeBlueConfig,
+        red: activeRedConfig,
+        progress: applyEffort(effortPreset, rawProgress),
+      };
+    }
+
+    const motionBeatIndex = Math.max(0, currentStepIndex - 1);
+    const currentBeat = motionBeatIndex + 1 + rawProgress;
+    const phrase = findPhraseAtBeat(timeline, currentBeat);
+
+    if (!phrase) {
+      // Gaps between phrases play linearly.
+      return {
+        blue: activeBlueConfig,
+        red: activeRedConfig,
+        progress: rawProgress,
+      };
+    }
+
+    const totalMotionSteps = Math.max(1, stepConfigs.length - 1);
+    const { stepIndex, localProgress } = phraseInterpolator.interpolate(
+      phrase,
+      currentBeat,
+      totalMotionSteps,
+    );
+
+    const targetStep = stepConfigs[stepIndex + 1] ?? currentStep;
+    return {
+      blue: targetStep?.blue ?? null,
+      red: targetStep?.red ?? null,
+      progress: localProgress,
+    };
+  });
 
   // Computed prop states
-  const bluePropState = $derived.by(() => {
-    if (!activeBlueConfig) return null;
-    const prog = playback.progress;
-    const result = propInterpolator.calculatePropState(activeBlueConfig, prog);
-
-    // [EXPORT-DIAG] Log what inputs the $derived chain sees
-    // We check a global flag since we can't easily access viewer3DState here
-    if ((globalThis as any).__exportDiagEnabled && _derivedDiagCounter % 10 === 0) {
-      console.log(
-        `[EXPORT-DIAG] bluePropState $derived id=${id} ` +
-        `currentStepIndex=${currentStepIndex} progress=${prog.toFixed(4)} ` +
-        `resultPos=(${result.worldPosition.x.toFixed(3)},${result.worldPosition.y.toFixed(3)},${result.worldPosition.z.toFixed(3)})`
-      );
-    }
-    _derivedDiagCounter++;
-
-    return result;
-  });
+  const bluePropState = $derived(
+    easedFrame.blue
+      ? propInterpolator.calculatePropState(easedFrame.blue, easedFrame.progress)
+      : null
+  );
   const redPropState = $derived(
-    activeRedConfig
-      ? propInterpolator.calculatePropState(activeRedConfig, playback.progress)
+    easedFrame.red
+      ? propInterpolator.calculatePropState(easedFrame.red, easedFrame.progress)
       : null
   );
 
@@ -784,13 +839,24 @@ export function createAvatarInstanceState(
       playback.loop = value;
     },
 
+    // Effort state (for UI readouts / debugging)
+    get effortPreset() {
+      return effortPreset;
+    },
+    get effortTimeline() {
+      return effortTimeline;
+    },
+
     // Playback methods
     play: playback.play,
     pause: playback.pause,
     togglePlay: playback.togglePlay,
     reset: playback.reset,
     setProgress: playback.setProgress,
-    destroy: playback.destroy,
+    destroy: () => {
+      effortManager.unregisterObserver(handleEffortChange);
+      playback.destroy();
+    },
     autoStartIfNeeded: playback.autoStartIfNeeded,
 
     // Sequence methods

@@ -5,7 +5,11 @@
   import type { MuseumGrid } from "./domain/museum-grid-types";
   import { createEditorState } from "./state/editor-state.svelte";
   import { setEditorContext } from "./state/editor-context";
+  import { createSoundscapePlayer } from "./audio/soundscape-player.svelte";
+  import { setSoundscapeContext } from "./audio/soundscape-context";
+  import { destroyMuseumVillage } from "./services/implementations/MuseumVillageManager";
   import RoomPicker from "./components/RoomPicker.svelte";
+  import SoundscapeBubble from "./components/audio/SoundscapeBubble.svelte";
 
   import { onMount, untrack } from "svelte";
   import { page } from "$app/stores";
@@ -44,6 +48,9 @@
     return () => {
       // Restore sidebar when leaving museum
       setDesktopSidebarForcedHidden(false);
+      // Tear down the village sim — a module-scope singleton that would
+      // otherwise keep its Three.js meshes alive across navigations.
+      destroyMuseumVillage();
     };
   });
 
@@ -210,6 +217,12 @@
   editorState.importGrid(serializeGrid(initialGrid));
   setEditorContext({ state: editorState });
 
+  // Soundscape player — owns audio elements, crossfades on wing change.
+  // Wing updates flow in via DimensionFlipProof's onWingChange callback.
+  const soundscapePlayer = createSoundscapePlayer();
+  setSoundscapeContext(soundscapePlayer);
+  onMount(() => soundscapePlayer.initialize());
+
   // Module mode: museum | edit | showroom | 3p-test
   type ModuleMode = "museum" | "edit" | "showroom" | "3p-test";
   const LAST_MODE_KEY = "museum-last-mode";
@@ -273,10 +286,20 @@
     <div class="mode-content" class:hidden-mode={mode !== "museum" && mode !== "showroom" && mode !== "3p-test"}>
       {#key selectedRoom}
         {#await import("./components/game/DimensionFlipProof.svelte") then { default: DimensionFlipProof }}
-          <DimensionFlipProof grid={liveGrid} onAllLoaded={handleAllLoaded} startInFps={selectedRoom !== null} />
+          <DimensionFlipProof
+            grid={liveGrid}
+            onAllLoaded={handleAllLoaded}
+            startInFps={selectedRoom !== null}
+            onWingChange={(id) => soundscapePlayer.setCurrentWing(id)}
+          />
         {/await}
       {/key}
     </div>
+
+    <!-- Floating music-player bubble — audition ambient tracks per wing -->
+    {#if mode === "museum"}
+      <SoundscapeBubble />
+    {/if}
 
     <!-- Non-3D modes render separately and unmount normally (they're lightweight) -->
     {#if mode === "showroom"}

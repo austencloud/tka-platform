@@ -396,7 +396,10 @@
     align-items: center;
     justify-content: center;
     min-height: 0;
+    min-width: 0;
     padding: 8px;
+    container-type: size;
+    overflow: hidden;
   }
 
   .era-loading {
@@ -407,8 +410,8 @@
   /* ── Braille frame (1989) ── */
 
   .braille-frame {
-    width: min(100%, 80vh);
-    max-width: 500px;
+    width: min(100cqw, 100cqh);
+    height: min(100cqw, 100cqh);
     aspect-ratio: 1;
     display: flex;
     align-items: center;
@@ -485,12 +488,12 @@
     image-rendering: pixelated;
     image-rendering: crisp-edges;
     display: block;
-    width: min(100%, 80vh);
-    max-width: 500px;
-    height: auto;
+    width: min(100cqw, 100cqh);
+    height: min(100cqw, 100cqh);
     aspect-ratio: 1;
     background: #c0c0c0;
     border: 2px inset #c0c0c0;
+    box-sizing: border-box;
   }
 
   /* ── XP frame (2003) ── */
@@ -505,9 +508,8 @@
 
   .xp-canvas {
     display: block;
-    width: min(100%, 80vh);
-    max-width: 500px;
-    height: auto;
+    width: min(100cqw, 100cqh);
+    height: min(100cqw, 100cqh);
     aspect-ratio: 1;
     background: #ffffff;
   }
@@ -515,8 +517,8 @@
   /* ── SVG frame (2026) ── */
 
   .svg-frame {
-    width: min(100%, 80vh);
-    max-width: 500px;
+    width: min(100cqw, 100cqh);
+    height: min(100cqw, 100cqh);
     aspect-ratio: 1;
   }
 

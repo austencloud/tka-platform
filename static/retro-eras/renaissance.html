@@ -25,6 +25,9 @@
 </head>
 <body>
 <canvas id="c" width="500" height="500"></canvas>
+<script src="./_shared/pictograph-geometry.js"></script>
+<script src="./_shared/pictograph-bridge.js"></script>
+<script src="./_shared/pictograph-stylize.js"></script>
 <script>
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
@@ -38,7 +41,20 @@ const PAPER_BASE  = '#F0E0C0';   // warm cream
 const PAPER_AGED  = '#E8D0A0';   // slightly more amber patches
 const FOX_SPOT    = '#C8A86840'; // foxing spots (semi-transparent)
 
+// ─── Canonical-compose Path 1 palette ─────────────────────────────────────────
+// Maps the canonical renderer's blue/red/structural classes onto the studio's
+// ink palette — iron gall ink for blue, sepia for red, pencil graphite for the
+// structural strokes (grid lines, crosshairs, axes from the canonical render).
+// bg is null so the aged paper shows through.
+const RENAISSANCE_PALETTE = {
+  blue:       '#2A3258',  // iron gall ink
+  red:        '#6A2A18',  // sepia ink
+  structural: '#5A4028',  // pencil graphite
+  bg:         null,
+};
+
 const CX = 250, CY = 250;       // canvas center = pictograph center
+const W = 500, H = 500;         // canvas dimensions
 const GRID_R = 130;             // radius to grid points
 
 // ─── Utility helpers ─────────────────────────────────────────────────────────
@@ -76,6 +92,135 @@ function circleVar(cx, cy, r, segments = 60, drift = 0.5) {
   }
   ctx.closePath();
   ctx.stroke();
+}
+
+// ─── Renaissance hand colors ──────────────────────────────────────────────────
+// The era's ink palette is sepia, not RGB — so blue/red are mapped onto the
+// darkest and medium sepia inks the original Letter A study used.
+const BLUE_COLOR = INK_DARK;
+const RED_COLOR  = INK_MED;
+
+// ─── Data-driven hand helpers ─────────────────────────────────────────────────
+// These read the pictograph's blue/red hand data and draw each prop's staff
+// and motion arrow. The era's hand-drawn aesthetic (jittered lineVar, pressure
+// circleVar) is preserved — only the positions come from data now.
+
+function handLoc(hand)    { return String(hand.location    || hand.startLocation || '').toLowerCase(); }
+function handEndLoc(hand) { return String(hand.endLocation || '').toLowerCase(); }
+
+function drawArrowForHand(hand, color) {
+  if (!hand || hand.motionType === 'static' || !window.PictographGeometry) return;
+  const G = window.PictographGeometry;
+  const s = G.locationPoint(handLoc(hand),    CX, CY, GRID_R);
+  const e = G.locationPoint(handEndLoc(hand), CX, CY, GRID_R);
+  if (!s || !e) return;
+
+  // Construction radii — faint dashed pen strokes to the arc's endpoints,
+  // the kind a Renaissance draftsman would leave on the page.
+  ctx.save();
+  ctx.strokeStyle = INK_GHOST;
+  ctx.lineWidth = 0.5;
+  ctx.setLineDash([3, 5]);
+  lineVar(CX, CY, s.x, s.y, 8, 0.4);
+  lineVar(CX, CY, e.x, e.y, 8, 0.4);
+  ctx.setLineDash([]);
+  ctx.restore();
+
+  if (hand.motionType === 'dash') {
+    // Straight dash — drawn with the era's jittered pen drag.
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2.2;
+    ctx.lineCap = 'round';
+    lineVar(s.x, s.y, e.x, e.y, 20, 0.6);
+    ctx.restore();
+
+    const len = Math.hypot(e.x - s.x, e.y - s.y) || 1;
+    const dx = (e.x - s.x) / len, dy = (e.y - s.y) / len;
+    drawArrowhead(e.x, e.y, dx, dy, 9, color, 2.0);
+    return;
+  }
+
+  // Arc motion (pro / anti / float). Draw as jittered polyline along the arc
+  // so it reads like a careful compass stroke with hand-drawn weight variation.
+  const dir = G.handDirection(hand) || 'cw';
+  const angles = G.arcAngles(handLoc(hand), handEndLoc(hand), dir);
+  if (!angles) return;
+
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2.2;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  const segs = 36;
+  ctx.beginPath();
+  for (let i = 0; i <= segs; i++) {
+    const t = i / segs;
+    const a = angles.startA + (angles.endA - angles.startA) * t;
+    const r = GRID_R + (Math.random() - 0.5) * 0.8;
+    const x = CX + r * Math.cos(a);
+    const y = CY + r * Math.sin(a);
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+
+  // Small arc tick marks across the sweep — Renaissance surveying mark style.
+  const tickStep = (angles.endA - angles.startA) / 6;
+  for (let i = 1; i < 6; i++) {
+    const ta = angles.startA + tickStep * i;
+    const p1 = { x: CX + (GRID_R - 5) * Math.cos(ta), y: CY + (GRID_R - 5) * Math.sin(ta) };
+    const p2 = { x: CX + (GRID_R + 5) * Math.cos(ta), y: CY + (GRID_R + 5) * Math.sin(ta) };
+    ctx.strokeStyle = INK_GHOST;
+    ctx.lineWidth = 0.4;
+    lineVar(p1.x, p1.y, p2.x, p2.y, 2, 0.2);
+  }
+  ctx.restore();
+
+  // Arrowhead tangent to arc at end. For an arc traced by increasing `a`,
+  // the tangent is (-sin a, cos a); reverse sign when we're sweeping the
+  // other way (endA < startA, i.e. the ccw path in canvas space).
+  const arrivalA = angles.endA;
+  const sign = (angles.endA >= angles.startA) ? 1 : -1;
+  const tx = -Math.sin(arrivalA) * sign;
+  const ty =  Math.cos(arrivalA) * sign;
+  drawArrowhead(e.x, e.y, tx, ty, 9, color, 2.0);
+}
+
+function drawStaffForHand(hand, color) {
+  if (!hand || !window.PictographGeometry) return;
+  const G = window.PictographGeometry;
+  const center = G.locationPoint(handEndLoc(hand), CX, CY, GRID_R);
+  const axis = G.staffAxisAngle(handEndLoc(hand), hand.orientation || 'in');
+  if (center == null || axis == null) return;
+  const length = 36; // match the original Letter-A stave length (±18 from center)
+  const { a, b } = G.staffEndpoints(center, axis, length);
+
+  // Main shaft — thick precise technical line, preserved from the original
+  // drawStaves() look.
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2.8;
+  ctx.lineCap = 'round';
+  lineVar(a.x, a.y, b.x, b.y, 18, 0.5);
+
+  // Parallel shadow line offset perpendicular to the axis — gives the
+  // cylinder illusion.
+  const nx = -Math.sin(axis), ny = Math.cos(axis);
+  const shadowOffset = 1.5;
+  ctx.strokeStyle = INK_LIGHT;
+  ctx.lineWidth = 0.7;
+  lineVar(a.x + nx * shadowOffset, a.y + ny * shadowOffset,
+          b.x + nx * shadowOffset, b.y + ny * shadowOffset, 10, 0.3);
+
+  // End caps — small perpendicular tick marks at each end of the shaft.
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.6;
+  const capHalf = 8;
+  lineVar(a.x - nx * capHalf, a.y - ny * capHalf,
+          a.x + nx * capHalf, a.y + ny * capHalf, 4, 0.4);
+  lineVar(b.x - nx * capHalf, b.y - ny * capHalf,
+          b.x + nx * capHalf, b.y + ny * capHalf, 4, 0.4);
+  ctx.restore();
 }
 
 // ─── 1. Aged paper background ─────────────────────────────────────────────────
@@ -192,13 +337,14 @@ function drawBorder() {
 }
 
 // ─── 3. Title header (mirror-written + normal) ────────────────────────────────
-function drawTitle() {
+function drawTitle(letter) {
+  const glyph = String(letter || 'A');
   // Normal italic title at top centre
   ctx.save();
   ctx.font = 'italic 13px Georgia, serif';
   ctx.fillStyle = INK_DARK;
   ctx.textAlign = 'center';
-  ctx.fillText('Litera  A  ·  Studio di Moto Circolare', 250, 46);
+  ctx.fillText(`Litera  ${glyph}  ·  Studio di Moto Circolare`, 250, 46);
   ctx.restore();
 
   // Mirror-written subtitle (da Vinci style) — transform for horizontal flip
@@ -283,230 +429,10 @@ function drawGrid() {
   ctx.fill();
 }
 
-// ─── 5. Staves — north (blue→sepia-dark) and south (red→sepia-med) ──────────
-function drawStaves() {
-  const north = pt(0);   // N
-  const south = pt(180); // S
-
-  // ── North stave ──────────────────────────────────────────────────────────
-  // Main shaft — drawn as thick precise technical line
-  ctx.strokeStyle = INK_DARK;
-  ctx.lineWidth = 2.8;
-  ctx.lineCap = 'round';
-  lineVar(north.x - 6, north.y + 18, north.x + 6, north.y - 18, 18, 0.5);
-  // Parallel shadow line for cylinder illusion
-  ctx.strokeStyle = INK_MED;
-  ctx.lineWidth = 0.7;
-  lineVar(north.x - 4.5, north.y + 18, north.x - 4.5, north.y - 18, 8, 0.3);
-  // End caps — small perpendicular tick marks
-  ctx.strokeStyle = INK_DARK;
-  ctx.lineWidth = 1.6;
-  lineVar(north.x - 8, north.y - 16, north.x + 8, north.y - 16, 4, 0.4);
-  lineVar(north.x - 8, north.y + 16, north.x + 8, north.y + 16, 4, 0.4);
-
-  // Stave label: "BACULUS SEPTENTR." near north stave
-  ctx.save();
-  ctx.font = '7.5px Georgia, serif';
-  ctx.fillStyle = INK_MED;
-  ctx.textAlign = 'left';
-  ctx.fillText('Baculus septentrionalis', north.x + 12, north.y - 8);
-  // Small dimension tick
-  ctx.strokeStyle = INK_GHOST;
-  ctx.lineWidth = 0.5;
-  lineVar(north.x + 10, north.y - 18, north.x + 10, north.y + 18, 5, 0.2);
-  lineVar(north.x + 8, north.y - 18, north.x + 12, north.y - 18, 3, 0.2);
-  lineVar(north.x + 8, north.y + 18, north.x + 12, north.y + 18, 3, 0.2);
-  ctx.restore();
-
-  // ── South stave ──────────────────────────────────────────────────────────
-  ctx.strokeStyle = INK_MED;
-  ctx.lineWidth = 2.4;
-  ctx.lineCap = 'round';
-  lineVar(south.x - 6, south.y + 18, south.x + 6, south.y - 18, 18, 0.5);
-  // Parallel shadow line
-  ctx.strokeStyle = INK_LIGHT;
-  ctx.lineWidth = 0.6;
-  lineVar(south.x + 4.5, south.y - 18, south.x + 4.5, south.y + 18, 8, 0.3);
-  // End caps
-  ctx.strokeStyle = INK_MED;
-  ctx.lineWidth = 1.4;
-  lineVar(south.x - 8, south.y - 16, south.x + 8, south.y - 16, 4, 0.4);
-  lineVar(south.x - 8, south.y + 16, south.x + 8, south.y + 16, 4, 0.4);
-
-  // South stave label
-  ctx.save();
-  ctx.font = '7.5px Georgia, serif';
-  ctx.fillStyle = INK_MED;
-  ctx.textAlign = 'right';
-  ctx.fillText('Baculus meridionalis', south.x - 12, south.y + 8);
-  ctx.restore();
-}
-
-// ─── 6. Pro motion arrows with compass-construction geometry ─────────────────
-//  Blue hand: W → N (pro, clockwise arc going through NW quadrant)
-//  Red hand:  E → S (pro, clockwise arc going through SE quadrant)
-// ──────────────────────────────────────────────────────────────────────────────
-function drawArrows() {
-  const W  = pt(270);   // West
-  const N  = pt(0);     // North
-  const E  = pt(90);    // East
-  const S  = pt(180);   // South
-
-  // ── Construction geometry — compass radii (dashed, very faint) ──────────
-
-  // Blue arc: center of compass for W→N arc lies at CX, CY (center)
-  // The arc sweeps from W to N, counterclockwise in standard math (clockwise visually)
-  // Radius = distance from center to grid point = GRID_R
-  // Show construction: dashed radii from center to W and N endpoints
-  ctx.strokeStyle = INK_GHOST;
-  ctx.lineWidth = 0.5;
-  ctx.setLineDash([3, 5]);
-  lineVar(CX, CY, W.x, W.y, 8, 0.4);  // radius to W
-  lineVar(CX, CY, N.x, N.y, 8, 0.4);  // radius to N
-  ctx.setLineDash([]);
-
-  // Small arc tick marks on blue arc construction circle
-  for (let a = 180; a <= 270; a += 15) {
-    const ta = (a - 90) * Math.PI / 180;
-    const p1 = { x: CX + (GRID_R - 5) * Math.cos(ta), y: CY + (GRID_R - 5) * Math.sin(ta) };
-    const p2 = { x: CX + (GRID_R + 5) * Math.cos(ta), y: CY + (GRID_R + 5) * Math.sin(ta) };
-    ctx.strokeStyle = INK_GHOST;
-    ctx.lineWidth = 0.4;
-    lineVar(p1.x, p1.y, p2.x, p2.y, 2, 0.2);
-  }
-
-  // Red arc: same center, same radius, sweeps from E to S
-  ctx.strokeStyle = INK_GHOST;
-  ctx.lineWidth = 0.5;
-  ctx.setLineDash([3, 5]);
-  lineVar(CX, CY, E.x, E.y, 8, 0.4);
-  lineVar(CX, CY, S.x, S.y, 8, 0.4);
-  ctx.setLineDash([]);
-
-  // Red arc tick marks
-  for (let a = 0; a <= 90; a += 15) {
-    const ta = (a - 90) * Math.PI / 180;
-    const p1 = { x: CX + (GRID_R - 5) * Math.cos(ta), y: CY + (GRID_R - 5) * Math.sin(ta) };
-    const p2 = { x: CX + (GRID_R + 5) * Math.cos(ta), y: CY + (GRID_R + 5) * Math.sin(ta) };
-    ctx.strokeStyle = INK_GHOST;
-    ctx.lineWidth = 0.4;
-    lineVar(p1.x, p1.y, p2.x, p2.y, 2, 0.2);
-  }
-
-  // ── Blue arc: W → N (clockwise visually = counterclockwise in canvas angles) ─
-  // Canvas angles: 0=right, π/2=down. Grid angles: 0=up (N), 90=right (E)
-  // W = 270° grid = 180° canvas. N = 0° grid = -90° canvas (=270°).
-  // Arc from W to N going through NW: canvas from 180° to 270° (counterclockwise = false means we go shorter way)
-  // Actually W is 270° grid → canvas angle = (270-90)*π/180 = 180° = π
-  // N is 0° grid → canvas angle = (0-90)*π/180 = -90° = 270° = 3π/2
-  // Going through NW (315° grid = 225° canvas) → from π to 3π/2 counterclockwise (going π → 3π/2 the long way)
-  // In canvas arc(cx, cy, r, startAngle, endAngle, anticlockwise):
-  //   start = π (W), end = 3π/2 (N), anticlockwise = true goes π → π/2 → 0 → 3π/2 → through NW
-  // Let's verify: going anticlockwise from π: π → 3π/4 (NW canvas) → π/2 → ... → 3π/2
-  // Yes, 3π/4 is NW in canvas = 135° canvas → grid angle 135+90=225° (SW). That's wrong.
-  // Let me re-derive carefully:
-  // Canvas angle 0 = East, increases clockwise. Grid: 0=N, 90=E, 180=S, 270=W.
-  // grid_to_canvas(g) = (g - 90) * π/180
-  // W  = grid 270° → canvas (270-90)*π/180 = 180° = π ✓
-  // N  = grid 0°   → canvas (0-90)*π/180   = -90° = -π/2 (= 3π/2 after mod)
-  // NW = grid 315° → canvas (315-90)*π/180 = 225° = 5π/4
-  // Arc through NW going from W to N: start at π, pass through 5π/4, arrive at 3π/2
-  // That direction is CLOCKWISE in canvas (increasing angle π → 5π/4 → 3π/2).
-  // So: arc(CX, CY, GRID_R, π, -π/2, false) [false = clockwise in canvas]
-  const W_angle = Math.PI;           // canvas angle for W
-  const N_angle = -Math.PI / 2;      // canvas angle for N (= 3π/2)
-  const E_angle = 0;                 // canvas angle for E
-  const S_angle = Math.PI / 2;       // canvas angle for S
-
-  // Blue arc stroke — drawn with slight line weight variation via manual segmentation
-  ctx.save();
-  ctx.strokeStyle = INK_DARK;
-  ctx.lineWidth = 2.2;
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-
-  // Draw arc as polyline segments with slight jitter for hand-drawn feel
-  const numSeg = 36;
-  ctx.beginPath();
-  for (let i = 0; i <= numSeg; i++) {
-    const t = i / numSeg;
-    // Clockwise from W_angle (π) to N_angle (-π/2 = 3π/2):
-    // going clockwise means angle increases: π → 3π/2
-    const startA = Math.PI;
-    const endA   = Math.PI * 1.5;
-    const a = startA + (endA - startA) * t;
-    const r = GRID_R + (Math.random() - 0.5) * 0.8;
-    const x = CX + r * Math.cos(a);
-    const y = CY + r * Math.sin(a);
-    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-  }
-  ctx.stroke();
-
-  // Blue arc: arrowhead at N end — tangent direction at N (clockwise arc, arriving at 3π/2)
-  // At canvas angle 3π/2, tangent of clockwise arc points in direction of increasing angle:
-  // d/dθ of (cos θ, sin θ) = (-sin θ, cos θ). At 3π/2: (-sin(3π/2), cos(3π/2)) = (1, 0) → pointing East.
-  // But N is at top of grid — arrow should point toward N (up on canvas). Let me re-check arc direction.
-  // Actually for clockwise arc (anticlockwise=false in canvas, angle increases), the path goes
-  // from W (left) clockwise through NW (upper-left) to N (top). So at N the arrow tip points East? No...
-  // At top of circle, going clockwise, the tangent points to the right (East). But the stave is at N.
-  // The arrowhead should point INTO the N stave — so pointing roughly East/right at that point. ✓
-  const arrAngle = Math.PI * 1.5; // angle of arrival
-  const tx =  -Math.sin(arrAngle); // tangent x = -sin(θ) for clockwise
-  const ty =   Math.cos(arrAngle); // tangent y =  cos(θ) for clockwise
-  // Arrow tip at N grid point
-  const tipBx = CX + GRID_R * Math.cos(arrAngle);
-  const tipBy = CY + GRID_R * Math.sin(arrAngle);
-  drawArrowhead(tipBx, tipBy, tx, ty, 9, INK_DARK, 2.0);
-
-  // Blue annotation: "motus dexter" (right/clockwise motion)
-  ctx.font = 'italic 8px Georgia, serif';
-  ctx.fillStyle = INK_MED;
-  ctx.textAlign = 'center';
-  ctx.fillText('motus dexter', CX - 72, CY - 72);
-  // Arc length annotation
-  ctx.font = '7px Georgia, serif';
-  ctx.fillStyle = INK_GHOST;
-  ctx.fillText('¼ circuli', CX - 85, CY - 58);
-  ctx.restore();
-
-  // Red arc: E → S (clockwise through SE: E_angle=0 to S_angle=π/2)
-  ctx.save();
-  ctx.strokeStyle = INK_MED;
-  ctx.lineWidth = 1.9;
-  ctx.lineCap = 'round';
-
-  ctx.beginPath();
-  for (let i = 0; i <= numSeg; i++) {
-    const t = i / numSeg;
-    const startA = 0;           // E
-    const endA   = Math.PI / 2; // S
-    const a = startA + (endA - startA) * t;
-    const r = GRID_R + (Math.random() - 0.5) * 0.8;
-    const x = CX + r * Math.cos(a);
-    const y = CY + r * Math.sin(a);
-    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-  }
-  ctx.stroke();
-
-  // Red arc arrowhead at S (arrival angle = π/2)
-  const arrAngleR = Math.PI / 2;
-  const txR = -Math.sin(arrAngleR);
-  const tyR =  Math.cos(arrAngleR);
-  const tipRx = CX + GRID_R * Math.cos(arrAngleR);
-  const tipRy = CY + GRID_R * Math.sin(arrAngleR);
-  drawArrowhead(tipRx, tipRy, txR, tyR, 8, INK_MED, 1.7);
-
-  // Red annotation
-  ctx.font = 'italic 8px Georgia, serif';
-  ctx.fillStyle = INK_MED;
-  ctx.textAlign = 'center';
-  ctx.fillText('motus dexter', CX + 74, CY + 72);
-  ctx.font = '7px Georgia, serif';
-  ctx.fillStyle = INK_GHOST;
-  ctx.fillText('¼ circuli', CX + 86, CY + 58);
-  ctx.restore();
-
-  // Compass centre mark for arcs — small circle at CX, CY showing it's the pivot
+// ─── Compass-pivot centre mark — "centrum" annotation at the grid origin ─────
+// Rendered as a generic studio annotation (unchanged regardless of the
+// pictograph) since every arc in the Renaissance diagram swings from CX,CY.
+function drawCompassCentre() {
   ctx.save();
   ctx.strokeStyle = INK_GHOST;
   ctx.lineWidth = 0.5;
@@ -543,19 +469,20 @@ function drawArrowhead(tipX, tipY, dx, dy, size, color, lw) {
   ctx.restore();
 }
 
-// ─── 7. Large italic "A" — elegant hand lettering in centre margin ─────────────
-function drawLetterA() {
-  // Big ornamental A in top-left corner (notebook heading style)
+// ─── 7. Large italic letter — elegant hand lettering in centre margin ─────────
+function drawLetterGlyph(letter) {
+  const glyph = String(letter || 'A');
+  // Big ornamental letter in top-left corner (notebook heading style)
   ctx.save();
   ctx.font = 'bold italic 64px Georgia, serif';
   ctx.fillStyle = 'rgba(59,42,26,0.18)';  // very faint ghost letter behind
   ctx.textAlign = 'left';
   ctx.textBaseline = 'top';
-  ctx.fillText('A', 30, 70);
+  ctx.fillText(glyph, 30, 70);
 
   ctx.font = 'bold italic 42px Georgia, serif';
   ctx.fillStyle = INK_DARK;
-  ctx.fillText('A', 32, 72);
+  ctx.fillText(glyph, 32, 72);
   ctx.restore();
 
   // Mirror-written annotation beside the A
@@ -703,26 +630,116 @@ function drawFinalOverlay() {
 }
 
 // ─── Render pipeline ──────────────────────────────────────────────────────────
-// Use a seeded pseudo-random for reproducibility (override Math.random)
-let _seed = 42;
+// We override Math.random with a seeded pseudo-random before each render so
+// the jitter, foxing, and paper grain stay stable between frames for a given
+// pictograph. Without this the page would "shimmer" every redraw.
 const origRandom = Math.random;
-Math.random = function() {
-  _seed = (_seed * 9301 + 49297) % 233280;
-  return _seed / 233280;
+function seededRandom(seed) {
+  let s = seed;
+  return function () {
+    s = (s * 9301 + 49297) % 233280;
+    return s / 233280;
+  };
+}
+
+// Blue/red hands at opposite points with pro motion — what the page showed
+// before the data-driven refactor, and also the fallback when this HTML is
+// opened directly without a parent posting pictograph data.
+const DEFAULT_PICTOGRAPH = {
+  letter: 'A',
+  gridMode: 'diamond',
+  blueHand: {
+    color: 'blue',
+    location: 'w', endLocation: 'n',
+    motionType: 'pro', rotationDirection: 'cw',
+    orientation: 'in', turns: 0,
+  },
+  redHand: {
+    color: 'red',
+    location: 'e', endLocation: 's',
+    motionType: 'pro', rotationDirection: 'cw',
+    orientation: 'in', turns: 0,
+  },
 };
 
-drawPaper();
-drawBorder();
-drawTitle();
-drawGrid();
-drawStaves();
-drawArrows();
-drawLetterA();
-drawAnnotations();
-drawCompassRose();
-drawFinalOverlay();
+// Mulberry32 — dedicated deterministic RNG passed to PictographStylize so the
+// sepia edge treatment reproduces identically for the same pictograph.
+function mulberry32(seed) {
+  return function () {
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
 
-Math.random = origRandom; // restore
+function seedFor(data) {
+  const b = data.blueHand || {}, r = data.redHand || {};
+  const s = `${data.letter}|${b.location}|${b.endLocation}|${b.motionType}|${r.location}|${r.endLocation}|${r.motionType}`;
+  let h = 0xDEADBEEF;
+  for (let i = 0; i < s.length; i++) {
+    h = (h ^ s.charCodeAt(i)) * 16777619 >>> 0;
+  }
+  return h;
+}
+
+// ─── Render — two paths, same era chrome ─────────────────────────────────────
+// Path 1 (canonical bitmap available): pixelate + recolor + sepia edge
+// treatment + single-pass composite at 0.88 alpha. Inherits all correct
+// motion semantics (pro vs anti, turns, dashes, floats) from the canonical
+// renderer without reimplementing them here.
+//
+// Path 2 (no canonical): fall back to the original data-driven jittered
+// sketch so the page still produces a meaningful image when opened directly.
+//
+// Era chrome (aged paper, foxing, border, title, construction lines, letter
+// glyph, annotations, compass rose, vignette) is drawn identically in either
+// path — that's where the Renaissance studio voice lives.
+function render(data, canonical, meta) {
+  const pictograph = data || DEFAULT_PICTOGRAPH;
+  Math.random = seededRandom(42);
+  const rng = mulberry32(seedFor(pictograph));
+  try {
+    // Background + chrome — drawn first in both paths
+    drawPaper();
+    drawBorder();
+    drawTitle(pictograph.letter);
+    drawGrid();
+
+    if (canonical && window.PictographStylize) {
+      // Path 1: canonical-compose
+      const chunky = window.PictographStylize.pixelate(canonical, W, 200);
+      const styled = window.PictographStylize.recolor(chunky, RENAISSANCE_PALETTE, W);
+      window.PictographStylize.edgeTreatment(styled, 'sepia', rng);
+      ctx.save();
+      ctx.globalAlpha = 0.88;
+      ctx.drawImage(styled, 0, 0, W, H);
+      ctx.restore();
+    } else {
+      // Fallback: original jittered pen-and-ink sketch
+      drawStaffForHand(pictograph.blueHand, BLUE_COLOR);
+      drawStaffForHand(pictograph.redHand,  RED_COLOR);
+      drawArrowForHand(pictograph.blueHand, BLUE_COLOR);
+      drawArrowForHand(pictograph.redHand,  RED_COLOR);
+      drawCompassCentre();
+    }
+
+    // Foreground chrome — always drawn on top
+    drawLetterGlyph(pictograph.letter);
+    drawAnnotations();
+    drawCompassRose();
+    drawFinalOverlay();
+  } finally {
+    Math.random = origRandom;
+  }
+}
+
+render(DEFAULT_PICTOGRAPH, null, null);
+if (window.PictographBridge) {
+  window.PictographBridge.onPictograph(function (data, canonical, meta) {
+    render(data, canonical, meta);
+  });
+}
 </script>
 <script>if(location.search.includes("embed"))document.body.classList.add("embed")</script>
 </body>

@@ -12,6 +12,7 @@ import {
 } from "firebase/firestore";
 import { getFirestoreInstance, getAuthSync } from "$lib/shared/auth/firebase";
 import type { IActivityLogger } from "$lib/shared/analytics/services/contracts/IActivityLogger";
+import type { UserAttribution } from "$lib/shared/attribution/domain/types";
 import type {
   ISystemStateManager,
   SystemState,
@@ -170,6 +171,7 @@ export class SystemStateManager implements ISystemStateManager {
       createdAt: createdAtDate,
       disabled: (data["disabled"] as boolean) ?? false,
       role: (data["role"] as string) ?? "user",
+      attribution: (data["attribution"] as UserAttribution | undefined) ?? null,
     };
   }
 

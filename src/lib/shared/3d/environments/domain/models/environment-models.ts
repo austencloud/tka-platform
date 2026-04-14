@@ -42,7 +42,8 @@ export type ParticleType =
   | "bubbles"
   | "fireflies"
   | "dust"
-  | "smoke";
+  | "smoke"
+  | "steam";
 
 /**
  * Falling particles configuration

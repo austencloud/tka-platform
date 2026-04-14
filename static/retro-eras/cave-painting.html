@@ -47,18 +47,31 @@
   <div class="caption">Grotte des Séquences — Parietal Period — ~38,000 BCE</div>
 </div>
 
+<script src="./_shared/pictograph-geometry.js"></script>
+<script src="./_shared/pictograph-bridge.js"></script>
+<script src="./_shared/pictograph-stylize.js"></script>
+
 <script>
 // ─────────────────────────────────────────────────────────────────────────────
-// Cave Painting Renderer — TKA Letter "A"
-// Blue hand: North, pro motion (curves W→N)
-// Red hand:  South, pro motion (curves E→S)
+// Cave Painting Renderer — paints any pictograph in Lascaux mineral pigments.
+//
+// Receives RetroPictographData via PictographBridge and redraws on each change.
+// Uses PictographGeometry to resolve staff orientations and arc directions.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const canvas = document.getElementById('cave');
 const ctx = canvas.getContext('2d');
 const W = 500, H = 500;
 
-// ── Seeded PRNG (Mulberry32) ──────────────────────────────────────────────────
+// Offscreen cache for the stone wall background — it's expensive to compute
+// and identical for every pictograph, so we prepare it once.
+const bgCanvas = document.createElement('canvas');
+bgCanvas.width = W;
+bgCanvas.height = H;
+const bgCtx = bgCanvas.getContext('2d');
+
+// ── Seeded PRNG (Mulberry32) — reseeded per render for determinism ───────────
+let rng = mulberry32(0xDEADBEEF);
 function mulberry32(seed) {
   return function() {
     seed |= 0; seed = seed + 0x6D2B79F5 | 0;
@@ -67,7 +80,17 @@ function mulberry32(seed) {
     return ((t ^ t >>> 14) >>> 0) / 4294967296;
   };
 }
-const rng = mulberry32(0xDEADBEEF);
+
+function seedFor(data) {
+  // Any stable hash of the pictograph identity — so navigating forward/back
+  // reproduces the same scatter/wobble for each letter.
+  const s = `${data.letter}|${data.blueHand.location}|${data.blueHand.endLocation}|${data.blueHand.motionType}|${data.redHand.location}|${data.redHand.endLocation}|${data.redHand.motionType}`;
+  let h = 0xDEADBEEF;
+  for (let i = 0; i < s.length; i++) {
+    h = (h ^ s.charCodeAt(i)) * 16777619 >>> 0;
+  }
+  return h;
+}
 
 // ── Noise helpers ─────────────────────────────────────────────────────────────
 function hash(x, y) {
@@ -97,13 +120,12 @@ function fbm(x, y, octaves = 5) {
   return val / max;
 }
 
-// ── Step 1: Stone wall — BRIGHT warm brown, like a well-lit Lascaux photograph ──
-function drawStoneWall() {
-  // Start bright: warm tan/ochre base. NOT dark.
-  ctx.fillStyle = '#b08060';
-  ctx.fillRect(0, 0, W, H);
+// ── Stone wall — drawn once into bgCanvas ────────────────────────────────────
+function drawStoneWall(targetCtx) {
+  targetCtx.fillStyle = '#b08060';
+  targetCtx.fillRect(0, 0, W, H);
 
-  const imgData = ctx.getImageData(0, 0, W, H);
+  const imgData = targetCtx.getImageData(0, 0, W, H);
   const d = imgData.data;
 
   for (let y = 0; y < H; y++) {
@@ -118,64 +140,45 @@ function drawStoneWall() {
 
       const combined = base * 0.5 + detail * 0.3 + crack * 0.15 + fine * 0.05;
 
-      // BRIGHT rock palette — well-lit cave wall
-      // Dark zones: warm medium brown (not black)
       const r0 = 100, g0 = 75,  b0 = 50;
-      // Mid zones: warm tan
       const r1 = 155, g1 = 118, b1 = 78;
-      // Light zones: sandy limestone
       const r2 = 178, g2 = 142, b2 = 98;
-      // Pale highlight zones: calcite white-tan
       const r3 = 200, g3 = 168, b3 = 125;
 
-      // t drives the brightness — keep it high (0.4 minimum)
       let t = Math.pow(combined, 0.75);
-      t = 0.35 + t * 0.65; // clamp floor so wall never goes dark
+      t = 0.35 + t * 0.65;
 
       let r, g, b;
       if (t < 0.5) {
         const u = t * 2;
-        r = lerp(r0, r1, u);
-        g = lerp(g0, g1, u);
-        b = lerp(b0, b1, u);
+        r = lerp(r0, r1, u); g = lerp(g0, g1, u); b = lerp(b0, b1, u);
       } else if (t < 0.8) {
         const u = (t - 0.5) / 0.3;
-        r = lerp(r1, r2, u);
-        g = lerp(g1, g2, u);
-        b = lerp(b1, b2, u);
+        r = lerp(r1, r2, u); g = lerp(g1, g2, u); b = lerp(b1, b2, u);
       } else {
         const u = (t - 0.8) / 0.2;
-        r = lerp(r2, r3, u);
-        g = lerp(g2, g3, u);
-        b = lerp(b2, b3, u);
+        r = lerp(r2, r3, u); g = lerp(g2, g3, u); b = lerp(b2, b3, u);
       }
 
-      // Pale calcite veins
       const vein = fbm(nx * 6 + 2.2, ny * 1.4 + 7.3, 2);
       const veinStrength = Math.max(0, vein - 0.62) * 2.2;
       r += veinStrength * 25;
       g += veinStrength * 20;
       b += veinStrength * 15;
 
-      // Warm ochre mineral patches
       const ochreN = fbm(nx * 2.1 + 9.1, ny * 2.5 + 4.3, 3);
       const ochre = Math.max(0, ochreN - 0.54) * 2.5;
       r += ochre * 18;
       g += ochre * 8;
       b -= ochre * 5;
 
-      // SUBTLE edge vignette — only the outer 20% of the canvas dims
-      // Center 80% stays fully bright
       const edgeDx = (x / W) * 2 - 1;
       const edgeDy = (y / H) * 2 - 1;
       const edgeDist = Math.sqrt(edgeDx * edgeDx + edgeDy * edgeDy);
-      // Only pull darkness in at dist > 1.1 (well into the corners/edges)
       const vignetteFactor = Math.max(0, edgeDist - 1.05) * 0.9;
       const vignette = 1 - Math.min(0.35, vignetteFactor);
 
-      r *= vignette;
-      g *= vignette;
-      b *= vignette;
+      r *= vignette; g *= vignette; b *= vignette;
 
       const idx = (y * W + x) * 4;
       d[idx]     = Math.min(255, Math.max(0, r | 0));
@@ -185,11 +188,10 @@ function drawStoneWall() {
     }
   }
 
-  ctx.putImageData(imgData, 0, 0);
+  targetCtx.putImageData(imgData, 0, 0);
 }
 
-// ── Step 2: Pigment stroke — BOLD, visible. No hidden alpha multipliers. ────────
-// opacity is used DIRECTLY — 0.7 means 0.7, not 0.7 * 0.18
+// ── Pigment primitives (opacity used DIRECTLY, no hidden multiplier) ─────────
 function pigmentStroke(x1, y1, x2, y2, color, width, opacity, roughness = 1.0) {
   const dist = Math.hypot(x2 - x1, y2 - y1);
   const steps = Math.max(18, dist * 1.6 | 0);
@@ -198,7 +200,7 @@ function pigmentStroke(x1, y1, x2, y2, color, width, opacity, roughness = 1.0) {
   ctx.save();
 
   for (let s = 0; s < steps; s++) {
-    const t = s / (steps - 1);
+    const t = s / Math.max(1, steps - 1);
     const wobble = (rng() - 0.5) * width * roughness * 0.7;
     const perpX = -Math.sin(angle) * wobble;
     const perpY =  Math.cos(angle) * wobble;
@@ -209,7 +211,6 @@ function pigmentStroke(x1, y1, x2, y2, color, width, opacity, roughness = 1.0) {
     const blobH = blobW * (0.45 + rng() * 0.4);
     const blobAngle = angle + (rng() - 0.5) * 0.7;
 
-    // Each blob at the direct opacity — bold and visible
     ctx.globalAlpha = opacity * (0.55 + rng() * 0.45);
     ctx.fillStyle = color;
     ctx.save();
@@ -224,49 +225,14 @@ function pigmentStroke(x1, y1, x2, y2, color, width, opacity, roughness = 1.0) {
   ctx.restore();
 }
 
-// ── Wobbly charcoal line ──────────────────────────────────────────────────────
-// opacity used DIRECTLY — no hidden multiplier
-function wobbleLine(x1, y1, x2, y2, color, width, opacity, roughness = 1.0) {
-  const dist = Math.hypot(x2 - x1, y2 - y1);
-  const layers = 3;
-
-  ctx.save();
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-
-  for (let layer = 0; layer < layers; layer++) {
-    // Layered from wide-faint to narrow-bold
-    ctx.globalAlpha = opacity * (0.5 + layer * 0.25);
-    ctx.strokeStyle = color;
-    ctx.lineWidth = width * (1.2 - layer * 0.2) + rng() * width * 0.25;
-
-    const segments = Math.max(4, dist / 18 | 0);
-    ctx.beginPath();
-    for (let i = 0; i <= segments; i++) {
-      const t = i / segments;
-      const jx = (rng() - 0.5) * roughness * width * 0.6;
-      const jy = (rng() - 0.5) * roughness * width * 0.6;
-      const px = lerp(x1, x2, t) + jx;
-      const py = lerp(y1, y2, t) + jy;
-      if (i === 0) ctx.moveTo(px, py);
-      else ctx.lineTo(px, py);
-    }
-    ctx.stroke();
-  }
-  ctx.restore();
-}
-
-// ── Pigment daub (fingerprint dot) — BOLD ────────────────────────────────────
 function pigmentDaub(x, y, r, color, opacity) {
   ctx.save();
-  // Solid fill center
   ctx.globalAlpha = opacity * 0.85;
   ctx.fillStyle = color;
   ctx.beginPath();
   ctx.ellipse(x, y, r * 0.9, r * 0.75, rng() * Math.PI, 0, Math.PI * 2);
   ctx.fill();
 
-  // Outer rings for organic edge
   const rings = 3 + (rng() * 2 | 0);
   for (let i = 0; i < rings; i++) {
     const jx = (rng() - 0.5) * r * 0.5;
@@ -278,7 +244,6 @@ function pigmentDaub(x, y, r, color, opacity) {
     ctx.fill();
   }
 
-  // Fingerprint arc lines
   ctx.strokeStyle = color;
   ctx.lineWidth = 1.0 + rng() * 0.8;
   for (let arc = 0; arc < 4; arc++) {
@@ -297,7 +262,6 @@ function pigmentDaub(x, y, r, color, opacity) {
   ctx.restore();
 }
 
-// ── Pigment arc with arrow — BOLD. opacity used directly. ─────────────────────
 function pigmentArc(cx, cy, radius, startAngle, endAngle, color, width, opacity) {
   const steps = 60;
   const points = [];
@@ -310,7 +274,6 @@ function pigmentArc(cx, cy, radius, startAngle, endAngle, color, width, opacity)
 
   ctx.save();
 
-  // Draw 3 passes: wide soft → medium → narrow crisp
   const passes = [
     { widthMult: 1.6, alpha: opacity * 0.35 },
     { widthMult: 1.1, alpha: opacity * 0.65 },
@@ -334,7 +297,7 @@ function pigmentArc(cx, cy, radius, startAngle, endAngle, color, width, opacity)
     ctx.stroke();
   }
 
-  // Arrowhead — solid, clearly visible
+  // Arrowhead — solid
   const endPt  = points[points.length - 1];
   const prevPt = points[points.length - 7];
   const headAngle = Math.atan2(endPt.y - prevPt.y, endPt.x - prevPt.x);
@@ -358,7 +321,27 @@ function pigmentArc(cx, cy, radius, startAngle, endAngle, color, width, opacity)
   ctx.restore();
 }
 
-// ── Scratch carved into stone ──────────────────────────────────────────────────
+function pigmentArrowhead(fromX, fromY, toX, toY, color, width, opacity) {
+  const angle = Math.atan2(toY - fromY, toX - fromX);
+  const headLen = width * 3.2;
+  ctx.save();
+  ctx.globalAlpha = opacity * 0.92;
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(toX, toY);
+  ctx.lineTo(
+    toX - Math.cos(angle - 0.52) * headLen + (rng() - 0.5) * 4,
+    toY - Math.sin(angle - 0.52) * headLen + (rng() - 0.5) * 4
+  );
+  ctx.lineTo(
+    toX - Math.cos(angle + 0.52) * headLen + (rng() - 0.5) * 4,
+    toY - Math.sin(angle + 0.52) * headLen + (rng() - 0.5) * 4
+  );
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
 function carvedScratch(x1, y1, x2, y2, opacity = 0.55) {
   const dist = Math.hypot(x2 - x1, y2 - y1);
   const steps = Math.max(3, dist / 10 | 0);
@@ -366,7 +349,6 @@ function carvedScratch(x1, y1, x2, y2, opacity = 0.55) {
   ctx.save();
   ctx.lineCap = 'round';
 
-  // Deep groove shadow
   ctx.strokeStyle = '#3a2a18';
   ctx.lineWidth = 1.8 + rng() * 1.0;
   ctx.globalAlpha = opacity;
@@ -380,7 +362,6 @@ function carvedScratch(x1, y1, x2, y2, opacity = 0.55) {
   }
   ctx.stroke();
 
-  // Light catch on the upper-left edge of the groove
   ctx.strokeStyle = '#c8a870';
   ctx.lineWidth = 0.7;
   ctx.globalAlpha = opacity * 0.55;
@@ -397,15 +378,11 @@ function carvedScratch(x1, y1, x2, y2, opacity = 0.55) {
   ctx.restore();
 }
 
-// ── Grid dot ──────────────────────────────────────────────────────────────────
 function gridDot(x, y) {
-  // Outer ring
   pigmentDaub(x, y, 8, '#7a5228', 0.75);
-  // Inner dark center
   pigmentDaub(x, y, 4, '#4a2e12', 0.85);
 }
 
-// ── Handprint stamp ────────────────────────────────────────────────────────────
 function handprint(cx, cy, scale = 1.0, color = '#8b3a1a', opacity = 0.80) {
   ctx.save();
   ctx.translate(cx, cy);
@@ -413,12 +390,10 @@ function handprint(cx, cy, scale = 1.0, color = '#8b3a1a', opacity = 0.80) {
   ctx.globalAlpha = opacity;
   ctx.fillStyle = color;
 
-  // Palm
   ctx.beginPath();
   ctx.ellipse(0, 8, 13, 17, 0.1, 0, Math.PI * 2);
   ctx.fill();
 
-  // Fingers
   const fingers = [
     { x: -11, y: -6,  rx: 4.5, ry: 10, rot: -0.35 },
     { x: -4,  y: -13, rx: 4,   ry: 11, rot: -0.12 },
@@ -436,7 +411,6 @@ function handprint(cx, cy, scale = 1.0, color = '#8b3a1a', opacity = 0.80) {
     ctx.restore();
   });
 
-  // Knuckle ridge lines — slight negative space
   ctx.globalAlpha = opacity * 0.35;
   ctx.strokeStyle = '#2a1208';
   ctx.lineWidth = 1.5;
@@ -449,133 +423,116 @@ function handprint(cx, cy, scale = 1.0, color = '#8b3a1a', opacity = 0.80) {
   ctx.restore();
 }
 
-// ── Primitive "A" scratched into stone ───────────────────────────────────────
-function primitiveA(x, y, size = 28, opacity = 0.80) {
-  const hs = size / 2;
-  ctx.save();
-  ctx.translate(x, y);
-  carvedScratch(-hs * 0.6,  hs * 0.9, 0,          -hs * 0.9, opacity);
-  carvedScratch( 0,         -hs * 0.9, hs * 0.6,   hs * 0.9,  opacity);
-  carvedScratch(-hs * 0.32,  hs * 0.1, hs * 0.32,  hs * 0.05, opacity);
-  ctx.restore();
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Grid layout
 // ─────────────────────────────────────────────────────────────────────────────
 const CX = 248, CY = 250;
 const R  = 88;
 
-function gridPoint(angle) {
-  return { x: CX + Math.cos(angle) * R, y: CY + Math.sin(angle) * R };
-}
-
-const N  = gridPoint(-Math.PI / 2);
-const NE = gridPoint(-Math.PI / 4);
-const E  = gridPoint(0);
-const SE = gridPoint( Math.PI / 4);
-const S  = gridPoint( Math.PI / 2);
-const SW = gridPoint( Math.PI * 3 / 4);
-const Wp = gridPoint( Math.PI);
-const NW = gridPoint(-Math.PI * 3 / 4);
-
-// ── Color palettes ─────────────────────────────────────────────────────────────
-// Blue hand: manganese/charcoal — deep blue-black, still clearly visible
+// ── Color palettes ────────────────────────────────────────────────────────────
 const CHAR_DARK = '#1e1a2e';
 const CHAR_MID  = '#2e2848';
 const CHAR_BLUE = '#3a3560';
 
-// Red hand: iron oxide / ochre / burnt sienna
 const OCHRE       = '#9b621e';
 const SIENNA      = '#8a3a1a';
 const SIENNA_DARK = '#6a2610';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// RENDER
+// Glyph rendering — uses PictographGeometry to resolve every location/angle.
 // ─────────────────────────────────────────────────────────────────────────────
-drawStoneWall();
+function drawGrid() {
+  const G = PictographGeometry;
+  const N  = G.locationPoint('n',  CX, CY, R);
+  const E  = G.locationPoint('e',  CX, CY, R);
+  const S  = G.locationPoint('s',  CX, CY, R);
+  const Wp = G.locationPoint('w',  CX, CY, R);
+  const NE = G.locationPoint('ne', CX, CY, R);
+  const SE = G.locationPoint('se', CX, CY, R);
+  const SW = G.locationPoint('sw', CX, CY, R);
+  const NW = G.locationPoint('nw', CX, CY, R);
 
-// ── Grid construction lines (faint scratches — still legible) ────────────────
-const gridLineOpacity = 0.35;
-carvedScratch(Wp.x - 12, CY,        E.x + 12,  CY,        gridLineOpacity);
-carvedScratch(CX,         N.y - 12,  CX,         S.y + 12,  gridLineOpacity);
-carvedScratch(NW.x - 8,  NW.y - 8,  SE.x + 8,  SE.y + 8,  gridLineOpacity * 0.65);
-carvedScratch(NE.x + 8,  NE.y - 8,  SW.x - 8,  SW.y + 8,  gridLineOpacity * 0.65);
+  const gridLineOpacity = 0.35;
+  carvedScratch(Wp.x - 12, CY,        E.x + 12,  CY,        gridLineOpacity);
+  carvedScratch(CX,        N.y - 12,  CX,        S.y + 12,  gridLineOpacity);
+  carvedScratch(NW.x - 8,  NW.y - 8,  SE.x + 8,  SE.y + 8,  gridLineOpacity * 0.65);
+  carvedScratch(NE.x + 8,  NE.y - 8,  SW.x - 8,  SW.y + 8,  gridLineOpacity * 0.65);
 
-// ── Grid dots ─────────────────────────────────────────────────────────────────
-[N, NE, E, SE, S, SW, Wp, NW].forEach(pt => gridDot(pt.x, pt.y));
-gridDot(CX, CY);
-
-// ─────────────────────────────────────────────────────────────────────────────
-// STAVES
-// Blue staff: vertical — center up through North point
-// ─────────────────────────────────────────────────────────────────────────────
-{
-  // Staff runs from center toward North and beyond
-  const staffTop    = CY - R - 30;  // above North
-  const staffBottom = CY - 15;      // just above center
-
-  // Bold passes — opacity used DIRECTLY, 0.7+ means actually 0.7+
-  for (let pass = 0; pass < 4; pass++) {
-    pigmentStroke(CX, staffBottom, CX, staffTop, CHAR_DARK, 11, 0.75, 1.1);
-  }
-  for (let pass = 0; pass < 2; pass++) {
-    pigmentStroke(CX, staffBottom, CX, staffTop, CHAR_BLUE, 6,  0.60, 0.7);
-  }
-
-  // End caps (thumb / pinky ends)
-  pigmentDaub(CX, staffTop,    6, CHAR_MID,  0.80);
-  pigmentDaub(CX, staffBottom, 6, CHAR_DARK, 0.80);
+  [N, NE, E, SE, S, SW, Wp, NW].forEach(pt => gridDot(pt.x, pt.y));
+  gridDot(CX, CY);
 }
 
-// Red staff: vertical — center down through South point
-{
-  const staffTop    = CY + 15;      // just below center
-  const staffBottom = CY + R + 30;  // below South
+function drawArrow(hand, softColor, boldColor) {
+  const G = PictographGeometry;
+  const archetype = G.motionArchetype(hand);
+  if (archetype === 'none' || archetype === 'static') return;
 
-  for (let pass = 0; pass < 4; pass++) {
-    pigmentStroke(CX, staffTop, CX, staffBottom, SIENNA_DARK, 11, 0.75, 1.1);
-  }
-  for (let pass = 0; pass < 2; pass++) {
-    pigmentStroke(CX, staffTop, CX, staffBottom, SIENNA, 6, 0.60, 0.7);
+  if (archetype === 'arc') {
+    const dir = G.handDirection(hand);
+    if (!dir) return;
+    const angles = G.arcAngles(hand.location, hand.endLocation, dir);
+    if (!angles) return;
+    pigmentArc(CX, CY, R, angles.startA, angles.endA, softColor, 14, 0.55);
+    pigmentArc(CX, CY, R, angles.startA, angles.endA, boldColor, 10, 0.80);
+    return;
   }
 
-  pigmentDaub(CX, staffTop,    6, OCHRE,       0.80);
-  pigmentDaub(CX, staffBottom, 6, SIENNA_DARK, 0.80);
+  if (archetype === 'dash') {
+    const s = G.locationPoint(hand.location,   CX, CY, R);
+    const e = G.locationPoint(hand.endLocation, CX, CY, R);
+    for (let p = 0; p < 3; p++) pigmentStroke(s.x, s.y, e.x, e.y, boldColor, 10, 0.72, 0.9);
+    for (let p = 0; p < 2; p++) pigmentStroke(s.x, s.y, e.x, e.y, softColor,  6, 0.55, 0.7);
+    pigmentArrowhead(s.x, s.y, e.x, e.y, boldColor, 10, 0.85);
+  }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// PRO MOTION ARROWS
-// Blue: W → N (CW arc through NW, short 90° sweep)
-// Red:  E → S (CW arc through SE, short 90° sweep)
-// ─────────────────────────────────────────────────────────────────────────────
-const arcRadius = R * 1.0;
+function drawStaff(hand, mainColor, darkColor, tipColor) {
+  const G = PictographGeometry;
+  const center = G.locationPoint(hand.endLocation, CX, CY, R);
+  const axis = G.staffAxisAngle(hand.endLocation, hand.orientation);
+  const length = R * 1.25; // total staff length in pixels
 
-// Blue: W(π) → N(3π/2), CW in canvas coords
-// Soft outer pass, then bold crisp passes
-pigmentArc(CX, CY, arcRadius, Math.PI, Math.PI * 3 / 2, CHAR_BLUE, 14, 0.55);
-pigmentArc(CX, CY, arcRadius, Math.PI, Math.PI * 3 / 2, CHAR_DARK, 10, 0.80);
+  const { a, b } = G.staffEndpoints(center, axis, length);
 
-// Red: E(0) → S(π/2), CW
-pigmentArc(CX, CY, arcRadius, 0, Math.PI / 2, SIENNA,      14, 0.55);
-pigmentArc(CX, CY, arcRadius, 0, Math.PI / 2, SIENNA_DARK, 10, 0.80);
+  for (let pass = 0; pass < 4; pass++) {
+    pigmentStroke(a.x, a.y, b.x, b.y, darkColor, 11, 0.75, 1.1);
+  }
+  for (let pass = 0; pass < 2; pass++) {
+    pigmentStroke(a.x, a.y, b.x, b.y, mainColor, 6, 0.60, 0.7);
+  }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Primitive "A" glyph — scratched upper-right
-// ─────────────────────────────────────────────────────────────────────────────
-primitiveA(CX + 148, CY - 135, 30, 0.85);
+  // End caps — thumb end (a) vs pinky end (b). We don't distinguish which is
+  // which at this fidelity; both are drawn with the tip color.
+  pigmentDaub(a.x, a.y, 6, tipColor,  0.80);
+  pigmentDaub(b.x, b.y, 6, darkColor, 0.80);
+}
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Handprint — lower left
-// ─────────────────────────────────────────────────────────────────────────────
-handprint(72, 418, 1.05, '#8a3518', 0.80);
-// Slightly offset second layer for depth/imperfection
-handprint(70, 416, 1.05, '#6a2510', 0.45);
+// ── Letter glyph — "scratched into the stone" in the upper-right corner ─────
+function scratchedLetter(letter, cx, cy, size, opacity) {
+  if (!letter) return;
+  ctx.save();
+  ctx.globalAlpha = opacity;
+  ctx.fillStyle = '#3a2a18';
+  ctx.strokeStyle = '#c8a870';
+  ctx.lineWidth = 1.2;
+  ctx.font = `${size}px "Times New Roman", serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Surface texture — fine grain and spatter
-// ─────────────────────────────────────────────────────────────────────────────
-{
+  // Jitter a few times for a carved feel
+  for (let j = 0; j < 4; j++) {
+    ctx.fillStyle = j < 2 ? '#3a2a18' : '#2a1c0e';
+    ctx.globalAlpha = opacity * (0.4 + rng() * 0.3);
+    ctx.fillText(letter, cx + (rng() - 0.5) * 2, cy + (rng() - 0.5) * 2);
+  }
+  // Light-catch stroke on top for the carved groove highlight
+  ctx.globalAlpha = opacity * 0.35;
+  ctx.strokeStyle = '#c8a870';
+  ctx.strokeText(letter, cx + 1, cy + 1);
+  ctx.restore();
+}
+
+function drawSurfaceTexture() {
   const overlay = ctx.getImageData(0, 0, W, H);
   const od = overlay.data;
   for (let y = 0; y < H; y++) {
@@ -606,13 +563,7 @@ handprint(70, 416, 1.05, '#6a2510', 0.45);
   ctx.putImageData(overlay, 0, 0);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Final vignette — SUBTLE. Center 80% stays fully bright.
-// Only the outer ~15% of the radius dims slightly.
-// ─────────────────────────────────────────────────────────────────────────────
-{
-  // Inner clear zone: 60% of half-width = 150px radius
-  // Outer edge: max opacity 0.18 at canvas corners
+function drawVignette() {
   const grd = ctx.createRadialGradient(CX, CY, W * 0.5, CX, CY, W * 0.82);
   grd.addColorStop(0,   'rgba(0,0,0,0)');
   grd.addColorStop(0.7, 'rgba(0,0,0,0.04)');
@@ -621,6 +572,109 @@ handprint(70, 416, 1.05, '#6a2510', 0.45);
   ctx.fillRect(0, 0, W, H);
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Render — called on every pictograph update
+//
+// Two paths:
+//   1. Canonical bitmap available (parent rendered via Canvas2DDirectRenderer):
+//      recolor into charcoal/iron-oxide palette, apply pigment edge jitter,
+//      composite onto the stone background. This path inherits all correct
+//      motion semantics — pro vs anti, turns indicators, dashes, floats — from
+//      the canonical renderer without reimplementing them here.
+//
+//   2. No canonical (standalone page open, or canonical render failed):
+//      fall back to the original data-driven pigment rendering so the page
+//      still produces a meaningful image.
+//
+// Era chrome (stone wall, scratched letter, handprint, texture, vignette) is
+// drawn identically either way — that's where this era's voice lives.
+// ─────────────────────────────────────────────────────────────────────────────
+const CAVE_PALETTE = {
+  blue:       CHAR_DARK,
+  red:        SIENNA_DARK,
+  structural: '#3a2a18',
+  bg:         null,  // transparent — stone wall shows through
+};
+
+function render(data, canonical /* ImageBitmap | null */) {
+  // Blit cached stone background
+  ctx.drawImage(bgCanvas, 0, 0);
+
+  // Reseed so each pictograph produces stable scatter
+  rng = mulberry32(seedFor(data));
+
+  if (canonical && window.PictographStylize) {
+    // Path 1: pixelate + recolor + pigment pixel treatment + layered composite.
+    //   1. pixelate — downsample canonical to 90px then upsample with nearest
+    //      neighbor so clean SVG edges become chunky pigment-scale blocks
+    //   2. recolor — map the canonical's blue/red/structural classes to
+    //      charcoal / iron-oxide / dark-ochre
+    //   3. pigment treatment — displace pixels along a noise field, vary
+    //      alpha for thickness variation, scatter darker flecks
+    //   4. multi-pass composite — draw the styled canvas three times at
+    //      slightly different offsets and opacities so strokes feel layered
+    const chunky = window.PictographStylize.pixelate(canonical, W, 90);
+    const styled = window.PictographStylize.recolor(chunky, CAVE_PALETTE, W);
+    window.PictographStylize.edgeTreatment(styled, 'pigment', rng);
+
+    const offsets = [
+      { dx:  0, dy:  0, alpha: 0.85 },
+      { dx:  2, dy: -1, alpha: 0.45 },
+      { dx: -1, dy:  2, alpha: 0.35 },
+    ];
+    for (const off of offsets) {
+      ctx.save();
+      ctx.globalAlpha = off.alpha;
+      ctx.drawImage(styled, off.dx, off.dy, W, H);
+      ctx.restore();
+    }
+  } else {
+    // Fallback: original data-driven pigment rendering
+    drawGrid();
+    drawArrow(data.blueHand, CHAR_BLUE, CHAR_DARK);
+    drawArrow(data.redHand,  SIENNA,    SIENNA_DARK);
+    drawStaff(data.blueHand, CHAR_BLUE, CHAR_DARK, CHAR_MID);
+    drawStaff(data.redHand,  SIENNA,    SIENNA_DARK, OCHRE);
+  }
+
+  // Era chrome (same for both paths)
+  scratchedLetter(String(data.letter || ''), CX + 148, CY - 135, 34, 0.85);
+  handprint(72, 418, 1.05, '#8a3518', 0.80);
+  handprint(70, 416, 1.05, '#6a2510', 0.45);
+
+  drawSurfaceTexture();
+  drawVignette();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Boot
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Default pictograph — rendered immediately so the page isn't blank before a
+// parent posts data. Also used when this HTML is opened directly.
+const DEFAULT_PICTOGRAPH = {
+  letter: 'A',
+  gridMode: 'diamond',
+  blueHand: {
+    color: 'blue',
+    location: 'w', endLocation: 'n',
+    motionType: 'pro', rotationDirection: 'cw',
+    orientation: 'in', turns: 0,
+  },
+  redHand: {
+    color: 'red',
+    location: 'e', endLocation: 's',
+    motionType: 'pro', rotationDirection: 'cw',
+    orientation: 'in', turns: 0,
+  },
+};
+
+drawStoneWall(bgCtx);
+render(DEFAULT_PICTOGRAPH, null);
+
+PictographBridge.onPictograph(function(data, canonical, meta) {
+  render(data, canonical);
+});
 </script>
 <script>if(location.search.includes("embed"))document.body.classList.add("embed")</script>
 </body>

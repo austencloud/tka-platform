@@ -29,6 +29,9 @@
 </head>
 <body>
 <canvas id="c" width="500" height="500"></canvas>
+<script src="./_shared/pictograph-geometry.js"></script>
+<script src="./_shared/pictograph-bridge.js"></script>
+<script src="./_shared/pictograph-stylize.js"></script>
 <script>
 (function() {
   const canvas = document.getElementById('c');
@@ -50,6 +53,16 @@
   const BROWN    = '#5A3010';
   const INK      = '#1A0E04';
   const PARCHMENT_BASE = '#E8D5A0';
+
+  // Palette used when remapping the canonical pictograph bitmap into the
+  // manuscript's ink-and-pigment voice. Parchment (bg:null) is left transparent
+  // so the hand-drawn parchment texture reads through.
+  const MEDIEVAL_PALETTE = {
+    blue:       '#1B3A8A',  // ultramarine
+    red:        '#A8162A',  // crimson lake
+    structural: '#6B4A1A',  // ink + gold tint
+    bg:         null,       // parchment shows through
+  };
 
   // ─── 1. PARCHMENT BACKGROUND ──────────────────────────────────────────────
   function drawParchment() {
@@ -429,14 +442,60 @@
     ctx.fill();
   }
 
+  // ─── Pictograph-data helpers ──────────────────────────────────────────────
+  // Convert a HandData record into the raw geometric inputs the existing
+  // drawStaff / drawIlluminatedArrow helpers already understand. The fancy
+  // medieval styling in those functions is left completely untouched — we're
+  // only replacing the hardcoded Letter-A positions with values pulled from
+  // whatever pictograph was posted in via PictographBridge.
+  function handLoc(hand)    { return String(hand && (hand.location    || hand.startLocation) || '').toLowerCase(); }
+  function handEndLoc(hand) { return String(hand && hand.endLocation || '').toLowerCase(); }
+
+  function drawArrowForHand(hand, mainColor, lightColor) {
+    if (!hand || hand.motionType === 'static' || !window.PictographGeometry) return;
+    const G = window.PictographGeometry;
+    const CX = CENTER.x, CY = CENTER.y, R = GRID_R;
+    const from = G.locationPoint(handLoc(hand),    CX, CY, R);
+    const to   = G.locationPoint(handEndLoc(hand), CX, CY, R);
+    if (!from || !to) return;
+
+    if (hand.motionType === 'dash') {
+      // Straight dash — midpoint control keeps the quill-stroke helper happy
+      // while producing a visually-straight line.
+      const mid = { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 };
+      drawIlluminatedArrow(from, to, mainColor, lightColor, mid, 'end');
+      return;
+    }
+
+    // Arc motion — pull the Bézier control point OUTward from center along
+    // the midpoint of the arc so the curve bows around the perimeter, matching
+    // how the original Letter-A arrows were hand-placed.
+    const dir = G.handDirection(hand) || 'cw';
+    const angles = G.arcAngles(handLoc(hand), handEndLoc(hand), dir);
+    if (!angles) return;
+    const midA = (angles.startA + angles.endA) / 2;
+    const ctrlR = GRID_R * 1.25;
+    const ctrl = { x: CENTER.x + Math.cos(midA) * ctrlR, y: CENTER.y + Math.sin(midA) * ctrlR };
+    drawIlluminatedArrow(from, to, mainColor, lightColor, ctrl, 'end');
+  }
+
+  function drawStaffForHand(hand, mainColor, lightColor, tipColor) {
+    if (!hand || !window.PictographGeometry) return;
+    const G = window.PictographGeometry;
+    const center = G.locationPoint(handEndLoc(hand), CENTER.x, CENTER.y, GRID_R);
+    if (!center) return;
+    const axis = G.staffAxisAngle(handEndLoc(hand), hand.orientation || 'in');
+    const length = GRID_R * 1.2;
+    const { a, b } = G.staffEndpoints(center, axis, length);
+    drawStaff(a.x, a.y, b.x, b.y, mainColor, lightColor, tipColor);
+  }
+
   // ─── 4. STAVES ────────────────────────────────────────────────────────────
   // Letter A: blue hand at N, red hand at S
   // Staves are vertical props pointing up and down
-  function drawStaves() {
-    // Blue staff at N (pointing from center upward through N)
-    drawStaff(CENTER.x, CENTER.y, gridPoints.N.x, gridPoints.N.y, BLUE, BLUE_LT, '#6090FF');
-    // Red staff at S (pointing from center downward through S)
-    drawStaff(CENTER.x, CENTER.y, gridPoints.S.x, gridPoints.S.y, RED, RED_LT, '#FF8878');
+  function drawStaves(data) {
+    drawStaffForHand(data.blueHand, BLUE, BLUE_LT, '#6090FF');
+    drawStaffForHand(data.redHand,  RED,  RED_LT,  '#FF8878');
   }
 
   function drawStaff(x1, y1, x2, y2, mainColor, lightColor, tipColor) {
@@ -545,26 +604,12 @@
   }
 
   // ─── 5. ARROWS ────────────────────────────────────────────────────────────
-  // Letter A: blue arrow W→N (pro = curves counter-clockwise for blue)
-  //           red arrow  E→S (pro = curves clockwise for red)
-  function drawArrows() {
-    // Blue: W to N, pro motion — curves through the upper-left arc
-    drawIlluminatedArrow(
-      gridPoints.W, gridPoints.N,
-      BLUE, BLUE_LT,
-      // Control point for the curve: upper-left quadrant
-      { x: CENTER.x - GRID_R * 0.82, y: CENTER.y - GRID_R * 0.82 },
-      'start' // arrowhead at end (N)
-    );
-
-    // Red: E to S, pro motion — curves through the lower-right arc
-    drawIlluminatedArrow(
-      gridPoints.E, gridPoints.S,
-      RED, RED_LT,
-      // Control point: lower-right quadrant
-      { x: CENTER.x + GRID_R * 0.82, y: CENTER.y + GRID_R * 0.82 },
-      'end'
-    );
+  // Motion arrows are now driven entirely from the hand data — the start, end
+  // and curve direction come from PictographGeometry so any letter's motions
+  // end up in the right quadrant with the right arc direction.
+  function drawArrows(data) {
+    drawArrowForHand(data.blueHand, BLUE, BLUE_LT);
+    drawArrowForHand(data.redHand,  RED,  RED_LT);
   }
 
   function drawIlluminatedArrow(from, to, mainColor, lightColor, ctrl, headAt) {
@@ -738,10 +783,12 @@
     ctx.stroke();
   }
 
-  // ─── 7. ILLUMINATED CAPITAL "A" ──────────────────────────────────────────
-  // Placed in upper-left quadrant of the inner frame
-  // Large, decorated with knotwork, painted gold + blue + red
-  function drawIlluminatedA() {
+  // ─── 7. ILLUMINATED CAPITAL ──────────────────────────────────────────────
+  // Placed in upper-left quadrant of the inner frame. The bespoke, hand-drawn
+  // capital "A" is the canonical illumination — any other letter falls back to
+  // a generic serif glyph painted in the same gold-on-blue scheme so the
+  // panel still reads as an illuminated initial.
+  function drawIlluminatedCapital(letter) {
     const lx = 52;  // left edge of letter block
     const ly = 52;  // top edge
     const lw = 88;  // width of letter block
@@ -780,63 +827,92 @@
     ];
     kCorners.forEach(k => drawKnotOrnament(k.x, k.y, 7));
 
-    // ── The letter A itself ────────────────────────────────────────────────
+    // ── The letter itself ────────────────────────────────────────────────
     const ax = lx + lw / 2; // center X of letter
     const ay = ly + lh / 2; // center Y of letter
     const ah = 50;          // height of the A strokes
     const aw = 32;          // half-width at base
 
-    // Shadow/depth offset for the letter
-    ctx.save();
-    ctx.translate(1.5, 1.5);
-    drawLetterAShape(ax, ay, ah, aw, 'rgba(0,0,0,0.5)');
-    ctx.restore();
+    if (letter === 'A') {
+      // Shadow/depth offset for the letter
+      ctx.save();
+      ctx.translate(1.5, 1.5);
+      drawLetterAShape(ax, ay, ah, aw, 'rgba(0,0,0,0.5)');
+      ctx.restore();
 
-    // Main gold letter
-    drawLetterAShape(ax, ay, ah, aw, GOLD);
+      // Main gold letter
+      drawLetterAShape(ax, ay, ah, aw, GOLD);
 
-    // Ink outline
-    ctx.save();
-    drawLetterAStroke(ax, ay, ah, aw);
-    ctx.restore();
+      // Ink outline
+      ctx.save();
+      drawLetterAStroke(ax, ay, ah, aw);
+      ctx.restore();
 
-    // ── Red and blue knotwork inside the A counter (the triangle space) ───
-    // Fill the counter with a small knotwork pattern
-    const counterCx = ax;
-    const counterCy = ay + 3;
-    drawCounterKnot(counterCx, counterCy, 7);
+      // ── Red and blue knotwork inside the A counter (the triangle space) ───
+      drawCounterKnot(ax, ay + 3, 7);
 
-    // ── Decorative serif flourishes at base ───────────────────────────────
-    drawASerifs(ax, ay, ah, aw);
+      // ── Decorative serif flourishes at base ───────────────────────────────
+      drawASerifs(ax, ay, ah, aw);
 
-    // ── Label "A" is already drawn — add illumination details ─────────────
-    // Small vine tendrils emerging from the letter
-    ctx.save();
-    ctx.globalAlpha = 0.85;
+      // ── Small vine tendrils emerging from the letter ───────────────────────
+      ctx.save();
+      ctx.globalAlpha = 0.85;
 
-    // Left vine curl from top of A
-    ctx.beginPath();
-    ctx.moveTo(ax - aw * 0.25, ay - ah * 0.45);
-    ctx.bezierCurveTo(
-      ax - aw * 0.5, ay - ah * 0.7,
-      lx + 8,        ly + 8,
-      lx + 12,       ly + 14
-    );
-    ctx.strokeStyle = GREEN;
-    ctx.lineWidth   = 1.5;
-    ctx.stroke();
+      // Left vine curl from top of A
+      ctx.beginPath();
+      ctx.moveTo(ax - aw * 0.25, ay - ah * 0.45);
+      ctx.bezierCurveTo(
+        ax - aw * 0.5, ay - ah * 0.7,
+        lx + 8,        ly + 8,
+        lx + 12,       ly + 14
+      );
+      ctx.strokeStyle = GREEN;
+      ctx.lineWidth   = 1.5;
+      ctx.stroke();
 
-    // Right vine curl
-    ctx.beginPath();
-    ctx.moveTo(ax + aw * 0.25, ay - ah * 0.45);
-    ctx.bezierCurveTo(
-      ax + aw * 0.5,  ay - ah * 0.7,
-      lx + lw - 8,    ly + 8,
-      lx + lw - 12,   ly + 14
-    );
-    ctx.stroke();
+      // Right vine curl
+      ctx.beginPath();
+      ctx.moveTo(ax + aw * 0.25, ay - ah * 0.45);
+      ctx.bezierCurveTo(
+        ax + aw * 0.5,  ay - ah * 0.7,
+        lx + lw - 8,    ly + 8,
+        lx + lw - 12,   ly + 14
+      );
+      ctx.stroke();
 
-    ctx.restore();
+      ctx.restore();
+    } else {
+      // Generic illuminated capital — big serif letter in gold with an ink
+      // shadow so the panel stays legible for every letter in the alphabet
+      // even though only "A" gets the full illumination treatment.
+      ctx.save();
+      ctx.font = 'bold 64px "Times New Roman", serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      // Ink shadow — two passes, slightly offset for depth
+      ctx.fillStyle = 'rgba(0,0,0,0.55)';
+      ctx.fillText(letter, ax + 2, ay + 2);
+      ctx.fillStyle = INK;
+      ctx.fillText(letter, ax + 1, ay + 1);
+
+      // Gold body
+      ctx.fillStyle = GOLD;
+      ctx.fillText(letter, ax, ay);
+
+      // Gold highlight for the gilt shimmer
+      ctx.fillStyle = GOLD_LT;
+      ctx.globalAlpha = 0.55;
+      ctx.fillText(letter, ax - 0.6, ay - 0.6);
+      ctx.globalAlpha = 1;
+
+      // Ink outline pass
+      ctx.strokeStyle = INK;
+      ctx.lineWidth = 1.2;
+      ctx.strokeText(letter, ax, ay);
+
+      ctx.restore();
+    }
   }
 
   function drawLetterAShape(cx, cy, ah, aw, fillColor) {
@@ -1019,10 +1095,13 @@
   }
 
   // ─── 8. TITLE INSCRIPTION ─────────────────────────────────────────────────
-  function drawInscription() {
-    // Small Gothic-style text label below the TKA content
+  function drawInscription(letter) {
+    // Small Gothic-style text label below the TKA content. The letter in the
+    // inscription is pulled from the pictograph so the label matches whatever
+    // is shown in the illuminated capital above.
     const iy = H - 46;
     const ix = W / 2;
+    const text = `LITERA · ${String(letter || 'A').toUpperCase()} · MOTUS · PRONAVICULARIS`;
 
     // Gold rule above text
     ctx.beginPath();
@@ -1040,17 +1119,17 @@
     // Shadow
     ctx.fillStyle = 'rgba(40,15,0,0.5)';
     ctx.font      = 'bold 11px serif';
-    ctx.fillText('LITERA · A · MOTUS · PRONAVICULARIS', ix + 1, iy + 1);
+    ctx.fillText(text, ix + 1, iy + 1);
 
     // Main ink text
     ctx.fillStyle = INK;
-    ctx.fillText('LITERA · A · MOTUS · PRONAVICULARIS', ix, iy);
+    ctx.fillText(text, ix, iy);
 
     // Gold accent on alternate runs
     ctx.fillStyle = GOLD_DK;
     ctx.font      = 'bold 11px serif';
     ctx.globalAlpha = 0.6;
-    ctx.fillText('LITERA · A · MOTUS · PRONAVICULARIS', ix, iy);
+    ctx.fillText(text, ix, iy);
     ctx.globalAlpha = 1;
 
     // Small decorative dots flanking text
@@ -1076,15 +1155,29 @@
   }
 
   // ─── 9. HAND POSITION LABELS ──────────────────────────────────────────────
-  function drawHandLabels() {
+  // Small gold-and-ink roundels mark each hand's end location with the
+  // compass letter for that spot (N, NE, E, ...). The roundel is nudged
+  // outward from the grid so it doesn't sit on top of the staff or rosette.
+  function drawHandLabels(data) {
+    if (!window.PictographGeometry) return;
+    const G = window.PictographGeometry;
     ctx.save();
     ctx.font      = 'bold 9px serif';
     ctx.textAlign = 'center';
 
-    // Blue hand at N — label "B" (for blue/north) in a small gold roundel
-    drawHandRoundel(gridPoints.N.x + 16, gridPoints.N.y - 14, 'N', BLUE, GOLD);
-    // Red hand at S — label "R" in a small roundel
-    drawHandRoundel(gridPoints.S.x - 16, gridPoints.S.y + 14, 'S', RED, GOLD);
+    [[data.blueHand, BLUE], [data.redHand, RED]].forEach(([hand, bg]) => {
+      if (!hand) return;
+      const loc = handEndLoc(hand);
+      const pt  = G.locationPoint(loc, CENTER.x, CENTER.y, GRID_R);
+      if (!pt) return;
+      // Push the roundel ~18px further out along the same radial direction
+      // so it sits just outside the grid point rather than covering it.
+      const ang = G.locationAngle(loc);
+      const nudge = 18;
+      const x = pt.x + Math.cos(ang) * nudge;
+      const y = pt.y + Math.sin(ang) * nudge;
+      drawHandRoundel(x, y, loc.toUpperCase(), bg, GOLD);
+    });
 
     ctx.restore();
   }
@@ -1124,24 +1217,85 @@
     ctx.closePath();
   }
 
-  // ─── RENDER ORDER ─────────────────────────────────────────────────────────
-  drawParchment();
-  drawBorder();
-  drawGridDots();
-  drawStaves();
-  drawArrows();
-  drawCenterRosette();
-  drawIlluminatedA();
-  drawHandLabels();
-  drawInscription();
+  // ─── RENDER ───────────────────────────────────────────────────────────────
+  // Single entry point — called once on boot with the default pictograph,
+  // and again every time PictographBridge delivers a new RetroPictographData
+  // from the parent window.
+  function render(data, canonical, meta) {
+    const letter = String(data && data.letter || 'A');
 
-  // Final vignette — gentle darkening at edges to simulate age
-  const vignette = ctx.createRadialGradient(250, 250, 180, 250, 250, 360);
-  vignette.addColorStop(0,   'rgba(0,0,0,0)');
-  vignette.addColorStop(0.7, 'rgba(0,0,0,0)');
-  vignette.addColorStop(1,   'rgba(30,10,0,0.30)');
-  ctx.fillStyle = vignette;
-  ctx.fillRect(0, 0, W, H);
+    // Clear any previous frame so repeated renders don't stack.
+    ctx.clearRect(0, 0, W, H);
+
+    // ── Background + chrome (always drawn identically) ────────────────────
+    drawParchment();
+    drawBorder();
+    drawGridDots();
+
+    // ── Pictograph core ──
+    // Path 1: the parent posted a canonical ImageBitmap. We pixelate it to
+    // pigment-scale blocks, remap its colors into ultramarine / crimson / ink,
+    // apply the gold highlight edge treatment (which tints high-luminance
+    // structural pixels like a gilded outline), then composite at 0.92 so the
+    // parchment texture still reads through faintly.
+    //
+    // Fallback: no canonical available — use the original data-driven
+    // illuminated arrows and staves.
+    if (canonical && window.PictographStylize) {
+      const chunky = window.PictographStylize.pixelate(canonical, W, 140);
+      const styled = window.PictographStylize.recolor(chunky, MEDIEVAL_PALETTE, W);
+      window.PictographStylize.edgeTreatment(styled, 'goldHighlight');
+      ctx.save();
+      ctx.globalAlpha = 0.92;
+      ctx.drawImage(styled, 0, 0, W, H);
+      ctx.restore();
+    } else {
+      drawStaves(data);
+      drawArrows(data);
+      drawHandLabels(data);
+    }
+
+    // ── Chrome on top ──
+    drawCenterRosette();
+    drawIlluminatedCapital(letter);
+    drawInscription(letter);
+
+    // Final vignette — gentle darkening at edges to simulate age
+    const vignette = ctx.createRadialGradient(250, 250, 180, 250, 250, 360);
+    vignette.addColorStop(0,   'rgba(0,0,0,0)');
+    vignette.addColorStop(0.7, 'rgba(0,0,0,0)');
+    vignette.addColorStop(1,   'rgba(30,10,0,0.30)');
+    ctx.fillStyle = vignette;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  // ─── Default pictograph — Letter A (what the page rendered before the
+  //     data-driven refactor). Also used when this HTML is opened directly
+  //     without a parent posting pictograph data.
+  const DEFAULT_PICTOGRAPH = {
+    letter: 'A',
+    gridMode: 'diamond',
+    blueHand: {
+      color: 'blue',
+      location: 'w', endLocation: 'n',
+      motionType: 'pro', rotationDirection: 'cw',
+      orientation: 'in', turns: 0,
+    },
+    redHand: {
+      color: 'red',
+      location: 'e', endLocation: 's',
+      motionType: 'pro', rotationDirection: 'cw',
+      orientation: 'in', turns: 0,
+    },
+  };
+
+  render(DEFAULT_PICTOGRAPH, null, null);
+
+  if (window.PictographBridge) {
+    window.PictographBridge.onPictograph(function(data, canonical, meta) {
+      render(data, canonical, meta);
+    });
+  }
 
 })();
 </script>

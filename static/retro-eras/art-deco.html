@@ -203,6 +203,9 @@
     </div>
   </div>
 
+  <script src="./_shared/pictograph-geometry.js"></script>
+  <script src="./_shared/pictograph-bridge.js"></script>
+  <script src="./_shared/pictograph-stylize.js"></script>
   <script>
   // ─── Pictograph Data ─────────────────────────────────────────────────────
   let pictographData = {
@@ -337,6 +340,16 @@
   const BG      = '#0A0A14';
   const BURGUNDY= '#7A001C';
   const NAVY    = '#0C0C2A';
+
+  // Palette fed into PictographStylize.recolor() when a canonical bitmap is
+  // supplied by the History Lab parent. Maps the canonical renderer's blue /
+  // red / structural strokes into this era's electric blue, ruby, and gold.
+  const DECO_PALETTE = {
+    blue:       '#1A6FFF',   // electric blue
+    red:        '#CC1530',   // ruby
+    structural: '#D4AF37',   // gold
+    bg:         null,        // transparent — era chrome shows through
+  };
 
   // ─── Grid positions (8-point compass on a 160-radius circle) ─────────────
   const R = 160;
@@ -993,9 +1006,15 @@
         return;
       }
 
-      // Pro = CCW, Anti = CW
-      const direction = (hand.motionType === 'pro') ? 'ccw' : 'cw';
-      drawDecoArc(fromPt, toPt, mainColor, accentColor, direction);
+      // Resolve the hand's visual direction of travel from motion type +
+      // rotationDirection. PictographGeometry returns visual CW/CCW using
+      // canvas convention (y-down, so visual CW = angle increasing).
+      // drawDecoArc inverts this internally — its "ccw" parameter yields an
+      // increasing-angle sweep — so we flip here to match.
+      const visualDir = (window.PictographGeometry && window.PictographGeometry.handDirection(hand))
+        || (hand.motionType === 'pro' ? 'cw' : 'ccw');
+      const decoDir = visualDir === 'cw' ? 'ccw' : 'cw';
+      drawDecoArc(fromPt, toPt, mainColor, accentColor, decoDir);
     }
 
     drawHandArrow(data.blueHand, BLUE_MAIN, BLUE_ACCENT);
@@ -1157,12 +1176,28 @@
   }
 
   // ─── Main render ──────────────────────────────────────────────────────────
-  function render(data) {
+  //
+  // Two paths:
+  //   1. Canonical bitmap available (parent rendered via Canvas2DDirectRenderer):
+  //      recolor the canonical into our electric blue / ruby / gold palette
+  //      with flat hard edges (Art Deco is crisp — no pixelation) and
+  //      composite over the chrome. This inherits all correct motion semantics
+  //      — pro vs anti, turn indicators, dashes, floats — from the canonical
+  //      renderer without reimplementing them here.
+  //
+  //   2. No canonical (standalone page open, or canonical render failed):
+  //      fall back to the original data-driven drawing so the page still
+  //      produces a meaningful image.
+  //
+  // Era chrome (background, sunburst, border, decorative band, corner fans,
+  // pinstripes, center disc, letter, motion label, title banner) is drawn
+  // identically either way — that's where this era's voice lives.
+  function render(data, canonical, meta) {
     ctx.clearRect(0, 0, W, H);
 
     const pts = buildGridPoints(data.gridMode);
 
-    // Chrome (static decorative elements)
+    // Chrome — underlay (always drawn first)
     drawBackground();
     drawSunburst();
     drawBorder();
@@ -1170,12 +1205,21 @@
     drawAllCornerFans();
     drawPinstripes();
 
-    // Dynamic elements driven by data
-    drawGridLines(pts);
-    drawStaves(pts, data);
-    drawMotionArrows(pts, data);
-    drawGridDots(pts);
-    drawHandDots(pts, data);
+    if (canonical && window.PictographStylize) {
+      // Path 1: recolor the canonical into Deco palette with flat edges
+      const styled = window.PictographStylize.recolor(canonical, DECO_PALETTE, W);
+      window.PictographStylize.edgeTreatment(styled, 'flat');
+      ctx.drawImage(styled, 0, 0, W, H);
+    } else {
+      // Path 2: fallback data-driven rendering
+      drawGridLines(pts);
+      drawStaves(pts, data);
+      drawMotionArrows(pts, data);
+      drawGridDots(pts);
+      drawHandDots(pts, data);
+    }
+
+    // Chrome — overlay (drawn on top so letter/disc/banner stay legible)
     drawCenterDisc();
     drawLetter(data.letter);
     drawMotionLabel(data);
@@ -1184,7 +1228,35 @@
 
   // ─── Initial render ────────────────────────────────────────────────────────
   syncControlsFromData();
-  render(pictographData);
+  render(pictographData, null, null);
+
+  // ─── Bridge: receive pictograph data from the History Lab parent ───────────
+  // Accepts the lowercase compass names used by the TKA domain (n, ne, e, ...)
+  // and normalises them to this file's uppercase convention.
+  function normalizeLocation(loc) {
+    return String(loc || '').toUpperCase();
+  }
+  function normalizeHand(h) {
+    return {
+      startLocation: normalizeLocation(h.location || h.startLocation),
+      endLocation:   normalizeLocation(h.endLocation),
+      motionType:    h.motionType,
+      rotationDirection: h.rotationDirection,
+      orientation:   h.orientation,
+    };
+  }
+  if (window.PictographBridge) {
+    window.PictographBridge.onPictograph(function(data, canonical, meta) {
+      pictographData = {
+        letter:   String(data.letter || '?'),
+        gridMode: String(data.gridMode || 'diamond'),
+        blueHand: normalizeHand(data.blueHand),
+        redHand:  normalizeHand(data.redHand),
+      };
+      syncControlsFromData();
+      render(pictographData, canonical, meta);
+    });
+  }
 
   </script>
 <script>if(location.search.includes("embed"))document.body.classList.add("embed")</script>

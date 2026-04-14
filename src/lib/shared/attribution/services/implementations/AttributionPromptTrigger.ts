@@ -207,10 +207,25 @@ export class AttributionPromptTrigger implements IAttributionPromptTrigger {
   }
 
   /**
-   * Increment session count (called on app init)
+   * Increment session count (called on app init).
+   *
+   * On the very first app boot, nothing is persisted yet — so the default
+   * state from getPromptState() returns a fresh "eligibleAfter = now + minDays"
+   * every session without ever saving it, which would make the deferred
+   * eligibility drift forward forever. Here we detect that first boot (no
+   * stored prompt state) and persist the initial state so the clock actually
+   * starts ticking.
    */
   recordSessionStart(): void {
     if (!browser) return;
+
+    const hasStoredState = localStorage.getItem(PROMPT_STATE_KEY) !== null;
+    const hasStoredMetrics = localStorage.getItem(METRICS_KEY) !== null;
+
+    if (!hasStoredState || !hasStoredMetrics) {
+      this.initializeForNewUser();
+      return;
+    }
 
     const metrics = this.loadMetrics();
     metrics.sessionCount++;
