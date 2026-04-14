@@ -881,14 +881,7 @@ export const LAB_TABS: Section[] = [
     color: "#f472b6",
     gradient: "linear-gradient(135deg, #f9a8d4 0%, #f472b6 100%)",
   },
-  {
-    id: "mandala-drawing",
-    label: "Mandala Drawing",
-    icon: '<i class="fas fa-circle-notch" style="color: #c084fc;" aria-hidden="true"></i>',
-    description: "Live mandala tracing during animation playback",
-    color: "#c084fc",
-    gradient: "linear-gradient(135deg, #d8b4fe 0%, #c084fc 100%)",
-  },
+  // mandala-drawing removed (Apr 2026) — was just a placeholder notes tab
   // ml-training removed (Mar 2026)
   // multi-grid graduated to Levels module as conjoined-grid (Mar 2026)
   // hand-path-explorer graduated to Hand Paths module (Mar 2026)
@@ -960,6 +953,14 @@ export const LAB_TABS: Section[] = [
     description: "Catalog and label 3D poses for collision safety",
     color: "#ef4444",
     gradient: "linear-gradient(135deg, #f87171 0%, #ef4444 100%)",
+  },
+  {
+    id: "scene-lab",
+    label: "Scene Lab",
+    icon: '<i class="fas fa-snowflake" style="color: #38bdf8;" aria-hidden="true"></i>',
+    description: "Tune 3D environment scenes with live sliders",
+    color: "#38bdf8",
+    gradient: "linear-gradient(135deg, #7dd3fc 0%, #38bdf8 100%)",
   },
 ];
 
