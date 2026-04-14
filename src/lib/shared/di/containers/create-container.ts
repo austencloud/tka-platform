@@ -1,5 +1,5 @@
 /**
- * Build Container - ITI-based Dependency Injection
+ * Create Container - ITI-based Dependency Injection
  *
  * Provides all services for the Create module including:
  * - Create module orchestration (14 services)
@@ -173,7 +173,7 @@ import type { ISequenceLoopabilityChecker } from "$lib/features/compose/services
  * External dependencies that must be provided when creating the container.
  * These come from other containers (core, data, pictograph, etc.)
  */
-export interface BuildContainerDependencies {
+export interface CreateContainerDependencies {
   // Device services
   deviceDetector: IDeviceDetector;
   viewportManager: IViewportManager;
@@ -221,9 +221,9 @@ let startPositionManagerInstance: StartPositionManager | null = null;
 let letterTransitionGraphInstance: LetterTransitionGraph | null = null;
 
 /**
- * Create the build container with all dependencies
+ * Create the Create module container with all dependencies
  */
-export function createBuildContainer(deps: BuildContainerDependencies) {
+export function createCreateContainer(deps: CreateContainerDependencies) {
   return (
     createContainer()
       // === Layer 1: No-dependency services ===
@@ -688,14 +688,14 @@ export function createBuildContainer(deps: BuildContainerDependencies) {
 }
 
 /**
- * Type for the build container
+ * Type for the create container
  */
-export type BuildContainer = ReturnType<typeof createBuildContainer>;
+export type CreateContainer = ReturnType<typeof createCreateContainer>;
 
 /**
  * Reset singleton instances (useful for testing)
  */
-export function resetBuildContainerSingletons(): void {
+export function resetCreateContainerSingletons(): void {
   responsiveLayoutManagerInstance = null;
   startPositionManagerInstance = null;
   letterTransitionGraphInstance = null;
@@ -712,43 +712,43 @@ import { createLazyContainer } from "../lazy-container";
  * The lazy pattern breaks the HMR invalidation chain - editing a service
  * in this container won't invalidate the composition root (di/index.ts).
  */
-let _lazyDepsResolver: (() => BuildContainerDependencies) | null = null;
-let _lazyContainer: ReturnType<typeof createLazyContainer<BuildContainer>> | null = null;
+let _lazyDepsResolver: (() => CreateContainerDependencies) | null = null;
+let _lazyContainer: ReturnType<typeof createLazyContainer<CreateContainer>> | null = null;
 
 /**
  * Configure the lazy container with a dependencies resolver function.
- * Call this once from di/index.ts before using getBuildContainer().
+ * Call this once from di/index.ts before using getCreateContainer().
  *
- * The resolver is called lazily (only when getBuildContainer() is first invoked),
+ * The resolver is called lazily (only when getCreateContainer() is first invoked),
  * which means dependencies don't need to exist at configuration time.
  */
-export function configureLazyBuildContainer(
-  depsResolver: () => BuildContainerDependencies
+export function configureLazyCreateContainer(
+  depsResolver: () => CreateContainerDependencies
 ): void {
   _lazyDepsResolver = depsResolver;
   _lazyContainer = createLazyContainer(() => {
     if (!_lazyDepsResolver) {
-      throw new Error("Build container dependencies resolver not configured");
+      throw new Error("Create container dependencies resolver not configured");
     }
-    return createBuildContainer(_lazyDepsResolver());
+    return createCreateContainer(_lazyDepsResolver());
   });
 }
 
 /**
- * Get the build container lazily.
+ * Get the create container lazily.
  *
- * This is the recommended way to access build container services for better HMR:
+ * This is the recommended way to access create container services for better HMR:
  * ```typescript
- * import { getBuildContainer } from "$lib/shared/di/containers/build-container";
- * const sequenceAnalyzer = getBuildContainer().items.sequenceAnalyzer;
+ * import { getCreateContainer } from "$lib/shared/di/containers/create-container";
+ * const sequenceAnalyzer = getCreateContainer().items.sequenceAnalyzer;
  * ```
  *
- * @throws Error if configureLazyBuildContainer() hasn't been called
+ * @throws Error if configureLazyCreateContainer() hasn't been called
  */
-export function getBuildContainer(): BuildContainer {
+export function getCreateContainer(): CreateContainer {
   if (!_lazyContainer) {
     throw new Error(
-      "Build container not configured. Call configureLazyBuildContainer() first."
+      "Create container not configured. Call configureLazyCreateContainer() first."
     );
   }
   return _lazyContainer();
@@ -758,13 +758,13 @@ export function getBuildContainer(): BuildContainer {
  * Check if the lazy container has been initialized.
  * Useful for debugging HMR behavior.
  */
-export function isBuildContainerInitialized(): boolean {
+export function isCreateContainerInitialized(): boolean {
   return _lazyContainer?.isInitialized() ?? false;
 }
 
 /**
  * Reset the lazy container (useful for testing or forcing re-initialization).
  */
-export function resetLazyBuildContainer(): void {
+export function resetLazyCreateContainer(): void {
   _lazyContainer?.reset();
 }

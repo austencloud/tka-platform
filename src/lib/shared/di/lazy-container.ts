@@ -8,9 +8,9 @@
  *
  * Usage:
  * ```typescript
- * const getBuildContainer = createLazyContainer(() => createBuildContainer(getDeps()));
+ * const getCreateContainer = createLazyContainer(() => createCreateContainer(getDeps()));
  * // Later:
- * const service = getBuildContainer().items.myService;
+ * const service = getCreateContainer().items.myService;
  * ```
  */
 
