@@ -4,29 +4,48 @@
    *
    * A forest clearing environment with KayKit 3D models arranged in a ring
    * around the performer. Includes falling leaves and supports autumn/firefly variants.
+   *
+   * Production callers pass just `variant` and get the baked-in look.
+   * The Scene Lab can pass a full `config` object instead to drive every
+   * knob reactively for tuning.
    */
 
   import { T, useThrelte } from "@threlte/core";
   import { useGltf } from "@threlte/extras";
   import TexturedGroundPlane from "../primitives/TexturedGroundPlane.svelte";
+  import GroundPlane from "../primitives/GroundPlane.svelte";
   import SkyGradient from "../primitives/SkyGradient.svelte";
   import FallingParticles from "../primitives/FallingParticles.svelte";
   import type { ForestVariant } from "../domain/enums/environment-enums";
+  import {
+    type ForestSceneConfig,
+    createDefaultForestFireflyConfig,
+    createDefaultForestAutumnConfig,
+  } from "../domain/models/scene-configs";
   import { userProportionsState } from "../../state/user-proportions-state.svelte";
   import VolumetricFireComponent from "../../effects/volumetric-fire/VolumetricFireComponent.svelte";
   import { Vector3, FogExp2, Color } from "three";
 
   interface Props {
-    /** Color variant: autumn (warm) or firefly (cool green) */
+    /** Color variant. Ignored if `config` is provided. */
     variant?: ForestVariant;
+    /** Full scene config (overrides variant defaults). Used by Scene Lab. */
+    config?: ForestSceneConfig;
   }
 
-  let { variant = "autumn" }: Props = $props();
+  let { variant = "autumn", config }: Props = $props();
+
+  // When no explicit config, fall back to the variant's baked defaults.
+  const activeConfig = $derived(
+    config ??
+      (variant === "firefly"
+        ? createDefaultForestFireflyConfig()
+        : createDefaultForestAutumnConfig())
+  );
 
   /** R2 CDN base URL for large assets */
   const R2_CDN = "https://pub-f5505ed75927471cb198c54336317370.r2.dev";
 
-  // Load KayKit forest models from R2 CDN
   const tree1 = useGltf(`${R2_CDN}/models/forest/Tree_1_A_Color1.gltf`);
   const tree2 = useGltf(`${R2_CDN}/models/forest/Tree_2_A_Color1.gltf`);
   const tree3 = useGltf(`${R2_CDN}/models/forest/Tree_3_A_Color1.gltf`);
@@ -35,270 +54,148 @@
   const bush1 = useGltf(`${R2_CDN}/models/forest/Bush_1_A_Color1.gltf`);
   const bush2 = useGltf(`${R2_CDN}/models/forest/Bush_2_A_Color1.gltf`);
 
-  // Load camping models (Kenney Survival Kit - CC0)
-  // Served from static/ with texture embedded in the GLB
   const campfire = useGltf("/models/camping/campfire-pit.glb");
   const tent = useGltf("/models/camping/tent-canvas.glb");
-
-  // Load forest floor detail models
   const fallenLog = useGltf("/models/camping/tree-log.glb");
   const fallenLogSmall = useGltf("/models/camping/tree-log-small.glb");
 
-  // Get scene for fog
   const { scene } = useThrelte();
 
   // ========================================
   // All positions and scales in METERS (1 unit = 1 meter)
   // ========================================
 
-  // Campfire position - further out from stage, to the right
-  const campfirePosition = { x: 5.5, z: -3.5 };
-  const campfireScale = 2.5;
-
-  // Tent position - upstage-left, well clear of the audience arc
-  const tentPosition = { x: -5.0, z: -4.0 };
-  const tentScale = 2.25;
-
-
-  // Point light and fire emitter heights above campfire
-  const campfireLightHeight = 0.75;
-
-  // Fire dimensions - fire is centered at position, so we need to raise it by half its height
-  const fireScale = 0.9;
-  const fireHeight = 2.0; // Base height before scaling
-  const fireHalfHeight = (fireHeight * fireScale) / 2; // 0.9 meters
-  const fireEmitterHeight = fireHalfHeight; // Position fire so bottom touches ground
-
-  // Clearing radius - how far the inner ring of trees is from center
-  const clearingRadius = 14;
-
-  // Multiple rings of trees to create depth - a true forest clearing feel
-  // Ring 1: Inner edge of clearing (sparse, largest trees)
-  // Ring 2: Mid-distance (denser, medium trees)
-  // Ring 3: Far background (densest, smaller trees due to distance)
-  // Ring 4: Distant backdrop (very dense, smallest)
-
-  // Tree rings in meters
-  const treeRings = [
-    {
-      radius: 14,
-      count: 20,
-      scaleBase: 1.4,
-      scaleVariation: 0.4,
-      radiusJitter: 1.0,
-    },
-    {
-      radius: 17.5,
-      count: 28,
-      scaleBase: 1.25,
-      scaleVariation: 0.35,
-      radiusJitter: 1.5,
-    },
-    {
-      radius: 21,
-      count: 36,
-      scaleBase: 1.1,
-      scaleVariation: 0.3,
-      radiusJitter: 1.75,
-    },
-    {
-      radius: 25,
-      count: 44,
-      scaleBase: 0.9,
-      scaleVariation: 0.25,
-      radiusJitter: 2.0,
-    },
-  ];
-
-  // Generate all tree placements across all rings
-  // Position format: [x, z, scale, rotationY]
-  const treePlacements: [number, number, number, number][] = treeRings.flatMap(
-    (ring, ringIndex) =>
+  // Tree placements derived reactively from config
+  const treePlacements = $derived.by(() => {
+    return activeConfig.treeRings.flatMap((ring, ringIndex) =>
       Array.from({ length: ring.count }, (_, i) => {
-        // Offset each ring's starting angle so trees don't line up
         const angleOffset = ringIndex * 0.4;
         const angle = (i / ring.count) * Math.PI * 2 + angleOffset;
-
-        // Add randomness to radius for natural clustering
         const seed = ringIndex * 100 + i;
         const radiusVariation =
           ring.radius + Math.sin(seed * 3.7) * ring.radiusJitter;
         const x = Math.cos(angle) * radiusVariation;
         const z = Math.sin(angle) * radiusVariation;
-
-        // Scale varies by position for natural look
         const scale =
           ring.scaleBase + Math.abs(Math.sin(seed * 2.3) * ring.scaleVariation);
-
-        // Trees face roughly toward center with variation
         const rotation = angle + Math.PI + Math.sin(seed * 1.7) * 0.3;
-
         return [x, z, scale, rotation] as [number, number, number, number];
       })
-  );
+    );
+  });
 
-  // Rock placements - scattered around the clearing edge (meters)
-  const rockPlacements: [number, number, number, number][] = Array.from(
-    { length: 10 },
-    (_, i) => {
-      const angle = (i / 10) * Math.PI * 2 + 0.2; // Offset from trees
+  const rockPlacements = $derived.by(() => {
+    const count = activeConfig.rockCount;
+    const clearingRadius = activeConfig.clearingRadius;
+    return Array.from({ length: count }, (_, i) => {
+      const angle = (i / count) * Math.PI * 2 + 0.2;
       const radius = clearingRadius - 2.0 + Math.sin(i * 4.1) * 1.0;
       const x = Math.cos(angle) * radius;
       const z = Math.sin(angle) * radius;
       const scale = 0.3 + Math.abs(Math.sin(i * 3.2) * 0.25);
       const rotation = Math.sin(i * 2.8) * Math.PI;
       return [x, z, scale, rotation] as [number, number, number, number];
-    }
-  );
+    });
+  });
 
-  // Bush placements - scattered around clearing, more near trees (meters)
-  const bushPlacements: [number, number, number, number][] = Array.from(
-    { length: 16 },
-    (_, i) => {
-      const angle = (i / 16) * Math.PI * 2 + 0.15;
+  const bushPlacements = $derived.by(() => {
+    const count = activeConfig.bushCount;
+    const clearingRadius = activeConfig.clearingRadius;
+    return Array.from({ length: count }, (_, i) => {
+      const angle = (i / count) * Math.PI * 2 + 0.15;
       const radius = clearingRadius - 1.5 + Math.sin(i * 5.3) * 1.75;
       const x = Math.cos(angle) * radius;
       const z = Math.sin(angle) * radius;
       const scale = 0.4 + Math.abs(Math.sin(i * 2.1) * 0.25);
       const rotation = Math.sin(i * 3.4) * Math.PI;
       return [x, z, scale, rotation] as [number, number, number, number];
-    }
-  );
+    });
+  });
 
-  // Fallen log placements - scattered naturally on forest floor (meters)
+  // Fallen log placements stay hand-authored — they're intentional focal details.
   const fallenLogPlacements: [number, number, number, number, boolean][] = [
-    // [x, z, scale, rotation, isLarge]
-    // Near the clearing edge
     [7.0, 4.0, 2.0, Math.PI * 0.3, true],
     [-6.0, 5.5, 1.75, Math.PI * 0.7, true],
     [4.5, -6.5, 1.5, Math.PI * 1.2, false],
     [-7.5, -3.0, 1.4, Math.PI * 0.1, false],
-    // Mid-distance
     [11.0, 2.0, 1.6, Math.PI * 0.5, true],
     [-10.0, -6.0, 1.5, Math.PI * 1.4, false],
     [9.0, -9.0, 1.75, Math.PI * 0.9, true],
-    // Between tree rings
     [14.0, 7.5, 1.4, Math.PI * 0.2, false],
     [-13.0, 9.0, 1.5, Math.PI * 1.1, true],
   ];
 
-  // Ground level - derived from user proportions
   const groundY = $derived(userProportionsState.groundY);
 
-  // Fire emitter position (reactive to groundY)
-  const firePosition = $derived(
-    new Vector3(
-      campfirePosition.x,
-      groundY + fireEmitterHeight,
-      campfirePosition.z
-    )
-  );
+  // Fire emitter position (reactive to config + groundY)
+  const firePosition = $derived.by(() => {
+    const cf = activeConfig.campfire;
+    if (!cf) return new Vector3(0, groundY, 0);
+    const fireHalfHeight = (cf.fireHeight * cf.fireScale) / 2;
+    return new Vector3(cf.position.x, groundY + fireHalfHeight, cf.position.z);
+  });
 
-  // Forest floor texture paths
-  const forestFloorTextures = {
-    diffuse: "/textures/forest-floor/diffuse.jpg",
-    normal: "/textures/forest-floor/normal.jpg",
-    roughness: "/textures/forest-floor/roughness.jpg",
-  };
-
-  // Color palettes from background themeColors
-  const palettes = {
-    autumn: {
-      // Golden hour dusk — visible through canopy gaps
-      sky: {
-        topColor: "#1a1045", // Deep violet upper sky
-        midColor: "#b5522a", // Warm burnt orange horizon glow
-        bottomColor: "#3d1a10", // Dark warm base
-      },
-      ground: "#ddccbb", // Light warm tint — lets texture detail show through
-      leaves: ["#d97706", "#dc2626", "#ea580c", "#92400e"],
-      // No fireflies in autumn
-      fireflies: null as string[] | null,
-      // Warm amber fog for autumn morning mist (density in meters)
-      fog: { color: "#1a1008", density: 0.028 },
-      // Smoke colors (gray with warm tint)
-      smoke: ["#443322", "#332211", "#221100"],
-    },
-    firefly: {
-      // Moonlit night — deep blue with teal glow near horizon
-      sky: {
-        topColor: "#0c1632", // Deep starfield navy
-        midColor: "#1a4a5a", // Cool teal moonlight band
-        bottomColor: "#0d2218", // Dark forest edge
-      },
-      ground: "#99aa88", // Light green tint — lets texture show in darkness
-      // Subtle green leaves barely visible in the dark
-      leaves: ["#1a3a1a", "#0d2a15", "#153020", "#0f2518"],
-      // Single warm yellow-green like real fireflies
-      fireflies: ["#d4e157"],
-      // Cool blue-green fog for mysterious night atmosphere (density in meters)
-      fog: { color: "#0a1210", density: 0.034 },
-      // Night smoke (darker, cooler)
-      smoke: ["#222222", "#1a1a1a", "#111111"],
-    },
-  };
-
-  const palette = $derived(palettes[variant]);
-
-  // Apply fog to scene (reactive to variant changes)
+  // Apply fog reactively
   $effect(() => {
     if (!scene.current) return;
-    const fogColor = new Color(palette.fog.color);
-    scene.current.fog = new FogExp2(fogColor, palette.fog.density);
-
+    const fog = activeConfig.fog;
+    scene.current.fog = new FogExp2(new Color(fog.color), fog.density);
     return () => {
-      if (scene.current) {
-        scene.current.fog = null;
-      }
+      if (scene.current) scene.current.fog = null;
     };
   });
 </script>
 
-<!-- Sky gradient background -->
 <SkyGradient
-  topColor={palette.sky.topColor}
-  midColor={palette.sky.midColor}
-  bottomColor={palette.sky.bottomColor}
+  topColor={activeConfig.sky.topColor}
+  midColor={activeConfig.sky.midColor}
+  bottomColor={activeConfig.sky.bottomColor}
 />
 
-<!-- Ground plane with PBR forest floor texture -->
-<!-- Large size to cover the entire forest (all tree rings and beyond) - 50 meters -->
-<TexturedGroundPlane
-  color={palette.ground}
-  size={50}
-  diffuseMap={forestFloorTextures.diffuse}
-  normalMap={forestFloorTextures.normal}
-  roughnessMap={forestFloorTextures.roughness}
-  normalScale={1.5}
-  textureRepeat={40}
-/>
-
-<!-- Falling leaves - covers the entire forest (area in meters) -->
-<!-- In firefly mode, leaves are very subtle (dark colors) -->
-<FallingParticles
-  type="leaves"
-  count={variant === "firefly" ? 150 : 450}
-  area={{ width: 40, height: 5, depth: 40 }}
-  speed={variant === "firefly" ? 0.075 : 0.125}
-  colors={palette.leaves}
-  sizeRange={variant === "firefly" ? [0.075, 0.175] : [0.125, 0.275]}
-  spin={true}
-/>
-
-<!-- Fireflies - only in firefly variant (area in meters) -->
-{#if palette.fireflies}
-  <FallingParticles
-    type="fireflies"
-    count={60}
-    area={{ width: 8, height: 2, depth: 8 }}
-    speed={0.005}
-    colors={palette.fireflies}
-    sizeRange={[0.2, 0.4]}
-    spin={false}
+{#if activeConfig.ground.textured && activeConfig.ground.diffuseMap}
+  <TexturedGroundPlane
+    color={activeConfig.ground.color}
+    size={activeConfig.ground.size}
+    diffuseMap={activeConfig.ground.diffuseMap}
+    normalMap={activeConfig.ground.normalMap}
+    roughnessMap={activeConfig.ground.roughnessMap}
+    normalScale={activeConfig.ground.normalScale ?? 1.0}
+    textureRepeat={activeConfig.ground.textureRepeat ?? 8}
+  />
+{:else}
+  <GroundPlane
+    color={activeConfig.ground.color}
+    size={activeConfig.ground.size}
+    opacity={activeConfig.ground.opacity ?? 1}
   />
 {/if}
 
-<!-- KayKit Trees - ring around clearing -->
+{#key `${activeConfig.leaves.count}|${activeConfig.leaves.sizeRange[0]}|${activeConfig.leaves.sizeRange[1]}|${activeConfig.leaves.area.width}|${activeConfig.leaves.speed}|${activeConfig.leaves.spin}`}
+  <FallingParticles
+    type={activeConfig.leaves.type}
+    count={activeConfig.leaves.count}
+    area={activeConfig.leaves.area}
+    speed={activeConfig.leaves.speed}
+    colors={activeConfig.leaves.colors}
+    sizeRange={activeConfig.leaves.sizeRange}
+    spin={activeConfig.leaves.spin}
+  />
+{/key}
+
+{#if activeConfig.fireflies}
+  {#key `${activeConfig.fireflies.count}|${activeConfig.fireflies.sizeRange[0]}|${activeConfig.fireflies.sizeRange[1]}|${activeConfig.fireflies.area.width}`}
+    <FallingParticles
+      type={activeConfig.fireflies.type}
+      count={activeConfig.fireflies.count}
+      area={activeConfig.fireflies.area}
+      speed={activeConfig.fireflies.speed}
+      colors={activeConfig.fireflies.colors}
+      sizeRange={activeConfig.fireflies.sizeRange}
+      spin={activeConfig.fireflies.spin}
+    />
+  {/key}
+{/if}
+
 {#if $tree1 && $tree2 && $tree3}
   {#each treePlacements as [x, z, scale, rotY], i}
     {@const treeModel = i % 3 === 0 ? $tree1 : i % 3 === 1 ? $tree2 : $tree3}
@@ -313,7 +210,6 @@
   {/each}
 {/if}
 
-<!-- KayKit Rocks - scattered around clearing edge -->
 {#if $rock1 && $rock2}
   {#each rockPlacements as [x, z, scale, rotY], i}
     {@const rockModel = i % 2 === 0 ? $rock1 : $rock2}
@@ -328,7 +224,6 @@
   {/each}
 {/if}
 
-<!-- KayKit Bushes - filling gaps in tree ring -->
 {#if $bush1 && $bush2}
   {#each bushPlacements as [x, z, scale, rotY], i}
     {@const bushModel = i % 2 === 0 ? $bush1 : $bush2}
@@ -343,7 +238,6 @@
   {/each}
 {/if}
 
-<!-- Fallen logs - natural forest floor detail -->
 {#if $fallenLog && $fallenLogSmall}
   {#each fallenLogPlacements as [x, z, scale, rotY, isLarge]}
     {@const logModel = isLarge ? $fallenLog : $fallenLogSmall}
@@ -358,76 +252,73 @@
   {/each}
 {/if}
 
-<!-- Campfire with warm point lights and fire particles -->
-{#if $campfire}
+{#if activeConfig.campfire?.enabled && $campfire}
+  {@const cf = activeConfig.campfire}
   <T
     is={$campfire.scene.clone()}
-    position.x={campfirePosition.x}
+    position.x={cf.position.x}
     position.y={groundY}
-    position.z={campfirePosition.z}
-    scale={campfireScale}
+    position.z={cf.position.z}
+    scale={cf.modelScale}
   />
-  <!-- Volumetric raymarched fire (realistic) - 3x larger -->
   <VolumetricFireComponent
     position={firePosition}
     width={1.0}
-    height={fireHeight}
+    height={cf.fireHeight}
     depth={1.0}
-    scale={fireScale}
+    scale={cf.fireScale}
     sliceSpacing={0.15}
   />
-  <!-- Primary warm point light - STRONG illumination for ground visibility -->
   <T.PointLight
-    position.x={campfirePosition.x}
-    position.y={groundY + campfireLightHeight * 2}
-    position.z={campfirePosition.z}
-    color="#ff6622"
-    intensity={variant === "firefly" ? 50 : 35}
-    distance={20}
-    decay={1.2}
+    position.x={cf.position.x}
+    position.y={groundY + cf.primaryLight.heightOffset}
+    position.z={cf.position.z}
+    color={cf.primaryLight.color}
+    intensity={cf.primaryLight.intensity}
+    distance={cf.primaryLight.distance}
+    decay={cf.primaryLight.decay}
   />
-  <!-- Secondary fill light (lower, wider spread for ground illumination) -->
   <T.PointLight
-    position.x={campfirePosition.x}
-    position.y={groundY + 0.25}
-    position.z={campfirePosition.z}
-    color="#ff4400"
-    intensity={variant === "firefly" ? 30 : 20}
-    distance={15}
-    decay={1.5}
+    position.x={cf.position.x}
+    position.y={groundY + cf.fillLight.heightOffset}
+    position.z={cf.position.z}
+    color={cf.fillLight.color}
+    intensity={cf.fillLight.intensity}
+    distance={cf.fillLight.distance}
+    decay={cf.fillLight.decay}
   />
-  <!-- Subtle ambient hemisphere light for overall warmth -->
-  <T.HemisphereLight
-    color="#ff8844"
-    groundColor="#221100"
-    intensity={variant === "firefly" ? 0.6 : 0.4}
-  />
-  <!-- Campfire smoke - gentle plume rising from fire (meters) -->
   <T.Group
-    position.x={campfirePosition.x}
-    position.y={groundY + fireEmitterHeight + 0.5}
-    position.z={campfirePosition.z}
+    position.x={cf.position.x}
+    position.y={groundY + (cf.fireHeight * cf.fireScale) / 2 + 0.5}
+    position.z={cf.position.z}
   >
-    <FallingParticles
-      type="smoke"
-      count={40}
-      area={{ width: 1, height: 4, depth: 1 }}
-      speed={0.04}
-      colors={palette.smoke}
-      sizeRange={[0.15, 0.4]}
-      spin={false}
-    />
+    {#key cf.smokeCount}
+      <FallingParticles
+        type="smoke"
+        count={cf.smokeCount}
+        area={{ width: 1, height: 4, depth: 1 }}
+        speed={0.04}
+        colors={cf.smokeColors}
+        sizeRange={[0.15, 0.4]}
+        spin={false}
+      />
+    {/key}
   </T.Group>
 {/if}
 
-<!-- Cozy tent -->
-{#if $tent}
+<T.HemisphereLight
+  color={activeConfig.hemisphereLight.skyColor}
+  groundColor={activeConfig.hemisphereLight.groundColor}
+  intensity={activeConfig.hemisphereLight.intensity}
+/>
+
+{#if activeConfig.tent.enabled && $tent}
   <T
     is={$tent.scene.clone()}
-    position.x={tentPosition.x}
+    position.x={activeConfig.tent.position.x}
     position.y={groundY}
-    position.z={tentPosition.z}
-    scale={tentScale}
-    rotation.y={Math.PI * 0.65}
+    position.z={activeConfig.tent.position.z}
+    scale={activeConfig.tent.scale}
+    rotation.y={activeConfig.tent.rotationY}
   />
 {/if}
