@@ -1,5 +1,5 @@
 /**
- * Animator Container (ITI)
+ * Compose Core Container (ITI)
  *
  * Contains all services for the animation pipeline:
  * - Animation playback controllers
@@ -66,7 +66,7 @@ import { CameraKeyframeInterpolator } from "$lib/shared/video-export/services/im
 /**
  * External dependencies that must be provided from other containers
  */
-export interface AnimatorContainerDependencies {
+export interface ComposeCoreContainerDependencies {
   imageComposer: IImageComposer;
   dimensionCalculator: IDimensionCalculator;
   layoutCalculator: ILayoutCalculator;
@@ -79,12 +79,12 @@ export interface AnimatorContainerDependencies {
 }
 
 /**
- * Create the animator container with all animation-related services.
+ * Create the compose core container with all animation-related services.
  *
  * @param externalDeps - Dependencies from other containers (render, foundation, create, browse)
- * @returns ITI container with all animator services
+ * @returns ITI container with all compose core services
  */
-export function createAnimatorContainer(externalDeps: AnimatorContainerDependencies) {
+export function createComposeCoreContainer(externalDeps: ComposeCoreContainerDependencies) {
   return createContainer()
     // === TIER 0: Services with no dependencies ===
     .add({
@@ -199,7 +199,7 @@ export function createAnimatorContainer(externalDeps: AnimatorContainerDependenc
 /**
  * Type helper for extracting container items type
  */
-export type AnimatorContainerItems = ReturnType<typeof createAnimatorContainer>["items"];
+export type ComposeCoreContainerItems = ReturnType<typeof createComposeCoreContainer>["items"];
 
 /**
  * Factory function to create a NEW AnimationPlaybackController instance.

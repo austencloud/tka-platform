@@ -17,7 +17,7 @@
   import type { IAnimationPlaybackController } from "../../../services/contracts/IAnimationPlaybackController";
   import { createAnimationPanelState } from "../../../state/animation-panel-state.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import { createPlaybackControllerFactory } from "$lib/shared/di/containers/animator-container";
+  import { createPlaybackControllerFactory } from "$lib/shared/di/containers/compose-core-container";
   import type { AdditionalLayerProps } from "../../../services/contracts/ITrailCapturer";
 
   interface Props {

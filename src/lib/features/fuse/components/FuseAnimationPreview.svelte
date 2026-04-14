@@ -13,7 +13,7 @@
 	import type { ISequenceMotionLoader } from "$lib/shared/sequence-viewer/services/contracts/ISequenceMotionLoader";
 	import { createAnimationPanelState } from "$lib/features/compose/state/animation-panel-state.svelte";
 	import { container } from "$lib/shared/di";
-	import { createPlaybackControllerFactory } from "$lib/shared/di/containers/animator-container";
+	import { createPlaybackControllerFactory } from "$lib/shared/di/containers/compose-core-container";
 
 	let {
 		sequence,
