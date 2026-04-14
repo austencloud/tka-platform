@@ -362,13 +362,11 @@
       handleOpenInBrowser(signInSheetReason);
       return;
     }
-    // Kick off Google sign-in via the Authenticator service. The replay
-    // effect below fires when authState.isAuthenticated flips to true.
-    void container.items.authenticator.signInWithGoogle().catch((err) => {
-      console.error("[Viewer] sign-in failed:", err);
-    });
-    // Close optimistically but keep the queue so replay can run
+    // Delegate to the existing auth drawer — it handles Google One Tap, popup
+    // fallback, persistence, and error messaging. When auth flips true, the
+    // replay effect below drains the pending queue and fires the real action.
     signInSheetOpen = false;
+    authDrawerState.show("signin");
   }
 
   // 3D viewer state — created once, distributed via Svelte context
