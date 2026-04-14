@@ -40,6 +40,7 @@
   import type { AvatarInstanceState } from "../state/avatar-instance-state.svelte";
   import { getCameraLayers } from "$lib/shared/3d/layers/layer-constants";
   import { SCALE, STAGE } from "$lib/shared/3d/scale/scale-constants";
+  import { userProportionsState } from "$lib/shared/3d/state/user-proportions-state.svelte";
 
   // Enable Threlte layers plugin for layer inheritance through component tree
   layers();
@@ -259,8 +260,32 @@
     }
   });
 
+  /**
+   * Compute the maximum polar angle that keeps the camera above the ground.
+   * At close orbit distances the angle is generous (camera can't reach
+   * underground anyway). At far distances it tightens to prevent clipping
+   * through the ground plane.
+   */
+  function getGroundMaxPolarAngle(orbitRadius: number, targetY: number): number {
+    const floorY = userProportionsState.groundY + STAGE.ORBIT_GROUND_BUFFER;
+    const cosTheta = (floorY - targetY) / orbitRadius;
+    // Clamp to valid acos range; when the floor is unreachable at this
+    // radius the camera can orbit freely (returns π).
+    return Math.acos(Math.max(-1, Math.min(1, cosTheta)));
+  }
+
   // Handle orbit control changes
   function handleCameraChange() {
+    // Dynamically tighten the polar-angle ceiling so the camera
+    // never drops below the ground plane at the current orbit radius.
+    if (controlsRef) {
+      const camera = controlsRef.object;
+      if (camera) {
+        const r = camera.position.distanceTo(controlsRef.target);
+        controlsRef.maxPolarAngle = getGroundMaxPolarAngle(r, controlsRef.target.y);
+      }
+    }
+
     if (!onCameraChange || !controlsRef) return;
 
     const camera = controlsRef.object;
@@ -389,7 +414,7 @@
             dampingFactor={0.05}
             minDistance={STAGE.ORBIT_MIN_DISTANCE}
             maxDistance={STAGE.ORBIT_MAX_DISTANCE}
-            maxPolarAngle={STAGE.ORBIT_MAX_POLAR_ANGLE}
+            maxPolarAngle={Math.PI / 2}
             target={cameraTarget}
             onchange={handleCameraChange}
           />

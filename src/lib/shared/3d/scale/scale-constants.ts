@@ -161,11 +161,11 @@ export const STAGE = {
 	ORBIT_MAX_DISTANCE: 10.0,
 
 	/**
-	 * Maximum polar angle for orbit controls (radians from zenith).
-	 * π/2 keeps the camera at or above the orbit target's Y level,
-	 * preventing the camera from going underground.
+	 * Buffer above the ground plane (meters) for the orbit camera floor.
+	 * The camera can get this close to the ground but no closer,
+	 * so you never clip through the surface.
 	 */
-	ORBIT_MAX_POLAR_ANGLE: Math.PI / 2,
+	ORBIT_GROUND_BUFFER: 0.15,
 
 	// ─────────────────────────────────────────────────────────────────
 	// First Person Camera
