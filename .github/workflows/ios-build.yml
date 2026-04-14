@@ -33,10 +33,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Create .env from .env.example (blank values are safe)
+        run: cp .env.example .env
+
       - name: Build web app (PWA disabled)
         env:
-          POSTHOG_PERSONAL_API_KEY: "ci-placeholder-unused-on-native"
-          POSTHOG_PROJECT_ID: "ci-placeholder-unused-on-native"
           DISABLE_PWA: "true"
         run: pnpm run build
 
