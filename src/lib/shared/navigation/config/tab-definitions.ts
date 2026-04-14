@@ -371,6 +371,14 @@ export const ADMIN_TABS: Section[] = [
     color: "#f97316",
     gradient: "linear-gradient(135deg, #fb923c 0%, #f97316 100%)",
   },
+  {
+    id: "attribution",
+    label: "Attribution",
+    icon: '<i class="fas fa-compass" aria-hidden="true"></i>',
+    description: "Where users discover TKA Composer",
+    color: "#8b5cf6",
+    gradient: "linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%)",
+  },
 ];
 
 // Settings tabs configuration - shown in sidebar like other modules
