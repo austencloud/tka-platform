@@ -1,0 +1,43 @@
+# Procedural World Engine
+
+Lives at `src/lib/shared/3d/procedural-engine/`. Shared infrastructure for every 3D surface that wants terrain streaming, vegetation scatter, atmosphere, water, GPU compute, ECS, or worker-based chunk generation. It is not tied to any destination.
+
+## Structure
+
+```
+shared/3d/procedural-engine/
+├── core/         chunk-manager, hybrid-chunk-manager, ecs-world, systems,
+│                 world-config, world-definitions
+├── terrain/      TerrainMeshGenerator, terrain-types
+├── vegetation/   biome-vegetation-rules, vegetation-categories, ModelRegistry
+├── generation/   seed-generator, biome-system, vegetation-scatter,
+│                 drainage-calculator, real-terrain-zone, gpu/ (compute shaders)
+├── rendering/    atmosphere, water, drainage-water, instanced-vegetation,
+│                 model-cache, terrain-texture-material
+├── spatial/      octree
+├── objects/      PlacedObject, PlacedObjectRenderer, object-catalog
+├── workers/      chunk-generator.worker
+└── components/   WorldScene, WorldSceneContent, DebugPanel
+```
+
+## Destinations that consume it
+
+A destination is a `.svelte` component that composes `WorldScene` (or lower-level engine primitives) with its own world configuration. Each destination lives in its own feature folder:
+
+- `features/campground/CampgroundDestination.svelte` — procedural forest clearing
+- `features/hannons-camp/HannonsCampDestination.svelte` — real-world terrain JSON
+- `features/archive/ArchiveDestination.svelte` — curated indoor scene (does not use the procedural engine, uses `IndoorScene` instead)
+- `features/museum/scenes/procedural/MuseumDestination.svelte` — procedural museum walk mode of the museum feature
+- `features/lab/tools/3d-controls/ThreeDControlsLab.svelte` — prop/motion tuning lab
+
+All are registered in `shared/3d/destinations/definitions.ts`.
+
+`shared/3d/StageWorld.svelte` also composes engine primitives directly for the sequence viewer's Stage mode.
+
+## Data ownership
+
+The engine does not know about destination-specific data. When a destination needs real-world terrain (Hannon's Camp), it imports the JSON and passes it to `WorldScene` as a `terrainData` prop. `WorldSceneContent` consumes the prop; it does not import data files itself.
+
+## Why it lives under shared/
+
+Campground, Hannon's Camp, and the 3D Museum scene all need the engine. The sequence viewer's Stage mode needs it too. Putting shared infrastructure inside a feature folder (as it was previously under `features/realm/`) forced every consumer to either cross feature boundaries or duplicate the engine. Moving it to `shared/3d/procedural-engine/` eliminates that coupling.

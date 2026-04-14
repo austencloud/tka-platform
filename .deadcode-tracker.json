@@ -259,13 +259,6 @@
       "removedCount": 0,
       "deferredCount": 0
     },
-    "features/realm": {
-      "scannedAt": "2026-03-11T22:14:06.845Z",
-      "status": "complete",
-      "deadCount": 0,
-      "removedCount": 0,
-      "deferredCount": 0
-    },
     "features/retro": {
       "scannedAt": "2026-03-11T22:14:42.957Z",
       "status": "complete",
@@ -965,13 +958,8 @@
     "lib/features/create/generate/circular/services/implementations/SwappedComplementaryLOOPExecutor.ts",
     "lib/features/create/generate/circular/services/implementations/MirroredRotatedComplementarySwappedLOOPExecutor.ts",
     "lib/features/create/generate/circular/services/implementations/MirroredRotatedComplementaryLOOPExecutor.ts",
-    "lib/features/realm/terrain/TerrainMeshGenerator.ts",
-    "lib/features/realm/objects/PlacedObjectRenderer.ts",
-    "lib/features/realm/services/implementations/PreviewRenderQueue.ts",
-    "lib/features/realm/components/dev/BoundaryEditorPanel.svelte",
-    "lib/features/realm/components/dev/WorldDevPanel.svelte",
-    "lib/features/realm/components/placement/FPPlacementHUD.svelte",
-    "lib/features/realm/components/placement/FPObjectSlots.svelte",
+    "lib/shared/3d/procedural-engine/terrain/TerrainMeshGenerator.ts",
+    "lib/shared/3d/procedural-engine/objects/PlacedObjectRenderer.ts",
     "lib/features/train/services/contracts/IPerformanceScorer.ts",
     "lib/features/train/services/contracts/IOrientationTracker.ts",
     "lib/features/train/services/contracts/IPerformanceRecorder.ts",

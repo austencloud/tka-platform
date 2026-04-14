@@ -152,7 +152,7 @@
     "auditDate": "2026-01-21",
     "reason": "Reason: 4/4 perspectives say leave it. Display-only component with 0 effects, 3 trivial derived values. 946 lines = 90 TS + 230 markup + 620 CSS. No extractable logic, just well-organized presentation with optional XP/challenge sections. CSS bulk is appropriate for polished results screen with WCAG AAA support."
   },
-  "lib/features/realm/workers/chunk-generator.worker.ts": {
+  "lib/shared/3d/procedural-engine/workers/chunk-generator.worker.ts": {
     "auditDate": "2026-01-22",
     "reason": "1420-line Web Worker is appropriately monolithic. Workers are self-contained by design. Contains: T-junction stitching, biome generation, vegetation placement, skirt geometry. All responsibilities are cohesive to terrain chunk generation. 2026-01-22 audit: Added getHeightAt(), fixed re-stitch cascade, added LRU memory eviction."
   },
@@ -172,7 +172,7 @@
     "auditDate": "2026-02-02",
     "reason": "Just extracted PreviewCellRenderer service (this session). Remaining: orchestration of rendering, container sizing (UI-specific), LOOP detection (delegates to service), ~305 lines CSS. No further extraction needed."
   },
-  "lib/features/realm/core/chunk-manager.ts": {
+  "lib/shared/3d/procedural-engine/core/chunk-manager.ts": {
     "auditDate": "2026-02-02",
     "reason": "Cohesive domain service for streaming terrain chunks. Single complex system: worker pool, LOD calculation, memory management, zone types. Methods are 10-50 lines with clear sections. Extracting zones would fragment cohesive logic."
   },
@@ -180,7 +180,7 @@
     "auditDate": "2026-02-02",
     "reason": "Orchestrator for layout preset editor. Delegates to services (ConstraintSolver, LayoutPersistence) and child components (Canvas, Inspector, PresetPicker). ~370 lines CSS, ~640 lines script. All handlers serve one purpose."
   },
-  "lib/features/realm/components/scene/WorldSceneContent.svelte": {
+  "lib/shared/3d/procedural-engine/components/WorldSceneContent.svelte": {
     "auditDate": "2026-02-02",
     "reason": "3D scene orchestrator for Threlte Canvas. Coordinates physics, chunks, vegetation, atmosphere, water, avatar via useTask game loop. All systems have extracted managers. Scene coordination is the single responsibility."
   },
@@ -192,7 +192,7 @@
     "auditDate": "2026-02-02",
     "reason": "Well-composed save panel. Logic delegated to services (librarySaveService, contentModerator, hallOfShameSubmitter). UI decomposed to 6 child components. 15 derived values justified by complex form state (moderation, duplicates). CSS is 43% of file."
   },
-  "lib/features/realm/components/scene/WorldScene.svelte": {
+  "lib/shared/3d/procedural-engine/components/WorldScene.svelte": {
     "auditDate": "2026-02-02",
     "reason": "Container wrapping WorldSceneContent. Holds ~50 state vars via bind: pattern (physics, managers, debug). HMR persistence + MCP bridge + UI overlays are page-specific. State is structural, not logic."
   },
@@ -204,7 +204,7 @@
     "auditDate": "2026-02-02",
     "reason": "Cohesive state module - all operations on single cells array. 35+ small methods (10-30 lines each). Mature code with v3→v4 migration. Extracting presets/spans would create coupling without benefit."
   },
-  "lib/features/realm/rendering/instanced-vegetation.ts": {
+  "lib/shared/3d/procedural-engine/rendering/instanced-vegetation.ts": {
     "auditDate": "2026-02-02",
     "reason": "Cohesive GPU rendering class - single responsibility (instanced vegetation). Clear section headers, 20-50 line methods. Dual new/legacy system is backward compat, not tangled. Procedural geometry is fallback-only."
   },
@@ -212,15 +212,11 @@
     "auditDate": "2026-02-02",
     "reason": "DI composition root - must be single file by design. ITI requires layered wiring at one point for type safety. 122 imports, ~80 services - this is correct DI architecture, not a monolith."
   },
-  "lib/features/realm/rendering/geometry-clipmap.ts": {
-    "auditDate": "2026-02-02",
-    "reason": "Graphics algorithm implementation - SIGGRAPH paper. Two approaches (pure vs hybrid) share same vertex morphing algorithm. Splitting separates related LOD techniques with shared documentation. Well-organized with clear section headers."
-  },
   "lib/features/browse/creators/components/profile/ProfileAdminSection.svelte": {
     "auditDate": "2026-02-02",
     "reason": "Self-contained admin controls. 7 async functions (20-80 lines each) follow consistent pattern. CSS is 39% of file. Two simple modals could be extracted if file grows, but current structure is clear."
   },
-  "lib/features/realm/generation/vegetation-scatter.ts": {
+  "lib/shared/3d/procedural-engine/generation/vegetation-scatter.ts": {
     "auditDate": "2026-02-02",
     "reason": "Cohesive vegetation placement algorithms. Two systems (legacy + category) share Poisson disk sampling and biome rules. SpatialHash classes are implementation details, not separate responsibilities."
   },
