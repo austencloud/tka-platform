@@ -63,7 +63,7 @@ import type {
 } from "../workers/chunk-generator.worker";
 import type { DrainageData } from "../generation/gpu/terrain-compute-types";
 import { DEFAULT_EROSION_CONFIG } from "../generation/gpu/terrain-compute-types";
-import type { CampgroundConfig } from "./realm-config";
+import type { CampgroundConfig } from "./world-config";
 import {
   type RealTerrainZone,
   type ImportedTerrainData,

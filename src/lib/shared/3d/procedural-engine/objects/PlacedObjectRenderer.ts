@@ -15,7 +15,7 @@ import {
 	MeshStandardMaterial,
 	type BufferGeometry,
 } from "three";
-import type { PlacedObject } from "../domain/PlacedObject";
+import type { PlacedObject } from "./PlacedObject";
 import { type ObjectDefinition, getObjectDefinition } from "./object-catalog";
 
 export class PlacedObjectRenderer {

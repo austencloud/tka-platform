@@ -16,10 +16,10 @@
 
   import { onMount, onDestroy } from "svelte";
   import { useThrelte } from "@threlte/core";
-  import { ChunkManager, type ChunkState } from "$lib/features/realm/core/chunk-manager";
-  import { VegetationManager } from "$lib/features/realm/rendering/instanced-vegetation";
-  import { AtmosphereManager } from "$lib/features/realm/rendering/atmosphere";
-  import { SeededNoise } from "$lib/features/realm/generation/seed-generator";
+  import { ChunkManager, type ChunkState } from "$lib/shared/3d/procedural-engine/core/chunk-manager";
+  import { VegetationManager } from "$lib/shared/3d/procedural-engine/rendering/instanced-vegetation";
+  import { AtmosphereManager } from "$lib/shared/3d/procedural-engine/rendering/atmosphere";
+  import { SeededNoise } from "$lib/shared/3d/procedural-engine/generation/seed-generator";
   import { TerrainPhysicsManager } from "$lib/shared/3d/physics/terrain-collider";
   import type { PhysicsWorldState } from "$lib/shared/3d/physics/types";
   import {

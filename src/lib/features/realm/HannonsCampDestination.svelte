@@ -9,8 +9,13 @@
 	 * Stage and Gallery destinations.
 	 */
 
-	import WorldScene from "./components/scene/WorldScene.svelte";
-	import { HANNONS_CAMP_CONFIG } from "./core/realm-definitions";
+	import WorldScene from "$lib/shared/3d/procedural-engine/components/WorldScene.svelte";
+	import { HANNONS_CAMP_CONFIG } from "$lib/shared/3d/procedural-engine/core/world-definitions";
+	import type { ImportedTerrainData } from "$lib/shared/3d/procedural-engine/generation/real-terrain-zone";
+	import hannonsTerrainData from "./data/hannons-camp-terrain.json";
 </script>
 
-<WorldScene realmConfig={HANNONS_CAMP_CONFIG} />
+<WorldScene
+	realmConfig={HANNONS_CAMP_CONFIG}
+	terrainData={hannonsTerrainData as ImportedTerrainData}
+/>

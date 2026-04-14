@@ -5,7 +5,7 @@
  * Each realm has unique terrain, physics, and feature settings.
  */
 
-import type { RealmConfig } from "./realm-config";
+import type { RealmConfig } from "./world-config";
 
 // ============================================================================
 // HANNON'S CAMP
