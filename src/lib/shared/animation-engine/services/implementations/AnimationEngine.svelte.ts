@@ -326,6 +326,10 @@ export class AnimationEngine {
   private prevEffortPreset: EffortId = "linear";
   private prevPathShape: "arc" | "linear" = "arc";
 
+  /** Per-performer effort resolver. When set, getEffortForPerformer() calls it
+   *  instead of reading the global visibility manager. */
+  private _performerEffortResolver: ((performerId: string) => EffortId) | null = null;
+
   // Additional layer texture loading for tunnel mode (indexed by layer)
   private additionalLayerTexturesLoaded: boolean[] = [];
   private additionalLayerTexturesLoading: boolean[] = [];
@@ -380,6 +384,29 @@ export class AnimationEngine {
    */
   setVisibilityManager(manager: AnimationVisibilityStateManager): void {
     this.visibilityManagerOverride = manager;
+  }
+
+  /**
+   * Set a per-performer effort resolver. When set, getEffortForPerformer()
+   * calls the resolver instead of reading the global visibility manager.
+   * Pass null to clear and restore global-fallback behavior.
+   */
+  setPerformerEffortResolver(
+    resolver: ((performerId: string) => EffortId) | null
+  ): void {
+    this._performerEffortResolver = resolver;
+  }
+
+  /**
+   * Return the effort preset for a given performer.
+   * Uses the per-performer resolver when set; falls back to the global
+   * visibility manager otherwise.
+   */
+  getEffortForPerformer(performerId: string): EffortId {
+    if (this._performerEffortResolver) {
+      return this._performerEffortResolver(performerId);
+    }
+    return this.getVM().getEffortPreset();
   }
 
   /** Return the per-instance override if set, otherwise the global singleton. */
