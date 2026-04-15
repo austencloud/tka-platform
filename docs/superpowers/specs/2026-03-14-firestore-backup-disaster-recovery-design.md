@@ -182,7 +182,8 @@ export const backupHealthCheck = functions
     const client = new v1.FirestoreAdminClient();
     const parent = `projects/${PROJECT_ID}/locations/${LOCATION}`;
 
-    const [backups] = await client.listBackups({ parent });
+    const [response] = await client.listBackups({ parent });
+    const backups = response.backups;
 
     if (!backups || backups.length === 0) {
       throw new Error(
