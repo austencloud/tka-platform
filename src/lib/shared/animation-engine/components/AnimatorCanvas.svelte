@@ -50,6 +50,7 @@ Last audit: 2025-12-27
   import { fireCacheInvalidation } from "../state/fire-invalidation-signal.svelte";
   import { effectErrorSignal } from "../state/effect-error-signal.svelte";
   import AnimatorCanvasSelf from "./AnimatorCanvas.svelte";
+  import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
 
   // Props
   let {
@@ -88,6 +89,7 @@ Last audit: 2025-12-27
     onInitialized: onInitializedCallback = undefined,
     onEffectError = undefined,
     visibilityManagerOverride = undefined,
+    effectsConfigState = undefined,
     externalToggleDisassemble = undefined,
     externalDisassembled = false,
     suppress2DOverlays = false,
@@ -135,6 +137,11 @@ Last audit: 2025-12-27
      * manager instead of the global singleton. Enables multiple canvases to have
      * independent visibility/effect settings (e.g. landing page with two players). */
     visibilityManagerOverride?: AnimationVisibilityStateManager;
+    /** Live EffectsConfigState (single source of truth for per-effect intents —
+     *  zap, sparkles, motion, bloom today; fire/led/charcoal in later phases).
+     *  The engine reads from this each frame to pick up slider changes from
+     *  the Customize panels without touching the visibility manager. */
+    effectsConfigState?: EffectsConfigState;
     /** When provided, overrides the internal disassemble toggle for the context menu.
      * The context menu will call this callback instead of the built-in split animation. */
     externalToggleDisassemble?: () => void;
@@ -259,6 +266,13 @@ Last audit: 2025-12-27
     if (override) {
       engine.setVisibilityManager(override);
     }
+  });
+
+  // Wire the live EffectsConfigState (if provided) before initialize() runs.
+  // The engine reads zap intent from this each frame to re-resolve Zap2DParams
+  // when sliders in ZapCustomize move.
+  $effect.pre(() => {
+    engine.setEffectsConfigState(effectsConfigState ?? null);
   });
 
   // Initialize visibility state via $effect.pre to avoid state_referenced_locally on visibilityManager
