@@ -5,7 +5,6 @@
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { container as di } from "$lib/shared/di";
-  import html2canvas from "html2canvas";
   import CardPreviewStack from "./designer/CardPreviewStack.svelte";
 
   interface Props {
@@ -60,6 +59,9 @@
     if (copyImageState === "copying" || !stackEl) return;
     copyImageState = "copying";
     try {
+      // html2canvas is lazy-loaded — eagerly importing it violates CSP
+      // (uses new Function for CSS parsing) and adds 200KB to the main chunk.
+      const { default: html2canvas } = await import("html2canvas");
       const canvas = await html2canvas(stackEl, {
         backgroundColor: null,
         scale: 2,

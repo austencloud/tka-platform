@@ -1,4 +1,3 @@
-import html2canvas from "html2canvas";
 import { mount, unmount } from "svelte";
 import CardBack from "../../components/card-back/CardBack.svelte";
 import type { ICardBackDomRenderer, CardBackDomRenderOptions } from "../contracts/ICardBackDomRenderer";
@@ -33,6 +32,10 @@ export class CardBackDomRenderer implements ICardBackDomRenderer {
       await new Promise((resolve) => requestAnimationFrame(() =>
         requestAnimationFrame(() => setTimeout(resolve, 200))
       ));
+
+      // html2canvas is lazy-loaded — it's ~200KB and violates CSP if eagerly
+      // imported into the main chunk (uses new Function for CSS parsing).
+      const { default: html2canvas } = await import("html2canvas");
 
       // Capture the rendered DOM to canvas
       const capturedCanvas = await html2canvas(container, {

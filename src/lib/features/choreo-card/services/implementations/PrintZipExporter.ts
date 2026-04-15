@@ -7,7 +7,6 @@
  * card face images.
  */
 
-import JSZip from "jszip";
 import type { IPrintZipExporter, ZipCardPair } from "../contracts/IPrintZipExporter";
 
 export class PrintZipExporter implements IPrintZipExporter {
@@ -16,6 +15,9 @@ export class PrintZipExporter implements IPrintZipExporter {
     deckName: string,
     onProgress?: (current: number, total: number) => void
   ): Promise<Blob> {
+    // JSZip is lazy-loaded — it uses `new Function` internally (CSP-incompatible
+    // when eagerly imported into the main chunk).
+    const { default: JSZip } = await import("jszip");
     const zip = new JSZip();
     const fronts = zip.folder("fronts")!;
     const backs = zip.folder("backs")!;
