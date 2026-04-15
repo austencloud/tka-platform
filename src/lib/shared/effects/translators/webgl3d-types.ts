@@ -12,6 +12,10 @@ import type {
   FireIntent,
   LedIntent,
   CharcoalIntent,
+  ZapIntent,
+  SparklesIntent,
+  MotionIntent,
+  BloomIntent,
 } from "../domain/EffectsConfig";
 
 export interface Trails3DParams extends TrailsIntent {
@@ -58,4 +62,38 @@ export interface Charcoal3DParams extends CharcoalIntent {
   gravity: number;
   /** 0-1. Spark size randomization. */
   sparkSizeJitter: number;
+}
+
+export interface Zap3DParams extends ZapIntent {
+  /** Segment count along each arc. */
+  segments: number;
+  /** 0-1 world-space jitter displacement per segment. */
+  jitterAmount: number;
+  /** Point light intensity when intensity > 0.5. */
+  pointLightIntensity: number;
+  /** Path regeneration interval in frames. */
+  regenerateEveryFrames: number;
+}
+
+export interface Sparkles3DParams extends SparklesIntent {
+  /** Max particles alive at once. */
+  poolSize: number;
+  /** Point sprite base radius (world units). */
+  baseRadius: number;
+  /** Gravity applied per second (negative = rise). */
+  gravity: number;
+}
+
+export interface Motion3DParams extends MotionIntent {
+  /** Motion blur sample count for the blur shader. */
+  blurSamples: number;
+  /** Speed line max streak length (world units). */
+  streakLength: number;
+}
+
+export interface Bloom3DParams extends BloomIntent {
+  /** Bloom pass kernel size. */
+  kernelSize: number;
+  /** Mipmap levels to accumulate for the final bloom buffer. */
+  mipLevels: number;
 }
