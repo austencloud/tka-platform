@@ -91,6 +91,11 @@ import type { ILedTipTracker } from "../contracts/ILedTipTracker";
 import { DEFAULT_LED_CONFIG, ledBrightnessToFloat, type LedOverlayConfig } from "../../domain/types/LedTypes";
 import { TrailOverlayCanvas } from "./TrailOverlayCanvas";
 import type { ITrailOverlayCanvas } from "../contracts/ITrailOverlayCanvas";
+import { ZapOverlayRenderer } from "./ZapOverlayRenderer";
+import type { IZapOverlayRenderer } from "../contracts/IZapOverlayRenderer";
+import type { Zap2DParams } from "$lib/shared/effects/translators/canvas2d-types";
+import { resolveZap2D } from "$lib/shared/effects/translators/canvas2d-translator";
+import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
 import { sequenceLoopabilityChecker } from "$lib/features/compose/services/implementations/SequenceLoopabilityChecker";
 import { isBilateralProp } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";
 import { TrackingMode } from "../../domain/types/TrailTypes";
@@ -263,6 +268,12 @@ export class AnimationEngine {
   private cellTipEffectMap: TipEffectMap | undefined = undefined;
   private cellTipEffortMap: TipEffortMap | undefined = undefined;
   private trailOverlay: ITrailOverlayCanvas | null = null;
+  private zapRenderer: IZapOverlayRenderer | null = null;
+  // Cached zap params resolved from the current ZapIntent. Default-sourced for
+  // now (Effects Lab UI updates tipEffectMap; per-effect intent wiring lands
+  // in a later phase). Built once and reused frame-to-frame to avoid per-frame
+  // allocation churn.
+  private zapConfig: Zap2DParams = resolveZap2D(DEFAULT_EFFECTS_CONFIG.zap);
 
   // ============================================================================
   // PRIVATE STATE
@@ -319,6 +330,7 @@ export class AnimationEngine {
   private prevHasFireTips: boolean = false;
   private prevColorBlend: number = 0.5;
   private prevHasCharcoalTips: boolean = false;
+  private prevHasZapTips: boolean = false;
   private prevFireIntensity: number = 0.7;
   private prevFireTurbulence: number = 0.5;
   private prevFireColorCurve: import("../../domain/types/FireTypes").FireColorCurve | null = null;
@@ -368,6 +380,7 @@ export class AnimationEngine {
     darkMode: false,
     propColors: undefined,
     ledConfig: null,
+    zapConfig: null,
     isSeamlesslyLoopable: false,
     sequenceContentHash: undefined,
     tipEffectMap: {},
@@ -434,6 +447,7 @@ export class AnimationEngine {
     this.prevHasFireTips = vm.hasEffect("fire");
     this.prevColorBlend = vm.getFireColorBlend();
     this.prevHasCharcoalTips = vm.hasEffect("charcoal");
+    this.prevHasZapTips = vm.hasEffect("zap");
     this.prevFireIntensity = vm.getFireIntensity();
     this.prevCharcoalParamsJson = JSON.stringify(vm.getCharcoalParams());
     this.prevEffortPreset = vm.getEffortPreset();
@@ -591,6 +605,13 @@ export class AnimationEngine {
         if (hasCharcoalTips !== this.prevHasCharcoalTips) {
           this.prevHasCharcoalTips = hasCharcoalTips;
           this.syncCharcoalOverlay();
+        }
+
+        // Sync zap (lightning) effect toggle from tipEffectMap
+        const hasZapTips = vm.hasEffect("zap");
+        if (hasZapTips !== this.prevHasZapTips) {
+          this.prevHasZapTips = hasZapTips;
+          this.syncZapOverlay();
         }
 
         // Sync fire slider values + color curve → physics
@@ -788,6 +809,11 @@ export class AnimationEngine {
         ledRenderer: this.ledRenderer,
       });
     }
+    if (this.zapRenderer?.isInitialized() && this.renderLoopService) {
+      this.renderLoopService.updateConfig({
+        zapRenderer: this.zapRenderer,
+      });
+    }
 
     // Create overlays that weren't created yet (e.g. enabled before HMR/reload
     // but the $effect hasn't triggered, or the rAF hasn't fired yet).
@@ -799,6 +825,9 @@ export class AnimationEngine {
     }
     if (this.ledConfig.enabled && !this.ledRenderer?.isInitialized()) {
       this.syncLedOverlay();
+    }
+    if (this.prevHasZapTips && !this.zapRenderer?.isInitialized()) {
+      this.syncZapOverlay();
     }
   }
 
@@ -1347,6 +1376,10 @@ export class AnimationEngine {
     this.trailOverlay?.dispose();
     this.trailOverlay = null;
 
+    // Dispose zap overlay
+    this.zapRenderer?.dispose();
+    this.zapRenderer = null;
+
     // Clear trails
     this.trailCapturer?.clearTrails();
 
@@ -1666,6 +1699,47 @@ export class AnimationEngine {
   }
 
   /**
+   * Initialize or destroy the zap (lightning) overlay based on prevHasZapTips.
+   * Mirrors syncCharcoalOverlay — the zap overlay is a Canvas2D layer that
+   * draws procedural arcs between prop tips on top of fire/trails.
+   */
+  private syncZapOverlay(): void {
+    const enabled = this.prevHasZapTips;
+
+    if (enabled) {
+      if (!this.zapRenderer?.isInitialized()) {
+        if (!this.containerElement) return;
+        this.zapRenderer = new ZapOverlayRenderer();
+        const success = this.zapRenderer.initialize(
+          this.containerElement,
+          this.canvasSize,
+          this.canvasSize
+        );
+        if (success) {
+          this.renderLoopService?.updateConfig({
+            zapRenderer: this.zapRenderer,
+          });
+        } else {
+          this.zapRenderer = null;
+        }
+      }
+    } else {
+      if (this.zapRenderer?.isInitialized()) {
+        this.zapRenderer.dispose();
+        this.zapRenderer = null;
+      }
+      this.renderLoopService?.updateConfig({ zapRenderer: null });
+    }
+
+    // Trigger a render to start/stop the zap loop
+    if (this.renderLoopService && this.lastPropsRef) {
+      this.renderLoopService.triggerRender(() =>
+        this.getFrameParams(this.lastPropsRef ?? DEFAULT_ENGINE_PROPS)
+      );
+    }
+  }
+
+  /**
    * Pause canvas resize observation during CSS transitions.
    * Prevents canvas buffer clears that cause black frames.
    */
@@ -1917,6 +1991,7 @@ export class AnimationEngine {
         this.fireRenderer?.resize(newSize, newSize);
         this.ledRenderer?.resize(newSize, newSize);
         this.trailOverlay?.resize(newSize, newSize);
+        this.zapRenderer?.resize(newSize, newSize);
         // Reset fire/LED tip trackers so positions recalculate at the new canvas size.
         // Without this, after HMR the tracker uses stale positions from the old size.
         this.fireTipTracker?.reset();
@@ -2174,6 +2249,12 @@ export class AnimationEngine {
 
     // LED overlay config
     fp.ledConfig = this.ledConfig.enabled ? this.ledConfig : null;
+
+    // Zap (lightning) overlay config — params are constant per session today
+    // (defaults sourced from DEFAULT_EFFECTS_CONFIG.zap). When the per-effect
+    // intent panel wires its EffectsConfigState through, replace with a live
+    // resolveZap2D(state.zap) call.
+    fp.zapConfig = this.prevHasZapTips ? this.zapConfig : null;
 
     // Per-tip effect assignments for filtering tips by effect type.
     // Cell-level map (from compose grid) takes priority over the global map.
