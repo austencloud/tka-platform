@@ -16,7 +16,7 @@
 -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import { goto } from "$app/navigation";
+  import { goto, replaceState } from "$app/navigation";
   import { fly } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
@@ -24,6 +24,7 @@
   import {
     getSequenceOverlayState,
     closeSequenceOverlay,
+    openSequenceOverlay,
   } from "../state/sequence-viewer-overlay-state.svelte";
   // Components
   import ViewerSplitPane from "./ViewerSplitPane.svelte";
@@ -179,6 +180,60 @@
     };
   });
 
+  // URL bootstrap: when the page loaded with ?v=<code>, resolve it and open
+  // the drawer populated with that sequence. Runs as an effect so we can wait
+  // for Firebase auth to settle — the short code may resolve to a sequence in
+  // the user's own private Firestore namespace, which requires authentication.
+  // Attempting the read before auth is ready returns "insufficient permissions".
+  let bootstrapAttempted = false;
+  $effect(() => {
+    // Re-read on every auth state change until we either succeed or the URL
+    // no longer has ?v=. Gated by bootstrapAttempted so we only try once.
+    const loading = authState.loading;
+    if (loading || bootstrapAttempted) return;
+    bootstrapAttempted = true;
+    void bootstrapFromUrl();
+  });
+
+  async function bootstrapFromUrl() {
+    if (typeof window === "undefined") return;
+    const code = new URL(window.location.href).searchParams.get("v");
+    if (!code || overlay.isOpen) return;
+    let resolved = false;
+    try {
+      const manager = container.items.shortCodeManager;
+      const sequence = await manager.resolveShortCode(code);
+      if (!sequence) {
+        // Unresolvable code — strip it so the browser's base history entry
+        // doesn't keep pulling the user back to a broken URL on every back
+        // navigation or drawer close.
+        stripInvalidV(code);
+        return;
+      }
+      if (overlay.isOpen) return;
+      const stillMatches = new URL(window.location.href).searchParams.get("v") === code;
+      if (!stillMatches) return;
+      openSequenceOverlay(sequence, {
+        fromUrl: true,
+        shortCode: code,
+        skipHistoryPush: true,
+      });
+      resolved = true;
+    } catch (error) {
+      console.warn("[SequenceViewerDrawerHost] Failed to bootstrap from ?v= code:", error);
+    } finally {
+      if (!resolved) stripInvalidV(code);
+    }
+  }
+
+  function stripInvalidV(code: string) {
+    if (typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("v") !== code) return;
+    url.searchParams.delete("v");
+    replaceState(url.pathname + url.search + url.hash, {});
+  }
+
   // ============================================================================
   // DISMISS
   // ============================================================================
@@ -187,14 +242,18 @@
     // Read state BEFORE closing (closeSequenceOverlay clears it)
     const path = overlay.dismissPath;
     const wasOpen = overlay.isOpen;
+    const wasFromUrl = overlay.openedFromUrl;
 
     closeSequenceOverlay();
 
     if (path) {
       // External link: navigate to app destination instead of going back
       goto(path, { replaceState: true });
-    } else if (wasOpen) {
-      // In-app: go back in history to remove the entry we pushed when opening
+    } else if (wasOpen && !wasFromUrl) {
+      // In-app open: go back in history to remove the entry we pushed.
+      // For URL-bootstrapped opens the ?v= strip already handled the URL and
+      // there's no pushed entry to pop — history.back() here would leave the
+      // app, which is not what the user wants when dismissing a restored viewer.
       window.history.back();
     }
   }
@@ -401,21 +460,12 @@
                   {#if isRecordSceneActive && ctx.effectiveSequence}
                     <RecordSceneChrome
                       exportOptions={ctx.exportOptions}
-                      renderMode={ctx.renderMode}
-                      webgl2Available={ctx.viewer3DState?.webgl2Available ?? false}
                       bpm={ctx.bpmLocal}
                       isPlaying={ctx.isPlayingLocal}
                       playbackMode={ctx.playbackMode}
                       singlePlayDuration={ctx.singlePlayDuration}
                       isExporting={ctx.isExporting}
                       canvasReady={ctx.canvasReady}
-                      onRenderModeChange={(mode) => {
-                        if (mode === '3d' && ctx.effectiveSequence) {
-                          ctx.viewer3DState.enter3D(ctx.effectiveSequence);
-                        } else if (mode === '2d') {
-                          ctx.viewer3DState.exit3D();
-                        }
-                      }}
                       onBpmChange={ctx.handleBpmChange}
                       onPlaybackToggle={ctx.handlePlaybackToggle}
                       onPlaybackModeChange={ctx.handlePlaybackModeChange}
@@ -485,15 +535,6 @@
                 bpm={ctx.bpmLocal}
                 isPlaying={ctx.isPlayingLocal}
                 landscape={isLandscape}
-                renderMode={ctx.renderMode}
-                webgl2Available={ctx.viewer3DState?.webgl2Available ?? false}
-                onRenderModeChange={(mode) => {
-                  if (mode === '3d' && ctx.effectiveSequence) {
-                    ctx.viewer3DState.enter3D(ctx.effectiveSequence);
-                  } else if (mode === '2d') {
-                    ctx.viewer3DState.exit3D();
-                  }
-                }}
                 onBpmChange={ctx.handleBpmChange}
                 onPlayPause={ctx.handlePlaybackToggle}
                 onStepBack={ctx.stepFullBeatBackward}
