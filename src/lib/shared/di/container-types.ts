@@ -62,6 +62,27 @@ import type { ViewerAuthContainer } from "./containers/viewer-auth-container";
 import type { NavigationContainerItems } from "./containers/navigation-container";
 import type { ComposeCoreContainerItems } from "./containers/compose-core-container";
 import type { LoopLabelerContainerItems } from "./containers/loop-labeler-container";
+// Feature containers not yet wired above
+import type { ArenaContainer } from "./containers/arena-container";
+import type { AssembleContainer } from "./containers/assemble-container";
+import type { CollisionLabContainer } from "./containers/collision-lab-container";
+import type { ComposeArrangeContainer } from "./containers/compose-arrange-container";
+import type { ComposeBrowseContainer } from "./containers/compose-browse-container";
+import type { EffectsLabContainer } from "./containers/effects-lab-container";
+import type { FestivalContainer } from "./containers/festival-container";
+import type { FuseContainer } from "./containers/fuse-container";
+import type { HallOfShameContainer } from "./containers/hall-of-shame-container";
+import type { LabContainer } from "./containers/lab-container";
+import type { LandingPreviewContainer } from "./containers/landing-preview-container";
+import type { MultiGridContainer } from "./containers/multi-grid-container";
+import type { MuseumContainer } from "./containers/museum-container";
+import type { PoiContainer } from "./containers/poi-container";
+import type { PoiLabContainer } from "./containers/poi-lab-container";
+import type { StoreContainer } from "./containers/store-container";
+import type { TikaContainer } from "./containers/tika-container";
+import type { TrigridLabContainer } from "./containers/trigrid-lab-container";
+import type { VideoInfraContainer } from "./containers/video-infra-container";
+import type { VideoTrailsContainer } from "./containers/video-trails-container";
 
 // ============================================================================
 // Standalone services registered directly in buildAppContainer()
@@ -119,6 +140,28 @@ type PushItems = ItemsOf<PushContainer>;
 type OfflineItems = ItemsOf<OfflineContainer>;
 type PlatformNativeItems = ItemsOf<PlatformContainerType>;
 type ViewerAuthItems = ItemsOf<ViewerAuthContainer>;
+
+// Feature container items (not previously wired into the intersection)
+type ArenaItems = ItemsOf<ArenaContainer>;
+type AssembleItems = ItemsOf<AssembleContainer>;
+type CollisionLabItems = ItemsOf<CollisionLabContainer>;
+type ComposeArrangeItems = ItemsOf<ComposeArrangeContainer>;
+type ComposeBrowseItems = ItemsOf<ComposeBrowseContainer>;
+type EffectsLabItems = ItemsOf<EffectsLabContainer>;
+type FestivalItems = ItemsOf<FestivalContainer>;
+type FuseItems = ItemsOf<FuseContainer>;
+type HallOfShameItems = ItemsOf<HallOfShameContainer>;
+type LabItems = ItemsOf<LabContainer>;
+type LandingPreviewItems = ItemsOf<LandingPreviewContainer>;
+type MultiGridItems = ItemsOf<MultiGridContainer>;
+type MuseumItems = ItemsOf<MuseumContainer>;
+type PoiItems = ItemsOf<PoiContainer>;
+type PoiLabItems = ItemsOf<PoiLabContainer>;
+type StoreItems = ItemsOf<StoreContainer>;
+type TikaItems = ItemsOf<TikaContainer>;
+type TrigridLabItems = ItemsOf<TrigridLabContainer>;
+type VideoInfraItems = ItemsOf<VideoInfraContainer>;
+type VideoTrailsItems = ItemsOf<VideoTrailsContainer>;
 // ============================================================================
 // Upsert conflict handling
 //
@@ -198,5 +241,27 @@ export type IAppContainerItems =
 	PlatformNativeItems &
 	// Viewer auth (pending-action queue + webview detection)
 	ViewerAuthItems &
+	// Feature containers (wired via buildAppContainer)
+	ArenaItems &
+	AssembleItems &
+	CollisionLabItems &
+	ComposeArrangeItems &
+	ComposeBrowseItems &
+	EffectsLabItems &
+	FestivalItems &
+	FuseItems &
+	HallOfShameItems &
+	LabItems &
+	LandingPreviewItems &
+	MultiGridItems &
+	MuseumItems &
+	PoiItems &
+	PoiLabItems &
+	Skel2TKAItems &
+	StoreItems &
+	TikaItems &
+	TrigridLabItems &
+	VideoInfraItems &
+	VideoTrailsItems &
 	// Standalone services
 	StandaloneItems;
