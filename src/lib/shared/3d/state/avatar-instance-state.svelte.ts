@@ -25,6 +25,12 @@ import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/stat
 import type { EffortTimeline } from "$lib/features/phrase-effort-lab/domain/effort-timeline-types";
 import { findPhraseAtBeat } from "$lib/features/phrase-effort-lab/domain/effort-timeline-types";
 import { PhraseInterpolator } from "$lib/features/phrase-effort-lab/services/implementations/PhraseInterpolator";
+import {
+  makeDefaultPerformerSettings,
+  type PerformerSettings,
+  type EffectId,
+} from "./performer-settings-types";
+import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 
 // ============================================
 // Position Constants (all in meters)
@@ -671,6 +677,27 @@ export function createAvatarInstanceState(
     targetFacingAngle = value;
   }
 
+  // ============================================
+  // Performer Settings
+  // ============================================
+
+  let _settings = $state<PerformerSettings>(makeDefaultPerformerSettings());
+
+  function setEffort(effortId: EffortId): void {
+    _settings = { ..._settings, effortId };
+  }
+
+  function setProp(prop: PropType): void {
+    _settings = { ..._settings, prop };
+  }
+
+  function toggleEffect(effect: EffectId): void {
+    const next = new Set(_settings.effects);
+    if (next.has(effect)) next.delete(effect);
+    else next.add(effect);
+    _settings = { ..._settings, effects: next };
+  }
+
   /**
    * Update locomotion state each frame. Lerps facing angle toward
    * target for smooth avatar rotation in third-person mode.
@@ -849,6 +876,12 @@ export function createAvatarInstanceState(
     nextStep,
     prevStep,
     goToStep,
+
+    // Performer settings
+    get settings() { return _settings; },
+    setEffort,
+    setProp,
+    toggleEffect,
   };
 }
 
