@@ -1,5 +1,6 @@
 <script lang="ts">
   import { T } from "@threlte/core";
+  import { untrack } from "svelte";
   import { MeshBasicMaterial, DoubleSide, Color } from "three";
 
   interface Props {
@@ -18,7 +19,7 @@
   const WALL_HEIGHT = 4.5;
   const fogColor = new Color("#1a1008");
 
-  let currentOpacity = $state(active ? 0.6 : 0);
+  let currentOpacity = $state(untrack(() => (active ? 0.6 : 0)));
 
   $effect(() => {
     // Snap to target for now — lerping can be added later via useTask

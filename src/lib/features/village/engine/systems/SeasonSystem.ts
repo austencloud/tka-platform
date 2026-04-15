@@ -20,7 +20,7 @@ export class SeasonSystem {
 		if (this.ticksInSeason >= SEASON_DURATION) {
 			this.ticksInSeason = 0;
 			this.seasonIndex = (this.seasonIndex + 1) % SEASON_CYCLE.length;
-			this.currentSeason = SEASON_CYCLE[this.seasonIndex];
+			this.currentSeason = SEASON_CYCLE[this.seasonIndex]!;
 			this.emitter.emit("season:changed", this.currentSeason);
 			this.applySeasonEffects(world);
 		}

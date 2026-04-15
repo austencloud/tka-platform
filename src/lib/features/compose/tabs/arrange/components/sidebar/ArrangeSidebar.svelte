@@ -17,6 +17,16 @@
   import CellEditorPanel from "../grid/cell-editor/CellEditorPanel.svelte";
   import PlaybackBar from "../shared/PlaybackBar.svelte";
 
+  type PresetLayoutType =
+    | "single"
+    | "vertical"
+    | "horizontal"
+    | "line"
+    | "square"
+    | "hero-thumbs"
+    | "main-banner"
+    | "pip";
+
   interface ArrangeSidebarProps {
     // Grid layout props
     gridRows: number;
@@ -25,7 +35,7 @@
     onSetGridRows: (n: number) => void;
     onSetGridCols: (n: number) => void;
     onSetDimensions: (rows: number, cols: number) => void;
-    onPresetLayout: (preset: string) => void;
+    onPresetLayout: (preset: PresetLayoutType) => void;
 
     // Cell editor props (null when no cell selected)
     selectedCell: GridCell | null;

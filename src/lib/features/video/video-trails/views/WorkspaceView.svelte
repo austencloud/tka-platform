@@ -3,7 +3,7 @@
   import { container } from "$lib/shared/di";
   import { getVideoTrailsContext } from "../context/video-trails-context";
   import { DETECTOR_REGISTRY } from "../domain/types";
-  import type { ExportConfig } from "../domain/types";
+  import type { ExportConfig, ExportState } from "../domain/types";
   import type { IEndpointDetector } from "../services/contracts/IEndpointDetector";
   import type { IEffectConfigMapper } from "../services/contracts/IEffectConfigMapper";
   import type { IVideoTipAdapter } from "../services/contracts/IVideoTipAdapter";
@@ -367,7 +367,7 @@
     trailsState.setExportState({ phase: "preparing" });
     try {
       const canvases = canvasStack.getAllCanvases();
-      const blob = await exporter.export(videoEl, canvases, config, (s) => trailsState.setExportState(s));
+      const blob = await exporter.export(videoEl, canvases, config, (s: ExportState) => trailsState.setExportState(s));
       trailsState.setExportState({ phase: "complete", blob });
     } catch (err) {
       trailsState.setExportState({ phase: "error", error: err instanceof Error ? err.message : String(err) });

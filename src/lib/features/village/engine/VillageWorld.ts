@@ -99,7 +99,7 @@ export function createAvatarEntity(
 				propType:
 					VILLAGE_PROP_TYPES[
 						Math.floor(Math.random() * VILLAGE_PROP_TYPES.length)
-					],
+					]!,
 				createdAtTick: options.currentTick,
 				createdBy: "",
 				ownershipChain: [],
@@ -112,10 +112,10 @@ export function createAvatarEntity(
 			propPreference:
 				VILLAGE_PROP_TYPES[
 					Math.floor(Math.random() * VILLAGE_PROP_TYPES.length)
-				],
+				]!,
 		},
 		effect: {
-			affinity: EFFECT_AFFINITIES[Math.floor(Math.random() * EFFECT_AFFINITIES.length)],
+			affinity: EFFECT_AFFINITIES[Math.floor(Math.random() * EFFECT_AFFINITIES.length)]!,
 			affinityStrength: 0.5 + Math.random() * 0.5,
 			exposureHistory: new Map(),
 		},

@@ -20,7 +20,7 @@
   function getOrCreateGeos(size: string): { plaqueGeo: BoxGeometry; frameGeo: BoxGeometry } {
     let entry = geoCache.get(size);
     if (!entry) {
-      const dims = PLAQUE_DIMS_MODULE[size];
+      const dims = PLAQUE_DIMS_MODULE[size] ?? PLAQUE_DIMS_MODULE.standard!;
       entry = {
         plaqueGeo: new BoxGeometry(dims.w, dims.h, dims.d),
         frameGeo: new BoxGeometry(dims.w + FRAME_PAD * 2, dims.h + FRAME_PAD * 2, FRAME_DEPTH),

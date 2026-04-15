@@ -331,7 +331,7 @@
       if (newHoverId && scn) {
         const group = scn.getObjectByName(`manual-placement-${newHoverId}`);
         if (group) {
-          group.traverse((child) => {
+          group.traverse((child: Object3D) => {
             if ((child as any).isMesh && (child as any).material?.emissive) {
               child.userData.__originalEmissive = (child as any).material.emissive.getHex();
               (child as any).material.emissive.setHex(0xff4444);

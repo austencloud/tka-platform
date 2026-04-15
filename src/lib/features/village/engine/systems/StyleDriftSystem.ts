@@ -44,28 +44,32 @@ export class StyleDriftSystem {
 
 		const entityIds = [...entityStyles.keys()];
 		for (let i = 0; i < entityIds.length; i++) {
-			if (assigned.has(entityIds[i])) continue;
+			const pivotId = entityIds[i];
+			if (!pivotId) continue;
+			if (assigned.has(pivotId)) continue;
 
-			const cluster = new Set<string>([entityIds[i]]);
-			const pivot = entityStyles.get(entityIds[i])!;
+			const cluster = new Set<string>([pivotId]);
+			const pivot = entityStyles.get(pivotId)!;
 
 			for (let j = i + 1; j < entityIds.length; j++) {
-				if (assigned.has(entityIds[j])) continue;
-				const other = entityStyles.get(entityIds[j])!;
+				const otherId = entityIds[j];
+				if (!otherId) continue;
+				if (assigned.has(otherId)) continue;
+				const other = entityStyles.get(otherId)!;
 				const dAmp = pivot.amplitudeScale - other.amplitudeScale;
 				const dTempo = pivot.tempoOffset - other.tempoOffset;
 				const dist = Math.sqrt(dAmp * dAmp + dTempo * dTempo);
 				if (dist < STYLE_SIMILARITY_THRESHOLD) {
-					cluster.add(entityIds[j]);
+					cluster.add(otherId);
 				}
 			}
 
 			if (cluster.size >= STYLE_SCHOOL_MIN_MEMBERS) {
 				for (const id of cluster) assigned.add(id);
 
-				const colorHue = this.hashToHue(entityIds[i]);
+				const colorHue = this.hashToHue(pivotId);
 				const school: StyleSchool = {
-					id: entityIds[i],
+					id: pivotId,
 					color: `hsl(${colorHue}, 60%, 50%)`,
 					memberIds: cluster,
 				};
