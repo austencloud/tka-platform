@@ -37,6 +37,7 @@
                 <data android:host="tkaflowarts.com" />
                 <data android:pathPrefix="/p/" />
                 <data android:pathPrefix="/sequence/" />
+                <data android:pathPrefix="/store/" />
             </intent-filter>
 
         </activity>

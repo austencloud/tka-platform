@@ -987,7 +987,7 @@ export const AUSTEN_PORTFOLIO_SEED: Omit<TeachingPortfolio, "userId" | "createdA
     "https://youtu.be/c1AzCYasT-g?si=johN0ahBg41Xpa1E&t=378",
   ],
   socialLinks: {
-    website: "thekineticalphabet.com",
+    website: "tkaflowarts.com",
     instagram: "@thekineticalphabet",
     facebook: "facebook.com/TheKineticAlphabet",
   },

@@ -4,7 +4,7 @@ import Stripe from "stripe";
 import { defineString } from "firebase-functions/params";
 
 const stripeSecretKey = defineString("STRIPE_SECRET_KEY");
-const appBaseUrl = defineString("APP_BASE_URL", { default: "https://thekineticalphabet.com" });
+const appBaseUrl = defineString("APP_BASE_URL", { default: "https://tkaflowarts.com" });
 
 interface CheckoutRequest {
   productId: string;

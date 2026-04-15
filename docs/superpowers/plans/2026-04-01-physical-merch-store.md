@@ -1238,7 +1238,7 @@ export const createMerchCheckout = functions.https.onCall(
     }
 
     // Create Stripe Checkout Session
-    const baseUrl = functions.config().app?.base_url || "https://thekineticalphabet.com";
+    const baseUrl = functions.config().app?.base_url || "https://tkaflowarts.com";
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
@@ -1469,7 +1469,7 @@ These are manual steps for Austen (not code tasks):
 - [ ] Create Stripe Products + Prices in Stripe Dashboard for each deck
 - [ ] Set `stripe.secret_key` in Firebase Functions config: `firebase functions:config:set stripe.secret_key="sk_live_..."`
 - [ ] Set `stripe.webhook_secret` in Firebase Functions config
-- [ ] Set `app.base_url` in Firebase Functions config: `firebase functions:config:set app.base_url="https://thekineticalphabet.com"`
+- [ ] Set `app.base_url` in Firebase Functions config: `firebase functions:config:set app.base_url="https://tkaflowarts.com"`
 - [ ] Deploy Cloud Functions: `firebase deploy --only functions:createMerchCheckout,handleMerchWebhook`
 - [ ] Deploy Firestore rules: `firebase deploy --only firestore:rules`
 - [ ] Register webhook endpoint in Stripe Dashboard: `https://us-central1-the-kinetic-alphabet.cloudfunctions.net/handleMerchWebhook`
