@@ -7,7 +7,8 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { Canvas, T } from "@threlte/core";
-  import { OrbitControls } from "@threlte/extras";
+  import type CameraControls from "camera-controls";
+  import OrbitControls from "$lib/shared/3d/components/OrbitControls.svelte";
   import {
     Euler,
     Quaternion,
@@ -50,14 +51,17 @@
     }
   }
 
+  const _scratchTarget = new Vector3();
   function saveToSession() {
     try {
       const camera = cameraRef
         ? { x: cameraRef.position.x, y: cameraRef.position.y, z: cameraRef.position.z }
         : { x: 0, y: 0, z: 0 };
-      const target = controlsRef
-        ? { x: controlsRef.target.x, y: controlsRef.target.y, z: controlsRef.target.z }
-        : { x: 0, y: 0, z: 0 };
+      let target = { x: 0, y: 0, z: 0 };
+      if (controlsRef) {
+        controlsRef.getTarget(_scratchTarget);
+        target = { x: _scratchTarget.x, y: _scratchTarget.y, z: _scratchTarget.z };
+      }
       const data: PersistedState = {
         selectedPreset,
         eulerAngles,
@@ -83,7 +87,7 @@
   let activeTaxonomyPose = $state("");
   let loadError = $state<string | null>(null);
   let cameraRef: PerspectiveCamera | undefined = $state();
-  let controlsRef: any = $state();
+  let controlsRef = $state<CameraControls | null>(null);
   let activeTab = $state<TabMode>("browse");
 
   // Clipping plane to isolate the hand (normal + constant)
@@ -143,11 +147,19 @@
 
     if (cameraRef) {
       cameraRef.position.set(handPos.x + 0.1, handPos.y + 0.05, handPos.z + 0.3);
-      cameraRef.lookAt(handPos);
     }
     if (controlsRef) {
-      controlsRef.target.copy(handPos);
-      controlsRef.update();
+      // Re-aim the orbit around the hand. Animated transition so
+      // switching presets doesn't snap the camera.
+      controlsRef.setLookAt(
+        handPos.x + 0.1,
+        handPos.y + 0.05,
+        handPos.z + 0.3,
+        handPos.x,
+        handPos.y,
+        handPos.z,
+        true,
+      );
     }
   }
 
@@ -208,12 +220,20 @@
         applyToBones();
 
         setTimeout(() => {
-          if (cameraRef) {
-            cameraRef.position.set(persisted.camera.x, persisted.camera.y, persisted.camera.z);
-          }
           if (controlsRef) {
-            controlsRef.target.set(persisted.target.x, persisted.target.y, persisted.target.z);
-            controlsRef.update();
+            // Restore both pose + target in one call so camera-controls
+            // converges on the saved snapshot without an animated lerp.
+            controlsRef.setLookAt(
+              persisted.camera.x,
+              persisted.camera.y,
+              persisted.camera.z,
+              persisted.target.x,
+              persisted.target.y,
+              persisted.target.z,
+              false,
+            );
+          } else if (cameraRef) {
+            cameraRef.position.set(persisted.camera.x, persisted.camera.y, persisted.camera.z);
           }
         }, 100);
       } else {
