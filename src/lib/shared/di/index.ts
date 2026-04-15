@@ -28,6 +28,16 @@ import { dataContainer } from "./containers/data-container";
 import { keyboardContainer } from "./containers/keyboard-container";
 import { platformContainer } from "./containers/platform-container";
 import { viewerAuthContainer } from "./containers/viewer-auth-container";
+import { arenaContainer } from "./containers/arena-container";
+import { assembleContainer } from "./containers/assemble-container";
+import { effectsLabContainer } from "./containers/effects-lab-container";
+import { festivalContainer } from "./containers/festival-container";
+import { fuseContainer } from "./containers/fuse-container";
+import { labContainer } from "./containers/lab-container";
+import { multiGridContainer } from "./containers/multi-grid-container";
+import { trigridLabContainer } from "./containers/trigrid-lab-container";
+import { videoInfraContainer } from "./containers/video-infra-container";
+import { videoTrailsContainer } from "./containers/video-trails-container";
 
 // ============================================================================
 // DIRECT PICTOGRAPH IMPORTS (migrated away from DI container)
@@ -85,6 +95,17 @@ import { createVoiceControlContainer } from "./containers/voice-control-containe
 import { createVoiceSessionContainer } from "./containers/voice-session-container";
 import { createPushContainer } from "./containers/push-container";
 import { createOfflineContainer } from "./containers/offline-container";
+import { createCollisionLabContainer } from "./containers/collision-lab-container";
+import { createComposeArrangeContainer } from "./containers/compose-arrange-container";
+import { createComposeBrowseContainer } from "./containers/compose-browse-container";
+import { createHallOfShameContainer } from "./containers/hall-of-shame-container";
+import { createLandingPreviewContainer } from "./containers/landing-preview-container";
+import { createMuseumContainer } from "./containers/museum-container";
+import { createPoiContainer } from "./containers/poi-container";
+import { createPoiLabContainer } from "./containers/poi-lab-container";
+import { createSkel2TKAContainer } from "./containers/skel2tka-container";
+import { createStoreContainer } from "./containers/store-container";
+import { createTikaContainer } from "./containers/tika-container";
 // Deep link resolution for cross-tab/cross-user URLs
 import { DeepLinkResolver } from "../application/services/implementations/DeepLinkResolver";
 
@@ -330,6 +351,19 @@ const offlineContainer = typeof window !== 'undefined' ? _timeContainer('offline
   thumbnailLocalCache: browseContainer.items.thumbnailLocalCache,
 })) : null as any;
 
+// Feature factory containers (no external dependencies)
+const collisionLabContainer = typeof window !== 'undefined' ? _timeContainer('collision-lab', createCollisionLabContainer) : null as any;
+const composeArrangeModuleContainer = typeof window !== 'undefined' ? _timeContainer('compose-arrange', createComposeArrangeContainer) : null as any;
+const composeBrowseModuleContainer = typeof window !== 'undefined' ? _timeContainer('compose-browse', createComposeBrowseContainer) : null as any;
+const hallOfShameContainer = typeof window !== 'undefined' ? _timeContainer('hall-of-shame', createHallOfShameContainer) : null as any;
+const landingPreviewContainer = typeof window !== 'undefined' ? _timeContainer('landing-preview', createLandingPreviewContainer) : null as any;
+const museumContainer = typeof window !== 'undefined' ? _timeContainer('museum', createMuseumContainer) : null as any;
+const poiContainer = typeof window !== 'undefined' ? _timeContainer('poi', createPoiContainer) : null as any;
+const poiLabContainer = typeof window !== 'undefined' ? _timeContainer('poi-lab', createPoiLabContainer) : null as any;
+const skel2tkaContainer = typeof window !== 'undefined' ? _timeContainer('skel2tka', createSkel2TKAContainer) : null as any;
+const storeContainer = typeof window !== 'undefined' ? _timeContainer('store', createStoreContainer) : null as any;
+const tikaContainer = typeof window !== 'undefined' ? _timeContainer('tika', createTikaContainer) : null as any;
+
 // DeepLinkResolver - needs sequenceRepository from data and browseLoader from browse
 const deepLinkResolver = typeof window !== 'undefined' ? new DeepLinkResolver(
   dataContainer.items.sequenceRepository,
@@ -443,6 +477,29 @@ function buildAppContainer(): any {
       createModuleContainer.items.loopExplainer,
     ),
   }));
+
+  // Feature containers (simple + factory)
+  c = c.add(arenaContainer.items);
+  c = c.add(assembleContainer.items);
+  c = c.add(effectsLabContainer.items);
+  c = c.add(festivalContainer.items);
+  c = c.add(fuseContainer.items);
+  c = c.add(labContainer.items);
+  c = c.add(multiGridContainer.items);
+  c = c.add(trigridLabContainer.items);
+  c = c.add(videoInfraContainer.items);
+  c = c.add(videoTrailsContainer.items);
+  c = c.add(collisionLabContainer.items);
+  c = c.add(composeArrangeModuleContainer.items);
+  c = c.add(composeBrowseModuleContainer.items);
+  c = c.add(hallOfShameContainer.items);
+  c = c.add(landingPreviewContainer.items);
+  c = c.add(museumContainer.items);
+  c = c.add(poiContainer.items);
+  c = c.add(poiLabContainer.items);
+  c = c.add(skel2tkaContainer.items);
+  c = c.add(storeContainer.items);
+  c = c.add(tikaContainer.items);
 
   // Cross-container services (depend on multiple container outputs)
   c = c.add({ deepLinkResolver: () => deepLinkResolver });
