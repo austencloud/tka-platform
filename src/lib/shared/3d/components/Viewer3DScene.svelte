@@ -42,7 +42,9 @@
   let { sequenceData, currentStep, isPlaying, avatarState }: Props = $props();
   // The `avatarState` prop is kept for backward-compat with Viewer3DCanvas;
   // Task 14 removes it. The scene now iterates viewer3DState.performerManager.
-  void avatarState;
+  $effect(() => {
+    void avatarState;
+  });
 
   const viewer3DState = getViewer3DContext();
   const sceneFeatures = getSceneFeatureContext();
@@ -321,7 +323,6 @@
       facingAngle={performer.facingAngle}
       planeMode={performer.planeMode}
       avatarState={performer}
-      showGrid={viewer3DState.showGrid && sceneFeatures.isEnabled("grid")}
       visiblePlanes={gridVisiblePlanes}
       gridMode={(sequenceData?.gridMode ?? "diamond") as import("../domain/constants/grid-layout").GridMode}
       {bluePropType}
