@@ -36,6 +36,7 @@ export class Zap2DRenderer {
     const prevShadowColor = ctx.shadowColor;
     const prevStrokeStyle = ctx.strokeStyle;
     const prevLineWidth = ctx.lineWidth;
+    const prevGlobalAlpha = ctx.globalAlpha;
     try {
       ctx.globalCompositeOperation = "lighter";
 
@@ -59,10 +60,11 @@ export class Zap2DRenderer {
         if (tips.redPosA) origins.push(tips.redPosA);
         if (tips.redPosB) origins.push(tips.redPosB);
 
-        if (needRegen || this.cachedArcs.length === 0) {
+        const CRACKLE_SPOKES = 3;
+        const expectedLength = origins.length * CRACKLE_SPOKES;
+        if (needRegen || this.cachedArcs.length !== expectedLength) {
           this.cachedArcs = origins.flatMap((o) => {
-            const spokes = 3;
-            return Array.from({ length: spokes }).map(() => {
+            return Array.from({ length: CRACKLE_SPOKES }).map(() => {
               const angle = Math.random() * Math.PI * 2;
               const len = 40 + params.intensity * 60;
               const end = {
@@ -83,6 +85,7 @@ export class Zap2DRenderer {
       ctx.shadowColor = prevShadowColor;
       ctx.strokeStyle = prevStrokeStyle;
       ctx.lineWidth = prevLineWidth;
+      ctx.globalAlpha = prevGlobalAlpha;
     }
   }
 
@@ -118,6 +121,8 @@ export class Zap2DRenderer {
     path: Array<{ x: number; y: number }>,
     params: Zap2DParams,
   ): void {
+    if (path.length < 2) return;
+    const first = path[0]!;
     // Glow pass
     ctx.strokeStyle = params.color;
     ctx.shadowColor = params.color;
@@ -125,7 +130,7 @@ export class Zap2DRenderer {
     ctx.lineWidth = params.lineWidth * 2;
     ctx.globalAlpha = 0.6 * params.intensity;
     ctx.beginPath();
-    ctx.moveTo(path[0]!.x, path[0]!.y);
+    ctx.moveTo(first.x, first.y);
     for (let i = 1; i < path.length; i++) ctx.lineTo(path[i]!.x, path[i]!.y);
     ctx.stroke();
 
@@ -135,11 +140,9 @@ export class Zap2DRenderer {
     ctx.lineWidth = params.lineWidth;
     ctx.globalAlpha = params.intensity;
     ctx.beginPath();
-    ctx.moveTo(path[0]!.x, path[0]!.y);
+    ctx.moveTo(first.x, first.y);
     for (let i = 1; i < path.length; i++) ctx.lineTo(path[i]!.x, path[i]!.y);
     ctx.stroke();
-
-    ctx.globalAlpha = 1.0;
   }
 
   dispose(): void {
