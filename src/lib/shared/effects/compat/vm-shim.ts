@@ -61,11 +61,21 @@ export function snapshotConfigFromVm(vm: AnimationVisibilityStateManager): Effec
     // the 3D renderer has valid values.
     charcoal: { ...DEFAULT_EFFECTS_CONFIG.charcoal },
 
+    // New effects not yet wired to vm — seed from schema defaults.
+    zap: { ...DEFAULT_EFFECTS_CONFIG.zap },
+    sparkles: { ...DEFAULT_EFFECTS_CONFIG.sparkles },
+    motion: { ...DEFAULT_EFFECTS_CONFIG.motion },
+    bloom: { ...DEFAULT_EFFECTS_CONFIG.bloom },
+
     activePresets: {
       trails: null,
       fire: null,
       led: vm.getActivePresetId(),
       charcoal: null,
+      zap: null,
+      sparkles: null,
+      motion: null,
+      bloom: null,
     },
   };
 }

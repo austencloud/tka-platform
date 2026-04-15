@@ -12,6 +12,10 @@ import type {
   FireIntent,
   LedIntent,
   CharcoalIntent,
+  ZapIntent,
+  SparklesIntent,
+  MotionIntent,
+  BloomIntent,
 } from "../domain/EffectsConfig";
 
 export interface Trails2DParams extends TrailsIntent {
@@ -46,4 +50,38 @@ export interface Charcoal2DParams extends CharcoalIntent {
   particleCount?: number;
   /** Canvas composite op. */
   canvasBlendMode?: GlobalCompositeOperation;
+}
+
+export interface Zap2DParams extends ZapIntent {
+  /** Segment count along each arc. Derived from intensity + distance. */
+  segments: number;
+  /** px — random jitter radius per segment midpoint. */
+  jitterAmount: number;
+  /** px — shadowBlur for the glow pass. */
+  glowBlur: number;
+  /** px — core line width. */
+  lineWidth: number;
+}
+
+export interface Sparkles2DParams extends SparklesIntent {
+  /** Max particles alive at once. */
+  poolSize: number;
+  /** px — base particle radius before `size` multiplier. */
+  baseRadius: number;
+  /** Canvas composite op. */
+  blendMode?: GlobalCompositeOperation;
+}
+
+export interface Motion2DParams extends MotionIntent {
+  /** 0-1 — per-frame alpha multiplier for the trailing-blur canvas (1 = no fade, 0 = instant clear). */
+  fadeAlpha: number;
+  /** px — speed line segment length multiplier. */
+  streakLength: number;
+}
+
+export interface Bloom2DParams extends BloomIntent {
+  /** px — Gaussian blur kernel radius in pixels. */
+  blurRadiusPx: number;
+  /** 1-4 — number of blur passes (higher = softer). */
+  passes: number;
 }
