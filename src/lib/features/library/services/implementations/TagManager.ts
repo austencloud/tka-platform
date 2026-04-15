@@ -24,6 +24,7 @@ import {
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { authState } from "$lib/shared/auth/state/authState.svelte.ts";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
+import { isPermissionDeniedError } from "$lib/shared/auth/utils/isPermissionDeniedError";
 import type { ITagManager } from "../contracts/ITagManager";
 import type { LibraryTag, CreateTagOptions } from "../../domain/models/Tag";
 import { createTag } from "../../domain/models/Tag";
@@ -325,6 +326,8 @@ export class TagManager implements ITagManager {
             callback(tags);
           },
           (error) => {
+            // Expected on sign-out; tags belong to the user and become unreadable.
+            if (isPermissionDeniedError(error)) return;
             console.error("[TagManager] Subscription error:", error);
             toast.error("Lost connection to tags. Please refresh.");
           }

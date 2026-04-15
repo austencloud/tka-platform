@@ -26,6 +26,7 @@ import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { authState } from "$lib/shared/auth/state/authState.svelte";
 import { userPreviewState } from "$lib/shared/debug/state/user-preview-state.svelte";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
+import { isPermissionDeniedError } from "$lib/shared/auth/utils/isPermissionDeniedError";
 import type {
   Conversation,
   ConversationPreview,
@@ -842,6 +843,10 @@ export class ConversationManager implements IConversationManager {
             callback(conversations);
           },
           (error) => {
+            // Expected on sign-out — Firestore rules reject the query once the
+            // user's auth token goes away. The onAuthStateChanged handler will
+            // tear this listener down shortly.
+            if (isPermissionDeniedError(error)) return;
             console.error(
               "[ConversationManager] Conversations subscription error:",
               error

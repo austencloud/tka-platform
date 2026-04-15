@@ -21,6 +21,7 @@ import {
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
+import { isPermissionDeniedError } from "$lib/shared/auth/utils/isPermissionDeniedError";
 import type { UserNotification } from "../../domain/models/notification-models";
 
 const USERS_COLLECTION = "users";
@@ -350,6 +351,9 @@ export class NotificationService {
             callback(notifications);
           },
           (error) => {
+            // Expected on sign-out. Skip the toast; the listener is about to
+            // be cleaned up by the auth state handler.
+            if (isPermissionDeniedError(error)) return;
             console.error(
               "[Notifier] Notifications subscription error:",
               error

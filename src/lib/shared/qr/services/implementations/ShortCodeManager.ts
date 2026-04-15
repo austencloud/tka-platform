@@ -96,7 +96,7 @@ export class ShortCodeManager implements IShortCodeManager {
       return window.location.origin;
     }
     // Fallback for SSR
-    return "https://thekineticalphabet.com";
+    return "https://tkaflowarts.com";
   }
 
   /**
