@@ -1,0 +1,22 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.tkaflowarts.composer",
+      "sha256_cert_fingerprints": [
+        "74:B7:8B:7B:F0:C7:9D:1B:F3:FB:A4:0E:14:F4:25:5B:86:CE:EC:6F:6E:BA:04:9B:18:11:23:67:59:83:F6:B5"
+      ]
+    }
+  },
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.tkacomposer.app",
+      "sha256_cert_fingerprints": [
+        "74:B7:8B:7B:F0:C7:9D:1B:F3:FB:A4:0E:14:F4:25:5B:86:CE:EC:6F:6E:BA:04:9B:18:11:23:67:59:83:F6:B5"
+      ]
+    }
+  }
+]
