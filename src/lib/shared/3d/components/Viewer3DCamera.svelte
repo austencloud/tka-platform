@@ -12,7 +12,7 @@
   import { T } from "@threlte/core";
   import * as THREE from "three";
   import type CameraControls from "camera-controls";
-  import Viewer3DOrbitControls from "./Viewer3DOrbitControls.svelte";
+  import OrbitControls from "./OrbitControls.svelte";
   import { getViewer3DContext } from "../context/viewer-3d-context";
   import type { CameraStateSnapshot } from "../domain/types/CameraStateSnapshot";
   import UnifiedCameraController from "../camera/UnifiedCameraController.svelte";
@@ -166,7 +166,7 @@
   // Live reference to the three.js camera. Populated via bind:ref on
   // <T.PerspectiveCamera> below. camera-controls needs the real camera
   // instance, not a threlte wrapper, so we bind the ref directly.
-  let cameraRef = $state<THREE.PerspectiveCamera | null>(null);
+  let cameraRef = $state<THREE.PerspectiveCamera | undefined>(undefined);
 
   // The camera-controls instance, exposed by the child on mount. Used by
   // snapTo to imperatively move the camera with the library's built-in
@@ -175,18 +175,28 @@
 
   // Debounce persistence — only save after user stops orbiting for 500ms.
   let saveTimer: ReturnType<typeof setTimeout> | null = null;
+  const _endPos = new THREE.Vector3();
+  const _endTgt = new THREE.Vector3();
 
-  function handleControlEnd(position: THREE.Vector3, target: THREE.Vector3) {
+  function handleControlEnd(controls: CameraControls) {
     const camera = cameraRef;
     if (!camera) return;
+
+    controls.getPosition(_endPos);
+    controls.getTarget(_endTgt);
+    // Snapshot the vectors immediately — the debounced save runs
+    // after 500ms by which point the user may have started another
+    // drag that mutates them.
+    const pos = { x: _endPos.x, y: _endPos.y, z: _endPos.z };
+    const tgt = { x: _endTgt.x, y: _endTgt.y, z: _endTgt.z };
 
     if (saveTimer) clearTimeout(saveTimer);
     saveTimer = setTimeout(() => {
       const snapshot: CameraStateSnapshot = {
-        position: { x: position.x, y: position.y, z: position.z },
+        position: pos,
         rotation: { x: camera.rotation.x, y: camera.rotation.y, z: camera.rotation.z },
         fov: camera.fov ?? 50,
-        target: { x: target.x, y: target.y, z: target.z },
+        target: tgt,
         timestamp: Date.now(),
       };
       viewer3DState.updateCameraSnapshot(snapshot);
@@ -228,13 +238,30 @@
 />
 
 {#if navMode === "orbit" && cameraRef}
-  <Viewer3DOrbitControls
-    camera={cameraRef}
-    {initialPosition}
-    {initialTarget}
-    oncontrolend={handleControlEnd}
-    oninstance={(c) => (controlsInstance = c)}
-    ondragchange={(d) => viewer3DState.setCameraDragging(d)}
+  <OrbitControls
+    minDistance={1}
+    maxDistance={25}
+    maxPolarAngle={Math.PI / 2}
+    oncreate={(c) => {
+      controlsInstance = c;
+      // Place the camera at the persisted / computed initial pose
+      // with no transition — we want the scene to render at the
+      // saved spot on first paint.
+      c.setLookAt(
+        initialPosition.x,
+        initialPosition.y,
+        initialPosition.z,
+        initialTarget.x,
+        initialTarget.y,
+        initialTarget.z,
+        false,
+      );
+    }}
+    oncontrolstart={() => viewer3DState.setCameraDragging(true)}
+    oncontrolend={(c) => {
+      viewer3DState.setCameraDragging(false);
+      handleControlEnd(c);
+    }}
   />
 {/if}
 
