@@ -63,6 +63,14 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
   // smoothing path (used by clearBuffers to reset inter-sequence state).
   private hasPrevCenter = false;
 
+  // smoothAlphaDecay does a full-canvas getImageData/putImageData roundtrip
+  // — a GPU↔CPU sync of ~3.6MB at 950². Running it every frame dominated
+  // render time (40-60ms). Amortize over N frames with a proportionally
+  // larger DECAY step so observable fade rate is unchanged.
+  private smoothAlphaDecayFrameCounter = 0;
+  private static readonly SMOOTH_ALPHA_DECAY_INTERVAL = 10;
+  private static readonly SMOOTH_ALPHA_DECAY_STEP = 20;
+
   // Skip trail capture for the first few frames after initialization so
   // props can settle into their correct starting positions. Without this,
   // the very first frame captures props at an intermediate location (e.g.
@@ -468,20 +476,41 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
    * Subtract a constant from every non-zero alpha pixel in the stuck zone.
    * Destination-out's multiplicative fade can never reach 0 due to 8-bit
    * integer rounding. Constant subtraction guarantees every pixel reaches 0.
+   *
+   * Throttled to every SMOOTH_ALPHA_DECAY_INTERVAL frames — the full-canvas
+   * getImageData/putImageData is a GPU↔CPU roundtrip (~3.6MB at 950²) that
+   * dominated render time at 60fps. Killswitch: window.__TKA_DISABLE_SMOOTH_DECAY = true
    */
   private smoothAlphaDecay(ctx: CanvasRenderingContext2D): void {
+    if (
+      typeof window !== "undefined" &&
+      (window as { __TKA_DISABLE_SMOOTH_DECAY?: boolean }).__TKA_DISABLE_SMOOTH_DECAY === true
+    ) {
+      return;
+    }
+
+    this.smoothAlphaDecayFrameCounter++;
+    if (
+      this.smoothAlphaDecayFrameCounter <
+      TrailOverlayCanvas.SMOOTH_ALPHA_DECAY_INTERVAL
+    ) {
+      return;
+    }
+    this.smoothAlphaDecayFrameCounter = 0;
+
     const w = this.width;
     const h = this.height;
     if (w === 0 || h === 0) return;
 
     const imageData = ctx.getImageData(0, 0, w, h);
     const data = imageData.data;
-    const DECAY = 2;
+    const DECAY = TrailOverlayCanvas.SMOOTH_ALPHA_DECAY_STEP;
+    const THRESHOLD = DECAY + 10;
     let dirty = false;
 
     for (let i = 3; i < data.length; i += 4) {
       const a = data[i]!;
-      if (a > 0 && a <= 28) {
+      if (a > 0 && a <= THRESHOLD) {
         data[i] = Math.max(0, a - DECAY);
         dirty = true;
       }
