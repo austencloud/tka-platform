@@ -6,25 +6,63 @@
   const { effectLabel, onBack }: Props = $props();
 </script>
 
-<div class="coming-soon">
-  <header>
-    <button type="button" class="back-btn" onclick={onBack} aria-label="Back">
-      <i class="fas fa-chevron-left" aria-hidden="true"></i>
-    </button>
-    <span>{effectLabel}</span>
-  </header>
-  <p>Controls for {effectLabel} land in a follow-up phase. The effect is visible here so you can see where it'll live.</p>
+<div class="customize-view">
+  <button type="button" class="back-btn" onclick={onBack}>
+    <i class="fas fa-arrow-left" aria-hidden="true"></i>
+    Back to presets
+  </button>
+
+  <p class="message">Controls for {effectLabel} land in a follow-up phase. The effect is visible here so you can see where it'll live.</p>
 </div>
 
 <style>
-  .coming-soon { padding: 8px 4px; font-size: 12px; opacity: 0.8; }
-  .coming-soon header {
-    display: flex; align-items: center; gap: 8px; font-weight: 600; margin-bottom: 8px;
+  .customize-view {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
   }
+
   .back-btn {
-    width: 28px; height: 28px; border-radius: 6px;
-    border: 1px solid var(--theme-stroke, rgba(255,255,255,0.1));
-    background: transparent; color: inherit; cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    min-height: 44px;
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 10px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    font-size: var(--font-size-min, 14px);
+    cursor: pointer;
+    transition: all var(--duration-fast, 100ms) ease;
+    -webkit-tap-highlight-color: transparent;
   }
-  .coming-soon p { line-height: 1.5; }
+
+  .back-btn:hover {
+    background: color-mix(in srgb, var(--theme-text) 8%, transparent);
+    color: var(--theme-text, white);
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+  }
+
+  .back-btn:focus-visible {
+    outline: 2px solid var(--theme-accent, #8b5cf6);
+    outline-offset: 2px;
+  }
+
+  .back-btn i {
+    font-size: 12px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .back-btn {
+      transition: none;
+    }
+  }
+
+  .message {
+    font-size: var(--font-size-min, 14px);
+    line-height: 1.5;
+    opacity: 0.75;
+    padding: 0;
+  }
 </style>
