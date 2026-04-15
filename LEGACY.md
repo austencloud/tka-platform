@@ -10,15 +10,17 @@ TKA (The Kinetic Alphabet) is a notation system for flow arts. Flow arts means s
 
 There are two types of QR codes on the cards.
 
-**Short codes** look like `thekineticalphabet.com/p/Abc123`. The six characters after `/p/` are a lookup key. When someone scans this code, the app queries a Firebase database (Firestore collection: `shortcodes`) to find the sequence data, then renders it. These codes are short and scan easily, but they need the server to work.
+**Short codes** look like `tkaflowarts.com/p/Abc123`. The six characters after `/p/` are a lookup key. When someone scans this code, the app queries a Firebase database (Firestore collection: `shortcodes`) to find the sequence data, then renders it. These codes are short and scan easily, but they need the server to work.
 
-**Inline codes** look like `thekineticalphabet.com/p/s~z:...` where everything after `s~` is the sequence data itself, compressed. These are self-contained. No server call, no database lookup. The `s~` prefix tells the app to decode the data directly from the URL. These codes are longer (bigger QR pattern) but they survive infrastructure failures. If the server is gone, these still work with just the decoder.
+**Inline codes** look like `tkaflowarts.com/p/s~z:...` where everything after `s~` is the sequence data itself, compressed. These are self-contained. No server call, no database lookup. The `s~` prefix tells the app to decode the data directly from the URL. These codes are longer (bigger QR pattern) but they survive infrastructure failures. If the server is gone, these still work with just the decoder.
+
+The project previously used `thekineticalphabet.com` as its primary domain. That domain is still owned and redirects to `tkaflowarts.com`, so any URL with the old host resolves correctly. If you see the old domain in a screenshot or a blog post, follow it — the redirect does the right thing.
 
 ## What Keeps It Running
 
 Three things:
 
-1. **Domain name:** `thekineticalphabet.com`. Registered through a standard registrar. If this lapses, every QR code on every printed card stops working. Annual renewal, usually around $12/year.
+1. **Domain names:** `tkaflowarts.com` (primary) and `thekineticalphabet.com` (legacy, redirects to primary). Registered through a standard registrar. If the primary lapses, every QR code on every printed card stops working. If the legacy lapses, any historical URL in the wild breaks. Annual renewal, usually around $12/year each.
 
 2. **Firebase project:** `the-kinetic-alphabet`. This is the backend. Firestore holds user accounts, saved sequences, and the `shortcodes` collection that maps short QR codes to sequence data. The Spark (free) plan covers modest traffic. If usage grows, the Blaze (pay-as-you-go) plan kicks in. If the Firebase project is deleted or the billing account closes, short code QR lookups fail.
 
@@ -34,10 +36,10 @@ If you have Firestore export data or JSON backups, you can rebuild the lookup in
 
 ## If the Domain Dies
 
-Every QR code on every printed card hardcodes `thekineticalphabet.com`. If the domain expires and someone else registers it, those codes point to whatever they put there.
+Every QR code on every printed card hardcodes a domain — `tkaflowarts.com` for current cards, `thekineticalphabet.com` for anything printed before the rebrand. If either expires and someone else registers it, those codes point to whatever the new owner puts there.
 
 Options:
-- **Renew the domain.** This is the simplest fix. Transfer it to whoever is maintaining this.
+- **Renew the domains.** This is the simplest fix. Transfer to whoever is maintaining this.
 - **Redirect from a new domain.** Buy a new domain, deploy the app there, and set up redirects. The app itself doesn't care what domain it runs on.
 - **Inline codes still work.** If you have the decoder (next section) and the URL from the QR code, you can extract the `s~...` portion and decode it locally. The domain is just the delivery mechanism for inline codes.
 
@@ -67,7 +69,7 @@ The sequence data itself is an array of steps. Each step has two motions (one pe
 
 Checklist:
 
-- [ ] Renew `thekineticalphabet.com` annually
+- [ ] Renew `tkaflowarts.com` and `thekineticalphabet.com` annually (legacy domain redirects to primary)
 - [ ] Keep the Firebase project `the-kinetic-alphabet` active (check billing, don't let it get deleted for inactivity)
 - [ ] Keep this GitHub repo public so the decoder is always accessible
 - [ ] If migrating away from Firebase, export the `shortcodes` collection and the `users/*/sequences/*` subcollections
@@ -80,4 +82,4 @@ The inline QR codes are the most durable thing here. They carry their own data. 
 Austen Cloud
 austencloud@gmail.com
 The Kinetic Alphabet
-https://thekineticalphabet.com
+https://tkaflowarts.com

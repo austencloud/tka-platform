@@ -333,7 +333,7 @@ Campfire 2018, Carpe Diem 2022, Equilibrium 2019, Flashepoint 2017, Flame 2023/2
 - https://youtu.be/c1AzCYasT-g?si=johN0ahBg41Xpa1E&t=378
 
 **Social Links:**
-- Website: thekineticalphabet.com
+- Website: tkaflowarts.com
 - Instagram: @thekineticalphabet, @austencloud
 - Facebook: facebook.com/TheKineticAlphabet, facebook.com/austencloud
 
