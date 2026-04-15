@@ -160,22 +160,27 @@ export class TurnManager implements ITurnManager {
     }
 
     const turns = motion.turns || 0;
+    const hasTurns = typeof turns === "number" && turns > 0;
 
     let newRotationDirection: RotationDirection;
 
-    if (propContinuity === PropContinuity.CONTINUOUS) {
-      // Continuous: use the provided rotation direction if turns > 0
-      newRotationDirection =
-        typeof turns === "number" && turns > 0
-          ? (rotationDirection as RotationDirection)
-          : ROTATION_DIRS.noRotation;
+    if (!hasTurns) {
+      // No turns means no rotation — the prop is held still
+      newRotationDirection = ROTATION_DIRS.noRotation;
+    } else if (propContinuity === PropContinuity.CONTINUOUS) {
+      // Continuous: inherit the previous beat's direction. If the caller
+      // didn't supply one (first beat, or upstream chain was all static),
+      // fall back to random so we never emit an empty/noRotation value
+      // on a motion that's supposed to spin.
+      const isValidInherit =
+        rotationDirection === ROTATION_DIRS.CLOCKWISE ||
+        rotationDirection === ROTATION_DIRS.COUNTER_CLOCKWISE;
+      newRotationDirection = isValidInherit
+        ? (rotationDirection as RotationDirection)
+        : this.getRandomRotationDirection();
     } else {
-      // Random: randomly choose rotation if turns > 0
-      if (typeof turns === "number" && turns > 0) {
-        newRotationDirection = this.getRandomRotationDirection();
-      } else {
-        newRotationDirection = ROTATION_DIRS.noRotation;
-      }
+      // Random: randomly choose rotation
+      newRotationDirection = this.getRandomRotationDirection();
     }
 
     beat.motions[color] = {
