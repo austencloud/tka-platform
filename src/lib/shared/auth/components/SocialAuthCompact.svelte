@@ -12,7 +12,6 @@
   import FacebookIcon from "./icons/FacebookIcon.svelte";
   import GoogleIcon from "./icons/GoogleIcon.svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
-  import { goto } from "$app/navigation";
   import {
     GoogleAuthProvider,
     browserLocalPersistence,
@@ -20,7 +19,7 @@
     setPersistence,
     signInWithPopup,
   } from "firebase/auth";
-  import { auth } from "../firebase";
+  import { getAuthInstance } from "../firebase";
 
   let { mode = "signin", onFacebookAuth } = $props<{
     mode: "signin" | "signup";
@@ -39,6 +38,14 @@
     window.google?.accounts?.id?.cancel();
 
     try {
+      // Resolve the Auth instance lazily. The static `auth` export is bound
+      // to the Firebase app created at module-eval time, but the HMR manager
+      // rotates the app on each dev cycle — leaving the static reference
+      // bound to a terminated app. Firebase rejects such references with
+      // auth/argument-error deep inside signInWithPopup. getAuthInstance()
+      // always returns an Auth wired to the current app.
+      const auth = await getAuthInstance();
+
       // Set persistence for reliable auth state
       try {
         await setPersistence(auth, indexedDBLocalPersistence);
@@ -50,11 +57,24 @@
       provider.addScope("email");
       provider.addScope("profile");
 
-      // Use popup for all devices - redirect flow has never worked
+      // Use popup for all devices - redirect flow has never worked.
+      // Don't navigate on success: the AuthDrawer/AuthSheet that wraps this
+      // button unmounts via `{#if !isAuthenticated}` in MainApplication, so
+      // the user stays on whatever app page they opened the sheet from.
+      // Navigating to "/" used to send them back to the marketing landing.
       await signInWithPopup(auth, provider);
-      await goto("/");
     } catch (error: unknown) {
       const errorCode = (error as { code?: string })?.code;
+
+      // Log the full error so we can see the stack in devtools. Firebase
+      // swallows a lot of context inside FirebaseError; the stack is the
+      // only reliable way to identify which call threw.
+      console.error("[SocialAuthCompact] Google sign-in failed", {
+        error,
+        code: errorCode,
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
 
       // Provide user-friendly error messages
       if (errorCode === "auth/popup-blocked") {

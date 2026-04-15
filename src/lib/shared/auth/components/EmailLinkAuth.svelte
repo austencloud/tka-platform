@@ -15,7 +15,6 @@
   } from "firebase/auth";
   import { httpsCallable } from "firebase/functions";
   import { auth, getFunctionsInstance } from "../firebase";
-  import { goto } from "$app/navigation";
   import { onMount } from "svelte";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte";
@@ -55,9 +54,11 @@
         { success: boolean; message?: string; error?: string }
       >(functions, "sendMagicLink");
 
+      // Land the user inside the app after they click the magic link, not on
+      // the marketing landing page at "/".
       const result = await sendMagicLink({
         email,
-        continueUrl: window.location.origin + "/",
+        continueUrl: window.location.origin + "/create",
       });
 
       if (result.data.success) {
@@ -124,8 +125,9 @@
       // Clear the email from storage
       window.localStorage.removeItem("emailForSignIn");
 
-      // Navigate to app
-      goto("/");
+      // The magic link's continueUrl already landed the user inside the app
+      // (e.g. /create). No extra navigation needed — sending them to "/" would
+      // bounce them back to the marketing landing page.
     } catch (err: any) {
       console.error(`❌ [email-link] Sign-in error:`, err);
       console.error(`❌ [email-link] Error code:`, err.code);
