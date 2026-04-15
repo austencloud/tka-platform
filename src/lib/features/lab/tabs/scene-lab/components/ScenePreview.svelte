@@ -15,9 +15,9 @@
    */
 
   import { Canvas, T } from "@threlte/core";
-  import { OrbitControls } from "@threlte/extras";
-  import { WebGLRenderer, PCFSoftShadowMap } from "three";
-  import type { OrbitControls as OrbitControlsImpl } from "three/examples/jsm/controls/OrbitControls.js";
+  import { WebGLRenderer, PCFSoftShadowMap, Vector3 } from "three";
+  import type CameraControls from "camera-controls";
+  import OrbitControls from "$lib/shared/3d/components/OrbitControls.svelte";
   import ForestScene from "$lib/shared/3d/environments/scenes/ForestScene.svelte";
   import WinterScene from "$lib/shared/3d/environments/scenes/WinterScene.svelte";
   import UnifiedCameraController from "$lib/shared/3d/camera/UnifiedCameraController.svelte";
@@ -74,32 +74,46 @@
 
   // Keep the camera from slipping underground while orbiting.
   const MIN_CAMERA_Y = 0.1;
-  let controlsRef = $state<OrbitControlsImpl | undefined>(undefined);
+  let controlsRef = $state<CameraControls | null>(null);
   let clamping = false;
+  const _clampPos = new Vector3();
+  const _clampTgt = new Vector3();
 
-  function clampBelowGround() {
-    if (!controlsRef || clamping) return;
-    const camera = controlsRef.object;
-    const target = controlsRef.target;
-    if (!camera || !target) return;
+  function clampBelowGround(controls: CameraControls) {
+    if (clamping) return;
+    controls.getPosition(_clampPos);
+    controls.getTarget(_clampTgt);
 
+    let newPosY = _clampPos.y;
+    let newTgtY = _clampTgt.y;
     let changed = false;
 
-    if (camera.position.y < MIN_CAMERA_Y) {
-      const delta = MIN_CAMERA_Y - camera.position.y;
-      camera.position.y += delta;
-      target.y += delta;
+    if (_clampPos.y < MIN_CAMERA_Y) {
+      const delta = MIN_CAMERA_Y - _clampPos.y;
+      newPosY += delta;
+      newTgtY += delta;
       changed = true;
     }
 
-    if (target.y < 0) {
-      target.y = 0;
+    if (newTgtY < 0) {
+      newTgtY = 0;
       changed = true;
     }
 
     if (changed) {
       clamping = true;
-      controlsRef.update?.();
+      // No transition — the clamp should feel like a hard wall, not
+      // a rubber-band. setLookAt sets both at once so the dolly
+      // distance stays intact.
+      controls.setLookAt(
+        _clampPos.x,
+        newPosY,
+        _clampPos.z,
+        _clampTgt.x,
+        newTgtY,
+        _clampTgt.z,
+        false,
+      );
       clamping = false;
     }
   }
