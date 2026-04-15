@@ -522,9 +522,11 @@ export class BeamSearch {
         const isFinalBeat = i === length - 1;
         if (reachability && !isFinalBeat) {
           const nextReachable = reachability.reachableAt[i + 1];
-          candidates = candidates.filter(
-            (p) => nextReachable.has(p.endPosition),
-          );
+          if (nextReachable) {
+            candidates = candidates.filter(
+              (p) => nextReachable.has(p.endPosition),
+            );
+          }
         } else if (isFinalBeat && requiredEndPositions && requiredEndPositions.size > 0) {
           candidates = candidates.filter(
             (p) => requiredEndPositions.has(p.endPosition),

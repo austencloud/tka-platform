@@ -76,9 +76,12 @@ export class LOOPEndPositionSelector {
         return SWAPPED_POSITION_MAP[mirroredPosition] ?? null;
       }
 
-      // Swapped + Inverted: inverted takes precedence — return to start
+      // Swapped + Inverted: the seed ends at the swapped position. The executor
+      // then re-swaps in createStep, so the full extended sequence's final end
+      // position lands back at start (swap is its own inverse). This matches
+      // SWAPPED_LOOP_VALIDATION_SET used by SwappedInvertedExecutor.
       case LOOPType.SWAPPED_INVERTED:
-        return startPosition;
+        return SWAPPED_POSITION_MAP[startPosition] ?? null;
 
       // Mirrored + Swapped + Inverted: inverted takes precedence — return to start
       case LOOPType.MIRRORED_SWAPPED_INVERTED:

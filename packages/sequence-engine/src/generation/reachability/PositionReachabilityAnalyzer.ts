@@ -79,12 +79,13 @@ export class PositionReachabilityAnalyzer {
 
     // Final beat: positions whose forward transitions include at least one
     // required end position.
-    reachableAt[seedLength - 1] = new Set<string>();
+    const finalBeat = new Set<string>();
+    reachableAt[seedLength - 1] = finalBeat;
     for (const pos of allPositions) {
       const reachableEnds = graph.getReachableFrom(pos);
       for (const end of requiredEndPositions) {
         if (reachableEnds.has(end)) {
-          reachableAt[seedLength - 1].add(pos);
+          finalBeat.add(pos);
           break;
         }
       }
@@ -93,12 +94,14 @@ export class PositionReachabilityAnalyzer {
     // Propagate backward: beat i is reachable if at least one of its forward
     // transitions lands in the reachable set of beat i+1.
     for (let i = seedLength - 2; i >= 0; i--) {
-      reachableAt[i] = new Set<string>();
+      const currentBeat = new Set<string>();
+      reachableAt[i] = currentBeat;
+      const nextBeat = reachableAt[i + 1]!;
       for (const pos of allPositions) {
         const reachableEnds = graph.getReachableFrom(pos);
-        for (const nextPos of reachableAt[i + 1]) {
+        for (const nextPos of nextBeat) {
           if (reachableEnds.has(nextPos)) {
-            reachableAt[i].add(pos);
+            currentBeat.add(pos);
             break;
           }
         }
@@ -107,8 +110,9 @@ export class PositionReachabilityAnalyzer {
 
     // --- Apply blocked start positions to beat 0 ---
     if (blockedStartPositions) {
+      const beat0 = reachableAt[0]!;
       for (const blocked of blockedStartPositions) {
-        reachableAt[0].delete(blocked);
+        beat0.delete(blocked);
       }
     }
 
@@ -118,10 +122,12 @@ export class PositionReachabilityAnalyzer {
     // that survived the backward pass but have no valid incoming path.
     for (let i = 1; i < seedLength; i++) {
       const forwardReachable = new Set<string>();
-      for (const pos of reachableAt[i]) {
+      const currentBeat = reachableAt[i]!;
+      const prevBeat = reachableAt[i - 1]!;
+      for (const pos of currentBeat) {
         // pos is valid at beat i if some position at beat i-1 can transition to it
         const predecessors = graph.getReachableTo(pos);
-        for (const pred of reachableAt[i - 1]) {
+        for (const pred of prevBeat) {
           if (predecessors.has(pred)) {
             forwardReachable.add(pos);
             break;
@@ -134,7 +140,7 @@ export class PositionReachabilityAnalyzer {
     // --- Feasibility check ---
     let emptyBeatIndex: number | undefined;
     for (let i = 0; i < seedLength; i++) {
-      if (reachableAt[i].size === 0) {
+      if (reachableAt[i]!.size === 0) {
         emptyBeatIndex = i;
         break;
       }
