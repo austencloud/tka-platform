@@ -3,12 +3,20 @@ import type {
   FireIntent,
   LedIntent,
   CharcoalIntent,
+  ZapIntent,
+  SparklesIntent,
+  MotionIntent,
+  BloomIntent,
 } from "../domain/EffectsConfig";
 import type {
   Trails2DParams,
   Fire2DParams,
   Led2DParams,
   Charcoal2DParams,
+  Zap2DParams,
+  Sparkles2DParams,
+  Motion2DParams,
+  Bloom2DParams,
 } from "./canvas2d-types";
 
 export function resolveTrails2D(
@@ -50,3 +58,53 @@ export function resolveCharcoal2D(
   };
   return { ...intent, ...defaults, ...override };
 }
+
+export function resolveZap2D(
+  intent: ZapIntent,
+  override: Partial<Zap2DParams> = {},
+): Zap2DParams {
+  const defaults: Omit<Zap2DParams, keyof ZapIntent> = {
+    segments: Math.max(4, Math.round(6 + intent.intensity * 10)),
+    jitterAmount: 6 + intent.intensity * 10,
+    glowBlur: 8 + intent.intensity * 12,
+    lineWidth: 1.5 + intent.intensity * 1.5,
+  };
+  return { ...intent, ...defaults, ...override };
+}
+
+export function resolveSparkles2D(
+  intent: SparklesIntent,
+  override: Partial<Sparkles2DParams> = {},
+): Sparkles2DParams {
+  const defaults: Omit<Sparkles2DParams, keyof SparklesIntent> = {
+    poolSize: 256,
+    baseRadius: 3,
+    blendMode: "lighter",
+  };
+  return { ...intent, ...defaults, ...override };
+}
+
+export function resolveMotion2D(
+  intent: MotionIntent,
+  override: Partial<Motion2DParams> = {},
+): Motion2DParams {
+  const defaults: Omit<Motion2DParams, keyof MotionIntent> = {
+    fadeAlpha: 0.85 + intent.blur * 0.14,
+    streakLength: 12 + intent.speedLines * 30,
+  };
+  return { ...intent, ...defaults, ...override };
+}
+
+export function resolveBloom2D(
+  intent: BloomIntent,
+  override: Partial<Bloom2DParams> = {},
+): Bloom2DParams {
+  const defaults: Omit<Bloom2DParams, keyof BloomIntent> = {
+    blurRadiusPx: 8 + intent.radius * 32,
+    passes: Math.max(1, Math.round(1 + intent.radius * 3)),
+  };
+  return { ...intent, ...defaults, ...override };
+}
+
+/** @deprecated Import from webgl3d-translator instead. Re-exported here for test convenience only. */
+export { resolveZap3D } from "./webgl3d-translator";
