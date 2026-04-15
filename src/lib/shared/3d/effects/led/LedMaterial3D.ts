@@ -76,12 +76,11 @@ const fragmentShader = /* glsl */ `
     // Discard pixels outside the glow radius for clean edges
     if (dist > 1.0) discard;
 
-    // Inner core: sharp bright circle
-    // Peaks at center, drops off quickly — creates the "bulb" look
+    // Inner core: sharp bright circle — the "bulb"
     float coreRadius = 0.15;
     float core = smoothstep(coreRadius, 0.0, dist);
 
-    // Outer halo: soft exponential falloff from center
+    // Outer halo: soft exponential falloff
     float halo = exp(-dist * dist * 3.0 / (uGlowRadius * uGlowRadius));
 
     // Blend: core is near-white (desaturated), halo is full color
