@@ -11,5 +11,4 @@ export const SCENE_FEATURES: SceneFeature[] = [
   { key: "environment", label: "Environment",  defaultEnabled: true,  requiresAsyncLoad: true  },
   { key: "campfire",    label: "Campfire",     defaultEnabled: true,  requiresAsyncLoad: false },
   { key: "tent",        label: "Tent",         defaultEnabled: true,  requiresAsyncLoad: false },
-  { key: "grid",        label: "Grid",         defaultEnabled: true,  requiresAsyncLoad: false },
 ];
