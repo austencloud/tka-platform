@@ -1,7 +1,7 @@
 <script lang="ts">
   import { untrack } from "svelte";
   import { T, useTask, useThrelte } from "@threlte/core";
-  import { PCFSoftShadowMap, Vector3 } from "three";
+  import { PCFSoftShadowMap } from "three";
   import {
     MathUtils,
     Vector3,
