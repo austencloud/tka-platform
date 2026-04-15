@@ -17,6 +17,8 @@ import type { IFireTipTracker, FireTipTrackerConfig } from "../contracts/IFireTi
 import type { ILedOverlayRenderer } from "../contracts/ILedOverlayRenderer";
 import type { ILedTipTracker, LedTipTrackerConfig } from "../contracts/ILedTipTracker";
 import type { ITrailOverlayCanvas } from "../contracts/ITrailOverlayCanvas";
+import type { IZapOverlayRenderer } from "../contracts/IZapOverlayRenderer";
+import type { ZapTipInput } from "$lib/shared/effects/renderers/Zap2DRenderer";
 import type {
   IAnimationRenderLoop,
   RenderLoopConfig,
@@ -26,6 +28,51 @@ import { QualityTier } from "../../domain/types/QualityTypes";
 import { effectErrorSignal } from "../../state/effect-error-signal.svelte";
 import { resolveEffect } from "../../domain/types/TipEffectTypes";
 import type { TipEffectMap } from "../../domain/types/TipEffectTypes";
+
+// ============================================================================
+// Longtask observer singleton — one PerformanceObserver shared across every
+// AnimationRenderLoop instance. Without this, each loop attaches its own
+// observer and every main-thread stall produces N duplicate log lines where
+// N is the number of live AnimatorCanvas instances on the page.
+// ============================================================================
+type LongTaskListener = (durationMs: number) => void;
+const longTaskListeners = new Set<LongTaskListener>();
+let longTaskObserverInstalled = false;
+let lastBigLongTaskLogTime = 0;
+
+function installLongTaskObserver(): void {
+  if (longTaskObserverInstalled) return;
+  if (typeof PerformanceObserver === "undefined") return;
+  if (!PerformanceObserver.supportedEntryTypes?.includes("longtask")) return;
+  try {
+    const observer = new PerformanceObserver((list) => {
+      const now = performance.now();
+      const warnEnabled =
+        typeof window !== "undefined" &&
+        (window as { __TKA_FPS_LOG?: boolean }).__TKA_FPS_LOG === true;
+      for (const entry of list.getEntries()) {
+        for (const listener of longTaskListeners) listener(entry.duration);
+        // Warn once per 2s for individually-huge stalls when the FPS diagnostic
+        // is enabled. Otherwise the listener just accumulates duration for the
+        // FPS summary window (which itself is gated).
+        if (warnEnabled && entry.duration > 150 && now - lastBigLongTaskLogTime > 2000) {
+          lastBigLongTaskLogTime = now;
+          console.warn(`[LongTask] ${entry.duration.toFixed(0)}ms main-thread block`);
+        }
+      }
+    });
+    observer.observe({ entryTypes: ["longtask"] });
+    longTaskObserverInstalled = true;
+  } catch {
+    // Observer setup failed — silently degrade (FPS summary still works).
+  }
+}
+
+function subscribeToLongTasks(listener: LongTaskListener): () => void {
+  installLongTaskObserver();
+  longTaskListeners.add(listener);
+  return () => longTaskListeners.delete(listener);
+}
 
 function hasTrailTips(map: TipEffectMap | undefined): boolean {
   if (!map) return false;
@@ -43,6 +90,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
   private ledRenderer: ILedOverlayRenderer | null = null;
   private ledTipTracker: ILedTipTracker | null = null;
   private trailOverlay: ITrailOverlayCanvas | null = null;
+  private zapRenderer: IZapOverlayRenderer | null = null;
   private onEffectError: ((effectName: string, error: Error) => void) | null = null;
   private canvasSize: number = 950;
   private lastTrailFrameTime: number = 0;
@@ -54,8 +102,10 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
   // Effect error tracking: auto-recover on first failure, escalate on repeated failures
   private consecutiveFireErrors: number = 0;
   private consecutiveLedErrors: number = 0;
+  private consecutiveZapErrors: number = 0;
   private fireDisabledByError: boolean = false;
   private ledDisabledByError: boolean = false;
+  private zapDisabledByError: boolean = false;
   private static readonly EFFECT_ERROR_THRESHOLD = 3;
 
   // Loop detection for cache-based trail gathering and fire frame cache
@@ -84,6 +134,19 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
   private static readonly FRAME_DROP_LOG_COOLDOWN_MS = 2000; // Max 1 log per 2 seconds
   private framesRenderedSinceStart = 0; // Warm-up grace period — skip frame drop logging for first N frames
   private static readonly WARMUP_FRAMES = 10; // First 10 frames always have high RAF gaps
+
+  // Rolling FPS summary — logs once per second while playing so you can see
+  // average FPS + min/max frame time + frame count without spamming per-frame.
+  // Enabled by default; gate with window.__TKA_FPS_LOG = false to silence.
+  private fpsWindowStart = 0;          // performance.now() at window open
+  private fpsWindowFrames = 0;         // frames rendered in current window
+  private fpsWindowMinFrameMs = Infinity;
+  private fpsWindowMaxFrameMs = 0;
+  private fpsWindowMaxRenderMs = 0;    // slowest render() call this window
+  private fpsWindowRenderMsSum = 0;    // sum of render() times this window
+  private fpsWindowDrops = 0;          // frames this window that breached budget
+  private fpsWindowLongTaskMs = 0;     // total longtask ms attributed to window (read from module singleton)
+  private longTaskSubscriberDispose: (() => void) | null = null;
 
   // Idle auto-stop: after N consecutive idle frames (not playing, no needsRender, no
   // effects active), stop the RAF loop. Prevents 16+ arrange grid cells from each
@@ -114,7 +177,18 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     this.ledRenderer = config.ledRenderer ?? null;
     this.ledTipTracker = config.ledTipTracker ?? null;
     this.trailOverlay = config.trailOverlay ?? null;
+    this.zapRenderer = config.zapRenderer ?? null;
     this.onEffectError = config.onEffectError ?? null;
+
+    // Subscribe to the module-singleton longtask observer so the FPS summary
+    // can attribute main-thread stalls to the window in which they occurred.
+    // One observer serves all AnimationRenderLoop instances — without the
+    // singleton, N loops produced N duplicate log lines per longtask.
+    if (!this.longTaskSubscriberDispose) {
+      this.longTaskSubscriberDispose = subscribeToLongTasks((durationMs) => {
+        this.fpsWindowLongTaskMs += durationMs;
+      });
+    }
   }
 
   updateConfig(config: Partial<RenderLoopConfig>): void {
@@ -137,6 +211,8 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       this.ledTipTracker = config.ledTipTracker ?? null;
     if (config.trailOverlay !== undefined)
       this.trailOverlay = config.trailOverlay ?? null;
+    if (config.zapRenderer !== undefined)
+      this.zapRenderer = config.zapRenderer ?? null;
     if (config.onEffectError !== undefined)
       this.onEffectError = config.onEffectError ?? null;
   }
@@ -163,8 +239,10 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     // Reset effect error tracking so effects can retry on next start
     this.consecutiveFireErrors = 0;
     this.consecutiveLedErrors = 0;
+    this.consecutiveZapErrors = 0;
     this.fireDisabledByError = false;
     this.ledDisabledByError = false;
+    this.zapDisabledByError = false;
   }
 
   isRunning(): boolean {
@@ -222,6 +300,8 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     // Mark as disposed FIRST to stop any pending RAF callbacks
     this.isDisposed = true;
     this.stop();
+    this.longTaskSubscriberDispose?.();
+    this.longTaskSubscriberDispose = null;
     this.renderer = null;
     this.TrailCapturer = null;
     this.pathCache = null;
@@ -240,6 +320,9 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     this.ledTipTracker = null;
     // Clean up trail overlay
     this.trailOverlay = null;
+    // Clean up zap overlay
+    this.zapRenderer?.dispose();
+    this.zapRenderer = null;
     // Clear reusable arrays to free memory
     this.reusableBlueTrailPoints.length = 0;
     this.reusableRedTrailPoints.length = 0;
@@ -301,6 +384,9 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     const ledActive =
       params.ledConfig?.enabled === true &&
       this.ledRenderer?.isInitialized() === true;
+    const zapActive =
+      params.zapConfig != null &&
+      this.zapRenderer?.isInitialized() === true;
 
     // Active work: playing, effects running, background animating, or explicit render request
     const hasActiveWork =
@@ -309,7 +395,8 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       backgroundTransitioning ||
       fireActive ||
       charcoalActive ||
-      ledActive;
+      ledActive ||
+      zapActive;
 
     // Trails alone (without active work) should not keep the loop alive forever.
     // Allow a grace period for initialization/texture loading, then auto-stop.
@@ -445,6 +532,10 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
           if (ctx) ctx.clearRect(0, 0, trailCanvas.width, trailCanvas.height);
         }
       }
+      // Clear zap overlay (Canvas2D)
+      if (this.zapRenderer?.isInitialized()) {
+        this.zapRenderer.clear();
+      }
     } else if (!params.suppress2DOverlays && this.wasSuppressed) {
       this.wasSuppressed = false;
     }
@@ -519,38 +610,48 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     // Read prop transforms from Canvas2D renderer for fire coherence
     const renderedTransforms = this.renderer?.getLastPropTransforms?.() ?? undefined;
 
-    // Fire/charcoal overlay: render after Canvas2D so it composites on top.
-    // Fire and charcoal are independent renderers that share tip tracking.
+    // Fire/charcoal/zap overlays: render after Canvas2D so they composite on top.
+    // Fire, charcoal, and zap all consume FireTipTracker output (zap reads the
+    // same {x,y} positions but ignores velocity). The tracker is updated at most
+    // once per frame and the result is shared across the three branches below.
     const activeFireRenderer = this.fireRenderer?.isInitialized() ? this.fireRenderer : null;
     const activeCharcoalRenderer = this.charcoalRenderer?.isInitialized() ? this.charcoalRenderer : null;
-    const hasActiveOverlay = this.fireTipTracker && (
+    const activeZapRenderer = this.zapRenderer?.isInitialized() ? this.zapRenderer : null;
+    const hasFireOrCharcoalOverlay = this.fireTipTracker && (
       (activeFireRenderer && params.fireConfig != null) || activeCharcoalRenderer
     );
+    const hasZapOverlay = this.fireTipTracker && activeZapRenderer && params.zapConfig != null;
+    const hasAnyTipOverlay = hasFireOrCharcoalOverlay || hasZapOverlay;
 
-    if (hasActiveOverlay && !this.fireDisabledByError && !params.suppress2DOverlays) {
+    let sharedTipResult: import("../contracts/IFireTipTracker").FireTipUpdateResult | null = null;
+    if (hasAnyTipOverlay && !params.suppress2DOverlays) {
+      // Reset tip tracker on loop to prevent velocity spike from position teleport.
+      // Without this, the position delta (end-of-sequence → start-of-sequence) produces
+      // a massive velocity injection that pushes fire off the prop tips.
+      if (this.loopDetectedThisFrame) {
+        this.fireTipTracker!.reset();
+      }
+
+      const tipTrackerConfig: FireTipTrackerConfig = {
+        canvasSize: this.canvasSize,
+        bluePropDimensions: props.bluePropDimensions,
+        redPropDimensions: props.redPropDimensions,
+        bluePropType: params.bluePropType,
+        redPropType: params.redPropType,
+        renderedTransforms,
+      };
+
+      sharedTipResult = this.fireTipTracker!.update(
+        props.blueProp,
+        props.redProp,
+        tipTrackerConfig,
+        currentTime
+      );
+    }
+
+    if (hasFireOrCharcoalOverlay && !this.fireDisabledByError && !params.suppress2DOverlays && sharedTipResult) {
       try {
-        // Reset tip tracker on loop to prevent velocity spike from position teleport.
-        // Without this, the position delta (end-of-sequence → start-of-sequence) produces
-        // a massive velocity injection that pushes fire off the prop tips.
-        if (this.loopDetectedThisFrame) {
-          this.fireTipTracker!.reset();
-        }
-
-        const tipTrackerConfig: FireTipTrackerConfig = {
-          canvasSize: this.canvasSize,
-          bluePropDimensions: props.bluePropDimensions,
-          redPropDimensions: props.redPropDimensions,
-          bluePropType: params.bluePropType,
-          redPropType: params.redPropType,
-          renderedTransforms,
-        };
-
-        const tipResult = this.fireTipTracker!.update(
-          props.blueProp,
-          props.redProp,
-          tipTrackerConfig,
-          currentTime
-        );
+        const tipResult = sharedTipResult;
 
         // Filter tips by resolved effect so each renderer only gets its assigned tips.
         // tipEffectMap is always the authority. No legacy fallback.
@@ -615,6 +716,61 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
           );
         }
       }
+    }
+
+    // Zap (lightning) overlay: draws procedural arcs between blue/red prop tips.
+    // Reads the same shared tip positions as fire/charcoal but ignores velocity.
+    // Composites on top of fire (z-index 2) so arcs read cleanly over flame glow.
+    if (hasZapOverlay && !this.zapDisabledByError && !params.suppress2DOverlays && sharedTipResult) {
+      try {
+        const tipMap = params.tipEffectMap ?? {};
+        const zapInput: ZapTipInput = {
+          bluePosA: null,
+          bluePosB: null,
+          redPosA: null,
+          redPosB: null,
+        };
+        // Pull the (up to 2) tips per prop assigned to "zap" out of the shared
+        // tracker result. Indexing maps {propIndex 0 = blue, 1 = red} and
+        // {tipIndex 0 = A, 1 = B}, matching the 3D zap shader's convention.
+        for (const t of sharedTipResult.tips) {
+          if (resolveEffect(t.propIndex, t.tipIndex, tipMap, {}) !== "zap") continue;
+          const pos = { x: t.x, y: t.y };
+          if (t.propIndex === 0) {
+            if (t.tipIndex === 0) zapInput.bluePosA = pos;
+            else if (t.tipIndex === 1) zapInput.bluePosB = pos;
+          } else if (t.propIndex === 1) {
+            if (t.tipIndex === 0) zapInput.redPosA = pos;
+            else if (t.tipIndex === 1) zapInput.redPosB = pos;
+          }
+        }
+
+        activeZapRenderer!.renderFrame(params.zapConfig!, zapInput);
+        this.consecutiveZapErrors = 0;
+      } catch (error) {
+        this.consecutiveZapErrors++;
+        activeZapRenderer?.clear();
+
+        if (this.consecutiveZapErrors >= AnimationRenderLoop.EFFECT_ERROR_THRESHOLD) {
+          this.zapDisabledByError = true;
+          const err = error instanceof Error ? error : new Error(String(error));
+          console.error("[AnimationRenderLoop] Zap effect disabled after repeated failures:", err);
+          if (this.onEffectError) {
+            this.onEffectError("zap", err);
+          } else {
+            effectErrorSignal.trigger("zap", err);
+          }
+        } else {
+          console.warn(
+            `[AnimationRenderLoop] Zap render error (attempt ${this.consecutiveZapErrors}/${AnimationRenderLoop.EFFECT_ERROR_THRESHOLD}), resetting:`,
+            error
+          );
+        }
+      }
+    } else if (activeZapRenderer && !hasZapOverlay) {
+      // Zap renderer exists but no zap config / not active this frame — clear
+      // any leftover arcs so they don't sit stale on screen.
+      activeZapRenderer.clear();
     }
 
     // LED overlay: render after fire so it composites on top of both Canvas2D and fire
@@ -708,15 +864,13 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     const isWarmingUp = this.framesRenderedSinceStart <= AnimationRenderLoop.WARMUP_FRAMES;
     const isFirstFrameAfterRestart = rafGap > 1000;
     const logEnabled = this.frameDropLoggingEnabled ||
-      (typeof window !== "undefined" && (window as any).__TKA_FRAME_DROP_LOG === true);
-    if (
-      logEnabled &&
+      (typeof window !== "undefined" && (window as { __TKA_FRAME_DROP_LOG?: boolean }).__TKA_FRAME_DROP_LOG === true);
+    const droppedThisFrame =
+      params.isPlaying &&
       !isWarmingUp &&
       !isFirstFrameAfterRestart &&
-      params.isPlaying &&
-      (renderTime > AnimationRenderLoop.FRAME_DROP_THRESHOLD_MS ||
-       rafGap > 100) // RAF gap > 100ms means browser missed 5+ vsyncs (genuine stall)
-    ) {
+      (renderTime > AnimationRenderLoop.FRAME_DROP_THRESHOLD_MS || rafGap > 100);
+    if (logEnabled && droppedThisFrame) {
       const now = performance.now();
       if (now - this.lastFrameDropLogTime > AnimationRenderLoop.FRAME_DROP_LOG_COOLDOWN_MS) {
         this.lastFrameDropLogTime = now;
@@ -731,6 +885,64 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
           `loop=${this.loopDetectedThisFrame ? "YES" : "no"}`
         );
       }
+    }
+
+    // Rolling 1-second FPS summary — complements the per-drop log by telling
+    // you the average even when individual drops fall below the 2s cooldown.
+    // Opt-in diagnostic: enable with window.__TKA_FPS_LOG = true
+    const fpsLogEnabled =
+      typeof window !== "undefined" &&
+      (window as { __TKA_FPS_LOG?: boolean }).__TKA_FPS_LOG === true;
+    if (fpsLogEnabled && params.isPlaying && !isWarmingUp && !isFirstFrameAfterRestart) {
+      if (this.fpsWindowStart === 0) {
+        this.fpsWindowStart = currentTime;
+      }
+      this.fpsWindowFrames++;
+      this.fpsWindowRenderMsSum += renderTime;
+      if (rafGap > 0) {
+        if (rafGap < this.fpsWindowMinFrameMs) this.fpsWindowMinFrameMs = rafGap;
+        if (rafGap > this.fpsWindowMaxFrameMs) this.fpsWindowMaxFrameMs = rafGap;
+      }
+      if (renderTime > this.fpsWindowMaxRenderMs) this.fpsWindowMaxRenderMs = renderTime;
+      if (droppedThisFrame) this.fpsWindowDrops++;
+
+      const elapsed = currentTime - this.fpsWindowStart;
+      if (elapsed >= 1000) {
+        const avgFps = (this.fpsWindowFrames / elapsed) * 1000;
+        const avgRender = this.fpsWindowRenderMsSum / this.fpsWindowFrames;
+        const fireState = this.fireRenderer?.isInitialized()
+          ? (params.fireConfig != null ? "active" : "idle")
+          : "off";
+        const trailsOn = hasTrailTips(params.tipEffectMap);
+        const trailCount = this.reusableBlueTrailPoints.length + this.reusableRedTrailPoints.length;
+        console.log(
+          `[FPS] ${avgFps.toFixed(1)}fps over ${elapsed.toFixed(0)}ms ` +
+          `(${this.fpsWindowFrames} frames) | ` +
+          `frame: min=${this.fpsWindowMinFrameMs === Infinity ? "-" : this.fpsWindowMinFrameMs.toFixed(1)}ms ` +
+          `max=${this.fpsWindowMaxFrameMs.toFixed(1)}ms | ` +
+          `render: avg=${avgRender.toFixed(1)}ms max=${this.fpsWindowMaxRenderMs.toFixed(1)}ms | ` +
+          `drops=${this.fpsWindowDrops} longtasks=${this.fpsWindowLongTaskMs.toFixed(0)}ms | ` +
+          `fire=${fireState} trails=${trailsOn ? trailCount : "off"} tier=${this.previousQualityTier ?? "?"}`
+        );
+        this.fpsWindowStart = currentTime;
+        this.fpsWindowFrames = 0;
+        this.fpsWindowMinFrameMs = Infinity;
+        this.fpsWindowMaxFrameMs = 0;
+        this.fpsWindowMaxRenderMs = 0;
+        this.fpsWindowRenderMsSum = 0;
+        this.fpsWindowDrops = 0;
+        this.fpsWindowLongTaskMs = 0;
+      }
+    } else if (!params.isPlaying) {
+      // Reset window when playback pauses so the next play-session starts clean
+      this.fpsWindowStart = 0;
+      this.fpsWindowFrames = 0;
+      this.fpsWindowMinFrameMs = Infinity;
+      this.fpsWindowMaxFrameMs = 0;
+      this.fpsWindowMaxRenderMs = 0;
+      this.fpsWindowRenderMsSum = 0;
+      this.fpsWindowDrops = 0;
+      this.fpsWindowLongTaskMs = 0;
     }
   }
 

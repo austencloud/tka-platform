@@ -18,7 +18,9 @@ import type { FireOverlayConfig, PropFlameColor } from "../../domain/types/FireT
 import type { ILedOverlayRenderer } from "./ILedOverlayRenderer";
 import type { ILedTipTracker } from "./ILedTipTracker";
 import type { ITrailOverlayCanvas } from "./ITrailOverlayCanvas";
+import type { IZapOverlayRenderer } from "./IZapOverlayRenderer";
 import type { LedOverlayConfig } from "../../domain/types/LedTypes";
+import type { Zap2DParams } from "$lib/shared/effects/translators/canvas2d-types";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
@@ -46,6 +48,8 @@ export interface RenderLoopConfig {
   ledTipTracker?: ILedTipTracker | null;
   /** Trail overlay canvas for persistent cross-sequence trails */
   trailOverlay?: ITrailOverlayCanvas | null;
+  /** Optional zap (lightning) overlay renderer that draws procedural arcs between prop tips */
+  zapRenderer?: IZapOverlayRenderer | null;
   /** Called when an effect (fire/charcoal/LED) fails repeatedly and is auto-disabled */
   onEffectError?: (effectName: string, error: Error) => void;
 }
@@ -109,6 +113,8 @@ export interface RenderFrameParams {
   propColors?: [PropFlameColor, PropFlameColor];
   /** LED overlay configuration (null or undefined = disabled) */
   ledConfig?: LedOverlayConfig | null;
+  /** Zap (lightning) overlay parameters (null or undefined = disabled) */
+  zapConfig?: Zap2DParams | null;
   /** Playback speed multiplier (1.0 = 60 BPM). Passed to fire for cache invalidation. */
   playbackSpeed?: number;
   /** Whether sequence loops seamlessly (end position = start position).
