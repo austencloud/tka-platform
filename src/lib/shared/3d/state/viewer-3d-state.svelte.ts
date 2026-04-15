@@ -28,6 +28,12 @@ import { calculateFacingAngle } from "../domain/formation";
 import { PRESET_VALID_COUNTS, createFormationFromPreset } from "../config/formation-presets";
 
 // ============================================
+// Popover Stack
+// ============================================
+
+export type PopoverId = "performers" | "tempo" | "export" | "gear" | "info";
+
+// ============================================
 // Persistence
 // ============================================
 
@@ -273,6 +279,19 @@ export function createViewer3DState(deps: {
   // where they were. The orchestrator still fires enter3D() once the sequence
   // is available so the primary performer gets its sequence data loaded.
   let renderMode = $state<"2d" | "3d">(_persistedMode);
+
+  // Exclusive popover stack: only one popover can be open at a time.
+  // Used to prevent "popover stomping" where multiple rail popovers and the
+  // header info chip could be open simultaneously.
+  let _activePopover = $state<PopoverId | null>(null);
+
+  function openPopover(id: PopoverId | null): void {
+    _activePopover = id;
+  }
+
+  function closePopover(): void {
+    _activePopover = null;
+  }
 
   // Performer manager — single source of truth for multi-performer state.
   // The viewer passes its viewer-specific cap (8) while realm/museum/duet
@@ -768,6 +787,11 @@ export function createViewer3DState(deps: {
     get renderMode() {
       return renderMode;
     },
+    get activePopover() {
+      return _activePopover;
+    },
+    openPopover,
+    closePopover,
     get performerManager() {
       return performerManager;
     },
