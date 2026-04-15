@@ -29,6 +29,12 @@ import type { PictographData } from "$lib/shared/pictograph/shared/domain/models
 export interface GenerationOptions {
   mode?: GenerationMode | undefined;
   length: number;
+  /**
+   * Word to spell (e.g. "BOOK", "AΣ-B"). When provided, the engine parses
+   * letters from the word instead of using `length` for freeform generation.
+   * Used by spell mode to route through the same engine pipeline as freeform.
+   */
+  word?: string;
   gridMode: GridMode;
   propType: PropType;
   difficulty: DifficultyLevel;
