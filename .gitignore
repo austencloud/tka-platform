@@ -9,6 +9,14 @@
 # Debug artifacts
 debug-screenshots/
 
+# iOS IPA artifacts downloaded from CI
+.ios-builds/
+
+# Session / automation scratch
+.claude-artifacts/
+.claude/scheduled_tasks.lock
+.tmp-*
+
 # Dependencies
 node_modules/
 .pnpm-debug.log*
