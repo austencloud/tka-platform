@@ -6,7 +6,8 @@
    * This is unrigged geometry, so no animation - just static display.
    */
   import { Canvas, T } from "@threlte/core";
-  import { OrbitControls, useGltf } from "@threlte/extras";
+  import { useGltf } from "@threlte/extras";
+  import OrbitControls from "$lib/shared/3d/components/OrbitControls.svelte";
 
   let showWireframe = $state(false);
   let rotationY = $state(0);
