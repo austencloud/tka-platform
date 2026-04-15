@@ -7,14 +7,12 @@
    * by default; individual controls opt back in with pointer-events: auto).
    *
    * Layout:
-   *   top-left   : 2D/3D RenderModeToggle
    *   top-right  : Playback popover + Export popover
    *                (sits LEFT of the existing Viewer3DGearPopover that lives
    *                 inside Viewer3DCanvas at top:12, right:12)
    *   bottom-right: Floating Record button
    *
-   * The existing NavModeToggle (orbit/fly) and Viewer3DGearPopover (Scene)
-   * are NOT reimplemented here — they live inside Viewer3DCanvas and remain
+   * The Viewer3DGearPopover (Scene) lives inside Viewer3DCanvas and remains
    * visible during Record Scene mode.
    */
 
