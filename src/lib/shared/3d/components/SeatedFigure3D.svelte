@@ -2,20 +2,17 @@
   /**
    * SeatedFigure3D
    *
-   * Loads avatar via useGltf, then applies a sitting animation
-   * by remapping FBX track names to match this avatar's bone names.
-   * No retargetClip — just a prefix swap since all Mixamo skeletons
-   * share the same bone layout.
+   * Pulls a pre-baked scene clone + remapped AnimationClip from
+   * SeatedAudienceLoader's cache. After SeatedAudience3D.preloadAll
+   * has completed, prepareFigure resolves in a microtask and the
+   * mixer spins up without any GLB parse, FBX parse, or track remap
+   * happening on the main thread during playback.
    */
 
   import { T, useTask } from "@threlte/core";
-  import { useGltf } from "@threlte/extras";
-  import { onDestroy } from "svelte";
-  import { untrack } from "svelte";
-  import { AnimationMixer, LoopRepeat } from "three";
-  import {
-    seatedAudienceLoader,
-  } from "../services/implementations/SeatedAudienceLoader";
+  import { onDestroy, onMount } from "svelte";
+  import { AnimationMixer, LoopRepeat, type Object3D } from "three";
+  import { seatedAudienceLoader } from "../services/implementations/SeatedAudienceLoader";
 
   interface Props {
     modelUrl: string;
@@ -25,53 +22,33 @@
 
   const { modelUrl, animationUrl, timeOffset = 0 }: Props = $props();
 
-  const gltf = useGltf(untrack(() => modelUrl));
-
+  let scene = $state<Object3D | null>(null);
   let mixer = $state<AnimationMixer | null>(null);
-  let animApplied = false;
 
-  $effect(() => {
-    const loaded = $gltf;
-    if (!loaded || animApplied) return;
-    animApplied = true;
-
-    const scene = loaded.scene;
-
-    // Disable frustum culling
-    scene.traverse((child: any) => {
-      if (child.isMesh || child.isSkinnedMesh) {
-        child.frustumCulled = false;
-      }
-    });
-
-    // Find the skinned mesh
-    let targetMesh: any = null;
-    scene.traverse((child: any) => {
-      if (!targetMesh && child.isSkinnedMesh) {
-        targetMesh = child;
-      }
-    });
-    if (!targetMesh) return;
-
-    // Remap the FBX animation tracks to this avatar's bone names
-    seatedAudienceLoader.remapAnimation(targetMesh, animationUrl).then((clip) => {
-      if (!clip || clip.tracks.length === 0) {
-        console.warn(`[SeatedFigure3D] No remapped tracks for ${modelUrl}`);
-        return;
-      }
-      console.log(`[SeatedFigure3D] ${modelUrl}: ${clip.tracks.length} tracks remapped`);
-
-      // Root the mixer on the scene (not the SkinnedMesh) so it can
-      // find bones by name via scene graph traversal
-      const m = new AnimationMixer(scene);
-      const action = m.clipAction(clip);
-      action.setLoop(LoopRepeat, Infinity);
-      action.play();
-      if (timeOffset > 0) m.update(timeOffset);
-      mixer = m;
-    }).catch((err) => {
-      console.error(`[SeatedFigure3D] remap error:`, err);
-    });
+  onMount(() => {
+    let cancelled = false;
+    seatedAudienceLoader
+      .prepareFigure(modelUrl, animationUrl)
+      .then((prepared) => {
+        if (cancelled) return;
+        scene = prepared.scene;
+        if (!prepared.clip) {
+          console.warn(`[SeatedFigure3D] No clip for ${modelUrl} / ${animationUrl}`);
+          return;
+        }
+        const m = new AnimationMixer(prepared.scene);
+        const action = m.clipAction(prepared.clip);
+        action.setLoop(LoopRepeat, Infinity);
+        action.play();
+        if (timeOffset > 0) m.update(timeOffset);
+        mixer = m;
+      })
+      .catch((err) => {
+        console.error(`[SeatedFigure3D] prepareFigure failed:`, err);
+      });
+    return () => {
+      cancelled = true;
+    };
   });
 
   useTask((delta) => {
@@ -83,6 +60,6 @@
   });
 </script>
 
-{#if $gltf}
-  <T is={$gltf.scene} />
+{#if scene}
+  <T is={scene} />
 {/if}

@@ -7,6 +7,12 @@
    * from six different character GLBs, two idle animation variants
    * alternated per seat, per-seat time offsets for desync, and mild
    * scale jitter.
+   *
+   * All GLBs, FBX clips, and remapped animation clips are preloaded
+   * and pre-baked before the audience renders. The scene feature
+   * registry only reports "audience" ready once every asset is cached,
+   * so the SceneLoadingCurtain stays down until the audience can
+   * populate with zero main-thread hitches during sequence playback.
    */
 
   import { T } from "@threlte/core";
@@ -79,26 +85,43 @@
     return result;
   });
 
-  // Preload FBX animations so retargeting is fast once GLBs finish
+  let isReady = $state(false);
+
   onMount(() => {
-    seatedAudienceLoader.preloadAnimations(ANIMATION_URLS).then(() => {
-      sceneFeatures?.reportReady("audience");
-    });
+    let cancelled = false;
+    seatedAudienceLoader
+      .preloadAll(AVATAR_URLS, ANIMATION_URLS)
+      .then(() => {
+        if (cancelled) return;
+        isReady = true;
+        sceneFeatures?.reportReady("audience");
+      })
+      .catch((err) => {
+        console.error("[SeatedAudience3D] preload failed:", err);
+        // Still report ready so the curtain can lift — better a missing
+        // audience than a permanent loading state.
+        if (!cancelled) sceneFeatures?.reportReady("audience");
+      });
+    return () => {
+      cancelled = true;
+    };
   });
 </script>
 
-<T.Group position={[0, groundY, 0]}>
-  {#each seats as seat, i (i)}
-    <T.Group
-      position={[seat.x, 0, seat.z]}
-      rotation.y={seat.yaw}
-      scale={seat.sizeScale}
-    >
-      <SeatedFigure3D
-        modelUrl={seat.modelUrl}
-        animationUrl={seat.animationUrl}
-        timeOffset={seat.timeOffset}
-      />
-    </T.Group>
-  {/each}
-</T.Group>
+{#if isReady}
+  <T.Group position={[0, groundY, 0]}>
+    {#each seats as seat, i (i)}
+      <T.Group
+        position={[seat.x, 0, seat.z]}
+        rotation.y={seat.yaw}
+        scale={seat.sizeScale}
+      >
+        <SeatedFigure3D
+          modelUrl={seat.modelUrl}
+          animationUrl={seat.animationUrl}
+          timeOffset={seat.timeOffset}
+        />
+      </T.Group>
+    {/each}
+  </T.Group>
+{/if}
