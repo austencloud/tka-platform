@@ -400,7 +400,8 @@ type AdminClient = InstanceType<typeof v1.FirestoreAdminClient>;
  */
 async function findNewestBackup(client: AdminClient) {
   const parent = `projects/${PROJECT_ID}/locations/${LOCATION}`;
-  const [backups] = await client.listBackups({ parent });
+  const [response] = await client.listBackups({ parent });
+  const backups = response.backups;
 
   if (!backups || backups.length === 0) {
     throw new Error(
