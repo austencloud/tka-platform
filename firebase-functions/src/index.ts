@@ -21,9 +21,6 @@ export { transcribeAudio } from "./transcribeAudio";
 export { onNewMessage } from "./push/onNewMessage";
 export { onNewNotification } from "./push/onNewNotification";
 
-// Export scheduled Firestore backup function
-export { scheduledFirestoreExport } from "./scheduledFirestoreExport";
-
 // Export feedback claims module (bulletproof claim management)
 export {
   // Agent session management
