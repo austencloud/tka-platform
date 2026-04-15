@@ -40,6 +40,8 @@
   "module_arena": "Arena",
   "module_festivals": "Festivals",
   "module_retro": "Retro",
+  "module_archive": "Archive",
+  "module_desc_archive": "Walk through 40,000 years of kinetic history",
   "module_hand_paths": "Hand Paths",
   "module_desc_hand_paths": "Browse and build spatial hand paths",
   "tab_hand_paths_hand_path_explorer": "Path Explorer",
