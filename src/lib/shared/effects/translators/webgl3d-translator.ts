@@ -3,12 +3,20 @@ import type {
   FireIntent,
   LedIntent,
   CharcoalIntent,
+  ZapIntent,
+  SparklesIntent,
+  MotionIntent,
+  BloomIntent,
 } from "../domain/EffectsConfig";
 import type {
   Trails3DParams,
   Fire3DParams,
   Led3DParams,
   Charcoal3DParams,
+  Zap3DParams,
+  Sparkles3DParams,
+  Motion3DParams,
+  Bloom3DParams,
 } from "./webgl3d-types";
 
 export function resolveTrails3D(
@@ -60,6 +68,53 @@ export function resolveCharcoal3D(
     particleLifetime: 0.5 + intent.glow * 1.5,
     gravity: -2.0, // upward drift for charcoal sparks
     sparkSizeJitter: 0.4,
+  };
+  return { ...intent, ...defaults, ...override };
+}
+
+export function resolveZap3D(
+  intent: ZapIntent,
+  override: Partial<Zap3DParams> = {},
+): Zap3DParams {
+  const defaults: Omit<Zap3DParams, keyof ZapIntent> = {
+    segments: Math.max(4, Math.round(5 + intent.intensity * 8)),
+    jitterAmount: 0.08 + intent.intensity * 0.14,
+    pointLightIntensity: intent.intensity > 0.5 ? intent.intensity * 2.0 : 0,
+    regenerateEveryFrames: 3,
+  };
+  return { ...intent, ...defaults, ...override };
+}
+
+export function resolveSparkles3D(
+  intent: SparklesIntent,
+  override: Partial<Sparkles3DParams> = {},
+): Sparkles3DParams {
+  const defaults: Omit<Sparkles3DParams, keyof SparklesIntent> = {
+    poolSize: 512,
+    baseRadius: 0.03,
+    gravity: -0.2,
+  };
+  return { ...intent, ...defaults, ...override };
+}
+
+export function resolveMotion3D(
+  intent: MotionIntent,
+  override: Partial<Motion3DParams> = {},
+): Motion3DParams {
+  const defaults: Omit<Motion3DParams, keyof MotionIntent> = {
+    blurSamples: Math.max(4, Math.round(4 + intent.blur * 12)),
+    streakLength: 0.3 + intent.speedLines * 1.2,
+  };
+  return { ...intent, ...defaults, ...override };
+}
+
+export function resolveBloom3D(
+  intent: BloomIntent,
+  override: Partial<Bloom3DParams> = {},
+): Bloom3DParams {
+  const defaults: Omit<Bloom3DParams, keyof BloomIntent> = {
+    kernelSize: Math.max(3, Math.round(3 + intent.radius * 9)),
+    mipLevels: Math.max(2, Math.round(2 + intent.radius * 4)),
   };
   return { ...intent, ...defaults, ...override };
 }
