@@ -64,6 +64,9 @@ export {
 // Export staged upload cleanup (orphan prevention)
 export { cleanupStagedUploads } from "./cleanupStagedUploads";
 
+// Export backup health check (dead man's switch for Firestore Managed Backups)
+export { backupHealthCheck } from "./backupHealthCheck";
+
 // Merch store: checkout session creation and order recording via Stripe webhook
 export { createMerchCheckout } from "./merch/createMerchCheckout";
 export { handleMerchWebhook } from "./merch/handleMerchWebhook";
