@@ -76,9 +76,14 @@
   }
 
   // Internal state
-  let activeEffect = $state("none");
+  // Initialize synchronously from the VM so the preset section renders on
+  // first paint instead of appearing after onMount (which caused CLS — the
+  // panel would grow once the VM's active effect came back as non-"none").
+  let activeEffect = $state<string>(vm.getActiveEffect());
   let customizeOpen = $state(false);
-  let activePresetId = $state<string | null>(null);
+  let activePresetId = $state<string | null>(
+    vm.getActiveEffect() === "led" ? vm.getActivePresetId() : null
+  );
   // Tick counter to force summary recompute when VM state changes
   let summaryTick = $state(0);
 
@@ -124,6 +129,13 @@
 
   function handleEffectSelect(effectId: string): void {
     customizeOpen = false;
+    // Click the active chip to disable — round-trip to "none"
+    if (effectId === activeEffect) {
+      vm.setActiveEffect("none" as EffectType);
+      activeEffect = "none";
+      activePresetId = null;
+      return;
+    }
     vm.setActiveEffect(effectId as EffectType);
     activeEffect = effectId;
     activePresetId = null;
