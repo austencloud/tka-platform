@@ -21,7 +21,6 @@ import { DEFAULT_AVATAR_ID } from "../config/avatar-definitions";
 import { SCALE } from "$lib/shared/3d/scale/scale-constants";
 import { applyEffort } from "$lib/features/effort-lab/domain/effort-easing-unified";
 import type { EffortId } from "$lib/features/effort-lab/domain/effort-types";
-import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 import type { EffortTimeline } from "$lib/features/phrase-effort-lab/domain/effort-timeline-types";
 import { findPhraseAtBeat } from "$lib/features/phrase-effort-lab/domain/effort-timeline-types";
 import { PhraseInterpolator } from "$lib/features/phrase-effort-lab/services/implementations/PhraseInterpolator";
@@ -133,6 +132,12 @@ export function createAvatarInstanceState(
   let avatarModelId = $state<AvatarId>(
     config.avatarModelId ?? DEFAULT_AVATAR_ID
   );
+
+  // ============================================
+  // Performer Settings (declared early so derived computations can read them)
+  // ============================================
+
+  let _settings = $state<PerformerSettings>(makeDefaultPerformerSettings());
 
   // ============================================
   // Locomotion State
@@ -272,12 +277,6 @@ export function createAvatarInstanceState(
   // each beat. The same curves apply cleanly here — we just transform the
   // raw progress that feeds into prop interpolation.
   const phraseInterpolator = new PhraseInterpolator();
-  const effortManager = getAnimationVisibilityManager();
-  let effortPreset = $state<EffortId>(effortManager.getEffortPreset());
-  const handleEffortChange = () => {
-    effortPreset = effortManager.getEffortPreset();
-  };
-  effortManager.registerObserver(handleEffortChange);
 
   // Timeline is sequence-scoped. Newer sequences store it under creatorIntent;
   // older ones use the top-level field.
@@ -300,7 +299,7 @@ export function createAvatarInstanceState(
       return {
         blue: activeBlueConfig,
         red: activeRedConfig,
-        progress: applyEffort(effortPreset, rawProgress),
+        progress: applyEffort(_settings.effortId, rawProgress),
       };
     }
 
@@ -678,10 +677,8 @@ export function createAvatarInstanceState(
   }
 
   // ============================================
-  // Performer Settings
+  // Performer Settings (setter functions — _settings declared near top)
   // ============================================
-
-  let _settings = $state<PerformerSettings>(makeDefaultPerformerSettings());
 
   function setEffort(effortId: EffortId): void {
     _settings = { ..._settings, effortId };
@@ -852,7 +849,7 @@ export function createAvatarInstanceState(
 
     // Effort state (for UI readouts / debugging)
     get effortPreset() {
-      return effortPreset;
+      return _settings.effortId;
     },
     get effortTimeline() {
       return effortTimeline;
@@ -865,7 +862,6 @@ export function createAvatarInstanceState(
     reset: playback.reset,
     setProgress: playback.setProgress,
     destroy: () => {
-      effortManager.unregisterObserver(handleEffortChange);
       playback.destroy();
     },
     autoStartIfNeeded: playback.autoStartIfNeeded,
