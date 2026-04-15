@@ -9,9 +9,7 @@
 
 export interface CompiledProgram {
   program: WebGLProgram;
-  /** Attribute locations, keyed by attribute name. */
   attribs: Record<string, number>;
-  /** Uniform locations, keyed by uniform name. Null means uniform was optimized out. */
   uniforms: Record<string, WebGLUniformLocation | null>;
 }
 
@@ -37,18 +35,24 @@ void main() {
 `;
 
 /**
- * Decay shader. FBO holds premultiplied RGBA; multiplying all four
- * channels by u_alphaFactor decays both the color contribution and
- * the alpha, matching Canvas2D destination-out fade behavior.
+ * Decay shader — multiplicative fade + subtract-to-zero floor kill.
+ *
+ * Multiplies premultiplied RGBA by u_alphaFactor (matches Canvas2D
+ * destination-out), then subtracts u_alphaSubtract to push 8-bit
+ * precision-floored pixels (1/255) to real zero. Without the subtract,
+ * rgba8 FBOs leave a permanent gray "ghost trail" from pixels that
+ * multiplicative decay can never round below 1/255.
  */
 const DECAY_FRAG = `#version 300 es
 precision highp float;
 in vec2 v_uv;
 uniform sampler2D u_src;
 uniform float u_alphaFactor;
+uniform float u_alphaSubtract;
 out vec4 fragColor;
 void main() {
-  fragColor = texture(u_src, v_uv) * u_alphaFactor;
+  vec4 c = texture(u_src, v_uv) * u_alphaFactor;
+  fragColor = max(c - vec4(u_alphaSubtract), vec4(0.0));
 }
 `;
 
@@ -65,11 +69,9 @@ void main() {
 `;
 
 /**
- * Trail mesh vertex shader.
- *
- * Interleaved input: (x, y, edge_t, alpha).
- *   - edge_t: −1 at left polygon edge, +1 at right edge
- *   - alpha:  head→tail opacity ramp already embedded by mesh builder
+ * Trail mesh vertex shader. Interleaved input: (x, y, edge_t, alpha).
+ *   - edge_t: −1 at left polygon edge, +1 at right edge (for AA).
+ *   - alpha:  head→tail opacity ramp already embedded by mesh builder.
  */
 const TRAIL_MESH_VERT = `#version 300 es
 precision highp float;
@@ -86,34 +88,79 @@ void main() {
 `;
 
 /**
- * Trail mesh fragment shader — anti-aliased core + halo glow.
+ * Trail mesh fragment shader — sharp polygon with anti-aliased edge only.
  *
- * The mesh carries a total half-width of (thickness/2 + glow). The
- * uniform u_coreRatio says where the solid core ends; outside that
- * is the halo region, whose alpha falls off quadratically toward the
- * outer edge and is scaled by u_glowStrength.
- *
- * Output is premultiplied (rgb * a, a) — compositing pass uses
- * blendFunc(ONE, ONE_MINUS_SRC_ALPHA) to stack correctly.
+ * Glow diffusion is produced by a separable Gaussian blur pass on the
+ * accumulator FBO, not by this shader. Keeping this shader sharp means
+ * the subsequent blur has crisp geometry to spread from.
  */
 const TRAIL_MESH_FRAG = `#version 300 es
 precision highp float;
 in float v_edge_t;
 in float v_alpha;
 uniform vec3 u_color;
-uniform float u_coreRatio;
-uniform float u_glowStrength;
 uniform float u_aaWidth;
 out vec4 fragColor;
 void main() {
   float t = abs(v_edge_t);
-  // Anti-aliased solid core.
-  float core = 1.0 - smoothstep(u_coreRatio - u_aaWidth, u_coreRatio, t);
-  // Halo: soft falloff from the core edge to the outer boundary.
-  float haloBase = 1.0 - smoothstep(u_coreRatio, 1.0, t);
-  float halo = haloBase * haloBase * u_glowStrength;
-  float a = (core + (1.0 - core) * halo) * v_alpha;
+  float a = (1.0 - smoothstep(1.0 - u_aaWidth, 1.0, t)) * v_alpha;
   fragColor = vec4(u_color * a, a);
+}
+`;
+
+/**
+ * Separable Gaussian blur. 9-tap symmetric kernel with sigma ≈ 2.
+ *
+ * u_direction = (1/width, 0) for horizontal pass, (0, 1/height) for
+ * vertical. u_stride scales the tap offset so a single blur program
+ * handles any radius — small stride = tight halo, large stride = wide
+ * atmospheric bloom.
+ */
+const GAUSSIAN_BLUR_FRAG = `#version 300 es
+precision highp float;
+in vec2 v_uv;
+uniform sampler2D u_src;
+uniform vec2 u_direction;
+uniform float u_stride;
+out vec4 fragColor;
+const float W0 = 0.2042;
+const float W1 = 0.1802;
+const float W2 = 0.1238;
+const float W3 = 0.0663;
+const float W4 = 0.0276;
+void main() {
+  vec2 step = u_direction * u_stride;
+  vec4 sum = texture(u_src, v_uv) * W0;
+  sum += texture(u_src, v_uv + step) * W1;
+  sum += texture(u_src, v_uv - step) * W1;
+  sum += texture(u_src, v_uv + step * 2.0) * W2;
+  sum += texture(u_src, v_uv - step * 2.0) * W2;
+  sum += texture(u_src, v_uv + step * 3.0) * W3;
+  sum += texture(u_src, v_uv - step * 3.0) * W3;
+  sum += texture(u_src, v_uv + step * 4.0) * W4;
+  sum += texture(u_src, v_uv - step * 4.0) * W4;
+  fragColor = sum;
+}
+`;
+
+/**
+ * Trail composite — sharp + blurred additive bloom.
+ *
+ * Both inputs are premultiplied. Output is premultiplied. Downstream
+ * blend is (ONE, ONE_MINUS_SRC_ALPHA). u_glowMix scales the blurred
+ * contribution: 0 = sharp only, 1 = full bloom.
+ */
+const TRAIL_COMPOSITE_FRAG = `#version 300 es
+precision highp float;
+in vec2 v_uv;
+uniform sampler2D u_sharp;
+uniform sampler2D u_blur;
+uniform float u_glowMix;
+out vec4 fragColor;
+void main() {
+  vec4 sharp = texture(u_sharp, v_uv);
+  vec4 blur = texture(u_blur, v_uv);
+  fragColor = clamp(sharp + blur * u_glowMix, vec4(0.0), vec4(1.0));
 }
 `;
 
@@ -122,7 +169,7 @@ const PROGRAMS: Record<string, ProgramSpec> = {
     vertex: FULLSCREEN_VERT,
     fragment: DECAY_FRAG,
     attribs: [],
-    uniforms: ["u_src", "u_alphaFactor"],
+    uniforms: ["u_src", "u_alphaFactor", "u_alphaSubtract"],
   },
   composite: {
     vertex: FULLSCREEN_VERT,
@@ -134,7 +181,19 @@ const PROGRAMS: Record<string, ProgramSpec> = {
     vertex: TRAIL_MESH_VERT,
     fragment: TRAIL_MESH_FRAG,
     attribs: ["a_position", "a_edge_t", "a_alpha"],
-    uniforms: ["u_color", "u_coreRatio", "u_glowStrength", "u_aaWidth"],
+    uniforms: ["u_color", "u_aaWidth"],
+  },
+  "gaussian-blur": {
+    vertex: FULLSCREEN_VERT,
+    fragment: GAUSSIAN_BLUR_FRAG,
+    attribs: [],
+    uniforms: ["u_src", "u_direction", "u_stride"],
+  },
+  "trail-composite": {
+    vertex: FULLSCREEN_VERT,
+    fragment: TRAIL_COMPOSITE_FRAG,
+    attribs: [],
+    uniforms: ["u_sharp", "u_blur", "u_glowMix"],
   },
 };
 

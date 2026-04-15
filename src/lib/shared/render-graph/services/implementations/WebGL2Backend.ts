@@ -4,18 +4,24 @@
  * Trail passes are rasterized from a per-tip leading-edge path by
  * smoothing with centripetal Catmull-Rom (see math/trail-mesh.ts),
  * building a tapered triangle-strip mesh, and drawing it onto a
- * ping-pong FBO with a soft-edge + halo-glow shader. The FBO is
- * decayed each frame so old trail pixels fade multiplicatively —
- * same visual pipeline as the Canvas2D trail overlay.
+ * ping-pong FBO that accumulates the trail across frames. Each frame
+ * the accumulator is multiplicatively decayed and then has a constant
+ * alpha subtracted — the combo matches Canvas2D's fade-plus-alpha-kick
+ * pipeline and prevents the rgba8 precision floor from leaving a ghost
+ * trail in the background.
+ *
+ * Glow is a separable Gaussian blur of the accumulator composited
+ * additively on top of the sharp trail — the GPU analogue of Canvas2D
+ * shadowBlur.
  *
  * Persistent GPU state:
  * - One ping-pong pair per tip, keyed off tipId
+ * - Two shared blur scratch FBOs ("blur-temp", "blur-result")
  * - Compiled shader programs in ShaderLibrary
  * - One dynamic VBO reused across all tips per frame
  *
- * All resources released on dispose(). Per-tip FBO pairs are
- * garbage-collected after MAX_UNUSED_FRAMES_BEFORE_GC consecutive
- * frames without seeing the tip.
+ * Per-tip FBO pairs are garbage-collected after
+ * MAX_UNUSED_FRAMES_BEFORE_GC consecutive frames without seeing the tip.
  */
 
 import type { RenderBackend, BackendStats } from "../../domain/Backend";
@@ -39,9 +45,15 @@ import { FBOPool, type FBO } from "./FBOPool";
 import { ShaderLibrary } from "./ShaderLibrary";
 
 const TRAIL_KEY_PREFIX = "trail-tip-";
+const BLUR_TEMP_KEY = "blur-temp";
+const BLUR_RESULT_KEY = "blur-result";
 const DT_CLAMP_SECONDS = 0.1;
 const MAX_UNUSED_FRAMES_BEFORE_GC = 30;
 const AA_WIDTH = 0.05;
+/** Subtract per-frame from every channel to escape the rgba8 1/255 floor. */
+const ALPHA_SUBTRACT = 1.0 / 255.0;
+/** Additive blur contribution in the final composite. 0.5 = balanced bloom. */
+const GLOW_MIX = 0.6;
 
 interface TipLiveness {
   lastSeenFrame: number;
@@ -90,9 +102,14 @@ export class WebGL2Backend implements RenderBackend {
       throw new Error("WebGL2Backend: mesh VAO/VBO allocation failed");
     }
 
-    this.shaders.precompile(["decay", "composite", "trail-mesh"]);
+    this.shaders.precompile([
+      "decay",
+      "composite",
+      "trail-mesh",
+      "gaussian-blur",
+      "trail-composite",
+    ]);
 
-    // Wire mesh VAO: interleaved (x, y, edge_t, alpha) = 4 floats per vertex.
     const mesh = this.shaders.get("trail-mesh");
     gl.bindVertexArray(this.meshVAO);
     gl.bindBuffer(gl.ARRAY_BUFFER, this.meshVBO);
@@ -195,11 +212,18 @@ export class WebGL2Backend implements RenderBackend {
     const fbos = this.fbos!;
     const shaders = this.shaders!;
 
+    // Prepare the default framebuffer once so each tip composites in order.
+    const canvas = this.canvas!;
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
     for (const tip of payload.tips) {
       this.markTipSeen(tip.tipId);
       this.advanceTip(tip, dt, gl, fbos, shaders);
+      this.compositeTip(tip, gl, fbos, shaders);
     }
-    this.compositeTips(payload.tips, gl, fbos, shaders);
   }
 
   private advanceTip(
@@ -229,6 +253,7 @@ export class WebGL2Backend implements RenderBackend {
     gl.bindTexture(gl.TEXTURE_2D, pair.read.texture);
     gl.uniform1i(decay.uniforms["u_src"]!, 0);
     gl.uniform1f(decay.uniforms["u_alphaFactor"]!, decayFactor);
+    gl.uniform1f(decay.uniforms["u_alphaSubtract"]!, ALPHA_SUBTRACT);
     gl.bindVertexArray(this.emptyVAO);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
     gl.bindVertexArray(null);
@@ -247,7 +272,6 @@ export class WebGL2Backend implements RenderBackend {
   ): void {
     if (tip.path.length < 2) return;
 
-    // Smooth the control points into a higher-density path.
     const buf = this.smoothPathBuffer;
     buf.length = tip.path.length;
     for (let i = 0; i < tip.path.length; i += 1) {
@@ -269,7 +293,6 @@ export class WebGL2Backend implements RenderBackend {
     const mesh = buildTaperedMesh(smooth, {
       thickness: tip.thickness,
       taperTailRatio: tip.taperTailRatio,
-      glow: tip.glow,
       maxAlpha: tip.color[3],
       fadeExponent: tip.fadeExponent,
     });
@@ -287,11 +310,8 @@ export class WebGL2Backend implements RenderBackend {
       tip.color[1],
       tip.color[2],
     );
-    gl.uniform1f(prog.uniforms["u_coreRatio"]!, mesh.coreRatio);
-    gl.uniform1f(prog.uniforms["u_glowStrength"]!, tip.glow > 0 ? 0.9 : 0);
     gl.uniform1f(prog.uniforms["u_aaWidth"]!, AA_WIDTH);
 
-    // Premultiplied alpha blend — shader emits (rgb*a, a).
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, mesh.vertexCount);
@@ -301,43 +321,122 @@ export class WebGL2Backend implements RenderBackend {
     gl.bindBuffer(gl.ARRAY_BUFFER, null);
   }
 
-  private compositeTips(
-    tips: readonly TrailTipState[],
+  private compositeTip(
+    tip: TrailTipState,
     gl: WebGL2RenderingContext,
     fbos: FBOPool,
     shaders: ShaderLibrary,
   ): void {
+    const key = TRAIL_KEY_PREFIX + tip.tipId;
+    const pair = fbos.getOrAllocatePair(key, "rgba8");
+    // After advanceTip().swap(), the fresh accumulator is in pair.read.
+    const accumulator = pair.read;
+
     const canvas = this.canvas!;
+    const glowPx = this.glowRadiusPixels(tip.glow, canvas.width, canvas.height);
+
+    let blurResult: FBO | null = null;
+    if (glowPx > 0.5) {
+      blurResult = this.runSeparableBlur(accumulator, glowPx, gl, fbos, shaders);
+    }
+
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.viewport(0, 0, canvas.width, canvas.height);
-    gl.clearColor(0, 0, 0, 0);
-    gl.clear(gl.COLOR_BUFFER_BIT);
-
-    const composite = shaders.get("composite");
-    gl.useProgram(composite.program);
+    this.setBlendMode(gl, tip.blendMode);
     gl.bindVertexArray(this.emptyVAO);
 
-    for (const tip of tips) {
-      const key = TRAIL_KEY_PREFIX + tip.tipId;
-      const pair = fbos.getOrAllocatePair(key, "rgba8");
-      this.setBlendMode(gl, tip.blendMode);
+    if (blurResult) {
+      const prog = shaders.get("trail-composite");
+      gl.useProgram(prog.program);
       gl.activeTexture(gl.TEXTURE0);
-      gl.bindTexture(gl.TEXTURE_2D, pair.read.texture);
-      gl.uniform1i(composite.uniforms["u_src"]!, 0);
-      gl.uniform4f(composite.uniforms["u_tint"]!, 1, 1, 1, 1);
+      gl.bindTexture(gl.TEXTURE_2D, accumulator.texture);
+      gl.uniform1i(prog.uniforms["u_sharp"]!, 0);
+      gl.activeTexture(gl.TEXTURE1);
+      gl.bindTexture(gl.TEXTURE_2D, blurResult.texture);
+      gl.uniform1i(prog.uniforms["u_blur"]!, 1);
+      gl.uniform1f(prog.uniforms["u_glowMix"]!, GLOW_MIX);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+    } else {
+      const prog = shaders.get("composite");
+      gl.useProgram(prog.program);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, accumulator.texture);
+      gl.uniform1i(prog.uniforms["u_src"]!, 0);
+      gl.uniform4f(prog.uniforms["u_tint"]!, 1, 1, 1, 1);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
     }
 
     gl.disable(gl.BLEND);
     gl.bindVertexArray(null);
+    gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, null);
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, null);
+    gl.activeTexture(gl.TEXTURE0);
+  }
+
+  /**
+   * Run a 2-pass separable Gaussian blur on the given source. Returns
+   * the FBO holding the final vertical-pass result. Stride is tuned so
+   * the 4-tap-each-side kernel spans roughly `radiusPx` pixels total.
+   */
+  private runSeparableBlur(
+    source: FBO,
+    radiusPx: number,
+    gl: WebGL2RenderingContext,
+    fbos: FBOPool,
+    shaders: ShaderLibrary,
+  ): FBO {
+    const temp = fbos.getOrAllocate(BLUR_TEMP_KEY, "rgba8");
+    const result = fbos.getOrAllocate(BLUR_RESULT_KEY, "rgba8");
+    const prog = shaders.get("gaussian-blur");
+
+    const strideX = radiusPx / 4 / source.width;
+    const strideY = radiusPx / 4 / source.height;
+
+    gl.useProgram(prog.program);
+    gl.disable(gl.BLEND);
+    gl.bindVertexArray(this.emptyVAO);
+
+    // Horizontal pass: source → temp
+    gl.bindFramebuffer(gl.FRAMEBUFFER, temp.framebuffer);
+    gl.viewport(0, 0, temp.width, temp.height);
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, source.texture);
+    gl.uniform1i(prog.uniforms["u_src"]!, 0);
+    gl.uniform2f(prog.uniforms["u_direction"]!, 1, 0);
+    gl.uniform1f(prog.uniforms["u_stride"]!, strideX);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+    // Vertical pass: temp → result
+    gl.bindFramebuffer(gl.FRAMEBUFFER, result.framebuffer);
+    gl.viewport(0, 0, result.width, result.height);
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.bindTexture(gl.TEXTURE_2D, temp.texture);
+    gl.uniform2f(prog.uniforms["u_direction"]!, 0, 1);
+    gl.uniform1f(prog.uniforms["u_stride"]!, strideY);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+    gl.bindVertexArray(null);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    return result;
+  }
+
+  private glowRadiusPixels(glowNdc: number, width: number, height: number): number {
+    if (glowNdc <= 0) return 0;
+    // NDC spans 2 across each axis; use the minor axis to keep halos
+    // circular on non-square canvases.
+    const minAxis = Math.min(width, height);
+    return glowNdc * 0.5 * minAxis;
   }
 
   private setBlendMode(gl: WebGL2RenderingContext, mode: TrailBlendMode): void {
     gl.enable(gl.BLEND);
     switch (mode) {
       case "additive":
-        // Premultiplied additive.
         gl.blendFunc(gl.ONE, gl.ONE);
         return;
       case "screen":
@@ -345,7 +444,6 @@ export class WebGL2Backend implements RenderBackend {
         return;
       case "alpha":
       default:
-        // Premultiplied over.
         gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
         return;
     }
