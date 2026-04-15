@@ -130,7 +130,10 @@ Each renderer implements the same contract as existing effect renderers (`init`,
 
 ### 1.4 Panel surface
 
-- Extend `EffectSelector.svelte`'s chip list from 5 to 9 (add Zap, Sparkles, Motion, Bloom with icons/colors matching the legacy panel: bolt/star/wind/sun).
+- Restructure `EffectSelector.svelte` from a 5-chip single row (None + 4) to an **8-chip 4×2 grid**. Drop the "None" chip entirely.
+  - New interaction: clicking the active chip **deselects it** (returns to no-effect state). Active chip gets a subtle `aria-pressed` style + tooltip hint ("Click again to disable") on first hover per session.
+  - Grid contents (row 1 / row 2): Trails · Fire · LED · Charcoal / Zap · Sparkles · Motion · Bloom. Icons/colors for the new four match the legacy panel: bolt/star/wind/sun.
+  - `handleEffectSelect` in `EffectsPanel.svelte` updated to toggle off when the selected effect equals the active effect.
 - Add preset groups in `src/lib/shared/animation-engine/components/effects-panel/presets/`:
   - `zap-presets.ts` — Thunder, Tesla, Plasma, Custom
   - `sparkles-presets.ts` — Fairy Dust, Fireworks, Stars, Custom
@@ -151,7 +154,7 @@ Bloom is a post-process, not per-tip — it needs a second pass after all other 
 
 ### 1.6 Exit criteria
 
-- `generate_pictograph` + Effects Lab: all 9 chips render. Toggling each applies in 2D immediately.
+- Effects Lab: all 8 chips render in a 4×2 grid. Clicking a chip activates it; clicking the active chip deactivates it. Each chip applies in 2D immediately.
 - Persisted v1 configs load without error; new fields fill from defaults.
 - Typecheck + unit tests for new translator functions pass.
 - `EffectsSettingsPanel.svelte` still works unchanged (we haven't touched it).
@@ -252,7 +255,7 @@ Keep all renderer components under `src/lib/shared/3d/effects/` (energy/, partic
 
 - **Gear Popover refactor (in progress).** Phase 3 needs to know whether effects live in the sidebar or the popover's Effects tab at the time it lands. Re-check `docs/superpowers/specs/2026-04-15-sequence-viewer-redesign-design.md` and current git log before starting Phase 3. If the popover has an Effects tab slot, drop `EffectsPanel` there instead of `Animation3DSidePanel`.
 - **LED ribbon refactor (in progress).** Phase 1 must not touch `src/lib/shared/3d/effects/led/`. LED renderer is being rewritten in parallel. Intent layer's LED entry stays unchanged.
-- **Export drawer stability.** `ExportVideoDrawer.svelte` mounts `EffectsPanel` in `inline-settings-body`. Any chip-row layout change needs to flex at both widths (Lab wide panel, Export narrow sidebar).
+- **Export drawer stability.** `ExportVideoDrawer.svelte` mounts `EffectsPanel` in `inline-settings-body`. The 4×2 chip grid must render in both the Lab's wide panel and the Export drawer's narrower sidebar — min chip width ~72px, grid wraps if needed.
 
 ## Verification plan
 
