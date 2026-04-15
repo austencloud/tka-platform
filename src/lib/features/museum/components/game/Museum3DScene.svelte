@@ -1,7 +1,7 @@
 <script lang="ts">
   import { untrack } from "svelte";
   import { T, useTask, useThrelte } from "@threlte/core";
-  import { PCFSoftShadowMap } from "three";
+  import { PCFSoftShadowMap, Vector3 } from "three";
   import {
     MathUtils,
     Vector3,
@@ -44,7 +44,7 @@
   import PlacementGhost from '../editor/PlacementGhost.svelte';
   import { PlacementPersister } from '../../services/implementations/PlacementPersister';
   import { preloadAllFixtureModels, addTorchToScene, removeTorchFromScene } from './MuseumTorch3D.svelte';
-  import { OrbitControls } from "@threlte/extras";
+  import OrbitControls from "$lib/shared/3d/components/OrbitControls.svelte";
   import { museum3dEditorState } from "../../state/museum-3d-editor-state.svelte";
   import { museumEditorOverrides } from "../../state/museum-editor-overrides";
   import { ProximityGrid } from "../../services/implementations/ProximityGrid";
@@ -409,6 +409,9 @@
 
   // ── Camera ──
   let camera: PerspectiveCamera | undefined = $state();
+  // Reused scratch vector for reading the editor-orbit target on each
+  // change event. Avoids per-frame Vector3 allocations.
+  const _editorTargetVec = new Vector3();
 
   // Grid metrics
   const gridCenterX = (grid.width * TILE_SIZE) / 2;
@@ -1704,40 +1707,44 @@
       zoomSpeed={1.2}
       minDistance={1}
       maxDistance={50}
-      onchange={(e) => {
+      onchange={(controls) => {
         // Persist editor camera + orbit target across HMR
-        if (camera) {
-          const controls = e.target;
-          museum3dEditorState.saveCamera({
-            x: camera.position.x,
-            y: camera.position.y,
-            z: camera.position.z,
-            targetX: controls.target.x,
-            targetY: controls.target.y,
-            targetZ: controls.target.z,
-          });
-        }
+        if (!camera) return;
+        controls.getTarget(_editorTargetVec);
+        museum3dEditorState.saveCamera({
+          x: camera.position.x,
+          y: camera.position.y,
+          z: camera.position.z,
+          targetX: _editorTargetVec.x,
+          targetY: _editorTargetVec.y,
+          targetZ: _editorTargetVec.z,
+        });
       }}
       oncreate={(controls) => {
-        // Store controls ref so editor state can update the orbit target
+        // Store controls ref so editor state can retarget on object selection
         museum3dEditorState.setOrbitControls(controls);
 
         const saved = museum3dEditorState.loadCamera();
-        if (saved && camera) {
-          camera.position.set(saved.x, saved.y, saved.z);
-          controls.target.set(saved.targetX, saved.targetY, saved.targetZ);
+        if (saved) {
+          // Restore position + target in one atomic setLookAt — any
+          // attempt to set camera.position directly gets smoothed
+          // over on the next update tick.
+          controls.setLookAt(
+            saved.x, saved.y, saved.z,
+            saved.targetX, saved.targetY, saved.targetZ,
+            false,
+          );
         } else {
-          // First time: orbit target is where the player is looking at, 5m ahead
+          // First time: orbit target is 5m ahead of the player's gaze.
           const lookAheadDist = 5;
-          controls.target.set(
+          controls.setTarget(
             playerPosition.x + Math.sin(playerYaw) * lookAheadDist,
             1.2,
             playerPosition.z + Math.cos(playerYaw) * lookAheadDist,
+            false,
           );
         }
-        controls.update();
 
-        // Clean up on destroy
         return () => {
           museum3dEditorState.setOrbitControls(null);
         };

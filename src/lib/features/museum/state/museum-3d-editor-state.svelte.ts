@@ -7,10 +7,11 @@
  * Camera position persists across HMR via sessionStorage.
  */
 import { Vector3, type Object3D } from "three";
-import type { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import type CameraControls from "camera-controls";
 import type { PlaceableObjectDef } from '../domain/placeable-object-registry';
 
 const _tempVec = new Vector3();
+const _panVec = new Vector3();
 
 const EDITOR_CAMERA_KEY = "museum-editor-camera";
 
@@ -22,45 +23,9 @@ interface EditorCamera {
 let editorActive = $state(false);
 let selectedObject: Object3D | null = $state(null);
 let gizmoMode: "translate" | "rotate" | "scale" = $state("translate");
-let orbitControls: OrbitControls | null = null;
-let targetAnimationId: number | null = null;
+let orbitControls: CameraControls | null = null;
 let placementDef: PlaceableObjectDef | null = $state(null);
 let ghostValid = $state(false);
-
-/** Smoothly animate the orbit target to a new position over ~300ms */
-function animateOrbitTarget(x: number, y: number, z: number) {
-  if (!orbitControls) return;
-
-  // Cancel any in-flight animation
-  if (targetAnimationId !== null) cancelAnimationFrame(targetAnimationId);
-
-  const start = { x: orbitControls.target.x, y: orbitControls.target.y, z: orbitControls.target.z };
-  const startTime = performance.now();
-  const duration = 300; // ms
-
-  function tick() {
-    if (!orbitControls) return;
-    const elapsed = performance.now() - startTime;
-    const t = Math.min(elapsed / duration, 1);
-    // Ease-out cubic for a smooth deceleration
-    const ease = 1 - Math.pow(1 - t, 3);
-
-    orbitControls.target.set(
-      start.x + (x - start.x) * ease,
-      start.y + (y - start.y) * ease,
-      start.z + (z - start.z) * ease,
-    );
-    orbitControls.update();
-
-    if (t < 1) {
-      targetAnimationId = requestAnimationFrame(tick);
-    } else {
-      targetAnimationId = null;
-    }
-  }
-
-  targetAnimationId = requestAnimationFrame(tick);
-}
 
 function loadEditorCamera(): EditorCamera | null {
   try {
@@ -84,10 +49,11 @@ export const museum3dEditorState = {
 
   select(obj: Object3D) {
     selectedObject = obj;
-    // Smoothly glide orbit target to selected object
+    // Smoothly glide orbit target to selected object. camera-controls'
+    // internal smoothTime handles the easing — no hand-rolled rAF lerp.
     if (orbitControls && obj) {
       obj.getWorldPosition(_tempVec);
-      animateOrbitTarget(_tempVec.x, _tempVec.y, _tempVec.z);
+      orbitControls.setTarget(_tempVec.x, _tempVec.y, _tempVec.z, true);
     }
   },
 
@@ -133,24 +99,26 @@ export const museum3dEditorState = {
     }
   },
 
-  /** Store reference to OrbitControls so we can update its target */
-  setOrbitControls(controls: OrbitControls | null) {
+  /** Store reference to the CameraControls instance so we can retarget it. */
+  setOrbitControls(controls: CameraControls | null) {
     orbitControls = controls;
   },
 
-  /** Focus orbit on a specific world point with smooth animation */
+  /** Focus orbit on a specific world point with smooth animation. */
   focusOnPoint(x: number, y: number, z: number) {
-    animateOrbitTarget(x, y, z);
+    orbitControls?.setTarget(x, y, z, true);
   },
 
-  /** Move orbit target by a delta (for WASD panning — no animation) */
+  /** Move orbit target by a delta (for WASD panning — no animation). */
   panTarget(dx: number, dy: number, dz: number) {
-    if (orbitControls) {
-      orbitControls.target.x += dx;
-      orbitControls.target.y += dy;
-      orbitControls.target.z += dz;
-      orbitControls.update();
-    }
+    if (!orbitControls) return;
+    orbitControls.getTarget(_panVec);
+    orbitControls.setTarget(
+      _panVec.x + dx,
+      _panVec.y + dy,
+      _panVec.z + dz,
+      false,
+    );
   },
 
   loadCamera: loadEditorCamera,
