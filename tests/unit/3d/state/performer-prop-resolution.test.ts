@@ -1,0 +1,18 @@
+import { describe, it, expect } from "vitest";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+import { resolvePerformerProp } from "$lib/shared/3d/state/performer-prop-resolution";
+
+describe("resolvePerformerProp", () => {
+  it("returns the performer's own prop setting", () => {
+    const performer = { settings: { prop: PropType.FAN } } as any;
+    expect(resolvePerformerProp(performer, PropType.STAFF)).toBe(PropType.FAN);
+  });
+
+  it("returns the global fallback when performer is null", () => {
+    expect(resolvePerformerProp(null, PropType.STAFF)).toBe(PropType.STAFF);
+  });
+
+  it("returns the global fallback when performer is undefined", () => {
+    expect(resolvePerformerProp(undefined, PropType.STAFF)).toBe(PropType.STAFF);
+  });
+});

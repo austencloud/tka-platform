@@ -29,6 +29,7 @@
   import type { TipEffectMap } from "$lib/shared/animation-engine/domain/types/TipEffectTypes";
   import type { AvatarInstanceState } from "../state/avatar-instance-state.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+  import { resolvePerformerProp } from "$lib/shared/3d/state/performer-prop-resolution";
   import { Raycaster, Vector2 } from "three";
   import type { Object3D, Scene } from "three";
 
@@ -325,8 +326,8 @@
       avatarState={performer}
       visiblePlanes={gridVisiblePlanes}
       gridMode={(sequenceData?.gridMode ?? "diamond") as import("../domain/constants/grid-layout").GridMode}
-      {bluePropType}
-      {redPropType}
+      bluePropType={resolvePerformerProp(performer, bluePropType)}
+      redPropType={resolvePerformerProp(performer, redPropType)}
       bluePropState={performer.bluePropState}
       redPropState={performer.redPropState}
       tipEffectMap={globalTipEffectMap}
