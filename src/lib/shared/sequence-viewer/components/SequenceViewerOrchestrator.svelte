@@ -199,7 +199,7 @@
 </script>
 
 <script lang="ts">
-  import { onMount, onDestroy, type Snippet } from "svelte";
+  import { onMount, onDestroy, untrack, type Snippet } from "svelte";
   import { goto, replaceState } from "$app/navigation";
   import {
     GoogleAuthProvider,
@@ -491,7 +491,7 @@
     }
   }
   let editingPane = $state<'animation' | 'image' | 'video-upload' | null>(
-    loadRecentEditingPane(sequence?.id ?? null)
+    untrack(() => loadRecentEditingPane(sequence?.id ?? null))
   );
   // Refresh the stored timestamp whenever editingPane changes so the TTL
   // window stays aligned with the most recent mount/transition.

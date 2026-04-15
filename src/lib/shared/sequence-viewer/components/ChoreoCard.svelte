@@ -36,6 +36,9 @@
   import { DEFAULT_SHARE_OPTIONS } from "$lib/shared/share/domain/models/ShareOptions";
   import { createStartPositionFromBeatStart } from "$lib/features/create/shared/services/implementations/sequence-transforms/sequence-transforms";
   import { previewCellRenderer } from "../services/implementations/PreviewCellRenderer";
+  import { cellCacheKeyDeriver } from "../services/implementations/CellCacheKeyDeriver";
+  import { pictographBlobCache } from "$lib/shared/render/services/implementations/PictographBlobCache";
+  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import { simplifyAndTruncate } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
   import { calculateTimelineRowsByBeatCount } from "$lib/features/create/shared/workspace-panel/sequence-display/utils/grid-calculations";
@@ -996,41 +999,100 @@
       const totalCellCount = placeholderCells.length;
       let loadedCount = 0;
 
-      // Render cells SEQUENTIALLY (start → 1 → 2 → 3...) so animation can
-      // chase the render frontier. Perceived time is much shorter than parallel
-      // because cells appear in meaningful order.
-
-      // Start position render
+      // Build per-cell render tasks ahead of time — we need the pictograph data,
+      // cell options (for mixed-duration widthMultiplier), and cache key for each.
+      interface CellTask {
+        cellIndex: number;           // -1 for start, 0..n-1 for steps
+        data: PictographData;
+        stepNumber: number | undefined;
+        options: PreviewCellRenderOptions;
+        cacheKey: string;
+      }
+      const tasks: CellTask[] = [];
       if (sequence.startPosition || firstStep) {
         const startData = sequence.startPosition || createStartPositionFromBeatStart(firstStep!);
-        const imageUrl = await previewCellRenderer.renderCell(startData, undefined, isDark, renderOptions);
-        const idx = cells.findIndex(c => c.index === -1);
-        if (idx !== -1) {
-          cells[idx] = { ...cells[idx]!, imageUrl, isLoaded: true };
-        }
-        loadedCount++;
-        onRenderProgress?.(loadedCount, totalCellCount);
+        tasks.push({
+          cellIndex: -1,
+          data: startData,
+          stepNumber: undefined,
+          options: renderOptions,
+          cacheKey: cellCacheKeyDeriver.deriveCacheKey(startData, undefined, isDark, renderOptions),
+        });
       }
-
-      // Step renders — in order, one at a time
       for (let i = 0; i < sequence.steps.length; i++) {
         const step = sequence.steps[i];
         if (!step) continue;
-
-        // For mixed-duration sequences, pass widthMultiplier so the image renderer
-        // produces a wider canvas with the pictograph content centered
         const stepDuration = step.duration ?? 1;
-        const cellRenderOptions = (mixed && stepDuration !== 1)
+        const cellOpts = (mixed && stepDuration !== 1)
           ? { ...renderOptions, widthMultiplier: stepDuration }
           : renderOptions;
+        tasks.push({
+          cellIndex: i,
+          data: step,
+          stepNumber: i + 1,
+          options: cellOpts,
+          cacheKey: cellCacheKeyDeriver.deriveCacheKey(step, i + 1, isDark, cellOpts),
+        });
+      }
 
-        const imageUrl = await previewCellRenderer.renderCell(step, i + 1, isDark, cellRenderOptions);
-        const idx = cells.findIndex(c => c.index === i);
-        if (idx !== -1) {
-          cells[idx] = { ...cells[idx]!, imageUrl, isLoaded: true };
+      // PHASE 1: parallel IDB read for every cell. Any hit lets us paint the
+      // cell instantly in a single batched assignment below. Misses fall
+      // through to Phase 2 where the worker pool renders them in background.
+      const blobResults = await Promise.all(
+        tasks.map(t => pictographBlobCache.get(t.cacheKey).catch(() => null))
+      );
+
+      // Apply all IDB hits in a single batch assignment. One Svelte reactive
+      // flush → one paint. Replaces the sequential cell-by-cell loop that
+      // stalled warm sequences for ~1.5s.
+      const updatedCells: CellData[] = cells.map(c => ({ ...c }));
+      const missedTasks: { task: CellTask; cellArrayIndex: number }[] = [];
+      let hitCount = 0;
+      for (let t = 0; t < tasks.length; t++) {
+        const task = tasks[t]!;
+        const blob = blobResults[t];
+        const idx = updatedCells.findIndex(c => c.index === task.cellIndex);
+        if (idx === -1) continue;
+        if (blob) {
+          updatedCells[idx] = { ...updatedCells[idx]!, imageUrl: URL.createObjectURL(blob), isLoaded: true };
+          hitCount++;
+        } else {
+          missedTasks.push({ task, cellArrayIndex: idx });
         }
-        loadedCount++;
-        onRenderProgress?.(loadedCount, totalCellCount);
+      }
+      cells = updatedCells;
+      loadedCount = hitCount;
+      onRenderProgress?.(loadedCount, totalCellCount);
+
+      // PHASE 2: for cells that missed IDB, render via the worker pool in
+      // parallel. Each cell updates independently as it completes, so the user
+      // sees progressive fill-in for genuinely cold sequences. Scheduling at
+      // background priority keeps 3D's main-thread budget unstarved.
+      if (missedTasks.length > 0) {
+        const scheduleRender = async (task: CellTask, cellArrayIndex: number) => {
+          const run = async () => {
+            try {
+              const imageUrl = await previewCellRenderer.renderCell(task.data, task.stepNumber, isDark, task.options);
+              // Only apply if the cell is still the placeholder we queued — a
+              // later renderAllCells() may have replaced it with a newer render.
+              const current = cells[cellArrayIndex];
+              if (current && current.index === task.cellIndex && !current.isLoaded) {
+                cells[cellArrayIndex] = { ...current, imageUrl, isLoaded: true };
+                loadedCount++;
+                onRenderProgress?.(loadedCount, totalCellCount);
+              }
+            } catch (err) {
+              console.warn("[ChoreoCard] worker render failed for cell", task.cellIndex, err);
+            }
+          };
+          const scheduler = (globalThis as { scheduler?: { postTask?: (cb: () => unknown, opts: { priority: string }) => Promise<unknown> } }).scheduler;
+          if (scheduler?.postTask) {
+            await scheduler.postTask(run, { priority: "background" });
+          } else {
+            await run();
+          }
+        };
+        await Promise.allSettled(missedTasks.map(m => scheduleRender(m.task, m.cellArrayIndex)));
       }
 
       // Store in global cache for reuse across component remounts
