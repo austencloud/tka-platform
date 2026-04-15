@@ -11,6 +11,14 @@ export type VideoFps = 30 | 60 | 120;
 // Video resolution options
 export type VideoResolution = 720 | 1080 | 2160 | 4320;
 
+// Video quality tier.
+// - "standard": one render per output frame, native resolution.
+// - "cinema": 2× supersampling + 4× temporal motion blur. 3D exports only.
+//             Roughly 4-8× slower than standard but produces a notably
+//             smoother, sharper result — the right choice for finished
+//             cuts, portfolio pieces, and anything you plan to share.
+export type VideoQuality = "standard" | "cinema";
+
 // Effect overrides for video export
 export interface EffectOverride {
   fire: boolean;
@@ -32,6 +40,7 @@ export interface VideoExportOptions {
   effectOverrides: EffectOverride | null; // null = use viewer state
   includeStartPosition: boolean;
   includeEndHold: boolean;
+  quality: VideoQuality;
 }
 
 export interface SplitExportOptions extends VideoExportOptions {
@@ -69,6 +78,7 @@ const DEFAULT_VIDEO_OPTIONS: VideoExportOptions = {
   effectOverrides: null,
   includeStartPosition: true,
   includeEndHold: true, // Overridden to false for loopable sequences at runtime
+  quality: "standard",
 };
 
 const DEFAULT_SPLIT_OPTIONS: SplitExportOptions = {
@@ -81,6 +91,7 @@ const DEFAULT_SPLIT_OPTIONS: SplitExportOptions = {
   compositeOrientation: "horizontal",
   gridStepSize: 120,
   showStepNumbers: true,
+  quality: "standard",
 };
 
 const DEFAULT_IMAGE_OPTIONS: ImageExportOptions = {
@@ -168,6 +179,7 @@ export function createExportOptionsState() {
   let videoEffectOverrides = $state<EffectOverride | null>(stored.video.effectOverrides ?? null);
   let videoIncludeStartPosition = $state(stored.video.includeStartPosition ?? true);
   let videoIncludeEndHold = $state(stored.video.includeEndHold ?? true);
+  let videoQuality = $state<VideoQuality>(stored.video.quality ?? "standard");
 
   // Split export options (animation + grid composite)
   let splitFps = $state<VideoFps>(stored.split.fps);
@@ -201,6 +213,7 @@ export function createExportOptionsState() {
         effectOverrides: videoEffectOverrides,
         includeStartPosition: videoIncludeStartPosition,
         includeEndHold: videoIncludeEndHold,
+        quality: videoQuality,
       },
       split: {
         fps: splitFps,
@@ -212,6 +225,7 @@ export function createExportOptionsState() {
         showStepNumbers: splitShowStepNumbers,
         includeStartPosition: splitIncludeStartPosition,
         includeEndHold: splitIncludeEndHold,
+        quality: "standard",
       },
       image: {
         includeStartPosition: imageIncludeStartPosition,
@@ -235,6 +249,7 @@ export function createExportOptionsState() {
     get videoEffectOverrides() { return videoEffectOverrides; },
     get videoIncludeStartPosition() { return videoIncludeStartPosition; },
     get videoIncludeEndHold() { return videoIncludeEndHold; },
+    get videoQuality() { return videoQuality; },
 
     // Split options (getters)
     get splitFps() { return splitFps; },
@@ -278,6 +293,10 @@ export function createExportOptionsState() {
     },
     setVideoIncludeEndHold(include: boolean) {
       videoIncludeEndHold = include;
+      persist();
+    },
+    setVideoQuality(q: VideoQuality) {
+      videoQuality = q;
       persist();
     },
 
@@ -355,6 +374,7 @@ export function createExportOptionsState() {
         effectOverrides: videoEffectOverrides,
         includeStartPosition: videoIncludeStartPosition,
         includeEndHold: videoIncludeEndHold,
+        quality: videoQuality,
       };
     },
 
@@ -369,6 +389,7 @@ export function createExportOptionsState() {
         compositeOrientation: splitOrientation,
         gridStepSize: splitGridStepSize,
         showStepNumbers: splitShowStepNumbers,
+        quality: "standard",
       };
     },
 
@@ -394,6 +415,7 @@ export function createExportOptionsState() {
       videoEffectOverrides = DEFAULT_VIDEO_OPTIONS.effectOverrides;
       videoIncludeStartPosition = DEFAULT_VIDEO_OPTIONS.includeStartPosition;
       videoIncludeEndHold = DEFAULT_VIDEO_OPTIONS.includeEndHold;
+      videoQuality = DEFAULT_VIDEO_OPTIONS.quality;
       splitFps = DEFAULT_SPLIT_OPTIONS.fps;
       splitLoopCount = DEFAULT_SPLIT_OPTIONS.loopCount;
       splitResolution = DEFAULT_SPLIT_OPTIONS.resolution;

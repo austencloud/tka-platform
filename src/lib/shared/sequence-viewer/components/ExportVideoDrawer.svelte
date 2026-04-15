@@ -256,6 +256,34 @@
               </div>
             </div>
 
+            <!-- Quality (3D only) -->
+            {#if renderMode === '3d'}
+              <div class="setting-row">
+                <span class="setting-label">Quality</span>
+                <div class="chip-group">
+                  <button
+                    type="button"
+                    class="chip"
+                    class:active={exportOptions.videoQuality === 'standard'}
+                    onclick={() => exportOptions.setVideoQuality('standard')}
+                    aria-pressed={exportOptions.videoQuality === 'standard'}
+                  >
+                    Standard
+                  </button>
+                  <button
+                    type="button"
+                    class="chip"
+                    class:active={exportOptions.videoQuality === 'cinema'}
+                    onclick={() => exportOptions.setVideoQuality('cinema')}
+                    aria-pressed={exportOptions.videoQuality === 'cinema'}
+                  >
+                    <i class="fas fa-film" aria-hidden="true" style="margin-right: 0.35em;"></i>
+                    Cinema
+                  </button>
+                </div>
+              </div>
+            {/if}
+
             <!-- Timing -->
             <div class="setting-row">
               <span class="setting-label">Timing</span>
@@ -435,6 +463,35 @@
           {/each}
         </div>
       </div>
+
+      {#if renderMode === '3d'}
+        <div class="setting-row">
+          <span class="setting-label">Quality</span>
+          <div class="chip-group">
+            <button
+              type="button"
+              class="chip"
+              class:active={exportOptions.videoQuality === 'standard'}
+              onclick={() => exportOptions.setVideoQuality('standard')}
+              aria-pressed={exportOptions.videoQuality === 'standard'}
+              title="One render per frame. Fastest export."
+            >
+              Standard
+            </button>
+            <button
+              type="button"
+              class="chip"
+              class:active={exportOptions.videoQuality === 'cinema'}
+              onclick={() => exportOptions.setVideoQuality('cinema')}
+              aria-pressed={exportOptions.videoQuality === 'cinema'}
+              title="2× supersampling + 4× motion blur. ~4-8× slower, noticeably smoother and sharper."
+            >
+              <i class="fas fa-film" aria-hidden="true" style="margin-right: 0.35em;"></i>
+              Cinema
+            </button>
+          </div>
+        </div>
+      {/if}
 
       <div class="setting-row">
         <span class="setting-label">Timing</span>
