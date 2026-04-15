@@ -16,9 +16,18 @@ import type {
   PropFlameColor,
 } from "$lib/shared/animation-engine/domain/types/FireTypes";
 
-export const EFFECTS_CONFIG_VERSION = 1;
+export const EFFECTS_CONFIG_VERSION = 2;
 
-export type EffectType = "none" | "trails" | "fire" | "led" | "charcoal";
+export type EffectType =
+  | "none"
+  | "trails"
+  | "fire"
+  | "led"
+  | "charcoal"
+  | "zap"
+  | "sparkles"
+  | "motion"
+  | "bloom";
 
 export interface TrailsIntent {
   /** Which staff end(s) the trail tracks. */
@@ -74,6 +83,50 @@ export interface CharcoalIntent {
   glow: number;
 }
 
+export interface ZapIntent {
+  /** 0-1 — overall arc brightness + branch count. */
+  intensity: number;
+  /** Hex string, e.g. "#88ccff". */
+  color: string;
+  /** 1-30 strikes per second. */
+  frequency: number;
+  /** 'arc' = tip-to-tip arc. 'crackle' = radiate from each tip. */
+  mode: "arc" | "crackle";
+  /** 0-1 — probability each arc segment spawns a branch. */
+  branching: number;
+}
+
+export interface SparklesIntent {
+  /** 0-1 — particle spawn rate multiplier. */
+  rate: number;
+  /** 0-1 — particle scale multiplier. */
+  size: number;
+  /** 0.1-3.0 seconds. */
+  lifetime: number;
+  /** Hex string — primary tint. Ignored when `rainbow` is true. */
+  color: string;
+  /** Hue-cycle override. */
+  rainbow: boolean;
+}
+
+export interface MotionIntent {
+  /** 0-1 — trailing blur strength. */
+  blur: number;
+  /** 0-1 — velocity-based streak strength. */
+  speedLines: number;
+  /** 0-1 — min hand speed before effect kicks in (normalized). */
+  threshold: number;
+}
+
+export interface BloomIntent {
+  /** 0-1 — overall glow. */
+  intensity: number;
+  /** 0-1 — luminance cutoff (only pixels brighter than this bloom). */
+  threshold: number;
+  /** 0-1 — blur spread / kernel size. */
+  radius: number;
+}
+
 /**
  * Backend-specific override storage. Populated only when the user
  * has explicitly edited a backend-only parameter via an Advanced
@@ -89,6 +142,14 @@ export interface EffectsOverrides {
   led3D?: Record<string, unknown>;
   charcoal2D?: Record<string, unknown>;
   charcoal3D?: Record<string, unknown>;
+  zap2D?: Record<string, unknown>;
+  zap3D?: Record<string, unknown>;
+  sparkles2D?: Record<string, unknown>;
+  sparkles3D?: Record<string, unknown>;
+  motion2D?: Record<string, unknown>;
+  motion3D?: Record<string, unknown>;
+  bloom2D?: Record<string, unknown>;
+  bloom3D?: Record<string, unknown>;
 }
 
 export interface EffectsConfig {
@@ -98,11 +159,19 @@ export interface EffectsConfig {
   fire: FireIntent;
   led: LedIntent;
   charcoal: CharcoalIntent;
+  zap: ZapIntent;
+  sparkles: SparklesIntent;
+  motion: MotionIntent;
+  bloom: BloomIntent;
   activePresets: {
     trails: string | null;
     fire: string | null;
     led: string | null;
     charcoal: string | null;
+    zap: string | null;
+    sparkles: string | null;
+    motion: string | null;
+    bloom: string | null;
   };
   overrides?: EffectsOverrides;
 }
