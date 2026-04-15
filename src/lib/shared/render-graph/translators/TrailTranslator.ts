@@ -33,8 +33,14 @@ export interface TrailTranslationContext {
 
 const DEFAULT_THICKNESS_NDC = 0.008;
 const THICKNESS_UNIT_NDC = 0.002;
-const GLOW_RATIO = 1.5;
-const DEFAULT_DECAY_PER_SECOND = 0.75;
+/** Gaussian-blur halo radius expressed as a multiple of head thickness. */
+const GLOW_RATIO = 2.5;
+/**
+ * Fade rate tuned to match Canvas2D TrailOverlayCanvas's 1200 ms fade
+ * duration. Canvas2D decays ~4.9% of alpha per 60fps frame; continuous
+ * equivalent is exp(-3.0 * dt) ≈ 4.9% per 16.67 ms.
+ */
+const DEFAULT_DECAY_PER_SECOND = 3.0;
 
 export function toTrailPassPayload(
   intent: TrailsIntent,

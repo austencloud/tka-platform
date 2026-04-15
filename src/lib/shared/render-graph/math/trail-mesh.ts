@@ -204,5 +204,5 @@ export function buildTaperedMesh(
     offset += 8;
   }
 
-  return { vertices, vertexCount: n * 2, coreRatio };
+  return { vertices, vertexCount: n * 2 };
 }
