@@ -1,8 +1,11 @@
-# Service Naming Convention
+---
+name: service-naming
+description: Use when creating or renaming service classes, interfaces, or container registrations. Enforces the "name by what it does" convention — never use "Service" suffix.
+---
+
+# Service Naming
 
 **Never use "Service" suffix.** Name services by what they DO.
-
-## Pattern
 
 | Action | Suffix | Example |
 |--------|--------|---------|
@@ -19,4 +22,4 @@
 | Cache | `*Cache` | `BrowseCache` |
 | Orchestrate | `*Orchestrator` | `GenerationOrchestrator` |
 
-Interfaces use `I` prefix: `ISequencePersister`, `ILOOPDetector`
+Interfaces use `I` prefix: `ISequencePersister`, `ILOOPDetector`.
