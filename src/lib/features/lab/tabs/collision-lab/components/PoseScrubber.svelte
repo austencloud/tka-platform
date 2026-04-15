@@ -49,7 +49,7 @@
 <div class="scrubber">
   <div class="filters">
     <div class="filter-group">
-      <label>Blue plane</label>
+      <span class="group-label">Blue plane</span>
       <div class="chips">
         {#each planeOptions as opt}
           <button
@@ -62,7 +62,7 @@
     </div>
 
     <div class="filter-group">
-      <label>Red plane</label>
+      <span class="group-label">Red plane</span>
       <div class="chips">
         {#each planeOptions as opt}
           <button
@@ -75,7 +75,7 @@
     </div>
 
     <div class="filter-group">
-      <label>Blue ori</label>
+      <span class="group-label">Blue ori</span>
       <div class="chips">
         {#each oriOptions as opt}
           <button
@@ -88,7 +88,7 @@
     </div>
 
     <div class="filter-group">
-      <label>Red ori</label>
+      <span class="group-label">Red ori</span>
       <div class="chips">
         {#each oriOptions as opt}
           <button
@@ -101,7 +101,7 @@
     </div>
 
     <div class="filter-group">
-      <label>&nbsp;</label>
+      <span class="group-label">&nbsp;</span>
       <button
         class="chip cross-plane"
         class:active={state.crossPlaneOnly}
@@ -164,7 +164,7 @@
     align-items: center;
     gap: 8px;
   }
-  .filter-group label {
+  .filter-group .group-label {
     font-size: 12px;
     opacity: 0.7;
   }

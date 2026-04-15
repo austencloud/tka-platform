@@ -360,9 +360,19 @@
                 class="card-cell"
                 class:clickable={!!onCardClick}
                 style:aspect-ratio="{cardAspect}"
+                role="button"
+                tabindex="0"
                 onclick={() => {
                   const idx = sheetIndex * layout.cardsPerPage + cardIndex;
                   onCardClick?.(sequences[idx]!, card.frontUrl, () => rerenderCard(idx));
+                }}
+                onkeydown={(e) => {
+                  if (!onCardClick) return;
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    const idx = sheetIndex * layout.cardsPerPage + cardIndex;
+                    onCardClick(sequences[idx]!, card.frontUrl, () => rerenderCard(idx));
+                  }
                 }}
                 oncontextmenu={(e) => handleCardContextMenu(e, sheetIndex * layout.cardsPerPage + cardIndex)}
               >
@@ -387,9 +397,19 @@
                 style:aspect-ratio="{cardAspect}"
                 style:grid-column="{mirroredCol(cardIndex, layout.cols) + 1}"
                 style:grid-row="{rowOf(cardIndex, layout.cols) + 1}"
+                role="button"
+                tabindex="0"
                 onclick={() => {
                   const idx = sheetIndex * layout.cardsPerPage + cardIndex;
                   onCardClick?.(sequences[idx]!, card.frontUrl, () => rerenderCard(idx));
+                }}
+                onkeydown={(e) => {
+                  if (!onCardClick) return;
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    const idx = sheetIndex * layout.cardsPerPage + cardIndex;
+                    onCardClick(sequences[idx]!, card.frontUrl, () => rerenderCard(idx));
+                  }
                 }}
                 oncontextmenu={(e) => handleCardContextMenu(e, sheetIndex * layout.cardsPerPage + cardIndex)}
               >
