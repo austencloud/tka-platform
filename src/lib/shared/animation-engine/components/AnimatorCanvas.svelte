@@ -507,18 +507,21 @@ Last audit: 2025-12-27
   onpointercancel={cancelLongPress}
 >
   <div class="content-wrapper" bind:this={contentWrapperEl} data-dark-mode={darkModeEnabled ? "true" : "false"}>
-    {#if !suppress2DOverlays}
-      <div class="header-slot">
-        <WordHeader
-          {word}
-          visible={wordHeaderVisible}
-          darkMode={darkModeEnabled}
-          activeStepNumber={currentStep >= 1 && currentStep < (sequenceData?.steps?.length ?? 0) + 0.99 ? Math.floor(currentStep) : null}
-          difficultyLevel={computedDifficultyLevel}
-          loopComponents={computedLoopComponents}
-        />
-      </div>
-    {/if}
+    <!-- Always mounted. Unmounting via suppress2DOverlays would re-fire the
+         WordHeader's slide-in animation each time the user flips from 3D
+         back to 2D, which reads as an unwanted glitch mid-session. The 3D
+         canvas layer (z-index:2, inset:0) visually covers this when 3D is
+         active, so there's no cost to leaving it mounted. -->
+    <div class="header-slot">
+      <WordHeader
+        {word}
+        visible={wordHeaderVisible}
+        darkMode={darkModeEnabled}
+        activeStepNumber={currentStep >= 1 && currentStep < (sequenceData?.steps?.length ?? 0) + 0.99 ? Math.floor(currentStep) : null}
+        difficultyLevel={computedDifficultyLevel}
+        loopComponents={computedLoopComponents}
+      />
+    </div>
 
     <div
       class="canvas-wrapper"
@@ -614,19 +617,18 @@ Last audit: 2025-12-27
       </div>
     {/if}
 
-    {#if !suppress2DOverlays}
-      <div class="progress-slot">
-        <SegmentedSequenceProgressBar
-          steps={sequenceData?.steps ?? []}
-          currentStep={currentStep}
-          visible={progressBarVisible && !hideProgressBar}
-          darkMode={darkModeEnabled}
-          variant={progressBarVariant}
-          showLabels={progressBarVariant === "labeled" || progressBarVariant === "gradient-labeled"}
-          onSeek={onProgressBarSeek}
-        />
-      </div>
-    {/if}
+    <!-- Always mounted, same reason as header-slot above. -->
+    <div class="progress-slot">
+      <SegmentedSequenceProgressBar
+        steps={sequenceData?.steps ?? []}
+        currentStep={currentStep}
+        visible={progressBarVisible && !hideProgressBar}
+        darkMode={darkModeEnabled}
+        variant={progressBarVariant}
+        showLabels={progressBarVariant === "labeled" || progressBarVariant === "gradient-labeled"}
+        onSeek={onProgressBarSeek}
+      />
+    </div>
   </div>
 
   {#if !disableContextMenu}

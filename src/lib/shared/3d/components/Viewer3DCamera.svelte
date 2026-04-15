@@ -10,14 +10,26 @@
 
   import { onMount, onDestroy } from "svelte";
   import { T } from "@threlte/core";
-  import { OrbitControls } from "@threlte/extras";
-  import { Vector3 } from "three";
+  import * as THREE from "three";
+  import type CameraControls from "camera-controls";
+  import Viewer3DOrbitControls from "./Viewer3DOrbitControls.svelte";
   import { getViewer3DContext } from "../context/viewer-3d-context";
   import type { CameraStateSnapshot } from "../domain/types/CameraStateSnapshot";
-  import { STAGE } from "../scale/scale-constants";
-  import { userProportionsState } from "../state/user-proportions-state.svelte";
+  import UnifiedCameraController from "../camera/UnifiedCameraController.svelte";
+  import { CameraMode } from "../camera/types";
+  import type { AvatarState, PhysicsProvider } from "../camera/types";
+
+  interface Props {
+    /** Camera player avatar for fly/walk modes (WASD writes here, not the performer). */
+    cameraPlayerAvatar?: AvatarState | null;
+    /** Physics provider for fly mode (noclip). Null for orbit/walk. */
+    cameraPlayerPhysics?: PhysicsProvider | null;
+  }
+
+  let { cameraPlayerAvatar = null, cameraPlayerPhysics = null }: Props = $props();
 
   const viewer3DState = getViewer3DContext();
+  const navMode = $derived(viewer3DState.navMode);
 
   // Grid center in 3D world space.
   // Y=0 is shoulder height (proportions reference). Grid T.Group is at
@@ -101,85 +113,77 @@
   const defaultPosition = computed.position;
   const defaultTarget = computed.target;
 
-  // Restore persisted camera if available, otherwise use computed default
+  // Restore persisted camera if available, otherwise use computed default.
+  // Guard against degenerate persisted state: if the saved target is missing,
+  // contains NaN, underground, or collapsed onto the camera position, the
+  // orbit would rotate around nothing meaningful (user-visible symptom:
+  // "camera spins in place around itself"). In those cases, throw the
+  // persisted snapshot away and fall back to sensible defaults.
   const persisted = viewer3DState.persistedCamera;
-  const initialPosition = persisted?.position ?? defaultPosition;
-  const initialTarget = persisted?.target ?? defaultTarget;
+  const persistedPos = persisted?.position;
+  const persistedTarget = persisted?.target;
 
-  let controlsRef: any = $state(null);
-
-  /**
-   * Keep the orbit camera above the ground plane. Recomputes the
-   * maximum polar angle each frame based on the current orbit radius
-   * so you can get close to the ground without clipping through it.
-   */
-  function clampCameraAboveGround() {
-    if (!controlsRef) return;
-    const camera = controlsRef.object;
-    if (!camera) return;
-
-    const r = camera.position.distanceTo(controlsRef.target);
-    const floorY = userProportionsState.groundY + STAGE.ORBIT_GROUND_BUFFER;
-    const cosTheta = (floorY - controlsRef.target.y) / r;
-    controlsRef.maxPolarAngle = Math.acos(Math.max(-1, Math.min(1, cosTheta)));
+  function isFinitePoint(p: { x: number; y: number; z: number } | undefined | null): boolean {
+    return !!p && Number.isFinite(p.x) && Number.isFinite(p.y) && Number.isFinite(p.z);
   }
+
+  function distSq(
+    a: { x: number; y: number; z: number },
+    b: { x: number; y: number; z: number },
+  ): number {
+    const dx = a.x - b.x;
+    const dy = a.y - b.y;
+    const dz = a.z - b.z;
+    return dx * dx + dy * dy + dz * dz;
+  }
+
+  // OrbitControls enforces minDistance=1, so after any legitimate
+  // interaction the camera and target must be at least 1m apart. Anything
+  // tighter than that is corruption and would produce the "rotating in
+  // place from my own head" symptom.
+  const MIN_ORBIT_RADIUS_SQ = 1.0;
+
+  const persistedLooksOk =
+    isFinitePoint(persistedPos) &&
+    isFinitePoint(persistedTarget) &&
+    distSq(persistedPos!, persistedTarget!) >= MIN_ORBIT_RADIUS_SQ &&
+    persistedTarget!.y >= -0.5;
+
+  // When persisted state is broken, clear it. Without this, handleEnd()
+  // would re-save the same broken snapshot on the next orbit-end and we'd
+  // fall into the same validation branch forever.
+  if (persisted && !persistedLooksOk && typeof localStorage !== "undefined") {
+    try {
+      localStorage.removeItem("tka-viewer3d-camera");
+    } catch {
+      // Storage unavailable — harmless, defaults will be used anyway.
+    }
+  }
+
+  const initialPosition = persistedLooksOk ? persistedPos! : defaultPosition;
+  const initialTarget = persistedLooksOk ? persistedTarget! : defaultTarget;
+
+  // Live reference to the three.js camera. Populated via bind:ref on
+  // <T.PerspectiveCamera> below. camera-controls needs the real camera
+  // instance, not a threlte wrapper, so we bind the ref directly.
+  let cameraRef = $state<THREE.PerspectiveCamera | null>(null);
+
+  // The camera-controls instance, exposed by the child on mount. Used by
+  // snapTo to imperatively move the camera with the library's built-in
+  // smoothing instead of a hand-rolled rAF lerp.
+  let controlsInstance: CameraControls | null = null;
 
   // Debounce persistence — only save after user stops orbiting for 500ms.
-  // This avoids the infinite loop from writing $state on every onchange frame.
   let saveTimer: ReturnType<typeof setTimeout> | null = null;
 
-  // Minimum camera height above ground (y=0). The orbit's maxPolarAngle stops
-  // the camera from swinging under the floor, but right-click panning slides
-  // both camera and target on the screen plane — nothing in OrbitControls
-  // stops that from diving underground. We clamp on every change so panning,
-  // keyboard nudges, and dollying all bottom out just above the floor.
-  const MIN_CAMERA_Y = 0.05;
-
-  // Guard against re-entering clamp when we ourselves call controls.update()
-  // (which re-fires the 'change' event).
-  let clamping = false;
-
-  function clampBelowGround() {
-    if (!controlsRef || clamping) return;
-    const camera = controlsRef.object;
-    const target = controlsRef.target;
-    if (!camera || !target) return;
-
-    let changed = false;
-
-    if (camera.position.y < MIN_CAMERA_Y) {
-      // Shift both camera and target by the same delta so the view direction
-      // is preserved — otherwise a pure camera-only clamp would tilt the view
-      // up sharply as the user keeps dragging into the floor.
-      const delta = MIN_CAMERA_Y - camera.position.y;
-      camera.position.y += delta;
-      target.y += delta;
-      changed = true;
-    }
-
-    if (target.y < 0) {
-      // If panning dragged the target itself below ground, bring it flush.
-      target.y = 0;
-      changed = true;
-    }
-
-    if (changed) {
-      clamping = true;
-      controlsRef.update?.();
-      clamping = false;
-    }
-  }
-
-  function handleEnd() {
-    if (!controlsRef) return;
-    const camera = controlsRef.object;
-    const target = controlsRef.target;
-    if (!camera || !target) return;
+  function handleControlEnd(position: THREE.Vector3, target: THREE.Vector3) {
+    const camera = cameraRef;
+    if (!camera) return;
 
     if (saveTimer) clearTimeout(saveTimer);
     saveTimer = setTimeout(() => {
       const snapshot: CameraStateSnapshot = {
-        position: { x: camera.position.x, y: camera.position.y, z: camera.position.z },
+        position: { x: position.x, y: position.y, z: position.z },
         rotation: { x: camera.rotation.x, y: camera.rotation.y, z: camera.rotation.z },
         fov: camera.fov ?? 50,
         target: { x: target.x, y: target.y, z: target.z },
@@ -189,85 +193,65 @@
     }, 500);
   }
 
-  // Smooth camera animation via lerp
-  let animFrameId: number | null = null;
-
   function snapTo(
     targetPos: { x: number; y: number; z: number },
-    targetLookAt: { x: number; y: number; z: number }
+    targetLookAt: { x: number; y: number; z: number },
   ) {
-    if (!controlsRef) return;
-    const camera = controlsRef.object;
-    const controls = controlsRef;
-    if (!camera) return;
-
-    // Cancel any in-progress animation
-    if (animFrameId !== null) cancelAnimationFrame(animFrameId);
-
-    const startPos = new Vector3().copy(camera.position);
-    const endPos = new Vector3(targetPos.x, targetPos.y, targetPos.z);
-    const startTarget = new Vector3().copy(controls.target);
-    const endTarget = new Vector3(targetLookAt.x, targetLookAt.y, targetLookAt.z);
-
-    const duration = 600; // ms
-    const startTime = performance.now();
-
-    function animate(now: number) {
-      const elapsed = now - startTime;
-      // Ease-out cubic for smooth deceleration
-      const raw = Math.min(elapsed / duration, 1);
-      const t = 1 - Math.pow(1 - raw, 3);
-
-      camera.position.lerpVectors(startPos, endPos, t);
-      controls.target.lerpVectors(startTarget, endTarget, t);
-      controls.update();
-
-      if (raw < 1) {
-        animFrameId = requestAnimationFrame(animate);
-      } else {
-        animFrameId = null;
-        // Persist final position
-        handleEnd();
-      }
-    }
-
-    animFrameId = requestAnimationFrame(animate);
+    if (!controlsInstance) return;
+    // camera-controls handles the smoothing internally via smoothTime.
+    // Passing enableTransition=true interpolates from the current pose.
+    controlsInstance.setLookAt(
+      targetPos.x,
+      targetPos.y,
+      targetPos.z,
+      targetLookAt.x,
+      targetLookAt.y,
+      targetLookAt.z,
+      true,
+    );
   }
 
-  // Register snapTo with the shared state so presets component can call it
   onMount(() => {
     viewer3DState.registerSnapTo(snapTo);
   });
 
   onDestroy(() => {
-    if (animFrameId !== null) cancelAnimationFrame(animFrameId);
     if (saveTimer) clearTimeout(saveTimer);
   });
 </script>
 
 <T.PerspectiveCamera
+  bind:ref={cameraRef}
   makeDefault
   position={[initialPosition.x, initialPosition.y, initialPosition.z]}
   fov={50}
->
-  <OrbitControls
-    bind:ref={controlsRef}
-    target={[initialTarget.x, initialTarget.y, initialTarget.z]}
-    enableDamping
-    dampingFactor={0.1}
-    minDistance={1}
-    maxDistance={25}
-    maxPolarAngle={Math.PI / 2}
-    screenSpacePanning={false}
-    onstart={() => viewer3DState.setCameraDragging(true)}
-    onchange={() => {
-      clampCameraAboveGround();
-      clampBelowGround();
-    }}
-    onend={() => {
-      viewer3DState.setCameraDragging(false);
-      clampBelowGround();
-      handleEnd();
-    }}
+/>
+
+{#if navMode === "orbit" && cameraRef}
+  <Viewer3DOrbitControls
+    camera={cameraRef}
+    {initialPosition}
+    {initialTarget}
+    oncontrolend={handleControlEnd}
+    oninstance={(c) => (controlsInstance = c)}
+    ondragchange={(d) => viewer3DState.setCameraDragging(d)}
   />
-</T.PerspectiveCamera>
+{/if}
+
+{#if navMode === "fly" && cameraPlayerAvatar}
+  <!-- Fly: first-person free camera. Physics provider reports permanent
+       noclip so the controller uses full-3D forward (pitch lifts you),
+       no gravity, no ground. Click canvas to enter pointer lock. -->
+  <UnifiedCameraController
+    destinationId="viewer-3d-fly"
+    avatarState={cameraPlayerAvatar}
+    physicsProvider={cameraPlayerPhysics}
+    enabled={true}
+    allowedModes={[CameraMode.FIRST_PERSON]}
+    disableModeToggle={true}
+    moveSpeed={4}
+    sprintMultiplier={2.5}
+    gravity={0}
+    jumpForce={0}
+  />
+{/if}

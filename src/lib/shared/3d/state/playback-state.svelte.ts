@@ -142,31 +142,12 @@ export function createPlaybackState(options: PlaybackOptions = {}) {
   }
 
   function reset() {
-    // [EXPORT-DIAG] Log reset calls during export
-    if ((globalThis as any).__exportDiagEnabled) {
-      console.log(
-        `[EXPORT-DIAG] playback.reset() key=${storageKey} progress was ${progress.toFixed(4)} -> 0`
-      );
-    }
     pause();
     progress = 0;
   }
 
-  // [EXPORT-DIAG] Counter for setProgress logging
-  let _setProgressDiagCounter = 0;
-
   function setProgress(value: number) {
-    const prev = progress;
     progress = Math.max(0, Math.min(1, value));
-
-    // [EXPORT-DIAG] Log setProgress calls during export
-    if ((globalThis as any).__exportDiagEnabled && _setProgressDiagCounter % 10 === 0) {
-      console.log(
-        `[EXPORT-DIAG] playback.setProgress key=${storageKey} ` +
-        `prev=${prev.toFixed(4)} new=${progress.toFixed(4)} requested=${value.toFixed(4)}`
-      );
-    }
-    _setProgressDiagCounter++;
   }
 
   function destroy() {

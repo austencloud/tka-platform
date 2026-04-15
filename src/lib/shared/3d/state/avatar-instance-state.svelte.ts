@@ -601,29 +601,13 @@ export function createAvatarInstanceState(
     updateVisibilityFromStep(stepConfigs[currentStepIndex]);
   }
 
-  // [EXPORT-DIAG] Counter for goToStep/setProgress logging
-  let _goToStepDiagCounter = 0;
-
   /**
    * Jump to specific beat
    */
   function goToStep(index: number) {
     if (stepConfigs.length === 0) return;
-    const prevIndex = currentStepIndex;
-    const prevProgress = playback.progress;
     currentStepIndex = Math.max(0, Math.min(index, stepConfigs.length - 1));
     playback.reset();
-
-    // [EXPORT-DIAG] Log the reset — this sets progress=0
-    if ((globalThis as any).__exportDiagEnabled && _goToStepDiagCounter % 10 === 0) {
-      console.log(
-        `[EXPORT-DIAG] goToStep id=${id} index=${index} ` +
-        `prevIndex=${prevIndex} prevProgress=${prevProgress.toFixed(4)} ` +
-        `afterReset: currentStepIndex=${currentStepIndex} progress=${playback.progress.toFixed(4)}`
-      );
-    }
-    _goToStepDiagCounter++;
-
     updateVisibilityFromStep(stepConfigs[currentStepIndex]);
   }
 

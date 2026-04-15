@@ -15,7 +15,7 @@ import type {
   AvatarCustomization,
   ProportionPreset,
 } from "../contracts/IAvatarCustomizer";
-import type { IAnimation3DPersister } from "../contracts/IAnimation3DPersister";
+import type { IScene3DPersister } from "../contracts/IScene3DPersister";
 
 /**
  * Anthropometric ratios based on research
@@ -140,7 +140,7 @@ export class AvatarCustomizer implements IAvatarCustomizer {
   private bodyMaterial: MeshStandardMaterial;
   private listeners: Set<(state: AvatarCustomization) => void> = new Set();
 
-  constructor(private persistence: IAnimation3DPersister) {
+  constructor(private persistence: IScene3DPersister) {
     // Get Austen preset (index 2)
     const austenPreset = PROPORTION_PRESETS.find((p) => p.id === "tall-male");
     const defaultProportions =

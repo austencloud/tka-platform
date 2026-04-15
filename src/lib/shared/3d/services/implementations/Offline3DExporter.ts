@@ -1,22 +1,40 @@
 /**
- * Offline 3D Exporter
+ * Offline 3D Exporter — synchronous scheduler-driven pipeline.
  *
- * Renders every frame deterministically by setting performer state and
- * camera position, then waiting for Threlte's normal frame pipeline
- * (useTask → IK → effects → render) to complete via requestAnimationFrame.
+ * Every frame is rendered deterministically by:
+ *   1. Setting the performer step + camera transform.
+ *   2. Flushing Svelte reactive state (await tick) so $derived/props
+ *      propagate into Threlte components.
+ *   3. Calling runFrame(time) — a single synchronous call that drives
+ *      the entire Threlte scheduler: puppet loop → IK → effects → render.
+ *   4. Capturing the canvas.
  *
- * Key insight: Threlte's advance() does NOT run useTask callbacks
- * synchronously — it schedules them. Calling advance() 200 times in a
- * loop only triggers ~8 task executions. Instead, we stay in "always"
- * render mode and use rAF to pace one export frame per browser frame.
- * This guarantees every frame gets the full pipeline: puppet loop
- * distributes state, IK solves arm poses, effects tick, scene renders.
+ * The native Three.js setAnimationLoop is paused for the duration of the
+ * export so automatic rAF renders don't race with our manual pacing.
+ * This delivers three properties:
+ *   - Speed: the export runs at CPU speed, not capped at the display
+ *     refresh rate.
+ *   - Tab-switch immunity: manual scheduler.run() is unaffected by the
+ *     browser throttling rAF when the tab is backgrounded.
+ *   - Determinism: monotonic synthetic time means effects/IK receive
+ *     exactly 1/fps seconds of delta per frame, independent of wall clock.
  *
- * Output quality is independent of real-time scene performance — a scene
- * that renders at 8.5fps live will still produce smooth 30fps export,
- * it just takes proportionally longer to render.
+ * ── Quality modes ──────────────────────────────────────────────────
+ * "standard": 1 render per output frame at native resolution.
+ * "cinema":
+ *   - 2× supersampling: render to a 2× backing store, then bilinearly
+ *     downsample to target. Eliminates shader aliasing on thin geometry
+ *     (staves, arms, prop edges) far better than MSAA.
+ *   - 4× temporal motion blur: render 4 sub-frames at T, T+¼Δ, T+½Δ,
+ *     T+¾Δ and average them into a compositor canvas using a running
+ *     alpha `1/(k+1)`. Each sub-frame advances the animation and camera
+ *     a fraction of a frame so fast motion integrates over the shutter
+ *     interval instead of snapping.
+ *   - Combined cost: ~4× wall time vs. standard for the same settings.
  */
 
+import { tick } from "svelte";
+import { Vector2 } from "three";
 import type { IBackgroundVideoEncoder } from "$lib/features/compose/services/contracts/IBackgroundVideoEncoder";
 import type { VideoExportProgress } from "$lib/features/compose/services/contracts/IVideoExportOrchestrator";
 import type {
@@ -34,6 +52,13 @@ import { ExportDiagnostics } from "$lib/shared/video-export/domain/ExportDiagnos
 
 const KEYFRAME_INTERVAL = 30;
 const FALLBACK_ASPECT_RATIO = 16 / 9;
+// How many frames to render between event-loop yields. Too small wastes
+// time in scheduling overhead; too large blocks the UI (progress bar
+// stops updating, cancel button feels sticky). 8 strikes a good balance.
+const YIELD_EVERY_N_FRAMES = 8;
+// Cinema-mode tunables.
+const CINEMA_SSAA = 2;
+const CINEMA_SUB_FRAMES = 4;
 
 export class Offline3DExporter implements IOffline3DExporter {
   private shouldCancel = false;
@@ -52,6 +77,9 @@ export class Offline3DExporter implements IOffline3DExporter {
     this.shouldCancel = false;
 
     const { fps, resolution, loopCount } = options;
+    const cinema = options.quality === "cinema";
+    const ssaa = cinema ? CINEMA_SSAA : 1;
+    const subFrames = cinema ? CINEMA_SUB_FRAMES : 1;
 
     const liveWidth = deps.webglCanvas.width;
     const liveHeight = deps.webglCanvas.height;
@@ -72,7 +100,6 @@ export class Offline3DExporter implements IOffline3DExporter {
       );
     }
 
-    // Initialize the background encoder (spins up the Web Worker)
     await this.backgroundEncoder.initialize({
       width,
       height,
@@ -99,16 +126,46 @@ export class Offline3DExporter implements IOffline3DExporter {
     );
 
     const keyframes = deps.cameraKeyframes.keyframes;
+    const frameDurationMs = 1000 / fps;
+    const subFrameDurationMs = frameDurationMs / subFrames;
+    let monotonicTime = performance.now();
 
-    // Signal export mode. The puppet loop reads exportCurrentStep
-    // instead of the live component prop.
+    // ── Cinema mode setup ─────────────────────────────────────────
+    // Save original renderer state so we can restore it later.
+    // Three.js WebGLRenderer.getSize(target) calls target.set(w, h), so
+    // the target must be a Vector2 (or compatible object with .set).
+    const origSize = new Vector2();
+    deps.renderer.getSize(origSize);
+    const origPixelRatio = deps.renderer.getPixelRatio();
+
+    // Compositor canvas for motion blur + downsample. Standard mode
+    // skips this entirely and captures straight from the WebGL canvas.
+    let compositor: HTMLCanvasElement | null = null;
+    let compositorCtx: CanvasRenderingContext2D | null = null;
+    if (cinema) {
+      compositor = document.createElement("canvas");
+      compositor.width = width;
+      compositor.height = height;
+      const ctx = compositor.getContext("2d", { alpha: false });
+      if (!ctx) {
+        throw new Error("Cinema export requires 2D canvas context support.");
+      }
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+      compositorCtx = ctx;
+
+      // Resize WebGL backing store to 2× target. Force pixelRatio=1 so
+      // setSize treats the numbers as literal backing-store dimensions —
+      // otherwise a retina display would double-multiply.
+      deps.renderer.setPixelRatio(1);
+      deps.renderer.setSize(width * ssaa, height * ssaa, false);
+    }
+
     deps.setExporting(true);
-
-    // Stay in "always" render mode — Threlte's normal rAF loop handles
-    // task execution (puppet loop, IK, effects) and rendering. We pace
-    // the export with requestAnimationFrame, setting state before each
-    // browser frame and capturing after Threlte renders.
-    // DO NOT switch to manual mode — advance() doesn't run tasks reliably.
+    // Stop the native rAF loop so our manual runFrame calls aren't
+    // racing with automatic renders. This gives us CPU-speed export
+    // and tab-switch immunity.
+    deps.pauseAutoLoop();
 
     try {
       for (let frameIndex = 0; frameIndex < totalFrames; frameIndex++) {
@@ -119,58 +176,89 @@ export class Offline3DExporter implements IOffline3DExporter {
         diag.startFrame();
 
         const animationTime = frameIndex / fps;
-        const currentStep = animationTime * deps.beatsPerSecond;
 
-        // 1. Set the animation step for the puppet loop to distribute.
-        //    The puppet loop runs in Threlte's useTask during the next
-        //    rAF tick and calls goToStep/setProgress on performers.
-        deps.setExportCurrentStep(currentStep);
+        if (compositorCtx) {
+          // Reset the compositor for this output frame. We want to
+          // start with a blank slate so the running-alpha average is
+          // built from the subFrames sub-renders and nothing else.
+          compositorCtx.globalAlpha = 1;
+          compositorCtx.clearRect(0, 0, width, height);
+        }
 
-        // 2. Interpolate camera from recorded keyframes
-        const cam = this.cameraInterpolator.interpolate(keyframes, animationTime);
-        deps.camera.position.set(cam.position[0], cam.position[1], cam.position[2]);
-        deps.camera.quaternion.set(
-          cam.quaternion[0],
-          cam.quaternion[1],
-          cam.quaternion[2],
-          cam.quaternion[3]
-        );
-        deps.camera.fov = cam.fov;
-        deps.camera.updateProjectionMatrix();
+        for (let sub = 0; sub < subFrames; sub++) {
+          // Sub-frame timing: evenly distribute sub-renders across the
+          // shutter interval [T, T+Δ). When subFrames=1 this reduces to
+          // subTime = animationTime, matching standard behaviour.
+          const subTime = animationTime + sub / (fps * subFrames);
+          const subStep = subTime * deps.beatsPerSecond;
+
+          // 1. Advance animation step for this sub-frame.
+          deps.setExportCurrentStep(subStep);
+
+          // 2. Interpolate camera at sub-frame time.
+          const cam = this.cameraInterpolator.interpolate(keyframes, subTime);
+          deps.camera.position.set(cam.position[0], cam.position[1], cam.position[2]);
+          deps.camera.quaternion.set(
+            cam.quaternion[0],
+            cam.quaternion[1],
+            cam.quaternion[2],
+            cam.quaternion[3]
+          );
+          deps.camera.fov = cam.fov;
+          deps.camera.updateProjectionMatrix();
+
+          // 3. Flush Svelte reactive state → components before Threlte's
+          //    useTask callbacks read it.
+          await tick();
+
+          // 4. Run Threlte's full pipeline synchronously — puppet loop,
+          //    IK, effects, render.
+          deps.runFrame(monotonicTime + sub * subFrameDurationMs);
+
+          if (compositorCtx) {
+            // Composite sub-render into motion-blur accumulator.
+            // Running alpha = 1/(sub+1) gives a mathematically exact
+            // uniform average across subFrames sub-renders using plain
+            // source-over blending. `drawImage` with differing source
+            // and dest sizes performs the SSAA downsample in-browser.
+            compositorCtx.globalAlpha = 1 / (sub + 1);
+            compositorCtx.drawImage(deps.webglCanvas, 0, 0, width, height);
+          }
+        }
 
         diag.markDrawImage();
 
-        // 3. Wait for Threlte's next frame to complete. This ensures:
-        //    - Puppet loop distributes exportCurrentStep to performers
-        //    - Avatar3D's IK solves arm poses toward prop targets
-        //    - EffectOrchestrator ticks fire/LED/trail effects
-        //    - Three.js renders the complete scene to the canvas
-        // We wait for TWO rAF ticks: the first lets Svelte flush the
-        // $state changes into component props, the second lets Threlte
-        // run its full pipeline with the updated props.
-        await this.waitForRender();
-
-        // 4. Capture the rendered frame
+        // 5. Capture the finished output frame.
+        const captureCanvas = compositor ?? deps.webglCanvas;
         const timestampMicros = Math.round(animationTime * 1_000_000);
         const isKeyframe = frameIndex % KEYFRAME_INTERVAL === 0;
-        const frame = this.capturer.capture(deps.webglCanvas, timestampMicros);
+        const frame = this.capturer.capture(captureCanvas, timestampMicros);
         diag.markCapture();
 
         this.backgroundEncoder.addFrameCaptured(frame, frameIndex, isKeyframe);
         diag.markAddFrame();
 
-        // 5. Report progress
+        // 6. Progress report.
         onProgress({
           progress: frameIndex / totalFrames,
           stage: "capturing",
           currentFrame: frameIndex,
           totalFrames,
         });
+
+        monotonicTime += frameDurationMs;
+
+        // 7. Yield to the event loop periodically so the UI stays
+        //    responsive — progress bar updates, cancel button works.
+        //    MessageChannel is unthrottled even when the tab is
+        //    backgrounded (unlike setTimeout or rAF).
+        if (frameIndex % YIELD_EVERY_N_FRAMES === 0) {
+          await yieldToEventLoop();
+        }
       }
 
       diag.finish();
 
-      // Finalize encoding
       const blob = await this.backgroundEncoder.finish();
       onProgress({ progress: 1, stage: "complete", totalFrames });
       return blob;
@@ -185,30 +273,37 @@ export class Offline3DExporter implements IOffline3DExporter {
       }
       throw err;
     } finally {
-      // Always restore live state
       deps.setExportCurrentStep(null);
       deps.setExporting(false);
-    }
-  }
 
-  /**
-   * Wait for two requestAnimationFrame callbacks to ensure:
-   * 1. First rAF: Svelte flushes $state → $derived → component props
-   * 2. Second rAF: Threlte runs useTask (puppet loop, IK, effects) + renders
-   * The canvas contains the fully rendered frame after this resolves.
-   */
-  private waitForRender(): Promise<void> {
-    return new Promise((resolve) => {
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          resolve();
-        });
-      });
-    });
+      // Restore renderer size/pixel ratio — even if export threw or was
+      // cancelled — so the live scene keeps rendering at the right size.
+      if (cinema) {
+        deps.renderer.setPixelRatio(origPixelRatio);
+        deps.renderer.setSize(origSize.x, origSize.y, false);
+      }
+
+      // Always resume the native loop last, once the renderer is back
+      // to its live size.
+      deps.resumeAutoLoop();
+    }
   }
 
   cancel(): void {
     this.shouldCancel = true;
     this.backgroundEncoder.cancel();
   }
+}
+
+/**
+ * Yield to the browser's event loop without rAF throttling. A
+ * MessageChannel post-message fires on the next macrotask, which
+ * is unaffected by tab backgrounding or the 60Hz display refresh.
+ */
+function yieldToEventLoop(): Promise<void> {
+  return new Promise<void>((resolve) => {
+    const channel = new MessageChannel();
+    channel.port1.onmessage = () => resolve();
+    channel.port2.postMessage(null);
+  });
 }

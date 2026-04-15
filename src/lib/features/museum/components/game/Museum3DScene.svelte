@@ -1316,6 +1316,7 @@
   // geometry Web Worker. Rooms are added/removed from the scene as the player
   // moves through the museum.
   const activeRoomChunks = new Map<string, RoomChunk>();
+  let firstRoomActivated = false;
 
   // Determine spawn room from tile coordinates
   function getRoomAtTile(tileX: number, tileY: number): string | null {
@@ -1402,6 +1403,15 @@
     // is negligible. This eliminates every "walls pop in" artifact.
     console.log("[Museum] activateRoom done:", roomId);
     setChunkVisible(chunk, true);
+
+    // Signal boot profiler that museum is ready — triggers the final summary
+    // with route-activation time included. Only on the first room activation.
+    if (!firstRoomActivated) {
+      firstRoomActivated = true;
+      void import("$lib/shared/analytics/boot-profiler").then(({ bootProfiler }) =>
+        bootProfiler.signalReady("museum"),
+      );
+    }
 
     // Update proximity grids so fixtures in this room become discoverable
     for (const t of chunk.torchPositions) torchGrid.insert(t, t.tileX, t.tileY);

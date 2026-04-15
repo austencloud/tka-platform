@@ -138,7 +138,7 @@ interface StandaloneItems {
 	printCardRenderer: import("$lib/features/choreo-card/services/contracts/IPrintCardRenderer").IPrintCardRenderer;
 	cardBackDomRenderer: import("$lib/features/choreo-card/services/contracts/ICardBackDomRenderer").ICardBackDomRenderer;
 	infoCardCanvasRenderer: import("$lib/features/choreo-card/services/contracts/IInfoCardCanvasRenderer").IInfoCardCanvasRenderer;
-	printPDFExporter: import("$lib/features/choreo-card/services/contracts/IPrintPDFExporter").IPrintPDFExporter;
+	// printPDFExporter removed from DI — lazy-loaded at call sites (pdf-lib is CSP-incompatible when eagerly imported)
 	printZipExporter: import("$lib/features/choreo-card/services/contracts/IPrintZipExporter").IPrintZipExporter;
 }
 

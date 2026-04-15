@@ -20,10 +20,13 @@
   import Viewer3DCanvasRef from "./Viewer3DCanvasRef.svelte";
   import Viewer3DGearPopover from "./Viewer3DGearPopover.svelte";
   import BeatPlaneStrip from "./controls/BeatPlaneStrip.svelte";
+  import NavModeToggle from "./controls/NavModeToggle.svelte";
   import { getViewer3DContext } from "../context/viewer-3d-context";
   import { createSceneFeatureState } from "../scene-features/state/scene-feature-state.svelte";
   import { setSceneFeatureContext } from "../scene-features/context/scene-feature-context";
   import SceneLoadingCurtain from "../scene-features/components/SceneLoadingCurtain.svelte";
+  import { createViewerCameraPlayerState } from "../state/viewer-camera-player-state.svelte";
+  import { getInputCapabilities } from "$lib/shared/input/InputCapabilities.svelte";
 
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { CameraStateSnapshot } from "../domain/types/CameraStateSnapshot";
@@ -52,6 +55,28 @@
   // still waits on this to avoid mounting WebGL before any performer exists.
   const avatarState = $derived(viewer3DState.performerManager.performers[0] ?? null);
 
+  // Camera-player state for fly mode. This is the VIEWER's avatar (what WASD
+  // moves), not the performer. Created once per canvas mount so fly-mode
+  // position survives mode toggles within the same session.
+  const cameraPlayer = createViewerCameraPlayerState();
+
+  // Fly mode only makes sense when the canvas owns the full viewport AND the
+  // user has a mouse + keyboard. Side-by-side with the choreo card: pointer
+  // lock on half a screen is disorienting and there's no WASD on touch.
+  const inputCaps = getInputCapabilities();
+  const navToggleVisible = $derived(
+    fullScreen && inputCaps.canUsePointerLock()
+  );
+
+  // If the nav toggle hides while the user is in fly/walk mode (e.g. they
+  // collapsed to side-by-side, or resized to mobile), snap back to orbit so
+  // they're not stranded in a mode whose toggle isn't reachable.
+  $effect(() => {
+    if (!navToggleVisible && viewer3DState.navMode !== "orbit") {
+      viewer3DState.setNavMode("orbit");
+    }
+  });
+
 
 </script>
 
@@ -62,7 +87,10 @@
       createRenderer={(canvas) => new WebGLRenderer({ canvas, preserveDrawingBuffer: true })}
     >
       <Viewer3DCanvasRef />
-      <Viewer3DCamera />
+      <Viewer3DCamera
+        cameraPlayerAvatar={cameraPlayer.avatarState}
+        cameraPlayerPhysics={cameraPlayer.physicsProvider}
+      />
       <Viewer3DScene
         {sequenceData}
         {currentStep}
@@ -87,32 +115,19 @@
       </div>
     {/if}
     {#if !hideOverlays}
-      {#if fullScreen}
-        <!-- Full-screen: back button + controls in one header row -->
-        <!-- stopPropagation prevents clicks on controls from triggering tap-to-collapse -->
+      <!-- Nav mode toggle (orbit / fly / walk) — only in fullscreen on desktop.
+           Side-by-side hides it because pointer lock on half a screen is
+           disorienting; touch devices hide it because there's no WASD. -->
+      {#if navToggleVisible}
         <!-- svelte-ignore a11y_no_static_element_interactions a11y_click_events_have_key_events -->
-        <div class="fullscreen-header" onclick={(e) => e.stopPropagation()} onpointerdown={(e) => e.stopPropagation()}>
-          <button
-            class="back-button"
-            onclick={() => onExitFullScreen?.()}
-            aria-label="Exit full-screen"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M19 12H5M12 19l-7-7 7-7"/>
-            </svg>
-          </button>
-          <div class="header-spacer"></div>
-          <div class="top-controls">
-            <Viewer3DGearPopover />
-          </div>
-        </div>
-      {:else}
-        <!-- Half-screen: gear icon only -->
-        <!-- svelte-ignore a11y_no_static_element_interactions a11y_click_events_have_key_events -->
-        <div class="top-controls" onclick={(e) => e.stopPropagation()} onpointerdown={(e) => e.stopPropagation()}>
-          <Viewer3DGearPopover />
+        <div class="top-left-controls" onclick={(e) => e.stopPropagation()} onpointerdown={(e) => e.stopPropagation()}>
+          <NavModeToggle />
         </div>
       {/if}
+      <!-- svelte-ignore a11y_no_static_element_interactions a11y_click_events_have_key_events -->
+      <div class="top-controls" onclick={(e) => e.stopPropagation()} onpointerdown={(e) => e.stopPropagation()}>
+        <Viewer3DGearPopover />
+      </div>
       {#if avatarState && avatarState.totalSteps > 1 && avatarState.beatEditMode}
         <div class="beat-strip-container">
           <BeatPlaneStrip
@@ -177,40 +192,17 @@
     align-items: flex-start;
   }
 
-  .fullscreen-header {
+  .top-left-controls {
+    /* Sit below the 2D/3D RenderModeToggle pill (which lives at top:12px
+       of the animation pane, ~30px tall + 8px gap = 50px). */
     position: absolute;
-    top: 12px;
+    top: 50px;
     left: 12px;
-    right: 12px;
     z-index: 10;
     display: flex;
-    align-items: flex-start;
     gap: 8px;
-  }
-
-  .header-spacer {
-    flex: 1;
-  }
-
-  .back-button {
-    flex-shrink: 0;
-    width: var(--min-touch-target-compact, 32px);
-    height: var(--min-touch-target-compact, 32px);
-    border-radius: 50%;
-    background: rgba(0, 0, 0, 0.5);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: rgba(255, 255, 255, 0.7);
-    cursor: pointer;
-    backdrop-filter: blur(8px);
-    transition: all 0.2s ease;
-  }
-
-  .back-button:hover {
-    background: rgba(0, 0, 0, 0.7);
-    color: rgba(255, 255, 255, 0.95);
+    align-items: flex-start;
+    container-type: inline-size;
   }
 
   .beat-strip-container {

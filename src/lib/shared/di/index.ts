@@ -92,7 +92,9 @@ import { DeepLinkResolver } from "../application/services/implementations/DeepLi
 import { CardBackDomRenderer as CardBackDomRendererImpl } from "$lib/features/choreo-card/services/implementations/CardBackDomRenderer";
 import { InfoCardCanvasRenderer as InfoCardCanvasRendererImpl } from "$lib/features/choreo-card/services/implementations/InfoCardCanvasRenderer";
 import { PrintCardRenderer as PrintCardRendererImpl } from "$lib/features/choreo-card/services/implementations/PrintCardRenderer";
-import { PrintPDFExporter as PrintPDFExporterImpl } from "$lib/features/choreo-card/services/implementations/PrintPDFExporter";
+// PrintPDFExporter removed from DI — statically importing it pulls pdf-lib into
+// the main chunk, which uses `new Function` and violates CSP. Consumers
+// dynamic-import it directly (see DeckBrowser.svelte, VtgFamilyDrillDown.svelte).
 import { PrintZipExporter as PrintZipExporterImpl } from "$lib/features/choreo-card/services/implementations/PrintZipExporter";
 
 // Unified sequence data provider (abstracts local + Firebase sources)
@@ -429,7 +431,7 @@ function buildAppContainer(): any {
   c = c.add({
     cardBackDomRenderer: () => new CardBackDomRendererImpl(),
     infoCardCanvasRenderer: () => new InfoCardCanvasRendererImpl(),
-    printPDFExporter: () => new PrintPDFExporterImpl(),
+    // printPDFExporter removed — see comment above the import block
     printZipExporter: () => new PrintZipExporterImpl(),
   });
   c = c.add((ctx: any) => ({
