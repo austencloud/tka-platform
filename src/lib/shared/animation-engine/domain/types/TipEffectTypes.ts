@@ -13,7 +13,16 @@
 
 import type { EffortId } from "$lib/features/effort-lab/domain/effort-types";
 
-export type EffectType = "none" | "fire" | "charcoal" | "led" | "trails";
+export type EffectType =
+  | "none"
+  | "fire"
+  | "charcoal"
+  | "led"
+  | "trails"
+  | "zap"
+  | "sparkles"
+  | "motion"
+  | "bloom";
 
 export interface TipEffectAssignment {
   effect: EffectType;

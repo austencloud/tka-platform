@@ -90,7 +90,9 @@
   // ─── Derive active mode from visibility manager for canvas/UI hints ────
   // The EffectsPanel writes to the VM; we read from it to know which mode
   // is active for the canvas conditional props and accent color theming.
-  let vmActiveMode = $state<"fire" | "charcoal" | "led" | "trails" | "none">("none");
+  let vmActiveMode = $state<
+    "fire" | "charcoal" | "led" | "trails" | "zap" | "sparkles" | "motion" | "bloom" | "none"
+  >("none");
 
   function syncActiveMode() {
     const active = visibilityManager.getActiveEffect();
