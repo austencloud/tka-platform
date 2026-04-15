@@ -20,7 +20,6 @@
   import Viewer3DCanvasRef from "./Viewer3DCanvasRef.svelte";
   import Viewer3DGearPopover from "./Viewer3DGearPopover.svelte";
   import BeatPlaneStrip from "./controls/BeatPlaneStrip.svelte";
-  import NavModeToggle from "./controls/NavModeToggle.svelte";
   import { getViewer3DContext } from "../context/viewer-3d-context";
   import { createSceneFeatureState } from "../scene-features/state/scene-feature-state.svelte";
   import { setSceneFeatureContext } from "../scene-features/context/scene-feature-context";
@@ -115,17 +114,8 @@
       </div>
     {/if}
     {#if !hideOverlays}
-      <!-- Nav mode toggle (orbit / fly / walk) — only in fullscreen on desktop.
-           Side-by-side hides it because pointer lock on half a screen is
-           disorienting; touch devices hide it because there's no WASD. -->
-      {#if navToggleVisible}
-        <!-- svelte-ignore a11y_no_static_element_interactions a11y_click_events_have_key_events -->
-        <div class="top-left-controls" onclick={(e) => e.stopPropagation()} onpointerdown={(e) => e.stopPropagation()}>
-          <NavModeToggle />
-        </div>
-      {/if}
       <!-- svelte-ignore a11y_no_static_element_interactions a11y_click_events_have_key_events -->
-      <div class="top-controls" onclick={(e) => e.stopPropagation()} onpointerdown={(e) => e.stopPropagation()}>
+      <div class="top-controls" role="presentation" onclick={(e) => e.stopPropagation()} onpointerdown={(e) => e.stopPropagation()}>
         <Viewer3DGearPopover />
       </div>
       {#if avatarState && avatarState.totalSteps > 1 && avatarState.beatEditMode}
@@ -190,19 +180,6 @@
     display: flex;
     gap: 8px;
     align-items: flex-start;
-  }
-
-  .top-left-controls {
-    /* Sit below the 2D/3D RenderModeToggle pill (which lives at top:12px
-       of the animation pane, ~30px tall + 8px gap = 50px). */
-    position: absolute;
-    top: 50px;
-    left: 12px;
-    z-index: 10;
-    display: flex;
-    gap: 8px;
-    align-items: flex-start;
-    container-type: inline-size;
   }
 
   .beat-strip-container {
