@@ -16,6 +16,7 @@
    */
 
   import { T } from "@threlte/core";
+  import { untrack } from "svelte";
   import type { Group } from "three";
   import Avatar3D from "./Avatar3D.svelte";
   import Grid3D from "./Grid3D.svelte";
@@ -138,7 +139,7 @@
   // callback each frame (the turn clip drives the rotation). When the flag
   // is false, this mirrors the consumer's facingAngle directly so the rig
   // behaves exactly as before.
-  let accumulatedYaw = $state(facingAngle);
+  let accumulatedYaw = $state(untrack(() => facingAngle));
 
   // Resolve prop states: use overrides (for dual-wheel swap) or avatarState defaults
   const bluePropState = $derived(bluePropStateOverride ?? avatarState.bluePropState);
