@@ -67,7 +67,7 @@
   // ========================================
 
   // Scene feature context — gate campfire/tent visibility and report loading readiness
-  let sceneFeatures: ReturnType<typeof getSceneFeatureContext> | null = null;
+  let sceneFeatures = $state<ReturnType<typeof getSceneFeatureContext> | null>(null);
   try {
     sceneFeatures = getSceneFeatureContext();
   } catch {

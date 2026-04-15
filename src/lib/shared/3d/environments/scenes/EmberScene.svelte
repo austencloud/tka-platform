@@ -9,6 +9,15 @@
   import GroundPlane from "../primitives/GroundPlane.svelte";
   import SkyGradient from "../primitives/SkyGradient.svelte";
   import FallingParticles from "../primitives/FallingParticles.svelte";
+  import { getSceneFeatureContext } from "../../scene-features/context/scene-feature-context";
+
+  // Scene feature readiness — synchronous scene, report on mount so the
+  // loading curtain can lift. Without this, the "environment" feature stays
+  // enabled-but-not-ready forever and allEnabledReady never flips true.
+  const sceneFeatures = getSceneFeatureContext();
+  $effect(() => {
+    sceneFeatures?.reportReady("environment");
+  });
 
   // Ember palette - fiery oranges and reds
   const palette = {

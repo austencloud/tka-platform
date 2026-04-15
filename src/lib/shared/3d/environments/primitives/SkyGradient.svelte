@@ -8,6 +8,7 @@
    */
 
   import { T } from "@threlte/core";
+  import { untrack } from "svelte";
   import {
     SphereGeometry,
     ShaderMaterial,
@@ -34,7 +35,7 @@
     radius = 80,
   }: Props = $props();
 
-  const geometry = new SphereGeometry(radius, 32, 32);
+  const geometry = untrack(() => new SphereGeometry(radius, 32, 32));
 
   const material = $derived.by(() => {
     const top = new Color(topColor);

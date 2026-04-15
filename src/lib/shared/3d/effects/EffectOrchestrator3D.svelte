@@ -642,6 +642,7 @@
         }
       };
     }
+    return;
   });
 
   // Threlte render-loop: call the extracted update function each frame.

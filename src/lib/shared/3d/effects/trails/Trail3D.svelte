@@ -1,7 +1,7 @@
 <script lang="ts">
   import { T, useTask, useThrelte } from "@threlte/core";
   import { Vector3, Color } from "three";
-  import { onDestroy } from "svelte";
+  import { onDestroy, untrack } from "svelte";
   import { TrailRenderer3D } from "./TrailRenderer3D";
   import type { TrailMode } from "./TrailRenderer3D";
   import type { DynamicLightManager, LightHandle } from "../lighting/DynamicLightManager";
@@ -39,20 +39,29 @@
 
   const { camera } = useThrelte();
 
+  // svelte-ignore state_referenced_locally
   const renderer = new TrailRenderer3D({
+    // svelte-ignore state_referenced_locally
     maxPoints,
     subdivisions: 4,
+    // svelte-ignore state_referenced_locally
     width,
+    // svelte-ignore state_referenced_locally
     color,
+    // svelte-ignore state_referenced_locally
     opacity,
+    // svelte-ignore state_referenced_locally
     rainbow,
+    // svelte-ignore state_referenced_locally
     qualityTier,
+    // svelte-ignore state_referenced_locally
     mode,
+    // svelte-ignore state_referenced_locally
     fadeDuration,
   });
 
   let lightHandle: LightHandle | null = null;
-  const lightColor = new Color(color === "rainbow" ? "#ffffff" : color);
+  const lightColor = untrack(() => new Color(color === "rainbow" ? "#ffffff" : color));
 
   useTask(() => {
     if (!enabled || !tipPosition) {
