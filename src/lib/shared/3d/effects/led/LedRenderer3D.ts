@@ -1,17 +1,20 @@
 /**
- * LedRenderer3D — Instanced billboard LED renderer with trail accumulation.
+ * LedRenderer3D — LED renderer with mathematically continuous trails.
  *
- * Renders all LED points across both props in a single instanced draw call.
- * Each LED is a camera-facing quad with a core+halo shader (LedMaterial3D).
- *
- * Trail accumulation: each LED maintains a short ring buffer of recent
- * positions. These trail ghosts are rendered as additional instances with
- * decaying alpha, creating the "light painting" persistence-of-vision effect.
+ * Architecture:
+ *   - Active head LEDs are rendered as camera-facing billboard sprites
+ *     via an InstancedMesh (LedMaterial3D's bulb shader).
+ *   - Trails are rendered as continuous camera-facing ribbon geometry,
+ *     one BufferGeometry per LED. The ribbon is rebuilt every frame from
+ *     a rolling history of sample positions. This eliminates the
+ *     chain-of-dots artifact that plagues discrete-sample approaches —
+ *     the trail is a literal solid mesh, not a stack of overlapping
+ *     alpha blobs.
  *
  * Quality tier adaptation:
- *   - High: full trail length (32 frames), dynamic point lights
- *   - Medium: shorter trails (16 frames), dynamic lights, no shadows
- *   - Low: no trails, no dynamic lights (emissive only)
+ *   - High: long ribbons (full fade duration), dense history
+ *   - Medium: shorter fade, less history
+ *   - Low: no ribbons (emissive bulbs only)
  */
 
 import {
@@ -19,45 +22,60 @@ import {
   PlaneGeometry,
   InstancedMesh,
   InstancedBufferAttribute,
-  Matrix4,
-  Quaternion,
+  Mesh,
   Object3D,
   type Camera,
 } from "three";
 import { createLedMaterial, type LedMaterialOptions } from "./LedMaterial3D";
+import {
+  createLedRibbonMaterial,
+  type LedRibbonMaterialOptions,
+} from "./LedRibbonMaterial3D";
+import { LedRibbonGeometry3D, type RibbonSample } from "./LedRibbonGeometry3D";
 import { QualityTier } from "../types";
 
-/** Maximum LED points per prop (matches 2D system's MAX_TOTAL_TIPS / 2) */
+/** Maximum LED tips per prop (matches 2D system's MAX_TOTAL_TIPS / 2) */
 const MAX_LEDS_PER_PROP = 16;
 
-/** Maximum total LED instances (active + trail ghosts) */
-const MAX_INSTANCES = 1024;
-
-/** LED sprite size in world units — large enough to read as glowing orbs */
+/** LED sprite size in world units — the bright bulb at the active head */
 const LED_SPRITE_SIZE = 0.35;
 
-/** Ring buffer capacity per quality tier. Sized to hold at least
- *  TRAIL_FADE_DURATION seconds of trail at up to 120fps. The actual
- *  visible trail length is controlled by time-based eviction in
- *  getOrdered(), not by capacity. */
-const TRAIL_LENGTH: Record<QualityTier, number> = {
-  [QualityTier.HIGH]: 128,
-  [QualityTier.MEDIUM]: 64,
-  [QualityTier.LOW]: 0,
+/** Ribbon half-width in world units. Set to the bulb's core radius so
+ *  the transition from ribbon to bulb at the head is visually seamless. */
+const LED_RIBBON_HALF_WIDTH = LED_SPRITE_SIZE * 0.25;
+
+/** Maximum number of sample points that can feed a single LED's ribbon.
+ *  Sized to hold 2s of history at 120fps with moderate substep density,
+ *  which is more than enough for any realistic trail fade duration. */
+const MAX_SAMPLES_PER_RIBBON = 512;
+
+/** Maximum head bulb instances — 2 props × MAX_LEDS_PER_PROP, but each
+ *  renderer only handles one prop's worth, so we only need MAX_LEDS_PER_PROP. */
+const MAX_HEAD_INSTANCES = MAX_LEDS_PER_PROP;
+
+/** Trail fade duration per quality tier, in seconds. */
+const TRAIL_FADE_DURATION: Record<QualityTier, number> = {
+  [QualityTier.HIGH]: 1.0,
+  [QualityTier.MEDIUM]: 0.6,
+  [QualityTier.LOW]: 0.0,
 };
 
-/** Per-LED position in the trail ring buffer */
-interface LedTrailEntry {
-  position: Vector3;
-  timestamp: number;
-  r: number;
-  g: number;
-  b: number;
-}
+/** Target spacing between ribbon sample points, as a fraction of sprite
+ *  size. The ribbon is continuous between samples, so this doesn't need
+ *  to be tiny — it only has to be tight enough that polygon edges don't
+ *  cause visible kinks on tight curves. */
+const RIBBON_SAMPLE_SPACING = LED_SPRITE_SIZE * 0.25;
 
-/** Ring buffer for a single LED's trail history */
-class LedTrailRing {
-  private buffer: LedTrailEntry[];
+/** Cap on substeps generated per frame to bound worst-case work. */
+const MAX_SUBSTEPS_PER_FRAME = 32;
+
+/** If the gap between this frame and the previous sample is larger than
+ *  this, treat as a discontinuity and reset the ribbon. */
+const MAX_SUBSTEP_DT = 0.1;
+
+/** Ring buffer of ribbon samples for one LED. */
+class RibbonSampleBuffer {
+  private readonly buffer: RibbonSample[];
   private head = 0;
   private _count = 0;
   readonly capacity: number;
@@ -80,7 +98,13 @@ class LedTrailRing {
     return this._count;
   }
 
-  push(position: Vector3, timestamp: number, r: number, g: number, b: number): void {
+  push(
+    position: Vector3,
+    timestamp: number,
+    r: number,
+    g: number,
+    b: number,
+  ): void {
     const entry = this.buffer[this.head]!;
     entry.position.copy(position);
     entry.timestamp = timestamp;
@@ -91,25 +115,40 @@ class LedTrailRing {
     if (this._count < this.capacity) this._count++;
   }
 
-  /** Get trail entries oldest-first, excluding entries older than maxAge seconds */
-  getOrdered(currentTime: number, maxAge: number): LedTrailEntry[] {
-    if (this._count === 0) return [];
-    const result: LedTrailEntry[] = [];
+  /** Fill the provided array with samples oldest-first, skipping any
+   *  older than `maxAge`. Returns the number of samples written. */
+  fillOrdered(
+    out: RibbonSample[],
+    currentTime: number,
+    maxAge: number,
+  ): number {
+    if (this._count === 0) return 0;
     const start = this._count < this.capacity ? 0 : this.head;
+    let written = 0;
     for (let i = 0; i < this._count; i++) {
       const idx = (start + i) % this.capacity;
       const entry = this.buffer[idx]!;
-      if (currentTime - entry.timestamp <= maxAge) {
-        result.push(entry);
-      }
+      if (currentTime - entry.timestamp > maxAge) continue;
+      out[written++] = entry;
     }
-    return result;
+    return written;
   }
 
   clear(): void {
     this.head = 0;
     this._count = 0;
   }
+}
+
+/** Per-LED state: history buffer, ribbon mesh, and last-pushed sample
+ *  used to drive substep interpolation between frames. */
+interface LedTrailState {
+  buffer: RibbonSampleBuffer;
+  ribbon: LedRibbonGeometry3D;
+  mesh: Mesh;
+  lastPosition: Vector3;
+  lastTimestamp: number;
+  hasLast: boolean;
 }
 
 export interface LedTipInput {
@@ -125,47 +164,53 @@ export interface LedTipInput {
 }
 
 export class LedRenderer3D {
-  private mesh: InstancedMesh | null = null;
+  private headMesh: InstancedMesh | null = null;
   private instanceColors: Float32Array;
   private instanceAlphas: Float32Array;
   private instanceStretches: Float32Array;
   private dummy = new Object3D();
-  private trails: Map<string, LedTrailRing> = new Map();
+  private trails: Map<string, LedTrailState> = new Map();
   private qualityTier: QualityTier;
-  private trailLength: number;
+  private fadeDuration: number;
   private parent: Object3D | null = null;
+  private ribbonMaterial: ReturnType<typeof createLedRibbonMaterial> | null = null;
+  /** Scratch array for fillOrdered — reused across frames/LEDs. */
+  private readonly sampleScratch: RibbonSample[] = new Array(MAX_SAMPLES_PER_RIBBON);
+  /** Scratch vectors reused every frame to avoid GC pressure in the hot path. */
+  private readonly scratchCameraPosition = new Vector3();
+  private readonly scratchInterp = new Vector3();
 
-  /** Maximum velocity elongation factor */
+  /** Maximum velocity elongation factor for the head bulb */
   private static readonly MAX_STRETCH = 1.5;
   /** Speed threshold where stretch begins (world units/sec) */
   private static readonly STRETCH_SPEED_MIN = 0.5;
   /** Speed at which stretch reaches MAX_STRETCH */
   private static readonly STRETCH_SPEED_MAX = 5.0;
 
-  /** Trail fade duration in seconds */
-  private static readonly TRAIL_FADE_DURATION = 1.0;
-
   constructor(qualityTier: QualityTier = QualityTier.HIGH) {
     this.qualityTier = qualityTier;
-    this.trailLength = TRAIL_LENGTH[qualityTier];
-    this.instanceColors = new Float32Array(MAX_INSTANCES * 3);
-    this.instanceAlphas = new Float32Array(MAX_INSTANCES);
-    this.instanceStretches = new Float32Array(MAX_INSTANCES * 2);
+    this.fadeDuration = TRAIL_FADE_DURATION[qualityTier];
+    this.instanceColors = new Float32Array(MAX_HEAD_INSTANCES * 3);
+    this.instanceAlphas = new Float32Array(MAX_HEAD_INSTANCES);
+    this.instanceStretches = new Float32Array(MAX_HEAD_INSTANCES * 2);
   }
 
-  initialize(parent: Object3D, materialOptions?: LedMaterialOptions): void {
-    if (this.mesh) return;
+  initialize(
+    parent: Object3D,
+    materialOptions?: LedMaterialOptions,
+    ribbonOptions?: LedRibbonMaterialOptions,
+  ): void {
+    if (this.headMesh) return;
     this.parent = parent;
 
     const geometry = new PlaneGeometry(LED_SPRITE_SIZE, LED_SPRITE_SIZE);
     const material = createLedMaterial(materialOptions);
 
-    this.mesh = new InstancedMesh(geometry, material, MAX_INSTANCES);
-    this.mesh.frustumCulled = false;
+    this.headMesh = new InstancedMesh(geometry, material, MAX_HEAD_INSTANCES);
+    this.headMesh.frustumCulled = false;
 
-    // Set up instanced attributes
     const colorAttr = new InstancedBufferAttribute(this.instanceColors, 3);
-    colorAttr.setUsage(35048); // DynamicDrawUsage
+    colorAttr.setUsage(35048);
     geometry.setAttribute("instanceColor", colorAttr);
 
     const alphaAttr = new InstancedBufferAttribute(this.instanceAlphas, 1);
@@ -176,36 +221,35 @@ export class LedRenderer3D {
     stretchAttr.setUsage(35048);
     geometry.setAttribute("instanceStretch", stretchAttr);
 
-    // Start with 0 visible instances
-    this.mesh.count = 0;
-    this.mesh.renderOrder = 100; // Render after scene geometry
+    this.headMesh.count = 0;
+    this.headMesh.renderOrder = 101; // heads render above ribbons
+    parent.add(this.headMesh);
 
-    parent.add(this.mesh);
+    this.ribbonMaterial = createLedRibbonMaterial(ribbonOptions);
   }
 
   /**
    * Update all LED instances for the current frame.
    *
    * @param tips - Active LED tip data for this frame
-   * @param camera - Current camera (for billboard orientation)
+   * @param camera - Current camera (for head billboard + ribbon orientation)
    * @param currentTime - Current time in seconds
    */
   update(tips: LedTipInput[], camera: Camera, currentTime: number): void {
-    if (!this.mesh) return;
+    if (!this.headMesh) return;
 
-    let instanceIndex = 0;
-
-    // Billboard orientation: face the camera
+    camera.getWorldPosition(this.scratchCameraPosition);
     const cameraQuat = camera.quaternion;
 
-    for (let t = 0; t < tips.length && instanceIndex < MAX_INSTANCES; t++) {
+    let headIndex = 0;
+
+    for (let t = 0; t < tips.length && headIndex < MAX_HEAD_INSTANCES; t++) {
       const tip = tips[t]!;
 
-      // Compute velocity-based stretch
+      // --- Head bulb (billboard sprite) ---
       const speed = tip.speed;
       let stretchFactor = 1.0;
       let stretchAngle = 0;
-
       if (speed > LedRenderer3D.STRETCH_SPEED_MIN) {
         const normalizedSpeed = Math.min(
           (speed - LedRenderer3D.STRETCH_SPEED_MIN) /
@@ -216,110 +260,131 @@ export class LedRenderer3D {
         stretchAngle = Math.atan2(tip.velocityY, tip.velocityX);
       }
 
-      // Active LED instance
-      this.setInstance(
-        instanceIndex,
-        tip.position,
-        cameraQuat,
-        tip.r,
-        tip.g,
-        tip.b,
-        tip.brightness,
-        stretchFactor,
-        stretchAngle,
+      this.dummy.position.copy(tip.position);
+      this.dummy.quaternion.copy(cameraQuat);
+      this.dummy.updateMatrix();
+      this.headMesh.setMatrixAt(headIndex, this.dummy.matrix);
+
+      const ci = headIndex * 3;
+      this.instanceColors[ci] = tip.r;
+      this.instanceColors[ci + 1] = tip.g;
+      this.instanceColors[ci + 2] = tip.b;
+      this.instanceAlphas[headIndex] = tip.brightness;
+      const si = headIndex * 2;
+      this.instanceStretches[si] = stretchFactor;
+      this.instanceStretches[si + 1] = stretchAngle;
+      headIndex++;
+
+      // --- Trail ribbon ---
+      if (this.fadeDuration <= 0) continue;
+
+      const key = `${t}`;
+      let state = this.trails.get(key);
+      if (!state) {
+        state = this.createTrailState(key);
+      }
+
+      // Substep interpolation: between the previous frame's sample and
+      // this frame's position, push intermediate samples along the line
+      // so the ribbon has enough vertices to stay smooth through tight
+      // curves at any prop speed.
+      if (state.hasLast) {
+        const dt = currentTime - state.lastTimestamp;
+        if (dt > 0 && dt <= MAX_SUBSTEP_DT) {
+          const dist = tip.position.distanceTo(state.lastPosition);
+          if (dist > RIBBON_SAMPLE_SPACING) {
+            const steps = Math.min(
+              Math.ceil(dist / RIBBON_SAMPLE_SPACING),
+              MAX_SUBSTEPS_PER_FRAME,
+            );
+            for (let s = 1; s < steps; s++) {
+              const a = s / steps;
+              this.scratchInterp.lerpVectors(
+                state.lastPosition,
+                tip.position,
+                a,
+              );
+              const interpTime = state.lastTimestamp + dt * a;
+              // push() copies by value, so reusing scratch is safe.
+              state.buffer.push(this.scratchInterp, interpTime, tip.r, tip.g, tip.b);
+            }
+          }
+        } else if (dt > MAX_SUBSTEP_DT) {
+          // Long gap → treat as discontinuity, start fresh
+          state.buffer.clear();
+        }
+      }
+
+      state.buffer.push(tip.position, currentTime, tip.r, tip.g, tip.b);
+      state.lastPosition.copy(tip.position);
+      state.lastTimestamp = currentTime;
+      state.hasLast = true;
+
+      // Build ribbon geometry for this frame
+      const sampleCount = state.buffer.fillOrdered(
+        this.sampleScratch,
+        currentTime,
+        this.fadeDuration,
       );
-      instanceIndex++;
-
-      // Update trail ring buffer
-      if (this.trailLength > 0) {
-        const key = `${t}`;
-        let trail = this.trails.get(key);
-        if (!trail) {
-          trail = new LedTrailRing(this.trailLength);
-          this.trails.set(key, trail);
-        }
-        trail.push(tip.position.clone(), currentTime, tip.r, tip.g, tip.b);
-
-        // Render trail ghosts
-        const entries = trail.getOrdered(currentTime, LedRenderer3D.TRAIL_FADE_DURATION);
-        // Skip the most recent entry (it's the current position)
-        for (let e = 0; e < entries.length - 1 && instanceIndex < MAX_INSTANCES; e++) {
-          const entry = entries[e]!;
-          const age = currentTime - entry.timestamp;
-
-          if (age > LedRenderer3D.TRAIL_FADE_DURATION) continue;
-
-          const alpha =
-            (1.0 - age / LedRenderer3D.TRAIL_FADE_DURATION) * 0.6 * tip.brightness;
-
-          if (alpha < 0.01) continue;
-
-          this.setInstance(
-            instanceIndex,
-            entry.position,
-            cameraQuat,
-            entry.r,
-            entry.g,
-            entry.b,
-            alpha,
-            1.0, // no stretch on trail ghosts
-            0,
-          );
-          instanceIndex++;
-        }
+      if (sampleCount < 2) {
+        state.ribbon.hide();
+      } else {
+        state.ribbon.update(
+          this.sampleScratch,
+          sampleCount,
+          this.scratchCameraPosition,
+          LED_RIBBON_HALF_WIDTH,
+          currentTime,
+          this.fadeDuration,
+          tip.brightness,
+        );
       }
     }
 
-    this.mesh.count = instanceIndex;
+    // Hide ribbons for LEDs that weren't updated this frame (fewer tips
+    // than last frame, or tip index unused).
+    for (const [key, state] of this.trails) {
+      const idx = Number(key);
+      if (idx >= tips.length) {
+        state.ribbon.hide();
+      }
+    }
 
-    // Flag attributes for GPU upload
-    const geo = this.mesh.geometry;
+    this.headMesh.count = headIndex;
+
+    const geo = this.headMesh.geometry;
     const colorAttr = geo.getAttribute("instanceColor") as InstancedBufferAttribute;
     const alphaAttr = geo.getAttribute("instanceAlpha") as InstancedBufferAttribute;
     const stretchAttr = geo.getAttribute("instanceStretch") as InstancedBufferAttribute;
-
     if (colorAttr) colorAttr.needsUpdate = true;
     if (alphaAttr) alphaAttr.needsUpdate = true;
     if (stretchAttr) stretchAttr.needsUpdate = true;
-
-    this.mesh.instanceMatrix.needsUpdate = true;
+    this.headMesh.instanceMatrix.needsUpdate = true;
   }
 
-  private setInstance(
-    index: number,
-    position: Vector3,
-    cameraQuat: Quaternion,
-    r: number,
-    g: number,
-    b: number,
-    alpha: number,
-    stretchFactor: number,
-    stretchAngle: number,
-  ): void {
-    // Position + camera-facing orientation
-    this.dummy.position.copy(position);
-    this.dummy.quaternion.copy(cameraQuat);
-    this.dummy.updateMatrix();
-    this.mesh!.setMatrixAt(index, this.dummy.matrix);
+  private createTrailState(key: string): LedTrailState {
+    const buffer = new RibbonSampleBuffer(MAX_SAMPLES_PER_RIBBON);
+    const ribbon = new LedRibbonGeometry3D(MAX_SAMPLES_PER_RIBBON);
+    const mesh = new Mesh(ribbon.geometry, this.ribbonMaterial!);
+    mesh.frustumCulled = false;
+    mesh.renderOrder = 100; // under heads, above scene
+    this.parent?.add(mesh);
 
-    // Per-instance color
-    const ci = index * 3;
-    this.instanceColors[ci] = r;
-    this.instanceColors[ci + 1] = g;
-    this.instanceColors[ci + 2] = b;
-
-    // Per-instance alpha
-    this.instanceAlphas[index] = alpha;
-
-    // Per-instance stretch
-    const si = index * 2;
-    this.instanceStretches[si] = stretchFactor;
-    this.instanceStretches[si + 1] = stretchAngle;
+    const state: LedTrailState = {
+      buffer,
+      ribbon,
+      mesh,
+      lastPosition: new Vector3(),
+      lastTimestamp: 0,
+      hasLast: false,
+    };
+    this.trails.set(key, state);
+    return state;
   }
 
   updateMaterialUniforms(options: Partial<LedMaterialOptions>): void {
-    if (!this.mesh) return;
-    const mat = this.mesh.material as ReturnType<typeof createLedMaterial>;
+    if (!this.headMesh) return;
+    const mat = this.headMesh.material as ReturnType<typeof createLedMaterial>;
     if (options.glowRadius !== undefined) {
       mat.uniforms.uGlowRadius!.value = options.glowRadius;
     }
@@ -331,40 +396,61 @@ export class LedRenderer3D {
     }
   }
 
+  updateRibbonUniforms(options: Partial<LedRibbonMaterialOptions>): void {
+    if (!this.ribbonMaterial) return;
+    if (options.brightness !== undefined) {
+      this.ribbonMaterial.uniforms.uBrightness!.value = options.brightness;
+    }
+    if (options.emissiveStrength !== undefined) {
+      this.ribbonMaterial.uniforms.uEmissiveStrength!.value = options.emissiveStrength;
+    }
+    if (options.coreStrength !== undefined) {
+      this.ribbonMaterial.uniforms.uCoreStrength!.value = options.coreStrength;
+    }
+  }
+
   setQualityTier(tier: QualityTier): void {
     if (tier === this.qualityTier) return;
     this.qualityTier = tier;
-    this.trailLength = TRAIL_LENGTH[tier];
-
-    // Clear all trails when tier changes (trail capacity changed)
-    for (const trail of this.trails.values()) {
-      trail.clear();
+    this.fadeDuration = TRAIL_FADE_DURATION[tier];
+    for (const state of this.trails.values()) {
+      state.buffer.clear();
+      state.ribbon.hide();
+      state.hasLast = false;
     }
-    this.trails.clear();
   }
 
   reset(): void {
-    for (const trail of this.trails.values()) {
-      trail.clear();
+    for (const state of this.trails.values()) {
+      state.buffer.clear();
+      state.ribbon.hide();
+      state.hasLast = false;
     }
-    this.trails.clear();
-    if (this.mesh) {
-      this.mesh.count = 0;
+    if (this.headMesh) {
+      this.headMesh.count = 0;
     }
   }
 
   dispose(): void {
-    if (this.mesh) {
-      this.parent?.remove(this.mesh);
-      this.mesh.geometry.dispose();
-      if (Array.isArray(this.mesh.material)) {
-        this.mesh.material.forEach((m) => m.dispose());
+    if (this.headMesh) {
+      this.parent?.remove(this.headMesh);
+      this.headMesh.geometry.dispose();
+      if (Array.isArray(this.headMesh.material)) {
+        this.headMesh.material.forEach((m) => m.dispose());
       } else {
-        this.mesh.material.dispose();
+        this.headMesh.material.dispose();
       }
-      this.mesh = null;
+      this.headMesh = null;
+    }
+    for (const state of this.trails.values()) {
+      this.parent?.remove(state.mesh);
+      state.ribbon.dispose();
     }
     this.trails.clear();
+    if (this.ribbonMaterial) {
+      this.ribbonMaterial.dispose();
+      this.ribbonMaterial = null;
+    }
     this.parent = null;
   }
 }

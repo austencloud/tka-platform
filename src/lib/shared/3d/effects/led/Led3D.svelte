@@ -12,7 +12,7 @@
 
   import { useTask, useThrelte } from "@threlte/core";
   import { Vector3, Color } from "three";
-  import { onDestroy } from "svelte";
+  import { onDestroy, untrack } from "svelte";
   import { LedRenderer3D, type LedTipInput } from "./LedRenderer3D";
   import type { DynamicLightManager, LightHandle } from "../lighting/DynamicLightManager";
   import type { QualityTier } from "../types";
@@ -44,7 +44,7 @@
 
   const { scene, camera } = useThrelte();
 
-  const renderer = new LedRenderer3D(qualityTier);
+  const renderer = untrack(() => new LedRenderer3D(qualityTier));
   let initialized = false;
   let lightHandle: LightHandle | null = null;
 
