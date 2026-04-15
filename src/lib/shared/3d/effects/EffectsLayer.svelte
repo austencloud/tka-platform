@@ -14,6 +14,8 @@
   import type { PropState3D } from "../domain/models/PropState3D";
   import { getEffectState } from "./state/effect-state.svelte";
   import { getEffectsConfigState } from "./state/effects-config-state.svelte";
+  import { getEffectsConfigContext as getUnifiedEffectsState } from "$lib/shared/effects/state/effects-config-context";
+  import { resolveZap3D } from "$lib/shared/effects/translators/webgl3d-translator";
   import { AUSTEN_STAFF } from "../config/avatar-proportions";
   import { TrackingMode, TrailStyle } from "./types";
 
@@ -46,6 +48,11 @@
   // Get state instances
   const effectState = getEffectState();
   const configState = getEffectsConfigState();
+  const unifiedState = getUnifiedEffectsState();
+  const zap3D = $derived(unifiedState ? resolveZap3D(unifiedState.zap) : null);
+  const zapEnabled = $derived(
+    unifiedState ? unifiedState.config.tipEffectMap["*"]?.effect === "zap" : false,
+  );
 
   // Half staff length for calculating prop ends
   const halfLength = $derived(staffLength / 2);
@@ -324,67 +331,26 @@
 {/if}
 
 <!-- =============================================================================
-     Electricity Effects
+     Electricity / Zap Effects (sourced from unified intent layer via resolveZap3D)
      ============================================================================= -->
-{#if configState.electricity.enabled && isPlaying}
-  <!-- Blue prop electricity -->
-  {#if blueEnds}
-    {#if configState.electricity.segments > 3}
-      <!-- Arc mode: connect the two ends -->
-      <ElectricityArc
-        start={blueEnds.positive}
-        end={blueEnds.negative}
-        enabled={configState.electricity.enabled}
-        intensity={configState.electricity.intensity}
-        color="#88ccff"
-        mode="arc"
-      />
-    {:else}
-      <!-- Crackle mode: radiate from each end -->
-      <ElectricityArc
-        start={blueEnds.positive}
-        enabled={configState.electricity.enabled}
-        intensity={configState.electricity.intensity}
-        color="#88ccff"
-        mode="crackle"
-      />
-      <ElectricityArc
-        start={blueEnds.negative}
-        enabled={configState.electricity.enabled}
-        intensity={configState.electricity.intensity * 0.6}
-        color="#88ccff"
-        mode="crackle"
-      />
-    {/if}
-  {/if}
-
-  <!-- Red prop electricity -->
-  {#if redEnds}
-    {#if configState.electricity.segments > 3}
-      <ElectricityArc
-        start={redEnds.positive}
-        end={redEnds.negative}
-        enabled={configState.electricity.enabled}
-        intensity={configState.electricity.intensity}
-        color="#ff8888"
-        mode="arc"
-      />
-    {:else}
-      <ElectricityArc
-        start={redEnds.positive}
-        enabled={configState.electricity.enabled}
-        intensity={configState.electricity.intensity}
-        color="#ff8888"
-        mode="crackle"
-      />
-      <ElectricityArc
-        start={redEnds.negative}
-        enabled={configState.electricity.enabled}
-        intensity={configState.electricity.intensity * 0.6}
-        color="#ff8888"
-        mode="crackle"
-      />
-    {/if}
+{#if zapEnabled && zap3D && isPlaying}
+  {#if bluePropState && redPropState && blueEnds && redEnds}
+    <ElectricityArc
+      start={blueEnds.positive}
+      end={redEnds.positive}
+      enabled={true}
+      intensity={zap3D.intensity}
+      color={zap3D.color}
+      mode={zap3D.mode}
+    />
+    <ElectricityArc
+      start={blueEnds.negative}
+      end={redEnds.negative}
+      enabled={true}
+      intensity={zap3D.intensity}
+      color={zap3D.color}
+      mode={zap3D.mode}
+    />
   {/if}
 {/if}
 
