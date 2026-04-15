@@ -105,6 +105,3 @@ export function resolveBloom2D(
   };
   return { ...intent, ...defaults, ...override };
 }
-
-/** @deprecated Import from webgl3d-translator instead. Re-exported here for test convenience only. */
-export { resolveZap3D } from "./webgl3d-translator";

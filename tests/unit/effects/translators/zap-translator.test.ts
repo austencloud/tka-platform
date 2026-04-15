@@ -1,9 +1,6 @@
 import { describe, it, expect } from "vitest";
-import {
-  resolveZap2D,
-  resolveZap3D,
-} from "../../../../src/lib/shared/effects/translators/canvas2d-translator";
-import { resolveZap3D as resolveZap3DFn } from "../../../../src/lib/shared/effects/translators/webgl3d-translator";
+import { resolveZap2D } from "../../../../src/lib/shared/effects/translators/canvas2d-translator";
+import { resolveZap3D } from "../../../../src/lib/shared/effects/translators/webgl3d-translator";
 import type { ZapIntent } from "../../../../src/lib/shared/effects/domain/EffectsConfig";
 
 const baseIntent: ZapIntent = {
@@ -33,7 +30,7 @@ describe("resolveZap2D", () => {
 
 describe("resolveZap3D (webgl3d-translator)", () => {
   it("passes intent through and derives sensible 3D params", () => {
-    const out = resolveZap3DFn(baseIntent);
+    const out = resolveZap3D(baseIntent);
     expect(out.intensity).toBe(0.7);
     expect(out.segments).toBeGreaterThanOrEqual(4);
     expect(out.jitterAmount).toBeGreaterThan(0);
