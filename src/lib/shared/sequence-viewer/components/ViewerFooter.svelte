@@ -21,7 +21,6 @@
 <script lang="ts">
   import TempoControl from "./TempoControl.svelte";
   import ViewerOverflowMenu from "./ViewerOverflowMenu.svelte";
-  import RenderModeToggle from "./RenderModeToggle.svelte";
 
   interface Props {
     bpm: number;
@@ -29,9 +28,6 @@
     controlsVisible?: boolean;
     landscape?: boolean;
     practiceActive?: boolean;
-    renderMode?: "2d" | "3d";
-    webgl2Available?: boolean;
-    onRenderModeChange?: (mode: "2d" | "3d") => void;
     onBpmChange: (bpm: number) => void;
     onPlayPause: () => void;
     onStepBack: () => void;
@@ -66,9 +62,6 @@
     controlsVisible = true,
     landscape = false,
     practiceActive = false,
-    renderMode = "2d",
-    webgl2Available = false,
-    onRenderModeChange,
     onBpmChange,
     onPlayPause,
     onStepBack,
@@ -281,15 +274,6 @@
 
       <!-- Row 2: Transport + Actions -->
       <div class="mid-controls-row">
-        {#if onRenderModeChange}
-          <div class="mid-render-toggle">
-            <RenderModeToggle
-              {renderMode}
-              {webgl2Available}
-              onchange={onRenderModeChange}
-            />
-          </div>
-        {/if}
         <div class="mid-transport-group">
           {#if onRestartToStart}
             <button
@@ -399,16 +383,8 @@
   {:else}
     <!-- Desktop: tempo (shrink) | transport (fixed center) | actions (shrink) -->
     <div class="desktop-row">
-      <!-- Left: render-mode toggle + tempo controls — takes whatever space
-           it needs, no more -->
+      <!-- Left: tempo controls — takes whatever space it needs, no more -->
       <div class="footer-side footer-left">
-        {#if onRenderModeChange}
-          <RenderModeToggle
-            {renderMode}
-            {webgl2Available}
-            onchange={onRenderModeChange}
-          />
-        {/if}
         <div class="tempo-section">
           <TempoControl
             {bpm}
@@ -913,12 +889,6 @@
     align-items: center;
     flex-shrink: 0;
     gap: 10px;
-  }
-
-  .mid-render-toggle {
-    display: flex;
-    align-items: center;
-    flex-shrink: 0;
   }
 
   .footer-left {
