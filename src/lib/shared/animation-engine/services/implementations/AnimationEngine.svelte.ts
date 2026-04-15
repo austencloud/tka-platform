@@ -96,6 +96,7 @@ import type { IZapOverlayRenderer } from "../contracts/IZapOverlayRenderer";
 import type { Zap2DParams } from "$lib/shared/effects/translators/canvas2d-types";
 import { resolveZap2D } from "$lib/shared/effects/translators/canvas2d-translator";
 import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
+import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
 import { sequenceLoopabilityChecker } from "$lib/features/compose/services/implementations/SequenceLoopabilityChecker";
 import { isBilateralProp } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";
 import { TrackingMode } from "../../domain/types/TrailTypes";
@@ -269,11 +270,18 @@ export class AnimationEngine {
   private cellTipEffortMap: TipEffortMap | undefined = undefined;
   private trailOverlay: ITrailOverlayCanvas | null = null;
   private zapRenderer: IZapOverlayRenderer | null = null;
-  // Cached zap params resolved from the current ZapIntent. Default-sourced for
-  // now (Effects Lab UI updates tipEffectMap; per-effect intent wiring lands
-  // in a later phase). Built once and reused frame-to-frame to avoid per-frame
-  // allocation churn.
+  // Cached zap params resolved from the current ZapIntent.
+  // Seeded from DEFAULT_EFFECTS_CONFIG.zap and overwritten in getFrameParams()
+  // whenever a wired EffectsConfigState reports a changed zap intent
+  // (detected via JSON diff — mirrors the prevCharcoalParamsJson pattern).
   private zapConfig: Zap2DParams = resolveZap2D(DEFAULT_EFFECTS_CONFIG.zap);
+  // JSON snapshot of the last ZapIntent we resolved into zapConfig.
+  // Re-resolves only when the intent changes to avoid per-frame allocation churn.
+  private prevZapIntentJson: string = JSON.stringify(DEFAULT_EFFECTS_CONFIG.zap);
+  // Live effects config state (zap intent, plus other intents in later phases).
+  // Wired by the host via setEffectsConfigState() before initialize() runs.
+  // Optional — when null, zapConfig stays at defaults (sequence viewer, etc.).
+  private effectsConfigState: EffectsConfigState | null = null;
 
   // ============================================================================
   // PRIVATE STATE
@@ -397,6 +405,17 @@ export class AnimationEngine {
    */
   setVisibilityManager(manager: AnimationVisibilityStateManager): void {
     this.visibilityManagerOverride = manager;
+  }
+
+  /**
+   * Wire the shared EffectsConfigState so the engine reads live per-effect
+   * intents (zap, etc.) from the same source the Customize panels write to.
+   *
+   * Pass null to detach (falls back to DEFAULT_EFFECTS_CONFIG-resolved values).
+   * Call before initialize() so first-frame render uses the correct params.
+   */
+  setEffectsConfigState(state: EffectsConfigState | null): void {
+    this.effectsConfigState = state;
   }
 
   /**
@@ -2250,10 +2269,18 @@ export class AnimationEngine {
     // LED overlay config
     fp.ledConfig = this.ledConfig.enabled ? this.ledConfig : null;
 
-    // Zap (lightning) overlay config — params are constant per session today
-    // (defaults sourced from DEFAULT_EFFECTS_CONFIG.zap). When the per-effect
-    // intent panel wires its EffectsConfigState through, replace with a live
-    // resolveZap2D(state.zap) call.
+    // Zap (lightning) overlay config — re-resolve when the shared
+    // EffectsConfigState reports a changed ZapIntent. JSON diff mirrors the
+    // prevCharcoalParamsJson pattern: cheap to compare, zero alloc when stable,
+    // one re-resolve per slider tick when the user is actively tweaking.
+    if (this.effectsConfigState) {
+      const intent = this.effectsConfigState.zap;
+      const intentJson = JSON.stringify(intent);
+      if (intentJson !== this.prevZapIntentJson) {
+        this.prevZapIntentJson = intentJson;
+        this.zapConfig = resolveZap2D(intent);
+      }
+    }
     fp.zapConfig = this.prevHasZapTips ? this.zapConfig : null;
 
     // Per-tip effect assignments for filtering tips by effect type.

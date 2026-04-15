@@ -17,6 +17,8 @@
   import { container } from "$lib/shared/di";
   import { Letter } from "$lib/shared/foundation/domain/models/Letter";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
+  import { createEffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
+  import { setEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
 
   import { AnimationPlaybackController } from "$lib/features/compose/services/implementations/AnimationPlaybackController";
   import { SequenceAnimationOrchestrator } from "$lib/features/compose/services/implementations/SequenceAnimationOrchestrator";
@@ -44,6 +46,13 @@
   const DEFAULT_BPM = 60;
   const STORAGE_KEY = "effects-lab-state";
   const visibilityManager = getAnimationVisibilityManager();
+
+  // Shared effects config state — single source of truth for per-effect intents
+  // (zap, sparkles, motion, bloom today). The Customize panels write here via
+  // getEffectsConfigContext(); the AnimatorCanvas reads the same state each
+  // frame so slider changes flow straight to the canvas.
+  const effectsConfigState = createEffectsConfigState();
+  setEffectsConfigContext(effectsConfigState);
 
   // ─── Persisted state (playback only — effect params managed by VM) ────
   interface EffectsLabPersistedState {
@@ -465,6 +474,7 @@
             backgroundAlpha={0}
             focused={true}
             trailSettings={animationSettings.trail}
+            {effectsConfigState}
           />
         </div>
       {/if}
