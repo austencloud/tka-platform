@@ -20,22 +20,18 @@
 
   import type { ExportOptionsStateManager } from "../../state/export-options-state.svelte";
   import type { PlaybackMode } from "$lib/features/compose/state/animation-panel-state.svelte";
-  import RenderModeToggle from "../RenderModeToggle.svelte";
   import RecordScenePlaybackPopover from "./RecordScenePlaybackPopover.svelte";
   import RecordSceneExportPopover from "./RecordSceneExportPopover.svelte";
   import RecordSceneRecordButton from "./RecordSceneRecordButton.svelte";
 
   interface Props {
     exportOptions: ExportOptionsStateManager;
-    renderMode: "2d" | "3d";
-    webgl2Available: boolean;
     bpm: number;
     isPlaying: boolean;
     playbackMode: PlaybackMode;
     singlePlayDuration: number;
     isExporting: boolean;
     canvasReady: boolean;
-    onRenderModeChange: (mode: "2d" | "3d") => void;
     onBpmChange: (bpm: number) => void;
     onPlaybackToggle: () => void;
     onPlaybackModeChange: (mode: PlaybackMode) => void;
@@ -44,15 +40,12 @@
 
   let {
     exportOptions,
-    renderMode,
-    webgl2Available,
     bpm,
     isPlaying,
     playbackMode,
     singlePlayDuration,
     isExporting,
     canvasReady,
-    onRenderModeChange,
     onBpmChange,
     onPlaybackToggle,
     onPlaybackModeChange,
@@ -61,14 +54,6 @@
 </script>
 
 <div class="chrome-root">
-  <div class="top-left">
-    <RenderModeToggle
-      {renderMode}
-      {webgl2Available}
-      onchange={onRenderModeChange}
-    />
-  </div>
-
   <div class="top-right">
     <RecordScenePlaybackPopover
       {exportOptions}
@@ -102,7 +87,6 @@
     z-index: 5;
   }
 
-  .top-left,
   .top-right,
   .bottom-right {
     position: absolute;
@@ -110,11 +94,6 @@
     align-items: flex-start;
     gap: 8px;
     pointer-events: auto;
-  }
-
-  .top-left {
-    top: 12px;
-    left: 12px;
   }
 
   /*
