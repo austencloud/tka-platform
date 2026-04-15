@@ -1,8 +1,8 @@
 # Grant Tracker
 
 ## [CC] Creative Capital Award
-- **Status:** drafting
-- **Deadline:** 2026-04-02
+- **Status:** not-applied (deadline passed without submission)
+- **Deadline:** 2026-04-02 (passed)
 - **Amount:** up to $50,000
 - **URL:** https://creative-capital.org/creative-capital-award/award-application/
 - **Framing:** notation system + cultural preservation + technology art
@@ -23,14 +23,27 @@
 - **Notes:** Explicitly funds "technology" discipline. Unrestricted. Early-stage projects preferred. Cannot be primarily educational or promotional. Recommended discipline: Visual Arts > Technology. All written drafts complete, awaiting Austen's review and voice pass.
 
 ## [LACMA] Art + Technology Lab
-- **Status:** not-started
+- **Status:** drafting
 - **Deadline:** 2026-04-22
 - **Amount:** up to $50,000
 - **URL:** https://www.lacma.org/art/lab/grants
-- **Framing:** art-technology hybrid, notation as creative technology, public demos
+- **Submittable:** https://lacma.submittable.com/submit/348727/2026-art-technology-lab-grants
+- **Framing:** notation-system R&D (engine) + museum/3D venues (public demonstration). Bridges "tool that represents performance" to "tool physically constrained by real bodies." AI-assisted codification of embodied knowledge aligns with Anthropic partnership.
 - **Sections:**
-  - [ ] TBD — review Submittable portal for requirements
-- **Notes:** Partners include Anthropic. Two-year grant. 3-5 projects selected. Prior tech experience not required. Must include public demo/prototype opportunities. Via Submittable.
+  - [x] Project name (draft: LACMA-01-project-name.md) — The Kinetic Alphabet
+  - [x] Three descriptive words (draft: LACMA-02-three-descriptive-words.md) — Biomechanics. Notation. Composition.
+  - [x] One-sentence description (draft: LACMA-03-one-sentence-description.md) — 41 words
+  - [x] Full project description (draft: LACMA-04-project-description.md) — 496 words
+  - [x] Artistic/creative merit (draft: LACMA-05-artistic-merit.md) — 91 words
+  - [x] Dialogue with technology/culture (draft: LACMA-06-dialogue-tech-culture.md) — 99 words
+  - [x] Public engagement plan (draft: LACMA-07-public-engagement.md) — 84 words
+  - [x] Other funding sources (draft: LACMA-08-other-funding.md)
+  - [ ] Detailed project budget (LACMA-09)
+  - [ ] Implementation plan with milestones (LACMA-10)
+  - [ ] Artist bio/CV — adapt from CC-09 (LACMA-11)
+  - [ ] Supporting media — up to 6 files (JPEGs/video) (LACMA-12)
+  - [ ] Final review and submission (LACMA-13)
+- **Notes:** Partners include Anthropic, Snap, Hyundai, MIT Media Lab, NASA JPL. Two-year grant (24 months). 3-5 projects selected. Prior tech experience not required. Program explicitly emphasizes process over finished work — "safe-to-fail rapid prototyping." Prefers projects producing "models, prototypes, data, code, or other material that can be shared broadly." Public demonstration strongly preferred. Via Submittable.
 
 ## [EPIC] Epic MegaGrants
 - **Status:** not-started
