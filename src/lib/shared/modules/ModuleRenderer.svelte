@@ -183,6 +183,15 @@
     // Services are already registered synchronously via ITI container
     const { default: ModuleComponent } = await moduleLoaders[moduleName]();
     moduleCache.set(moduleName, ModuleComponent);
+
+    // Signal the boot profiler that the initial module chunk has arrived —
+    // this is the "user sees real app content" moment. The profiler is
+    // idempotent: only the first signal prints the summary, later module
+    // switches are no-ops (they're navigation, not boot).
+    import("$lib/shared/analytics/boot-profiler").then(({ bootProfiler }) =>
+      bootProfiler.signalReady(moduleName),
+    );
+
     return ModuleComponent;
   }
 

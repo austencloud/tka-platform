@@ -19,14 +19,48 @@ interface PhaseEntry {
   duration?: number;
 }
 
+interface VitalEntry {
+  name: string;
+  value: number;
+  rating: "good" | "needs-improvement" | "poor";
+  delta?: number;
+}
+
+const VITAL_EMOJI = {
+  good: "🟢",
+  "needs-improvement": "🟡",
+  poor: "🔴",
+} as const;
+
 class BootProfiler {
   private phases = new Map<string, PhaseEntry>();
+  private vitals = new Map<string, VitalEntry>();
   private bootStart: number;
   private enabled: boolean;
+  private summaryPrinted = false;
+  private pendingSummaryTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
     this.bootStart = performance.now();
     this.enabled = typeof window !== "undefined";
+  }
+
+  /** Record a Core Web Vital. Logs inline as metrics arrive. */
+  recordVital(entry: VitalEntry): void {
+    if (!this.enabled) return;
+    this.vitals.set(entry.name, entry);
+    const emoji = VITAL_EMOJI[entry.rating] ?? "⚪";
+    const formatted =
+      entry.name === "CLS" ? entry.value.toFixed(3) : `${Math.round(entry.value)}ms`;
+    console.log(
+      `%c${emoji} ${entry.name}: ${formatted} (${entry.rating})`,
+      "font-weight: bold;"
+    );
+  }
+
+  /** Snapshot vitals currently captured (may be incomplete — some arrive late). */
+  getVitals(): VitalEntry[] {
+    return Array.from(this.vitals.values());
   }
 
   /** Mark the start of a named phase */
@@ -60,9 +94,49 @@ class BootProfiler {
     }
   }
 
+  /**
+   * Schedule the final boot summary. Feature modules can call `signalReady(label)`
+   * to add a final "route-ready" phase and trigger the summary immediately.
+   * If no module signals within the timeout, summary prints anyway.
+   */
+  scheduleSummary(timeoutMs = 3000): void {
+    if (!this.enabled || this.summaryPrinted || this.pendingSummaryTimer) return;
+    this.pendingSummaryTimer = setTimeout(() => {
+      this.pendingSummaryTimer = null;
+      this.summary();
+    }, timeoutMs);
+  }
+
+  /**
+   * Signal that a feature module has finished its post-boot activation.
+   * Records a "route:<label>" phase covering total time from boot start to now,
+   * cancels any pending timeout, and prints the final summary.
+   */
+  signalReady(label: string): void {
+    if (!this.enabled || this.summaryPrinted) return;
+    const now = performance.now();
+    this.phases.set(`route:${label}`, {
+      label: `route:${label}`,
+      startTime: this.bootStart,
+      endTime: now,
+      duration: now - this.bootStart,
+    });
+    try {
+      performance.mark(`boot:route:${label}:ready`);
+    } catch {
+      // ignored
+    }
+    if (this.pendingSummaryTimer) {
+      clearTimeout(this.pendingSummaryTimer);
+      this.pendingSummaryTimer = null;
+    }
+    this.summary();
+  }
+
   /** Print a summary table to the console */
   summary(): void {
-    if (!this.enabled) return;
+    if (!this.enabled || this.summaryPrinted) return;
+    this.summaryPrinted = true;
 
     const totalTime = performance.now() - this.bootStart;
     const entries = Array.from(this.phases.values())
@@ -117,6 +191,12 @@ class BootProfiler {
   /** Reset for a fresh measurement */
   reset(): void {
     this.phases.clear();
+    this.vitals.clear();
+    this.summaryPrinted = false;
+    if (this.pendingSummaryTimer) {
+      clearTimeout(this.pendingSummaryTimer);
+      this.pendingSummaryTimer = null;
+    }
     this.bootStart = performance.now();
   }
 }

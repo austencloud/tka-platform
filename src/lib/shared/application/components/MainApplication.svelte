@@ -528,7 +528,12 @@
     <PwaMigrationBanner />
 
     <!-- FirstRunWizard as overlay (only for newly authenticated users) -->
-    {#if isAuthenticated && (firstRunState.syncInProgress || (!firstRunState.cloudSynced && !firstRunState.isDone()))}
+    <!-- Returning users (isDone() === true) have valid local preferences
+         already. The cloud sync is a background freshen, so don't blank out
+         the app with "Loading preferences..." — that looks like a full page
+         reload right after sign-in. Only block the UI for genuine first-run
+         users whose local state isn't set up yet. -->
+    {#if isAuthenticated && !firstRunState.isDone() && (firstRunState.syncInProgress || !firstRunState.cloudSynced)}
       <div class="fullscreen-overlay">
         <div class="auth-loading">
           <div class="auth-loading-spinner"></div>

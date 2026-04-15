@@ -14,6 +14,7 @@
  */
 
 import type { Metric } from "web-vitals";
+import { bootProfiler } from "./boot-profiler";
 
 // Thresholds based on Google's recommendations
 const THRESHOLDS = {
@@ -39,36 +40,17 @@ function getRating(
   return "poor";
 }
 
-function formatValue(name: string, value: number): string {
-  if (name === "CLS") {
-    return value.toFixed(3);
-  }
-  return `${Math.round(value)}ms`;
-}
-
-function getEmoji(rating: string): string {
-  switch (rating) {
-    case "good":
-      return "🟢";
-    case "needs-improvement":
-      return "🟡";
-    case "poor":
-      return "🔴";
-    default:
-      return "⚪";
-  }
-}
-
 /**
- * Handler for web vitals metrics
- * Silent in development (clutters console), logs in production for analytics
+ * Handler for web vitals metrics — feeds into bootProfiler so metrics appear
+ * alongside init phases in one consolidated view.
  */
 function handleMetric(metric: Metric): void {
-  const rating = getRating(metric.name, metric.value);
-
-  // Only log in production - dev console should be quiet
-  // In production, send to analytics service:
-  // sendToAnalytics({ name: metric.name, value: metric.value, rating, id: metric.id });
+  bootProfiler.recordVital({
+    name: metric.name,
+    value: metric.value,
+    rating: getRating(metric.name, metric.value),
+    delta: metric.delta,
+  });
 }
 
 /**

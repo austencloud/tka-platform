@@ -58,6 +58,88 @@
     children: Snippet;
   }>();
 
+  // ============================================================================
+  // PARALLEL IMPORT KICKOFF (pre-onMount)
+  //
+  // Start fetching all app-mode JS chunks the moment this module is evaluated,
+  // NOT when onMount runs. onMount waits for Svelte hydration — by then the
+  // browser is idle and could have been downloading chunks already.
+  //
+  // Fetching at module-top lets all vendor chunks (firebase, iti, etc.) stream
+  // in parallel with hydration. When onMount finally needs them, they're cached.
+  //
+  // Guard: only run in app mode. Landing/retro routes must not pay this cost.
+  // The helper is reused for the landing→app upgrade path (afterNavigate).
+  // ============================================================================
+  /**
+   * First-path-segment → module chunk preloader. Keep synchronized with
+   * ModuleRenderer.moduleLoaders. Unlisted segments fall through to lazy load.
+   */
+  const URL_TO_MODULE: Record<string, () => Promise<unknown>> = {
+    create: () => import("$lib/features/create/shared/components/CreateModule.svelte"),
+    generate: () => import("$lib/features/create/shared/components/CreateModule.svelte"),
+    browse: () => import("$lib/features/browse/shared/components/BrowseModule.svelte"),
+    compose: () => import("$lib/features/compose/ComposeModule.svelte"),
+    animate: () => import("$lib/features/compose/ComposeModule.svelte"),
+    museum: () => import("$lib/features/museum/MuseumModule.svelte"),
+    learn: () => import("$lib/features/learn/LearnTab.svelte"),
+    train: () => import("$lib/features/train/components/TrainModule.svelte"),
+    arena: () => import("$lib/features/arena/ArenaModule.svelte"),
+    watch: () => import("$lib/features/watch/WatchModule.svelte"),
+    settings: () => import("$lib/features/settings/SettingsModule.svelte"),
+    tika: () => import("$lib/features/tika/TikaModule.svelte"),
+    festivals: () => import("$lib/features/festivals/FestivalModule.svelte"),
+    admin: () => import("$lib/features/admin/components/AdminDashboard.svelte"),
+  };
+
+  function startActiveModulePreload(): void {
+    if (typeof window === "undefined") return;
+    // Dev mode: each ES module is a separate HTTP request. Preloading the
+    // module chunk (150+ files for /create) contends with the DI container
+    // fetch and slows both. Skip in dev — ModuleRenderer lazy loads anyway.
+    // Prod mode: chunks are bundled; HTTP/2 multiplexes them at negligible
+    // cost, so parallel preload is pure win.
+    if (!import.meta.env.PROD) return;
+    const segment = window.location.pathname.split("/")[1] ?? "";
+    const loader = URL_TO_MODULE[segment];
+    if (loader) {
+      // Fire-and-forget. Cache warms up while DI/firebase/auth resolve in parallel.
+      loader().catch(() => {
+        // Preload failure is non-critical — ModuleRenderer retries on demand.
+      });
+    }
+  }
+
+  function startAppImports() {
+    // Prod-only: also kick off the active module chunk so ModuleRenderer's
+    // later dynamic import resolves from cache.
+    startActiveModulePreload();
+    const common = {
+      bootProfiler: import("$lib/shared/analytics/boot-profiler"),
+      di: import("$lib/shared/di"),
+      firebase: import("$lib/shared/auth/firebase"),
+      authState: import("$lib/shared/auth/state/authState.svelte"),
+      i18n: import("$lib/shared/i18n/i18n.svelte.js"),
+      posthog: import("$lib/shared/analytics/services/posthog"),
+      modalUrlState: import("$lib/shared/application/state/ui/modal-url-state.svelte"),
+      cacheBuster: import("$lib/shared/utils/cache-buster"),
+    };
+    // Prod-only: preload MainApp too. In dev, AppShellLoader's own import() is
+    // fast enough — adding it here pulls too many deps into initial parallel
+    // fetch and slows DI.
+    if (import.meta.env.PROD) {
+      (common as Record<string, Promise<unknown>>).mainApp = import(
+        "$lib/shared/application/components/MainApplication.svelte"
+      );
+    }
+    return common;
+  }
+
+  let preloadedImports: ReturnType<typeof startAppImports> | null =
+    typeof window !== "undefined" && detectSiteMode() === "app"
+      ? startAppImports()
+      : null;
+
   // Site mode detection — determines whether we load the heavy app stack
   let siteMode = $state<SiteMode>("loading");
 
@@ -131,7 +213,12 @@
    * Same logic as the original layout, but loaded dynamically.
    */
   async function initAppMode() {
-    const { bootProfiler } = await import("$lib/shared/analytics/boot-profiler");
+    // Landing→app upgrade: preloadedImports is null because we started in landing
+    // mode. Kick off the imports now (still parallel, just late).
+    if (!preloadedImports) preloadedImports = startAppImports();
+    const imports = preloadedImports;
+
+    const { bootProfiler } = await imports.bootProfiler;
     bootProfiler.mark("total-init");
 
     // Progress: SvelteKit has hydrated and onMount is running
@@ -147,7 +234,7 @@
 
     // Load DI container — this triggers all service registration
     bootProfiler.mark("di-container");
-    const { container } = await import("$lib/shared/di");
+    const { container } = await imports.di;
     bootProfiler.end("di-container");
 
     // Populate the deferred container reference (context was set synchronously above)
@@ -205,7 +292,7 @@
 
     // Analytics: PostHog
     bootProfiler.mark("posthog");
-    const { initPostHog } = await import("$lib/shared/analytics/services/posthog");
+    const { initPostHog } = await imports.posthog;
     initPostHog();
     bootProfiler.end("posthog");
 
@@ -221,12 +308,12 @@
 
     // i18n
     bootProfiler.mark("i18n");
-    const { initI18n } = await import("$lib/shared/i18n/i18n.svelte.js");
+    const { initI18n } = await imports.i18n;
     initI18n();
     bootProfiler.end("i18n");
 
     // Modal URL state
-    const { initModalUrlState, cleanupModalUrlState } = await import("$lib/shared/application/state/ui/modal-url-state.svelte");
+    const { initModalUrlState, cleanupModalUrlState } = await imports.modalUrlState;
     initModalUrlState();
 
     // Viewport height
@@ -238,13 +325,13 @@
     window.addEventListener("resize", updateViewportHeight);
 
     // Cache clear shortcut
-    const { registerCacheClearShortcut } = await import("$lib/shared/utils/cache-buster");
+    const { registerCacheClearShortcut } = await imports.cacheBuster;
     registerCacheClearShortcut();
 
     // Firestore + Auth
     bootProfiler.mark("firestore-init");
     try {
-      const { getFirestoreInstance } = await import("$lib/shared/auth/firebase");
+      const { getFirestoreInstance } = await imports.firebase;
       await getFirestoreInstance();
       (window as any).__tkaLoadProgress?.(76, "Connecting to cloud...");
     } catch (error) {
@@ -253,13 +340,15 @@
     bootProfiler.end("firestore-init");
 
     bootProfiler.mark("auth-init");
-    const { authState } = await import("$lib/shared/auth/state/authState.svelte");
+    const { authState } = await imports.authState;
     await authState.initialize();
     bootProfiler.end("auth-init");
     (window as any).__tkaLoadProgress?.(80, "Checking session...");
 
     bootProfiler.end("total-init");
-    bootProfiler.summary();
+    // Don't print summary yet — wait for the active feature module to signalReady.
+    // 3s timeout is the safety net if no module signals.
+    bootProfiler.scheduleSummary(3000);
 
     // ========================================================================
     // BACKGROUND INIT — fire-and-forget. The UI is interactive at this point;

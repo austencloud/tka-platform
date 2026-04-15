@@ -22,6 +22,23 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!--
+                App Links: open TKA-branded web URLs directly in the app.
+                autoVerify triggers Android to fetch
+                https://tkaflowarts.com/.well-known/assetlinks.json
+                and confirm this app owns the domain. Must match both the
+                package name and the Play App Signing SHA-256 fingerprint.
+            -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:host="tkaflowarts.com" />
+                <data android:pathPrefix="/p/" />
+                <data android:pathPrefix="/sequence/" />
+            </intent-filter>
+
         </activity>
 
         <provider
