@@ -2,21 +2,34 @@
   /**
    * EffectsSettingsPanel - Visual effects controls for 3D viewer
    *
-   * Toggle trails, fire, sparkles, electricity, motion effects, and bloom.
+   * Toggle trails, fire, charcoal, LED, sparkles, electricity, motion effects, and bloom.
    * Uses chip-style buttons consistent with GridSettingsPanel.
+   *
+   * Accepts an optional `performer` prop. When provided, reads/writes that
+   * performer's `settings.effects` Set via `performer.toggleEffect()`.
+   * When absent, falls back to the global `getEffectsConfigState()`.
    */
 
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import { getEffectsConfigState } from "../../effects/state/effects-config-state.svelte";
+  import type { AvatarInstanceState } from "$lib/shared/3d/state/avatar-instance-state.svelte";
+  import type { EffectId } from "$lib/shared/3d/state/performer-settings-types";
+
+  interface Props {
+    performer?: AvatarInstanceState | null;
+  }
+  let { performer = null }: Props = $props();
 
   const config = getEffectsConfigState();
 
-  // Effect definitions for rendering
+  // Effect definitions for rendering (8 total)
   const effectChips = [
     { key: "trails", label: "Trails", icon: "route", color: "#a855f7" },
     { key: "fire", label: "Fire", icon: "fire", color: "#f97316" },
-    { key: "sparkles", label: "Sparkles", icon: "star", color: "#fbbf24" },
+    { key: "charcoal", label: "Charcoal", icon: "pen-nib", color: "#78716c" },
+    { key: "led", label: "LED", icon: "lightbulb", color: "#4ade80" },
     { key: "electricity", label: "Zap", icon: "bolt", color: "#38bdf8" },
+    { key: "sparkles", label: "Sparkles", icon: "star", color: "#fbbf24" },
     { key: "motion", label: "Motion", icon: "wind", color: "#22d3ee" },
     { key: "bloom", label: "Glow", icon: "sun", color: "#f472b6" },
   ] as const;
@@ -25,6 +38,11 @@
 
   // Check if an effect is enabled
   function isEnabled(key: EffectKey): boolean {
+    if (performer) {
+      return performer.settings.effects.has(key as EffectId);
+    }
+    // Global fallback — charcoal/led are not in the global config so they
+    // correctly return false via the default branch (option B).
     switch (key) {
       case "trails":
         return config.trails.enabled;
@@ -45,6 +63,15 @@
 
   // Toggle an effect
   function toggle(key: EffectKey) {
+    if (performer) {
+      performer.toggleEffect(key as EffectId);
+      // TODO(tipEffectMap): per feedback_tipeffectmap_sync, if per-performer effects
+      // need to sync tipEffectMap (renderer filter), add that call here once the
+      // performer-scoped trail renderer is wired up. The global path already handles
+      // this inside the effects-config-state toggles below.
+      return;
+    }
+    // Global fallback
     switch (key) {
       case "trails":
         config.toggleTrails();
@@ -240,7 +267,14 @@
   {/if}
 
   <!-- Quick Info -->
-  {#if config.enabledCount > 0}
+  {#if performer}
+    {@const count = performer.settings.effects.size}
+    {#if count > 0}
+      <div class="active-count">
+        {count} effect{count > 1 ? "s" : ""} active
+      </div>
+    {/if}
+  {:else if config.enabledCount > 0}
     <div class="active-count">
       {config.enabledCount} effect{config.enabledCount > 1 ? "s" : ""} active
     </div>
