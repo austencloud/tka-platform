@@ -151,7 +151,12 @@
     if (renderedPairs.length === 0 || isExporting) return;
     isExporting = true;
     try {
-      const pdfExporter = container.items.printPDFExporter as IPrintPDFExporter;
+      // Lazy-load PrintPDFExporter — it pulls pdf-lib (~400KB + CSP-violating
+      // runtime codegen). Only loaded when the user actually exports.
+      const { PrintPDFExporter } = await import(
+        "$lib/features/choreo-card/services/implementations/PrintPDFExporter"
+      );
+      const pdfExporter: IPrintPDFExporter = new PrintPDFExporter();
       const blob = await pdfExporter.exportHomePrintPDF(renderedPairs, familyLabel, cardSize);
       downloadBlob(blob, `${familyLabel}-${cardSize}.pdf`);
     } finally {
