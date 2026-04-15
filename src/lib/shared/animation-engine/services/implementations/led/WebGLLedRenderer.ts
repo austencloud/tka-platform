@@ -33,6 +33,18 @@ const MAX_DPR = 2;
 const MAX_LEDS = 32;
 const BLOOM_MIP_COUNT = 5;
 
+/** Number of floats per LED in the instance buffer.
+ *  Layout: [x, y, prevX, prevY, r, g, b, brightness, glowRadius] */
+const INSTANCE_STRIDE_FLOATS = 9;
+
+/** If the time gap between frames exceeds this (seconds), or the
+ *  distance between prev and curr exceeds MAX_STREAK_VIEWBOX, treat as
+ *  a discontinuity and render this frame as a point sprite (prev = curr)
+ *  rather than stretching a capsule across it. Prevents wild streaks
+ *  after pauses, resets, or teardown/rebuild cycles. */
+const MAX_STREAK_DT = 0.1;
+const MAX_STREAK_VIEWBOX = 400;
+
 // ============================================================
 // Framebuffer types (mirrored from WebGLFireRenderer)
 // ============================================================
@@ -74,7 +86,16 @@ export class WebGLLedRenderer implements ILedOverlayRenderer {
 	private spriteVAO: WebGLVertexArrayObject | null = null;
 	private quadBuffer: WebGLBuffer | null = null;
 	private instanceBuffer: WebGLBuffer | null = null;
-	private instanceData: Float32Array = new Float32Array(MAX_LEDS * 7);
+	private instanceData: Float32Array = new Float32Array(
+		MAX_LEDS * INSTANCE_STRIDE_FLOATS,
+	);
+
+	/** Per-tip previous-frame positions, keyed by `propIndex*100 + tipIndex`.
+	 *  Drives the motion-streak capsule by giving the vertex shader both
+	 *  endpoints of where the LED was over the current frame. */
+	private prevPositions: Map<number, { x: number; y: number }> = new Map();
+	/** Timestamp of the last frame rendered, in seconds (from the input). */
+	private lastFrameTime = -1;
 
 	// Framebuffers
 	private spriteFBO: FBOAttachment | null = null;
@@ -184,22 +205,69 @@ export class WebGLLedRenderer implements ILedOverlayRenderer {
 		// Reset blend state to known baseline before each frame
 		gl.disable(gl.BLEND);
 
-		// 1. Update instance data from tips
+		// 1. Update instance data from tips. For each LED we also supply
+		//    its previous-frame position so the vertex shader can extrude
+		//    a motion-streak capsule between the two points. On the first
+		//    frame for a given LED — or after a long pause / big jump —
+		//    we collapse the capsule to a point by setting prev = curr.
 		const tipCount = Math.min(input.tips.length, MAX_LEDS);
 		const baseGlowRadius = config.glowRadius * 60.0;
+		const currentTimeSec =
+			input.currentTime > 1e6 ? input.currentTime / 1000 : input.currentTime;
+		const dt =
+			this.lastFrameTime >= 0 ? currentTimeSec - this.lastFrameTime : 0;
+		const isDiscontinuity = dt <= 0 || dt > MAX_STREAK_DT;
+
+		const seenKeys = new Set<number>();
 		for (let i = 0; i < tipCount; i++) {
 			const tip = input.tips[i]!;
-			const offset = i * 7;
-			this.instanceData[offset] = tip.x;
+			const key = tip.propIndex * 100 + tip.tipIndex;
+			seenKeys.add(key);
+
+			let prevX = tip.x;
+			let prevY = tip.y;
+			const stored = this.prevPositions.get(key);
+			if (stored && !isDiscontinuity) {
+				const ddx = tip.x - stored.x;
+				const ddy = tip.y - stored.y;
+				if (ddx * ddx + ddy * ddy <= MAX_STREAK_VIEWBOX * MAX_STREAK_VIEWBOX) {
+					prevX = stored.x;
+					prevY = stored.y;
+				}
+			}
+
+			const offset = i * INSTANCE_STRIDE_FLOATS;
+			this.instanceData[offset + 0] = tip.x;
 			this.instanceData[offset + 1] = tip.y;
-			this.instanceData[offset + 2] = tip.r;
-			this.instanceData[offset + 3] = tip.g;
-			this.instanceData[offset + 4] = tip.b;
-			this.instanceData[offset + 5] = tip.brightness * config.brightness;
-			this.instanceData[offset + 6] = baseGlowRadius;
+			this.instanceData[offset + 2] = prevX;
+			this.instanceData[offset + 3] = prevY;
+			this.instanceData[offset + 4] = tip.r;
+			this.instanceData[offset + 5] = tip.g;
+			this.instanceData[offset + 6] = tip.b;
+			this.instanceData[offset + 7] = tip.brightness * config.brightness;
+			this.instanceData[offset + 8] = baseGlowRadius;
+
+			if (stored) {
+				stored.x = tip.x;
+				stored.y = tip.y;
+			} else {
+				this.prevPositions.set(key, { x: tip.x, y: tip.y });
+			}
 		}
+
+		// Drop state for LEDs that disappeared this frame so they start
+		// fresh next time they reappear rather than streaking across gaps.
+		for (const key of this.prevPositions.keys()) {
+			if (!seenKeys.has(key)) this.prevPositions.delete(key);
+		}
+		this.lastFrameTime = currentTimeSec;
+
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.instanceBuffer);
-		gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.instanceData.subarray(0, tipCount * 7));
+		gl.bufferSubData(
+			gl.ARRAY_BUFFER,
+			0,
+			this.instanceData.subarray(0, tipCount * INSTANCE_STRIDE_FLOATS),
+		);
 
 		// 2. Render sprites to spriteFBO
 		gl.bindFramebuffer(gl.FRAMEBUFFER, this.spriteFBO!.fbo);
@@ -370,25 +438,35 @@ export class WebGLLedRenderer implements ILedOverlayRenderer {
 		gl.enableVertexAttribArray(0);
 		gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
 
-		// Instance attributes (per-instance, divisor 1)
+		// Instance attributes (per-instance, divisor 1).
+		// Layout (9 floats, stride 36 bytes):
+		//   0: a_ledPos      vec2   offset  0
+		//   1: a_ledPrevPos  vec2   offset  8
+		//   2: a_ledColor    vec3   offset 16
+		//   3: a_brightness  float  offset 28
+		//   4: a_glowRadius  float  offset 32
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.instanceBuffer);
-		const stride = 7 * 4; // 7 floats * 4 bytes
+		const stride = INSTANCE_STRIDE_FLOATS * 4;
 
 		gl.enableVertexAttribArray(1); // a_ledPos (vec2)
 		gl.vertexAttribPointer(1, 2, gl.FLOAT, false, stride, 0);
 		gl.vertexAttribDivisor(1, 1);
 
-		gl.enableVertexAttribArray(2); // a_ledColor (vec3)
-		gl.vertexAttribPointer(2, 3, gl.FLOAT, false, stride, 8);
+		gl.enableVertexAttribArray(2); // a_ledPrevPos (vec2)
+		gl.vertexAttribPointer(2, 2, gl.FLOAT, false, stride, 8);
 		gl.vertexAttribDivisor(2, 1);
 
-		gl.enableVertexAttribArray(3); // a_brightness (float)
-		gl.vertexAttribPointer(3, 1, gl.FLOAT, false, stride, 20);
+		gl.enableVertexAttribArray(3); // a_ledColor (vec3)
+		gl.vertexAttribPointer(3, 3, gl.FLOAT, false, stride, 16);
 		gl.vertexAttribDivisor(3, 1);
 
-		gl.enableVertexAttribArray(4); // a_glowRadius (float)
-		gl.vertexAttribPointer(4, 1, gl.FLOAT, false, stride, 24);
+		gl.enableVertexAttribArray(4); // a_brightness (float)
+		gl.vertexAttribPointer(4, 1, gl.FLOAT, false, stride, 28);
 		gl.vertexAttribDivisor(4, 1);
+
+		gl.enableVertexAttribArray(5); // a_glowRadius (float)
+		gl.vertexAttribPointer(5, 1, gl.FLOAT, false, stride, 32);
+		gl.vertexAttribDivisor(5, 1);
 
 		gl.bindVertexArray(null);
 	}
@@ -549,9 +627,10 @@ export class WebGLLedRenderer implements ILedOverlayRenderer {
 		// Bind attribute locations BEFORE linking
 		gl.bindAttribLocation(program, 0, "a_position");
 		gl.bindAttribLocation(program, 1, "a_ledPos");
-		gl.bindAttribLocation(program, 2, "a_ledColor");
-		gl.bindAttribLocation(program, 3, "a_brightness");
-		gl.bindAttribLocation(program, 4, "a_glowRadius");
+		gl.bindAttribLocation(program, 2, "a_ledPrevPos");
+		gl.bindAttribLocation(program, 3, "a_ledColor");
+		gl.bindAttribLocation(program, 4, "a_brightness");
+		gl.bindAttribLocation(program, 5, "a_glowRadius");
 
 		gl.linkProgram(program);
 

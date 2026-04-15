@@ -85,15 +85,20 @@
     </div>
   {/if}
 
-  {#if sequence}
-    <div class="sequence-info">
+  <!-- Always render the slot so space is reserved and conditional hydration
+       of `sequence` doesn't shift the EffectsPanel below (CLS). -->
+  <div class="sequence-info" data-empty={!sequence || undefined} aria-hidden={!sequence || undefined}>
+    {#if sequence}
       <span class="seq-name">{simplifyAndTruncate(sequence.word || sequence.name || "Unnamed")}</span>
       <span class="seq-meta">
         <span class="seq-beats">{sequence.steps?.length || 0} beats</span>
         <span class="seq-hint" title="Press D to copy sequence data to clipboard">D = copy</span>
       </span>
-    </div>
-  {/if}
+    {:else}
+      <span class="seq-name seq-placeholder">&nbsp;</span>
+      <span class="seq-meta"><span class="seq-beats">&nbsp;</span></span>
+    {/if}
+  </div>
 </div>
 
 <style>
@@ -206,6 +211,18 @@
     padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px);
     background: color-mix(in srgb, var(--theme-text) 3%, transparent);
     border-radius: var(--border-radius-sm, 4px);
+    /* Reserve height so populating `sequence` asynchronously doesn't shift
+       sibling panels downward (CLS). Matches rendered height: font-size-min
+       line-height (~20px) + 8px vertical padding. */
+    min-height: calc(var(--font-size-min, 14px) * 1.4 + 8px);
+  }
+
+  .sequence-info[data-empty] {
+    background: transparent;
+  }
+
+  .seq-placeholder {
+    visibility: hidden;
   }
 
   .seq-name {
