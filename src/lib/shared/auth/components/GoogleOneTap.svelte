@@ -1,3 +1,28 @@
+<script module lang="ts">
+  // GoogleOneTap mounts on multiple surfaces (landing page, auth drawer,
+  // sequence viewer). The Google Identity library only wants one initialize()
+  // call per page load — additional calls produce a GSI_LOGGER warning and
+  // only the last config wins (which would silently break whichever surface
+  // mounted first).
+  //
+  // We solve both problems by calling initialize() exactly once with a
+  // dispatcher callback. Each instance registers its own handler; the
+  // dispatcher forwards the credential to every active instance so whichever
+  // surface the user tapped gets the result.
+  //
+  // These live in `<script module>` so they are genuinely module-scoped.
+  // A plain `<script>` in Svelte 5 is per-instance, which defeats the guard.
+  type CredentialHandler = (credential: string) => void;
+  const credentialHandlers = new Set<CredentialHandler>();
+  let gsiInitialized = false;
+
+  function dispatchCredential(response: { credential: string }) {
+    for (const handler of credentialHandlers) {
+      handler(response.credential);
+    }
+  }
+</script>
+
 <script lang="ts">
   /**
    * Google One Tap Component
@@ -80,7 +105,7 @@
     });
   }
 
-  async function handleCredentialResponse(response: { credential: string }) {
+  async function handleCredentialResponse(credential: string) {
     debug.info("Received Google credential, signing in...");
 
     try {
@@ -89,7 +114,7 @@
       }
 
       if (authService) {
-        await authService.signInWithGoogleCredential(response.credential);
+        await authService.signInWithGoogleCredential(credential);
         debug.success("Google One Tap sign-in successful!");
         onSuccess?.();
       }
@@ -118,28 +143,35 @@
       debug.info("Automated browser detected - disabling FedCM");
     }
 
-    // Configuration for One Tap
-    // FedCM becomes mandatory in August 2025 for real browsers
-    // With FedCM: browser controls position, shows domain instead of app name
-    const config: GoogleOneTapConfig = {
-      client_id: GOOGLE_CLIENT_ID,
-      callback: handleCredentialResponse,
-      auto_select: true,
-      cancel_on_tap_outside: false,
-      context: "signin",
-      itp_support: true,
-      // Enable FedCM unless in automated environment where it will fail
-      use_fedcm_for_prompt: !isAutomated,
-    };
+    // Register this instance's handler. The first mount initializes GSI with
+    // the shared dispatcher; subsequent mounts just subscribe.
+    credentialHandlers.add(handleCredentialResponse);
 
-    if (promptParentId) {
-      config.prompt_parent_id = promptParentId;
+    if (!gsiInitialized) {
+      // Configuration for One Tap
+      // FedCM becomes mandatory in August 2025 for real browsers
+      // With FedCM: browser controls position, shows domain instead of app name
+      const config: GoogleOneTapConfig = {
+        client_id: GOOGLE_CLIENT_ID,
+        callback: dispatchCredential,
+        auto_select: true,
+        cancel_on_tap_outside: false,
+        context: "signin",
+        itp_support: true,
+        // Enable FedCM unless in automated environment where it will fail
+        use_fedcm_for_prompt: !isAutomated,
+      };
+
+      if (promptParentId) {
+        config.prompt_parent_id = promptParentId;
+      }
+
+      window.google.accounts.id.initialize(config);
+      gsiInitialized = true;
+      debug.success(
+        `Google One Tap initialized (FedCM: ${isAutomated ? "disabled - automated browser" : "enabled"})`
+      );
     }
-
-    window.google.accounts.id.initialize(config);
-    debug.success(
-      `Google One Tap initialized (FedCM: ${isAutomated ? "disabled - automated browser" : "enabled"})`
-    );
 
     if (autoPrompt) {
       // Small delay to let the page settle
@@ -172,6 +204,7 @@
   });
 
   onDestroy(() => {
+    credentialHandlers.delete(handleCredentialResponse);
     // Cancel any pending prompts
     window.google?.accounts.id.cancel();
   });
