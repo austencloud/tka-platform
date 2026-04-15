@@ -871,6 +871,29 @@ export default defineConfig({
               return "vendor-three";
             if (id.includes("fabric")) return "vendor-fabric";
             if (id.includes("pdfjs-dist")) return "vendor-pdf";
+            // CSP-sensitive libs (use `new Function` — no unsafe-eval allowed).
+            // Let Rollup auto-generate dynamic chunks for these so they only
+            // load when consumers actually dynamic-import them.
+            if (
+              id.includes("pdf-lib") ||
+              id.includes("html2canvas") ||
+              id.includes("@mediapipe") ||
+              id.includes("peerjs") ||
+              id.includes("protobufjs") ||
+              // JSZip uses new Function for its worker pipeline
+              id.includes("jszip") ||
+              // Vercel AI SDK uses new Function for JSON schema compilation.
+              // Only needed by Tika module — let it lazy-load with the module.
+              id.includes("node_modules/ai/") ||
+              id.includes("@ai-sdk/") ||
+              // JSON schema validators that commonly use new Function
+              id.includes("ajv/") ||
+              id.includes("json-schema-to-ts")
+            ) {
+              // Returning undefined → Rollup decides (usually its own chunk
+              // based on dynamic import boundaries). Never lands in vendor.
+              return undefined;
+            }
             if (id.includes("firebase")) return "vendor-firebase";
             if (id.includes("dexie")) return "vendor-dexie";
             // pixi.js is heavy (~500KB) - keep it in its own chunk
