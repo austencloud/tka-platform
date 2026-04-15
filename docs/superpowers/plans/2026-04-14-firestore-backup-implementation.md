@@ -385,7 +385,9 @@ import { defineSecret } from "firebase-functions/params";
 import { v1 } from "@google-cloud/firestore";
 
 const PROJECT_ID = "the-kinetic-alphabet";
-const LOCATION = "us-central1";
+// The Firestore database for this project is in nam5 (multi-region).
+// Managed Backups live in the same location as the database.
+const LOCATION = "nam5";
 const MAX_BACKUP_AGE_HOURS = 48;
 
 const backupHealthcheckUrl = defineSecret("BACKUP_HEALTHCHECK_URL");
