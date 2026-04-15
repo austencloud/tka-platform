@@ -40,10 +40,42 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
     glow: 0.6,
   },
 
+  zap: {
+    intensity: 0.7,
+    color: "#88ccff",
+    frequency: 12,
+    mode: "arc",
+    branching: 0.3,
+  },
+
+  sparkles: {
+    rate: 0.5,
+    size: 0.5,
+    lifetime: 1.2,
+    color: "#fbbf24",
+    rainbow: false,
+  },
+
+  motion: {
+    blur: 0.4,
+    speedLines: 0.5,
+    threshold: 0.2,
+  },
+
+  bloom: {
+    intensity: 0.6,
+    threshold: 0.7,
+    radius: 0.5,
+  },
+
   activePresets: {
     trails: null,
     fire: null,
     led: null,
     charcoal: null,
+    zap: null,
+    sparkles: null,
+    motion: null,
+    bloom: null,
   },
 };
