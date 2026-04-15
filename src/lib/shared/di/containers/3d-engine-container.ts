@@ -1,21 +1,25 @@
 /**
- * Animation 3D ITI Container
+ * 3D Engine Container
  *
- * Provides all services for the 3D animation system including:
- * - Core math services (angle math, orientation mapping, motion calculation)
+ * Infrastructure services for the 3D scene/animation engine, shared across
+ * every 3D experience (sequence viewer, museum, village, festival).
+ *
+ * Scope:
+ * - Core math (angle math, orientation mapping, motion calculation)
  * - Coordinate and interpolation services
  * - Sequence conversion
- * - Persistence
- * - Duet system
+ * - Persistence (localStorage-backed UI state)
+ * - Duet/multi-performer sync
+ * - Quality tier detection and effect bridging
  *
- * Note: Avatar system services (skeleton, IK, animator, leg animator) are
- * instantiated directly in Avatar3D.svelte because each avatar needs its own
- * independent instances (not singletons).
+ * Not included here:
+ * - Avatar system services (skeleton, IK, animator) — each avatar needs its own
+ *   instances, so they're created directly in Avatar3D.svelte, not as singletons.
+ * - Viewer-specific concerns like undo/redo — see viewer-3d-container.ts.
  */
 
 import { createContainer } from "iti";
 
-// Service implementations
 import { AngleMathCalculator } from "$lib/shared/3d/services/implementations/AngleMathCalculator";
 import { QualityTierDetector } from "$lib/shared/3d/effects/quality/QualityTierDetector";
 import { TipPositionBridge3D } from "$lib/shared/3d/effects/TipPositionBridge3D";
@@ -24,42 +28,36 @@ import { MotionCalculator } from "$lib/shared/3d/services/implementations/Motion
 import { PlaneCoordinateMapper } from "$lib/shared/3d/services/implementations/PlaneCoordinateMapper";
 import { PropStateInterpolator } from "$lib/shared/3d/services/implementations/PropStateInterpolator";
 import { SequenceConverter } from "$lib/shared/3d/services/implementations/SequenceConverter";
-import { Animation3DPersister } from "$lib/shared/3d/services/implementations/Animation3DPersister";
+import { Scene3DPersister } from "$lib/shared/3d/services/implementations/Scene3DPersister";
 import { DuetPersister } from "$lib/shared/3d/services/implementations/DuetPersister";
 import { createPerformerSynchronizer } from "$lib/shared/3d/services/implementations/PerformerSynchronizer";
-import { Viewer3DUndoManager } from "$lib/shared/3d/services/implementations/Viewer3DUndoManager";
 
-// External dependency types
 import type { IBrowseLoader } from "$lib/features/browse/sequences/display/services/contracts/IBrowseLoader";
 
 /**
- * External dependencies required by the animation-3d container.
+ * External dependencies required by the 3D engine container.
  */
-export interface Animation3DContainerDeps {
+export interface Engine3DContainerDeps {
   browseLoader: IBrowseLoader;
 }
 
 /**
- * Creates the animation-3d container with all required dependencies.
+ * Creates the 3D engine container with all required dependencies.
  *
  * @param deps - External dependencies from the root container
  */
-export function createAnimation3DContainer(deps: Animation3DContainerDeps) {
+export function create3DEngineContainer(deps: Engine3DContainerDeps) {
   // Tier 0: Core math services (no dependencies, singletons)
-  // Names prefixed with "animation3D" to avoid conflicts with animator container
   const tier0 = createContainer()
     .add({
-      // Core math
-      animation3DAngleMath: () => new AngleMathCalculator(),
-      animation3DOrientationMapper: () => new OrientationMapper(),
+      angleMath3D: () => new AngleMathCalculator(),
+      orientationMapper3D: () => new OrientationMapper(),
     })
     .add((ctx) => ({
-      // Motion calculator depends on angle math and orientation
-      animation3DMotionCalculator: () =>
-        new MotionCalculator(ctx.animation3DAngleMath, ctx.animation3DOrientationMapper),
+      motionCalculator3D: () =>
+        new MotionCalculator(ctx.angleMath3D, ctx.orientationMapper3D),
     }))
     .add({
-      // Coordinate mapping (no dependencies)
       planeCoordinateMapper: () => new PlaneCoordinateMapper(),
     });
 
@@ -67,27 +65,24 @@ export function createAnimation3DContainer(deps: Animation3DContainerDeps) {
   const tier1 = tier0.add((ctx) => ({
     propStateInterpolator: () =>
       new PropStateInterpolator(
-        ctx.animation3DAngleMath,
-        ctx.animation3DOrientationMapper,
-        ctx.animation3DMotionCalculator
+        ctx.angleMath3D,
+        ctx.orientationMapper3D,
+        ctx.motionCalculator3D
       ),
   }));
 
   // Tier 2: Conversion and persistence (no dependencies)
   const tier2 = tier1.add({
     sequenceConverter: () => new SequenceConverter(),
-    animation3DPersister: () => new Animation3DPersister(),
+    scene3DPersister: () => new Scene3DPersister(),
   });
 
   // Tier 3: Duet and multi-performer systems
   const tier3 = tier2.add({
     duetPersister: () => new DuetPersister(deps.browseLoader),
-    // Factory function - creates new instance each time (not singleton)
-    // Use container.items.performerSynchronizerFactory() to create instances
+    // Factory function — creates a new instance each call (not a singleton).
+    // Use container.items.performerSynchronizerFactory() to create instances.
     performerSynchronizerFactory: () => createPerformerSynchronizer,
-    // Snapshot-based undo for the standalone 3D viewer. Singleton scoped to
-    // the container; the viewer state factory consumes it via its deps.
-    viewer3DUndoManager: () => new Viewer3DUndoManager(),
   });
 
   // Tier 4: 3D effects infrastructure
@@ -99,4 +94,4 @@ export function createAnimation3DContainer(deps: Animation3DContainerDeps) {
   return container;
 }
 
-export type Animation3DContainer = ReturnType<typeof createAnimation3DContainer>;
+export type Engine3DContainer = ReturnType<typeof create3DEngineContainer>;

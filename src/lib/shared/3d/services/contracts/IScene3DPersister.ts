@@ -1,7 +1,7 @@
 /**
- * IAnimation3DPersister Contract
+ * IScene3DPersister Contract
  *
- * Service for persisting 3D animation UI state to localStorage.
+ * Service for persisting 3D scene UI state to localStorage.
  * Note: Environment/background type is not persisted here - it uses
  * the shared settingsService which handles its own persistence.
  */
@@ -32,7 +32,7 @@ export interface AvatarProportions {
 /**
  * State structure for persistence
  */
-export interface Animation3DPersistedState {
+export interface Scene3DPersistedState {
   // Scene settings
   visiblePlanes: string[];
   showGrid: boolean;
@@ -72,16 +72,16 @@ export interface Animation3DPersistedState {
   currentStepIndex: number;
 }
 
-export interface IAnimation3DPersister {
+export interface IScene3DPersister {
   /**
    * Save state to localStorage (merges with existing)
    */
-  saveState(state: Partial<Animation3DPersistedState>): void;
+  saveState(state: Partial<Scene3DPersistedState>): void;
 
   /**
    * Load state from localStorage
    */
-  loadState(): Partial<Animation3DPersistedState>;
+  loadState(): Partial<Scene3DPersistedState>;
 
   /**
    * Clear all persisted state

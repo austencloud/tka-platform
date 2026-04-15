@@ -392,11 +392,22 @@
     }
   });
 
-  // Animation loop
+  // Animation loop.
+  //
+  // `time` is a local accumulator fed by the useTask delta instead of
+  // `performance.now()`. That matters during offline video export:
+  // Cinema mode renders 4 sub-frames per output frame back-to-back at
+  // CPU speed, so wall-clock time races ahead of the animation clock
+  // and firefly pulses appear to oscillate rapidly. Accumulating from
+  // delta keeps the pulse clock in lockstep with the rendered timeline
+  // both during live playback (real delta) and during export
+  // (synthetic delta = 1/(fps * subFrames)).
+  let localTime = 0;
   useTask((delta) => {
     if (!geometry || !material || !enabled) return;
 
-    const time = performance.now() / 1000;
+    localTime += delta;
+    const time = localTime;
     const isFirefly = type === "fireflies";
 
     // Get direct references to geometry arrays (once per frame, not per particle)

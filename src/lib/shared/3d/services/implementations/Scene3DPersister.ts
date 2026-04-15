@@ -1,57 +1,55 @@
 /**
- * Animation3DPersister Implementation
+ * Scene3DPersister Implementation
  *
- * Persists 3D animation UI state to localStorage.
+ * Persists 3D scene UI state to localStorage.
  */
 
 import { Plane } from "../../domain/enums/Plane";
 import type {
-  IAnimation3DPersister,
-  Animation3DPersistedState,
-} from "../contracts/IAnimation3DPersister";
+  IScene3DPersister,
+  Scene3DPersistedState,
+} from "../contracts/IScene3DPersister";
 
 const STORAGE_KEY = "tka-3d-animator-state";
 
-export class Animation3DPersister implements IAnimation3DPersister {
+export class Scene3DPersister implements IScene3DPersister {
   /**
    * Save state to localStorage (merges with existing)
    */
-  saveState(state: Partial<Animation3DPersistedState>): void {
+  saveState(state: Partial<Scene3DPersistedState>): void {
     try {
       const existing = this.loadState();
       const merged = { ...existing, ...state };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
     } catch (e) {
-      console.warn("Failed to save 3D animator state:", e);
+      console.warn("Failed to save 3D scene state:", e);
     }
   }
 
   /**
    * Load state from localStorage
    */
-  loadState(): Partial<Animation3DPersistedState> {
+  loadState(): Partial<Scene3DPersistedState> {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (!stored) return {};
       const state = JSON.parse(stored);
 
-      // Migration: Clear legacy camera positions (pre-meter scale)
-      // Old positions were 200-800 units, new positions are 1-10 meters
+      // Migration: Clear legacy camera positions (pre-meter scale).
+      // Old positions were 200-800 units, new positions are 1-10 meters.
       if (state.cameraPosition) {
         const maxCoord = Math.max(...state.cameraPosition.map(Math.abs));
         if (maxCoord > 20) {
-          // Legacy position detected, clear it
-          console.log('[Animation3DPersister] Clearing legacy camera position:', state.cameraPosition);
+          console.log('[Scene3DPersister] Clearing legacy camera position:', state.cameraPosition);
           delete state.cameraPosition;
           delete state.cameraTarget;
-          // Persist the cleaned state
           localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
         }
       }
 
       return state;
     } catch (e) {
-      console.warn("Failed to load 3D animator state:", e);
+      console.warn("Failed to load 3D scene state:", e);
       return {};
     }
   }

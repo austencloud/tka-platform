@@ -36,6 +36,28 @@ const STORAGE_KEY_CAMERA = "tka-viewer3d-camera";
 const STORAGE_KEY_VISIBLE_PLANES = "tka-viewer3d-visiblePlanes";
 const STORAGE_KEY_PRESET = "tka-viewer3d-activePreset";
 const STORAGE_KEY_CAM_PRESET = "tka-viewer3d-cameraPreset";
+const STORAGE_KEY_NAV_MODE = "tka-viewer3d-navMode";
+
+export type ViewerNavMode = "orbit" | "fly" | "walk";
+
+function loadPersistedNavMode(): ViewerNavMode {
+  if (typeof localStorage === "undefined") return "orbit";
+  try {
+    const v = localStorage.getItem(STORAGE_KEY_NAV_MODE);
+    return v === "fly" || v === "walk" ? v : "orbit";
+  } catch {
+    return "orbit";
+  }
+}
+
+function persistNavMode(value: ViewerNavMode) {
+  if (typeof localStorage === "undefined") return;
+  try {
+    localStorage.setItem(STORAGE_KEY_NAV_MODE, value);
+  } catch {
+    // Storage full or unavailable
+  }
+}
 
 // New multi-performer persistence keys (v2). The old
 // STORAGE_KEY_VISIBLE_PLANES is migrated to the first entry of the new
@@ -522,6 +544,7 @@ export function createViewer3DState(deps: {
     charcoal: false,
   });
   let cameraSnapshot = $state<CameraStateSnapshot | null>(null);
+  let navMode = $state<ViewerNavMode>(loadPersistedNavMode());
   let activePreset = $state<string | null>((() => {
     if (typeof localStorage === "undefined") return "behind";
     try { return localStorage.getItem(STORAGE_KEY_PRESET) || "behind"; } catch { return "behind"; }
@@ -538,14 +561,18 @@ export function createViewer3DState(deps: {
 
   // Threlte scene internals — registered by Viewer3DScene so the offline
   // exporter can drive rendering without coupling to Threlte's reactive layer.
-  let threlteRenderer = $state<{ render(scene: any, camera: any): void } | null>(null);
+  let threlteRenderer = $state<any>(null);
   let threlteScene = $state<any>(null);
   let threlteCamera = $state<any>(null);
-  // Threlte's advance() runs all useTask callbacks + renders one frame.
-  // Used by the offline exporter instead of raw renderer.render() so the
-  // full animation pipeline (puppet loop, IK, effects) runs each frame.
-  let threlteAdvance = $state<((delta?: number) => void) | null>(null);
-  let threlteRenderMode = $state<{ set(mode: string): void } | null>(null);
+  // runFrame drives Threlte's full pipeline synchronously: every useTask
+  // callback (puppet loop, IK, effects, render) runs in one call. The
+  // offline exporter uses this to render at CPU speed, decoupled from the
+  // display refresh rate.
+  let threlteRunFrame = $state<((timeMs: number) => void) | null>(null);
+  // Pause/resume the native rAF animation loop. During offline export the
+  // loop is paused so manual runFrame calls aren't racing with rAF renders.
+  let threltePauseAutoLoop = $state<(() => void) | null>(null);
+  let threlteResumeAutoLoop = $state<(() => void) | null>(null);
 
   // When true, the puppet loop in Viewer3DScene skips performer state updates
   // so the offline exporter can drive performers deterministically. IK and
@@ -753,6 +780,13 @@ export function createViewer3DState(deps: {
     setCameraDragging(value: boolean) {
       isCameraDragging = value;
     },
+    get navMode(): ViewerNavMode {
+      return navMode;
+    },
+    setNavMode(value: ViewerNavMode) {
+      navMode = value;
+      persistNavMode(value);
+    },
     scopedPerformers,
     selectPerformerScope,
     setHandPlaneScoped,
@@ -857,27 +891,32 @@ export function createViewer3DState(deps: {
       return threlteCamera;
     },
     /**
-     * Register the Three.js renderer, scene, camera, and Threlte's advance()
-     * from Viewer3DScene so offline export can drive the full render pipeline.
+     * Register Threlte internals from Viewer3DScene so the offline exporter
+     * can drive the full render pipeline synchronously.
      */
     registerThrelteInternals(refs: {
-      renderer: { render(scene: any, camera: any): void };
+      renderer: any;
       scene: any;
       camera: any;
-      advance: (delta?: number) => void;
-      renderMode: { set(mode: string): void };
+      runFrame: (timeMs: number) => void;
+      pauseAutoLoop: () => void;
+      resumeAutoLoop: () => void;
     }) {
       threlteRenderer = refs.renderer;
       threlteScene = refs.scene;
       threlteCamera = refs.camera;
-      threlteAdvance = refs.advance;
-      threlteRenderMode = refs.renderMode;
+      threlteRunFrame = refs.runFrame;
+      threltePauseAutoLoop = refs.pauseAutoLoop;
+      threlteResumeAutoLoop = refs.resumeAutoLoop;
     },
-    get threlteAdvance() {
-      return threlteAdvance;
+    get threlteRunFrame() {
+      return threlteRunFrame;
     },
-    get threlteRenderMode() {
-      return threlteRenderMode;
+    get threltePauseAutoLoop() {
+      return threltePauseAutoLoop;
+    },
+    get threlteResumeAutoLoop() {
+      return threlteResumeAutoLoop;
     },
     get isExporting() {
       return isExporting;

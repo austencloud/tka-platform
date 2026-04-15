@@ -12,7 +12,7 @@
    * lighting, dual-wheel prop swapping, and the puppet-mode sync loop.
    */
 
-  import { T, useTask, useThrelte } from "@threlte/core";
+  import { T, useTask, useThrelte, useScheduler } from "@threlte/core";
   import { onMount, onDestroy } from "svelte";
   import PerformerRig from "./PerformerRig.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
@@ -46,19 +46,50 @@
 
   const viewer3DState = getViewer3DContext();
   const sceneFeatures = getSceneFeatureContext();
-  const { renderer, camera, scene, advance, renderMode } = useThrelte();
+  const { renderer, camera, scene } = useThrelte();
+  const { scheduler, resetFrameInvalidation } = useScheduler();
 
   // When the stage is visible, lift performers onto the deck surface
   const stageGroundOffset = $derived(
     sceneFeatures.isEnabled("stage") ? STAGE.STAGE_DECK_HEIGHT : 0
   );
 
+  // Reconstructs Threlte's default setAnimationLoop callback. We restore
+  // this after the offline export pauses the loop.
+  const autoLoopCallback = (time: number) => {
+    scheduler.run(time);
+    resetFrameInvalidation();
+  };
+
+  // runFrame drives Threlte's entire pipeline synchronously in one call:
+  // every registered useTask (puppet loop, IK, effects, autoRender) runs,
+  // then the scene is drawn to the canvas. No rAF involved. The exporter
+  // uses this to export at CPU speed (decoupled from display refresh rate)
+  // and without tab-switch throttling.
+  function runFrame(timeMs: number) {
+    scheduler.run(timeMs);
+    resetFrameInvalidation();
+  }
+
+  // During export the native rAF loop is paused so it doesn't fight our
+  // manual pacing. Resume restores the identical callback Threlte set up.
+  function pauseAutoLoop() {
+    if ("setAnimationLoop" in renderer) {
+      (renderer as { setAnimationLoop(cb: ((time: number) => void) | null): void })
+        .setAnimationLoop(null);
+    }
+  }
+
+  function resumeAutoLoop() {
+    if ("setAnimationLoop" in renderer) {
+      (renderer as { setAnimationLoop(cb: ((time: number) => void) | null): void })
+        .setAnimationLoop(autoLoopCallback);
+    }
+  }
+
   // Register Threlte internals so the offline exporter can drive the full
   // render pipeline. Threlte exposes renderer and scene as direct objects
   // (not CurrentWritable), but camera is a CurrentWritable with .current.
-  // advance() triggers all useTask callbacks + renders one frame when
-  // renderMode is 'manual' — this is what the offline exporter uses
-  // instead of raw renderer.render() to get IK, effects, etc.
   $effect(() => {
     const cam = camera.current;
     if (renderer && scene && cam) {
@@ -66,8 +97,9 @@
         renderer,
         scene,
         camera: cam,
-        advance,
-        renderMode,
+        runFrame,
+        pauseAutoLoop,
+        resumeAutoLoop,
       });
     }
   });
@@ -100,16 +132,13 @@
   //
   // stepConfigs now includes the start position at index 0, so the mapping
   // is direct: 2D beat N → 3D index N (no offset needed).
-  // [EXPORT-DIAG] Frame counter for sampled logging during export
-  let _puppetDiagCounter = 0;
-
   useTask(() => {
     // During offline export, the exporter sets exportCurrentStep on
     // viewer3DState each frame. We read it here instead of the component
     // prop `currentStep` (which is frozen because playback is paused).
     // This keeps state distribution inside useTask — the same code path
     // as live playback — so the $derived chain (currentStepIndex →
-    // bluePropState → Avatar3D props) resolves within the same advance().
+    // bluePropState → Avatar3D props) resolves within the same frame.
     const step = viewer3DState.isExporting
       ? viewer3DState.exportCurrentStep ?? currentStep
       : currentStep;
@@ -117,37 +146,13 @@
     const beatIndex = Math.floor(step);
     const subBeatProgress = step - beatIndex;
 
-    // [EXPORT-DIAG] Log what the puppet loop reads and distributes
-    if (viewer3DState.isExporting && _puppetDiagCounter % 10 === 0) {
-      console.log(
-        `[EXPORT-DIAG] PuppetLoop frame=${_puppetDiagCounter} ` +
-        `exportCurrentStep=${viewer3DState.exportCurrentStep?.toFixed(4)} ` +
-        `componentProp=${currentStep.toFixed(4)} ` +
-        `resolvedStep=${step.toFixed(4)} beatIndex=${beatIndex} subBeat=${subBeatProgress.toFixed(4)}`
-      );
-    }
-
     for (const p of performerManager.performers) {
       const wrappedBeat = p.totalSteps > 0 && beatIndex >= p.totalSteps
         ? beatIndex % p.totalSteps
         : beatIndex;
       p.goToStep(wrappedBeat);
       p.setProgress(subBeatProgress);
-
-      // [EXPORT-DIAG] After setting state, read back what the performer actually has
-      if (viewer3DState.isExporting && _puppetDiagCounter % 10 === 0) {
-        const blue = p.bluePropState;
-        const red = p.redPropState;
-        console.log(
-          `[EXPORT-DIAG] PuppetLoop performer=${p.id} ` +
-          `afterGoToStep: currentStepIndex=${p.currentStepIndex} progress=${p.progress.toFixed(4)} ` +
-          `bluePropState=${blue ? `pos(${blue.worldPosition.x.toFixed(3)},${blue.worldPosition.y.toFixed(3)},${blue.worldPosition.z.toFixed(3)})` : 'null'} ` +
-          `redPropState=${red ? `pos(${red.worldPosition.x.toFixed(3)},${red.worldPosition.y.toFixed(3)},${red.worldPosition.z.toFixed(3)})` : 'null'}`
-        );
-      }
     }
-
-    if (viewer3DState.isExporting) _puppetDiagCounter++;
 
     // Drive formation transitions. transitionToFormation (called from the
     // Performers tab) kicks off an animation but doesn't run its own frame

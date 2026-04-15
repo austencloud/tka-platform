@@ -7,7 +7,7 @@
  */
 
 import type { AvatarState, PhysicsProvider } from "$lib/shared/3d/camera/types";
-import { createFlycamPhysicsProvider } from "./flycam-physics-provider";
+import { createFlycamPhysicsProvider } from "$lib/shared/3d/state/flycam-physics-provider";
 
 export function createSceneLabPlayerState(): {
   avatarState: AvatarState;
