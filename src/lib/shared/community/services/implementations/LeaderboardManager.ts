@@ -21,6 +21,7 @@ import {
 import { getAuth } from "firebase/auth";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
+import { isPermissionDeniedError } from "$lib/shared/auth/utils/isPermissionDeniedError";
 import type { ILeaderboardManager } from "../contracts/ILeaderboardManager";
 import type {
   LeaderboardCategory,
@@ -347,6 +348,8 @@ export class LeaderboardManager implements ILeaderboardManager {
             callback(leaderboardData);
           },
           (error) => {
+            // Expected on sign-out — the listener is about to be cleaned up.
+            if (isPermissionDeniedError(error)) return;
             console.error(
               "[LeaderboardManager] Error in leaderboard subscription:",
               error

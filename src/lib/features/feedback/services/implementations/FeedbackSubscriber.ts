@@ -19,6 +19,7 @@ import {
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
+import { isPermissionDeniedError } from "$lib/shared/auth/utils/isPermissionDeniedError";
 import type { IFeedbackSubscriptionService } from "../contracts/IFeedbackSubscriptionService";
 import type { FeedbackItem } from "../../domain/models/feedback-models";
 import type { IFeedbackDocumentMapper } from "../contracts/IFeedbackDocumentMapper";
@@ -77,6 +78,11 @@ export class FeedbackSubscriptionService implements IFeedbackSubscriptionService
             onUpdate(items);
           },
           (error) => {
+            // Expected on sign-out; stay quiet.
+            if (isPermissionDeniedError(error)) {
+              onError?.(error);
+              return;
+            }
             console.error("[FeedbackSubscriber] Subscription error:", error);
             toast.error("Lost connection to feedback. Please refresh.");
             onError?.(error);
@@ -144,6 +150,11 @@ export class FeedbackSubscriptionService implements IFeedbackSubscriptionService
             onUpdate(items);
           },
           (error) => {
+            // Expected on sign-out.
+            if (isPermissionDeniedError(error)) {
+              onError?.(error);
+              return;
+            }
             console.error(
               "[FeedbackSubscriber] User subscription error:",
               error

@@ -18,6 +18,7 @@ import {
 } from "firebase/firestore";
 import { auth, getFirestoreInstance } from "../../../auth/firebase";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
+import { isPermissionDeniedError } from "$lib/shared/auth/utils/isPermissionDeniedError";
 import { trackWrite } from "$lib/shared/offline/state/sync-status-state.svelte";
 import type { AppSettings } from "../../domain/AppSettings";
 import type { ISettingsPersister } from "../contracts/ISettingsPersister";
@@ -187,6 +188,8 @@ export class FirebaseSettingsPersister implements ISettingsPersister {
             }
           },
           (error) => {
+            // Expected on sign-out — user settings are no longer readable.
+            if (isPermissionDeniedError(error)) return;
             console.error(
               "❌ [FirebaseSettingsPersister] Subscription error:",
               error

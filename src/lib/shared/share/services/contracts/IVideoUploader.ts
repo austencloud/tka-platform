@@ -2,7 +2,7 @@
  * Video Upload Service Interface
  *
  * Defines the contract for uploading user videos, animations, and thumbnails
- * to cloud storage (R2). Replaces IFirebaseVideoUploader.
+ * to cloud storage (R2).
  *
  * Key differences from the old interface:
  * - Returns `key` (R2 object key) instead of `storagePath` (Firebase path)

@@ -24,6 +24,7 @@ import {
 } from "firebase/firestore";
 import { auth, getFirestoreInstance } from "../../../auth/firebase";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
+import { isPermissionDeniedError } from "$lib/shared/auth/utils/isPermissionDeniedError";
 import type {
   ISubscriptionManager,
   SubscriptionInfo,
@@ -244,6 +245,8 @@ export class SubscriptionManager implements ISubscriptionManager {
             callback(info);
           },
           (error) => {
+            // Expected on sign-out; subscription doc is user-scoped.
+            if (isPermissionDeniedError(error)) return;
             console.error(
               "[SubscriptionManager] Subscription change listener error:",
               error

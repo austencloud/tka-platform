@@ -24,6 +24,7 @@ import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { authState, getEffectiveUserId } from "$lib/shared/auth/state/authState.svelte";
 import { userPreviewState } from "$lib/shared/debug/state/user-preview-state.svelte";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
+import { isPermissionDeniedError } from "$lib/shared/auth/utils/isPermissionDeniedError";
 // Note: Message notifications removed - messages and notifications share same inbox panel
 import type {
   Message,
@@ -321,6 +322,10 @@ export class Messenger implements IMessenger {
             callback(messages);
           },
           (error) => {
+            // Expected when the user signs out — Firestore revokes access and
+            // this listener is about to be torn down by the auth listener.
+            // Don't alarm the user with a "lost connection" toast.
+            if (isPermissionDeniedError(error)) return;
             console.error("[Messenger] Messages subscription error:", error);
             toast.error("Lost connection to messages. Please refresh.");
           }
