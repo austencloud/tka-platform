@@ -1,10 +1,13 @@
 <script lang="ts">
   const EFFECTS = [
-    { id: "none", label: "None", icon: "fa-ban", color: "" },
+    { id: "trails", label: "Trails", icon: "fa-route", color: "#60a5fa" },
     { id: "fire", label: "Fire", icon: "fa-fire", color: "#f97316" },
     { id: "led", label: "LED", icon: "fa-lightbulb", color: "#22c55e" },
-    { id: "trails", label: "Trails", icon: "fa-route", color: "#60a5fa" },
     { id: "charcoal", label: "Coal", icon: "fa-diamond", color: "#a855f7" },
+    { id: "zap", label: "Zap", icon: "fa-bolt", color: "#38bdf8" },
+    { id: "sparkles", label: "Sparkle", icon: "fa-star", color: "#fbbf24" },
+    { id: "motion", label: "Motion", icon: "fa-wind", color: "#22d3ee" },
+    { id: "bloom", label: "Bloom", icon: "fa-sun", color: "#f472b6" },
   ] as const;
 
   interface Props {
@@ -17,18 +20,9 @@
   function getButtonStyle(effect: (typeof EFFECTS)[number]): string {
     const isActive = activeEffect === effect.id;
     if (!isActive) return "";
-
-    if (!effect.color) {
-      return [
-        "border-color: var(--theme-text, white)",
-        "background: color-mix(in srgb, var(--theme-text) 8%, transparent)",
-        "color: var(--theme-text, white)",
-      ].join("; ");
-    }
-
     return [
       `border-color: ${effect.color}`,
-      `background: color-mix(in srgb, ${effect.color} 12%, transparent)`,
+      `background: color-mix(in srgb, ${effect.color} 14%, transparent)`,
       `color: ${effect.color}`,
     ].join("; ");
   }
@@ -48,6 +42,7 @@
       role="radio"
       aria-checked={isActive}
       aria-label={effect.label}
+      title={isActive ? `Click to disable ${effect.label}` : effect.label}
       style={getButtonStyle(effect)}
       onclick={() => onSelect(effect.id)}
     >
@@ -59,13 +54,14 @@
 
 <style>
   .effect-selector {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
     gap: 6px;
   }
 
   .effect-btn {
-    flex: 1;
     min-height: 48px;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -115,5 +111,8 @@
     line-height: 1;
     pointer-events: none;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
   }
 </style>
