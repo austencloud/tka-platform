@@ -2,7 +2,7 @@
 	import { PLACEABLE_OBJECTS, type PlaceableObjectDef } from '../../domain/placeable-object-registry';
 	import { museum3dEditorState } from '../../state/museum-3d-editor-state.svelte';
 	import { handleModuleChange } from '$lib/shared/navigation-coordinator/navigation-coordinator.svelte';
-	import type { ModuleId } from '$lib/shared/navigation/state/navigation-state.svelte';
+	import type { ModuleId } from '$lib/shared/navigation/domain/types';
 
 	interface Props {
 		currentRoomName?: string;
@@ -29,7 +29,7 @@
 		if (def.category === 'furniture') {
 			const furnitureIcons = ['🪑', '🪴', '📚', '🪔'];
 			const idx = furniture.indexOf(def);
-			return furnitureIcons[idx % furnitureIcons.length];
+			return furnitureIcons[idx % furnitureIcons.length] ?? '🪑';
 		}
 		// Distinct icons per fixture wing theme
 		const fixtureIcons: Record<string, string> = {
@@ -57,6 +57,7 @@
 			const idx = num - 1;
 			if (idx < allItems.length) {
 				const def = allItems[idx];
+				if (!def) return;
 				if (museum3dEditorState.placementDef?.id === def.id) {
 					museum3dEditorState.stopPlacement();
 				} else {
@@ -288,6 +289,7 @@
 		text-overflow: ellipsis;
 		display: -webkit-box;
 		-webkit-line-clamp: 2;
+		line-clamp: 2;
 		-webkit-box-orient: vertical;
 		width: 100%;
 		word-break: break-word;

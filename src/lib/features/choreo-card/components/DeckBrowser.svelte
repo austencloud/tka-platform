@@ -251,7 +251,7 @@
     if (turn) {
       const uniformMatch = turn.match(/^uniform[- ](\d+)t$/i);
       if (uniformMatch) {
-        const turns = parseInt(uniformMatch[1], 10);
+        const turns = parseInt(uniformMatch[1] ?? "0", 10);
         const ratio = TURNS_TO_RATIO[turns];
         if (ratio) return `VTG ${label} ${ratio}`;
       }
@@ -278,7 +278,7 @@
       // VTG uniform format (e.g. "uniform-0t" = 0 turns → ratio "1:1")
       const uniformMatch = turn.match(/^uniform[- ](\d+)t$/i);
       if (uniformMatch) {
-        const turns = parseInt(uniformMatch[1], 10);
+        const turns = parseInt(uniformMatch[1] ?? "0", 10);
         const ratio = TURNS_TO_RATIO[turns] ?? `${turns}t`;
         return `${abbr} ${ratio}`;
       }

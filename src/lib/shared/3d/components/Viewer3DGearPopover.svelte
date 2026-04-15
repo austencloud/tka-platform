@@ -395,14 +395,6 @@
     padding: 4px 0 0 0;
   }
 
-  .placeholder {
-    padding: 32px 12px;
-    text-align: center;
-    font-size: 12px;
-    color: rgba(255, 255, 255, 0.3);
-    font-style: italic;
-  }
-
   /* Plane matrix */
   .plane-matrix {
     display: flex;

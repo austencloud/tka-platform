@@ -606,7 +606,7 @@
   // ── Flip animation state ──
   const DURATION = 0.8;
   let progress = initialFpsActive ? 1 : 0;
-  let animating = false;
+  let animating = $state(false);
   let goingDown = true;
   let lastFlipCount = 0;
   let initialized = false;

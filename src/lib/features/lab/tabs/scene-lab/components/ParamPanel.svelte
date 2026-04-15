@@ -5,7 +5,7 @@
    * Collapsible section wrapper for a group of scene params.
    */
 
-  import type { Snippet } from "svelte";
+  import { untrack, type Snippet } from "svelte";
 
   interface Props {
     title: string;
@@ -15,7 +15,7 @@
 
   let { title, defaultOpen = true, children }: Props = $props();
 
-  let open = $state(defaultOpen);
+  let open = $state(untrack(() => defaultOpen));
 </script>
 
 <div class="param-panel" class:open>

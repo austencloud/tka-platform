@@ -29,16 +29,19 @@ export class CircleSystem {
 			const assigned = new Set<string>();
 
 			for (let i = 0; i < performers.length; i++) {
-				if (assigned.has(performers[i].id)) continue;
 				const pivot = performers[i];
+				if (!pivot) continue;
+				if (assigned.has(pivot.id)) continue;
 				const cluster = new Set<string>([pivot.id]);
 
 				for (let j = 0; j < performers.length; j++) {
-					if (i === j || assigned.has(performers[j].id)) continue;
-					const dx = pivot.transform.x - performers[j].transform.x;
-					const dz = pivot.transform.z - performers[j].transform.z;
+					const other = performers[j];
+					if (!other) continue;
+					if (i === j || assigned.has(other.id)) continue;
+					const dx = pivot.transform.x - other.transform.x;
+					const dz = pivot.transform.z - other.transform.z;
 					if (Math.sqrt(dx * dx + dz * dz) <= CIRCLE_RADIUS) {
-						cluster.add(performers[j].id);
+						cluster.add(other.id);
 					}
 				}
 

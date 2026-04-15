@@ -7,6 +7,7 @@
 -->
 <script lang="ts">
 	import { T, useTask } from "@threlte/core";
+	import { untrack } from "svelte";
 	import { HTML } from "@threlte/extras";
 	import PerformerRig from "$lib/shared/3d/components/PerformerRig.svelte";
 	import { userProportionsState } from "$lib/shared/3d/state/user-proportions-state.svelte";
@@ -64,7 +65,7 @@
 	let frameCount = 0;
 	let showAvatar = $state(false);
 	let labelOpacity = $state(0);
-	const LOAD_FRAMES = loadFrames;
+	const LOAD_FRAMES = untrack(() => loadFrames);
 
 	useTask(() => {
 		const inst = renderState.instanceState;

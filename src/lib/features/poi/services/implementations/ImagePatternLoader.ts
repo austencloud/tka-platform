@@ -167,7 +167,7 @@ export class ImagePatternLoader implements IImagePatternLoader {
       frames,
       metadata: {
         name: "Image Upload",
-        source: "image-strip",
+        source: "image-upload",
         createdAt: Date.now(),
       },
     };
