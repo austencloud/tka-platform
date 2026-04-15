@@ -9,13 +9,11 @@
   const state = getEffectsConfigContext();
 </script>
 
-<div class="customize-panel">
-  <header class="customize-header">
-    <button type="button" class="back-btn" onclick={onBack} aria-label="Back to presets">
-      <i class="fas fa-chevron-left" aria-hidden="true"></i>
-    </button>
-    <span class="customize-title">Zap</span>
-  </header>
+<div class="customize-view">
+  <button type="button" class="back-btn" onclick={onBack}>
+    <i class="fas fa-arrow-left" aria-hidden="true"></i>
+    Back to presets
+  </button>
 
   {#if state}
     <label class="row">
@@ -45,6 +43,7 @@
         value={state.zap.color}
         oninput={(e) => state.updateZap({ color: (e.currentTarget as HTMLInputElement).value })}
       />
+      <span class="val">{state.zap.color}</span>
     </label>
 
     <label class="row">
@@ -67,24 +66,59 @@
         <option value="crackle">Crackle (radiate)</option>
       </select>
     </label>
+  {:else}
+    <p class="empty">Effect state unavailable.</p>
   {/if}
 </div>
 
 <style>
-  .customize-panel { display: flex; flex-direction: column; gap: 10px; padding: 0; }
-  .customize-header {
-    display: flex; align-items: center; gap: 8px;
-    margin-bottom: 4px;
+  .customize-view {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
   }
+
   .back-btn {
-    width: 28px; height: 28px; border-radius: 6px;
-    border: 1px solid var(--theme-stroke, rgba(255,255,255,0.1));
-    background: transparent; color: inherit; cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    min-height: 44px;
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 10px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    font-size: var(--font-size-min, 14px);
+    cursor: pointer;
+    transition: all var(--duration-fast, 100ms) ease;
+    -webkit-tap-highlight-color: transparent;
   }
-  .customize-title { font-weight: 600; }
-  .row { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+
+  .back-btn:hover {
+    background: color-mix(in srgb, var(--theme-text) 8%, transparent);
+    color: var(--theme-text, white);
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+  }
+
+  .back-btn:focus-visible {
+    outline: 2px solid var(--theme-accent, #8b5cf6);
+    outline-offset: 2px;
+  }
+
+  .back-btn i {
+    font-size: 12px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .back-btn {
+      transition: none;
+    }
+  }
+
+  .row { display: flex; align-items: center; gap: 8px; font-size: var(--font-size-min, 14px); }
   .row span:first-child { min-width: 72px; opacity: 0.7; }
   .row input[type=range] { flex: 1; min-width: 0; }
-  .row .val { min-width: 40px; text-align: right; font-variant-numeric: tabular-nums; opacity: 0.7; }
+  .row .val { min-width: 48px; text-align: right; font-variant-numeric: tabular-nums; opacity: 0.7; }
   .row select { flex: 1; }
+  .empty { opacity: 0.6; font-size: var(--font-size-min, 14px); padding: 4px 0; }
 </style>
