@@ -47,6 +47,12 @@ export interface ShortCodeURLOptions {
   bluePropType?: string;
   /** Red prop type to append to URL (encoded as single char) */
   redPropType?: string;
+  /** Force-embed the full sequenceData in the shortcode record even when
+   *  ownerId is set. Use this for URL-sync flows where the sequence may
+   *  never be persisted (e.g., playing a generated-but-unsaved sequence);
+   *  without it the resolver would fail because users/{uid}/sequences/{id}
+   *  doesn't exist yet. */
+  embedSequenceData?: boolean;
 }
 
 export interface IShortCodeManager {

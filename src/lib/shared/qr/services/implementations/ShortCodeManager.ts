@@ -195,10 +195,15 @@ export class ShortCodeManager implements IShortCodeManager {
           record.encoderHash = encoderHash;
         }
 
-        // Deck sequences have no ownerId, so the resolver can't look them up
-        // by owner path. Embed the essential sequence data directly in the
-        // shortcode record so we can hydrate without searching deck collections.
-        if (!sequence.ownerId && sequence.steps && sequence.steps.length > 0) {
+        // Embed the essential sequence data directly in the shortcode record
+        // for any case where the sequence isn't persisted elsewhere — deck
+        // sequences (no ownerId at all), or URL-sync flows where the caller
+        // explicitly requested embedding because the sequence may never be
+        // saved to the user's library. Without this, resolution falls through
+        // every strategy and returns null.
+        const shouldEmbed =
+          options?.embedSequenceData || !sequence.ownerId;
+        if (shouldEmbed && sequence.steps && sequence.steps.length > 0) {
           const seqData: Record<string, unknown> = {
             steps: sequence.steps,
           };
