@@ -412,22 +412,39 @@
       }
 
       // Load and bake turn clips (async — isReady() gates usage in frame loop)
+      //
+      // The GLB + contact.json files are built offline from the Python scripts
+      // in static/animations/turns/. If a developer hasn't run the conversion
+      // yet the directory only contains the scripts, and fetching a missing
+      // file under SvelteKit returns the SPA index.html (200 OK) which then
+      // fails JSON parsing deep inside the animator. Probe one asset first
+      // and skip the entire load silently when it isn't present — turns will
+      // simply fall back to the procedural path until assets are baked.
       if (turnAnimator && cachedRoot) {
         const turnsBase = "/animations/turns/";
-        turnAnimator
-          .initialize(cachedRoot, [
-            { angleDeg: 90, glbUrl: `${turnsBase}turn-left-90.glb`, contactUrl: `${turnsBase}turn-left-90.contact.json`, clipName: "turn-left-90" },
-            { angleDeg: -90, glbUrl: `${turnsBase}turn-right-90.glb`, contactUrl: `${turnsBase}turn-right-90.contact.json`, clipName: "turn-right-90" },
-            { angleDeg: 180, glbUrl: `${turnsBase}turn-left-180.glb`, contactUrl: `${turnsBase}turn-left-180.contact.json`, clipName: "turn-left-180" },
-            { angleDeg: -180, glbUrl: `${turnsBase}turn-right-180.glb`, contactUrl: `${turnsBase}turn-right-180.contact.json`, clipName: "turn-right-180" },
-          ])
-          .then(() => {
-            // Register turn clip contact curves so FootPlanter can query them
-            if (contactCurveCache && turnAnimator) {
-              for (const curve of turnAnimator.getContactCurves()) {
-                contactCurveCache.register(curve);
-              }
-            }
+        const probeUrl = `${turnsBase}turn-left-90.glb`;
+        const rootForTurns = cachedRoot;
+        fetch(probeUrl, { method: "HEAD" })
+          .then((res) => {
+            const contentType = res.headers.get("content-type") ?? "";
+            const assetsPresent =
+              res.ok && !contentType.includes("text/html");
+            if (!assetsPresent || !turnAnimator) return;
+            return turnAnimator
+              .initialize(rootForTurns, [
+                { angleDeg: 90, glbUrl: `${turnsBase}turn-left-90.glb`, contactUrl: `${turnsBase}turn-left-90.contact.json`, clipName: "turn-left-90" },
+                { angleDeg: -90, glbUrl: `${turnsBase}turn-right-90.glb`, contactUrl: `${turnsBase}turn-right-90.contact.json`, clipName: "turn-right-90" },
+                { angleDeg: 180, glbUrl: `${turnsBase}turn-left-180.glb`, contactUrl: `${turnsBase}turn-left-180.contact.json`, clipName: "turn-left-180" },
+                { angleDeg: -180, glbUrl: `${turnsBase}turn-right-180.glb`, contactUrl: `${turnsBase}turn-right-180.contact.json`, clipName: "turn-right-180" },
+              ])
+              .then(() => {
+                // Register turn clip contact curves so FootPlanter can query them
+                if (contactCurveCache && turnAnimator) {
+                  for (const curve of turnAnimator.getContactCurves()) {
+                    contactCurveCache.register(curve);
+                  }
+                }
+              });
           })
           .catch((err) => {
             console.warn("[Avatar3D] Failed to load turn clips:", err);
