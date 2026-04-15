@@ -416,13 +416,17 @@ export class DashLocationCalculator implements IDashLocationCalculator {
 
   private dashLocationNonZeroTurns(motion: MotionData): GridLocation {
     /**Calculate dash location for non-zero turns.*/
-    const rotationDirection = motion.rotationDirection.toLowerCase();
+    const rotationDirection = (motion.rotationDirection ?? "").toLowerCase();
     if (
+      rotationDirection === "" ||
       rotationDirection === "norotation" ||
       rotationDirection === "none" ||
-      rotationDirection === "no_rotation"
+      rotationDirection === "no_rotation" ||
+      rotationDirection === "no_rot"
     ) {
-      // Fallback for no rotation
+      // A dash with no spin direction (common for zero-turn dashes that
+      // still reach this branch) has no "clockwise vs counter-clockwise"
+      // answer — the arrow just stays at its starting grid point.
       return motion.startLocation;
     }
 
