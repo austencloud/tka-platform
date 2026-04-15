@@ -1,0 +1,49 @@
+import { describe, it, expect } from "vitest";
+import { migrateEffectsConfig } from "../../../src/lib/shared/effects/domain/migrations";
+import { DEFAULT_EFFECTS_CONFIG } from "../../../src/lib/shared/effects/domain/defaults";
+
+describe("migrateEffectsConfig", () => {
+  it("returns v2 config untouched", () => {
+    const v2 = structuredClone(DEFAULT_EFFECTS_CONFIG);
+    const result = migrateEffectsConfig(v2);
+    expect(result).toEqual(v2);
+  });
+
+  it("adds missing zap/sparkles/motion/bloom to v1 config", () => {
+    const v1: Record<string, unknown> = {
+      version: 1,
+      tipEffectMap: { "*": { effect: "trails" } },
+      trails: DEFAULT_EFFECTS_CONFIG.trails,
+      fire: DEFAULT_EFFECTS_CONFIG.fire,
+      led: DEFAULT_EFFECTS_CONFIG.led,
+      charcoal: DEFAULT_EFFECTS_CONFIG.charcoal,
+      activePresets: { trails: null, fire: null, led: null, charcoal: null },
+    };
+    const result = migrateEffectsConfig(v1);
+    expect(result.version).toBe(2);
+    expect(result.zap).toEqual(DEFAULT_EFFECTS_CONFIG.zap);
+    expect(result.sparkles).toEqual(DEFAULT_EFFECTS_CONFIG.sparkles);
+    expect(result.motion).toEqual(DEFAULT_EFFECTS_CONFIG.motion);
+    expect(result.bloom).toEqual(DEFAULT_EFFECTS_CONFIG.bloom);
+    expect(result.activePresets.zap).toBeNull();
+    expect(result.activePresets.sparkles).toBeNull();
+    expect(result.activePresets.motion).toBeNull();
+    expect(result.activePresets.bloom).toBeNull();
+  });
+
+  it("preserves existing v1 values for trails/fire/led/charcoal", () => {
+    const v1: Record<string, unknown> = {
+      version: 1,
+      tipEffectMap: { "*": { effect: "fire" } },
+      trails: { ...DEFAULT_EFFECTS_CONFIG.trails, thickness: 10 },
+      fire: { ...DEFAULT_EFFECTS_CONFIG.fire, intensity: 0.9 },
+      led: DEFAULT_EFFECTS_CONFIG.led,
+      charcoal: DEFAULT_EFFECTS_CONFIG.charcoal,
+      activePresets: { trails: null, fire: "fire-intense", led: null, charcoal: null },
+    };
+    const result = migrateEffectsConfig(v1);
+    expect(result.trails.thickness).toBe(10);
+    expect(result.fire.intensity).toBe(0.9);
+    expect(result.activePresets.fire).toBe("fire-intense");
+  });
+});
