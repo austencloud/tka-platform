@@ -14,7 +14,6 @@
     signInWithEmailAndPassword,
     updateProfile,
   } from "firebase/auth";
-  import { goto } from "$app/navigation";
   import { onDestroy } from "svelte";
   import { auth } from "../firebase";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
@@ -116,7 +115,10 @@
         resetAttempts();
       }
 
-      await goto("/");
+      // Don't navigate on success. The wrapping AuthDrawer/AuthSheet closes
+      // itself when `isAuthenticated` flips true, leaving the user on the app
+      // page they opened it from. Routing to "/" used to dump them on the
+      // marketing landing.
     } catch (err: any) {
       // Record failed attempt (only credential errors)
       if (

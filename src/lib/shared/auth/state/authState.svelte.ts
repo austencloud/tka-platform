@@ -396,6 +396,21 @@ export async function initializeAuthListener() {
         role,
       };
 
+      // If the user just became authenticated, clear any in-flight auth
+      // drawer state. Otherwise a "Sign up" the user opened before signing
+      // in a different way (popover, magic link, One Tap) stays flagged as
+      // open — then re-appears as a ghost sheet the next time they sign out,
+      // because MainApplication re-mounts AuthDrawer with `open={authDrawerState.open}`.
+      if (user) {
+        try {
+          const { authDrawerState } =
+            await import("../state/auth-drawer-state.svelte");
+          authDrawerState.reset();
+        } catch {
+          // Drawer state may not be loaded in some code paths — safe to ignore.
+        }
+      }
+
       // 📊 PostHog user identification
       if (user) {
         identifyUser(user.uid, {
@@ -591,6 +606,28 @@ export async function initializeAuthListener() {
  */
 export async function signOut() {
   try {
+    // Close any open auth drawer synchronously. This prevents the "sign up"
+    // sheet from flashing back into view the moment Firebase's auth state
+    // flips to signed-out and MainApplication re-mounts <AuthDrawer>.
+    try {
+      const { authDrawerState } =
+        await import("../state/auth-drawer-state.svelte");
+      authDrawerState.reset();
+    } catch {
+      // Non-critical; UI will still end up in the right place.
+    }
+
+    // Tell Google Identity Services not to auto-select this account on the
+    // next One Tap prompt. Without this, if the One Tap library is already
+    // loaded, it will eagerly re-prompt the user the instant any surface
+    // that mounts <GoogleOneTap autoPrompt /> reappears.
+    try {
+      (window as { google?: { accounts?: { id?: { disableAutoSelect?: () => void } } } })
+        .google?.accounts?.id?.disableAutoSelect?.();
+    } catch {
+      // GSI may not be loaded yet; nothing to do.
+    }
+
     // Clear any auth-related localStorage items
     const keysToRemove = Object.keys(localStorage).filter(
       (key) =>

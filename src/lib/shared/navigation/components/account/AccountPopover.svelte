@@ -103,13 +103,19 @@
 
   async function handleSignIn() {
     triggerHaptic();
+    // Close the popover before launching the Google popup. When Firebase
+    // returns and the auth listener fan-out starts re-rendering the sidebar
+    // (swapping in premium modules, pulling the user avatar, etc.), there's
+    // no stale "Sign In" menu hanging over the top of it. Visually the user
+    // sees the popover dismiss, the OAuth popup take focus, then the signed-in
+    // app on return — no double-update flash.
+    onClose();
     try {
       const authenticator = container.items.authenticator;
       await authenticator.signInWithGoogle();
     } catch {
       // Sign-in failure handled by auth UI
     }
-    onClose();
   }
 
   function handleWhatsNew() {

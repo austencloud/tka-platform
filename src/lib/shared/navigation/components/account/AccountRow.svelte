@@ -52,6 +52,9 @@
       class="account-row drawer interactive"
       onclick={() => {
         try { (container.items.hapticFeedback as IHapticFeedback)?.trigger("selection"); } catch {}
+        // Close the containing drawer (e.g. mobile nav) before the auth drawer
+        // opens, so we never stack two full-height sheets on top of each other.
+        onclick?.();
         authDrawerState.show();
       }}
       aria-label="Create account"

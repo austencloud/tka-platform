@@ -21,6 +21,7 @@ import {
   initializeAuth,
   type Auth,
   browserLocalPersistence,
+  browserPopupRedirectResolver,
   indexedDBLocalPersistence,
   setPersistence,
 } from "firebase/auth";
@@ -198,9 +199,12 @@ export function getAuthSync(): Auth {
 function initAuthWithPersistence(): Auth {
   // initializeAuth can only run once per Firebase app — fall back to getAuth
   // if it's already been initialized (e.g., via HMR or another call site).
+  // popupRedirectResolver is required here because signInWithPopup relies on it;
+  // getAuth() installs it by default, but initializeAuth() does not.
   try {
     return initializeAuth(app, {
       persistence: [indexedDBLocalPersistence, browserLocalPersistence],
+      popupRedirectResolver: browserPopupRedirectResolver,
     });
   } catch {
     return getAuth(app);
