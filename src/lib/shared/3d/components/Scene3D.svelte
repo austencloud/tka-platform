@@ -20,7 +20,9 @@
 
   import { Canvas } from "@threlte/core";
   import { T } from "@threlte/core";
-  import { OrbitControls, layers } from "@threlte/extras";
+  import { layers } from "@threlte/extras";
+  import type CameraControls from "camera-controls";
+  import OrbitControls from "./OrbitControls.svelte";
   import { EffectComposer } from "threlte-postprocessing";
   import * as THREE from "three";
   import Grid3D from "./Grid3D.svelte";
@@ -225,15 +227,10 @@
     useCustom = false;
   });
 
-  // Reference to orbit controls for getting camera state
-  // Type uses intersection to satisfy bind:ref while providing camera/target access
-  let controlsRef = $state<
-    | (import("three/examples/jsm/controls/OrbitControls.js").OrbitControls & {
-        object: THREE.PerspectiveCamera;
-        target: THREE.Vector3;
-      })
-    | undefined
-  >(undefined);
+  // Reference to orbit controls for getting camera state.
+  let controlsRef = $state<CameraControls | null>(null);
+  const _camStatePos = new THREE.Vector3();
+  const _camStateTgt = new THREE.Vector3();
 
   // Reference to camera for first-person mode
   let cameraRef = $state<THREE.PerspectiveCamera | undefined>(undefined);
@@ -275,28 +272,20 @@
   }
 
   // Handle orbit control changes
-  function handleCameraChange() {
+  function handleCameraChange(controls: CameraControls) {
+    controls.getPosition(_camStatePos);
+    controls.getTarget(_camStateTgt);
+
     // Dynamically tighten the polar-angle ceiling so the camera
     // never drops below the ground plane at the current orbit radius.
-    if (controlsRef) {
-      const camera = controlsRef.object;
-      if (camera) {
-        const r = camera.position.distanceTo(controlsRef.target);
-        controlsRef.maxPolarAngle = getGroundMaxPolarAngle(r, controlsRef.target.y);
-      }
-    }
+    const r = _camStatePos.distanceTo(_camStateTgt);
+    controls.maxPolarAngle = getGroundMaxPolarAngle(r, _camStateTgt.y);
 
-    if (!onCameraChange || !controlsRef) return;
-
-    const camera = controlsRef.object;
-    const target = controlsRef.target;
-
-    if (camera && target) {
-      onCameraChange({
-        position: [camera.position.x, camera.position.y, camera.position.z],
-        target: [target.x, target.y, target.z],
-      });
-    }
+    if (!onCameraChange) return;
+    onCameraChange({
+      position: [_camStatePos.x, _camStatePos.y, _camStatePos.z],
+      target: [_camStateTgt.x, _camStateTgt.y, _camStateTgt.z],
+    });
   }
 </script>
 
