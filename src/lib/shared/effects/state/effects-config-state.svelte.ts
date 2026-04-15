@@ -14,6 +14,10 @@ import type {
   FireIntent,
   LedIntent,
   CharcoalIntent,
+  ZapIntent,
+  SparklesIntent,
+  MotionIntent,
+  BloomIntent,
 } from "../domain/EffectsConfig";
 import type { EffectsPreset } from "../domain/EffectsPreset";
 import type { TipEffectMap } from "$lib/shared/animation-engine/domain/types/TipEffectTypes";
@@ -28,6 +32,10 @@ function mergeConfig(base: EffectsConfig, patch: Partial<EffectsConfig>): Effect
     fire: patch.fire ? { ...base.fire, ...patch.fire } : base.fire,
     led: patch.led ? { ...base.led, ...patch.led } : base.led,
     charcoal: patch.charcoal ? { ...base.charcoal, ...patch.charcoal } : base.charcoal,
+    zap: patch.zap ? { ...base.zap, ...patch.zap } : base.zap,
+    sparkles: patch.sparkles ? { ...base.sparkles, ...patch.sparkles } : base.sparkles,
+    motion: patch.motion ? { ...base.motion, ...patch.motion } : base.motion,
+    bloom: patch.bloom ? { ...base.bloom, ...patch.bloom } : base.bloom,
     activePresets: patch.activePresets
       ? { ...base.activePresets, ...patch.activePresets }
       : base.activePresets,
@@ -59,6 +67,26 @@ export function createEffectsConfigState(initial: EffectsConfig = DEFAULT_EFFECT
     config.activePresets.charcoal = null;
   }
 
+  function updateZap(patch: Partial<ZapIntent>) {
+    config.zap = { ...config.zap, ...patch };
+    config.activePresets.zap = null;
+  }
+
+  function updateSparkles(patch: Partial<SparklesIntent>) {
+    config.sparkles = { ...config.sparkles, ...patch };
+    config.activePresets.sparkles = null;
+  }
+
+  function updateMotion(patch: Partial<MotionIntent>) {
+    config.motion = { ...config.motion, ...patch };
+    config.activePresets.motion = null;
+  }
+
+  function updateBloom(patch: Partial<BloomIntent>) {
+    config.bloom = { ...config.bloom, ...patch };
+    config.activePresets.bloom = null;
+  }
+
   function setTipEffectMap(map: TipEffectMap) {
     config.tipEffectMap = map;
   }
@@ -88,6 +116,10 @@ export function createEffectsConfigState(initial: EffectsConfig = DEFAULT_EFFECT
     get fire() { return config.fire; },
     get led() { return config.led; },
     get charcoal() { return config.charcoal; },
+    get zap() { return config.zap; },
+    get sparkles() { return config.sparkles; },
+    get motion() { return config.motion; },
+    get bloom() { return config.bloom; },
     get overrides() { return config.overrides; },
     get activePresets() { return config.activePresets; },
 
@@ -95,6 +127,10 @@ export function createEffectsConfigState(initial: EffectsConfig = DEFAULT_EFFECT
     updateFire,
     updateLed,
     updateCharcoal,
+    updateZap,
+    updateSparkles,
+    updateMotion,
+    updateBloom,
     setTipEffectMap,
     applyPreset,
     updateOverride,
