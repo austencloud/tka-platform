@@ -17,6 +17,12 @@ export interface VideoExportOptions {
   effectOverrides?: VideoExportEffectOverrides;
   includeStartPosition?: boolean;
   includeEndHold?: boolean;
+  /**
+   * "standard" (default): one render per output frame, native resolution.
+   * "cinema": 2× supersampling + 4× temporal motion blur. Roughly 4-8×
+   * slower but produces a visibly smoother, sharper result. 3D exports only.
+   */
+  quality?: "standard" | "cinema";
 }
 
 export interface ImageExportOptions {
@@ -87,10 +93,19 @@ export interface Video3DExportDependencies {
   totalDurationSeconds: number;
   /** Camera keyframe buffer from pass 1 (or static capture) */
   cameraKeyframes: import("$lib/shared/video-export/domain/CameraKeyframe").CameraKeyframeBuffer;
-  /** Threlte advance() — runs full pipeline + render for one frame */
-  advance(delta?: number): void;
-  /** Switch between 'always' (live) and 'manual' (offline) render modes */
-  setRenderMode(mode: "always" | "manual"): void;
+  /** Three.js WebGLRenderer — needed for cinema-mode supersampling resize */
+  renderer: {
+    getSize(target: { x: number; y: number; set(w: number, h: number): unknown }): unknown;
+    setSize(w: number, h: number, updateStyle?: boolean): void;
+    getPixelRatio(): number;
+    setPixelRatio(ratio: number): void;
+  };
+  /** Run the full Threlte pipeline synchronously for one frame */
+  runFrame(timeMs: number): void;
+  /** Pause Threlte's native rAF loop for the duration of the export */
+  pauseAutoLoop(): void;
+  /** Resume Threlte's native rAF loop after export completes */
+  resumeAutoLoop(): void;
   /** Signal export mode to the puppet loop */
   setExporting(value: boolean): void;
   /** Set the animation step for the puppet loop to distribute each frame */

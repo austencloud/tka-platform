@@ -33,6 +33,7 @@
   import VideoPreviewPanel from "./VideoPreviewPanel.svelte";
   import PracticeProgressIndicator from "./PracticeProgressIndicator.svelte";
   import Recording3DOverlay from "./Recording3DOverlay.svelte";
+  import RecordSceneChrome from "./record-scene/RecordSceneChrome.svelte";
   // Services
   import { container } from "$lib/shared/di";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
@@ -227,6 +228,12 @@
         {@const isImageExportActive = ctx.editingPane === "image"}
         {@const isVideoUploadActive = ctx.editingPane === "video-upload"}
         {@const isAnyExportActive = ctx.editingPane !== null}
+        <!-- 3D Record Scene mode: fullscreen chrome overlay replaces the
+             right-sidebar ExportVideoDrawer. When a preview blob is ready
+             (recording finished), yield to the sidebar so VideoPreviewPanel
+             can show the playback/redownload UI. -->
+        {@const isRecordSceneActive = isVideoExportActive && ctx.renderMode === '3d' && !ctx.previewBlobUrl}
+        {@const isSidebarExportActive = isAnyExportActive && !isRecordSceneActive}
         <div class="drawer-viewer-container" class:landscape={isLandscape}>
           <!-- Header — adapts between normal viewer and export mode -->
           <header class="drawer-header">
@@ -247,26 +254,7 @@
                 </div>
 
                 <div class="drawer-header-actions">
-                  {#if ctx.viewer3DState?.webgl2Available && isVideoExportActive}
-                    <button
-                      type="button"
-                      class="dimension-chip"
-                      class:is-3d={ctx.renderMode === '3d'}
-                      onclick={() => {
-                        if (ctx.renderMode === '3d') {
-                          ctx.viewer3DState.exit3D();
-                        } else if (ctx.effectiveSequence) {
-                          ctx.viewer3DState.enter3D(ctx.effectiveSequence);
-                        }
-                      }}
-                      aria-label={ctx.renderMode === '3d' ? 'Switch to 2D' : 'Switch to 3D'}
-                      title={ctx.renderMode === '3d' ? 'Switch to 2D' : 'Switch to 3D'}
-                    >
-                      <i class="fas fa-cube" aria-hidden="true"></i>
-                      3D
-                    </button>
-                  {/if}
-                  {#if !isMobileWidth}
+                  {#if !isMobileWidth && !isRecordSceneActive}
                     <button
                       type="button"
                       class="header-action-btn"
@@ -323,24 +311,6 @@
                 </div>
 
                 <div class="drawer-header-actions">
-                  {#if ctx.viewer3DState?.webgl2Available}
-                    <button
-                      type="button"
-                      class="dimension-chip"
-                      class:is-3d={ctx.renderMode === '3d'}
-                      onclick={() => {
-                        if (ctx.renderMode === '3d') {
-                          ctx.viewer3DState.exit3D();
-                        } else if (ctx.effectiveSequence) {
-                          ctx.viewer3DState.enter3D(ctx.effectiveSequence);
-                        }
-                      }}
-                      aria-label={ctx.renderMode === '3d' ? 'Switch to 2D' : 'Switch to 3D'}
-                    >
-                      <i class="fas fa-cube" aria-hidden="true"></i>
-                      {ctx.renderMode === '3d' ? '3D' : '3D'}
-                    </button>
-                  {/if}
                   {#if authState.isAdmin}
                     <button
                       type="button"
@@ -363,7 +333,8 @@
               {#if ctx.hasSequence && ctx.effectiveSequence}
                 <div
                   class="viewer-and-export"
-                  class:export-active={isAnyExportActive}
+                  class:export-active={isSidebarExportActive}
+                  class:record-scene-active={isRecordSceneActive}
                   class:desktop={!isMobileWidth}
                   class:sidebar-collapsed={exportSidebarCollapsed}
                 >
@@ -427,7 +398,31 @@
                     onSendTo={overlay.sequence ? handleSendTo : undefined}
                     stepCount={overlay.sequence?.steps?.length ?? 0}
                   />
-                  {#if isAnyExportActive}
+                  {#if isRecordSceneActive && ctx.effectiveSequence}
+                    <RecordSceneChrome
+                      exportOptions={ctx.exportOptions}
+                      renderMode={ctx.renderMode}
+                      webgl2Available={ctx.viewer3DState?.webgl2Available ?? false}
+                      bpm={ctx.bpmLocal}
+                      isPlaying={ctx.isPlayingLocal}
+                      playbackMode={ctx.playbackMode}
+                      singlePlayDuration={ctx.singlePlayDuration}
+                      isExporting={ctx.isExporting}
+                      canvasReady={ctx.canvasReady}
+                      onRenderModeChange={(mode) => {
+                        if (mode === '3d' && ctx.effectiveSequence) {
+                          ctx.viewer3DState.enter3D(ctx.effectiveSequence);
+                        } else if (mode === '2d') {
+                          ctx.viewer3DState.exit3D();
+                        }
+                      }}
+                      onBpmChange={ctx.handleBpmChange}
+                      onPlaybackToggle={ctx.handlePlaybackToggle}
+                      onPlaybackModeChange={ctx.handlePlaybackModeChange}
+                      onExport={ctx.handleExport}
+                    />
+                  {/if}
+                  {#if isSidebarExportActive}
                     <div class="export-panel-container" class:sidebar={!isMobileWidth && (isVideoExportActive || isVideoUploadActive)}>
                       {#if isVideoExportActive}
                         {#if ctx.previewBlobUrl}
@@ -490,6 +485,15 @@
                 bpm={ctx.bpmLocal}
                 isPlaying={ctx.isPlayingLocal}
                 landscape={isLandscape}
+                renderMode={ctx.renderMode}
+                webgl2Available={ctx.viewer3DState?.webgl2Available ?? false}
+                onRenderModeChange={(mode) => {
+                  if (mode === '3d' && ctx.effectiveSequence) {
+                    ctx.viewer3DState.enter3D(ctx.effectiveSequence);
+                  } else if (mode === '2d') {
+                    ctx.viewer3DState.exit3D();
+                  }
+                }}
                 onBpmChange={ctx.handleBpmChange}
                 onPlayPause={ctx.handlePlaybackToggle}
                 onStepBack={ctx.stepFullBeatBackward}
@@ -728,39 +732,6 @@
   /* Active state for toggle buttons (e.g. sidebar settings toggle) */
   .header-action-btn.active {
     color: var(--theme-accent, #6366f1);
-  }
-
-  .dimension-chip {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    min-width: 44px;
-    min-height: 44px;
-    padding: 8px 14px;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
-    border-radius: 22px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
-    font-size: var(--font-size-min, 14px);
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.15s ease;
-  }
-
-  .dimension-chip:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: var(--theme-text, rgba(255, 255, 255, 0.8));
-    border-color: rgba(255, 255, 255, 0.2);
-  }
-
-  .dimension-chip.is-3d {
-    background: rgba(99, 102, 241, 0.15);
-    border-color: rgba(99, 102, 241, 0.35);
-    color: var(--theme-accent, #6366f1);
-  }
-
-  .dimension-chip.is-3d:hover {
-    background: rgba(99, 102, 241, 0.25);
   }
 
   .header-action-btn:focus-visible {

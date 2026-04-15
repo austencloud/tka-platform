@@ -146,8 +146,10 @@ export class SequenceModalExporter implements ISequenceModalExporter {
           beatsPerSecond: deps.beatsPerSecond,
           totalDurationSeconds: deps.totalDurationSeconds,
           cameraKeyframes: deps.cameraKeyframes,
-          advance: deps.advance,
-          setRenderMode: deps.setRenderMode,
+          renderer: deps.renderer,
+          runFrame: deps.runFrame,
+          pauseAutoLoop: deps.pauseAutoLoop,
+          resumeAutoLoop: deps.resumeAutoLoop,
           setExporting: deps.setExporting,
           setExportCurrentStep: deps.setExportCurrentStep,
         },
@@ -164,6 +166,7 @@ export class SequenceModalExporter implements ISequenceModalExporter {
           loopCount: options.loopCount,
           includeStartPosition: options.includeStartPosition ?? true,
           includeEndHold: options.includeEndHold ?? false,
+          quality: options.quality ?? "standard",
         }
       );
 
