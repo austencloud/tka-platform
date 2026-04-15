@@ -10,6 +10,15 @@
   import FallingParticles from "../primitives/FallingParticles.svelte";
   import GroundPlane from "../primitives/GroundPlane.svelte";
   import type { CosmicVariant } from "../domain/enums/environment-enums";
+  import { getSceneFeatureContext } from "../../scene-features/context/scene-feature-context";
+
+  // Scene feature readiness — synchronous scene, report on mount so the
+  // loading curtain can lift. Without this, the "environment" feature stays
+  // enabled-but-not-ready forever and allEnabledReady never flips true.
+  const sceneFeatures = getSceneFeatureContext();
+  $effect(() => {
+    sceneFeatures?.reportReady("environment");
+  });
 
   interface Props {
     /** Color variant: night (purple/indigo) or aurora (green/cyan) */

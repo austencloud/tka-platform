@@ -34,6 +34,7 @@
   } from "../domain/models/scene-configs";
   import { userProportionsState } from "../../state/user-proportions-state.svelte";
   import VolumetricFireComponent from "../../effects/volumetric-fire/VolumetricFireComponent.svelte";
+  import { getSceneFeatureContext } from "../../scene-features/context/scene-feature-context";
 
   interface Props {
     /** Optional scene config. Defaults to the baked winter look. */
@@ -234,6 +235,19 @@
     return () => {
       if (scene.current) scene.current.fog = null;
     };
+  });
+
+  // Report environment readiness when all winter GLBs have loaded. Without
+  // this, the loading curtain stays up forever on winter backgrounds.
+  const sceneFeatures = getSceneFeatureContext();
+  $effect(() => {
+    if (!sceneFeatures) return;
+    const allLoaded =
+      $pineTallA && $pineTallC && $pineDefault && $pineRound && $pineSmall &&
+      $rockA && $rockB && $logModel && $logLarge && $campfire;
+    if (allLoaded) {
+      sceneFeatures.reportReady("environment");
+    }
   });
 </script>
 
