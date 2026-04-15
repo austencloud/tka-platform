@@ -22,7 +22,15 @@ void main() {
 `;
 
 // ─── LED Sprite Shader ────────────────────────────────────────────────────────
-// Renders individual LED glow quads with inverse-square radial falloff.
+// Renders each LED as a motion-streak capsule — a sprite oriented and
+// stretched from the LED's previous-frame position to its current-frame
+// position. When the trail pass composites this sprite with max() blend,
+// the capsule fills the exact region the LED physically passed through
+// during the frame, eliminating the chain-of-dots artifact that plagues
+// point-sprite-only approaches.
+//
+// The fragment shader uses a capsule signed-distance field to get a
+// smooth glow falloff around the entire segment, not just the endpoints.
 
 export const LED_SPRITE_VERT = `#version 300 es
 precision highp float;
@@ -30,58 +38,101 @@ precision highp float;
 // Per-vertex: quad corners (-1 to 1)
 in vec2 a_position;
 
-// Per-instance: LED world position, color, brightness, glow radius
-in vec2 a_ledPos;      // viewbox coords
-in vec3 a_ledColor;    // RGB [0,1]
-in float a_brightness; // [0,1]
-in float a_glowRadius; // world-space radius
+// Per-instance attributes
+in vec2 a_ledPos;       // current-frame position in viewbox coords
+in vec2 a_ledPrevPos;   // previous-frame position in viewbox coords
+in vec3 a_ledColor;     // RGB [0,1]
+in float a_brightness;  // [0,1]
+in float a_glowRadius;  // viewbox-space glow radius
 
 uniform vec2 u_resolution;  // canvas size in physical pixels
 uniform vec2 u_viewboxSize; // viewbox dimensions (e.g. 950x950)
 
-out vec2 v_uv;
-out vec3 v_color;
-out float v_brightness;
+// Pass the fragment's position in viewbox space, plus the capsule
+// endpoints and glow radius, so the fragment shader can compute the
+// capsule distance field exactly.
+out vec2 v_viewboxPos;
+flat out vec2 v_capA;
+flat out vec2 v_capB;
+flat out float v_glowRadius;
+flat out vec3 v_color;
+flat out float v_brightness;
 
 void main() {
-  v_uv = a_position * 0.5 + 0.5; // quad UV [0,1]
+  v_capA = a_ledPrevPos;
+  v_capB = a_ledPos;
+  v_glowRadius = a_glowRadius;
   v_color = a_ledColor;
   v_brightness = a_brightness;
 
-  // Transform from viewbox coords to [0,1] UV, then to clip space
-  vec2 clipPos = (a_ledPos / u_viewboxSize) * 2.0 - 1.0;
-  clipPos.y = -clipPos.y; // flip Y (viewbox Y is top-down)
+  // Build a quad oriented along the segment from prev to curr that fully
+  // contains the capsule (including soft glow padding on all sides).
+  vec2 dir = a_ledPos - a_ledPrevPos;
+  float segLen = length(dir);
+  vec2 axis = segLen > 1e-4 ? dir / segLen : vec2(1.0, 0.0);
+  vec2 perp = vec2(-axis.y, axis.x);
 
-  // Scale glow radius from viewbox units to clip space
-  vec2 scaledOffset = a_position * (a_glowRadius / u_viewboxSize) * 2.0;
+  vec2 center = (a_ledPrevPos + a_ledPos) * 0.5;
+  // Oversize slightly past glow radius so the smoothstep edge isn't
+  // clipped by the quad boundary.
+  float pad = a_glowRadius * 1.05;
+  float halfLen = segLen * 0.5 + pad;
+  float halfWid = pad;
 
-  gl_Position = vec4(clipPos + scaledOffset, 0.0, 1.0);
+  // a_position ∈ [-1,1] — use x for along-axis, y for across-axis
+  vec2 worldOffset = axis * (a_position.x * halfLen) + perp * (a_position.y * halfWid);
+  vec2 worldPos = center + worldOffset;
+
+  v_viewboxPos = worldPos;
+
+  // Transform to clip space (viewbox Y is top-down)
+  vec2 clipPos = (worldPos / u_viewboxSize) * 2.0 - 1.0;
+  clipPos.y = -clipPos.y;
+
+  gl_Position = vec4(clipPos, 0.0, 1.0);
 }
 `;
 
 export const LED_SPRITE_FRAG = `#version 300 es
 precision highp float;
 
-in vec2 v_uv;
-in vec3 v_color;
-in float v_brightness;
+in vec2 v_viewboxPos;
+flat in vec2 v_capA;
+flat in vec2 v_capB;
+flat in float v_glowRadius;
+flat in vec3 v_color;
+flat in float v_brightness;
 
 out vec4 fragColor;
 
 void main() {
-  // Distance from center of quad
-  vec2 centered = v_uv - 0.5;
-  float dist = length(centered);
+  // Capsule SDF: distance from this fragment to the nearest point on
+  // the prev→curr line segment, in viewbox units.
+  vec2 p = v_viewboxPos;
+  vec2 a = v_capA;
+  vec2 b = v_capB;
+  vec2 pa = p - a;
+  vec2 ba = b - a;
+  float baLenSq = dot(ba, ba);
+  float h = baLenSq > 1e-6 ? clamp(dot(pa, ba) / baLenSq, 0.0, 1.0) : 0.0;
+  vec2 closest = a + ba * h;
+  float dist = length(p - closest);
 
-  // Smooth circular fade — starts tapering at 60% radius, fully transparent at edge
-  float edgeFade = 1.0 - smoothstep(0.3, 0.5, dist);
+  // Normalize distance to glow-radius units: 0 on the spine, 1 at the
+  // nominal glow edge.
+  float nd = dist / v_glowRadius;
+
+  // Soft edge falloff — discard outside the full-glow envelope.
+  float edgeFade = 1.0 - smoothstep(0.6, 1.0, nd);
   if (edgeFade < 0.001) discard;
 
-  // Inverse-square radial falloff with soft edge
-  float glow = 1.0 / (1.0 + 30.0 * dist * dist);
+  // Inverse-square glow body — identical visual profile to the original
+  // point-sprite shader, just with distance measured to the segment.
+  float glow = 1.0 / (1.0 + 7.5 * nd * nd);
 
-  // Core hotspot: brighter center for LED look
-  float core = exp(-dist * dist * 80.0);
+  // Bright hot centerline — the filament of the glowing wire.
+  float core = exp(-nd * nd * 20.0);
+
   float combined = (glow + core * 0.5) * edgeFade;
 
   vec3 color = v_color * combined * v_brightness;
