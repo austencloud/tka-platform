@@ -710,7 +710,14 @@ export class SequenceEncoder implements ISequenceEncoder {
     const endLoc = LOCATION_ENCODE[motion.endLocation];
     const startOrient = ORIENTATION_ENCODE[motion.startOrientation];
     const endOrient = ORIENTATION_ENCODE[motion.endOrientation];
-    const rotation = ROTATION_ENCODE[motion.rotationDirection];
+    // Static and dash motions legitimately have no rotation direction.
+    // Fall back to the NO_ROTATION encoding so the motion still round-trips
+    // through the URL instead of being rejected as "missing required fields".
+    const rotation =
+      ROTATION_ENCODE[motion.rotationDirection] ??
+      (motion.motionType === "static" || motion.motionType === "dash"
+        ? ROTATION_ENCODE[RotationDirection.NO_ROTATION]
+        : undefined);
     const turns = motion.turns === "fl" ? "f" : String(motion.turns);
     const type = MOTION_TYPE_ENCODE[motion.motionType];
     const prop = PROP_TYPE_ENCODE[motion.propType];

@@ -208,21 +208,21 @@ export class ReversalDetector implements IReversalDetector {
       return motionData.rotationDirection;
     }
 
-    // FALLBACK: Derive from motion type when rotationDirection is missing
-    // This handles incomplete CSV data where rotationDirection defaults to null
-    if (motionData.motionType === "static") {
+    // Static and dash motions legitimately have no rotation — the prop doesn't
+    // spin during these motions, so rotationDirection is intentionally absent.
+    // Treat the missing value as "noRotation" rather than warning.
+    if (motionData.motionType === "static" || motionData.motionType === "dash") {
       return "noRotation";
     }
 
-    // For other motion types (pro, anti, dash, float), we can't reliably derive
-    // the rotation direction without additional context. Log warning and return
-    // a safe default to avoid treating it as a reversal.
+    // Pro/anti/float motions should always have a rotationDirection. If one
+    // really is missing here it's bad data — warn and fall through to cw so
+    // downstream reversal detection doesn't crash.
     console.warn(
       `Missing rotationDirection for ${color} at step ${beat.stepNumber}. ` +
         `Motion type: ${motionData.motionType}. Defaulting to 'cw'.`
     );
 
-    // Safe default: clockwise (most common in TKA sequences)
     return "cw";
   }
 
