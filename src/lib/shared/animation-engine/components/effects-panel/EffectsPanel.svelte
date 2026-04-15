@@ -9,12 +9,15 @@
   import FireCustomize from "./customize/FireCustomize.svelte";
   import TrailCustomize from "./customize/TrailCustomize.svelte";
   import CharcoalCustomize from "./customize/CharcoalCustomize.svelte";
+  import ZapCustomize from "./customize/ZapCustomize.svelte";
+  import ComingSoonCustomize from "./customize/ComingSoonCustomize.svelte";
   import TempoControl from "$lib/shared/sequence-viewer/components/TempoControl.svelte";
   import TransportControls from "$lib/features/compose/components/controls/TransportControls.svelte";
   import { LED_PRESET_GROUP } from "./presets/led-presets";
   import { FIRE_PRESET_GROUP } from "./presets/fire-presets";
   import { TRAIL_PRESET_GROUP } from "./presets/trail-presets";
   import { CHARCOAL_PRESET_GROUP } from "./presets/charcoal-presets";
+  import { ZAP_PRESET_GROUP } from "./presets/zap-presets";
   import type { EffectPresetGroup } from "./presets/types";
 
   interface Props {
@@ -92,6 +95,10 @@
     led: "#22c55e",
     trails: "#60a5fa",
     charcoal: "#a855f7",
+    zap: "#38bdf8",
+    sparkles: "#fbbf24",
+    motion: "#22d3ee",
+    bloom: "#f472b6",
   };
 
   const EFFECT_LABELS: Record<string, string> = {
@@ -99,6 +106,10 @@
     led: "LED",
     trails: "Trails",
     charcoal: "Charcoal",
+    zap: "Zap",
+    sparkles: "Sparkle",
+    motion: "Motion",
+    bloom: "Bloom",
   };
 
   function syncFromVM(): void {
@@ -147,6 +158,7 @@
       case "fire": return FIRE_PRESET_GROUP;
       case "trails": return TRAIL_PRESET_GROUP;
       case "charcoal": return CHARCOAL_PRESET_GROUP;
+      case "zap": return ZAP_PRESET_GROUP;
       default: return null;
     }
   }
@@ -217,6 +229,14 @@
         <TrailCustomize onBack={() => (customizeOpen = false)} />
       {:else if activeEffect === "charcoal"}
         <CharcoalCustomize onBack={() => (customizeOpen = false)} />
+      {:else if activeEffect === "zap"}
+        <ZapCustomize onBack={() => (customizeOpen = false)} />
+      {:else if activeEffect === "sparkles"}
+        <ComingSoonCustomize effectLabel="Sparkles" onBack={() => (customizeOpen = false)} />
+      {:else if activeEffect === "motion"}
+        <ComingSoonCustomize effectLabel="Motion" onBack={() => (customizeOpen = false)} />
+      {:else if activeEffect === "bloom"}
+        <ComingSoonCustomize effectLabel="Bloom" onBack={() => (customizeOpen = false)} />
       {/if}
     </div>
   {/if}
