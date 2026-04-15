@@ -111,14 +111,15 @@ describe("buildTaperedMesh", () => {
     expect(lastAlpha).toBeCloseTo(0.9, 5);
   });
 
-  it("coreRatio = 1.0 when glow is 0", () => {
-    const mesh = buildTaperedMesh(straightPath, { thickness: 0.04, glow: 0 });
-    expect(mesh.coreRatio).toBe(1);
-  });
-
-  it("coreRatio < 1.0 when glow > 0", () => {
-    const mesh = buildTaperedMesh(straightPath, { thickness: 0.04, glow: 0.02 });
-    expect(mesh.coreRatio).toBeGreaterThan(0);
-    expect(mesh.coreRatio).toBeLessThan(1);
+  it("polygon width matches thickness at the head (no glow expansion)", () => {
+    const thickness = 0.04;
+    const mesh = buildTaperedMesh(straightPath, { thickness });
+    const headIdx = mesh.vertexCount - 2;
+    const leftX = mesh.vertices[headIdx * 4 + 0]!;
+    const leftY = mesh.vertices[headIdx * 4 + 1]!;
+    const rightX = mesh.vertices[(headIdx + 1) * 4 + 0]!;
+    const rightY = mesh.vertices[(headIdx + 1) * 4 + 1]!;
+    const headWidth = Math.hypot(leftX - rightX, leftY - rightY);
+    expect(headWidth).toBeCloseTo(thickness, 5);
   });
 });
