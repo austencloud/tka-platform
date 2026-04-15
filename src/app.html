@@ -46,6 +46,38 @@
             link.href = url;
             head.appendChild(link);
           });
+
+          // ============================================================
+          // SPECULATION RULES API (Chromium 111+)
+          // Prerender the likely-next app routes at browser idle time.
+          // Graceful fallback: browsers that don't support <script type="speculationrules">
+          // silently ignore the tag. Zero cost for Safari/Firefox.
+          //
+          // "moderate" eagerness = only when user shows intent (hover, focus).
+          // Avoids burning bandwidth on pages the user never visits.
+          // ============================================================
+          if (HTMLScriptElement.supports && HTMLScriptElement.supports('speculationrules')) {
+            var rules = document.createElement('script');
+            rules.type = 'speculationrules';
+            rules.textContent = JSON.stringify({
+              prerender: [
+                {
+                  source: 'document',
+                  where: {
+                    and: [
+                      { href_matches: '/*' },
+                      { not: { href_matches: '/sequence/*' } },
+                      { not: { href_matches: '/p/*' } },
+                      { not: { href_matches: '/embed*' } },
+                      { not: { selector_matches: '[rel~="external"]' } }
+                    ]
+                  },
+                  eagerness: 'moderate'
+                }
+              ]
+            });
+            head.appendChild(rules);
+          }
         }
       })();
     </script>

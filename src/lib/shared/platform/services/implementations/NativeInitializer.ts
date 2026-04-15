@@ -54,10 +54,19 @@ export class NativeInitializer implements INativeInitializer {
 			});
 		}
 
-		await App.addListener("appUrlOpen", ({ url }) => {
-			const path = new URL(url).pathname;
-			if (path) {
-				window.location.href = path;
+		// When a user taps an App Link / Universal Link (e.g. a QR code targeting
+		// tkaflowarts.com/p/ABC123), Android hands us the full URL. Route to
+		// the matching in-app path via SvelteKit's client navigation so we keep the
+		// app alive — a full reload would drop state and flash the splash screen.
+		await App.addListener("appUrlOpen", async ({ url }) => {
+			try {
+				const parsed = new URL(url);
+				const target = parsed.pathname + parsed.search + parsed.hash;
+				if (!target || target === "/") return;
+				const { goto } = await import("$app/navigation");
+				await goto(target);
+			} catch {
+				// Malformed URL — ignore. The OS shouldn't hand us one, but don't crash.
 			}
 		});
 	}

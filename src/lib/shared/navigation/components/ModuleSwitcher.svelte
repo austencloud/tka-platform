@@ -195,7 +195,11 @@
     <div class="account-footer">
       <AccountRow
         variant="drawer"
-        onclick={userPreviewState.isActive ? undefined : handleProfileTap}
+        onclick={userPreviewState.isActive
+          ? undefined
+          : authState.isAuthenticated
+            ? handleProfileTap
+            : closeDrawer}
       />
       <div class="account-footer-actions">
         {#if authState.isAuthenticated}
@@ -275,11 +279,6 @@
   :global(.module-switcher-backdrop) {
     --sheet-backdrop-bg: rgba(0, 0, 0, 0.4);
     --sheet-backdrop-filter: blur(3px);
-  }
-
-  /* Sheet content - ensure proper z-index */
-  :global(.drawer-content.module-switcher-drawer) {
-    z-index: 1100 !important;
   }
 
   /* Drawer inner fills available height */
