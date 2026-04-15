@@ -10,6 +10,7 @@ import { setPendingGenerationAnimation } from "$lib/features/create/shared/works
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import { container } from "$lib/shared/di";
 import type { GenerationOptions } from "../shared/domain/models/generate-models";
+import { GenerationMode } from "../shared/domain/models/generate-models";
 import type { IGenerationOrchestrator } from "../shared/services/contracts/IGenerationOrchestrator";
 import { generationOrchestrator } from "../shared/services/implementations/GenerationOrchestrator";
 import type { IErrorHandler } from "$lib/shared/application/services/contracts/IErrorHandler";
@@ -22,24 +23,16 @@ import type { SpellModeState } from "./spell-mode-state.svelte";
 import type { UndoMetadata, UndoOperationType } from "$lib/features/create/shared/services/contracts/IUndoManager";
 import { UndoOperationType as UndoOp } from "$lib/features/create/shared/services/contracts/IUndoManager";
 import type { IVariationExplorationOrchestrator } from "$lib/features/create/spell/services/contracts/IVariationExplorationOrchestrator";
-import type { IRandomSequenceGenerator } from "$lib/features/create/spell/services/contracts/IRandomSequenceGenerator";
 import type { ISpellServiceLoader } from "$lib/features/create/spell/services/contracts/ISpellServiceLoader";
-import { createConstraintSet } from "$lib/shared/sequence-engine/constraints";
-import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { sequenceExtender } from "$lib/features/create/shared/services/implementations/SequenceExtender";
-import { LOOPType, SliceSize, ROTATED_LOOP_TYPES } from "$lib/features/create/generate/circular/domain/models/circular-models";
+import { LOOPType, SliceSize } from "$lib/features/create/generate/circular/domain/models/circular-models";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import { resolveAccessTier, getMaxBeats } from "$lib/shared/auth/domain/AccessTier";
 import { authState } from "$lib/shared/auth/state/authState.svelte";
 import { isPremiumOrAbove } from "$lib/shared/auth/domain/models/UserRole";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import { orientationCycleExtender } from "$lib/features/create/generate/circular/services/implementations/OrientationCycleExtender";
-import { turnAllocator } from "../shared/services/implementations/TurnAllocator";
-import { turnManager } from "../shared/services/implementations/TurnManager";
-import { PropContinuity } from "../shared/domain/models/generate-models";
-import { recalculateAllOrientations } from "$lib/features/create/shared/services/implementations/sequence-transforms/orientation-propagation";
-import { orientationCalculator } from "$lib/shared/pictograph/prop/services/implementations/OrientationCalculator";
-import { reversalDetector } from "$lib/features/create/shared/services/implementations/ReversalDetector";
 
 // Letters with dash motions (Type 3, 4, and 5)
 const DASH_LETTERS: Set<string> = new Set([
@@ -166,10 +159,11 @@ export function createGenerationActionsState(
     }
   }
 
-  // Lazy-resolved spell services
+  // Lazy-resolved spell services — used only for word parsing (Greek aliases,
+  // bridge-letter expansion, target-length padding). The actual sequence
+  // generation goes through generationOrchestrator (same path as freeform + MCP).
   let spellOrchestrator: IVariationExplorationOrchestrator | null = null;
   let spellServiceLoader: ISpellServiceLoader | null = null;
-  let spellGenerator: IRandomSequenceGenerator | null = null;
 
   async function onSpellGenerate() {
     const spellState = getSpellState?.();
@@ -188,9 +182,6 @@ export function createGenerationActionsState(
       }
       if (!spellServiceLoader) {
         spellServiceLoader = container.items.spellServiceLoader as ISpellServiceLoader;
-      }
-      if (!spellGenerator) {
-        spellGenerator = await spellServiceLoader.getRandomSequenceGenerator();
       }
 
       const config = getConfig?.();
@@ -269,120 +260,67 @@ export function createGenerationActionsState(
         spellState.setLetterSources(finalLetterSources);
       }
 
-      // Build constraints
-      const constraintBuilder = await spellServiceLoader.getVariationConstraintBuilder();
-      const constraints = constraintBuilder.buildConstraints(
-        {
-          constraintPreset: config?.constraintPreset ?? "smooth",
-          handPathMode: config?.handPathMode ?? "mixed",
-          motionTypeFilter: config?.motionTypeFilter ?? null,
-          highContinuity: config?.constraintPreset === "smooth",
-          makeCircular: false,
-          selectedLOOPType: null,
-          targetStepCount: null,
-          maxReversals: null,
-        },
-        finalLetters
-      );
+      // ── Unified generation path ────────────────────────────────────────────
+      // Spell and freeform both route through generationOrchestrator →
+      // SequenceBuilder → BeamSearch. The engine parses letters, allocates
+      // turns, resolves rotation directions for static/dash+turns beats,
+      // applies LOOP extension, and runs orientation propagation — identical
+      // to what MCP does. The spell-only pre-step is word parsing + target-
+      // length bridge extension (finalLetters above); post-step is spellData
+      // metadata attachment.
+      const expandedWord = finalLetters.join("") || spellState.inputWord;
+      const isLoop = !!config?.loopEnabled;
 
-      const constraintSet = createConstraintSet(config?.constraintPreset ?? "smooth", {
-        handPathMode: config?.handPathMode ?? "mixed",
-      });
+      const loopType = (config?.loopType as LOOPType) || LOOPType.STRICT_REWOUND;
+      const sliceSize = (config?.sliceSize as SliceSize) || SliceSize.HALVED;
 
-      // Generate sequence with level and turn intensity from config
-      const sequence = await spellGenerator.generateRandomSequence(finalLetters, {
+      // Generate the word sequence WITHOUT engine-level LOOP. Word-based
+      // generation can't auto-append bridges to reach LOOP-compatible end
+      // positions (the word's letters are fixed), so we take the two-step
+      // approach: generate the word freeform, then extend with bridges if
+      // LOOP is requested. This mirrors the MCP engine path for non-loop
+      // and the old spell path's Path B for loop.
+      const generationOptions: GenerationOptions = {
+        mode: GenerationMode.FREEFORM,
+        length: finalLetters.length, // Ignored when word is set, but required by the type
+        word: expandedWord,
         gridMode: (config?.gridMode ?? "diamond") as GridMode,
-        constraints,
-        constraintSet,
-        letterSources: finalLetterSources,
-        level: levelToDifficulty(config?.level ?? 2),
+        propType: PropType.STAFF,
+        difficulty: levelToDifficulty(config?.level ?? 2),
         turnIntensity: config?.turnIntensity ?? 1.0,
-      });
+        constraintPreset: config?.constraintPreset ?? "smooth",
+        handPathMode: config?.handPathMode ?? "mixed",
+        motionTypeFilter: config?.motionTypeFilter ?? null,
+      };
 
-      if (!sequence) {
-        spellState.setError("Could not generate a valid sequence. Try different settings.");
-        return;
-      }
+      let generatedSequence = await generationOrchestrator.generateSequence(generationOptions);
 
-      // Apply turn allocation to spell-generated sequence.
-      // The RandomSequenceGenerator selects pictographs with 0 turns (from CSV data).
-      // We allocate turns post-hoc, then recalculate ALL orientations from scratch.
-      // This is safe because recalculateAllOrientations() propagates from start position
-      // through every step, computing endOri based on each step's actual turns.
-      const level = config?.level ?? 2;
-      let turnAppliedSequence = sequence;
-      if (level >= 2 && sequence.steps?.length > 0) {
-        const turnAllocation = await turnAllocator.allocateTurns(
-          sequence.steps.length,
-          level,
-          config?.turnIntensity ?? 1.0
+      // If LOOP is requested, apply it post-hoc via the bridge-aware extender.
+      // This path can add a single bridge letter to make the sequence land at
+      // a LOOP-compatible end position when the word itself doesn't.
+      if (isLoop) {
+        generatedSequence = await applySpellLoopExtension(
+          generatedSequence,
+          loopType,
+          sliceSize,
+          finalLetterSources,
         );
-
-        // Derive prop continuity from constraintPreset (same mapping as freeform pipeline)
-        const propContinuity = config?.constraintPreset === "smooth"
-          ? PropContinuity.CONTINUOUS
-          : PropContinuity.RANDOM;
-
-        // Apply allocated turns to each step
-        const stepsWithTurns = [...sequence.steps];
-        for (let i = 0; i < stepsWithTurns.length; i++) {
-          const step = stepsWithTurns[i];
-          if (!step) continue;
-          const turnBlue = turnAllocation.blue[i] ?? 0;
-          const turnRed = turnAllocation.red[i] ?? 0;
-          // Clone step to avoid mutation
-          stepsWithTurns[i] = { ...step, motions: { ...step.motions } };
-          turnManager.setTurns(stepsWithTurns[i]!, turnBlue, turnRed);
-          // Set rotation direction for dash/static motions that received non-zero turns.
-          // CONTINUOUS: maintains the existing rotation direction across steps.
-          // RANDOM: assigns random CW/CCW per step (more reversals).
-          turnManager.updateDashStaticRotationDirections(stepsWithTurns[i]!, propContinuity, "", "");
-        }
-
-        // Rebuild sequence with new turns, then recalculate entire orientation chain
-        turnAppliedSequence = { ...sequence, steps: stepsWithTurns };
       }
 
-      // Derive start position (needed for orientation recalculation)
-      let sequenceWithStart = turnAppliedSequence;
-      const firstStep = turnAppliedSequence.steps?.[0];
-      if (!turnAppliedSequence.startPosition && firstStep) {
-        try {
-          const derived = startPositionDeriver.deriveFromFirstBeat(firstStep);
-          sequenceWithStart = { ...turnAppliedSequence, startPosition: derived };
-        } catch {
-          // Use sequence without start position
-        }
-      }
-
-      // Recalculate orientations with the new turns and reprocess reversals
-      if (level >= 2 && sequenceWithStart.startPosition) {
-        sequenceWithStart = recalculateAllOrientations(sequenceWithStart, orientationCalculator);
-        sequenceWithStart = reversalDetector.processReversals(sequenceWithStart);
-      }
-
-      // Build final sequence with spell metadata
-      const finalExpandedWord = finalLetters.join("") || spellState.inputWord;
-      const finalSequence: SequenceData = {
-        ...sequenceWithStart,
+      // Attach spell metadata so the UI can highlight bridge letters and
+      // downstream persistence can round-trip the user's original word.
+      let loopedSequence: SequenceData = {
+        ...generatedSequence,
         name: spellState.inputWord,
-        word: finalExpandedWord,
+        word: expandedWord,
         metadata: {
-          ...sequenceWithStart.metadata,
+          ...generatedSequence.metadata,
           spellData: {
-            expandedWord: finalExpandedWord,
+            expandedWord,
             letterSources: finalLetterSources,
           },
         },
       };
-
-      // Apply LOOP extension if loopEnabled
-      let loopedSequence: SequenceData = finalSequence;
-      if (config?.loopEnabled) {
-        const loopType = (config.loopType as LOOPType) || LOOPType.STRICT_REWOUND;
-        const sliceSize = (config.sliceSize as SliceSize) || SliceSize.HALVED;
-        loopedSequence = await applySpellLoopExtension(finalSequence, loopType, sliceSize, finalLetterSources);
-      }
 
       // Apply duration rhythm template if configured
       if (config?.durationTemplateId) {
@@ -466,16 +404,19 @@ export function createGenerationActionsState(
    * 1. Try direct extension (sequence already ends at LOOP-compatible position)
    * 2. If not, find bridge letters and auto-insert the first viable option
    * 3. Update letterSources and spell metadata accordingly
+   *
+   * Required for word-based LOOP because the engine's buildByWord can't
+   * auto-append bridge letters to reach LOOP-compatible end positions —
+   * the word's letters are fixed.
    */
   async function applySpellLoopExtension(
     sequence: SequenceData,
     loopType: LOOPType,
     sliceSize: SliceSize,
-    letterSources?: Array<{ letter: Letter; isOriginal: boolean; stepIndex: number }>
+    letterSources?: Array<{ letter: Letter; isOriginal: boolean; stepIndex: number }>,
   ): Promise<SequenceData> {
     try {
       // Path A: Try direct extension (sequence already ends at LOOP-compatible position)
-      // Wrapped in its own try-catch so failures fall through to bridge-finding (Path B)
       const analysis = sequenceExtender.analyzeSequence(sequence);
       if (analysis.canExtend) {
         try {
@@ -484,13 +425,11 @@ export function createGenerationActionsState(
             return updateLoopMetadata(extended, sequence, letterSources);
           }
         } catch {
-          // Direct extension failed (e.g., position pair not valid for this LOOP type)
-          // Fall through to bridge-finding below
+          // Direct extension failed — fall through to bridge-finding
         }
       }
 
       // Path B: Not directly extendable — find a bridge letter to make it LOOP-compatible
-      // Try both circularization (cross-group) and extension (same-group) options
       const circularizationOptions = await sequenceExtender.getCircularizationOptions(sequence);
       const extensionOptions = await sequenceExtender.getAllExtensionOptions(sequence);
       const allBridgeOptions = [...circularizationOptions, ...extensionOptions];
@@ -500,21 +439,14 @@ export function createGenerationActionsState(
         return sequence;
       }
 
-      // Filter bridge options to those compatible with the user's chosen LOOP type AND slice size
-      // rotationRelation tells us the position pair geometry:
-      //   "half" → valid for halved (180°)
-      //   "quarter" → valid for quartered (90°)
-      //   "exact" → same position (rewound only)
       const expectedRotation = sliceSize === SliceSize.QUARTERED ? "quarter" : "half";
-
       const compatibleBridges = allBridgeOptions.filter((opt) => {
         const hasLoopType = opt.availableLOOPs.some((l) => l.loopType === loopType);
         if (!hasLoopType) return false;
-        // Also check slice size compatibility via rotation relation
         if (opt.rotationRelation) {
           return opt.rotationRelation === expectedRotation;
         }
-        return true; // No rotation info = allow (e.g., rewound)
+        return true;
       });
 
       if (compatibleBridges.length === 0) {
@@ -522,26 +454,20 @@ export function createGenerationActionsState(
         return sequence;
       }
 
-      const bridgeOptions = compatibleBridges;
-
-      // Pick the first viable bridge option
-      const bestBridge = bridgeOptions[0]!;
+      const bestBridge = compatibleBridges[0]!;
       const bridgeLetter = bestBridge.bridgeLetters[0];
       if (!bridgeLetter) return sequence;
 
-      // Extend with the bridge letter, passing the specific pictographData
-      // to ensure the exact variation (and correct end position) is used
       const extended = await sequenceExtender.extendWithBridge(
         sequence,
         bridgeLetter,
         loopType,
         bestBridge.pictographData,
-        sliceSize
+        sliceSize,
       );
 
       if (!extended) return sequence;
 
-      // Update letter sources to include the bridge letter
       const updatedSources = [
         ...(letterSources ?? []),
         {
@@ -558,19 +484,12 @@ export function createGenerationActionsState(
     }
   }
 
-  /**
-   * Update sequence metadata after LOOP extension to include spell data
-   * and bridge letter tracking.
-   */
   function updateLoopMetadata(
     extended: SequenceData,
     original: SequenceData,
-    letterSources?: Array<{ letter: Letter; isOriginal: boolean; stepIndex: number }>
+    letterSources?: Array<{ letter: Letter; isOriginal: boolean; stepIndex: number }>,
   ): SequenceData {
     const originalStepCount = original.steps?.length ?? 0;
-
-    // Build updated letterSources: original steps preserve their source,
-    // LOOP-generated steps are marked as not original
     const extendedSources = extended.steps?.map((step, index) => {
       if (index < originalStepCount && letterSources?.[index]) {
         return {
@@ -586,7 +505,7 @@ export function createGenerationActionsState(
       };
     }) ?? [];
 
-    const extendedWord = extended.word || extended.steps?.map(s => s.letter || "").join("") || "";
+    const extendedWord = extended.word || extended.steps?.map((s) => s.letter || "").join("") || "";
 
     return {
       ...extended,

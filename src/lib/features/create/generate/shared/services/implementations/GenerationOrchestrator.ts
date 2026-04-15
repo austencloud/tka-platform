@@ -25,6 +25,36 @@ import type { ISequenceMetadataManager } from "../contracts/ISequenceMetadataMan
 import { SequenceBuilder } from "@tka/sequence-engine/generation";
 import type { ConstraintOptions } from "@tka/sequence-engine/generation";
 import { LOOPType, SliceSize } from "@tka/sequence-engine/loop";
+import {
+  TransitionGraph as EngineTransitionGraph,
+  setLetterTransitionGraph,
+} from "@tka/sequence-engine";
+import { BrowserDataProvider } from "$lib/shared/sequence-engine/data/implementations/BrowserDataProvider";
+import { letterQueryHandler as globalLetterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/implementations/LetterQueryHandler";
+
+// The engine's word-based generation path reads from a global transition
+// graph singleton (mirrors mcp-server/src/shared/server-context.ts which
+// initializes it during startup). Freeform length-based generation doesn't
+// need it, but spell mode does. Register lazily on first spell call so
+// startup cost is only paid when spell mode is actually used.
+let engineTransitionGraphPromise: Promise<void> | null = null;
+
+function ensureEngineTransitionGraph(): Promise<void> {
+  if (engineTransitionGraphPromise) return engineTransitionGraphPromise;
+
+  engineTransitionGraphPromise = (async () => {
+    const dataProvider = new BrowserDataProvider(globalLetterQueryHandler);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- app-local
+    // BrowserDataProvider structurally matches the engine's ISequenceDataProvider;
+    // the nominal type mismatch comes from two separate type declarations that
+    // will be reconciled when the app's shim is retired.
+    const graph = new EngineTransitionGraph(dataProvider as any);
+    await graph.initialize();
+    setLetterTransitionGraph(graph);
+  })();
+
+  return engineTransitionGraphPromise;
+}
 
 export class GenerationOrchestrator implements IGenerationOrchestrator {
   constructor(
@@ -50,11 +80,17 @@ export class GenerationOrchestrator implements IGenerationOrchestrator {
     options: GenerationOptions
   ): Promise<SequenceData> {
     await this.variationProvider.initialize(String(options.gridMode));
+    if (options.word) {
+      await ensureEngineTransitionGraph();
+    }
     const builder = new SequenceBuilder(this.variationProvider);
     const level = this.metadataManager.mapDifficultyToLevel(options.difficulty);
 
     const result = builder.build({
-      length: options.length,
+      // Word wins over length: spell mode passes an expanded word string;
+      // freeform passes length. The engine handles both paths identically
+      // after parsing letters.
+      ...(options.word ? { word: options.word } : { length: options.length }),
       gridMode: String(options.gridMode),
       level,
       constraintOptions: this.mapConstraints(options),
@@ -79,6 +115,9 @@ export class GenerationOrchestrator implements IGenerationOrchestrator {
     options: GenerationOptions
   ): Promise<SequenceData> {
     await this.variationProvider.initialize(String(options.gridMode));
+    if (options.word) {
+      await ensureEngineTransitionGraph();
+    }
     const builder = new SequenceBuilder(this.variationProvider);
     const level = this.metadataManager.mapDifficultyToLevel(options.difficulty);
 
@@ -91,10 +130,12 @@ export class GenerationOrchestrator implements IGenerationOrchestrator {
     // The UI's length is the TOTAL output length. The seed is a fraction:
     // halved = length / 2, quartered = length / 4. The LOOP executor
     // extends the seed back to the full length.
+    // For word-based spell-LOOP, the word itself is the seed — no length
+    // division is applied because the user's word IS the pattern.
     const sliceMultiplier = sliceSize === SliceSize.QUARTERED ? 4 : 2;
     const seedLength = Math.max(1, Math.floor(options.length / sliceMultiplier));
     const result = builder.build({
-      length: seedLength,
+      ...(options.word ? { word: options.word } : { length: seedLength }),
       gridMode: String(options.gridMode),
       level,
       constraintOptions: this.mapConstraints(options),
