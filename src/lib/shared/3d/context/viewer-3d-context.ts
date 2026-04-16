@@ -6,6 +6,7 @@
 
 import { getContext, setContext } from "svelte";
 import type { createViewer3DState } from "../state/viewer-3d-state.svelte";
+export type { PopoverId } from "../state/viewer-3d-state.svelte";
 
 const KEY = Symbol("viewer-3d");
 type Viewer3DState = ReturnType<typeof createViewer3DState>;

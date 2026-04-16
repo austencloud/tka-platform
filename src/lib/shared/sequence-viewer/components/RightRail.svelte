@@ -1,0 +1,67 @@
+<script lang="ts">
+  import { getViewer3DContext, type PopoverId } from "$lib/shared/3d/context/viewer-3d-context";
+
+  const viewer = getViewer3DContext();
+
+  interface Chip { id: PopoverId; icon: string; tooltip: string; }
+  const CHIPS: Chip[] = [
+    { id: "performers", icon: "fa-users", tooltip: "Performers" },
+    { id: "tempo",      icon: "fa-drum",  tooltip: "Tempo" },
+    { id: "export",     icon: "fa-film",  tooltip: "Export" },
+    { id: "gear",       icon: "fa-gear",  tooltip: "Settings" },
+  ];
+
+  function onClick(id: PopoverId) {
+    viewer.openPopover(viewer.activePopover === id ? null : id);
+  }
+</script>
+
+<div class="right-rail" role="toolbar" aria-label="Viewer controls">
+  {#each CHIPS as chip (chip.id)}
+    <button
+      class="rail-chip"
+      aria-pressed={viewer.activePopover === chip.id}
+      aria-label={chip.tooltip}
+      data-tooltip={chip.tooltip}
+      onclick={() => onClick(chip.id)}
+    >
+      <i class="fas {chip.icon}"></i>
+    </button>
+  {/each}
+</div>
+
+<style>
+  .right-rail {
+    position: absolute; top: 76px; right: 12px;
+    display: flex; flex-direction: column; gap: 8px;
+    z-index: 9;
+  }
+  .rail-chip {
+    width: 56px; height: 56px;
+    background: rgba(20, 22, 32, 0.78);
+    backdrop-filter: blur(20px) saturate(140%);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 14px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+    color: rgba(255,255,255,0.62);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+    transition: all 180ms cubic-bezier(0.2, 0, 0.13, 1.5);
+  }
+  .rail-chip:hover::after {
+    content: attr(data-tooltip);
+    position: absolute; right: calc(100% + 10px); top: 50%; transform: translateY(-50%);
+    background: rgba(0,0,0,0.85); color: white;
+    padding: 6px 10px; border-radius: 8px;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.04em;
+    white-space: nowrap; pointer-events: none;
+  }
+  .rail-chip[aria-pressed="true"] {
+    background: color-mix(in srgb, #4a9eff 18%, transparent);
+    border-color: color-mix(in srgb, #4a9eff 50%, transparent);
+    color: #8fc3ff;
+    box-shadow: 0 4px 20px color-mix(in srgb, #4a9eff 25%, transparent);
+  }
+  .rail-chip i { font-size: 22px; }
+</style>
