@@ -89,6 +89,7 @@ import { WebGLLedRenderer } from "./led/WebGLLedRenderer";
 import type { ILedOverlayRenderer } from "../contracts/ILedOverlayRenderer";
 import type { ILedTipTracker } from "../contracts/ILedTipTracker";
 import { DEFAULT_LED_CONFIG, ledBrightnessToFloat, type LedOverlayConfig } from "../../domain/types/LedTypes";
+import { TrailOverlayWebGL2 } from "./TrailOverlayWebGL2";
 import { TrailOverlayCanvas } from "./TrailOverlayCanvas";
 import type { ITrailOverlayCanvas } from "../contracts/ITrailOverlayCanvas";
 import { ZapOverlayRenderer } from "./ZapOverlayRenderer";
@@ -1632,9 +1633,25 @@ export class AnimationEngine {
       onEffectError: this.callbacks.onEffectError,
     });
 
-    this.trailOverlay = new TrailOverlayCanvas();
+    this.trailOverlay = this.createTrailOverlay();
     this.trailOverlay.initialize(this.containerElement!, this.canvasSize, this.canvasSize);
     this.renderLoopService.updateConfig({ trailOverlay: this.trailOverlay });
+  }
+
+  /** Runtime A/B toggle: set `window.__TKA_TRAIL_GPU = false` before
+   *  a sequence starts to use the legacy Canvas2D overlay instead of
+   *  the WebGL2 backend. Default is WebGL2. */
+  private createTrailOverlay(): ITrailOverlayCanvas {
+    const flag =
+      typeof window !== "undefined"
+        ? (window as { __TKA_TRAIL_GPU?: boolean }).__TKA_TRAIL_GPU
+        : undefined;
+    if (flag === false) {
+      // eslint-disable-next-line no-console -- one-shot dev telemetry
+      console.info("[TrailOverlay] using legacy Canvas2D (window.__TKA_TRAIL_GPU = false)");
+      return new TrailOverlayCanvas();
+    }
+    return new TrailOverlayWebGL2();
   }
 
   /**

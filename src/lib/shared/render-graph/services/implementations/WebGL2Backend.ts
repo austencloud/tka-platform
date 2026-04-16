@@ -1,27 +1,26 @@
 /**
  * WebGL2 render backend — Phase 1.
  *
- * Trail passes are rasterized from a per-tip leading-edge path by
- * smoothing with centripetal Catmull-Rom (see math/trail-mesh.ts),
- * building a tapered triangle-strip mesh, and drawing it onto a
- * ping-pong FBO that accumulates the trail across frames. Each frame
- * the accumulator is multiplicatively decayed and then has a constant
- * alpha subtracted — the combo matches Canvas2D's fade-plus-alpha-kick
- * pipeline and prevents the rgba8 precision floor from leaving a ghost
- * trail in the background.
+ * Per-frame algorithm per tip (matches Canvas2D shadowBlur semantics):
  *
- * Glow is a separable Gaussian blur of the accumulator composited
- * additively on top of the sharp trail — the GPU analogue of Canvas2D
- * shadowBlur.
+ *   1. Decay the accumulator (ping-pong read → write, multiplicative
+ *      fade + 1/255 subtract so rgba8 pixels eventually reach true zero).
+ *   2. Draw the current smoothed-tapered-polygon mesh into a scratch
+ *      STAMP FBO. The stamp is cleared each frame so it holds ONLY
+ *      this frame's polygon.
+ *   3. If glow > 0, run a separable 2-pass Gaussian blur on the stamp
+ *      into a BLUR_RESULT FBO.
+ *   4. Composite (stamp + blur * GLOW_MIX) on top of the decayed
+ *      accumulator via premultiplied alpha-over blend. This bakes a
+ *      fresh, full-brightness halo around the current polygon into the
+ *      accumulator, which then fades naturally on subsequent frames —
+ *      the GPU equivalent of Canvas2D shadowBlur applied per-stroke.
+ *   5. Composite accumulator onto the display.
  *
  * Persistent GPU state:
- * - One ping-pong pair per tip, keyed off tipId
- * - Two shared blur scratch FBOs ("blur-temp", "blur-result")
- * - Compiled shader programs in ShaderLibrary
- * - One dynamic VBO reused across all tips per frame
- *
- * Per-tip FBO pairs are garbage-collected after
- * MAX_UNUSED_FRAMES_BEFORE_GC consecutive frames without seeing the tip.
+ * - One ping-pong pair per tip ("trail-tip-<id>")
+ * - Three shared scratch FBOs: "stamp", "blur-temp", "blur-result"
+ * - Compiled shader programs + one dynamic mesh VBO
  */
 
 import type { RenderBackend, BackendStats } from "../../domain/Backend";
@@ -45,15 +44,24 @@ import { FBOPool, type FBO } from "./FBOPool";
 import { ShaderLibrary } from "./ShaderLibrary";
 
 const TRAIL_KEY_PREFIX = "trail-tip-";
-const BLUR_TEMP_KEY = "blur-temp";
-const BLUR_RESULT_KEY = "blur-result";
+const STAMP_KEY = "stamp";
+const BLUR_SRC_HALF_KEY = "blur-src-half";
+const BLUR_TEMP_HALF_KEY = "blur-temp-half";
+const BLUR_RESULT_HALF_KEY = "blur-result-half";
 const DT_CLAMP_SECONDS = 0.1;
 const MAX_UNUSED_FRAMES_BEFORE_GC = 30;
 const AA_WIDTH = 0.05;
-/** Subtract per-frame from every channel to escape the rgba8 1/255 floor. */
+/** Subtract per-frame from every channel to escape rgba8's 1/255 floor. */
 const ALPHA_SUBTRACT = 1.0 / 255.0;
-/** Additive blur contribution in the final composite. 0.5 = balanced bloom. */
-const GLOW_MIX = 0.6;
+/** Additive gain on the blurred stamp. Fresh-per-frame so this stays bright. */
+const GLOW_MIX = 1.0;
+/** Downsample factor for the bloom blur. Half-res = 4× less pixels blurred,
+ *  and bilinear upsample in the composite softens any residual banding. */
+const BLOOM_DOWNSAMPLE = 2;
+/** Effective sigma contributed by one 9-tap blur pass at 1 texel stride. */
+const SIGMA_PER_PASS = 2.0;
+/** Cap on blur iterations — bounds worst-case GPU cost. */
+const MAX_BLUR_ITERATIONS = 8;
 
 interface TipLiveness {
   lastSeenFrame: number;
@@ -211,9 +219,9 @@ export class WebGL2Backend implements RenderBackend {
     const gl = this.gl!;
     const fbos = this.fbos!;
     const shaders = this.shaders!;
-
-    // Prepare the default framebuffer once so each tip composites in order.
     const canvas = this.canvas!;
+
+    // Clear the screen once; each tip composites in order on top.
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.viewport(0, 0, canvas.width, canvas.height);
     gl.clearColor(0, 0, 0, 0);
@@ -221,55 +229,80 @@ export class WebGL2Backend implements RenderBackend {
 
     for (const tip of payload.tips) {
       this.markTipSeen(tip.tipId);
-      this.advanceTip(tip, dt, gl, fbos, shaders);
-      this.compositeTip(tip, gl, fbos, shaders);
+      this.renderTip(tip, dt, gl, fbos, shaders);
     }
   }
 
-  private advanceTip(
+  private renderTip(
     tip: TrailTipState,
     dt: number,
     gl: WebGL2RenderingContext,
     fbos: FBOPool,
     shaders: ShaderLibrary,
   ): void {
-    const key = TRAIL_KEY_PREFIX + tip.tipId;
-    const pair = fbos.getOrAllocatePair(key, "rgba8");
+    const accumulator = fbos.getOrAllocatePair(TRAIL_KEY_PREFIX + tip.tipId, "rgba8");
+    const stamp = fbos.getOrAllocate(STAMP_KEY, "rgba8");
 
-    // --- Pass A: decay existing FBO into the write target, overwriting. ---
-    gl.bindFramebuffer(gl.FRAMEBUFFER, pair.write.framebuffer);
-    gl.viewport(0, 0, pair.write.width, pair.write.height);
+    // 1. Decay previous accumulator into the write target.
+    this.decayInto(accumulator.write, accumulator.read, tip.decayPerSecond, dt, gl, shaders);
+
+    // 2. Stamp this frame's polygon on a clean scratch FBO.
+    this.drawStamp(tip, stamp, gl, shaders);
+
+    // 3. If glow enabled, blur the stamp.
+    const canvas = this.canvas!;
+    const glowPx = this.glowRadiusPixels(tip.glow, canvas.width, canvas.height);
+    const blur = glowPx > 0.5
+      ? this.runSeparableBlur(stamp, glowPx, gl, fbos, shaders)
+      : null;
+
+    // 4. Composite (stamp + blur * GLOW_MIX) onto the decayed accumulator.
+    this.bakeStampIntoAccumulator(accumulator.write, stamp, blur, gl, shaders);
+
+    accumulator.swap();
+
+    // 5. Blit the fresh accumulator (now in read slot after swap) to screen.
+    this.blitToScene(accumulator.read, tip.blendMode, gl, shaders);
+  }
+
+  private decayInto(
+    write: FBO,
+    read: FBO,
+    decayPerSecond: number,
+    dt: number,
+    gl: WebGL2RenderingContext,
+    shaders: ShaderLibrary,
+  ): void {
+    gl.bindFramebuffer(gl.FRAMEBUFFER, write.framebuffer);
+    gl.viewport(0, 0, write.width, write.height);
     gl.disable(gl.BLEND);
     gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT);
 
-    const decayFactor = tip.decayPerSecond > 0
-      ? Math.exp(-tip.decayPerSecond * dt)
-      : 1.0;
-
-    const decay = shaders.get("decay");
-    gl.useProgram(decay.program);
+    const factor = decayPerSecond > 0 ? Math.exp(-decayPerSecond * dt) : 1.0;
+    const prog = shaders.get("decay");
+    gl.useProgram(prog.program);
     gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, pair.read.texture);
-    gl.uniform1i(decay.uniforms["u_src"]!, 0);
-    gl.uniform1f(decay.uniforms["u_alphaFactor"]!, decayFactor);
-    gl.uniform1f(decay.uniforms["u_alphaSubtract"]!, ALPHA_SUBTRACT);
+    gl.bindTexture(gl.TEXTURE_2D, read.texture);
+    gl.uniform1i(prog.uniforms["u_src"]!, 0);
+    gl.uniform1f(prog.uniforms["u_alphaFactor"]!, factor);
+    gl.uniform1f(prog.uniforms["u_alphaSubtract"]!, ALPHA_SUBTRACT);
     gl.bindVertexArray(this.emptyVAO);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
     gl.bindVertexArray(null);
-
-    // --- Pass B: draw the current leading-edge polygon on top. ---
-    this.drawTipMesh(tip, gl, shaders);
-
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    pair.swap();
   }
 
-  private drawTipMesh(
+  private drawStamp(
     tip: TrailTipState,
+    stamp: FBO,
     gl: WebGL2RenderingContext,
     shaders: ShaderLibrary,
   ): void {
+    gl.bindFramebuffer(gl.FRAMEBUFFER, stamp.framebuffer);
+    gl.viewport(0, 0, stamp.width, stamp.height);
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
     if (tip.path.length < 2) return;
 
     const buf = this.smoothPathBuffer;
@@ -321,38 +354,27 @@ export class WebGL2Backend implements RenderBackend {
     gl.bindBuffer(gl.ARRAY_BUFFER, null);
   }
 
-  private compositeTip(
-    tip: TrailTipState,
+  private bakeStampIntoAccumulator(
+    accumulator: FBO,
+    stamp: FBO,
+    blur: FBO | null,
     gl: WebGL2RenderingContext,
-    fbos: FBOPool,
     shaders: ShaderLibrary,
   ): void {
-    const key = TRAIL_KEY_PREFIX + tip.tipId;
-    const pair = fbos.getOrAllocatePair(key, "rgba8");
-    // After advanceTip().swap(), the fresh accumulator is in pair.read.
-    const accumulator = pair.read;
-
-    const canvas = this.canvas!;
-    const glowPx = this.glowRadiusPixels(tip.glow, canvas.width, canvas.height);
-
-    let blurResult: FBO | null = null;
-    if (glowPx > 0.5) {
-      blurResult = this.runSeparableBlur(accumulator, glowPx, gl, fbos, shaders);
-    }
-
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    gl.viewport(0, 0, canvas.width, canvas.height);
-    this.setBlendMode(gl, tip.blendMode);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, accumulator.framebuffer);
+    gl.viewport(0, 0, accumulator.width, accumulator.height);
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
     gl.bindVertexArray(this.emptyVAO);
 
-    if (blurResult) {
+    if (blur) {
       const prog = shaders.get("trail-composite");
       gl.useProgram(prog.program);
       gl.activeTexture(gl.TEXTURE0);
-      gl.bindTexture(gl.TEXTURE_2D, accumulator.texture);
+      gl.bindTexture(gl.TEXTURE_2D, stamp.texture);
       gl.uniform1i(prog.uniforms["u_sharp"]!, 0);
       gl.activeTexture(gl.TEXTURE1);
-      gl.bindTexture(gl.TEXTURE_2D, blurResult.texture);
+      gl.bindTexture(gl.TEXTURE_2D, blur.texture);
       gl.uniform1i(prog.uniforms["u_blur"]!, 1);
       gl.uniform1f(prog.uniforms["u_glowMix"]!, GLOW_MIX);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
@@ -360,7 +382,7 @@ export class WebGL2Backend implements RenderBackend {
       const prog = shaders.get("composite");
       gl.useProgram(prog.program);
       gl.activeTexture(gl.TEXTURE0);
-      gl.bindTexture(gl.TEXTURE_2D, accumulator.texture);
+      gl.bindTexture(gl.TEXTURE_2D, stamp.texture);
       gl.uniform1i(prog.uniforms["u_src"]!, 0);
       gl.uniform4f(prog.uniforms["u_tint"]!, 1, 1, 1, 1);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
@@ -375,10 +397,47 @@ export class WebGL2Backend implements RenderBackend {
     gl.activeTexture(gl.TEXTURE0);
   }
 
+  private blitToScene(
+    source: FBO,
+    blendMode: TrailBlendMode,
+    gl: WebGL2RenderingContext,
+    shaders: ShaderLibrary,
+  ): void {
+    const canvas = this.canvas!;
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    this.setBlendMode(gl, blendMode);
+    gl.bindVertexArray(this.emptyVAO);
+
+    const prog = shaders.get("composite");
+    gl.useProgram(prog.program);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, source.texture);
+    gl.uniform1i(prog.uniforms["u_src"]!, 0);
+    gl.uniform4f(prog.uniforms["u_tint"]!, 1, 1, 1, 1);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+    gl.disable(gl.BLEND);
+    gl.bindVertexArray(null);
+    gl.bindTexture(gl.TEXTURE_2D, null);
+  }
+
   /**
-   * Run a 2-pass separable Gaussian blur on the given source. Returns
-   * the FBO holding the final vertical-pass result. Stride is tuned so
-   * the 4-tap-each-side kernel spans roughly `radiusPx` pixels total.
+   * Produce a blurred version of `source` matching the requested halo radius.
+   *
+   * Pipeline:
+   *   1. Downsample `source` to a half-res FBO via a single LINEAR-filtered
+   *      fullscreen triangle (correct 2×2 box average, no aliasing).
+   *   2. Iterate a 9-tap separable Gaussian at stride=1 texel in half-res
+   *      space. Multi-pass Gaussians add variances, so effective sigma is
+   *      `sqrt(N) * SIGMA_PER_PASS`. Iteration count is chosen from the
+   *      requested radius so small halos stay crisp and large halos stay
+   *      smooth without ringing.
+   *   3. Return the half-res result. Composite samples it at full-res UVs;
+   *      LINEAR filtering on the FBO texture upsamples smoothly for free.
+   *
+   * This replaces a single-pass large-stride blur, which produced visible
+   * ribbing at thick-trail halo radii (stride > 5px with only 9 taps).
    */
   private runSeparableBlur(
     source: FBO,
@@ -387,38 +446,68 @@ export class WebGL2Backend implements RenderBackend {
     fbos: FBOPool,
     shaders: ShaderLibrary,
   ): FBO {
-    const temp = fbos.getOrAllocate(BLUR_TEMP_KEY, "rgba8");
-    const result = fbos.getOrAllocate(BLUR_RESULT_KEY, "rgba8");
-    const prog = shaders.get("gaussian-blur");
+    const halfW = Math.max(1, Math.floor(source.width / BLOOM_DOWNSAMPLE));
+    const halfH = Math.max(1, Math.floor(source.height / BLOOM_DOWNSAMPLE));
+    const src = fbos.getOrAllocateSized(BLUR_SRC_HALF_KEY, halfW, halfH, "rgba8");
+    const temp = fbos.getOrAllocateSized(BLUR_TEMP_HALF_KEY, halfW, halfH, "rgba8");
+    const result = fbos.getOrAllocateSized(BLUR_RESULT_HALF_KEY, halfW, halfH, "rgba8");
 
-    const strideX = radiusPx / 4 / source.width;
-    const strideY = radiusPx / 4 / source.height;
-
-    gl.useProgram(prog.program);
     gl.disable(gl.BLEND);
     gl.bindVertexArray(this.emptyVAO);
 
-    // Horizontal pass: source → temp
-    gl.bindFramebuffer(gl.FRAMEBUFFER, temp.framebuffer);
-    gl.viewport(0, 0, temp.width, temp.height);
+    // 1. Downsample full-res stamp → half-res blur source.
+    const downsample = shaders.get("composite");
+    gl.useProgram(downsample.program);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, src.framebuffer);
+    gl.viewport(0, 0, src.width, src.height);
     gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT);
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, source.texture);
-    gl.uniform1i(prog.uniforms["u_src"]!, 0);
-    gl.uniform2f(prog.uniforms["u_direction"]!, 1, 0);
-    gl.uniform1f(prog.uniforms["u_stride"]!, strideX);
+    gl.uniform1i(downsample.uniforms["u_src"]!, 0);
+    gl.uniform4f(downsample.uniforms["u_tint"]!, 1, 1, 1, 1);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
 
-    // Vertical pass: temp → result
-    gl.bindFramebuffer(gl.FRAMEBUFFER, result.framebuffer);
-    gl.viewport(0, 0, result.width, result.height);
-    gl.clearColor(0, 0, 0, 0);
-    gl.clear(gl.COLOR_BUFFER_BIT);
-    gl.bindTexture(gl.TEXTURE_2D, temp.texture);
-    gl.uniform2f(prog.uniforms["u_direction"]!, 0, 1);
-    gl.uniform1f(prog.uniforms["u_stride"]!, strideY);
-    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    // 2. Iterate separable Gaussian. stride=1 texel in half-res = ~2px in
+    //    full-res — no aliasing between taps.
+    const radiusHalfRes = radiusPx / BLOOM_DOWNSAMPLE;
+    const targetSigma = Math.max(0.5, radiusHalfRes / 2);
+    const iterations = Math.min(
+      MAX_BLUR_ITERATIONS,
+      Math.max(1, Math.ceil((targetSigma * targetSigma) / (SIGMA_PER_PASS * SIGMA_PER_PASS))),
+    );
+
+    const blur = shaders.get("gaussian-blur");
+    gl.useProgram(blur.program);
+    const strideX = 1 / src.width;
+    const strideY = 1 / src.height;
+
+    let inputTex = src.texture;
+    for (let i = 0; i < iterations; i += 1) {
+      // Horizontal: inputTex → temp
+      gl.bindFramebuffer(gl.FRAMEBUFFER, temp.framebuffer);
+      gl.viewport(0, 0, temp.width, temp.height);
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, inputTex);
+      gl.uniform1i(blur.uniforms["u_src"]!, 0);
+      gl.uniform2f(blur.uniforms["u_direction"]!, 1, 0);
+      gl.uniform1f(blur.uniforms["u_stride"]!, strideX);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+      // Vertical: temp → result
+      gl.bindFramebuffer(gl.FRAMEBUFFER, result.framebuffer);
+      gl.viewport(0, 0, result.width, result.height);
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      gl.bindTexture(gl.TEXTURE_2D, temp.texture);
+      gl.uniform2f(blur.uniforms["u_direction"]!, 0, 1);
+      gl.uniform1f(blur.uniforms["u_stride"]!, strideY);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+      inputTex = result.texture;
+    }
 
     gl.bindVertexArray(null);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -427,8 +516,6 @@ export class WebGL2Backend implements RenderBackend {
 
   private glowRadiusPixels(glowNdc: number, width: number, height: number): number {
     if (glowNdc <= 0) return 0;
-    // NDC spans 2 across each axis; use the minor axis to keep halos
-    // circular on non-square canvases.
     const minAxis = Math.min(width, height);
     return glowNdc * 0.5 * minAxis;
   }

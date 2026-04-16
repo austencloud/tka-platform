@@ -29,7 +29,6 @@
   } from "$lib/shared/animation-engine/domain/types/TrailTypes";
 
   const CANVAS_SIZE = 500;
-  const LEADING_EDGE = 20;
 
   let webglCanvasEl!: HTMLCanvasElement;
   let canvas2dEl!: HTMLCanvasElement;
@@ -37,6 +36,11 @@
   let backend: RenderBackend | null = null;
   let canvas2dCtx: CanvasRenderingContext2D | null = null;
   const trailRenderer = new Canvas2DTrailRenderer();
+  /** Counter for smoothAlphaDecay on the Canvas2D side — mirrors
+   *  TrailOverlayCanvas so rgba8 1/255 floor pixels get kicked to zero. */
+  let canvas2dDecayCounter = 0;
+  const CANVAS2D_DECAY_INTERVAL = 10;
+  const CANVAS2D_DECAY_STEP = 20;
 
   let rafHandle = 0;
   let startTime = 0;
@@ -59,6 +63,10 @@
     rainbow: false,
   });
 
+  /** Stress-test controls. Scale tips and path length independently. */
+  let tipCount = $state(2);
+  let pointsPerTip = $state(20);
+
   // Last N positions per tip — shared across both renderers so they
   // see identical input. NDC for the WebGL2 path; pixel-space for Canvas2D.
   const pathNDC = new Map<string, Array<[number, number]>>();
@@ -70,7 +78,7 @@
     canvas2dEl.width = CANVAS_SIZE;
     canvas2dEl.height = CANVAS_SIZE;
 
-    canvas2dCtx = canvas2dEl.getContext("2d", { willReadFrequently: false });
+    canvas2dCtx = canvas2dEl.getContext("2d", { willReadFrequently: true });
 
     try {
       backend = await createBackend(webglCanvasEl);
@@ -97,8 +105,10 @@
     const dt = previousFrameTime < 0 ? 1 / 60 : (time - previousFrameTime) / 1000;
     previousFrameTime = time;
 
-    advancePath("blue", tipPath(elapsed, 0), time);
-    advancePath("red", tipPath(elapsed, Math.PI), time);
+    for (let i = 0; i < tipCount; i += 1) {
+      const phase = (i / tipCount) * Math.PI * 2;
+      advancePath(tipIdFor(i), tipPath(elapsed, phase), time);
+    }
 
     const webglStart = performance.now();
     renderWebGL(time, elapsed);
@@ -124,6 +134,12 @@
     return [x, y];
   }
 
+  function tipIdFor(i: number): string {
+    if (i === 0) return "blue";
+    if (i === 1) return "red";
+    return `tip-${i}`;
+  }
+
   function advancePath(tipId: string, ndc: [number, number], timestamp: number) {
     // NDC ring for WebGL2.
     let ring = pathNDC.get(tipId);
@@ -132,7 +148,7 @@
       pathNDC.set(tipId, ring);
     }
     ring.push(ndc);
-    if (ring.length > LEADING_EDGE) ring.splice(0, ring.length - LEADING_EDGE);
+    if (ring.length > pointsPerTip) ring.splice(0, ring.length - pointsPerTip);
 
     // Pixel ring for Canvas2D.
     let pxRing = pathPixels.get(tipId);
@@ -147,24 +163,23 @@
       propIndex: tipId === "red" ? 1 : 0,
       tipIndex: 0,
     });
-    if (pxRing.length > LEADING_EDGE) pxRing.splice(0, pxRing.length - LEADING_EDGE);
+    if (pxRing.length > pointsPerTip) pxRing.splice(0, pxRing.length - pointsPerTip);
   }
 
   function renderWebGL(time: number, elapsed: number) {
     if (!backend) return;
+    const tips: Array<{ tipId: string; path: Array<[number, number]> }> = [];
+    for (let i = 0; i < tipCount; i += 1) {
+      const id = tipIdFor(i);
+      tips.push({ tipId: id, path: pathNDC.get(id) ?? [] });
+    }
     const graph: FrameGraph = {
       passes: [
         {
           kind: "trail",
           order: Z_ORDER.TRAIL,
           target: "scene",
-          payload: toTrailPassPayload(intent, {
-            tips: [
-              { tipId: "blue", path: pathNDC.get("blue") ?? [] },
-              { tipId: "red", path: pathNDC.get("red") ?? [] },
-            ],
-            elapsedSeconds: elapsed,
-          }),
+          payload: toTrailPassPayload(intent, { tips, elapsedSeconds: elapsed }),
         },
       ],
       targets: {
@@ -192,12 +207,33 @@
     ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
     ctx.restore();
 
+    // 1b. Kick-to-zero pass — matches TrailOverlayCanvas.smoothAlphaDecay.
+    // Canvas2D destination-out can't round below 1/255 alpha due to 8-bit
+    // integer rounding, leaving a permanent ghost trail. Subtracting a
+    // small constant from near-zero pixels every N frames kills it.
+    canvas2dDecayCounter += 1;
+    if (canvas2dDecayCounter >= CANVAS2D_DECAY_INTERVAL) {
+      canvas2dDecayCounter = 0;
+      const img = ctx.getImageData(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+      const data = img.data;
+      const threshold = CANVAS2D_DECAY_STEP + 10;
+      let dirty = false;
+      for (let i = 3; i < data.length; i += 4) {
+        const a = data[i]!;
+        if (a > 0 && a <= threshold) {
+          data[i] = Math.max(0, a - CANVAS2D_DECAY_STEP);
+          dirty = true;
+        }
+      }
+      if (dirty) ctx.putImageData(img, 0, 0);
+    }
+
     // 2. Draw current leading edge using the real Canvas2DTrailRenderer.
-    const settings: TrailSettings = {
+    const baseSettings: TrailSettings = {
       mode: TrailMode.FADE,
       effect: TrailEffect.GLOW,
       fadeDurationMs,
-      maxPoints: LEADING_EDGE,
+      maxPoints: pointsPerTip,
       lineWidth: Math.max(3.5, intent.thickness),
       glowBlur: 3,
       blueColor: colorFor("blue", time),
@@ -211,19 +247,36 @@
       previewMode: false,
     };
 
-    const blueRing = pathPixels.get("blue") ?? [];
-    const redRing = pathPixels.get("red") ?? [];
+    // Pairs: tips 0/1 use blue/red hues, subsequent tips cycle the hue wheel.
+    for (let i = 0; i < tipCount; i += 2) {
+      const leftId = tipIdFor(i);
+      const rightId = i + 1 < tipCount ? tipIdFor(i + 1) : null;
+      const leftRing = pathPixels.get(leftId) ?? [];
+      const rightRing = rightId ? (pathPixels.get(rightId) ?? []) : [];
+      const settings = {
+        ...baseSettings,
+        blueColor: colorForIndex(i, time),
+        redColor: rightId ? colorForIndex(i + 1, time) : baseSettings.redColor,
+      };
+      trailRenderer.renderTrails(
+        ctx,
+        leftRing,
+        rightRing,
+        settings,
+        time,
+        leftRing.length >= 2,
+        rightRing.length >= 2,
+        CANVAS_SIZE,
+      );
+    }
+  }
 
-    trailRenderer.renderTrails(
-      ctx,
-      blueRing,
-      redRing,
-      settings,
-      time,
-      blueRing.length >= 2,
-      redRing.length >= 2,
-      CANVAS_SIZE,
-    );
+  function colorForIndex(i: number, time: number): string {
+    if (i === 0) return colorFor("blue", time);
+    if (i === 1) return colorFor("red", time);
+    const h = ((i * 0.17) + (time - startTime) / 1000 * 0.05) % 1;
+    const [r, g, b] = hsvToRgb(h, 0.8, 1);
+    return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
   }
 
   function colorFor(tipId: string, time: number): string {
@@ -322,6 +375,27 @@
           rainbow
         </label>
         <button type="button" onclick={reset}>reset trails</button>
+      </fieldset>
+
+      <fieldset>
+        <legend>stress test</legend>
+        <label>
+          tip count <output>{tipCount}</output>
+          <input type="range" min="1" max="64" step="1" bind:value={tipCount} />
+        </label>
+        <label>
+          points / tip <output>{pointsPerTip}</output>
+          <input type="range" min="10" max="2000" step="10" bind:value={pointsPerTip} />
+        </label>
+        <dl class="meta">
+          <dt>total points</dt><dd>{tipCount * pointsPerTip}</dd>
+        </dl>
+        <div class="presets">
+          <button type="button" onclick={() => { tipCount = 2; pointsPerTip = 20; reset(); }}>baseline</button>
+          <button type="button" onclick={() => { tipCount = 8; pointsPerTip = 150; reset(); }}>medium</button>
+          <button type="button" onclick={() => { tipCount = 16; pointsPerTip = 500; reset(); }}>heavy</button>
+          <button type="button" onclick={() => { tipCount = 32; pointsPerTip = 1500; reset(); }}>brutal</button>
+        </div>
       </fieldset>
     </aside>
   </div>
@@ -433,4 +507,13 @@
     cursor: pointer;
   }
   button:hover { background: #243240; }
+  .presets {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.35rem;
+  }
+  .presets button {
+    padding: 0.35rem;
+    font-size: 0.75rem;
+  }
 </style>
