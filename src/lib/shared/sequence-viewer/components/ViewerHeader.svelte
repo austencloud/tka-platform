@@ -1,249 +1,72 @@
 <!--
   ViewerHeader.svelte
 
-  Header bar for the sequence viewer modal.
-  Handles both normal view mode and export mode headers.
+  Three-region floating overlay header for the sequence viewer.
+  Per spec §6.1: left = Back + 2D/3D toggle, center = VIEWER badge + title, right = info chip.
 -->
 <script lang="ts">
-  type ExportType = "animation" | "image" | "both";
+  import DestinationBadge from "./DestinationBadge.svelte";
+  import InfoChipPopover from "./InfoChipPopover.svelte";
+  import RenderModeToggle from "./RenderModeToggle.svelte";
 
   interface Props {
-    isExportMode: boolean;
-    exportType: ExportType | null;
-    isFullscreen: boolean;
-    isMobile: boolean;
-    isLandscapeMobile?: boolean;
-    darkMode: boolean;
-    // Callbacks
-    onClose: () => void;
-    onExitExportMode: () => void;
-    onBackToExportTypeSelection: () => void;
-    onDarkModeToggle: () => void;
+    sequenceTitle: string;
+    renderMode: "2d" | "3d";
+    webgl2Available: boolean;
+    onRenderModeChange: (mode: "2d" | "3d") => void;
+    onBack: () => void;
   }
-
-  let {
-    isExportMode,
-    exportType,
-    isFullscreen,
-    isMobile,
-    isLandscapeMobile = false,
-    darkMode,
-    onClose,
-    onExitExportMode,
-    onBackToExportTypeSelection,
-    onDarkModeToggle,
-  }: Props = $props();
+  let { sequenceTitle, renderMode, webgl2Available, onRenderModeChange, onBack }: Props = $props();
 </script>
 
-{#if isExportMode}
-  <!-- Export mode header -->
-  <header class="details-header export-header" data-hidden={isFullscreen}>
-    <div class="header-left">
-      <button
-        type="button"
-        class="close-button"
-        onclick={exportType ? onBackToExportTypeSelection : onExitExportMode}
-        aria-label={exportType ? "Back to export options" : "Back to viewer"}
-      >
-        <i class="fas fa-arrow-left" aria-hidden="true"></i>
-      </button>
-    </div>
+<header class="viewer-header">
+  <div class="header-left">
+    <button class="icon-btn" onclick={onBack} aria-label="Back">
+      <i class="fas fa-chevron-left"></i>
+      <span>Back</span>
+    </button>
+    <RenderModeToggle {renderMode} {webgl2Available} onchange={onRenderModeChange} />
+  </div>
 
-    <div class="header-center">
-      <h2 class="mode-title">
-        {#if !exportType}
-          Export
-        {:else if exportType === "animation"}
-          Download Animation
-        {:else}
-          Download Card
-        {/if}
-      </h2>
-    </div>
+  <div class="header-center">
+    <DestinationBadge label="VIEWER" />
+    <span class="seq-title">{sequenceTitle}</span>
+  </div>
 
-    <div class="header-right">
-      <!-- Spacer to balance layout -->
-    </div>
-  </header>
-{:else}
-  <!-- Normal viewer header -->
-  <header
-    class="details-header"
-    class:mobile={isMobile}
-    class:landscape={isLandscapeMobile}
-    data-hidden={isFullscreen}
-  >
-    <!-- Mobile: Swipe handle indicator for swipe-to-dismiss -->
-    {#if isMobile && !isLandscapeMobile}
-      <div class="swipe-handle" aria-hidden="true"></div>
-    {/if}
-
-    <div class="header-left">
-      <button
-        type="button"
-        class="close-button back"
-        onclick={onClose}
-        aria-label="Back"
-      >
-        <i class="fas fa-arrow-left" aria-hidden="true"></i>
-        {#if !isMobile}
-          <span>Back</span>
-        {/if}
-      </button>
-    </div>
-
-    {#if !isLandscapeMobile}
-      <div class="header-center">
-        <h2 class="sequence-title">Sequence Viewer</h2>
-      </div>
-    {/if}
-
-    <div class="header-right">
-      <!-- Spacer to balance layout -->
-    </div>
-  </header>
-{/if}
+  <div class="header-right">
+    <InfoChipPopover />
+  </div>
+</header>
 
 <style>
-  /* Header - CSS Grid for true center */
-  .details-header {
-    display: grid;
-    grid-template-columns: 1fr auto 1fr;
-    align-items: center;
-    padding: 12px 16px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    flex-shrink: 0;
-    transition:
-      opacity var(--duration-normal, 200ms) var(--ease-out, ease-out),
-      transform var(--duration-normal, 200ms) var(--ease-out, ease-out);
-  }
-
-  .details-header[data-hidden="true"] {
-    opacity: 0;
-    transform: translateY(-100%);
-    pointer-events: none;
+  .viewer-header {
     position: absolute;
-  }
-
-  /* Swipe handle - visual affordance for swipe-to-dismiss */
-  .swipe-handle {
-    position: absolute;
-    top: 6px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 40px;
-    height: 4px;
-    background: rgba(255, 255, 255, 0.3);
-    border-radius: 2px;
-  }
-
-  /* Mobile header - minimal, with swipe affordance */
-  .details-header.mobile {
-    padding-top: 16px;
-    touch-action: pan-y;
-  }
-
-  .details-header.mobile .sequence-title {
-    max-width: 150px;
-    font-size: var(--font-size-min, 14px);
-  }
-
-  .header-left {
-    justify-self: start;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-
-  .header-right {
-    justify-self: end;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-
-  .header-center {
-    display: flex;
-    justify-content: center;
-  }
-
-  .close-button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    min-width: var(--min-touch-target);
+    top: 12px; left: 12px; right: 12px;
     height: var(--min-touch-target);
-    padding: 0 12px;
-    background: transparent;
-    border: none;
-    border-radius: 8px;
-    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.6));
-    font-size: 16px;
-    cursor: pointer;
-    transition: all 0.15s ease;
-  }
-
-  .close-button span {
-    font-size: var(--font-size-min, 14px);
-    font-weight: 500;
-  }
-
-  .close-button:hover {
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    color: var(--theme-text, white);
-  }
-
-  /* Sequence title in header */
-  .sequence-title,
-  .mode-title {
-    margin: 0;
-    font-size: var(--font-size-lg, 18px);
-    font-weight: 600;
-    color: var(--theme-text, white);
-    text-align: center;
-    max-width: 200px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  /* Landscape: compact overlay header */
-  .details-header.landscape {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 8px 0 6px;
+    background: rgba(20, 22, 32, 0.78);
+    backdrop-filter: blur(20px) saturate(140%);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 14px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.4);
     z-index: 10;
-    background: linear-gradient(
-      to bottom,
-      rgba(0, 0, 0, 0.6) 0%,
-      rgba(0, 0, 0, 0.3) 60%,
-      transparent 100%
-    );
-    border-bottom: none;
-    padding: 6px 8px;
-    grid-template-columns: auto 1fr auto;
-    pointer-events: none;
   }
-
-  .details-header.landscape .header-left,
-  .details-header.landscape .header-right {
-    pointer-events: auto;
+  .header-left, .header-right { display: flex; align-items: center; gap: 6px; }
+  .header-center {
+    display: flex; align-items: center; gap: 10px;
+    position: absolute; left: 50%; transform: translateX(-50%);
   }
-
-  .details-header.landscape .close-button {
-    min-width: 40px;
-    min-height: 40px;
-    height: 40px;
-    color: rgba(255, 255, 255, 0.8);
+  .icon-btn {
+    height: var(--min-touch-target);
+    min-width: var(--min-touch-target);
+    padding: 0 12px;
+    background: transparent; border: none; border-radius: 10px;
+    color: rgba(255,255,255,0.62);
+    font-size: 13px; font-weight: 500;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
   }
-
-  @media (prefers-reduced-motion: reduce) {
-    .details-header,
-    .close-button {
-      transition: none !important;
-    }
-  }
+  .icon-btn:hover { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.95); }
+  .seq-title { color: rgba(255,255,255,0.95); font-size: 14px; font-weight: 600; }
 </style>
