@@ -51,17 +51,15 @@ Box mode intercardinal positions (NE, SE, SW, NW) sit on only 1 primary plane ci
 | Wall+Wheel (L) | Left Shield | (-1/√2, 0, 1/√2) | Y | Up, Down |
 | Wall+Floor (Fwd) | Forward Ramp | (0, 1/√2, -1/√2) | X | Stage R, Stage L |
 | Wall+Floor (Bwd) | Backward Ramp | (0, 1/√2, 1/√2) | X | Stage R, Stage L |
-| Wheel+Floor (R) | Right Sundial* | (1/√2, 1/√2, 0) | Z | Downstage, Upstage |
-| Wheel+Floor (L) | Left Sundial* | (-1/√2, 1/√2, 0) | Z | Downstage, Upstage |
-
-*Sundial is a working name. May be renamed.
+| Wheel+Floor (R) | Right Wing | (1/√2, 1/√2, 0) | Z | Downstage, Upstage |
+| Wheel+Floor (L) | Left Wing | (-1/√2, 1/√2, 0) | Z | Downstage, Upstage |
 
 ### Box Mode Gate Table (L9)
 
 | Position | Primary | Fusion |
 |----------|---------|--------|
-| Wall NE / SW | Wall | Left Sundial |
-| Wall SE / NW | Wall | Right Sundial |
+| Wall NE / SW | Wall | Left Wing |
+| Wall SE / NW | Wall | Right Wing |
 | Wheel NE / SW | Wheel | Forward Ramp |
 | Wheel SE / NW | Wheel | Backward Ramp |
 | Floor NE / SW | Floor | Left Shield |
@@ -115,8 +113,8 @@ export enum Plane {
   LEFT_SHIELD = "left-shield",
   FORWARD_RAMP = "forward-ramp",
   BACKWARD_RAMP = "backward-ramp",
-  RIGHT_SUNDIAL = "right-sundial",
-  LEFT_SUNDIAL = "left-sundial",
+  RIGHT_WING = "right-wing",
+  LEFT_WING = "left-wing",
 }
 ```
 
@@ -135,8 +133,8 @@ const PLANE_NORMALS: Record<Plane, Vector3> = {
   [Plane.LEFT_SHIELD]:    new Vector3(-S2, 0, S2),
   [Plane.FORWARD_RAMP]:   new Vector3(0, S2, -S2),
   [Plane.BACKWARD_RAMP]:  new Vector3(0, S2, S2),
-  [Plane.RIGHT_SUNDIAL]:  new Vector3(S2, S2, 0),
-  [Plane.LEFT_SUNDIAL]:   new Vector3(-S2, S2, 0),
+  [Plane.RIGHT_WING]:  new Vector3(S2, S2, 0),
+  [Plane.LEFT_WING]:   new Vector3(-S2, S2, 0),
 };
 
 // Derive up/right for any plane from its normal.

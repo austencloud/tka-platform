@@ -41,8 +41,8 @@ const PLANE_CODE: Record<Plane, string> = {
   [Plane.LEFT_SHIELD]: "ls",
   [Plane.FORWARD_RAMP]: "fr",
   [Plane.BACKWARD_RAMP]: "br",
-  [Plane.RIGHT_SUNDIAL]: "ru",
-  [Plane.LEFT_SUNDIAL]: "lu",
+  [Plane.RIGHT_WING]: "rw",
+  [Plane.LEFT_WING]: "lw",
 };
 
 function handCode(h: HandState): string {

@@ -60,8 +60,8 @@ export const PLANE_NORMALS: Record<Plane, Vector3> = {
   [Plane.LEFT_SHIELD]:   new Vector3(-S2,  0,   S2),  // Wall ∧ Wheel, left
   [Plane.FORWARD_RAMP]:  new Vector3(0,    S2, -S2),  // Wall ∧ Floor, top toward audience
   [Plane.BACKWARD_RAMP]: new Vector3(0,    S2,  S2),  // Wall ∧ Floor, top away
-  [Plane.RIGHT_SUNDIAL]: new Vector3( S2,  S2,  0),   // Wheel ∧ Floor, right
-  [Plane.LEFT_SUNDIAL]:  new Vector3(-S2,  S2,  0),   // Wheel ∧ Floor, left
+  [Plane.RIGHT_WING]:    new Vector3( S2,  S2,  0),   // Wheel ∧ Floor, right
+  [Plane.LEFT_WING]:     new Vector3(-S2,  S2,  0),   // Wheel ∧ Floor, left
 };
 
 /**
@@ -76,7 +76,7 @@ export function getPlaneNormal(plane: Plane): Vector3 {
  * Derive orthonormal up/right basis vectors from any plane normal.
  *
  * When the normal is nearly parallel to world-Y (i.e. the floor plane and
- * sundials) we use world-Z as the reference instead so the cross products
+ * wings) we use world-Z as the reference instead so the cross products
  * stay well-conditioned.
  */
 function deriveUpRight(normal: Vector3): { up: Vector3; right: Vector3 } {
