@@ -38,6 +38,7 @@ interface PingPongStorage {
 export class FBOPool {
   private readonly gl: WebGL2RenderingContext;
   private readonly single = new Map<string, FBO>();
+  private readonly sized = new Map<string, FBO>();
   private readonly pairs = new Map<string, PingPongStorage>();
   private width: number;
   private height: number;
@@ -49,7 +50,7 @@ export class FBOPool {
   }
 
   get count(): number {
-    return this.single.size + this.pairs.size * 2;
+    return this.single.size + this.sized.size + this.pairs.size * 2;
   }
 
   /** Get-or-allocate a single-buffer target. Uses pool dimensions and the given format. */
@@ -58,6 +59,29 @@ export class FBOPool {
     if (existing) return existing;
     const fbo = this.createFBO(this.width, this.height, format);
     this.single.set(name, fbo);
+    return fbo;
+  }
+
+  /**
+   * Get-or-allocate a target at arbitrary dimensions. Unlike getOrAllocate,
+   * the target's size is caller-managed (e.g. half-res bloom FBOs derived
+   * from canvas dims). Reallocates if dimensions or format change.
+   */
+  getOrAllocateSized(
+    name: string,
+    width: number,
+    height: number,
+    format: TargetFormat = "rgba8",
+  ): FBO {
+    const w = Math.max(1, width);
+    const h = Math.max(1, height);
+    const existing = this.sized.get(name);
+    if (existing && existing.width === w && existing.height === h && existing.format === format) {
+      return existing;
+    }
+    if (existing) this.destroyFBO(existing);
+    const fbo = this.createFBO(w, h, format);
+    this.sized.set(name, fbo);
     return fbo;
   }
 
@@ -94,6 +118,12 @@ export class FBOPool {
       this.single.delete(name);
       return;
     }
+    const sized = this.sized.get(name);
+    if (sized) {
+      this.destroyFBO(sized);
+      this.sized.delete(name);
+      return;
+    }
     const pair = this.pairs.get(name);
     if (pair) {
       this.destroyFBO(pair.a);
@@ -126,17 +156,19 @@ export class FBOPool {
 
   dispose(): void {
     for (const fbo of this.single.values()) this.destroyFBO(fbo);
+    for (const fbo of this.sized.values()) this.destroyFBO(fbo);
     for (const pair of this.pairs.values()) {
       this.destroyFBO(pair.a);
       this.destroyFBO(pair.b);
     }
     this.single.clear();
+    this.sized.clear();
     this.pairs.clear();
   }
 
   /** List all managed target names — for diagnostics. */
   listNames(): string[] {
-    return [...this.single.keys(), ...this.pairs.keys()];
+    return [...this.single.keys(), ...this.sized.keys(), ...this.pairs.keys()];
   }
 
   private createFBO(width: number, height: number, format: TargetFormat): FBO {
