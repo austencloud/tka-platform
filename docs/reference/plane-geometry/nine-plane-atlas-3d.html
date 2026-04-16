@@ -152,15 +152,15 @@
     <span class="toggle-sub">↙ upstage</span>
   </div>
 
-  <div class="section-label">Sundials (Wheel ↔ Floor)</div>
-  <div class="toggle-row" onclick="togglePlane('rightSundial')">
-    <div class="toggle-dot" id="dot-rightSundial" style="color:#5eead4;"></div>
-    <span class="toggle-label" style="color:#5eead4;">Right Sundial</span>
+  <div class="section-label">Wings (Wheel ↔ Floor)</div>
+  <div class="toggle-row" onclick="togglePlane('rightWing')">
+    <div class="toggle-dot" id="dot-rightWing" style="color:#5eead4;"></div>
+    <span class="toggle-label" style="color:#5eead4;">Right Wing</span>
     <span class="toggle-sub">tilt R</span>
   </div>
-  <div class="toggle-row" onclick="togglePlane('leftSundial')">
-    <div class="toggle-dot" id="dot-leftSundial" style="color:#2dd4bf;"></div>
-    <span class="toggle-label" style="color:#2dd4bf;">Left Sundial</span>
+  <div class="toggle-row" onclick="togglePlane('leftWing')">
+    <div class="toggle-dot" id="dot-leftWing" style="color:#2dd4bf;"></div>
+    <span class="toggle-label" style="color:#2dd4bf;">Left Wing</span>
     <span class="toggle-sub">tilt L</span>
   </div>
 
@@ -307,8 +307,8 @@ const planeDefs = {
   leftShield:    { normal: new THREE.Vector3(-S2, 0, S2),   color: '#818cf8' },
   forwardRamp:   { normal: new THREE.Vector3(0, S2, -S2),   color: '#86efac' },
   backwardRamp:  { normal: new THREE.Vector3(0, S2, S2),    color: '#6ee7b7' },
-  rightSundial:  { normal: new THREE.Vector3(S2, S2, 0),    color: '#5eead4' },
-  leftSundial:   { normal: new THREE.Vector3(-S2, S2, 0),   color: '#2dd4bf' },
+  rightWing:  { normal: new THREE.Vector3(S2, S2, 0),    color: '#5eead4' },
+  leftWing:   { normal: new THREE.Vector3(-S2, S2, 0),   color: '#2dd4bf' },
 };
 
 const planeGroups = {};
@@ -348,10 +348,10 @@ scene.add(diamondGroup);
 
 const boxData = [
   // Wall box (XY plane, z=0)
-  { pos: [R*S2, R*S2, 0],    label: 'Wall NE',  gates: 'Wall + L.Sundial' },
-  { pos: [R*S2, -R*S2, 0],   label: 'Wall SE',  gates: 'Wall + R.Sundial' },
-  { pos: [-R*S2, -R*S2, 0],  label: 'Wall SW',  gates: 'Wall + L.Sundial' },
-  { pos: [-R*S2, R*S2, 0],   label: 'Wall NW',  gates: 'Wall + R.Sundial' },
+  { pos: [R*S2, R*S2, 0],    label: 'Wall NE',  gates: 'Wall + L.Wing' },
+  { pos: [R*S2, -R*S2, 0],   label: 'Wall SE',  gates: 'Wall + R.Wing' },
+  { pos: [-R*S2, -R*S2, 0],  label: 'Wall SW',  gates: 'Wall + L.Wing' },
+  { pos: [-R*S2, R*S2, 0],   label: 'Wall NW',  gates: 'Wall + R.Wing' },
   // Wheel box (YZ plane, x=0)
   { pos: [0, R*S2, R*S2],    label: 'Wheel NE', gates: 'Wheel + Fwd.Ramp' },
   { pos: [0, -R*S2, R*S2],   label: 'Wheel SE', gates: 'Wheel + Bwd.Ramp' },
@@ -376,14 +376,14 @@ scene.add(boxGroup);
 // ─── TRIAGONAL positions (8 cube corners) ───
 
 const triagonalData = [
-  { pos: [R*S3, R*S3, R*S3],       label: '+++',  gates: 'L.Shield + Fwd.Ramp + L.Sundial' },
-  { pos: [R*S3, R*S3, -R*S3],      label: '++-',  gates: 'R.Shield + Bwd.Ramp + L.Sundial' },
-  { pos: [R*S3, -R*S3, R*S3],      label: '+-+',  gates: 'L.Shield + Bwd.Ramp + R.Sundial' },
-  { pos: [R*S3, -R*S3, -R*S3],     label: '+--',  gates: 'R.Shield + Fwd.Ramp + R.Sundial' },
-  { pos: [-R*S3, R*S3, R*S3],      label: '-++',  gates: 'R.Shield + Fwd.Ramp + R.Sundial' },
-  { pos: [-R*S3, R*S3, -R*S3],     label: '-+-',  gates: 'L.Shield + Bwd.Ramp + R.Sundial' },
-  { pos: [-R*S3, -R*S3, R*S3],     label: '--+',  gates: 'R.Shield + Bwd.Ramp + L.Sundial' },
-  { pos: [-R*S3, -R*S3, -R*S3],    label: '---',  gates: 'L.Shield + Fwd.Ramp + L.Sundial' },
+  { pos: [R*S3, R*S3, R*S3],       label: '+++',  gates: 'L.Shield + Fwd.Ramp + L.Wing' },
+  { pos: [R*S3, R*S3, -R*S3],      label: '++-',  gates: 'R.Shield + Bwd.Ramp + L.Wing' },
+  { pos: [R*S3, -R*S3, R*S3],      label: '+-+',  gates: 'L.Shield + Bwd.Ramp + R.Wing' },
+  { pos: [R*S3, -R*S3, -R*S3],     label: '+--',  gates: 'R.Shield + Fwd.Ramp + R.Wing' },
+  { pos: [-R*S3, R*S3, R*S3],      label: '-++',  gates: 'R.Shield + Fwd.Ramp + R.Wing' },
+  { pos: [-R*S3, R*S3, -R*S3],     label: '-+-',  gates: 'L.Shield + Bwd.Ramp + R.Wing' },
+  { pos: [-R*S3, -R*S3, R*S3],     label: '--+',  gates: 'R.Shield + Bwd.Ramp + L.Wing' },
+  { pos: [-R*S3, -R*S3, -R*S3],    label: '---',  gates: 'L.Shield + Fwd.Ramp + L.Wing' },
 ];
 
 const triagonalGroup = new THREE.Group();

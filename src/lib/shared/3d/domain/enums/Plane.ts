@@ -37,9 +37,9 @@ export enum Plane {
   /** 45° between Wall and Floor, top away from audience */
   BACKWARD_RAMP = "backward-ramp",
   /** 45° between Wheel and Floor, tilted right */
-  RIGHT_SUNDIAL = "right-sundial",
+  RIGHT_WING = "right-wing",
   /** 45° between Wheel and Floor, tilted left */
-  LEFT_SUNDIAL = "left-sundial",
+  LEFT_WING = "left-wing",
 }
 
 /**
@@ -53,8 +53,8 @@ export const PLANE_LABELS: Record<Plane, string> = {
   [Plane.LEFT_SHIELD]: "Left Shield",
   [Plane.FORWARD_RAMP]: "Forward Ramp",
   [Plane.BACKWARD_RAMP]: "Backward Ramp",
-  [Plane.RIGHT_SUNDIAL]: "Right Sundial",
-  [Plane.LEFT_SUNDIAL]: "Left Sundial",
+  [Plane.RIGHT_WING]: "Right Wing",
+  [Plane.LEFT_WING]: "Left Wing",
 };
 
 /**
@@ -68,8 +68,8 @@ export const PLANE_COLORS: Record<Plane, string> = {
   [Plane.LEFT_SHIELD]: "#818cf8",   // Indigo
   [Plane.FORWARD_RAMP]: "#86efac",  // Light green
   [Plane.BACKWARD_RAMP]: "#6ee7b7", // Emerald
-  [Plane.RIGHT_SUNDIAL]: "#5eead4", // Teal
-  [Plane.LEFT_SUNDIAL]: "#2dd4bf",  // Cyan-teal
+  [Plane.RIGHT_WING]: "#5eead4", // Teal
+  [Plane.LEFT_WING]: "#2dd4bf",  // Cyan-teal
 };
 
 /** Primary planes available at L8 */

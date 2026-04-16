@@ -13,8 +13,8 @@ const EXPECTED_NORMALS: Record<string, [number, number, number]> = {
   [Plane.LEFT_SHIELD]:    [-S2, 0, S2],
   [Plane.FORWARD_RAMP]:   [0, S2, -S2],
   [Plane.BACKWARD_RAMP]:  [0, S2, S2],
-  [Plane.RIGHT_SUNDIAL]:  [S2, S2, 0],
-  [Plane.LEFT_SUNDIAL]:   [-S2, S2, 0],
+  [Plane.RIGHT_WING]:     [S2, S2, 0],
+  [Plane.LEFT_WING]:      [-S2, S2, 0],
 };
 
 describe("Plane normals", () => {

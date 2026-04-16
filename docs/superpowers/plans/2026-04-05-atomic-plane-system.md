@@ -60,9 +60,9 @@ export enum Plane {
   /** 45° between Wall and Floor, top away from audience */
   BACKWARD_RAMP = "backward-ramp",
   /** 45° between Wheel and Floor, tilted right */
-  RIGHT_SUNDIAL = "right-sundial",
+  RIGHT_WING = "right-wing",
   /** 45° between Wheel and Floor, tilted left */
-  LEFT_SUNDIAL = "left-sundial",
+  LEFT_WING = "left-wing",
 }
 ```
 
@@ -77,8 +77,8 @@ export const PLANE_LABELS: Record<Plane, string> = {
   [Plane.LEFT_SHIELD]: "Left Shield",
   [Plane.FORWARD_RAMP]: "Forward Ramp",
   [Plane.BACKWARD_RAMP]: "Backward Ramp",
-  [Plane.RIGHT_SUNDIAL]: "Right Sundial",
-  [Plane.LEFT_SUNDIAL]: "Left Sundial",
+  [Plane.RIGHT_WING]: "Right Wing",
+  [Plane.LEFT_WING]: "Left Wing",
 };
 
 export const PLANE_COLORS: Record<Plane, string> = {
@@ -89,8 +89,8 @@ export const PLANE_COLORS: Record<Plane, string> = {
   [Plane.LEFT_SHIELD]: "#818cf8",  // Indigo
   [Plane.FORWARD_RAMP]: "#86efac", // Light green
   [Plane.BACKWARD_RAMP]: "#6ee7b7", // Emerald
-  [Plane.RIGHT_SUNDIAL]: "#5eead4", // Teal
-  [Plane.LEFT_SUNDIAL]: "#2dd4bf",  // Cyan-teal
+  [Plane.RIGHT_WING]: "#5eead4", // Teal
+  [Plane.LEFT_WING]: "#2dd4bf",  // Cyan-teal
 };
 ```
 
@@ -129,8 +129,8 @@ const EXPECTED_NORMALS: Record<string, [number, number, number]> = {
   [Plane.LEFT_SHIELD]:    [-S2, 0, S2],
   [Plane.FORWARD_RAMP]:   [0, S2, -S2],
   [Plane.BACKWARD_RAMP]:  [0, S2, S2],
-  [Plane.RIGHT_SUNDIAL]:  [S2, S2, 0],
-  [Plane.LEFT_SUNDIAL]:   [-S2, S2, 0],
+  [Plane.RIGHT_WING]:  [S2, S2, 0],
+  [Plane.LEFT_WING]:   [-S2, S2, 0],
 };
 
 describe("Plane normals", () => {
@@ -216,8 +216,8 @@ const PLANE_NORMALS: Record<Plane, Vector3> = {
   [Plane.LEFT_SHIELD]:    new Vector3(-S2, 0, S2),
   [Plane.FORWARD_RAMP]:   new Vector3(0, S2, -S2),
   [Plane.BACKWARD_RAMP]:  new Vector3(0, S2, S2),
-  [Plane.RIGHT_SUNDIAL]:  new Vector3(S2, S2, 0),
-  [Plane.LEFT_SUNDIAL]:   new Vector3(-S2, S2, 0),
+  [Plane.RIGHT_WING]:  new Vector3(S2, S2, 0),
+  [Plane.LEFT_WING]:   new Vector3(-S2, S2, 0),
 };
 
 export function getPlaneNormal(plane: Plane): Vector3 {
