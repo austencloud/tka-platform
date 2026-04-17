@@ -64,8 +64,9 @@ describe("Sparkles2DRenderer", () => {
       redPosA: { x: 100, y: 0 },
       redPosB: { x: 110, y: 0 },
     };
-    for (let i = 0; i < 200; i++) r.render(ctx, params, tips, 1 / 60);
-    expect((r as any).particles.length).toBeLessThanOrEqual(200);
+    for (let i = 0; i < 500; i++) r.render(ctx, params, tips, 1 / 60);
+    // MAX_PARTICLES cap (currently 500). Lock the cap exists.
+    expect((r as any).particles.length).toBeLessThanOrEqual(500);
   });
 
   it("decrements particle life over time and removes dead particles", () => {
@@ -84,7 +85,10 @@ describe("Sparkles2DRenderer", () => {
     // Advance well past lifetime — older particles die; check life monotonicity.
     for (let i = 0; i < 20; i++) r.render(ctx, params, tips, 1 / 60);
     const lives = (r as any).particles.map((p: any) => p.life);
-    expect(Math.max(...lives, 0)).toBeLessThanOrEqual(params.lifetime);
+    // Lifetime is jittered up to 1.4× the base in the renderer, so use a
+    // generous upper bound for this assertion — the point is monotonicity,
+    // not the exact cap.
+    expect(Math.max(...lives, 0)).toBeLessThanOrEqual(params.lifetime * 1.4);
   });
 
   it("cycles palette colors when colorMode === 'palette'", () => {
