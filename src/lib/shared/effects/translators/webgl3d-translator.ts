@@ -5,7 +5,7 @@ import type {
   CharcoalIntent,
   ZapIntent,
   SparklesIntent,
-  MotionIntent,
+  EchoIntent,
   BloomIntent,
 } from "../domain/EffectsConfig";
 import type {
@@ -15,7 +15,7 @@ import type {
   Charcoal3DParams,
   Zap3DParams,
   Sparkles3DParams,
-  Motion3DParams,
+  Echo3DParams,
   Bloom3DParams,
 } from "./webgl3d-types";
 
@@ -99,13 +99,12 @@ export function resolveSparkles3D(
   return { ...intent, ...defaults, ...override };
 }
 
-export function resolveMotion3D(
-  intent: MotionIntent,
-  override: Partial<Motion3DParams> = {},
-): Motion3DParams {
-  const defaults: Omit<Motion3DParams, keyof MotionIntent> = {
-    blurSamples: Math.max(4, Math.round(4 + intent.blur * 12)),
-    streakLength: 0.3 + intent.speedLines * 1.2,
+export function resolveEcho3D(
+  intent: EchoIntent,
+  override: Partial<Echo3DParams> = {},
+): Echo3DParams {
+  const defaults: Omit<Echo3DParams, keyof EchoIntent> = {
+    poolSize: Math.max(2, Math.ceil(intent.decay / intent.interval) + 2),
   };
   return { ...intent, ...defaults, ...override };
 }

@@ -5,7 +5,7 @@ import type {
   CharcoalIntent,
   ZapIntent,
   SparklesIntent,
-  MotionIntent,
+  EchoIntent,
   BloomIntent,
 } from "../domain/EffectsConfig";
 import type {
@@ -15,7 +15,7 @@ import type {
   Charcoal2DParams,
   Zap2DParams,
   Sparkles2DParams,
-  Motion2DParams,
+  Echo2DParams,
   Bloom2DParams,
 } from "./canvas2d-types";
 
@@ -84,13 +84,12 @@ export function resolveSparkles2D(
   return { ...intent, ...defaults, ...override };
 }
 
-export function resolveMotion2D(
-  intent: MotionIntent,
-  override: Partial<Motion2DParams> = {},
-): Motion2DParams {
-  const defaults: Omit<Motion2DParams, keyof MotionIntent> = {
-    fadeAlpha: 0.85 + intent.blur * 0.14,
-    streakLength: 12 + intent.speedLines * 30,
+export function resolveEcho2D(
+  intent: EchoIntent,
+  override: Partial<Echo2DParams> = {},
+): Echo2DParams {
+  const defaults: Omit<Echo2DParams, keyof EchoIntent> = {
+    blendMode: "lighter",
   };
   return { ...intent, ...defaults, ...override };
 }
