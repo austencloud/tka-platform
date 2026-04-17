@@ -57,7 +57,128 @@ export class Echo2DRenderer {
     params: Echo2DParams,
     tips: EchoTipInput,
   ): void {
-    // Implementation lands in Task 4.
+    // 1. Beat-onset detection. floor() places every sub-step within one
+    //    beat cell; the transition from one cell to the next is the onset.
+    const beatIndex = Math.floor(tips.currentStep / params.interval);
+    if (beatIndex > this.lastBeatIndex) {
+      if (tips.bluePosA && tips.bluePosB) {
+        this.phantomsBlue.push({
+          posA: { x: tips.bluePosA.x, y: tips.bluePosA.y },
+          posB: { x: tips.bluePosB.x, y: tips.bluePosB.y },
+          capturedStep: tips.currentStep,
+        });
+      }
+      if (tips.redPosA && tips.redPosB) {
+        this.phantomsRed.push({
+          posA: { x: tips.redPosA.x, y: tips.redPosA.y },
+          posB: { x: tips.redPosB.x, y: tips.redPosB.y },
+          capturedStep: tips.currentStep,
+        });
+      }
+      this.lastBeatIndex = beatIndex;
+    }
+
+    // 2. Cull aged-out phantoms. Age is measured in intervals, not seconds,
+    //    so slider changes to `decay` feel instant.
+    const cullAge = params.decay;
+    const ageInIntervals = (p: Phantom) =>
+      (tips.currentStep - p.capturedStep) / params.interval;
+    this.phantomsBlue = this.phantomsBlue.filter((p) => ageInIntervals(p) < cullAge);
+    this.phantomsRed = this.phantomsRed.filter((p) => ageInIntervals(p) < cullAge);
+
+    if (!this.phantomsBlue.length && !this.phantomsRed.length) return;
+
+    // 3. Draw each phantom. Additive blend means overlapping ghosts brighten.
+    const prevComposite = ctx.globalCompositeOperation;
+    const prevAlpha = ctx.globalAlpha;
+    const prevLineCap = ctx.lineCap;
+    const prevLineWidth = ctx.lineWidth;
+    const prevStroke = ctx.strokeStyle;
+    const prevFill = ctx.fillStyle;
+
+    try {
+      ctx.globalCompositeOperation = params.blendMode ?? "lighter";
+      ctx.lineCap = "round";
+      ctx.lineWidth = params.thickness;
+
+      for (const phantom of this.phantomsBlue) {
+        const age = ageInIntervals(phantom);
+        const alpha = params.intensity * Math.max(0, 1 - age / cullAge);
+        const color = this.pickColor(
+          params,
+          Math.floor(phantom.capturedStep / params.interval),
+          age,
+          tips.blueColor,
+        );
+        this.drawPhantom(ctx, phantom, params, alpha, color);
+      }
+      for (const phantom of this.phantomsRed) {
+        const age = ageInIntervals(phantom);
+        const alpha = params.intensity * Math.max(0, 1 - age / cullAge);
+        const color = this.pickColor(
+          params,
+          Math.floor(phantom.capturedStep / params.interval),
+          age,
+          tips.redColor,
+        );
+        this.drawPhantom(ctx, phantom, params, alpha, color);
+      }
+    } finally {
+      ctx.globalCompositeOperation = prevComposite;
+      ctx.globalAlpha = prevAlpha;
+      ctx.lineCap = prevLineCap;
+      ctx.lineWidth = prevLineWidth;
+      ctx.strokeStyle = prevStroke;
+      ctx.fillStyle = prevFill;
+    }
+  }
+
+  private pickColor(
+    params: Echo2DParams,
+    beatIdx: number,
+    age: number,
+    propColor: string,
+  ): string {
+    switch (params.colorMode) {
+      case "rainbow":
+        // 47° per beat — coprime with 360 so the cycle doesn't repeat for 360 beats.
+        return `hsl(${(beatIdx * 47) % 360}, 80%, 60%)`;
+      case "gradient":
+        // Fade from red (hue 0) → violet (hue 240) across decay.
+        return `hsl(${Math.min(240, (age / params.decay) * 240)}, 80%, 60%)`;
+      case "prop-matched":
+        return propColor;
+      case "solid":
+      default:
+        return params.color;
+    }
+  }
+
+  private drawPhantom(
+    ctx: CanvasRenderingContext2D,
+    phantom: Phantom,
+    params: Echo2DParams,
+    alpha: number,
+    color: string,
+  ): void {
+    if (alpha <= 0) return;
+    ctx.globalAlpha = alpha;
+    if (params.shape === "staff" || params.shape === "both") {
+      ctx.strokeStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(phantom.posA.x, phantom.posA.y);
+      ctx.lineTo(phantom.posB.x, phantom.posB.y);
+      ctx.stroke();
+    }
+    if (params.shape === "tips" || params.shape === "both") {
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(phantom.posA.x, phantom.posA.y, params.thickness, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(phantom.posB.x, phantom.posB.y, params.thickness, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
 
   dispose(): void {
