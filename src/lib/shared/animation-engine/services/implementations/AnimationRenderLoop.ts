@@ -19,10 +19,10 @@ import type { ILedTipTracker, LedTipTrackerConfig } from "../contracts/ILedTipTr
 import type { ITrailOverlayCanvas } from "../contracts/ITrailOverlayCanvas";
 import type { IZapOverlayRenderer } from "../contracts/IZapOverlayRenderer";
 import type { ISparklesOverlayRenderer } from "../contracts/ISparklesOverlayRenderer";
-import type { IMotionOverlayRenderer } from "../contracts/IMotionOverlayRenderer";
+import type { IEchoOverlayRenderer } from "../contracts/IEchoOverlayRenderer";
 import type { ZapTipInput } from "$lib/shared/effects/renderers/Zap2DRenderer";
 import type { SparklesTipInput } from "$lib/shared/effects/renderers/Sparkles2DRenderer";
-import type { MotionTipInput } from "$lib/shared/effects/renderers/Motion2DRenderer";
+import type { EchoTipInput } from "$lib/shared/effects/renderers/Echo2DRenderer";
 import type {
   IAnimationRenderLoop,
   RenderLoopConfig,
@@ -96,12 +96,11 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
   private trailOverlay: ITrailOverlayCanvas | null = null;
   private zapRenderer: IZapOverlayRenderer | null = null;
   private sparklesRenderer: ISparklesOverlayRenderer | null = null;
-  private motionRenderer: IMotionOverlayRenderer | null = null;
+  private echoRenderer: IEchoOverlayRenderer | null = null;
   private onEffectError: ((effectName: string, error: Error) => void) | null = null;
   private canvasSize: number = 950;
   private lastTrailFrameTime: number = 0;
   private lastSparklesFrameTime: number = 0;
-  private lastMotionFrameTime: number = 0;
   private rafId: number | null = null;
   private needsRender: boolean = false;
   private getFrameParamsCallback: (() => RenderFrameParams) | null = null;
@@ -112,12 +111,12 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
   private consecutiveLedErrors: number = 0;
   private consecutiveZapErrors: number = 0;
   private consecutiveSparklesErrors: number = 0;
-  private consecutiveMotionErrors: number = 0;
+  private consecutiveEchoErrors: number = 0;
   private fireDisabledByError: boolean = false;
   private ledDisabledByError: boolean = false;
   private zapDisabledByError: boolean = false;
   private sparklesDisabledByError: boolean = false;
-  private motionDisabledByError: boolean = false;
+  private echoDisabledByError: boolean = false;
   private static readonly EFFECT_ERROR_THRESHOLD = 3;
 
   // Loop detection for cache-based trail gathering and fire frame cache
@@ -191,7 +190,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     this.trailOverlay = config.trailOverlay ?? null;
     this.zapRenderer = config.zapRenderer ?? null;
     this.sparklesRenderer = config.sparklesRenderer ?? null;
-    this.motionRenderer = config.motionRenderer ?? null;
+    this.echoRenderer = config.echoRenderer ?? null;
     this.onEffectError = config.onEffectError ?? null;
 
     // Subscribe to the module-singleton longtask observer so the FPS summary
@@ -229,8 +228,8 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       this.zapRenderer = config.zapRenderer ?? null;
     if (config.sparklesRenderer !== undefined)
       this.sparklesRenderer = config.sparklesRenderer ?? null;
-    if (config.motionRenderer !== undefined)
-      this.motionRenderer = config.motionRenderer ?? null;
+    if (config.echoRenderer !== undefined)
+      this.echoRenderer = config.echoRenderer ?? null;
     if (config.onEffectError !== undefined)
       this.onEffectError = config.onEffectError ?? null;
   }
@@ -343,8 +342,8 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     this.zapRenderer = null;
     this.sparklesRenderer?.dispose();
     this.sparklesRenderer = null;
-    this.motionRenderer?.dispose();
-    this.motionRenderer = null;
+    this.echoRenderer?.dispose();
+    this.echoRenderer = null;
     // Clear reusable arrays to free memory
     this.reusableBlueTrailPoints.length = 0;
     this.reusableRedTrailPoints.length = 0;
@@ -412,9 +411,9 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     const sparklesActive =
       params.sparklesConfig != null &&
       this.sparklesRenderer?.isInitialized() === true;
-    const motionActive =
-      params.motionConfig != null &&
-      this.motionRenderer?.isInitialized() === true;
+    const echoActive =
+      params.echoConfig != null &&
+      this.echoRenderer?.isInitialized() === true;
 
     // Active work: playing, effects running, background animating, or explicit render request
     const hasActiveWork =
@@ -426,7 +425,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       ledActive ||
       zapActive ||
       sparklesActive ||
-      motionActive;
+      echoActive;
 
     // Trails alone (without active work) should not keep the loop alive forever.
     // Allow a grace period for initialization/texture loading, then auto-stop.
@@ -570,9 +569,9 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       if (this.sparklesRenderer?.isInitialized()) {
         this.sparklesRenderer.clear();
       }
-      // Clear motion overlay (Canvas2D)
-      if (this.motionRenderer?.isInitialized()) {
-        this.motionRenderer.clear();
+      // Clear echo overlay (Canvas2D)
+      if (this.echoRenderer?.isInitialized()) {
+        this.echoRenderer.clear();
       }
     } else if (!params.suppress2DOverlays && this.wasSuppressed) {
       this.wasSuppressed = false;
@@ -663,11 +662,11 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       this.fireTipTracker
       && this.sparklesRenderer?.isInitialized()
       && params.sparklesConfig != null;
-    const hasMotionOverlayForTipUpdate =
+    const hasEchoOverlayForTipUpdate =
       this.fireTipTracker
-      && this.motionRenderer?.isInitialized()
-      && params.motionConfig != null;
-    const hasAnyTipOverlay = hasFireOrCharcoalOverlay || hasZapOverlay || hasSparklesOverlayForTipUpdate || hasMotionOverlayForTipUpdate;
+      && this.echoRenderer?.isInitialized()
+      && params.echoConfig != null;
+    const hasAnyTipOverlay = hasFireOrCharcoalOverlay || hasZapOverlay || hasSparklesOverlayForTipUpdate || hasEchoOverlayForTipUpdate;
 
     let sharedTipResult: import("../contracts/IFireTipTracker").FireTipUpdateResult | null = null;
     if (hasAnyTipOverlay && !params.suppress2DOverlays) {
@@ -885,72 +884,67 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       activeSparklesRenderer.clear();
     }
 
-    // Motion overlay: velocity-gated ghost stamps + speed lines. Reads the
-    // same shared tip positions as fire/charcoal/zap/sparkles, plus per-prop
-    // trail colors for prop-matched colorMode.
-    const activeMotionRenderer = this.motionRenderer?.isInitialized()
-      ? this.motionRenderer
+    // Echo overlay: beat-onset phantoms of the staff. Reads the same shared
+    // tip positions as fire/charcoal/zap/sparkles, plus per-prop trail colors
+    // for prop-matched colorMode. Unlike the others, echo does not need dt —
+    // phantom aging is driven by `currentStep`.
+    const activeEchoRenderer = this.echoRenderer?.isInitialized()
+      ? this.echoRenderer
       : null;
-    const hasMotionOverlay =
-      this.fireTipTracker && activeMotionRenderer && params.motionConfig != null;
+    const hasEchoOverlay =
+      this.fireTipTracker && activeEchoRenderer && params.echoConfig != null;
 
     if (
-      hasMotionOverlay &&
-      !this.motionDisabledByError &&
+      hasEchoOverlay &&
+      !this.echoDisabledByError &&
       !params.suppress2DOverlays &&
       sharedTipResult
     ) {
       try {
         const tipMap = params.tipEffectMap ?? {};
-        const motionInput: MotionTipInput = {
+        const echoInput: EchoTipInput = {
           bluePosA: null,
           bluePosB: null,
           redPosA: null,
           redPosB: null,
+          currentStep: params.currentStep,
           blueColor: params.trailSettings.blueColor,
           redColor: params.trailSettings.redColor,
         };
         for (const t of sharedTipResult.tips) {
-          if (resolveEffect(t.propIndex, t.tipIndex, tipMap, {}) !== "motion") continue;
+          if (resolveEffect(t.propIndex, t.tipIndex, tipMap, {}) !== "echo") continue;
           const pos = { x: t.x, y: t.y };
           if (t.propIndex === 0) {
-            if (t.tipIndex === 0) motionInput.bluePosA = pos;
-            else if (t.tipIndex === 1) motionInput.bluePosB = pos;
+            if (t.tipIndex === 0) echoInput.bluePosA = pos;
+            else if (t.tipIndex === 1) echoInput.bluePosB = pos;
           } else if (t.propIndex === 1) {
-            if (t.tipIndex === 0) motionInput.redPosA = pos;
-            else if (t.tipIndex === 1) motionInput.redPosB = pos;
+            if (t.tipIndex === 0) echoInput.redPosA = pos;
+            else if (t.tipIndex === 1) echoInput.redPosB = pos;
           }
         }
-        // Motion-specific frame timestamp keeps dt correct when other overlays
-        // are inactive. Clamp to avoid catastrophic dt on first frame / pause.
-        const rawDt = this.lastMotionFrameTime > 0
-          ? (currentTime - this.lastMotionFrameTime) / 1000
-          : 1 / 60;
-        const dt = Math.min(0.1, rawDt);
-        this.lastMotionFrameTime = currentTime;
-        activeMotionRenderer!.renderFrame(params.motionConfig!, motionInput, dt);
-        this.consecutiveMotionErrors = 0;
+        activeEchoRenderer!.renderFrame(params.echoConfig!, echoInput);
+        this.consecutiveEchoErrors = 0;
       } catch (error) {
-        this.consecutiveMotionErrors++;
-        activeMotionRenderer?.clear();
-        if (this.consecutiveMotionErrors >= AnimationRenderLoop.EFFECT_ERROR_THRESHOLD) {
-          this.motionDisabledByError = true;
+        this.consecutiveEchoErrors++;
+        activeEchoRenderer?.clear();
+        if (this.consecutiveEchoErrors >= AnimationRenderLoop.EFFECT_ERROR_THRESHOLD) {
+          this.echoDisabledByError = true;
           const err = error instanceof Error ? error : new Error(String(error));
-          console.error("[AnimationRenderLoop] Motion effect disabled after repeated failures:", err);
+          console.error("[AnimationRenderLoop] Echo effect disabled after repeated failures:", err);
           if (this.onEffectError) {
-            this.onEffectError("motion", err);
+            this.onEffectError("echo", err);
           } else {
-            effectErrorSignal.trigger("motion", err);
+            effectErrorSignal.trigger("echo", err);
           }
         } else {
           console.warn(
-            `[AnimationRenderLoop] Motion render error (attempt ${this.consecutiveMotionErrors}/${AnimationRenderLoop.EFFECT_ERROR_THRESHOLD}), resetting:`,
+            `[AnimationRenderLoop] Echo render error (attempt ${this.consecutiveEchoErrors}/${AnimationRenderLoop.EFFECT_ERROR_THRESHOLD}), resetting:`,
             error
           );
         }
       }
-    } else if (activeMotionRenderer && !hasMotionOverlay) {
-      activeMotionRenderer.clear();
+    } else if (activeEchoRenderer && !hasEchoOverlay) {
+      activeEchoRenderer.clear();
     }
 
     // LED overlay: render after fire so it composites on top of both Canvas2D and fire

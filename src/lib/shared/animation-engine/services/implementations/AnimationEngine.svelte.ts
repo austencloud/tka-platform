@@ -96,11 +96,11 @@ import { ZapOverlayRenderer } from "./ZapOverlayRenderer";
 import type { IZapOverlayRenderer } from "../contracts/IZapOverlayRenderer";
 import { SparklesOverlayRenderer } from "./SparklesOverlayRenderer";
 import type { ISparklesOverlayRenderer } from "../contracts/ISparklesOverlayRenderer";
-import { MotionOverlayRenderer } from "./MotionOverlayRenderer";
-import type { IMotionOverlayRenderer } from "../contracts/IMotionOverlayRenderer";
-import type { Motion2DParams, Sparkles2DParams, Zap2DParams } from "$lib/shared/effects/translators/canvas2d-types";
-import { resolveMotion2D, resolveSparkles2D, resolveZap2D } from "$lib/shared/effects/translators/canvas2d-translator";
-import type { MotionIntent, SparklesIntent } from "$lib/shared/effects/domain/EffectsConfig";
+import { EchoOverlayRenderer } from "./EchoOverlayRenderer";
+import type { IEchoOverlayRenderer } from "../contracts/IEchoOverlayRenderer";
+import type { Echo2DParams, Sparkles2DParams, Zap2DParams } from "$lib/shared/effects/translators/canvas2d-types";
+import { resolveEcho2D, resolveSparkles2D, resolveZap2D } from "$lib/shared/effects/translators/canvas2d-translator";
+import type { EchoIntent, SparklesIntent } from "$lib/shared/effects/domain/EffectsConfig";
 import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
 import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
 import { sequenceLoopabilityChecker } from "$lib/features/compose/services/implementations/SequenceLoopabilityChecker";
@@ -277,7 +277,7 @@ export class AnimationEngine {
   private trailOverlay: ITrailOverlayCanvas | null = null;
   private zapRenderer: IZapOverlayRenderer | null = null;
   private sparklesRenderer: ISparklesOverlayRenderer | null = null;
-  private motionRenderer: IMotionOverlayRenderer | null = null;
+  private echoRenderer: IEchoOverlayRenderer | null = null;
   // Cached zap params resolved from the current ZapIntent.
   // Seeded from DEFAULT_EFFECTS_CONFIG.zap and overwritten in getFrameParams()
   // whenever a wired EffectsConfigState reports a changed zap intent
@@ -288,10 +288,10 @@ export class AnimationEngine {
   // (EffectsConfigState assigns a fresh object on every updateSparkles).
   private sparklesConfig: Sparkles2DParams = resolveSparkles2D(DEFAULT_EFFECTS_CONFIG.sparkles);
   private prevSparklesIntentRef: SparklesIntent | null = null;
-  // Cached motion params resolved from the live MotionIntent.
+  // Cached echo params resolved from the live EchoIntent.
   // Same reference-identity diff pattern as sparkles.
-  private motionConfig: Motion2DParams = resolveMotion2D(DEFAULT_EFFECTS_CONFIG.motion);
-  private prevMotionIntentRef: MotionIntent | null = null;
+  private echoConfig: Echo2DParams = resolveEcho2D(DEFAULT_EFFECTS_CONFIG.echo);
+  private prevEchoIntentRef: EchoIntent | null = null;
   // JSON snapshot of the last ZapIntent we resolved into zapConfig.
   // Re-resolves only when the intent changes to avoid per-frame allocation churn.
   private prevZapIntentJson: string = JSON.stringify(DEFAULT_EFFECTS_CONFIG.zap);
@@ -357,7 +357,7 @@ export class AnimationEngine {
   private prevHasCharcoalTips: boolean = false;
   private prevHasZapTips: boolean = false;
   private prevHasSparklesTips: boolean = false;
-  private prevHasMotionTips: boolean = false;
+  private prevHasEchoTips: boolean = false;
   private prevFireIntensity: number = 0.7;
   private prevFireTurbulence: number = 0.5;
   private prevFireColorCurve: import("../../domain/types/FireTypes").FireColorCurve | null = null;
@@ -409,7 +409,7 @@ export class AnimationEngine {
     ledConfig: null,
     zapConfig: null,
     sparklesConfig: null,
-    motionConfig: null,
+    echoConfig: null,
     isSeamlesslyLoopable: false,
     sequenceContentHash: undefined,
     tipEffectMap: {},
@@ -489,7 +489,7 @@ export class AnimationEngine {
     this.prevHasCharcoalTips = vm.hasEffect("charcoal");
     this.prevHasZapTips = vm.hasEffect("zap");
     this.prevHasSparklesTips = vm.hasEffect("sparkles");
-    this.prevHasMotionTips = vm.hasEffect("motion");
+    this.prevHasEchoTips = vm.hasEffect("echo");
     this.prevFireIntensity = vm.getFireIntensity();
     this.prevCharcoalParamsJson = JSON.stringify(vm.getCharcoalParams());
     this.prevEffortPreset = vm.getEffortPreset();
@@ -662,10 +662,10 @@ export class AnimationEngine {
           this.syncSparklesOverlay();
         }
 
-        const hasMotionTips = vm.hasEffect("motion");
-        if (hasMotionTips !== this.prevHasMotionTips) {
-          this.prevHasMotionTips = hasMotionTips;
-          this.syncMotionOverlay();
+        const hasEchoTips = vm.hasEffect("echo");
+        if (hasEchoTips !== this.prevHasEchoTips) {
+          this.prevHasEchoTips = hasEchoTips;
+          this.syncEchoOverlay();
         }
 
         // Sync fire slider values + color curve → physics
@@ -886,8 +886,8 @@ export class AnimationEngine {
     if (this.prevHasSparklesTips && !this.sparklesRenderer?.isInitialized()) {
       this.syncSparklesOverlay();
     }
-    if (this.prevHasMotionTips && !this.motionRenderer?.isInitialized()) {
-      this.syncMotionOverlay();
+    if (this.prevHasEchoTips && !this.echoRenderer?.isInitialized()) {
+      this.syncEchoOverlay();
     }
   }
 
@@ -1441,8 +1441,8 @@ export class AnimationEngine {
     this.zapRenderer = null;
     this.sparklesRenderer?.dispose();
     this.sparklesRenderer = null;
-    this.motionRenderer?.dispose();
-    this.motionRenderer = null;
+    this.echoRenderer?.dispose();
+    this.echoRenderer = null;
 
     // Clear trails
     this.trailCapturer?.clearTrails();
@@ -1860,36 +1860,36 @@ export class AnimationEngine {
   }
 
   /**
-   * Initialize or destroy the motion overlay based on prevHasMotionTips.
-   * Mirrors syncSparklesOverlay — the motion overlay is a Canvas2D layer
-   * that draws velocity-gated ghost stamps + speed lines around prop tips.
+   * Initialize or destroy the echo overlay based on prevHasEchoTips.
+   * Mirrors syncSparklesOverlay — the echo overlay is a Canvas2D layer
+   * that draws beat-onset phantoms of the staff at each tip pair.
    */
-  private syncMotionOverlay(): void {
-    const enabled = this.prevHasMotionTips;
+  private syncEchoOverlay(): void {
+    const enabled = this.prevHasEchoTips;
 
     if (enabled) {
-      if (!this.motionRenderer?.isInitialized()) {
+      if (!this.echoRenderer?.isInitialized()) {
         if (!this.containerElement) return;
-        this.motionRenderer = new MotionOverlayRenderer();
-        const success = this.motionRenderer.initialize(
+        this.echoRenderer = new EchoOverlayRenderer();
+        const success = this.echoRenderer.initialize(
           this.containerElement,
           this.canvasSize,
           this.canvasSize
         );
         if (success) {
           this.renderLoopService?.updateConfig({
-            motionRenderer: this.motionRenderer,
+            echoRenderer: this.echoRenderer,
           });
         } else {
-          this.motionRenderer = null;
+          this.echoRenderer = null;
         }
       }
     } else {
-      if (this.motionRenderer?.isInitialized()) {
-        this.motionRenderer.dispose();
-        this.motionRenderer = null;
+      if (this.echoRenderer?.isInitialized()) {
+        this.echoRenderer.dispose();
+        this.echoRenderer = null;
       }
-      this.renderLoopService?.updateConfig({ motionRenderer: null });
+      this.renderLoopService?.updateConfig({ echoRenderer: null });
     }
 
     if (this.renderLoopService && this.lastPropsRef) {
@@ -2153,7 +2153,7 @@ export class AnimationEngine {
         this.trailOverlay?.resize(newSize, newSize);
         this.zapRenderer?.resize(newSize, newSize);
         this.sparklesRenderer?.resize(newSize, newSize);
-        this.motionRenderer?.resize(newSize, newSize);
+        this.echoRenderer?.resize(newSize, newSize);
         // Reset fire/LED tip trackers so positions recalculate at the new canvas size.
         // Without this, after HMR the tracker uses stale positions from the old size.
         this.fireTipTracker?.reset();
@@ -2438,17 +2438,17 @@ export class AnimationEngine {
     }
     fp.sparklesConfig = this.prevHasSparklesTips ? this.sparklesConfig : null;
 
-    // Motion overlay config — re-resolve when MotionIntent changes via
+    // Echo overlay config — re-resolve when EchoIntent changes via
     // reference identity (mirrors sparkles; cheap and EffectsConfigState
-    // assigns a fresh object on every updateMotion).
+    // assigns a fresh object on every updateEcho).
     if (this.effectsConfigState) {
-      const intent = this.effectsConfigState.motion;
-      if (intent !== this.prevMotionIntentRef) {
-        this.prevMotionIntentRef = intent;
-        this.motionConfig = resolveMotion2D(intent);
+      const intent = this.effectsConfigState.echo;
+      if (intent !== this.prevEchoIntentRef) {
+        this.prevEchoIntentRef = intent;
+        this.echoConfig = resolveEcho2D(intent);
       }
     }
-    fp.motionConfig = this.prevHasMotionTips ? this.motionConfig : null;
+    fp.echoConfig = this.prevHasEchoTips ? this.echoConfig : null;
 
     // Per-tip effect assignments for filtering tips by effect type.
     // Cell-level map (from compose grid) takes priority over the global map.
