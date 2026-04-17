@@ -99,8 +99,7 @@ export function resolveBloom2D(
   override: Partial<Bloom2DParams> = {},
 ): Bloom2DParams {
   const defaults: Omit<Bloom2DParams, keyof BloomIntent> = {
-    blurRadiusPx: 8 + intent.radius * 32,
-    passes: Math.max(1, Math.round(1 + intent.radius * 3)),
+    blendMode: "lighter",
   };
   return { ...intent, ...defaults, ...override };
 }
