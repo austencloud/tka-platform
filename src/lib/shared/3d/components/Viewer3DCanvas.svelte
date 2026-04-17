@@ -27,6 +27,7 @@
   import { createViewerCameraPlayerState } from "../state/viewer-camera-player-state.svelte";
   import { getInputCapabilities } from "$lib/shared/input/InputCapabilities.svelte";
   import RightRail from "$lib/shared/sequence-viewer/components/RightRail.svelte";
+  import ViewerTransportBar from "$lib/shared/sequence-viewer/components/ViewerTransportBar.svelte";
 
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { CameraStateSnapshot } from "../domain/types/CameraStateSnapshot";
@@ -120,6 +121,7 @@
         <Viewer3DGearPopover />
       </div>
       <RightRail />
+      <ViewerTransportBar />
       {#if avatarState && avatarState.totalSteps > 1 && avatarState.beatEditMode}
         <div class="beat-strip-container">
           <BeatPlaneStrip
