@@ -11,7 +11,13 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
   if (!raw || typeof raw !== "object") {
     return structuredClone(DEFAULT_EFFECTS_CONFIG);
   }
-  const input = raw as Partial<EffectsConfig> & { version?: number; zap?: any; sparkles?: any; motion?: any };
+  const input = raw as Partial<EffectsConfig> & {
+    version?: number;
+    zap?: any;
+    sparkles?: any;
+    motion?: any;
+    echo?: any;
+  };
   const version = input.version ?? 1;
 
   // v2 → v3: split zap.color into zap.leftColor + zap.rightColor.
@@ -38,13 +44,45 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
 
   // v4 → v5: extend motion with color/colorMode/length/count. Existing
   // persisted v4 configs only have blur/speedLines/threshold; inject
-  // defaults so the upgraded shape matches the new MotionIntent.
+  // defaults so the upgraded shape matches the old MotionIntent.
+  // NOTE: v6 discards this motion block entirely — echo replaces it.
   if (version < 5 && input.motion) {
     const m = input.motion as any;
     m.color ??= "#ffffff";
     m.colorMode ??= "solid";
     m.length ??= 0.5;
     m.count ??= 6;
+  }
+
+  // v5 → v6: Motion effect replaced by Echo (beat-onset phantoms). The old
+  // motion fields (blur/speedLines/threshold/color/colorMode/length/count)
+  // have no clean mapping to echo's stroboscopic phantom model, so we
+  // discard them and reseed echo defaults. Tip-effect assignments that
+  // named "motion" are rewritten to "echo" so existing sequences keep
+  // firing a visual effect on the same tips.
+  if (version < 6) {
+    if (input.motion) {
+      input.echo = {
+        intensity: 0.7,
+        decay: 4,
+        interval: 1,
+        shape: "staff",
+        colorMode: "solid",
+        color: "#ffffff",
+        thickness: 3,
+      };
+      delete input.motion;
+    }
+    if (input.tipEffectMap) {
+      for (const key of Object.keys(input.tipEffectMap)) {
+        const entry: any = (input.tipEffectMap as any)[key];
+        if (entry?.effect === "motion") entry.effect = "echo";
+      }
+    }
+    if (input.activePresets && "motion" in (input.activePresets as any)) {
+      (input.activePresets as any).echo = (input.activePresets as any).motion;
+      delete (input.activePresets as any).motion;
+    }
   }
 
   let out: EffectsConfig = {
@@ -56,7 +94,7 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
     charcoal: { ...DEFAULT_EFFECTS_CONFIG.charcoal, ...(input.charcoal ?? {}) },
     zap: { ...DEFAULT_EFFECTS_CONFIG.zap, ...(input.zap ?? {}) },
     sparkles: { ...DEFAULT_EFFECTS_CONFIG.sparkles, ...(input.sparkles ?? {}) },
-    motion: { ...DEFAULT_EFFECTS_CONFIG.motion, ...(input.motion ?? {}) },
+    echo: { ...DEFAULT_EFFECTS_CONFIG.echo, ...(input.echo ?? {}) },
     bloom: { ...DEFAULT_EFFECTS_CONFIG.bloom, ...(input.bloom ?? {}) },
     activePresets: {
       ...DEFAULT_EFFECTS_CONFIG.activePresets,

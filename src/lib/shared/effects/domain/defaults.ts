@@ -61,14 +61,14 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
     mode: "stream",
   },
 
-  motion: {
-    blur: 0.4,
-    speedLines: 0.5,
-    threshold: 0.2,
-    color: "#ffffff",
+  echo: {
+    intensity: 0.7,
+    decay: 4,
+    interval: 1,
+    shape: "staff",
     colorMode: "solid",
-    length: 0.5,
-    count: 6,
+    color: "#ffffff",
+    thickness: 3,
   },
 
   bloom: {
@@ -84,7 +84,7 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
     charcoal: null,
     zap: null,
     sparkles: null,
-    motion: null,
+    echo: null,
     bloom: null,
   },
 };

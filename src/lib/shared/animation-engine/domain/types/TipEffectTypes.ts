@@ -21,7 +21,7 @@ export type EffectType =
   | "trails"
   | "zap"
   | "sparkles"
-  | "motion"
+  | "echo"
   | "bloom";
 
 export interface TipEffectAssignment {

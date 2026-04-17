@@ -16,7 +16,7 @@ import type {
   PropFlameColor,
 } from "$lib/shared/animation-engine/domain/types/FireTypes";
 
-export const EFFECTS_CONFIG_VERSION = 5;
+export const EFFECTS_CONFIG_VERSION = 6;
 
 export type EffectType =
   | "none"
@@ -26,7 +26,7 @@ export type EffectType =
   | "charcoal"
   | "zap"
   | "sparkles"
-  | "motion"
+  | "echo"
   | "bloom";
 
 export interface TrailsIntent {
@@ -119,21 +119,21 @@ export interface SparklesIntent {
   mode: "burst" | "stream" | "trail";
 }
 
-export interface MotionIntent {
-  /** 0-1 — trailing blur strength (ghost-stamps of the tip). */
-  blur: number;
-  /** 0-1 — anime speed-line streak strength. */
-  speedLines: number;
-  /** 0-1 — min normalized hand speed before effect kicks in. */
-  threshold: number;
-  /** Hex string — primary stroke/ghost tint when colorMode === "solid". */
+export interface EchoIntent {
+  /** 0-1 — phantom peak alpha. */
+  intensity: number;
+  /** 1-8 — how many beats a phantom persists before fully fading. */
+  decay: number;
+  /** Capture interval in beats. 1 = every beat, 0.5 = every half-beat, 2 = every other beat. */
+  interval: number;
+  /** "staff" = line connecting blue/red tip pair; "tips" = dots at each tip; "both" = line + dots. */
+  shape: "staff" | "tips" | "both";
+  /** "solid" = use color, "rainbow" = hue shifts per-beat, "prop-matched" = blue tips blue / red tips red, "gradient" = hue shifts per-phantom-age. */
+  colorMode: "solid" | "rainbow" | "prop-matched" | "gradient";
+  /** Hex — when colorMode === "solid". */
   color: string;
-  /** "solid" = use color, "rainbow" = HSL cycle, "velocity" = hue maps to speed (cool→hot), "prop-matched" = blue tip blue, red tip red. */
-  colorMode: "solid" | "rainbow" | "velocity" | "prop-matched";
-  /** 0-1 — trail/streak length multiplier (composes with renderer base length). */
-  length: number;
-  /** 3-12 — number of streak lines per tip. */
-  count: number;
+  /** 1-8 — stroke width / tip dot size in 2D. */
+  thickness: number;
 }
 
 export interface BloomIntent {
@@ -164,8 +164,8 @@ export interface EffectsOverrides {
   zap3D?: Record<string, unknown>;
   sparkles2D?: Record<string, unknown>;
   sparkles3D?: Record<string, unknown>;
-  motion2D?: Record<string, unknown>;
-  motion3D?: Record<string, unknown>;
+  echo2D?: Record<string, unknown>;
+  echo3D?: Record<string, unknown>;
   bloom2D?: Record<string, unknown>;
   bloom3D?: Record<string, unknown>;
 }
@@ -179,7 +179,7 @@ export interface EffectsConfig {
   charcoal: CharcoalIntent;
   zap: ZapIntent;
   sparkles: SparklesIntent;
-  motion: MotionIntent;
+  echo: EchoIntent;
   bloom: BloomIntent;
   activePresets: {
     trails: string | null;
@@ -188,7 +188,7 @@ export interface EffectsConfig {
     charcoal: string | null;
     zap: string | null;
     sparkles: string | null;
-    motion: string | null;
+    echo: string | null;
     bloom: string | null;
   };
   overrides?: EffectsOverrides;
