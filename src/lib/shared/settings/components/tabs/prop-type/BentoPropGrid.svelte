@@ -27,7 +27,12 @@
     variant = "panel",
   } = $props<{
     selectedPropType: PropType;
-    color?: "blue" | "red";
+    /**
+     * Accent color for selection state. Accepts "blue" / "red" sentinels
+     * (legacy two-performer model, mapped to the prop-blue/prop-red tokens
+     * in PropTypeButton) or any CSS color string for N-performer palettes.
+     */
+    color?: "blue" | "red" | (string & {});
     title?: string;
     onSelect: (propType: PropType) => void;
     /** "panel" = bordered card (desktop settings), "inline" = no border (drawer) */
