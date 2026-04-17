@@ -47,7 +47,7 @@ export const SPARKLES_PRESETS: EffectPreset[] = [
       rate: 0.7, size: 0.6, lifetime: 2.0,
       colorMode: "palette",
       palette: ["#ec4899", "#22d3ee", "#fbbf24", "#22c55e", "#a855f7"],
-      spread: 12, gravity: 0.8, mode: "burst",
+      spread: 12, gravity: 0.8, mode: "stream",
     }),
   },
   {
