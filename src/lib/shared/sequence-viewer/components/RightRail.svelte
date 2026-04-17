@@ -11,7 +11,8 @@
     { id: "gear",       icon: "fa-gear",  tooltip: "Settings" },
   ];
 
-  function onClick(id: PopoverId) {
+  function onClick(e: MouseEvent, id: PopoverId) {
+    e.stopPropagation();
     viewer.openPopover(viewer.activePopover === id ? null : id);
   }
 </script>
@@ -23,7 +24,7 @@
       aria-pressed={viewer.activePopover === chip.id}
       aria-label={chip.tooltip}
       data-tooltip={chip.tooltip}
-      onclick={() => onClick(chip.id)}
+      onclick={(e) => onClick(e, chip.id)}
     >
       <i class="fas {chip.icon}"></i>
     </button>
