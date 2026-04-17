@@ -19,6 +19,8 @@
   import { TRAIL_PRESET_GROUP } from "./presets/trail-presets";
   import { CHARCOAL_PRESET_GROUP } from "./presets/charcoal-presets";
   import { ZAP_PRESET_GROUP } from "./presets/zap-presets";
+  import { SPARKLES_PRESET_GROUP } from "./presets/sparkles-presets";
+  import SparklesCustomize from "./customize/SparklesCustomize.svelte";
   import type { EffectPresetGroup } from "./presets/types";
 
   interface Props {
@@ -163,6 +165,7 @@
       case "trails": return TRAIL_PRESET_GROUP;
       case "charcoal": return CHARCOAL_PRESET_GROUP;
       case "zap": return ZAP_PRESET_GROUP;
+      case "sparkles": return SPARKLES_PRESET_GROUP;
       default: return null;
     }
   }
@@ -189,7 +192,7 @@
 <div class="effects-panel">
   {#if showPlayback}
     <div class="sb-section">
-      <TempoControl {bpm} {onBpmChange} showPresets={true} showPractice={false} />
+      <TempoControl {bpm} {onBpmChange} showPresets={false} showPractice={false} presetsMode="popover" />
       <TransportControls
         {isPlaying}
         onPlaybackToggle={onPlaybackToggle}
@@ -236,7 +239,7 @@
       {:else if activeEffect === "zap"}
         <ZapCustomize onBack={() => (customizeOpen = false)} />
       {:else if activeEffect === "sparkles"}
-        <ComingSoonCustomize effectLabel="Sparkles" onBack={() => (customizeOpen = false)} />
+        <SparklesCustomize onBack={() => (customizeOpen = false)} />
       {:else if activeEffect === "motion"}
         <ComingSoonCustomize effectLabel="Motion" onBack={() => (customizeOpen = false)} />
       {:else if activeEffect === "bloom"}
