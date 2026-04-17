@@ -173,12 +173,15 @@
 		"alternateName": "The Kinetic Alphabet Composer",
 		"description": "Create, animate, and share staff, clubs, fans, hoops, buugeng, and sword sequences. A notation system for flow arts.",
 		"url": "https://tkaflowarts.com/create",
-		"applicationCategory": ["EducationalApplication", "EntertainmentApplication", "DesignApplication"],
+		"applicationCategory": "EducationalApplication",
 		"operatingSystem": "Any (Web Browser)",
 		"browserRequirements": "Requires JavaScript. Works on Chrome, Firefox, Safari, Edge.",
 		"softwareVersion": "1.0",
 		"releaseNotes": "https://tkaflowarts.com/changelog",
+		"image": "https://tkaflowarts.com/branding/og-image.png",
 		"screenshot": "https://tkaflowarts.com/branding/og-image.png",
+		"datePublished": "2024-01-01",
+		"inLanguage": "en-US",
 		"featureList": [
 			"Create sequences by hand or generate them automatically",
 			"Animate sequences in 2D with motion trails",
@@ -291,6 +294,7 @@
 		"@type": "HowTo",
 		"name": "How to Create Flow Arts Choreography with TKA Composer",
 		"description": "Learn to create, animate, and share staff, clubs, fans, and hoop sequences using TKA notation.",
+		"image": "https://tkaflowarts.com/branding/og-image.png",
 		"totalTime": "PT10M",
 		"tool": [
 			{
@@ -304,31 +308,36 @@
 				"position": 1,
 				"name": "Open TKA Composer",
 				"text": "Visit tkaflowarts.com/create to launch the free web application.",
-				"url": "https://tkaflowarts.com/create"
+				"url": "https://tkaflowarts.com/create",
+				"image": "https://tkaflowarts.com/branding/og-image.png"
 			},
 			{
 				"@type": "HowToStep",
 				"position": 2,
 				"name": "Choose a creation mode",
-				"text": "Choose how to build: by hand step-by-step, or let the app generate patterns for you."
+				"text": "Choose how to build: by hand step-by-step, or let the app generate patterns for you.",
+				"image": "https://tkaflowarts.com/branding/og-image.png"
 			},
 			{
 				"@type": "HowToStep",
 				"position": 3,
 				"name": "Build your sequence",
-				"text": "Add movements by selecting start positions, hand motions, and transitions. Each beat is represented as a pictograph."
+				"text": "Add movements by selecting start positions, hand motions, and transitions. Each beat is represented as a pictograph.",
+				"image": "https://tkaflowarts.com/branding/og-image.png"
 			},
 			{
 				"@type": "HowToStep",
 				"position": 4,
 				"name": "Animate and preview",
-				"text": "Switch to the Animate module to watch your sequence come alive with 2D visualization and motion trails."
+				"text": "Switch to the Animate module to watch your sequence come alive with 2D visualization and motion trails.",
+				"image": "https://tkaflowarts.com/branding/og-image.png"
 			},
 			{
 				"@type": "HowToStep",
 				"position": 5,
 				"name": "Export and share",
-				"text": "Export your choreography as PNG, PDF, GIF, or video. Share to Instagram or publish to the community gallery."
+				"text": "Export your choreography as PNG, PDF, GIF, or video. Share to Instagram or publish to the community gallery.",
+				"image": "https://tkaflowarts.com/branding/og-image.png"
 			}
 		]
 	}

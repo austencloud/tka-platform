@@ -102,8 +102,153 @@
   <title>About The Kinetic Alphabet | TKA Composer</title>
   <meta
     name="description"
-    content="The Kinetic Alphabet brings something novel to flow arts. Learn about the origin, mission, and vision behind TKA."
+    content="The Kinetic Alphabet (TKA) is a notation system for flow arts. Learn what TKA is, how it works, and why it exists."
   />
+  <link rel="canonical" href="https://tkaflowarts.com/about" />
+
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://tkaflowarts.com/about" />
+  <meta property="og:title" content="About The Kinetic Alphabet" />
+  <meta
+    property="og:description"
+    content="The Kinetic Alphabet (TKA) is a notation system for flow arts. Learn what TKA is, how it works, and why it exists."
+  />
+  <meta property="og:image" content="https://tkaflowarts.com/branding/og-image.png" />
+
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="About The Kinetic Alphabet" />
+  <meta
+    name="twitter:description"
+    content="The Kinetic Alphabet (TKA) is a notation system for flow arts. Learn what TKA is, how it works, and why it exists."
+  />
+  <meta name="twitter:image" content="https://tkaflowarts.com/branding/og-image.png" />
+
+  <!-- JSON-LD: AboutPage identifies this page and its subject (the TKA system) -->
+  {@html `<script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "AboutPage",
+    "name": "About The Kinetic Alphabet",
+    "url": "https://tkaflowarts.com/about",
+    "description": "The Kinetic Alphabet (TKA) is a notation system for flow arts. Learn what TKA is, how it works, and why it exists.",
+    "inLanguage": "en-US",
+    "mainEntity": {
+      "@type": "Thing",
+      "name": "The Kinetic Alphabet",
+      "alternateName": ["TKA", "Kinetic Alphabet", "Flow Arts Notation"],
+      "description": "A notation system for flow arts that uses pictographs to document staff, club, fan, hoop, and buugeng choreography."
+    },
+    "isPartOf": {
+      "@type": "WebSite",
+      "name": "TKA - The Kinetic Alphabet",
+      "url": "https://tkaflowarts.com/"
+    }
+  }
+  </script>`}
+
+  <!-- JSON-LD: BreadcrumbList for search result hierarchy -->
+  {@html `<script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Home",
+        "item": "https://tkaflowarts.com/"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "About",
+        "item": "https://tkaflowarts.com/about"
+      }
+    ]
+  }
+  </script>`}
+
+  <!-- JSON-LD: FAQPage — matches the visible FAQ section on this page -->
+  {@html `<script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "What is The Kinetic Alphabet?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "The Kinetic Alphabet (TKA) is a notation system for flow arts — like sheet music for dancers. It lets flow artists document, share, and learn staff, clubs, fans, hoops, buugeng, and sword choreography using pictographs and symbols."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What does TKA stand for?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "TKA stands for The Kinetic Alphabet, a flow arts notation system for documenting and sharing staff, fans, hoop, club, and buugeng choreography."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What is flow arts notation?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Flow arts notation is a system for writing down prop manipulation movements like staff, fans, hoop, and club choreography. The Kinetic Alphabet uses pictographs to represent each beat of movement, showing hand positions, motion types, and prop orientation."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How do you write down staff spinning moves?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "The Kinetic Alphabet uses pictographs that capture hand positions on a grid, motion types (prospin, antispin, static), direction, and number of turns. It's built for dual-wielded props like double staff, and the notation applies to any prop you grip directly."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What props does TKA Composer support?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "TKA Composer is built for dual-wielded static props: staff, clubs, fans, hoops, mini hoops, buugeng, triads, and swords. Each prop is rendered with proper rotations and hand positions."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I use TKA notation for poi?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "The Kinetic Alphabet is built for static props like staff and fans, where you can hold any orientation freely. Poi is momentum-based, so gravity limits which TKA sequences are physically possible. Many sequences work, but not all. The Poi Lab tool identifies which sequences are poi-legal."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Is TKA Composer free to use?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes, TKA Composer is completely free. You can create sequences, animate them, export to various formats, and browse the community library at no cost. The app is open and accessible to all flow artists."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How do I learn flow arts with The Kinetic Alphabet?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "TKA Composer includes progressive lessons from grid basics to advanced LOOPs. Interactive quizzes help reinforce understanding, and the Train module offers daily challenges to track your progress."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I share my sequences with other flow artists?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. Export sequences as PNG images, PDFs, animated GIFs, or videos. Share links directly to Instagram, or publish to the community gallery for other artists to find."
+        }
+      }
+    ]
+  }
+  </script>`}
 </svelte:head>
 
 <div class="about-page">
