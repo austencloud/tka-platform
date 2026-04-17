@@ -1,6 +1,7 @@
 <script lang="ts">
   import { getViewer3DContext, type PopoverId } from "$lib/shared/3d/context/viewer-3d-context";
   import TempoPopover from "./TempoPopover.svelte";
+  import ExportPopover from "./ExportPopover.svelte";
 
   const viewer = getViewer3DContext();
 
@@ -38,6 +39,19 @@
           <i class="fas {chip.icon}"></i>
         </button>
         <TempoPopover {bpm} {onBpmChange} />
+      </div>
+    {:else if chip.id === "export"}
+      <div class="chip-wrap">
+        <button
+          class="rail-chip"
+          aria-pressed={viewer.activePopover === chip.id}
+          aria-label={chip.tooltip}
+          data-tooltip={chip.tooltip}
+          onclick={(e) => onClick(e, chip.id)}
+        >
+          <i class="fas {chip.icon}"></i>
+        </button>
+        <ExportPopover />
       </div>
     {:else}
       <button
