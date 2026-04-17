@@ -20,20 +20,16 @@
   import { scale } from "svelte/transition";
   import { cubicOut, backOut } from "svelte/easing";
   import PerformerChipStrip from "./controls/PerformerChipStrip.svelte";
-  import PerformerTab from "./controls/PerformerTab.svelte";
   import { createViewer3DKeyboardHandler } from "../keyboard/Viewer3DKeyboardHandler";
   import { onMount } from "svelte";
   import SceneFeatureTiles from "../scene-features/components/SceneFeatureTiles.svelte";
-  import Viewer3DVisibilityToggles from "./controls/Viewer3DVisibilityToggles.svelte";
 
-  type TabId = "camera" | "planes" | "performers" | "scene" | "visibility";
+  type TabId = "camera" | "planes" | "scene";
 
-  const TABS: { id: TabId; label: string; disabled?: boolean }[] = [
+  const TABS: { id: TabId; label: string }[] = [
     { id: "camera", label: "Camera" },
     { id: "planes", label: "Planes" },
-    { id: "performers", label: "Performers" },
     { id: "scene", label: "Scene" },
-    { id: "visibility", label: "Visibility" },
   ];
 
   let open = $state(false);
@@ -181,12 +177,11 @@
           <button
             class="tab-btn"
             class:active={activeTab === tab.id}
-            disabled={tab.disabled}
             onclick={(e) => selectTab(e, tab.id)}
             role="tab"
             aria-selected={activeTab === tab.id}
             aria-controls="tab-panel-{tab.id}"
-            title={tab.disabled ? `${tab.label} (coming soon)` : tab.label}
+            title={tab.label}
           >
             {tab.label}
           </button>
@@ -275,26 +270,24 @@
         </div>
       {/if}
 
-      <!-- Performers tab -->
-      {#if activeTab === "performers"}
-        <div class="tab-panel" id="tab-panel-performers" role="tabpanel">
-          <PerformerTab />
-        </div>
-      {/if}
-
       <!-- Scene tab -->
       {#if activeTab === "scene"}
-        <div class="tab-panel" role="tabpanel">
+        <div class="tab-panel" id="tab-panel-scene" role="tabpanel">
           <SceneFeatureTiles />
         </div>
       {/if}
 
-      <!-- Visibility tab -->
-      {#if activeTab === "visibility"}
-        <div class="tab-panel" id="tab-panel-visibility" role="tabpanel">
-          <Viewer3DVisibilityToggles />
-        </div>
-      {/if}
+      <!-- Stage bridge footer -->
+      <button
+        class="bridge-btn"
+        onclick={(e) => { e.stopPropagation(); console.log("[stub] Stage destination not yet built"); }}
+      >
+        <span class="bridge-text">
+          <span class="bridge-title">Stage this scene</span>
+          <span class="bridge-sub">Multi-sequence · timeline · audio</span>
+        </span>
+        <span class="bridge-arrow"><i class="fas fa-arrow-right"></i></span>
+      </button>
     </div>
   {/if}
 </div>
@@ -564,5 +557,53 @@
     border-radius: 50%;
     background: #f59e0b;
     border: 1.5px solid rgba(14, 14, 24, 1);
+  }
+
+  /* Stage bridge footer — gradient CTA that links to Stage destination */
+  .bridge-btn {
+    margin-top: 14px;
+    min-height: var(--min-touch-target);
+    padding: 12px 14px;
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, #a855f7 18%, transparent),
+      color-mix(in srgb, #4a9eff 18%, transparent)
+    );
+    border: 1px solid color-mix(in srgb, #a855f7 45%, transparent);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    color: rgba(255, 255, 255, 0.95);
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+    transition: filter 0.15s ease;
+  }
+
+  .bridge-btn:hover {
+    filter: brightness(1.12);
+  }
+
+  .bridge-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .bridge-title {
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .bridge-sub {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.42);
+  }
+
+  .bridge-arrow {
+    color: #c89aff;
+    font-size: 16px;
   }
 </style>
