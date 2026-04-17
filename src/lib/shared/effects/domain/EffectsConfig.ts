@@ -16,7 +16,7 @@ import type {
   PropFlameColor,
 } from "$lib/shared/animation-engine/domain/types/FireTypes";
 
-export const EFFECTS_CONFIG_VERSION = 6;
+export const EFFECTS_CONFIG_VERSION = 7;
 
 export type EffectType =
   | "none"
@@ -137,12 +137,27 @@ export interface EchoIntent {
 }
 
 export interface BloomIntent {
-  /** 0-1 — overall glow. */
+  /** 0-1 — peak alpha at halo center. */
   intensity: number;
-  /** 0-1 — luminance cutoff (only pixels brighter than this bloom). */
-  threshold: number;
-  /** 0-1 — blur spread / kernel size. */
+  /** 8-80 px — halo radius in 2D. 3D billboard scales proportionally. */
   radius: number;
+  /** Hex — used when colorMode === "solid". */
+  color: string;
+  /** Multicolor palette (3-5 hex) — used when colorMode === "palette". */
+  palette: string[];
+  /**
+   * "solid" = use color.
+   * "prop-matched" = blue tips blue, red tips red (from trail colors).
+   * "rainbow" = hue cycles with time (full cycle / 6s).
+   * "palette" = pick from palette by tipIndex.
+   */
+  colorMode: "solid" | "prop-matched" | "rainbow" | "palette";
+  /** "smooth" = gaussian falloff, "sharp" = tighter hot core, "ring" = hollow corona. */
+  falloff: "smooth" | "sharp" | "ring";
+  /** 0-1 — breathing amplitude (0 = static halo, 1 = full on/off pulse). */
+  pulse: number;
+  /** 0.25-4 Hz — pulse frequency. */
+  pulseRate: number;
 }
 
 /**

@@ -72,9 +72,14 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
   },
 
   bloom: {
-    intensity: 0.6,
-    threshold: 0.7,
-    radius: 0.5,
+    intensity: 0.7,
+    radius: 28,
+    color: "#f472b6",
+    palette: ["#f472b6", "#fbbf24", "#22d3ee"],
+    colorMode: "solid",
+    falloff: "smooth",
+    pulse: 0,
+    pulseRate: 1,
   },
 
   activePresets: {
