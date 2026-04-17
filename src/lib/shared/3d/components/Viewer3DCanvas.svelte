@@ -36,6 +36,8 @@
     sequenceData: SequenceData | null;
     currentStep: number;
     isPlaying: boolean;
+    bpm?: number;
+    onBpmChange?: (bpm: number) => void;
     bluePropType?: string | null;
     redPropType?: string | null;
     hideOverlays?: boolean;
@@ -45,8 +47,17 @@
     onCameraStateChange?: (state: CameraStateSnapshot) => void;
   }
 
-  let { sequenceData, currentStep, isPlaying, hideOverlays = false, fullScreen = false, onExitFullScreen, onCameraStateChange }: Props =
-    $props();
+  let {
+    sequenceData,
+    currentStep,
+    isPlaying,
+    bpm = 60,
+    onBpmChange = () => {},
+    hideOverlays = false,
+    fullScreen = false,
+    onExitFullScreen,
+    onCameraStateChange,
+  }: Props = $props();
 
   const viewer3DState = getViewer3DContext();
   const sceneFeatureState = createSceneFeatureState();
@@ -105,7 +116,7 @@
       <div class="top-controls" role="presentation" onclick={(e) => e.stopPropagation()} onpointerdown={(e) => e.stopPropagation()}>
         <Viewer3DGearPopover />
       </div>
-      <RightRail />
+      <RightRail {bpm} {onBpmChange} />
       <ViewerTransportBar />
       {#if avatarState && avatarState.totalSteps > 1 && avatarState.beatEditMode}
         <div class="beat-strip-container">

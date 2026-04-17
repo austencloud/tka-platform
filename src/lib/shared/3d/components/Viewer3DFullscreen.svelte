@@ -100,6 +100,8 @@
       {sequenceData}
       {currentStep}
       {isPlaying}
+      {bpm}
+      {onBpmChange}
       {bluePropType}
       {redPropType}
     />

@@ -4,6 +4,12 @@
 
   const viewer = getViewer3DContext();
 
+  interface Props {
+    bpm?: number;
+    onBpmChange?: (bpm: number) => void;
+  }
+  let { bpm = 60, onBpmChange = () => {} }: Props = $props();
+
   interface Chip { id: PopoverId; icon: string; tooltip: string; }
   const CHIPS: Chip[] = [
     { id: "performers", icon: "fa-users", tooltip: "Performers" },
@@ -31,7 +37,7 @@
         >
           <i class="fas {chip.icon}"></i>
         </button>
-        <TempoPopover />
+        <TempoPopover {bpm} {onBpmChange} />
       </div>
     {:else}
       <button

@@ -572,6 +572,8 @@
               <ViewerSplitPane
                 sequence={ctx.effectiveSequence}
                 renderMode={isMobile ? '2d' : ctx.renderMode}
+                bpm={ctx.bpmLocal}
+                onBpmChange={ctx.handleBpmChange}
                 playback={ctx.splitPanePlayback}
                 imageComposition={isImageExportActive
                   ? {
