@@ -16,7 +16,7 @@ import type {
   PropFlameColor,
 } from "$lib/shared/animation-engine/domain/types/FireTypes";
 
-export const EFFECTS_CONFIG_VERSION = 3;
+export const EFFECTS_CONFIG_VERSION = 4;
 
 export type EffectType =
   | "none"
@@ -105,10 +105,18 @@ export interface SparklesIntent {
   size: number;
   /** 0.1-3.0 seconds. */
   lifetime: number;
-  /** Hex string — primary tint. Ignored when `rainbow` is true. */
+  /** Hex string — primary tint when colorMode === "solid". */
   color: string;
-  /** Hue-cycle override. */
-  rainbow: boolean;
+  /** Multicolor palette (3-5 hex). Used when colorMode === "palette". */
+  palette: string[];
+  /** "solid" = use color, "rainbow" = HSL cycle, "palette" = pick random from palette. */
+  colorMode: "solid" | "rainbow" | "palette";
+  /** 0-30 px — radius around the tip particles spawn within. */
+  spread: number;
+  /** 0-1 — 0 = floaty (low gravity), 1 = fast fall (high gravity). */
+  gravity: number;
+  /** 'burst' = sudden bloom on motion, 'stream' = continuous, 'trail' = follows tip path. */
+  mode: "burst" | "stream" | "trail";
 }
 
 export interface MotionIntent {

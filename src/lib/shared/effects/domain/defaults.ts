@@ -54,7 +54,11 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
     size: 0.5,
     lifetime: 1.2,
     color: "#fbbf24",
-    rainbow: false,
+    palette: ["#fbbf24", "#f59e0b", "#fde047"],
+    colorMode: "solid",
+    spread: 8,
+    gravity: 0.3,
+    mode: "stream",
   },
 
   motion: {

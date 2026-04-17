@@ -489,39 +489,37 @@
     <p>{containerError}</p>
     <button onclick={() => window.location.reload()}>Retry</button>
   </div>
-{:else if containerReady}
-  <!-- App-only shell components (null/skipped for landing mode) -->
-  {#if WarningBannerComp}
+{:else}
+  <!-- App-only shell components (only after container initializes client-side;
+       skipped during SSR and for landing mode). The #app-loading DOM in app.html
+       covers the visible loading state until hydration completes. -->
+  {#if containerReady && WarningBannerComp}
     <WarningBannerComp />
   {/if}
 
-  {#if EmailVerificationBannerComp}
+  {#if containerReady && EmailVerificationBannerComp}
     <EmailVerificationBannerComp />
   {/if}
 
-  <!-- Render children (either landing page or app) -->
+  <!-- Render children always — required for SSR/prerender of public routes.
+       App routes opt out of SSR via their own +layout.ts (ssr = false). -->
   {@render children()}
 
-  {#if FullscreenPromptComp}
+  {#if containerReady && FullscreenPromptComp}
     <FullscreenPromptComp />
   {/if}
 
-  {#if InAppBrowserPromptComp}
+  {#if containerReady && InAppBrowserPromptComp}
     <InAppBrowserPromptComp />
   {/if}
 
-  {#if ReportUserModalComp}
+  {#if containerReady && ReportUserModalComp}
     <ReportUserModalComp />
   {/if}
 
-  {#if ModalUrlRestorerComp}
+  {#if containerReady && ModalUrlRestorerComp}
     <ModalUrlRestorerComp />
   {/if}
-{:else}
-  <!-- Brief loading while container sets up -->
-  <div class="error-screen">
-    <p>Setting up services...</p>
-  </div>
 {/if}
 
 <style>
