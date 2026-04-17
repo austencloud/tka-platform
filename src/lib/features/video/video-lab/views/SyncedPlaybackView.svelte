@@ -10,6 +10,7 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { getHighlightedBeatFromVideo } from "$lib/shared/video-collaboration/utils/beat-map-utils";
   import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
+  import { formatTime } from "$lib/shared/sequence-viewer/utils/format-time";
 
   interface Props {
     videoUrl: string;
@@ -94,11 +95,6 @@
     }
   }
 
-  function formatTime(seconds: number): string {
-    const m = Math.floor(seconds / 60);
-    const s = Math.floor(seconds % 60);
-    return `${m}:${s.toString().padStart(2, "0")}`;
-  }
 </script>
 
 <div class="synced-playback-view">

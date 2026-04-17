@@ -10,6 +10,7 @@
   import { fade } from "svelte/transition";
   import type { BeatMap } from "$lib/shared/video-collaboration/domain/CollaborativeVideo";
   import { generateEvenBeatTimestamps } from "$lib/shared/video-collaboration/utils/beat-map-utils";
+  import { formatTime } from "$lib/shared/sequence-viewer/utils/format-time";
   import BeatMapTimeline from "./BeatMapTimeline.svelte";
 
   interface Props {
@@ -231,11 +232,6 @@
     }
   }
 
-  function formatTime(seconds: number): string {
-    const m = Math.floor(seconds / 60);
-    const s = Math.floor(seconds % 60);
-    return `${m}:${s.toString().padStart(2, "0")}`;
-  }
 </script>
 
 <div class="beat-map-editor" transition:fade={{ duration: 200 }}>

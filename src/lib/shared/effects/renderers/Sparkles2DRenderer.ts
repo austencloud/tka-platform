@@ -26,9 +26,12 @@ interface Particle {
 type TipKey = "bluePosA" | "bluePosB" | "redPosA" | "redPosB";
 const TIP_KEYS: TipKey[] = ["bluePosA", "bluePosB", "redPosA", "redPosB"];
 
-const MAX_PARTICLES = 500;
-/** Spawns per second per tip per unit rate. Higher = denser stream. */
-const SPAWN_DENSITY = 24;
+/** Hard ceiling on particle count for perf safety. The live cap is rate-scaled. */
+const MAX_PARTICLES = 1500;
+/** Spawns per second per tip per unit rate. */
+const SPAWN_DENSITY = 18;
+/** Floor for rate-scaled cap so rate near 0 still shows something visible. */
+const MIN_LIVE_PARTICLES = 40;
 /** Burst mode: minimum tip displacement (px) per frame to trigger a spawn burst. */
 const BURST_MOTION_THRESHOLD = 0.3;
 
@@ -53,6 +56,22 @@ export class Sparkles2DRenderer {
     dt: number,
   ): void {
     // 1. Spawn from each enabled tip per current mode.
+    //    Live cap scales with params.rate so the slider actually controls
+    //    on-screen density (not just the spawn rate, which was being masked
+    //    by a static cap once rate crossed ~0.08).
+    //    Per-tip allocation prevents the first tip in iteration order from
+    //    consuming the whole budget — without it, sparkles appear to come
+    //    from only one tip.
+    const effectiveMax = Math.max(
+      MIN_LIVE_PARTICLES,
+      Math.min(MAX_PARTICLES, Math.floor(MAX_PARTICLES * params.rate)),
+    );
+    const activeKeys = TIP_KEYS.filter((k) => tips[k] != null);
+    const slotsLeft = Math.max(0, effectiveMax - this.particles.length);
+    const perTipCap = activeKeys.length > 0
+      ? Math.max(0, Math.floor(slotsLeft / activeKeys.length))
+      : 0;
+
     for (const key of TIP_KEYS) {
       const tip = tips[key];
       if (!tip) {
@@ -60,7 +79,7 @@ export class Sparkles2DRenderer {
         continue;
       }
       const last = this.lastTipPos[key];
-      this.spawnFromTip(params, tip, last, dt);
+      this.spawnFromTip(params, tip, last, dt, perTipCap);
       this.lastTipPos[key] = { x: tip.x, y: tip.y };
     }
 
@@ -150,6 +169,7 @@ export class Sparkles2DRenderer {
     tip: { x: number; y: number },
     last: { x: number; y: number } | undefined,
     dt: number,
+    perTipCap: number,
   ): void {
     // Base count: rate × SPAWN_DENSITY spawns/s, normalized via dt × 60 so a 60fps
     // tick spawns at the documented rate regardless of actual frame timing.
@@ -171,8 +191,10 @@ export class Sparkles2DRenderer {
       usePathSpawn = !!last;
     }
 
+    // Clamp to this tip's fair share of the pool so other tips can spawn too.
+    spawnCount = Math.max(0, Math.min(spawnCount, perTipCap));
+
     for (let i = 0; i < spawnCount; i++) {
-      if (this.particles.length >= MAX_PARTICLES) return;
 
       // Origin: AT the tip (no scatter) so all particles emerge from the same
       // point and burst outward — that's what reads as "bursting from the tip"
