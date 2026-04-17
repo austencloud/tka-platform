@@ -459,16 +459,8 @@
                   />
                   {#if isRecordSceneActive && ctx.effectiveSequence}
                     <RecordSceneChrome
-                      exportOptions={ctx.exportOptions}
-                      bpm={ctx.bpmLocal}
-                      isPlaying={ctx.isPlayingLocal}
-                      playbackMode={ctx.playbackMode}
-                      singlePlayDuration={ctx.singlePlayDuration}
                       isExporting={ctx.isExporting}
                       canvasReady={ctx.canvasReady}
-                      onBpmChange={ctx.handleBpmChange}
-                      onPlaybackToggle={ctx.handlePlaybackToggle}
-                      onPlaybackModeChange={ctx.handlePlaybackModeChange}
                       onExport={ctx.handleExport}
                     />
                   {/if}
