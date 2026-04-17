@@ -17,6 +17,7 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
     sparkles?: any;
     motion?: any;
     echo?: any;
+    bloom?: any;
   };
   const version = input.version ?? 1;
 
@@ -82,6 +83,31 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
     if (input.activePresets && "motion" in (input.activePresets as any)) {
       (input.activePresets as any).echo = (input.activePresets as any).motion;
       delete (input.activePresets as any).motion;
+    }
+  }
+
+  // v6 → v7: Bloom pivots from fullscreen-post-process stub
+  // {intensity, threshold, radius(0-1)} into a per-tip radial-halo intent with
+  // color, palette, colorMode, falloff, pulse, pulseRate. Preserve existing
+  // intensity. Drop threshold (no longer meaningful). Map old radius (0-1
+  // normalized) to the new pixel scale via old*72+8 clamped to [8, 80]. Seed
+  // new fields from defaults. tipEffectMap entries pointing at "bloom" stay
+  // valid.
+  if (version < 7) {
+    if (input.bloom) {
+      const b = input.bloom as any;
+      const oldRadius = typeof b.radius === "number" ? b.radius : 0.5;
+      const newRadiusPx = Math.min(80, Math.max(8, oldRadius * 72 + 8));
+      const preservedIntensity = typeof b.intensity === "number" ? b.intensity : 0.7;
+      b.radius = newRadiusPx;
+      b.intensity = preservedIntensity;
+      delete b.threshold;
+      b.color ??= "#f472b6";
+      b.palette ??= ["#f472b6", "#fbbf24", "#22d3ee"];
+      b.colorMode ??= "solid";
+      b.falloff ??= "smooth";
+      b.pulse ??= 0;
+      b.pulseRate ??= 1;
     }
   }
 

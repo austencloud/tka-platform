@@ -145,6 +145,77 @@ describe("migrateEffectsConfig", () => {
     expect(out.activePresets.sparkles).toBe("sparkles-fairy-dust");
   });
 
+  it("migrates v6 bloom stub to v7 per-tip halo shape", () => {
+    // Old stub: {intensity, threshold, radius(0-1 normalized)}.
+    // New: {intensity, radius(8-80 px), color, palette, colorMode, falloff, pulse, pulseRate}.
+    const v6 = {
+      version: 6,
+      bloom: { intensity: 0.6, threshold: 0.8, radius: 0.5 },
+    };
+    const out = migrateEffectsConfig(v6);
+    expect(out.version).toBe(EFFECTS_CONFIG_VERSION);
+    expect(out.bloom.intensity).toBe(0.6); // preserved
+    // old 0.5 → 0.5*72+8 = 44
+    expect(out.bloom.radius).toBe(44);
+    expect((out.bloom as any).threshold).toBeUndefined();
+    expect(out.bloom.color).toBe("#f472b6");
+    expect(out.bloom.palette).toEqual(["#f472b6", "#fbbf24", "#22d3ee"]);
+    expect(out.bloom.colorMode).toBe("solid");
+    expect(out.bloom.falloff).toBe("smooth");
+    expect(out.bloom.pulse).toBe(0);
+    expect(out.bloom.pulseRate).toBe(1);
+  });
+
+  it("clamps v6 bloom radius at the 8-80 px bounds during v7 migration", () => {
+    const outLow = migrateEffectsConfig({
+      version: 6,
+      bloom: { intensity: 0.5, threshold: 0.7, radius: 0 },
+    });
+    expect(outLow.bloom.radius).toBe(8);
+    const outHigh = migrateEffectsConfig({
+      version: 6,
+      bloom: { intensity: 0.5, threshold: 0.7, radius: 1 },
+    });
+    expect(outHigh.bloom.radius).toBe(80);
+  });
+
+  it("leaves v6 tipEffectMap entries pointing at bloom valid through v7 migration", () => {
+    const v6 = {
+      version: 6,
+      tipEffectMap: {
+        "*": { effect: "bloom" },
+        "1-1": { effect: "sparkles" },
+      },
+      bloom: { intensity: 0.4, threshold: 0.5, radius: 0.25 },
+    };
+    const out = migrateEffectsConfig(v6);
+    expect(out.tipEffectMap["*"]?.effect).toBe("bloom");
+    expect(out.tipEffectMap["1-1"]?.effect).toBe("sparkles");
+    expect(out.bloom.radius).toBe(26); // 0.25*72+8
+  });
+
+  it("leaves a current-version v7 bloom untouched", () => {
+    const v7 = {
+      version: EFFECTS_CONFIG_VERSION,
+      bloom: {
+        intensity: 0.9,
+        radius: 40,
+        color: "#ff00ff",
+        palette: ["#aaa", "#bbb", "#ccc"],
+        colorMode: "palette" as const,
+        falloff: "ring" as const,
+        pulse: 0.5,
+        pulseRate: 2,
+      },
+    };
+    const out = migrateEffectsConfig(v7);
+    expect(out.bloom.intensity).toBe(0.9);
+    expect(out.bloom.radius).toBe(40);
+    expect(out.bloom.colorMode).toBe("palette");
+    expect(out.bloom.falloff).toBe("ring");
+    expect(out.bloom.palette).toEqual(["#aaa", "#bbb", "#ccc"]);
+  });
+
   it("leaves a current-version v6 echo untouched", () => {
     const v6 = {
       version: EFFECTS_CONFIG_VERSION,
