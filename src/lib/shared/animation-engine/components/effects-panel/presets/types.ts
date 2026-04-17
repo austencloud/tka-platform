@@ -6,6 +6,7 @@
  */
 
 import type { AnimationVisibilityStateManager } from "../../../state/animation-visibility-state.svelte";
+import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
 
 export interface EffectPreset {
   id: string;
@@ -14,13 +15,18 @@ export interface EffectPreset {
   previewColor: string;
   /** Optional second color for dual-dot previews (e.g. "Prop Colors") */
   previewColor2?: string;
-  /** Apply this preset's settings to the visibility manager */
-  apply: (vm: AnimationVisibilityStateManager) => void;
+  /**
+   * Apply this preset's settings.
+   * `state` is the unified EffectsConfigState (or null for legacy effects that only use vm).
+   * Captured by EffectsPanel via getContext at init time — Svelte 5 forbids
+   * getContext() inside event handlers, so presets must NOT call it themselves.
+   */
+  apply: (vm: AnimationVisibilityStateManager, state: EffectsConfigState | null) => void;
 }
 
 export interface EffectPresetGroup {
   effectType: string;
   presets: EffectPreset[];
-  /** One-line summary of current settings for display below presets */
-  getSummary: (vm: AnimationVisibilityStateManager) => string;
+  /** One-line summary of current settings. Same context rules as `apply`. */
+  getSummary: (vm: AnimationVisibilityStateManager, state: EffectsConfigState | null) => string;
 }
