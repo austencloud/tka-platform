@@ -16,6 +16,11 @@ interface Particle {
   maxLife: number;
   color: string;
   scale: number;
+  /** Initial radians; drifts via spinSpeed so the cross shape twinkles instead of sitting static. */
+  rotation: number;
+  spinSpeed: number;
+  /** Phase offset (radians) for the per-particle alpha twinkle. */
+  twinklePhase: number;
 }
 
 type TipKey = "bluePosA" | "bluePosB" | "redPosA" | "redPosB";
@@ -23,7 +28,7 @@ const TIP_KEYS: TipKey[] = ["bluePosA", "bluePosB", "redPosA", "redPosB"];
 
 const MAX_PARTICLES = 200;
 /** Burst mode: minimum tip displacement (px) per frame to trigger a spawn burst. */
-const BURST_MOTION_THRESHOLD = 1.5;
+const BURST_MOTION_THRESHOLD = 0.3;
 
 /**
  * Particle-pool sparkle renderer for the Canvas2D backend.
@@ -66,30 +71,75 @@ export class Sparkles2DRenderer {
       p.vy += gravityPx * dt;
       p.x += p.vx * dt;
       p.y += p.vy * dt;
+      p.rotation += p.spinSpeed * dt;
       surviving.push(p);
     }
     this.particles = surviving;
 
-    // 3. Draw.
+    // 3. Draw — each particle is a 4-point star (cross + smaller diagonal cross)
+    //    with a bright pinpoint core. Sin-modulated alpha = twinkle. The cross
+    //    shape + scintillation is what differentiates sparkles from charcoal's
+    //    additive-glow blobs.
     if (this.particles.length === 0) return;
     const prevComposite = ctx.globalCompositeOperation;
     const prevAlpha = ctx.globalAlpha;
     const prevFill = ctx.fillStyle;
+    const prevStroke = ctx.strokeStyle;
+    const prevLineWidth = ctx.lineWidth;
+    const prevLineCap = ctx.lineCap;
     try {
       ctx.globalCompositeOperation = params.blendMode ?? "lighter";
+      ctx.lineCap = "round";
       const baseR = params.baseRadius;
       for (const p of this.particles) {
         const t = p.life / p.maxLife;
-        ctx.globalAlpha = Math.max(0, 1 - t);
-        ctx.fillStyle = p.color;
+        const fade = Math.max(0, 1 - t);
+        const twinkle = 0.55 + 0.45 * Math.sin(p.life * 22 + p.twinklePhase);
+        const alpha = fade * twinkle;
+        const armLen = baseR * p.scale * 2.4;
+        const diagLen = armLen * 0.55;
+
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rotation);
+
+        // Major cross (+) — long, thin, bright.
+        ctx.strokeStyle = p.color;
+        ctx.globalAlpha = alpha;
+        ctx.lineWidth = Math.max(1, baseR * p.scale * 0.45);
         ctx.beginPath();
-        ctx.arc(p.x, p.y, baseR * p.scale, 0, Math.PI * 2);
+        ctx.moveTo(-armLen, 0);
+        ctx.lineTo(armLen, 0);
+        ctx.moveTo(0, -armLen);
+        ctx.lineTo(0, armLen);
+        ctx.stroke();
+
+        // Minor diagonal cross (×) — shorter, thinner, gives it the 8-point feel.
+        ctx.lineWidth = Math.max(0.6, baseR * p.scale * 0.25);
+        ctx.globalAlpha = alpha * 0.7;
+        ctx.beginPath();
+        ctx.moveTo(-diagLen, -diagLen);
+        ctx.lineTo(diagLen, diagLen);
+        ctx.moveTo(-diagLen, diagLen);
+        ctx.lineTo(diagLen, -diagLen);
+        ctx.stroke();
+
+        // Bright white pinpoint core.
+        ctx.fillStyle = "#ffffff";
+        ctx.globalAlpha = alpha;
+        ctx.beginPath();
+        ctx.arc(0, 0, Math.max(0.5, baseR * p.scale * 0.35), 0, Math.PI * 2);
         ctx.fill();
+
+        ctx.restore();
       }
     } finally {
       ctx.globalCompositeOperation = prevComposite;
       ctx.globalAlpha = prevAlpha;
       ctx.fillStyle = prevFill;
+      ctx.strokeStyle = prevStroke;
+      ctx.lineWidth = prevLineWidth;
+      ctx.lineCap = prevLineCap;
     }
   }
 
@@ -151,6 +201,9 @@ export class Sparkles2DRenderer {
         maxLife: params.lifetime,
         color: this.pickColor(params),
         scale: 0.6 + Math.random() * 0.8 * params.size * 2,
+        rotation: Math.random() * Math.PI * 2,
+        spinSpeed: (Math.random() - 0.5) * 1.6,
+        twinklePhase: Math.random() * Math.PI * 2,
       });
     }
   }
