@@ -67,8 +67,6 @@
 
   // Popover state (popover mode only)
   let showPopover = $state(false);
-  let customDraft = $state(60);
-  let customInputRef: HTMLInputElement | null = $state(null);
 
   // Hold-to-repeat state
   let holdTimer: ReturnType<typeof setTimeout> | null = null;
@@ -162,40 +160,19 @@
 
   function handleBpmButtonClick() {
     if (presetsMode === "popover") {
-      openPopover();
+      if (showPopover) closePopover();
+      else openPopover();
     } else {
       handleTap();
     }
   }
 
   function openPopover() {
-    customDraft = bpm;
     showPopover = true;
-    queueMicrotask(() => customInputRef?.focus());
   }
 
   function closePopover() {
     showPopover = false;
-  }
-
-  function commitCustomBpm() {
-    const next = clampBpm(Math.round(customDraft || bpm));
-    if (!Number.isNaN(next) && next !== bpm) onBpmChange(next);
-    closePopover();
-  }
-
-  function handleCustomKey(e: KeyboardEvent) {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      commitCustomBpm();
-    } else if (e.key === "Escape") {
-      e.preventDefault();
-      closePopover();
-    }
-  }
-
-  function nudgeCustom(delta: number) {
-    customDraft = clampBpm((customDraft || bpm) + delta);
   }
 
   function selectPresetFromPopover(presetBpm: number) {
@@ -299,8 +276,6 @@
 
 {#if showPopover && presetsMode === "popover"}
   <div class="bpm-popover" role="region" aria-label={t("compose_custom_bpm")}>
-    <div class="bpm-popover-header">{t("compose_custom_bpm")}</div>
-
     <div class="bpm-popover-presets">
       {#each NUMERIC_PRESETS as preset}
         <button
@@ -315,38 +290,6 @@
       {/each}
     </div>
 
-    <div class="bpm-popover-custom">
-      <button
-        type="button"
-        class="adjust-btn"
-        onclick={() => nudgeCustom(-1)}
-        disabled={customDraft <= BPM_MIN}
-        aria-label={t("compose_decrease_bpm")}
-      >
-        <i class="fas fa-minus" aria-hidden="true"></i>
-      </button>
-      <input
-        bind:this={customInputRef}
-        class="bpm-popover-input"
-        type="number"
-        inputmode="numeric"
-        pattern="[0-9]*"
-        min={BPM_MIN}
-        max={BPM_MAX}
-        bind:value={customDraft}
-        onkeydown={handleCustomKey}
-        aria-label={t("compose_custom_bpm")}
-      />
-      <button
-        type="button"
-        class="adjust-btn"
-        onclick={() => nudgeCustom(1)}
-        disabled={customDraft >= BPM_MAX}
-        aria-label={t("compose_increase_bpm")}
-      >
-        <i class="fas fa-plus" aria-hidden="true"></i>
-      </button>
-    </div>
 
     <button
       type="button"
@@ -359,14 +302,6 @@
       <span>{isTapping ? `${t("compose_tap")} · ${tapTimes.length}` : t("compose_tap_to_set_tempo")}</span>
     </button>
 
-    <div class="bpm-popover-actions">
-      <button type="button" class="bpm-popover-btn cancel" onclick={closePopover}>
-        {t("common_cancel")}
-      </button>
-      <button type="button" class="bpm-popover-btn confirm" onclick={commitCustomBpm}>
-        {t("common_done")}
-      </button>
-    </div>
   </div>
 {/if}
 </div>
@@ -680,15 +615,6 @@
     to { opacity: 1; transform: translateY(0) scaleY(1); }
   }
 
-  .bpm-popover-header {
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 600;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    text-align: center;
-  }
-
   .bpm-popover-presets {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -699,40 +625,6 @@
     min-height: var(--min-touch-target);
     padding: 8px 6px;
     text-align: center;
-  }
-
-  .bpm-popover-custom {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .bpm-popover-input {
-    flex: 1;
-    min-height: var(--min-touch-target);
-    padding: 8px 10px;
-    background: color-mix(in srgb, var(--theme-accent, #6366f1) 10%, transparent);
-    border: 1.5px solid color-mix(in srgb, var(--theme-accent, #6366f1) 35%, transparent);
-    border-radius: 12px;
-    color: var(--theme-text, white);
-    font-size: 1.5rem;
-    font-weight: 700;
-    text-align: center;
-    font-variant-numeric: tabular-nums;
-    -moz-appearance: textfield;
-    appearance: textfield;
-  }
-
-  .bpm-popover-input::-webkit-outer-spin-button,
-  .bpm-popover-input::-webkit-inner-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
-  }
-
-  .bpm-popover-input:focus {
-    outline: none;
-    border-color: var(--theme-accent, #6366f1);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-accent, #6366f1) 25%, transparent);
   }
 
   .bpm-popover-tap {
@@ -768,46 +660,11 @@
     transform: scale(0.97);
   }
 
-  .bpm-popover-actions {
-    display: flex;
-    gap: 8px;
-  }
-
-  .bpm-popover-btn {
-    flex: 1;
-    min-height: var(--min-touch-target);
-    padding: 10px 14px;
-    border-radius: 12px;
-    font-size: var(--font-size-min, 14px);
-    font-weight: 600;
-    cursor: pointer;
-    transition: all var(--duration-fast, 150ms) ease;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .bpm-popover-btn.cancel {
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
-  }
-
-  .bpm-popover-btn.confirm {
-    background: var(--theme-accent, #6366f1);
-    border: 1.5px solid var(--theme-accent, #6366f1);
-    color: white;
-  }
-
-  .bpm-popover-btn:active {
-    transform: scale(0.97);
-  }
-
   @media (prefers-reduced-motion: reduce) {
-    .bpm-popover,
-    .bpm-popover-backdrop {
+    .bpm-popover {
       animation: none;
     }
-    .bpm-popover-tap:active,
-    .bpm-popover-btn:active {
+    .bpm-popover-tap:active {
       transform: none;
     }
   }
