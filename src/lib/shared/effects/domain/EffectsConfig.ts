@@ -16,7 +16,7 @@ import type {
   PropFlameColor,
 } from "$lib/shared/animation-engine/domain/types/FireTypes";
 
-export const EFFECTS_CONFIG_VERSION = 4;
+export const EFFECTS_CONFIG_VERSION = 5;
 
 export type EffectType =
   | "none"
@@ -120,12 +120,20 @@ export interface SparklesIntent {
 }
 
 export interface MotionIntent {
-  /** 0-1 — trailing blur strength. */
+  /** 0-1 — trailing blur strength (ghost-stamps of the tip). */
   blur: number;
-  /** 0-1 — velocity-based streak strength. */
+  /** 0-1 — anime speed-line streak strength. */
   speedLines: number;
-  /** 0-1 — min hand speed before effect kicks in (normalized). */
+  /** 0-1 — min normalized hand speed before effect kicks in. */
   threshold: number;
+  /** Hex string — primary stroke/ghost tint when colorMode === "solid". */
+  color: string;
+  /** "solid" = use color, "rainbow" = HSL cycle, "velocity" = hue maps to speed (cool→hot), "prop-matched" = blue tip blue, red tip red. */
+  colorMode: "solid" | "rainbow" | "velocity" | "prop-matched";
+  /** 0-1 — trail/streak length multiplier (composes with renderer base length). */
+  length: number;
+  /** 3-12 — number of streak lines per tip. */
+  count: number;
 }
 
 export interface BloomIntent {
