@@ -42,7 +42,8 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
 
   zap: {
     intensity: 0.7,
-    color: "#88ccff",
+    leftColor: "#88ccff",
+    rightColor: "#88ccff",
     frequency: 12,
     mode: "arc",
     branching: 0.3,
