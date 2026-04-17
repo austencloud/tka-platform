@@ -80,8 +80,10 @@ export interface Sparkles3DParams extends SparklesIntent {
   poolSize: number;
   /** Point sprite base radius (world units). */
   baseRadius: number;
-  /** Gravity applied per second (negative = rise). */
-  gravity: number;
+  /** Per-second gravity applied to particles, world units (negative = rise).
+   *  Distinct from intent.gravity (0-1 normalized) — this is the resolved
+   *  3D world-space value derived from intent.gravity. */
+  worldGravity: number;
 }
 
 export interface Motion3DParams extends MotionIntent {

@@ -92,7 +92,9 @@ export function resolveSparkles3D(
   const defaults: Omit<Sparkles3DParams, keyof SparklesIntent> = {
     poolSize: 512,
     baseRadius: 0.03,
-    gravity: -0.2,
+    // Map normalized intent.gravity (0=floaty,1=fast fall) to world-units/s.
+    // 0 → small upward drift (-0.2), 1 → strong downward pull (+5.0).
+    worldGravity: -0.2 + intent.gravity * 5.2,
   };
   return { ...intent, ...defaults, ...override };
 }
