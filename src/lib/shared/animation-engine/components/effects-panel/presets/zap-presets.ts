@@ -24,7 +24,8 @@ export const ZAP_PRESETS: EffectPreset[] = [
     name: "Thunder",
     previewColor: "#88ccff",
     apply: (_vm, state) => applyZap(state, "zap-thunder", {
-      intensity: 0.9, color: "#88ccff", frequency: 8, mode: "arc", branching: 0.4,
+      intensity: 0.9, leftColor: "#88ccff", rightColor: "#88ccff",
+      frequency: 8, mode: "arc", branching: 0.4,
     }),
   },
   {
@@ -32,7 +33,8 @@ export const ZAP_PRESETS: EffectPreset[] = [
     name: "Tesla",
     previewColor: "#a855f7",
     apply: (_vm, state) => applyZap(state, "zap-tesla", {
-      intensity: 1.0, color: "#a855f7", frequency: 20, mode: "arc", branching: 0.6,
+      intensity: 1.0, leftColor: "#a855f7", rightColor: "#a855f7",
+      frequency: 20, mode: "arc", branching: 0.6,
     }),
   },
   {
@@ -40,7 +42,8 @@ export const ZAP_PRESETS: EffectPreset[] = [
     name: "Plasma",
     previewColor: "#ec4899",
     apply: (_vm, state) => applyZap(state, "zap-plasma", {
-      intensity: 0.7, color: "#ec4899", frequency: 16, mode: "crackle", branching: 0.2,
+      intensity: 0.7, leftColor: "#ec4899", rightColor: "#22d3ee",
+      frequency: 16, mode: "crackle", branching: 0.2,
     }),
   },
   {
