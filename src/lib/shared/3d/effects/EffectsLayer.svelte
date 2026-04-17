@@ -15,7 +15,7 @@
   import { getEffectState } from "./state/effect-state.svelte";
   import { getEffectsConfigState } from "./state/effects-config-state.svelte";
   import { getEffectsConfigContext as getUnifiedEffectsState } from "$lib/shared/effects/state/effects-config-context";
-  import { resolveSparkles3D, resolveZap3D } from "$lib/shared/effects/translators/webgl3d-translator";
+  import { resolveMotion3D, resolveSparkles3D, resolveZap3D } from "$lib/shared/effects/translators/webgl3d-translator";
   import { AUSTEN_STAFF } from "../config/avatar-proportions";
   import { TrackingMode, TrailStyle } from "./types";
 
@@ -26,6 +26,8 @@
   import SparkleEmitter from "./particles/SparkleEmitter.svelte";
   import ElectricityArc from "./energy/ElectricityArc.svelte";
   import PropMotionEffects from "./motion/PropMotionEffects.svelte";
+  import MotionBlur from "./motion/MotionBlur.svelte";
+  import SpeedLines from "./motion/SpeedLines.svelte";
 
   interface Props {
     /** Blue prop state from animation */
@@ -57,6 +59,34 @@
   const sparklesEnabled = $derived(
     unifiedState ? unifiedState.config.tipEffectMap["*"]?.effect === "sparkles" : false,
   );
+  const motion3D = $derived(unifiedState ? resolveMotion3D(unifiedState.motion) : null);
+  const motionEnabled = $derived(
+    unifiedState ? unifiedState.config.tipEffectMap["*"]?.effect === "motion" : false,
+  );
+
+  /**
+   * Pick a per-tip color for unified motion intent. Tip indices:
+   * 0 = blueA, 1 = blueB, 2 = redA, 3 = redB.
+   *
+   * `velocity` mode falls back to motion3D.color in 3D — per-frame velocity
+   * hue requires per-emitter derived state and adds noise without much payoff
+   * in 3D where the tip already moves through space (deferred).
+   */
+  function pickMotionColor(i: number): string {
+    if (!motion3D) return "#ffffff";
+    if (motion3D.colorMode === "prop-matched") {
+      const isBlue = i < 2;
+      const trails = unifiedState?.trails;
+      if (isBlue) return trails?.blueColor ?? "#3b82f6";
+      return trails?.redColor ?? "#ef4444";
+    }
+    if (motion3D.colorMode === "rainbow") {
+      const hue = (Date.now() * 0.05 + i * 90) % 360;
+      return `hsl(${hue}, 80%, 60%)`;
+    }
+    // solid + velocity (deferred) → motion3D.color
+    return motion3D.color;
+  }
 
   function pickSparkleColor(i: number): string {
     if (!sparkles3D) return "#ffffff";
@@ -390,6 +420,103 @@
       enableSpeedLines={configState.motion.speedLines}
       intensity={configState.motion.intensity}
       threshold={configState.motion.threshold}
+    />
+  {/if}
+{/if}
+
+<!-- =============================================================================
+     Unified Motion intent (Phase 1d) — velocity-gated MotionBlur + SpeedLines
+     per tip, sourced from the unified intent layer via resolveMotion3D.
+     Lives alongside the legacy PropMotionEffects mount above; Phase 3 retires
+     the legacy path.
+     ============================================================================= -->
+{#if motionEnabled && motion3D && isPlaying}
+  {@const blueTrail = effectState.getTrailPoints("blue", 2)}
+  {@const redTrail = effectState.getTrailPoints("red", 2)}
+  {@const bluePrev = blueTrail[1]?.position ?? blueCenter}
+  {@const redPrev = redTrail[1]?.position ?? redCenter}
+  {@const trailCount = Math.max(1, Math.floor(3 + motion3D.blur * 6))}
+  {@const speedMaxLength = motion3D.length * 1.2}
+
+  {#if blueEnds && bluePrev}
+    <MotionBlur
+      currentPosition={blueEnds.positive}
+      previousPosition={bluePrev}
+      enabled={motion3D.blur > 0}
+      intensity={motion3D.blur}
+      threshold={motion3D.threshold}
+      color={pickMotionColor(0)}
+      trailCount={trailCount}
+    />
+    <SpeedLines
+      currentPosition={blueEnds.positive}
+      previousPosition={bluePrev}
+      enabled={motion3D.speedLines > 0}
+      intensity={motion3D.speedLines}
+      threshold={motion3D.threshold}
+      color={pickMotionColor(0)}
+      lineCount={motion3D.count}
+      maxLength={speedMaxLength}
+    />
+    <MotionBlur
+      currentPosition={blueEnds.negative}
+      previousPosition={bluePrev}
+      enabled={motion3D.blur > 0}
+      intensity={motion3D.blur}
+      threshold={motion3D.threshold}
+      color={pickMotionColor(1)}
+      trailCount={trailCount}
+    />
+    <SpeedLines
+      currentPosition={blueEnds.negative}
+      previousPosition={bluePrev}
+      enabled={motion3D.speedLines > 0}
+      intensity={motion3D.speedLines}
+      threshold={motion3D.threshold}
+      color={pickMotionColor(1)}
+      lineCount={motion3D.count}
+      maxLength={speedMaxLength}
+    />
+  {/if}
+
+  {#if redEnds && redPrev}
+    <MotionBlur
+      currentPosition={redEnds.positive}
+      previousPosition={redPrev}
+      enabled={motion3D.blur > 0}
+      intensity={motion3D.blur}
+      threshold={motion3D.threshold}
+      color={pickMotionColor(2)}
+      trailCount={trailCount}
+    />
+    <SpeedLines
+      currentPosition={redEnds.positive}
+      previousPosition={redPrev}
+      enabled={motion3D.speedLines > 0}
+      intensity={motion3D.speedLines}
+      threshold={motion3D.threshold}
+      color={pickMotionColor(2)}
+      lineCount={motion3D.count}
+      maxLength={speedMaxLength}
+    />
+    <MotionBlur
+      currentPosition={redEnds.negative}
+      previousPosition={redPrev}
+      enabled={motion3D.blur > 0}
+      intensity={motion3D.blur}
+      threshold={motion3D.threshold}
+      color={pickMotionColor(3)}
+      trailCount={trailCount}
+    />
+    <SpeedLines
+      currentPosition={redEnds.negative}
+      previousPosition={redPrev}
+      enabled={motion3D.speedLines > 0}
+      intensity={motion3D.speedLines}
+      threshold={motion3D.threshold}
+      color={pickMotionColor(3)}
+      lineCount={motion3D.count}
+      maxLength={speedMaxLength}
     />
   {/if}
 {/if}
