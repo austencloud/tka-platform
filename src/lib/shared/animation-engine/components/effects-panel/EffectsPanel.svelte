@@ -36,6 +36,7 @@
 
     // Layout control
     showPlayback?: boolean;       // default true
+    showTransport?: boolean;      // default true — when false, hide play/step buttons (e.g. lab uses canvas overlay)
     showExportControls?: boolean; // default false
 
     // Svelte 5 snippet for slot content (export controls, source picker, etc.)
@@ -52,6 +53,7 @@
     onHalfStepForward,
     onHalfStepBackward,
     showPlayback = true,
+    showTransport = true,
     showExportControls = false,
     children,
   }: Props = $props();
@@ -193,14 +195,16 @@
   {#if showPlayback}
     <div class="sb-section">
       <TempoControl {bpm} {onBpmChange} showPresets={false} showPractice={false} presetsMode="popover" />
-      <TransportControls
-        {isPlaying}
-        onPlaybackToggle={onPlaybackToggle}
-        onStepHalfBeatForward={onHalfStepForward}
-        onStepHalfBeatBackward={onHalfStepBackward}
-        onStepFullBeatForward={onStepForward}
-        onStepFullBeatBackward={onStepBackward}
-      />
+      {#if showTransport}
+        <TransportControls
+          {isPlaying}
+          onPlaybackToggle={onPlaybackToggle}
+          onStepHalfBeatForward={onHalfStepForward}
+          onStepHalfBeatBackward={onHalfStepBackward}
+          onStepFullBeatForward={onStepForward}
+          onStepFullBeatBackward={onStepBackward}
+        />
+      {/if}
     </div>
   {/if}
 

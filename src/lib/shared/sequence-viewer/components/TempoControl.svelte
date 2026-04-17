@@ -22,6 +22,8 @@
     { label: "Fast", bpm: 120 },
   ] as const;
 
+  const NUMERIC_PRESETS = [15, 30, 60, 90, 120, 150] as const;
+
   const BPM_MIN = 5;
   const BPM_MAX = 300;
   const STEP_NORMAL = 5;
@@ -40,6 +42,11 @@
     practiceActive?: boolean;
     onPracticeStart?: () => void;
     onPracticeStop?: () => void;
+    /**
+     * "inline" (default): tap BPM = tap-tempo; Slow/Med/Fast presets render as chips.
+     * "popover": tap BPM opens a popover with numeric presets, custom input, and tap-tempo.
+     */
+    presetsMode?: "inline" | "popover";
   }
 
   let {
@@ -50,12 +57,18 @@
     practiceActive = false,
     onPracticeStart,
     onPracticeStop,
+    presetsMode = "inline",
   }: Props = $props();
 
   // Tap tempo state
   let tapTimes: number[] = $state([]);
   let tapTimeout: ReturnType<typeof setTimeout> | null = null;
   let isTapping = $derived(tapTimes.length > 0);
+
+  // Popover state (popover mode only)
+  let showPopover = $state(false);
+  let customDraft = $state(60);
+  let customInputRef: HTMLInputElement | null = $state(null);
 
   // Hold-to-repeat state
   let holdTimer: ReturnType<typeof setTimeout> | null = null;
@@ -147,6 +160,49 @@
     onBpmChange(presetBpm);
   }
 
+  function handleBpmButtonClick() {
+    if (presetsMode === "popover") {
+      openPopover();
+    } else {
+      handleTap();
+    }
+  }
+
+  function openPopover() {
+    customDraft = bpm;
+    showPopover = true;
+    queueMicrotask(() => customInputRef?.focus());
+  }
+
+  function closePopover() {
+    showPopover = false;
+  }
+
+  function commitCustomBpm() {
+    const next = clampBpm(Math.round(customDraft || bpm));
+    if (!Number.isNaN(next) && next !== bpm) onBpmChange(next);
+    closePopover();
+  }
+
+  function handleCustomKey(e: KeyboardEvent) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      commitCustomBpm();
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      closePopover();
+    }
+  }
+
+  function nudgeCustom(delta: number) {
+    customDraft = clampBpm((customDraft || bpm) + delta);
+  }
+
+  function selectPresetFromPopover(presetBpm: number) {
+    selectPreset(presetBpm);
+    closePopover();
+  }
+
   function handlePracticeClick() {
     if (practiceActive) {
       onPracticeStop?.();
@@ -164,6 +220,7 @@
   });
 </script>
 
+<div class="tempo-wrapper">
 <div class="tempo-control">
   <!-- +/- with BPM display -->
   <div class="bpm-adjuster">
@@ -182,10 +239,12 @@
 
     <button
       class="bpm-display"
-      onclick={handleTap}
+      onclick={handleBpmButtonClick}
       type="button"
-      aria-label={t("compose_tap_to_set_tempo")}
-      title={t("compose_tap_tempo_hint")}
+      aria-label={presetsMode === "popover" ? t("compose_custom_bpm") : t("compose_tap_to_set_tempo")}
+      title={presetsMode === "popover" ? t("compose_custom_bpm") : t("compose_tap_tempo_hint")}
+      aria-haspopup={presetsMode === "popover" ? "dialog" : undefined}
+      aria-expanded={presetsMode === "popover" ? showPopover : undefined}
       style="--bpm-color: {bpmColor}"
     >
       <span class="bpm-value">{bpm}</span>
@@ -206,8 +265,8 @@
     </button>
   </div>
 
-  <!-- Semantic presets (hidden on mobile) -->
-  {#if showPresets}
+  <!-- Semantic presets (hidden on mobile / in popover mode) -->
+  {#if showPresets && presetsMode === "inline"}
     <div class="presets">
       {#each PRESETS as preset}
         <button
@@ -236,6 +295,80 @@
       <span>{practiceActive ? "Stop" : "Practice"}</span>
     </button>
   {/if}
+</div>
+
+{#if showPopover && presetsMode === "popover"}
+  <div class="bpm-popover" role="region" aria-label={t("compose_custom_bpm")}>
+    <div class="bpm-popover-header">{t("compose_custom_bpm")}</div>
+
+    <div class="bpm-popover-presets">
+      {#each NUMERIC_PRESETS as preset}
+        <button
+          type="button"
+          class="preset-btn"
+          class:active={bpm === preset}
+          onclick={() => selectPresetFromPopover(preset)}
+          aria-label={t("compose_set_bpm_to", { bpm: preset })}
+        >
+          {preset}
+        </button>
+      {/each}
+    </div>
+
+    <div class="bpm-popover-custom">
+      <button
+        type="button"
+        class="adjust-btn"
+        onclick={() => nudgeCustom(-1)}
+        disabled={customDraft <= BPM_MIN}
+        aria-label={t("compose_decrease_bpm")}
+      >
+        <i class="fas fa-minus" aria-hidden="true"></i>
+      </button>
+      <input
+        bind:this={customInputRef}
+        class="bpm-popover-input"
+        type="number"
+        inputmode="numeric"
+        pattern="[0-9]*"
+        min={BPM_MIN}
+        max={BPM_MAX}
+        bind:value={customDraft}
+        onkeydown={handleCustomKey}
+        aria-label={t("compose_custom_bpm")}
+      />
+      <button
+        type="button"
+        class="adjust-btn"
+        onclick={() => nudgeCustom(1)}
+        disabled={customDraft >= BPM_MAX}
+        aria-label={t("compose_increase_bpm")}
+      >
+        <i class="fas fa-plus" aria-hidden="true"></i>
+      </button>
+    </div>
+
+    <button
+      type="button"
+      class="bpm-popover-tap"
+      class:tapping={isTapping}
+      onclick={handleTap}
+      aria-label={t("compose_tap_to_set_tempo")}
+    >
+      <i class="fas fa-hand-pointer" aria-hidden="true"></i>
+      <span>{isTapping ? `${t("compose_tap")} · ${tapTimes.length}` : t("compose_tap_to_set_tempo")}</span>
+    </button>
+
+    <div class="bpm-popover-actions">
+      <button type="button" class="bpm-popover-btn cancel" onclick={closePopover}>
+        {t("common_cancel")}
+      </button>
+      <button type="button" class="bpm-popover-btn confirm" onclick={commitCustomBpm}>
+        {t("common_done")}
+      </button>
+    </div>
+  </div>
+{/if}
 </div>
 
 <style>
@@ -511,6 +644,170 @@
     .preset-btn:active,
     .practice-btn:hover,
     .practice-btn:active {
+      transform: none;
+    }
+  }
+
+  /* ===========================
+     BPM POPOVER (popover mode)
+     =========================== */
+
+  /* Wrapper stacks the BPM row above the inline popover so they share width
+     and the popover expands in place rather than floating. */
+  .tempo-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+  }
+
+  /* Inline popover — expands in place below the BPM row. No backdrop. */
+  .bpm-popover {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 14px;
+    background: color-mix(in srgb, var(--theme-accent, #6366f1) 6%, var(--theme-card-bg, rgba(255, 255, 255, 0.04)));
+    border: 1px solid color-mix(in srgb, var(--theme-accent, #6366f1) 30%, transparent);
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+    animation: bpm-popIn 180ms cubic-bezier(0.4, 0, 0.2, 1);
+    transform-origin: top center;
+  }
+
+  @keyframes bpm-popIn {
+    from { opacity: 0; transform: translateY(-6px) scaleY(0.94); }
+    to { opacity: 1; transform: translateY(0) scaleY(1); }
+  }
+
+  .bpm-popover-header {
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    text-align: center;
+  }
+
+  .bpm-popover-presets {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+
+  .bpm-popover-presets .preset-btn {
+    min-height: var(--min-touch-target);
+    padding: 8px 6px;
+    text-align: center;
+  }
+
+  .bpm-popover-custom {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .bpm-popover-input {
+    flex: 1;
+    min-height: var(--min-touch-target);
+    padding: 8px 10px;
+    background: color-mix(in srgb, var(--theme-accent, #6366f1) 10%, transparent);
+    border: 1.5px solid color-mix(in srgb, var(--theme-accent, #6366f1) 35%, transparent);
+    border-radius: 12px;
+    color: var(--theme-text, white);
+    font-size: 1.5rem;
+    font-weight: 700;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+
+  .bpm-popover-input::-webkit-outer-spin-button,
+  .bpm-popover-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  .bpm-popover-input:focus {
+    outline: none;
+    border-color: var(--theme-accent, #6366f1);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-accent, #6366f1) 25%, transparent);
+  }
+
+  .bpm-popover-tap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: var(--min-touch-target);
+    padding: 10px 14px;
+    border-radius: 12px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
+    font-size: var(--font-size-min, 14px);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--duration-fast, 150ms) ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .bpm-popover-tap:hover {
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
+    color: var(--theme-text, white);
+  }
+
+  .bpm-popover-tap.tapping {
+    background: color-mix(in srgb, var(--theme-accent, #6366f1) 18%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent, #6366f1) 50%, transparent);
+    color: var(--theme-accent, #a78bfa);
+  }
+
+  .bpm-popover-tap:active {
+    transform: scale(0.97);
+  }
+
+  .bpm-popover-actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  .bpm-popover-btn {
+    flex: 1;
+    min-height: var(--min-touch-target);
+    padding: 10px 14px;
+    border-radius: 12px;
+    font-size: var(--font-size-min, 14px);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--duration-fast, 150ms) ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .bpm-popover-btn.cancel {
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
+  }
+
+  .bpm-popover-btn.confirm {
+    background: var(--theme-accent, #6366f1);
+    border: 1.5px solid var(--theme-accent, #6366f1);
+    color: white;
+  }
+
+  .bpm-popover-btn:active {
+    transform: scale(0.97);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bpm-popover,
+    .bpm-popover-backdrop {
+      animation: none;
+    }
+    .bpm-popover-tap:active,
+    .bpm-popover-btn:active {
       transform: none;
     }
   }
