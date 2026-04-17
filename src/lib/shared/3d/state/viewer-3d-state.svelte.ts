@@ -27,6 +27,7 @@ import type { FormationPreset } from "../domain/formation";
 import { calculateFacingAngle } from "../domain/formation";
 import { PRESET_VALID_COUNTS, createFormationFromPreset } from "../config/formation-presets";
 import { isWebGL2Available } from "../capabilities/webgl-capabilities";
+import { createCameraChoreographyState } from "$lib/shared/sequence-viewer/camera-choreography/state.svelte";
 
 // ============================================
 // Popover Stack
@@ -588,6 +589,11 @@ export function createViewer3DState(deps: {
   // Legacy — kept for any remaining references but no longer used for gating.
   let autoRenderEnabled = $state(true);
 
+  // Camera choreography sub-state — tracks the preset selected in the
+  // Export popover. The recording driver that consumes this lands in
+  // Phase 1 of the camera-choreography plan.
+  const cameraChoreography = createCameraChoreographyState();
+
   // Callback slot for the effect orchestrator's per-frame update function.
   // Registered by EffectOrchestrator3D via $effect, called by the offline
   // exporter with a deterministic dt each frame.
@@ -950,6 +956,9 @@ export function createViewer3DState(deps: {
     },
     set updateEffects(fn: ((dt: number) => void) | null) {
       updateEffectsCallback = fn;
+    },
+    get cameraChoreography() {
+      return cameraChoreography;
     },
     enter3D,
     exit3D,
