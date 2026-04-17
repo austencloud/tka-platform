@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from "svelte";
   import { getViewer3DContext, type PopoverId } from "$lib/shared/3d/context/viewer-3d-context";
   import TempoPopover from "./TempoPopover.svelte";
   import ExportPopover from "./ExportPopover.svelte";
@@ -12,6 +13,8 @@
   }
   let { bpm = 60, onBpmChange = () => {} }: Props = $props();
 
+  let rootEl = $state<HTMLDivElement | null>(null);
+
   interface Chip { id: PopoverId; icon: string; tooltip: string; }
   const CHIPS: Chip[] = [
     { id: "performers", icon: "fa-users", tooltip: "Performers" },
@@ -24,9 +27,25 @@
     e.stopPropagation();
     viewer.openPopover(viewer.activePopover === id ? null : id);
   }
+
+  onMount(() => {
+    function onDocClick(e: MouseEvent) {
+      if (!viewer.activePopover) return;
+      const target = e.target as Node | null;
+      if (!target) return;
+      // Clicks inside the rail (chips + adjacent popover wrappers) are ignored.
+      if (rootEl && rootEl.contains(target)) return;
+      // Popovers may render in portals — treat any role="dialog" as inside.
+      const popovers = document.querySelectorAll('[role="dialog"]');
+      for (const p of popovers) if (p.contains(target)) return;
+      viewer.closePopover();
+    }
+    document.addEventListener("click", onDocClick);
+    return () => document.removeEventListener("click", onDocClick);
+  });
 </script>
 
-<div class="right-rail" role="toolbar" aria-label="Viewer controls">
+<div class="right-rail" bind:this={rootEl} role="toolbar" aria-label="Viewer controls">
   {#each CHIPS as chip (chip.id)}
     {#if chip.id === "performers"}
       <div class="chip-wrap">
