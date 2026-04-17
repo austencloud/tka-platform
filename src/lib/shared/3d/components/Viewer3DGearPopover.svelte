@@ -23,7 +23,7 @@
   import PerformerTab from "./controls/PerformerTab.svelte";
   import { createViewer3DKeyboardHandler } from "../keyboard/Viewer3DKeyboardHandler";
   import { onMount } from "svelte";
-  import SceneFeatureToggles from "../scene-features/components/SceneFeatureToggles.svelte";
+  import SceneFeatureTiles from "../scene-features/components/SceneFeatureTiles.svelte";
   import Viewer3DVisibilityToggles from "./controls/Viewer3DVisibilityToggles.svelte";
 
   type TabId = "camera" | "planes" | "performers" | "scene" | "visibility";
@@ -285,7 +285,7 @@
       <!-- Scene tab -->
       {#if activeTab === "scene"}
         <div class="tab-panel" role="tabpanel">
-          <SceneFeatureToggles />
+          <SceneFeatureTiles />
         </div>
       {/if}
 
