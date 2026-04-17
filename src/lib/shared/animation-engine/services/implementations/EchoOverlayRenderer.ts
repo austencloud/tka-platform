@@ -1,28 +1,29 @@
 /**
- * Motion Overlay Renderer
+ * Echo Overlay Renderer
  *
  * Owns an absolutely-positioned Canvas2D element on top of the animator
- * surface and delegates per-frame drawing to `Motion2DRenderer`. Mirrors
+ * surface and delegates per-frame drawing to `Echo2DRenderer`. Mirrors
  * the sparkles overlay pattern: position:absolute, pointer-events:none,
  * z-index sits above the trails canvas (1) but below LED.
  *
- * The overlay canvas is fully cleared each frame before drawing — Motion2DRenderer
- * uses additive blending, so we don't want stale ghost stamps from the previous
- * frame to fade in/out unpredictably. The renderer holds per-tip velocity
- * history state across frames.
+ * The overlay canvas is fully cleared each frame before drawing — the
+ * Echo2DRenderer uses additive blending and its own phantom ring buffer
+ * to manage persistence across frames. Drawing a fresh frame each tick
+ * keeps fade behavior predictable when the step index doesn't advance
+ * (paused) or jumps (seek).
  */
 
-import type { IMotionOverlayRenderer } from "../contracts/IMotionOverlayRenderer";
-import type { Motion2DParams } from "$lib/shared/effects/translators/canvas2d-types";
+import type { IEchoOverlayRenderer } from "../contracts/IEchoOverlayRenderer";
+import type { Echo2DParams } from "$lib/shared/effects/translators/canvas2d-types";
 import {
-  Motion2DRenderer,
-  type MotionTipInput,
-} from "$lib/shared/effects/renderers/Motion2DRenderer";
+  Echo2DRenderer,
+  type EchoTipInput,
+} from "$lib/shared/effects/renderers/Echo2DRenderer";
 
-export class MotionOverlayRenderer implements IMotionOverlayRenderer {
+export class EchoOverlayRenderer implements IEchoOverlayRenderer {
   private canvas: HTMLCanvasElement | null = null;
   private ctx: CanvasRenderingContext2D | null = null;
-  private renderer = new Motion2DRenderer();
+  private renderer = new Echo2DRenderer();
   private width = 0;
   private height = 0;
 
@@ -40,7 +41,7 @@ export class MotionOverlayRenderer implements IMotionOverlayRenderer {
     canvas.style.width = "100%";
     canvas.style.height = "100%";
     canvas.style.pointerEvents = "none";
-    // Sit above the trail overlay (z-index 1) so streaks render on top of trails.
+    // Sit above the trail overlay (z-index 1) so phantoms render on top of trails.
     canvas.style.zIndex = "2";
     canvas.style.background = "transparent";
 
@@ -65,13 +66,11 @@ export class MotionOverlayRenderer implements IMotionOverlayRenderer {
     this.height = height;
   }
 
-  renderFrame(params: Motion2DParams, tips: MotionTipInput, dt: number): void {
+  renderFrame(params: Echo2DParams, tips: EchoTipInput): void {
     const ctx = this.ctx;
     if (!ctx) return;
     ctx.clearRect(0, 0, this.width, this.height);
-    // Step renderer every frame so per-tip history continues to update even
-    // when individual tips drop out (e.g., between sequence loops).
-    this.renderer.render(ctx, params, tips, dt);
+    this.renderer.render(ctx, params, tips);
   }
 
   clear(): void {
