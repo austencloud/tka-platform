@@ -18,9 +18,15 @@
   type TabId = "prop" | "effects" | "effort";
   let activeTab = $state<TabId>("effort");
 
-  // When selectedPerformerIndex is null ("All" chip), fall back to performer 0
-  // so the panel shows something actionable. Mutations still target that performer.
+  // "All" chip selected = no individual target for prop/effort/effects.
+  // The sub-tabs each mutate a single performer's settings, so falling back
+  // to performer 0 when null was silently writing to performer 0 while the
+  // UI implied a group edit. Gate the controls instead: sub-tabs disable and
+  // show a hint until the user picks a specific performer.
+  const allSelected = $derived(viewer.selectedPerformerIndex === null);
+
   const selected = $derived.by(() => {
+    if (allSelected) return null;
     const list = viewer.performerManager.performers;
     if (list.length === 0) return null;
     const idx = viewer.selectedPerformerIndex ?? 0;
@@ -58,23 +64,30 @@
           class="tab"
           role="tab"
           aria-selected={activeTab === "prop"}
+          disabled={allSelected}
           onclick={() => (activeTab = "prop")}>Prop</button
         >
         <button
           class="tab"
           role="tab"
           aria-selected={activeTab === "effects"}
+          disabled={allSelected}
           onclick={() => (activeTab = "effects")}>Effects</button
         >
         <button
           class="tab"
           role="tab"
           aria-selected={activeTab === "effort"}
+          disabled={allSelected}
           onclick={() => (activeTab = "effort")}>Effort</button
         >
       </div>
 
-      {#if selected === null}
+      {#if allSelected}
+        <div class="empty">
+          Select a performer to edit their prop, effort, or effects.
+        </div>
+      {:else if selected === null}
         <div class="empty">No performer selected.</div>
       {:else if activeTab === "prop"}
         <BentoPropGrid
@@ -148,8 +161,12 @@
     text-align: center;
     transition: all 140ms cubic-bezier(0.2, 0, 0.13, 1.5);
   }
-  .tab:hover {
+  .tab:hover:not(:disabled) {
     color: rgba(255, 255, 255, 0.72);
+  }
+  .tab:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
   }
   .tab[aria-selected="true"] {
     background: rgba(255, 255, 255, 0.12);
