@@ -65,6 +65,10 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
     blur: 0.4,
     speedLines: 0.5,
     threshold: 0.2,
+    color: "#ffffff",
+    colorMode: "solid",
+    length: 0.5,
+    count: 6,
   },
 
   bloom: {
