@@ -18,6 +18,8 @@ Last updated: 2026-04-15.
 
 **Where.** `src/lib/shared/3d/effects/EffectsLayer.svelte`.
 
+**Phase 1b note (2026-04-17).** With the per-hand `leftColor`/`rightColor` split, the 3D path now uses a per-pair color split: positive-pair takes `leftColor`, negative-pair takes `rightColor`. This is a documented compromise — it surfaces per-hand color in 3D arc mode without a custom shader, but in crackle mode the per-pair split is not the same as per-origin coloring. Option A's four-instance refactor would also restore true per-origin (and therefore per-hand) coloring in 3D crackle mode.
+
 ---
 
 ## 2. FireTipTracker output-array aliasing

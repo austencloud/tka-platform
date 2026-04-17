@@ -340,7 +340,7 @@
       end={redEnds.positive}
       enabled={true}
       intensity={zap3D.intensity}
-      color={zap3D.color}
+      color={zap3D.leftColor}
       mode={zap3D.mode}
     />
     <ElectricityArc
@@ -348,7 +348,7 @@
       end={redEnds.negative}
       enabled={true}
       intensity={zap3D.intensity}
-      color={zap3D.color}
+      color={zap3D.rightColor}
       mode={zap3D.mode}
     />
   {/if}
