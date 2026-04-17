@@ -85,3 +85,19 @@ Then pass `effectsConfigState` as a prop to `AnimatorCanvas`. Same three-line pa
 Before Phase 3 (retiring `EffectsSettingsPanel`) so parity with the legacy system is real. Items 1, 2, 4 are user-visible; items 3, 5 are correctness/clarity.
 
 Items can be rolled into Phase 1b/1c/1d polish passes if they're in the way, or tackled as a dedicated cleanup pass between Phase 1d and Phase 2.
+
+---
+
+## 6. Motion (Phase 1d) deferred items
+
+Surfaced 2026-04-17 during Phase 1d Group B implementation.
+
+**6a. Velocity-color mode in 3D.** `Motion3DParams.colorMode === "velocity"` falls back to `motion3D.color` in 3D. Per-frame velocity hue requires per-emitter derived state (one `$derived.by` per Motion mount, reading `effectState.getVelocity` each frame) and adds noise without much visual payoff in 3D where the tip already moves through space. 2D path supports velocity hue as designed.
+
+**6b. Per-tip independent threshold.** Spec uses one global threshold for all four tips (blueA/B, redA/B). Per-tip threshold would let users gate left vs right hand independently. Probably not worth the UI complexity until a user asks.
+
+**6c. Doppler chromatic aberration.** Spec listed it as a future polish — split RGB channels offset along velocity vector for a hyperspeed look. Defer until someone wants it.
+
+**6d. Legacy `PropMotionEffects` mount in `EffectsLayer.svelte`.** Phase 1d adds the unified-state mount alongside the legacy one (driven by `configState.motion.*`). Phase 3 retires the legacy path along with `EffectsSettingsPanel`.
+
+**6e. 3D MotionBlur/SpeedLines per-tip previousPosition.** The 3D mounts pass center-prop `previousPosition` for both ends of a staff (no per-tip-end history). The components' threshold gating is based on velocity magnitude and the approximation reads correctly at speed. A faithful per-end previous position would require extending `effectState` to track end positions, not just centers. Defer.
