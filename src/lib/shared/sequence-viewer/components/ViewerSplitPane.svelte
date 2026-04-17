@@ -93,6 +93,8 @@
     propRendering: PropRenderingProps;
     layout: ViewerLayoutState;
     renderMode?: '2d' | '3d';
+    bpm?: number;
+    onBpmChange?: (bpm: number) => void;
     onRenderProgress?: (loaded: number, total: number) => void;
     onFocusPane: (pane: "animation" | "image") => void;
     onUnfocusPane: () => void;
@@ -116,6 +118,8 @@
     propRendering,
     layout,
     renderMode = '2d',
+    bpm = 60,
+    onBpmChange = () => {},
     onRenderProgress,
     onFocusPane,
     onUnfocusPane,
@@ -248,6 +252,8 @@
             sequenceData={playback.animationState.sequenceData}
             currentStep={playback.currentStep}
             isPlaying={playback.isPlaying}
+            {bpm}
+            {onBpmChange}
             bluePropType={propRendering.bluePropType != null ? String(propRendering.bluePropType) : null}
             redPropType={propRendering.redPropType != null ? String(propRendering.redPropType) : null}
             hideOverlays={false}

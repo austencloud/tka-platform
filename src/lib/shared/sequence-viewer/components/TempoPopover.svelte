@@ -7,20 +7,29 @@
   const viewer = getViewer3DContext();
   const open = $derived(viewer.activePopover === "tempo");
 
-  let bpm = $state(60);
+  interface Props {
+    bpm: number;
+    onBpmChange: (bpm: number) => void;
+  }
+  let { bpm, onBpmChange }: Props = $props();
 </script>
 
 {#if open}
+  <!-- svelte-ignore a11y_interactive_supports_focus -->
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
   <div
     class="pop"
     role="dialog"
     aria-label="Tempo"
+    onclick={(e) => e.stopPropagation()}
+    onpointerdown={(e) => e.stopPropagation()}
     in:scale={{ duration: 220, start: 0.92, opacity: 0, easing: backOut }}
     out:scale={{ duration: 160, start: 0.95, opacity: 0, easing: cubicOut }}
   >
     <div class="pop-header">Tempo</div>
     <div class="pop-body">
-      <BpmChips bind:bpm variant="full" />
+      <BpmChips {bpm} variant="full" {onBpmChange} />
     </div>
   </div>
 {/if}
