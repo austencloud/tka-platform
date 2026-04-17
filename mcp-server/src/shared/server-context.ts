@@ -8,8 +8,8 @@
 import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
-import { exec } from "child_process";
-import { tmpdir } from "os";
+import { exec, spawn } from "child_process";
+import { homedir, tmpdir } from "os";
 import { calculateOrientations } from "../core/orientation-calculator.js";
 import type { MotionData, PictographData, GridMode } from "../types/pictograph.js";
 
@@ -82,20 +82,49 @@ export function updatePreferences(partial: Partial<UserPreferences>): void {
 // ============================================================================
 
 /**
+ * Resolve a user-writable temp directory. os.tmpdir() can return
+ * C:\WINDOWS\TEMP when the MCP server inherits a system env, which
+ * blocks Windows from auto-launching the default image viewer.
+ */
+function resolveUserTempDir(): string {
+  if (process.platform === "win32") {
+    const localAppData = process.env.LOCALAPPDATA;
+    const userTemp = localAppData
+      ? path.join(localAppData, "Temp")
+      : path.join(homedir(), "AppData", "Local", "Temp");
+    const dir = path.join(userTemp, "tka-mcp");
+    try {
+      fs.mkdirSync(dir, { recursive: true });
+      return dir;
+    } catch {
+      return tmpdir();
+    }
+  }
+  return tmpdir();
+}
+
+/**
  * Open an image file with the system's default image viewer.
+ * On Windows uses explorer.exe (more reliable than cmd's `start`
+ * when the MCP process has no attached console).
  */
 export function openImageFile(filePath: string): void {
   const platform = process.platform;
-  let command: string;
 
   if (platform === "win32") {
-    command = `start "" "${filePath}"`;
-  } else if (platform === "darwin") {
-    command = `open "${filePath}"`;
-  } else {
-    command = `xdg-open "${filePath}"`;
+    const child = spawn("explorer.exe", [filePath], {
+      detached: true,
+      stdio: "ignore",
+      windowsHide: false,
+    });
+    child.on("error", (err) => {
+      console.error(`[MCP] Failed to open image via explorer: ${err.message}`);
+    });
+    child.unref();
+    return;
   }
 
+  const command = platform === "darwin" ? `open "${filePath}"` : `xdg-open "${filePath}"`;
   exec(command, (error) => {
     if (error) {
       console.error(`[MCP] Failed to open image: ${error.message}`);
@@ -107,7 +136,7 @@ export function openImageFile(filePath: string): void {
  * Save PNG buffer to a temp file and open it immediately.
  */
 export function saveAndOpenImage(pngBuffer: Buffer, label: string): string {
-  const tempDir = tmpdir();
+  const tempDir = resolveUserTempDir();
   const timestamp = Date.now();
   const fileName = `tka-${label}-${timestamp}.png`;
   const filePath = path.join(tempDir, fileName);
