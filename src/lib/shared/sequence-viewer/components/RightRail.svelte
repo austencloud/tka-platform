@@ -2,6 +2,7 @@
   import { getViewer3DContext, type PopoverId } from "$lib/shared/3d/context/viewer-3d-context";
   import TempoPopover from "./TempoPopover.svelte";
   import ExportPopover from "./ExportPopover.svelte";
+  import PerformerPopover from "./PerformerPopover.svelte";
 
   const viewer = getViewer3DContext();
 
@@ -27,7 +28,20 @@
 
 <div class="right-rail" role="toolbar" aria-label="Viewer controls">
   {#each CHIPS as chip (chip.id)}
-    {#if chip.id === "tempo"}
+    {#if chip.id === "performers"}
+      <div class="chip-wrap">
+        <button
+          class="rail-chip"
+          aria-pressed={viewer.activePopover === chip.id}
+          aria-label={chip.tooltip}
+          data-tooltip={chip.tooltip}
+          onclick={(e) => onClick(e, chip.id)}
+        >
+          <i class="fas {chip.icon}"></i>
+        </button>
+        <PerformerPopover />
+      </div>
+    {:else if chip.id === "tempo"}
       <div class="chip-wrap">
         <button
           class="rail-chip"
