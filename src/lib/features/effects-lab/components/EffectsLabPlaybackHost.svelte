@@ -48,7 +48,7 @@
   const visibilityManager = getAnimationVisibilityManager();
 
   // Shared effects config state — single source of truth for per-effect intents
-  // (zap, sparkles, motion, bloom today). The Customize panels write here via
+  // (zap, sparkles, echo, bloom today). The Customize panels write here via
   // getEffectsConfigContext(); the AnimatorCanvas reads the same state each
   // frame so slider changes flow straight to the canvas.
   const effectsConfigState = createEffectsConfigState();
@@ -100,7 +100,7 @@
   // The EffectsPanel writes to the VM; we read from it to know which mode
   // is active for the canvas conditional props and accent color theming.
   let vmActiveMode = $state<
-    "fire" | "charcoal" | "led" | "trails" | "zap" | "sparkles" | "motion" | "bloom" | "none"
+    "fire" | "charcoal" | "led" | "trails" | "zap" | "sparkles" | "echo" | "bloom" | "none"
   >("none");
 
   function syncActiveMode() {

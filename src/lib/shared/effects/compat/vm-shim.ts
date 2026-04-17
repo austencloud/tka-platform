@@ -64,7 +64,7 @@ export function snapshotConfigFromVm(vm: AnimationVisibilityStateManager): Effec
     // New effects not yet wired to vm — seed from schema defaults.
     zap: { ...DEFAULT_EFFECTS_CONFIG.zap },
     sparkles: { ...DEFAULT_EFFECTS_CONFIG.sparkles },
-    motion: { ...DEFAULT_EFFECTS_CONFIG.motion },
+    echo: { ...DEFAULT_EFFECTS_CONFIG.echo },
     bloom: { ...DEFAULT_EFFECTS_CONFIG.bloom },
 
     activePresets: {
@@ -74,7 +74,7 @@ export function snapshotConfigFromVm(vm: AnimationVisibilityStateManager): Effec
       charcoal: null,
       zap: null,
       sparkles: null,
-      motion: null,
+      echo: null,
       bloom: null,
     },
   };

@@ -16,7 +16,7 @@ import type {
   CharcoalIntent,
   ZapIntent,
   SparklesIntent,
-  MotionIntent,
+  EchoIntent,
   BloomIntent,
 } from "../domain/EffectsConfig";
 import type { EffectsPreset } from "../domain/EffectsPreset";
@@ -34,7 +34,7 @@ function mergeConfig(base: EffectsConfig, patch: Partial<EffectsConfig>): Effect
     charcoal: patch.charcoal ? { ...base.charcoal, ...patch.charcoal } : base.charcoal,
     zap: patch.zap ? { ...base.zap, ...patch.zap } : base.zap,
     sparkles: patch.sparkles ? { ...base.sparkles, ...patch.sparkles } : base.sparkles,
-    motion: patch.motion ? { ...base.motion, ...patch.motion } : base.motion,
+    echo: patch.echo ? { ...base.echo, ...patch.echo } : base.echo,
     bloom: patch.bloom ? { ...base.bloom, ...patch.bloom } : base.bloom,
     activePresets: patch.activePresets
       ? { ...base.activePresets, ...patch.activePresets }
@@ -77,9 +77,9 @@ export function createEffectsConfigState(initial: EffectsConfig = DEFAULT_EFFECT
     config.activePresets.sparkles = null;
   }
 
-  function updateMotion(patch: Partial<MotionIntent>) {
-    config.motion = { ...config.motion, ...patch };
-    config.activePresets.motion = null;
+  function updateEcho(patch: Partial<EchoIntent>) {
+    config.echo = { ...config.echo, ...patch };
+    config.activePresets.echo = null;
   }
 
   function updateBloom(patch: Partial<BloomIntent>) {
@@ -118,7 +118,7 @@ export function createEffectsConfigState(initial: EffectsConfig = DEFAULT_EFFECT
     get charcoal() { return config.charcoal; },
     get zap() { return config.zap; },
     get sparkles() { return config.sparkles; },
-    get motion() { return config.motion; },
+    get echo() { return config.echo; },
     get bloom() { return config.bloom; },
     get overrides() { return config.overrides; },
     get activePresets() { return config.activePresets; },
@@ -129,7 +129,7 @@ export function createEffectsConfigState(initial: EffectsConfig = DEFAULT_EFFECT
     updateCharcoal,
     updateZap,
     updateSparkles,
-    updateMotion,
+    updateEcho,
     updateBloom,
     setTipEffectMap,
     applyPreset,
