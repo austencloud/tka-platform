@@ -21,6 +21,8 @@
   import { ZAP_PRESET_GROUP } from "./presets/zap-presets";
   import { SPARKLES_PRESET_GROUP } from "./presets/sparkles-presets";
   import SparklesCustomize from "./customize/SparklesCustomize.svelte";
+  import { MOTION_PRESET_GROUP } from "./presets/motion-presets";
+  import MotionCustomize from "./customize/MotionCustomize.svelte";
   import type { EffectPresetGroup } from "./presets/types";
 
   interface Props {
@@ -168,6 +170,7 @@
       case "charcoal": return CHARCOAL_PRESET_GROUP;
       case "zap": return ZAP_PRESET_GROUP;
       case "sparkles": return SPARKLES_PRESET_GROUP;
+      case "motion": return MOTION_PRESET_GROUP;
       default: return null;
     }
   }
@@ -245,7 +248,7 @@
       {:else if activeEffect === "sparkles"}
         <SparklesCustomize onBack={() => (customizeOpen = false)} />
       {:else if activeEffect === "motion"}
-        <ComingSoonCustomize effectLabel="Motion" onBack={() => (customizeOpen = false)} />
+        <MotionCustomize onBack={() => (customizeOpen = false)} />
       {:else if activeEffect === "bloom"}
         <ComingSoonCustomize effectLabel="Bloom" onBack={() => (customizeOpen = false)} />
       {/if}
