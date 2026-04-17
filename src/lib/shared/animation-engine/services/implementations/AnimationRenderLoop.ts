@@ -410,7 +410,8 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       fireActive ||
       charcoalActive ||
       ledActive ||
-      zapActive;
+      zapActive ||
+      sparklesActive;
 
     // Trails alone (without active work) should not keep the loop alive forever.
     // Allow a grace period for initialization/texture loading, then auto-stop.
