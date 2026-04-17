@@ -34,10 +34,12 @@
     {@const enabled = sceneFeatures.isEnabled(feature.key)}
     {@const loading = isLoading(feature.key, feature.requiresAsyncLoad)}
     <button
+      type="button"
       class="tile"
       class:loading
       style:--tile-color={ACCENTS[feature.key] ?? "#888"}
       aria-pressed={enabled}
+      aria-label={feature.label + " scene feature"}
       onclick={() => sceneFeatures.toggle(feature.key)}
     >
       <div
@@ -46,7 +48,7 @@
       ></div>
       <div class="foot">
         <span class="label">{feature.label}</span>
-        <span class="status"></span>
+        <span class="status" aria-hidden="true"></span>
       </div>
     </button>
   {/each}
