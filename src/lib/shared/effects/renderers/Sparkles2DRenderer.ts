@@ -26,7 +26,9 @@ interface Particle {
 type TipKey = "bluePosA" | "bluePosB" | "redPosA" | "redPosB";
 const TIP_KEYS: TipKey[] = ["bluePosA", "bluePosB", "redPosA", "redPosB"];
 
-const MAX_PARTICLES = 200;
+const MAX_PARTICLES = 500;
+/** Spawns per second per tip per unit rate. Higher = denser stream. */
+const SPAWN_DENSITY = 24;
 /** Burst mode: minimum tip displacement (px) per frame to trigger a spawn burst. */
 const BURST_MOTION_THRESHOLD = 0.3;
 
@@ -149,23 +151,22 @@ export class Sparkles2DRenderer {
     last: { x: number; y: number } | undefined,
     dt: number,
   ): void {
-    // Base count: ~rate * 8 spawns/s normalized via dt * 60 so a 60fps tick spawns
-    // at the documented rate regardless of actual frame timing.
-    const baseCount = Math.floor(params.rate * 8 * dt * 60);
+    // Base count: rate × SPAWN_DENSITY spawns/s, normalized via dt × 60 so a 60fps
+    // tick spawns at the documented rate regardless of actual frame timing.
+    const baseCount = Math.floor(params.rate * SPAWN_DENSITY * dt * 60);
     let spawnCount = 0;
     let usePathSpawn = false;
 
     if (params.mode === "stream") {
       spawnCount = Math.max(1, baseCount);
     } else if (params.mode === "burst") {
-      if (!last) return; // No motion data yet — wait one frame to seed last position.
+      if (!last) return;
       const dx = tip.x - last.x;
       const dy = tip.y - last.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
       if (dist < BURST_MOTION_THRESHOLD) return;
       spawnCount = Math.max(1, Math.floor(baseCount * (1 + dist / 10)));
     } else {
-      // trail mode — spawn along the path between last and current tip.
       spawnCount = Math.max(1, baseCount);
       usePathSpawn = !!last;
     }
@@ -173,32 +174,36 @@ export class Sparkles2DRenderer {
     for (let i = 0; i < spawnCount; i++) {
       if (this.particles.length >= MAX_PARTICLES) return;
 
-      // Position: scattered within spread radius around tip, or along path for trail.
-      let px = tip.x;
-      let py = tip.y;
+      // Origin: AT the tip (no scatter) so all particles emerge from the same
+      // point and burst outward — that's what reads as "bursting from the tip"
+      // rather than "appearing in a fuzzy area".
+      let originX = tip.x;
+      let originY = tip.y;
       if (usePathSpawn && last) {
         const t = i / spawnCount;
-        px = last.x + (tip.x - last.x) * t;
-        py = last.y + (tip.y - last.y) * t;
+        originX = last.x + (tip.x - last.x) * t;
+        originY = last.y + (tip.y - last.y) * t;
       }
-      const angle = Math.random() * Math.PI * 2;
-      const r = Math.random() * params.spread;
-      const x = px + Math.cos(angle) * r;
-      const y = py + Math.sin(angle) * r;
 
-      // Velocity: random direction × small initial speed, with slight upward bias.
-      const vAngle = Math.random() * Math.PI * 2;
-      const speed = 10 + Math.random() * 30;
-      const vx = Math.cos(vAngle) * speed;
-      const vy = Math.sin(vAngle) * speed - 20;
+      // Radial outward velocity. Speed scales with spread so the spread slider
+      // controls burst reach instead of a static scatter radius.
+      const angle = Math.random() * Math.PI * 2;
+      const burstSpeed = params.spread * 4 + Math.random() * params.spread * 8;
+      const vx = Math.cos(angle) * burstSpeed;
+      // Slight upward bias keeps them feeling buoyant before gravity wins.
+      const vy = Math.sin(angle) * burstSpeed - 15;
+
+      // Stagger lifetime ±40% so particles die at different times. Without this
+      // the whole batch dies together and the canvas pulses dark every lifetime.
+      const lifeJitter = 0.6 + Math.random() * 0.8;
 
       this.particles.push({
-        x,
-        y,
+        x: originX,
+        y: originY,
         vx,
         vy,
         life: 0,
-        maxLife: params.lifetime,
+        maxLife: params.lifetime * lifeJitter,
         color: this.pickColor(params),
         scale: 0.6 + Math.random() * 0.8 * params.size * 2,
         rotation: Math.random() * Math.PI * 2,
