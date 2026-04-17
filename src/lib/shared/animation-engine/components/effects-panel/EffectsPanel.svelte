@@ -23,6 +23,8 @@
   import SparklesCustomize from "./customize/SparklesCustomize.svelte";
   import { ECHO_PRESET_GROUP } from "./presets/echo-presets";
   import EchoCustomize from "./customize/EchoCustomize.svelte";
+  import { BLOOM_PRESET_GROUP } from "./presets/bloom-presets";
+  import BloomCustomize from "./customize/BloomCustomize.svelte";
   import type { EffectPresetGroup } from "./presets/types";
 
   interface Props {
@@ -171,6 +173,7 @@
       case "zap": return ZAP_PRESET_GROUP;
       case "sparkles": return SPARKLES_PRESET_GROUP;
       case "echo": return ECHO_PRESET_GROUP;
+      case "bloom": return BLOOM_PRESET_GROUP;
       default: return null;
     }
   }
@@ -250,7 +253,7 @@
       {:else if activeEffect === "echo"}
         <EchoCustomize onBack={() => (customizeOpen = false)} />
       {:else if activeEffect === "bloom"}
-        <ComingSoonCustomize effectLabel="Bloom" onBack={() => (customizeOpen = false)} />
+        <BloomCustomize onBack={() => (customizeOpen = false)} />
       {/if}
     </div>
   {/if}
