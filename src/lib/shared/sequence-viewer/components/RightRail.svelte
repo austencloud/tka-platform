@@ -1,5 +1,6 @@
 <script lang="ts">
   import { getViewer3DContext, type PopoverId } from "$lib/shared/3d/context/viewer-3d-context";
+  import TempoPopover from "./TempoPopover.svelte";
 
   const viewer = getViewer3DContext();
 
@@ -19,15 +20,30 @@
 
 <div class="right-rail" role="toolbar" aria-label="Viewer controls">
   {#each CHIPS as chip (chip.id)}
-    <button
-      class="rail-chip"
-      aria-pressed={viewer.activePopover === chip.id}
-      aria-label={chip.tooltip}
-      data-tooltip={chip.tooltip}
-      onclick={(e) => onClick(e, chip.id)}
-    >
-      <i class="fas {chip.icon}"></i>
-    </button>
+    {#if chip.id === "tempo"}
+      <div class="chip-wrap">
+        <button
+          class="rail-chip"
+          aria-pressed={viewer.activePopover === chip.id}
+          aria-label={chip.tooltip}
+          data-tooltip={chip.tooltip}
+          onclick={(e) => onClick(e, chip.id)}
+        >
+          <i class="fas {chip.icon}"></i>
+        </button>
+        <TempoPopover />
+      </div>
+    {:else}
+      <button
+        class="rail-chip"
+        aria-pressed={viewer.activePopover === chip.id}
+        aria-label={chip.tooltip}
+        data-tooltip={chip.tooltip}
+        onclick={(e) => onClick(e, chip.id)}
+      >
+        <i class="fas {chip.icon}"></i>
+      </button>
+    {/if}
   {/each}
 </div>
 
@@ -36,6 +52,9 @@
     position: absolute; top: 76px; right: 12px;
     display: flex; flex-direction: column; gap: 8px;
     z-index: 9;
+  }
+  .chip-wrap {
+    position: relative;
   }
   .rail-chip {
     width: 56px; height: 56px;
