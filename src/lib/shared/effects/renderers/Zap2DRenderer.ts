@@ -10,14 +10,13 @@ export interface ZapTipInput {
 
 /**
  * Procedural lightning renderer using midpoint displacement.
- * Regenerates arc paths every `regenerateEveryFrames` to produce flicker.
+ * Regenerates arc paths at the user-specified frequency (Hz) to produce flicker.
  * 'arc' mode connects blue→red tip pairs.
  * 'crackle' mode radiates short arcs outward from each tip.
  */
 export class Zap2DRenderer {
   private frameCount = 0;
   private cachedArcs: Array<{ x: number; y: number }[]> = [];
-  private readonly regenerateEveryFrames = 3;
 
   /**
    * Draw one frame. Caller is responsible for clearing/composing the canvas
@@ -29,7 +28,10 @@ export class Zap2DRenderer {
     tips: ZapTipInput,
   ): void {
     this.frameCount++;
-    const needRegen = this.frameCount % this.regenerateEveryFrames === 0;
+    // params.frequency is regenerations per second at 60fps render cadence.
+    // Clamp to ≥1 frame so frequency=60 means every frame, frequency=1 means once a second.
+    const regenerateEveryFrames = Math.max(1, Math.round(60 / Math.max(0.1, params.frequency)));
+    const needRegen = this.frameCount % regenerateEveryFrames === 0;
 
     const prevComposite = ctx.globalCompositeOperation;
     const prevShadowBlur = ctx.shadowBlur;
