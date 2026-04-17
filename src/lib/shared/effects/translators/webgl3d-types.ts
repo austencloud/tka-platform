@@ -14,7 +14,7 @@ import type {
   CharcoalIntent,
   ZapIntent,
   SparklesIntent,
-  MotionIntent,
+  EchoIntent,
   BloomIntent,
 } from "../domain/EffectsConfig";
 
@@ -86,11 +86,9 @@ export interface Sparkles3DParams extends SparklesIntent {
   worldGravity: number;
 }
 
-export interface Motion3DParams extends MotionIntent {
-  /** Motion blur sample count for the blur shader. */
-  blurSamples: number;
-  /** Speed line max streak length (world units). */
-  streakLength: number;
+export interface Echo3DParams extends EchoIntent {
+  /** Max phantom mesh count per prop (ring buffer). Derived from decay / interval. */
+  poolSize: number;
 }
 
 export interface Bloom3DParams extends BloomIntent {

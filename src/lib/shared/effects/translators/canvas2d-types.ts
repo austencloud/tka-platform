@@ -14,7 +14,7 @@ import type {
   CharcoalIntent,
   ZapIntent,
   SparklesIntent,
-  MotionIntent,
+  EchoIntent,
   BloomIntent,
 } from "../domain/EffectsConfig";
 
@@ -72,11 +72,9 @@ export interface Sparkles2DParams extends SparklesIntent {
   blendMode?: GlobalCompositeOperation;
 }
 
-export interface Motion2DParams extends MotionIntent {
-  /** 0-1 — per-frame alpha multiplier for the trailing-blur canvas (1 = no fade, 0 = instant clear). */
-  fadeAlpha: number;
-  /** px — speed line segment length multiplier. */
-  streakLength: number;
+export interface Echo2DParams extends EchoIntent {
+  /** Canvas composite op. Default 'lighter' so overlapping phantoms brighten. */
+  blendMode?: GlobalCompositeOperation;
 }
 
 export interface Bloom2DParams extends BloomIntent {
