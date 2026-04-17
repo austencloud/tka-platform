@@ -81,4 +81,35 @@ describe("migrateEffectsConfig", () => {
     expect(out.sparkles.palette).toEqual(["#aaa", "#bbb", "#ccc"]);
     expect(out.sparkles.mode).toBe("burst");
   });
+
+  it("migrates v4 motion to v5 with default color/colorMode/length/count", () => {
+    const v4 = {
+      version: 4,
+      motion: { blur: 0.6, speedLines: 0.8, threshold: 0.3 },
+    };
+    const out = migrateEffectsConfig(v4);
+    expect(out.version).toBe(EFFECTS_CONFIG_VERSION);
+    expect(out.motion.blur).toBe(0.6);
+    expect(out.motion.speedLines).toBe(0.8);
+    expect(out.motion.threshold).toBe(0.3);
+    expect(out.motion.color).toBe("#ffffff");
+    expect(out.motion.colorMode).toBe("solid");
+    expect(out.motion.length).toBe(0.5);
+    expect(out.motion.count).toBe(6);
+  });
+
+  it("preserves user motion fields when already at v5", () => {
+    const v5 = {
+      version: EFFECTS_CONFIG_VERSION,
+      motion: {
+        blur: 0.2, speedLines: 0.9, threshold: 0.5,
+        color: "#ff00ff", colorMode: "velocity" as const,
+        length: 1.0, count: 10,
+      },
+    };
+    const out = migrateEffectsConfig(v5);
+    expect(out.motion.colorMode).toBe("velocity");
+    expect(out.motion.color).toBe("#ff00ff");
+    expect(out.motion.count).toBe(10);
+  });
 });

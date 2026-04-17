@@ -11,7 +11,7 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
   if (!raw || typeof raw !== "object") {
     return structuredClone(DEFAULT_EFFECTS_CONFIG);
   }
-  const input = raw as Partial<EffectsConfig> & { version?: number; zap?: any; sparkles?: any };
+  const input = raw as Partial<EffectsConfig> & { version?: number; zap?: any; sparkles?: any; motion?: any };
   const version = input.version ?? 1;
 
   // v2 → v3: split zap.color into zap.leftColor + zap.rightColor.
@@ -34,6 +34,17 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
     s.gravity ??= 0.3;
     s.mode ??= "stream";
     delete s.rainbow;
+  }
+
+  // v4 → v5: extend motion with color/colorMode/length/count. Existing
+  // persisted v4 configs only have blur/speedLines/threshold; inject
+  // defaults so the upgraded shape matches the new MotionIntent.
+  if (version < 5 && input.motion) {
+    const m = input.motion as any;
+    m.color ??= "#ffffff";
+    m.colorMode ??= "solid";
+    m.length ??= 0.5;
+    m.count ??= 6;
   }
 
   let out: EffectsConfig = {
