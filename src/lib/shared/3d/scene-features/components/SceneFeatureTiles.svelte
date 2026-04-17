@@ -19,15 +19,13 @@
     tent: "#84cc16",
   };
 
-  // Derive loading state from existing API: async feature + enabled + not yet
-  // reportReady()'d. SceneFeatureState exposes allEnabledReady/readyProgress
-  // but not per-key readiness, so we infer from allEnabledReady as a proxy
-  // for "still waiting" per-tile. Until a per-key API lands, any async tile
-  // that is enabled-but-not-everyone-ready will show the shimmer.
+  // Per-key loading: async feature enabled but not yet reported ready.
+  // Uses SceneFeatureState.isReady(key) so each tile shimmers independently
+  // instead of all enabled async tiles shimmering together.
   function isLoading(key: string, requiresAsync: boolean): boolean {
     if (!requiresAsync) return false;
     if (!sceneFeatures.isEnabled(key)) return false;
-    return !sceneFeatures.allEnabledReady;
+    return !sceneFeatures.isReady(key);
   }
 </script>
 
