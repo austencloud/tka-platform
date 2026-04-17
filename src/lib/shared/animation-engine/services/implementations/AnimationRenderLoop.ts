@@ -20,9 +20,11 @@ import type { ITrailOverlayCanvas } from "../contracts/ITrailOverlayCanvas";
 import type { IZapOverlayRenderer } from "../contracts/IZapOverlayRenderer";
 import type { ISparklesOverlayRenderer } from "../contracts/ISparklesOverlayRenderer";
 import type { IEchoOverlayRenderer } from "../contracts/IEchoOverlayRenderer";
+import type { IBloomOverlayRenderer } from "../contracts/IBloomOverlayRenderer";
 import type { ZapTipInput } from "$lib/shared/effects/renderers/Zap2DRenderer";
 import type { SparklesTipInput } from "$lib/shared/effects/renderers/Sparkles2DRenderer";
 import type { EchoTipInput } from "$lib/shared/effects/renderers/Echo2DRenderer";
+import type { BloomTipInput } from "$lib/shared/effects/renderers/Bloom2DRenderer";
 import type {
   IAnimationRenderLoop,
   RenderLoopConfig,
@@ -97,6 +99,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
   private zapRenderer: IZapOverlayRenderer | null = null;
   private sparklesRenderer: ISparklesOverlayRenderer | null = null;
   private echoRenderer: IEchoOverlayRenderer | null = null;
+  private bloomRenderer: IBloomOverlayRenderer | null = null;
   private onEffectError: ((effectName: string, error: Error) => void) | null = null;
   private canvasSize: number = 950;
   private lastTrailFrameTime: number = 0;
@@ -112,11 +115,13 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
   private consecutiveZapErrors: number = 0;
   private consecutiveSparklesErrors: number = 0;
   private consecutiveEchoErrors: number = 0;
+  private consecutiveBloomErrors: number = 0;
   private fireDisabledByError: boolean = false;
   private ledDisabledByError: boolean = false;
   private zapDisabledByError: boolean = false;
   private sparklesDisabledByError: boolean = false;
   private echoDisabledByError: boolean = false;
+  private bloomDisabledByError: boolean = false;
   private static readonly EFFECT_ERROR_THRESHOLD = 3;
 
   // Loop detection for cache-based trail gathering and fire frame cache
@@ -191,6 +196,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     this.zapRenderer = config.zapRenderer ?? null;
     this.sparklesRenderer = config.sparklesRenderer ?? null;
     this.echoRenderer = config.echoRenderer ?? null;
+    this.bloomRenderer = config.bloomRenderer ?? null;
     this.onEffectError = config.onEffectError ?? null;
 
     // Subscribe to the module-singleton longtask observer so the FPS summary
@@ -230,6 +236,8 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       this.sparklesRenderer = config.sparklesRenderer ?? null;
     if (config.echoRenderer !== undefined)
       this.echoRenderer = config.echoRenderer ?? null;
+    if (config.bloomRenderer !== undefined)
+      this.bloomRenderer = config.bloomRenderer ?? null;
     if (config.onEffectError !== undefined)
       this.onEffectError = config.onEffectError ?? null;
   }
@@ -344,6 +352,8 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     this.sparklesRenderer = null;
     this.echoRenderer?.dispose();
     this.echoRenderer = null;
+    this.bloomRenderer?.dispose();
+    this.bloomRenderer = null;
     // Clear reusable arrays to free memory
     this.reusableBlueTrailPoints.length = 0;
     this.reusableRedTrailPoints.length = 0;
@@ -414,6 +424,9 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     const echoActive =
       params.echoConfig != null &&
       this.echoRenderer?.isInitialized() === true;
+    const bloomActive =
+      params.bloomConfig != null &&
+      this.bloomRenderer?.isInitialized() === true;
 
     // Active work: playing, effects running, background animating, or explicit render request
     const hasActiveWork =
@@ -425,7 +438,8 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       ledActive ||
       zapActive ||
       sparklesActive ||
-      echoActive;
+      echoActive ||
+      bloomActive;
 
     // Trails alone (without active work) should not keep the loop alive forever.
     // Allow a grace period for initialization/texture loading, then auto-stop.
@@ -573,6 +587,10 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       if (this.echoRenderer?.isInitialized()) {
         this.echoRenderer.clear();
       }
+      // Clear bloom overlay (Canvas2D)
+      if (this.bloomRenderer?.isInitialized()) {
+        this.bloomRenderer.clear();
+      }
     } else if (!params.suppress2DOverlays && this.wasSuppressed) {
       this.wasSuppressed = false;
     }
@@ -666,7 +684,11 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       this.fireTipTracker
       && this.echoRenderer?.isInitialized()
       && params.echoConfig != null;
-    const hasAnyTipOverlay = hasFireOrCharcoalOverlay || hasZapOverlay || hasSparklesOverlayForTipUpdate || hasEchoOverlayForTipUpdate;
+    const hasBloomOverlayForTipUpdate =
+      this.fireTipTracker
+      && this.bloomRenderer?.isInitialized()
+      && params.bloomConfig != null;
+    const hasAnyTipOverlay = hasFireOrCharcoalOverlay || hasZapOverlay || hasSparklesOverlayForTipUpdate || hasEchoOverlayForTipUpdate || hasBloomOverlayForTipUpdate;
 
     let sharedTipResult: import("../contracts/IFireTipTracker").FireTipUpdateResult | null = null;
     if (hasAnyTipOverlay && !params.suppress2DOverlays) {
@@ -945,6 +967,64 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       }
     } else if (activeEchoRenderer && !hasEchoOverlay) {
       activeEchoRenderer.clear();
+    }
+
+    // Bloom overlay: per-tip radial halation. Reads the same shared tip
+    // positions as the other tip-sourced overlays, plus per-prop trail
+    // colors for prop-matched colorMode. Pulse modulation is time-based
+    // (performance.now() inside the renderer), so no dt parameter.
+    const activeBloomRenderer = this.bloomRenderer?.isInitialized()
+      ? this.bloomRenderer
+      : null;
+    const hasBloomOverlay =
+      this.fireTipTracker && activeBloomRenderer && params.bloomConfig != null;
+
+    if (
+      hasBloomOverlay &&
+      !this.bloomDisabledByError &&
+      !params.suppress2DOverlays &&
+      sharedTipResult
+    ) {
+      try {
+        const tipMap = params.tipEffectMap ?? {};
+        const blueColor = params.trailSettings.blueColor;
+        const redColor = params.trailSettings.redColor;
+        const bloomTips: BloomTipInput[] = [];
+        let globalTipIndex = 0;
+        for (const t of sharedTipResult.tips) {
+          if (resolveEffect(t.propIndex, t.tipIndex, tipMap, {}) !== "bloom") continue;
+          bloomTips.push({
+            x: t.x,
+            y: t.y,
+            propIndex: t.propIndex as 0 | 1,
+            tipIndex: globalTipIndex++,
+            blueColor,
+            redColor,
+          });
+        }
+        activeBloomRenderer!.renderFrame(params.bloomConfig!, bloomTips);
+        this.consecutiveBloomErrors = 0;
+      } catch (error) {
+        this.consecutiveBloomErrors++;
+        activeBloomRenderer?.clear();
+        if (this.consecutiveBloomErrors >= AnimationRenderLoop.EFFECT_ERROR_THRESHOLD) {
+          this.bloomDisabledByError = true;
+          const err = error instanceof Error ? error : new Error(String(error));
+          console.error("[AnimationRenderLoop] Bloom effect disabled after repeated failures:", err);
+          if (this.onEffectError) {
+            this.onEffectError("bloom", err);
+          } else {
+            effectErrorSignal.trigger("bloom", err);
+          }
+        } else {
+          console.warn(
+            `[AnimationRenderLoop] Bloom render error (attempt ${this.consecutiveBloomErrors}/${AnimationRenderLoop.EFFECT_ERROR_THRESHOLD}), resetting:`,
+            error
+          );
+        }
+      }
+    } else if (activeBloomRenderer && !hasBloomOverlay) {
+      activeBloomRenderer.clear();
     }
 
     // LED overlay: render after fire so it composites on top of both Canvas2D and fire
