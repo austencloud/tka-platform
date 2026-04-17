@@ -31,6 +31,7 @@
   // intent-layer replacement, mounted via GhostStaff3D below.
   import PropMotionEffects from "./motion/PropMotionEffects.svelte";
   import GhostStaff3D from "./motion/GhostStaff3D.svelte";
+  import BloomBillboard3D from "./post-processing/BloomBillboard3D.svelte";
 
   interface Props {
     /** Blue prop state from animation */
@@ -72,6 +73,12 @@
   const echoEnabled = $derived(
     unifiedState ? unifiedState.config.tipEffectMap["*"]?.effect === "echo" : false,
   );
+  const bloomIntent = $derived(unifiedState?.bloom ?? null);
+  const bloomEnabled = $derived(
+    unifiedState ? unifiedState.config.tipEffectMap["*"]?.effect === "bloom" : false,
+  );
+  const bloomBlueColor = $derived(unifiedState?.trails.blueColor ?? "#3b82f6");
+  const bloomRedColor = $derived(unifiedState?.trails.redColor ?? "#ef4444");
 
   /**
    * Pick the phantom color for the Echo effect. `whichProp` is "blue" or "red".
@@ -464,5 +471,49 @@
     staffLength={staffLength}
     currentStep={currentStep}
     shape={echo3D.shape}
+  />
+{/if}
+
+<!-- =============================================================================
+     Bloom: per-tip radial halation sprites. Unlike echo/trails, bloom runs
+     even when paused — pulse modulation is time-based, not step-based.
+     4 sprites total: blueA, blueB, redA, redB.
+     ============================================================================= -->
+{#if bloomEnabled && bloomIntent}
+  <BloomBillboard3D
+    position={blueEnds?.positive ?? null}
+    tipIndex={0}
+    propIndex={0}
+    blueColor={bloomBlueColor}
+    redColor={bloomRedColor}
+    intent={bloomIntent}
+    enabled={bloomEnabled}
+  />
+  <BloomBillboard3D
+    position={blueEnds?.negative ?? null}
+    tipIndex={1}
+    propIndex={0}
+    blueColor={bloomBlueColor}
+    redColor={bloomRedColor}
+    intent={bloomIntent}
+    enabled={bloomEnabled}
+  />
+  <BloomBillboard3D
+    position={redEnds?.positive ?? null}
+    tipIndex={2}
+    propIndex={1}
+    blueColor={bloomBlueColor}
+    redColor={bloomRedColor}
+    intent={bloomIntent}
+    enabled={bloomEnabled}
+  />
+  <BloomBillboard3D
+    position={redEnds?.negative ?? null}
+    tipIndex={3}
+    propIndex={1}
+    blueColor={bloomBlueColor}
+    redColor={bloomRedColor}
+    intent={bloomIntent}
+    enabled={bloomEnabled}
   />
 {/if}
