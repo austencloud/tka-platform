@@ -6,7 +6,7 @@
     { id: "charcoal", label: "Coal", icon: "fa-diamond", color: "#a855f7" },
     { id: "zap", label: "Zap", icon: "fa-bolt", color: "#38bdf8" },
     { id: "sparkles", label: "Sparkle", icon: "fa-star", color: "#fbbf24" },
-    { id: "motion", label: "Motion", icon: "fa-wind", color: "#22d3ee" },
+    { id: "echo", label: "Echo", icon: "fa-clone", color: "#22d3ee" },
     { id: "bloom", label: "Bloom", icon: "fa-sun", color: "#f472b6" },
   ] as const;
 
