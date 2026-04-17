@@ -16,7 +16,7 @@ import type {
   PropFlameColor,
 } from "$lib/shared/animation-engine/domain/types/FireTypes";
 
-export const EFFECTS_CONFIG_VERSION = 2;
+export const EFFECTS_CONFIG_VERSION = 3;
 
 export type EffectType =
   | "none"
@@ -86,8 +86,10 @@ export interface CharcoalIntent {
 export interface ZapIntent {
   /** 0-1 — overall arc brightness + branch count. */
   intensity: number;
-  /** Hex string, e.g. "#88ccff". */
-  color: string;
+  /** Hex string — color for the blue (left) hand's zap output. */
+  leftColor: string;
+  /** Hex string — color for the red (right) hand's zap output. */
+  rightColor: string;
   /** 1-30 strikes per second. */
   frequency: number;
   /** 'arc' = tip-to-tip arc. 'crackle' = radiate from each tip. */

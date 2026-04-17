@@ -11,8 +11,16 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
   if (!raw || typeof raw !== "object") {
     return structuredClone(DEFAULT_EFFECTS_CONFIG);
   }
-  const input = raw as Partial<EffectsConfig> & { version?: number };
+  const input = raw as Partial<EffectsConfig> & { version?: number; zap?: any };
   const version = input.version ?? 1;
+
+  // v2 → v3: split zap.color into zap.leftColor + zap.rightColor.
+  // Mutate the input shape *before* the default-merge so downstream sees v3 shape.
+  if (version < 3 && input.zap && typeof input.zap.color === "string" && !input.zap.leftColor) {
+    input.zap.leftColor = input.zap.color;
+    input.zap.rightColor = input.zap.color;
+    delete input.zap.color;
+  }
 
   let out: EffectsConfig = {
     ...DEFAULT_EFFECTS_CONFIG,
@@ -31,11 +39,6 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
     },
     version: EFFECTS_CONFIG_VERSION,
   };
-
-  if (version < 2) {
-    // v1 → v2: no transformations beyond the default-merge above.
-    out = { ...out, version: 2 };
-  }
 
   return out;
 }
