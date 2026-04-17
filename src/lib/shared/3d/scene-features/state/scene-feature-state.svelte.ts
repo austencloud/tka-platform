@@ -44,6 +44,10 @@ export function createSceneFeatureState(
     return enabledMap[key] ?? false;
   }
 
+  function isReady(key: string): boolean {
+    return readySet.has(key);
+  }
+
   function toggle(key: string): void {
     const current = enabledMap[key] ?? false;
     enabledMap = { ...enabledMap, [key]: !current };
@@ -76,6 +80,7 @@ export function createSceneFeatureState(
       return SCENE_FEATURES;
     },
     isEnabled,
+    isReady,
     toggle,
     reportReady,
     get allEnabledReady(): boolean {
