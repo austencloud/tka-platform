@@ -8,15 +8,23 @@ export interface ZapTipInput {
   redPosB: { x: number; y: number } | null;
 }
 
+interface CachedArc {
+  path: Array<{ x: number; y: number }>;
+  /** Color for the start endpoint of this arc (linear gradient). */
+  startColor: string;
+  /** Color for the end endpoint. Equal to startColor in crackle mode. */
+  endColor: string;
+}
+
 /**
  * Procedural lightning renderer using midpoint displacement.
  * Regenerates arc paths at the user-specified frequency (Hz) to produce flicker.
- * 'arc' mode connects blue→red tip pairs.
- * 'crackle' mode radiates short arcs outward from each tip.
+ * 'arc' mode connects blue→red tip pairs, gradient leftColor → rightColor.
+ * 'crackle' mode radiates short arcs outward from each tip in that hand's color.
  */
 export class Zap2DRenderer {
   private frameCount = 0;
-  private cachedArcs: Array<{ x: number; y: number }[]> = [];
+  private cachedArcs: CachedArc[] = [];
 
   /**
    * Draw one frame. Caller is responsible for clearing/composing the canvas
@@ -43,24 +51,28 @@ export class Zap2DRenderer {
       ctx.globalCompositeOperation = "lighter";
 
       if (params.mode === "arc") {
-        const pairs: Array<[{ x: number; y: number }, { x: number; y: number }]> = [];
-        // Match 3D: connect blueA↔redA and blueB↔redB when both tips exist.
-        if (tips.bluePosA && tips.redPosA) pairs.push([tips.bluePosA, tips.redPosA]);
-        if (tips.bluePosB && tips.redPosB) pairs.push([tips.bluePosB, tips.redPosB]);
+        // Arc mode: pair blueA↔redA and blueB↔redB. Gradient leftColor → rightColor.
+        const pairs: Array<{ a: { x: number; y: number }; b: { x: number; y: number } }> = [];
+        if (tips.bluePosA && tips.redPosA) pairs.push({ a: tips.bluePosA, b: tips.redPosA });
+        if (tips.bluePosB && tips.redPosB) pairs.push({ a: tips.bluePosB, b: tips.redPosB });
 
         if (needRegen || this.cachedArcs.length !== pairs.length) {
-          this.cachedArcs = pairs.map(([a, b]) => this.generatePath(a, b, params));
+          this.cachedArcs = pairs.map(({ a, b }) => ({
+            path: this.generatePath(a, b, params),
+            startColor: params.leftColor,
+            endColor: params.rightColor,
+          }));
         }
-        for (const path of this.cachedArcs) {
-          this.drawArc(ctx, path, params);
+        for (const arc of this.cachedArcs) {
+          this.drawArc(ctx, arc, params);
         }
       } else {
-        // crackle mode — short radiating arcs from each tip
-        const origins: Array<{ x: number; y: number }> = [];
-        if (tips.bluePosA) origins.push(tips.bluePosA);
-        if (tips.bluePosB) origins.push(tips.bluePosB);
-        if (tips.redPosA) origins.push(tips.redPosA);
-        if (tips.redPosB) origins.push(tips.redPosB);
+        // Crackle mode: each origin's spokes carry its own hand color.
+        const origins: Array<{ pos: { x: number; y: number }; color: string }> = [];
+        if (tips.bluePosA) origins.push({ pos: tips.bluePosA, color: params.leftColor });
+        if (tips.bluePosB) origins.push({ pos: tips.bluePosB, color: params.leftColor });
+        if (tips.redPosA) origins.push({ pos: tips.redPosA, color: params.rightColor });
+        if (tips.redPosB) origins.push({ pos: tips.redPosB, color: params.rightColor });
 
         const CRACKLE_SPOKES = 3;
         const expectedLength = origins.length * CRACKLE_SPOKES;
@@ -70,15 +82,19 @@ export class Zap2DRenderer {
               const angle = Math.random() * Math.PI * 2;
               const len = 40 + params.intensity * 60;
               const end = {
-                x: o.x + Math.cos(angle) * len,
-                y: o.y + Math.sin(angle) * len,
+                x: o.pos.x + Math.cos(angle) * len,
+                y: o.pos.y + Math.sin(angle) * len,
               };
-              return this.generatePath(o, end, params);
+              return {
+                path: this.generatePath(o.pos, end, params),
+                startColor: o.color,
+                endColor: o.color,
+              };
             });
           });
         }
-        for (const path of this.cachedArcs) {
-          this.drawArc(ctx, path, params);
+        for (const arc of this.cachedArcs) {
+          this.drawArc(ctx, arc, params);
         }
       }
     } finally {
@@ -120,14 +136,28 @@ export class Zap2DRenderer {
 
   private drawArc(
     ctx: CanvasRenderingContext2D,
-    path: Array<{ x: number; y: number }>,
+    arc: CachedArc,
     params: Zap2DParams,
   ): void {
+    const { path, startColor, endColor } = arc;
     if (path.length < 2) return;
     const first = path[0]!;
-    // Glow pass
-    ctx.strokeStyle = params.color;
-    ctx.shadowColor = params.color;
+    const last = path[path.length - 1]!;
+
+    // Build the per-arc gradient once per draw call.
+    let stroke: string | CanvasGradient;
+    if (startColor === endColor) {
+      stroke = startColor;
+    } else {
+      const grad = ctx.createLinearGradient(first.x, first.y, last.x, last.y);
+      grad.addColorStop(0, startColor);
+      grad.addColorStop(1, endColor);
+      stroke = grad;
+    }
+
+    // Glow pass — use the gradient (or solid). shadowColor needs a string.
+    ctx.strokeStyle = stroke;
+    ctx.shadowColor = startColor; // gradient halo isn't supported; pick start as approximation
     ctx.shadowBlur = params.glowBlur;
     ctx.lineWidth = params.lineWidth * 2;
     ctx.globalAlpha = 0.6 * params.intensity;
@@ -136,7 +166,7 @@ export class Zap2DRenderer {
     for (let i = 1; i < path.length; i++) ctx.lineTo(path[i]!.x, path[i]!.y);
     ctx.stroke();
 
-    // Core pass
+    // Core pass — bright white center for the lightning hot core.
     ctx.strokeStyle = "#ffffff";
     ctx.shadowBlur = params.glowBlur * 0.5;
     ctx.lineWidth = params.lineWidth;
