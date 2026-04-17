@@ -1273,8 +1273,38 @@
 
       // ── Pass 1: Camera Performance Recording ──
       // Play the animation at normal speed while recording camera transforms
-      // at 60Hz. The user can orbit/zoom/pan freely and stop whenever ready.
+      // at 60Hz. With a choreography preset selected, the driver controls
+      // the camera and we auto-stop after the preset's total loop count;
+      // with "free" the user orbits manually and clicks Stop Recording.
       const cameraKeyframes = new CameraKeyframeBuffer();
+
+      const choreography = viewer3DState.cameraChoreography;
+      const activePresetId = choreography.activePresetId;
+      const activePreset = choreography.activePreset;
+      const presetEligible =
+        activePreset &&
+        choreography.evaluate(activePresetId, viewer3DState.performerManager.performers.length).eligible;
+      const usePreset = activePresetId !== "free" && !!activePreset && presetEligible;
+
+      const primaryAvatar = viewer3DState.performerManager.performers[0] ?? null;
+      const presetTotalLoops = usePreset ? activePreset!.totalLoops : 1;
+      const presetDurationSec = usePreset ? singleLoopSec * presetTotalLoops : 0;
+
+      // Attach the driver *before* starting playback so the opening
+      // shot is already framed at t=0. If applyPreset returns null
+      // (controls not yet registered, ineligible) we gracefully fall
+      // back to free-cam recording rather than degrading silently.
+      const disposeDriver: (() => void) | null = usePreset
+        ? choreography.applyPreset(activePresetId, {
+            performers: viewer3DState.performerManager.performers,
+            sequenceDurationSec: singleLoopSec,
+          })
+        : null;
+      const driverActive = !!disposeDriver;
+
+      // Snapshot loop flag so we can restore it after preset recording.
+      const loopBefore = primaryAvatar?.loop ?? false;
+      if (driverActive && primaryAvatar) primaryAvatar.loop = true;
 
       // Jump to start and begin playback
       const pc = playbackController!;
@@ -1287,10 +1317,37 @@
       recordingElapsed = 0;
       recordingTimer = setInterval(() => { recordingElapsed += 0.1; }, 100);
 
-      // Wait until the user clicks "Stop Recording"
-      await new Promise<void>((resolve) => {
-        resolveRecording = resolve;
-      });
+      // Loop-boundary detector + auto-stop timer for preset recordings.
+      let boundaryPoller: ReturnType<typeof setInterval> | null = null;
+      let autoStopTimer: ReturnType<typeof setTimeout> | null = null;
+      if (driverActive && primaryAvatar) {
+        let prevProgress = primaryAvatar.progress;
+        let completedLoops = 0;
+        boundaryPoller = setInterval(() => {
+          const p = primaryAvatar.progress;
+          // Wraparound detection: progress jumped from near-end back to near-start.
+          if (prevProgress > 0.85 && p < 0.15) {
+            completedLoops += 1;
+            choreography.emitLoopBoundary();
+          }
+          prevProgress = p;
+        }, 1000 / 60);
+        autoStopTimer = setTimeout(() => {
+          if (resolveRecording) resolveRecording();
+        }, Math.round(presetDurationSec * 1000) + 200);
+      }
+
+      // Wait until the user clicks "Stop Recording" (or auto-stop fires).
+      try {
+        await new Promise<void>((resolve) => {
+          resolveRecording = resolve;
+        });
+      } finally {
+        if (boundaryPoller) clearInterval(boundaryPoller);
+        if (autoStopTimer) clearTimeout(autoStopTimer);
+        if (disposeDriver) disposeDriver();
+        if (driverActive && primaryAvatar) primaryAvatar.loop = loopBefore;
+      }
 
       // Stop playback and recording
       if (isPlayingLocal) pc.togglePlayback();
