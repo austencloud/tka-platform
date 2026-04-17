@@ -16,11 +16,25 @@
     selected?: boolean;
     selectedBlue?: boolean;
     selectedRed?: boolean;
-    color?: "blue" | "red";
+    /**
+     * Checkmark accent. "blue" / "red" use the prop-blue/prop-red tokens
+     * (two-performer legacy); any other CSS color string applies inline
+     * so callers can paint per-performer palettes.
+     */
+    color?: "blue" | "red" | (string & {});
     /** Variant count badge. Shown as a small circle in the top-right corner. */
     badge?: number;
     onSelect?: (propType: PropType) => void;
   }>();
+
+  // Sentinel colors get class-based styling (uses theme tokens + shadow).
+  // Arbitrary CSS color strings fall through to an inline style.
+  const isSentinel = $derived(color === "blue" || color === "red");
+  const customStyle = $derived(
+    isSentinel
+      ? ""
+      : `background: ${color}; box-shadow: 0 3px 10px color-mix(in srgb, ${color} 50%, transparent), 0 1px 3px var(--theme-shadow);`,
+  );
 
   const displayInfo = $derived(getPropTypeDisplayInfo(propType));
 
@@ -60,7 +74,12 @@
     <div class="checkmark-container">
       {#if selected}
         <!-- Single selection mode: show checkmark matching the color prop -->
-        <div class="ios-checkmark {color}">
+        <div
+          class="ios-checkmark"
+          class:blue={color === "blue"}
+          class:red={color === "red"}
+          style={customStyle}
+        >
           <i class="fas fa-check" aria-hidden="true"></i>
         </div>
       {:else}

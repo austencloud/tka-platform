@@ -33,10 +33,15 @@
     return list[idx] ?? null;
   });
 
-  // BentoPropGrid color: performer 0 = blue, others = red. (BentoPropGrid only
-  // supports "blue" | "red" — for indices 2+ we reuse red as a neutral tint.)
-  const gridColor = $derived<"blue" | "red">(
-    (viewer.selectedPerformerIndex ?? 0) === 0 ? "blue" : "red",
+  // Per-performer accent for BentoPropGrid. Reuses the PerformerChipStrip
+  // palette so the prop picker's selection glow matches the active chip
+  // instead of collapsing everyone above index 0 onto the same red.
+  const CHIP_COLORS = [
+    "#3b82f6", "#ef4444", "#8b5cf6", "#f97316",
+    "#10b981", "#ec4899", "#06b6d4", "#eab308",
+  ];
+  const gridColor = $derived<string>(
+    CHIP_COLORS[(viewer.selectedPerformerIndex ?? 0) % CHIP_COLORS.length] ?? "#3b82f6",
   );
 </script>
 
