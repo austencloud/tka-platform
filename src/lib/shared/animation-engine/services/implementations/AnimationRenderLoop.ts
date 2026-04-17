@@ -97,6 +97,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
   private onEffectError: ((effectName: string, error: Error) => void) | null = null;
   private canvasSize: number = 950;
   private lastTrailFrameTime: number = 0;
+  private lastSparklesFrameTime: number = 0;
   private rafId: number | null = null;
   private needsRender: boolean = false;
   private getFrameParamsCallback: (() => RenderFrameParams) | null = null;
@@ -827,9 +828,14 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
             else if (t.tipIndex === 1) sparklesInput.redPosB = pos;
           }
         }
-        const dt = this.lastTrailFrameTime > 0
-          ? (currentTime - this.lastTrailFrameTime) / 1000
+        // Use a sparkles-specific frame timestamp so dt is correct even when
+        // trails are disabled. Clamp to avoid catastrophic dt on first frame
+        // or after a long pause.
+        const rawDt = this.lastSparklesFrameTime > 0
+          ? (currentTime - this.lastSparklesFrameTime) / 1000
           : 1 / 60;
+        const dt = Math.min(0.1, rawDt);
+        this.lastSparklesFrameTime = currentTime;
         activeSparklesRenderer!.renderFrame(params.sparklesConfig!, sparklesInput, dt);
         this.consecutiveSparklesErrors = 0;
       } catch (error) {
