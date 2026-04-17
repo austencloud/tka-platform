@@ -94,8 +94,11 @@ import { TrailOverlayCanvas } from "./TrailOverlayCanvas";
 import type { ITrailOverlayCanvas } from "../contracts/ITrailOverlayCanvas";
 import { ZapOverlayRenderer } from "./ZapOverlayRenderer";
 import type { IZapOverlayRenderer } from "../contracts/IZapOverlayRenderer";
-import type { Zap2DParams } from "$lib/shared/effects/translators/canvas2d-types";
-import { resolveZap2D } from "$lib/shared/effects/translators/canvas2d-translator";
+import { SparklesOverlayRenderer } from "./SparklesOverlayRenderer";
+import type { ISparklesOverlayRenderer } from "../contracts/ISparklesOverlayRenderer";
+import type { Sparkles2DParams, Zap2DParams } from "$lib/shared/effects/translators/canvas2d-types";
+import { resolveSparkles2D, resolveZap2D } from "$lib/shared/effects/translators/canvas2d-translator";
+import type { SparklesIntent } from "$lib/shared/effects/domain/EffectsConfig";
 import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
 import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
 import { sequenceLoopabilityChecker } from "$lib/features/compose/services/implementations/SequenceLoopabilityChecker";
@@ -271,11 +274,17 @@ export class AnimationEngine {
   private cellTipEffortMap: TipEffortMap | undefined = undefined;
   private trailOverlay: ITrailOverlayCanvas | null = null;
   private zapRenderer: IZapOverlayRenderer | null = null;
+  private sparklesRenderer: ISparklesOverlayRenderer | null = null;
   // Cached zap params resolved from the current ZapIntent.
   // Seeded from DEFAULT_EFFECTS_CONFIG.zap and overwritten in getFrameParams()
   // whenever a wired EffectsConfigState reports a changed zap intent
   // (detected via JSON diff — mirrors the prevCharcoalParamsJson pattern).
   private zapConfig: Zap2DParams = resolveZap2D(DEFAULT_EFFECTS_CONFIG.zap);
+  // Cached sparkles params resolved from the live SparklesIntent.
+  // Reference-identity diff: re-resolves only when the intent object changes
+  // (EffectsConfigState assigns a fresh object on every updateSparkles).
+  private sparklesConfig: Sparkles2DParams = resolveSparkles2D(DEFAULT_EFFECTS_CONFIG.sparkles);
+  private prevSparklesIntentRef: SparklesIntent | null = null;
   // JSON snapshot of the last ZapIntent we resolved into zapConfig.
   // Re-resolves only when the intent changes to avoid per-frame allocation churn.
   private prevZapIntentJson: string = JSON.stringify(DEFAULT_EFFECTS_CONFIG.zap);
@@ -340,6 +349,7 @@ export class AnimationEngine {
   private prevColorBlend: number = 0.5;
   private prevHasCharcoalTips: boolean = false;
   private prevHasZapTips: boolean = false;
+  private prevHasSparklesTips: boolean = false;
   private prevFireIntensity: number = 0.7;
   private prevFireTurbulence: number = 0.5;
   private prevFireColorCurve: import("../../domain/types/FireTypes").FireColorCurve | null = null;
@@ -390,6 +400,7 @@ export class AnimationEngine {
     propColors: undefined,
     ledConfig: null,
     zapConfig: null,
+    sparklesConfig: null,
     isSeamlesslyLoopable: false,
     sequenceContentHash: undefined,
     tipEffectMap: {},
@@ -468,6 +479,7 @@ export class AnimationEngine {
     this.prevColorBlend = vm.getFireColorBlend();
     this.prevHasCharcoalTips = vm.hasEffect("charcoal");
     this.prevHasZapTips = vm.hasEffect("zap");
+    this.prevHasSparklesTips = vm.hasEffect("sparkles");
     this.prevFireIntensity = vm.getFireIntensity();
     this.prevCharcoalParamsJson = JSON.stringify(vm.getCharcoalParams());
     this.prevEffortPreset = vm.getEffortPreset();
@@ -632,6 +644,12 @@ export class AnimationEngine {
         if (hasZapTips !== this.prevHasZapTips) {
           this.prevHasZapTips = hasZapTips;
           this.syncZapOverlay();
+        }
+
+        const hasSparklesTips = vm.hasEffect("sparkles");
+        if (hasSparklesTips !== this.prevHasSparklesTips) {
+          this.prevHasSparklesTips = hasSparklesTips;
+          this.syncSparklesOverlay();
         }
 
         // Sync fire slider values + color curve → physics
@@ -848,6 +866,9 @@ export class AnimationEngine {
     }
     if (this.prevHasZapTips && !this.zapRenderer?.isInitialized()) {
       this.syncZapOverlay();
+    }
+    if (this.prevHasSparklesTips && !this.sparklesRenderer?.isInitialized()) {
+      this.syncSparklesOverlay();
     }
   }
 
@@ -1399,6 +1420,8 @@ export class AnimationEngine {
     // Dispose zap overlay
     this.zapRenderer?.dispose();
     this.zapRenderer = null;
+    this.sparklesRenderer?.dispose();
+    this.sparklesRenderer = null;
 
     // Clear trails
     this.trailCapturer?.clearTrails();
@@ -1776,6 +1799,46 @@ export class AnimationEngine {
   }
 
   /**
+   * Initialize or destroy the sparkles overlay based on prevHasSparklesTips.
+   * Mirrors syncZapOverlay — the sparkles overlay is a Canvas2D layer that
+   * draws particle sparkles around prop tips on top of fire/trails.
+   */
+  private syncSparklesOverlay(): void {
+    const enabled = this.prevHasSparklesTips;
+
+    if (enabled) {
+      if (!this.sparklesRenderer?.isInitialized()) {
+        if (!this.containerElement) return;
+        this.sparklesRenderer = new SparklesOverlayRenderer();
+        const success = this.sparklesRenderer.initialize(
+          this.containerElement,
+          this.canvasSize,
+          this.canvasSize
+        );
+        if (success) {
+          this.renderLoopService?.updateConfig({
+            sparklesRenderer: this.sparklesRenderer,
+          });
+        } else {
+          this.sparklesRenderer = null;
+        }
+      }
+    } else {
+      if (this.sparklesRenderer?.isInitialized()) {
+        this.sparklesRenderer.dispose();
+        this.sparklesRenderer = null;
+      }
+      this.renderLoopService?.updateConfig({ sparklesRenderer: null });
+    }
+
+    if (this.renderLoopService && this.lastPropsRef) {
+      this.renderLoopService.triggerRender(() =>
+        this.getFrameParams(this.lastPropsRef ?? DEFAULT_ENGINE_PROPS)
+      );
+    }
+  }
+
+  /**
    * Pause canvas resize observation during CSS transitions.
    * Prevents canvas buffer clears that cause black frames.
    */
@@ -2028,6 +2091,7 @@ export class AnimationEngine {
         this.ledRenderer?.resize(newSize, newSize);
         this.trailOverlay?.resize(newSize, newSize);
         this.zapRenderer?.resize(newSize, newSize);
+        this.sparklesRenderer?.resize(newSize, newSize);
         // Reset fire/LED tip trackers so positions recalculate at the new canvas size.
         // Without this, after HMR the tracker uses stale positions from the old size.
         this.fireTipTracker?.reset();
@@ -2299,6 +2363,18 @@ export class AnimationEngine {
       }
     }
     fp.zapConfig = this.prevHasZapTips ? this.zapConfig : null;
+
+    // Sparkles overlay config — re-resolve when SparklesIntent changes via
+    // reference identity (Phase 1b pattern; cheaper than JSON diff and safe
+    // because EffectsConfigState assigns a fresh object on every updateSparkles).
+    if (this.effectsConfigState) {
+      const intent = this.effectsConfigState.sparkles;
+      if (intent !== this.prevSparklesIntentRef) {
+        this.prevSparklesIntentRef = intent;
+        this.sparklesConfig = resolveSparkles2D(intent);
+      }
+    }
+    fp.sparklesConfig = this.prevHasSparklesTips ? this.sparklesConfig : null;
 
     // Per-tip effect assignments for filtering tips by effect type.
     // Cell-level map (from compose grid) takes priority over the global map.
