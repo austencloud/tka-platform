@@ -128,7 +128,7 @@
       aria-valuenow={Math.round(progress * 100)}
     >
       <div class="fill" style:width="{progress * 100}%"></div>
-      {#each beatMarkers as pct (pct)}
+      {#each beatMarkers as pct, i (i)}
         <div class="beat-marker" style:left="{pct * 100}%"></div>
       {/each}
       <div class="knob" style:left="{progress * 100}%"></div>
@@ -162,7 +162,7 @@
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
     min-width: 520px;
     max-width: 720px;
-    z-index: 8;
+    z-index: 9;
   }
 
   .transport-play {
