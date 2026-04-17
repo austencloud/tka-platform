@@ -92,8 +92,8 @@ export interface Echo3DParams extends EchoIntent {
 }
 
 export interface Bloom3DParams extends BloomIntent {
-  /** Bloom pass kernel size. */
-  kernelSize: number;
-  /** Mipmap levels to accumulate for the final bloom buffer. */
-  mipLevels: number;
+  /** World-space sprite scale (derived from radius). 28 px ≈ 1.12 world units. */
+  spriteScale: number;
+  /** Texture resolution for the procedural halo sprite (square). */
+  textureSize: number;
 }

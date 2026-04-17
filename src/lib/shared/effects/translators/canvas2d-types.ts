@@ -78,8 +78,6 @@ export interface Echo2DParams extends EchoIntent {
 }
 
 export interface Bloom2DParams extends BloomIntent {
-  /** px — Gaussian blur kernel radius in pixels. */
-  blurRadiusPx: number;
-  /** 1-4 — number of blur passes (higher = softer). */
-  passes: number;
+  /** Canvas composite op. Default 'lighter' so overlapping halos brighten. */
+  blendMode?: GlobalCompositeOperation;
 }

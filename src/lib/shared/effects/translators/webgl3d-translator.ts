@@ -114,8 +114,9 @@ export function resolveBloom3D(
   override: Partial<Bloom3DParams> = {},
 ): Bloom3DParams {
   const defaults: Omit<Bloom3DParams, keyof BloomIntent> = {
-    kernelSize: Math.max(3, Math.round(3 + intent.radius * 9)),
-    mipLevels: Math.max(2, Math.round(2 + intent.radius * 4)),
+    // Tuned so 28 px 2D ≈ 1.12 world units 3D.
+    spriteScale: intent.radius * 0.04,
+    textureSize: 128,
   };
   return { ...intent, ...defaults, ...override };
 }
