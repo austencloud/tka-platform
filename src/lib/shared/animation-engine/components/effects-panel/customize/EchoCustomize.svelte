@@ -16,127 +16,172 @@
   </button>
 
   {#if state}
-    <div class="motion-controls">
+    <div class="echo-controls">
+      <!-- Shape chip row -->
+      <div class="option-row">
+        <span class="option-label">Shape</span>
+        <div class="chip-group" role="radiogroup" aria-label="Echo shape">
+          <button
+            class="chip"
+            class:active={state.echo.shape === "staff"}
+            type="button"
+            role="radio"
+            aria-checked={state.echo.shape === "staff"}
+            onclick={() => state.updateEcho({ shape: "staff" })}
+          >
+            <i class="fas fa-ruler" aria-hidden="true"></i>
+            Staff
+          </button>
+          <button
+            class="chip"
+            class:active={state.echo.shape === "tips"}
+            type="button"
+            role="radio"
+            aria-checked={state.echo.shape === "tips"}
+            onclick={() => state.updateEcho({ shape: "tips" })}
+          >
+            <i class="fas fa-circle" aria-hidden="true"></i>
+            Tips
+          </button>
+          <button
+            class="chip"
+            class:active={state.echo.shape === "both"}
+            type="button"
+            role="radio"
+            aria-checked={state.echo.shape === "both"}
+            onclick={() => state.updateEcho({ shape: "both" })}
+          >
+            <i class="fas fa-layer-group" aria-hidden="true"></i>
+            Both
+          </button>
+        </div>
+      </div>
+
       <!-- Color mode chip row -->
       <div class="option-row">
         <span class="option-label">Color</span>
-        <div class="chip-group" role="radiogroup" aria-label="Motion color mode">
+        <div class="chip-group" role="radiogroup" aria-label="Echo color mode">
           <button
             class="chip"
-            class:active={state.motion.colorMode === "solid"}
+            class:active={state.echo.colorMode === "solid"}
             type="button"
             role="radio"
-            aria-checked={state.motion.colorMode === "solid"}
-            onclick={() => state.updateMotion({ colorMode: "solid" })}
+            aria-checked={state.echo.colorMode === "solid"}
+            onclick={() => state.updateEcho({ colorMode: "solid" })}
           >
             Solid
           </button>
           <button
             class="chip"
-            class:active={state.motion.colorMode === "rainbow"}
+            class:active={state.echo.colorMode === "rainbow"}
             type="button"
             role="radio"
-            aria-checked={state.motion.colorMode === "rainbow"}
-            onclick={() => state.updateMotion({ colorMode: "rainbow" })}
+            aria-checked={state.echo.colorMode === "rainbow"}
+            onclick={() => state.updateEcho({ colorMode: "rainbow" })}
           >
             Rainbow
           </button>
           <button
             class="chip"
-            class:active={state.motion.colorMode === "velocity"}
+            class:active={state.echo.colorMode === "prop-matched"}
             type="button"
             role="radio"
-            aria-checked={state.motion.colorMode === "velocity"}
-            onclick={() => state.updateMotion({ colorMode: "velocity" })}
+            aria-checked={state.echo.colorMode === "prop-matched"}
+            onclick={() => state.updateEcho({ colorMode: "prop-matched" })}
           >
-            Velocity
+            Prop-Matched
           </button>
           <button
             class="chip"
-            class:active={state.motion.colorMode === "prop-matched"}
+            class:active={state.echo.colorMode === "gradient"}
             type="button"
             role="radio"
-            aria-checked={state.motion.colorMode === "prop-matched"}
-            onclick={() => state.updateMotion({ colorMode: "prop-matched" })}
+            aria-checked={state.echo.colorMode === "gradient"}
+            onclick={() => state.updateEcho({ colorMode: "gradient" })}
           >
-            Prop-Matched
+            Gradient
           </button>
         </div>
       </div>
 
-      {#if state.motion.colorMode === "solid"}
+      {#if state.echo.colorMode === "solid"}
         <div class="color-row">
           <span class="color-label">Tint</span>
           <div class="color-pickers">
             <label class="color-picker">
               <input
                 type="color"
-                value={state.motion.color}
-                oninput={(e) => state.updateMotion({ color: (e.currentTarget as HTMLInputElement).value })}
+                value={state.echo.color}
+                oninput={(e) =>
+                  state.updateEcho({ color: (e.currentTarget as HTMLInputElement).value })}
               />
             </label>
           </div>
         </div>
       {/if}
 
-      <!-- Blur -->
+      <!-- Intensity -->
       <div class="slider-row">
-        <label for="motion-blur">Blur</label>
+        <label for="echo-intensity">Intensity</label>
         <input
-          id="motion-blur"
-          type="range" min="0" max="1" step="0.05"
-          value={state.motion.blur}
-          oninput={(e) => state.updateMotion({ blur: +(e.currentTarget as HTMLInputElement).value })}
+          id="echo-intensity"
+          type="range"
+          min="0"
+          max="1"
+          step="0.05"
+          value={state.echo.intensity}
+          oninput={(e) =>
+            state.updateEcho({ intensity: +(e.currentTarget as HTMLInputElement).value })}
         />
-        <span class="slider-value">{Math.round(state.motion.blur * 100)}%</span>
+        <span class="slider-value">{Math.round(state.echo.intensity * 100)}%</span>
       </div>
 
-      <!-- Speed Lines -->
+      <!-- Decay (beats) -->
       <div class="slider-row">
-        <label for="motion-speed-lines">Speed Lines</label>
+        <label for="echo-decay">Decay</label>
         <input
-          id="motion-speed-lines"
-          type="range" min="0" max="1" step="0.05"
-          value={state.motion.speedLines}
-          oninput={(e) => state.updateMotion({ speedLines: +(e.currentTarget as HTMLInputElement).value })}
+          id="echo-decay"
+          type="range"
+          min="1"
+          max="8"
+          step="0.5"
+          value={state.echo.decay}
+          oninput={(e) =>
+            state.updateEcho({ decay: +(e.currentTarget as HTMLInputElement).value })}
         />
-        <span class="slider-value">{Math.round(state.motion.speedLines * 100)}%</span>
+        <span class="slider-value">{state.echo.decay}b</span>
       </div>
 
-      <!-- Threshold -->
+      <!-- Interval (beats) -->
       <div class="slider-row">
-        <label for="motion-threshold">Threshold</label>
+        <label for="echo-interval">Interval</label>
         <input
-          id="motion-threshold"
-          type="range" min="0" max="1" step="0.05"
-          value={state.motion.threshold}
-          oninput={(e) => state.updateMotion({ threshold: +(e.currentTarget as HTMLInputElement).value })}
+          id="echo-interval"
+          type="range"
+          min="0.25"
+          max="2"
+          step="0.25"
+          value={state.echo.interval}
+          oninput={(e) =>
+            state.updateEcho({ interval: +(e.currentTarget as HTMLInputElement).value })}
         />
-        <span class="slider-value">{Math.round(state.motion.threshold * 100)}%</span>
+        <span class="slider-value">{state.echo.interval}b</span>
       </div>
 
-      <!-- Length -->
+      <!-- Thickness -->
       <div class="slider-row">
-        <label for="motion-length">Length</label>
+        <label for="echo-thickness">Thickness</label>
         <input
-          id="motion-length"
-          type="range" min="0" max="1" step="0.05"
-          value={state.motion.length}
-          oninput={(e) => state.updateMotion({ length: +(e.currentTarget as HTMLInputElement).value })}
+          id="echo-thickness"
+          type="range"
+          min="1"
+          max="8"
+          step="1"
+          value={state.echo.thickness}
+          oninput={(e) =>
+            state.updateEcho({ thickness: +(e.currentTarget as HTMLInputElement).value })}
         />
-        <span class="slider-value">{Math.round(state.motion.length * 100)}%</span>
-      </div>
-
-      <!-- Count -->
-      <div class="slider-row">
-        <label for="motion-count">Count</label>
-        <input
-          id="motion-count"
-          type="range" min="3" max="12" step="1"
-          value={state.motion.count}
-          oninput={(e) => state.updateMotion({ count: +(e.currentTarget as HTMLInputElement).value })}
-        />
-        <span class="slider-value">{state.motion.count}</span>
+        <span class="slider-value">{state.echo.thickness}px</span>
       </div>
     </div>
   {:else}
@@ -189,7 +234,7 @@
     }
   }
 
-  .motion-controls {
+  .echo-controls {
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -252,6 +297,10 @@
   .chip:focus-visible {
     outline: 2px solid var(--theme-accent, #8b5cf6);
     outline-offset: 2px;
+  }
+
+  .chip i {
+    font-size: 11px;
   }
 
   .slider-row {
