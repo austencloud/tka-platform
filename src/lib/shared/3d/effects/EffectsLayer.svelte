@@ -15,7 +15,7 @@
   import { getEffectState } from "./state/effect-state.svelte";
   import { getEffectsConfigState } from "./state/effects-config-state.svelte";
   import { getEffectsConfigContext as getUnifiedEffectsState } from "$lib/shared/effects/state/effects-config-context";
-  import { resolveZap3D } from "$lib/shared/effects/translators/webgl3d-translator";
+  import { resolveSparkles3D, resolveZap3D } from "$lib/shared/effects/translators/webgl3d-translator";
   import { AUSTEN_STAFF } from "../config/avatar-proportions";
   import { TrackingMode, TrailStyle } from "./types";
 
@@ -53,6 +53,21 @@
   const zapEnabled = $derived(
     unifiedState ? unifiedState.config.tipEffectMap["*"]?.effect === "zap" : false,
   );
+  const sparkles3D = $derived(unifiedState ? resolveSparkles3D(unifiedState.sparkles) : null);
+  const sparklesEnabled = $derived(
+    unifiedState ? unifiedState.config.tipEffectMap["*"]?.effect === "sparkles" : false,
+  );
+
+  function pickSparkleColor(i: number): string {
+    if (!sparkles3D) return "#ffffff";
+    if (sparkles3D.colorMode === "solid") return sparkles3D.color;
+    if (sparkles3D.colorMode === "palette" && sparkles3D.palette.length > 0) {
+      return sparkles3D.palette[i % sparkles3D.palette.length]!;
+    }
+    // rainbow mode — rotate hue by emitter index
+    const hue = (Date.now() * 0.05 + i * 90) % 360;
+    return `hsl(${hue}, 80%, 60%)`;
+  }
 
   // Half staff length for calculating prop ends
   const halfLength = $derived(staffLength / 2);
@@ -292,40 +307,38 @@
 <!-- =============================================================================
      Sparkle Effects (on prop ends)
      ============================================================================= -->
-{#if configState.sparkles.enabled && isPlaying}
-  <!-- Blue prop sparkles -->
+{#if sparklesEnabled && sparkles3D && isPlaying}
   {#if blueEnds}
     <SparkleEmitter
       position={blueEnds.positive}
-      enabled={configState.sparkles.enabled}
-      intensity={configState.sparkles.rate}
-      color="#60a5fa"
-      spread={configState.sparkles.size * 200}
+      enabled={true}
+      intensity={sparkles3D.rate}
+      color={pickSparkleColor(0)}
+      spread={sparkles3D.spread}
     />
     <SparkleEmitter
       position={blueEnds.negative}
-      enabled={configState.sparkles.enabled}
-      intensity={configState.sparkles.rate * 0.7}
-      color="#93c5fd"
-      spread={configState.sparkles.size * 150}
+      enabled={true}
+      intensity={sparkles3D.rate * 0.7}
+      color={pickSparkleColor(1)}
+      spread={sparkles3D.spread * 0.75}
     />
   {/if}
 
-  <!-- Red prop sparkles -->
   {#if redEnds}
     <SparkleEmitter
       position={redEnds.positive}
-      enabled={configState.sparkles.enabled}
-      intensity={configState.sparkles.rate}
-      color="#f87171"
-      spread={configState.sparkles.size * 200}
+      enabled={true}
+      intensity={sparkles3D.rate}
+      color={pickSparkleColor(2)}
+      spread={sparkles3D.spread}
     />
     <SparkleEmitter
       position={redEnds.negative}
-      enabled={configState.sparkles.enabled}
-      intensity={configState.sparkles.rate * 0.7}
-      color="#fca5a5"
-      spread={configState.sparkles.size * 150}
+      enabled={true}
+      intensity={sparkles3D.rate * 0.7}
+      color={pickSparkleColor(3)}
+      spread={sparkles3D.spread * 0.75}
     />
   {/if}
 {/if}
