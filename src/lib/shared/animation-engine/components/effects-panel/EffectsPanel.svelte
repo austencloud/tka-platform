@@ -2,6 +2,7 @@
   import { onMount, onDestroy } from "svelte";
   import type { Snippet } from "svelte";
   import { getAnimationVisibilityManager } from "../../state/animation-visibility-state.svelte";
+  import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   import type { EffectType } from "../../domain/types/TipEffectTypes";
   import EffectSelector from "./EffectSelector.svelte";
   import EffectPresetsSection from "./EffectPresetsSection.svelte";
@@ -54,6 +55,9 @@
   }: Props = $props();
 
   const vm = getAnimationVisibilityManager();
+  // Capture once at init — Svelte 5 forbids getContext() inside event handlers
+  // or reactive computations. Presets receive this state explicitly.
+  const effectsConfigState = getEffectsConfigContext();
 
   // ── Preset persistence ─────────────────────────────────────────────
   const PRESET_STORAGE_KEY = "tka_active_effect_presets";
@@ -168,7 +172,7 @@
     if (!group) return;
     const preset = group.presets.find((p) => p.id === presetId);
     if (!preset) return;
-    preset.apply(vm);
+    preset.apply(vm, effectsConfigState);
     activePresetId = presetId;
     savePresetId(activeEffect, presetId);
   }
@@ -178,14 +182,14 @@
     summaryTick;
     const group = getPresetGroup(activeEffect);
     if (!group) return "";
-    return group.getSummary(vm);
+    return group.getSummary(vm, effectsConfigState);
   });
 </script>
 
 <div class="effects-panel">
   {#if showPlayback}
     <div class="sb-section">
-      <TempoControl {bpm} {onBpmChange} showPresets={false} showPractice={false} />
+      <TempoControl {bpm} {onBpmChange} showPresets={true} showPractice={false} />
       <TransportControls
         {isPlaying}
         onPlaybackToggle={onPlaybackToggle}

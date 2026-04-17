@@ -1,17 +1,21 @@
 import type { EffectPreset, EffectPresetGroup } from "./types";
-import type { AnimationVisibilityStateManager } from "../../../state/animation-visibility-state.svelte";
-import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
+import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
+import type { ZapIntent } from "$lib/shared/effects/domain/EffectsConfig";
+import type { EffectsPreset } from "$lib/shared/effects/domain/EffectsPreset";
 
-function apply(presetId: string, patch: Partial<import("$lib/shared/effects/domain/EffectsConfig").ZapIntent>): void {
-  const state = getEffectsConfigContext();
+function applyZap(
+  state: EffectsConfigState | null,
+  presetId: string,
+  patch: Partial<ZapIntent>,
+): void {
   if (!state) return;
   state.updateZap(patch);
-  // Mark preset as active (updateZap nulls it first — restore it here).
+  // updateZap nulls activePresets.zap; restore it so the chip stays highlighted.
   state.applyPreset({
     id: presetId,
     effectType: "zap",
     patch: { activePresets: { ...state.activePresets, zap: presetId } },
-  } as unknown as import("$lib/shared/effects/domain/EffectsPreset").EffectsPreset);
+  } as unknown as EffectsPreset);
 }
 
 export const ZAP_PRESETS: EffectPreset[] = [
@@ -19,7 +23,7 @@ export const ZAP_PRESETS: EffectPreset[] = [
     id: "zap-thunder",
     name: "Thunder",
     previewColor: "#88ccff",
-    apply: (_vm) => apply("zap-thunder", {
+    apply: (_vm, state) => applyZap(state, "zap-thunder", {
       intensity: 0.9, color: "#88ccff", frequency: 8, mode: "arc", branching: 0.4,
     }),
   },
@@ -27,7 +31,7 @@ export const ZAP_PRESETS: EffectPreset[] = [
     id: "zap-tesla",
     name: "Tesla",
     previewColor: "#a855f7",
-    apply: (_vm) => apply("zap-tesla", {
+    apply: (_vm, state) => applyZap(state, "zap-tesla", {
       intensity: 1.0, color: "#a855f7", frequency: 20, mode: "arc", branching: 0.6,
     }),
   },
@@ -35,7 +39,7 @@ export const ZAP_PRESETS: EffectPreset[] = [
     id: "zap-plasma",
     name: "Plasma",
     previewColor: "#ec4899",
-    apply: (_vm) => apply("zap-plasma", {
+    apply: (_vm, state) => applyZap(state, "zap-plasma", {
       intensity: 0.7, color: "#ec4899", frequency: 16, mode: "crackle", branching: 0.2,
     }),
   },
@@ -43,9 +47,8 @@ export const ZAP_PRESETS: EffectPreset[] = [
     id: "zap-custom",
     name: "Custom",
     previewColor: "custom",
-    apply: (_vm) => {
-      // "Custom" just opens the Customize panel — no-op here; the EffectsPanel
-      // routes Custom → customizeOpen.
+    apply: () => {
+      // "Custom" just opens the Customize panel — EffectsPanel routes Custom → customizeOpen.
     },
   },
 ];
@@ -53,8 +56,7 @@ export const ZAP_PRESETS: EffectPreset[] = [
 export const ZAP_PRESET_GROUP: EffectPresetGroup = {
   effectType: "zap",
   presets: ZAP_PRESETS,
-  getSummary: (_vm: AnimationVisibilityStateManager): string => {
-    const state = getEffectsConfigContext();
+  getSummary: (_vm, state) => {
     if (!state) return "";
     const z = state.zap;
     return `${z.mode} · freq ${z.frequency}/s · ${Math.round(z.intensity * 100)}%`;
