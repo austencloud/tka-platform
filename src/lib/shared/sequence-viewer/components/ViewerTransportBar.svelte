@@ -87,6 +87,7 @@
   // ── Scrubber ─────────────────────────────────────────────────────────────
 
   function onScrub(e: MouseEvent) {
+    e.stopPropagation();
     if (!avatar) return;
     const el = e.currentTarget as HTMLDivElement;
     const rect = el.getBoundingClientRect();
@@ -94,9 +95,15 @@
     avatar.setProgress(Math.max(0, Math.min(1, ratio)));
   }
 
+  function onPlayClick(e: MouseEvent) {
+    e.stopPropagation();
+    avatar?.togglePlay();
+  }
+
   // ── Loop toggle ──────────────────────────────────────────────────────────
 
-  function toggleLoop() {
+  function toggleLoop(e: MouseEvent) {
+    e.stopPropagation();
     if (!avatar) return;
     avatar.loop = !avatar.loop;
   }
@@ -107,7 +114,7 @@
   <div class="transport" role="group" aria-label="Playback transport">
     <button
       class="transport-play"
-      onclick={() => avatar.togglePlay()}
+      onclick={onPlayClick}
       aria-label={avatar.isPlaying ? "Pause" : "Play"}
     >
       <i class="fas {avatar.isPlaying ? 'fa-pause' : 'fa-play'}"></i>
