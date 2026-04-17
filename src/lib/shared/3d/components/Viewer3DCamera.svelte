@@ -9,7 +9,7 @@
    */
 
   import { onMount, onDestroy } from "svelte";
-  import { T } from "@threlte/core";
+  import { T, useTask } from "@threlte/core";
   import * as THREE from "three";
   import type CameraControls from "camera-controls";
   import OrbitControls from "./OrbitControls.svelte";
@@ -225,6 +225,13 @@
     viewer3DState.registerSnapTo(snapTo);
   });
 
+  // Per-frame tick for the camera-choreography driver. Runs every frame;
+  // the state's tick() is a no-op when no preset is driving, so this is
+  // free when recording is idle.
+  useTask((delta) => {
+    viewer3DState.cameraChoreography.tick(delta);
+  });
+
   onDestroy(() => {
     if (saveTimer) clearTimeout(saveTimer);
   });
@@ -256,6 +263,13 @@
         initialTarget.z,
         false,
       );
+      // Register this controls instance with the camera-choreography
+      // state so recording presets can drive it during Pass 1 of the
+      // 3D export pipeline.
+      viewer3DState.cameraChoreography.registerControls(c);
+      return () => {
+        viewer3DState.cameraChoreography.unregisterControls(c);
+      };
     }}
     oncontrolstart={() => viewer3DState.setCameraDragging(true)}
     oncontrolend={(c) => {

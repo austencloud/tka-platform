@@ -44,6 +44,10 @@
   const currentTimeLabel = $derived(formatTime(currentSec));
   const totalTimeLabel = $derived(formatTime(totalSec));
 
+  // Camera choreography drives the camera during recording — lock the
+  // scrubber + loop toggle so the user can't desync the preset.
+  const isDriving = $derived(viewer.cameraChoreography.isDriving);
+
   /**
    * Beat marker positions as fractions of [0,1].
    * One tick per beat boundary (excluding 0 and 1 themselves).
@@ -83,7 +87,7 @@
 
   function onScrub(e: MouseEvent) {
     e.stopPropagation();
-    if (!avatar) return;
+    if (!avatar || isDriving) return;
     const el = e.currentTarget as HTMLDivElement;
     const rect = el.getBoundingClientRect();
     const ratio = (e.clientX - rect.left) / rect.width;
@@ -99,7 +103,7 @@
 
   function toggleLoop(e: MouseEvent) {
     e.stopPropagation();
-    if (!avatar) return;
+    if (!avatar || isDriving) return;
     avatar.loop = !avatar.loop;
   }
 </script>
@@ -121,6 +125,7 @@
 
     <div
       class="transport-scrubber"
+      class:locked={isDriving}
       onclick={onScrub}
       role="slider"
       tabindex="0"
@@ -128,6 +133,8 @@
       aria-valuemin={0}
       aria-valuemax={100}
       aria-valuenow={Math.round(progress * 100)}
+      aria-disabled={isDriving}
+      title={isDriving ? "Camera preset locks the scrubber during recording." : undefined}
     >
       <div class="fill" style:width="{progress * 100}%"></div>
       {#each beatMarkers as pct, i (i)}
@@ -138,8 +145,12 @@
 
     <button
       class="transport-loop"
+      class:locked={isDriving}
       aria-pressed={avatar.loop}
       aria-label="Loop {avatar.loop ? 'on' : 'off'}"
+      aria-disabled={isDriving}
+      disabled={isDriving}
+      title={isDriving ? "Camera preset controls the loop count during recording." : undefined}
       onclick={toggleLoop}
     >
       <i class="fas fa-sync"></i>
@@ -250,5 +261,15 @@
     background: transparent;
     color: rgba(255, 255, 255, 0.4);
     border-color: rgba(255, 255, 255, 0.12);
+  }
+
+  .transport-scrubber.locked {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+  .transport-loop.locked,
+  .transport-loop:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
   }
 </style>
