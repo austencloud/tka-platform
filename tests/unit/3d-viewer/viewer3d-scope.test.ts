@@ -2,13 +2,14 @@ import { describe, it, expect, vi, beforeAll, afterEach } from "vitest";
 import { createViewer3DStateForTest } from "./viewer3d-test-helpers.svelte";
 import type { IPropStateInterpolator } from "$lib/shared/3d/services/contracts/IPropStateInterpolator";
 import type { ISequenceConverter } from "$lib/shared/3d/services/contracts/ISequenceConverter";
+import { __resetWebGL2CapabilityForTests } from "$lib/shared/3d/capabilities/webgl-capabilities";
 
 // The global test setup replaces document.createElement with a generic stub
 // that returns plain objects lacking getContext. The viewer3d factory's
 // WebGL2 detection calls document.createElement("canvas").getContext("webgl2"),
 // so we extend the stub to return a canvas-like object for that specific tag.
-// getContext returns null so detectWebGL2() reports "not supported", which is
-// fine — these scope tests never actually enter 3D mode.
+// getContext returns null so the capability probe reports "not supported",
+// which is fine — these scope tests never actually enter 3D mode.
 beforeAll(() => {
   const originalCreateElement = document.createElement as unknown as (tag: string) => unknown;
   (document as unknown as { createElement: (tag: string) => unknown }).createElement = (tag: string) => {
@@ -18,6 +19,9 @@ beforeAll(() => {
     }
     return base;
   };
+  // Clear the module-level cache so the first factory call re-probes against
+  // the stub we just installed, not a stale result from some earlier test file.
+  __resetWebGL2CapabilityForTests();
 });
 
 function stubDeps(): {

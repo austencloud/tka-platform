@@ -12,11 +12,10 @@
   interface Props {
     sequenceTitle: string;
     renderMode: "2d" | "3d";
-    webgl2Available: boolean;
     onRenderModeChange: (mode: "2d" | "3d") => void;
     onBack: () => void;
   }
-  let { sequenceTitle, renderMode, webgl2Available, onRenderModeChange, onBack }: Props = $props();
+  let { sequenceTitle, renderMode, onRenderModeChange, onBack }: Props = $props();
 </script>
 
 <header class="viewer-header">
@@ -25,7 +24,7 @@
       <i class="fas fa-chevron-left"></i>
       <span>Back</span>
     </button>
-    <RenderModeToggle {renderMode} {webgl2Available} onchange={onRenderModeChange} />
+    <RenderModeToggle {renderMode} onchange={onRenderModeChange} />
   </div>
 
   <div class="header-center">

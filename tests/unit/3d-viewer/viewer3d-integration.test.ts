@@ -3,11 +3,12 @@ import { createViewer3DStateForTest } from "./viewer3d-test-helpers.svelte";
 import { Viewer3DUndoManager } from "$lib/shared/3d/services/implementations/Viewer3DUndoManager";
 import type { IPropStateInterpolator } from "$lib/shared/3d/services/contracts/IPropStateInterpolator";
 import type { ISequenceConverter } from "$lib/shared/3d/services/contracts/ISequenceConverter";
+import { __resetWebGL2CapabilityForTests } from "$lib/shared/3d/capabilities/webgl-capabilities";
 
 // The jsdom test environment doesn't implement canvas.getContext. Patch
-// document.createElement so WebGL2 detection in createViewer3DState sees a
-// canvas stub that returns null from getContext (= "not supported"), which is
-// fine — these tests never enter actual 3D rendering.
+// document.createElement so the WebGL2 capability probe sees a canvas stub
+// that returns null from getContext (= "not supported"), which is fine —
+// these tests never enter actual 3D rendering.
 beforeAll(() => {
   const originalCreateElement = document.createElement as unknown as (tag: string) => unknown;
   (document as unknown as { createElement: (tag: string) => unknown }).createElement = (tag: string) => {
@@ -17,6 +18,7 @@ beforeAll(() => {
     }
     return base;
   };
+  __resetWebGL2CapabilityForTests();
 });
 
 function stubDeps() {
