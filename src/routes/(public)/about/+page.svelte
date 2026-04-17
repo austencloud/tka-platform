@@ -19,11 +19,11 @@
     {
       id: "what",
       icon: "fa-seedling",
-      title: "What Is TKA",
+      title: "What Is The Kinetic Alphabet",
       color: "#22c55e",
       content: [
-        "TKA is a notation system for flow arts. Other people have documented patterns before. TKA takes it further.",
-        "Right now, flow arts knowledge lives mostly in videos scattered across the internet. Sheet music tells musicians what to play. Scripts tell actors what to say. TKA does that for prop movement: write it down, read it back, reproduce it later.",
+        "The Kinetic Alphabet (TKA) is a notation system for flow arts. Other people have documented patterns before. The Kinetic Alphabet takes it further.",
+        "Right now, flow arts knowledge lives mostly in videos scattered across the internet. Sheet music tells musicians what to play. Scripts tell actors what to say. The Kinetic Alphabet does that for prop movement: write it down, read it back, reproduce it later.",
       ],
     },
     {
@@ -119,7 +119,7 @@
       </a>
 
       <div class="header-content">
-        <h1>The Story Behind TKA</h1>
+        <h1>The Kinetic Alphabet</h1>
         <p class="tagline">A notation system for flow arts</p>
       </div>
     </header>
@@ -193,6 +193,74 @@
         </article>
       {/each}
     </div>
+
+    <!-- Frequently Asked Questions (visible FAQ for search + AI overviews) -->
+    <section class="faq-section" aria-labelledby="faq-heading">
+      <h2 id="faq-heading">Frequently Asked Questions</h2>
+
+      <article class="faq-item">
+        <h3>What is The Kinetic Alphabet?</h3>
+        <p>
+          The Kinetic Alphabet (TKA) is a notation system for flow arts — like sheet music for dancers. It lets flow artists document, share, and learn staff, clubs, fans, hoops, buugeng, and sword choreography using pictographs and symbols.
+        </p>
+      </article>
+
+      <article class="faq-item">
+        <h3>What does TKA stand for?</h3>
+        <p>
+          TKA stands for The Kinetic Alphabet, a flow arts notation system for documenting and sharing staff, fans, hoop, club, and buugeng choreography.
+        </p>
+      </article>
+
+      <article class="faq-item">
+        <h3>What is flow arts notation?</h3>
+        <p>
+          Flow arts notation is a system for writing down prop manipulation movements like staff, fans, hoop, and club choreography. The Kinetic Alphabet uses pictographs to represent each beat of movement, showing hand positions, motion types, and prop orientation.
+        </p>
+      </article>
+
+      <article class="faq-item">
+        <h3>How do you write down staff spinning moves?</h3>
+        <p>
+          The Kinetic Alphabet uses pictographs that capture hand positions on a grid, motion types (prospin, antispin, static), direction, and number of turns. It's built for dual-wielded props like double staff, and the notation applies to any prop you grip directly.
+        </p>
+      </article>
+
+      <article class="faq-item">
+        <h3>What props does TKA Composer support?</h3>
+        <p>
+          TKA Composer is built for dual-wielded static props: staff, clubs, fans, hoops, mini hoops, buugeng, triads, and swords. Each prop is rendered with proper rotations and hand positions.
+        </p>
+      </article>
+
+      <article class="faq-item">
+        <h3>Can I use TKA notation for poi?</h3>
+        <p>
+          The Kinetic Alphabet is built for static props like staff and fans, where you can hold any orientation freely. Poi is momentum-based, so gravity limits which TKA sequences are physically possible. Many sequences work, but not all. The Poi Lab tool identifies which sequences are poi-legal.
+        </p>
+      </article>
+
+      <article class="faq-item">
+        <h3>Is TKA Composer free to use?</h3>
+        <p>
+          Yes, TKA Composer is completely free. You can create sequences, animate them, export to various formats, and browse the community library at no cost. The app is open and accessible to all flow artists.
+        </p>
+      </article>
+
+      <article class="faq-item">
+        <h3>How do I learn flow arts with The Kinetic Alphabet?</h3>
+        <p>
+          TKA Composer includes progressive lessons from grid basics to advanced LOOPs. Interactive quizzes help reinforce understanding, and the Train module offers daily challenges to track your progress.
+        </p>
+      </article>
+
+      <article class="faq-item">
+        <h3>Can I share my sequences with other flow artists?</h3>
+        <p>
+          Yes. Export sequences as PNG images, PDFs, animated GIFs, or videos. Share links directly to Instagram, or publish to the community gallery for other artists to find.
+        </p>
+      </article>
+    </section>
 
     <!-- CTA -->
     <footer class="about-footer">
@@ -429,6 +497,46 @@
   .position-desc {
     font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+  }
+
+  /* FAQ Section */
+  .faq-section {
+    margin-top: 4rem;
+    padding: 2rem;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 16px;
+  }
+
+  .faq-section > h2 {
+    font-size: clamp(1.5rem, 4vw, 2rem);
+    font-weight: 700;
+    margin: 0 0 1.5rem 0;
+    color: var(--theme-text, #ffffff);
+    text-align: center;
+  }
+
+  .faq-item {
+    padding: 1.25rem 0;
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+  }
+
+  .faq-item:last-child {
+    border-bottom: none;
+  }
+
+  .faq-item h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin: 0 0 0.5rem 0;
+    color: var(--theme-text, #ffffff);
+  }
+
+  .faq-item p {
+    margin: 0;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.75));
+    line-height: 1.6;
+    font-size: 0.95rem;
   }
 
   /* Footer CTA */
