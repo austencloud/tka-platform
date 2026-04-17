@@ -12,6 +12,7 @@
 -->
 <script lang="ts">
   import type { MediaItem } from "./MediaSpotlight.svelte";
+  import { formatTime } from "$lib/shared/sequence-viewer/utils/format-time";
 
   interface Props {
     /** The video item to display */
@@ -44,13 +45,6 @@
   const progress = $derived(duration > 0 ? (currentTime / duration) * 100 : 0);
   const formattedTime = $derived(formatTime(currentTime));
   const formattedDuration = $derived(formatTime(duration));
-
-  // ===== Helpers =====
-  function formatTime(seconds: number): string {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
-  }
 
   // ===== Event Handlers =====
   function handleLoadedMetadata() {

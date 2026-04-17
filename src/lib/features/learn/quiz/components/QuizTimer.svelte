@@ -7,6 +7,7 @@
 
 <script lang="ts">
   import { onDestroy, onMount } from "svelte";
+  import { formatTime } from "$lib/shared/sequence-viewer/utils/format-time";
 
   // Props
   let {
@@ -106,12 +107,6 @@
         break;
       }
     }
-  }
-
-  function formatTime(seconds: number): string {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
   }
 
   function getTimerClass(): string {

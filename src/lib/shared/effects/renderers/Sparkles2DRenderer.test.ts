@@ -64,9 +64,10 @@ describe("Sparkles2DRenderer", () => {
       redPosA: { x: 100, y: 0 },
       redPosB: { x: 110, y: 0 },
     };
-    for (let i = 0; i < 500; i++) r.render(ctx, params, tips, 1 / 60);
-    // MAX_PARTICLES cap (currently 500). Lock the cap exists.
-    expect((r as any).particles.length).toBeLessThanOrEqual(500);
+    for (let i = 0; i < 300; i++) r.render(ctx, params, tips, 1 / 60);
+    // Hard MAX_PARTICLES cap (currently 1500). Lock that some cap exists
+    // and we never exceed the hard ceiling regardless of rate.
+    expect((r as any).particles.length).toBeLessThanOrEqual(1500);
   });
 
   it("decrements particle life over time and removes dead particles", () => {

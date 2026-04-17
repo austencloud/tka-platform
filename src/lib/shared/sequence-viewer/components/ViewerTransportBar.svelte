@@ -14,6 +14,7 @@
 
   import { onMount } from "svelte";
   import { getViewer3DContext } from "$lib/shared/3d/context/viewer-3d-context";
+  import { formatTime } from "$lib/shared/sequence-viewer/utils/format-time";
 
   const viewer = getViewer3DContext();
 
@@ -39,12 +40,6 @@
 
   /** Elapsed seconds */
   const currentSec = $derived(totalSec * progress);
-
-  function formatTime(sec: number): string {
-    const m = Math.floor(sec / 60);
-    const s = Math.floor(sec % 60);
-    return `${m}:${s.toString().padStart(2, "0")}`;
-  }
 
   const currentTimeLabel = $derived(formatTime(currentSec));
   const totalTimeLabel = $derived(formatTime(totalSec));
