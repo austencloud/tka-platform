@@ -7,15 +7,20 @@
    * don't have to hit the opposite label to switch.
    *
    * Lives in the Sequence Viewer footer, bottom-left.
+   *
+   * WebGL2 capability is read from the shared `webgl-capabilities` module
+   * rather than threaded through as a prop, so call sites don't have to
+   * plumb the flag down a component just to forward it to us.
    */
+  import { isWebGL2Available } from "$lib/shared/3d/capabilities/webgl-capabilities";
 
   interface Props {
     renderMode: "2d" | "3d";
-    webgl2Available: boolean;
     onchange: (mode: "2d" | "3d") => void;
   }
 
-  let { renderMode, webgl2Available, onchange }: Props = $props();
+  let { renderMode, onchange }: Props = $props();
+  const webgl2Available = isWebGL2Available();
 
   function flip() {
     onchange(renderMode === "2d" ? "3d" : "2d");

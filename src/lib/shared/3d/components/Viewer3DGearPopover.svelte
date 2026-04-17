@@ -2,13 +2,15 @@
   /**
    * Viewer3DGearPopover
    *
-   * Single gear icon for the sequence-viewer 3D popover. Opens a popover
-   * with a tab bar for multiple settings domains:
+   * Gear tab of the sequence-viewer RightRail. Gated on
+   * viewer3DState.activePopover === "gear" — the rail owns the chip button
+   * and outside-click behavior. This component only renders the panel
+   * contents when the gear popover is active.
    *
+   * Tabs:
    * - Camera: viewing angle presets (front, back, left, right, top, 3/4)
    * - Planes: which plane each hand is on, plus force-show visibility
-   * - Avatar: (planned) multi-avatar / variation presets — stub for now
-   * - Effects: (planned) prop effects (trails, fire, sparkles) — stub for now
+   * - Scene: scene-feature toggles
    *
    * Sequence-wide only — per-beat plane overrides are not editable here.
    * PlaneMode is derived from the hand assignments in setHandPlane.
@@ -32,11 +34,9 @@
     { id: "scene", label: "Scene" },
   ];
 
-  let open = $state(false);
-  let activeTab = $state<TabId>("camera");
-  let rootEl = $state<HTMLDivElement | null>(null);
-
   const viewer3DState = getViewer3DContext();
+  const open = $derived(viewer3DState.activePopover === "gear");
+  let activeTab = $state<TabId>("camera");
 
   // Bind Ctrl+Z / Ctrl+Shift+Z to viewer undo/redo while the component
   // is mounted. The handler ignores events inside editable fields so it
@@ -88,11 +88,6 @@
 
   const hasBeatOverrides = $derived(avatarState?.hasBeatOverrides ?? false);
 
-  function toggleOpen(e: MouseEvent) {
-    e.stopPropagation();
-    open = !open;
-  }
-
   function selectTab(e: MouseEvent, tabId: TabId) {
     e.stopPropagation();
     activeTab = tabId;
@@ -132,43 +127,23 @@
     }
   }
 
-  function handleOutsideClick(e: MouseEvent) {
-    if (!open) return;
-    const target = e.target as Node;
-    if (rootEl && !rootEl.contains(target)) {
-      open = false;
-    }
-  }
 </script>
 
-<svelte:window onclick={handleOutsideClick} />
-
-<div class="gear-root" bind:this={rootEl}>
-  <button
-    class="gear-button"
-    class:active={open}
-    onclick={toggleOpen}
+{#if open}
+  <!-- svelte-ignore a11y_interactive_supports_focus -->
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+  <div
+    class="gear-popover"
+    role="dialog"
     aria-label="3D viewer settings"
-    aria-expanded={open}
-    aria-haspopup="true"
+    tabindex="-1"
+    onclick={(e) => e.stopPropagation()}
+    onpointerdown={(e) => e.stopPropagation()}
+    onkeydown={(e) => { if (e.key === 'Escape') viewer3DState.closePopover(); }}
+    in:scale={{ duration: 250, start: 0.9, opacity: 0, easing: backOut }}
+    out:scale={{ duration: 180, start: 0.95, opacity: 0, easing: cubicOut }}
   >
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-      <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
-      <circle cx="12" cy="12" r="3"/>
-    </svg>
-  </button>
-
-  {#if open}
-    <div
-      class="gear-popover"
-      role="dialog"
-      aria-label="3D viewer settings"
-      tabindex="-1"
-      onclick={(e) => e.stopPropagation()}
-      onkeydown={(e) => { if (e.key === 'Escape') open = false; }}
-      in:scale={{ duration: 250, start: 0.9, opacity: 0, easing: backOut }}
-      out:scale={{ duration: 180, start: 0.95, opacity: 0, easing: cubicOut }}
-    >
       <PerformerChipStrip />
 
       <!-- Tab bar -->
@@ -288,45 +263,14 @@
         </span>
         <span class="bridge-arrow"><i class="fas fa-arrow-right"></i></span>
       </button>
-    </div>
-  {/if}
-</div>
+  </div>
+{/if}
 
 <style>
-  .gear-root {
-    position: relative;
-  }
-
-  .gear-button {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: rgba(0, 0, 0, 0.5);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: rgba(255, 255, 255, 0.6);
-    cursor: pointer;
-    backdrop-filter: blur(8px);
-    transition: all 0.2s ease;
-  }
-
-  .gear-button:hover {
-    background: rgba(0, 0, 0, 0.7);
-    color: rgba(255, 255, 255, 0.9);
-  }
-
-  .gear-button.active {
-    background: rgba(139, 139, 255, 0.2);
-    border-color: rgba(139, 139, 255, 0.3);
-    color: #fff;
-  }
-
   .gear-popover {
     position: absolute;
-    top: calc(100% + 8px);
-    right: 0;
+    right: calc(100% + 10px);
+    top: 0;
     z-index: 100;
     width: 340px;
     border-radius: 10px;

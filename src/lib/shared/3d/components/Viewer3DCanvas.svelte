@@ -18,7 +18,6 @@
   import Viewer3DScene from "./Viewer3DScene.svelte";
   import Viewer3DCamera from "./Viewer3DCamera.svelte";
   import Viewer3DCanvasRef from "./Viewer3DCanvasRef.svelte";
-  import Viewer3DGearPopover from "./Viewer3DGearPopover.svelte";
   import BeatPlaneStrip from "./controls/BeatPlaneStrip.svelte";
   import { getViewer3DContext } from "../context/viewer-3d-context";
   import { createSceneFeatureState } from "../scene-features/state/scene-feature-state.svelte";
@@ -112,10 +111,6 @@
     </Canvas>
     <SceneLoadingCurtain />
     {#if !hideOverlays}
-      <!-- svelte-ignore a11y_no_static_element_interactions a11y_click_events_have_key_events -->
-      <div class="top-controls" role="presentation" onclick={(e) => e.stopPropagation()} onpointerdown={(e) => e.stopPropagation()}>
-        <Viewer3DGearPopover />
-      </div>
       <RightRail {bpm} {onBpmChange} />
       <ViewerTransportBar />
       {#if avatarState && avatarState.totalSteps > 1 && avatarState.beatEditMode}
@@ -140,16 +135,6 @@
     height: 100%;
     position: relative;
     background: #1a1a2e;
-  }
-
-  .top-controls {
-    position: absolute;
-    top: 12px;
-    right: 12px;
-    z-index: 10;
-    display: flex;
-    gap: 8px;
-    align-items: flex-start;
   }
 
   .beat-strip-container {

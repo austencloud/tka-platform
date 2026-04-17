@@ -4,6 +4,7 @@
   import TempoPopover from "./TempoPopover.svelte";
   import ExportPopover from "./ExportPopover.svelte";
   import PerformerPopover from "./PerformerPopover.svelte";
+  import Viewer3DGearPopover from "$lib/shared/3d/components/Viewer3DGearPopover.svelte";
 
   const viewer = getViewer3DContext();
 
@@ -85,6 +86,19 @@
           <i class="fas {chip.icon}"></i>
         </button>
         <ExportPopover />
+      </div>
+    {:else if chip.id === "gear"}
+      <div class="chip-wrap">
+        <button
+          class="rail-chip"
+          aria-pressed={viewer.activePopover === chip.id}
+          aria-label={chip.tooltip}
+          data-tooltip={chip.tooltip}
+          onclick={(e) => onClick(e, chip.id)}
+        >
+          <i class="fas {chip.icon}"></i>
+        </button>
+        <Viewer3DGearPopover />
       </div>
     {:else}
       <button

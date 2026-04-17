@@ -26,6 +26,7 @@ import { STAGE } from "$lib/shared/3d/scale/scale-constants";
 import type { FormationPreset } from "../domain/formation";
 import { calculateFacingAngle } from "../domain/formation";
 import { PRESET_VALID_COUNTS, createFormationFromPreset } from "../config/formation-presets";
+import { isWebGL2Available } from "../capabilities/webgl-capabilities";
 
 // ============================================
 // Popover Stack
@@ -243,25 +244,6 @@ function migrateLegacyPlanesIfNeeded(): void {
 }
 
 // ============================================
-// WebGL2 Detection
-// ============================================
-
-/**
- * Test for WebGL2 support by creating a throwaway canvas.
- * Runs once at factory creation, result is cached in the returned state.
- */
-function detectWebGL2(): boolean {
-  if (typeof document === "undefined") return false; // SSR guard
-  const testCanvas = document.createElement("canvas");
-  const gl = testCanvas.getContext("webgl2");
-  const supported = !!gl;
-  if (gl) {
-    gl.getExtension("WEBGL_lose_context")?.loseContext();
-  }
-  return supported;
-}
-
-// ============================================
 // Factory
 // ============================================
 
@@ -270,7 +252,7 @@ export function createViewer3DState(deps: {
   sequenceConverter: ISequenceConverter;
   viewer3DUndoManager: IViewer3DUndoManager;
 }) {
-  const _webgl2Available = detectWebGL2();
+  const _webgl2Available = isWebGL2Available();
   const _persistedMode = _webgl2Available ? loadPersistedMode() : "2d";
   const _persistedCamera = loadPersistedCamera();
 
