@@ -1,33 +1,16 @@
 <script lang="ts">
-  const guides = [
-    {
-      level: 1,
-      title: "Base Motions",
-      description:
-        "The grid, all 6 letter types, basic words. No turns.",
-      image: "/images/level_images/level_1.png",
-      href: "/guides/level-1.pdf",
-      accent: "#4CAF50",
-    },
-    {
-      level: 2,
-      title: "Whole Turns",
-      description:
-        "Whole turns. Shifts get rotation, combos get harder.",
-      image: "/images/level_images/level_2.png",
-      href: "/guides/level-2.pdf",
-      accent: "#2196F3",
-    },
-    {
-      level: 3,
-      title: "Half Turns, Floats",
-      description:
-        "Half turns, floats. The full vocabulary.",
-      image: "/images/level_images/level_3.png",
-      href: "/guides/level-3.pdf",
-      accent: "#9C27B0",
-    },
-  ];
+  import { LEVEL_METADATA, type LevelNumber } from "$lib/shared/domain/curriculum/level-metadata";
+
+  const levels: LevelNumber[] = [1, 2, 3];
+
+  const guides = levels.map((level) => ({
+    level,
+    title: LEVEL_METADATA[level].name,
+    description: LEVEL_METADATA[level].blurb,
+    image: LEVEL_METADATA[level].image,
+    href: `/guides/level-${level}.pdf`,
+    accent: LEVEL_METADATA[level].accent,
+  }));
 </script>
 
 <section class="guides" id="guides">
