@@ -100,9 +100,11 @@ import { EchoOverlayRenderer } from "./EchoOverlayRenderer";
 import type { IEchoOverlayRenderer } from "../contracts/IEchoOverlayRenderer";
 import { BloomOverlayRenderer } from "./BloomOverlayRenderer";
 import type { IBloomOverlayRenderer } from "../contracts/IBloomOverlayRenderer";
-import type { Bloom2DParams, Echo2DParams, Sparkles2DParams, Zap2DParams } from "$lib/shared/effects/translators/canvas2d-types";
-import { resolveBloom2D, resolveEcho2D, resolveSparkles2D, resolveZap2D } from "$lib/shared/effects/translators/canvas2d-translator";
-import type { BloomIntent, EchoIntent, SparklesIntent } from "$lib/shared/effects/domain/EffectsConfig";
+import { WaterOverlayRenderer } from "./WaterOverlayRenderer";
+import type { IWaterOverlayRenderer } from "../contracts/IWaterOverlayRenderer";
+import type { Bloom2DParams, Echo2DParams, Sparkles2DParams, Water2DParams, Zap2DParams } from "$lib/shared/effects/translators/canvas2d-types";
+import { resolveBloom2D, resolveEcho2D, resolveSparkles2D, resolveWater2D, resolveZap2D } from "$lib/shared/effects/translators/canvas2d-translator";
+import type { BloomIntent, EchoIntent, SparklesIntent, WaterIntent } from "$lib/shared/effects/domain/EffectsConfig";
 import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
 import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
 import { sequenceLoopabilityChecker } from "$lib/features/compose/services/implementations/SequenceLoopabilityChecker";
@@ -283,6 +285,7 @@ export class AnimationEngine {
   private sparklesRenderer: ISparklesOverlayRenderer | null = null;
   private echoRenderer: IEchoOverlayRenderer | null = null;
   private bloomRenderer: IBloomOverlayRenderer | null = null;
+  private waterRenderer: IWaterOverlayRenderer | null = null;
   // Cached zap params resolved from the current ZapIntent.
   // Seeded from DEFAULT_EFFECTS_CONFIG.zap and overwritten in getFrameParams()
   // whenever a wired EffectsConfigState reports a changed zap intent
@@ -301,6 +304,9 @@ export class AnimationEngine {
   // Same reference-identity diff pattern as sparkles/echo.
   private bloomConfig: Bloom2DParams = resolveBloom2D(DEFAULT_EFFECTS_CONFIG.bloom);
   private prevBloomIntentRef: BloomIntent | null = null;
+  // Cached water params resolved from the live WaterIntent.
+  private waterConfig: Water2DParams = resolveWater2D(DEFAULT_EFFECTS_CONFIG.water);
+  private prevWaterIntentRef: WaterIntent | null = null;
   // JSON snapshot of the last ZapIntent we resolved into zapConfig.
   // Re-resolves only when the intent changes to avoid per-frame allocation churn.
   private prevZapIntentJson: string = JSON.stringify(DEFAULT_EFFECTS_CONFIG.zap);
@@ -368,6 +374,7 @@ export class AnimationEngine {
   private prevHasSparklesTips: boolean = false;
   private prevHasEchoTips: boolean = false;
   private prevHasBloomTips: boolean = false;
+  private prevHasWaterTips: boolean = false;
   private prevFireIntensity: number = 0.7;
   private prevFireTurbulence: number = 0.5;
   private prevFireColorCurve: import("../../domain/types/FireTypes").FireColorCurve | null = null;
@@ -421,6 +428,7 @@ export class AnimationEngine {
     sparklesConfig: null,
     echoConfig: null,
     bloomConfig: null,
+    waterConfig: null,
     isSeamlesslyLoopable: false,
     sequenceContentHash: undefined,
     tipEffectMap: {},
@@ -502,6 +510,7 @@ export class AnimationEngine {
     this.prevHasSparklesTips = vm.hasEffect("sparkles");
     this.prevHasEchoTips = vm.hasEffect("echo");
     this.prevHasBloomTips = vm.hasEffect("bloom");
+    this.prevHasWaterTips = vm.hasEffect("water");
     this.prevFireIntensity = vm.getFireIntensity();
     this.prevCharcoalParamsJson = JSON.stringify(vm.getCharcoalParams());
     this.prevEffortPreset = vm.getEffortPreset();
@@ -684,6 +693,12 @@ export class AnimationEngine {
         if (hasBloomTips !== this.prevHasBloomTips) {
           this.prevHasBloomTips = hasBloomTips;
           this.syncBloomOverlay();
+        }
+
+        const hasWaterTips = vm.hasEffect("water");
+        if (hasWaterTips !== this.prevHasWaterTips) {
+          this.prevHasWaterTips = hasWaterTips;
+          this.syncWaterOverlay();
         }
 
         // Sync fire slider values + color curve → physics
@@ -909,6 +924,9 @@ export class AnimationEngine {
     }
     if (this.prevHasBloomTips && !this.bloomRenderer?.isInitialized()) {
       this.syncBloomOverlay();
+    }
+    if (this.prevHasWaterTips && !this.waterRenderer?.isInitialized()) {
+      this.syncWaterOverlay();
     }
   }
 
@@ -1466,6 +1484,8 @@ export class AnimationEngine {
     this.echoRenderer = null;
     this.bloomRenderer?.dispose();
     this.bloomRenderer = null;
+    this.waterRenderer?.dispose();
+    this.waterRenderer = null;
 
     // Clear trails
     this.trailCapturer?.clearTrails();
@@ -1964,6 +1984,46 @@ export class AnimationEngine {
   }
 
   /**
+   * Initialize or destroy the water overlay based on prevHasWaterTips.
+   * Mirrors syncBloomOverlay — Canvas2D layer that hosts the droplet
+   * emitter + pool for every tip the tipEffectMap assigns to "water".
+   */
+  private syncWaterOverlay(): void {
+    const enabled = this.prevHasWaterTips;
+
+    if (enabled) {
+      if (!this.waterRenderer?.isInitialized()) {
+        if (!this.containerElement) return;
+        this.waterRenderer = new WaterOverlayRenderer();
+        const success = this.waterRenderer.initialize(
+          this.containerElement,
+          this.canvasSize,
+          this.canvasSize
+        );
+        if (success) {
+          this.renderLoopService?.updateConfig({
+            waterRenderer: this.waterRenderer,
+          });
+        } else {
+          this.waterRenderer = null;
+        }
+      }
+    } else {
+      if (this.waterRenderer?.isInitialized()) {
+        this.waterRenderer.dispose();
+        this.waterRenderer = null;
+      }
+      this.renderLoopService?.updateConfig({ waterRenderer: null });
+    }
+
+    if (this.renderLoopService && this.lastPropsRef) {
+      this.renderLoopService.triggerRender(() =>
+        this.getFrameParams(this.lastPropsRef ?? DEFAULT_ENGINE_PROPS)
+      );
+    }
+  }
+
+  /**
    * Pause canvas resize observation during CSS transitions.
    * Prevents canvas buffer clears that cause black frames.
    */
@@ -2219,6 +2279,8 @@ export class AnimationEngine {
         this.sparklesRenderer?.resize(newSize, newSize);
         this.echoRenderer?.resize(newSize, newSize);
         this.bloomRenderer?.resize(newSize, newSize);
+        this.waterRenderer?.resize(newSize, newSize);
+        this.charcoalRenderer?.resize(newSize, newSize);
         // Reset fire/LED tip trackers so positions recalculate at the new canvas size.
         // Without this, after HMR the tracker uses stale positions from the old size.
         this.fireTipTracker?.reset();
@@ -2527,6 +2589,17 @@ export class AnimationEngine {
       }
     }
     fp.bloomConfig = this.prevHasBloomTips ? this.bloomConfig : null;
+
+    // Water overlay config — re-resolve when WaterIntent changes via
+    // reference identity (same pattern as bloom/echo/sparkles).
+    if (this.effectsConfigState) {
+      const intent = this.effectsConfigState.water;
+      if (intent !== this.prevWaterIntentRef) {
+        this.prevWaterIntentRef = intent;
+        this.waterConfig = resolveWater2D(intent);
+      }
+    }
+    fp.waterConfig = this.prevHasWaterTips ? this.waterConfig : null;
 
     // Per-tip effect assignments for filtering tips by effect type.
     // Cell-level map (from compose grid) takes priority over the global map.
