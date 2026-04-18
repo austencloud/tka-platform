@@ -37,6 +37,7 @@ export class Bloom2DRenderer {
     ctx: CanvasRenderingContext2D,
     params: Bloom2DParams,
     tips: BloomTipInput[],
+    scale: number = 1,
   ): void {
     if (tips.length === 0) return;
 
@@ -62,7 +63,8 @@ export class Bloom2DRenderer {
 
       for (const tip of tips) {
         const color = this.pickColor(params, tip, t);
-        const r = Math.max(1, params.radius);
+        // radius is px at reference canvas size; scale converts to actual canvas px
+        const r = Math.max(1, params.radius * scale);
         const gradient = this.buildGradient(
           ctx,
           tip.x,
