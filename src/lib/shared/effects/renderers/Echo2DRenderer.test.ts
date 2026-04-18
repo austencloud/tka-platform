@@ -217,3 +217,67 @@ describe("Echo2DRenderer", () => {
     expect((r as any).lastBeatIndex).toBe(-1);
   });
 });
+
+describe("Echo2DRenderer scale", () => {
+  it("accepts a scale argument (contract)", () => {
+    const r = new Echo2DRenderer();
+    const ctx = makeCtx();
+    const params: Echo2DParams = {
+      intensity: 1,
+      decay: 4,
+      interval: 1,
+      shape: "staff",
+      colorMode: "solid",
+      color: "#ffffff",
+      thickness: 4,
+      blendMode: "lighter",
+    };
+    const tips = {
+      bluePosA: { x: 0, y: 0 },
+      bluePosB: { x: 10, y: 0 },
+      redPosA: null,
+      redPosB: null,
+      currentStep: 0,
+      blueColor: "#00f",
+      redColor: "#f00",
+    };
+    expect(() => r.render(ctx, params, tips, 0.5)).not.toThrow();
+  });
+
+  it("at scale=0.5, ctx.lineWidth is set to thickness*0.5 during render", () => {
+    const r = new Echo2DRenderer();
+    // Track all lineWidth assignments made during render.
+    const assignedLineWidths: number[] = [];
+    let _lineWidth = 1;
+    const ctx = {
+      ...makeCtx(),
+      get lineWidth() { return _lineWidth; },
+      set lineWidth(v: number) { assignedLineWidths.push(v); _lineWidth = v; },
+    } as unknown as CanvasRenderingContext2D;
+
+    const params: Echo2DParams = {
+      intensity: 1,
+      decay: 4,
+      interval: 1,
+      shape: "staff",
+      colorMode: "solid",
+      color: "#ffffff",
+      thickness: 8,
+      blendMode: "lighter",
+    };
+    // Step 1: capture at beat 0.
+    r.render(ctx, params, {
+      bluePosA: { x: 0, y: 0 }, bluePosB: { x: 10, y: 0 },
+      redPosA: null, redPosB: null,
+      currentStep: 0, blueColor: "#00f", redColor: "#f00",
+    }, 0.5);
+    // Step 2: advance past beat 1 so the captured phantom is drawn.
+    r.render(ctx, params, {
+      bluePosA: { x: 0, y: 0 }, bluePosB: { x: 10, y: 0 },
+      redPosA: null, redPosB: null,
+      currentStep: 1.5, blueColor: "#00f", redColor: "#f00",
+    }, 0.5);
+    // The renderer sets lineWidth = thickness * scale = 8 * 0.5 = 4.
+    expect(assignedLineWidths).toContain(4);
+  });
+});
