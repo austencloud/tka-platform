@@ -37,6 +37,7 @@ import {
   MIN_TAIL_WIDTH_RATIO,
   FADE_EXPONENT,
 } from "$lib/shared/render-graph/math/trail-mesh";
+import { computeEffectScale } from "$lib/shared/effects/renderers/scale";
 
 const RING_BUFFER_SIZE = 120;
 const LEADING_EDGE = 20;
@@ -225,7 +226,14 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
     this.redLeftTailProg = advance(this.redLeftRing, this.redLeftTailProg, redLeftMoved);
     this.redRightTailProg = advance(this.redRightRing, this.redRightTailProg, redRightMoved);
 
-    const lineWidth = Math.max(3.5, trailSettings.lineWidth);
+    // lineWidth is authored in reference-size (500px) pixels. On smaller
+    // canvases, scale it down so the trail + glow halo stay the same
+    // proportion of the frame — otherwise the fixed-pixel floor (3.5) and
+    // the NDC division by canvas width make the halo a bigger share of a
+    // small canvas, which reads as overblown glow on mobile.
+    const effectScale = computeEffectScale(this.width, this.height);
+    const scaledLineWidth = Math.max(3.5, trailSettings.lineWidth) * effectScale;
+    const lineWidth = Math.max(1, scaledLineWidth);
     const thicknessNdc = (lineWidth * 2) / Math.max(1, this.width);
     const decayPerSecond = decayRateFor(trailSettings.fadeDurationMs);
     const glowNdc = thicknessNdc * GLOW_RATIO;
