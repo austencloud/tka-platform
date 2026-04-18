@@ -1002,6 +1002,45 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
             redColor,
           });
         }
+        // Augment with prop-center halos for visible props that emit no
+        // tip-tracker output (hand, contactball, etc. — empty tip-point
+        // configs). These props still occupy a meaningful position in
+        // space; bloom should fire on their center even though they have
+        // no per-tip endpoints. Only synthesizes when tipEffectMap
+        // resolves to "bloom" for the prop AND no per-tip bloom tip
+        // already exists for it.
+        const blueTransform = renderedTransforms?.blue;
+        if (
+          params.props.blueProp &&
+          blueTransform &&
+          resolveEffect(0, 0, tipMap, {}) === "bloom" &&
+          !bloomTips.some((t) => t.propIndex === 0)
+        ) {
+          bloomTips.push({
+            x: blueTransform.centerX,
+            y: blueTransform.centerY,
+            propIndex: 0,
+            tipIndex: globalTipIndex++,
+            blueColor,
+            redColor,
+          });
+        }
+        const redTransform = renderedTransforms?.red;
+        if (
+          params.props.redProp &&
+          redTransform &&
+          resolveEffect(1, 0, tipMap, {}) === "bloom" &&
+          !bloomTips.some((t) => t.propIndex === 1)
+        ) {
+          bloomTips.push({
+            x: redTransform.centerX,
+            y: redTransform.centerY,
+            propIndex: 1,
+            tipIndex: globalTipIndex++,
+            blueColor,
+            redColor,
+          });
+        }
         activeBloomRenderer!.renderFrame(params.bloomConfig!, bloomTips);
         this.consecutiveBloomErrors = 0;
       } catch (error) {
