@@ -216,4 +216,21 @@ describe("Bloom2DRenderer", () => {
     expect(ctx.save).toHaveBeenCalled();
     expect(ctx.restore).toHaveBeenCalled();
   });
+
+  describe("scale parameter", () => {
+    it("accepts scale argument without throwing", () => {
+      const r = new Bloom2DRenderer();
+      const { ctx } = makeCtx();
+      expect(() => r.render(ctx, makeParams(), [makeTip()], 0.5)).not.toThrow();
+    });
+
+    it("fillRect w/h = radius*scale*2 when scale=0.5 and radius=100", () => {
+      const r = new Bloom2DRenderer();
+      const { ctx, fillRects } = makeCtx();
+      r.render(ctx, makeParams({ radius: 100 }), [makeTip()], 0.5);
+      // r = 100 * 0.5 = 50; side = r*2 = 100
+      expect(fillRects[0]!.w).toBe(100);
+      expect(fillRects[0]!.h).toBe(100);
+    });
+  });
 });
