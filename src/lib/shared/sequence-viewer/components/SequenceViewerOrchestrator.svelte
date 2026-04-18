@@ -219,6 +219,11 @@
   import { createAnimationPanelState, type AnimationStateKey } from "$lib/features/compose/state/animation-panel-state.svelte";
   import { setAnimationPlaybackRef } from "$lib/shared/coordinators/animation-playback-ref.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
+  import { createEffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
+  import { setEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
+  import { snapshotConfigFromVm, bindVmToEffectsConfig } from "$lib/shared/effects/compat/vm-shim";
+  import { seedTrailsFromAnimationSettings } from "$lib/shared/effects/compat/animation-settings-shim";
+  import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import { lanSyncState } from "$lib/shared/lan-sync/state/lan-sync-state.svelte";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
@@ -600,6 +605,29 @@
 
   // Animation visibility
   const animationVisibility = getAnimationVisibilityManager();
+
+  // Canonical effects config — single source of truth shared across the
+  // canvas (ViewerSplitPane) AND the export panel (ExportVideoDrawer).
+  // Lives here so both subtrees can read the same context; without this,
+  // EffectsPanel's customize views see a null context and render
+  // "Effect state unavailable".
+  const effectsConfigState = createEffectsConfigState(snapshotConfigFromVm(animationVisibility));
+  seedTrailsFromAnimationSettings(effectsConfigState);
+  setEffectsConfigContext(effectsConfigState);
+
+  $effect(() => {
+    const dispose = bindVmToEffectsConfig(animationVisibility, effectsConfigState);
+    return dispose;
+  });
+
+  $effect(() => {
+    animationSettings.trail.lineWidth;
+    animationSettings.trail.maxOpacity;
+    animationSettings.trail.blueColor;
+    animationSettings.trail.redColor;
+    animationSettings.trail.trackingMode;
+    untrack(() => seedTrailsFromAnimationSettings(effectsConfigState));
+  });
 
   // Image composition
   const imageComposition = getImageCompositionManager();
@@ -1368,6 +1396,7 @@
         return;
       }
 
+      let exported3DOk = false;
       try {
         await sequenceModalExporter.export3DAnimation(
           {
@@ -1393,11 +1422,13 @@
           },
           callbacks
         );
+        exported3DOk = true;
       } finally {
         isRecording3D = false;
         recordingElapsed = 0;
         if (recordingTimer) { clearInterval(recordingTimer); recordingTimer = null; }
       }
+      if (exported3DOk) autoDownloadVideo();
       return;
     }
 
@@ -1415,6 +1446,9 @@
         { canvas: animationCanvas, playbackController, panelState: modalAnimationState },
         callbacks
       );
+      if (sequenceModalExporter.state.previewBlobUrl && !sequenceModalExporter.state.error) {
+        autoDownloadVideo();
+      }
     } else if (exportType === "animation" && (!playbackController || !animationCanvas)) {
       showToast("Animation not ready yet. Wait a moment and try again.", "error");
       return;
@@ -1443,6 +1477,17 @@
   function handleRetryExport() {
     sequenceModalExporter.clearError();
     handleExport();
+  }
+
+  function autoDownloadVideo() {
+    const url = sequenceModalExporter.state.previewBlobUrl;
+    if (!url) return;
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${effectiveSequence?.word || "sequence"}.mp4`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
   }
 
   function dismissPreview() {

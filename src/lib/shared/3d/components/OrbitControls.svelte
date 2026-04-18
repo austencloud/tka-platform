@@ -67,6 +67,13 @@
     autoRotate?: boolean;
     /** Matches three.js OrbitControls units (~6deg/s per unit at 60fps). */
     autoRotateSpeed?: number;
+    /**
+     * When true, the per-frame `controls.update(delta)` is skipped so the
+     * camera transform set by another author (e.g. the offline 3D exporter
+     * replaying recorded keyframes) is not overwritten by damping toward
+     * the controls' internal target.
+     */
+    paused?: boolean;
     target?: Vec3Tuple | THREE.Vector3;
     /** Fires on every internal update tick (i.e. while animating). */
     onchange?: (controls: CameraControls) => void;
@@ -97,6 +104,7 @@
     enablePan = true,
     autoRotate = false,
     autoRotateSpeed = 2.0,
+    paused = false,
     target,
     onchange,
     oncontrolstart,
@@ -218,7 +226,7 @@
   const AUTO_ROTATE_RAD_PER_SEC = Math.PI / 30;
 
   useTask((delta) => {
-    if (!controls) return;
+    if (!controls || paused) return;
     if (autoRotate) {
       controls.azimuthAngle += delta * AUTO_ROTATE_RAD_PER_SEC * autoRotateSpeed;
     }
