@@ -28,6 +28,7 @@ import {
 	BLOOM_UPSAMPLE_FRAG,
 	LED_DISPLAY_FRAG,
 } from "./LedShaderSources";
+import { computeEffectScale } from "$lib/shared/effects/renderers/scale";
 
 const MAX_DPR = 2;
 const MAX_LEDS = 32;
@@ -211,7 +212,12 @@ export class WebGLLedRenderer implements ILedOverlayRenderer {
 		//    frame for a given LED — or after a long pause / big jump —
 		//    we collapse the capsule to a point by setting prev = curr.
 		const tipCount = Math.min(input.tips.length, MAX_LEDS);
-		const baseGlowRadius = config.glowRadius * 60.0;
+		// glowRadius * 60 is authored in reference-size (500px) pixels.
+		// Scale to the current canvas so the halo stays the same proportion
+		// of the frame — without this, a_glowRadius is fixed viewbox-space
+		// and the halo reads as proportionally larger on small canvases.
+		const effectScale = computeEffectScale(input.canvasWidth, input.canvasHeight);
+		const baseGlowRadius = config.glowRadius * 60.0 * effectScale;
 		const currentTimeSec =
 			input.currentTime > 1e6 ? input.currentTime / 1000 : input.currentTime;
 		const dt =
