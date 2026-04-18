@@ -110,10 +110,14 @@
     { value: 4320, label: "8K" },
   ];
 
-  /** Total video duration at current BPM and loop count */
+  /** Total video duration: one beat for each enabled hold + motion × loops. Matches the
+   *  timeline in VideoExportOrchestrator so the label agrees with the exported file. */
   const totalVideoDuration = $derived.by(() => {
     if (singlePlayDuration <= 0) return "";
-    const total = singlePlayDuration * exportOptions.videoLoopCount;
+    const unitSeconds = bpm > 0 ? 60 / bpm : 0;
+    const startHold = exportOptions.videoIncludeStartPosition ? unitSeconds : 0;
+    const endHold = exportOptions.videoIncludeEndHold ? unitSeconds : 0;
+    const total = startHold + singlePlayDuration * exportOptions.videoLoopCount + endHold;
     return formatDuration(total);
   });
 

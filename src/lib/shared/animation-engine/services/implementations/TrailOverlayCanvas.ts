@@ -153,6 +153,7 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
       redProp,
       bluePropType,
       redPropType,
+      currentTime,
     } = params;
 
     // ---------------------------------------------------------------
@@ -184,10 +185,10 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
       !anyBilateral; // unilateral always tracks the single tip
 
     if (blueProp && hasBlue) {
-      this.capturePropTips(blueProp, canvasSize, bluePropType, 0, trackLeft, trackRight);
+      this.capturePropTips(blueProp, canvasSize, bluePropType, 0, trackLeft, trackRight, currentTime);
     }
     if (redProp && hasRed) {
-      this.capturePropTips(redProp, canvasSize, redPropType, 1, trackLeft, trackRight);
+      this.capturePropTips(redProp, canvasSize, redPropType, 1, trackLeft, trackRight, currentTime);
     }
 
     // ---------------------------------------------------------------
@@ -234,7 +235,7 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
             blueLeading,
             redLeading,
             overlaySettings,
-            performance.now(),
+            currentTime,
             hasBlue && blueLeading.length >= 2,
             hasRed && redLeading.length >= 2,
             canvasSize
@@ -351,7 +352,8 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
     propType: string | null | undefined,
     propIndex: 0 | 1,
     trackLeft: boolean,
-    trackRight: boolean
+    trackRight: boolean,
+    currentTime: number
   ): void {
     const tipConfig = getTipPoints(propType);
     const pts = tipConfig.points;
@@ -379,14 +381,14 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
       const leftRing = propIndex === 0 ? this.blueLeftRing : this.redLeftRing;
       const worldX = center.x + (tp.dx * cosA - tp.dy * sinA) * gridScaleFactor;
       const worldY = center.y + (tp.dx * sinA + tp.dy * cosA) * gridScaleFactor;
-      this.appendToRing(leftRing, worldX, worldY, canvasSize, propIndex, leftTipIndex);
+      this.appendToRing(leftRing, worldX, worldY, canvasSize, propIndex, leftTipIndex, currentTime);
     }
     if (trackRight && rightTipIndex < pts.length) {
       const tp = pts[rightTipIndex]!;
       const rightRing = propIndex === 0 ? this.blueRightRing : this.redRightRing;
       const worldX = center.x + (tp.dx * cosA - tp.dy * sinA) * gridScaleFactor;
       const worldY = center.y + (tp.dx * sinA + tp.dy * cosA) * gridScaleFactor;
-      this.appendToRing(rightRing, worldX, worldY, canvasSize, propIndex, rightTipIndex);
+      this.appendToRing(rightRing, worldX, worldY, canvasSize, propIndex, rightTipIndex, currentTime);
     }
   }
 
@@ -396,7 +398,8 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
     worldY: number,
     canvasSize: number,
     propIndex: 0 | 1,
-    tipIndex: number
+    tipIndex: number,
+    currentTime: number
   ): void {
 
     if (ring.length > 0) {
@@ -411,12 +414,11 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
       }
 
       // Skip near-duplicate points. When props are stationary, floating
-      // point jitter produces near-identical positions each frame. The
-      // tapered renderer computes direction from consecutive points — if
-      // they're sub-pixel apart, the direction is arbitrary and draws
-      // visible artifact lines in random directions.
-      // Minimum 0.5px movement required.
+      // point jitter produces near-identical positions each frame.
+      // Update the timestamp of the last point instead of adding a new one
+      // to allow the trail to fade into the prop when stationary.
       if (ring.length > 0 && distSq < 0.25) {
+        last.timestamp = currentTime;
         return;
       }
     }
@@ -424,7 +426,7 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
     ring.push({
       x: worldX,
       y: worldY,
-      timestamp: performance.now(),
+      timestamp: currentTime,
       propIndex,
       tipIndex,
     });

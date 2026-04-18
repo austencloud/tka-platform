@@ -38,6 +38,11 @@ import type { IBackgroundVideoEncoder } from "../contracts/IBackgroundVideoEncod
 import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 import { fireCacheInvalidation } from "$lib/shared/animation-engine/state/fire-invalidation-signal.svelte";
 import { getExportDimensions, calculateBitrate } from "../../shared/domain/video-export-calculations";
+import { SequenceDifficultyCalculator } from "$lib/features/browse/sequences/display/services/implementations/SequenceDifficultyCalculator";
+import { LOOPTypeResolver } from "$lib/features/create/generate/shared/services/implementations/LOOPTypeResolver";
+import { loopDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
+import { greekToAscii } from "$lib/features/create/spell/domain/constants/spell-constants";
+import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
 
 export class VideoExportOrchestrator implements IVideoExportOrchestrator {
   private _isExporting = false;
@@ -71,7 +76,7 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
     const useBackgroundEncoder = exportFormat === "mp4";
     const filename = this.resolveFilename(
       options.filename,
-      panelState.sequenceWord,
+      panelState,
       exportFormat
     );
 
@@ -85,6 +90,37 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
     const progressBarHeight = showProgressBar
       ? this.canvasRenderer.getProgressBarHeight(canvas.width)
       : 0;
+
+    // Compute header overlays (difficulty badge + LOOP icon strip) once per export.
+    // Matches AnimatorCanvas.svelte:330-358 derivation so the exported video's
+    // word header mirrors the live canvas.
+    const difficultyLevel = panelState.sequenceData
+      ? new SequenceDifficultyCalculator().calculateDifficultyLevel([
+          ...(panelState.sequenceData.steps ?? []),
+        ])
+      : null;
+
+    const loopComponents: Set<string> | null = (() => {
+      const seq = panelState.sequenceData;
+      if (!seq) return null;
+      const loopTypeResolver = new LOOPTypeResolver();
+      try {
+        if (seq.loopType) {
+          const components = loopTypeResolver.parseComponents(seq.loopType);
+          return components.size > 0 ? (components as Set<string>) : null;
+        }
+        if (seq.steps?.length) {
+          const result = loopDetector.detectLOOPType(seq);
+          if (result.loopType) {
+            const components = loopTypeResolver.parseComponents(result.loopType);
+            return components.size > 0 ? (components as Set<string>) : null;
+          }
+        }
+        return null;
+      } catch {
+        return null;
+      }
+    })();
 
     // Resolve FPS early — used by both encoder paths and frame calculations
     const fps = options.fps ?? VIDEO_EXPORT_FPS;
@@ -131,7 +167,9 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       const bitrate = calculateBitrate(outputWidth, outputHeight, fps);
 
       // Calculate total frames early so the worker can allocate its muxer.
-      // Must match the capture loop: optional start position + steps + optional end hold.
+      // Must match the capture loop: one start position + (motion × loopCount) + one end hold.
+      // The start position plays once at the very beginning and the end hold plays once
+      // at the very end; only the motion steps repeat for each additional loop.
       const earlySteps = panelState.sequenceData?.steps ?? [];
       const earlyStepDuration = earlySteps.length > 0
         ? earlySteps.reduce((sum, s) => sum + (s.duration ?? 1), 0)
@@ -139,12 +177,12 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       const earlyStartDur = (options.includeAnimationStartPosition ?? true) ? 1 : 0;
       const earlyIsLoopable = playbackController.isSeamlesslyLoopable;
       const earlyEndDur = (options.includeEndHold ?? !earlyIsLoopable) ? 1 : 0;
-      const earlyTotalDuration = earlyStartDur + earlyStepDuration + earlyEndDur;
+      const earlyLoopCount = options.loopCount ?? panelState.exportLoopCount ?? 1;
+      const earlyTotalDuration =
+        earlyStartDur + earlyStepDuration * earlyLoopCount + earlyEndDur;
       const secondsPerBeat = 1.0 / panelState.speed;
-      const singleLoopDurationSeconds = earlyTotalDuration * secondsPerBeat;
-      const framesPerLoop = Math.ceil(singleLoopDurationSeconds * fps);
-      const loopCount = options.loopCount ?? panelState.exportLoopCount ?? 1;
-      const totalFramesEstimate = framesPerLoop * loopCount;
+      const totalTimelineSeconds = earlyTotalDuration * secondsPerBeat;
+      const totalFramesEstimate = Math.ceil(totalTimelineSeconds * fps);
 
       // Wire progress from worker — only used during the finalize phase.
       // During capture, the main loop reports its own progress; the worker
@@ -242,20 +280,23 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       const startPositionDuration = (options.includeAnimationStartPosition ?? true) ? 1 : 0;
       const isLoopable = playbackController.isSeamlesslyLoopable;
       const endPositionHoldDuration = (options.includeEndHold ?? !isLoopable) ? 1 : 0;
-      const totalDurationWithHolds = startPositionDuration + totalDurationUnits + endPositionHoldDuration;
+
+      // Apply loop count for repeating the motion portion back-to-back.
+      // Prefer options.loopCount if provided, otherwise use panelState.exportLoopCount.
+      // The timeline is: one start position → motion × loopCount → one end hold.
+      // The start position and end hold each play exactly once, regardless of loopCount.
+      const loopCount = options.loopCount ?? panelState.exportLoopCount ?? 1;
+      const motionLoopUnits = totalDurationUnits * loopCount;
+      const totalDurationWithHolds =
+        startPositionDuration + motionLoopUnits + endPositionHoldDuration;
 
       // Calculate effective duration at user's BPM/speed
       // At speed=1.0 (60 BPM): 1 second per beat unit
       // At speed=2.0 (120 BPM): 0.5 seconds per beat unit
       const secondsPerBeatUnit = 1.0 / panelState.speed;
-      const singleLoopDurationSeconds = totalDurationWithHolds * secondsPerBeatUnit;
+      const totalTimelineSeconds = totalDurationWithHolds * secondsPerBeatUnit;
 
-      const framesPerLoop = Math.ceil(singleLoopDurationSeconds * fps);
-
-      // Apply loop count for circular sequences
-      // Prefer options.loopCount if provided, otherwise use panelState.exportLoopCount
-      const loopCount = options.loopCount ?? panelState.exportLoopCount ?? 1;
-      const totalFrames = framesPerLoop * loopCount;
+      const totalFrames = Math.ceil(totalTimelineSeconds * fps);
 
       // Build cumulative duration breakpoints for time-to-beat mapping
       // This allows steps with different durations to occupy proportional time
@@ -366,35 +407,45 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
         }
 
         // Calculate beat position for this frame using duration-weighted mapping.
-        // The timeline includes: optional start position + motion steps + optional end hold.
+        // Timeline: one start position → motion × loopCount → one end hold.
+        // Start and end hold each appear exactly once; motion wraps per loop iteration.
         // The animation engine uses beat 0 = start position, beat 1+ = motion steps.
         // Using calculateStateForBeat instead of jumpToStep because jumpToStep
         // clamps at totalSteps, which truncates the last step's fractional progress.
-        const frameInLoop = i % framesPerLoop;
-        const timeProgress = (frameInLoop / framesPerLoop) * totalDurationWithHolds;
+        const timeProgress = (i / totalFrames) * totalDurationWithHolds;
+
+        // Calculate deterministic virtual time for this frame (in ms)
+        const virtualTimeMs = (i / fps) * 1000;
+        panelState.setVirtualTime(virtualTimeMs);
 
         let beat: number;
         let stepIndex: number;
         let isInStartPosition = false;
         let isInEndHold = false;
 
-        if (startPositionDuration > 0 && timeProgress < startPositionDuration) {
-          // Start position phase — show initial pose, no glyph
+        const motionStart = startPositionDuration;
+        const motionEnd = motionStart + motionLoopUnits;
+
+        if (startPositionDuration > 0 && timeProgress < motionStart) {
+          // Start position phase — show initial pose, no glyph (once, at the beginning)
           beat = timeProgress / startPositionDuration;
           stepIndex = -1;
           isInStartPosition = true;
           playbackController.calculateStateForBeat(beat);
-        } else if (endPositionHoldDuration > 0 && timeProgress >= startPositionDuration + totalDurationUnits) {
-          // End position hold — freeze on the completed last motion step
+        } else if (endPositionHoldDuration > 0 && timeProgress >= motionEnd) {
+          // End position hold — freeze on the completed last motion step (once, at the end)
           beat = steps.length + 1;
           stepIndex = steps.length - 1;
           isInEndHold = true;
           playbackController.calculateStateForBeat(beat);
         } else {
-          // Motion steps phase — map time to step index, offset by +1 for the
-          // animation engine's beat convention (beat 0 = start, 1+ = motion)
-          const motionTime = timeProgress - startPositionDuration;
-          const rawBeat = this.timeToBeat(motionTime, cumulativeDurations, stepDurations);
+          // Motion steps phase — wrap time modulo one loop so N iterations play
+          // back-to-back with no inter-iteration hold. Offset by +1 for the
+          // animation engine's beat convention (beat 0 = start, 1+ = motion).
+          const motionTime = timeProgress - motionStart;
+          const wrappedMotionTime =
+            totalDurationUnits > 0 ? motionTime % totalDurationUnits : 0;
+          const rawBeat = this.timeToBeat(wrappedMotionTime, cumulativeDurations, stepDurations);
           stepIndex = Math.floor(rawBeat);
           beat = rawBeat + 1;
           playbackController.calculateStateForBeat(beat);
@@ -595,7 +646,9 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
               actualCanvasSize,
               panelState.sequenceWord,
               isDarkMode,
-              activeStepNumber
+              activeStepNumber,
+              difficultyLevel,
+              loopComponents
             );
           }
 
@@ -726,6 +779,7 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       this.shouldCancel = false;
       this.glyphPrerenderer.clear();
       this.backgroundEncoder.onProgress = null;
+      panelState.setVirtualTime(undefined);
 
       // Clean up composite renderer if it was used
       if (options.compositeMode && options.compositeMode !== "none") {
@@ -764,15 +818,23 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
 
   private resolveFilename(
     explicitFilename: string | undefined,
-    sequenceWord: string | null,
+    panelState: AnimationPanelState,
     format: VideoExportFormat
   ): string {
     if (explicitFilename) {
       return explicitFilename;
     }
 
-    const baseName = sequenceWord || "animation";
-    // Map format to file extension
+    const seq = panelState.sequenceData;
+    const rawName =
+      seq?.displayName ||
+      seq?.intendedWord ||
+      seq?.word ||
+      panelState.sequenceWord ||
+      "animation";
+    // Collapse repeated kernels ("VΛ-VΛ-VΛ-VΛ-" → "VΛ-") so the filename matches
+    // what WordHeader/WordLabel show on screen, then map Greek → ASCII shorthand.
+    const baseName = greekToAscii(simplifyRepeatedWord(rawName));
     const extensionMap: Record<VideoExportFormat, string> = {
       webm: "webm",
       mp4: "mp4",

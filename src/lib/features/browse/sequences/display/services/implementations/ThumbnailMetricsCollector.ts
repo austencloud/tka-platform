@@ -99,6 +99,7 @@ export class ThumbnailMetricsCollector implements IThumbnailMetricsCollector {
 
   getSummary(): ThumbnailMetricsSummary {
     const byLayer: Record<CacheLayer | "failed", number> = {
+      memory: 0,
       static: 0,
       local: 0,
       cloud: 0,
@@ -107,6 +108,7 @@ export class ThumbnailMetricsCollector implements IThumbnailMetricsCollector {
     };
 
     const timesByLayer: Record<CacheLayer | "failed", number[]> = {
+      memory: [],
       static: [],
       local: [],
       cloud: [],
@@ -145,6 +147,7 @@ export class ThumbnailMetricsCollector implements IThumbnailMetricsCollector {
     const totalUploads = this.uploadSuccesses + this.uploadFailures;
 
     const avgTimeByLayer: Record<CacheLayer | "failed", number> = {
+      memory: this.avg(timesByLayer.memory),
       static: this.avg(timesByLayer.static),
       local: this.avg(timesByLayer.local),
       cloud: this.avg(timesByLayer.cloud),
@@ -153,6 +156,7 @@ export class ThumbnailMetricsCollector implements IThumbnailMetricsCollector {
     };
 
     const hitRateByLayer: Record<CacheLayer | "failed", number> = {
+      memory: total > 0 ? (byLayer.memory / total) * 100 : 0,
       static: total > 0 ? (byLayer.static / total) * 100 : 0,
       local: total > 0 ? (byLayer.local / total) * 100 : 0,
       cloud: total > 0 ? (byLayer.cloud / total) * 100 : 0,
@@ -165,7 +169,7 @@ export class ThumbnailMetricsCollector implements IThumbnailMetricsCollector {
     const timeDistribution = this.buildDistribution(allTimes);
 
     const timeDistributionByLayer: Partial<Record<CacheLayer | "failed", TimingDistribution>> = {};
-    for (const layer of ["static", "local", "cloud", "render", "failed"] as const) {
+    for (const layer of ["memory", "static", "local", "cloud", "render", "failed"] as const) {
       if (timesByLayer[layer].length > 0) {
         timeDistributionByLayer[layer] = this.buildDistribution(timesByLayer[layer]);
       }

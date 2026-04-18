@@ -11,7 +11,7 @@
  * This data informs whether optimizations are worth implementing.
  */
 
-export type CacheLayer = "static" | "local" | "cloud" | "render";
+export type CacheLayer = "memory" | "static" | "local" | "cloud" | "render";
 
 export interface ThumbnailRequestMetrics {
   /** Unique request ID for correlation */

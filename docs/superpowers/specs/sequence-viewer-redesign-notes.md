@@ -74,6 +74,26 @@ Phase 2 remaining (Tasks 11-15) → Phase 3 (Tasks 16-20: popover contents) → 
 
 ---
 
+## Open questions for Phase 4
+
+**`webgl2Available` prop on `ViewerHeader`** (surfaced in Task 13 code review, commit `0d1904bae6`).
+The existing `RenderModeToggle` requires a `webgl2Available: boolean` prop. Task 13 threaded it through `ViewerHeader`'s public contract so callers must pass it down. Reviewer flagged this as a minor coupling leak — every Phase 4 call site will need to plumb WebGL2 capability down through the header even though the header itself doesn't use the value.
+
+Three options when Phase 4 starts wiring call sites:
+1. **Keep as-is** — callers already know WebGL2 capability (they bootstrap the 3D pipeline). Pass-through is fine. Add JSDoc noting it forwards to the toggle.
+2. **Context/store read** — `RenderModeToggle` reads from a WebGL capabilities context/store; removes the prop from both components. Cleaner separation, but requires touching a component that's currently stable.
+3. **Snippet prop** — caller provides `RenderModeToggle` as a Svelte snippet with its props pre-applied; `ViewerHeader` just renders the slot. Most decoupled, but snippet-prop for a single child may be overkill.
+
+Resolve before wiring 4 call sites in Phase 4 (Tasks 21-24).
+
+**`PlaybackControlBar` vs `ViewerTransportBar` parallel implementations** (surfaced in Task 15 code review, commit `80051706a5`).
+`src/lib/shared/3d/components/controls/PlaybackControlBar.svelte` (238 lines) already implements play/pause + progress + loop with a reusable props-driven API. Task 15 re-solved the same problem instead of extending it — violates `feedback_reuse_existing_components`. The immediate visual regression was fixed in the follow-up polish commit (duplicate inline progress bar deleted). Architectural resolution deferred to Phase 4: either (a) delete `PlaybackControlBar` if nothing else uses it, or (b) refactor `ViewerTransportBar` to compose `PlaybackControlBar` with transport-bar styling. Grep usage before deciding. Also: `formatTime` is now duplicated in 5 components — extract to `src/lib/shared/sequence-viewer/utils/format-time.ts` as part of Phase 4 cleanup. Drag-to-scrub is a deliberate scope call — if users ask for it, wire `pointerdown` + window `pointermove`/`pointerup` then.
+
+**`.top-controls` vs `RightRail` semantic + spatial overlap** (surfaced in Task 14 code review, commit `33c02ad859`).
+The existing `.top-controls` block in `Viewer3DCanvas.svelte` hosts `Viewer3DGearPopover` at `top: 12px; z-index: 10`. Task 14's `RightRail` sits at `top: 76px; z-index: 9` with a `gear` chip and a `performers` chip — both semantically duplicate gear-popover content. Phase 3 (Tasks 16-20) must either (a) absorb `Viewer3DGearPopover`'s content into the rail's gear popover and remove the old component, or (b) remove the duplicate gear chip from the rail. Verify the Phase 3 task list addresses this before starting Task 16.
+
+---
+
 ## Completed work reference
 
 **Phase 0 — Foundation (Tasks 1-7 + 5.5), 9 commits on main:**

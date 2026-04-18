@@ -134,13 +134,35 @@ export class BrowseFilter implements IBrowseFilter {
     }
 
     const searchTerm = filterValue.toLowerCase();
-    return sequences.filter(
-      (seq) =>
-        seq.word.toLowerCase().includes(searchTerm) ||
-        seq.name.toLowerCase().includes(searchTerm) ||
-        seq.intendedWord?.toLowerCase().includes(searchTerm) ||
-        seq.displayName?.toLowerCase().includes(searchTerm)
-    );
+    
+    // Sort sequences to prioritize those starting with the searchTerm
+    return sequences.filter((seq) => {
+      const word = seq.word.toLowerCase();
+      const name = seq.name.toLowerCase();
+      const intended = seq.intendedWord?.toLowerCase() || "";
+      const display = seq.displayName?.toLowerCase() || "";
+
+      return (
+        word.includes(searchTerm) ||
+        name.includes(searchTerm) ||
+        intended.includes(searchTerm) ||
+        display.includes(searchTerm)
+      );
+    }).sort((a, b) => {
+      // Primary priority: Word starts with search term
+      const aStarts = a.word.toLowerCase().startsWith(searchTerm);
+      const bStarts = b.word.toLowerCase().startsWith(searchTerm);
+      if (aStarts && !bStarts) return -1;
+      if (!aStarts && bStarts) return 1;
+
+      // Secondary priority: Name starts with search term
+      const aNameStarts = a.name.toLowerCase().startsWith(searchTerm);
+      const bNameStarts = b.name.toLowerCase().startsWith(searchTerm);
+      if (aNameStarts && !bNameStarts) return -1;
+      if (!aNameStarts && bNameStarts) return 1;
+
+      return 0;
+    });
   }
 
   private filterByLength(

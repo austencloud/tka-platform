@@ -328,16 +328,14 @@
             </button>
           {/if}
 
-          {#if isOwned && isSaved}
-            <button
-              type="button"
-              class="mid-action-btn edit"
-              onclick={onEdit}
-              aria-label="Remix"
-            >
-              <i class="fas fa-pen-to-square" aria-hidden="true"></i>
-            </button>
-          {/if}
+          <button
+            type="button"
+            class="mid-action-btn edit"
+            onclick={onEdit}
+            aria-label="Remix"
+          >
+            <i class="fas fa-pen-to-square" aria-hidden="true"></i>
+          </button>
 
           {#if onVideoUpload}
             <button

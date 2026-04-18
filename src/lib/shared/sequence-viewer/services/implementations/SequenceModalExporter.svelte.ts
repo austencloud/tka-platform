@@ -12,6 +12,9 @@ import type { VideoExportProgress, IVideoExportOrchestrator } from "$lib/feature
 import type { IOffline3DExporter } from "$lib/shared/3d/services/contracts/IOffline3DExporter";
 import type { ISequenceRenderer } from "$lib/shared/render/services/contracts/ISequenceRenderer";
 import { container } from "$lib/shared/di";
+import { fileDownloader } from "$lib/shared/foundation/services/implementations/FileDownloader";
+import { greekToAscii } from "$lib/features/create/spell/domain/constants/spell-constants";
+import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
 import { recordExportThroughput } from "../../state/export-timing-tracker";
 
 /**
@@ -217,15 +220,22 @@ export class SequenceModalExporter implements ISequenceModalExporter {
           : undefined,
         visibilityOverrides: {
           darkMode: options.darkMode,
-          showQRCode: true,
+          showQRCode: options.showQRCode,
         },
       });
 
-      // Download the image
+      // Match what WordHeader/WordLabel show on screen: collapse repeated
+      // kernels ("VΛ-VΛ-VΛ-VΛ-" → "VΛ-") then map Greek → ASCII shorthand
+      // (Λ → lam, Σ → sig, etc.) so the filename becomes "Vlam-.png".
+      const seq = deps.sequence;
+      const rawName =
+        seq.displayName || seq.intendedWord || seq.word || "sequence";
+      const simplified = greekToAscii(simplifyRepeatedWord(rawName));
+      const safeName = fileDownloader.sanitizeFilename(simplified) || "sequence";
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `${deps.sequence.word || "sequence"}.png`;
+      link.download = `${safeName}.png`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);

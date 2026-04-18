@@ -292,6 +292,16 @@ export function createDrillDownState(allDecksOrGetter: Deck[] | (() => Deck[])) 
 			selections = { ...selections, reversalPattern: pattern };
 		},
 
+		// Quiet shape setter for the desktop sidebar. Unlike selectShape,
+		// this does not reset dependent selections or advance the step —
+		// it only populates shape when empty, so the sidebar's default
+		// "Rotated · Halved · Diamond" visuals reflect real filter state
+		// instead of being a UI-only illusion.
+		initShapeDefaults(shape: ShapeSelections) {
+			if (selections.shape !== null) return;
+			selections = { ...selections, shape };
+		},
+
 		goBackTo(index: number) {
 			const target = breadcrumbs[index];
 			if (!target) return;

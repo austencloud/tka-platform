@@ -97,6 +97,9 @@ export type AnimationPanelState = {
   readonly error: string | null;
   readonly sequenceData: SequenceData | null;
 
+  // Video export state
+  readonly virtualTime?: number;
+
   // State mutators
   setCurrentStep: (beat: number) => void;
   setIsPlaying: (playing: boolean) => void;
@@ -114,6 +117,7 @@ export type AnimationPanelState = {
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   setSequenceData: (data: SequenceData | null) => void;
+  setVirtualTime: (time: number | undefined) => void;
   reset: () => void;
   /** Cleanup function - call in onDestroy to prevent memory leaks */
   dispose: () => void;
@@ -198,6 +202,7 @@ export function createAnimationPanelState(): AnimationPanelState {
   let loading = $state(false);
   let error = $state<string | null>(null);
   let sequenceData = $state<SequenceData | null>(null);
+  let virtualTime = $state<number | undefined>(undefined);
 
   return {
     // Getters
@@ -248,6 +253,9 @@ export function createAnimationPanelState(): AnimationPanelState {
     },
     get sequenceData() {
       return sequenceData;
+    },
+    get virtualTime() {
+      return virtualTime;
     },
 
     // Setters (with observer notifications for observable keys)
@@ -324,6 +332,10 @@ export function createAnimationPanelState(): AnimationPanelState {
 
     setSequenceData: (data: SequenceData | null) => {
       sequenceData = data;
+    },
+
+    setVirtualTime: (time: number | undefined) => {
+      virtualTime = time;
     },
 
     reset: () => {

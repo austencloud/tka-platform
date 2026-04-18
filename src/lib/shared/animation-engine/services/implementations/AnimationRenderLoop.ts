@@ -373,7 +373,10 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     }
 
     const params = this.getFrameParamsCallback();
-    const { trailSettings, isPlaying } = params;
+    const { trailSettings, isPlaying, virtualTime } = params;
+
+    // Use virtual time if provided (export mode), otherwise fallback to RAF timestamp
+    const effectiveTime = virtualTime ?? currentTime;
 
     // Real-time trail capture
     const trailsActive = hasTrailTips(params.tipEffectMap);
@@ -395,7 +398,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
             : undefined,
         },
         currentStep,
-        currentTime
+        effectiveTime
       );
     }
 
@@ -443,6 +446,12 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
 
     // Trails alone (without active work) should not keep the loop alive forever.
     // Allow a grace period for initialization/texture loading, then auto-stop.
+    // If trails are active in FADE mode, extend the idle threshold to allow
+    // them to fade completely (at least twice the fade duration).
+    const idleThreshold = trailsNeedContinuousRender && trailSettings.mode === TrailMode.FADE
+      ? Math.max(AnimationRenderLoop.IDLE_STOP_THRESHOLD, Math.ceil((trailSettings.fadeDurationMs * 2) / 16))
+      : AnimationRenderLoop.IDLE_STOP_THRESHOLD;
+
     if (hasActiveWork) {
       this.consecutiveIdleFrames = 0;
     } else {
@@ -451,11 +460,11 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
 
     const shouldContinueLoop =
       hasActiveWork ||
-      trailsNeedContinuousRender &&
-        this.consecutiveIdleFrames < AnimationRenderLoop.IDLE_STOP_THRESHOLD;
+      (trailsNeedContinuousRender &&
+        this.consecutiveIdleFrames < idleThreshold);
 
     if (shouldContinueLoop) {
-      this.render(params, currentTime);
+      this.render(params, effectiveTime);
       this.needsRender = false;
       // Only schedule next frame if not disposed
       if (!this.isDisposed) {
@@ -597,17 +606,17 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
 
     // Route trail rendering through the overlay canvas
     if (this.trailOverlay && effectiveTrailsVisible && !params.suppress2DOverlays) {
-      const now = performance.now();
       const dt = this.lastTrailFrameTime > 0
-        ? (now - this.lastTrailFrameTime) / 1000
+        ? (currentTime - this.lastTrailFrameTime) / 1000
         : 1 / 60;
-      this.lastTrailFrameTime = now;
+      this.lastTrailFrameTime = currentTime;
 
       this.trailOverlay.renderFrame({
         blueTrailPoints: effectiveBlueMotionVisible ? trailPoints.blue : [],
         redTrailPoints: effectiveRedMotionVisible ? trailPoints.red : [],
         trailSettings,
         deltaTime: dt,
+        currentTime: currentTime,
         canvasSize: this.canvasSize,
         hasBlue: !!params.props.blueProp && effectiveBlueMotionVisible,
         hasRed: !!params.props.redProp && effectiveRedMotionVisible,

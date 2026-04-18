@@ -225,8 +225,9 @@
       orchestrator.cancel({ hash: currentKeyHash });
     }
 
-    // Revoke blob URL to prevent memory leak
-    if (thumbnailUrl?.startsWith("blob:")) {
+    // Don't revoke blob URLs that are in the memory cache — other components may reuse them.
+    // The memory cache handles revocation on LRU eviction.
+    if (thumbnailUrl?.startsWith("blob:") && orchestrator && !orchestrator.getCached(currentKeyHash ?? "")) {
       URL.revokeObjectURL(thumbnailUrl);
     }
   });
@@ -302,11 +303,24 @@
     }
     currentKeyHash = key.hash;
 
-    // Clear old thumbnail - don't show stale image while loading new one
+    // Synchronous memory cache check — instant on revisits, no placeholder flash
+    if (!skipCacheOnNextRequest) {
+      const cached = orchestrator.getCached(key.hash);
+      if (cached) {
+        if (thumbnailUrl?.startsWith("blob:") && thumbnailUrl !== cached) {
+          URL.revokeObjectURL(thumbnailUrl);
+        }
+        thumbnailUrl = cached;
+        status = { state: "complete", url: cached };
+        return;
+      }
+    }
+
+    // Clear old thumbnail - show loading placeholder while fetching
     if (thumbnailUrl?.startsWith("blob:")) {
       URL.revokeObjectURL(thumbnailUrl);
     }
-    thumbnailUrl = null; // Always clear so we show loading placeholder, not old image
+    thumbnailUrl = null;
 
     // Capture and reset the skipCache flag
     const shouldSkipCache = skipCacheOnNextRequest;

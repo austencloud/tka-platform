@@ -111,6 +111,9 @@
     onCanvasReady: (canvas: HTMLCanvasElement | null) => void;
     onChoreoCardContextMenu?: (x: number, y: number) => void;
     onPlaybackToggle?: () => void;
+    onProgressBarSeek?: (targetStep: number) => void;
+    onProgressBarScrubStart?: () => void;
+    onProgressBarScrubEnd?: () => void;
     rerenderTrigger?: number;
     /**
      * When true, the tap-to-focus handlers on both panes are suppressed
@@ -137,6 +140,9 @@
     onCanvasReady,
     onChoreoCardContextMenu,
     onPlaybackToggle,
+    onProgressBarSeek,
+    onProgressBarScrubStart,
+    onProgressBarScrubEnd,
     rerenderTrigger = 0,
     isExporting = false,
   }: Props = $props();
@@ -286,30 +292,22 @@
           redPropType={propRendering.redPropType}
           {trailSettings}
           {onCanvasReady}
+          {onPlaybackToggle}
+          onProgressBarSeek={onProgressBarSeek ?? null}
+          onProgressBarScrubStart={onProgressBarScrubStart ?? null}
+          onProgressBarScrubEnd={onProgressBarScrubEnd ?? null}
           focused={layout.focusedPane === "animation"}
           suppress2DOverlays={renderMode === '3d'}
         />
-
-        {#if onPlaybackToggle}
-          <button
-            type="button"
-            class="canvas-play-btn"
-            onclick={(e) => { e.stopPropagation(); onPlaybackToggle?.(); }}
-            aria-label={playback.isPlaying ? "Pause" : "Play"}
-            title={playback.isPlaying ? "Pause (Space)" : "Play (Space)"}
-          >
-            <i class="fas {playback.isPlaying ? 'fa-pause' : 'fa-play'}" aria-hidden="true"></i>
-          </button>
-        {/if}
-
-        <!-- Unified control rail — always mounted, peer to both canvas
-             layers so it survives the 2D/3D crossfade. Rail collapses to
-             just the render-mode toggle in 2D and repositions to the
-             canvas top-right corner. -->
-        <RightRail {sequence} {renderMode} {bpm} {onBpmChange} />
       {/if}
 
     </div>
+
+    <!-- Unified control rail — sibling of .media-pane, NOT inside it.
+         The hover-scale effect is applied to .media-pane so the rail
+         sits in a non-scaling layer. Keeps chip positions stable as
+         the user moves the cursor toward them (Fitts's Law). -->
+    <RightRail {sequence} {renderMode} {bpm} {onBpmChange} />
   </div>
 
   <!-- Image/Preview pane -->
@@ -405,6 +403,7 @@
 
   /* Split columns — tappable focus targets */
   .split-column {
+    position: relative; /* anchor for non-scaling overlays like RightRail */
     min-height: 0;
     min-width: 0;
     display: flex;
@@ -419,13 +418,16 @@
     transition: opacity 250ms cubic-bezier(0.2, 0, 0, 1);
   }
 
-  /* Hover scale — desktop pointer devices only */
+  /* Hover scale — desktop pointer devices only.
+     Applied to .media-pane rather than .split-column so overlays that
+     live as siblings of the pane (e.g. RightRail) don't scale with it.
+     Scaling the rail would violate Fitts's Law: chip positions shift
+     when the user moves the cursor toward them. */
   @media (hover: hover) and (pointer: fine) {
-    .split-column:not(.focused) {
-      transition: opacity 250ms cubic-bezier(0.2, 0, 0, 1),
-                  transform 120ms cubic-bezier(0.2, 0, 0, 1);
+    .split-column:not(.focused) > .media-pane {
+      transition: transform 120ms cubic-bezier(0.2, 0, 0, 1);
     }
-    .split-column:hover:not(.focused) {
+    .split-column:hover:not(.focused) > .media-pane {
       transform: scale(1.012);
     }
   }
@@ -469,42 +471,6 @@
 
   .animation-pane {
     background: transparent;
-  }
-
-  .canvas-play-btn {
-    position: absolute;
-    left: 50%;
-    bottom: 6%;
-    transform: translateX(-50%);
-    width: 52px;
-    height: 52px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    background: color-mix(in srgb, var(--theme-accent, #6366f1) 18%, rgba(18, 18, 28, 0.88));
-    border: 1.5px solid color-mix(in srgb, var(--theme-accent, #6366f1) 55%, transparent);
-    color: white;
-    font-size: 18px;
-    cursor: pointer;
-    backdrop-filter: blur(6px);
-    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
-    transition: transform 120ms ease, background 120ms ease;
-    z-index: 5;
-  }
-
-  .canvas-play-btn:hover {
-    background: color-mix(in srgb, var(--theme-accent, #6366f1) 28%, rgba(18, 18, 28, 0.9));
-    transform: translateX(-50%) scale(1.04);
-  }
-
-  .canvas-play-btn:active {
-    transform: translateX(-50%) scale(0.96);
-  }
-
-  .canvas-play-btn:focus-visible {
-    outline: 2px solid var(--theme-accent, #6366f1);
-    outline-offset: 3px;
   }
 
   .canvas-3d-layer {

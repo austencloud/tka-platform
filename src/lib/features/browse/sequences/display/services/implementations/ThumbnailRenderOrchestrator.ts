@@ -28,6 +28,49 @@ import type { ICloudThumbnailCache } from "../contracts/ICloudThumbnailCache";
 import type { IThumbnailLocalCache } from "../contracts/IThumbnailLocalCache";
 import type { IThumbnailMetricsCollector } from "../contracts/IThumbnailMetricsCollector";
 
+// In-memory LRU cache of hash → blobUrl for instant revisits.
+// Survives component remounts within the same page session.
+const MAX_MEMORY_ENTRIES = 500;
+
+class MemoryUrlCache {
+  private map = new Map<string, string>();
+
+  get(hash: string): string | null {
+    const url = this.map.get(hash);
+    if (!url) return null;
+    // Move to end (most recently used)
+    this.map.delete(hash);
+    this.map.set(hash, url);
+    return url;
+  }
+
+  set(hash: string, url: string): void {
+    if (this.map.has(hash)) {
+      this.map.delete(hash);
+    } else if (this.map.size >= MAX_MEMORY_ENTRIES) {
+      // Evict oldest entry
+      const oldest = this.map.keys().next().value;
+      if (oldest !== undefined) {
+        const oldUrl = this.map.get(oldest);
+        this.map.delete(oldest);
+        if (oldUrl?.startsWith("blob:")) {
+          URL.revokeObjectURL(oldUrl);
+        }
+      }
+    }
+    this.map.set(hash, url);
+  }
+
+  clear(): void {
+    for (const url of this.map.values()) {
+      if (url.startsWith("blob:")) {
+        URL.revokeObjectURL(url);
+      }
+    }
+    this.map.clear();
+  }
+}
+
 // Static thumbnail manifest - loaded once, lists all bundled thumbnails
 let staticManifest: Set<string> | null = null;
 let staticManifestLoading: Promise<Set<string>> | null = null;
@@ -59,6 +102,7 @@ async function getStaticManifest(): Promise<Set<string>> {
 
 export class ThumbnailRenderOrchestrator implements IThumbnailRenderOrchestrator {
   private completedCount = 0;
+  private memoryCache = new MemoryUrlCache();
 
   // Generation counter: bumped when all caches are nuked.
   // Any thumbnail rendered before this generation is stale.
@@ -84,10 +128,17 @@ export class ThumbnailRenderOrchestrator implements IThumbnailRenderOrchestrator
   invalidateAllCaches(): void {
     this.cacheGeneration++;
     this.renderedGenerations.clear();
+    this.memoryCache.clear();
     // Nuke in-memory URL cache + persistent "known exists" list
     this.cloudCache.clearMemoryCache(true);
     // Reset static manifest so stale bundled thumbnails aren't served
     staticManifest = new Set();
+  }
+
+  getCached(hash: string): string | null {
+    const lastRenderedGen = this.renderedGenerations.get(hash) ?? -1;
+    if (lastRenderedGen < this.cacheGeneration) return null;
+    return this.memoryCache.get(hash);
   }
 
   async getThumbnail(request: ThumbnailRequest): Promise<ThumbnailResult> {
@@ -102,31 +153,43 @@ export class ThumbnailRenderOrchestrator implements IThumbnailRenderOrchestrator
     // Start metrics tracking
     const requestId = this.metrics?.startRequest(true) ?? "";
 
+    // Step 0: In-memory URL cache (synchronous, zero latency)
+    // Survives component remounts — eliminates placeholder flash on revisits
+    if (!mustSkipCache) {
+      const memUrl = this.memoryCache.get(key.hash);
+      if (memUrl) {
+        this.completedCount++;
+        this.metrics?.endRequest(requestId, "memory");
+        request.onStatusChange?.({ state: "complete", url: memUrl });
+        return { url: memUrl, fromCache: true, key };
+      }
+    }
+
     // Step 1: Check STATIC bundled thumbnails (instant, no network latency)
-    // These are synced from cloud during releases for instant loading
-    // Only for default settings (static thumbnails use standard rendering)
     if (key.usesDefaults && !mustSkipCache) {
       const staticKey = this.buildStaticKey(key);
       const manifest = await getStaticManifest();
 
       if (manifest.has(staticKey)) {
         const staticUrl = `/thumbnails/${staticKey}.webp`;
+        this.memoryCache.set(key.hash, staticUrl);
+        this.renderedGenerations.set(key.hash, this.cacheGeneration);
         this.completedCount++;
         this.metrics?.endRequest(requestId, "static");
         request.onStatusChange?.({ state: "complete", url: staticUrl });
         return { url: staticUrl, fromCache: true, key };
       } else if (manifest.size > 0) {
-        // Log sequences not found in static manifest (for debugging cache coverage)
         console.debug(`[Static] Not in manifest: "${staticKey}" (sequence: ${key.inputs.sequenceName})`);
       }
     }
 
     // Step 2: Check LOCAL IndexedDB cache (instant, personalized)
-    // Works for ALL thumbnails - cat-dog, custom settings, everything
     if (!mustSkipCache) {
       const localBlob = await this.localCache.get(key.hash);
       if (localBlob) {
         const url = URL.createObjectURL(localBlob);
+        this.memoryCache.set(key.hash, url);
+        this.renderedGenerations.set(key.hash, this.cacheGeneration);
         this.completedCount++;
         this.metrics?.endRequest(requestId, "local");
         request.onStatusChange?.({ state: "complete", url });
@@ -134,10 +197,12 @@ export class ThumbnailRenderOrchestrator implements IThumbnailRenderOrchestrator
       }
     }
 
-    // Step 3: Check in-memory URL cache (instant, session-only)
+    // Step 3: Check cloud in-memory URL cache (instant, session-only)
     if (key.usesDefaults && !mustSkipCache) {
       const memoryCached = this.cloudCache.getCachedUrl(cloudKey);
       if (memoryCached) {
+        this.memoryCache.set(key.hash, memoryCached);
+        this.renderedGenerations.set(key.hash, this.cacheGeneration);
         this.completedCount++;
         this.metrics?.endRequest(requestId, "cloud");
         request.onStatusChange?.({ state: "complete", url: memoryCached });
@@ -145,13 +210,13 @@ export class ThumbnailRenderOrchestrator implements IThumbnailRenderOrchestrator
       }
 
       // Step 4: Check cloud cache (network request)
-      // This runs BEFORE queueing so cached items don't wait in line
       if (memoryCached === undefined) {
         request.onStatusChange?.({ state: "checking-cache" });
         const cloudUrl = await this.cloudCache.getUrl(cloudKey, request.priority);
         if (cloudUrl) {
-          // Found in cloud - fetch blob and save to local cache
           this.saveCloudBlobToLocal(cloudUrl, key.hash);
+          this.memoryCache.set(key.hash, cloudUrl);
+          this.renderedGenerations.set(key.hash, this.cacheGeneration);
           this.completedCount++;
           this.metrics?.endRequest(requestId, "cloud");
           request.onStatusChange?.({ state: "complete", url: cloudUrl });
@@ -205,7 +270,8 @@ export class ThumbnailRenderOrchestrator implements IThumbnailRenderOrchestrator
           this.uploadToCloud(key, blob);
         }
 
-        // Mark this key as freshly rendered in the current generation
+        // Store in memory cache for instant revisits
+        this.memoryCache.set(key.hash, url);
         this.renderedGenerations.set(key.hash, this.cacheGeneration);
         this.completedCount++;
         this.metrics?.endRequest(requestId, "render", { queueWaitTime, renderTime });

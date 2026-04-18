@@ -339,6 +339,16 @@
     playbackController?.togglePlayback();
   }
 
+  let wasPlayingBeforeScrub = false;
+  function handleScrubStart() {
+    wasPlayingBeforeScrub = isPlaying;
+    if (wasPlayingBeforeScrub) playbackController?.togglePlayback();
+  }
+  function handleScrubEnd() {
+    if (wasPlayingBeforeScrub) playbackController?.togglePlayback();
+    wasPlayingBeforeScrub = false;
+  }
+
   function handleBpmChange(newBpm: number) {
     bpm = newBpm;
     playbackController?.setSpeed(newBpm / DEFAULT_BPM);
@@ -471,22 +481,14 @@
             {isPlaying}
             onPlaybackToggle={togglePlayback}
             onProgressBarSeek={(step) => playbackController?.seekToStep(step)}
+            onProgressBarScrubStart={handleScrubStart}
+            onProgressBarScrubEnd={handleScrubEnd}
             word={sequence?.word || sequence?.name || null}
             backgroundAlpha={0}
             focused={true}
             trailSettings={animationSettings.trail}
             {effectsConfigState}
           />
-          <button
-            class="canvas-play-btn"
-            class:is-playing={isPlaying}
-            onclick={togglePlayback}
-            type="button"
-            aria-label={isPlaying ? "Pause" : "Play"}
-            title={isPlaying ? "Pause (Space)" : "Play (Space)"}
-          >
-            <i class="fas {isPlaying ? 'fa-pause' : 'fa-play'}" aria-hidden="true"></i>
-          </button>
         </div>
       {/if}
     </div>
@@ -539,7 +541,7 @@
   .content {
     flex: 1;
     display: grid;
-    grid-template-columns: 1fr 360px;
+    grid-template-columns: 1fr clamp(360px, 32vw, 520px);
     gap: var(--spacing-md, 16px);
     padding: var(--spacing-md, 16px);
     min-height: 0;
@@ -565,57 +567,6 @@
     display: flex;
     align-items: center;
     justify-content: center;
-  }
-
-  /* Floating play/pause button — sits below the bottom grid dot.
-     The animator canvas is square-centered in the wrapper; the bottom
-     grid dot lands near the bottom of that square. We anchor relative
-     to the wrapper center, offset downward. */
-  .canvas-play-btn {
-    position: absolute;
-    left: 50%;
-    bottom: 6%;
-    transform: translateX(-50%);
-    width: 52px;
-    height: 52px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    background: color-mix(in srgb, var(--theme-accent, #6366f1) 18%, rgba(18, 18, 28, 0.88));
-    border: 1.5px solid color-mix(in srgb, var(--theme-accent, #6366f1) 55%, transparent);
-    color: white;
-    font-size: 18px;
-    cursor: pointer;
-    backdrop-filter: blur(6px);
-    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
-    transition: transform 120ms ease, background 120ms ease, opacity 200ms ease;
-    z-index: 5;
-    opacity: 0.92;
-  }
-
-  .canvas-play-btn:hover {
-    background: color-mix(in srgb, var(--theme-accent, #6366f1) 28%, rgba(18, 18, 28, 0.9));
-    opacity: 1;
-    transform: translateX(-50%) scale(1.04);
-  }
-
-  .canvas-play-btn:active {
-    transform: translateX(-50%) scale(0.96);
-  }
-
-  .canvas-play-btn:focus-visible {
-    outline: 2px solid var(--theme-accent, #6366f1);
-    outline-offset: 3px;
-  }
-
-  /* Fade the button when playing so it doesn't distract from the effect. */
-  .canvas-play-btn.is-playing {
-    opacity: 0;
-  }
-
-  .canvas-wrapper:hover .canvas-play-btn.is-playing {
-    opacity: 0.75;
   }
 
   .empty-state,

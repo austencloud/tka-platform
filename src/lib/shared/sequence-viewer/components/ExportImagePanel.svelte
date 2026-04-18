@@ -7,9 +7,11 @@
     Settings open in a slide-up overlay. Choreo card gets full screen space.
 -->
 <script lang="ts">
+  import { onDestroy } from "svelte";
   import { fade, slide } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
   import type { ExportOptionsStateManager } from "../state/export-options-state.svelte";
+  import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
 
   type PanelLayout = "sidebar" | "bottom";
 
@@ -33,6 +35,21 @@
 
   // Mobile settings drawer state
   let settingsOpen = $state(false);
+
+  // Include chips read/write the global visibility settings so the Visibility tab,
+  // the side-by-side preview, and the download view all stay in sync.
+  const imageComposition = getImageCompositionManager();
+  let compositionVersion = $state(0);
+  function onCompositionChanged(): void { compositionVersion++; }
+  imageComposition.registerObserver(onCompositionChanged);
+  onDestroy(() => imageComposition.unregisterObserver(onCompositionChanged));
+
+  const showWord = $derived.by(() => { void compositionVersion; return imageComposition.addWord; });
+  const includeStart = $derived.by(() => { void compositionVersion; return imageComposition.includeStartPosition; });
+  const showDifficulty = $derived.by(() => { void compositionVersion; return imageComposition.addDifficultyLevel; });
+  const showCreatorName = $derived.by(() => { void compositionVersion; return imageComposition.showCreatorName; });
+  const showNotes = $derived.by(() => { void compositionVersion; return imageComposition.showNotes; });
+  const showQRCode = $derived.by(() => { void compositionVersion; return imageComposition.showQRCode; });
 
   /** Summary of current settings for the bottom bar chip */
   const settingsSummary = $derived.by(() => {
@@ -98,30 +115,34 @@
         </div>
 
         <div class="inline-settings-body">
-          <!-- Include toggles -->
+          <!-- Include toggles — write through to the global visibility settings -->
           <div class="setting-row">
             <span class="setting-label">Include</span>
             <div class="chip-group">
-              <button type="button" class="chip" class:active={exportOptions.imageShowWord}
-                onclick={() => exportOptions.setImageShowWord(!exportOptions.imageShowWord)}
-                aria-pressed={exportOptions.imageShowWord}
+              <button type="button" class="chip" class:active={showWord}
+                onclick={() => imageComposition.setAddWord(!showWord)}
+                aria-pressed={showWord}
               >Word</button>
-              <button type="button" class="chip" class:active={exportOptions.imageIncludeStartPosition}
-                onclick={() => exportOptions.setImageIncludeStartPosition(!exportOptions.imageIncludeStartPosition)}
-                aria-pressed={exportOptions.imageIncludeStartPosition}
+              <button type="button" class="chip" class:active={includeStart}
+                onclick={() => imageComposition.setIncludeStartPosition(!includeStart)}
+                aria-pressed={includeStart}
               >Start</button>
-              <button type="button" class="chip" class:active={exportOptions.imageShowDifficulty}
-                onclick={() => exportOptions.setImageShowDifficulty(!exportOptions.imageShowDifficulty)}
-                aria-pressed={exportOptions.imageShowDifficulty}
+              <button type="button" class="chip" class:active={showDifficulty}
+                onclick={() => imageComposition.setAddDifficultyLevel(!showDifficulty)}
+                aria-pressed={showDifficulty}
               >Level</button>
-              <button type="button" class="chip" class:active={exportOptions.imageShowCreatorName}
-                onclick={() => exportOptions.setImageShowCreatorName(!exportOptions.imageShowCreatorName)}
-                aria-pressed={exportOptions.imageShowCreatorName}
+              <button type="button" class="chip" class:active={showCreatorName}
+                onclick={() => imageComposition.setShowCreatorName(!showCreatorName)}
+                aria-pressed={showCreatorName}
               >Name</button>
-              <button type="button" class="chip" class:active={exportOptions.imageShowNotes}
-                onclick={() => exportOptions.setImageShowNotes(!exportOptions.imageShowNotes)}
-                aria-pressed={exportOptions.imageShowNotes}
+              <button type="button" class="chip" class:active={showNotes}
+                onclick={() => imageComposition.setShowNotes(!showNotes)}
+                aria-pressed={showNotes}
               >Notes</button>
+              <button type="button" class="chip" class:active={showQRCode}
+                onclick={() => imageComposition.setShowQRCode(!showQRCode)}
+                aria-pressed={showQRCode}
+              >QR</button>
             </div>
           </div>
 
@@ -221,26 +242,30 @@
       <div class="setting-row">
         <span class="setting-label">Include</span>
         <div class="chip-group">
-          <button type="button" class="chip" class:active={exportOptions.imageShowWord}
-            onclick={() => exportOptions.setImageShowWord(!exportOptions.imageShowWord)}
-            aria-pressed={exportOptions.imageShowWord}
+          <button type="button" class="chip" class:active={showWord}
+            onclick={() => imageComposition.setAddWord(!showWord)}
+            aria-pressed={showWord}
           >Word</button>
-          <button type="button" class="chip" class:active={exportOptions.imageIncludeStartPosition}
-            onclick={() => exportOptions.setImageIncludeStartPosition(!exportOptions.imageIncludeStartPosition)}
-            aria-pressed={exportOptions.imageIncludeStartPosition}
+          <button type="button" class="chip" class:active={includeStart}
+            onclick={() => imageComposition.setIncludeStartPosition(!includeStart)}
+            aria-pressed={includeStart}
           >Start</button>
-          <button type="button" class="chip" class:active={exportOptions.imageShowDifficulty}
-            onclick={() => exportOptions.setImageShowDifficulty(!exportOptions.imageShowDifficulty)}
-            aria-pressed={exportOptions.imageShowDifficulty}
+          <button type="button" class="chip" class:active={showDifficulty}
+            onclick={() => imageComposition.setAddDifficultyLevel(!showDifficulty)}
+            aria-pressed={showDifficulty}
           >Level</button>
-          <button type="button" class="chip" class:active={exportOptions.imageShowCreatorName}
-            onclick={() => exportOptions.setImageShowCreatorName(!exportOptions.imageShowCreatorName)}
-            aria-pressed={exportOptions.imageShowCreatorName}
+          <button type="button" class="chip" class:active={showCreatorName}
+            onclick={() => imageComposition.setShowCreatorName(!showCreatorName)}
+            aria-pressed={showCreatorName}
           >Name</button>
-          <button type="button" class="chip" class:active={exportOptions.imageShowNotes}
-            onclick={() => exportOptions.setImageShowNotes(!exportOptions.imageShowNotes)}
-            aria-pressed={exportOptions.imageShowNotes}
+          <button type="button" class="chip" class:active={showNotes}
+            onclick={() => imageComposition.setShowNotes(!showNotes)}
+            aria-pressed={showNotes}
           >Notes</button>
+          <button type="button" class="chip" class:active={showQRCode}
+            onclick={() => imageComposition.setShowQRCode(!showQRCode)}
+            aria-pressed={showQRCode}
+          >QR</button>
         </div>
       </div>
 

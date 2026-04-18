@@ -51,6 +51,9 @@
     buildThumbnailUrl,
   } from "$lib/shared/inbox/state/send-sequence-state.svelte";
   import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
+  import { fileDownloader } from "$lib/shared/foundation/services/implementations/FileDownloader";
+  import { greekToAscii } from "$lib/features/create/spell/domain/constants/spell-constants";
+  import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
 
   const overlay = getSequenceOverlayState();
 
@@ -404,19 +407,10 @@
                     playback={ctx.splitPanePlayback}
                     imageComposition={isImageExportActive
                       ? {
-                          showWord: ctx.exportOptions.imageShowWord,
-                          showStepNumbers: ctx.exportOptions.imageShowStepNumbers,
-                          showDifficulty: ctx.exportOptions.imageShowDifficulty,
-                          showStartPos: ctx.exportOptions.imageIncludeStartPosition,
-                          showCreatorName: ctx.exportOptions.imageShowCreatorName,
-                          showNotes: ctx.exportOptions.imageShowNotes,
-                          showBirthday: ctx.splitPaneImageComposition.showBirthday,
-                          showQRCode: ctx.exportOptions.imageShowQRCode,
-                          showLoopGlyph: ctx.splitPaneImageComposition.showLoopGlyph,
+                          ...ctx.splitPaneImageComposition,
                           darkMode: ctx.exportOptions.imageDarkMode,
                           columnCount: ctx.exportOptions.imageColumnCount,
                           forceContain: true,
-                          userName: ctx.splitPaneImageComposition.userName,
                         }
                       : ctx.splitPaneImageComposition}
                     propRendering={ctx.splitPanePropRendering}
@@ -436,6 +430,9 @@
                     {rerenderTrigger}
                     onChoreoCardContextMenu={(x, y) => choreoCardMenuHost?.openContextMenu(x, y)}
                     onPlaybackToggle={ctx.handlePlaybackToggle}
+                    onProgressBarSeek={ctx.handleProgressBarSeek}
+                    onProgressBarScrubStart={ctx.handleProgressBarScrubStart}
+                    onProgressBarScrubEnd={ctx.handleProgressBarScrubEnd}
                   />
                   {#if ctx.renderMode === '3d' && (ctx.countdownValue > 0 || ctx.isRecording3D || ctx.isExporting)}
                     <Recording3DOverlay
@@ -473,9 +470,21 @@
                             blobUrl={ctx.previewBlobUrl}
                             onDismiss={ctx.dismissPreview}
                             onRedownload={() => {
+                              const seq = ctx.effectiveSequence;
+                              const rawName =
+                                seq?.displayName ||
+                                seq?.intendedWord ||
+                                seq?.word ||
+                                "sequence";
+                              const simplified = greekToAscii(
+                                simplifyRepeatedWord(rawName)
+                              );
+                              const safeName =
+                                fileDownloader.sanitizeFilename(simplified) ||
+                                "sequence";
                               const a = document.createElement("a");
                               a.href = ctx.previewBlobUrl!;
-                              a.download = `${ctx.effectiveSequence?.word || "sequence"}.mp4`;
+                              a.download = `${safeName}.mp4`;
                               a.click();
                             }}
                           />

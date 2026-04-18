@@ -562,7 +562,10 @@
       "Bash(PATH=\"/c/Users/Austen/AppData/Local/nvm/v18.20.2:/c/Users/Austen/AppData/Roaming/npm:$PATH\" npm run:*)",
       "Bash(/c/Users/Austen/AppData/Local/nvm/v18.20.2/node.exe:*)",
       "Bash(git reset:*)",
-      "Bash(PATH=\"/c/Program Files/nodejs:/c/Users/Austen/AppData/Roaming/npm:$PATH\" npm run:*)"
+      "Bash(PATH=\"/c/Program Files/nodejs:/c/Users/Austen/AppData/Roaming/npm:$PATH\" npm run:*)",
+      "Bash(mkdir -p \"C:/Users/Austen/.claude/icons\")",
+      "Read(//c/Users/Austen/.claude/**)",
+      "Bash(NODE_OPTIONS=--max-old-space-size=8192 npx vite build)"
     ]
   },
   "enableAllProjectMcpServers": true,

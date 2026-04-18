@@ -47,7 +47,11 @@ Only renders when at least one filter is active.
             class="chip-dismiss"
             type="button"
             aria-label={t('browse_remove_filter', { label: filter.label })}
-            onclick={() => handleRemove(filter.type)}
+            onmousedown={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              handleRemove(filter.type);
+            }}
           >
             <i class="fas fa-times" aria-hidden="true"></i>
           </button>
@@ -58,7 +62,11 @@ Only renders when at least one filter is active.
         <button
           class="clear-all-btn"
           type="button"
-          onclick={handleClearAll}
+          onmousedown={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            handleClearAll();
+          }}
         >
           {t('browse_clear_all')}
         </button>

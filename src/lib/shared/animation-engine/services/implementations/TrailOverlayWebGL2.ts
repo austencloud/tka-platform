@@ -73,6 +73,17 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
   private redLeftRing: TrailPoint[] = [];
   private redRightRing: TrailPoint[] = [];
 
+  // Fractional tail progress per ring [0, 1). When a ring doesn't receive a
+  // new point this frame (prop stationary), this advances so the stamp's
+  // first path point smoothly slides from ring[oldest] toward ring[oldest+1].
+  // When it reaches 1.0 the oldest point is dropped and progress resets.
+  // This makes the trail's tail smoothly walk forward along the captured
+  // path instead of jumping in point-sized chunks.
+  private blueLeftTailProg = 0;
+  private blueRightTailProg = 0;
+  private redLeftTailProg = 0;
+  private redRightTailProg = 0;
+
   private lastTrackingMode: TrackingMode | null = null;
   private hasPrevCenter = false;
 
@@ -154,6 +165,10 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
       this.blueRightRing = [];
       this.redLeftRing = [];
       this.redRightRing = [];
+      this.blueLeftTailProg = 0;
+      this.blueRightTailProg = 0;
+      this.redLeftTailProg = 0;
+      this.redRightTailProg = 0;
     }
     this.lastTrackingMode = trailSettings.trackingMode;
 
@@ -170,12 +185,45 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
       trailSettings.trackingMode === TrackingMode.BOTH_ENDS ||
       !anyBilateral;
 
+    let blueLeftMoved = false;
+    let blueRightMoved = false;
+    let redLeftMoved = false;
+    let redRightMoved = false;
     if (blueProp && hasBlue) {
-      this.capturePropTips(blueProp, canvasSize, bluePropType, 0, trackLeft, trackRight);
+      const r = this.capturePropTips(blueProp, canvasSize, bluePropType, 0, trackLeft, trackRight);
+      blueLeftMoved = r.leftMoved;
+      blueRightMoved = r.rightMoved;
     }
     if (redProp && hasRed) {
-      this.capturePropTips(redProp, canvasSize, redPropType, 1, trackLeft, trackRight);
+      const r = this.capturePropTips(redProp, canvasSize, redPropType, 1, trackLeft, trackRight);
+      redLeftMoved = r.leftMoved;
+      redRightMoved = r.rightMoved;
     }
+
+    // Advance per-ring tail progress. When a ring didn't receive a new
+    // point this frame (prop stationary), grow tailProg; when it's at/past
+    // 1 drop the oldest point and keep the fractional remainder. When the
+    // prop IS moving the new point naturally reveals the hidden tail, so
+    // reset to 0 for a clean look. Tied to fadeDurationMs so the visible
+    // tail recedes over the same timescale as the accumulator decay.
+    const dtMs = Math.max(0, params.deltaTime * 1000);
+    const stepPerMs = LEADING_EDGE / Math.max(1, trailSettings.fadeDurationMs);
+    const step = stepPerMs * dtMs;
+
+    const advance = (ring: TrailPoint[], prog: number, moved: boolean): number => {
+      if (moved) return 0;
+      let p = prog + step;
+      while (p >= 1 && ring.length > 1) {
+        ring.shift();
+        p -= 1;
+      }
+      if (ring.length <= 1) return 0;
+      return p;
+    };
+    this.blueLeftTailProg = advance(this.blueLeftRing, this.blueLeftTailProg, blueLeftMoved);
+    this.blueRightTailProg = advance(this.blueRightRing, this.blueRightTailProg, blueRightMoved);
+    this.redLeftTailProg = advance(this.redLeftRing, this.redLeftTailProg, redLeftMoved);
+    this.redRightTailProg = advance(this.redRightRing, this.redRightTailProg, redRightMoved);
 
     const lineWidth = Math.max(3.5, trailSettings.lineWidth);
     const thicknessNdc = (lineWidth * 2) / Math.max(1, this.width);
@@ -187,8 +235,13 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
 
     const tips: TrailTipState[] = [];
 
-    const push = (tipId: string, ring: TrailPoint[], rgb: [number, number, number]) => {
-      const path = this.ringToNdcPath(ring);
+    const push = (
+      tipId: string,
+      ring: TrailPoint[],
+      rgb: [number, number, number],
+      tailProg: number,
+    ) => {
+      const path = this.ringToNdcPath(ring, tailProg);
       if (path.length < 2) return;
       tips.push({
         tipId,
@@ -204,12 +257,12 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
     };
 
     if (hasBlue) {
-      push("blue-left", this.blueLeftRing, [bR, bG, bB]);
-      push("blue-right", this.blueRightRing, [bR, bG, bB]);
+      push("blue-left", this.blueLeftRing, [bR, bG, bB], this.blueLeftTailProg);
+      push("blue-right", this.blueRightRing, [bR, bG, bB], this.blueRightTailProg);
     }
     if (hasRed) {
-      push("red-left", this.redLeftRing, [rR, rG, rB]);
-      push("red-right", this.redRightRing, [rR, rG, rB]);
+      push("red-left", this.redLeftRing, [rR, rG, rB], this.redLeftTailProg);
+      push("red-right", this.redRightRing, [rR, rG, rB], this.redRightTailProg);
     }
 
     const payload: TrailPassPayload = { tips };
@@ -235,6 +288,10 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
     this.blueRightRing = [];
     this.redLeftRing = [];
     this.redRightRing = [];
+    this.blueLeftTailProg = 0;
+    this.blueRightTailProg = 0;
+    this.redLeftTailProg = 0;
+    this.redRightTailProg = 0;
     this.warmupFramesRemaining = TrailOverlayWebGL2.WARMUP_FRAMES;
     this.rebuildBackend();
   }
@@ -245,6 +302,10 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
     this.blueRightRing = [];
     this.redLeftRing = [];
     this.redRightRing = [];
+    this.blueLeftTailProg = 0;
+    this.blueRightTailProg = 0;
+    this.redLeftTailProg = 0;
+    this.redRightTailProg = 0;
     this.warmupFramesRemaining = TrailOverlayWebGL2.WARMUP_FRAMES;
     this.rebuildBackend();
   }
@@ -290,7 +351,10 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
     });
   }
 
-  private ringToNdcPath(ring: TrailPoint[]): Array<[number, number]> {
+  private ringToNdcPath(
+    ring: TrailPoint[],
+    tailProg: number = 0,
+  ): Array<[number, number]> {
     if (ring.length < 2) return [];
     const start = Math.max(0, ring.length - LEADING_EDGE);
     const w = this.width;
@@ -311,16 +375,36 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
       }
     }
 
+    const toNdc = (x: number, y: number): [number, number] => [
+      (x / w) * 2 - 1,
+      1 - (y / h) * 2,
+    ];
+
     const out: Array<[number, number]> = [];
-    for (let i = gapStart; i < ring.length; i++) {
-      const p = ring[i]!;
-      const ndcX = (p.x / w) * 2 - 1;
-      const ndcY = 1 - (p.y / h) * 2;
-      out.push([ndcX, ndcY]);
+
+    // Fractional-tail interpolation: slide the first path point from
+    // ring[gapStart] toward ring[gapStart+1] by tailProg so the stamp's
+    // tail walks smoothly along the captured path instead of popping
+    // segment-by-segment when the prop is stationary.
+    const t = Math.max(0, Math.min(0.9999, tailProg));
+    if (t > 0 && gapStart + 1 < ring.length) {
+      const a = ring[gapStart]!;
+      const b = ring[gapStart + 1]!;
+      out.push(toNdc(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t));
+      for (let i = gapStart + 1; i < ring.length; i++) {
+        const p = ring[i]!;
+        out.push(toNdc(p.x, p.y));
+      }
+    } else {
+      for (let i = gapStart; i < ring.length; i++) {
+        const p = ring[i]!;
+        out.push(toNdc(p.x, p.y));
+      }
     }
     return out;
   }
 
+  /** Returns which rings received a new point this frame. */
   private capturePropTips(
     prop: PropState,
     canvasSize: number,
@@ -328,10 +412,12 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
     propIndex: 0 | 1,
     trackLeft: boolean,
     trackRight: boolean,
-  ): void {
+  ): { leftMoved: boolean; rightMoved: boolean } {
+    let leftMoved = false;
+    let rightMoved = false;
     const tipConfig = getTipPoints(propType);
     const pts = tipConfig.points;
-    if (pts.length === 0) return;
+    if (pts.length === 0) return { leftMoved, rightMoved };
 
     const trailConfig = getTrailPointConfig(propType);
     const leftTipIndex = trailConfig?.left?.type === "tip" ? trailConfig.left.index : 0;
@@ -355,17 +441,20 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
       const leftRing = propIndex === 0 ? this.blueLeftRing : this.redLeftRing;
       const worldX = center.x + (tp.dx * cosA - tp.dy * sinA) * gridScaleFactor;
       const worldY = center.y + (tp.dx * sinA + tp.dy * cosA) * gridScaleFactor;
-      this.appendToRing(leftRing, worldX, worldY, canvasSize, propIndex, leftTipIndex);
+      leftMoved = this.appendToRing(leftRing, worldX, worldY, canvasSize, propIndex, leftTipIndex);
     }
     if (trackRight && rightTipIndex < pts.length) {
       const tp = pts[rightTipIndex]!;
       const rightRing = propIndex === 0 ? this.blueRightRing : this.redRightRing;
       const worldX = center.x + (tp.dx * cosA - tp.dy * sinA) * gridScaleFactor;
       const worldY = center.y + (tp.dx * sinA + tp.dy * cosA) * gridScaleFactor;
-      this.appendToRing(rightRing, worldX, worldY, canvasSize, propIndex, rightTipIndex);
+      rightMoved = this.appendToRing(rightRing, worldX, worldY, canvasSize, propIndex, rightTipIndex);
     }
+    return { leftMoved, rightMoved };
   }
 
+  /** Returns true if a new point was appended (prop moved enough),
+   *  false if the call was a stationary / jitter no-op. */
   private appendToRing(
     ring: TrailPoint[],
     worldX: number,
@@ -373,7 +462,7 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
     canvasSize: number,
     propIndex: 0 | 1,
     tipIndex: number,
-  ): void {
+  ): boolean {
     if (ring.length > 0) {
       const last = ring[ring.length - 1]!;
       const dx = worldX - last.x;
@@ -385,7 +474,7 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
       }
 
       if (ring.length > 0 && distSq < 0.25) {
-        return;
+        return false;
       }
     }
 
@@ -400,5 +489,6 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
     if (ring.length > RING_BUFFER_SIZE) {
       ring.splice(0, ring.length - RING_BUFFER_SIZE);
     }
+    return true;
   }
 }

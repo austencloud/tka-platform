@@ -113,7 +113,7 @@
 				</svg>
 			{/if}
 		</button>
-		<TempoControl {bpm} {onBpmChange} showPresets={false} showPractice={false} />
+		<TempoControl {bpm} {onBpmChange} showPresets={true} showPractice={false} />
 		<button
 			class="settings-gear-btn"
 			class:active={sequencePanelManager.isDetailExpanded}

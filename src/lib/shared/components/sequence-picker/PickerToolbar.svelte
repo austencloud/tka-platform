@@ -16,6 +16,7 @@
     columnCount: number;
     canZoomIn: boolean;
     canZoomOut: boolean;
+    searchQuery?: string;
     resultCount: number;
     onSearchChange: (query: string) => void;
     onSortChange: (method: BrowseSortMethod) => void;
@@ -28,6 +29,7 @@
     columnCount,
     canZoomIn,
     canZoomOut,
+    searchQuery = "",
     resultCount,
     onSearchChange,
     onSortChange,
@@ -110,6 +112,7 @@
   <!-- Search with Greek letter picker -->
   <ExpandableSearchBar
     onSearch={onSearchChange}
+    value={searchQuery}
     placeholder="Search sequences..."
   />
 
