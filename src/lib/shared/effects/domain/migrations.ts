@@ -90,14 +90,14 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
   // {intensity, threshold, radius(0-1)} into a per-tip radial-halo intent with
   // color, palette, colorMode, falloff, pulse, pulseRate. Preserve existing
   // intensity. Drop threshold (no longer meaningful). Map old radius (0-1
-  // normalized) to the new pixel scale via old*72+8 clamped to [8, 80]. Seed
+  // normalized) to the new pixel scale via old*200+8 clamped to [8, 200]. Seed
   // new fields from defaults. tipEffectMap entries pointing at "bloom" stay
   // valid.
   if (version < 7) {
     if (input.bloom) {
       const b = input.bloom as any;
       const oldRadius = typeof b.radius === "number" ? b.radius : 0.5;
-      const newRadiusPx = Math.min(80, Math.max(8, oldRadius * 72 + 8));
+      const newRadiusPx = Math.min(200, Math.max(8, oldRadius * 200 + 8));
       const preservedIntensity = typeof b.intensity === "number" ? b.intensity : 0.7;
       b.radius = newRadiusPx;
       b.intensity = preservedIntensity;

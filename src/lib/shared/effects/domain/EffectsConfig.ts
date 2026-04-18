@@ -139,7 +139,7 @@ export interface EchoIntent {
 export interface BloomIntent {
   /** 0-1 — peak alpha at halo center. */
   intensity: number;
-  /** 8-80 px — halo radius in 2D. 3D billboard scales proportionally. */
+  /** 8-200 px — halo radius in 2D. 3D billboard scales proportionally. */
   radius: number;
   /** Hex — used when colorMode === "solid". */
   color: string;
