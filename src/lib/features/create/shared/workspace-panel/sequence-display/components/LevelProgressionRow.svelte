@@ -29,8 +29,8 @@
     display: flex;
     align-items: flex-end;
     justify-content: center;
-    gap: 10px;
-    padding: 22px 18px 16px;
+    gap: 18px;
+    padding: 28px 20px 20px;
   }
 
   .lcard {
@@ -38,8 +38,8 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 10px;
-    border-radius: 10px;
+    padding: 12px;
+    border-radius: 12px;
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.06);
     transition: all 0.2s ease;
@@ -48,48 +48,53 @@
   .lcard img {
     background: #fff;
     padding: 4px;
-    border-radius: 6px;
+    border-radius: 8px;
     display: block;
   }
 
   .lcard .lname {
-    margin-top: 8px;
-    font-size: 11px;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    margin-top: 10px;
+    font-size: 12px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     text-align: center;
     line-height: 1.3;
   }
 
   .lnum {
-    width: 22px;
-    height: 22px;
+    width: 24px;
+    height: 24px;
     border-radius: 50%;
     font-family: Cambria, serif;
     font-weight: bold;
-    font-size: 13px;
+    font-size: 14px;
     display: flex;
     align-items: center;
     justify-content: center;
     border: 1px solid #000;
-    margin-bottom: 6px;
+    margin-bottom: 8px;
   }
 
-  .lcard.dim { opacity: 0.55; }
-  .lcard.dim img { width: 72px; height: 72px; }
+  .lcard.dim { opacity: 0.5; }
+  .lcard.dim img {
+    width: 110px;
+    height: 110px;
+    filter: grayscale(1) brightness(0.85);
+  }
+  .lcard.dim .lnum { filter: grayscale(1) brightness(0.85); }
 
   .lcard.current {
-    background: color-mix(in srgb, var(--theme-accent, #2196f3) 12%, transparent);
-    border-color: color-mix(in srgb, var(--theme-accent, #2196f3) 30%, transparent);
-    padding: 14px;
-    transform: translateY(6px);
+    background: color-mix(in srgb, var(--theme-accent, #2196f3) 14%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent, #2196f3) 35%, transparent);
+    padding: 18px;
+    transform: translateY(8px);
   }
-  .lcard.current img { width: 140px; height: 140px; }
-  .lcard.current .lnum { width: 28px; height: 28px; font-size: 15px; }
+  .lcard.current img { width: 200px; height: 200px; }
+  .lcard.current .lnum { width: 32px; height: 32px; font-size: 17px; }
   .lcard.current .lname {
     color: var(--theme-text, #e8e8ea);
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
-    margin-top: 10px;
+    margin-top: 12px;
   }
 
   @container (max-width: 360px) {

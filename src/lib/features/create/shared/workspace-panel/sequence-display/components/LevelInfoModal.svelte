@@ -56,7 +56,7 @@
   });
 </script>
 
-<BaseModal {open} {onclose} size="lg">
+<BaseModal {open} {onclose} size="lg" class="level-info-modal">
   <ModalHeader
     title="Level {analysis.level}"
     subtitle={levelName}
@@ -73,16 +73,21 @@
 </BaseModal>
 
 <style>
+  :global(dialog.base-modal.level-info-modal) {
+    width: min(92vw, 920px);
+  }
+
   .body {
     container-type: inline-size;
-    padding-bottom: 18px;
+    padding: 8px 24px 28px;
   }
 
   .progression {
-    padding: 0 22px 4px;
-    margin: 0;
-    font-size: 13.5px;
+    margin: 18px 0 0;
+    padding: 0 16px;
+    font-size: 15px;
     line-height: 1.6;
     color: var(--theme-text, #c5c9d2);
+    text-align: center;
   }
 </style>
