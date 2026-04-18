@@ -92,7 +92,7 @@
     margin-top: 10px;
   }
 
-  @container (max-width: 480px) {
+  @container (max-width: 360px) {
     .row {
       flex-direction: column;
       align-items: center;

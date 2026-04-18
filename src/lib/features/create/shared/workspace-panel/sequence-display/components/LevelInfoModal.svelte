@@ -24,7 +24,7 @@
     switch (analysis.level) {
       case 1:
         return {
-          lead: "This sequence uses only base motions.",
+          lead: "This sequence uses only base motions. ",
           parts: [
             { text: "Add ", emph: null },
             { text: "whole turns", emph: L2 },
@@ -56,7 +56,7 @@
   });
 </script>
 
-<BaseModal {open} {onclose} size="md">
+<BaseModal {open} {onclose} size="lg">
   <ModalHeader
     title="Level {analysis.level}"
     subtitle={levelName}
