@@ -34,6 +34,7 @@ export class Zap2DRenderer {
     ctx: CanvasRenderingContext2D,
     params: Zap2DParams,
     tips: ZapTipInput,
+    scale: number = 1,
   ): void {
     this.frameCount++;
     // params.frequency is regenerations per second at 60fps render cadence.
@@ -58,13 +59,13 @@ export class Zap2DRenderer {
 
         if (needRegen || this.cachedArcs.length !== pairs.length) {
           this.cachedArcs = pairs.map(({ a, b }) => ({
-            path: this.generatePath(a, b, params),
+            path: this.generatePath(a, b, params, scale),
             startColor: params.leftColor,
             endColor: params.rightColor,
           }));
         }
         for (const arc of this.cachedArcs) {
-          this.drawArc(ctx, arc, params);
+          this.drawArc(ctx, arc, params, scale);
         }
       } else {
         // Crackle mode: each origin's spokes carry its own hand color.
@@ -80,13 +81,13 @@ export class Zap2DRenderer {
           this.cachedArcs = origins.flatMap((o) => {
             return Array.from({ length: CRACKLE_SPOKES }).map(() => {
               const angle = Math.random() * Math.PI * 2;
-              const len = 40 + params.intensity * 60;
+              const len = (40 + params.intensity * 60) * scale;
               const end = {
                 x: o.pos.x + Math.cos(angle) * len,
                 y: o.pos.y + Math.sin(angle) * len,
               };
               return {
-                path: this.generatePath(o.pos, end, params),
+                path: this.generatePath(o.pos, end, params, scale),
                 startColor: o.color,
                 endColor: o.color,
               };
@@ -94,7 +95,7 @@ export class Zap2DRenderer {
           });
         }
         for (const arc of this.cachedArcs) {
-          this.drawArc(ctx, arc, params);
+          this.drawArc(ctx, arc, params, scale);
         }
       }
     } finally {
@@ -111,6 +112,7 @@ export class Zap2DRenderer {
     a: { x: number; y: number },
     b: { x: number; y: number },
     params: Zap2DParams,
+    scale: number = 1,
   ): Array<{ x: number; y: number }> {
     const pts: Array<{ x: number; y: number }> = [a, b];
     for (let iter = 0; iter < Math.log2(params.segments); iter++) {
@@ -121,7 +123,7 @@ export class Zap2DRenderer {
         next.push(cur);
         const mx = (cur.x + nxt.x) / 2;
         const my = (cur.y + nxt.y) / 2;
-        const jitter = params.jitterAmount / (iter + 1);
+        const jitter = (params.jitterAmount * scale) / (iter + 1);
         next.push({
           x: mx + (Math.random() - 0.5) * jitter * 2,
           y: my + (Math.random() - 0.5) * jitter * 2,
@@ -138,6 +140,7 @@ export class Zap2DRenderer {
     ctx: CanvasRenderingContext2D,
     arc: CachedArc,
     params: Zap2DParams,
+    scale: number = 1,
   ): void {
     const { path, startColor, endColor } = arc;
     if (path.length < 2) return;
@@ -158,8 +161,8 @@ export class Zap2DRenderer {
     // Glow pass — use the gradient (or solid). shadowColor needs a string.
     ctx.strokeStyle = stroke;
     ctx.shadowColor = startColor; // gradient halo isn't supported; pick start as approximation
-    ctx.shadowBlur = params.glowBlur;
-    ctx.lineWidth = params.lineWidth * 2;
+    ctx.shadowBlur = params.glowBlur * scale;
+    ctx.lineWidth = params.lineWidth * 2 * scale;
     ctx.globalAlpha = 0.6 * params.intensity;
     ctx.beginPath();
     ctx.moveTo(first.x, first.y);
@@ -168,8 +171,8 @@ export class Zap2DRenderer {
 
     // Core pass — bright white center for the lightning hot core.
     ctx.strokeStyle = "#ffffff";
-    ctx.shadowBlur = params.glowBlur * 0.5;
-    ctx.lineWidth = params.lineWidth;
+    ctx.shadowBlur = params.glowBlur * 0.5 * scale;
+    ctx.lineWidth = params.lineWidth * scale;
     ctx.globalAlpha = params.intensity;
     ctx.beginPath();
     ctx.moveTo(first.x, first.y);
