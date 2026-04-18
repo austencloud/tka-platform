@@ -47,6 +47,9 @@ export {
   httpUpdateFeedbackStatus,
 } from "./feedbackClaims";
 
+// Shortcode snapshot publisher (scheduled weekly to R2)
+export { snapshotShortCodes } from "./snapshotShortCodes";
+
 // R2 storage functions (presigned URLs, multipart, delete)
 // Deploy after R2 secrets are configured:
 //   firebase functions:secrets:set R2_ACCOUNT_ID R2_ACCESS_KEY_ID R2_SECRET_ACCESS_KEY R2_BUCKET_NAME R2_PUBLIC_URL
