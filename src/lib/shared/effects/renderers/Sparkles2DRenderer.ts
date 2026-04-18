@@ -32,7 +32,7 @@ const MAX_PARTICLES = 1500;
 const SPAWN_DENSITY = 18;
 /** Floor for rate-scaled cap so rate near 0 still shows something visible. */
 const MIN_LIVE_PARTICLES = 40;
-/** Burst mode: minimum tip displacement (px) per frame to trigger a spawn burst. */
+/** Burst mode: minimum tip displacement (px) per frame to trigger a spawn burst (at scale=1). */
 const BURST_MOTION_THRESHOLD = 0.3;
 
 /**
@@ -54,14 +54,9 @@ export class Sparkles2DRenderer {
     params: Sparkles2DParams,
     tips: SparklesTipInput,
     dt: number,
+    scale: number = 1,
   ): void {
     // 1. Spawn from each enabled tip per current mode.
-    //    Live cap scales with params.rate so the slider actually controls
-    //    on-screen density (not just the spawn rate, which was being masked
-    //    by a static cap once rate crossed ~0.08).
-    //    Per-tip allocation prevents the first tip in iteration order from
-    //    consuming the whole budget — without it, sparkles appear to come
-    //    from only one tip.
     const effectiveMax = Math.max(
       MIN_LIVE_PARTICLES,
       Math.min(MAX_PARTICLES, Math.floor(MAX_PARTICLES * params.rate)),
@@ -79,12 +74,13 @@ export class Sparkles2DRenderer {
         continue;
       }
       const last = this.lastTipPos[key];
-      this.spawnFromTip(params, tip, last, dt, perTipCap);
+      this.spawnFromTip(params, tip, last, dt, perTipCap, scale);
       this.lastTipPos[key] = { x: tip.x, y: tip.y };
     }
 
     // 2. Step physics + cull dead particles.
-    const gravityPx = params.gravity * 200; // px/s²
+    // Gravity is px/s² at scale=1; scales linearly with canvas.
+    const gravityPx = params.gravity * 200 * scale;
     const surviving: Particle[] = [];
     for (const p of this.particles) {
       p.life += dt;
@@ -97,10 +93,7 @@ export class Sparkles2DRenderer {
     }
     this.particles = surviving;
 
-    // 3. Draw — each particle is a 4-point star (cross + smaller diagonal cross)
-    //    with a bright pinpoint core. Sin-modulated alpha = twinkle. The cross
-    //    shape + scintillation is what differentiates sparkles from charcoal's
-    //    additive-glow blobs.
+    // 3. Draw.
     if (this.particles.length === 0) return;
     const prevComposite = ctx.globalCompositeOperation;
     const prevAlpha = ctx.globalAlpha;
@@ -111,7 +104,8 @@ export class Sparkles2DRenderer {
     try {
       ctx.globalCompositeOperation = params.blendMode ?? "lighter";
       ctx.lineCap = "round";
-      const baseR = params.baseRadius;
+      // baseRadius is px at reference size; scale into canvas pixels.
+      const baseR = params.baseRadius * scale;
       for (const p of this.particles) {
         const t = p.life / p.maxLife;
         const fade = Math.max(0, 1 - t);
@@ -124,9 +118,9 @@ export class Sparkles2DRenderer {
         ctx.translate(p.x, p.y);
         ctx.rotate(p.rotation);
 
-        // Major cross (+) — long, thin, bright.
         ctx.strokeStyle = p.color;
         ctx.globalAlpha = alpha;
+        // Line-width clamp stays in canvas px so sub-pixel strokes don't vanish.
         ctx.lineWidth = Math.max(1, baseR * p.scale * 0.45);
         ctx.beginPath();
         ctx.moveTo(-armLen, 0);
@@ -135,7 +129,6 @@ export class Sparkles2DRenderer {
         ctx.lineTo(0, armLen);
         ctx.stroke();
 
-        // Minor diagonal cross (×) — shorter, thinner, gives it the 8-point feel.
         ctx.lineWidth = Math.max(0.6, baseR * p.scale * 0.25);
         ctx.globalAlpha = alpha * 0.7;
         ctx.beginPath();
@@ -145,7 +138,6 @@ export class Sparkles2DRenderer {
         ctx.lineTo(diagLen, -diagLen);
         ctx.stroke();
 
-        // Bright white pinpoint core.
         ctx.fillStyle = "#ffffff";
         ctx.globalAlpha = alpha;
         ctx.beginPath();
@@ -170,9 +162,8 @@ export class Sparkles2DRenderer {
     last: { x: number; y: number } | undefined,
     dt: number,
     perTipCap: number,
+    scale: number,
   ): void {
-    // Base count: rate × SPAWN_DENSITY spawns/s, normalized via dt × 60 so a 60fps
-    // tick spawns at the documented rate regardless of actual frame timing.
     const baseCount = Math.floor(params.rate * SPAWN_DENSITY * dt * 60);
     let spawnCount = 0;
     let usePathSpawn = false;
@@ -184,21 +175,19 @@ export class Sparkles2DRenderer {
       const dx = tip.x - last.x;
       const dy = tip.y - last.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
-      if (dist < BURST_MOTION_THRESHOLD) return;
-      spawnCount = Math.max(1, Math.floor(baseCount * (1 + dist / 10)));
+      // Motion threshold is px/frame at reference size; scale with canvas.
+      if (dist < BURST_MOTION_THRESHOLD * scale) return;
+      // `dist / 10` keeps ratio invariant — distance already scales with canvas
+      // (tips are in canvas px), so the divisor scales too.
+      spawnCount = Math.max(1, Math.floor(baseCount * (1 + dist / (10 * scale))));
     } else {
       spawnCount = Math.max(1, baseCount);
       usePathSpawn = !!last;
     }
 
-    // Clamp to this tip's fair share of the pool so other tips can spawn too.
     spawnCount = Math.max(0, Math.min(spawnCount, perTipCap));
 
     for (let i = 0; i < spawnCount; i++) {
-
-      // Origin: AT the tip (no scatter) so all particles emerge from the same
-      // point and burst outward — that's what reads as "bursting from the tip"
-      // rather than "appearing in a fuzzy area".
       let originX = tip.x;
       let originY = tip.y;
       if (usePathSpawn && last) {
@@ -207,16 +196,13 @@ export class Sparkles2DRenderer {
         originY = last.y + (tip.y - last.y) * t;
       }
 
-      // Radial outward velocity. Speed scales with spread so the spread slider
-      // controls burst reach instead of a static scatter radius.
       const angle = Math.random() * Math.PI * 2;
-      const burstSpeed = params.spread * 4 + Math.random() * params.spread * 8;
+      // Burst speed is px/s at reference size; scales with canvas.
+      const burstSpeed = (params.spread * 4 + Math.random() * params.spread * 8) * scale;
       const vx = Math.cos(angle) * burstSpeed;
-      // Slight upward bias keeps them feeling buoyant before gravity wins.
-      const vy = Math.sin(angle) * burstSpeed - 15;
+      // Upward bias is px/s at reference size; scales with canvas.
+      const vy = Math.sin(angle) * burstSpeed - 15 * scale;
 
-      // Stagger lifetime ±40% so particles die at different times. Without this
-      // the whole batch dies together and the canvas pulses dark every lifetime.
       const lifeJitter = 0.6 + Math.random() * 0.8;
 
       this.particles.push({
