@@ -17,6 +17,7 @@ import {
   Bloom2DRenderer,
   type BloomTipInput,
 } from "$lib/shared/effects/renderers/Bloom2DRenderer";
+import { computeEffectScale } from "$lib/shared/effects/renderers/scale";
 
 export class BloomOverlayRenderer implements IBloomOverlayRenderer {
   private canvas: HTMLCanvasElement | null = null;
@@ -24,6 +25,7 @@ export class BloomOverlayRenderer implements IBloomOverlayRenderer {
   private renderer = new Bloom2DRenderer();
   private width = 0;
   private height = 0;
+  private scale = 1;
 
   initialize(container: HTMLElement, width: number, height: number): boolean {
     this.dispose();
@@ -52,6 +54,7 @@ export class BloomOverlayRenderer implements IBloomOverlayRenderer {
     this.ctx = ctx;
     this.width = width;
     this.height = height;
+    this.scale = computeEffectScale(width, height);
     return true;
   }
 
@@ -61,13 +64,14 @@ export class BloomOverlayRenderer implements IBloomOverlayRenderer {
     this.canvas.height = height;
     this.width = width;
     this.height = height;
+    this.scale = computeEffectScale(width, height);
   }
 
   renderFrame(params: Bloom2DParams, tips: BloomTipInput[]): void {
     const ctx = this.ctx;
     if (!ctx) return;
     ctx.clearRect(0, 0, this.width, this.height);
-    this.renderer.render(ctx, params, tips);
+    this.renderer.render(ctx, params, tips, this.scale);
   }
 
   clear(): void {
@@ -89,6 +93,7 @@ export class BloomOverlayRenderer implements IBloomOverlayRenderer {
     this.ctx = null;
     this.width = 0;
     this.height = 0;
+    this.scale = 1;
   }
 
   isInitialized(): boolean {
