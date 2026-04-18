@@ -113,6 +113,13 @@ export interface IThumbnailRenderOrchestrator {
   invalidateAllCaches(): void;
 
   /**
+   * Synchronous lookup for a previously-loaded thumbnail URL.
+   * Returns the blob/cloud URL if the hash was loaded this session, null otherwise.
+   * Use before the async getThumbnail pipeline to avoid placeholder flash on revisits.
+   */
+  getCached(hash: string): string | null;
+
+  /**
    * Get current queue statistics.
    * Useful for debugging and progress display.
    */

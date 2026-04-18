@@ -85,14 +85,19 @@ export class FileDownloader implements IFileDownloader {
   }
 
   /**
-   * Generate a safe filename from a string
+   * Generate a safe filename from a string.
+   * Preserves Unicode letters and numbers (modern filesystems — NTFS, APFS, ext4 —
+   * handle them fine). Strips only characters forbidden on Windows/macOS/Linux:
+   * `< > : " / \ | ? *` and C0 control chars. Also trims trailing dots/spaces
+   * (forbidden on Windows) and collapses any whitespace to single spaces.
    */
   sanitizeFilename(filename: string): string {
     return filename
-      .replace(/[^a-z0-9\-_.]/gi, "_") // Replace invalid characters with underscore
-      .replace(/_{2,}/g, "_") // Replace multiple underscores with single
-      .replace(/^_+|_+$/g, "") // Remove leading/trailing underscores
-      .substring(0, 255); // Limit length
+      // eslint-disable-next-line no-control-regex
+      .replace(/[<>:"/\\|?*\x00-\x1f]/g, "_")
+      .replace(/\s+/g, " ")
+      .replace(/^[.\s]+|[.\s]+$/g, "")
+      .substring(0, 200);
   }
 
   /**

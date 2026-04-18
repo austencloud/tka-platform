@@ -27,6 +27,8 @@
   import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/implementations/SequenceViewerNavigator";
   import { browseScrollState } from "../state/BrowseScrollState.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte";
+  import VirtualKeyboard from "$lib/shared/components/touch/VirtualKeyboard.svelte";
+  import { container } from "$lib/shared/di";
 
   interface Props {
     isMobile: boolean;
@@ -168,6 +170,39 @@
       scrollY: browseScrollState.lastScrollY,
     });
   }
+
+  // Floating Search State
+  let showSearchTerminal = $state(false);
+  let searchMode = $state<"standard" | "spelled">("standard");
+  const hapticService = container.items.hapticFeedback;
+
+  const currentSearchQuery = $derived.by(() => {
+    const filter = galleryState.activeFilterList.find(f => f.type === 'contains_letters');
+    return filter ? filter.value as string : "";
+  });
+
+  function handleToggleSearch() {
+    hapticService?.trigger("selection");
+    showSearchTerminal = !showSearchTerminal;
+  }
+
+  function handleSearchClear() {
+    handleFilterChange('all');
+  }
+
+  function handleSearchKey(char: string) {
+    const newValue = currentSearchQuery + char;
+    handleFilterChange('contains_letters', newValue);
+  }
+
+  function handleSearchBackspace() {
+    const newValue = currentSearchQuery.slice(0, -1);
+    if (newValue) {
+      handleFilterChange('contains_letters', newValue);
+    } else {
+      handleFilterChange('all');
+    }
+  }
 </script>
 
 <BrowseLayout>
@@ -247,8 +282,6 @@
   </Drawer>
 {/if}
 
-<!-- Filters are now inline in SequenceDisplayPanel via InlineFilterPanel -->
-
 <!-- Letter Selection Sheet -->
 <div style:--drawer-width={isMobile ? "min(600px, 90vw)" : "min(400px, 40vw)"}>
   <Drawer
@@ -307,13 +340,39 @@
   </div>
 {/if}
 
-<!-- Variation Picker: shown when tapping a card with multiple same-word sequences -->
+<!-- Variation Picker -->
 <VariationPickerDrawer
   isOpen={pickerState.isOpen}
   variations={pickerState.variations}
   onSelect={handleVariationSelected}
   onClose={closeVariationPicker}
 />
+
+<!-- Notation Terminal Keyboard -->
+{#if showSearchTerminal}
+  <VirtualKeyboard
+    bind:isOpen={showSearchTerminal}
+    value={currentSearchQuery}
+    resultCount={galleryState.displayedSequences.length}
+    {searchMode}
+    onKey={handleSearchKey}
+    onBackspace={handleSearchBackspace}
+    onClear={handleSearchClear}
+    onClose={() => (showSearchTerminal = false)}
+    onModeToggle={(mode) => (searchMode = mode)}
+  />
+{/if}
+
+<!-- Floating Search Trigger (FAB) -->
+<button 
+  class="floating-search-trigger" 
+  class:kb-active={showSearchTerminal}
+  onclick={handleToggleSearch}
+  type="button"
+  aria-label="Search Sequences"
+>
+  <i class="fas fa-search"></i>
+</button>
 
 <style>
   .sequences-main {
@@ -405,4 +464,48 @@
     background: var(--theme-panel-bg) !important;
   }
 
+  .floating-search-trigger {
+    position: fixed;
+    bottom: 100px;
+    right: 24px;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: var(--theme-accent);
+    color: white;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+    cursor: pointer;
+    z-index: 1000;
+    transition: transform var(--duration-fast) ease, background var(--duration-fast) ease, opacity var(--duration-fast) ease;
+  }
+
+  .floating-search-trigger:hover {
+    transform: scale(1.05);
+    background: color-mix(in srgb, var(--theme-accent) 90%, white);
+  }
+
+  .floating-search-trigger:active {
+    transform: scale(0.95);
+  }
+
+  .floating-search-trigger.kb-active {
+    opacity: 0;
+    pointer-events: none;
+    transform: scale(0.8);
+  }
+
+  @media (max-width: 640px) {
+    .floating-search-trigger {
+      bottom: calc(16px + env(safe-area-inset-bottom) + 70px);
+      right: 16px;
+      width: 56px;
+      height: 56px;
+      font-size: 20px;
+    }
+  }
 </style>

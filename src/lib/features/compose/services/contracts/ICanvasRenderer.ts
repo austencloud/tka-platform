@@ -58,13 +58,17 @@ export interface ICanvasRenderer {
    * @param word - The word/sequence name to render (null/empty = no render)
    * @param darkMode - When true, uses dark background with light text
    * @param activeStepNumber - 1-indexed beat number for letter highlighting (null = no highlighting)
+   * @param difficultyLevel - Difficulty level (1-5) for the top-left badge (null = no badge)
+   * @param loopComponents - Set of active LOOP component ids for the top-right icon strip (null/empty = no strip)
    */
   renderWordHeaderToCanvas(
     ctx: CanvasRenderingContext2D,
     canvasSize: number,
     word: string | null,
     darkMode?: boolean,
-    activeStepNumber?: number | null
+    activeStepNumber?: number | null,
+    difficultyLevel?: number | null,
+    loopComponents?: Set<string> | null
   ): void;
 
   /**

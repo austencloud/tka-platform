@@ -135,9 +135,9 @@
     }
 
     // Responsive defaults when no override is set
-    if (containerWidth >= 1600) return 5;
-    if (containerWidth >= 1200) return 4;
-    if (containerWidth >= 800) return 3;
+    if (containerWidth >= 1400) return 5;
+    if (containerWidth >= 1000) return 4;
+    if (containerWidth >= 600) return 3;
     return 2;
   });
 

@@ -106,6 +106,12 @@ class CircularBuffer<T> {
     return Array.from(this);
   }
 
+  last(): T | undefined {
+    if (this.size === 0) return undefined;
+    const lastIndex = (this.head - 1 + this.capacity) % this.capacity;
+    return this.buffer[lastIndex];
+  }
+
   getLast(n: number): T[] {
     const result: T[] = [];
     const count = Math.min(n, this.size);
@@ -560,6 +566,7 @@ export class TrailCapturer implements ITrailCapturer {
         });
       } else {
         const distance = Math.hypot(worldX - lastPoint.x, worldY - lastPoint.y);
+        const timeSinceLastPoint = currentTime - lastPoint.timestamp;
         const isInitialJump = distance > INITIAL_JUMP_DISTANCE_THRESHOLD;
 
         if (isInitialJump) {
@@ -578,6 +585,19 @@ export class TrailCapturer implements ITrailCapturer {
             tipIndex,
           });
           this.totalPointsCaptured++;
+          this.lastCapturedPoints.set(key, {
+            x: worldX,
+            y: worldY,
+            beat: currentStep,
+            timestamp: currentTime,
+          });
+        } else {
+          // Stationary or small move - update the head point's timestamp to keep it fresh.
+          // This allows the tail to continue fading/pruning while the head stays at the prop.
+          const lastBufferPoint = buffer.last();
+          if (lastBufferPoint) {
+            lastBufferPoint.timestamp = currentTime;
+          }
           this.lastCapturedPoints.set(key, {
             x: worldX,
             y: worldY,
@@ -753,6 +773,7 @@ export class TrailCapturer implements ITrailCapturer {
             worldX - lastPoint.x,
             worldY - lastPoint.y
           );
+          const timeSinceLastPoint = currentTime - lastPoint.timestamp;
 
           // Detect initial jump (from default position to first beat position)
           const isInitialJump = distance > INITIAL_JUMP_DISTANCE_THRESHOLD;
@@ -782,8 +803,20 @@ export class TrailCapturer implements ITrailCapturer {
               beat: currentStep,
               timestamp: currentTime,
             });
+          } else {
+            // Stationary or small move - update the head point's timestamp to keep it fresh.
+            // This allows the tail to continue fading/pruning while the head stays at the prop.
+            const lastBufferPoint = buffer.last();
+            if (lastBufferPoint) {
+              lastBufferPoint.timestamp = currentTime;
+            }
+            this.lastCapturedPoints.set(key, {
+              x: worldX,
+              y: worldY,
+              beat: currentStep,
+              timestamp: currentTime,
+            });
           }
-          // If distance < minSpacing, skip this point (prevents oversaturation)
         }
       }
     }

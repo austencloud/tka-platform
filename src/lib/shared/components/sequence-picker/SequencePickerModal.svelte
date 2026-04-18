@@ -388,6 +388,7 @@
       {columnCount}
       {canZoomIn}
       {canZoomOut}
+      searchQuery={searchQuery}
       resultCount={filteredSequences.length}
       onSearchChange={handleSearchChange}
       onSortChange={handleSortChange}

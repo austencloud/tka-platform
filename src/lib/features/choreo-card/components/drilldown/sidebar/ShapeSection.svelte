@@ -9,9 +9,10 @@
     currentShape: ShapeSelections | null;
     accentColor: string;
     onSelectShape: (shape: ShapeSelections) => void;
+    onInitShape: (shape: ShapeSelections) => void;
   }
 
-  let { decks, currentShape, accentColor, onSelectShape }: Props = $props();
+  let { decks, currentShape, accentColor, onSelectShape, onInitShape }: Props = $props();
 
   const LOOP_TYPE_ORDER = ['Rotated', 'Mirrored', 'Swapped', 'Inverted', 'Rewound'] as const;
   const SLICE_OPTIONS = ['Halved', 'Quartered'] as const;
@@ -84,6 +85,25 @@
   function selectGrid(g: string): void {
     emitShape([...displayLoopTypes], displaySlice, g);
   }
+
+  // The pills default to Rotated · Halved · Diamond visually. If the user
+  // never explicitly clicks a shape pill, state.shape stays null and the
+  // filter silently drops the shape constraint — so Quartered decks slip
+  // through while Halved looks selected. Backfill state to match visuals.
+  $effect(() => {
+    if (currentShape) return;
+    if (availableLoopTypes.length === 0 || availableGridModes.length === 0) return;
+
+    const lt = availableLoopTypes.find((t) => t === 'Rotated') ?? availableLoopTypes[0];
+    const g = availableGridModes.find((x) => x === 'Diamond') ?? availableGridModes[0];
+    if (!lt || !g) return;
+
+    onInitShape({
+      loopTypes: [lt.toLowerCase()],
+      sliceType: 'halved',
+      gridMode: g.toLowerCase(),
+    });
+  });
 </script>
 
 <SidebarFilterSection label="Shape" state="active" {accentColor}>

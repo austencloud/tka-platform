@@ -3,168 +3,179 @@
 
   - Shows as magnifying glass icon when collapsed
   - Expands to search input on click
-  - Filters sequences via contains_letters filter
+  - Automatically triggers TKA Virtual Keyboard on focus
+  - Suppresses system keyboard for focused notation entry
   - Auto-collapses on blur when empty
-  - Greek letter picker for TKA special characters
 -->
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, tick } from "svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte";
+  import VirtualKeyboard from "$lib/shared/components/touch/VirtualKeyboard.svelte";
 
   interface Props {
     onSearch: (query: string) => void;
     onClear?: () => void;
     placeholder?: string;
+    value?: string;
+    /** Live count of matches to show in the virtual keyboard header */
+    resultCount?: number;
   }
 
-  let { onSearch, onClear, placeholder = "Search..." }: Props = $props();
-
-  // Greek/special letters available in TKA
-  const SPECIAL_LETTERS = [
-    // Type 2/3 letters (Shift / Cross-Shift)
-    { char: "Σ", label: "Sigma" },
-    { char: "Δ", label: "Delta" },
-    { char: "Θ", label: "Theta" },
-    { char: "Ω", label: "Omega" },
-    // Type 4/5 letters (Dash / Dual-Dash)
-    { char: "Φ", label: "Phi" },
-    { char: "Ψ", label: "Psi" },
-    { char: "Λ", label: "Lambda" },
-    // Type 6 letters (Static)
-    { char: "α", label: "alpha" },
-    { char: "β", label: "beta" },
-    { char: "γ", label: "gamma" },
-  ];
+  let {
+    onSearch,
+    onClear,
+    placeholder = "Search...",
+    value = "",
+    resultCount = 0,
+  }: Props = $props();
 
   // Local state
   let isExpanded = $state(false);
-  let inputValue = $state("");
+  let inputValue = $state(value);
   let inputRef: HTMLInputElement | null = $state(null);
   let containerRef: HTMLDivElement | null = $state(null);
-  let showGreekPicker = $state(false);
+  let showVirtualKeyboard = $state(false);
   let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
-  /** Search fires after this delay to avoid thrashing on every keystroke */
-  const SEARCH_DEBOUNCE_MS = 250;
+  // Track the last value received from the parent to avoid reset loops
+  let lastSyncedValue = value;
 
-  /**
-   * Collapse delay must exceed the browser's blur→mousedown race.
-   * Without this, the search bar collapses before Greek picker clicks register.
-   */
+  // Sync internal state with external value prop
+  $effect(() => {
+    if (value !== lastSyncedValue) {
+      inputValue = value;
+      lastSyncedValue = value;
+      if (value.trim() && !isExpanded) {
+        isExpanded = true;
+      }
+    }
+  });
+
+  const SEARCH_DEBOUNCE_MS = 250;
   const COLLAPSE_DELAY_MS = 150;
 
   // Expand and focus input
   function handleExpand(event: MouseEvent) {
     event.stopPropagation();
     isExpanded = true;
-    // Focus after DOM update via microtask
+    showVirtualKeyboard = true;
     setTimeout(() => inputRef?.focus(), 0);
   }
 
-  // Collapse if empty
+  function handleFocus() {
+    showVirtualKeyboard = true;
+  }
+
   function handleCollapse() {
     setTimeout(() => {
-      if (!inputValue.trim() && !showGreekPicker) {
+      if (!inputValue.trim() && !showVirtualKeyboard) {
         isExpanded = false;
       }
     }, COLLAPSE_DELAY_MS);
   }
 
-  // Handle input change with debounce
-  function handleInput(event: Event) {
-    const target = event.target as HTMLInputElement;
-    inputValue = target.value;
+  function handleInput() {
+    // When typing manually, we update lastSyncedValue to prevent the effect from resetting us
+    lastSyncedValue = inputValue;
+    triggerSearch();
+  }
 
-    // Clear previous timer
+  function triggerSearch() {
     if (debounceTimer) {
       clearTimeout(debounceTimer);
     }
-
-    // Debounce search
     debounceTimer = setTimeout(() => {
       onSearch(inputValue.trim());
     }, SEARCH_DEBOUNCE_MS);
   }
 
-  // Clear search
   function handleClear() {
     inputValue = "";
+    lastSyncedValue = "";
     onSearch("");
     onClear?.();
-    showGreekPicker = false;
-    inputRef?.focus();
+    showVirtualKeyboard = false;
+    inputRef?.blur();
   }
 
-  // Handle keyboard events
   function handleKeydown(event: KeyboardEvent) {
     if (event.key === "Escape") {
-      if (showGreekPicker) {
-        showGreekPicker = false;
-      } else {
-        inputValue = "";
-        onSearch("");
-        onClear?.();
-        isExpanded = false;
+      if (showVirtualKeyboard) {
+        showVirtualKeyboard = false;
         inputRef?.blur();
+      } else {
+        handleClear();
+        isExpanded = false;
       }
+    } else if (event.key === "Enter") {
+      showVirtualKeyboard = false;
+      inputRef?.blur();
     }
   }
 
-  // Toggle Greek letter picker
-  // Uses onmousedown (not onclick) intentionally: the input's onblur fires before
-  // onclick would register, collapsing the search bar before the picker can open.
-  // mousedown fires before blur, allowing the picker to intercept.
-  function toggleGreekPicker(event: MouseEvent) {
-    event.stopPropagation();
-    event.preventDefault();
-    showGreekPicker = !showGreekPicker;
-  }
-
-  // Insert Greek letter at cursor position
-  // Uses onmousedown for the same reason as toggleGreekPicker above.
-  function insertLetter(char: string) {
+  async function insertChar(char: string) {
     if (!inputRef) return;
-
     const start = inputRef.selectionStart ?? inputValue.length;
     const end = inputRef.selectionEnd ?? inputValue.length;
 
-    // Insert character at cursor position
-    const newValue =
-      inputValue.slice(0, start) + char + inputValue.slice(end);
+    // Update local state
+    const newValue = inputValue.slice(0, start) + char + inputValue.slice(end);
     inputValue = newValue;
 
-    // Trigger search
-    if (debounceTimer) {
-      clearTimeout(debounceTimer);
+    // CRITICAL: Update lastSyncedValue immediately to prevent the prop-sync effect
+    // from reverting this local change before the parent can process the search update.
+    lastSyncedValue = newValue;
+
+    triggerSearch();
+
+    // Wait for Svelte to update the DOM value
+    await tick();
+
+    // Restore selection/focus
+    if (inputRef) {
+      inputRef.focus();
+      const newPos = start + char.length;
+      inputRef.setSelectionRange(newPos, newPos);
     }
-    debounceTimer = setTimeout(() => {
-      onSearch(inputValue.trim());
-    }, SEARCH_DEBOUNCE_MS);
-
-    // Re-focus input and set cursor after inserted char
-    setTimeout(() => {
-      inputRef?.focus();
-      inputRef?.setSelectionRange(start + char.length, start + char.length);
-    }, 0);
-
-    showGreekPicker = false;
   }
 
-  // Handle clicks outside to collapse
+  async function handleBackspace() {
+    if (!inputRef) return;
+    const start = inputRef.selectionStart ?? 0;
+    const end = inputRef.selectionEnd ?? 0;
+
+    let newPos = start;
+    if (start === end) {
+      if (start === 0) return;
+      inputValue = inputValue.slice(0, start - 1) + inputValue.slice(start);
+      newPos = start - 1;
+    } else {
+      inputValue = inputValue.slice(0, start) + inputValue.slice(end);
+      newPos = start;
+    }
+
+    lastSyncedValue = inputValue;
+    triggerSearch();
+    await tick();
+    if (inputRef) {
+      inputRef.focus();
+      inputRef.setSelectionRange(newPos, newPos);
+    }
+  }
+
   function handleClickOutside(event: MouseEvent) {
     if (
       containerRef &&
       !containerRef.contains(event.target as Node) &&
-      !inputValue.trim()
+      !inputValue.trim() &&
+      !showVirtualKeyboard
     ) {
       isExpanded = false;
-      showGreekPicker = false;
+      showVirtualKeyboard = false;
     }
   }
 
   onMount(() => {
-    // Use capture phase to match SortPopover's click-outside pattern,
-    // ensuring the handler fires even if stopPropagation is called downstream.
     document.addEventListener("click", handleClickOutside, true);
     return () => {
       document.removeEventListener("click", handleClickOutside, true);
@@ -178,6 +189,7 @@
 <div
   class="search-container"
   class:expanded={isExpanded}
+  class:kb-active={showVirtualKeyboard}
   bind:this={containerRef}
   role="search"
 >
@@ -188,25 +200,15 @@
         type="text"
         class="search-input"
         bind:this={inputRef}
-        value={inputValue}
+        bind:value={inputValue}
         oninput={handleInput}
         onkeydown={handleKeydown}
         onblur={handleCollapse}
+        onfocus={handleFocus}
         {placeholder}
         aria-label={t('browse_search_sequences')}
+        inputmode="none"
       />
-      <!-- Greek letter picker toggle -->
-      <button
-        class="greek-toggle"
-        class:active={showGreekPicker}
-        onmousedown={toggleGreekPicker}
-        type="button"
-        aria-label={t('browse_insert_greek_letter')}
-        aria-expanded={showGreekPicker}
-        title={t('browse_greek_letters_title')}
-      >
-        Σ
-      </button>
       {#if inputValue}
         <button
           class="clear-button"
@@ -219,21 +221,19 @@
       {/if}
     </div>
 
-    <!-- Greek letter picker dropdown -->
-    {#if showGreekPicker}
-      <div class="greek-picker" role="listbox" aria-label={t('browse_greek_letters')}>
-        {#each SPECIAL_LETTERS as letter}
-          <button
-            class="greek-letter"
-            onmousedown={() => insertLetter(letter.char)}
-            type="button"
-            aria-label={letter.label}
-            title={letter.label}
-          >
-            {letter.char}
-          </button>
-        {/each}
-      </div>
+    {#if showVirtualKeyboard}
+      <VirtualKeyboard
+        bind:isOpen={showVirtualKeyboard}
+        value={inputValue}
+        {resultCount}
+        onKey={insertChar}
+        onBackspace={handleBackspace}
+        onClear={handleClear}
+        onClose={() => {
+          showVirtualKeyboard = false;
+          inputRef?.blur();
+        }}
+      />
     {/if}
   {:else}
     <button
@@ -261,13 +261,14 @@
     overflow: visible;
     transition: width var(--transition-duration) ease;
     flex-shrink: 0;
+    z-index: 10;
   }
 
   .search-container.expanded {
-    width: clamp(160px, 25vw, 240px);
+    width: clamp(200px, 40vw, 400px);
+    z-index: 10000;
   }
 
-  /* Collapsed: Icon button */
   .search-button {
     display: flex;
     align-items: center;
@@ -294,7 +295,6 @@
     outline-offset: 2px;
   }
 
-  /* Expanded: Input with icon */
   .search-input-wrapper {
     display: flex;
     align-items: center;
@@ -352,7 +352,6 @@
     flex-shrink: 0;
   }
 
-  /* Expand tap target to min-touch-target minimum for WCAG AA */
   .clear-button::after {
     content: "";
     position: absolute;
@@ -373,137 +372,32 @@
     outline-offset: 1px;
   }
 
-  /* Greek letter toggle button */
-  .greek-toggle {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 28px;
-    background: transparent;
-    border: 1px solid var(--theme-stroke);
-    border-radius: 6px;
-    color: var(--theme-text-dim);
-    font-size: var(--font-size-base, 16px);
-    font-weight: 600;
-    cursor: pointer;
-    transition: all var(--duration-fast) ease;
-    flex-shrink: 0;
-  }
-
-  /* Expand tap target to min-touch-target minimum for WCAG AA */
-  .greek-toggle::after {
-    content: "";
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    min-width: var(--min-touch-target);
-    min-height: var(--min-touch-target);
-  }
-
-  .greek-toggle:hover {
-    background: color-mix(in srgb, var(--theme-text) 10%, transparent);
-    color: var(--theme-text);
-    border-color: var(--theme-stroke-strong);
-  }
-
-  .greek-toggle.active {
-    background: var(--theme-accent);
-    border-color: var(--theme-accent);
-    color: var(--theme-text);
-  }
-
-  .greek-toggle:focus-visible {
-    outline: 2px solid var(--theme-accent);
-    outline-offset: 1px;
-  }
-
-  /* Greek letter picker dropdown */
-  .greek-picker {
-    position: absolute;
-    top: calc(100% + 4px);
-    right: 0;
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 4px;
-    padding: 8px;
-    background: var(--theme-card-bg);
-    border: 1px solid var(--theme-stroke);
-    border-radius: 12px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
-    z-index: 100;
-    min-width: 180px;
-  }
-
-  .greek-letter {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 44px;
-    height: 44px;
-    background: transparent;
-    border: 1px solid transparent;
-    border-radius: 6px;
-    color: var(--theme-text);
-    font-size: var(--font-size-lg, 18px);
-    font-weight: 500;
-    cursor: pointer;
-    transition: all var(--duration-fast) ease;
-  }
-
-  /* Expand tap target to min-touch-target minimum for WCAG AA */
-  .greek-letter::after {
-    content: "";
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    min-width: var(--min-touch-target);
-    min-height: var(--min-touch-target);
-  }
-
-  .greek-letter:hover {
-    background: var(--theme-accent);
-    border-color: var(--theme-accent);
-  }
-
-  .greek-letter:focus-visible {
-    outline: 2px solid var(--theme-accent);
-    outline-offset: 1px;
-  }
-
-  /* Mobile responsive */
   @media (max-width: 640px) {
     .search-container.expanded {
-      width: clamp(140px, 35vw, 200px);
+      width: clamp(160px, 50vw, 300px);
+    }
+
+    /* On mobile, if keyboard is active, keep the top search bar as a compact icon
+       so it doesn't overlay the 'My Library' toggle. Input happens in the keyboard header. */
+    .search-container.expanded.kb-active {
+      width: var(--control-height);
+    }
+
+    .search-container.kb-active .search-input-wrapper {
+      padding: 0;
+      justify-content: center;
+      border-color: transparent;
+      background: transparent;
+    }
+
+    .search-container.kb-active .search-input,
+    .search-container.kb-active .clear-button {
+      display: none;
     }
 
     .search-input-wrapper {
       padding: 0 10px;
       gap: 6px;
-    }
-
-    .greek-toggle {
-      width: 24px;
-      height: 24px;
-      font-size: var(--font-size-min, 14px);
-      /* 48px tap target maintained via ::after pseudo-element */
-    }
-
-    .greek-picker {
-      grid-template-columns: repeat(5, 1fr);
-      min-width: 240px;
-      padding: 6px;
-    }
-
-    .greek-letter {
-      width: 40px;
-      height: 40px;
-      font-size: var(--font-size-base, 16px);
-      /* 48px tap target maintained via ::after pseudo-element */
     }
   }
 </style>

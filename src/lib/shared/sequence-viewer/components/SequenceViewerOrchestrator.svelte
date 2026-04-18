@@ -147,6 +147,9 @@
     handlePlaybackToggle: () => void;
     handleBpmChange: (bpm: number) => void;
     handleStepClick: (stepIndex: number) => void;
+    handleProgressBarSeek: (targetStep: number) => void;
+    handleProgressBarScrubStart: () => void;
+    handleProgressBarScrubEnd: () => void;
     enterEditMode: (pane: 'animation' | 'image' | 'video-upload') => void;
     exitEditMode: () => void;
     enterFullscreen: () => void;
@@ -1054,6 +1057,23 @@
     playbackController?.togglePlayback();
   }
 
+  // Scrub gesture: pause while user drags the transport scrubber, resume on
+  // release if it was playing when the grab started.
+  let wasPlayingBeforeScrub = false;
+  function handleProgressBarSeek(targetStep: number) {
+    arrivedViaStepping = false;
+    modalAnimationState.setCurrentStep(targetStep);
+    playbackController?.seekToStep(targetStep);
+  }
+  function handleProgressBarScrubStart() {
+    wasPlayingBeforeScrub = isPlayingLocal;
+    if (wasPlayingBeforeScrub) playbackController?.togglePlayback();
+  }
+  function handleProgressBarScrubEnd() {
+    if (wasPlayingBeforeScrub) playbackController?.togglePlayback();
+    wasPlayingBeforeScrub = false;
+  }
+
   function handleBpmChange(newBpm: number) {
     hapticService?.trigger("selection");
     const speedMultiplier = newBpm / 60;
@@ -1457,7 +1477,20 @@
         showToast("Sequence has no beats to export.", "error");
         return;
       }
-      const opts = exportOptions.getImageOptions();
+      // Include fields come from the global visibility settings so the Visibility
+      // tab, the side-by-side preview, and the download all agree. Column count
+      // and dark mode stay export-specific.
+      const opts = {
+        includeStartPosition: imgShowStartPos,
+        showStepNumbers: imgShowStepNumbers,
+        showWord: imgShowWord,
+        showDifficulty: imgShowDifficulty,
+        showCreatorName: imgShowCreatorName,
+        showNotes: imgShowNotes,
+        showQRCode: imgShowQRCode,
+        darkMode: exportOptions.imageDarkMode,
+        columnCount: exportOptions.imageColumnCount,
+      };
       await sequenceModalExporter.exportImage(
         opts,
         { sequence: effectiveSequence, userName: authState.user?.displayName ?? "" },
@@ -2069,6 +2102,9 @@
 
     // Handlers
     handlePlaybackToggle,
+    handleProgressBarSeek,
+    handleProgressBarScrubStart,
+    handleProgressBarScrubEnd,
     handleBpmChange,
     handleStepClick,
     enterEditMode,

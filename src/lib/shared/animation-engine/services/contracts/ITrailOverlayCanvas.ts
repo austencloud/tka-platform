@@ -17,6 +17,8 @@ export interface TrailOverlayRenderParams {
   /** Prop type names for correct trail endpoint resolution */
   bluePropType?: string | null;
   redPropType?: string | null;
+  /** Current animation time in ms (performance.now() or virtualTime) */
+  currentTime: number;
 }
 
 export interface ITrailOverlayCanvas {

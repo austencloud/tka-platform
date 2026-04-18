@@ -122,7 +122,7 @@
           onmousedown={(e) => handleAction(onClear, e)}
           type="button"
         >
-          {t("browse_clear", "Clear")}
+          {t("browse_clear")}
         </button>
       </div>
 

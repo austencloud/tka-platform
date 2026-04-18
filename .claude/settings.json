@@ -27,7 +27,6 @@
       },
       {
         "matcher": "Bash",
-        "if": "Bash(git commit*)",
         "hooks": [
           {
             "type": "command",
@@ -38,5 +37,8 @@
         ]
       }
     ]
+  },
+  "enabledPlugins": {
+    "context7@claude-plugins-official": true
   }
 }

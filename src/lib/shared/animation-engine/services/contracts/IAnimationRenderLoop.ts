@@ -141,6 +141,10 @@ export interface RenderFrameParams {
   tipEffectMap?: TipEffectMap;
   /** When true, skip fire/charcoal/LED/trail overlay rendering (3D mode handles effects) */
   suppress2DOverlays?: boolean;
+  /** Virtual time for this frame (in ms). Used during video export to ensure
+   * deterministic trail capture and effect timing regardless of real-time
+   * rendering performance. When provided, replaces performance.now(). */
+  virtualTime?: number;
 }
 
 /**

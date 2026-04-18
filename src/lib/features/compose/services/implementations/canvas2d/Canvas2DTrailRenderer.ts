@@ -346,92 +346,42 @@ export class Canvas2DTrailRenderer {
   ): void {
     if (smoothPoints.length < 2) return;
 
-    // Calculate average opacity for the entire trail
-    const avgOpacity = this.calculateOpacity(
-      Math.floor(smoothPoints.length / 2),
-      smoothPoints.length,
-      originalPoints,
-      settings,
-      currentTime
-    );
-
     ctx.save();
-    ctx.beginPath();
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
 
-    const firstPoint = smoothPoints[0]!;
-    ctx.moveTo(firstPoint.x, firstPoint.y);
-
-    // Use quadraticCurveTo with midpoint technique for smooth curves
-    // This eliminates visible vertices at connection points
-    if (smoothPoints.length === 2) {
-      // Only two points - just draw a line
-      const lastPoint = smoothPoints[1]!;
-      ctx.lineTo(lastPoint.x, lastPoint.y);
-    } else {
-      // For 3+ points, use quadratic curves with midpoint technique
-      //
-      // IMPORTANT: Connect the first point to the second point with a curve
-      // Without this, the implicit connection from moveTo(firstPoint) to the first
-      // quadraticCurveTo creates a straight line artifact when the first point
-      // becomes distant from subsequent points (e.g., after pruning in FADE mode)
-      const secondPoint = smoothPoints[1]!;
-      const thirdPoint = smoothPoints[2];
-      if (!isNaN(secondPoint.x) && !isNaN(secondPoint.y)) {
-        if (thirdPoint && !isNaN(thirdPoint.x) && !isNaN(thirdPoint.y)) {
-          // Curve from first point toward second, ending at midpoint of second and third
-          const midX = (secondPoint.x + thirdPoint.x) / 2;
-          const midY = (secondPoint.y + thirdPoint.y) / 2;
-          ctx.quadraticCurveTo(secondPoint.x, secondPoint.y, midX, midY);
-        }
-      }
-
-      // Continue with remaining points (start at index 2 since we handled 0-1-2 above)
-      for (let i = 2; i < smoothPoints.length - 1; i++) {
-        const point = smoothPoints[i]!;
-        const nextPoint = smoothPoints[i + 1]!;
-        if (isNaN(point.x) || isNaN(point.y)) continue;
-        if (isNaN(nextPoint.x) || isNaN(nextPoint.y)) continue;
-
-        // Midpoint between current and next becomes the endpoint
-        // Current point becomes the control point (curves toward it)
-        const midX = (point.x + nextPoint.x) / 2;
-        const midY = (point.y + nextPoint.y) / 2;
-        ctx.quadraticCurveTo(point.x, point.y, midX, midY);
-      }
-
-      // Connect to the last point using a curve, not a straight line
-      // The straight lineTo() was causing visible artifacts at the trail's fading end
-      // when points were spaced far apart (especially after pruning in FADE mode)
-      const lastPoint = smoothPoints[smoothPoints.length - 1]!;
-      const secondLastPoint = smoothPoints[smoothPoints.length - 2];
-      if (!isNaN(lastPoint.x) && !isNaN(lastPoint.y)) {
-        if (secondLastPoint && !isNaN(secondLastPoint.x) && !isNaN(secondLastPoint.y)) {
-          // Use the second-to-last point as control point for smooth curve to final point
-          ctx.quadraticCurveTo(secondLastPoint.x, secondLastPoint.y, lastPoint.x, lastPoint.y);
-        } else {
-          // Fallback to line if no second-to-last point
-          ctx.lineTo(lastPoint.x, lastPoint.y);
-        }
-      }
-    }
-
-    // GLOW or NONE effect (NEON removed - never used)
-    const scaledWidth = Math.max(MIN_SCALED_LINE_WIDTH, settings.lineWidth * sizeScale);
-    if (effect === TrailEffect.GLOW) {
+    // Apply glow effect once
+    const isGlow = effect === TrailEffect.GLOW;
+    if (isGlow) {
       const rawBlur = settings.glowBlur > 0 ? settings.glowBlur * DEFAULT_GLOW_BLUR_MULTIPLIER : FALLBACK_GLOW_BLUR;
       ctx.shadowBlur = Math.max(MIN_SCALED_GLOW_BLUR, rawBlur * sizeScale);
       ctx.shadowColor = color;
-      ctx.strokeStyle = color;
-      ctx.lineWidth = scaledWidth;
-      ctx.globalAlpha = avgOpacity;
-      ctx.stroke();
-      ctx.shadowBlur = 0;
-    } else {
-      ctx.strokeStyle = color;
-      ctx.lineWidth = scaledWidth;
-      ctx.globalAlpha = avgOpacity;
+    }
+    ctx.strokeStyle = color;
+    const scaledWidth = Math.max(MIN_SCALED_LINE_WIDTH, settings.lineWidth * sizeScale);
+    ctx.lineWidth = scaledWidth;
+
+    // Draw trail in segments to allow per-segment opacity
+    for (let i = 0; i < smoothPoints.length - 1; i++) {
+      const p1 = smoothPoints[i]!;
+      const p2 = smoothPoints[i + 1]!;
+
+      if (isNaN(p1.x) || isNaN(p1.y) || isNaN(p2.x) || isNaN(p2.y)) continue;
+
+      const opacity = this.calculateOpacity(
+        i,
+        smoothPoints.length,
+        originalPoints,
+        settings,
+        currentTime
+      );
+
+      if (opacity <= 0) continue;
+
+      ctx.globalAlpha = opacity;
+      ctx.beginPath();
+      ctx.moveTo(p1.x, p1.y);
+      ctx.lineTo(p2.x, p2.y);
       ctx.stroke();
     }
 
@@ -455,15 +405,6 @@ export class Canvas2DTrailRenderer {
     if (smoothPoints.length < 3) return;
 
     ctx.save();
-
-    // Calculate average opacity for the trail
-    const avgOpacity = this.calculateOpacity(
-      Math.floor(smoothPoints.length / 2),
-      smoothPoints.length,
-      originalPoints,
-      settings,
-      currentTime
-    );
 
     // Build two edge curves - one on each side of the trail path
     // Offset perpendicular to the path direction by half the line width
@@ -518,68 +459,36 @@ export class Canvas2DTrailRenderer {
       }
     }
 
-    // Draw filled polygon using the two edges
-    ctx.beginPath();
-
-    // Left edge forward (using quadratic curves for smoothness)
-    ctx.moveTo(leftEdge[0]!.x, leftEdge[0]!.y);
-
-    // IMPORTANT: Connect first point to second with a curve (same fix as renderUniformSmoothTrail)
-    // Without this, the implicit connection creates a straight line artifact when points are distant
-    if (leftEdge.length >= 3) {
-      const secondLeft = leftEdge[1]!;
-      const thirdLeft = leftEdge[2]!;
-      const midX = (secondLeft.x + thirdLeft.x) / 2;
-      const midY = (secondLeft.y + thirdLeft.y) / 2;
-      ctx.quadraticCurveTo(secondLeft.x, secondLeft.y, midX, midY);
-    }
-
-    // Continue with remaining left edge points (start at index 2)
-    for (let i = 2; i < leftEdge.length - 1; i++) {
-      const point = leftEdge[i]!;
-      const nextPoint = leftEdge[i + 1]!;
-      const midX = (point.x + nextPoint.x) / 2;
-      const midY = (point.y + nextPoint.y) / 2;
-      ctx.quadraticCurveTo(point.x, point.y, midX, midY);
-    }
-    // Connect to the last left edge point with a curve to avoid straight line artifacts
-    if (leftEdge.length >= 2) {
-      const lastLeft = leftEdge[leftEdge.length - 1]!;
-      const secondLastLeft = leftEdge[leftEdge.length - 2]!;
-      ctx.quadraticCurveTo(secondLastLeft.x, secondLastLeft.y, lastLeft.x, lastLeft.y);
-    }
-
-    // Right edge backward (creates closed shape)
-    // Start from last point and work backward
-    for (let i = rightEdge.length - 1; i > 1; i--) {
-      const point = rightEdge[i]!;
-      const prevPoint = rightEdge[i - 1]!;
-      const midX = (point.x + prevPoint.x) / 2;
-      const midY = (point.y + prevPoint.y) / 2;
-      ctx.quadraticCurveTo(point.x, point.y, midX, midY);
-    }
-    // Connect to the first right edge point with a curve to avoid straight line artifacts
-    if (rightEdge.length >= 2) {
-      const firstRight = rightEdge[0]!;
-      const secondRight = rightEdge[1]!;
-      ctx.quadraticCurveTo(secondRight.x, secondRight.y, firstRight.x, firstRight.y);
-    }
-
-    ctx.closePath();
-
-    // GLOW or NONE effect (NEON removed - never used)
-    if (effect === TrailEffect.GLOW) {
+    // Apply glow effect once for all segments
+    const isGlow = effect === TrailEffect.GLOW;
+    if (isGlow) {
       const rawBlur = settings.glowBlur > 0 ? settings.glowBlur * DEFAULT_GLOW_BLUR_MULTIPLIER : FALLBACK_GLOW_BLUR;
       ctx.shadowBlur = Math.max(MIN_SCALED_GLOW_BLUR, rawBlur * sizeScale);
       ctx.shadowColor = color;
-      ctx.fillStyle = color;
-      ctx.globalAlpha = avgOpacity;
-      ctx.fill();
-      ctx.shadowBlur = 0;
-    } else {
-      // No effect - simple fill
-      ctx.fillStyle = color;
-      ctx.globalAlpha = avgOpacity;
+    }
+    ctx.fillStyle = color;
+
+    // Draw trail in segments to allow per-segment opacity (fading along length).
+    // Using many small filled polygons ensures smooth width and opacity variation.
+    // Overlap segments slightly to prevent antialiasing gaps.
+    for (let i = 0; i < smoothPoints.length - 1; i++) {
+      const opacity = this.calculateOpacity(
+        i,
+        smoothPoints.length,
+        originalPoints,
+        settings,
+        currentTime
+      );
+
+      if (opacity <= 0) continue;
+
+      ctx.globalAlpha = opacity;
+      ctx.beginPath();
+      ctx.moveTo(leftEdge[i]!.x, leftEdge[i]!.y);
+      ctx.lineTo(leftEdge[i + 1]!.x, leftEdge[i + 1]!.y);
+      ctx.lineTo(rightEdge[i + 1]!.x, rightEdge[i + 1]!.y);
+      ctx.lineTo(rightEdge[i]!.x, rightEdge[i]!.y);
+      ctx.closePath();
       ctx.fill();
     }
 

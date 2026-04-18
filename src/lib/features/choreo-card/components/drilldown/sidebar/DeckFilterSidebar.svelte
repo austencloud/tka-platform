@@ -84,6 +84,7 @@
       currentShape={state.selections.shape}
       {accentColor}
       onSelectShape={state.selectShape}
+      onInitShape={state.initShapeDefaults}
     />
 
     <StepCountSection

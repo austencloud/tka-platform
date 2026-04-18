@@ -34,7 +34,7 @@ Last audit: 2025-12-27
   import GlyphOverlay from "./layers/GlyphOverlay.svelte";
   import WordHeader from "./layers/WordHeader.svelte";
   import ProgressOverlay from "./layers/ProgressOverlay.svelte";
-  import SegmentedSequenceProgressBar from "./layers/SegmentedSequenceProgressBar.svelte";
+  import TransportBar from "./layers/TransportBar.svelte";
   import { AnimationEngine } from "../services/implementations/AnimationEngine.svelte";
   import { getAnimationVisibilityManager, type AnimationVisibilityStateManager } from "../state/animation-visibility-state.svelte";
   import { sequenceLoopabilityChecker } from "$lib/features/compose/services/implementations/SequenceLoopabilityChecker";
@@ -78,6 +78,8 @@ Last audit: 2025-12-27
     isSeamlesslyLoopable = undefined,
     progressBarVariant = "gradient",
     onProgressBarSeek = null,
+    onProgressBarScrubStart = null,
+    onProgressBarScrubEnd = null,
     focused = false,
     fireConfig = undefined,
     ledConfig = undefined,
@@ -93,6 +95,7 @@ Last audit: 2025-12-27
     externalToggleDisassemble = undefined,
     externalDisassembled = false,
     suppress2DOverlays = false,
+    virtualTime = undefined,
   }: {
     blueProp: PropState | null;
     redProp: PropState | null;
@@ -118,6 +121,8 @@ Last audit: 2025-12-27
     isSeamlesslyLoopable?: boolean;
     progressBarVariant?: "minimal" | "raised" | "rounded" | "neon" | "gradient" | "labeled" | "gradient-labeled";
     onProgressBarSeek?: ((targetStep: number) => void) | null;
+    onProgressBarScrubStart?: (() => void) | null;
+    onProgressBarScrubEnd?: (() => void) | null;
     focused?: boolean;
     fireConfig?: Partial<FireOverlayConfig>;
     ledConfig?: Partial<LedOverlayConfig>;
@@ -150,6 +155,8 @@ Last audit: 2025-12-27
     externalDisassembled?: boolean;
     /** When true, 2D effect overlays (fire/charcoal/LED/trails) are hidden — 3D mode handles effects */
     suppress2DOverlays?: boolean;
+    /** Virtual time for this frame (in ms). Used during video export. */
+    virtualTime?: number;
   } = $props();
 
   // Disassemble mode state machine
@@ -445,6 +452,7 @@ Last audit: 2025-12-27
       redPropType,
       previewDarkMode,
       isSeamlesslyLoopable,
+      virtualTime,
     };
     untrack(() => {
       if (currentFireConfig) {
@@ -633,7 +641,7 @@ Last audit: 2025-12-27
 
     <!-- Always mounted, same reason as header-slot above. -->
     <div class="progress-slot">
-      <SegmentedSequenceProgressBar
+      <TransportBar
         steps={sequenceData?.steps ?? []}
         currentStep={currentStep}
         visible={progressBarVisible && !hideProgressBar}
@@ -641,6 +649,10 @@ Last audit: 2025-12-27
         variant={progressBarVariant}
         showLabels={progressBarVariant === "labeled" || progressBarVariant === "gradient-labeled"}
         onSeek={onProgressBarSeek}
+        onScrubStart={onProgressBarScrubStart}
+        onScrubEnd={onProgressBarScrubEnd}
+        {isPlaying}
+        {onPlaybackToggle}
       />
     </div>
   </div>

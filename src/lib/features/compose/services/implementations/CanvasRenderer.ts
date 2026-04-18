@@ -6,6 +6,7 @@
 import type { PropState } from "../../shared/domain/types/PropState";
 import type { ICanvasRenderer } from "../contracts/ICanvasRenderer";
 import { simplifyAndTruncate } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
+import { renderHeader } from "@tka/render-composition";
 
 // Constants from standalone_animator.html
 // Using "strict" hand point offset (actual hand position, further from center)
@@ -114,9 +115,19 @@ export class CanvasRenderer implements ICanvasRenderer {
     canvasSize: number,
     word: string | null,
     darkMode: boolean = false,
-    activeStepNumber: number | null = null
+    activeStepNumber: number | null = null,
+    difficultyLevel: number | null = null,
+    loopComponents: Set<string> | null = null
   ): void {
-    this.drawWordHeader(ctx, canvasSize, word, darkMode, activeStepNumber);
+    this.drawWordHeader(
+      ctx,
+      canvasSize,
+      word,
+      darkMode,
+      activeStepNumber,
+      difficultyLevel,
+      loopComponents
+    );
   }
 
   /**
@@ -314,7 +325,9 @@ export class CanvasRenderer implements ICanvasRenderer {
     canvasSize: number,
     word: string | null,
     darkMode: boolean,
-    activeStepNumber: number | null
+    activeStepNumber: number | null,
+    difficultyLevel: number | null,
+    loopComponents: Set<string> | null
   ): void {
     if (!word || word.trim() === "") return;
 
@@ -322,90 +335,41 @@ export class CanvasRenderer implements ICanvasRenderer {
     const displayText = simplifyAndTruncate(word, 12).toUpperCase();
 
     const headerHeight = canvasSize * 0.07;
-    const fontSize = headerHeight * 0.45;
 
-    ctx.save();
-
-    // Draw full-width gradient background
-    const gradient = ctx.createLinearGradient(0, 0, 0, headerHeight);
-    if (darkMode) {
-      gradient.addColorStop(0, "rgba(15, 15, 20, 0.98)");
-      gradient.addColorStop(1, "rgba(10, 10, 15, 0.98)");
-    } else {
-      gradient.addColorStop(0, "rgba(248, 248, 248, 0.98)");
-      gradient.addColorStop(1, "rgba(240, 240, 240, 0.98)");
-    }
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, canvasSize, headerHeight);
-
-    // Draw bottom border
-    ctx.strokeStyle = darkMode
-      ? "rgba(255, 255, 255, 0.08)"
-      : "rgba(0, 0, 0, 0.08)";
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(0, headerHeight);
-    ctx.lineTo(canvasSize, headerHeight);
-    ctx.stroke();
-
-    // Set font for all text drawing
-    ctx.font = `bold ${fontSize}px Georgia, serif`;
-    ctx.textBaseline = "middle";
-
-    // Parse display text into TKA letter units (handles dash-letters like "Λ-")
+    // Build per-character letterStyles only when highlighting is active.
+    // The canvas-native renderer indexes letterStyles by character (not letter-unit);
+    // parseLetterUnits gives us the unit count and which unit index is active,
+    // and we expand that into a per-character style array matching displayText.
+    let letterStyles: Array<{ letter: string; dimmed: boolean }> | undefined;
     const letterUnits = this.parseLetterUnits(displayText);
-
-    // Determine if highlighting is active
     const hasHighlighting =
       activeStepNumber !== null && activeStepNumber >= 1 && letterUnits.length > 0;
-    const activeIndex = hasHighlighting
-      ? (activeStepNumber! - 1) % letterUnits.length
-      : -1;
-
     if (hasHighlighting) {
-      // Draw each letter individually with highlighting
-      // First measure total width to center the text block
-      const letterSpacing = fontSize * 0.08;
-      let totalWidth = 0;
-      const letterWidths: number[] = [];
-      for (const letter of letterUnits) {
-        const w = ctx.measureText(letter).width + letterSpacing;
-        letterWidths.push(w);
-        totalWidth += w;
-      }
-
-      let x = (canvasSize - totalWidth) / 2;
-      const y = headerHeight / 2;
-
-      ctx.textAlign = "left";
-      for (let i = 0; i < letterUnits.length; i++) {
-        const isActive = i === activeIndex;
-        if (isActive) {
-          ctx.fillStyle = darkMode ? "#ffffff" : "#1f2937";
-          // Subtle glow via shadow
-          ctx.shadowColor = darkMode
-            ? "rgba(255, 255, 255, 0.5)"
-            : "rgba(31, 41, 55, 0.3)";
-          ctx.shadowBlur = fontSize * 0.4;
-        } else {
-          ctx.fillStyle = darkMode
-            ? "rgba(255, 255, 255, 0.25)"
-            : "rgba(31, 41, 55, 0.3)";
-          ctx.shadowColor = "transparent";
-          ctx.shadowBlur = 0;
+      const activeIndex = (activeStepNumber! - 1) % letterUnits.length;
+      letterStyles = [];
+      let charIndex = 0;
+      for (let unitIdx = 0; unitIdx < letterUnits.length; unitIdx++) {
+        const unit = letterUnits[unitIdx]!;
+        const dimmed = unitIdx !== activeIndex;
+        for (const ch of unit) {
+          letterStyles.push({ letter: displayText[charIndex] ?? ch, dimmed });
+          charIndex++;
         }
-        ctx.fillText(letterUnits[i]!, x, y);
-        x += letterWidths[i]!;
       }
-    } else {
-      // No highlighting - draw all text at full opacity
-      ctx.textAlign = "center";
-      ctx.letterSpacing = `${fontSize * 0.08}px`;
-      ctx.fillStyle = darkMode ? "#ffffff" : "#1f2937";
-      ctx.fillText(displayText, canvasSize / 2, headerHeight / 2);
     }
 
-    ctx.restore();
+    renderHeader(ctx, {
+      canvasWidth: canvasSize,
+      headerHeight,
+      word: displayText,
+      difficultyLevel: difficultyLevel ?? undefined,
+      showDifficultyBadge: difficultyLevel != null,
+      loopComponents: (loopComponents ?? undefined) as
+        | Set<import("@tka/render-composition").LOOPComponentId>
+        | undefined,
+      darkMode,
+      letterStyles,
+    });
   }
 
   /**

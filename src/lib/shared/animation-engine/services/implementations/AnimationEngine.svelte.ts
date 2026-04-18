@@ -133,6 +133,8 @@ export interface AnimationEngineProps {
   previewDarkMode?: boolean | null;
   // Whether sequence returns to start position - controls trail clearing on loop
   isSeamlesslyLoopable?: boolean;
+  /** Virtual time for this frame (in ms). Used during video export. */
+  virtualTime?: number;
 }
 
 /**
@@ -2413,6 +2415,7 @@ export class AnimationEngine {
     const fp = this.frameParams;
     fp.stepData = props.stepData ?? null;
     fp.currentStep = props.currentStep ?? 0;
+    fp.virtualTime = props.virtualTime;
     fp.trailSettings = this.getEffectiveTrailSettings();
     fp.gridVisible = props.gridVisible ?? true;
     fp.gridMode = props.gridMode ?? GridMode.DIAMOND;

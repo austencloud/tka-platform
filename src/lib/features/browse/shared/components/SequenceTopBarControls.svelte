@@ -16,7 +16,6 @@
   import { container } from "$lib/shared/di";
   import { onMount } from "svelte";
   import { BrowseSortMethod } from "../domain/enums/browse-enums";
-  import ExpandableSearchBar from "./ExpandableSearchBar.svelte";
   import SortPopover from "./SortPopover.svelte";
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte";
@@ -100,6 +99,14 @@
   const isSearchFilter = $derived(
     sequenceControls?.currentFilter?.type === "contains_letters"
   );
+
+  // Derive current search query for the search bar component
+  const currentSearchQuery = $derived.by(() => {
+    if (sequenceControls?.currentFilter?.type === "contains_letters") {
+      return sequenceControls.currentFilter.value as string;
+    }
+    return "";
+  });
 
   // Screen reader announcement for filter changes
   const filterAnnouncement = $derived.by(() => {
@@ -210,14 +217,8 @@
         onSortChange={handleSortChange}
       />
 
-      <!-- Right actions: Search + Filter Button -->
+      <!-- Right actions: Search FAB is now floating at bottom-right, only Filter remains -->
       <div class="actions-section">
-        <ExpandableSearchBar
-          onSearch={handleSearch}
-          onClear={handleSearchClear}
-          placeholder={t('browse_search_placeholder')}
-        />
-
         <!-- Filter Toggle Button -->
         <button
           class="filter-button"

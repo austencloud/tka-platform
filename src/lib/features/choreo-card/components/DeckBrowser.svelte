@@ -79,6 +79,13 @@
   setDrillDownContext(drillState);
 
   function handleSidebarDeckSelect(deck: Deck) {
+    // Narrow the drill filter to the clicked deck's reversal pattern so the
+    // auto-sync effect below sees a single-deck match. Without this, the
+    // effect reads selectedDeckId-set + drillState.selectedDeck-null and
+    // reverts via onBackToCollections, turning the click into a no-op.
+    if (drillState.selections.reversalPattern !== deck.reversalPattern) {
+      drillState.selectReversalPattern(deck.reversalPattern);
+    }
     onSelectDeck(deck.id, drillState.selections.category?.vtgFamily ?? null);
   }
 
@@ -433,6 +440,11 @@
           <div class="loading" role="status" aria-live="polite">
             <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
             Loading deck...
+          </div>
+        {:else if isLoading || decks.length === 0}
+          <div class="loading" role="status" aria-live="polite">
+            <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+            Loading decks...
           </div>
         {:else}
           <DeckResultsPanel

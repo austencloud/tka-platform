@@ -32,6 +32,7 @@ export interface ImageExportOptions {
   showDifficulty: boolean;
   showCreatorName: boolean;
   showNotes: boolean;
+  showQRCode: boolean;
   darkMode: boolean;
   columnCount: number | null;
 }

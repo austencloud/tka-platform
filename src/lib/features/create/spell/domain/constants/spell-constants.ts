@@ -74,6 +74,25 @@ export const GREEK_LETTER_PALETTE = {
 };
 
 /**
+ * Inverse of the rename-panel Greek shorthand (sig → Σ, etc.).
+ * Used for ASCII-safe filenames — "VΛ-" becomes "Vlam-" instead of "V_-".
+ */
+export const GREEK_TO_ASCII: Record<string, string> = {
+  Σ: "sig", Δ: "del", Θ: "the", Ω: "ome",
+  Φ: "phi", Ψ: "psi", Λ: "lam",
+  α: "alp", β: "bet", γ: "gam",
+};
+
+/**
+ * Rewrite Greek letters in a sequence name using the ASCII shorthand that
+ * matches the rename panel convention. Returns a string safe for most
+ * downstream uses (filenames, URLs, logs).
+ */
+export function greekToAscii(text: string): string {
+  return text.replace(/[ΣΔΘΩΦΨΛαβγ]/g, (c) => GREEK_TO_ASCII[c] ?? c);
+}
+
+/**
  * Display labels for Greek letters in the UI
  */
 export const GREEK_LETTER_DISPLAY: Record<string, string> = {

@@ -3,8 +3,10 @@
   Uses CardPreviewStack from the card designer for the focus/toggle interaction.
 -->
 <script lang="ts">
+  import { onDestroy } from "svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { container as di } from "$lib/shared/di";
+  import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import CardPreviewStack from "./designer/CardPreviewStack.svelte";
 
   interface Props {
@@ -40,6 +42,17 @@
   let copyImageState = $state<"idle" | "copying" | "success" | "error">("idle");
 
   const word = $derived(sequence.word ?? sequence.name ?? '');
+
+  // QR code visibility — follows the user's global visibility setting so turning it off
+  // in the settings panel removes it from the export modal too.
+  const imageComposition = getImageCompositionManager();
+  let compositionVersion = $state(0);
+  function onCompositionChanged(): void { compositionVersion++; }
+  imageComposition.registerObserver(onCompositionChanged);
+  onDestroy(() => imageComposition.unregisterObserver(onCompositionChanged));
+
+  const showQRCode = $derived.by(() => { void compositionVersion; return imageComposition.showQRCode; });
+  function toggleQRCode() { imageComposition.setShowQRCode(!showQRCode); }
 
   /** Copy sequence data in Claude-optimized compact format */
   async function copySequenceData() {
@@ -126,7 +139,7 @@
         {includeStartPosition}
         startPositionLayout="row"
         showBirthday={true}
-        showQRCode={true}
+        {showQRCode}
         showInfoCard={false}
         printMode={true}
         {frontImageUrl}
@@ -161,6 +174,15 @@
           {:else}
             <i class="fas fa-image"></i> Copy Image
           {/if}
+        </button>
+        <button
+          class="copy-btn toggle-btn"
+          class:on={showQRCode}
+          onclick={toggleQRCode}
+          aria-pressed={showQRCode}
+          aria-label="Toggle QR code"
+        >
+          <i class="fas fa-qrcode"></i> QR {showQRCode ? "On" : "Off"}
         </button>
       </div>
       <div class="hints">
@@ -291,6 +313,18 @@
   .copy-btn:disabled {
     opacity: 0.4;
     cursor: not-allowed;
+  }
+
+  .toggle-btn.on {
+    background: rgba(110, 180, 255, 0.14);
+    border-color: rgba(110, 180, 255, 0.35);
+    color: rgba(200, 225, 255, 0.9);
+  }
+
+  .toggle-btn.on:hover {
+    background: rgba(110, 180, 255, 0.22);
+    border-color: rgba(110, 180, 255, 0.55);
+    color: #fff;
   }
 
   .hints {
