@@ -56,6 +56,7 @@ export class Echo2DRenderer {
     ctx: CanvasRenderingContext2D,
     params: Echo2DParams,
     tips: EchoTipInput,
+    scale: number = 1,
   ): void {
     // 1. Beat-onset detection. floor() places every sub-step within one
     //    beat cell; the transition from one cell to the next is the onset.
@@ -99,7 +100,8 @@ export class Echo2DRenderer {
     try {
       ctx.globalCompositeOperation = params.blendMode ?? "lighter";
       ctx.lineCap = "round";
-      ctx.lineWidth = params.thickness;
+      // thickness is px at reference size.
+      ctx.lineWidth = params.thickness * scale;
 
       for (const phantom of this.phantomsBlue) {
         const age = ageInIntervals(phantom);
@@ -110,7 +112,7 @@ export class Echo2DRenderer {
           age,
           tips.blueColor,
         );
-        this.drawPhantom(ctx, phantom, params, alpha, color);
+        this.drawPhantom(ctx, phantom, params, alpha, color, scale);
       }
       for (const phantom of this.phantomsRed) {
         const age = ageInIntervals(phantom);
@@ -121,7 +123,7 @@ export class Echo2DRenderer {
           age,
           tips.redColor,
         );
-        this.drawPhantom(ctx, phantom, params, alpha, color);
+        this.drawPhantom(ctx, phantom, params, alpha, color, scale);
       }
     } finally {
       ctx.globalCompositeOperation = prevComposite;
@@ -160,6 +162,7 @@ export class Echo2DRenderer {
     params: Echo2DParams,
     alpha: number,
     color: string,
+    scale: number,
   ): void {
     if (alpha <= 0) return;
     ctx.globalAlpha = alpha;
@@ -172,11 +175,12 @@ export class Echo2DRenderer {
     }
     if (params.shape === "tips" || params.shape === "both") {
       ctx.fillStyle = color;
+      const tipR = params.thickness * scale;
       ctx.beginPath();
-      ctx.arc(phantom.posA.x, phantom.posA.y, params.thickness, 0, Math.PI * 2);
+      ctx.arc(phantom.posA.x, phantom.posA.y, tipR, 0, Math.PI * 2);
       ctx.fill();
       ctx.beginPath();
-      ctx.arc(phantom.posB.x, phantom.posB.y, params.thickness, 0, Math.PI * 2);
+      ctx.arc(phantom.posB.x, phantom.posB.y, tipR, 0, Math.PI * 2);
       ctx.fill();
     }
   }
