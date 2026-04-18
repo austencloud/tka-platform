@@ -10,13 +10,15 @@ Effects currently use literal pixel values throughout the pipeline. On a 4K moni
 
 ## Decision
 
-Introduce a `scale` factor derived from the live canvas size against a fixed reference dimension. Every pixel-space quantity in the 2D renderers gets multiplied by `scale` at draw time.
+Introduce a `scale` factor derived from the live canvas size against the existing `DEFAULT_CANVAS_SIZE = 500` constant from `ICanvasResizer`. Every pixel-space quantity in the 2D renderers gets multiplied by `scale` at draw time.
 
-- `REFERENCE_DIM = 1024` (the size effects were authored against; desktop viewer baseline)
-- `scale = min(canvasWidth, canvasHeight) / REFERENCE_DIM`
+- Reference: `DEFAULT_CANVAS_SIZE = 500` (reused from the existing `ICanvasResizer` contract — this is already the convention `Canvas2DTrailRenderer` uses for its own `sizeScale`, so adopting it here keeps trails and the other effects on the same baseline).
+- `scale = canvasSize / DEFAULT_CANVAS_SIZE` where `canvasSize = min(canvasWidth, canvasHeight)` — matches `Canvas2DTrailRenderer` exactly.
 - `min()` chosen over `max()`/`sqrt()` so that a narrow mobile canvas scales by its constrained dimension — the one that actually limits visual real estate.
 
 Intent values (e.g., `bloom.radius: 8-200 px`, `sparkles.spread: 0-30 px`) remain documented as "pixels at the reference size." The renderer converts them. No contract churn at the intent layer — the user-facing sliders still behave identically, just relative to the reference instead of the device.
+
+**Existing precedent:** `Canvas2DTrailRenderer.renderTrails()` already accepts `canvasSize: number` and computes `sizeScale = canvasSize / DEFAULT_CANVAS_SIZE` internally. This plan extends that pattern to Sparkles, Zap, Echo, and Bloom. LED has no dedicated 2D renderer class yet; wire-up is deferred until that extraction happens.
 
 ## Architecture
 
@@ -67,21 +69,22 @@ container dims → OverlayRenderer.resize(w, h)
 - `src/lib/shared/effects/renderers/Zap2DRenderer.ts`
 - `src/lib/shared/effects/renderers/Echo2DRenderer.ts`
 - `src/lib/shared/effects/renderers/Bloom2DRenderer.ts`
-- Trails renderer (exact file TBD during implementation — there are two candidates)
-- LED renderer
+
+**Already handled — out of scope for this plan:**
+- `Canvas2DTrailRenderer.ts` (already accepts `canvasSize` and computes `sizeScale` internally)
+- LED 2D (no dedicated 2D renderer class; handle when extracted)
 
 **Overlay services (compute + pass scale):**
 - `src/lib/shared/animation-engine/services/implementations/SparklesOverlayRenderer.ts`
 - `src/lib/shared/animation-engine/services/implementations/ZapOverlayRenderer.ts`
 - `src/lib/shared/animation-engine/services/implementations/EchoOverlayRenderer.ts`
 - `src/lib/shared/animation-engine/services/implementations/BloomOverlayRenderer.ts`
-- Trails overlay, LED overlay
 
 **Contracts:**
-- Each `I*OverlayRenderer` contract needs its render signature updated only if `scale` is exposed across the boundary. Current plan keeps `scale` internal to the overlay impl — contracts unchanged.
+- Each `I*OverlayRenderer` contract unchanged — `scale` stays internal to the overlay implementation, derived from the already-known canvas `width`/`height`.
 
-**New shared constant:**
-- `src/lib/shared/effects/renderers/scale.ts` exporting `REFERENCE_DIM = 1024` and `computeEffectScale(width, height)` helper. Single source of truth so tweaking the reference dim is a one-line change.
+**New shared helper:**
+- `src/lib/shared/effects/renderers/scale.ts` exporting `computeEffectScale(width, height): number` that returns `min(width, height) / DEFAULT_CANVAS_SIZE`. Single function so the formula is consistent across all four renderers and the trails path.
 
 ## Testing
 
