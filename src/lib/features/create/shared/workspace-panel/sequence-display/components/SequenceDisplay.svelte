@@ -11,6 +11,7 @@
   import LOOPIconStrip from "$lib/shared/components/LOOPIconStrip.svelte";
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
   import ModalHeader from "$lib/shared/foundation/ui/modal/ModalHeader.svelte";
+  import LevelInfoModal from "./LevelInfoModal.svelte";
   import { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
   import { SliceSize } from "$lib/features/create/generate/circular/domain/models/circular-models";
   import { loopTypeResolver } from "$lib/features/create/generate/shared/services/implementations/LOOPTypeResolver";
@@ -114,12 +115,15 @@
     return columns;
   });
 
-  // Difficulty level badge (mirrors ChoreoCard exactly)
+  // Difficulty analysis — returns both level and the feature that triggered it
   const difficultyCalculator = new SequenceDifficultyCalculator();
-  const difficultyLevel = $derived.by(() => {
-    if (!currentSequence?.steps?.length) return 1;
-    return difficultyCalculator.calculateDifficultyLevel([...currentSequence.steps]);
+  const difficultyAnalysis = $derived.by(() => {
+    if (!currentSequence?.steps?.length) {
+      return { level: 1 as const, trigger: "none" as const };
+    }
+    return difficultyCalculator.analyzeDifficulty([...currentSequence.steps]);
   });
+  const difficultyLevel = $derived(difficultyAnalysis.level);
 
   // Level badge colors — single source of truth shared with the image compositor
   const currentLevelStyle = $derived.by(() => {
@@ -136,12 +140,6 @@
     if (!loopDetectionResult?.loopType) return "";
     return loopTypeResolver.formatForDisplay(loopDetectionResult.loopType);
   });
-
-  const difficultyDescriptions: Record<number, string> = {
-    1: "Base Motions",
-    2: "Whole Turns",
-    3: "Half Turns, Floats",
-  };
 
   // Convert selectedStartPosition (PictographData) to StepData format for StepGrid
   const startPositionStep = $derived(() => {
@@ -262,34 +260,11 @@
 </div>
 
 <!-- Difficulty Level Info Modal -->
-<BaseModal
+<LevelInfoModal
   open={showDifficultyInfo}
+  analysis={difficultyAnalysis}
   onclose={() => (showDifficultyInfo = false)}
-  size="sm"
->
-  <ModalHeader
-    title="Level {difficultyLevel}"
-    subtitle={difficultyDescriptions[difficultyLevel] ?? ""}
-    icon="fa-layer-group"
-    iconColor={difficultyLevel === 3 ? "#b8860b" : difficultyLevel === 2 ? "#a8a8a8" : "#6366f1"}
-    onClose={() => (showDifficultyInfo = false)}
-  />
-  <div class="info-modal-body">
-    <p>Each level introduces new concepts.</p>
-    <div class="level-list">
-      {#each [1, 2, 3] as level}
-        {@const style = DIFFICULTY_LEVELS[level] ?? DEFAULT_DIFFICULTY_STYLE}
-        <div class="level-row" class:current={level === difficultyLevel}>
-          <div
-            class="level-dot"
-            style="background: {style.cssBg}; border-color: {style.border}; color: {style.text};"
-          >{level}</div>
-          <span class="level-desc">{difficultyDescriptions[level]}</span>
-        </div>
-      {/each}
-    </div>
-  </div>
-</BaseModal>
+/>
 
 <!-- LOOP Info Modal -->
 <BaseModal
@@ -496,51 +471,6 @@
 
   .info-modal-body p {
     margin: 0 0 16px;
-  }
-
-  /* Level list in difficulty modal */
-  .level-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .level-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 6px 8px;
-    border-radius: 8px;
-    transition: background 0.15s ease;
-  }
-
-  .level-row.current {
-    background: color-mix(in srgb, var(--theme-accent) 12%, transparent);
-  }
-
-  .level-dot {
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    border: 1px solid black;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: Cambria, serif;
-    font-weight: bold;
-    font-size: 14px;
-    padding-bottom: 1px;
-    flex-shrink: 0;
-  }
-
-  .level-desc {
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-dim);
-  }
-
-  .level-row.current .level-desc {
-    color: var(--theme-text);
-    font-weight: 500;
   }
 
   /* LOOP components display */
