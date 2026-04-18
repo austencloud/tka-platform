@@ -17,6 +17,7 @@ import {
   Sparkles2DRenderer,
   type SparklesTipInput,
 } from "$lib/shared/effects/renderers/Sparkles2DRenderer";
+import { computeEffectScale } from "$lib/shared/effects/renderers/scale";
 
 export class SparklesOverlayRenderer implements ISparklesOverlayRenderer {
   private canvas: HTMLCanvasElement | null = null;
@@ -24,6 +25,7 @@ export class SparklesOverlayRenderer implements ISparklesOverlayRenderer {
   private renderer = new Sparkles2DRenderer();
   private width = 0;
   private height = 0;
+  private scale = 1;
 
   initialize(container: HTMLElement, width: number, height: number): boolean {
     this.dispose();
@@ -53,6 +55,7 @@ export class SparklesOverlayRenderer implements ISparklesOverlayRenderer {
     this.ctx = ctx;
     this.width = width;
     this.height = height;
+    this.scale = computeEffectScale(width, height);
     return true;
   }
 
@@ -62,6 +65,7 @@ export class SparklesOverlayRenderer implements ISparklesOverlayRenderer {
     this.canvas.height = height;
     this.width = width;
     this.height = height;
+    this.scale = computeEffectScale(width, height);
   }
 
   renderFrame(params: Sparkles2DParams, tips: SparklesTipInput, dt: number): void {
@@ -70,7 +74,7 @@ export class SparklesOverlayRenderer implements ISparklesOverlayRenderer {
     ctx.clearRect(0, 0, this.width, this.height);
     // Step physics every frame so existing particles continue decaying even when
     // tips drop out (e.g., between sequence loops).
-    this.renderer.render(ctx, params, tips, dt);
+    this.renderer.render(ctx, params, tips, dt, this.scale);
   }
 
   clear(): void {
@@ -92,6 +96,7 @@ export class SparklesOverlayRenderer implements ISparklesOverlayRenderer {
     this.ctx = null;
     this.width = 0;
     this.height = 0;
+    this.scale = 1;
   }
 
   isInitialized(): boolean {
