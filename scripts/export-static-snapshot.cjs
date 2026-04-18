@@ -45,13 +45,15 @@ const db = admin.firestore();
 // Configuration
 // ---------------------------------------------------------------------------
 
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 2;
 const BATCH_SIZE = 500;
 const OUTPUT_DIR = path.join(__dirname, "..", "static", "data", "snapshots");
 
+// Emitted shape per collection. Default: skinny {_id, encoded} for shortcodes,
+// full doc for publicSequences.
 const COLLECTION_MAP = {
-  shortcodes: "shortcodes.json",
-  publicSequences: "public-sequences.json",
+  shortcodes: { file: "shortcodes.json", skinny: true },
+  publicSequences: { file: "public-sequences.json", skinny: false },
 };
 
 // ---------------------------------------------------------------------------
@@ -70,6 +72,25 @@ for (const name of requestedCollections) {
     console.error(`Available: ${Object.keys(COLLECTION_MAP).join(", ")}`);
     process.exit(1);
   }
+}
+
+// Skinny projection for shortcodes — only what the v2 resolver needs.
+// Drops sequenceData (84 MB saving), keeps encoded (the self-contained blob).
+function projectSkinny(collectionName, docs) {
+  if (collectionName !== "shortcodes") return docs;
+  const out = [];
+  let skipped = 0;
+  for (const doc of docs) {
+    if (!doc.encoded) {
+      skipped++;
+      continue;
+    }
+    out.push({ _id: doc._id, encoded: doc.encoded });
+  }
+  if (skipped > 0) {
+    console.log(`  [${collectionName}] skipped ${skipped} docs without "encoded" field`);
+  }
+  return out;
 }
 
 // ---------------------------------------------------------------------------
@@ -167,27 +188,31 @@ async function main() {
   const summary = [];
 
   for (const collectionName of requestedCollections) {
-    const filename = COLLECTION_MAP[collectionName];
+    const { file: filename } = COLLECTION_MAP[collectionName];
     const outputPath = path.join(OUTPUT_DIR, filename);
 
     console.log(`Exporting "${collectionName}"...`);
     const documents = await exportCollection(collectionName);
     const sanitized = sanitizeForJson(documents);
+    const projected = projectSkinny(collectionName, sanitized);
 
     const envelope = {
       _meta: {
         exportedAt: exportTimestamp,
         schemaVersion: SCHEMA_VERSION,
         collection: collectionName,
-        documentCount: documents.length,
+        documentCount: projected.length,
       },
-      documents: sanitized,
+      documents: projected,
     };
 
-    writeFileSync(outputPath, JSON.stringify(envelope, null, 2), "utf8");
-    console.log(`  -> ${path.relative(process.cwd(), outputPath)} (${documents.length} docs)\n`);
+    writeFileSync(outputPath, JSON.stringify(envelope), "utf8");
+    console.log(
+      `  -> ${path.relative(process.cwd(), outputPath)} ` +
+      `(${projected.length} docs, ${(JSON.stringify(envelope).length / 1024 / 1024).toFixed(2)} MB)\n`
+    );
 
-    summary.push({ collection: collectionName, count: documents.length, file: filename });
+    summary.push({ collection: collectionName, count: projected.length, file: filename });
   }
 
   // Print summary
