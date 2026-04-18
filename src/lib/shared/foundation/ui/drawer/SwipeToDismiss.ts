@@ -304,6 +304,12 @@ export class SwipeToDismiss {
       return;
     }
 
+    // Bail out for any ARIA slider (e.g., the segmented progress / scrubber bar).
+    // Scrubbing horizontally on the bar would otherwise be read as drawer drag.
+    if (target.closest('[role="slider"]')) {
+      return;
+    }
+
     // Bail out for canvas elements (e.g., Three.js/Threlte 3D viewer orbit controls)
     // — dragging on a canvas is for the canvas's own interaction, not drawer dismissal
     if (target.tagName === "CANVAS" || target.closest("canvas")) {

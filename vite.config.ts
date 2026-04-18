@@ -1039,7 +1039,7 @@ export default defineConfig({
     host: "0.0.0.0",
     port: 5173,
     strictPort: true, // 📱 Mobile debugging requires consistent port (ADB reverse tcp:5173)
-    allowedHosts: [".trycloudflare.com"],
+    allowedHosts: [".trycloudflare.com", "dev.tkaflowarts.com"],
     headers: {
       // Enable OAuth popups to communicate with parent window
       "Cross-Origin-Opener-Policy": "same-origin-allow-popups",

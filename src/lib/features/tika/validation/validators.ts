@@ -404,6 +404,54 @@ export const noEmDashes: TikaValidator = {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
+// Internal Instruction Leak Validator
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Catches internal tool instructions that leaked into the user-facing response.
+ * These are directives meant for the LLM, not the user.
+ */
+export const noInternalInstructions: TikaValidator = {
+	name: 'NoInternalInstructions',
+	description: 'Catches internal tool directives that leaked into user-facing responses',
+	severity: 'error',
+
+	validate(text: string, _context: ValidationContext): ValidationResult {
+		const patterns = [
+			/No canonical answer found/gi,
+			/No pre-written answer exists/gi,
+			/Use other tools to construct/gi,
+			/\[INTERNAL/gi,
+			/DO NOT show this message/gi,
+			/synthesize a helpful answer/gi,
+		];
+
+		const violations: ValidationViolation[] = [];
+
+		for (const pattern of patterns) {
+			const matches = [...text.matchAll(pattern)];
+			for (const match of matches) {
+				violations.push(
+					createViolation(
+						this.name,
+						this.severity,
+						`Internal instruction "${match[0]}" leaked into response. This should never be shown to users.`,
+						match[0],
+						match.index
+					)
+				);
+			}
+		}
+
+		if (violations.length === 0) {
+			return pass();
+		}
+
+		return fail(violations);
+	}
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
 // Export All Validators
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -416,5 +464,6 @@ export const ALL_VALIDATORS: TikaValidator[] = [
 	noType1Misconception,
 	noVariationCounts,
 	noAffirmativeOpeners,
-	noEmDashes
+	noEmDashes,
+	noInternalInstructions
 ];

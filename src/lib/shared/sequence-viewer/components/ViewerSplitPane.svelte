@@ -163,6 +163,14 @@
       return;
     }
 
+    // Clicks/releases on the transport scrubber or the play knob are
+    // their own controls — never read them as "expand the pane".
+    const target = e.target as HTMLElement | null;
+    if (target?.closest('[role="slider"], button')) {
+      pointerDownPos = null;
+      return;
+    }
+
     // For 3D mode, only expand on tap (no significant drag movement).
     // OrbitControls use drag — a click without movement means "tap to expand".
     if (renderMode === '3d' && pointerDownPos) {

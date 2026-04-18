@@ -3,11 +3,7 @@
  *
  * Reactive network status using Svelte 5 runes.
  * Uses navigator.onLine + online/offline events to track connectivity.
- *
- * Also triggers a toast notification when coming back online after being offline.
  */
-
-import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
 interface NetworkStatus {
 	isOnline: boolean;
@@ -29,15 +25,8 @@ function createNetworkStatusState() {
 	const onOfflineCallbacks: Array<() => void> = [];
 
 	function handleOnline() {
-		const wasOfflineBefore = !isOnline;
 		isOnline = true;
 		lastOnlineAt = Date.now();
-
-		// Show reconnection toast if we were previously offline
-		if (wasOfflineBefore && wasOffline) {
-			toast.success("Back online! Syncing your changes...", 3000);
-		}
-
 		wasOffline = false;
 
 		// Notify registered callbacks

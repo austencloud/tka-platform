@@ -24,6 +24,8 @@ Design variants supported:
     visible = true,
     darkMode = false,
     onSeek = null,
+    onScrubStart = null,
+    onScrubEnd = null,
     variant = "minimal",
     showLabels = false,
   }: {
@@ -37,6 +39,10 @@ Design variants supported:
     darkMode?: boolean;
     /** Callback when user clicks/drags to seek */
     onSeek?: ((targetStep: number) => void) | null;
+    /** Fires when the user grabs the scrubber (pointerdown on the bar) */
+    onScrubStart?: (() => void) | null;
+    /** Fires when the user releases the scrubber (pointerup/cancel) */
+    onScrubEnd?: (() => void) | null;
     /** Visual style variant */
     variant?: "minimal" | "raised" | "rounded" | "neon" | "gradient" | "labeled" | "gradient-labeled";
     /** Show beat numbers above segments */
@@ -167,6 +173,7 @@ Design variants supported:
 
     isDragging = true;
     containerRef.setPointerCapture(event.pointerId);
+    onScrubStart?.();
 
     const targetStep = calculateTargetStep(event, containerRef);
     onSeek(targetStep);
@@ -182,6 +189,7 @@ Design variants supported:
   function handlePointerUp(event: PointerEvent) {
     if (!containerRef) return;
 
+    if (isDragging) onScrubEnd?.();
     isDragging = false;
     containerRef.releasePointerCapture(event.pointerId);
   }

@@ -47,7 +47,7 @@ const db = admin.firestore();
 
 const SCHEMA_VERSION = 1;
 const BATCH_SIZE = 500;
-const OUTPUT_DIR = path.join(__dirname, "..", "data", "snapshots");
+const OUTPUT_DIR = path.join(__dirname, "..", "static", "data", "snapshots");
 
 const COLLECTION_MAP = {
   shortcodes: "shortcodes.json",
