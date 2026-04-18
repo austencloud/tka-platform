@@ -236,9 +236,15 @@ export class AnimationPlaybackController implements IAnimationPlaybackController
     // Clamp beat to valid range
     const clampedStep = Math.max(0, Math.min(beat, this.state.totalSteps));
 
-    // Preserve the fractional part of the current step timing
-    // E.g., if we're at beat 1.7 and seek to beat 3, we want to be at 3.7
-    const currentFraction = this.state.currentStep - Math.floor(this.state.currentStep);
+    // If the caller passed an integer beat (e.g. step-cell click), preserve
+    // the current fractional offset so playback continues smoothly from the
+    // analogous moment of the new beat. If the caller passed a fractional
+    // beat (e.g. scrubbing the transport bar), honor that exact position —
+    // mixing in the old fraction would snap the scrubber unpredictably.
+    const isIntegerBeat = clampedStep === Math.floor(clampedStep);
+    const currentFraction = isIntegerBeat
+      ? this.state.currentStep - Math.floor(this.state.currentStep)
+      : 0;
     const targetStepWithFraction = clampedStep + currentFraction;
 
     this.syncCurrentStep(targetStepWithFraction);

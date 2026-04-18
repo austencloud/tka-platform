@@ -14,6 +14,7 @@ import {
 } from "../shared/domain/models/generate-models";
 import type { UIGenerationConfig } from "../shared/utils/config-mapper";
 import { getTemplateById } from "../../shared/domain/templates/duration-templates";
+import { authState } from "$lib/shared/auth/state/authState.svelte";
 
 // Re-export for convenience
 export type { UIGenerationConfig };
@@ -187,6 +188,16 @@ const DEFAULT_CONFIG: UIGenerationConfig = {
   spellTargetLength: null,
 };
 
+// Baseline for signed-out visitors so the Generate tab has an opinionated
+// starting state (rotated loop, quartered slice, level 1) instead of the
+// Intermediate freeform default. Overridden by any saved config.
+const GUEST_DEFAULT_OVERRIDES: Partial<UIGenerationConfig> = {
+  level: 1,
+  loopEnabled: true,
+  loopType: LOOPType.ROTATED,
+  sliceSize: SliceSize.QUARTERED,
+};
+
 // ===== Simple State Creator =====
 /**
  * Creates simple reactive state for generation configuration
@@ -198,9 +209,15 @@ export function createGenerationConfigState(
   // Load saved config or use defaults
   const savedConfig = loadConfig();
 
-  // Initialize config with priority: initialConfig > savedConfig > DEFAULT_CONFIG
+  // Guests with no saved config get an opinionated starting state
+  // so the Generate tab isn't a blank Intermediate freeform prompt.
+  const guestOverrides =
+    !savedConfig && !authState.isAuthenticated ? GUEST_DEFAULT_OVERRIDES : {};
+
+  // Initialize config with priority: initialConfig > savedConfig > guestOverrides > DEFAULT_CONFIG
   let config = $state<UIGenerationConfig>({
     ...DEFAULT_CONFIG,
+    ...guestOverrides,
     ...(savedConfig || {}),
     ...initialConfig,
   });
