@@ -16,6 +16,7 @@
 import type { IZapOverlayRenderer } from "../contracts/IZapOverlayRenderer";
 import type { Zap2DParams } from "$lib/shared/effects/translators/canvas2d-types";
 import { Zap2DRenderer, type ZapTipInput } from "$lib/shared/effects/renderers/Zap2DRenderer";
+import { computeEffectScale } from "$lib/shared/effects/renderers/scale";
 
 export class ZapOverlayRenderer implements IZapOverlayRenderer {
   private canvas: HTMLCanvasElement | null = null;
@@ -23,6 +24,7 @@ export class ZapOverlayRenderer implements IZapOverlayRenderer {
   private renderer = new Zap2DRenderer();
   private width = 0;
   private height = 0;
+  private scale = 1;
 
   initialize(container: HTMLElement, width: number, height: number): boolean {
     this.dispose();
@@ -53,6 +55,7 @@ export class ZapOverlayRenderer implements IZapOverlayRenderer {
     this.ctx = ctx;
     this.width = width;
     this.height = height;
+    this.scale = computeEffectScale(width, height);
     return true;
   }
 
@@ -62,6 +65,7 @@ export class ZapOverlayRenderer implements IZapOverlayRenderer {
     this.canvas.height = height;
     this.width = width;
     this.height = height;
+    this.scale = computeEffectScale(width, height);
   }
 
   renderFrame(params: Zap2DParams, tips: ZapTipInput): void {
@@ -77,7 +81,7 @@ export class ZapOverlayRenderer implements IZapOverlayRenderer {
       return;
     }
 
-    this.renderer.render(ctx, params, tips);
+    this.renderer.render(ctx, params, tips, this.scale);
   }
 
   clear(): void {
@@ -99,6 +103,7 @@ export class ZapOverlayRenderer implements IZapOverlayRenderer {
     this.ctx = null;
     this.width = 0;
     this.height = 0;
+    this.scale = 1;
   }
 
   isInitialized(): boolean {
