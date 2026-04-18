@@ -28,7 +28,6 @@ import type {
 	CharcoalSparkParams,
 } from "../../../domain/types/CharcoalSparkTypes";
 import { DEFAULT_CHARCOAL_PARAMS } from "../../../domain/types/CharcoalSparkTypes";
-import { computeEffectScale } from "$lib/shared/effects/renderers/scale";
 
 // ============================================================================
 // Constants
@@ -186,15 +185,17 @@ export class CharcoalSparkRenderer implements ICharcoalRenderer {
 	// Current params (updated externally via setParams)
 	private currentParams: CharcoalSparkParams = { ...DEFAULT_CHARCOAL_PARAMS };
 
-	// Scale factor for emission on smaller canvases. Quadratic (area-based)
-	// so a 300px canvas gets ~36% of the particles of a 500px canvas — density
-	// per unit area stays constant, which matches what the eye expects.
+	// Emission density scale. Quadratic (area-based) so particles-per-unit-area
+	// stays constant as the canvas shrinks.
 	private canvasScale = 1.0;
-	// Linear scale for particle size + ember glow radius. Uses the shared
-	// computeEffectScale helper (min-dim / 500) so sparks stay the same
-	// proportion of the frame across canvas sizes.
+	// Linear scale for particle size + ember glow radius. Sparks authored at
+	// the reference size need to shrink proportionally on smaller canvases
+	// so the halo stays the same fraction of the frame.
 	private sizeScale = 1.0;
-	private static readonly REFERENCE_SIZE = 500;
+	// Charcoal default params (sizeMin/Max, emberGlowRadius) were tuned on
+	// a 950px canvas, so the linear size-scale is referenced to 950 — not
+	// the project-wide 500 — to preserve the look at full size.
+	private static readonly REFERENCE_SIZE = 950;
 
 	// ======================================================================
 	// IFireOverlayRenderer implementation
@@ -218,7 +219,8 @@ export class CharcoalSparkRenderer implements ICharcoalRenderer {
 
 		const areaRatio = (width * height) / (CharcoalSparkRenderer.REFERENCE_SIZE ** 2);
 		this.canvasScale = Math.max(0.1, Math.min(1.0, areaRatio));
-		this.sizeScale = computeEffectScale(width, height);
+		const minDim = Math.min(width, height);
+		this.sizeScale = Math.max(0.1, Math.min(1.0, minDim / CharcoalSparkRenderer.REFERENCE_SIZE));
 
 		container.appendChild(this.canvas);
 
@@ -269,11 +271,12 @@ export class CharcoalSparkRenderer implements ICharcoalRenderer {
 		this.canvas.height = Math.round(height * this.dpr);
 
 		// Scale emission density by canvas area relative to reference size.
-		// A 300px canvas gets ~36% of the particles of a 500px canvas,
+		// A 300px canvas gets ~10% of the particles of a 950px canvas,
 		// keeping visual density proportional instead of overwhelming small previews.
 		const areaRatio = (width * height) / (CharcoalSparkRenderer.REFERENCE_SIZE ** 2);
 		this.canvasScale = Math.max(0.1, Math.min(1.0, areaRatio));
-		this.sizeScale = computeEffectScale(width, height);
+		const minDim = Math.min(width, height);
+		this.sizeScale = Math.max(0.1, Math.min(1.0, minDim / CharcoalSparkRenderer.REFERENCE_SIZE));
 	}
 
 	renderCharcoal(input: FireFrameInput, config: FireOverlayConfig): void {
