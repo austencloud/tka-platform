@@ -19,6 +19,7 @@ import {
   Echo2DRenderer,
   type EchoTipInput,
 } from "$lib/shared/effects/renderers/Echo2DRenderer";
+import { computeEffectScale } from "$lib/shared/effects/renderers/scale";
 
 export class EchoOverlayRenderer implements IEchoOverlayRenderer {
   private canvas: HTMLCanvasElement | null = null;
@@ -26,6 +27,7 @@ export class EchoOverlayRenderer implements IEchoOverlayRenderer {
   private renderer = new Echo2DRenderer();
   private width = 0;
   private height = 0;
+  private scale = 1;
 
   initialize(container: HTMLElement, width: number, height: number): boolean {
     this.dispose();
@@ -55,6 +57,7 @@ export class EchoOverlayRenderer implements IEchoOverlayRenderer {
     this.ctx = ctx;
     this.width = width;
     this.height = height;
+    this.scale = computeEffectScale(width, height);
     return true;
   }
 
@@ -64,13 +67,14 @@ export class EchoOverlayRenderer implements IEchoOverlayRenderer {
     this.canvas.height = height;
     this.width = width;
     this.height = height;
+    this.scale = computeEffectScale(width, height);
   }
 
   renderFrame(params: Echo2DParams, tips: EchoTipInput): void {
     const ctx = this.ctx;
     if (!ctx) return;
     ctx.clearRect(0, 0, this.width, this.height);
-    this.renderer.render(ctx, params, tips);
+    this.renderer.render(ctx, params, tips, this.scale);
   }
 
   clear(): void {
@@ -92,6 +96,7 @@ export class EchoOverlayRenderer implements IEchoOverlayRenderer {
     this.ctx = null;
     this.width = 0;
     this.height = 0;
+    this.scale = 1;
   }
 
   isInitialized(): boolean {
