@@ -57,6 +57,12 @@ export class Sparkles2DRenderer {
     scale: number = 1,
   ): void {
     // 1. Spawn from each enabled tip per current mode.
+    //    Live cap scales with params.rate so the slider actually controls
+    //    on-screen density (not just the spawn rate, which was being masked
+    //    by a static cap once rate crossed ~0.08).
+    //    Per-tip allocation prevents the first tip in iteration order from
+    //    consuming the whole budget — without it, sparkles appear to come
+    //    from only one tip.
     const effectiveMax = Math.max(
       MIN_LIVE_PARTICLES,
       Math.min(MAX_PARTICLES, Math.floor(MAX_PARTICLES * params.rate)),
@@ -93,7 +99,10 @@ export class Sparkles2DRenderer {
     }
     this.particles = surviving;
 
-    // 3. Draw.
+    // 3. Draw — each particle is a 4-point star (cross + smaller diagonal cross)
+    //    with a bright pinpoint core. Sin-modulated alpha = twinkle. The cross
+    //    shape + scintillation is what differentiates sparkles from charcoal's
+    //    additive-glow blobs.
     if (this.particles.length === 0) return;
     const prevComposite = ctx.globalCompositeOperation;
     const prevAlpha = ctx.globalAlpha;
@@ -118,6 +127,7 @@ export class Sparkles2DRenderer {
         ctx.translate(p.x, p.y);
         ctx.rotate(p.rotation);
 
+        // Major cross (+) — long, thin, bright.
         ctx.strokeStyle = p.color;
         ctx.globalAlpha = alpha;
         // Line-width clamp stays in canvas px so sub-pixel strokes don't vanish.
@@ -129,6 +139,7 @@ export class Sparkles2DRenderer {
         ctx.lineTo(0, armLen);
         ctx.stroke();
 
+        // Minor diagonal cross (×) — shorter, thinner, gives it the 8-point feel.
         ctx.lineWidth = Math.max(0.6, baseR * p.scale * 0.25);
         ctx.globalAlpha = alpha * 0.7;
         ctx.beginPath();
@@ -138,6 +149,7 @@ export class Sparkles2DRenderer {
         ctx.lineTo(diagLen, -diagLen);
         ctx.stroke();
 
+        // Bright white pinpoint core.
         ctx.fillStyle = "#ffffff";
         ctx.globalAlpha = alpha;
         ctx.beginPath();
@@ -164,6 +176,8 @@ export class Sparkles2DRenderer {
     perTipCap: number,
     scale: number,
   ): void {
+    // Base count: rate × SPAWN_DENSITY spawns/s, normalized via dt × 60 so a 60fps
+    // tick spawns at the documented rate regardless of actual frame timing.
     const baseCount = Math.floor(params.rate * SPAWN_DENSITY * dt * 60);
     let spawnCount = 0;
     let usePathSpawn = false;
@@ -185,9 +199,13 @@ export class Sparkles2DRenderer {
       usePathSpawn = !!last;
     }
 
+    // Clamp to this tip's fair share of the pool so other tips can spawn too.
     spawnCount = Math.max(0, Math.min(spawnCount, perTipCap));
 
     for (let i = 0; i < spawnCount; i++) {
+      // Origin: AT the tip (no scatter) so all particles emerge from the same
+      // point and burst outward — that's what reads as "bursting from the tip"
+      // rather than "appearing in a fuzzy area".
       let originX = tip.x;
       let originY = tip.y;
       if (usePathSpawn && last) {
@@ -203,6 +221,8 @@ export class Sparkles2DRenderer {
       // Upward bias is px/s at reference size; scales with canvas.
       const vy = Math.sin(angle) * burstSpeed - 15 * scale;
 
+      // Stagger lifetime ±40% so particles die at different times. Without this
+      // the whole batch dies together and the canvas pulses dark every lifetime.
       const lifeJitter = 0.6 + Math.random() * 0.8;
 
       this.particles.push({
