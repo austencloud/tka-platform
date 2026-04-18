@@ -201,7 +201,8 @@
               onBpmChange={onBpmChange ?? (() => {})}
               {isPlaying}
               onPlaybackToggle={onPlaybackToggle ?? (() => {})}
-              showPlayback={!!(onPlaybackToggle && onBpmChange)}
+              showPlayback={!!onBpmChange}
+              showTransport={false}
             />
 
             <!-- Playback Mode -->
@@ -351,20 +352,8 @@
         </div>
       {/if}
 
-      <!-- Bottom bar: [Play] [Download Animation] [Settings] -->
+      <!-- Bottom bar: [Download Animation] [Settings] -->
       <div class="mobile-bar">
-        {#if onPlaybackToggle}
-          <button
-            type="button"
-            class="bar-play-btn"
-            class:playing={isPlaying}
-            onclick={onPlaybackToggle}
-            aria-label={isPlaying ? "Pause" : "Play"}
-          >
-            <i class="fas {isPlaying ? 'fa-pause' : 'fa-play'}" aria-hidden="true"></i>
-          </button>
-        {/if}
-
         <button
           type="button"
           class="bar-export-btn"

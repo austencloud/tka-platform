@@ -227,8 +227,11 @@
 
   // Per-frame tick for the camera-choreography driver. Runs every frame;
   // the state's tick() is a no-op when no preset is driving, so this is
-  // free when recording is idle.
+  // free when recording is idle. Gated off during Pass 2 export — the
+  // offline renderer drives the camera straight from recorded keyframes,
+  // and a live driver mutating `controls.azimuthAngle` would fight it.
   useTask((delta) => {
+    if (viewer3DState.isExporting) return;
     viewer3DState.cameraChoreography.tick(delta);
   });
 
@@ -249,6 +252,7 @@
     minDistance={1}
     maxDistance={25}
     maxPolarAngle={Math.PI / 2}
+    paused={viewer3DState.isExporting}
     oncreate={(c) => {
       controlsInstance = c;
       // Place the camera at the persisted / computed initial pose

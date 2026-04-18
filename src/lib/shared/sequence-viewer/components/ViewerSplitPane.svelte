@@ -18,13 +18,14 @@
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import Viewer3DCanvas from "$lib/shared/3d/components/Viewer3DCanvas.svelte";
   import ChoreoCard from "./ChoreoCard.svelte";
+  import RightRail from "./RightRail.svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import { TrackingMode } from "$lib/shared/animation-engine/domain/types/TrailTypes";
   import { isBilateralProp } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { createEffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
-  import { setEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
+  import { setEffectsConfigContext, getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   import { snapshotConfigFromVm, bindVmToEffectsConfig } from "$lib/shared/effects/compat/vm-shim";
   import { seedTrailsFromAnimationSettings } from "$lib/shared/effects/compat/animation-settings-shim";
 
@@ -63,11 +64,18 @@
   // animationSettings) and kept in sync via a compat shim while Phase A
   // is in flight. Shim deleted in Phase B.
   const effectsVm = getAnimationVisibilityManager();
-  const effectsConfigState = createEffectsConfigState(snapshotConfigFromVm(effectsVm));
-  seedTrailsFromAnimationSettings(effectsConfigState);
-  setEffectsConfigContext(effectsConfigState);
+  // Reuse the parent context if one is set (SequenceViewerOrchestrator now
+  // owns this so ExportVideoDrawer's EffectsPanel can read the same state).
+  // Fall back to creating our own when used standalone (e.g. legacy hosts).
+  const inheritedEffectsConfig = getEffectsConfigContext();
+  const effectsConfigState = inheritedEffectsConfig ?? createEffectsConfigState(snapshotConfigFromVm(effectsVm));
+  if (!inheritedEffectsConfig) {
+    seedTrailsFromAnimationSettings(effectsConfigState);
+    setEffectsConfigContext(effectsConfigState);
+  }
 
   $effect(() => {
+    if (inheritedEffectsConfig) return; // parent owns the binding
     const dispose = bindVmToEffectsConfig(effectsVm, effectsConfigState);
     return dispose;
   });
@@ -77,6 +85,7 @@
   // `untrack` so the state mutation on effectsConfigState doesn't get tracked
   // as part of this effect's own dependency set (which would loop).
   $effect(() => {
+    if (inheritedEffectsConfig) return; // parent owns the seeding
     // Touch the fields Svelte needs to track for the $effect to re-run.
     animationSettings.trail.lineWidth;
     animationSettings.trail.maxOpacity;
@@ -101,6 +110,7 @@
     onStepClick: (stepIndex: number) => void;
     onCanvasReady: (canvas: HTMLCanvasElement | null) => void;
     onChoreoCardContextMenu?: (x: number, y: number) => void;
+    onPlaybackToggle?: () => void;
     rerenderTrigger?: number;
     /**
      * When true, the tap-to-focus handlers on both panes are suppressed
@@ -126,6 +136,7 @@
     onStepClick,
     onCanvasReady,
     onChoreoCardContextMenu,
+    onPlaybackToggle,
     rerenderTrigger = 0,
     isExporting = false,
   }: Props = $props();
@@ -279,6 +290,23 @@
           suppress2DOverlays={renderMode === '3d'}
         />
 
+        {#if onPlaybackToggle}
+          <button
+            type="button"
+            class="canvas-play-btn"
+            onclick={(e) => { e.stopPropagation(); onPlaybackToggle?.(); }}
+            aria-label={playback.isPlaying ? "Pause" : "Play"}
+            title={playback.isPlaying ? "Pause (Space)" : "Play (Space)"}
+          >
+            <i class="fas {playback.isPlaying ? 'fa-pause' : 'fa-play'}" aria-hidden="true"></i>
+          </button>
+        {/if}
+
+        <!-- Unified control rail — always mounted, peer to both canvas
+             layers so it survives the 2D/3D crossfade. Rail collapses to
+             just the render-mode toggle in 2D and repositions to the
+             canvas top-right corner. -->
+        <RightRail {sequence} {renderMode} {bpm} {onBpmChange} />
       {/if}
 
     </div>
@@ -441,6 +469,42 @@
 
   .animation-pane {
     background: transparent;
+  }
+
+  .canvas-play-btn {
+    position: absolute;
+    left: 50%;
+    bottom: 6%;
+    transform: translateX(-50%);
+    width: 52px;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--theme-accent, #6366f1) 18%, rgba(18, 18, 28, 0.88));
+    border: 1.5px solid color-mix(in srgb, var(--theme-accent, #6366f1) 55%, transparent);
+    color: white;
+    font-size: 18px;
+    cursor: pointer;
+    backdrop-filter: blur(6px);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+    transition: transform 120ms ease, background 120ms ease;
+    z-index: 5;
+  }
+
+  .canvas-play-btn:hover {
+    background: color-mix(in srgb, var(--theme-accent, #6366f1) 28%, rgba(18, 18, 28, 0.9));
+    transform: translateX(-50%) scale(1.04);
+  }
+
+  .canvas-play-btn:active {
+    transform: translateX(-50%) scale(0.96);
+  }
+
+  .canvas-play-btn:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 3px;
   }
 
   .canvas-3d-layer {

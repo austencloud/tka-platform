@@ -435,6 +435,7 @@
                     onCanvasReady={ctx.handleCanvasReady}
                     {rerenderTrigger}
                     onChoreoCardContextMenu={(x, y) => choreoCardMenuHost?.openContextMenu(x, y)}
+                    onPlaybackToggle={ctx.handlePlaybackToggle}
                   />
                   {#if ctx.renderMode === '3d' && (ctx.countdownValue > 0 || ctx.isRecording3D || ctx.isExporting)}
                     <Recording3DOverlay

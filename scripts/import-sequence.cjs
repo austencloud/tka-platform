@@ -181,6 +181,91 @@ async function readInput() {
 // Build Firestore document from raw sequence JSON
 // ---------------------------------------------------------------------------
 
+/**
+ * Build a complete startPosition object. Two input shapes are tolerated:
+ *
+ *   1. Rich object (from the app or a prior export): already has .motions.blue
+ *      and .motions.red — we just normalize and pass through.
+ *   2. Bare string or stub (from MCP generate_sequence, which returns
+ *      startPosition as a grid-position string like "beta5"): synthesize a
+ *      static startPosition object from the first step's start-side motion
+ *      data. Without this, the Firestore doc ends up with undefined
+ *      motions, and the thumbnail renderer draws an empty Start cell.
+ */
+function buildStartPositionObject(startPosInput, steps, sequenceId) {
+  if (
+    startPosInput &&
+    typeof startPosInput === "object" &&
+    startPosInput.motions?.blue &&
+    startPosInput.motions?.red
+  ) {
+    const gridPos =
+      startPosInput.gridPosition ||
+      startPosInput.startPosition ||
+      steps?.[0]?.startPosition ||
+      null;
+    return {
+      isStartPosition: true,
+      id: startPosInput.id || `start-${sequenceId}`,
+      gridPosition: gridPos,
+      letter: startPosInput.letter,
+      startPosition: startPosInput.startPosition || gridPos,
+      endPosition: startPosInput.endPosition || gridPos,
+      motions: startPosInput.motions,
+    };
+  }
+
+  const firstStep = steps?.[0];
+  const blueMotion = firstStep?.motions?.blue;
+  const redMotion = firstStep?.motions?.red;
+  if (!blueMotion || !redMotion) return null;
+
+  const gridPos =
+    (typeof startPosInput === "string" ? startPosInput : null) ||
+    firstStep.startPosition ||
+    null;
+
+  const letter = typeof gridPos === "string"
+    ? gridPos.startsWith("alpha") ? "α"
+    : gridPos.startsWith("beta") ? "β"
+    : gridPos.startsWith("gamma") ? "Γ"
+    : null
+    : null;
+
+  return {
+    isStartPosition: true,
+    id: `start-${sequenceId}`,
+    gridPosition: gridPos,
+    letter,
+    startPosition: gridPos,
+    endPosition: gridPos,
+    motions: {
+      blue: {
+        color: "blue",
+        motionType: "static",
+        startLocation: blueMotion.startLocation,
+        endLocation: blueMotion.startLocation,
+        startOrientation: blueMotion.startOrientation,
+        endOrientation: blueMotion.startOrientation,
+        rotationDirection: "no_rotation",
+        turns: 0,
+        isVisible: blueMotion.isVisible !== false,
+      },
+      red: {
+        color: "red",
+        motionType: "static",
+        startLocation: redMotion.startLocation,
+        endLocation: redMotion.startLocation,
+        startOrientation: redMotion.startOrientation,
+        endOrientation: redMotion.startOrientation,
+        rotationDirection: "no_rotation",
+        turns: 0,
+        isVisible: redMotion.isVisible !== false,
+      },
+    },
+  };
+}
+
 function buildFirestoreDoc(raw, admin, loopInfo) {
   const sequenceId = `seq_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`;
   const now = admin.firestore.FieldValue.serverTimestamp();
@@ -191,7 +276,12 @@ function buildFirestoreDoc(raw, admin, loopInfo) {
   // Use LOOP detector's circularity check (more reliable), fall back to manual
   const steps = raw.steps || [];
   const startPos = raw.startPosition || raw.startingPosition;
-  const startGridPos = startPos?.startPosition || startPos?.gridPosition;
+  const startPosObject = buildStartPositionObject(startPos, steps, sequenceId);
+  const startGridPos =
+    startPosObject?.gridPosition ||
+    (typeof startPos === "string" ? startPos : null) ||
+    startPos?.startPosition ||
+    startPos?.gridPosition;
   const lastStep = steps[steps.length - 1];
   const manualCircular = lastStep && startGridPos
     ? lastStep.endPosition === startGridPos
@@ -217,17 +307,7 @@ function buildFirestoreDoc(raw, admin, loopInfo) {
       endPosition: step.endPosition,
       motions: step.motions,
     })),
-    startPosition: startPos
-      ? {
-          isStartPosition: true,
-          id: startPos.id || `start-${Date.now()}`,
-          gridPosition: startPos.gridPosition,
-          letter: startPos.letter,
-          startPosition: startPos.startPosition,
-          endPosition: startPos.endPosition,
-          motions: startPos.motions,
-        }
-      : null,
+    startPosition: startPosObject,
     startingPositionGroup,
     gridMode: raw.gridMode || "diamond",
     sequenceLength: steps.length,
