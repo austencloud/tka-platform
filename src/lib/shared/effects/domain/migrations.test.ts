@@ -147,7 +147,7 @@ describe("migrateEffectsConfig", () => {
 
   it("migrates v6 bloom stub to v7 per-tip halo shape", () => {
     // Old stub: {intensity, threshold, radius(0-1 normalized)}.
-    // New: {intensity, radius(8-80 px), color, palette, colorMode, falloff, pulse, pulseRate}.
+    // New: {intensity, radius(8-200 px), color, palette, colorMode, falloff, pulse, pulseRate}.
     const v6 = {
       version: 6,
       bloom: { intensity: 0.6, threshold: 0.8, radius: 0.5 },
@@ -155,8 +155,8 @@ describe("migrateEffectsConfig", () => {
     const out = migrateEffectsConfig(v6);
     expect(out.version).toBe(EFFECTS_CONFIG_VERSION);
     expect(out.bloom.intensity).toBe(0.6); // preserved
-    // old 0.5 → 0.5*72+8 = 44
-    expect(out.bloom.radius).toBe(44);
+    // old 0.5 → 0.5*200+8 = 108
+    expect(out.bloom.radius).toBe(108);
     expect((out.bloom as any).threshold).toBeUndefined();
     expect(out.bloom.color).toBe("#f472b6");
     expect(out.bloom.palette).toEqual(["#f472b6", "#fbbf24", "#22d3ee"]);
@@ -166,7 +166,7 @@ describe("migrateEffectsConfig", () => {
     expect(out.bloom.pulseRate).toBe(1);
   });
 
-  it("clamps v6 bloom radius at the 8-80 px bounds during v7 migration", () => {
+  it("clamps v6 bloom radius at the 8-200 px bounds during v7 migration", () => {
     const outLow = migrateEffectsConfig({
       version: 6,
       bloom: { intensity: 0.5, threshold: 0.7, radius: 0 },
@@ -176,7 +176,7 @@ describe("migrateEffectsConfig", () => {
       version: 6,
       bloom: { intensity: 0.5, threshold: 0.7, radius: 1 },
     });
-    expect(outHigh.bloom.radius).toBe(80);
+    expect(outHigh.bloom.radius).toBe(200);
   });
 
   it("leaves v6 tipEffectMap entries pointing at bloom valid through v7 migration", () => {
@@ -191,7 +191,7 @@ describe("migrateEffectsConfig", () => {
     const out = migrateEffectsConfig(v6);
     expect(out.tipEffectMap["*"]?.effect).toBe("bloom");
     expect(out.tipEffectMap["1-1"]?.effect).toBe("sparkles");
-    expect(out.bloom.radius).toBe(26); // 0.25*72+8
+    expect(out.bloom.radius).toBe(58); // 0.25*200+8
   });
 
   it("leaves a current-version v7 bloom untouched", () => {

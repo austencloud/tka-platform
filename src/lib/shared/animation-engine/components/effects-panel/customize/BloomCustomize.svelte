@@ -168,7 +168,7 @@
           id="bloom-radius"
           type="range"
           min="8"
-          max="80"
+          max="200"
           step="2"
           value={state.bloom.radius}
           oninput={(e) =>

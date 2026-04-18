@@ -72,8 +72,8 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
   },
 
   bloom: {
-    intensity: 0.7,
-    radius: 28,
+    intensity: 0.95,
+    radius: 90,
     color: "#f472b6",
     palette: ["#f472b6", "#fbbf24", "#22d3ee"],
     colorMode: "solid",

@@ -25,8 +25,8 @@ export const BLOOM_PRESETS: EffectPreset[] = [
     previewColor: "#fbbf24",
     apply: (_vm, state) =>
       applyBloom(state, "bloom-candle", {
-        intensity: 0.65,
-        radius: 32,
+        intensity: 0.95,
+        radius: 100,
         color: "#fbbf24",
         palette: ["#fbbf24", "#f59e0b", "#fde047"],
         colorMode: "solid",
@@ -41,8 +41,8 @@ export const BLOOM_PRESETS: EffectPreset[] = [
     previewColor: "#ffffff",
     apply: (_vm, state) =>
       applyBloom(state, "bloom-halo", {
-        intensity: 0.75,
-        radius: 44,
+        intensity: 0.9,
+        radius: 130,
         color: "#ffffff",
         palette: ["#f472b6", "#fbbf24", "#22d3ee"],
         colorMode: "solid",
@@ -57,8 +57,8 @@ export const BLOOM_PRESETS: EffectPreset[] = [
     previewColor: "rainbow",
     apply: (_vm, state) =>
       applyBloom(state, "bloom-prism", {
-        intensity: 0.7,
-        radius: 30,
+        intensity: 0.95,
+        radius: 95,
         color: "#f472b6",
         palette: ["#f472b6", "#fbbf24", "#22d3ee", "#a855f7"],
         colorMode: "palette",
@@ -73,8 +73,8 @@ export const BLOOM_PRESETS: EffectPreset[] = [
     previewColor: "#a5b4fc",
     apply: (_vm, state) =>
       applyBloom(state, "bloom-twin-stars", {
-        intensity: 0.85,
-        radius: 36,
+        intensity: 1.0,
+        radius: 110,
         color: "#ffffff",
         palette: ["#f472b6", "#fbbf24", "#22d3ee"],
         colorMode: "prop-matched",
