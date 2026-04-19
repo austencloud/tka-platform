@@ -51,6 +51,7 @@
   const showCreatorName = $derived.by(() => { void compositionVersion; return imageComposition.showCreatorName; });
   const showNotes = $derived.by(() => { void compositionVersion; return imageComposition.showNotes; });
   const showQRCode = $derived.by(() => { void compositionVersion; return imageComposition.showQRCode; });
+  const showMandala = $derived.by(() => { void compositionVersion; return imageComposition.showMandala; });
   const showLoopGlyph = $derived.by(() => { void compositionVersion; return imageComposition.showLoopGlyph; });
   const showBirthday = $derived.by(() => { void compositionVersion; return imageComposition.showBirthday; });
 
@@ -269,6 +270,17 @@
             </div>
           </div>
 
+          <!-- Mandala fill (blue/red path visualization in empty col-0 cells) -->
+          <div class="setting-row">
+            <span class="setting-label">Mandala</span>
+            <div class="chip-group">
+              <button type="button" class="chip" class:active={showMandala}
+                onclick={() => imageComposition.setShowMandala(!showMandala)}
+                aria-pressed={showMandala}
+              >Mandala</button>
+            </div>
+          </div>
+
           <!-- Columns -->
           <div class="setting-row">
             <span class="setting-label">Columns</span>
@@ -452,6 +464,17 @@
             onclick={() => imageComposition.setShowQRCode(!showQRCode)}
             aria-pressed={showQRCode}
           >QR Code</button>
+        </div>
+      </div>
+
+      <!-- Mandala fill (blue/red path visualization in empty col-0 cells) -->
+      <div class="setting-row">
+        <span class="setting-label">Mandala</span>
+        <div class="chip-group">
+          <button type="button" class="chip" class:active={showMandala}
+            onclick={() => imageComposition.setShowMandala(!showMandala)}
+            aria-pressed={showMandala}
+          >Mandala</button>
         </div>
       </div>
 
