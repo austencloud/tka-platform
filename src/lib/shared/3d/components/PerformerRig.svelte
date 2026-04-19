@@ -36,9 +36,16 @@
   import type { TipEffectMap } from "$lib/shared/animation-engine/domain/types/TipEffectTypes";
   import type { TurnRequest } from "../services/contracts/ITurnAnimator";
   import { derivePlaneModeFromHands } from "../state/avatar-instance-state.svelte";
+  import { tryGetViewerVisibilityContext } from "$lib/shared/sequence-viewer/context/viewer-visibility-context";
 
   // Constant sets to avoid allocating new Set objects on every reactive update.
   const WHEEL_ONLY = new Set([Plane.WHEEL]);
+
+  // Safe access to viewer visibility — PerformerRig is used in museum/realm
+  // contexts where this context won't exist. Defaults to true (both visible).
+  const _viewerVisibility = tryGetViewerVisibilityContext();
+  const blueVisible = $derived(_viewerVisibility?.blueMotion ?? true);
+  const redVisible = $derived(_viewerVisibility?.redMotion ?? true);
 
   interface Props {
     /** World position (x/z). y=0 is ground level. */
@@ -329,7 +336,7 @@
     position.x={blueHandPos.x}
     position.z={blueHandPos.z}
   >
-    {#if bluePropState}
+    {#if bluePropState && blueVisible}
       <T.Group
         bind:ref={bluePropAnchorRef}
         position.x={bluePropState.worldPosition.x}
@@ -352,7 +359,7 @@
     position.x={redHandPos.x}
     position.z={redHandPos.z}
   >
-    {#if redPropState}
+    {#if redPropState && redVisible}
       <T.Group
         bind:ref={redPropAnchorRef}
         position.x={redPropState.worldPosition.x}
