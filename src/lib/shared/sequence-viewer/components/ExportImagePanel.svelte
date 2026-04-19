@@ -8,11 +8,13 @@
 -->
 <script lang="ts">
   import { onDestroy } from "svelte";
-  import { fade, slide } from "svelte/transition";
-  import { cubicOut } from "svelte/easing";
+  import { fade } from "svelte/transition";
   import type { ExportOptionsStateManager } from "../state/export-options-state.svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
+  import RailBentoSheet from "./bento/RailBentoSheet.svelte";
+  import "./bento/rail-tile.css";
+  import { nextColumnValue, prevColumnValue } from "./bento/columns-stepper";
 
   type PanelLayout = "sidebar" | "bottom";
 
@@ -33,9 +35,6 @@
     onExport,
     onClose,
   }: Props = $props();
-
-  // Mobile settings drawer state
-  let settingsOpen = $state(false);
 
   // Include chips read/write the global visibility settings so the Visibility tab,
   // the side-by-side preview, and the download view all stay in sync.
@@ -108,13 +107,6 @@
     vm.setGlyphVisibility("elementalGlyph", next);
   }
 
-  /** Summary of current settings for the bottom bar chip */
-  const settingsSummary = $derived.by(() => {
-    const cols = exportOptions.imageColumnCount ?? "Auto";
-    const theme = exportOptions.imageDarkMode ? "Dark" : "Light";
-    return `${cols} col · ${theme}`;
-  });
-
   const allColumnOptions = [
     { label: "Auto", value: null },
     { label: "2", value: 2 },
@@ -140,179 +132,193 @@
       exportOptions.setImageColumnCount(null);
     }
   });
+
+  // ── Mobile bento state ───────────────────────────────────────────────
+  let openSheet = $state<"content" | null>(null);
+  function toggleContentSheet(): void {
+    openSheet = openSheet === "content" ? null : "content";
+  }
+  function closeSheet(): void {
+    openSheet = null;
+  }
+
+  // Count of all visibility toggles currently ON, for the Content tile badge.
+  const contentOnCount = $derived.by(() => {
+    void compositionVersion;
+    void vmVersion;
+    let n = 0;
+    if (showWord) n++;
+    if (showDifficulty) n++;
+    if (showLoopGlyph) n++;
+    if (showCreatorName) n++;
+    if (showNotes) n++;
+    if (showBirthday) n++;
+    if (showGrid) n++;
+    if (tkaGlyph) n++;
+    if (vtgGlyph) n++;
+    if (positionsGlyph) n++;
+    if (nonRadial) n++;
+    if (showQRCode) n++;
+    if (showMandala) n++;
+    return n;
+  });
+  const CONTENT_TOTAL = 13;
+
+  const columnsLabel = $derived(
+    exportOptions.imageColumnCount === null ? "Auto" : String(exportOptions.imageColumnCount)
+  );
 </script>
 
 {#if layout === "bottom"}
   <!-- ============================================================
-       MOBILE: Compact bottom bar + settings overlay
+       MOBILE: Bento grid. Card preview stays visible.
+       Content opens a fixed-position sub-sheet with all visibility
+       toggles. Columns + Theme use inline controls.
        ============================================================ -->
   <div
     class="mobile-export"
+    transition:fade={{ duration: 200 }}
     role="region"
     aria-label="Card export"
   >
-    <!-- Inline settings (collapsible, no overlay) -->
-    {#if settingsOpen}
-      <div
-        class="inline-settings"
-        role="region"
-        aria-label="Card export settings"
-        transition:slide={{ duration: 250, easing: cubicOut }}
-      >
-        <div class="inline-settings-header">
-          <span class="inline-settings-title">Image Settings</span>
-          <button
-            type="button"
-            class="inline-settings-close"
-            onclick={() => (settingsOpen = false)}
-            aria-label="Close settings"
-          >
-            <i class="fas fa-chevron-down" aria-hidden="true"></i>
-          </button>
-        </div>
-
-        <div class="inline-settings-body">
-          <!-- Header section -->
-          <div class="setting-row">
-            <button type="button" class="setting-label section-toggle" class:on={headerAnyOn}
-              onclick={toggleHeader} aria-pressed={headerAnyOn}
-              aria-label={headerAnyOn ? "Hide all header elements" : "Show all header elements"}
-            >Header</button>
-            <div class="chip-group">
-              <button type="button" class="chip" class:active={showWord}
-                onclick={() => imageComposition.setAddWord(!showWord)}
-                aria-pressed={showWord}
-              >Word</button>
-              <button type="button" class="chip" class:active={showDifficulty}
-                onclick={() => imageComposition.setAddDifficultyLevel(!showDifficulty)}
-                aria-pressed={showDifficulty}
-              >Level</button>
-              <button type="button" class="chip" class:active={showLoopGlyph}
-                onclick={() => imageComposition.setShowLoopGlyph(!showLoopGlyph)}
-                aria-pressed={showLoopGlyph}
-              >LOOP</button>
-            </div>
-          </div>
-
-          <!-- Footer section -->
-          <div class="setting-row">
-            <button type="button" class="setting-label section-toggle" class:on={footerAnyOn}
-              onclick={toggleFooter} aria-pressed={footerAnyOn}
-              aria-label={footerAnyOn ? "Hide all footer elements" : "Show all footer elements"}
-            >Footer</button>
-            <div class="chip-group">
-              <button type="button" class="chip" class:active={showCreatorName}
-                onclick={() => imageComposition.setShowCreatorName(!showCreatorName)}
-                aria-pressed={showCreatorName}
-              >Name</button>
-              <button type="button" class="chip" class:active={showNotes}
-                onclick={() => imageComposition.setShowNotes(!showNotes)}
-                aria-pressed={showNotes}
-              >Notes</button>
-              <button type="button" class="chip" class:active={showBirthday}
-                onclick={() => imageComposition.setShowBirthday(!showBirthday)}
-                aria-pressed={showBirthday}
-              >Date</button>
-            </div>
-          </div>
-
-          <!-- Pictograph section -->
-          <div class="setting-row">
-            <button type="button" class="setting-label section-toggle" class:on={pictographAnyOn}
-              onclick={togglePictograph} aria-pressed={pictographAnyOn}
-              aria-label={pictographAnyOn ? "Hide all pictograph elements" : "Show all pictograph elements"}
-            >Pictograph</button>
-            <div class="chip-group">
-              <button type="button" class="chip" class:active={showGrid}
-                onclick={() => vm.setGridVisibility(!showGrid)}
-                aria-pressed={showGrid}
-              >Grid</button>
-              <button type="button" class="chip" class:active={tkaGlyph}
-                onclick={() => vm.setGlyphVisibility("tkaGlyph", !tkaGlyph)}
-                aria-pressed={tkaGlyph}
-              >TKA</button>
-              <button type="button" class="chip" class:active={vtgGlyph}
-                onclick={toggleVtg}
-                aria-pressed={vtgGlyph}
-              >VTG</button>
-              <button type="button" class="chip" class:active={positionsGlyph}
-                onclick={() => vm.setGlyphVisibility("positionsGlyph", !positionsGlyph)}
-                aria-pressed={positionsGlyph}
-              >Positions</button>
-              <button type="button" class="chip" class:active={nonRadial}
-                onclick={() => vm.setNonRadialVisibility(!nonRadial)}
-                aria-pressed={nonRadial}
-              >Non-radial</button>
-            </div>
-          </div>
-
-          <!-- QR code (standalone — it's a grid cell, not a banner) -->
-          <div class="setting-row">
-            <span class="setting-label">QR</span>
-            <div class="chip-group">
-              <button type="button" class="chip" class:active={showQRCode}
-                onclick={() => imageComposition.setShowQRCode(!showQRCode)}
-                aria-pressed={showQRCode}
-              >QR Code</button>
-            </div>
-          </div>
-
-          <!-- Mandala fill (blue/red path visualization in empty col-0 cells) -->
-          <div class="setting-row">
-            <span class="setting-label">Mandala</span>
-            <div class="chip-group">
-              <button type="button" class="chip" class:active={showMandala}
-                onclick={() => imageComposition.setShowMandala(!showMandala)}
-                aria-pressed={showMandala}
-              >Mandala</button>
-            </div>
-          </div>
-
-          <!-- Columns -->
-          <div class="setting-row">
-            <span class="setting-label">Columns</span>
-            <div class="chip-group">
-              {#each columnOptions as option}
-                <button type="button" class="chip"
-                  class:active={exportOptions.imageColumnCount === option.value}
-                  onclick={() => exportOptions.setImageColumnCount(option.value)}
-                  aria-pressed={exportOptions.imageColumnCount === option.value}
-                >{option.label}</button>
-              {/each}
-            </div>
-          </div>
-
-          <!-- Theme -->
-          <div class="setting-row">
-            <span class="setting-label">Theme</span>
-            <div class="chip-group">
-              <button type="button" class="chip"
-                class:active={!exportOptions.imageDarkMode}
-                onclick={() => exportOptions.setImageDarkMode(false)}
-                aria-pressed={!exportOptions.imageDarkMode}
-              >
-                <i class="fas fa-sun" aria-hidden="true"></i> Light
-              </button>
-              <button type="button" class="chip"
-                class:active={exportOptions.imageDarkMode}
-                onclick={() => exportOptions.setImageDarkMode(true)}
-                aria-pressed={exportOptions.imageDarkMode}
-              >
-                <i class="fas fa-moon" aria-hidden="true"></i> Dark
-              </button>
-            </div>
+    {#if openSheet === "content"}
+      <RailBentoSheet title="Content" onClose={closeSheet}>
+        <div class="rt-section">
+          <span class="rt-section-label">Header</span>
+          <div class="rt-chip-row">
+            <button type="button" class="rt-chip"
+              aria-pressed={showWord}
+              onclick={() => imageComposition.setAddWord(!showWord)}
+            >Word</button>
+            <button type="button" class="rt-chip"
+              aria-pressed={showDifficulty}
+              onclick={() => imageComposition.setAddDifficultyLevel(!showDifficulty)}
+            >Level</button>
+            <button type="button" class="rt-chip"
+              aria-pressed={showLoopGlyph}
+              onclick={() => imageComposition.setShowLoopGlyph(!showLoopGlyph)}
+            >LOOP</button>
           </div>
         </div>
-      </div>
+
+        <div class="rt-section">
+          <span class="rt-section-label">Footer</span>
+          <div class="rt-chip-row">
+            <button type="button" class="rt-chip"
+              aria-pressed={showCreatorName}
+              onclick={() => imageComposition.setShowCreatorName(!showCreatorName)}
+            >Name</button>
+            <button type="button" class="rt-chip"
+              aria-pressed={showNotes}
+              onclick={() => imageComposition.setShowNotes(!showNotes)}
+            >Notes</button>
+            <button type="button" class="rt-chip"
+              aria-pressed={showBirthday}
+              onclick={() => imageComposition.setShowBirthday(!showBirthday)}
+            >Date</button>
+          </div>
+        </div>
+
+        <div class="rt-section">
+          <span class="rt-section-label">Pictograph</span>
+          <div class="rt-chip-row">
+            <button type="button" class="rt-chip"
+              aria-pressed={showGrid}
+              onclick={() => vm.setGridVisibility(!showGrid)}
+            >Grid</button>
+            <button type="button" class="rt-chip"
+              aria-pressed={tkaGlyph}
+              onclick={() => vm.setGlyphVisibility("tkaGlyph", !tkaGlyph)}
+            >TKA</button>
+            <button type="button" class="rt-chip"
+              aria-pressed={vtgGlyph}
+              onclick={toggleVtg}
+            >VTG</button>
+            <button type="button" class="rt-chip"
+              aria-pressed={positionsGlyph}
+              onclick={() => vm.setGlyphVisibility("positionsGlyph", !positionsGlyph)}
+            >Positions</button>
+            <button type="button" class="rt-chip"
+              aria-pressed={nonRadial}
+              onclick={() => vm.setNonRadialVisibility(!nonRadial)}
+            >Non-radial</button>
+          </div>
+        </div>
+
+        <div class="rt-section">
+          <span class="rt-section-label">Extras</span>
+          <div class="rt-chip-row">
+            <button type="button" class="rt-chip"
+              aria-pressed={showQRCode}
+              onclick={() => imageComposition.setShowQRCode(!showQRCode)}
+            >
+              <i class="fas fa-qrcode" aria-hidden="true"></i> QR
+            </button>
+            <button type="button" class="rt-chip"
+              aria-pressed={showMandala}
+              onclick={() => imageComposition.setShowMandala(!showMandala)}
+            >
+              <i class="fas fa-asterisk" aria-hidden="true"></i> Mandala
+            </button>
+          </div>
+        </div>
+      </RailBentoSheet>
     {/if}
 
-    <div class="mobile-bar">
+    <div class="rt-zone" role="group" aria-label="Card export settings">
+      <div class="rt-row-3">
+        <!-- Content tile — opens sub-sheet -->
+        <button
+          type="button"
+          class="rt-tile"
+          aria-pressed={openSheet === "content"}
+          onclick={toggleContentSheet}
+        >
+          <i class="fas fa-layer-group rt-icon" aria-hidden="true"></i>
+          <span class="rt-lbl">Content</span>
+          <span class="rt-count">{contentOnCount}/{CONTENT_TOTAL}</span>
+        </button>
+
+        <!-- Columns tile — inline stepper -->
+        <div class="rt-tile" role="group" aria-label="Card columns">
+          <div class="rt-stepper">
+            <button type="button" class="rt-step-btn"
+              onclick={() => exportOptions.setImageColumnCount(prevColumnValue(exportOptions.imageColumnCount, beatCount))}
+              aria-label="Previous column value"
+            ><i class="fas fa-minus" aria-hidden="true"></i></button>
+            <span class="rt-val">{columnsLabel}</span>
+            <button type="button" class="rt-step-btn"
+              onclick={() => exportOptions.setImageColumnCount(nextColumnValue(exportOptions.imageColumnCount, beatCount))}
+              aria-label="Next column value"
+            ><i class="fas fa-plus" aria-hidden="true"></i></button>
+          </div>
+          <span class="rt-lbl">Columns</span>
+        </div>
+
+        <!-- Theme tile — inline split-pill -->
+        <div class="rt-tile" role="group" aria-label="Card theme" style="padding: 8px;">
+          <div class="rt-split">
+            <button type="button" class="rt-split-opt"
+              aria-pressed={!exportOptions.imageDarkMode}
+              onclick={() => exportOptions.setImageDarkMode(false)}
+              aria-label="Light theme"
+            ><i class="fas fa-sun" aria-hidden="true"></i> Light</button>
+            <button type="button" class="rt-split-opt"
+              aria-pressed={exportOptions.imageDarkMode}
+              onclick={() => exportOptions.setImageDarkMode(true)}
+              aria-label="Dark theme"
+            ><i class="fas fa-moon" aria-hidden="true"></i> Dark</button>
+          </div>
+          <span class="rt-lbl">Theme</span>
+        </div>
+      </div>
+
       <button
         type="button"
-        class="bar-export-btn"
+        class="rt-download"
         onclick={onExport}
         disabled={isExporting}
-        aria-label="Download Card"
+        aria-label="Download card"
       >
         {#if isExporting}
           <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
@@ -321,18 +327,6 @@
           <i class="fas fa-download" aria-hidden="true"></i>
           Download Card
         {/if}
-      </button>
-
-      <button
-        type="button"
-        class="bar-settings-btn"
-        class:active={settingsOpen}
-        onclick={() => (settingsOpen = !settingsOpen)}
-        aria-label="Export settings"
-        aria-expanded={settingsOpen}
-      >
-        <i class="fas fa-cog" aria-hidden="true"></i>
-        <span class="settings-summary">{settingsSummary}</span>
       </button>
     </div>
   </div>
@@ -524,142 +518,6 @@
     overflow-y: auto;
     border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
-  }
-
-  .mobile-bar {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 12px;
-  }
-
-  .bar-export-btn {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    min-height: var(--min-touch-target);
-    padding: 10px 20px;
-    border: none;
-    border-radius: 12px;
-    background: var(--theme-accent, #6366f1);
-    color: white;
-    font-size: var(--font-size-min, 14px);
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.15s ease;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .bar-export-btn:hover:not(:disabled) {
-    filter: brightness(1.1);
-  }
-
-  .bar-export-btn:active:not(:disabled) {
-    transform: scale(0.98);
-    transition-duration: 50ms;
-  }
-
-  .bar-export-btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-
-  .bar-settings-btn {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    min-height: var(--min-touch-target);
-    padding: 8px 12px;
-    flex-shrink: 0;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 12px;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.15s ease;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .bar-settings-btn.active {
-    border-color: var(--theme-accent, #6366f1);
-    color: var(--theme-text, white);
-  }
-
-  .settings-summary {
-    white-space: nowrap;
-  }
-
-  /* ============================================================
-   * MOBILE INLINE SETTINGS (collapsible, no overlay)
-   * ============================================================ */
-
-  .inline-settings {
-    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    overflow-y: auto;
-    max-height: 35vh;
-  }
-
-  .inline-settings-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 6px 12px 4px;
-  }
-
-  .inline-settings-title {
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 600;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-
-  .inline-settings-close {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
-    background: transparent;
-    border: none;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
-    font-size: 12px;
-    cursor: pointer;
-    transition: all 0.15s ease;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .inline-settings-close:hover {
-    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
-    color: var(--theme-text, white);
-  }
-
-  .inline-settings-body {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding: 2px 12px 8px;
-  }
-
-  /* Compact shared controls within mobile inline settings */
-  .inline-settings .setting-row {
-    gap: 8px;
-  }
-  .inline-settings .setting-label {
-    min-width: 56px;
-  }
-  .inline-settings .chip-group {
-    gap: 6px;
-  }
-  .inline-settings .chip {
-    min-height: 34px;
-    padding: 4px 10px;
   }
 
   /* ============================================================
@@ -868,13 +726,12 @@
    * ============================================================ */
 
   @media (prefers-reduced-motion: reduce) {
-    .chip, .export-btn, .bar-export-btn,
-    .bar-settings-btn, .inline-settings-close {
+    .chip, .export-btn {
       transition: none !important;
       animation: none !important;
     }
 
-    .chip:active, .export-btn:active, .bar-export-btn:active {
+    .chip:active, .export-btn:active {
       transform: none !important;
     }
   }
