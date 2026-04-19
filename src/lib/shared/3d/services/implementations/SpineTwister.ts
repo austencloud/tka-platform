@@ -33,11 +33,23 @@ import type { ISpineTwister, SpineTwistResult } from "../contracts/ISpineTwister
 /** Maximum total upper-body yaw (turning left/right) in radians (~60 degrees). */
 const MAX_YAW = (60 * Math.PI) / 180;
 
+/** Maximum yaw in single-hand gaze mode (~40 degrees). Softer than
+ *  the cross-body reach case — you turn to LOOK at a held prop, you
+ *  don't lean your whole torso toward it. */
+const SINGLE_HAND_MAX_YAW = (40 * Math.PI) / 180;
+
 /** Maximum lateral tilt (leaning sideways) in radians (~25 degrees). */
 const MAX_TILT = (25 * Math.PI) / 180;
 
 /** Half shoulder width for normalizing lateral offset */
 const SHOULDER_HALF_WIDTH = 0.2;
+
+/** Hand reach used to normalize single-hand yaw. A hand extended to this
+ *  X-offset from body center drives the single-hand yaw to its max. */
+const SINGLE_HAND_REACH = 0.5;
+
+/** Identity quaternion reused across idle-branch returns. */
+const IDENTITY_QUAT = new Quaternion();
 
 /** How much cross-body tension contributes relative to lateral bias */
 const CROSS_TENSION_WEIGHT = 0.5;
@@ -68,6 +80,33 @@ const IDEAL_WEIGHTS: Record<string, number> = {
 
 export class SpineTwister implements ISpineTwister {
   computeSpineTwist(
+    leftHandTarget: Vector3 | null,
+    rightHandTarget: Vector3 | null,
+    bodyCenter: Vector3,
+    availableBones?: Set<string>
+  ): SpineTwistResult {
+    if (leftHandTarget && rightHandTarget) {
+      return this.computeTwoHandedTwist(
+        leftHandTarget,
+        rightHandTarget,
+        bodyCenter,
+        availableBones
+      );
+    }
+    const presentHand = leftHandTarget ?? rightHandTarget;
+    if (presentHand) {
+      return this.computeSingleHandGaze(presentHand, bodyCenter, availableBones);
+    }
+    return this.identityResult();
+  }
+
+  /**
+   * Cross-body reach: torso leans toward the reaching direction, hips
+   * counter-rotate for grounding, head tracks the average cross-body
+   * pull. Height-gated lateral tilt keeps high cross-body reaches from
+   * clipping arms through the head.
+   */
+  private computeTwoHandedTwist(
     leftHandTarget: Vector3,
     rightHandTarget: Vector3,
     bodyCenter: Vector3,
@@ -129,6 +168,44 @@ export class SpineTwister implements ISpineTwister {
       neck: this.makeSpineRotation(totalYaw * (weights.neck ?? 0), totalTilt * (weights.neck ?? 0)),
       head: this.makeSpineRotation(totalYaw * (weights.head ?? 0), totalTilt * (weights.head ?? 0)),
       hips: this.makeSpineRotation(totalYaw * HIP_COUNTER_FRACTION, totalTilt * HIP_COUNTER_FRACTION * 0.5),
+    };
+  }
+
+  /**
+   * Single-hand gaze: performer holds one prop and the other hand is
+   * absent. Head and upper spine orient toward the present hand; no
+   * tilt (no cross-body lean), no hip counter-rotation (gazing at a
+   * held prop doesn't need a counter-balanced stance). Softer max
+   * yaw than the two-hand case — this is look-at, not reach-across.
+   */
+  private computeSingleHandGaze(
+    handTarget: Vector3,
+    bodyCenter: Vector3,
+    availableBones?: Set<string>
+  ): SpineTwistResult {
+    const offsetX = handTarget.x - bodyCenter.x;
+    const normalizedYaw = Math.max(-1, Math.min(1, offsetX / SINGLE_HAND_REACH));
+    const totalYaw = normalizedYaw * SINGLE_HAND_MAX_YAW;
+
+    const weights = this.redistributeWeights(availableBones);
+
+    return {
+      spine1: this.makeSpineRotation(totalYaw * (weights.spine1 ?? 0), 0),
+      spine2: this.makeSpineRotation(totalYaw * (weights.spine2 ?? 0), 0),
+      neck: this.makeSpineRotation(totalYaw * (weights.neck ?? 0), 0),
+      head: this.makeSpineRotation(totalYaw * (weights.head ?? 0), 0),
+      hips: new Quaternion(),
+    };
+  }
+
+  /** No twist. Used when both hands are absent. */
+  private identityResult(): SpineTwistResult {
+    return {
+      spine1: IDENTITY_QUAT.clone(),
+      spine2: IDENTITY_QUAT.clone(),
+      neck: IDENTITY_QUAT.clone(),
+      head: IDENTITY_QUAT.clone(),
+      hips: IDENTITY_QUAT.clone(),
     };
   }
 

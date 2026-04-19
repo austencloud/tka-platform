@@ -28,11 +28,16 @@ export interface HandPose {
 }
 
 /**
- * Full body pose
+ * Full body pose.
+ *
+ * `leftHand` / `rightHand` may be null when that side holds no prop. Body
+ * systems (spine twist, clavicle raise, pole vectors, IK) must treat null
+ * as "hand not present" and skip the side rather than reading stale
+ * positions from a prior frame.
  */
 export interface BodyPose {
-  leftHand: HandPose;
-  rightHand: HandPose;
+  leftHand: HandPose | null;
+  rightHand: HandPose | null;
   /** Optional head look target */
   headLookAt?: Vector3;
   /** Root position offset */

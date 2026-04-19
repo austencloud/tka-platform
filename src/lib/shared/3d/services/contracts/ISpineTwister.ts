@@ -27,15 +27,24 @@ export interface ISpineTwister {
   /**
    * Compute distributed twist rotations for the spine chain.
    *
-   * @param leftHandTarget - Left hand position (world space)
-   * @param rightHandTarget - Right hand position (world space)
+   * Three modes by nullability of the hand targets:
+   *
+   * - **Both present** — cross-body reach. Torso leans toward the reaching
+   *   direction with hip counter-rotation; head rotates most, lower back least.
+   * - **One present, one null** — single-hand gaze. Torso and head orient
+   *   gently toward the present hand. No hip counter-rotation (gazing at a
+   *   held prop doesn't need a counter-balanced stance).
+   * - **Both null** — no prop in either hand. Identity (no twist).
+   *
+   * @param leftHandTarget - Left hand position (world space), or null if absent
+   * @param rightHandTarget - Right hand position (world space), or null if absent
    * @param bodyCenter - Avatar's torso center (world space)
    * @param availableBones - Which bones the model actually has (for weight redistribution)
    * @returns Quaternions to apply to Spine1, Spine2, Neck, Head, and Hips
    */
   computeSpineTwist(
-    leftHandTarget: Vector3,
-    rightHandTarget: Vector3,
+    leftHandTarget: Vector3 | null,
+    rightHandTarget: Vector3 | null,
     bodyCenter: Vector3,
     availableBones?: Set<string>
   ): SpineTwistResult;
