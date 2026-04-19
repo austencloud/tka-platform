@@ -1,7 +1,14 @@
 // Autosave endpoint for guide page sidecar JSON.
 // PUT /api/guide/level-1/page/[n] writes _data/page-NN.json atomically.
+//
+// DEV-ONLY by design. Sidecar JSON is statically imported by page templates
+// at build time, so writes only become visible after a Vite HMR reload (dev)
+// or a rebuild (prod). The editor lives in dev; the deployed reader consumes
+// committed sidecar files. A persistence target for prod-side editing
+// (Firestore / KV / D1) is out of scope until Phase 4+.
 
 import { json, error, type RequestHandler } from '@sveltejs/kit';
+import { dev } from '$app/environment';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { validateSidecar } from '../../../../../(public)/guide/level-1/_lib/sidecar-schema';
@@ -17,6 +24,10 @@ const DATA_ROOT = path.join(
 );
 
 export const PUT: RequestHandler = async ({ request, params }) => {
+	if (!dev) {
+		throw error(404, 'Guide editor autosave is dev-only');
+	}
+
 	const n = Number(params.n);
 	if (!Number.isInteger(n) || n < 1 || n > 999) {
 		throw error(400, `Invalid page param: ${params.n}`);
