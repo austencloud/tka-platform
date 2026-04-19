@@ -13,8 +13,8 @@ export interface AnimationShortcutHandlers {
   onStepFullBeatForward: () => void;
   onStepFullBeatBackward: () => void;
   onClose: () => void;
-  onToggleBlue: () => void;
-  onToggleRed: () => void;
+  onToggleBlue?: () => void;
+  onToggleRed?: () => void;
   onShowHelp: () => void;
 }
 
