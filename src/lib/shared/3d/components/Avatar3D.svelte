@@ -63,10 +63,18 @@
   import { CollisionDetector } from "../services/implementations/CollisionDetector";
   import type { BodySnapshot, CollisionEvent, PropSegment } from "../services/contracts/ICollisionDetector";
   import { tryGetViewer3DContext } from "../context/viewer-3d-context";
+  import { tryGetViewerVisibilityContext } from "$lib/shared/sequence-viewer/context/viewer-visibility-context";
 
   // Safe access to viewer3DState — Avatar3D is used in contexts (museum, realm)
   // where the viewer3D context may not exist. We only need autoRenderEnabled.
   const viewer3DState = tryGetViewer3DContext();
+
+  // Safe access to viewer visibility state — Avatar3D is used outside the
+  // sequence viewer (museum, realm) where this context won't exist.
+  // Defaults to true (both sides visible) when context is absent.
+  const viewerVisibility = tryGetViewerVisibilityContext();
+  const blueVisible = $derived(viewerVisibility?.blueMotion ?? true);
+  const redVisible = $derived(viewerVisibility?.redMotion ?? true);
 
   // Default Z position for avatars
   // Placing avatar at z=0 (same as grid plane) so hands are exactly at prop positions
@@ -915,7 +923,10 @@
       ? { ...redPropState, worldPosition: redIKTarget }
       : null;
 
-    animationService.setPropsAndBlend(blueWorldProp, redWorldProp);
+    animationService.setPropsAndBlend(
+      blueVisible ? blueWorldProp : null,
+      redVisible ? redWorldProp : null,
+    );
     // Push optional external spine pitch (e.g., lean-forward stance variants)
     // before the animator runs IK so the arms solve against the leaned torso.
     animationService.setExternalSpinePitch(spinePitchOffset);
@@ -1070,7 +1081,10 @@
       rotation.y={facingAngle}
     >
       <!-- worldPosition is already local grid coordinates, no offset needed -->
-      <IKFigure3D {bluePropState} {redPropState} />
+      <IKFigure3D
+        bluePropState={blueVisible ? bluePropState : null}
+        redPropState={redVisible ? redPropState : null}
+      />
     </T.Group>
   {:else if modelLoaded && cachedRoot}
     <!-- GLTF model (production mode) -->
