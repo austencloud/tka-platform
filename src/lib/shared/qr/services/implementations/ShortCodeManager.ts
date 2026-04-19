@@ -220,16 +220,19 @@ export class ShortCodeManager implements IShortCodeManager {
           record.sequenceData = JSON.parse(JSON.stringify(seqData));
         }
 
-        // Pre-compute the self-contained "s~..." blob so the static snapshot
-        // only needs this one field to fully reconstruct the sequence client-side
-        // (no cross-collection lookups, no Firebase). Failure is non-fatal —
-        // the Firestore primary path still works without it.
+        // The self-contained "s~..." blob is the durability invariant — without
+        // it the shortcode points only to mutable external state and becomes
+        // unresolvable the moment that state changes. Every shortcode with
+        // steps MUST carry `encoded`. A throw here aborts the whole create so
+        // we never write a half-document that will zombie later.
         if (sequence.steps && sequence.steps.length > 0) {
-          try {
-            record.encoded = await this.sequenceEncoder.encodeForQR(sequence);
-          } catch (err) {
-            console.warn(`[ShortCode] encodeForQR failed for "${code}":`, err);
-          }
+          record.encoded = await this.sequenceEncoder.encodeForQR(sequence);
+        }
+
+        if (!record.encoded && !record.sequenceData) {
+          throw new Error(
+            `[ShortCode] Refusing to create "${code}" without encoded blob or embedded sequenceData — would produce an unresolvable zombie document.`
+          );
         }
 
         await setDoc(docRef, record);
@@ -483,6 +486,7 @@ export class ShortCodeManager implements IShortCodeManager {
 
       await updateDoc(docRef, {
         scanCount: increment(1),
+        lastScannedAt: new Date().toISOString(),
       });
     } catch (error) {
       // Log but don't throw - analytics shouldn't break the user experience

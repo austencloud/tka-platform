@@ -213,6 +213,23 @@
         stripInvalidV(code);
         return;
       }
+
+      // Fire-and-forget scan telemetry for Firestore-backed codes.
+      const encoder = container.items.sequenceEncoder;
+      if (!encoder.isInlineEncoded(code) && typeof window !== "undefined") {
+        manager.incrementScanCount(code).catch(() => {});
+        manager.logScanEvent(code, {
+          printId: new URL(window.location.href).searchParams.get("pid") || null,
+          country: null,
+          city: null,
+          userAgent: navigator.userAgent,
+          screenWidth: window.screen.width,
+          screenHeight: window.screen.height,
+          referrer: document.referrer || null,
+          userId: null,
+        }).catch(() => {});
+      }
+
       if (overlay.isOpen) return;
       const stillMatches = new URL(window.location.href).searchParams.get("v") === code;
       if (!stillMatches) return;
