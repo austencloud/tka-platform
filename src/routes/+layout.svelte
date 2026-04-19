@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Snippet, Component } from "svelte";
   import { onMount, setContext } from "svelte";
-  import { afterNavigate, onNavigate } from "$app/navigation";
+  import { afterNavigate, onNavigate, replaceState } from "$app/navigation";
   import { detectSiteMode, type SiteMode } from "../config/domains";
   import { consumeSkipNextViewTransition } from "$lib/shared/transitions/sequence-drawer-state.svelte";
   import "../app.css";
@@ -52,6 +52,51 @@
         await navigation.complete;
       });
     });
+  });
+
+  // ============================================================================
+  // STALE URL-PARAM SANITIZER
+  //
+  // Some URL params are owned by specific features (e.g. `?seq=` belongs to
+  // the loop-labeler admin tool for deep-linking sequences by id). When the
+  // user navigates AWAY from that feature, the params stick around because
+  // no one cleans them up — they cargo-cult through every subsequent URL
+  // change until the next hard reload.
+  //
+  // This is more than cosmetic: the stale params feed the shortcode
+  // race-condition pattern. A `?v=CODE` viewer-bootstrap URL with a leftover
+  // `?seq=<id>` can look like two different sequences to two different state
+  // systems, each of which may try to createShortCode() for "its" sequence
+  // at the same time. Strip the junk on every navigation that isn't on a
+  // route that owns the param.
+  //
+  // Add new entries here as features start/stop owning URL params.
+  // ============================================================================
+  const OWNED_PARAMS: Record<string, readonly string[]> = {
+    // loop-labeler (/test/loop-labeler) uses these for deep-link state.
+    seq: ["/test/loop-labeler"],
+    filter: ["/test/loop-labeler"],
+  };
+
+  afterNavigate((navigation) => {
+    if (typeof window === "undefined") return;
+    const pathname = navigation.to?.url.pathname ?? "";
+
+    const url = new URL(window.location.href);
+    let changed = false;
+    for (const [param, ownedBy] of Object.entries(OWNED_PARAMS)) {
+      if (!url.searchParams.has(param)) continue;
+      const allowed = ownedBy.some((prefix) => pathname.startsWith(prefix));
+      if (!allowed) {
+        url.searchParams.delete(param);
+        changed = true;
+      }
+    }
+
+    if (changed) {
+      const cleaned = url.pathname + (url.search ? url.search : "") + url.hash;
+      replaceState(cleaned, {});
+    }
   });
 
   let { children } = $props<{
