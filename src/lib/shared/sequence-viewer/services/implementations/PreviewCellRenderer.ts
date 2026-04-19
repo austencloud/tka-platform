@@ -79,16 +79,12 @@ export class PreviewCellRenderer implements IPreviewCellRenderer {
       ? this.filterSoloMotions(pictographData, viewMode!)
       : pictographData;
 
-    // Motion visibility filter: when a color is toggled off in export settings,
-    // strip that color's motion BEFORE preparation so the arrow positioning
-    // pipeline recomputes positions as if the hidden motion doesn't exist.
-    // Without this, the remaining arrow stays at its "both-visible" position,
-    // which was nudged by the now-hidden motion's special-placement rules.
-    const dataForRender = this.filterInvisibleMotions(
-      soloFiltered,
-      options.showBlueMotion,
-      options.showRedMotion
-    );
+    // Motion visibility is a render-layer concern, not a data-layer one.
+    // The pictograph still represents a two-hand beat; we just hide one
+    // layer at draw time via showBlueMotion/showRedMotion in renderOptions.
+    // Stripping the motion here would corrupt dash arrow positioning —
+    // dashes read cross-motion data to disambiguate rotation and mirroring.
+    const dataForRender = soloFiltered;
 
     // Prepare the pictograph data (DOM-free, runs on main thread)
     const prepared = await pictographPreparer.prepareSingle(dataForRender, {
@@ -167,25 +163,6 @@ export class PreviewCellRenderer implements IPreviewCellRenderer {
     } else {
       delete motions.blue;
     }
-    return { ...data, motions };
-  }
-
-  /**
-   * Strip motions whose visibility is explicitly false.
-   * A missing motion causes the arrow positioning pipeline to skip
-   * cross-arrow adjustments (SpecialPlacer rules that nudge arrows
-   * apart when both exist). The remaining arrow falls back to its
-   * default single-motion position.
-   */
-  private filterInvisibleMotions(
-    data: PictographData,
-    showBlue: boolean | undefined,
-    showRed: boolean | undefined
-  ): PictographData {
-    if (showBlue !== false && showRed !== false) return data;
-    const motions = { ...data.motions };
-    if (showBlue === false) delete motions.blue;
-    if (showRed === false) delete motions.red;
     return { ...data, motions };
   }
 
