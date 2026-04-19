@@ -16,6 +16,7 @@
   import type { VideoExportProgress } from "$lib/features/compose/services/contracts/IVideoExportOrchestrator";
   import { estimateExportTime, hasDeviceMetrics } from "../state/export-timing-tracker";
   import EffectsPanel from "$lib/shared/animation-engine/components/effects-panel/EffectsPanel.svelte";
+  import MobileEffectsPanel from "$lib/shared/animation-engine/components/effects-panel/MobileEffectsPanel.svelte";
   import PlaybackModeToggle from "$lib/features/compose/components/controls/PlaybackModeToggle.svelte";
   import type { PlaybackMode } from "$lib/features/compose/state/animation-panel-state.svelte";
   import RailBentoSheet from "./bento/RailBentoSheet.svelte";
@@ -215,14 +216,7 @@
     {:else}
       {#if openSheet === "effects"}
         <RailBentoSheet title="Effects" onClose={closeSheet}>
-          <EffectsPanel
-            {bpm}
-            onBpmChange={onBpmChange ?? (() => {})}
-            {isPlaying}
-            onPlaybackToggle={onPlaybackToggle ?? (() => {})}
-            showPlayback={false}
-            showTransport={false}
-          />
+          <MobileEffectsPanel />
         </RailBentoSheet>
       {:else if openSheet === "effort"}
         <RailBentoSheet title="Effort" onClose={closeSheet}>
