@@ -356,9 +356,15 @@
       const shortCodeManager = container.items.shortCodeManager;
       let resolvedSequence = await shortCodeManager.resolveShortCode(id);
 
-      // Fire-and-forget scan telemetry for Firestore-backed codes (not `s~`
-      // inline blobs — those have no Firestore record to update).
-      if (resolvedSequence && !encoderService.isInlineEncoded(id) && typeof window !== "undefined") {
+      // Fire-and-forget scan telemetry — only for genuine scans (not
+      // refreshes or back/forward navigations or repeat session visits).
+      const { isGenuineScan } = await import("$lib/shared/qr/utils/scan-detection");
+      if (
+        resolvedSequence &&
+        !encoderService.isInlineEncoded(id) &&
+        typeof window !== "undefined" &&
+        isGenuineScan(id)
+      ) {
         shortCodeManager.incrementScanCount(id).catch(() => {});
         shortCodeManager.logScanEvent(id, {
           printId: new URL(window.location.href).searchParams.get("pid") || null,

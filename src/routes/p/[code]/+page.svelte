@@ -23,6 +23,7 @@
   import { fade } from "svelte/transition";
   import { container } from "$lib/shared/di";
   import { captureEvent } from "$lib/shared/analytics/services/posthog";
+  import { isGenuineScan } from "$lib/shared/qr/utils/scan-detection";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import type { ILetterDeriver } from "$lib/shared/navigation/services/contracts/ILetterDeriver";
   import type { IPositionDeriver } from "$lib/shared/navigation/services/contracts/IPositionDeriver";
@@ -216,40 +217,44 @@
         return;
       }
 
-      // Track scan count for Firebase-backed short codes (not offline codes)
-      if (!sequenceEncoder.isInlineEncoded(shortCode)) {
+      // Track scan count ONLY for genuine scans — skip refreshes and
+      // back/forward navigations, and skip repeat visits within the same
+      // session. Without this guard every F5 inflated the counter.
+      const isScan =
+        !sequenceEncoder.isInlineEncoded(shortCode) && isGenuineScan(shortCode);
+      if (isScan) {
         shortCodeManager.incrementScanCount(shortCode).catch((err: unknown) => {
           console.warn("Failed to increment scan count:", err);
         });
+
+        // Fire scan analytics (fire-and-forget, never blocks the viewer)
+        captureEvent("qr_code_scanned", {
+          short_code: shortCode,
+          print_id: new URL(window.location.href).searchParams.get("pid") || null,
+          sequence_word: resolved.word,
+          sequence_id: resolved.id,
+          country: data?.geo?.country || null,
+          city: data?.geo?.city || null,
+          screen_width: window.screen.width,
+          screen_height: window.screen.height,
+          viewport_width: window.innerWidth,
+          viewport_height: window.innerHeight,
+          referrer: document.referrer || null,
+          is_deck_sequence: !resolved.ownerId,
+        });
+
+        // Log detailed scan event to Firestore subcollection
+        shortCodeManager.logScanEvent(shortCode, {
+          printId: new URL(window.location.href).searchParams.get("pid") || null,
+          country: data?.geo?.country || null,
+          city: data?.geo?.city || null,
+          userAgent: navigator.userAgent,
+          screenWidth: window.screen.width,
+          screenHeight: window.screen.height,
+          referrer: document.referrer || null,
+          userId: null,
+        }).catch(() => {}); // Silent failure — analytics should never break the viewer
       }
-
-      // Fire scan analytics (fire-and-forget, never blocks the viewer)
-      captureEvent("qr_code_scanned", {
-        short_code: shortCode,
-        print_id: new URL(window.location.href).searchParams.get("pid") || null,
-        sequence_word: resolved.word,
-        sequence_id: resolved.id,
-        country: data?.geo?.country || null,
-        city: data?.geo?.city || null,
-        screen_width: window.screen.width,
-        screen_height: window.screen.height,
-        viewport_width: window.innerWidth,
-        viewport_height: window.innerHeight,
-        referrer: document.referrer || null,
-        is_deck_sequence: !resolved.ownerId,
-      });
-
-      // Log detailed scan event to Firestore subcollection
-      shortCodeManager.logScanEvent(shortCode, {
-        printId: new URL(window.location.href).searchParams.get("pid") || null,
-        country: data?.geo?.country || null,
-        city: data?.geo?.city || null,
-        userAgent: navigator.userAgent,
-        screenWidth: window.screen.width,
-        screenHeight: window.screen.height,
-        referrer: document.referrer || null,
-        userId: null,
-      }).catch(() => {}); // Silent failure — analytics should never break the viewer
 
       // Derive letters and positions if services are available
       const letterDeriver = container.items.letterDeriver as ILetterDeriver | null;

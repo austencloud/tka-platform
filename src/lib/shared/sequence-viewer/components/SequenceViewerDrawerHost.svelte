@@ -214,9 +214,16 @@
         return;
       }
 
-      // Fire-and-forget scan telemetry for Firestore-backed codes.
+      // Fire-and-forget scan telemetry — only for genuine scans. Skips
+      // reloads, back/forward nav, and repeat session visits to avoid
+      // inflating scanCount on refresh.
       const encoder = container.items.sequenceEncoder;
-      if (!encoder.isInlineEncoded(code) && typeof window !== "undefined") {
+      const { isGenuineScan } = await import("$lib/shared/qr/utils/scan-detection");
+      if (
+        !encoder.isInlineEncoded(code) &&
+        typeof window !== "undefined" &&
+        isGenuineScan(code)
+      ) {
         manager.incrementScanCount(code).catch(() => {});
         manager.logScanEvent(code, {
           printId: new URL(window.location.href).searchParams.get("pid") || null,
