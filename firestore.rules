@@ -864,12 +864,28 @@ service cloud.firestore {
       // ANYONE can read short codes (QR scanning works without auth)
       allow read: if true;
 
-      // Authenticated users can create short codes
-      allow create: if isAuthenticated();
+      // Authenticated users can create short codes.
+      // Durability invariant: every shortcode MUST carry a non-empty `encoded`
+      // blob (self-contained payload) OR a non-empty `sequenceData.steps` array
+      // (embedded inline). Without one of those, the doc is a zombie waiting
+      // to happen — see docs/superpowers/specs/2026-04-18-shortcode-durability-roadmap.md.
+      allow create: if isAuthenticated()
+        && (
+          (
+            request.resource.data.keys().hasAny(['encoded'])
+            && request.resource.data.encoded is string
+            && request.resource.data.encoded.size() > 0
+          )
+          || (
+            request.resource.data.keys().hasAny(['sequenceData'])
+            && request.resource.data.sequenceData.keys().hasAny(['steps'])
+            && request.resource.data.sequenceData.steps.size() > 0
+          )
+        );
 
-      // Anyone can increment scan count (fire-and-forget analytics)
-      // Only allow updating the scanCount field
-      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['scanCount']);
+      // Anyone can increment scan count (fire-and-forget analytics).
+      // Allow only scanCount and lastScannedAt to change on update.
+      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['scanCount', 'lastScannedAt']);
 
       // No deletion - short codes are permanent
       allow delete: if isAdmin();

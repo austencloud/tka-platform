@@ -356,6 +356,22 @@
       const shortCodeManager = container.items.shortCodeManager;
       let resolvedSequence = await shortCodeManager.resolveShortCode(id);
 
+      // Fire-and-forget scan telemetry for Firestore-backed codes (not `s~`
+      // inline blobs — those have no Firestore record to update).
+      if (resolvedSequence && !encoderService.isInlineEncoded(id) && typeof window !== "undefined") {
+        shortCodeManager.incrementScanCount(id).catch(() => {});
+        shortCodeManager.logScanEvent(id, {
+          printId: new URL(window.location.href).searchParams.get("pid") || null,
+          country: null,
+          city: null,
+          userAgent: navigator.userAgent,
+          screenWidth: window.screen.width,
+          screenHeight: window.screen.height,
+          referrer: document.referrer || null,
+          userId: null,
+        }).catch(() => {});
+      }
+
       if (!resolvedSequence) {
         const provider = container.items.sequenceDataProvider;
         resolvedSequence = await provider.loadByIdentifier(id);
