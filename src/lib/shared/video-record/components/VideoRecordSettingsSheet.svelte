@@ -4,8 +4,7 @@
   Settings sheet for video recording options.
   Controls reference view, animation settings, and grid settings.
 
-  Reuses SimpleTrailControls and MotionVisibilityButtons for consistency
-  with the animation panel controls.
+  Reuses SimpleTrailControls for trail intensity controls.
 -->
 <script lang="ts">
   import type {
@@ -13,8 +12,6 @@
     GridSettings,
   } from "../state/video-record-settings.svelte";
   import SimpleTrailControls from "$lib/features/compose/components/trail/SimpleTrailControls.svelte";
-  import MotionVisibilityButtons from "$lib/features/compose/components/trail/MotionVisibilityButtons.svelte";
-  import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 
   let {
     isOpen = false,
@@ -37,33 +34,6 @@
     onReferenceViewChange?: (view: ReferenceViewType) => void;
     onGridSettingsChange?: (settings: GridSettings) => void;
   } = $props();
-
-  // Get the global visibility manager
-  const visibilityManager = getAnimationVisibilityManager();
-
-  // Read visibility state from the global manager
-  let blueMotionVisible = $state(visibilityManager.getVisibility("blueMotion"));
-  let redMotionVisible = $state(visibilityManager.getVisibility("redMotion"));
-
-  // Sync state when sheet opens (in case visibility changed elsewhere)
-  $effect(() => {
-    if (isOpen) {
-      blueMotionVisible = visibilityManager.getVisibility("blueMotion");
-      redMotionVisible = visibilityManager.getVisibility("redMotion");
-    }
-  });
-
-  function toggleBlueMotion() {
-    const newValue = !blueMotionVisible;
-    blueMotionVisible = newValue;
-    visibilityManager.setVisibility("blueMotion", newValue);
-  }
-
-  function toggleRedMotion() {
-    const newValue = !redMotionVisible;
-    redMotionVisible = newValue;
-    visibilityManager.setVisibility("redMotion", newValue);
-  }
 
   function handleBackdropClick(e: MouseEvent) {
     if (e.target === e.currentTarget) {
@@ -136,19 +106,6 @@
 
             <!-- Trail Controls (Off/Subtle/Vivid) with bilateral toggle -->
             <SimpleTrailControls {bluePropType} {redPropType} />
-
-            <!-- Motion Visibility -->
-            <div class="motion-visibility-row">
-              <span class="visibility-label">Motion Visibility</span>
-              <div class="visibility-buttons">
-                <MotionVisibilityButtons
-                  {blueMotionVisible}
-                  {redMotionVisible}
-                  onToggleBlue={toggleBlueMotion}
-                  onToggleRed={toggleRedMotion}
-                />
-              </div>
-            </div>
           </section>
         {/if}
 
@@ -344,30 +301,6 @@
 
   .option-btn.active i {
     color: var(--theme-accent, var(--semantic-info));
-  }
-
-  /* Motion Visibility Row */
-  .motion-visibility-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    margin-top: 12px;
-    padding: 12px;
-    background: var(--theme-card-bg);
-    border: 1px solid var(--theme-stroke);
-    border-radius: 12px;
-  }
-
-  .visibility-label {
-    font-size: var(--font-size-compact);
-    font-weight: 500;
-    color: var(--theme-text-dim, var(--theme-text-dim));
-  }
-
-  .visibility-buttons {
-    display: flex;
-    gap: 8px;
   }
 
   /* Slider Rows */
