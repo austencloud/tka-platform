@@ -100,12 +100,24 @@ export class MandalaRenderer implements IMandalaRenderer {
 			parts.push(`    <circle cx="0" cy="0" r="${GRID_DOT_RADIUS}" fill="rgba(255,255,255,0.3)"/>`);
 		}
 
+		// Palette falls back to the dark-mode defaults when the caller doesn't
+		// pass an explicit palette (card-back on dark background is the original
+		// use case).
+		const palette = options.palette ?? {
+			blueStroke: BLUE_STROKE,
+			blueFill: BLUE_FILL,
+			redStroke: RED_STROKE,
+			redFill: RED_FILL,
+			purpleStroke: PURPLE_STROKE,
+			purpleFill: PURPLE_FILL,
+		};
+
 		// Render blue paths
 		if (show === "blue" || show === "both") {
 			for (const pathData of paths.blue) {
 				const attrs = style === "filled"
-					? filledAttributes(BLUE_STROKE, BLUE_FILL, strokeWidth)
-					: strokeAttributes(BLUE_STROKE, strokeWidth);
+					? filledAttributes(palette.blueStroke, palette.blueFill, strokeWidth)
+					: strokeAttributes(palette.blueStroke, strokeWidth);
 				parts.push(`    <path d="${pathData.d}" ${attrs}/>`);
 			}
 		}
@@ -114,8 +126,8 @@ export class MandalaRenderer implements IMandalaRenderer {
 		if (show === "red" || show === "both") {
 			for (const pathData of paths.red) {
 				const attrs = style === "filled"
-					? filledAttributes(RED_STROKE, RED_FILL, strokeWidth)
-					: strokeAttributes(RED_STROKE, strokeWidth);
+					? filledAttributes(palette.redStroke, palette.redFill, strokeWidth)
+					: strokeAttributes(palette.redStroke, strokeWidth);
 				parts.push(`    <path d="${pathData.d}" ${attrs}/>`);
 			}
 		}
@@ -124,8 +136,8 @@ export class MandalaRenderer implements IMandalaRenderer {
 		if (show === "both" && paths.purple?.length) {
 			for (const pathData of paths.purple) {
 				const attrs = style === "filled"
-					? filledAttributes(PURPLE_STROKE, PURPLE_FILL, strokeWidth)
-					: strokeAttributes(PURPLE_STROKE, strokeWidth);
+					? filledAttributes(palette.purpleStroke, palette.purpleFill, strokeWidth)
+					: strokeAttributes(palette.purpleStroke, strokeWidth);
 				parts.push(`    <path d="${pathData.d}" ${attrs}/>`);
 			}
 		}

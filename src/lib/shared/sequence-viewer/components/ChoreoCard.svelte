@@ -2159,7 +2159,8 @@
                     mode="card-back"
                     style="stroke"
                     show={placement.variant === "full" ? "both" : placement.variant}
-                    size={cellWidth || 120}
+                    size={Math.round((cellWidth || 120) * 0.82)}
+                    darkMode={activeDarkMode}
                   />
                 </div>
               </div>

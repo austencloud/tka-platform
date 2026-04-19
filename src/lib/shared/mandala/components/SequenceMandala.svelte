@@ -6,8 +6,17 @@
 		MandalaMode,
 		MandalaRenderOptions,
 		MandalaPaths,
+		MandalaPalette,
 	} from "../domain/mandala-types";
-	import { MANDALA_DEFAULT_SIZE } from "../domain/mandala-constants";
+	import {
+		MANDALA_DEFAULT_SIZE,
+		LIGHT_BLUE_STROKE,
+		LIGHT_RED_STROKE,
+		LIGHT_BLUE_FILL,
+		LIGHT_RED_FILL,
+		LIGHT_PURPLE_STROKE,
+		LIGHT_PURPLE_FILL,
+	} from "../domain/mandala-constants";
 	import type { IMandalaGeometryCalculator } from "../services/contracts/IMandalaGeometryCalculator";
 	import type { IMandalaRenderer } from "../services/contracts/IMandalaRenderer";
 
@@ -19,6 +28,13 @@
 		show?: "blue" | "red" | "both";
 		size?: number;
 		currentStep?: number;
+		/**
+		 * When true, keep the default dark-mode palette. When false, use the
+		 * light-mode prop hues so the mandala matches --prop-blue / --prop-red
+		 * on a light background.
+		 * Defaults to the app's dark-mode setting.
+		 */
+		darkMode?: boolean;
 	}
 
 	let {
@@ -28,7 +44,17 @@
 		show = "both",
 		size = MANDALA_DEFAULT_SIZE,
 		currentStep,
+		darkMode,
 	}: Props = $props();
+
+	const LIGHT_PALETTE: MandalaPalette = {
+		blueStroke: LIGHT_BLUE_STROKE,
+		blueFill: LIGHT_BLUE_FILL,
+		redStroke: LIGHT_RED_STROKE,
+		redFill: LIGHT_RED_FILL,
+		purpleStroke: LIGHT_PURPLE_STROKE,
+		purpleFill: LIGHT_PURPLE_FILL,
+	};
 
 	let calculator: IMandalaGeometryCalculator | null = $state(null);
 	let renderer: IMandalaRenderer | null = $state(null);
@@ -48,7 +74,11 @@
 		return calculator.calculate(sequence.steps, blueProp, redProp);
 	});
 
-	// Derive render options — card-back mode omits grid dots and background for a clean embed
+	// Effective dark-mode flag — explicit prop wins, otherwise fall back to global settings.
+	const effectiveDarkMode = $derived(darkMode ?? settingsService.settings.darkMode);
+
+	// Derive render options — card-back mode omits grid dots and background for a clean embed.
+	// In light mode, swap to the light-mode prop palette so hues match --prop-blue / --prop-red.
 	const renderOptions = $derived.by((): MandalaRenderOptions => {
 		const isCardBack = mode === "card-back";
 		return {
@@ -57,6 +87,7 @@
 			showGridDots: !isCardBack,
 			show,
 			transparentBackground: isCardBack,
+			palette: effectiveDarkMode ? undefined : LIGHT_PALETTE,
 		};
 	});
 
