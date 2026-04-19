@@ -17,8 +17,6 @@ export interface AnimationVisibilityState {
   props: boolean;
   trails: boolean;
   tkaGlyph: boolean; // TKA Glyph includes turn numbers
-  blueMotion: boolean;
-  redMotion: boolean;
   /** Dark Mode: dark background, inverted grid, white text/outlines */
   darkMode: boolean;
   /** Word header overlay showing sequence name */

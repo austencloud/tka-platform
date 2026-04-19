@@ -199,6 +199,10 @@ export interface AnimationEngineState {
 
   // 3D mode flag — when true, 2D effect overlays (fire/charcoal/LED/trails) are suppressed
   suppress2DOverlays: boolean;
+
+  // Viewer-scoped motion visibility (not stored in AnimationVisibilityState)
+  blueMotionVisible: boolean;
+  redMotionVisible: boolean;
 }
 
 export class AnimationEngine {
@@ -216,8 +220,6 @@ export class AnimationEngine {
       props: true,
       trails: true,
       tkaGlyph: true, // TKA Glyph includes turn numbers
-      blueMotion: true,
-      redMotion: true,
       darkMode: false,
       wordHeader: true,
       activeEffect: "trails" as import("../../domain/types/TipEffectTypes").EffectType,
@@ -241,6 +243,8 @@ export class AnimationEngine {
     currentRedPropType: "staff",
     currentPropType: "staff",
     suppress2DOverlays: false,
+    blueMotionVisible: true,
+    redMotionVisible: true,
   });
 
   // ============================================================================
@@ -465,13 +469,13 @@ export class AnimationEngine {
    */
   setMotionVisibility(blue: boolean, red: boolean): void {
     if (
-      this.state.visibilityState.blueMotion === blue &&
-      this.state.visibilityState.redMotion === red
+      this.state.blueMotionVisible === blue &&
+      this.state.redMotionVisible === red
     ) {
       return;
     }
-    this.state.visibilityState.blueMotion = blue;
-    this.state.visibilityState.redMotion = red;
+    this.state.blueMotionVisible = blue;
+    this.state.redMotionVisible = red;
     if (this.state.isInitialized) {
       this.renderLoopService?.triggerRender(() =>
         this.getFrameParams(this.lastPropsRef ?? DEFAULT_ENGINE_PROPS)
@@ -570,8 +574,6 @@ export class AnimationEngine {
       props: vm.getVisibility("props"),
       trails: vm.isTrailsActive(),
       tkaGlyph: vm.getVisibility("tkaGlyph"), // TKA Glyph includes turn numbers
-      blueMotion: true,
-      redMotion: true,
       darkMode: vm.isDarkMode(),
       wordHeader: vm.getVisibility("wordHeader"),
       activeEffect: vm.getActiveEffect(),
@@ -2499,8 +2501,8 @@ export class AnimationEngine {
     fp.visibility.gridVisible = this.state.visibilityState.grid;
     fp.visibility.propsVisible = this.state.visibilityState.props;
     fp.visibility.trailsVisible = this.state.visibilityState.trails;
-    fp.visibility.blueMotionVisible = this.state.visibilityState.blueMotion;
-    fp.visibility.redMotionVisible = this.state.visibilityState.redMotion;
+    fp.visibility.blueMotionVisible = this.state.blueMotionVisible;
+    fp.visibility.redMotionVisible = this.state.redMotionVisible;
 
     // Set isPlaying to control render loop continuation
     fp.isPlaying = props.isPlaying ?? false;
