@@ -1,0 +1,6543 @@
+{
+  "generatedAt": "2026-04-19T01:53:43.976Z",
+  "dryRun": false,
+  "totalOrphans": 933,
+  "byCategory": {
+    "public-orphan": 321,
+    "no-encoded-no-owner": 316,
+    "user-owned-deleted": 296
+  },
+  "orphans": [
+    {
+      "code": "07W53Q",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "08XA0y",
+      "word": "OΛOΛOΛOΛ",
+      "sequenceId": "gamma11-OΛ-apswsdww",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "0KON8B",
+      "word": "LΦLΦLΦLΦ",
+      "sequenceId": "alpha1-LΦ-apsedsew",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "0benEt",
+      "word": "γUUγUU",
+      "sequenceId": "gamma11_γUU",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "0h1xVZ",
+      "word": "ALΦALΦ",
+      "sequenceId": "alpha1_ALΦ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "0k9mkF",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "0uQbS7",
+      "word": "Σ-YΣ-Y",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "0vxXW8",
+      "word": "αBαBαBαB",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "0zXQ2X",
+      "word": "AΦ-AΦ-AΦ-AΦ-",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "1CUiRv",
+      "word": "TSX-Ω-TSX-Ω-",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "1HFd2S",
+      "word": "ΔΛ-XΔΛ-X",
+      "sequenceId": "alpha1_ΔΛ-X",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "1KBn3H",
+      "word": "XΦ-ΔXΦ-Δ",
+      "sequenceId": "gamma11_XΦ-Δ",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "1L8RcK",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "1LcHWA",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "1k809U",
+      "word": "Ψ-HΨ-HΨ-HΨ-H",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "1llo6l",
+      "word": "A",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "1nkuJT",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "1sJJeL",
+      "word": "UMPUZDCΔVNQVYECΣ",
+      "sequenceId": "874db7bf-3c0e-448e-9a41-4f0d15c85e39",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "20xDyt",
+      "word": "HFΨHFΨ",
+      "sequenceId": "beta5_HFΨ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "2AEgOU",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "2GXstp",
+      "word": "BAΣX-BAΣX-BAΣX-BAΣX-",
+      "sequenceId": "alpha1_BAΣX-",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "2GY4ZZ",
+      "word": "XΩ-W-ΣXΩ-W-ΣXΩ-W-ΣXΩ-W-Σ",
+      "sequenceId": "93eab556-ab3f-4725-8f34-46678e35dab4",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "2ML2Cr",
+      "word": "EΔQYΔ-UWΘ-ZΣ-XΔγY-βI",
+      "sequenceId": "seq_1773879248987_rm35oxl20",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "2VHoCB",
+      "word": "BAΦ-BAΦ-",
+      "sequenceId": "alpha1_BAΦ-",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "2f7NN1",
+      "word": "CΦ-CΦ-CΦ-CΦ-",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "2j9oD2",
+      "word": "βHβHβHβH",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "2kccRI",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "2m8ztG",
+      "word": "CCΣX-CCΣX-CCΣX-CCΣX-",
+      "sequenceId": "alpha1_CCΣX-",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "3DhfMb",
+      "word": "ΦJΦJΦJΦJ",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "3IbNyQ",
+      "word": "DCΨDCΨ",
+      "sequenceId": "beta5_DCΨ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "3PtQQU",
+      "word": "EΔQYΔ-UWΘ-ZΣ-XΔγY-βI",
+      "sequenceId": "seq_1773879248987_rm35oxl20",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "3byvBu",
+      "word": "FAΨFAΨ",
+      "sequenceId": "beta5_FAΨ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "3fsR82",
+      "word": "EΔQYΔ-UWΘ-ZΣ-XΔγY-βI",
+      "sequenceId": "seq_1773879248987_rm35oxl20",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "3pfZJD",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "3vAku0",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "45eOMP",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "485anK",
+      "word": "ABΦ-ABΦ-",
+      "sequenceId": "alpha1_ABΦ-",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "4GQiFn",
+      "word": "OTΛOTΛ",
+      "sequenceId": "gamma11_OTΛ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "4HvP6H",
+      "word": "ΔΛ-WΔΛ-W",
+      "sequenceId": "alpha1_ΔΛ-W",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "4ILNrx",
+      "word": "ABΔW-ABΔW-ABΔW-ABΔW-",
+      "sequenceId": "alpha1_ABΔW-",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "4NJQK1",
+      "word": "AAΔX-AAΔX-AAΔX-AAΔX-",
+      "sequenceId": "alpha1_AAΔX-",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "4SNXes",
+      "word": "EΔQYΔ-UWΘ-ZΣ-XΔγY-βI",
+      "sequenceId": "seq_1773879248987_rm35oxl20",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "4Vs2O0",
+      "word": "ECΨECΨ",
+      "sequenceId": "beta5_ECΨ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "4bqg8p",
+      "word": "IDΨIDΨ",
+      "sequenceId": "beta5_IDΨ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "4kUVwg",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "4ntZTZ",
+      "word": "GHΨ-GHΨ-",
+      "sequenceId": "beta5_GHΨ-",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "57hb3h",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "5RbsS2",
+      "word": "EΔQYΔ-UWΘ-ZΣ-XΔγY-βI",
+      "sequenceId": "seq_1773879248987_rm35oxl20",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "5dYVyN",
+      "word": "DCΨDCΨ",
+      "sequenceId": "beta5_DCΨ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "5iIB5H",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "5m0OGp",
+      "word": "RTΛRTΛ",
+      "sequenceId": "gamma11_RTΛ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "5ouuoz",
+      "word": "Λ-TΛ-TΛ-TΛ-T",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "60q8dg",
+      "word": "EΔQYΔ-UWΘ-ZΣ-XΔγY-βI",
+      "sequenceId": "seq_1773879248987_rm35oxl20",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "69Vmfg",
+      "word": "EΔQYΔ-UWΘ-ZΣ-XΔγY-βI",
+      "sequenceId": "seq_1773879248987_rm35oxl20",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "69s6c0",
+      "word": "CKΩX-CKΩX-CKΩX-CKΩX-",
+      "sequenceId": "alpha1_CKΩX-",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "6GkG7T",
+      "word": "Ω-X-Ω-X-Ω-X-Ω-X-",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "6RG6X4",
+      "word": "UUΛ-UUΛ-",
+      "sequenceId": "gamma11_UUΛ-",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "6RbRSi",
+      "word": "OOΛ-OOΛ-",
+      "sequenceId": "gamma11_OOΛ-",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "6Z2eaS",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "6gBDb0",
+      "word": "EΔQYΔ-UWΘ-ZΣ-XΔγY-βI",
+      "sequenceId": "seq_1773879248987_rm35oxl20",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "6uJ2tt",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "6xVapb",
+      "word": "ΨEΨEΨEΨE",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "72zCf2",
+      "word": "EΔQYΔ-UWΘ-ZΣ-XΔγY-βI",
+      "sequenceId": "seq_1773879248987_rm35oxl20",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "759WYt",
+      "word": "CKΩW-CKΩW-CKΩW-CKΩW-",
+      "sequenceId": "alpha1_CKΩW-",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "79KMzU",
+      "word": "CKΦCKΦ",
+      "sequenceId": "alpha1_CKΦ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "7HOG8q",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "7S99Pk",
+      "word": "Z-ΩVΛ-Z-ΩVΛ-",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "7TeyRi",
+      "word": "ΦKΦKΦKΦK",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "7Vvpie",
+      "word": "CJΦCJΦ",
+      "sequenceId": "alpha1_CJΦ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "7f0jFI",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "7kKfl4",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "7saAAm",
+      "word": "γQNγQN",
+      "sequenceId": "gamma11_γQN",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "7yMdX6",
+      "word": "Λ-YΦAΦ-LΩO",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "7ypKO6",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "80GoHj",
+      "word": "βIβIβIβI",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "8Ekioi",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "8HxDzC",
+      "word": "Θ-UUΛW-CΔX-",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "8IAH5w",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "8LnpT4",
+      "word": ":|",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "8PQ0yZ",
+      "word": "NΛNΛNΛNΛ",
+      "sequenceId": "gamma11-NΛ-aaswsdww",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "8RkHij",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "8msnvn",
+      "word": "LGΦLGΦ",
+      "sequenceId": "alpha1_LGΦ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "8oXy46",
+      "word": "GΨ-GΨ-GΨ-GΨ-",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "8p6yzR",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "8qMJyf",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "8rVZPH",
+      "word": "BBΣX-BBΣX-BBΣX-BBΣX-",
+      "sequenceId": "alpha1_BBΣX-",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "8ylUo3",
+      "word": "SYΣ-XBBΘ-RSYΣ-XBBΘ-R",
+      "sequenceId": "14650f36-b071-40d0-8a41-4e5395fe26d8",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "8zvTe6",
+      "word": "ΩY-ΩY-ΩY-ΩY-",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "95bJzo",
+      "word": "ΩΛ-ZΩΛ-Z",
+      "sequenceId": "beta5_ΩΛ-Z",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "99WuvV",
+      "word": "EΔQYΔ-UWΘ-ZΣ-XΔγY-βI",
+      "sequenceId": "seq_1773879248987_rm35oxl20",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "99ylQ4",
+      "word": "EJΨ-EJΨ-",
+      "sequenceId": "beta5_EJΨ-",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "9KcVLa",
+      "word": "ΨFΨFΨFΨF",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "9WMJWf",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "9jGqwo",
+      "word": "γPMγPM",
+      "sequenceId": "gamma11_γPM",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "9kjYvn",
+      "word": ":|",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "9m5rrr",
+      "word": "KIΦKIΦ",
+      "sequenceId": "alpha1_KIΦ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "9mLayC",
+      "word": "ΦLΦLΦLΦL",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "A2Kn9n",
+      "word": "EΔQYΔ-UWΘ-ZΣ-XΔγY-βI",
+      "sequenceId": "seq_1773879248987_rm35oxl20",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "A5q9dP",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "AABisU",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "AKD9CW",
+      "word": "Δ-Z-Δ-Z-Δ-Z-Δ-Z-",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "AR17x6",
+      "word": "CCΦ-CCΦ-",
+      "sequenceId": "alpha1_CCΦ-",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "ASgsME",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "AeuUXP",
+      "word": "GFΨGFΨ",
+      "sequenceId": "beta5_GFΨ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "AyKR8B",
+      "word": "QVΛQVΛ",
+      "sequenceId": "gamma11_QVΛ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "B027WP",
+      "word": "EΔQYΔ-UWΘ-ZΣ-XΔγY-βI",
+      "sequenceId": "seq_1773879248987_rm35oxl20",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "B1fhsC",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "B3UvV6",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "B3caDC",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "B5hvfz",
+      "word": ":|",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "B7Y8Tt",
+      "word": "Σ-ZΣ-ZΣ-ZΣ-Z",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "B8mKa3",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "BCcjYM",
+      "word": "JΦJΦJΦJΦ",
+      "sequenceId": "alpha1-JΦ-ppsedsew",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "BEGNX9",
+      "word": ":|",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "BHqanT",
+      "word": "Φ-BΦ-BΦ-BΦ-B",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "BHrDen",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "BTo4RB",
+      "word": "DCΨDCΨ",
+      "sequenceId": "beta5_DCΨ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "BVAAiq",
+      "word": "EΔQYΔ-UWΘ-ZΣ-XΔγY-βI",
+      "sequenceId": "seq_1773879248987_rm35oxl20",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "Bd9fUG",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "Bg1gZZ",
+      "word": "ΩΛ-YΩΛ-Y",
+      "sequenceId": "beta5_ΩΛ-Y",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "BgcTRf",
+      "word": "γSγSγSγS",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "BjVSX8",
+      "word": "ΔX-LΦΔX-LΦ",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "BozQwP",
+      "word": "EΔQYΔ-UWΘ-ZΣ-XΔγY-βI",
+      "sequenceId": "seq_1773879248987_rm35oxl20",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "BrUkLB",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "BxaQiN",
+      "word": "TOΛTOΛ",
+      "sequenceId": "gamma11_TOΛ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "ByYHYw",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "C0Ymac",
+      "word": "γSSγSS",
+      "sequenceId": "gamma11_γSS",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "C2lCLb",
+      "word": "ABΣW-ABΣW-ABΣW-ABΣW-",
+      "sequenceId": "alpha1_ABΣW-",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "C4yabn",
+      "word": "EΔQYΔ-UWΘ-ZΣ-XΔγY-βI",
+      "sequenceId": "seq_1773879248987_rm35oxl20",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "CA52Hq",
+      "word": "ABΣX-ABΣX-ABΣX-ABΣX-",
+      "sequenceId": "alpha1_ABΣX-",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "CCx9Ea",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "CGVQPy",
+      "word": "EΔQYΔ-UWΘ-ZΣ-XΔγY-βI",
+      "sequenceId": "seq_1773879248987_rm35oxl20",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "CHwkAE",
+      "word": "NUΛNUΛ",
+      "sequenceId": "gamma11_NUΛ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "CNZBme",
+      "word": "CKΦCKΦ",
+      "sequenceId": "alpha1_CKΦ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "CSkYb5",
+      "word": "ΩYΩYΩYΩY",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "CU0RVH",
+      "word": ":|",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "CUEysA",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "CUVPqs",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "CYz31U",
+      "word": "FLΨ-FLΨ-",
+      "sequenceId": "beta5_FLΨ-",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "CdsE1n",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "CnuY32",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "CpASb5",
+      "word": ":|",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "D23y91",
+      "word": "ALΩW-ALΩW-ALΩW-ALΩW-",
+      "sequenceId": "alpha1_ALΩW-",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "D3Od3t",
+      "word": "EΔQYΔ-UWΘ-ZΣ-XΔγY-βI",
+      "sequenceId": "seq_1773879248987_rm35oxl20",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "DDNUTo",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "DFR5Rx",
+      "word": "RSΛRSΛ",
+      "sequenceId": "gamma11_RSΛ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "DFbGxS",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "DHPxVw",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "DbIAAf",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "DbfLAj",
+      "word": ":|",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "Dk6Vh9",
+      "word": "βEKβEK",
+      "sequenceId": "beta5_βEK",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "Dn4lXk",
+      "word": "αAAαAA",
+      "sequenceId": "alpha1_αAA",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "DpxBZJ",
+      "word": "CαCαCαCα",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "E9Ffkm",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "ECWDpq",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "EHTveS",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "EI5ySQ",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "EL2rxP",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "EZneR7",
+      "word": ":|",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "EfFVZ4",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "EvT3hO",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "F0wyPI",
+      "word": "Sequence 2:07:49 PM",
+      "sequenceId": "seq_1774206469524_6nhdep43y",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "F5q2uK",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "FB7Ngb",
+      "word": "γVVγVV",
+      "sequenceId": "gamma11_γVV",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "FJMoqg",
+      "word": "γTγTγTγT",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "FUYpaw",
+      "word": "ΩZ-ΩZ-ΩZ-ΩZ-",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "FwIX0M",
+      "word": ":|",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "G1o7Cw",
+      "word": "ZΨ-ΘZΨ-Θ",
+      "sequenceId": "gamma11_ZΨ-Θ",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "G3JSGg",
+      "word": "e→s→s→w→w→n→n→e→e|s→e→w→s→n→w→e→n→s",
+      "sequenceId": "hand-path-e→s→s→w→w→n→n→e→e|s→e→w→s→n→w→e→n→s",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "G6i6zV",
+      "word": "CJΩW-CJΩW-CJΩW-CJΩW-",
+      "sequenceId": "alpha1_CJΩW-",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "G8CZnf",
+      "word": "PΛPΛPΛPΛ",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "G97d3v",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "G9G1xt",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "GHzOkW",
+      "word": "SγSγSγSγ",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "GY87qM",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "GaIJxq",
+      "word": "TΛ-TΛ-TΛ-TΛ-",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "GkwNiC",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "GwMkmj",
+      "word": "FAΨFAΨ",
+      "sequenceId": "beta5_FAΨ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "GynhOE",
+      "word": "αJDαJD",
+      "sequenceId": "alpha1_αJD",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "GzsugX",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "H1cVg4",
+      "word": "Θ-WΘ-WΘ-WΘ-W",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "H2l5cY",
+      "word": "HFΨHFΨ",
+      "sequenceId": "beta5_HFΨ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "H9DRpR",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "HBTGaD",
+      "word": "LHΦLHΦ",
+      "sequenceId": "alpha1_LHΦ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "HH0JAS",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "HKLLvn",
+      "word": "EΔQYΔ-UWΘ-ZΣ-XΔγY-βI",
+      "sequenceId": "seq_1773879248987_rm35oxl20",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "Hi8GrU",
+      "word": ":|",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "Hj5yPK",
+      "word": "Σ-Y-Σ-Y-Σ-Y-Σ-Y-",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "Ho15Mw",
+      "word": "LΣ-Z-ΦLΣ-Z-Φ",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "HrLGjt",
+      "word": "CKΦCKΦ",
+      "sequenceId": "alpha1_CKΦ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "HuftTZ",
+      "word": "EΔQYΔ-UWΘ-ZΣ-XΔγY-βI",
+      "sequenceId": "seq_1773879248987_rm35oxl20",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "I310As",
+      "word": ":|",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "I69jHm",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "IATEKg",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "IHrIoZ",
+      "word": ":|",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "IJb0jd",
+      "word": "EΔQYΔ-UWΘ-ZΣ-XΔγY-βI",
+      "sequenceId": "seq_1773879248987_rm35oxl20",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "IUYoFC",
+      "word": ":|",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "IqtPWD",
+      "word": "LHΦLHΦ",
+      "sequenceId": "alpha1_LHΦ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "IrDuuf",
+      "word": "UΛ-UΛ-UΛ-UΛ-",
+      "sequenceId": "0959b1d0-36e7-4b96-a301-dd7b948b7d49",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "IsIHRt",
+      "word": "EΔQYΔ-UWΘ-ZΣ-XΔγY-βI",
+      "sequenceId": "seq_1773879248987_rm35oxl20",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "ItcoOp",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "J80dKI",
+      "word": "Assemble Sequence",
+      "sequenceId": "f3391036-e0e7-4d6b-8446-92a92f0f3546",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "JDffLp",
+      "word": "MVΛMVΛ",
+      "sequenceId": "gamma11_MVΛ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "JGPIFE",
+      "word": "YIDΣYIDΣ",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "JXOjAu",
+      "word": "ΨDΨDΨDΨD",
+      "sequenceId": "alpha1-ΨD-sdssppsw",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "JhCdkU",
+      "word": "ΨEΨEΨEΨE",
+      "sequenceId": "alpha1-ΨE-sdssaasw",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "JiuRB0",
+      "word": "PUΛPUΛ",
+      "sequenceId": "gamma11_PUΛ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "JmBAHO",
+      "word": "PUΛPUΛ",
+      "sequenceId": "gamma11_PUΛ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "JplcDT",
+      "word": "ECΨECΨ",
+      "sequenceId": "beta5_ECΨ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "Jr6Eni",
+      "word": ":|",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "K2AqRF",
+      "word": "EΔQYΔ-UWΘ-ZΣ-XΔγY-βI",
+      "sequenceId": "seq_1773879248987_rm35oxl20",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "KGgXU1",
+      "word": "Sequence 1:38:56 PM",
+      "sequenceId": "seq_1774201136784_xxcipl0a1",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "KJkfRn",
+      "word": ":|",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "KXFpNN",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "Kdyf9q",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "KsJynF",
+      "word": "EΔQYΔ-UWΘ-ZΣ-XΔγY-βI",
+      "sequenceId": "seq_1773879248987_rm35oxl20",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "L0OdDm",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "L1fB4V",
+      "word": "ΦJΘY-ΦJΘY-",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "L55s5C",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "L6vyYc",
+      "word": "Θ-W-Θ-W-Θ-W-Θ-W-",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "L8F9Sd",
+      "word": "CΨΩXCΨΩX",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "LPqrCM",
+      "word": "BαBαBαBα",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "LPwwW4",
+      "word": ":|",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "LWqjlC",
+      "word": "JΦJΦJΦJΦ",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "LdAXzU",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "LiCjWv",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "LoTN9H",
+      "word": "LFΦ-LFΦ-",
+      "sequenceId": "alpha1_LFΦ-",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "LqL6HG",
+      "word": "ΔW-ΔW-ΔW-ΔW-",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "Lw6CA8",
+      "word": "PQΛ-PQΛ-",
+      "sequenceId": "gamma11_PQΛ-",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "LzP8MF",
+      "word": ":|",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "M1gAyr",
+      "word": ":|",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "M4OXdz",
+      "word": "UMPUZDCΔVNQVYECΣ",
+      "sequenceId": "874db7bf-3c0e-448e-9a41-4f0d15c85e39",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "M7PwcS",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "MSdyP3",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "MeVpLs",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "MmJxP8",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "Mq0EfJ",
+      "word": "HΨ-HΨ-HΨ-HΨ-",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "MqPi03",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "MzGDc8",
+      "word": "VVΛ-VVΛ-",
+      "sequenceId": "gamma11_VVΛ-",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "NTQGaA",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "NUNkK2",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "NVd4ts",
+      "word": "Ψ-GΨ-GΨ-GΨ-G",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "NbN1tN",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "NgPVbz",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "Nh8CzW",
+      "word": "ΘΛ-YΘΛ-Y",
+      "sequenceId": "beta5_ΘΛ-Y",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "NpvDUN",
+      "word": "EΔQYΔ-UWΘ-ZΣ-XΔγY-βI",
+      "sequenceId": "seq_1773879248987_rm35oxl20",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "NwSOLa",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "O2JfRH",
+      "word": "Θ-W-Φ-Φ-Θ-W-Φ-Φ-",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "O4ugVt",
+      "word": "W-Φ-Θ-Λ-W-Φ-Θ-Λ-",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "OEQy9F",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "OP0tF4",
+      "word": "Sequence 2:07:49 PM",
+      "sequenceId": "seq_1774206469524_6nhdep43y",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "OPeCs7",
+      "word": "DΨDΨDΨDΨ",
+      "sequenceId": "39f1c48e-48e2-421e-872e-e295e47435c1",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "OS0TT2",
+      "word": "βGGβGG",
+      "sequenceId": "beta5_βGG",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "OiyQUr",
+      "word": "Σ-VPΛZ-Σ-VPY-EΩ-VVPX-C",
+      "sequenceId": "38af30c9-6918-4796-90d8-0c563e4fa718",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "OlWeyz",
+      "word": "OSΛOSΛ",
+      "sequenceId": "gamma11_OSΛ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "OoaxkG",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "Ov4De7",
+      "word": "ΘYΘYΘYΘY",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "P3aoS1",
+      "word": "BBΔX-BBΔX-BBΔX-BBΔX-",
+      "sequenceId": "alpha1_BBΔX-",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "PE7l8C",
+      "word": "EΔQYΔ-UWΘ-ZΣ-XΔγY-βI",
+      "sequenceId": "seq_1773879248987_rm35oxl20",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "PISQG9",
+      "word": "EΔQYΔ-UWΘ-ZΣ-XΔγY-βI",
+      "sequenceId": "seq_1773879248987_rm35oxl20",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "PNW6eO",
+      "word": "γMPγMP",
+      "sequenceId": "gamma11_γMP",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "PNX6du",
+      "word": "EΔQYΔ-UWΘ-ZΣ-XΔγY-βI",
+      "sequenceId": "seq_1773879248987_rm35oxl20",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "POMou1",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "PON6oZ",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "PUh9XL",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "PbSVre",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "PhbIr9",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "PqftTB",
+      "word": "EΔQYΔ-UWΘ-ZΣ-XΔγY-βI",
+      "sequenceId": "seq_1773879248987_rm35oxl20",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "Pt60TW",
+      "word": "CCΔW-CCΔW-CCΔW-CCΔW-",
+      "sequenceId": "alpha1_CCΔW-",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "Q84eor",
+      "word": "JIΦJIΦ",
+      "sequenceId": "alpha1_JIΦ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "QN8f2v",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "QO8P2W",
+      "word": "VNΛVNΛ",
+      "sequenceId": "gamma11_VNΛ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "QU2lXl",
+      "word": "EΔQYΔ-UWΘ-ZΣ-XΔγY-βI",
+      "sequenceId": "seq_1773879248987_rm35oxl20",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "QVCw7n",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "QmKuiw",
+      "word": "IEΨIEΨ",
+      "sequenceId": "beta5_IEΨ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "Qq47Dh",
+      "word": ":|",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "Qyfvnr",
+      "word": "Φ-AΦ-AΦ-AΦ-A",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "R4ruvB",
+      "word": "ΘX-Ω-Z-ΘX-Ω-Z-",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "RDBkyE",
+      "word": "EΔQYΔ-UWΘ-ZΣ-XΔγY-βI",
+      "sequenceId": "seq_1773879248987_rm35oxl20",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "RJutVr",
+      "word": "n→e→e→s→s→w→w→n→n|s→e→w→s→n→w→e→n→s",
+      "sequenceId": "hand-path-n→e→e→s→s→w→w→n→n|s→e→w→s→n→w→e→n→s",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "RN71vs",
+      "word": "LHΦLHΦ",
+      "sequenceId": "alpha1_LHΦ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "RaWOg9",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "ReC3yV",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "Rtis1A",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "S0xuz9",
+      "word": "αKEαKE",
+      "sequenceId": "alpha1_αKE",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "SEYC4A",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "SEpNi3",
+      "word": "SRΛSRΛ",
+      "sequenceId": "gamma11_SRΛ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "SVFIcM",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "SyLKav",
+      "word": "VNΛVNΛ",
+      "sequenceId": "gamma11_VNΛ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "T40d99",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "T5XMXs",
+      "word": "MΛMΛMΛMΛ",
+      "sequenceId": "gamma11-MΛ-ppswsdww",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "TVWht9",
+      "word": "ΔUWJEΔUWΣVXKDΣVX",
+      "sequenceId": "3f59bb9e-7294-483f-93f3-f40cccd8d513",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "TdKVxV",
+      "word": "ABΔX-ABΔX-ABΔX-ABΔX-",
+      "sequenceId": "alpha1_ABΔX-",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "TiNYmQ",
+      "word": "KΦKΦKΦKΦ",
+      "sequenceId": "alpha1-KΦ-aasedsew",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "TiPxa4",
+      "word": "HβHβHβHβ",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "TwfxfW",
+      "word": "EΔQYΔ-UWΘ-ZΣ-XΔγY-βI",
+      "sequenceId": "seq_1773879248987_rm35oxl20",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "TwnJAu",
+      "word": "Ψ-ββΨ-ββ",
+      "sequenceId": "beta5_Ψ-ββ",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "U1CZx9",
+      "word": "SYΣ-XBBΘ-RSYΣ-XBBΘ-R",
+      "sequenceId": "14650f36-b071-40d0-8a41-4e5395fe26d8",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "U7P4Uo",
+      "word": "Θ-WΘ-WΘ-WΘ-W",
+      "sequenceId": "618f8e10-d311-46d4-a982-aa475e58efc1",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "UCvXGD",
+      "word": "Σ-XΩ-YΣ-XΩ-Y",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "UE6BxX",
+      "word": "PΛPΛPΛPΛ",
+      "sequenceId": "gamma11-PΛ-ppsedsew",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "UJP2PL",
+      "word": "ALΦALΦ",
+      "sequenceId": "alpha1_ALΦ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "UW4pII",
+      "word": "n→s→e→w→s→n→w→e→n|s→s→w→w→n→n→e→e→s",
+      "sequenceId": "hand-path-n→s→e→w→s→n→w→e→n|s→s→w→w→n→n→e→e→s",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "UaDNkr",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "UlDfL9",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "V3D52m",
+      "word": "CJΘX-CJΘX-CJΘX-CJΘX-",
+      "sequenceId": "alpha1_CJΘX-",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "V52dUo",
+      "word": "FBΨFBΨ",
+      "sequenceId": "beta5_FBΨ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "VD9LFm",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "VE955N",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "VG5uyC",
+      "word": "NUΛNUΛ",
+      "sequenceId": "gamma11_NUΛ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "VOcN2t",
+      "word": "EΔQYΔ-UWΘ-ZΣ-XΔγY-βI",
+      "sequenceId": "seq_1773879248987_rm35oxl20",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "VQVMJD",
+      "word": "ALIΨ-IΦALIΨ-IΦ",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "VTRQD0",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "VfNpk0",
+      "word": "IDΨIDΨ",
+      "sequenceId": "beta5_IDΨ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "Vka6Kx",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "Vl3ebH",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "VsX2MB",
+      "word": "IEΨIEΨ",
+      "sequenceId": "beta5_IEΨ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "VtpgZZ",
+      "word": "Σ-YΣ-YΣ-YΣ-YΣ-YΣ-YΣ-YΣ-Y",
+      "sequenceId": "130d8be3-0190-4c04-a2c1-757322d3ef65",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "VvLcGp",
+      "word": "WΦ-ΣWΦ-Σ",
+      "sequenceId": "gamma11_WΦ-Σ",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "W5VNPp",
+      "word": "TγTγTγTγ",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "W62VpJ",
+      "word": "Ψ-ΦBΨΨ-ΦBΨ",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "WBkbha",
+      "word": "βFLβFL",
+      "sequenceId": "beta5_βFL",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "WDcqQ5",
+      "word": "Ω-YΩXΩ-YΩX",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "WGiBbs",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "WXVgRb",
+      "word": "XΩ-ΛΛXΨΨ-Ω",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "WbbxwM",
+      "word": "αAαAαAαA",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "Wl8Kdb",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "Wqo1kn",
+      "word": "KDΦ-KDΦ-",
+      "sequenceId": "alpha1_KDΦ-",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "Wukres",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "Wumc2h",
+      "word": "HGΨ-HGΨ-",
+      "sequenceId": "beta5_HGΨ-",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "X3ebTI",
+      "word": "ZΩZΩZΩZΩ",
+      "sequenceId": "75691421-af1b-4851-82d5-f8ac882a43c7",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "X8n0Qv",
+      "word": "EΔQYΔ-UWΘ-ZΣ-XΔγY-βI",
+      "sequenceId": "seq_1773879248987_rm35oxl20",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "XIMM04",
+      "word": "EΔQYΔ-UWΘ-ZΣ-XΔγY-βI",
+      "sequenceId": "seq_1773879248987_rm35oxl20",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "XNZHlb",
+      "word": ":|",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "XWDTgX",
+      "word": "SΛ-SΛ-SΛ-SΛ-",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "XWJVdN",
+      "word": "ΘΛ-ZΘΛ-Z",
+      "sequenceId": "beta5_ΘΛ-Z",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "Xbszdi",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "XdgNWU",
+      "word": "ΔWΔWΔWΔW",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "XpesRf",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "Xsy1xs",
+      "word": "CJΦCJΦ",
+      "sequenceId": "alpha1_CJΦ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "Y7ALdu",
+      "word": "IΨ-IΨ-IΨ-IΨ-",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "YL6XkB",
+      "word": "ΣXΣXΣXΣX",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "YPG983",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "YQtKrP",
+      "word": "αLFαLF",
+      "sequenceId": "alpha1_αLF",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "YUAtpI",
+      "word": "RTΛRTΛ",
+      "sequenceId": "gamma11_RTΛ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "YUWn2v",
+      "word": "LGΦLGΦ",
+      "sequenceId": "alpha1_LGΦ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "YWgbX7",
+      "word": "γTTγTT",
+      "sequenceId": "gamma11_γTT",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "YYXJmS",
+      "word": "EΔQYΔ-UWΘ-ZΣ-XΔγY-βI",
+      "sequenceId": "seq_1773879248987_rm35oxl20",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "YjinpF",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "YkJPOl",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "YrvGB5",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "YvIuIE",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "Z1K1KQ",
+      "word": "EΔQYΔ-UWΘ-ZΣ-XΔγY-βI",
+      "sequenceId": "seq_1773879248987_rm35oxl20",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "Z6Bz7x",
+      "word": "ΔXΔXΔXΔX",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "Z6ihYn",
+      "word": "ΩZΩZΩZΩZ",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "Z6sKwH",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "Z70LIX",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "Z8zxuZ",
+      "word": "ΛZ-GΔ-ΛZ-GΔ-",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "ZDYavO",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "ZM6zq7",
+      "word": "GFΨGFΨ",
+      "sequenceId": "beta5_GFΨ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "ZQcMaJ",
+      "word": "IDΣZ-IDΣZ-",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "ZR3cQS",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "ZX6W8G",
+      "word": "Ω-XΩ-XΩ-XΩ-X",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "ZZBZGf",
+      "word": "JEΦ-JEΦ-",
+      "sequenceId": "alpha1_JEΦ-",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "ZfTq2z",
+      "word": "W-Θ-W-ΣW-Θ-W-Σ",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "Zgb2en",
+      "word": "Sequence 1:38:56 PM",
+      "sequenceId": "seq_1774201136784_xxcipl0a1",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "ZiEcWD",
+      "word": "YΨ-ΘYΨ-Θ",
+      "sequenceId": "gamma11_YΨ-Θ",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "ZrBsev",
+      "word": "Φ-CΦ-CΦ-CΦ-C",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "ZtdQXV",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "Zy07yD",
+      "word": "GFΨGFΨ",
+      "sequenceId": "beta5_GFΨ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "a0t6rO",
+      "word": "Sequence 7:14:08 PM",
+      "sequenceId": "seq_1773879248987_rm35oxl20",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "aCWWn2",
+      "word": "EΔQYΔ-UWΘ-ZΣ-XΔγY-βI",
+      "sequenceId": "seq_1773879248987_rm35oxl20",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "aFfpyI",
+      "word": "EΔQYΔ-UWΘ-ZΣ-XΔγY-βI",
+      "sequenceId": "seq_1773879248987_rm35oxl20",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "aXaHEm",
+      "word": "QVΛQVΛ",
+      "sequenceId": "gamma11_QVΛ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "aXcZeC",
+      "word": "Θ-WCCΘ-WCC",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "ah0Azk",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "ams4k5",
+      "word": "ΩOX-ΨΩOX-ΨΩOX-ΨΩOX-Ψ",
+      "sequenceId": "7dff8e7f-4c71-4fde-86bf-f2f291979b55",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "atDXcT",
+      "word": "EΔQYΔ-UWΘ-ZΣ-XΔγY-βI",
+      "sequenceId": "seq_1773879248987_rm35oxl20",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "autbvw",
+      "word": "EΔQYΔ-UWΘ-ZΣ-XΔγY-βI",
+      "sequenceId": "seq_1773879248987_rm35oxl20",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "b8DO1c",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "bAv3ej",
+      "word": "ΦCΨΨ-ΦCΨΨ-",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "bBcqlq",
+      "word": "DKΨ-DKΨ-",
+      "sequenceId": "beta5_DKΨ-",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "bGtnFV",
+      "word": "BLΘX-BLΘX-BLΘX-BLΘX-",
+      "sequenceId": "alpha1_BLΘX-",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "bLL8QL",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "bT5YKU",
+      "word": "UMPUZDCΔVNQVYECΣ",
+      "sequenceId": "874db7bf-3c0e-448e-9a41-4f0d15c85e39",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "bbMBdf",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "bmlCDe",
+      "word": "Sequence 4:37:04 PM",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "bnDrr7",
+      "word": "DΨDΨDΨDΨ",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "c0xa5q",
+      "word": "BBΣW-BBΣW-BBΣW-BBΣW-",
+      "sequenceId": "alpha1_BBΣW-",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "c4OMKF",
+      "word": "UQΛUQΛ",
+      "sequenceId": "gamma11_UQΛ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "cXSm0C",
+      "word": "EΔQYΔ-UWΘ-ZΣ-XΔγY-βI",
+      "sequenceId": "seq_1773879248987_rm35oxl20",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "ceeGHG",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "chMK2S",
+      "word": "Ω-W-Ω-W-Ω-W-Ω-W-",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "chYExW",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "clS3Nb",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "clViOR",
+      "word": "EΔQYΔ-UWΘ-ZΣ-XΔγY-βI",
+      "sequenceId": "seq_1773879248987_rm35oxl20",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "coPTM5",
+      "word": "Δ-X-Ω-Y-Δ-X-Ω-Y-",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "cucbeK",
+      "word": "MVΛMVΛ",
+      "sequenceId": "gamma11_MVΛ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "d2U9Ij",
+      "word": "EΔQYΔ-UWΘ-ZΣ-XΔγY-βI",
+      "sequenceId": "seq_1773879248987_rm35oxl20",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "dJYfp5",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "dPXVMj",
+      "word": "W-JFAAΨΔ-O",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "dTVg5E",
+      "word": "FBΨFBΨ",
+      "sequenceId": "beta5_FBΨ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "dTtkqs",
+      "word": "CJΦCJΦ",
+      "sequenceId": "alpha1_CJΦ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "deR6TU",
+      "word": "JIΦCJIΦC",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "deTTDg",
+      "word": "Y-ΩY-ΩY-ΩY-Ω",
+      "sequenceId": "b3a0eacc-67c0-4a38-9f30-fd916ffaa2d8",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "dgSh79",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "djGTwR",
+      "word": "LGΦLGΦ",
+      "sequenceId": "alpha1_LGΦ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "dpdjO0",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "e7oKKW",
+      "word": "EΨEΨEΨEΨ",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "eAtwQu",
+      "word": "FCLΔ-PXΔZ-",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "eBfNVk",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "eHptBG",
+      "word": "AAΔW-AAΔW-AAΔW-AAΔW-",
+      "sequenceId": "alpha1_AAΔW-",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "eJF8pA",
+      "word": "ALΩX-ALΩX-ALΩX-ALΩX-",
+      "sequenceId": "alpha1_ALΩX-",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "eLx6u8",
+      "word": "FΩ-X-AΦ-ΔZ-Ψ-",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "eShngj",
+      "word": "Sequence 7:14:08 PM",
+      "sequenceId": "seq_1773879248987_rm35oxl20",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "ebVQS6",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "esBz53",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "esagDP",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "eyD9J0",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "fIAwtE",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "fMUB2d",
+      "word": "RRΛ-RRΛ-",
+      "sequenceId": "gamma11_RRΛ-",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "fQigx8",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "fatHdC",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "ff9NOX",
+      "word": "Sequence 7:14:08 PM",
+      "sequenceId": "seq_1773879248987_rm35oxl20",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "fjM9do",
+      "word": "TRΛTRΛ",
+      "sequenceId": "gamma11_TRΛ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "flqR0K",
+      "word": "BAΔX-BAΔX-BAΔX-BAΔX-",
+      "sequenceId": "alpha1_BAΔX-",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "foWIUY",
+      "word": "UQΛUQΛ",
+      "sequenceId": "gamma11_UQΛ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "fr9jnt",
+      "word": "XΦ-ΣXΦ-Σ",
+      "sequenceId": "gamma11_XΦ-Σ",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "frcReI",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "fuZbrj",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "fwTGDj",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "fzHwh9",
+      "word": "EΔQYΔ-UWΘ-ZΣ-XΔγY-βI",
+      "sequenceId": "seq_1773879248987_rm35oxl20",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "g5q1U8",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "gNaQtg",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "gP5Cq6",
+      "word": ":|",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "gRIx07",
+      "word": "UMPUZDCΔVNQVYECΣ",
+      "sequenceId": "874db7bf-3c0e-448e-9a41-4f0d15c85e39",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "gfHfYP",
+      "word": "OSΛOSΛ",
+      "sequenceId": "gamma11_OSΛ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "ggZg7E",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "ghaVd2",
+      "word": "BLΦBLΦ",
+      "sequenceId": "alpha1_BLΦ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "gj8NmC",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "gn77pL",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "gnBVEG",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "goOnoV",
+      "word": "UMΛUMΛ",
+      "sequenceId": "gamma11_UMΛ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "gr8U8o",
+      "word": "YΨ-ΩYΨ-Ω",
+      "sequenceId": "gamma11_YΨ-Ω",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "hAvDmb",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "hMHmc9",
+      "word": "RSΛRSΛ",
+      "sequenceId": "gamma11_RSΛ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "hR3a2x",
+      "word": "Sequence 7:01:15 PM",
+      "sequenceId": "seq_1774479675884_w8jvd8nwl",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "hhAPgN",
+      "word": "Sequence 1:31:46 PM",
+      "sequenceId": "seq_1774200706971_glotybxih",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "hl1dRe",
+      "word": "e→n→s→e→w→s→n→w→e|s→w→w→n→n→e→e→s→s",
+      "sequenceId": "hand-path-e→n→s→e→w→s→n→w→e|s→w→w→n→n→e→e→s→s",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "hzTJsj",
+      "word": "Sequence 4:23:13 PM",
+      "sequenceId": "seq_1774387393830_i98tmjho3",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "i0ilv4",
+      "word": "αBBαBB",
+      "sequenceId": "alpha1_αBB",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "i4grd1",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "i8WRQm",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "iDV9n0",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "iMZ4Oq",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "iMe0Qv",
+      "word": "TRΛTRΛ",
+      "sequenceId": "gamma11_TRΛ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "iNdu9m",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "iPtZDO",
+      "word": "ΘZΘZΘZΘZ",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "iYJOVT",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "ibI03Y",
+      "word": "ΨDΨDΨDΨD",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "igaCq3",
+      "word": "QPΛ-QPΛ-",
+      "sequenceId": "gamma11_QPΛ-",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "ih108X",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "ilKpEx",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "im1JLB",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "iyCAbN",
+      "word": "EΔQYΔ-UWΘ-ZΣ-XΔγY-βI",
+      "sequenceId": "seq_1773879248987_rm35oxl20",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "izJyQ2",
+      "word": "Λ-γγΛ-γγ",
+      "sequenceId": "gamma11_Λ-γγ",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "j2MOfa",
+      "word": "ALΦALΦ",
+      "sequenceId": "alpha1_ALΦ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "jGKIUG",
+      "word": "EΔQYΔ-UWΘ-ZΣ-XΔγY-βI",
+      "sequenceId": "seq_1773879248987_rm35oxl20",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "jYy6hN",
+      "word": "BLΦBLΦ",
+      "sequenceId": "alpha1_BLΦ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "ji3jKz",
+      "word": "XΔMVXΔMV",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "jnxCzm",
+      "word": "VPΛVPΛ",
+      "sequenceId": "gamma11_VPΛ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "jsEanA",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "jwflfQ",
+      "word": "OTΛOTΛ",
+      "sequenceId": "gamma11_OTΛ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "jxHcSq",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "jy9RCG",
+      "word": "W-ΣWBΘ-XΣΛ-OSRZ-GΣ-Z-F",
+      "sequenceId": "87b24334-d0f7-491e-b1d0-787a87ae9189",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "k19q7R",
+      "word": "SOΛSOΛ",
+      "sequenceId": "gamma11_SOΛ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "k2Iz7t",
+      "word": "BLΦBLΦ",
+      "sequenceId": "alpha1_BLΦ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "k51WVC",
+      "word": "Z-Δ-QVZ-Δ-QV",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "kAsr11",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "kEGyfq",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "kIJLo6",
+      "word": ":|",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "kbC1rB",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "kd2PmU",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "kjRXN8",
+      "word": "FAΨFAΨ",
+      "sequenceId": "beta5_FAΨ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "kksMbq",
+      "word": "BAΣW-BAΣW-BAΣW-BAΣW-",
+      "sequenceId": "alpha1_BAΣW-",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "kmb4Xf",
+      "word": "CJΘW-CJΘW-CJΘW-CJΘW-",
+      "sequenceId": "alpha1_CJΘW-",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "kqMjDO",
+      "word": "Σ-Z-Σ-Z-Σ-Z-Σ-Z-",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "l4gsUC",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "l6g3bZ",
+      "word": "ΔX-ΔX-ΔX-ΔX-",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "lE7Hrz",
+      "word": "ECΨECΨ",
+      "sequenceId": "beta5_ECΨ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "lFnF3K",
+      "word": "Δ-ZΔ-ZΔ-ZΔ-Z",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "lOKbo4",
+      "word": "MΛMΛMΛMΛ",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "ldd4lr",
+      "word": "JIΦJIΦ",
+      "sequenceId": "alpha1_JIΦ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "ljbC70",
+      "word": "αCCαCC",
+      "sequenceId": "alpha1_αCC",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "ljxE0f",
+      "word": "UMΛUMΛ",
+      "sequenceId": "gamma11_UMΛ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "loydV4",
+      "word": "ALΘW-ALΘW-ALΘW-ALΘW-",
+      "sequenceId": "alpha1_ALΘW-",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "lsIlXs",
+      "word": "Assemble Sequence",
+      "sequenceId": "60f8c7de-5d24-4bf3-8550-a3ec9298bca9",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "m9vbrD",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "mFJ2fU",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "mObwBg",
+      "word": "BΦ-BΦ-BΦ-BΦ-BΦ-BΦ-BΦ-BΦ-",
+      "sequenceId": "0ba40793-6544-4d1c-980f-b62d69e4daee",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "mQhRiJ",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "mcOlBD",
+      "word": "CCΔX-CCΔX-CCΔX-CCΔX-",
+      "sequenceId": "alpha1_CCΔX-",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "mdFR9a",
+      "word": "BLΘW-BLΘW-BLΘW-BLΘW-",
+      "sequenceId": "alpha1_BLΘW-",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "me537X",
+      "word": "KΦKΦKΦKΦ",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "mesA81",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "mkp9Df",
+      "word": "W-Θ-W-Θ-W-Θ-W-Θ-",
+      "sequenceId": "717e9a9f-f338-436b-8bbc-ad370b8c688b",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "ml3zrJ",
+      "word": "SRΛSRΛ",
+      "sequenceId": "gamma11_SRΛ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "mtdenf",
+      "word": "βDJβDJ",
+      "sequenceId": "beta5_βDJ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "mvNkP1",
+      "word": "IDΨIDΨ",
+      "sequenceId": "beta5_IDΨ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "n2yAhz",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "n8CT85",
+      "word": "Sequence 2:07:49 PM",
+      "sequenceId": "seq_1774206469524_6nhdep43y",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "nADxPF",
+      "word": "ΨΣ-ROYGΘX-ΔY-ΩY-HΔ-ΛY-",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "nEcaY5",
+      "word": "ALΘX-ALΘX-ALΘX-ALΘX-",
+      "sequenceId": "alpha1_ALΘX-",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "nIONH6",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "nJMDeb",
+      "word": "BLΩX-BLΩX-BLΩX-BLΩX-",
+      "sequenceId": "alpha1_BLΩX-",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "neu5h7",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "nh6r1b",
+      "word": "LΦLΦLΦLΦ",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "ni1l5O",
+      "word": "FΨFΨFΨFΨ",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "nkL9ls",
+      "word": "EΔQYΔ-UWΘ-ZΣ-XΔγY-βI",
+      "sequenceId": "seq_1773879248987_rm35oxl20",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "ntDfhc",
+      "word": ":|",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "nx62An",
+      "word": "Φ-ααΦ-αα",
+      "sequenceId": "alpha1_Φ-αα",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "o6WgdD",
+      "word": "BAΔW-BAΔW-BAΔW-BAΔW-",
+      "sequenceId": "alpha1_BAΔW-",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "oIWgoL",
+      "word": "Θ-X-Θ-X-Θ-X-Θ-X-",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "oahQQ4",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "oamwFg",
+      "word": "EΔQYΔ-UWΘ-ZΣ-XΔγY-βI",
+      "sequenceId": "seq_1773879248987_rm35oxl20",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "omefqB",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "oqDH83",
+      "word": "IECΩ-VXΩ-VVΩ-XVΩ-CEI",
+      "sequenceId": "6ad872de-4a5d-4667-a180-36b1d1ad7ee1",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "owcZh1",
+      "word": "ΘZ-ΘZ-ΘZ-ΘZ-",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "p0BaAn",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "p5BWQs",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "p5Js5l",
+      "word": "Ψ-IΨ-IΨ-IΨ-I",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "p8L0Hd",
+      "word": "GβGβGβGβ",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "pC4AsI",
+      "word": "FBΨFBΨ",
+      "sequenceId": "beta5_FBΨ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "pKzLTJ",
+      "word": "KIΦKIΦ",
+      "sequenceId": "alpha1_KIΦ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "pMjaxd",
+      "word": "AAΣX-AAΣX-AAΣX-AAΣX-",
+      "sequenceId": "alpha1_AAΣX-",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "pWOZ2t",
+      "word": "ΣX-ΣX-ΣX-ΣX-",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "paBWsC",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "pdHIvv",
+      "word": "ΨFΨFΨFΨF",
+      "sequenceId": "alpha1-ΨF-sdssapsw",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "peK2HK",
+      "word": "γNQγNQ",
+      "sequenceId": "gamma11_γNQ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "phNFqN",
+      "word": "AAΣW-AAΣW-AAΣW-AAΣW-",
+      "sequenceId": "alpha1_AAΣW-",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "plbbiZ",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "psE4mF",
+      "word": ":|",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "pxqbzy",
+      "word": ":|",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "q5DOAu",
+      "word": "ΣΛ-XΣΛ-X",
+      "sequenceId": "alpha1_ΣΛ-X",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "qSCos0",
+      "word": "IβIβIβIβ",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "qeFVn1",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "qslUVE",
+      "word": "KIΦKIΦ",
+      "sequenceId": "alpha1_KIΦ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "qzbZVa",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "r4Xg9b",
+      "word": "BΦ-BΦ-BΦ-BΦ-",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "r8quNB",
+      "word": "EΔQYΔ-UWΘ-ZΣ-XΔγY-βI",
+      "sequenceId": "seq_1773879248987_rm35oxl20",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "r8wgcW",
+      "word": "αCαCαCαC",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "rFzZkW",
+      "word": "IIΨ-IIΨ-",
+      "sequenceId": "beta5_IIΨ-",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "rKTPVq",
+      "word": "EΔQYΔ-UWΘ-ZΣ-XΔγY-βI",
+      "sequenceId": "seq_1773879248987_rm35oxl20",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "rUtRWj",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "rZxpK5",
+      "word": "Δ-Y-Δ-Y-Δ-Y-Δ-Y-",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "rcVJko",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "rd7RgQ",
+      "word": "EΔQYΔ-UWΘ-ZΣ-XΔγY-βI",
+      "sequenceId": "seq_1773879248987_rm35oxl20",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "rqd8ea",
+      "word": "TOΛTOΛ",
+      "sequenceId": "gamma11_TOΛ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "ru471J",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "s1tcTJ",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "sL0Aay",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "sb8whz",
+      "word": "EΔQYΔ-UWΘ-ZΣ-XΔγY-βI",
+      "sequenceId": "seq_1773879248987_rm35oxl20",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "sc63Ji",
+      "word": ":|",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "shMiGz",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "spCB46",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "t0QkpU",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "t3Cplo",
+      "word": "Sequence 2:07:49 PM",
+      "sequenceId": "seq_1774206469524_6nhdep43y",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "t4KBC7",
+      "word": "γORγOR",
+      "sequenceId": "gamma11_γOR",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "tK65qz",
+      "word": "Ω-WΩ-WΩ-WΩ-W",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "tYDS7S",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "tZ2gg7",
+      "word": "Δ-YΔ-YΔ-YΔ-Y",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "tclzYk",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "tjCg0q",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "tl6wGn",
+      "word": "EΔQYΔ-UWΘ-ZΣ-XΔγY-βI",
+      "sequenceId": "seq_1773879248987_rm35oxl20",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "tpB6d8",
+      "word": "TSΛ-TSΛ-",
+      "sequenceId": "gamma11_TSΛ-",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "tu0rRa",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "uKxloM",
+      "word": "Λ-SΛ-SΛ-SΛ-S",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "uMO3Aw",
+      "word": "MNΛ-MNΛ-",
+      "sequenceId": "gamma11_MNΛ-",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "uPsoiT",
+      "word": "NMΛ-NMΛ-",
+      "sequenceId": "gamma11_NMΛ-",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "uVutJK",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "uY8szP",
+      "word": "βHHβHH",
+      "sequenceId": "beta5_βHH",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "ukbMms",
+      "word": "βGβGβGβG",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "uqAHDt",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "ux8AoE",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "v1TJ9j",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "v4cN0L",
+      "word": "LΣ-WLFBΦ-A",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "v6ndfR",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "v8BEII",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "vFfiWQ",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "vKLqlY",
+      "word": "EΔQYΔ-UWΘ-ZΣ-XΔγY-βI",
+      "sequenceId": "seq_1773879248987_rm35oxl20",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "vMqzJR",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "vYwCQu",
+      "word": "ΣΛ-WΣΛ-W",
+      "sequenceId": "alpha1_ΣΛ-W",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "vsXN8B",
+      "word": "CCΣW-CCΣW-CCΣW-CCΣW-",
+      "sequenceId": "alpha1_CCΣW-",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "vtHDNr",
+      "word": "AαAαAαAα",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "vtM4Gs",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "vxyWlP",
+      "word": "γROγRO",
+      "sequenceId": "gamma11_γRO",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "w1L8K5",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "w4RRux",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "w99tiJ",
+      "word": "JIΦJIΦ",
+      "sequenceId": "alpha1_JIΦ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "w9E2TD",
+      "word": "HΨ-HΨ-HΨ-HΨ-",
+      "sequenceId": "8c3abdd3-537c-42d2-84e2-cda8abed4695",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "wBilFo",
+      "word": "WΦ-ΔWΦ-Δ",
+      "sequenceId": "gamma11_WΦ-Δ",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "wBpAv9",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "wGzOIm",
+      "word": "BLΩW-BLΩW-BLΩW-BLΩW-",
+      "sequenceId": "alpha1_BLΩW-",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "wUwFio",
+      "word": "GFΨGGFΨG",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "wWn3df",
+      "word": "OSRΛ-OSRΛ-OSRΛ-OSRΛ-",
+      "sequenceId": "bc259bb5-fcf6-4baa-aed2-ec3589b9b420",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "wXjb1h",
+      "word": "ΣW-ΣW-ΣW-ΣW-",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "wbAD0E",
+      "word": "EΔQYΔ-UWΘ-ZΣ-XΔγY-βI",
+      "sequenceId": "seq_1773879248987_rm35oxl20",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "weOwxP",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "wut73r",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "x6W9ta",
+      "word": "EΔQYΔ-UWΘ-ZΣ-XΔγY-βI",
+      "sequenceId": "seq_1773879248987_rm35oxl20",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "xFpKMB",
+      "word": "EΔQYΔ-UWΘ-ZΣ-XΔγY-βI",
+      "sequenceId": "seq_1773879248987_rm35oxl20",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "xSvTzY",
+      "word": "Sequence 4:39:25 PM",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "xVL58k",
+      "word": "Θ-XΘ-XΘ-XΘ-X",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "xpktAV",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "y0R7w2",
+      "word": "Sequence 11:23:24 PM",
+      "sequenceId": "seq_1773897804798_dlg4x3qp7",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "y0kNJh",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "y1QUvD",
+      "word": ":|",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "yCZqym",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "yFFjZ4",
+      "word": "SOΛSOΛ",
+      "sequenceId": "gamma11_SOΛ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "yJP8T5",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "yK5nZu",
+      "word": "ΣWΣWΣWΣW",
+      "sequenceId": "f0a5d353-4ada-4f1b-87a1-159bd2e8e335",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "yMIDB9",
+      "word": "Sequence 12:42:22 AM",
+      "sequenceId": "seq_1773898942797_579f7pk27",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "yPqa4X",
+      "word": ":|",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "yW2yra",
+      "word": "STΛ-STΛ-",
+      "sequenceId": "gamma11_STΛ-",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "ye2ySc",
+      "word": ":|",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "yexupt",
+      "word": "ΘY-ΘY-ΘY-ΘY-",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "yhigHQ",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "ylRmcU",
+      "word": "VPΛVPΛ",
+      "sequenceId": "gamma11_VPΛ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "ypHXuQ",
+      "word": "CJΩX-CJΩX-CJΩX-CJΩX-",
+      "sequenceId": "alpha1_CJΩX-",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "yy32FK",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "yzR6xn",
+      "word": ":|",
+      "sequenceId": null,
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "zPpL1K",
+      "word": "UMPUZDCΔVNQVYECΣ",
+      "sequenceId": "874db7bf-3c0e-448e-9a41-4f0d15c85e39",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "zRdHRK",
+      "word": "βIIβII",
+      "sequenceId": "beta5_βII",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "zX5rep",
+      "word": "Sequence 1:38:56 PM",
+      "sequenceId": "seq_1774201136784_xxcipl0a1",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "zaELlY",
+      "word": "BBΔW-BBΔW-BBΔW-BBΔW-",
+      "sequenceId": "alpha1_BBΔW-",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "zkNIIC",
+      "word": "HFΨHFΨ",
+      "sequenceId": "beta5_HFΨ",
+      "ownerId": null,
+      "category": "no-encoded-no-owner"
+    },
+    {
+      "code": "zmPXHy",
+      "word": "XΔXΔXΔXΔ",
+      "sequenceId": "516da14f-46fa-4825-ac0d-c98f7827dbf6",
+      "ownerId": null,
+      "category": "public-orphan"
+    },
+    {
+      "code": "06ED5l",
+      "word": "IΣ-NY-IΣ-NY-IΣ-NY-IΣ-NY-",
+      "sequenceId": "4645d378-4731-4962-ad07-88d143e29993",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "168ARM",
+      "word": "DΘ-OOZ-DΣPZ-EBΘ-OPYDΘ-OOZ-DΣPZ-EBΘ-OPYDΘ-OOZ-DΣPZ-EBΘ-OPYDΘ-OOZ-DΣPZ-EBΘ-OPY",
+      "sequenceId": "9f222e48-2f4a-4a3b-be1e-d1386f73b1fe",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "0vEArj",
+      "word": "FALΨ-FALΨ-FALΨ-FALΨ-",
+      "sequenceId": "0e1d7c71-43b7-4e42-a717-1062a2339e47",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "1uNPLU",
+      "word": "VNΛ-MVNΛ-MVNΛ-MVNΛ-M",
+      "sequenceId": "05757f9c-b5d4-4f74-af15-ed485b9e5e86",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "0WJpLJ",
+      "word": "WΔWΘ-WΔWΘ-WΔWΘ-WΔWΘ-",
+      "sequenceId": "dc0936be-23cf-469a-a472-3c77d5e95dfd",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "0bC0J2",
+      "word": "CCCC",
+      "sequenceId": "c9d9bd94-78a5-498d-9982-86c216bf89e5",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "2DxMJq",
+      "word": "MPMP",
+      "sequenceId": "vtg-7to1-quarter-opp-mpmp",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "1P28b6",
+      "word": "AΔUSTYEΘ-N",
+      "sequenceId": "530e5443-00e6-4f7f-a5fa-3826847314c2",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "2OkMA7",
+      "word": "Σ-Z-Σ-Z-Σ-Z-Σ-Z-",
+      "sequenceId": "175cbec0-e4ae-400d-bf51-ffd0a09e00a9",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "2QMbpf",
+      "word": "ΨGΦΦ-ΨGΦΦ-ΨGΦΦ-ΨGΦΦ-",
+      "sequenceId": "a7cae002-69cf-4302-9e32-a300241cb7d2",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "2Iuv72",
+      "word": "IΨ-IΨ-IΨ-IΨ-",
+      "sequenceId": "60dacba5-b9cf-4d3a-adcf-4c57b0898797",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "2p2K3w",
+      "word": "BΘ-Y-ΦBΘ-Y-ΦBΘ-Y-ΦBΘ-Y-Φ",
+      "sequenceId": "169fc792-676c-4cb6-935c-06b6a2f5bef0",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "2r7mAg",
+      "word": "GFLGFLGFLGFL",
+      "sequenceId": "70e0aaca-dd18-4d55-885b-1e457bc6e380",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "2aSeaO",
+      "word": "Sequence 11:05:53 PM",
+      "sequenceId": "seq_1774670753789_twtr5qauu",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "3Ha61l",
+      "word": "Sequence 9:19:10 PM",
+      "sequenceId": "seq_1776133150515_orobql8oj",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "3DUppq",
+      "word": "DΔX-KECΔY-DΔX-KECΔY-",
+      "sequenceId": "2df13a99-295a-4d22-a0b3-bb76edbfa7ac",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "5KWIR9",
+      "word": "IIII",
+      "sequenceId": "vtg-2to1-tog-same-iiii",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "4tExMM",
+      "word": "ΘWCKΘWCKΘWCKΘWCK",
+      "sequenceId": "a2dab6a7-7006-4f1b-b75d-783ce7aad4a1",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "3RNjlw",
+      "word": "Θ-RRX-Ω-RRW-",
+      "sequenceId": "ee888c37-7d3f-4ba9-8681-299d630781b9",
+      "ownerId": "noahWBkHCaTxYWXZQo3JXeiktwt2",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "4dGnC1",
+      "word": "Δ-RW-ΨΔ-RW-ΨΔ-RW-ΨΔ-RW-Ψ",
+      "sequenceId": "46104c7b-8a2a-4f7e-8498-da5f7e18dcb5",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "4LWRE0",
+      "word": "IΦΘ-Y-IΦΘ-Y-IΦΘ-Y-IΦΘ-Y-",
+      "sequenceId": "0e7a5ce7-b1af-4058-a5d3-164606d78411",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "5fiZTM",
+      "word": "BΨΩXBΩ-MWBΨΩXBΩ-MW",
+      "sequenceId": "dd37fe5c-8bb6-4c1b-9686-1739bfd3705b",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "2yi8dV",
+      "word": "CΦ-CΦ-CΦ-CΦ-",
+      "sequenceId": "997c9c72-87b8-4248-b378-2ebe1bdfa90f",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "4TIzBG",
+      "word": "IIII",
+      "sequenceId": "vtg-2to1-tog-same-iiii",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "6O6RtB",
+      "word": "Sequence 4:02:55 AM",
+      "sequenceId": "seq_1776502975489_08pa0n28n",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "5SZvTa",
+      "word": "ΣXΦ-ΣXΦ-ΣXΦ-ΣXΦ-",
+      "sequenceId": "43d09ffd-66fd-4b0f-b3e5-693cd6bb2dd9",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "2VkHye",
+      "word": "Sequence 5:11:24 PM",
+      "sequenceId": "seq_1774735884444_d1gaiaryb",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "6Qz0wL",
+      "word": "Sequence 1:28:33 PM",
+      "sequenceId": "seq_1774808913818_y7rwrmisk",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "33bkXc",
+      "word": "Sequence 5:10:09 PM",
+      "sequenceId": "seq_1774735809199_zmtxf25fk",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "11cJqk",
+      "word": "IEΦ-KIEΦ-KIEΦ-KIEΦ-K",
+      "sequenceId": "c9b389eb-b46a-4a0d-8f7e-f1ccc2f3093e",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "6dicvk",
+      "word": "Sequence 5:08:56 PM",
+      "sequenceId": "seq_1774735736393_7kn689uyv",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "6lR9kU",
+      "word": "OROR",
+      "sequenceId": "272067f9-23b2-45e9-bfdb-0029feaa0054",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "54uPwm",
+      "word": "EΘ-ZHEΘ-ZHEΘ-ZHEΘ-ZH",
+      "sequenceId": "6a541843-d9b3-450a-bb5d-f506bbe9d4b1",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "6LueJk",
+      "word": "PMVPMVPMVPMV",
+      "sequenceId": "71249f2b-a8ba-4862-9b9e-a66e1008093b",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "5UBOax",
+      "word": "GGGG",
+      "sequenceId": "87ab3b92-b3f9-426c-948f-35d270a8725b",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "5z4mq1",
+      "word": "CCCC",
+      "sequenceId": "459603cb-c1c5-448f-9413-b40afd852e96",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "7zg56z",
+      "word": "JΘWCJΘWCJΘWCJΘWC",
+      "sequenceId": "c2a14915-947c-47d6-bcb4-ac0d62888363",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "8Spqyj",
+      "word": "CΩ-W-CCΩ-W-CCΩ-W-CCΩ-W-C",
+      "sequenceId": "59bc0bdd-3ad2-4e01-bd08-4c538885563b",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "7HrHU2",
+      "word": "ABΔW-ABΔW-ABΔW-ABΔW-",
+      "sequenceId": "02601c6b-1ead-43d7-8f3f-4509fa84f40a",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "7yUnua",
+      "word": "SSSS",
+      "sequenceId": "9b45e058-995b-47a4-90a1-24edcd081bab",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "7kli4m",
+      "word": "EΩ-Z-IEΩ-Z-IEΩ-Z-IEΩ-Z-I",
+      "sequenceId": "e5db0031-4054-4190-acc0-1f3cc2d1bb38",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "8ngAU0",
+      "word": "DΨDΨDΨDΨ",
+      "sequenceId": "e2367f99-1556-4133-a2cc-004fca23919c",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "7l3EXc",
+      "word": "ΘOZHΘOZHΘOZHΘOZH",
+      "sequenceId": "7f252b0e-9533-4185-859a-72400f034589",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "6ZMB4C",
+      "word": "YECΘ-YECΘ-YECΘ-YECΘ-",
+      "sequenceId": "519c8cd9-0d85-4d0d-9b75-1f097b4aab16",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "65DdxE",
+      "word": "CΨECCΨECCΨECCΨEC",
+      "sequenceId": "1ed63f88-b2ee-4ff5-8401-ed0728dbfc59",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "6Yu6wp",
+      "word": "ΦΨΘYΦΨΘYΦΨΘYΦΨΘY",
+      "sequenceId": "32d21828-81c8-4d6c-806f-b94d68ab5bff",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "9YaClQ",
+      "word": "IEΦ-KIEΦ-KIEΦ-KIEΦ-K",
+      "sequenceId": "c9b389eb-b46a-4a0d-8f7e-f1ccc2f3093e",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "9jVita",
+      "word": "YIIΩYIIΩYIIΩYIIΩ",
+      "sequenceId": "73b7fc2c-717b-4879-a9e8-8ab4d90bfbdc",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "8W7eY0",
+      "word": "VVVV",
+      "sequenceId": "be250a7c-7107-409d-aaa3-f137b7c24fa0",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "4mux4c",
+      "word": "CCCC",
+      "sequenceId": "459603cb-c1c5-448f-9413-b40afd852e96",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "AOHUKW",
+      "word": "AΔUSTZ-EΘ-NWAΔUSTZ-EΘ-NWAΔUSTZ-EΘ-NWAΔUSTZ-EΘ-NW",
+      "sequenceId": "3228a40b-a298-4fe8-a6ae-8a2381ff864c",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "At0F3B",
+      "word": "ABΔW-ABΔW-ABΔW-ABΔW-",
+      "sequenceId": "02601c6b-1ead-43d7-8f3f-4509fa84f40a",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "863Urm",
+      "word": "YFAΘ-YFAΘ-YFAΘ-YFAΘ-",
+      "sequenceId": "c4d4ba60-7c1d-4c6d-a264-908cfba02705",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "93iTfP",
+      "word": "UX-ΣΛ-UX-ΣΛ-UX-ΣΛ-UX-ΣΛ-",
+      "sequenceId": "611e8cdc-54bc-4834-bb3b-0590d739287d",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "D6iTKR",
+      "word": "JDJD",
+      "sequenceId": "vtg-2to1-split-opp-jdjd",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "8aTNrA",
+      "word": "BBBB",
+      "sequenceId": "b09e0f05-3032-4531-8fcc-2046e67435d0",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "9WWunv",
+      "word": "IΦΘ-Y-IΦΘ-Y-IΦΘ-Y-IΦΘ-Y-",
+      "sequenceId": "0e7a5ce7-b1af-4058-a5d3-164606d78411",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "B3htyp",
+      "word": "AΔUSTZ-EΩ-NWAΔUSTZ-EΩ-NWAΔUSTZ-EΩ-NWAΔUSTZ-EΩ-NW",
+      "sequenceId": "039c2092-1fce-49c5-adc6-82b06cf4a26d",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "DSaNAC",
+      "word": "ΔX-ΔX-ΔX-ΔX-",
+      "sequenceId": "bdf3aef5-f8ee-4f6f-a4dc-85ae7ebe0cf8",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "C59wB3",
+      "word": "Sequence 5:08:56 PM",
+      "sequenceId": "seq_1774735736393_7kn689uyv",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "C20ku6",
+      "word": "KECΦ-KECΦ-KECΦ-KECΦ-",
+      "sequenceId": "377a1460-8980-4478-a19f-2e01e77cce61",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "DyZcz5",
+      "word": "IΨ-IΨ-IΨ-IΨ-",
+      "sequenceId": "630cbf39-df94-4c40-aa59-5ad92e069a4a",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "BHd5ib",
+      "word": "ΣZ-FBΣZ-FBΣZ-FBΣZ-FB",
+      "sequenceId": "1c76efb1-2055-41ca-b730-2521b6121551",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "ACslLI",
+      "word": "IΣ-NY-IΣ-NY-IΣ-NY-IΣ-NY-",
+      "sequenceId": "4645d378-4731-4962-ad07-88d143e29993",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "9BB55w",
+      "word": "OΛOOOΛOOOΛOOOΛOO",
+      "sequenceId": "b474fc6d-5376-42b2-a810-7e8110dad2ba",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "A9kAQh",
+      "word": "DCCΨDCCΨDCCΨDCCΨ",
+      "sequenceId": "13aafb46-d7af-486d-8ad8-aaa45ec804ed",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "FcxzP4",
+      "word": "Sequence 5:25:38 PM",
+      "sequenceId": "seq_1774736738283_1ahufilim",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "F2JYuZ",
+      "word": "GGGG",
+      "sequenceId": "87ab3b92-b3f9-426c-948f-35d270a8725b",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "DaGkPj",
+      "word": "W-BCΘ-W-BCΘ-",
+      "sequenceId": "bc6c6c9b-27ee-4224-b274-811c7ad5e104",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "GBkHDy",
+      "word": "ΘZ-EKFACLΘZ-EKFACL",
+      "sequenceId": "a0675595-b51a-40df-8d30-365c61737476",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "GDYQcN",
+      "word": "Ω-ORWΩ-ORWΩ-ORWΩ-ORW",
+      "sequenceId": "107d38ba-f05a-4a59-be2a-b2d1657dbf54",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "7z78lG",
+      "word": "Ω-WΩ-WΩ-WΩ-W",
+      "sequenceId": "c2fde260-9fd2-4bc8-bc7c-bf483f45d650",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "DJ1AwK",
+      "word": "DJDJ",
+      "sequenceId": "49e57a6c-add4-4d1b-bbc0-d24bf44664e6",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "EZ1Jte",
+      "word": "Θ-ZΩXΘ-ZΩXΘ-ZΩXΘ-ZΩX",
+      "sequenceId": "b6508746-f02d-4a7d-b3eb-7e90559604ce",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "H2DUrN",
+      "word": "BACCBCBCBACCBCBC",
+      "sequenceId": "420194ec-1d91-440b-9068-a527396a27a7",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "GZrHAO",
+      "word": "ΣX-ΔXΣX-ΔXΣX-ΔXΣX-ΔX",
+      "sequenceId": "e55f6350-b69a-4108-9153-7ffb16b97d47",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "HepT2R",
+      "word": "ZΘZΘZΘZΘZΘZΘZΘZΘ",
+      "sequenceId": "d0be451f-6b02-43be-a8ba-03a9c38d8a96",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "DxVdbP",
+      "word": "UWΔUUWΔUUWΔUUWΔU",
+      "sequenceId": "7f6f8f0f-94de-474d-9f6c-b39a11967279",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "EtrqQ1",
+      "word": "GΨ-GΨ-GΨ-GΨ-",
+      "sequenceId": "e9d1b049-7071-4055-a904-7fd2722ec272",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "I26MGS",
+      "word": "AΨΣ-W-AΨΣ-W-AΨΣ-W-AΨΣ-W-",
+      "sequenceId": "daed6c5d-0e4c-47a0-814c-60579c77eb04",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "Goq5cZ",
+      "word": "ΩNZIΩNZIΩNZIΩNZI",
+      "sequenceId": "b72d12e1-2c59-4664-85f5-2098bdac3723",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "IkYAtz",
+      "word": "BAΣWBAΣWBAΣWBAΣW",
+      "sequenceId": "48b45b35-1650-45b7-96ba-e2873f35ed02",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "Flltcy",
+      "word": "IFΩ-YIFΩ-YIFΩ-YIFΩ-Y",
+      "sequenceId": "810565cd-3492-4f16-b3b7-de4f507cc8fa",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "FxEPqy",
+      "word": "HΨ-HΨ-HΨ-HΨ-",
+      "sequenceId": "b74b4469-7442-460c-9f19-14a73ddfa05d",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "GoRDsN",
+      "word": "Σ-YGΨ-Σ-YGΨ-Σ-YGΨ-Σ-YGΨ-",
+      "sequenceId": "d4fe6be7-361c-4b6b-a46b-2062d7319892",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "Et0URS",
+      "word": "ABAB",
+      "sequenceId": "8076ab14-1a7f-4a10-89ff-07344d72c043",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "JBdT1Z",
+      "word": "XΣΛ-Y-FΩ-SΛXΣΛ-Y-FΩ-SΛ",
+      "sequenceId": "1c90ad3a-2c67-46a9-890f-32ed9a1eb29f",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "IPrL0t",
+      "word": "HHHH",
+      "sequenceId": "b565ee95-0ab1-4d8b-90f7-a3b849950688",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "HiNtyb",
+      "word": "IFΩ-YIFΩ-YIFΩ-YIFΩ-Y",
+      "sequenceId": "810565cd-3492-4f16-b3b7-de4f507cc8fa",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "Kd824u",
+      "word": "JEKΦJEKΦJEKΦJEKΦ",
+      "sequenceId": "652cbb3d-a6f6-4813-88d3-e6d6536ce3f7",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "JHwOpD",
+      "word": "IΨ-IΨ-IΨ-IΨ-",
+      "sequenceId": "630cbf39-df94-4c40-aa59-5ad92e069a4a",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "CWkdHc",
+      "word": "W-ΣW-ΣW-ΣW-Σ",
+      "sequenceId": "dbe43efc-4e20-4fc7-a07d-395acd65c5e9",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "JjZnmV",
+      "word": "ΣΓWΑΔΓWΑ",
+      "sequenceId": "seq_1774642238424_pftl3sp9h",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "LX1nKM",
+      "word": "Assemble Sequence",
+      "sequenceId": "c375f369-7548-4c28-b5f9-f4ec6adb8cfe",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "IoHdz3",
+      "word": "DΨDΨDΨDΨ",
+      "sequenceId": "052e4a1f-ac87-429d-8204-4d94ca80cc53",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "JxgIkX",
+      "word": "EΩ-NY-EΩ-NY-EΩ-NY-EΩ-NY-",
+      "sequenceId": "375e4038-bcdd-4c5d-9e82-96e406054451",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "IeRRiJ",
+      "word": "ΘZIIΘZIIΘZIIΘZII",
+      "sequenceId": "01cefe0d-2231-47a7-80d9-c48ecb1bf8d2",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "J7jLtG",
+      "word": "X-Θ-TX-Θ-TX-Θ-TX-Θ-T",
+      "sequenceId": "4d4a184d-b45e-4ed8-b152-c072b79bc9ef",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "JesHo7",
+      "word": "CCCC",
+      "sequenceId": "6d9922cd-39d3-4897-a740-c009b2d62e2a",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "L1C8pV",
+      "word": "CCCC",
+      "sequenceId": "ca82728e-b01f-4a7e-9613-be8bd2280bd7",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "K8XbDQ",
+      "word": "ΘZΘYΘZΘYΘZΘYΘZΘY",
+      "sequenceId": "42b75442-5da7-442f-b7a2-66105d831467",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "MzkHkQ",
+      "word": "NPNΛNPNΛNPNΛNPNΛ",
+      "sequenceId": "69a88bb1-7616-4c03-8298-de9ba07db021",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "JVFsyG",
+      "word": "IΣ-NY-IΣ-NY-IΣ-NY-IΣ-NY-",
+      "sequenceId": "4645d378-4731-4962-ad07-88d143e29993",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "JOL9cv",
+      "word": "DΩ-ΛZDΩ-ΛZDΩ-ΛZDΩ-ΛZ",
+      "sequenceId": "91fdc5d1-66bf-4993-8dc4-3494f10ed2c3",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "R3fGKJ",
+      "word": "AΘ-USTZ-EΣNWAΘ-USTZ-EΣNWAΘ-USTZ-EΣNWAΘ-USTZ-EΣNW",
+      "sequenceId": "c1b115d3-4279-4619-b013-ece53072d0cc",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "JzM03p",
+      "word": "ΣXΣXΣXΣXΣXΣXΣXΣX",
+      "sequenceId": "0b3500e7-d5e2-4f07-82dc-b8023e388b5c",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "PPYXBs",
+      "word": "Ω-SΛW-Ω-RRXΩ-SΛW-Ω-RRX",
+      "sequenceId": "7cc67b57-b24e-4dea-99f2-8186275bb74c",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "Itmji8",
+      "word": "CCCC",
+      "sequenceId": "ca82728e-b01f-4a7e-9613-be8bd2280bd7",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "HDlwUL",
+      "word": "Y-FAΘ-Y-FAΘ-Y-FAΘ-Y-FAΘ-",
+      "sequenceId": "008fe875-4945-4c01-9da6-1e457a74f69e",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "P608AG",
+      "word": "ZΣ-ZΣ-ZΣ-ZΣ-",
+      "sequenceId": "df9d6f8b-b2f0-48b3-afdb-d22e6cd57123",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "LWryDu",
+      "word": "Sequence 5:13:45 PM",
+      "sequenceId": "seq_1774736025289_6v7yh145s",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "M29ZDW",
+      "word": "FΩ-OYFΩ-OYFΩ-OYFΩ-OY",
+      "sequenceId": "5444b9c5-eb93-489c-9fe2-676547e4bd03",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "QP37FI",
+      "word": "Φ-BΨΦΦ-BΨΦΦ-BΨΦΦ-BΨΦ",
+      "sequenceId": "62d72dea-275d-4c60-a141-4c5c1a59638b",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "RKsIqG",
+      "word": "Σ-RSZ-Σ-RSZ-Σ-RSZ-Σ-RSZ-",
+      "sequenceId": "398b322c-837f-4a39-a343-180e6963f99c",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "QQqRWy",
+      "word": "LΦLΦLΦLΦ",
+      "sequenceId": "8776a098-94e6-4e80-a717-ce9f474ec5a4",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "M4ECZx",
+      "word": "ΩΛ-UZΩΛ-UZΩΛ-UZΩΛ-UZ",
+      "sequenceId": "5b7bf910-d959-4722-8a80-a2b209773d26",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "N5qxVC",
+      "word": "XLGFLFAΩ-XLGFLFAΩ-",
+      "sequenceId": "3a9c8032-fcc5-4953-b214-a0fcd2839f12",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "OFjDLd",
+      "word": "Σ-XΔYΣ-XΔYΣ-XΔYΣ-XΔY",
+      "sequenceId": "c6b1799b-9577-4ce8-9447-1a88b2628751",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "QGXiHd",
+      "word": "Assemble Sequence",
+      "sequenceId": "6406c176-6207-42f8-a2be-bc67f9f30939",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "Qp8JnA",
+      "word": "RZ-FBLFLFΣW-Ω-RΛYΣ-Λ-",
+      "sequenceId": "286e72ef-8bc8-49b7-a44b-2cc02fd04cb0",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "ShO8nA",
+      "word": "ΣXΣW-ΣXΣW-ΣXΣW-ΣXΣW-",
+      "sequenceId": "9b9393af-5fd7-4d7a-92b3-08418e32941a",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "QG51dj",
+      "word": "ΔZ-Σ-XΔZ-Σ-XΔZ-Σ-XΔZ-Σ-X",
+      "sequenceId": "71c09fcb-08e3-4ded-9191-0cc7d616e932",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "RFFrTh",
+      "word": "Assemble Sequence",
+      "sequenceId": "aa472450-e440-4c99-b54b-13262da0be27",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "Wenb29",
+      "word": "CCCC",
+      "sequenceId": "459603cb-c1c5-448f-9413-b40afd852e96",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "PSniPM",
+      "word": "TTYDCΘ-OSTTYDCΘ-OS",
+      "sequenceId": "209271f9-139d-43e1-a15d-406c652f7653",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "QTjZay",
+      "word": "Assemble Sequence",
+      "sequenceId": "cf6e219b-85c3-4782-a914-e6f95dc28df1",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "KnrQHv",
+      "word": "IΣ-NY-IΣ-NY-IΣ-NY-IΣ-NY-",
+      "sequenceId": "4645d378-4731-4962-ad07-88d143e29993",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "TR8i0Y",
+      "word": "ΨΩYFΨΩYFΨΩYFΨΩYF",
+      "sequenceId": "eabc6a1e-c880-4287-bdb4-431e2979d2a4",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "RNDlu1",
+      "word": "ΘZΘZ-ΘZΘZ-ΘZΘZ-ΘZΘZ-",
+      "sequenceId": "cd606e95-c2b9-4a9a-82fa-cc4bb7e112f2",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "TJ37yN",
+      "word": "ΔWCΦ-ΔWCΦ-ΔWCΦ-ΔWCΦ-",
+      "sequenceId": "35b22b59-9883-45d8-9afc-18699d2a790e",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "RG7gvA",
+      "word": "SSSS",
+      "sequenceId": "f4fd5162-a2a2-4f40-a5e8-7e089c98bf03",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "VwhhfR",
+      "word": "CCCC",
+      "sequenceId": "4e41c882-618f-4a58-b4f0-ad2a0fa8d229",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "XjCLAz",
+      "word": "Y-Δ-UUY-Δ-UUY-Δ-UUY-Δ-UU",
+      "sequenceId": "2e09aed3-d359-49c0-91ac-351c2dd2288c",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "W4BSj7",
+      "word": "Y-GIΣ-Y-Σ-W-ΔY-GIΣ-Y-Σ-W-Δ",
+      "sequenceId": "71c570d7-524c-43b0-a4f5-e59ccacb4328",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "SyOBn2",
+      "word": "GHGHGHGGGHGHGHGG",
+      "sequenceId": "05bd9385-5dfc-47f0-82ba-8758544f5632",
+      "ownerId": "40ovmSoxdRNouOIeQrhDFSwkDEX2",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "SKjuZO",
+      "word": "Sequence 2:11:11 PM",
+      "sequenceId": "seq_1775329871748_6zu3h86z5",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "T2yxJJ",
+      "word": "CCCC",
+      "sequenceId": "ca82728e-b01f-4a7e-9613-be8bd2280bd7",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "WZ84bj",
+      "word": "Sequence 1:28:33 PM",
+      "sequenceId": "seq_1774808913818_y7rwrmisk",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "YGVrp8",
+      "word": "SOΛ-PSOΛ-PSOΛ-PSOΛ-P",
+      "sequenceId": "a61a7bec-7a7e-453a-b004-c962a934aff4",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "TrZBv9",
+      "word": "TTTT",
+      "sequenceId": "df26baa0-3db8-4b43-958d-87d27fb02f55",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "XODRQc",
+      "word": "ABLΦABLΦABLΦABLΦ",
+      "sequenceId": "fe72b148-afba-4df1-b810-bc81d93536d3",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "U14n5Y",
+      "word": "PUQYEΔX-ΣPUQYEΔX-Σ",
+      "sequenceId": "f5634320-5ac4-4aff-82c1-4c072b1d057c",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "NIreEy",
+      "word": "CCCC",
+      "sequenceId": "459603cb-c1c5-448f-9413-b40afd852e96",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "b4jbrj",
+      "word": "CΩ-W-CCΩ-W-CCΩ-W-CCΩ-W-C",
+      "sequenceId": "59bc0bdd-3ad2-4e01-bd08-4c538885563b",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "WRmxut",
+      "word": "IIII",
+      "sequenceId": "vtg-2to1-tog-same-iiii",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "To2Crq",
+      "word": "ZEΔUZEΔUZEΔUZEΔU",
+      "sequenceId": "29209998-08b6-4161-aec9-7987b1dbc90b",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "Z1HdXr",
+      "word": "ΣW-Ω-XΣW-Ω-XΣW-Ω-XΣW-Ω-X",
+      "sequenceId": "26d5c1f4-c96b-4b89-ab08-118486e759c9",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "REkva9",
+      "word": "Sequence 5:35:13 PM",
+      "sequenceId": "seq_1774996513564_cub0tqvu0",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "YrG1b8",
+      "word": "SSSS",
+      "sequenceId": "9b45e058-995b-47a4-90a1-24edcd081bab",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "XpzSez",
+      "word": "Sequence 1:28:33 PM",
+      "sequenceId": "seq_1774808913818_y7rwrmisk",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "XceGNQ",
+      "word": "X-ΔX-ΔX-ΔX-Δ",
+      "sequenceId": "3f35a9f6-0c18-4b50-81b9-5cfac68ec340",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "ZqsnX5",
+      "word": "GGGG",
+      "sequenceId": "87ab3b92-b3f9-426c-948f-35d270a8725b",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "ZjBR1E",
+      "word": "ΦBLHΦBLHΦBLHΦBLH",
+      "sequenceId": "efbf7615-ba95-44fb-9361-83c0ea02fbb7",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "Y5jKUV",
+      "word": "IIII",
+      "sequenceId": "vtg-2to1-tog-same-iiii",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "YN4Ohz",
+      "word": "KΩYDKΩYDKΩYDKΩYD",
+      "sequenceId": "427bf5e0-e8da-4fd4-a618-06f0f3cbf3ff",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "bc7ImF",
+      "word": "SOX-Θ-SOX-Θ-SOX-Θ-SOX-Θ-",
+      "sequenceId": "401f1135-fffc-42aa-a3ad-7c5cf31a4770",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "Yjx0NB",
+      "word": "UWCΔUWCΔUWCΔUWCΔ",
+      "sequenceId": "6d80f001-1382-4614-9c01-4a9baa92de37",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "alRiKe",
+      "word": "Θ-RTX-LFΨFΘ-RTX-LFΨF",
+      "sequenceId": "987a0f16-a4e9-4e04-a5c2-fbd2aa8ff8a6",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "ZPHe2X",
+      "word": "CCCC",
+      "sequenceId": "ca82728e-b01f-4a7e-9613-be8bd2280bd7",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "bRpoYD",
+      "word": "Sequence 9:19:10 PM",
+      "sequenceId": "seq_1776133150515_orobql8oj",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "T16Vvz",
+      "word": "CCCC",
+      "sequenceId": "459603cb-c1c5-448f-9413-b40afd852e96",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "cEQACb",
+      "word": "Z-ΩZ-ΩZ-ΩZ-Ω",
+      "sequenceId": "4d5c1c2e-a9a5-4b9a-8db3-53bc8e15f167",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "ZbYtC6",
+      "word": "AΩ-USTYEΩ-NWAΩ-USTYEΩ-NWAΩ-USTYEΩ-NWAΩ-USTYEΩ-NW",
+      "sequenceId": "a26768b3-0e6d-4173-87ac-b69cd6d31130",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "ZFs5ij",
+      "word": "Θ-Z-GFΘ-Z-GFΘ-Z-GFΘ-Z-GF",
+      "sequenceId": "46ac6496-5bd8-4dd0-8260-77603f77c6b8",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "feM3Mo",
+      "word": "ΨΩYFΨΩYFΨΩYFΨΩYF",
+      "sequenceId": "009cd7fc-8508-4a22-96b3-85089b64c007",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "dl7tiw",
+      "word": "TZFΩ-TZFΩ-TZFΩ-TZFΩ-",
+      "sequenceId": "6cdbf8ad-b638-4ca5-8148-2318449e1656",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "XD9h5J",
+      "word": "Sequence 2:53:07 AM",
+      "sequenceId": "seq_1775289187318_9t4r6nxr3",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "bxGO2d",
+      "word": "LΣ-OXLΣ-OXLΣ-OXLΣ-OX",
+      "sequenceId": "6b3c5db9-33b4-4f20-af84-0235c514086d",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "ZzzIDW",
+      "word": "IΨ-IΨ-IΨ-IΨ-",
+      "sequenceId": "630cbf39-df94-4c40-aa59-5ad92e069a4a",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "d0eLLj",
+      "word": "VY-Δ-VY-Δ-VY-Δ-VY-Δ-",
+      "sequenceId": "7bac2449-6bde-4767-9e55-fa55a5e19dbb",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "bUxlRy",
+      "word": "BBΣX-BBΣX-BBΣX-BBΣX-",
+      "sequenceId": "4cc2022e-447f-453f-83aa-45cc06b6b50c",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "f3dl9Q",
+      "word": "ΨΩYFΨΩYFΨΩYFΨΩYF",
+      "sequenceId": "64c85c37-793a-41af-9728-b76bf67ea50a",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "c7kzsd",
+      "word": "KECΦ-KECΦ-KECΦ-KECΦ-",
+      "sequenceId": "0dde6082-8f31-426d-a935-87e3766573a6",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "gkedry",
+      "word": "GHGH",
+      "sequenceId": "0ae1d8d0-68bf-44c4-bddd-e9e48d87ea96",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "cjHef7",
+      "word": "Λ-MΛ-ΛΛ-MΛ-ΛΛ-MΛ-ΛΛ-MΛ-Λ",
+      "sequenceId": "8660f288-eda7-4062-8c00-873c4e1c8d86",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "etob7Q",
+      "word": "WΣORY-DΣWΣORY-DΣWΣORY-DΣWΣORY-DΣ",
+      "sequenceId": "b7bc605c-bc23-45c6-98e0-7b52a3ac1651",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "gCgIqN",
+      "word": "AΩ-USTYEΩ-NWAΩ-USTYEΩ-NWAΩ-USTYEΩ-NWAΩ-USTYEΩ-NW",
+      "sequenceId": "a26768b3-0e6d-4173-87ac-b69cd6d31130",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "e1OneT",
+      "word": "FΨΘZFΨΘZFΨΘZFΨΘZ",
+      "sequenceId": "3d8f1027-fefb-434c-a63b-3ea868c8ac03",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "h0WO6x",
+      "word": "BΨΩXBΩ-MWBΨΩXBΩ-MWBΨΩXBΩ-MWBΨΩXBΩ-MW",
+      "sequenceId": "dd37fe5c-8bb6-4c1b-9686-1739bfd3705b",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "YNCl0b",
+      "word": "AΔUSTYEΔNWAΔUSTYEΔNWAΔUSTYEΔNWAΔUSTYEΔNW",
+      "sequenceId": "d1839938-5667-46b1-8efc-34ef683aa7ef",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "ctIWtK",
+      "word": "IIII",
+      "sequenceId": "12ea1d17-a9b3-4f81-ad2d-8f8f7053d990",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "e3BQ0U",
+      "word": "Sequence 5:11:24 PM",
+      "sequenceId": "seq_1774735884444_d1gaiaryb",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "hfjZKy",
+      "word": "ZΘZΘZΘZΘ",
+      "sequenceId": "dfe033e2-126e-4102-9e99-d510c6bbc8aa",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "dpJCni",
+      "word": "ΘY-FΨFΩ-W-ΨΘY-FΨFΩ-W-Ψ",
+      "sequenceId": "2323c236-4084-463e-976e-f8ab12e8c8dd",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "hX7uiz",
+      "word": "CΩ-Λ-Z-ΩPUQQUPΩZ-Λ-Ω-C",
+      "sequenceId": "416dc5ec-face-4dff-834d-058b44187ad2",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "iiEBnN",
+      "word": "W-ALΔ-Λ-OX-Ω-W-ALΔ-Λ-OX-Ω-",
+      "sequenceId": "5e7b3603-649d-4de9-9369-ea362c3dc5a2",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "bLOR01",
+      "word": "IIΩYIIΩYIIΩYIIΩY",
+      "sequenceId": "765e9a7e-021b-46d6-956a-317cc7bf115f",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "f5QHr5",
+      "word": "KEKEKEKDKEKEKEKD",
+      "sequenceId": "cd70711d-f4a1-4500-872e-6b6942bdc1a8",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "gqDTeM",
+      "word": "IIII",
+      "sequenceId": "d6e18bd0-34e4-4b2f-859e-a4f5adcee967",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "hzMJvH",
+      "word": "JDJD",
+      "sequenceId": "vtg-2to1-split-opp-jdjd",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "h3gHf5",
+      "word": "X-ΔX-ΔX-ΔX-Δ",
+      "sequenceId": "3f35a9f6-0c18-4b50-81b9-5cfac68ec340",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "jRZMCH",
+      "word": "RX-Ω-RRX-Ω-RRX-Ω-RRX-Ω-R",
+      "sequenceId": "8c1c55a2-5c08-4352-aab2-5f4bd809b2e2",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "gr9DHV",
+      "word": "AΔUSTZ-EΘ-NWAΔUSTZ-EΘ-NWAΔUSTZ-EΘ-NWAΔUSTZ-EΘ-NW",
+      "sequenceId": "3228a40b-a298-4fe8-a6ae-8a2381ff864c",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "hyREmz",
+      "word": "ABLΔ-W-LFΦ-ABLΔ-W-LFΦ-",
+      "sequenceId": "0f5fb730-201a-4834-8400-b96dc9ac611f",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "k1ylau",
+      "word": "Y-Δ-Y-Δ-Y-Δ-Y-Δ-",
+      "sequenceId": "48856084-6bf5-4f8a-ad9d-e4fc0c10d21c",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "iV6a8D",
+      "word": "CKDCKDCKDCKD",
+      "sequenceId": "1593a460-2ce9-4c09-b53e-c1d7f7c04e2d",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "hmPFWT",
+      "word": "HGFΨHGFΨHGFΨHGFΨ",
+      "sequenceId": "9ebe6ddd-fada-4675-9922-4abfc410e8f6",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "hg7pJ9",
+      "word": "AΩ-USTYEΩ-NWAΩ-USTYEΩ-NWAΩ-USTYEΩ-NWAΩ-USTYEΩ-NW",
+      "sequenceId": "a26768b3-0e6d-4173-87ac-b69cd6d31130",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "clJKx4",
+      "word": "ZΘUUZΘUUZΘUUZΘUU",
+      "sequenceId": "5978a496-e633-4dec-8799-8137ef62b8a2",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "hy0gV0",
+      "word": "KECΦ-KECΦ-KECΦ-KECΦ-",
+      "sequenceId": "0dde6082-8f31-426d-a935-87e3766573a6",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "kwatSa",
+      "word": "JΦJΦJΦJΦ",
+      "sequenceId": "d313abb5-8af6-45f7-98d8-e772d2682e0e",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "kxrBG5",
+      "word": "ΣΓWΑΔΓWΑ",
+      "sequenceId": "seq_1774642238424_pftl3sp9h",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "mJJJod",
+      "word": "MZGΣ-MZGΣ-",
+      "sequenceId": "62b3e15b-2840-42da-9b0b-e88b0091ecdb",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "j7xWhk",
+      "word": "Assemble Sequence",
+      "sequenceId": "12f08751-c282-4414-86cc-48d02f8f5b4a",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "fspkF1",
+      "word": "DΘ-OZ-GΔ-SYHIΘTTYIHΘSZ-GZ-OΘ-J",
+      "sequenceId": "8c62afd4-f7e8-471d-abf1-d01ed7a561aa",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "jlegxG",
+      "word": "Θ-TOX-Θ-TOX-Θ-TOX-Θ-TOX-",
+      "sequenceId": "cb00dd58-d0d6-482c-a9ca-20df03bf1902",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "hRv5jl",
+      "word": "Σ-Z-Σ-Z-Σ-Z-Σ-Z-",
+      "sequenceId": "2602b331-61ef-4c3b-8b1c-9328e5770a08",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "i5jmLP",
+      "word": "WΩ-PUWΩ-PUWΩ-PUWΩ-PU",
+      "sequenceId": "39ca976a-47b4-4c7d-ad5a-f29f3f47d2b3",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "jNWlDm",
+      "word": "ΩTΛY-ΩTΛY-ΩTΛY-ΩTΛY-",
+      "sequenceId": "64e62709-b4c0-4d61-ba06-53c6a09497b2",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "kTNzMx",
+      "word": "SSSS",
+      "sequenceId": "130862d7-6b6b-4dea-8d7f-47dc04acfd30",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "mtQ9OR",
+      "word": "EJEΨEJEΨEJEΨEJEΨ",
+      "sequenceId": "41b62f4d-de69-4b81-b689-8733c114c3f4",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "jvjQTT",
+      "word": "RRRΛRRRΛRRRΛRRRΛ",
+      "sequenceId": "a37cf577-4853-411b-983a-10d467516b09",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "liIyCM",
+      "word": "XKΩVXKΩVXKΩVXKΩV",
+      "sequenceId": "79e3c599-dea9-487b-b468-600493ab45be",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "l0OgXx",
+      "word": "SSSS",
+      "sequenceId": "3aab704a-1483-41a1-ac95-25c6f2b9be5b",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "n8tpq9",
+      "word": "DΦ-CJDΦ-CJDΦ-CJDΦ-CJ",
+      "sequenceId": "20d861f4-7983-43e5-a64c-fd7c234ae02a",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "mA3JfN",
+      "word": "BAΣWBAΣWBAΣWBAΣW",
+      "sequenceId": "48b45b35-1650-45b7-96ba-e2873f35ed02",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "hJrDfL",
+      "word": "ΣVPWΣVPWΣVPWΣVPW",
+      "sequenceId": "dd029520-ad59-44fc-a4a6-9dad4229e276",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "l0MCjQ",
+      "word": "SSSS",
+      "sequenceId": "f4fd5162-a2a2-4f40-a5e8-7e089c98bf03",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "lJimL5",
+      "word": "ABΔW-ABΔW-ABΔW-ABΔW-",
+      "sequenceId": "02601c6b-1ead-43d7-8f3f-4509fa84f40a",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "plAbbf",
+      "word": "TΛ-TΛ-TΛ-TΛ-",
+      "sequenceId": "ff8d0da1-ed47-4a6e-850c-a10fdc29468a",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "nXRJoK",
+      "word": "FΣY-HFΣY-HFΣY-HFΣY-H",
+      "sequenceId": "54e0c5d6-8491-41b2-b65c-c9b26a5765f4",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "n2yjWs",
+      "word": "IFΩ-YIFΩ-YIFΩ-YIFΩ-Y",
+      "sequenceId": "810565cd-3492-4f16-b3b7-de4f507cc8fa",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "lwciS5",
+      "word": "URZ-Σ-URZ-Σ-URZ-Σ-URZ-Σ-",
+      "sequenceId": "16fb6674-a5cf-4dd2-8f99-253c0fbfc9ba",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "itsD6Q",
+      "word": "Sequence 3:10:38 PM",
+      "sequenceId": "seq_1774642238424_pftl3sp9h",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "mfZOf1",
+      "word": "SSSS",
+      "sequenceId": "9b45e058-995b-47a4-90a1-24edcd081bab",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "o7ghjc",
+      "word": "CCBABCAACCBABCAA",
+      "sequenceId": "ad5c3584-d701-48e6-b7b5-a466f4b53fba",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "qvjRcs",
+      "word": "CCCC",
+      "sequenceId": "459603cb-c1c5-448f-9413-b40afd852e96",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "pHEFLL",
+      "word": "LΔ-SX-LΔ-SX-",
+      "sequenceId": "1ee977ee-2a1a-42f7-9d71-ef9c9b2b4396",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "n6LGCD",
+      "word": "JDJD",
+      "sequenceId": "vtg-2to1-split-opp-jdjd",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "mSPfzQ",
+      "word": "LFAΦ-LFAΦ-LFAΦ-LFAΦ-",
+      "sequenceId": "72de3c3d-0cea-49a0-b1b3-98e9983f2b10",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "nHL45Z",
+      "word": "RΛRΛRΛRΛ",
+      "sequenceId": "2f765873-8b79-48ea-9406-8451d3fba26e",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "kg1MNY",
+      "word": "UUUU",
+      "sequenceId": "3f92117a-9499-4db3-b304-c0f4be19188f",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "pBH6AX",
+      "word": "IΨ-IΨ-IΨ-IΨ-",
+      "sequenceId": "480531d0-e7e0-4da9-9b27-0cd038b5f8ac",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "orZnzT",
+      "word": "ΣXΩ-W-ΣXΩ-W-ΣXΩ-W-ΣXΩ-W-",
+      "sequenceId": "dc459d17-0f28-4bfb-b87a-aae611321e47",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "r6sGk4",
+      "word": "Ω-PZEΣVVZ-IΣ-Z-ΩNΛVW-",
+      "sequenceId": "6090115f-2bae-4d97-8c60-78cd374764db",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "pkgGgo",
+      "word": "CCCC",
+      "sequenceId": "ca82728e-b01f-4a7e-9613-be8bd2280bd7",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "kZFKjh",
+      "word": "ΔWCΦ-ΔWCΦ-ΔWCΦ-ΔWCΦ-",
+      "sequenceId": "35b22b59-9883-45d8-9afc-18699d2a790e",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "p9eU8w",
+      "word": "Sequence 1:28:33 PM",
+      "sequenceId": "seq_1774808913818_y7rwrmisk",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "olNo8U",
+      "word": "SWΔRSWΔRSWΔRSWΔR",
+      "sequenceId": "88fb0088-857a-4aa3-adcd-80bdce41ec61",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "tLiw8r",
+      "word": "VXCΩ-VXCΩ-VXCΩ-VXCΩ-",
+      "sequenceId": "2e0f9623-55c3-434f-9506-b264d85c7784",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "rXMxQ6",
+      "word": "CCCC",
+      "sequenceId": "459603cb-c1c5-448f-9413-b40afd852e96",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "mKhOW3",
+      "word": "Θ-OOXΘ-OOXΘ-OOXΘ-OOX",
+      "sequenceId": "baf3a25a-e1ef-4db7-b0d0-bc5b62d447f2",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "pTjrSA",
+      "word": "LΨ-ΘRORRΛ-Λ-RRORΘΨ-L",
+      "sequenceId": "bbd01326-ba58-4506-a14d-fb8a454c264a",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "uH4SWr",
+      "word": "CCCC",
+      "sequenceId": "459603cb-c1c5-448f-9413-b40afd852e96",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "skypNF",
+      "word": "ΔZΘZΘWΔX-ΔZΘZΘWΔX-",
+      "sequenceId": "0f6acf5d-03f2-46d7-b772-aae337d58914",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "rDQo2Y",
+      "word": "X-Ω-VΛX-Ω-VΛX-Ω-VΛX-Ω-VΛ",
+      "sequenceId": "ba5df50a-cce1-45f5-a108-0b6b6686ad4b",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "r3I5zM",
+      "word": "Sequence 1:28:33 PM",
+      "sequenceId": "seq_1774808913818_y7rwrmisk",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "nUddyX",
+      "word": "CCCC",
+      "sequenceId": "ca82728e-b01f-4a7e-9613-be8bd2280bd7",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "qnCvH8",
+      "word": "ZΣ-RΛ-ZΣ-RΛ-ZΣ-RΛ-ZΣ-RΛ-",
+      "sequenceId": "e404fecd-80a9-4e98-9440-e6d9ced530ef",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "qzJ54G",
+      "word": "XΩ-NΛXΩ-NΛXΩ-NΛXΩ-NΛ",
+      "sequenceId": "2cbeab89-2277-4971-9af7-55f21a26253f",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "raKEt8",
+      "word": "Assemble Sequence",
+      "sequenceId": "d58bc860-dbba-4fa7-8f0e-2205526bd800",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "qrOQVG",
+      "word": "Y-FLΔ-OMZ-Δ-Z-FLΣ-ONY-Σ-",
+      "sequenceId": "2b88bc86-1070-44bf-b217-f4e81af78c57",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "sgP9o4",
+      "word": "ΘW-Θ-ZΣ-VZ-HΩX-Ω-YΔ-UY-G",
+      "sequenceId": "f137a95f-8858-4b27-91c3-aa3492baf503",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "rpnVlc",
+      "word": "NMNMNMNQNMNMNMNQ",
+      "sequenceId": "f126dbae-713c-4a3d-b20c-033713655850",
+      "ownerId": "40ovmSoxdRNouOIeQrhDFSwkDEX2",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "tKJHkN",
+      "word": "Y-EΨΔ-Y-EΨΔ-",
+      "sequenceId": "cf7009af-91f3-421a-a29b-3a97aa6707c8",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "seFOdo",
+      "word": "LΦLΦLΦLΦ",
+      "sequenceId": "623a5ee5-c641-4daf-9e1d-df5a2e484c1b",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "uQW7dY",
+      "word": "ΘZIΔ-MPMYΘZIΔ-MPMY",
+      "sequenceId": "494eb243-431e-4f9a-9d61-30aecfca9e33",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "nN5skI",
+      "word": "Sequence 5:08:56 PM",
+      "sequenceId": "seq_1774735736393_7kn689uyv",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "rmJett",
+      "word": "W-CΣW-CΣW-CΣW-CΣ",
+      "sequenceId": "5fcda4e8-83d9-470e-bc09-21ab83487bcf",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "xxmEHX",
+      "word": "LΦLΦLΦLΦ",
+      "sequenceId": "433a05c2-a4cd-4b42-a866-482d0e627301",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "qLWb8s",
+      "word": "ΩYΩYΩYΩY",
+      "sequenceId": "02ffbae9-1791-44c8-9c86-6b059e64b8f8",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "vcNEzG",
+      "word": "LΦLΦLΦLΦ",
+      "sequenceId": "e698a6ce-a476-4c64-927c-4a0d03a4abd5",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "ss6oBU",
+      "word": "LΘSRTRRW-LΘSRTRRW-",
+      "sequenceId": "ec4a81f1-a822-4cd0-ada8-b41867bdeca2",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "ysW3GQ",
+      "word": "CCCC",
+      "sequenceId": "459603cb-c1c5-448f-9413-b40afd852e96",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "uwLHuo",
+      "word": "BBBB",
+      "sequenceId": "8dbaf347-e3f3-48ed-9038-95485574e333",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "uO2ml7",
+      "word": "XCCΩ-XCCΩ-XCCΩ-XCCΩ-",
+      "sequenceId": "a73fb7bb-bf52-422a-b19b-3e2a62cb0870",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "uAXvO2",
+      "word": "Ω-SΛW-Ω-RRXΩ-SΛW-Ω-RRX",
+      "sequenceId": "7cc67b57-b24e-4dea-99f2-8186275bb74c",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "rWPDGg",
+      "word": "IΘWJIΘWJIΘWJIΘWJ",
+      "sequenceId": "c4e2d501-c489-4936-95f5-bd1058b457ff",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "wX4jnK",
+      "word": "LΦLΦLΦLΦ",
+      "sequenceId": "4f9e5f76-ecb4-44e5-aa25-98944af2ca74",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "virOwk",
+      "word": "ΣXΩ-W-ΣXΩ-W-ΣXΩ-W-ΣXΩ-W-",
+      "sequenceId": "dc459d17-0f28-4bfb-b87a-aae611321e47",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "uKTmp6",
+      "word": "Θ-UMW-Θ-UMW-",
+      "sequenceId": "e627f11e-a1b1-4ebf-b630-dadcf1d1ae99",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "wrnSYu",
+      "word": "CCCC",
+      "sequenceId": "459603cb-c1c5-448f-9413-b40afd852e96",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "xsiPeh",
+      "word": "LFLΩTZΩWLFLΩTZΩW",
+      "sequenceId": "3314f71f-6f0d-4733-a8ce-a4f7a6d6ce5d",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "zLiLpQ",
+      "word": "SOOSOOSOOSOO",
+      "sequenceId": "9df480e1-496b-4a9b-85e4-802b2b7ae227",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "rHTrRX",
+      "word": "AΔUSTY-EΣNWAΔUSTY-EΣNWAΔUSTY-EΣNWAΔUSTY-EΣNW",
+      "sequenceId": "2682cb8c-3878-487c-b439-9af9cd8c1206",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "xM61pQ",
+      "word": "YΦΔMYΦΔMYΦΔMYΦΔM",
+      "sequenceId": "e2411123-b2ce-4d60-a67b-071f1275fbc7",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "xdDHLF",
+      "word": "ΦΘ-WKΦΘ-WK",
+      "sequenceId": "465d36ef-5e75-4eb7-ae96-95971bdfccab",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "u1EkMo",
+      "word": "Ω-X-Ω-X-Ω-X-Ω-X-",
+      "sequenceId": "28bf98b3-8ca7-4d67-af76-1a35f549d786",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "tQVAF1",
+      "word": "X-ΔPQX-ΔPQX-ΔPQX-ΔPQ",
+      "sequenceId": "39c31c09-1dda-4e24-9e75-178a16a5d544",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "wLcUj7",
+      "word": "LΔ-W-BLΔ-W-BLΔ-W-BLΔ-W-B",
+      "sequenceId": "a2faab84-997c-4b9c-9d63-aec5117776eb",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "zW626L",
+      "word": "ΩOOY-ΩSWLΩOOY-ΩSWL",
+      "sequenceId": "14abfce9-5dc4-42d7-a99d-2e5f92e72968",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "xlCupR",
+      "word": "LFKDJFJDLFKDJFJD",
+      "sequenceId": "7fbc99ad-0c04-4d5b-a333-32c063f2e131",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "zRxM2t",
+      "word": "TY-FΩ-WΦ-LGΘSX-AABBL",
+      "sequenceId": "a8548870-bf3e-4fc4-b517-101363df7ba8",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "ykeUZM",
+      "word": "BBBB",
+      "sequenceId": "bdc7146b-568a-47be-82db-5f71a672adeb",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "zJLFKm",
+      "word": "CΦ-CΦ-CΦ-CΦ-",
+      "sequenceId": "e4f362a5-5d57-4bf8-b5cf-0abae6d69ca6",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "v44nlx",
+      "word": "ΣXΩ-W-ΣXΩ-W-ΣXΩ-W-ΣXΩ-W-",
+      "sequenceId": "dc459d17-0f28-4bfb-b87a-aae611321e47",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "zkXQno",
+      "word": "AΩ-USTZEΔNWAΩ-USTZEΔNWAΩ-USTZEΔNWAΩ-USTZEΔNW",
+      "sequenceId": "9fc8aa78-32fa-41a7-b7d8-0a4b8f5ae77a",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "z3xQ32",
+      "word": "CΦ-CΦ-CΦ-CΦ-",
+      "sequenceId": "970c967a-a1d3-41e0-9742-d1cfbb06019b",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "v2j6Un",
+      "word": "ΨΩYFΨΩYFΨΩYFΨΩYF",
+      "sequenceId": "eabc6a1e-c880-4287-bdb4-431e2979d2a4",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "zyny24",
+      "word": "ΣXΩ-W-ΣXΩ-W-ΣXΩ-W-ΣXΩ-W-",
+      "sequenceId": "dc459d17-0f28-4bfb-b87a-aae611321e47",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "zWF7hT",
+      "word": "YΦΣTYΦΣTYΦΣTYΦΣT",
+      "sequenceId": "907ae71c-91ff-4d07-ae0d-0f4385b39323",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "yhgLez",
+      "word": "Σ-RΛY-Δ-RΛΛRZ-Δ-W-ΣYHΩ",
+      "sequenceId": "9315a04c-badc-43bd-b2bc-951aebbbf036",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "yK00UK",
+      "word": "CΦ-CΦ-CΦ-CΦ-",
+      "sequenceId": "8a4d411f-4903-4085-ae45-240605f4654d",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "zj7qlQ",
+      "word": "BBBB",
+      "sequenceId": "c9ecfc00-7e33-4481-ade8-f1003acfe5f8",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "zVu63F",
+      "word": "Sequence 1:28:33 PM",
+      "sequenceId": "seq_1774808913818_y7rwrmisk",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    },
+    {
+      "code": "zUsaM5",
+      "word": "IIII",
+      "sequenceId": "0ae1d8d0-68bf-44c4-bddd-e9e48d87ea96",
+      "ownerId": "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+      "category": "user-owned-deleted"
+    }
+  ]
+}
