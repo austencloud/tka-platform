@@ -1,4 +1,5 @@
 import type { Water2DParams } from "../translators/canvas2d-types";
+import type { WaterPalette } from "../domain/WaterPalettes";
 
 export interface WaterTipInput {
   bluePosA: { x: number; y: number } | null;
@@ -11,13 +12,11 @@ type TipKey = "bluePosA" | "bluePosB" | "redPosA" | "redPosB";
 const TIP_KEYS: TipKey[] = ["bluePosA", "bluePosB", "redPosA", "redPosB"];
 
 /**
- * A single "water element" released from a tip. Once released it's on
- * rails — position is computed from the release state plus ballistic
- * motion (gravity only, no drag). Stream samples chain together to form
- * the continuous ribbon; splashes are loners that break off.
+ * A single in-flight water droplet. Once released it's on rails — position
+ * is computed from the release state plus ballistic motion (gravity only).
  */
-interface WaterElement {
-  /** Release position (world-space px on the canvas). */
+interface WaterDroplet {
+  /** Release position (world-space px). */
   x0: number;
   y0: number;
   /** Release velocity (px/s). */
@@ -27,60 +26,157 @@ interface WaterElement {
   age: number;
   /** Seconds until retirement. */
   maxAge: number;
-  /** Released width factor (stream samples: 1; splashes: 0.5-1.5 jittered). */
-  width: number;
-  /** Per-chunk random seed in [0,1). Drives the blob-cluster shape so each
-   *  chunk renders as a stable irregular outline instead of a flickering
-   *  shape. Unused by stream samples. */
-  blobSeed: number;
+  /** Droplet radius in world px (SSFR density-based sizing). */
+  radius: number;
+  /** Base sprite rotation (radians). For stationary spawns only — motion
+   *  droplets rotate to face their flight direction. */
+  rotation: number;
+  /** Radians/sec of rotation (slow tumble). */
+  rotVel: number;
 }
 
-/** Screen-down gravity, px/s² at scale=1. Water falls hard. */
 const GRAVITY_PX = 820;
-/** Stream sample lifetime — how long a released ribbon element lasts. */
-const STREAM_LIFE_BASE = 0.55;
-/** Splash droplet lifetime range. */
-const SPLASH_LIFE_MIN = 0.3;
-const SPLASH_LIFE_VAR = 0.35;
-/** Hard pool ceilings so a burst can't OOM. */
-const MAX_STREAM_PER_TIP = 80;
-const MAX_SPLASHES = 512;
+const DROPLET_LIFE_MIN = 0.55;
+const DROPLET_LIFE_VAR = 0.6;
+const MAX_DROPLETS = 1024;
 const TAU = Math.PI * 2;
+const SPRITE_SIZE = 128;
+
+type SpewStyle = "splash" | "flow" | "mist";
 
 /**
- * Ribbon-stream water renderer for the Canvas2D backend.
+ * Per-style tuning table. Each style is a complete visual language — not a
+ * "strength slider". Splash = chunky discrete throws, Flow = continuous
+ * thin streaks, Mist = fine high-count spray.
+ */
+interface StyleTuning {
+  /** Multiplier on droplet radius. Smaller = finer water. */
+  sizeScale: number;
+  /** Extra multiplicative spread baked into sizeBand randomness. */
+  sizeVariance: number;
+  /** Ambient (at-rest) spawn multiplier. */
+  ambientMult: number;
+  /** Motion-driven spawn multiplier. */
+  motionMult: number;
+  /** 1/px — higher = more elongation per unit velocity. */
+  stretchPerSpeed: number;
+  /** Max stretch factor under motion, before surface-tension adjustment. */
+  stretchLimitBase: number;
+  /** Lifetime multiplier. */
+  lifeScale: number;
+  /** Fraction of tip velocity each droplet inherits. */
+  velInherit: number;
+  /** Cone half-angle at slow tip motion. */
+  coneHalfBase: number;
+  /** Cone half-angle at max tip speed. */
+  coneHalfMin: number;
+  /** Fraction of spawns that go in the directional cone vs isotropic. */
+  motionFracBase: number;
+  /** Kick magnitude added per unit speedScalar. */
+  kickPerSpeed: number;
+  /** Atmospheric blur radius in px (before scale). 0 = direct draw, no
+   *  offscreen. >0 routes through offscreen + blur filter for "wet haze"
+   *  and heavy fog looks. */
+  atmosphericBlur: number;
+  /** Alpha of the blurred fog layer (0 = no fog pass). */
+  fogAlpha: number;
+  /** Alpha of the crisp droplet layer on top of fog. */
+  dropletAlpha: number;
+}
+
+const STYLE_TUNINGS: Record<SpewStyle, StyleTuning> = {
+  splash: {
+    sizeScale: 0.55,
+    sizeVariance: 0.5,
+    ambientMult: 0.2,
+    motionMult: 1.2,
+    stretchPerSpeed: 1 / 420,
+    stretchLimitBase: 2.4,
+    lifeScale: 1.0,
+    velInherit: 0.4,
+    coneHalfBase: 0.7,
+    coneHalfMin: 0.3,
+    motionFracBase: 0.35,
+    kickPerSpeed: 210,
+    atmosphericBlur: 0,
+    fogAlpha: 0,
+    dropletAlpha: 1.0,
+  },
+  flow: {
+    sizeScale: 0.35,
+    sizeVariance: 0.3,
+    ambientMult: 0.12,
+    motionMult: 2.0,
+    stretchPerSpeed: 1 / 240,
+    stretchLimitBase: 4.0,
+    lifeScale: 1.35,
+    velInherit: 0.75,
+    coneHalfBase: 0.4,
+    coneHalfMin: 0.11,
+    motionFracBase: 0.75,
+    kickPerSpeed: 120,
+    // Subtle wet sheen halo around each droplet — fog pass at low alpha
+    // gives the "atmospheric moisture" feel without smearing shapes.
+    atmosphericBlur: 2.5,
+    fogAlpha: 0.4,
+    dropletAlpha: 0.95,
+  },
+  mist: {
+    sizeScale: 0.24,
+    sizeVariance: 0.35,
+    ambientMult: 0.4,
+    motionMult: 3.2,
+    stretchPerSpeed: 1 / 540,
+    stretchLimitBase: 1.7,
+    lifeScale: 0.9,
+    velInherit: 0.22,
+    coneHalfBase: 1.05,
+    coneHalfMin: 0.55,
+    motionFracBase: 0.4,
+    kickPerSpeed: 140,
+    // Heavy atmospheric blur makes mist read as diffuse fog rather than
+    // discrete particles. Most of the visible output is the blurred pass;
+    // the crisp layer only peeks through to hint at droplet structure.
+    atmosphericBlur: 7,
+    fogAlpha: 0.9,
+    dropletAlpha: 0.22,
+  },
+};
+
+/**
+ * SSFR-derived water renderer for the Canvas2D backend.
  *
- * Conceptually water is no longer a cloud of discrete particles — it's a
- * continuous stream of released elements. Each element leaves the tip
- * with the tip's current velocity, then follows a ballistic trajectory
- * under gravity. Rendering draws the chain as overlapping white disks on
- * an offscreen mask; neighbors fuse through the gooey filter pass into
- * a tapered ribbon that bends under gravity the same way real falling
- * water does.
+ * Canvas2D can't run per-pixel shaders, so full Screen-Space Fluid Rendering
+ * (depth buffer → bilateral blur → normal reconstruction → Fresnel/GGX/
+ * refraction) isn't viable at 60fps. Instead we **pre-bake** the SSFR
+ * shading into a droplet sprite on a cached canvas: four layered radial
+ * gradients encode dark-rim Fresnel, saturated body, upper-left specular,
+ * and lower-right refraction caustic — exactly what a screen-space shader
+ * would compute per-pixel, just done once and stamped per droplet.
  *
- * Splash droplets are a second, optional layer — they break off at
- * direction changes or at the tail of a stream element's life. They
- * share the same white-mask → gooey-filter → color-fill pipeline so
- * stream and splash read as one continuous liquid.
+ * Each droplet is then one drawImage call with translate + rotate + scale,
+ * stretched along velocity (SSFR's velocity-elongation) and sized per
+ * density band (SSFR's density sizing: isolated = small, clustered = large).
+ * When droplets overlap they naturally read as thicker/darker water because
+ * the sprite already has alpha fall-off at the edges — accumulation through
+ * source-over compositing produces the volumetric look that metaball
+ * blur-and-threshold can't.
  *
- * Why this works where the pure-particle model didn't: particles have
- * gaps. A continuous ribbon never does. Fire doesn't look like fire
- * because of its flames; it looks like fire because it's a *continuous
- * density field with no gaps*. This ribbon-stream is the 2D analogue.
+ * References: NVIDIA SSFR (GDC 2010), Macklin & Müller Position Based
+ * Fluids (ACM TOG 2013), Codrops WebGPU Fluids (2025).
  */
 export class Water2DRenderer {
-  private stream: Partial<Record<TipKey, WaterElement[]>> = {};
-  private splashes: WaterElement[] = [];
+  private droplets: WaterDroplet[] = [];
   private lastTipPos: Partial<Record<TipKey, { x: number; y: number }>> = {};
-  /** Rolling tip velocity smoothed over a few frames so splash kicks
-   *  don't flicker at 60fps noise. */
-  private smoothedVelocity: Partial<Record<TipKey, { vx: number; vy: number }>> =
-    {};
-
-  private offscreen: HTMLCanvasElement | OffscreenCanvas | null = null;
-  private offctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D | null = null;
-  private offW = 0;
-  private offH = 0;
+  private smoothedVelocity: Partial<Record<TipKey, { vx: number; vy: number }>> = {};
+  private spriteCache = new DropletSpriteCache();
+  private atmosOff: HTMLCanvasElement | OffscreenCanvas | null = null;
+  private atmosCtx:
+    | CanvasRenderingContext2D
+    | OffscreenCanvasRenderingContext2D
+    | null = null;
+  private atmosW = 0;
+  private atmosH = 0;
   private filterProbeDone = false;
   private filterSupported = false;
 
@@ -92,25 +188,20 @@ export class Water2DRenderer {
     scale: number = 1,
   ): void {
     const g = GRAVITY_PX * scale;
-    const momentumMode = params.momentumMode === true;
+    const style = (params.spewStyle ?? "flow") as SpewStyle;
+    const tuning = STYLE_TUNINGS[style] ?? STYLE_TUNINGS.flow;
+    const baseR =
+      params.baseRadius * scale * (1.2 + 0.6 * params.intensity) * tuning.sizeScale;
+    const poolCap = Math.min(MAX_DROPLETS, params.poolSize ?? MAX_DROPLETS);
 
-    // Momentum-mode speed gating: below SLOW ribbon is fully suppressed,
-    // above FAST it's full-rate. Chunk size + splash magnitude key off
-    // the same normalized scalar so the whole effect breathes with motion.
-    const MOMENTUM_SLOW_PX = 140 * scale;
-    const MOMENTUM_FAST_PX = 900 * scale;
-
-    // 1. Per-tip stream update + splash spawn.
-    const streamLife = STREAM_LIFE_BASE;
+    // 1. Per-tip: smooth velocity + spawn droplets.
     for (const key of TIP_KEYS) {
       const tip = tips[key];
       if (!tip || !this.isTipEnabled(key, tips, params)) {
         delete this.lastTipPos[key];
         delete this.smoothedVelocity[key];
-        this.stream[key] = [];
         continue;
       }
-
       const last = this.lastTipPos[key];
       let vx = 0;
       let vy = 0;
@@ -118,51 +209,15 @@ export class Water2DRenderer {
         vx = (tip.x - last.x) / dt;
         vy = (tip.y - last.y) / dt;
       }
-      // Smooth tip velocity — raw per-frame delta is noisy.
-      const prevSmooth = this.smoothedVelocity[key];
-      const smoothAlpha = 1 - Math.pow(0.6, dt * 60); // ~55ms half-life
-      const svx = prevSmooth ? prevSmooth.vx + (vx - prevSmooth.vx) * smoothAlpha : vx;
-      const svy = prevSmooth ? prevSmooth.vy + (vy - prevSmooth.vy) * smoothAlpha : vy;
+      // EMA smoothing — raw per-frame delta is noisy and makes spawn rate
+      // flicker on top of the intended motion curve.
+      const prev = this.smoothedVelocity[key];
+      const alpha = 1 - Math.pow(0.6, dt * 60);
+      const svx = prev ? prev.vx + (vx - prev.vx) * alpha : vx;
+      const svy = prev ? prev.vy + (vy - prev.vy) * alpha : vy;
       this.smoothedVelocity[key] = { vx: svx, vy: svy };
       const speedPx = Math.hypot(svx, svy);
-
-      // 1a. Append a fresh stream sample at the tip. Released velocity =
-      //     tip velocity (so the element inherits the prop's motion),
-      //     plus a small inward perpendicular bias that makes the ribbon
-      //     hug the tip's path instead of flying sideways.
-      //
-      // Momentum mode: the ribbon is disabled entirely — all visual
-      //   weight moves onto the fling-off chunks so the two layers don't
-      //   fight each other. Any existing samples are allowed to age out
-      //   naturally (not cleared mid-flight — looks worse).
-      const samples = this.stream[key] ?? (this.stream[key] = []);
-      if (!momentumMode && samples.length < MAX_STREAM_PER_TIP) {
-        samples.push({
-          x0: tip.x,
-          y0: tip.y,
-          vx0: svx,
-          vy0: svy,
-          age: 0,
-          maxAge: streamLife,
-          width: 1,
-          blobSeed: 0,
-        });
-      }
-
-      // 1b. Age existing stream samples; drop any past their maxAge.
-      for (let i = samples.length - 1; i >= 0; i--) {
-        const el = samples[i]!;
-        el.age += dt;
-        if (el.age >= el.maxAge) {
-          // End-of-life ribbon tail → inject a splash so the ribbon
-          // visually "breaks off" into drops. Cheap realism win.
-          this.spawnEndOfLifeSplash(el, g, scale);
-          samples.splice(i, 1);
-        }
-      }
-
-      // 1c. Spawn splash droplets at a rate driven by intensity + speed.
-      this.spawnSplashesFromTip(
+      this.spawnDroplets(
         params,
         tip,
         svx,
@@ -170,268 +225,180 @@ export class Water2DRenderer {
         speedPx,
         dt,
         scale,
-        momentumMode,
+        baseR,
+        poolCap,
+        tuning,
       );
-
       this.lastTipPos[key] = { x: tip.x, y: tip.y };
     }
 
-    // 2. Age splash pool, evict dead.
-    const survivingSplashes: WaterElement[] = [];
-    for (const s of this.splashes) {
-      s.age += dt;
-      if (s.age < s.maxAge) survivingSplashes.push(s);
+    // 2. Age + evict.
+    const alive: WaterDroplet[] = [];
+    for (const d of this.droplets) {
+      d.age += dt;
+      if (d.age < d.maxAge) alive.push(d);
     }
-    this.splashes = survivingSplashes;
+    this.droplets = alive;
+    if (this.droplets.length === 0) return;
 
-    // Early exit if nothing to draw.
-    const anyStream = TIP_KEYS.some((k) => (this.stream[k]?.length ?? 0) > 0);
-    if (!anyStream && this.splashes.length === 0) return;
+    // 3. Resolve sprite for active palette.
+    const sprite = this.spriteCache.get(params.resolvedPalette, params.clarity);
+    if (!sprite) return;
 
-    const baseR = params.baseRadius * scale;
-    const bodyRadius = baseR * (1.3 + 0.6 * params.intensity);
-
-    // Momentum mode: direct-draw chunks to the main ctx with crisp edges,
-    // flat body color, rim light, and specular — skip the offscreen +
-    // gooey-filter pipeline entirely. The filter always reads as "blur
-    // vibes" because metaball rendering *is* blur-then-threshold; real
-    // water has volumetric shading instead. Draw each chunk as a stretched
-    // ellipse path + thin rim arc + specular dot.
-    if (momentumMode) {
-      this.drawMomentumChunksDirect(ctx, params, g, bodyRadius);
-      return;
-    }
-
-    // 3. Prepare full-res offscreen mask.
-    const mainW = ctx.canvas.width;
-    const mainH = ctx.canvas.height;
-    this.ensureOffscreen(mainW, mainH);
-    const off = this.offctx;
-    if (!off) return; // no offscreen → skip gracefully
-    off.clearRect(0, 0, mainW, mainH);
-
-    // 4. Draw pure-white mask.
-    off.save();
-    off.globalCompositeOperation = "source-over";
-    off.fillStyle = "#ffffff";
-
-    // 4a. Ribbon — each tip's stream rendered as a tapered chain of
-    //     overlapping disks. The gooey filter fuses them into a smooth
-    //     ribbon.
-    for (const key of TIP_KEYS) {
-      const samples = this.stream[key];
-      if (!samples || samples.length < 1) continue;
-
-      // Precompute current positions + per-sample radius/alpha.
-      const cache = samples.map((s) => {
-        const pt = computeBallistic(s, g);
-        const ageT = s.age / s.maxAge;
-        // Newer samples are fatter, older thinner.
-        const widthT = 1 - ageT;
-        const radius = Math.max(1, bodyRadius * s.width * (0.3 + 0.7 * widthT));
-        const alpha = Math.min(1, 0.25 + 0.9 * widthT);
-        return { x: pt.x, y: pt.y, radius, alpha };
-      });
-
-      for (let i = 0; i < cache.length; i++) {
-        const c = cache[i]!;
-        off.globalAlpha = c.alpha;
-        off.beginPath();
-        off.arc(c.x, c.y, c.radius, 0, TAU);
-        off.fill();
-
-        // Interpolate disks along the segment to the next sample so the
-        // ribbon never has gaps even at high tip speeds.
-        if (i + 1 < cache.length) {
-          const n = cache[i + 1]!;
-          const dx = n.x - c.x;
-          const dy = n.y - c.y;
-          const segLen = Math.hypot(dx, dy);
-          const stepSpacing = Math.max(1.5, Math.min(c.radius, n.radius) * 0.7);
-          const steps = Math.min(16, Math.max(1, Math.ceil(segLen / stepSpacing)));
-          for (let k = 1; k < steps; k++) {
-            const t = k / steps;
-            const r = c.radius + (n.radius - c.radius) * t;
-            const a = c.alpha + (n.alpha - c.alpha) * t;
-            off.globalAlpha = a;
-            off.beginPath();
-            off.arc(c.x + dx * t, c.y + dy * t, r, 0, TAU);
-            off.fill();
-          }
-        }
-      }
-    }
-
-    // 4b. Splash droplets — drawn as a velocity-stretched teardrop cluster.
-    //     The whole cluster lives in a rotated+scaled local frame so fast
-    //     chunks elongate dramatically along their flight direction, slow
-    //     chunks stay rounder. Inside the local frame: big head at origin,
-    //     2-3 overlapping satellites trailing along -X (opposite flight).
-    //     The gooey filter then fuses the stretched cluster into a smooth
-    //     teardrop/comma outline with crisp edges.
-    for (const s of this.splashes) {
-      const pt = computeBallistic(s, g);
-      const ageT = s.age / s.maxAge;
-      const fade = ageT < 0.15 ? ageT / 0.15 : ageT > 0.7 ? 1 - (ageT - 0.7) / 0.3 : 1;
-      if (fade <= 0.05) continue;
-      const headR = Math.max(1, bodyRadius * s.width * 0.55);
-
-      // Velocity at current age (gravity has affected vy).
-      const currVy = s.vy0 + g * s.age;
-      const sp = Math.hypot(s.vx0, currVy);
-      const angle = sp > 1 ? Math.atan2(currVy, s.vx0) : 0;
-      // Non-area-preserving stretch: elongates along velocity 1×→3.5×.
-      // We want water streaks, not ovals; scaling only X (not 1/X on Y)
-      // gives real motion-blur-style elongation like real falling water.
-      const stretchX = 1 + Math.min(2.5, sp / 400);
-      const squashY = 0.75 + 0.25 * Math.min(1, sp / 800); // slight pinch perp to flight
-
-      // Seed-derived cluster asymmetry — each chunk gets its own shape.
-      const seed = s.blobSeed;
-      const tailOffset1 = headR * (0.7 + seed * 0.6);
-      const tailOffset2 = headR * (1.4 + seed * 0.7);
-      const tailR1 = headR * (0.8 + ((seed * 3.1) % 1) * 0.25);
-      const tailR2 = headR * (0.45 + ((seed * 5.7) % 1) * 0.3);
-      const perpJitter = (((seed * 7.3) % 1) - 0.5) * headR * 0.35;
-
-      off.globalAlpha = fade;
-      off.save();
-      off.translate(pt.x, pt.y);
-      if (sp > 1) {
-        off.rotate(angle);
-        off.scale(stretchX, squashY);
-      }
-      // Head (at cluster origin).
-      off.beginPath();
-      off.arc(0, 0, headR, 0, TAU);
-      off.fill();
-      // Trailing satellites along -X (opposite flight direction).
-      off.beginPath();
-      off.arc(-tailOffset1, perpJitter, tailR1, 0, TAU);
-      off.fill();
-      if (tailR2 > 1.2) {
-        off.beginPath();
-        off.arc(-tailOffset2, perpJitter * 0.5, tailR2, 0, TAU);
-        off.fill();
-      }
-      off.restore();
-    }
-    off.restore();
-
-    // 5. Composite through gooey filter + color fill + highlights.
-    if (!this.filterProbeDone) {
-      this.filterSupported = this.probeFilterSupport(ctx);
-      this.filterProbeDone = true;
-    }
-    const prevComposite = ctx.globalCompositeOperation;
-    const prevAlpha = ctx.globalAlpha;
-    const prevFilter = ctx.filter;
-    const prevFillStyle = ctx.fillStyle;
-    try {
-      const { core, highlight } = params.resolvedPalette;
-      if (this.filterSupported) {
-        // Gooey filter — blur fuses neighbors, contrast cliff thresholds
-        // the resulting alpha into crisp ribbon/drop edges.
-        ctx.globalCompositeOperation = "source-over";
-        ctx.globalAlpha = 1;
-        // Momentum mode: small blur + *huge* contrast. The goal is
-        // metaball fusion of the cluster into a teardrop with HARD edges
-        // (what water actually has) — not a soft-blur halo (what the
-        // ribbon pipeline produces). High contrast clips the alpha
-        // gradient into a near-binary cliff, so the end result reads as
-        // a crisp-edged liquid shape instead of fuzzy goo.
-        const blurPx = momentumMode
-          ? Math.max(3, Math.round(4 * scale))
-          : Math.max(5, Math.round(8 * scale));
-        const contrastX = momentumMode
-          ? 120 + params.surfaceTension * 40
-          : 26 + params.surfaceTension * 22;
-        ctx.filter = `blur(${blurPx}px) contrast(${contrastX.toFixed(1)})`;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ctx.drawImage(this.offscreen as any, 0, 0);
-        ctx.filter = "none";
-
-        // Replace RGB with the water color, keep the crisp alpha mask.
-        ctx.globalCompositeOperation = "source-in";
-        ctx.fillStyle = core;
-        ctx.globalAlpha = 1.0 - params.clarity * 0.12;
-        ctx.fillRect(0, 0, mainW, mainH);
-      } else {
-        // Fallback: tinted additive blit.
-        ctx.globalCompositeOperation = "lighter";
-        ctx.globalAlpha = 0.85;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ctx.drawImage(this.offscreen as any, 0, 0);
-        ctx.globalCompositeOperation = "source-atop";
-        ctx.fillStyle = core;
-        ctx.fillRect(0, 0, mainW, mainH);
-      }
-
-      // Specular highlights at every live ribbon sample head + newest
-      // samples of every tip. Keeps the wet-sheen read.
-      ctx.globalCompositeOperation = "source-over";
-      ctx.filter = "none";
-      ctx.fillStyle = highlight;
-      for (const key of TIP_KEYS) {
-        const samples = this.stream[key];
-        if (!samples || samples.length === 0) continue;
-        // Only the newest ~3 samples get a highlight — older samples
-        // have settled into the ribbon body.
-        const startIdx = Math.max(0, samples.length - 3);
-        for (let i = startIdx; i < samples.length; i++) {
-          const s = samples[i]!;
-          const pt = computeBallistic(s, g);
-          const ageT = s.age / s.maxAge;
-          const r = Math.max(1, bodyRadius * s.width * (0.3 + 0.7 * (1 - ageT)));
-          if (r < 2) continue;
-          ctx.globalAlpha = (1 - ageT) * 0.55;
-          ctx.beginPath();
-          ctx.arc(pt.x - r * 0.22, pt.y - r * 0.28, r * 0.3, 0, TAU);
-          ctx.fill();
-        }
-      }
-      // Splash highlights — in momentum mode, a tiny specular crescent on
-      // the leading edge of each chunk (reads as wet-shine, not glow).
-      // In classic mode, the original bigger top-left dot (ribbon look).
-      for (const s of this.splashes) {
-        const pt = computeBallistic(s, g);
-        const ageT = s.age / s.maxAge;
-        const fade = ageT < 0.15 ? ageT / 0.15 : ageT > 0.7 ? 1 - (ageT - 0.7) / 0.3 : 1;
-        if (fade <= 0.1) continue;
-        const r = Math.max(1, bodyRadius * s.width * 0.55);
-        if (r < 2) continue;
-        if (momentumMode) {
-          // Tiny specular dot on the leading edge of the head sphere
-          // (where light would catch a moving wet surface). Much smaller
-          // and slightly offset forward along flight — crescent feel
-          // without the extra mask complexity.
-          const currVy = s.vy0 + g * s.age;
-          const sp = Math.hypot(s.vx0, currVy);
-          const cosA = sp > 1 ? s.vx0 / sp : 0;
-          const sinA = sp > 1 ? currVy / sp : 0;
-          const specR = r * 0.16;
-          const specX = pt.x + cosA * r * 0.45 - sinA * r * 0.25;
-          const specY = pt.y + sinA * r * 0.45 + cosA * r * 0.25;
-          ctx.globalAlpha = fade * 0.35;
-          ctx.beginPath();
-          ctx.arc(specX, specY, specR, 0, TAU);
-          ctx.fill();
-        } else {
-          ctx.globalAlpha = fade * 0.45;
-          ctx.beginPath();
-          ctx.arc(pt.x - r * 0.25, pt.y - r * 0.3, r * 0.28, 0, TAU);
-          ctx.fill();
-        }
-      }
-    } finally {
-      ctx.filter = prevFilter;
-      ctx.globalCompositeOperation = prevComposite;
-      ctx.globalAlpha = prevAlpha;
-      ctx.fillStyle = prevFillStyle;
+    // 4. Route drawing: styles with atmospheric blur render droplets to an
+    //    offscreen canvas, then composite to main in two passes — blurred
+    //    fog (wet haze / diffuse mist) + crisp droplets on top. Splash
+    //    skips the offscreen for perf and draws direct.
+    if (tuning.atmosphericBlur > 0 && this.probeFilter(ctx)) {
+      this.renderViaAtmosphere(ctx, sprite, params, tuning, g);
+    } else {
+      this.stampDroplets(
+        ctx as
+          | CanvasRenderingContext2D
+          | OffscreenCanvasRenderingContext2D,
+        sprite,
+        params,
+        tuning,
+        g,
+      );
     }
   }
 
-  private spawnSplashesFromTip(
+  private stampDroplets(
+    ctx:
+      | CanvasRenderingContext2D
+      | OffscreenCanvasRenderingContext2D,
+    sprite: HTMLCanvasElement | OffscreenCanvas,
+    params: Water2DParams,
+    tuning: StyleTuning,
+    g: number,
+  ): void {
+    // Stamp each droplet — the entire shading model is baked into the
+    // sprite, so this loop only handles placement, rotation, stretch,
+    // and fade.
+    const prevComposite = ctx.globalCompositeOperation;
+    const prevAlpha = ctx.globalAlpha;
+    try {
+      ctx.globalCompositeOperation = "source-over";
+      // Surface tension tightens the per-style stretch limit (rounder drops).
+      const stretchLimit = tuning.stretchLimitBase * (1.0 - params.surfaceTension * 0.55);
+      for (const d of this.droplets) {
+        const pt = this.positionAt(d, g);
+        const ageT = d.age / d.maxAge;
+        // Birth-in fade (0→0.1) so spawns don't pop; death fade from
+        // 0.75→1.0 so expiries don't vanish abruptly.
+        const fade =
+          ageT < 0.1
+            ? ageT / 0.1
+            : ageT > 0.75
+              ? 1 - (ageT - 0.75) / 0.25
+              : 1;
+        if (fade <= 0.02) continue;
+        const sizeFade = ageT < 0.7 ? 1 : 1 - ((ageT - 0.7) / 0.3) * 0.35;
+        const currVy = d.vy0 + g * d.age;
+        const sp = Math.hypot(d.vx0, currVy);
+        const stretchX = 1 + Math.min(stretchLimit, sp * tuning.stretchPerSpeed);
+        const squashY = 1 / Math.sqrt(stretchX);
+        const angle =
+          sp > 6 ? Math.atan2(currVy, d.vx0) : d.rotation + d.rotVel * d.age;
+        const drawR = d.radius * sizeFade;
+        const spriteScale = drawR / (SPRITE_SIZE * 0.42);
+
+        ctx.save();
+        ctx.globalAlpha = fade;
+        ctx.translate(pt.x, pt.y);
+        ctx.rotate(angle);
+        ctx.scale(spriteScale * stretchX, spriteScale * squashY);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ctx.drawImage(sprite as any, -SPRITE_SIZE / 2, -SPRITE_SIZE / 2);
+        ctx.restore();
+      }
+    } finally {
+      ctx.globalCompositeOperation = prevComposite;
+      ctx.globalAlpha = prevAlpha;
+    }
+  }
+
+  private renderViaAtmosphere(
+    ctx: CanvasRenderingContext2D,
+    sprite: HTMLCanvasElement | OffscreenCanvas,
+    params: Water2DParams,
+    tuning: StyleTuning,
+    g: number,
+  ): void {
+    const mainW = ctx.canvas.width;
+    const mainH = ctx.canvas.height;
+    const off = this.ensureAtmosOffscreen(mainW, mainH);
+    if (!off) {
+      // Fallback: direct draw if offscreen can't be created.
+      this.stampDroplets(ctx, sprite, params, tuning, g);
+      return;
+    }
+    off.clearRect(0, 0, mainW, mainH);
+    this.stampDroplets(off, sprite, params, tuning, g);
+
+    // Two-pass composite: blurred fog then crisp droplets on top.
+    const prevFilter = ctx.filter;
+    const prevAlpha = ctx.globalAlpha;
+    const prevComposite = ctx.globalCompositeOperation;
+    try {
+      ctx.globalCompositeOperation = "source-over";
+      if (tuning.fogAlpha > 0) {
+        ctx.filter = `blur(${Math.max(1, Math.round(tuning.atmosphericBlur))}px)`;
+        ctx.globalAlpha = tuning.fogAlpha;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ctx.drawImage(this.atmosOff as any, 0, 0);
+        ctx.filter = "none";
+      }
+      if (tuning.dropletAlpha > 0) {
+        ctx.globalAlpha = tuning.dropletAlpha;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ctx.drawImage(this.atmosOff as any, 0, 0);
+      }
+    } finally {
+      ctx.filter = prevFilter;
+      ctx.globalAlpha = prevAlpha;
+      ctx.globalCompositeOperation = prevComposite;
+    }
+  }
+
+  private ensureAtmosOffscreen(
+    w: number,
+    h: number,
+  ): CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D | null {
+    if (this.atmosOff && this.atmosW === w && this.atmosH === h && this.atmosCtx) {
+      return this.atmosCtx;
+    }
+    const canvas = createOffscreen(w, h);
+    if (!canvas) return null;
+    const ctx = canvas.getContext("2d") as
+      | CanvasRenderingContext2D
+      | OffscreenCanvasRenderingContext2D
+      | null;
+    if (!ctx) return null;
+    this.atmosOff = canvas;
+    this.atmosCtx = ctx;
+    this.atmosW = w;
+    this.atmosH = h;
+    return ctx;
+  }
+
+  private probeFilter(ctx: CanvasRenderingContext2D): boolean {
+    if (this.filterProbeDone) return this.filterSupported;
+    try {
+      const prev = ctx.filter;
+      ctx.filter = "blur(2px)";
+      const applied = ctx.filter;
+      ctx.filter = prev;
+      this.filterSupported = typeof applied === "string" && applied.includes("blur");
+    } catch {
+      this.filterSupported = false;
+    }
+    this.filterProbeDone = true;
+    return this.filterSupported;
+  }
+
+  private spawnDroplets(
     params: Water2DParams,
     tip: { x: number; y: number },
     vx: number,
@@ -439,228 +406,76 @@ export class Water2DRenderer {
     speedPx: number,
     dt: number,
     scale: number,
-    momentumMode: boolean,
+    baseR: number,
+    poolCap: number,
+    tuning: StyleTuning,
   ): void {
-    if (this.splashes.length >= MAX_SPLASHES) return;
+    if (this.droplets.length >= poolCap) return;
 
-    const PX_PER_WORLD_UNIT = 60;
-    const refSpeedPx = params.motionReferenceSpeed * PX_PER_WORLD_UNIT * scale;
-    const speedScalar = refSpeedPx > 0 ? Math.min(1, speedPx / refSpeedPx) : 0;
+    const PX_PER_WORLD = 60;
+    const refSpeed = params.motionReferenceSpeed * PX_PER_WORLD * scale;
+    const speedScalar = refSpeed > 0 ? Math.min(1, speedPx / refSpeed) : 0;
 
-    // Momentum mode: cut ambient to near-zero (no constant mist), crank
-    // motion response so hard flings launch big wet chunks, mild motion
-    // still yields something but sparsely.
-    const ambientScale = momentumMode ? 0.03 : 0.35;
-    const motionScale = momentumMode ? 1.2 : 0.55;
-    const ambientRate = params.ambientEmission * params.ambientSpawnRate * ambientScale;
-    const motionRate =
-      params.motionEmission * speedScalar * params.motionSpawnRate * motionScale;
-    const expected = (ambientRate + motionRate) * dt;
+    // Spawn rates per the style's ambient/motion multipliers.
+    const ambient = params.ambientEmission * params.ambientSpawnRate * tuning.ambientMult;
+    const motion =
+      params.motionEmission * speedScalar * params.motionSpawnRate * tuning.motionMult;
+    const expected = (ambient + motion) * dt;
+    let n = Math.floor(expected);
+    if (Math.random() < expected - n) n++;
+    const slots = poolCap - this.droplets.length;
+    if (n > slots) n = slots;
+    if (n <= 0) return;
 
-    let spawnCount = Math.floor(expected);
-    if (Math.random() < expected - spawnCount) spawnCount++;
-    const slots = MAX_SPLASHES - this.splashes.length;
-    if (spawnCount > slots) spawnCount = slots;
-    if (spawnCount <= 0) return;
+    // Shed direction — droplets fly opposite tip motion. Cone width and
+    // inheritance come from the style tuning, so flow draws tight trailing
+    // streams while mist fans widely.
+    const motionDir = speedPx > 1 ? Math.atan2(vy, vx) : 0;
+    const shedDir = motionDir + Math.PI;
+    const coneHalf =
+      tuning.coneHalfBase -
+      speedScalar * (tuning.coneHalfBase - tuning.coneHalfMin);
+    const motionFrac = tuning.motionFracBase + (1 - tuning.motionFracBase) * speedScalar;
+    const lifeMin = DROPLET_LIFE_MIN * tuning.lifeScale;
+    const lifeVar = DROPLET_LIFE_VAR * tuning.lifeScale;
 
-    // In momentum mode, chunk size + fling magnitude ride speedScalar so
-    // fast sweeps throw big globs and slow sweeps throw tiny drips.
-    const kickBase = momentumMode ? 40 + speedScalar * 140 : 50;
-    const kickVar = momentumMode ? 60 + speedScalar * 140 : 90;
-    const widthBase = momentumMode ? 0.8 + speedScalar * 1.5 : 0.55;
-    const widthVar = momentumMode ? 0.6 + speedScalar * 0.8 : 0.6;
-    // Low velocity inheritance so the tip *leaves chunks behind* as it
-    // sweeps — this is the charcoal trick that makes sparks trail the
-    // prop. Chunks get ~40% of tip velocity and then a backward kick,
-    // so the tip's continued forward motion creates the classic wet-trail
-    // shedding read.
-    const velInherit = momentumMode ? 0.4 : 0.55;
-    // Momentum mode: narrow kick cone pointing *opposite* to the tip's
-    // motion — water sheds behind the moving prop (like drops flying off
-    // a whipped mop, or sparks trailing a sword). Cone tightens as
-    // momentum builds so fast sweeps throw tight backward streams, slow
-    // sweeps fan out. Stationary tip → isotropic.
-    const motionDir = speedPx > 1 ? Math.atan2(vy, vx) : null;
-    const shedDir = motionDir !== null ? motionDir + Math.PI : null;
-    const coneHalfAngle = 0.75 - speedScalar * 0.45; // ~0.75 rad @ slow → ~0.3 rad @ fast
-
-    for (let i = 0; i < spawnCount; i++) {
-      const kickMag = kickBase + Math.random() * kickVar;
-      const kickAngle =
-        momentumMode && shedDir !== null
-          ? shedDir + (Math.random() - 0.5) * 2 * coneHalfAngle
-          : Math.random() * Math.PI * 2;
+    for (let i = 0; i < n; i++) {
+      const isMotion = speedPx > 1 && Math.random() < motionFrac;
+      const kickAngle = isMotion
+        ? shedDir + (Math.random() - 0.5) * 2 * coneHalf
+        : Math.random() * TAU;
+      const kickMag = isMotion
+        ? 40 +
+          speedScalar * tuning.kickPerSpeed +
+          Math.random() * (30 + speedScalar * tuning.kickPerSpeed * 0.8)
+        : 10 + Math.random() * 30;
       const ox = (Math.random() - 0.5) * 6 * scale;
       const oy = (Math.random() - 0.5) * 6 * scale;
-      this.splashes.push({
+      // Density-based sizing: isolated ambient drips small, motion-spawned
+      // chunks larger at higher speed. sizeVariance controls how much
+      // spread mixes sizes within a spawn burst.
+      const sizeBand = isMotion
+        ? 0.45 + speedScalar * 0.8 + Math.random() * tuning.sizeVariance * 1.6
+        : 0.25 + Math.random() * tuning.sizeVariance;
+      this.droplets.push({
         x0: tip.x + ox,
         y0: tip.y + oy,
-        vx0: vx * velInherit + Math.cos(kickAngle) * kickMag * scale,
-        vy0: vy * velInherit + Math.sin(kickAngle) * kickMag * scale,
+        vx0: vx * tuning.velInherit + Math.cos(kickAngle) * kickMag * scale,
+        vy0: vy * tuning.velInherit + Math.sin(kickAngle) * kickMag * scale,
         age: 0,
-        maxAge: SPLASH_LIFE_MIN + Math.random() * SPLASH_LIFE_VAR,
-        width: widthBase + Math.random() * widthVar,
-        blobSeed: Math.random(),
+        maxAge: lifeMin + Math.random() * lifeVar,
+        radius: baseR * sizeBand,
+        rotation: Math.random() * TAU,
+        rotVel: (Math.random() - 0.5) * 2.0,
       });
     }
   }
 
-  /**
-   * Direct-draw momentum-mode chunks to the main context, no offscreen
-   * mask, no gooey filter. Each chunk is:
-   *   1. A velocity-stretched ellipse body in water core color (crisp edge)
-   *   2. A thin rim-light arc on the leading edge (highlight color)
-   *   3. A tiny specular dot on the leading edge (highlight, crisper)
-   * This is what gives chunks the "drop of water" read — volumetric depth
-   * through layered shading, not blurred goo.
-   */
-  private drawMomentumChunksDirect(
-    ctx: CanvasRenderingContext2D,
-    params: Water2DParams,
-    g: number,
-    bodyRadius: number,
-  ): void {
-    if (this.splashes.length === 0) return;
-    const { core, highlight } = params.resolvedPalette;
-    const prevComposite = ctx.globalCompositeOperation;
-    const prevAlpha = ctx.globalAlpha;
-    const prevFillStyle = ctx.fillStyle;
-    const prevStrokeStyle = ctx.strokeStyle;
-    const prevLineWidth = ctx.lineWidth;
-    try {
-      ctx.globalCompositeOperation = "source-over";
-      for (const s of this.splashes) {
-        const pt = computeBallistic(s, g);
-        const ageT = s.age / s.maxAge;
-        const fade =
-          ageT < 0.1 ? ageT / 0.1 : ageT > 0.75 ? 1 - (ageT - 0.75) / 0.25 : 1;
-        if (fade <= 0.05) continue;
-
-        const headR = Math.max(1, bodyRadius * s.width * 0.6);
-        // Elongate along velocity — 1× at rest, up to 3× at full flight.
-        const currVy = s.vy0 + g * s.age;
-        const sp = Math.hypot(s.vx0, currVy);
-        const stretchX = 1 + Math.min(2.0, sp / 420);
-        const squashY = 0.8 + 0.2 * Math.min(1, sp / 900);
-        const angle = sp > 1 ? Math.atan2(currVy, s.vx0) : 0;
-
-        ctx.save();
-        ctx.translate(pt.x, pt.y);
-        if (sp > 1) ctx.rotate(angle);
-
-        // 1. Body: solid water color, crisp edge. Drawn as an ellipse
-        //    with stretchX × squashY in local frame. Alpha slightly
-        //    below 1 so overlaps pool naturally instead of flat-stamping.
-        ctx.globalAlpha = fade * (0.88 - params.clarity * 0.18);
-        ctx.fillStyle = core;
-        ctx.beginPath();
-        ctx.ellipse(0, 0, headR * stretchX, headR * squashY, 0, 0, TAU);
-        ctx.fill();
-
-        // 2. Rim light: thin bright arc on the leading (+X) edge. Reads
-        //    as the wet-surface catching light as the chunk flies.
-        ctx.globalAlpha = fade * 0.55;
-        ctx.strokeStyle = highlight;
-        ctx.lineWidth = Math.max(1, headR * 0.18);
-        ctx.beginPath();
-        ctx.ellipse(
-          0,
-          0,
-          headR * stretchX,
-          headR * squashY,
-          0,
-          -Math.PI * 0.55,
-          Math.PI * 0.1,
-        );
-        ctx.stroke();
-
-        // 3. Specular: small bright dot on the upper-leading edge.
-        //    Positioned in the local (pre-rotation) frame so it tracks the
-        //    chunk's flight direction.
-        const specR = Math.max(0.8, headR * 0.18);
-        const specX = headR * stretchX * 0.45;
-        const specY = -headR * squashY * 0.55;
-        ctx.globalAlpha = fade * 0.85;
-        ctx.fillStyle = highlight;
-        ctx.beginPath();
-        ctx.arc(specX, specY, specR, 0, TAU);
-        ctx.fill();
-
-        ctx.restore();
-      }
-    } finally {
-      ctx.globalCompositeOperation = prevComposite;
-      ctx.globalAlpha = prevAlpha;
-      ctx.fillStyle = prevFillStyle;
-      ctx.strokeStyle = prevStrokeStyle;
-      ctx.lineWidth = prevLineWidth;
-    }
-  }
-
-  private spawnEndOfLifeSplash(
-    src: WaterElement,
-    g: number,
-    scale: number,
-  ): void {
-    if (this.splashes.length >= MAX_SPLASHES) return;
-    // Only spawn eol splash occasionally so we don't flood.
-    if (Math.random() > 0.18) return;
-    const pt = computeBallistic(src, g);
-    const currVy = src.vy0 + g * src.age;
-    // Mild scatter so the tail breaks up into a few drops — but the
-    // scatter is a narrow cone around the sample's own flight direction,
-    // not isotropic. Breaking ribbons shed drops *along* their path.
-    const kickMag = 20 + Math.random() * 40;
-    const flightSpeed = Math.hypot(src.vx0, currVy);
-    const flightDir = flightSpeed > 1 ? Math.atan2(currVy, src.vx0) : 0;
-    const kickAngle = flightDir + (Math.random() - 0.5) * 0.8;
-    this.splashes.push({
-      x0: pt.x,
-      y0: pt.y,
-      blobSeed: Math.random(),
-      vx0: src.vx0 * 0.9 + Math.cos(kickAngle) * kickMag * scale,
-      vy0: currVy * 0.9 + Math.sin(kickAngle) * kickMag * scale,
-      age: 0,
-      maxAge: SPLASH_LIFE_MIN + Math.random() * SPLASH_LIFE_VAR,
-      width: 0.5 + Math.random() * 0.4,
-    });
-  }
-
-  private ensureOffscreen(w: number, h: number): void {
-    if (this.offscreen && this.offW === w && this.offH === h) return;
-    this.offW = w;
-    this.offH = h;
-    try {
-      if (typeof OffscreenCanvas !== "undefined") {
-        this.offscreen = new OffscreenCanvas(w, h);
-        this.offctx = (this.offscreen as OffscreenCanvas).getContext("2d");
-        return;
-      }
-    } catch {
-      // fall through
-    }
-    if (typeof document !== "undefined") {
-      const c = document.createElement("canvas");
-      c.width = w;
-      c.height = h;
-      this.offscreen = c;
-      this.offctx = c.getContext("2d");
-      return;
-    }
-    this.offscreen = null;
-    this.offctx = null;
-  }
-
-  private probeFilterSupport(ctx: CanvasRenderingContext2D): boolean {
-    try {
-      const prev = ctx.filter;
-      ctx.filter = "blur(2px)";
-      const applied = ctx.filter;
-      ctx.filter = prev;
-      return typeof applied === "string" && applied.includes("blur");
-    } catch {
-      return false;
-    }
+  private positionAt(d: WaterDroplet, g: number): { x: number; y: number } {
+    return {
+      x: d.x0 + d.vx0 * d.age,
+      y: d.y0 + d.vy0 * d.age + 0.5 * g * d.age * d.age,
+    };
   }
 
   private isTipEnabled(
@@ -675,24 +490,165 @@ export class Water2DRenderer {
   }
 
   dispose(): void {
-    this.stream = {};
-    this.splashes = [];
+    this.droplets = [];
     this.lastTipPos = {};
     this.smoothedVelocity = {};
-    this.offscreen = null;
-    this.offctx = null;
-    this.offW = 0;
-    this.offH = 0;
+    this.spriteCache.dispose();
+    this.atmosOff = null;
+    this.atmosCtx = null;
+    this.atmosW = 0;
+    this.atmosH = 0;
     this.filterProbeDone = false;
     this.filterSupported = false;
   }
 }
 
-/** Ballistic position at current age — release point + constant horizontal
- *  velocity + gravity-accelerated vertical velocity. */
-function computeBallistic(e: WaterElement, g: number): { x: number; y: number } {
-  return {
-    x: e.x0 + e.vx0 * e.age,
-    y: e.y0 + e.vy0 * e.age + 0.5 * g * e.age * e.age,
-  };
+/**
+ * Cached pre-baked droplet sprite. Regenerates whenever the palette or
+ * clarity changes — keyed on a signature string so per-frame lookups are
+ * cheap. The sprite encodes everything a real SSFR shader would compute
+ * per-pixel (Fresnel rim darkening, body refraction absorption, specular
+ * highlight, caustic focus spot) as four layered radial gradients.
+ */
+class DropletSpriteCache {
+  private canvas: HTMLCanvasElement | OffscreenCanvas | null = null;
+  private signature = "";
+
+  get(
+    palette: WaterPalette,
+    clarity: number,
+  ): HTMLCanvasElement | OffscreenCanvas | null {
+    const sig = `${palette.core}|${palette.edge}|${palette.highlight}|${clarity.toFixed(2)}`;
+    if (sig === this.signature && this.canvas) return this.canvas;
+    this.canvas = renderDropletSprite(palette, clarity);
+    this.signature = sig;
+    return this.canvas;
+  }
+
+  dispose(): void {
+    this.canvas = null;
+    this.signature = "";
+  }
+}
+
+function renderDropletSprite(
+  palette: WaterPalette,
+  clarity: number,
+): HTMLCanvasElement | OffscreenCanvas | null {
+  const canvas = createOffscreen(SPRITE_SIZE, SPRITE_SIZE);
+  if (!canvas) return null;
+  const ctx = canvas.getContext("2d") as
+    | CanvasRenderingContext2D
+    | OffscreenCanvasRenderingContext2D
+    | null;
+  if (!ctx) return null;
+
+  const cx = SPRITE_SIZE / 2;
+  const cy = SPRITE_SIZE / 2;
+  const R = SPRITE_SIZE * 0.42;
+  ctx.clearRect(0, 0, SPRITE_SIZE, SPRITE_SIZE);
+
+  // Layer 1 — BODY. Radial gradient from a slightly-lit interior to the
+  // saturated rim. Alpha goes to 0 at R so the droplet has a soft (but
+  // not blurred) edge. Clarity reduces interior opacity so you see through
+  // the drop more.
+  const interiorAlpha = Math.max(0.55, 0.95 - clarity * 0.2);
+  const bodyGrad = ctx.createRadialGradient(
+    cx - R * 0.2,
+    cy - R * 0.2,
+    0,
+    cx,
+    cy,
+    R,
+  );
+  bodyGrad.addColorStop(0, withAlpha(palette.edge, interiorAlpha * 0.82));
+  bodyGrad.addColorStop(0.5, withAlpha(palette.core, interiorAlpha));
+  bodyGrad.addColorStop(0.9, withAlpha(palette.core, interiorAlpha * 0.75));
+  bodyGrad.addColorStop(1.0, withAlpha(palette.core, 0));
+  ctx.fillStyle = bodyGrad;
+  ctx.beginPath();
+  ctx.arc(cx, cy, R, 0, TAU);
+  ctx.fill();
+
+  // Layer 2 — FRESNEL RIM. Ring of subtle darkening near the drop's edge
+  // (real water drops look darker at the silhouette due to total internal
+  // reflection). Clipped to the body by source-atop.
+  ctx.globalCompositeOperation = "source-atop";
+  const rimGrad = ctx.createRadialGradient(cx, cy, R * 0.78, cx, cy, R);
+  rimGrad.addColorStop(0, "rgba(0,0,0,0)");
+  rimGrad.addColorStop(0.55, "rgba(0,0,0,0.28)");
+  rimGrad.addColorStop(1.0, "rgba(0,0,0,0)");
+  ctx.fillStyle = rimGrad;
+  ctx.beginPath();
+  ctx.arc(cx, cy, R, 0, TAU);
+  ctx.fill();
+
+  // Layer 3 — SPECULAR HIGHLIGHT. Assumes a single light source from the
+  // upper-left, so specular peaks there. Additive so it lights on top of
+  // the body without tinting it. This is what reads as "wet surface
+  // catching light" — the feature SSFR's Fresnel + GGX produces.
+  ctx.globalCompositeOperation = "lighter";
+  const specCx = cx - R * 0.38;
+  const specCy = cy - R * 0.42;
+  const specR = R * 0.48;
+  const specGrad = ctx.createRadialGradient(specCx, specCy, 0, specCx, specCy, specR);
+  specGrad.addColorStop(0, withAlpha(palette.highlight, 0.95));
+  specGrad.addColorStop(0.35, withAlpha(palette.highlight, 0.35));
+  specGrad.addColorStop(1.0, withAlpha(palette.highlight, 0));
+  ctx.fillStyle = specGrad;
+  ctx.beginPath();
+  ctx.arc(specCx, specCy, specR, 0, TAU);
+  ctx.fill();
+
+  // Layer 4 — REFRACTION CAUSTIC. Bright focal spot on the lower-right
+  // interior where light passing through the drop converges. This is the
+  // subtle "glowy bottom" that makes real water drops photograph as
+  // luminous — without it they look like painted blobs. SSFR gets this
+  // for free from its refraction-offset math; we bake it in.
+  const caustCx = cx + R * 0.24;
+  const caustCy = cy + R * 0.32;
+  const caustR = R * 0.32;
+  const caustGrad = ctx.createRadialGradient(
+    caustCx,
+    caustCy,
+    0,
+    caustCx,
+    caustCy,
+    caustR,
+  );
+  caustGrad.addColorStop(0, withAlpha(palette.highlight, 0.55));
+  caustGrad.addColorStop(0.55, withAlpha(palette.highlight, 0.15));
+  caustGrad.addColorStop(1.0, withAlpha(palette.highlight, 0));
+  ctx.fillStyle = caustGrad;
+  ctx.beginPath();
+  ctx.arc(caustCx, caustCy, caustR, 0, TAU);
+  ctx.fill();
+
+  ctx.globalCompositeOperation = "source-over";
+  return canvas;
+}
+
+function createOffscreen(w: number, h: number): HTMLCanvasElement | OffscreenCanvas | null {
+  try {
+    if (typeof OffscreenCanvas !== "undefined") {
+      return new OffscreenCanvas(w, h);
+    }
+  } catch {
+    // fall through
+  }
+  if (typeof document !== "undefined") {
+    const c = document.createElement("canvas");
+    c.width = w;
+    c.height = h;
+    return c;
+  }
+  return null;
+}
+
+function withAlpha(hex: string, alpha: number): string {
+  const s = hex.replace("#", "");
+  const r = parseInt(s.slice(0, 2), 16);
+  const g = parseInt(s.slice(2, 4), 16);
+  const b = parseInt(s.slice(4, 6), 16);
+  return `rgba(${r},${g},${b},${Math.max(0, Math.min(1, alpha))})`;
 }

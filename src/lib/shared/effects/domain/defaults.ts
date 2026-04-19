@@ -91,7 +91,7 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
     clarity: 0.7,
     surfaceTension: 0.3,
     trackingMode: "both_ends",
-    momentumMode: false,
+    spewStyle: "flow",
   },
 
   activePresets: {
