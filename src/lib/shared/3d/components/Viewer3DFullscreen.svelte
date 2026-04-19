@@ -21,6 +21,8 @@
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { createEffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
   import { setEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
+  import { createScene3DRenderState } from "$lib/shared/3d/scene-features/state/scene-3d-render-state.svelte";
+  import { setScene3DRenderContext } from "$lib/shared/3d/scene-features/state/scene-3d-render-context";
   import { snapshotConfigFromVm, bindVmToEffectsConfig } from "$lib/shared/effects/compat/vm-shim";
   import { seedTrailsFromAnimationSettings } from "$lib/shared/effects/compat/animation-settings-shim";
 
@@ -32,6 +34,11 @@
   const effectsConfigState = createEffectsConfigState(snapshotConfigFromVm(effectsVm));
   seedTrailsFromAnimationSettings(effectsConfigState);
   setEffectsConfigContext(effectsConfigState);
+
+  // Scene-wide 3D render modifiers (motion blur + speed lines).
+  // Separate from per-tip EffectsConfig because these are whole-scene passes.
+  const scene3DRenderState = createScene3DRenderState();
+  setScene3DRenderContext(scene3DRenderState);
 
   $effect(() => {
     const dispose = bindVmToEffectsConfig(effectsVm, effectsConfigState);

@@ -12,6 +12,8 @@
 
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import { getEffectsConfigState } from "../../effects/state/effects-config-state.svelte";
+  import { getScene3DRenderContext } from "$lib/shared/3d/scene-features/state/scene-3d-render-context";
+  import { createScene3DRenderState } from "$lib/shared/3d/scene-features/state/scene-3d-render-state.svelte";
   import type { AvatarInstanceState } from "$lib/shared/3d/state/avatar-instance-state.svelte";
   import type { EffectId } from "$lib/shared/3d/state/performer-settings-types";
 
@@ -21,6 +23,7 @@
   let { performer = null }: Props = $props();
 
   const config = getEffectsConfigState();
+  const scene3DRender = getScene3DRenderContext() ?? createScene3DRenderState();
 
   // Effect definitions for rendering (8 total)
   const effectChips = [
@@ -53,7 +56,7 @@
       case "electricity":
         return config.electricity.enabled;
       case "motion":
-        return config.motion.blur || config.motion.speedLines;
+        return scene3DRender.motion.blur || scene3DRender.motion.speedLines;
       case "bloom":
         return config.bloom.enabled;
       default:
@@ -87,8 +90,8 @@
         break;
       case "motion":
         // Toggle both blur and speed lines together
-        const motionEnabled = config.motion.blur || config.motion.speedLines;
-        config.updateMotion({
+        const motionEnabled = scene3DRender.motion.blur || scene3DRender.motion.speedLines;
+        scene3DRender.updateMotion({
           blur: !motionEnabled,
           speedLines: !motionEnabled,
         });
@@ -128,7 +131,7 @@
       case "electricity":
         return config.electricity.intensity;
       case "motion":
-        return config.motion.intensity;
+        return scene3DRender.motion.intensity;
       case "bloom":
         return config.bloom.intensity;
       default:
@@ -151,7 +154,7 @@
         config.updateElectricity({ intensity: value });
         break;
       case "motion":
-        config.updateMotion({ intensity: value });
+        scene3DRender.updateMotion({ intensity: value });
         break;
       case "bloom":
         config.updateBloom({ intensity: value });

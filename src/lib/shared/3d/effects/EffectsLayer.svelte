@@ -15,7 +15,8 @@
   import { getEffectState } from "./state/effect-state.svelte";
   import { getEffectsConfigState } from "./state/effects-config-state.svelte";
   import { getEffectsConfigContext as getUnifiedEffectsState } from "$lib/shared/effects/state/effects-config-context";
-  import { resolveEcho3D, resolveSparkles3D, resolveZap3D, resolveWater3D } from "$lib/shared/effects/translators/webgl3d-translator";
+  import { getScene3DRenderContext } from "$lib/shared/3d/scene-features/state/scene-3d-render-context";
+  import { resolveEcho3D, resolveSparkles3D, resolveZap3D, resolveWater3D, resolveBubbles3D, resolvePetals3D } from "$lib/shared/effects/translators/webgl3d-translator";
   import { AUSTEN_STAFF } from "../config/avatar-proportions";
   import { TrackingMode, TrailStyle } from "./types";
 
@@ -33,6 +34,9 @@
   import GhostStaff3D from "./motion/GhostStaff3D.svelte";
   import BloomBillboard3D from "./post-processing/BloomBillboard3D.svelte";
   import WaterEmitter3D from "./water/WaterEmitter3D.svelte";
+  import BubbleEmitter3D from "./bubbles/BubbleEmitter3D.svelte";
+  import PetalEmitter3D from "./petals/PetalEmitter3D.svelte";
+  import PetalAmbientShower3D from "./petals/PetalAmbientShower3D.svelte";
 
   interface Props {
     /** Blue prop state from animation */
@@ -62,6 +66,7 @@
   const effectState = getEffectState();
   const configState = getEffectsConfigState();
   const unifiedState = getUnifiedEffectsState();
+  const scene3DRender = getScene3DRenderContext();
   const zap3D = $derived(unifiedState ? resolveZap3D(unifiedState.zap) : null);
   const zapEnabled = $derived(
     unifiedState ? unifiedState.config.tipEffectMap["*"]?.effect === "zap" : false,
@@ -89,6 +94,26 @@
   );
   const waterShowRightEnd = $derived(
     water3D?.trackingMode === "right_end" || water3D?.trackingMode === "both_ends",
+  );
+  const bubbles3D = $derived(unifiedState ? resolveBubbles3D(unifiedState.bubbles) : null);
+  const bubblesEnabled = $derived(
+    unifiedState ? unifiedState.config.tipEffectMap["*"]?.effect === "bubbles" : false,
+  );
+  const bubblesShowLeftEnd = $derived(
+    bubbles3D?.trackingMode === "left_end" || bubbles3D?.trackingMode === "both_ends",
+  );
+  const bubblesShowRightEnd = $derived(
+    bubbles3D?.trackingMode === "right_end" || bubbles3D?.trackingMode === "both_ends",
+  );
+  const petals3D = $derived(unifiedState ? resolvePetals3D(unifiedState.petals) : null);
+  const petalsEnabled = $derived(
+    unifiedState ? unifiedState.config.tipEffectMap["*"]?.effect === "petals" : false,
+  );
+  const petalsShowLeftEnd = $derived(
+    petals3D?.trackingMode === "left_end" || petals3D?.trackingMode === "both_ends",
+  );
+  const petalsShowRightEnd = $derived(
+    petals3D?.trackingMode === "right_end" || petals3D?.trackingMode === "both_ends",
   );
 
   /**
@@ -430,15 +455,15 @@
 <!-- =============================================================================
      Motion Effects (blur and speed lines)
      ============================================================================= -->
-{#if (configState.motion.blur || configState.motion.speedLines) && isPlaying}
+{#if scene3DRender && (scene3DRender.motion.blur || scene3DRender.motion.speedLines) && isPlaying}
   {#if blueCenter}
     <PropMotionEffects
       position={blueCenter}
       color="blue"
-      enableBlur={configState.motion.blur}
-      enableSpeedLines={configState.motion.speedLines}
-      intensity={configState.motion.intensity}
-      threshold={configState.motion.threshold}
+      enableBlur={scene3DRender.motion.blur}
+      enableSpeedLines={scene3DRender.motion.speedLines}
+      intensity={scene3DRender.motion.intensity}
+      threshold={2}
     />
   {/if}
 
@@ -446,10 +471,10 @@
     <PropMotionEffects
       position={redCenter}
       color="red"
-      enableBlur={configState.motion.blur}
-      enableSpeedLines={configState.motion.speedLines}
-      intensity={configState.motion.intensity}
-      threshold={configState.motion.threshold}
+      enableBlur={scene3DRender.motion.blur}
+      enableSpeedLines={scene3DRender.motion.speedLines}
+      intensity={scene3DRender.motion.intensity}
+      threshold={2}
     />
   {/if}
 {/if}
@@ -564,6 +589,86 @@
       position={redEnds.negative}
       propVelocity={redVelocityVec}
       params={water3D}
+      enabled={true}
+    />
+  {/if}
+{/if}
+
+<!-- =============================================================================
+     Bubbles: per-tip buoyant bubble emitters. Ambient drift + motion-reactive
+     emission. Bubbles rise (+y) and grow over lifetime before popping on
+     timeout or max-size.
+     ============================================================================= -->
+{#if bubblesEnabled && bubbles3D && isPlaying}
+  {#if blueEnds && bubblesShowRightEnd}
+    <BubbleEmitter3D
+      position={blueEnds.positive}
+      propVelocity={blueVelocityVec}
+      params={bubbles3D}
+      enabled={true}
+    />
+  {/if}
+  {#if blueEnds && bubblesShowLeftEnd}
+    <BubbleEmitter3D
+      position={blueEnds.negative}
+      propVelocity={blueVelocityVec}
+      params={bubbles3D}
+      enabled={true}
+    />
+  {/if}
+  {#if redEnds && bubblesShowRightEnd}
+    <BubbleEmitter3D
+      position={redEnds.positive}
+      propVelocity={redVelocityVec}
+      params={bubbles3D}
+      enabled={true}
+    />
+  {/if}
+  {#if redEnds && bubblesShowLeftEnd}
+    <BubbleEmitter3D
+      position={redEnds.negative}
+      propVelocity={redVelocityVec}
+      params={bubbles3D}
+      enabled={true}
+    />
+  {/if}
+{/if}
+
+<!-- =============================================================================
+     Petals: dual-source emission. Per-tip motion bursts (4 emitters) + one
+     scene-wide ambient ceiling shower that rains petals from above.
+     ============================================================================= -->
+{#if petalsEnabled && petals3D && isPlaying}
+  <PetalAmbientShower3D params={petals3D} enabled={true} />
+  {#if blueEnds && petalsShowRightEnd}
+    <PetalEmitter3D
+      position={blueEnds.positive}
+      propVelocity={blueVelocityVec}
+      params={petals3D}
+      enabled={true}
+    />
+  {/if}
+  {#if blueEnds && petalsShowLeftEnd}
+    <PetalEmitter3D
+      position={blueEnds.negative}
+      propVelocity={blueVelocityVec}
+      params={petals3D}
+      enabled={true}
+    />
+  {/if}
+  {#if redEnds && petalsShowRightEnd}
+    <PetalEmitter3D
+      position={redEnds.positive}
+      propVelocity={redVelocityVec}
+      params={petals3D}
+      enabled={true}
+    />
+  {/if}
+  {#if redEnds && petalsShowLeftEnd}
+    <PetalEmitter3D
+      position={redEnds.negative}
+      propVelocity={redVelocityVec}
+      params={petals3D}
       enabled={true}
     />
   {/if}
