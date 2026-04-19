@@ -19,6 +19,7 @@ import type { ComponentId } from "../domain/constants/loop-components";
 import {
   LOOPComponent,
   RESERVED_ORIENTATION_PRIMITIVES,
+  type LOOPDomain,
 } from "$lib/features/create/generate/shared/domain/models/generate-models";
 import {
   SliceSize,
@@ -30,6 +31,22 @@ import { loopTypeResolver } from "$lib/features/create/generate/shared/services/
 
 export interface LoopDisplay {
   components: Set<LOOPComponent>;
+  /**
+   * Per-component domain annotation. "location" = acts on grid positions,
+   * "orientation" = acts on the orientation wheel, "both" = detected in both.
+   * Keys match the components Set; may be absent for sequences where only
+   * the stored loopType string was available (no detector run).
+   */
+  componentDomains?: Partial<Record<LOOPComponent, LOOPDomain>>;
+  /**
+   * Integer LOOP period (passes to return to identity): 1, 2, 4, or 8.
+   * 1 = not a LOOP; 2 = halved; 4 = quartered; 8 = reserved for L5/L7.
+   */
+  period: number;
+  /**
+   * @deprecated Use `period` instead. `SliceSize.HALVED` maps to period 2,
+   * `SliceSize.QUARTERED` to period 4. Kept while Phase 6 migrates consumers.
+   */
   rotationSliceSize?: SliceSize;
 }
 
@@ -171,19 +188,49 @@ function computeLoopDisplay(input: LoopDisplayInput): LoopDisplay {
       const detection = loopDetector.detectLOOP(entry);
 
       const components = new Set<LOOPComponent>();
-      for (const id of detection.components) {
-        const mapped = toLoopComponent(id);
-        if (mapped && !RESERVED_ORIENTATION_PRIMITIVES.has(mapped)) {
-          components.add(mapped);
+      const componentDomains: Partial<Record<LOOPComponent, LOOPDomain>> = {};
+
+      // Prefer the domain-aware componentsDetailed path (Phase 3 populated it
+      // via orientation merge). Fall back to the legacy components ID list
+      // when detailed is empty — keeps old sequences rendering while the
+      // migration window is open.
+      const detailed = detection.componentsDetailed ?? [];
+      if (detailed.length > 0) {
+        for (const entry of detailed) {
+          if (RESERVED_ORIENTATION_PRIMITIVES.has(entry.component)) continue;
+          components.add(entry.component);
+          if (entry.domain) {
+            componentDomains[entry.component] = entry.domain;
+          }
+        }
+      } else {
+        for (const id of detection.components) {
+          const mapped = toLoopComponent(id);
+          if (mapped && !RESERVED_ORIENTATION_PRIMITIVES.has(mapped)) {
+            components.add(mapped);
+            componentDomains[mapped] = "location";
+          }
         }
       }
 
       if (components.size > 0) {
+        const period = detection.period ?? 2;
         return {
           components,
-          rotationSliceSize: mapRotationInterval(
-            detection.transformationIntervals?.rotation
-          ),
+          componentDomains,
+          period,
+          // Back-compat for consumers still reading rotationSliceSize. Rotated
+          // + period 4 → QUARTERED; Rotated + period 2 → HALVED. Period 8 or
+          // non-rotated sequences leave it undefined.
+          rotationSliceSize: components.has(LOOPComponent.ROTATED)
+            ? period === 4
+              ? SliceSize.QUARTERED
+              : period === 2
+                ? SliceSize.HALVED
+                : undefined
+            : mapRotationInterval(
+                detection.transformationIntervals?.rotation
+              ),
         };
       }
       // Detection returned nothing usable — fall through to stored loopType
@@ -202,14 +249,29 @@ function computeLoopDisplay(input: LoopDisplayInput): LoopDisplay {
   if (storedLoopType) {
     const parsed = loopTypeResolver.parseComponents(storedLoopType);
     const components = new Set<LOOPComponent>();
+    const componentDomains: Partial<Record<LOOPComponent, LOOPDomain>> = {};
     for (const c of parsed) {
-      if (!RESERVED_ORIENTATION_PRIMITIVES.has(c)) components.add(c);
+      if (!RESERVED_ORIENTATION_PRIMITIVES.has(c)) {
+        components.add(c);
+        componentDomains[c] = "location";
+      }
     }
     if (components.size > 0) {
-      return { components, rotationSliceSize: undefined };
+      // Legacy string path can't recover orientation info; assume period 2
+      // (halved) which is the historical default for non-quartered LOOPs.
+      return {
+        components,
+        componentDomains,
+        period: 2,
+        rotationSliceSize: undefined,
+      };
     }
   }
 
   // Path 3: nothing to show
-  return { components: new Set<LOOPComponent>(), rotationSliceSize: undefined };
+  return {
+    components: new Set<LOOPComponent>(),
+    period: 1,
+    rotationSliceSize: undefined,
+  };
 }

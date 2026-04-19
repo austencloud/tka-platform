@@ -11,6 +11,7 @@
 import { describe, it, expect } from "vitest";
 import { loopDetector } from "$lib/features/loop-labeler/services/implementations/LOOPDetector";
 import type { SequenceEntry, RawStepData } from "$lib/features/loop-labeler/domain/models/sequence-models";
+import { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
 
 // ============================================================================
 // TEST FIXTURES
@@ -185,6 +186,159 @@ describe("LOOPDetector.detectLOOP transformationIntervals", () => {
     expect(result.isCircular).toBe(true);
     expect(result.components).toContain("rotated");
     expect(result.transformationIntervals.rotation).toBe("quartered");
+  });
+
+  // ==========================================================================
+  // ORIENTATION PASS (Phase 3)
+  // ==========================================================================
+  //
+  // These tests lock the orientation detection behavior. The detector runs a
+  // location pass AND an orientation pass; the resulting period is max of the
+  // two, and `componentsDetailed` carries per-component domain annotations.
+
+  it("detects a period-4 orientation rotation (per-pass 90° delta)", () => {
+    // 2-beat sequence where blue + red both advance by one quarter turn per
+    // pass (in → clock). Position is irrelevant — we're testing pure
+    // orientation rotation. The delta of 1 quarter turn means 4 passes are
+    // needed to close: period 4, domain orientation.
+    const entry = makeEntry([
+      {
+        beat: 0,
+        sequenceStartPosition: "alpha1",
+        endPos: "alpha1",
+      },
+      {
+        beat: 1,
+        letter: "A",
+        startPos: "alpha1",
+        endPos: "alpha1",
+        blueAttributes: {
+          startLoc: "n",
+          endLoc: "n",
+          motionType: "static",
+          propRotDir: "no_rotation",
+          startOri: "in",
+          endOri: "clock",
+        },
+        redAttributes: {
+          startLoc: "s",
+          endLoc: "s",
+          motionType: "static",
+          propRotDir: "no_rotation",
+          startOri: "in",
+          endOri: "clock",
+        },
+      },
+      {
+        beat: 2,
+        letter: "A",
+        startPos: "alpha1",
+        endPos: "alpha1",
+        blueAttributes: {
+          startLoc: "n",
+          endLoc: "n",
+          motionType: "static",
+          propRotDir: "no_rotation",
+          startOri: "clock",
+          endOri: "clock",
+        },
+        redAttributes: {
+          startLoc: "s",
+          endLoc: "s",
+          motionType: "static",
+          propRotDir: "no_rotation",
+          startOri: "clock",
+          endOri: "clock",
+        },
+      },
+    ]);
+
+    const result = loopDetector.detectLOOP(entry);
+
+    expect(result.period).toBe(4);
+    const rotated = result.componentsDetailed.find(
+      (c) => c.component === LOOPComponent.ROTATED
+    );
+    expect(rotated).toBeDefined();
+    expect(rotated?.domain).toBe("orientation");
+  });
+
+  it("promotes ROTATED to domain='both' when location + orientation both rotate", () => {
+    // Quartered positional rotation (existing fixture) PLUS per-pass
+    // orientation delta of 1 quarter turn. Detector should emit ROTATED
+    // with domain='both' and period 4.
+    const quartered = quarteredFixture();
+    // Patch the first beat's blueAttributes.startOri / last beat's endOri
+    // to create a per-pass orientation delta as well.
+    const beats = quartered.fullMetadata!.sequence!;
+    const firstBeat = beats.find((b) => (b.beat ?? 0) === 1)!;
+    const lastBeat = beats.find((b) => (b.beat ?? 0) === 4)!;
+    firstBeat.blueAttributes = {
+      ...firstBeat.blueAttributes!,
+      startOri: "in",
+      endOri: "in",
+    };
+    firstBeat.redAttributes = {
+      ...firstBeat.redAttributes!,
+      startOri: "in",
+      endOri: "in",
+    };
+    lastBeat.blueAttributes = {
+      ...lastBeat.blueAttributes!,
+      startOri: "out",
+      endOri: "clock",
+    };
+    lastBeat.redAttributes = {
+      ...lastBeat.redAttributes!,
+      startOri: "out",
+      endOri: "clock",
+    };
+
+    const result = loopDetector.detectLOOP(quartered);
+
+    expect(result.period).toBe(4);
+    const rotated = result.componentsDetailed.find(
+      (c) => c.component === LOOPComponent.ROTATED
+    );
+    expect(rotated?.domain).toBe("both");
+  });
+
+  it("returns period 1 and empty componentsDetailed for a non-LOOP sequence", () => {
+    // 2-beat static sequence with matching orientations — no LOOP, period 1.
+    const entry = makeEntry([
+      {
+        beat: 0,
+        sequenceStartPosition: "alpha1",
+        endPos: "alpha1",
+      },
+      {
+        beat: 1,
+        letter: "A",
+        startPos: "alpha1",
+        endPos: "alpha1",
+        blueAttributes: {
+          startLoc: "n",
+          endLoc: "n",
+          motionType: "static",
+          propRotDir: "no_rotation",
+          startOri: "in",
+          endOri: "in",
+        },
+        redAttributes: {
+          startLoc: "s",
+          endLoc: "s",
+          motionType: "static",
+          propRotDir: "no_rotation",
+          startOri: "in",
+          endOri: "in",
+        },
+      },
+    ]);
+
+    const result = loopDetector.detectLOOP(entry);
+
+    expect(result.period).toBe(1);
+    expect(result.componentsDetailed).toEqual([]);
   });
 
   it("leaves transformationIntervals.rotation undefined when no rotation is detected", () => {

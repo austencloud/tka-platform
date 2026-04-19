@@ -86,9 +86,21 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     category: "general"
   },
   "glyph": {
-    definition: "A visual notation element displayed on a pictograph. Glyphs annotate the pictograph with additional information beyond the prop and arrow positions.",
+    definition: "A visual notation element displayed on a pictograph. Glyphs annotate the pictograph with additional information beyond the prop and arrow positions. The TKA glyph's turns column (high/low slots) is laid out per PADS.",
     examples: ["TKA glyph: shows the letter name and turn numbers", "VTG glyph: shows timing relationship between hands", "Position glyph: shows start and end positions"],
-    relatedTerms: ["pictograph", "vtg", "tka"],
+    relatedTerms: ["pictograph", "pads", "vtg", "tka"],
+    category: "notation"
+  },
+  "pads": {
+    definition: "The priority order — Pro, Anti, Dash, Static — that determines which motion occupies the high (top) slot and which occupies the low (bottom) slot of a pictograph's turns column. When the two hands have different motion types, the higher-priority type goes in the high slot: pro beats anti beats dash beats static. For pro/anti hybrids (C, F, I, L, O, R, U, V) this means pro-high / anti-low. For Type 2 (W, X, Y, Z, Σ, Δ, θ, Ω): shift-high / static-low. For Type 3 (W-, X-, Y-, Z-, Σ-, Δ-, θ-, Ω-): shift-high / dash-low. For Type 4 (Φ, Ψ, Λ): dash-high / static-low. When motion types match — A, B, D, E, G, H, J, K, M, N, P, Q, dual-dashes (Φ-, Ψ-, Λ-), statics (α, β, Γ) — left goes high and right goes low. S and T are the exception among matching-type hybrids: leading hand goes high, following hand goes low. The TKA software handles placement automatically. Defined in the Level 2 Guide (Glyphs / PADS section).",
+    examples: [
+      "C-High-One: pro hand has 1 turn, anti hand has 0 (high = pro per PADS)",
+      "R(fl, 0): float marker in high slot means the float was applied to the pro hand (pro-high / anti-low for hybrids)",
+      "W(1, 0): shift has 1 turn, static has 0 (high = shift since shift beats static)",
+      "Φ(1, 0): dash has 1 turn, static has 0 (high = dash since dash beats static)",
+      "S-High-One: leading hand has 1 turn (leading goes high for S and T)"
+    ],
+    relatedTerms: ["glyph", "pro", "anti", "dash", "static", "turn", "hybrid", "pictograph"],
     category: "notation"
   },
   "prop": {
