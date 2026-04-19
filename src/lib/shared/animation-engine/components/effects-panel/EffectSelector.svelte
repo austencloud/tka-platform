@@ -1,15 +1,5 @@
 <script lang="ts">
-  const EFFECTS = [
-    { id: "trails", label: "Trails", icon: "fa-route", color: "#60a5fa" },
-    { id: "fire", label: "Fire", icon: "fa-fire", color: "#f97316" },
-    { id: "led", label: "LED", icon: "fa-lightbulb", color: "#22c55e" },
-    { id: "charcoal", label: "Coal", icon: "fa-diamond", color: "#a855f7" },
-    { id: "zap", label: "Zap", icon: "fa-bolt", color: "#38bdf8" },
-    { id: "sparkles", label: "Sparkle", icon: "fa-star", color: "#fbbf24" },
-    { id: "echo", label: "Echo", icon: "fa-clone", color: "#22d3ee" },
-    { id: "bloom", label: "Bloom", icon: "fa-sun", color: "#f472b6" },
-    { id: "water", label: "Water", icon: "fa-droplet", color: "#3a7fd9" },
-  ] as const;
+  import { EFFECTS, type EffectMeta } from "./effect-registry";
 
   interface Props {
     activeEffect: string;
@@ -18,7 +8,7 @@
 
   const { activeEffect, onSelect }: Props = $props();
 
-  function getButtonStyle(effect: (typeof EFFECTS)[number]): string {
+  function getButtonStyle(effect: EffectMeta): string {
     const isActive = activeEffect === effect.id;
     if (!isActive) return "";
     return [

@@ -27,7 +27,10 @@
   import BloomCustomize from "./customize/BloomCustomize.svelte";
   import { WATER_PRESET_GROUP } from "./presets/water-presets";
   import WaterCustomize from "./customize/WaterCustomize.svelte";
+  import { BUBBLES_PRESET_GROUP } from "./presets/bubbles-presets";
+  import BubblesCustomize from "./customize/BubblesCustomize.svelte";
   import type { EffectPresetGroup } from "./presets/types";
+  import { EFFECT_COLORS, EFFECT_LABELS } from "./effect-registry";
 
   interface Props {
     // Playback state (from parent — the parent owns the playback engine)
@@ -104,29 +107,6 @@
   // Tick counter to force summary recompute when VM state changes
   let summaryTick = $state(0);
 
-  const EFFECT_COLORS: Record<string, string> = {
-    fire: "#f97316",
-    led: "#22c55e",
-    trails: "#60a5fa",
-    charcoal: "#a855f7",
-    zap: "#38bdf8",
-    sparkles: "#fbbf24",
-    echo: "#22d3ee",
-    bloom: "#f472b6",
-    water: "#3a7fd9",
-  };
-
-  const EFFECT_LABELS: Record<string, string> = {
-    fire: "Fire",
-    led: "LED",
-    trails: "Trails",
-    charcoal: "Charcoal",
-    zap: "Zap",
-    sparkles: "Sparkle",
-    echo: "Echo",
-    bloom: "Bloom",
-    water: "Water",
-  };
 
   function syncFromVM(): void {
     activeEffect = vm.getActiveEffect();
@@ -179,6 +159,7 @@
       case "echo": return ECHO_PRESET_GROUP;
       case "bloom": return BLOOM_PRESET_GROUP;
       case "water": return WATER_PRESET_GROUP;
+      case "bubbles": return BUBBLES_PRESET_GROUP;
       default: return null;
     }
   }
@@ -261,6 +242,8 @@
         <BloomCustomize onBack={() => (customizeOpen = false)} />
       {:else if activeEffect === "water"}
         <WaterCustomize onBack={() => (customizeOpen = false)} />
+      {:else if activeEffect === "bubbles"}
+        <BubblesCustomize onBack={() => (customizeOpen = false)} />
       {/if}
     </div>
   {/if}
