@@ -1,0 +1,148 @@
+import { describe, it, expect } from "vitest";
+import {
+	getMandalaPlacements,
+	type GetMandalaPlacementsArgs,
+} from "$lib/shared/sequence-viewer/services/getMandalaPlacements";
+
+function args(overrides: Partial<GetMandalaPlacementsArgs> = {}): GetMandalaPlacementsArgs {
+	return {
+		stepCount: 8,
+		cols: 3,
+		rows: 4,
+		includeStartPosition: true,
+		showQRCode: true,
+		blueVisible: true,
+		redVisible: true,
+		mandalaEnabled: true,
+		...overrides,
+	};
+}
+
+describe("getMandalaPlacements — toggle/off cases", () => {
+	it("returns empty when mandalaEnabled=false", () => {
+		const res = getMandalaPlacements(args({ mandalaEnabled: false }));
+		expect(res.placements).toEqual([]);
+		expect(res.layoutOverride).toBeNull();
+	});
+
+	it("returns empty when includeStartPosition=false", () => {
+		const res = getMandalaPlacements(args({ includeStartPosition: false }));
+		expect(res.placements).toEqual([]);
+	});
+
+	it("returns empty when both hands hidden", () => {
+		const res = getMandalaPlacements(args({ blueVisible: false, redVisible: false }));
+		expect(res.placements).toEqual([]);
+	});
+
+	it("returns empty for rows < 2", () => {
+		const res = getMandalaPlacements(args({ stepCount: 2, cols: 3, rows: 1 }));
+		expect(res.placements).toEqual([]);
+	});
+});
+
+describe("getMandalaPlacements — 4-count horizontal", () => {
+	it("produces 4×2 horizontal with blue + red when both visible and QR on", () => {
+		const res = getMandalaPlacements(args({ stepCount: 4, cols: 3, rows: 2 }));
+		expect(res.layoutOverride).not.toBeNull();
+		expect(res.layoutOverride!.cols).toBe(4);
+		expect(res.layoutOverride!.rows).toBe(2);
+		expect(res.layoutOverride!.startPos).toEqual({ col: 1, row: 1 });
+		expect(res.layoutOverride!.qrPos).toEqual({ col: 4, row: 1 });
+		expect(res.layoutOverride!.stepPositions).toHaveLength(4);
+		expect(res.layoutOverride!.stepPositions[0]).toEqual({ col: 1, row: 2 });
+		expect(res.layoutOverride!.stepPositions[3]).toEqual({ col: 4, row: 2 });
+		expect(res.placements).toEqual([
+			{ row: 1, col: 2, variant: "blue" },
+			{ row: 1, col: 3, variant: "red" },
+		]);
+	});
+
+	it("drops red slot when red hidden", () => {
+		const res = getMandalaPlacements(
+			args({ stepCount: 4, cols: 3, rows: 2, redVisible: false }),
+		);
+		expect(res.layoutOverride).not.toBeNull();
+		expect(res.placements).toEqual([{ row: 1, col: 2, variant: "blue" }]);
+	});
+
+	it("drops blue slot when blue hidden", () => {
+		const res = getMandalaPlacements(
+			args({ stepCount: 4, cols: 3, rows: 2, blueVisible: false }),
+		);
+		expect(res.placements).toEqual([{ row: 1, col: 3, variant: "red" }]);
+	});
+
+	it("does not trigger horizontal when QR is off", () => {
+		const res = getMandalaPlacements(
+			args({ stepCount: 4, cols: 3, rows: 2, showQRCode: false }),
+		);
+		expect(res.layoutOverride).toBeNull();
+	});
+});
+
+describe("getMandalaPlacements — col-0 empties (both hands visible)", () => {
+	it("1 empty → full mandala centered", () => {
+		const res = getMandalaPlacements(args({ stepCount: 9, cols: 4, rows: 3 }));
+		expect(res.layoutOverride).toBeNull();
+		expect(res.placements).toEqual([{ row: 2, col: 1, variant: "full" }]);
+	});
+
+	it("2 empties → blue on top, red on bottom", () => {
+		const res = getMandalaPlacements(args({ stepCount: 8, cols: 3, rows: 4 }));
+		expect(res.placements).toEqual([
+			{ row: 2, col: 1, variant: "blue" },
+			{ row: 3, col: 1, variant: "red" },
+		]);
+	});
+
+	it("3 empties → sandwich", () => {
+		const res = getMandalaPlacements(args({ stepCount: 10, cols: 3, rows: 5 }));
+		expect(res.placements).toEqual([
+			{ row: 2, col: 1, variant: "blue" },
+			{ row: 3, col: 1, variant: "full" },
+			{ row: 4, col: 1, variant: "red" },
+		]);
+	});
+
+	it("4+ empties → capped at 3 sandwich, centered", () => {
+		// 6 rows means topRow=2, bottomRow=5 → 4 empties. Cap=3, startRow=2.
+		const res = getMandalaPlacements(args({ stepCount: 20, cols: 6, rows: 6 }));
+		expect(res.placements).toEqual([
+			{ row: 2, col: 1, variant: "blue" },
+			{ row: 3, col: 1, variant: "full" },
+			{ row: 4, col: 1, variant: "red" },
+		]);
+	});
+});
+
+describe("getMandalaPlacements — single-hand visibility", () => {
+	it("2 empties + red hidden → only blue slot, centered", () => {
+		const res = getMandalaPlacements(
+			args({ stepCount: 8, cols: 3, rows: 4, redVisible: false }),
+		);
+		// 2 empties (rows 2,3), 1 variant → startRow = 2+floor((2-1)/2) = 2.
+		expect(res.placements).toEqual([{ row: 2, col: 1, variant: "blue" }]);
+	});
+
+	it("3 empties + blue hidden → only red slot, centered", () => {
+		const res = getMandalaPlacements(
+			args({ stepCount: 10, cols: 3, rows: 5, blueVisible: false }),
+		);
+		// 3 empties (rows 2,3,4), 1 variant → startRow = 2+floor((3-1)/2) = 3.
+		expect(res.placements).toEqual([{ row: 3, col: 1, variant: "red" }]);
+	});
+});
+
+describe("getMandalaPlacements — QR off joins bottom cell to empty span", () => {
+	it("8-count, QR off → 3 empties → sandwich", () => {
+		const res = getMandalaPlacements(
+			args({ stepCount: 8, cols: 3, rows: 4, showQRCode: false }),
+		);
+		expect(res.placements).toEqual([
+			{ row: 2, col: 1, variant: "blue" },
+			{ row: 3, col: 1, variant: "full" },
+			{ row: 4, col: 1, variant: "red" },
+		]);
+	});
+});
