@@ -84,3 +84,12 @@ export function useEditorContext(): EditorContext {
 	if (!ctx) throw new Error('useEditorContext called outside of /edit route');
 	return ctx;
 }
+
+/**
+ * Same as useEditorContext but returns null if no context provider is in
+ * scope. Use in page templates that render in BOTH editor and read-only
+ * modes — branch on the result to pick EditableText vs RenderedText.
+ */
+export function tryEditorContext(): EditorContext | null {
+	return getContext<EditorContext | undefined>(KEY) ?? null;
+}
