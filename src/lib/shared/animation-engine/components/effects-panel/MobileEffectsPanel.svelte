@@ -35,6 +35,16 @@
   import { WATER_PRESET_GROUP } from "./presets/water-presets";
   import { BUBBLES_PRESET_GROUP } from "./presets/bubbles-presets";
   import type { EffectPresetGroup } from "./presets/types";
+  import LedCustomize from "./customize/LedCustomize.svelte";
+  import FireCustomize from "./customize/FireCustomize.svelte";
+  import TrailCustomize from "./customize/TrailCustomize.svelte";
+  import CharcoalCustomize from "./customize/CharcoalCustomize.svelte";
+  import ZapCustomize from "./customize/ZapCustomize.svelte";
+  import SparklesCustomize from "./customize/SparklesCustomize.svelte";
+  import EchoCustomize from "./customize/EchoCustomize.svelte";
+  import BloomCustomize from "./customize/BloomCustomize.svelte";
+  import WaterCustomize from "./customize/WaterCustomize.svelte";
+  import BubblesCustomize from "./customize/BubblesCustomize.svelte";
 
   const vm = getAnimationVisibilityManager();
   const effectsConfigState = getEffectsConfigContext();
@@ -66,6 +76,7 @@
   let activePresetId = $state<string | null>(
     vm.getActiveEffect() === "led" ? vm.getActivePresetId() : null,
   );
+  let customizeOpen = $state(false);
   // Tick bumps when VM state changes OR slider moves, so $derived recomputes.
   let syncTick = $state(0);
 
@@ -119,6 +130,7 @@
   }
 
   function handleEffectSelect(effectId: string): void {
+    customizeOpen = false;
     if (effectId === activeEffect) {
       vm.setActiveEffect("none" as EffectType);
       activeEffect = "none";
@@ -161,76 +173,122 @@
 </script>
 
 <div class="mep">
-  <div class="fx-strip" role="radiogroup" aria-label="Select effect">
-    {#each EFFECTS as e (e.id)}
-      {@const isActive = activeEffect === e.id}
-      <button
-        type="button"
-        class="fx-tile"
-        class:active={isActive}
-        role="radio"
-        aria-checked={isActive}
-        aria-label={e.label}
-        style:--fx={e.color}
-        onclick={() => handleEffectSelect(e.id)}
-      >
-        <i class="fas {e.icon}" aria-hidden="true"></i>
-        <span>{e.label}</span>
-        {#if isActive}<span class="dot" aria-hidden="true"></span>{/if}
-      </button>
-    {/each}
-  </div>
+  {#if customizeOpen && activeEffect !== "none"}
+    <button
+      type="button"
+      class="back-row"
+      onclick={() => (customizeOpen = false)}
+      aria-label="Back to effect presets"
+    >
+      <i class="fas fa-arrow-left" aria-hidden="true"></i>
+      <span class="back-row-title">
+        <span class="back-row-label">{EFFECT_LABELS[activeEffect] ?? activeEffect}</span>
+        <span class="back-row-sub">More tuning</span>
+      </span>
+    </button>
 
-  {#if activeEffect !== "none"}
-    {@const group = getPresetGroup(activeEffect)}
-
-    {#if group}
-      <div
-        class="preset-strip"
-        role="radiogroup"
-        aria-label="{EFFECT_LABELS[activeEffect] ?? activeEffect} presets"
-      >
-        {#each group.presets as preset (preset.id)}
-          {@const isActive = activePresetId === preset.id}
-          <button
-            type="button"
-            class="preset-chip"
-            class:active={isActive}
-            role="radio"
-            aria-checked={isActive}
-            onclick={() => handlePresetSelect(preset.id)}
-          >
-            {#if preset.previewColor === "rainbow"}
-              <span class="swatch rainbow" aria-hidden="true"></span>
-            {:else}
-              <span
-                class="swatch"
-                style:background={preset.previewColor}
-                aria-hidden="true"
-              ></span>
-            {/if}
-            {preset.name}
-          </button>
-        {/each}
-      </div>
+    {#if activeEffect === "led"}
+      <LedCustomize onBack={() => (customizeOpen = false)} />
+    {:else if activeEffect === "fire"}
+      <FireCustomize onBack={() => (customizeOpen = false)} />
+    {:else if activeEffect === "trails"}
+      <TrailCustomize onBack={() => (customizeOpen = false)} />
+    {:else if activeEffect === "charcoal"}
+      <CharcoalCustomize onBack={() => (customizeOpen = false)} />
+    {:else if activeEffect === "zap"}
+      <ZapCustomize onBack={() => (customizeOpen = false)} />
+    {:else if activeEffect === "sparkles"}
+      <SparklesCustomize onBack={() => (customizeOpen = false)} />
+    {:else if activeEffect === "echo"}
+      <EchoCustomize onBack={() => (customizeOpen = false)} />
+    {:else if activeEffect === "bloom"}
+      <BloomCustomize onBack={() => (customizeOpen = false)} />
+    {:else if activeEffect === "water"}
+      <WaterCustomize onBack={() => (customizeOpen = false)} />
+    {:else if activeEffect === "bubbles"}
+      <BubblesCustomize onBack={() => (customizeOpen = false)} />
     {/if}
+  {:else}
+    <div class="fx-strip" role="radiogroup" aria-label="Select effect">
+      {#each EFFECTS as e (e.id)}
+        {@const isActive = activeEffect === e.id}
+        <button
+          type="button"
+          class="fx-tile"
+          class:active={isActive}
+          role="radio"
+          aria-checked={isActive}
+          aria-label={e.label}
+          style:--fx={e.color}
+          onclick={() => handleEffectSelect(e.id)}
+        >
+          <i class="fas {e.icon}" aria-hidden="true"></i>
+          <span>{e.label}</span>
+          {#if isActive}<span class="dot" aria-hidden="true"></span>{/if}
+        </button>
+      {/each}
+    </div>
 
-    {#if primarySpec}
-      <div class="slider-row">
-        <span class="slider-label">{primarySpec.label}</span>
-        <input
-          type="range"
-          class="slider"
-          min={primarySpec.min}
-          max={primarySpec.max}
-          step={primarySpec.step}
-          value={primaryValue}
-          oninput={handleSliderInput}
-          aria-label="{primarySpec.label} for {EFFECT_LABELS[activeEffect] ??
-            activeEffect}"
-        />
-        <span class="slider-val">{primarySpec.format(primaryValue)}</span>
-      </div>
+    {#if activeEffect !== "none"}
+      {@const group = getPresetGroup(activeEffect)}
+
+      {#if group}
+        <div
+          class="preset-strip"
+          role="radiogroup"
+          aria-label="{EFFECT_LABELS[activeEffect] ?? activeEffect} presets"
+        >
+          {#each group.presets as preset (preset.id)}
+            {@const isActive = activePresetId === preset.id}
+            <button
+              type="button"
+              class="preset-chip"
+              class:active={isActive}
+              role="radio"
+              aria-checked={isActive}
+              onclick={() => handlePresetSelect(preset.id)}
+            >
+              {#if preset.previewColor === "rainbow"}
+                <span class="swatch rainbow" aria-hidden="true"></span>
+              {:else}
+                <span
+                  class="swatch"
+                  style:background={preset.previewColor}
+                  aria-hidden="true"
+                ></span>
+              {/if}
+              {preset.name}
+            </button>
+          {/each}
+        </div>
+      {/if}
+
+      {#if primarySpec}
+        <div class="slider-row">
+          <span class="slider-label">{primarySpec.label}</span>
+          <input
+            type="range"
+            class="slider"
+            min={primarySpec.min}
+            max={primarySpec.max}
+            step={primarySpec.step}
+            value={primaryValue}
+            oninput={handleSliderInput}
+            aria-label="{primarySpec.label} for {EFFECT_LABELS[activeEffect] ??
+              activeEffect}"
+          />
+          <span class="slider-val">{primarySpec.format(primaryValue)}</span>
+        </div>
+
+        <button
+          type="button"
+          class="more-btn"
+          onclick={() => (customizeOpen = true)}
+        >
+          <span>More tuning…</span>
+          <i class="fas fa-chevron-right" aria-hidden="true"></i>
+        </button>
+      {/if}
     {/if}
   {/if}
 </div>
@@ -408,9 +466,70 @@
     text-align: right;
   }
 
+  .more-btn {
+    height: 40px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: all 150ms ease;
+  }
+  .more-btn:hover {
+    background: rgba(255, 255, 255, 0.07);
+  }
+
+  .back-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 10px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.75);
+    font: inherit;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    align-self: flex-start;
+  }
+  .back-row i {
+    width: 20px;
+    text-align: center;
+  }
+  .back-row-title {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    line-height: 1.1;
+  }
+  .back-row-label {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .back-row-sub {
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(74, 158, 255, 0.8);
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .fx-tile,
-    .preset-chip {
+    .preset-chip,
+    .more-btn,
+    .back-row {
       transition: none;
     }
   }
