@@ -43,6 +43,8 @@
   import { simplifyAndTruncate } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
   import { calculateTimelineRowsByBeatCount } from "$lib/features/create/shared/workspace-panel/sequence-display/utils/grid-calculations";
   import type { TimelineRow } from "$lib/features/create/shared/workspace-panel/sequence-display/utils/grid-calculations";
+  import SequenceMandala from "$lib/shared/mandala/components/SequenceMandala.svelte";
+  import { getMandalaPlacements } from "../services/getMandalaPlacements";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import {
@@ -328,7 +330,14 @@
   // Find the grid position for the QR code: bottom of column 1 (under start position).
   // Only show when there are naturally 2+ rows — don't force an extra row for short sequences.
   const qrGridPosition = $derived.by(() => {
-    if (!showQRCode || !includeStartPosition || effectiveRows < 2) return null;
+    if (!showQRCode || !includeStartPosition) return null;
+    if (mandalaLayoutOverride) {
+      return {
+        gridColumn: mandalaLayoutOverride.qrPos.col,
+        gridRow: mandalaLayoutOverride.qrPos.row,
+      };
+    }
+    if (effectiveRows < 2) return null;
     return { gridColumn: 1, gridRow: effectiveRows };
   });
 
@@ -483,7 +492,7 @@
 
   // Effective columns — synchronously computed from layout tables so the grid
   // updates immediately when includeStartPosition toggles (before async re-render).
-  const effectiveColumns = $derived.by(() => {
+  const baseColumns = $derived.by(() => {
     if (!sequence?.steps?.length) return columns || 0;
     const stepCount = sequence.steps.length;
 
@@ -527,14 +536,14 @@
   // When the column count comes from any override (prop, composition manager,
   // or isLongSequence), derive rows from that count instead of the layout table
   // (which assumes its own column count and would produce wrong rows).
-  const effectiveRows = $derived.by(() => {
+  const baseRows = $derived.by(() => {
     if (!sequence?.steps?.length) return rows || 0;
     const stepCount = sequence.steps.length;
 
     // If we know the column count (prop override, composition manager, or
     // long-sequence), derive rows from it. The composition manager check
-    // mirrors effectiveColumns so the two stay in sync.
-    const cols = effectiveColumns;
+    // mirrors baseColumns so the two stay in sync.
+    const cols = baseColumns;
     const hasCompositionOverride = stepCount >= 4
       && compositionManager.getColumnCountForStepCount(stepCount) !== null;
     if (cols > 0 && (columnCount !== null || isLongSequence || hasCompositionOverride)) {
@@ -545,8 +554,42 @@
     }
 
     const [, rws] = layoutCalculator.calculateLayout(stepCount, includeStartPosition, "column");
+
+    // Mandala fill needs at least one col-0 empty between start and QR.
+    // 6-count naturally lays out as 4×2 (packed). When mandala is on, expand
+    // to 4×3 so col 0 has a single empty cell (Full mandala goes there).
+    if (
+      showMandala
+      && showQRCode
+      && includeStartPosition
+      && stepCount === 6
+      && rws === 2
+    ) {
+      return 3;
+    }
     return rws;
   });
+
+  // Compute mandala placements + optional 4-count horizontal layout override.
+  // Takes base dims as inputs; the override reshapes dims downstream.
+  const mandalaResult = $derived.by(() => {
+    return getMandalaPlacements({
+      stepCount: sequence?.steps?.length ?? 0,
+      cols: baseColumns,
+      rows: baseRows,
+      includeStartPosition,
+      showQRCode,
+      blueVisible: showBlueMotion,
+      redVisible: showRedMotion,
+      mandalaEnabled: showMandala,
+    });
+  });
+  const mandalaLayoutOverride = $derived(mandalaResult.layoutOverride);
+  const mandalaPlacements = $derived(mandalaResult.placements);
+
+  // Final effective dims — override wins for the 4-count horizontal case.
+  const effectiveColumns = $derived(mandalaLayoutOverride?.cols ?? baseColumns);
+  const effectiveRows = $derived(mandalaLayoutOverride?.rows ?? baseRows);
 
   // Compute aspect ratio for the entire preview (width / height)
   // This ensures the preview maintains correct proportions regardless of container size
@@ -737,6 +780,16 @@
    *   Row 4: 13(col 2), 14(col 3), 15(col 4), 16(col 5)
    */
   function calculateGridPosition(stepIndex: number, cols: number): { gridColumn: number; gridRow: number } {
+    // 4-count horizontal mandala override: start/step positions come from the override spec.
+    const override = mandalaLayoutOverride;
+    if (override) {
+      if (stepIndex === -1) {
+        return { gridColumn: override.startPos.col, gridRow: override.startPos.row };
+      }
+      const pos = override.stepPositions[stepIndex];
+      if (pos) return { gridColumn: pos.col, gridRow: pos.row };
+    }
+
     // Start position is always at column 1, row 1
     if (stepIndex === -1) {
       return { gridColumn: 1, gridRow: 1 };
@@ -2094,6 +2147,23 @@
                 </div>
               </div>
             {/if}
+            {#each mandalaPlacements as placement (placement.row + "-" + placement.col + "-" + placement.variant)}
+              <div
+                class="cell-flip-wrapper mandala-cell-wrapper"
+                style="grid-column: {placement.col}; grid-row: {placement.row};"
+                transition:fade|local={{ duration: 200 }}
+              >
+                <div class="pictograph-cell mandala-cell">
+                  <SequenceMandala
+                    {sequence}
+                    mode="card-back"
+                    style="stroke"
+                    show={placement.variant === "full" ? "both" : placement.variant}
+                    size={cellWidth || 120}
+                  />
+                </div>
+              </div>
+            {/each}
           </div>
         </div>
       {:else}
@@ -2153,6 +2223,23 @@
               </div>
             </div>
           {/if}
+          {#each mandalaPlacements as placement (placement.row + "-" + placement.col + "-" + placement.variant)}
+            <div
+              class="cell-flip-wrapper mandala-cell-wrapper"
+              style="grid-column: {placement.col}; grid-row: {placement.row};"
+              transition:fade|local={{ duration: 200 }}
+            >
+              <div class="pictograph-cell mandala-cell">
+                <SequenceMandala
+                  {sequence}
+                  mode="card-back"
+                  style="stroke"
+                  show={placement.variant === "full" ? "both" : placement.variant}
+                  size={cellWidth || 120}
+                />
+              </div>
+            </div>
+          {/each}
         </div>
       {/if}
 
@@ -2696,6 +2783,15 @@
     object-fit: contain;
     -webkit-user-drag: none;
     user-select: none;
+  }
+
+  /* Mandala fill cell — sits in empty col-0 cells and shows blue/red/full path viz. */
+  .mandala-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    background: transparent;
   }
 
   /* Clickable cells */
