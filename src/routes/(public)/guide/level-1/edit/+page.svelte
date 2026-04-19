@@ -1,36 +1,32 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import Page05TableOfContents from '../_pages/Page05TableOfContents.svelte';
-	import {
-		provideEditorContext,
-		type EditorContext
-	} from '../_lib/EditorContext.svelte';
-	import { validateSidecar, type PageSidecar } from '../_lib/sidecar-schema';
+	import { provideEditorContext } from '../_lib/EditorContext.svelte';
+	import { type PageSidecar } from '../_lib/sidecar-schema';
 	import sidecarPage5 from '../_data/page-05.json';
 	import EditorShell from './EditorShell.svelte';
 
-	let activePage = $state(5);
-	let editorReady = $state(false);
-	let ctx: EditorContext | null = null;
+	// Context is created exactly once during component init; subsequent page
+	// jumps swap the loaded sidecar in-place via ctx.loadSidecar. Calling
+	// provideEditorContext again outside init triggers Svelte's
+	// lifecycle_outside_component error and breaks navigation.
+	const initialPage = 5;
+	const initialSidecar = sidecarPage5 as unknown as PageSidecar;
+	const ctx = provideEditorContext(initialSidecar);
 
-	function loadPage(n: number): boolean {
-		if (n === 5) {
-			const data = sidecarPage5 as unknown as PageSidecar;
-			validateSidecar(data);
-			ctx = provideEditorContext(data);
-			editorReady = true;
-			return true;
-		}
-		editorReady = false;
-		ctx = null;
-		return false;
-	}
+	let activePage = $state(initialPage);
+	const editableSet = new Set<number>([5]);
+	const editorReady = $derived(editableSet.has(activePage));
 
-	loadPage(activePage);
-
-	function onJump(n: number) {
+	async function onJump(n: number) {
+		if (n === activePage) return;
 		activePage = n;
-		loadPage(n);
+		if (n === 5) {
+			await ctx.loadSidecar(sidecarPage5 as unknown as PageSidecar);
+		}
+		// Other pages: leave ctx pointing at the previously-loaded sidecar
+		// so EditableText/SaveIndicator inside the editor shell stay valid.
+		// The canvas renders the "not yet editable" placeholder.
 	}
 
 	onMount(() => {
@@ -39,8 +35,17 @@
 		(window as unknown as { __tkaLoadProgress?: () => void }).__tkaLoadProgress = () => {};
 	});
 
+	// Flush any pending autosave before the tab/route unloads so the last
+	// keystroke isn't lost in the 800ms debounce window.
+	function onBeforeUnload() {
+		void ctx.autosave.flushNow();
+	}
+
+	onDestroy(() => {
+		void ctx.autosave.flushNow();
+	});
+
 	function onKeydown(e: KeyboardEvent) {
-		if (!ctx) return;
 		const isMac =
 			typeof navigator !== 'undefined' && navigator.platform.toLowerCase().includes('mac');
 		const meta = isMac ? e.metaKey : e.ctrlKey;
@@ -57,7 +62,7 @@
 	}
 </script>
 
-<svelte:window onkeydown={onKeydown} />
+<svelte:window onkeydown={onKeydown} onbeforeunload={onBeforeUnload} />
 <svelte:head>
 	<title>Guide Editor — Level 1 Page {activePage}</title>
 </svelte:head>

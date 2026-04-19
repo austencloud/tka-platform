@@ -35,16 +35,23 @@ export class EditorContext {
 	 * Apply a mutation to the sidecar. Records a snapshot for undo and
 	 * schedules an autosave. The mutator receives a deep clone of the
 	 * current sidecar and returns the new sidecar.
+	 *
+	 * `coalesce` lets callers (e.g., per-keystroke editors) merge consecutive
+	 * mutations into one undo entry. See UndoStack.record for semantics.
 	 */
-	mutate(fn: (draft: PageSidecar) => PageSidecar): void {
+	mutate(
+		fn: (draft: PageSidecar) => PageSidecar,
+		coalesce?: { key: string; withinMs: number }
+	): void {
 		const next = fn(structuredClone(this.sidecar));
 		validateSidecar(next);
 		this.sidecar = next;
-		this.undo.record(structuredClone(next));
+		this.undo.record(structuredClone(next), coalesce);
 		this.autosave.notifyEdit();
 	}
 
 	performUndo(): void {
+		this.undo.breakCoalesce();
 		const prev = this.undo.undo();
 		if (prev !== undefined) {
 			this.sidecar = structuredClone(prev);
@@ -53,11 +60,33 @@ export class EditorContext {
 	}
 
 	performRedo(): void {
+		this.undo.breakCoalesce();
 		const next = this.undo.redo();
 		if (next !== undefined) {
 			this.sidecar = structuredClone(next);
 			this.autosave.notifyEdit();
 		}
+	}
+
+	/**
+	 * Replace the loaded page without reconstructing the context. Used by
+	 * the editor shell when the user navigates between pages — calling
+	 * `provideEditorContext` again would invoke `setContext` outside of
+	 * component initialization, which Svelte 5 rejects.
+	 *
+	 * Flushes any pending autosave for the OLD page first so debounced
+	 * keystrokes aren't dropped on navigation.
+	 */
+	async loadSidecar(next: PageSidecar): Promise<void> {
+		validateSidecar(next);
+		await this.autosave.flushNow().catch(() => {
+			// Surface as autosave error state; loadSidecar still proceeds.
+		});
+		this.pageNumber = next.pageNumber;
+		this.sidecar = next;
+		this.selectedAssetId = null;
+		this.undo.clear();
+		this.undo.record(structuredClone(next));
 	}
 
 	private async persist(): Promise<void> {
