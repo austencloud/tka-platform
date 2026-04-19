@@ -13,7 +13,6 @@
   import type { ExportOptionsStateManager } from "../state/export-options-state.svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
-  import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
   type PanelLayout = "sidebar" | "bottom";
 
@@ -63,8 +62,6 @@
   vm.registerObserver(onVmChanged, ["all"]);
   onDestroy(() => vm.unregisterObserver(onVmChanged));
 
-  const blueMotion = $derived.by(() => { void vmVersion; return vm.getMotionVisibility(MotionColor.BLUE); });
-  const redMotion = $derived.by(() => { void vmVersion; return vm.getMotionVisibility(MotionColor.RED); });
   const showGrid = $derived.by(() => { void vmVersion; return vm.getGridVisibility(); });
   const tkaGlyph = $derived.by(() => { void vmVersion; return vm.getRawGlyphVisibility("tkaGlyph"); });
   const vtgGlyph = $derived.by(() => { void vmVersion; return vm.getRawGlyphVisibility("vtgGlyph"); });
@@ -77,7 +74,7 @@
   const headerAnyOn = $derived(showWord || showDifficulty || showLoopGlyph);
   const footerAnyOn = $derived(showCreatorName || showNotes || showBirthday);
   const pictographAnyOn = $derived(
-    blueMotion || redMotion || showGrid || tkaGlyph || vtgGlyph || positionsGlyph || nonRadial
+    showGrid || tkaGlyph || vtgGlyph || positionsGlyph || nonRadial
   );
 
   function toggleHeader(): void {
@@ -96,8 +93,6 @@
 
   function togglePictograph(): void {
     const target = !pictographAnyOn;
-    vm.setMotionVisibility(MotionColor.BLUE, target);
-    vm.setMotionVisibility(MotionColor.RED, target);
     vm.setGridVisibility(target);
     vm.setGlyphVisibility("tkaGlyph", target);
     vm.setGlyphVisibility("vtgGlyph", target);
@@ -228,14 +223,6 @@
               aria-label={pictographAnyOn ? "Hide all pictograph elements" : "Show all pictograph elements"}
             >Pictograph</button>
             <div class="chip-group">
-              <button type="button" class="chip" class:active={blueMotion}
-                onclick={() => vm.setMotionVisibility(MotionColor.BLUE, !blueMotion)}
-                aria-pressed={blueMotion}
-              >Blue</button>
-              <button type="button" class="chip" class:active={redMotion}
-                onclick={() => vm.setMotionVisibility(MotionColor.RED, !redMotion)}
-                aria-pressed={redMotion}
-              >Red</button>
               <button type="button" class="chip" class:active={showGrid}
                 onclick={() => vm.setGridVisibility(!showGrid)}
                 aria-pressed={showGrid}
@@ -425,14 +412,6 @@
           aria-label={pictographAnyOn ? "Hide all pictograph elements" : "Show all pictograph elements"}
         >Pictograph</button>
         <div class="chip-group">
-          <button type="button" class="chip" class:active={blueMotion}
-            onclick={() => vm.setMotionVisibility(MotionColor.BLUE, !blueMotion)}
-            aria-pressed={blueMotion}
-          >Blue</button>
-          <button type="button" class="chip" class:active={redMotion}
-            onclick={() => vm.setMotionVisibility(MotionColor.RED, !redMotion)}
-            aria-pressed={redMotion}
-          >Red</button>
           <button type="button" class="chip" class:active={showGrid}
             onclick={() => vm.setGridVisibility(!showGrid)}
             aria-pressed={showGrid}
