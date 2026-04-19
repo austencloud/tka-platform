@@ -71,8 +71,6 @@ interface AnimationVisibilitySettings {
   // Shared with pictograph visibility (can sync)
   tkaGlyph: boolean; // TKA Glyph includes turn numbers
   reversalIndicators: boolean;
-  blueMotion: boolean;
-  redMotion: boolean;
   effortPreset: EffortId;
   /** Path shape for shift interpolation: "arc" (default) or "linear" */
   pathShape: "arc" | "linear";
@@ -174,8 +172,6 @@ export class AnimationVisibilityStateManager {
       // Shared elements - defaults optimized for animation viewing
       tkaGlyph: true, // TKA Glyph includes turn numbers
       reversalIndicators: false, // Less clutter during animation
-      blueMotion: true,
-      redMotion: true,
       effortPreset: "linear",
       pathShape: "arc",
 
@@ -422,25 +418,6 @@ export class AnimationVisibilityStateManager {
    */
   updateSettings(updates: Partial<AnimationVisibilitySettings>): void {
     Object.assign(this.settings, updates);
-    this.saveToStorage();
-    this.notifyObservers();
-  }
-
-  /**
-   * Sync shared settings from pictograph visibility
-   * (Only syncs keys that exist in both systems)
-   */
-  syncFromPictographVisibility(pictographSettings: {
-    tkaGlyph: boolean;
-    reversalIndicators: boolean;
-    blueMotion: boolean;
-    redMotion: boolean;
-  }): void {
-    this.settings.tkaGlyph = pictographSettings.tkaGlyph;
-    this.settings.reversalIndicators = pictographSettings.reversalIndicators;
-    this.settings.blueMotion = pictographSettings.blueMotion;
-    this.settings.redMotion = pictographSettings.redMotion;
-
     this.saveToStorage();
     this.notifyObservers();
   }
