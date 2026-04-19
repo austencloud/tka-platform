@@ -38,7 +38,6 @@ with pre-prepared data for better performance.
   import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
   import type { PropType } from "../../prop/domain/enums/PropType";
   import { GridMode, GridLocation } from "../../grid/domain/enums/grid-enums";
-  import { MotionColor } from "../domain/enums/pictograph-enums";
   import PictographRenderer from "./PictographRenderer.svelte";
   import { globalAdjustmentVersion } from "../../arrow/positioning/global/state/global-adjustment-version.svelte";
 
@@ -156,8 +155,8 @@ with pre-prepared data for better performance.
   // Using $state for each value ensures Svelte 5 properly tracks changes
   let syncedVisibility = $state({
     showGrid: visibilityManager.getGridVisibility(),
-    blueMotion: visibilityManager.getMotionVisibility(MotionColor.BLUE),
-    redMotion: visibilityManager.getMotionVisibility(MotionColor.RED),
+    blueMotion: true,
+    redMotion: true,
     tkaGlyph: visibilityManager.getGlyphVisibility("tkaGlyph"),
     reversalIndicators: visibilityManager.getGlyphVisibility("reversalIndicators"),
     nonRadialPoints: visibilityManager.getNonRadialVisibility(),
@@ -173,8 +172,8 @@ with pre-prepared data for better performance.
     // This creates a new object reference, forcing Svelte to detect the change
     syncedVisibility = {
       showGrid: visibilityManager.getGridVisibility(),
-      blueMotion: visibilityManager.getMotionVisibility(MotionColor.BLUE),
-      redMotion: visibilityManager.getMotionVisibility(MotionColor.RED),
+      blueMotion: true,
+      redMotion: true,
       tkaGlyph: visibilityManager.getGlyphVisibility("tkaGlyph"),
       reversalIndicators: visibilityManager.getGlyphVisibility("reversalIndicators"),
       nonRadialPoints: visibilityManager.getNonRadialVisibility(),
