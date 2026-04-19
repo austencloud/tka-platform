@@ -56,7 +56,6 @@
   import { setAnimationPlaybackRef } from "$lib/shared/coordinators/animation-playback-ref.svelte";
   import { ANIMATION_AUTO_START_DELAY_MS } from "$lib/features/compose/shared/domain/constants/timing";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
   import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
 
   // Get context
@@ -89,10 +88,6 @@
   let stepPlaybackPauseMsLocal = $state(300);
   let stepPlaybackStepSizeLocal = $state<StepPlaybackStepSize>(1);
   let cleanupAnimationStateSubscription: (() => void) | undefined;
-
-  // Visibility state management
-  const visibilityManager = getVisibilityStateManager();
-  let savedMotionVisibility: { blue: boolean; red: boolean } | null = null;
 
   // Layout detection
   let isSideBySideLayout = $state(false);
@@ -230,17 +225,6 @@
       }
     }
   );
-
-  // Save visibility state when export panel opens, restore when it closes
-  $effect(() => {
-    if (
-      panelState.isExportPanelOpen &&
-      selectedFormat === "animation" &&
-      savedMotionVisibility === null
-    ) {
-      savedMotionVisibility = visibilityManager.saveMotionVisibilityState();
-    }
-  });
 
   // Update layout detection
   $effect(() => {
@@ -613,12 +597,6 @@
     // Pause animation when closing export panel
     if (isPlayingLocal && playbackController) {
       playbackController.togglePlayback();
-    }
-
-    // Restore saved motion visibility state
-    if (savedMotionVisibility !== null) {
-      visibilityManager.restoreMotionVisibilityState(savedMotionVisibility);
-      savedMotionVisibility = null;
     }
 
     // Cancel any ongoing export

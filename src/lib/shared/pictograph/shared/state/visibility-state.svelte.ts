@@ -1,8 +1,8 @@
 /**
  * Visibility State Manager - Modern Web Implementation
  *
- * Replicates the sophisticated visibility system from the legacy desktop app.
- * Manages complex dependencies between motion visibility and dependent glyphs.
+ * Manages glyph, grid, and display visibility settings for pictographs.
+ * Motion visibility is viewer-scoped and not stored here.
  *
  * Persistence: Settings are saved to AppSettings and synced via SettingsState
  * to localStorage (immediate) and Firebase (authenticated users).
@@ -10,7 +10,6 @@
 
 import type { AppSettings } from "../../../settings/domain/AppSettings";
 import type { ISettingsState } from "../../../settings/services/contracts/ISettingsState";
-import { MotionColor } from "../domain/enums/pictograph-enums";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import { browser } from "$app/environment";
 
@@ -31,13 +30,9 @@ async function getSettingsService(): Promise<ISettingsState | null> {
 
 type VisibilityObserver = () => void;
 
-type VisibilityCategory = "glyph" | "motion" | "non_radial" | "all" | "buttons";
+type VisibilityCategory = "glyph" | "non_radial" | "all" | "buttons";
 
 interface VisibilitySettings {
-  // Motion visibility (independent)
-  redMotion: boolean;
-  blueMotion: boolean;
-
   // Independent glyphs
   reversalIndicators: boolean;
 
@@ -81,10 +76,6 @@ export class VisibilityStateManager {
   constructor(initialSettings?: Partial<AppSettings>) {
     // Initialize with defaults matching desktop app
     this.settings = {
-      // Motion defaults - both visible
-      redMotion: true,
-      blueMotion: true,
-
       // Independent glyph defaults
       reversalIndicators: true,
 
@@ -108,7 +99,6 @@ export class VisibilityStateManager {
 
     // Initialize observer categories
     this.observers.set("glyph", new Set());
-    this.observers.set("motion", new Set());
     this.observers.set("non_radial", new Set());
     this.observers.set("all", new Set());
     this.observers.set("buttons", new Set());
@@ -330,112 +320,17 @@ export class VisibilityStateManager {
   }
 
   // ============================================================================
-  // MOTION VISIBILITY
-  // ============================================================================
-
-  /**
-   * Get motion visibility for a specific color
-   */
-  getMotionVisibility(color: MotionColor): boolean {
-    return this.settings[
-      `${color}Motion` as keyof VisibilitySettings
-    ] as boolean;
-  }
-
-  /**
-   * Set motion visibility with constraint enforcement
-   */
-  setMotionVisibility(color: MotionColor, visible: boolean): void {
-    const otherColor =
-      color === MotionColor.RED ? MotionColor.BLUE : MotionColor.RED;
-
-    // Type-safe motion property keys
-    const isRed = color === MotionColor.RED;
-    const isOtherRed = otherColor === MotionColor.RED;
-
-    // Get current state of other motion
-    const otherMotionVisible = isOtherRed
-      ? this.settings.redMotion
-      : this.settings.blueMotion;
-
-    // Enforce constraint: at least one motion must remain visible
-    if (!visible && !otherMotionVisible) {
-      // If trying to turn off the last visible motion, turn on the other one
-      if (isRed) {
-        this.settings.redMotion = false;
-        this.settings.blueMotion = true;
-      } else {
-        this.settings.blueMotion = false;
-        this.settings.redMotion = true;
-      }
-      this.notifyObservers(["motion", "glyph", "buttons"]);
-      return;
-    }
-
-    // Normal case
-    if (isRed) {
-      this.settings.redMotion = visible;
-    } else {
-      this.settings.blueMotion = visible;
-    }
-    this.notifyObservers(["motion", "glyph", "buttons"]);
-  }
-
-  /**
-   * Check if all motions are visible
-   */
-  areAllMotionsVisible(): boolean {
-    return this.settings.redMotion && this.settings.blueMotion;
-  }
-
-  /**
-   * Check if any motion is visible
-   */
-  isAnyMotionVisible(): boolean {
-    return this.settings.redMotion || this.settings.blueMotion;
-  }
-
-  /**
-   * Save current motion visibility state (for temporary overrides)
-   */
-  saveMotionVisibilityState(): { blue: boolean; red: boolean } {
-    return {
-      blue: this.settings.blueMotion,
-      red: this.settings.redMotion,
-    };
-  }
-
-  /**
-   * Restore saved motion visibility state (after temporary overrides)
-   */
-  restoreMotionVisibilityState(savedState: {
-    blue: boolean;
-    red: boolean;
-  }): void {
-    this.settings.blueMotion = savedState.blue;
-    this.settings.redMotion = savedState.red;
-    this.notifyObservers(["motion", "glyph", "buttons"]);
-  }
-
-  // ============================================================================
   // GLYPH VISIBILITY
   // ============================================================================
 
   /**
-   * Get glyph visibility considering dependencies
+   * Get glyph visibility
    */
   getGlyphVisibility(glyphType: string): boolean {
-    const baseVisibility =
+    return (
       (this.settings[glyphType as keyof VisibilitySettings] as boolean) ??
-      false;
-
-    // For dependent glyphs, also check if both motions are visible
-    if (this.DEPENDENT_GLYPHS.includes(glyphType)) {
-      return baseVisibility && this.areAllMotionsVisible();
-    }
-
-    // For independent glyphs, return direct visibility
-    return baseVisibility;
+      false
+    );
   }
 
   /**
@@ -608,12 +503,9 @@ export class VisibilityStateManager {
   }
 
   /**
-   * Get all enabled dependent glyphs (considering motion constraints)
+   * Get all enabled dependent glyphs
    */
   getAvailableDependentGlyphs(): string[] {
-    if (!this.areAllMotionsVisible()) {
-      return [];
-    }
     return this.DEPENDENT_GLYPHS.filter((glyph) =>
       this.getRawGlyphVisibility(glyph)
     );
