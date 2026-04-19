@@ -17,7 +17,6 @@
     getSettings,
     updateSettings,
   } from "$lib/shared/application/state/app-state.svelte";
-  import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { container } from "$lib/shared/di";
   import type { IHapticFeedback } from "$lib/shared/application/services/contracts/IHapticFeedback";
   import type { VisibilityMode } from "./visibility/visibility-types";
@@ -64,15 +63,12 @@
   });
 
   // ── Pictograph state ──
-  const blueMotion = $derived.by(() => { void version; return vm.getMotionVisibility(MotionColor.BLUE); });
-  const redMotion = $derived.by(() => { void version; return vm.getMotionVisibility(MotionColor.RED); });
   const showGrid = $derived.by(() => { void version; return vm.getGridVisibility(); });
   const nonRadial = $derived.by(() => { void version; return vm.getNonRadialVisibility(); });
   const tkaGlyph = $derived.by(() => { void version; return vm.getRawGlyphVisibility("tkaGlyph"); });
   const vtgGlyph = $derived.by(() => { void version; return vm.getRawGlyphVisibility("vtgGlyph"); });
   const positionsGlyph = $derived.by(() => { void version; return vm.getRawGlyphVisibility("positionsGlyph"); });
   const reversals = $derived.by(() => { void version; return vm.getRawGlyphVisibility("reversalIndicators"); });
-  const allMotionsVisible = $derived.by(() => { void version; return vm.areAllMotionsVisible(); });
 
   // ── Animation state ──
   const darkMode = $derived(getSettings().darkMode ?? false);
@@ -107,8 +103,6 @@
   // ── Pictograph toggle handler ──
   function handlePictographToggle(key: string) {
     switch (key) {
-      case "blue": tap(() => vm.setMotionVisibility(MotionColor.BLUE, !blueMotion)); break;
-      case "red": tap(() => vm.setMotionVisibility(MotionColor.RED, !redMotion)); break;
       case "grid": tap(() => vm.setGridVisibility(!showGrid)); break;
       case "tka": tap(() => vm.setGlyphVisibility("tkaGlyph", !tkaGlyph)); break;
       case "vtg": tap(() => {
@@ -183,15 +177,12 @@
   <!-- Panels Container -->
   <div class="visibility-panels-container">
     <PictographPanel
-      blueMotionVisible={blueMotion}
-      redMotionVisible={redMotion}
       {showGrid}
       tkaGlyphVisible={tkaGlyph}
       vtgGlyphVisible={vtgGlyph}
       positionsGlyphVisible={positionsGlyph}
       reversalIndicatorsVisible={reversals}
       nonRadialVisible={nonRadial}
-      {allMotionsVisible}
       onToggle={handlePictographToggle}
       isMobileHidden={mobileMode !== "pictograph"}
     />
@@ -286,6 +277,15 @@
     /* Show all panels on desktop regardless of mobile mode */
     .visibility-panels-container :global(.mobile-hidden) {
       display: flex !important;
+    }
+  }
+
+  /* Mobile column: undo the panels' desktop `flex: 1 1 0; overflow: hidden`,
+     which collapses to min-content here and clips everything below the header. */
+  @container visibility-tab (max-width: 699px) {
+    .visibility-panels-container :global(.settings-panel) {
+      flex: 0 0 auto;
+      overflow: visible;
     }
   }
 
