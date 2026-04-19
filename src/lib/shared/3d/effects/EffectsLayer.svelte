@@ -16,7 +16,7 @@
   import { getEffectsConfigState } from "./state/effects-config-state.svelte";
   import { getEffectsConfigContext as getUnifiedEffectsState } from "$lib/shared/effects/state/effects-config-context";
   import { getScene3DRenderContext } from "$lib/shared/3d/scene-features/state/scene-3d-render-context";
-  import { resolveEcho3D, resolveSparkles3D, resolveZap3D, resolveWater3D, resolveBubbles3D, resolvePetals3D } from "$lib/shared/effects/translators/webgl3d-translator";
+  import { resolveEcho3D, resolveSparkles3D, resolveZap3D, resolveWater3D, resolveBubbles3D, resolvePetals3D, resolveTrails3D } from "$lib/shared/effects/translators/webgl3d-translator";
   import { AUSTEN_STAFF } from "../config/avatar-proportions";
   import { TrackingMode, TrailStyle } from "./types";
 
@@ -114,6 +114,16 @@
   );
   const petalsShowRightEnd = $derived(
     petals3D?.trackingMode === "right_end" || petals3D?.trackingMode === "both_ends",
+  );
+  const trails3D = $derived(unifiedState ? resolveTrails3D(unifiedState.trails) : null);
+  const trailsEnabled = $derived(
+    unifiedState ? unifiedState.config.tipEffectMap["*"]?.effect === "trails" : false,
+  );
+  const trailsShowLeftEnd = $derived(
+    trails3D?.trackingMode === "left_end" || trails3D?.trackingMode === "both_ends",
+  );
+  const trailsShowRightEnd = $derived(
+    trails3D?.trackingMode === "right_end" || trails3D?.trackingMode === "both_ends",
   );
 
   /**
@@ -234,25 +244,6 @@
   // Derived Effect States
   // =============================================================================
 
-  // Check if we have enough history for trail effects
-  const hasBlueTrailHistory = $derived(
-    effectState.hasEnoughHistory(
-      "blue",
-      configState.trails.length > 10 ? 10 : 2
-    )
-  );
-  const hasRedTrailHistory = $derived(
-    effectState.hasEnoughHistory("red", configState.trails.length > 10 ? 10 : 2)
-  );
-
-  // Trail positions for each prop
-  const blueTrailPositions = $derived(
-    effectState.getPositions("blue", configState.trails.length)
-  );
-  const redTrailPositions = $derived(
-    effectState.getPositions("red", configState.trails.length)
-  );
-
   // Velocities for velocity-reactive effects
   const blueVelocity = $derived(effectState.getVelocity("blue"));
   const redVelocity = $derived(effectState.getVelocity("red"));
@@ -278,40 +269,34 @@
 <!-- =============================================================================
      Trail Effects - Physics-based ribbons attached to prop ends
      ============================================================================= -->
-{#if configState.trails.enabled && isPlaying}
-  {@const trackMode = configState.trails.trackingMode}
-  {@const isRainbow = configState.trails.color === "rainbow"}
-  {@const showLeftEnd =
-    trackMode === TrackingMode.LEFT_END || trackMode === TrackingMode.BOTH_ENDS}
-  {@const showRightEnd =
-    trackMode === TrackingMode.RIGHT_END ||
-    trackMode === TrackingMode.BOTH_ENDS}
+{#if trailsEnabled && trails3D && isPlaying}
+  {@const isRainbow = trails3D.rainbow}
+  {@const blueColor = trails3D.blueColor}
+  {@const redColor = trails3D.redColor}
+  {@const width = trails3D.thickness}
+  {@const opacity = trails3D.brightness}
 
   <!-- Blue prop ribbons -->
   {#if blueEnds}
-    {#if showRightEnd}
+    {#if trailsShowRightEnd}
       <RibbonTrail3D
         attachPoint={blueEnds.positive}
-        color={isRainbow ? "rainbow" : "#3b82f6"}
+        color={isRainbow ? "rainbow" : blueColor}
         rainbow={isRainbow}
-        segments={configState.trails.length}
-        width={configState.trails.width}
-        opacity={configState.trails.opacity}
-        gravity={configState.trails.gravity}
-        drag={configState.trails.drag}
+        segments={12}
+        width={width}
+        opacity={opacity}
         enabled={true}
       />
     {/if}
-    {#if showLeftEnd}
+    {#if trailsShowLeftEnd}
       <RibbonTrail3D
         attachPoint={blueEnds.negative}
-        color={isRainbow ? "rainbow" : "#60a5fa"}
+        color={isRainbow ? "rainbow" : blueColor}
         rainbow={isRainbow}
-        segments={configState.trails.length}
-        width={configState.trails.width * 0.8}
-        opacity={configState.trails.opacity * 0.7}
-        gravity={configState.trails.gravity}
-        drag={configState.trails.drag}
+        segments={12}
+        width={width * 0.8}
+        opacity={opacity * 0.7}
         enabled={true}
       />
     {/if}
@@ -319,29 +304,25 @@
 
   <!-- Red prop ribbons -->
   {#if redEnds}
-    {#if showRightEnd}
+    {#if trailsShowRightEnd}
       <RibbonTrail3D
         attachPoint={redEnds.positive}
-        color={isRainbow ? "rainbow" : "#ef4444"}
+        color={isRainbow ? "rainbow" : redColor}
         rainbow={isRainbow}
-        segments={configState.trails.length}
-        width={configState.trails.width}
-        opacity={configState.trails.opacity}
-        gravity={configState.trails.gravity}
-        drag={configState.trails.drag}
+        segments={12}
+        width={width}
+        opacity={opacity}
         enabled={true}
       />
     {/if}
-    {#if showLeftEnd}
+    {#if trailsShowLeftEnd}
       <RibbonTrail3D
         attachPoint={redEnds.negative}
-        color={isRainbow ? "rainbow" : "#f87171"}
+        color={isRainbow ? "rainbow" : redColor}
         rainbow={isRainbow}
-        segments={configState.trails.length}
-        width={configState.trails.width * 0.8}
-        opacity={configState.trails.opacity * 0.7}
-        gravity={configState.trails.gravity}
-        drag={configState.trails.drag}
+        segments={12}
+        width={width * 0.8}
+        opacity={opacity * 0.7}
         enabled={true}
       />
     {/if}
