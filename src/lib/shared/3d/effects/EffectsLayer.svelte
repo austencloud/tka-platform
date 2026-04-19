@@ -15,7 +15,7 @@
   import { getEffectState } from "./state/effect-state.svelte";
   import { getEffectsConfigState } from "./state/effects-config-state.svelte";
   import { getEffectsConfigContext as getUnifiedEffectsState } from "$lib/shared/effects/state/effects-config-context";
-  import { resolveEcho3D, resolveSparkles3D, resolveZap3D } from "$lib/shared/effects/translators/webgl3d-translator";
+  import { resolveEcho3D, resolveSparkles3D, resolveZap3D, resolveWater3D } from "$lib/shared/effects/translators/webgl3d-translator";
   import { AUSTEN_STAFF } from "../config/avatar-proportions";
   import { TrackingMode, TrailStyle } from "./types";
 
@@ -32,6 +32,7 @@
   import PropMotionEffects from "./motion/PropMotionEffects.svelte";
   import GhostStaff3D from "./motion/GhostStaff3D.svelte";
   import BloomBillboard3D from "./post-processing/BloomBillboard3D.svelte";
+  import WaterEmitter3D from "./water/WaterEmitter3D.svelte";
 
   interface Props {
     /** Blue prop state from animation */
@@ -79,6 +80,16 @@
   );
   const bloomBlueColor = $derived(unifiedState?.trails.blueColor ?? "#3b82f6");
   const bloomRedColor = $derived(unifiedState?.trails.redColor ?? "#ef4444");
+  const water3D = $derived(unifiedState ? resolveWater3D(unifiedState.water) : null);
+  const waterEnabled = $derived(
+    unifiedState ? unifiedState.config.tipEffectMap["*"]?.effect === "water" : false,
+  );
+  const waterShowLeftEnd = $derived(
+    water3D?.trackingMode === "left_end" || water3D?.trackingMode === "both_ends",
+  );
+  const waterShowRightEnd = $derived(
+    water3D?.trackingMode === "right_end" || water3D?.trackingMode === "both_ends",
+  );
 
   /**
    * Pick the phantom color for the Echo effect. `whichProp` is "blue" or "red".
@@ -516,4 +527,44 @@
     intent={bloomIntent}
     enabled={bloomEnabled}
   />
+{/if}
+
+<!-- =============================================================================
+     Water: per-tip droplet emitters (Phase 1f.i MVP). Ambient drip + motion-
+     reactive emission. Later sub-phases add stream ribbon / metaballs /
+     puddles / refraction.
+     ============================================================================= -->
+{#if waterEnabled && water3D && isPlaying}
+  {#if blueEnds && waterShowRightEnd}
+    <WaterEmitter3D
+      position={blueEnds.positive}
+      propVelocity={blueVelocityVec}
+      params={water3D}
+      enabled={true}
+    />
+  {/if}
+  {#if blueEnds && waterShowLeftEnd}
+    <WaterEmitter3D
+      position={blueEnds.negative}
+      propVelocity={blueVelocityVec}
+      params={water3D}
+      enabled={true}
+    />
+  {/if}
+  {#if redEnds && waterShowRightEnd}
+    <WaterEmitter3D
+      position={redEnds.positive}
+      propVelocity={redVelocityVec}
+      params={water3D}
+      enabled={true}
+    />
+  {/if}
+  {#if redEnds && waterShowLeftEnd}
+    <WaterEmitter3D
+      position={redEnds.negative}
+      propVelocity={redVelocityVec}
+      params={water3D}
+      enabled={true}
+    />
+  {/if}
 {/if}

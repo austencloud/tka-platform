@@ -361,6 +361,7 @@
           showCreatorName={imageComposition.showCreatorName}
           showNotes={imageComposition.showNotes}
           showQRCode={imageComposition.showQRCode}
+          showMandala={imageComposition.showMandala ?? false}
           showBirthday={imageComposition.showBirthday}
           showLoopGlyph={imageComposition.showLoopGlyph ?? true}
           darkMode={imageComposition.darkMode}

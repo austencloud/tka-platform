@@ -22,7 +22,8 @@ export type EffectType =
   | "zap"
   | "sparkles"
   | "echo"
-  | "bloom";
+  | "bloom"
+  | "water";
 
 export interface TipEffectAssignment {
   effect: EffectType;

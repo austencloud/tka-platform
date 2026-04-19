@@ -16,7 +16,7 @@ import type {
   PropFlameColor,
 } from "$lib/shared/animation-engine/domain/types/FireTypes";
 
-export const EFFECTS_CONFIG_VERSION = 7;
+export const EFFECTS_CONFIG_VERSION = 8;
 
 export type EffectType =
   | "none"
@@ -27,7 +27,8 @@ export type EffectType =
   | "zap"
   | "sparkles"
   | "echo"
-  | "bloom";
+  | "bloom"
+  | "water";
 
 export interface TrailsIntent {
   /** Which staff end(s) the trail tracks. */
@@ -160,6 +161,29 @@ export interface BloomIntent {
   pulseRate: number;
 }
 
+export interface WaterIntent {
+  /** 0-1. Continuous drip rate when props are at rest. */
+  ambientEmission: number;
+  /** 0-1. Velocity-reactive emission multiplier. */
+  motionEmission: number;
+  /** 0-1. Overall droplet scale + brightness. */
+  intensity: number;
+  /** Named color palette. "custom" uses customColor instead. */
+  palette: "classic" | "mercury" | "acid" | "blood" | "spirit" | "custom";
+  /** Hex string. Used only when palette === "custom". */
+  customColor: string;
+  /** 0-1. 0 = milky/opaque, 1 = crystal clear. Drives 3D refraction + 2D highlight. */
+  clarity: number;
+  /** 0-1. Metaball merge strength. 0 = independent drops, 1 = fully goopy. Inactive until 1f.iii. */
+  surfaceTension: number;
+  /** Which staff end(s) droplets track. */
+  trackingMode: "left_end" | "right_end" | "both_ends";
+  /** Experimental: ribbon emits only above a speed threshold, chunk size
+   *  scales with release velocity, ambient mist suppressed. Makes water
+   *  read like discrete flung globs rather than a continuous stream. */
+  momentumMode: boolean;
+}
+
 /**
  * Backend-specific override storage. Populated only when the user
  * has explicitly edited a backend-only parameter via an Advanced
@@ -183,6 +207,8 @@ export interface EffectsOverrides {
   echo3D?: Record<string, unknown>;
   bloom2D?: Record<string, unknown>;
   bloom3D?: Record<string, unknown>;
+  water2D?: Record<string, unknown>;
+  water3D?: Record<string, unknown>;
 }
 
 export interface EffectsConfig {
@@ -196,6 +222,7 @@ export interface EffectsConfig {
   sparkles: SparklesIntent;
   echo: EchoIntent;
   bloom: BloomIntent;
+  water: WaterIntent;
   activePresets: {
     trails: string | null;
     fire: string | null;
@@ -205,6 +232,7 @@ export interface EffectsConfig {
     sparkles: string | null;
     echo: string | null;
     bloom: string | null;
+    water: string | null;
   };
   overrides?: EffectsOverrides;
 }

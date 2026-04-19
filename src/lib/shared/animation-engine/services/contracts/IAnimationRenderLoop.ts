@@ -22,8 +22,9 @@ import type { IZapOverlayRenderer } from "./IZapOverlayRenderer";
 import type { ISparklesOverlayRenderer } from "./ISparklesOverlayRenderer";
 import type { IEchoOverlayRenderer } from "./IEchoOverlayRenderer";
 import type { IBloomOverlayRenderer } from "./IBloomOverlayRenderer";
+import type { IWaterOverlayRenderer } from "./IWaterOverlayRenderer";
 import type { LedOverlayConfig } from "../../domain/types/LedTypes";
-import type { Bloom2DParams, Echo2DParams, Sparkles2DParams, Zap2DParams } from "$lib/shared/effects/translators/canvas2d-types";
+import type { Bloom2DParams, Echo2DParams, Sparkles2DParams, Water2DParams, Zap2DParams } from "$lib/shared/effects/translators/canvas2d-types";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
@@ -59,6 +60,8 @@ export interface RenderLoopConfig {
   echoRenderer?: IEchoOverlayRenderer | null;
   /** Optional bloom overlay renderer that draws per-tip radial halos */
   bloomRenderer?: IBloomOverlayRenderer | null;
+  /** Optional water overlay renderer that spawns per-tip droplets */
+  waterRenderer?: IWaterOverlayRenderer | null;
   /** Called when an effect (fire/charcoal/LED) fails repeatedly and is auto-disabled */
   onEffectError?: (effectName: string, error: Error) => void;
 }
@@ -130,6 +133,8 @@ export interface RenderFrameParams {
   echoConfig?: Echo2DParams | null;
   /** Bloom overlay parameters (null or undefined = disabled) */
   bloomConfig?: Bloom2DParams | null;
+  /** Water overlay parameters (null or undefined = disabled) */
+  waterConfig?: Water2DParams | null;
   /** Playback speed multiplier (1.0 = 60 BPM). Passed to fire for cache invalidation. */
   playbackSpeed?: number;
   /** Whether sequence loops seamlessly (end position = start position).

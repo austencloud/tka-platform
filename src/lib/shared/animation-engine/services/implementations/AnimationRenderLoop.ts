@@ -21,10 +21,12 @@ import type { IZapOverlayRenderer } from "../contracts/IZapOverlayRenderer";
 import type { ISparklesOverlayRenderer } from "../contracts/ISparklesOverlayRenderer";
 import type { IEchoOverlayRenderer } from "../contracts/IEchoOverlayRenderer";
 import type { IBloomOverlayRenderer } from "../contracts/IBloomOverlayRenderer";
+import type { IWaterOverlayRenderer } from "../contracts/IWaterOverlayRenderer";
 import type { ZapTipInput } from "$lib/shared/effects/renderers/Zap2DRenderer";
 import type { SparklesTipInput } from "$lib/shared/effects/renderers/Sparkles2DRenderer";
 import type { EchoTipInput } from "$lib/shared/effects/renderers/Echo2DRenderer";
 import type { BloomTipInput } from "$lib/shared/effects/renderers/Bloom2DRenderer";
+import type { WaterTipInput } from "$lib/shared/effects/renderers/Water2DRenderer";
 import type {
   IAnimationRenderLoop,
   RenderLoopConfig,
@@ -100,6 +102,8 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
   private sparklesRenderer: ISparklesOverlayRenderer | null = null;
   private echoRenderer: IEchoOverlayRenderer | null = null;
   private bloomRenderer: IBloomOverlayRenderer | null = null;
+  private waterRenderer: IWaterOverlayRenderer | null = null;
+  private lastWaterFrameTime: number = 0;
   private onEffectError: ((effectName: string, error: Error) => void) | null = null;
   private canvasSize: number = 950;
   private lastTrailFrameTime: number = 0;
@@ -116,12 +120,14 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
   private consecutiveSparklesErrors: number = 0;
   private consecutiveEchoErrors: number = 0;
   private consecutiveBloomErrors: number = 0;
+  private consecutiveWaterErrors: number = 0;
   private fireDisabledByError: boolean = false;
   private ledDisabledByError: boolean = false;
   private zapDisabledByError: boolean = false;
   private sparklesDisabledByError: boolean = false;
   private echoDisabledByError: boolean = false;
   private bloomDisabledByError: boolean = false;
+  private waterDisabledByError: boolean = false;
   private static readonly EFFECT_ERROR_THRESHOLD = 3;
 
   // Loop detection for cache-based trail gathering and fire frame cache
@@ -197,6 +203,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     this.sparklesRenderer = config.sparklesRenderer ?? null;
     this.echoRenderer = config.echoRenderer ?? null;
     this.bloomRenderer = config.bloomRenderer ?? null;
+    this.waterRenderer = config.waterRenderer ?? null;
     this.onEffectError = config.onEffectError ?? null;
 
     // Subscribe to the module-singleton longtask observer so the FPS summary
@@ -238,6 +245,8 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       this.echoRenderer = config.echoRenderer ?? null;
     if (config.bloomRenderer !== undefined)
       this.bloomRenderer = config.bloomRenderer ?? null;
+    if (config.waterRenderer !== undefined)
+      this.waterRenderer = config.waterRenderer ?? null;
     if (config.onEffectError !== undefined)
       this.onEffectError = config.onEffectError ?? null;
   }
@@ -354,6 +363,8 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     this.echoRenderer = null;
     this.bloomRenderer?.dispose();
     this.bloomRenderer = null;
+    this.waterRenderer?.dispose();
+    this.waterRenderer = null;
     // Clear reusable arrays to free memory
     this.reusableBlueTrailPoints.length = 0;
     this.reusableRedTrailPoints.length = 0;
@@ -430,6 +441,9 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     const bloomActive =
       params.bloomConfig != null &&
       this.bloomRenderer?.isInitialized() === true;
+    const waterActive =
+      params.waterConfig != null &&
+      this.waterRenderer?.isInitialized() === true;
 
     // Active work: playing, effects running, background animating, or explicit render request
     const hasActiveWork =
@@ -442,7 +456,8 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       zapActive ||
       sparklesActive ||
       echoActive ||
-      bloomActive;
+      bloomActive ||
+      waterActive;
 
     // Trails alone (without active work) should not keep the loop alive forever.
     // Allow a grace period for initialization/texture loading, then auto-stop.
@@ -600,6 +615,10 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       if (this.bloomRenderer?.isInitialized()) {
         this.bloomRenderer.clear();
       }
+      // Clear water overlay (Canvas2D) — also drops the droplet pool.
+      if (this.waterRenderer?.isInitialized()) {
+        this.waterRenderer.clear();
+      }
     } else if (!params.suppress2DOverlays && this.wasSuppressed) {
       this.wasSuppressed = false;
     }
@@ -697,7 +716,11 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       this.fireTipTracker
       && this.bloomRenderer?.isInitialized()
       && params.bloomConfig != null;
-    const hasAnyTipOverlay = hasFireOrCharcoalOverlay || hasZapOverlay || hasSparklesOverlayForTipUpdate || hasEchoOverlayForTipUpdate || hasBloomOverlayForTipUpdate;
+    const hasWaterOverlayForTipUpdate =
+      this.fireTipTracker
+      && this.waterRenderer?.isInitialized()
+      && params.waterConfig != null;
+    const hasAnyTipOverlay = hasFireOrCharcoalOverlay || hasZapOverlay || hasSparklesOverlayForTipUpdate || hasEchoOverlayForTipUpdate || hasBloomOverlayForTipUpdate || hasWaterOverlayForTipUpdate;
 
     let sharedTipResult: import("../contracts/IFireTipTracker").FireTipUpdateResult | null = null;
     if (hasAnyTipOverlay && !params.suppress2DOverlays) {
@@ -1073,6 +1096,76 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       }
     } else if (activeBloomRenderer && !hasBloomOverlay) {
       activeBloomRenderer.clear();
+    }
+
+    // Water overlay: per-tip droplet emitter. Reads sharedTipResult to
+    // pull the 2 tips per prop into the {bluePosA, bluePosB, redPosA,
+    // redPosB} shape Water2DRenderer expects. Filters tips by
+    // tipEffectMap resolution. dt drives particle physics + spawn-rate
+    // integration — unlike bloom, water has persistent pool state.
+    const activeWaterRenderer = this.waterRenderer?.isInitialized()
+      ? this.waterRenderer
+      : null;
+    const hasWaterOverlay =
+      this.fireTipTracker && activeWaterRenderer && params.waterConfig != null;
+
+    if (
+      hasWaterOverlay &&
+      !this.waterDisabledByError &&
+      !params.suppress2DOverlays &&
+      sharedTipResult
+    ) {
+      try {
+        const tipMap = params.tipEffectMap ?? {};
+        const waterTips: WaterTipInput = {
+          bluePosA: null,
+          bluePosB: null,
+          redPosA: null,
+          redPosB: null,
+        };
+        for (const t of sharedTipResult.tips) {
+          if (resolveEffect(t.propIndex, t.tipIndex, tipMap, {}) !== "water") continue;
+          // propIndex 0 = blue, 1 = red. tipIndex 0 = A end, 1 = B end.
+          if (t.propIndex === 0) {
+            if (t.tipIndex === 0) waterTips.bluePosA = { x: t.x, y: t.y };
+            else if (t.tipIndex === 1) waterTips.bluePosB = { x: t.x, y: t.y };
+          } else if (t.propIndex === 1) {
+            if (t.tipIndex === 0) waterTips.redPosA = { x: t.x, y: t.y };
+            else if (t.tipIndex === 1) waterTips.redPosB = { x: t.x, y: t.y };
+          }
+        }
+        // dt — seconds since last water frame (computed once from currentTime).
+        const nowMs = currentTime;
+        let dt = this.lastWaterFrameTime > 0 ? (nowMs - this.lastWaterFrameTime) / 1000 : 1 / 60;
+        // Clamp absurd dts (tab switch, export pause, etc.) so a stalled frame
+        // doesn't teleport every droplet off-screen.
+        if (!Number.isFinite(dt) || dt <= 0) dt = 1 / 60;
+        if (dt > 0.1) dt = 0.1;
+        this.lastWaterFrameTime = nowMs;
+        activeWaterRenderer!.renderFrame(params.waterConfig!, waterTips, dt);
+        this.consecutiveWaterErrors = 0;
+      } catch (error) {
+        this.consecutiveWaterErrors++;
+        activeWaterRenderer?.clear();
+        if (this.consecutiveWaterErrors >= AnimationRenderLoop.EFFECT_ERROR_THRESHOLD) {
+          this.waterDisabledByError = true;
+          const err = error instanceof Error ? error : new Error(String(error));
+          console.error("[AnimationRenderLoop] Water effect disabled after repeated failures:", err);
+          if (this.onEffectError) {
+            this.onEffectError("water", err);
+          } else {
+            effectErrorSignal.trigger("water", err);
+          }
+        } else {
+          console.warn(
+            `[AnimationRenderLoop] Water render error (attempt ${this.consecutiveWaterErrors}/${AnimationRenderLoop.EFFECT_ERROR_THRESHOLD}), resetting:`,
+            error
+          );
+        }
+      }
+    } else if (activeWaterRenderer && !hasWaterOverlay) {
+      activeWaterRenderer.clear();
+      this.lastWaterFrameTime = 0;
     }
 
     // LED overlay: render after fire so it composites on top of both Canvas2D and fire

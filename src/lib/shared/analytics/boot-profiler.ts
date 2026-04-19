@@ -12,6 +12,21 @@
  *   bootProfiler.summary();
  */
 
+/**
+ * Verbose boot logging (DI container table, phase breakdown) is off by default.
+ * Enable by appending `?profile=1` to the URL or setting `localStorage.bootProfile = '1'`.
+ * Core Web Vitals (FCP, TTFB, etc.) always log — they flag regressions and are cheap.
+ */
+export function isBootProfileVerbose(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    if (new URLSearchParams(window.location.search).get("profile") === "1") return true;
+    return window.localStorage?.getItem("bootProfile") === "1";
+  } catch {
+    return false;
+  }
+}
+
 interface PhaseEntry {
   label: string;
   startTime: number;
@@ -137,6 +152,10 @@ class BootProfiler {
   summary(): void {
     if (!this.enabled || this.summaryPrinted) return;
     this.summaryPrinted = true;
+
+    // Performance marks/measures remain for DevTools timeline. Skip the verbose
+    // console output unless the user opted in.
+    if (!isBootProfileVerbose()) return;
 
     const totalTime = performance.now() - this.bootStart;
     const entries = Array.from(this.phases.values())

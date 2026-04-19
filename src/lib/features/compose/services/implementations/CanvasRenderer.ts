@@ -7,6 +7,7 @@ import type { PropState } from "../../shared/domain/types/PropState";
 import type { ICanvasRenderer } from "../contracts/ICanvasRenderer";
 import { simplifyAndTruncate } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
 import { renderHeader } from "@tka/render-composition";
+import { SliceSize } from "$lib/features/create/generate/circular/domain/models/circular-models";
 
 // Constants from standalone_animator.html
 // Using "strict" hand point offset (actual hand position, further from center)
@@ -117,7 +118,8 @@ export class CanvasRenderer implements ICanvasRenderer {
     darkMode: boolean = false,
     activeStepNumber: number | null = null,
     difficultyLevel: number | null = null,
-    loopComponents: Set<string> | null = null
+    loopComponents: Set<string> | null = null,
+    rotationSliceSize?: SliceSize
   ): void {
     this.drawWordHeader(
       ctx,
@@ -126,7 +128,8 @@ export class CanvasRenderer implements ICanvasRenderer {
       darkMode,
       activeStepNumber,
       difficultyLevel,
-      loopComponents
+      loopComponents,
+      rotationSliceSize
     );
   }
 
@@ -327,7 +330,8 @@ export class CanvasRenderer implements ICanvasRenderer {
     darkMode: boolean,
     activeStepNumber: number | null,
     difficultyLevel: number | null,
-    loopComponents: Set<string> | null
+    loopComponents: Set<string> | null,
+    rotationSliceSize: SliceSize | undefined
   ): void {
     if (!word || word.trim() === "") return;
 
@@ -358,6 +362,16 @@ export class CanvasRenderer implements ICanvasRenderer {
       }
     }
 
+    // Map the app's SliceSize enum values to the package's string literal.
+    // The enum values line up ("halved" / "quartered"), but typing the
+    // handoff explicitly keeps the package independent of the app enum.
+    const sliceSizeForRender =
+      rotationSliceSize === SliceSize.QUARTERED
+        ? "quartered"
+        : rotationSliceSize === SliceSize.HALVED
+          ? "halved"
+          : undefined;
+
     renderHeader(ctx, {
       canvasWidth: canvasSize,
       headerHeight,
@@ -367,6 +381,7 @@ export class CanvasRenderer implements ICanvasRenderer {
       loopComponents: (loopComponents ?? undefined) as
         | Set<import("@tka/render-composition").LOOPComponentId>
         | undefined,
+      rotationSliceSize: sliceSizeForRender,
       darkMode,
       letterStyles,
     });

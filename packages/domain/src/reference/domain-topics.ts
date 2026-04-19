@@ -306,12 +306,15 @@ When both hands shift one step, angular separation either stays the same or chan
 | Beta <-> Alpha (opp dir) | Eta <-> Zeta (opp dir) |
 | Gamma <-> Gamma (both dirs) | *(gamma can't be skewed)* |
 
-### Type 1 (Dual-Shift): M through V
+### Type 1 (Dual-Shift) and letter group attribution
 
-All skewed Type 1 transitions use gamma letters (M through V), not A through L. Zeta/Eta are asymmetric, creating leader/follower distinctions that A-L cannot represent.
+**Correction (2026-04-18):** A previous version of this topic claimed "all skewed Type 1 transitions use M-V, not A-L." That was wrong.
 
-- **Same-direction** (Eta->Eta, Zeta->Zeta): Maps to S, T, U, V
-- **Opposite-direction** (Eta<->Zeta): Maps to M/P, N/Q, O/R group
+A-L and M-V are defined by diamond-grid position, not by skewed behavior:
+- **A-L** are Type 1 letters on alpha/beta (the symmetric diamond-grid positions)
+- **M-V** are Type 1 letters on gamma (the asymmetric diamond-grid position)
+
+How zeta/eta transitions are actually assigned to letters is a **separate question** that this topic does not resolve. Don't conflate the two. Ask Austen or reference the Skewed pictograph dataframe directly before making claims about skewed-position letter assignments.
 
 ### Type 4 (Dash + Static): Phi and Psi
 
@@ -323,13 +326,13 @@ Phi- and Psi- extend the same way. Lambda- cannot be skewed.
 
 ### Summary
 
-| Context | Zeta/Eta behave like... | Why |
-|---------|------------------------|-----|
-| Type 1 same-direction | Gamma | Asymmetric, leader/follower matters |
-| Type 1 opposite-direction | Gamma (M/P group) | Consistency, no leader/follower |
-| Type 4/5 diverge/converge | Alpha/Beta (Phi/Psi) | One hand static, no leader/follower |
-| Transition structure | Alpha/Beta | Interconvert via opposite-direction shifts |
-| Position symmetry | Gamma | Asymmetric |`,
+| Context | Behavior | Why |
+|---------|----------|-----|
+| Type 4/5 diverge/converge | Phi (diverging) / Psi (converging); Lambda cannot be skewed | Gamma (90°) requires both hands on same grid |
+| Position symmetry | Zeta and Eta are asymmetric | One hand directionally ahead of the other |
+| Transition structure | Zeta↔Eta via opposite-direction shift (like Alpha↔Beta) | Same shift geometry, different position family |
+
+Note: Type 1 letter assignment for zeta/eta transitions is intentionally omitted from this summary. Determining whether a given skewed transition uses an A-L letter, an M-V letter, or a new letter entirely is a distinct question from defining what A-L and M-V mean on the 4-point diamond grid. Refer to the Skewed pictograph dataframe or Austen directly for the ground truth on skewed letter assignment.`,
   },
 
   "position-symmetry": {

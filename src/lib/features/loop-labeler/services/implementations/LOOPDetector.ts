@@ -22,6 +22,58 @@ import type {
   CandidateInfo,
 } from "../../domain/models/internal-step-models";
 import type { ComponentId } from "../../domain/constants/loop-components";
+import {
+  LOOPComponent,
+  type DetectedComponent,
+} from "$lib/features/create/generate/shared/domain/models/generate-models";
+
+/**
+ * Map a legacy ComponentId string to the LOOPComponent enum, or null when the
+ * id (e.g., "modular", "repeated") has no enum equivalent. Phase 3 replaces
+ * this with a domain-aware detector; Phase 1 uses it only to populate the
+ * new `componentsDetailed` field conservatively.
+ */
+function componentIdToLOOPComponent(id: ComponentId): LOOPComponent | null {
+  switch (id) {
+    case "rotated":
+      return LOOPComponent.ROTATED;
+    case "mirrored":
+      return LOOPComponent.MIRRORED;
+    case "flipped":
+      return LOOPComponent.FLIPPED;
+    case "swapped":
+      return LOOPComponent.SWAPPED;
+    case "inverted":
+      return LOOPComponent.INVERTED;
+    case "rewound":
+      return LOOPComponent.REWOUND;
+    default:
+      return null;
+  }
+}
+
+function componentsToDetailed(ids: ComponentId[]): DetectedComponent[] {
+  const out: DetectedComponent[] = [];
+  for (const id of ids) {
+    const component = componentIdToLOOPComponent(id);
+    if (component !== null) {
+      out.push({ component, domain: "location" });
+    }
+  }
+  return out;
+}
+
+function periodFromIntervals(
+  intervals: TransformationIntervals,
+  isCircular: boolean
+): number {
+  if (!isCircular) return 1;
+  const values = Object.values(intervals);
+  if (values.length === 0) return 1;
+  if (values.some((v) => v === "quartered")) return 4;
+  if (values.some((v) => v === "halved")) return 2;
+  return 1;
+}
 
 /**
  * Service for detecting Linked Orbital Offset Patterns (LOOPs) in sequences.
@@ -278,6 +330,8 @@ export class LOOPDetector implements ILOOPDetector {
       isPolyrhythmic: polyrhythmic.isPolyrhythmic,
       compoundPattern,
       isAxisAlternating: false,
+      period: periodFromIntervals(derivedIntervals, true),
+      componentsDetailed: componentsToDetailed(derivedComponents),
     };
   }
 
@@ -434,6 +488,8 @@ export class LOOPDetector implements ILOOPDetector {
       polyrhythmic,
       isPolyrhythmic: polyrhythmic.isPolyrhythmic,
       isAxisAlternating: false,
+      period: periodFromIntervals(derivedIntervals, true),
+      componentsDetailed: componentsToDetailed(derivedComponents),
     };
   }
 
@@ -483,6 +539,8 @@ export class LOOPDetector implements ILOOPDetector {
             description: axisAlternating.description,
           }
         : undefined,
+      period: 1,
+      componentsDetailed: [],
     };
   }
 
@@ -507,6 +565,8 @@ export class LOOPDetector implements ILOOPDetector {
       polyrhythmic,
       isPolyrhythmic: polyrhythmic.isPolyrhythmic,
       isAxisAlternating: false,
+      period: 1,
+      componentsDetailed: [],
     };
   }
 
@@ -530,6 +590,8 @@ export class LOOPDetector implements ILOOPDetector {
       polyrhythmic,
       isPolyrhythmic: polyrhythmic.isPolyrhythmic,
       isAxisAlternating: false,
+      period: 1,
+      componentsDetailed: [],
     };
   }
 
@@ -729,6 +791,8 @@ export class LOOPDetector implements ILOOPDetector {
       isPolyrhythmic: polyrhythmic.isPolyrhythmic,
       isAxisAlternating: false,
       modularPattern,
+      period: periodFromIntervals(intervals, true),
+      componentsDetailed: componentsToDetailed(components),
     };
   }
 }

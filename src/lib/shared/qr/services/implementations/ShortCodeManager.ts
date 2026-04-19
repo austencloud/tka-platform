@@ -55,6 +55,10 @@ interface ShortCodeData {
   createdBy: string;
   scanCount: number;
   sequenceData?: Record<string, unknown>;
+  /** Self-contained "s~..." blob from SequenceEncoder.encodeForQR.
+   *  When present, the resolver can decode the sequence without any
+   *  cross-collection lookups — the primary path for static snapshot fallback. */
+  encoded?: string;
 }
 
 export class ShortCodeManager implements IShortCodeManager {
@@ -216,6 +220,18 @@ export class ShortCodeManager implements IShortCodeManager {
           record.sequenceData = JSON.parse(JSON.stringify(seqData));
         }
 
+        // Pre-compute the self-contained "s~..." blob so the static snapshot
+        // only needs this one field to fully reconstruct the sequence client-side
+        // (no cross-collection lookups, no Firebase). Failure is non-fatal —
+        // the Firestore primary path still works without it.
+        if (sequence.steps && sequence.steps.length > 0) {
+          try {
+            record.encoded = await this.sequenceEncoder.encodeForQR(sequence);
+          } catch (err) {
+            console.warn(`[ShortCode] encodeForQR failed for "${code}":`, err);
+          }
+        }
+
         await setDoc(docRef, record);
 
         return {
@@ -375,7 +391,21 @@ export class ShortCodeManager implements IShortCodeManager {
       sequence: data.sequence,
       sequenceId: data.sequenceId ?? "MISSING",
       ownerId: data.ownerId ?? "MISSING",
+      encoded: data.encoded ? `${data.encoded.slice(0, 16)}…` : "MISSING",
     });
+
+    // Strategy 0: Self-contained encoded blob (zero Firestore dependency).
+    // Preferred path — fastest, and the only strategy that survives a full
+    // Firestore outage when resolving from the static snapshot.
+    if (data.encoded) {
+      try {
+        const decoded = await this.sequenceEncoder.decodeFromQR(data.encoded);
+        console.log(`[ShortCode] ✓ Resolved "${code}" via encoded blob`);
+        return { ...decoded, id: code } as SequenceData;
+      } catch (err) {
+        console.log(`[ShortCode] ✗ encoded blob failed to decode for "${code}":`, err);
+      }
+    }
 
     // Strategy 1: Public index lookup by stored word + sequenceId
     try {

@@ -107,6 +107,7 @@ import { createSkel2TKAContainer } from "./containers/skel2tka-container";
 import { createStoreContainer } from "./containers/store-container";
 import { createTikaContainer } from "./containers/tika-container";
 // Deep link resolution for cross-tab/cross-user URLs
+import { isBootProfileVerbose } from "../analytics/boot-profiler";
 import { DeepLinkResolver } from "../application/services/implementations/DeepLinkResolver";
 
 // Print Prep services (MPC card export)
@@ -514,8 +515,8 @@ const _buildStart = typeof window !== 'undefined' ? performance.now() : 0;
 export const container = (typeof window !== 'undefined' ? buildAppContainer() : null) as unknown as
   { items: IAppContainerItems };
 
-// Log DI container timing breakdown
-if (typeof window !== 'undefined') {
+// Log DI container timing breakdown (verbose; gate behind ?profile=1)
+if (typeof window !== 'undefined' && isBootProfileVerbose()) {
   const totalDI = performance.now() - _diStart;
   const buildTime = performance.now() - _buildStart;
 

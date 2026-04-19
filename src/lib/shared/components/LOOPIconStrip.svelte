@@ -3,13 +3,17 @@ LOOPIconStrip.svelte - Horizontal strip of Font Awesome icons for LOOP visualiza
 
 Shows only the active LOOP primitives as a compact icon strip.
 Uses the user's chosen icons from the Design Lab (2026-01-21):
-- Rotated: fa-rotate
+- Rotated: fa-rotate (halved / 180°) or fa-arrows-spin (quartered / 90°)
 - Mirrored: fa-left-right
 - Flipped: fa-up-down
 - Swapped: fa-shuffle
 - Inverted: fa-adjust
 - Rewound: fa-backward
 - Freeform: fa-infinity
+
+The rotated icon swaps based on rotationSliceSize so a performer can tell
+at a glance whether the sequence rotates every half (2 reps, 180° each) or
+every quarter (4 reps, 90° each) without reading the label.
 
 Used in:
 1. Sequence cards (badge overlay)
@@ -18,10 +22,18 @@ Used in:
 -->
 <script lang="ts">
   import { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
+  import { SliceSize } from "$lib/features/create/generate/circular/domain/models/circular-models";
   import { LOOP_ICON_GAP_SCALE } from "@tka/render-composition";
 
   interface Props {
     activeComponents: Set<LOOPComponent>;
+    /**
+     * When the ROTATED component is active, this decides between fa-rotate
+     * (halved / 180°) and fa-arrows-spin (quartered / 90°). Undefined keeps
+     * the legacy fa-rotate default, so any caller that hasn't been updated
+     * continues to look the same as before.
+     */
+    rotationSliceSize?: SliceSize;
     size?: number;
     darkMode?: boolean;
     showFreeformWhenEmpty?: boolean;
@@ -29,17 +41,26 @@ Used in:
 
   let {
     activeComponents,
+    rotationSliceSize,
     size = 16,
     darkMode = true,
     showFreeformWhenEmpty = true,
   }: Props = $props();
 
-  // Icon configuration - matches Design Lab choices
-  const primitiveIcons: Record<LOOPComponent | "freeform", {
+  // Icon configuration - matches Design Lab choices.
+  // Rotated's icon + label gets overridden at render time based on
+  // rotationSliceSize (quartered → fa-arrows-spin). Keeping the map entry
+  // as the halved-default means every non-rotated primitive stays driven
+  // from a single source of truth.
+  // Reserved orientation primitives (ZONE_HOLD_INVERT / FLIP / CROSS) are
+  // intentionally absent — see primitive-discovery rule and Phase 2 filter.
+  const primitiveIcons: Partial<Record<LOOPComponent, {
     faClass: string;
     color: string;
     label: string;
-  }> = {
+  }>> & {
+    freeform: { faClass: string; color: string; label: string };
+  } = {
     [LOOPComponent.ROTATED]: {
       faClass: "fas fa-rotate",
       color: "#36c3ff",
@@ -97,10 +118,39 @@ Used in:
     showFreeformWhenEmpty && activeList.length === 0
   );
 
-  // Generate aria label
+  const isQuarteredRotation = $derived(
+    rotationSliceSize === SliceSize.QUARTERED
+  );
+
+  // Pick the icon for a component, applying the quartered-rotation override
+  // inline so the primitiveIcons map stays the single definition of visual
+  // truth for the other 5 primitives.
+  function iconFor(component: LOOPComponent): {
+    faClass: string;
+    color: string;
+    label: string;
+  } | null {
+    const base = primitiveIcons[component];
+    if (!base) return null;
+    if (component === LOOPComponent.ROTATED && isQuarteredRotation) {
+      return {
+        faClass: "fas fa-arrows-spin",
+        color: base.color,
+        label: "Rotated (quartered)",
+      };
+    }
+    return base;
+  }
+
+  // Generate aria label. When rotation is quartered the label reads
+  // "Rotated (quartered)" so screen readers pick up the 90° vs 180°
+  // distinction, matching what the icon now communicates visually.
   const ariaLabel = $derived(
     activeList.length > 0
-      ? `LOOP: ${activeList.map(c => primitiveIcons[c].label).join(", ")}`
+      ? `LOOP: ${activeList
+          .map((c) => iconFor(c)?.label)
+          .filter((l): l is string => typeof l === "string")
+          .join(", ")}`
       : "Freeform LOOP"
   );
 
@@ -124,13 +174,15 @@ Used in:
     ></i>
   {:else}
     {#each activeList as component}
-      {@const icon = primitiveIcons[component]}
-      <i
-        class={icon.faClass}
-        style="font-size: {size}px; color: {icon.color};"
-        aria-hidden="true"
-        title={icon.label}
-      ></i>
+      {@const icon = iconFor(component)}
+      {#if icon}
+        <i
+          class={icon.faClass}
+          style="font-size: {size}px; color: {icon.color};"
+          aria-hidden="true"
+          title={icon.label}
+        ></i>
+      {/if}
     {/each}
   {/if}
 </div>

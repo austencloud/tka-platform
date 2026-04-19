@@ -32,6 +32,7 @@ import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 import { settingsService } from "$lib/shared/settings/state/SettingsState.svelte";
 import { isCatDogMode } from "$lib/features/browse/sequences/display/utils/prop-mode-helpers";
 import { createStartPositionFromBeatStart } from "$lib/features/create/shared/services/implementations/sequence-transforms/sequence-transforms";
+import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
 
 /** Cell to be rendered: pictograph data + step number + cache key */
 interface CellTask {
@@ -167,6 +168,11 @@ export class CellPreWarmer implements ICellPreWarmer {
       handPointVisibility: visibility?.handPointVisibility ?? "all",
       showTKA: visibility?.tkaGlyph ?? true,
       showReversals: visibility?.reversalIndicators ?? true,
+      // Glyph visibility must match what ChoreoCard reads from VM so pre-warmed
+      // blobs land on the same cache keys as the live render.
+      showVTG: getVisibilityStateManager().getRawGlyphVisibility("vtgGlyph"),
+      showElemental: getVisibilityStateManager().getRawGlyphVisibility("elementalGlyph"),
+      showPositions: getVisibilityStateManager().getRawGlyphVisibility("positionsGlyph"),
     };
   }
 
@@ -304,6 +310,11 @@ export class CellPreWarmer implements ICellPreWarmer {
       redPropType: options.catDogModeEnabled
         ? options.redPropType
         : options.bluePropType,
+      showBlueMotion: options.showBlueMotion,
+      showRedMotion: options.showRedMotion,
+      showVTG: options.showVTG,
+      showElemental: options.showElemental,
+      showPositions: options.showPositions,
     };
 
     try {

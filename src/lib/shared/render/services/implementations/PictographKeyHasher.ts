@@ -51,6 +51,8 @@ interface PictographKeyInput {
     handPathMode: boolean;
     handPointVisibility: string;
     printMode: boolean;
+    showBlueMotion: boolean;
+    showRedMotion: boolean;
   };
 }
 
@@ -98,6 +100,8 @@ export class PictographKeyHasher implements IPictographKeyHasher {
         handPathMode: visibility.handPathMode ?? false,
         handPointVisibility: visibility.handPointVisibility ?? "all",
         printMode: visibility.printMode ?? false,
+        showBlueMotion: visibility.showBlueMotion ?? true,
+        showRedMotion: visibility.showRedMotion ?? true,
       },
     };
   }

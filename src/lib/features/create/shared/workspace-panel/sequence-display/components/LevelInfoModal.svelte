@@ -19,28 +19,26 @@
   );
 
   const progression = $derived.by(() => {
-    const L2 = LEVEL_METADATA[2].accent;
-    const L3 = LEVEL_METADATA[3].accent;
     switch (analysis.level) {
       case 1:
         return {
           lead: "This sequence uses only base motions. ",
           parts: [
-            { text: "Add ", emph: null },
-            { text: "whole turns", emph: L2 },
-            { text: " to reach Level 2. Add ", emph: null },
-            { text: "half turns or floats", emph: L3 },
-            { text: " to reach Level 3.", emph: null },
+            { text: "Add ", bold: false },
+            { text: "whole turns", bold: true },
+            { text: " to reach Level 2. Add ", bold: false },
+            { text: "half turns or floats", bold: true },
+            { text: " to reach Level 3.", bold: false },
           ],
         };
       case 2:
         return {
           lead: "This sequence uses ",
           parts: [
-            { text: "whole turns", emph: L2 },
-            { text: " — that's Level 2. Add ", emph: null },
-            { text: "half turns or floats", emph: L3 },
-            { text: " to reach Level 3.", emph: null },
+            { text: "whole turns", bold: true },
+            { text: " — that's Level 2. Add ", bold: false },
+            { text: "half turns or floats", bold: true },
+            { text: " to reach Level 3.", bold: false },
           ],
         };
       case 3:
@@ -48,15 +46,15 @@
         return {
           lead: "This sequence uses ",
           parts: [
-            { text: "half turns or floats", emph: L3 },
-            { text: " — that's Level 3, the full vocabulary.", emph: null },
+            { text: "half turns or floats", bold: true },
+            { text: " — that's Level 3, the full vocabulary.", bold: false },
           ],
         };
     }
   });
 </script>
 
-<BaseModal {open} {onclose} size="xl" class="level-info-modal">
+<BaseModal {open} {onclose} size="lg" class="level-info-modal">
   <ModalHeader
     title="Level {analysis.level}"
     subtitle={levelName}
@@ -67,7 +65,7 @@
   <div class="body">
     <LevelProgressionRow currentLevel={analysis.level as LevelNumber} />
     <p class="progression">
-      {progression.lead}{#each progression.parts as part, i (i)}{#if part.emph}<strong style="color: {part.emph};">{part.text}</strong>{:else}{part.text}{/if}{/each}
+      {progression.lead}{#each progression.parts as part, i (i)}{#if part.bold}<strong>{part.text}</strong>{:else}{part.text}{/if}{/each}
     </p>
   </div>
 </BaseModal>

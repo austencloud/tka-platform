@@ -16,7 +16,9 @@ import type {
   SparklesIntent,
   EchoIntent,
   BloomIntent,
+  WaterIntent,
 } from "../domain/EffectsConfig";
+import type { WaterPalette } from "../domain/WaterPalettes";
 
 export interface Trails3DParams extends TrailsIntent {
   /** World-space tube radius, meters. Derived from thickness. */
@@ -96,4 +98,21 @@ export interface Bloom3DParams extends BloomIntent {
   spriteScale: number;
   /** Texture resolution for the procedural halo sprite (square). */
   textureSize: number;
+}
+
+export interface Water3DParams extends WaterIntent {
+  /** Resolved palette swatches. */
+  resolvedPalette: WaterPalette;
+  /** Max instanced droplets. Tier-dependent: 512 / 1024 / 2048. */
+  poolSize: number;
+  /** World-units — base billboard radius (applied before `intensity`). */
+  baseRadius: number;
+  /** Droplets/sec at `ambientEmission=1`. */
+  ambientSpawnRate: number;
+  /** Droplets/sec at full velocity * `motionEmission=1`. */
+  motionSpawnRate: number;
+  /** World units/s mapping to full motion scalar. */
+  motionReferenceSpeed: number;
+  /** World-space gravity (−y is down). */
+  worldGravity: number;
 }

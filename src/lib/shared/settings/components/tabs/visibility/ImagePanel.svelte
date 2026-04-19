@@ -15,6 +15,7 @@ so the preview matches exactly what the user will see when exporting.
     addDifficultyLevel: boolean;
     includeStartPosition: boolean;
     showQRCode: boolean;
+    showLoopGlyph: boolean;
     showCreatorName: boolean;
     showNotes: boolean;
     showBirthday: boolean;
@@ -32,6 +33,7 @@ so the preview matches exactly what the user will see when exporting.
     addDifficultyLevel,
     includeStartPosition,
     showQRCode,
+    showLoopGlyph,
     showCreatorName,
     showNotes,
     showBirthday,
@@ -63,6 +65,7 @@ so the preview matches exactly what the user will see when exporting.
       showDifficultyLevel={addDifficultyLevel}
       {includeStartPosition}
       {showQRCode}
+      {showLoopGlyph}
       {showCreatorName}
       {showNotes}
       {showBirthday}
@@ -94,13 +97,6 @@ so the preview matches exactly what the user will see when exporting.
         </button>
         <button
           class="toggle-btn"
-          class:active={includeStartPosition}
-          onclick={() => onToggle("startPosition")}
-        >
-          Start Pos
-        </button>
-        <button
-          class="toggle-btn"
           class:active={addDifficultyLevel}
           onclick={() => onToggle("difficulty")}
         >
@@ -119,6 +115,13 @@ so the preview matches exactly what the user will see when exporting.
           onclick={() => onToggle("qrCode")}
         >
           QR Code
+        </button>
+        <button
+          class="toggle-btn"
+          class:active={showLoopGlyph}
+          onclick={() => onToggle("loopGlyph")}
+        >
+          LOOP
         </button>
       </div>
     </div>

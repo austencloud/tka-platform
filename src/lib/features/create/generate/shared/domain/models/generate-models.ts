@@ -74,7 +74,7 @@ export interface PictographOperation {
 // Import from there if needed
 
 // Fundamental LOOP components that can be combined
-// The 6 transformation primitives + freeform
+// The 6 transformation primitives + reserved orientation primitives (not user-surfaced)
 export enum LOOPComponent {
   ROTATED = "rotated",    // 180° or 90° position rotation
   MIRRORED = "mirrored",  // Vertical reflection (left ↔ right)
@@ -82,6 +82,50 @@ export enum LOOPComponent {
   SWAPPED = "swapped",    // Blue/red hand exchange
   INVERTED = "inverted",  // PRO ↔ ANTI motion direction flip
   REWOUND = "rewound",    // Time reversal (plays backward)
+
+  // Reserved orientation primitives — detected but never surfaced in UI.
+  // Filter via RESERVED_ORIENTATION_PRIMITIVES in consumer resolvers.
+  ZONE_HOLD_INVERT = "zone_hold_invert", // all beats stay in the same radial zone; orientations invert in-zone
+  ZONE_HOLD_FLIP = "zone_hold_flip",     // all beats stay in the same nonradial zone; orientations flip in-zone
+  ZONE_CROSS = "zone_cross",             // beats alternate radial/nonradial zones across the cycle
+}
+
+/**
+ * LOOP components that live in the enum and in detection output but are NEVER
+ * surfaced to UI consumers. Introduced as a reserved taxonomy for orientation
+ * primitives we have not yet fully explored (zone-hold-invert etc.).
+ *
+ * Resolvers and icon strips consume `resolveLoopDisplay`, which filters these
+ * out before returning. If you are a new UI consumer, use the resolver — do
+ * not read `SequenceData.components` directly, or you will see these.
+ */
+export const RESERVED_ORIENTATION_PRIMITIVES = new Set<LOOPComponent>([
+  LOOPComponent.ZONE_HOLD_INVERT,
+  LOOPComponent.ZONE_HOLD_FLIP,
+  LOOPComponent.ZONE_CROSS,
+]);
+
+/**
+ * Domain of a LOOP transformation.
+ *
+ * A LOOP component can operate in one of three spaces:
+ * - `location`: grid positions transform between passes (classic LOOPs)
+ * - `orientation`: orientations transform between passes (positions stay pinned)
+ * - `both`: detected in both spaces (e.g., a sequence that rotates in location
+ *   AND accumulates an orientation cycle that matches the positional cycle)
+ */
+export type LOOPDomain = "location" | "orientation" | "both";
+
+/**
+ * A detected LOOP component with its operating domain.
+ *
+ * The detector emits one DetectedComponent per (component, domain) pair.
+ * UI consumers consume a deduplicated Set<LOOPComponent> paired with a
+ * Record<LOOPComponent, LOOPDomain> (see resolveLoopDisplay).
+ */
+export interface DetectedComponent {
+  readonly component: LOOPComponent;
+  readonly domain?: LOOPDomain;
 }
 
 /**

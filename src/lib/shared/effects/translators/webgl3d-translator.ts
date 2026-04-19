@@ -7,6 +7,7 @@ import type {
   SparklesIntent,
   EchoIntent,
   BloomIntent,
+  WaterIntent,
 } from "../domain/EffectsConfig";
 import type {
   Trails3DParams,
@@ -17,7 +18,9 @@ import type {
   Sparkles3DParams,
   Echo3DParams,
   Bloom3DParams,
+  Water3DParams,
 } from "./webgl3d-types";
+import { resolveWaterPalette } from "../domain/WaterPalettes";
 
 export function resolveTrails3D(
   intent: TrailsIntent,
@@ -117,6 +120,22 @@ export function resolveBloom3D(
     // Tuned so 28 px 2D ≈ 1.12 world units 3D.
     spriteScale: intent.radius * 0.04,
     textureSize: 128,
+  };
+  return { ...intent, ...defaults, ...override };
+}
+
+export function resolveWater3D(
+  intent: WaterIntent,
+  override: Partial<Water3DParams> = {},
+): Water3DParams {
+  const defaults: Omit<Water3DParams, keyof WaterIntent> = {
+    resolvedPalette: resolveWaterPalette(intent),
+    poolSize: 1024,
+    baseRadius: 0.04,
+    ambientSpawnRate: 8,
+    motionSpawnRate: 40,
+    motionReferenceSpeed: 3.0,
+    worldGravity: -9.8,
   };
   return { ...intent, ...defaults, ...override };
 }

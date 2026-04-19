@@ -8,17 +8,12 @@
 -->
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { ISequenceToEntryConverter } from "../services/contracts/ISequenceToEntryConverter";
-  import { container as di } from "$lib/shared/di";
-  import { loopDetector } from "$lib/features/loop-labeler/services/implementations/LOOPDetector";
-  import { onMount } from "svelte";
   import LOOPIconStrip from "$lib/shared/components/LOOPIconStrip.svelte";
-  import { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
+  import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";
   import {
     LOOP_TYPE_LABELS,
     ROTATED_LOOP_TYPES,
   } from "$lib/features/create/generate/circular/domain/models/circular-models";
-  import type { ComponentId } from "$lib/features/loop-labeler/domain/constants/loop-components";
 
   interface Props {
     sequence: SequenceData;
@@ -26,39 +21,9 @@
 
   let { sequence }: Props = $props();
 
-  let converter: ISequenceToEntryConverter | null = $state(null);
-
-  onMount(() => {
-    converter = di.items.sequenceToEntryConverter;
-  });
-
-  function toLoopComponent(id: ComponentId): LOOPComponent | null {
-    const map: Record<string, LOOPComponent> = {
-      rotated: LOOPComponent.ROTATED,
-      mirrored: LOOPComponent.MIRRORED,
-      flipped: LOOPComponent.FLIPPED,
-      swapped: LOOPComponent.SWAPPED,
-      inverted: LOOPComponent.INVERTED,
-      rewound: LOOPComponent.REWOUND,
-    };
-    return map[id] ?? null;
-  }
-
-  const loopComponents = $derived.by(() => {
-    if (!converter || !sequence.steps?.length) return new Set<LOOPComponent>();
-    try {
-      const entry = converter.convert(sequence);
-      const result = loopDetector.detectLOOP(entry);
-      const out = new Set<LOOPComponent>();
-      for (const c of result.components) {
-        const mapped = toLoopComponent(c);
-        if (mapped) out.add(mapped);
-      }
-      return out;
-    } catch {
-      return new Set<LOOPComponent>();
-    }
-  });
+  const loopDisplay = $derived.by(() => resolveLoopDisplay(sequence));
+  const loopComponents = $derived(loopDisplay.components);
+  const rotationSliceSize = $derived(loopDisplay.rotationSliceSize);
 
   const hasLoop = $derived(loopComponents.size > 0);
   const level = $derived(sequence.level ?? 1);
@@ -127,7 +92,7 @@
       {#if hasLoop}
         <div class="loop">
           <div class="loop-head">
-            <LOOPIconStrip activeComponents={loopComponents} size={16} darkMode={false} />
+            <LOOPIconStrip activeComponents={loopComponents} {rotationSliceSize} size={16} darkMode={false} />
             <span class="loop-label">
               {#if sliceName}{sliceName}{/if}
               {#if isRotated} Rotation{/if}

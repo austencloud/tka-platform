@@ -75,9 +75,20 @@ export class PreviewCellRenderer implements IPreviewCellRenderer {
 
     // For solo views (props+solo or hands+solo), strip the non-selected hand's
     // motion data so the renderer only draws one performer.
-    const dataForRender = isSoloView
+    const soloFiltered = isSoloView
       ? this.filterSoloMotions(pictographData, viewMode!)
       : pictographData;
+
+    // Motion visibility filter: when a color is toggled off in export settings,
+    // strip that color's motion BEFORE preparation so the arrow positioning
+    // pipeline recomputes positions as if the hidden motion doesn't exist.
+    // Without this, the remaining arrow stays at its "both-visible" position,
+    // which was nudged by the now-hidden motion's special-placement rules.
+    const dataForRender = this.filterInvisibleMotions(
+      soloFiltered,
+      options.showBlueMotion,
+      options.showRedMotion
+    );
 
     // Prepare the pictograph data (DOM-free, runs on main thread)
     const prepared = await pictographPreparer.prepareSingle(dataForRender, {
@@ -88,6 +99,14 @@ export class PreviewCellRenderer implements IPreviewCellRenderer {
     });
 
     // Render options for layer compositor
+    // Motion-visibility solo: exactly one color toggled on. Single-hand
+    // pictographs are effectively solo — letters, VTG, and position glyphs
+    // all describe hand PAIRS and are meaningless for one hand alone.
+    const isMotionSolo =
+      (options.showBlueMotion === true && options.showRedMotion === false) ||
+      (options.showRedMotion === true && options.showBlueMotion === false);
+    const suppressOverlays = isHandPath || isSoloView || isMotionSolo;
+
     const renderOptions: LayerRenderOptions = {
       size: options.size,
       widthMultiplier: options.widthMultiplier,
@@ -96,12 +115,18 @@ export class PreviewCellRenderer implements IPreviewCellRenderer {
       handPointVisibility: options.handPointVisibility ?? "all",
       bluePropType: effectiveBlueProp,
       redPropType: effectiveRedProp,
+      showBlueMotion: options.showBlueMotion,
+      showRedMotion: options.showRedMotion,
+      // VTG/elemental/positions suppressed in any single-hand view
+      // (same reasoning as TKA/reversals — single-hand views drop letters).
+      showVTG: suppressOverlays ? false : (options.showVTG ?? false),
+      showElemental: suppressOverlays ? false : (options.showElemental ?? false),
+      showPositions: suppressOverlays ? false : (options.showPositions ?? false),
     };
 
     // Visibility settings
     // Suppress TKA glyphs and reversals in hand path mode AND solo view mode.
     // Letters require both hands — they're meaningless for single-prop rendering.
-    const suppressOverlays = isHandPath || isSoloView;
     const visibility: LayerVisibility = {
       showTKA: suppressOverlays ? false : (options.showTKA ?? true),
       showReversals: suppressOverlays ? false : (options.showReversals ?? true),
@@ -142,6 +167,25 @@ export class PreviewCellRenderer implements IPreviewCellRenderer {
     } else {
       delete motions.blue;
     }
+    return { ...data, motions };
+  }
+
+  /**
+   * Strip motions whose visibility is explicitly false.
+   * A missing motion causes the arrow positioning pipeline to skip
+   * cross-arrow adjustments (SpecialPlacer rules that nudge arrows
+   * apart when both exist). The remaining arrow falls back to its
+   * default single-motion position.
+   */
+  private filterInvisibleMotions(
+    data: PictographData,
+    showBlue: boolean | undefined,
+    showRed: boolean | undefined
+  ): PictographData {
+    if (showBlue !== false && showRed !== false) return data;
+    const motions = { ...data.motions };
+    if (showBlue === false) delete motions.blue;
+    if (showRed === false) delete motions.red;
     return { ...data, motions };
   }
 

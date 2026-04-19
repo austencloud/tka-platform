@@ -5,7 +5,7 @@ import {
   LOOP_ICON_SIZE_SCALE, LOOP_ICON_GAP_SCALE, LOOP_ICON_STRIP_OFFSET_SCALE,
 } from "./dimensions.js";
 import { DIFFICULTY_LEVELS, DEFAULT_DIFFICULTY_STYLE, DIFFICULTY_FONT_FAMILY, applyGradientStops } from "./difficulty-config.js";
-import { renderLoopIconStrip } from "./loop-icons.js";
+import { renderLoopIconStrip, type LoopRotationSliceSize } from "./loop-icons.js";
 
 export interface HeaderOptions {
   canvasWidth: number;
@@ -14,6 +14,8 @@ export interface HeaderOptions {
   difficultyLevel?: number;
   showDifficultyBadge?: boolean;
   loopComponents?: Set<LOOPComponentId>;
+  /** When rotated is active, picks fa-arrows-spin (quartered) vs fa-rotate (halved) */
+  rotationSliceSize?: LoopRotationSliceSize;
   darkMode?: boolean;
   letterStyles?: LetterStyle[];
   /** Override header background color */
@@ -26,7 +28,7 @@ export function renderHeader(ctx: CanvasRenderingContext2D, options: HeaderOptio
   const {
     canvasWidth, headerHeight, word,
     difficultyLevel = 1, showDifficultyBadge = true,
-    loopComponents, darkMode = true, letterStyles,
+    loopComponents, rotationSliceSize, darkMode = true, letterStyles,
     backgroundColor, borderColor,
   } = options;
 
@@ -59,7 +61,7 @@ export function renderHeader(ctx: CanvasRenderingContext2D, options: HeaderOptio
     const stripWidth = activeCount * iconSize + (activeCount - 1) * gap;
     const rightEdge = canvasWidth - badgePadding;
     const stripCenterX = rightEdge - stripWidth / 2 - iconSize * LOOP_ICON_STRIP_OFFSET_SCALE;
-    renderLoopIconStrip(ctx, loopComponents, stripCenterX, headerHeight / 2, iconSize, darkMode);
+    renderLoopIconStrip(ctx, loopComponents, stripCenterX, headerHeight / 2, iconSize, darkMode, false, rotationSliceSize);
   }
 
   // Word text (center)

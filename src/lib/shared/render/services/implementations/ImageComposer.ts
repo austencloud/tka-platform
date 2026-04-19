@@ -12,6 +12,12 @@ import type { SequenceData } from "../../../foundation/domain/models/SequenceDat
 import { type PropType } from "../../../pictograph/prop/domain/enums/PropType";
 import type { PictographVisibilityOptions } from "../../utils/pictograph-to-svg";
 import { LOOPTypeResolver } from "../../../../features/create/generate/shared/services/implementations/LOOPTypeResolver";
+import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";
+import { SliceSize } from "$lib/features/create/generate/circular/domain/models/circular-models";
+import {
+  RESERVED_ORIENTATION_PRIMITIVES,
+  type LOOPComponent,
+} from "$lib/features/create/generate/shared/domain/models/generate-models";
 import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
 import { createStartPositionFromBeatStart } from "../../../../features/create/shared/services/implementations/sequence-transforms/sequence-transforms";
 import { getVisibilityStateManager } from "../../../pictograph/shared/state/visibility-state.svelte";
@@ -497,11 +503,29 @@ export class ImageComposer implements IImageComposer {
 
     // Step 7: Render header with word at the top
     // The header has a level badge indicator (only if addDifficultyLevel is true)
-    // Parse LOOP components for glyph display
-    const loopType = options.loopType ?? sequence.loopType;
-    const loopComponents = loopType
-      ? this.loopTypeResolver.parseComponents(loopType)
-      : undefined;
+    // Parse LOOP components for glyph display.
+    //
+    // We call the shared resolver to pick up rotation slice size (quartered
+    // vs halved) so the exported image shows the same fa-arrows-spin vs
+    // fa-rotate distinction the live app does. When the caller has
+    // overridden loopType explicitly (via options.loopType), fall back to
+    // the simple parser path — we can't infer slice size from a string
+    // alone, but the rotated icon stays correct in the halved default.
+    const loopTypeOverride = options.loopType;
+    let loopComponents: Set<LOOPComponent> | undefined;
+    let rotationSliceSize: SliceSize | undefined;
+    if (loopTypeOverride) {
+      const parsed = this.loopTypeResolver.parseComponents(loopTypeOverride);
+      const filtered = new Set<LOOPComponent>();
+      for (const c of parsed) {
+        if (!RESERVED_ORIENTATION_PRIMITIVES.has(c)) filtered.add(c);
+      }
+      loopComponents = filtered.size > 0 ? filtered : undefined;
+    } else {
+      const display = resolveLoopDisplay(sequence);
+      loopComponents = display.components.size > 0 ? display.components : undefined;
+      rotationSliceSize = display.rotationSliceSize;
+    }
     const showLoopGlyph =
       options.showLoopGlyph !== false &&
       loopComponents &&
@@ -517,6 +541,17 @@ export class ImageComposer implements IImageComposer {
       // Only show word if addWord is enabled
       // Use custom name if provided and addWord is enabled, otherwise use derived word if addWord is enabled
       const displayName = options.addWord ? (options.customName || derivedWord) : "";
+      // Map the SliceSize enum (app) to the package's string literal —
+      // the values line up ("halved"/"quartered") but typing them as a
+      // union keeps the render-composition package independent of the
+      // app's circular-models enum.
+      const sliceSizeForRender =
+        rotationSliceSize === SliceSize.QUARTERED
+          ? "quartered"
+          : rotationSliceSize === SliceSize.HALVED
+            ? "halved"
+            : undefined;
+
       this.TextRenderer.renderWordHeader(
         canvas,
         displayName,
@@ -530,7 +565,8 @@ export class ImageComposer implements IImageComposer {
         isDarkMode, // Dark Mode for dark theme styling
         showLoopGlyph ? loopComponents : undefined,
         options.deckCard ? DECK_HEADER_BG : undefined,
-        options.deckCard ? DECK_BORDER_COLOR : undefined
+        options.deckCard ? DECK_BORDER_COLOR : undefined,
+        showLoopGlyph ? sliceSizeForRender : undefined
       );
     }
 

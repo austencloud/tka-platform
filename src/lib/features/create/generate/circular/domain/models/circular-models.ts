@@ -81,6 +81,15 @@ export interface LOOPGenerationOptions {
   /** Slice size for rotational LOOPs */
   sliceSize: SliceSize;
 
+  /**
+   * LOOP period (integer count of passes to return to identity).
+   *
+   * Replaces `sliceSize` over the migration window. Valid values: 2, 4, 8.
+   * When both `period` and `sliceSize` are provided, `period` wins.
+   * Migration helper `periodFromSliceSize` computes this from legacy input.
+   */
+  period?: number;
+
   /** Turn intensity (1-3) */
   turnIntensity: number;
 
@@ -92,6 +101,35 @@ export interface LOOPGenerationOptions {
 
   /** Grid mode */
   gridMode: "box" | "diamond";
+}
+
+/**
+ * Convert legacy `SliceSize` enum values to integer `period`.
+ *
+ * HALVED → 2, QUARTERED → 4. Returns 2 as the safe default when input is
+ * undefined or unrecognized, matching historical behavior of LOOP generation.
+ */
+export function periodFromSliceSize(sliceSize: SliceSize | undefined): number {
+  if (sliceSize === SliceSize.QUARTERED) return 4;
+  return 2;
+}
+
+/**
+ * Derive integer `period` from legacy persistence fields.
+ *
+ * Uses `orientationCycleCount` when >1 (an orientation-extended sequence is
+ * always at least that period), otherwise falls back to `loopType` naming
+ * conventions. Non-LOOP sequences resolve to period 1.
+ */
+export function periodFromLegacyFields(
+  loopType: LOOPType | null | undefined,
+  orientationCycleCount: 1 | 2 | 4 | undefined
+): number {
+  if (orientationCycleCount && orientationCycleCount > 1) {
+    return orientationCycleCount;
+  }
+  if (!loopType) return 1;
+  return 2;
 }
 
 /**

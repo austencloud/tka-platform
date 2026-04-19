@@ -94,6 +94,7 @@
   const imgNotes = $derived.by(() => { void version; return icm.showNotes; });
   const imgBirthday = $derived.by(() => { void version; return icm.showBirthday; });
   const imgQR = $derived.by(() => { void version; return icm.showQRCode; });
+  const imgLoopGlyph = $derived.by(() => { void version; return icm.showLoopGlyph; });
   const imgStepNumbers = $derived.by(() => { void version; return icm.addStepNumbers; });
   const imgCustomNotes = $derived.by(() => { void version; return icm.customNotesText; });
 
@@ -164,6 +165,7 @@
       case "notes": tap(() => icm.setShowNotes(!imgNotes)); break;
       case "birthday": tap(() => icm.setShowBirthday(!imgBirthday)); break;
       case "qrCode": tap(() => icm.setShowQRCode(!imgQR)); break;
+      case "loopGlyph": tap(() => icm.setShowLoopGlyph(!imgLoopGlyph)); break;
     }
   }
 
@@ -218,6 +220,7 @@
       addDifficultyLevel={imgDifficulty}
       includeStartPosition={imgStartPos}
       showQRCode={imgQR}
+      showLoopGlyph={imgLoopGlyph}
       showCreatorName={imgCreator}
       showNotes={imgNotes}
       showBirthday={imgBirthday}

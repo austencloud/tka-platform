@@ -7,6 +7,7 @@ import type {
   SparklesIntent,
   EchoIntent,
   BloomIntent,
+  WaterIntent,
 } from "../domain/EffectsConfig";
 import type {
   Trails2DParams,
@@ -17,7 +18,9 @@ import type {
   Sparkles2DParams,
   Echo2DParams,
   Bloom2DParams,
+  Water2DParams,
 } from "./canvas2d-types";
+import { resolveWaterPalette } from "../domain/WaterPalettes";
 
 export function resolveTrails2D(
   intent: TrailsIntent,
@@ -100,6 +103,22 @@ export function resolveBloom2D(
 ): Bloom2DParams {
   const defaults: Omit<Bloom2DParams, keyof BloomIntent> = {
     blendMode: "lighter",
+  };
+  return { ...intent, ...defaults, ...override };
+}
+
+export function resolveWater2D(
+  intent: WaterIntent,
+  override: Partial<Water2DParams> = {},
+): Water2DParams {
+  const defaults: Omit<Water2DParams, keyof WaterIntent> = {
+    resolvedPalette: resolveWaterPalette(intent),
+    poolSize: 1024,
+    baseRadius: 4,
+    ambientSpawnRate: 8,
+    motionSpawnRate: 40,
+    motionReferenceSpeed: 3.0,
+    blendMode: "source-over",
   };
   return { ...intent, ...defaults, ...override };
 }

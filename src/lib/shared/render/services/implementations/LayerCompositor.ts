@@ -560,6 +560,13 @@ export class LayerCompositor implements ILayerCompositor {
         baseGridOnly: true,
         bluePropType: options.bluePropType,
         redPropType: options.redPropType,
+        showBlueMotion: options.showBlueMotion,
+        showRedMotion: options.showRedMotion,
+        // VTG/elemental/positions are baked here (no separate overlay yet).
+        // Base layer cache key includes these, so toggles correctly invalidate.
+        showVTG: options.showVTG,
+        showElemental: options.showElemental,
+        showPositions: options.showPositions,
       },
     });
 

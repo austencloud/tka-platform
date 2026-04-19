@@ -338,7 +338,7 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
     let arrowsTime = 0;
     if (prepared) {
       const arrowsStart = performance.now();
-      await this.drawArrows(ctx, prepared, size);
+      await this.drawArrows(ctx, prepared, size, options);
       arrowsTime = performance.now() - arrowsStart;
     }
 
@@ -590,7 +590,13 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
     const svgCache = getSvgImageCache();
     const scale = canvasSize / VIEWBOX_SIZE;
 
+    const showBlue = options.visibility.showBlueMotion ?? true;
+    const showRed = options.visibility.showRedMotion ?? true;
+
     for (const color of ["blue", "red"]) {
+      if (color === "blue" && !showBlue) continue;
+      if (color === "red" && !showRed) continue;
+
       const position = propPositions[color];
       const assets = propAssets[color];
 
@@ -672,13 +678,20 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
   private async drawArrows(
     ctx: CanvasRenderingContext2D,
     prepared: NonNullable<PreparedPictographData["_prepared"]>,
-    canvasSize: number
+    canvasSize: number,
+    options: DirectRenderOptions
   ): Promise<void> {
     const { arrowPositions, arrowAssets, arrowMirroring } = prepared;
     const svgCache = getSvgImageCache();
     const scale = canvasSize / VIEWBOX_SIZE;
 
+    const showBlue = options.visibility.showBlueMotion ?? true;
+    const showRed = options.visibility.showRedMotion ?? true;
+
     for (const color of ["blue", "red"]) {
+      if (color === "blue" && !showBlue) continue;
+      if (color === "red" && !showRed) continue;
+
       const position = arrowPositions[color];
       const assets = arrowAssets[color];
       const shouldMirror = arrowMirroring[color] ?? false;

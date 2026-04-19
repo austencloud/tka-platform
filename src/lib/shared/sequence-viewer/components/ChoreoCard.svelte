@@ -18,15 +18,13 @@
   import { cubicOut } from "svelte/easing";
   import { DIFFICULTY_LEVELS, DEFAULT_DIFFICULTY_STYLE } from "$lib/shared/config/difficulty-styles";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
   import type { PreviewCellRenderOptions } from "../services/contracts/IPreviewCellRenderer";
   import { onMount, onDestroy, untrack } from "svelte";
   import { layoutCalculator } from "$lib/shared/render/services/implementations/LayoutCalculator";
   import { SequenceDifficultyCalculator } from "$lib/features/browse/sequences/display/services/implementations/SequenceDifficultyCalculator";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
-  import { LOOPTypeResolver } from "$lib/features/create/generate/shared/services/implementations/LOOPTypeResolver";
-  import { loopDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
+  import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";
   import LOOPIconStrip from "$lib/shared/components/LOOPIconStrip.svelte";
   import ContextMenu from "$lib/shared/components/context-menu/ContextMenu.svelte";
   import type { ContextMenuEntry, ContextMenuState } from "$lib/shared/components/context-menu/context-menu-types";
@@ -40,6 +38,8 @@
   import { pictographBlobCache } from "$lib/shared/render/services/implementations/PictographBlobCache";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
+  import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
+  import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { simplifyAndTruncate } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
   import { calculateTimelineRowsByBeatCount } from "$lib/features/create/shared/workspace-panel/sequence-display/utils/grid-calculations";
   import type { TimelineRow } from "$lib/features/create/shared/workspace-panel/sequence-display/utils/grid-calculations";
@@ -70,7 +70,6 @@
     durationRows?: TimelineRow[];
     hasMixedDurations?: boolean;
     durationColCount?: number;
-    passDividerGridRows?: number[];
   }
   const MAX_PREVIEW_CACHE = 30;
   const globalPreviewCache = new Map<string, CachedPreview>();
@@ -99,7 +98,9 @@
     const settings = getSettings();
     const resolvedBlue = opts.bluePropType ?? settings.bluePropType ?? "staff";
     const resolvedRed = opts.redPropType ?? settings.redPropType ?? "staff";
-    return `${seq.id ?? seq.word ?? "?"}-${stepLetters}-${seq.steps?.length ?? 0}-${opts.size}-${opts.showStepNumbers}-${opts.showNonRadialPoints}-${opts.showTKA}-${opts.showReversals}-${opts.handPathMode ?? false}-${resolvedBlue}-${resolvedRed}-${colCount ?? "auto"}-${isDark ? "dark" : "light"}-d:${durationFingerprint}-m:${motionFingerprint}-vm:${vmKey}`;
+    const mv = `${opts.showBlueMotion === false ? "B0" : "B1"}${opts.showRedMotion === false ? "R0" : "R1"}`;
+    const gv = `${opts.showVTG ? "V1" : "V0"}${opts.showElemental ? "E1" : "E0"}${opts.showPositions ? "P1" : "P0"}`;
+    return `${seq.id ?? seq.word ?? "?"}-${stepLetters}-${seq.steps?.length ?? 0}-${opts.size}-${opts.showStepNumbers}-${opts.showNonRadialPoints}-${opts.showTKA}-${opts.showReversals}-${opts.handPathMode ?? false}-${resolvedBlue}-${resolvedRed}-${colCount ?? "auto"}-${isDark ? "dark" : "light"}-d:${durationFingerprint}-m:${motionFingerprint}-vm:${vmKey}-mv:${mv}-gv:${gv}`;
   }
 
   function storePreviewInCache(key: string, data: CachedPreview): void {
@@ -131,6 +132,8 @@
     showBirthday?: boolean;
     showLoopGlyph?: boolean;
     showQRCode?: boolean;
+    /** When true, fill empty col-0 cells with mandala visualizations */
+    showMandala?: boolean;
     /** Render as hand path visualization (HAND props, float arrows, no TKA) */
     handPathMode?: boolean;
     /** Browse view mode for solo prop/hand filtering */
@@ -173,6 +176,7 @@
     showBirthday = true,
     showLoopGlyph = true,
     showQRCode = false,
+    showMandala = false,
     handPathMode = false,
     browseViewMode,
     darkMode = false,
@@ -210,45 +214,6 @@
   // Render at high resolution for crisp display on 4K monitors
   // Images scale down cleanly on lower-resolution displays
   const CELL_SIZE = 240; // Match thumbnail pipeline (240px) for instant cache hits from gallery
-
-  // LOOP type resolver for parsing loopType to components
-  const loopTypeResolver = new LOOPTypeResolver();
-
-  // Cache for on-demand LOOP detection results (keyed by sequence ID)
-  const loopDetectionCache = new Map<string, Set<LOOPComponent> | null>();
-
-  /**
-   * Detect LOOP components on demand for sequences without loopType.
-   * Uses caching to avoid repeated analysis.
-   */
-  function detectLoopComponents(seq: SequenceData): Set<LOOPComponent> | null {
-    const cacheKey = seq.id;
-    if (loopDetectionCache.has(cacheKey)) {
-      return loopDetectionCache.get(cacheKey)!;
-    }
-
-    if (!seq.steps || seq.steps.length < 2) {
-      loopDetectionCache.set(cacheKey, null);
-      return null;
-    }
-
-    try {
-      const result = loopDetector.detectLOOPType(seq);
-
-      if (result.loopType) {
-        const components = loopTypeResolver.parseComponents(result.loopType);
-        const resultSet = components.size > 0 ? components : null;
-        loopDetectionCache.set(cacheKey, resultSet);
-        return resultSet;
-      }
-
-      loopDetectionCache.set(cacheKey, null);
-      return null;
-    } catch {
-      loopDetectionCache.set(cacheKey, null);
-      return null;
-    }
-  }
 
   // Individual cell data
   interface CellData {
@@ -305,33 +270,53 @@
   const needsScroll = $derived(!forceContain && isLongSequence);
   let gridScrollRef: HTMLDivElement | undefined = $state();
 
-  // Orientation cycle pass dividers
-  // When orientationCycleCount > 1, the sequence contains multiple passes.
-  // We insert visual dividers between them so the performer knows where
-  // each repetition starts.
-  const orientationCycleCount = $derived(sequence?.orientationCycleCount ?? 1);
-  const stepsPerPass = $derived.by(() => {
-    if (orientationCycleCount <= 1) return 0;
-    const totalSteps = sequence?.steps?.length ?? 0;
-    return Math.floor(totalSteps / orientationCycleCount);
-  });
-  // Step indices where a pass boundary occurs (0-indexed step indices).
-  // E.g., for 8 steps with cycleCount=2, stepsPerPass=4 → boundary at index 4
-  const passBoundaryStepIndices = $derived.by(() => {
-    if (orientationCycleCount <= 1 || stepsPerPass <= 0) return [];
-    const boundaries: number[] = [];
-    for (let pass = 1; pass < orientationCycleCount; pass++) {
-      boundaries.push(pass * stepsPerPass);
-    }
-    return boundaries;
-  });
-
   // Visibility settings from user preferences (reactive)
   const visibilitySettings = $derived(getSettings().visibility);
   const showNonRadial = $derived(visibilitySettings?.nonRadialPoints ?? true);
   const handPointVis = $derived<"all" | "active">(visibilitySettings?.handPointVisibility ?? "all");
   const showTKA = $derived(visibilitySettings?.tkaGlyph ?? true);
   const showReversals = $derived(visibilitySettings?.reversalIndicators ?? true);
+
+  // Motion visibility — when one hand is hidden, the sequence is a hand-path
+  // view: letters and word become meaningless (letters are defined by both
+  // hands combined), so we suppress the word heading. Level/LOOP stay.
+  // Glyph visibility — VTG/elemental/positions read from VM too so toggling
+  // those in the export panel invalidates the preview cache.
+  const vm = getVisibilityStateManager();
+  let motionVisibilityVersion = $state(0);
+  let glyphVisibilityVersion = $state(0);
+  function onMotionVisibilityChanged(): void { motionVisibilityVersion++; }
+  function onGlyphVisibilityChanged(): void { glyphVisibilityVersion++; }
+  vm.registerObserver(onMotionVisibilityChanged, ["motion"]);
+  vm.registerObserver(onGlyphVisibilityChanged, ["glyph"]);
+  onDestroy(() => {
+    vm.unregisterObserver(onMotionVisibilityChanged);
+    vm.unregisterObserver(onGlyphVisibilityChanged);
+  });
+  const allMotionsVisible = $derived.by(() => {
+    void motionVisibilityVersion;
+    return vm.areAllMotionsVisible();
+  });
+  const showBlueMotion = $derived.by(() => {
+    void motionVisibilityVersion;
+    return vm.getMotionVisibility(MotionColor.BLUE);
+  });
+  const showRedMotion = $derived.by(() => {
+    void motionVisibilityVersion;
+    return vm.getMotionVisibility(MotionColor.RED);
+  });
+  const showVTG = $derived.by(() => {
+    void glyphVisibilityVersion;
+    return vm.getRawGlyphVisibility("vtgGlyph");
+  });
+  const showElemental = $derived.by(() => {
+    void glyphVisibilityVersion;
+    return vm.getRawGlyphVisibility("elementalGlyph");
+  });
+  const showPositions = $derived.by(() => {
+    void glyphVisibilityVersion;
+    return vm.getRawGlyphVisibility("positionsGlyph");
+  });
 
   // QR code state — generated async, cached by sequence ID + dark mode.
   // The grid cell is always reserved (via qrGridPosition) so layout doesn't
@@ -414,32 +399,42 @@
     return difficultyCalculator.calculateDifficultyLevel([...sequence.steps]);
   });
 
-  // Parse LOOP components for the glyph
-  const loopComponents = $derived.by(() => {
-    const loopType = sequence.loopType;
-
-    if (loopType) {
-      const components = loopTypeResolver.parseComponents(loopType);
-      return components.size > 0 ? components : null;
-    }
-
-    if (!loopType && sequence.steps) {
-      return detectLoopComponents(sequence);
-    }
-
-    return null;
-  });
+  // Parse LOOP components for the glyph. The resolver handles both the
+  // stored-loopType path (fast) and the on-demand detect path (when a
+  // sequence was edited and its stored loopType might be stale), plus
+  // caching keyed by sequence id.
+  const loopDisplay = $derived.by(() => resolveLoopDisplay(sequence));
+  const loopComponents = $derived(
+    loopDisplay.components.size > 0 ? loopDisplay.components : null
+  );
+  const loopRotationSliceSize = $derived(loopDisplay.rotationSliceSize);
 
   // Solo mode: hide dual-prop metadata (word, letters, difficulty, LOOP)
   // When browseViewMode has granularity "solo", we're showing one prop/hand only.
   // The header shows a color label instead of the sequence word.
-  const isSoloMode = $derived(browseViewMode?.granularity === "solo");
-  const soloColor = $derived(browseViewMode?.color);
+  const isBrowseSoloMode = $derived(browseViewMode?.granularity === "solo");
+  // Motion-visibility solo: one color toggled off in the export panel. The
+  // pictograph is effectively single-hand, so letters/VTG/positions are
+  // meaningless (they describe hand PAIRS) and must hide the same way.
+  const isMotionSoloMode = $derived(
+    (showBlueMotion && !showRedMotion) || (showRedMotion && !showBlueMotion)
+  );
+  const isSoloMode = $derived(isBrowseSoloMode || isMotionSoloMode);
+  const soloColor = $derived<"blue" | "red" | undefined>(
+    browseViewMode?.color ??
+      (isMotionSoloMode ? (showBlueMotion ? "blue" : "red") : undefined)
+  );
 
-  // Show header when difficulty, LOOP glyph, or word is enabled
+  // When a motion is hidden the sequence becomes a hand-path view: letters
+  // are undefined, so the word (which is concatenated letters) must hide too.
+  const wordVisible = $derived(showWord && !!sequence.word && allMotionsVisible);
+
+  // Show header when difficulty, LOOP glyph, or word is enabled.
+  // The "Blue Prop Path" style header belongs to browse-solo; motion-solo
+  // just hides the word and doesn't inject a replacement title.
   const showHeader = $derived(
-    (isSoloMode && !hideSoloHeader) ||
-    showDifficultyLevel || (showLoopGlyph && loopComponents) || (showWord && sequence.word)
+    (isBrowseSoloMode && !hideSoloHeader) ||
+    showDifficultyLevel || (showLoopGlyph && loopComponents) || wordVisible
   );
 
   // Show footer when any footer element is enabled
@@ -664,8 +659,13 @@
       handPointVisibility: handPointVis,
       showTKA: isSoloMode ? false : showTKA,
       showReversals: isSoloMode ? false : showReversals,
+      showVTG: isSoloMode ? false : showVTG,
+      showElemental: isSoloMode ? false : showElemental,
+      showPositions: isSoloMode ? false : showPositions,
       handPathMode,
       browseViewMode,
+      showBlueMotion,
+      showRedMotion,
     };
   }
 
@@ -681,6 +681,50 @@
     if (!motion?.endLocation) return String(stepIndex + 1);
     // Capitalize location abbreviation: "n" → "N", "ne" → "NE"
     return motion.endLocation.toUpperCase();
+  }
+
+  /**
+   * Look up the visible motion for a given cell in motion-solo mode.
+   * cellIndex === -1 means start position, otherwise a step index.
+   * Returns undefined when not in motion-solo or data is missing.
+   */
+  function getMotionSoloMotion(cellIndex: number):
+    | import("$lib/shared/pictograph/shared/domain/models/MotionData").MotionData
+    | undefined {
+    if (!isMotionSoloMode) return undefined;
+    const color = showBlueMotion ? "blue" : "red";
+    if (cellIndex === -1) {
+      const startData = sequence.startPosition ??
+        (sequence.steps?.[0] ? createStartPositionFromBeatStart(sequence.steps[0]) : undefined);
+      return startData?.motions?.[color] ?? undefined;
+    }
+    return sequence.steps?.[cellIndex]?.motions?.[color] ?? undefined;
+  }
+
+  /** Format turns for the solo-mode bottom-left badge. "fl" stays "fl".
+   *  Returns empty string for 0 turns so the overlay stays hidden. */
+  function formatSoloTurns(turns: number | "fl" | undefined | null): string {
+    if (turns === undefined || turns === null) return "";
+    if (turns === "fl") return "fl";
+    if (turns === 0) return "";
+    return turns.toString();
+  }
+
+  /** Short-form orientation label. Level 1-3 are "in", "out", "cl", "cn".
+   *  Level 6 interradials collapse to 2-char forms. Returns null if unknown. */
+  function shortOrientation(ori: string | undefined | null): string | null {
+    if (!ori) return null;
+    switch (ori) {
+      case "in": return "in";
+      case "out": return "out";
+      case "clock": return "cl";
+      case "counter": return "cn";
+      case "clock_in": return "cli";
+      case "clock_out": return "clo";
+      case "counter_in": return "cni";
+      case "counter_out": return "cno";
+      default: return ori.length <= 3 ? ori : ori.slice(0, 3);
+    }
   }
 
   /**
@@ -718,48 +762,6 @@
       return { gridColumn: col, gridRow: row };
     }
   }
-
-  /**
-   * Compute divider row positions and adjust cell gridRows for pass boundaries.
-   * Returns the grid rows where dividers should be rendered.
-   */
-  function applyPassDividerOffsets(
-    cellData: CellData[],
-    boundaries: number[],
-    cols: number
-  ): { dividerGridRows: number[]; extraRows: number } {
-    if (boundaries.length === 0) return { dividerGridRows: [], extraRows: 0 };
-
-    // Find the grid row of each boundary step (the first step of the new pass)
-    const dividerGridRows: number[] = [];
-    for (const boundaryIdx of boundaries) {
-      // The divider goes BEFORE this step's row. Find what row this step
-      // would normally be on (before any offsets).
-      const pos = calculateGridPosition(boundaryIdx, cols);
-      dividerGridRows.push(pos.gridRow); // Divider row inserted before this row
-    }
-
-    // Offset cells: for each cell, count how many divider rows precede it
-    for (const cell of cellData) {
-      let offset = 0;
-      for (const divRow of dividerGridRows) {
-        if (cell.gridRow >= divRow) {
-          offset++;
-        }
-      }
-      if (offset > 0) {
-        cell.gridRow += offset;
-      }
-    }
-
-    // The divider rows themselves are offset by preceding dividers
-    const adjustedDividerRows = dividerGridRows.map((row, i) => row + i);
-
-    return { dividerGridRows: adjustedDividerRows, extraRows: boundaries.length };
-  }
-
-  // State for pass divider grid rows (populated during render)
-  let passDividerGridRows = $state<number[]>([]);
 
   /**
    * Render all cells (start position + steps)
@@ -816,7 +818,6 @@
       durationRows,
       hasMixedDurations,
       durationColCount,
-      passDividerGridRows,
     });
   }
 
@@ -892,10 +893,6 @@
         durationColCount = 0;
       }
 
-      // Account for pass divider rows in total row count
-      const dividerCount = (!mixed && passBoundaryStepIndices.length > 0)
-        ? passBoundaryStepIndices.length : 0;
-      rws += dividerCount;
       rows = rws;
 
       // Build render options once for all cells
@@ -912,7 +909,6 @@
         hasMixedDurations = cached.hasMixedDurations ?? false;
         durationRows = cached.durationRows ?? [];
         durationColCount = cached.durationColCount ?? 0;
-        passDividerGridRows = cached.passDividerGridRows ?? [];
         isLoading = false;
         isRendering = false;
         // Signal 100% immediately for cache hits
@@ -958,22 +954,11 @@
       for (let i = 0; i < sequence.steps.length; i++) {
         const { gridColumn, gridRow } = calculateGridPosition(i, cols);
         placeholderCells.push({
-          index: i, label: isSoloMode ? getSoloLocationLabel(i) : String(i + 1),
+          index: i, label: isBrowseSoloMode ? getSoloLocationLabel(i) : String(i + 1),
           imageUrl: "", isLoaded: false,
           gridColumn, gridRow,
           duration: sequence.steps[i]?.duration ?? 1,
         });
-      }
-
-      // Apply pass divider row offsets for multi-pass orientation cycles.
-      // Row count was already adjusted above; here we just shift cell positions.
-      if (!mixed && passBoundaryStepIndices.length > 0) {
-        const { dividerGridRows } = applyPassDividerOffsets(
-          placeholderCells, passBoundaryStepIndices, cols
-        );
-        passDividerGridRows = dividerGridRows;
-      } else {
-        passDividerGridRows = [];
       }
 
       // Pre-calculate contain dimensions and cellWidth BEFORE inserting cells.
@@ -1103,7 +1088,6 @@
         durationRows: computedDurationRows,
         hasMixedDurations: mixed,
         durationColCount,
-        passDividerGridRows: [...passDividerGridRows],
       });
 
       // Now safe to revoke old blob URLs — new ones are in the DOM
@@ -1223,7 +1207,6 @@
           durationRows: [...durationRows],
           hasMixedDurations,
           durationColCount,
-          passDividerGridRows: [...passDividerGridRows],
         });
       }
 
@@ -1574,6 +1557,11 @@
     const stka = showTKA;
     const sr = showReversals;
     const dm = darkMode;
+    const sbm = showBlueMotion;
+    const srm = showRedMotion;
+    const svtg = showVTG;
+    const selm = showElemental;
+    const spos = showPositions;
     // Read effectiveColumns so the effect fires when the composition manager's
     // column override changes (e.g. via the right-click column picker).
     const effCols = effectiveColumns;
@@ -1584,7 +1572,8 @@
     // effectiveColumns is included here so column count changes trigger a full
     // re-render (not just relayout) — the grid structure, pass dividers, and
     // cell sizes all change when columns change.
-    const imageKey = `${sequence?.id ?? ""}-${stepLetters}-${stepCount}-${bpt}-${rpt}-${cdm}-${ssn}-${snr}-${hpv}-${stka}-${sr}-${durationKey}-cols:${effCols}`;
+    const gv = `${svtg ? "1" : "0"}${selm ? "1" : "0"}${spos ? "1" : "0"}`;
+    const imageKey = `${sequence?.id ?? ""}-${stepLetters}-${stepCount}-${bpt}-${rpt}-${cdm}-${ssn}-${snr}-${hpv}-${stka}-${sr}-${durationKey}-cols:${effCols}-mv:${sbm ? "1" : "0"}${srm ? "1" : "0"}-gv:${gv}`;
     // Layout key: props that only affect grid positions (start position toggle).
     const layoutKey = `${isp}`;
     // Full content key combines both
@@ -1728,7 +1717,7 @@
     const stepLetters = sequence?.steps?.map(s => s.letter ?? "?").join("") ?? "";
     const stepCount = sequence?.steps?.length ?? 0;
     const durationKey = sequence?.steps?.map(s => s.duration ?? 1).join(",") ?? "";
-    lastImageKey = `${sequence?.id ?? ""}-${stepLetters}-${stepCount}-${bluePropType}-${redPropType}-${catDogModeEnabled}-${showStepNumbers}-${showNonRadial}-${handPointVis}-${showTKA}-${showReversals}-${durationKey}-cols:${effectiveColumns}`;
+    lastImageKey = `${sequence?.id ?? ""}-${stepLetters}-${stepCount}-${bluePropType}-${redPropType}-${catDogModeEnabled}-${showStepNumbers}-${showNonRadial}-${handPointVis}-${showTKA}-${showReversals}-${durationKey}-cols:${effectiveColumns}-mv:${showBlueMotion ? "1" : "0"}${showRedMotion ? "1" : "0"}-gv:${showVTG ? "1" : "0"}${showElemental ? "1" : "0"}${showPositions ? "1" : "0"}`;
     lastContentKey = `${lastImageKey}-${includeStartPosition}`;
     lastEffectRenderKey = `${lastContentKey}-${darkMode}`;
 
@@ -1747,7 +1736,6 @@
         hasMixedDurations = cached.hasMixedDurations ?? false;
         durationRows = cached.durationRows ?? [];
         durationColCount = cached.durationColCount ?? 0;
-        passDividerGridRows = cached.passDividerGridRows ?? [];
         isLoading = false;
         hasMounted = true;
         return;
@@ -1786,8 +1774,36 @@
       alt={cell.label}
       draggable="false"
     />
-    {#if showStepNumbers}<span class="step-number-overlay" class:dark-mode={activeDarkMode} class:solo-location={isSoloMode} style="font-size: {isSoloMode ? Math.round(stepNumFontSize * 0.75) : stepNumFontSize}px;" transition:fade|local={{ duration: 150 }}>{cell.label}</span>{/if}
+    {#if showStepNumbers}<span class="step-number-overlay" class:dark-mode={activeDarkMode} class:solo-location={isBrowseSoloMode} style="font-size: {isBrowseSoloMode ? Math.round(stepNumFontSize * 0.75) : stepNumFontSize}px;" transition:fade|local={{ duration: 150 }}>{cell.label}</span>{/if}
     {#if showDurBadge && hasMixedDurations && cell.duration !== 1}<span class="duration-badge" class:dark-mode={activeDarkMode}>{formatDuration(cell.duration)}</span>{/if}
+    {#if isMotionSoloMode}
+      {@const soloMotion = getMotionSoloMotion(cell.index)}
+      {#if soloMotion}
+        <span class="solo-locations" class:dark-mode={activeDarkMode} transition:fade|local={{ duration: 150 }}>
+          <span class="solo-loc-letter">{(soloMotion.startLocation ?? "").toLowerCase()}</span>
+          <img class="solo-loc-arrow" src="/images/arrow.svg" alt="to" aria-hidden="true" draggable="false" />
+          <span class="solo-loc-letter">{(soloMotion.endLocation ?? "").toLowerCase()}</span>
+        </span>
+        {@const turnsLabel = formatSoloTurns(soloMotion.turns)}
+        {#if turnsLabel}
+          <span
+            class="solo-turn-number"
+            class:dark-mode={activeDarkMode}
+            style="color: {soloColor === 'blue' ? 'var(--prop-blue, #2196f3)' : 'var(--prop-red, #f44336)'};"
+            transition:fade|local={{ duration: 150 }}
+          >{turnsLabel}</span>
+        {/if}
+        {@const startOri = shortOrientation(soloMotion.startOrientation)}
+        {@const endOri = shortOrientation(soloMotion.endOrientation)}
+        {#if startOri && endOri}
+          <span class="solo-orientation" class:dark-mode={activeDarkMode} transition:fade|local={{ duration: 150 }}>
+            <span class="solo-ori-letter">{startOri}</span>
+            <img class="solo-ori-arrow" src="/images/arrow.svg" alt="to" aria-hidden="true" draggable="false" />
+            <span class="solo-ori-letter">{endOri}</span>
+          </span>
+        {/if}
+      {/if}
+    {/if}
   {:else}
     <div class="cell-spinner-container">
       <ProgressRing percent={-1} size={20} strokeWidth={2} />
@@ -1853,7 +1869,7 @@
           style="height: {scaledHeaderHeight}px;"
           transition:fly|local={{ y: -20, duration: 250, easing: cubicOut }}
         >
-          {#if isSoloMode}
+          {#if isBrowseSoloMode}
             <span
               class="word-title"
               style="font-size: {wordTitleFontSize}px; color: {soloColor === 'blue' ? 'var(--prop-blue, #2196f3)' : 'var(--prop-red, #f44336)'};"
@@ -1879,7 +1895,7 @@
               </div>
             {/if}
 
-            {#if showWord && sequence.word}
+            {#if wordVisible}
               <span
                 class="word-title"
                 style="font-size: {wordTitleFontSize}px;"
@@ -1897,6 +1913,7 @@
               >
                 <LOOPIconStrip
                   activeComponents={loopComponents}
+                  rotationSliceSize={loopRotationSliceSize}
                   size={Math.floor(badgeSize * LOOP_ICON_SIZE_SCALE)}
                   darkMode={activeDarkMode}
                   showFreeformWhenEmpty={false}
@@ -2070,6 +2087,7 @@
               <div
                 class="cell-flip-wrapper qr-cell-wrapper"
                 style="grid-column: {qrGridPosition.gridColumn}; grid-row: {qrGridPosition.gridRow};"
+                transition:scale|local={{ duration: 200, easing: cubicOut }}
               >
                 <div class="pictograph-cell qr-cell">
                   <img class="qr-code-image" src={qrDataUrl} alt="Scan to get this sequence" draggable="false" />
@@ -2124,15 +2142,14 @@
             {/if}
             </div>
           {/each}
-          {#if qrGridPosition}
+          {#if qrGridPosition && qrDataUrl}
             <div
               class="cell-flip-wrapper qr-cell-wrapper"
               style="grid-column: {qrGridPosition.gridColumn}; grid-row: {qrGridPosition.gridRow};"
+              transition:scale|local={{ duration: 200, easing: cubicOut }}
             >
               <div class="pictograph-cell qr-cell">
-                {#if qrDataUrl}
-                  <img class="qr-code-image" src={qrDataUrl} alt="Scan to get this sequence" draggable="false" />
-                {/if}
+                <img class="qr-code-image" src={qrDataUrl} alt="Scan to get this sequence" draggable="false" />
               </div>
             </div>
           {/if}
@@ -2554,6 +2571,98 @@
 
   .duration-badge.dark-mode {
     color: #ffffff;
+  }
+
+  /* Motion-solo top-center locations — matches PositionGlyph composition.
+     Canonical arrow dimensions from PositionGlyph: 88.9 × 34.8 * 0.75
+     ≈ 66.675 × 26.1 units in a 950-unit pictograph viewBox, i.e.
+     7.02cqw wide by 2.75cqw tall when 100cqw == cell width. We keep the
+     same arrow SVG and size it identically so headers read consistently. */
+  .solo-locations {
+    position: absolute;
+    top: 3.5%;
+    left: 50%;
+    transform: translateX(-50%);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.7cqw;
+    font-family: Cambria, "Hoefler Text", Georgia, serif;
+    font-weight: 700;
+    font-size: 7.9cqw; /* matches scaled letter height in PositionGlyph */
+    line-height: 1;
+    color: #231f20;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .solo-locations.dark-mode {
+    color: #ffffff;
+  }
+
+  .solo-loc-letter {
+    /* true lowercase, no small-caps */
+    text-transform: lowercase;
+    letter-spacing: 0;
+  }
+
+  /* Shared arrow sizing — both header rows use the exact dimensions of
+     the PositionGlyph's rendered arrow so the two look like siblings. */
+  .solo-loc-arrow,
+  .solo-ori-arrow {
+    width: 7.02cqw;
+    height: auto; /* aspect ratio preserved at 88.9:34.8 */
+    flex-shrink: 0;
+  }
+
+  :global(:root.dark) .solo-locations .solo-loc-arrow,
+  .solo-locations.dark-mode .solo-loc-arrow,
+  :global(:root.dark) .solo-orientation .solo-ori-arrow,
+  .solo-orientation.dark-mode .solo-ori-arrow {
+    filter: invert(0.92);
+  }
+
+  /* Motion-solo turn number — single colored digit where the TKA glyph's
+     turns column sat. Kept small so it reads as a secondary annotation. */
+  .solo-turn-number {
+    position: absolute;
+    left: 8%;
+    bottom: 6%;
+    font-family: Georgia, serif;
+    font-weight: 700;
+    font-size: min(10cqw, 28px);
+    line-height: 1;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  /* Motion-solo orientation annotation — bottom-center, below the
+     southernmost outer grid dot. Not bold; shares the arrow size with
+     the top locations row so both headers feel matched. */
+  .solo-orientation {
+    position: absolute;
+    bottom: 3%;
+    left: 50%;
+    transform: translateX(-50%);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.7cqw;
+    font-family: Cambria, "Hoefler Text", Georgia, serif;
+    font-weight: 400;
+    font-size: 7.9cqw;
+    line-height: 1;
+    color: #231f20;
+    opacity: 0.85;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .solo-orientation.dark-mode {
+    color: #ffffff;
+  }
+
+  .solo-ori-letter {
+    text-transform: lowercase;
+    letter-spacing: 0;
   }
 
   /* Per-cell loading spinner */

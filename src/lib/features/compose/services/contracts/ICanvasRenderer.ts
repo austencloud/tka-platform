@@ -60,6 +60,7 @@ export interface ICanvasRenderer {
    * @param activeStepNumber - 1-indexed beat number for letter highlighting (null = no highlighting)
    * @param difficultyLevel - Difficulty level (1-5) for the top-left badge (null = no badge)
    * @param loopComponents - Set of active LOOP component ids for the top-right icon strip (null/empty = no strip)
+   * @param rotationSliceSize - When rotated is active, selects fa-arrows-spin (quartered) vs fa-rotate (halved)
    */
   renderWordHeaderToCanvas(
     ctx: CanvasRenderingContext2D,
@@ -68,7 +69,8 @@ export interface ICanvasRenderer {
     darkMode?: boolean,
     activeStepNumber?: number | null,
     difficultyLevel?: number | null,
-    loopComponents?: Set<string> | null
+    loopComponents?: Set<string> | null,
+    rotationSliceSize?: import("$lib/features/create/generate/circular/domain/models/circular-models").SliceSize
   ): void;
 
   /**
