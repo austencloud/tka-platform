@@ -21,6 +21,7 @@ import {
   getDocs,
   updateDoc,
   increment,
+  runTransaction,
   type Firestore,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
@@ -64,6 +65,15 @@ interface ShortCodeData {
 export class ShortCodeManager implements IShortCodeManager {
   private firestore: Firestore | null = null;
   private staticSnapshotCache: Map<string, ShortCodeData> | null = null;
+  /** In-flight single-flight cache keyed by encoderHash (or fallback id when
+   *  a sequence has no steps). Prevents simultaneous calls for the same
+   *  sequence — e.g. QRCodeGenerator and SequenceViewerOverlayState both
+   *  requesting a shortcode for the current sequence at the same time —
+   *  from racing past the `findExistingCodeByHash` check and writing two
+   *  docs with identical encoderHash. Observed live 2026-04-19: same hash,
+   *  1ms apart, two codes. The cache reduces Firestore pressure even when
+   *  no race is present (second caller just returns the first's promise). */
+  private readonly inflightByKey = new Map<string, Promise<CreateShortCodeResult>>();
 
   constructor(
     private readonly browseLoader: IBrowseLoader,
@@ -128,8 +138,6 @@ export class ShortCodeManager implements IShortCodeManager {
   }
 
   async createShortCode(sequence: SequenceData, options?: ShortCodeURLOptions): Promise<CreateShortCodeResult> {
-    const firestore = await this.ensureFirestore();
-
     // Compute encoderHash for content-based dedup. Two sequences with the
     // same motions always produce the same hash, regardless of word or owner.
     // Falls back to word-based lookup for sequences without steps (legacy).
@@ -147,7 +155,42 @@ export class ShortCodeManager implements IShortCodeManager {
       throw new Error("Sequence must have steps, word, name, or id for short code generation");
     }
 
-    // Check if this sequence already has a short code (by hash or word)
+    // Single-flight dedup key. Two concurrent calls in the same tab for the
+    // same sequence will share one Firestore round-trip and one promise.
+    // Scope: options?.embedSequenceData affects the doc shape, so calls
+    // with different embed flags MUST NOT share a promise (otherwise one
+    // caller gets a doc shaped for the other's use case).
+    const embedScope = options?.embedSequenceData ? "embed" : "lean";
+    const dedupKey = `${embedScope}:${encoderHash ?? `w:${fallbackId}`}`;
+
+    const inflight = this.inflightByKey.get(dedupKey);
+    if (inflight) return inflight;
+
+    const promise = this.createShortCodeInternal(
+      sequence,
+      options,
+      encoderHash,
+      fallbackId
+    );
+    this.inflightByKey.set(dedupKey, promise);
+    try {
+      return await promise;
+    } finally {
+      this.inflightByKey.delete(dedupKey);
+    }
+  }
+
+  private async createShortCodeInternal(
+    sequence: SequenceData,
+    options: ShortCodeURLOptions | undefined,
+    encoderHash: string | undefined,
+    fallbackId: string | undefined
+  ): Promise<CreateShortCodeResult> {
+    const firestore = await this.ensureFirestore();
+
+    // Check if this sequence already has a short code (by hash or word).
+    // This is the legacy-dedup path — it catches codes created before the
+    // single-flight cache existed, and codes written by OTHER tabs/devices.
     const existingCode = encoderHash
       ? await this.findExistingCodeByHash(encoderHash)
       : await this.findExistingCode(fallbackId!);
@@ -174,79 +217,72 @@ export class ShortCodeManager implements IShortCodeManager {
       };
     }
 
-    // Generate a new unique code
-    let code = this.generateCode();
-    let attempts = 0;
+    // Build the full record once. Encoding is expensive — don't redo it per
+    // collision-retry attempt.
+    const record: Record<string, unknown> = {
+      sequence: fallbackId || "",
+      createdAt: new Date().toISOString(),
+      createdBy: "system",
+      scanCount: 0,
+      sequenceName: sequence.word || sequence.name || "",
+    };
+    if (sequence.id) record.sequenceId = sequence.id;
+    if (sequence.ownerId) record.ownerId = sequence.ownerId;
+    if (encoderHash) record.encoderHash = encoderHash;
+
+    const shouldEmbed = options?.embedSequenceData || !sequence.ownerId;
+    if (shouldEmbed && sequence.steps && sequence.steps.length > 0) {
+      const seqData: Record<string, unknown> = { steps: sequence.steps };
+      if (sequence.word != null) seqData.word = sequence.word;
+      if (sequence.startPosition != null) seqData.startPosition = sequence.startPosition;
+      if (sequence.gridMode != null) seqData.gridMode = sequence.gridMode;
+      if (sequence.isCircular != null) seqData.isCircular = sequence.isCircular;
+      if (sequence.loopType != null) seqData.loopType = sequence.loopType;
+      record.sequenceData = JSON.parse(JSON.stringify(seqData));
+    }
+
+    if (sequence.steps && sequence.steps.length > 0) {
+      record.encoded = await this.sequenceEncoder.encodeForQR(sequence);
+    }
+
+    if (!record.encoded && !record.sequenceData) {
+      throw new Error(
+        `[ShortCode] Refusing to create a shortcode without encoded blob or embedded sequenceData — would produce an unresolvable zombie document.`
+      );
+    }
+
+    // Allocate a unique code. The `getDoc → setDoc` sequence used to race:
+    // two tabs could both observe "doc doesn't exist" for the SAME random
+    // code (astronomically rare) OR, more importantly, both observe "hash
+    // doesn't exist" and each write their own code. runTransaction
+    // serializes the check-and-write so at most one writer wins per doc
+    // path. Cross-tab hash races are still theoretically possible but the
+    // loser reads their code back on next createShortCode via the legacy
+    // findExistingCodeByHash path above.
     const maxAttempts = 10;
-
-    while (attempts < maxAttempts) {
+    for (let attempts = 0; attempts < maxAttempts; attempts++) {
+      const code = this.generateCode();
       const docRef = doc(firestore, SHORTCODES_COLLECTION, code);
-      const docSnap = await getDoc(docRef);
 
-      if (!docSnap.exists()) {
-        const record: Record<string, unknown> = {
-          sequence: fallbackId || "", // Keep word for backwards compat and debugging
-          createdAt: new Date().toISOString(),
-          createdBy: "system",
-          scanCount: 0,
-          sequenceName: sequence.word || sequence.name || "",
-        };
-        // Only set optional fields if defined (Firestore rejects undefined values)
-        if (sequence.id) record.sequenceId = sequence.id;
-        if (sequence.ownerId) record.ownerId = sequence.ownerId;
-        // Store encoderHash for content-based dedup
-        if (encoderHash) {
-          record.encoderHash = encoderHash;
-        }
-
-        // Embed the essential sequence data directly in the shortcode record
-        // for any case where the sequence isn't persisted elsewhere — deck
-        // sequences (no ownerId at all), or URL-sync flows where the caller
-        // explicitly requested embedding because the sequence may never be
-        // saved to the user's library. Without this, resolution falls through
-        // every strategy and returns null.
-        const shouldEmbed =
-          options?.embedSequenceData || !sequence.ownerId;
-        if (shouldEmbed && sequence.steps && sequence.steps.length > 0) {
-          const seqData: Record<string, unknown> = {
-            steps: sequence.steps,
-          };
-          if (sequence.word != null) seqData.word = sequence.word;
-          if (sequence.startPosition != null) seqData.startPosition = sequence.startPosition;
-          if (sequence.gridMode != null) seqData.gridMode = sequence.gridMode;
-          if (sequence.isCircular != null) seqData.isCircular = sequence.isCircular;
-          if (sequence.loopType != null) seqData.loopType = sequence.loopType;
-          // JSON round-trip strips undefined values that Firestore rejects
-          record.sequenceData = JSON.parse(JSON.stringify(seqData));
-        }
-
-        // The self-contained "s~..." blob is the durability invariant — without
-        // it the shortcode points only to mutable external state and becomes
-        // unresolvable the moment that state changes. Every shortcode with
-        // steps MUST carry `encoded`. A throw here aborts the whole create so
-        // we never write a half-document that will zombie later.
-        if (sequence.steps && sequence.steps.length > 0) {
-          record.encoded = await this.sequenceEncoder.encodeForQR(sequence);
-        }
-
-        if (!record.encoded && !record.sequenceData) {
-          throw new Error(
-            `[ShortCode] Refusing to create "${code}" without encoded blob or embedded sequenceData — would produce an unresolvable zombie document.`
-          );
-        }
-
-        await setDoc(docRef, record);
-
-        return {
-          code,
-          url: this.buildUrlWithOptions(this.getBaseUrl(), code, options),
-          isNew: true,
-        };
+      try {
+        await runTransaction(firestore, async (tx) => {
+          const snap = await tx.get(docRef);
+          if (snap.exists()) {
+            throw new Error("__CODE_COLLISION__");
+          }
+          tx.set(docRef, record);
+        });
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        if (msg === "__CODE_COLLISION__") continue;
+        throw err;
       }
 
-      // Code collision, try a new one
-      code = this.generateCode();
-      attempts++;
+      return {
+        code,
+        url: this.buildUrlWithOptions(this.getBaseUrl(), code, options),
+        isNew: true,
+      };
     }
 
     throw new Error("Failed to generate unique short code after max attempts");
