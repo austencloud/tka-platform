@@ -29,6 +29,8 @@
   import WaterCustomize from "./customize/WaterCustomize.svelte";
   import { BUBBLES_PRESET_GROUP } from "./presets/bubbles-presets";
   import BubblesCustomize from "./customize/BubblesCustomize.svelte";
+  import { PETALS_PRESET_GROUP } from "./presets/petals-presets";
+  import PetalsCustomize from "./customize/PetalsCustomize.svelte";
   import type { EffectPresetGroup } from "./presets/types";
   import { EFFECT_COLORS, EFFECT_LABELS } from "./effect-registry";
 
@@ -160,6 +162,7 @@
       case "bloom": return BLOOM_PRESET_GROUP;
       case "water": return WATER_PRESET_GROUP;
       case "bubbles": return BUBBLES_PRESET_GROUP;
+      case "petals": return PETALS_PRESET_GROUP;
       default: return null;
     }
   }
@@ -244,6 +247,8 @@
         <WaterCustomize onBack={() => (customizeOpen = false)} />
       {:else if activeEffect === "bubbles"}
         <BubblesCustomize onBack={() => (customizeOpen = false)} />
+      {:else if activeEffect === "petals"}
+        <PetalsCustomize onBack={() => (customizeOpen = false)} />
       {/if}
     </div>
   {/if}
