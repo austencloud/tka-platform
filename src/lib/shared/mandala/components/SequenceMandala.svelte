@@ -10,12 +10,18 @@
 	} from "../domain/mandala-types";
 	import {
 		MANDALA_DEFAULT_SIZE,
-		LIGHT_BLUE_STROKE,
-		LIGHT_RED_STROKE,
-		LIGHT_BLUE_FILL,
-		LIGHT_RED_FILL,
-		LIGHT_PURPLE_STROKE,
-		LIGHT_PURPLE_FILL,
+		DARK_MOTION_BLUE_STROKE,
+		DARK_MOTION_RED_STROKE,
+		DARK_MOTION_BLUE_FILL,
+		DARK_MOTION_RED_FILL,
+		DARK_MOTION_PURPLE_STROKE,
+		DARK_MOTION_PURPLE_FILL,
+		LIGHT_MOTION_BLUE_STROKE,
+		LIGHT_MOTION_RED_STROKE,
+		LIGHT_MOTION_BLUE_FILL,
+		LIGHT_MOTION_RED_FILL,
+		LIGHT_MOTION_PURPLE_STROKE,
+		LIGHT_MOTION_PURPLE_FILL,
 	} from "../domain/mandala-constants";
 	import type { IMandalaGeometryCalculator } from "../services/contracts/IMandalaGeometryCalculator";
 	import type { IMandalaRenderer } from "../services/contracts/IMandalaRenderer";
@@ -47,13 +53,22 @@
 		darkMode,
 	}: Props = $props();
 
-	const LIGHT_PALETTE: MandalaPalette = {
-		blueStroke: LIGHT_BLUE_STROKE,
-		blueFill: LIGHT_BLUE_FILL,
-		redStroke: LIGHT_RED_STROKE,
-		redFill: LIGHT_RED_FILL,
-		purpleStroke: LIGHT_PURPLE_STROKE,
-		purpleFill: LIGHT_PURPLE_FILL,
+	const DARK_MOTION_PALETTE: MandalaPalette = {
+		blueStroke: DARK_MOTION_BLUE_STROKE,
+		blueFill: DARK_MOTION_BLUE_FILL,
+		redStroke: DARK_MOTION_RED_STROKE,
+		redFill: DARK_MOTION_RED_FILL,
+		purpleStroke: DARK_MOTION_PURPLE_STROKE,
+		purpleFill: DARK_MOTION_PURPLE_FILL,
+	};
+
+	const LIGHT_MOTION_PALETTE: MandalaPalette = {
+		blueStroke: LIGHT_MOTION_BLUE_STROKE,
+		blueFill: LIGHT_MOTION_BLUE_FILL,
+		redStroke: LIGHT_MOTION_RED_STROKE,
+		redFill: LIGHT_MOTION_RED_FILL,
+		purpleStroke: LIGHT_MOTION_PURPLE_STROKE,
+		purpleFill: LIGHT_MOTION_PURPLE_FILL,
 	};
 
 	let calculator: IMandalaGeometryCalculator | null = $state(null);
@@ -78,7 +93,8 @@
 	const effectiveDarkMode = $derived(darkMode ?? settingsService.settings.darkMode);
 
 	// Derive render options — card-back mode omits grid dots and background for a clean embed.
-	// In light mode, swap to the light-mode prop palette so hues match --prop-blue / --prop-red.
+	// Palette mirrors the actual pictograph arrow colors (--dm-motion-*) so the
+	// mandala's red/blue match what the user sees in the beat cells.
 	const renderOptions = $derived.by((): MandalaRenderOptions => {
 		const isCardBack = mode === "card-back";
 		return {
@@ -87,7 +103,7 @@
 			showGridDots: !isCardBack,
 			show,
 			transparentBackground: isCardBack,
-			palette: effectiveDarkMode ? undefined : LIGHT_PALETTE,
+			palette: effectiveDarkMode ? DARK_MOTION_PALETTE : LIGHT_MOTION_PALETTE,
 		};
 	});
 
