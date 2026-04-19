@@ -59,6 +59,13 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
   // Track previous tracking mode to detect changes
   private lastTrackingMode: TrackingMode | null = null;
 
+  // Track previous per-color visibility. When a color transitions from
+  // hidden back to visible, its ring buffers still contain stale points
+  // from before it was hidden, and the next capture would draw a straight
+  // line between the stale tail and the fresh tip. Clear on false→true.
+  private lastHasBlue = true;
+  private lastHasRed = true;
+
   // Tracks whether a previous center position exists for the center-point
   // smoothing path (used by clearBuffers to reset inter-sequence state).
   private hasPrevCenter = false;
@@ -170,6 +177,19 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
       this.redRightRing = [];
     }
     this.lastTrackingMode = trailSettings.trackingMode;
+
+    // Clear per-color rings on hidden→visible transition so the first
+    // captured point starts fresh instead of connecting to a stale tail.
+    if (hasBlue && !this.lastHasBlue) {
+      this.blueLeftRing = [];
+      this.blueRightRing = [];
+    }
+    if (hasRed && !this.lastHasRed) {
+      this.redLeftRing = [];
+      this.redRightRing = [];
+    }
+    this.lastHasBlue = hasBlue;
+    this.lastHasRed = hasRed;
 
     // Unilateral props (club, fan, etc.) only have one tip — force single-end
     const blueIsBilateral = bluePropType ? isBilateralProp(bluePropType) : true;

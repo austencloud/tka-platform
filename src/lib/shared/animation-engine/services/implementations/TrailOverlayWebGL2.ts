@@ -88,6 +88,13 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
   private lastTrackingMode: TrackingMode | null = null;
   private hasPrevCenter = false;
 
+  // Track previous per-color visibility. When a color transitions from
+  // hidden back to visible, its ring buffers still contain stale points
+  // from before it was hidden, and the next capture would draw a straight
+  // line between the stale tail and the fresh tip. Clear on false→true.
+  private lastHasBlue = true;
+  private lastHasRed = true;
+
   private warmupFramesRemaining = 0;
   private static readonly WARMUP_FRAMES = 3;
 
@@ -172,6 +179,23 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
       this.redRightTailProg = 0;
     }
     this.lastTrackingMode = trailSettings.trackingMode;
+
+    // Clear per-color rings on hidden→visible transition so the first
+    // captured point starts fresh instead of connecting to a stale tail.
+    if (hasBlue && !this.lastHasBlue) {
+      this.blueLeftRing = [];
+      this.blueRightRing = [];
+      this.blueLeftTailProg = 0;
+      this.blueRightTailProg = 0;
+    }
+    if (hasRed && !this.lastHasRed) {
+      this.redLeftRing = [];
+      this.redRightRing = [];
+      this.redLeftTailProg = 0;
+      this.redRightTailProg = 0;
+    }
+    this.lastHasBlue = hasBlue;
+    this.lastHasRed = hasRed;
 
     const blueIsBilateral = bluePropType ? isBilateralProp(bluePropType) : true;
     const redIsBilateral = redPropType ? isBilateralProp(redPropType) : true;
