@@ -11,6 +11,21 @@ export interface MandalaPaths {
 	purple: SVGPathData[];
 }
 
+/**
+ * Optional color palette override. When omitted, MandalaRenderer falls back to
+ * the dark-mode defaults (BLUE_STROKE/RED_STROKE/PURPLE_STROKE from
+ * mandala-constants). Callers rendering against a light background should pass
+ * the light-mode prop palette so the mandala matches the rest of the card.
+ */
+export interface MandalaPalette {
+	blueStroke: string;
+	blueFill: string;
+	redStroke: string;
+	redFill: string;
+	purpleStroke: string;
+	purpleFill: string;
+}
+
 export interface MandalaRenderOptions {
 	/** Pixel size of the SVG viewBox (square) */
 	size: number;
@@ -24,6 +39,8 @@ export interface MandalaRenderOptions {
 	strokeWidth?: number;
 	/** Transparent background (no dark rect) — use when embedding in themed containers */
 	transparentBackground?: boolean;
+	/** Override the default dark-mode prop colors (e.g. for light-mode backgrounds) */
+	palette?: MandalaPalette;
 }
 
 export type MandalaMode = "card-back" | "gallery" | "animated";

@@ -24,6 +24,18 @@ export const RED_FILL = "rgba(248, 113, 113, 0.2)";
 export const PURPLE_STROKE = "#a78bfa";
 export const PURPLE_FILL = "rgba(167, 139, 250, 0.2)";
 
+/**
+ * Light-mode prop palette — mirrors --prop-blue / --prop-red from
+ * background-theme-calculator. Use when rendering against a light background
+ * so the mandala's hue matches the rest of the card's prop coloring.
+ */
+export const LIGHT_BLUE_STROKE = "#2e3192";
+export const LIGHT_RED_STROKE = "#ed1c24";
+export const LIGHT_BLUE_FILL = "rgba(46, 49, 146, 0.2)";
+export const LIGHT_RED_FILL = "rgba(237, 28, 36, 0.2)";
+export const LIGHT_PURPLE_STROKE = "#6d28d9";
+export const LIGHT_PURPLE_FILL = "rgba(109, 40, 217, 0.2)";
+
 /** Distance threshold in mandala coordinate units for overlap detection.
  * This is the spatial hash cell size; the 3×3 neighborhood check makes
  * the effective radius ~3× this value. Keep small so only truly
