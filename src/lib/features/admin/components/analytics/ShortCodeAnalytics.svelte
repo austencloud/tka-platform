@@ -1,36 +1,30 @@
 <!--
-  Admin Shortcodes Dashboard
+  Shortcode Analytics Section
 
-  Three-panel view of the shortcodes collection:
-  1. Top 50 codes by scan count (with 30-day daily sparklines)
-  2. Deletion candidates — scanCount == 0 AND created > 30 days ago
-  3. Live feed — last 100 scanEvents across every code (collectionGroup)
+  Lives inside the admin Analytics tab (PostHogDashboard.svelte).
+  Shows the history of every choreo card scan: top codes, stale
+  candidates, and a live feed of recent scans.
 
-  Auth is handled by src/routes/admin/+layout.ts (client-side redirect for
-  non-admins). This page trusts the gate — no redundant checks.
+  Data flows:
+  - shortcodes collection — single getDocs() sweep (~2.8k docs, <1MB)
+  - scanEvents subcollections — per-top-code fetch for sparklines
+  - scanEvents collectionGroup — global live feed
 
-  Data source: direct Firebase SDK queries. No service wrapper — this is
-  read-only internal tooling. See the shortcode durability roadmap at
-  docs/superpowers/specs/2026-04-18-shortcode-durability-roadmap.md.
+  Durability invariant enforced by firestore.rules + ShortCodeManager.
+  See docs/superpowers/specs/2026-04-18-shortcode-durability-roadmap.md.
 -->
 <script lang="ts">
   import { onMount } from "svelte";
   import {
     collection,
     collectionGroup,
-    doc,
-    getDoc,
     getDocs,
     limit,
     orderBy,
     query,
     where,
-    Timestamp,
   } from "firebase/firestore";
   import { getFirestoreInstance } from "$lib/shared/auth/firebase";
-  import Panel from "$lib/shared/panels/Panel.svelte";
-
-  // ---- Types -----------------------------------------------------------------
 
   interface ShortCodeRow {
     code: string;
@@ -39,7 +33,6 @@
     lastScannedAt: string | null;
     createdAt: string;
     ownerId: string | null;
-    /** 30 daily buckets, newest last. Filled lazily. */
     sparkline: number[] | null;
   }
 
@@ -52,19 +45,17 @@
     city: string | null;
   }
 
-  // ---- State -----------------------------------------------------------------
-
   let loading = $state(true);
   let loadError = $state<string | null>(null);
   let totalCodes = $state(0);
+  let codesWithScans = $state(0);
+  let totalScans = $state(0);
   let topCodes = $state<ShortCodeRow[]>([]);
   let zeroScanCandidates = $state<ShortCodeRow[]>([]);
   let liveFeed = $state<ScanEventRow[]>([]);
   let liveFeedError = $state<string | null>(null);
 
   const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
-
-  // ---- Fetch -----------------------------------------------------------------
 
   onMount(() => {
     void loadAll();
@@ -75,10 +66,6 @@
     loadError = null;
     try {
       const firestore = await getFirestoreInstance();
-
-      // Single sweep of the collection. At ~2.8k docs and ~200B each, this is
-      // well under 1MB — cheaper than two separate indexed queries and
-      // avoids the composite-index requirement for the zero-scan-old filter.
       const allSnap = await getDocs(collection(firestore, "shortcodes"));
       totalCodes = allSnap.size;
 
@@ -95,13 +82,14 @@
         };
       });
 
-      // Top 50 by scan count.
+      totalScans = all.reduce((sum, r) => sum + r.scanCount, 0);
+      codesWithScans = all.filter((r) => r.scanCount > 0).length;
+
       topCodes = all
         .filter((r) => r.scanCount > 0)
         .sort((a, b) => b.scanCount - a.scanCount)
         .slice(0, 50);
 
-      // Deletion candidates: zero scans, older than 30 days. Show oldest first.
       const staleCutoff = Date.now() - THIRTY_DAYS_MS;
       zeroScanCandidates = all
         .filter((r) => {
@@ -111,13 +99,7 @@
         })
         .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 
-      // Fetch sparklines in parallel for the top codes. Failures are per-row,
-      // not fatal for the page.
       void hydrateSparklines(topCodes);
-
-      // Live feed via collectionGroup. If the index is missing the query
-      // throws; we surface that as a soft error and tell the admin how to
-      // fix it. Don't let it take out the whole page.
       void loadLiveFeed();
     } catch (err) {
       loadError = err instanceof Error ? err.message : String(err);
@@ -128,13 +110,13 @@
 
   async function hydrateSparklines(rows: ShortCodeRow[]) {
     const firestore = await getFirestoreInstance();
-    const cutoff = Timestamp.fromMillis(Date.now() - THIRTY_DAYS_MS);
+    const cutoffIso = new Date(Date.now() - THIRTY_DAYS_MS).toISOString();
     await Promise.all(
       rows.map(async (row) => {
         try {
           const eventsRef = collection(firestore, "shortcodes", row.code, "scanEvents");
           const eventsSnap = await getDocs(
-            query(eventsRef, where("timestamp", ">=", cutoff.toDate().toISOString()))
+            query(eventsRef, where("timestamp", ">=", cutoffIso))
           );
           const buckets = new Array<number>(30).fill(0);
           for (const d of eventsSnap.docs) {
@@ -146,9 +128,9 @@
             buckets[29 - daysAgo]! += 1;
           }
           row.sparkline = buckets;
-          topCodes = [...topCodes]; // retrigger derived rendering
+          topCodes = [...topCodes];
         } catch {
-          // Silent per-row failure — sparkline stays null, cell shows "—".
+          // silent per-row
         }
       })
     );
@@ -176,15 +158,9 @@
         };
       });
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      // Firestore surfaces the console link in the error message when an
-      // index is missing — surface it verbatim so the admin can one-click
-      // create it.
-      liveFeedError = msg;
+      liveFeedError = err instanceof Error ? err.message : String(err);
     }
   }
-
-  // ---- Formatters ------------------------------------------------------------
 
   function formatRelative(iso: string | null): string {
     if (!iso) return "never";
@@ -213,7 +189,9 @@
     return ua.slice(0, 37) + "…";
   }
 
-  // ---- Sparkline -------------------------------------------------------------
+  function formatNumber(n: number): string {
+    return n.toLocaleString();
+  }
 
   function sparklinePath(values: number[]): string {
     if (values.length === 0) return "";
@@ -231,26 +209,54 @@
   }
 </script>
 
-<svelte:head>
-  <title>Admin — Shortcodes</title>
-</svelte:head>
-
-<div class="page">
-  <header class="page-header">
-    <h1>Shortcodes</h1>
-    <p class="subtitle">
-      {totalCodes.toLocaleString()} total durable codes · Wave 1 durability invariant active
-    </p>
-  </header>
+<section class="section" aria-labelledby="shortcodes-title">
+  <h3 id="shortcodes-title" class="section-title">
+    <i class="fas fa-qrcode" aria-hidden="true"></i>
+    Choreo Card Scans
+    <span class="section-subtitle">(every QR scan, every print, every world city)</span>
+  </h3>
 
   {#if loading}
-    <div class="loading">Loading…</div>
+    <div class="loading-inline">
+      <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+      Loading shortcode data…
+    </div>
   {:else if loadError}
-    <div class="error">Failed to load shortcodes: {loadError}</div>
+    <div class="error-box">Failed to load: {loadError}</div>
   {:else}
-    <Panel title={`Top ${topCodes.length} by scan count`}>
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-value">{formatNumber(totalCodes)}</div>
+        <div class="metric-label">Durable codes</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-value">{formatNumber(totalScans)}</div>
+        <div class="metric-label">Total scans</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-value">{formatNumber(codesWithScans)}</div>
+        <div class="metric-label">Codes scanned ≥1×</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-value">
+          {#if topCodes.length > 0 && topCodes[0]?.lastScannedAt}
+            {formatRelative(topCodes[0].lastScannedAt)}
+          {:else}
+            never
+          {/if}
+        </div>
+        <div class="metric-label">Most recent scan</div>
+      </div>
+    </div>
+
+    <!-- Top 50 -->
+    <div class="subsection">
+      <h4 class="subsection-title">
+        <i class="fas fa-fire" aria-hidden="true"></i>
+        Top {topCodes.length} by scan count
+      </h4>
       {#if topCodes.length === 0}
-        <p class="empty">No codes have been scanned yet. Telemetry was just wired — check back tomorrow.</p>
+        <p class="empty">No codes have been scanned yet. Telemetry was just wired — check back after your first scan.</p>
       {:else}
         <div class="table-scroll">
           <table>
@@ -294,15 +300,19 @@
           </table>
         </div>
       {/if}
-    </Panel>
+    </div>
 
-    <Panel title={`Deletion candidates — zero scans, created > 30 days ago (${zeroScanCandidates.length})`}>
+    <!-- Zero-scan stale -->
+    <div class="subsection">
+      <h4 class="subsection-title">
+        <i class="fas fa-hourglass-end" aria-hidden="true"></i>
+        Deletion candidates — zero scans, {zeroScanCandidates.length} older than 30 days
+      </h4>
       {#if zeroScanCandidates.length === 0}
         <p class="empty">No stale zero-scan codes.</p>
       {:else}
         <p class="note">
-          These codes are durable (they have an <code>encoded</code> payload) but nobody has scanned them in 30+ days.
-          Candidates for future cleanup — <strong>do not delete</strong> without confirming they weren't printed on a card.
+          Durable codes that nobody has scanned in 30+ days. Cleanup candidates — <strong>do not delete</strong> without confirming they weren't printed on a physical card.
         </p>
         <div class="table-scroll small">
           <table>
@@ -330,17 +340,22 @@
           {/if}
         </div>
       {/if}
-    </Panel>
+    </div>
 
-    <Panel title="Live feed — last 100 scans">
+    <!-- Live feed -->
+    <div class="subsection">
+      <h4 class="subsection-title">
+        <i class="fas fa-signal" aria-hidden="true"></i>
+        Live feed — last 100 scans
+      </h4>
       {#if liveFeedError}
-        <div class="error">
-          <strong>Live feed unavailable.</strong> A Firestore collection-group index on <code>scanEvents.timestamp</code> is required. Firestore's error includes a one-click creation URL:
+        <div class="error-box">
+          <strong>Live feed unavailable.</strong> A Firestore collection-group index on <code>scanEvents.timestamp</code> is required.
           <pre>{liveFeedError}</pre>
-          Alternatively, deploy <code>firestore.indexes.json</code>.
+          Deploy <code>firestore.indexes.json</code> to fix.
         </div>
       {:else if liveFeed.length === 0}
-        <p class="empty">No scan events yet. Telemetry just started — scans will appear here as they happen.</p>
+        <p class="empty">No scan events yet. They will appear here as cards get scanned in the wild.</p>
       {:else}
         <div class="table-scroll">
           <table>
@@ -373,72 +388,77 @@
           </table>
         </div>
       {/if}
-    </Panel>
+    </div>
   {/if}
-</div>
+</section>
 
 <style>
-  .page {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 24px;
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
-    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-    color: var(--text-primary, #e8e8e8);
+  .subsection {
+    margin-top: 24px;
   }
 
-  .page-header h1 {
-    margin: 0 0 4px 0;
-    font-size: 28px;
+  .subsection-title {
+    margin: 0 0 8px 0;
+    font-size: 14px;
     font-weight: 600;
-    letter-spacing: -0.02em;
+    color: var(--text-primary, #e8e8e8);
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
 
-  .subtitle {
-    margin: 0;
+  .subsection-title i {
+    color: var(--text-secondary, #888);
+    font-size: 13px;
+  }
+
+  .loading-inline {
+    padding: 12px 0;
     color: var(--text-secondary, #888);
     font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
 
-  .loading,
   .empty,
   .note {
     color: var(--text-secondary, #888);
-    padding: 16px;
-    font-size: 14px;
+    font-size: 13px;
+    padding: 8px 0;
+    margin: 0 0 8px 0;
   }
 
   .note strong {
     color: var(--text-primary, #e8e8e8);
   }
 
-  .error {
-    background: rgba(220, 60, 60, 0.1);
-    border: 1px solid rgba(220, 60, 60, 0.35);
+  .error-box {
+    background: rgba(220, 60, 60, 0.08);
+    border: 1px solid rgba(220, 60, 60, 0.3);
     color: #ff9090;
-    padding: 12px 16px;
+    padding: 12px 14px;
     border-radius: 6px;
-    font-size: 14px;
+    font-size: 13px;
   }
 
-  .error pre {
+  .error-box pre {
     margin: 8px 0 0 0;
     white-space: pre-wrap;
     word-break: break-word;
-    font-size: 12px;
+    font-size: 11px;
     color: #ffc8c8;
   }
 
   .table-scroll {
     overflow-x: auto;
-    margin: 0 -12px;
-    padding: 0 12px;
+    border-radius: 6px;
+    border: 1px solid var(--panel-border, rgba(255, 255, 255, 0.08));
+    background: var(--panel-bg, rgba(255, 255, 255, 0.02));
   }
 
   .table-scroll.small {
-    max-height: 400px;
+    max-height: 360px;
     overflow-y: auto;
   }
 
@@ -451,17 +471,21 @@
   th,
   td {
     text-align: left;
-    padding: 8px 10px;
-    border-bottom: 1px solid var(--panel-border, rgba(255, 255, 255, 0.08));
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--panel-border, rgba(255, 255, 255, 0.06));
+  }
+
+  tbody tr:last-child td {
+    border-bottom: none;
   }
 
   th {
     font-weight: 600;
-    font-size: 11px;
+    font-size: 10.5px;
     text-transform: uppercase;
     letter-spacing: 0.04em;
     color: var(--text-secondary, #888);
-    background: var(--panel-header-bg, rgba(255, 255, 255, 0.02));
+    background: var(--panel-header-bg, rgba(255, 255, 255, 0.03));
     position: sticky;
     top: 0;
   }
@@ -494,7 +518,7 @@
   }
 
   .ua {
-    max-width: 320px;
+    max-width: 280px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -504,7 +528,7 @@
   svg.spark {
     width: 80px;
     height: 20px;
-    color: var(--theme-accent, #6366f1);
+    color: var(--theme-accent, #f97316);
     display: block;
   }
 </style>
