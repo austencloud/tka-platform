@@ -24,16 +24,35 @@
     open = false;
   }
 
-  function onDocumentClick(e: MouseEvent) {
+  // Capture-phase dismissal: when the popover is open, an outside
+  // pointerdown closes it AND is swallowed before it reaches whatever
+  // sits underneath. Without eating the event the underlying control
+  // (button, canvas, etc.) would activate on the same click the user
+  // intended only as "get me out of this popover."
+  function onOutsidePointerDown(e: PointerEvent) {
     if (!open) return;
-    const target = e.target as HTMLElement;
-    if (!target.closest(".motion-vis-root")) close();
+    const target = e.target as HTMLElement | null;
+    if (target?.closest(".motion-vis-root")) return;
+    e.preventDefault();
+    e.stopPropagation();
+    close();
+  }
+
+  function onKeydown(e: KeyboardEvent) {
+    if (open && e.key === "Escape") {
+      e.stopPropagation();
+      close();
+    }
   }
 
   $effect(() => {
     if (!open) return;
-    document.addEventListener("click", onDocumentClick);
-    return () => document.removeEventListener("click", onDocumentClick);
+    document.addEventListener("pointerdown", onOutsidePointerDown, true);
+    document.addEventListener("keydown", onKeydown, true);
+    return () => {
+      document.removeEventListener("pointerdown", onOutsidePointerDown, true);
+      document.removeEventListener("keydown", onKeydown, true);
+    };
   });
 </script>
 
