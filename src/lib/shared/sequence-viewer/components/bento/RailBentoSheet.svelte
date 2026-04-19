@@ -72,10 +72,10 @@
 
 <style>
   .bento-backdrop {
-    position: absolute;
+    position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.35);
-    z-index: 14;
+    background: rgba(0, 0, 0, 0.55);
+    z-index: 120;
     cursor: pointer;
     border: none;
     padding: 0;
@@ -83,13 +83,13 @@
   }
 
   .bento-sheet {
-    position: absolute;
+    position: fixed;
     left: 8px;
     right: 8px;
+    top: 60px;
     bottom: 8px;
-    max-height: 72%;
-    z-index: 15;
-    background: rgba(14, 16, 24, 0.95);
+    z-index: 121;
+    background: rgba(14, 16, 24, 0.98);
     backdrop-filter: blur(24px) saturate(160%);
     -webkit-backdrop-filter: blur(24px) saturate(160%);
     border: 1px solid rgba(255, 255, 255, 0.12);
