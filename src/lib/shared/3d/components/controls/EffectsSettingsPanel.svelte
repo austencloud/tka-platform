@@ -11,107 +11,84 @@
    */
 
   import { t } from "$lib/shared/i18n/i18n.svelte";
-  import { getEffectsConfigState } from "../../effects/state/effects-config-state.svelte";
+  import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
+  import { createEffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
   import { getScene3DRenderContext } from "$lib/shared/3d/scene-features/state/scene-3d-render-context";
   import { createScene3DRenderState } from "$lib/shared/3d/scene-features/state/scene-3d-render-state.svelte";
+  import {
+    getPrimaryParam,
+    setPrimaryParam,
+    PRIMARY_PARAMS,
+  } from "$lib/shared/animation-engine/components/effects-panel/effect-primary-param";
+  import { EFFECTS } from "$lib/shared/animation-engine/components/effects-panel/effect-registry";
   import type { AvatarInstanceState } from "$lib/shared/3d/state/avatar-instance-state.svelte";
   import type { EffectId } from "$lib/shared/3d/state/performer-settings-types";
+  import type { EffectType } from "$lib/shared/effects/domain/EffectsConfig";
 
   interface Props {
     performer?: AvatarInstanceState | null;
   }
   let { performer = null }: Props = $props();
 
-  const config = getEffectsConfigState();
+  const config = getEffectsConfigContext() ?? createEffectsConfigState();
   const scene3DRender = getScene3DRenderContext() ?? createScene3DRenderState();
 
-  // Effect definitions for rendering (8 total)
-  const effectChips = [
-    { key: "trails", label: "Trails", icon: "route", color: "#a855f7" },
-    { key: "fire", label: "Fire", icon: "fire", color: "#f97316" },
-    { key: "charcoal", label: "Charcoal", icon: "pen-nib", color: "#78716c" },
-    { key: "led", label: "LED", icon: "lightbulb", color: "#4ade80" },
-    { key: "electricity", label: "Zap", icon: "bolt", color: "#38bdf8" },
-    { key: "sparkles", label: "Sparkles", icon: "star", color: "#fbbf24" },
-    { key: "motion", label: "Motion", icon: "wind", color: "#22d3ee" },
-    { key: "bloom", label: "Glow", icon: "sun", color: "#f472b6" },
-  ] as const;
+  // Grid combines the 11 unified effects + motion (scene-level render modifier).
+  // Registry is canonical for order, label, icon, color.
+  type EffectKey = EffectType | "motion";
+  const effectChips: ReadonlyArray<{ key: EffectKey; label: string; icon: string; color: string }> = [
+    ...EFFECTS.map((e) => ({
+      key: e.id as EffectType,
+      label: e.label,
+      icon: e.icon.replace(/^fa-/, ""),
+      color: e.color,
+    })),
+    { key: "motion" as const, label: "Motion", icon: "wind", color: "#22d3ee" },
+  ];
 
-  type EffectKey = (typeof effectChips)[number]["key"];
+  // Per-performer Sets use the legacy EffectId union. Translate between the
+  // canonical EffectType and EffectId where they diverge; unrepresentable
+  // keys (echo/water/bubbles/petals) hide from the per-performer toggle —
+  // Phase 2.5 migrates the per-performer Set to the canonical enum.
+  function toPerformerEffect(key: EffectKey): EffectId | null {
+    if (key === "zap") return "electricity";
+    if (key === "motion") return "motion";
+    if (key === "echo" || key === "water" || key === "bubbles" || key === "petals" || key === "none") {
+      return null;
+    }
+    return key as EffectId;
+  }
 
-  // Check if an effect is enabled
   function isEnabled(key: EffectKey): boolean {
     if (performer) {
-      return performer.settings.effects.has(key as EffectId);
+      const pk = toPerformerEffect(key);
+      return pk !== null && performer.settings.effects.has(pk);
     }
-    // Global fallback — charcoal/led are not in the global config so they
-    // correctly return false via the default branch (option B).
-    switch (key) {
-      case "trails":
-        return config.trails.enabled;
-      case "fire":
-        return config.fire.enabled;
-      case "sparkles":
-        return config.sparkles.enabled;
-      case "electricity":
-        return config.electricity.enabled;
-      case "motion":
-        return scene3DRender.motion.blur || scene3DRender.motion.speedLines;
-      case "bloom":
-        return config.bloom.enabled;
-      default:
-        return false;
+    if (key === "motion") {
+      return scene3DRender.motion.blur || scene3DRender.motion.speedLines;
     }
+    return config.config.tipEffectMap["*"]?.effect === key;
   }
 
-  // Toggle an effect
   function toggle(key: EffectKey) {
     if (performer) {
-      performer.toggleEffect(key as EffectId);
-      // TODO(tipEffectMap): per feedback_tipeffectmap_sync, if per-performer effects
-      // need to sync tipEffectMap (renderer filter), add that call here once the
-      // performer-scoped trail renderer is wired up. The global path already handles
-      // this inside the effects-config-state toggles below.
+      const pk = toPerformerEffect(key);
+      if (pk !== null) performer.toggleEffect(pk);
       return;
     }
-    // Global fallback
-    switch (key) {
-      case "trails":
-        config.toggleTrails();
-        break;
-      case "fire":
-        config.toggleFire();
-        break;
-      case "sparkles":
-        config.toggleSparkles();
-        break;
-      case "electricity":
-        config.toggleElectricity();
-        break;
-      case "motion":
-        // Toggle both blur and speed lines together
-        const motionEnabled = scene3DRender.motion.blur || scene3DRender.motion.speedLines;
-        scene3DRender.updateMotion({
-          blur: !motionEnabled,
-          speedLines: !motionEnabled,
-        });
-        break;
-      case "bloom":
-        config.toggleBloom();
-        break;
+    if (key === "motion") {
+      const motionEnabled = scene3DRender.motion.blur || scene3DRender.motion.speedLines;
+      scene3DRender.updateMotion({
+        blur: !motionEnabled,
+        speedLines: !motionEnabled,
+      });
+      return;
     }
+    // Global fallback — wildcard tip map. Toggling the active effect off
+    // returns to "none" so the grid has a consistent off-state semantic.
+    const currentlyActive = config.config.tipEffectMap["*"]?.effect === key;
+    config.setTipEffectMap({ "*": { effect: currentlyActive ? "none" : key } });
   }
-
-  // Trail mode toggle
-  const trailModes = [
-    { value: "rainbow", label: "Rainbow" },
-    { value: "color", label: "Color" },
-  ] as const;
-
-  const isRainbow = $derived(config.trails.color === "rainbow");
-
-  // Trail tracking mode (which prop end(s) to track)
-  const trackingModeLabel = $derived(config.getTrackingModeLabel());
 
   // Intensity slider for active effects
   let expandedEffect = $state<EffectKey | null>(null);
@@ -121,46 +98,29 @@
   }
 
   function getIntensity(key: EffectKey): number {
-    switch (key) {
-      case "trails":
-        return config.trails.width / 10; // Normalize 0-10 to 0-1
-      case "fire":
-        return config.fire.intensity;
-      case "sparkles":
-        return config.sparkles.rate / 50; // Normalize 0-50 to 0-1
-      case "electricity":
-        return config.electricity.intensity;
-      case "motion":
-        return scene3DRender.motion.intensity;
-      case "bloom":
-        return config.bloom.intensity;
-      default:
-        return 0.5;
-    }
+    if (key === "motion") return scene3DRender.motion.intensity;
+    const spec = PRIMARY_PARAMS[key as EffectType];
+    if (!spec) return 0.5;
+    const raw = getPrimaryParam(key as EffectType, config);
+    return (raw - spec.min) / (spec.max - spec.min);
   }
 
   function setIntensity(key: EffectKey, value: number) {
-    switch (key) {
-      case "trails":
-        config.updateTrails({ width: value * 10 });
-        break;
-      case "fire":
-        config.updateFire({ intensity: value });
-        break;
-      case "sparkles":
-        config.updateSparkles({ rate: value * 50 });
-        break;
-      case "electricity":
-        config.updateElectricity({ intensity: value });
-        break;
-      case "motion":
-        scene3DRender.updateMotion({ intensity: value });
-        break;
-      case "bloom":
-        config.updateBloom({ intensity: value });
-        break;
+    if (key === "motion") {
+      scene3DRender.updateMotion({ intensity: value });
+      return;
     }
+    const spec = PRIMARY_PARAMS[key as EffectType];
+    if (!spec) return;
+    const raw = spec.min + value * (spec.max - spec.min);
+    const snapped = Math.round(raw / spec.step) * spec.step;
+    setPrimaryParam(key as EffectType, config, snapped);
   }
+
+  const globalEnabledCount = $derived(
+    (config.config.tipEffectMap["*"]?.effect && config.config.tipEffectMap["*"].effect !== "none" ? 1 : 0) +
+    (scene3DRender.motion.blur || scene3DRender.motion.speedLines ? 1 : 0),
+  );
 </script>
 
 <section class="effects-settings">
@@ -186,62 +146,61 @@
     {/each}
   </div>
 
-  <!-- Trail Mode Toggle (when trails enabled) -->
-  {#if config.trails.enabled}
+  <!-- Trail Mode + Tracking (when trails enabled globally) -->
+  {#if isEnabled("trails") && !performer}
     <div class="sub-control">
       <span class="sub-label">{t("viewer3d_color")}</span>
       <div class="mode-chips">
         <button
           class="mode-chip"
-          class:active={isRainbow}
-          onclick={() => config.setTrailMode("rainbow")}
+          class:active={config.trails.rainbow}
+          onclick={() => config.updateTrails({ rainbow: true })}
           aria-label="Trail color: Rainbow"
-          aria-pressed={isRainbow}
+          aria-pressed={config.trails.rainbow}
         >
           Rainbow
         </button>
         <button
           class="mode-chip"
-          class:active={!isRainbow}
-          onclick={() => config.setTrailMode("color")}
+          class:active={!config.trails.rainbow}
+          onclick={() => config.updateTrails({ rainbow: false })}
           aria-label="Trail color: Solid"
-          aria-pressed={!isRainbow}
+          aria-pressed={!config.trails.rainbow}
         >
           Solid
         </button>
       </div>
     </div>
 
-    <!-- Trail Tracking Mode (which end(s) to track) -->
     <div class="sub-control">
       <span class="sub-label">{t("viewer3d_track")}</span>
       <div class="mode-chips triple">
         <button
           class="mode-chip"
-          class:active={trackingModeLabel === "left"}
-          onclick={() => config.setTrackingMode("left")}
+          class:active={config.trails.trackingMode === "left_end"}
+          onclick={() => config.updateTrails({ trackingMode: "left_end" })}
           aria-label="Track left end only"
-          aria-pressed={trackingModeLabel === "left"}
+          aria-pressed={config.trails.trackingMode === "left_end"}
           title="Track left end only"
         >
           Left
         </button>
         <button
           class="mode-chip"
-          class:active={trackingModeLabel === "both"}
-          onclick={() => config.setTrackingMode("both")}
+          class:active={config.trails.trackingMode === "both_ends"}
+          onclick={() => config.updateTrails({ trackingMode: "both_ends" })}
           aria-label="Track both ends"
-          aria-pressed={trackingModeLabel === "both"}
+          aria-pressed={config.trails.trackingMode === "both_ends"}
           title="Track both ends"
         >
           Both
         </button>
         <button
           class="mode-chip"
-          class:active={trackingModeLabel === "right"}
-          onclick={() => config.setTrackingMode("right")}
+          class:active={config.trails.trackingMode === "right_end"}
+          onclick={() => config.updateTrails({ trackingMode: "right_end" })}
           aria-label="Track right end only"
-          aria-pressed={trackingModeLabel === "right"}
+          aria-pressed={config.trails.trackingMode === "right_end"}
           title="Track right end only"
         >
           Right
@@ -277,9 +236,9 @@
         {count} effect{count > 1 ? "s" : ""} active
       </div>
     {/if}
-  {:else if config.enabledCount > 0}
+  {:else if globalEnabledCount > 0}
     <div class="active-count">
-      {config.enabledCount} effect{config.enabledCount > 1 ? "s" : ""} active
+      {globalEnabledCount} effect{globalEnabledCount > 1 ? "s" : ""} active
     </div>
   {/if}
 </section>
