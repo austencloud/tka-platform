@@ -52,6 +52,7 @@ Last audit: 2025-12-27
   import AnimatorCanvasSelf from "./AnimatorCanvas.svelte";
   import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
   import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
+  import { tryGetViewerVisibilityContext } from "$lib/shared/sequence-viewer/context/viewer-visibility-context";
 
   // Props
   let {
@@ -281,6 +282,18 @@ Last audit: 2025-12-27
   const inheritedEffectsConfig = getEffectsConfigContext();
   $effect.pre(() => {
     engine.setEffectsConfigState(effectsConfigState ?? inheritedEffectsConfig ?? null);
+  });
+
+  // Push viewer-scoped motion visibility into the engine whenever the toggle
+  // changes. Reads tryGet so AnimatorCanvas still works outside the viewer
+  // (landing page, browse previews) — context absent → method never called.
+  const viewerVisibilityCtx = tryGetViewerVisibilityContext();
+  $effect(() => {
+    if (!viewerVisibilityCtx) return;
+    engine.setMotionVisibility(
+      viewerVisibilityCtx.blueMotion,
+      viewerVisibilityCtx.redMotion,
+    );
   });
 
   // Initialize visibility state via $effect.pre to avoid state_referenced_locally on visibilityManager
