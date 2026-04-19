@@ -32,6 +32,9 @@ export interface ImageCompositionSettings {
   // QR code in empty cell under start position
   showQRCode: boolean;
 
+  // Mandala fills empty col-0 cells with per-hand path visualizations
+  showMandala: boolean;
+
   // Start position layout: "row" = top row, "column" = left column
   startPositionLayout: "row" | "column";
 
@@ -67,6 +70,9 @@ const DEFAULT_SETTINGS: ImageCompositionSettings = {
 
   // QR code - shown by default in the empty cell under start position
   showQRCode: true,
+
+  // Mandala - shown by default (fills empty cells with path visualizations)
+  showMandala: true,
 
   // Start position layout - default to column (start as left column, beats fill remaining columns)
   startPositionLayout: "column" as const,
@@ -222,7 +228,7 @@ class ImageCompositionStateManager {
   }
 
   get includeStartPosition(): boolean {
-    return this.settings.includeStartPosition;
+    return true;
   }
 
   /**
@@ -264,6 +270,10 @@ class ImageCompositionStateManager {
 
   get showQRCode(): boolean {
     return this.settings.showQRCode;
+  }
+
+  get showMandala(): boolean {
+    return this.settings.showMandala;
   }
 
   get startPositionLayout(): "row" | "column" {
@@ -353,6 +363,12 @@ class ImageCompositionStateManager {
 
   setShowQRCode(value: boolean): void {
     this.settings.showQRCode = value;
+    this.saveToStorage();
+    this.notifyObservers();
+  }
+
+  setShowMandala(value: boolean): void {
+    this.settings.showMandala = value;
     this.saveToStorage();
     this.notifyObservers();
   }
