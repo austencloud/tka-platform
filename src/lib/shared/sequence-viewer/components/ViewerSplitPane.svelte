@@ -26,6 +26,8 @@
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { createEffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
   import { setEffectsConfigContext, getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
+  import { createScene3DRenderState } from "$lib/shared/3d/scene-features/state/scene-3d-render-state.svelte";
+  import { setScene3DRenderContext, getScene3DRenderContext } from "$lib/shared/3d/scene-features/state/scene-3d-render-context";
   import { snapshotConfigFromVm, bindVmToEffectsConfig } from "$lib/shared/effects/compat/vm-shim";
   import { seedTrailsFromAnimationSettings } from "$lib/shared/effects/compat/animation-settings-shim";
 
@@ -72,6 +74,13 @@
   if (!inheritedEffectsConfig) {
     seedTrailsFromAnimationSettings(effectsConfigState);
     setEffectsConfigContext(effectsConfigState);
+  }
+
+  // Scene-wide 3D render modifiers (motion blur + speed lines).
+  // Inherit from parent context when present; otherwise own it.
+  const inheritedScene3DRender = getScene3DRenderContext();
+  if (!inheritedScene3DRender) {
+    setScene3DRenderContext(createScene3DRenderState());
   }
 
   $effect(() => {
