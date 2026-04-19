@@ -39,7 +39,7 @@
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
-  import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import { tryGetViewerVisibilityContext } from "../context/viewer-visibility-context";
   import { simplifyAndTruncate } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
   import { calculateTimelineRowsByBeatCount } from "$lib/features/create/shared/workspace-panel/sequence-display/utils/grid-calculations";
   import type { TimelineRow } from "$lib/features/create/shared/workspace-panel/sequence-display/utils/grid-calculations";
@@ -288,28 +288,19 @@
   // Glyph visibility — VTG/elemental/positions read from VM too so toggling
   // those in the export panel invalidates the preview cache.
   const vm = getVisibilityStateManager();
-  let motionVisibilityVersion = $state(0);
   let glyphVisibilityVersion = $state(0);
-  function onMotionVisibilityChanged(): void { motionVisibilityVersion++; }
   function onGlyphVisibilityChanged(): void { glyphVisibilityVersion++; }
-  vm.registerObserver(onMotionVisibilityChanged, ["motion"]);
   vm.registerObserver(onGlyphVisibilityChanged, ["glyph"]);
   onDestroy(() => {
-    vm.unregisterObserver(onMotionVisibilityChanged);
     vm.unregisterObserver(onGlyphVisibilityChanged);
   });
-  const allMotionsVisible = $derived.by(() => {
-    void motionVisibilityVersion;
-    return vm.areAllMotionsVisible();
-  });
-  const showBlueMotion = $derived.by(() => {
-    void motionVisibilityVersion;
-    return vm.getMotionVisibility(MotionColor.BLUE);
-  });
-  const showRedMotion = $derived.by(() => {
-    void motionVisibilityVersion;
-    return vm.getMotionVisibility(MotionColor.RED);
-  });
+
+  // Motion visibility: viewer-scoped. When rendered outside a viewer
+  // (browse previews, export pipeline), fall back to always-visible.
+  const viewerVisibility = tryGetViewerVisibilityContext();
+  const showBlueMotion = $derived(viewerVisibility?.blueMotion ?? true);
+  const showRedMotion = $derived(viewerVisibility?.redMotion ?? true);
+  const allMotionsVisible = $derived(showBlueMotion && showRedMotion);
   const showVTG = $derived.by(() => {
     void glyphVisibilityVersion;
     return vm.getRawGlyphVisibility("vtgGlyph");
