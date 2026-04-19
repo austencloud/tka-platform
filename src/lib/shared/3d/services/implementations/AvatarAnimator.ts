@@ -411,9 +411,23 @@ export class AvatarAnimator implements IAvatarAnimator {
     const maxIKWeight = Math.max(this.leftArmIK.weight, this.rightArmIK.weight);
 
     if (this._spineTwistEnabled && this.spineTwister && this.spineRestCached && maxIKWeight > 0.001) {
+      // When one hand is hidden (its prop was toggled off), its targetPosition
+      // is stale from the last time that prop was set. Feeding it to SpineTwister
+      // makes the head/torso turn toward a prop that isn't there. Collapse the
+      // hidden hand onto the visible one so the twist orients toward the single
+      // visible prop instead.
+      const leftVisible = this.leftArmIK.targetWeight > 0.001;
+      const rightVisible = this.rightArmIK.targetWeight > 0.001;
+      const effectiveLeft = leftVisible
+        ? pose.leftHand.targetPosition
+        : pose.rightHand.targetPosition;
+      const effectiveRight = rightVisible
+        ? pose.rightHand.targetPosition
+        : pose.leftHand.targetPosition;
+
       const twistResult = this.spineTwister.computeSpineTwist(
-        pose.leftHand.targetPosition,
-        pose.rightHand.targetPosition,
+        effectiveLeft,
+        effectiveRight,
         bodyCenter,
         this.availableSpineBones
       );
