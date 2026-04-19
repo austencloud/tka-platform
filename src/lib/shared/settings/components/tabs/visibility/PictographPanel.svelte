@@ -10,29 +10,23 @@
   import { examplePictographData } from "./example-data";
 
   interface Props {
-    blueMotionVisible: boolean;
-    redMotionVisible: boolean;
     showGrid: boolean;
     tkaGlyphVisible: boolean;
     vtgGlyphVisible: boolean;
     positionsGlyphVisible: boolean;
     reversalIndicatorsVisible: boolean;
     nonRadialVisible: boolean;
-    allMotionsVisible: boolean;
     onToggle: (key: string) => void;
     isMobileHidden?: boolean;
   }
 
   let {
-    blueMotionVisible,
-    redMotionVisible,
     showGrid,
     tkaGlyphVisible,
     vtgGlyphVisible,
     positionsGlyphVisible,
     reversalIndicatorsVisible,
     nonRadialVisible,
-    allMotionsVisible,
     onToggle,
     isMobileHidden = false,
   }: Props = $props();
@@ -67,31 +61,6 @@
 
   <!-- Controls -->
   <div class="panel-controls">
-    <!-- Motions group -->
-    <div class="control-group">
-      <span class="group-label">Motions</span>
-      <div class="toggle-grid">
-        <button
-          class="toggle-btn"
-          class:active={blueMotionVisible}
-          onclick={() => onToggle("blue")}
-          aria-pressed={blueMotionVisible}
-        >
-          <span class="chip-dot" style="background: #2563eb;"></span>
-          Blue
-        </button>
-        <button
-          class="toggle-btn"
-          class:active={redMotionVisible}
-          onclick={() => onToggle("red")}
-          aria-pressed={redMotionVisible}
-        >
-          <span class="chip-dot" style="background: #dc2626;"></span>
-          Red
-        </button>
-      </div>
-    </div>
-
     <!-- Grid & Points group -->
     <div class="control-group">
       <span class="group-label">Grid & Points</span>
@@ -120,14 +89,10 @@
     <!-- Glyphs group -->
     <div class="control-group">
       <span class="group-label">Glyphs</span>
-      {#if !allMotionsVisible}
-        <p class="hint">Some glyphs need both motions visible</p>
-      {/if}
       <div class="toggle-grid">
         <button
           class="toggle-btn"
           class:active={tkaGlyphVisible}
-          disabled={!allMotionsVisible}
           onclick={() => onToggle("tka")}
           aria-pressed={tkaGlyphVisible}
         >
@@ -137,7 +102,6 @@
         <button
           class="toggle-btn"
           class:active={vtgGlyphVisible}
-          disabled={!allMotionsVisible}
           onclick={() => onToggle("vtg")}
           aria-pressed={vtgGlyphVisible}
         >
@@ -147,7 +111,6 @@
         <button
           class="toggle-btn"
           class:active={positionsGlyphVisible}
-          disabled={!allMotionsVisible}
           onclick={() => onToggle("positions")}
           aria-pressed={positionsGlyphVisible}
         >
@@ -322,21 +285,6 @@
   .toggle-btn:focus-visible {
     outline: 2px solid color-mix(in srgb, var(--theme-accent) 50%, transparent);
     outline-offset: 2px;
-  }
-
-  .chip-dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    flex-shrink: 0;
-  }
-
-  .hint {
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    font-style: italic;
-    margin: 0;
-    padding: 4px 0;
   }
 
   @media (prefers-reduced-motion: reduce) {
