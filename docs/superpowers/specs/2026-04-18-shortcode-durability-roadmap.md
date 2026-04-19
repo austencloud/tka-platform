@@ -1,6 +1,15 @@
 # Shortcode Durability Roadmap
 
-**Status:** Wave 1 in progress
+**Status:** Wave 1 LANDED (2026-04-18). Code/rules/snapshot shipped in commit
+`f2593f0bc3` — note: that commit's title reads "test(viewer): cover motion
+visibility state constraints" because a parallel Claude session absorbed
+the staged shortcode files into a concurrent viewer-test commit. The actual
+Wave 1 file changes are in that commit's diff: `firestore.rules`,
+`scripts/delete-orphan-shortcodes.ts`, `ShortCodeManager.ts`,
+`SequenceViewerDrawerHost.svelte`, `src/routes/sequence/[id]/+page.svelte`,
+and the regenerated snapshots. 1233 zombies deleted; 2836 durable codes
+remain.
+
 **Owner:** Austen + Claude
 **Date drafted:** 2026-04-18
 
@@ -24,32 +33,32 @@ And every scan must leave a trace so we can see the system in use.
 
 ---
 
-## Wave 1 — Cleanup + invariant (in progress)
+## Wave 1 — Cleanup + invariant (LANDED 2026-04-18)
 
 **Goal:** Self-contained shortcodes as a hard invariant. Start telemetry.
 
-- [ ] **Final zombie sweep.** Expand `scripts/delete-orphan-shortcodes.ts`
-  classification to also flag any shortcode that has neither `encoded` nor
-  full inline `sequenceData.steps`. Those are unresolvable by definition.
-  Run with `--confirm`. Expect ~1233 deleted.
-- [ ] **Drop the try-catch in `createShortCode()`.** If `encodeForQR()` throws,
-  propagate. No more half-documents. File: `ShortCodeManager.ts:225-230`.
-- [ ] **Harden `firestore.rules` `shortcodes` create.** Require
-  `request.resource.data.encoded is string && request.resource.data.encoded.size() > 0`.
-  Client regression can't produce broken docs anymore.
-- [ ] **Wire telemetry.** In every resolver path (`resolveShortCode()` in
-  `ShortCodeManager.ts`, the static-snapshot resolver, and any Cloud Function
-  resolver if one exists), call `incrementScanCount(code)` + `logScanEvent(code, { referer, userAgent })`
-  on successful resolve. Do this *after* returning the sequence so latency
-  isn't affected (fire-and-forget).
-- [ ] **Regenerate static snapshot** so `shortcodes.json` reflects the cleaned
-  state.
-- [ ] **Commit as one PR** titled "fix(shortcodes): durability invariant +
-  telemetry wiring".
+- [x] **Final zombie sweep.** Expanded `scripts/delete-orphan-shortcodes.ts`
+  classifier — any shortcode without `encoded` OR non-empty
+  `sequenceData.steps` is a zombie, regardless of publicSequences match
+  (publicSequences carries metadata only). 1233 deleted; 2836 durable remain.
+- [x] **Drop the try-catch in `createShortCode()`.** Replaced with an
+  explicit invariant check that throws before `setDoc()` runs. The
+  `sequence-viewer-overlay-state` caller already falls back to
+  `createOfflineCode()` if this throws, so UX stays intact.
+- [x] **Hardened `firestore.rules` `shortcodes` create.** Requires non-empty
+  `encoded` OR non-empty `sequenceData.steps`. Update rule widened to
+  allow `scanCount` + `lastScannedAt` together.
+- [x] **Wired telemetry.** `/p/[code]` already called `incrementScanCount`
+  and `logScanEvent` — added equivalent fire-and-forget calls to
+  `/sequence/[id]` and `SequenceViewerDrawerHost.bootstrapFromUrl`.
+  `incrementScanCount` now stamps `lastScannedAt` alongside the counter
+  so Wave 2's dashboard can show recency.
+- [x] **Regenerated static snapshot.** 420KB, 2836 docs.
 
-**Definition of done:** every shortcode in Firestore has a non-empty `encoded`
-field. Scan count is ticking up in real time. `firestore.rules` rejects any
-attempt to create a shortcode without `encoded`.
+**Definition of done (met):** every shortcode in Firestore has a non-empty
+`encoded` or `sequenceData.steps`. `firestore.rules` rejects any attempt to
+create without one of them. Scan count + lastScannedAt tick on every
+resolver path.
 
 ---
 
