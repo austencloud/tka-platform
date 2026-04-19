@@ -7,7 +7,7 @@ import {
 } from "../../src/lib/shared/animation-engine/components/effects-panel/effect-primary-param";
 
 describe("effect-primary-param", () => {
-  it("has an entry for all 10 effects", () => {
+  it("has an entry for all 11 effects", () => {
     const ids = Object.keys(PRIMARY_PARAMS).sort();
     expect(ids).toEqual([
       "bloom",
@@ -16,6 +16,7 @@ describe("effect-primary-param", () => {
       "echo",
       "fire",
       "led",
+      "petals",
       "sparkles",
       "trails",
       "water",
@@ -67,6 +68,7 @@ describe("effect-primary-param", () => {
     ["bloom", 0.8],
     ["water", 0.2],
     ["bubbles", 0.55],
+    ["petals", 0.42],
   ])("%s primary param round-trips to %f", (id, value) => {
     const s = createEffectsConfigState();
     setPrimaryParam(id as string, s, value as number);

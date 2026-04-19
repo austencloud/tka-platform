@@ -34,6 +34,7 @@
   import { BLOOM_PRESET_GROUP } from "./presets/bloom-presets";
   import { WATER_PRESET_GROUP } from "./presets/water-presets";
   import { BUBBLES_PRESET_GROUP } from "./presets/bubbles-presets";
+  import { PETALS_PRESET_GROUP } from "./presets/petals-presets";
   import type { EffectPresetGroup } from "./presets/types";
   import LedCustomize from "./customize/LedCustomize.svelte";
   import FireCustomize from "./customize/FireCustomize.svelte";
@@ -45,6 +46,7 @@
   import BloomCustomize from "./customize/BloomCustomize.svelte";
   import WaterCustomize from "./customize/WaterCustomize.svelte";
   import BubblesCustomize from "./customize/BubblesCustomize.svelte";
+  import PetalsCustomize from "./customize/PetalsCustomize.svelte";
 
   const vm = getAnimationVisibilityManager();
   const effectsConfigState = getEffectsConfigContext();
@@ -124,6 +126,8 @@
         return WATER_PRESET_GROUP;
       case "bubbles":
         return BUBBLES_PRESET_GROUP;
+      case "petals":
+        return PETALS_PRESET_GROUP;
       default:
         return null;
     }
@@ -207,6 +211,8 @@
       <WaterCustomize onBack={() => (customizeOpen = false)} />
     {:else if activeEffect === "bubbles"}
       <BubblesCustomize onBack={() => (customizeOpen = false)} />
+    {:else if activeEffect === "petals"}
+      <PetalsCustomize onBack={() => (customizeOpen = false)} />
     {/if}
   {:else}
     <div class="fx-strip" role="radiogroup" aria-label="Select effect">
