@@ -2,7 +2,7 @@
  * Pictograph Context Menu Builder
  *
  * Inline visibility toggles for pictograph right-click menu.
- * Submenus for Motions, Grid & Points, Glyphs. Direct toggle for Step Numbers.
+ * Submenus for Grid & Points, Glyphs. Direct toggle for Step Numbers.
  * Optional arrow adjustment items (admin only).
  */
 
@@ -11,36 +11,12 @@ import type {
   ContextMenuItem,
 } from "$lib/shared/components/context-menu/context-menu-types";
 import type { VisibilityStateManager } from "../../state/visibility-state.svelte";
-import { MotionColor } from "../../domain/enums/pictograph-enums";
 
 interface PictographContextMenuDeps {
   visibilityManager: VisibilityStateManager;
   onAdjustArrow?: (color: "blue" | "red") => void;
   /** True if the user is admin and the pictograph has motions (not a blank/start beat) */
   showArrowAdjustment?: boolean;
-}
-
-function buildMotionChildren(vm: VisibilityStateManager): ContextMenuItem[] {
-  return [
-    {
-      id: "toggle-blue-motion",
-      label: "Blue Motion",
-      icon: "fa-circle",
-      iconColor: "#2563eb",
-      checked: vm.getMotionVisibility(MotionColor.BLUE),
-      keepOpen: true,
-      action: () => vm.setMotionVisibility(MotionColor.BLUE, !vm.getMotionVisibility(MotionColor.BLUE)),
-    },
-    {
-      id: "toggle-red-motion",
-      label: "Red Motion",
-      icon: "fa-circle",
-      iconColor: "#dc2626",
-      checked: vm.getMotionVisibility(MotionColor.RED),
-      keepOpen: true,
-      action: () => vm.setMotionVisibility(MotionColor.RED, !vm.getMotionVisibility(MotionColor.RED)),
-    },
-  ];
 }
 
 function buildGridChildren(vm: VisibilityStateManager): ContextMenuItem[] {
@@ -121,12 +97,6 @@ export function buildPictographContextMenuItems(
   const vm = deps.visibilityManager;
 
   const items: ContextMenuEntry[] = [
-    {
-      id: "motions-submenu",
-      label: "Motions",
-      icon: "fa-arrows-spin",
-      children: buildMotionChildren(vm),
-    },
     {
       id: "grid-submenu",
       label: "Grid & Points",
