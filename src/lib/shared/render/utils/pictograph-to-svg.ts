@@ -61,6 +61,10 @@ export interface PictographVisibilityOptions {
   baseGridOnly?: boolean;
   /** Render as hand path visualization (HAND props, float arrows, no TKA) */
   handPathMode?: boolean;
+  /** Show blue motion (prop + arrow). When false, renderer skips blue entirely. Default: true. */
+  showBlueMotion?: boolean;
+  /** Show red motion (prop + arrow). When false, renderer skips red entirely. Default: true. */
+  showRedMotion?: boolean;
 }
 
 /**
@@ -122,6 +126,12 @@ export async function renderPictographToSVG(
       // Pass explicit prop types through to PictographPreparer for consistency during async rendering
       componentProps.bluePropTypeOverride = visibilityOptions.bluePropType;
       componentProps.redPropTypeOverride = visibilityOptions.redPropType;
+      if (visibilityOptions.showBlueMotion !== undefined) {
+        componentProps.showBlueMotion = visibilityOptions.showBlueMotion;
+      }
+      if (visibilityOptions.showRedMotion !== undefined) {
+        componentProps.showRedMotion = visibilityOptions.showRedMotion;
+      }
     }
 
     // Mount PictographContainer with explicit visibility settings

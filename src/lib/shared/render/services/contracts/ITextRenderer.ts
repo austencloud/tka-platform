@@ -1,4 +1,5 @@
 import type { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
+import type { LoopRotationSliceSize } from "@tka/render-composition";
 import type {
   TextRenderOptions,
   UserExportInfo as UserInfo,
@@ -36,6 +37,7 @@ export interface ITextRenderer {
    * Simple background with optional level badge indicator
    * @param darkMode - When true, uses dark theme styling (dark bg, light text)
    * @param loopComponents - Optional LOOP components to display as badge on right side
+   * @param rotationSliceSize - When rotated is active, picks fa-arrows-spin (quartered) vs fa-rotate (halved)
    */
   renderWordHeader(
     canvas: HTMLCanvasElement,
@@ -47,7 +49,8 @@ export interface ITextRenderer {
     darkMode?: boolean,
     loopComponents?: Set<LOOPComponent>,
     backgroundColor?: string,
-    borderColor?: string
+    borderColor?: string,
+    rotationSliceSize?: LoopRotationSliceSize
   ): void;
 
   /**

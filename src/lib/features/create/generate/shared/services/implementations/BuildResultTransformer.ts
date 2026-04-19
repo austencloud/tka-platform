@@ -246,6 +246,12 @@ export class BuildResultTransformer implements IBuildResultTransformer {
       turns: engineMotion.turns ?? 0,
       color,
       gridMode: options.gridMode,
+      ...(engineMotion.prefloatMotionType && {
+        prefloatMotionType: this.toMotionType(engineMotion.prefloatMotionType),
+      }),
+      ...(engineMotion.prefloatRotationDirection && {
+        prefloatRotationDirection: this.toRotationDirection(engineMotion.prefloatRotationDirection),
+      }),
     });
   }
 

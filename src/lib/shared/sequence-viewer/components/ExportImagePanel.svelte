@@ -12,6 +12,8 @@
   import { cubicOut } from "svelte/easing";
   import type { ExportOptionsStateManager } from "../state/export-options-state.svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
+  import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
+  import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
   type PanelLayout = "sidebar" | "bottom";
 
@@ -45,11 +47,70 @@
   onDestroy(() => imageComposition.unregisterObserver(onCompositionChanged));
 
   const showWord = $derived.by(() => { void compositionVersion; return imageComposition.addWord; });
-  const includeStart = $derived.by(() => { void compositionVersion; return imageComposition.includeStartPosition; });
   const showDifficulty = $derived.by(() => { void compositionVersion; return imageComposition.addDifficultyLevel; });
   const showCreatorName = $derived.by(() => { void compositionVersion; return imageComposition.showCreatorName; });
   const showNotes = $derived.by(() => { void compositionVersion; return imageComposition.showNotes; });
   const showQRCode = $derived.by(() => { void compositionVersion; return imageComposition.showQRCode; });
+  const showLoopGlyph = $derived.by(() => { void compositionVersion; return imageComposition.showLoopGlyph; });
+  const showBirthday = $derived.by(() => { void compositionVersion; return imageComposition.showBirthday; });
+
+  // Pictograph visibility — sourced from VisibilityManager so this panel
+  // stays in sync with the Visibility tab, context menus, and voice control.
+  const vm = getVisibilityStateManager();
+  let vmVersion = $state(0);
+  function onVmChanged(): void { vmVersion++; }
+  vm.registerObserver(onVmChanged, ["all"]);
+  onDestroy(() => vm.unregisterObserver(onVmChanged));
+
+  const blueMotion = $derived.by(() => { void vmVersion; return vm.getMotionVisibility(MotionColor.BLUE); });
+  const redMotion = $derived.by(() => { void vmVersion; return vm.getMotionVisibility(MotionColor.RED); });
+  const showGrid = $derived.by(() => { void vmVersion; return vm.getGridVisibility(); });
+  const tkaGlyph = $derived.by(() => { void vmVersion; return vm.getRawGlyphVisibility("tkaGlyph"); });
+  const vtgGlyph = $derived.by(() => { void vmVersion; return vm.getRawGlyphVisibility("vtgGlyph"); });
+  const positionsGlyph = $derived.by(() => { void vmVersion; return vm.getRawGlyphVisibility("positionsGlyph"); });
+  const nonRadial = $derived.by(() => { void vmVersion; return vm.getNonRadialVisibility(); });
+
+  // Master toggles: clicking a section label flips all its children.
+  // If any child is on, master is "on" and a click turns everything off;
+  // if all are off, a click turns everything on.
+  const headerAnyOn = $derived(showWord || showDifficulty || showLoopGlyph);
+  const footerAnyOn = $derived(showCreatorName || showNotes || showBirthday);
+  const pictographAnyOn = $derived(
+    blueMotion || redMotion || showGrid || tkaGlyph || vtgGlyph || positionsGlyph || nonRadial
+  );
+
+  function toggleHeader(): void {
+    const target = !headerAnyOn;
+    imageComposition.setAddWord(target);
+    imageComposition.setAddDifficultyLevel(target);
+    imageComposition.setShowLoopGlyph(target);
+  }
+
+  function toggleFooter(): void {
+    const target = !footerAnyOn;
+    imageComposition.setShowCreatorName(target);
+    imageComposition.setShowNotes(target);
+    imageComposition.setShowBirthday(target);
+  }
+
+  function togglePictograph(): void {
+    const target = !pictographAnyOn;
+    vm.setMotionVisibility(MotionColor.BLUE, target);
+    vm.setMotionVisibility(MotionColor.RED, target);
+    vm.setGridVisibility(target);
+    vm.setGlyphVisibility("tkaGlyph", target);
+    vm.setGlyphVisibility("vtgGlyph", target);
+    vm.setGlyphVisibility("elementalGlyph", target);
+    vm.setGlyphVisibility("positionsGlyph", target);
+    vm.setNonRadialVisibility(target);
+  }
+
+  // VTG and elemental glyphs move together (matching VisibilityTab behavior).
+  function toggleVtg(): void {
+    const next = !vtgGlyph;
+    vm.setGlyphVisibility("vtgGlyph", next);
+    vm.setGlyphVisibility("elementalGlyph", next);
+  }
 
   /** Summary of current settings for the bottom bar chip */
   const settingsSummary = $derived.by(() => {
@@ -115,22 +176,35 @@
         </div>
 
         <div class="inline-settings-body">
-          <!-- Include toggles — write through to the global visibility settings -->
+          <!-- Header section -->
           <div class="setting-row">
-            <span class="setting-label">Include</span>
+            <button type="button" class="setting-label section-toggle" class:on={headerAnyOn}
+              onclick={toggleHeader} aria-pressed={headerAnyOn}
+              aria-label={headerAnyOn ? "Hide all header elements" : "Show all header elements"}
+            >Header</button>
             <div class="chip-group">
               <button type="button" class="chip" class:active={showWord}
                 onclick={() => imageComposition.setAddWord(!showWord)}
                 aria-pressed={showWord}
               >Word</button>
-              <button type="button" class="chip" class:active={includeStart}
-                onclick={() => imageComposition.setIncludeStartPosition(!includeStart)}
-                aria-pressed={includeStart}
-              >Start</button>
               <button type="button" class="chip" class:active={showDifficulty}
                 onclick={() => imageComposition.setAddDifficultyLevel(!showDifficulty)}
                 aria-pressed={showDifficulty}
               >Level</button>
+              <button type="button" class="chip" class:active={showLoopGlyph}
+                onclick={() => imageComposition.setShowLoopGlyph(!showLoopGlyph)}
+                aria-pressed={showLoopGlyph}
+              >LOOP</button>
+            </div>
+          </div>
+
+          <!-- Footer section -->
+          <div class="setting-row">
+            <button type="button" class="setting-label section-toggle" class:on={footerAnyOn}
+              onclick={toggleFooter} aria-pressed={footerAnyOn}
+              aria-label={footerAnyOn ? "Hide all footer elements" : "Show all footer elements"}
+            >Footer</button>
+            <div class="chip-group">
               <button type="button" class="chip" class:active={showCreatorName}
                 onclick={() => imageComposition.setShowCreatorName(!showCreatorName)}
                 aria-pressed={showCreatorName}
@@ -139,10 +213,59 @@
                 onclick={() => imageComposition.setShowNotes(!showNotes)}
                 aria-pressed={showNotes}
               >Notes</button>
+              <button type="button" class="chip" class:active={showBirthday}
+                onclick={() => imageComposition.setShowBirthday(!showBirthday)}
+                aria-pressed={showBirthday}
+              >Date</button>
+            </div>
+          </div>
+
+          <!-- Pictograph section -->
+          <div class="setting-row">
+            <button type="button" class="setting-label section-toggle" class:on={pictographAnyOn}
+              onclick={togglePictograph} aria-pressed={pictographAnyOn}
+              aria-label={pictographAnyOn ? "Hide all pictograph elements" : "Show all pictograph elements"}
+            >Pictograph</button>
+            <div class="chip-group">
+              <button type="button" class="chip" class:active={blueMotion}
+                onclick={() => vm.setMotionVisibility(MotionColor.BLUE, !blueMotion)}
+                aria-pressed={blueMotion}
+              >Blue</button>
+              <button type="button" class="chip" class:active={redMotion}
+                onclick={() => vm.setMotionVisibility(MotionColor.RED, !redMotion)}
+                aria-pressed={redMotion}
+              >Red</button>
+              <button type="button" class="chip" class:active={showGrid}
+                onclick={() => vm.setGridVisibility(!showGrid)}
+                aria-pressed={showGrid}
+              >Grid</button>
+              <button type="button" class="chip" class:active={tkaGlyph}
+                onclick={() => vm.setGlyphVisibility("tkaGlyph", !tkaGlyph)}
+                aria-pressed={tkaGlyph}
+              >TKA</button>
+              <button type="button" class="chip" class:active={vtgGlyph}
+                onclick={toggleVtg}
+                aria-pressed={vtgGlyph}
+              >VTG</button>
+              <button type="button" class="chip" class:active={positionsGlyph}
+                onclick={() => vm.setGlyphVisibility("positionsGlyph", !positionsGlyph)}
+                aria-pressed={positionsGlyph}
+              >Positions</button>
+              <button type="button" class="chip" class:active={nonRadial}
+                onclick={() => vm.setNonRadialVisibility(!nonRadial)}
+                aria-pressed={nonRadial}
+              >Non-radial</button>
+            </div>
+          </div>
+
+          <!-- QR code (standalone — it's a grid cell, not a banner) -->
+          <div class="setting-row">
+            <span class="setting-label">QR</span>
+            <div class="chip-group">
               <button type="button" class="chip" class:active={showQRCode}
                 onclick={() => imageComposition.setShowQRCode(!showQRCode)}
                 aria-pressed={showQRCode}
-              >QR</button>
+              >QR Code</button>
             </div>
           </div>
 
@@ -239,21 +362,35 @@
     {/if}
 
     <div class="panel-body">
+      <!-- Header section -->
       <div class="setting-row">
-        <span class="setting-label">Include</span>
+        <button type="button" class="setting-label section-toggle" class:on={headerAnyOn}
+          onclick={toggleHeader} aria-pressed={headerAnyOn}
+          aria-label={headerAnyOn ? "Hide all header elements" : "Show all header elements"}
+        >Header</button>
         <div class="chip-group">
           <button type="button" class="chip" class:active={showWord}
             onclick={() => imageComposition.setAddWord(!showWord)}
             aria-pressed={showWord}
           >Word</button>
-          <button type="button" class="chip" class:active={includeStart}
-            onclick={() => imageComposition.setIncludeStartPosition(!includeStart)}
-            aria-pressed={includeStart}
-          >Start</button>
           <button type="button" class="chip" class:active={showDifficulty}
             onclick={() => imageComposition.setAddDifficultyLevel(!showDifficulty)}
             aria-pressed={showDifficulty}
           >Level</button>
+          <button type="button" class="chip" class:active={showLoopGlyph}
+            onclick={() => imageComposition.setShowLoopGlyph(!showLoopGlyph)}
+            aria-pressed={showLoopGlyph}
+          >LOOP</button>
+        </div>
+      </div>
+
+      <!-- Footer section -->
+      <div class="setting-row">
+        <button type="button" class="setting-label section-toggle" class:on={footerAnyOn}
+          onclick={toggleFooter} aria-pressed={footerAnyOn}
+          aria-label={footerAnyOn ? "Hide all footer elements" : "Show all footer elements"}
+        >Footer</button>
+        <div class="chip-group">
           <button type="button" class="chip" class:active={showCreatorName}
             onclick={() => imageComposition.setShowCreatorName(!showCreatorName)}
             aria-pressed={showCreatorName}
@@ -262,10 +399,59 @@
             onclick={() => imageComposition.setShowNotes(!showNotes)}
             aria-pressed={showNotes}
           >Notes</button>
+          <button type="button" class="chip" class:active={showBirthday}
+            onclick={() => imageComposition.setShowBirthday(!showBirthday)}
+            aria-pressed={showBirthday}
+          >Date</button>
+        </div>
+      </div>
+
+      <!-- Pictograph section -->
+      <div class="setting-row">
+        <button type="button" class="setting-label section-toggle" class:on={pictographAnyOn}
+          onclick={togglePictograph} aria-pressed={pictographAnyOn}
+          aria-label={pictographAnyOn ? "Hide all pictograph elements" : "Show all pictograph elements"}
+        >Pictograph</button>
+        <div class="chip-group">
+          <button type="button" class="chip" class:active={blueMotion}
+            onclick={() => vm.setMotionVisibility(MotionColor.BLUE, !blueMotion)}
+            aria-pressed={blueMotion}
+          >Blue</button>
+          <button type="button" class="chip" class:active={redMotion}
+            onclick={() => vm.setMotionVisibility(MotionColor.RED, !redMotion)}
+            aria-pressed={redMotion}
+          >Red</button>
+          <button type="button" class="chip" class:active={showGrid}
+            onclick={() => vm.setGridVisibility(!showGrid)}
+            aria-pressed={showGrid}
+          >Grid</button>
+          <button type="button" class="chip" class:active={tkaGlyph}
+            onclick={() => vm.setGlyphVisibility("tkaGlyph", !tkaGlyph)}
+            aria-pressed={tkaGlyph}
+          >TKA</button>
+          <button type="button" class="chip" class:active={vtgGlyph}
+            onclick={toggleVtg}
+            aria-pressed={vtgGlyph}
+          >VTG</button>
+          <button type="button" class="chip" class:active={positionsGlyph}
+            onclick={() => vm.setGlyphVisibility("positionsGlyph", !positionsGlyph)}
+            aria-pressed={positionsGlyph}
+          >Positions</button>
+          <button type="button" class="chip" class:active={nonRadial}
+            onclick={() => vm.setNonRadialVisibility(!nonRadial)}
+            aria-pressed={nonRadial}
+          >Non-radial</button>
+        </div>
+      </div>
+
+      <!-- QR code (standalone — it's a grid cell, not a banner) -->
+      <div class="setting-row">
+        <span class="setting-label">QR</span>
+        <div class="chip-group">
           <button type="button" class="chip" class:active={showQRCode}
             onclick={() => imageComposition.setShowQRCode(!showQRCode)}
             aria-pressed={showQRCode}
-          >QR</button>
+          >QR Code</button>
         </div>
       </div>
 
@@ -555,6 +741,34 @@
     text-transform: uppercase;
     letter-spacing: 0.05em;
     flex-shrink: 0;
+  }
+
+  /* A setting-label that doubles as a master toggle for its section.
+   * Dim when the section is all-off; accent tint when any child is on. */
+  button.setting-label.section-toggle {
+    appearance: none;
+    background: transparent;
+    border: none;
+    padding: 4px 0;
+    text-align: left;
+    font-family: inherit;
+    cursor: pointer;
+    transition: color 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  button.setting-label.section-toggle:hover {
+    color: var(--theme-text, rgba(255, 255, 255, 0.9));
+  }
+
+  button.setting-label.section-toggle.on {
+    color: var(--theme-accent, #6366f1);
+  }
+
+  button.setting-label.section-toggle:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--theme-accent, #6366f1) 50%, transparent);
+    outline-offset: 2px;
+    border-radius: 4px;
   }
 
   .chip-group {

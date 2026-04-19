@@ -72,14 +72,15 @@ export class CellCacheKeyDeriver implements ICellCacheKeyDeriver {
       options.browseViewMode ? `vm-${options.browseViewMode.subject}-${options.browseViewMode.granularity}-${options.browseViewMode.color}` : "",
     ];
 
-    return `lsp8-${pictographHash}:${cellParts.join("|")}`;
+    return `lsp9-${pictographHash}:${cellParts.join("|")}`;
   }
 
   /**
    * Maps PreviewCellRenderOptions + isDark to PictographVisibilityOptions.
    *
    * Resolves catDogMode (the hasher receives an already-resolved redPropType).
-   * Hardcodes VTG, elemental, and positions to false (preview cells never show them).
+   * VTG/elemental/positions flow from the export visibility toggles (sourced
+   * from VisibilityStateManager in ChoreoCard) rather than being hardcoded.
    * printMode is always false (preview cells are never print mode).
    *
    * Note: PreviewCellRenderOptions.handPointVisibility is narrowed to "all" | "active".
@@ -91,9 +92,9 @@ export class CellCacheKeyDeriver implements ICellCacheKeyDeriver {
   ): PictographVisibilityOptions {
     return {
       showTKA: options.showTKA ?? true,
-      showVTG: false,
-      showElemental: false,
-      showPositions: false,
+      showVTG: options.showVTG ?? false,
+      showElemental: options.showElemental ?? false,
+      showPositions: options.showPositions ?? false,
       showReversals: options.showReversals ?? true,
       showNonRadialPoints: options.showNonRadialPoints ?? true,
       darkMode: isDark,
@@ -104,6 +105,8 @@ export class CellCacheKeyDeriver implements ICellCacheKeyDeriver {
       handPointVisibility: options.handPointVisibility,
       handPathMode: options.handPathMode,
       printMode: false,
+      showBlueMotion: options.showBlueMotion,
+      showRedMotion: options.showRedMotion,
     };
   }
 }

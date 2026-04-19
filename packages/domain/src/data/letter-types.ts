@@ -8,8 +8,8 @@ export const LETTER_TYPES: Record<string, LetterTypeDefinition> = {
       "Both hands move 90 degrees on the grid",
       "Creates smooth, flowing transitions",
       "22 letters - the largest type",
-      "A-L for symmetric positions (alpha/beta). M-V for asymmetric positions (gamma, and on the 8-point grid: zeta/eta)",
-      "In skewed positions (zeta/eta), ALL Type 1 transitions use M-V because the leader/follower distinction matters"
+      "A-L are Type 1 letters on alpha/beta (the symmetric diamond-grid positions). The split into A-L is by rotation pattern (pro/anti/hybrid in groups of three)",
+      "M-V are Type 1 letters on gamma (the asymmetric diamond-grid position). Gamma's leader/follower distinction is what expands this group to 10 letters vs alpha/beta's 12"
     ],
     letters: ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V"],
     motionPattern: {

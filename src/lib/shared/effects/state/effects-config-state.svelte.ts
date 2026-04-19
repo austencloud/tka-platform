@@ -18,6 +18,7 @@ import type {
   SparklesIntent,
   EchoIntent,
   BloomIntent,
+  WaterIntent,
 } from "../domain/EffectsConfig";
 import type { EffectsPreset } from "../domain/EffectsPreset";
 import type { TipEffectMap } from "$lib/shared/animation-engine/domain/types/TipEffectTypes";
@@ -36,6 +37,7 @@ function mergeConfig(base: EffectsConfig, patch: Partial<EffectsConfig>): Effect
     sparkles: patch.sparkles ? { ...base.sparkles, ...patch.sparkles } : base.sparkles,
     echo: patch.echo ? { ...base.echo, ...patch.echo } : base.echo,
     bloom: patch.bloom ? { ...base.bloom, ...patch.bloom } : base.bloom,
+    water: patch.water ? { ...base.water, ...patch.water } : base.water,
     activePresets: patch.activePresets
       ? { ...base.activePresets, ...patch.activePresets }
       : base.activePresets,
@@ -87,6 +89,11 @@ export function createEffectsConfigState(initial: EffectsConfig = DEFAULT_EFFECT
     config.activePresets.bloom = null;
   }
 
+  function updateWater(patch: Partial<WaterIntent>) {
+    config.water = { ...config.water, ...patch };
+    config.activePresets.water = null;
+  }
+
   function setTipEffectMap(map: TipEffectMap) {
     config.tipEffectMap = map;
   }
@@ -120,6 +127,7 @@ export function createEffectsConfigState(initial: EffectsConfig = DEFAULT_EFFECT
     get sparkles() { return config.sparkles; },
     get echo() { return config.echo; },
     get bloom() { return config.bloom; },
+    get water() { return config.water; },
     get overrides() { return config.overrides; },
     get activePresets() { return config.activePresets; },
 
@@ -131,6 +139,7 @@ export function createEffectsConfigState(initial: EffectsConfig = DEFAULT_EFFECT
     updateSparkles,
     updateEcho,
     updateBloom,
+    updateWater,
     setTipEffectMap,
     applyPreset,
     updateOverride,

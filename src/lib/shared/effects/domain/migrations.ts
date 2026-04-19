@@ -18,6 +18,7 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
     motion?: any;
     echo?: any;
     bloom?: any;
+    water?: any;
   };
   const version = input.version ?? 1;
 
@@ -111,6 +112,9 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
     }
   }
 
+  // v7 → v8: add water intent. No field migration — absent water resolves to
+  // DEFAULT_EFFECTS_CONFIG.water via the merge below.
+
   let out: EffectsConfig = {
     ...DEFAULT_EFFECTS_CONFIG,
     ...input,
@@ -122,6 +126,7 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
     sparkles: { ...DEFAULT_EFFECTS_CONFIG.sparkles, ...(input.sparkles ?? {}) },
     echo: { ...DEFAULT_EFFECTS_CONFIG.echo, ...(input.echo ?? {}) },
     bloom: { ...DEFAULT_EFFECTS_CONFIG.bloom, ...(input.bloom ?? {}) },
+    water: { ...DEFAULT_EFFECTS_CONFIG.water, ...(input.water ?? {}) },
     activePresets: {
       ...DEFAULT_EFFECTS_CONFIG.activePresets,
       ...(input.activePresets ?? {}),

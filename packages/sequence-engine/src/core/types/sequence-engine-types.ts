@@ -120,6 +120,14 @@ export interface MotionData {
   plane?: "wall" | "wheel" | "overhead";
   /** Prop color ("blue" or "red"). Optional — not all contexts track color. */
   color?: string;
+  /**
+   * Original motion type before float conversion. Present only when motionType === "float"
+   * and the source was a shift (pro/anti). Consumers like TurnColorInterpreter need this
+   * to pick the correct slot (pro vs anti) for TYPE1_HYBRID letter turn coloring.
+   */
+  prefloatMotionType?: string;
+  /** Original rotation direction before float conversion; paired with prefloatMotionType. */
+  prefloatRotationDirection?: string;
 }
 
 /**

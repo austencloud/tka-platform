@@ -39,8 +39,8 @@ Last audit: 2025-12-27
   import { getAnimationVisibilityManager, type AnimationVisibilityStateManager } from "../state/animation-visibility-state.svelte";
   import { sequenceLoopabilityChecker } from "$lib/features/compose/services/implementations/SequenceLoopabilityChecker";
   import { SequenceDifficultyCalculator } from "$lib/features/browse/sequences/display/services/implementations/SequenceDifficultyCalculator";
-  import { LOOPTypeResolver } from "$lib/features/create/generate/shared/services/implementations/LOOPTypeResolver";
-  import { loopDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
+  import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";
+  import { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
   import type { FireOverlayConfig } from "../domain/types/FireTypes";
   import type { LedOverlayConfig } from "../domain/types/LedTypes";
   import type { TipEffectMap, TipEffortMap } from "../domain/types/TipEffectTypes";
@@ -51,6 +51,7 @@ Last audit: 2025-12-27
   import { effectErrorSignal } from "../state/effect-error-signal.svelte";
   import AnimatorCanvasSelf from "./AnimatorCanvas.svelte";
   import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
+  import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
 
   // Props
   let {
@@ -275,11 +276,11 @@ Last audit: 2025-12-27
     }
   });
 
-  // Wire the live EffectsConfigState (if provided) before initialize() runs.
-  // The engine reads zap intent from this each frame to re-resolve Zap2DParams
-  // when sliders in ZapCustomize move.
+  // Fall back to ancestor-provided context when no prop is passed so the
+  // customize panel (Zap/Sparkle/Echo/Bloom) actually drives this canvas.
+  const inheritedEffectsConfig = getEffectsConfigContext();
   $effect.pre(() => {
-    engine.setEffectsConfigState(effectsConfigState ?? null);
+    engine.setEffectsConfigState(effectsConfigState ?? inheritedEffectsConfig ?? null);
   });
 
   // Initialize visibility state via $effect.pre to avoid state_referenced_locally on visibilityManager
@@ -335,34 +336,28 @@ Last audit: 2025-12-27
 
   // Difficulty level from sequence data
   const difficultyCalculator = new SequenceDifficultyCalculator();
-  const loopTypeResolver = new LOOPTypeResolver();
 
   const computedDifficultyLevel = $derived.by(() => {
     if (!sequenceData?.steps?.length) return null;
     return difficultyCalculator.calculateDifficultyLevel([...sequenceData.steps]);
   });
 
-  const computedLoopComponents = $derived.by(() => {
-    if (!sequenceData) return null;
-    const loopType = sequenceData.loopType;
-    if (loopType) {
-      const components = loopTypeResolver.parseComponents(loopType);
-      return components.size > 0 ? components : null;
-    }
-    // Auto-detect if no explicit loopType
-    if (sequenceData.steps?.length) {
-      try {
-        const result = loopDetector.detectLOOPType(sequenceData);
-        if (result.loopType) {
-          const components = loopTypeResolver.parseComponents(result.loopType);
-          return components.size > 0 ? components : null;
+  // Shared resolver: same components + slice-aware rotation as every other
+  // LOOP badge surface, cached by sequence id.
+  const loopDisplay = $derived.by(() =>
+    sequenceData
+      ? resolveLoopDisplay(sequenceData)
+      : {
+          components: new Set<LOOPComponent>(),
+          rotationSliceSize: undefined as
+            | import("$lib/features/create/generate/circular/domain/models/circular-models").SliceSize
+            | undefined,
         }
-      } catch {
-        return null;
-      }
-    }
-    return null;
-  });
+  );
+  const computedLoopComponents = $derived(
+    loopDisplay.components.size > 0 ? loopDisplay.components : null
+  );
+  const computedRotationSliceSize = $derived(loopDisplay.rotationSliceSize);
 
   // When an external caller (e.g. video export orchestrator) signals that the
   // fire frame cache is stale, invalidate it so the simulation re-records.
@@ -542,6 +537,7 @@ Last audit: 2025-12-27
         activeStepNumber={currentStep >= 1 && currentStep < (sequenceData?.steps?.length ?? 0) + 0.99 ? Math.floor(currentStep) : null}
         difficultyLevel={computedDifficultyLevel}
         loopComponents={computedLoopComponents}
+        rotationSliceSize={computedRotationSliceSize}
       />
     </div>
 

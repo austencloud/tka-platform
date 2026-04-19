@@ -36,6 +36,15 @@ export interface BaseLayerKeyComponents {
   darkMode: boolean;
   // Size
   size: number;
+  // Per-color motion visibility — renderer skips hidden motions
+  showBlueMotion: boolean;
+  showRedMotion: boolean;
+  // VTG/elemental/positions glyphs are baked into the base layer, so they
+  // contribute to the cache key. Toggling any invalidates only those pictographs
+  // that actually change visually (same letter/motions re-use the same blob).
+  showVTG: boolean;
+  showElemental: boolean;
+  showPositions: boolean;
   // NOTE: The following are EXCLUDED from base layer key:
   // - showNonRadialPoints, handPointVisibility → rendered in gridPoints layer
   // - showTKA → rendered in TKA overlay
@@ -117,6 +126,11 @@ export class LayerKeyDeriver {
       redPropType: options.redPropType ?? pictograph.motions?.red?.propType ?? "staff",
       darkMode: options.darkMode,
       size: options.size,
+      showBlueMotion: options.showBlueMotion ?? true,
+      showRedMotion: options.showRedMotion ?? true,
+      showVTG: options.showVTG ?? false,
+      showElemental: options.showElemental ?? false,
+      showPositions: options.showPositions ?? false,
     };
   }
 

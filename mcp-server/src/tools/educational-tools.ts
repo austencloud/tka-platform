@@ -40,7 +40,7 @@ export function registerEducationalTools(server: McpServer): void {
 - Hand paths: Static=stay, Shift=arc to adjacent, Dash=straight to opposite(180°), Hash=straight to/from center (L4, "half-dash")
 - Prop rotations: Pro=with hand path (0 turns=isolation, preserves center-relative orientation), Anti=against, Float=holds absolute spatial angle
 - Types: 1=Dual-Shift(A-V), 2=Shift(W-Ω), 3=Cross-Shift(W--Ω-), 4=Dash(Φ,Ψ,Λ), 5=Dual-Dash(Φ-,Ψ-,Λ-), 6=Static(α,β,γ)
-- Skewed positions (zeta/eta): Type 1 uses M-V (gamma letters) not A-L. Type 4 uses Phi(diverge)/Psi(converge), Lambda can't be skewed
+- Skewed positions (zeta/eta) are their own L5 positions. A-L and M-V are Type 1 letters for the 4-point grid (alpha/beta and gamma respectively); how Type 1 letters apply to zeta/eta transitions is a separate, unresolved question — don't assume either group "handles" skewed transitions. Type 4 in skewed uses Phi(diverge)/Psi(converge), Lambda can't be skewed
 - "[Letter] dash" = Type 3 with "-" suffix (e.g. "Σ dash" = Σ-)
 - Orientations: in, out, clock, counter + Level 6 interradial: clockIn, clockOut, counterIn, counterOut
 - VTG (Vulcan Tech Gospel): Split-Same, Tog-Same, Split-Opp, Tog-Opp
@@ -182,7 +182,7 @@ Sequences that return home through transformations:
 
 Skewed positions (Zeta at 135°, Eta at 45°) are asymmetric like gamma. This affects which letters apply:
 
-**Type 1 (Dual-Shift):** All skewed transitions use M-V (gamma letters), not A-L. Zeta and Eta have a leader/follower distinction (like gamma) that A-L cannot represent. Same-direction shifts (Eta→Eta, Zeta→Zeta) map to S/T/U/V. Opposite-direction shifts (Eta↔Zeta) map to M/P, N/Q, O/R.
+**Type 1 (Dual-Shift):** A-L and M-V are defined by 4-point-grid positions (alpha/beta and gamma respectively). How Type 1 letters apply to zeta/eta transitions is a separate question this system prompt does NOT answer. Do not assume "all skewed Type 1 uses M-V, not A-L" — that earlier claim was wrong. If asked, defer to the Skewed pictograph dataframe or Austen directly rather than guessing.
 
 **Type 4 (Dash):** Phi = diverging (Eta→Zeta, angle increases). Psi = converging (Zeta→Eta, angle decreases). Lambda cannot be skewed because gamma (90°) requires both hands on the same grid.
 

@@ -12,10 +12,11 @@
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
   import ModalHeader from "$lib/shared/foundation/ui/modal/ModalHeader.svelte";
   import LevelInfoModal from "./LevelInfoModal.svelte";
-  import { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
-  import { SliceSize } from "$lib/features/create/generate/circular/domain/models/circular-models";
-  import { loopTypeResolver } from "$lib/features/create/generate/shared/services/implementations/LOOPTypeResolver";
+  import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";
   import { loopDetector as circularLoopDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
+  import { loopTypeResolver } from "$lib/features/create/generate/shared/services/implementations/LOOPTypeResolver";
+  import { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
+  import type { SliceSize } from "$lib/features/create/generate/circular/domain/models/circular-models";
   import { SequenceDifficultyCalculator } from "$lib/features/browse/sequences/display/services/implementations/SequenceDifficultyCalculator";
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
   import { getIsTimelineMode } from "../state/timeline-mode.svelte";
@@ -81,17 +82,26 @@
   const isShiftStartMode = $derived(panelState.isShiftStartMode);
   const isTimelineMode = $derived(getIsTimelineMode());
 
-  // Reactive LOOP detection
+  // Reactive LOOP detection — the circular detector still owns the
+  // isCircular + loopType shape we need for grid alignment and the modal
+  // title. The resolver layered on top of it gives us the icon-shaped
+  // output (components + rotation slice size) for the badge.
   const loopDetectionResult = $derived.by(() => {
     if (!currentSequence) return null;
     if ((currentSequence.steps?.length ?? 0) < 2) return null;
     return circularLoopDetector.detectLOOPType(currentSequence);
   });
 
-  const activeComponents = $derived.by(() => {
-    if (!loopDetectionResult?.loopType) return new Set<LOOPComponent>();
-    return loopTypeResolver.parseComponents(loopDetectionResult.loopType);
-  });
+  const loopDisplay = $derived.by(() =>
+    currentSequence
+      ? resolveLoopDisplay(currentSequence)
+      : {
+          components: new Set<LOOPComponent>(),
+          rotationSliceSize: undefined as SliceSize | undefined,
+        }
+  );
+  const activeComponents = $derived(loopDisplay.components);
+  const rotationSliceSize = $derived(loopDisplay.rotationSliceSize);
 
   const hasDetectedLoop = $derived(activeComponents.size > 0);
 
@@ -224,6 +234,7 @@
               >
                 <LOOPIconStrip
                   {activeComponents}
+                  {rotationSliceSize}
                   size={22}
                   darkMode={true}
                   showFreeformWhenEmpty={false}
@@ -286,6 +297,7 @@
       <div class="components-strip">
         <LOOPIconStrip
           {activeComponents}
+          {rotationSliceSize}
           size={28}
           darkMode={true}
           showFreeformWhenEmpty={false}

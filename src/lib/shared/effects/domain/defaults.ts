@@ -82,6 +82,18 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
     pulseRate: 1,
   },
 
+  water: {
+    ambientEmission: 0.4,
+    motionEmission: 0.6,
+    intensity: 0.6,
+    palette: "classic",
+    customColor: "#3a7fd9",
+    clarity: 0.7,
+    surfaceTension: 0.3,
+    trackingMode: "both_ends",
+    momentumMode: false,
+  },
+
   activePresets: {
     trails: null,
     fire: null,
@@ -91,5 +103,6 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
     sparkles: null,
     echo: null,
     bloom: null,
+    water: null,
   },
 };

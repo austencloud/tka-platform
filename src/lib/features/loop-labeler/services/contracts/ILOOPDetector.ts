@@ -8,6 +8,7 @@ import type { StepPairRelationship } from "./IStepPairAnalyzer";
 import type { ComponentId } from "../../domain/constants/loop-components";
 import type { PolyrhythmicLOOPResult } from "./IPolyrhythmicDetector";
 import type { LayeredPathResult } from "./ILayeredPathDetector";
+import type { DetectedComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
 
 /**
  * Describes a compound LOOP pattern with multiple transformations at different intervals
@@ -81,6 +82,21 @@ export interface LOOPDetectionResult {
 
   /** Detected transformation components */
   components: ComponentId[];
+
+  /**
+   * Integer LOOP period: count of passes required to return to identity in
+   * both location and orientation. 1 = non-LOOP. 2 = halved. 4 = quartered.
+   * 8 = octaved (reserved for L5/L7).
+   */
+  period: number;
+
+  /**
+   * Detailed per-component annotations with operating domain.
+   * Alongside the legacy `components: ComponentId[]` list for the migration
+   * window. Reserved orientation primitives appear here but are filtered by
+   * UI consumers via RESERVED_ORIENTATION_PRIMITIVES.
+   */
+  componentsDetailed: DetectedComponent[];
 
   /** Per-transformation interval configuration */
   transformationIntervals: TransformationIntervals;

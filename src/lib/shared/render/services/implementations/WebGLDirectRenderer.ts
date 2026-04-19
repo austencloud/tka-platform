@@ -371,15 +371,18 @@ export class WebGLDirectRenderer implements IDirectRenderer {
     const blueMotion = pictograph.motions?.[MotionColor.BLUE];
     const redMotion = pictograph.motions?.[MotionColor.RED];
 
+    const showBlue = options.visibility.showBlueMotion ?? true;
+    const showRed = options.visibility.showRedMotion ?? true;
+
     // Draw arrows
-    if (blueMotion) {
+    if (blueMotion && showBlue) {
       const arrowId = this.getArrowId(blueMotion);
       if (arrowId) {
         this.drawArrow(arrowId, size, BLUE_COLOR, blueMotion);
       }
     }
 
-    if (redMotion) {
+    if (redMotion && showRed) {
       const arrowId = this.getArrowId(redMotion);
       if (arrowId) {
         this.drawArrow(arrowId, size, RED_COLOR, redMotion);

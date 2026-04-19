@@ -61,6 +61,20 @@ export interface LayerRenderOptions {
   // Prop type overrides
   bluePropType?: PropType;
   redPropType?: PropType;
+
+  // Per-color motion visibility. When false, renderer skips that color's props+arrows.
+  // Default: true (both visible). Affects base layer cache key.
+  showBlueMotion?: boolean;
+  showRedMotion?: boolean;
+
+  // Glyphs baked into the base layer (toggle invalidates base cache, which
+  // is acceptable given the rarity of toggles and low cost of a fresh render).
+  /** VTG glyph (bottom-right category badge). */
+  showVTG?: boolean;
+  /** Elemental glyph (paired with VTG, same corner). */
+  showElemental?: boolean;
+  /** Start/end position letters (alpha/beta/gamma). */
+  showPositions?: boolean;
 }
 
 /**

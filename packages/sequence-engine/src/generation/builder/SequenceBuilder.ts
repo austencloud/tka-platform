@@ -775,6 +775,10 @@ export class SequenceBuilder {
           startOrientation: pd.blueMotion.startOrientation,
           endOrientation: pd.blueMotion.endOrientation,
           turns: effectiveBlueTurns,
+          ...(blueIsFloat && {
+            prefloatMotionType: pd.blueMotion.motionType,
+            prefloatRotationDirection: pd.blueMotion.rotationDirection,
+          }),
         },
         redMotion: {
           motionType: redMotionType,
@@ -786,6 +790,10 @@ export class SequenceBuilder {
           startOrientation: pd.redMotion.startOrientation,
           endOrientation: pd.redMotion.endOrientation,
           turns: effectiveRedTurns,
+          ...(redIsFloat && {
+            prefloatMotionType: pd.redMotion.motionType,
+            prefloatRotationDirection: pd.redMotion.rotationDirection,
+          }),
         },
         beatIndex,
         stepNumber: i,

@@ -54,31 +54,31 @@
   }
 
   .lcard .lname {
-    margin-top: clamp(6px, 1vw, 12px);
-    font-size: clamp(10px, 0.6vw + 0.4rem, 13px);
+    margin-top: clamp(4px, 0.6vw, 8px);
+    font-size: clamp(10px, 0.4vw + 0.45rem, 12px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     text-align: center;
-    line-height: 1.3;
+    line-height: 1.25;
   }
 
   .lnum {
-    width: clamp(18px, 2vw, 26px);
-    height: clamp(18px, 2vw, 26px);
+    width: clamp(18px, 1.6vw, 24px);
+    height: clamp(18px, 1.6vw, 24px);
     border-radius: 50%;
     font-family: Cambria, serif;
     font-weight: bold;
-    font-size: clamp(11px, 0.8vw + 0.3rem, 14px);
+    font-size: clamp(11px, 0.6vw + 0.3rem, 13px);
     display: flex;
     align-items: center;
     justify-content: center;
     border: 1px solid #000;
-    margin-bottom: clamp(4px, 1vw, 10px);
+    margin-bottom: clamp(3px, 0.6vw, 6px);
   }
 
   .lcard.dim { opacity: 0.5; }
   .lcard.dim img {
-    width: clamp(64px, 14vw, 120px);
-    height: clamp(64px, 14vw, 120px);
+    width: clamp(56px, 10vw, 90px);
+    height: clamp(56px, 10vw, 90px);
     filter: grayscale(1) brightness(0.85);
   }
   .lcard.dim .lnum { filter: grayscale(1) brightness(0.85); }
@@ -86,23 +86,23 @@
   .lcard.current {
     background: color-mix(in srgb, var(--theme-accent, #2196f3) 14%, transparent);
     border-color: color-mix(in srgb, var(--theme-accent, #2196f3) 35%, transparent);
-    padding: clamp(10px, 2vw, 22px);
-    transform: translateY(clamp(2px, 0.6vw, 8px));
+    padding: clamp(8px, 1.4vw, 14px);
+    transform: translateY(clamp(2px, 0.4vw, 6px));
   }
   .lcard.current img {
-    width: clamp(120px, 24vw, 240px);
-    height: clamp(120px, 24vw, 240px);
+    width: clamp(108px, 18vw, 170px);
+    height: clamp(108px, 18vw, 170px);
   }
   .lcard.current .lnum {
-    width: clamp(24px, 2.4vw, 34px);
-    height: clamp(24px, 2.4vw, 34px);
-    font-size: clamp(13px, 1vw + 0.3rem, 18px);
+    width: clamp(22px, 1.8vw, 28px);
+    height: clamp(22px, 1.8vw, 28px);
+    font-size: clamp(12px, 0.7vw + 0.3rem, 15px);
   }
   .lcard.current .lname {
     color: var(--theme-text, #e8e8ea);
-    font-size: clamp(12px, 0.7vw + 0.5rem, 15px);
+    font-size: clamp(12px, 0.5vw + 0.55rem, 14px);
     font-weight: 600;
-    margin-top: clamp(8px, 1.2vw, 14px);
+    margin-top: clamp(6px, 0.8vw, 10px);
   }
 
   @media (prefers-reduced-motion: reduce) {

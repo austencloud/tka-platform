@@ -13,9 +13,11 @@ import type { ILOOPExplanationTextGenerator } from "../contracts/ILOOPExplanatio
  */
 export class LOOPExplanationTextGenerator implements ILOOPExplanationTextGenerator {
   /**
-   * Detailed descriptions for individual LOOP components
+   * Detailed descriptions for individual LOOP components.
+   * Reserved orientation primitives (ZONE_HOLD_INVERT / FLIP / CROSS) are
+   * intentionally absent — they are never user-surfaced.
    */
-  private readonly singleDescriptions: Record<LOOPComponent, string> = {
+  private readonly singleDescriptions: Partial<Record<LOOPComponent, string>> = {
     [LOOPComponent.ROTATED]:
       "Rotates the entire sequence 180° around the grid center. North becomes South, East becomes West. The sequence plays out in the opposite quadrants while maintaining the same motion patterns.",
     [LOOPComponent.MIRRORED]:
@@ -105,7 +107,10 @@ export class LOOPExplanationTextGenerator implements ILOOPExplanationTextGenerat
     }
 
     if (selected.length === 1) {
-      return this.singleDescriptions[selected[0]!];
+      return (
+        this.singleDescriptions[selected[0]!] ??
+        "This LOOP transformation is not user-facing."
+      );
     }
 
     if (selected.length === 2) {

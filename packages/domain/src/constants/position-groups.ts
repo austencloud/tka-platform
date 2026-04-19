@@ -48,7 +48,7 @@ export const POSITION_DEFINITIONS: Record<PositionName, PositionDefinition> = {
     name: "Zeta (ζ)",
     symbol: "ζ",
     angle: "135°",
-    description: "Hands form an obtuse angle. Asymmetric like gamma: one hand is directionally ahead of the other, creating a leader/follower distinction. Zeta and Eta form a transition pair (like alpha/beta): opposite-direction shifts convert Zeta to Eta and vice versa. Same-direction shifts stay in Zeta. All Type 1 letters in Zeta use the gamma letter group (M-V), not A-L. Type 4 (dash+static) in Zeta→Eta uses Psi (converging).",
+    description: "Hands form an obtuse angle. Asymmetric like gamma: one hand is directionally ahead of the other, creating a leader/follower distinction. Zeta and Eta form a transition pair (like alpha/beta): opposite-direction shifts convert Zeta to Eta and vice versa. Same-direction shifts stay in Zeta. Type 4 (dash+static) in Zeta→Eta uses Psi (converging). (Type 1 letter assignment for Zeta transitions is not claimed here — see the Skewed pictograph dataframe for ground truth.)",
     gridDescription: "One hand on a cardinal point, one on an intercardinal point, 135° apart. Has two internal halves (like gamma) based on which hand is CW of the other. These halves are more isolated than gamma's: no single-step shift can swap halves while staying in Zeta (opposite-direction shifts leave Zeta entirely, going to Eta).",
     examples: [
       "Hands at N and SE (skewed mode, 135°)",
@@ -61,7 +61,7 @@ export const POSITION_DEFINITIONS: Record<PositionName, PositionDefinition> = {
     name: "Eta (η)",
     symbol: "η",
     angle: "45°",
-    description: "Hands form an acute angle. Asymmetric like gamma: one hand is directionally ahead of the other, creating a leader/follower distinction. Eta and Zeta form a transition pair (like beta/alpha): opposite-direction shifts convert Eta to Zeta and vice versa. Same-direction shifts stay in Eta. All Type 1 letters in Eta use the gamma letter group (M-V), not A-L. Type 4 (dash+static) in Eta→Zeta uses Phi (diverging).",
+    description: "Hands form an acute angle. Asymmetric like gamma: one hand is directionally ahead of the other, creating a leader/follower distinction. Eta and Zeta form a transition pair (like beta/alpha): opposite-direction shifts convert Eta to Zeta and vice versa. Same-direction shifts stay in Eta. Type 4 (dash+static) in Eta→Zeta uses Phi (diverging). (Type 1 letter assignment for Eta transitions is not claimed here — see the Skewed pictograph dataframe for ground truth.)",
     gridDescription: "One hand on a cardinal point, one on an intercardinal point, 45° apart. Has two internal halves (like gamma) based on which hand is CW of the other. These halves are more isolated than gamma's: no single-step shift can swap halves while staying in Eta (opposite-direction shifts leave Eta entirely, going to Zeta).",
     examples: [
       "Hands at N and NE (skewed mode, 45°)",

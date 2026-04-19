@@ -12,8 +12,9 @@ import { DIFFICULTY_LEVELS, DIFFICULTY_FONT_FAMILY } from "$lib/shared/config/di
 import {
   LOOP_TYPE_LABELS,
   ROTATED_LOOP_TYPES,
+  SliceSize,
 } from "$lib/features/create/generate/circular/domain/models/circular-models";
-import { LOOPTypeResolver } from "$lib/features/create/generate/shared/services/implementations/LOOPTypeResolver";
+import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";
 import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
 import { VTG_TURNS_RATIO_MAP } from "../../domain/elemental-theme";
 import { getReversalPattern } from "../../domain/reversal-patterns";
@@ -57,6 +58,9 @@ export interface CardBackData {
   anatomy: SequenceAnatomy;
   hasLoop: boolean;
   loopComponents: Set<LOOPComponent>;
+  /** Slice size for the rotated component, when ROTATED is active.
+   *  Lets the front card pick fa-rotate (halved) vs fa-arrows-spin (quartered). */
+  rotationSliceSize: SliceSize | undefined;
   loopLabel: string | null;
   loopExplanation: LOOPExplanation | null;
   sliceName: string | null;
@@ -98,9 +102,6 @@ const LEVEL_BADGES: Record<number, Omit<LevelBadgeData, "reason">> = Object.from
     }];
   })
 );
-
-// Use the same resolver as the front card so LOOP icons always match
-const loopTypeResolver = new LOOPTypeResolver();
 
 // Derive the "why this level" reason from the anatomy
 function deriveLevelReason(level: number, anatomy: SequenceAnatomy): string {
@@ -417,7 +418,9 @@ function capitalize(s: string): string {
 
 export function deriveCardBackData(
   sequence: SequenceData,
-  converter: ISequenceToEntryConverter | null,
+  // Kept for call-site compatibility — the shared loop-display resolver
+  // owns the SequenceData→SequenceEntry conversion internally now.
+  _converter: ISequenceToEntryConverter | null,
   explainer: ILOOPExplainer | null = null
 ): CardBackData {
   const levelNum = sequence.level ?? 1;
@@ -425,11 +428,13 @@ export function deriveCardBackData(
   const anatomy = deriveAnatomy(sequence);
   const reason = deriveLevelReason(levelNum, anatomy);
 
-  // LOOP components: parse from stored loopType (same as front card)
-  // so the icons always match between front and back
-  const loopComponents = sequence.loopType
-    ? loopTypeResolver.parseComponents(sequence.loopType)
-    : new Set<LOOPComponent>();
+  // LOOP components come from the shared resolver so the back matches the
+  // front card (and every other consumer). The resolver prefers live
+  // detection from steps and falls back to the stored loopType when
+  // detection can't run (short sequences, etc).
+  const loopDisplay = resolveLoopDisplay(sequence);
+  const loopComponents = loopDisplay.components;
+  const rotationSliceSize = loopDisplay.rotationSliceSize;
 
   // Generate rich LOOP explanation when the explainer is available
   let loopExplanation: LOOPExplanation | null = null;
@@ -472,6 +477,7 @@ export function deriveCardBackData(
     anatomy,
     hasLoop: loopComponents.size > 0,
     loopComponents,
+    rotationSliceSize,
     loopLabel,
     loopExplanation,
     sliceName,

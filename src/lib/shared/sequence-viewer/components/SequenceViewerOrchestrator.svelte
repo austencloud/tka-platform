@@ -642,6 +642,8 @@
   let imgShowNotes = $state(imageComposition.showNotes);
   let imgShowBirthday = $state(imageComposition.showBirthday);
   let imgShowQRCode = $state(imageComposition.showQRCode);
+  let imgShowMandala = $state(imageComposition.showMandala);
+  let imgShowLoopGlyph = $state(imageComposition.showLoopGlyph);
   let imgDarkMode = $state(imageComposition.darkMode);
   let imgColumnCount = $state<number | null>(sequenceModalPersistence.loadColumnCount());
 
@@ -870,6 +872,8 @@
       imgShowNotes = imageComposition.showNotes;
       imgShowBirthday = imageComposition.showBirthday;
       imgShowQRCode = imageComposition.showQRCode;
+      imgShowMandala = imageComposition.showMandala;
+      imgShowLoopGlyph = imageComposition.showLoopGlyph;
       imgDarkMode = imageComposition.darkMode;
     };
     imageComposition.registerObserver(observer);
@@ -2155,7 +2159,8 @@
       showNotes: imgShowNotes,
       showBirthday: imgShowBirthday,
       showQRCode: imgShowQRCode,
-      showLoopGlyph: !isHandPath,
+      showMandala: imgShowMandala,
+      showLoopGlyph: !isHandPath && imgShowLoopGlyph,
       darkMode: imgDarkMode,
       columnCount: imgColumnCount,
       forceContain: false,

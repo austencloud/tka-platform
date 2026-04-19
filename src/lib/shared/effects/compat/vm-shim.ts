@@ -66,6 +66,7 @@ export function snapshotConfigFromVm(vm: AnimationVisibilityStateManager): Effec
     sparkles: { ...DEFAULT_EFFECTS_CONFIG.sparkles },
     echo: { ...DEFAULT_EFFECTS_CONFIG.echo },
     bloom: { ...DEFAULT_EFFECTS_CONFIG.bloom },
+    water: { ...DEFAULT_EFFECTS_CONFIG.water },
 
     activePresets: {
       trails: null,
@@ -76,6 +77,7 @@ export function snapshotConfigFromVm(vm: AnimationVisibilityStateManager): Effec
       sparkles: null,
       echo: null,
       bloom: null,
+      water: null,
     },
   };
 }

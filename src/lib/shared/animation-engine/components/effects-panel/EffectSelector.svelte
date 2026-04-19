@@ -8,6 +8,7 @@
     { id: "sparkles", label: "Sparkle", icon: "fa-star", color: "#fbbf24" },
     { id: "echo", label: "Echo", icon: "fa-clone", color: "#22d3ee" },
     { id: "bloom", label: "Bloom", icon: "fa-sun", color: "#f472b6" },
+    { id: "water", label: "Water", icon: "fa-droplet", color: "#3a7fd9" },
   ] as const;
 
   interface Props {

@@ -46,6 +46,15 @@ export interface PreviewCellRenderOptions {
   /** Show reversal indicators */
   showReversals?: boolean;
 
+  /** Show VTG glyph (bottom-right category badge) */
+  showVTG?: boolean;
+
+  /** Show elemental glyph (paired with VTG, same corner) */
+  showElemental?: boolean;
+
+  /** Show start/end position letters (alpha/beta/gamma labels) */
+  showPositions?: boolean;
+
   /** When true, renders hand path visualization: HAND props, float arrows for shifts,
    *  no TKA overlay, no reversals. Shows pure spatial trajectory. */
   handPathMode?: boolean;
@@ -53,6 +62,12 @@ export interface PreviewCellRenderOptions {
   /** Browse view mode (props/hands x combined/solo x blue/red).
    *  Affects cache keys so the same sequence renders differently per mode. */
   browseViewMode?: BrowseViewMode;
+
+  /** Show blue motion (prop + arrow). When false, renderer skips blue entirely. Default: true. */
+  showBlueMotion?: boolean;
+
+  /** Show red motion (prop + arrow). When false, renderer skips red entirely. Default: true. */
+  showRedMotion?: boolean;
 }
 
 export interface IPreviewCellRenderer {

@@ -39,8 +39,8 @@ import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/stat
 import { fireCacheInvalidation } from "$lib/shared/animation-engine/state/fire-invalidation-signal.svelte";
 import { getExportDimensions, calculateBitrate } from "../../shared/domain/video-export-calculations";
 import { SequenceDifficultyCalculator } from "$lib/features/browse/sequences/display/services/implementations/SequenceDifficultyCalculator";
-import { LOOPTypeResolver } from "$lib/features/create/generate/shared/services/implementations/LOOPTypeResolver";
-import { loopDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
+import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";
+import { SliceSize } from "$lib/features/create/generate/circular/domain/models/circular-models";
 import { greekToAscii } from "$lib/features/create/spell/domain/constants/spell-constants";
 import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
 
@@ -100,27 +100,26 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
         ])
       : null;
 
-    const loopComponents: Set<string> | null = (() => {
+    // Resolve once per export: both the component set (for the icon strip)
+    // and the rotation slice size (so quartered LOOPs render with fa-arrows-spin
+    // in the exported video header, matching the live preview).
+    const loopDisplayForExport = (() => {
       const seq = panelState.sequenceData;
       if (!seq) return null;
-      const loopTypeResolver = new LOOPTypeResolver();
       try {
-        if (seq.loopType) {
-          const components = loopTypeResolver.parseComponents(seq.loopType);
-          return components.size > 0 ? (components as Set<string>) : null;
-        }
-        if (seq.steps?.length) {
-          const result = loopDetector.detectLOOPType(seq);
-          if (result.loopType) {
-            const components = loopTypeResolver.parseComponents(result.loopType);
-            return components.size > 0 ? (components as Set<string>) : null;
-          }
-        }
-        return null;
+        return resolveLoopDisplay(seq);
       } catch {
         return null;
       }
     })();
+
+    const loopComponents: Set<string> | null =
+      loopDisplayForExport && loopDisplayForExport.components.size > 0
+        ? (loopDisplayForExport.components as unknown as Set<string>)
+        : null;
+
+    const rotationSliceSize: SliceSize | undefined =
+      loopDisplayForExport?.rotationSliceSize;
 
     // Resolve FPS early — used by both encoder paths and frame calculations
     const fps = options.fps ?? VIDEO_EXPORT_FPS;
@@ -648,7 +647,8 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
               isDarkMode,
               activeStepNumber,
               difficultyLevel,
-              loopComponents
+              loopComponents,
+              rotationSliceSize
             );
           }
 

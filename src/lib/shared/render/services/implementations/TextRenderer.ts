@@ -20,7 +20,7 @@ import {
   DIFFICULTY_FONT_FAMILY,
   applyGradientStops,
 } from "$lib/shared/config/difficulty-styles";
-import { renderHeader, renderFooter, FOOTER_FONT_SCALE, type LOOPComponentId } from "@tka/render-composition";
+import { renderHeader, renderFooter, FOOTER_FONT_SCALE, type LOOPComponentId, type LoopRotationSliceSize } from "@tka/render-composition";
 
 export class TextRenderer implements ITextRenderer {
   // Font configuration matching WordLabel component exactly
@@ -154,7 +154,8 @@ export class TextRenderer implements ITextRenderer {
     darkMode: boolean = false,
     loopComponents?: Set<LOOPComponent>,
     backgroundColor?: string,
-    borderColor?: string
+    borderColor?: string,
+    rotationSliceSize?: LoopRotationSliceSize
   ): void {
     const ctx = canvas.getContext("2d");
     if (!ctx) {
@@ -177,6 +178,7 @@ export class TextRenderer implements ITextRenderer {
       difficultyLevel,
       showDifficultyBadge,
       loopComponents: packageComponents,
+      rotationSliceSize,
       darkMode,
       backgroundColor,
       borderColor,

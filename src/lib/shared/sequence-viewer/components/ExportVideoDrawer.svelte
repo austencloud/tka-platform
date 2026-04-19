@@ -7,7 +7,7 @@
     Settings open in a slide-up overlay. Animation gets full screen space.
 -->
 <script lang="ts">
-  import { fade, slide } from "svelte/transition";
+  import { fade, fly } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
   import type {
     ExportOptionsStateManager,
@@ -177,16 +177,25 @@
         {/if}
       </div>
     {:else}
-      <!-- Inline settings (collapsible, no overlay) -->
+      <!-- Settings sheet (overlay, slides up over canvas) -->
       {#if settingsOpen}
+        <button
+          type="button"
+          class="settings-backdrop"
+          onclick={() => (settingsOpen = false)}
+          aria-label="Close settings"
+          tabindex="-1"
+          transition:fade={{ duration: 200 }}
+        ></button>
         <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
         <div
           class="inline-settings"
           role="region"
           aria-label="Animation export settings"
           onkeydown={preventSpaceActivation}
-          transition:slide={{ duration: 250, easing: cubicOut }}
+          transition:fly={{ y: 120, duration: 280, easing: cubicOut }}
         >
+          <div class="sheet-handle" aria-hidden="true"></div>
           <div class="inline-settings-header">
             <span class="inline-settings-title">Animation Settings</span>
             <button
@@ -195,7 +204,7 @@
               onclick={() => (settingsOpen = false)}
               aria-label="Close settings"
             >
-              <i class="fas fa-chevron-down" aria-hidden="true"></i>
+              <i class="fas fa-times" aria-hidden="true"></i>
             </button>
           </div>
 
@@ -610,6 +619,18 @@
     flex-shrink: 0;
     border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+    z-index: 10;
+  }
+
+  .settings-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 99;
+    cursor: pointer;
+    border: none;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
   }
 
   .mobile-bar {
@@ -718,14 +739,32 @@
   }
 
   /* ============================================================
-   * MOBILE INLINE SETTINGS (collapsible, no overlay)
+   * MOBILE SETTINGS SHEET (overlay, slides up over canvas)
    * ============================================================ */
 
   .inline-settings {
-    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 100%;
+    max-height: 62vh;
+    z-index: 100;
+    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    border-bottom: none;
+    border-radius: 14px 14px 0 0;
+    box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.5);
     overflow-y: auto;
-    max-height: 35vh;
+    overscroll-behavior: contain;
+  }
+
+  .sheet-handle {
+    width: 36px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.18);
+    border-radius: 2px;
+    margin: 10px auto 2px;
+    flex-shrink: 0;
   }
 
   .inline-settings-header {
@@ -776,19 +815,20 @@
     text-align: center;
   }
 
-  /* Compact shared controls within mobile inline settings */
+  /* Compact shared controls within mobile settings sheet */
   .inline-settings .setting-row {
     gap: 8px;
   }
   .inline-settings .setting-label {
-    min-width: 56px;
+    min-width: 68px;
   }
   .inline-settings .chip-group {
     gap: 6px;
+    flex-wrap: wrap;
   }
   .inline-settings .chip {
-    min-height: 34px;
-    padding: 4px 10px;
+    min-height: 38px;
+    padding: 6px 12px;
   }
 
   /* ============================================================

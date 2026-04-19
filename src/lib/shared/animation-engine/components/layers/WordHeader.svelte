@@ -17,6 +17,7 @@ Supports letter highlighting during animation playback.
   import { DIFFICULTY_LEVELS, DEFAULT_DIFFICULTY_STYLE } from "$lib/shared/config/difficulty-styles";
   import LOOPIconStrip from "$lib/shared/components/LOOPIconStrip.svelte";
   import type { LOOPComponent } from "$lib/features/create/generate/shared/domain/models/generate-models";
+  import type { SliceSize } from "$lib/features/create/generate/circular/domain/models/circular-models";
 
   let {
     word = null,
@@ -25,6 +26,7 @@ Supports letter highlighting during animation playback.
     activeStepNumber = null,
     difficultyLevel = null,
     loopComponents = null,
+    rotationSliceSize,
   }: {
     word?: string | null;
     visible?: boolean;
@@ -35,6 +37,8 @@ Supports letter highlighting during animation playback.
     difficultyLevel?: number | null;
     /** LOOP components to show as icon strip on the right */
     loopComponents?: Set<LOOPComponent> | null;
+    /** When ROTATED is active, lets the strip pick fa-arrows-spin (quartered) vs fa-rotate (halved) */
+    rotationSliceSize?: SliceSize;
   } = $props();
 
   // Difficulty badge styling from shared config
@@ -220,6 +224,7 @@ Supports letter highlighting during animation playback.
       <div class="loop-icon-badge">
         <LOOPIconStrip
           activeComponents={loopComponents}
+          {rotationSliceSize}
           size={20}
           darkMode={darkMode}
           showFreeformWhenEmpty={false}

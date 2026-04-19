@@ -25,6 +25,8 @@
   import EchoCustomize from "./customize/EchoCustomize.svelte";
   import { BLOOM_PRESET_GROUP } from "./presets/bloom-presets";
   import BloomCustomize from "./customize/BloomCustomize.svelte";
+  import { WATER_PRESET_GROUP } from "./presets/water-presets";
+  import WaterCustomize from "./customize/WaterCustomize.svelte";
   import type { EffectPresetGroup } from "./presets/types";
 
   interface Props {
@@ -111,6 +113,7 @@
     sparkles: "#fbbf24",
     echo: "#22d3ee",
     bloom: "#f472b6",
+    water: "#3a7fd9",
   };
 
   const EFFECT_LABELS: Record<string, string> = {
@@ -122,6 +125,7 @@
     sparkles: "Sparkle",
     echo: "Echo",
     bloom: "Bloom",
+    water: "Water",
   };
 
   function syncFromVM(): void {
@@ -174,6 +178,7 @@
       case "sparkles": return SPARKLES_PRESET_GROUP;
       case "echo": return ECHO_PRESET_GROUP;
       case "bloom": return BLOOM_PRESET_GROUP;
+      case "water": return WATER_PRESET_GROUP;
       default: return null;
     }
   }
@@ -254,6 +259,8 @@
         <EchoCustomize onBack={() => (customizeOpen = false)} />
       {:else if activeEffect === "bloom"}
         <BloomCustomize onBack={() => (customizeOpen = false)} />
+      {:else if activeEffect === "water"}
+        <WaterCustomize onBack={() => (customizeOpen = false)} />
       {/if}
     </div>
   {/if}

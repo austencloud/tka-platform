@@ -16,7 +16,9 @@ import type {
   SparklesIntent,
   EchoIntent,
   BloomIntent,
+  WaterIntent,
 } from "../domain/EffectsConfig";
+import type { WaterPalette } from "../domain/WaterPalettes";
 
 export interface Trails2DParams extends TrailsIntent {
   /** px value for ctx.lineWidth. Derived from thickness. */
@@ -79,5 +81,22 @@ export interface Echo2DParams extends EchoIntent {
 
 export interface Bloom2DParams extends BloomIntent {
   /** Canvas composite op. Default 'lighter' so overlapping halos brighten. */
+  blendMode?: GlobalCompositeOperation;
+}
+
+export interface Water2DParams extends WaterIntent {
+  /** Resolved palette swatches (intent's palette enum → concrete hex stops). */
+  resolvedPalette: WaterPalette;
+  /** Max droplets alive at once. Tier-dependent: 512 / 1024 / 2048. */
+  poolSize: number;
+  /** px — base droplet radius before `intensity` multiplier. */
+  baseRadius: number;
+  /** Droplets/sec at `ambientEmission=1`. */
+  ambientSpawnRate: number;
+  /** Droplets/sec at full velocity * `motionEmission=1`. */
+  motionSpawnRate: number;
+  /** World units/s that maps to full motion scalar (tuned against medium spin). */
+  motionReferenceSpeed: number;
+  /** Canvas composite op — `source-over` for body, `lighter` for highlight. */
   blendMode?: GlobalCompositeOperation;
 }

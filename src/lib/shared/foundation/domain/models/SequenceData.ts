@@ -17,6 +17,10 @@ import type { StartPositionData } from "../../../../features/create/shared/domai
 import type { GridPositionGroup } from "../../../pictograph/grid/domain/enums/grid-enums";
 import type { PropType } from "../../../pictograph/prop/domain/enums/PropType";
 import type { LOOPType } from "../../../../features/create/generate/circular/domain/models/circular-models";
+import type {
+  LOOPComponent,
+  LOOPDomain,
+} from "../../../../features/create/generate/shared/domain/models/generate-models";
 import type { SoloPropData } from "./SoloPropData";
 import type { StepPairingData } from "./StepPairingData";
 
@@ -77,8 +81,32 @@ export interface SequenceData {
    * Formerly known as LOOP type (Continuous Assembly Pattern).
    */
   readonly loopType?: LOOPType | null;
-  /** Number of sequence repetitions needed to return to starting orientation (1, 2, or 4) */
+  /**
+   * @deprecated Use `period` instead. Kept during the period-migration window.
+   * Number of sequence repetitions needed to return to starting orientation (1, 2, or 4).
+   */
   readonly orientationCycleCount?: 1 | 2 | 4;
+  /**
+   * Integer count of passes required to return to identity in BOTH location
+   * and orientation. 1 = non-LOOP / closed in one pass. 2 = halved.
+   * 4 = quartered. 8 = future octaved (L5 grid / L7 wheel).
+   *
+   * Supersedes the legacy (loopType-name, orientationCycleCount) pair.
+   */
+  readonly period?: number;
+  /**
+   * Distinct LOOP transformation primitives detected in the sequence.
+   * Set-like; `componentDomains` annotates the space each component acts in.
+   * Reserved orientation primitives are filtered before reaching UI consumers.
+   */
+  readonly components?: readonly LOOPComponent[];
+  /**
+   * Domain annotation for each detected component.
+   * "location" = transformation acts on grid positions.
+   * "orientation" = transformation acts on orientation wheel.
+   * "both" = detected in both spaces.
+   */
+  readonly componentDomains?: Partial<Record<LOOPComponent, LOOPDomain>>;
   readonly difficultyLevel?: string;
   readonly tags: readonly string[];
   /**
@@ -170,6 +198,11 @@ export function createSequenceData(
     ...(data.loopType !== undefined && { loopType: data.loopType }),
     ...(data.orientationCycleCount !== undefined && {
       orientationCycleCount: data.orientationCycleCount,
+    }),
+    ...(data.period !== undefined && { period: data.period }),
+    ...(data.components !== undefined && { components: data.components }),
+    ...(data.componentDomains !== undefined && {
+      componentDomains: data.componentDomains,
     }),
     tags: data.tags ?? [],
     metadata: data.metadata ?? {},
