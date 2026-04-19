@@ -16,7 +16,7 @@
   import { getEffectsConfigState } from "./state/effects-config-state.svelte";
   import { getEffectsConfigContext as getUnifiedEffectsState } from "$lib/shared/effects/state/effects-config-context";
   import { getScene3DRenderContext } from "$lib/shared/3d/scene-features/state/scene-3d-render-context";
-  import { resolveEcho3D, resolveSparkles3D, resolveZap3D, resolveWater3D, resolveBubbles3D, resolvePetals3D, resolveTrails3D } from "$lib/shared/effects/translators/webgl3d-translator";
+  import { resolveEcho3D, resolveSparkles3D, resolveZap3D, resolveWater3D, resolveBubbles3D, resolvePetals3D, resolveTrails3D, resolveFire3D } from "$lib/shared/effects/translators/webgl3d-translator";
   import { AUSTEN_STAFF } from "../config/avatar-proportions";
   import { TrackingMode, TrailStyle } from "./types";
 
@@ -124,6 +124,10 @@
   );
   const trailsShowRightEnd = $derived(
     trails3D?.trackingMode === "right_end" || trails3D?.trackingMode === "both_ends",
+  );
+  const fire3D = $derived(unifiedState ? resolveFire3D(unifiedState.fire) : null);
+  const fireEnabled = $derived(
+    unifiedState ? unifiedState.config.tipEffectMap["*"]?.effect === "fire" : false,
   );
 
   /**
@@ -332,21 +336,21 @@
 <!-- =============================================================================
      Fire Effects (on prop ends)
      ============================================================================= -->
-{#if configState.fire.enabled && isPlaying}
+{#if fireEnabled && fire3D && isPlaying}
   <!-- Blue prop fire -->
   {#if blueEnds}
     <FireEmitter
       position={blueEnds.positive}
-      enabled={configState.fire.enabled}
-      intensity={configState.fire.intensity}
-      velocityInfluence={configState.fire.velocityReactive ? 0.3 : 0}
+      enabled={true}
+      intensity={fire3D.intensity}
+      velocityInfluence={0.3}
       propVelocity={blueVelocityVec}
     />
     <FireEmitter
       position={blueEnds.negative}
-      enabled={configState.fire.enabled}
-      intensity={configState.fire.intensity * 0.7}
-      velocityInfluence={configState.fire.velocityReactive ? 0.3 : 0}
+      enabled={true}
+      intensity={fire3D.intensity * 0.7}
+      velocityInfluence={0.3}
       propVelocity={blueVelocityVec}
     />
   {/if}
@@ -355,16 +359,16 @@
   {#if redEnds}
     <FireEmitter
       position={redEnds.positive}
-      enabled={configState.fire.enabled}
-      intensity={configState.fire.intensity}
-      velocityInfluence={configState.fire.velocityReactive ? 0.3 : 0}
+      enabled={true}
+      intensity={fire3D.intensity}
+      velocityInfluence={0.3}
       propVelocity={redVelocityVec}
     />
     <FireEmitter
       position={redEnds.negative}
-      enabled={configState.fire.enabled}
-      intensity={configState.fire.intensity * 0.7}
-      velocityInfluence={configState.fire.velocityReactive ? 0.3 : 0}
+      enabled={true}
+      intensity={fire3D.intensity * 0.7}
+      velocityInfluence={0.3}
       propVelocity={redVelocityVec}
     />
   {/if}
