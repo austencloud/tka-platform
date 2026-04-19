@@ -174,14 +174,16 @@ export interface WaterIntent {
   customColor: string;
   /** 0-1. 0 = milky/opaque, 1 = crystal clear. Drives 3D refraction + 2D highlight. */
   clarity: number;
-  /** 0-1. Metaball merge strength. 0 = independent drops, 1 = fully goopy. Inactive until 1f.iii. */
+  /** 0-1. How strongly surface tension holds droplets round under motion.
+   *  1 = very round (tight tension), 0 = stretches hard under velocity. */
   surfaceTension: number;
   /** Which staff end(s) droplets track. */
   trackingMode: "left_end" | "right_end" | "both_ends";
-  /** Experimental: ribbon emits only above a speed threshold, chunk size
-   *  scales with release velocity, ambient mist suppressed. Makes water
-   *  read like discrete flung globs rather than a continuous stream. */
-  momentumMode: boolean;
+  /** How the water comes off the prop.
+   *  - splash: heavier discrete chunks on motion, drippy at rest
+   *  - flow:   streamy long elongated droplets that trail the tip
+   *  - mist:   fine high-count spray, drops stay round, wide spread */
+  spewStyle: "splash" | "flow" | "mist";
 }
 
 /**

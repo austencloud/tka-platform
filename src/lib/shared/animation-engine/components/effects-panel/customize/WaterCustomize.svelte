@@ -23,6 +23,12 @@
     { id: "right_end", label: "Right" },
     { id: "both_ends", label: "Both" },
   ];
+
+  const STYLES: { id: WaterIntent["spewStyle"]; label: string; icon: string }[] = [
+    { id: "splash", label: "Splash", icon: "fa-droplet" },
+    { id: "flow", label: "Flow", icon: "fa-wave-square" },
+    { id: "mist", label: "Mist", icon: "fa-cloud" },
+  ];
 </script>
 
 <div class="customize-view">
@@ -33,23 +39,6 @@
 
   {#if state}
     <div class="water-controls">
-      <!-- Experimental momentum toggle -->
-      <div class="option-row">
-        <span class="option-label">Momentum</span>
-        <button
-          type="button"
-          class="chip toggle-chip"
-          class:active={state.water.momentumMode}
-          role="switch"
-          aria-checked={state.water.momentumMode}
-          onclick={() =>
-            state.updateWater({ momentumMode: !state.water.momentumMode })}
-        >
-          <span class="toggle-dot" class:on={state.water.momentumMode}></span>
-          {state.water.momentumMode ? "On — chunks fly on motion" : "Off — continuous stream"}
-        </button>
-      </div>
-
       <!-- Palette chip row -->
       <div class="option-row">
         <span class="option-label">Palette</span>
@@ -87,6 +76,26 @@
           </div>
         </div>
       {/if}
+
+      <!-- Style chip row -->
+      <div class="option-row">
+        <span class="option-label">Style</span>
+        <div class="chip-group" role="radiogroup" aria-label="Water spew style">
+          {#each STYLES as s (s.id)}
+            <button
+              class="chip"
+              class:active={state.water.spewStyle === s.id}
+              type="button"
+              role="radio"
+              aria-checked={state.water.spewStyle === s.id}
+              onclick={() => state.updateWater({ spewStyle: s.id })}
+            >
+              <i class="fas {s.icon}" aria-hidden="true"></i>
+              {s.label}
+            </button>
+          {/each}
+        </div>
+      </div>
 
       <!-- Tracking chip row -->
       <div class="option-row">
@@ -314,27 +323,6 @@
 
   .swatch-chip {
     flex: 1 1 40%;
-  }
-
-  .toggle-chip {
-    flex: 1 1 100%;
-    justify-content: flex-start;
-    gap: 10px;
-  }
-
-  .toggle-dot {
-    display: inline-block;
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: var(--theme-stroke-strong, rgba(255, 255, 255, 0.25));
-    flex-shrink: 0;
-    transition: background var(--duration-fast, 100ms) ease;
-  }
-
-  .toggle-dot.on {
-    background: var(--theme-accent, #8b5cf6);
-    box-shadow: 0 0 6px var(--theme-accent, #8b5cf6);
   }
 
   .swatch {

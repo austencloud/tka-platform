@@ -1,12 +1,50 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeAll } from "vitest";
 import { Water2DRenderer } from "./Water2DRenderer";
 import type { Water2DParams } from "../translators/canvas2d-types";
 import { WATER_PALETTES } from "../domain/WaterPalettes";
 
+// Provide a minimal OffscreenCanvas shim so the sprite cache can bake a
+// sprite during tests (node env has no OffscreenCanvas by default).
+beforeAll(() => {
+  if (typeof (globalThis as Record<string, unknown>).OffscreenCanvas === "undefined") {
+    class OffscreenCanvasMock {
+      width: number;
+      height: number;
+      constructor(w: number, h: number) {
+        this.width = w;
+        this.height = h;
+      }
+      getContext() {
+        return {
+          canvas: { width: 128, height: 128 },
+          globalCompositeOperation: "source-over",
+          globalAlpha: 1,
+          fillStyle: "",
+          filter: "none",
+          clearRect: () => {},
+          arc: () => {},
+          beginPath: () => {},
+          fill: () => {},
+          save: () => {},
+          restore: () => {},
+          translate: () => {},
+          rotate: () => {},
+          scale: () => {},
+          drawImage: () => {},
+          createRadialGradient: () => ({ addColorStop: () => {} }),
+        };
+      }
+    }
+    (globalThis as Record<string, unknown>).OffscreenCanvas = OffscreenCanvasMock;
+  }
+});
+
 function makeCtx(): CanvasRenderingContext2D {
   const ctx = {
+    canvas: { width: 800, height: 600 },
     globalCompositeOperation: "source-over" as GlobalCompositeOperation,
     globalAlpha: 1,
+    filter: "none",
     strokeStyle: "" as string | CanvasGradient,
     fillStyle: "" as string | CanvasGradient,
     lineWidth: 1,
@@ -16,8 +54,17 @@ function makeCtx(): CanvasRenderingContext2D {
     lineTo: vi.fn(),
     stroke: vi.fn(),
     arc: vi.fn(),
+    ellipse: vi.fn(),
     fill: vi.fn(),
+    drawImage: vi.fn(),
+    save: vi.fn(),
+    restore: vi.fn(),
+    translate: vi.fn(),
+    rotate: vi.fn(),
+    scale: vi.fn(),
+    clearRect: vi.fn(),
     createLinearGradient: vi.fn(() => ({ addColorStop: vi.fn() })),
+    createRadialGradient: vi.fn(() => ({ addColorStop: vi.fn() })),
   } as unknown as CanvasRenderingContext2D;
   return ctx;
 }
@@ -32,7 +79,9 @@ function makeParams(overrides: Partial<Water2DParams> = {}): Water2DParams {
     clarity: 0.7,
     surfaceTension: 0.3,
     trackingMode: "both_ends",
-    momentumMode: false,
+    // splash style skips the atmospheric offscreen path so tests don't
+    // need a full offscreen ctx mock. Style-specific tests can override.
+    spewStyle: "splash",
     resolvedPalette: WATER_PALETTES.classic,
     poolSize: 256,
     baseRadius: 4,
@@ -52,7 +101,7 @@ const ALL_TIPS = {
 };
 
 describe("Water2DRenderer", () => {
-  it("spawns and draws ambient droplets at rest (streak calls stroke())", () => {
+  it("spawns droplets at rest under ambient emission", () => {
     const r = new Water2DRenderer();
     const ctx = makeCtx();
     const params = makeParams({ ambientEmission: 1, motionEmission: 0 });
@@ -60,9 +109,8 @@ describe("Water2DRenderer", () => {
     for (let i = 0; i < 30; i++) {
       r.render(ctx, params, ALL_TIPS, 1 / 60);
     }
-    // Each live droplet produces a beginPath + stroke pair.
-    expect((ctx.stroke as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThan(0);
-    expect((ctx.lineTo as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThan(0);
+    // Each live droplet becomes one drawImage + translate pair.
+    expect((ctx.drawImage as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThan(0);
   });
 
   it("motion emission outpaces ambient emission", () => {
@@ -84,8 +132,8 @@ describe("Water2DRenderer", () => {
       };
       rB.render(ctxB, moveParams, moving, step);
     }
-    const aCalls = (ctxA.stroke as ReturnType<typeof vi.fn>).mock.calls.length;
-    const bCalls = (ctxB.stroke as ReturnType<typeof vi.fn>).mock.calls.length;
+    const aCalls = (ctxA.drawImage as ReturnType<typeof vi.fn>).mock.calls.length;
+    const bCalls = (ctxB.drawImage as ReturnType<typeof vi.fn>).mock.calls.length;
     expect(bCalls).toBeGreaterThan(aCalls);
   });
 
@@ -94,13 +142,14 @@ describe("Water2DRenderer", () => {
     const ctx = makeCtx();
     const params = makeParams({
       ambientEmission: 1,
+      ambientSpawnRate: 80, // high enough to make spawn deterministic over test window
       motionEmission: 0,
       trackingMode: "left_end",
     });
-    for (let i = 0; i < 30; i++) {
+    for (let i = 0; i < 60; i++) {
       r.render(ctx, params, ALL_TIPS, 1 / 60);
     }
-    expect((ctx.stroke as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThan(0);
+    expect((ctx.drawImage as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThan(0);
   });
 
   it("caps pool size", () => {
@@ -111,15 +160,16 @@ describe("Water2DRenderer", () => {
       ambientSpawnRate: 10000,
       poolSize: 50,
     });
+    // Let the pool saturate.
     for (let i = 0; i < 120; i++) {
       r.render(ctx, params, ALL_TIPS, 1 / 60);
     }
-    const callsMid = (ctx.stroke as ReturnType<typeof vi.fn>).mock.calls.length;
+    const callsMid = (ctx.drawImage as ReturnType<typeof vi.fn>).mock.calls.length;
     for (let i = 0; i < 60; i++) {
       r.render(ctx, params, ALL_TIPS, 1 / 60);
     }
-    const callsEnd = (ctx.stroke as ReturnType<typeof vi.fn>).mock.calls.length;
-    // Per-frame strokes ≤ poolSize. callsEnd - callsMid is bounded.
+    const callsEnd = (ctx.drawImage as ReturnType<typeof vi.fn>).mock.calls.length;
+    // Per-frame drawImage count ≤ poolSize. callsEnd - callsMid is bounded.
     expect(callsEnd - callsMid).toBeLessThanOrEqual(60 * params.poolSize);
   });
 
@@ -127,18 +177,15 @@ describe("Water2DRenderer", () => {
     const r = new Water2DRenderer();
     const ctx = makeCtx();
     const params = makeParams({ ambientEmission: 1, motionEmission: 0 });
-    // Prime one droplet at top of frame with no motion.
-    r.render(ctx, params, ALL_TIPS, 1 / 60);
-    // Integrate physics. After a quarter-second of gravity, every lineTo
-    // y-coordinate should be below the spawn zone (y > 100). Sample the
-    // last lineTo call's y coordinate as a proxy.
+    // Integrate physics — the translate call before each drawImage places
+    // the droplet at its ballistic position, so tracking the max y across
+    // translate calls is a gravity-downward check.
     for (let i = 0; i < 30; i++) {
       r.render(ctx, params, ALL_TIPS, 1 / 60);
     }
-    const lineToCalls = (ctx.lineTo as ReturnType<typeof vi.fn>).mock.calls;
-    expect(lineToCalls.length).toBeGreaterThan(0);
-    // Grab the max y from all lineTo head positions.
-    const maxY = Math.max(...lineToCalls.map((c) => c[1] as number));
+    const translateCalls = (ctx.translate as ReturnType<typeof vi.fn>).mock.calls;
+    expect(translateCalls.length).toBeGreaterThan(0);
+    const maxY = Math.max(...translateCalls.map((c) => c[1] as number));
     expect(maxY).toBeGreaterThan(100);
   });
 
