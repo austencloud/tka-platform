@@ -26,6 +26,10 @@
 
 	let host: HTMLDivElement | undefined = $state();
 	let editor: Editor | undefined = $state();
+	// Suppresses ctx.mutate during programmatic setContent calls so external
+	// state changes (undo/redo, navigation) don't bounce back through onUpdate
+	// and create a feedback loop.
+	let suppressUpdates = false;
 
 	const currentDoc = $derived<TipTapJSONDoc>(
 		ctx.sidecar.text[field] ?? emptyTipTapDoc()
@@ -51,11 +55,20 @@
 			content: currentDoc,
 			editable: ctx.mode === 'edit',
 			onUpdate({ editor }) {
+				if (suppressUpdates) return;
 				const next = editor.getJSON() as TipTapJSONDoc;
-				ctx.mutate((draft) => {
-					draft.text[field] = next;
-					return draft;
-				});
+				ctx.mutate(
+					(draft) => {
+						draft.text[field] = next;
+						return draft;
+					},
+					{ key: `text:${field}`, withinMs: 600 }
+				);
+			},
+			onBlur() {
+				// Force the next keystroke (in any field) to start a new
+				// undo entry instead of merging into the just-edited one.
+				ctx.undo.breakCoalesce();
 			}
 		});
 
@@ -74,7 +87,12 @@
 		const incoming = currentDoc;
 		const live = editor.getJSON();
 		if (JSON.stringify(incoming) !== JSON.stringify(live)) {
-			editor.commands.setContent(incoming, false);
+			suppressUpdates = true;
+			try {
+				editor.commands.setContent(incoming, false);
+			} finally {
+				suppressUpdates = false;
+			}
 		}
 	});
 

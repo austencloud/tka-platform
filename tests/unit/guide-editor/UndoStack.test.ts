@@ -73,4 +73,36 @@ describe('UndoStack', () => {
 		expect(() => new UndoStack<number>(-1)).toThrow(/positive integer/);
 		expect(() => new UndoStack<number>(1.5)).toThrow(/positive integer/);
 	});
+
+	it('coalesces consecutive records with the same key inside the window', () => {
+		const stack = new UndoStack<{ v: number }>(50);
+		stack.record({ v: 0 });
+		stack.record({ v: 1 }, { key: 'text:title', withinMs: 600 });
+		stack.record({ v: 2 }, { key: 'text:title', withinMs: 600 });
+		stack.record({ v: 3 }, { key: 'text:title', withinMs: 600 });
+		// All three keystroke records collapse onto a single undo entry.
+		// Undo restores v:0 (the snapshot before the first keystroke).
+		expect(stack.undo()).toEqual({ v: 0 });
+		expect(stack.canUndo).toBe(false);
+	});
+
+	it('starts a new entry when coalesce keys differ', () => {
+		const stack = new UndoStack<{ field: string; v: number }>(50);
+		stack.record({ field: 'init', v: 0 });
+		stack.record({ field: 'a', v: 1 }, { key: 'text:a', withinMs: 600 });
+		stack.record({ field: 'b', v: 2 }, { key: 'text:b', withinMs: 600 });
+		// First undo returns the post-field-a state, second returns init.
+		expect(stack.undo()).toEqual({ field: 'a', v: 1 });
+		expect(stack.undo()).toEqual({ field: 'init', v: 0 });
+	});
+
+	it('breakCoalesce forces the next record to start a fresh entry', () => {
+		const stack = new UndoStack<{ v: number }>(50);
+		stack.record({ v: 0 });
+		stack.record({ v: 1 }, { key: 'text:title', withinMs: 600 });
+		stack.breakCoalesce();
+		stack.record({ v: 2 }, { key: 'text:title', withinMs: 600 });
+		expect(stack.undo()).toEqual({ v: 1 });
+		expect(stack.undo()).toEqual({ v: 0 });
+	});
 });

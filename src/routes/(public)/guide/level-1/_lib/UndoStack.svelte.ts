@@ -8,6 +8,8 @@ export class UndoStack<T> {
 	private redoBuf: T[] = $state([]);
 	private readonly maxSize: number;
 	private current: T | undefined = undefined;
+	private lastRecordKey: string | null = null;
+	private lastRecordAt: number = 0;
 
 	constructor(maxSize: number) {
 		if (!Number.isInteger(maxSize) || maxSize < 1) {
@@ -28,8 +30,29 @@ export class UndoStack<T> {
 	 * Record a new snapshot. Becomes the "current" state. The previous
 	 * current state is pushed onto the undo buffer. Redo buffer clears
 	 * (any forward history is invalidated by a new edit).
+	 *
+	 * If a `coalesce` key is provided and the previous record used the same
+	 * key within `withinMs`, the new snapshot REPLACES the current state
+	 * without pushing a new undo entry. Used for per-keystroke editing so
+	 * a 50-deep undo doesn't fill up after typing one paragraph.
 	 */
-	record(snapshot: T): void {
+	record(
+		snapshot: T,
+		coalesce?: { key: string; withinMs: number }
+	): void {
+		const now = Date.now();
+		const sameKey =
+			coalesce !== undefined &&
+			coalesce.key === this.lastRecordKey &&
+			now - this.lastRecordAt <= coalesce.withinMs;
+
+		if (sameKey) {
+			this.current = snapshot;
+			this.lastRecordAt = now;
+			this.redoBuf = [];
+			return;
+		}
+
 		if (this.current !== undefined) {
 			this.undoBuf.push(this.current);
 			while (this.undoBuf.length > this.maxSize) {
@@ -38,6 +61,17 @@ export class UndoStack<T> {
 		}
 		this.current = snapshot;
 		this.redoBuf = [];
+		this.lastRecordKey = coalesce?.key ?? null;
+		this.lastRecordAt = now;
+	}
+
+	/**
+	 * Force the next `record` to start a new undo entry even if its
+	 * coalesce key would otherwise match the previous one. Call when
+	 * editing focus changes (e.g., clicking a different field).
+	 */
+	breakCoalesce(): void {
+		this.lastRecordKey = null;
 	}
 
 	/**
@@ -69,5 +103,7 @@ export class UndoStack<T> {
 		this.undoBuf = [];
 		this.redoBuf = [];
 		this.current = undefined;
+		this.lastRecordKey = null;
+		this.lastRecordAt = 0;
 	}
 }
