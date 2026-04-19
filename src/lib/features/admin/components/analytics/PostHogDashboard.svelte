@@ -19,6 +19,7 @@
   } from "../../services/contracts/ISystemStateManager";
   import type { IPostHogAnalyticsProvider } from "../../services/contracts/IPostHogAnalyticsProvider";
   import { t } from "$lib/shared/i18n/i18n.svelte";
+  import ShortCodeAnalytics from "./ShortCodeAnalytics.svelte";
 
   // PostHog project ID for dashboard links
   const POSTHOG_PROJECT_ID = "299320";
@@ -282,6 +283,9 @@
         </div>
       </div>
     </section>
+
+    <!-- Shortcode / Choreo Card scans -->
+    <ShortCodeAnalytics />
 
     <!-- PostHog Dashboard Links -->
     <section class="section" aria-labelledby="dashboards-title">
