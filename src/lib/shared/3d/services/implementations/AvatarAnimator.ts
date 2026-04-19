@@ -96,19 +96,42 @@ export class AvatarAnimator implements IAvatarAnimator {
     this.clavicleRaiser = clavicleRaiser ?? null;
     this.spineTwister = spineTwister ?? null;
 
-    const defaultPose: BodyPose = {
-      leftHand: {
-        targetPosition: new Vector3(-0.25, 0.5, 0),
-        weight: 1,
-      },
-      rightHand: {
-        targetPosition: new Vector3(0.25, 0.5, 0),
-        weight: 1,
-      },
+    // Default pose: no props in either hand. Hands become non-null once
+    // setPropsAndBlend / setHandTargetsFromProps is called with a prop.
+    this.currentPose = {
+      leftHand: null,
+      rightHand: null,
       timestamp: Date.now(),
     };
-    this.currentPose = { ...defaultPose };
-    this.targetPose = { ...defaultPose };
+    this.targetPose = {
+      leftHand: null,
+      rightHand: null,
+      timestamp: Date.now(),
+    };
+  }
+
+  /** Deep-clone a HandPose, preserving null. */
+  private static cloneHandPose(p: HandPose | null): HandPose | null {
+    if (!p) return null;
+    return {
+      targetPosition: p.targetPosition.clone(),
+      wristRotation: p.wristRotation?.clone(),
+      staffAngle: p.staffAngle,
+      gripType: p.gripType,
+      plane: p.plane,
+      weight: p.weight,
+    };
+  }
+
+  /** Deep-clone a BodyPose (nullable hands, cloned Vector3s). */
+  private static cloneBodyPose(p: BodyPose): BodyPose {
+    return {
+      leftHand: AvatarAnimator.cloneHandPose(p.leftHand),
+      rightHand: AvatarAnimator.cloneHandPose(p.rightHand),
+      headLookAt: p.headLookAt?.clone(),
+      rootOffset: p.rootOffset?.clone(),
+      timestamp: p.timestamp,
+    };
   }
 
   setHandTargetsFromProps(
@@ -129,33 +152,33 @@ export class AvatarAnimator implements IAvatarAnimator {
     const oy = offset?.y ?? 0;
     const oz = offset?.z ?? 0;
 
-    if (blueProp) {
-      // Blue prop → performer's left hand → skeleton's LeftHand
-      this.targetPose.leftHand = {
-        targetPosition: new Vector3(
-          blueProp.worldPosition.x - ox,
-          blueProp.worldPosition.y - oy,
-          blueProp.worldPosition.z - oz
-        ),
-        plane: blueProp.plane,
-        weight: 1,
-      };
-    }
-    // else: no prop — animation drives the arm, don't update target
+    // Blue prop → performer's left hand → skeleton's LeftHand
+    // Red prop → performer's right hand → skeleton's RightHand
+    // When a prop is absent, the hand becomes null so body systems know
+    // not to read a stale position.
+    this.targetPose.leftHand = blueProp
+      ? {
+          targetPosition: new Vector3(
+            blueProp.worldPosition.x - ox,
+            blueProp.worldPosition.y - oy,
+            blueProp.worldPosition.z - oz
+          ),
+          plane: blueProp.plane,
+          weight: 1,
+        }
+      : null;
 
-    if (redProp) {
-      // Red prop → performer's right hand → skeleton's RightHand
-      this.targetPose.rightHand = {
-        targetPosition: new Vector3(
-          redProp.worldPosition.x - ox,
-          redProp.worldPosition.y - oy,
-          redProp.worldPosition.z - oz
-        ),
-        plane: redProp.plane,
-        weight: 1,
-      };
-    }
-    // else: no prop — animation drives the arm, don't update target
+    this.targetPose.rightHand = redProp
+      ? {
+          targetPosition: new Vector3(
+            redProp.worldPosition.x - ox,
+            redProp.worldPosition.y - oy,
+            redProp.worldPosition.z - oz
+          ),
+          plane: redProp.plane,
+          weight: 1,
+        }
+      : null;
 
     this.targetPose.timestamp = Date.now();
   }
@@ -172,31 +195,34 @@ export class AvatarAnimator implements IAvatarAnimator {
     const oy = offset?.y ?? 0;
     const oz = offset?.z ?? 0;
 
-    if (blueProp) {
-      this.targetPose.leftHand = {
-        targetPosition: new Vector3(
-          blueProp.worldPosition.x - ox,
-          blueProp.worldPosition.y - oy,
-          blueProp.worldPosition.z - oz
-        ),
-        staffAngle: blueProp.staffRotationAngle,
-        plane: blueProp.plane,
-        weight: 1,
-      };
-    }
+    // When a prop is absent, the hand becomes null so downstream systems
+    // (spine twist, clavicle, pole vectors, IK) skip the side uniformly
+    // instead of reading stale positions from a prior frame.
+    this.targetPose.leftHand = blueProp
+      ? {
+          targetPosition: new Vector3(
+            blueProp.worldPosition.x - ox,
+            blueProp.worldPosition.y - oy,
+            blueProp.worldPosition.z - oz
+          ),
+          staffAngle: blueProp.staffRotationAngle,
+          plane: blueProp.plane,
+          weight: 1,
+        }
+      : null;
 
-    if (redProp) {
-      this.targetPose.rightHand = {
-        targetPosition: new Vector3(
-          redProp.worldPosition.x - ox,
-          redProp.worldPosition.y - oy,
-          redProp.worldPosition.z - oz
-        ),
-        staffAngle: redProp.staffRotationAngle,
-        plane: redProp.plane,
-        weight: 1,
-      };
-    }
+    this.targetPose.rightHand = redProp
+      ? {
+          targetPosition: new Vector3(
+            redProp.worldPosition.x - ox,
+            redProp.worldPosition.y - oy,
+            redProp.worldPosition.z - oz
+          ),
+          staffAngle: redProp.staffRotationAngle,
+          plane: redProp.plane,
+          weight: 1,
+        }
+      : null;
 
     this.targetPose.timestamp = Date.now();
   }
@@ -241,26 +267,12 @@ export class AvatarAnimator implements IAvatarAnimator {
     // This keeps the wrist bones strictly locked to the grid prop location
     // so they never visually detach. Body systems (clavicle, spine twist,
     // pole vectors) still use smoothingFactor for natural motion.
-    this.currentPose.leftHand.targetPosition.copy(
-      this.targetPose.leftHand.targetPosition
+    this.currentPose.leftHand = AvatarAnimator.cloneHandPose(
+      this.targetPose.leftHand
     );
-    this.currentPose.rightHand.targetPosition.copy(
-      this.targetPose.rightHand.targetPosition
+    this.currentPose.rightHand = AvatarAnimator.cloneHandPose(
+      this.targetPose.rightHand
     );
-
-    // Weights also snap — no gradual ramp on the pose weight itself.
-    // (IK blend weight still ramps via ikBlendSpeed in update().)
-    this.currentPose.leftHand.weight = this.targetPose.leftHand.weight;
-    this.currentPose.rightHand.weight = this.targetPose.rightHand.weight;
-
-    // Staff angle snaps directly — drives wrist twist
-    this.currentPose.leftHand.staffAngle = this.targetPose.leftHand.staffAngle;
-    this.currentPose.rightHand.staffAngle = this.targetPose.rightHand.staffAngle;
-
-    // Plane is discrete — always take the latest target's plane
-    this.currentPose.leftHand.plane = this.targetPose.leftHand.plane;
-    this.currentPose.rightHand.plane = this.targetPose.rightHand.plane;
-
     this.currentPose.timestamp = Date.now();
   }
 
@@ -278,7 +290,7 @@ export class AvatarAnimator implements IAvatarAnimator {
     if (this.transitionProgress >= 1) {
       this.transitionProgress = 1;
       this.transitioning = false;
-      this.currentPose = { ...this.transitionEnd };
+      this.currentPose = AvatarAnimator.cloneBodyPose(this.transitionEnd);
       return;
     }
 
@@ -288,19 +300,43 @@ export class AvatarAnimator implements IAvatarAnimator {
       this.transitionConfig.easing
     );
 
-    // Interpolate poses
-    this.currentPose.leftHand.targetPosition.lerpVectors(
-      this.transitionStart.leftHand.targetPosition,
-      this.transitionEnd.leftHand.targetPosition,
+    // Interpolate pose hands per side. When either endpoint is null on a
+    // side we cannot lerp, so snap to the end's nullability — a hand that
+    // appears mid-transition pops in at t=0 and one that vanishes drops
+    // out at t=0. In practice transition targets come from set-piece
+    // authoring where both hands are consistently present or absent.
+    this.currentPose.leftHand = this.lerpHand(
+      this.transitionStart.leftHand,
+      this.transitionEnd.leftHand,
       t
     );
-    this.currentPose.rightHand.targetPosition.lerpVectors(
-      this.transitionStart.rightHand.targetPosition,
-      this.transitionEnd.rightHand.targetPosition,
+    this.currentPose.rightHand = this.lerpHand(
+      this.transitionStart.rightHand,
+      this.transitionEnd.rightHand,
       t
     );
 
     this.currentPose.timestamp = Date.now();
+  }
+
+  private lerpHand(
+    start: HandPose | null,
+    end: HandPose | null,
+    t: number
+  ): HandPose | null {
+    if (!start || !end) return AvatarAnimator.cloneHandPose(end);
+    return {
+      targetPosition: new Vector3().lerpVectors(
+        start.targetPosition,
+        end.targetPosition,
+        t
+      ),
+      wristRotation: end.wristRotation?.clone(),
+      staffAngle: end.staffAngle,
+      gripType: end.gripType,
+      plane: end.plane,
+      weight: start.weight + (end.weight - start.weight) * t,
+    };
   }
 
   private applyEasing(t: number, easing: TransitionConfig["easing"]): number {
@@ -317,35 +353,26 @@ export class AvatarAnimator implements IAvatarAnimator {
   }
 
   private computeFinalPose(): BodyPose {
-    // Start with current pose
-    const result: BodyPose = {
-      leftHand: {
-        targetPosition: this.currentPose.leftHand.targetPosition.clone(),
-        staffAngle: this.currentPose.leftHand.staffAngle,
-        plane: this.currentPose.leftHand.plane,
-        weight: this.currentPose.leftHand.weight,
-      },
-      rightHand: {
-        targetPosition: this.currentPose.rightHand.targetPosition.clone(),
-        staffAngle: this.currentPose.rightHand.staffAngle,
-        plane: this.currentPose.rightHand.plane,
-        weight: this.currentPose.rightHand.weight,
-      },
-      timestamp: this.currentPose.timestamp,
-    };
+    const result = AvatarAnimator.cloneBodyPose(this.currentPose);
 
-    // Apply layers
+    // Apply layers. A layer can only influence a hand that's present in
+    // both the current pose and the layer's pose — there's nothing to
+    // lerp toward or from when one side is null.
     for (const layer of this.layers.values()) {
       if (layer.weight <= 0) continue;
 
-      result.leftHand.targetPosition.lerp(
-        layer.pose.leftHand.targetPosition,
-        layer.weight
-      );
-      result.rightHand.targetPosition.lerp(
-        layer.pose.rightHand.targetPosition,
-        layer.weight
-      );
+      if (result.leftHand && layer.pose.leftHand) {
+        result.leftHand.targetPosition.lerp(
+          layer.pose.leftHand.targetPosition,
+          layer.weight
+        );
+      }
+      if (result.rightHand && layer.pose.rightHand) {
+        result.rightHand.targetPosition.lerp(
+          layer.pose.rightHand.targetPosition,
+          layer.weight
+        );
+      }
     }
 
     return result;
@@ -411,23 +438,12 @@ export class AvatarAnimator implements IAvatarAnimator {
     const maxIKWeight = Math.max(this.leftArmIK.weight, this.rightArmIK.weight);
 
     if (this._spineTwistEnabled && this.spineTwister && this.spineRestCached && maxIKWeight > 0.001) {
-      // When one hand is hidden (its prop was toggled off), its targetPosition
-      // is stale from the last time that prop was set. Feeding it to SpineTwister
-      // makes the head/torso turn toward a prop that isn't there. Collapse the
-      // hidden hand onto the visible one so the twist orients toward the single
-      // visible prop instead.
-      const leftVisible = this.leftArmIK.targetWeight > 0.001;
-      const rightVisible = this.rightArmIK.targetWeight > 0.001;
-      const effectiveLeft = leftVisible
-        ? pose.leftHand.targetPosition
-        : pose.rightHand.targetPosition;
-      const effectiveRight = rightVisible
-        ? pose.rightHand.targetPosition
-        : pose.leftHand.targetPosition;
-
+      // Nullable hands are first-class: SpineTwister handles the
+      // single-hand-gaze branch and the no-hand identity branch
+      // internally, so we pass pose hands through as-is.
       const twistResult = this.spineTwister.computeSpineTwist(
-        effectiveLeft,
-        effectiveRight,
+        pose.leftHand?.targetPosition ?? null,
+        pose.rightHand?.targetPosition ?? null,
         bodyCenter,
         this.availableSpineBones
       );
@@ -495,11 +511,12 @@ export class AvatarAnimator implements IAvatarAnimator {
       }
     }
 
-    const leftTarget = pose.leftHand.targetPosition;
-    const rightTarget = pose.rightHand.targetPosition;
+    const leftHand = pose.leftHand;
+    const rightHand = pose.rightHand;
 
-    if (leftChain) {
+    if (leftChain && leftHand) {
       if (this.leftArmIK.weight > 0.001) {
+        const leftTarget = leftHand.targetPosition;
         // Save what the locomotion animation wrote to bone quaternions
         const animRootQuat = leftChain.root.quaternion.clone();
         const animMiddleQuat = leftChain.middle.quaternion.clone();
@@ -526,13 +543,13 @@ export class AvatarAnimator implements IAvatarAnimator {
         // Build IK target with optional pole vector
         const target: IKTarget = {
           position: leftTarget,
-          weight: pose.leftHand.weight,
+          weight: leftHand.weight,
         };
 
-        if (this._poleVectorsEnabled && this.poleComputer && pose.leftHand.plane) {
+        if (this._poleVectorsEnabled && this.poleComputer && leftHand.plane) {
           const idealPole = this.poleComputer.computePoleVector(
             leftTarget,
-            pose.leftHand.plane,
+            leftHand.plane,
             "left",
             bodyCenter
           );
@@ -559,8 +576,9 @@ export class AvatarAnimator implements IAvatarAnimator {
       // else: weight ~0, skip IK entirely — animation drives the arm
     }
 
-    if (rightChain) {
+    if (rightChain && rightHand) {
       if (this.rightArmIK.weight > 0.001) {
+        const rightTarget = rightHand.targetPosition;
         // Save what the locomotion animation wrote to bone quaternions
         const animRootQuat = rightChain.root.quaternion.clone();
         const animMiddleQuat = rightChain.middle.quaternion.clone();
@@ -587,13 +605,13 @@ export class AvatarAnimator implements IAvatarAnimator {
         // Build IK target with optional pole vector
         const target: IKTarget = {
           position: rightTarget,
-          weight: pose.rightHand.weight,
+          weight: rightHand.weight,
         };
 
-        if (this._poleVectorsEnabled && this.poleComputer && pose.rightHand.plane) {
+        if (this._poleVectorsEnabled && this.poleComputer && rightHand.plane) {
           const idealPole = this.poleComputer.computePoleVector(
             rightTarget,
-            pose.rightHand.plane,
+            rightHand.plane,
             "right",
             bodyCenter
           );
@@ -641,7 +659,7 @@ export class AvatarAnimator implements IAvatarAnimator {
 
   async transitionTo(pose: BodyPose, config: TransitionConfig): Promise<void> {
     return new Promise((resolve) => {
-      this.transitionStart = { ...this.currentPose };
+      this.transitionStart = AvatarAnimator.cloneBodyPose(this.currentPose);
       this.transitionEnd = pose;
       this.transitionConfig = config;
       this.transitionProgress = 0;
