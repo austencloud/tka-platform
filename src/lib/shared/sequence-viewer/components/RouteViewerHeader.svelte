@@ -76,7 +76,7 @@
     </div>
 
     <div class="header-right">
-      <!-- Spacer to balance layout -->
+      <MotionVisibilityToggle />
     </div>
   </header>
 {:else}
