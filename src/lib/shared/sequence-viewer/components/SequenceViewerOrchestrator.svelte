@@ -198,6 +198,9 @@
     recordingElapsed: number;
     /** Stop the current 3D recording and proceed to export */
     handleStopRecording: () => void;
+
+    /** Per-viewer motion visibility state (ephemeral, resets on sequence change) */
+    viewerVisibility: SequenceViewerVisibilityState;
   }
 </script>
 
@@ -254,6 +257,8 @@
   import type { LibrarySequence } from "$lib/features/library/domain/models/LibrarySequence";
   import { createViewer3DState } from "$lib/shared/3d/state/viewer-3d-state.svelte";
   import { setViewer3DContext } from "$lib/shared/3d/context/viewer-3d-context";
+  import { SequenceViewerVisibilityState } from "../state/viewer-visibility-state.svelte";
+  import { setViewerVisibilityContext } from "../context/viewer-visibility-context";
   import { CameraKeyframeBuffer } from "$lib/shared/video-export/domain/CameraKeyframe";
   import type { PendingActionType } from "$lib/shared/sequence-viewer/services/contracts/IPendingActionQueue";
   import SignInSheet from "./SignInSheet.svelte";
@@ -427,7 +432,16 @@
   });
   setViewer3DContext(viewer3DState);
 
-  // Animation state
+  // Motion visibility state — ephemeral per-viewer, resets on sequence change
+  const viewerVisibility = new SequenceViewerVisibilityState();
+  setViewerVisibilityContext(viewerVisibility);
+
+  $effect(() => {
+    // Reset motion visibility whenever the sequence identity changes
+    void sequence?.id;
+    viewerVisibility.reset();
+  });
+
   const modalAnimationState = createAnimationPanelState();
   let animationServicesReady = $state(false);
   let animationLoading = $state(false);
@@ -2171,6 +2185,9 @@
       redPropType: activeRedProp,
       catDogModeEnabled: activeCatDog,
     },
+
+    // Motion visibility
+    viewerVisibility,
   });
 </script>
 
