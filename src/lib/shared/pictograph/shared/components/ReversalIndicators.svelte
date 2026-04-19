@@ -61,7 +61,7 @@ Color-coded dots indicate which motion (blue/red) is reversing between pictograp
   }
 
   onMount(() => {
-    visibilityManager.registerObserver(handleVisibilityChange, ["motion"]);
+    visibilityManager.registerObserver(handleVisibilityChange, ["glyph"]);
     animationVisibilityManager.registerObserver(handleColorChange);
 
     return () => {

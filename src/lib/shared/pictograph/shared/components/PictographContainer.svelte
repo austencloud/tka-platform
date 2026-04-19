@@ -155,8 +155,6 @@ with pre-prepared data for better performance.
   // Using $state for each value ensures Svelte 5 properly tracks changes
   let syncedVisibility = $state({
     showGrid: visibilityManager.getGridVisibility(),
-    blueMotion: true,
-    redMotion: true,
     tkaGlyph: visibilityManager.getGlyphVisibility("tkaGlyph"),
     reversalIndicators: visibilityManager.getGlyphVisibility("reversalIndicators"),
     nonRadialPoints: visibilityManager.getNonRadialVisibility(),
@@ -172,8 +170,6 @@ with pre-prepared data for better performance.
     // This creates a new object reference, forcing Svelte to detect the change
     syncedVisibility = {
       showGrid: visibilityManager.getGridVisibility(),
-      blueMotion: true,
-      redMotion: true,
       tkaGlyph: visibilityManager.getGlyphVisibility("tkaGlyph"),
       reversalIndicators: visibilityManager.getGlyphVisibility("reversalIndicators"),
       nonRadialPoints: visibilityManager.getNonRadialVisibility(),
@@ -207,12 +203,12 @@ with pre-prepared data for better performance.
     darkMode !== undefined ? darkMode : syncedVisibility.darkMode
   );
 
-  // Effective visibility values - use prop overrides if set, otherwise synced state
+  // Effective visibility values - use prop overrides if set, otherwise true (motion always visible)
   const effectiveBlueMotion = $derived(
-    showBlueMotion !== undefined ? showBlueMotion : syncedVisibility.blueMotion
+    showBlueMotion !== undefined ? showBlueMotion : true
   );
   const effectiveRedMotion = $derived(
-    showRedMotion !== undefined ? showRedMotion : syncedVisibility.redMotion
+    showRedMotion !== undefined ? showRedMotion : true
   );
   const effectiveShowGrid = $derived(
     showGrid !== undefined ? showGrid : syncedVisibility.showGrid

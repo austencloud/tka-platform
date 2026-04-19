@@ -46,14 +46,11 @@ function buildGridChildren(vm: VisibilityStateManager): ContextMenuItem[] {
 }
 
 function buildGlyphChildren(vm: VisibilityStateManager): ContextMenuItem[] {
-  const allMotionsVisible = vm.areAllMotionsVisible();
-
   return [
     {
       id: "toggle-tka-glyph",
       label: "TKA",
       checked: vm.getRawGlyphVisibility("tkaGlyph"),
-      disabled: !allMotionsVisible,
       keepOpen: true,
       action: () => vm.setGlyphVisibility("tkaGlyph", !vm.getRawGlyphVisibility("tkaGlyph")),
     },
@@ -61,7 +58,6 @@ function buildGlyphChildren(vm: VisibilityStateManager): ContextMenuItem[] {
       id: "toggle-vtg-glyph",
       label: "VTG",
       checked: vm.getRawGlyphVisibility("vtgGlyph"),
-      disabled: !allMotionsVisible,
       keepOpen: true,
       action: () => vm.setGlyphVisibility("vtgGlyph", !vm.getRawGlyphVisibility("vtgGlyph")),
     },
@@ -69,7 +65,6 @@ function buildGlyphChildren(vm: VisibilityStateManager): ContextMenuItem[] {
       id: "toggle-elemental-glyph",
       label: "Elemental",
       checked: vm.getRawGlyphVisibility("elementalGlyph"),
-      disabled: !allMotionsVisible,
       keepOpen: true,
       action: () => vm.setGlyphVisibility("elementalGlyph", !vm.getRawGlyphVisibility("elementalGlyph")),
     },
@@ -77,7 +72,6 @@ function buildGlyphChildren(vm: VisibilityStateManager): ContextMenuItem[] {
       id: "toggle-positions-glyph",
       label: "Positions",
       checked: vm.getRawGlyphVisibility("positionsGlyph"),
-      disabled: !allMotionsVisible,
       keepOpen: true,
       action: () => vm.setGlyphVisibility("positionsGlyph", !vm.getRawGlyphVisibility("positionsGlyph")),
     },
