@@ -114,8 +114,8 @@
     position: fixed;
     left: 8px;
     right: 8px;
-    top: 60px;
     bottom: 8px;
+    max-height: 85vh;
     z-index: 2147483646;
     background: #0d1018;
     border: 1px solid rgba(255, 255, 255, 0.12);
