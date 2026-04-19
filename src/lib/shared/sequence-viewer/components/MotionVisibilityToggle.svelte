@@ -92,8 +92,8 @@
   .motion-vis-root { position: relative; }
 
   .motion-vis-btn {
-    width: var(--min-touch-target);
-    height: var(--min-touch-target);
+    width: var(--min-touch-target, 44px);
+    height: var(--min-touch-target, 44px);
     border-radius: 10px;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
     background: transparent;
