@@ -44,6 +44,7 @@
   import VideoPanel from "./video-panel/VideoPanel.svelte";
   import type { ICollaborativeVideoManager } from "$lib/shared/video-collaboration/services/contracts/ICollaborativeVideoManager";
   import ChoreoCardContextMenuHost from "./choreo-card-context-menu/ChoreoCardContextMenuHost.svelte";
+  import MotionVisibilityToggle from "./MotionVisibilityToggle.svelte";
   import CardSettingsModal from "$lib/features/choreo-card/components/CardSettingsModal.svelte";
   import {
     openSendSequenceSheet,
@@ -397,6 +398,7 @@
                 </div>
 
                 <div class="drawer-header-actions">
+                  <MotionVisibilityToggle />
                   {#if authState.isAdmin}
                     <button
                       type="button"
