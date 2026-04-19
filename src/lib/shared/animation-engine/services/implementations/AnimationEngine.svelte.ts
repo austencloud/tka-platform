@@ -365,8 +365,6 @@ export class AnimationEngine {
   private previewDarkModeActive: boolean = false; // true when previewDarkMode prop overrides global
   private prevTrailsActive: boolean = true;
   private prevPropsVisible: boolean = true;
-  private prevBlueMotionVisible: boolean = true;
-  private prevRedMotionVisible: boolean = true;
   private prevHasFireTips: boolean = false;
   private prevColorBlend: number = 0.5;
   private prevHasCharcoalTips: boolean = false;
@@ -459,6 +457,29 @@ export class AnimationEngine {
   }
 
   /**
+   * Update motion visibility from the viewer-scoped state.
+   * Called by AnimatorCanvas whenever the user toggles Blue/Red in the
+   * header popover. Mutates the engine's internal visibilityState so the
+   * next render frame reflects it. Also triggers an immediate re-render
+   * so the change takes effect without waiting for the next animation tick.
+   */
+  setMotionVisibility(blue: boolean, red: boolean): void {
+    if (
+      this.state.visibilityState.blueMotion === blue &&
+      this.state.visibilityState.redMotion === red
+    ) {
+      return;
+    }
+    this.state.visibilityState.blueMotion = blue;
+    this.state.visibilityState.redMotion = red;
+    if (this.state.isInitialized) {
+      this.renderLoopService?.triggerRender(() =>
+        this.getFrameParams(this.lastPropsRef ?? DEFAULT_ENGINE_PROPS)
+      );
+    }
+  }
+
+  /**
    * Set a per-performer effort resolver. When set, getEffortForPerformer()
    * calls the resolver instead of reading the global visibility manager.
    * Pass null to clear and restore global-fallback behavior.
@@ -501,8 +522,6 @@ export class AnimationEngine {
     this.prevDarkMode = vm.isDarkMode();
     this.prevTrailsActive = vm.isTrailsActive();
     this.prevPropsVisible = vm.getVisibility("props");
-    this.prevBlueMotionVisible = vm.getVisibility("blueMotion");
-    this.prevRedMotionVisible = vm.getVisibility("redMotion");
     this.prevHasFireTips = vm.hasEffect("fire");
     this.prevColorBlend = vm.getFireColorBlend();
     this.prevHasCharcoalTips = vm.hasEffect("charcoal");
@@ -551,8 +570,8 @@ export class AnimationEngine {
       props: vm.getVisibility("props"),
       trails: vm.isTrailsActive(),
       tkaGlyph: vm.getVisibility("tkaGlyph"), // TKA Glyph includes turn numbers
-      blueMotion: vm.getVisibility("blueMotion"),
-      redMotion: vm.getVisibility("redMotion"),
+      blueMotion: true,
+      redMotion: true,
       darkMode: vm.isDarkMode(),
       wordHeader: vm.getVisibility("wordHeader"),
       activeEffect: vm.getActiveEffect(),
@@ -623,26 +642,6 @@ export class AnimationEngine {
             this.trailCapturer?.clearTrails();
           }
 
-          if (this.state.isInitialized) {
-            this.renderLoopService?.triggerRender(() =>
-              this.getFrameParams(this.lastPropsRef ?? DEFAULT_ENGINE_PROPS)
-            );
-          }
-        }
-
-        // Trigger render when blue motion visibility changes (enables individual fade)
-        if (state.blueMotion !== this.prevBlueMotionVisible) {
-          this.prevBlueMotionVisible = state.blueMotion;
-          if (this.state.isInitialized) {
-            this.renderLoopService?.triggerRender(() =>
-              this.getFrameParams(this.lastPropsRef ?? DEFAULT_ENGINE_PROPS)
-            );
-          }
-        }
-
-        // Trigger render when red motion visibility changes (enables individual fade)
-        if (state.redMotion !== this.prevRedMotionVisible) {
-          this.prevRedMotionVisible = state.redMotion;
           if (this.state.isInitialized) {
             this.renderLoopService?.triggerRender(() =>
               this.getFrameParams(this.lastPropsRef ?? DEFAULT_ENGINE_PROPS)
