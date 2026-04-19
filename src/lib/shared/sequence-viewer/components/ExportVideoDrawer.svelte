@@ -7,8 +7,7 @@
     Settings open in a slide-up overlay. Animation gets full screen space.
 -->
 <script lang="ts">
-  import { fade, fly } from "svelte/transition";
-  import { cubicOut } from "svelte/easing";
+  import { fade } from "svelte/transition";
   import type {
     ExportOptionsStateManager,
     VideoFps,
@@ -19,6 +18,13 @@
   import EffectsPanel from "$lib/shared/animation-engine/components/effects-panel/EffectsPanel.svelte";
   import PlaybackModeToggle from "$lib/features/compose/components/controls/PlaybackModeToggle.svelte";
   import type { PlaybackMode } from "$lib/features/compose/state/animation-panel-state.svelte";
+  import RailBentoSheet from "./bento/RailBentoSheet.svelte";
+  import "./bento/rail-tile.css";
+  import TempoControl from "./TempoControl.svelte";
+  import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
+  import { EFFORTS } from "$lib/features/effort-lab/domain/effort-types";
+  import EffortCategory from "$lib/shared/animation-engine/components/animation-settings-modal/categories/EffortCategory.svelte";
+  import { onDestroy } from "svelte";
 
   type PanelLayout = "sidebar" | "bottom";
 
@@ -60,8 +66,37 @@
 
   const exportButtonLabel = $derived(renderMode === '3d' ? 'Record Scene' : 'Download Animation');
 
-  // Mobile settings drawer state
-  let settingsOpen = $state(false);
+  // Which sub-sheet is currently open in the mobile bento layout. Null = none.
+  type SheetId = "effects" | "effort" | "playback" | "export";
+  let openSheet = $state<SheetId | null>(null);
+  function toggleSheet(id: SheetId) {
+    openSheet = openSheet === id ? null : id;
+  }
+  function closeSheet() {
+    openSheet = null;
+  }
+
+  // Reactive bridge to the animation visibility manager — drives the Effort
+  // tile label/color and the Effects tile count badge.
+  const vm = getAnimationVisibilityManager();
+  let vmVersion = $state(0);
+  function onVmChanged(): void { vmVersion++; }
+  vm.registerObserver(onVmChanged);
+  onDestroy(() => vm.unregisterObserver(onVmChanged));
+
+  const activeEffort = $derived.by(() => {
+    void vmVersion;
+    const id = vm.getEffortPreset();
+    const match = EFFORTS.find((e) => e.id === id);
+    // EFFORTS is a non-empty readonly array; fall back to "linear" as a safety net.
+    return match ?? EFFORTS[0] ?? { id: "linear", label: "Linear", subtitle: "", color: "#94a3b8", params: [] };
+  });
+
+  const effectsCount = $derived.by(() => {
+    void vmVersion;
+    const map = vm.getTipEffectMap();
+    return Object.values(map).filter((a) => a?.effect && a.effect !== "none").length;
+  });
 
   function preventSpaceActivation(event: KeyboardEvent) {
     if (event.key === " " || event.code === "Space") {
@@ -137,7 +172,8 @@
 
 {#if layout === "bottom"}
   <!-- ============================================================
-       MOBILE: Compact bottom bar + settings overlay
+       MOBILE: Bento grid. Canvas stays visible. Sub-sheets open
+       over the bottom of the canvas when a primary tile is tapped.
        ============================================================ -->
   <div
     class="mobile-export"
@@ -146,7 +182,7 @@
     aria-label="Animation export"
   >
     {#if isExporting}
-      <!-- Progress replaces the bar during export -->
+      <!-- Progress replaces the bento during export -->
       <div class="mobile-progress" role="status" aria-live="polite">
         <div class="progress-info">
           <span class="progress-stage">
@@ -177,199 +213,225 @@
         {/if}
       </div>
     {:else}
-      <!-- Settings sheet (overlay, slides up over canvas) -->
-      {#if settingsOpen}
-        <button
-          type="button"
-          class="settings-backdrop"
-          onclick={() => (settingsOpen = false)}
-          aria-label="Close settings"
-          tabindex="-1"
-          transition:fade={{ duration: 200 }}
-        ></button>
-        <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-        <div
-          class="inline-settings"
-          role="region"
-          aria-label="Animation export settings"
-          onkeydown={preventSpaceActivation}
-          transition:fly={{ y: 120, duration: 280, easing: cubicOut }}
-        >
-          <div class="sheet-handle" aria-hidden="true"></div>
-          <div class="inline-settings-header">
-            <span class="inline-settings-title">Animation Settings</span>
-            <button
-              type="button"
-              class="inline-settings-close"
-              onclick={() => (settingsOpen = false)}
-              aria-label="Close settings"
-            >
-              <i class="fas fa-times" aria-hidden="true"></i>
-            </button>
+      {#if openSheet === "effects"}
+        <RailBentoSheet title="Effects" onClose={closeSheet}>
+          <EffectsPanel
+            {bpm}
+            onBpmChange={onBpmChange ?? (() => {})}
+            {isPlaying}
+            onPlaybackToggle={onPlaybackToggle ?? (() => {})}
+            showPlayback={false}
+            showTransport={false}
+          />
+        </RailBentoSheet>
+      {:else if openSheet === "effort"}
+        <RailBentoSheet title="Effort" onClose={closeSheet}>
+          <EffortCategory />
+        </RailBentoSheet>
+      {:else if openSheet === "playback"}
+        <RailBentoSheet title="Playback" onClose={closeSheet}>
+          <div class="rt-section">
+            <span class="rt-section-label">Tempo</span>
+            <TempoControl
+              {bpm}
+              onBpmChange={onBpmChange ?? (() => {})}
+              showPresets={false}
+              showPractice={false}
+              presetsMode="popover"
+            />
           </div>
 
-          <div class="inline-settings-body">
-            <EffectsPanel
-              bpm={bpm}
-              onBpmChange={onBpmChange ?? (() => {})}
-              {isPlaying}
-              onPlaybackToggle={onPlaybackToggle ?? (() => {})}
-              showPlayback={!!onBpmChange}
-              showTransport={false}
-            />
-
-            <!-- Playback Mode -->
-            {#if onPlaybackModeChange}
-              <div class="setting-row">
-                <span class="setting-label">Playback</span>
-                <PlaybackModeToggle
-                  {playbackMode}
-                  {isPlaying}
-                  onPlaybackModeChange={onPlaybackModeChange}
-                  onPlaybackToggle={onPlaybackToggle ?? (() => {})}
-                />
-              </div>
-            {/if}
-
-            <!-- FPS -->
-            <div class="setting-row">
-              <span class="setting-label">FPS</span>
-              <div class="chip-group">
-                {#each fpsOptions as opt}
-                  <button
-                    type="button"
-                    class="chip"
-                    class:active={exportOptions.videoFps === opt.value}
-                    onclick={() => exportOptions.setVideoFps(opt.value)}
-                    aria-pressed={exportOptions.videoFps === opt.value}
-                  >
-                    {opt.label}
-                    {#if opt.badge}
-                      <span class="chip-badge">{opt.badge}</span>
-                    {/if}
-                  </button>
-                {/each}
-              </div>
+          {#if onPlaybackModeChange}
+            <div class="rt-section">
+              <span class="rt-section-label">Mode</span>
+              <PlaybackModeToggle
+                {playbackMode}
+                {isPlaying}
+                {onPlaybackModeChange}
+                onPlaybackToggle={onPlaybackToggle ?? (() => {})}
+              />
             </div>
+          {/if}
 
-            <!-- Resolution -->
-            <div class="setting-row">
-              <span class="setting-label">Resolution</span>
-              <div class="chip-group">
-                {#each resOptionsWithDims as opt}
-                  <button
-                    type="button"
-                    class="chip"
-                    class:active={exportOptions.videoResolution === opt.value}
-                    onclick={() => exportOptions.setVideoResolution(opt.value)}
-                    aria-pressed={exportOptions.videoResolution === opt.value}
-                  >
-                    {opt.label}
-                  </button>
-                {/each}
-              </div>
+          <div class="rt-section">
+            <span class="rt-section-label">Timing</span>
+            <div class="rt-chip-row">
+              <button
+                type="button"
+                class="rt-chip"
+                aria-pressed={exportOptions.videoIncludeStartPosition}
+                onclick={() => exportOptions.setVideoIncludeStartPosition(!exportOptions.videoIncludeStartPosition)}
+              >
+                <i class="fas fa-step-backward" aria-hidden="true"></i> Start Hold
+              </button>
+              <button
+                type="button"
+                class="rt-chip"
+                aria-pressed={exportOptions.videoIncludeEndHold}
+                onclick={() => exportOptions.setVideoIncludeEndHold(!exportOptions.videoIncludeEndHold)}
+              >
+                <i class="fas fa-step-forward" aria-hidden="true"></i> End Hold
+              </button>
             </div>
+          </div>
+        </RailBentoSheet>
+      {:else if openSheet === "export"}
+        <RailBentoSheet title="Export" onClose={closeSheet}>
+          <div class="rt-section">
+            <span class="rt-section-label">Frame rate</span>
+            <div class="rt-chip-row">
+              <button
+                type="button"
+                class="rt-chip"
+                aria-pressed={exportOptions.videoFps === 30}
+                onclick={() => exportOptions.setVideoFps(30)}
+              >30 fps</button>
+              <button
+                type="button"
+                class="rt-chip"
+                aria-pressed={exportOptions.videoFps === 60}
+                onclick={() => exportOptions.setVideoFps(60)}
+              >60 fps</button>
+            </div>
+          </div>
 
-            <!-- Quality (3D only) -->
-            {#if renderMode === '3d'}
-              <div class="setting-row">
-                <span class="setting-label">Quality</span>
-                <div class="chip-group">
-                  <button
-                    type="button"
-                    class="chip"
-                    class:active={exportOptions.videoQuality === 'standard'}
-                    onclick={() => exportOptions.setVideoQuality('standard')}
-                    aria-pressed={exportOptions.videoQuality === 'standard'}
-                  >
-                    Standard
-                  </button>
-                  <button
-                    type="button"
-                    class="chip"
-                    class:active={exportOptions.videoQuality === 'cinema'}
-                    onclick={() => exportOptions.setVideoQuality('cinema')}
-                    aria-pressed={exportOptions.videoQuality === 'cinema'}
-                  >
-                    <i class="fas fa-film" aria-hidden="true" style="margin-right: 0.35em;"></i>
-                    Cinema
-                  </button>
-                </div>
-              </div>
-            {/if}
+          <div class="rt-section">
+            <span class="rt-section-label">Resolution</span>
+            <div class="rt-chip-row">
+              <button
+                type="button"
+                class="rt-chip"
+                aria-pressed={exportOptions.videoResolution === 720}
+                onclick={() => exportOptions.setVideoResolution(720)}
+              >{renderMode === '3d' ? '720×720' : '720p'}</button>
+              <button
+                type="button"
+                class="rt-chip"
+                aria-pressed={exportOptions.videoResolution === 1080}
+                onclick={() => exportOptions.setVideoResolution(1080)}
+              >{renderMode === '3d' ? '1080×1080' : '1080p'}</button>
+            </div>
+          </div>
 
-            <!-- Timing -->
-            <div class="setting-row">
-              <span class="setting-label">Timing</span>
-              <div class="chip-group">
+          {#if renderMode === '3d'}
+            <div class="rt-section">
+              <span class="rt-section-label">Quality</span>
+              <div class="rt-chip-row">
                 <button
                   type="button"
-                  class="chip"
-                  class:active={exportOptions.videoIncludeStartPosition}
-                  onclick={() => exportOptions.setVideoIncludeStartPosition(!exportOptions.videoIncludeStartPosition)}
-                  aria-pressed={exportOptions.videoIncludeStartPosition}
-                >
-                  Start Pos
-                </button>
+                  class="rt-chip"
+                  aria-pressed={exportOptions.videoQuality === 'standard'}
+                  onclick={() => exportOptions.setVideoQuality('standard')}
+                >Standard</button>
                 <button
                   type="button"
-                  class="chip"
-                  class:active={exportOptions.videoIncludeEndHold}
-                  onclick={() => exportOptions.setVideoIncludeEndHold(!exportOptions.videoIncludeEndHold)}
-                  aria-pressed={exportOptions.videoIncludeEndHold}
+                  class="rt-chip"
+                  aria-pressed={exportOptions.videoQuality === 'cinema'}
+                  onclick={() => exportOptions.setVideoQuality('cinema')}
                 >
-                  End Hold
+                  <i class="fas fa-film" aria-hidden="true"></i> Cinema
                 </button>
               </div>
             </div>
+          {/if}
 
-            <!-- Loops -->
-            <div class="setting-row">
-              <span class="setting-label">Loops</span>
-              <div class="loop-count-row">
-                <button
-                  type="button"
-                  class="loop-btn"
-                  onclick={() => exportOptions.setVideoLoopCount(exportOptions.videoLoopCount - 1)}
-                  disabled={exportOptions.videoLoopCount <= 1}
-                  aria-label="Decrease loop count"
-                >
-                  <i class="fas fa-minus" aria-hidden="true"></i>
-                </button>
-                <span class="loop-count-value">{exportOptions.videoLoopCount}x</span>
-                <button
-                  type="button"
-                  class="loop-btn"
-                  onclick={() => exportOptions.setVideoLoopCount(exportOptions.videoLoopCount + 1)}
-                  disabled={exportOptions.videoLoopCount >= 10}
-                  aria-label="Increase loop count"
-                >
-                  <i class="fas fa-plus" aria-hidden="true"></i>
-                </button>
-              </div>
+          <div class="rt-row">
+            <span class="rt-row-label">Loops</span>
+            <div class="rt-stepper">
+              <button
+                type="button"
+                class="rt-step-btn"
+                onclick={() => exportOptions.setVideoLoopCount(exportOptions.videoLoopCount - 1)}
+                disabled={exportOptions.videoLoopCount <= 1}
+                aria-label="Decrease loop count"
+              >
+                <i class="fas fa-minus" aria-hidden="true"></i>
+              </button>
+              <span class="rt-val">{exportOptions.videoLoopCount}×</span>
+              <button
+                type="button"
+                class="rt-step-btn"
+                onclick={() => exportOptions.setVideoLoopCount(exportOptions.videoLoopCount + 1)}
+                disabled={exportOptions.videoLoopCount >= 10}
+                aria-label="Increase loop count"
+              >
+                <i class="fas fa-plus" aria-hidden="true"></i>
+              </button>
             </div>
-
-            {#if totalVideoDuration}
-              <div class="video-duration-line">
-                <i class="fas fa-film" aria-hidden="true"></i>
-                Video length: {totalVideoDuration}
-              </div>
-            {/if}
           </div>
 
           {#if timeEstimateLabel}
-            <div class="inline-settings-footer">
-              <span class="time-estimate">{timeEstimateLabel}</span>
+            <div class="video-duration-line">
+              <i class="fas fa-clock" aria-hidden="true"></i>
+              {timeEstimateLabel}
             </div>
           {/if}
-        </div>
+          {#if totalVideoDuration}
+            <div class="video-duration-line">
+              <i class="fas fa-film" aria-hidden="true"></i>
+              Video length: {totalVideoDuration}
+            </div>
+          {/if}
+        </RailBentoSheet>
       {/if}
 
-      <!-- Bottom bar: [Download Animation] [Settings] -->
-      <div class="mobile-bar">
+      <!-- Primary bento grid -->
+      <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+      <div
+        class="rt-zone"
+        onkeydown={preventSpaceActivation}
+        role="group"
+        aria-label="Animation export settings"
+      >
+        <div class="rt-grid-2x2">
+          <button
+            type="button"
+            class="rt-tile"
+            aria-pressed={openSheet === "effects"}
+            onclick={() => toggleSheet("effects")}
+          >
+            <i class="fas fa-sparkles rt-icon" aria-hidden="true"></i>
+            <span class="rt-lbl">Effects</span>
+            {#if effectsCount > 0}
+              <span class="rt-count">{effectsCount}</span>
+            {/if}
+          </button>
+
+          <button
+            type="button"
+            class="rt-tile rt-effort"
+            style:--effort-color={activeEffort.color}
+            aria-pressed={openSheet === "effort"}
+            onclick={() => toggleSheet("effort")}
+          >
+            <span class="rt-val">{activeEffort.label}</span>
+            <span class="rt-lbl">Effort</span>
+          </button>
+
+          <button
+            type="button"
+            class="rt-tile"
+            aria-pressed={openSheet === "playback"}
+            onclick={() => toggleSheet("playback")}
+          >
+            <i class="fas fa-play rt-icon" aria-hidden="true"></i>
+            <span class="rt-lbl">Playback</span>
+          </button>
+
+          <button
+            type="button"
+            class="rt-tile"
+            aria-pressed={openSheet === "export"}
+            onclick={() => toggleSheet("export")}
+          >
+            <i class="fas fa-sliders rt-icon" aria-hidden="true"></i>
+            <span class="rt-lbl">Export</span>
+          </button>
+        </div>
+
         <button
           type="button"
-          class="bar-export-btn"
+          class="rt-download"
           onclick={onExport}
           disabled={exportDisabled}
           aria-label={exportButtonLabel}
@@ -381,18 +443,6 @@
             <i class="fas {renderMode === '3d' ? 'fa-circle' : 'fa-download'}" aria-hidden="true"></i>
             {exportButtonLabel}
           {/if}
-        </button>
-
-        <button
-          type="button"
-          class="bar-settings-btn"
-          class:active={settingsOpen}
-          onclick={() => (settingsOpen = !settingsOpen)}
-          aria-label="Export settings"
-          aria-expanded={settingsOpen}
-        >
-          <i class="fas fa-cog {settingsOpen ? 'spin-active' : ''}" aria-hidden="true"></i>
-          <span class="settings-summary">{settingsSummary}</span>
         </button>
       </div>
     {/if}
@@ -620,215 +670,6 @@
     border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
     z-index: 10;
-  }
-
-  .settings-backdrop {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 99;
-    cursor: pointer;
-    border: none;
-    padding: 0;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .mobile-bar {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 12px;
-  }
-
-  .bar-play-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: var(--min-touch-target);
-    height: var(--min-touch-target);
-    flex-shrink: 0;
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
-    border-radius: 50%;
-    background: color-mix(in srgb, var(--theme-card-bg) 70%, transparent);
-    color: var(--theme-text, white);
-    font-size: 16px;
-    cursor: pointer;
-    transition: all 0.15s ease;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .bar-play-btn.playing {
-    border-color: var(--theme-accent, #6366f1);
-    background: color-mix(in srgb, var(--theme-accent, #6366f1) 20%, transparent);
-  }
-
-  .bar-play-btn i {
-    margin-left: 2px;
-  }
-
-  .bar-play-btn.playing i {
-    margin-left: 0;
-  }
-
-  .bar-export-btn {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    min-height: var(--min-touch-target);
-    padding: 10px 20px;
-    border: none;
-    border-radius: 12px;
-    background: var(--theme-accent, #6366f1);
-    color: white;
-    font-size: var(--font-size-min, 14px);
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.15s ease;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .bar-export-btn:hover:not(:disabled) {
-    filter: brightness(1.1);
-  }
-
-  .bar-export-btn:active:not(:disabled) {
-    transform: scale(0.98);
-    transition-duration: 50ms;
-  }
-
-  .bar-export-btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-
-  .bar-settings-btn {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    min-height: var(--min-touch-target);
-    padding: 8px 12px;
-    flex-shrink: 0;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 12px;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.15s ease;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .bar-settings-btn.active {
-    border-color: var(--theme-accent, #6366f1);
-    color: var(--theme-text, white);
-  }
-
-  .bar-settings-btn i {
-    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .bar-settings-btn i.spin-active {
-    transform: rotate(90deg);
-  }
-
-  .settings-summary {
-    white-space: nowrap;
-  }
-
-  /* ============================================================
-   * MOBILE SETTINGS SHEET (overlay, slides up over canvas)
-   * ============================================================ */
-
-  .inline-settings {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 100%;
-    max-height: 62vh;
-    z-index: 100;
-    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
-    border-bottom: none;
-    border-radius: 14px 14px 0 0;
-    box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.5);
-    overflow-y: auto;
-    overscroll-behavior: contain;
-  }
-
-  .sheet-handle {
-    width: 36px;
-    height: 4px;
-    background: rgba(255, 255, 255, 0.18);
-    border-radius: 2px;
-    margin: 10px auto 2px;
-    flex-shrink: 0;
-  }
-
-  .inline-settings-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 6px 12px 4px;
-  }
-
-  .inline-settings-title {
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 600;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-
-  .inline-settings-close {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
-    background: transparent;
-    border: none;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
-    font-size: 12px;
-    cursor: pointer;
-    transition: all 0.15s ease;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .inline-settings-close:hover {
-    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
-    color: var(--theme-text, white);
-  }
-
-  .inline-settings-body {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding: 2px 12px 8px;
-  }
-
-  .inline-settings-footer {
-    padding: 0 12px 6px;
-    text-align: center;
-  }
-
-  /* Compact shared controls within mobile settings sheet */
-  .inline-settings .setting-row {
-    gap: 8px;
-  }
-  .inline-settings .setting-label {
-    min-width: 68px;
-  }
-  .inline-settings .chip-group {
-    gap: 6px;
-    flex-wrap: wrap;
-  }
-  .inline-settings .chip {
-    min-height: 38px;
-    padding: 6px 12px;
   }
 
   /* ============================================================
@@ -1135,14 +976,16 @@
    * ============================================================ */
 
   @media (prefers-reduced-motion: reduce) {
-    .chip, .bar-play-btn,
-    .export-btn, .bar-export-btn, .bar-settings-btn,
-    .cancel-btn, .progress-fill, .inline-settings-close {
+    .chip,
+    .export-btn,
+    .cancel-btn,
+    .progress-fill {
       transition: none !important;
       animation: none !important;
     }
 
-    .chip:active, .export-btn:active, .bar-export-btn:active {
+    .chip:active,
+    .export-btn:active {
       transform: none !important;
     }
   }
