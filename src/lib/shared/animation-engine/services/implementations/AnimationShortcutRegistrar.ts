@@ -128,7 +128,7 @@ export class AnimationShortcutRegistrar implements IAnimationShortcutRegistrar {
         priority: "medium",
         action: (e) => {
           e.preventDefault();
-          handlers.onToggleBlue();
+          handlers.onToggleBlue?.();
         },
       })
     );
@@ -145,7 +145,7 @@ export class AnimationShortcutRegistrar implements IAnimationShortcutRegistrar {
         priority: "medium",
         action: (e) => {
           e.preventDefault();
-          handlers.onToggleRed();
+          handlers.onToggleRed?.();
         },
       })
     );

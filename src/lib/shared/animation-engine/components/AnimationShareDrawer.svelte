@@ -35,8 +35,6 @@
   import { Letter } from "$lib/shared/foundation/domain/models/Letter";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
-  import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
 
@@ -244,8 +242,6 @@
       onStepFullBeatForward,
       onStepFullBeatBackward,
       onClose: handleClose,
-      onToggleBlue: toggleBlueMotion,
-      onToggleRed: toggleRedMotion,
       onShowHelp: handleShowHelp,
     });
   }
@@ -317,69 +313,15 @@
   // STATE MANAGEMENT
   // ============================================================================
 
-  // Get visibility state manager
-  const visibilityManager = getVisibilityStateManager();
-
   // Trail settings from global animation settings (derived for reactivity)
   let trailSettings = $derived(animationSettings.settings.trail);
-
-  // Motion visibility state - reactive to visibility manager
-  let blueMotionVisible = $state(
-    visibilityManager.getMotionVisibility(MotionColor.BLUE)
-  );
-  let redMotionVisible = $state(
-    visibilityManager.getMotionVisibility(MotionColor.RED)
-  );
-
-  // Saved motion visibility state for temporary overrides
-  let savedMotionVisibility: { blue: boolean; red: boolean } | null = null;
-
-  // Save motion visibility when panel opens
-  $effect(() => {
-    if (show && savedMotionVisibility === null) {
-      savedMotionVisibility = visibilityManager.saveMotionVisibilityState();
-    }
-  });
-
-  // Register observer to update visibility when it changes
-  $effect(() => {
-    const updateVisibility = () => {
-      blueMotionVisible = visibilityManager.getMotionVisibility(
-        MotionColor.BLUE
-      );
-      redMotionVisible = visibilityManager.getMotionVisibility(MotionColor.RED);
-    };
-
-    visibilityManager.registerObserver(updateVisibility, ["motion"]);
-
-    return () => {
-      visibilityManager.unregisterObserver(updateVisibility);
-    };
-  });
-
-  // Computed props based on visibility
-  const visibleBlueProp = $derived(blueMotionVisible ? blueProp : null);
-  const visibleRedProp = $derived(redMotionVisible ? redProp : null);
 
   // ============================================================================
   // EVENT HANDLERS
   // ============================================================================
 
   function handleClose() {
-    // Restore saved motion visibility state
-    if (savedMotionVisibility !== null) {
-      visibilityManager.restoreMotionVisibilityState(savedMotionVisibility);
-      savedMotionVisibility = null;
-    }
     onClose();
-  }
-
-  function toggleBlueMotion() {
-    visibilityManager.setMotionVisibility(MotionColor.BLUE, !blueMotionVisible);
-  }
-
-  function toggleRedMotion() {
-    visibilityManager.setMotionVisibility(MotionColor.RED, !redMotionVisible);
   }
 </script>
 
@@ -431,8 +373,8 @@
         >
           <!-- Canvas Area -->
           <AnimationCanvas
-            blueProp={visibleBlueProp}
-            redProp={visibleRedProp}
+            {blueProp}
+            {redProp}
             {gridVisible}
             {gridMode}
             {letter}
@@ -453,8 +395,6 @@
             {playbackMode}
             {stepPlaybackPauseMs}
             {stepPlaybackStepSize}
-            {blueMotionVisible}
-            {redMotionVisible}
             {isSideBySideLayout}
             isExpanded={!isSideBySideLayout}
             bind:isSettingsOpen
@@ -473,8 +413,6 @@
             {onStepHalfBeatForward}
             {onStepFullBeatBackward}
             {onStepFullBeatForward}
-            onToggleBlue={toggleBlueMotion}
-            onToggleRed={toggleRedMotion}
             onToggleToolView={toggleMobileToolView}
             {onExportVideo}
             {onCancelExport}
