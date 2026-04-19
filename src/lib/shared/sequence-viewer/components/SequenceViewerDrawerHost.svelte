@@ -341,6 +341,7 @@
                 </div>
 
                 <div class="drawer-header-actions">
+                  <MotionVisibilityToggle />
                   {#if !isMobileWidth && !isRecordSceneActive}
                     <button
                       type="button"
