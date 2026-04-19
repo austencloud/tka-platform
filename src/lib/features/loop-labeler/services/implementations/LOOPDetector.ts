@@ -25,7 +25,9 @@ import type { ComponentId } from "../../domain/constants/loop-components";
 import {
   LOOPComponent,
   type DetectedComponent,
+  type LOOPDomain,
 } from "$lib/features/create/generate/shared/domain/models/generate-models";
+import { loopOrientationDetector } from "./LOOPOrientationDetector";
 
 /**
  * Map a legacy ComponentId string to the LOOPComponent enum, or null when the
@@ -76,6 +78,37 @@ function periodFromIntervals(
 }
 
 /**
+ * Combine location and orientation domain component arrays.
+ *
+ * Merge semantics: when the same LOOPComponent appears in both domains, the
+ * result has `domain: "both"`. Otherwise each component keeps its originating
+ * domain. Reserved primitives from either side flow through unchanged —
+ * consumer resolvers strip them via RESERVED_ORIENTATION_PRIMITIVES.
+ */
+function mergeComponents(
+  locationComponents: DetectedComponent[],
+  orientationComponents: DetectedComponent[]
+): DetectedComponent[] {
+  const byComponent = new Map<LOOPComponent, LOOPDomain>();
+  for (const entry of locationComponents) {
+    byComponent.set(entry.component, "location");
+  }
+  for (const entry of orientationComponents) {
+    const existing = byComponent.get(entry.component);
+    if (existing === "location") {
+      byComponent.set(entry.component, "both");
+    } else if (!existing) {
+      byComponent.set(entry.component, "orientation");
+    }
+  }
+  const out: DetectedComponent[] = [];
+  for (const [component, domain] of byComponent) {
+    out.push({ component, domain });
+  }
+  return out;
+}
+
+/**
  * Service for detecting Linked Orbital Offset Patterns (LOOPs) in sequences.
  * Orchestrates the detection process using specialized services.
  */
@@ -107,6 +140,35 @@ export class LOOPDetector implements ILOOPDetector {
   }
 
   detectLOOP(sequence: SequenceEntry): LOOPDetectionResult {
+    const result = this.detectLocationPass(sequence);
+    return this.augmentWithOrientation(result, sequence);
+  }
+
+  /**
+   * Augment a location-only detection result with the orientation pass.
+   *
+   * Runs the orientation detector, merges components, lifts `period` to
+   * max(location, orientation). Called as a post-pass so every existing
+   * builder return path gets orientation-aware without being rewritten.
+   */
+  private augmentWithOrientation(
+    result: LOOPDetectionResult,
+    sequence: SequenceEntry
+  ): LOOPDetectionResult {
+    const orientation = loopOrientationDetector.detectOrientationPass(sequence);
+    const mergedDetailed = mergeComponents(
+      result.componentsDetailed,
+      orientation.components
+    );
+    const period = Math.max(result.period, orientation.period);
+    return {
+      ...result,
+      period,
+      componentsDetailed: mergedDetailed,
+    };
+  }
+
+  private detectLocationPass(sequence: SequenceEntry): LOOPDetectionResult {
     const circular = this.isCircular(sequence);
     const steps = this.comparisonOrchestrator.extractBeats(sequence);
 
