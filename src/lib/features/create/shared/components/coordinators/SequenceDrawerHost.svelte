@@ -57,7 +57,6 @@
   import { ANIMATION_AUTO_START_DELAY_MS } from "$lib/features/compose/shared/domain/constants/timing";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
-  import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { simplifyRepeatedWord } from "$lib/features/create/shared/workspace-panel/shared/utils/word-simplifier";
 
   // Get context
@@ -93,12 +92,6 @@
 
   // Visibility state management
   const visibilityManager = getVisibilityStateManager();
-  let blueMotionVisible = $state(
-    visibilityManager.getMotionVisibility(MotionColor.BLUE)
-  );
-  let redMotionVisible = $state(
-    visibilityManager.getMotionVisibility(MotionColor.RED)
-  );
   let savedMotionVisibility: { blue: boolean; red: boolean } | null = null;
 
   // Layout detection
@@ -237,20 +230,6 @@
       }
     }
   );
-
-  // Sync visibility state from visibility manager
-  $effect(() => {
-    const updateVisibility = () => {
-      blueMotionVisible = visibilityManager.getMotionVisibility(
-        MotionColor.BLUE
-      );
-      redMotionVisible = visibilityManager.getMotionVisibility(MotionColor.RED);
-    };
-
-    visibilityManager.registerObserver(updateVisibility, ["motion"]);
-    updateVisibility();
-    return () => visibilityManager.unregisterObserver(updateVisibility);
-  });
 
   // Save visibility state when export panel opens, restore when it closes
   $effect(() => {
@@ -615,14 +594,6 @@
     animationPanelState.setStepPlaybackStepSize(stepSize);
   }
 
-  function handleToggleBlueMotion() {
-    visibilityManager.setMotionVisibility(MotionColor.BLUE, !blueMotionVisible);
-  }
-
-  function handleToggleRedMotion() {
-    visibilityManager.setMotionVisibility(MotionColor.RED, !redMotionVisible);
-  }
-
   function handleFormatChange(format: "animation" | "static" | "performance") {
     // Pause animation when switching away from Animation format
     if (
@@ -798,8 +769,6 @@
     playbackMode={playbackModeLocal}
     stepPlaybackPauseMs={stepPlaybackPauseMsLocal}
     stepPlaybackStepSize={stepPlaybackStepSizeLocal}
-    {blueMotionVisible}
-    {redMotionVisible}
     {isSideBySideLayout}
     onPlaybackToggle={handlePlaybackToggle}
     onSpeedChange={handleSpeedChange}
@@ -813,8 +782,6 @@
     onPlaybackModeChange={handlePlaybackModeChange}
     onStepPlaybackPauseMsChange={handleStepPlaybackPauseMsChange}
     onStepPlaybackStepSizeChange={handleStepPlaybackStepSizeChange}
-    onToggleBlue={handleToggleBlueMotion}
-    onToggleRed={handleToggleRedMotion}
   />
   {/key}
 {/if}
