@@ -2,12 +2,14 @@
   /**
    * EffectsSettingsPanel - Visual effects controls for 3D viewer
    *
-   * Toggle trails, fire, charcoal, LED, sparkles, electricity, motion effects, and bloom.
+   * 11 unified per-tip effects (trails/fire/led/charcoal/zap/sparkles/
+   * echo/bloom/water/bubbles/petals) + 1 scene-level motion modifier.
    * Uses chip-style buttons consistent with GridSettingsPanel.
    *
    * Accepts an optional `performer` prop. When provided, reads/writes that
    * performer's `settings.effects` Set via `performer.toggleEffect()`.
-   * When absent, falls back to the global `getEffectsConfigState()`.
+   * When absent, reads the unified EffectsConfig via
+   * `getEffectsConfigContext()` plus the Scene3DRenderConfig for motion.
    */
 
   import { t } from "$lib/shared/i18n/i18n.svelte";
