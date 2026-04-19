@@ -8,7 +8,6 @@
   import type { PreparedPictographData } from "../shared/domain/models/PreparedPictographData";
   import PictographRenderer from "../shared/components/PictographRenderer.svelte";
   import { getVisibilityStateManager } from "../shared/state/visibility-state.svelte";
-  import { MotionColor } from "../shared/domain/enums/pictograph-enums";
   import type { GridLocation } from "../grid/domain/enums/grid-enums";
 
   let {
@@ -23,8 +22,6 @@
 
   const vm = getVisibilityStateManager();
 
-  let blueMotionVisible = $state(vm.getMotionVisibility(MotionColor.BLUE));
-  let redMotionVisible = $state(vm.getMotionVisibility(MotionColor.RED));
   let showGrid = $state(vm.getGridVisibility());
   let showTKA = $state(vm.getGlyphVisibility("tkaGlyph"));
   let showReversals = $state(vm.getGlyphVisibility("reversalIndicators"));
@@ -35,8 +32,6 @@
   let handPointVisibility = $state<"all" | "active">(vm.getHandPointVisibility());
 
   function syncAll() {
-    blueMotionVisible = vm.getMotionVisibility(MotionColor.BLUE);
-    redMotionVisible = vm.getMotionVisibility(MotionColor.RED);
     showGrid = vm.getGridVisibility();
     showTKA = vm.getGlyphVisibility("tkaGlyph");
     showReversals = vm.getGlyphVisibility("reversalIndicators");
@@ -67,8 +62,8 @@
   {pictograph}
   {blueReversal}
   {redReversal}
-  {blueMotionVisible}
-  {redMotionVisible}
+  blueMotionVisible={true}
+  redMotionVisible={true}
   {showGrid}
   {showTKA}
   {showReversals}
