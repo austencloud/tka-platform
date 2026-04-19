@@ -45,6 +45,9 @@
   import type { TimelineRow } from "$lib/features/create/shared/workspace-panel/sequence-display/utils/grid-calculations";
   import SequenceMandala from "$lib/shared/mandala/components/SequenceMandala.svelte";
   import { getMandalaPlacements } from "../services/getMandalaPlacements";
+
+  /** Fraction of the cell width the mandala occupies. Tweak for breathing room. */
+  const MANDALA_CELL_SCALE = 0.78;
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import {
@@ -2159,7 +2162,7 @@
                     mode="card-back"
                     style="stroke"
                     show={placement.variant === "full" ? "both" : placement.variant}
-                    size={Math.round((cellWidth || 120) * 0.82)}
+                    size={Math.round((cellWidth || 120) * MANDALA_CELL_SCALE)}
                     darkMode={activeDarkMode}
                   />
                 </div>
@@ -2236,7 +2239,8 @@
                   mode="card-back"
                   style="stroke"
                   show={placement.variant === "full" ? "both" : placement.variant}
-                  size={cellWidth || 120}
+                  size={Math.round((cellWidth || 120) * MANDALA_CELL_SCALE)}
+                  darkMode={activeDarkMode}
                 />
               </div>
             </div>
