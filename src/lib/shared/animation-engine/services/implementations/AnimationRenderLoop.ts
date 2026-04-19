@@ -22,11 +22,15 @@ import type { ISparklesOverlayRenderer } from "../contracts/ISparklesOverlayRend
 import type { IEchoOverlayRenderer } from "../contracts/IEchoOverlayRenderer";
 import type { IBloomOverlayRenderer } from "../contracts/IBloomOverlayRenderer";
 import type { IWaterOverlayRenderer } from "../contracts/IWaterOverlayRenderer";
+import type { IBubblesOverlayRenderer } from "../contracts/IBubblesOverlayRenderer";
+import type { IPetalsOverlayRenderer } from "../contracts/IPetalsOverlayRenderer";
 import type { ZapTipInput } from "$lib/shared/effects/renderers/Zap2DRenderer";
 import type { SparklesTipInput } from "$lib/shared/effects/renderers/Sparkles2DRenderer";
 import type { EchoTipInput } from "$lib/shared/effects/renderers/Echo2DRenderer";
 import type { BloomTipInput } from "$lib/shared/effects/renderers/Bloom2DRenderer";
 import type { WaterTipInput } from "$lib/shared/effects/renderers/Water2DRenderer";
+import type { BubblesTipInput } from "$lib/shared/effects/renderers/Bubbles2DRenderer";
+import type { PetalsTipInput } from "$lib/shared/effects/renderers/Petals2DRenderer";
 import type {
   IAnimationRenderLoop,
   RenderLoopConfig,
@@ -104,6 +108,10 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
   private bloomRenderer: IBloomOverlayRenderer | null = null;
   private waterRenderer: IWaterOverlayRenderer | null = null;
   private lastWaterFrameTime: number = 0;
+  private bubblesRenderer: IBubblesOverlayRenderer | null = null;
+  private lastBubblesFrameTime: number = 0;
+  private petalsRenderer: IPetalsOverlayRenderer | null = null;
+  private lastPetalsFrameTime: number = 0;
   private onEffectError: ((effectName: string, error: Error) => void) | null = null;
   private canvasSize: number = 950;
   private lastTrailFrameTime: number = 0;
@@ -121,6 +129,8 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
   private consecutiveEchoErrors: number = 0;
   private consecutiveBloomErrors: number = 0;
   private consecutiveWaterErrors: number = 0;
+  private consecutiveBubblesErrors: number = 0;
+  private consecutivePetalsErrors: number = 0;
   private fireDisabledByError: boolean = false;
   private ledDisabledByError: boolean = false;
   private zapDisabledByError: boolean = false;
@@ -128,6 +138,8 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
   private echoDisabledByError: boolean = false;
   private bloomDisabledByError: boolean = false;
   private waterDisabledByError: boolean = false;
+  private bubblesDisabledByError: boolean = false;
+  private petalsDisabledByError: boolean = false;
   private static readonly EFFECT_ERROR_THRESHOLD = 3;
 
   // Loop detection for cache-based trail gathering and fire frame cache
@@ -204,6 +216,8 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     this.echoRenderer = config.echoRenderer ?? null;
     this.bloomRenderer = config.bloomRenderer ?? null;
     this.waterRenderer = config.waterRenderer ?? null;
+    this.bubblesRenderer = config.bubblesRenderer ?? null;
+    this.petalsRenderer = config.petalsRenderer ?? null;
     this.onEffectError = config.onEffectError ?? null;
 
     // Subscribe to the module-singleton longtask observer so the FPS summary
@@ -247,6 +261,10 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       this.bloomRenderer = config.bloomRenderer ?? null;
     if (config.waterRenderer !== undefined)
       this.waterRenderer = config.waterRenderer ?? null;
+    if (config.bubblesRenderer !== undefined)
+      this.bubblesRenderer = config.bubblesRenderer ?? null;
+    if (config.petalsRenderer !== undefined)
+      this.petalsRenderer = config.petalsRenderer ?? null;
     if (config.onEffectError !== undefined)
       this.onEffectError = config.onEffectError ?? null;
   }
@@ -365,6 +383,10 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     this.bloomRenderer = null;
     this.waterRenderer?.dispose();
     this.waterRenderer = null;
+    this.bubblesRenderer?.dispose();
+    this.bubblesRenderer = null;
+    this.petalsRenderer?.dispose();
+    this.petalsRenderer = null;
     // Clear reusable arrays to free memory
     this.reusableBlueTrailPoints.length = 0;
     this.reusableRedTrailPoints.length = 0;
@@ -444,6 +466,12 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     const waterActive =
       params.waterConfig != null &&
       this.waterRenderer?.isInitialized() === true;
+    const bubblesActive =
+      params.bubblesConfig != null &&
+      this.bubblesRenderer?.isInitialized() === true;
+    const petalsActive =
+      params.petalsConfig != null &&
+      this.petalsRenderer?.isInitialized() === true;
 
     // Active work: playing, effects running, background animating, or explicit render request
     const hasActiveWork =
@@ -457,7 +485,9 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       sparklesActive ||
       echoActive ||
       bloomActive ||
-      waterActive;
+      waterActive ||
+      bubblesActive ||
+      petalsActive;
 
     // Trails alone (without active work) should not keep the loop alive forever.
     // Allow a grace period for initialization/texture loading, then auto-stop.
@@ -619,6 +649,14 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       if (this.waterRenderer?.isInitialized()) {
         this.waterRenderer.clear();
       }
+      // Clear bubbles overlay (Canvas2D) — also drops the bubble pool.
+      if (this.bubblesRenderer?.isInitialized()) {
+        this.bubblesRenderer.clear();
+      }
+      // Clear petals overlay (Canvas2D) — also drops the petal pool.
+      if (this.petalsRenderer?.isInitialized()) {
+        this.petalsRenderer.clear();
+      }
     } else if (!params.suppress2DOverlays && this.wasSuppressed) {
       this.wasSuppressed = false;
     }
@@ -720,7 +758,15 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       this.fireTipTracker
       && this.waterRenderer?.isInitialized()
       && params.waterConfig != null;
-    const hasAnyTipOverlay = hasFireOrCharcoalOverlay || hasZapOverlay || hasSparklesOverlayForTipUpdate || hasEchoOverlayForTipUpdate || hasBloomOverlayForTipUpdate || hasWaterOverlayForTipUpdate;
+    const hasBubblesOverlayForTipUpdate =
+      this.fireTipTracker
+      && this.bubblesRenderer?.isInitialized()
+      && params.bubblesConfig != null;
+    const hasPetalsOverlayForTipUpdate =
+      this.fireTipTracker
+      && this.petalsRenderer?.isInitialized()
+      && params.petalsConfig != null;
+    const hasAnyTipOverlay = hasFireOrCharcoalOverlay || hasZapOverlay || hasSparklesOverlayForTipUpdate || hasEchoOverlayForTipUpdate || hasBloomOverlayForTipUpdate || hasWaterOverlayForTipUpdate || hasBubblesOverlayForTipUpdate || hasPetalsOverlayForTipUpdate;
 
     let sharedTipResult: import("../contracts/IFireTipTracker").FireTipUpdateResult | null = null;
     if (hasAnyTipOverlay && !params.suppress2DOverlays) {
@@ -741,8 +787,8 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       };
 
       sharedTipResult = this.fireTipTracker!.update(
-        props.blueProp,
-        props.redProp,
+        effectiveBlueMotionVisible ? props.blueProp : null,
+        effectiveRedMotionVisible ? props.redProp : null,
         tipTrackerConfig,
         currentTime
       );
@@ -1166,6 +1212,137 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     } else if (activeWaterRenderer && !hasWaterOverlay) {
       activeWaterRenderer.clear();
       this.lastWaterFrameTime = 0;
+    }
+
+    // Bubbles overlay: per-tip buoyant bubble emitter. Reads sharedTipResult
+    // to pull the 2 tips per prop into the {bluePosA, bluePosB, redPosA,
+    // redPosB} shape Bubbles2DRenderer expects. Filters tips by
+    // tipEffectMap resolution. dt drives particle physics + spawn-rate
+    // integration — like water, bubbles have persistent pool state.
+    const activeBubblesRenderer = this.bubblesRenderer?.isInitialized()
+      ? this.bubblesRenderer
+      : null;
+    const hasBubblesOverlay =
+      this.fireTipTracker && activeBubblesRenderer && params.bubblesConfig != null;
+
+    if (
+      hasBubblesOverlay &&
+      !this.bubblesDisabledByError &&
+      !params.suppress2DOverlays &&
+      sharedTipResult
+    ) {
+      try {
+        const tipMap = params.tipEffectMap ?? {};
+        const bubblesTips: BubblesTipInput = {
+          bluePosA: null,
+          bluePosB: null,
+          redPosA: null,
+          redPosB: null,
+        };
+        for (const t of sharedTipResult.tips) {
+          if (resolveEffect(t.propIndex, t.tipIndex, tipMap, {}) !== "bubbles") continue;
+          if (t.propIndex === 0) {
+            if (t.tipIndex === 0) bubblesTips.bluePosA = { x: t.x, y: t.y };
+            else if (t.tipIndex === 1) bubblesTips.bluePosB = { x: t.x, y: t.y };
+          } else if (t.propIndex === 1) {
+            if (t.tipIndex === 0) bubblesTips.redPosA = { x: t.x, y: t.y };
+            else if (t.tipIndex === 1) bubblesTips.redPosB = { x: t.x, y: t.y };
+          }
+        }
+        const nowMs = currentTime;
+        let dt = this.lastBubblesFrameTime > 0 ? (nowMs - this.lastBubblesFrameTime) / 1000 : 1 / 60;
+        if (!Number.isFinite(dt) || dt <= 0) dt = 1 / 60;
+        if (dt > 0.1) dt = 0.1;
+        this.lastBubblesFrameTime = nowMs;
+        activeBubblesRenderer!.renderFrame(params.bubblesConfig!, bubblesTips, dt);
+        this.consecutiveBubblesErrors = 0;
+      } catch (error) {
+        this.consecutiveBubblesErrors++;
+        activeBubblesRenderer?.clear();
+        if (this.consecutiveBubblesErrors >= AnimationRenderLoop.EFFECT_ERROR_THRESHOLD) {
+          this.bubblesDisabledByError = true;
+          const err = error instanceof Error ? error : new Error(String(error));
+          console.error("[AnimationRenderLoop] Bubbles effect disabled after repeated failures:", err);
+          if (this.onEffectError) {
+            this.onEffectError("bubbles", err);
+          } else {
+            effectErrorSignal.trigger("bubbles", err);
+          }
+        } else {
+          console.warn(
+            `[AnimationRenderLoop] Bubbles render error (attempt ${this.consecutiveBubblesErrors}/${AnimationRenderLoop.EFFECT_ERROR_THRESHOLD}), resetting:`,
+            error
+          );
+        }
+      }
+    } else if (activeBubblesRenderer && !hasBubblesOverlay) {
+      activeBubblesRenderer.clear();
+      this.lastBubblesFrameTime = 0;
+    }
+
+    // Petals overlay: per-tip falling silhouette emitter. Mirrors the bubbles
+    // pipeline — reads sharedTipResult, filters by tipEffectMap, integrates
+    // physics via dt since last frame. Petal pool state persists across frames
+    // so we only clear on disable / error / sequence boundary.
+    const activePetalsRenderer = this.petalsRenderer?.isInitialized()
+      ? this.petalsRenderer
+      : null;
+    const hasPetalsOverlay =
+      this.fireTipTracker && activePetalsRenderer && params.petalsConfig != null;
+
+    if (
+      hasPetalsOverlay &&
+      !this.petalsDisabledByError &&
+      !params.suppress2DOverlays &&
+      sharedTipResult
+    ) {
+      try {
+        const tipMap = params.tipEffectMap ?? {};
+        const petalsTips: PetalsTipInput = {
+          bluePosA: null,
+          bluePosB: null,
+          redPosA: null,
+          redPosB: null,
+        };
+        for (const t of sharedTipResult.tips) {
+          if (resolveEffect(t.propIndex, t.tipIndex, tipMap, {}) !== "petals") continue;
+          if (t.propIndex === 0) {
+            if (t.tipIndex === 0) petalsTips.bluePosA = { x: t.x, y: t.y };
+            else if (t.tipIndex === 1) petalsTips.bluePosB = { x: t.x, y: t.y };
+          } else if (t.propIndex === 1) {
+            if (t.tipIndex === 0) petalsTips.redPosA = { x: t.x, y: t.y };
+            else if (t.tipIndex === 1) petalsTips.redPosB = { x: t.x, y: t.y };
+          }
+        }
+        const nowMs = currentTime;
+        let dt = this.lastPetalsFrameTime > 0 ? (nowMs - this.lastPetalsFrameTime) / 1000 : 1 / 60;
+        if (!Number.isFinite(dt) || dt <= 0) dt = 1 / 60;
+        if (dt > 0.1) dt = 0.1;
+        this.lastPetalsFrameTime = nowMs;
+        activePetalsRenderer!.renderFrame(params.petalsConfig!, petalsTips, dt);
+        this.consecutivePetalsErrors = 0;
+      } catch (error) {
+        this.consecutivePetalsErrors++;
+        activePetalsRenderer?.clear();
+        if (this.consecutivePetalsErrors >= AnimationRenderLoop.EFFECT_ERROR_THRESHOLD) {
+          this.petalsDisabledByError = true;
+          const err = error instanceof Error ? error : new Error(String(error));
+          console.error("[AnimationRenderLoop] Petals effect disabled after repeated failures:", err);
+          if (this.onEffectError) {
+            this.onEffectError("petals", err);
+          } else {
+            effectErrorSignal.trigger("petals", err);
+          }
+        } else {
+          console.warn(
+            `[AnimationRenderLoop] Petals render error (attempt ${this.consecutivePetalsErrors}/${AnimationRenderLoop.EFFECT_ERROR_THRESHOLD}), resetting:`,
+            error
+          );
+        }
+      }
+    } else if (activePetalsRenderer && !hasPetalsOverlay) {
+      activePetalsRenderer.clear();
+      this.lastPetalsFrameTime = 0;
     }
 
     // LED overlay: render after fire so it composites on top of both Canvas2D and fire

@@ -73,7 +73,7 @@
         onclick={() => visibility.toggleBlue()}
         aria-pressed={visibility.blueMotion}
       >
-        Blue
+        Left
       </button>
       <button
         type="button"
@@ -82,7 +82,7 @@
         onclick={() => visibility.toggleRed()}
         aria-pressed={visibility.redMotion}
       >
-        Red
+        Right
       </button>
     </div>
   {/if}
