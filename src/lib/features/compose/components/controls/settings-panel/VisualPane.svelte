@@ -2,7 +2,6 @@
   VisualPane.svelte
 
   Visual settings:
-  - Motion visibility (Blue/Red)
   - Element toggles (Grid, Props, Beat #, Glyph)
   - Trail toggle (Off/On - hardcoded vivid style when on)
   - Ends selector (One End/Both Ends) - for bilateral props
@@ -57,12 +56,6 @@
     return () => visibilityManager.unregisterObserver(handleChange);
   });
 
-  // Show Blue/Red toggles only when Props is visible
-  const showMotionToggles = $derived.by(() => {
-    updateCounter; // trigger reactivity
-    return visibilityManager.getVisibility("props");
-  });
-
   // Both ends toggle for bilateral props
   const showBothEndsToggle = $derived.by(() => {
     const blueIsBilateral = effectiveBluePropType != null && isBilateralProp(effectiveBluePropType);
@@ -97,14 +90,6 @@
     updateCounter;
     return visibilityManager.getGridMode() !== "none";
   }
-  function getBlueMotion() {
-    updateCounter;
-    return visibilityManager.getVisibility("blueMotion");
-  }
-  function getRedMotion() {
-    updateCounter;
-    return visibilityManager.getVisibility("redMotion");
-  }
   function getProps() {
     updateCounter;
     return visibilityManager.getVisibility("props");
@@ -131,28 +116,6 @@
     const currentMode = visibilityManager.getGridMode();
     const newMode: GridMode = currentMode === "none" ? "8point" : "none";
     visibilityManager.setGridMode(newMode);
-    updateCounter++;
-  }
-  function toggleBlueMotion() {
-    const blueOn = visibilityManager.getVisibility("blueMotion");
-    const redOn = visibilityManager.getVisibility("redMotion");
-
-    // If trying to turn off the last active one, turn the other on instead
-    if (blueOn && !redOn) {
-      visibilityManager.setVisibility("redMotion", true);
-    }
-    visibilityManager.setVisibility("blueMotion", !blueOn);
-    updateCounter++;
-  }
-  function toggleRedMotion() {
-    const blueOn = visibilityManager.getVisibility("blueMotion");
-    const redOn = visibilityManager.getVisibility("redMotion");
-
-    // If trying to turn off the last active one, turn the other on instead
-    if (redOn && !blueOn) {
-      visibilityManager.setVisibility("blueMotion", true);
-    }
-    visibilityManager.setVisibility("redMotion", !redOn);
     updateCounter++;
   }
   function toggleProps() {
@@ -205,36 +168,6 @@
 </script>
 
 <div class="visual-pane">
-  <!-- Motion Visibility (only when Props is on) -->
-  {#if showMotionToggles}
-    <div class="motion-toggles">
-      <button
-        class="motion-btn blue"
-        class:active={getBlueMotion()}
-        onclick={toggleBlueMotion}
-        type="button"
-        aria-label={getBlueMotion() ? "Hide blue motion" : "Show blue motion"}
-        aria-pressed={getBlueMotion()}
-      >
-        <i class="fas fa-eye{getBlueMotion() ? '' : '-slash'}" aria-hidden="true"
-        ></i>
-        <span>Blue</span>
-      </button>
-      <button
-        class="motion-btn red"
-        class:active={getRedMotion()}
-        onclick={toggleRedMotion}
-        type="button"
-        aria-label={getRedMotion() ? "Hide red motion" : "Show red motion"}
-        aria-pressed={getRedMotion()}
-      >
-        <i class="fas fa-eye{getRedMotion() ? '' : '-slash'}" aria-hidden="true"
-        ></i>
-        <span>Red</span>
-      </button>
-    </div>
-  {/if}
-
   <!-- Element Toggles -->
   <div class="element-grid">
     <button
@@ -385,50 +318,6 @@
     to {
       opacity: 1;
       transform: translateY(0);
-    }
-  }
-
-  /* Motion Toggles */
-  .motion-toggles {
-    display: flex;
-    gap: 6px;
-  }
-
-  .motion-btn {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    min-height: var(--min-touch-target);
-    padding: 8px 12px;
-    background: var(--theme-card-bg);
-    border: 1.5px solid var(--theme-stroke);
-    border-radius: 10px;
-    color: var(--theme-text-dim);
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 600;
-    cursor: pointer;
-    transition: all var(--duration-normal) ease;
-  }
-
-  .motion-btn.blue.active {
-    background: var(--prop-blue, rgba(59, 130, 246, 0.8));
-    border-color: var(--prop-blue, rgba(59, 130, 246, 1));
-    color: white;
-  }
-
-  .motion-btn.red.active {
-    background: var(--prop-red, rgba(239, 68, 68, 0.8));
-    border-color: var(--prop-red, rgba(239, 68, 68, 1));
-    color: white;
-  }
-
-  @media (hover: hover) and (pointer: fine) {
-    .motion-btn:hover:not(.active) {
-      background: var(--theme-card-hover-bg);
-      border-color: var(--theme-stroke-strong);
-      color: var(--theme-text);
     }
   }
 
