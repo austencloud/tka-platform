@@ -8,6 +8,7 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
   import { container } from "$lib/shared/di";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import MotionVisibilityToggle from "./MotionVisibilityToggle.svelte";
 
   interface Props {
     editingPane: 'animation' | 'image' | 'video-upload' | null;
@@ -114,6 +115,7 @@
     </div>
 
     <div class="header-right">
+      <MotionVisibilityToggle />
       {#if authState.isAdmin}
         <button
           type="button"
