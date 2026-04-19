@@ -32,50 +32,78 @@
       onClose();
     }
   }
+
+  // Portal action: moves the element to document.body so the fixed-positioned
+  // sheet isn't trapped inside a parent stacking context. The viewer wraps
+  // this panel in containers that create stacking contexts (transforms, z-index,
+  // flex layouts), which would otherwise clip the "fixed" sheet to a parent's
+  // height instead of the viewport.
+  function portal(node: HTMLElement) {
+    document.body.appendChild(node);
+    return {
+      destroy() {
+        node.remove();
+      },
+    };
+  }
 </script>
 
-<!-- svelte-ignore a11y_click_events_have_key_events -->
-<button
-  type="button"
-  class="bento-backdrop"
-  aria-label="Close {title}"
-  tabindex="-1"
-  onclick={onBackdropClick}
-  transition:fade={{ duration: 180 }}
-></button>
+<div use:portal class="bento-portal">
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <button
+    type="button"
+    class="bento-backdrop"
+    aria-label="Close {title}"
+    tabindex="-1"
+    onclick={onBackdropClick}
+    transition:fade={{ duration: 180 }}
+  ></button>
 
-<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-<div
-  class="bento-sheet"
-  role="dialog"
-  aria-modal="true"
-  aria-label={title}
-  onkeydown={onSheetKeydown}
-  transition:fly={{ y: 80, duration: 240, easing: cubicOut }}
->
-  <div class="bento-sheet-head">
-    <span class="bento-sheet-title">{title}</span>
-    <button
-      type="button"
-      class="bento-sheet-close"
-      onclick={onClose}
-      aria-label="Close {title}"
-    >
-      <i class="fas fa-times" aria-hidden="true"></i>
-    </button>
-  </div>
+  <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+  <div
+    class="bento-sheet"
+    role="dialog"
+    aria-modal="true"
+    aria-label={title}
+    tabindex="-1"
+    onkeydown={onSheetKeydown}
+    transition:fly={{ y: 80, duration: 240, easing: cubicOut }}
+  >
+    <div class="bento-sheet-head">
+      <span class="bento-sheet-title">{title}</span>
+      <button
+        type="button"
+        class="bento-sheet-close"
+        onclick={onClose}
+        aria-label="Close {title}"
+      >
+        <i class="fas fa-times" aria-hidden="true"></i>
+      </button>
+    </div>
 
-  <div class="bento-sheet-body">
-    {@render children()}
+    <div class="bento-sheet-body">
+      {@render children()}
+    </div>
   </div>
 </div>
 
 <style>
+  .bento-portal {
+    position: fixed;
+    inset: 0;
+    z-index: 2147483645;
+    pointer-events: none;
+  }
+
+  .bento-portal > * {
+    pointer-events: auto;
+  }
+
   .bento-backdrop {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.55);
-    z-index: 120;
+    background: rgba(0, 0, 0, 0.65);
+    z-index: 2147483645;
     cursor: pointer;
     border: none;
     padding: 0;
@@ -88,10 +116,8 @@
     right: 8px;
     top: 60px;
     bottom: 8px;
-    z-index: 121;
-    background: rgba(14, 16, 24, 0.98);
-    backdrop-filter: blur(24px) saturate(160%);
-    -webkit-backdrop-filter: blur(24px) saturate(160%);
+    z-index: 2147483646;
+    background: #0d1018;
     border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 16px;
     box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.6);
