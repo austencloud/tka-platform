@@ -1,0 +1,57 @@
+{
+  "pageNumber": 5,
+  "text": {
+    "title": {
+      "type": "doc",
+      "content": [
+        { "type": "paragraph", "content": [{ "type": "text", "text": "Table of Contents" }] }
+      ]
+    },
+    "col1Chapter1": {
+      "type": "doc",
+      "content": [
+        { "type": "paragraph", "content": [{ "type": "text", "text": "1.0 - Positions / Motions" }] }
+      ]
+    },
+    "col1Chapter2": {
+      "type": "doc",
+      "content": [
+        { "type": "paragraph", "content": [{ "type": "text", "text": "1.1 - Letters" }] }
+      ]
+    },
+    "col2Chapter1": {
+      "type": "doc",
+      "content": [
+        { "type": "paragraph", "content": [{ "type": "text", "text": "1.2 - Words" }] }
+      ]
+    },
+    "col2Chapter2": {
+      "type": "doc",
+      "content": [
+        { "type": "paragraph", "content": [{ "type": "text", "text": "1.3 - Single-Turns" }] }
+      ]
+    },
+    "col2Chapter3": {
+      "type": "doc",
+      "content": [
+        { "type": "paragraph", "content": [{ "type": "text", "text": "1.4 - Double-Turns" }] }
+      ]
+    },
+    "footerUrl": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "TheKineticAlphabet.com",
+              "marks": [{ "type": "link", "attrs": { "href": "https://thekineticalphabet.com" } }]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "placedAssets": []
+}
