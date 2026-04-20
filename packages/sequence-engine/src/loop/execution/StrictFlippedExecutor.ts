@@ -1,14 +1,17 @@
 /**
- * Strict Flipped LOOP Executor
+ * Strict Flipped LOOP Executor (engine version)
  *
- * Flips positions and locations horizontally (north/south swap).
- * Flips prop rotation directions (CW <-> CCW).
- * Always halved (no quartering support).
+ * Supports halved (period 2) and quartered (period 4). Period 4 needs the
+ * partial's per-hand wheel-quarter total ≡ 1 or 3 (mod 4) — enforced by
+ * SequenceBuilder via allocateTurns({enforcePeriod4Parity}).
  */
 
 import type { ILOOPExecutor } from "./ILOOPExecutor.js";
-import type { SequenceStep, MotionData } from "../../core/types/sequence-engine-types.js";
-import type { SliceSize } from "../loop-types.js";
+import type {
+  SequenceStep,
+  MotionData,
+} from "../../core/types/sequence-engine-types.js";
+import { SliceSize } from "../loop-types.js";
 import {
   HORIZONTAL_MIRROR_POSITION_MAP,
   HORIZONTAL_MIRROR_LOCATION_MAP,
@@ -17,7 +20,7 @@ import {
 import { updateStepOrientations } from "./orientation-helpers.js";
 
 export class StrictFlippedExecutor implements ILOOPExecutor {
-  executeLOOP(sequence: SequenceStep[], _sliceSize: SliceSize): SequenceStep[] {
+  executeLOOP(sequence: SequenceStep[], sliceSize: SliceSize): SequenceStep[] {
     this.validateSequence(sequence);
 
     const startPosition = sequence.shift();
@@ -25,23 +28,26 @@ export class StrictFlippedExecutor implements ILOOPExecutor {
       throw new Error("Sequence must have a start position");
     }
 
-    const sequenceLength = sequence.length;
-    const entriesToAdd = sequenceLength;
+    const partialLength = sequence.length;
+    const period = sliceSize === SliceSize.QUARTERED ? 4 : 2;
+    const totalLength = partialLength * period;
+    const beatsToGenerate = totalLength - partialLength;
 
     let lastStep = sequence[sequence.length - 1]!;
-    const nextStepNumber = (lastStep.stepNumber ?? lastStep.beatIndex) + 1;
+    const firstGeneratedStepNumber =
+      (lastStep.stepNumber ?? lastStep.beatIndex) + 1;
 
-    for (let i = 2; i < sequenceLength + 2; i++) {
-      const finalIntendedLength = sequenceLength + entriesToAdd;
-      const stepNumber = nextStepNumber + i - 2;
+    for (let offset = 0; offset < beatsToGenerate; offset++) {
+      const stepNumber = firstGeneratedStepNumber + offset;
+      const quarterIdx = Math.floor((stepNumber - 1) / partialLength);
+      const sourceStepNumber = ((stepNumber - 1) % partialLength) + 1;
+      const applyFlip = quarterIdx % 2 === 1;
 
-      const matchingStep = this.getPreviousMatchingBeat(
-        sequence,
-        stepNumber,
-        finalIntendedLength
-      );
+      const sourceStep = sequence[sourceStepNumber - 1]!;
 
-      const newStep = this.createFlippedStep(matchingStep, lastStep, stepNumber);
+      const newStep = applyFlip
+        ? this.createFlippedStep(sourceStep, lastStep, stepNumber)
+        : this.createCopiedStep(sourceStep, lastStep, stepNumber);
       const finalStep = updateStepOrientations(newStep, lastStep);
 
       sequence.push(finalStep);
@@ -54,7 +60,9 @@ export class StrictFlippedExecutor implements ILOOPExecutor {
 
   private validateSequence(sequence: SequenceStep[]): void {
     if (sequence.length < 2) {
-      throw new Error("Sequence must have at least 2 steps (start position + 1 beat)");
+      throw new Error(
+        "Sequence must have at least 2 steps (start position + 1 beat)"
+      );
     }
 
     const startPos = sequence[0]!.startPosition;
@@ -74,61 +82,66 @@ export class StrictFlippedExecutor implements ILOOPExecutor {
     }
   }
 
-  private getPreviousMatchingBeat(
-    sequence: SequenceStep[],
-    stepNumber: number,
-    finalLength: number
-  ): SequenceStep {
-    const halfLength = Math.floor(finalLength / 2);
-    const matchingStepNumber = stepNumber - halfLength;
-    const arrayIndex = matchingStepNumber - 1;
-
-    if (arrayIndex < 0 || arrayIndex >= sequence.length) {
-      throw new Error(
-        `Invalid index mapping: stepNumber ${stepNumber} -> arrayIndex ${arrayIndex}`
-      );
-    }
-
-    return sequence[arrayIndex]!;
-  }
-
   private createFlippedStep(
-    matchingStep: SequenceStep,
+    sourceStep: SequenceStep,
     previousStep: SequenceStep,
     stepNumber: number
   ): SequenceStep {
     const flippedEndPosition =
-      HORIZONTAL_MIRROR_POSITION_MAP[matchingStep.endPosition] || matchingStep.endPosition;
+      HORIZONTAL_MIRROR_POSITION_MAP[sourceStep.endPosition] ||
+      sourceStep.endPosition;
 
     return {
-      ...matchingStep,
+      ...sourceStep,
       stepNumber,
       beatIndex: stepNumber,
       startPosition: previousStep.endPosition,
       endPosition: flippedEndPosition,
       blueMotion: this.createFlippedMotion(
-        matchingStep.blueMotion,
+        sourceStep.blueMotion,
         previousStep.blueMotion
       ),
       redMotion: this.createFlippedMotion(
-        matchingStep.redMotion,
+        sourceStep.redMotion,
         previousStep.redMotion
       ),
     };
   }
 
+  private createCopiedStep(
+    sourceStep: SequenceStep,
+    previousStep: SequenceStep,
+    stepNumber: number
+  ): SequenceStep {
+    return {
+      ...sourceStep,
+      stepNumber,
+      beatIndex: stepNumber,
+      startPosition: previousStep.endPosition,
+      endPosition: sourceStep.endPosition,
+      blueMotion: {
+        ...sourceStep.blueMotion,
+        startLocation: previousStep.blueMotion.endLocation,
+      },
+      redMotion: {
+        ...sourceStep.redMotion,
+        startLocation: previousStep.redMotion.endLocation,
+      },
+    };
+  }
+
   private createFlippedMotion(
-    matchingMotion: MotionData,
+    sourceMotion: MotionData,
     previousMotion: MotionData
   ): MotionData {
     const flippedEndLocation =
-      HORIZONTAL_MIRROR_LOCATION_MAP[matchingMotion.endLocation] ||
-      matchingMotion.endLocation;
+      HORIZONTAL_MIRROR_LOCATION_MAP[sourceMotion.endLocation] ||
+      sourceMotion.endLocation;
 
-    const flippedRotDir = flipRotationDirection(matchingMotion.rotationDirection);
+    const flippedRotDir = flipRotationDirection(sourceMotion.rotationDirection);
 
     return {
-      ...matchingMotion,
+      ...sourceMotion,
       startLocation: previousMotion.endLocation,
       endLocation: flippedEndLocation,
       rotationDirection: flippedRotDir,
