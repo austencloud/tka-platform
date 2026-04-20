@@ -373,3 +373,23 @@ If a reverted wave's downstream consumers already merged, revert them in reverse
 - TODO-comment format: `// TODO(beat-rename): AMBIGUOUS — <reason> — <cataloged-id-if-any>`.
 - Audit-script sketch for Wave 12 sweep — what constitutes "intentional beat" vs "leaked beat".
 - Decision on `BeatMap` global name: KEEP (default in this spec) or RENAME-with-storage-back-compat. Austen call.
+
+## Appendix A — Pilot Retrospective
+
+**Wave 0 ran on 2026-04-20 against `src/lib/features/create/shared/domain/models/`.** Six files audited; 27 `beat` occurrences found; zero identifier-level matches; zero edits applied.
+
+**What the pilot taught us:**
+
+1. **The pilot directory was already migrated.** Every sequence-step identifier in these six files already uses `step*` / `Step*` (`stepIndex`, `stepNumber`, `stepCount`, `StepData`). The only "beat" tokens remaining are JSDoc prose referencing the old concept. Per Non-Goal §3.5, standalone comment-text updates are out of scope. This means Wave 0 did not exercise edit-application — it exercised audit-extraction and classification only. Wave 1 will be the first wave whose outcome proves the rename pipeline end-to-end.
+2. **The identifier extractor correctly excluded JSDoc/line comments and string literals.** This matches the spec's Non-Goal §3.5 directive and is critical for every subsequent wave, where prose `beat` mentions vastly outnumber identifier `beat` mentions.
+3. **Named-exception override works.** Smoke-tests on `AnimationPlaybackController.ts` (Rule 1 KEEP zone, named-exception override) correctly returned RENAME for step-index identifiers.
+4. **Smoke-tested KEEP path works.** `bpm-analyzer.ts` → 2 KEEP (`beatInterval`) via Rule 1. Neutral path classifier not stressed; will be by Waves 6–8.
+
+**Rules that changed:** None. The spec's rule set and catalog behaved correctly against this sample.
+
+**Edge cases surfaced:**
+
+- `msPerBeat` inside `AnimationPlaybackController.ts` (Wave 4 named exception) — the identifier is genuine BPM math (`1000 / speedMultiplier`), not a step index. The named-exception override classified it RENAME, which would be incorrect. Wave 4 must surface this per-identifier during its manual read-through (plan task 4.1 already requires this). Consider adding a Rule-3 KEEP sub-list for `msPerBeat`, `nextHalfBeat` vs `stepHalfBeatForward` in the named-exception files — but this is best handled in Wave 4's own retrospective, not now.
+- Directories where rename work has already happened (like the pilot's) will yield empty commits. The project's commit hygiene rule allows this only when the wave boundary needs marking; alternative is to roll the empty wave into Wave 3 as a de-facto no-op. Kept the empty commit for revertability.
+
+**Confidence level in rule set for Wave 1+:** High. The extractor + classifier produced sensible output on every smoke-test sample. Wave 1 (tka-types + sequence-engine) can proceed as planned once sibling-spec Phase 1 lands. The `msPerBeat`-style edge case is Wave 4-local and does not affect Waves 1–3.
