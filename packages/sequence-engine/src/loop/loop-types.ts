@@ -69,6 +69,29 @@ export enum SliceSize {
 }
 
 /**
+ * Convert legacy SliceSize to integer period.
+ *
+ * HALVED → 2, QUARTERED → 4. Period is the count of passes required for a
+ * LOOP to return to identity in both position and orientation. Introduced
+ * as part of the period-domain refactor; kept alongside SliceSize during the
+ * migration window so callers can migrate at their own pace.
+ */
+export function periodFromSliceSize(sliceSize: SliceSize | undefined): number {
+  if (sliceSize === SliceSize.QUARTERED) return 4;
+  return 2;
+}
+
+/**
+ * Convert integer period back to SliceSize for legacy APIs.
+ *
+ * 2 → HALVED, 4 → QUARTERED. Period 8 is not yet representable in SliceSize;
+ * callers targeting period 8 must use the period-aware API surface.
+ */
+export function sliceSizeFromPeriod(period: number): SliceSize {
+  return period === 4 ? SliceSize.QUARTERED : SliceSize.HALVED;
+}
+
+/**
  * LOOP User-friendly labels
  * Maps LOOP types to display names for UI
  */

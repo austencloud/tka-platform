@@ -347,6 +347,11 @@ function createRewoundMotion(
  * - Creating new steps that fit the rotated positions
  * - Deriving letters from the rotated motion parameters
  */
+/**
+ * Geometric post-hoc rotation path used by the MCP server's `executeLOOP`
+ * dispatcher. The in-app generator uses the class-based
+ * StrictRotatedExecutor in `./StrictRotatedExecutor.ts` instead.
+ */
 function executeStrictRotated(
   steps: SequenceStep[],
   word: string,

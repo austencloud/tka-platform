@@ -1,14 +1,17 @@
 /**
- * Strict Swapped LOOP Executor
+ * Strict Swapped LOOP Executor (engine version)
  *
- * Swaps blue and red motion attributes. Blue does what Red did, Red does what Blue did.
- * Positions are transformed according to the swap map.
- * Always halved (no quartering support).
+ * Supports halved (period 2) and quartered (period 4). Period 4 requires
+ * SequenceBuilder to enforce per-hand turn parity via
+ * allocateTurns({enforcePeriod4Parity}).
  */
 
 import type { ILOOPExecutor } from "./ILOOPExecutor.js";
-import type { SequenceStep, MotionData } from "../../core/types/sequence-engine-types.js";
-import type { SliceSize } from "../loop-types.js";
+import type {
+  SequenceStep,
+  MotionData,
+} from "../../core/types/sequence-engine-types.js";
+import { SliceSize } from "../loop-types.js";
 import {
   SWAPPED_POSITION_MAP,
   SWAPPED_LOOP_VALIDATION_SET,
@@ -21,7 +24,7 @@ import { gridPositionDeriver } from "../../core/positions/GridPositionDeriver.js
 import { updateStepOrientations } from "./orientation-helpers.js";
 
 export class StrictSwappedExecutor implements ILOOPExecutor {
-  executeLOOP(sequence: SequenceStep[], _sliceSize: SliceSize): SequenceStep[] {
+  executeLOOP(sequence: SequenceStep[], sliceSize: SliceSize): SequenceStep[] {
     this.validateSequence(sequence);
 
     const startPosition = sequence.shift();
@@ -29,23 +32,26 @@ export class StrictSwappedExecutor implements ILOOPExecutor {
       throw new Error("Sequence must have a start position");
     }
 
-    const sequenceLength = sequence.length;
-    const entriesToAdd = sequenceLength;
+    const partialLength = sequence.length;
+    const period = sliceSize === SliceSize.QUARTERED ? 4 : 2;
+    const totalLength = partialLength * period;
+    const beatsToGenerate = totalLength - partialLength;
 
     let lastStep = sequence[sequence.length - 1]!;
-    const nextStepNumber = (lastStep.stepNumber ?? lastStep.beatIndex) + 1;
+    const firstGeneratedStepNumber =
+      (lastStep.stepNumber ?? lastStep.beatIndex) + 1;
 
-    for (let i = 2; i < sequenceLength + 2; i++) {
-      const finalIntendedLength = sequenceLength + entriesToAdd;
-      const stepNumber = nextStepNumber + i - 2;
+    for (let offset = 0; offset < beatsToGenerate; offset++) {
+      const stepNumber = firstGeneratedStepNumber + offset;
+      const quarterIdx = Math.floor((stepNumber - 1) / partialLength);
+      const sourceStepNumber = ((stepNumber - 1) % partialLength) + 1;
+      const applySwap = quarterIdx % 2 === 1;
 
-      const matchingStep = this.getPreviousMatchingBeat(
-        sequence,
-        stepNumber,
-        finalIntendedLength
-      );
+      const sourceStep = sequence[sourceStepNumber - 1]!;
 
-      const newStep = this.createSwappedStep(matchingStep, lastStep, stepNumber);
+      const newStep = applySwap
+        ? this.createSwappedStep(sourceStep, lastStep, stepNumber)
+        : this.createCopiedStep(sourceStep, lastStep, stepNumber);
       const finalStep = updateStepOrientations(newStep, lastStep);
 
       sequence.push(finalStep);
@@ -58,7 +64,9 @@ export class StrictSwappedExecutor implements ILOOPExecutor {
 
   private validateSequence(sequence: SequenceStep[]): void {
     if (sequence.length < 2) {
-      throw new Error("Sequence must have at least 2 steps (start position + 1 beat)");
+      throw new Error(
+        "Sequence must have at least 2 steps (start position + 1 beat)"
+      );
     }
 
     const startPos = sequence[0]!.startPosition;
@@ -78,40 +86,20 @@ export class StrictSwappedExecutor implements ILOOPExecutor {
     }
   }
 
-  private getPreviousMatchingBeat(
-    sequence: SequenceStep[],
-    stepNumber: number,
-    finalLength: number
-  ): SequenceStep {
-    const halfLength = Math.floor(finalLength / 2);
-    const matchingStepNumber = stepNumber - halfLength;
-    const arrayIndex = matchingStepNumber - 1;
-
-    if (arrayIndex < 0 || arrayIndex >= sequence.length) {
-      throw new Error(
-        `Invalid index mapping: stepNumber ${stepNumber} -> arrayIndex ${arrayIndex}`
-      );
-    }
-
-    return sequence[arrayIndex]!;
-  }
-
   private createSwappedStep(
-    matchingStep: SequenceStep,
+    sourceStep: SequenceStep,
     previousStep: SequenceStep,
     stepNumber: number
   ): SequenceStep {
-    // Swap: Blue gets Red's pattern, Red gets Blue's pattern
     const blueMotion = this.createSwappedMotion(
       previousStep.blueMotion,
-      matchingStep.redMotion // Use RED from matching beat for BLUE
+      sourceStep.redMotion
     );
     const redMotion = this.createSwappedMotion(
       previousStep.redMotion,
-      matchingStep.blueMotion // Use BLUE from matching beat for RED
+      sourceStep.blueMotion
     );
 
-    // Derive actual grid positions from hand locations
     const actualStartPosition = gridPositionDeriver.getGridPositionFromLocations(
       blueMotion.startLocation,
       redMotion.startLocation
@@ -122,7 +110,7 @@ export class StrictSwappedExecutor implements ILOOPExecutor {
     );
 
     return {
-      ...matchingStep,
+      ...sourceStep,
       stepNumber,
       beatIndex: stepNumber,
       startPosition: actualStartPosition,
@@ -132,24 +120,41 @@ export class StrictSwappedExecutor implements ILOOPExecutor {
     };
   }
 
+  private createCopiedStep(
+    sourceStep: SequenceStep,
+    previousStep: SequenceStep,
+    stepNumber: number
+  ): SequenceStep {
+    return {
+      ...sourceStep,
+      stepNumber,
+      beatIndex: stepNumber,
+      startPosition: previousStep.endPosition,
+      endPosition: sourceStep.endPosition,
+      blueMotion: {
+        ...sourceStep.blueMotion,
+        startLocation: previousStep.blueMotion.endLocation,
+      },
+      redMotion: {
+        ...sourceStep.redMotion,
+        startLocation: previousStep.redMotion.endLocation,
+      },
+    };
+  }
+
   private createSwappedMotion(
     previousMotion: MotionData,
-    matchingMotion: MotionData // From the OPPOSITE color in the matching beat
+    matchingMotion: MotionData
   ): MotionData {
     const startLocation = previousMotion.endLocation;
 
-    // Derive end location from the seed's hand path direction, applied to
-    // the new start location. Previously this used matchingMotion.endLocation
-    // directly, which decoupled the end from the start and could produce
-    // physically impossible arcs (e.g. pro e→w) when the swapped motion
-    // starts from a different location than the seed.
     let endLocation: string;
     if (matchingMotion.startLocation === matchingMotion.endLocation) {
       endLocation = startLocation;
     } else {
       const seedHandDir = getHandRotationDirection(
         matchingMotion.startLocation,
-        matchingMotion.endLocation,
+        matchingMotion.endLocation
       );
       const locationMap = getLocationMapForHandRotation(seedHandDir);
       endLocation = locationMap[startLocation] || startLocation;

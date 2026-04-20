@@ -1,15 +1,17 @@
 /**
- * Strict Inverted LOOP Executor
+ * Strict Inverted LOOP Executor (engine version)
  *
- * Uses inverted letters (opposite motion types: A<->B, D<->E, etc.)
- * Flips motion types (PRO <-> ANTI) and prop rotation directions (CW <-> CCW).
- * End position must equal start position (sequence returns to start).
- * Always halved (no quartering support).
+ * Supports halved (period 2) and quartered (period 4). Period 4 requires
+ * SequenceBuilder to enforce per-hand turn parity via
+ * allocateTurns({enforcePeriod4Parity}).
  */
 
 import type { ILOOPExecutor } from "./ILOOPExecutor.js";
-import type { SequenceStep, MotionData } from "../../core/types/sequence-engine-types.js";
-import type { SliceSize } from "../loop-types.js";
+import type {
+  SequenceStep,
+  MotionData,
+} from "../../core/types/sequence-engine-types.js";
+import { SliceSize } from "../loop-types.js";
 import {
   INVERTED_LOOP_VALIDATION_SET,
   getInvertedLetter,
@@ -17,7 +19,7 @@ import {
 import { updateStepOrientations } from "./orientation-helpers.js";
 
 export class StrictInvertedExecutor implements ILOOPExecutor {
-  executeLOOP(sequence: SequenceStep[], _sliceSize: SliceSize): SequenceStep[] {
+  executeLOOP(sequence: SequenceStep[], sliceSize: SliceSize): SequenceStep[] {
     this.validateSequence(sequence);
 
     const startPosition = sequence.shift();
@@ -25,23 +27,26 @@ export class StrictInvertedExecutor implements ILOOPExecutor {
       throw new Error("Sequence must have a start position");
     }
 
-    const sequenceLength = sequence.length;
-    const entriesToAdd = sequenceLength;
+    const partialLength = sequence.length;
+    const period = sliceSize === SliceSize.QUARTERED ? 4 : 2;
+    const totalLength = partialLength * period;
+    const beatsToGenerate = totalLength - partialLength;
 
     let lastStep = sequence[sequence.length - 1]!;
-    const nextStepNumber = (lastStep.stepNumber ?? lastStep.beatIndex) + 1;
+    const firstGeneratedStepNumber =
+      (lastStep.stepNumber ?? lastStep.beatIndex) + 1;
 
-    for (let i = 2; i < sequenceLength + 2; i++) {
-      const finalIntendedLength = sequenceLength + entriesToAdd;
-      const stepNumber = nextStepNumber + i - 2;
+    for (let offset = 0; offset < beatsToGenerate; offset++) {
+      const stepNumber = firstGeneratedStepNumber + offset;
+      const quarterIdx = Math.floor((stepNumber - 1) / partialLength);
+      const sourceStepNumber = ((stepNumber - 1) % partialLength) + 1;
+      const applyInversion = quarterIdx % 2 === 1;
 
-      const matchingStep = this.getPreviousMatchingBeat(
-        sequence,
-        stepNumber,
-        finalIntendedLength
-      );
+      const sourceStep = sequence[sourceStepNumber - 1]!;
 
-      const newStep = this.createInvertedStep(matchingStep, lastStep, stepNumber);
+      const newStep = applyInversion
+        ? this.createInvertedStep(sourceStep, lastStep, stepNumber)
+        : this.createCopiedStep(sourceStep, lastStep, stepNumber);
       const finalStep = updateStepOrientations(newStep, lastStep);
 
       sequence.push(finalStep);
@@ -54,7 +59,9 @@ export class StrictInvertedExecutor implements ILOOPExecutor {
 
   private validateSequence(sequence: SequenceStep[]): void {
     if (sequence.length < 2) {
-      throw new Error("Sequence must have at least 2 steps (start position + 1 beat)");
+      throw new Error(
+        "Sequence must have at least 2 steps (start position + 1 beat)"
+      );
     }
 
     const startPos = sequence[0]!.startPosition;
@@ -73,59 +80,63 @@ export class StrictInvertedExecutor implements ILOOPExecutor {
     }
   }
 
-  private getPreviousMatchingBeat(
-    sequence: SequenceStep[],
-    stepNumber: number,
-    finalLength: number
-  ): SequenceStep {
-    const halfLength = Math.floor(finalLength / 2);
-    const matchingStepNumber = stepNumber - halfLength;
-    const arrayIndex = matchingStepNumber - 1;
-
-    if (arrayIndex < 0 || arrayIndex >= sequence.length) {
-      throw new Error(
-        `Invalid index mapping: stepNumber ${stepNumber} -> arrayIndex ${arrayIndex}`
-      );
-    }
-
-    return sequence[arrayIndex]!;
-  }
-
   private createInvertedStep(
-    matchingStep: SequenceStep,
+    sourceStep: SequenceStep,
     previousStep: SequenceStep,
     stepNumber: number
   ): SequenceStep {
-    const invertedLetter = getInvertedLetter(matchingStep.letter);
+    const invertedLetter = getInvertedLetter(sourceStep.letter);
 
     return {
-      ...matchingStep,
+      ...sourceStep,
       stepNumber,
       beatIndex: stepNumber,
       letter: invertedLetter,
       startPosition: previousStep.endPosition,
-      endPosition: matchingStep.endPosition, // Same as matching beat
+      endPosition: sourceStep.endPosition,
       blueMotion: this.createInvertedMotion(
-        matchingStep.blueMotion,
+        sourceStep.blueMotion,
         previousStep.blueMotion
       ),
       redMotion: this.createInvertedMotion(
-        matchingStep.redMotion,
+        sourceStep.redMotion,
         previousStep.redMotion
       ),
     };
   }
 
+  private createCopiedStep(
+    sourceStep: SequenceStep,
+    previousStep: SequenceStep,
+    stepNumber: number
+  ): SequenceStep {
+    return {
+      ...sourceStep,
+      stepNumber,
+      beatIndex: stepNumber,
+      startPosition: previousStep.endPosition,
+      endPosition: sourceStep.endPosition,
+      blueMotion: {
+        ...sourceStep.blueMotion,
+        startLocation: previousStep.blueMotion.endLocation,
+      },
+      redMotion: {
+        ...sourceStep.redMotion,
+        startLocation: previousStep.redMotion.endLocation,
+      },
+    };
+  }
+
   private createInvertedMotion(
-    matchingMotion: MotionData,
+    sourceMotion: MotionData,
     previousMotion: MotionData
   ): MotionData {
     return {
-      ...matchingMotion,
-      motionType: invertMotionType(matchingMotion.motionType),
+      ...sourceMotion,
+      motionType: invertMotionType(sourceMotion.motionType),
       startLocation: previousMotion.endLocation,
-      endLocation: matchingMotion.endLocation, // Same as matching beat
-      rotationDirection: flipRotationDirection(matchingMotion.rotationDirection),
+      endLocation: sourceMotion.endLocation,
+      rotationDirection: flipRotationDirection(sourceMotion.rotationDirection),
     };
   }
 }
