@@ -2,6 +2,7 @@
 	import PageNav from './PageNav.svelte';
 	import EditorTopBar from './EditorTopBar.svelte';
 	import LibraryPanel from './LibraryPanel.svelte';
+	import AssetInspector from './AssetInspector.svelte';
 
 	interface Props {
 		activePage: number;
@@ -20,7 +21,12 @@
 				{@render children?.()}
 			</div>
 		</main>
-		<aside class="right"><LibraryPanel /></aside>
+		<aside class="right">
+			<div class="right-stack">
+				<div class="library-region"><LibraryPanel /></div>
+				<AssetInspector />
+			</div>
+		</aside>
 	</div>
 </div>
 
@@ -44,6 +50,16 @@
 	.right {
 		border-left: 1px solid #1f2530;
 		min-height: 0;
+	}
+	.right-stack {
+		display: grid;
+		grid-template-rows: 1fr auto;
+		height: 100%;
+		min-height: 0;
+	}
+	.library-region {
+		min-height: 0;
+		overflow: hidden;
 	}
 	.canvas {
 		background: #1c2230;
