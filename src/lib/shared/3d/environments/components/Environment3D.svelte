@@ -46,7 +46,7 @@
         return { scene: "ocean" };
       case BackgroundType.EMBER_GLOW:
         return { scene: "ember" };
-      case BackgroundType.SAKURA_DRIFT:
+      case BackgroundType.CHERRY_BLOSSOM:
         return { scene: "cherryBlossom" };
       // SOLID_COLOR and LINEAR_GRADIENT show no 3D scene
       default:

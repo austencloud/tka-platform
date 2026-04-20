@@ -51,11 +51,15 @@
       ></div>
     {/each}
 
-    <div class="progress-area">
-      <p class="status-text">Setting the stage...</p>
-      <div class="progress-track">
+    <div class="progress-area" role="status" aria-live="polite">
+      <div class="status-row">
+        <span class="spinner" aria-hidden="true"></span>
+        <p class="status-text">Setting the stage</p>
+      </div>
+      <div class="progress-track" aria-label="Scene loading progress">
         <div class="progress-fill" style="width: {progress * 100}%"></div>
       </div>
+      <p class="percent-text">{Math.round(progress * 100)}%</p>
     </div>
   </div>
 {/if}
@@ -104,34 +108,102 @@
 
   .progress-area {
     position: absolute;
-    bottom: 48px;
-    left: 50%;
-    transform: translateX(-50%);
+    inset: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 12px;
+    justify-content: center;
+    gap: 14px;
+    pointer-events: none;
+  }
+
+  .status-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .spinner {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 200, 120, 0.18);
+    border-top-color: rgba(255, 200, 120, 0.95);
+    animation: spin 0.9s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
   }
 
   .status-text {
-    color: rgba(255, 200, 120, 0.6);
-    font-size: var(--font-size-min, 14px);
+    color: rgba(255, 220, 170, 0.95);
+    font-size: var(--font-size-base, 15px);
+    font-weight: 500;
     margin: 0;
     letter-spacing: 0.04em;
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  /* Animated ellipsis — three dots that cascade in */
+  .status-text::after {
+    content: "";
+    display: inline-block;
+    width: 1.2em;
+    text-align: left;
+    animation: ellipsis 1.4s steps(4, end) infinite;
+  }
+
+  @keyframes ellipsis {
+    0%   { content: ""; }
+    25%  { content: "."; }
+    50%  { content: ".."; }
+    75%  { content: "..."; }
+    100% { content: ""; }
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 0.85; }
+    50%      { opacity: 1; }
   }
 
   .progress-track {
-    width: 180px;
-    height: 3px;
-    background: rgba(255, 255, 255, 0.08);
-    border-radius: 2px;
+    width: 220px;
+    height: 5px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
     overflow: hidden;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
   }
 
   .progress-fill {
     height: 100%;
-    background: rgba(255, 180, 70, 0.7);
-    border-radius: 2px;
+    background: linear-gradient(
+      90deg,
+      rgba(255, 180, 70, 0.85),
+      rgba(255, 210, 130, 0.95)
+    );
+    border-radius: 3px;
     transition: width 0.3s ease;
+    box-shadow: 0 0 10px rgba(255, 180, 70, 0.4);
+  }
+
+  .percent-text {
+    color: rgba(255, 220, 170, 0.75);
+    font-size: var(--font-size-min, 13px);
+    font-variant-numeric: tabular-nums;
+    margin: 0;
+    letter-spacing: 0.05em;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .spinner,
+    .status-text,
+    .status-text::after {
+      animation: none;
+    }
+    .status-text::after {
+      content: "...";
+    }
   }
 </style>
