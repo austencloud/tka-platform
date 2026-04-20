@@ -197,14 +197,14 @@ describe("resolveSmoke2D — palette carries behavior", () => {
     // fog has curlBias 0.5; intent 0.8 × 0.5 = 0.4
     const out = resolveSmoke2D(baseIntent({ palette: "fog", curlStrength: 0.8 }));
     expect(out.resolvedCurlStrength).toBeCloseTo(0.4, 6);
-    expect(out.lifetimeSeconds).toBe(12.0);
+    expect(out.lifetimeSeconds).toBe(6.0);
   });
 
   it("applies palette.riseBias to intent.riseSpeed and scales by riseBaseSpeed", () => {
-    // genie has riseBias 0.9; intent 1.0 × 0.9 × 60 = 54 (2D uses 60 px/s base)
+    // genie has riseBias 0.9; intent 1.0 × 0.9 × 110 = 99 (2D uses 110 px/s base)
     const out = resolveSmoke2D(baseIntent({ palette: "genie", riseSpeed: 1.0 }));
-    expect(out.resolvedRiseSpeed).toBeCloseTo(54.0, 4);
-    expect(out.riseBaseSpeed).toBe(60);
+    expect(out.resolvedRiseSpeed).toBeCloseTo(99.0, 4);
+    expect(out.riseBaseSpeed).toBe(110);
   });
 
   it("derives a custom palette from customColor with neutral behavior defaults", () => {
