@@ -1,7 +1,7 @@
 <script lang="ts">
 	import PageNav from './PageNav.svelte';
 	import EditorTopBar from './EditorTopBar.svelte';
-	import RightSidebarStub from './RightSidebarStub.svelte';
+	import LibraryPanel from './LibraryPanel.svelte';
 
 	interface Props {
 		activePage: number;
@@ -20,7 +20,7 @@
 				{@render children?.()}
 			</div>
 		</main>
-		<aside class="right"><RightSidebarStub /></aside>
+		<aside class="right"><LibraryPanel /></aside>
 	</div>
 </div>
 

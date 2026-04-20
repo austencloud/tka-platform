@@ -17,6 +17,11 @@ const config = {
       // Core aliases
       $lib: "./src/lib",
       "$lib/*": "./src/lib/*",
+      // Guide editor library utilities. Aliased because TypeScript's bundler
+      // module resolution mishandles parens in paths like "(public)" when
+      // imported across the src/lib <-> src/routes boundary.
+      "$guide-level-1": "./src/routes/(public)/guide/level-1",
+      "$guide-level-1/*": "./src/routes/(public)/guide/level-1/*",
     },
 
     // ============================================================================
