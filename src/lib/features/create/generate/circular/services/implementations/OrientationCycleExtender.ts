@@ -10,6 +10,16 @@
  * second pass (same motions, different start orientations) returns to radial.
  * Since the pictographs differ between passes, a repeat sign wouldn't work —
  * the performer needs to see the actual beat pictographs.
+ *
+ * ## Usage
+ *
+ * Since the Complete Cycle button was removed, this extender is invoked
+ * automatically inside `generate-actions.svelte.ts` whenever a freshly
+ * generated LOOP has `orientationCycleCount > 1`. The user never sees an
+ * open-orientation sequence: closure is atomic with generation.
+ *
+ * Kept available for lab tooling (Collision Lab, orientation lab) that
+ * needs to extend sequences manually.
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";

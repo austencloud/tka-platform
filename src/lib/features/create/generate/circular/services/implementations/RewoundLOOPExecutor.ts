@@ -22,8 +22,9 @@ import {
   MotionColor,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import type { SliceSize } from "../../domain/models/circular-models";
+import { SliceSize } from "../../domain/models/circular-models";
 import type { ILOOPExecutor } from "../contracts/ILOOPExecutor";
+import { LoopViabilityError } from "../../../shared/domain/errors/LoopViabilityError";
 
 export class RewoundLOOPExecutor implements ILOOPExecutor {
   /**
@@ -33,7 +34,14 @@ export class RewoundLOOPExecutor implements ILOOPExecutor {
    * @param _sliceSize - Ignored (Rewound always doubles the sequence)
    * @returns The complete sequence with reversed steps appended
    */
-  executeLOOP(sequence: StepData[], _sliceSize: SliceSize): StepData[] {
+  executeLOOP(sequence: StepData[], sliceSize: SliceSize): StepData[] {
+    if (sliceSize === SliceSize.QUARTERED) {
+      throw new LoopViabilityError(
+        "Quartered rewound is not a valid LOOP.",
+        "Rewound is order 2 (reverse-of-reverse = identity). Use halved or pick a rotation-containing type."
+      );
+    }
+
     if (sequence.length < 2) {
       throw new Error(
         "Sequence must have at least 2 steps (start position + 1 beat)"
