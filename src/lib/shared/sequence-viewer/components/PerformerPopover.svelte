@@ -2,7 +2,7 @@
   import { getViewer3DContext } from "$lib/shared/3d/context/viewer-3d-context";
   import PerformerChipStrip from "$lib/shared/3d/components/controls/PerformerChipStrip.svelte";
   import BentoPropGrid from "$lib/shared/settings/components/tabs/prop-type/BentoPropGrid.svelte";
-  import EffectsSettingsPanel from "$lib/shared/3d/components/controls/EffectsSettingsPanel.svelte";
+  import MobileEffectsPanel from "$lib/shared/animation-engine/components/effects-panel/MobileEffectsPanel.svelte";
   import EffortPalette from "$lib/features/phrase-effort-lab/components/EffortPalette.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import type { EffortId } from "$lib/features/effort-lab/domain/effort-types";
@@ -76,7 +76,6 @@
           class="tab"
           role="tab"
           aria-selected={activeTab === "effects"}
-          disabled={allSelected}
           onclick={() => (activeTab = "effects")}>Effects</button
         >
         <button
@@ -88,9 +87,13 @@
         >
       </div>
 
-      {#if allSelected}
+      {#if activeTab === "effects"}
+        <!-- Effects are scene-wide (shared with the export Effects panel).
+             Per-performer scoping is Phase 2.5 work. -->
+        <div class="effects-host"><MobileEffectsPanel /></div>
+      {:else if allSelected}
         <div class="empty">
-          Select a performer to edit their prop, effort, or effects.
+          Select a performer to edit their prop or effort.
         </div>
       {:else if selected === null}
         <div class="empty">No performer selected.</div>
@@ -101,8 +104,6 @@
           variant="inline"
           onSelect={(p: PropType) => selected.setProp(p)}
         />
-      {:else if activeTab === "effects"}
-        <EffectsSettingsPanel performer={selected} />
       {:else if activeTab === "effort"}
         <EffortPalette
           selectedEffort={selected.settings.effortId ?? "linear"}
@@ -183,5 +184,12 @@
     text-align: center;
     font-size: 12px;
     color: rgba(255, 255, 255, 0.42);
+  }
+  .effects-host {
+    /* MobileEffectsPanel was sized for the bento sheet (~300px wide
+       on iPhone SE). The PerformerPopover is 420px wide so the panel
+       has a touch more room — let it use the available width. */
+    max-height: 60vh;
+    overflow-y: auto;
   }
 </style>
