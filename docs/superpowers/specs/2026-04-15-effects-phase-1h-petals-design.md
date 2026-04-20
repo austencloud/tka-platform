@@ -21,7 +21,7 @@ export interface PetalsIntent {
   /** 0-1. Overall petal size + brightness. */
   intensity: number;
   /** Named palette. "custom" uses customColor. */
-  palette: "sakura" | "autumn" | "jungle" | "ash" | "gold" | "custom";
+  palette: "blossom" | "autumn" | "jungle" | "ash" | "gold" | "custom";
   /** Hex string. Used only when palette === "custom". */
   customColor: string;
   /** 0-1. Sinusoidal sway amplitude. 0 = straight fall, 1 = wide flutter. */
@@ -54,12 +54,12 @@ Palette registry:
 
 | id | sprites | tint range | ember flag | notes |
 |----|---------|------------|------------|-------|
-| sakura | 3 small round petal shapes | `#ffd0e0`, `#ffc0d8`, `#ffb0c8` | — | pink cherry blossom |
+| blossom | 3 small round petal shapes | `#ffd0e0`, `#ffc0d8`, `#ffb0c8` | — | pink cherry blossom |
 | autumn | 5 maple/oak/elm leaf shapes | `#d84820`, `#c86828`, `#c88020`, `#a85820`, `#884818` | — | red/orange/brown mix |
 | jungle | 4 elongated leaf shapes | `#408840`, `#509848`, `#60a050`, `#588838` | — | green, heavier silhouettes |
 | ash | 5 burnt-edged leaf shapes | `#606060`, `#484848`, `#303030` | 20% chance, `#ff6020` edge | pairs with fire |
 | gold | 3 stylized leaf shapes | `#ffd060`, `#ddc050`, `#c89020` | — | metallic, rare, slow fall |
-| custom | reuses sakura silhouettes | derived from `customColor` (3 tints: base, +10% L, -10% L) | — | |
+| custom | reuses blossom silhouettes | derived from `customColor` (3 tints: base, +10% L, -10% L) | — | |
 
 **Sprite atlas storage:** `src/lib/shared/3d/effects/petals/sprites/` — one PNG atlas per palette. 2D and 3D share the atlases (loaded once per palette, referenced by both renderers).
 
@@ -69,7 +69,7 @@ Six presets in `src/lib/shared/effects/domain/presets/built-in-petals-presets.ts
 
 | id | palette | ambient | motion | intensity | swayAmplitude | fallSpeed | notes |
 |----|---------|---------|--------|-----------|---------------|-----------|-------|
-| classic | sakura | 0.5 | 0.4 | 0.6 | 0.6 | 0.4 | balanced cherry blossom |
+| classic | blossom | 0.5 | 0.4 | 0.6 | 0.6 | 0.4 | balanced cherry blossom |
 | storm | autumn | 0.8 | 0.6 | 0.7 | 0.8 | 0.7 | chaotic autumn fall |
 | jungle_drift | jungle | 0.4 | 0.3 | 0.7 | 0.5 | 0.5 | green heavy drift |
 | ember_ash | ash | 0.3 | 0.7 | 0.5 | 0.7 | 0.5 | motion-heavy, embers flicker |
