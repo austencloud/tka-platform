@@ -245,6 +245,7 @@
       hideProps: false,
       usePathCache: false,
       previewMode: false,
+      tailLength: 20,
     };
 
     // Pairs: tips 0/1 use blue/red hues, subsequent tips cycle the hue wheel.

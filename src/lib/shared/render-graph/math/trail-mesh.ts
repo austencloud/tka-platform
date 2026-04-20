@@ -106,11 +106,22 @@ export function adaptiveSubdivisions(pointCount: number): number {
 }
 
 export interface TrailMesh {
-  /** Interleaved float buffer: [x0, y0, edge_t0, alpha0, x1, y1, edge_t1, alpha1, ...]. */
+  /**
+   * Interleaved float buffer: [x, y, z, edge_t, alpha] per vertex.
+   *
+   * `z` is the age-normalized depth: 0 at the head (newest), 1 at the tail
+   * (oldest). Consumers that enable `DEPTH_TEST` with `depthFunc(LEQUAL)`
+   * and clear depth to 1.0 each frame get newest-wins compositing across
+   * all tips. Consumers that don't enable depth test simply ignore this
+   * channel (z=0 in clip space is inside the default `[-1,1]` depth range).
+   */
   vertices: Float32Array;
   /** Vertex count. Draw with gl.TRIANGLE_STRIP. */
   vertexCount: number;
 }
+
+/** Floats per vertex in `TrailMesh.vertices`. */
+export const TRAIL_VERTEX_STRIDE = 5;
 
 export interface MeshBuildOptions {
   /** Head thickness in NDC — the polygon width at the head. */
@@ -147,7 +158,7 @@ export function buildTaperedMesh(
   const fadeExponent = options.fadeExponent ?? FADE_EXPONENT;
 
   const n = smoothPath.length;
-  const vertices = new Float32Array(n * 2 * 4);
+  const vertices = new Float32Array(n * 2 * TRAIL_VERTEX_STRIDE);
   let offset = 0;
 
   for (let i = 0; i < n; i += 1) {
@@ -190,18 +201,25 @@ export function buildTaperedMesh(
     const rightX = curr.x - perpX * halfAtPoint;
     const rightY = curr.y - perpY * halfAtPoint;
 
+    // Age-normalized depth: 0 at head (newest), 1 at tail (oldest).
+    // Both edges of a given slice share the same depth so the polygon
+    // remains planar in depth space.
+    const z = 1 - progress;
+
     // Left edge: edge_t = -1
     vertices[offset + 0] = leftX;
     vertices[offset + 1] = leftY;
-    vertices[offset + 2] = -1;
-    vertices[offset + 3] = alpha;
+    vertices[offset + 2] = z;
+    vertices[offset + 3] = -1;
+    vertices[offset + 4] = alpha;
     // Right edge: edge_t = +1
-    vertices[offset + 4] = rightX;
-    vertices[offset + 5] = rightY;
-    vertices[offset + 6] = 1;
-    vertices[offset + 7] = alpha;
+    vertices[offset + 5] = rightX;
+    vertices[offset + 6] = rightY;
+    vertices[offset + 7] = z;
+    vertices[offset + 8] = 1;
+    vertices[offset + 9] = alpha;
 
-    offset += 8;
+    offset += 2 * TRAIL_VERTEX_STRIDE;
   }
 
   return { vertices, vertexCount: n * 2 };

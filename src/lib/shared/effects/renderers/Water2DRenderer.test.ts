@@ -169,8 +169,13 @@ describe("Water2DRenderer", () => {
       r.render(ctx, params, ALL_TIPS, 1 / 60);
     }
     const callsEnd = (ctx.drawImage as ReturnType<typeof vi.fn>).mock.calls.length;
-    // Per-frame drawImage count ≤ poolSize. callsEnd - callsMid is bounded.
-    expect(callsEnd - callsMid).toBeLessThanOrEqual(60 * params.poolSize);
+    // Per-frame drawImage count ≤ poolSize × (1 + trailCount) for splash
+    // style (trailCount=2 → up to 3 stamps per droplet when moving fast
+    // enough to trigger trails).
+    const maxStampsPerDroplet = 4;
+    expect(callsEnd - callsMid).toBeLessThanOrEqual(
+      60 * params.poolSize * maxStampsPerDroplet,
+    );
   });
 
   it("applies screen-down gravity (droplets accelerate downward)", () => {
