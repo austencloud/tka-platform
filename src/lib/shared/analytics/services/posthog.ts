@@ -77,9 +77,6 @@ export function initPostHog(): void {
       // Reload feature flags to ensure fresh state
       posthog.reloadFeatureFlags();
 
-      if (import.meta.env.DEV) {
-        console.log("[PostHog] Initialized successfully");
-      }
     },
   });
 
