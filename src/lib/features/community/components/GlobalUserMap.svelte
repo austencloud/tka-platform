@@ -15,16 +15,29 @@
     userLocation = null,
     apiKey,
     onMapReady = () => {},
+    scanMarkers = [],
+    size = "full",
   }: {
     locations: UserLocationWithProfile[];
     userLocation: { lat: number; lng: number } | null;
     apiKey: string;
     onMapReady?: () => void;
+    /** Scan-origin pins injected by the ChoreoCard Scan Activity view. */
+    scanMarkers?: Array<{
+      id: string;
+      lat: number;
+      lng: number;
+      label?: string;
+      styleClass?: "pin" | "pin-new";
+    }>;
+    /** Layout variant. "embedded" gives a compact rounded 260px container. */
+    size?: "full" | "embedded";
   } = $props();
 
   let mapContainer: HTMLDivElement;
   let map: google.maps.Map | null = null;
   let markers: google.maps.marker.AdvancedMarkerElement[] = [];
+  let injectedScanMarkers: google.maps.marker.AdvancedMarkerElement[] = [];
   let selectedUser: UserLocationWithProfile | null = $state(null);
 
   onMount(async () => {
@@ -155,6 +168,30 @@
     }
   });
 
+  // Sync injected scan-origin markers (Scan Activity view).
+  $effect(() => {
+    const incoming = scanMarkers;
+    if (!map) return;
+
+    for (const m of injectedScanMarkers) m.map = null;
+    injectedScanMarkers = [];
+
+    if (incoming.length === 0) return;
+
+    const { AdvancedMarkerElement } = google.maps.marker;
+    for (const m of incoming) {
+      const content = document.createElement("div");
+      content.className = `scan-pin${m.styleClass === "pin-new" ? " scan-pin--new" : ""}`;
+      const marker = new AdvancedMarkerElement({
+        map,
+        position: { lat: m.lat, lng: m.lng },
+        content,
+        title: m.label ?? "",
+      });
+      injectedScanMarkers.push(marker);
+    }
+  });
+
   // Center map on user location when it changes
   $effect(() => {
     if (map && userLocation) {
@@ -164,7 +201,7 @@
   });
 </script>
 
-<div class="map-wrapper">
+<div class="map-wrapper" class:embedded={size === "embedded"}>
   <div bind:this={mapContainer} class="map-container"></div>
 
   {#if selectedUser}
@@ -200,9 +237,35 @@
     overflow: hidden;
   }
 
+  .map-wrapper.embedded {
+    height: 260px;
+    border-radius: 8px;
+  }
+
   .map-container {
     width: 100%;
     height: 100%;
+  }
+
+  :global(.scan-pin) {
+    width: 12px;
+    height: 12px;
+    background: #10b981;
+    border-radius: 50%;
+    box-shadow: 0 0 8px #10b981;
+  }
+
+  :global(.scan-pin--new) {
+    animation: scanPinPulse 1.5s infinite;
+  }
+
+  @keyframes scanPinPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.5); box-shadow: 0 0 16px #10b981; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    :global(.scan-pin--new) { animation: none; }
   }
 
   .popup-overlay {
