@@ -1,9 +1,12 @@
 <!--
   MotionVisibilityToggle.svelte
 
-  Icon button in the sequence viewer header. Shows two prop silhouettes:
-  the hidden side is rendered grey. Click opens a popover with two chips
-  (Blue, Red) that toggle each color's visibility.
+  Per-viewer motion visibility control.
+
+  - Wide viewports (≥768px): two inline chips (Left / Right) for one-tap
+    toggles with direct state readability.
+  - Narrow viewports: icon button + popover, so the header doesn't blow
+    past its horizontal budget on phones.
 
   Reads/writes SequenceViewerVisibilityState via context.
 -->
@@ -14,8 +17,20 @@
 
   const visibility = getViewerVisibilityContext();
   let open = $state(false);
+  let isNarrow = $state(false);
 
-  function toggle(e: MouseEvent) {
+  $effect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    const sync = () => {
+      isNarrow = mq.matches;
+      if (!isNarrow) open = false;
+    };
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  });
+
+  function toggleOpen(e: MouseEvent) {
     e.stopPropagation();
     open = !open;
   }
@@ -24,10 +39,8 @@
     open = false;
   }
 
-  // Dismissal is handled by the backdrop element rendered in the
-  // template — a transparent full-viewport layer that absorbs the
-  // click so no underlying control (choreo card, canvas, playback
-  // button) can co-activate with the same press. Escape closes too.
+  // Backdrop absorbs the dismiss click so it can't reach the choreo
+  // card, canvas, or any other control beneath.
   function onBackdropPointerDown(e: PointerEvent) {
     e.preventDefault();
     e.stopPropagation();
@@ -48,52 +61,72 @@
   });
 </script>
 
-<div class="motion-vis-root">
-  <button
-    type="button"
-    class="motion-vis-btn"
-    onclick={toggle}
-    aria-label="Motion visibility"
-    aria-expanded={open}
-    aria-haspopup="dialog"
-  >
-    <span
-      class="prop-silhouette blue"
-      class:muted={!visibility.blueMotion}
-      aria-hidden="true"
-    ></span>
-    <span
-      class="prop-silhouette red"
-      class:muted={!visibility.redMotion}
-      aria-hidden="true"
-    ></span>
-  </button>
-
-  {#if open}
-    <!-- Backdrop: absorbs the dismiss click so it can't reach the
-         choreo card, canvas, or any other control beneath. Transparent
-         but pointer-active. Higher z-index than page content, lower
-         than the popover itself. -->
-    <div
-      class="motion-vis-backdrop"
-      role="button"
-      tabindex="-1"
-      aria-label="Close motion visibility menu"
-      onpointerdown={onBackdropPointerDown}
-    ></div>
-    <div
-      class="motion-vis-popover"
-      role="dialog"
+<div class="motion-vis-root" class:narrow={isNarrow}>
+  {#if isNarrow}
+    <button
+      type="button"
+      class="motion-vis-btn"
+      onclick={toggleOpen}
       aria-label="Motion visibility"
-      in:scale={{ duration: 220, start: 0.92, opacity: 0, easing: backOut }}
-      out:scale={{ duration: 160, start: 0.95, opacity: 0, easing: cubicOut }}
+      aria-expanded={open}
+      aria-haspopup="dialog"
     >
+      <span
+        class="prop-silhouette blue"
+        class:muted={!visibility.blueMotion}
+        aria-hidden="true"
+      ></span>
+      <span
+        class="prop-silhouette red"
+        class:muted={!visibility.redMotion}
+        aria-hidden="true"
+      ></span>
+    </button>
+
+    {#if open}
+      <div
+        class="motion-vis-backdrop"
+        role="button"
+        tabindex="-1"
+        aria-label="Close motion visibility menu"
+        onpointerdown={onBackdropPointerDown}
+      ></div>
+      <div
+        class="motion-vis-popover"
+        role="dialog"
+        aria-label="Motion visibility"
+        in:scale={{ duration: 220, start: 0.92, opacity: 0, easing: backOut }}
+        out:scale={{ duration: 160, start: 0.95, opacity: 0, easing: cubicOut }}
+      >
+        <button
+          type="button"
+          class="chip blue"
+          class:active={visibility.blueMotion}
+          onclick={() => visibility.toggleBlue()}
+          aria-pressed={visibility.blueMotion}
+        >
+          Left
+        </button>
+        <button
+          type="button"
+          class="chip red"
+          class:active={visibility.redMotion}
+          onclick={() => visibility.toggleRed()}
+          aria-pressed={visibility.redMotion}
+        >
+          Right
+        </button>
+      </div>
+    {/if}
+  {:else}
+    <div class="motion-vis-inline" role="group" aria-label="Motion visibility">
       <button
         type="button"
         class="chip blue"
         class:active={visibility.blueMotion}
         onclick={() => visibility.toggleBlue()}
         aria-pressed={visibility.blueMotion}
+        aria-label={visibility.blueMotion ? "Hide left motion" : "Show left motion"}
       >
         Left
       </button>
@@ -103,6 +136,7 @@
         class:active={visibility.redMotion}
         onclick={() => visibility.toggleRed()}
         aria-pressed={visibility.redMotion}
+        aria-label={visibility.redMotion ? "Hide right motion" : "Show right motion"}
       >
         Right
       </button>
@@ -112,6 +146,12 @@
 
 <style>
   .motion-vis-root { position: relative; }
+
+  .motion-vis-inline {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
 
   .motion-vis-btn {
     width: var(--min-touch-target, 44px);
@@ -167,8 +207,7 @@
   }
 
   .chip {
-    flex: 1;
-    padding: 6px 10px;
+    padding: 6px 12px;
     border-radius: 8px;
     border: 1px solid rgba(255, 255, 255, 0.14);
     background: transparent;
@@ -177,7 +216,12 @@
     font-weight: 600;
     cursor: pointer;
     transition: background 160ms ease, color 160ms ease, border-color 160ms ease;
+    /* Inline chips need a minimum height to feel like real controls. */
+    min-height: 32px;
   }
+  /* Popover chips stretch to fill the popover width evenly. */
+  .motion-vis-popover .chip { flex: 1; }
+
   .chip:hover { background: rgba(255, 255, 255, 0.06); color: rgba(255, 255, 255, 0.95); }
   .chip.blue.active {
     background: color-mix(in srgb, var(--prop-blue, #2196f3) 22%, transparent);
