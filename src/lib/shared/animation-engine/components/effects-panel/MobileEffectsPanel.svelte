@@ -48,6 +48,13 @@
   import BubblesCustomize from "./customize/BubblesCustomize.svelte";
   import PetalsCustomize from "./customize/PetalsCustomize.svelte";
 
+  interface Props {
+    /** "scroll" = horizontal-scroll strip (mobile bento default).
+     *  "grid"   = wrapping auto-fill grid (desktop popover hosts). */
+    layout?: "scroll" | "grid";
+  }
+  let { layout = "scroll" }: Props = $props();
+
   const vm = getAnimationVisibilityManager();
   const effectsConfigState = getEffectsConfigContext();
 
@@ -215,7 +222,7 @@
       <PetalsCustomize onBack={() => (customizeOpen = false)} />
     {/if}
   {:else}
-    <div class="fx-strip" role="radiogroup" aria-label="Select effect">
+    <div class="fx-strip" class:grid={layout === "grid"} role="radiogroup" aria-label="Select effect">
       {#each EFFECTS as e (e.id)}
         {@const isActive = activeEffect === e.id}
         <button
@@ -317,6 +324,18 @@
   .fx-strip::-webkit-scrollbar,
   .preset-strip::-webkit-scrollbar {
     display: none;
+  }
+
+  /* Desktop grid variant — wraps tiles into rows that auto-fit the host width.
+     11 tiles + 8px gaps fit a 420px popover at 5 cols × 3 rows. */
+  .fx-strip.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));
+    gap: 8px;
+    overflow: visible;
+  }
+  .fx-strip.grid .fx-tile {
+    width: 100%;
   }
 
   .fx-tile {
