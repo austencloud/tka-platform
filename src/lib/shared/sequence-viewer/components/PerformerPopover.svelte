@@ -90,7 +90,7 @@
       {#if activeTab === "effects"}
         <!-- Effects are scene-wide (shared with the export Effects panel).
              Per-performer scoping is Phase 2.5 work. -->
-        <div class="effects-host"><MobileEffectsPanel /></div>
+        <div class="effects-host"><MobileEffectsPanel layout="grid" /></div>
       {:else if allSelected}
         <div class="empty">
           Select a performer to edit their prop or effort.
@@ -186,10 +186,10 @@
     color: rgba(255, 255, 255, 0.42);
   }
   .effects-host {
-    /* MobileEffectsPanel was sized for the bento sheet (~300px wide
-       on iPhone SE). The PerformerPopover is 420px wide so the panel
-       has a touch more room — let it use the available width. */
-    max-height: 60vh;
+    /* PerformerPopover is 420px wide; the grid layout fits all 11 tiles
+       without horizontal scroll, so we only need a vertical safety cap
+       for very small screens (laptop notch / etc.). */
+    max-height: 70vh;
     overflow-y: auto;
   }
 </style>
