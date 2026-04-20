@@ -125,6 +125,15 @@ export const PRIMARY_PARAMS: Record<string, PrimaryParamSpec> = {
     get: (s) => s.petals.intensity,
     set: (s, v) => s.updatePetals({ intensity: v }),
   },
+  smoke: {
+    label: "Intensity",
+    min: 0,
+    max: 1,
+    step: 0.01,
+    format: fmt2,
+    get: (s) => s.smoke.intensity,
+    set: (s, v) => s.updateSmoke({ intensity: v }),
+  },
 };
 
 export function getPrimaryParam(effectId: string, state: EffectsConfigState): number {

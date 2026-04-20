@@ -1,8 +1,8 @@
 /**
  * Shared effect metadata. Single source of truth for id/label/icon/color
  * across the 2D EffectsPanel (desktop), MobileEffectsPanel, and
- * EffectSelector. Phase 2 will extend EffectMeta with a `modes` field
- * and add the 3D-only Motion entry; for now this is 2D's 10 effects.
+ * EffectSelector. Currently 12 effects; the "none" chip is rendered
+ * separately by consumers that need it.
  */
 
 export interface EffectMeta {
@@ -24,6 +24,7 @@ export const EFFECTS: readonly EffectMeta[] = [
   { id: "water", label: "Water", icon: "fa-droplet", color: "#3a7fd9" },
   { id: "bubbles", label: "Bubbles", icon: "fa-circle-notch", color: "#c8e0ff" },
   { id: "petals", label: "Petals", icon: "fa-leaf", color: "#ffc0d8" },
+  { id: "smoke", label: "Smoke", icon: "fa-smog", color: "#c0c0c8" },
 ] as const;
 
 export const EFFECT_COLORS: Record<string, string> = Object.fromEntries(
