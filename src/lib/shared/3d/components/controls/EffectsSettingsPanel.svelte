@@ -2,8 +2,8 @@
   /**
    * EffectsSettingsPanel - Visual effects controls for 3D viewer
    *
-   * 11 unified per-tip effects (trails/fire/led/charcoal/zap/sparkles/
-   * echo/bloom/water/bubbles/petals) + 1 scene-level motion modifier.
+   * 12 unified per-tip effects (trails/fire/led/charcoal/zap/sparkles/
+   * echo/bloom/water/bubbles/petals/smoke) + 1 scene-level motion modifier.
    * Uses chip-style buttons consistent with GridSettingsPanel.
    *
    * Accepts an optional `performer` prop. When provided, reads/writes that
@@ -35,7 +35,7 @@
   const config = getEffectsConfigContext() ?? createEffectsConfigState();
   const scene3DRender = getScene3DRenderContext() ?? createScene3DRenderState();
 
-  // Grid combines the 11 unified effects + motion (scene-level render modifier).
+  // Grid combines the 12 unified effects + motion (scene-level render modifier).
   // Registry is canonical for order, label, icon, color.
   type EffectKey = EffectType | "motion";
   const effectChips: ReadonlyArray<{ key: EffectKey; label: string; icon: string; color: string }> = [
@@ -50,12 +50,19 @@
 
   // Per-performer Sets use the legacy EffectId union. Translate between the
   // canonical EffectType and EffectId where they diverge; unrepresentable
-  // keys (echo/water/bubbles/petals) hide from the per-performer toggle —
-  // Phase 2.5 migrates the per-performer Set to the canonical enum.
+  // keys (echo/water/bubbles/petals/smoke) hide from the per-performer
+  // toggle — Phase 2.5 migrates the per-performer Set to the canonical enum.
   function toPerformerEffect(key: EffectKey): EffectId | null {
     if (key === "zap") return "electricity";
     if (key === "motion") return "motion";
-    if (key === "echo" || key === "water" || key === "bubbles" || key === "petals" || key === "none") {
+    if (
+      key === "echo" ||
+      key === "water" ||
+      key === "bubbles" ||
+      key === "petals" ||
+      key === "smoke" ||
+      key === "none"
+    ) {
       return null;
     }
     return key as EffectId;
