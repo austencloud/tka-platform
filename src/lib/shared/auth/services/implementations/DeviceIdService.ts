@@ -1,4 +1,5 @@
-import { doc, setDoc, getFirestore, serverTimestamp } from "firebase/firestore";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { getFirestoreInstance } from "../../firebase";
 import type { IDeviceIdService } from "../contracts/IDeviceIdService";
 
 const STORAGE_KEY = "tka:deviceId";
@@ -15,7 +16,7 @@ export class DeviceIdService implements IDeviceIdService {
   async linkDeviceToUser(userId: string): Promise<void> {
     const deviceId = this.getDeviceId();
     try {
-      const firestore = getFirestore();
+      const firestore = await getFirestoreInstance();
       const ref = doc(firestore, "users", userId, "devices", deviceId);
       await setDoc(
         ref,
