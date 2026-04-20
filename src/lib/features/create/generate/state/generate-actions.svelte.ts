@@ -26,7 +26,12 @@ import type { IVariationExplorationOrchestrator } from "$lib/features/create/spe
 import type { ISpellServiceLoader } from "$lib/features/create/spell/services/contracts/ISpellServiceLoader";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { sequenceExtender } from "$lib/features/create/shared/services/implementations/SequenceExtender";
-import { LOOPType, SliceSize } from "$lib/features/create/generate/circular/domain/models/circular-models";
+import {
+  LOOPType,
+  SliceSize,
+  periodFromSliceSize,
+} from "$lib/features/create/generate/circular/domain/models/circular-models";
+import { loopViabilityService } from "$lib/features/create/generate/shared/services/implementations/LoopViabilityService";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
 import { resolveAccessTier, getMaxBeats } from "$lib/shared/auth/domain/AccessTier";
 import { authState } from "$lib/shared/auth/state/authState.svelte";
@@ -52,7 +57,6 @@ export function createGenerationActionsState(
   let lastGeneratedSequence = $state<SequenceData | null>(null);
   let lastGeneratedConfig = $state<UIGenerationConfig | null>(null);
   let generationError = $state<string | null>(null);
-  let needsCycleCompletion = $state(false);
   let orchestrationService: IGenerationOrchestrator | null = null;
 
   async function onGenerateClicked(options: GenerationOptions) {
@@ -62,6 +66,38 @@ export function createGenerationActionsState(
     generationError = null;
 
     try {
+      // Pre-flight viability check. Rejects combos that the LOOP algebra
+      // forbids (e.g. quartered mirrored), preventing silent period-2
+      // downgrade. See docs/superpowers/specs/2026-04-19-loop-period-viability-design.md.
+      if (options.loopType) {
+        const period =
+          (options as { period?: number }).period ??
+          periodFromSliceSize(options.sliceSize);
+        const viability = loopViabilityService.check({
+          loopType: options.loopType,
+          period,
+          gridMode: options.gridMode,
+        });
+        if (!viability.viable) {
+          const fullMessage = viability.suggestion
+            ? `${viability.reason} ${viability.suggestion}`
+            : (viability.reason ?? "LOOP configuration is not viable.");
+          generationError = fullMessage;
+          const errorService = container.items.errorHandler;
+          errorService?.showUserError({
+            message: "This LOOP combination isn't supported",
+            technicalDetails: fullMessage,
+            error: new Error(fullMessage),
+            severity: "warning",
+            context: {
+              module: "create",
+            },
+          });
+          isGenerating = false;
+          return;
+        }
+      }
+
       if (!orchestrationService) {
         orchestrationService = generationOrchestrator;
       }
@@ -109,9 +145,17 @@ export function createGenerationActionsState(
         description: "Generate sequence",
       });
 
+      // Auto-close orientation cycle so the user never sees a "Complete
+      // Cycle" button. If the generated sequence's orientations don't
+      // return to start after one pass, extend it here via the same
+      // extender that previously backed the Complete Cycle button —
+      // silent, atomic, no extra click.
+      if ((generatedSequence.orientationCycleCount ?? 1) > 1) {
+        generatedSequence =
+          orientationCycleExtender.extendIfNeeded(generatedSequence);
+      }
+
       lastGeneratedSequence = generatedSequence;
-      needsCycleCompletion =
-        (generatedSequence.orientationCycleCount ?? 1) > 1;
       const currentConfig = getConfig?.();
       lastGeneratedConfig = currentConfig ? { ...currentConfig } : null;
       await updateWorkbenchWithSequence(generatedSequence);
@@ -356,7 +400,6 @@ export function createGenerationActionsState(
       });
 
       lastGeneratedSequence = loopedSequence;
-      needsCycleCompletion = false; // Spell mode doesn't use orientation cycle completion
       const currentConfig = getConfig?.();
       lastGeneratedConfig = currentConfig ? { ...currentConfig } : null;
       await updateWorkbenchWithSequence(loopedSequence);
@@ -561,41 +604,6 @@ export function createGenerationActionsState(
     }
   }
 
-  /**
-   * Extend the current sequence to complete its orientation cycle.
-   * Only animates the NEW beats in — existing beats stay in place.
-   */
-  async function completeCycle() {
-    const sequenceState = getSequenceState?.();
-    if (!sequenceState) return;
-
-    const currentSequence = sequenceState.currentSequence;
-    if (!currentSequence) return;
-
-    // Snapshot before extending so the user can undo the cycle completion
-    pushUndoSnapshot?.(UndoOp.EXTEND_SEQUENCE, {
-      description: "Complete orientation cycle",
-    });
-
-    const existingBeatCount = currentSequence.steps.length;
-    const extended = orientationCycleExtender.extendIfNeeded(currentSequence);
-    needsCycleCompletion = false;
-
-    // Signal StepGrid to animate only new beats (from existingBeatCount onward)
-    window.dispatchEvent(
-      new CustomEvent("prepare-cycle-extension", {
-        detail: {
-          totalBeatCount: extended.steps.length,
-          existingBeatCount,
-        },
-      })
-    );
-
-    await new Promise((resolve) => setTimeout(resolve, 10));
-
-    sequenceState.setCurrentSequence(extended);
-  }
-
   function clearError() {
     generationError = null;
   }
@@ -624,12 +632,8 @@ export function createGenerationActionsState(
     get generationError() {
       return generationError;
     },
-    get needsCycleCompletion() {
-      return needsCycleCompletion;
-    },
     onGenerateClicked,
     onSpellGenerate,
-    completeCycle,
     clearError,
     getGenerationSummary,
   };

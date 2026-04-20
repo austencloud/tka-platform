@@ -193,11 +193,14 @@ export class GenerationOrchestrator implements IGenerationOrchestrator {
     }
 
     // Motion type filter (motionTypeFilter axis)
+    // no-dash = hard exclude; prefer-dash = soft maximize (weighted to
+    // dominate other soft constraints, but closure/hard filters can still
+    // force non-dash picks on specific beats).
     if (options.motionTypeFilter === "no-dash") {
       result.motionFamily = { exclude: ["dash"] };
+    } else if (options.motionTypeFilter === "prefer-dash") {
+      result.dashPreference = "maximize";
     }
-    // "prefer-dash" is a soft preference — not a hard constraint.
-    // The compositional system doesn't have a soft motion family preference yet.
 
     return result;
   }

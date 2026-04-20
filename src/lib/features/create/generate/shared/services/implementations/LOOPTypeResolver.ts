@@ -11,8 +11,14 @@ import type { ILOOPTypeResolver } from "../contracts/ILOOPTypeResolver";
  */
 export class LOOPTypeResolver implements ILOOPTypeResolver {
   /**
-   * Parse LOOP type to extract components
-   * Handles all 6 primitives: rotated, mirrored, flipped, swapped, inverted, rewound
+   * Parse LOOP type to extract components.
+   * Handles all 6 primitives: rotated, mirrored, flipped, swapped, inverted, rewound.
+   *
+   * @deprecated Use `resolveLoopDisplay` from loop-display-resolver instead.
+   * That resolver runs detection against the sequence's steps when available,
+   * falls back to this string parse when not, and filters reserved primitives.
+   * parseComponents returns raw substring matches which can surface reserved
+   * enum values that aren't UI-safe.
    */
   parseComponents(loopType: LOOPType): Set<LOOPComponent> {
     const components = new Set<LOOPComponent>();
