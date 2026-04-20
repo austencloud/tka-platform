@@ -212,7 +212,9 @@ export class HapticFeedback implements IHapticFeedback {
     // Check standard Vibration API (Android Chrome, Firefox, etc.)
     try {
       this.supportsVibrationAPI =
-        "vibrate" in navigator && typeof navigator.vibrate === "function";
+        "vibrate" in navigator &&
+        typeof navigator.vibrate === "function" &&
+        (navigator.maxTouchPoints ?? 0) > 0;
     } catch {
       this.supportsVibrationAPI = false;
     }
