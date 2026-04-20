@@ -140,6 +140,7 @@ Uses pure runes instead of stores for reactivity.
   } from "../utils/letter-image-getter";
   import { onMount } from "svelte";
   import Dash from "./Dash.svelte";
+  import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 
   let {
     letter,
@@ -172,6 +173,24 @@ Uses pure runes instead of stores for reactivity.
     /** Dark Mode override for export. When set, applies filter override. */
     darkMode?: boolean;
   }>();
+
+  // Dark mode is applied as an inline filter rather than via the global
+  // :root.dark CSS cascade. iOS Safari PWA fails to re-apply `filter: invert()`
+  // on an SVG <g> when the class is added after first style resolution —
+  // the glyph renders in its native black color against the dark background
+  // while the DirectionDot and TurnsColumn (which use inline fills) render fine.
+  // Matching DirectionDot's pattern: read dark mode from the visibility manager
+  // and bake it into an inline style so the filter never depends on the cascade.
+  const visibilityManager = getAnimationVisibilityManager();
+  let localDarkMode = $state(visibilityManager.isDarkMode());
+  $effect(() => {
+    const handler = () => {
+      localDarkMode = visibilityManager.isDarkMode();
+    };
+    visibilityManager.registerObserver(handler);
+    return () => visibilityManager.unregisterObserver(handler);
+  });
+  const effectiveDarkMode = $derived(darkMode ?? localDarkMode);
 
   // Letter dimensions state - async-loaded by $effect for uncached letters
   let letterDimensions = $state({ width: 100, height: 100 });
@@ -335,9 +354,9 @@ Uses pure runes instead of stores for reactivity.
     class:visible={visible && imageReady}
     class:preview-mode={previewMode}
     class:interactive={onToggle !== undefined}
-    class:dark-mode-override={darkMode === true}
-    class:light-mode-override={darkMode === false}
-    style={darkMode === true ? "filter: invert(0.9)" : darkMode === false ? "filter: none" : undefined}
+    class:dark-mode-override={effectiveDarkMode === true}
+    class:light-mode-override={effectiveDarkMode === false}
+    style={effectiveDarkMode ? "filter: invert(0.9)" : "filter: none"}
     data-letter={letter}
     transform="translate({x}, {y}) scale({scale})"
     onclick={onToggle}
