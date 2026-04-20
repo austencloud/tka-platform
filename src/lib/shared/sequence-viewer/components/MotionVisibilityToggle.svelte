@@ -207,7 +207,7 @@
   }
 
   .chip {
-    padding: 6px 12px;
+    padding: 6px 14px;
     border-radius: 8px;
     border: 1px solid rgba(255, 255, 255, 0.14);
     background: transparent;
@@ -216,8 +216,10 @@
     font-weight: 600;
     cursor: pointer;
     transition: background 160ms ease, color 160ms ease, border-color 160ms ease;
-    /* Inline chips need a minimum height to feel like real controls. */
-    min-height: 32px;
+    /* Accessibility: respect the project's minimum touch target so a
+       finger or assistive pointer can reliably hit the chip. */
+    min-width: var(--min-touch-target, 44px);
+    min-height: var(--min-touch-target, 44px);
   }
   /* Popover chips stretch to fill the popover width evenly. */
   .motion-vis-popover .chip { flex: 1; }
