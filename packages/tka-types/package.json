@@ -1,0 +1,75 @@
+{
+  "name": "@tka/tka-types",
+  "version": "0.1.0",
+  "description": "Canonical TKA sequence types — Step, Motion, and enums shared across engine, domain, app, and MCP.",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./step": {
+      "types": "./src/step.ts",
+      "default": "./src/step.ts"
+    },
+    "./motion": {
+      "types": "./src/motion.ts",
+      "default": "./src/motion.ts"
+    },
+    "./letter": {
+      "types": "./src/letter.ts",
+      "default": "./src/letter.ts"
+    },
+    "./grid": {
+      "types": "./src/grid.ts",
+      "default": "./src/grid.ts"
+    },
+    "./motion-type": {
+      "types": "./src/motion-type.ts",
+      "default": "./src/motion-type.ts"
+    },
+    "./rotation-direction": {
+      "types": "./src/rotation-direction.ts",
+      "default": "./src/rotation-direction.ts"
+    },
+    "./orientation": {
+      "types": "./src/orientation.ts",
+      "default": "./src/orientation.ts"
+    },
+    "./plane": {
+      "types": "./src/plane.ts",
+      "default": "./src/plane.ts"
+    },
+    "./prop-color": {
+      "types": "./src/prop-color.ts",
+      "default": "./src/prop-color.ts"
+    },
+    "./builders": {
+      "types": "./src/builders.ts",
+      "default": "./src/builders.ts"
+    },
+    "./guards": {
+      "types": "./src/guards.ts",
+      "default": "./src/guards.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "clean": "rimraf dist",
+    "test": "vitest run",
+    "prepublishOnly": "npm run clean && npm run build"
+  },
+  "devDependencies": {
+    "rimraf": "^5.0.0",
+    "typescript": "^5.0.0",
+    "vitest": "^4.0.16"
+  },
+  "author": "Austen Cloud <austencloud@gmail.com>",
+  "license": "MIT"
+}

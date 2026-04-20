@@ -380,7 +380,7 @@
       <circle cx={x} cy={y} r={r} fill={color} opacity={0.08 + s * 0.1}/>
     {/each}
 
-  {:else if theme === "sakuraDrift"}
+  {:else if theme === "cherryBlossom"}
     <!-- Cherry blossom petals using dual-ellipse shape from actual renderer -->
     {#each Array(20) as _, i}
       {@const s = ((i * 16807 + 31) % 2147483647) / 2147483647}
