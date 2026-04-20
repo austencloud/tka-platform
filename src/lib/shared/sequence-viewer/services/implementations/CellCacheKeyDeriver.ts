@@ -37,6 +37,11 @@
  *   PictographKeyHasher instead of independently enumerating motion fields.
  *   Also adds handPathMode, handPointVisibility, printMode, and gridMode
  *   (all previously missing from the flat key). Single source of truth.
+ * - lsp9-: Intermediate bump (no behavior change from lsp8).
+ * - lsp10-: PictographKeyHasher reverted from djb2 digest to full JSON
+ *   string — the lsp8 refactor had silently reintroduced the 32-bit hash
+ *   collision that lsp3→lsp4 specifically eliminated, causing wrong-arrow
+ *   blobs once the cache grew past ~46K entries.
  */
 
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/PictographData";
@@ -72,7 +77,7 @@ export class CellCacheKeyDeriver implements ICellCacheKeyDeriver {
       options.browseViewMode ? `vm-${options.browseViewMode.subject}-${options.browseViewMode.granularity}-${options.browseViewMode.color}` : "",
     ];
 
-    return `lsp9-${pictographHash}:${cellParts.join("|")}`;
+    return `lsp10-${pictographHash}:${cellParts.join("|")}`;
   }
 
   /**
