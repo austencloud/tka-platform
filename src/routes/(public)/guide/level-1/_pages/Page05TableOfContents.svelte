@@ -140,13 +140,13 @@
 				<li><span class="lbl">VTG links and Taco Tuesday</span><span class="dots"></span><span class="pg"></span></li>
 			</ul>
 
-			<p class="footer-url">
+			<div class="footer-url">
 				{#if ctx}
 					<EditableText field="footerUrl" multiline={false} />
 				{:else}
 					<RenderedText value={field('footerUrl')} />
 				{/if}
-			</p>
+			</div>
 		</div>
 	</div>
 </PageFrame>
