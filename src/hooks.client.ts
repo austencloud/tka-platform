@@ -30,9 +30,6 @@ declare const __PWA_ENABLED__: boolean;
 if (browser && dev && "serviceWorker" in navigator) {
   navigator.serviceWorker
     .register("/firebase-messaging-sw.js", { scope: "/" })
-    .then((reg) => {
-      console.log("[FCM-Dev] Messaging service worker registered", reg.scope);
-    })
     .catch((err) => {
       console.warn("[FCM-Dev] Messaging service worker registration failed:", err);
     });
