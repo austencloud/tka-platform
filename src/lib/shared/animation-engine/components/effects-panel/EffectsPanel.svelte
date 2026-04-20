@@ -31,6 +31,8 @@
   import BubblesCustomize from "./customize/BubblesCustomize.svelte";
   import { PETALS_PRESET_GROUP } from "./presets/petals-presets";
   import PetalsCustomize from "./customize/PetalsCustomize.svelte";
+  import { SMOKE_PRESET_GROUP } from "./presets/smoke-presets";
+  import SmokeCustomize from "./customize/SmokeCustomize.svelte";
   import type { EffectPresetGroup } from "./presets/types";
   import { EFFECT_COLORS, EFFECT_LABELS } from "./effect-registry";
 
@@ -163,6 +165,7 @@
       case "water": return WATER_PRESET_GROUP;
       case "bubbles": return BUBBLES_PRESET_GROUP;
       case "petals": return PETALS_PRESET_GROUP;
+      case "smoke": return SMOKE_PRESET_GROUP;
       default: return null;
     }
   }
@@ -249,6 +252,8 @@
         <BubblesCustomize onBack={() => (customizeOpen = false)} />
       {:else if activeEffect === "petals"}
         <PetalsCustomize onBack={() => (customizeOpen = false)} />
+      {:else if activeEffect === "smoke"}
+        <SmokeCustomize onBack={() => (customizeOpen = false)} />
       {/if}
     </div>
   {/if}
