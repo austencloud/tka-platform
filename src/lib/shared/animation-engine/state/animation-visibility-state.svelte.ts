@@ -11,6 +11,7 @@ import type { FireColorCurve } from "../domain/types/FireTypes";
 import type { EffortId } from "$lib/features/effort-lab/domain/effort-types";
 import type { EffectType, TipEffectMap, TipEffortMap } from "../domain/types/TipEffectTypes";
 import { findPreset, validatePreset, type LedColorPreset } from "../domain/types/LedColorPresets";
+import type { EffectLayerMode } from "../services/effect-layer";
 
 type VisibilityObserver = () => void;
 
@@ -79,6 +80,10 @@ interface AnimationVisibilitySettings {
   // tipEffectMap is the sole authority for which effect is active.
   tipEffectMap: TipEffectMap;
   tipEffortMap: TipEffortMap;
+
+  /** Per-effect override of the z-stack position. Missing entry = "behind" (default).
+   * When "front", the effect's canvas renders above the main props canvas. */
+  effectLayerOverrides: Record<string, EffectLayerMode>;
 }
 
 const STORAGE_KEY = "animation-visibility-settings";
@@ -179,6 +184,9 @@ export class AnimationVisibilityStateManager {
       // Default: trails on so new users see motion paths.
       tipEffectMap: { "*": { effect: "trails" } },
       tipEffortMap: {},
+
+      // All effects default to "behind" props — user opts individual effects into "front".
+      effectLayerOverrides: {},
     };
   }
 
@@ -311,6 +319,10 @@ export class AnimationVisibilityStateManager {
           parsed.ledUserPresets = parsed.ledUserPresets.filter(validatePreset);
         }
 
+        if (!parsed.effectLayerOverrides || typeof parsed.effectLayerOverrides !== "object") {
+          parsed.effectLayerOverrides = {};
+        }
+
         return {
           ...defaults,
           ...parsed,
@@ -379,7 +391,7 @@ export class AnimationVisibilityStateManager {
   getVisibility(
     key: Exclude<
       keyof AnimationVisibilitySettings,
-      "gridMode" | "playbackMode" | "speed" | "darkMode" | "fireColorBlend" | "fireIntensity" | "fireTurbulence" | "charcoalParams" | "ledBrightness" | "ledPatternId" | "ledPrimaryColor" | "ledSecondaryColor" | "ledActivePresetId" | "ledUserPresets" | "ledPatternSpeed" | "ledColorMode" | "effortPreset" | "pathShape" | "tipEffectMap" | "tipEffortMap" | "fireColorCurve"
+      "gridMode" | "playbackMode" | "speed" | "darkMode" | "fireColorBlend" | "fireIntensity" | "fireTurbulence" | "charcoalParams" | "ledBrightness" | "ledPatternId" | "ledPrimaryColor" | "ledSecondaryColor" | "ledActivePresetId" | "ledUserPresets" | "ledPatternSpeed" | "ledColorMode" | "effortPreset" | "pathShape" | "tipEffectMap" | "tipEffortMap" | "fireColorCurve" | "effectLayerOverrides"
     >
   ): boolean {
     return this.settings[key] as boolean;
@@ -404,7 +416,7 @@ export class AnimationVisibilityStateManager {
   setVisibility(
     key: Exclude<
       keyof AnimationVisibilitySettings,
-      "gridMode" | "playbackMode" | "speed" | "fireColorBlend" | "fireIntensity" | "fireTurbulence" | "charcoalParams" | "ledBrightness" | "ledPatternId" | "ledPrimaryColor" | "ledSecondaryColor" | "ledActivePresetId" | "ledUserPresets" | "ledPatternSpeed" | "ledColorMode" | "effortPreset" | "pathShape" | "tipEffectMap" | "tipEffortMap" | "fireColorCurve"
+      "gridMode" | "playbackMode" | "speed" | "fireColorBlend" | "fireIntensity" | "fireTurbulence" | "charcoalParams" | "ledBrightness" | "ledPatternId" | "ledPrimaryColor" | "ledSecondaryColor" | "ledActivePresetId" | "ledUserPresets" | "ledPatternSpeed" | "ledColorMode" | "effortPreset" | "pathShape" | "tipEffectMap" | "tipEffortMap" | "fireColorCurve" | "effectLayerOverrides"
     >,
     visible: boolean
   ): void {
@@ -962,13 +974,44 @@ export class AnimationVisibilityStateManager {
     this.setPathShape(this.settings.pathShape === "arc" ? "linear" : "arc");
   }
 
+  // ============================================================================
+  // PER-EFFECT LAYER OVERRIDES (behind/front props)
+  // ============================================================================
+
+  getEffectLayer(effectId: string): EffectLayerMode {
+    return this.settings.effectLayerOverrides[effectId] ?? "behind";
+  }
+
+  setEffectLayer(effectId: string, mode: EffectLayerMode): void {
+    if (mode === "behind") {
+      // Keep the map small — absence encodes the default.
+      const { [effectId]: _omit, ...rest } = this.settings.effectLayerOverrides;
+      this.settings.effectLayerOverrides = rest;
+    } else {
+      this.settings.effectLayerOverrides = {
+        ...this.settings.effectLayerOverrides,
+        [effectId]: mode,
+      };
+    }
+    this.saveToStorage();
+    this.notifyObservers();
+  }
+
+  toggleEffectLayer(effectId: string): void {
+    this.setEffectLayer(effectId, this.getEffectLayer(effectId) === "behind" ? "front" : "behind");
+  }
+
+  getEffectLayerOverrides(): Readonly<Record<string, EffectLayerMode>> {
+    return this.settings.effectLayerOverrides;
+  }
+
   /**
    * Toggle a boolean visibility setting
    */
   toggleVisibility(
     key: Exclude<
       keyof AnimationVisibilitySettings,
-      "gridMode" | "playbackMode" | "speed" | "darkMode" | "fireColorBlend" | "fireIntensity" | "fireTurbulence" | "charcoalParams" | "ledBrightness" | "ledPatternId" | "ledPrimaryColor" | "ledSecondaryColor" | "ledActivePresetId" | "ledUserPresets" | "ledPatternSpeed" | "ledColorMode" | "effortPreset" | "pathShape" | "tipEffectMap" | "tipEffortMap" | "fireColorCurve"
+      "gridMode" | "playbackMode" | "speed" | "darkMode" | "fireColorBlend" | "fireIntensity" | "fireTurbulence" | "charcoalParams" | "ledBrightness" | "ledPatternId" | "ledPrimaryColor" | "ledSecondaryColor" | "ledActivePresetId" | "ledUserPresets" | "ledPatternSpeed" | "ledColorMode" | "effortPreset" | "pathShape" | "tipEffectMap" | "tipEffortMap" | "fireColorCurve" | "effectLayerOverrides"
     >
   ): void {
     this.setVisibility(key, !(this.settings[key] as boolean));

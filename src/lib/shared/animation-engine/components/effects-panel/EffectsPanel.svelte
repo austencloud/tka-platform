@@ -35,6 +35,7 @@
   import SmokeCustomize from "./customize/SmokeCustomize.svelte";
   import type { EffectPresetGroup } from "./presets/types";
   import { EFFECT_COLORS, EFFECT_LABELS } from "./effect-registry";
+  import type { EffectLayerMode } from "../../services/effect-layer";
 
   interface Props {
     // Playback state (from parent — the parent owns the playback engine)
@@ -187,6 +188,17 @@
     if (!group) return "";
     return group.getSummary(vm, effectsConfigState);
   });
+
+  const activeLayerMode = $derived.by((): EffectLayerMode => {
+    summaryTick;
+    return activeEffect === "none" ? "behind" : vm.getEffectLayer(activeEffect);
+  });
+
+  function setLayer(mode: EffectLayerMode): void {
+    if (activeEffect === "none") return;
+    vm.setEffectLayer(activeEffect, mode);
+  }
+
 </script>
 
 <div class="effects-panel">
@@ -226,6 +238,32 @@
         />
       </div>
     {/if}
+
+    <div class="sb-section">
+      <span class="sb-label">LAYER</span>
+      <div class="layer-toggle" role="radiogroup" aria-label="Effect layer position">
+        <button
+          type="button"
+          role="radio"
+          aria-checked={activeLayerMode === "behind"}
+          class="layer-btn"
+          class:active={activeLayerMode === "behind"}
+          onclick={() => setLayer("behind")}
+        >
+          Behind props
+        </button>
+        <button
+          type="button"
+          role="radio"
+          aria-checked={activeLayerMode === "front"}
+          class="layer-btn"
+          class:active={activeLayerMode === "front"}
+          onclick={() => setLayer("front")}
+        >
+          In front of props
+        </button>
+      </div>
+    </div>
   {/if}
 
   {#if customizeOpen}
@@ -282,5 +320,38 @@
     letter-spacing: 0.5px;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.35));
     margin-bottom: 8px;
+  }
+
+  .layer-toggle {
+    display: flex;
+    gap: 8px;
+  }
+
+  .layer-btn {
+    flex: 1;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--theme-text, rgba(255, 255, 255, 0.85));
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 120ms ease, border-color 120ms ease;
+  }
+
+  .layer-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .layer-btn.active {
+    background: rgba(139, 92, 246, 0.2);
+    border-color: rgba(139, 92, 246, 0.6);
+    color: #fff;
+  }
+
+  .layer-btn:focus-visible {
+    outline: 2px solid rgba(139, 92, 246, 0.8);
+    outline-offset: 2px;
   }
 </style>

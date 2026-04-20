@@ -1,6 +1,11 @@
 <script lang="ts">
 	import { animationSettings } from "../../../state/animation-settings-state.svelte";
-	import { TrackingMode } from "../../../domain/types/TrailTypes";
+	import {
+		TrackingMode,
+		TAIL_LENGTH_MIN,
+		TAIL_LENGTH_MAX,
+		DEFAULT_TRAIL_SETTINGS,
+	} from "../../../domain/types/TrailTypes";
 	import { isBilateralProp } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";
 	import { getMotionColor } from "$lib/shared/utils/svg-color-utils";
 	import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -51,6 +56,7 @@
 
 	let lineWidth = $derived(animationSettings.trail.lineWidth);
 	let maxOpacity = $derived(animationSettings.trail.maxOpacity);
+	let tailLength = $derived(animationSettings.trail.tailLength);
 	let blueColor = $derived(animationSettings.trail.blueColor);
 	let redColor = $derived(animationSettings.trail.redColor);
 
@@ -69,6 +75,7 @@
 	const isDefault = $derived(
 		Math.abs(lineWidth - 5) < 0.2 &&
 		Math.abs(maxOpacity - 1.0) < 0.03 &&
+		tailLength === DEFAULT_TRAIL_SETTINGS.tailLength &&
 		trackingMode === TrackingMode.RIGHT_END &&
 		blueColor === defaultBlue &&
 		redColor === defaultRed
@@ -81,6 +88,7 @@
 			blueColor: defaultBlue,
 			redColor: defaultRed,
 		});
+		animationSettings.setTailLength(DEFAULT_TRAIL_SETTINGS.tailLength);
 		animationSettings.setTrackingMode(TrackingMode.RIGHT_END);
 	}
 </script>
@@ -140,6 +148,23 @@
 			}}
 		/>
 		<span class="slider-value">{formatBrightness(maxOpacity)}</span>
+	</div>
+
+	<div class="slider-row">
+		<label for="ctx-trail-length">Tail length</label>
+		<input
+			id="ctx-trail-length"
+			type="range"
+			min={TAIL_LENGTH_MIN}
+			max={TAIL_LENGTH_MAX}
+			step="5"
+			value={tailLength}
+			oninput={(e) =>
+				animationSettings.setTailLength(
+					Number((e.target as HTMLInputElement).value),
+				)}
+		/>
+		<span class="slider-value">{tailLength}</span>
 	</div>
 
 	<div class="color-row">

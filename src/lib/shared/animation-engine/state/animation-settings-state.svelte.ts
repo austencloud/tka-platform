@@ -23,6 +23,8 @@ import {
   type TrailSettings,
   type TrailPoint,
   DEFAULT_TRAIL_SETTINGS as MODULE_DEFAULT_TRAIL_SETTINGS,
+  TAIL_LENGTH_MIN,
+  TAIL_LENGTH_MAX,
 } from "../domain/types/TrailTypes";
 
 // Re-export for convenience
@@ -109,6 +111,13 @@ function loadSettings(): AnimationSettings {
     settings.trail.minOpacity = 0.25; // Higher minimum so tail doesn't fade too much
     settings.trail.glowBlur = 3; // Stronger glow for more visibility
     settings.trail.fadeDurationMs = 2500;
+    // Backfill tailLength for users persisted before this setting existed.
+    if (
+      typeof settings.trail.tailLength !== "number" ||
+      !Number.isFinite(settings.trail.tailLength)
+    ) {
+      settings.trail.tailLength = MODULE_DEFAULT_TRAIL_SETTINGS.tailLength;
+    }
   }
 
   return settings;
@@ -134,6 +143,7 @@ export type AnimationSettingsState = {
   setTrailEffect: (effect: TrailEffect) => void;
   setTrackingMode: (mode: TrackingMode) => void;
   setFadeDuration: (ms: number) => void;
+  setTailLength: (points: number) => void;
   setTrailAppearance: (appearance: Partial<TrailAppearance>) => void;
   setHideProps: (hide: boolean) => void;
 
@@ -170,6 +180,7 @@ export function createAnimationSettingsState(): AnimationSettingsState {
       void settings.trail.blueColor;
       void settings.trail.redColor;
       void settings.trail.fadeDurationMs;
+      void settings.trail.tailLength;
       void settings.trail.hideProps;
 
       settingsPersistence.setupAutoSave(settings);
@@ -232,6 +243,16 @@ export function createAnimationSettingsState(): AnimationSettingsState {
           ...settings.trail,
           fadeDurationMs: Math.max(500, Math.min(10000, ms)),
         },
+      };
+    },
+
+    setTailLength: (points: number) => {
+      const clamped = Math.round(
+        Math.max(TAIL_LENGTH_MIN, Math.min(TAIL_LENGTH_MAX, points)),
+      );
+      settings = {
+        ...settings,
+        trail: { ...settings.trail, tailLength: clamped },
       };
     },
 
