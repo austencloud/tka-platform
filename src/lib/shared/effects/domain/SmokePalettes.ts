@@ -46,7 +46,7 @@ const INCENSE: SmokePalette = {
   id: "incense",
   core: "#d8d8d8",
   edge: "#f0f0f0",
-  lifetime: 8.0,
+  lifetime: 5.0,
   curlBias: 0.3,
   riseBias: 0.4,
 };
@@ -55,7 +55,7 @@ const FOG: SmokePalette = {
   id: "fog",
   core: "#c0c0c8",
   edge: "#e0e0e8",
-  lifetime: 12.0,
+  lifetime: 6.0,
   curlBias: 0.5,
   riseBias: 0.2,
 };
@@ -73,8 +73,8 @@ const GENIE: SmokePalette = {
 const CURSED: SmokePalette = {
   id: "cursed",
   core: "#202020",
-  edge: "#404040",
-  lifetime: 10.0,
+  edge: "#606060",
+  lifetime: 5.0,
   curlBias: 0.8,
   riseBias: 0.3,
 };
@@ -90,9 +90,9 @@ const SPIRIT: SmokePalette = {
 
 const CAMPFIRE: SmokePalette = {
   id: "campfire",
-  core: "#805040",
-  edge: "#b08060",
-  lifetime: 7.0,
+  core: "#706560",
+  edge: "#a09590",
+  lifetime: 4.0,
   curlBias: 0.6,
   riseBias: 0.6,
 };

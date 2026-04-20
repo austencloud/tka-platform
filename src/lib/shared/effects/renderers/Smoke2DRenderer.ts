@@ -42,8 +42,12 @@ interface SmokePuff {
 }
 
 const TAU = Math.PI * 2;
-const FADE_OUT_FRACTION = 0.3; // last 30% of life fades alpha out
-const FADE_IN_DURATION = 0.15; // seconds — soft birth, avoids hard pop-in
+const FADE_IN_DURATION = 0.3; // seconds — soft birth, avoids hard pop-in
+// Full-life fade curve: rise-in over FADE_IN_DURATION, hold for 40% of life,
+// then linear decay across the remaining 60%. Previous "last 30%" policy left
+// puffs at full opacity for most of their life, which accumulated into a
+// stuck cloud for long-lifetime palettes (fog, cursed).
+const HOLD_FRACTION = 0.4;
 
 /**
  * Canvas2D smoke renderer — per-tip curl-noise puff emitter.
@@ -144,8 +148,10 @@ export class Smoke2DRenderer {
     if (n <= 0) return;
 
     const lifetime = params.lifetimeSeconds;
-    // Expansion ratio — puffs roughly triple in radius over life.
-    const growthRatio = 3.0;
+    // Expansion ratio — puffs grow 1.8x over life. Earlier 3x + slow rise
+    // caused visible piling at the emitter; 1.8x keeps the expansion read
+    // without compounding the accumulation problem.
+    const growthRatio = 1.8;
 
     for (let i = 0; i < n; i++) {
       const jitter = 0.8 + Math.random() * 0.4;
@@ -155,9 +161,10 @@ export class Smoke2DRenderer {
       const oy = (Math.random() - 0.5) * 6 * scale;
       // Spec: ±20% per-particle lifetime jitter.
       const lifeJitter = 0.8 + Math.random() * 0.4;
-      // Intent's `intensity` multiplies the per-puff alpha peak; palette
-      // isn't colorable-translucency aware so we keep this on the emitter.
-      const peakAlpha = 0.25 + 0.45 * params.intensity;
+      // Intent's `intensity` multiplies the per-puff alpha peak. Smoke is
+      // translucent — previous range 0.25-0.70 read as opaque blobs at high
+      // intensity. New range 0.12-0.37 keeps puffs readably misty.
+      const peakAlpha = 0.12 + 0.25 * params.intensity;
       this.puffs.push({
         x: tip.x + ox,
         y: tip.y + oy,
@@ -197,10 +204,14 @@ export class Smoke2DRenderer {
       const CURL_BASE_PX = 80 * scale;
       const cx = curl.vx * curlStrength * CURL_BASE_PX;
       const cy = curl.vy * curlStrength * CURL_BASE_PX;
+      // Rise decelerates with age: hot smoke lifts fast near the source,
+      // cools and slows as it rises. lifeT 0 → factor 1.0, lifeT 1 → 0.5.
+      const lifeT = p.age / p.maxAge;
+      const riseFactor = 1 - 0.5 * lifeT;
       p.x += (p.vx + cx) * dt;
-      p.y += (p.vy + cy) * dt;
+      p.y += (p.vy * riseFactor + cy) * dt;
       // Light drag so horizontal drift doesn't accumulate forever on
-      // long-lived puffs (fog palette at 12s lifetime).
+      // long-lived puffs (fog palette).
       const drag = Math.pow(0.4, dt);
       p.vx *= drag;
       survivors.push(p);
@@ -221,9 +232,10 @@ export class Smoke2DRenderer {
       for (const p of this.puffs) {
         const lifeT = p.age / p.maxAge;
         const fadeIn = p.age < FADE_IN_DURATION ? p.age / FADE_IN_DURATION : 1;
+        // Full-life decay: hold for HOLD_FRACTION, then linear fade to 0.
         const fadeOut =
-          lifeT > 1 - FADE_OUT_FRACTION
-            ? (1 - lifeT) / FADE_OUT_FRACTION
+          lifeT > HOLD_FRACTION
+            ? Math.max(0, (1 - lifeT) / (1 - HOLD_FRACTION))
             : 1;
         const alpha = Math.max(0, fadeIn * fadeOut * p.peakAlpha);
         if (alpha <= 0.02) continue;
