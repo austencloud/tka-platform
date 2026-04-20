@@ -208,6 +208,15 @@ export interface ISequenceEncoder {
    * @returns Prop options with decoded prop types (or undefined if not present)
    */
   parsePropsFromURL(searchParams: URLSearchParams): URLPropOptions;
+
+  /**
+   * Verify that an encoded string round-trips through decode → re-encode
+   * without data loss. Returns the decoded sequence on success, or a reason
+   * string describing the first mismatch found on failure.
+   */
+  verifyRoundTrip(
+    encoded: string
+  ): { ok: true; decoded: SequenceData } | { ok: false; reason: string };
 }
 
 /**
