@@ -19,11 +19,11 @@
   import type { IDeckLoader } from "../services/contracts/IDeckLoader";
   import DeckBrowser from "./DeckBrowser.svelte";
   import CardDesigner from "./CardDesigner.svelte";
+  import ScanActivityTab from "./scan-activity/ScanActivityTab.svelte";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import ContextMenu from "$lib/shared/components/context-menu/ContextMenu.svelte";
   import type { ContextMenuState, ContextMenuEntry } from "$lib/shared/components/context-menu/context-menu-types";
   import { buildChoreoCardContextMenuItems } from "./context-menu/CardDesignerContextMenuBuilder";
-  import CardSettingsModal from "./CardSettingsModal.svelte";
 
   // Level calculator for dynamic level badge calculation
   const levelCalculator = new SequenceDifficultyCalculator();
@@ -137,7 +137,6 @@
   // Stores the rerender callback from the specific card that was right-clicked.
   let contextMenuState: ContextMenuState = $state({ open: false });
   let activeCardRerender: (() => void) | undefined = $state(undefined);
-  let cardSettingsOpen = $state(false);
 
   function openCardContextMenu(x: number, y: number, rerender: () => void) {
     activeCardRerender = rerender;
@@ -150,22 +149,18 @@
 
   const contextMenuItems: ContextMenuEntry[] = $derived(
     buildChoreoCardContextMenuItems({
-      onOpenSettings: () => {
-        closeCardContextMenu();
-        cardSettingsOpen = true;
-      },
       onRerender: activeCardRerender,
     })
   );
 
   // Mode state - synced with global navigation
-  type ChoreoCardMode = "decks" | "designer";
+  type ChoreoCardMode = "decks" | "designer" | "scan-activity";
   let mode = $state<ChoreoCardMode>("decks");
 
   // Sync with navigation state (sidebar tab selection)
   $effect(() => {
     const navTab = navigationState.activeTab;
-    if (navTab === "decks" || navTab === "designer") {
+    if (navTab === "decks" || navTab === "designer" || navTab === "scan-activity") {
       const newMode = navTab as ChoreoCardMode;
       if (newMode !== mode) {
         mode = newMode;
@@ -604,13 +599,14 @@
       <main class="content-area">
         <CardDesigner {sequences} {isLoading} />
       </main>
+    {:else if mode === "scan-activity"}
+      <ScanActivityTab />
     {/if}
   </div>
 </div>
 
 <!-- Context menu for right-click on any choreo card thumbnail -->
 <ContextMenu menuState={contextMenuState} items={contextMenuItems} onClose={closeCardContextMenu} />
-<CardSettingsModal bind:open={cardSettingsOpen} sequence={filteredSequences[0] ?? null} />
 
 <style>
   .choreo-card-tab {
