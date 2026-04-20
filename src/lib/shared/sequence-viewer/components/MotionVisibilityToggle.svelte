@@ -24,15 +24,11 @@
     open = false;
   }
 
-  // Capture-phase dismissal: when the popover is open, an outside
-  // pointerdown closes it AND is swallowed before it reaches whatever
-  // sits underneath. Without eating the event the underlying control
-  // (button, canvas, etc.) would activate on the same click the user
-  // intended only as "get me out of this popover."
-  function onOutsidePointerDown(e: PointerEvent) {
-    if (!open) return;
-    const target = e.target as HTMLElement | null;
-    if (target?.closest(".motion-vis-root")) return;
+  // Dismissal is handled by the backdrop element rendered in the
+  // template — a transparent full-viewport layer that absorbs the
+  // click so no underlying control (choreo card, canvas, playback
+  // button) can co-activate with the same press. Escape closes too.
+  function onBackdropPointerDown(e: PointerEvent) {
     e.preventDefault();
     e.stopPropagation();
     close();
@@ -47,12 +43,8 @@
 
   $effect(() => {
     if (!open) return;
-    document.addEventListener("pointerdown", onOutsidePointerDown, true);
     document.addEventListener("keydown", onKeydown, true);
-    return () => {
-      document.removeEventListener("pointerdown", onOutsidePointerDown, true);
-      document.removeEventListener("keydown", onKeydown, true);
-    };
+    return () => document.removeEventListener("keydown", onKeydown, true);
   });
 </script>
 
@@ -78,6 +70,17 @@
   </button>
 
   {#if open}
+    <!-- Backdrop: absorbs the dismiss click so it can't reach the
+         choreo card, canvas, or any other control beneath. Transparent
+         but pointer-active. Higher z-index than page content, lower
+         than the popover itself. -->
+    <div
+      class="motion-vis-backdrop"
+      role="button"
+      tabindex="-1"
+      aria-label="Close motion visibility menu"
+      onpointerdown={onBackdropPointerDown}
+    ></div>
     <div
       class="motion-vis-popover"
       role="dialog"
@@ -134,6 +137,17 @@
   .prop-silhouette.muted {
     background: rgba(255, 255, 255, 0.25);
     opacity: 0.55;
+  }
+
+  .motion-vis-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 19;
+    background: transparent;
+    border: none;
+    padding: 0;
+    margin: 0;
+    cursor: default;
   }
 
   .motion-vis-popover {
