@@ -43,18 +43,41 @@ function randomChoice<T>(array: T[]): T {
   return array[Math.floor(Math.random() * array.length)]!;
 }
 
+export interface TurnAllocationOptions {
+  /**
+   * When true, enforce per-hand turn totals that produce period-4 orientation
+   * closure: total wheel-quarters per hand ≡ 1 or 3 (mod 4). Requires L3+ so
+   * half-turn (0.5) values are available. The last beat in each hand's
+   * allocation is picked deterministically to hit the target parity; earlier
+   * beats remain random.
+   */
+  enforcePeriod4Parity?: boolean;
+}
+
+/**
+ * Convert a turn value to its wheel-quarter contribution mod 4.
+ * 1 turn = 180° = 2 wheel-quarters. 0.5 turn = 90° = 1 wheel-quarter.
+ * "fl" is a float (special motion state), which contributes 0 wheel-quarters.
+ */
+function wheelQuarters(turn: number | "fl"): number {
+  if (turn === "fl") return 0;
+  return Math.round(turn * 2) % 4;
+}
+
 /**
  * Allocate turns for a sequence.
  *
  * @param stepCount - Number of steps (excluding start position)
  * @param level - Difficulty level (1-3)
  * @param maxTurnIntensity - Maximum turn intensity allowed (0-3, or undefined for level default)
+ * @param options - Optional allocation constraints (e.g. period-4 parity)
  * @returns Turn allocations for blue and red props per step
  */
 export function allocateTurns(
   stepCount: number,
   level: number,
   maxTurnIntensity?: number,
+  options?: TurnAllocationOptions,
 ): TurnAllocation {
   const possibleTurns = getPossibleTurnsForLevel(level);
 
@@ -71,18 +94,69 @@ export function allocateTurns(
   // If filtering removed everything except possibly "fl", ensure we have at least 0
   const turnsPool = validTurns.length > 0 ? validTurns : [0];
 
-  const turnsBlue: (number | "fl")[] = [];
-  const turnsRed: (number | "fl")[] = [];
-
-  for (let i = 0; i < stepCount; i++) {
-    turnsBlue.push(randomChoice(turnsPool));
-    turnsRed.push(randomChoice(turnsPool));
-  }
+  const turnsBlue = allocateSingleHand(stepCount, turnsPool, options);
+  const turnsRed = allocateSingleHand(stepCount, turnsPool, options);
 
   return {
     blue: turnsBlue,
     red: turnsRed,
   };
+}
+
+function allocateSingleHand(
+  stepCount: number,
+  turnsPool: (number | "fl")[],
+  options?: TurnAllocationOptions,
+): (number | "fl")[] {
+  const result: (number | "fl")[] = [];
+
+  const enforceParity = options?.enforcePeriod4Parity === true;
+
+  // Period-4 parity requires at least one half-integer option in the pool
+  // (otherwise totals can only be ≡ 0 or 2 mod 4). If we can't satisfy it,
+  // fall back to pure random — the executor viability gate should have
+  // prevented this path, but we don't crash the generator either way.
+  const halfTurnOptions = turnsPool.filter(
+    (t) => t !== "fl" && typeof t === "number" && t * 2 % 2 !== 0
+  );
+  const wholeTurnOptions = turnsPool.filter(
+    (t) => t !== "fl" && typeof t === "number" && t * 2 % 2 === 0
+  );
+  const canEnforce =
+    enforceParity && halfTurnOptions.length > 0 && wholeTurnOptions.length > 0;
+
+  const beatsToPreallocate = canEnforce ? stepCount - 1 : stepCount;
+
+  for (let i = 0; i < beatsToPreallocate; i++) {
+    result.push(randomChoice(turnsPool));
+  }
+
+  if (!canEnforce) {
+    return result;
+  }
+
+  // Compute running total mod 4 and pick the last beat to hit odd parity.
+  let runningTotal = 0;
+  for (const t of result) {
+    runningTotal = (runningTotal + wheelQuarters(t)) % 4;
+  }
+
+  // Target the last beat's wheel-quarter contribution so total ≡ 1 (mod 4).
+  // (1 and 3 are both odd; pick 1 as canonical.)
+  const targetContribution = (1 - runningTotal + 4) % 4;
+
+  const matching = turnsPool.filter(
+    (t) => t !== "fl" && wheelQuarters(t) === targetContribution
+  );
+
+  if (matching.length > 0) {
+    result.push(randomChoice(matching));
+  } else {
+    // Shouldn't happen given canEnforce, but guard defensively.
+    result.push(randomChoice(turnsPool));
+  }
+
+  return result;
 }
 
 /**
