@@ -1,0 +1,123 @@
+/**
+ * Sequence Hydrator
+ *
+ * Runs every pure-client-side deriver we have against a decoded
+ * SequenceData and returns a fully enriched copy. This is the single
+ * bottleneck that guarantees URL-shared / shortcode-resolved sequences
+ * carry the same semantic fields a freshly-authored sequence does:
+ * letter per beat, start/end position per beat, word, isCircular,
+ * loopType, and gridMode.
+ *
+ * Why a standalone helper rather than a service class: the three
+ * resolver paths (/p/[code], /sequence/[id], SequenceViewerDrawerHost)
+ * all need identical behavior, and without centralizing the pipeline
+ * each one drifts. Previously /p and /sequence ran letter+position
+ * only; the drawer host ran nothing at all. Refreshing a scanned link
+ * would restore a sequence with empty word and null loopType — which
+ * is what broke card footers and the reversal/difficulty indicators.
+ *
+ * Pure. No Firestore, no fetch. Motion primitives carry everything.
+ */
+
+import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import type { ILetterDeriver } from "../contracts/ILetterDeriver";
+import type { IPositionDeriver } from "../contracts/IPositionDeriver";
+import type { ILOOPDetector } from "$lib/features/create/generate/circular/services/contracts/ILOOPDetector";
+import type { IGridModeDeriver } from "$lib/shared/pictograph/grid/services/contracts/IGridModeDeriver";
+
+export interface SequenceHydratorDeps {
+  letterDeriver: ILetterDeriver | null;
+  positionDeriver: IPositionDeriver | null;
+  loopDetector: ILOOPDetector | null;
+  gridModeDeriver: IGridModeDeriver | null;
+}
+
+export async function hydrateSequence(
+  sequence: SequenceData,
+  deps: SequenceHydratorDeps
+): Promise<SequenceData> {
+  const { letterDeriver, positionDeriver, loopDetector, gridModeDeriver } =
+    deps;
+
+  const [withLetters, withPositions] = await Promise.all([
+    letterDeriver
+      ? letterDeriver.deriveLettersForSequence(sequence)
+      : Promise.resolve(sequence),
+    positionDeriver
+      ? positionDeriver.derivePositionsForSequence(sequence)
+      : Promise.resolve(sequence),
+  ]);
+
+  // Merge: letters take precedence (they carry `word`), but fall back
+  // to position-derived start/endPosition when the letter pass didn't
+  // populate them. Mirrors DeepLinkSequenceHandler.mergeEnrichedSequence
+  // so behavior stays identical across entry points.
+  const merged: SequenceData = {
+    ...withLetters,
+    steps: withLetters.steps.map((beat, index) => ({
+      ...beat,
+      startPosition:
+        beat.startPosition ?? withPositions.steps[index]?.startPosition ?? null,
+      endPosition:
+        beat.endPosition ?? withPositions.steps[index]?.endPosition ?? null,
+    })),
+    startPosition: withLetters.startPosition
+      ? {
+          ...withLetters.startPosition,
+          startPosition:
+            withLetters.startPosition.startPosition ??
+            withPositions.startPosition?.startPosition ??
+            null,
+          endPosition:
+            withLetters.startPosition.endPosition ??
+            withPositions.startPosition?.endPosition ??
+            null,
+        }
+      : withPositions.startPosition,
+    startingPosition: withLetters.startingPosition
+      ? {
+          ...withLetters.startingPosition,
+          startPosition:
+            withLetters.startingPosition.startPosition ??
+            withPositions.startingPosition?.startPosition ??
+            null,
+          endPosition:
+            withLetters.startingPosition.endPosition ??
+            withPositions.startingPosition?.endPosition ??
+            null,
+        }
+      : withPositions.startingPosition,
+  };
+
+  const loopResult = loopDetector ? loopDetector.detectLOOPType(merged) : null;
+
+  // gridMode: infer from the first beat whose motions decoded cleanly.
+  // Using the start position's motions isn't reliable — at beat 0 the
+  // encoded form may be a blank placeholder (no motions carried).
+  let gridMode: GridMode | undefined;
+  if (gridModeDeriver) {
+    for (const beat of merged.steps) {
+      if (beat.motions?.blue && beat.motions?.red) {
+        gridMode = gridModeDeriver.deriveGridMode(
+          beat.motions.blue,
+          beat.motions.red
+        );
+        break;
+      }
+    }
+  }
+
+  return {
+    ...merged,
+    ...(loopResult && {
+      isCircular: loopResult.isCircular,
+      loopType: loopResult.loopType ?? undefined,
+    }),
+    ...(gridMode && { gridMode }),
+    metadata: {
+      ...merged.metadata,
+      _hydratedAt: Date.now(),
+    },
+  };
+}
