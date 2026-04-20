@@ -84,6 +84,7 @@
     opts: PreviewCellRenderOptions,
     colCount: number | null,
     isDark: boolean,
+    spl: "row" | "column" = "column",
   ): string {
     const stepLetters = seq.steps?.map(s => s.letter ?? "?").join("") ?? "";
     const durationFingerprint = seq.steps?.map(s => s.duration ?? 1).join(",") ?? "";
@@ -105,7 +106,7 @@
     const resolvedRed = opts.redPropType ?? settings.redPropType ?? "staff";
     const mv = `${opts.showBlueMotion === false ? "B0" : "B1"}${opts.showRedMotion === false ? "R0" : "R1"}`;
     const gv = `${opts.showVTG ? "V1" : "V0"}${opts.showElemental ? "E1" : "E0"}${opts.showPositions ? "P1" : "P0"}`;
-    return `${seq.id ?? seq.word ?? "?"}-${stepLetters}-${seq.steps?.length ?? 0}-${opts.size}-${opts.showStepNumbers}-${opts.showNonRadialPoints}-${opts.showTKA}-${opts.showReversals}-${opts.handPathMode ?? false}-${resolvedBlue}-${resolvedRed}-${colCount ?? "auto"}-${isDark ? "dark" : "light"}-d:${durationFingerprint}-m:${motionFingerprint}-vm:${vmKey}-mv:${mv}-gv:${gv}`;
+    return `${seq.id ?? seq.word ?? "?"}-${stepLetters}-${seq.steps?.length ?? 0}-${opts.size}-${opts.showStepNumbers}-${opts.showNonRadialPoints}-${opts.showTKA}-${opts.showReversals}-${opts.handPathMode ?? false}-${resolvedBlue}-${resolvedRed}-${colCount ?? "auto"}-${isDark ? "dark" : "light"}-spl:${spl}-d:${durationFingerprint}-m:${motionFingerprint}-vm:${vmKey}-mv:${mv}-gv:${gv}`;
   }
 
   function storePreviewInCache(key: string, data: CachedPreview): void {
@@ -295,6 +296,25 @@
     vm.unregisterObserver(onGlyphVisibilityChanged);
   });
 
+  // Observe composition manager so per-step-count settings (start position
+  // layout, column overrides) trigger layout re-derivation.
+  let compositionVersion = $state(0);
+  function onCompositionChanged(): void { compositionVersion++; }
+  compositionManager.registerObserver(onCompositionChanged);
+  onDestroy(() => {
+    compositionManager.unregisterObserver(onCompositionChanged);
+  });
+
+  // Start-position layout — "row" puts start in a top row spanning all columns,
+  // "column" puts start in a left column. Per-step-count override, falls back
+  // to global default. Read reactively via compositionVersion.
+  const startPositionLayout = $derived.by<"row" | "column">(() => {
+    void compositionVersion;
+    const stepCount = sequence?.steps?.length ?? 0;
+    if (stepCount === 0) return compositionManager.startPositionLayout;
+    return compositionManager.getStartPositionLayoutForStepCount(stepCount);
+  });
+
   // Motion visibility: viewer-scoped. When rendered outside a viewer
   // (browse previews, export pipeline), fall back to always-visible.
   const viewerVisibility = tryGetViewerVisibilityContext();
@@ -321,8 +341,9 @@
   const qrCacheMap = new Map<string, string>();
   let lastQrKey = "";
 
-  // Find the grid position for the QR code: bottom of column 1 (under start position).
-  // Only show when there are naturally 2+ rows — don't force an extra row for short sequences.
+  // Find the grid position for the QR code.
+  // Column layout: bottom of column 1 (under start position). Needs 2+ rows.
+  // Row layout: rightmost cell of row 1 (the start row), alongside the start pictograph.
   const qrGridPosition = $derived.by(() => {
     if (!showQRCode || !includeStartPosition) return null;
     if (mandalaLayoutOverride) {
@@ -330,6 +351,10 @@
         gridColumn: mandalaLayoutOverride.qrPos.col,
         gridRow: mandalaLayoutOverride.qrPos.row,
       };
+    }
+    if (startPositionLayout === "row") {
+      if (effectiveColumns < 2) return null;
+      return { gridColumn: effectiveColumns, gridRow: 1 };
     }
     if (effectiveRows < 2) return null;
     return { gridColumn: 1, gridRow: effectiveRows };
@@ -486,20 +511,23 @@
 
   // Effective columns — synchronously computed from layout tables so the grid
   // updates immediately when includeStartPosition toggles (before async re-render).
+  // Row layout: start sits in the top row, no extra column is added.
+  // Column layout: start sits in its own left column, so beat cols + 1.
   const baseColumns = $derived.by(() => {
     if (!sequence?.steps?.length) return columns || 0;
     const stepCount = sequence.steps.length;
+    const spl = startPositionLayout;
 
     if (columnCount !== null && columnCount > 0) {
       // columnCount is the number of *beat* columns the user wants.
-      // When the start position is shown, add 1 for its column.
-      return includeStartPosition ? columnCount + 1 : columnCount;
+      // Column layout adds a dedicated start column; row layout does not.
+      return includeStartPosition && spl === "column" ? columnCount + 1 : columnCount;
     }
     // Check per-length column count from global composition settings (4+ steps only)
     if (stepCount >= 4) {
       const compositionCols = compositionManager.getColumnCountForStepCount(stepCount);
       if (compositionCols !== null && compositionCols > 0) {
-        return includeStartPosition ? compositionCols + 1 : compositionCols;
+        return includeStartPosition && spl === "column" ? compositionCols + 1 : compositionCols;
       }
     }
     // Long sequences use fixed 5 columns whether scrolling or force-contained.
@@ -509,7 +537,7 @@
       return 5;
     }
     // Use the layout service directly for an instant column count
-    const [cols] = layoutCalculator.calculateLayout(stepCount, includeStartPosition, "column");
+    const [cols] = layoutCalculator.calculateLayout(stepCount, includeStartPosition, spl);
     return cols;
   });
 
@@ -538,24 +566,34 @@
     // long-sequence), derive rows from it. The composition manager check
     // mirrors baseColumns so the two stay in sync.
     const cols = baseColumns;
+    const spl = startPositionLayout;
     const hasCompositionOverride = stepCount >= 4
       && compositionManager.getColumnCountForStepCount(stepCount) !== null;
     if (cols > 0 && (columnCount !== null || isLongSequence || hasCompositionOverride)) {
+      if (includeStartPosition && spl === "row") {
+        // Row layout: start occupies row 0 alone; steps fill full-width rows 1+.
+        return 1 + Math.ceil(stepCount / cols);
+      }
+      // Column layout (or no start): steps use cols-startCol columns, first row
+      // already holds some steps alongside the start position.
       const stepsPerRow = includeStartPosition ? cols - 1 : cols;
       const firstRowSteps = Math.min(stepsPerRow, stepCount);
       const remainingSteps = stepCount - firstRowSteps;
       return 1 + Math.ceil(remainingSteps / stepsPerRow);
     }
 
-    const [, rws] = layoutCalculator.calculateLayout(stepCount, includeStartPosition, "column");
+    const [, rws] = layoutCalculator.calculateLayout(stepCount, includeStartPosition, spl);
 
-    // Mandala fill needs at least one col-0 empty between start and QR.
-    // 6-count naturally lays out as 4×2 (packed). When mandala is on, expand
-    // to 4×3 so col 0 has a single empty cell (Full mandala goes there).
+    // Column layout only: mandala fill needs at least one col-1 empty between
+    // start and QR. 6-count naturally lays out as 4×2 (packed); when mandala
+    // is on, expand to 4×3 so col 1 has a single empty cell (Full mandala).
+    // Row layout doesn't need this — mandalas go in the top row alongside
+    // start/QR and don't require an extra row.
     if (
       showMandala
       && showQRCode
       && includeStartPosition
+      && spl === "column"
       && stepCount === 6
       && rws === 2
     ) {
@@ -576,6 +614,7 @@
       blueVisible: showBlueMotion,
       redVisible: showRedMotion,
       mandalaEnabled: showMandala,
+      startPositionLayout,
     });
   });
   const mandalaLayoutOverride = $derived(mandalaResult.layoutOverride);
@@ -789,8 +828,16 @@
       return { gridColumn: 1, gridRow: 1 };
     }
 
+    if (includeStartPosition && startPositionLayout === "row") {
+      // Row layout: start position occupies row 1 alone; steps fill full-width
+      // rows starting at row 2, using all `cols` columns.
+      const col = (stepIndex % cols) + 1;
+      const row = Math.floor(stepIndex / cols) + 2;
+      return { gridColumn: col, gridRow: row };
+    }
+
     if (includeStartPosition) {
-      // With start position: col 1 is reserved for start, steps start at col 2
+      // Column layout: col 1 is reserved for start, steps start at col 2.
       const stepsPerRow = cols - 1;
       const firstRowSteps = cols - 1;
 
@@ -854,7 +901,7 @@
     // Update the global cache entry with new positions
     const renderOptions = buildRenderOptions();
     const isDark = darkMode;
-    const cacheKey = getPreviewCacheKey(sequence, renderOptions, columnCount, isDark);
+    const cacheKey = getPreviewCacheKey(sequence, renderOptions, columnCount, isDark, startPositionLayout);
     storePreviewInCache(cacheKey, {
       cells: cells.map(c => ({
         index: c.index, label: c.label, imageUrl: c.imageUrl,
@@ -896,45 +943,58 @@
       const resolvedColumnCount = columnCount
         ?? (stepCount >= 4 ? compositionManager.getColumnCountForStepCount(stepCount) : null);
 
+      const spl = startPositionLayout;
+
       if (resolvedColumnCount !== null && resolvedColumnCount > 0) {
         // Manual or composition column override.
         // resolvedColumnCount is the number of *beat* columns.
-        // Convert to total columns (including start position) to match the
-        // convention used by the layout table and isLongSequence paths.
-        cols = includeStartPosition ? resolvedColumnCount + 1 : resolvedColumnCount;
-        const stepsPerRow = includeStartPosition ? cols - 1 : cols;
-        const firstRowSteps = Math.min(stepsPerRow, stepCount);
-        const remainingSteps = stepCount - firstRowSteps;
-        rws = 1 + Math.ceil(remainingSteps / stepsPerRow);
+        // Row layout: start sits in the top row, no extra column added.
+        // Column layout: start occupies its own column, so cols = beats + 1.
+        cols = includeStartPosition && spl === "column" ? resolvedColumnCount + 1 : resolvedColumnCount;
+        if (includeStartPosition && spl === "row") {
+          rws = 1 + Math.ceil(stepCount / cols);
+        } else {
+          const stepsPerRow = includeStartPosition ? cols - 1 : cols;
+          const firstRowSteps = Math.min(stepsPerRow, stepCount);
+          const remainingSteps = stepCount - firstRowSteps;
+          rws = 1 + Math.ceil(remainingSteps / stepsPerRow);
+        }
       } else if (isLongSequence) {
         // Long sequences: fixed 5 columns (both scroll mode and export/forceContain)
         cols = 5;
-        const stepsPerRow = includeStartPosition ? cols - 1 : cols;
-        const firstRowSteps = Math.min(stepsPerRow, stepCount);
-        const remainingSteps = stepCount - firstRowSteps;
-        rws = 1 + Math.ceil(remainingSteps / stepsPerRow);
+        if (includeStartPosition && spl === "row") {
+          rws = 1 + Math.ceil(stepCount / cols);
+        } else {
+          const stepsPerRow = includeStartPosition ? cols - 1 : cols;
+          const firstRowSteps = Math.min(stepsPerRow, stepCount);
+          const remainingSteps = stepCount - firstRowSteps;
+          rws = 1 + Math.ceil(remainingSteps / stepsPerRow);
+        }
       } else {
-        [cols, rws] = layoutService.calculateLayout(stepCount, includeStartPosition, "column");
+        [cols, rws] = layoutService.calculateLayout(stepCount, includeStartPosition, spl);
       }
 
       columns = cols;
 
       // For mixed durations: compute timeline rows using row capacity.
-      // Start position is handled as a separate column barrier, NOT inline in the first row.
+      // Column mode: start is a separate column barrier, NOT inline in the first row.
+      // Row mode: start occupies its own top row; steps use full width.
       let computedDurationRows: TimelineRow[] = [];
       if (mixed) {
-        // Use the layout table's column count as beats-per-row.
-        // cols already includes start position (+1), so subtract it to get beat columns.
-        const beatsPerRow = includeStartPosition ? cols - 1 : cols;
+        // cols already accounts for start-column in column mode (subtract 1
+        // to get beat columns); in row mode start doesn't consume a column.
+        const beatsPerRow = includeStartPosition && spl === "column" ? cols - 1 : cols;
         computedDurationRows = calculateTimelineRowsByBeatCount(sequence.steps, beatsPerRow);
-        rws = computedDurationRows.length;
+        // Row mode adds a top row for the start position.
+        rws = computedDurationRows.length + (includeStartPosition && spl === "row" ? 1 : 0);
         durationRows = computedDurationRows;
-        // Compute max step duration units in any row, then add 1 for start column
+        // Compute max step duration units in any row. Column mode adds a
+        // start-position column alongside; row mode does not.
         let maxStepUnits = 0;
         for (const row of computedDurationRows) {
           maxStepUnits = Math.max(maxStepUnits, row.totalDuration);
         }
-        durationColCount = maxStepUnits + (includeStartPosition ? 1 : 0);
+        durationColCount = maxStepUnits + (includeStartPosition && spl === "column" ? 1 : 0);
       } else {
         durationRows = [];
         durationColCount = 0;
@@ -949,7 +1009,7 @@
       const isDark = darkMode;
 
       // Check global cache — avoids re-rendering after drag-to-move
-      const cacheKey = getPreviewCacheKey(sequence, renderOptions, columnCount, isDark);
+      const cacheKey = getPreviewCacheKey(sequence, renderOptions, columnCount, isDark, startPositionLayout);
       const cached = globalPreviewCache.get(cacheKey);
       if (cached && cached.columns === cols && cached.rows === rws) {
         cells = cached.cells.map(c => ({ ...c, isLoaded: true }));
@@ -1212,7 +1272,7 @@
       const renderOptions = buildRenderOptions();
 
       // Check global cache first — may already have the target mode rendered
-      const cacheKey = getPreviewCacheKey(sequence, renderOptions, columnCount, isDark);
+      const cacheKey = getPreviewCacheKey(sequence, renderOptions, columnCount, isDark, startPositionLayout);
       const cached = globalPreviewCache.get(cacheKey);
 
       let newUrls: Map<number, string>;
@@ -1439,7 +1499,7 @@
     const isDark = darkMode;
 
     // 1. Clear global in-memory preview cache entry for this sequence
-    const cacheKey = getPreviewCacheKey(sequence, renderOptions, columnCount, isDark);
+    const cacheKey = getPreviewCacheKey(sequence, renderOptions, columnCount, isDark, startPositionLayout);
     globalPreviewCache.delete(cacheKey);
 
     // 2. Delete IndexedDB blobs for all cells of this sequence
@@ -1774,7 +1834,7 @@
     // async — the component renders at least one frame with isLoading=true first.
     if (sequence?.steps?.length) {
       const renderOptions = buildRenderOptions();
-      const cacheKey = getPreviewCacheKey(sequence, renderOptions, columnCount, darkMode);
+      const cacheKey = getPreviewCacheKey(sequence, renderOptions, columnCount, darkMode, startPositionLayout);
       const cached = globalPreviewCache.get(cacheKey);
       if (cached) {
         cells = cached.cells.map(c => ({ ...c, isLoaded: true }));

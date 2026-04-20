@@ -14,12 +14,20 @@
 
   import { onMount } from "svelte";
   import { getViewer3DContext } from "$lib/shared/3d/context/viewer-3d-context";
+  import { getSceneFeatureContext } from "$lib/shared/3d/scene-features/context/scene-feature-context";
   import { formatTime } from "$lib/shared/sequence-viewer/utils/format-time";
 
   const viewer = getViewer3DContext();
+  const sceneFeatures = getSceneFeatureContext();
 
   // Primary performer — same derivation used by Viewer3DCanvas
   const avatar = $derived(viewer.performerManager.performers[0] ?? null);
+
+  // Hold the transport offscreen until the scene is ready. The loading
+  // curtain owns the bottom of the viewport during first-mount; letting
+  // the play knob + beat notches render underneath it competes visually
+  // and reads as a half-broken UI.
+  const sceneReady = $derived(sceneFeatures?.allEnabledReady ?? true);
 
   // ── Derived transport values ─────────────────────────────────────────────
 
@@ -108,7 +116,7 @@
   }
 </script>
 
-{#if visible && avatar}
+{#if visible && avatar && sceneReady}
   <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
   <div class="transport" role="group" aria-label="Playback transport">
     <button
