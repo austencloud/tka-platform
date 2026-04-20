@@ -107,7 +107,7 @@
 </script>
 
 <div class="editable-text {klass}" bind:this={host}>
-	{#if !editor}
+	{#if !editor && fallbackHtml}
 		<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 		{@html fallbackHtml}
 	{/if}

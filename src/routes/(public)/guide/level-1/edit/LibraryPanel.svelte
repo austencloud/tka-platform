@@ -119,7 +119,7 @@
 	<div class="body">
 		{#if loading}
 			<div class="grid">
-				{#each Array(4) as _, i (i)}
+				{#each Array.from({ length: 4 }, (_, i) => i) as i (i)}
 					<div class="tile skeleton" aria-hidden="true">
 						<div class="thumb skeleton-block"></div>
 						<div class="label skeleton-block"></div>
