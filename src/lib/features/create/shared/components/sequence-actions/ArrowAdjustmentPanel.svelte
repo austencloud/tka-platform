@@ -26,6 +26,7 @@
   import { globalAdjustmentVersion } from "$lib/shared/pictograph/arrow/positioning/global/state/global-adjustment-version.svelte";
   import { arrowAdjustmentUndoStack } from "$lib/shared/pictograph/arrow/positioning/global/state/ArrowAdjustmentUndoStack";
   import { pictographPreparer } from "$lib/shared/pictograph/shared/services/implementations/PictographPreparer";
+  import { rotationOverrideManager } from "$lib/shared/pictograph/arrow/positioning/placement/services/implementations/RotationOverrideManager";
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 
@@ -102,6 +103,28 @@
   const currentAdjustmentLayer = $derived(cascadingResult?.layer ?? null);
   const hasAdjustment = $derived(currentAdjustmentX !== 0 || currentAdjustmentY !== 0);
 
+  // Rotation override is only valid for DASH and STATIC motion types
+  const canToggleRotationOverride = $derived.by(() => {
+    const motionType = selectedArrow?.motionData?.motionType?.toLowerCase();
+    return motionType === "dash" || motionType === "static";
+  });
+  let rotationOverrideActive = $state(false);
+
+  // Refresh override state whenever selection or adjustment version changes
+  $effect(() => {
+    const _ = globalAdjustmentVersion.version;
+    if (!selectedArrow || !canToggleRotationOverride) {
+      rotationOverrideActive = false;
+      return;
+    }
+    rotationOverrideManager
+      .hasRotationOverride(selectedArrow.motionData, selectedArrow.pictographData)
+      .then((active) => {
+        rotationOverrideActive = active;
+      })
+      .catch((err) => logger.warn("Failed to check rotation override:", err));
+  });
+
   // Reset state when selection changes
   $effect(() => {
     const _ = selectedArrow;
@@ -151,9 +174,37 @@
       handleResetToDefault();
     }
 
+    if (key === "x" && !event.ctrlKey && !event.metaKey && !event.altKey) {
+      if (!canToggleRotationOverride) return;
+      event.preventDefault();
+      handleToggleRotationOverride();
+    }
+
     if (key === "escape") {
       event.preventDefault();
       selectedArrowState.clearSelection();
+    }
+  }
+
+  async function handleToggleRotationOverride() {
+    if (!selectedArrow || !canToggleRotationOverride) return;
+
+    try {
+      const isActive = await rotationOverrideManager.toggleRotationOverride(
+        selectedArrow.motionData,
+        selectedArrow.pictographData
+      );
+      rotationOverrideActive = isActive;
+
+      // Force all pictographs to re-render with new rotation
+      pictographPreparer.clearCache();
+      globalAdjustmentVersion.increment();
+
+      hapticService?.trigger("selection");
+      logger.log(`Rotation override ${isActive ? "applied" : "removed"} for ${selectedArrow.color} ${selectedArrow.motionData.motionType}`);
+    } catch (err) {
+      logger.error("Failed to toggle rotation override:", err);
+      hapticService?.trigger("error");
     }
   }
 
@@ -402,6 +453,23 @@
     </button>
   {/if}
 
+  <!-- Rotation override toggle (DASH/STATIC only) -->
+  {#if canToggleRotationOverride}
+    <button
+      class="rotation-override-btn"
+      class:active={rotationOverrideActive}
+      onclick={handleToggleRotationOverride}
+      title={rotationOverrideActive
+        ? "Rotation override ON — press X to remove"
+        : "Toggle rotation override (X)"}
+      aria-label="Toggle rotation override"
+      aria-pressed={rotationOverrideActive}
+    >
+      <i class="fas fa-sync-alt" aria-hidden="true"></i>
+      <span class="hotkey-hint">X</span>
+    </button>
+  {/if}
+
   <!-- Reset to default button -->
   {#if hasAdjustment}
     <button
@@ -599,6 +667,44 @@
   .reset-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+  }
+
+  .rotation-override-btn {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    height: 20px;
+    padding: 0 6px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    cursor: pointer;
+    font-size: 0.6rem;
+    transition: all var(--duration-fast) ease;
+  }
+
+  .rotation-override-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+  }
+
+  .rotation-override-btn.active {
+    border-color: rgba(168, 85, 247, 0.5);
+    background: rgba(168, 85, 247, 0.25);
+    color: #d8b4fe;
+  }
+
+  .rotation-override-btn.active:hover {
+    background: rgba(168, 85, 247, 0.35);
+    color: #ede9fe;
+  }
+
+  .hotkey-hint {
+    font-family: "SF Mono", Monaco, monospace;
+    font-weight: 600;
+    font-size: 0.6rem;
+    opacity: 0.8;
   }
 
   @media (prefers-reduced-motion: reduce) {
