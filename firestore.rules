@@ -301,6 +301,16 @@ service cloud.firestore {
       allow delete: if isOwner(userId) || isAdmin();
 
       // -------------------------------------------------------------------------
+      // DEVICE LINKAGE (Scan Activity) — DeviceIdService writes here on sign-in
+      // to link anonymous device scans to the user's account.
+      // -------------------------------------------------------------------------
+      match /devices/{deviceId} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow create, update: if isOwner(userId);
+        allow delete: if false;
+      }
+
+      // -------------------------------------------------------------------------
       // USER SETTINGS (Private - admin can read for impersonation preview)
       // -------------------------------------------------------------------------
       match /settings/{settingId} {
@@ -884,18 +894,27 @@ service cloud.firestore {
         );
 
       // Anyone can increment scan count (fire-and-forget analytics).
-      // Allow only scanCount and lastScannedAt to change on update.
-      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['scanCount', 'lastScannedAt']);
+      // Allowed keys on update: scanCount, lastScannedAt, and dailyScans
+      // (the per-day sparkline rollup map — see incrementScanCount).
+      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['scanCount', 'lastScannedAt', 'dailyScans']);
 
       // No deletion - short codes are permanent
       allow delete: if isAdmin();
 
-      // Scan event log — append-only analytics per QR scan
-      match /scanEvents/{eventId} {
-        allow read: if isAdmin();
-        allow create: if true;
-        allow update, delete: if false;
-      }
+      // Scan event log is a top-level collectionGroup rule below,
+      // because the admin live-feed runs a collectionGroup query over
+      // every shortcodes/*/scanEvents subcollection. A nested rule
+      // here wouldn't authorize that query.
+    }
+
+    // Scan event log — append-only analytics per QR scan.
+    // Top-level so collectionGroup queries (admin live feed) are covered.
+    // Anyone may create (fire-and-forget telemetry from public scanners);
+    // only admins may read; no updates or deletes.
+    match /{path=**}/scanEvents/{eventId} {
+      allow read: if isAdmin();
+      allow create: if true;
+      allow update, delete: if false;
     }
 
     // ============================================================================
