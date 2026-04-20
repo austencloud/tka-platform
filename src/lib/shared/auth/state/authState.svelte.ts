@@ -371,6 +371,13 @@ export async function initializeAuthListener() {
               _error
             );
           }
+
+          // Link this device to the signed-in user (fire-and-forget)
+          container.items.deviceIdService
+            .linkDeviceToUser(user.uid)
+            .catch((err: unknown) => {
+              console.warn("⚠️ [authState] Failed to link device to user", err);
+            });
         } catch (_error) {
           console.warn("⚠️ [authState] Auth processing error:", _error);
         }
