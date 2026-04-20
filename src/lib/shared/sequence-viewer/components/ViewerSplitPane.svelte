@@ -315,6 +315,7 @@
           onProgressBarScrubEnd={onProgressBarScrubEnd ?? null}
           focused={layout.focusedPane === "animation"}
           suppress2DOverlays={renderMode === '3d'}
+          hideProgressBar={renderMode === '3d'}
         />
       {/if}
 
@@ -442,10 +443,10 @@
      Scaling the rail would violate Fitts's Law: chip positions shift
      when the user moves the cursor toward them. */
   @media (hover: hover) and (pointer: fine) {
-    .split-column:not(.focused) > .media-pane {
+    .split-column:not(.focused) .media-pane {
       transition: transform 120ms cubic-bezier(0.2, 0, 0, 1);
     }
-    .split-column:hover:not(.focused) > .media-pane {
+    .split-column:hover:not(.focused) .media-pane {
       transform: scale(1.012);
     }
   }

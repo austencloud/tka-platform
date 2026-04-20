@@ -1,7 +1,6 @@
 <!--
   ChoreoCardContextMenuHost — Orchestrates the ChoreoCard right-click context menu.
-  Includes inline column picker, "Card Settings..." plus optional Send to action.
-  Preserves export mode props for parent compatibility.
+  Includes inline column picker plus optional Re-render and Send to actions.
 -->
 <script lang="ts">
   import ContextMenu from "$lib/shared/components/context-menu/ContextMenu.svelte";
@@ -10,7 +9,6 @@
   import type { ExportOptionsStateManager } from "$lib/shared/sequence-viewer/state/export-options-state.svelte";
 
   interface Props {
-    onOpenSettings: () => void;
     onRerender?: () => void;
     isExportMode?: boolean;
     exportOptions?: ExportOptionsStateManager;
@@ -18,7 +16,7 @@
     stepCount?: number;
   }
 
-  const { onOpenSettings, onRerender, isExportMode = false, exportOptions, onSendTo, stepCount = 0 }: Props = $props();
+  const { onRerender, isExportMode = false, exportOptions, onSendTo, stepCount = 0 }: Props = $props();
 
   let menuState: ContextMenuState = $state({ open: false });
   let menuVersion = $state(0);
@@ -30,10 +28,6 @@
   const menuItems: ContextMenuEntry[] = $derived.by(() => {
     void menuVersion;
     return buildChoreoCardContextMenuItems({
-      onOpenSettings: () => {
-        closeContextMenu();
-        onOpenSettings();
-      },
       onSendTo: onSendTo ? () => { closeContextMenu(); onSendTo(); } : undefined,
       onRerender: onRerender ? () => { closeContextMenu(); onRerender(); } : undefined,
       stepCount,

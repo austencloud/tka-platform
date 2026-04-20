@@ -52,6 +52,10 @@
   const showMandala = $derived.by(() => { void compositionVersion; return imageComposition.showMandala; });
   const showLoopGlyph = $derived.by(() => { void compositionVersion; return imageComposition.showLoopGlyph; });
   const showBirthday = $derived.by(() => { void compositionVersion; return imageComposition.showBirthday; });
+  const startPosLayout = $derived.by(() => {
+    void compositionVersion;
+    return imageComposition.getStartPositionLayoutForStepCount(beatCount);
+  });
 
   // Pictograph visibility — sourced from VisibilityManager so this panel
   // stays in sync with the Visibility tab, context menus, and voice control.
@@ -262,6 +266,20 @@
             </button>
           </div>
         </div>
+
+        <div class="rt-section">
+          <span class="rt-section-label">Info</span>
+          <div class="rt-chip-row">
+            <button type="button" class="rt-chip"
+              aria-pressed={startPosLayout === "row"}
+              onclick={() => imageComposition.setStartPositionLayoutForStepCount(beatCount, "row")}
+            >Top Row</button>
+            <button type="button" class="rt-chip"
+              aria-pressed={startPosLayout === "column"}
+              onclick={() => imageComposition.setStartPositionLayoutForStepCount(beatCount, "column")}
+            >Left Column</button>
+          </div>
+        </div>
       </RailBentoSheet>
     {/if}
 
@@ -448,6 +466,22 @@
             onclick={() => imageComposition.setShowMandala(!showMandala)}
             aria-pressed={showMandala}
           >Mandala</button>
+        </div>
+      </div>
+
+      <div class="setting-row">
+        <span class="setting-label">Info</span>
+        <div class="chip-group">
+          <button type="button" class="chip"
+            class:active={startPosLayout === "row"}
+            onclick={() => imageComposition.setStartPositionLayoutForStepCount(beatCount, "row")}
+            aria-pressed={startPosLayout === "row"}
+          >Top Row</button>
+          <button type="button" class="chip"
+            class:active={startPosLayout === "column"}
+            onclick={() => imageComposition.setStartPositionLayoutForStepCount(beatCount, "column")}
+            aria-pressed={startPosLayout === "column"}
+          >Left Column</button>
         </div>
       </div>
 
