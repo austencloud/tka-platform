@@ -1,0 +1,75 @@
+import { describe, expect, it } from "vitest";
+import { SequenceEncoder } from "$lib/shared/navigation/services/implementations/SequenceEncoder";
+import { createSequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
+import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/MotionData";
+import {
+  MotionType,
+  RotationDirection,
+  Orientation,
+  MotionColor,
+} from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
+
+describe("SequenceEncoder.verifyRoundTrip", () => {
+  const encoder = new SequenceEncoder();
+
+  function makeAntiHalfTurn() {
+    return createSequenceData({
+      word: "",
+      name: "",
+      steps: [
+        {
+          id: "step-1",
+          stepNumber: 1,
+          duration: 1,
+          blueReversal: false,
+          redReversal: false,
+          isBlank: false,
+          letter: null,
+          startPosition: null,
+          endPosition: null,
+          motions: {
+            blue: createMotionData({
+              color: MotionColor.BLUE,
+              motionType: MotionType.ANTI,
+              rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
+              startLocation: GridLocation.SOUTH,
+              endLocation: GridLocation.WEST,
+              startOrientation: Orientation.IN,
+              endOrientation: Orientation.COUNTER,
+              turns: 0.5,
+              propType: PropType.STAFF,
+            }),
+            red: createMotionData({
+              color: MotionColor.RED,
+              motionType: MotionType.STATIC,
+              rotationDirection: RotationDirection.NO_ROTATION,
+              startLocation: GridLocation.NORTH,
+              endLocation: GridLocation.NORTH,
+              startOrientation: Orientation.IN,
+              endOrientation: Orientation.IN,
+              turns: 0,
+              propType: PropType.STAFF,
+            }),
+          },
+        },
+      ],
+    });
+  }
+
+  it("returns ok=true for a clean round-trip", () => {
+    const seq = makeAntiHalfTurn();
+    const { encoded } = encoder.encodeWithCompression(seq);
+    const result = encoder.verifyRoundTrip(encoded);
+    expect(result.ok).toBe(true);
+    expect(result.decoded).toBeDefined();
+    expect(result.reason).toBeUndefined();
+  });
+
+  it("returns ok=false for a corrupted blob", () => {
+    const result = encoder.verifyRoundTrip("s~z:not-actually-valid-data");
+    expect(result.ok).toBe(false);
+    expect(result.reason).toBeDefined();
+  });
+});
