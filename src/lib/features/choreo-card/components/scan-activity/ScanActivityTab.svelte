@@ -125,7 +125,7 @@
 <ScanHistoryDrawer bind:isOpen={drawerOpen} entry={drawerEntry} />
 
 <style>
-  .shell { display: flex; flex-direction: column; height: 100%; background: #080a12; }
+  .shell { display: flex; flex-direction: column; flex: 1; min-width: 0; width: 100%; height: 100%; background: #080a12; }
 
   .top {
     display: flex; align-items: center; gap: 14px;
