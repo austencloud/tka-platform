@@ -250,10 +250,15 @@ function assembleConstraintOptions(params: EngineGenerationParams): ConstraintOp
   }
 
   // Axis 3: motionTypeFilter
+  // no-dash = hard exclude; prefer-dash = soft maximize so non-dash letters
+  // (connectors, closure beats) remain available when needed. The previous
+  // `include: ["dash"]` mapping was a hard filter that excluded all shift
+  // and static motions, which broke generation as soon as bridges or
+  // closure forced a non-dash pick.
   if (params.motionTypeFilter === "no-dash") {
     options.motionFamily = { exclude: ["dash"] };
   } else if (params.motionTypeFilter === "prefer-dash") {
-    options.motionFamily = { include: ["dash"] };
+    options.dashPreference = "maximize";
   }
 
   return options;

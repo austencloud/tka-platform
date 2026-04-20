@@ -92,7 +92,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     category: "notation"
   },
   "pads": {
-    definition: "The priority order — Pro, Anti, Dash, Static — that determines which motion occupies the high (top) slot and which occupies the low (bottom) slot of a pictograph's turns column. When the two hands have different motion types, the higher-priority type goes in the high slot: pro beats anti beats dash beats static. For pro/anti hybrids (C, F, I, L, O, R, U, V) this means pro-high / anti-low. For Type 2 (W, X, Y, Z, Σ, Δ, θ, Ω): shift-high / static-low. For Type 3 (W-, X-, Y-, Z-, Σ-, Δ-, θ-, Ω-): shift-high / dash-low. For Type 4 (Φ, Ψ, Λ): dash-high / static-low. When motion types match — A, B, D, E, G, H, J, K, M, N, P, Q, dual-dashes (Φ-, Ψ-, Λ-), statics (α, β, Γ) — left goes high and right goes low. S and T are the exception among matching-type hybrids: leading hand goes high, following hand goes low. The TKA software handles placement automatically. Defined in the Level 2 Guide (Glyphs / PADS section).",
+    definition: "The priority order — Pro, Anti, Dash, Static — that determines which motion occupies the high (top) slot and which occupies the low (bottom) slot of a pictograph's turns column. When the two hands have different motion types, the higher-priority type goes in the high slot: pro beats anti beats dash beats static. For pro/anti hybrids (C, F, I, L, O, R, U, V) this means pro-high / anti-low. For Type 2 (W, X, Y, Z, Σ, Δ, θ, Ω): shift-high / static-low. For Type 3 (W-, X-, Y-, Z-, Σ-, Δ-, θ-, Ω-): shift-high / dash-low. For Type 4 (Φ, Ψ, Λ): dash-high / static-low. When motion types match — A, B, D, E, G, H, J, K, M, N, P, Q, dual-dashes (Φ-, Ψ-, Λ-), statics (α, β, Γ) — left goes high and right goes low. S and T are the exception among matching-type hybrids: leading hand goes high, following hand goes low. The TKA software handles placement automatically. Defined in the Level 2 Guide (Glyphs / PADS section). Implemented implicitly in the codebase via per-letter-type branches in TurnColorInterpreter and TurnsTupleGenerator — no explicit PADS constant array exists.",
     examples: [
       "C-High-One: pro hand has 1 turn, anti hand has 0 (high = pro per PADS)",
       "R(fl, 0): float marker in high slot means the float was applied to the pro hand (pro-high / anti-low for hybrids)",
@@ -100,8 +100,121 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
       "Φ(1, 0): dash has 1 turn, static has 0 (high = dash since dash beats static)",
       "S-High-One: leading hand has 1 turn (leading goes high for S and T)"
     ],
-    relatedTerms: ["glyph", "pro", "anti", "dash", "static", "turn", "hybrid", "pictograph"],
+    relatedTerms: ["glyph", "glyph-anatomy", "pro", "anti", "dash", "static", "turn", "hybrid", "pictograph", "high-slot", "low-slot"],
     category: "notation"
+  },
+  "high-slot": {
+    definition: "The upper of the two turn-number slots positioned to the right of a letter in a TKA glyph. Which hand occupies the high slot is determined by PADS priority (Pro > Anti > Dash > Static) when motion types differ, by left-hand convention when motion types match, or by the leading hand for S and T. The corresponding low-slot sits below. TKA software handles slot placement automatically; the concept is defined in the Level 2 Guide (Glyphs / PADS section).",
+    examples: [
+      "In C(1,0), the '1' sits in the high slot and belongs to the pro motion (pro beats anti per PADS)",
+      "In W(s,1,0), the '1' in the high slot belongs to the shift (shift beats static)",
+      "In A(1,0), the '1' in the high slot belongs to the left hand (motion types match, so left goes high)"
+    ],
+    relatedTerms: ["low-slot", "pads", "glyph", "turn", "leading"],
+    category: "notation"
+  },
+  "low-slot": {
+    definition: "The lower of the two turn-number slots in a TKA glyph, sitting beneath the high-slot. Which hand occupies the low slot is determined by PADS priority (takes whichever motion type is lower — anti, dash, or static depending on the pair), by right-hand convention when motion types match, or by the following hand for S and T. Complement of high-slot.",
+    examples: [
+      "In C(1,0), the '0' in the low slot belongs to the anti motion",
+      "In Φ(1,0), the '0' in the low slot belongs to the static hand (dash beats static)",
+      "In A(1,0), the '0' in the low slot belongs to the right hand"
+    ],
+    relatedTerms: ["high-slot", "pads", "glyph", "turn", "following"],
+    category: "notation"
+  },
+  "rotational-relationship": {
+    definition: "The geometric relationship between the rotation directions of two simultaneously-rotating props in a single beat. When both hands rotate, their directions form either a 'Same' relationship (same direction relative to each other) or an 'Opp' relationship (opposite directions). Notated with a same-dot (above the letter) or opp-dot (below). Only meaningful when both props are actively rotating — pictographs with only one rotating prop have no rotational relationship to describe. Lambda (Λ, Λ-) and Gamma (Γ) pictographs do NOT use rotational-relationship — they use opening/closing instead, which supersedes (rather than coexists with) same/opp because gamma's right-angle asymmetry requires a different disambiguation. In the codebase, this is derived at render time by comparing blueMotion.rotationDirection to redMotion.rotationDirection; it is not a stored field.",
+    examples: [
+      "W(s,0,1): shift and static both rotate in the same direction → same-dot above the W",
+      "X(o,1,1): shift and static rotate in opposite directions → opp-dot below the X",
+      "Φ(1,0): only the dash rotates → no rotational relationship, no dot",
+      "Λ(0,1,op): rotating hand is opening — opening/closing replaces same/opp for Lambda"
+    ],
+    relatedTerms: ["same-dot", "opp-dot", "opening", "closing", "glyph-anatomy"],
+    category: "rotation"
+  },
+  "same-dot": {
+    definition: "A dot placed above a letter in a TKA glyph to mark the rotational relationship as 'Same' — both rotating props are spinning in the same direction relative to each other. Encoded in code as an (s) parameter (e.g., W(s,0,1)). Read aloud as '[Letter]-Same' — for example, W with a same-dot is spoken 'W-Same'. Applied to Type 2, Type 3, Type 4, Type 5, and Type 6 pictographs when both hands rotate. Does NOT apply to Lambda (Λ, Λ-) or Gamma (Γ), which use opening/closing instead. Complement of opp-dot.",
+    examples: [
+      "W(s,0,1): W with same-dot above, 0 turns on shift, 1 on static — 'W-Same-Low-One'",
+      "Ψ-(s,1,1): Psi-Dash with same-dot, 1 turn on each hand — 'Psi-Dash-Same-One-One'",
+      "α(s,1,1): alpha with same-dot, 1 turn each — 'Alpha-Same-One-One'"
+    ],
+    relatedTerms: ["opp-dot", "rotational-relationship", "glyph-anatomy"],
+    category: "notation"
+  },
+  "opp-dot": {
+    definition: "A dot placed below a letter in a TKA glyph to mark the rotational relationship as 'Opp' — the two rotating props are spinning in opposite directions relative to each other. Encoded in code as an (o) parameter (e.g., X(o,1,1)). Read aloud as '[Letter]-Opp' — for example, X with an opp-dot is spoken 'X-Opp'. Same application scope as same-dot. Does NOT apply to Lambda or Gamma. Complement of same-dot.",
+    examples: [
+      "X(o,1,1): X with opp-dot below, 1 turn on each hand — 'X-Opp-One-One'",
+      "Θ-(o,1,1): Theta-Dash with opp-dot, 1 turn each — 'Theta-Dash-Opp-One-One'",
+      "Φ(o,1,1): Phi with opp-dot — both dash and static rotating in opposite directions"
+    ],
+    relatedTerms: ["same-dot", "rotational-relationship", "glyph-anatomy"],
+    category: "notation"
+  },
+  "opening": {
+    definition: "A per-hand designation for a rotating prop in a Lambda (Λ), Lambda-Dash (Λ-), or Gamma (Γ) pictograph. 'Opening' means that if the hand's rotational trajectory were extrapolated into a subsequent pro-shift, the motion would resolve toward an alpha position (hands at opposite grid points — spatially 'open'). Each rotating hand is independently opening or closing; a pictograph can have mixed states (e.g., blue opening + red closing). Required because these pictographs' opening/closing variants cannot be produced from each other by rotation, reflection, or mirroring (a core TKA invariant), and same/opp rotational relationship cannot capture the distinction — gamma's right-angle geometry creates asymmetric outcomes. Encoded in code as an 'op' flag in the turn tuple (e.g., Λ(0,1,op) for single-rotating-hand, Λ-(1,1,op,cl) for both rotating). In the codebase, derived at render time from (endLocation, otherHandEndLocation, rotationDirection) lookups in PropRotationStateTracker.ts — not stored on MotionData. Complement of closing.",
+    examples: [
+      "Λ(0,1,op): Lambda with 1-turn static hand whose trajectory would resolve to alpha",
+      "Λ-(1,1,op,cl): Lambda-Dash with blue hand opening (toward alpha), red hand closing (toward beta)",
+      "Γ(op,op): Gamma with both hands rotating such that both trajectories resolve to alpha"
+    ],
+    relatedTerms: ["closing", "glyph-anatomy", "alpha", "rotational-relationship"],
+    category: "notation"
+  },
+  "closing": {
+    definition: "A per-hand designation for a rotating prop in a Lambda (Λ), Lambda-Dash (Λ-), or Gamma (Γ) pictograph. 'Closing' means that if the hand's rotational trajectory were extrapolated into a subsequent pro-shift, the motion would resolve toward a beta position (hands at the same grid point — spatially 'closed'). Each rotating hand is independently opening or closing. Encoded in code as a 'cl' flag in the turn tuple. Complement of opening. See opening for the full rationale (alpha-vs-beta trajectory, codebase implementation in PropRotationStateTracker.ts).",
+    examples: [
+      "Λ(0,1,cl): Lambda with 1-turn static hand whose trajectory would resolve to beta",
+      "Λ-(1,1,cl,cl): Lambda-Dash with both hands closing (both trajectories resolve to beta)",
+      "Γ(cl,op): Gamma with blue closing (toward beta), red opening (toward alpha)"
+    ],
+    relatedTerms: ["opening", "glyph-anatomy", "beta", "rotational-relationship"],
+    category: "notation"
+  },
+  "thumb-switch": {
+    definition: "One flip of the thumb-end's reference orientation during a motion (e.g., thumb in → thumb out). The Level 2 Guide's primary pedagogical counting framework for teaching turns: every motion has a base thumb-switch count, and each additional turn adds exactly one more thumb switch. Provides a discrete, physically-verifiable check during practice rather than requiring students to track abstract angular rotation.",
+    examples: [
+      "Isolation (0-turn pro shift): 0 switches — thumb stays in throughout",
+      "Antispin (0-turn anti shift): 1 switch — in → out",
+      "1-turn antispin: 2 switches — in → out → in",
+      "2-turn antispin: 3 switches — in → out → in → out",
+      "Base dash: 1 switch (in → out)",
+      "1-turn dash: 2 switches (in → out → in — back to start orientation)",
+      "2-turn static: 2 switches (in → out → in)"
+    ],
+    relatedTerms: ["turn", "orientation", "pro", "anti", "dash", "static", "isolation"],
+    category: "rotation"
+  },
+  "linear-extension": {
+    definition: "A repeated-dash choreo pattern where the hand travels in a straight line through the center to the opposite grid point with one turn added per beat (a 1-turn dash executed on repeat). Named 'linear extension' because the pattern extends along a linear hand path rather than a curved one. Iconic because with double staves, the prop's two ends exhibit opposite rotation relationships relative to the linear hand path — one end behaves like a prospin, the other like an antispin. The Level 2 Guide recommends focusing on the antispin half to ensure the hand passes directly through the center point.",
+    examples: [
+      "Repeated 1-turn dashes: N→S→N→S with one turn per beat",
+      "The prop's two ends: one end prospins, the other antispins — focus on the antispin end for timing"
+    ],
+    relatedTerms: ["dash", "turn", "thumb-switch"],
+    category: "motion"
+  },
+  "leading": {
+    definition: "The hand that drives or initiates a Quarter-Same gamma motion. Applies to the Type 1 gamma-to-gamma letters S, T, U, and V, which have an inherent leader/follower asymmetry. For S and T (matching motion types pro|pro or anti|anti), the glyph's high slot belongs to the leading hand and the low slot to the following hand — this is how their base forms are disambiguated. For U and V (pro|anti hybrid), the leading/following asymmetry physically exists but the glyph slots follow the pro/anti PADS rule instead (pro-high / anti-low). Counterpart to following. Note: as of 2026-04-19, leading/following is a pedagogical concept from the Level 2 Guide that is not represented in the TKA software pipeline — the code distinguishes hands only by color (blue/red). See also: leader-follower.",
+    examples: [
+      "S-High-One: leading hand has 1 turn (leading occupies the high slot for S and T)",
+      "T-Low-One: following hand has 1 turn, leading has 0",
+      "U-High-One: leading hand has 1 turn — but here the high slot is pro, not leader, because U is pro|anti hybrid"
+    ],
+    relatedTerms: ["following", "leader-follower", "gamma", "high-slot", "pads"],
+    category: "position"
+  },
+  "following": {
+    definition: "The hand that trails the leading hand in a Quarter-Same gamma motion (S, T, U, V). For S and T, the glyph's low slot belongs to the following hand. For U and V, slot assignment follows pro/anti PADS rules regardless of leading/following. Counterpart to leading. Not currently represented in the TKA software pipeline (code distinguishes hands only by color). See also: leader-follower.",
+    examples: [
+      "S-Low-One: following hand has 1 turn",
+      "T-High-One: leading hand has 1 turn, following has 0"
+    ],
+    relatedTerms: ["leading", "leader-follower", "gamma", "low-slot", "pads"],
+    category: "position"
   },
   "prop": {
     definition: "The physical object being manipulated (staff, fan, club, poi, etc.). The prop is what rotates. The hand is just the vehicle that carries it between grid points.",
@@ -559,7 +672,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   "leader-follower": {
     definition: "A distinction that arises in asymmetric positions (gamma, zeta, eta) when both hands shift the same direction. One hand is directionally 'ahead' of the other, creating a leader and a follower. This matters for letter assignment because the leader and follower can have different turn values. In the TKA glyph, the leader's turn number appears on top, the follower's on bottom. Leader/follower does NOT apply to opposite-direction movement (hands diverge/converge symmetrically) or to symmetric positions (alpha, beta). Leader/follower is combinatorially equivalent to mixed motion types: it doubles the variation space the same way that having one pro and one anti does.",
     examples: ["In gamma, same-direction shifts create leader/follower — requires S, T, U, V letters", "In alpha (symmetric), no leader/follower — uses A through L", "Opposite-direction shifts in any position have no leader/follower", "S,T,U,V each have the same variation count as hybrids (C, F, I, L, O) because leader/follower doubles the space"],
-    relatedTerms: ["gamma", "zeta", "eta", "position", "symmetry-invariance"],
+    relatedTerms: ["gamma", "zeta", "eta", "position", "symmetry-invariance", "leading", "following"],
     category: "position"
   },
   "symmetry-invariance": {
