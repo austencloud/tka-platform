@@ -1,67 +1,129 @@
 /**
  * Turn Tuple Parser
  *
- * Parses turns tuple strings into structured data.
- * Handles format: "(direction, top, bottom)" or "(top, bottom)"
+ * Parses turns tuple strings emitted by TurnsTupleGenerator into structured data.
+ *
+ * Supported forms (top/bottom positions match the PADS slot order):
+ * - "(top, bottom)"                          — standard 2-part
+ * - "(direction, top, bottom)"               — direction-prefixed 3-part
+ * - "(rotDir, top, bottom)"                  — single-rotation 3-part (TYPE2/3/4/5/6)
+ * - "(top, bottom, oc)"                      — Λ/Λ-/γ single-rotating-hand; oc binds to non-zero slot
+ * - "(direction, top, bottom, topOC, bottomOC)" — Λ/Λ-/γ both-rotating-hands
  *
  * Examples:
- * - "(s, 1, 2)" => { direction: "s", top: 1, bottom: 2 }
- * - "(1.5, fl)" => { direction: null, top: 1.5, bottom: "fl" }
- * - "(cw, 0, 1)" => { direction: "cw", top: 0, bottom: 1 }
+ * - "(s, 1, 2)"            => { direction: "s", top: 1, bottom: 2 }
+ * - "(1.5, fl)"            => { direction: null, top: 1.5, bottom: "fl" }
+ * - "(cw, 0, 1)"           => { direction: "cw", top: 0, bottom: 1 }
+ * - "(0, 1, op)"           => { direction: null, top: 0, bottom: 1, bottomOpenClose: "op" }
+ * - "(1, 0, cl)"           => { direction: null, top: 1, bottom: 0, topOpenClose: "cl" }
+ * - "(s, 1, 1, op, cl)"    => { direction: "s", top: 1, bottom: 1, topOpenClose: "op", bottomOpenClose: "cl" }
  */
 
 export type TurnValue = number | "fl";
 export type DirectionValue = "s" | "o" | "cw" | "ccw" | null;
+export type OpenCloseValue = "op" | "cl" | null;
 
 export interface ParsedTurnsTuple {
   direction: DirectionValue;
   top: TurnValue;
   bottom: TurnValue;
+  topOpenClose: OpenCloseValue;
+  bottomOpenClose: OpenCloseValue;
 }
 
 const VALID_DIRECTIONS = ["s", "o", "cw", "ccw"] as const;
+const VALID_OPEN_CLOSE = ["op", "cl"] as const;
 const VALID_TURN_NUMBERS = [0, 0.5, 1, 1.5, 2, 2.5, 3] as const;
+
+function parseOpenClose(value: string | undefined): OpenCloseValue {
+  if (!value) return null;
+  return VALID_OPEN_CLOSE.includes(value as (typeof VALID_OPEN_CLOSE)[number])
+    ? (value as OpenCloseValue)
+    : null;
+}
+
+function emptyResult(): ParsedTurnsTuple {
+  return {
+    direction: null,
+    top: 0,
+    bottom: 0,
+    topOpenClose: null,
+    bottomOpenClose: null,
+  };
+}
 
 /**
  * Parse a turns tuple string into structured data
  */
 export function parseTurnsTuple(turnsTuple: string): ParsedTurnsTuple {
   if (!turnsTuple.trim()) {
-    return { direction: null, top: 0, bottom: 0 };
+    return emptyResult();
   }
 
   try {
-    // Remove parentheses and whitespace, split by comma
     const cleaned = turnsTuple.replace(/[()]/g, "").trim();
     const parts = cleaned.split(",").map((p) => p.trim());
 
     if (parts.length < 2) {
-      return { direction: null, top: 0, bottom: 0 };
+      return emptyResult();
     }
 
-    // Check if first part is a direction (3-part tuple) or a turn value (2-part tuple)
     const firstIsDirection = VALID_DIRECTIONS.includes(
       parts[0] as (typeof VALID_DIRECTIONS)[number]
     );
 
+    // 5-part: (direction, top, bottom, topOC, bottomOC) — Λ/Λ-/γ both hands rotating
+    if (firstIsDirection && parts.length >= 5) {
+      const top = parseTurnValue(parts[1] || "");
+      const bottom = parseTurnValue(parts[2] || "");
+      return {
+        direction: parts[0] as DirectionValue,
+        top,
+        bottom,
+        topOpenClose: parseOpenClose(parts[3]),
+        bottomOpenClose: parseOpenClose(parts[4]),
+      };
+    }
+
+    // 3-part direction-prefixed: (direction, top, bottom)
     if (firstIsDirection && parts.length >= 3) {
-      // Format: (direction, top, bottom)
       return {
         direction: parts[0] as DirectionValue,
         top: parseTurnValue(parts[1] || ""),
         bottom: parseTurnValue(parts[2] || ""),
-      };
-    } else {
-      // Format: (top, bottom)
-      return {
-        direction: null,
-        top: parseTurnValue(parts[0] || ""),
-        bottom: parseTurnValue(parts[1] || ""),
+        topOpenClose: null,
+        bottomOpenClose: null,
       };
     }
+
+    // 3-part no-direction: (top, bottom, oc) — Λ/Λ-/γ single hand rotating.
+    // The op/cl binds to whichever slot is non-zero; the zero slot has no rotational state.
+    if (!firstIsDirection && parts.length >= 3) {
+      const top = parseTurnValue(parts[0] || "");
+      const bottom = parseTurnValue(parts[1] || "");
+      const oc = parseOpenClose(parts[2]);
+      const topNonZero = top !== 0;
+      const bottomNonZero = bottom !== 0;
+      return {
+        direction: null,
+        top,
+        bottom,
+        topOpenClose: topNonZero && !bottomNonZero ? oc : null,
+        bottomOpenClose: bottomNonZero && !topNonZero ? oc : null,
+      };
+    }
+
+    // 2-part: (top, bottom)
+    return {
+      direction: null,
+      top: parseTurnValue(parts[0] || ""),
+      bottom: parseTurnValue(parts[1] || ""),
+      topOpenClose: null,
+      bottomOpenClose: null,
+    };
   } catch (error) {
     console.error("Failed to parse turns tuple:", turnsTuple, error);
-    return { direction: null, top: 0, bottom: 0 };
+    return emptyResult();
   }
 }
 
