@@ -1,0 +1,362 @@
+{
+  "description": "50 manually enumerated parity edge cases. Each entry is a fully-specified sequence-generation input; the capture script runs it through the engine and records the deterministic output for bit-exact comparison in future phases.",
+  "entries": [
+    {
+      "id": "period2-mirrored-ABAB",
+      "kind": "word",
+      "word": "ABAB",
+      "options": { "loopType": "MIRRORED", "period": 2, "constraintPreset": "smooth" },
+      "description": "Period-2 MIRRORED — baseline case"
+    },
+    {
+      "id": "period2-flipped-CDCD",
+      "kind": "word",
+      "word": "CDCD",
+      "options": { "loopType": "FLIPPED", "period": 2, "constraintPreset": "smooth" },
+      "description": "Period-2 FLIPPED"
+    },
+    {
+      "id": "period2-swapped-EFEF",
+      "kind": "word",
+      "word": "EFEF",
+      "options": { "loopType": "SWAPPED", "period": 2, "constraintPreset": "smooth" },
+      "description": "Period-2 SWAPPED"
+    },
+    {
+      "id": "period2-inverted-GHGH",
+      "kind": "word",
+      "word": "GHGH",
+      "options": { "loopType": "INVERTED", "period": 2, "constraintPreset": "smooth" },
+      "description": "Period-2 INVERTED"
+    },
+    {
+      "id": "period2-rotated-IJIJ",
+      "kind": "word",
+      "word": "IJIJ",
+      "options": { "loopType": "ROTATED", "period": 2, "constraintPreset": "smooth" },
+      "description": "Period-2 ROTATED"
+    },
+    {
+      "id": "period2-rewound-KLKL",
+      "kind": "word",
+      "word": "KLKL",
+      "options": { "loopType": "REWOUND", "period": 2, "constraintPreset": "smooth" },
+      "description": "Period-2 REWOUND"
+    },
+    {
+      "id": "period4-mirrored-ABCDABCD",
+      "kind": "word",
+      "word": "ABCDABCD",
+      "options": { "loopType": "MIRRORED", "period": 4, "constraintPreset": "smooth" },
+      "description": "Period-4 MIRRORED"
+    },
+    {
+      "id": "period4-flipped-EFGHEFGH",
+      "kind": "word",
+      "word": "EFGHEFGH",
+      "options": { "loopType": "FLIPPED", "period": 4, "constraintPreset": "smooth" },
+      "description": "Period-4 FLIPPED"
+    },
+    {
+      "id": "period4-swapped-IJKLIJKL",
+      "kind": "word",
+      "word": "IJKLIJKL",
+      "options": { "loopType": "SWAPPED", "period": 4, "constraintPreset": "smooth" },
+      "description": "Period-4 SWAPPED"
+    },
+    {
+      "id": "period4-inverted-MNOPMNOP",
+      "kind": "word",
+      "word": "MNOPMNOP",
+      "options": { "loopType": "INVERTED", "period": 4, "constraintPreset": "smooth" },
+      "description": "Period-4 INVERTED"
+    },
+    {
+      "id": "period4-rotated-QRSTQRST",
+      "kind": "word",
+      "word": "QRSTQRST",
+      "options": { "loopType": "ROTATED", "period": 4, "constraintPreset": "smooth" },
+      "description": "Period-4 ROTATED"
+    },
+    {
+      "id": "period4-rewound-UVABUVAB",
+      "kind": "word",
+      "word": "UVABUVAB",
+      "options": { "loopType": "REWOUND", "period": 4, "constraintPreset": "smooth" },
+      "description": "Period-4 REWOUND"
+    },
+    {
+      "id": "quartered-mirrored-rotated-ABAB",
+      "kind": "word",
+      "word": "ABAB",
+      "options": { "loopType": "MIRRORED/ROTATED", "period": 2, "constraintPreset": "smooth" },
+      "description": "Quartered MIRRORED/ROTATED — original bug regression case"
+    },
+    {
+      "id": "quartered-flipped-rotated-CDCD",
+      "kind": "word",
+      "word": "CDCD",
+      "options": { "loopType": "FLIPPED/ROTATED", "period": 2, "constraintPreset": "smooth" },
+      "description": "Quartered FLIPPED/ROTATED"
+    },
+    {
+      "id": "quartered-swapped-rotated-EFEF",
+      "kind": "word",
+      "word": "EFEF",
+      "options": { "loopType": "SWAPPED/ROTATED", "period": 2, "constraintPreset": "smooth" },
+      "description": "Quartered SWAPPED/ROTATED"
+    },
+    {
+      "id": "quartered-inverted-rotated-GHGH",
+      "kind": "word",
+      "word": "GHGH",
+      "options": { "loopType": "INVERTED/ROTATED", "period": 2, "constraintPreset": "smooth" },
+      "description": "Quartered INVERTED/ROTATED"
+    },
+    {
+      "id": "quartered-mirrored-swap-IJIJ",
+      "kind": "word",
+      "word": "IJIJ",
+      "options": { "loopType": "MIRRORED/SWAPPED", "period": 2, "constraintPreset": "smooth" },
+      "description": "Quartered MIRRORED/SWAPPED"
+    },
+    {
+      "id": "quartered-mirrored-inverted-KLKL",
+      "kind": "word",
+      "word": "KLKL",
+      "options": { "loopType": "MIRRORED/INVERTED", "period": 2, "constraintPreset": "smooth" },
+      "description": "Quartered MIRRORED/INVERTED"
+    },
+    {
+      "id": "quartered-flipped-swap-MNMN",
+      "kind": "word",
+      "word": "MNMN",
+      "options": { "loopType": "FLIPPED/SWAPPED", "period": 2, "constraintPreset": "smooth" },
+      "description": "Quartered FLIPPED/SWAPPED"
+    },
+    {
+      "id": "quartered-flipped-inverted-OPOP",
+      "kind": "word",
+      "word": "OPOP",
+      "options": { "loopType": "FLIPPED/INVERTED", "period": 2, "constraintPreset": "smooth" },
+      "description": "Quartered FLIPPED/INVERTED"
+    },
+    {
+      "id": "quartered-swap-inverted-QRQR",
+      "kind": "word",
+      "word": "QRQR",
+      "options": { "loopType": "SWAPPED/INVERTED", "period": 2, "constraintPreset": "smooth" },
+      "description": "Quartered SWAPPED/INVERTED"
+    },
+    {
+      "id": "quartered-mirrored-rotated-period4",
+      "kind": "word",
+      "word": "ABCDABCD",
+      "options": { "loopType": "MIRRORED/ROTATED", "period": 4, "constraintPreset": "smooth" },
+      "description": "Quartered MIRRORED/ROTATED period-4"
+    },
+    {
+      "id": "quartered-flipped-rotated-period4",
+      "kind": "word",
+      "word": "EFGHEFGH",
+      "options": { "loopType": "FLIPPED/ROTATED", "period": 4, "constraintPreset": "smooth" },
+      "description": "Quartered FLIPPED/ROTATED period-4"
+    },
+    {
+      "id": "quartered-inverted-rewound-IJKLIJKL",
+      "kind": "word",
+      "word": "IJKLIJKL",
+      "options": { "loopType": "INVERTED/REWOUND", "period": 4, "constraintPreset": "smooth" },
+      "description": "Quartered INVERTED/REWOUND period-4"
+    },
+    {
+      "id": "high-turns-3-smooth",
+      "kind": "word",
+      "word": "AB",
+      "options": { "constraintPreset": "smooth", "turnBudget": 3 },
+      "description": "High-turn sequence — 3 turns per hand"
+    },
+    {
+      "id": "high-turns-4-smooth",
+      "kind": "word",
+      "word": "CD",
+      "options": { "constraintPreset": "smooth", "turnBudget": 4 },
+      "description": "High-turn sequence — 4 turns per hand"
+    },
+    {
+      "id": "high-turns-5-smooth",
+      "kind": "word",
+      "word": "EF",
+      "options": { "constraintPreset": "smooth", "turnBudget": 5 },
+      "description": "High-turn sequence — 5 turns per hand"
+    },
+    {
+      "id": "high-turns-mixed-GH",
+      "kind": "word",
+      "word": "GH",
+      "options": { "constraintPreset": "smooth", "turnBudget": 6 },
+      "description": "High-turn sequence — 6 turns per hand"
+    },
+    {
+      "id": "high-turns-extreme",
+      "kind": "word",
+      "word": "IJ",
+      "options": { "constraintPreset": "smooth", "turnBudget": 8 },
+      "description": "High-turn sequence — 8 turns per hand (stress test)"
+    },
+    {
+      "id": "float-motion-basic",
+      "kind": "word",
+      "word": "AB",
+      "options": { "constraintPreset": "smooth", "allowFloat": true },
+      "description": "Float motion-type sequence"
+    },
+    {
+      "id": "float-motion-period2",
+      "kind": "word",
+      "word": "CDCD",
+      "options": { "loopType": "MIRRORED", "period": 2, "constraintPreset": "smooth", "allowFloat": true },
+      "description": "Float + MIRRORED period-2"
+    },
+    {
+      "id": "float-motion-period4",
+      "kind": "word",
+      "word": "EFGHEFGH",
+      "options": { "loopType": "ROTATED", "period": 4, "constraintPreset": "smooth", "allowFloat": true },
+      "description": "Float + ROTATED period-4"
+    },
+    {
+      "id": "float-motion-high-turns",
+      "kind": "word",
+      "word": "IJ",
+      "options": { "constraintPreset": "smooth", "allowFloat": true, "turnBudget": 3 },
+      "description": "Float + high turns"
+    },
+    {
+      "id": "float-motion-type3-WDash",
+      "kind": "word",
+      "word": "W-X-",
+      "options": { "constraintPreset": "smooth", "allowFloat": true },
+      "description": "Float with Type 3 Cross-Shift letters"
+    },
+    {
+      "id": "bridge-inserted-KA",
+      "kind": "word",
+      "word": "KA",
+      "options": { "constraintPreset": "smooth" },
+      "description": "Bridge-inserted — non-adjacent positions"
+    },
+    {
+      "id": "bridge-inserted-VM",
+      "kind": "word",
+      "word": "VM",
+      "options": { "constraintPreset": "smooth" },
+      "description": "Bridge-inserted — cross-type"
+    },
+    {
+      "id": "bridge-inserted-QF",
+      "kind": "word",
+      "word": "QF",
+      "options": { "constraintPreset": "smooth" },
+      "description": "Bridge-inserted — long jump"
+    },
+    {
+      "id": "bridge-inserted-alpha-gamma",
+      "kind": "word",
+      "word": "AC",
+      "options": { "constraintPreset": "smooth" },
+      "description": "Bridge-inserted — alpha to gamma"
+    },
+    {
+      "id": "bridge-inserted-beta-gamma",
+      "kind": "word",
+      "word": "BD",
+      "options": { "constraintPreset": "smooth" },
+      "description": "Bridge-inserted — beta to gamma"
+    },
+    {
+      "id": "mixed-plane-wall-wheel",
+      "kind": "word",
+      "word": "AB",
+      "options": { "constraintPreset": "smooth", "planes": ["wall", "wheel"] },
+      "description": "Mixed plane — wall + wheel"
+    },
+    {
+      "id": "mixed-plane-wall-overhead",
+      "kind": "word",
+      "word": "CD",
+      "options": { "constraintPreset": "smooth", "planes": ["wall", "overhead"] },
+      "description": "Mixed plane — wall + overhead"
+    },
+    {
+      "id": "mixed-plane-three",
+      "kind": "word",
+      "word": "EFGH",
+      "options": { "constraintPreset": "smooth", "planes": ["wall", "wheel", "overhead"] },
+      "description": "Mixed plane — all three"
+    },
+    {
+      "id": "blank-step-mid",
+      "kind": "word",
+      "word": "A_B",
+      "options": { "constraintPreset": "smooth" },
+      "description": "Blank-step sequence — middle"
+    },
+    {
+      "id": "blank-step-early",
+      "kind": "word",
+      "word": "_AB",
+      "options": { "constraintPreset": "smooth" },
+      "description": "Blank-step sequence — early"
+    },
+    {
+      "id": "blank-step-late",
+      "kind": "word",
+      "word": "AB_",
+      "options": { "constraintPreset": "smooth" },
+      "description": "Blank-step sequence — late"
+    },
+    {
+      "id": "single-step-A",
+      "kind": "word",
+      "word": "A",
+      "options": { "constraintPreset": "smooth" },
+      "description": "Single-step partial"
+    },
+    {
+      "id": "empty-start-only",
+      "kind": "start",
+      "startPosition": "alpha1",
+      "options": {},
+      "description": "Start position only — no letters"
+    },
+    {
+      "id": "level7-quarter-rotation-AB",
+      "kind": "word",
+      "word": "AB",
+      "options": { "constraintPreset": "smooth", "level": 7 },
+      "description": "Level 7 — 45 degree quarter rotations"
+    },
+    {
+      "id": "level7-period2-mirrored",
+      "kind": "word",
+      "word": "CDCD",
+      "options": { "loopType": "MIRRORED", "period": 2, "constraintPreset": "smooth", "level": 7 },
+      "description": "Level 7 + MIRRORED period-2"
+    },
+    {
+      "id": "reversal-flip-mid",
+      "kind": "word",
+      "word": "ABACBA",
+      "options": { "constraintPreset": "smooth" },
+      "description": "Explicit mid-sequence direction flip — ambiguous reversal chain"
+    },
+    {
+      "id": "reversal-flip-alternating",
+      "kind": "word",
+      "word": "ABABAB",
+      "options": { "constraintPreset": "smooth" },
+      "description": "Alternating direction — repeated reversal chain"
+    }
+  ]
+}
