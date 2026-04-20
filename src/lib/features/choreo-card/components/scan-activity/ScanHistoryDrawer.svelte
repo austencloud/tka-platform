@@ -7,12 +7,12 @@
   import type { CodeEntry, ScanEventRow } from "$lib/features/choreo-card/state/scan-activity-state.svelte";
   import {
     collection,
-    getFirestore,
     onSnapshot,
     orderBy,
     query,
     type Unsubscribe,
   } from "firebase/firestore";
+  import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 
   let {
     isOpen = $bindable(false),
@@ -31,26 +31,34 @@
       return;
     }
     loading = true;
-    const fs = getFirestore();
-    const q = query(
-      collection(fs, "shortcodes", entry.code, "scanEvents"),
-      orderBy("timestamp", "desc")
-    );
-    unsub = onSnapshot(q, (snap) => {
-      events = snap.docs.map((d) => {
-        const data = d.data();
-        return {
-          code: entry!.code,
-          timestamp: data.timestamp ?? "",
-          city: data.city ?? null,
-          country: data.country ?? null,
-          deviceId: data.deviceId ?? null,
-          userId: data.userId ?? null,
-        };
+    const currentEntry = entry;
+    let cancelled = false;
+    (async () => {
+      const fs = await getFirestoreInstance();
+      if (cancelled) return;
+      const q = query(
+        collection(fs, "shortcodes", currentEntry.code, "scanEvents"),
+        orderBy("timestamp", "desc")
+      );
+      unsub = onSnapshot(q, (snap) => {
+        events = snap.docs.map((d) => {
+          const data = d.data();
+          return {
+            code: currentEntry.code,
+            timestamp: data.timestamp ?? "",
+            city: data.city ?? null,
+            country: data.country ?? null,
+            deviceId: data.deviceId ?? null,
+            userId: data.userId ?? null,
+          };
+        });
+        loading = false;
       });
-      loading = false;
-    });
-    return () => unsub?.();
+    })();
+    return () => {
+      cancelled = true;
+      unsub?.();
+    };
   });
 </script>
 

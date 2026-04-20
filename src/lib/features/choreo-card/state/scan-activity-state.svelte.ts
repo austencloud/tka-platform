@@ -11,7 +11,6 @@ import {
   collection,
   collectionGroup,
   getDocsFromServer,
-  getFirestore,
   limit,
   onSnapshot,
   orderBy,
@@ -21,6 +20,7 @@ import {
   type Unsubscribe,
 } from "firebase/firestore";
 import { container } from "$lib/shared/di";
+import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import type { ISequenceEncoder } from "$lib/shared/navigation/services/contracts/ISequenceEncoder";
 
 export interface CodeEntry {
@@ -72,7 +72,7 @@ class ScanActivityState {
     this.error = null;
     this.teardown();
 
-    const firestore = getFirestore();
+    const firestore = await getFirestoreInstance();
     const encoder = container.items.sequenceEncoder as ISequenceEncoder;
 
     const codesRef = collection(firestore, "shortcodes");
