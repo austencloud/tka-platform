@@ -38,6 +38,7 @@ import {
   adaptiveSubdivisions,
   buildTaperedMesh,
   createSmoothCurve,
+  TRAIL_VERTEX_STRIDE,
   type Point2D,
 } from "../../math/trail-mesh";
 import { FBOPool, type FBO } from "./FBOPool";
@@ -93,6 +94,10 @@ export class WebGL2Backend implements RenderBackend {
       premultipliedAlpha: true,
       antialias: false,
       preserveDrawingBuffer: false,
+      // Required for the `__TKA_TRAIL_DEPTH` path's per-pixel age ordering.
+      // Cheap even when the flag is off — the existing accumulator path
+      // never enables DEPTH_TEST so the depth buffer just goes unused.
+      depth: true,
     });
     if (!gl) throw new Error("WebGL2Backend: failed to acquire WebGL2 context");
 
@@ -123,20 +128,24 @@ export class WebGL2Backend implements RenderBackend {
     gl.bindBuffer(gl.ARRAY_BUFFER, this.meshVBO);
 
     const aPos = mesh.attribs["a_position"];
+    const aZ = mesh.attribs["a_z"];
     const aEdge = mesh.attribs["a_edge_t"];
     const aAlpha = mesh.attribs["a_alpha"];
-    if (aPos === undefined || aEdge === undefined || aAlpha === undefined
-        || aPos < 0 || aEdge < 0 || aAlpha < 0) {
+    if (aPos === undefined || aZ === undefined || aEdge === undefined || aAlpha === undefined
+        || aPos < 0 || aZ < 0 || aEdge < 0 || aAlpha < 0) {
       throw new Error("WebGL2Backend: trail-mesh shader attribute locations missing");
     }
 
-    const stride = 4 * Float32Array.BYTES_PER_ELEMENT;
+    const stride = TRAIL_VERTEX_STRIDE * Float32Array.BYTES_PER_ELEMENT;
+    const fSize = Float32Array.BYTES_PER_ELEMENT;
     gl.enableVertexAttribArray(aPos);
     gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, stride, 0);
+    gl.enableVertexAttribArray(aZ);
+    gl.vertexAttribPointer(aZ, 1, gl.FLOAT, false, stride, 2 * fSize);
     gl.enableVertexAttribArray(aEdge);
-    gl.vertexAttribPointer(aEdge, 1, gl.FLOAT, false, stride, 2 * Float32Array.BYTES_PER_ELEMENT);
+    gl.vertexAttribPointer(aEdge, 1, gl.FLOAT, false, stride, 3 * fSize);
     gl.enableVertexAttribArray(aAlpha);
-    gl.vertexAttribPointer(aAlpha, 1, gl.FLOAT, false, stride, 3 * Float32Array.BYTES_PER_ELEMENT);
+    gl.vertexAttribPointer(aAlpha, 1, gl.FLOAT, false, stride, 4 * fSize);
 
     gl.bindVertexArray(null);
     gl.bindBuffer(gl.ARRAY_BUFFER, null);
@@ -221,6 +230,22 @@ export class WebGL2Backend implements RenderBackend {
     const shaders = this.shaders!;
     const canvas = this.canvas!;
 
+    // Dev flag: when true, skip the per-tip ping-pong accumulator and draw
+    // every tip's current leading-edge polygon directly to the canvas with
+    // depth test enabled. Per-vertex z (0=newest, 1=oldest) gives global
+    // "newest-wins" compositing across tips — red strokes over blue when
+    // red is newer, and vice versa. Glow is intentionally absent in this
+    // path; it gets restored in a follow-up by rendering into a sceneTrail
+    // FBO with depth and post-blurring.
+    const depthFlag =
+      typeof window !== "undefined"
+        ? (window as { __TKA_TRAIL_DEPTH?: boolean }).__TKA_TRAIL_DEPTH
+        : undefined;
+    if (depthFlag === true) {
+      this.executeTrailPassDepth(payload, gl, shaders);
+      return;
+    }
+
     // Clear the screen once; each tip composites in order on top.
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.viewport(0, 0, canvas.width, canvas.height);
@@ -231,6 +256,86 @@ export class WebGL2Backend implements RenderBackend {
       this.markTipSeen(tip.tipId);
       this.renderTip(tip, dt, gl, fbos, shaders);
     }
+  }
+
+  /**
+   * Direct-to-canvas trail rendering with age-based depth test.
+   *
+   * Each tip's leading-edge polygon is drawn this frame only (no
+   * accumulator). Per-vertex z is already age-normalized by
+   * `buildTaperedMesh`, so `depthFunc(LEQUAL)` with depth cleared to 1.0
+   * makes newer fragments overwrite older ones regardless of tip draw
+   * order. Alpha blend is kept on so semi-transparent tail ends still
+   * composite over the canvas clear color.
+   */
+  private executeTrailPassDepth(
+    payload: TrailPassPayload,
+    gl: WebGL2RenderingContext,
+    shaders: ShaderLibrary,
+  ): void {
+    const canvas = this.canvas!;
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    gl.clearColor(0, 0, 0, 0);
+    gl.clearDepth(1.0);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+    gl.enable(gl.DEPTH_TEST);
+    gl.depthFunc(gl.LEQUAL);
+    gl.depthMask(true);
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+
+    const prog = shaders.get("trail-mesh");
+    gl.useProgram(prog.program);
+    gl.bindVertexArray(this.meshVAO);
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.meshVBO);
+    gl.uniform1f(prog.uniforms["u_aaWidth"]!, AA_WIDTH);
+
+    for (const tip of payload.tips) {
+      this.markTipSeen(tip.tipId);
+      if (tip.path.length < 2) continue;
+
+      const buf = this.smoothPathBuffer;
+      buf.length = tip.path.length;
+      for (let i = 0; i < tip.path.length; i += 1) {
+        const p = tip.path[i]!;
+        const existing = buf[i];
+        if (existing) {
+          existing.x = p[0];
+          existing.y = p[1];
+        } else {
+          buf[i] = { x: p[0], y: p[1] };
+        }
+      }
+
+      const smooth = createSmoothCurve(buf, {
+        subdivisionsPerSegment: adaptiveSubdivisions(buf.length),
+      });
+      if (smooth.length < 2) continue;
+
+      const mesh = buildTaperedMesh(smooth, {
+        thickness: tip.thickness,
+        taperTailRatio: tip.taperTailRatio,
+        maxAlpha: tip.color[3],
+        fadeExponent: tip.fadeExponent,
+      });
+      if (mesh.vertexCount < 2) continue;
+
+      gl.bufferData(gl.ARRAY_BUFFER, mesh.vertices, gl.DYNAMIC_DRAW);
+      gl.uniform3f(
+        prog.uniforms["u_color"]!,
+        tip.color[0],
+        tip.color[1],
+        tip.color[2],
+      );
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, mesh.vertexCount);
+    }
+
+    gl.disable(gl.BLEND);
+    gl.disable(gl.DEPTH_TEST);
+    gl.bindVertexArray(null);
+    gl.bindBuffer(gl.ARRAY_BUFFER, null);
   }
 
   private renderTip(

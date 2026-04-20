@@ -76,6 +76,7 @@ void main() {
 const TRAIL_MESH_VERT = `#version 300 es
 precision highp float;
 in vec2 a_position;
+in float a_z;
 in float a_edge_t;
 in float a_alpha;
 out float v_edge_t;
@@ -83,7 +84,11 @@ out float v_alpha;
 void main() {
   v_edge_t = a_edge_t;
   v_alpha = a_alpha;
-  gl_Position = vec4(a_position, 0.0, 1.0);
+  // Map age-normalized z (0=newest, 1=oldest) to clip-space [-1, 1].
+  // With depthFunc(LEQUAL) + depth cleared to 1.0, newest fragments win.
+  // When depth test is disabled (existing stamp path), z has no effect.
+  float zClip = a_z * 2.0 - 1.0;
+  gl_Position = vec4(a_position, zClip, 1.0);
 }
 `;
 
@@ -180,7 +185,7 @@ const PROGRAMS: Record<string, ProgramSpec> = {
   "trail-mesh": {
     vertex: TRAIL_MESH_VERT,
     fragment: TRAIL_MESH_FRAG,
-    attribs: ["a_position", "a_edge_t", "a_alpha"],
+    attribs: ["a_position", "a_z", "a_edge_t", "a_alpha"],
     uniforms: ["u_color", "u_aaWidth"],
   },
   "gaussian-blur": {

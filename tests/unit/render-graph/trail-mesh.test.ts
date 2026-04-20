@@ -4,6 +4,7 @@ import {
   createSmoothCurve,
   adaptiveSubdivisions,
   MIN_TAIL_WIDTH_RATIO,
+  TRAIL_VERTEX_STRIDE,
   type Point2D,
 } from "$lib/shared/render-graph/math/trail-mesh";
 
@@ -70,28 +71,29 @@ describe("buildTaperedMesh", () => {
   it("produces exactly 2 * pathLength vertices (left + right edge per point)", () => {
     const mesh = buildTaperedMesh(straightPath, { thickness: 0.02 });
     expect(mesh.vertexCount).toBe(straightPath.length * 2);
-    expect(mesh.vertices.length).toBe(straightPath.length * 2 * 4);
+    expect(mesh.vertices.length).toBe(straightPath.length * 2 * TRAIL_VERTEX_STRIDE);
   });
 
   it("alternates edge_t between -1 and +1", () => {
     const mesh = buildTaperedMesh(straightPath, { thickness: 0.02 });
     for (let i = 0; i < mesh.vertexCount; i += 1) {
-      const edgeT = mesh.vertices[i * 4 + 2]!;
+      const edgeT = mesh.vertices[i * TRAIL_VERTEX_STRIDE + 3]!;
       expect(edgeT).toBe(i % 2 === 0 ? -1 : 1);
     }
   });
 
   it("tapers width — first-pair separation is smaller than last-pair", () => {
     const mesh = buildTaperedMesh(straightPath, { thickness: 0.05 });
+    const s = TRAIL_VERTEX_STRIDE;
     const firstLeft = { x: mesh.vertices[0]!, y: mesh.vertices[1]! };
-    const firstRight = { x: mesh.vertices[4]!, y: mesh.vertices[5]! };
+    const firstRight = { x: mesh.vertices[s]!, y: mesh.vertices[s + 1]! };
     const lastLeft = {
-      x: mesh.vertices[mesh.vertices.length - 8]!,
-      y: mesh.vertices[mesh.vertices.length - 7]!,
+      x: mesh.vertices[mesh.vertices.length - 2 * s]!,
+      y: mesh.vertices[mesh.vertices.length - 2 * s + 1]!,
     };
     const lastRight = {
-      x: mesh.vertices[mesh.vertices.length - 4]!,
-      y: mesh.vertices[mesh.vertices.length - 3]!,
+      x: mesh.vertices[mesh.vertices.length - s]!,
+      y: mesh.vertices[mesh.vertices.length - s + 1]!,
     };
     const tailWidth = Math.hypot(firstLeft.x - firstRight.x, firstLeft.y - firstRight.y);
     const headWidth = Math.hypot(lastLeft.x - lastRight.x, lastLeft.y - lastRight.y);
@@ -105,20 +107,31 @@ describe("buildTaperedMesh", () => {
       maxAlpha: 0.9,
       fadeExponent: 2.5,
     });
-    const firstAlpha = mesh.vertices[3]!;
+    // alpha is the 5th float (index 4) of each vertex stride.
+    const firstAlpha = mesh.vertices[4]!;
     const lastAlpha = mesh.vertices[mesh.vertices.length - 1]!;
     expect(firstAlpha).toBeCloseTo(0, 5);
     expect(lastAlpha).toBeCloseTo(0.9, 5);
   });
 
+  it("z is age-normalized: 1 at tail (oldest), 0 at head (newest)", () => {
+    const mesh = buildTaperedMesh(straightPath, { thickness: 0.02 });
+    // z is the 3rd float (index 2) of each vertex stride.
+    const firstZ = mesh.vertices[2]!;
+    const lastZ = mesh.vertices[mesh.vertices.length - TRAIL_VERTEX_STRIDE + 2]!;
+    expect(firstZ).toBeCloseTo(1, 5);
+    expect(lastZ).toBeCloseTo(0, 5);
+  });
+
   it("polygon width matches thickness at the head (no glow expansion)", () => {
     const thickness = 0.04;
     const mesh = buildTaperedMesh(straightPath, { thickness });
+    const s = TRAIL_VERTEX_STRIDE;
     const headIdx = mesh.vertexCount - 2;
-    const leftX = mesh.vertices[headIdx * 4 + 0]!;
-    const leftY = mesh.vertices[headIdx * 4 + 1]!;
-    const rightX = mesh.vertices[(headIdx + 1) * 4 + 0]!;
-    const rightY = mesh.vertices[(headIdx + 1) * 4 + 1]!;
+    const leftX = mesh.vertices[headIdx * s + 0]!;
+    const leftY = mesh.vertices[headIdx * s + 1]!;
+    const rightX = mesh.vertices[(headIdx + 1) * s + 0]!;
+    const rightY = mesh.vertices[(headIdx + 1) * s + 1]!;
     const headWidth = Math.hypot(leftX - rightX, leftY - rightY);
     expect(headWidth).toBeCloseTo(thickness, 5);
   });

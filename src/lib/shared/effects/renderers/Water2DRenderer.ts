@@ -82,6 +82,15 @@ interface StyleTuning {
   fogAlpha: number;
   /** Alpha of the crisp droplet layer on top of fog. */
   dropletAlpha: number;
+  /** How many phantom copies of each droplet to stamp along its recent
+   *  trajectory. Gives the temporal-streak look real water has when
+   *  photographed in motion. 0 = no trail. */
+  trailCount: number;
+  /** Spacing in seconds between trail phantoms. Smaller = tighter streak. */
+  trailStep: number;
+  /** Starting alpha of the first trail phantom (subsequent phantoms decay
+   *  linearly toward 0 across trailCount). */
+  trailAlphaStart: number;
 }
 
 const STYLE_TUNINGS: Record<SpewStyle, StyleTuning> = {
@@ -101,6 +110,9 @@ const STYLE_TUNINGS: Record<SpewStyle, StyleTuning> = {
     atmosphericBlur: 0,
     fogAlpha: 0,
     dropletAlpha: 1.0,
+    trailCount: 2,
+    trailStep: 0.04,
+    trailAlphaStart: 0.42,
   },
   flow: {
     sizeScale: 0.35,
@@ -120,6 +132,9 @@ const STYLE_TUNINGS: Record<SpewStyle, StyleTuning> = {
     atmosphericBlur: 2.5,
     fogAlpha: 0.4,
     dropletAlpha: 0.95,
+    trailCount: 3,
+    trailStep: 0.035,
+    trailAlphaStart: 0.55,
   },
   mist: {
     sizeScale: 0.24,
@@ -140,6 +155,11 @@ const STYLE_TUNINGS: Record<SpewStyle, StyleTuning> = {
     atmosphericBlur: 7,
     fogAlpha: 0.9,
     dropletAlpha: 0.22,
+    // Mist already has heavy atmospheric blur — adding trails on top
+    // smears into unreadable fog. Skip.
+    trailCount: 0,
+    trailStep: 0,
+    trailAlphaStart: 0,
   },
 };
 
@@ -282,6 +302,12 @@ export class Water2DRenderer {
       ctx.globalCompositeOperation = "source-over";
       // Surface tension tightens the per-style stretch limit (rounder drops).
       const stretchLimit = tuning.stretchLimitBase * (1.0 - params.surfaceTension * 0.55);
+      const trailCount = tuning.trailCount;
+      const trailStep = tuning.trailStep;
+      const trailAlphaStart = tuning.trailAlphaStart;
+      // Phantoms only kick in on moving droplets — at rest they'd just
+      // overlap the current stamp and dirty the silhouette.
+      const TRAIL_SPEED_THRESHOLD = 70;
       for (const d of this.droplets) {
         const pt = this.positionAt(d, g);
         const ageT = d.age / d.maxAge;
@@ -303,6 +329,32 @@ export class Water2DRenderer {
           sp > 6 ? Math.atan2(currVy, d.vx0) : d.rotation + d.rotVel * d.age;
         const drawR = d.radius * sizeFade;
         const spriteScale = drawR / (SPRITE_SIZE * 0.42);
+
+        // Motion trails: stamp phantoms at earlier positions along the
+        // droplet's flight path. This is the temporal streaking real
+        // water shows when photographed in motion — without it every
+        // frozen frame reads as a "posed" particle.
+        if (trailCount > 0 && sp > TRAIL_SPEED_THRESHOLD) {
+          for (let k = trailCount; k >= 1; k--) {
+            const phantomAge = Math.max(0, d.age - k * trailStep);
+            if (phantomAge <= 0) continue;
+            const phantomPt = {
+              x: d.x0 + d.vx0 * phantomAge,
+              y: d.y0 + d.vy0 * phantomAge + 0.5 * g * phantomAge * phantomAge,
+            };
+            const phantomAlpha =
+              fade * trailAlphaStart * ((trailCount - k + 1) / trailCount);
+            if (phantomAlpha <= 0.01) continue;
+            ctx.save();
+            ctx.globalAlpha = phantomAlpha;
+            ctx.translate(phantomPt.x, phantomPt.y);
+            ctx.rotate(angle);
+            ctx.scale(spriteScale * stretchX, spriteScale * squashY);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            ctx.drawImage(sprite as any, -SPRITE_SIZE / 2, -SPRITE_SIZE / 2);
+            ctx.restore();
+          }
+        }
 
         ctx.save();
         ctx.globalAlpha = fade;
@@ -570,14 +622,18 @@ function renderDropletSprite(
   ctx.arc(cx, cy, R, 0, TAU);
   ctx.fill();
 
-  // Layer 2 — FRESNEL RIM. Ring of subtle darkening near the drop's edge
-  // (real water drops look darker at the silhouette due to total internal
-  // reflection). Clipped to the body by source-atop.
-  ctx.globalCompositeOperation = "source-atop";
-  const rimGrad = ctx.createRadialGradient(cx, cy, R * 0.78, cx, cy, R);
-  rimGrad.addColorStop(0, "rgba(0,0,0,0)");
-  rimGrad.addColorStop(0.55, "rgba(0,0,0,0.28)");
-  rimGrad.addColorStop(1.0, "rgba(0,0,0,0)");
+  // Layer 2 — BACKLIT RIM. Additive bright ring near the drop's edge.
+  // On a *dark* background (our pictograph canvas), real water drops
+  // exhibit a bright silhouette rim from light backlighting through the
+  // thin edge of the drop — the OPPOSITE of Fresnel-dark-rim which is
+  // only correct for light backgrounds. This is what makes real photos
+  // of water drops against dark bg look luminous instead of outlined.
+  ctx.globalCompositeOperation = "lighter";
+  const rimGrad = ctx.createRadialGradient(cx, cy, R * 0.82, cx, cy, R);
+  rimGrad.addColorStop(0, withAlpha(palette.highlight, 0));
+  rimGrad.addColorStop(0.55, withAlpha(palette.highlight, 0.45));
+  rimGrad.addColorStop(0.9, withAlpha(palette.highlight, 0.3));
+  rimGrad.addColorStop(1.0, withAlpha(palette.highlight, 0));
   ctx.fillStyle = rimGrad;
   ctx.beginPath();
   ctx.arc(cx, cy, R, 0, TAU);
