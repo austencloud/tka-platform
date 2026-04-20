@@ -21,8 +21,9 @@
   import { fade } from "svelte/transition";
   import { container } from "$lib/shared/di";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { ILetterDeriver } from "$lib/shared/navigation/services/contracts/ILetterDeriver";
-  import type { IPositionDeriver } from "$lib/shared/navigation/services/contracts/IPositionDeriver";
+  import { hydrateSequence } from "$lib/shared/navigation/services/implementations/SequenceHydrator";
+  import { loopDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
+  import { gridModeDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridModeDeriver";
   import { initializeAppServices } from "$lib/shared/application/state/services.svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import { setSkipNextViewTransition } from "$lib/shared/transitions/sequence-drawer-state.svelte";
@@ -53,7 +54,6 @@
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/PropType";
   import LoadingGate from "$lib/shared/components/loading/LoadingGate.svelte";
   import ChoreoCardContextMenuHost from "$lib/shared/sequence-viewer/components/choreo-card-context-menu/ChoreoCardContextMenuHost.svelte";
-  import CardSettingsModal from "$lib/features/choreo-card/components/CardSettingsModal.svelte";
   import {
     openSendSequenceSheet,
     buildSequenceSharePayload,
@@ -115,8 +115,7 @@
   let deleteConfirmOpen = $state(false);
   let isDeleting = $state(false);
 
-  // ChoreoCard settings modal + context menu
-  let cardSettingsOpen = $state(false);
+  // ChoreoCard context menu
   let choreoCardMenuHost: ChoreoCardContextMenuHost | undefined = $state();
 
   // DrawerStack registration - blocks pull-to-refresh on mobile
@@ -286,15 +285,12 @@
         try {
           let decoded = encoderService.decodeWithCompression(parsed.encoded);
 
-          const letterDeriver = container.items.letterDeriver as ILetterDeriver | null;
-          const positionDeriver = container.items.positionDeriver as IPositionDeriver | null;
-
-          if (letterDeriver) {
-            decoded = await letterDeriver.deriveLettersForSequence(decoded);
-          }
-          if (positionDeriver) {
-            decoded = await positionDeriver.derivePositionsForSequence(decoded);
-          }
+          decoded = await hydrateSequence(decoded, {
+            letterDeriver: container.items.letterDeriver,
+            positionDeriver: container.items.positionDeriver,
+            loopDetector,
+            gridModeDeriver,
+          });
 
           sequence = applyUrlMetadata(decoded);
 
@@ -344,7 +340,12 @@
         try {
           const decoded = encoderService.decodeWithCompression(decodeURIComponent(id));
           if (decoded) {
-            sequence = decoded;
+            sequence = await hydrateSequence(decoded, {
+              letterDeriver: container.items.letterDeriver,
+              positionDeriver: container.items.positionDeriver,
+              loopDetector,
+              gridModeDeriver,
+            });
             isLoading = false;
             return;
           }
@@ -375,6 +376,7 @@
           screenHeight: window.screen.height,
           referrer: document.referrer || null,
           userId: null,
+          deviceId: container.items.deviceIdService.getDeviceId(),
         }).catch(() => {});
       }
 
@@ -399,7 +401,12 @@
         return;
       }
 
-      sequence = resolvedSequence;
+      sequence = await hydrateSequence(resolvedSequence, {
+        letterDeriver: container.items.letterDeriver,
+        positionDeriver: container.items.positionDeriver,
+        loopDetector,
+        gridModeDeriver,
+      });
       // Apply URL prop preferences (from QR codes with embedded prop info)
       applyUrlPropPreferences();
       isLoading = false;
@@ -632,13 +639,11 @@
               />
               <ChoreoCardContextMenuHost
                 bind:this={choreoCardMenuHost}
-                onOpenSettings={() => { cardSettingsOpen = true; }}
                 isExportMode={isImageExportActive}
                 exportOptions={ctx.exportOptions}
                 onSendTo={sequence ? handleSendTo : undefined}
                 stepCount={sequence?.steps?.length ?? 0}
               />
-              <CardSettingsModal bind:open={cardSettingsOpen} {sequence} />
               {#if isAnyExportActive}
                 <div class="export-panel-container" class:sidebar={!isMobile && isVideoExportActive} transition:fade={{ duration: 200 }}>
                   {#if isVideoExportActive}

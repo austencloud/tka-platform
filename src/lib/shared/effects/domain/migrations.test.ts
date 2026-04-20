@@ -231,4 +231,132 @@ describe("migrateEffectsConfig", () => {
     expect(out.echo.shape).toBe("tips");
     expect(out.echo.colorMode).toBe("rainbow");
   });
+
+  it("migrates v8 → v9 by seeding default bubbles intent", () => {
+    const v8 = {
+      version: 8,
+      // No bubbles block — must seed from defaults.
+    };
+    const out = migrateEffectsConfig(v8);
+    expect(out.version).toBe(EFFECTS_CONFIG_VERSION);
+    expect(out.bubbles).toBeDefined();
+    expect(out.bubbles.palette).toBe("soap");
+    expect(out.bubbles.ambientEmission).toBeGreaterThan(0);
+    expect(out.bubbles.motionEmission).toBeGreaterThan(0);
+    expect(out.bubbles.buoyancy).toBeGreaterThan(0);
+    expect(out.bubbles.trackingMode).toBe("both_ends");
+    expect(out.activePresets.bubbles).toBe(null);
+  });
+
+  it("preserves existing bubbles values through v8 → v9 merge", () => {
+    const v8 = {
+      version: 8,
+      bubbles: {
+        palette: "oil" as const,
+        customColor: "#ff00ff",
+        ambientEmission: 0.9,
+        motionEmission: 0.1,
+        intensity: 0.8,
+        sizeJitter: 0.6,
+        buoyancy: 0.7,
+        trackingMode: "left_end" as const,
+      },
+    };
+    const out = migrateEffectsConfig(v8);
+    expect(out.bubbles.palette).toBe("oil");
+    expect(out.bubbles.ambientEmission).toBe(0.9);
+    expect(out.bubbles.buoyancy).toBe(0.7);
+    expect(out.bubbles.trackingMode).toBe("left_end");
+  });
+
+  it("migrates v9 → v10 by seeding default petals intent", () => {
+    const v9 = {
+      version: 9,
+      // No petals block — must seed from defaults.
+    };
+    const out = migrateEffectsConfig(v9);
+    expect(out.version).toBe(EFFECTS_CONFIG_VERSION);
+    expect(out.petals).toBeDefined();
+    expect(out.petals.palette).toBe("blossom");
+    expect(out.petals.ambientEmission).toBeGreaterThan(0);
+    expect(out.petals.motionEmission).toBeGreaterThan(0);
+    expect(out.petals.swayAmplitude).toBeGreaterThan(0);
+    expect(out.petals.fallSpeed).toBeGreaterThan(0);
+    expect(out.petals.trackingMode).toBe("both_ends");
+    expect(out.activePresets.petals).toBe(null);
+  });
+
+  it("preserves existing petals values through v9 → v10 merge", () => {
+    const v9 = {
+      version: 9,
+      petals: {
+        palette: "autumn" as const,
+        customColor: "#ff8800",
+        ambientEmission: 0.8,
+        motionEmission: 0.2,
+        intensity: 0.9,
+        swayAmplitude: 0.9,
+        fallSpeed: 0.7,
+        trackingMode: "right_end" as const,
+      },
+    };
+    const out = migrateEffectsConfig(v9);
+    expect(out.petals.palette).toBe("autumn");
+    expect(out.petals.ambientEmission).toBe(0.8);
+    expect(out.petals.swayAmplitude).toBe(0.9);
+    expect(out.petals.fallSpeed).toBe(0.7);
+    expect(out.petals.trackingMode).toBe("right_end");
+  });
+
+  it("migrates v10 → v11 by seeding default smoke intent", () => {
+    const v10 = {
+      version: 10,
+      // No smoke block — must seed from defaults.
+    };
+    const out = migrateEffectsConfig(v10);
+    expect(out.version).toBe(EFFECTS_CONFIG_VERSION);
+    expect(out.smoke).toBeDefined();
+    expect(out.smoke.palette).toBe("incense");
+    expect(out.smoke.ambientEmission).toBeGreaterThan(0);
+    expect(out.smoke.motionEmission).toBeGreaterThan(0);
+    expect(out.smoke.curlStrength).toBeGreaterThan(0);
+    expect(out.smoke.riseSpeed).toBeGreaterThan(0);
+    expect(out.smoke.trackingMode).toBe("both_ends");
+    expect(out.activePresets.smoke).toBe(null);
+  });
+
+  it("preserves existing smoke values through v10 → v11 merge", () => {
+    const v10 = {
+      version: 10,
+      smoke: {
+        palette: "genie" as const,
+        customColor: "#a060ff",
+        ambientEmission: 0.2,
+        motionEmission: 1.0,
+        intensity: 0.7,
+        curlStrength: 0.9,
+        riseSpeed: 0.8,
+        trackingMode: "right_end" as const,
+      },
+    };
+    const out = migrateEffectsConfig(v10);
+    expect(out.smoke.palette).toBe("genie");
+    expect(out.smoke.motionEmission).toBe(1.0);
+    expect(out.smoke.curlStrength).toBe(0.9);
+    expect(out.smoke.riseSpeed).toBe(0.8);
+    expect(out.smoke.trackingMode).toBe("right_end");
+  });
+
+  it("v10 → v11 migration does not touch tipEffectMap entries", () => {
+    const v10 = {
+      version: 10,
+      tipEffectMap: {
+        "*": { effect: "petals" },
+        "0-0": { effect: "bubbles" },
+      },
+    };
+    const out = migrateEffectsConfig(v10);
+    expect(out.tipEffectMap["*"]?.effect).toBe("petals");
+    expect(out.tipEffectMap["0-0"]?.effect).toBe("bubbles");
+  });
 });

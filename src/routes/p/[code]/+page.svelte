@@ -25,8 +25,9 @@
   import { captureEvent } from "$lib/shared/analytics/services/posthog";
   import { isGenuineScan } from "$lib/shared/qr/utils/scan-detection";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-  import type { ILetterDeriver } from "$lib/shared/navigation/services/contracts/ILetterDeriver";
-  import type { IPositionDeriver } from "$lib/shared/navigation/services/contracts/IPositionDeriver";
+  import { hydrateSequence } from "$lib/shared/navigation/services/implementations/SequenceHydrator";
+  import { loopDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
+  import { gridModeDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridModeDeriver";
   import { initializeAppServices } from "$lib/shared/application/state/services.svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import { setSkipNextViewTransition } from "$lib/shared/transitions/sequence-drawer-state.svelte";
@@ -55,7 +56,6 @@
   import DeleteConfirmDialog from "$lib/shared/sequence-viewer/components/DeleteConfirmDialog.svelte";
   import LoadingGate from "$lib/shared/components/loading/LoadingGate.svelte";
   import ChoreoCardContextMenuHost from "$lib/shared/sequence-viewer/components/choreo-card-context-menu/ChoreoCardContextMenuHost.svelte";
-  import CardSettingsModal from "$lib/features/choreo-card/components/CardSettingsModal.svelte";
 
   // ============================================================================
   // PAGE DATA (from +page.server.ts — Cloudflare geo headers)
@@ -113,8 +113,7 @@
   let deleteConfirmOpen = $state(false);
   let isDeleting = $state(false);
 
-  // ChoreoCard settings modal + context menu
-  let cardSettingsOpen = $state(false);
+  // ChoreoCard context menu
   let choreoCardMenuHost: ChoreoCardContextMenuHost | undefined = $state();
 
   // DrawerStack registration - blocks pull-to-refresh on mobile
@@ -253,19 +252,20 @@
           screenHeight: window.screen.height,
           referrer: document.referrer || null,
           userId: null,
+          deviceId: container.items.deviceIdService.getDeviceId(),
         }).catch(() => {}); // Silent failure — analytics should never break the viewer
       }
 
-      // Derive letters and positions if services are available
-      const letterDeriver = container.items.letterDeriver as ILetterDeriver | null;
-      const positionDeriver = container.items.positionDeriver as IPositionDeriver | null;
-
-      if (letterDeriver) {
-        resolved = await letterDeriver.deriveLettersForSequence(resolved);
-      }
-      if (positionDeriver) {
-        resolved = await positionDeriver.derivePositionsForSequence(resolved);
-      }
+      // Run every pure client-side deriver: letter, position, loop
+      // pattern (isCircular + loopType), and gridMode. A fresh scan
+      // or refresh both arrive with bare motion data, so this pass
+      // is what restores word / letters / loop badges / grid styling.
+      resolved = await hydrateSequence(resolved, {
+        letterDeriver: container.items.letterDeriver,
+        positionDeriver: container.items.positionDeriver,
+        loopDetector,
+        gridModeDeriver,
+      });
 
       // Apply URL dark mode preference before the orchestrator mounts
       if (urlDarkMode !== null) {
@@ -589,13 +589,11 @@
               />
               <ChoreoCardContextMenuHost
                 bind:this={choreoCardMenuHost}
-                onOpenSettings={() => { cardSettingsOpen = true; }}
                 isExportMode={isImageExportActive}
                 exportOptions={ctx.exportOptions}
                 onSendTo={sequence ? handleSendTo : undefined}
                 stepCount={sequence?.steps?.length ?? 0}
               />
-              <CardSettingsModal bind:open={cardSettingsOpen} {sequence} />
               {#if isAnyExportActive}
                 <div class="export-panel-container" class:sidebar={!isMobile && isVideoExportActive} transition:fade={{ duration: 200 }}>
                   {#if isVideoExportActive}

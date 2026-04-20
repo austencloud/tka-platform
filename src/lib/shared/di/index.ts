@@ -110,6 +110,9 @@ import { createTikaContainer } from "./containers/tika-container";
 import { isBootProfileVerbose } from "../analytics/boot-profiler";
 import { DeepLinkResolver } from "../application/services/implementations/DeepLinkResolver";
 
+// DeviceId service — stable per-browser identifier for scan event analytics
+import { DeviceIdService } from "$lib/shared/auth/services/implementations/DeviceIdService";
+
 // Print Prep services (MPC card export)
 import { CardBackDomRenderer as CardBackDomRendererImpl } from "$lib/features/choreo-card/services/implementations/CardBackDomRenderer";
 import { InfoCardCanvasRenderer as InfoCardCanvasRendererImpl } from "$lib/features/choreo-card/services/implementations/InfoCardCanvasRenderer";
@@ -505,6 +508,8 @@ function buildAppContainer(): any {
   // Cross-container services (depend on multiple container outputs)
   c = c.add({ deepLinkResolver: () => deepLinkResolver });
   c = c.add({ sequenceDataProvider: () => sequenceDataProvider });
+  // Device identity — stable per-browser ID for scan event analytics
+  c = c.add({ deviceIdService: () => new DeviceIdService() });
 
   return c;
 }
