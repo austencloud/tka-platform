@@ -201,10 +201,11 @@ describe("resolveSmoke2D — palette carries behavior", () => {
   });
 
   it("applies palette.riseBias to intent.riseSpeed and scales by riseBaseSpeed", () => {
-    // genie has riseBias 0.9; intent 1.0 × 0.9 × 110 = 99 (2D uses 110 px/s base)
+    // genie has riseBias 0.9; intent 1.0 × 0.9 × 280 = 252
+    // (2D uses 280 px/s base — Boussinesq buoyancy target)
     const out = resolveSmoke2D(baseIntent({ palette: "genie", riseSpeed: 1.0 }));
-    expect(out.resolvedRiseSpeed).toBeCloseTo(99.0, 4);
-    expect(out.riseBaseSpeed).toBe(110);
+    expect(out.resolvedRiseSpeed).toBeCloseTo(252.0, 4);
+    expect(out.riseBaseSpeed).toBe(280);
   });
 
   it("derives a custom palette from customColor with neutral behavior defaults", () => {
