@@ -176,6 +176,11 @@ export class SequenceEncoder implements ISequenceEncoder {
   /**
    * Encode a sequence into compact URL string format
    * Format: "startPosition|step1|step2|step3..."
+   *
+   * Pure motion data only. Sequence-level fields (word, loopType,
+   * isCircular, gridMode, letters, positions) are derived at decode
+   * time from the motion primitives — see decode() for where the
+   * derivers run.
    */
   encode(sequence: SequenceData): string {
     let startPositionStep: StepData | StartPositionData;
@@ -211,7 +216,6 @@ export class SequenceEncoder implements ISequenceEncoder {
 
     const encodedStartPosition = this.encodeBeat(startPositionStep);
     const encodedBeats = actualSteps.map((beat) => this.encodeBeat(beat));
-
     return `${encodedStartPosition}|${encodedBeats.join("|")}`;
   }
 
@@ -797,7 +801,7 @@ export class SequenceEncoder implements ISequenceEncoder {
     const startOrientation = ORIENTATION_DECODE[startOrientCode!];
     const endOrientation = ORIENTATION_DECODE[endOrientCode!];
     const rotationDirection = ROTATION_DECODE[rotationCode!];
-    const turns = turnsCode === "f" ? ("fl" as const) : parseInt(turnsCode, 10);
+    const turns = turnsCode === "f" ? ("fl" as const) : parseFloat(turnsCode);
     const motionType = MOTION_TYPE_DECODE[typeCode!];
     const propType = PROP_TYPE_DECODE[propCode!];
 
@@ -908,6 +912,77 @@ export class SequenceEncoder implements ISequenceEncoder {
 
   private decompressString(compressed: string): string | null {
     return LZString.decompressFromEncodedURIComponent(compressed);
+  }
+
+  /**
+   * Decode the blob, re-encode the result, and compare field-by-field to
+   * detect any data lost in the round trip. Used to gate feed card
+   * rendering so corrupted sequences don't reach the visual layer.
+   *
+   * Returns `{ ok: true, decoded }` when every motion field matches,
+   * or `{ ok: false, reason }` describing the first mismatch found.
+   */
+  verifyRoundTrip(
+    encoded: string
+  ): { ok: true; decoded: SequenceData } | { ok: false; reason: string } {
+    let decoded: SequenceData;
+    try {
+      decoded = this.decodeWithCompression(encoded);
+    } catch (err) {
+      return { ok: false, reason: `decode threw: ${(err as Error).message}` };
+    }
+
+    let reencoded: string;
+    try {
+      ({ encoded: reencoded } = this.encodeWithCompression(decoded));
+    } catch (err) {
+      return { ok: false, reason: `re-encode threw: ${(err as Error).message}` };
+    }
+
+    let redecoded: SequenceData;
+    try {
+      redecoded = this.decodeWithCompression(reencoded);
+    } catch (err) {
+      return { ok: false, reason: `re-decode threw: ${(err as Error).message}` };
+    }
+
+    const mismatch = this.findMotionMismatch(decoded, redecoded);
+    if (mismatch) return { ok: false, reason: mismatch };
+
+    return { ok: true, decoded };
+  }
+
+  private findMotionMismatch(a: SequenceData, b: SequenceData): string | null {
+    if (a.steps.length !== b.steps.length) {
+      return `step count ${a.steps.length} vs ${b.steps.length}`;
+    }
+    const fields: (keyof MotionData)[] = [
+      "motionType",
+      "rotationDirection",
+      "startLocation",
+      "endLocation",
+      "startOrientation",
+      "endOrientation",
+      "turns",
+      "handPath",
+      "prefloatMotionType",
+      "prefloatRotationDirection",
+      "skewSteps",
+      "skewDir",
+    ];
+    for (let i = 0; i < a.steps.length; i++) {
+      for (const color of ["blue", "red"] as const) {
+        const ma = a.steps[i]?.motions?.[color];
+        const mb = b.steps[i]?.motions?.[color];
+        if (!ma || !mb) return `step ${i + 1} ${color} motion missing`;
+        for (const f of fields) {
+          if (ma[f] !== mb[f]) {
+            return `step ${i + 1} ${color}.${f}: ${String(ma[f])} vs ${String(mb[f])}`;
+          }
+        }
+      }
+    }
+    return null;
   }
 }
 
