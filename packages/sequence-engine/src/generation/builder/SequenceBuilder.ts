@@ -42,7 +42,12 @@ import { getPresetOptions } from "../constraints/presets/preset-constraints.js";
 import { buildConstraintSet } from "../constraints/composition/build-constraint-set.js";
 import { parseConstraintSet } from "../constraints/parsing/constraint-parser.js";
 import type { ConstraintOptions } from "../constraints/composition/constraint-options.js";
-import { LOOPType, SliceSize, ROTATED_LOOP_TYPES } from "../../loop/loop-types.js";
+import {
+  LOOPType,
+  SliceSize,
+  ROTATED_LOOP_TYPES,
+  periodFromSliceSize,
+} from "../../loop/loop-types.js";
 import { loopExecutorSelector } from "../../loop/execution/LOOPExecutorSelector.js";
 import { loopEndPositionSelector } from "../../loop/targeting/LOOPEndPositionSelector.js";
 import {
@@ -55,6 +60,21 @@ import { PositionReachabilityAnalyzer, type ReachabilityResult } from "../reacha
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Decide whether to enforce period-4 turn parity for this LOOP request.
+ *
+ * Period 4 non-rotated LOOPs (mirrored/flipped/swapped/inverted at L3+) close
+ * only when each hand's partial turn total is ≡ 1 or 3 (mod 4) wheel-quarters.
+ * Rotated LOOPs don't need this — the quartered grid rotation provides the
+ * 4-cycle on its own. Pure period-2 LOOPs are trivially closed.
+ */
+function shouldEnforcePeriod4Parity(loop: LoopOptions | undefined): boolean {
+  if (!loop) return false;
+  const period = loop.period ?? periodFromSliceSize(loop.sliceSize);
+  if (period !== 4) return false;
+  return !ROTATED_LOOP_TYPES.has(loop.type);
+}
 
 /**
  * Dash and static motions in the CSV have "noRotation" because at 0 turns
@@ -167,6 +187,19 @@ export interface LoopOptions {
   /** How the sequence is sliced for rotation */
   sliceSize: SliceSize;
 
+  /**
+   * Integer LOOP period (count of passes to return to identity).
+   *
+   * Supersedes `sliceSize` over the migration window:
+   *   sliceSize HALVED → period 2
+   *   sliceSize QUARTERED → period 4
+   *   (future L5/L7) → period 8
+   *
+   * When both are provided, `period` wins. When neither is provided,
+   * defaults to period derived from sliceSize via periodFromSliceSize.
+   */
+  period?: number;
+
   /** Whether to use targeted end-position generation */
   useTargetedGeneration?: boolean;
 }
@@ -253,6 +286,7 @@ export class SequenceBuilder {
       letters.length,
       options.level,
       options.maxTurnIntensity,
+      { enforcePeriod4Parity: shouldEnforcePeriod4Parity(options.loop) },
     );
 
     // Stage 4: Beam search
@@ -380,6 +414,7 @@ export class SequenceBuilder {
       length,
       options.level,
       options.maxTurnIntensity,
+      { enforcePeriod4Parity: shouldEnforcePeriod4Parity(options.loop) },
     );
 
     // Stage 4: Beam search by length

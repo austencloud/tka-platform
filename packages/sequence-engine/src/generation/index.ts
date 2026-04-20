@@ -125,6 +125,30 @@ export {
   type LoopOptions,
 } from "./builder/SequenceBuilder.js";
 
+// Minimum length calculator — UI length-chip feasibility gate
+export {
+  minLength,
+  type MinLengthArgs,
+  type LOOPDomain,
+} from "./capacity/minimum-length-calculator.js";
+
+// Orientation reachability — future beam-search pruning
+export {
+  OrientationReachabilityAnalyzer,
+  orientationReachabilityAnalyzer,
+  type OrientationReachabilityArgs,
+  type OrientationReachabilityResult,
+} from "./reachability/OrientationReachabilityAnalyzer.js";
+
+// LOOP closure constraints
+export { TurnParityConstraint } from "./constraints/closure/turn-parity-constraint.js";
+export {
+  MirroredClosureConstraint,
+  FlippedClosureConstraint,
+  SwappedClosureConstraint,
+  InvertedClosureConstraint,
+} from "./constraints/closure/per-type-closure-constraints.js";
+
 // Beam search (used internally by SequenceBuilder)
 export { BeamSearch, type BeamSearchResult } from "./builder/BeamSearch.js";
 
