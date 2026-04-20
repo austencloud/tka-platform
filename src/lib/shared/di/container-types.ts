@@ -89,6 +89,7 @@ import type { VideoTrailsContainer } from "./containers/video-trails-container";
 // ============================================================================
 import type { DeepLinkResolver } from "../application/services/implementations/DeepLinkResolver";
 import type { SequenceDataProvider } from "../sequence-viewer/services/implementations/SequenceDataProvider";
+import type { IDeviceIdService } from "../auth/services/contracts/IDeviceIdService";
 
 // ============================================================================
 // Helper: extract the resolved items type from an ITI container
@@ -177,6 +178,7 @@ type CreateItemsClean = Omit<ItemsOf<CreateContainer>, "loopDetector">;
 interface StandaloneItems {
 	deepLinkResolver: DeepLinkResolver;
 	sequenceDataProvider: SequenceDataProvider;
+	deviceIdService: IDeviceIdService;
 	// Print Prep services (MPC card export)
 	printCardRenderer: import("$lib/features/choreo-card/services/contracts/IPrintCardRenderer").IPrintCardRenderer;
 	cardBackDomRenderer: import("$lib/features/choreo-card/services/contracts/ICardBackDomRenderer").ICardBackDomRenderer;

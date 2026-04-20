@@ -119,6 +119,7 @@ export interface IShortCodeManager {
       screenHeight: number;
       referrer: string | null;
       userId: string | null;
+      deviceId: string;
     }
   ): Promise<void>;
 }

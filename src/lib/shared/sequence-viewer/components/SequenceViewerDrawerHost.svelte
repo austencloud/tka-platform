@@ -38,6 +38,9 @@
   // Services
   import { container } from "$lib/shared/di";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import { hydrateSequence } from "$lib/shared/navigation/services/implementations/SequenceHydrator";
+  import { loopDetector } from "$lib/features/create/generate/circular/services/implementations/LOOPDetector";
+  import { gridModeDeriver } from "$lib/shared/pictograph/grid/services/implementations/GridModeDeriver";
   import type { IDeviceDetector } from "$lib/shared/device/services/contracts/IDeviceDetector";
   import type { ResponsiveSettings } from "$lib/shared/device/domain/models/device-models";
   import DeleteConfirmDialog from "./DeleteConfirmDialog.svelte";
@@ -45,7 +48,6 @@
   import type { ICollaborativeVideoManager } from "$lib/shared/video-collaboration/services/contracts/ICollaborativeVideoManager";
   import ChoreoCardContextMenuHost from "./choreo-card-context-menu/ChoreoCardContextMenuHost.svelte";
   import MotionVisibilityToggle from "./MotionVisibilityToggle.svelte";
-  import CardSettingsModal from "$lib/features/choreo-card/components/CardSettingsModal.svelte";
   import {
     openSendSequenceSheet,
     buildSequenceSharePayload,
@@ -140,8 +142,7 @@
   let deleteConfirmOpen = $state(false);
   let isDeleting = $state(false);
 
-  // ChoreoCard settings modal + context menu
-  let cardSettingsOpen = $state(false);
+  // ChoreoCard context menu
   let rerenderTrigger = $state(0);
   let choreoCardMenuHost: ChoreoCardContextMenuHost | undefined = $state();
 
@@ -203,11 +204,11 @@
     if (typeof window === "undefined") return;
     const code = new URL(window.location.href).searchParams.get("v");
     if (!code || overlay.isOpen) return;
-    let resolved = false;
+    let openedSuccessfully = false;
     try {
       const manager = container.items.shortCodeManager;
-      const sequence = await manager.resolveShortCode(code);
-      if (!sequence) {
+      const resolved = await manager.resolveShortCode(code);
+      if (!resolved) {
         // Unresolvable code — strip it so the browser's base history entry
         // doesn't keep pulling the user back to a broken URL on every back
         // navigation or drawer close.
@@ -235,22 +236,38 @@
           screenHeight: window.screen.height,
           referrer: document.referrer || null,
           userId: null,
+          deviceId: container.items.deviceIdService.getDeviceId(),
         }).catch(() => {});
       }
 
       if (overlay.isOpen) return;
       const stillMatches = new URL(window.location.href).searchParams.get("v") === code;
       if (!stillMatches) return;
-      openSequenceOverlay(sequence, {
+
+      // Hydrate BEFORE opening the overlay. Without this, the drawer
+      // renders a sequence with empty `word` and null `loopType` —
+      // viewer footer, reversal indicators, and loop-type badge all
+      // showed blank on refresh (bug report 2026-04-19).
+      const hydrated = await hydrateSequence(resolved, {
+        letterDeriver: container.items.letterDeriver,
+        positionDeriver: container.items.positionDeriver,
+        loopDetector,
+        gridModeDeriver,
+      });
+
+      if (overlay.isOpen) return;
+      if (new URL(window.location.href).searchParams.get("v") !== code) return;
+
+      openSequenceOverlay(hydrated, {
         fromUrl: true,
         shortCode: code,
         skipHistoryPush: true,
       });
-      resolved = true;
+      openedSuccessfully = true;
     } catch (error) {
       console.warn("[SequenceViewerDrawerHost] Failed to bootstrap from ?v= code:", error);
     } finally {
-      if (!resolved) stripInvalidV(code);
+      if (!openedSuccessfully) stripInvalidV(code);
     }
   }
 
@@ -472,10 +489,8 @@
                       onCancelExport={ctx.handleCancelExport}
                     />
                   {/if}
-                  <CardSettingsModal bind:open={cardSettingsOpen} sequence={overlay.sequence} />
                   <ChoreoCardContextMenuHost
                     bind:this={choreoCardMenuHost}
-                    onOpenSettings={() => { cardSettingsOpen = true; }}
                     onRerender={() => { rerenderTrigger++; }}
                     isExportMode={isImageExportActive}
                     exportOptions={ctx.exportOptions}
