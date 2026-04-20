@@ -57,7 +57,12 @@ export enum LOOPType {
 
 /**
  * Slice Size
- * Determines how the circle is divided for rotation
+ * Determines how the circle is divided for rotation.
+ *
+ * @deprecated Use integer `period` instead. HALVED → 2, QUARTERED → 4.
+ * SliceSize is kept functional during the period-migration window for
+ * backward compatibility with legacy LoopOptions callers. Remove in the
+ * next cleanup pass once all consumers migrate.
  */
 export enum SliceSize {
   /** Half rotation - 180° */
