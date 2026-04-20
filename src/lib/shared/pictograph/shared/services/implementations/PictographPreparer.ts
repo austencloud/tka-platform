@@ -194,6 +194,11 @@ export class PictographPreparer implements IPictographPreparer {
       (options?.useGridVersion ?? false) ? "grid" : "thumbnail",
       // Hand path mode produces completely different motion transforms
       options?.handPathMode ? "hp" : "",
+      // Motion visibility suppresses beta offset for the visible prop when the
+      // partner is hidden. Use explicit `=== false` so undefined/true share a
+      // cache slot (both mean "visible"). Only an explicit hide toggles a miss.
+      options?.showBlueMotion === false ? "hideBlue" : "",
+      options?.showRedMotion === false ? "hideRed" : "",
     ];
 
     return parts.join("|");
@@ -241,6 +246,13 @@ export class PictographPreparer implements IPictographPreparer {
 
     const motions = this.getMotionsWithOverrides(pictograph, settings, options);
 
+    // Partner-visibility lets PropPlacer suppress beta offset when this prop's
+    // partner is hidden — no collision partner means no overlap to avoid.
+    const visibility = {
+      showBlue: options?.showBlueMotion,
+      showRed: options?.showRedMotion,
+    };
+
     await Promise.all(
       motions.map(async ([color, motion]) => {
         try {
@@ -253,7 +265,7 @@ export class PictographPreparer implements IPictographPreparer {
               options?.useGridVersion ?? false,
               options?.themeMode ? { themeMode: options.themeMode } : undefined
             ),
-            this.propPlacer.calculatePlacement(pictograph, motion),
+            this.propPlacer.calculatePlacement(pictograph, motion, visibility),
           ]);
 
           if (!renderData.svgData) return;

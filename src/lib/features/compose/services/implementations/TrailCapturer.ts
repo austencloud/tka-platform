@@ -191,6 +191,7 @@ export class TrailCapturer implements ITrailCapturer {
       hideProps: false,
       usePathCache: true,
       previewMode: false,
+      tailLength: 20,
     },
   };
 

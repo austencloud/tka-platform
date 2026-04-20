@@ -155,9 +155,10 @@ export class Canvas2DAnimationRenderer implements IAnimationRenderer {
   async initialize(
     container: HTMLElement,
     size: number,
-    backgroundAlpha: number = 1
+    backgroundAlpha: number = 1,
+    paintBackground: boolean = true
   ): Promise<void> {
-    await this.appManager.initialize(container, size, backgroundAlpha);
+    await this.appManager.initialize(container, size, backgroundAlpha, paintBackground);
   }
 
   async resize(newSize: number): Promise<void> {

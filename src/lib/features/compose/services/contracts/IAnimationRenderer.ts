@@ -76,11 +76,15 @@ export interface IAnimationRenderer {
    * @param container - DOM element to attach the canvas to
    * @param size - Initial canvas size
    * @param backgroundAlpha - Alpha value for canvas background (0 = transparent, 1 = opaque)
+   * @param paintBackground - When false, the canvas itself stays transparent (background
+   *   comes from the parent element) so overlays can render behind the main canvas.
+   *   Defaults to true so export/offscreen renderers still burn in their own background.
    */
   initialize(
     container: HTMLElement,
     size: number,
-    backgroundAlpha?: number
+    backgroundAlpha?: number,
+    paintBackground?: boolean
   ): Promise<void>;
 
   /**

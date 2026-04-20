@@ -59,6 +59,7 @@ export class Canvas2DApplicationManager {
   private dpr: number = 1;
   private maxDpr: number = Infinity;
   private backgroundAlpha: number = 1;
+  private paintBackground: boolean = true;
   private isInitialized: boolean = false;
   private darkModeEnabled: boolean = false;
 
@@ -71,7 +72,8 @@ export class Canvas2DApplicationManager {
   async initialize(
     container: HTMLElement,
     size: number,
-    backgroundAlpha: number = 1
+    backgroundAlpha: number = 1,
+    paintBackground: boolean = true
   ): Promise<void> {
     if (this.isInitialized) {
       console.warn("[Canvas2DApplicationManager] Already initialized");
@@ -80,6 +82,7 @@ export class Canvas2DApplicationManager {
 
     this.currentSize = size;
     this.backgroundAlpha = backgroundAlpha;
+    this.paintBackground = paintBackground;
     this.dpr = Math.min(window.devicePixelRatio || 1, this.maxDpr);
 
     // Create canvas element with DPI-aware backing store
@@ -89,12 +92,22 @@ export class Canvas2DApplicationManager {
     this.canvas.height = Math.floor(size * this.dpr);
     this.canvas.style.width = "100%";
     this.canvas.style.height = "100%";
+    // When the canvas is transparent (paintBackground=false) it needs to be a
+    // positioned stacking context so overlay canvases at z<3 render *below*
+    // it in non-prop pixels. The wrapper supplies the background color.
+    if (!paintBackground) {
+      this.canvas.style.position = "relative";
+      this.canvas.style.zIndex = "3";
+      this.canvas.style.background = "transparent";
+    }
 
     // Get 2D context with alpha support based on backgroundAlpha
     // NOTE: desynchronized intentionally omitted — it causes visible tearing
     // (colored strip artifacts) on Android Chrome PWA due to front-buffer rendering
+    // When paintBackground=false the canvas must have an alpha channel so
+    // non-prop pixels stay transparent (so overlays behind props show through).
     this.ctx = this.canvas.getContext("2d", {
-      alpha: backgroundAlpha < 1,
+      alpha: backgroundAlpha < 1 || !paintBackground,
     });
 
     if (!this.ctx) {
@@ -156,9 +169,11 @@ export class Canvas2DApplicationManager {
     // Update background color transition if in progress
     this.updateBackgroundTransition();
 
-    // Fill with current (possibly transitioning) background color
-    // Wrap in save/restore to isolate globalAlpha from subsequent draw calls
-    if (this.backgroundAlpha > 0) {
+    // Fill with current (possibly transitioning) background color.
+    // Skipped when paintBackground=false — the wrapper provides the background
+    // color via CSS so overlay canvases placed underneath (z<3) show through
+    // non-prop areas of this canvas.
+    if (this.paintBackground && this.backgroundAlpha > 0) {
       this.ctx.save();
       this.ctx.globalAlpha = this.backgroundAlpha;
       this.ctx.fillStyle = this.currentBgColor;
