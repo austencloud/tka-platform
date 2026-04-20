@@ -59,7 +59,7 @@ const ALL_GRADIENTS = {
     "linear-gradient(135deg, #1e1b4b 0%, #7c3aed 30%, #ec4899 60%, #fbbf24 100%)",
   // Earth family
   forest: "linear-gradient(135deg, #0d3320 0%, #166534 50%, #84cc16 100%)",
-  sakura: "linear-gradient(135deg, #831843 0%, #db2777 50%, #fbcfe8 100%)",
+  cherryBlossom: "linear-gradient(135deg, #831843 0%, #db2777 50%, #fbcfe8 100%)",
   lavender: "linear-gradient(135deg, #4c1d95 0%, #8b5cf6 50%, #ddd6fe 100%)",
   sand: "linear-gradient(135deg, #78350f 0%, #a16207 50%, #84cc16 100%)",
   // Dark family
@@ -77,7 +77,7 @@ const THEME_TO_GRADIENT = {
   "night-sky": "twilight",
   "deep-ocean": "ocean",
   "ember-glow": "ember",
-  "sakura-drift": "sakura",
+  "cherry-blossom": "cherryBlossom",
   "firefly-forest": "forest",
   "autumn-drift": "autumn",
   "solid-color": "void",
@@ -86,7 +86,7 @@ const THEME_TO_GRADIENT = {
   nightSky: "twilight",
   deepOcean: "ocean",
   emberGlow: "ember",
-  sakuraDrift: "sakura",
+  cherryBlossom: "cherryBlossom",
   fireflyForest: "forest",
   autumnDrift: "autumn",
   solidColor: "void",
