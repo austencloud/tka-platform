@@ -32,7 +32,10 @@ const STORE_NAME = "blobs";
 // v6: Switched from 32-bit djb2 hash keys (lsp3-) to full string keys (lsp4-).
 // The hash had collision risk after ~46K entries, causing wrong prop type blobs to be served.
 // All lsp3- entries must be cleared since they can't be looked up under lsp4- keys anyway.
-const DB_VERSION = 6;
+// v7: lsp8 refactor silently reintroduced the djb2 hash via PictographKeyHasher, producing
+// wrong-arrow blobs once the cache grew past ~46K entries. Reverted to full JSON string
+// keys (lsp10-). All pre-v7 entries may be collision-poisoned — clear everything.
+const DB_VERSION = 7;
 
 interface CachedBlobEntry {
   /** Hash key for the pictograph configuration (includes size) */
@@ -67,13 +70,14 @@ export class PictographBlobCache implements IPictographBlobCache {
         if (!db.objectStoreNames.contains(STORE_NAME)) {
           const store = db.createObjectStore(STORE_NAME, { keyPath: "key" });
           store.createIndex("timestamp", "timestamp", { unique: false });
-        } else if (oldVersion < 6) {
+        } else if (oldVersion < 7) {
           // v1→v2: keys added visibility settings.
           // v2→v3: keys added orientation data.
           // v3→v4: ImageComposer write-through contamination (step numbers baked in).
           // v4→v5: dark mode cross-fade may have cached wrong theme colors.
           // v5→v6: switched from djb2 hash keys to full string keys (collision fix).
-          // All pre-v6 entries are stale — clear them.
+          // v6→v7: lsp8 reintroduced the djb2 collision; reverted to full JSON string keys.
+          // All pre-v7 entries may be collision-poisoned — clear them.
           const tx = (event.target as IDBOpenDBRequest).transaction!;
           tx.objectStore(STORE_NAME).clear();
         }
