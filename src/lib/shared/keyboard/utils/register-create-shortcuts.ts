@@ -541,12 +541,12 @@ export function registerCreateShortcuts(
     },
   });
 
-  // Alt+S — Swap hands (swap colors)
+  // Alt+X — Swap hands (swap colors). Was Alt+S but Chrome/extensions steal it.
   service.register({
     id: "create.transform-swap-hands",
     label: "Swap Hands",
     description: "Swap hand movements (left becomes right, right becomes left)",
-    key: "s",
+    key: "x",
     modifiers: ["alt"],
     context: "create",
     scope: "sequence-management",
