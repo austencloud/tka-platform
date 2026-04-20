@@ -310,9 +310,15 @@ export class SwipeToDismiss {
       return;
     }
 
-    // Bail out for canvas elements (e.g., Three.js/Threlte 3D viewer orbit controls)
-    // — dragging on a canvas is for the canvas's own interaction, not drawer dismissal
-    if (target.tagName === "CANVAS" || target.closest("canvas")) {
+    // Bail out for canvases that own pointer gestures (e.g., Three.js/Threlte
+    // 3D viewer orbit controls). The 2D animation canvas has no drag
+    // interaction of its own, so it should pass through to dismiss. Canvases
+    // opt in by marking an ancestor with `data-swipe-block`.
+    const canvasEl =
+      target.tagName === "CANVAS"
+        ? (target as HTMLCanvasElement)
+        : (target.closest("canvas") as HTMLCanvasElement | null);
+    if (canvasEl && canvasEl.closest("[data-swipe-block]")) {
       return;
     }
 

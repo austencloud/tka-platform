@@ -62,6 +62,7 @@ import { LOOPEndPositionSelector } from "$lib/features/create/generate/circular/
 import { TypographyScaler } from "$lib/features/create/generate/shared/services/implementations/TypographyScaler";
 import { CardConfigurator } from "$lib/features/create/generate/shared/services/implementations/CardConfigurator";
 import { LOOPTypeResolver } from "$lib/features/create/generate/shared/services/implementations/LOOPTypeResolver";
+import { LoopViabilityService } from "$lib/features/create/generate/shared/services/implementations/LoopViabilityService";
 import { SequenceToEntryConverter } from "$lib/features/choreo-card/services/implementations/SequenceToEntryConverter";
 import { DeckLoader } from "$lib/features/choreo-card/services/implementations/DeckLoader";
 import { VtgFamilyAggregator } from "$lib/features/choreo-card/services/implementations/VtgFamilyAggregator";
@@ -252,6 +253,7 @@ export function createCreateContainer(deps: CreateContainerDependencies) {
         turnManager: () => new TurnManager(),
         typographyScaler: () => new TypographyScaler(),
         cardConfigurator: () => new CardConfigurator(),
+        loopViabilityService: () => new LoopViabilityService(),
 
         // Sequence - no deps
         sequenceValidator: () => new SequenceValidator(),

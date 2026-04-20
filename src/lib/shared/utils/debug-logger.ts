@@ -42,8 +42,11 @@ class DebugLogger {
     try {
       const stored = localStorage.getItem("tka-debug-config");
       if (stored) {
-        const parsed = JSON.parse(stored);
-        this.config = { ...this.config, ...parsed };
+        const parsed = JSON.parse(stored) as Partial<DebugConfig>;
+        // Only restore per-component overrides. `enabled` is always off on
+        // load so a long-forgotten `__TKA_DEBUG__.enable()` doesn't pollute
+        // every future session.
+        if (parsed.components) this.config.components = parsed.components;
       }
     } catch {
       // Ignore localStorage errors

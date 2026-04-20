@@ -49,11 +49,15 @@
     if (!open && menuState.open) onClose();
   }
 
-  // bits-ui dismisses on the outside `pointerdown` but lets the subsequent
-  // `click` hit whatever is underneath — in the sequence viewer that click
-  // enters export mode, which reads as "the viewer closed." Swallow clicks
-  // that land outside the menu while it's open. Menu + submenu both carry
-  // `.ctx-menu-content`, so clicks on items still pass through.
+  // bits-ui dismisses on the outside `pointerdown` for mouse, but on touch it
+  // defers dismissal to the subsequent `click` via a one-shot document listener.
+  // We also need to swallow that click so it doesn't hit the underlying viewer
+  // (which would enter export mode). Running in capture phase with
+  // `stopImmediatePropagation` preempts both the target handler AND bits-ui's
+  // touch-dismiss listener, so we take responsibility for the close ourselves.
+  // For mouse the menu is already closed by pointerdown, making the onClose
+  // call idempotent. Menu + submenu both carry `.ctx-menu-content`, so clicks
+  // on items still pass through.
   $effect(() => {
     if (!menuState.open) return;
     if (typeof document === "undefined") return;
@@ -63,6 +67,7 @@
       if (target?.closest(".ctx-menu-content")) return;
       ev.stopImmediatePropagation();
       ev.preventDefault();
+      onClose();
     };
 
     document.addEventListener("click", blockOutsideClick, { capture: true });
