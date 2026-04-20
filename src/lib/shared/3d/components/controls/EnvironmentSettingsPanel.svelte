@@ -62,7 +62,7 @@
       has3DScene: true,
     },
     {
-      type: BackgroundType.SAKURA_DRIFT,
+      type: BackgroundType.CHERRY_BLOSSOM,
       name: "Cherry Blossom",
       icon: "fa-spa",
       has3DScene: true,

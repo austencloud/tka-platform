@@ -3,7 +3,7 @@
    * CherryBlossomScene
    *
    * A cherry blossom environment with falling petals.
-   * Used for SAKURA_DRIFT background type.
+   * Used for CHERRY_BLOSSOM background type.
    */
 
   import GroundPlane from "../primitives/GroundPlane.svelte";
