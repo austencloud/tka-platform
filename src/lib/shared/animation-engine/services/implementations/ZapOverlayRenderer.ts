@@ -94,6 +94,10 @@ export class ZapOverlayRenderer implements IZapOverlayRenderer {
     this.canvas.style.display = visible ? "" : "none";
   }
 
+  setCanvasZIndex(z: number): void {
+    if (this.canvas) this.canvas.style.zIndex = String(z);
+  }
+
   dispose(): void {
     if (this.canvas?.parentElement) {
       this.canvas.parentElement.removeChild(this.canvas);

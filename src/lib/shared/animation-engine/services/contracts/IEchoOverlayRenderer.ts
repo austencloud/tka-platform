@@ -42,6 +42,7 @@ export interface IEchoOverlayRenderer {
    * Toggle canvas visibility without disposing.
    */
   setVisible(visible: boolean): void;
+  setCanvasZIndex(z: number): void;
 
   /**
    * Tear down the canvas + remove it from the DOM.

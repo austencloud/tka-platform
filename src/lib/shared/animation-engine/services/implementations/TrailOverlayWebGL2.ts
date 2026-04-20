@@ -38,9 +38,21 @@ import {
   FADE_EXPONENT,
 } from "$lib/shared/render-graph/math/trail-mesh";
 import { computeEffectScale } from "$lib/shared/effects/renderers/scale";
+import {
+  advanceTail,
+  computeVisiblePath,
+  createTailState,
+  type TailState,
+} from "$lib/shared/animation-engine/domain/tail-recession";
 
-const RING_BUFFER_SIZE = 120;
-const LEADING_EDGE = 20;
+/**
+ * Minimum ring capacity. Actual capacity is `max(RING_BUFFER_MIN, tailLength + RING_BUFFER_HEADROOM)`
+ * so the ring always has room to capture fresh motion while the full visible
+ * tail is still on screen.
+ */
+const RING_BUFFER_MIN = 120;
+const RING_BUFFER_HEADROOM = 20;
+const DEFAULT_LEADING_EDGE = 20;
 const GLOW_RATIO = 2.5;
 
 /** Convert TrailSettings.fadeDurationMs to the backend's decayPerSecond. */
@@ -74,16 +86,18 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
   private redLeftRing: TrailPoint[] = [];
   private redRightRing: TrailPoint[] = [];
 
-  // Fractional tail progress per ring [0, 1). When a ring doesn't receive a
-  // new point this frame (prop stationary), this advances so the stamp's
-  // first path point smoothly slides from ring[oldest] toward ring[oldest+1].
-  // When it reaches 1.0 the oldest point is dropped and progress resets.
-  // This makes the trail's tail smoothly walk forward along the captured
-  // path instead of jumping in point-sized chunks.
-  private blueLeftTailProg = 0;
-  private blueRightTailProg = 0;
-  private redLeftTailProg = 0;
-  private redRightTailProg = 0;
+  // Per-ring tail recession state. `visibleCount` shrinks from the current
+  // leading edge toward 2 while the prop is stationary, so the visible
+  // window actually closes from the tail end instead of staying pinned at
+  // "last N ring entries." `prog` interpolates the first visible point
+  // between adjacent ring entries so recession is continuous, not step-wise.
+  private blueLeftTail: TailState = createTailState(DEFAULT_LEADING_EDGE);
+  private blueRightTail: TailState = createTailState(DEFAULT_LEADING_EDGE);
+  private redLeftTail: TailState = createTailState(DEFAULT_LEADING_EDGE);
+  private redRightTail: TailState = createTailState(DEFAULT_LEADING_EDGE);
+
+  /** Current ring capacity — derived from `trailSettings.tailLength`. */
+  private ringCapacity = RING_BUFFER_MIN;
 
   private lastTrackingMode: TrackingMode | null = null;
   private hasPrevCenter = false;
@@ -168,15 +182,21 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
       redPropType,
     } = params;
 
+    const leadingEdge = Math.max(
+      2,
+      Math.floor(trailSettings.tailLength ?? DEFAULT_LEADING_EDGE),
+    );
+    this.ringCapacity = Math.max(RING_BUFFER_MIN, leadingEdge + RING_BUFFER_HEADROOM);
+
     if (this.lastTrackingMode !== null && this.lastTrackingMode !== trailSettings.trackingMode) {
       this.blueLeftRing = [];
       this.blueRightRing = [];
       this.redLeftRing = [];
       this.redRightRing = [];
-      this.blueLeftTailProg = 0;
-      this.blueRightTailProg = 0;
-      this.redLeftTailProg = 0;
-      this.redRightTailProg = 0;
+      this.blueLeftTail = createTailState(leadingEdge);
+      this.blueRightTail = createTailState(leadingEdge);
+      this.redLeftTail = createTailState(leadingEdge);
+      this.redRightTail = createTailState(leadingEdge);
     }
     this.lastTrackingMode = trailSettings.trackingMode;
 
@@ -185,14 +205,14 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
     if (hasBlue && !this.lastHasBlue) {
       this.blueLeftRing = [];
       this.blueRightRing = [];
-      this.blueLeftTailProg = 0;
-      this.blueRightTailProg = 0;
+      this.blueLeftTail = createTailState(leadingEdge);
+      this.blueRightTail = createTailState(leadingEdge);
     }
     if (hasRed && !this.lastHasRed) {
       this.redLeftRing = [];
       this.redRightRing = [];
-      this.redLeftTailProg = 0;
-      this.redRightTailProg = 0;
+      this.redLeftTail = createTailState(leadingEdge);
+      this.redRightTail = createTailState(leadingEdge);
     }
     this.lastHasBlue = hasBlue;
     this.lastHasRed = hasRed;
@@ -225,30 +245,17 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
       redRightMoved = r.rightMoved;
     }
 
-    // Advance per-ring tail progress. When a ring didn't receive a new
-    // point this frame (prop stationary), grow tailProg; when it's at/past
-    // 1 drop the oldest point and keep the fractional remainder. When the
-    // prop IS moving the new point naturally reveals the hidden tail, so
-    // reset to 0 for a clean look. Tied to fadeDurationMs so the visible
-    // tail recedes over the same timescale as the accumulator decay.
+    // Advance per-ring tail recession state. Moving frames update the
+    // per-ring speed EMA and keep visibleCount at LEADING_EDGE. Stationary
+    // frames walk the visible endpoint forward along the captured path at
+    // the pre-stop speed — so stopping on a dime reads as "the trail
+    // finishes the motion" instead of freezing at constant length.
     const dtMs = Math.max(0, params.deltaTime * 1000);
-    const stepPerMs = LEADING_EDGE / Math.max(1, trailSettings.fadeDurationMs);
-    const step = stepPerMs * dtMs;
 
-    const advance = (ring: TrailPoint[], prog: number, moved: boolean): number => {
-      if (moved) return 0;
-      let p = prog + step;
-      while (p >= 1 && ring.length > 1) {
-        ring.shift();
-        p -= 1;
-      }
-      if (ring.length <= 1) return 0;
-      return p;
-    };
-    this.blueLeftTailProg = advance(this.blueLeftRing, this.blueLeftTailProg, blueLeftMoved);
-    this.blueRightTailProg = advance(this.blueRightRing, this.blueRightTailProg, blueRightMoved);
-    this.redLeftTailProg = advance(this.redLeftRing, this.redLeftTailProg, redLeftMoved);
-    this.redRightTailProg = advance(this.redRightRing, this.redRightTailProg, redRightMoved);
+    this.blueLeftTail = advanceTail(this.blueLeftTail, this.blueLeftRing, blueLeftMoved, dtMs, leadingEdge);
+    this.blueRightTail = advanceTail(this.blueRightTail, this.blueRightRing, blueRightMoved, dtMs, leadingEdge);
+    this.redLeftTail = advanceTail(this.redLeftTail, this.redLeftRing, redLeftMoved, dtMs, leadingEdge);
+    this.redRightTail = advanceTail(this.redRightTail, this.redRightRing, redRightMoved, dtMs, leadingEdge);
 
     // lineWidth is authored in reference-size (500px) pixels. On smaller
     // canvases, scale it down so the trail + glow halo stay the same
@@ -271,9 +278,9 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
       tipId: string,
       ring: TrailPoint[],
       rgb: [number, number, number],
-      tailProg: number,
+      tail: TailState,
     ) => {
-      const path = this.ringToNdcPath(ring, tailProg);
+      const path = computeVisiblePath(ring, tail, this.width, this.height);
       if (path.length < 2) return;
       tips.push({
         tipId,
@@ -289,12 +296,12 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
     };
 
     if (hasBlue) {
-      push("blue-left", this.blueLeftRing, [bR, bG, bB], this.blueLeftTailProg);
-      push("blue-right", this.blueRightRing, [bR, bG, bB], this.blueRightTailProg);
+      push("blue-left", this.blueLeftRing, [bR, bG, bB], this.blueLeftTail);
+      push("blue-right", this.blueRightRing, [bR, bG, bB], this.blueRightTail);
     }
     if (hasRed) {
-      push("red-left", this.redLeftRing, [rR, rG, rB], this.redLeftTailProg);
-      push("red-right", this.redRightRing, [rR, rG, rB], this.redRightTailProg);
+      push("red-left", this.redLeftRing, [rR, rG, rB], this.redLeftTail);
+      push("red-right", this.redRightRing, [rR, rG, rB], this.redRightTail);
     }
 
     const payload: TrailPassPayload = { tips };
@@ -316,35 +323,38 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
   }
 
   clear(): void {
-    this.blueLeftRing = [];
-    this.blueRightRing = [];
-    this.redLeftRing = [];
-    this.redRightRing = [];
-    this.blueLeftTailProg = 0;
-    this.blueRightTailProg = 0;
-    this.redLeftTailProg = 0;
-    this.redRightTailProg = 0;
+    this.resetRingsAndTails();
     this.warmupFramesRemaining = TrailOverlayWebGL2.WARMUP_FRAMES;
     this.rebuildBackend();
   }
 
   clearBuffers(): void {
     this.hasPrevCenter = false;
+    this.resetRingsAndTails();
+    this.warmupFramesRemaining = TrailOverlayWebGL2.WARMUP_FRAMES;
+    this.rebuildBackend();
+  }
+
+  private resetRingsAndTails(): void {
     this.blueLeftRing = [];
     this.blueRightRing = [];
     this.redLeftRing = [];
     this.redRightRing = [];
-    this.blueLeftTailProg = 0;
-    this.blueRightTailProg = 0;
-    this.redLeftTailProg = 0;
-    this.redRightTailProg = 0;
-    this.warmupFramesRemaining = TrailOverlayWebGL2.WARMUP_FRAMES;
-    this.rebuildBackend();
+    // Reset to DEFAULT_LEADING_EDGE — the next renderFrame will re-seed with
+    // the current tailLength setting before the first advance call.
+    this.blueLeftTail = createTailState(DEFAULT_LEADING_EDGE);
+    this.blueRightTail = createTailState(DEFAULT_LEADING_EDGE);
+    this.redLeftTail = createTailState(DEFAULT_LEADING_EDGE);
+    this.redRightTail = createTailState(DEFAULT_LEADING_EDGE);
   }
 
   setVisible(visible: boolean): void {
     if (!this.canvas) return;
     this.canvas.style.display = visible ? "" : "none";
+  }
+
+  setCanvasZIndex(z: number): void {
+    if (this.canvas) this.canvas.style.zIndex = String(z);
   }
 
   dispose(): void {
@@ -381,59 +391,6 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
         backend.dispose();
       }
     });
-  }
-
-  private ringToNdcPath(
-    ring: TrailPoint[],
-    tailProg: number = 0,
-  ): Array<[number, number]> {
-    if (ring.length < 2) return [];
-    const start = Math.max(0, ring.length - LEADING_EDGE);
-    const w = this.width;
-    const h = this.height;
-    if (w === 0 || h === 0) return [];
-
-    // Walk backward trimming at any large gap.
-    let gapStart = start;
-    const maxGapSq = (Math.max(w, h) * 0.3) ** 2;
-    for (let i = ring.length - 1; i > gapStart; i--) {
-      const curr = ring[i]!;
-      const prev = ring[i - 1]!;
-      const dx = curr.x - prev.x;
-      const dy = curr.y - prev.y;
-      if (dx * dx + dy * dy > maxGapSq) {
-        gapStart = i;
-        break;
-      }
-    }
-
-    const toNdc = (x: number, y: number): [number, number] => [
-      (x / w) * 2 - 1,
-      1 - (y / h) * 2,
-    ];
-
-    const out: Array<[number, number]> = [];
-
-    // Fractional-tail interpolation: slide the first path point from
-    // ring[gapStart] toward ring[gapStart+1] by tailProg so the stamp's
-    // tail walks smoothly along the captured path instead of popping
-    // segment-by-segment when the prop is stationary.
-    const t = Math.max(0, Math.min(0.9999, tailProg));
-    if (t > 0 && gapStart + 1 < ring.length) {
-      const a = ring[gapStart]!;
-      const b = ring[gapStart + 1]!;
-      out.push(toNdc(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t));
-      for (let i = gapStart + 1; i < ring.length; i++) {
-        const p = ring[i]!;
-        out.push(toNdc(p.x, p.y));
-      }
-    } else {
-      for (let i = gapStart; i < ring.length; i++) {
-        const p = ring[i]!;
-        out.push(toNdc(p.x, p.y));
-      }
-    }
-    return out;
   }
 
   /** Returns which rings received a new point this frame. */
@@ -518,8 +475,8 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
       tipIndex,
     });
 
-    if (ring.length > RING_BUFFER_SIZE) {
-      ring.splice(0, ring.length - RING_BUFFER_SIZE);
+    if (ring.length > this.ringCapacity) {
+      ring.splice(0, ring.length - this.ringCapacity);
     }
     return true;
   }
