@@ -88,4 +88,34 @@ describe("buildConstraintSet", () => {
     expect(turnConstraint).toBeDefined();
     expect(turnConstraint!.mode).toBe("hard");
   });
+
+  it("creates soft DashPreferenceConstraint for dashPreference: 'maximize'", () => {
+    const result = buildConstraintSet({ dashPreference: "maximize" });
+    const dashPref = result.soft.find(
+      c => c.type === ConstraintType.MOTION_TYPE && c.description.toLowerCase().includes("maximize dash")
+    );
+    expect(dashPref).toBeDefined();
+    expect(dashPref!.mode).toBe("soft");
+    // Weight must be > 1.0 so it dominates other soft constraints.
+    // Without this boost, the 3-way average (prop + handpath + dash)
+    // drowns the dash signal and the setting has no visible effect.
+    expect(result.weights?.get(ConstraintType.MOTION_TYPE)).toBeGreaterThan(1.0);
+  });
+
+  it("creates soft DashAvoidanceConstraint for dashPreference: 'minimize'", () => {
+    const result = buildConstraintSet({ dashPreference: "minimize" });
+    const dashAvoid = result.soft.find(
+      c => c.type === ConstraintType.MOTION_TYPE && c.description.toLowerCase().includes("minimize dash")
+    );
+    expect(dashAvoid).toBeDefined();
+    expect(dashAvoid!.mode).toBe("soft");
+    expect(result.weights?.get(ConstraintType.MOTION_TYPE)).toBeGreaterThan(1.0);
+  });
+
+  it("does not create a dash constraint when dashPreference is undefined", () => {
+    const result = buildConstraintSet({ propContinuity: "maximize" });
+    const motionSoft = result.soft.find(c => c.type === ConstraintType.MOTION_TYPE);
+    expect(motionSoft).toBeUndefined();
+    expect(result.weights).toBeUndefined();
+  });
 });

@@ -32,6 +32,13 @@ export enum ConstraintType {
   PROP_TYPE = "propType",
   POSITION_CONTINUITY = "positionContinuity",
   FLOAT = "float",
+
+  // LOOP closure constraints (Phase 4)
+  TURN_PARITY = "turnParity",
+  MIRRORED_CLOSURE = "mirroredClosure",
+  FLIPPED_CLOSURE = "flippedClosure",
+  SWAPPED_CLOSURE = "swappedClosure",
+  INVERTED_CLOSURE = "invertedClosure",
 }
 
 /**
@@ -69,4 +76,9 @@ export const CONSTRAINT_CATEGORIES: Record<ConstraintType, ConstraintCategory> =
     [ConstraintType.PROP_TYPE]: ConstraintCategory.DOMAIN,
     [ConstraintType.POSITION_CONTINUITY]: ConstraintCategory.DOMAIN,
     [ConstraintType.FLOAT]: ConstraintCategory.DOMAIN,
+    [ConstraintType.TURN_PARITY]: ConstraintCategory.DOMAIN,
+    [ConstraintType.MIRRORED_CLOSURE]: ConstraintCategory.DOMAIN,
+    [ConstraintType.FLIPPED_CLOSURE]: ConstraintCategory.DOMAIN,
+    [ConstraintType.SWAPPED_CLOSURE]: ConstraintCategory.DOMAIN,
+    [ConstraintType.INVERTED_CLOSURE]: ConstraintCategory.DOMAIN,
   };
