@@ -379,6 +379,14 @@ export const ADMIN_TABS: Section[] = [
     color: "#8b5cf6",
     gradient: "linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%)",
   },
+  {
+    id: "short-codes",
+    label: "Short Codes",
+    icon: '<i class="fas fa-qrcode" aria-hidden="true"></i>',
+    description: "Choreo card QR scans, durability, and sparklines",
+    color: "#10b981",
+    gradient: "linear-gradient(135deg, #34d399 0%, #10b981 100%)",
+  },
 ];
 
 // Settings tabs configuration - shown in sidebar like other modules
@@ -561,6 +569,14 @@ export const CHOREO_CARD_TABS: Section[] = [
     description: "Design custom choreo cards",
     color: "#ec4899",
     gradient: "linear-gradient(135deg, #f472b6 0%, #ec4899 100%)",
+  },
+  {
+    id: "scan-activity",
+    label: "Scan Activity",
+    icon: '<i class="fas fa-satellite-dish" aria-hidden="true"></i>',
+    description: "Live feed of Choreo Card scans worldwide",
+    color: "#10b981",
+    gradient: "linear-gradient(135deg, #34d399 0%, #10b981 100%)",
   },
 ];
 
