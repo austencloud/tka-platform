@@ -329,6 +329,10 @@ export class CharcoalSparkRenderer implements ICharcoalRenderer {
 		return this.canvas;
 	}
 
+	setCanvasZIndex(z: number): void {
+		if (this.canvas) this.canvas.style.zIndex = String(z);
+	}
+
 	getGl(): WebGL2RenderingContext | null {
 		return this.gl;
 	}

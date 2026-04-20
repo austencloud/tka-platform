@@ -56,6 +56,11 @@ export interface IFireOverlayRenderer {
   getCanvas(): HTMLCanvasElement | null;
 
   /**
+   * Set the CSS z-index on the overlay canvas.
+   */
+  setCanvasZIndex(z: number): void;
+
+  /**
    * Get the WebGL2 rendering context.
    * Returns null if not yet initialized.
    */

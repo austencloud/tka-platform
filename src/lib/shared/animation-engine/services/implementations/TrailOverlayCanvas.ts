@@ -27,11 +27,12 @@ import { getTipPoints } from "../../domain/types/PropTipPoints";
 import { getTrailPointConfig } from "../../domain/types/TrailPointTypes";
 import { isBilateralProp } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";
 
-/** Max points stored in each color's ring buffer */
-const RING_BUFFER_SIZE = 120;
+/** Minimum ring capacity; actual capacity grows with `trailSettings.tailLength`. */
+const RING_BUFFER_MIN = 120;
+const RING_BUFFER_HEADROOM = 20;
 
-/** Points fed to the tapered renderer each frame */
-const LEADING_EDGE = 20;
+/** Default visible leading edge when no settings have been applied yet. */
+const DEFAULT_LEADING_EDGE = 20;
 
 export class TrailOverlayCanvas implements ITrailOverlayCanvas {
   private canvas: HTMLCanvasElement | null = null;
@@ -85,6 +86,11 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
   // brief straight-line artifact that fades out.
   private warmupFramesRemaining = 0;
   private static readonly WARMUP_FRAMES = 3;
+
+  // Current per-settings leading edge and ring capacity; refreshed from
+  // trailSettings.tailLength each renderFrame.
+  private leadingEdge = DEFAULT_LEADING_EDGE;
+  private ringCapacity = RING_BUFFER_MIN;
 
   initialize(container: HTMLElement, width: number, height: number): void {
     this.dispose();
@@ -162,6 +168,15 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
       redPropType,
       currentTime,
     } = params;
+
+    this.leadingEdge = Math.max(
+      2,
+      Math.floor(trailSettings.tailLength ?? DEFAULT_LEADING_EDGE),
+    );
+    this.ringCapacity = Math.max(
+      RING_BUFFER_MIN,
+      this.leadingEdge + RING_BUFFER_HEADROOM,
+    );
 
     // ---------------------------------------------------------------
     // 1. Capture current prop tip positions into ring buffers
@@ -303,6 +318,10 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
   setVisible(visible: boolean): void {
     if (!this.canvas) return;
     this.canvas.style.display = visible ? "" : "none";
+  }
+
+  setCanvasZIndex(z: number): void {
+    if (this.canvas) this.canvas.style.zIndex = String(z);
   }
 
   dispose(): void {
@@ -451,14 +470,14 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
       tipIndex,
     });
 
-    if (ring.length > RING_BUFFER_SIZE) {
-      ring.splice(0, ring.length - RING_BUFFER_SIZE);
+    if (ring.length > this.ringCapacity) {
+      ring.splice(0, ring.length - this.ringCapacity);
     }
   }
 
   /**
    * Extract the leading edge from a ring buffer, sanitized for
-   * discontinuities. Returns at most LEADING_EDGE points.
+   * discontinuities. Returns at most `this.leadingEdge` points.
    */
   private getLeadingEdge(
     ring: TrailPoint[],
@@ -466,7 +485,7 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
   ): TrailPoint[] {
     if (ring.length < 2) return ring;
 
-    const start = Math.max(0, ring.length - LEADING_EDGE);
+    const start = Math.max(0, ring.length - this.leadingEdge);
     const slice = ring.slice(start);
 
     // Walk backward from the newest point, trimming at any large gap

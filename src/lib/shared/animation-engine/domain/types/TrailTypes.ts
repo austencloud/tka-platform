@@ -81,6 +81,14 @@ export interface TrailSettings {
   hideProps: boolean; // Hide props and show only trails
   usePathCache: boolean; // Use pre-computed animation paths for gap-free rendering
   previewMode: boolean; // Show future path (training mode) vs past trail (normal mode)
+  /**
+   * Visible trail length in captured ring points. Higher values let the user
+   * see more of the path at once (up to the full mandala). The ring buffer
+   * is sized to hold `tailLength + headroom` so motion can continue feeding
+   * while the tail is still visible. Default matches the original hard-coded
+   * LEADING_EDGE constant.
+   */
+  tailLength: number;
 }
 
 import { getMotionColor } from "../../../utils/svg-color-utils";
@@ -112,7 +120,12 @@ export const DEFAULT_TRAIL_SETTINGS: TrailSettings = {
   hideProps: false,
   usePathCache: true,
   previewMode: false,
+  tailLength: 20,
 };
+
+/** Hard bounds on `TrailSettings.tailLength`. */
+export const TAIL_LENGTH_MIN = 10;
+export const TAIL_LENGTH_MAX = 400;
 
 /**
  * LocalStorage key for trail settings

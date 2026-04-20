@@ -55,6 +55,11 @@ export interface ICharcoalRenderer {
   getCanvas(): HTMLCanvasElement | null;
 
   /**
+   * Set the CSS z-index on the overlay canvas.
+   */
+  setCanvasZIndex(z: number): void;
+
+  /**
    * Get the WebGL2 rendering context.
    */
   getGl(): WebGL2RenderingContext | null;

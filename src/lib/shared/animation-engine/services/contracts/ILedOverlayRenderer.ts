@@ -42,4 +42,9 @@ export interface ILedOverlayRenderer {
 	 * Return the underlying canvas element (for clearing when switching render modes).
 	 */
 	getCanvas(): HTMLCanvasElement | null;
+
+	/**
+	 * Set the CSS z-index on the overlay canvas.
+	 */
+	setCanvasZIndex(z: number): void;
 }

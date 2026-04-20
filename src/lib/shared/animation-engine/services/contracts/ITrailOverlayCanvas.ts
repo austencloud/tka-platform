@@ -28,5 +28,6 @@ export interface ITrailOverlayCanvas {
   clear(): void;
   clearBuffers(): void;
   setVisible(visible: boolean): void;
+  setCanvasZIndex(z: number): void;
   dispose(): void;
 }

@@ -405,6 +405,10 @@ export class WebGLLedRenderer implements ILedOverlayRenderer {
 		return this.canvas;
 	}
 
+	setCanvasZIndex(z: number): void {
+		if (this.canvas) this.canvas.style.zIndex = String(z);
+	}
+
 	// ============================================================
 	// Geometry creation
 	// ============================================================
