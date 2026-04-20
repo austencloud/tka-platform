@@ -73,9 +73,9 @@ function makeOptions(overrides?: Partial<PreviewCellRenderOptions>): PreviewCell
 }
 
 describe("CellCacheKeyDeriver (lsp8 composition)", () => {
-  it("produces keys starting with lsp8-", () => {
+  it("produces keys starting with lsp10-", () => {
     const key = deriver.deriveCacheKey(makeStartPosition(), undefined, false, makeOptions());
-    expect(key).toMatch(/^lsp8-/);
+    expect(key).toMatch(/^lsp10-/);
   });
 
   describe("motion-intrinsic propType differentiation (the original bug)", () => {

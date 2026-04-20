@@ -23,6 +23,9 @@ export interface GetMandalaPlacementsArgs {
 	blueVisible: boolean;
 	redVisible: boolean;
 	mandalaEnabled: boolean;
+	/** Where the info cells live. "column" → mandalas stack vertically in col 1.
+	 *  "row" → mandalas lay out horizontally across the top row. */
+	startPositionLayout?: "row" | "column";
 }
 
 export interface GetMandalaPlacementsResult {
@@ -42,27 +45,50 @@ export function getMandalaPlacements(args: GetMandalaPlacementsArgs): GetMandala
 		blueVisible,
 		redVisible,
 		mandalaEnabled,
+		startPositionLayout = "column",
 	} = args;
 
 	if (!mandalaEnabled) return EMPTY;
 	if (!includeStartPosition) return EMPTY;
 	if (!blueVisible && !redVisible) return EMPTY;
-	if (rows < 2) return EMPTY;
 
-	// 4-count horizontal metadata row only applies when QR needs a home.
-	// Without QR, 4-count stays at 3×2 and the default rule handles it.
-	if (stepCount === 4 && showQRCode) {
+	// 4-count horizontal metadata row only applies when QR needs a home
+	// AND the user has selected column layout (the override reshapes the
+	// grid into a horizontal info row). In row layout the info row already
+	// spans the top, so the generic row-mode logic below handles it.
+	if (stepCount === 4 && showQRCode && startPositionLayout === "column") {
 		return buildFourCountHorizontal(blueVisible, redVisible);
 	}
 
-	// Standard case: col 0 runs start (row 1) → empties → QR (row `rows`).
+	if (startPositionLayout === "row") {
+		// Row layout: info cells live in row 1 between start (col 1) and QR (col `cols`).
+		// When QR is off, the trailing cell is also empty and joins the span.
+		if (cols < 2) return EMPTY;
+		const leftCol = 2;
+		const rightCol = showQRCode ? cols - 1 : cols;
+		const emptyCount = rightCol - leftCol + 1;
+		if (emptyCount < 1) return EMPTY;
+
+		const variants = chooseVariantSequence(emptyCount, blueVisible, redVisible);
+		if (variants.length === 0) return EMPTY;
+
+		const startCol = leftCol + Math.floor((emptyCount - variants.length) / 2);
+		const placements: MandalaPlacement[] = variants.map((variant, i) => ({
+			row: 1,
+			col: startCol + i,
+			variant,
+		}));
+		return { placements, layoutOverride: null };
+	}
+
+	// Column layout: col 1 runs start (row 1) → empties → QR (row `rows`).
 	// When QR is off, the bottom cell is also empty and joins the span.
+	if (rows < 2) return EMPTY;
 	const topRow = 2;
 	const bottomRow = showQRCode ? rows - 1 : rows;
 	const emptyCount = bottomRow - topRow + 1;
 	if (emptyCount < 1) return EMPTY;
 
-	// cols is read for signature completeness and future cases that may need it.
 	void cols;
 
 	const variants = chooseVariantSequence(emptyCount, blueVisible, redVisible);

@@ -250,14 +250,14 @@ function interpolate(
 		return { x, y, staffAngle };
 	}
 
-	if (motionType === "static" || motionType === "float") {
+	if (motionType === "static") {
 		// Hand stays at start position
 		const x = Math.cos(startCenterAngle);
 		const y = Math.sin(startCenterAngle);
 		return { x, y, staffAngle };
 	}
 
-	// Arc interpolation (PRO, ANTI)
+	// Arc interpolation (PRO, ANTI, FLOAT — all shift-family motions)
 	const centerAngle = lerpAngle(startCenterAngle, targetCenterAngle, t);
 	const x = Math.cos(centerAngle);
 	const y = Math.sin(centerAngle);
@@ -366,9 +366,6 @@ function generatePathPoints(
 		const motion = extractMotion(rawMotion);
 		if (!motion) continue;
 
-		// Float produces no path (no movement, no rotation)
-		if (motion.motionType === "float") continue;
-
 		const endpoints = calculateMotionEndpoints(motion);
 
 		// Staff angle chaining: override start with previous beat's end angle
@@ -378,8 +375,12 @@ function generatePathPoints(
 			);
 			endpoints.startStaffAngle = prevEndStaffAngle;
 
-			// Recompute staffRotationDelta relative to the chained start angle
-			if (motion.turns > 0 && !isNoRotation(motion.rotDir)) {
+			// Recompute staffRotationDelta relative to the chained start angle.
+			// Float is special: the prop holds its absolute spatial angle, so
+			// delta stays 0 regardless of chaining.
+			if (motion.motionType === "float") {
+				endpoints.staffRotationDelta = 0;
+			} else if (motion.turns > 0 && !isNoRotation(motion.rotDir)) {
 				const dir = parseDirection(motion.rotDir);
 				const turnsRotation = dir * motion.turns * PI;
 

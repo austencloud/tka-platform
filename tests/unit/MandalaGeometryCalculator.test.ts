@@ -353,7 +353,13 @@ const SINGLE_STATIC_STEP: StepLike[] = [
   },
 ];
 
-/** Single FLOAT beat — should produce no path */
+/**
+ * Single FLOAT beat — s→w shift with prop holding absolute spatial angle.
+ *
+ * Float only exists on shifts (curved hand path). The hand arcs from s to w
+ * like pro/anti, but the prop does not rotate at all — it holds its start
+ * orientation's world-frame angle throughout the motion.
+ */
 const SINGLE_FLOAT_STEP: StepLike[] = [
   {
     motions: {
@@ -361,10 +367,10 @@ const SINGLE_FLOAT_STEP: StepLike[] = [
         motionType: "float",
         rotationDirection: "noRotation",
         startLocation: "s",
-        endLocation: "s",
+        endLocation: "w",
         turns: 0,
         startOrientation: "out",
-        endOrientation: "out",
+        endOrientation: "clock",
       },
       red: {
         motionType: "static",
@@ -597,18 +603,91 @@ describe("MandalaGeometryCalculator", () => {
     });
   });
 
-  // ─── Test 5: FLOAT produces no path ─────────────────────────────────────
+  // ─── Test 5: FLOAT traces a shift arc with constant prop angle ──────────
 
-  describe("FLOAT motion produces no path", () => {
-    it("blue has no path entries when blue motion is float", () => {
+  describe("FLOAT motion produces an arc with constant prop angle", () => {
+    it("blue produces a path (float is a shift, it must be drawn)", () => {
       const result = calc.calculate(SINGLE_FLOAT_STEP);
-      // The float hand should generate no path data
-      expect(result.blue).toHaveLength(0);
+      expect(result.blue.length).toBeGreaterThan(0);
     });
 
-    it("red path is still produced when red is static (float only on blue)", () => {
+    it("blue path traces an arc between start and end locations (s→w)", () => {
+      const result = calc.calculate(SINGLE_FLOAT_STEP);
+      const path = result.blue[0]!;
+      const pts = parseSVGEndpoints(path.d);
+      expect(pts.length).toBeGreaterThan(4);
+
+      // First point should be near south (y > 0), last near west (x < 0).
+      // The south grid location is at angle 90° (unit circle: cos=0, sin=1).
+      // The west location is at 180° (cos=-1, sin=0).
+      // Grid radius scales these; tip offset shifts but preserves quadrant.
+      const first = pts[0]!;
+      const last = pts[pts.length - 1]!;
+
+      // First point is in the "south" half (positive y side of the grid)
+      expect(first.y).toBeGreaterThan(0);
+      // Last point is in the "west" half (negative x side of the grid)
+      expect(last.x).toBeLessThan(0);
+    });
+
+    it("path traverses a wide range of positions (arc, not static)", () => {
+      // A static motion produces a zero-area path (all points at the same
+      // hand position, only staff angle may differ — but staff is also
+      // constant during 0-turn static, so all tip points are identical).
+      // A float arc must carry the hand across the grid, so the bounding
+      // box of tip points must be substantial.
+      const result = calc.calculate(SINGLE_FLOAT_STEP);
+      const path = result.blue[0]!;
+      const pts = parseSVGEndpoints(path.d);
+
+      const xs = pts.map((p) => p.x);
+      const ys = pts.map((p) => p.y);
+      const xSpan = Math.max(...xs) - Math.min(...xs);
+      const ySpan = Math.max(...ys) - Math.min(...ys);
+
+      // An arc from s→w covers roughly one grid-radius in each axis (~56px).
+      // Require at least half that to confirm the hand is moving, not static.
+      expect(xSpan).toBeGreaterThan(MANDALA_GRID_RADIUS / 2);
+      expect(ySpan).toBeGreaterThan(MANDALA_GRID_RADIUS / 2);
+    });
+
+    it("prop holds its absolute spatial angle throughout the arc (float definition)", () => {
+      // Float's defining property: prop does not rotate. In world frame,
+      // the staff angle is constant across all samples. We verify this by
+      // checking that the two tips (tipIndex 0 and 1) maintain a constant
+      // separation vector — if the staff rotated, the vector between the
+      // two tips would rotate too.
+      const result = calc.calculate(SINGLE_FLOAT_STEP);
+      expect(result.blue).toHaveLength(2);
+
+      const tipA = parseSVGEndpoints(result.blue[0]!.d);
+      const tipB = parseSVGEndpoints(result.blue[1]!.d);
+      expect(tipA.length).toBe(tipB.length);
+
+      // For each sample, the vector from tipA to tipB represents the staff
+      // orientation at that moment. If the staff doesn't rotate, all these
+      // vectors point in the same direction.
+      const separationAngles = tipA.map((a, i) => {
+        const b = tipB[i]!;
+        return Math.atan2(b.y - a.y, b.x - a.x);
+      });
+
+      const minAngle = Math.min(...separationAngles);
+      const maxAngle = Math.max(...separationAngles);
+      // Staff angle variation should be negligible (< 0.01 rad, effectively 0)
+      expect(maxAngle - minAngle).toBeLessThan(0.01);
+    });
+
+    it("red static path is still produced alongside float blue path", () => {
       const result = calc.calculate(SINGLE_FLOAT_STEP);
       expect(result.red.length).toBeGreaterThan(0);
+    });
+
+    it("path is a single continuous curve (one M command)", () => {
+      const result = calc.calculate(SINGLE_FLOAT_STEP);
+      for (const path of result.blue) {
+        expect(countMoveToCommands(path.d)).toBe(1);
+      }
     });
   });
 
