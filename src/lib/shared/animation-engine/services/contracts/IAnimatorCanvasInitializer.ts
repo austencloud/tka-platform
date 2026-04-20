@@ -34,6 +34,9 @@ export interface InitializerCallbacks {
 export interface InitializerDependencies {
   containerElement: HTMLDivElement;
   backgroundAlpha: number;
+  /** Live animator canvases opt out so effects can composite behind props.
+   *  Export/offscreen paths leave this true to burn the background into pixels. */
+  paintBackground?: boolean;
   gridMode: GridMode | null;
   loadAnimatorServices: () => Promise<boolean>;
   initializePrecomputationService: () => void;

@@ -38,6 +38,7 @@ import { SequenceAnimationOrchestrator } from "$lib/features/compose/services/im
 import { AnimationStateManager } from "$lib/features/compose/services/implementations/AnimationStateManager";
 import { container } from "$lib/shared/di";
 import { getAnimationVisibilityManager, type AnimationVisibilityStateManager } from "../../state/animation-visibility-state.svelte";
+import { resolveEffectZ } from "../effect-layer";
 import type { EffortId } from "$lib/features/effort-lab/domain/effort-types";
 import type { TipEffectMap, TipEffortMap } from "../../domain/types/TipEffectTypes";
 
@@ -903,6 +904,11 @@ export class AnimationEngine {
         if (Object.keys(ledDiff).length > 0) {
           this.setLedConfig(ledDiff);
         }
+
+        // Any settings change — including behind/front layer overrides — carries
+        // here. Applied after syncXxxOverlay so newly created canvases pick up the
+        // override on the same notification.
+        this.syncEffectLayers();
       }
     );
 
@@ -1781,6 +1787,31 @@ export class AnimationEngine {
     this.trailOverlay = this.createTrailOverlay();
     this.trailOverlay.initialize(this.containerElement!, this.canvasSize, this.canvasSize);
     this.renderLoopService.updateConfig({ trailOverlay: this.trailOverlay });
+    this.syncEffectLayers();
+  }
+
+  /**
+   * Push each effect's behind/front layer override to its overlay canvas.
+   * Safe to call any time; renderers that aren't initialized yet are skipped.
+   */
+  private syncEffectLayers(): void {
+    const vm = this.getVM();
+    const apply = (id: string, renderer: { setCanvasZIndex?: (z: number) => void } | null) => {
+      if (!renderer?.setCanvasZIndex) return;
+      renderer.setCanvasZIndex(resolveEffectZ(id, vm.getEffectLayer(id)));
+    };
+    apply("trails", this.trailOverlay);
+    apply("fire", this.fireRenderer);
+    apply("charcoal", this.charcoalRenderer);
+    apply("led", this.ledRenderer);
+    apply("zap", this.zapRenderer);
+    apply("sparkles", this.sparklesRenderer);
+    apply("echo", this.echoRenderer);
+    apply("bloom", this.bloomRenderer);
+    apply("water", this.waterRenderer);
+    apply("bubbles", this.bubblesRenderer);
+    apply("petals", this.petalsRenderer);
+    apply("smoke", this.smokeRenderer);
   }
 
   /** Runtime A/B toggle: set `window.__TKA_TRAIL_GPU = false` before

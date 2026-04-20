@@ -58,6 +58,7 @@ export class EffectConfigMapper implements IEffectConfigMapper {
       hideProps: false,
       usePathCache: false,
       previewMode: false,
+      tailLength: 20,
     };
   }
 }

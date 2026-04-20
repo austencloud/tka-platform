@@ -745,7 +745,9 @@ Last audit: 2025-12-27
                 opacity 0.2s ease-out;
   }
 
-  /* Canvas wrapper: square in portrait mode */
+  /* Canvas wrapper: square in portrait mode. Owns the background color so the
+     main canvas can stay transparent — effect overlays at z<3 sit between this
+     background and the main canvas's opaque prop pixels. */
   .canvas-wrapper {
     position: relative;
     width: 100%;
@@ -755,6 +757,16 @@ Last audit: 2025-12-27
     display: flex;
     align-items: center;
     justify-content: center;
+    background: #f5f5f5;
+    transition: background-color 350ms ease;
+  }
+
+  .canvas-wrapper[data-dark-mode="true"] {
+    background: #0a0a0f;
+  }
+
+  .canvas-wrapper[data-transparent="true"] {
+    background: transparent;
   }
 
   /* ===========================================
@@ -810,20 +822,11 @@ Last audit: 2025-12-27
   }
 
   .canvas-wrapper :global(canvas) {
-    background: #f5f5f5;
+    background: transparent;
     display: block;
     width: 100%;
     height: 100%;
     object-fit: contain;
-    transition: background-color 350ms ease;
-  }
-
-  .canvas-wrapper[data-dark-mode="true"] :global(canvas) {
-    background: #0a0a0f;
-  }
-
-  .canvas-wrapper[data-transparent="true"] :global(canvas) {
-    background: transparent !important;
   }
 
   /* ===========================================

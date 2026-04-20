@@ -108,7 +108,8 @@ export class AnimatorCanvasInitializer implements IAnimatorCanvasInitializer {
       await this.renderer.initialize(
         deps.containerElement,
         initialSize,
-        deps.backgroundAlpha
+        deps.backgroundAlpha,
+        deps.paintBackground ?? false
       );
 
       // Check if destroyed during async operation
