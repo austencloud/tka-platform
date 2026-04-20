@@ -1,5 +1,5 @@
 import type { Smoke2DParams } from "../translators/canvas2d-types";
-import { SampledCurlGrid2D } from "$lib/shared/3d/effects/smoke/SmokeCurlField";
+import { curl2D } from "$lib/shared/3d/effects/smoke/SmokeCurlField";
 
 export interface SmokeTipInput {
   bluePosA: { x: number; y: number } | null;
@@ -14,16 +14,15 @@ const TIP_KEYS: TipKey[] = ["bluePosA", "bluePosB", "redPosA", "redPosB"];
 /**
  * A single live puff particle.
  *
- * Position is integrated each frame by a curl-noise velocity (swirling
- * horizontal component) plus a world-up rise (upward screen-space = -y).
- * Radius grows over lifetime — smoke reads as expanding, not as a solid
- * disc — and alpha fades over the last 30% of life.
+ * Motion integrates a multi-octave curl-noise flow field (sampled at the
+ * puff's own position — no per-particle phase offset, so neighbouring
+ * puffs move as coherent sheets) with a Boussinesq buoyancy force scaled
+ * by per-particle temperature that cools exponentially.
  */
 interface SmokePuff {
-  /** Current position (px). */
   x: number;
   y: number;
-  /** Horizontal velocity (px/s). Updated each frame from curl field. */
+  /** Horizontal velocity (px/s). Linear-drag advected toward flow. */
   vx: number;
   /** Vertical velocity (px/s). Negative = rising (screen-up). */
   vy: number;
@@ -35,46 +34,64 @@ interface SmokePuff {
   r0: number;
   /** Max radius at end of life (px). Puff grows linearly across life. */
   r1: number;
-  /** Base alpha at peak (0-1). Palette intensity + intent modulate this. */
+  /** Base alpha at peak (0-1). */
   peakAlpha: number;
-  /** Per-puff phase for the noise sample — keeps emitted puffs from all sampling the exact same curl cell on their first frame. */
-  noisePhase: number;
+  /** Temperature 0-1. Decays exponentially; drives buoyancy. */
+  temperature: number;
+  /** Current draw rotation (radians). */
+  angle: number;
+  /** Rotation rate (radians/sec). Derived from curl rotation at spawn. */
+  angularVel: number;
+  /** Per-puff silhouette stretch (1 = round). Breaks identical-blob look. */
+  stretch: number;
 }
 
 const TAU = Math.PI * 2;
-const FADE_IN_DURATION = 0.3; // seconds — soft birth, avoids hard pop-in
-// Full-life fade curve: rise-in over FADE_IN_DURATION, hold for 40% of life,
-// then linear decay across the remaining 60%. Previous "last 30%" policy left
-// puffs at full opacity for most of their life, which accumulated into a
-// stuck cloud for long-lifetime palettes (fog, cursed).
+const FADE_IN_DURATION = 0.3; // seconds — soft birth
+// Full-life fade curve: hold HOLD_FRACTION of life, decay across remainder.
 const HOLD_FRACTION = 0.4;
 
+// --- Flow field tuning (Bridson 2007 curl-noise + Schechter/Bridson fBm) ---
+// Two octaves. Large eddies carry the billow; small eddies add wispy
+// detail. Sampled at the puff's actual world position (no per-particle
+// phase offset) so nearby puffs share a flow → coherent sheets of motion
+// instead of independent jitter.
+const LARGE_EDDY_SCALE = 0.003; // 1/px — ~330px per eddy
+const SMALL_EDDY_SCALE = 0.012; // 1/px — ~80px wisps
+const LARGE_STRENGTH = 140; // px/s — dominant billow motion
+const SMALL_STRENGTH = 45; // px/s — detail turbulence
+
+// Thermal model (Boussinesq).
+// Puffs spawn hot (temp=1), cool exponentially. Buoyancy is proportional
+// to temperature, so fresh puffs lift fast and older ones settle. This is
+// what produces mushroom-cap expansion without additional forces: young
+// hot puffs overtake older cool ones below them.
+const COOLING = 0.35; // 1/s — halves temperature every ~2 s
+
+// Linear drag toward flow velocity. DRAG of 0.6 /s means the time
+// constant is ~1.7 s — gentle, lets momentum carry across curls
+// instead of being snuffed out within a quarter second like the old
+// exponential `0.4^dt` drag.
+const DRAG = 0.6; // 1/s
+
 /**
- * Canvas2D smoke renderer — per-tip curl-noise puff emitter.
+ * Canvas2D smoke renderer — per-tip curl-noise puff emitter with
+ * continuous analytical flow field + Boussinesq buoyancy.
  *
- * Each puff is drawn as a radial-gradient circle (core → edge →
- * transparent). Motion combines:
- *   - vy  = palette-biased rise speed (negative = up)
- *   - curl(position, time) × resolvedCurlStrength
- *
- * Curl noise is sampled from a pre-baked grid (`SampledCurlGrid2D`) that
- * regenerates at ~3 Hz — a one-time cost of ~12k simplex calls every
- * 333ms instead of 245k calls/sec direct sampling at high tier.
- *
- * Pool saturation policy: when the pool is full, new spawn attempts are
- * dropped — we do NOT recycle alive particles. Fog palette at max spawn
- * will hit the density cap and stay there until older puffs age out,
- * which reads as a natural density plateau, not pop-out artifacts.
+ * Designed against Bridson 2007 "Curl-Noise for Procedural Fluid Flow" and
+ * Schechter/Bridson 2008 "Evolving Sub-Grid Turbulence" — the parts that
+ * translate to a particle system without a grid solver. Each puff samples
+ * two octaves of curl at its own position (no per-particle phase offset,
+ * which was the previous coherence-breaker), gets an upward target
+ * velocity from temperature, and advects its velocity toward
+ * `flow + buoyancy` with linear drag.
  */
 export class Smoke2DRenderer {
   private puffs: SmokePuff[] = [];
   private lastTipPos: Partial<Record<TipKey, { x: number; y: number }>> = {};
-  private smoothedVelocity: Partial<Record<TipKey, { vx: number; vy: number }>> = {};
+  private smoothedVelocity: Partial<Record<TipKey, { vx: number; vy: number }>> =
+    {};
   private clock = 0;
-  // One shared curl field across tips. Domain of 16 world-space-ish units
-  // at noiseScale=0.5 gives a coherent eddy pattern at the ~800px canvas
-  // scale without visible tiling seams.
-  private readonly curlField = new SampledCurlGrid2D(64, 16, 1 / 3);
 
   render(
     ctx: CanvasRenderingContext2D,
@@ -109,12 +126,21 @@ export class Smoke2DRenderer {
       const svy = prev ? prev.vy + (vy - prev.vy) * alpha : vy;
       this.smoothedVelocity[key] = { vx: svx, vy: svy };
       const speedPx = Math.hypot(svx, svy);
-      this.spawnPuffs(params, tip, speedPx, dt, scale, baseRadius, poolCap);
+      this.spawnPuffs(
+        params,
+        tip,
+        { vx: svx, vy: svy },
+        speedPx,
+        dt,
+        scale,
+        baseRadius,
+        poolCap,
+      );
       this.lastTipPos[key] = { x: tip.x, y: tip.y };
     }
 
     // 2. Integrate + age + cull.
-    this.integratePuffs(dt, params, scale);
+    this.integratePuffs(dt, params);
 
     if (this.puffs.length === 0) return;
 
@@ -125,6 +151,7 @@ export class Smoke2DRenderer {
   private spawnPuffs(
     params: Smoke2DParams,
     tip: { x: number; y: number },
+    tipVel: { vx: number; vy: number },
     speedPx: number,
     dt: number,
     scale: number,
@@ -132,9 +159,6 @@ export class Smoke2DRenderer {
     poolCap: number,
   ): void {
     if (this.puffs.length >= poolCap) return;
-    // Match other emitters' speed scalar: convert world-speed reference
-    // to a px scale via a 60:1 pixel-per-world rule so the motion
-    // sensitivity lines up with bubbles/petals.
     const PX_PER_WORLD = 60;
     const refSpeed = params.motionReferenceSpeed * PX_PER_WORLD * scale;
     const speedScalar = refSpeed > 0 ? Math.min(1, speedPx / refSpeed) : 0;
@@ -148,72 +172,107 @@ export class Smoke2DRenderer {
     if (n <= 0) return;
 
     const lifetime = params.lifetimeSeconds;
-    // Expansion ratio — puffs grow 1.8x over life. Earlier 3x + slow rise
-    // caused visible piling at the emitter; 1.8x keeps the expansion read
-    // without compounding the accumulation problem.
-    const growthRatio = 1.8;
+    // Puffs grow 2.4x over life. Combined with exponential thermal cooling
+    // you get the mushroom-cap read: hot fresh puffs are small+fast, old
+    // cool puffs are large+slow, so fresh ones overtake older ones below.
+    const growthRatio = 2.4;
 
     for (let i = 0; i < n; i++) {
       const jitter = 0.8 + Math.random() * 0.4;
       const r0 = baseRadius * jitter;
-      const r1 = r0 * growthRatio * (0.8 + Math.random() * 0.4);
-      const ox = (Math.random() - 0.5) * 8 * scale;
-      const oy = (Math.random() - 0.5) * 6 * scale;
-      // Spec: ±20% per-particle lifetime jitter.
+      const r1 = r0 * growthRatio * (0.85 + Math.random() * 0.3);
+      // Tighten spawn spread vs 8×6 old value — reads as entrainment
+      // from a narrower source.
+      const ox = (Math.random() - 0.5) * 4 * scale;
+      const oy = (Math.random() - 0.5) * 3 * scale;
       const lifeJitter = 0.8 + Math.random() * 0.4;
-      // Intent's `intensity` multiplies the per-puff alpha peak. Smoke is
-      // translucent — previous range 0.25-0.70 read as opaque blobs at high
-      // intensity. New range 0.12-0.37 keeps puffs readably misty.
+      // Smoke is translucent — range 0.12-0.37 peak instead of 0.25-0.70.
       const peakAlpha = 0.12 + 0.25 * params.intensity;
+
+      const px = tip.x + ox;
+      const py = tip.y + oy;
+
+      // Seed angular velocity from the curl sampled at spawn. Scaling by
+      // the difference of curl components gives each puff a rotation tied
+      // to the local vorticity rather than random spin.
+      const c = curl2D(px * LARGE_EDDY_SCALE, py * LARGE_EDDY_SCALE, this.clock);
+      const angularVel = (c.vx - c.vy) * 0.8;
+
+      // Inherit a fraction of tip velocity — gives fast tip motion a
+      // visible "ejected plume" direction without overpowering buoyancy.
+      const INHERIT = 0.35;
+
       this.puffs.push({
-        x: tip.x + ox,
-        y: tip.y + oy,
-        // Small initial outward drift so fresh puffs don't stack.
-        vx: (Math.random() - 0.5) * 20 * scale,
-        // Negative = up in screen space.
-        vy: -params.resolvedRiseSpeed * scale * (0.85 + Math.random() * 0.3),
+        x: px,
+        y: py,
+        vx: tipVel.vx * INHERIT,
+        vy: tipVel.vy * INHERIT,
         age: 0,
         maxAge: lifetime * lifeJitter,
         r0,
         r1,
         peakAlpha,
-        noisePhase: Math.random() * TAU,
+        temperature: 0.85 + Math.random() * 0.3,
+        angle: Math.random() * TAU,
+        angularVel,
+        stretch: 0.85 + Math.random() * 0.3,
       });
     }
   }
 
-  private integratePuffs(dt: number, params: Smoke2DParams, scale: number): void {
+  private integratePuffs(dt: number, params: Smoke2DParams): void {
     const survivors: SmokePuff[] = [];
     const curlStrength = params.resolvedCurlStrength;
-    // noiseScale is world-units per radian; we bake the curl grid in
-    // world units and scale position → world via 1/(noiseScale × PX_PER_WORLD).
-    const PX_PER_WORLD = 60;
-    const worldScale = 1 / (params.noiseScale * PX_PER_WORLD * scale);
+    // resolvedRiseSpeed is the Boussinesq buoyancy target (px/s upward) at
+    // temperature=1. Palette riseBias is already baked in at the
+    // translator. Negate so screen-up (-y) is the rise direction.
+    const buoyancyTarget = -params.resolvedRiseSpeed;
+    const coolingFactor = Math.exp(-COOLING * dt);
+    const dragStep = DRAG * dt;
+
     for (const p of this.puffs) {
       p.age += dt;
       if (p.age >= p.maxAge) continue;
-      // Curl sample: position mapped to grid world coords, plus a per-
-      // puff noise phase offset so neighbouring puffs don't sample the
-      // same cell perfectly in sync.
-      const wx = p.x * worldScale + p.noisePhase;
-      const wy = p.y * worldScale;
-      const curl = this.curlField.sample(wx, wy, this.clock);
-      // Curl magnitude baseline: the sampled output is roughly [-1, 1],
-      // so a curl-scale px/sec conversion lets user-facing curlStrength=1
-      // move a puff ~80 px/s laterally (visible but not chaotic).
-      const CURL_BASE_PX = 80 * scale;
-      const cx = curl.vx * curlStrength * CURL_BASE_PX;
-      const cy = curl.vy * curlStrength * CURL_BASE_PX;
-      // Rise decelerates with age: hot smoke lifts fast near the source,
-      // cools and slows as it rises. lifeT 0 → factor 1.0, lifeT 1 → 0.5.
-      const lifeT = p.age / p.maxAge;
-      const riseFactor = 1 - 0.5 * lifeT;
-      p.x += (p.vx + cx) * dt;
-      p.y += (p.vy * riseFactor + cy) * dt;
-      // Light drag so horizontal drift doesn't accumulate forever on
-      // long-lived puffs (fog palette).
-      const drag = Math.pow(0.4, dt);
-      p.vx *= drag;
+
+      // Exponential thermal cooling.
+      p.temperature *= coolingFactor;
+
+      // Multi-octave curl sample at the puff's own position. SHARED
+      // spatial coordinates — no per-particle phase offset — so two
+      // neighbouring puffs sample the same flow and move together.
+      const c1 = curl2D(
+        p.x * LARGE_EDDY_SCALE,
+        p.y * LARGE_EDDY_SCALE,
+        this.clock,
+      );
+      const c2 = curl2D(
+        p.x * SMALL_EDDY_SCALE,
+        p.y * SMALL_EDDY_SCALE,
+        this.clock * 1.7,
+      );
+      const flowVx =
+        (c1.vx * LARGE_STRENGTH + c2.vx * SMALL_STRENGTH) * curlStrength;
+      const flowVy =
+        (c1.vy * LARGE_STRENGTH + c2.vy * SMALL_STRENGTH) * curlStrength;
+
+      // Boussinesq: buoyancy acts as an upward target velocity scaled by
+      // temperature. Hot → strong lift; cool → near zero.
+      const targetVx = flowVx;
+      const targetVy = flowVy + buoyancyTarget * p.temperature;
+
+      // Linear drag advects velocity toward target (flow + buoyancy),
+      // instead of kicking velocity away from it — that's what gives
+      // smoke its "following the current" look.
+      p.vx += (targetVx - p.vx) * dragStep;
+      p.vy += (targetVy - p.vy) * dragStep;
+
+      // Integrate position.
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+
+      // Rotation is continuous — no per-frame randomness.
+      p.angle += p.angularVel * dt;
+
       survivors.push(p);
     }
     this.puffs = survivors;
@@ -232,7 +291,6 @@ export class Smoke2DRenderer {
       for (const p of this.puffs) {
         const lifeT = p.age / p.maxAge;
         const fadeIn = p.age < FADE_IN_DURATION ? p.age / FADE_IN_DURATION : 1;
-        // Full-life decay: hold for HOLD_FRACTION, then linear fade to 0.
         const fadeOut =
           lifeT > HOLD_FRACTION
             ? Math.max(0, (1 - lifeT) / (1 - HOLD_FRACTION))
@@ -242,15 +300,24 @@ export class Smoke2DRenderer {
 
         const radius = p.r0 + (p.r1 - p.r0) * lifeT;
 
-        const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, radius);
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.angle);
+        // Area-preserving stretch breaks the identical-blob look.
+        const sx = p.stretch;
+        const sy = 1 / p.stretch;
+        ctx.scale(sx, sy);
+
+        const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, radius);
         grad.addColorStop(0, `rgba(${cr},${cg},${cb},${alpha})`);
         grad.addColorStop(0.55, `rgba(${er},${eg},${eb},${alpha * 0.55})`);
         grad.addColorStop(1, `rgba(${er},${eg},${eb},0)`);
 
         ctx.fillStyle = grad;
         ctx.beginPath();
-        ctx.arc(p.x, p.y, radius, 0, TAU);
+        ctx.arc(0, 0, radius, 0, TAU);
         ctx.fill();
+        ctx.restore();
       }
     } finally {
       ctx.globalAlpha = prevAlpha;

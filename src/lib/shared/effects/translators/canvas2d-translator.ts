@@ -187,7 +187,13 @@ export function resolveSmoke2D(
   // Spec tuning constants. RISE_BASE is the screen-space px/s rise at
   // slider=1 before palette bias. 2D uses px, so a tuned absolute value
   // replaces 3D's world-unit value.
-  const RISE_BASE_PX = 110; // px/sec upward at riseSpeed=1, palette.riseBias=1
+  // Boussinesq buoyancy target velocity at riseSpeed=1, palette.riseBias=1
+  // and temperature=1. The renderer advects vy toward this target with
+  // linear drag (DRAG=0.6/s) — time constant ≈1.7s — so the target is an
+  // upper bound that long-lived puffs approach asymptotically. Short-lived
+  // genie puffs only reach ~60% of target before cooling. Value tuned
+  // against Bridson 2007 + Boussinesq approximation for visual plausibility.
+  const RISE_BASE_PX = 280;
   const defaults: Omit<Smoke2DParams, keyof SmokeIntent> = {
     resolvedPalette: palette,
     poolSize: 1024,
