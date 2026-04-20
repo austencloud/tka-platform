@@ -19,18 +19,12 @@ Always renders as a pure button. Word input is now in WordInputCard.
     onGenerateClicked,
     config,
     startEndOptions = null,
-    needsCycleCompletion = false,
-    onCompleteCycle,
   } = $props<{
     isGenerating: boolean;
     hasSettingsChanged?: boolean;
     onGenerateClicked: (options: any) => Promise<void>;
     config: UIGenerationConfig;
     startEndOptions?: StartEndOptions | null;
-    /** When true, show "Complete Cycle" button alongside generate */
-    needsCycleCompletion?: boolean;
-    /** Called when user clicks "Complete Cycle" */
-    onCompleteCycle?: () => void;
   }>();
 
   const isDisabled = $derived(isGenerating);
@@ -61,56 +55,21 @@ Always renders as a pure button. Word input is now in WordInputCard.
     );
     await onGenerateClicked(generationOptions);
   }
-
-  function handleCompleteCycle() {
-    hapticService?.trigger("selection");
-    onCompleteCycle?.();
-  }
 </script>
 
-{#if needsCycleCompletion}
-  <div class="generate-row">
-    <button
-      class="complete-cycle-btn"
-      onclick={handleCompleteCycle}
-      disabled={isGenerating}
-      type="button"
-      aria-label="Complete orientation cycle"
-    >
-      <div class="button-content">
-        <FontAwesomeIcon icon="rotate" style="solid" />
-        <span>Complete Cycle</span>
-      </div>
-    </button>
-    <button
-      class="generate-button-card generate-half"
-      class:dirty={hasSettingsChanged && !isGenerating}
-      onclick={handleClick}
-      disabled={isDisabled}
-      type="button"
-      aria-label={buttonLabel}
-    >
-      <div class="button-content">
-        <FontAwesomeIcon icon={buttonIcon} style="solid" />
-        <span>{buttonLabel}</span>
-      </div>
-    </button>
+<button
+  class="generate-button-card"
+  class:dirty={hasSettingsChanged && !isGenerating}
+  onclick={handleClick}
+  disabled={isDisabled}
+  type="button"
+  aria-label={buttonLabel}
+>
+  <div class="button-content">
+    <FontAwesomeIcon icon={buttonIcon} style="solid" />
+    <span>{buttonLabel}</span>
   </div>
-{:else}
-  <button
-    class="generate-button-card"
-    class:dirty={hasSettingsChanged && !isGenerating}
-    onclick={handleClick}
-    disabled={isDisabled}
-    type="button"
-    aria-label={buttonLabel}
-  >
-    <div class="button-content">
-      <FontAwesomeIcon icon={buttonIcon} style="solid" />
-      <span>{buttonLabel}</span>
-    </div>
-  </button>
-{/if}
+</button>
 
 <style>
   .generate-button-card {
@@ -175,59 +134,6 @@ Always renders as a pure button. Word input is now in WordInputCard.
   .generate-button-card:focus-visible {
     outline: 2px solid var(--theme-text, white);
     outline-offset: 2px;
-  }
-
-  /* ─── Complete Cycle + Generate side-by-side ─── */
-
-  .generate-row {
-    display: flex;
-    width: 100%;
-    height: 100%;
-    gap: clamp(4px, 1cqi, 8px);
-  }
-
-  .complete-cycle-btn {
-    flex: 1;
-    border: none;
-    background: var(--theme-accent, rgba(99, 102, 241, 0.85));
-    color: var(--theme-text, white);
-    border-radius: 20px;
-    font-size: clamp(14px, 1.8vmin, 22px);
-    font-weight: var(--card-text-weight);
-    letter-spacing: 0.2px;
-    text-shadow: var(--card-text-shadow);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow:
-      0 4px 12px color-mix(in srgb, var(--theme-accent, rgba(99, 102, 241, 0.85)) 40%, transparent),
-      0 2px 6px var(--theme-shadow);
-  }
-
-  .complete-cycle-btn:hover:not(:disabled) {
-    filter: brightness(1.15);
-    transform: scale(1.02);
-  }
-
-  .complete-cycle-btn:active:not(:disabled) {
-    transform: scale(0.98);
-    transition: all var(--duration-instant) ease;
-  }
-
-  .complete-cycle-btn:focus-visible {
-    outline: 2px solid var(--theme-text, white);
-    outline-offset: 2px;
-  }
-
-  .complete-cycle-btn:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-  }
-
-  .generate-half {
-    flex: 1;
   }
 
   /* ─── Button styles ─── */
@@ -301,6 +207,12 @@ Always renders as a pure button. Word input is now in WordInputCard.
     }
   }
 
+  @media (prefers-reduced-motion: reduce) {
+    .generate-button-card {
+      animation: none;
+    }
+  }
+
   @keyframes meshGradientFlow {
     0%,
     100% {
@@ -334,10 +246,6 @@ Always renders as a pure button. Word input is now in WordInputCard.
 
     .generate-button-card:hover:not(:disabled) {
       animation: none;
-    }
-
-    .complete-cycle-btn {
-      transition: none;
     }
   }
 </style>

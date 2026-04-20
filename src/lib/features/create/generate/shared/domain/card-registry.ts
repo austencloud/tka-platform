@@ -100,9 +100,9 @@ export const CARD_REGISTRY = [
     colorKey: "mode",
   },
   {
-    id: "slice-size",
-    tourHeader: "SLICE",
-    tourDefaultValue: "Quartered",
+    id: "period",
+    tourHeader: "PERIOD",
+    tourDefaultValue: "Halved",
     tourSpan: 2,
     helpId: "slice-size",
     colorKey: "sliceSize",
