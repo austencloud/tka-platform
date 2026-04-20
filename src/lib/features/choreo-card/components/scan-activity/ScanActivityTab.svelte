@@ -5,9 +5,10 @@
   "scan-activity" section id.
 -->
 <script lang="ts">
-  import { onMount, onDestroy } from "svelte";
+  import { onDestroy } from "svelte";
   import { container } from "$lib/shared/di";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
+  import { PUBLIC_GOOGLE_MAPS_API_KEY } from "$env/static/public";
   import type { ISequenceEncoder } from "$lib/shared/navigation/services/contracts/ISequenceEncoder";
   import { scanActivityState, type CodeEntry } from "$lib/features/choreo-card/state/scan-activity-state.svelte";
   import ScanActivityCard from "./ScanActivityCard.svelte";
@@ -25,13 +26,11 @@
   const scanState = scanActivityState;
   const isAdmin = $derived(authState.isAdmin === true);
 
-  onMount(() => {
-    scanState.subscribe(authState.user?.uid ?? null);
-  });
   onDestroy(() => scanState.teardown());
 
   $effect(() => {
-    // Re-subscribe when scope changes
+    // Fires on mount and whenever scope changes — re-subscribes both times.
+    void scanState.scope;
     scanState.subscribe(authState.user?.uid ?? null);
   });
 
@@ -114,7 +113,7 @@
           <h5>Live map</h5>
           <span class="count">● {scanState.recentEvents.length} recent</span>
         </div>
-        <GlobalUserMap locations={[]} userLocation={null} apiKey="" scanMarkers={mapMarkers} size="embedded" />
+        <GlobalUserMap locations={[]} userLocation={null} apiKey={PUBLIC_GOOGLE_MAPS_API_KEY} scanMarkers={mapMarkers} size="embedded" />
         <RecentScansList events={scanState.recentEvents} onRowClick={openDrawer} />
       </div>
       <TopLocationsBlock events={scanState.recentEvents} />
