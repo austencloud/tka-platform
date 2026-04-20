@@ -39,7 +39,7 @@ const THEMES: Record<string, CardBackThemeVisuals> = {
     accentColor: "#fb923c",
     background: "linear-gradient(180deg, #0f0505 0%, #1a0a0a 30%, #2d1410 60%, #1a0a0a 100%)",
   },
-  sakuraDrift: {
+  cherryBlossom: {
     borderGradient: "linear-gradient(135deg, #831843 0%, #db2777 20%, #fce7f3 38%, #f9a8d4 50%, #fce7f3 62%, #db2777 80%, #831843 100%)",
     accentColor: "#f9a8d4",
     background: "linear-gradient(180deg, #1a0a14 0%, #2a1520 40%, #1a0a14 100%)",

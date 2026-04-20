@@ -8,7 +8,8 @@ import type { ContextMenuEntry } from "$lib/shared/components/context-menu/conte
 import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
 
 export interface ChoreoCardContextMenuDeps {
-  onOpenSettings: () => void;
+  /** Optional — when provided, adds a "Card Settings…" entry. CardDesigner uses this to toggle its sidebar. */
+  onOpenSettings?: () => void;
   onRerender?: () => void;
   onSendTo?: () => void;
   /** Step count of the current sequence (enables column picker) */
@@ -69,12 +70,14 @@ export function buildChoreoCardContextMenuItems(
     }
   }
 
-  items.push({
-    id: "open-card-settings",
-    label: "Card Settings\u2026",
-    icon: "fa-sliders",
-    action: () => deps.onOpenSettings(),
-  });
+  if (deps.onOpenSettings) {
+    items.push({
+      id: "open-card-settings",
+      label: "Card Settings\u2026",
+      icon: "fa-sliders",
+      action: () => deps.onOpenSettings?.(),
+    });
+  }
 
   const actions: ContextMenuEntry[] = [];
 
