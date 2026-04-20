@@ -38,7 +38,7 @@
     "deep-ocean": BackgroundType.DEEP_OCEAN,
     "night-sky": BackgroundType.NIGHT_SKY,
     "firefly-forest": BackgroundType.FIREFLY_FOREST,
-    "cherry-blossom": BackgroundType.SAKURA_DRIFT, // Cherry Blossom uses Sakura Drift theme
+    "cherry-blossom": BackgroundType.CHERRY_BLOSSOM,
     "pride": BackgroundType.PRIDE,
     "ember-glow": BackgroundType.EMBER_GLOW,
     "snowfall": BackgroundType.SNOWFALL,
