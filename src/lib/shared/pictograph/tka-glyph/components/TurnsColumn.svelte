@@ -29,6 +29,7 @@ Props:
   } from "./TKAGlyph.svelte";
   import { isDashLetter } from "../utils/letter-image-getter";
   import { getAnimationVisibilityManager } from "../../../animation-engine/state/animation-visibility-state.svelte";
+  import { tryGetViewerVisibilityContext } from "$lib/shared/sequence-viewer/context/viewer-visibility-context";
 
   let {
     turnsTuple = "(0, 0)",
@@ -208,9 +209,25 @@ Props:
     return calculateTurnPositions(dims, numberHeight, hasDash);
   });
 
+  // Viewer-scoped motion visibility (null when this TurnsColumn is rendered
+  // outside a sequence viewer — e.g. browse previews, image export worker).
+  const viewerVisibility = tryGetViewerVisibilityContext();
+
+  // A turn number is hidden when its color belongs to a motion the viewer
+  // has toggled off. Red color is '#ED1C24'; everything else is blue.
+  function isColorHidden(color: string | undefined | null): boolean {
+    if (!viewerVisibility || !color) return false;
+    const isRed = color === "#ED1C24";
+    return isRed ? !viewerVisibility.redMotion : !viewerVisibility.blueMotion;
+  }
+
   // Check visibility
-  const showTop = $derived(shouldDisplayTurn(parsedTurns.top));
-  const showBottom = $derived(shouldDisplayTurn(parsedTurns.bottom));
+  const showTop = $derived(
+    shouldDisplayTurn(parsedTurns.top) && !isColorHidden(turnColors.top)
+  );
+  const showBottom = $derived(
+    shouldDisplayTurn(parsedTurns.bottom) && !isColorHidden(turnColors.bottom)
+  );
 
   // Get image paths
   const topImagePath = $derived(getTurnNumberImagePath(parsedTurns.top));
