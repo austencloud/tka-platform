@@ -102,42 +102,30 @@ export class ArrowRotationCalculator implements IArrowRotationCalculator {
      * Uses different rotation maps based on whether orientation is radial (IN/OUT) or non-radial (CLOCK/COUNTER).
      * Radial = Diamond mode, Non-radial = Box mode.
      *
-     * ROTATION OVERRIDE CHECK:
-     * For specific pictographs, rotation override flag may be set in special placements.
-     * When override is active, uses different rotation angles.
-     *
-     * IMPORTANT: Override map selection uses END orientation, not start orientation!
-     * This is because the special placement data is organized by end orientation layers.
-     * For half-turn motions, start and end orientations may be in different layers.
+     * Both normal and override map selection use START orientation, matching the
+     * legacy desktop calculator. Half-turn motions (different start/end radiality)
+     * still resolve against the start-orientation layer.
      */
     const startOrientation = motion.startOrientation;
-    const endOrientation = motion.endOrientation;
     const rotationDirection = motion.rotationDirection.toLowerCase();
 
-    // For NORMAL rotation maps, use start orientation (where the arrow is rendered from)
     const isStartRadial =
       startOrientation === Orientation.IN ||
       startOrientation === Orientation.OUT;
 
-    // For OVERRIDE rotation maps, use end orientation (matches how placement data is organized)
-    const isEndRadial =
-      endOrientation === Orientation.IN || endOrientation === Orientation.OUT;
-
-    // STEP 1: Check for rotation override (uses END orientation to match data organization)
     const overrideRotation = await this.checkRotationOverride(
       motion,
       location,
       pictographData,
-      isEndRadial // Use END orientation for override map selection
+      isStartRadial
     );
 
     if (overrideRotation !== null) {
       return overrideRotation;
     }
 
-    // STEP 2: Use normal rotation maps (uses START orientation for normal rendering)
     const rotationMap = RotationMapSelector.selectStaticMap(
-      isStartRadial, // Use START orientation for normal map selection
+      isStartRadial,
       rotationDirection
     );
 
@@ -176,23 +164,21 @@ export class ArrowRotationCalculator implements IArrowRotationCalculator {
     /**
      * Calculate rotation for DASH arrows with special NO_ROTATION handling.
      *
-     * ROTATION OVERRIDE CHECK:
-     * Dash arrows can also have rotation overrides for specific pictographs.
-     * Uses END orientation to match how placement data is organized.
+     * Override map selection uses START orientation to match the legacy
+     * desktop calculator.
      */
     const rotationDirection = motion.rotationDirection.toLowerCase();
-    const endOrientation = motion.endOrientation;
+    const startOrientation = motion.startOrientation;
 
-    // Determine if end orientation is radial (for override map selection)
-    const isEndRadial =
-      endOrientation === Orientation.IN || endOrientation === Orientation.OUT;
+    const isStartRadial =
+      startOrientation === Orientation.IN ||
+      startOrientation === Orientation.OUT;
 
-    // STEP 1: Check for rotation override (uses END orientation to match data organization)
     const overrideRotation = await this.checkRotationOverride(
       motion,
       location,
       pictographData,
-      isEndRadial // Use END orientation for override map selection
+      isStartRadial
     );
 
     if (overrideRotation !== null) {
@@ -248,14 +234,14 @@ export class ArrowRotationCalculator implements IArrowRotationCalculator {
    * @param motion - Motion data
    * @param location - Grid location
    * @param pictographData - Optional pictograph data
-   * @param isRadial - Whether orientation is radial (for override map selection)
+   * @param isStartRadial - Whether START orientation is radial (for override map selection)
    * @returns Override rotation angle if override exists, null otherwise
    */
   private async checkRotationOverride(
     motion: MotionData,
     location: GridLocation,
     pictographData: PictographData | undefined,
-    isRadial: boolean
+    isStartRadial: boolean
   ): Promise<number | null> {
     if (!pictographData) {
       return null;
@@ -271,7 +257,7 @@ export class ArrowRotationCalculator implements IArrowRotationCalculator {
       motion,
       location,
       pictographData,
-      isRadial,
+      isStartRadial,
       this.SpecialPlacer,
       this.rotationOverrideKeyGenerator
     );

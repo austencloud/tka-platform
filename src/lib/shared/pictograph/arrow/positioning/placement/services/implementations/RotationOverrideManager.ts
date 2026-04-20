@@ -92,9 +92,16 @@ export class RotationOverrideManager implements IRotationOverrideManager {
       return false;
     }
 
-    // Generate keys for storage
-    const oriKey = this.oriKeyGenerator.generateOrientationKey(
+    // Generate the effective oriKey — SpecialPlacer reads using this, so we
+    // must save under it or the reader never sees the override. For staff+staff
+    // this collapses to the legacy bucket (e.g. "from_layer1"); for other props
+    // it preserves the specific orientation (e.g. "clock_counter").
+    const rawOriKey = this.oriKeyGenerator.generateOrientationKey(
       motion,
+      pictographData
+    );
+    const oriKey = this.oriKeyGenerator.resolveEffectiveOriKey(
+      rawOriKey,
       pictographData
     );
     const gridMode = this.getGridMode(pictographData);
@@ -150,9 +157,14 @@ export class RotationOverrideManager implements IRotationOverrideManager {
       return false;
     }
 
-    // Generate keys for lookup
-    const oriKey = this.oriKeyGenerator.generateOrientationKey(
+    // Use the same effective oriKey SpecialPlacer uses when reading,
+    // so the state shown in the UI matches what the renderer applies.
+    const rawOriKey = this.oriKeyGenerator.generateOrientationKey(
       motion,
+      pictographData
+    );
+    const oriKey = this.oriKeyGenerator.resolveEffectiveOriKey(
+      rawOriKey,
       pictographData
     );
     const gridMode = this.getGridMode(pictographData);
@@ -164,7 +176,10 @@ export class RotationOverrideManager implements IRotationOverrideManager {
       );
     const letter = pictographData.letter;
 
-    // Load overrides and check — try specific oriKey first, then legacy bucket
+    // Load overrides and check — try effective oriKey first, then legacy
+    // bucket from the RAW key. Computing legacy from rawOriKey (not from
+    // an already-collapsed oriKey) matches SpecialPlacer's pattern so stale
+    // non-staff entries can still be discovered.
     const overrides = this.loadOverrides();
     if (
       overrides[gridMode]?.[oriKey]?.[letter]?.[turnsTuple]?.[rotationKey] ===
@@ -173,8 +188,7 @@ export class RotationOverrideManager implements IRotationOverrideManager {
       return true;
     }
 
-    // Fallback: check legacy bucket oriKey for old entries
-    const legacyOriKey = this.oriKeyGenerator.mapToLegacyBucket(oriKey);
+    const legacyOriKey = this.oriKeyGenerator.mapToLegacyBucket(rawOriKey);
     if (legacyOriKey !== oriKey) {
       return (
         overrides[gridMode]?.[legacyOriKey]?.[letter]?.[turnsTuple]?.[rotationKey] ===
