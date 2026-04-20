@@ -25,7 +25,10 @@ import { createPropPlacementFromPosition } from "../../domain/factories/createPr
 import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 import type { PropPlacementData } from "../../domain/models/PropPlacementData";
 import type { IBetaDetector } from "../contracts/IBetaDetector";
-import type { IPropPlacer } from "../contracts/IPropPlacer";
+import type {
+  IPropPlacer,
+  PropPlacementVisibility,
+} from "../contracts/IPropPlacer";
 import DefaultPropPositioner from "./DefaultPropPositioner";
 import { PropRotAngleManager } from "./PropRotAngleManager";
 import {
@@ -43,7 +46,8 @@ export class PropPlacer implements IPropPlacer {
 
   async calculatePlacement(
     pictographData: PictographData,
-    motionData: MotionData
+    motionData: MotionData,
+    visibility?: PropPlacementVisibility
   ): Promise<PropPlacementData> {
     // DEBUG: Log motion data
 
@@ -61,7 +65,8 @@ export class PropPlacer implements IPropPlacer {
     const position = await this.calculatePosition(
       pictographData,
       motionData,
-      gridMode
+      gridMode,
+      visibility
     );
 
     // IMPORTANT: Hands should never rotate - always use default orientation (0 degrees)
@@ -80,7 +85,8 @@ export class PropPlacer implements IPropPlacer {
   private async calculatePosition(
     pictographData: PictographData,
     motionData: MotionData,
-    gridMode: GridMode
+    gridMode: GridMode,
+    visibility?: PropPlacementVisibility
   ): Promise<{ x: number; y: number }> {
     // Determine if strict handpoints are needed (large props like bighoop)
     // Legacy: pictograph_checker.has_strict_placed_props() - true when BOTH props are strict types
@@ -113,7 +119,8 @@ export class PropPlacer implements IPropPlacer {
     const betaOffset = await this.calculateBetaOffset(
       pictographData,
       motionData,
-      gridMode
+      gridMode,
+      visibility
     );
 
     return {
@@ -125,8 +132,20 @@ export class PropPlacer implements IPropPlacer {
   private async calculateBetaOffset(
     pictographData: PictographData,
     motionData: MotionData,
-    gridMode: GridMode
+    gridMode: GridMode,
+    visibility?: PropPlacementVisibility
   ): Promise<{ x: number; y: number }> {
+    // If this prop's partner is hidden, there is no collision — skip offset.
+    // Beta offset exists purely to separate two overlapping props; with one
+    // hidden the remaining prop should snap back to the default hand point.
+    const thisIsBlue = motionData.color === MotionColor.BLUE;
+    const partnerHidden = thisIsBlue
+      ? visibility?.showRed === false
+      : visibility?.showBlue === false;
+    if (partnerHidden) {
+      return { x: 0, y: 0 };
+    }
+
     // App-specific check: does this pictograph end in a beta position?
     const needsBetaOffset = this.BetaDetector.endsWithBeta(pictographData);
 

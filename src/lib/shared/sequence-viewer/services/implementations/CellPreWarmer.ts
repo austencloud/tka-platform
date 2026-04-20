@@ -290,6 +290,10 @@ export class CellPreWarmer implements ICellPreWarmer {
       redPropType: options.catDogModeEnabled
         ? options.redPropType
         : options.bluePropType,
+      // Partner-visibility controls beta offset — matches PreviewCellRenderer so
+      // the prewarm cache and on-demand render agree on positions.
+      showBlueMotion: options.showBlueMotion,
+      showRedMotion: options.showRedMotion,
     });
 
     if (signal.aborted) return;

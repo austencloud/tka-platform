@@ -92,6 +92,10 @@ export class PreviewCellRenderer implements IPreviewCellRenderer {
       bluePropType: effectiveBlueProp,
       redPropType: effectiveRedProp,
       handPathMode: isHandPath,
+      // Visibility flows into prop placement so a solo-visible prop skips
+      // the beta offset — no partner to collide with.
+      showBlueMotion: options.showBlueMotion,
+      showRedMotion: options.showRedMotion,
     });
 
     // Render options for layer compositor
