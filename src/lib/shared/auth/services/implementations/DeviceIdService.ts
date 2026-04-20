@@ -14,17 +14,22 @@ export class DeviceIdService implements IDeviceIdService {
 
   async linkDeviceToUser(userId: string): Promise<void> {
     const deviceId = this.getDeviceId();
-    const firestore = getFirestore();
-    const ref = doc(firestore, "users", userId, "devices", deviceId);
-    await setDoc(
-      ref,
-      {
-        deviceId,
-        firstSeen: serverTimestamp(),
-        lastSeen: serverTimestamp(),
-        userAgent: navigator.userAgent,
-      },
-      { merge: true }
-    );
+    try {
+      const firestore = getFirestore();
+      const ref = doc(firestore, "users", userId, "devices", deviceId);
+      await setDoc(
+        ref,
+        {
+          deviceId,
+          firstSeen: serverTimestamp(),
+          lastSeen: serverTimestamp(),
+          userAgent: navigator.userAgent,
+        },
+        { merge: true }
+      );
+    } catch (error) {
+      console.error("[DeviceIdService] Failed to link device to user:", error);
+      throw error;
+    }
   }
 }
