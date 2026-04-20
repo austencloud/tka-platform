@@ -28,7 +28,7 @@ const BACKGROUND_THEME_COLORS: Record<BackgroundType, string[]> = {
   [BackgroundType.NIGHT_SKY]: ["#1e1b4b", "#4338ca", "#818cf8"],
   [BackgroundType.DEEP_OCEAN]: ["#0c4a6e", "#0891b2", "#22d3ee"],
   [BackgroundType.EMBER_GLOW]: ["#7c2d12", "#ea580c", "#fb923c"],
-  [BackgroundType.SAKURA_DRIFT]: ["#831843", "#db2777", "#f9a8d4"],
+  [BackgroundType.CHERRY_BLOSSOM]: ["#831843", "#db2777", "#f9a8d4"],
   [BackgroundType.FIREFLY_FOREST]: ["#0d3320", "#166534", "#22c55e", "#bef264"],
   [BackgroundType.AUTUMN_DRIFT]: ["#92400e", "#d97706", "#dc2626", "#78350f"],
   // Solid/gradient: dark backgrounds but vibrant indigo accent for visibility

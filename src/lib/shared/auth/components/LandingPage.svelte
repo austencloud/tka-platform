@@ -61,7 +61,7 @@
     { type: BackgroundType.DEEP_OCEAN, icon: "fa-water", label: "Ocean" },
     { type: BackgroundType.SNOWFALL, icon: "fa-snowflake", label: "Snow" },
     { type: BackgroundType.EMBER_GLOW, icon: "fa-fire", label: "Ember" },
-    { type: BackgroundType.SAKURA_DRIFT, icon: "fa-leaf", label: "Cherry" },
+    { type: BackgroundType.CHERRY_BLOSSOM, icon: "fa-leaf", label: "Cherry" },
   ];
   let currentBgIndex = $state(0);
 

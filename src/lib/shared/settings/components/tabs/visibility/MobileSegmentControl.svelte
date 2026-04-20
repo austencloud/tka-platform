@@ -57,6 +57,7 @@
 
   .segment-btn {
     flex: 1;
+    min-width: 0;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -73,11 +74,23 @@
     cursor: pointer;
     transition: all 150ms ease;
     -webkit-tap-highlight-color: transparent;
+    white-space: nowrap;
   }
 
   .segment-btn i {
     font-size: var(--font-size-sm, 14px);
     transition: all 150ms ease;
+  }
+
+  /* Narrow widths: stack icon above label so longer labels stay on one line
+     and all three buttons keep equal height. */
+  @media (max-width: 480px) {
+    .segment-btn {
+      flex-direction: column;
+      gap: 4px;
+      padding: 8px 6px;
+      font-size: var(--font-size-compact, 12px);
+    }
   }
 
   .segment-btn:hover {
