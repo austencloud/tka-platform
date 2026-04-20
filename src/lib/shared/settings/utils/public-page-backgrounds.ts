@@ -17,7 +17,7 @@ export const ANIMATED_BACKGROUNDS = [
   { type: BackgroundType.SNOWFALL, icon: "fa-snowflake", label: "Snowfall" },
   { type: BackgroundType.DEEP_OCEAN, icon: "fa-water", label: "Deep Ocean" },
   { type: BackgroundType.EMBER_GLOW, icon: "fa-fire", label: "Ember Glow" },
-  { type: BackgroundType.SAKURA_DRIFT, icon: "fa-spa", label: "Cherry Blossom" },
+  { type: BackgroundType.CHERRY_BLOSSOM, icon: "fa-spa", label: "Cherry Blossom" },
   { type: BackgroundType.FIREFLY_FOREST, icon: "fa-tree", label: "Firefly Forest" },
   { type: BackgroundType.AUTUMN_DRIFT, icon: "fa-leaf", label: "Autumn" },
   { type: BackgroundType.PRIDE, icon: "fa-rainbow", label: "Pride" },
