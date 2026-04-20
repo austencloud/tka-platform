@@ -19,6 +19,9 @@ import type {
   EchoIntent,
   BloomIntent,
   WaterIntent,
+  BubblesIntent,
+  PetalsIntent,
+  SmokeIntent,
 } from "../domain/EffectsConfig";
 import type { EffectsPreset } from "../domain/EffectsPreset";
 import type { TipEffectMap } from "$lib/shared/animation-engine/domain/types/TipEffectTypes";
@@ -38,6 +41,9 @@ function mergeConfig(base: EffectsConfig, patch: Partial<EffectsConfig>): Effect
     echo: patch.echo ? { ...base.echo, ...patch.echo } : base.echo,
     bloom: patch.bloom ? { ...base.bloom, ...patch.bloom } : base.bloom,
     water: patch.water ? { ...base.water, ...patch.water } : base.water,
+    bubbles: patch.bubbles ? { ...base.bubbles, ...patch.bubbles } : base.bubbles,
+    petals: patch.petals ? { ...base.petals, ...patch.petals } : base.petals,
+    smoke: patch.smoke ? { ...base.smoke, ...patch.smoke } : base.smoke,
     activePresets: patch.activePresets
       ? { ...base.activePresets, ...patch.activePresets }
       : base.activePresets,
@@ -94,6 +100,21 @@ export function createEffectsConfigState(initial: EffectsConfig = DEFAULT_EFFECT
     config.activePresets.water = null;
   }
 
+  function updateBubbles(patch: Partial<BubblesIntent>) {
+    config.bubbles = { ...config.bubbles, ...patch };
+    config.activePresets.bubbles = null;
+  }
+
+  function updatePetals(patch: Partial<PetalsIntent>) {
+    config.petals = { ...config.petals, ...patch };
+    config.activePresets.petals = null;
+  }
+
+  function updateSmoke(patch: Partial<SmokeIntent>) {
+    config.smoke = { ...config.smoke, ...patch };
+    config.activePresets.smoke = null;
+  }
+
   function setTipEffectMap(map: TipEffectMap) {
     config.tipEffectMap = map;
   }
@@ -128,6 +149,9 @@ export function createEffectsConfigState(initial: EffectsConfig = DEFAULT_EFFECT
     get echo() { return config.echo; },
     get bloom() { return config.bloom; },
     get water() { return config.water; },
+    get bubbles() { return config.bubbles; },
+    get petals() { return config.petals; },
+    get smoke() { return config.smoke; },
     get overrides() { return config.overrides; },
     get activePresets() { return config.activePresets; },
 
@@ -140,6 +164,9 @@ export function createEffectsConfigState(initial: EffectsConfig = DEFAULT_EFFECT
     updateEcho,
     updateBloom,
     updateWater,
+    updateBubbles,
+    updatePetals,
+    updateSmoke,
     setTipEffectMap,
     applyPreset,
     updateOverride,

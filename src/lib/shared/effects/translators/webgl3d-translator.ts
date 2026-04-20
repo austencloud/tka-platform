@@ -8,6 +8,9 @@ import type {
   EchoIntent,
   BloomIntent,
   WaterIntent,
+  BubblesIntent,
+  PetalsIntent,
+  SmokeIntent,
 } from "../domain/EffectsConfig";
 import type {
   Trails3DParams,
@@ -19,8 +22,14 @@ import type {
   Echo3DParams,
   Bloom3DParams,
   Water3DParams,
+  Bubbles3DParams,
+  Petals3DParams,
+  Smoke3DParams,
 } from "./webgl3d-types";
 import { resolveWaterPalette } from "../domain/WaterPalettes";
+import { resolveBubblePalette } from "../domain/BubblePalettes";
+import { resolvePetalPalette } from "../domain/PetalPalettes";
+import { resolveSmokePalette } from "../domain/SmokePalettes";
 
 export function resolveTrails3D(
   intent: TrailsIntent,
@@ -136,6 +145,81 @@ export function resolveWater3D(
     motionSpawnRate: 40,
     motionReferenceSpeed: 3.0,
     worldGravity: -9.8,
+  };
+  return { ...intent, ...defaults, ...override };
+}
+
+export function resolveBubbles3D(
+  intent: BubblesIntent,
+  override: Partial<Bubbles3DParams> = {},
+): Bubbles3DParams {
+  const defaults: Omit<Bubbles3DParams, keyof BubblesIntent> = {
+    resolvedPalette: resolveBubblePalette(intent),
+    poolSize: 1024,
+    baseRadius: 0.07,
+    ambientSpawnRate: 6,
+    motionSpawnRate: 30,
+    motionReferenceSpeed: 3.0,
+    // 0.2 m/s at buoyancy=0 → 1.6 m/s at buoyancy=1. Bubbles always rise
+    // at least a little — a motionless bubble looks dead.
+    riseSpeed: 0.2 + intent.buoyancy * 1.4,
+    // 1.0-3.0s lifetime driven by intensity (bigger bubbles last longer
+    // before max-size pop takes over).
+    lifetime: 1.0 + intent.intensity * 2.0,
+  };
+  return { ...intent, ...defaults, ...override };
+}
+
+export function resolvePetals3D(
+  intent: PetalsIntent,
+  override: Partial<Petals3DParams> = {},
+): Petals3DParams {
+  const defaults: Omit<Petals3DParams, keyof PetalsIntent> = {
+    resolvedPalette: resolvePetalPalette(intent),
+    poolSize: 1024,
+    baseSize: 0.1,
+    // 3D emission is dual-source: ambient-from-ceiling + motion-from-tip.
+    // Ambient rate stays lower than 2D because 3D petals live longer per
+    // particle (longer descent path).
+    ambientAboveRate: 10,
+    motionTipRate: 25,
+    motionReferenceSpeed: 3.0,
+    // 3D uses +y = up, so falling is negative velocity.
+    fallBaseSpeed: 1.4,
+    swayBaseSpeed: 0.8,
+    swayFrequency: 1.4,
+    lifetime: 4.0 + intent.intensity * 4.0,
+  };
+  return { ...intent, ...defaults, ...override };
+}
+
+/**
+ * Resolve smoke for the 3D backend.
+ *
+ * Matches the 2D translator's palette-composition rules; the only 3D-
+ * specific bits are world-unit tunings (base radius in meters, rise in
+ * m/s). Curl/rise biases are composed the same way:
+ *   resolvedCurlStrength = intent.curlStrength * palette.curlBias
+ *   resolvedRiseSpeed    = intent.riseSpeed * palette.riseBias * RISE_BASE
+ */
+export function resolveSmoke3D(
+  intent: SmokeIntent,
+  override: Partial<Smoke3DParams> = {},
+): Smoke3DParams {
+  const palette = resolveSmokePalette(intent);
+  const RISE_BASE_M = 1.5; // m/sec upward at riseSpeed=1, palette.riseBias=1
+  const defaults: Omit<Smoke3DParams, keyof SmokeIntent> = {
+    resolvedPalette: palette,
+    poolSize: 1024,
+    baseRadius: 0.18,
+    ambientSpawnRate: 4,
+    motionSpawnRate: 20,
+    motionReferenceSpeed: 3.0,
+    lifetimeSeconds: palette.lifetime,
+    resolvedCurlStrength: intent.curlStrength * palette.curlBias,
+    resolvedRiseSpeed: intent.riseSpeed * palette.riseBias * RISE_BASE_M,
+    noiseScale: 0.5,
+    riseBaseSpeed: RISE_BASE_M,
   };
   return { ...intent, ...defaults, ...override };
 }

@@ -16,7 +16,7 @@ import type {
   PropFlameColor,
 } from "$lib/shared/animation-engine/domain/types/FireTypes";
 
-export const EFFECTS_CONFIG_VERSION = 8;
+export const EFFECTS_CONFIG_VERSION = 11;
 
 export type EffectType =
   | "none"
@@ -28,7 +28,10 @@ export type EffectType =
   | "sparkles"
   | "echo"
   | "bloom"
-  | "water";
+  | "water"
+  | "bubbles"
+  | "petals"
+  | "smoke";
 
 export interface TrailsIntent {
   /** Which staff end(s) the trail tracks. */
@@ -186,6 +189,67 @@ export interface WaterIntent {
   spewStyle: "splash" | "flow" | "mist";
 }
 
+export interface BubblesIntent {
+  /** 0-1. Continuous emission at rest. */
+  ambientEmission: number;
+  /** 0-1. Velocity-reactive multiplier. Spin rate drives this via tip speed. */
+  motionEmission: number;
+  /** 0-1. Overall size + brightness. */
+  intensity: number;
+  /** Named palette. "custom" uses customColor instead. */
+  palette: "soap" | "champagne" | "oil" | "acid" | "spirit" | "custom";
+  /** Hex string. Used only when palette === "custom". */
+  customColor: string;
+  /** 0-1. Size variance per bubble. 0 = uniform, 1 = wide mix. */
+  sizeJitter: number;
+  /** 0-1. Upward rise speed scalar. */
+  buoyancy: number;
+  /** Which staff end(s) bubbles track. */
+  trackingMode: "left_end" | "right_end" | "both_ends";
+}
+
+export interface PetalsIntent {
+  /** 0-1. Continuous emission. 2D: from tip. 3D: from above scene ceiling. */
+  ambientEmission: number;
+  /** 0-1. Velocity-reactive burst from tip (both backends). */
+  motionEmission: number;
+  /** 0-1. Overall petal size + brightness. */
+  intensity: number;
+  /** Named palette. "custom" uses customColor. */
+  palette: "blossom" | "autumn" | "jungle" | "ash" | "gold" | "custom";
+  /** Hex string. Used only when palette === "custom". */
+  customColor: string;
+  /** 0-1. Sinusoidal sway amplitude. 0 = straight fall, 1 = wide flutter. */
+  swayAmplitude: number;
+  /** 0-1. Downward velocity scalar. */
+  fallSpeed: number;
+  /** Which staff end(s) petals track. */
+  trackingMode: "left_end" | "right_end" | "both_ends";
+}
+
+export interface SmokeIntent {
+  /** 0-1. Continuous emission at rest. */
+  ambientEmission: number;
+  /** 0-1. Velocity-reactive multiplier. Spin rate drives this via tip speed. */
+  motionEmission: number;
+  /** 0-1. Overall puff size + opacity. */
+  intensity: number;
+  /**
+   * Named palette. Personality-laden — palette carries behavioral DNA
+   * (lifetime, curl bias, rise bias) alongside color. "custom" uses
+   * customColor with neutral behavior defaults.
+   */
+  palette: "incense" | "fog" | "genie" | "cursed" | "spirit" | "campfire" | "custom";
+  /** Hex string. Used only when palette === "custom". */
+  customColor: string;
+  /** 0-1. Curl noise magnitude. 0 = straight rise, 1 = chaotic swirl. Multiplied by palette.curlBias. */
+  curlStrength: number;
+  /** 0-1. Upward rise speed scalar. Multiplied by palette.riseBias. */
+  riseSpeed: number;
+  /** Explicit tracking. */
+  trackingMode: "left_end" | "right_end" | "both_ends";
+}
+
 /**
  * Backend-specific override storage. Populated only when the user
  * has explicitly edited a backend-only parameter via an Advanced
@@ -211,6 +275,12 @@ export interface EffectsOverrides {
   bloom3D?: Record<string, unknown>;
   water2D?: Record<string, unknown>;
   water3D?: Record<string, unknown>;
+  bubbles2D?: Record<string, unknown>;
+  bubbles3D?: Record<string, unknown>;
+  petals2D?: Record<string, unknown>;
+  petals3D?: Record<string, unknown>;
+  smoke2D?: Record<string, unknown>;
+  smoke3D?: Record<string, unknown>;
 }
 
 export interface EffectsConfig {
@@ -225,6 +295,9 @@ export interface EffectsConfig {
   echo: EchoIntent;
   bloom: BloomIntent;
   water: WaterIntent;
+  bubbles: BubblesIntent;
+  petals: PetalsIntent;
+  smoke: SmokeIntent;
   activePresets: {
     trails: string | null;
     fire: string | null;
@@ -235,6 +308,9 @@ export interface EffectsConfig {
     echo: string | null;
     bloom: string | null;
     water: string | null;
+    bubbles: string | null;
+    petals: string | null;
+    smoke: string | null;
   };
   overrides?: EffectsOverrides;
 }

@@ -19,6 +19,9 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
     echo?: any;
     bloom?: any;
     water?: any;
+    bubbles?: any;
+    petals?: any;
+    smoke?: any;
   };
   const version = input.version ?? 1;
 
@@ -115,6 +118,23 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
   // v7 → v8: add water intent. No field migration — absent water resolves to
   // DEFAULT_EFFECTS_CONFIG.water via the merge below.
 
+  // v8 → v9: add bubbles intent + activePresets.bubbles. Net-new 10th effect
+  // (11th chip including "none"). No field migration — absent bubbles resolves
+  // to DEFAULT_EFFECTS_CONFIG.bubbles via the merge below. tipEffectMap entries
+  // are unchanged (only the domain expands).
+
+  // v9 → v10: add petals intent + activePresets.petals. Net-new 11th effect
+  // (12th chip including "none"). No field migration — absent petals resolves
+  // to DEFAULT_EFFECTS_CONFIG.petals via the merge below. tipEffectMap entries
+  // are unchanged (only the domain expands).
+
+  // v10 → v11: add smoke intent + activePresets.smoke. Net-new 12th effect
+  // (13th chip including "none"). No field migration — absent smoke resolves
+  // to DEFAULT_EFFECTS_CONFIG.smoke via the merge below. tipEffectMap entries
+  // are unchanged (only the domain expands). First effect where palette
+  // carries behavioral multipliers (lifetime, curl bias, rise bias) in
+  // addition to color.
+
   let out: EffectsConfig = {
     ...DEFAULT_EFFECTS_CONFIG,
     ...input,
@@ -127,6 +147,9 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
     echo: { ...DEFAULT_EFFECTS_CONFIG.echo, ...(input.echo ?? {}) },
     bloom: { ...DEFAULT_EFFECTS_CONFIG.bloom, ...(input.bloom ?? {}) },
     water: { ...DEFAULT_EFFECTS_CONFIG.water, ...(input.water ?? {}) },
+    bubbles: { ...DEFAULT_EFFECTS_CONFIG.bubbles, ...(input.bubbles ?? {}) },
+    petals: { ...DEFAULT_EFFECTS_CONFIG.petals, ...(input.petals ?? {}) },
+    smoke: { ...DEFAULT_EFFECTS_CONFIG.smoke, ...(input.smoke ?? {}) },
     activePresets: {
       ...DEFAULT_EFFECTS_CONFIG.activePresets,
       ...(input.activePresets ?? {}),
