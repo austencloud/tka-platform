@@ -1,7 +1,7 @@
 /**
  * Scheduled Cloud Function: publish a lean shortcode snapshot to R2.
  *
- * Runs weekly. Reads every `shortcodes/*` doc, emits only `{_id, encoded}`
+ * Runs daily. Reads every `shortcodes/*` doc, emits only `{_id, encoded}`
  * pairs (docs without `encoded` are skipped — they're covered by the
  * Firestore primary path at resolve time). Uploads the resulting JSON to R2
  * so the SPA can fetch it as a static asset if Firestore is ever unreachable.
@@ -67,7 +67,7 @@ export const snapshotShortCodes = functions
     secrets: [r2AccountId, r2AccessKeyId, r2SecretAccessKey, r2BucketName],
   })
   .region("us-central1")
-  .pubsub.schedule("every sunday 03:00")
+  .pubsub.schedule("every day 03:00")
   .timeZone("UTC")
   .onRun(async () => {
     const start = Date.now();
