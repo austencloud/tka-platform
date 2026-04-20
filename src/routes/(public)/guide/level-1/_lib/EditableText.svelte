@@ -57,6 +57,11 @@
 			onUpdate({ editor }) {
 				if (suppressUpdates) return;
 				const next = editor.getJSON() as TipTapJSONDoc;
+				// TipTap fires onUpdate from setEditable + setContent in addition
+				// to actual user edits. Skip when content is unchanged so the
+				// reactive graph doesn't ping-pong between effect 2 and mutate.
+				const current = ctx.sidecar.text[field];
+				if (current && JSON.stringify(current) === JSON.stringify(next)) return;
 				ctx.mutate(
 					(draft) => {
 						draft.text[field] = next;
@@ -98,7 +103,10 @@
 
 	$effect(() => {
 		if (!editor) return;
-		editor.setEditable(ctx.mode === 'edit');
+		// Pass emitUpdate=false so setEditable doesn't fire onUpdate — that
+		// path triggers ctx.mutate, which writes sidecar, which re-derives
+		// currentDoc, which can loop with this effect via ctx.mode access.
+		editor.setEditable(ctx.mode === 'edit', false);
 	});
 
 	onDestroy(() => {
