@@ -1,0 +1,214 @@
+import { describe, expect, it } from "vitest";
+import {
+  createMotion,
+  createStartStep,
+  createStep,
+  updateStep,
+  Letter,
+  GridLocation,
+  GridMode,
+  GridPosition,
+  MotionType,
+  Orientation,
+  Plane,
+  PropColor,
+  RotationDirection,
+  type Motion,
+  type Step,
+} from "../src/index.js";
+
+function makeBlue(): Motion {
+  return createMotion({
+    motionType: MotionType.shift,
+    startLocation: GridLocation.n,
+    endLocation: GridLocation.e,
+    rotationDirection: RotationDirection.cw,
+    startOrientation: Orientation.in,
+    endOrientation: Orientation.out,
+    turns: 0,
+    plane: Plane.wall,
+    color: PropColor.blue,
+  });
+}
+
+function makeRed(): Motion {
+  return createMotion({
+    motionType: MotionType.shift,
+    startLocation: GridLocation.s,
+    endLocation: GridLocation.w,
+    rotationDirection: RotationDirection.cw,
+    startOrientation: Orientation.in,
+    endOrientation: Orientation.out,
+    turns: 0,
+    plane: Plane.wall,
+    color: PropColor.red,
+  });
+}
+
+function baseStep(): Step {
+  return createStep({
+    id: "step-1-A",
+    letter: Letter.A,
+    startPosition: GridPosition.alpha1,
+    endPosition: GridPosition.alpha3,
+    motions: { blue: makeBlue(), red: makeRed() },
+    stepNumber: 1,
+    duration: 1,
+    gridMode: GridMode.diamond,
+  });
+}
+
+describe("createStep", () => {
+  it("builds a Step with required fields intact", () => {
+    const s = baseStep();
+    expect(s.stepNumber).toBe(1);
+    expect(s.letter).toBe("A");
+    expect(s.startPosition).toBe("alpha1");
+    expect(s.endPosition).toBe("alpha3");
+    expect(s.duration).toBe(1);
+    expect(s.gridMode).toBe("diamond");
+  });
+
+  it("freezes the outer Step and the motions record", () => {
+    const s = baseStep();
+    expect(Object.isFrozen(s)).toBe(true);
+    expect(Object.isFrozen(s.motions)).toBe(true);
+  });
+
+  it("requires a non-empty id", () => {
+    expect(() =>
+      createStep({
+        id: "",
+        letter: Letter.A,
+        startPosition: GridPosition.alpha1,
+        endPosition: GridPosition.alpha3,
+        motions: { blue: makeBlue(), red: makeRed() },
+        stepNumber: 1,
+        duration: 1,
+      })
+    ).toThrow(/Step.id/);
+  });
+
+  it("requires stepNumber >= 0", () => {
+    expect(() =>
+      createStep({
+        id: "x",
+        letter: Letter.A,
+        startPosition: GridPosition.alpha1,
+        endPosition: GridPosition.alpha3,
+        motions: { blue: makeBlue(), red: makeRed() },
+        stepNumber: -1,
+        duration: 1,
+      })
+    ).toThrow(/stepNumber/);
+  });
+
+  it("requires duration > 0", () => {
+    expect(() =>
+      createStep({
+        id: "x",
+        letter: Letter.A,
+        startPosition: GridPosition.alpha1,
+        endPosition: GridPosition.alpha3,
+        motions: { blue: makeBlue(), red: makeRed() },
+        stepNumber: 1,
+        duration: 0,
+      })
+    ).toThrow(/duration/);
+  });
+
+  it("rejects swapped motion colors", () => {
+    const blueLookingRed = createMotion({
+      motionType: MotionType.shift,
+      startLocation: GridLocation.n,
+      endLocation: GridLocation.e,
+      rotationDirection: RotationDirection.cw,
+      startOrientation: Orientation.in,
+      endOrientation: Orientation.out,
+      turns: 0,
+      plane: Plane.wall,
+      color: PropColor.red,
+    });
+    expect(() =>
+      createStep({
+        id: "x",
+        letter: Letter.A,
+        startPosition: GridPosition.alpha1,
+        endPosition: GridPosition.alpha3,
+        motions: { blue: blueLookingRed, red: makeRed() },
+        stepNumber: 1,
+        duration: 1,
+      })
+    ).toThrow(/motions.blue.color/);
+  });
+
+  it("rejects invalid gridMode", () => {
+    expect(() =>
+      createStep({
+        id: "x",
+        letter: Letter.A,
+        startPosition: GridPosition.alpha1,
+        endPosition: GridPosition.alpha3,
+        motions: { blue: makeBlue(), red: makeRed() },
+        stepNumber: 1,
+        duration: 1,
+        gridMode: "triangle" as unknown as typeof GridMode.diamond,
+      })
+    ).toThrow(/gridMode/);
+  });
+
+  it("rejects invalid variation", () => {
+    expect(() =>
+      createStep({
+        id: "x",
+        letter: Letter.A,
+        startPosition: GridPosition.alpha1,
+        endPosition: GridPosition.alpha3,
+        motions: { blue: makeBlue(), red: makeRed() },
+        stepNumber: 1,
+        duration: 1,
+        variation: -3,
+      })
+    ).toThrow(/variation/);
+  });
+});
+
+describe("createStartStep", () => {
+  it("produces stepNumber 0 with null letter", () => {
+    const s = createStartStep(GridPosition.alpha1);
+    expect(s.stepNumber).toBe(0);
+    expect(s.letter).toBeNull();
+    expect(s.startPosition).toBe("alpha1");
+    expect(s.endPosition).toBe("alpha1");
+  });
+
+  it("colors motions correctly", () => {
+    const s = createStartStep(GridPosition.beta3);
+    expect(s.motions.blue.color).toBe("blue");
+    expect(s.motions.red.color).toBe("red");
+    expect(s.motions.blue.motionType).toBe("static");
+    expect(s.motions.red.motionType).toBe("static");
+  });
+
+  it("freezes the result", () => {
+    const s = createStartStep(GridPosition.gamma1);
+    expect(Object.isFrozen(s)).toBe(true);
+    expect(Object.isFrozen(s.motions)).toBe(true);
+  });
+});
+
+describe("updateStep", () => {
+  it("returns a new frozen Step with changes applied", () => {
+    const s = baseStep();
+    const updated = updateStep(s, { duration: 2 });
+    expect(updated.duration).toBe(2);
+    expect(updated).not.toBe(s);
+    expect(Object.isFrozen(updated)).toBe(true);
+    expect(s.duration).toBe(1); // original untouched
+  });
+
+  it("validates changes against field constraints", () => {
+    const s = baseStep();
+    expect(() => updateStep(s, { stepNumber: -5 })).toThrow(/stepNumber/);
+  });
+});
