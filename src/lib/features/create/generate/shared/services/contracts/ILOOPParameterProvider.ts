@@ -56,11 +56,14 @@ export interface ILOOPParameterProvider {
    * @param wordLength - Number of steps in the sequence
    * @param level - Difficulty level (1-3)
    * @param maxTurnIntensity - Maximum turn intensity allowed
+   * @param options - Optional allocation constraints (e.g. period-4 parity
+   *                  for non-rotated LOOPs at L3+)
    * @returns Turn allocations for blue and red props
    */
   allocateTurns(
     wordLength: number,
     level: number,
-    maxTurnIntensity: number
+    maxTurnIntensity: number,
+    options?: { enforcePeriod4Parity?: boolean }
   ): TurnAllocation;
 }

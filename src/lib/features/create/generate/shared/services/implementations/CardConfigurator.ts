@@ -1,11 +1,48 @@
 import type { UIGenerationConfig } from "../../../state/generate-config.svelte";
 import { DifficultyLevel } from "../../domain/models/generate-models";
-import { LOOPType, ROTATED_LOOP_TYPES } from "../../../circular/domain/models/circular-models";
+import {
+  LOOPType,
+  ROTATED_LOOP_TYPES,
+  SliceSize,
+  periodFromSliceSize,
+} from "../../../circular/domain/models/circular-models";
+import { minLength as minLengthEngine } from "@tka/sequence-engine/generation";
 import type {
   CardDescriptor,
   CardHandlers,
   ICardConfigurator,
 } from "../contracts/ICardConfigurator";
+
+/**
+ * Derive minimum sequence length for a LOOP configuration via the engine's
+ * closed-form calculator. Returns undefined when LOOP is not enabled so the
+ * LengthCard falls back to its default minimum.
+ *
+ * Reads `period` from config if present (Phase 6 migration), otherwise falls
+ * back to `sliceSize` via periodFromSliceSize.
+ */
+function deriveLoopMinOverride(
+  config: UIGenerationConfig,
+  loopEnabled: boolean
+): number | undefined {
+  if (!loopEnabled) return undefined;
+  const loopType = config.loopType;
+  if (!loopType) return undefined;
+  const period =
+    (config as { period?: number }).period ??
+    periodFromSliceSize(config.sliceSize as SliceSize | undefined);
+  const level = Number(config.level) || 1;
+  // The two LOOPType enums (app circular-models + engine loop-types) are
+  // string-valued and share identical members. Cast through unknown so we can
+  // bridge them without pulling the app enum into the engine package.
+  const minimum = minLengthEngine({
+    loopType: loopType as unknown as Parameters<typeof minLengthEngine>[0]["loopType"],
+    period,
+    level,
+    gridMode: config.gridMode,
+  });
+  return Number.isFinite(minimum) ? minimum : undefined;
+}
 
 /**
  * Implementation of ICardConfigurator
@@ -97,6 +134,7 @@ export class CardConfigurator implements ICardConfigurator {
           loopEnabled,
           onLengthChange: handlers.handleLengthChange,
           locked: false,
+          minOverride: deriveLoopMinOverride(config, loopEnabled),
           cardIndex: cardIndex++,
         },
         gridColumnSpan: 2,
@@ -142,11 +180,20 @@ export class CardConfigurator implements ICardConfigurator {
       });
     }
 
-    // ─── Customize + LOOP [+ Slice] row ───
-    // When LOOP is enabled with a rotated type, add a Slice card: Customize(2)+LOOP(2)+Slice(2)
-    // Otherwise two cards share the row at span 3 each.
-    const showSliceCard = loopEnabled && ROTATED_LOOP_TYPES.has(config.loopType as LOOPType);
-    const customizeLoopSpan = showSliceCard ? 2 : 3;
+    // ─── Customize + LOOP [+ Period] row ───
+    // Period card visibility mirrors the TurnIntensity pattern: only show
+    // when the current (loopType, level) combination can actually reach
+    // period 4. Rotated types: always. Non-rotated (except rewound): L3+
+    // where half turns unlock the orientation-wheel quarter-advance that
+    // produces genuine period-4 closure. Rewound is never quartered.
+    const levelNum = Number(config.level) || 1;
+    const currentLoopType = config.loopType as LOOPType;
+    const isRotatedType = ROTATED_LOOP_TYPES.has(currentLoopType);
+    const isRewound = currentLoopType === LOOPType.STRICT_REWOUND;
+    const supportsPeriodFour =
+      loopEnabled && (isRotatedType || (!isRewound && levelNum >= 3));
+    const showPeriodCard = supportsPeriodFour;
+    const customizeLoopSpan = showPeriodCard ? 2 : 3;
 
     // Customize card (absorbs Style + Rhythm + Start/End)
     const hasStartEnd = handlers.handleStartEndChange && handlers.startEndOptions;
@@ -188,13 +235,26 @@ export class CardConfigurator implements ICardConfigurator {
       });
     }
 
-    // Slice size card (only when LOOP enabled with a rotated variant)
-    if (showSliceCard && handlers.handleSliceSizeChange) {
+    // Period card (shown for all LOOP types — universal slice-awareness).
+    // Integer period values: 2 (halved), 4 (quartered). Legacy SliceSize
+    // field on config stays populated via the onPeriodChange handler until
+    // Phase 10 removes it.
+    if (showPeriodCard && handlers.handleSliceSizeChange) {
+      const currentPeriod =
+        (config as { period?: number }).period ??
+        periodFromSliceSize(config.sliceSize as SliceSize | undefined);
       cardList.push({
-        id: "slice-size",
+        id: "period",
         props: {
-          currentSliceSize: config.sliceSize,
-          onSliceSizeChange: handlers.handleSliceSizeChange,
+          currentPeriod,
+          onPeriodChange: (period: number) => {
+            // Forward to the existing sliceSize handler for backward compat.
+            // Config state will migrate to `period` directly in Phase 10; for
+            // now both fields stay in sync via this bridge.
+            const sliceSize =
+              period === 4 ? SliceSize.QUARTERED : SliceSize.HALVED;
+            handlers.handleSliceSizeChange?.(sliceSize);
+          },
           cardIndex: cardIndex++,
         },
         gridColumnSpan: 2,
@@ -212,9 +272,6 @@ export class CardConfigurator implements ICardConfigurator {
           onGenerateClicked: handlers.handleGenerateClick,
           config,
           startEndOptions: handlers.startEndOptions,
-          // Orientation cycle completion (freeform LOOP only)
-          needsCycleCompletion: handlers.needsCycleCompletion ?? false,
-          onCompleteCycle: handlers.handleCompleteCycle,
         },
         gridColumnSpan: 6,
       });

@@ -144,7 +144,8 @@ export class LOOPParameterProvider implements ILOOPParameterProvider {
   allocateTurns(
     wordLength: number,
     level: number,
-    maxTurnIntensity: number
+    maxTurnIntensity: number,
+    options?: { enforcePeriod4Parity?: boolean }
   ): TurnAllocation {
     let possibleTurns: (number | "fl")[];
 
@@ -157,28 +158,62 @@ export class LOOPParameterProvider implements ILOOPParameterProvider {
       possibleTurns = [0];
     }
 
-    const turnsBlue: (number | "fl")[] = [];
-    const turnsRed: (number | "fl")[] = [];
+    const validTurns = possibleTurns.filter((t) => {
+      if (t === "fl") return true;
+      return typeof t === "number" && t <= maxTurnIntensity;
+    });
+    const turnsPool = validTurns.length > 0 ? validTurns : [0];
 
-    for (let i = 0; i < wordLength; i++) {
-      // Filter possible turns by max intensity - exact logic from legacy
-      const validTurns = possibleTurns.filter((t) => {
-        if (t === "fl") return true;
-        return typeof t === "number" && t <= maxTurnIntensity;
-      });
+    const enforceParity = options?.enforcePeriod4Parity === true;
+    const hasHalfTurns = turnsPool.some(
+      (t) => t !== "fl" && typeof t === "number" && (t * 2) % 2 !== 0
+    );
+    const hasWholeTurns = turnsPool.some(
+      (t) => t !== "fl" && typeof t === "number" && (t * 2) % 2 === 0
+    );
+    const canEnforce = enforceParity && hasHalfTurns && hasWholeTurns;
 
-      // Random selection - exact logic from legacy
-      const turnBlue = this.randomChoice(validTurns);
-      const turnRed = this.randomChoice(validTurns);
+    const blue = this.allocateSingleHand(wordLength, turnsPool, canEnforce);
+    const red = this.allocateSingleHand(wordLength, turnsPool, canEnforce);
 
-      turnsBlue.push(turnBlue);
-      turnsRed.push(turnRed);
+    return { blue, red };
+  }
+
+  private allocateSingleHand(
+    wordLength: number,
+    turnsPool: (number | "fl")[],
+    enforcePeriod4Parity: boolean
+  ): (number | "fl")[] {
+    const result: (number | "fl")[] = [];
+    const beatsToPreallocate = enforcePeriod4Parity ? wordLength - 1 : wordLength;
+
+    for (let i = 0; i < beatsToPreallocate; i++) {
+      result.push(this.randomChoice(turnsPool));
     }
 
-    return {
-      blue: turnsBlue,
-      red: turnsRed,
-    };
+    if (!enforcePeriod4Parity) return result;
+
+    let runningTotal = 0;
+    for (const t of result) {
+      runningTotal = (runningTotal + this.wheelQuarters(t)) % 4;
+    }
+
+    const targetContribution = (1 - runningTotal + 4) % 4;
+    const matching = turnsPool.filter(
+      (t) => t !== "fl" && this.wheelQuarters(t) === targetContribution
+    );
+
+    result.push(
+      matching.length > 0
+        ? this.randomChoice(matching)
+        : this.randomChoice(turnsPool)
+    );
+    return result;
+  }
+
+  private wheelQuarters(turn: number | "fl"): number {
+    if (turn === "fl") return 0;
+    return Math.round(turn * 2) % 4;
   }
 
   // ============================================================================
