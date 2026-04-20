@@ -17,7 +17,8 @@ function snapshot<T>(v: T): T {
 	return $state.snapshot(v) as T;
 }
 
-const KEY = Symbol('GuideEditorContext');
+export const EDITOR_CONTEXT_KEY = Symbol('GuideEditorContext');
+const KEY = EDITOR_CONTEXT_KEY;
 
 export type EditorMode = 'edit' | 'preview';
 
