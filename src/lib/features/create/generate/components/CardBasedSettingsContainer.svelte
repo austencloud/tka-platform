@@ -43,7 +43,7 @@ Delegates ALL logic to services (SRP compliant)
   import TurnIntensityCard from "./cards/TurnIntensityCard.svelte";
   import GenerateButtonCard from "./cards/GenerateButtonCard.svelte";
   import ConsolidatedLOOPCard from "./cards/ConsolidatedLOOPCard.svelte";
-  import SliceSizeCard from "./cards/SliceSizeCard.svelte";
+  import PeriodCard from "./cards/PeriodCard.svelte";
   import CustomizeCard from "./cards/CustomizeCard.svelte";
   import WordInputCard from "./cards/WordInputCard.svelte";
   import PresetCard from "./cards/PresetCard.svelte";
@@ -60,8 +60,6 @@ Delegates ALL logic to services (SRP compliant)
     wordInputValue = "",
     onWordInput,
     onWordSubmit,
-    needsCycleCompletion = false,
-    onCompleteCycle,
     isMobile = false,
     onOpenWordInput,
     favoriteState,
@@ -76,8 +74,6 @@ Delegates ALL logic to services (SRP compliant)
     wordInputValue?: string;
     onWordInput?: (value: string) => void;
     onWordSubmit?: () => void;
-    needsCycleCompletion?: boolean;
-    onCompleteCycle?: () => void;
     isMobile?: boolean;
     onOpenWordInput?: () => void;
     favoriteState: ReturnType<typeof createFavoriteState>;
@@ -277,6 +273,22 @@ Delegates ALL logic to services (SRP compliant)
       );
     }
 
+    // Coerce period back to halved when the new level no longer supports
+    // quartered for the current (non-rotated) loop type. Without this the
+    // Period card would hide while config still holds a stale quartered
+    // value, causing a runtime viability error at Generate time.
+    const currentType = config.loopType as LOOPType;
+    const isRotated = ROTATED_LOOP_TYPES.has(currentType);
+    if (!isRotated && newLevelNum < 3) {
+      if (config.sliceSize === SliceSize.QUARTERED) {
+        updates.sliceSize = SliceSize.HALVED;
+      }
+      const currentPeriod = (config as { period?: number }).period;
+      if (currentPeriod === 4) {
+        (updates as { period?: number }).period = 2;
+      }
+    }
+
     updateConfig(updates);
   }
 
@@ -313,7 +325,28 @@ Delegates ALL logic to services (SRP compliant)
   }
 
   function handleLOOPTypeChange(loopType: LOOPType) {
-    updateConfig({ loopType });
+    const updates: Partial<UIGenerationConfig> = { loopType };
+
+    // Coerce period back to halved when switching to a loop type that
+    // cannot support period 4 in the current context. Rewound is never
+    // quartered; non-rotated types need L3+ for half-turn closure.
+    const isRotated = ROTATED_LOOP_TYPES.has(loopType);
+    const isRewound = loopType === LOOPType.STRICT_REWOUND;
+    const levelNum = Number(config.level) || 1;
+    const supportsPeriodFour =
+      isRotated || (!isRewound && levelNum >= 3);
+
+    if (!supportsPeriodFour) {
+      if (config.sliceSize === SliceSize.QUARTERED) {
+        updates.sliceSize = SliceSize.HALVED;
+      }
+      const currentPeriod = (config as { period?: number }).period;
+      if (currentPeriod === 4) {
+        (updates as { period?: number }).period = 2;
+      }
+    }
+
+    updateConfig(updates);
   }
 
   // Style handlers
@@ -410,8 +443,6 @@ Delegates ALL logic to services (SRP compliant)
         positionsResetTrigger,
         currentGridMode: config.gridMode,
         handleGenerateClick: onGenerateClicked,
-        needsCycleCompletion,
-        handleCompleteCycle: onCompleteCycle,
         activeFavoriteId: favoriteState.activeFavoriteId,
         activeFavoriteName: favoriteState.activeFavoriteId === "mine"
           ? "My Fav"
@@ -457,8 +488,8 @@ Delegates ALL logic to services (SRP compliant)
         <CustomizeCard {...card.props as any} color={cardColors.customize.color} shadowColor={cardColors.customize.shadowColor} />
       {:else if card.id === "loop"}
         <ConsolidatedLOOPCard {...card.props as any} />
-      {:else if card.id === "slice-size"}
-        <SliceSizeCard {...card.props as any} color={cardColors.sliceSize.color} shadowColor={cardColors.sliceSize.shadowColor} />
+      {:else if card.id === "period"}
+        <PeriodCard {...card.props as any} color={cardColors.sliceSize.color} shadowColor={cardColors.sliceSize.shadowColor} />
       {:else if card.id === "preset"}
         <PresetCard
           {...card.props as any}
