@@ -8,14 +8,14 @@
   import { onDestroy } from "svelte";
   import { container } from "$lib/shared/di";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
-  import { PUBLIC_GOOGLE_MAPS_API_KEY } from "$env/static/public";
   import type { ISequenceEncoder } from "$lib/shared/navigation/services/contracts/ISequenceEncoder";
   import { scanActivityState, type CodeEntry } from "$lib/features/choreo-card/state/scan-activity-state.svelte";
   import ScanActivityCard from "./ScanActivityCard.svelte";
   import ScanHistoryDrawer from "./ScanHistoryDrawer.svelte";
   import RecentScansList from "./RecentScansList.svelte";
   import TopLocationsBlock from "./TopLocationsBlock.svelte";
-  import GlobalUserMap from "$lib/features/community/components/GlobalUserMap.svelte";
+  import ScanActivityGlobe from "./ScanActivityGlobe.svelte";
+  import { countryCentroid } from "./country-centroids";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
   const encoder = container.items.sequenceEncoder as ISequenceEncoder;
@@ -48,17 +48,23 @@
     }
   }
 
-  const mapMarkers = $derived(
-    scanState.recentEvents
-      .slice(0, 20)
-      .map((e, i) => ({
+  const globePoints = $derived.by(() => {
+    const pts: { id: string; lat: number; lng: number; label: string; newest?: boolean }[] = [];
+    scanState.recentEvents.slice(0, 40).forEach((e, i) => {
+      const c = countryCentroid(e.country);
+      if (!c) return;
+      const [lat, lng] = c;
+      const jitter = 1.5;
+      pts.push({
         id: `${e.code}-${i}`,
-        lat: 0,
-        lng: 0,
-        label: e.code,
-        styleClass: i === 0 ? ("pin-new" as const) : ("pin" as const),
-      }))
-  );
+        lat: lat + (Math.random() - 0.5) * jitter,
+        lng: lng + (Math.random() - 0.5) * jitter,
+        label: `${e.code} · ${e.city ?? e.country ?? ""}`,
+        newest: i === 0,
+      });
+    });
+    return pts;
+  });
 </script>
 
 <div class="shell">
@@ -113,7 +119,7 @@
           <h5>Live map</h5>
           <span class="count">● {scanState.recentEvents.length} recent</span>
         </div>
-        <GlobalUserMap locations={[]} userLocation={null} apiKey={PUBLIC_GOOGLE_MAPS_API_KEY} scanMarkers={mapMarkers} size="embedded" />
+        <ScanActivityGlobe points={globePoints} height={260} />
         <RecentScansList events={scanState.recentEvents} onRowClick={openDrawer} />
       </div>
       <TopLocationsBlock events={scanState.recentEvents} />
