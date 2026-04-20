@@ -9,6 +9,14 @@ import { UndoStack } from './UndoStack.svelte';
 import { AutosaveCoordinator } from './AutosaveCoordinator.svelte';
 import { validateSidecar, type PageSidecar } from './sidecar-schema';
 
+// Svelte 5 wraps $state objects in a Proxy whose internal slots are
+// non-cloneable, so structuredClone throws DataCloneError at runtime.
+// $state.snapshot strips the proxy and returns plain JSON. Used everywhere
+// we'd otherwise structuredClone a $state-wrapped sidecar.
+function snapshot<T>(v: T): T {
+	return $state.snapshot(v) as T;
+}
+
 const KEY = Symbol('GuideEditorContext');
 
 export type EditorMode = 'edit' | 'preview';
@@ -27,7 +35,7 @@ export class EditorContext {
 		this.pageNumber = initial.pageNumber;
 		this.sidecar = initial;
 		this.undo = new UndoStack<PageSidecar>(50);
-		this.undo.record(structuredClone(initial));
+		this.undo.record(snapshot(initial));
 		this.autosave = new AutosaveCoordinator(() => this.persist(), 800);
 	}
 
@@ -43,10 +51,10 @@ export class EditorContext {
 		fn: (draft: PageSidecar) => PageSidecar,
 		coalesce?: { key: string; withinMs: number }
 	): void {
-		const next = fn(structuredClone(this.sidecar));
+		const next = fn(snapshot(this.sidecar));
 		validateSidecar(next);
 		this.sidecar = next;
-		this.undo.record(structuredClone(next), coalesce);
+		this.undo.record(snapshot(next), coalesce);
 		this.autosave.notifyEdit();
 	}
 
@@ -54,7 +62,7 @@ export class EditorContext {
 		this.undo.breakCoalesce();
 		const prev = this.undo.undo();
 		if (prev !== undefined) {
-			this.sidecar = structuredClone(prev);
+			this.sidecar = snapshot(prev);
 			this.autosave.notifyEdit();
 		}
 	}
@@ -63,7 +71,7 @@ export class EditorContext {
 		this.undo.breakCoalesce();
 		const next = this.undo.redo();
 		if (next !== undefined) {
-			this.sidecar = structuredClone(next);
+			this.sidecar = snapshot(next);
 			this.autosave.notifyEdit();
 		}
 	}
@@ -86,7 +94,7 @@ export class EditorContext {
 		this.sidecar = next;
 		this.selectedAssetId = null;
 		this.undo.clear();
-		this.undo.record(structuredClone(next));
+		this.undo.record(snapshot(next));
 	}
 
 	private async persist(): Promise<void> {
