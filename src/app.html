@@ -7,12 +7,48 @@
     <meta name="author" content="Austen Cloud" />
     <link rel="icon" href="%sveltekit.assets%/pwa/favicon.png" />
 
+    <!-- crypto.randomUUID polyfill for iOS Safari PWA and older WebKit builds.
+         crypto.randomUUID requires iOS Safari 15.4+ and a secure context; in
+         some PWA/standalone contexts it's undefined, which breaks the create
+         module (46 call sites) and causes the "restoring sequence" loop.
+         crypto.getRandomValues has been universally supported for years. -->
+    <script>
+      (function () {
+        if (typeof crypto === 'undefined') return;
+        if (typeof crypto.randomUUID === 'function') return;
+        if (typeof crypto.getRandomValues !== 'function') return;
+        var hex = [];
+        for (var i = 0; i < 256; i++) hex.push((i + 0x100).toString(16).slice(1));
+        var polyfill = function () {
+          var b = crypto.getRandomValues(new Uint8Array(16));
+          b[6] = (b[6] & 0x0f) | 0x40;
+          b[8] = (b[8] & 0x3f) | 0x80;
+          return (
+            hex[b[0]] + hex[b[1]] + hex[b[2]] + hex[b[3]] + '-' +
+            hex[b[4]] + hex[b[5]] + '-' +
+            hex[b[6]] + hex[b[7]] + '-' +
+            hex[b[8]] + hex[b[9]] + '-' +
+            hex[b[10]] + hex[b[11]] + hex[b[12]] + hex[b[13]] + hex[b[14]] + hex[b[15]]
+          );
+        };
+        try {
+          crypto.randomUUID = polyfill;
+        } catch (e) {
+          try {
+            Object.defineProperty(crypto, 'randomUUID', { value: polyfill, configurable: true, writable: true });
+          } catch (e2) {
+            // Can't patch the Crypto object — callers will still fail.
+          }
+        }
+      })();
+    </script>
+
     <!-- 🚀 Preconnect to external origins for faster requests (app mode only) -->
     <!-- Landing visitors don't need Firebase/Google APIs — skip these to save ~500ms -->
     <script>
       (function() {
         var p = window.location.pathname;
-        var isLanding = p === '/' || p === '/landing' || p.startsWith('/embed') || p.startsWith('/p/') || p.startsWith('/sequence/') || p.startsWith('/profile/') || p.startsWith('/demo') || p.startsWith('/1989') || p.startsWith('/1995') || p.startsWith('/1998') || p.startsWith('/2003');
+        var isLanding = p === '/' || p === '/landing' || p.startsWith('/embed') || p.startsWith('/p/') || p.startsWith('/sequence/') || p.startsWith('/profile/') || p.startsWith('/demo') || p.startsWith('/guide') || p.startsWith('/1989') || p.startsWith('/1995') || p.startsWith('/1998') || p.startsWith('/2003');
         if (isLanding) {
           // Mark landing mode early for loading bar skip below
           window.__tkaIsLanding = true;
@@ -433,7 +469,7 @@
             nightSky: ["#1e1b4b", "#4338ca", "#818cf8"],
             deepOcean: ["#0c4a6e", "#0891b2", "#22d3ee"],
             emberGlow: ["#7c2d12", "#ea580c", "#fb923c"],
-            sakuraDrift: ["#831843", "#db2777", "#f9a8d4"],
+            cherryBlossom: ["#831843", "#db2777", "#f9a8d4"],
             fireflyForest: ["#0d3320", "#166534", "#22c55e", "#bef264"],
             autumnDrift: ["#92400e", "#d97706", "#dc2626", "#78350f"],
             solidColor: ["#18181b", "#6366f1", "#818cf8"],
@@ -556,7 +592,7 @@
             nightSky: "linear-gradient(135deg, #0a0e2c 0%, #1a2040 50%, #2a3060 100%)",
             deepOcean: "linear-gradient(135deg, #001122 0%, #000c1e 50%, #000511 100%)",
             emberGlow: "linear-gradient(135deg, #1a0a0a 0%, #2d1410 30%, #4a1f1a 60%, #3d1814 100%)",
-            sakuraDrift: "linear-gradient(135deg, #2a1f2e 0%, #3d2f42 30%, #4a3d52 60%, #362d40 100%)",
+            cherryBlossom: "linear-gradient(135deg, #2a1f2e 0%, #3d2f42 30%, #4a3d52 60%, #362d40 100%)",
             fireflyForest: "linear-gradient(180deg, #0a0e18 0%, #0a1612 60%, #0c1a14 85%, #0a1810 100%)",
             autumnDrift: "linear-gradient(180deg, #1a1520 0%, #2d1f28 30%, #3d2a1f 60%, #2a1810 100%)",
           };
@@ -570,7 +606,7 @@
             nightSky: "star-twinkle",
             deepOcean: "deep-ocean-flow",
             emberGlow: "ember-glow",
-            sakuraDrift: "cherry-blossom",
+            cherryBlossom: "cherry-blossom",
             fireflyForest: "firefly-forest",
             autumnDrift: "autumn-drift",
           };
