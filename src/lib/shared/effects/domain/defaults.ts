@@ -94,6 +94,42 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
     spewStyle: "flow",
   },
 
+  bubbles: {
+    ambientEmission: 0.3,
+    motionEmission: 0.5,
+    intensity: 0.6,
+    palette: "soap",
+    customColor: "#c8e0ff",
+    sizeJitter: 0.4,
+    buoyancy: 0.5,
+    trackingMode: "both_ends",
+  },
+
+  petals: {
+    ambientEmission: 0.5,
+    motionEmission: 0.4,
+    intensity: 0.6,
+    palette: "blossom",
+    customColor: "#ffb0c8",
+    swayAmplitude: 0.6,
+    fallSpeed: 0.4,
+    trackingMode: "both_ends",
+  },
+
+  // Default smoke maps to the "classic" preset (incense palette). Palette
+  // carries behavioral DNA — lifetime/curl/rise biases live there, not on
+  // the intent. See docs/superpowers/specs/2026-04-15-effects-phase-1i-smoke-design.md
+  smoke: {
+    ambientEmission: 0.5,
+    motionEmission: 0.4,
+    intensity: 0.5,
+    palette: "incense",
+    customColor: "#e0e0e0",
+    curlStrength: 0.5,
+    riseSpeed: 0.5,
+    trackingMode: "both_ends",
+  },
+
   activePresets: {
     trails: null,
     fire: null,
@@ -104,5 +140,8 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
     echo: null,
     bloom: null,
     water: null,
+    bubbles: null,
+    petals: null,
+    smoke: null,
   },
 };

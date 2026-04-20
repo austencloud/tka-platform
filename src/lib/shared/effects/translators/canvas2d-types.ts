@@ -17,8 +17,14 @@ import type {
   EchoIntent,
   BloomIntent,
   WaterIntent,
+  BubblesIntent,
+  PetalsIntent,
+  SmokeIntent,
 } from "../domain/EffectsConfig";
 import type { WaterPalette } from "../domain/WaterPalettes";
+import type { BubblePalette } from "../domain/BubblePalettes";
+import type { PetalPalette } from "../domain/PetalPalettes";
+import type { SmokePalette } from "../domain/SmokePalettes";
 
 export interface Trails2DParams extends TrailsIntent {
   /** px value for ctx.lineWidth. Derived from thickness. */
@@ -98,5 +104,88 @@ export interface Water2DParams extends WaterIntent {
   /** World units/s that maps to full motion scalar (tuned against medium spin). */
   motionReferenceSpeed: number;
   /** Canvas composite op — `source-over` for body, `lighter` for highlight. */
+  blendMode?: GlobalCompositeOperation;
+}
+
+export interface Bubbles2DParams extends BubblesIntent {
+  /** Resolved palette swatches (intent's palette enum → concrete hex stops). */
+  resolvedPalette: BubblePalette;
+  /** Max bubbles alive at once. Tier-dependent: 512 / 1024 / 2048. */
+  poolSize: number;
+  /** px — base bubble radius before `intensity` multiplier. */
+  baseRadius: number;
+  /** Bubbles/sec at `ambientEmission=1`. */
+  ambientSpawnRate: number;
+  /** Bubbles/sec at full velocity * `motionEmission=1`. */
+  motionSpawnRate: number;
+  /** World units/s that maps to full motion scalar. */
+  motionReferenceSpeed: number;
+  /** Canvas composite op — default `source-over`, pop bursts use `lighter`. */
+  blendMode?: GlobalCompositeOperation;
+}
+
+export interface Petals2DParams extends PetalsIntent {
+  /** Resolved palette (sprite list + tint range + optional ember flag). */
+  resolvedPalette: PetalPalette;
+  /** Max petals alive at once. Tier-dependent: 512 / 1024 / 2048. */
+  poolSize: number;
+  /** px — base petal half-size before `intensity` multiplier. */
+  baseSize: number;
+  /** Petals/sec at `ambientEmission=1`. */
+  ambientSpawnRate: number;
+  /** Petals/sec at full velocity * `motionEmission=1`. */
+  motionSpawnRate: number;
+  /** World units/s that maps to full motion scalar. */
+  motionReferenceSpeed: number;
+  /** px/s — base downward velocity at `fallSpeed=1`. */
+  fallBaseSpeed: number;
+  /** px/s — sinusoidal sway amplitude at `swayAmplitude=1`. */
+  swayBaseSpeed: number;
+  /** Hz — sinusoidal sway frequency (shared across particles). */
+  swayFrequency: number;
+  /** Canvas composite op — `source-over` for bodies; ember rim uses `lighter` internally. */
+  blendMode?: GlobalCompositeOperation;
+}
+
+export interface Smoke2DParams extends SmokeIntent {
+  /** Resolved palette (core/edge colors + behavior multipliers). */
+  resolvedPalette: SmokePalette;
+  /** Max puffs alive at once. Tier-dependent: 512 / 1024 / 2048. */
+  poolSize: number;
+  /** px — base puff radius before `intensity` multiplier. */
+  baseRadius: number;
+  /** Puffs/sec at `ambientEmission=1`. */
+  ambientSpawnRate: number;
+  /** Puffs/sec at full velocity * `motionEmission=1`. */
+  motionSpawnRate: number;
+  /** World units/s that maps to full motion scalar. */
+  motionReferenceSpeed: number;
+  /**
+   * Resolved lifetime in seconds (palette.lifetime; ±20% per-particle
+   * jitter applied at spawn). Kept on params so the renderer doesn't
+   * reach into the palette every frame.
+   */
+  lifetimeSeconds: number;
+  /**
+   * Resolved curl magnitude = intent.curlStrength * palette.curlBias.
+   * The renderer multiplies the noise field by this scalar.
+   */
+  resolvedCurlStrength: number;
+  /**
+   * Resolved rise speed = intent.riseSpeed * palette.riseBias * RISE_BASE.
+   * In 2D (screen-space), y grows downward so "rise" is a negative vy.
+   */
+  resolvedRiseSpeed: number;
+  /**
+   * Curl-noise field wavelength (world-units per radian of noise space).
+   * Lower = tighter eddies. 0.5 matches the spec's NOISE_SCALE.
+   */
+  noiseScale: number;
+  /**
+   * Base world-up rise magnitude (before palette/user multipliers).
+   * Pulled out so tests can assert on it. Spec: RISE_BASE ≈ 1.5.
+   */
+  riseBaseSpeed: number;
+  /** Canvas composite op. `source-over` suits light-on-dark smoke. */
   blendMode?: GlobalCompositeOperation;
 }

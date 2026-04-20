@@ -8,6 +8,9 @@ import type {
   EchoIntent,
   BloomIntent,
   WaterIntent,
+  BubblesIntent,
+  PetalsIntent,
+  SmokeIntent,
 } from "../domain/EffectsConfig";
 import type {
   Trails2DParams,
@@ -19,8 +22,14 @@ import type {
   Echo2DParams,
   Bloom2DParams,
   Water2DParams,
+  Bubbles2DParams,
+  Petals2DParams,
+  Smoke2DParams,
 } from "./canvas2d-types";
 import { resolveWaterPalette } from "../domain/WaterPalettes";
+import { resolveBubblePalette } from "../domain/BubblePalettes";
+import { resolvePetalPalette } from "../domain/PetalPalettes";
+import { resolveSmokePalette } from "../domain/SmokePalettes";
 
 export function resolveTrails2D(
   intent: TrailsIntent,
@@ -118,6 +127,79 @@ export function resolveWater2D(
     ambientSpawnRate: 8,
     motionSpawnRate: 40,
     motionReferenceSpeed: 3.0,
+    blendMode: "source-over",
+  };
+  return { ...intent, ...defaults, ...override };
+}
+
+export function resolveBubbles2D(
+  intent: BubblesIntent,
+  override: Partial<Bubbles2DParams> = {},
+): Bubbles2DParams {
+  const defaults: Omit<Bubbles2DParams, keyof BubblesIntent> = {
+    resolvedPalette: resolveBubblePalette(intent),
+    poolSize: 1024,
+    baseRadius: 6,
+    ambientSpawnRate: 6,
+    motionSpawnRate: 30,
+    motionReferenceSpeed: 3.0,
+    blendMode: "source-over",
+  };
+  return { ...intent, ...defaults, ...override };
+}
+
+export function resolvePetals2D(
+  intent: PetalsIntent,
+  override: Partial<Petals2DParams> = {},
+): Petals2DParams {
+  const defaults: Omit<Petals2DParams, keyof PetalsIntent> = {
+    resolvedPalette: resolvePetalPalette(intent),
+    poolSize: 1024,
+    baseSize: 10,
+    ambientSpawnRate: 5,
+    motionSpawnRate: 25,
+    motionReferenceSpeed: 3.0,
+    fallBaseSpeed: 140,
+    swayBaseSpeed: 80,
+    swayFrequency: 1.4,
+    blendMode: "source-over",
+  };
+  return { ...intent, ...defaults, ...override };
+}
+
+/**
+ * Resolve smoke for the 2D backend.
+ *
+ * Composes user intent with palette behavioral multipliers:
+ *   - lifetimeSeconds       = palette.lifetime (±20% per-particle jitter at spawn)
+ *   - resolvedCurlStrength  = intent.curlStrength * palette.curlBias
+ *   - resolvedRiseSpeed     = intent.riseSpeed * palette.riseBias * RISE_BASE
+ *
+ * The renderer reads only the resolved fields — palette colors flow
+ * through `resolvedPalette.core/edge`. This matches the spec's
+ * "palette owns lifetime/curl/rise" contract.
+ */
+export function resolveSmoke2D(
+  intent: SmokeIntent,
+  override: Partial<Smoke2DParams> = {},
+): Smoke2DParams {
+  const palette = resolveSmokePalette(intent);
+  // Spec tuning constants. RISE_BASE is the screen-space px/s rise at
+  // slider=1 before palette bias. 2D uses px, so a tuned absolute value
+  // replaces 3D's world-unit value.
+  const RISE_BASE_PX = 60; // px/sec upward at riseSpeed=1, palette.riseBias=1
+  const defaults: Omit<Smoke2DParams, keyof SmokeIntent> = {
+    resolvedPalette: palette,
+    poolSize: 1024,
+    baseRadius: 18,
+    ambientSpawnRate: 4,
+    motionSpawnRate: 20,
+    motionReferenceSpeed: 3.0,
+    lifetimeSeconds: palette.lifetime,
+    resolvedCurlStrength: intent.curlStrength * palette.curlBias,
+    resolvedRiseSpeed: intent.riseSpeed * palette.riseBias * RISE_BASE_PX,
+    noiseScale: 0.5,
+    riseBaseSpeed: RISE_BASE_PX,
     blendMode: "source-over",
   };
   return { ...intent, ...defaults, ...override };

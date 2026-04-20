@@ -17,8 +17,14 @@ import type {
   EchoIntent,
   BloomIntent,
   WaterIntent,
+  BubblesIntent,
+  PetalsIntent,
+  SmokeIntent,
 } from "../domain/EffectsConfig";
 import type { WaterPalette } from "../domain/WaterPalettes";
+import type { BubblePalette } from "../domain/BubblePalettes";
+import type { PetalPalette } from "../domain/PetalPalettes";
+import type { SmokePalette } from "../domain/SmokePalettes";
 
 export interface Trails3DParams extends TrailsIntent {
   /** World-space tube radius, meters. Derived from thickness. */
@@ -115,4 +121,71 @@ export interface Water3DParams extends WaterIntent {
   motionReferenceSpeed: number;
   /** World-space gravity (−y is down). */
   worldGravity: number;
+}
+
+export interface Bubbles3DParams extends BubblesIntent {
+  /** Resolved palette swatches. */
+  resolvedPalette: BubblePalette;
+  /** Max instanced bubbles. Tier-dependent: 512 / 1024 / 2048. */
+  poolSize: number;
+  /** World-units — base billboard radius (applied before `intensity`). */
+  baseRadius: number;
+  /** Bubbles/sec at `ambientEmission=1`. */
+  ambientSpawnRate: number;
+  /** Bubbles/sec at full velocity * `motionEmission=1`. */
+  motionSpawnRate: number;
+  /** World units/s mapping to full motion scalar. */
+  motionReferenceSpeed: number;
+  /** World-space rise speed scalar (positive = up). Derived from `buoyancy`. */
+  riseSpeed: number;
+  /** Bubble lifetime in seconds (before size-pop override). */
+  lifetime: number;
+}
+
+export interface Petals3DParams extends PetalsIntent {
+  /** Resolved palette (sprite list + tint range). */
+  resolvedPalette: PetalPalette;
+  /** Max instanced petals. Tier-dependent: 512 / 1024 / 2048. */
+  poolSize: number;
+  /** World-units — base petal size (applied before `intensity`). */
+  baseSize: number;
+  /** Petals/sec at `ambientEmission=1` spawned from the above-scene ceiling zone. */
+  ambientAboveRate: number;
+  /** Petals/sec at full velocity * `motionEmission=1` spawned from tip. */
+  motionTipRate: number;
+  /** World units/s mapping to full motion scalar. */
+  motionReferenceSpeed: number;
+  /** World-space downward speed scalar at `fallSpeed=1`. */
+  fallBaseSpeed: number;
+  /** World-space sinusoidal sway amplitude at `swayAmplitude=1`. */
+  swayBaseSpeed: number;
+  /** Hz — sinusoidal sway frequency. */
+  swayFrequency: number;
+  /** Petal lifetime in seconds. */
+  lifetime: number;
+}
+
+export interface Smoke3DParams extends SmokeIntent {
+  /** Resolved palette (core/edge colors + behavior multipliers). */
+  resolvedPalette: SmokePalette;
+  /** Max instanced puffs. Tier-dependent: 512 / 1024 / 2048. */
+  poolSize: number;
+  /** World-units — base billboard radius before `intensity`. */
+  baseRadius: number;
+  /** Puffs/sec at `ambientEmission=1`. */
+  ambientSpawnRate: number;
+  /** Puffs/sec at full velocity * `motionEmission=1`. */
+  motionSpawnRate: number;
+  /** World units/s mapping to full motion scalar. */
+  motionReferenceSpeed: number;
+  /** Resolved puff lifetime in seconds (palette.lifetime; jittered at spawn). */
+  lifetimeSeconds: number;
+  /** Resolved curl magnitude = intent.curlStrength * palette.curlBias. */
+  resolvedCurlStrength: number;
+  /** Resolved rise speed (world-units/s) = intent.riseSpeed * palette.riseBias * RISE_BASE. */
+  resolvedRiseSpeed: number;
+  /** World-units per radian of noise space. Matches spec NOISE_SCALE ≈ 0.5. */
+  noiseScale: number;
+  /** Base world-up rise magnitude in m/s before user/palette multipliers. Spec RISE_BASE ≈ 1.5. */
+  riseBaseSpeed: number;
 }
