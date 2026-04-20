@@ -6,6 +6,10 @@
  * The key includes all properties that affect the visual SVG output,
  * but explicitly EXCLUDES stepNumber and size to enable cache sharing
  * across sequences with identical pictographs.
+ *
+ * Returns the full canonical JSON string (not a digest) to avoid
+ * the 32-bit hash-collision bug that corrupted ~46K+ entry caches
+ * with wrong prop/arrow blobs. IndexedDB handles long string keys fine.
  */
 
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
@@ -62,7 +66,7 @@ export class PictographKeyHasher implements IPictographKeyHasher {
     visibility: PictographVisibilityOptions
   ): string {
     const input = this.buildKeyInput(data, visibility);
-    return this.computeHash(input);
+    return JSON.stringify(input, this.sortedReplacer);
   }
 
   /**
@@ -156,24 +160,6 @@ export class PictographKeyHasher implements IPictographKeyHasher {
     }
 
     return GridMode.DIAMOND;
-  }
-
-  /**
-   * Compute a deterministic hash from the key input
-   * Uses djb2 algorithm for fast, reasonable distribution
-   */
-  private computeHash(input: PictographKeyInput): string {
-    // Sort keys for deterministic JSON serialization
-    const str = JSON.stringify(input, this.sortedReplacer);
-
-    // djb2 hash algorithm
-    let hash = 5381;
-    for (let i = 0; i < str.length; i++) {
-      hash = ((hash << 5) + hash + str.charCodeAt(i)) | 0;
-    }
-
-    // Convert to base36 for shorter strings
-    return Math.abs(hash).toString(36);
   }
 
   /**
