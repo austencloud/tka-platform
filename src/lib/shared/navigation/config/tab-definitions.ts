@@ -379,14 +379,6 @@ export const ADMIN_TABS: Section[] = [
     color: "#8b5cf6",
     gradient: "linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%)",
   },
-  {
-    id: "short-codes",
-    label: "Short Codes",
-    icon: '<i class="fas fa-qrcode" aria-hidden="true"></i>',
-    description: "Choreo card QR scans, durability, and sparklines",
-    color: "#10b981",
-    gradient: "linear-gradient(135deg, #34d399 0%, #10b981 100%)",
-  },
 ];
 
 // Settings tabs configuration - shown in sidebar like other modules
