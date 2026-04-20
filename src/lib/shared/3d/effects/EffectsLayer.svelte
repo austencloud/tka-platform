@@ -15,7 +15,7 @@
   import { getEffectState } from "./state/effect-state.svelte";
   import { getEffectsConfigContext as getUnifiedEffectsState } from "$lib/shared/effects/state/effects-config-context";
   import { getScene3DRenderContext } from "$lib/shared/3d/scene-features/state/scene-3d-render-context";
-  import { resolveEcho3D, resolveSparkles3D, resolveZap3D, resolveWater3D, resolveBubbles3D, resolvePetals3D, resolveTrails3D, resolveFire3D } from "$lib/shared/effects/translators/webgl3d-translator";
+  import { resolveEcho3D, resolveSparkles3D, resolveZap3D, resolveWater3D, resolveBubbles3D, resolvePetals3D, resolveSmoke3D, resolveTrails3D, resolveFire3D } from "$lib/shared/effects/translators/webgl3d-translator";
   import { AUSTEN_STAFF } from "../config/avatar-proportions";
 
   // Effect components
@@ -35,6 +35,7 @@
   import BubbleEmitter3D from "./bubbles/BubbleEmitter3D.svelte";
   import PetalEmitter3D from "./petals/PetalEmitter3D.svelte";
   import PetalAmbientShower3D from "./petals/PetalAmbientShower3D.svelte";
+  import SmokeRenderer3D from "./smoke/SmokeRenderer3D.svelte";
 
   interface Props {
     /** Blue prop state from animation */
@@ -111,6 +112,16 @@
   );
   const petalsShowRightEnd = $derived(
     petals3D?.trackingMode === "right_end" || petals3D?.trackingMode === "both_ends",
+  );
+  const smoke3D = $derived(unifiedState ? resolveSmoke3D(unifiedState.smoke) : null);
+  const smokeEnabled = $derived(
+    unifiedState ? unifiedState.config.tipEffectMap["*"]?.effect === "smoke" : false,
+  );
+  const smokeShowLeftEnd = $derived(
+    smoke3D?.trackingMode === "left_end" || smoke3D?.trackingMode === "both_ends",
+  );
+  const smokeShowRightEnd = $derived(
+    smoke3D?.trackingMode === "right_end" || smoke3D?.trackingMode === "both_ends",
   );
   const trails3D = $derived(unifiedState ? resolveTrails3D(unifiedState.trails) : null);
   const trailsEnabled = $derived(
@@ -651,6 +662,46 @@
       position={redEnds.negative}
       propVelocity={redVelocityVec}
       params={petals3D}
+      enabled={true}
+    />
+  {/if}
+{/if}
+
+<!-- =============================================================================
+     Smoke: per-tip curl-noise puff emitters (Phase 1i.i MVP). Each tip owns
+     a 256-particle pool; palette carries lifetime + curl bias + rise bias.
+     Sub-phases 1i.ii (blur) and 1i.iii (genie hue-shift) deferred.
+     ============================================================================= -->
+{#if smokeEnabled && smoke3D && isPlaying}
+  {#if blueEnds && smokeShowRightEnd}
+    <SmokeRenderer3D
+      position={blueEnds.positive}
+      propVelocity={blueVelocityVec}
+      params={smoke3D}
+      enabled={true}
+    />
+  {/if}
+  {#if blueEnds && smokeShowLeftEnd}
+    <SmokeRenderer3D
+      position={blueEnds.negative}
+      propVelocity={blueVelocityVec}
+      params={smoke3D}
+      enabled={true}
+    />
+  {/if}
+  {#if redEnds && smokeShowRightEnd}
+    <SmokeRenderer3D
+      position={redEnds.positive}
+      propVelocity={redVelocityVec}
+      params={smoke3D}
+      enabled={true}
+    />
+  {/if}
+  {#if redEnds && smokeShowLeftEnd}
+    <SmokeRenderer3D
+      position={redEnds.negative}
+      propVelocity={redVelocityVec}
+      params={smoke3D}
       enabled={true}
     />
   {/if}

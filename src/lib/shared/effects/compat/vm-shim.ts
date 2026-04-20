@@ -67,6 +67,9 @@ export function snapshotConfigFromVm(vm: AnimationVisibilityStateManager): Effec
     echo: { ...DEFAULT_EFFECTS_CONFIG.echo },
     bloom: { ...DEFAULT_EFFECTS_CONFIG.bloom },
     water: { ...DEFAULT_EFFECTS_CONFIG.water },
+    bubbles: { ...DEFAULT_EFFECTS_CONFIG.bubbles },
+    petals: { ...DEFAULT_EFFECTS_CONFIG.petals },
+    smoke: { ...DEFAULT_EFFECTS_CONFIG.smoke },
 
     activePresets: {
       trails: null,
@@ -78,6 +81,9 @@ export function snapshotConfigFromVm(vm: AnimationVisibilityStateManager): Effec
       echo: null,
       bloom: null,
       water: null,
+      bubbles: null,
+      petals: null,
+      smoke: null,
     },
   };
 }

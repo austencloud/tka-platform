@@ -102,9 +102,15 @@ import { BloomOverlayRenderer } from "./BloomOverlayRenderer";
 import type { IBloomOverlayRenderer } from "../contracts/IBloomOverlayRenderer";
 import { WaterOverlayRenderer } from "./WaterOverlayRenderer";
 import type { IWaterOverlayRenderer } from "../contracts/IWaterOverlayRenderer";
-import type { Bloom2DParams, Echo2DParams, Sparkles2DParams, Water2DParams, Zap2DParams } from "$lib/shared/effects/translators/canvas2d-types";
-import { resolveBloom2D, resolveEcho2D, resolveSparkles2D, resolveWater2D, resolveZap2D } from "$lib/shared/effects/translators/canvas2d-translator";
-import type { BloomIntent, EchoIntent, SparklesIntent, WaterIntent } from "$lib/shared/effects/domain/EffectsConfig";
+import { BubblesOverlayRenderer } from "./BubblesOverlayRenderer";
+import type { IBubblesOverlayRenderer } from "../contracts/IBubblesOverlayRenderer";
+import { PetalsOverlayRenderer } from "./PetalsOverlayRenderer";
+import type { IPetalsOverlayRenderer } from "../contracts/IPetalsOverlayRenderer";
+import { SmokeOverlayRenderer } from "./SmokeOverlayRenderer";
+import type { ISmokeOverlayRenderer } from "../contracts/ISmokeOverlayRenderer";
+import type { Bloom2DParams, Bubbles2DParams, Echo2DParams, Petals2DParams, Smoke2DParams, Sparkles2DParams, Water2DParams, Zap2DParams } from "$lib/shared/effects/translators/canvas2d-types";
+import { resolveBloom2D, resolveBubbles2D, resolveEcho2D, resolvePetals2D, resolveSmoke2D, resolveSparkles2D, resolveWater2D, resolveZap2D } from "$lib/shared/effects/translators/canvas2d-translator";
+import type { BloomIntent, BubblesIntent, EchoIntent, PetalsIntent, SmokeIntent, SparklesIntent, WaterIntent } from "$lib/shared/effects/domain/EffectsConfig";
 import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
 import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
 import { sequenceLoopabilityChecker } from "$lib/features/compose/services/implementations/SequenceLoopabilityChecker";
@@ -290,6 +296,9 @@ export class AnimationEngine {
   private echoRenderer: IEchoOverlayRenderer | null = null;
   private bloomRenderer: IBloomOverlayRenderer | null = null;
   private waterRenderer: IWaterOverlayRenderer | null = null;
+  private bubblesRenderer: IBubblesOverlayRenderer | null = null;
+  private petalsRenderer: IPetalsOverlayRenderer | null = null;
+  private smokeRenderer: ISmokeOverlayRenderer | null = null;
   // Cached zap params resolved from the current ZapIntent.
   // Seeded from DEFAULT_EFFECTS_CONFIG.zap and overwritten in getFrameParams()
   // whenever a wired EffectsConfigState reports a changed zap intent
@@ -311,6 +320,15 @@ export class AnimationEngine {
   // Cached water params resolved from the live WaterIntent.
   private waterConfig: Water2DParams = resolveWater2D(DEFAULT_EFFECTS_CONFIG.water);
   private prevWaterIntentRef: WaterIntent | null = null;
+  // Cached bubbles params resolved from the live BubblesIntent.
+  private bubblesConfig: Bubbles2DParams = resolveBubbles2D(DEFAULT_EFFECTS_CONFIG.bubbles);
+  private prevBubblesIntentRef: BubblesIntent | null = null;
+  // Cached petals params resolved from the live PetalsIntent.
+  private petalsConfig: Petals2DParams = resolvePetals2D(DEFAULT_EFFECTS_CONFIG.petals);
+  private prevPetalsIntentRef: PetalsIntent | null = null;
+  // Cached smoke params resolved from the live SmokeIntent.
+  private smokeConfig: Smoke2DParams = resolveSmoke2D(DEFAULT_EFFECTS_CONFIG.smoke);
+  private prevSmokeIntentRef: SmokeIntent | null = null;
   // JSON snapshot of the last ZapIntent we resolved into zapConfig.
   // Re-resolves only when the intent changes to avoid per-frame allocation churn.
   private prevZapIntentJson: string = JSON.stringify(DEFAULT_EFFECTS_CONFIG.zap);
@@ -377,6 +395,9 @@ export class AnimationEngine {
   private prevHasEchoTips: boolean = false;
   private prevHasBloomTips: boolean = false;
   private prevHasWaterTips: boolean = false;
+  private prevHasBubblesTips: boolean = false;
+  private prevHasPetalsTips: boolean = false;
+  private prevHasSmokeTips: boolean = false;
   private prevFireIntensity: number = 0.7;
   private prevFireTurbulence: number = 0.5;
   private prevFireColorCurve: import("../../domain/types/FireTypes").FireColorCurve | null = null;
@@ -431,6 +452,9 @@ export class AnimationEngine {
     echoConfig: null,
     bloomConfig: null,
     waterConfig: null,
+    bubblesConfig: null,
+    petalsConfig: null,
+    smokeConfig: null,
     isSeamlesslyLoopable: false,
     sequenceContentHash: undefined,
     tipEffectMap: {},
@@ -534,6 +558,9 @@ export class AnimationEngine {
     this.prevHasEchoTips = vm.hasEffect("echo");
     this.prevHasBloomTips = vm.hasEffect("bloom");
     this.prevHasWaterTips = vm.hasEffect("water");
+    this.prevHasBubblesTips = vm.hasEffect("bubbles");
+    this.prevHasPetalsTips = vm.hasEffect("petals");
+    this.prevHasSmokeTips = vm.hasEffect("smoke");
     this.prevFireIntensity = vm.getFireIntensity();
     this.prevCharcoalParamsJson = JSON.stringify(vm.getCharcoalParams());
     this.prevEffortPreset = vm.getEffortPreset();
@@ -700,6 +727,21 @@ export class AnimationEngine {
         if (hasWaterTips !== this.prevHasWaterTips) {
           this.prevHasWaterTips = hasWaterTips;
           this.syncWaterOverlay();
+        }
+        const hasBubblesTips = vm.hasEffect("bubbles");
+        if (hasBubblesTips !== this.prevHasBubblesTips) {
+          this.prevHasBubblesTips = hasBubblesTips;
+          this.syncBubblesOverlay();
+        }
+        const hasPetalsTips = vm.hasEffect("petals");
+        if (hasPetalsTips !== this.prevHasPetalsTips) {
+          this.prevHasPetalsTips = hasPetalsTips;
+          this.syncPetalsOverlay();
+        }
+        const hasSmokeTips = vm.hasEffect("smoke");
+        if (hasSmokeTips !== this.prevHasSmokeTips) {
+          this.prevHasSmokeTips = hasSmokeTips;
+          this.syncSmokeOverlay();
         }
 
         // Sync fire slider values + color curve → physics
@@ -928,6 +970,15 @@ export class AnimationEngine {
     }
     if (this.prevHasWaterTips && !this.waterRenderer?.isInitialized()) {
       this.syncWaterOverlay();
+    }
+    if (this.prevHasBubblesTips && !this.bubblesRenderer?.isInitialized()) {
+      this.syncBubblesOverlay();
+    }
+    if (this.prevHasPetalsTips && !this.petalsRenderer?.isInitialized()) {
+      this.syncPetalsOverlay();
+    }
+    if (this.prevHasSmokeTips && !this.smokeRenderer?.isInitialized()) {
+      this.syncSmokeOverlay();
     }
   }
 
@@ -1487,6 +1538,12 @@ export class AnimationEngine {
     this.bloomRenderer = null;
     this.waterRenderer?.dispose();
     this.waterRenderer = null;
+    this.bubblesRenderer?.dispose();
+    this.bubblesRenderer = null;
+    this.petalsRenderer?.dispose();
+    this.petalsRenderer = null;
+    this.smokeRenderer?.dispose();
+    this.smokeRenderer = null;
 
     // Clear trails
     this.trailCapturer?.clearTrails();
@@ -2025,6 +2082,128 @@ export class AnimationEngine {
   }
 
   /**
+   * Initialize or destroy the bubbles overlay based on prevHasBubblesTips.
+   * Canvas2D layer that hosts the buoyant bubble emitter + pool for every
+   * tip the tipEffectMap assigns to "bubbles".
+   */
+  private syncBubblesOverlay(): void {
+    const enabled = this.prevHasBubblesTips;
+
+    if (enabled) {
+      if (!this.bubblesRenderer?.isInitialized()) {
+        if (!this.containerElement) return;
+        this.bubblesRenderer = new BubblesOverlayRenderer();
+        const success = this.bubblesRenderer.initialize(
+          this.containerElement,
+          this.canvasSize,
+          this.canvasSize
+        );
+        if (success) {
+          this.renderLoopService?.updateConfig({
+            bubblesRenderer: this.bubblesRenderer,
+          });
+        } else {
+          this.bubblesRenderer = null;
+        }
+      }
+    } else {
+      if (this.bubblesRenderer?.isInitialized()) {
+        this.bubblesRenderer.dispose();
+        this.bubblesRenderer = null;
+      }
+      this.renderLoopService?.updateConfig({ bubblesRenderer: null });
+    }
+
+    if (this.renderLoopService && this.lastPropsRef) {
+      this.renderLoopService.triggerRender(() =>
+        this.getFrameParams(this.lastPropsRef ?? DEFAULT_ENGINE_PROPS)
+      );
+    }
+  }
+
+  /**
+   * Initialize or destroy the smoke overlay based on prevHasSmokeTips.
+   * Canvas2D layer that hosts the curl-noise puff emitter + pool for
+   * every tip the tipEffectMap assigns to "smoke". Mirrors the petals
+   * overlay lifecycle exactly — renderer instance is created lazily on
+   * first enable and torn down on disable.
+   */
+  private syncSmokeOverlay(): void {
+    const enabled = this.prevHasSmokeTips;
+
+    if (enabled) {
+      if (!this.smokeRenderer?.isInitialized()) {
+        if (!this.containerElement) return;
+        this.smokeRenderer = new SmokeOverlayRenderer();
+        const success = this.smokeRenderer.initialize(
+          this.containerElement,
+          this.canvasSize,
+          this.canvasSize
+        );
+        if (success) {
+          this.renderLoopService?.updateConfig({
+            smokeRenderer: this.smokeRenderer,
+          });
+        } else {
+          this.smokeRenderer = null;
+        }
+      }
+    } else {
+      if (this.smokeRenderer?.isInitialized()) {
+        this.smokeRenderer.dispose();
+        this.smokeRenderer = null;
+      }
+      this.renderLoopService?.updateConfig({ smokeRenderer: null });
+    }
+
+    if (this.renderLoopService && this.lastPropsRef) {
+      this.renderLoopService.triggerRender(() =>
+        this.getFrameParams(this.lastPropsRef ?? DEFAULT_ENGINE_PROPS)
+      );
+    }
+  }
+
+  /**
+   * Initialize or destroy the petals overlay based on prevHasPetalsTips.
+   * Canvas2D layer that hosts the falling silhouette emitter + pool for
+   * every tip the tipEffectMap assigns to "petals".
+   */
+  private syncPetalsOverlay(): void {
+    const enabled = this.prevHasPetalsTips;
+
+    if (enabled) {
+      if (!this.petalsRenderer?.isInitialized()) {
+        if (!this.containerElement) return;
+        this.petalsRenderer = new PetalsOverlayRenderer();
+        const success = this.petalsRenderer.initialize(
+          this.containerElement,
+          this.canvasSize,
+          this.canvasSize
+        );
+        if (success) {
+          this.renderLoopService?.updateConfig({
+            petalsRenderer: this.petalsRenderer,
+          });
+        } else {
+          this.petalsRenderer = null;
+        }
+      }
+    } else {
+      if (this.petalsRenderer?.isInitialized()) {
+        this.petalsRenderer.dispose();
+        this.petalsRenderer = null;
+      }
+      this.renderLoopService?.updateConfig({ petalsRenderer: null });
+    }
+
+    if (this.renderLoopService && this.lastPropsRef) {
+      this.renderLoopService.triggerRender(() =>
+        this.getFrameParams(this.lastPropsRef ?? DEFAULT_ENGINE_PROPS)
+      );
+    }
+  }
+
+  /**
    * Pause canvas resize observation during CSS transitions.
    * Prevents canvas buffer clears that cause black frames.
    */
@@ -2281,6 +2460,9 @@ export class AnimationEngine {
         this.echoRenderer?.resize(newSize, newSize);
         this.bloomRenderer?.resize(newSize, newSize);
         this.waterRenderer?.resize(newSize, newSize);
+        this.bubblesRenderer?.resize(newSize, newSize);
+        this.petalsRenderer?.resize(newSize, newSize);
+        this.smokeRenderer?.resize(newSize, newSize);
         this.charcoalRenderer?.resize(newSize, newSize);
         // Reset fire/LED tip trackers so positions recalculate at the new canvas size.
         // Without this, after HMR the tracker uses stale positions from the old size.
@@ -2371,7 +2553,8 @@ export class AnimationEngine {
       a.trackingMode !== b.trackingMode ||
       a.hideProps !== b.hideProps ||
       a.usePathCache !== b.usePathCache ||
-      a.previewMode !== b.previewMode
+      a.previewMode !== b.previewMode ||
+      a.tailLength !== b.tailLength
     );
   }
 
@@ -2601,6 +2784,36 @@ export class AnimationEngine {
       }
     }
     fp.waterConfig = this.prevHasWaterTips ? this.waterConfig : null;
+
+    // Bubbles overlay config — same reference-identity diff pattern.
+    if (this.effectsConfigState) {
+      const intent = this.effectsConfigState.bubbles;
+      if (intent !== this.prevBubblesIntentRef) {
+        this.prevBubblesIntentRef = intent;
+        this.bubblesConfig = resolveBubbles2D(intent);
+      }
+    }
+    fp.bubblesConfig = this.prevHasBubblesTips ? this.bubblesConfig : null;
+
+    // Petals overlay config — same reference-identity diff pattern.
+    if (this.effectsConfigState) {
+      const intent = this.effectsConfigState.petals;
+      if (intent !== this.prevPetalsIntentRef) {
+        this.prevPetalsIntentRef = intent;
+        this.petalsConfig = resolvePetals2D(intent);
+      }
+    }
+    fp.petalsConfig = this.prevHasPetalsTips ? this.petalsConfig : null;
+
+    // Smoke overlay config — same reference-identity diff pattern.
+    if (this.effectsConfigState) {
+      const intent = this.effectsConfigState.smoke;
+      if (intent !== this.prevSmokeIntentRef) {
+        this.prevSmokeIntentRef = intent;
+        this.smokeConfig = resolveSmoke2D(intent);
+      }
+    }
+    fp.smokeConfig = this.prevHasSmokeTips ? this.smokeConfig : null;
 
     // Per-tip effect assignments for filtering tips by effect type.
     // Cell-level map (from compose grid) takes priority over the global map.

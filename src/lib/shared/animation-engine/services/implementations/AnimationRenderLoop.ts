@@ -24,6 +24,7 @@ import type { IBloomOverlayRenderer } from "../contracts/IBloomOverlayRenderer";
 import type { IWaterOverlayRenderer } from "../contracts/IWaterOverlayRenderer";
 import type { IBubblesOverlayRenderer } from "../contracts/IBubblesOverlayRenderer";
 import type { IPetalsOverlayRenderer } from "../contracts/IPetalsOverlayRenderer";
+import type { ISmokeOverlayRenderer } from "../contracts/ISmokeOverlayRenderer";
 import type { ZapTipInput } from "$lib/shared/effects/renderers/Zap2DRenderer";
 import type { SparklesTipInput } from "$lib/shared/effects/renderers/Sparkles2DRenderer";
 import type { EchoTipInput } from "$lib/shared/effects/renderers/Echo2DRenderer";
@@ -31,6 +32,7 @@ import type { BloomTipInput } from "$lib/shared/effects/renderers/Bloom2DRendere
 import type { WaterTipInput } from "$lib/shared/effects/renderers/Water2DRenderer";
 import type { BubblesTipInput } from "$lib/shared/effects/renderers/Bubbles2DRenderer";
 import type { PetalsTipInput } from "$lib/shared/effects/renderers/Petals2DRenderer";
+import type { SmokeTipInput } from "$lib/shared/effects/renderers/Smoke2DRenderer";
 import type {
   IAnimationRenderLoop,
   RenderLoopConfig,
@@ -112,6 +114,8 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
   private lastBubblesFrameTime: number = 0;
   private petalsRenderer: IPetalsOverlayRenderer | null = null;
   private lastPetalsFrameTime: number = 0;
+  private smokeRenderer: ISmokeOverlayRenderer | null = null;
+  private lastSmokeFrameTime: number = 0;
   private onEffectError: ((effectName: string, error: Error) => void) | null = null;
   private canvasSize: number = 950;
   private lastTrailFrameTime: number = 0;
@@ -131,6 +135,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
   private consecutiveWaterErrors: number = 0;
   private consecutiveBubblesErrors: number = 0;
   private consecutivePetalsErrors: number = 0;
+  private consecutiveSmokeErrors: number = 0;
   private fireDisabledByError: boolean = false;
   private ledDisabledByError: boolean = false;
   private zapDisabledByError: boolean = false;
@@ -140,6 +145,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
   private waterDisabledByError: boolean = false;
   private bubblesDisabledByError: boolean = false;
   private petalsDisabledByError: boolean = false;
+  private smokeDisabledByError: boolean = false;
   private static readonly EFFECT_ERROR_THRESHOLD = 3;
 
   // Loop detection for cache-based trail gathering and fire frame cache
@@ -218,6 +224,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     this.waterRenderer = config.waterRenderer ?? null;
     this.bubblesRenderer = config.bubblesRenderer ?? null;
     this.petalsRenderer = config.petalsRenderer ?? null;
+    this.smokeRenderer = config.smokeRenderer ?? null;
     this.onEffectError = config.onEffectError ?? null;
 
     // Subscribe to the module-singleton longtask observer so the FPS summary
@@ -265,6 +272,8 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       this.bubblesRenderer = config.bubblesRenderer ?? null;
     if (config.petalsRenderer !== undefined)
       this.petalsRenderer = config.petalsRenderer ?? null;
+    if (config.smokeRenderer !== undefined)
+      this.smokeRenderer = config.smokeRenderer ?? null;
     if (config.onEffectError !== undefined)
       this.onEffectError = config.onEffectError ?? null;
   }
@@ -387,6 +396,8 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     this.bubblesRenderer = null;
     this.petalsRenderer?.dispose();
     this.petalsRenderer = null;
+    this.smokeRenderer?.dispose();
+    this.smokeRenderer = null;
     // Clear reusable arrays to free memory
     this.reusableBlueTrailPoints.length = 0;
     this.reusableRedTrailPoints.length = 0;
@@ -472,6 +483,9 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     const petalsActive =
       params.petalsConfig != null &&
       this.petalsRenderer?.isInitialized() === true;
+    const smokeActive =
+      params.smokeConfig != null &&
+      this.smokeRenderer?.isInitialized() === true;
 
     // Active work: playing, effects running, background animating, or explicit render request
     const hasActiveWork =
@@ -487,7 +501,8 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       bloomActive ||
       waterActive ||
       bubblesActive ||
-      petalsActive;
+      petalsActive ||
+      smokeActive;
 
     // Trails alone (without active work) should not keep the loop alive forever.
     // Allow a grace period for initialization/texture loading, then auto-stop.
@@ -537,13 +552,31 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     const {
       stepData,
       currentStep,
-      trailSettings,
+      trailSettings: rawTrailSettings,
       gridVisible,
       gridMode,
       letter,
       props,
       visibility,
     } = params;
+
+    // Tail length is authored as "visible ring points at ~60fps render rate."
+    // The path-cache pipeline uses fadeDurationMs for both read window and
+    // fade rate, so scale fadeDurationMs up to honor tailLength — otherwise
+    // a long tailLength in download/export mode would be clipped by the
+    // legacy 2500ms default. The overlay reads ring-buffer directly by
+    // tailLength; extending fadeDurationMs also slows its GPU decay so
+    // visibly-long trails don't fade out mid-tail.
+    const FRAME_MS_60 = 1000 / 60;
+    const tailDurationMs = (rawTrailSettings.tailLength ?? 20) * FRAME_MS_60;
+    const effectiveFadeDurationMs = Math.max(
+      rawTrailSettings.fadeDurationMs,
+      tailDurationMs,
+    );
+    const trailSettings: TrailSettings =
+      effectiveFadeDurationMs === rawTrailSettings.fadeDurationMs
+        ? rawTrailSettings
+        : { ...rawTrailSettings, fadeDurationMs: effectiveFadeDurationMs };
 
     // Get turn tuple for glyph rendering
     const blueMotion = stepData?.motions?.blue;
@@ -657,6 +690,10 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       if (this.petalsRenderer?.isInitialized()) {
         this.petalsRenderer.clear();
       }
+      // Clear smoke overlay (Canvas2D) — also drops the puff pool.
+      if (this.smokeRenderer?.isInitialized()) {
+        this.smokeRenderer.clear();
+      }
     } else if (!params.suppress2DOverlays && this.wasSuppressed) {
       this.wasSuppressed = false;
     }
@@ -766,7 +803,11 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       this.fireTipTracker
       && this.petalsRenderer?.isInitialized()
       && params.petalsConfig != null;
-    const hasAnyTipOverlay = hasFireOrCharcoalOverlay || hasZapOverlay || hasSparklesOverlayForTipUpdate || hasEchoOverlayForTipUpdate || hasBloomOverlayForTipUpdate || hasWaterOverlayForTipUpdate || hasBubblesOverlayForTipUpdate || hasPetalsOverlayForTipUpdate;
+    const hasSmokeOverlayForTipUpdate =
+      this.fireTipTracker
+      && this.smokeRenderer?.isInitialized()
+      && params.smokeConfig != null;
+    const hasAnyTipOverlay = hasFireOrCharcoalOverlay || hasZapOverlay || hasSparklesOverlayForTipUpdate || hasEchoOverlayForTipUpdate || hasBloomOverlayForTipUpdate || hasWaterOverlayForTipUpdate || hasBubblesOverlayForTipUpdate || hasPetalsOverlayForTipUpdate || hasSmokeOverlayForTipUpdate;
 
     let sharedTipResult: import("../contracts/IFireTipTracker").FireTipUpdateResult | null = null;
     if (hasAnyTipOverlay && !params.suppress2DOverlays) {
@@ -1343,6 +1384,71 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     } else if (activePetalsRenderer && !hasPetalsOverlay) {
       activePetalsRenderer.clear();
       this.lastPetalsFrameTime = 0;
+    }
+
+    // Smoke overlay: per-tip curl-noise puff emitter. Mirrors the petals
+    // pipeline — reads sharedTipResult, filters by tipEffectMap, integrates
+    // curl motion via dt since last frame. Puff pool state persists across
+    // frames so we only clear on disable / error / sequence boundary.
+    const activeSmokeRenderer = this.smokeRenderer?.isInitialized()
+      ? this.smokeRenderer
+      : null;
+    const hasSmokeOverlay =
+      this.fireTipTracker && activeSmokeRenderer && params.smokeConfig != null;
+
+    if (
+      hasSmokeOverlay &&
+      !this.smokeDisabledByError &&
+      !params.suppress2DOverlays &&
+      sharedTipResult
+    ) {
+      try {
+        const tipMap = params.tipEffectMap ?? {};
+        const smokeTips: SmokeTipInput = {
+          bluePosA: null,
+          bluePosB: null,
+          redPosA: null,
+          redPosB: null,
+        };
+        for (const t of sharedTipResult.tips) {
+          if (resolveEffect(t.propIndex, t.tipIndex, tipMap, {}) !== "smoke") continue;
+          if (t.propIndex === 0) {
+            if (t.tipIndex === 0) smokeTips.bluePosA = { x: t.x, y: t.y };
+            else if (t.tipIndex === 1) smokeTips.bluePosB = { x: t.x, y: t.y };
+          } else if (t.propIndex === 1) {
+            if (t.tipIndex === 0) smokeTips.redPosA = { x: t.x, y: t.y };
+            else if (t.tipIndex === 1) smokeTips.redPosB = { x: t.x, y: t.y };
+          }
+        }
+        const nowMs = currentTime;
+        let dt = this.lastSmokeFrameTime > 0 ? (nowMs - this.lastSmokeFrameTime) / 1000 : 1 / 60;
+        if (!Number.isFinite(dt) || dt <= 0) dt = 1 / 60;
+        if (dt > 0.1) dt = 0.1;
+        this.lastSmokeFrameTime = nowMs;
+        activeSmokeRenderer!.renderFrame(params.smokeConfig!, smokeTips, dt);
+        this.consecutiveSmokeErrors = 0;
+      } catch (error) {
+        this.consecutiveSmokeErrors++;
+        activeSmokeRenderer?.clear();
+        if (this.consecutiveSmokeErrors >= AnimationRenderLoop.EFFECT_ERROR_THRESHOLD) {
+          this.smokeDisabledByError = true;
+          const err = error instanceof Error ? error : new Error(String(error));
+          console.error("[AnimationRenderLoop] Smoke effect disabled after repeated failures:", err);
+          if (this.onEffectError) {
+            this.onEffectError("smoke", err);
+          } else {
+            effectErrorSignal.trigger("smoke", err);
+          }
+        } else {
+          console.warn(
+            `[AnimationRenderLoop] Smoke render error (attempt ${this.consecutiveSmokeErrors}/${AnimationRenderLoop.EFFECT_ERROR_THRESHOLD}), resetting:`,
+            error
+          );
+        }
+      }
+    } else if (activeSmokeRenderer && !hasSmokeOverlay) {
+      activeSmokeRenderer.clear();
+      this.lastSmokeFrameTime = 0;
     }
 
     // LED overlay: render after fire so it composites on top of both Canvas2D and fire
