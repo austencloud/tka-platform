@@ -60,10 +60,12 @@ class BootProfiler {
     this.enabled = typeof window !== "undefined";
   }
 
-  /** Record a Core Web Vital. Logs inline as metrics arrive. */
+  /** Record a Core Web Vital. Only logs when verbose profiling is opted in;
+   *  metrics are still captured and available via getVitals() for analytics. */
   recordVital(entry: VitalEntry): void {
     if (!this.enabled) return;
     this.vitals.set(entry.name, entry);
+    if (!isBootProfileVerbose()) return;
     const emoji = VITAL_EMOJI[entry.rating] ?? "⚪";
     const formatted =
       entry.name === "CLS" ? entry.value.toFixed(3) : `${Math.round(entry.value)}ms`;
