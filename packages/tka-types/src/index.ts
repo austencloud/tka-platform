@@ -11,3 +11,4 @@ export * from "./prop-color.js";
 export * from "./motion.js";
 export * from "./step.js";
 export * from "./builders.js";
+export * from "./guards.js";
