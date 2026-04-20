@@ -38,32 +38,30 @@
   import AvatarLoadingIndicator from "./AvatarLoadingIndicator.svelte";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
-  // Direct imports for manual instantiation (ensures shared skeleton instance)
-  import { AvatarSkeletonBuilder } from "../services/implementations/AvatarSkeletonBuilder";
-  import { IKSolver } from "../services/implementations/IKSolver";
-  import { AvatarAnimator } from "../services/implementations/AvatarAnimator";
-  import { LocomotionAnimator } from "../services/implementations/LocomotionAnimator";
   import type { ILocomotionAnimator } from "../services/contracts/ILocomotionAnimator";
-  import { AnimationStateMachine } from "../services/implementations/AnimationStateMachine";
   import type { IAnimationStateMachine } from "../services/contracts/IAnimationStateMachine";
   import { LocomotionState } from "../services/contracts/IAnimationStateMachine";
-  import { RootMotionExtractor } from "../services/implementations/RootMotionExtractor";
   import type { IRootMotionExtractor } from "../services/contracts/IRootMotionExtractor";
-  import { FingerAnimator } from "$lib/shared/3d/services/implementations/FingerAnimator";
-  import { FootPlanter } from "../services/implementations/FootPlanter";
+  import type { FingerAnimator } from "$lib/shared/3d/services/implementations/FingerAnimator";
   import type { IFootPlanter } from "../services/contracts/IFootPlanter";
-  import { HingeConstrainedLegIKSolver } from "../services/implementations/HingeConstrainedLegIKSolver";
-  import { ContactCurveCache } from "../services/implementations/ContactCurveCache";
-  import { ElbowPoleComputer } from "../services/implementations/ElbowPoleComputer";
-  import { ClavicleRaiser } from "../services/implementations/ClavicleRaiser";
-  import { SpineTwister } from "../services/implementations/SpineTwister";
-  import { ClipBasedTurnAnimator } from "../services/implementations/ClipBasedTurnAnimator";
+  import type { HingeConstrainedLegIKSolver } from "../services/implementations/HingeConstrainedLegIKSolver";
+  import type { ContactCurveCache } from "../services/implementations/ContactCurveCache";
+  import type { ClipBasedTurnAnimator } from "../services/implementations/ClipBasedTurnAnimator";
   import type { TurnRequest } from "../services/contracts/ITurnAnimator";
+  import { createAvatarServices } from "../services/implementations/AvatarServicesFactory";
   import { GripType } from "$lib/shared/3d/domain/models/GripPose";
   import { CollisionDetector } from "../services/implementations/CollisionDetector";
   import type { BodySnapshot, CollisionEvent, PropSegment } from "../services/contracts/ICollisionDetector";
   import { tryGetViewer3DContext } from "../context/viewer-3d-context";
   import { tryGetViewerVisibilityContext } from "$lib/shared/sequence-viewer/context/viewer-visibility-context";
+  import {
+    installAvatarDebugHooks,
+    type AvatarDebugHandle,
+  } from "../debug/avatar-debug-hooks";
+  import {
+    installMocapDebugHooks,
+    type MocapDebugHandle,
+  } from "../debug/mocap-debug";
 
   // Safe access to viewer3DState — Avatar3D is used in contexts (museum, realm)
   // where the viewer3D context may not exist. We only need autoRenderEnabled.
@@ -198,6 +196,8 @@
   let contactCurveCache: ContactCurveCache | null = null;
   let turnAnimator: ClipBasedTurnAnimator | null = null;
   let fingerAnimator: FingerAnimator | null = null;
+  let debugHandle: AvatarDebugHandle | null = null;
+  let mocapHandle: MocapDebugHandle | null = null;
 
   // Collision detection — logs when props/arms clip through the avatar body
   const collisionDetector = new CollisionDetector();
@@ -502,222 +502,33 @@
     }
 
     try {
-      // Create per-avatar service instances manually
-      // This ensures the animator uses the SAME skeleton instance we load models into
-      // (Using DI would give animator its own skeleton via constructor injection)
-      const skeleton = new AvatarSkeletonBuilder();
-      const solver = new IKSolver();
-      const poleComputer = new ElbowPoleComputer();
-      const clavicleRaiser = new ClavicleRaiser();
-      const spineTwister = new SpineTwister();
-      const animator = new AvatarAnimator(solver, skeleton, poleComputer, clavicleRaiser, spineTwister);
-      const locomotion = new LocomotionAnimator();
+      const services = createAvatarServices({
+        enableLocomotion,
+        enableRootMotion,
+        enableFootPlanting,
+      });
 
-      skeletonService = skeleton;
-      ikSolver = solver;
-      animationService = animator;
-      locomotionAnimator = locomotion;
-
-      // Exhibit performers with planted feet: skip Hips counter-rotation
-      // so the SpineTwister doesn't cascade yaw into the leg chain.
-      if (enableFootPlanting) {
-        animator.setSkipHipsTwist(true);
-      }
-
-      // State machine + foot IK + root motion (only useful with locomotion)
-      if (enableLocomotion) {
-        stateMachine = new AnimationStateMachine();
-        footPlanter = new FootPlanter();
-        legIKSolver = new HingeConstrainedLegIKSolver();
-        contactCurveCache = new ContactCurveCache();
-        turnAnimator = new ClipBasedTurnAnimator();
-        if (enableRootMotion) {
-          rootMotionExtractor = new RootMotionExtractor();
-        }
-      }
-
-      const fingers = new FingerAnimator();
-      fingerAnimator = fingers;
+      skeletonService = services.skeleton;
+      ikSolver = services.ikSolver;
+      animationService = services.animator;
+      locomotionAnimator = services.locomotion;
+      stateMachine = services.stateMachine;
+      footPlanter = services.footPlanter;
+      legIKSolver = services.legIKSolver;
+      contactCurveCache = services.contactCurveCache;
+      turnAnimator = services.turnAnimator;
+      rootMotionExtractor = services.rootMotionExtractor;
+      fingerAnimator = services.fingers;
 
       servicesReady = true;
 
-      // Debug toggles — A/B comparison from browser console
-      (window as any).__togglePoleVectors = () => {
-        const enabled = animator.togglePoleVectors();
-        console.log(`Pole vectors: ${enabled ? "ON (new)" : "OFF (old — elbows bend backward)"}`);
-        return enabled;
-      };
-      (window as any).__toggleClavicleRaise = () => {
-        const enabled = animator.toggleClavicleRaise();
-        console.log(`Clavicle raise: ${enabled ? "ON (shoulders elevate)" : "OFF (shoulders static)"}`);
-        return enabled;
-      };
-
-      (window as any).__toggleSpineTwist = () => {
-        const enabled = animator.toggleSpineTwist();
-        console.log(`Spine twist: ${enabled ? "ON (torso/head rotate)" : "OFF (spine static)"}`);
-        return enabled;
-      };
-
-      // Debug: dump shoulder bone positions to diagnose placement issues
-      (window as any).__dumpShoulders = () => {
-        const s = skeleton.getState();
-        if (!s.isLoaded) return "Skeleton not loaded";
-        const bones = ["LeftShoulder", "RightShoulder", "LeftArm", "RightArm", "Spine2", "Hips"];
-        const data: Record<string, any> = {};
-        for (const name of bones) {
-          const bone = s.bones.get(name as any);
-          if (bone) {
-            const wp = new Vector3();
-            bone.getWorldPosition(wp);
-            const q = bone.quaternion;
-            data[name] = {
-              worldPos: `(${wp.x.toFixed(3)}, ${wp.y.toFixed(3)}, ${wp.z.toFixed(3)})`,
-              localQuat: `(${q.x.toFixed(3)}, ${q.y.toFixed(3)}, ${q.z.toFixed(3)}, ${q.w.toFixed(3)})`,
-            };
-          }
-        }
-        const lc = skeleton.getLeftArmChain();
-        const rc = skeleton.getRightArmChain();
-        if (lc && rc) {
-          const lp = new Vector3(); const rp = new Vector3();
-          lc.root.getWorldPosition(lp);
-          rc.root.getWorldPosition(rp);
-          data._shoulderSpan = lp.distanceTo(rp).toFixed(3);
-          data._leftArmWorldY = lp.y.toFixed(3);
-          data._rightArmWorldY = rp.y.toFixed(3);
-        }
-        console.table(data);
-        return data;
-      };
-
-      // Mocap playback: load an FBX animation and play it on the avatar
-      let mocapMixer: import("three").AnimationMixer | null = null;
-      let mocapPlaying = false;
-
-      (window as any).__playMocap = async (url = "/animations/mocap-test.fbx") => {
-        if (!skeletonService) return "Skeleton not loaded";
-        const root = skeletonService.getRoot();
-        if (!root) return "No root object";
-
-        const { FBXLoader } = await import("three/examples/jsm/loaders/FBXLoader.js");
-        const { AnimationMixer, AnimationClip, LoopRepeat } = await import("three");
-
-        // Detect the bone naming prefix used by our avatar's scene graph
-        // by searching for a bone containing "Hips"
-        let avatarPrefix = "";
-        root.traverse((obj: any) => {
-          if (obj.isBone && obj.name.includes("Hips") && !avatarPrefix) {
-            const idx = obj.name.indexOf("Hips");
-            avatarPrefix = obj.name.slice(0, idx);
-          }
-        });
-        console.log(`[Mocap] Avatar bone prefix: "${avatarPrefix}"`);
-
-        // Build a set of all bone names in our avatar for validation
-        const avatarBoneNames = new Set<string>();
-        root.traverse((obj: any) => {
-          if (obj.isBone) avatarBoneNames.add(obj.name);
-        });
-
-        console.log("[Mocap] Loading FBX:", url);
-        const loader = new FBXLoader();
-
-        return new Promise((resolve, reject) => {
-          loader.load(
-            url,
-            (fbx) => {
-              console.log("[Mocap] FBX loaded. Animations:", fbx.animations.length);
-              if (fbx.animations.length === 0) {
-                resolve("No animations found in FBX");
-                return;
-              }
-
-              // Detect the FBX bone prefix
-              let fbxPrefix = "";
-              fbx.traverse((child: any) => {
-                if (child.isBone && child.name.includes("Hips") && !fbxPrefix) {
-                  const idx = child.name.indexOf("Hips");
-                  fbxPrefix = child.name.slice(0, idx);
-                }
-              });
-              console.log(`[Mocap] FBX bone prefix: "${fbxPrefix}"`);
-
-              // Create mixer on the avatar's root
-              mocapMixer = new AnimationMixer(root);
-
-              for (const clip of fbx.animations) {
-                console.log(`[Mocap] Clip: "${clip.name}" duration=${clip.duration.toFixed(2)}s tracks=${clip.tracks.length}`);
-
-                // Retarget track names: strip FBX prefix, add avatar prefix
-                let mapped = 0;
-                let skipped = 0;
-                const retargetedTracks = clip.tracks.map((track) => {
-                  const [boneName, ...rest] = track.name.split(".");
-                  const property = rest.join(".");
-
-                  // Strip FBX prefix to get core bone name
-                  let coreName = boneName || "";
-                  if (fbxPrefix && coreName.startsWith(fbxPrefix)) {
-                    coreName = coreName.slice(fbxPrefix.length);
-                  }
-
-                  // Build the avatar track name
-                  const avatarBoneName = avatarPrefix + coreName;
-                  const newTrackName = `${avatarBoneName}.${property}`;
-
-                  if (avatarBoneNames.has(avatarBoneName)) {
-                    mapped++;
-                  } else {
-                    skipped++;
-                  }
-
-                  const cloned = track.clone();
-                  cloned.name = newTrackName;
-                  return cloned;
-                });
-
-                console.log(`[Mocap] Retargeted ${mapped} tracks, ${skipped} bones not found in avatar`);
-
-                const retargetedClip = new AnimationClip(
-                  clip.name + "_retargeted",
-                  clip.duration,
-                  retargetedTracks
-                );
-
-                const action = mocapMixer.clipAction(retargetedClip);
-                action.setLoop(LoopRepeat, Infinity);
-                action.play();
-              }
-
-              mocapPlaying = true;
-              console.log("[Mocap] Playing! Call __stopMocap() to stop.");
-              resolve("Mocap playing");
-            },
-            (progress) => {
-              if (progress.total) {
-                console.log(`[Mocap] Loading: ${((progress.loaded / progress.total) * 100).toFixed(0)}%`);
-              }
-            },
-            (error) => {
-              console.error("[Mocap] Failed to load:", error);
-              reject(error);
-            }
-          );
-        });
-      };
-
-      (window as any).__stopMocap = () => {
-        if (mocapMixer) {
-          mocapMixer.stopAllAction();
-          mocapMixer = null;
-        }
-        mocapPlaying = false;
-        console.log("[Mocap] Stopped.");
-      };
-
-      // Hook mocap mixer into the render loop — updates handled in useTask below
-      (window as any).__getMocapMixer = () => mocapMixer;
+      debugHandle = installAvatarDebugHooks({
+        animator: services.animator,
+        skeleton: services.skeleton,
+      });
+      mocapHandle = installMocapDebugHooks({
+        getSkeletonService: () => skeletonService,
+      });
 
       // Load initial avatar
       await loadAvatar(avatarId);
@@ -755,7 +566,7 @@
   // Update animation each frame
   useTask((delta) => {
     // Update mocap mixer if playing (runs independently of IK)
-    const mixer = (window as any).__getMocapMixer?.();
+    const mixer = mocapHandle?.getMixer();
     if (mixer) {
       mixer.update(delta);
     }
@@ -1062,6 +873,9 @@
     if (skeletonService && !useProceduralFallback) {
       skeletonService.dispose();
     }
+
+    debugHandle?.dispose();
+    mocapHandle?.dispose();
 
     collisionDetector.dispose();
   });

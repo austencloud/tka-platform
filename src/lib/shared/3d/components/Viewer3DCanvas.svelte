@@ -91,7 +91,7 @@
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="viewer-3d-canvas">
+<div class="viewer-3d-canvas" data-swipe-block>
   {#if avatarState && sequenceData}
     <Canvas
       createRenderer={(canvas) => new WebGLRenderer({ canvas, preserveDrawingBuffer: true })}
