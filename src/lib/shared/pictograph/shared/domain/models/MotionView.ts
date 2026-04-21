@@ -66,25 +66,46 @@ export interface MotionView {
  * should annotate inputs as `MotionWithView` rather than the deprecated
  * `MotionData`.
  *
- * ## Known migration blocker — `plane` required vs optional
+ * ## Migration blockers — resolved and outstanding
  *
- * `@tka/tka-types` declares `Motion.plane: Plane` (required). The app's
- * `MotionData.plane?: Plane` (optional). Because `MotionWithView` intersects
- * the engine's required `plane` with MotionView's omission, the composed type
- * inherits the required form.
+ * ### Resolved 2026-04-20
  *
- * Existing app call sites construct motions without setting `plane`, and many
- * consumers treat `motion.plane` as possibly undefined. A naive swap from
- * `MotionData` to `Motion` or `MotionWithView` therefore produces cascading
- * TS2345 errors at the construction sites.
+ * `@tka/tka-types` Motion.plane is now optional (commit 900965c4). The guard
+ * was loosened to match (commit a299c806). `createMotion` still defaults the
+ * runtime value to `Plane.wall` when omitted.
  *
- * Before a full migration can land, one of the following must happen:
- *   1. Every motion constructor defaults `plane: Plane.WALL` — remove the
- *      `undefined` escape hatch from the runtime data.
- *   2. `@tka/tka-types` loosens `Motion.plane` to optional. Engine would need
- *      to decide the default-to-wall policy at read time.
+ * ### Outstanding — deeper enum incompatibilities
  *
- * Option 1 is consistent with the engine's existing "undefined means wall"
- * comment and is the intended direction.
+ * The bigger obstacle to swapping `MotionData` -> `Motion` in consumers:
+ *
+ *   1. **App enums are nominal TS `enum` types, tka-types uses `const`-as-union.**
+ *      `enum MotionType { PRO = "pro" }` makes `MotionType.PRO` nominally
+ *      distinct from `"pro"` at the type level. A caller holding
+ *      `MotionData` (app enums) cannot directly satisfy a parameter typed
+ *      as `Motion` (tka-types unions) without a cast, even though the
+ *      runtime values match.
+ *
+ *   2. **`Plane` value set disagrees.** App `Plane` has 9 values (WALL,
+ *      WHEEL, FLOOR, plus 6 fusion planes). tka-types `Plane` has 3
+ *      (wall, wheel, overhead). `MotionData.plane: Plane` (app) is not
+ *      assignable to `Motion.plane: Plane` (tka-types) because
+ *      `Plane.FLOOR` has no counterpart, and tka-types' `"overhead"` has
+ *      no app counterpart.
+ *
+ *   3. **Interfaces still declare `MotionData`.** Swapping an implementation
+ *      without also swapping the interface triggers TS2416 "not assignable
+ *      to base type". Interface and impl must migrate together.
+ *
+ * A clean migration requires one of:
+ *   - Unify `Plane` (merge fusion planes into tka-types, or extract a
+ *     shared 3D enum package).
+ *   - Convert app enums to `const`-as-union so values become structurally
+ *     assignable.
+ *   - Introduce `MotionData` as a structurally-compatible alias of
+ *     `Motion & MotionView` (the Motion half using app enums re-exported
+ *     from tka-types as type aliases).
+ *
+ * Until this prerequisite is addressed, Category A / B / C migration of
+ * consumers from `MotionData` is blocked. See session log on 2026-04-20.
  */
 export type MotionWithView = Motion & MotionView;
