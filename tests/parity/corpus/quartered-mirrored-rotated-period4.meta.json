@@ -1,0 +1,11 @@
+{
+  "description": "Quartered MIRRORED/ROTATED period-4",
+  "id": "quartered-mirrored-rotated-period4",
+  "kind": "word",
+  "options": {
+    "constraintPreset": "smooth",
+    "loopType": "MIRRORED/ROTATED",
+    "period": 4
+  },
+  "word": "ABCDABCD"
+}

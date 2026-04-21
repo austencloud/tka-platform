@@ -1,0 +1,11 @@
+{
+  "description": "Period-4 MIRRORED",
+  "id": "period4-mirrored-ABCDABCD",
+  "kind": "word",
+  "options": {
+    "constraintPreset": "smooth",
+    "loopType": "MIRRORED",
+    "period": 4
+  },
+  "word": "ABCDABCD"
+}

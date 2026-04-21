@@ -1,0 +1,11 @@
+{
+  "description": "Period-4 FLIPPED",
+  "id": "period4-flipped-EFGHEFGH",
+  "kind": "word",
+  "options": {
+    "constraintPreset": "smooth",
+    "loopType": "FLIPPED",
+    "period": 4
+  },
+  "word": "EFGHEFGH"
+}

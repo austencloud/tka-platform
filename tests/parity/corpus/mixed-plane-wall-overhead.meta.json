@@ -1,0 +1,13 @@
+{
+  "description": "Mixed plane — wall + overhead",
+  "id": "mixed-plane-wall-overhead",
+  "kind": "word",
+  "options": {
+    "constraintPreset": "smooth",
+    "planes": [
+      "wall",
+      "overhead"
+    ]
+  },
+  "word": "CD"
+}

@@ -1,0 +1,14 @@
+{
+  "description": "Mixed plane — all three",
+  "id": "mixed-plane-three",
+  "kind": "word",
+  "options": {
+    "constraintPreset": "smooth",
+    "planes": [
+      "wall",
+      "wheel",
+      "overhead"
+    ]
+  },
+  "word": "EFGH"
+}

@@ -1,0 +1,9 @@
+{
+  "description": "Blank-step sequence — late",
+  "id": "blank-step-late",
+  "kind": "word",
+  "options": {
+    "constraintPreset": "smooth"
+  },
+  "word": "AB_"
+}

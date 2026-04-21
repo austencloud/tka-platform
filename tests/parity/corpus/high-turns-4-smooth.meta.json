@@ -1,0 +1,10 @@
+{
+  "description": "High-turn sequence — 4 turns per hand",
+  "id": "high-turns-4-smooth",
+  "kind": "word",
+  "options": {
+    "constraintPreset": "smooth",
+    "turnBudget": 4
+  },
+  "word": "CD"
+}

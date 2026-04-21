@@ -1,0 +1,7 @@
+{
+  "description": "Start position only — no letters",
+  "id": "empty-start-only",
+  "kind": "start",
+  "options": {},
+  "startPosition": "alpha1"
+}

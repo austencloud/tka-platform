@@ -1,0 +1,11 @@
+{
+  "description": "Quartered FLIPPED/ROTATED period-4",
+  "id": "quartered-flipped-rotated-period4",
+  "kind": "word",
+  "options": {
+    "constraintPreset": "smooth",
+    "loopType": "FLIPPED/ROTATED",
+    "period": 4
+  },
+  "word": "EFGHEFGH"
+}

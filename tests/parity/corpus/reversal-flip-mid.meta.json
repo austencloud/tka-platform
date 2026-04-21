@@ -1,0 +1,9 @@
+{
+  "description": "Explicit mid-sequence direction flip — ambiguous reversal chain",
+  "id": "reversal-flip-mid",
+  "kind": "word",
+  "options": {
+    "constraintPreset": "smooth"
+  },
+  "word": "ABACBA"
+}

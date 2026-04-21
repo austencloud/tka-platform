@@ -1,0 +1,10 @@
+{
+  "description": "Float with Type 3 Cross-Shift letters",
+  "id": "float-motion-type3-WDash",
+  "kind": "word",
+  "options": {
+    "allowFloat": true,
+    "constraintPreset": "smooth"
+  },
+  "word": "W-X-"
+}

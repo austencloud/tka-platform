@@ -1,0 +1,9 @@
+{
+  "description": "Bridge-inserted — alpha to gamma",
+  "id": "bridge-inserted-alpha-gamma",
+  "kind": "word",
+  "options": {
+    "constraintPreset": "smooth"
+  },
+  "word": "AC"
+}

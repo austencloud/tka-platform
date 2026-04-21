@@ -1,0 +1,11 @@
+{
+  "description": "Period-2 ROTATED",
+  "id": "period2-rotated-IJIJ",
+  "kind": "word",
+  "options": {
+    "constraintPreset": "smooth",
+    "loopType": "ROTATED",
+    "period": 2
+  },
+  "word": "IJIJ"
+}

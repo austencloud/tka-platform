@@ -1,0 +1,10 @@
+{
+  "description": "High-turn sequence — 6 turns per hand",
+  "id": "high-turns-mixed-GH",
+  "kind": "word",
+  "options": {
+    "constraintPreset": "smooth",
+    "turnBudget": 6
+  },
+  "word": "GH"
+}

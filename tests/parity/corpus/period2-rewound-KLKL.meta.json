@@ -1,0 +1,11 @@
+{
+  "description": "Period-2 REWOUND",
+  "id": "period2-rewound-KLKL",
+  "kind": "word",
+  "options": {
+    "constraintPreset": "smooth",
+    "loopType": "REWOUND",
+    "period": 2
+  },
+  "word": "KLKL"
+}

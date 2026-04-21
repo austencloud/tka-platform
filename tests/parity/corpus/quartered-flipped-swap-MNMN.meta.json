@@ -1,0 +1,11 @@
+{
+  "description": "Quartered FLIPPED/SWAPPED",
+  "id": "quartered-flipped-swap-MNMN",
+  "kind": "word",
+  "options": {
+    "constraintPreset": "smooth",
+    "loopType": "FLIPPED/SWAPPED",
+    "period": 2
+  },
+  "word": "MNMN"
+}

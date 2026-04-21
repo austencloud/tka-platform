@@ -1,0 +1,11 @@
+{
+  "description": "Float + high turns",
+  "id": "float-motion-high-turns",
+  "kind": "word",
+  "options": {
+    "allowFloat": true,
+    "constraintPreset": "smooth",
+    "turnBudget": 3
+  },
+  "word": "IJ"
+}

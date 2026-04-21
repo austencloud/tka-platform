@@ -1,0 +1,10 @@
+{
+  "description": "Float motion-type sequence",
+  "id": "float-motion-basic",
+  "kind": "word",
+  "options": {
+    "allowFloat": true,
+    "constraintPreset": "smooth"
+  },
+  "word": "AB"
+}

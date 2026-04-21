@@ -1,0 +1,10 @@
+{
+  "description": "High-turn sequence — 8 turns per hand (stress test)",
+  "id": "high-turns-extreme",
+  "kind": "word",
+  "options": {
+    "constraintPreset": "smooth",
+    "turnBudget": 8
+  },
+  "word": "IJ"
+}

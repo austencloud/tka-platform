@@ -1,0 +1,11 @@
+{
+  "description": "Quartered FLIPPED/ROTATED",
+  "id": "quartered-flipped-rotated-CDCD",
+  "kind": "word",
+  "options": {
+    "constraintPreset": "smooth",
+    "loopType": "FLIPPED/ROTATED",
+    "period": 2
+  },
+  "word": "CDCD"
+}

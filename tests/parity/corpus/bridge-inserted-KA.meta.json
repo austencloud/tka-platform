@@ -1,0 +1,9 @@
+{
+  "description": "Bridge-inserted — non-adjacent positions",
+  "id": "bridge-inserted-KA",
+  "kind": "word",
+  "options": {
+    "constraintPreset": "smooth"
+  },
+  "word": "KA"
+}

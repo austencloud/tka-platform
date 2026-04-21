@@ -1,0 +1,11 @@
+{
+  "description": "Period-4 ROTATED",
+  "id": "period4-rotated-QRSTQRST",
+  "kind": "word",
+  "options": {
+    "constraintPreset": "smooth",
+    "loopType": "ROTATED",
+    "period": 4
+  },
+  "word": "QRSTQRST"
+}

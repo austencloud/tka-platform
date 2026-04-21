@@ -1,0 +1,11 @@
+{
+  "description": "Period-2 SWAPPED",
+  "id": "period2-swapped-EFEF",
+  "kind": "word",
+  "options": {
+    "constraintPreset": "smooth",
+    "loopType": "SWAPPED",
+    "period": 2
+  },
+  "word": "EFEF"
+}

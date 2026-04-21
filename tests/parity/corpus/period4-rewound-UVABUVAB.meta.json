@@ -1,0 +1,11 @@
+{
+  "description": "Period-4 REWOUND",
+  "id": "period4-rewound-UVABUVAB",
+  "kind": "word",
+  "options": {
+    "constraintPreset": "smooth",
+    "loopType": "REWOUND",
+    "period": 4
+  },
+  "word": "UVABUVAB"
+}

@@ -1,0 +1,9 @@
+{
+  "description": "Blank-step sequence — middle",
+  "id": "blank-step-mid",
+  "kind": "word",
+  "options": {
+    "constraintPreset": "smooth"
+  },
+  "word": "A_B"
+}

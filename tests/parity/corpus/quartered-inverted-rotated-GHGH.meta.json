@@ -1,0 +1,11 @@
+{
+  "description": "Quartered INVERTED/ROTATED",
+  "id": "quartered-inverted-rotated-GHGH",
+  "kind": "word",
+  "options": {
+    "constraintPreset": "smooth",
+    "loopType": "INVERTED/ROTATED",
+    "period": 2
+  },
+  "word": "GHGH"
+}
