@@ -188,7 +188,7 @@ function findReversals(steps: { blueMotion: MotionData; redMotion: MotionData }[
   for (const color of ["blue", "red"] as const) {
     let lastDir: string | null = null;
     for (let i = 0; i < steps.length; i++) {
-      const motion = color === "blue" ? steps[i]!.blueMotion : steps[i]!.redMotion;
+      const motion = color === "blue" ? steps[i]!.motions.blue : steps[i]!.motions.red;
       const dir = motion.rotationDirection;
       if (!dir || dir === "noRotation" || dir === "no_rot") continue;
 
