@@ -231,8 +231,11 @@ function formatBetaAnalysis(
   // Orientation analysis
   const blueEndOri = blueMotion.endOrientation;
   const redEndOri = redMotion.endOrientation;
-  const radialOrientations = [Orientation.IN, Orientation.OUT];
-  const nonRadialOrientations = [Orientation.CLOCK, Orientation.COUNTER];
+  const radialOrientations: Orientation[] = [Orientation.IN, Orientation.OUT];
+  const nonRadialOrientations: Orientation[] = [
+    Orientation.CLOCK,
+    Orientation.COUNTER,
+  ];
 
   const blueIsRadial = radialOrientations.includes(blueEndOri);
   const redIsRadial = radialOrientations.includes(redEndOri);

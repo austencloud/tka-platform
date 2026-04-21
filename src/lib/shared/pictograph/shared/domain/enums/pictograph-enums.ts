@@ -70,11 +70,14 @@ export enum MotionColor {
   RED = "red",
 }
 
-export enum RotationDirection {
-  CLOCKWISE = "cw",
-  COUNTER_CLOCKWISE = "ccw",
-  NO_ROTATION = "noRotation",
-}
+export const RotationDirection = {
+  CLOCKWISE: "cw",
+  COUNTER_CLOCKWISE: "ccw",
+  NO_ROTATION: "noRotation",
+} as const;
+
+export type RotationDirection =
+  (typeof RotationDirection)[keyof typeof RotationDirection];
 
 /**
  * Orientation describes the direction a prop points relative to the center.
@@ -91,28 +94,30 @@ export enum RotationDirection {
  * - COUNTER_IN: Between COUNTER and IN (gravity at NW)
  * - COUNTER_OUT: Between COUNTER and OUT (gravity at SW)
  */
-export enum Orientation {
+export const Orientation = {
   // Cardinal orientations (radial - relative to center)
-  IN = "in",
-  OUT = "out",
+  IN: "in",
+  OUT: "out",
   // Non-radial orientations (Level 3)
-  CLOCK = "clock",
-  COUNTER = "counter", 
+  CLOCK: "clock",
+  COUNTER: "counter",
   // Centric orientations (Level 5 - prop at center, points toward compass direction)
-  CENTER_N = "centerN",
-  CENTER_NE = "centerNE",
-  CENTER_E = "centerE",
-  CENTER_SE = "centerSE",
-  CENTER_S = "centerS",
-  CENTER_SW = "centerSW",
-  CENTER_W = "centerW",
-  CENTER_NW = "centerNW",
+  CENTER_N: "centerN",
+  CENTER_NE: "centerNE",
+  CENTER_E: "centerE",
+  CENTER_SE: "centerSE",
+  CENTER_S: "centerS",
+  CENTER_SW: "centerSW",
+  CENTER_W: "centerW",
+  CENTER_NW: "centerNW",
   // Interradial orientations (Level 6)
-  CLOCK_IN = "clockIn",
-  CLOCK_OUT = "clockOut",
-  COUNTER_IN = "counterIn",
-  COUNTER_OUT = "counterOut",
-}
+  CLOCK_IN: "clockIn",
+  CLOCK_OUT: "clockOut",
+  COUNTER_IN: "counterIn",
+  COUNTER_OUT: "counterOut",
+} as const;
+
+export type Orientation = (typeof Orientation)[keyof typeof Orientation];
 
 export enum VectorDirection {
   UP = "up",
