@@ -6,9 +6,40 @@
 
 **Spec:** `docs/superpowers/specs/2026-04-21-download-animation-unified-nav-design.md`
 
-**Architecture:** Two new components (`DownloadPillNav` + `PillBody`) + one pure helper (`computeDisplaySummary`) + one CSS file. ExportVideoDrawer's mobile and desktop branches collapse to a single shared template with one variant prop. Reuses 9 existing components (EffectsPanel, MobileEffectsPanel, EffortPanel, DisplayPanel, PathShapePanel, PlaybackModeToggle, TempoControl, RailBentoSheet, rail-tile.css).
+**Architecture:** Two new components (`DownloadPillNav` + `PillBody`) + one pure helper (`computeDisplaySummary`) + one CSS file, plus targeted hardening of three shared primitives (`rail-tile.css`, `RailBentoSheet.svelte`, focus management). ExportVideoDrawer's mobile and desktop branches collapse to a single shared template with one variant prop. Reuses 9 existing components (EffectsPanel, MobileEffectsPanel, EffortPanel, DisplayPanel, PathShapePanel, PlaybackModeToggle, TempoControl, RailBentoSheet, rail-tile.css).
 
-**Tech Stack:** Svelte 5 (runes), TypeScript, vitest for the one pure helper test, Chrome DevTools MCP for visual QA.
+**Tech Stack:** Svelte 5 (runes), TypeScript, vitest for the pure helpers, Chrome DevTools MCP for visual QA.
+
+---
+
+## ⚠️ Audit corrections — read this before executing
+
+This plan has been audited twice. The corrections below override anything later in the doc that conflicts. Where the spec body and this plan disagree, this plan wins.
+
+### Round 1 (design correctness)
+1. Effects pill summary shows the active effect's NAME (`"Trails"`, `"Fire"`, `"Off"`), NEVER a count. The default `tipEffectMap` has one wildcard entry, so a count was meaningless.
+2. All 3 fps options (30 / 60 / 120) and all 4 resolutions (720p / 1080p / 4K / 8K) are preserved on desktop. No regression.
+3. Loops + Timing live in **Export** (they describe the output video file). Playback pill = Tempo + Mode only (in-canvas preview behavior).
+4. Desktop Effects pill keeps the inline play/pause + tempo via `EffectsPanel`'s `showPlayback={!!(onPlaybackToggle && onBpmChange)}` branch.
+5. Path shape (Arc/Linear) surfaces explicitly in the Display summary as `"<n> / 7 visible · <path>"`. Both arc and linear are valid, not on/off — they're not counted.
+6. `PILL_ORDER` is type-enforced via `buildPillSpecs(Record<PillId, ...>)` — adding a pill without a spec is a compile error. No runtime DEV drift guard.
+7. Orphan `PlaybackPanel.svelte` is deleted in pre-flight (no consumer).
+
+### Round 2 (architecture, ARIA, contrast, touch targets)
+
+8. **CRITICAL:** `.rt-section`, `.rt-section-label`, `.rt-chip-row`, `.rt-chip`, `.rt-row`, `.rt-row-label` exist ONLY inside `:global(.bento-sheet-body ...)` in `RailBentoSheet.svelte`. They DO NOT apply inside the desktop inline pill body — without the fix, the desktop Playback / Display / Export bodies render as unstyled `<button>` + `<div>` elements. Pre-flight Task 0e promotes these selectors into `rail-tile.css` so they apply in both contexts.
+9. **CRITICAL:** Touch targets in shared primitives violate AAA: `.rt-step-btn` is 24×24, `.bento-sheet-close` is 28×28, `.rt-chip` is 38px tall. Pre-flight Task 0f bumps them to 44×44 (AAA).
+10. **CRITICAL:** `RailBentoSheet` declares `aria-modal="true"` but does not trap focus, has no focus-visible style on its close button, and does not respect `prefers-reduced-motion` on its `fly`/`fade` transitions. Pre-flight Task 0g hardens it.
+11. **CRITICAL:** `activePillId` cannot be a one-shot `$state(layout === ...)` initializer — that fires once. If `layout` flips between `"bottom"` and `"sidebar"` without a remount, desktop loses its always-on default. The script uses a `$effect` to keep them in sync (Task 6).
+12. **HIGH:** Pills use `role="button"` + `aria-pressed` only (no `role="tab"` / `aria-selected`). The tabs ARIA pattern requires the panel to be a permanent DOM sibling linked via `aria-controls`; pill bodies are conditionally mounted (one at a time on desktop, in a portal'd dialog on mobile). Mobile pills also carry `aria-haspopup="dialog"`. PillBody desktop variant uses `role="region"` + `aria-live="polite"` (not `tabpanel`).
+13. **HIGH:** Focus is restored to the activating pill button when the mobile sheet closes. ExportVideoDrawer keeps a `Map<PillId, HTMLButtonElement>` populated by DownloadPillNav and refocuses on close.
+14. **HIGH:** Tasks 6 and 7 are merged into one atomic task ("rewrite script + template together"). The previous split left the working tree non-building between commits.
+15. **HIGH:** Pill typography meets the project's 12px floor. `.pill-label` and `.pill-summary` use `var(--font-size-compact, 12px)`. Active-state foreground is solid white, not a color-mix that drifts below 7:1 contrast. Focus outlines use the opaque accent color (no 0.6 alpha).
+16. **HIGH:** Display pill body wraps `DisplayPanel` and `PathShapePanel` in `role="group"` regions with explicit "Visibility" and "Motion paths" section labels (linked via `aria-labelledby`).
+17. **HIGH:** DownloadPillNav implements WAI-ARIA toolbar keyboard pattern: ←/→ wrap focus, `Home`/`End` jump to first/last, `Enter` and `Space` activate. The legacy `"Spacebar"` key name is dropped.
+18. **MEDIUM:** `computeDisplaySummary` signature takes a single record of all toggles (including grid) so the denominator is genuinely arity-derived, not hardcoded `+1`.
+19. **MEDIUM:** `preventSpaceActivation` only fires when the event target is a non-interactive element — it does not swallow space on focused buttons / inputs / sliders inside the panel.
+20. **MEDIUM:** Task 9 verification drops the "viewer URL grep" theatre (asks the user for a URL) and the "CSS brace-balance" theatre (relies on `npm run build` instead).
 
 ---
 
@@ -102,6 +133,398 @@ If any line is missing, the file was edited since the spec was written — re-re
 
 ---
 
+## Task 0e: Promote shared `.rt-*` selectors into rail-tile.css (CRITICAL)
+
+**Files:**
+- Modify: `src/lib/shared/sequence-viewer/components/bento/rail-tile.css`
+- Modify: `src/lib/shared/sequence-viewer/components/bento/RailBentoSheet.svelte`
+
+**Why:** `.rt-section`, `.rt-section-label`, `.rt-chip-row`, `.rt-chip`, `.rt-row`, `.rt-row-label` are currently defined as `:global(.bento-sheet-body .rt-*)` inside `RailBentoSheet.svelte`'s scoped style block. The desktop pill body renders these classes inside `.pill-body-inline` (NOT inside `.bento-sheet-body`), so without this promotion the desktop Playback / Display / Export bodies render as unstyled `<button>` + `<div>` elements. Promote them to `rail-tile.css` so they apply equally in both contexts.
+
+- [ ] **Step 1: Read both files**
+
+```bash
+cat src/lib/shared/sequence-viewer/components/bento/rail-tile.css | wc -l
+```
+
+Read the full RailBentoSheet style block (lines 90–249) and the full rail-tile.css.
+
+- [ ] **Step 2: Append the promoted rules to `rail-tile.css`**
+
+Append the following block at the end of `rail-tile.css` (before any final newline):
+
+```css
+
+/* ==========================================================================
+   Sheet/panel body primitives — sections, chips, rows.
+   Originally defined as :global(.bento-sheet-body .rt-*) inside
+   RailBentoSheet.svelte. Promoted here so the same primitives apply inside
+   the desktop inline pill body (.pill-body-inline) without requiring the
+   .bento-sheet-body ancestor.
+   ========================================================================== */
+
+.rt-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.rt-section-label {
+  font-size: var(--font-size-compact, 12px);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.rt-chip-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.rt-chip {
+  flex: 1;
+  min-height: var(--min-touch-target, 44px);
+  min-width: 44px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  font-size: var(--font-size-compact, 12px);
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: all 150ms ease;
+}
+
+.rt-chip:hover:not([aria-pressed="true"]) {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.18);
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.rt-chip[aria-pressed="true"] {
+  background: color-mix(in srgb, #4a9eff 22%, rgba(20, 22, 32, 0.6));
+  border-color: color-mix(in srgb, #4a9eff 55%, transparent);
+  color: #ffffff;
+}
+
+.rt-chip:focus-visible {
+  outline: 2px solid #4a9eff;
+  outline-offset: 2px;
+}
+
+.rt-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 8px 12px;
+  min-height: var(--min-touch-target, 44px);
+}
+
+.rt-row-label {
+  font-size: var(--font-size-compact, 12px);
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.85);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rt-chip {
+    transition: none;
+  }
+}
+```
+
+- [ ] **Step 3: Delete the now-redundant `:global(.bento-sheet-body .rt-*)` rules from `RailBentoSheet.svelte`**
+
+Open `RailBentoSheet.svelte`. Find the block (currently lines 176–248) starting with `/* Common inner primitives used by sheet bodies */`. Delete every `:global(.bento-sheet-body .rt-section)` / `.rt-section-label` / `.rt-chip-row` / `.rt-chip` / `.rt-chip[aria-pressed="true"]` / `.rt-row` / `.rt-row-label` rule. Keep the `@media (prefers-reduced-motion: reduce)` block but remove the `:global(.bento-sheet-body .rt-chip)` line from it (just `.bento-sheet-close` remains). The promoted rules in `rail-tile.css` cover both contexts now.
+
+The remaining style block in RailBentoSheet should only contain `.bento-portal`, `.bento-backdrop`, `.bento-sheet`, `.bento-sheet-head`, `.bento-sheet-title`, `.bento-sheet-close`, `.bento-sheet-body`, and the reduced-motion media query.
+
+- [ ] **Step 4: Type check + build**
+
+```bash
+npm run check 2>&1 | grep -A 1 "RailBentoSheet\|rail-tile" | head -20
+npm run build 2>&1 | tail -5
+```
+
+Expected: zero errors in either file. Build succeeds. Visual regression in any other consumer of `RailBentoSheet` is acceptable — the styles are now globally available, not narrowed.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add src/lib/shared/sequence-viewer/components/bento/rail-tile.css \
+        src/lib/shared/sequence-viewer/components/bento/RailBentoSheet.svelte
+git commit -m "$(cat <<'EOF'
+refactor(rail-tile): promote .rt-section/.rt-chip/.rt-row from sheet-scoped to global
+
+The .rt-* primitives were :global(.bento-sheet-body .rt-*) inside
+RailBentoSheet.svelte, so they only applied inside the bento sheet.
+The new pill-nav design renders them inside .pill-body-inline on desktop,
+which is NOT a .bento-sheet-body descendant. Promoting these rules to
+rail-tile.css makes them apply in both contexts.
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+EOF
+)"
+```
+
+---
+
+## Task 0f: Bump touch targets in shared primitives to AAA (CRITICAL)
+
+**Files:**
+- Modify: `src/lib/shared/sequence-viewer/components/bento/rail-tile.css`
+- Modify: `src/lib/shared/sequence-viewer/components/bento/RailBentoSheet.svelte`
+
+**Why:** `.rt-step-btn` is `width: 24px; height: 24px` and `.bento-sheet-close` is `28×28`. Both fail AA (44×44) and AAA (48×48) touch-target standards. The Loops stepper and the sheet's close button are touch-only on mobile. Bump them to AAA.
+
+- [ ] **Step 1: Edit `.rt-step-btn` in `rail-tile.css`**
+
+Find the `.rt-step-btn` block (currently lines 133–147). Replace `width: 24px; height: 24px;` with `min-width: var(--min-touch-target, 44px); min-height: var(--min-touch-target, 44px);`. Bump `border-radius` to `10px` to match the larger tap area. Optionally raise `font-size` to `15px` for the `+`/`−` glyphs.
+
+- [ ] **Step 2: Edit `.bento-sheet-close` in `RailBentoSheet.svelte`**
+
+Find the `.bento-sheet-close` block (currently lines 145–165). Replace `width: 28px; height: 28px;` with `min-width: var(--min-touch-target, 44px); min-height: var(--min-touch-target, 44px);`. Replace `font-size: 11px` with `font-size: 14px` so the `×` glyph is readable in the larger button.
+
+- [ ] **Step 3: Add focus-visible style to `.bento-sheet-close`**
+
+Append inside the same style block:
+
+```css
+.bento-sheet-close:focus-visible {
+  outline: 2px solid #4a9eff;
+  outline-offset: 2px;
+}
+```
+
+- [ ] **Step 4: Build + verify visually**
+
+```bash
+npm run build 2>&1 | tail -5
+```
+
+The Loops stepper buttons in any existing consumer (RightRail, RenderModeToggle, etc.) will become noticeably bigger. That is the intended fix — they were too small for mobile use.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add src/lib/shared/sequence-viewer/components/bento/rail-tile.css \
+        src/lib/shared/sequence-viewer/components/bento/RailBentoSheet.svelte
+git commit -m "$(cat <<'EOF'
+fix(rail-tile, bento-sheet): bump touch targets to AAA 44px
+
+.rt-step-btn was 24x24, .bento-sheet-close was 28x28 — both fail AA
+(44x44) and AAA (48x48). Mobile is the only way to interact with these
+controls, so the small targets were a real usability bug. Also adds a
+focus-visible outline to the sheet close button.
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+EOF
+)"
+```
+
+---
+
+## Task 0g: Add focus trap, focus restoration, and reduced-motion to RailBentoSheet (CRITICAL)
+
+**Files:**
+- Modify: `src/lib/shared/sequence-viewer/components/bento/RailBentoSheet.svelte`
+
+**Why:** The sheet declares `aria-modal="true"` but does not trap focus — Tab cycles into the underlying page. The `fly`/`fade` Svelte transitions ignore `prefers-reduced-motion`. And the calling code (ExportVideoDrawer) needs the sheet to return focus to the activating element on close.
+
+- [ ] **Step 1: Add focus management + reduced-motion to the script block**
+
+Replace the entire `<script lang="ts">` block in `RailBentoSheet.svelte` with:
+
+```svelte
+<script lang="ts">
+  import { fade, fly } from "svelte/transition";
+  import { cubicOut } from "svelte/easing";
+  import type { Snippet } from "svelte";
+  import { onMount, tick } from "svelte";
+
+  interface Props {
+    title: string;
+    onClose: () => void;
+    /** Optional: element to restore focus to when the sheet closes. */
+    returnFocusTo?: HTMLElement | null;
+    children: Snippet;
+  }
+
+  let { title, onClose, returnFocusTo = null, children }: Props = $props();
+
+  let sheetEl: HTMLDivElement | undefined;
+
+  // Honor prefers-reduced-motion for the entrance / exit transitions.
+  let reduceMotion = $state(false);
+  onMount(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    reduceMotion = mq.matches;
+    const handler = (e: MediaQueryListEvent) => { reduceMotion = e.matches; };
+    mq.addEventListener("change", handler);
+
+    // Move initial focus into the sheet so the keyboard user lands inside it.
+    void tick().then(() => {
+      const first = sheetEl?.querySelector<HTMLElement>(
+        "button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])"
+      );
+      first?.focus();
+    });
+
+    return () => {
+      mq.removeEventListener("change", handler);
+      // Restore focus to the activating element on unmount.
+      if (returnFocusTo && typeof returnFocusTo.focus === "function") {
+        returnFocusTo.focus();
+      }
+    };
+  });
+
+  function getFocusables(): HTMLElement[] {
+    if (!sheetEl) return [];
+    return Array.from(
+      sheetEl.querySelectorAll<HTMLElement>(
+        "button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])"
+      )
+    ).filter((el) => el.offsetParent !== null);
+  }
+
+  function onBackdropClick() {
+    onClose();
+  }
+
+  function onSheetKeydown(e: KeyboardEvent) {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      onClose();
+      return;
+    }
+    if (e.key !== "Tab") return;
+
+    // Focus trap: keep Tab focus inside the sheet.
+    const focusables = getFocusables();
+    if (focusables.length === 0) {
+      e.preventDefault();
+      return;
+    }
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    const active = document.activeElement as HTMLElement | null;
+    if (e.shiftKey) {
+      if (active === first || !sheetEl?.contains(active)) {
+        e.preventDefault();
+        last.focus();
+      }
+    } else {
+      if (active === last || !sheetEl?.contains(active)) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
+  }
+
+  function portal(node: HTMLElement) {
+    document.body.appendChild(node);
+    return {
+      destroy() { node.remove(); },
+    };
+  }
+</script>
+```
+
+- [ ] **Step 2: Wire the new `bind:this` and the reduced-motion durations into the template**
+
+Find the `<div class="bento-sheet" ...>` element. Add `bind:this={sheetEl}` and replace its `transition:fly={...}` with:
+
+```svelte
+transition:fly={{ y: reduceMotion ? 0 : 80, duration: reduceMotion ? 0 : 240, easing: cubicOut }}
+```
+
+Find the `<button class="bento-backdrop" ...>` and replace its `transition:fade={...}` with:
+
+```svelte
+transition:fade={{ duration: reduceMotion ? 0 : 180 }}
+```
+
+- [ ] **Step 3: Type check + build**
+
+```bash
+npm run check 2>&1 | grep "RailBentoSheet" | head
+npm run build 2>&1 | tail -5
+```
+
+Expected: zero errors. Build succeeds.
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add src/lib/shared/sequence-viewer/components/bento/RailBentoSheet.svelte
+git commit -m "$(cat <<'EOF'
+fix(bento-sheet): focus trap, focus restoration, and reduced-motion
+
+aria-modal="true" promised behavior the sheet wasn't delivering: focus
+escaped to the page beneath it, and Svelte's built-in fly/fade ignored
+prefers-reduced-motion. Also accepts an optional returnFocusTo element
+so callers can restore focus to the activating control on close.
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+EOF
+)"
+```
+
+---
+
+## Task 0h: Fix focus-indicator contrast in EffortPanel + PathShapePanel (HIGH)
+
+**Files:**
+- Modify: `src/lib/shared/animation-engine/components/settings-panels/EffortPanel.svelte`
+- Modify: `src/lib/shared/animation-engine/components/settings-panels/PathShapePanel.svelte`
+
+**Why:** Both components use `outline: 2px solid color-mix(in srgb, var(--<color>) 50%, transparent)` for `:focus-visible`. The 50%-transparent outline composites against a near-black chip background at ~2.68:1, below the WCAG 2.4.11 AA minimum of 3:1 for non-text contrast. With darker effort/path colors the ratio drops further.
+
+- [ ] **Step 1: Replace 50%-transparent outline with opaque colors**
+
+In each file, find the `:focus-visible` rule that uses `color-mix(...50%, transparent)` and replace with `outline: 2px solid var(--effort-color, #94a3b8); outline-offset: 2px;` for EffortPanel and `outline: 2px solid var(--path-color, #60a5fa); outline-offset: 2px;` for PathShapePanel.
+
+- [ ] **Step 2: Build**
+
+```bash
+npm run build 2>&1 | tail -5
+```
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add src/lib/shared/animation-engine/components/settings-panels/EffortPanel.svelte \
+        src/lib/shared/animation-engine/components/settings-panels/PathShapePanel.svelte
+git commit -m "$(cat <<'EOF'
+fix(settings-panels): opaque focus outlines for AA contrast
+
+50%-transparent focus outlines composited to ~2.68:1 against the chip
+background, below the WCAG 2.4.11 AA minimum of 3:1. Use the opaque
+accent color directly.
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+EOF
+)"
+```
+
+---
+
 ## Task 1: Create pill-nav directory + pill-types.ts
 
 **Files:**
@@ -183,9 +606,9 @@ EOF
 - Create: `src/lib/shared/sequence-viewer/components/pill-nav/pill-summaries.ts`
 - Create: `tests/unit/pill-nav/pill-summaries.test.ts`
 
-The Display summary counts visibility toggles (the 6 flags exposed in `DisplayPanel`) plus grid visibility — 7 things that have a clear on/off semantic. Path shape is a binary choice between two valid options (arc vs linear), not on/off, so it is shown explicitly in the summary rather than counted.
+The Display summary counts visibility flags — 7 things with clear on/off semantics: the 6 toggles exposed in `DisplayPanel` plus grid visibility. Path shape is a binary choice between two valid options (arc vs linear), not on/off, so it is shown explicitly in the summary rather than counted.
 
-The denominator is derived from the count of fields in the helper's input, not hardcoded, so adding a future toggle to `DisplayPanel` and the `DisplayToggles` interface is the only place that needs to change.
+The denominator is derived from `Object.values(flags).length`, not hardcoded. Adding a future toggle requires only one change: add the field to the `DisplayFlags` interface. The `+ 1` for grid that the previous draft hardcoded is gone — grid is now a regular field in the same record.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -193,48 +616,56 @@ Write `tests/unit/pill-nav/pill-summaries.test.ts`:
 
 ```ts
 import { describe, it, expect } from "vitest";
-import { computeDisplaySummary } from "$lib/shared/sequence-viewer/components/pill-nav/pill-summaries";
+import { computeDisplaySummary, type DisplayFlags } from "$lib/shared/sequence-viewer/components/pill-nav/pill-summaries";
 
-const allOff = {
+const allOff: DisplayFlags = {
   tkaGlyph: false,
   stepNumbers: false,
   beatPosition: false,
   props: false,
   wordHeader: false,
   progressBar: false,
+  grid: false,
 };
 
-const allOn = {
+const allOn: DisplayFlags = {
   tkaGlyph: true,
   stepNumbers: true,
   beatPosition: true,
   props: true,
   wordHeader: true,
   progressBar: true,
+  grid: true,
 };
 
 describe("computeDisplaySummary", () => {
-  it("reports 0 / 7 visible · arc when everything is off, grid is none, path is arc", () => {
-    expect(computeDisplaySummary(allOff, false, "arc")).toBe("0 / 7 visible · arc");
+  it("reports 0 / 7 visible · arc when everything is off and path is arc", () => {
+    expect(computeDisplaySummary(allOff, "arc")).toBe("0 / 7 visible · arc");
   });
 
-  it("reports 7 / 7 visible · arc when every toggle and grid are on, path is arc", () => {
-    expect(computeDisplaySummary(allOn, true, "arc")).toBe("7 / 7 visible · arc");
+  it("reports 7 / 7 visible · arc when every flag including grid is on", () => {
+    expect(computeDisplaySummary(allOn, "arc")).toBe("7 / 7 visible · arc");
   });
 
-  it("counts grid as +1 when visible", () => {
-    expect(computeDisplaySummary(allOff, true, "arc")).toBe("1 / 7 visible · arc");
+  it("counts grid as a regular flag", () => {
+    expect(computeDisplaySummary({ ...allOff, grid: true }, "arc")).toBe("1 / 7 visible · arc");
   });
 
   it("reports linear path explicitly without affecting the count", () => {
-    expect(computeDisplaySummary(allOff, false, "linear")).toBe("0 / 7 visible · linear");
-    expect(computeDisplaySummary(allOn, true, "linear")).toBe("7 / 7 visible · linear");
+    expect(computeDisplaySummary(allOff, "linear")).toBe("0 / 7 visible · linear");
+    expect(computeDisplaySummary(allOn, "linear")).toBe("7 / 7 visible · linear");
   });
 
   it("counts each visibility flag independently", () => {
     expect(
-      computeDisplaySummary({ ...allOff, tkaGlyph: true, props: true }, false, "arc")
+      computeDisplaySummary({ ...allOff, tkaGlyph: true, props: true }, "arc")
     ).toBe("2 / 7 visible · arc");
+  });
+
+  it("denominator follows DisplayFlags arity (regression guard)", () => {
+    // If someone adds a field to DisplayFlags without updating allOff, this
+    // test will fail because Object.values(...).length will jump to 8.
+    expect(Object.keys(allOff).length).toBe(7);
   });
 });
 ```
@@ -261,13 +692,19 @@ Write `src/lib/shared/sequence-viewer/components/pill-nav/pill-summaries.ts`:
  * inline in ExportVideoDrawer.
  */
 
-export interface DisplayToggles {
+/**
+ * Single record of every boolean visibility flag the Display pill exposes.
+ * Grid is included as a regular field so the denominator is genuinely
+ * arity-derived from this record — no hardcoded `+1`.
+ */
+export interface DisplayFlags {
   tkaGlyph: boolean;
   stepNumbers: boolean;
   beatPosition: boolean;
   props: boolean;
   wordHeader: boolean;
   progressBar: boolean;
+  grid: boolean;
 }
 
 export type PathShape = "arc" | "linear";
@@ -275,21 +712,19 @@ export type PathShape = "arc" | "linear";
 /**
  * Returns "<n> / <total> visible · <pathShape>".
  *
- * Counts the 6 visibility toggles + grid (7 total). Path shape is a binary
- * choice between two valid options (arc vs linear), not on/off, so it is
- * surfaced explicitly rather than counted.
+ * Path shape is a binary choice between two valid options (arc vs linear),
+ * not on/off, so it is surfaced explicitly rather than counted.
  *
- * The denominator is derived from the input arity so adding a new toggle
- * to DisplayToggles automatically updates the "/ N" denominator.
+ * The denominator is derived from the input arity — adding a new field to
+ * DisplayFlags automatically updates the "/ N" denominator.
  */
 export function computeDisplaySummary(
-  toggles: DisplayToggles,
-  gridVisible: boolean,
+  flags: DisplayFlags,
   pathShape: PathShape,
 ): string {
-  const flagValues = Object.values(toggles);
-  const on = flagValues.filter(Boolean).length + (gridVisible ? 1 : 0);
-  const total = flagValues.length + 1; // +1 for grid
+  const values = Object.values(flags);
+  const on = values.filter(Boolean).length;
+  const total = values.length;
   return `${on} / ${total} visible · ${pathShape}`;
 }
 ```
@@ -332,6 +767,9 @@ Write `src/lib/shared/sequence-viewer/components/pill-nav/pill-nav.css`:
 /* ==========================================================================
    pill-nav.css — extends rail-tile.css with the pill row layout
    Used by DownloadPillNav.svelte for both mobile and desktop variants.
+   Typography: respects the project 12px floor (--font-size-compact).
+   Contrast: meets WCAG AAA (7:1 body, 3:1 non-text) for the default
+   blue accent and remains AA-or-better for any effort color.
    ========================================================================== */
 
 .pill-nav {
@@ -349,22 +787,21 @@ Write `src/lib/shared/sequence-viewer/components/pill-nav/pill-nav.css`:
 }
 
 .pill {
-  /* Inherits .rt-tile background/border/shadow/transition from rail-tile.css */
   flex: 1;
   min-width: 0;
-  min-height: 44px;
+  min-height: var(--min-touch-target, 48px);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
-  padding: 6px 4px;
+  gap: 4px;
+  padding: 8px 6px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(20, 22, 32, 0.78);
   backdrop-filter: blur(20px) saturate(140%);
   -webkit-backdrop-filter: blur(20px) saturate(140%);
   border-radius: 10px;
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(255, 255, 255, 0.85);
   cursor: pointer;
   font-family: inherit;
   transition: all 180ms cubic-bezier(0.2, 0, 0.13, 1.5);
@@ -372,61 +809,63 @@ Write `src/lib/shared/sequence-viewer/components/pill-nav/pill-nav.css`:
 }
 
 .pill-nav.variant-mobile .pill {
-  min-height: 56px;
-  padding: 8px 4px;
+  min-height: 60px;
+  padding: 10px 6px;
 }
 
 .pill:hover:not([aria-pressed="true"]) {
-  border-color: rgba(255, 255, 255, 0.22);
-  background: rgba(28, 32, 44, 0.85);
-  color: rgba(255, 255, 255, 0.9);
+  border-color: rgba(255, 255, 255, 0.28);
+  background: rgba(28, 32, 44, 0.9);
+  color: white;
 }
 
+/* Opaque focus outline. Default falls back to the brand blue at full alpha
+   so the indicator never composites below 3:1 against any pill background. */
 .pill:focus-visible {
-  outline: 2px solid var(--pill-accent, rgba(120, 160, 255, 0.6));
+  outline: 2px solid var(--pill-focus, #4a9eff);
   outline-offset: 2px;
 }
 
 .pill[aria-pressed="true"] {
-  background: color-mix(in srgb, var(--pill-accent, #4a9eff) 18%, rgba(20, 22, 32, 0.78));
-  border-color: color-mix(in srgb, var(--pill-accent, #4a9eff) 50%, transparent);
-  color: color-mix(in srgb, var(--pill-accent, #4a9eff) 70%, white);
-  box-shadow: 0 4px 20px color-mix(in srgb, var(--pill-accent, #4a9eff) 25%, transparent);
+  background: color-mix(in srgb, var(--pill-accent, #4a9eff) 22%, rgba(20, 22, 32, 0.85));
+  border-color: color-mix(in srgb, var(--pill-accent, #4a9eff) 60%, transparent);
+  color: white;
+  box-shadow: 0 4px 20px color-mix(in srgb, var(--pill-accent, #4a9eff) 30%, transparent);
 }
 
 .pill-icon-row {
   display: flex;
   align-items: center;
-  gap: 4px;
-  font-size: 12px;
+  gap: 6px;
+  font-size: 13px;
 }
 
 .pill-icon-row .effort-dot {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   background: var(--pill-accent, currentColor);
-  box-shadow: 0 0 4px var(--pill-accent, currentColor);
+  box-shadow: 0 0 6px var(--pill-accent, currentColor);
   flex-shrink: 0;
 }
 
 .pill-label {
-  font-size: 9px;
+  font-size: var(--font-size-compact, 12px);
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.55);
+  color: rgba(255, 255, 255, 0.7);
   line-height: 1;
 }
 
 .pill[aria-pressed="true"] .pill-label {
-  color: color-mix(in srgb, var(--pill-accent, #4a9eff) 60%, white);
+  color: white;
 }
 
 .pill-summary {
-  font-size: 10px;
+  font-size: var(--font-size-compact, 12px);
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.85);
+  color: rgba(255, 255, 255, 0.92);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
   overflow: hidden;
@@ -436,11 +875,14 @@ Write `src/lib/shared/sequence-viewer/components/pill-nav/pill-nav.css`:
 }
 
 .pill[aria-pressed="true"] .pill-summary {
-  color: color-mix(in srgb, var(--pill-accent, #4a9eff) 50%, white);
+  color: white;
 }
 
+/* "—" placeholder when a pill has no current value. Use a single explicit
+   color rather than stacking opacity on the parent (which would land at
+   3.6:1 — below AA). */
 .pill-summary.empty {
-  opacity: 0.45;
+  color: rgba(255, 255, 255, 0.55);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -450,18 +892,9 @@ Write `src/lib/shared/sequence-viewer/components/pill-nav/pill-nav.css`:
 }
 ```
 
-- [ ] **Step 2: Sanity check the file is valid CSS**
+- [ ] **Step 2: No standalone CSS check needed**
 
-```bash
-node -e "
-const css = require('fs').readFileSync('src/lib/shared/sequence-viewer/components/pill-nav/pill-nav.css', 'utf8');
-const balance = (s, a, b) => [...s].reduce((n, c) => n + (c === a) - (c === b), 0);
-console.log('braces balanced:', balance(css, '{', '}') === 0);
-console.log('parens balanced:', balance(css, '(', ')') === 0);
-"
-```
-
-Expected: both `true`.
+The CSS is consumed by `vite build` in Task 6/7. If anything is malformed the build fails with a real CSS parse error. Skipping the brace-balance heuristic — it can pass when CSS is invalid (missing colons, unclosed strings, etc.).
 
 - [ ] **Step 3: Commit**
 
@@ -493,6 +926,18 @@ Write `src/lib/shared/sequence-viewer/components/pill-nav/DownloadPillNav.svelte
   Horizontal row of 5 pills (Effects / Effort / Playback / Display / Export)
   shown above the download button on mobile and at the top of the sidebar
   on desktop. Pure presentational — all state is owned by the parent.
+
+  ARIA semantics: button + aria-pressed (NOT tab + aria-selected). The
+  ARIA tabs pattern requires the panel to be a permanent DOM sibling
+  linked via aria-controls. Pill bodies are conditionally mounted (one at
+  a time on desktop) and on mobile they live inside a portal'd
+  role="dialog" — neither is a tabpanel. On mobile the pill button also
+  carries aria-haspopup="dialog" so screen readers announce the popup
+  intent.
+
+  Focus management: the parent gets the `navEl` reference via the
+  `onMount` callback (passed in `Props.onMount`) and can call
+  `findPillButton(id)` to restore focus to a specific pill when needed.
 -->
 <script lang="ts">
   import type { PillId, PillSpec } from "./pill-types";
@@ -502,20 +947,37 @@ Write `src/lib/shared/sequence-viewer/components/pill-nav/DownloadPillNav.svelte
     activeId: PillId | null;
     onSelect: (id: PillId) => void;
     variant: "mobile" | "desktop";
+    /** Optional: parent receives the nav root element on mount so it can
+     *  restore focus to a specific pill button via
+     *  `el.querySelector('[data-pill-id="<id>"]')`. */
+    onNavMount?: (el: HTMLDivElement) => void;
   }
 
-  const { pills, activeId, onSelect, variant }: Props = $props();
+  const { pills, activeId, onSelect, variant, onNavMount }: Props = $props();
 
-  // Local element reference — scoping arrow-key focus moves to this nav
+  // Local element reference — arrow-key focus moves are scoped to THIS nav
   // only, so multiple DownloadPillNav instances on the same page (e.g. a
-  // mid-resize transition where mobile + desktop both mount briefly) can't
+  // mid-resize transition where mobile + desktop briefly co-mount) cannot
   // steal focus from each other.
-  let navEl: HTMLDivElement | undefined;
+  let navEl: HTMLDivElement | undefined = $state();
+  $effect(() => {
+    if (navEl) onNavMount?.(navEl);
+  });
+
+  function focusPillAt(idx: number) {
+    if (!navEl || pills.length === 0) return;
+    const wrapped = ((idx % pills.length) + pills.length) % pills.length;
+    const target = navEl.querySelector<HTMLButtonElement>(
+      `[data-pill-id="${pills[wrapped].id}"]`,
+    );
+    target?.focus();
+  }
 
   function handleKeydown(e: KeyboardEvent, id: PillId) {
-    // Enter / Space activate (default button behavior already does this,
-    // but Space scrolls the page in some contexts — preventDefault to be safe).
-    if (e.key === " " || e.key === "Spacebar") {
+    // Enter / Space activate. Space's default on a focused <button> is to
+    // fire click on keyup — preventing default on keydown stops the page
+    // from scrolling without breaking activation (we call onSelect ourselves).
+    if (e.key === " ") {
       e.preventDefault();
       onSelect(id);
       return;
@@ -524,19 +986,31 @@ Write `src/lib/shared/sequence-viewer/components/pill-nav/DownloadPillNav.svelte
       onSelect(id);
       return;
     }
+
+    const idx = pills.findIndex((p) => p.id === id);
+    if (idx < 0) return;
+
     // Arrow keys move focus along the row, do NOT activate.
-    if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+    if (e.key === "ArrowRight") {
       e.preventDefault();
-      if (!navEl) return;
-      const dir = e.key === "ArrowRight" ? 1 : -1;
-      const currentIdx = pills.findIndex((p) => p.id === id);
-      if (currentIdx < 0) return;
-      const nextIdx = (currentIdx + dir + pills.length) % pills.length;
-      const nextId = pills[nextIdx].id;
-      const nextEl = navEl.querySelector<HTMLButtonElement>(
-        `[data-pill-id="${nextId}"]`,
-      );
-      nextEl?.focus();
+      focusPillAt(idx + 1);
+      return;
+    }
+    if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      focusPillAt(idx - 1);
+      return;
+    }
+    // Home / End jump to first / last per WAI-ARIA toolbar pattern.
+    if (e.key === "Home") {
+      e.preventDefault();
+      focusPillAt(0);
+      return;
+    }
+    if (e.key === "End") {
+      e.preventDefault();
+      focusPillAt(pills.length - 1);
+      return;
     }
   }
 </script>
@@ -544,17 +1018,17 @@ Write `src/lib/shared/sequence-viewer/components/pill-nav/DownloadPillNav.svelte
 <div
   bind:this={navEl}
   class="pill-nav variant-{variant}"
-  role="tablist"
+  role="group"
   aria-label="Download settings"
 >
   {#each pills as pill (pill.id)}
     <button
       type="button"
       class="pill"
-      role="tab"
       data-pill-id={pill.id}
+      aria-label={pill.label}
       aria-pressed={activeId === pill.id}
-      aria-selected={activeId === pill.id}
+      aria-haspopup={variant === "mobile" ? "dialog" : undefined}
       style:--pill-accent={pill.accentColor ?? null}
       onclick={() => onSelect(pill.id)}
       onkeydown={(e) => handleKeydown(e, pill.id)}
@@ -574,6 +1048,7 @@ Write `src/lib/shared/sequence-viewer/components/pill-nav/DownloadPillNav.svelte
   {/each}
 </div>
 ```
+
 
 - [ ] **Step 2: Type check**
 
@@ -615,8 +1090,15 @@ Write `src/lib/shared/sequence-viewer/components/pill-nav/PillBody.svelte`:
 
   - mobile: rendered inside a RailBentoSheet that slides up from the
     bottom of the canvas. Closes via the sheet's ✕ / backdrop / Escape.
+    Sheet handles aria-modal + focus trap.
   - desktop: rendered inline in a flex-grow scrollable region between
     the pill row and the download footer. Always visible — never closes.
+    Wrapped in role="region" with aria-live="polite" so content swaps
+    are announced to screen readers (the pill itself stays focused after
+    activation; the body content changes silently otherwise).
+
+  NOT role="tabpanel" — see DownloadPillNav for the rationale (the panel
+  is conditionally mounted, not a permanent DOM sibling).
 -->
 <script lang="ts">
   import type { Snippet } from "svelte";
@@ -626,18 +1108,30 @@ Write `src/lib/shared/sequence-viewer/components/pill-nav/PillBody.svelte`:
     title: string;
     variant: "mobile" | "desktop";
     onClose?: () => void;
+    /** Mobile only: element to restore focus to when the sheet closes
+     *  (typically the activating pill button). Forwarded to RailBentoSheet. */
+    returnFocusTo?: HTMLElement | null;
     children: Snippet;
   }
 
-  const { title, variant, onClose, children }: Props = $props();
+  const { title, variant, onClose, returnFocusTo = null, children }: Props = $props();
 </script>
 
 {#if variant === "mobile"}
-  <RailBentoSheet {title} onClose={onClose ?? (() => {})}>
+  <RailBentoSheet
+    {title}
+    onClose={onClose ?? (() => {})}
+    {returnFocusTo}
+  >
     {@render children()}
   </RailBentoSheet>
 {:else}
-  <div class="pill-body-inline" role="tabpanel" aria-label={title}>
+  <div
+    class="pill-body-inline"
+    role="region"
+    aria-label={title}
+    aria-live="polite"
+  >
     {@render children()}
   </div>
 {/if}
@@ -645,7 +1139,7 @@ Write `src/lib/shared/sequence-viewer/components/pill-nav/PillBody.svelte`:
 <style>
   /* No internal padding — the active pill's content owns its own chrome
      (EffectsPanel renders self-padded .sb-section blocks; the inline
-     pill bodies wrap themselves in a .pill-inline-pad div, see Task 7).
+     pill bodies wrap themselves in a .pill-inline-pad div, see Task 6).
      PillBody only manages flex sizing and scroll. */
   .pill-body-inline {
     flex: 1;
@@ -680,12 +1174,12 @@ EOF
 
 ---
 
-## Task 6: Rewrite ExportVideoDrawer — script block
+## Task 6: Rewrite ExportVideoDrawer — script + template (atomic)
 
 **Files:**
 - Modify: `src/lib/shared/sequence-viewer/components/ExportVideoDrawer.svelte`
 
-This task only changes the `<script>` block. Template + style come in Task 7 and 8.
+This task rewrites both the `<script>` block and the template in one atomic commit. The previous draft split this into two tasks, which left the working tree non-building between commits — the new agent might `/compact` mid-rewrite and lose the in-flight state. Style block follows in **Task 7**.
 
 - [ ] **Step 1: Replace the import block**
 
@@ -722,7 +1216,7 @@ Open `src/lib/shared/sequence-viewer/components/ExportVideoDrawer.svelte`. Find 
 
 `RailBentoSheet` is no longer imported here — `PillBody` consumes it internally. The previous `import RailBentoSheet ...` line is removed by replacing the whole block above.
 
-- [ ] **Step 2: Replace the SheetId state with PillId state**
+- [ ] **Step 2: Replace the SheetId state with PillId state, with $effect-driven layout sync and pill-ref tracking**
 
 Find the block (currently lines ~70–78):
 
@@ -740,13 +1234,35 @@ Find the block (currently lines ~70–78):
 Replace with:
 
 ```ts
-  // Mobile: null = no sheet open. Desktop: defaults to "effects" and never goes null.
+  // Mobile: null = no sheet open. Desktop: always has one pill active.
+  // Use $effect to keep activePillId in sync with the layout prop. A one-shot
+  // $state(layout === ...) initializer would only fire at component init —
+  // if the parent flips layout from "bottom" to "sidebar" without remounting,
+  // desktop would render with no active pill (empty body). The effect repairs
+  // the state on every layout change.
   let activePillId = $state<PillId | null>(layout === "sidebar" ? "effects" : null);
+  $effect(() => {
+    if (layout === "sidebar" && activePillId === null) {
+      activePillId = "effects";
+    }
+  });
+
+  // Track each pill button so we can restore focus when the mobile sheet
+  // closes. DownloadPillNav passes its root element on mount; we querySelector
+  // for the right pill button when needed.
+  let pillNavEl: HTMLDivElement | null = $state(null);
+  function findPillButton(id: PillId): HTMLButtonElement | null {
+    return pillNavEl?.querySelector<HTMLButtonElement>(`[data-pill-id="${id}"]`) ?? null;
+  }
+  let lastActivatedPillEl: HTMLButtonElement | null = $state(null);
 
   function selectPill(id: PillId): void {
     if (layout === "bottom") {
       // Mobile toggles the sheet; tapping the active pill closes it.
-      activePillId = activePillId === id ? null : id;
+      const wasOpen = activePillId === id;
+      activePillId = wasOpen ? null : id;
+      // Capture the activating pill button so the sheet can restore focus on close.
+      lastActivatedPillEl = wasOpen ? null : findPillButton(id);
     } else {
       // Desktop is always-on; tapping the active pill is a no-op.
       activePillId = id;
@@ -756,6 +1272,9 @@ Replace with:
   function closePill(): void {
     if (layout === "bottom") {
       activePillId = null;
+      // Focus restoration happens inside RailBentoSheet via returnFocusTo,
+      // but we also clear the ref so a re-open re-captures fresh.
+      lastActivatedPillEl = null;
     }
   }
 ```
@@ -798,8 +1317,8 @@ Right after the existing `effectsCount` derivation (current line ~96–100), app
         props: s.props,
         wordHeader: s.wordHeader,
         progressBar: s.progressBar,
+        grid: vm.isGridVisible(),
       },
-      vm.isGridVisible(),
       vm.getPathShape(),
     );
   });
@@ -819,16 +1338,54 @@ Right after the existing `effectsCount` derivation (current line ~96–100), app
 
   /** PillSpec map keyed by PillId. Compiler enforces every PillId has a
    *  spec — adding to PILL_ORDER without updating this object fails the
-   *  type check, so no runtime drift guard is needed. */
+   *  type check, so no runtime drift guard is needed.
+   *
+   *  Note: "export" is quoted defensively. JS / TS allow reserved words as
+   *  object literal keys, but some lint configs (e.g. strict
+   *  no-restricted-syntax rules) flag unquoted reserved words in property
+   *  positions. Quoting is unambiguous in every config. */
   const pills = $derived<PillSpec[]>(
     buildPillSpecs({
-      effects:  { label: "EFFECTS",  icon: "fa-sparkles",   summary: effectsSummary },
-      effort:   { label: "EFFORT",   summary: effortSummary, accentColor: effortAccent },
-      playback: { label: "PLAYBACK", icon: "fa-play",       summary: playbackSummary },
-      display:  { label: "DISPLAY",  icon: "fa-eye",        summary: displaySummary },
-      export:   { label: "EXPORT",   icon: "fa-sliders",    summary: exportSummary },
+      effects:    { label: "EFFECTS",  icon: "fa-sparkles",   summary: effectsSummary },
+      effort:     { label: "EFFORT",   summary: effortSummary, accentColor: effortAccent },
+      playback:   { label: "PLAYBACK", icon: "fa-play",       summary: playbackSummary },
+      display:    { label: "DISPLAY",  icon: "fa-eye",        summary: displaySummary },
+      "export":   { label: "EXPORT",   icon: "fa-sliders",    summary: exportSummary },
     }),
   );
+```
+
+- [ ] **Step 3-bis: Scope `preventSpaceActivation` so it doesn't swallow Space on focused buttons / inputs**
+
+Find the existing function (currently lines ~102–106):
+
+```ts
+  function preventSpaceActivation(event: KeyboardEvent) {
+    if (event.key === " " || event.code === "Space") {
+      event.preventDefault();
+    }
+  }
+```
+
+Replace with:
+
+```ts
+  /**
+   * Prevent Space-initiated page scroll when focus is on a non-interactive
+   * descendant of the export panel. Critically, do NOT preventDefault when
+   * the focused element is a button/input/textarea/select — Space on those
+   * elements is meant to activate the control, and preventDefault on the
+   * bubbled keydown blocks that activation.
+   */
+  function preventSpaceActivation(event: KeyboardEvent) {
+    if (event.key !== " " && event.code !== "Space") return;
+    const target = event.target as HTMLElement | null;
+    if (!target) return;
+    const tag = target.tagName;
+    if (tag === "BUTTON" || tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+    if (target.isContentEditable) return;
+    event.preventDefault();
+  }
 ```
 
 - [ ] **Step 4: Delete obsolete derivations**
@@ -877,32 +1434,9 @@ Delete each of the following blocks (line ranges are approximate, locate by cont
   );
 ```
 
-The new template (Task 7) iterates inline literals for fps and resolution chips, so these arrays become dead. `exportSummary` replaces `settingsSummary`.
+The new template (Step 5 below) iterates inline literals for fps and resolution chips, so these arrays become dead. `exportSummary` replaces `settingsSummary`.
 
-- [ ] **Step 5: Type check**
-
-```bash
-npm run check 2>&1 | grep -A 2 "ExportVideoDrawer" | head -40
-```
-
-Expected: zero errors. There may be unused-template-binding warnings about `toggleSheet`/`closeSheet`/`openSheet` that are still referenced in the existing template — those go away in Task 7 when the template is rewritten. If that's the only error class, proceed; otherwise fix before continuing.
-
-If you need to satisfy the type check between this task and Task 7, temporarily comment out the template references to `openSheet`. Don't commit a half-done state — Tasks 6 + 7 are intended to land as a single commit at the end of Task 7.
-
-- [ ] **Step 6: Do NOT commit yet**
-
-Combine with Task 7 into one commit.
-
----
-
-## Task 7: Rewrite ExportVideoDrawer — template
-
-**Files:**
-- Modify: `src/lib/shared/sequence-viewer/components/ExportVideoDrawer.svelte`
-
-Build a single shared template that both mobile and desktop branches dispatch to. After this task, the file no longer has two parallel template branches — instead, it has variant-aware chrome that wraps a shared core.
-
-- [ ] **Step 1: Replace the entire template (everything between `</script>` and `<style>`)**
+- [ ] **Step 5: Replace the entire template (everything between `</script>` and `<style>`)**
 
 Find the line `</script>` (around line 172). Find the matching `<style>` opener (around line 656). Replace everything between them (inclusive of the surrounding markers' adjacent newlines but not the markers themselves) with:
 
@@ -956,9 +1490,12 @@ Find the line `</script>` (around line 172). Find the matching `<style>` opener 
     </div>
   {:else if activePillId === "display"}
     <div class="pill-inline-pad">
-      <DisplayPanel />
-      <div class="rt-section">
-        <span class="rt-section-label">Motion paths</span>
+      <div class="rt-section" role="group" aria-labelledby="display-visibility-label">
+        <span class="rt-section-label" id="display-visibility-label">Visibility</span>
+        <DisplayPanel />
+      </div>
+      <div class="rt-section" role="group" aria-labelledby="display-paths-label">
+        <span class="rt-section-label" id="display-paths-label">Motion paths</span>
         <PathShapePanel />
       </div>
     </div>
@@ -1126,6 +1663,7 @@ Find the line `</script>` (around line 172). Find the matching `<style>` opener 
           title={pills.find((p) => p.id === activePillId)?.label ?? ""}
           variant="mobile"
           onClose={closePill}
+          returnFocusTo={lastActivatedPillEl}
         >
           {@render pillBody()}
         </PillBody>
@@ -1137,6 +1675,7 @@ Find the line `</script>` (around line 172). Find the matching `<style>` opener 
           {activePillId}
           onSelect={selectPill}
           variant="mobile"
+          onNavMount={(el) => (pillNavEl = el)}
         />
 
         <button
@@ -1174,6 +1713,7 @@ Find the line `</script>` (around line 172). Find the matching `<style>` opener 
         {activePillId}
         onSelect={selectPill}
         variant="desktop"
+        onNavMount={(el) => (pillNavEl = el)}
       />
 
       <PillBody
@@ -1244,17 +1784,17 @@ Find the line `</script>` (around line 172). Find the matching `<style>` opener 
 
 This single template uses one `{#snippet pillBody}` with the pill body content shared between mobile and desktop. The mobile branch wraps `pillBody` in a sheet; the desktop branch renders it inline.
 
-- [ ] **Step 2: Type check**
+- [ ] **Step 6: Type check**
 
 ```bash
 npm run check 2>&1 | grep -A 2 "ExportVideoDrawer" | head -40
 ```
 
 Expected: zero errors. If there are errors, fix them before proceeding. Common ones:
-- "openSheet is not defined" — leftover reference from Task 6 step 4 cleanup. Search the file for `openSheet`, `toggleSheet`, `closeSheet`, `SheetId` and replace any survivors.
+- "openSheet is not defined" — leftover reference from Step 2's cleanup. Search the file for `openSheet`, `toggleSheet`, `closeSheet`, `SheetId` and replace any survivors.
 - "settingsSummary is not defined" — leftover template binding. Same fix.
 
-- [ ] **Step 3: Build**
+- [ ] **Step 7: Build**
 
 ```bash
 npm run build 2>&1 | tail -15
@@ -1262,7 +1802,7 @@ npm run build 2>&1 | tail -15
 
 Expected: build succeeds. Look for "built in Xs" line.
 
-- [ ] **Step 4: Commit Tasks 6 + 7 together**
+- [ ] **Step 8: Commit (script + template together)**
 
 ```bash
 git add src/lib/shared/sequence-viewer/components/ExportVideoDrawer.svelte
@@ -1272,8 +1812,18 @@ refactor(export-video): unify mobile + desktop on 5-pill nav
 Replaces the 4-tile mobile bento and the flat desktop sidebar with one
 shared 5-pill nav (Effects / Effort / Playback / Display / Export).
 Display + Path Shape come back into the UI (orphaned when the modal was
-nuked). Loops moves from Export to Playback (semantically belongs with
-playback duration).
+nuked).
+
+- Effects pill summary shows the active effect's name (e.g. "Trails"),
+  not a meaningless count derived from the wildcard tipEffectMap entry.
+- Loops + Timing live in Export (they describe the output video).
+  Playback pill = Tempo + Mode (in-canvas preview behavior).
+- Pills use role=button + aria-pressed (not the broken role=tab pattern;
+  pill bodies are conditionally mounted, not permanent tabpanels).
+- Mobile pill carries aria-haspopup="dialog"; the bento sheet handles
+  focus trap + restoration via PillBody's returnFocusTo prop.
+- $effect keeps activePillId in sync with the layout prop so a runtime
+  layout flip doesn't leave the desktop sidebar with no active pill.
 
 Mobile keeps the slide-up sheet pattern via PillBody(variant=mobile).
 Desktop renders the active body inline in the sidebar via
@@ -1287,12 +1837,12 @@ EOF
 
 ---
 
-## Task 8: Replace dead CSS in ExportVideoDrawer with pill-only chrome
+## Task 7: Replace dead CSS in ExportVideoDrawer with pill-only chrome
 
 **Files:**
 - Modify: `src/lib/shared/sequence-viewer/components/ExportVideoDrawer.svelte` (style block only)
 
-Tasks 6+7 leave the old desktop chip/setting-row chrome orphaned and add the new `.pill-inline-pad` wrapper. Replace the `<style>` block contents with the explicit final form below — no heuristic scan, no fragile class detection.
+Task 6 leaves the old desktop chip/setting-row chrome orphaned and adds the new `.pill-inline-pad` wrapper. Replace the `<style>` block contents with the explicit final form below — no heuristic scan, no fragile class detection.
 
 - [ ] **Step 1: Replace the `<style>` block**
 
@@ -1532,7 +2082,7 @@ EOF
 
 ---
 
-## Task 9: Visual QA via Chrome DevTools MCP
+## Task 8: Visual QA via Chrome DevTools MCP
 
 **Files:** none (verification only)
 
@@ -1542,7 +2092,7 @@ If the user has not granted browser permission yet, post a single message:
 
 > "Visual QA needs to drive Chrome DevTools — navigate to a viewer URL, click pills, and screenshot at two viewports. May I proceed?"
 
-Wait for an affirmative response before continuing. If the user declines, mark this task complete with a note and proceed to Task 10 with a self-check via `curl localhost:5173/...` for HTTP-200 and `npm run build` only.
+Wait for an affirmative response before continuing. If the user declines, mark this task complete with a note and proceed to Task 9 with a self-check via `curl localhost:5173/...` for HTTP-200 and `npm run build` only.
 
 - [ ] **Step 1: Verify dev server is running**
 
@@ -1552,15 +2102,13 @@ curl -s -o /dev/null -w "%{http_code}\n" http://localhost:5173/
 
 Expected: `200`. If not, ask the user to start their dev server (don't start a competing one on 5173).
 
-- [ ] **Step 2: Pick a viewer URL**
+- [ ] **Step 2: Get a viewer URL from the user**
 
-Find a recent viewer shortcode by checking git log + recent files:
+Grepping `src/` for `/viewer/<code>` literals does not produce live URLs — strings in source aren't guaranteed to resolve to real shortcodes. Just ask:
 
-```bash
-grep -roE '/viewer/[A-Za-z0-9]{6}' src/ docs/ 2>/dev/null | head -3
-```
+> "What viewer URL should I QA against? (e.g. `http://localhost:5173/viewer/9stG`)"
 
-If nothing meaningful comes up, try `http://localhost:5173/viewer/9stG` (used in prior session screenshots) or ask the user for a URL.
+If the user offers nothing, default to navigating to the create flow at `http://localhost:5173/` and triggering the export from there.
 
 - [ ] **Step 3: Mobile viewport (393×709)**
 
@@ -1580,9 +2128,9 @@ Once the panel is open, screenshot. Confirm:
 Tap each pill in turn (`mcp__chrome-devtools__click` requires permission per the gate above):
 - Effects → sheet opens with `MobileEffectsPanel` content
 - Effort → sheet shows 8 effort buttons
-- Playback → sheet shows Tempo + Mode + Timing + Loops
-- Display → sheet shows visibility toggles + Motion paths section
-- Export → sheet shows FPS + Resolution + (Quality if 3D)
+- Playback → sheet shows Tempo + Mode (Loops/Timing are NOT here — they live in Export)
+- Display → sheet shows Visibility section + Motion paths section
+- Export → sheet shows FPS + Resolution + (Quality if 3D) + Timing + Loops + duration line
 
 Tap the active pill again — sheet closes.
 
@@ -1625,6 +2173,8 @@ For each:
 6. Step the Loops counter in the Export pill up/down. Confirm value changes, disabled state on min/max, and the Export pill summary appends `• Nx` when count > 1.
 7. On desktop only: confirm the Effects pill body shows the inline play/pause + tempo control row (driven by `EffectsPanel`'s `showPlayback` branch).
 8. Switch between viewports (mobile ↔ desktop simulated by resizing). Confirm desktop defaults to Effects pill open; mobile defaults to no pill open.
+9. **Keyboard a11y check:** Tab into the pill row, press `→` `→` `Home` `End` `←` — focus moves accordingly. Press `Enter` on a focused pill — that pill activates. Press `Space` on a focused pill — same. Press `Escape` while a mobile sheet is open — sheet closes AND focus returns to the activating pill button (verify via `document.activeElement` in the console).
+10. **Touch target check:** With DevTools' Inspect tool, hover the `+`/`−` Loops stepper buttons and the sheet `×` close button — DevTools should show ≥44×44 hit areas.
 
 - [ ] **Step 7: Console clean check**
 
@@ -1636,13 +2186,13 @@ Expected: no errors related to pill-nav. Warnings are acceptable but log them.
 
 - [ ] **Step 8: Take notes**
 
-If any step revealed a visual or behavioral bug, note it. Fix in a follow-up commit before Task 10.
+If any step revealed a visual or behavioral bug, note it. Fix in a follow-up commit before Task 9.
 
 No commit needed for QA — screenshots are temp artifacts.
 
 ---
 
-## Task 10: Final cleanup + verification
+## Task 9: Final cleanup + verification
 
 **Files:** any straggling orphaned imports
 
@@ -1716,20 +2266,39 @@ Otherwise skip.
 
 ## Success criteria
 
-- `npm run check` passes with no NEW errors (matches the 8-error pre-existing baseline noted in Task 10).
+### Build / type / test
+- `npm run check` passes with no NEW errors (matches the 8-error pre-existing baseline noted in Task 9).
 - `npm run build` succeeds.
-- `npx vitest run tests/unit/pill-nav/` passes with 5 tests.
+- `npx vitest run tests/unit/pill-nav/` passes (6 tests including the arity guard).
+
+### Layout + nav
 - At 393×709, the Download Animation panel shows a 5-pill row + download button. Tapping a pill opens a sheet over the canvas.
 - At 1400×900, the sidebar shows a 5-pill row at the top, active body inline, download in the footer. Switching pills swaps the body without layout shift.
 - **Effects pill summary** shows the active effect *name* ("Trails", "Fire", …) or "Off" — never a count.
 - **Effort pill** border and dot are tinted with the active effort's color.
 - **Playback pill** body has Tempo + Mode only (no Loops, no Timing — those describe the output video, not preview).
-- **Display pill** exposes the 6 visibility toggles + Grid + Path Shape (Arc/Linear) under "Motion paths". Summary reads `<n> / 7 visible · <path>`.
+- **Display pill** exposes the 6 visibility toggles + Grid (under "Visibility" group label) + Path Shape Arc/Linear (under "Motion paths" group label). Summary reads `<n> / 7 visible · <path>`.
 - **Export pill** body has FPS (30/60/120) + Resolution (720p/1080p/4K/8K) + Quality (3D only) + Timing (Start/End hold) + Loops + duration line. Summary appends `• Nx` when loops > 1. **No frame-rate or resolution options were dropped vs the old desktop sidebar.**
 - Desktop Effects pill body still surfaces the inline play/pause + tempo via `EffectsPanel`'s `showPlayback` branch (no regression vs prior desktop UX).
 - Right-click on the canvas does NOT show "Animation Settings…" anymore (verified by grep, not synthetic event).
 - Orphan `PlaybackPanel.svelte` is gone (deleted in Pre-flight Step 0a-bis).
+
+### Architecture / state
 - All settings persist through their existing managers — a toggle in the pill body updates the canvas immediately.
+- `activePillId` reactively tracks `layout` via `$effect` — flipping `layout="bottom"` → `"sidebar"` without remount still defaults the desktop sidebar to "effects".
+- Shared `.rt-section`, `.rt-chip`, `.rt-row`, `.rt-stepper` primitives are defined in `rail-tile.css` and apply equally inside `.bento-sheet-body` and `.pill-body-inline`.
+
+### Accessibility (AAA where reachable, never below AA)
+- Pills are `role="button"` with `aria-pressed`. NO `role="tab"` / `aria-selected` (the tab pattern is broken for conditionally-mounted panels).
+- Mobile pills carry `aria-haspopup="dialog"`.
+- DownloadPillNav supports `←`/`→` (with wrap), `Home`, `End`, `Enter`, and `Space` keyboard navigation. No legacy `"Spacebar"` key name.
+- Mobile sheet (`RailBentoSheet`) traps focus, restores focus to the activating pill on close, and respects `prefers-reduced-motion` on its `fly`/`fade` transitions.
+- Touch targets in shared primitives meet AAA: `.rt-step-btn` ≥44×44, `.bento-sheet-close` ≥44×44, `.rt-chip` ≥44px tall, `.bento-sheet-close` has a focus-visible outline.
+- Pill typography uses the project's 12px floor (`var(--font-size-compact)`) for both label and summary.
+- Pill active state uses solid white text for AAA contrast (no color-mix that drifts below 7:1).
+- Pill focus outline uses opaque accent (no 0.6 alpha that composites below 3:1).
+- `EffortPanel` and `PathShapePanel` focus outlines are opaque (Task 0h).
+- DisplayPanel + PathShapePanel are wrapped in `role="group"` with `aria-labelledby` to their section labels.
 
 ---
 
@@ -1739,15 +2308,15 @@ Otherwise skip.
   - DownloadPillNav → Task 4
   - PillBody → Task 5
   - pill-types (with `buildPillSpecs` type-enforced ordering) → Task 1
-  - pill-summaries (Display count helper) → Task 2
+  - pill-summaries (Display arity helper + tests) → Task 2
   - pill-nav.css → Task 3
-  - ExportVideoDrawer rewrite (script + template) → Tasks 6, 7
-  - Display section (DisplayPanel + PathShapePanel under Motion paths label) → embedded in Task 7
-  - Loops + Timing in Export pill (NOT Playback — they describe output video) → embedded in Task 7
-  - Dead CSS removal via explicit replacement → Task 8
-  - Visual QA → Task 9
-  - Final verification → Task 10
-- [x] **Audit fixes from prior review applied:**
+  - ExportVideoDrawer rewrite (script + template, atomic) → Task 6
+  - Display section (Visibility group + Motion paths group) → embedded in Task 6
+  - Loops + Timing in Export pill (NOT Playback — they describe output video) → embedded in Task 6
+  - Dead CSS removal via explicit replacement → Task 7
+  - Visual QA → Task 8
+  - Final verification → Task 9
+- [x] **Audit Round 1 fixes applied:**
   - Effects summary: name (`EFFECT_LABELS[active]`) not misleading count
   - 120 fps + 4K + 8K resolution chips preserved
   - Loops + Timing kept in Export (not Playback)
@@ -1755,15 +2324,31 @@ Otherwise skip.
   - Orphan `PlaybackPanel.svelte` deleted in Pre-flight 0a-bis
   - Import contradiction in Task 6 step 1 removed
   - `fpsOptions` / `resOptions` / `resOptionsWithDims` deletions added to Task 6 step 4
-  - PILL_ORDER → `buildPillSpecs` Record-keyed function (compile-time enforcement)
+  - PILL_ORDER → `buildPillSpecs` Record-keyed function (compile-time enforcement); `"export"` quoted defensively
   - Path shape removed from "/N on" count; surfaced explicitly as `· arc` / `· linear`
-  - Display summary denominator derived from input arity, not hardcoded
+  - Display summary denominator genuinely arity-derived (grid is now a regular field of `DisplayFlags`, no hardcoded `+1`)
   - Arrow-key `querySelector` scoped to local `bind:this` element
   - PillBody desktop variant has no padding; inline pill bodies wrap in `.pill-inline-pad`
-  - Task 8 dead-CSS heuristic replaced with explicit final `<style>` block
-  - Task 9 step 5 contextmenu verification done by grep, not synthetic dispatch
+  - Task 7 dead-CSS heuristic replaced with explicit final `<style>` block
+  - Task 8 step 5 contextmenu verification done by grep, not synthetic dispatch
+- [x] **Audit Round 2 fixes applied:**
+  - `.rt-section` / `.rt-chip` / `.rt-row` primitives promoted from `RailBentoSheet` scope to `rail-tile.css` (Task 0e) so the desktop pill body actually gets styled
+  - `.rt-step-btn` (24→44), `.bento-sheet-close` (28→44), `.rt-chip` (38→44 tall) bumped to AAA touch targets (Task 0f)
+  - `RailBentoSheet` adds focus trap, focus restoration via `returnFocusTo`, and reduced-motion (Task 0g)
+  - `EffortPanel` + `PathShapePanel` opaque focus outlines (Task 0h)
+  - DownloadPillNav switches from `role="tab"` + `aria-selected` to `role="button"` + `aria-pressed`; mobile pills carry `aria-haspopup="dialog"`
+  - PillBody desktop uses `role="region"` + `aria-live="polite"` (NOT `role="tabpanel"`)
+  - Home / End keys added; legacy `"Spacebar"` dropped
+  - `activePillId` synchronized to `layout` via `$effect` (not a one-shot `$state` initializer)
+  - ExportVideoDrawer captures `pillNavEl` and `lastActivatedPillEl` so mobile sheet can restore focus on close
+  - `preventSpaceActivation` scoped to non-interactive event targets (does NOT swallow Space on focused buttons / inputs)
+  - Tasks 6 + 7 merged into a single atomic Task 6 (no half-built intermediate tree)
+  - `.pill-label` and `.pill-summary` use 12px (project floor); active text uses solid white; focus outline uses opaque accent
+  - Display pill body wraps DisplayPanel in `role="group"` "Visibility" + PathShapePanel in `role="group"` "Motion paths"
+  - Task 8 viewer-URL grep theatre dropped (asks the user); Task 3 brace-balance theatre dropped (relies on `vite build`)
+  - Task 8 step 6 includes keyboard a11y check + touch target check
 - [x] **No placeholders:** every code block is complete, no `...`, no `TBD`.
 - [x] **All file paths absolute-from-repo-root.**
 - [x] **Each step is atomic** (1–10 minutes of work).
-- [x] **Pre-flight verification (Step 0)** confirms the assumed file structure (settings-panels exist, modal is gone, bento primitives present) and removes the orphan PlaybackPanel before any modifications.
-- [x] **Permission gates** for browser commands (Task 9) per project rules — never assume browser-control consent.
+- [x] **Pre-flight verification (Steps 0a–0h)** confirms file structure, removes the orphan PlaybackPanel, hardens the shared primitives (CSS scoping, touch targets, focus trap, focus indicators) BEFORE the new pill-nav components consume them.
+- [x] **Permission gates** for browser commands (Task 8) per project rules — never assume browser-control consent.

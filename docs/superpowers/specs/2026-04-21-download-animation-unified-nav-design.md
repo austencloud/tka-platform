@@ -11,13 +11,22 @@
 
 The original spec body shipped several design errors that the implementation plan now overrides. The plan (`docs/superpowers/plans/2026-04-21-download-animation-unified-nav.md`) is the source of truth where it conflicts with the body below. Specifically:
 
-1. **Loops and Timing live in EXPORT, not Playback.** They describe the output video, not in-canvas preview. The "Loops semantically belongs with playback duration" framing earlier in this doc is wrong.
+1. **Loops and Timing live in EXPORT, not Playback.** They describe the output video file (how many concatenations, whether to pad start/end with held frames), not in-canvas preview behavior. Any earlier line implying "Loops belongs with playback" is wrong.
 2. **Effects pill summary shows the active effect's NAME (`"Trails"`, `"Fire"`, `"Off"`), not a count.** The default `tipEffectMap` always has one wildcard entry, so a count-based summary said "1 active" with zero user input.
 3. **All 3 fps options (30/60/120) and all 4 resolutions (720p/1080p/4K/8K) are preserved on desktop.** Earlier draft inadvertently dropped 120 fps and 4K/8K.
-4. **Desktop Effects pill keeps the inline play/pause + tempo control** via `EffectsPanel`'s `showPlayback` branch. Earlier draft set `showPlayback={false}`, which removed the play affordance from desktop.
-5. **Path shape (Arc/Linear) is reported explicitly in the Display summary, not counted as on/off.** Both arc and linear are valid choices, not enable/disable. New summary format: `<n> / 7 visible · <path>`.
+4. **Desktop Effects pill keeps the inline play/pause + tempo control** via `EffectsPanel`'s `showPlayback` branch (only when both `onPlaybackToggle` and `onBpmChange` are provided). Earlier draft set `showPlayback={false}`, which removed the play affordance from desktop.
+5. **Path shape (Arc/Linear) is reported explicitly in the Display summary, not counted as on/off.** Both arc and linear are valid choices, not enable/disable. New summary format: `<n> / 7 visible · <path>`. Denominator (7) is derived from the input arity to `computeDisplaySummary`, not hardcoded.
 6. **PILL_ORDER is type-enforced** via `buildPillSpecs(Record<PillId, ...>)` in `pill-types.ts` — no runtime DEV drift guard.
 7. **`PlaybackPanel.svelte` is deleted as orphan** in pre-flight (no consumer; the Playback pill body inlines `TempoControl` + `PlaybackModeToggle`).
+8. **Pills use `role="button"` + `aria-pressed`, NOT `role="tab"` + `aria-selected`.** The `tab`/`tabpanel` ARIA pattern requires the panel to be a permanent DOM sibling linked via `aria-controls`. The pill bodies are conditionally mounted (one at a time) and on mobile they live inside a portal'd `role="dialog"` — neither is a tabpanel. Mobile pill buttons additionally carry `aria-haspopup="dialog"`.
+9. **Shared `.rt-*` primitives (`.rt-section`, `.rt-section-label`, `.rt-chip-row`, `.rt-chip`, `.rt-row`, `.rt-row-label`) are promoted from `RailBentoSheet`'s `:global(.bento-sheet-body ...)` scope into `rail-tile.css`** so they apply equally inside the desktop inline pill body and the mobile sheet. (Pre-flight task in the plan.)
+10. **Touch targets in the shared primitives are bumped to AAA-grade 44px:** `.rt-step-btn` 24×24 → 44×44, `.bento-sheet-close` 28×28 → 44×44, `.rt-chip` 38px tall → 44px tall. (Pre-flight task in the plan.)
+11. **`RailBentoSheet` adds a focus trap, returns focus to the activating pill on close, and honors `prefers-reduced-motion` on its fly/fade transitions.** Pill button refs are tracked so the sheet can restore focus on dismiss. (Pre-flight task in the plan.)
+12. **The Display pill body wraps `DisplayPanel` and `PathShapePanel` in `role="group"` regions** with explicit "Visibility" and "Motion paths" section labels (linked via `aria-labelledby`).
+13. **Pill typography and contrast meet AAA:** `.pill-label` and `.pill-summary` use `var(--font-size-compact, 12px)` (the project's typography floor — no 9px or 10px text). Active-state foreground uses solid white, not a color-mix that drifts below the 7:1 threshold. Focus outlines use the opaque accent color, not 0.6 alpha.
+14. **DownloadPillNav's keyboard model implements the WAI-ARIA toolbar pattern**: ←/→ moves focus (with wrap), `Home`/`End` jump to first/last, `Enter`/`Space` activate. The legacy `"Spacebar"` key name is dropped — only `e.key === " "` is checked.
+15. **`activePillId` is reactive to `layout` changes via `$effect`**, not a one-shot `$state` initializer. If the parent flips `layout="bottom"` → `layout="sidebar"` without remounting, the desktop sidebar still defaults to "effects" so the spec's "one pill always active on desktop" invariant holds.
+16. **Tasks 6 and 7 are merged into a single atomic task** so the working tree never carries a half-rewritten `ExportVideoDrawer.svelte` between commits.
 
 The body below is otherwise still accurate (component decomposition, RailBentoSheet reuse, mobile/desktop layout strategy).
 
@@ -52,11 +61,11 @@ Left-to-right reading order matches workflow ("set up the look, then export it")
 
 | Order | Pill | Label | Icon | Live summary content (max 24 chars) | Source state |
 |---|---|---|---|---|---|
-| 1 | Effects | EFFECTS | `fa-sparkles` | `"Trails ×2"` (count of non-none tip effects), or `"—"` | `vm.getTipEffectMap()` |
+| 1 | Effects | EFFECTS | `fa-sparkles` | active effect name, e.g. `"Trails"`, `"Fire"`, or `"Off"`. (Resolved via `EFFECT_LABELS[vm.getActiveEffect()]`.) | `vm.getActiveEffect()` |
 | 2 | Effort | EFFORT | (effort color dot) | active effort label, e.g. `"Float"`. Pill border + dot tinted by `effort.color`. | `vm.getEffortPreset()` |
 | 3 | Playback | PLAYBACK | `fa-play` | `"120 BPM • Cont."` or `"120 BPM • Step"` | `bpm`, `vm.getPlaybackMode()` |
-| 4 | Display | DISPLAY | `fa-eye` | `"5 / 8 on"` (count of visibility toggles enabled, denominator = 8 = 7 toggles + Path Shape state) | `vm.getSettings()`, `vm.getPathShape()` |
-| 5 | Export | EXPORT | `fa-sliders` | `"1080p • 60 fps"` (or `"1080×1080 • 60 fps"` in 3D mode) | `exportOptions.videoResolution`, `exportOptions.videoFps` |
+| 4 | Display | DISPLAY | `fa-eye` | `"5 / 7 visible · arc"` (count of 6 visibility toggles + grid; path shape surfaced separately because Arc/Linear are both valid choices, not on/off) | `vm.getSettings()`, `vm.isGridVisible()`, `vm.getPathShape()` |
+| 5 | Export | EXPORT | `fa-sliders` | `"1080p • 60 fps"`, with `" • Nx"` appended when `videoLoopCount > 1` (or `"1080×1080 • 60 fps"` in 3D mode) | `exportOptions.videoResolution`, `exportOptions.videoFps`, `exportOptions.videoLoopCount` |
 
 Pill width on mobile: `1fr` each, equal-share, single horizontal row above the download button. Pill width on desktop: `1fr` each, single horizontal row at the top of the sidebar.
 
@@ -211,15 +220,15 @@ The 5 pill bodies are rendered inline as `{#if activePillId === "effects"}...{:e
 
 | Pill | Body content |
 |---|---|
-| Effects | Mobile: `<MobileEffectsPanel />`. Desktop: `<EffectsPanel ... showPlayback={false} />` (Playback transport is its own pill now, so we suppress EffectsPanel's transport row to avoid duplication). |
+| Effects | Mobile: `<MobileEffectsPanel />`. Desktop: `<EffectsPanel ... showPlayback={!!(onPlaybackToggle && onBpmChange)} />` (desktop keeps the inline play/pause + tempo control via the EffectsPanel's `showPlayback` branch — no regression vs the prior desktop UX). |
 | Effort | `<EffortPanel />` |
-| Playback | `<TempoControl />` + `<PlaybackModeToggle />` + Start Hold/End Hold chip row + Loops stepper. (Loops moves from Export to Playback because it's about how many cycles play, not about the export format.) |
-| Display | `<DisplayPanel />` + section label "Motion paths" + `<PathShapePanel />` |
-| Export | FPS chips + Resolution chips + Quality chips (3D only). |
+| Playback | `<TempoControl />` + `<PlaybackModeToggle />`. Tempo + mode only — these describe in-canvas preview behavior. Loops, Start Hold, End Hold all describe the OUTPUT video and live in Export. |
+| Display | "Visibility" section label + `<DisplayPanel />` + "Motion paths" section label + `<PathShapePanel />`, both wrapped in `role="group"` with `aria-labelledby` to the matching section label. |
+| Export | FPS chips + Resolution chips + Quality chips (3D only) + Timing (Start Hold / End Hold) chips + Loops stepper + duration line. |
 
-### Loops moved from Export to Playback
+### Loops + Timing live in Export, not Playback
 
-The 4-tile bento spec put Loops in Export. With the new 5-pill structure, Loops belongs in **Playback**: it controls *playback duration*, not *output format*. The desktop sidebar today already groups Loops with playback semantics (it appears with Playback toggle and Timing chips). Moving it preserves that grouping.
+Loops, Start Hold, and End Hold all describe the **output video file** (how many times the sequence is concatenated, whether to pad with a held start frame, whether to pad with a held end frame). They do not affect in-canvas preview playback. Group them with the other output-format controls (FPS, resolution, quality) under the Export pill.
 
 ## State and event flow
 
@@ -237,30 +246,35 @@ The new `DownloadPillNav` and `PillBody` are pure presentation. The pill summari
 const displaySummary = $derived.by(() => {
   void vmVersion;
   const s = vm.getSettings();
-  // 7 boolean toggles + grid (treat grid as "on" when not "none") + path shape (always 1 of 2)
-  let on = 0;
-  const total = 8;
-  if (vm.isGridVisible()) on++;
-  if (s.tkaGlyph) on++;
-  if (s.stepNumbers) on++;
-  if (s.beatPosition) on++;
-  if (s.props) on++;
-  if (s.wordHeader) on++;
-  if (s.progressBar) on++;
-  if (vm.getPathShape() === "arc") on++;   // Arc is the "default visible" path
-  return `${on} / ${total} on`;
+  return computeDisplaySummary(
+    {
+      tkaGlyph: s.tkaGlyph,
+      stepNumbers: s.stepNumbers,
+      beatPosition: s.beatPosition,
+      props: s.props,
+      wordHeader: s.wordHeader,
+      progressBar: s.progressBar,
+      grid: vm.isGridVisible(),
+    },
+    vm.getPathShape(),
+  );
 });
 ```
 
+`computeDisplaySummary` (a pure helper, unit-tested) sums the truthy values across all input flags and surfaces the path shape explicitly (arc vs linear are both valid choices, not on/off). Returns `"<n> / <total> visible · <pathShape>"`. Denominator is genuinely arity-derived from the input record — adding a new toggle automatically updates it.
+
 ### Effects summary derivation
 
-Already exists as `effectsCount` derived in the current file. Reused as:
-
 ```ts
-const effectsSummary = $derived(
-  effectsCount > 0 ? `${effectsCount} active` : "—"
-);
+const effectsSummary = $derived.by(() => {
+  void vmVersion;
+  const active = vm.getActiveEffect();
+  if (active === "none") return "Off";
+  return EFFECT_LABELS[active] ?? active;
+});
 ```
+
+The legacy `effectsCount` derived value (count of non-none entries in `tipEffectMap`) is removed. The default tip-effect map is `{ "*": { effect: "trails" } }`, so a count of 1 vs 0 was meaningless — it never reflected a user action. Active-effect name is the truthful state.
 
 ### Playback summary derivation
 
