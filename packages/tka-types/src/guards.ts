@@ -60,7 +60,7 @@ export function isMotion(value: unknown): value is Motion {
   if (!isEnumMember(value.startOrientation, ORIENTATION_VALUES)) return false;
   if (!isEnumMember(value.endOrientation, ORIENTATION_VALUES)) return false;
   if (!isTurns(value.turns)) return false;
-  if (!isEnumMember(value.plane, PLANE_VALUES)) return false;
+  if (!isOptionalEnumMember(value.plane, PLANE_VALUES)) return false;
   // `color` is optional on Motion (redundant when keyed under step.motions.blue/red).
   if (!isOptionalEnumMember(value.color, PROP_COLOR_VALUES)) return false;
   if (!isOptionalEnumMember(value.prefloatMotionType, MOTION_TYPE_VALUES))
