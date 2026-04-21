@@ -20,6 +20,17 @@ export interface VTGCalculationResult {
   elementalType: ElementalType | null;
 }
 
+// Position subsets used by conditional VTG lookups.
+// Typed as GridPosition[] so .includes() accepts the full GridPosition union.
+const BETA_3_7: GridPosition[] = [GridPosition.BETA3, GridPosition.BETA7];
+const ALPHA_1_5: GridPosition[] = [GridPosition.ALPHA1, GridPosition.ALPHA5];
+const GAMMA_DIAG: GridPosition[] = [
+  GridPosition.GAMMA10,
+  GridPosition.GAMMA8,
+  GridPosition.GAMMA14,
+  GridPosition.GAMMA4,
+];
+
 /**
  * Mapping from VTG mode to elemental type.
  * Based on legacy SVG_PATHS mapping from elemental_glyph.py
@@ -50,30 +61,30 @@ const DIAMOND_MODE_MAP: Record<
   B: VTGMode.SPLIT_SAME,
   C: VTGMode.SPLIT_SAME,
   D: (startPos: GridPosition) =>
-    [GridPosition.BETA3, GridPosition.BETA7].includes(startPos)
+    BETA_3_7.includes(startPos)
       ? VTGMode.SPLIT_OPP
       : VTGMode.TOG_OPP,
   E: (startPos: GridPosition) =>
-    [GridPosition.BETA3, GridPosition.BETA7].includes(startPos)
+    BETA_3_7.includes(startPos)
       ? VTGMode.SPLIT_OPP
       : VTGMode.TOG_OPP,
   F: (startPos: GridPosition) =>
-    [GridPosition.BETA3, GridPosition.BETA7].includes(startPos)
+    BETA_3_7.includes(startPos)
       ? VTGMode.SPLIT_OPP
       : VTGMode.TOG_OPP,
   G: VTGMode.TOG_SAME,
   H: VTGMode.TOG_SAME,
   I: VTGMode.TOG_SAME,
   J: (startPos: GridPosition) =>
-    [GridPosition.ALPHA1, GridPosition.ALPHA5].includes(startPos)
+    ALPHA_1_5.includes(startPos)
       ? VTGMode.SPLIT_OPP
       : VTGMode.TOG_OPP,
   K: (startPos: GridPosition) =>
-    [GridPosition.ALPHA1, GridPosition.ALPHA5].includes(startPos)
+    ALPHA_1_5.includes(startPos)
       ? VTGMode.SPLIT_OPP
       : VTGMode.TOG_OPP,
   L: (startPos: GridPosition) =>
-    [GridPosition.ALPHA1, GridPosition.ALPHA5].includes(startPos)
+    ALPHA_1_5.includes(startPos)
       ? VTGMode.SPLIT_OPP
       : VTGMode.TOG_OPP,
   M: VTGMode.QUARTER_OPP,
@@ -106,57 +117,27 @@ const BOX_MODE_MAP: Record<
   K: VTGMode.QUARTER_OPP,
   L: VTGMode.QUARTER_OPP,
   M: (startPos: GridPosition) =>
-    [
-      GridPosition.GAMMA10,
-      GridPosition.GAMMA8,
-      GridPosition.GAMMA14,
-      GridPosition.GAMMA4,
-    ].includes(startPos)
+    GAMMA_DIAG.includes(startPos)
       ? VTGMode.SPLIT_OPP
       : VTGMode.TOG_OPP,
   N: (startPos: GridPosition) =>
-    [
-      GridPosition.GAMMA10,
-      GridPosition.GAMMA8,
-      GridPosition.GAMMA14,
-      GridPosition.GAMMA4,
-    ].includes(startPos)
+    GAMMA_DIAG.includes(startPos)
       ? VTGMode.SPLIT_OPP
       : VTGMode.TOG_OPP,
   O: (startPos: GridPosition) =>
-    [
-      GridPosition.GAMMA10,
-      GridPosition.GAMMA8,
-      GridPosition.GAMMA14,
-      GridPosition.GAMMA4,
-    ].includes(startPos)
+    GAMMA_DIAG.includes(startPos)
       ? VTGMode.SPLIT_OPP
       : VTGMode.TOG_OPP,
   P: (startPos: GridPosition) =>
-    [
-      GridPosition.GAMMA10,
-      GridPosition.GAMMA8,
-      GridPosition.GAMMA14,
-      GridPosition.GAMMA4,
-    ].includes(startPos)
+    GAMMA_DIAG.includes(startPos)
       ? VTGMode.SPLIT_OPP
       : VTGMode.TOG_OPP,
   Q: (startPos: GridPosition) =>
-    [
-      GridPosition.GAMMA10,
-      GridPosition.GAMMA8,
-      GridPosition.GAMMA14,
-      GridPosition.GAMMA4,
-    ].includes(startPos)
+    GAMMA_DIAG.includes(startPos)
       ? VTGMode.SPLIT_OPP
       : VTGMode.TOG_OPP,
   R: (startPos: GridPosition) =>
-    [
-      GridPosition.GAMMA10,
-      GridPosition.GAMMA8,
-      GridPosition.GAMMA14,
-      GridPosition.GAMMA4,
-    ].includes(startPos)
+    GAMMA_DIAG.includes(startPos)
       ? VTGMode.SPLIT_OPP
       : VTGMode.TOG_OPP,
   S: VTGMode.QUARTER_SAME,

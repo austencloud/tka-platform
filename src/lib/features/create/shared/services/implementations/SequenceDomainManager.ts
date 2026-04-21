@@ -132,11 +132,10 @@ export class SequenceDomainManager implements ISequenceDomainManager {
     }
 
     // Grid mode validation from desktop enums
+    const allowedGridModes: GridMode[] = [GridMode.DIAMOND, GridMode.BOX];
     if (
       typedRequest.gridMode &&
-      ![GridMode.DIAMOND, GridMode.BOX].includes(
-        typedRequest.gridMode as GridMode
-      )
+      !allowedGridModes.includes(typedRequest.gridMode as GridMode)
     ) {
       errors.push({
         code: "INVALID_GRID_MODE",

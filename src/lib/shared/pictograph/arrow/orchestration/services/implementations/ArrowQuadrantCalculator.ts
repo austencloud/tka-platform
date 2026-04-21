@@ -56,14 +56,14 @@ export class ArrowQuadrantCalculator implements IArrowQuadrantCalculator {
      * For shift motions (PRO/ANTI/FLOAT), the calculated arrow location follows this pattern.
      * For dash/static motions, use the motion's start/end locations to determine the mode.
      */
-    const diagonalLocations = [
+    const diagonalLocations: GridLocation[] = [
       GridLocation.NORTHEAST,
       GridLocation.SOUTHEAST,
       GridLocation.SOUTHWEST,
       GridLocation.NORTHWEST,
     ];
 
-    const cardinalLocations = [
+    const cardinalLocations: GridLocation[] = [
       GridLocation.NORTH,
       GridLocation.EAST,
       GridLocation.SOUTH,

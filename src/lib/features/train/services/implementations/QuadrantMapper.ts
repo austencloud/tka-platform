@@ -47,14 +47,14 @@ export class QuadrantMapper {
       return true; // All quadrants valid when no mode specified
     }
 
-    const cardinalQuadrants = [
+    const cardinalQuadrants: GridLocation[] = [
       GridLocation.NORTH,
       GridLocation.EAST,
       GridLocation.SOUTH,
       GridLocation.WEST,
     ];
 
-    const intercardinalQuadrants = [
+    const intercardinalQuadrants: GridLocation[] = [
       GridLocation.NORTHEAST,
       GridLocation.SOUTHEAST,
       GridLocation.SOUTHWEST,

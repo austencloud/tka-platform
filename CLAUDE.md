@@ -26,6 +26,20 @@ Every "done" or "fixed" claim needs proof: test output, runtime query output, co
 
 "Build succeeded", "I updated the config", "I changed the component" do NOT count as verification.
 
+## Do Your Own Job
+
+**Never tell the user to run typecheck, lint, tests, build, or commits.** Those are your job.
+
+Run them yourself. If the tool reports errors, fix them and run again. Keep iterating until green or until you hit a genuine blocker. Only then surface it.
+
+Phrases that mean you're punting and must be removed:
+- "Run `npm run check` to verify"
+- "Please typecheck and commit"
+- "Let me know if the build passes"
+- "Typecheck + commit" as a closing line
+
+Report the actual result, not the instruction to produce one.
+
 ## Writing Style (Real-World Copy)
 
 The fire jam test: would Austen say this out loud? State what it does. Be specific. Cut redundancy. Check features exist. No first person without a signature. Vary sentence length.

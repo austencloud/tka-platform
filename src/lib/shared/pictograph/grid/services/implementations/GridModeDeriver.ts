@@ -12,13 +12,13 @@ import type { GridData } from "../../domain/models/grid-models";
 import type { MotionData } from "../../../shared/domain/models/MotionData";
 
 export class GridModeDeriver implements IGridModeDeriver {
-  private readonly cardinalLocations = [
+  private readonly cardinalLocations: GridLocation[] = [
     GridLocation.NORTH,
     GridLocation.EAST,
     GridLocation.SOUTH,
     GridLocation.WEST,
   ];
-  private readonly intercardinalLocations = [
+  private readonly intercardinalLocations: GridLocation[] = [
     GridLocation.NORTHEAST,
     GridLocation.SOUTHEAST,
     GridLocation.SOUTHWEST,

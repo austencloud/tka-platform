@@ -28,13 +28,13 @@ export class StaticDashMotionHandler implements IDirectionCalculator {
 
     if (gridMode === GridMode.DIAMOND) {
       const map = isRadial ? DIAMOND_RADIAL_MAP : DIAMOND_NON_RADIAL_MAP;
-      return (
-        map[location as DiamondLoc][motionData.color as MotionColor] ?? null
-      );
+      const entry = map[location as DiamondLoc];
+      return entry?.[motionData.color as MotionColor] ?? null;
     }
 
     const map = isRadial ? BOX_RADIAL_MAP : BOX_NON_RADIAL_MAP;
-    return map[location as BoxLoc][motionData.color as MotionColor] ?? null;
+    const entry = map[location as BoxLoc];
+    return entry?.[motionData.color as MotionColor] ?? null;
   }
 
   private getGridMode(location: string): GridMode {

@@ -568,8 +568,8 @@ function calculateEndOrientation(
 
 function isLocationValidForMode(location: GridLocation, mode: GridMode, centerEnabled: boolean): boolean {
   if (location === GridLocation.CENTER) return centerEnabled;
-  const CARDINAL = [GridLocation.NORTH, GridLocation.EAST, GridLocation.SOUTH, GridLocation.WEST];
-  const INTERCARDINAL = [GridLocation.NORTHEAST, GridLocation.SOUTHEAST, GridLocation.SOUTHWEST, GridLocation.NORTHWEST];
+  const CARDINAL: GridLocation[] = [GridLocation.NORTH, GridLocation.EAST, GridLocation.SOUTH, GridLocation.WEST];
+  const INTERCARDINAL: GridLocation[] = [GridLocation.NORTHEAST, GridLocation.SOUTHEAST, GridLocation.SOUTHWEST, GridLocation.NORTHWEST];
   switch (mode) {
     case GridMode.DIAMOND: return CARDINAL.includes(location);
     case GridMode.BOX: return INTERCARDINAL.includes(location);

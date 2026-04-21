@@ -63,21 +63,24 @@ export class LetterGHHandler implements IDirectionCalculator {
     }
 
     // Check if it's a box location (NE/SE/SW/NW)
-    const isBoxLocation = [
+    const boxLocations: GridLocation[] = [
       GridLocation.NORTHEAST,
       GridLocation.SOUTHEAST,
       GridLocation.SOUTHWEST,
       GridLocation.NORTHWEST,
-    ].includes(endLocation as GridLocation);
+    ];
+    const isBoxLocation = boxLocations.includes(endLocation as GridLocation);
 
     if (isBoxLocation) {
       // Use box maps for box mode pictographs
       const boxMap = isRadial ? BOX_RADIAL_MAP : BOX_NON_RADIAL_MAP;
-      return boxMap[endLocation as BoxLoc][MotionColor.RED] ?? null;
+      const boxEntry = boxMap[endLocation as BoxLoc];
+      return boxEntry?.[MotionColor.RED] ?? null;
     }
 
     // Use diamond maps for diamond mode pictographs (N/S/E/W)
     const diamondMap = isRadial ? DIAMOND_RADIAL_MAP : DIAMOND_NON_RADIAL_MAP;
-    return diamondMap[endLocation as DiamondLoc][MotionColor.RED] ?? null;
+    const diamondEntry = diamondMap[endLocation as DiamondLoc];
+    return diamondEntry?.[MotionColor.RED] ?? null;
   }
 }
