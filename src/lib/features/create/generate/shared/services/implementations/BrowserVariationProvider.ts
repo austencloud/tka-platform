@@ -107,6 +107,10 @@ export class BrowserVariationProvider implements IBrowserVariationProvider {
   /**
    * Extract the fields the engine cares about from a rich app MotionData.
    * Enum values (.toString()) produce the same lowercase strings the engine uses.
+   *
+   * Phase 2a transitional cast: the app-layer enums are nominally incompatible
+   * with the tka-types literal unions, but the runtime values are identical.
+   * Data is trusted (validated via letter CSV + enum constructors upstream).
    */
   private mapMotion(
     appMotion: AppMotionData,
@@ -121,7 +125,7 @@ export class BrowserVariationProvider implements IBrowserVariationProvider {
       endOrientation: String(appMotion.endOrientation),
       turns: appMotion.turns,
       color,
-    };
+    } as EngineMotionData;
   }
 
   private toGridModeEnum(gridMode: string): GridMode {
