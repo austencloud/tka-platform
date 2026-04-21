@@ -48,42 +48,42 @@ export function extendForOrientationCycle(
     return { steps, cycleCount: 1, word };
   }
 
-  // Separate beat steps from the start-position step
+  // Separate letter steps from the start-position step
   const startStep = steps.find((s) => (s.stepNumber ?? s.stepNumber) === 0);
-  const beatSteps = steps.filter((s) => (s.stepNumber ?? s.stepNumber) > 0);
+  const letterSteps = steps.filter((s) => (s.stepNumber ?? s.stepNumber) > 0);
 
-  const extendedBeats: SequenceStep[] = [...beatSteps];
+  const extendedSteps: SequenceStep[] = [...letterSteps];
 
-  // Get the last beat of the original sequence to seed orientation propagation
-  let previousBeat: SequenceStep = beatSteps[beatSteps.length - 1]!;
+  // Get the last step of the original sequence to seed orientation propagation
+  let previousStep: SequenceStep = letterSteps[letterSteps.length - 1]!;
 
-  // Clone and re-orient beats for each additional pass
+  // Clone and re-orient steps for each additional pass
   for (let pass = 1; pass < result.cycleCount; pass++) {
-    for (let i = 0; i < beatSteps.length; i++) {
-      const sourceBeat = beatSteps[i]!;
+    for (let i = 0; i < letterSteps.length; i++) {
+      const sourceStep = letterSteps[i]!;
 
-      // Clone the beat with an updated step number
+      // Clone the step with an updated step number
       const cloned: SequenceStep = {
-        ...sourceBeat,
-        stepNumber: extendedBeats.length + 1,
+        ...sourceStep,
+        stepNumber: extendedSteps.length + 1,
         motions: {
-          blue: { ...sourceBeat.motions.blue },
-          red: { ...sourceBeat.motions.red },
+          blue: { ...sourceStep.motions.blue },
+          red: { ...sourceStep.motions.red },
         },
       };
 
-      // Propagate orientations from previous beat and recalculate
-      const reOriented = updateStepOrientations(cloned, previousBeat);
+      // Propagate orientations from previous step and recalculate
+      const reOriented = updateStepOrientations(cloned, previousStep);
 
-      extendedBeats.push(reOriented);
-      previousBeat = reOriented;
+      extendedSteps.push(reOriented);
+      previousStep = reOriented;
     }
   }
 
-  // Rebuild full steps array with start step + extended beats
+  // Rebuild full steps array with start step + extended steps
   const fullSteps: SequenceStep[] = startStep
-    ? [startStep, ...extendedBeats]
-    : extendedBeats;
+    ? [startStep, ...extendedSteps]
+    : extendedSteps;
 
   return {
     steps: fullSteps,

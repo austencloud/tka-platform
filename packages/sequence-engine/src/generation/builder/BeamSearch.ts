@@ -50,15 +50,15 @@ export type PropContinuityMode = "maximize" | "allow-reversals" | "force-reversa
  */
 function enrichWithTurns(
   variation: PictographData,
-  beatIndex: number,
+  stepIndex: number,
   turnAllocation: TurnAllocation | undefined,
   previousSteps: PictographData[],
   propContinuity: PropContinuityMode | undefined,
 ): PictographData {
   if (!turnAllocation) return variation;
 
-  const blueTurns = turnAllocation.blue[beatIndex];
-  const redTurns = turnAllocation.red[beatIndex];
+  const blueTurns = turnAllocation.blue[stepIndex];
+  const redTurns = turnAllocation.red[stepIndex];
 
   const enrichedBlue = enrichMotionDirection(
     variation.blueMotion, blueTurns, previousSteps, "blue", propContinuity,
@@ -401,42 +401,42 @@ export class BeamSearch {
     // 2+ need variations at every position the sequence may travel to.
     // If we filtered nonType6 globally, beat 2 would find zero candidates
     // whenever beat 1 transitioned to a position that was "blocked."
-    let firstBeatCandidates: PictographData[];
+    let firstStepCandidates: PictographData[];
     if (startPosition) {
-      firstBeatCandidates = nonType6.filter((p) => p.startPosition === startPosition);
+      firstStepCandidates = nonType6.filter((p) => p.startPosition === startPosition);
     } else if (options?.blockedStartPositions && options.blockedStartPositions.size > 0) {
       const blocked = options.blockedStartPositions;
-      firstBeatCandidates = nonType6.filter((p) => !blocked.has(p.startPosition));
+      firstStepCandidates = nonType6.filter((p) => !blocked.has(p.startPosition));
     } else {
-      firstBeatCandidates = nonType6;
+      firstStepCandidates = nonType6;
     }
 
     if (length === 1 && requiredEndPositions && requiredEndPositions.size > 0) {
       const endSet = requiredEndPositions;
-      firstBeatCandidates = firstBeatCandidates.filter(
+      firstStepCandidates = firstStepCandidates.filter(
         (p) => endSet.has(p.endPosition),
       );
     } else if (length === 1 && loopPositionMap && Object.keys(loopPositionMap).length > 0) {
       // No explicit requiredEndPositions but we have a position map.
       // Pre-filter to candidates whose endPosition is valid for their startPosition.
-      firstBeatCandidates = firstBeatCandidates.filter((p) => {
+      firstStepCandidates = firstStepCandidates.filter((p) => {
         const validEnds = loopPositionMap[p.startPosition];
         return validEnds && validEnds.includes(p.endPosition);
       });
     }
 
-    if (firstBeatCandidates.length === 0) {
+    if (firstStepCandidates.length === 0) {
       return this.failResult("No variations available for first beat", 0, 0);
     }
 
     // Step 2: Score first beat candidates
     const firstScores = scoreAndRankVariations(
-      firstBeatCandidates,
+      firstStepCandidates,
       {
         stepIndex: 0,
         totalSteps: length,
         previousSteps: [],
-        letter: firstBeatCandidates[0]!.letter,
+        letter: firstStepCandidates[0]!.letter,
       },
       constraintSet,
     );
@@ -522,15 +522,15 @@ export class BeamSearch {
         // directly (the reachability backward pass already encodes this,
         // but we keep the explicit check as a fallback for when reachability
         // wasn't computed).
-        const isFinalBeat = i === length - 1;
-        if (reachability && !isFinalBeat) {
+        const isFinalStep = i === length - 1;
+        if (reachability && !isFinalStep) {
           const nextReachable = reachability.reachableAt[i + 1];
           if (nextReachable) {
             candidates = candidates.filter(
               (p) => nextReachable.has(p.endPosition),
             );
           }
-        } else if (isFinalBeat && requiredEndPositions && requiredEndPositions.size > 0) {
+        } else if (isFinalStep && requiredEndPositions && requiredEndPositions.size > 0) {
           candidates = candidates.filter(
             (p) => requiredEndPositions.has(p.endPosition),
           );

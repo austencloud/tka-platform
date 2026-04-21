@@ -56,7 +56,7 @@ export {
   getHandpathDirection,
   maximizeHandPathContinuity,
   enforceHandPathContinuity,
-  handReversalEveryBeat,
+  handReversalEveryStep,
 } from "./constraints/style/hand-path-constraint.js";
 export {
   DashPreferenceConstraint,

@@ -287,7 +287,7 @@ export class LOOPDetectorClass {
   /**
    * Analyze a sequence and detect its LOOP type.
    * Takes an array of SequenceStep where step 0 is the start position
-   * and subsequent steps are the beats.
+   * and subsequent steps are the letter steps.
    */
   detectLOOPType(steps: SequenceStep[]): RichLOOPDetectionResult {
     // Check circularity using the start-position step and last step
@@ -297,20 +297,20 @@ export class LOOPDetectorClass {
       return { isCircular: false, loopType: null, sliceSize: null, confidence: "accidental" };
     }
 
-    // Get beat steps only (exclude start position)
-    const beats = steps.filter((s) => (s.stepNumber ?? s.stepNumber) > 0);
+    // Get letter steps only (exclude start position)
+    const letterSteps = steps.filter((s) => (s.stepNumber ?? s.stepNumber) > 0);
 
-    if (beats.length < 2) {
+    if (letterSteps.length < 2) {
       return { isCircular: true, loopType: null, sliceSize: null, confidence: "accidental" };
     }
 
     // Detect transformations at BOTH intervals independently
-    const quarteredTransformations = this.detectAtQuartered(beats);
-    const halvedTransformations = this.detectAtHalved(beats);
+    const quarteredTransformations = this.detectAtQuartered(letterSteps);
+    const halvedTransformations = this.detectAtHalved(letterSteps);
 
     // Check for compound pattern (transformations at different intervals)
     const compoundPattern = this.detectCompoundPattern(
-      beats,
+      letterSteps,
       quarteredTransformations,
       halvedTransformations
     );
@@ -324,12 +324,12 @@ export class LOOPDetectorClass {
       compoundPattern.quarteredTransformations.forEach((c) => detectedComponents.add(c));
       compoundPattern.halvedTransformations.forEach((c) => detectedComponents.add(c));
     } else {
-      sliceSize = this.determineSliceSize(beats);
+      sliceSize = this.determineSliceSize(letterSteps);
 
-      if (this.detectsRotation(beats, sliceSize)) detectedComponents.add(LOOPComponent.ROTATED);
-      if (this.detectsMirroring(beats)) detectedComponents.add(LOOPComponent.MIRRORED);
-      if (this.detectsSwapping(beats)) detectedComponents.add(LOOPComponent.SWAPPED);
-      if (this.detectsInversion(beats)) detectedComponents.add(LOOPComponent.INVERTED);
+      if (this.detectsRotation(letterSteps, sliceSize)) detectedComponents.add(LOOPComponent.ROTATED);
+      if (this.detectsMirroring(letterSteps)) detectedComponents.add(LOOPComponent.MIRRORED);
+      if (this.detectsSwapping(letterSteps)) detectedComponents.add(LOOPComponent.SWAPPED);
+      if (this.detectsInversion(letterSteps)) detectedComponents.add(LOOPComponent.INVERTED);
     }
 
     // Map components to LOOP type

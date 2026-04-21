@@ -55,7 +55,7 @@ export interface LOOPExecutionResult {
   sliceSize: SliceSize;
   isCircular: boolean;
   /** Which beat indices are derived (not part of seed) */
-  derivedBeatIndices: number[];
+  derivedStepIndices: number[];
   error?: string;
 }
 
@@ -212,7 +212,7 @@ function executeRewound(
       loopType: LOOPType.REWOUND,
       sliceSize: SliceSize.HALVED,
       isCircular: false,
-      derivedBeatIndices: [],
+      derivedStepIndices: [],
       error: "Sequence must have at least 2 steps (start position + 1 beat)",
     };
   }
@@ -237,22 +237,22 @@ function executeRewound(
         ? actualSteps[actualSteps.length - 1]!
         : reversedSteps[i - 1]!;
 
-    const rewoundBeatRaw = createRewoundBeat(sourceStep, previousStep, newStepNumber);
+    const rewoundStepRaw = createRewoundStep(sourceStep, previousStep, newStepNumber);
 
     // Derive the letter from the reversed motion parameters
     const derivedLetter = findLetterByMotions(
-      rewoundBeatRaw.motions.blue,
-      rewoundBeatRaw.motions.red,
+      rewoundStepRaw.motions.blue,
+      rewoundStepRaw.motions.red,
       allPictographs
     );
 
     // Update the beat with the derived letter (or keep original if not found).
     // Step is readonly, so emit a new step with the resolved letter.
     const resolvedLetter = (derivedLetter || sourceStep.letter) as SequenceStep["letter"];
-    const rewoundBeat: SequenceStep = { ...rewoundBeatRaw, letter: resolvedLetter };
-    derivedLetters.push(rewoundBeat.letter ?? "");
+    const rewoundStep: SequenceStep = { ...rewoundStepRaw, letter: resolvedLetter };
+    derivedLetters.push(rewoundStep.letter ?? "");
 
-    reversedSteps.push(rewoundBeat);
+    reversedSteps.push(rewoundStep);
   }
 
   // Combine: start position + original steps + reversed steps
@@ -263,7 +263,7 @@ function executeRewound(
   const loopWord = word + derivedWord;
 
   // Track which beat indices are derived (1-indexed, excluding start position)
-  const derivedBeatIndices = Array.from(
+  const derivedStepIndices = Array.from(
     { length: originalLength },
     (_, i) => originalLength + i + 1
   );
@@ -278,7 +278,7 @@ function executeRewound(
     loopType: LOOPType.REWOUND,
     sliceSize: SliceSize.HALVED,
     isCircular: true,
-    derivedBeatIndices,
+    derivedStepIndices,
   };
 }
 
@@ -286,7 +286,7 @@ function executeRewound(
  * Create a rewound beat from a source beat
  * Swaps start/end positions and reverses motion directions
  */
-function createRewoundBeat(
+function createRewoundStep(
   sourceStep: SequenceStep,
   previousStep: SequenceStep,
   newStepNumber: number
@@ -374,7 +374,7 @@ function executeStrictRotated(
       loopType: LOOPType.ROTATED,
       sliceSize,
       isCircular: false,
-      derivedBeatIndices: [],
+      derivedStepIndices: [],
       error: "Sequence must have at least 2 steps (start position + 1 beat)",
     };
   }
@@ -399,7 +399,7 @@ function executeStrictRotated(
       loopType: LOOPType.ROTATED,
       sliceSize,
       isCircular: false,
-      derivedBeatIndices: [],
+      derivedStepIndices: [],
       error: `Invalid position pair for ${sliceSize} LOOP: ${startPos} → ${endPos}`,
     };
   }
@@ -436,7 +436,7 @@ function executeStrictRotated(
         loopType: LOOPType.ROTATED,
         sliceSize,
         isCircular: false,
-        derivedBeatIndices: [],
+        derivedStepIndices: [],
         error: `Failed to find matching step at index ${matchingIndex}`,
       };
     }
@@ -467,7 +467,7 @@ function executeStrictRotated(
   const loopWord = word + derivedWord;
 
   // Track which beat indices are derived
-  const derivedBeatIndices = Array.from(
+  const derivedStepIndices = Array.from(
     { length: entriesToAdd },
     (_, i) => originalLength + i + 1
   );
@@ -482,7 +482,7 @@ function executeStrictRotated(
     loopType: LOOPType.ROTATED,
     sliceSize,
     isCircular: true,
-    derivedBeatIndices,
+    derivedStepIndices,
   };
 }
 
@@ -637,7 +637,7 @@ export function executeLOOP(
         loopType,
         sliceSize,
         isCircular: false,
-        derivedBeatIndices: [],
+        derivedStepIndices: [],
         error: `LOOP type "${loopType}" is not yet implemented. Supported types: REWOUND, ROTATED`,
       };
   }

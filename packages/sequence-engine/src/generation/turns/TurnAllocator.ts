@@ -125,9 +125,9 @@ function allocateSingleHand(
   const canEnforce =
     enforceParity && halfTurnOptions.length > 0 && wholeTurnOptions.length > 0;
 
-  const beatsToPreallocate = canEnforce ? stepCount - 1 : stepCount;
+  const stepsToPreallocate = canEnforce ? stepCount - 1 : stepCount;
 
-  for (let i = 0; i < beatsToPreallocate; i++) {
+  for (let i = 0; i < stepsToPreallocate; i++) {
     result.push(randomChoice(turnsPool));
   }
 

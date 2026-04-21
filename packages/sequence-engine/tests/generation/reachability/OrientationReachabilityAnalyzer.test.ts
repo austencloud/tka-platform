@@ -17,13 +17,13 @@ describe("OrientationReachabilityAnalyzer", () => {
     const result = analyzer.analyze({
       requiredBlueEnd: "in",
       requiredRedEnd: "in",
-      remainingBeats: 1,
+      remainingSteps: 1,
       allowedDeltas: [0],
     });
     expect(result.feasible).toBe(true);
-    expect(result.reachablePerBeat).toHaveLength(1);
-    expect(result.reachablePerBeat[0]!.has("in|in")).toBe(true);
-    expect(result.reachablePerBeat[0]!.size).toBe(1);
+    expect(result.reachablePerStep).toHaveLength(1);
+    expect(result.reachablePerStep[0]!.has("in|in")).toBe(true);
+    expect(result.reachablePerStep[0]!.size).toBe(1);
   });
 
   it("returns feasible when a delta-1 path connects start to end", () => {
@@ -33,17 +33,17 @@ describe("OrientationReachabilityAnalyzer", () => {
     const result = analyzer.analyze({
       requiredBlueEnd: "clock",
       requiredRedEnd: "clock",
-      remainingBeats: 2,
+      remainingSteps: 2,
       allowedDeltas: [0, 1],
     });
     expect(result.feasible).toBe(true);
-    expect(result.reachablePerBeat).toHaveLength(2);
-    const beat0 = result.reachablePerBeat[0]!;
+    expect(result.reachablePerStep).toHaveLength(2);
+    const step0 = result.reachablePerStep[0]!;
     // From (clock, clock) at beat 1, subtracting deltas in {0, 1} gives:
     // (clock, clock), (clock, in), (in, clock), (in, in).
-    expect(beat0.has("clock|clock")).toBe(true);
-    expect(beat0.has("in|in")).toBe(true);
-    expect(beat0.size).toBe(4);
+    expect(step0.has("clock|clock")).toBe(true);
+    expect(step0.has("in|in")).toBe(true);
+    expect(step0.size).toBe(4);
   });
 
   it("returns infeasible when no delta combination bridges start to end", () => {
@@ -52,7 +52,7 @@ describe("OrientationReachabilityAnalyzer", () => {
     const result = analyzer.analyze({
       requiredBlueEnd: "out",
       requiredRedEnd: "out",
-      remainingBeats: 3,
+      remainingSteps: 3,
       allowedDeltas: [0],
     });
     // With deltas={0}, every beat's reachable set is exactly the end state.
@@ -60,7 +60,7 @@ describe("OrientationReachabilityAnalyzer", () => {
     // the start must also be (out, out). The test verifies the reachable
     // set stays constrained rather than the analyzer rejecting the request.
     expect(result.feasible).toBe(true);
-    expect(result.reachablePerBeat[0]!.has("out|out")).toBe(true);
-    expect(result.reachablePerBeat[0]!.size).toBe(1);
+    expect(result.reachablePerStep[0]!.has("out|out")).toBe(true);
+    expect(result.reachablePerStep[0]!.size).toBe(1);
   });
 });

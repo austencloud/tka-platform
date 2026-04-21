@@ -35,7 +35,7 @@ export class StrictRotatedExecutor implements ILOOPExecutor {
 
     for (let i = 0; i < entriesToAdd; i++) {
       const finalIntendedLength = sequenceLength + entriesToAdd;
-      const matchingStep = this.getPreviousMatchingBeat(
+      const matchingStep = this.getPreviousMatchingStep(
         sequence,
         nextStepNumber,
         finalIntendedLength,
@@ -78,7 +78,7 @@ export class StrictRotatedExecutor implements ILOOPExecutor {
     }
   }
 
-  private getPreviousMatchingBeat(
+  private getPreviousMatchingStep(
     sequence: SequenceStep[],
     stepNumber: number,
     finalLength: number,

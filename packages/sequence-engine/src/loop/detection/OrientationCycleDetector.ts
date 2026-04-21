@@ -43,11 +43,11 @@ export interface OrientationCycleResult {
  * @returns OrientationCycleResult with the cycle count and orientation history
  */
 export function detectOrientationCycle(steps: SequenceStep[]): OrientationCycleResult {
-  // Separate start-position step from beat steps
+  // Separate start-position step from letter steps
   const startStep = steps.find((s) => (s.stepNumber ?? s.stepNumber) === 0);
-  const beatSteps = steps.filter((s) => (s.stepNumber ?? s.stepNumber) > 0);
+  const letterSteps = steps.filter((s) => (s.stepNumber ?? s.stepNumber) > 0);
 
-  if (beatSteps.length === 0) {
+  if (letterSteps.length === 0) {
     return {
       cycleCount: 1,
       blueOrientations: ["in"],
@@ -55,8 +55,8 @@ export function detectOrientationCycle(steps: SequenceStep[]): OrientationCycleR
     };
   }
 
-  // Get starting orientations from start-position step or first beat
-  const startOrientations = getStartingOrientations(startStep, beatSteps[0]!);
+  // Get starting orientations from start-position step or first step
+  const startOrientations = getStartingOrientations(startStep, letterSteps[0]!);
 
   const blueOrientations: Orientation[] = [startOrientations.blue];
   const redOrientations: Orientation[] = [startOrientations.red];
@@ -66,9 +66,9 @@ export function detectOrientationCycle(steps: SequenceStep[]): OrientationCycleR
 
   // Simulate up to 4 repetitions
   for (let rep = 1; rep <= 4; rep++) {
-    for (const beat of beatSteps) {
-      const blue = beat.motions.blue;
-      const red = beat.motions.red;
+    for (const step of letterSteps) {
+      const blue = step.motions.blue;
+      const red = step.motions.red;
 
       if (blue) {
         currentBlue = calculateEndOrientation({
@@ -115,11 +115,11 @@ export function detectOrientationCycle(steps: SequenceStep[]): OrientationCycleR
 }
 
 /**
- * Extract starting orientations from the start-position step or first beat.
+ * Extract starting orientations from the start-position step or first step.
  */
 function getStartingOrientations(
   startStep: SequenceStep | undefined,
-  firstBeat: SequenceStep
+  firstStep: SequenceStep
 ): { blue: Orientation; red: Orientation } {
   // Try start-position step first
   if (startStep) {
@@ -131,9 +131,9 @@ function getStartingOrientations(
     };
   }
 
-  // Fall back to first beat
-  const blue = firstBeat.motions.blue;
-  const red = firstBeat.motions.red;
+  // Fall back to first step
+  const blue = firstStep.motions.blue;
+  const red = firstStep.motions.red;
   return {
     blue: (blue?.startOrientation as Orientation) ?? "in",
     red: (red?.startOrientation as Orientation) ?? "in",
