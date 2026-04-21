@@ -359,4 +359,56 @@ describe("migrateEffectsConfig", () => {
     expect(out.tipEffectMap["*"]?.effect).toBe("petals");
     expect(out.tipEffectMap["0-0"]?.effect).toBe("bubbles");
   });
+
+  it("migrates v11 → v12 by seeding default ink intent", () => {
+    const v11 = {
+      version: 11,
+      // No ink block — must seed from defaults.
+    };
+    const out = migrateEffectsConfig(v11);
+    expect(out.version).toBe(EFFECTS_CONFIG_VERSION);
+    expect(out.ink).toBeDefined();
+    expect(out.ink.palette).toBe("india");
+    expect(out.ink.ambientEmission).toBe(0.2);
+    expect(out.ink.motionEmission).toBe(0.8);
+    expect(out.ink.intensity).toBe(0.6);
+    expect(out.ink.viscosity).toBe(0.3);
+    expect(out.ink.splatterIntensity).toBe(0.3);
+    expect(out.ink.trackingMode).toBe("both_ends");
+    expect(out.activePresets.ink).toBe(null);
+  });
+
+  it("preserves existing ink values through v11 → v12 merge", () => {
+    const v11 = {
+      version: 11,
+      ink: {
+        palette: "neon" as const,
+        customColor: "#ff2080",
+        ambientEmission: 0.1,
+        motionEmission: 1.0,
+        intensity: 0.9,
+        viscosity: 0.2,
+        splatterIntensity: 0.4,
+        trackingMode: "right_end" as const,
+      },
+    };
+    const out = migrateEffectsConfig(v11);
+    expect(out.ink.palette).toBe("neon");
+    expect(out.ink.motionEmission).toBe(1.0);
+    expect(out.ink.viscosity).toBe(0.2);
+    expect(out.ink.trackingMode).toBe("right_end");
+  });
+
+  it("v11 → v12 migration does not touch tipEffectMap entries", () => {
+    const v11 = {
+      version: 11,
+      tipEffectMap: {
+        "*": { effect: "smoke" },
+        "0-0": { effect: "petals" },
+      },
+    };
+    const out = migrateEffectsConfig(v11);
+    expect(out.tipEffectMap["*"]?.effect).toBe("smoke");
+    expect(out.tipEffectMap["0-0"]?.effect).toBe("petals");
+  });
 });

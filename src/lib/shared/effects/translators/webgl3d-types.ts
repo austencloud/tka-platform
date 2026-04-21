@@ -20,11 +20,13 @@ import type {
   BubblesIntent,
   PetalsIntent,
   SmokeIntent,
+  InkIntent,
 } from "../domain/EffectsConfig";
 import type { WaterPalette } from "../domain/WaterPalettes";
 import type { BubblePalette } from "../domain/BubblePalettes";
 import type { PetalPalette } from "../domain/PetalPalettes";
 import type { SmokePalette } from "../domain/SmokePalettes";
+import type { InkPalette } from "$lib/shared/3d/effects/ink/InkPalettes";
 
 export interface Trails3DParams extends TrailsIntent {
   /** World-space tube radius, meters. Derived from thickness. */
@@ -188,4 +190,40 @@ export interface Smoke3DParams extends SmokeIntent {
   noiseScale: number;
   /** Base world-up rise magnitude in m/s before user/palette multipliers. Spec RISE_BASE ≈ 1.5. */
   riseBaseSpeed: number;
+}
+
+export interface Ink3DParams extends InkIntent {
+  /**
+   * Resolved palette (pigment + edge + splatter + pool + behavior flags).
+   * Sprint 1 3D renderer (not yet wired) reads pigment + edge + the
+   * emissive/watercolor flags; splatter/pool tints are sprint-2 consumers.
+   */
+  resolvedPalette: InkPalette;
+  /**
+   * Resolved effective ambient after the motion-dominant hard cap.
+   * Same formula as 2D: `min(intent.ambientEmission, 0.3)`.
+   */
+  effectiveAmbient: number;
+  /**
+   * World-units — base stroke radius (tube radius for 3D ribbon mesh).
+   * Watercolor palette doubles this (wider bleed). Slow tip presses to
+   * this maximum; fast tip lifts to strokeWidthMinWorld.
+   */
+  strokeWidthMaxWorld: number;
+  /** World-units — min stroke radius at high tip speed (brush lifting). */
+  strokeWidthMinWorld: number;
+  /** Max alpha at peak (0-1). Watercolor palette caps this at 0.4. */
+  opacityMax: number;
+  /**
+   * Material flag: when true, use emissive/additive blend (neon only).
+   * Default false → opaque flat-shaded pigment (the #1 differentiator
+   * from trails, which are all emissive).
+   */
+  emissiveMaterial: boolean;
+  /** Seconds — stroke-point lifetime. */
+  lifetimeSeconds: number;
+  /** Max stroke points per tip (bounded history). */
+  maxPointsPerTip: number;
+  /** World units/s mapping to full motion scalar. Spec MOTION_REFERENCE_SPEED=3.0. */
+  motionReferenceSpeed: number;
 }

@@ -70,6 +70,7 @@ export function snapshotConfigFromVm(vm: AnimationVisibilityStateManager): Effec
     bubbles: { ...DEFAULT_EFFECTS_CONFIG.bubbles },
     petals: { ...DEFAULT_EFFECTS_CONFIG.petals },
     smoke: { ...DEFAULT_EFFECTS_CONFIG.smoke },
+    ink: { ...DEFAULT_EFFECTS_CONFIG.ink },
 
     activePresets: {
       trails: null,
@@ -84,6 +85,7 @@ export function snapshotConfigFromVm(vm: AnimationVisibilityStateManager): Effec
       bubbles: null,
       petals: null,
       smoke: null,
+      ink: null,
     },
   };
 }

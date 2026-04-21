@@ -22,6 +22,7 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
     bubbles?: any;
     petals?: any;
     smoke?: any;
+    ink?: any;
   };
   const version = input.version ?? 1;
 
@@ -135,6 +136,14 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
   // carries behavioral multipliers (lifetime, curl bias, rise bias) in
   // addition to color.
 
+  // v11 → v12: add ink intent + activePresets.ink. Net-new 13th effect
+  // (14th chip including "none"). No field migration — absent ink resolves
+  // to DEFAULT_EFFECTS_CONFIG.ink via the merge below. tipEffectMap entries
+  // are unchanged (only the domain expands). First stroke-based effect —
+  // opaque flat-shaded pigment, variable width from velocity (slow =
+  // thick loaded brush, fast = thin lifted brush). Sprint 1 = stroke MVP;
+  // sprint 2 adds sag, strand breakup, splatter bursts, ground pooling.
+
   let out: EffectsConfig = {
     ...DEFAULT_EFFECTS_CONFIG,
     ...input,
@@ -150,6 +159,7 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
     bubbles: { ...DEFAULT_EFFECTS_CONFIG.bubbles, ...(input.bubbles ?? {}) },
     petals: { ...DEFAULT_EFFECTS_CONFIG.petals, ...(input.petals ?? {}) },
     smoke: { ...DEFAULT_EFFECTS_CONFIG.smoke, ...(input.smoke ?? {}) },
+    ink: { ...DEFAULT_EFFECTS_CONFIG.ink, ...(input.ink ?? {}) },
     activePresets: {
       ...DEFAULT_EFFECTS_CONFIG.activePresets,
       ...(input.activePresets ?? {}),

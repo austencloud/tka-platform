@@ -36,6 +36,7 @@
   import { BUBBLES_PRESET_GROUP } from "./presets/bubbles-presets";
   import { PETALS_PRESET_GROUP } from "./presets/petals-presets";
   import { SMOKE_PRESET_GROUP } from "./presets/smoke-presets";
+  import { INK_PRESET_GROUP } from "./presets/ink-presets";
   import type { EffectPresetGroup } from "./presets/types";
   import LedCustomize from "./customize/LedCustomize.svelte";
   import FireCustomize from "./customize/FireCustomize.svelte";
@@ -49,6 +50,7 @@
   import BubblesCustomize from "./customize/BubblesCustomize.svelte";
   import PetalsCustomize from "./customize/PetalsCustomize.svelte";
   import SmokeCustomize from "./customize/SmokeCustomize.svelte";
+  import InkCustomize from "./customize/InkCustomize.svelte";
 
   interface Props {
     /** "scroll" = horizontal-scroll strip (mobile bento default).
@@ -139,6 +141,8 @@
         return PETALS_PRESET_GROUP;
       case "smoke":
         return SMOKE_PRESET_GROUP;
+      case "ink":
+        return INK_PRESET_GROUP;
       default:
         return null;
     }
@@ -226,6 +230,8 @@
       <PetalsCustomize onBack={() => (customizeOpen = false)} />
     {:else if activeEffect === "smoke"}
       <SmokeCustomize onBack={() => (customizeOpen = false)} />
+    {:else if activeEffect === "ink"}
+      <InkCustomize onBack={() => (customizeOpen = false)} />
     {/if}
   {:else}
     <div class="fx-strip" class:grid={layout === "grid"} role="radiogroup" aria-label="Select effect">

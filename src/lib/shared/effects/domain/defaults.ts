@@ -130,6 +130,22 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
     trackingMode: "both_ends",
   },
 
+  // Default ink maps to the "classic" preset (india palette). Motion-dominant
+  // stroke medium — slow tip = thick loaded brush, fast tip = thin lifted
+  // brush. Sprint 1 (1j.i) ships the stroke MVP; viscosity + splatterIntensity
+  // live in the shape now but are sprint-2 knobs (strand breakup + splatter
+  // bursts). See docs/superpowers/specs/2026-04-15-effects-phase-1j-ink-design.md
+  ink: {
+    ambientEmission: 0.2,
+    motionEmission: 0.8,
+    intensity: 0.6,
+    palette: "india",
+    customColor: "#0a0a0a",
+    viscosity: 0.3,
+    splatterIntensity: 0.3,
+    trackingMode: "both_ends",
+  },
+
   activePresets: {
     trails: null,
     fire: null,
@@ -143,5 +159,6 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
     bubbles: null,
     petals: null,
     smoke: null,
+    ink: null,
   },
 };

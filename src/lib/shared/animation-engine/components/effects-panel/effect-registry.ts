@@ -1,7 +1,7 @@
 /**
  * Shared effect metadata. Single source of truth for id/label/icon/color
  * across the 2D EffectsPanel (desktop), MobileEffectsPanel, and
- * EffectSelector. Currently 12 effects; the "none" chip is rendered
+ * EffectSelector. Currently 13 effects; the "none" chip is rendered
  * separately by consumers that need it.
  */
 
@@ -25,6 +25,7 @@ export const EFFECTS: readonly EffectMeta[] = [
   { id: "bubbles", label: "Bubbles", icon: "fa-circle-notch", color: "#c8e0ff" },
   { id: "petals", label: "Petals", icon: "fa-leaf", color: "#ffc0d8" },
   { id: "smoke", label: "Smoke", icon: "fa-smog", color: "#c0c0c8" },
+  { id: "ink", label: "Ink", icon: "fa-paint-brush", color: "#0a0a0a" },
 ] as const;
 
 export const EFFECT_COLORS: Record<string, string> = Object.fromEntries(

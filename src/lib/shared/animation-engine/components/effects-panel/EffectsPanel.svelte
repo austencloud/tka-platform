@@ -33,6 +33,8 @@
   import PetalsCustomize from "./customize/PetalsCustomize.svelte";
   import { SMOKE_PRESET_GROUP } from "./presets/smoke-presets";
   import SmokeCustomize from "./customize/SmokeCustomize.svelte";
+  import { INK_PRESET_GROUP } from "./presets/ink-presets";
+  import InkCustomize from "./customize/InkCustomize.svelte";
   import type { EffectPresetGroup } from "./presets/types";
   import { EFFECT_COLORS, EFFECT_LABELS } from "./effect-registry";
   import type { EffectLayerMode } from "../../services/effect-layer";
@@ -167,6 +169,7 @@
       case "bubbles": return BUBBLES_PRESET_GROUP;
       case "petals": return PETALS_PRESET_GROUP;
       case "smoke": return SMOKE_PRESET_GROUP;
+      case "ink": return INK_PRESET_GROUP;
       default: return null;
     }
   }
@@ -292,6 +295,8 @@
         <PetalsCustomize onBack={() => (customizeOpen = false)} />
       {:else if activeEffect === "smoke"}
         <SmokeCustomize onBack={() => (customizeOpen = false)} />
+      {:else if activeEffect === "ink"}
+        <InkCustomize onBack={() => (customizeOpen = false)} />
       {/if}
     </div>
   {/if}

@@ -26,7 +26,8 @@ export type EffectType =
   | "water"
   | "bubbles"
   | "petals"
-  | "smoke";
+  | "smoke"
+  | "ink";
 
 export interface TipEffectAssignment {
   effect: EffectType;
