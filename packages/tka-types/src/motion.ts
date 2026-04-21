@@ -28,7 +28,13 @@ export interface Motion {
    * literal "fl" marker for "floating" — rotation decided at render time.
    */
   readonly turns: number | "fl";
-  readonly plane: Plane;
+  /**
+   * Optional — defaults to 'wall' in most contexts. When omitted, consumers
+   * should treat as wall. `createMotion` fills in `Plane.wall` when omitted,
+   * but the contract permits storing a Motion without a plane field for
+   * back-compat with app-side code that predates the 3D viewer.
+   */
+  readonly plane?: Plane;
   /**
    * Prop color. Optional: Motions stored under `step.motions.blue` are
    * definitionally blue; `color` is redundant there. Kept for back-compat
