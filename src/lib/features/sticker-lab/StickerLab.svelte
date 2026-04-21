@@ -7,6 +7,7 @@
 <script lang="ts">
   import { createStickerLabState } from "./state/sticker-lab-state.svelte";
   import { setStickerLabContext } from "./context/sticker-lab-context";
+  import StickerList from "./components/StickerList.svelte";
 
   const state = createStickerLabState();
   setStickerLabContext(state);
@@ -15,12 +16,12 @@
 <div class="sticker-lab">
   <section class="col col-list" aria-label="Sticker list">
     <header><h2>Stickers</h2></header>
-    <div class="placeholder">Sticker list (Task 9)</div>
+    <StickerList />
   </section>
 
   <section class="col col-preview" aria-label="Sheet preview">
     <header><h2>Sheet preview</h2></header>
-    <div class="placeholder">Preview ({state.sheet.stickers.length} stickers)</div>
+    <div class="placeholder">Preview (Task 10)</div>
   </section>
 
   <section class="col col-export" aria-label="Export panel">
