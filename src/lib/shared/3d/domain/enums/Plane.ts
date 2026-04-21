@@ -18,29 +18,31 @@
  *   - N = Audience/downstage, E = Performer's right, S = Backstage/upstage, W = Performer's left
  *   - Horizontal plane at performer's waist/chest level
  */
-export enum Plane {
+export const Plane = {
   /** XY plane - performer facing audience (current 2D system) */
-  WALL = "wall",
+  WALL: "wall",
   /** YZ plane - perpendicular to wall (side view / cartwheel plane) */
-  WHEEL = "wheel",
+  WHEEL: "wheel",
   /** XZ plane - horizontal (top-down view) */
-  FLOOR = "floor",
+  FLOOR: "floor",
 
   // ── Fusion planes (L9 — data model only, no UI at L8) ──
 
   /** 45° between Wall and Wheel, tilted right */
-  RIGHT_SHIELD = "right-shield",
+  RIGHT_SHIELD: "right-shield",
   /** 45° between Wall and Wheel, tilted left */
-  LEFT_SHIELD = "left-shield",
+  LEFT_SHIELD: "left-shield",
   /** 45° between Wall and Floor, top toward audience */
-  FORWARD_RAMP = "forward-ramp",
+  FORWARD_RAMP: "forward-ramp",
   /** 45° between Wall and Floor, top away from audience */
-  BACKWARD_RAMP = "backward-ramp",
+  BACKWARD_RAMP: "backward-ramp",
   /** 45° between Wheel and Floor, tilted right */
-  RIGHT_WING = "right-wing",
+  RIGHT_WING: "right-wing",
   /** 45° between Wheel and Floor, tilted left */
-  LEFT_WING = "left-wing",
-}
+  LEFT_WING: "left-wing",
+} as const;
+
+export type Plane = (typeof Plane)[keyof typeof Plane];
 
 /**
  * Human-readable labels for each plane
@@ -73,6 +75,6 @@ export const PLANE_COLORS: Record<Plane, string> = {
 };
 
 /** Primary planes available at L8 */
-export const PRIMARY_PLANES: ReadonlySet<Plane> = new Set([
+export const PRIMARY_PLANES: ReadonlySet<Plane> = new Set<Plane>([
   Plane.WALL, Plane.WHEEL, Plane.FLOOR,
 ]);
