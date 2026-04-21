@@ -17,6 +17,7 @@
  * See docs/superpowers/specs/2026-04-20-sequence-engine-unification-design.md.
  */
 
+import type { Motion } from "@tka/tka-types";
 import type { ArrowPlacementData } from "../../../arrow/positioning/placement/domain/ArrowPlacementData";
 import type { PropPlacementData } from "../../../prop/domain/models/PropPlacementData";
 import type { PropType } from "../../../prop/domain/enums/PropType";
@@ -57,3 +58,12 @@ export interface MotionView {
   /** Skew direction sign. Only meaningful when `skewSteps > 0`. */
   readonly skewDir?: SkewDirection | null;
 }
+
+/**
+ * Motion composed with its view-layer fields. Use at call sites that read both
+ * structural (engine) and visual (renderer) concerns. Renderers, placement
+ * services, and anything reading `isVisible` / `propType` / `arrowLocation`
+ * should annotate inputs as `MotionWithView` rather than the deprecated
+ * `MotionData`.
+ */
+export type MotionWithView = Motion & MotionView;
