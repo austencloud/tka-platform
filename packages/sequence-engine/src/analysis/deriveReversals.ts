@@ -17,20 +17,68 @@
  * display.
  */
 
-import type { Step } from "@tka/tka-types";
+import type { Step, RotationDirection } from "@tka/tka-types";
 
 export interface StepReversals {
   readonly blue: boolean;
   readonly red: boolean;
 }
 
+const NO_REVERSAL: StepReversals = Object.freeze({ blue: false, red: false });
+
 /**
  * Compute reversal flags for each step. Pure function: no side effects.
- *
- * Implementation lands in the green pass.
  */
 export function deriveReversals(
-  _steps: readonly Step[]
+  steps: readonly Step[]
 ): ReadonlyArray<StepReversals> {
-  throw new Error("NotImplemented: deriveReversals — green pass pending");
+  const out: StepReversals[] = [];
+  let priorBlueDir: RotationDirection | null = null;
+  let priorRedDir: RotationDirection | null = null;
+
+  for (const step of steps) {
+    // Start-position step (stepNumber 0) is never a reversal and leaves no
+    // anchor behind: its motions are static with noRotation.
+    if (step.stepNumber === 0) {
+      out.push(NO_REVERSAL);
+      priorBlueDir = null;
+      priorRedDir = null;
+      continue;
+    }
+
+    // Blank steps are never a reversal themselves AND break the chain so the
+    // next real step has no prior direction to reverse against.
+    if (step.isBlank) {
+      out.push(NO_REVERSAL);
+      priorBlueDir = null;
+      priorRedDir = null;
+      continue;
+    }
+
+    const blueDir = step.motions.blue.rotationDirection;
+    const redDir = step.motions.red.rotationDirection;
+
+    const blueRev = isReversal(priorBlueDir, blueDir);
+    const redRev = isReversal(priorRedDir, redDir);
+
+    out.push(Object.freeze({ blue: blueRev, red: redRev }));
+
+    // Only active directions anchor a future reversal. A noRotation current
+    // step does not replace an earlier active anchor — the chain continues
+    // from whatever the last active direction was.
+    if (blueDir !== "noRotation") priorBlueDir = blueDir;
+    if (redDir !== "noRotation") priorRedDir = redDir;
+  }
+
+  return out;
+}
+
+function isReversal(
+  prior: RotationDirection | null,
+  current: RotationDirection
+): boolean {
+  if (prior === null) return false;
+  if (prior === "noRotation") return false;
+  if (current === "noRotation") return false;
+  return prior !== current;
 }
