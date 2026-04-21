@@ -2,7 +2,7 @@ import type { GridMode } from "../enums/grid-enums";
 import type { GridCoordinateData } from "../models/grid-models";
 
 export const gridCoordinates: Record<
-  Exclude<GridMode, GridMode.SKEWED | GridMode.TRIGRID | GridMode.EIGHT_POINT>,
+  Exclude<GridMode, "skewed" | "trigrid" | "8point">,
   GridCoordinateData
 > = {
   diamond: {

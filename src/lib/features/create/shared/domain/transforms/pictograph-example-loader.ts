@@ -21,7 +21,7 @@ let cachedPictographs: PictographData[] = [];
 let loadingPromise: Promise<PictographData[]> | null = null;
 
 // Locations with east/west components (Mirror needs these)
-const EW_LOCATIONS = new Set([
+const EW_LOCATIONS: ReadonlySet<GridLocation> = new Set<GridLocation>([
   GridLocation.EAST,
   GridLocation.WEST,
   GridLocation.NORTHEAST,
@@ -31,7 +31,7 @@ const EW_LOCATIONS = new Set([
 ]);
 
 // Locations with north/south components (Flip needs these)
-const NS_LOCATIONS = new Set([
+const NS_LOCATIONS: ReadonlySet<GridLocation> = new Set<GridLocation>([
   GridLocation.NORTH,
   GridLocation.SOUTH,
   GridLocation.NORTHEAST,

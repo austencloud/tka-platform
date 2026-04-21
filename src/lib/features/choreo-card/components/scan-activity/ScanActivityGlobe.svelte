@@ -25,24 +25,33 @@
   } = $props();
 
   let container: HTMLDivElement;
-  let globe: ReturnType<typeof Globe> | null = null;
+  let globe: InstanceType<typeof Globe> | null = null;
   let resizeObserver: ResizeObserver | null = null;
 
+  const enriched = $derived(
+    points.map((p) => ({
+      ...p,
+      color: p.newest ? "#34d399" : "#10b981",
+      altitude: p.newest ? 0.04 : 0.015,
+      radius: p.newest ? 0.7 : 0.4,
+    }))
+  );
+
   onMount(() => {
-    globe = Globe()(container)
+    globe = new Globe(container)
       .globeImageUrl("//unpkg.com/three-globe/example/img/earth-night.jpg")
       .bumpImageUrl("//unpkg.com/three-globe/example/img/earth-topology.png")
       .backgroundColor("rgba(0,0,0,0)")
       .showAtmosphere(true)
       .atmosphereColor("#34d399")
       .atmosphereAltitude(0.18)
-      .pointsData(points)
+      .pointsData(enriched)
       .pointLat("lat")
       .pointLng("lng")
-      .pointColor((d: GlobePoint) => (d.newest ? "#34d399" : "#10b981"))
-      .pointAltitude((d: GlobePoint) => (d.newest ? 0.04 : 0.015))
-      .pointRadius((d: GlobePoint) => (d.newest ? 0.7 : 0.4))
-      .pointLabel((d: GlobePoint) => d.label)
+      .pointColor("color")
+      .pointAltitude("altitude")
+      .pointRadius("radius")
+      .pointLabel("label")
       .pointsMerge(false)
       .width(container.clientWidth)
       .height(height);
@@ -62,7 +71,7 @@
   });
 
   $effect(() => {
-    globe?.pointsData(points);
+    globe?.pointsData(enriched);
   });
 
   onDestroy(() => {

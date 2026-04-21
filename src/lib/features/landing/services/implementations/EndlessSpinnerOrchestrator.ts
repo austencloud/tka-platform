@@ -45,14 +45,14 @@ import {
 import { recalculateAllOrientations } from "$lib/features/create/shared/services/implementations/sequence-transforms/orientation-propagation";
 
 // Cardinal locations (for DIAMOND grid) and intercardinal (for BOX grid)
-const CARDINAL_LOCATIONS = new Set([
+const CARDINAL_LOCATIONS: ReadonlySet<GridLocation> = new Set<GridLocation>([
   GridLocation.NORTH,
   GridLocation.EAST,
   GridLocation.SOUTH,
   GridLocation.WEST,
 ]);
 
-const INTERCARDINAL_LOCATIONS = new Set([
+const INTERCARDINAL_LOCATIONS: ReadonlySet<GridLocation> = new Set<GridLocation>([
   GridLocation.NORTHEAST,
   GridLocation.SOUTHEAST,
   GridLocation.SOUTHWEST,

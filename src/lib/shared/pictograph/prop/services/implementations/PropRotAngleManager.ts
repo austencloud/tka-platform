@@ -2,7 +2,7 @@ import { GridLocation, GridMode } from "../../../grid/domain/enums/grid-enums";
 import { Orientation } from "../../../shared/domain/enums/pictograph-enums";
 
 // Cardinal locations use diamond grid rotation
-const CARDINAL_LOCATIONS = new Set([
+const CARDINAL_LOCATIONS: ReadonlySet<GridLocation> = new Set<GridLocation>([
   GridLocation.NORTH,
   GridLocation.EAST,
   GridLocation.SOUTH,

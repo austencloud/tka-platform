@@ -875,14 +875,14 @@ export class SequenceEncoder implements ISequenceEncoder {
     startLocation: GridLocation,
     endLocation: GridLocation
   ): "diamond" | "box" {
-    const cardinalLocations = [
+    const cardinalLocations: GridLocation[] = [
       GridLocation.NORTH,
       GridLocation.EAST,
       GridLocation.SOUTH,
       GridLocation.WEST,
     ];
 
-    const intercardinalLocations = [
+    const intercardinalLocations: GridLocation[] = [
       GridLocation.NORTHEAST,
       GridLocation.SOUTHEAST,
       GridLocation.SOUTHWEST,

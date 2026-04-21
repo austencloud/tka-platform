@@ -144,7 +144,7 @@ export class PictographKeyHasher implements IPictographKeyHasher {
     startLocation: GridLocation | undefined,
     endLocation: GridLocation | undefined
   ): string {
-    const intercardinalLocations = [
+    const intercardinalLocations: GridLocation[] = [
       GridLocation.NORTHEAST,
       GridLocation.SOUTHEAST,
       GridLocation.SOUTHWEST,

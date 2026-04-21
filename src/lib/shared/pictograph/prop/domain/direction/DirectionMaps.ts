@@ -17,17 +17,9 @@ import {
 } from "../../../shared/domain/enums/pictograph-enums";
 
 // Location type aliases
-type Loc = `${GridLocation}`;
-type DiamondLoc =
-  | GridLocation.NORTH
-  | GridLocation.SOUTH
-  | GridLocation.EAST
-  | GridLocation.WEST;
-type BoxLoc =
-  | GridLocation.NORTHEAST
-  | GridLocation.SOUTHEAST
-  | GridLocation.SOUTHWEST
-  | GridLocation.NORTHWEST;
+type Loc = GridLocation;
+type DiamondLoc = "n" | "s" | "e" | "w";
+type BoxLoc = "ne" | "se" | "sw" | "nw";
 
 /**
  * Letter I direction maps (radial orientation)

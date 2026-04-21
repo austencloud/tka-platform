@@ -239,7 +239,7 @@ export class ArrowGridCoordinator implements IArrowGridCoordinator {
    * Cardinal locations (N, E, S, W) = DIAMOND mode
    */
   private inferGridModeFromLocation(location: GridLocation): GridMode {
-    const boxLocations = [
+    const boxLocations: GridLocation[] = [
       GridLocation.NORTHEAST,
       GridLocation.SOUTHEAST,
       GridLocation.SOUTHWEST,

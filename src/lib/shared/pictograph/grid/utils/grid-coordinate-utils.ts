@@ -88,7 +88,7 @@ export function createGridPointData(mode: GridMode): GridPointData {
   }
 
   const modeData =
-    gridCoordinates[mode as Exclude<GridMode, GridMode.SKEWED | GridMode.TRIGRID | GridMode.EIGHT_POINT>];
+    gridCoordinates[mode as Exclude<GridMode, "skewed" | "trigrid" | "8point">];
 
   return {
     allHandPointsStrict: parsePoints(modeData.hand_points.strict),

@@ -92,7 +92,7 @@ export const COMPASS_ORIENTATIONS: readonly OrientationOption[] = [
 
 // ── Helper functions ──────────────────────────────────────────────────
 
-const CARDINAL_LOCATIONS = new Set([
+const CARDINAL_LOCATIONS: ReadonlySet<GridLocation> = new Set<GridLocation>([
   GridLocation.NORTH,
   GridLocation.EAST,
   GridLocation.SOUTH,
