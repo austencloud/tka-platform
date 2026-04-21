@@ -55,8 +55,8 @@ export interface MotionData {
   readonly propPlacementData: PropPlacementData;
 
   // Prefloat attributes for letter determination
-  readonly prefloatMotionType?: MotionType | null;
-  readonly prefloatRotationDirection?: RotationDirection | null;
+  readonly prefloatMotionType?: MotionType;
+  readonly prefloatRotationDirection?: RotationDirection;
 
   // Hand path direction - essential for floats (no rotation to derive from),
   // explicitly stored for all motion types for self-documenting data
@@ -118,8 +118,8 @@ export function createMotionData(data: Partial<MotionData> = {}): MotionData {
     arrowPlacementData: data.arrowPlacementData ?? createArrowPlacementData(),
     propPlacementData: data.propPlacementData ?? createPropPlacementData(),
 
-    prefloatMotionType: data.prefloatMotionType ?? null,
-    prefloatRotationDirection: data.prefloatRotationDirection ?? null,
+    prefloatMotionType: data.prefloatMotionType ?? undefined,
+    prefloatRotationDirection: data.prefloatRotationDirection ?? undefined,
 
     handPath: data.handPath ?? null,
     skewSteps: data.skewSteps ?? null,

@@ -91,11 +91,8 @@ const MotionDataSchema = z.object({
     defaultArrowPlacementData
   ),
   propPlacementData: PropPlacementDataSchema.default(defaultPropPlacementData),
-  prefloatMotionType: z.nativeEnum(MotionType).nullable().default(null),
-  prefloatRotationDirection: z
-    .nativeEnum(RotationDirection)
-    .nullable()
-    .default(null),
+  prefloatMotionType: z.nativeEnum(MotionType).optional(),
+  prefloatRotationDirection: z.nativeEnum(RotationDirection).optional(),
 });
 
 const PictographDataSchema = z.object({
