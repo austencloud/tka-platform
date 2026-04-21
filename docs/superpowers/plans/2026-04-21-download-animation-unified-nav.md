@@ -39,7 +39,7 @@ This plan has been audited twice. The corrections below override anything later 
 17. **HIGH:** DownloadPillNav implements WAI-ARIA toolbar keyboard pattern: ←/→ wrap focus, `Home`/`End` jump to first/last, `Enter` and `Space` activate. The legacy `"Spacebar"` key name is dropped.
 18. **MEDIUM:** `computeDisplaySummary` signature takes a single record of all toggles (including grid) so the denominator is genuinely arity-derived, not hardcoded `+1`.
 19. **MEDIUM:** `preventSpaceActivation` only fires when the event target is a non-interactive element — it does not swallow space on focused buttons / inputs / sliders inside the panel.
-20. **MEDIUM:** Task 9 verification drops the "viewer URL grep" theatre (asks the user for a URL) and the "CSS brace-balance" theatre (relies on `npm run build` instead).
+20. **MEDIUM:** Task 8 verification drops the "viewer URL grep" theatre (asks the user for a URL) and the "CSS brace-balance" theatre (relies on `npm run build` instead).
 
 ---
 
