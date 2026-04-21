@@ -11,6 +11,7 @@ import type {
   BubblesIntent,
   PetalsIntent,
   SmokeIntent,
+  InkIntent,
 } from "../domain/EffectsConfig";
 import type {
   Trails3DParams,
@@ -25,11 +26,13 @@ import type {
   Bubbles3DParams,
   Petals3DParams,
   Smoke3DParams,
+  Ink3DParams,
 } from "./webgl3d-types";
 import { resolveWaterPalette } from "../domain/WaterPalettes";
 import { resolveBubblePalette } from "../domain/BubblePalettes";
 import { resolvePetalPalette } from "../domain/PetalPalettes";
 import { resolveSmokePalette } from "../domain/SmokePalettes";
+import { resolveInkPalette } from "$lib/shared/3d/effects/ink/InkPalettes";
 
 export function resolveTrails3D(
   intent: TrailsIntent,
@@ -220,6 +223,57 @@ export function resolveSmoke3D(
     resolvedRiseSpeed: intent.riseSpeed * palette.riseBias * RISE_BASE_M,
     noiseScale: 0.5,
     riseBaseSpeed: RISE_BASE_M,
+  };
+  return { ...intent, ...defaults, ...override };
+}
+
+/**
+ * Resolve ink for the 3D backend.
+ *
+ * Sprint 1 is a pure params echo — no 3D ink renderer exists yet. The
+ * translator pre-composes the stroke-width/alpha/material decisions so
+ * when 3D ink ships in a later phase it doesn't need to re-derive these
+ * from raw intent. World-unit tunings mirror the 2D translator's px
+ * tunings through a 60 px/world-unit scale factor.
+ *
+ *   strokeWidthMaxWorld = 12 px * (watercolor ? 2 : 1) / 60 px/world
+ *                      ≈ 0.2 world-units (0.4 watercolor)
+ *   strokeWidthMinWorld = 1 px / 60 ≈ 0.017 world-units
+ *
+ * Palette-carried behavior matches the 2D translator: watercolor caps
+ * opacity at 0.4 + doubles width; neon flips emissiveMaterial true so
+ * the 3D renderer uses additive blend instead of flat-shaded. Those
+ * five other palettes stay opaque — the default ink read in 3D is
+ * pigment, not glow.
+ */
+export function resolveInk3D(
+  intent: InkIntent,
+  override: Partial<Ink3DParams> = {},
+): Ink3DParams {
+  const palette = resolveInkPalette(intent);
+  const STROKE_WIDTH_MAX_BASE_WORLD = 0.2; // ≈ 12 px / 60 px-per-world
+  const STROKE_WIDTH_MIN_WORLD = 0.017;     // ≈ 1 px / 60 px-per-world
+  const LIFETIME_SECONDS_BASE = 4.5;
+  const MAX_POINTS_PER_TIP = 40;
+  const MOTION_REFERENCE_SPEED = 3.0;
+
+  const effectiveAmbient = Math.min(intent.ambientEmission, 0.3);
+  const opacityMax = palette.watercolor ? 0.4 : 1.0;
+  const strokeWidthMaxWorld = palette.watercolor
+    ? STROKE_WIDTH_MAX_BASE_WORLD * 2
+    : STROKE_WIDTH_MAX_BASE_WORLD;
+  const emissiveMaterial = !!palette.emissive;
+
+  const defaults: Omit<Ink3DParams, keyof InkIntent> = {
+    resolvedPalette: palette,
+    effectiveAmbient,
+    strokeWidthMaxWorld,
+    strokeWidthMinWorld: STROKE_WIDTH_MIN_WORLD,
+    opacityMax,
+    emissiveMaterial,
+    lifetimeSeconds: LIFETIME_SECONDS_BASE,
+    maxPointsPerTip: MAX_POINTS_PER_TIP,
+    motionReferenceSpeed: MOTION_REFERENCE_SPEED,
   };
   return { ...intent, ...defaults, ...override };
 }

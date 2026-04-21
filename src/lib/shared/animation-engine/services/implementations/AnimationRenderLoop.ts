@@ -25,6 +25,7 @@ import type { IWaterOverlayRenderer } from "../contracts/IWaterOverlayRenderer";
 import type { IBubblesOverlayRenderer } from "../contracts/IBubblesOverlayRenderer";
 import type { IPetalsOverlayRenderer } from "../contracts/IPetalsOverlayRenderer";
 import type { ISmokeOverlayRenderer } from "../contracts/ISmokeOverlayRenderer";
+import type { IInkOverlayRenderer } from "../contracts/IInkOverlayRenderer";
 import type { ZapTipInput } from "$lib/shared/effects/renderers/Zap2DRenderer";
 import type { SparklesTipInput } from "$lib/shared/effects/renderers/Sparkles2DRenderer";
 import type { EchoTipInput } from "$lib/shared/effects/renderers/Echo2DRenderer";
@@ -33,6 +34,7 @@ import type { WaterTipInput } from "$lib/shared/effects/renderers/Water2DRendere
 import type { BubblesTipInput } from "$lib/shared/effects/renderers/Bubbles2DRenderer";
 import type { PetalsTipInput } from "$lib/shared/effects/renderers/Petals2DRenderer";
 import type { SmokeTipInput } from "$lib/shared/effects/renderers/Smoke2DRenderer";
+import type { InkTipInput } from "$lib/shared/effects/renderers/Ink2DRenderer";
 import type {
   IAnimationRenderLoop,
   RenderLoopConfig,
@@ -116,6 +118,8 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
   private lastPetalsFrameTime: number = 0;
   private smokeRenderer: ISmokeOverlayRenderer | null = null;
   private lastSmokeFrameTime: number = 0;
+  private inkRenderer: IInkOverlayRenderer | null = null;
+  private lastInkFrameTime: number = 0;
   private onEffectError: ((effectName: string, error: Error) => void) | null = null;
   private canvasSize: number = 950;
   private lastTrailFrameTime: number = 0;
@@ -136,6 +140,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
   private consecutiveBubblesErrors: number = 0;
   private consecutivePetalsErrors: number = 0;
   private consecutiveSmokeErrors: number = 0;
+  private consecutiveInkErrors: number = 0;
   private fireDisabledByError: boolean = false;
   private ledDisabledByError: boolean = false;
   private zapDisabledByError: boolean = false;
@@ -146,6 +151,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
   private bubblesDisabledByError: boolean = false;
   private petalsDisabledByError: boolean = false;
   private smokeDisabledByError: boolean = false;
+  private inkDisabledByError: boolean = false;
   private static readonly EFFECT_ERROR_THRESHOLD = 3;
 
   // Loop detection for cache-based trail gathering and fire frame cache
@@ -225,6 +231,7 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     this.bubblesRenderer = config.bubblesRenderer ?? null;
     this.petalsRenderer = config.petalsRenderer ?? null;
     this.smokeRenderer = config.smokeRenderer ?? null;
+    this.inkRenderer = config.inkRenderer ?? null;
     this.onEffectError = config.onEffectError ?? null;
 
     // Subscribe to the module-singleton longtask observer so the FPS summary
@@ -274,6 +281,8 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       this.petalsRenderer = config.petalsRenderer ?? null;
     if (config.smokeRenderer !== undefined)
       this.smokeRenderer = config.smokeRenderer ?? null;
+    if (config.inkRenderer !== undefined)
+      this.inkRenderer = config.inkRenderer ?? null;
     if (config.onEffectError !== undefined)
       this.onEffectError = config.onEffectError ?? null;
   }
@@ -398,6 +407,8 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     this.petalsRenderer = null;
     this.smokeRenderer?.dispose();
     this.smokeRenderer = null;
+    this.inkRenderer?.dispose();
+    this.inkRenderer = null;
     // Clear reusable arrays to free memory
     this.reusableBlueTrailPoints.length = 0;
     this.reusableRedTrailPoints.length = 0;
@@ -486,6 +497,9 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     const smokeActive =
       params.smokeConfig != null &&
       this.smokeRenderer?.isInitialized() === true;
+    const inkActive =
+      params.inkConfig != null &&
+      this.inkRenderer?.isInitialized() === true;
 
     // Active work: playing, effects running, background animating, or explicit render request
     const hasActiveWork =
@@ -502,7 +516,8 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       waterActive ||
       bubblesActive ||
       petalsActive ||
-      smokeActive;
+      smokeActive ||
+      inkActive;
 
     // Trails alone (without active work) should not keep the loop alive forever.
     // Allow a grace period for initialization/texture loading, then auto-stop.
@@ -694,6 +709,10 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       if (this.smokeRenderer?.isInitialized()) {
         this.smokeRenderer.clear();
       }
+      // Clear ink overlay (Canvas2D) — also drops the per-tip stroke history.
+      if (this.inkRenderer?.isInitialized()) {
+        this.inkRenderer.clear();
+      }
     } else if (!params.suppress2DOverlays && this.wasSuppressed) {
       this.wasSuppressed = false;
     }
@@ -807,7 +826,11 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
       this.fireTipTracker
       && this.smokeRenderer?.isInitialized()
       && params.smokeConfig != null;
-    const hasAnyTipOverlay = hasFireOrCharcoalOverlay || hasZapOverlay || hasSparklesOverlayForTipUpdate || hasEchoOverlayForTipUpdate || hasBloomOverlayForTipUpdate || hasWaterOverlayForTipUpdate || hasBubblesOverlayForTipUpdate || hasPetalsOverlayForTipUpdate || hasSmokeOverlayForTipUpdate;
+    const hasInkOverlayForTipUpdate =
+      this.fireTipTracker
+      && this.inkRenderer?.isInitialized()
+      && params.inkConfig != null;
+    const hasAnyTipOverlay = hasFireOrCharcoalOverlay || hasZapOverlay || hasSparklesOverlayForTipUpdate || hasEchoOverlayForTipUpdate || hasBloomOverlayForTipUpdate || hasWaterOverlayForTipUpdate || hasBubblesOverlayForTipUpdate || hasPetalsOverlayForTipUpdate || hasSmokeOverlayForTipUpdate || hasInkOverlayForTipUpdate;
 
     let sharedTipResult: import("../contracts/IFireTipTracker").FireTipUpdateResult | null = null;
     if (hasAnyTipOverlay && !params.suppress2DOverlays) {
@@ -1449,6 +1472,71 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     } else if (activeSmokeRenderer && !hasSmokeOverlay) {
       activeSmokeRenderer.clear();
       this.lastSmokeFrameTime = 0;
+    }
+
+    // Ink overlay: per-tip stroke path builder. Mirrors the smoke pipeline —
+    // reads sharedTipResult, filters by tipEffectMap, ages points via dt. The
+    // per-tip point history persists across frames so we only clear on
+    // disable / error / sequence boundary.
+    const activeInkRenderer = this.inkRenderer?.isInitialized()
+      ? this.inkRenderer
+      : null;
+    const hasInkOverlay =
+      this.fireTipTracker && activeInkRenderer && params.inkConfig != null;
+
+    if (
+      hasInkOverlay &&
+      !this.inkDisabledByError &&
+      !params.suppress2DOverlays &&
+      sharedTipResult
+    ) {
+      try {
+        const tipMap = params.tipEffectMap ?? {};
+        const inkTips: InkTipInput = {
+          bluePosA: null,
+          bluePosB: null,
+          redPosA: null,
+          redPosB: null,
+        };
+        for (const t of sharedTipResult.tips) {
+          if (resolveEffect(t.propIndex, t.tipIndex, tipMap, {}) !== "ink") continue;
+          if (t.propIndex === 0) {
+            if (t.tipIndex === 0) inkTips.bluePosA = { x: t.x, y: t.y };
+            else if (t.tipIndex === 1) inkTips.bluePosB = { x: t.x, y: t.y };
+          } else if (t.propIndex === 1) {
+            if (t.tipIndex === 0) inkTips.redPosA = { x: t.x, y: t.y };
+            else if (t.tipIndex === 1) inkTips.redPosB = { x: t.x, y: t.y };
+          }
+        }
+        const nowMs = currentTime;
+        let dt = this.lastInkFrameTime > 0 ? (nowMs - this.lastInkFrameTime) / 1000 : 1 / 60;
+        if (!Number.isFinite(dt) || dt <= 0) dt = 1 / 60;
+        if (dt > 0.1) dt = 0.1;
+        this.lastInkFrameTime = nowMs;
+        activeInkRenderer!.renderFrame(params.inkConfig!, inkTips, dt);
+        this.consecutiveInkErrors = 0;
+      } catch (error) {
+        this.consecutiveInkErrors++;
+        activeInkRenderer?.clear();
+        if (this.consecutiveInkErrors >= AnimationRenderLoop.EFFECT_ERROR_THRESHOLD) {
+          this.inkDisabledByError = true;
+          const err = error instanceof Error ? error : new Error(String(error));
+          console.error("[AnimationRenderLoop] Ink effect disabled after repeated failures:", err);
+          if (this.onEffectError) {
+            this.onEffectError("ink", err);
+          } else {
+            effectErrorSignal.trigger("ink", err);
+          }
+        } else {
+          console.warn(
+            `[AnimationRenderLoop] Ink render error (attempt ${this.consecutiveInkErrors}/${AnimationRenderLoop.EFFECT_ERROR_THRESHOLD}), resetting:`,
+            error
+          );
+        }
+      }
+    } else if (activeInkRenderer && !hasInkOverlay) {
+      activeInkRenderer.clear();
+      this.lastInkFrameTime = 0;
     }
 
     // LED overlay: render after fire so it composites on top of both Canvas2D and fire

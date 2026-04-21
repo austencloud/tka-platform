@@ -11,6 +11,7 @@ import type {
   BubblesIntent,
   PetalsIntent,
   SmokeIntent,
+  InkIntent,
 } from "../domain/EffectsConfig";
 import type {
   Trails2DParams,
@@ -25,11 +26,13 @@ import type {
   Bubbles2DParams,
   Petals2DParams,
   Smoke2DParams,
+  Ink2DParams,
 } from "./canvas2d-types";
 import { resolveWaterPalette } from "../domain/WaterPalettes";
 import { resolveBubblePalette } from "../domain/BubblePalettes";
 import { resolvePetalPalette } from "../domain/PetalPalettes";
 import { resolveSmokePalette } from "../domain/SmokePalettes";
+import { resolveInkPalette } from "$lib/shared/3d/effects/ink/InkPalettes";
 
 export function resolveTrails2D(
   intent: TrailsIntent,
@@ -163,6 +166,78 @@ export function resolvePetals2D(
     swayBaseSpeed: 80,
     swayFrequency: 1.4,
     blendMode: "source-over",
+  };
+  return { ...intent, ...defaults, ...override };
+}
+
+/**
+ * Resolve ink for the 2D backend.
+ *
+ * Composes user intent with palette behavior flags:
+ *   - effectiveAmbient = min(intent.ambientEmission, 0.3) — motion-dominant
+ *     hard cap. Ink is a stroke medium. If the user dials ambient to full,
+ *     it still emits at ≤ 30% of the motion-driven rate.
+ *   - opacityMax = watercolor ? 0.4 : 1.0 — palette-carried opacity cap.
+ *     Watercolor is translucent by identity (not a user knob).
+ *   - strokeWidthMax = 12 px base * (watercolor ? 2 : 1) — watercolor
+ *     bleeds wider.
+ *   - blendMode = palette.emissive ? "lighter" : "source-over" — neon is
+ *     the only emissive ink palette. The other five are opaque pigment.
+ *
+ * Tuning constants from spec docs/superpowers/specs/2026-04-15-effects-phase-1j-ink-design.md:
+ *   AMBIENT_BASE_RATE       = 2   (barely any drip at rest)
+ *   MOTION_BASE_RATE        = 15  (moderate — ink is a stroke medium, not a particle emitter)
+ *   MOTION_REFERENCE_SPEED  = 3.0 (world units/sec that maps to full motion scalar)
+ *   STROKE_WIDTH_MIN        = 1   px (fast tip = thin lifted brush)
+ *   STROKE_WIDTH_MAX_BASE   = 12  px (slow tip = thick loaded brush)
+ *   LIFETIME_SECONDS_BASE   = 4.5 (center of spec 3-6 range)
+ *   MAX_POINTS_PER_TIP      = 40  (center of spec 30-50 range)
+ *
+ * Sprint 1 ignores viscosity + splatterIntensity — they live on the
+ * intent but the renderer's droplet breakup (1j.ii) and splatter bursts
+ * (1j.iii) don't exist yet.
+ */
+export function resolveInk2D(
+  intent: InkIntent,
+  override: Partial<Ink2DParams> = {},
+): Ink2DParams {
+  const palette = resolveInkPalette(intent);
+  const AMBIENT_BASE_RATE = 2;
+  const MOTION_BASE_RATE = 15;
+  const MOTION_REFERENCE_SPEED = 3.0;
+  const STROKE_WIDTH_MIN = 1;
+  const STROKE_WIDTH_MAX_BASE = 12;
+  const LIFETIME_SECONDS_BASE = 4.5;
+  const MAX_POINTS_PER_TIP = 40;
+
+  // Motion-dominant hard cap on ambient. Even at slider=1 the effective
+  // ambient rate is ≤ 30% of the base rate.
+  const effectiveAmbient = Math.min(intent.ambientEmission, 0.3);
+
+  // Watercolor palette: low opacity wash + wider bleed (2× width).
+  const opacityMax = palette.watercolor ? 0.4 : 1.0;
+  const strokeWidthMax = palette.watercolor
+    ? STROKE_WIDTH_MAX_BASE * 2
+    : STROKE_WIDTH_MAX_BASE;
+
+  // Neon is the only emissive ink palette. All others composite opaque —
+  // this is the #1 differentiator from trails (which are always emissive).
+  const blendMode: GlobalCompositeOperation = palette.emissive
+    ? "lighter"
+    : "source-over";
+
+  const defaults: Omit<Ink2DParams, keyof InkIntent> = {
+    resolvedPalette: palette,
+    blendMode,
+    effectiveAmbient,
+    ambientSpawnRate: AMBIENT_BASE_RATE,
+    motionSpawnRate: MOTION_BASE_RATE,
+    motionReferenceSpeed: MOTION_REFERENCE_SPEED,
+    strokeWidthMin: STROKE_WIDTH_MIN,
+    strokeWidthMax,
+    opacityMax,
+    lifetimeSeconds: LIFETIME_SECONDS_BASE,
+    maxPointsPerTip: MAX_POINTS_PER_TIP,
   };
   return { ...intent, ...defaults, ...override };
 }

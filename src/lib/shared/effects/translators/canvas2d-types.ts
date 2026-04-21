@@ -20,11 +20,13 @@ import type {
   BubblesIntent,
   PetalsIntent,
   SmokeIntent,
+  InkIntent,
 } from "../domain/EffectsConfig";
 import type { WaterPalette } from "../domain/WaterPalettes";
 import type { BubblePalette } from "../domain/BubblePalettes";
 import type { PetalPalette } from "../domain/PetalPalettes";
 import type { SmokePalette } from "../domain/SmokePalettes";
+import type { InkPalette } from "$lib/shared/3d/effects/ink/InkPalettes";
 
 export interface Trails2DParams extends TrailsIntent {
   /** px value for ctx.lineWidth. Derived from thickness. */
@@ -188,4 +190,52 @@ export interface Smoke2DParams extends SmokeIntent {
   riseBaseSpeed: number;
   /** Canvas composite op. `source-over` suits light-on-dark smoke. */
   blendMode?: GlobalCompositeOperation;
+}
+
+export interface Ink2DParams extends InkIntent {
+  /**
+   * Resolved palette (pigment + edge + splatter + pool + behavior flags).
+   * Renderer reads `pigment`, `edge`, and the `watercolor`/`emissive`
+   * flags in sprint 1; splatterTint + poolTint are sprint-2 consumers.
+   */
+  resolvedPalette: InkPalette;
+  /**
+   * Canvas composite op.
+   *   - `source-over` for india/sumi/watercolor/blood/acid/custom (opaque
+   *     pigment — THE #1 differentiator from trails).
+   *   - `lighter` when palette.emissive is true (neon only).
+   * Sprint 1 renderer computes the final composite from palette.emissive
+   * rather than honoring this field, but the field is surfaced for
+   * overrides / advanced panel work.
+   */
+  blendMode?: GlobalCompositeOperation;
+  /**
+   * Resolved ambient emission after the motion-dominant hard cap.
+   * `effectiveAmbient = min(intent.ambientEmission, 0.3)`. Renderer
+   * reads this so the cap is enforced at translate time, not at draw
+   * time.
+   */
+  effectiveAmbient: number;
+  /** Strokes-points/sec at `effectiveAmbient=1`. Spec AMBIENT_BASE_RATE=2. */
+  ambientSpawnRate: number;
+  /** Strokes-points/sec at full velocity * `motionEmission=1`. Spec MOTION_BASE_RATE=15. */
+  motionSpawnRate: number;
+  /** World units/s that maps to full motion scalar. Spec MOTION_REFERENCE_SPEED=3.0. */
+  motionReferenceSpeed: number;
+  /** Min stroke width (px) — reached at high tip speed (brush lifting). */
+  strokeWidthMin: number;
+  /**
+   * Max stroke width (px) — reached at low tip speed (brush pressing).
+   * Watercolor palette doubles this in the renderer (wide bleed).
+   */
+  strokeWidthMax: number;
+  /**
+   * Max alpha at peak (0-1). Watercolor palette caps this at 0.4 — that's
+   * why the palette reads translucent vs the rest of the ink family.
+   */
+  opacityMax: number;
+  /** Seconds — single stroke-point lifetime. Spec range 3-6s. */
+  lifetimeSeconds: number;
+  /** Max stroke points per tip (bounded history). Spec range 30-50. */
+  maxPointsPerTip: number;
 }

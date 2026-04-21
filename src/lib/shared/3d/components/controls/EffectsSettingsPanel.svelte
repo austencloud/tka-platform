@@ -2,8 +2,8 @@
   /**
    * EffectsSettingsPanel - Visual effects controls for 3D viewer
    *
-   * 12 unified per-tip effects (trails/fire/led/charcoal/zap/sparkles/
-   * echo/bloom/water/bubbles/petals/smoke) + 1 scene-level motion modifier.
+   * 13 unified per-tip effects (trails/fire/led/charcoal/zap/sparkles/
+   * echo/bloom/water/bubbles/petals/smoke/ink) + 1 scene-level motion modifier.
    * Uses chip-style buttons consistent with GridSettingsPanel.
    *
    * Accepts an optional `performer` prop. When provided, reads/writes that
@@ -50,7 +50,7 @@
 
   // Per-performer Sets use the legacy EffectId union. Translate between the
   // canonical EffectType and EffectId where they diverge; unrepresentable
-  // keys (echo/water/bubbles/petals/smoke) hide from the per-performer
+  // keys (echo/water/bubbles/petals/smoke/ink) hide from the per-performer
   // toggle — Phase 2.5 migrates the per-performer Set to the canonical enum.
   function toPerformerEffect(key: EffectKey): EffectId | null {
     if (key === "zap") return "electricity";
@@ -61,6 +61,7 @@
       key === "bubbles" ||
       key === "petals" ||
       key === "smoke" ||
+      key === "ink" ||
       key === "none"
     ) {
       return null;

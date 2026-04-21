@@ -22,6 +22,7 @@ import type {
   BubblesIntent,
   PetalsIntent,
   SmokeIntent,
+  InkIntent,
 } from "../domain/EffectsConfig";
 import type { EffectsPreset } from "../domain/EffectsPreset";
 import type { TipEffectMap } from "$lib/shared/animation-engine/domain/types/TipEffectTypes";
@@ -44,6 +45,7 @@ function mergeConfig(base: EffectsConfig, patch: Partial<EffectsConfig>): Effect
     bubbles: patch.bubbles ? { ...base.bubbles, ...patch.bubbles } : base.bubbles,
     petals: patch.petals ? { ...base.petals, ...patch.petals } : base.petals,
     smoke: patch.smoke ? { ...base.smoke, ...patch.smoke } : base.smoke,
+    ink: patch.ink ? { ...base.ink, ...patch.ink } : base.ink,
     activePresets: patch.activePresets
       ? { ...base.activePresets, ...patch.activePresets }
       : base.activePresets,
@@ -115,6 +117,11 @@ export function createEffectsConfigState(initial: EffectsConfig = DEFAULT_EFFECT
     config.activePresets.smoke = null;
   }
 
+  function updateInk(patch: Partial<InkIntent>) {
+    config.ink = { ...config.ink, ...patch };
+    config.activePresets.ink = null;
+  }
+
   function setTipEffectMap(map: TipEffectMap) {
     config.tipEffectMap = map;
   }
@@ -152,6 +159,7 @@ export function createEffectsConfigState(initial: EffectsConfig = DEFAULT_EFFECT
     get bubbles() { return config.bubbles; },
     get petals() { return config.petals; },
     get smoke() { return config.smoke; },
+    get ink() { return config.ink; },
     get overrides() { return config.overrides; },
     get activePresets() { return config.activePresets; },
 
@@ -167,6 +175,7 @@ export function createEffectsConfigState(initial: EffectsConfig = DEFAULT_EFFECT
     updateBubbles,
     updatePetals,
     updateSmoke,
+    updateInk,
     setTipEffectMap,
     applyPreset,
     updateOverride,

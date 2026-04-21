@@ -26,8 +26,9 @@ import type { IWaterOverlayRenderer } from "./IWaterOverlayRenderer";
 import type { IBubblesOverlayRenderer } from "./IBubblesOverlayRenderer";
 import type { IPetalsOverlayRenderer } from "./IPetalsOverlayRenderer";
 import type { ISmokeOverlayRenderer } from "./ISmokeOverlayRenderer";
+import type { IInkOverlayRenderer } from "./IInkOverlayRenderer";
 import type { LedOverlayConfig } from "../../domain/types/LedTypes";
-import type { Bloom2DParams, Bubbles2DParams, Echo2DParams, Petals2DParams, Smoke2DParams, Sparkles2DParams, Water2DParams, Zap2DParams } from "$lib/shared/effects/translators/canvas2d-types";
+import type { Bloom2DParams, Bubbles2DParams, Echo2DParams, Ink2DParams, Petals2DParams, Smoke2DParams, Sparkles2DParams, Water2DParams, Zap2DParams } from "$lib/shared/effects/translators/canvas2d-types";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { Letter } from "$lib/shared/foundation/domain/models/Letter";
 import type { StepData } from "$lib/features/create/shared/domain/models/StepData";
@@ -71,6 +72,8 @@ export interface RenderLoopConfig {
   petalsRenderer?: IPetalsOverlayRenderer | null;
   /** Optional smoke overlay renderer that spawns per-tip curl-noise puffs */
   smokeRenderer?: ISmokeOverlayRenderer | null;
+  /** Optional ink overlay renderer that draws per-tip calligraphic strokes */
+  inkRenderer?: IInkOverlayRenderer | null;
   /** Called when an effect (fire/charcoal/LED) fails repeatedly and is auto-disabled */
   onEffectError?: (effectName: string, error: Error) => void;
 }
@@ -150,6 +153,8 @@ export interface RenderFrameParams {
   petalsConfig?: Petals2DParams | null;
   /** Smoke overlay parameters (null or undefined = disabled) */
   smokeConfig?: Smoke2DParams | null;
+  /** Ink overlay parameters (null or undefined = disabled) */
+  inkConfig?: Ink2DParams | null;
   /** Playback speed multiplier (1.0 = 60 BPM). Passed to fire for cache invalidation. */
   playbackSpeed?: number;
   /** Whether sequence loops seamlessly (end position = start position).

@@ -16,7 +16,7 @@ import type {
   PropFlameColor,
 } from "$lib/shared/animation-engine/domain/types/FireTypes";
 
-export const EFFECTS_CONFIG_VERSION = 11;
+export const EFFECTS_CONFIG_VERSION = 12;
 
 export type EffectType =
   | "none"
@@ -31,7 +31,8 @@ export type EffectType =
   | "water"
   | "bubbles"
   | "petals"
-  | "smoke";
+  | "smoke"
+  | "ink";
 
 export interface TrailsIntent {
   /** Which staff end(s) the trail tracks. */
@@ -227,6 +228,37 @@ export interface PetalsIntent {
   trackingMode: "left_end" | "right_end" | "both_ends";
 }
 
+export interface InkIntent {
+  /**
+   * 0-1. Ambient drip rate at rest. Hard-capped at 0.3 in the renderer —
+   * ink is motion-dominant. User can still dial up but even at max it
+   * stays subtle. This is ink, not rain.
+   */
+  ambientEmission: number;
+  /** 0-1. Velocity-reactive stroke emission. The star of the effect. */
+  motionEmission: number;
+  /** 0-1. Stroke width + opacity. */
+  intensity: number;
+  /** Named palette. "custom" uses customColor. */
+  palette: "india" | "sumi" | "watercolor" | "neon" | "blood" | "acid" | "custom";
+  /** Hex string. Used only when palette === "custom". */
+  customColor: string;
+  /**
+   * 0-1. How easily strands break into droplets under stretch.
+   * 0 = continuous ribbon, 1 = shatters into drops. Shipped in the shape
+   * now; sprint 2 (1j.ii) wires it through the renderer.
+   */
+  viscosity: number;
+  /**
+   * 0-1. Splatter burst intensity on velocity spikes.
+   * 0 = clean strokes, 1 = Jackson Pollock. Shipped in the shape now;
+   * sprint 2 (1j.iii) wires it through the renderer.
+   */
+  splatterIntensity: number;
+  /** Explicit tracking. */
+  trackingMode: "left_end" | "right_end" | "both_ends";
+}
+
 export interface SmokeIntent {
   /** 0-1. Continuous emission at rest. */
   ambientEmission: number;
@@ -281,6 +313,8 @@ export interface EffectsOverrides {
   petals3D?: Record<string, unknown>;
   smoke2D?: Record<string, unknown>;
   smoke3D?: Record<string, unknown>;
+  ink2D?: Record<string, unknown>;
+  ink3D?: Record<string, unknown>;
 }
 
 export interface EffectsConfig {
@@ -298,6 +332,7 @@ export interface EffectsConfig {
   bubbles: BubblesIntent;
   petals: PetalsIntent;
   smoke: SmokeIntent;
+  ink: InkIntent;
   activePresets: {
     trails: string | null;
     fire: string | null;
@@ -311,6 +346,7 @@ export interface EffectsConfig {
     bubbles: string | null;
     petals: string | null;
     smoke: string | null;
+    ink: string | null;
   };
   overrides?: EffectsOverrides;
 }

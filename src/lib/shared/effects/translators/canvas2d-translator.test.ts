@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   resolveBubbles2D,
+  resolveInk2D,
   resolvePetals2D,
   resolveSmoke2D,
   resolveSparkles2D,
@@ -8,6 +9,7 @@ import {
 } from "./canvas2d-translator";
 import type {
   BubblesIntent,
+  InkIntent,
   PetalsIntent,
   SmokeIntent,
   SparklesIntent,
@@ -232,5 +234,118 @@ describe("resolveSmoke2D — palette carries behavior", () => {
     const out = resolveSmoke2D(baseIntent(), { poolSize: 512, baseRadius: 30 });
     expect(out.poolSize).toBe(512);
     expect(out.baseRadius).toBe(30);
+  });
+});
+
+describe("resolveInk2D — palette + motion-dominant + stroke width", () => {
+  function baseIntent(overrides: Partial<InkIntent> = {}): InkIntent {
+    return {
+      ambientEmission: 0.2,
+      motionEmission: 0.8,
+      intensity: 0.6,
+      palette: "india",
+      customColor: "#0a0a0a",
+      viscosity: 0.3,
+      splatterIntensity: 0.3,
+      trackingMode: "both_ends",
+      ...overrides,
+    };
+  }
+
+  it("resolves the india palette — opaque pigment defaults", () => {
+    const out = resolveInk2D(baseIntent());
+    expect(out.resolvedPalette.id).toBe("india");
+    expect(out.resolvedPalette.pigment).toBe("#0a0a0a");
+    expect(out.resolvedPalette.edge).toBe("#1a1a1a");
+    // Default palette is opaque — source-over, NOT lighter/emissive.
+    // This is the #1 visual differentiator from trails at sprint 1.
+    expect(out.blendMode).toBe("source-over");
+    expect(out.opacityMax).toBe(1.0);
+    expect(out.ambientSpawnRate).toBe(2);
+    expect(out.motionSpawnRate).toBe(15);
+    expect(out.motionReferenceSpeed).toBe(3.0);
+    expect(out.strokeWidthMin).toBe(1);
+    expect(out.strokeWidthMax).toBe(12);
+    expect(out.lifetimeSeconds).toBeGreaterThan(0);
+    expect(out.maxPointsPerTip).toBeGreaterThan(10);
+  });
+
+  it("hard-caps effectiveAmbient at 0.3 even when user dials ambient to max", () => {
+    // Ink is motion-dominant by identity. User slider at 1.0 clamps to 0.3
+    // in the translator — the renderer never sees >0.3.
+    const capped = resolveInk2D(baseIntent({ ambientEmission: 1.0 }));
+    expect(capped.effectiveAmbient).toBe(0.3);
+    const midRange = resolveInk2D(baseIntent({ ambientEmission: 0.5 }));
+    expect(midRange.effectiveAmbient).toBe(0.3);
+    const below = resolveInk2D(baseIntent({ ambientEmission: 0.1 }));
+    expect(below.effectiveAmbient).toBe(0.1);
+  });
+
+  it("watercolor palette flips watercolor flag + doubles width + caps alpha", () => {
+    // Palette-carried behavior — watercolor IS watercolor, not "light ink".
+    const out = resolveInk2D(baseIntent({ palette: "watercolor" }));
+    expect(out.resolvedPalette.watercolor).toBe(true);
+    expect(out.resolvedPalette.id).toBe("watercolor");
+    // Width doubled from the base 12 → 24 px.
+    expect(out.strokeWidthMax).toBe(24);
+    // Alpha capped at 0.4 (translucent wash).
+    expect(out.opacityMax).toBe(0.4);
+    // Still opaque composite — watercolor ≠ neon. The cap comes from
+    // alpha, not from switching to additive blend.
+    expect(out.blendMode).toBe("source-over");
+  });
+
+  it("neon palette flips emissive flag + switches composite to lighter", () => {
+    // Neon is the ONLY ink palette that glows. All others composite opaque.
+    // One glowing palette reinforces that the default ink read is pigment.
+    const out = resolveInk2D(baseIntent({ palette: "neon" }));
+    expect(out.resolvedPalette.emissive).toBe(true);
+    expect(out.resolvedPalette.id).toBe("neon");
+    expect(out.blendMode).toBe("lighter");
+  });
+
+  it("blood + acid palettes resolve to opaque pigment (cross-palette naming)", () => {
+    const blood = resolveInk2D(baseIntent({ palette: "blood" }));
+    expect(blood.resolvedPalette.id).toBe("blood");
+    expect(blood.blendMode).toBe("source-over");
+    expect(blood.resolvedPalette.pigment).toBe("#8a1818");
+
+    const acid = resolveInk2D(baseIntent({ palette: "acid" }));
+    expect(acid.resolvedPalette.id).toBe("acid");
+    expect(acid.blendMode).toBe("source-over");
+    expect(acid.resolvedPalette.pigment).toBe("#7fd94a");
+  });
+
+  it("custom palette derives pigment/edge/pool from customColor", () => {
+    const out = resolveInk2D(
+      baseIntent({ palette: "custom", customColor: "#ff8800" }),
+    );
+    expect(out.resolvedPalette.id).toBe("custom");
+    // Pigment = base customColor round-tripped through HSL.
+    expect(out.resolvedPalette.pigment.toLowerCase()).toBe("#ff8800");
+    // Edge ≠ pigment (lightened).
+    expect(out.resolvedPalette.edge).not.toBe(out.resolvedPalette.pigment);
+    // Custom ink is opaque (no flags).
+    expect(out.blendMode).toBe("source-over");
+    expect(out.opacityMax).toBe(1.0);
+  });
+
+  it("carries viscosity + splatterIntensity through to params for sprint 2", () => {
+    // Sprint 1 renderer ignores these, but the shape must survive the
+    // translator so sprint 2's breakup/splatter work has data.
+    const out = resolveInk2D(
+      baseIntent({ viscosity: 0.7, splatterIntensity: 0.9 }),
+    );
+    expect(out.viscosity).toBe(0.7);
+    expect(out.splatterIntensity).toBe(0.9);
+  });
+
+  it("allows overrides to replace any resolved default field", () => {
+    const out = resolveInk2D(baseIntent(), {
+      maxPointsPerTip: 20,
+      lifetimeSeconds: 2.0,
+    });
+    expect(out.maxPointsPerTip).toBe(20);
+    expect(out.lifetimeSeconds).toBe(2.0);
   });
 });
