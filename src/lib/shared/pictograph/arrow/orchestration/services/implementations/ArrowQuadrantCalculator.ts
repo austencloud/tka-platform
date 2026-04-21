@@ -99,9 +99,12 @@ export class ArrowQuadrantCalculator implements IArrowQuadrantCalculator {
     /**
      * Check if motion type is a shift motion (PRO/ANTI/FLOAT).
      */
-    return [MotionType.PRO, MotionType.ANTI, MotionType.FLOAT].includes(
-      motionType
-    );
+    const shiftTypes: MotionType[] = [
+      MotionType.PRO,
+      MotionType.ANTI,
+      MotionType.FLOAT,
+    ];
+    return shiftTypes.includes(motionType);
   }
 
   diamondShiftQuadrantIndex(location: GridLocation): number {

@@ -89,8 +89,11 @@ export class BetaPropDirectionCalculator {
   }
 
   private isShiftMotion(motion: MotionData): boolean {
-    return [MotionType.PRO, MotionType.ANTI, MotionType.FLOAT].includes(
-      motion.motionType
-    );
+    const shiftTypes: MotionType[] = [
+      MotionType.PRO,
+      MotionType.ANTI,
+      MotionType.FLOAT,
+    ];
+    return shiftTypes.includes(motion.motionType);
   }
 }

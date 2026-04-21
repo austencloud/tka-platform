@@ -54,10 +54,13 @@ export class LetterYZHandler implements IDirectionCalculator {
   } {
     const { red, blue } = this.motionDataSet;
 
+    const shiftTypes: MotionType[] = [
+      MotionType.PRO,
+      MotionType.ANTI,
+      MotionType.FLOAT,
+    ];
     const isShift = (motion: MotionData) =>
-      [MotionType.PRO, MotionType.ANTI, MotionType.FLOAT].includes(
-        motion.motionType
-      );
+      shiftTypes.includes(motion.motionType);
 
     const shiftMotion = isShift(red) ? red : isShift(blue) ? blue : null;
 
