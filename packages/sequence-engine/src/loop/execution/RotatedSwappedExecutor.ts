@@ -33,7 +33,7 @@ export class RotatedSwappedExecutor implements ILOOPExecutor {
     const finalIntendedLength = sequenceLength + entriesToAdd;
 
     for (let i = 0; i < entriesToAdd; i++) {
-      const matchingStep = this.getMatchingBeat(sequence, nextStepNumber, finalIntendedLength, sliceSize);
+      const matchingStep = this.getMatchingStep(sequence, nextStepNumber, finalIntendedLength, sliceSize);
       const newStep = this.createStep(matchingStep, lastStep, nextStepNumber);
       const finalStep = updateStepOrientations(newStep, lastStep);
       sequence.push(finalStep);
@@ -57,7 +57,7 @@ export class RotatedSwappedExecutor implements ILOOPExecutor {
     }
   }
 
-  private getMatchingBeat(sequence: SequenceStep[], stepNumber: number, finalLength: number, sliceSize: SliceSize): SequenceStep {
+  private getMatchingStep(sequence: SequenceStep[], stepNumber: number, finalLength: number, sliceSize: SliceSize): SequenceStep {
     const sliceLength = sliceSize === SliceSize.QUARTERED
       ? Math.floor(finalLength / 4)
       : Math.floor(finalLength / 2);

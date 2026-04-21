@@ -187,18 +187,18 @@ export class SequenceExtender {
     // Get the executor for the selected LOOP type
     const executor = this.executorSelector.getExecutor(loopType);
 
-    // Get only the beat steps for the executor (exclude start position)
-    const beatSteps = steps.filter((s) => (s.stepNumber ?? s.stepNumber) > 0);
+    // Get only the letter steps for the executor (exclude start position)
+    const letterSteps = steps.filter((s) => (s.stepNumber ?? s.stepNumber) > 0);
 
-    if (beatSteps.length === 0) {
-      throw new Error("No beat steps in sequence to extend");
+    if (letterSteps.length === 0) {
+      throw new Error("No letter steps in sequence to extend");
     }
 
     // Save original length BEFORE executing, since executor modifies array in place
-    const originalLength = beatSteps.length;
+    const originalLength = letterSteps.length;
 
     // Execute the LOOP transformation
-    const completedSteps = executor.executeLOOP(beatSteps, sliceSize);
+    const completedSteps = executor.executeLOOP(letterSteps, sliceSize);
 
     // Return only the new steps (after the original beats)
     return completedSteps.slice(originalLength);
@@ -221,9 +221,9 @@ function getStartPosition(steps: SequenceStep[]): string | null {
  * Get the current end position from the last beat step.
  */
 function getCurrentEndPosition(steps: SequenceStep[]): string | null {
-  const beatSteps = steps.filter((s) => (s.stepNumber ?? s.stepNumber) > 0);
-  if (beatSteps.length === 0) return null;
-  return beatSteps[beatSteps.length - 1]!.endPosition;
+  const letterSteps = steps.filter((s) => (s.stepNumber ?? s.stepNumber) > 0);
+  if (letterSteps.length === 0) return null;
+  return letterSteps[letterSteps.length - 1]!.endPosition;
 }
 
 // ============================================================================

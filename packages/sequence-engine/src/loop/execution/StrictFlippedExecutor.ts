@@ -31,13 +31,13 @@ export class StrictFlippedExecutor implements ILOOPExecutor {
     const partialLength = sequence.length;
     const period = sliceSize === SliceSize.QUARTERED ? 4 : 2;
     const totalLength = partialLength * period;
-    const beatsToGenerate = totalLength - partialLength;
+    const stepsToGenerate = totalLength - partialLength;
 
     let lastStep = sequence[sequence.length - 1]!;
     const firstGeneratedStepNumber =
       (lastStep.stepNumber ?? lastStep.stepNumber) + 1;
 
-    for (let offset = 0; offset < beatsToGenerate; offset++) {
+    for (let offset = 0; offset < stepsToGenerate; offset++) {
       const stepNumber = firstGeneratedStepNumber + offset;
       const quarterIdx = Math.floor((stepNumber - 1) / partialLength);
       const sourceStepNumber = ((stepNumber - 1) % partialLength) + 1;

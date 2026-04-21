@@ -37,7 +37,7 @@ export class MirroredInvertedExecutor implements ILOOPExecutor {
     for (let i = 2; i < sequenceLength + 2; i++) {
       const finalIntendedLength = sequenceLength + entriesToAdd;
       const stepNumber = nextStepNumber + i - 2;
-      const matchingStep = this.getMatchingBeat(sequence, stepNumber, finalIntendedLength);
+      const matchingStep = this.getMatchingStep(sequence, stepNumber, finalIntendedLength);
 
       const newStep = this.createStep(matchingStep, lastStep, stepNumber);
       const finalStep = updateStepOrientations(newStep, lastStep);
@@ -60,7 +60,7 @@ export class MirroredInvertedExecutor implements ILOOPExecutor {
     }
   }
 
-  private getMatchingBeat(sequence: SequenceStep[], stepNumber: number, finalLength: number): SequenceStep {
+  private getMatchingStep(sequence: SequenceStep[], stepNumber: number, finalLength: number): SequenceStep {
     const halfLength = Math.floor(finalLength / 2);
     const idx = stepNumber - halfLength - 1;
     if (idx < 0 || idx >= sequence.length) throw new Error(`Invalid index: ${idx}`);

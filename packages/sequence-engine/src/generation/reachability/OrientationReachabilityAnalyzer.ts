@@ -17,7 +17,7 @@
  *
  * Input:
  *   - requiredBlueEnd, requiredRedEnd (Orientation)
- *   - remainingBeats (count)
+ *   - remainingSteps (count)
  *   - turnIntensity (cap on turn values per beat)
  *   - level (gates feature availability — L1 has 0 turns only)
  *
@@ -42,19 +42,19 @@ export interface OrientationReachabilityResult {
   /** Is the end state reachable from some valid start? */
   feasible: boolean;
   /** If infeasible, which beat has no reachable states. */
-  emptyBeatIndex?: number;
+  emptyStepIndex?: number;
   /**
    * For each beat index (0 = first beat), the set of (blueOri, redOri)
    * pairs from which the required end state is still reachable in the
    * remaining beats.
    */
-  reachablePerBeat: Array<Set<string>>; // key: "blueOri|redOri"
+  reachablePerStep: Array<Set<string>>; // key: "blueOri|redOri"
 }
 
 export interface OrientationReachabilityArgs {
   requiredBlueEnd: Orientation;
   requiredRedEnd: Orientation;
-  remainingBeats: number;
+  remainingSteps: number;
   /**
    * Per-beat maximum orientation delta in quarter turns. Level 1 allows 0
    * only; level 2 adds ±2 (180° half turn), etc. Passing `[0]` models a
@@ -81,19 +81,19 @@ export class OrientationReachabilityAnalyzer {
    * Type-1 shifts) are enforced by per-type closure constraints, not here.
    */
   analyze(args: OrientationReachabilityArgs): OrientationReachabilityResult {
-    const { requiredBlueEnd, requiredRedEnd, remainingBeats, allowedDeltas } =
+    const { requiredBlueEnd, requiredRedEnd, remainingSteps, allowedDeltas } =
       args;
 
-    const reachablePerBeat: Array<Set<string>> = [];
+    const reachablePerStep: Array<Set<string>> = [];
     const endKey = `${requiredBlueEnd}|${requiredRedEnd}`;
 
-    // Beat (remainingBeats - 1) must land on the exact end state.
+    // Beat (remainingSteps - 1) must land on the exact end state.
     let currentReachable = new Set<string>([endKey]);
-    reachablePerBeat.push(new Set(currentReachable));
+    reachablePerStep.push(new Set(currentReachable));
 
     // Work backward. At each step, find all states from which a one-beat
     // motion with an allowed delta lands in currentReachable.
-    for (let beat = remainingBeats - 2; beat >= 0; beat--) {
+    for (let step = remainingSteps - 2; step >= 0; step--) {
       const prevReachable = new Set<string>();
       for (const key of currentReachable) {
         const [blueStr, redStr] = key.split("|");
@@ -115,15 +115,15 @@ export class OrientationReachabilityAnalyzer {
       if (prevReachable.size === 0) {
         return {
           feasible: false,
-          emptyBeatIndex: beat,
-          reachablePerBeat,
+          emptyStepIndex: step,
+          reachablePerStep,
         };
       }
-      reachablePerBeat.unshift(prevReachable);
+      reachablePerStep.unshift(prevReachable);
       currentReachable = prevReachable;
     }
 
-    return { feasible: true, reachablePerBeat };
+    return { feasible: true, reachablePerStep };
   }
 }
 

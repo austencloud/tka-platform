@@ -25,10 +25,10 @@ export class RewoundExecutor implements ILOOPExecutor {
     const originalLength = originalSteps.length;
 
     const reversedSteps: SequenceStep[] = [];
-    const beatsToReverse = [...originalSteps].reverse();
+    const stepsToReverse = [...originalSteps].reverse();
 
-    for (let i = 0; i < beatsToReverse.length; i++) {
-      const sourceStep = beatsToReverse[i]!;
+    for (let i = 0; i < stepsToReverse.length; i++) {
+      const sourceStep = stepsToReverse[i]!;
       const newStepNumber = originalLength + i + 1;
 
       const previousStep =
@@ -36,13 +36,13 @@ export class RewoundExecutor implements ILOOPExecutor {
           ? originalSteps[originalSteps.length - 1]!
           : reversedSteps[i - 1]!;
 
-      const rewoundBeat = this.createRewoundBeat(
+      const rewoundStep = this.createRewoundStep(
         sourceStep,
         previousStep,
         newStepNumber
       );
 
-      reversedSteps.push(rewoundBeat);
+      reversedSteps.push(rewoundStep);
     }
 
     const allSteps = [...originalSteps, ...reversedSteps];
@@ -51,7 +51,7 @@ export class RewoundExecutor implements ILOOPExecutor {
     return allSteps;
   }
 
-  private createRewoundBeat(
+  private createRewoundStep(
     sourceStep: SequenceStep,
     previousStep: SequenceStep,
     newStepNumber: number

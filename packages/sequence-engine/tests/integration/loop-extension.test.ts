@@ -248,7 +248,7 @@ describe("SequenceBuilder LOOP extension", () => {
     expect(result.loop).toBeDefined();
     expect(result.loop!.seedWord).toBe("AB");
     expect(result.loop!.derivedWord.length).toBeGreaterThan(0);
-    expect(result.loop!.derivedBeatIndices.length).toBe(2);
+    expect(result.loop!.derivedStepIndices.length).toBe(2);
     expect(result.loop!.components.length).toBe(2);
     expect(result.loop!.orientationCycleMultiplier).toBe(2);
   });
@@ -264,7 +264,7 @@ describe("SequenceBuilder LOOP extension", () => {
       },
     });
 
-    for (const idx of result.loop!.derivedBeatIndices) {
+    for (const idx of result.loop!.derivedStepIndices) {
       expect(idx).toBeLessThan(result.sequence.length);
       expect(result.sequence[idx]).toBeDefined();
     }

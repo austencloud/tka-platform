@@ -420,7 +420,7 @@ const enforceHandPathContinuityPattern: ConstraintPattern = {
   },
 };
 
-const handPathReversalEveryBeatPattern: ConstraintPattern = {
+const handPathReversalEveryStepPattern: ConstraintPattern = {
   id: "hand-path-reversal-every-beat",
   type: ConstraintType.HAND_PATH,
   description: "Hand path reversal every beat",
@@ -488,7 +488,7 @@ const maximizePropContinuityPattern: ConstraintPattern = {
 // REVERSAL PATTERNS (general - when user doesn't specify hand vs prop)
 // =============================================================================
 
-const reversalEveryBeatPattern: ConstraintPattern = {
+const reversalEveryStepPattern: ConstraintPattern = {
   id: "reversal-every-beat",
   type: ConstraintType.REVERSAL,
   description: "Reversal every beat (maximum direction changes)",
@@ -552,7 +552,7 @@ export const CONSTRAINT_PATTERNS: ConstraintPattern[] = [
   // Hand path patterns (specific hand path vs general reversal)
   enforceHandPathContinuityPattern,
   maximizeHandPathContinuityPattern,
-  handPathReversalEveryBeatPattern,
+  handPathReversalEveryStepPattern,
 
   // Prop reversal patterns (specific prop/spin reversal)
   noPropReversalsPattern,
@@ -563,7 +563,7 @@ export const CONSTRAINT_PATTERNS: ConstraintPattern[] = [
   maximizeContinuityPattern,
 
   // Reversals (general - when user doesn't specify hand vs prop)
-  reversalEveryBeatPattern,
+  reversalEveryStepPattern,
   noReversalsPattern,
 
   // Per-hand dash preferences (HIGHEST PRIORITY for dash patterns)

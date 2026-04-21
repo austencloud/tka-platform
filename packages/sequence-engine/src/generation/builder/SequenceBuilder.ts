@@ -234,7 +234,7 @@ export interface BuildResult {
     derivedWord: string;
     seedWord: string;
     components: string[];
-    derivedBeatIndices: number[];
+    derivedStepIndices: number[];
     orientationCycleMultiplier: number;
   };
 }
@@ -520,7 +520,7 @@ export class SequenceBuilder {
 
         if (!reachability.feasible) {
           throw new Error(
-            `No valid ${length}-beat path exists: beat ${reachability.emptyBeatIndex! + 1} ` +
+            `No valid ${length}-beat path exists: beat ${reachability.emptyStepIndex! + 1} ` +
             `has no reachable positions given the current constraints`,
           );
         }
@@ -606,7 +606,7 @@ export class SequenceBuilder {
 
           if (!reachabilityRetry.feasible) {
             throw new Error(
-              `No valid ${length}-beat path exists: beat ${reachabilityRetry.emptyBeatIndex! + 1} ` +
+              `No valid ${length}-beat path exists: beat ${reachabilityRetry.emptyStepIndex! + 1} ` +
               `has no reachable positions given the current constraints`,
             );
           }
@@ -755,18 +755,17 @@ export class SequenceBuilder {
       const pd = searchResult.steps[i]!;
       const isBridge = bridgeIndices.has(i);
 
-      // Beat index: start position = 0, first letter = 1, etc.
-      // Bridge letters share the beat index of the letter they precede.
-      const beatIndex = i;
+      // Step index: start position = 0, first letter = 1, etc.
+      // Bridge letters share the step index of the letter they precede.
 
       // Apply turn allocation. Index 0 = start position (no turns),
-      // beats are 1-indexed in the turn allocation arrays.
-      const beatTurnIndex = i > 0 ? i - 1 : -1;
-      const blueTurns = beatTurnIndex >= 0 && beatTurnIndex < turnAllocation.blue.length
-        ? turnAllocation.blue[beatTurnIndex]
+      // letter steps are 1-indexed in the turn allocation arrays.
+      const stepTurnIndex = i > 0 ? i - 1 : -1;
+      const blueTurns = stepTurnIndex >= 0 && stepTurnIndex < turnAllocation.blue.length
+        ? turnAllocation.blue[stepTurnIndex]
         : undefined;
-      const redTurns = beatTurnIndex >= 0 && beatTurnIndex < turnAllocation.red.length
-        ? turnAllocation.red[beatTurnIndex]
+      const redTurns = stepTurnIndex >= 0 && stepTurnIndex < turnAllocation.red.length
+        ? turnAllocation.red[stepTurnIndex]
         : undefined;
 
       // Get the previous step's rotation directions for continuity
@@ -831,7 +830,6 @@ export class SequenceBuilder {
           prefloatRotationDirection: pd.redMotion.rotationDirection as Motion["rotationDirection"],
         }),
       };
-      void beatIndex; // deprecated — stepNumber is the canonical field
       sequence.push({
         id: `step-${i}-${pd.letter}`,
         letter: pd.letter as SequenceStep["letter"],
@@ -930,11 +928,11 @@ export class SequenceBuilder {
     // The seed beats occupy indices 1 through (result.sequence.length - 1).
     // Derived beats start at index result.sequence.length.
     const seedStepCount = result.sequence.length;
-    const derivedBeatIndices: number[] = [];
+    const derivedStepIndices: number[] = [];
     const derivedLetters: string[] = [];
 
     for (let i = seedStepCount; i < extendedSteps.length; i++) {
-      derivedBeatIndices.push(i);
+      derivedStepIndices.push(i);
       derivedLetters.push(extendedSteps[i]!.letter ?? "");
     }
 
@@ -959,7 +957,7 @@ export class SequenceBuilder {
         seedWord,
         derivedWord,
         components,
-        derivedBeatIndices,
+        derivedStepIndices,
         orientationCycleMultiplier,
       },
     };

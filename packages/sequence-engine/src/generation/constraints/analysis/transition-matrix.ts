@@ -101,10 +101,10 @@ export interface WordFeasibility {
   canAvoidAllHandReversals: boolean;
   /** Can the word be done with NO prop reversals? */
   canAvoidAllPropReversals: boolean;
-  /** Can the word have a hand reversal on EVERY beat? */
-  canHaveHandReversalEveryBeat: boolean;
-  /** Can the word have a prop reversal on EVERY beat? */
-  canHavePropReversalEveryBeat: boolean;
+  /** Can the word have a hand reversal on EVERY step? */
+  canHaveHandReversalEveryStep: boolean;
+  /** Can the word have a prop reversal on EVERY step? */
+  canHavePropReversalEveryStep: boolean;
 
   /** Transitions that ALWAYS require hand reversal (blockers) */
   handReversalBlockers: string[];
@@ -221,8 +221,8 @@ export function analyzeWordFeasibility(
     letters,
     canAvoidAllHandReversals: handReversalBlockers.length === 0,
     canAvoidAllPropReversals: propReversalBlockers.length === 0,
-    canHaveHandReversalEveryBeat: noHandReversalPossible.length === 0,
-    canHavePropReversalEveryBeat: noPropReversalPossible.length === 0,
+    canHaveHandReversalEveryStep: noHandReversalPossible.length === 0,
+    canHavePropReversalEveryStep: noPropReversalPossible.length === 0,
     handReversalBlockers,
     propReversalBlockers,
     noHandReversalPossible,
@@ -265,7 +265,7 @@ export function suggestAlternatives(feasibility: WordFeasibility): string[] {
   }
 
   // If "reversal every beat" is impossible
-  if (!feasibility.canHaveHandReversalEveryBeat) {
+  if (!feasibility.canHaveHandReversalEveryStep) {
     const maxPossible = feasibility.maxHandReversals;
     const total = feasibility.letters.length - 1;
     suggestions.push(
@@ -300,14 +300,14 @@ export function explainConstraintImpossibility(
       return `${feasibility.propReversalBlockers.length} transitions always require prop reversals: ${feasibility.propReversalBlockers.join(", ")}.`;
 
     case "hand-reversal-every-beat":
-      if (feasibility.canHaveHandReversalEveryBeat) return null;
+      if (feasibility.canHaveHandReversalEveryStep) return null;
       if (feasibility.noHandReversalPossible.length === 1) {
         return `The transition ${feasibility.noHandReversalPossible[0]} can never produce a hand reversal - all its variations maintain the same hand path direction.`;
       }
       return `${feasibility.noHandReversalPossible.length} transitions can never produce handpath reversals: ${feasibility.noHandReversalPossible.join(", ")}. Maximum achievable: ${feasibility.maxHandReversals}/${feasibility.letters.length - 1} beats.`;
 
     case "prop-reversal-every-beat":
-      if (feasibility.canHavePropReversalEveryBeat) return null;
+      if (feasibility.canHavePropReversalEveryStep) return null;
       return `${feasibility.noPropReversalPossible.length} transitions can never produce prop reversals: ${feasibility.noPropReversalPossible.join(", ")}.`;
   }
 }

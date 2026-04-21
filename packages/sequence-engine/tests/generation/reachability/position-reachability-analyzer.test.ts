@@ -75,7 +75,7 @@ describe("PositionReachabilityAnalyzer", () => {
       const result = analyzer.analyze(2, new Set(["D"]), variations);
 
       expect(result.feasible).toBe(false);
-      expect(result.emptyBeatIndex).toBeDefined();
+      expect(result.emptyStepIndex).toBeDefined();
     });
   });
 
@@ -102,7 +102,7 @@ describe("PositionReachabilityAnalyzer", () => {
       const result = analyzer.analyze(2, new Set(["C"]), variations, new Set(["A", "X"]));
 
       expect(result.feasible).toBe(false);
-      expect(result.emptyBeatIndex).toBe(0);
+      expect(result.emptyStepIndex).toBe(0);
     });
   });
 
@@ -183,7 +183,7 @@ describe("PositionReachabilityAnalyzer", () => {
       const result = analyzer.analyze(1, new Set(["Z"]), variations);
 
       expect(result.feasible).toBe(false);
-      expect(result.emptyBeatIndex).toBe(0);
+      expect(result.emptyStepIndex).toBe(0);
     });
   });
 
@@ -255,7 +255,7 @@ describe("PositionReachabilityAnalyzer", () => {
       );
 
       expect(result.feasible).toBe(false);
-      expect(result.emptyBeatIndex).toBe(0);
+      expect(result.emptyStepIndex).toBe(0);
     });
 
     it("blocking one start still allows paths from another", () => {

@@ -317,6 +317,6 @@ export function enforceHandPathContinuity(): HandPathReversalConstraint {
   return new HandPathReversalConstraint("enforce");
 }
 
-export function handReversalEveryBeat(): HandPathReversalConstraint {
+export function handReversalEveryStep(): HandPathReversalConstraint {
   return new HandPathReversalConstraint("every");
 }
