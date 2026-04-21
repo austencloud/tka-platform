@@ -39,7 +39,9 @@
     "clean": "rimraf dist",
     "prepublishOnly": "npm run clean && npm run build"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@tka/tka-types": "workspace:*"
+  },
   "devDependencies": {
     "rimraf": "^5.0.0",
     "typescript": "^5.0.0"

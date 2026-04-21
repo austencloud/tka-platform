@@ -166,7 +166,7 @@ importers:
         version: link:packages/render-core
       '@tka/sequence-engine':
         specifier: file:./packages/sequence-engine
-        version: link:packages/sequence-engine
+        version: file:packages/sequence-engine
       '@tka/tka-types':
         specifier: file:./packages/tka-types
         version: link:packages/tka-types
@@ -594,6 +594,10 @@ importers:
         version: 5.9.3
 
   packages/sequence-engine:
+    dependencies:
+      '@tka/tka-types':
+        specifier: workspace:*
+        version: link:../tka-types
     devDependencies:
       rimraf:
         specifier: ^5.0.0
@@ -3054,6 +3058,9 @@ packages:
 
   '@tiptap/starter-kit@2.27.2':
     resolution: {integrity: sha512-bb0gJvPoDuyRUQ/iuN52j1//EtWWttw+RXAv1uJxfR0uKf8X7uAqzaOOgwjknoCIDC97+1YHwpGdnRjpDkOBxw==}
+
+  '@tka/sequence-engine@file:packages/sequence-engine':
+    resolution: {directory: packages/sequence-engine, type: directory}
 
   '@tootallnate/once@2.0.0':
     resolution: {integrity: sha512-XCuKFP5PS55gnMVu3dty8KPatLqUoy/ZYzDzAGCQ8JNFCkLXzmI7vNHCR+XpbZaMWQK/vQubr7PkYq8g470J/A==}
@@ -10107,6 +10114,10 @@ snapshots:
       '@tiptap/extension-text': 2.27.2(@tiptap/core@2.27.2(@tiptap/pm@2.27.2))
       '@tiptap/extension-text-style': 2.27.2(@tiptap/core@2.27.2(@tiptap/pm@2.27.2))
       '@tiptap/pm': 2.27.2
+
+  '@tka/sequence-engine@file:packages/sequence-engine':
+    dependencies:
+      '@tka/tka-types': link:packages/tka-types
 
   '@tootallnate/once@2.0.0':
     optional: true
