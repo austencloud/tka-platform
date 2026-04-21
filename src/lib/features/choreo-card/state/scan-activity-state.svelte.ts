@@ -10,6 +10,8 @@
 import {
   collection,
   collectionGroup,
+  doc,
+  getDoc,
   getDocsFromServer,
   limit,
   onSnapshot,
@@ -63,6 +65,8 @@ class ScanActivityState {
     string,
     { decoded: SequenceData | null; reason?: string }
   >();
+  private authorCache = new Map<string, { displayName: string; avatarUrl?: string }>();
+  private authorInflight = new Map<string, Promise<{ displayName: string; avatarUrl?: string }>>();
 
   filtered = $derived.by(() => {
     const q = this.searchQuery.trim().toLowerCase();
@@ -203,10 +207,11 @@ class ScanActivityState {
   ): Promise<void> {
     try {
       const decoded = await encoder.decodeFromQR(encoded);
-      this.decodeCache.set(encoded, { decoded });
+      const enriched = await this.enrichDecoded(decoded, entry);
+      this.decodeCache.set(encoded, { decoded: enriched });
       const current = this.byCode.get(entry.code);
       if (current && current.encoded === encoded) {
-        current.decoded = decoded;
+        current.decoded = enriched;
         current.integrityOk = true;
         this.resort();
       }
@@ -221,6 +226,59 @@ class ScanActivityState {
         this.resort();
       }
     }
+  }
+
+  /**
+   * Merge metadata from the shortcode doc + user profile onto the decoded
+   * sequence. The encoded blob itself carries steps only — word, author, and
+   * owner id live on the shortcode doc / user profile.
+   */
+  private async enrichDecoded(
+    decoded: SequenceData,
+    entry: CodeEntry
+  ): Promise<SequenceData> {
+    const author = entry.ownerId
+      ? await this.lookupAuthor(entry.ownerId)
+      : null;
+    return {
+      ...decoded,
+      word: entry.word || decoded.word,
+      name: entry.word || decoded.name,
+      ownerId: entry.ownerId ?? decoded.ownerId,
+      author: author?.displayName ?? decoded.author,
+      displayName: entry.word || decoded.displayName,
+    } as SequenceData;
+  }
+
+  private async lookupAuthor(
+    ownerId: string
+  ): Promise<{ displayName: string; avatarUrl?: string }> {
+    const cached = this.authorCache.get(ownerId);
+    if (cached) return cached;
+    const inflight = this.authorInflight.get(ownerId);
+    if (inflight) return inflight;
+
+    const p = (async () => {
+      try {
+        const firestore = await getFirestoreInstance();
+        const snap = await getDoc(doc(firestore, "users", ownerId));
+        const data = snap.data() ?? {};
+        const result = {
+          displayName: (data["displayName"] as string) ?? "Unknown",
+          avatarUrl: data["photoURL"] as string | undefined,
+        };
+        this.authorCache.set(ownerId, result);
+        return result;
+      } catch {
+        const fallback = { displayName: "Unknown" };
+        this.authorCache.set(ownerId, fallback);
+        return fallback;
+      } finally {
+        this.authorInflight.delete(ownerId);
+      }
+    })();
+    this.authorInflight.set(ownerId, p);
+    return p;
   }
 
   private resort(): void {

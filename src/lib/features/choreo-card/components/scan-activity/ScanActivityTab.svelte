@@ -6,17 +6,14 @@
 -->
 <script lang="ts">
   import { onDestroy } from "svelte";
+  import { goto } from "$app/navigation";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
-  import { scanActivityState, type CodeEntry } from "$lib/features/choreo-card/state/scan-activity-state.svelte";
+  import { scanActivityState } from "$lib/features/choreo-card/state/scan-activity-state.svelte";
   import ScanActivityCard from "./ScanActivityCard.svelte";
-  import ScanHistoryDrawer from "./ScanHistoryDrawer.svelte";
   import RecentScansList from "./RecentScansList.svelte";
   import TopLocationsBlock from "./TopLocationsBlock.svelte";
   import ScanActivityGlobe from "./ScanActivityGlobe.svelte";
   import { countryCentroid } from "./country-centroids";
-
-  let drawerOpen = $state(false);
-  let drawerEntry = $state<CodeEntry | null>(null);
 
   const scanState = scanActivityState;
   const isAdmin = $derived(authState.isAdmin === true);
@@ -29,9 +26,8 @@
     scanState.subscribe(authState.user?.uid ?? null);
   });
 
-  function openDrawer(code: string) {
-    drawerEntry = scanState.codes.find((c) => c.code === code) ?? null;
-    drawerOpen = drawerEntry !== null;
+  function openCard(code: string) {
+    goto(`/p/${code}`);
   }
 
 
@@ -94,7 +90,7 @@
       {:else}
         <div class="grid">
           {#each scanState.filtered as entry, i (entry.code)}
-            <ScanActivityCard {entry} sequence={entry.decoded} hot={i === 0} onOpen={openDrawer} />
+            <ScanActivityCard {entry} sequence={entry.decoded} hot={i === 0} onOpen={openCard} />
           {/each}
         </div>
       {/if}
@@ -107,7 +103,7 @@
           <span class="count">● {scanState.recentEvents.length} recent</span>
         </div>
         <ScanActivityGlobe points={globePoints} height={260} />
-        <RecentScansList events={scanState.recentEvents} onRowClick={openDrawer} />
+        <RecentScansList events={scanState.recentEvents} onRowClick={openCard} />
       </div>
       <TopLocationsBlock events={scanState.recentEvents} />
       <a class="link" href="/community?layer=scans">🌍 View all scans on Community map →</a>
@@ -115,7 +111,6 @@
   </div>
 </div>
 
-<ScanHistoryDrawer bind:isOpen={drawerOpen} entry={drawerEntry} />
 
 <style>
   .shell { display: flex; flex-direction: column; flex: 1; min-width: 0; width: 100%; height: 100%; background: #080a12; }

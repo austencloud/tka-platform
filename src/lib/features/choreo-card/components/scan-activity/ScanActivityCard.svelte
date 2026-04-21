@@ -1,13 +1,13 @@
 <!--
   ScanActivityCard.svelte
 
-  Feed card for the Scan Activity view. Composes ChoreoCardThumbnail
-  (which owns pictograph rendering via PropAwareThumbnail — CLAUDE.md
-  compliance) and wraps it with overlay chrome:
-  scan count badge, sparkline, city, time-ago, hot glow, error state.
+  Feed card for the Scan Activity view. Renders the real playing-card face
+  via ChoreoCard (cardMode) with a scan-count badge overlay and a thin
+  lower strip showing last-scan city + time-ago. Click navigates to the
+  canonical short-code viewer at /p/{code}.
 -->
 <script lang="ts">
-  import ChoreoCardThumbnail from "$lib/features/browse/sequences/display/components/ChoreoCardThumbnail/ChoreoCardThumbnail.svelte";
+  import ChoreoCard from "$lib/features/choreo-card/components/ChoreoCard.svelte";
   import type { CodeEntry } from "$lib/features/choreo-card/state/scan-activity-state.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
@@ -44,8 +44,9 @@
     class="scard placeholder"
     onclick={() => onOpen(entry.code)}
     aria-label={`${entry.word} — restoration failed. Click for details.`}
+    type="button"
   >
-    <span class="badge badge-error">!</span>
+    <span class="badge badge-error" aria-hidden="true">!</span>
     <span class="word">restoration failed</span>
     <span class="code-pill">{entry.code}</span>
     <div class="pictos" aria-hidden="true">
@@ -54,28 +55,36 @@
       <div class="cell"></div>
       <div class="cell"></div>
     </div>
-    <div class="footer">
+    <div class="footer-strip">
       <span class="loc">—</span>
       <span class="ago err">check</span>
     </div>
   </button>
 {:else}
-  <button
+  <div
     class="scard"
     class:hot
-    onclick={() => onOpen(entry.code)}
     aria-label={ariaLabel}
     style:view-transition-name={`scan-card-${entry.code}`}
   >
-    <span class="badge">{entry.scanCount}</span>
-    <div class="thumb-wrap">
-      <ChoreoCardThumbnail {sequence} />
+    <span class="badge" aria-hidden="true">{entry.scanCount}</span>
+    {#if hot}
+      <span class="hot-pulse" aria-hidden="true"></span>
+    {/if}
+    <div class="card-face">
+      <ChoreoCard
+        {sequence}
+        cardMode
+        showQRCodes={false}
+        showBirthday={false}
+        onSelect={() => onOpen(entry.code)}
+      />
     </div>
-    <div class="footer">
+    <div class="footer-strip">
       <span class="loc">{entry.lastCity ?? "—"}</span>
       <span class="ago">{timeAgo}</span>
     </div>
-  </button>
+  </div>
 {/if}
 
 <style>
@@ -83,38 +92,97 @@
     position: relative;
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    padding: 10px;
     background: linear-gradient(180deg, #151a28 0%, #0d1019 100%);
     border: 1px solid #222838;
     border-radius: 8px;
     aspect-ratio: 5 / 7;
-    cursor: pointer;
+    overflow: hidden;
     color: inherit;
     text-align: left;
     font: inherit;
     transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
   }
   .scard:hover { border-color: rgba(16, 185, 129, 0.4); transform: translateY(-2px); }
-  .scard:focus-visible { outline: 2px solid #34d399; outline-offset: 2px; }
-  .scard.hot { border-color: #10b981; box-shadow: 0 0 20px rgba(16, 185, 129, 0.25); }
+  .scard.hot { border-color: #10b981; box-shadow: 0 0 20px rgba(16, 185, 129, 0.35); }
+
+  .card-face {
+    flex: 1;
+    min-height: 0;
+    position: relative;
+  }
+
+  .card-face :global(.choreo-card) {
+    border: none;
+    border-radius: 0;
+  }
+  .card-face :global(.choreo-card:hover) {
+    transform: none;
+    box-shadow: none;
+  }
 
   .badge {
     position: absolute;
     top: 8px;
     right: 8px;
-    padding: 3px 8px;
-    background: rgba(16, 185, 129, 0.15);
-    border: 1px solid rgba(16, 185, 129, 0.4);
+    padding: 3px 9px;
+    background: rgba(16, 185, 129, 0.92);
     border-radius: 12px;
     font-size: var(--font-size-sm, 14px);
-    color: #34d399;
-    font-weight: 700;
+    color: #04120b;
+    font-weight: 800;
+    z-index: 2;
+    pointer-events: none;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
   }
-  .badge-error { background: rgba(239, 68, 68, 0.12); border-color: rgba(239, 68, 68, 0.35); color: #fca5a5; }
+  .badge-error {
+    background: rgba(239, 68, 68, 0.95);
+    color: #2b0707;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+  }
 
-  .thumb-wrap { flex: 1; min-height: 0; }
-  .word { font-family: monospace; color: #34d399; font-size: var(--font-size-sm, 14px); }
+  .hot-pulse {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #34d399;
+    box-shadow: 0 0 10px #10b981;
+    animation: hotPulse 1.4s infinite;
+    z-index: 2;
+  }
+  @keyframes hotPulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(1.6); }
+  }
+
+  .footer-strip {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 10px;
+    font-size: var(--font-size-sm, 14px);
+    background: #0b0d17;
+    border-top: 1px solid #1a1f2e;
+  }
+  .loc { color: #d0d5e0; }
+  .ago { color: #34d399; font-weight: 600; }
+  .ago.err { color: #fca5a5; }
+
+  /* Placeholder (integrity-failed) state keeps the old styling */
+  .placeholder {
+    opacity: 0.55;
+    border-style: dashed;
+    padding: 10px;
+    gap: 6px;
+    cursor: pointer;
+  }
+  .placeholder:focus-visible { outline: 2px solid #34d399; outline-offset: 2px; }
+  .placeholder .word {
+    font-family: monospace;
+    color: #94a3b8;
+    font-size: var(--font-size-sm, 14px);
+  }
   .code-pill {
     font-family: monospace;
     font-size: var(--font-size-sm, 14px);
@@ -134,15 +202,9 @@
     background: repeating-linear-gradient(45deg, #1a1f2e, #1a1f2e 5px, #0b0d17 5px, #0b0d17 10px);
     border-radius: 3px;
   }
-  .footer { display: flex; justify-content: space-between; font-size: var(--font-size-sm, 14px); }
-  .loc { color: #d0d5e0; }
-  .ago { color: #10b981; font-weight: 600; }
-  .ago.err { color: #fca5a5; }
-
-  .placeholder { opacity: 0.55; border-style: dashed; }
-  .placeholder .word { color: #94a3b8; }
 
   @media (prefers-reduced-motion: reduce) {
     .scard { transition: none; }
+    .hot-pulse { animation: none; }
   }
 </style>
