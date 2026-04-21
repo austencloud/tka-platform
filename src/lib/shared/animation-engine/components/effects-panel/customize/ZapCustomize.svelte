@@ -171,7 +171,6 @@
     gap: 8px;
   }
 
-  /* Chip row (Mode) — copied from TrailsCategory */
   .option-row {
     display: flex;
     align-items: center;
@@ -234,7 +233,6 @@
     font-size: 14px;
   }
 
-  /* Sliders — copied from TrailsCategory */
   .slider-row {
     display: flex;
     align-items: center;
@@ -261,7 +259,6 @@
     color: var(--theme-text, white);
   }
 
-  /* Color pickers — copied from TrailsCategory */
   .color-row {
     display: flex;
     align-items: center;

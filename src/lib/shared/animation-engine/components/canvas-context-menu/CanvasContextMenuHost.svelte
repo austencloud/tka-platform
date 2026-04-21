@@ -1,6 +1,6 @@
 <!--
   CanvasContextMenuHost — Orchestrator for the canvas right-click context menu.
-  Quick-access submenus for Effects, Efforts, Path Shape, plus Animation Settings launcher.
+  Quick-access submenus for Effects, Efforts, Path Shape.
 -->
 <script lang="ts">
   import { onDestroy } from "svelte";
@@ -15,7 +15,6 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
   interface Props {
-    onOpenSettings: () => void;
     disassembled?: boolean;
     onToggleDisassemble?: () => void;
     captureEffectDiagnostics?: () => Record<string, unknown>;
@@ -23,7 +22,6 @@
   }
 
   const {
-    onOpenSettings,
     disassembled = false,
     onToggleDisassemble,
     captureEffectDiagnostics,
@@ -66,10 +64,6 @@
 
     return buildCanvasContextMenuItems({
       visibilityManager,
-      onOpenSettings: () => {
-        closeContextMenu();
-        onOpenSettings();
-      },
       disassembled,
       onToggleDisassemble,
       captureEffectDiagnostics,

@@ -1,11 +1,11 @@
 <script lang="ts">
-	import { animationSettings } from "../../../state/animation-settings-state.svelte";
+	import { animationSettings } from "../../state/animation-settings-state.svelte";
 	import {
 		TrackingMode,
 		TAIL_LENGTH_MIN,
 		TAIL_LENGTH_MAX,
 		DEFAULT_TRAIL_SETTINGS,
-	} from "../../../domain/types/TrailTypes";
+	} from "../../domain/types/TrailTypes";
 	import { isBilateralProp } from "$lib/shared/pictograph/prop/domain/enums/PropClassification";
 	import { getMotionColor } from "$lib/shared/utils/svg-color-utils";
 	import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -13,7 +13,6 @@
 
 	const settingsState = container.items.settingsState;
 
-	// Check if ANY current prop is bilateral — only bilateral props can track both ends
 	const hasBilateralProp = $derived.by(() => {
 		const blue = settingsState.settings.bluePropType;
 		const red = settingsState.settings.redPropType;
@@ -22,7 +21,6 @@
 		return blueIsBilateral || redIsBilateral;
 	});
 
-	// Prop-specific labels for each end
 	const trackingOptions = $derived.by(() => {
 		const pt = animationSettings.currentPropType?.toLowerCase() ?? "staff";
 
@@ -49,7 +47,6 @@
 
 	let storedTrackingMode = $derived(animationSettings.trail.trackingMode);
 
-	// Effective tracking mode: unilateral props are forced to ONE END regardless of stored preference
 	let trackingMode = $derived(
 		hasBilateralProp ? storedTrackingMode : TrackingMode.RIGHT_END
 	);
@@ -60,7 +57,6 @@
 	let blueColor = $derived(animationSettings.trail.blueColor);
 	let redColor = $derived(animationSettings.trail.redColor);
 
-	// Default colors for comparison
 	const defaultBlue = getMotionColor(MotionColor.BLUE, "dark");
 	const defaultRed = getMotionColor(MotionColor.RED, "dark");
 
@@ -294,7 +290,6 @@
 		color: var(--theme-text, white);
 	}
 
-	/* ── Color pickers ── */
 	.color-row {
 		display: flex;
 		align-items: center;

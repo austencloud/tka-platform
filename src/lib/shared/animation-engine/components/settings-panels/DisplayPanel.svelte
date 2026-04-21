@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onDestroy } from "svelte";
-	import { getAnimationVisibilityManager } from "../../../state/animation-visibility-state.svelte";
+	import { getAnimationVisibilityManager } from "../../state/animation-visibility-state.svelte";
 
 	const vm = getAnimationVisibilityManager();
 
@@ -26,8 +26,6 @@
 	onDestroy(() => vm.unregisterObserver(handleVisibilityChange));
 
 	function toggleGrid(): void {
-		// Toggle between "none" and "diamond" (sequence's actual grid mode
-		// is determined by the sequence data, not this setting)
 		vm.setGridMode(gridVisible ? "none" : "8point");
 	}
 

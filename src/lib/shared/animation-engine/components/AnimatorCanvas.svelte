@@ -45,7 +45,6 @@ Last audit: 2025-12-27
   import type { LedOverlayConfig } from "../domain/types/LedTypes";
   import type { TipEffectMap, TipEffortMap } from "../domain/types/TipEffectTypes";
   import CanvasContextMenuHost from "./canvas-context-menu/CanvasContextMenuHost.svelte";
-  import AnimationSettingsModal from "./animation-settings-modal/AnimationSettingsModal.svelte";
   import { onDestroy, untrack } from "svelte";
   import { fireCacheInvalidation } from "../state/fire-invalidation-signal.svelte";
   import { effectErrorSignal } from "../state/effect-error-signal.svelte";
@@ -250,13 +249,6 @@ Last audit: 2025-12-27
 
   let containerElement: HTMLDivElement | undefined = $state();
   let contextMenuHost: CanvasContextMenuHost | undefined = $state();
-
-  // Settings modal state
-  let settingsModalOpen = $state(false);
-
-  function handleOpenSettings() {
-    settingsModalOpen = true;
-  }
 
   // Engine instance — wire per-instance visibility manager before initialization
   const engine = new AnimationEngine();
@@ -669,21 +661,10 @@ Last audit: 2025-12-27
   {#if !disableContextMenu}
     <CanvasContextMenuHost
       bind:this={contextMenuHost}
-      onOpenSettings={handleOpenSettings}
       disassembled={externalToggleDisassemble ? externalDisassembled : isDisassembledView}
       onToggleDisassemble={externalToggleDisassemble ?? toggleDisassemble}
       captureEffectDiagnostics={() => engine.captureEffectDiagnostics()}
       {sequenceData}
-    />
-
-    <AnimationSettingsModal
-      bind:open={settingsModalOpen}
-      {sequenceData}
-      {blueProp}
-      {redProp}
-      {letter}
-      {stepData}
-      {word}
     />
   {/if}
 </div>

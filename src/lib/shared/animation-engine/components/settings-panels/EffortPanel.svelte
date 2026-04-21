@@ -1,47 +1,43 @@
 <script lang="ts">
   import { onDestroy } from "svelte";
-  import { getAnimationVisibilityManager } from "../../../state/animation-visibility-state.svelte";
+  import { getAnimationVisibilityManager } from "../../state/animation-visibility-state.svelte";
+  import { EFFORTS } from "$lib/features/effort-lab/domain/effort-types";
 
   const vm = getAnimationVisibilityManager();
 
-  let pathShape = $state(vm.getPathShape());
+  let effortPreset = $state(vm.getEffortPreset());
 
   function handleVisibilityChange(): void {
-    pathShape = vm.getPathShape();
+    effortPreset = vm.getEffortPreset();
   }
 
   vm.registerObserver(handleVisibilityChange);
   onDestroy(() => vm.unregisterObserver(handleVisibilityChange));
-
-  const options = [
-    { id: "arc" as const, label: "Arc", color: "#60a5fa" },
-    { id: "linear" as const, label: "Linear", color: "#f97316" },
-  ];
 </script>
 
-<div class="path-shape-grid">
-  {#each options as option}
+<div class="effort-grid">
+  {#each EFFORTS as effort}
     <button
-      class="path-btn"
-      class:active={pathShape === option.id}
+      class="effort-btn"
+      class:active={effortPreset === effort.id}
       type="button"
-      aria-pressed={pathShape === option.id}
-      onclick={() => vm.setPathShape(option.id)}
-      style:--path-color={option.color}
+      aria-pressed={effortPreset === effort.id}
+      onclick={() => vm.setEffortPreset(effort.id)}
+      style:--effort-color={effort.color}
     >
-      {option.label}
+      {effort.label}
     </button>
   {/each}
 </div>
 
 <style>
-  .path-shape-grid {
+  .effort-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 6px;
   }
 
-  .path-btn {
+  .effort-btn {
     min-height: var(--min-touch-target, 44px);
     padding: 8px;
     border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
@@ -54,25 +50,25 @@
     transition: all var(--duration-fast, 100ms) ease;
   }
 
-  .path-btn:hover {
+  .effort-btn:hover {
     background: color-mix(in srgb, var(--theme-text) 8%, transparent);
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
     color: var(--theme-text, white);
   }
 
-  .path-btn.active {
-    background: color-mix(in srgb, var(--path-color) 20%, transparent);
-    border-color: color-mix(in srgb, var(--path-color) 50%, transparent);
+  .effort-btn.active {
+    background: color-mix(in srgb, var(--effort-color) 20%, transparent);
+    border-color: color-mix(in srgb, var(--effort-color) 50%, transparent);
     color: var(--theme-text, white);
   }
 
-  .path-btn:focus-visible {
-    outline: 2px solid color-mix(in srgb, var(--path-color) 50%, transparent);
+  .effort-btn:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--effort-color) 50%, transparent);
     outline-offset: 2px;
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .path-btn {
+    .effort-btn {
       transition: none;
     }
   }

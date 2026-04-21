@@ -1,91 +1,85 @@
 <script lang="ts">
 	import { onDestroy } from "svelte";
-	import { getAnimationVisibilityManager } from "../../../state/animation-visibility-state.svelte";
+	import { getAnimationVisibilityManager } from "../../state/animation-visibility-state.svelte";
+	import {
+		charcoalParamsToSemantic,
+		semanticToCharcoalParams,
+		DEFAULT_CHARCOAL_SEMANTIC,
+	} from "../../domain/types/CharcoalSparkTypes";
 
 	const vm = getAnimationVisibilityManager();
 
-	let intensity = $state(vm.getFireIntensity());
-	let colorBlend = $state(vm.getFireColorBlend());
-	let turbulence = $state(vm.getFireTurbulence());
+	let intensity = $state(0);
+	let spread = $state(0);
+	let glow = $state(0);
 
-	function handleVisibilityChange(): void {
-		intensity = vm.getFireIntensity();
-		colorBlend = vm.getFireColorBlend();
-		turbulence = vm.getFireTurbulence();
+	function syncFromParams(): void {
+		const semantic = charcoalParamsToSemantic(vm.getCharcoalParams());
+		intensity = semantic.intensity;
+		spread = semantic.spread;
+		glow = semantic.glow;
 	}
 
-	vm.registerObserver(handleVisibilityChange);
-	onDestroy(() => vm.unregisterObserver(handleVisibilityChange));
+	syncFromParams();
+	vm.registerObserver(syncFromParams);
+	onDestroy(() => vm.unregisterObserver(syncFromParams));
 
-	function formatIntensity(v: number): string {
-		const pct = Math.round(((v - 0.45) / (1 - 0.45)) * 100);
-		return `${pct}%`;
-	}
-
-	function formatColorBlend(v: number): string {
-		if (v < 0.1) return "Natural";
-		if (v > 0.9) return "Colored";
-		return `${Math.round(v * 100)}%`;
-	}
-
-	function formatTurbulence(v: number): string {
-		if (v < 0.05) return "Off";
-		if (v > 0.95) return "Max";
-		return `${Math.round(v * 100)}%`;
+	function applySemanticChange(): void {
+		vm.setCharcoalParams(semanticToCharcoalParams({ intensity, spread, glow }));
 	}
 
 	function resetDefaults(): void {
-		vm.resetFireDefaults();
+		vm.resetCharcoalDefaults();
 	}
 
 	const isDefault = $derived(
-		Math.abs(intensity - 0.7) < 0.03 &&
-		Math.abs(colorBlend - 0.5) < 0.03 &&
-		Math.abs(turbulence - 0.5) < 0.03
+		Math.abs(intensity - DEFAULT_CHARCOAL_SEMANTIC.intensity) < 0.02 &&
+		Math.abs(spread - DEFAULT_CHARCOAL_SEMANTIC.spread) < 0.02 &&
+		Math.abs(glow - DEFAULT_CHARCOAL_SEMANTIC.glow) < 0.02
 	);
 </script>
 
-<div class="fire-controls">
+<div class="charcoal-controls">
 	<div class="slider-row">
-		<label for="ctx-fire-intensity">Intensity</label>
+		<label for="ctx-charcoal-intensity">Intensity</label>
 		<input
-			id="ctx-fire-intensity"
+			id="ctx-charcoal-intensity"
 			type="range"
-			min="0.45"
+			min="0"
 			max="1"
-			step="0.05"
+			step="0.02"
 			value={intensity}
-			oninput={(e) => vm.setFireIntensity(Number((e.target as HTMLInputElement).value))}
+			oninput={(e) => { intensity = Number((e.target as HTMLInputElement).value); applySemanticChange(); }}
 		/>
-		<span class="slider-value">{formatIntensity(intensity)}</span>
+		<span class="slider-value">{Math.round(intensity * 100)}%</span>
 	</div>
 
 	<div class="slider-row">
-		<label for="ctx-fire-color-blend">Color</label>
+		<label for="ctx-charcoal-spread">Spread</label>
 		<input
-			id="ctx-fire-color-blend"
+			id="ctx-charcoal-spread"
 			type="range"
 			min="0"
 			max="1"
-			step="0.05"
-			value={colorBlend}
-			oninput={(e) => vm.setFireColorBlend(Number((e.target as HTMLInputElement).value))}
+			step="0.02"
+			value={spread}
+			oninput={(e) => { spread = Number((e.target as HTMLInputElement).value); applySemanticChange(); }}
 		/>
-		<span class="slider-value">{formatColorBlend(colorBlend)}</span>
+		<span class="slider-value">{Math.round(spread * 100)}%</span>
 	</div>
 
 	<div class="slider-row">
-		<label for="ctx-fire-turbulence">Turbulence</label>
+		<label for="ctx-charcoal-glow">Glow</label>
 		<input
-			id="ctx-fire-turbulence"
+			id="ctx-charcoal-glow"
 			type="range"
 			min="0"
 			max="1"
-			step="0.05"
-			value={turbulence}
-			oninput={(e) => vm.setFireTurbulence(Number((e.target as HTMLInputElement).value))}
+			step="0.02"
+			value={glow}
+			oninput={(e) => { glow = Number((e.target as HTMLInputElement).value); applySemanticChange(); }}
 		/>
-		<span class="slider-value">{formatTurbulence(turbulence)}</span>
+		<span class="slider-value">{Math.round(glow * 100)}%</span>
 	</div>
 
 	<button
@@ -99,7 +93,7 @@
 </div>
 
 <style>
-	.fire-controls {
+	.charcoal-controls {
 		display: flex;
 		flex-direction: column;
 		gap: 8px;
@@ -124,7 +118,7 @@
 	}
 
 	.slider-value {
-		min-width: 52px;
+		min-width: 40px;
 		text-align: right;
 		font-family: var(--font-mono, monospace);
 		font-size: var(--font-size-compact, 12px);
