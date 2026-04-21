@@ -9,6 +9,7 @@
   import { setStickerLabContext } from "./context/sticker-lab-context";
   import StickerList from "./components/StickerList.svelte";
   import StickerSheetPreview from "./components/StickerSheetPreview.svelte";
+  import StickerExportPanel from "./components/StickerExportPanel.svelte";
 
   const state = createStickerLabState();
   setStickerLabContext(state);
@@ -27,7 +28,7 @@
 
   <section class="col col-export" aria-label="Export panel">
     <header><h2>Export</h2></header>
-    <div class="placeholder">Export panel (Task 11)</div>
+    <StickerExportPanel />
   </section>
 </div>
 
@@ -58,15 +59,5 @@
     font-size: 14px;
     font-weight: 600;
     color: var(--theme-text, white);
-  }
-
-  .placeholder {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
-    font-style: italic;
-    font-size: 13px;
   }
 </style>
