@@ -71,7 +71,7 @@ function assertTurns(value: unknown): void {
  * Throws TypeError on invalid enum membership, on missing required fields,
  * or on invalid `turns` values.
  */
-export function createMotion(input: Omit<Motion, "plane"> & { plane?: Plane }): Motion {
+export function createMotion(input: Motion): Motion {
   assertMember(input.motionType, MOTION_TYPE_VALUES, "motionType");
   assertMember(input.startLocation, GRID_LOCATION_VALUES, "startLocation");
   assertMember(input.endLocation, GRID_LOCATION_VALUES, "endLocation");
