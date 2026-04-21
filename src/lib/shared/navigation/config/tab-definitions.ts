@@ -951,6 +951,14 @@ export const LAB_TABS: Section[] = [
     color: "#38bdf8",
     gradient: "linear-gradient(135deg, #7dd3fc 0%, #38bdf8 100%)",
   },
+  {
+    id: "stickers",
+    label: "Stickers",
+    icon: '<i class="fas fa-circle" aria-hidden="true"></i>',
+    description: "Turn LOOP mandalas into printable stickers",
+    color: "#ec4899",
+    gradient: "linear-gradient(135deg, #f472b6 0%, #ec4899 100%)",
+  },
 ];
 
 // REMOVED: LANDING_PAGE_TABS - LandingPreviewModule now handles its own internal tabs
