@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   getLayout,
   calculateImageDimensions,
-  BASE_BEAT_SIZE,
+  BASE_STEP_SIZE,
 } from "../src/layout-tables.js";
 
 describe("getLayout", () => {
@@ -84,8 +84,8 @@ describe("calculateImageDimensions", () => {
   });
 });
 
-describe("BASE_BEAT_SIZE", () => {
+describe("BASE_STEP_SIZE", () => {
   it("is 144", () => {
-    expect(BASE_BEAT_SIZE).toBe(144);
+    expect(BASE_STEP_SIZE).toBe(144);
   });
 });

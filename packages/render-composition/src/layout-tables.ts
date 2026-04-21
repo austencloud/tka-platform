@@ -1,6 +1,6 @@
 import type { StartPositionLayout } from "./types.js";
 
-export const BASE_BEAT_SIZE = 144;
+export const BASE_STEP_SIZE = 144;
 
 /**
  * Layout table for sequences WITH start position (sidebar/top rendering).
