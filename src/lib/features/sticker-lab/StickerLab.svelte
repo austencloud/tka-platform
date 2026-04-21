@@ -8,6 +8,7 @@
   import { createStickerLabState } from "./state/sticker-lab-state.svelte";
   import { setStickerLabContext } from "./context/sticker-lab-context";
   import StickerList from "./components/StickerList.svelte";
+  import StickerSheetPreview from "./components/StickerSheetPreview.svelte";
 
   const state = createStickerLabState();
   setStickerLabContext(state);
@@ -21,7 +22,7 @@
 
   <section class="col col-preview" aria-label="Sheet preview">
     <header><h2>Sheet preview</h2></header>
-    <div class="placeholder">Preview (Task 10)</div>
+    <StickerSheetPreview />
   </section>
 
   <section class="col col-export" aria-label="Export panel">
