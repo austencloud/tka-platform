@@ -158,8 +158,8 @@ export class BuildResultTransformer implements IBuildResultTransformer {
     stepNumber: number,
     options: GenerationOptions
   ): StepData {
-    const blueMotion = this.mapMotion(step.blueMotion, MotionColor.BLUE, options);
-    const redMotion = this.mapMotion(step.redMotion, MotionColor.RED, options);
+    const blueMotion = this.mapMotion(step.motions.blue, MotionColor.BLUE, options);
+    const redMotion = this.mapMotion(step.motions.red, MotionColor.RED, options);
 
     return {
       id: `step-${stepNumber}-${Date.now()}`,
@@ -192,24 +192,24 @@ export class BuildResultTransformer implements IBuildResultTransformer {
 
     // For start positions, motions should be static (props are held in place)
     const blueMotion = createMotionData({
-      motionType: this.toMotionType(step.blueMotion.motionType),
-      rotationDirection: this.toRotationDirection(step.blueMotion.rotationDirection),
-      startLocation: this.toGridLocation(step.blueMotion.startLocation),
-      endLocation: this.toGridLocation(step.blueMotion.endLocation),
-      startOrientation: this.toOrientation(step.blueMotion.startOrientation),
-      endOrientation: this.toOrientation(step.blueMotion.endOrientation),
-      turns: step.blueMotion.turns ?? 0,
+      motionType: this.toMotionType(step.motions.blue.motionType),
+      rotationDirection: this.toRotationDirection(step.motions.blue.rotationDirection),
+      startLocation: this.toGridLocation(step.motions.blue.startLocation),
+      endLocation: this.toGridLocation(step.motions.blue.endLocation),
+      startOrientation: this.toOrientation(step.motions.blue.startOrientation),
+      endOrientation: this.toOrientation(step.motions.blue.endOrientation),
+      turns: step.motions.blue.turns ?? 0,
       color: MotionColor.BLUE,
     });
 
     const redMotion = createMotionData({
-      motionType: this.toMotionType(step.redMotion.motionType),
-      rotationDirection: this.toRotationDirection(step.redMotion.rotationDirection),
-      startLocation: this.toGridLocation(step.redMotion.startLocation),
-      endLocation: this.toGridLocation(step.redMotion.endLocation),
-      startOrientation: this.toOrientation(step.redMotion.startOrientation),
-      endOrientation: this.toOrientation(step.redMotion.endOrientation),
-      turns: step.redMotion.turns ?? 0,
+      motionType: this.toMotionType(step.motions.red.motionType),
+      rotationDirection: this.toRotationDirection(step.motions.red.rotationDirection),
+      startLocation: this.toGridLocation(step.motions.red.startLocation),
+      endLocation: this.toGridLocation(step.motions.red.endLocation),
+      startOrientation: this.toOrientation(step.motions.red.startOrientation),
+      endOrientation: this.toOrientation(step.motions.red.endOrientation),
+      turns: step.motions.red.turns ?? 0,
       color: MotionColor.RED,
     });
 
