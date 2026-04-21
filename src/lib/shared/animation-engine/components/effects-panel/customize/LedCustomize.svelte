@@ -1,5 +1,5 @@
 <script lang="ts">
-  import LedSection from "../../animation-settings-modal/LedSection.svelte";
+  import LedPanel from "../../settings-panels/LedPanel.svelte";
 
   interface Props {
     onBack: () => void;
@@ -13,7 +13,7 @@
     Back to presets
   </button>
 
-  <LedSection />
+  <LedPanel />
 </div>
 
 <style>

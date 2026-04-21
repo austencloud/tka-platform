@@ -1,5 +1,5 @@
 <script lang="ts">
-  import FireCategory from "../../animation-settings-modal/categories/FireCategory.svelte";
+  import FirePanel from "../../settings-panels/FirePanel.svelte";
 
   interface Props {
     onBack: () => void;
@@ -13,7 +13,7 @@
     Back to presets
   </button>
 
-  <FireCategory />
+  <FirePanel />
 </div>
 
 <style>

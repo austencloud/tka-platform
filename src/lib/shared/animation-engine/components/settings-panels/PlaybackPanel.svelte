@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onDestroy } from "svelte";
-	import { getAnimationVisibilityManager } from "../../../state/animation-visibility-state.svelte";
-	import type { PlaybackMode } from "../../../state/animation-visibility-state.svelte";
+	import { getAnimationVisibilityManager } from "../../state/animation-visibility-state.svelte";
+	import type { PlaybackMode } from "../../state/animation-visibility-state.svelte";
 
 	const vm = getAnimationVisibilityManager();
 

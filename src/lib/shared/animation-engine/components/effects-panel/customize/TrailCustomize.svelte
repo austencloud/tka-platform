@@ -1,5 +1,5 @@
 <script lang="ts">
-  import TrailsCategory from "../../animation-settings-modal/categories/TrailsCategory.svelte";
+  import TrailsPanel from "../../settings-panels/TrailsPanel.svelte";
 
   interface Props {
     onBack: () => void;
@@ -13,7 +13,7 @@
     Back to presets
   </button>
 
-  <TrailsCategory />
+  <TrailsPanel />
 </div>
 
 <style>

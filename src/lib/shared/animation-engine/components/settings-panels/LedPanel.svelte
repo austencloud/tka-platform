@@ -57,7 +57,6 @@
 </script>
 
 <div class="led-section">
-  <!-- Row 1: Color swatches (single scrollable row) -->
   <div class="color-row">
     {#each allPresets as preset (preset.id)}
       <button
@@ -80,7 +79,6 @@
     />
   </div>
 
-  <!-- Row 2: Pattern selector (tap to open picker) -->
   <button type="button" class="pattern-selector" onclick={() => patternPickerOpen = !patternPickerOpen}>
     <span class="pattern-current">{activeDescriptor?.name ?? "Solid"}</span>
     <span class="pattern-category">{activeDescriptor ? CATEGORY_LABELS[activeDescriptor.category] : ""}</span>
@@ -110,7 +108,6 @@
     </div>
   {/if}
 
-  <!-- Row 3: Speed -->
   <div class="speed-row">
     <input
       type="range"
@@ -123,7 +120,6 @@
       aria-label="Pattern speed"
     />
     <span class="speed-label">{patternSpeed.toFixed(1)}x</span>
-    <!-- Brightness as small inline dots -->
     {#each [1, 2, 3, 4, 5] as level}
       <button
         type="button"
@@ -145,7 +141,6 @@
     gap: 6px;
   }
 
-  /* ─── Color row ───────────────────────────── */
   .color-row {
     display: flex;
     gap: 4px;
@@ -191,7 +186,6 @@
     pointer-events: none;
   }
 
-  /* ─── Pattern selector ────────────────────── */
   .pattern-selector {
     display: flex;
     align-items: center;
@@ -231,7 +225,6 @@
     transform: rotate(180deg);
   }
 
-  /* ─── Pattern picker dropdown ─────────────── */
   .pattern-picker {
     display: flex;
     flex-direction: column;
@@ -280,7 +273,6 @@
     color: var(--theme-text, white);
   }
 
-  /* ─── Speed + Brightness row ──────────────── */
   .speed-row {
     display: flex;
     align-items: center;

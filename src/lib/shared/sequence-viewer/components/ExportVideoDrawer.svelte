@@ -24,7 +24,7 @@
   import TempoControl from "./TempoControl.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { EFFORTS } from "$lib/features/effort-lab/domain/effort-types";
-  import EffortCategory from "$lib/shared/animation-engine/components/animation-settings-modal/categories/EffortCategory.svelte";
+  import EffortPanel from "$lib/shared/animation-engine/components/settings-panels/EffortPanel.svelte";
   import { onDestroy } from "svelte";
 
   type PanelLayout = "sidebar" | "bottom";
@@ -220,7 +220,7 @@
         </RailBentoSheet>
       {:else if openSheet === "effort"}
         <RailBentoSheet title="Effort" onClose={closeSheet}>
-          <EffortCategory />
+          <EffortPanel />
         </RailBentoSheet>
       {:else if openSheet === "playback"}
         <RailBentoSheet title="Playback" onClose={closeSheet}>

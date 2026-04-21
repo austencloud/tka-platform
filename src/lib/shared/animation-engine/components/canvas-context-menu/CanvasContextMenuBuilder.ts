@@ -13,7 +13,7 @@
  *   - Efforts: 8 effort presets from the effort-lab domain (radio-style)
  *   - Path Shape: Arc vs Linear (radio-style)
  *
- * Plus: Disassemble toggle, Animation Settings launcher.
+ * Plus: Disassemble toggle.
  */
 
 import type {
@@ -29,7 +29,6 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/Sequence
 
 interface CanvasContextMenuDeps {
   visibilityManager: AnimationVisibilityStateManager;
-  onOpenSettings: () => void;
   disassembled?: boolean;
   onToggleDisassemble?: () => void;
   /** Captures a diagnostic snapshot of the effect pipeline state */
@@ -331,23 +330,13 @@ export function buildCanvasContextMenuItems(
   );
 
   if (deps.onToggleDisassemble) {
-    items.push(
-      {
-        id: "toggle-disassemble",
-        label: deps.disassembled ? "Reassemble" : "Disassemble",
-        icon: deps.disassembled ? "fa-compress" : "fa-table-columns",
-        action: () => deps.onToggleDisassemble!(),
-      },
-      { type: "separator" as const },
-    );
+    items.push({
+      id: "toggle-disassemble",
+      label: deps.disassembled ? "Reassemble" : "Disassemble",
+      icon: deps.disassembled ? "fa-compress" : "fa-table-columns",
+      action: () => deps.onToggleDisassemble!(),
+    });
   }
-
-  items.push({
-    id: "open-animation-settings",
-    label: "Animation Settings\u2026",
-    icon: "fa-sliders",
-    action: () => deps.onOpenSettings(),
-  });
 
   // Show "Report Effect Issue" when any effect is active
   if (active !== "none" && deps.captureEffectDiagnostics) {

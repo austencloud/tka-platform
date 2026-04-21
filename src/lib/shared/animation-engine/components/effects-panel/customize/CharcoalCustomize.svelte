@@ -1,5 +1,5 @@
 <script lang="ts">
-  import CharcoalCategory from "../../animation-settings-modal/categories/CharcoalCategory.svelte";
+  import CharcoalPanel from "../../settings-panels/CharcoalPanel.svelte";
 
   interface Props {
     onBack: () => void;
@@ -13,7 +13,7 @@
     Back to presets
   </button>
 
-  <CharcoalCategory />
+  <CharcoalPanel />
 </div>
 
 <style>
