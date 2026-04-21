@@ -3,6 +3,19 @@
  *
  * Immutable motion data for props and arrows with embedded placement data.
  * Represents complete motion information including positioning and rendering data.
+ *
+ * @deprecated This type mixes engine-structural and view-layer concerns.
+ * Migrate consumers to one of:
+ *   - `Motion` from `@tka/tka-types` — engine/structural fields only
+ *     (motionType, startLocation, endLocation, rotationDirection,
+ *     startOrientation, endOrientation, turns, plane, color, prefloat fields)
+ *   - `MotionView` from `./MotionView` — visual/runtime fields only
+ *     (isVisible, propType, arrowLocation, gridMode, arrowPlacementData,
+ *     propPlacementData, handPath, skewSteps, skewDir)
+ *   - `MotionWithView` from `./MotionView` — composition for mixed consumers
+ *
+ * See docs/superpowers/specs/2026-04-20-sequence-engine-unification-design.md
+ * (Phase 2a — Sequence Engine Unification).
  */
 
 // IMPORTANT: Import directly from specific files to avoid circular dependencies
