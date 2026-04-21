@@ -5,6 +5,22 @@
 **Supersedes (mobile portion):** [`2026-04-19-mobile-bento-export-panels-design.md`](./2026-04-19-mobile-bento-export-panels-design.md) — keeps the rail-tile primitive and `RailBentoSheet`, replaces the 4-tile bento with a 5-pill nav and adds a Display section.
 **Related cleanup (already merged in this branch):** AnimationSettingsModal nuked; the 8 panel files moved from `animation-settings-modal/categories/` to `animation-engine/components/settings-panels/` with `Panel` suffix.
 
+---
+
+## ⚠️ 2026-04-21 audit corrections (read this before the body)
+
+The original spec body shipped several design errors that the implementation plan now overrides. The plan (`docs/superpowers/plans/2026-04-21-download-animation-unified-nav.md`) is the source of truth where it conflicts with the body below. Specifically:
+
+1. **Loops and Timing live in EXPORT, not Playback.** They describe the output video, not in-canvas preview. The "Loops semantically belongs with playback duration" framing earlier in this doc is wrong.
+2. **Effects pill summary shows the active effect's NAME (`"Trails"`, `"Fire"`, `"Off"`), not a count.** The default `tipEffectMap` always has one wildcard entry, so a count-based summary said "1 active" with zero user input.
+3. **All 3 fps options (30/60/120) and all 4 resolutions (720p/1080p/4K/8K) are preserved on desktop.** Earlier draft inadvertently dropped 120 fps and 4K/8K.
+4. **Desktop Effects pill keeps the inline play/pause + tempo control** via `EffectsPanel`'s `showPlayback` branch. Earlier draft set `showPlayback={false}`, which removed the play affordance from desktop.
+5. **Path shape (Arc/Linear) is reported explicitly in the Display summary, not counted as on/off.** Both arc and linear are valid choices, not enable/disable. New summary format: `<n> / 7 visible · <path>`.
+6. **PILL_ORDER is type-enforced** via `buildPillSpecs(Record<PillId, ...>)` in `pill-types.ts` — no runtime DEV drift guard.
+7. **`PlaybackPanel.svelte` is deleted as orphan** in pre-flight (no consumer; the Playback pill body inlines `TempoControl` + `PlaybackModeToggle`).
+
+The body below is otherwise still accurate (component decomposition, RailBentoSheet reuse, mobile/desktop layout strategy).
+
 ## Problem
 
 The Download Animation surface today exposes **5 conceptually-distinct setting groups** through three different mechanisms:

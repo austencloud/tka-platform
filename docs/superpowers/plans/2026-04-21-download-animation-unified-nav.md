@@ -45,6 +45,30 @@ TrailsPanel.svelte
 
 If any are missing, abort the plan — the cleanup commit that produced them must have been reverted.
 
+- [ ] **Step 0a-bis: Delete orphan `PlaybackPanel.svelte`**
+
+```bash
+grep -rn "PlaybackPanel" src/ 2>/dev/null
+```
+
+Expected: no matches. The cleanup commit landed `settings-panels/PlaybackPanel.svelte` but nothing imports it (the Playback pill body inlines `TempoControl` + `PlaybackModeToggle` instead). Remove the orphan now to avoid dead code drift:
+
+```bash
+git rm src/lib/shared/animation-engine/components/settings-panels/PlaybackPanel.svelte
+git commit -m "$(cat <<'EOF'
+chore(settings-panels): remove orphan PlaybackPanel.svelte
+
+No imports anywhere; the Playback pill body uses inline TempoControl +
+PlaybackModeToggle. Removing before the pill-nav rewrite to avoid
+shipping a stranded panel.
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+EOF
+)"
+```
+
+If `grep` returns matches: stop. Re-investigate before deleting.
+
 - [ ] **Step 0b: Confirm AnimationSettingsModal is gone**
 
 ```bash
@@ -91,11 +115,20 @@ Write `src/lib/shared/sequence-viewer/components/pill-nav/pill-types.ts`:
 /**
  * Pill-nav contract for ExportVideoDrawer.
  *
- * One PillId per primary section of the Download Animation surface.
- * PillSpec is the per-pill descriptor consumed by DownloadPillNav.
+ * PILL_ORDER is the single source of truth for which pills exist and
+ * the order they render. PillId is derived from it so the two cannot
+ * drift — adding a pill in only one place is a compile error.
  */
 
-export type PillId = "effects" | "effort" | "playback" | "display" | "export";
+export const PILL_ORDER = [
+  "effects",
+  "effort",
+  "playback",
+  "display",
+  "export",
+] as const;
+
+export type PillId = (typeof PILL_ORDER)[number];
 
 export interface PillSpec {
   id: PillId;
@@ -109,13 +142,17 @@ export interface PillSpec {
   accentColor?: string;
 }
 
-export const PILL_ORDER: readonly PillId[] = [
-  "effects",
-  "effort",
-  "playback",
-  "display",
-  "export",
-] as const;
+/**
+ * Build the ordered PillSpec array from a PillId-keyed record.
+ * Using a Record forces every PillId to be supplied at compile time, so
+ * adding a new id to PILL_ORDER fails the type check until a spec is
+ * provided. No runtime drift guard needed.
+ */
+export function buildPillSpecs(
+  specs: Record<PillId, Omit<PillSpec, "id">>,
+): PillSpec[] {
+  return PILL_ORDER.map((id) => ({ id, ...specs[id] }));
+}
 ```
 
 - [ ] **Step 2: Type check**
@@ -146,7 +183,9 @@ EOF
 - Create: `src/lib/shared/sequence-viewer/components/pill-nav/pill-summaries.ts`
 - Create: `tests/unit/pill-nav/pill-summaries.test.ts`
 
-The Display summary is the only non-trivial computation (counting toggles + path-shape state). Extracting and testing it keeps the parent simple and prevents off-by-one bugs.
+The Display summary counts visibility toggles (the 6 flags exposed in `DisplayPanel`) plus grid visibility — 7 things that have a clear on/off semantic. Path shape is a binary choice between two valid options (arc vs linear), not on/off, so it is shown explicitly in the summary rather than counted.
+
+The denominator is derived from the count of fields in the helper's input, not hardcoded, so adding a future toggle to `DisplayPanel` and the `DisplayToggles` interface is the only place that needs to change.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -154,7 +193,7 @@ Write `tests/unit/pill-nav/pill-summaries.test.ts`:
 
 ```ts
 import { describe, it, expect } from "vitest";
-import { computeDisplaySummary } from "../../../src/lib/shared/sequence-viewer/components/pill-nav/pill-summaries";
+import { computeDisplaySummary } from "$lib/shared/sequence-viewer/components/pill-nav/pill-summaries";
 
 const allOff = {
   tkaGlyph: false,
@@ -175,27 +214,27 @@ const allOn = {
 };
 
 describe("computeDisplaySummary", () => {
-  it("reports 0 / 8 on when everything is off and grid is none and path is linear", () => {
-    expect(computeDisplaySummary(allOff, false, "linear")).toBe("0 / 8 on");
+  it("reports 0 / 7 visible · arc when everything is off, grid is none, path is arc", () => {
+    expect(computeDisplaySummary(allOff, false, "arc")).toBe("0 / 7 visible · arc");
   });
 
-  it("reports 8 / 8 on when every toggle is on, grid visible, path is arc", () => {
-    expect(computeDisplaySummary(allOn, true, "arc")).toBe("8 / 8 on");
+  it("reports 7 / 7 visible · arc when every toggle and grid are on, path is arc", () => {
+    expect(computeDisplaySummary(allOn, true, "arc")).toBe("7 / 7 visible · arc");
   });
 
   it("counts grid as +1 when visible", () => {
-    expect(computeDisplaySummary(allOff, true, "linear")).toBe("1 / 8 on");
+    expect(computeDisplaySummary(allOff, true, "arc")).toBe("1 / 7 visible · arc");
   });
 
-  it("counts arc path as +1 (linear does not count)", () => {
-    expect(computeDisplaySummary(allOff, false, "arc")).toBe("1 / 8 on");
-    expect(computeDisplaySummary(allOff, false, "linear")).toBe("0 / 8 on");
+  it("reports linear path explicitly without affecting the count", () => {
+    expect(computeDisplaySummary(allOff, false, "linear")).toBe("0 / 7 visible · linear");
+    expect(computeDisplaySummary(allOn, true, "linear")).toBe("7 / 7 visible · linear");
   });
 
   it("counts each visibility flag independently", () => {
     expect(
-      computeDisplaySummary({ ...allOff, tkaGlyph: true, props: true }, false, "linear")
-    ).toBe("2 / 8 on");
+      computeDisplaySummary({ ...allOff, tkaGlyph: true, props: true }, false, "arc")
+    ).toBe("2 / 7 visible · arc");
   });
 });
 ```
@@ -206,7 +245,7 @@ describe("computeDisplaySummary", () => {
 npx vitest run tests/unit/pill-nav/pill-summaries.test.ts 2>&1 | tail -15
 ```
 
-Expected: FAIL — "Cannot find module './pill-summaries'".
+Expected: FAIL — "Cannot find module '$lib/.../pill-summaries'".
 
 - [ ] **Step 3: Write the implementation**
 
@@ -217,9 +256,9 @@ Write `src/lib/shared/sequence-viewer/components/pill-nav/pill-summaries.ts`:
  * Pure helpers that turn AnimationVisibilityStateManager state into the
  * one-line summaries shown beneath each pill label.
  *
- * Only the Display summary has real logic worth testing — the other
- * summaries (Effects count, Playback BPM/mode, Export FPS/res) are
- * trivial template strings derived inline in ExportVideoDrawer.
+ * Only the Display summary has real logic worth testing — Effects, Effort,
+ * Playback, and Export summaries are trivial template strings derived
+ * inline in ExportVideoDrawer.
  */
 
 export interface DisplayToggles {
@@ -234,24 +273,24 @@ export interface DisplayToggles {
 export type PathShape = "arc" | "linear";
 
 /**
- * Returns "<n> / 8 on" — counts visibility flags (6) + grid (1) + path-shape-arc (1).
- * Arc counts as "on" because it's the visible/curved default; linear is the alternate.
+ * Returns "<n> / <total> visible · <pathShape>".
+ *
+ * Counts the 6 visibility toggles + grid (7 total). Path shape is a binary
+ * choice between two valid options (arc vs linear), not on/off, so it is
+ * surfaced explicitly rather than counted.
+ *
+ * The denominator is derived from the input arity so adding a new toggle
+ * to DisplayToggles automatically updates the "/ N" denominator.
  */
 export function computeDisplaySummary(
   toggles: DisplayToggles,
   gridVisible: boolean,
   pathShape: PathShape,
 ): string {
-  let on = 0;
-  if (toggles.tkaGlyph) on++;
-  if (toggles.stepNumbers) on++;
-  if (toggles.beatPosition) on++;
-  if (toggles.props) on++;
-  if (toggles.wordHeader) on++;
-  if (toggles.progressBar) on++;
-  if (gridVisible) on++;
-  if (pathShape === "arc") on++;
-  return `${on} / 8 on`;
+  const flagValues = Object.values(toggles);
+  const on = flagValues.filter(Boolean).length + (gridVisible ? 1 : 0);
+  const total = flagValues.length + 1; // +1 for grid
+  return `${on} / ${total} visible · ${pathShape}`;
 }
 ```
 
@@ -467,6 +506,12 @@ Write `src/lib/shared/sequence-viewer/components/pill-nav/DownloadPillNav.svelte
 
   const { pills, activeId, onSelect, variant }: Props = $props();
 
+  // Local element reference — scoping arrow-key focus moves to this nav
+  // only, so multiple DownloadPillNav instances on the same page (e.g. a
+  // mid-resize transition where mobile + desktop both mount briefly) can't
+  // steal focus from each other.
+  let navEl: HTMLDivElement | undefined;
+
   function handleKeydown(e: KeyboardEvent, id: PillId) {
     // Enter / Space activate (default button behavior already does this,
     // but Space scrolls the page in some contexts — preventDefault to be safe).
@@ -482,13 +527,14 @@ Write `src/lib/shared/sequence-viewer/components/pill-nav/DownloadPillNav.svelte
     // Arrow keys move focus along the row, do NOT activate.
     if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
       e.preventDefault();
+      if (!navEl) return;
       const dir = e.key === "ArrowRight" ? 1 : -1;
       const currentIdx = pills.findIndex((p) => p.id === id);
       if (currentIdx < 0) return;
       const nextIdx = (currentIdx + dir + pills.length) % pills.length;
       const nextId = pills[nextIdx].id;
-      const nextEl = document.querySelector<HTMLButtonElement>(
-        `.pill-nav [data-pill-id="${nextId}"]`
+      const nextEl = navEl.querySelector<HTMLButtonElement>(
+        `[data-pill-id="${nextId}"]`,
       );
       nextEl?.focus();
     }
@@ -496,6 +542,7 @@ Write `src/lib/shared/sequence-viewer/components/pill-nav/DownloadPillNav.svelte
 </script>
 
 <div
+  bind:this={navEl}
   class="pill-nav variant-{variant}"
   role="tablist"
   aria-label="Download settings"
@@ -596,15 +643,17 @@ Write `src/lib/shared/sequence-viewer/components/pill-nav/PillBody.svelte`:
 {/if}
 
 <style>
+  /* No internal padding — the active pill's content owns its own chrome
+     (EffectsPanel renders self-padded .sb-section blocks; the inline
+     pill bodies wrap themselves in a .pill-inline-pad div, see Task 7).
+     PillBody only manages flex sizing and scroll. */
   .pill-body-inline {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
     overscroll-behavior: contain;
-    padding: 12px 0;
     display: flex;
     flex-direction: column;
-    gap: 12px;
   }
 </style>
 ```
@@ -655,23 +704,23 @@ Open `src/lib/shared/sequence-viewer/components/ExportVideoDrawer.svelte`. Find 
   import MobileEffectsPanel from "$lib/shared/animation-engine/components/effects-panel/MobileEffectsPanel.svelte";
   import PlaybackModeToggle from "$lib/features/compose/components/controls/PlaybackModeToggle.svelte";
   import type { PlaybackMode } from "$lib/features/compose/state/animation-panel-state.svelte";
-  import RailBentoSheet from "./bento/RailBentoSheet.svelte";
   import "./bento/rail-tile.css";
   import "./pill-nav/pill-nav.css";
   import TempoControl from "./TempoControl.svelte";
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { EFFORTS } from "$lib/features/effort-lab/domain/effort-types";
+  import { EFFECT_LABELS } from "$lib/shared/animation-engine/components/effects-panel/effect-registry";
   import EffortPanel from "$lib/shared/animation-engine/components/settings-panels/EffortPanel.svelte";
   import DisplayPanel from "$lib/shared/animation-engine/components/settings-panels/DisplayPanel.svelte";
   import PathShapePanel from "$lib/shared/animation-engine/components/settings-panels/PathShapePanel.svelte";
   import DownloadPillNav from "./pill-nav/DownloadPillNav.svelte";
   import PillBody from "./pill-nav/PillBody.svelte";
-  import { type PillId, type PillSpec, PILL_ORDER } from "./pill-nav/pill-types";
+  import { type PillId, type PillSpec, buildPillSpecs } from "./pill-nav/pill-types";
   import { computeDisplaySummary } from "./pill-nav/pill-summaries";
   import { onDestroy } from "svelte";
 ```
 
-`RailBentoSheet` is no longer imported directly — `PillBody` consumes it. Remove the line `import RailBentoSheet from "./bento/RailBentoSheet.svelte";` if it's still present.
+`RailBentoSheet` is no longer imported here — `PillBody` consumes it internally. The previous `import RailBentoSheet ...` line is removed by replacing the whole block above.
 
 - [ ] **Step 2: Replace the SheetId state with PillId state**
 
@@ -718,9 +767,16 @@ Right after the existing `effectsCount` derivation (current line ~96–100), app
 ```ts
   // ── Pill summaries — recomputed when vmVersion ticks or props change ──
 
-  const effectsSummary = $derived(
-    effectsCount > 0 ? `${effectsCount} active` : "—"
-  );
+  /** Effects pill shows the active effect's display name (e.g. "Trails",
+   *  "Fire"), or "Off" when none is set. The legacy effectsCount stat was
+   *  meaningless because the default tipEffectMap is { "*": { effect: "trails" } }
+   *  so a count of 1 vs 0 didn't reflect any user action. */
+  const effectsSummary = $derived.by(() => {
+    void vmVersion;
+    const active = vm.getActiveEffect();
+    if (active === "none") return "Off";
+    return EFFECT_LABELS[active] ?? active;
+  });
 
   const effortSummary = $derived(activeEffort.label);
   const effortAccent = $derived(activeEffort.color);
@@ -748,37 +804,71 @@ Right after the existing `effectsCount` derivation (current line ~96–100), app
     );
   });
 
+  /** Export pill shows resolution + fps + loop count.
+   *  Loops live in Export because they describe the OUTPUT video, not the
+   *  preview playback (Playback pill controls in-canvas behavior only). */
   const exportSummary = $derived.by(() => {
     const r = exportOptions.videoResolution;
     const resLabel = renderMode === "3d"
       ? `${r}×${r}`
       : (r >= 4320 ? "8K" : r >= 2160 ? "4K" : `${r}p`);
-    return `${resLabel} • ${exportOptions.videoFps} fps`;
+    const loops = exportOptions.videoLoopCount;
+    const loopLabel = loops > 1 ? ` • ${loops}×` : "";
+    return `${resLabel} • ${exportOptions.videoFps} fps${loopLabel}`;
   });
 
-  // Final pill array consumed by DownloadPillNav. Order is fixed by PILL_ORDER.
-  const pills = $derived<PillSpec[]>([
-    { id: "effects",  label: "EFFECTS",  icon: "fa-sparkles",        summary: effectsSummary },
-    { id: "effort",   label: "EFFORT",   icon: undefined,            summary: effortSummary, accentColor: effortAccent },
-    { id: "playback", label: "PLAYBACK", icon: "fa-play",            summary: playbackSummary },
-    { id: "display",  label: "DISPLAY",  icon: "fa-eye",             summary: displaySummary },
-    { id: "export",   label: "EXPORT",   icon: "fa-sliders",         summary: exportSummary },
-  ]);
-
-  // PILL_ORDER is the source of truth for ordering. Sanity check at dev time
-  // — array literal above must match. (Cheap runtime guard, falls out at build.)
-  if (import.meta.env.DEV) {
-    const ids = pills.map((p) => p.id).join(",");
-    const expected = PILL_ORDER.join(",");
-    if (ids !== expected) {
-      console.error("[ExportVideoDrawer] pill order drift:", ids, "expected", expected);
-    }
-  }
+  /** PillSpec map keyed by PillId. Compiler enforces every PillId has a
+   *  spec — adding to PILL_ORDER without updating this object fails the
+   *  type check, so no runtime drift guard is needed. */
+  const pills = $derived<PillSpec[]>(
+    buildPillSpecs({
+      effects:  { label: "EFFECTS",  icon: "fa-sparkles",   summary: effectsSummary },
+      effort:   { label: "EFFORT",   summary: effortSummary, accentColor: effortAccent },
+      playback: { label: "PLAYBACK", icon: "fa-play",       summary: playbackSummary },
+      display:  { label: "DISPLAY",  icon: "fa-eye",        summary: displaySummary },
+      export:   { label: "EXPORT",   icon: "fa-sliders",    summary: exportSummary },
+    }),
+  );
 ```
 
 - [ ] **Step 4: Delete obsolete derivations**
 
-Find and delete the `settingsSummary` derivation (currently around line ~169–171):
+Delete each of the following blocks (line ranges are approximate, locate by content):
+
+1. The `fpsOptions` array literal:
+
+```ts
+  const fpsOptions: { value: VideoFps; label: string; badge?: string }[] = [
+    { value: 30, label: "30" },
+    { value: 60, label: "60" },
+    { value: 120, label: "120" },
+  ];
+```
+
+2. The `resOptions` array literal:
+
+```ts
+  const resOptions: { value: VideoResolution; label: string }[] = [
+    { value: 720, label: "720p" },
+    { value: 1080, label: "1080p" },
+    { value: 2160, label: "4K" },
+    { value: 4320, label: "8K" },
+  ];
+```
+
+3. The `resOptionsWithDims` derivation:
+
+```ts
+  /** Resolution label with pixel dimensions for square (3D) exports */
+  const resOptionsWithDims = $derived(
+    resOptions.map((opt) => ({
+      ...opt,
+      label: renderMode === '3d' ? `${opt.value}x${opt.value}` : opt.label,
+    }))
+  );
+```
+
+4. The `settingsSummary` derivation:
 
 ```ts
   /** Summary of current settings for the bottom bar chip */
@@ -787,7 +877,7 @@ Find and delete the `settingsSummary` derivation (currently around line ~169–1
   );
 ```
 
-Delete it — `exportSummary` replaces it. If TypeScript complains about `settingsSummary` being unused, that's fine because we just removed it; the next type check should pass.
+The new template (Task 7) iterates inline literals for fps and resolution chips, so these arrays become dead. `exportSummary` replaces `settingsSummary`.
 
 - [ ] **Step 5: Type check**
 
@@ -819,148 +909,173 @@ Find the line `</script>` (around line 172). Find the matching `<style>` opener 
 ```svelte
 {#snippet pillBody()}
   {#if activePillId === "effects"}
+    <!-- EffectsPanel manages its own .sb-section padding/borders;
+         render it flat without a wrapping .pill-inline-pad. -->
     {#if layout === "bottom"}
       <MobileEffectsPanel />
     {:else}
       <EffectsPanel
-        bpm={bpm}
+        {bpm}
         onBpmChange={onBpmChange ?? (() => {})}
         {isPlaying}
         onPlaybackToggle={onPlaybackToggle ?? (() => {})}
-        showPlayback={false}
+        showPlayback={!!(onPlaybackToggle && onBpmChange)}
       />
     {/if}
   {:else if activePillId === "effort"}
-    <EffortPanel />
-  {:else if activePillId === "playback"}
-    <div class="rt-section">
-      <span class="rt-section-label">Tempo</span>
-      <TempoControl
-        {bpm}
-        onBpmChange={onBpmChange ?? (() => {})}
-        showPresets={false}
-        showPractice={false}
-        presetsMode="popover"
-      />
+    <div class="pill-inline-pad">
+      <EffortPanel />
     </div>
-
-    {#if onPlaybackModeChange}
+  {:else if activePillId === "playback"}
+    <!-- Playback = how the canvas previews the sequence: tempo + mode.
+         Loops and start/end hold belong in Export because they describe
+         the OUTPUT video, not in-canvas playback. -->
+    <div class="pill-inline-pad">
       <div class="rt-section">
-        <span class="rt-section-label">Mode</span>
-        <PlaybackModeToggle
-          {playbackMode}
-          {isPlaying}
-          {onPlaybackModeChange}
-          onPlaybackToggle={onPlaybackToggle ?? (() => {})}
+        <span class="rt-section-label">Tempo</span>
+        <TempoControl
+          {bpm}
+          onBpmChange={onBpmChange ?? (() => {})}
+          showPresets={false}
+          showPractice={false}
+          presetsMode="popover"
         />
       </div>
-    {/if}
 
-    <div class="rt-section">
-      <span class="rt-section-label">Timing</span>
-      <div class="rt-chip-row">
-        <button
-          type="button"
-          class="rt-chip"
-          aria-pressed={exportOptions.videoIncludeStartPosition}
-          onclick={() => exportOptions.setVideoIncludeStartPosition(!exportOptions.videoIncludeStartPosition)}
-        >
-          <i class="fas fa-step-backward" aria-hidden="true"></i> Start Hold
-        </button>
-        <button
-          type="button"
-          class="rt-chip"
-          aria-pressed={exportOptions.videoIncludeEndHold}
-          onclick={() => exportOptions.setVideoIncludeEndHold(!exportOptions.videoIncludeEndHold)}
-        >
-          <i class="fas fa-step-forward" aria-hidden="true"></i> End Hold
-        </button>
-      </div>
-    </div>
-
-    <div class="rt-row">
-      <span class="rt-row-label">Loops</span>
-      <div class="rt-stepper">
-        <button
-          type="button"
-          class="rt-step-btn"
-          onclick={() => exportOptions.setVideoLoopCount(exportOptions.videoLoopCount - 1)}
-          disabled={exportOptions.videoLoopCount <= 1}
-          aria-label="Decrease loop count"
-        ><i class="fas fa-minus" aria-hidden="true"></i></button>
-        <span class="rt-val">{exportOptions.videoLoopCount}×</span>
-        <button
-          type="button"
-          class="rt-step-btn"
-          onclick={() => exportOptions.setVideoLoopCount(exportOptions.videoLoopCount + 1)}
-          disabled={exportOptions.videoLoopCount >= 10}
-          aria-label="Increase loop count"
-        ><i class="fas fa-plus" aria-hidden="true"></i></button>
-      </div>
+      {#if onPlaybackModeChange}
+        <div class="rt-section">
+          <span class="rt-section-label">Mode</span>
+          <PlaybackModeToggle
+            {playbackMode}
+            {isPlaying}
+            {onPlaybackModeChange}
+            onPlaybackToggle={onPlaybackToggle ?? (() => {})}
+          />
+        </div>
+      {/if}
     </div>
   {:else if activePillId === "display"}
-    <DisplayPanel />
-    <div class="rt-section">
-      <span class="rt-section-label">Motion paths</span>
-      <PathShapePanel />
+    <div class="pill-inline-pad">
+      <DisplayPanel />
+      <div class="rt-section">
+        <span class="rt-section-label">Motion paths</span>
+        <PathShapePanel />
+      </div>
     </div>
   {:else if activePillId === "export"}
-    <div class="rt-section">
-      <span class="rt-section-label">Frame rate</span>
-      <div class="rt-chip-row">
-        <button type="button" class="rt-chip"
-          aria-pressed={exportOptions.videoFps === 30}
-          onclick={() => exportOptions.setVideoFps(30)}
-        >30 fps</button>
-        <button type="button" class="rt-chip"
-          aria-pressed={exportOptions.videoFps === 60}
-          onclick={() => exportOptions.setVideoFps(60)}
-        >60 fps</button>
-      </div>
-    </div>
-
-    <div class="rt-section">
-      <span class="rt-section-label">Resolution</span>
-      <div class="rt-chip-row">
-        <button type="button" class="rt-chip"
-          aria-pressed={exportOptions.videoResolution === 720}
-          onclick={() => exportOptions.setVideoResolution(720)}
-        >{renderMode === '3d' ? '720×720' : '720p'}</button>
-        <button type="button" class="rt-chip"
-          aria-pressed={exportOptions.videoResolution === 1080}
-          onclick={() => exportOptions.setVideoResolution(1080)}
-        >{renderMode === '3d' ? '1080×1080' : '1080p'}</button>
-      </div>
-    </div>
-
-    {#if renderMode === '3d'}
+    <div class="pill-inline-pad">
       <div class="rt-section">
-        <span class="rt-section-label">Quality</span>
+        <span class="rt-section-label">Frame rate</span>
         <div class="rt-chip-row">
           <button type="button" class="rt-chip"
-            aria-pressed={exportOptions.videoQuality === 'standard'}
-            onclick={() => exportOptions.setVideoQuality('standard')}
-          >Standard</button>
+            aria-pressed={exportOptions.videoFps === 30}
+            onclick={() => exportOptions.setVideoFps(30)}
+          >30 fps</button>
           <button type="button" class="rt-chip"
-            aria-pressed={exportOptions.videoQuality === 'cinema'}
-            onclick={() => exportOptions.setVideoQuality('cinema')}
-          ><i class="fas fa-film" aria-hidden="true"></i> Cinema</button>
+            aria-pressed={exportOptions.videoFps === 60}
+            onclick={() => exportOptions.setVideoFps(60)}
+          >60 fps</button>
+          <button type="button" class="rt-chip"
+            aria-pressed={exportOptions.videoFps === 120}
+            onclick={() => exportOptions.setVideoFps(120)}
+          >120 fps</button>
         </div>
       </div>
-    {/if}
 
-    {#if timeEstimateLabel}
-      <div class="video-duration-line">
-        <i class="fas fa-clock" aria-hidden="true"></i>
-        {timeEstimateLabel}
+      <div class="rt-section">
+        <span class="rt-section-label">Resolution</span>
+        <div class="rt-chip-row">
+          <button type="button" class="rt-chip"
+            aria-pressed={exportOptions.videoResolution === 720}
+            onclick={() => exportOptions.setVideoResolution(720)}
+          >{renderMode === '3d' ? '720×720' : '720p'}</button>
+          <button type="button" class="rt-chip"
+            aria-pressed={exportOptions.videoResolution === 1080}
+            onclick={() => exportOptions.setVideoResolution(1080)}
+          >{renderMode === '3d' ? '1080×1080' : '1080p'}</button>
+          <button type="button" class="rt-chip"
+            aria-pressed={exportOptions.videoResolution === 2160}
+            onclick={() => exportOptions.setVideoResolution(2160)}
+          >{renderMode === '3d' ? '2160×2160' : '4K'}</button>
+          <button type="button" class="rt-chip"
+            aria-pressed={exportOptions.videoResolution === 4320}
+            onclick={() => exportOptions.setVideoResolution(4320)}
+          >{renderMode === '3d' ? '4320×4320' : '8K'}</button>
+        </div>
       </div>
-    {/if}
-    {#if totalVideoDuration}
-      <div class="video-duration-line">
-        <i class="fas fa-film" aria-hidden="true"></i>
-        Video length: {totalVideoDuration}
+
+      {#if renderMode === '3d'}
+        <div class="rt-section">
+          <span class="rt-section-label">Quality</span>
+          <div class="rt-chip-row">
+            <button type="button" class="rt-chip"
+              aria-pressed={exportOptions.videoQuality === 'standard'}
+              onclick={() => exportOptions.setVideoQuality('standard')}
+            >Standard</button>
+            <button type="button" class="rt-chip"
+              aria-pressed={exportOptions.videoQuality === 'cinema'}
+              onclick={() => exportOptions.setVideoQuality('cinema')}
+            ><i class="fas fa-film" aria-hidden="true"></i> Cinema</button>
+          </div>
+        </div>
+      {/if}
+
+      <div class="rt-section">
+        <span class="rt-section-label">Timing</span>
+        <div class="rt-chip-row">
+          <button
+            type="button"
+            class="rt-chip"
+            aria-pressed={exportOptions.videoIncludeStartPosition}
+            onclick={() => exportOptions.setVideoIncludeStartPosition(!exportOptions.videoIncludeStartPosition)}
+          >
+            <i class="fas fa-step-backward" aria-hidden="true"></i> Start Hold
+          </button>
+          <button
+            type="button"
+            class="rt-chip"
+            aria-pressed={exportOptions.videoIncludeEndHold}
+            onclick={() => exportOptions.setVideoIncludeEndHold(!exportOptions.videoIncludeEndHold)}
+          >
+            <i class="fas fa-step-forward" aria-hidden="true"></i> End Hold
+          </button>
+        </div>
       </div>
-    {/if}
+
+      <div class="rt-row">
+        <span class="rt-row-label">Loops</span>
+        <div class="rt-stepper">
+          <button
+            type="button"
+            class="rt-step-btn"
+            onclick={() => exportOptions.setVideoLoopCount(exportOptions.videoLoopCount - 1)}
+            disabled={exportOptions.videoLoopCount <= 1}
+            aria-label="Decrease loop count"
+          ><i class="fas fa-minus" aria-hidden="true"></i></button>
+          <span class="rt-val">{exportOptions.videoLoopCount}×</span>
+          <button
+            type="button"
+            class="rt-step-btn"
+            onclick={() => exportOptions.setVideoLoopCount(exportOptions.videoLoopCount + 1)}
+            disabled={exportOptions.videoLoopCount >= 10}
+            aria-label="Increase loop count"
+          ><i class="fas fa-plus" aria-hidden="true"></i></button>
+        </div>
+      </div>
+
+      {#if timeEstimateLabel}
+        <div class="video-duration-line">
+          <i class="fas fa-clock" aria-hidden="true"></i>
+          {timeEstimateLabel}
+        </div>
+      {/if}
+      {#if totalVideoDuration}
+        <div class="video-duration-line">
+          <i class="fas fa-film" aria-hidden="true"></i>
+          Video length: {totalVideoDuration}
+        </div>
+      {/if}
+    </div>
   {/if}
 {/snippet}
 
@@ -1172,61 +1287,228 @@ EOF
 
 ---
 
-## Task 8: Strip dead CSS from ExportVideoDrawer
+## Task 8: Replace dead CSS in ExportVideoDrawer with pill-only chrome
 
 **Files:**
 - Modify: `src/lib/shared/sequence-viewer/components/ExportVideoDrawer.svelte` (style block only)
 
-The Tasks 6+7 rewrite leaves several CSS selectors orphaned. Remove them.
+Tasks 6+7 leave the old desktop chip/setting-row chrome orphaned and add the new `.pill-inline-pad` wrapper. Replace the `<style>` block contents with the explicit final form below — no heuristic scan, no fragile class detection.
 
-- [ ] **Step 1: Identify orphaned classes**
+- [ ] **Step 1: Replace the `<style>` block**
 
-Run:
+Locate the `<style>` opener and `</style>` closer in the file. Replace **everything between them** with:
 
-```bash
-node -e "
-const fs = require('fs');
-const file = 'src/lib/shared/sequence-viewer/components/ExportVideoDrawer.svelte';
-const src = fs.readFileSync(file, 'utf8');
-const styleStart = src.indexOf('<style>');
-const styleEnd = src.indexOf('</style>');
-const style = src.slice(styleStart, styleEnd);
-const tmpl = src.slice(0, styleStart);
+```css
+  /* ============================================================
+   * MOBILE BOTTOM CONTAINER
+   * ============================================================ */
 
-// Find all class selectors in the style block (rough — strips pseudo / state).
-const classes = [...style.matchAll(/\.([a-z][a-z0-9_-]+)/gi)].map((m) => m[1]);
-const unique = [...new Set(classes)];
-const orphans = unique.filter((c) => !tmpl.includes(\`\"\${c}\"\`) && !tmpl.includes(\`'\${c}'\`) && !tmpl.includes(\`class=\"\${c}\"\`) && !tmpl.includes(\`class:\${c}=\`));
-console.log('orphans (review manually):');
-orphans.forEach((c) => console.log('  .' + c));
-"
+  .mobile-export {
+    position: relative;
+    flex-shrink: 0;
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+    z-index: 10;
+  }
+
+  .mobile-progress {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px 16px 12px;
+  }
+
+  /* ============================================================
+   * DESKTOP SIDEBAR
+   * ============================================================ */
+
+  .export-panel {
+    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+    display: flex;
+    flex-direction: column;
+    z-index: 10;
+  }
+
+  .export-panel.sidebar {
+    position: relative;
+    width: 100%;
+    max-width: 100%;
+    border-left: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    overflow: hidden;
+  }
+
+  /* Desktop body becomes a vertical flex container: pill nav row at top,
+     PillBody fills remaining space and scrolls internally. */
+  .panel-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    gap: 12px;
+    padding: 12px;
+  }
+
+  /* Wrapper used by inline pill bodies (everything except Effects).
+     Effects renders its own .sb-section padding, so it skips this wrapper. */
+  :global(.pill-body-inline .pill-inline-pad) {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .video-duration-line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 500;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    padding: 4px 0;
+  }
+
+  .video-duration-line i {
+    font-size: 11px;
+    opacity: 0.6;
+  }
+
+  /* ============================================================
+   * Footer (desktop sidebar)
+   * ============================================================ */
+
+  .panel-footer {
+    padding: 12px 20px 16px;
+    flex-shrink: 0;
+  }
+
+  .export-row {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .time-estimate {
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 500;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+  }
+
+  .export-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    min-height: var(--min-touch-target);
+    padding: 12px 24px;
+    border: none;
+    border-radius: 12px;
+    background: var(--theme-accent, #6366f1);
+    color: white;
+    font-size: var(--font-size-min, 14px);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .export-btn:hover:not(:disabled) {
+    filter: brightness(1.1);
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--theme-accent, #6366f1) 40%, transparent);
+  }
+
+  .export-btn:active:not(:disabled) {
+    transform: scale(0.98);
+    transition-duration: 50ms;
+  }
+
+  .export-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  /* Progress (shared between mobile + desktop) */
+  .export-progress-row {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+  }
+
+  .progress-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .progress-stage {
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 500;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+  }
+
+  .progress-pct {
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    color: var(--theme-text, white);
+  }
+
+  .progress-bar {
+    width: 100%;
+    height: 6px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--theme-accent, #6366f1);
+    border-radius: 3px;
+    transition: width 0.2s ease;
+  }
+
+  .cancel-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    min-height: var(--min-touch-target);
+    padding: 10px 20px;
+    background: transparent;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 12px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    font-size: var(--font-size-min, 14px);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .cancel-btn:hover {
+    background: color-mix(in srgb, var(--semantic-error, #f87171) 15%, transparent);
+    border-color: var(--semantic-error, #f87171);
+    color: var(--semantic-error, #f87171);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .export-btn,
+    .cancel-btn,
+    .progress-fill {
+      transition: none !important;
+      animation: none !important;
+    }
+
+    .export-btn:active {
+      transform: none !important;
+    }
+  }
 ```
 
-This is heuristic — review the list manually. Expected orphans (delete these blocks from `<style>`):
+This deletes (vs the original): `.setting-row`, `.setting-label`, `.chip-group`, `.chip`, `.chip:hover`, `.chip:active`, `.chip.active`, `.chip:focus-visible`, `.chip-badge`, `.loop-count-row`, `.loop-btn`, `.loop-btn:hover`, `.loop-btn:disabled`, `.loop-count-value`, plus removes the `.chip` references from the reduced-motion block. The new `.pill-inline-pad` rule is added globally so it applies inside `PillBody.svelte`'s `.pill-body-inline` wrapper. `.rt-zone`, `.rt-download`, `.rt-tile`, `.rt-section`, `.rt-chip`, `.rt-row`, `.rt-stepper` are inherited from `rail-tile.css` (already imported) and the global RailBentoSheet rules.
 
-- `.rt-grid-2x2` (the 2×2 mobile bento grid is gone)
-- `.rt-tile` overrides (if any beyond what's in `rail-tile.css`)
-- `.rt-effort` (Effort tile override — moves into Effort pill via `--pill-accent`)
-- `.rt-count` (effects-count badge on tile — pills carry their own summary text now)
-- Any `.bar-*`, `.settings-*`, `.inline-settings-*` classes from the original mobile bottom bar (long since dead but might still be in the file)
-- `.setting-row`, `.setting-label`, `.chip-group`, `.chip` (these were the desktop sidebar's flat rows — now the panels render their own internal layout)
-- `.loop-count-row`, `.loop-count-value`, `.loop-btn` (Loops moved into pill body using `.rt-stepper` from `rail-tile.css`)
-
-Keep:
-
-- `.mobile-export`
-- `.mobile-progress` and its children (`.progress-info`, `.progress-stage`, `.progress-pct`, `.progress-bar`, `.progress-fill`, `.cancel-btn`)
-- `.export-panel.sidebar`, `.panel-body`, `.panel-footer`, `.export-row`, `.export-btn`, `.export-progress-row`, `.time-estimate`
-- `.video-duration-line`
-- `.rt-zone` (the mobile bottom-anchored container)
-- `.rt-download` (download button — still styled inline by class)
-- Any `@media (prefers-reduced-motion: reduce)` blocks for the survivors
-
-- [ ] **Step 2: Delete the orphaned blocks**
-
-Open the file in your editor and delete each orphaned class block from the `<style>` cascade. Be careful with adjacent rules — only delete the blocks for the orphans, not the surrounding kept rules.
-
-- [ ] **Step 3: Type check + build**
+- [ ] **Step 2: Type check + build**
 
 ```bash
 npm run check 2>&1 | grep -A 2 "ExportVideoDrawer" | head -10
@@ -1235,20 +1517,18 @@ npm run build 2>&1 | tail -5
 
 Expected: zero errors, build succeeds.
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 3: Commit**
 
 ```bash
 git add src/lib/shared/sequence-viewer/components/ExportVideoDrawer.svelte
 git diff --cached --stat
 git commit -m "$(cat <<'EOF'
-chore(export-video): strip dead CSS after pill-nav rewrite
+chore(export-video): replace style block with pill-only chrome
 
 Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
 EOF
 )"
 ```
-
-If `git diff --cached --stat` shows zero changes (no orphans found), skip the commit.
 
 ---
 
@@ -1322,18 +1602,29 @@ Click each pill in turn — body swaps inline without layout shift. Confirm the 
 
 Save desktop screenshots to `.claude-tmp/qa-desktop-*.png`.
 
-- [ ] **Step 5: Right-click on canvas — confirm Animation Settings is gone**
+- [ ] **Step 5: Confirm "Animation Settings" canvas-menu entry is gone**
 
-`mcp__chrome-devtools__evaluate_script` to dispatch a contextmenu event on the canvas, then snapshot. Confirm the menu does NOT contain "Animation Settings". (The cleanup task earlier in this branch already removed it — this is verification.)
+Synthetic `contextmenu` dispatch via `evaluate_script` is unreliable (the real handler may bind native events that don't trigger from a JS-dispatched MouseEvent). Verify by source inspection — cheaper and authoritative:
+
+```bash
+grep -nE "Animation Settings|open-animation-settings|onOpenSettings" \
+  src/lib/shared/animation-engine/components/canvas-context-menu/ \
+  src/lib/shared/animation-engine/components/AnimatorCanvas.svelte 2>&1
+```
+
+Expected: zero matches. The cleanup commit earlier in this branch removed the entry; this confirms it stayed gone after the pill-nav rewrite.
 
 - [ ] **Step 6: Behavioral checks**
 
 For each:
-1. Toggle a Display visibility flag in the Display pill body. Confirm the Display pill summary updates from `5 / 8 on` to `4 / 8 on` (or whatever the delta is).
-2. Change Effort to Heavy. Confirm the Effort pill border + dot recolor to the Heavy color.
-3. Change FPS or resolution in the Export pill. Confirm the Export pill summary updates.
-4. Move Loops in the Playback pill body up/down. Confirm value changes and disabled state on min/max.
-5. Switch between viewports (resize). Confirm the active pill state persists where appropriate (mobile resets to null after sheet close; desktop keeps "effects" if no other pill was selected).
+1. Toggle a Display visibility flag in the Display pill body. Confirm the Display pill summary count updates (e.g. `4 / 7 visible · arc` → `3 / 7 visible · arc`).
+2. Switch path shape from Arc to Linear in the Display pill body's "Motion paths" section. Confirm the summary text changes from `· arc` to `· linear` without changing the count.
+3. Change Effort to a different preset (e.g. Punch). Confirm the Effort pill border + dot recolor and the summary changes to the new label.
+4. Change Effects from Trails to Fire (or any other). Confirm the Effects pill summary updates from "Trails" to "Fire".
+5. Change FPS or resolution in the Export pill. Confirm the Export pill summary updates with the new values (covers all 3 fps + 4 resolution options).
+6. Step the Loops counter in the Export pill up/down. Confirm value changes, disabled state on min/max, and the Export pill summary appends `• Nx` when count > 1.
+7. On desktop only: confirm the Effects pill body shows the inline play/pause + tempo control row (driven by `EffectsPanel`'s `showPlayback` branch).
+8. Switch between viewports (mobile ↔ desktop simulated by resizing). Confirm desktop defaults to Effects pill open; mobile defaults to no pill open.
 
 - [ ] **Step 7: Console clean check**
 
@@ -1430,9 +1721,14 @@ Otherwise skip.
 - `npx vitest run tests/unit/pill-nav/` passes with 5 tests.
 - At 393×709, the Download Animation panel shows a 5-pill row + download button. Tapping a pill opens a sheet over the canvas.
 - At 1400×900, the sidebar shows a 5-pill row at the top, active body inline, download in the footer. Switching pills swaps the body without layout shift.
-- Display pill exposes the 7 visibility toggles + Path Shape (Arc/Linear) under "Motion paths".
-- Effort pill border and dot are tinted with the active effort's color.
-- Right-click on the canvas does NOT show "Animation Settings…" anymore.
+- **Effects pill summary** shows the active effect *name* ("Trails", "Fire", …) or "Off" — never a count.
+- **Effort pill** border and dot are tinted with the active effort's color.
+- **Playback pill** body has Tempo + Mode only (no Loops, no Timing — those describe the output video, not preview).
+- **Display pill** exposes the 6 visibility toggles + Grid + Path Shape (Arc/Linear) under "Motion paths". Summary reads `<n> / 7 visible · <path>`.
+- **Export pill** body has FPS (30/60/120) + Resolution (720p/1080p/4K/8K) + Quality (3D only) + Timing (Start/End hold) + Loops + duration line. Summary appends `• Nx` when loops > 1. **No frame-rate or resolution options were dropped vs the old desktop sidebar.**
+- Desktop Effects pill body still surfaces the inline play/pause + tempo via `EffectsPanel`'s `showPlayback` branch (no regression vs prior desktop UX).
+- Right-click on the canvas does NOT show "Animation Settings…" anymore (verified by grep, not synthetic event).
+- Orphan `PlaybackPanel.svelte` is gone (deleted in Pre-flight Step 0a-bis).
 - All settings persist through their existing managers — a toggle in the pill body updates the canvas immediately.
 
 ---
@@ -1442,20 +1738,32 @@ Otherwise skip.
 - [x] **Spec coverage:** every section of the spec has at least one task.
   - DownloadPillNav → Task 4
   - PillBody → Task 5
-  - pill-types → Task 1
-  - pill-summaries (with Display computation) → Task 2
+  - pill-types (with `buildPillSpecs` type-enforced ordering) → Task 1
+  - pill-summaries (Display count helper) → Task 2
   - pill-nav.css → Task 3
   - ExportVideoDrawer rewrite (script + template) → Tasks 6, 7
-  - Loops migration to Playback pill → embedded in Task 7
   - Display section (DisplayPanel + PathShapePanel under Motion paths label) → embedded in Task 7
-  - Dead CSS removal → Task 8
+  - Loops + Timing in Export pill (NOT Playback — they describe output video) → embedded in Task 7
+  - Dead CSS removal via explicit replacement → Task 8
   - Visual QA → Task 9
   - Final verification → Task 10
+- [x] **Audit fixes from prior review applied:**
+  - Effects summary: name (`EFFECT_LABELS[active]`) not misleading count
+  - 120 fps + 4K + 8K resolution chips preserved
+  - Loops + Timing kept in Export (not Playback)
+  - Desktop play/pause restored via `showPlayback={!!(onPlaybackToggle && onBpmChange)}`
+  - Orphan `PlaybackPanel.svelte` deleted in Pre-flight 0a-bis
+  - Import contradiction in Task 6 step 1 removed
+  - `fpsOptions` / `resOptions` / `resOptionsWithDims` deletions added to Task 6 step 4
+  - PILL_ORDER → `buildPillSpecs` Record-keyed function (compile-time enforcement)
+  - Path shape removed from "/N on" count; surfaced explicitly as `· arc` / `· linear`
+  - Display summary denominator derived from input arity, not hardcoded
+  - Arrow-key `querySelector` scoped to local `bind:this` element
+  - PillBody desktop variant has no padding; inline pill bodies wrap in `.pill-inline-pad`
+  - Task 8 dead-CSS heuristic replaced with explicit final `<style>` block
+  - Task 9 step 5 contextmenu verification done by grep, not synthetic dispatch
 - [x] **No placeholders:** every code block is complete, no `...`, no `TBD`.
-- [x] **Type consistency:** `PillId` + `PillSpec` + `PILL_ORDER` defined in Task 1, imported in Tasks 4, 6. `computeDisplaySummary` defined in Task 2, imported in Task 6. Method names against managers (`vm.getSettings`, `vm.isGridVisible`, `vm.getPathShape`, `vm.getPlaybackMode`, `vm.getEffortPreset`, `vm.getTipEffectMap`, `exportOptions.setVideoFps`, etc.) all verified against current source.
 - [x] **All file paths absolute-from-repo-root.**
 - [x] **Each step is atomic** (1–10 minutes of work).
-- [x] **Pre-flight verification (Step 0)** confirms the assumed file structure (settings-panels exist, modal is gone, bento primitives present) before any modifications.
+- [x] **Pre-flight verification (Step 0)** confirms the assumed file structure (settings-panels exist, modal is gone, bento primitives present) and removes the orphan PlaybackPanel before any modifications.
 - [x] **Permission gates** for browser commands (Task 9) per project rules — never assume browser-control consent.
-- [x] **No fabricated UI references** — every method, file, and line range was grepped or read in the conversation that produced this plan.
-- [x] **Combined commit for Tasks 6+7** noted explicitly so the type check between them isn't a separate failure point.
