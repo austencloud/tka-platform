@@ -1,0 +1,185 @@
+<script lang="ts">
+  import { getStickerLabContext } from "../context/sticker-lab-context";
+  import { StickerUnitRenderer } from "../services/implementations/StickerUnitRenderer";
+  import {
+    getMandalaPaths,
+    loadMandalaPaths,
+  } from "../state/mandala-paths-cache.svelte";
+  import {
+    SHEET_DIMENSIONS_IN,
+    STICKER_GAP_IN,
+  } from "../domain/sticker-constants";
+
+  const stickerState = getStickerLabContext();
+  const renderer = new StickerUnitRenderer();
+
+  let showCutLines = $state(true);
+  let showBleed = $state(false);
+  let activePage = $state(0);
+
+  // Expand sticker copies into a flat list for layout.
+  const flattened = $derived(
+    stickerState.sheet.stickers.flatMap((s) => Array.from({ length: s.copies }, () => s))
+  );
+
+  const layout = $derived.by(() => {
+    const { width: sw, height: sh } = SHEET_DIMENSIONS_IN[stickerState.sheet.sheetSize];
+    const diameter = 3;
+    const pitch = diameter + STICKER_GAP_IN;
+    const cols = Math.floor((sw + STICKER_GAP_IN) / pitch);
+    const rows = Math.floor((sh + STICKER_GAP_IN) / pitch);
+    const perPage = cols * rows;
+    const pages = perPage > 0 ? Math.max(1, Math.ceil(flattened.length / perPage)) : 1;
+    return { sheetWidthIn: sw, sheetHeightIn: sh, cols, rows, perPage, pages };
+  });
+
+  // Clamp activePage when pages shrink.
+  $effect(() => {
+    if (activePage >= layout.pages) activePage = Math.max(0, layout.pages - 1);
+  });
+
+  // Fire-and-forget: populate the mandala-paths cache for every visible sticker.
+  // Writes to the $state-backed cache trigger a rerender, so the SVG appears
+  // as soon as paths resolve.
+  $effect(() => {
+    for (const sticker of stickerState.sheet.stickers) {
+      if (sticker.sourceLoop) {
+        void loadMandalaPaths(sticker.sourceLoop.sequenceId);
+      }
+    }
+  });
+
+  const pageStickers = $derived(
+    flattened.slice(activePage * layout.perPage, (activePage + 1) * layout.perPage)
+  );
+</script>
+
+<div class="preview">
+  <div class="toolbar">
+    <label><input type="checkbox" bind:checked={showCutLines} /> Cut lines</label>
+    <label><input type="checkbox" bind:checked={showBleed} /> Bleed</label>
+    <span class="count">{flattened.length} stickers across {layout.pages} sheet{layout.pages === 1 ? "" : "s"}</span>
+    {#if layout.pages > 1}
+      <nav class="pager">
+        <button onclick={() => (activePage = Math.max(0, activePage - 1))} disabled={activePage === 0}>‹</button>
+        <span>Sheet {activePage + 1} of {layout.pages}</span>
+        <button onclick={() => (activePage = Math.min(layout.pages - 1, activePage + 1))} disabled={activePage >= layout.pages - 1}>›</button>
+      </nav>
+    {/if}
+  </div>
+
+  <div class="sheet-frame">
+    <div
+      class="sheet"
+      style:--sheet-w="{layout.sheetWidthIn}in"
+      style:--sheet-h="{layout.sheetHeightIn}in"
+      style:--cols={layout.cols}
+      style:--rows={layout.rows}
+      class:show-cut-lines={showCutLines}
+      class:show-bleed={showBleed}
+    >
+      {#each pageStickers as sticker, i (`${activePage}-${i}`)}
+        {@const paths = sticker.sourceLoop ? getMandalaPaths(sticker.sourceLoop.sequenceId) : null}
+        <div class="slot">
+          {#if paths}
+            <!-- Inline SVG rendering. The SVG already includes its own bleed padding. -->
+            {@html renderer.renderSVG(sticker, paths)}
+          {:else}
+            <div class="missing">No paths for {sticker.sourceLoop?.word}</div>
+          {/if}
+        </div>
+      {/each}
+    </div>
+  </div>
+</div>
+
+<style>
+  .preview {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    height: 100%;
+  }
+  .toolbar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-size: 12px;
+    color: var(--theme-text, white);
+  }
+  .toolbar label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+  .toolbar .count { margin-left: auto; opacity: 0.6; }
+  .pager { display: flex; align-items: center; gap: 8px; }
+  .pager button {
+    width: 28px; height: 28px;
+    background: rgba(255,255,255,0.04);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  .pager button:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  .sheet-frame {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: auto;
+    padding: 16px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 6px;
+  }
+
+  .sheet {
+    /* Scale to fit — CSS var length is ignored by most browsers when used as length,
+       so we compute using explicit max-height in JS if needed. For MVP, let it be
+       the true physical aspect ratio at 72 dpi (1in = 96px in CSS). */
+    width: calc(var(--sheet-w));
+    height: calc(var(--sheet-h));
+    max-width: 100%;
+    max-height: 100%;
+    aspect-ratio: var(--sheet-w) / var(--sheet-h);
+    background: #f9f6ef;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+    display: grid;
+    grid-template-columns: repeat(var(--cols), 1fr);
+    grid-template-rows: repeat(var(--rows), 1fr);
+    gap: 0.15in;
+    padding: 0.5in; /* approximate; true margins are centered in PDF */
+    box-sizing: border-box;
+  }
+
+  .slot {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  .slot :global(svg) {
+    width: 100%;
+    height: 100%;
+  }
+
+  .sheet.show-cut-lines .slot::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 1px dashed rgba(0, 0, 0, 0.4);
+  }
+
+  .sheet.show-bleed .slot::after {
+    content: "";
+    position: absolute;
+    inset: -0.1in;
+    border-radius: 50%;
+    border: 1px dotted rgba(200, 0, 0, 0.4);
+    pointer-events: none;
+  }
+
+  .missing {
+    font-size: 10px;
+    color: rgba(0,0,0,0.4);
+  }
+</style>
