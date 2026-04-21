@@ -5,13 +5,72 @@
 ## TL;DR
 
 - ✅ **Phase 0 complete** — `@tka/tka-types` package with `Step`, `Motion`, builders, guards. 43/43 tests pass.
-- ✅ **Phase 1 complete** — sequence-engine internals migrated to unified types. 168/168 engine tests pass. `deriveReversals` implemented TDD (11 tests green). `Motion.color` relaxed to optional; builders default `id`/`duration`/`plane`.
+- ✅ **Phase 1 complete** — sequence-engine internals migrated to unified types. 168/168 engine tests pass. `deriveReversals` implemented TDD (11 tests green). `Motion.color` relaxed optional; `Motion.plane` relaxed optional; builders default `id`/`duration`/`plane`.
 - ✅ **Rename Waves 0, 1, 2 complete** — 174 identifier renames in sequence-engine, 1 rename in render-composition (`BASE_STEP_SIZE`). Wave 0 pilot validated classification rules with zero changes needed.
-- 🚧 **MotionData split (Phase 2a prerequisite) — in progress at time of writing.** Agent making incremental commits; surfaced its own "plane-required" blocker but documenting rather than failing silently.
-- ⛔ **Phase 2 (main app migration) blocked** on MotionData split completion.
+- ✅ **MotionView + MotionWithView scaffolded** — new view-layer vocabulary exists in `src/lib/shared/pictograph/shared/domain/models/`. `MotionData` JSDoc-deprecated.
+- ⛔ **Phase 2 app migration BLOCKED** on three architectural decisions you need to make (see "Decisions awaiting you" below).
 - ⛔ **Phase 3+, Rename Wave 3+ blocked** on Phase 2.
 - 🚫 **Phase 6 (DB backfill)** — 30-day monitoring gate; not possible today regardless.
 - 🚫 **Phase 7 (npm publish)** — requires your credentials; not possible today regardless.
+
+## Decisions awaiting you (the hard stop)
+
+Every agent that tried to migrate app consumers from `MotionData` to `Motion` hit foundational disagreements between the app's type system and `@tka/tka-types`. These aren't bugs to fix — they're design choices to make:
+
+### Decision 1 — Enum representation
+
+- **App uses TS `enum` types (nominal).** `enum MotionType { PRO = "pro" }` — assigning a raw string `"pro"` to an `enum` parameter is a type error.
+- **`@tka/tka-types` uses `const`-as-union (structural).** Same runtime values, different TypeScript identity.
+
+Three resolutions:
+- **A.** Convert all app enums to `const`-as-union (matches tka-types). One-time large mechanical rename across `src/lib/shared/pictograph/shared/domain/enums/` and similar. 3-5h.
+- **B.** Convert tka-types enums to real `enum` types. Engine already migrated — would touch 24 engine files again. Also makes tka-types heavier for third-party consumers. Not recommended.
+- **C.** Keep both, accept `as` casts at every cross-layer boundary. Pollutes ~80 call sites perpetually. Not recommended.
+
+**My recommendation: A.** Matches where the published packages are heading anyway.
+
+### Decision 2 — Plane value set
+
+- **App `Plane` has 9 values:** WALL, WHEEL, FLOOR + 6 fusion planes (plane-mode project).
+- **tka-types `Plane` has 3 values:** wall, wheel, overhead.
+
+They describe different concepts. App's includes fusion planes that exist in your atomic-plane-system project. tka-types was defined without that in mind.
+
+Three resolutions:
+- **A.** Extend tka-types `Plane` to match app (9 values). Engine currently only uses wall/wheel/overhead, so adding more is additive and non-breaking.
+- **B.** Extract `Plane` into a separate shared package (`@tka/plane-types` or similar), consumed by both tka-types and app.
+- **C.** Keep them separate, define a mapping layer at the boundary.
+
+**My recommendation: A.** `Plane` is shared domain vocabulary; forcing two definitions is the same drift problem the whole unification spec set out to eliminate.
+
+### Decision 3 — Interface update strategy
+
+Interfaces like `IEndpointCalculator`, `ISequenceExporter` declare `MotionData` in their contract. Swapping an implementation without updating the interface triggers TS2416 ("type not assignable to same property in base"). Interface updates are mechanical but cascade.
+
+Two resolutions:
+- **A.** Bulk interface update in one commit: grep for `MotionData` in `src/lib/**/contracts/`, replace with `Motion` or `MotionWithView` based on access pattern. ~40 files.
+- **B.** Per-consumer migration: update each interface when its first implementation migrates. Slower but lower blast radius per commit.
+
+**My recommendation: A.** Atomic interface sweep avoids the partial-state problem.
+
+## What the next session should do (concrete order)
+
+1. **Confirm Decisions 1-3** — probably 5 min of "yes A, A, A" from you. 
+2. **Execute Decision 2** — extend tka-types `Plane` to 9 values. 15 min, ~3 files. Unblocks test runs.
+3. **Execute Decision 3** — interface sweep in `src/lib/**/contracts/`. 30-45 min, 1 commit.
+4. **Execute Decision 1** — enum unification. 3-5h, several commits by enum family.
+5. **Category A migration** — 58 files, mostly mechanical at that point. 1-2h.
+6. **Category B migration** — 24 files. 1-2h.
+7. **Category C migration** — 91 mixed files, needs per-file judgment. 3-5h.
+8. **Retry `StepData extends Step`** — should now work. Phase 2a Path A lands.
+9. **Cascade through Phase 2b-2e** (deriveReversals call sites, selectionStore, isStep removal) — 6-10h.
+10. **Rename Waves 3-11** — mostly mechanical. 3-5h.
+11. **Phase 3** (LOOP executor consolidation) — 2-3h.
+12. **Phase 4-5** (MCP + broadcast) — 3-4h.
+13. **Phase 6** scheduled work + 30-day wait.
+14. **Phase 7** scheduled work + your npm credentials.
+
+**Realistic calendar:** 3-5 more focused sessions of 4-6h each, spread over 2 weeks, plus the 30-day monitoring window.
 
 ## What was discovered that the spec missed
 
@@ -71,11 +130,14 @@ The in-flight agent is implementing exactly this split. When it lands, Phase 2a 
 **Rename Wave 2 (packages):**
 - `d0c0bd4d8d` refactor(beat→step): wave 2 — render-composition (BASE_BEAT_SIZE → BASE_STEP_SIZE)
 
-**MotionData split (Phase 2a prerequisite, in-flight at hand-off):**
+**MotionData split (Phase 2a prerequisite, scaffolding only — migration blocked on enum decision):**
 - `2a739c8d04` feat(pictograph): introduce MotionView for visual-layer concerns
 - `7d4d678e0c` feat(pictograph): add MotionWithView composition alias
 - `0111badad7` docs(pictograph): mark MotionData as deprecated, document migration targets
 - `a121a9c51e` docs(pictograph): document the plane-required blocker on MotionWithView
+- `900965c482` refactor(tka-types): relax Motion.plane to optional, builder default unchanged
+- `a299c80691` refactor(tka-types): relax isMotion guard to match optional plane
+- `2fcfe9442d` docs(pictograph): document deeper MotionData → Motion migration blockers
 
 **Design/plan docs:**
 - `0202facb67` docs(spec): sequence engine unification design
