@@ -2,9 +2,25 @@
  * Sequence Engine Types - Shared domain models
  *
  * Platform-agnostic types for sequence generation.
- * Uses strings internally for maximum compatibility between
- * MCP server (Node.js) and browser contexts.
+ *
+ * Transitional shim during the sequence-engine unification (Phase 1):
+ *   - Canonical `Step` and `Motion` now live in `@tka/tka-types`. This module
+ *     re-exports them so engine code can import from here or directly from
+ *     `@tka/tka-types`.
+ *   - The legacy `SequenceStep` and `MotionData` interfaces below are kept
+ *     alive during incremental migration of engine source files. Once every
+ *     internal usage is on `Step` / `Motion` / `.motions.blue` / `.motions.red`,
+ *     the legacy interfaces get collapsed to type aliases pointing at `Step`
+ *     and `Motion` (end of Phase 1).
+ *   - After Phase 2 consumers migrate, the aliases become safe to remove.
  */
+
+// Canonical unified types — single source of truth for Step and Motion.
+export type {
+  Step,
+  StepMotions,
+  Motion,
+} from "@tka/tka-types";
 
 /**
  * Position groups for letter transitions.
