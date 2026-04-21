@@ -3,16 +3,16 @@
  *
  * Platform-agnostic types for sequence generation.
  *
- * Transitional shim during the sequence-engine unification (Phase 1):
- *   - Canonical `Step` and `Motion` now live in `@tka/tka-types`. This module
- *     re-exports them so engine code can import from here or directly from
- *     `@tka/tka-types`.
- *   - The legacy `SequenceStep` and `MotionData` interfaces below are kept
- *     alive during incremental migration of engine source files. Once every
- *     internal usage is on `Step` / `Motion` / `.motions.blue` / `.motions.red`,
- *     the legacy interfaces get collapsed to type aliases pointing at `Step`
- *     and `Motion` (end of Phase 1).
- *   - After Phase 2 consumers migrate, the aliases become safe to remove.
+ * Post-unification (Phase 1 complete):
+ *   - Canonical `Step` and `Motion` live in `@tka/tka-types`.
+ *   - `SequenceStep` and `MotionData` are transitional aliases pointing at
+ *     `Step` and `Motion`. Engine internals use `Step`/`Motion` directly;
+ *     app code still imports via the legacy names while Phase 2 migrates
+ *     the app layer. After Phase 2 the aliases can be removed.
+ *   - Legacy enum type aliases (MotionType, RotationDirection, Orientation,
+ *     GridLocation, LetterCategory, LetterType, PositionGroup) remain as
+ *     loose string literal unions so existing string-flavored engine paths
+ *     keep compiling until the enum migration sweep.
  */
 
 // Canonical unified types — single source of truth for Step and Motion.
@@ -21,6 +21,15 @@ export type {
   StepMotions,
   Motion,
 } from "@tka/tka-types";
+
+// Transitional aliases: engine + app code migrating incrementally keeps
+// compiling under the legacy names.
+import type { Step as _Step, Motion as _Motion } from "@tka/tka-types";
+
+/** @deprecated Use `Step` from `@tka/tka-types`. Alias retained for app-layer transition (Phase 2). */
+export type SequenceStep = _Step;
+/** @deprecated Use `Motion` from `@tka/tka-types`. Alias retained for app-layer transition (Phase 2). */
+export type MotionData = _Motion;
 
 /**
  * Position groups for letter transitions.
@@ -121,54 +130,8 @@ export interface LetterMappingsJson {
   categories: Record<string, string[]>;
 }
 
-/**
- * Motion data for one hand (prop).
- */
-export interface MotionData {
-  motionType: string;
-  startLocation: string;
-  endLocation: string;
-  rotationDirection: string;
-  startOrientation?: string;
-  endOrientation?: string;
-  turns?: number | "fl";
-  /** Spinning plane (future concept, not yet assigned to a level). Defaults to "wall" when omitted. */
-  plane?: "wall" | "wheel" | "overhead";
-  /** Prop color ("blue" or "red"). Optional — not all contexts track color. */
-  color?: string;
-  /**
-   * Original motion type before float conversion. Present only when motionType === "float"
-   * and the source was a shift (pro/anti). Consumers like TurnColorInterpreter need this
-   * to pick the correct slot (pro vs anti) for TYPE1_HYBRID letter turn coloring.
-   */
-  prefloatMotionType?: string;
-  /** Original rotation direction before float conversion; paired with prefloatMotionType. */
-  prefloatRotationDirection?: string;
-}
-
-/**
- * A step in a sequence (one beat of motion).
- */
-export interface SequenceStep {
-  /** The letter representing this motion */
-  letter: string;
-  /** Starting position (e.g., "alpha1", "beta3") */
-  startPosition: string;
-  /** Ending position */
-  endPosition: string;
-  /** Blue hand/prop motion data */
-  blueMotion: MotionData;
-  /** Red hand/prop motion data */
-  redMotion: MotionData;
-  /** Beat number in the sequence */
-  beatIndex: number;
-  /** Step number (0 = start position, 1+ = beats). Used by LOOP detection/execution. */
-  stepNumber?: number;
-  /** Variation index within a letter's pictograph set */
-  variation?: number;
-  /** Whether this step is a bridge letter (inserted for position continuity) */
-  isBridge?: boolean;
-}
+// `MotionData` and `SequenceStep` interfaces removed — now aliases for
+// `Motion` and `Step` from `@tka/tka-types` (see top of file).
 
 /**
  * Result of sequence building.
