@@ -39,7 +39,7 @@ export class StrictSwappedExecutor implements ILOOPExecutor {
 
     let lastStep = sequence[sequence.length - 1]!;
     const firstGeneratedStepNumber =
-      (lastStep.stepNumber ?? lastStep.beatIndex) + 1;
+      (lastStep.stepNumber ?? lastStep.stepNumber) + 1;
 
     for (let offset = 0; offset < beatsToGenerate; offset++) {
       const stepNumber = firstGeneratedStepNumber + offset;
@@ -92,12 +92,12 @@ export class StrictSwappedExecutor implements ILOOPExecutor {
     stepNumber: number
   ): SequenceStep {
     const blueMotion = this.createSwappedMotion(
-      previousStep.blueMotion,
-      sourceStep.redMotion
+      previousStep.motions.blue,
+      sourceStep.motions.red
     );
     const redMotion = this.createSwappedMotion(
-      previousStep.redMotion,
-      sourceStep.blueMotion
+      previousStep.motions.red,
+      sourceStep.motions.blue
     );
 
     const actualStartPosition = gridPositionDeriver.getGridPositionFromLocations(
@@ -112,11 +112,9 @@ export class StrictSwappedExecutor implements ILOOPExecutor {
     return {
       ...sourceStep,
       stepNumber,
-      beatIndex: stepNumber,
-      startPosition: actualStartPosition,
-      endPosition: actualEndPosition,
-      blueMotion,
-      redMotion,
+      startPosition: (actualStartPosition) as SequenceStep["startPosition"],
+      endPosition: (actualEndPosition) as SequenceStep["endPosition"],
+      motions: { blue: blueMotion, red: redMotion },
     };
   }
 
@@ -128,16 +126,17 @@ export class StrictSwappedExecutor implements ILOOPExecutor {
     return {
       ...sourceStep,
       stepNumber,
-      beatIndex: stepNumber,
-      startPosition: previousStep.endPosition,
-      endPosition: sourceStep.endPosition,
-      blueMotion: {
-        ...sourceStep.blueMotion,
-        startLocation: previousStep.blueMotion.endLocation,
+      startPosition: (previousStep.endPosition) as SequenceStep["startPosition"],
+      endPosition: (sourceStep.endPosition) as SequenceStep["endPosition"],
+      motions: {
+        blue: {
+        ...sourceStep.motions.blue,
+        startLocation: (previousStep.motions.blue.endLocation) as MotionData["startLocation"],
       },
-      redMotion: {
-        ...sourceStep.redMotion,
-        startLocation: previousStep.redMotion.endLocation,
+        red: {
+        ...sourceStep.motions.red,
+        startLocation: (previousStep.motions.red.endLocation) as MotionData["startLocation"],
+      },
       },
     };
   }
@@ -162,8 +161,8 @@ export class StrictSwappedExecutor implements ILOOPExecutor {
 
     return {
       ...matchingMotion,
-      startLocation,
-      endLocation,
+      startLocation: startLocation as MotionData["startLocation"],
+      endLocation: endLocation as MotionData["endLocation"],
     };
   }
 }

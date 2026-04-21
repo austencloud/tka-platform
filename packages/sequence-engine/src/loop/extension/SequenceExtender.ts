@@ -188,7 +188,7 @@ export class SequenceExtender {
     const executor = this.executorSelector.getExecutor(loopType);
 
     // Get only the beat steps for the executor (exclude start position)
-    const beatSteps = steps.filter((s) => (s.stepNumber ?? s.beatIndex) > 0);
+    const beatSteps = steps.filter((s) => (s.stepNumber ?? s.stepNumber) > 0);
 
     if (beatSteps.length === 0) {
       throw new Error("No beat steps in sequence to extend");
@@ -213,7 +213,7 @@ export class SequenceExtender {
  * Get the start position from the start-position step (stepNumber 0).
  */
 function getStartPosition(steps: SequenceStep[]): string | null {
-  const startStep = steps.find((s) => (s.stepNumber ?? s.beatIndex) === 0);
+  const startStep = steps.find((s) => (s.stepNumber ?? s.stepNumber) === 0);
   return startStep?.startPosition ?? null;
 }
 
@@ -221,7 +221,7 @@ function getStartPosition(steps: SequenceStep[]): string | null {
  * Get the current end position from the last beat step.
  */
 function getCurrentEndPosition(steps: SequenceStep[]): string | null {
-  const beatSteps = steps.filter((s) => (s.stepNumber ?? s.beatIndex) > 0);
+  const beatSteps = steps.filter((s) => (s.stepNumber ?? s.stepNumber) > 0);
   if (beatSteps.length === 0) return null;
   return beatSteps[beatSteps.length - 1]!.endPosition;
 }

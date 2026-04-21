@@ -60,7 +60,7 @@ export class OrientationPropagator implements IOrientationPropagator {
       const step = updatedSteps[i];
       if (!step) continue;
 
-      const motion = color === "blue" ? step.blueMotion : step.redMotion;
+      const motion = color === "blue" ? step.motions.blue : step.motions.red;
       if (!motion) continue;
 
       const newEndOrientation = this.calculator.calculateEndOrientation(
@@ -80,8 +80,10 @@ export class OrientationPropagator implements IOrientationPropagator {
 
       updatedSteps[i] = {
         ...step,
-        blueMotion: color === "blue" ? updatedMotion : step.blueMotion,
-        redMotion: color === "red" ? updatedMotion : step.redMotion,
+        motions: {
+          blue: color === "blue" ? updatedMotion : step.motions.blue,
+          red: color === "red" ? updatedMotion : step.motions.red,
+        },
       };
 
       previousEndOrientation = newEndOrientation;
@@ -102,10 +104,10 @@ export class OrientationPropagator implements IOrientationPropagator {
 
     let updatedSteps = [...result.steps];
 
-    const blueStartOrientation = (startPosition.blueMotion.endOrientation || "in") as Orientation;
+    const blueStartOrientation = (startPosition.motions.blue.endOrientation || "in") as Orientation;
     updatedSteps = this.propagateForColor(updatedSteps, "blue", blueStartOrientation);
 
-    const redStartOrientation = (startPosition.redMotion.endOrientation || "in") as Orientation;
+    const redStartOrientation = (startPosition.motions.red.endOrientation || "in") as Orientation;
     updatedSteps = this.propagateForColor(updatedSteps, "red", redStartOrientation);
 
     return {

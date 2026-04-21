@@ -31,7 +31,7 @@ export class RotatedInvertedExecutor implements ILOOPExecutor {
       sliceSize === SliceSize.QUARTERED ? sequenceLength * 3 : sequenceLength;
 
     let lastStep = sequence[sequence.length - 1]!;
-    let nextStepNumber = (lastStep.stepNumber ?? lastStep.beatIndex) + 1;
+    let nextStepNumber = (lastStep.stepNumber ?? lastStep.stepNumber) + 1;
     const finalIntendedLength = sequenceLength + entriesToAdd;
 
     for (let i = 0; i < entriesToAdd; i++) {
@@ -70,43 +70,44 @@ export class RotatedInvertedExecutor implements ILOOPExecutor {
   }
 
   private createStep(matchingStep: SequenceStep, previousStep: SequenceStep, stepNumber: number): SequenceStep {
-    const invertedLetter = getInvertedLetter(matchingStep.letter);
+    const invertedLetter = getInvertedLetter(matchingStep.letter ?? "");
 
     // Same color (no swap) - get rotation from same color's handpath
     const blueHandRotDir = getHandRotationDirection(
-      matchingStep.blueMotion.startLocation, matchingStep.blueMotion.endLocation
+      matchingStep.motions.blue.startLocation, matchingStep.motions.blue.endLocation
     );
     const redHandRotDir = getHandRotationDirection(
-      matchingStep.redMotion.startLocation, matchingStep.redMotion.endLocation
+      matchingStep.motions.red.startLocation, matchingStep.motions.red.endLocation
     );
 
     const blueLocationMap = getLocationMapForHandRotation(blueHandRotDir);
     const redLocationMap = getLocationMapForHandRotation(redHandRotDir);
 
-    const newBlueEndLoc = blueLocationMap[previousStep.blueMotion.endLocation] || previousStep.blueMotion.endLocation;
-    const newRedEndLoc = redLocationMap[previousStep.redMotion.endLocation] || previousStep.redMotion.endLocation;
+    const newBlueEndLoc = blueLocationMap[previousStep.motions.blue.endLocation] || previousStep.motions.blue.endLocation;
+    const newRedEndLoc = redLocationMap[previousStep.motions.red.endLocation] || previousStep.motions.red.endLocation;
 
     const newEndPosition = gridPositionDeriver.getGridPositionFromLocations(newBlueEndLoc, newRedEndLoc);
 
     return {
       ...matchingStep,
       stepNumber,
-      beatIndex: stepNumber,
-      letter: invertedLetter,
-      startPosition: previousStep.endPosition,
-      endPosition: newEndPosition,
-      blueMotion: this.createMotion(matchingStep.blueMotion, previousStep.blueMotion, newBlueEndLoc),
-      redMotion: this.createMotion(matchingStep.redMotion, previousStep.redMotion, newRedEndLoc),
+      letter: (invertedLetter) as SequenceStep["letter"],
+      startPosition: (previousStep.endPosition) as SequenceStep["startPosition"],
+      endPosition: (newEndPosition) as SequenceStep["endPosition"],
+      motions: {
+        blue: this.createMotion(matchingStep.motions.blue, previousStep.motions.blue, newBlueEndLoc),
+        red: this.createMotion(matchingStep.motions.red, previousStep.motions.red, newRedEndLoc),
+      },
     };
   }
 
   private createMotion(matchingMotion: MotionData, previousMotion: MotionData, rotatedEndLoc: string): MotionData {
     return {
       ...matchingMotion,
-      motionType: invertMotionType(matchingMotion.motionType),
-      startLocation: previousMotion.endLocation,
-      endLocation: rotatedEndLoc,
-      rotationDirection: flipRotDir(matchingMotion.rotationDirection),
+      motionType: (invertMotionType(matchingMotion.motionType)) as MotionData["motionType"],
+      startLocation: (previousMotion.endLocation) as MotionData["startLocation"],
+      endLocation: (rotatedEndLoc) as MotionData["endLocation"],
+      rotationDirection: (flipRotDir(matchingMotion.rotationDirection)) as MotionData["rotationDirection"],
     };
   }
 }

@@ -32,7 +32,7 @@ export class MirroredInvertedExecutor implements ILOOPExecutor {
     const entriesToAdd = sequenceLength;
 
     let lastStep = sequence[sequence.length - 1]!;
-    const nextStepNumber = (lastStep.stepNumber ?? lastStep.beatIndex) + 1;
+    const nextStepNumber = (lastStep.stepNumber ?? lastStep.stepNumber) + 1;
 
     for (let i = 2; i < sequenceLength + 2; i++) {
       const finalIntendedLength = sequenceLength + entriesToAdd;
@@ -68,19 +68,20 @@ export class MirroredInvertedExecutor implements ILOOPExecutor {
   }
 
   private createStep(matchingStep: SequenceStep, previousStep: SequenceStep, stepNumber: number): SequenceStep {
-    const invertedLetter = getInvertedLetter(matchingStep.letter);
+    const invertedLetter = getInvertedLetter(matchingStep.letter ?? "");
     const mirroredEndPosition =
-      VERTICAL_MIRROR_POSITION_MAP[matchingStep.endPosition] || matchingStep.endPosition;
+      VERTICAL_MIRROR_POSITION_MAP[matchingStep.endPosition ?? ""] || matchingStep.endPosition;
 
     return {
       ...matchingStep,
       stepNumber,
-      beatIndex: stepNumber,
-      letter: invertedLetter,
-      startPosition: previousStep.endPosition,
-      endPosition: mirroredEndPosition,
-      blueMotion: this.createMotion(matchingStep.blueMotion, previousStep.blueMotion),
-      redMotion: this.createMotion(matchingStep.redMotion, previousStep.redMotion),
+      letter: (invertedLetter) as SequenceStep["letter"],
+      startPosition: (previousStep.endPosition) as SequenceStep["startPosition"],
+      endPosition: (mirroredEndPosition) as SequenceStep["endPosition"],
+      motions: {
+        blue: this.createMotion(matchingStep.motions.blue, previousStep.motions.blue),
+        red: this.createMotion(matchingStep.motions.red, previousStep.motions.red),
+      },
     };
   }
 
@@ -111,10 +112,10 @@ export class MirroredInvertedExecutor implements ILOOPExecutor {
 
     return {
       ...matchingMotion,
-      motionType: invertedMotionType,
-      startLocation,
-      endLocation,
-      rotationDirection,
+      motionType: (invertedMotionType) as MotionData["motionType"],
+      startLocation: startLocation as MotionData["startLocation"],
+      endLocation: endLocation as MotionData["endLocation"],
+      rotationDirection: rotationDirection as MotionData["rotationDirection"],
     };
   }
 }

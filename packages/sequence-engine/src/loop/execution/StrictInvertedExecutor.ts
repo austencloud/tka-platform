@@ -34,7 +34,7 @@ export class StrictInvertedExecutor implements ILOOPExecutor {
 
     let lastStep = sequence[sequence.length - 1]!;
     const firstGeneratedStepNumber =
-      (lastStep.stepNumber ?? lastStep.beatIndex) + 1;
+      (lastStep.stepNumber ?? lastStep.stepNumber) + 1;
 
     for (let offset = 0; offset < beatsToGenerate; offset++) {
       const stepNumber = firstGeneratedStepNumber + offset;
@@ -85,23 +85,24 @@ export class StrictInvertedExecutor implements ILOOPExecutor {
     previousStep: SequenceStep,
     stepNumber: number
   ): SequenceStep {
-    const invertedLetter = getInvertedLetter(sourceStep.letter);
+    const invertedLetter = getInvertedLetter(sourceStep.letter ?? "");
 
     return {
       ...sourceStep,
       stepNumber,
-      beatIndex: stepNumber,
-      letter: invertedLetter,
-      startPosition: previousStep.endPosition,
-      endPosition: sourceStep.endPosition,
-      blueMotion: this.createInvertedMotion(
-        sourceStep.blueMotion,
-        previousStep.blueMotion
+      letter: (invertedLetter) as SequenceStep["letter"],
+      startPosition: (previousStep.endPosition) as SequenceStep["startPosition"],
+      endPosition: (sourceStep.endPosition) as SequenceStep["endPosition"],
+      motions: {
+        blue: this.createInvertedMotion(
+        sourceStep.motions.blue,
+        previousStep.motions.blue
       ),
-      redMotion: this.createInvertedMotion(
-        sourceStep.redMotion,
-        previousStep.redMotion
+        red: this.createInvertedMotion(
+        sourceStep.motions.red,
+        previousStep.motions.red
       ),
+      },
     };
   }
 
@@ -113,16 +114,17 @@ export class StrictInvertedExecutor implements ILOOPExecutor {
     return {
       ...sourceStep,
       stepNumber,
-      beatIndex: stepNumber,
-      startPosition: previousStep.endPosition,
-      endPosition: sourceStep.endPosition,
-      blueMotion: {
-        ...sourceStep.blueMotion,
-        startLocation: previousStep.blueMotion.endLocation,
+      startPosition: (previousStep.endPosition) as SequenceStep["startPosition"],
+      endPosition: (sourceStep.endPosition) as SequenceStep["endPosition"],
+      motions: {
+        blue: {
+        ...sourceStep.motions.blue,
+        startLocation: (previousStep.motions.blue.endLocation) as MotionData["startLocation"],
       },
-      redMotion: {
-        ...sourceStep.redMotion,
-        startLocation: previousStep.redMotion.endLocation,
+        red: {
+        ...sourceStep.motions.red,
+        startLocation: (previousStep.motions.red.endLocation) as MotionData["startLocation"],
+      },
       },
     };
   }
@@ -133,10 +135,10 @@ export class StrictInvertedExecutor implements ILOOPExecutor {
   ): MotionData {
     return {
       ...sourceMotion,
-      motionType: invertMotionType(sourceMotion.motionType),
-      startLocation: previousMotion.endLocation,
-      endLocation: sourceMotion.endLocation,
-      rotationDirection: flipRotationDirection(sourceMotion.rotationDirection),
+      motionType: (invertMotionType(sourceMotion.motionType)) as MotionData["motionType"],
+      startLocation: (previousMotion.endLocation) as MotionData["startLocation"],
+      endLocation: (sourceMotion.endLocation) as MotionData["endLocation"],
+      rotationDirection: (flipRotationDirection(sourceMotion.rotationDirection)) as MotionData["rotationDirection"],
     };
   }
 }

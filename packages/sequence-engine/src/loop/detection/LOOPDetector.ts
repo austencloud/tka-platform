@@ -158,7 +158,7 @@ function resolveComponentsToLOOPType(components: Set<LOOPComponent>): LOOPType |
 export function isSequenceCircular(steps: SequenceStep[]): boolean {
   if (steps.length < 2) return false;
 
-  const startPositionStep = steps.find((s) => (s.stepNumber ?? s.beatIndex) === 0);
+  const startPositionStep = steps.find((s) => (s.stepNumber ?? s.stepNumber) === 0);
   const lastStep = steps[steps.length - 1];
 
   if (!startPositionStep || !lastStep) return false;
@@ -183,7 +183,7 @@ export function detectLOOPFromSteps(steps: SequenceStep[]): LOOPDetectionResult 
   }
 
   // Get letter steps only (exclude step 0 start position)
-  const letterSteps = steps.filter((s) => (s.stepNumber ?? s.beatIndex) > 0);
+  const letterSteps = steps.filter((s) => (s.stepNumber ?? s.stepNumber) > 0);
 
   if (letterSteps.length < 2) {
     return {
@@ -252,8 +252,8 @@ export class LOOPDetectorClass {
    * Derive start position from a step's motion locations.
    */
   private deriveStartPosition(step: SequenceStep): string | null {
-    const blue = step.blueMotion;
-    const red = step.redMotion;
+    const blue = step.motions.blue;
+    const red = step.motions.red;
     if (!blue?.startLocation || !red?.startLocation) return null;
 
     try {
@@ -270,8 +270,8 @@ export class LOOPDetectorClass {
    * Derive end position from a step's motion locations.
    */
   private deriveEndPosition(step: SequenceStep): string | null {
-    const blue = step.blueMotion;
-    const red = step.redMotion;
+    const blue = step.motions.blue;
+    const red = step.motions.red;
     if (!blue?.endLocation || !red?.endLocation) return null;
 
     try {
@@ -298,7 +298,7 @@ export class LOOPDetectorClass {
     }
 
     // Get beat steps only (exclude start position)
-    const beats = steps.filter((s) => (s.stepNumber ?? s.beatIndex) > 0);
+    const beats = steps.filter((s) => (s.stepNumber ?? s.stepNumber) > 0);
 
     if (beats.length < 2) {
       return { isCircular: true, loopType: null, sliceSize: null, confidence: "accidental" };
@@ -455,10 +455,10 @@ export class LOOPDetectorClass {
       const firstStep = steps[i]!;
       const secondStep = steps[halfLength + i]!;
 
-      const firstBlue = firstStep.blueMotion;
-      const firstRed = firstStep.redMotion;
-      const secondBlue = secondStep.blueMotion;
-      const secondRed = secondStep.redMotion;
+      const firstBlue = firstStep.motions.blue;
+      const firstRed = firstStep.motions.red;
+      const secondBlue = secondStep.motions.blue;
+      const secondRed = secondStep.motions.red;
 
       if (firstBlue && firstRed && secondBlue && secondRed) {
         // Skip pairs where both hands have the same motion type
@@ -493,21 +493,21 @@ export class LOOPDetectorClass {
       // Check letter inversion
       if (firstStep.letter && secondStep.letter) {
         validComparisons++;
-        const expectedLetter = INVERTED_LETTER_MAP[firstStep.letter];
+        const expectedLetter = INVERTED_LETTER_MAP[firstStep.letter ?? ""];
         if (expectedLetter && secondStep.letter !== expectedLetter) return false;
       }
 
       // Check motion type inversion (PRO <-> ANTI)
-      if (firstStep.blueMotion && secondStep.blueMotion) {
+      if (firstStep.motions.blue && secondStep.motions.blue) {
         validComparisons++;
-        if (!isMotionTypeInverted(firstStep.blueMotion.motionType, secondStep.blueMotion.motionType)) {
+        if (!isMotionTypeInverted(firstStep.motions.blue.motionType, secondStep.motions.blue.motionType)) {
           return false;
         }
       }
 
-      if (firstStep.redMotion && secondStep.redMotion) {
+      if (firstStep.motions.red && secondStep.motions.red) {
         validComparisons++;
-        if (!isMotionTypeInverted(firstStep.redMotion.motionType, secondStep.redMotion.motionType)) {
+        if (!isMotionTypeInverted(firstStep.motions.red.motionType, secondStep.motions.red.motionType)) {
           return false;
         }
       }
@@ -565,10 +565,10 @@ export class LOOPDetectorClass {
       const firstStep = steps[i]!;
       const secondStep = steps[i + interval]!;
 
-      const firstBlue = firstStep.blueMotion;
-      const firstRed = firstStep.redMotion;
-      const secondBlue = secondStep.blueMotion;
-      const secondRed = secondStep.redMotion;
+      const firstBlue = firstStep.motions.blue;
+      const firstRed = firstStep.motions.red;
+      const secondBlue = secondStep.motions.blue;
+      const secondRed = secondStep.motions.red;
 
       if (firstBlue && firstRed && secondBlue && secondRed) {
         if (firstBlue.motionType === firstRed.motionType) continue;
@@ -599,20 +599,20 @@ export class LOOPDetectorClass {
 
       if (firstStep.letter && secondStep.letter) {
         validComparisons++;
-        const expectedLetter = INVERTED_LETTER_MAP[firstStep.letter];
+        const expectedLetter = INVERTED_LETTER_MAP[firstStep.letter ?? ""];
         if (expectedLetter && secondStep.letter !== expectedLetter) return false;
       }
 
-      if (firstStep.blueMotion && secondStep.blueMotion) {
+      if (firstStep.motions.blue && secondStep.motions.blue) {
         validComparisons++;
-        if (!isMotionTypeInverted(firstStep.blueMotion.motionType, secondStep.blueMotion.motionType)) {
+        if (!isMotionTypeInverted(firstStep.motions.blue.motionType, secondStep.motions.blue.motionType)) {
           return false;
         }
       }
 
-      if (firstStep.redMotion && secondStep.redMotion) {
+      if (firstStep.motions.red && secondStep.motions.red) {
         validComparisons++;
-        if (!isMotionTypeInverted(firstStep.redMotion.motionType, secondStep.redMotion.motionType)) {
+        if (!isMotionTypeInverted(firstStep.motions.red.motionType, secondStep.motions.red.motionType)) {
           return false;
         }
       }
@@ -727,7 +727,7 @@ function checkRotatedPattern(
     const step2 = steps[i + halfLength];
     if (!step1 || !step2) continue;
 
-    const expectedPosition = HALF_POSITION_MAP[step1.endPosition];
+    const expectedPosition = HALF_POSITION_MAP[step1.endPosition ?? ""];
     if (expectedPosition === step2.endPosition) {
       matchCount++;
     }
@@ -738,7 +738,7 @@ function checkRotatedPattern(
 
   let direction: "cw" | "ccw" | null = null;
   if (matched && steps[0]) {
-    const blueRotDir = steps[0].blueMotion?.rotationDirection;
+    const blueRotDir = steps[0].motions.blue?.rotationDirection;
     if (blueRotDir === "cw" || blueRotDir === "ccw") {
       direction = blueRotDir;
     }
@@ -755,7 +755,7 @@ function checkMirroredPattern(steps: SequenceStep[], halfLength: number): boolea
     const step2 = steps[i + halfLength];
     if (!step1 || !step2) continue;
 
-    const expectedPosition = VERTICAL_MIRROR_POSITION_MAP[step1.endPosition];
+    const expectedPosition = VERTICAL_MIRROR_POSITION_MAP[step1.endPosition ?? ""];
     if (expectedPosition === step2.endPosition) {
       matchCount++;
     }
@@ -774,10 +774,10 @@ function checkSwappedPattern(steps: SequenceStep[], halfLength: number): boolean
     if (!step1 || !step2) continue;
 
     const motionSwapped =
-      step1.blueMotion?.startLocation === step2.redMotion?.startLocation &&
-      step1.blueMotion?.endLocation === step2.redMotion?.endLocation &&
-      step1.redMotion?.startLocation === step2.blueMotion?.startLocation &&
-      step1.redMotion?.endLocation === step2.blueMotion?.endLocation;
+      step1.motions.blue?.startLocation === step2.motions.red?.startLocation &&
+      step1.motions.blue?.endLocation === step2.motions.red?.endLocation &&
+      step1.motions.red?.startLocation === step2.motions.blue?.startLocation &&
+      step1.motions.red?.endLocation === step2.motions.blue?.endLocation;
 
     if (motionSwapped) {
       matchCount++;
@@ -797,12 +797,12 @@ function checkInvertedPattern(steps: SequenceStep[], halfLength: number): boolea
     if (!step1 || !step2) continue;
 
     const blueInverted =
-      (step1.blueMotion?.rotationDirection === "cw" && step2.blueMotion?.rotationDirection === "ccw") ||
-      (step1.blueMotion?.rotationDirection === "ccw" && step2.blueMotion?.rotationDirection === "cw");
+      (step1.motions.blue?.rotationDirection === "cw" && step2.motions.blue?.rotationDirection === "ccw") ||
+      (step1.motions.blue?.rotationDirection === "ccw" && step2.motions.blue?.rotationDirection === "cw");
 
     const redInverted =
-      (step1.redMotion?.rotationDirection === "cw" && step2.redMotion?.rotationDirection === "ccw") ||
-      (step1.redMotion?.rotationDirection === "ccw" && step2.redMotion?.rotationDirection === "cw");
+      (step1.motions.red?.rotationDirection === "cw" && step2.motions.red?.rotationDirection === "ccw") ||
+      (step1.motions.red?.rotationDirection === "ccw" && step2.motions.red?.rotationDirection === "cw");
 
     if (blueInverted || redInverted) {
       matchCount++;

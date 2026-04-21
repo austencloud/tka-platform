@@ -59,17 +59,18 @@ export class RewoundExecutor implements ILOOPExecutor {
     return {
       ...sourceStep,
       stepNumber: newStepNumber,
-      beatIndex: newStepNumber,
       startPosition: previousStep.endPosition,
       endPosition: sourceStep.startPosition,
-      blueMotion: this.createRewoundMotion(
-        sourceStep.blueMotion,
-        previousStep.blueMotion
+      motions: {
+        blue: this.createRewoundMotion(
+        sourceStep.motions.blue,
+        previousStep.motions.blue
       ),
-      redMotion: this.createRewoundMotion(
-        sourceStep.redMotion,
-        previousStep.redMotion
+        red: this.createRewoundMotion(
+        sourceStep.motions.red,
+        previousStep.motions.red
       ),
+      },
     };
   }
 

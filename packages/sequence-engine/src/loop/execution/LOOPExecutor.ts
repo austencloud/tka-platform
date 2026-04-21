@@ -12,7 +12,7 @@
  * reversing E's motions produces K (they are inverses of each other).
  */
 
-import type { SequenceStep } from "../../core/types/sequence-engine-types.js";
+import type { SequenceStep, Motion } from "../../core/types/sequence-engine-types.js";
 import { LOOPType, SliceSize } from "../loop-types.js";
 import { HALVED_LOOPS, QUARTERED_LOOPS } from "../validation/LOOPValidator.js";
 import { findLetterByMotions } from "../LetterLookup.js";
@@ -237,18 +237,20 @@ function executeRewound(
         ? actualSteps[actualSteps.length - 1]!
         : reversedSteps[i - 1]!;
 
-    const rewoundBeat = createRewoundBeat(sourceStep, previousStep, newStepNumber);
+    const rewoundBeatRaw = createRewoundBeat(sourceStep, previousStep, newStepNumber);
 
     // Derive the letter from the reversed motion parameters
     const derivedLetter = findLetterByMotions(
-      rewoundBeat.blueMotion,
-      rewoundBeat.redMotion,
+      rewoundBeatRaw.motions.blue,
+      rewoundBeatRaw.motions.red,
       allPictographs
     );
 
-    // Update the beat with the derived letter (or keep original if not found)
-    rewoundBeat.letter = derivedLetter || sourceStep.letter;
-    derivedLetters.push(rewoundBeat.letter);
+    // Update the beat with the derived letter (or keep original if not found).
+    // Step is readonly, so emit a new step with the resolved letter.
+    const resolvedLetter = (derivedLetter || sourceStep.letter) as SequenceStep["letter"];
+    const rewoundBeat: SequenceStep = { ...rewoundBeatRaw, letter: resolvedLetter };
+    derivedLetters.push(rewoundBeat.letter ?? "");
 
     reversedSteps.push(rewoundBeat);
   }
@@ -296,8 +298,10 @@ function createRewoundBeat(
     startPosition: previousStep.endPosition,
     endPosition: sourceStep.startPosition,
     // Reverse motions
-    blueMotion: createRewoundMotion(sourceStep.blueMotion, previousStep.blueMotion),
-    redMotion: createRewoundMotion(sourceStep.redMotion, previousStep.redMotion),
+    motions: {
+      blue: createRewoundMotion(sourceStep.motions.blue, previousStep.motions.blue),
+      red: createRewoundMotion(sourceStep.motions.red, previousStep.motions.red),
+    },
     variation: 0, // Variation doesn't apply to generated steps
   };
 }
@@ -307,9 +311,9 @@ function createRewoundBeat(
  * Swaps start/end locations and reverses rotation direction
  */
 function createRewoundMotion(
-  sourceMotion: SequenceStep["blueMotion"],
-  previousMotion: SequenceStep["blueMotion"]
-): SequenceStep["blueMotion"] {
+  sourceMotion: Motion,
+  previousMotion: Motion
+): Motion {
   // Reverse rotation direction
   let reversedRotation = sourceMotion.rotationDirection;
   if (reversedRotation === "cw") {
@@ -412,7 +416,7 @@ function executeStrictRotated(
   const derivedLetters: string[] = [];
   const allStepsForGeneration = [...actualSteps];
   let lastStep = actualSteps[actualSteps.length - 1]!;
-  let nextStepNumber = (lastStep.stepNumber ?? lastStep.beatIndex) + 1;
+  let nextStepNumber = (lastStep.stepNumber ?? lastStep.stepNumber) + 1;
 
   for (let i = 0; i < entriesToAdd; i++) {
     const finalIntendedLength = originalLength + entriesToAdd;
@@ -437,16 +441,17 @@ function executeStrictRotated(
       };
     }
 
-    const newStep = createRotatedStep(matchingStep, lastStep, nextStepNumber);
+    const newStepRaw = createRotatedStep(matchingStep, lastStep, nextStepNumber);
 
     // Derive the letter from the rotated motion parameters
     const derivedLetter = findLetterByMotions(
-      newStep.blueMotion,
-      newStep.redMotion,
+      newStepRaw.motions.blue,
+      newStepRaw.motions.red,
       allPictographs
     );
-    newStep.letter = derivedLetter || matchingStep.letter;
-    derivedLetters.push(newStep.letter);
+    const resolvedLetter = (derivedLetter || matchingStep.letter) as SequenceStep["letter"];
+    const newStep: SequenceStep = { ...newStepRaw, letter: resolvedLetter };
+    derivedLetters.push(newStep.letter ?? "");
 
     generatedSteps.push(newStep);
     allStepsForGeneration.push(newStep);
@@ -508,12 +513,12 @@ function createRotatedStep(
 ): SequenceStep {
   // Get hand rotation directions from the matching step
   const blueHandRotDir = getHandRotationDirection(
-    matchingStep.blueMotion.startLocation,
-    matchingStep.blueMotion.endLocation
+    matchingStep.motions.blue.startLocation,
+    matchingStep.motions.blue.endLocation
   );
   const redHandRotDir = getHandRotationDirection(
-    matchingStep.redMotion.startLocation,
-    matchingStep.redMotion.endLocation
+    matchingStep.motions.red.startLocation,
+    matchingStep.motions.red.endLocation
   );
 
   // Get location maps
@@ -521,27 +526,32 @@ function createRotatedStep(
   const redLocationMap = getLocationMapForHandRotation(redHandRotDir);
 
   // Calculate new end locations
-  const newBlueEndLoc = blueLocationMap[previousStep.blueMotion.endLocation] || previousStep.blueMotion.endLocation;
-  const newRedEndLoc = redLocationMap[previousStep.redMotion.endLocation] || previousStep.redMotion.endLocation;
+  const newBlueEndLoc = blueLocationMap[previousStep.motions.blue.endLocation] || previousStep.motions.blue.endLocation;
+  const newRedEndLoc = redLocationMap[previousStep.motions.red.endLocation] || previousStep.motions.red.endLocation;
 
-  // Create the new step
+  // Create the new step. Cast string-typed map outputs back to the
+  // unified enum types — the maps are hand-authored and the values are
+  // definitionally valid GridLocations/GridPositions.
   return {
+    id: `step-rotated-${stepNumber}`,
     letter: matchingStep.letter,
     variation: 0,
     startPosition: previousStep.endPosition,
-    endPosition: derivePositionFromLocations(newBlueEndLoc, newRedEndLoc),
-    blueMotion: {
-      ...matchingStep.blueMotion,
-      startLocation: previousStep.blueMotion.endLocation,
-      endLocation: newBlueEndLoc,
+    endPosition: derivePositionFromLocations(newBlueEndLoc, newRedEndLoc) as SequenceStep["endPosition"],
+    motions: {
+      blue: {
+        ...matchingStep.motions.blue,
+        startLocation: previousStep.motions.blue.endLocation as Motion["startLocation"],
+        endLocation: newBlueEndLoc as Motion["endLocation"],
+      },
+      red: {
+        ...matchingStep.motions.red,
+        startLocation: previousStep.motions.red.endLocation as Motion["startLocation"],
+        endLocation: newRedEndLoc as Motion["endLocation"],
+      },
     },
-    redMotion: {
-      ...matchingStep.redMotion,
-      startLocation: previousStep.redMotion.endLocation,
-      endLocation: newRedEndLoc,
-    },
-    beatIndex: stepNumber,
     stepNumber,
+    duration: 1,
     isBridge: false,
   };
 }
