@@ -68,15 +68,14 @@ export async function mirrorBeat(
   const willTransformBlue = shouldTransformHand(MotionColor.BLUE, targetHand);
   const willTransformRed = shouldTransformHand(MotionColor.RED, targetHand);
 
-  if (beat.motions[MotionColor.BLUE] && willTransformBlue) {
-    mirroredMotions[MotionColor.BLUE] = mirrorMotion(
-      beat.motions[MotionColor.BLUE]
-    );
+  const blueMotion = beat.motions[MotionColor.BLUE];
+  const redMotion = beat.motions[MotionColor.RED];
+
+  if (blueMotion && willTransformBlue) {
+    mirroredMotions[MotionColor.BLUE] = mirrorMotion(blueMotion);
   }
-  if (beat.motions[MotionColor.RED] && willTransformRed) {
-    mirroredMotions[MotionColor.RED] = mirrorMotion(
-      beat.motions[MotionColor.RED]
-    );
+  if (redMotion && willTransformRed) {
+    mirroredMotions[MotionColor.RED] = mirrorMotion(redMotion);
   }
 
   // For "both" mode, use fast path with position maps (no lookup needed)
@@ -116,19 +115,13 @@ export async function flipBeat(
   if (beat.isBlank || !beat) return beat;
 
   const flippedMotions = { ...beat.motions };
-  if (
-    beat.motions[MotionColor.BLUE] &&
-    shouldTransformHand(MotionColor.BLUE, targetHand)
-  ) {
-    flippedMotions[MotionColor.BLUE] = flipMotion(
-      beat.motions[MotionColor.BLUE]
-    );
+  const blueMotion = beat.motions[MotionColor.BLUE];
+  const redMotion = beat.motions[MotionColor.RED];
+  if (blueMotion && shouldTransformHand(MotionColor.BLUE, targetHand)) {
+    flippedMotions[MotionColor.BLUE] = flipMotion(blueMotion);
   }
-  if (
-    beat.motions[MotionColor.RED] &&
-    shouldTransformHand(MotionColor.RED, targetHand)
-  ) {
-    flippedMotions[MotionColor.RED] = flipMotion(beat.motions[MotionColor.RED]);
+  if (redMotion && shouldTransformHand(MotionColor.RED, targetHand)) {
+    flippedMotions[MotionColor.RED] = flipMotion(redMotion);
   }
 
   // For "both" mode, use fast path with position maps (no lookup needed)
@@ -175,23 +168,13 @@ export async function rotateBeat(
   void getToggledGridMode(currentGridMode, rotationAmount);
 
   const rotatedMotions = { ...beat.motions };
-  if (
-    beat.motions[MotionColor.BLUE] &&
-    shouldTransformHand(MotionColor.BLUE, targetHand)
-  ) {
-    rotatedMotions[MotionColor.BLUE] = rotateMotion(
-      beat.motions[MotionColor.BLUE],
-      rotationAmount
-    );
+  const beatBlue = beat.motions[MotionColor.BLUE];
+  const beatRed = beat.motions[MotionColor.RED];
+  if (beatBlue && shouldTransformHand(MotionColor.BLUE, targetHand)) {
+    rotatedMotions[MotionColor.BLUE] = rotateMotion(beatBlue, rotationAmount);
   }
-  if (
-    beat.motions[MotionColor.RED] &&
-    shouldTransformHand(MotionColor.RED, targetHand)
-  ) {
-    rotatedMotions[MotionColor.RED] = rotateMotion(
-      beat.motions[MotionColor.RED],
-      rotationAmount
-    );
+  if (beatRed && shouldTransformHand(MotionColor.RED, targetHand)) {
+    rotatedMotions[MotionColor.RED] = rotateMotion(beatRed, rotationAmount);
   }
 
   const blueMotion = rotatedMotions[MotionColor.BLUE];
@@ -235,12 +218,14 @@ export async function rotateBeat(
 export function colorSwapBeat(beat: StepData): StepData {
   if (beat.isBlank || !beat) return beat;
 
+  const beatBlue = beat.motions[MotionColor.BLUE];
+  const beatRed = beat.motions[MotionColor.RED];
   const swappedMotions = {
-    [MotionColor.BLUE]: beat.motions[MotionColor.RED]
-      ? swapMotionColor(beat.motions[MotionColor.RED], MotionColor.BLUE)
+    [MotionColor.BLUE]: beatRed
+      ? swapMotionColor(beatRed, MotionColor.BLUE)
       : undefined,
-    [MotionColor.RED]: beat.motions[MotionColor.BLUE]
-      ? swapMotionColor(beat.motions[MotionColor.BLUE], MotionColor.RED)
+    [MotionColor.RED]: beatBlue
+      ? swapMotionColor(beatBlue, MotionColor.RED)
       : undefined,
   };
 
@@ -273,21 +258,13 @@ export async function invertBeat(
   if (beat.isBlank || !beat) return beat;
 
   const invertedMotions = { ...beat.motions };
-  if (
-    beat.motions[MotionColor.BLUE] &&
-    shouldTransformHand(MotionColor.BLUE, targetHand)
-  ) {
-    invertedMotions[MotionColor.BLUE] = invertMotion(
-      beat.motions[MotionColor.BLUE]
-    );
+  const beatBlue = beat.motions[MotionColor.BLUE];
+  const beatRed = beat.motions[MotionColor.RED];
+  if (beatBlue && shouldTransformHand(MotionColor.BLUE, targetHand)) {
+    invertedMotions[MotionColor.BLUE] = invertMotion(beatBlue);
   }
-  if (
-    beat.motions[MotionColor.RED] &&
-    shouldTransformHand(MotionColor.RED, targetHand)
-  ) {
-    invertedMotions[MotionColor.RED] = invertMotion(
-      beat.motions[MotionColor.RED]
-    );
+  if (beatRed && shouldTransformHand(MotionColor.RED, targetHand)) {
+    invertedMotions[MotionColor.RED] = invertMotion(beatRed);
   }
 
   // For single-hand mode, keep existing letter for instant animation
@@ -300,12 +277,14 @@ export async function invertBeat(
 
   // Look up correct letter from dataset (only when both hands transformed)
   let correctLetter: Letter | null = beat.letter ?? null;
-  if (invertedMotions[MotionColor.BLUE] && invertedMotions[MotionColor.RED]) {
+  const invertedBlue = invertedMotions[MotionColor.BLUE];
+  const invertedRed = invertedMotions[MotionColor.RED];
+  if (invertedBlue && invertedRed) {
     try {
       const foundLetter =
         await motionQueryHandler.findLetterByMotionConfiguration(
-          invertedMotions[MotionColor.BLUE],
-          invertedMotions[MotionColor.RED],
+          invertedBlue,
+          invertedRed,
           gridMode
         );
       if (foundLetter) {
@@ -344,21 +323,13 @@ export async function rewindBeat(
   }
 
   const rewindMotions = { ...beat.motions };
-  if (
-    beat.motions[MotionColor.BLUE] &&
-    shouldTransformHand(MotionColor.BLUE, targetHand)
-  ) {
-    rewindMotions[MotionColor.BLUE] = rewindMotion(
-      beat.motions[MotionColor.BLUE]
-    );
+  const beatBlue = beat.motions[MotionColor.BLUE];
+  const beatRed = beat.motions[MotionColor.RED];
+  if (beatBlue && shouldTransformHand(MotionColor.BLUE, targetHand)) {
+    rewindMotions[MotionColor.BLUE] = rewindMotion(beatBlue);
   }
-  if (
-    beat.motions[MotionColor.RED] &&
-    shouldTransformHand(MotionColor.RED, targetHand)
-  ) {
-    rewindMotions[MotionColor.RED] = rewindMotion(
-      beat.motions[MotionColor.RED]
-    );
+  if (beatRed && shouldTransformHand(MotionColor.RED, targetHand)) {
+    rewindMotions[MotionColor.RED] = rewindMotion(beatRed);
   }
 
   // For single-hand mode, keep existing positions and letter for instant animation
@@ -375,12 +346,14 @@ export async function rewindBeat(
 
   // Look up correct letter from dataset (only when both hands transformed)
   let correctLetter: Letter | null = beat.letter ?? null;
-  if (rewindMotions[MotionColor.BLUE] && rewindMotions[MotionColor.RED]) {
+  const rewoundBlue = rewindMotions[MotionColor.BLUE];
+  const rewoundRed = rewindMotions[MotionColor.RED];
+  if (rewoundBlue && rewoundRed) {
     try {
       const foundLetter =
         await motionQueryHandler.findLetterByMotionConfiguration(
-          rewindMotions[MotionColor.BLUE],
-          rewindMotions[MotionColor.RED],
+          rewoundBlue,
+          rewoundRed,
           gridMode
         );
       if (foundLetter) {

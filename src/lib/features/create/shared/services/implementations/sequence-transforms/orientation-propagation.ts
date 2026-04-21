@@ -80,11 +80,12 @@ export function recalculateAllOrientations(
 
   const startPosition = sequence.startPosition;
   let updatedSteps = [...sequence.steps];
+  const blueStartMotion = startPosition.motions[MotionColor.BLUE];
+  const redStartMotion = startPosition.motions[MotionColor.RED];
 
   // Recalculate orientations for blue prop
-  if (startPosition.motions[MotionColor.BLUE]) {
-    const blueStartOrientation =
-      startPosition.motions[MotionColor.BLUE].endOrientation;
+  if (blueStartMotion) {
+    const blueStartOrientation = blueStartMotion.endOrientation;
     updatedSteps = propagateOrientationsForColor(
       updatedSteps,
       MotionColor.BLUE,
@@ -94,9 +95,8 @@ export function recalculateAllOrientations(
   }
 
   // Recalculate orientations for red prop
-  if (startPosition.motions[MotionColor.RED]) {
-    const redStartOrientation =
-      startPosition.motions[MotionColor.RED].endOrientation;
+  if (redStartMotion) {
+    const redStartOrientation = redStartMotion.endOrientation;
     updatedSteps = propagateOrientationsForColor(
       updatedSteps,
       MotionColor.RED,

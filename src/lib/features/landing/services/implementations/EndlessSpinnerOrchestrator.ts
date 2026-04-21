@@ -542,19 +542,21 @@ export class EndlessSpinnerOrchestrator implements IEndlessSpinnerOrchestrator {
           currentRedOri !== targetEndState.redOrientation
         ) {
           // Modify start position to have target orientations
+          const startBlueMotion = startPos.motions?.[MotionColor.BLUE];
+          const startRedMotion = startPos.motions?.[MotionColor.RED];
           const adjustedStartPos: StartPositionData = {
             ...startPos,
             motions: {
-              [MotionColor.BLUE]: startPos.motions?.[MotionColor.BLUE]
+              [MotionColor.BLUE]: startBlueMotion
                 ? {
-                    ...startPos.motions[MotionColor.BLUE],
+                    ...startBlueMotion,
                     startOrientation: targetEndState.blueOrientation,
                     endOrientation: targetEndState.blueOrientation,
                   }
                 : undefined,
-              [MotionColor.RED]: startPos.motions?.[MotionColor.RED]
+              [MotionColor.RED]: startRedMotion
                 ? {
-                    ...startPos.motions[MotionColor.RED],
+                    ...startRedMotion,
                     startOrientation: targetEndState.redOrientation,
                     endOrientation: targetEndState.redOrientation,
                   }
@@ -606,34 +608,40 @@ export class EndlessSpinnerOrchestrator implements IEndlessSpinnerOrchestrator {
 
     // Update grid mode on all steps AND their motions
     if (updatedSequence.steps?.length) {
-      updatedSequence.steps = updatedSequence.steps.map((beat) => ({
-        ...beat,
-        gridMode,
-        motions: {
-          ...beat.motions,
-          [MotionColor.BLUE]: beat.motions?.[MotionColor.BLUE]
-            ? { ...beat.motions[MotionColor.BLUE], gridMode }
-            : undefined,
-          [MotionColor.RED]: beat.motions?.[MotionColor.RED]
-            ? { ...beat.motions[MotionColor.RED], gridMode }
-            : undefined,
-        },
-      }));
+      updatedSequence.steps = updatedSequence.steps.map((beat) => {
+        const blueMotion = beat.motions?.[MotionColor.BLUE];
+        const redMotion = beat.motions?.[MotionColor.RED];
+        return {
+          ...beat,
+          gridMode,
+          motions: {
+            ...beat.motions,
+            [MotionColor.BLUE]: blueMotion
+              ? { ...blueMotion, gridMode }
+              : undefined,
+            [MotionColor.RED]: redMotion
+              ? { ...redMotion, gridMode }
+              : undefined,
+          },
+        };
+      });
     }
 
     // Update grid mode on start position and its motions if present
     if (updatedSequence.startPosition) {
       const sp = updatedSequence.startPosition;
+      const blueMotion = sp.motions?.[MotionColor.BLUE];
+      const redMotion = sp.motions?.[MotionColor.RED];
       updatedSequence.startPosition = {
         ...sp,
         gridMode,
         motions: {
           ...sp.motions,
-          [MotionColor.BLUE]: sp.motions?.[MotionColor.BLUE]
-            ? { ...sp.motions[MotionColor.BLUE], gridMode }
+          [MotionColor.BLUE]: blueMotion
+            ? { ...blueMotion, gridMode }
             : undefined,
-          [MotionColor.RED]: sp.motions?.[MotionColor.RED]
-            ? { ...sp.motions[MotionColor.RED], gridMode }
+          [MotionColor.RED]: redMotion
+            ? { ...redMotion, gridMode }
             : undefined,
         },
       };

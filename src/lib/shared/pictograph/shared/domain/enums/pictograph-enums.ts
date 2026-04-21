@@ -29,13 +29,16 @@ export const MotionType = {
 
 export type MotionType = (typeof MotionType)[keyof typeof MotionType];
 
-export enum HandMotionType {
-  SHIFT = "shift",
-  DASH = "dash",
-  STATIC = "static",
-  HASH_IN = "hashIn",   // Perimeter → center
-  HASH_OUT = "hashOut", // Center → perimeter
-}
+export const HandMotionType = {
+  SHIFT: "shift",
+  DASH: "dash",
+  STATIC: "static",
+  HASH_IN: "hashIn", // Perimeter → center
+  HASH_OUT: "hashOut", // Center → perimeter
+} as const;
+
+export type HandMotionType =
+  (typeof HandMotionType)[keyof typeof HandMotionType];
 
 export enum HandPath {
   CLOCKWISE = "cw",
@@ -65,10 +68,12 @@ export enum SkewDirection {
   MINUS = "-",
 }
 
-export enum MotionColor {
-  BLUE = "blue",
-  RED = "red",
-}
+export const MotionColor = {
+  BLUE: "blue",
+  RED: "red",
+} as const;
+
+export type MotionColor = (typeof MotionColor)[keyof typeof MotionColor];
 
 export const RotationDirection = {
   CLOCKWISE: "cw",
