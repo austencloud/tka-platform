@@ -22,6 +22,7 @@ import {
 import { container } from "$lib/shared/di";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import type { ISequenceEncoder } from "$lib/shared/navigation/services/contracts/ISequenceEncoder";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 
 export interface CodeEntry {
   code: string;
@@ -33,6 +34,7 @@ export interface CodeEntry {
   lastScannedAt: string | null;
   lastCity: string | null;
   lastCountry: string | null;
+  decoded: SequenceData | null;
   integrityOk: boolean;
   integrityReason?: string;
 }
@@ -57,7 +59,10 @@ class ScanActivityState {
   private unsubCodes: Unsubscribe | null = null;
   private unsubEvents: Unsubscribe | null = null;
   private byCode = new Map<string, CodeEntry>();
-  private integrityCache = new Map<string, { ok: boolean; reason?: string }>();
+  private decodeCache = new Map<
+    string,
+    { decoded: SequenceData | null; reason?: string }
+  >();
 
   filtered = $derived.by(() => {
     const q = this.searchQuery.trim().toLowerCase();
@@ -159,13 +164,7 @@ class ScanActivityState {
     encoder: ISequenceEncoder
   ): void {
     const encoded: string = data.encoded ?? "";
-    let integrity = this.integrityCache.get(data.encoderHash ?? code);
-    if (!integrity && encoded) {
-      const r = encoder.verifyRoundTrip(encoded);
-      integrity = r.ok ? { ok: true } : { ok: false, reason: r.reason };
-      this.integrityCache.set(data.encoderHash ?? code, integrity);
-    }
-    this.byCode.set(code, {
+    const entry: CodeEntry = {
       code,
       word: data.sequence ?? "",
       ownerId: data.ownerId ?? null,
@@ -175,9 +174,53 @@ class ScanActivityState {
       lastScannedAt: data.lastScannedAt ?? null,
       lastCity: data.lastCity ?? null,
       lastCountry: data.lastCountry ?? null,
-      integrityOk: integrity?.ok ?? true,
-      integrityReason: integrity?.reason,
-    });
+      decoded: null,
+      integrityOk: true,
+    };
+    this.byCode.set(code, entry);
+
+    if (!encoded) {
+      entry.integrityOk = false;
+      entry.integrityReason = "no encoded blob";
+      return;
+    }
+
+    const cached = this.decodeCache.get(encoded);
+    if (cached) {
+      entry.decoded = cached.decoded;
+      entry.integrityOk = cached.decoded !== null;
+      entry.integrityReason = cached.reason;
+      return;
+    }
+
+    void this.decodeAsync(entry, encoded, encoder);
+  }
+
+  private async decodeAsync(
+    entry: CodeEntry,
+    encoded: string,
+    encoder: ISequenceEncoder
+  ): Promise<void> {
+    try {
+      const decoded = await encoder.decodeFromQR(encoded);
+      this.decodeCache.set(encoded, { decoded });
+      const current = this.byCode.get(entry.code);
+      if (current && current.encoded === encoded) {
+        current.decoded = decoded;
+        current.integrityOk = true;
+        this.resort();
+      }
+    } catch (err) {
+      const reason = (err as Error).message;
+      this.decodeCache.set(encoded, { decoded: null, reason });
+      const current = this.byCode.get(entry.code);
+      if (current && current.encoded === encoded) {
+        current.decoded = null;
+        current.integrityOk = false;
+        current.integrityReason = reason;
+        this.resort();
+      }
+    }
   }
 
   private resort(): void {

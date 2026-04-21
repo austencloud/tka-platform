@@ -6,9 +6,7 @@
 -->
 <script lang="ts">
   import { onDestroy } from "svelte";
-  import { container } from "$lib/shared/di";
   import { authState } from "$lib/shared/auth/state/authState.svelte";
-  import type { ISequenceEncoder } from "$lib/shared/navigation/services/contracts/ISequenceEncoder";
   import { scanActivityState, type CodeEntry } from "$lib/features/choreo-card/state/scan-activity-state.svelte";
   import ScanActivityCard from "./ScanActivityCard.svelte";
   import ScanHistoryDrawer from "./ScanHistoryDrawer.svelte";
@@ -16,9 +14,6 @@
   import TopLocationsBlock from "./TopLocationsBlock.svelte";
   import ScanActivityGlobe from "./ScanActivityGlobe.svelte";
   import { countryCentroid } from "./country-centroids";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
-
-  const encoder = container.items.sequenceEncoder as ISequenceEncoder;
 
   let drawerOpen = $state(false);
   let drawerEntry = $state<CodeEntry | null>(null);
@@ -39,14 +34,6 @@
     drawerOpen = drawerEntry !== null;
   }
 
-  function decoded(entry: CodeEntry): SequenceData | null {
-    if (!entry.integrityOk || !entry.encoded) return null;
-    try {
-      return encoder.decodeWithCompression(entry.encoded);
-    } catch {
-      return null;
-    }
-  }
 
   const globePoints = $derived.by(() => {
     const pts: { id: string; lat: number; lng: number; label: string; newest?: boolean }[] = [];
@@ -107,7 +94,7 @@
       {:else}
         <div class="grid">
           {#each scanState.filtered as entry, i (entry.code)}
-            <ScanActivityCard {entry} sequence={decoded(entry)} hot={i === 0} onOpen={openDrawer} />
+            <ScanActivityCard {entry} sequence={entry.decoded} hot={i === 0} onOpen={openDrawer} />
           {/each}
         </div>
       {/if}
