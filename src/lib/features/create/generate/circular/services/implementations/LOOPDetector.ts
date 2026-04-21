@@ -463,9 +463,12 @@ export class LOOPDetector implements ILOOPDetector {
 
     // STATIC, FLOAT, DASH are self-inverted
     if (type1 === type2) {
-      return [MotionType.STATIC, MotionType.FLOAT, MotionType.DASH].includes(
-        type1
-      );
+      const selfInverted: MotionType[] = [
+        MotionType.STATIC,
+        MotionType.FLOAT,
+        MotionType.DASH,
+      ];
+      return selfInverted.includes(type1);
     }
 
     return false;

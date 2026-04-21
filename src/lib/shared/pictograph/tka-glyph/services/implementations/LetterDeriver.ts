@@ -151,9 +151,12 @@ export class LetterDeriver {
    * Check if motion type is a shift motion
    */
   private isShiftMotion(motionType: MotionType): boolean {
-    return [MotionType.PRO, MotionType.ANTI, MotionType.FLOAT].includes(
-      motionType
-    );
+    const shiftTypes: MotionType[] = [
+      MotionType.PRO,
+      MotionType.ANTI,
+      MotionType.FLOAT,
+    ];
+    return shiftTypes.includes(motionType);
   }
 
   /**

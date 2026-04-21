@@ -19,13 +19,15 @@ export enum VTGDirection {
   NONE = "none",
 }
 
-export enum MotionType {
-  PRO = "pro",
-  ANTI = "anti",
-  FLOAT = "float",
-  DASH = "dash",
-  STATIC = "static",
-}
+export const MotionType = {
+  PRO: "pro",
+  ANTI: "anti",
+  FLOAT: "float",
+  DASH: "dash",
+  STATIC: "static",
+} as const;
+
+export type MotionType = (typeof MotionType)[keyof typeof MotionType];
 
 export enum HandMotionType {
   SHIFT = "shift",
