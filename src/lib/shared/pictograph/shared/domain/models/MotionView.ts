@@ -65,5 +65,26 @@ export interface MotionView {
  * services, and anything reading `isVisible` / `propType` / `arrowLocation`
  * should annotate inputs as `MotionWithView` rather than the deprecated
  * `MotionData`.
+ *
+ * ## Known migration blocker — `plane` required vs optional
+ *
+ * `@tka/tka-types` declares `Motion.plane: Plane` (required). The app's
+ * `MotionData.plane?: Plane` (optional). Because `MotionWithView` intersects
+ * the engine's required `plane` with MotionView's omission, the composed type
+ * inherits the required form.
+ *
+ * Existing app call sites construct motions without setting `plane`, and many
+ * consumers treat `motion.plane` as possibly undefined. A naive swap from
+ * `MotionData` to `Motion` or `MotionWithView` therefore produces cascading
+ * TS2345 errors at the construction sites.
+ *
+ * Before a full migration can land, one of the following must happen:
+ *   1. Every motion constructor defaults `plane: Plane.WALL` — remove the
+ *      `undefined` escape hatch from the runtime data.
+ *   2. `@tka/tka-types` loosens `Motion.plane` to optional. Engine would need
+ *      to decide the default-to-wall policy at read time.
+ *
+ * Option 1 is consistent with the engine's existing "undefined means wall"
+ * comment and is the intended direction.
  */
 export type MotionWithView = Motion & MotionView;
