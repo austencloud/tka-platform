@@ -31,3 +31,9 @@ export type {
   ISequenceDataProvider,
   LetterVariationData,
 } from "./core/data/ISequenceDataProvider.js";
+
+// Analysis
+export {
+  deriveReversals,
+  type StepReversals,
+} from "./analysis/deriveReversals.js";

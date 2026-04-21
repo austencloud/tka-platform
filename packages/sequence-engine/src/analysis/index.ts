@@ -9,3 +9,8 @@ export {
   type ReversalInfo,
   type AnnotatedStep,
 } from "./ReversalDetector.js";
+
+export {
+  deriveReversals,
+  type StepReversals,
+} from "./deriveReversals.js";
