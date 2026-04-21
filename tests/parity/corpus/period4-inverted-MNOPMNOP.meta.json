@@ -1,0 +1,11 @@
+{
+  "description": "Period-4 INVERTED",
+  "id": "period4-inverted-MNOPMNOP",
+  "kind": "word",
+  "options": {
+    "constraintPreset": "smooth",
+    "loopType": "INVERTED",
+    "period": 4
+  },
+  "word": "MNOPMNOP"
+}

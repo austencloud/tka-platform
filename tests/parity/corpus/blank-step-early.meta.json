@@ -1,0 +1,9 @@
+{
+  "description": "Blank-step sequence — early",
+  "id": "blank-step-early",
+  "kind": "word",
+  "options": {
+    "constraintPreset": "smooth"
+  },
+  "word": "_AB"
+}

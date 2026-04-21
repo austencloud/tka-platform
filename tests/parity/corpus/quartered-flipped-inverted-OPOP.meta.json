@@ -1,0 +1,11 @@
+{
+  "description": "Quartered FLIPPED/INVERTED",
+  "id": "quartered-flipped-inverted-OPOP",
+  "kind": "word",
+  "options": {
+    "constraintPreset": "smooth",
+    "loopType": "FLIPPED/INVERTED",
+    "period": 2
+  },
+  "word": "OPOP"
+}

@@ -1,0 +1,11 @@
+{
+  "description": "Quartered SWAPPED/ROTATED",
+  "id": "quartered-swapped-rotated-EFEF",
+  "kind": "word",
+  "options": {
+    "constraintPreset": "smooth",
+    "loopType": "SWAPPED/ROTATED",
+    "period": 2
+  },
+  "word": "EFEF"
+}

@@ -1,0 +1,9 @@
+{
+  "description": "Single-step partial",
+  "id": "single-step-A",
+  "kind": "word",
+  "options": {
+    "constraintPreset": "smooth"
+  },
+  "word": "A"
+}

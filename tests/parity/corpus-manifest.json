@@ -1,6 +1,262 @@
 {
-  "version": 1,
-  "capturedAt": null,
-  "capturedCommit": null,
-  "entries": []
+  "capturedAt": "2026-04-21T00:16:21.178Z",
+  "capturedCommit": "fc47ab05c32d2096f94bfb2fd91dc143a7b503ac",
+  "entries": [
+    {
+      "description": "Period-2 MIRRORED — baseline case",
+      "id": "period2-mirrored-ABAB",
+      "kind": "word"
+    },
+    {
+      "description": "Period-2 FLIPPED",
+      "id": "period2-flipped-CDCD",
+      "kind": "word"
+    },
+    {
+      "description": "Period-2 SWAPPED",
+      "id": "period2-swapped-EFEF",
+      "kind": "word"
+    },
+    {
+      "description": "Period-2 INVERTED",
+      "id": "period2-inverted-GHGH",
+      "kind": "word"
+    },
+    {
+      "description": "Period-2 ROTATED",
+      "id": "period2-rotated-IJIJ",
+      "kind": "word"
+    },
+    {
+      "description": "Period-2 REWOUND",
+      "id": "period2-rewound-KLKL",
+      "kind": "word"
+    },
+    {
+      "description": "Period-4 MIRRORED",
+      "id": "period4-mirrored-ABCDABCD",
+      "kind": "word"
+    },
+    {
+      "description": "Period-4 FLIPPED",
+      "id": "period4-flipped-EFGHEFGH",
+      "kind": "word"
+    },
+    {
+      "description": "Period-4 SWAPPED",
+      "id": "period4-swapped-IJKLIJKL",
+      "kind": "word"
+    },
+    {
+      "description": "Period-4 INVERTED",
+      "id": "period4-inverted-MNOPMNOP",
+      "kind": "word"
+    },
+    {
+      "description": "Period-4 ROTATED",
+      "id": "period4-rotated-QRSTQRST",
+      "kind": "word"
+    },
+    {
+      "description": "Period-4 REWOUND",
+      "id": "period4-rewound-UVABUVAB",
+      "kind": "word"
+    },
+    {
+      "description": "Quartered MIRRORED/ROTATED — original bug regression case",
+      "id": "quartered-mirrored-rotated-ABAB",
+      "kind": "word"
+    },
+    {
+      "description": "Quartered FLIPPED/ROTATED",
+      "id": "quartered-flipped-rotated-CDCD",
+      "kind": "word"
+    },
+    {
+      "description": "Quartered SWAPPED/ROTATED",
+      "id": "quartered-swapped-rotated-EFEF",
+      "kind": "word"
+    },
+    {
+      "description": "Quartered INVERTED/ROTATED",
+      "id": "quartered-inverted-rotated-GHGH",
+      "kind": "word"
+    },
+    {
+      "description": "Quartered MIRRORED/SWAPPED",
+      "id": "quartered-mirrored-swap-IJIJ",
+      "kind": "word"
+    },
+    {
+      "description": "Quartered MIRRORED/INVERTED",
+      "id": "quartered-mirrored-inverted-KLKL",
+      "kind": "word"
+    },
+    {
+      "description": "Quartered FLIPPED/SWAPPED",
+      "id": "quartered-flipped-swap-MNMN",
+      "kind": "word"
+    },
+    {
+      "description": "Quartered FLIPPED/INVERTED",
+      "id": "quartered-flipped-inverted-OPOP",
+      "kind": "word"
+    },
+    {
+      "description": "Quartered SWAPPED/INVERTED",
+      "id": "quartered-swap-inverted-QRQR",
+      "kind": "word"
+    },
+    {
+      "description": "Quartered MIRRORED/ROTATED period-4",
+      "id": "quartered-mirrored-rotated-period4",
+      "kind": "word"
+    },
+    {
+      "description": "Quartered FLIPPED/ROTATED period-4",
+      "id": "quartered-flipped-rotated-period4",
+      "kind": "word"
+    },
+    {
+      "description": "Quartered INVERTED/REWOUND period-4",
+      "id": "quartered-inverted-rewound-IJKLIJKL",
+      "kind": "word"
+    },
+    {
+      "description": "High-turn sequence — 3 turns per hand",
+      "id": "high-turns-3-smooth",
+      "kind": "word"
+    },
+    {
+      "description": "High-turn sequence — 4 turns per hand",
+      "id": "high-turns-4-smooth",
+      "kind": "word"
+    },
+    {
+      "description": "High-turn sequence — 5 turns per hand",
+      "id": "high-turns-5-smooth",
+      "kind": "word"
+    },
+    {
+      "description": "High-turn sequence — 6 turns per hand",
+      "id": "high-turns-mixed-GH",
+      "kind": "word"
+    },
+    {
+      "description": "High-turn sequence — 8 turns per hand (stress test)",
+      "id": "high-turns-extreme",
+      "kind": "word"
+    },
+    {
+      "description": "Float motion-type sequence",
+      "id": "float-motion-basic",
+      "kind": "word"
+    },
+    {
+      "description": "Float + MIRRORED period-2",
+      "id": "float-motion-period2",
+      "kind": "word"
+    },
+    {
+      "description": "Float + ROTATED period-4",
+      "id": "float-motion-period4",
+      "kind": "word"
+    },
+    {
+      "description": "Float + high turns",
+      "id": "float-motion-high-turns",
+      "kind": "word"
+    },
+    {
+      "description": "Float with Type 3 Cross-Shift letters",
+      "id": "float-motion-type3-WDash",
+      "kind": "word"
+    },
+    {
+      "description": "Bridge-inserted — non-adjacent positions",
+      "id": "bridge-inserted-KA",
+      "kind": "word"
+    },
+    {
+      "description": "Bridge-inserted — cross-type",
+      "id": "bridge-inserted-VM",
+      "kind": "word"
+    },
+    {
+      "description": "Bridge-inserted — long jump",
+      "id": "bridge-inserted-QF",
+      "kind": "word"
+    },
+    {
+      "description": "Bridge-inserted — alpha to gamma",
+      "id": "bridge-inserted-alpha-gamma",
+      "kind": "word"
+    },
+    {
+      "description": "Bridge-inserted — beta to gamma",
+      "id": "bridge-inserted-beta-gamma",
+      "kind": "word"
+    },
+    {
+      "description": "Mixed plane — wall + wheel",
+      "id": "mixed-plane-wall-wheel",
+      "kind": "word"
+    },
+    {
+      "description": "Mixed plane — wall + overhead",
+      "id": "mixed-plane-wall-overhead",
+      "kind": "word"
+    },
+    {
+      "description": "Mixed plane — all three",
+      "id": "mixed-plane-three",
+      "kind": "word"
+    },
+    {
+      "description": "Blank-step sequence — middle",
+      "id": "blank-step-mid",
+      "kind": "word"
+    },
+    {
+      "description": "Blank-step sequence — early",
+      "id": "blank-step-early",
+      "kind": "word"
+    },
+    {
+      "description": "Blank-step sequence — late",
+      "id": "blank-step-late",
+      "kind": "word"
+    },
+    {
+      "description": "Single-step partial",
+      "id": "single-step-A",
+      "kind": "word"
+    },
+    {
+      "description": "Start position only — no letters",
+      "id": "empty-start-only",
+      "kind": "start"
+    },
+    {
+      "description": "Level 7 — 45 degree quarter rotations",
+      "id": "level7-quarter-rotation-AB",
+      "kind": "word"
+    },
+    {
+      "description": "Level 7 + MIRRORED period-2",
+      "id": "level7-period2-mirrored",
+      "kind": "word"
+    },
+    {
+      "description": "Explicit mid-sequence direction flip — ambiguous reversal chain",
+      "id": "reversal-flip-mid",
+      "kind": "word"
+    },
+    {
+      "description": "Alternating direction — repeated reversal chain",
+      "id": "reversal-flip-alternating",
+      "kind": "word"
+    }
+  ],
+  "version": 1
 }

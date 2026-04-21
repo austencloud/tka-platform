@@ -1,0 +1,11 @@
+{
+  "description": "Period-2 INVERTED",
+  "id": "period2-inverted-GHGH",
+  "kind": "word",
+  "options": {
+    "constraintPreset": "smooth",
+    "loopType": "INVERTED",
+    "period": 2
+  },
+  "word": "GHGH"
+}

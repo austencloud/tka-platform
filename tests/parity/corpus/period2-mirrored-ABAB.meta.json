@@ -1,0 +1,11 @@
+{
+  "description": "Period-2 MIRRORED — baseline case",
+  "id": "period2-mirrored-ABAB",
+  "kind": "word",
+  "options": {
+    "constraintPreset": "smooth",
+    "loopType": "MIRRORED",
+    "period": 2
+  },
+  "word": "ABAB"
+}

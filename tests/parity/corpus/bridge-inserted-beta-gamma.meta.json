@@ -1,0 +1,9 @@
+{
+  "description": "Bridge-inserted — beta to gamma",
+  "id": "bridge-inserted-beta-gamma",
+  "kind": "word",
+  "options": {
+    "constraintPreset": "smooth"
+  },
+  "word": "BD"
+}

@@ -1,0 +1,10 @@
+{
+  "description": "Level 7 — 45 degree quarter rotations",
+  "id": "level7-quarter-rotation-AB",
+  "kind": "word",
+  "options": {
+    "constraintPreset": "smooth",
+    "level": 7
+  },
+  "word": "AB"
+}

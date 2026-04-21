@@ -1,0 +1,9 @@
+{
+  "description": "Bridge-inserted — cross-type",
+  "id": "bridge-inserted-VM",
+  "kind": "word",
+  "options": {
+    "constraintPreset": "smooth"
+  },
+  "word": "VM"
+}

@@ -1,0 +1,10 @@
+{
+  "description": "High-turn sequence — 5 turns per hand",
+  "id": "high-turns-5-smooth",
+  "kind": "word",
+  "options": {
+    "constraintPreset": "smooth",
+    "turnBudget": 5
+  },
+  "word": "EF"
+}

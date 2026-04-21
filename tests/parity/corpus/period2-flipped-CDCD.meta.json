@@ -1,0 +1,11 @@
+{
+  "description": "Period-2 FLIPPED",
+  "id": "period2-flipped-CDCD",
+  "kind": "word",
+  "options": {
+    "constraintPreset": "smooth",
+    "loopType": "FLIPPED",
+    "period": 2
+  },
+  "word": "CDCD"
+}

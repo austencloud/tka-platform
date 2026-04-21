@@ -1,0 +1,12 @@
+{
+  "description": "Float + MIRRORED period-2",
+  "id": "float-motion-period2",
+  "kind": "word",
+  "options": {
+    "allowFloat": true,
+    "constraintPreset": "smooth",
+    "loopType": "MIRRORED",
+    "period": 2
+  },
+  "word": "CDCD"
+}

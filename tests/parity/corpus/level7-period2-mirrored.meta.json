@@ -1,0 +1,12 @@
+{
+  "description": "Level 7 + MIRRORED period-2",
+  "id": "level7-period2-mirrored",
+  "kind": "word",
+  "options": {
+    "constraintPreset": "smooth",
+    "level": 7,
+    "loopType": "MIRRORED",
+    "period": 2
+  },
+  "word": "CDCD"
+}

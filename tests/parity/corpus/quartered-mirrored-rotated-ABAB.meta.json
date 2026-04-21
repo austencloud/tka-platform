@@ -1,0 +1,11 @@
+{
+  "description": "Quartered MIRRORED/ROTATED — original bug regression case",
+  "id": "quartered-mirrored-rotated-ABAB",
+  "kind": "word",
+  "options": {
+    "constraintPreset": "smooth",
+    "loopType": "MIRRORED/ROTATED",
+    "period": 2
+  },
+  "word": "ABAB"
+}

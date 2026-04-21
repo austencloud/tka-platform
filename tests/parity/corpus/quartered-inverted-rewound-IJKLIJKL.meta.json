@@ -1,0 +1,11 @@
+{
+  "description": "Quartered INVERTED/REWOUND period-4",
+  "id": "quartered-inverted-rewound-IJKLIJKL",
+  "kind": "word",
+  "options": {
+    "constraintPreset": "smooth",
+    "loopType": "INVERTED/REWOUND",
+    "period": 4
+  },
+  "word": "IJKLIJKL"
+}

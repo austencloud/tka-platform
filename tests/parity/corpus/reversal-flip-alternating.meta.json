@@ -1,0 +1,9 @@
+{
+  "description": "Alternating direction — repeated reversal chain",
+  "id": "reversal-flip-alternating",
+  "kind": "word",
+  "options": {
+    "constraintPreset": "smooth"
+  },
+  "word": "ABABAB"
+}

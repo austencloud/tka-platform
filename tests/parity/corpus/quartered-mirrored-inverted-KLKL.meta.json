@@ -1,0 +1,11 @@
+{
+  "description": "Quartered MIRRORED/INVERTED",
+  "id": "quartered-mirrored-inverted-KLKL",
+  "kind": "word",
+  "options": {
+    "constraintPreset": "smooth",
+    "loopType": "MIRRORED/INVERTED",
+    "period": 2
+  },
+  "word": "KLKL"
+}

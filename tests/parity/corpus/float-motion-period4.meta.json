@@ -1,0 +1,12 @@
+{
+  "description": "Float + ROTATED period-4",
+  "id": "float-motion-period4",
+  "kind": "word",
+  "options": {
+    "allowFloat": true,
+    "constraintPreset": "smooth",
+    "loopType": "ROTATED",
+    "period": 4
+  },
+  "word": "EFGHEFGH"
+}

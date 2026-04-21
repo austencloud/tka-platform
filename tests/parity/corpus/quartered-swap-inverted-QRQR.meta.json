@@ -1,0 +1,11 @@
+{
+  "description": "Quartered SWAPPED/INVERTED",
+  "id": "quartered-swap-inverted-QRQR",
+  "kind": "word",
+  "options": {
+    "constraintPreset": "smooth",
+    "loopType": "SWAPPED/INVERTED",
+    "period": 2
+  },
+  "word": "QRQR"
+}

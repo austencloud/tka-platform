@@ -1,0 +1,11 @@
+{
+  "description": "Quartered MIRRORED/SWAPPED",
+  "id": "quartered-mirrored-swap-IJIJ",
+  "kind": "word",
+  "options": {
+    "constraintPreset": "smooth",
+    "loopType": "MIRRORED/SWAPPED",
+    "period": 2
+  },
+  "word": "IJIJ"
+}
