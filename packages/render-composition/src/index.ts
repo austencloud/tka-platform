@@ -3,7 +3,7 @@ export * from "./types.js";
 export * from "./difficulty-config.js";
 export { drawSvgPath, drawPathCommands, parsePathData, type PathCommand } from "./svg-path-painter.js";
 export { renderLoopIconStrip, LOOP_ICON_COLORS, type LoopRotationSliceSize } from "./loop-icons.js";
-export { getLayout, calculateImageDimensions, BASE_BEAT_SIZE } from "./layout-tables.js";
+export { getLayout, calculateImageDimensions, BASE_STEP_SIZE } from "./layout-tables.js";
 export {
   calculateHeaderHeight, calculateFooterHeight, narrowGridScale,
   HEADER_HEIGHT_DIVISOR, FOOTER_HEIGHT_DIVISOR, NARROW_GRID_THRESHOLD,
