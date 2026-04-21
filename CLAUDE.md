@@ -40,6 +40,23 @@ Phrases that mean you're punting and must be removed:
 
 Report the actual result, not the instruction to produce one.
 
+## Answer Your Own Questions
+
+When you catch yourself about to say "want me to research X" / "should I look into Y" / "can I investigate Z" — STOP. Just go do it. You have the codebase, grep, glob, read, web search, and subagents. Use them.
+
+The user can see your context window. If you're about to spend tokens that would genuinely overload it, that's their call to make — but 99% of investigations are cheap. Prodding the code to answer a question is never a permission request.
+
+Banned patterns:
+- "Want me to go research..."
+- "May I look into..."
+- "Should I check what Decks uses..."
+- "It would really help to know X — want me to find out?"
+- Listing 4 options and asking the user to pick *before* narrowing the list via investigation
+
+Correct pattern: investigate → narrow to 1-2 informed options → either decide, or present a concrete recommendation with the tradeoff you actually uncovered. If genuinely 50/50 between two informed options, ask. If you haven't investigated yet, you haven't earned the right to ask.
+
+This rule is load-bearing: model 4.7 has regressed on this specific behavior vs 4.6. Austen will call it out every time.
+
 ## Writing Style (Real-World Copy)
 
 The fire jam test: would Austen say this out loud? State what it does. Be specific. Cut redundancy. Check features exist. No first person without a signature. Vary sentence length.
