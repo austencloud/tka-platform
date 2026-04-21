@@ -75,18 +75,43 @@ describe("createStep", () => {
     expect(Object.isFrozen(s.motions)).toBe(true);
   });
 
-  it("requires a non-empty id", () => {
-    expect(() =>
-      createStep({
-        id: "",
-        letter: Letter.A,
-        startPosition: GridPosition.alpha1,
-        endPosition: GridPosition.alpha3,
-        motions: { blue: makeBlue(), red: makeRed() },
-        stepNumber: 1,
-        duration: 1,
-      })
-    ).toThrow(/Step.id/);
+  it("supplies a default id when omitted", () => {
+    const s = createStep({
+      letter: Letter.A,
+      startPosition: GridPosition.alpha1,
+      endPosition: GridPosition.alpha3,
+      motions: { blue: makeBlue(), red: makeRed() },
+      stepNumber: 1,
+      duration: 1,
+    });
+    expect(typeof s.id).toBe("string");
+    expect(s.id.length).toBeGreaterThan(0);
+  });
+
+  it("supplies a default id when empty string is passed", () => {
+    const s = createStep({
+      id: "",
+      letter: Letter.A,
+      startPosition: GridPosition.alpha1,
+      endPosition: GridPosition.alpha3,
+      motions: { blue: makeBlue(), red: makeRed() },
+      stepNumber: 1,
+      duration: 1,
+    });
+    expect(typeof s.id).toBe("string");
+    expect(s.id.length).toBeGreaterThan(0);
+  });
+
+  it("supplies a default duration of 1 when omitted", () => {
+    const s = createStep({
+      id: "step-1-A",
+      letter: Letter.A,
+      startPosition: GridPosition.alpha1,
+      endPosition: GridPosition.alpha3,
+      motions: { blue: makeBlue(), red: makeRed() },
+      stepNumber: 1,
+    });
+    expect(s.duration).toBe(1);
   });
 
   it("requires stepNumber >= 0", () => {
