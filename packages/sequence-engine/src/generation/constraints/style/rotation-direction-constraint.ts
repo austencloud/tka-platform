@@ -67,8 +67,8 @@ export class RotationDirectionConstraint implements IVariationConstraint {
   private evaluateVariation(candidate: PictographData): ConstraintScore {
     const { direction, hand, mode } = this.options;
 
-    const blueDir = candidate.blueMotion.rotationDirection;
-    const redDir = candidate.redMotion.rotationDirection;
+    const blueDir = candidate.blueMotion.rotationDirection as string;
+    const redDir = candidate.redMotion.rotationDirection as string;
 
     // Static motions have no rotation - treat as neutral
     const blueStatic =
@@ -152,8 +152,8 @@ export class RotationDirectionConstraint implements IVariationConstraint {
   private checkSatisfaction(candidate: PictographData): boolean {
     const { direction, hand } = this.options;
 
-    const blueDir = candidate.blueMotion.rotationDirection;
-    const redDir = candidate.redMotion.rotationDirection;
+    const blueDir = candidate.blueMotion.rotationDirection as string;
+    const redDir = candidate.redMotion.rotationDirection as string;
 
     const blueStatic =
       candidate.blueMotion.motionType === "static" ||

@@ -22,49 +22,53 @@ export function updateStepOrientations(
   previousStep: SequenceStep
 ): SequenceStep {
   // Set start orientations from previous step's end orientations
-  const blueStartOri = previousStep.blueMotion.endOrientation || "in";
-  const redStartOri = previousStep.redMotion.endOrientation || "in";
+  const blueStartOri = previousStep.motions.blue.endOrientation || "in";
+  const redStartOri = previousStep.motions.red.endOrientation || "in";
 
   const withStart: SequenceStep = {
     ...step,
-    blueMotion: {
-      ...step.blueMotion,
+    motions: {
+      blue: {
+      ...step.motions.blue,
       startOrientation: blueStartOri,
     },
-    redMotion: {
-      ...step.redMotion,
+      red: {
+      ...step.motions.red,
       startOrientation: redStartOri,
+    },
     },
   };
 
   // Calculate end orientations
   const blueEndOri = calculateEndOrientation({
-    motionType: withStart.blueMotion.motionType,
-    turns: withStart.blueMotion.turns,
-    rotationDirection: withStart.blueMotion.rotationDirection,
-    startLocation: withStart.blueMotion.startLocation,
-    endLocation: withStart.blueMotion.endLocation,
-    startOrientation: withStart.blueMotion.startOrientation,
+    motionType: withStart.motions.blue.motionType,
+    turns: withStart.motions.blue.turns,
+    rotationDirection: withStart.motions.blue.rotationDirection,
+    startLocation: withStart.motions.blue.startLocation,
+    endLocation: withStart.motions.blue.endLocation,
+    startOrientation: withStart.motions.blue.startOrientation,
   });
 
   const redEndOri = calculateEndOrientation({
-    motionType: withStart.redMotion.motionType,
-    turns: withStart.redMotion.turns,
-    rotationDirection: withStart.redMotion.rotationDirection,
-    startLocation: withStart.redMotion.startLocation,
-    endLocation: withStart.redMotion.endLocation,
-    startOrientation: withStart.redMotion.startOrientation,
+    motionType: withStart.motions.red.motionType,
+    turns: withStart.motions.red.turns,
+    rotationDirection: withStart.motions.red.rotationDirection,
+    startLocation: withStart.motions.red.startLocation,
+    endLocation: withStart.motions.red.endLocation,
+    startOrientation: withStart.motions.red.startOrientation,
   });
 
   return {
     ...withStart,
-    blueMotion: {
-      ...withStart.blueMotion,
+    motions: {
+      blue: {
+      ...withStart.motions.blue,
       endOrientation: blueEndOri,
     },
-    redMotion: {
-      ...withStart.redMotion,
+      red: {
+      ...withStart.motions.red,
       endOrientation: redEndOri,
+    },
     },
   };
 }

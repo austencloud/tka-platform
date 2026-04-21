@@ -32,7 +32,7 @@ export class SwappedInvertedExecutor implements ILOOPExecutor {
     const entriesToAdd = sequenceLength;
 
     let lastStep = sequence[sequence.length - 1]!;
-    const nextStepNumber = (lastStep.stepNumber ?? lastStep.beatIndex) + 1;
+    const nextStepNumber = (lastStep.stepNumber ?? lastStep.stepNumber) + 1;
 
     for (let i = 2; i < sequenceLength + 2; i++) {
       const finalIntendedLength = sequenceLength + entriesToAdd;
@@ -68,19 +68,20 @@ export class SwappedInvertedExecutor implements ILOOPExecutor {
   }
 
   private createStep(matchingStep: SequenceStep, previousStep: SequenceStep, stepNumber: number): SequenceStep {
-    const invertedLetter = getInvertedLetter(matchingStep.letter);
-    const swappedEndPosition = SWAPPED_POSITION_MAP[matchingStep.endPosition] || matchingStep.endPosition;
+    const invertedLetter = getInvertedLetter(matchingStep.letter ?? "");
+    const swappedEndPosition = SWAPPED_POSITION_MAP[matchingStep.endPosition ?? ""] || matchingStep.endPosition;
 
     return {
       ...matchingStep,
       stepNumber,
-      beatIndex: stepNumber,
-      letter: invertedLetter,
-      startPosition: previousStep.endPosition,
-      endPosition: swappedEndPosition,
+      letter: (invertedLetter) as SequenceStep["letter"],
+      startPosition: (previousStep.endPosition) as SequenceStep["startPosition"],
+      endPosition: (swappedEndPosition) as SequenceStep["endPosition"],
       // SWAP: Blue gets Red's pattern (inverted), Red gets Blue's pattern (inverted)
-      blueMotion: this.createMotion(previousStep.blueMotion, matchingStep.redMotion),
-      redMotion: this.createMotion(previousStep.redMotion, matchingStep.blueMotion),
+      motions: {
+        blue: this.createMotion(previousStep.motions.blue, matchingStep.motions.red),
+        red: this.createMotion(previousStep.motions.red, matchingStep.motions.blue),
+      },
     };
   }
 
@@ -111,10 +112,10 @@ export class SwappedInvertedExecutor implements ILOOPExecutor {
 
     return {
       ...matchingMotion,
-      motionType: invertedMotionType,
-      startLocation,
-      endLocation,
-      rotationDirection: invertedRotDir,
+      motionType: (invertedMotionType) as MotionData["motionType"],
+      startLocation: startLocation as MotionData["startLocation"],
+      endLocation: endLocation as MotionData["endLocation"],
+      rotationDirection: (invertedRotDir) as MotionData["rotationDirection"],
     };
   }
 }

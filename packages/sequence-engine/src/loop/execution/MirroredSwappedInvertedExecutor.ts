@@ -37,7 +37,7 @@ export class MirroredSwappedInvertedExecutor implements ILOOPExecutor {
     const entriesToAdd = sequenceLength;
 
     let lastStep = sequence[sequence.length - 1]!;
-    const nextStepNumber = (lastStep.stepNumber ?? lastStep.beatIndex) + 1;
+    const nextStepNumber = (lastStep.stepNumber ?? lastStep.stepNumber) + 1;
 
     for (let i = 2; i < sequenceLength + 2; i++) {
       const finalIntendedLength = sequenceLength + entriesToAdd;
@@ -73,20 +73,21 @@ export class MirroredSwappedInvertedExecutor implements ILOOPExecutor {
   }
 
   private createStep(matchingStep: SequenceStep, previousStep: SequenceStep, stepNumber: number): SequenceStep {
-    const invertedLetter = getInvertedLetter(matchingStep.letter);
+    const invertedLetter = getInvertedLetter(matchingStep.letter ?? "");
     const mirroredEndPosition =
-      VERTICAL_MIRROR_POSITION_MAP[matchingStep.endPosition] || matchingStep.endPosition;
+      VERTICAL_MIRROR_POSITION_MAP[matchingStep.endPosition ?? ""] || matchingStep.endPosition;
 
     return {
       ...matchingStep,
       stepNumber,
-      beatIndex: stepNumber,
-      letter: invertedLetter,
-      startPosition: previousStep.endPosition,
-      endPosition: mirroredEndPosition,
+      letter: (invertedLetter) as SequenceStep["letter"],
+      startPosition: (previousStep.endPosition) as SequenceStep["startPosition"],
+      endPosition: (mirroredEndPosition) as SequenceStep["endPosition"],
       // SWAP: Blue follows Red's pattern, Red follows Blue's pattern
-      blueMotion: this.createMotion(previousStep.blueMotion, matchingStep.redMotion),
-      redMotion: this.createMotion(previousStep.redMotion, matchingStep.blueMotion),
+      motions: {
+        blue: this.createMotion(previousStep.motions.blue, matchingStep.motions.red),
+        red: this.createMotion(previousStep.motions.red, matchingStep.motions.blue),
+      },
     };
   }
 
@@ -116,10 +117,10 @@ export class MirroredSwappedInvertedExecutor implements ILOOPExecutor {
     // Rotation direction stays the SAME (SWAP + INVERTED + MIRRORED together preserve rotation)
     return {
       ...matchingMotion,
-      motionType: invertedMotionType,
-      startLocation,
-      endLocation,
-      rotationDirection: matchingMotion.rotationDirection,
+      motionType: (invertedMotionType) as MotionData["motionType"],
+      startLocation: startLocation as MotionData["startLocation"],
+      endLocation: endLocation as MotionData["endLocation"],
+      rotationDirection: (matchingMotion.rotationDirection) as MotionData["rotationDirection"],
     };
   }
 }

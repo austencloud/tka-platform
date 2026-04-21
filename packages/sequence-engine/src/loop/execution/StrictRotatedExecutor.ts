@@ -31,7 +31,7 @@ export class StrictRotatedExecutor implements ILOOPExecutor {
       sliceSize === SliceSize.HALVED ? sequenceLength : sequenceLength * 3;
 
     let lastStep = sequence[sequence.length - 1]!;
-    let nextStepNumber = (lastStep.stepNumber ?? lastStep.beatIndex) + 1;
+    let nextStepNumber = (lastStep.stepNumber ?? lastStep.stepNumber) + 1;
 
     for (let i = 0; i < entriesToAdd; i++) {
       const finalIntendedLength = sequenceLength + entriesToAdd;
@@ -108,23 +108,23 @@ export class StrictRotatedExecutor implements ILOOPExecutor {
     stepNumber: number
   ): SequenceStep {
     const blueHandRotDir = getHandRotationDirection(
-      matchingStep.blueMotion.startLocation,
-      matchingStep.blueMotion.endLocation
+      matchingStep.motions.blue.startLocation,
+      matchingStep.motions.blue.endLocation
     );
     const redHandRotDir = getHandRotationDirection(
-      matchingStep.redMotion.startLocation,
-      matchingStep.redMotion.endLocation
+      matchingStep.motions.red.startLocation,
+      matchingStep.motions.red.endLocation
     );
 
     const blueLocationMap = getLocationMapForHandRotation(blueHandRotDir);
     const redLocationMap = getLocationMapForHandRotation(redHandRotDir);
 
     const newBlueEndLoc =
-      blueLocationMap[previousStep.blueMotion.endLocation] ||
-      previousStep.blueMotion.endLocation;
+      blueLocationMap[previousStep.motions.blue.endLocation] ||
+      previousStep.motions.blue.endLocation;
     const newRedEndLoc =
-      redLocationMap[previousStep.redMotion.endLocation] ||
-      previousStep.redMotion.endLocation;
+      redLocationMap[previousStep.motions.red.endLocation] ||
+      previousStep.motions.red.endLocation;
 
     const newEndPosition = gridPositionDeriver.getGridPositionFromLocations(
       newBlueEndLoc,
@@ -134,18 +134,19 @@ export class StrictRotatedExecutor implements ILOOPExecutor {
     return {
       ...matchingStep,
       stepNumber,
-      beatIndex: stepNumber,
-      startPosition: previousStep.endPosition,
-      endPosition: newEndPosition,
-      blueMotion: {
-        ...matchingStep.blueMotion,
-        startLocation: previousStep.blueMotion.endLocation,
-        endLocation: newBlueEndLoc,
+      startPosition: (previousStep.endPosition) as SequenceStep["startPosition"],
+      endPosition: (newEndPosition) as SequenceStep["endPosition"],
+      motions: {
+        blue: {
+        ...matchingStep.motions.blue,
+        startLocation: (previousStep.motions.blue.endLocation) as MotionData["startLocation"],
+        endLocation: (newBlueEndLoc) as MotionData["endLocation"],
       },
-      redMotion: {
-        ...matchingStep.redMotion,
-        startLocation: previousStep.redMotion.endLocation,
-        endLocation: newRedEndLoc,
+        red: {
+        ...matchingStep.motions.red,
+        startLocation: (previousStep.motions.red.endLocation) as MotionData["startLocation"],
+        endLocation: (newRedEndLoc) as MotionData["endLocation"],
+      },
       },
     };
   }

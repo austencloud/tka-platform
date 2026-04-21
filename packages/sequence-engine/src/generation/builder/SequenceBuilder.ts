@@ -23,7 +23,7 @@ import type {
   IConstraint,
   IVariationConstraint,
 } from "../constraints/types.js";
-import type { SequenceStep, Orientation } from "../../core/types/sequence-engine-types.js";
+import type { SequenceStep, Motion, Orientation } from "../../core/types/sequence-engine-types.js";
 import {
   OrientationPropagator,
   OrientationCalculator as OrientationCalculatorImpl,
@@ -771,8 +771,8 @@ export class SequenceBuilder {
 
       // Get the previous step's rotation directions for continuity
       const prevStep = sequence.length > 0 ? sequence[sequence.length - 1] : undefined;
-      const prevBlueRot = prevStep?.blueMotion.rotationDirection;
-      const prevRedRot = prevStep?.redMotion.rotationDirection;
+      const prevBlueRot = prevStep?.motions.blue.rotationDirection;
+      const prevRedRot = prevStep?.motions.red.rotationDirection;
 
       // Float is a shift variant — the prop shifts to an adjacent point with
       // minimal rotation. The TurnAllocator may assign "fl" to any hand, but
@@ -796,42 +796,50 @@ export class SequenceBuilder {
       const effectiveBlueTurns = blueIsFloat ? blueTurns : (blueTurns === "fl" ? 0 : blueTurns);
       const effectiveRedTurns = redIsFloat ? redTurns : (redTurns === "fl" ? 0 : redTurns);
 
+      // PictographData from the variation provider carries string-typed
+      // motion fields (loaded from JSON). Cast at the boundary into the
+      // unified Motion/Step enums — the JSON is trusted.
+      const blueMotion = {
+        motionType: blueMotionType as Motion["motionType"],
+        startLocation: pd.blueMotion.startLocation as Motion["startLocation"],
+        endLocation: pd.blueMotion.endLocation as Motion["endLocation"],
+        rotationDirection: (blueIsFloat
+          ? "noRotation"
+          : resolveRotationDirection(pd.blueMotion.rotationDirection, effectiveBlueTurns, prevBlueRot, propContinuity)) as Motion["rotationDirection"],
+        startOrientation: pd.blueMotion.startOrientation as Motion["startOrientation"],
+        endOrientation: pd.blueMotion.endOrientation as Motion["endOrientation"],
+        turns: effectiveBlueTurns as Motion["turns"],
+        plane: "wall" as Motion["plane"],
+        ...(blueIsFloat && {
+          prefloatMotionType: pd.blueMotion.motionType as Motion["motionType"],
+          prefloatRotationDirection: pd.blueMotion.rotationDirection as Motion["rotationDirection"],
+        }),
+      };
+      const redMotion = {
+        motionType: redMotionType as Motion["motionType"],
+        startLocation: pd.redMotion.startLocation as Motion["startLocation"],
+        endLocation: pd.redMotion.endLocation as Motion["endLocation"],
+        rotationDirection: (redIsFloat
+          ? "noRotation"
+          : resolveRotationDirection(pd.redMotion.rotationDirection, effectiveRedTurns, prevRedRot, propContinuity)) as Motion["rotationDirection"],
+        startOrientation: pd.redMotion.startOrientation as Motion["startOrientation"],
+        endOrientation: pd.redMotion.endOrientation as Motion["endOrientation"],
+        turns: effectiveRedTurns as Motion["turns"],
+        plane: "wall" as Motion["plane"],
+        ...(redIsFloat && {
+          prefloatMotionType: pd.redMotion.motionType as Motion["motionType"],
+          prefloatRotationDirection: pd.redMotion.rotationDirection as Motion["rotationDirection"],
+        }),
+      };
+      void beatIndex; // deprecated — stepNumber is the canonical field
       sequence.push({
-        letter: pd.letter,
-        startPosition: pd.startPosition,
-        endPosition: pd.endPosition,
-        blueMotion: {
-          motionType: blueMotionType,
-          startLocation: pd.blueMotion.startLocation,
-          endLocation: pd.blueMotion.endLocation,
-          rotationDirection: blueIsFloat
-            ? "noRotation"
-            : resolveRotationDirection(pd.blueMotion.rotationDirection, effectiveBlueTurns, prevBlueRot, propContinuity),
-          startOrientation: pd.blueMotion.startOrientation,
-          endOrientation: pd.blueMotion.endOrientation,
-          turns: effectiveBlueTurns,
-          ...(blueIsFloat && {
-            prefloatMotionType: pd.blueMotion.motionType,
-            prefloatRotationDirection: pd.blueMotion.rotationDirection,
-          }),
-        },
-        redMotion: {
-          motionType: redMotionType,
-          startLocation: pd.redMotion.startLocation,
-          endLocation: pd.redMotion.endLocation,
-          rotationDirection: redIsFloat
-            ? "noRotation"
-            : resolveRotationDirection(pd.redMotion.rotationDirection, effectiveRedTurns, prevRedRot, propContinuity),
-          startOrientation: pd.redMotion.startOrientation,
-          endOrientation: pd.redMotion.endOrientation,
-          turns: effectiveRedTurns,
-          ...(redIsFloat && {
-            prefloatMotionType: pd.redMotion.motionType,
-            prefloatRotationDirection: pd.redMotion.rotationDirection,
-          }),
-        },
-        beatIndex,
+        id: `step-${i}-${pd.letter}`,
+        letter: pd.letter as SequenceStep["letter"],
+        startPosition: pd.startPosition as SequenceStep["startPosition"],
+        endPosition: pd.endPosition as SequenceStep["endPosition"],
+        motions: { blue: blueMotion, red: redMotion },
         stepNumber: i,
+        duration: 1,
         isBridge,
       });
     }
@@ -842,9 +850,9 @@ export class SequenceBuilder {
     // orientation = previous beat's end orientation, and end orientation
     // is derived from motion type + turns + rotation direction.
     const propagator = new OrientationPropagator(new OrientationCalculatorImpl());
-    const blueStartOrientation = (orientationOverrides?.blueStartOrientation || sequence[0]?.blueMotion.endOrientation || "in") as Orientation;
+    const blueStartOrientation = (orientationOverrides?.blueStartOrientation || sequence[0]?.motions.blue.endOrientation || "in") as Orientation;
     let propagated = propagator.propagateForColor(sequence, "blue", blueStartOrientation);
-    const redStartOrientation = (orientationOverrides?.redStartOrientation || sequence[0]?.redMotion.endOrientation || "in") as Orientation;
+    const redStartOrientation = (orientationOverrides?.redStartOrientation || sequence[0]?.motions.red.endOrientation || "in") as Orientation;
     propagated = propagator.propagateForColor(propagated, "red", redStartOrientation);
 
     // Update beat 0 (start position) orientations when overrides are provided.
@@ -853,17 +861,24 @@ export class SequenceBuilder {
     if (orientationOverrides && propagated[0]) {
       const sp = propagated[0];
       if (orientationOverrides.blueStartOrientation) {
-        const blueOri = orientationOverrides.blueStartOrientation as Orientation;
+        const blueOri = orientationOverrides.blueStartOrientation as Motion["startOrientation"];
         propagated[0] = {
           ...sp,
-          blueMotion: { ...sp.blueMotion, startOrientation: blueOri, endOrientation: blueOri },
+          motions: {
+            blue: { ...sp.motions.blue, startOrientation: blueOri, endOrientation: blueOri },
+            red: sp.motions.red,
+          },
         };
       }
       if (orientationOverrides.redStartOrientation) {
-        const redOri = orientationOverrides.redStartOrientation as Orientation;
+        const redOri = orientationOverrides.redStartOrientation as Motion["startOrientation"];
+        const sp2 = propagated[0]!;
         propagated[0] = {
-          ...propagated[0]!,
-          redMotion: { ...propagated[0]!.redMotion, startOrientation: redOri, endOrientation: redOri },
+          ...sp2,
+          motions: {
+            blue: sp2.motions.blue,
+            red: { ...sp2.motions.red, startOrientation: redOri, endOrientation: redOri },
+          },
         };
       }
     }
@@ -920,7 +935,7 @@ export class SequenceBuilder {
 
     for (let i = seedStepCount; i < extendedSteps.length; i++) {
       derivedBeatIndices.push(i);
-      derivedLetters.push(extendedSteps[i]!.letter);
+      derivedLetters.push(extendedSteps[i]!.letter ?? "");
     }
 
     const derivedWord = derivedLetters.join("");

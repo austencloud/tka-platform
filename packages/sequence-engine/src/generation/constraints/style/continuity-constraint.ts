@@ -52,9 +52,9 @@ function findLastDirection(
   for (let i = steps.length - 1; i >= 0; i--) {
     const step = steps[i];
     if (!step) continue;
-    const dir = color === "blue"
+    const dir = (color === "blue"
       ? step.blueMotion.rotationDirection
-      : step.redMotion.rotationDirection;
+      : step.redMotion.rotationDirection) as string | undefined;
     if (dir && dir !== "noRotation" && dir !== "no_rot") {
       return dir;
     }

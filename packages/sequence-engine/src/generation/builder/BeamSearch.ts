@@ -31,7 +31,7 @@ import { generateConstraintReport } from "../constraints/reporting/report-genera
 import { scoreBridgeOptions } from "./bridge-scorer.js";
 import { getLetterTransitionGraph } from "../../core/transition-graph/LetterTransitionGraph.js";
 import { calculateEndOrientation } from "../../core/orientation/OrientationCalculator.js";
-import type { Orientation } from "../../core/types/sequence-engine-types.js";
+import type { Motion, Orientation } from "../../core/types/sequence-engine-types.js";
 import { LetterClassifier } from "../../core/letters/LetterClassifier.js";
 import type { ReachabilityResult } from "../reachability/PositionReachabilityAnalyzer.js";
 
@@ -91,9 +91,12 @@ function enrichMotionDirection(
   propContinuity: PropContinuityMode | undefined,
 ): PictographData["blueMotion"] {
   const hasTurns = turns !== undefined && turns !== 0 && turns !== "fl";
-  const isNoRot = !motion.rotationDirection ||
-    motion.rotationDirection === "noRotation" ||
-    motion.rotationDirection === "no_rot";
+  // Runtime JSON may emit either "noRotation" (canonical) or legacy "no_rot".
+  // Treat motion.rotationDirection as its wire string for the absence check.
+  const motionDirWire = motion.rotationDirection as string | undefined;
+  const isNoRot = !motionDirWire ||
+    motionDirWire === "noRotation" ||
+    motionDirWire === "no_rot";
 
   if (!hasTurns || !isNoRot) return motion;
 
@@ -101,7 +104,7 @@ function enrichMotionDirection(
   let prevDir: string | null = null;
   for (let i = previousSteps.length - 1; i >= 0; i--) {
     const m = color === "blue" ? previousSteps[i]!.blueMotion : previousSteps[i]!.redMotion;
-    const d = m.rotationDirection;
+    const d = m.rotationDirection as string | undefined;
     if (d && d !== "noRotation" && d !== "no_rot") {
       prevDir = d;
       break;
@@ -121,7 +124,7 @@ function enrichMotionDirection(
     resolvedDir = Math.random() < 0.5 ? "cw" : "ccw";
   }
 
-  return { ...motion, rotationDirection: resolvedDir };
+  return { ...motion, rotationDirection: resolvedDir as Motion["rotationDirection"] };
 }
 
 /**

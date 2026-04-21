@@ -145,7 +145,7 @@ export class ReversalDetector {
     step: SequenceStep,
     hand: "blue" | "red",
   ): string | null {
-    const motion = hand === "blue" ? step.blueMotion : step.redMotion;
+    const motion = hand === "blue" ? step.motions.blue : step.motions.red;
     if (!motion) return null;
 
     if (motion.rotationDirection) {

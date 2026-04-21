@@ -49,8 +49,8 @@ export function extendForOrientationCycle(
   }
 
   // Separate beat steps from the start-position step
-  const startStep = steps.find((s) => (s.stepNumber ?? s.beatIndex) === 0);
-  const beatSteps = steps.filter((s) => (s.stepNumber ?? s.beatIndex) > 0);
+  const startStep = steps.find((s) => (s.stepNumber ?? s.stepNumber) === 0);
+  const beatSteps = steps.filter((s) => (s.stepNumber ?? s.stepNumber) > 0);
 
   const extendedBeats: SequenceStep[] = [...beatSteps];
 
@@ -66,9 +66,10 @@ export function extendForOrientationCycle(
       const cloned: SequenceStep = {
         ...sourceBeat,
         stepNumber: extendedBeats.length + 1,
-        beatIndex: extendedBeats.length + 1,
-        blueMotion: { ...sourceBeat.blueMotion },
-        redMotion: { ...sourceBeat.redMotion },
+        motions: {
+          blue: { ...sourceBeat.motions.blue },
+          red: { ...sourceBeat.motions.red },
+        },
       };
 
       // Propagate orientations from previous beat and recalculate

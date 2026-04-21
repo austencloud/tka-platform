@@ -29,7 +29,7 @@ export class RotatedSwappedExecutor implements ILOOPExecutor {
       sliceSize === SliceSize.QUARTERED ? sequenceLength * 3 : sequenceLength;
 
     let lastStep = sequence[sequence.length - 1]!;
-    let nextStepNumber = (lastStep.stepNumber ?? lastStep.beatIndex) + 1;
+    let nextStepNumber = (lastStep.stepNumber ?? lastStep.stepNumber) + 1;
     const finalIntendedLength = sequenceLength + entriesToAdd;
 
     for (let i = 0; i < entriesToAdd; i++) {
@@ -70,29 +70,30 @@ export class RotatedSwappedExecutor implements ILOOPExecutor {
   private createStep(matchingStep: SequenceStep, previousStep: SequenceStep, stepNumber: number): SequenceStep {
     // Rotation uses OPPOSITE color's handpath (due to swap)
     const blueHandRotDir = getHandRotationDirection(
-      matchingStep.redMotion.startLocation, matchingStep.redMotion.endLocation
+      matchingStep.motions.red.startLocation, matchingStep.motions.red.endLocation
     );
     const redHandRotDir = getHandRotationDirection(
-      matchingStep.blueMotion.startLocation, matchingStep.blueMotion.endLocation
+      matchingStep.motions.blue.startLocation, matchingStep.motions.blue.endLocation
     );
 
     const blueLocationMap = getLocationMapForHandRotation(blueHandRotDir);
     const redLocationMap = getLocationMapForHandRotation(redHandRotDir);
 
-    const newBlueEndLoc = blueLocationMap[previousStep.blueMotion.endLocation] || previousStep.blueMotion.endLocation;
-    const newRedEndLoc = redLocationMap[previousStep.redMotion.endLocation] || previousStep.redMotion.endLocation;
+    const newBlueEndLoc = blueLocationMap[previousStep.motions.blue.endLocation] || previousStep.motions.blue.endLocation;
+    const newRedEndLoc = redLocationMap[previousStep.motions.red.endLocation] || previousStep.motions.red.endLocation;
 
     const newEndPosition = gridPositionDeriver.getGridPositionFromLocations(newBlueEndLoc, newRedEndLoc);
 
     return {
       ...matchingStep,
       stepNumber,
-      beatIndex: stepNumber,
-      startPosition: previousStep.endPosition,
-      endPosition: newEndPosition,
+      startPosition: (previousStep.endPosition) as SequenceStep["startPosition"],
+      endPosition: (newEndPosition) as SequenceStep["endPosition"],
       // SWAP: Blue follows Red's pattern, Red follows Blue's pattern
-      blueMotion: this.createMotion(previousStep.blueMotion, matchingStep.redMotion),
-      redMotion: this.createMotion(previousStep.redMotion, matchingStep.blueMotion),
+      motions: {
+        blue: this.createMotion(previousStep.motions.blue, matchingStep.motions.red),
+        red: this.createMotion(previousStep.motions.red, matchingStep.motions.blue),
+      },
     };
   }
 
@@ -107,9 +108,9 @@ export class RotatedSwappedExecutor implements ILOOPExecutor {
 
     return {
       ...matchingMotion,
-      startLocation,
-      endLocation,
-      rotationDirection: matchingMotion.rotationDirection,
+      startLocation: startLocation as MotionData["startLocation"],
+      endLocation: endLocation as MotionData["endLocation"],
+      rotationDirection: (matchingMotion.rotationDirection) as MotionData["rotationDirection"],
     };
   }
 }
