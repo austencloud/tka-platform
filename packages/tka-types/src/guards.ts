@@ -61,7 +61,8 @@ export function isMotion(value: unknown): value is Motion {
   if (!isEnumMember(value.endOrientation, ORIENTATION_VALUES)) return false;
   if (!isTurns(value.turns)) return false;
   if (!isEnumMember(value.plane, PLANE_VALUES)) return false;
-  if (!isEnumMember(value.color, PROP_COLOR_VALUES)) return false;
+  // `color` is optional on Motion (redundant when keyed under step.motions.blue/red).
+  if (!isOptionalEnumMember(value.color, PROP_COLOR_VALUES)) return false;
   if (!isOptionalEnumMember(value.prefloatMotionType, MOTION_TYPE_VALUES))
     return false;
   if (
@@ -125,7 +126,10 @@ export function isStep(value: unknown): value is Step {
   const motions = value.motions as Record<string, unknown>;
   if (!isMotion(motions.blue)) return false;
   if (!isMotion(motions.red)) return false;
-  if ((motions.blue as Motion).color !== "blue") return false;
-  if ((motions.red as Motion).color !== "red") return false;
+  // `color` is optional; if present it must match the channel.
+  const blueColor = (motions.blue as Motion).color;
+  if (blueColor !== undefined && blueColor !== "blue") return false;
+  const redColor = (motions.red as Motion).color;
+  if (redColor !== undefined && redColor !== "red") return false;
   return true;
 }

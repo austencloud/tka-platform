@@ -123,6 +123,36 @@ describe("createMotion", () => {
   });
 });
 
+describe("createMotion defaults and optional fields", () => {
+  it("defaults plane to 'wall' when omitted", () => {
+    const m = createMotion({
+      motionType: MotionType.shift,
+      startLocation: GridLocation.n,
+      endLocation: GridLocation.e,
+      rotationDirection: RotationDirection.cw,
+      startOrientation: Orientation.in,
+      endOrientation: Orientation.out,
+      turns: 0,
+      color: PropColor.blue,
+    });
+    expect(m.plane).toBe("wall");
+  });
+
+  it("accepts a Motion with no color (keyed-channel case)", () => {
+    const m = createMotion({
+      motionType: MotionType.shift,
+      startLocation: GridLocation.n,
+      endLocation: GridLocation.e,
+      rotationDirection: RotationDirection.cw,
+      startOrientation: Orientation.in,
+      endOrientation: Orientation.out,
+      turns: 0,
+      plane: Plane.wall,
+    });
+    expect(m.color).toBeUndefined();
+  });
+});
+
 describe("updateMotion", () => {
   it("returns a new frozen Motion with changes applied", () => {
     const base = baseBlueShift();

@@ -29,7 +29,12 @@ export interface Motion {
    */
   readonly turns: number | "fl";
   readonly plane: Plane;
-  readonly color: PropColor;
+  /**
+   * Prop color. Optional: Motions stored under `step.motions.blue` are
+   * definitionally blue; `color` is redundant there. Kept for back-compat
+   * with code that passes flat Motion objects across boundaries.
+   */
+  readonly color?: PropColor;
   /**
    * Original motion type before float conversion. Present only when
    * `motionType === "float"` and the source was a shift. Consumers like

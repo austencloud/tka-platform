@@ -60,10 +60,18 @@ function assertTurns(value: unknown): void {
 
 /**
  * Build a Motion. Validates every enum field, freezes the result.
+ *
+ * Defaults:
+ *   - `plane` defaults to `Plane.wall` when not supplied.
+ *
+ * Optional:
+ *   - `color` may be omitted; a Motion stored under `step.motions.blue` is
+ *     definitionally blue (and same for red), so color is redundant there.
+ *
  * Throws TypeError on invalid enum membership, on missing required fields,
  * or on invalid `turns` values.
  */
-export function createMotion(input: Motion): Motion {
+export function createMotion(input: Omit<Motion, "plane"> & { plane?: Plane }): Motion {
   assertMember(input.motionType, MOTION_TYPE_VALUES, "motionType");
   assertMember(input.startLocation, GRID_LOCATION_VALUES, "startLocation");
   assertMember(input.endLocation, GRID_LOCATION_VALUES, "endLocation");
@@ -75,8 +83,9 @@ export function createMotion(input: Motion): Motion {
   assertMember(input.startOrientation, ORIENTATION_VALUES, "startOrientation");
   assertMember(input.endOrientation, ORIENTATION_VALUES, "endOrientation");
   assertTurns(input.turns);
-  assertMember(input.plane, PLANE_VALUES, "plane");
-  assertMember(input.color, PROP_COLOR_VALUES, "color");
+  const plane: Plane = input.plane ?? Plane.wall;
+  assertMember(plane, PLANE_VALUES, "plane");
+  assertOptionalMember(input.color, PROP_COLOR_VALUES, "color");
   assertOptionalMember(
     input.prefloatMotionType,
     MOTION_TYPE_VALUES,
@@ -96,8 +105,8 @@ export function createMotion(input: Motion): Motion {
     startOrientation: input.startOrientation,
     endOrientation: input.endOrientation,
     turns: input.turns,
-    plane: input.plane,
-    color: input.color,
+    plane,
+    ...(input.color !== undefined && { color: input.color }),
     ...(input.prefloatMotionType !== undefined && {
       prefloatMotionType: input.prefloatMotionType,
     }),
@@ -121,14 +130,16 @@ function freezeStepMotions(blue: Motion, red: Motion): StepMotions {
       "Step.motions.blue and Step.motions.red must be produced via createMotion (frozen)"
     );
   }
-  if (blue.color !== "blue") {
+  // `color` is optional on Motion. When present it must match the channel;
+  // when absent, the channel itself ("blue"/"red") is definitional.
+  if (blue.color !== undefined && blue.color !== "blue") {
     throw new TypeError(
-      `Step.motions.blue.color must be "blue", got ${JSON.stringify(blue.color)}`
+      `Step.motions.blue.color must be "blue" or undefined, got ${JSON.stringify(blue.color)}`
     );
   }
-  if (red.color !== "red") {
+  if (red.color !== undefined && red.color !== "red") {
     throw new TypeError(
-      `Step.motions.red.color must be "red", got ${JSON.stringify(red.color)}`
+      `Step.motions.red.color must be "red" or undefined, got ${JSON.stringify(red.color)}`
     );
   }
   return Object.freeze({ blue, red });
@@ -165,27 +176,60 @@ function validateStepScalars(input: Step): void {
 }
 
 /**
+ * Generate a stable-ish id when caller does not supply one.
+ * Prefers `crypto.randomUUID` when available; falls back to a time-seeded
+ * random string. The returned id is a non-empty string.
+ */
+function generateStepId(): string {
+  const g = globalThis as { crypto?: { randomUUID?: () => string } };
+  if (g.crypto && typeof g.crypto.randomUUID === "function") {
+    return g.crypto.randomUUID();
+  }
+  return `step-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+/**
+ * Input for `createStep`.
+ *
+ * `id` and `duration` are type-level optional — the builder supplies defaults
+ * (uuid and `1` respectively) when omitted. All other required `Step` fields
+ * are required here as well. The returned `Step` is fully populated and frozen.
+ */
+export type CreateStepInput = Omit<Step, "id" | "duration"> & {
+  readonly id?: string;
+  readonly duration?: number;
+};
+
+/**
  * Build a Step with all invariants enforced.
  *
- * Requires a fully-populated Step: the builder does not supply defaults for
- * optional fields, but it does rebuild an immutable copy (freezing both the
- * outer object and the motions record).
+ * Defaults supplied when omitted:
+ *   - `id`: `crypto.randomUUID()` (or a time-seeded fallback).
+ *   - `duration`: `1` (one musical beat).
+ *
+ * Rebuilds an immutable copy (freezing both the outer object and the motions
+ * record).
  */
-export function createStep(input: Step): Step {
-  validateStepScalars(input);
-  const motions = freezeStepMotions(input.motions.blue, input.motions.red);
+export function createStep(input: CreateStepInput): Step {
+  const populated: Step = {
+    ...input,
+    id: input.id && input.id.length > 0 ? input.id : generateStepId(),
+    duration: input.duration ?? 1,
+  };
+  validateStepScalars(populated);
+  const motions = freezeStepMotions(populated.motions.blue, populated.motions.red);
   const frozen: Step = {
-    id: input.id,
-    letter: input.letter,
-    startPosition: input.startPosition,
-    endPosition: input.endPosition,
+    id: populated.id,
+    letter: populated.letter,
+    startPosition: populated.startPosition,
+    endPosition: populated.endPosition,
     motions,
-    stepNumber: input.stepNumber,
-    duration: input.duration,
-    ...(input.gridMode !== undefined && { gridMode: input.gridMode }),
-    ...(input.variation !== undefined && { variation: input.variation }),
-    ...(input.isBridge !== undefined && { isBridge: input.isBridge }),
-    ...(input.isBlank !== undefined && { isBlank: input.isBlank }),
+    stepNumber: populated.stepNumber,
+    duration: populated.duration,
+    ...(populated.gridMode !== undefined && { gridMode: populated.gridMode }),
+    ...(populated.variation !== undefined && { variation: populated.variation }),
+    ...(populated.isBridge !== undefined && { isBridge: populated.isBridge }),
+    ...(populated.isBlank !== undefined && { isBlank: populated.isBlank }),
   };
   return Object.freeze(frozen);
 }
