@@ -372,7 +372,7 @@ describe("SequenceBuilder integration", () => {
 
     for (let i = 0; i < result.sequence.length; i++) {
       const step = result.sequence[i]!;
-      expect(step.beatIndex).toBe(i);
+      // `beatIndex` was the engine's informal name; `stepNumber` is canonical now.
       expect(step.stepNumber).toBe(i);
     }
   });

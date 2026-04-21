@@ -188,7 +188,7 @@ describe("Float motions preserve prefloat type info", () => {
       for (let i = 0; i < result.sequence.length; i++) {
         const step = result.sequence[i]!;
         for (const color of ["blue", "red"] as const) {
-          const motion = color === "blue" ? step.blueMotion : step.redMotion;
+          const motion = color === "blue" ? step.motions.blue : step.motions.red;
           if (motion.motionType !== "float") continue;
 
           floatsSeen++;
@@ -245,7 +245,7 @@ describe("Float motions preserve prefloat type info", () => {
       for (let i = 0; i < result.sequence.length; i++) {
         const step = result.sequence[i]!;
         for (const color of ["blue", "red"] as const) {
-          const motion = color === "blue" ? step.blueMotion : step.redMotion;
+          const motion = color === "blue" ? step.motions.blue : step.motions.red;
           if (motion.motionType === "float") continue;
 
           if (motion.prefloatMotionType !== undefined) {

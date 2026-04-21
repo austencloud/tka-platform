@@ -197,12 +197,12 @@ class MockTransitionGraph implements ITransitionGraph {
   }
 }
 
-function countDashBeats(steps: { blueMotion: MotionData; redMotion: MotionData }[], skipStart = true): number {
+function countDashBeats(steps: { motions: { blue: MotionData; red: MotionData } }[], skipStart = true): number {
   let count = 0;
   const start = skipStart ? 1 : 0;
   for (let i = start; i < steps.length; i++) {
     const s = steps[i]!;
-    if (s.blueMotion.motionType === "dash" || s.redMotion.motionType === "dash") {
+    if (s.motions.blue.motionType === "dash" || s.motions.red.motionType === "dash") {
       count++;
     }
   }

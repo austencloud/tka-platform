@@ -19,13 +19,14 @@ import type {
 
 function makeMotion(overrides: Partial<MotionData> = {}): MotionData {
   return {
-    motionType: "pro",
-    startLocation: "n",
-    endLocation: "s",
-    rotationDirection: "cw",
-    startOrientation: "in",
-    endOrientation: "in",
+    motionType: "pro" as MotionData["motionType"],
+    startLocation: "n" as MotionData["startLocation"],
+    endLocation: "s" as MotionData["endLocation"],
+    rotationDirection: "cw" as MotionData["rotationDirection"],
+    startOrientation: "in" as MotionData["startOrientation"],
+    endOrientation: "in" as MotionData["endOrientation"],
     turns: 0.5,
+    plane: "wall" as MotionData["plane"],
     ...overrides,
   };
 }
@@ -37,14 +38,17 @@ function makeStep(
   letter: string = "A"
 ): SequenceStep {
   return {
-    letter,
-    startPosition: startPos,
-    endPosition: endPos,
+    id: `step-${stepNumber}-${letter}`,
+    letter: letter as SequenceStep["letter"],
+    startPosition: startPos as SequenceStep["startPosition"],
+    endPosition: endPos as SequenceStep["endPosition"],
     stepNumber,
-    beatIndex: stepNumber,
-    blueMotion: makeMotion(),
-    redMotion: makeMotion(),
-  } as SequenceStep;
+    duration: 1,
+    motions: {
+      blue: makeMotion(),
+      red: makeMotion(),
+    },
+  };
 }
 
 // Valid mirror pair for MIRRORED validation: alpha2 → alpha8.
