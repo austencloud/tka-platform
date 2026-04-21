@@ -77,17 +77,15 @@ export function mirrorStartPosition(
   positionDeriver?: IGridPositionDeriver
 ): StartPositionData {
   const mirroredMotions = { ...startPos.motions };
+  const blueMotion = startPos.motions[MotionColor.BLUE];
+  const redMotion = startPos.motions[MotionColor.RED];
 
   // Transform specified hand(s)
-  if ((targetHand === "blue" || targetHand === "both") && startPos.motions[MotionColor.BLUE]) {
-    mirroredMotions[MotionColor.BLUE] = mirrorMotion(
-      startPos.motions[MotionColor.BLUE]
-    );
+  if ((targetHand === "blue" || targetHand === "both") && blueMotion) {
+    mirroredMotions[MotionColor.BLUE] = mirrorMotion(blueMotion);
   }
-  if ((targetHand === "red" || targetHand === "both") && startPos.motions[MotionColor.RED]) {
-    mirroredMotions[MotionColor.RED] = mirrorMotion(
-      startPos.motions[MotionColor.RED]
-    );
+  if ((targetHand === "red" || targetHand === "both") && redMotion) {
+    mirroredMotions[MotionColor.RED] = mirrorMotion(redMotion);
   }
 
   // For single-hand transforms, derive new grid position from motion locations
@@ -127,17 +125,15 @@ export function flipStartPosition(
   positionDeriver?: IGridPositionDeriver
 ): StartPositionData {
   const flippedMotions = { ...startPos.motions };
+  const blueMotion = startPos.motions[MotionColor.BLUE];
+  const redMotion = startPos.motions[MotionColor.RED];
 
   // Transform specified hand(s)
-  if ((targetHand === "blue" || targetHand === "both") && startPos.motions[MotionColor.BLUE]) {
-    flippedMotions[MotionColor.BLUE] = flipMotion(
-      startPos.motions[MotionColor.BLUE]
-    );
+  if ((targetHand === "blue" || targetHand === "both") && blueMotion) {
+    flippedMotions[MotionColor.BLUE] = flipMotion(blueMotion);
   }
-  if ((targetHand === "red" || targetHand === "both") && startPos.motions[MotionColor.RED]) {
-    flippedMotions[MotionColor.RED] = flipMotion(
-      startPos.motions[MotionColor.RED]
-    );
+  if ((targetHand === "red" || targetHand === "both") && redMotion) {
+    flippedMotions[MotionColor.RED] = flipMotion(redMotion);
   }
 
   // For single-hand transforms, derive new grid position from motion locations
@@ -178,17 +174,19 @@ export function rotateStartPosition(
   targetHand: TargetHand = "both"
 ): StartPositionData {
   const rotatedMotions = { ...startPos.motions };
+  const origBlueMotion = startPos.motions[MotionColor.BLUE];
+  const origRedMotion = startPos.motions[MotionColor.RED];
 
   // Transform specified hand(s)
-  if ((targetHand === "blue" || targetHand === "both") && startPos.motions[MotionColor.BLUE]) {
+  if ((targetHand === "blue" || targetHand === "both") && origBlueMotion) {
     rotatedMotions[MotionColor.BLUE] = rotateMotion(
-      startPos.motions[MotionColor.BLUE],
+      origBlueMotion,
       rotationAmount
     );
   }
-  if ((targetHand === "red" || targetHand === "both") && startPos.motions[MotionColor.RED]) {
+  if ((targetHand === "red" || targetHand === "both") && origRedMotion) {
     rotatedMotions[MotionColor.RED] = rotateMotion(
-      startPos.motions[MotionColor.RED],
+      origRedMotion,
       rotationAmount
     );
   }
@@ -224,12 +222,14 @@ export function rotateStartPosition(
 export function colorSwapStartPosition(
   startPos: StartPositionData
 ): StartPositionData {
+  const origBlue = startPos.motions[MotionColor.BLUE];
+  const origRed = startPos.motions[MotionColor.RED];
   const swappedMotions = {
-    [MotionColor.BLUE]: startPos.motions[MotionColor.RED]
-      ? swapMotionColor(startPos.motions[MotionColor.RED], MotionColor.BLUE)
+    [MotionColor.BLUE]: origRed
+      ? swapMotionColor(origRed, MotionColor.BLUE)
       : undefined,
-    [MotionColor.RED]: startPos.motions[MotionColor.BLUE]
-      ? swapMotionColor(startPos.motions[MotionColor.BLUE], MotionColor.RED)
+    [MotionColor.RED]: origBlue
+      ? swapMotionColor(origBlue, MotionColor.RED)
       : undefined,
   };
 
@@ -258,10 +258,12 @@ export function invertStartPosition(
   positionDeriver?: IGridPositionDeriver
 ): StartPositionData {
   const invertedMotions = { ...startPos.motions };
+  const startBlueMotion = startPos.motions[MotionColor.BLUE];
+  const startRedMotion = startPos.motions[MotionColor.RED];
 
   // Transform specified hand(s)
-  if ((targetHand === "blue" || targetHand === "both") && startPos.motions[MotionColor.BLUE]) {
-    const blueMotion = startPos.motions[MotionColor.BLUE];
+  if ((targetHand === "blue" || targetHand === "both") && startBlueMotion) {
+    const blueMotion = startBlueMotion;
     const invertedBlueMotion = createMotionData({
       ...blueMotion,
       motionType: invertMotionType(blueMotion.motionType),
@@ -277,8 +279,8 @@ export function invertStartPosition(
     };
   }
 
-  if ((targetHand === "red" || targetHand === "both") && startPos.motions[MotionColor.RED]) {
-    const redMotion = startPos.motions[MotionColor.RED];
+  if ((targetHand === "red" || targetHand === "both") && startRedMotion) {
+    const redMotion = startRedMotion;
     const invertedRedMotion = createMotionData({
       ...redMotion,
       motionType: invertMotionType(redMotion.motionType),
