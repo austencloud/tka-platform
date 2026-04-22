@@ -141,9 +141,9 @@
   .scope button.active { background: rgba(16, 185, 129, 0.15); color: #34d399; box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.3); }
   .scope button:focus-visible { outline: 2px solid #34d399; outline-offset: 2px; }
 
-  .body { display: grid; grid-template-columns: 1fr 300px; gap: 16px; padding: 16px; flex: 1; min-height: 0; }
+  .body { display: grid; grid-template-columns: 1fr 300px; gap: 16px; padding: 16px; flex: 1; min-height: 0; overflow-y: auto; }
 
-  .feed { min-width: 0; }
+  .feed { min-width: 0; min-height: 0; }
   .grid {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
@@ -157,7 +157,7 @@
   .muted { color: #6b7491; font-size: var(--font-size-sm, 14px); }
   .error { color: #fca5a5; font-size: var(--font-size-sm, 14px); }
 
-  .mm { display: flex; flex-direction: column; gap: 14px; }
+  .mm { display: flex; flex-direction: column; gap: 14px; min-height: 0; }
   .map-panel { background: #0f1220; border: 1px solid #1a1f2e; border-radius: 8px; padding: 14px; }
   .mhead { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
   .mhead h5 { margin: 0; color: #d0d5e0; font-size: var(--font-size-sm, 14px); font-weight: 600; }
