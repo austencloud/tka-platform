@@ -24,8 +24,7 @@
 
 <article class="item" data-sticker-id={sticker.id}>
   <div class="row-primary">
-    <span class="word">{sticker.sourceLoop?.word ?? "Custom"}</span>
-    <span class="loop-type">{sticker.sourceLoop?.loopType ?? ""}</span>
+    <span class="word">{sticker.primitiveRef.displayName ?? sticker.primitiveRef.shapeHash.slice(0, 8)}</span>
     <button class="remove" aria-label="Remove sticker" onclick={() => state.removeSticker(sticker.id)}>×</button>
   </div>
 
@@ -80,8 +79,7 @@
     align-items: center;
     gap: 8px;
   }
-  .word { font-weight: 600; }
-  .loop-type { opacity: 0.6; flex: 1; }
+  .word { font-weight: 600; flex: 1; }
   .remove {
     background: none;
     border: none;

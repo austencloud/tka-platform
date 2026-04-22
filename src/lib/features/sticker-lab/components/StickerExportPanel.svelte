@@ -3,8 +3,8 @@
   import SheetSizePicker from "./SheetSizePicker.svelte";
   import { StickerSheetPdfExporter } from "../services/implementations/StickerSheetPdfExporter";
   import {
-    getMandalaPaths,
-    loadMandalaPaths,
+    getPrimitivePaths,
+    loadPrimitivePaths,
   } from "../state/mandala-paths-cache.svelte";
   import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
 
@@ -26,9 +26,7 @@
     isPreparing = true;
     try {
       await Promise.all(
-        stickerState.sheet.stickers.map((s) =>
-          s.sourceLoop ? loadMandalaPaths(s.sourceLoop.sequenceId) : Promise.resolve(null)
-        )
+        stickerState.sheet.stickers.map((s) => loadPrimitivePaths(s.primitiveRef.shapeHash))
       );
     } catch (err) {
       console.error("[StickerExportPanel] preload failed:", err);
@@ -40,7 +38,7 @@
 
     isExporting = true;
     try {
-      const bytes = await exporter.export(stickerState.sheet, { getPaths: getMandalaPaths });
+      const bytes = await exporter.export(stickerState.sheet, { getPaths: getPrimitivePaths });
       // Cast to ArrayBuffer slice — Uint8Array.buffer can be SharedArrayBuffer in the
       // DOM type lib, but pdf-lib always returns plain ArrayBuffer-backed bytes.
       const blob = new Blob([bytes as unknown as Uint8Array<ArrayBuffer>], { type: "application/pdf" });
