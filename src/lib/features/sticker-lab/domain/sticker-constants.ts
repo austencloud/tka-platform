@@ -31,4 +31,4 @@ export const MAX_COPIES_PER_STICKER = 50;
 export const STORAGE_KEY_ACTIVE_SHEET = "tka:sticker-lab:active-sheet";
 
 /** Storage schema version — bumped on breaking changes to persisted StickerSheet shape. */
-export const STORAGE_SCHEMA_VERSION = 1;
+export const STORAGE_SCHEMA_VERSION = 2;
