@@ -803,7 +803,7 @@
     position: relative;
   }
 
-  /* Viewer + export panel container */
+  /* Viewer + export panel container. */
   .viewer-and-export {
     --export-sidebar-width: 560px;
     position: relative;
@@ -812,21 +812,34 @@
     overflow: hidden;
   }
 
-  /* Export panel — absolute overlay so it doesn't steal width from split pane */
+  /* Desktop: always a grid so the sidebar column can transition smoothly. */
+  .viewer-and-export.desktop {
+    display: grid;
+    grid-template-columns: 1fr 0px;
+    grid-template-rows: minmax(0, 1fr);
+    transition: grid-template-columns 250ms cubic-bezier(0.2, 0, 0, 1);
+  }
+
+  .viewer-and-export.desktop :global(.view-container) {
+    position: relative;
+    inset: auto;
+  }
+
+  .viewer-and-export.export-active.desktop {
+    grid-template-columns: 1fr var(--export-sidebar-width);
+  }
+
+  /* Export panel — grid child on desktop, flex child on mobile */
   .export-panel-container {
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    width: var(--export-sidebar-width);
-    z-index: 5;
     overflow: hidden;
     overflow-y: auto;
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
     border-left: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    isolation: isolate;
+    min-width: 0;
   }
 
-  /* Mobile: export panel is inline in flex layout, not absolute */
+  /* Mobile: export panel is inline in flex layout */
   @media (max-width: 767px) {
     .viewer-and-export.export-active {
       display: flex;
@@ -834,11 +847,6 @@
     }
 
     .export-panel-container {
-      position: relative;
-      top: auto;
-      right: auto;
-      bottom: auto;
-      left: auto;
       width: 100%;
       flex-shrink: 0;
       overflow: visible;
