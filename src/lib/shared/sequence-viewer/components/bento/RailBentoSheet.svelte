@@ -13,14 +13,91 @@
   import { fade, fly } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
   import type { Snippet } from "svelte";
+  import { onMount, tick } from "svelte";
 
   interface Props {
     title: string;
     onClose: () => void;
+    /** Optional: element to restore focus to when the sheet closes. */
+    returnFocusTo?: HTMLElement | null;
     children: Snippet;
   }
 
-  let { title, onClose, children }: Props = $props();
+  let { title, onClose, returnFocusTo = null, children }: Props = $props();
+
+  let sheetEl: HTMLDivElement | undefined = $state();
+
+  // CSS selector for every tab-focusable element inside the sheet.
+  // Keep in sync between initial-focus (onMount) and focus-trap (onSheetKeydown).
+  const FOCUSABLE_SELECTOR =
+    'button:not([disabled]),[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"]),[contenteditable]:not([contenteditable="false"])';
+
+  // Honor prefers-reduced-motion for the entrance / exit transitions.
+  // IMPORTANT: initialize synchronously in the $state initializer — the sheet's
+  // entrance transition:fly/fade is evaluated at mount time, BEFORE onMount
+  // runs. If we set reduceMotion inside onMount, the first animation would
+  // always use the full 240ms even for users who have the reduced-motion
+  // preference enabled.
+  let reduceMotion = $state(
+    typeof window !== "undefined" &&
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+  );
+
+  onMount(() => {
+    // Snapshot returnFocusTo at mount so the cleanup below restores focus
+    // even if the prop has since been reactively re-assigned (e.g. the
+    // parent flipped `lastActivatedPillId` before the sheet finished
+    // unmounting). Element is kept alive by the parent's state.
+    const focusTarget = returnFocusTo;
+
+    const mq =
+      typeof window !== "undefined" && typeof window.matchMedia === "function"
+        ? window.matchMedia("(prefers-reduced-motion: reduce)")
+        : null;
+    const handler = (e: MediaQueryListEvent) => { reduceMotion = e.matches; };
+    mq?.addEventListener("change", handler);
+
+    // Move initial focus into the sheet so the keyboard user lands inside it.
+    void tick().then(() => {
+      const first = sheetEl?.querySelector<HTMLElement>(FOCUSABLE_SELECTOR);
+      first?.focus();
+    });
+
+    return () => {
+      mq?.removeEventListener("change", handler);
+      // Restore focus to the activating element on unmount. Only if it is
+      // still connected to the DOM — otherwise focus falls silently to
+      // document.body and keyboard users lose their place.
+      if (focusTarget && typeof focusTarget.focus === "function" && focusTarget.isConnected) {
+        focusTarget.focus();
+      }
+    };
+  });
+
+  function getFocusables(): HTMLElement[] {
+    if (!sheetEl) return [];
+    return Array.from(
+      sheetEl.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
+    ).filter((el) => {
+      // Visible-element filter: prefer checkVisibility() (modern), fall back
+      // to offsetParent (pre-2023). The fallback misses position:fixed
+      // descendants, but the sheet's content never uses fixed positioning.
+      // A defensive try/catch around checkVisibility prevents an exotic
+      // browser bug (Edge legacy has thrown here) from collapsing the whole
+      // focus trap — a single bad element should fall back, not poison the
+      // whole filter pass.
+      const maybeCheckVisibility = (el as HTMLElement & { checkVisibility?: () => boolean }).checkVisibility;
+      if (typeof maybeCheckVisibility === "function") {
+        try {
+          return maybeCheckVisibility.call(el);
+        } catch {
+          return el.offsetParent !== null;
+        }
+      }
+      return el.offsetParent !== null;
+    });
+  }
 
   function onBackdropClick() {
     onClose();
@@ -28,8 +105,46 @@
 
   function onSheetKeydown(e: KeyboardEvent) {
     if (e.key === "Escape") {
+      // Don't swallow Escape when a native dropdown / combobox / listbox is
+      // open inside the sheet — the user is trying to close THAT, not the
+      // sheet itself. Firefox in particular bubbles Escape from open
+      // <select> elements; without this guard the sheet vanishes when the
+      // user just meant to close the dropdown.
+      //
+      // The `instanceof Element` narrow matters: composed-path events from a
+      // shadow-DOM nested component or a TextNode target would throw on
+      // `.closest`, which — without a handler — bubbles to Svelte's error
+      // boundary and freezes the sheet until remount.
+      const target = e.target;
+      if (target instanceof Element &&
+          target.closest('select, [role="combobox"], [role="listbox"], [role="dialog"], [popover]')) {
+        return;
+      }
       e.preventDefault();
       onClose();
+      return;
+    }
+    if (e.key !== "Tab") return;
+
+    // Focus trap: keep Tab focus inside the sheet.
+    const focusables = getFocusables();
+    if (focusables.length === 0) {
+      e.preventDefault();
+      return;
+    }
+    const first = focusables[0]!;
+    const last = focusables[focusables.length - 1]!;
+    const active = document.activeElement as HTMLElement | null;
+    if (e.shiftKey) {
+      if (active === first || !sheetEl?.contains(active)) {
+        e.preventDefault();
+        last.focus();
+      }
+    } else {
+      if (active === last || !sheetEl?.contains(active)) {
+        e.preventDefault();
+        first.focus();
+      }
     }
   }
 
@@ -56,18 +171,19 @@
     aria-label="Close {title}"
     tabindex="-1"
     onclick={onBackdropClick}
-    transition:fade={{ duration: 180 }}
+    transition:fade={{ duration: reduceMotion ? 0 : 180 }}
   ></button>
 
   <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
   <div
+    bind:this={sheetEl}
     class="bento-sheet"
     role="dialog"
     aria-modal="true"
     aria-label={title}
     tabindex="-1"
     onkeydown={onSheetKeydown}
-    transition:fly={{ y: 80, duration: 240, easing: cubicOut }}
+    transition:fly={{ y: reduceMotion ? 0 : 80, duration: reduceMotion ? 0 : 240, easing: cubicOut }}
   >
     <div class="bento-sheet-head">
       <span class="bento-sheet-title">{title}</span>
