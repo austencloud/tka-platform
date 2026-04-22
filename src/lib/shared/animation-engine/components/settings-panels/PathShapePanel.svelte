@@ -67,7 +67,7 @@
   }
 
   .path-btn:focus-visible {
-    outline: 2px solid color-mix(in srgb, var(--path-color) 50%, transparent);
+    outline: 2px solid var(--path-color, #60a5fa);
     outline-offset: 2px;
   }
 

@@ -63,7 +63,7 @@
   }
 
   .effort-btn:focus-visible {
-    outline: 2px solid color-mix(in srgb, var(--effort-color) 50%, transparent);
+    outline: 2px solid var(--effort-color, #94a3b8);
     outline-offset: 2px;
   }
 
