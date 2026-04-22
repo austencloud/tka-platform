@@ -156,6 +156,17 @@
   cursor: default;
 }
 
+/* AAA-grade touch target when the stepper lives inside a full-width row
+   (e.g. the Loops stepper in the Export pill body). ExportImagePanel's
+   Columns stepper lives inside the compact .rt-tile (min-height 72px)
+   and retains the legacy 24×24 sizing. */
+.rt-row .rt-step-btn {
+  min-width: var(--min-touch-target, 44px);
+  min-height: var(--min-touch-target, 44px);
+  border-radius: 10px;
+  font-size: 15px;
+}
+
 .rt-stepper .rt-val {
   min-width: 44px;
   text-align: center;
