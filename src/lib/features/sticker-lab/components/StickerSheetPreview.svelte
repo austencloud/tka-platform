@@ -2,8 +2,8 @@
   import { getStickerLabContext } from "../context/sticker-lab-context";
   import { StickerUnitRenderer } from "../services/implementations/StickerUnitRenderer";
   import {
-    getMandalaPaths,
-    loadMandalaPaths,
+    getPrimitivePaths,
+    loadPrimitivePaths,
   } from "../state/mandala-paths-cache.svelte";
   import {
     SHEET_DIMENSIONS_IN,
@@ -43,9 +43,7 @@
   // as soon as paths resolve.
   $effect(() => {
     for (const sticker of stickerState.sheet.stickers) {
-      if (sticker.sourceLoop) {
-        void loadMandalaPaths(sticker.sourceLoop.sequenceId);
-      }
+      void loadPrimitivePaths(sticker.primitiveRef.shapeHash);
     }
   });
 
@@ -79,13 +77,13 @@
       class:show-bleed={showBleed}
     >
       {#each pageStickers as sticker, i (`${activePage}-${i}`)}
-        {@const paths = sticker.sourceLoop ? getMandalaPaths(sticker.sourceLoop.sequenceId) : null}
+        {@const paths = getPrimitivePaths(sticker.primitiveRef.shapeHash)}
         <div class="slot">
           {#if paths}
             <!-- Inline SVG rendering. The SVG already includes its own bleed padding. -->
             {@html renderer.renderSVG(sticker, paths)}
           {:else}
-            <div class="missing">No paths for {sticker.sourceLoop?.word}</div>
+            <div class="missing">No paths for {sticker.primitiveRef.displayName ?? sticker.primitiveRef.shapeHash.slice(0, 8)}</div>
           {/if}
         </div>
       {/each}
