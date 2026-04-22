@@ -173,76 +173,12 @@
     gap: 12px;
   }
 
-  /* Common inner primitives used by sheet bodies */
-  :global(.bento-sheet-body .rt-section) {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  :global(.bento-sheet-body .rt-section-label) {
-    font-size: 9px;
-    font-weight: 700;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.45);
-  }
-
-  :global(.bento-sheet-body .rt-chip-row) {
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
-  }
-
-  :global(.bento-sheet-body .rt-chip) {
-    flex: 1;
-    min-height: 38px;
-    min-width: 44px;
-    padding: 6px 12px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 10px;
-    font-size: 12px;
-    font-weight: 600;
-    color: rgba(255, 255, 255, 0.65);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
-    transition: all 150ms ease;
-  }
-
-  :global(.bento-sheet-body .rt-chip[aria-pressed="true"]) {
-    background: color-mix(in srgb, #4a9eff 22%, rgba(20, 22, 32, 0.6));
-    border-color: color-mix(in srgb, #4a9eff 55%, transparent);
-    color: #c5ddff;
-  }
-
-  :global(.bento-sheet-body .rt-row) {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 12px;
-    padding: 8px 12px;
-    min-height: 48px;
-  }
-
-  :global(.bento-sheet-body .rt-row-label) {
-    font-size: 10px;
-    font-weight: 700;
-    color: rgba(255, 255, 255, 0.7);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-  }
+  /* The .rt-section / .rt-section-label / .rt-chip-row / .rt-chip / .rt-row /
+     .rt-row-label primitives now live in rail-tile.css so they apply equally
+     in the .bento-sheet-body and the desktop .pill-body-inline contexts. */
 
   @media (prefers-reduced-motion: reduce) {
-    .bento-sheet-close,
-    :global(.bento-sheet-body .rt-chip) {
+    .bento-sheet-close {
       transition: none;
     }
   }

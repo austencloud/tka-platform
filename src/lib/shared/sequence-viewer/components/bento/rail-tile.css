@@ -239,3 +239,94 @@
     transform: none;
   }
 }
+
+/* ==========================================================================
+   Sheet/panel body primitives — sections, chips, rows.
+   Originally defined as :global(.bento-sheet-body .rt-*) inside
+   RailBentoSheet.svelte. Promoted here so the same primitives apply inside
+   the desktop inline pill body (.pill-body-inline) without requiring the
+   .bento-sheet-body ancestor.
+   ========================================================================== */
+
+.rt-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.rt-section-label {
+  font-size: var(--font-size-compact, 12px);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.rt-chip-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.rt-chip {
+  flex: 1;
+  min-height: var(--min-touch-target, 44px);
+  min-width: 44px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  font-size: var(--font-size-compact, 12px);
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: all 150ms ease;
+}
+
+.rt-chip:hover:not([aria-pressed="true"]) {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.18);
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.rt-chip[aria-pressed="true"] {
+  background: color-mix(in srgb, #4a9eff 22%, rgba(20, 22, 32, 0.6));
+  border-color: color-mix(in srgb, #4a9eff 55%, transparent);
+  color: #ffffff;
+}
+
+.rt-chip:focus-visible {
+  outline: 2px solid #4a9eff;
+  outline-offset: 2px;
+}
+
+.rt-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 8px 12px;
+  min-height: var(--min-touch-target, 44px);
+}
+
+.rt-row-label {
+  font-size: var(--font-size-compact, 12px);
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.85);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rt-chip {
+    transition: none;
+  }
+}
