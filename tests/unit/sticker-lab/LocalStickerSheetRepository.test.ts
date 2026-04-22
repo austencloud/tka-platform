@@ -1,8 +1,9 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { LocalStickerSheetRepository } from "$lib/features/sticker-lab/services/implementations/LocalStickerSheetRepository";
 import {
   createDefaultStickerSheet,
   createDefaultStickerUnit,
+  type MandalaPrimitiveRef,
 } from "$lib/features/sticker-lab/domain/sticker-types";
 import { STORAGE_KEY_ACTIVE_SHEET } from "$lib/features/sticker-lab/domain/sticker-constants";
 
@@ -20,6 +21,12 @@ function mockLocalStorage(): Storage {
   };
 }
 
+const testRef: MandalaPrimitiveRef = {
+  shapeHash: "shape-abc",
+  ultraHash: "shape-abc",
+  displayName: "Alpha",
+};
+
 describe("LocalStickerSheetRepository", () => {
   let storage: Storage;
   let repo: LocalStickerSheetRepository;
@@ -33,17 +40,17 @@ describe("LocalStickerSheetRepository", () => {
     expect(repo.load()).toBeNull();
   });
 
-  it("save then load returns the same sheet", () => {
-    const sheet = createDefaultStickerSheet();
-    const sheetWithOne = {
-      ...sheet,
-      stickers: [createDefaultStickerUnit({ sourceLoop: { sequenceId: "s1", word: "W", loopType: "t" } })],
+  it("save then load returns the same sheet with v2 stickers intact", () => {
+    const sheet = {
+      ...createDefaultStickerSheet(),
+      stickers: [createDefaultStickerUnit({ primitiveRef: testRef })],
     };
-    repo.save(sheetWithOne);
+    repo.save(sheet);
     const loaded = repo.load();
     expect(loaded).not.toBeNull();
-    expect(loaded!.id).toBe(sheetWithOne.id);
+    expect(loaded!.id).toBe(sheet.id);
     expect(loaded!.stickers).toHaveLength(1);
+    expect(loaded!.stickers[0]!.primitiveRef.shapeHash).toBe("shape-abc");
   });
 
   it("clear removes the stored sheet", () => {
@@ -57,11 +64,80 @@ describe("LocalStickerSheetRepository", () => {
     expect(repo.load()).toBeNull();
   });
 
-  it("load returns null when stored payload has wrong schema version", () => {
+  it("load returns null for an unknown future version (v99)", () => {
     storage.setItem(
       STORAGE_KEY_ACTIVE_SHEET,
-      JSON.stringify({ version: 999, sheet: createDefaultStickerSheet() })
+      JSON.stringify({ version: 99, sheet: createDefaultStickerSheet() })
     );
     expect(repo.load()).toBeNull();
+  });
+
+  it("migrates a v1 sheet to v2 — sticker gets primitiveRef with sequenceId proxy", () => {
+    const v1Sheet = {
+      id: "s1",
+      name: "Old",
+      sheetSize: "8.5x11",
+      stickers: [
+        {
+          id: "st1",
+          sourceLoop: { sequenceId: "seq-xyz", word: "ALPHA", loopType: "rotated-loop" },
+          variant: "full",
+          size: "3in-round",
+          background: "transparent",
+          copies: 2,
+          presentation: "pure",
+        },
+      ],
+      createdAt: 1000,
+      updatedAt: 1000,
+    };
+    storage.setItem(STORAGE_KEY_ACTIVE_SHEET, JSON.stringify({ version: 1, sheet: v1Sheet }));
+
+    const loaded = repo.load();
+    expect(loaded).not.toBeNull();
+
+    const sticker = loaded!.stickers[0]!;
+    expect(sticker.primitiveRef.shapeHash).toBe("seq-xyz");
+    expect(sticker.primitiveRef.ultraHash).toBe("seq-xyz");
+    expect(sticker.primitiveRef.displayName).toBe("ALPHA");
+    expect(sticker.copies).toBe(2);
+    // deprecated back-link preserved for audit trail
+    expect(sticker.sourceLoop?.sequenceId).toBe("seq-xyz");
+  });
+
+  it("migrates a v1 sticker with null sourceLoop using a legacy- prefix", () => {
+    const v1Sheet = {
+      id: "s1",
+      name: "Old",
+      sheetSize: "8.5x11",
+      stickers: [
+        {
+          id: "st42",
+          sourceLoop: null,
+          variant: "blue",
+          size: "3in-round",
+          background: "white",
+          copies: 1,
+          presentation: "pure",
+        },
+      ],
+      createdAt: 1000,
+      updatedAt: 1000,
+    };
+    storage.setItem(STORAGE_KEY_ACTIVE_SHEET, JSON.stringify({ version: 1, sheet: v1Sheet }));
+
+    const loaded = repo.load();
+    expect(loaded!.stickers[0]!.primitiveRef.shapeHash).toBe("legacy-st42");
+    expect(loaded!.stickers[0]!.primitiveRef.displayName).toBe("Imported sticker");
+  });
+
+  it("v2 sheet with sheetSize=13x19 round-trips through save/load", () => {
+    const sheet = {
+      ...createDefaultStickerSheet(),
+      sheetSize: "13x19" as const,
+    };
+    repo.save(sheet);
+    const loaded = repo.load();
+    expect(loaded!.sheetSize).toBe("13x19");
   });
 });
