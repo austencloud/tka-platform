@@ -143,13 +143,13 @@
   }
 
   .bento-sheet-close {
-    width: 28px;
-    height: 28px;
+    min-width: var(--min-touch-target, 44px);
+    min-height: var(--min-touch-target, 44px);
     border-radius: 8px;
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.08);
-    color: rgba(255, 255, 255, 0.55);
-    font-size: 11px;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 14px;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -162,6 +162,11 @@
   .bento-sheet-close:hover {
     background: rgba(255, 255, 255, 0.1);
     color: rgba(255, 255, 255, 0.9);
+  }
+
+  .bento-sheet-close:focus-visible {
+    outline: 2px solid #4a9eff;
+    outline-offset: 2px;
   }
 
   .bento-sheet-body {
