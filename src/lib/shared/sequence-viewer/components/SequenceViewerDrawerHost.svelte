@@ -890,7 +890,7 @@
      starting grid state and the 320px allocation happens instantly (no transition).
      Mobile: stays default (block), switches to flex column in export mode. */
   .viewer-and-export {
-    --export-sidebar-width: 320px;
+    --export-sidebar-width: 560px;
     position: relative;
     flex: 1;
     min-height: 0;

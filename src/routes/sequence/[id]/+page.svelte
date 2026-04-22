@@ -839,7 +839,7 @@
   /* Viewer + export panel container.
      Flex child fills remaining space. Export panel overlays the right side. */
   .viewer-and-export {
-    --export-sidebar-width: 320px;
+    --export-sidebar-width: 560px;
     position: relative;
     flex: 1;
     min-height: 0;
