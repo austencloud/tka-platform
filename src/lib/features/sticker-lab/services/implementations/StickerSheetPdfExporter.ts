@@ -41,9 +41,7 @@ export class StickerSheetPdfExporter implements IStickerSheetPdfExporter {
     }
 
     for (const placement of placements) {
-      const paths = placement.unit.sourceLoop
-        ? lookup.getPaths(placement.unit.sourceLoop.sequenceId)
-        : null;
+      const paths = lookup.getPaths(placement.unit.primitiveRef.shapeHash);
       if (!paths) continue;
 
       const svg = this.unitRenderer.renderSVG(placement.unit, paths);
