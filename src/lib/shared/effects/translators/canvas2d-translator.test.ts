@@ -262,10 +262,10 @@ describe("resolveInk2D — palette + motion-dominant + stroke width", () => {
     expect(out.blendMode).toBe("source-over");
     expect(out.opacityMax).toBe(1.0);
     expect(out.ambientSpawnRate).toBe(2);
-    expect(out.motionSpawnRate).toBe(15);
+    expect(out.motionSpawnRate).toBe(60);
     expect(out.motionReferenceSpeed).toBe(3.0);
-    expect(out.strokeWidthMin).toBe(1);
-    expect(out.strokeWidthMax).toBe(12);
+    expect(out.strokeWidthMin).toBe(2);
+    expect(out.strokeWidthMax).toBe(18);
     expect(out.lifetimeSeconds).toBeGreaterThan(0);
     expect(out.maxPointsPerTip).toBeGreaterThan(10);
   });
@@ -286,8 +286,8 @@ describe("resolveInk2D — palette + motion-dominant + stroke width", () => {
     const out = resolveInk2D(baseIntent({ palette: "watercolor" }));
     expect(out.resolvedPalette.watercolor).toBe(true);
     expect(out.resolvedPalette.id).toBe("watercolor");
-    // Width doubled from the base 12 → 24 px.
-    expect(out.strokeWidthMax).toBe(24);
+    // Width doubled from the base 18 → 36 px.
+    expect(out.strokeWidthMax).toBe(36);
     // Alpha capped at 0.4 (translucent wash).
     expect(out.opacityMax).toBe(0.4);
     // Still opaque composite — watercolor ≠ neon. The cap comes from

@@ -368,7 +368,7 @@ describe("migrateEffectsConfig", () => {
     const out = migrateEffectsConfig(v11);
     expect(out.version).toBe(EFFECTS_CONFIG_VERSION);
     expect(out.ink).toBeDefined();
-    expect(out.ink.palette).toBe("india");
+    expect(out.ink.palette).toBe("watercolor");
     expect(out.ink.ambientEmission).toBe(0.2);
     expect(out.ink.motionEmission).toBe(0.8);
     expect(out.ink.intensity).toBe(0.6);
