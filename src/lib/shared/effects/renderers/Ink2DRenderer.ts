@@ -227,20 +227,11 @@ export class Ink2DRenderer {
     const prevLineCap = ctx.lineCap;
     const prevLineJoin = ctx.lineJoin;
     try {
-      // Palette drives composite — neon glows (lighter), all others are
-      // opaque pigment (source-over). This is the #1 ink-vs-trails read.
-      ctx.globalCompositeOperation = palette.emissive
-        ? "lighter"
-        : "source-over";
+      ctx.globalCompositeOperation = palette.emissive ? "lighter" : "source-over";
       ctx.lineCap = "round";
       ctx.lineJoin = "round";
 
       const peakAlpha = params.opacityMax * (0.45 + 0.55 * params.intensity);
-      // Reference speed for segment width mapping. Slow segment → thick;
-      // fast segment → thin. Ceiling from motionReferenceSpeed (world
-      // units) converted to px with same PX_PER_WORLD=60, and a 2×
-      // ceiling so genuinely fast strokes still register as thin rather
-      // than saturating to thick at the ref speed.
       const SPEED_CEILING_PX = params.motionReferenceSpeed * 60 * 2;
       const widthMax = params.strokeWidthMax * (0.6 + 0.8 * params.intensity);
       const widthMin = params.strokeWidthMin;
@@ -249,48 +240,55 @@ export class Ink2DRenderer {
         const state = this.tips[key];
         if (!state || state.points.length < 2) continue;
 
-        // Segment-by-segment stroke — Canvas2D cannot interpolate lineWidth
-        // across a single stroke(), so each span gets its own path/stroke.
-        // Using two passes: first an edge pass (wider, lower alpha) for
-        // feathering, then the pigment pass on top. Skipped on emissive
-        // palettes because additive blend already softens the silhouette.
-        const doEdgePass = !palette.emissive;
+        // Single path per tip — one stroke() call so Canvas2D computes
+        // proper round joins at every intermediate point instead of
+        // isolated round caps per segment. Per-segment isolated stroke()
+        // calls produced a chain-of-ovals look (the sprint-1 regression).
+        //
+        // Width uses the median spawn speed across the whole stroke.
+        // True calligraphic per-segment width variation (filled polygon
+        // approach) is sprint-2 (1j.ii).
+        const sorted = state.points
+          .map((p) => p.spawnSpeedPx)
+          .slice()
+          .sort((a, b) => a - b);
+        const medianSpeed = sorted[Math.floor(sorted.length / 2)] ?? 0;
+        const t = Math.min(1, medianSpeed / SPEED_CEILING_PX);
+        const width = widthMax + (widthMin - widthMax) * t;
 
-        for (let i = 1; i < state.points.length; i++) {
-          const a = state.points[i - 1]!;
-          const b = state.points[i]!;
-          const lifeT = b.age / params.lifetimeSeconds;
-          const fadeOut =
-            lifeT > FADE_FRACTION
-              ? Math.max(0, (1 - lifeT) / (1 - FADE_FRACTION))
-              : 1;
-          const alpha = peakAlpha * fadeOut;
-          if (alpha <= 0.01) continue;
+        // Fade alpha from the oldest surviving point so the tail
+        // gradually disappears rather than individual segments blinking.
+        const oldestT = state.points[0]!.age / params.lifetimeSeconds;
+        const fadeOut =
+          oldestT > FADE_FRACTION
+            ? Math.max(0, (1 - oldestT) / (1 - FADE_FRACTION))
+            : 1;
+        const alpha = peakAlpha * fadeOut;
+        if (alpha <= 0.01) continue;
 
-          // Segment speed = slower of the two endpoints' spawn speeds.
-          // Using min gives the heavier/thicker segment a slight bias,
-          // which reads like a brush loading pigment into the paper.
-          const segSpeed = Math.min(a.spawnSpeedPx, b.spawnSpeedPx);
-          const t = Math.min(1, segSpeed / SPEED_CEILING_PX);
-          // Slow (t=0) → widthMax. Fast (t=1) → widthMin. Pressure curve.
-          const width = widthMax + (widthMin - widthMax) * t;
-
-          if (doEdgePass) {
-            ctx.lineWidth = width * 1.6;
-            ctx.strokeStyle = withAlpha(palette.edge, alpha * 0.35);
-            ctx.beginPath();
-            ctx.moveTo(a.x, a.y);
-            ctx.lineTo(b.x, b.y);
-            ctx.stroke();
-          }
-
-          ctx.lineWidth = width;
-          ctx.strokeStyle = withAlpha(palette.pigment, alpha);
+        const buildPath = (): void => {
           ctx.beginPath();
-          ctx.moveTo(a.x, a.y);
-          ctx.lineTo(b.x, b.y);
+          ctx.moveTo(state.points[0]!.x, state.points[0]!.y);
+          for (let i = 1; i < state.points.length; i++) {
+            ctx.lineTo(state.points[i]!.x, state.points[i]!.y);
+          }
+        };
+
+        // Edge feathering pass — wider, low-alpha. Creates a soft halo
+        // around the pigment stroke that reads like ink bleed on paper.
+        // Skipped on emissive (neon) because additive blend self-feathers.
+        if (!palette.emissive) {
+          ctx.lineWidth = width * 1.8;
+          ctx.strokeStyle = withAlpha(palette.edge, alpha * 0.28);
+          buildPath();
           ctx.stroke();
         }
+
+        // Pigment pass — the main stroke.
+        ctx.lineWidth = width;
+        ctx.strokeStyle = withAlpha(palette.pigment, alpha);
+        buildPath();
+        ctx.stroke();
       }
     } finally {
       ctx.globalCompositeOperation = prevComposite;

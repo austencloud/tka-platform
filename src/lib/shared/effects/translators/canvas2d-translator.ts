@@ -203,12 +203,17 @@ export function resolveInk2D(
 ): Ink2DParams {
   const palette = resolveInkPalette(intent);
   const AMBIENT_BASE_RATE = 2;
-  const MOTION_BASE_RATE = 15;
+  // 60 points/s at full motion → one new point every frame at 60fps.
+  // 15 was too sparse; strokes had visible gaps between recorded positions.
+  const MOTION_BASE_RATE = 60;
   const MOTION_REFERENCE_SPEED = 3.0;
-  const STROKE_WIDTH_MIN = 1;
-  const STROKE_WIDTH_MAX_BASE = 12;
-  const LIFETIME_SECONDS_BASE = 4.5;
-  const MAX_POINTS_PER_TIP = 40;
+  const STROKE_WIDTH_MIN = 2;
+  const STROKE_WIDTH_MAX_BASE = 18;
+  const LIFETIME_SECONDS_BASE = 3.0;
+  // 60 pts/s * 3s lifetime = 180 candidate points, cap at 90 so the
+  // bounded-history shift doesn't eat the newest stroke while keeping
+  // older tail visible for the full lifetime.
+  const MAX_POINTS_PER_TIP = 90;
 
   // Motion-dominant hard cap on ambient. Even at slider=1 the effective
   // ambient rate is ≤ 30% of the base rate.

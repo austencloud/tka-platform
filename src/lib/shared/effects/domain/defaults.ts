@@ -139,7 +139,7 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
     ambientEmission: 0.2,
     motionEmission: 0.8,
     intensity: 0.6,
-    palette: "india",
+    palette: "watercolor",
     customColor: "#0a0a0a",
     viscosity: 0.3,
     splatterIntensity: 0.3,
