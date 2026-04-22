@@ -2,41 +2,83 @@ import { describe, it, expect } from "vitest";
 import {
   createDefaultStickerUnit,
   createDefaultStickerSheet,
-  type StickerUnit,
-  type StickerSheet,
+  type MandalaPrimitiveRef,
 } from "$lib/features/sticker-lab/domain/sticker-types";
 
-describe("sticker-types default factories", () => {
-  it("createDefaultStickerUnit returns a unit with variant=full, background=transparent, copies=1, presentation=pure", () => {
-    const unit = createDefaultStickerUnit({
-      sourceLoop: { sequenceId: "seq-1", word: "ALPHA", loopType: "rotated-loop" },
-    });
+const testRef: MandalaPrimitiveRef = {
+  shapeHash: "shape-abc",
+  ultraHash: "shape-abc",
+  displayName: "Alpha",
+};
 
+describe("createDefaultStickerUnit", () => {
+  it("sets primitiveRef from input", () => {
+    const unit = createDefaultStickerUnit({ primitiveRef: testRef });
+    expect(unit.primitiveRef).toEqual(testRef);
+  });
+
+  it("defaults variant to full", () => {
+    const unit = createDefaultStickerUnit({ primitiveRef: testRef });
     expect(unit.variant).toBe("full");
+  });
+
+  it("defaults background to transparent", () => {
+    const unit = createDefaultStickerUnit({ primitiveRef: testRef });
     expect(unit.background).toBe("transparent");
+  });
+
+  it("defaults copies to 1", () => {
+    const unit = createDefaultStickerUnit({ primitiveRef: testRef });
     expect(unit.copies).toBe(1);
-    expect(unit.presentation).toBe("pure");
+  });
+
+  it("defaults size to 3in-round and presentation to pure", () => {
+    const unit = createDefaultStickerUnit({ primitiveRef: testRef });
     expect(unit.size).toBe("3in-round");
-    expect(unit.sourceLoop?.sequenceId).toBe("seq-1");
+    expect(unit.presentation).toBe("pure");
+  });
+
+  it("does not set deprecated sourceLoop field on newly-created units", () => {
+    const unit = createDefaultStickerUnit({ primitiveRef: testRef });
+    expect(unit.sourceLoop).toBeUndefined();
+  });
+
+  it("accepts variant / background / copies overrides", () => {
+    const unit = createDefaultStickerUnit({
+      primitiveRef: testRef,
+      variant: "blue",
+      background: "white",
+      copies: 5,
+    });
+    expect(unit.variant).toBe("blue");
+    expect(unit.background).toBe("white");
+    expect(unit.copies).toBe(5);
+  });
+
+  it("generates an id with the sticker- prefix", () => {
+    const unit = createDefaultStickerUnit({ primitiveRef: testRef });
     expect(unit.id).toMatch(/^sticker-[a-z0-9]+$/);
   });
+});
 
-  it("createDefaultStickerUnit accepts sourceLoop=null (Phase 3 chimera hook)", () => {
-    const unit = createDefaultStickerUnit({ sourceLoop: null });
-    expect(unit.sourceLoop).toBeNull();
+describe("createDefaultStickerSheet", () => {
+  it("creates a sheet with an empty sticker array", () => {
+    const sheet = createDefaultStickerSheet();
+    expect(sheet.stickers).toHaveLength(0);
   });
 
-  it("createDefaultStickerSheet returns an empty sheet at 8.5x11 with current timestamps", () => {
+  it("defaults sheetSize to 8.5x11 and name to 'My Sheet'", () => {
+    const sheet = createDefaultStickerSheet();
+    expect(sheet.sheetSize).toBe("8.5x11");
+    expect(sheet.name).toBe("My Sheet");
+  });
+
+  it("initializes createdAt and updatedAt to the current time", () => {
     const before = Date.now();
     const sheet = createDefaultStickerSheet();
     const after = Date.now();
-
-    expect(sheet.sheetSize).toBe("8.5x11");
-    expect(sheet.stickers).toEqual([]);
-    expect(sheet.name).toBe("My Sheet");
     expect(sheet.createdAt).toBeGreaterThanOrEqual(before);
     expect(sheet.createdAt).toBeLessThanOrEqual(after);
     expect(sheet.updatedAt).toBe(sheet.createdAt);
-    expect(sheet.id).toMatch(/^sheet-[a-z0-9]+$/);
   });
 });
