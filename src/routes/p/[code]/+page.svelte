@@ -805,7 +805,7 @@
 
   /* Viewer + export panel container */
   .viewer-and-export {
-    --export-sidebar-width: 320px;
+    --export-sidebar-width: 560px;
     position: relative;
     flex: 1;
     min-height: 0;
