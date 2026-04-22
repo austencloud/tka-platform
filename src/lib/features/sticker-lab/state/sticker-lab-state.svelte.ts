@@ -1,5 +1,5 @@
 import type {
-  LoopRef,
+  MandalaPrimitiveRef,
   StickerBackground,
   StickerSheet,
   StickerVariant,
@@ -15,7 +15,7 @@ import type { IStickerSheetRepository } from "../services/contracts/IStickerShee
 
 export interface StickerLabState {
   readonly sheet: StickerSheet;
-  addLoop(ref: LoopRef): void;
+  addPrimitive(ref: MandalaPrimitiveRef): void;
   setVariant(stickerId: string, variant: StickerVariant): void;
   setBackground(stickerId: string, background: StickerBackground): void;
   setCopies(stickerId: string, copies: number): void;
@@ -39,9 +39,23 @@ export function createStickerLabState(
       return sheet;
     },
 
-    addLoop(ref: LoopRef): void {
-      if (sheet.stickers.some((s) => s.sourceLoop?.sequenceId === ref.sequenceId)) return;
-      const unit = createDefaultStickerUnit({ sourceLoop: ref });
+    addPrimitive(ref: MandalaPrimitiveRef): void {
+      // Deduplicate by shapeHash — one shape tile per sheet entry.
+      const existing = sheet.stickers.find(
+        (s) => s.primitiveRef.shapeHash === ref.shapeHash
+      );
+      if (existing) {
+        // Increment copies on existing entry rather than adding a duplicate unit.
+        const clamped = Math.min(MAX_COPIES_PER_STICKER, existing.copies + 1);
+        mutate((s) => ({
+          ...s,
+          stickers: s.stickers.map((x) =>
+            x.id === existing.id ? { ...x, copies: clamped } : x
+          ),
+        }));
+        return;
+      }
+      const unit = createDefaultStickerUnit({ primitiveRef: ref });
       mutate((s) => ({ ...s, stickers: [...s.stickers, unit] }));
     },
 
