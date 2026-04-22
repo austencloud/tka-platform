@@ -6,7 +6,15 @@
    blue accent and remains AA-or-better for any effort color.
    ========================================================================== */
 
+/* Establish a size container so descendants can branch on the actual
+   rendered width of the pill row (not the viewport). The desktop sidebar
+   is ~380px wide, far narrower than the viewport; viewport-based media
+   queries can't tell that "EFFECTS / EFFORT / PLAYBACK / DISPLAY / EXPORT"
+   has no chance of fitting in five same-width pills. Container queries
+   on .pill-nav let us drop the label text below a width threshold. */
 .pill-nav {
+  container-type: inline-size;
+  container-name: pill-nav;
   display: flex;
   gap: 6px;
   padding: 6px;
@@ -21,15 +29,19 @@
 }
 
 .pill {
-  flex: 1;
+  flex: 1 1 0;
   min-width: 0;
+  /* Prevent overflow into adjacent pills. Without this, long labels and
+     summaries push past the pill border and visually bleed into the
+     neighbor — the bug Austen called out at narrow sidebar widths. */
+  overflow: hidden;
   min-height: var(--min-touch-target, 48px);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 4px;
-  padding: 8px 6px;
+  padding: 8px 4px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(20, 22, 32, 0.78);
   backdrop-filter: blur(20px) saturate(140%);
@@ -44,7 +56,7 @@
 
 .pill-nav.variant-mobile .pill {
   min-height: 60px;
-  padding: 10px 6px;
+  padding: 10px 4px;
 }
 
 .pill:hover:not([aria-pressed="true"]) {
@@ -70,8 +82,23 @@
 .pill-icon-row {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   font-size: 13px;
+  /* Truncation chain: this row may need to shrink below its content
+     width when the pill is narrow. min-width:0 unlocks shrink-below-
+     content; max-width:100% caps it; overflow:hidden + the per-child
+     ellipsis on .pill-label handles the cut. Without this row's
+     min-width:0, .pill-label's `text-overflow: ellipsis` would not
+     fire — it would push past the pill border instead. */
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.pill-icon-row > i,
+.pill-icon-row .effort-dot {
+  flex-shrink: 0;
 }
 
 .pill-icon-row .effort-dot {
@@ -80,7 +107,6 @@
   border-radius: 50%;
   background: var(--pill-accent, currentColor);
   box-shadow: 0 0 6px var(--pill-accent, currentColor);
-  flex-shrink: 0;
 }
 
 .pill-label {
@@ -90,6 +116,15 @@
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.7);
   line-height: 1;
+  /* Bound the label to its share of the icon row so it cannot overflow
+     out of the pill. The ellipsis is a defense for medium widths; below
+     ~460px container width the @container rule below hides the label
+     entirely (icon + summary carry the identity). */
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .pill[aria-pressed="true"] .pill-label {
@@ -104,6 +139,7 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  min-width: 0;
   max-width: 100%;
   line-height: 1.2;
 }
@@ -118,6 +154,32 @@
    to approximately 7.9:1 — clearing the AAA 7:1 threshold for normal text. */
 .pill-summary.empty {
   color: rgba(255, 255, 255, 0.65);
+}
+
+/* When the pill row is narrow enough that 5 same-width pills can't show
+   their full labels (the desktop sidebar at ~380px, mobile at <430px),
+   hide the text label and lean on the icon + summary. The icon carries
+   the identity; the summary carries the live state. Threshold derived
+   empirically: at 460px / 5 pills = 92px each; subtract gaps and
+   padding leaves ~80px per pill, which fits an 8-char uppercase label
+   ("PLAYBACK") at 12px bold only with no breathing room.
+
+   Effort is icon-less (uses an effort-dot instead) so we keep its dot
+   visible — the @container rule only hides .pill-label, not the dot. */
+@container pill-nav (max-width: 460px) {
+  .pill-label {
+    display: none;
+  }
+  .pill-icon-row {
+    font-size: 16px;
+  }
+  /* Effort pill is icon-less (uses .effort-dot for color identity); when
+     the text label is gone, bump the dot so it carries the identity on
+     its own. */
+  .pill-icon-row .effort-dot {
+    width: 14px;
+    height: 14px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
