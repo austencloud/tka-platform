@@ -30,7 +30,9 @@
           TabComponent = null;
         });
     } else {
-      loadError = `Unknown tab: ${activeTab}`;
+      if (navigationState.currentModule === "social") {
+        loadError = `Unknown tab: ${activeTab}`;
+      }
       TabComponent = null;
     }
   });
