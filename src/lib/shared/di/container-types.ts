@@ -18,7 +18,6 @@
 import type { CoreContainer } from "./containers/core-container";
 import type { DataContainerType } from "./containers/data-container";
 import type { KeyboardContainer } from "./containers/keyboard-container";
-import type { AnalyticsContainer } from "./containers/analytics-container";
 import type { PresenceContainer } from "./containers/presence-container";
 import type { CommunityContainer } from "./containers/community-container";
 import type { WriteContainer } from "./containers/write-container";
@@ -105,7 +104,6 @@ type CompositionItems = ItemsOf<CompositionContainer>;
 type CoreItems = ItemsOf<CoreContainer>;
 type DataItems = ItemsOf<DataContainerType>;
 type KeyboardItems = ItemsOf<KeyboardContainer>;
-type AnalyticsItems = ItemsOf<AnalyticsContainer>;
 type PresenceItems = ItemsOf<PresenceContainer>;
 type CommunityItems = ItemsOf<CommunityContainer>;
 type WriteItems = ItemsOf<WriteContainer>;
@@ -215,7 +213,6 @@ export type IAppContainerItems =
 	AdminItems &
 	PromoItems &
 	KeyboardItems &
-	AnalyticsItems &
 	PresenceItems &
 	CommunityItems &
 	WriteItems &

@@ -30,6 +30,7 @@ import {
   type User,
 } from "firebase/auth";
 import { container } from "../../di";
+import { getActivityLogger } from "../../analytics/getActivityLogger";
 
 // Service imports
 import type { IProfilePictureManager } from "../services/contracts/IProfilePictureManager";
@@ -440,7 +441,7 @@ export async function initializeAuthListener() {
       if (user && !childServicesInitialized) {
         childServicesInitialized = true;
         try {
-          const activityService = container.items.activityLogger;
+          const activityService = getActivityLogger();
           if (activityService) {
             activityService.logSessionStart().catch((error: unknown) => {
               console.warn(
