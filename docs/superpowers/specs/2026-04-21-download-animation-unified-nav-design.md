@@ -20,13 +20,23 @@ The original spec body shipped several design errors that the implementation pla
 7. **`PlaybackPanel.svelte` is deleted as orphan** in pre-flight (no consumer; the Playback pill body inlines `TempoControl` + `PlaybackModeToggle`).
 8. **Pills use `role="button"` + `aria-pressed`, NOT `role="tab"` + `aria-selected`.** The `tab`/`tabpanel` ARIA pattern requires the panel to be a permanent DOM sibling linked via `aria-controls`. The pill bodies are conditionally mounted (one at a time) and on mobile they live inside a portal'd `role="dialog"` — neither is a tabpanel. Mobile pill buttons additionally carry `aria-haspopup="dialog"`.
 9. **Shared `.rt-*` primitives (`.rt-section`, `.rt-section-label`, `.rt-chip-row`, `.rt-chip`, `.rt-row`, `.rt-row-label`) are promoted from `RailBentoSheet`'s `:global(.bento-sheet-body ...)` scope into `rail-tile.css`** so they apply equally inside the desktop inline pill body and the mobile sheet. (Pre-flight task in the plan.)
-10. **Touch targets in the shared primitives are bumped to AAA-grade 44px:** `.rt-step-btn` 24×24 → 44×44, `.bento-sheet-close` 28×28 → 44×44, `.rt-chip` 38px tall → 44px tall. (Pre-flight task in the plan.)
-11. **`RailBentoSheet` adds a focus trap, returns focus to the activating pill on close, and honors `prefers-reduced-motion` on its fly/fade transitions.** Pill button refs are tracked so the sheet can restore focus on dismiss. (Pre-flight task in the plan.)
-12. **The Display pill body wraps `DisplayPanel` and `PathShapePanel` in `role="group"` regions** with explicit "Visibility" and "Motion paths" section labels (linked via `aria-labelledby`).
+10. **Touch targets in the shared primitives are bumped to AAA-grade 44px:** `.rt-chip` 38px tall → 44px tall (global, via Task 0e's promotion), `.bento-sheet-close` 28×28 → 44×44 (global), and `.rt-step-btn` 24×24 → 44×44 **scoped to `.rt-row` descendants only** (the Export pill's Loops stepper). The base `.rt-step-btn` stays at 24×24 so `ExportImagePanel`'s compact Columns stepper (inside a 72px-tall `.rt-tile`) doesn't regress. (Pre-flight tasks in the plan.)
+11. **`RailBentoSheet` adds a focus trap, returns focus to the activating pill on close, and honors `prefers-reduced-motion` on its fly/fade transitions.** Focus restoration is **id-based**: the parent stores `lastActivatedPillId: PillId | null` and re-queries the live `pillNavEl` via `findPillButton(id)` whenever it hands `returnFocusTo` to `PillBody`. Element-ref-based tracking was rejected because it would (a) silently fail when `closePill()` clears the ref before the sheet's unmount cleanup reads it and (b) point at detached DOM after a layout-flip remount of `DownloadPillNav`. (Pre-flight task in the plan.)
+12. **The Display pill body wraps `DisplayPanel` and `PathShapePanel` in `role="region"` landmarks** with explicit "Visibility" and "Motion paths" section labels (linked via `aria-labelledby`). Region — not `group` — because these are named content landmarks, not form-control groups; `role="group"` makes JAWS/NVDA announce "group" before each label, which is misleading here.
 13. **Pill typography and contrast meet AAA:** `.pill-label` and `.pill-summary` use `var(--font-size-compact, 12px)` (the project's typography floor — no 9px or 10px text). Active-state foreground uses solid white, not a color-mix that drifts below the 7:1 threshold. Focus outlines use the opaque accent color, not 0.6 alpha.
 14. **DownloadPillNav's keyboard model implements the WAI-ARIA toolbar pattern**: ←/→ moves focus (with wrap), `Home`/`End` jump to first/last, `Enter`/`Space` activate. The legacy `"Spacebar"` key name is dropped — only `e.key === " "` is checked.
 15. **`activePillId` is reactive to `layout` changes via `$effect`**, not a one-shot `$state` initializer. If the parent flips `layout="bottom"` → `layout="sidebar"` without remounting, the desktop sidebar still defaults to "effects" so the spec's "one pill always active on desktop" invariant holds.
 16. **Tasks 6 and 7 are merged into a single atomic task** so the working tree never carries a half-rewritten `ExportVideoDrawer.svelte` between commits.
+
+### Round 4 additions (silent-failure + fallback AAA)
+
+17. **No duplicated landmarks.** The mobile outer `<div class="mobile-export">` already carries `role="region" aria-label="Animation export"`. The inner `<div class="rt-zone">` that wraps the pill row and download button does **not** carry a second `role="group"` with the same label — nested landmarks with identical accessible names cause SR duplication. The inner wrapper is an interaction scope only.
+18. **Reduced-motion gates panel mount/unmount fades.** Both `.mobile-export` and `.export-panel.sidebar` wrappers use `transition:fade={{ duration: reduceMotion ? 0 : 200 }}`. `reduceMotion` is a synchronously-initialized `$state` in ExportVideoDrawer (mirroring `RailBentoSheet`'s pattern) with a matchMedia change listener attached via `$effect` + cleanup. CSS `@media (prefers-reduced-motion: reduce)` does not cover Svelte transition directives because the directive is evaluated in JS at mount time.
+19. **Fallback lane clears AAA.** CSS text colors that read `var(--theme-text-dim, rgba(255,255,255,0.5))` are raised to `rgba(255,255,255,0.75)` in the fallback so the SSR / missing-token lane (first paint, custom theme, test harness) still clears 7:1 on panel-bg instead of the prior ~5.2:1.
+20. **Pure summary helpers surface upstream corruption.** `computeEffectsSummary`, `computePlaybackSummary`, and `computeExportSummary` validate their inputs: empty/non-string `activeEffect` → `"Off"`, non-finite/non-positive `bpm` → `"— BPM • <mode>"`, non-canonical `resolution` or non-finite `fps` → `"— • — fps"`. Each fallback emits a `console.warn` naming the offending input so the root cause surfaces in dev tools instead of being laundered into a plausible-looking label.
+21. **DownloadPillNav focus survives brief DOM staleness.** The nav root carries `tabindex="-1"`; `focusPillAt(idx)` falls back to focusing `navEl` when the pill query returns null (mid-remount / mid-layout-flip) so the keyboard user's next keypress still lands inside the component.
+22. **`onNavMount` never flickers null mid-life.** The `$effect` in DownloadPillNav is gated with `if (!navEl) return;` and fires `onNavMount(navEl)` unconditionally; the cleanup `return () => onNavMount?.(null)` is the single canonical null signal.
+23. **Defensive narrowings in RailBentoSheet:** Escape handler checks `target instanceof Element` before calling `.closest()`; `getFocusables()` wraps the `checkVisibility()` invocation in try/catch with a per-element `offsetParent !== null` fallback.
 
 The body below is otherwise still accurate (component decomposition, RailBentoSheet reuse, mobile/desktop layout strategy).
 
@@ -159,7 +169,15 @@ src/lib/shared/sequence-viewer/components/
 ### `pill-types.ts`
 
 ```ts
-export type PillId = "effects" | "effort" | "playback" | "display" | "export";
+export const PILL_ORDER = [
+  "effects",
+  "effort",
+  "playback",
+  "display",
+  "export",
+] as const;
+
+export type PillId = (typeof PILL_ORDER)[number];
 
 export interface PillSpec {
   id: PillId;
@@ -167,6 +185,18 @@ export interface PillSpec {
   icon?: string;          // FontAwesome class, e.g. "fa-sparkles". Optional for Effort (uses color dot).
   summary: string;        // live, derived in parent and passed in
   accentColor?: string;   // optional override (Effort uses effort.color)
+}
+
+/**
+ * Build the ordered PillSpec array from a PillId-keyed record. Using a
+ * Record forces every PillId to be supplied at compile time, so adding
+ * a new id to PILL_ORDER fails the type check until a spec is provided.
+ * No runtime drift guard needed.
+ */
+export function buildPillSpecs(
+  specs: Record<PillId, Omit<PillSpec, "id">>,
+): PillSpec[] {
+  return PILL_ORDER.map((id) => ({ id, ...specs[id] }));
 }
 ```
 
@@ -177,13 +207,16 @@ Pure presentational. Props:
 ```ts
 interface Props {
   pills: PillSpec[];
-  activeId: PillId;
+  activeId: PillId | null;         // null = no pill active (mobile closed state)
   onSelect: (id: PillId) => void;
   variant: "mobile" | "desktop";   // controls sizing/spacing only
+  /** Optional. Parent receives the nav root on mount and `null` on
+   *  unmount so it doesn't hold a detached reference after a layout flip. */
+  onNavMount?: (el: HTMLDivElement | null) => void;
 }
 ```
 
-Renders the 5 pills in a horizontal flex row. Mobile variant uses larger touch targets (min-height 56px); desktop uses a tighter 44px. Active pill gets the rail-chip blue tint or the `accentColor` override.
+Renders the 5 pills in a horizontal flex row. Mobile variant uses larger touch targets (min-height 60px) to comfortably exceed AAA 44×44; desktop uses a tighter 48px. Active pill gets the rail-chip blue tint or the `accentColor` override.
 
 ### `PillBody.svelte`
 
@@ -194,6 +227,9 @@ interface Props {
   title: string;            // Pill label (e.g. "Effects"); shown in sheet header on mobile
   variant: "mobile" | "desktop";
   onClose?: () => void;     // only used in mobile variant
+  /** Mobile only: element to restore focus to when the sheet closes.
+   *  Forwarded to RailBentoSheet via its returnFocusTo prop. */
+  returnFocusTo?: HTMLElement | null;
   children: Snippet;
 }
 ```
@@ -223,7 +259,7 @@ The 5 pill bodies are rendered inline as `{#if activePillId === "effects"}...{:e
 | Effects | Mobile: `<MobileEffectsPanel />`. Desktop: `<EffectsPanel ... showPlayback={!!(onPlaybackToggle && onBpmChange)} />` (desktop keeps the inline play/pause + tempo control via the EffectsPanel's `showPlayback` branch — no regression vs the prior desktop UX). |
 | Effort | `<EffortPanel />` |
 | Playback | `<TempoControl />` + `<PlaybackModeToggle />`. Tempo + mode only — these describe in-canvas preview behavior. Loops, Start Hold, End Hold all describe the OUTPUT video and live in Export. |
-| Display | "Visibility" section label + `<DisplayPanel />` + "Motion paths" section label + `<PathShapePanel />`, both wrapped in `role="group"` with `aria-labelledby` to the matching section label. |
+| Display | "Visibility" section label + `<DisplayPanel />` + "Motion paths" section label + `<PathShapePanel />`, both wrapped in `role="region"` with `aria-labelledby` to the matching section label (content landmarks, not form-control groups). |
 | Export | FPS chips + Resolution chips + Quality chips (3D only) + Timing (Start Hold / End Hold) chips + Loops stepper + duration line. |
 
 ### Loops + Timing live in Export, not Playback
@@ -294,9 +330,14 @@ const exportSummary = $derived.by(() => {
   const resLabel = renderMode === "3d"
     ? `${r}×${r}`
     : (r >= 4320 ? "8K" : r >= 2160 ? "4K" : `${r}p`);
-  return `${resLabel} • ${exportOptions.videoFps} fps`;
+  const loops = exportOptions.videoLoopCount;
+  const loopLabel = loops > 1 ? ` • ${loops}×` : "";
+  return `${resLabel} • ${exportOptions.videoFps} fps${loopLabel}`;
 });
 ```
+
+(The implementation extracts this as a pure helper `computeExportSummary` in
+`pill-summaries.ts` so the 2D/3D branch and loop-append logic are unit-tested.)
 
 ### Effort summary
 
@@ -333,20 +374,23 @@ Pills use the existing `rail-tile.css:.rt-tile` cascade for resting, hover, and 
   /* Inherits .rt-tile background/border/transition */
 }
 
-.pill-nav.variant-mobile .pill { min-height: 56px; }
+.pill-nav.variant-mobile .pill { min-height: 60px; }
 
+/* Typography respects the project's 12px floor (--font-size-compact).
+   No 9/10px text — those fall below the readability threshold and have
+   historically caused accessibility regressions. */
 .pill-label {
-  font-size: 9px;
+  font-size: var(--font-size-compact, 12px);
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.55);
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .pill-summary {
-  font-size: 10px;
+  font-size: var(--font-size-compact, 12px);
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.85);
+  color: rgba(255, 255, 255, 0.92);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
   overflow: hidden;
@@ -354,9 +398,18 @@ Pills use the existing `rail-tile.css:.rt-tile` cascade for resting, hover, and 
   max-width: 100%;
 }
 
+/* Active state uses SOLID white for both label and summary so the
+   foreground never drifts below the AAA 7:1 threshold via color-mix
+   composition against the semi-transparent active background. */
 .pill[aria-pressed="true"] .pill-label,
 .pill[aria-pressed="true"] .pill-summary {
-  color: var(--pill-accent, #c5ddff);
+  color: white;
+}
+
+/* Opaque focus outline — no 0.6-alpha composite that drops below 3:1. */
+.pill:focus-visible {
+  outline: 2px solid var(--pill-focus, #4a9eff);
+  outline-offset: 2px;
 }
 
 .pill .effort-dot {
@@ -428,9 +481,9 @@ Listed above.
 - Delete obsolete CSS: any `.rt-grid-2x2` usage in this file (the 2×2 tile grid is gone), the desktop `.setting-row` cascade (replaced by inline pill bodies that already have their own styling), and the `settings-summary` derivation (no longer used — pills carry their own summaries).
 - Keep: `.mobile-export`, `.mobile-progress`, `.export-panel.sidebar`, `.panel-footer`, `.export-row`, `.export-btn`, `.time-estimate`, `.video-duration-line`.
 
-### Migration of Loops from Export to Playback
+### Loops + Timing stay in the Export pill
 
-In the new Playback pill body, append a Loops row using the existing stepper markup. In the new Export pill body, omit the Loops row. Total footprint: ~30 lines moved between two `{#if activePillId === ...}` blocks. State writes still go through `exportOptions.setVideoLoopCount`.
+Loops (concatenation count), Start Hold, and End Hold describe the **output video file**, not in-canvas preview playback. They belong with the other output-format controls (FPS, resolution, quality) under the Export pill body, NOT under Playback. The Playback pill body is Tempo + Mode only. State writes still go through `exportOptions.setVideoLoopCount`, `setVideoIncludeStartPosition`, `setVideoIncludeEndHold`.
 
 ## Testing
 
@@ -445,7 +498,7 @@ Visual via Chrome DevTools MCP at the two canonical viewports:
 
 Behavioral checks:
 
-- Toggle a Display visibility flag, verify the Display pill summary updates from `5 / 8 on` to `4 / 8 on`.
+- Toggle a Display visibility flag, verify the Display pill summary updates from `4 / 7 visible · arc` to `3 / 7 visible · arc` (or equivalent count, depending on the starting state).
 - Change effort, verify the Effort pill border + dot recolor.
 - Change FPS or resolution, verify the Export pill summary updates.
 - Mobile: tap each pill in sequence, confirm only one sheet open at a time and old sheet closes cleanly.
@@ -476,7 +529,7 @@ None remaining. All design questions addressed by autonomous defaults grounded i
 - ✅ **No "checkboxes":** every toggle in DisplayPanel uses the existing `toggle-indicator` pattern; pills use `aria-pressed` not `aria-checked`.
 - ✅ **Verification grounded:** every claim about file paths and method names was derived from current grep/read output, not from memory of past structure.
 - ✅ **Consistency with prior decisions:** explicitly supersedes the 4-tile bento for the nav (not a parallel addition); preserves the rail-tile and sheet primitives.
-- ✅ **Accessibility:** keyboard nav specified (←/→ + Enter/Space + Escape), `aria-pressed` on pills, `role="region"` preserved, sheet `role="dialog"` already correct in `RailBentoSheet`.
+- ✅ **Accessibility:** keyboard nav specified (←/→ with wrap + Home/End + Enter/Space + Escape), `aria-pressed` on pills with `aria-haspopup="dialog"` on the mobile variant, `role="region"` + `aria-label` on desktop PillBody (no `aria-live` — announcement duty moved to a visually-hidden status line in the parent), sheet `role="dialog"` + focus trap + focus restoration hardened in Task 0g.
 - ✅ **No emojis** in spec.
 - ✅ **No ambiguous "TBD" or "later" markers.**
 
@@ -489,7 +542,7 @@ None remaining. All design questions addressed by autonomous defaults grounded i
 | Architecture | A | Clean two-component split (`DownloadPillNav` + `PillBody`); no new state; reuses existing managers and panels. The single shared template for mobile + desktop avoids the most common bug class (drift between viewports). |
 | Code quality | A | Pure-presentational components; props well-typed via `PillSpec`; derived state isolated in the parent; no inline business logic in the new components. |
 | Svelte 5 | A | All new components use `$props()`, `$state()`, `$derived()`. No legacy `$:` blocks. Snippets used for body content. |
-| Accessibility | A | `aria-pressed` on pills, `aria-label` on the nav (`"Download settings"`), keyboard navigation specified, `role="dialog"` preserved on the sheet, `prefers-reduced-motion` inherited from `rail-tile.css`. Touch targets ≥44px (mobile = 56px). |
+| Accessibility | A | `aria-pressed` on pills, `aria-label` on the nav (`"Download settings"`), WAI-ARIA toolbar keyboard pattern (←/→ wrap, Home/End, Enter/Space), `aria-haspopup="dialog"` on mobile pills, `role="dialog"` + focus trap + focus restoration on the mobile sheet, `role="region"` + `aria-label` (no live region) on desktop PillBody, a dedicated sr-only `aria-live="polite"` status line for pill-switch announcements, `prefers-reduced-motion` honored on sheet transitions + pill hover. Touch targets ≥44px (mobile pill = 60px, `.rt-step-btn` in `.rt-row` + `.bento-sheet-close` + `.rt-chip` all bumped to 44×44). |
 | UX states | A | Resting, hover, active, focus, sheet-open, sheet-closing, exporting, idle — all enumerated in the interaction-model table. |
 | UI consistency | A | Pills are a thin extension of the existing rail-tile primitive; Effort tinting reuses the same `--effort-color` mechanism already in `rail-tile.css`. Visual language carries forward. |
 | Performance | A | `$derived` only re-runs when `vmVersion` ticks or relevant primitive props change. Body components are conditionally mounted (one at a time on desktop, one at most on mobile); old body unmounts cleanly. No new observers, no extra work per frame. |
@@ -504,7 +557,7 @@ None remaining. All design questions addressed by autonomous defaults grounded i
 | Risk | Likelihood | Impact | Mitigation |
 |---|---|---|---|
 | `MobileEffectsPanel` and `EffectsPanel` divergence — desktop Effects pill might show a control that Mobile sheet doesn't, leading to a feature-parity gap. | Med | Low | Both are existing components used by the prior mobile bento — already shipping. We're not changing them; we're choosing the right one per variant exactly as the bento spec already does. |
-| Loops moving from Export → Playback might confuse users who learned the prior bento. | Low | Low | The bento is brand new (a few weeks old per `2026-04-19` spec date). Migration is invisible to users who haven't internalized the prior layout. Also: Loops is more semantically Playback and the new placement is more discoverable. |
+| Loops staying in Export (the prior bento already had it there) might not match user mental models if they expect it with Playback. | Low | Low | The bento is brand new (a few weeks old per `2026-04-19` spec date). Loops semantically describes the output video file (how many times it concatenates), not the in-canvas preview — the Export placement matches that model. The Playback pill body makes this explicit by showing only Tempo + Mode. |
 | Desktop sidebar going from "all settings flat" to "click a pill to see settings" hides info that was previously visible. | Med | Med | Pill summaries on every pill make state visible without opening. Desktop sidebar is wide enough that the active body shows in full — no info hidden. The trade is one click to access vs. one scroll. Net win: consistent with mobile. |
 | Effort accent color leaking from the Effort pill into other pills via CSS cascade. | Low | Med | `--pill-accent` is set inline on the Effort pill only; other pills don't read this variable. Verified the cascade is contained per-pill in `pill-nav.css` selectors above. |
 | Sheet height + pill row + download button stacking on small phones (e.g. 360×640) might leave too little canvas. | Low | Med | Sheet caps at 72%, pill+download is ~110px reserved. Worst case: ~28% canvas height = ~140px on a 640px-tall phone — still readable. If reports come in, lower the sheet cap to 65%. |
