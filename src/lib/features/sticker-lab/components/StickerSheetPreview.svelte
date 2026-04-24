@@ -54,8 +54,8 @@
 
 <div class="preview">
   <div class="toolbar">
-    <label><input type="checkbox" bind:checked={showCutLines} /> Cut lines</label>
-    <label><input type="checkbox" bind:checked={showBleed} /> Bleed</label>
+    <button class="toggle-btn" aria-pressed={showCutLines} onclick={() => showCutLines = !showCutLines}>Cut lines</button>
+    <button class="toggle-btn" aria-pressed={showBleed} onclick={() => showBleed = !showBleed}>Bleed</button>
     <span class="count">{flattened.length} stickers across {layout.pages} sheet{layout.pages === 1 ? "" : "s"}</span>
     {#if layout.pages > 1}
       <nav class="pager">
@@ -71,6 +71,7 @@
       class="sheet"
       style:--sheet-w="{layout.sheetWidthIn}in"
       style:--sheet-h="{layout.sheetHeightIn}in"
+      style:--sheet-ar="{layout.sheetWidthIn} / {layout.sheetHeightIn}"
       style:--cols={layout.cols}
       style:--rows={layout.rows}
       class:show-cut-lines={showCutLines}
@@ -105,7 +106,19 @@
     font-size: 12px;
     color: var(--theme-text, white);
   }
-  .toolbar label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+  .toolbar .toggle-btn {
+    padding: 4px 10px;
+    border-radius: 4px;
+    border: 1px solid rgba(255,255,255,0.15);
+    background: transparent;
+    color: var(--theme-text, white);
+    cursor: pointer;
+    font-size: 12px;
+  }
+  .toolbar .toggle-btn[aria-pressed="true"] {
+    background: rgba(255,255,255,0.15);
+    border-color: rgba(255,255,255,0.3);
+  }
   .toolbar .count { margin-left: auto; opacity: 0.6; }
   .pager { display: flex; align-items: center; gap: 8px; }
   .pager button {
@@ -137,7 +150,7 @@
     height: calc(var(--sheet-h));
     max-width: 100%;
     max-height: 100%;
-    aspect-ratio: var(--sheet-w) / var(--sheet-h);
+    aspect-ratio: var(--sheet-ar);
     background: #f9f6ef;
     box-shadow: 0 4px 24px rgba(0,0,0,0.5);
     display: grid;

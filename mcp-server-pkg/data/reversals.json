@@ -86,7 +86,7 @@
     "staticBeatReversals": {
       "description": "Reversal with beat of no motion in between",
       "notation": "Still mark with R for prop reversal indication",
-      "example": "BDELTA;MX sequence with right hand stops on beats 2 and 4"
+      "example": "BΔMX sequence with right hand stops on beats 2 and 4"
     }
   },
   "sequenceEffects": {

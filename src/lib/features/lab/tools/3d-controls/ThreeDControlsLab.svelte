@@ -24,15 +24,15 @@
   // ── State ────────────────────────────────────────────────────────────
 
   // Grid locations
-  let blueLocation = $state(GridLocation.NORTH);
-  let redLocation = $state(GridLocation.EAST);
+  let blueLocation: GridLocation = $state(GridLocation.NORTH);
+  let redLocation: GridLocation = $state(GridLocation.EAST);
 
   // Turns (controls staff rotation angle)
   let blueTurns = $state(1);
   let redTurns = $state(0.5);
 
   // Plane
-  let activePlane = $state(Plane.WALL);
+  let activePlane: Plane = $state(Plane.WALL);
 
   // Visibility
   let blueVisible = $state(true);

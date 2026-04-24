@@ -831,6 +831,7 @@ export default defineConfig({
       }),
   ].filter(Boolean),
   resolve: {
+    dedupe: ["three"],
     alias: {
       // Aliases handled by SvelteKit
     },
@@ -1055,8 +1056,6 @@ export default defineConfig({
     },
     hmr: {
       overlay: true,
-      clientPort: 5173,
-      // Explicit client port
       timeout: 30000, // 30s timeout instead of default 5s
     },
     watch: {

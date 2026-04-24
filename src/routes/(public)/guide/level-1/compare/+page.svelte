@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import ArtboardPage from '../_lib/ArtboardPage.svelte';
-  import { pages } from '../_lib/page-manifest.ts';
+  import { pages } from '../_lib/page-manifest';
   import { originalArtboards } from '../_lib/original-artboards';
 
   onMount(() => {

@@ -63,7 +63,7 @@
     },
     "sixteenCount": {
       "description": "4-letter word repeated 4 times, or 8-letter word repeated twice",
-      "examples": ["GTHETA;OZ", "EDELTA;QY", "CSIGMA;NZITHETA;VW"]
+      "examples": ["GΘOZ", "EΔQY", "CΣNZIΘVW"]
     }
   },
   "positionPatterns": {
@@ -78,14 +78,14 @@
     },
     "type2Loops": {
       "focus": "Using Type 2 letters to travel between alpha/beta and gamma",
-      "examples": ["BSIGMA;TX", "EDELTA;UZ", "OYTHETA;"],
+      "examples": ["BΣTX", "EΔUZ", "OYΘ"],
       "rotationPattern": "Each repetition rotated 180 degrees"
     }
   },
   "reversalLoops": {
     "propReversalLoops": {
       "description": "LOOPs incorporating prop reversals",
-      "examples": ["ESIGMA;QY", "TWKTHETA;", "BDELTA;MX"],
+      "examples": ["EΣQY", "TWKΘ", "BΔMX"],
       "pattern": "Usually Rotated LOOPs",
       "notation": "R/R marks prop reversals"
     },
