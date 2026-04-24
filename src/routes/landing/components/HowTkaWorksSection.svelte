@@ -30,6 +30,7 @@
   import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/implementations/StartPositionDeriver";
   import type { ISequenceHydrator } from "$lib/shared/foundation/services/contracts/ISequenceHydrator";
   import type { PublicSequenceIndex } from "$lib/features/library/domain/models/PublicSequenceIndex";
+  import { LOOPType } from "$lib/features/create/generate/circular/domain/models/circular-models";
   import HowTkaAnimationCard from "./HowTkaAnimationCard.svelte";
 
   interface Props {
@@ -64,7 +65,7 @@
     return { ...motion, propType };
   }
 
-  const LANDING_SEQUENCE_ID = "seq_1774721810120_yigllpcr6";
+  const LANDING_SEQUENCE_ID = "3b7882d6-a87d-4b57-bbfe-8eacb9e39f04";
 
   function setupFromSequence(full: SequenceData) {
     sequence = full;
@@ -153,7 +154,8 @@
         sequenceLength: data.sequenceLength,
         level: data.level,
         isFavorite: false,
-        isCircular: false,
+        isCircular: !!data.loopType,
+        loopType: (data.loopType as LOOPType) ?? null,
         tags: [...data.tags],
         metadata: {},
         ownerId: data.ownerId,
@@ -299,11 +301,11 @@
             columnCount={2}
             bluePropType={propType}
             redPropType={propType}
-            showDifficultyLevel={false}
+            startPositionLayoutOverride="column"
+            showMandala={true}
             showCreatorName={false}
             showNotes={false}
             showBirthday={false}
-            showLoopGlyph={false}
           />
         </div>
         <h3>String them together</h3>
