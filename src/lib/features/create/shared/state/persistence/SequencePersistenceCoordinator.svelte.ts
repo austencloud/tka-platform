@@ -13,7 +13,6 @@ import type { StartPositionData } from "../../domain/models/StartPositionData";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/SequenceData";
 import type { ISequencePersister } from "../../services/contracts/ISequencePersister";
 import { getActivityLogger } from "$lib/shared/analytics/getActivityLogger";
-import type { IActivityLogger } from "$lib/shared/analytics/services/contracts/IActivityLogger";
 import type { ActiveCreateModule } from "$lib/shared/foundation/ui/UITypes";
 
 export interface PersistenceState {
@@ -129,17 +128,15 @@ export function createSequencePersistenceCoordinator(
         // Log sequence save for analytics (non-blocking)
         if (currentSequence) {
           try {
-            const activityService = getActivityLogger() as IActivityLogger | undefined;
-            if (activityService) {
-              void activityService.logSequenceAction(
-                "save",
-                currentSequence.id,
-                {
-                  sequenceWord: currentSequence.word,
-                  sequenceLength: currentSequence.steps.length,
-                }
-              );
-            }
+            const activityLogger = getActivityLogger();
+            void activityLogger.logSequenceAction(
+              "save",
+              currentSequence.id,
+              {
+                sequenceWord: currentSequence.word,
+                sequenceLength: currentSequence.steps.length,
+              }
+            );
           } catch {
             // Silently fail - activity logging is non-critical
           }

@@ -15,8 +15,8 @@
  */
 
 import type { ModuleDefinition, ModuleId, Section } from "../domain/types";
-import type { IActivityLogger } from "../../analytics/services/contracts/IActivityLogger";
 import type { IPresenceTracker } from "../../presence/services/contracts/IPresenceTracker";
+import { getActivityLogger } from "../../analytics/getActivityLogger";
 
 // Lazy container reference to avoid circular dependency with DI
 // The DI container imports navigation-container which imports DeepLinker
@@ -446,14 +446,12 @@ export function createNavigationState() {
       // Include the tab for more granular tracking (e.g., "create:generate")
       if (previousModuleLocal !== moduleId) {
         try {
-          const activityService = tryResolveService<IActivityLogger>("activityLogger");
-          if (activityService) {
-            const moduleWithTab = nextTab ? `${moduleId}:${nextTab}` : moduleId;
-            void activityService.logModuleView(
-              moduleWithTab,
-              previousModuleLocal
-            );
-          }
+          const activityLogger = getActivityLogger();
+          const moduleWithTab = nextTab ? `${moduleId}:${nextTab}` : moduleId;
+          void activityLogger.logModuleView(
+            moduleWithTab,
+            previousModuleLocal
+          );
         } catch {
           // Silently fail - activity logging is non-critical
         }
@@ -552,15 +550,13 @@ export function createNavigationState() {
 
     // Log tab switch for analytics (non-blocking)
     try {
-      const activityService = tryResolveService<IActivityLogger>("activityLogger");
-      if (activityService) {
-        const moduleWithTab = `${currentModule}:${tabId}`;
-        const previousModuleWithTab = `${currentModule}:${previousTab}`;
-        void activityService.logModuleView(
-          moduleWithTab,
-          previousModuleWithTab
-        );
-      }
+      const activityLogger = getActivityLogger();
+      const moduleWithTab = `${currentModule}:${tabId}`;
+      const previousModuleWithTab = `${currentModule}:${previousTab}`;
+      void activityLogger.logModuleView(
+        moduleWithTab,
+        previousModuleWithTab
+      );
     } catch {
       // Silently fail - activity logging is non-critical
     }
