@@ -126,7 +126,7 @@ export type HandPath = "cw" | "ccw" | "dash" | "static" | "hashIn" | "hashOut";
  * All existing sequences default to "wall" when plane is omitted.
  * Note: Level 6 is interradial orientations. Planes are a separate future concept (Level 8).
  */
-export type SpinningPlane = "wall" | "wheel" | "overhead";
+export type SpinningPlane = "wall" | "wheel" | "floor";
 
 // ============================================================================
 // VECTOR DIRECTIONS (for beta offset)

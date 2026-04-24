@@ -77,7 +77,7 @@ export interface MotionData {
     endOrientation?: string;
     turns?: number | "fl";
     /** Spinning plane (future concept, not yet assigned to a level). Defaults to "wall" when omitted. */
-    plane?: "wall" | "wheel" | "overhead";
+    plane?: "wall" | "wheel" | "floor";
 }
 /**
  * A step in a sequence (one beat of motion).
