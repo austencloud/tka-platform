@@ -28,18 +28,51 @@ This plan has been audited twice. The corrections below override anything later 
 ### Round 2 (architecture, ARIA, contrast, touch targets)
 
 8. **CRITICAL:** `.rt-section`, `.rt-section-label`, `.rt-chip-row`, `.rt-chip`, `.rt-row`, `.rt-row-label` exist ONLY inside `:global(.bento-sheet-body ...)` in `RailBentoSheet.svelte`. They DO NOT apply inside the desktop inline pill body — without the fix, the desktop Playback / Display / Export bodies render as unstyled `<button>` + `<div>` elements. Pre-flight Task 0e promotes these selectors into `rail-tile.css` so they apply in both contexts.
-9. **CRITICAL:** Touch targets in shared primitives violate AAA: `.rt-step-btn` is 24×24, `.bento-sheet-close` is 28×28, `.rt-chip` is 38px tall. Pre-flight Task 0f bumps them to 44×44 (AAA).
+9. **CRITICAL:** Touch targets in shared primitives violate AAA: `.rt-step-btn` is 24×24, `.bento-sheet-close` is 28×28, `.rt-chip` is 38px tall. Pre-flight Task 0f bumps them — `.bento-sheet-close` and `.rt-chip` globally, `.rt-step-btn` contextually (see Round 3 item 21 for the scoping fix).
 10. **CRITICAL:** `RailBentoSheet` declares `aria-modal="true"` but does not trap focus, has no focus-visible style on its close button, and does not respect `prefers-reduced-motion` on its `fly`/`fade` transitions. Pre-flight Task 0g hardens it.
 11. **CRITICAL:** `activePillId` cannot be a one-shot `$state(layout === ...)` initializer — that fires once. If `layout` flips between `"bottom"` and `"sidebar"` without a remount, desktop loses its always-on default. The script uses a `$effect` to keep them in sync (Task 6).
-12. **HIGH:** Pills use `role="button"` + `aria-pressed` only (no `role="tab"` / `aria-selected`). The tabs ARIA pattern requires the panel to be a permanent DOM sibling linked via `aria-controls`; pill bodies are conditionally mounted (one at a time on desktop, in a portal'd dialog on mobile). Mobile pills also carry `aria-haspopup="dialog"`. PillBody desktop variant uses `role="region"` + `aria-live="polite"` (not `tabpanel`).
-13. **HIGH:** Focus is restored to the activating pill button when the mobile sheet closes. ExportVideoDrawer keeps a `Map<PillId, HTMLButtonElement>` populated by DownloadPillNav and refocuses on close.
-14. **HIGH:** Tasks 6 and 7 are merged into one atomic task ("rewrite script + template together"). The previous split left the working tree non-building between commits.
+12. **HIGH:** Pills use `role="button"` + `aria-pressed` only (no `role="tab"` / `aria-selected`). The tabs ARIA pattern requires the panel to be a permanent DOM sibling linked via `aria-controls`; pill bodies are conditionally mounted (one at a time on desktop, in a portal'd dialog on mobile). Mobile pills also carry `aria-haspopup="dialog"`. PillBody desktop variant uses `role="region"` with an `aria-label` (not `tabpanel`, and not a live region — see Round 3 item 25).
+13. **HIGH:** Focus is restored to the activating pill button when the mobile sheet closes. ExportVideoDrawer keeps a `lastActivatedPillId: PillId | null` and re-queries the button via `findPillButton` when passing `returnFocusTo` to `PillBody` (see Round 3 item 23 for why id-based beats element-ref-based).
+14. **HIGH:** Tasks 6 and 7 are merged into one atomic task ("rewrite script + template + style together"). The previous split left the working tree carrying a half-rewritten drawer between commits. Round 3 actually performs the merge — see item 27.
 15. **HIGH:** Pill typography meets the project's 12px floor. `.pill-label` and `.pill-summary` use `var(--font-size-compact, 12px)`. Active-state foreground is solid white, not a color-mix that drifts below 7:1 contrast. Focus outlines use the opaque accent color (no 0.6 alpha).
-16. **HIGH:** Display pill body wraps `DisplayPanel` and `PathShapePanel` in `role="group"` regions with explicit "Visibility" and "Motion paths" section labels (linked via `aria-labelledby`).
+16. **HIGH:** Display pill body wraps `DisplayPanel` and `PathShapePanel` in `role="region"` landmarks with explicit "Visibility" and "Motion paths" section labels (linked via `aria-labelledby`). Region — not `group` — because they are named named content sections, not form-control groups (see Round 3 item 26).
 17. **HIGH:** DownloadPillNav implements WAI-ARIA toolbar keyboard pattern: ←/→ wrap focus, `Home`/`End` jump to first/last, `Enter` and `Space` activate. The legacy `"Spacebar"` key name is dropped.
 18. **MEDIUM:** `computeDisplaySummary` signature takes a single record of all toggles (including grid) so the denominator is genuinely arity-derived, not hardcoded `+1`.
 19. **MEDIUM:** `preventSpaceActivation` only fires when the event target is a non-interactive element — it does not swallow space on focused buttons / inputs / sliders inside the panel.
 20. **MEDIUM:** Task 8 verification drops the "viewer URL grep" theatre (asks the user for a URL) and the "CSS brace-balance" theatre (relies on `npm run build` instead).
+
+### Round 3 (runtime correctness, silent-failure, AAA contrast)
+
+21. **CRITICAL:** The Round 2 global bump of `.rt-step-btn` from 24→44 regresses `ExportImagePanel.svelte` — a second consumer whose Columns stepper lives inside a compact `.rt-tile` (min-height 72px). The fix is contextual: keep the base `.rt-step-btn` rule at its legacy 24×24, and add `.rt-row .rt-step-btn { min-width: 44px; min-height: 44px; }` so only the Export pill's Loops stepper (wrapped in `.rt-row`) receives the AAA bump. Task 0f is rewritten accordingly. The ExportImagePanel columns stepper retains its pre-existing AA violation; that is out of scope for this plan and tracked as a follow-up.
+22. **CRITICAL:** `reduceMotion` in Task 0g was read inside `onMount`, which fires AFTER the sheet's entrance `fly`/`fade` transitions have already been evaluated against the default (`false`). Users with `prefers-reduced-motion: reduce` would still see a full 240ms slide-up on the first sheet open. `reduceMotion` must be initialized synchronously at the `$state` initializer using `window.matchMedia?.(...).matches === true` (SSR-guarded), with the change-listener attached in `onMount`.
+23. **CRITICAL:** Element-ref-based focus restoration (`lastActivatedPillEl: HTMLButtonElement | null`) is unsafe in two ways: (a) `closePill()` clears the ref BEFORE the sheet's unmount cleanup reads it, so focus silently falls to `document.body`; (b) on layout flip, `DownloadPillNav` remounts with a new DOM root, leaving the captured element detached. Replace with `lastActivatedPillId: PillId | null` and re-query via `findPillButton(lastActivatedPillId)` at the moment we hand `returnFocusTo` to `PillBody` — the query hits the live `pillNavEl` each time.
+24. **HIGH:** `DownloadPillNav`'s `$effect(() => onNavMount?.(navEl))` never fires with `null` on unmount, so the parent's `pillNavEl` holds a detached div forever after a layout flip. Signature widens to `(el: HTMLDivElement | null) => void` and the effect returns `() => onNavMount?.(null)` for cleanup.
+25. **HIGH:** Desktop `PillBody` used `role="region" aria-live="polite"`, which on pill switch announces the entire new panel subtree (dozens of labels). Replace with `role="region"` alone; move announcement duty to a visually-hidden `aria-live="polite" aria-atomic="true"` status line inside `ExportVideoDrawer` that updates to `"${title} settings"` when `activePillId` changes.
+26. **HIGH:** `role="group"` on the Display sub-sections makes screen readers announce "group" before each label, which is a form-controls idiom; these sections are content regions. Use `role="region"` + `aria-labelledby` instead.
+27. **HIGH:** Round 2 claimed Tasks 6 + 7 were merged but the body still split them (Task 6 did script+template, Task 7 did style). Round 3 actually merges them — the `<style>` replacement becomes Task 6 Step 7 and Task 7 is deleted. Remaining tasks renumber: old Task 8 → Task 7, old Task 9 → Task 8.
+28. **HIGH:** `RailBentoSheet`'s Escape handler dismisses the sheet unconditionally, including when a native `<select>` dropdown is open inside the sheet. On Firefox the sheet vanishes when the user meant to close only the dropdown. Before `onClose()`, bail if `e.target.closest('select, [role="combobox"], [role="listbox"]')` is non-null.
+29. **HIGH:** `getFocusables()` selector omits `[contenteditable]:not([contenteditable="false"])` — future panels with editable surfaces would escape the focus trap. Add the contenteditable fragment to the selector in both `onMount` initial-focus and `getFocusables`.
+30. **HIGH:** `effectsSummary` falls through with `EFFECT_LABELS[active] ?? active`, exposing raw kebab-case ids (e.g. `"per-tip-halation"`) if the map drifts. Fall back to `"Custom"` and log an error so the drift surfaces in telemetry.
+31. **HIGH:** `.pill-summary.empty` at `rgba(255,255,255,0.55)` composites to ~6.13:1 against the pill background — fails AAA (7:1) for normal text. Raise to `rgba(255,255,255,0.65)` (~7.9:1).
+32. **HIGH:** The `$effect` keeping `activePillId` in sync with `layout` only handles the `bottom → sidebar` direction. On a `sidebar → bottom` flip, a desktop-selected pill stays "active", showing a mobile sheet popping open unexpectedly. Effect now handles both directions.
+33. **HIGH:** `computeDisplaySummary` is tested; `computeEffectsSummary`, `computePlaybackSummary`, `computeExportSummary` are NOT. Extract all four to `pill-summaries.ts` as pure functions; add unit tests so an `EFFECT_LABELS` key rename, format-string regression, or 3D/2D branch bug is caught before shipping.
+34. **MEDIUM:** Task 2 Step 4 and Task 9 (now Task 8) Step 4 said "5 tests passed" — the test file had 6 `it` blocks. After extending pill-summaries.ts with the three additional pure helpers, the expected count is 17 (6 Display + 3 Effects + 3 Playback + 5 Export). Both step-level assertions and the success-criteria bullet updated. *(Round 4 raises this to 20 — see item 46 below.)*
+
+### Round 4 (silent-failure hardening, fallback AAA, plan hygiene)
+
+35. **CRITICAL:** The Round 2 `<div class="rt-zone" role="group" aria-label="Animation export">` wrapper sits inside `<div class="mobile-export" role="region" aria-label="Animation export">`. Two nested landmarks with the same accessible name produce duplicated SR announcements ("Animation export … Animation export"). `role="group"` is also semantically wrong — a group is a form-controls idiom, not an interaction wrapper for a pill row plus download button. Remove `role="group"` and `aria-label` from `.rt-zone`; the outer `role="region"` covers the landmark need.
+36. **HIGH:** The mobile `.mobile-export` and desktop `.export-panel.sidebar` wrappers use `transition:fade={{ duration: 200 }}` unconditionally. Svelte transition directives are evaluated in JS and bypass the `@media (prefers-reduced-motion: reduce)` CSS rule below. Users with reduced-motion on see a 200ms fade on every panel mount / layout flip. Fix: declare a synchronously-initialized `reduceMotion` `$state` in the ExportVideoDrawer script (mirroring Task 0g's pattern) and gate both fades with `transition:fade={{ duration: reduceMotion ? 0 : 200 }}`. The `$effect` that attaches the matchMedia change listener is paired with a cleanup that detaches it.
+37. **HIGH:** Fallbacks `var(--theme-text-dim, rgba(255,255,255,0.5))` in `.video-duration-line` and `.time-estimate` composite to ~5.2:1 on panel-bg — below AAA for 12px body text when `--theme-text-dim` is briefly unset (SSR first paint, non-standard theme, test harness without the theme provider). Raise the fallback to `rgba(255,255,255,0.75)` to match the dark-theme calculator's canonical textDim token. The theme-set value is already AAA; only the fallback lane was failing.
+38. **HIGH:** `computeEffectsSummary("", labels)` returns `"Custom"` silently because `labels[""]` is undefined. Similarly `computePlaybackSummary(NaN, mode)` renders `"NaN BPM • ..."` and `computeExportSummary({ resolution: 0, ... })` renders `"0p • 60 fps"`. All three laundry upstream state corruption into plausible-looking labels. Harden each helper: non-string/empty `activeEffect` → `"Off"`; `!Number.isFinite(bpm) || bpm <= 0` → `"— BPM • <mode>"`; non-canonical resolution or non-finite fps → `"— • — fps"`. Each path emits a `console.warn` naming the offending input so the root cause surfaces in dev tools.
+39. **HIGH:** `DownloadPillNav.focusPillAt(idx)` silently no-ops if the `querySelector` by `data-pill-id` returns null (pill DOM briefly stale on layout flip or remount). Keyboard users lose focus to `document.body` with no signal. Fix: fall back to focusing `navEl` itself (which now carries `tabindex="-1"` so programmatic focus works), emit a `console.warn`, and keep focus anchored so the next keypress works.
+40. **HIGH:** `DownloadPillNav`'s `$effect(() => { onNavMount?.(navEl ?? null); return () => onNavMount?.(null); })` re-runs and fires `onNavMount(null)` on every tracked-dep change, flickering the parent's `pillNavEl` cache to null. `findPillButton(id)` reads that cache, so a pill-switch reactive tick lands on a null window. Gate with `if (!navEl) return;` and pass `onNavMount(navEl)` unconditionally — the unmount cleanup is the single canonical null signal.
+41. **MEDIUM:** `RailBentoSheet`'s Escape handler does `(e.target as HTMLElement | null)?.closest(...)`. If `e.target` is a TextNode (shadow-DOM composed-path case), `.closest` throws, bubbles to Svelte's error boundary, and the sheet stops responding to Escape until remount. Narrow with `target instanceof Element` before `.closest`.
+42. **MEDIUM:** `getFocusables()` filter calls `checkVisibility()` without guarding against an exotic browser throwing from within. A single bad element would collapse the whole focus-trap filter pass. Wrap the invocation in try/catch that falls back to `offsetParent !== null` per-element.
+43. **MEDIUM:** `activePillAnnouncement` returns `""` silently when `pills.find` fails to match `activePillId`. An HMR-induced drift between `PILL_ORDER` and the local pills Record would produce this state. Emit a `console.warn` so the drift surfaces instead of an empty SR announcer.
+44. **MEDIUM:** Task 6 Step 1 keeps `VideoFps` and `VideoResolution` type imports. Step 4 deletes `fpsOptions` / `resOptions` (their only consumers); the new template at Step 5 calls `setVideoFps(30|60|120)` and `setVideoResolution(720|1080|2160|4320)` with literal arguments that widen automatically. The types are genuinely orphan — surface as `no-unused-vars` warnings. Drop them from the import block.
+45. **MEDIUM:** Task 6 Step 3 ends with "Also replace the import line for `computeDisplaySummary`" followed by a second copy of the import block already fully written in Step 1. Executed literally, this yields a duplicate import (TypeScript error). Remove the paragraph; Step 1's block is canonical.
+46. **MEDIUM:** Test count rises from 17 → 20. Three new `it` blocks (one per hardened helper) assert the silent-failure fallback and the `console.warn` spy. Import `vi` from vitest to expose `vi.spyOn`.
+47. **MEDIUM:** `.progress-stage` and `.cancel-btn` also use a `0.6α` theme-text-dim fallback (~6.5:1 — above AA but below AAA for 12px text). Raised to `0.75α` for consistency with item 37. No behavior change when `--theme-text-dim` is set, which is the common case.
 
 ---
 
@@ -289,15 +322,35 @@ EOF
 - Modify: `src/lib/shared/sequence-viewer/components/bento/rail-tile.css`
 - Modify: `src/lib/shared/sequence-viewer/components/bento/RailBentoSheet.svelte`
 
-**Why:** `.rt-step-btn` is `width: 24px; height: 24px` and `.bento-sheet-close` is `28×28`. Both fail AA (44×44) and AAA (48×48) touch-target standards. The Loops stepper and the sheet's close button are touch-only on mobile. Bump them to AAA.
+**Why:** `.bento-sheet-close` is `28×28` and `.rt-chip` is `38px` tall; both fail AA (44×44). The `.rt-step-btn` is `24×24` globally, but it is consumed in two contexts:
+- `ExportImagePanel.svelte`'s Columns stepper lives inside a compact `.rt-tile` (min-height 72px). Bumping globally to 44×44 overflows the tile and regresses the Download Card panel's layout.
+- The new Export pill's Loops stepper (Task 6 template) lives inside `.rt-row` (min-height 44px, no ceiling).
 
-- [ ] **Step 1: Edit `.rt-step-btn` in `rail-tile.css`**
+Scope the `.rt-step-btn` bump to `.rt-row` descendants only. `.bento-sheet-close` and `.rt-chip` (already bumped globally in Task 0e) get unconditional AAA treatment because they have no compact-container consumers. ExportImagePanel's pre-existing 24×24 columns stepper AA violation is out of scope for this plan (tracked as a follow-up).
 
-Find the `.rt-step-btn` block (currently lines 133–147). Replace `width: 24px; height: 24px;` with `min-width: var(--min-touch-target, 44px); min-height: var(--min-touch-target, 44px);`. Bump `border-radius` to `10px` to match the larger tap area. Optionally raise `font-size` to `15px` for the `+`/`−` glyphs.
+- [ ] **Step 1: Add contextual bump for `.rt-step-btn` inside `.rt-row` in `rail-tile.css`**
+
+Do NOT edit the existing `.rt-step-btn` block at lines 133–147 — its 24×24 size must be preserved for `ExportImagePanel`'s Columns stepper. Instead, append a new rule near the other `.rt-step-btn` rules:
+
+```css
+/* AAA-grade touch target when the stepper lives inside a full-width row
+   (e.g. the Loops stepper in the Export pill body). ExportImagePanel's
+   Columns stepper lives inside the compact .rt-tile (min-height 72px)
+   and retains the legacy 24×24 sizing. */
+.rt-row .rt-step-btn {
+  min-width: var(--min-touch-target, 44px);
+  min-height: var(--min-touch-target, 44px);
+  border-radius: 10px;
+  font-size: 15px;
+}
+```
 
 - [ ] **Step 2: Edit `.bento-sheet-close` in `RailBentoSheet.svelte`**
 
-Find the `.bento-sheet-close` block (currently lines 145–165). Replace `width: 28px; height: 28px;` with `min-width: var(--min-touch-target, 44px); min-height: var(--min-touch-target, 44px);`. Replace `font-size: 11px` with `font-size: 14px` so the `×` glyph is readable in the larger button.
+Find the `.bento-sheet-close` block (currently lines 145–165). Apply three changes:
+1. Replace `width: 28px; height: 28px;` with `min-width: var(--min-touch-target, 44px); min-height: var(--min-touch-target, 44px);`.
+2. Replace `font-size: 11px` with `font-size: 14px` so the `×` glyph is readable in the larger button.
+3. Replace the `color: rgba(255, 255, 255, 0.55);` line with `color: rgba(255, 255, 255, 0.8);` — the 0.55 alpha composites to ~2.7:1 against the sheet background (`#0d1018`), below WCAG 1.4.11's 3:1 minimum for non-text UI components. `0.8` alpha on the same background computes to ~9:1, clearing AAA.
 
 - [ ] **Step 3: Add focus-visible style to `.bento-sheet-close`**
 
@@ -316,7 +369,7 @@ Append inside the same style block:
 npm run build 2>&1 | tail -5
 ```
 
-The Loops stepper buttons in any existing consumer (RightRail, RenderModeToggle, etc.) will become noticeably bigger. That is the intended fix — they were too small for mobile use.
+Confirm visually (either via the user's dev server or by re-reading `ExportImagePanel.svelte`'s Columns tile markup) that the 3-tile image bento still renders cleanly. The Export pill's Loops stepper (from Task 6) will get the larger 44×44 buttons; nothing else should change.
 
 - [ ] **Step 5: Commit**
 
@@ -324,12 +377,13 @@ The Loops stepper buttons in any existing consumer (RightRail, RenderModeToggle,
 git add src/lib/shared/sequence-viewer/components/bento/rail-tile.css \
         src/lib/shared/sequence-viewer/components/bento/RailBentoSheet.svelte
 git commit -m "$(cat <<'EOF'
-fix(rail-tile, bento-sheet): bump touch targets to AAA 44px
+fix(rail-tile, bento-sheet): AAA touch targets, scoped to new contexts
 
-.rt-step-btn was 24x24, .bento-sheet-close was 28x28 — both fail AA
-(44x44) and AAA (48x48). Mobile is the only way to interact with these
-controls, so the small targets were a real usability bug. Also adds a
-focus-visible outline to the sheet close button.
+.bento-sheet-close bumps globally from 28x28 -> 44x44 (no compact
+consumer). .rt-step-btn gets a contextual bump via .rt-row .rt-step-btn
+so the Export pill Loops stepper hits 44x44 while ExportImagePanel's
+Columns stepper (inside the compact 72px rt-tile) keeps its legacy
+24x24. Adds focus-visible outline to .bento-sheet-close.
 
 Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
 EOF
@@ -368,28 +422,50 @@ Replace the entire `<script lang="ts">` block in `RailBentoSheet.svelte` with:
 
   let sheetEl: HTMLDivElement | undefined;
 
+  // CSS selector for every tab-focusable element inside the sheet.
+  // Keep in sync between initial-focus (onMount) and focus-trap (onSheetKeydown).
+  const FOCUSABLE_SELECTOR =
+    'button:not([disabled]),[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"]),[contenteditable]:not([contenteditable="false"])';
+
   // Honor prefers-reduced-motion for the entrance / exit transitions.
-  let reduceMotion = $state(false);
+  // IMPORTANT: initialize synchronously in the $state initializer — the sheet's
+  // entrance transition:fly/fade is evaluated at mount time, BEFORE onMount
+  // runs. If we set reduceMotion inside onMount, the first animation would
+  // always use the full 240ms even for users who have the reduced-motion
+  // preference enabled.
+  let reduceMotion = $state(
+    typeof window !== "undefined" &&
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+  );
+
   onMount(() => {
-    if (typeof window === "undefined" || !window.matchMedia) return;
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    reduceMotion = mq.matches;
+    // Snapshot returnFocusTo at mount so the cleanup below restores focus
+    // even if the prop has since been reactively re-assigned (e.g. the
+    // parent flipped `lastActivatedPillId` before the sheet finished
+    // unmounting). Element is kept alive by the parent's state.
+    const focusTarget = returnFocusTo;
+
+    const mq =
+      typeof window !== "undefined" && typeof window.matchMedia === "function"
+        ? window.matchMedia("(prefers-reduced-motion: reduce)")
+        : null;
     const handler = (e: MediaQueryListEvent) => { reduceMotion = e.matches; };
-    mq.addEventListener("change", handler);
+    mq?.addEventListener("change", handler);
 
     // Move initial focus into the sheet so the keyboard user lands inside it.
     void tick().then(() => {
-      const first = sheetEl?.querySelector<HTMLElement>(
-        "button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])"
-      );
+      const first = sheetEl?.querySelector<HTMLElement>(FOCUSABLE_SELECTOR);
       first?.focus();
     });
 
     return () => {
-      mq.removeEventListener("change", handler);
-      // Restore focus to the activating element on unmount.
-      if (returnFocusTo && typeof returnFocusTo.focus === "function") {
-        returnFocusTo.focus();
+      mq?.removeEventListener("change", handler);
+      // Restore focus to the activating element on unmount. Only if it is
+      // still connected to the DOM — otherwise focus falls silently to
+      // document.body and keyboard users lose their place.
+      if (focusTarget && typeof focusTarget.focus === "function" && focusTarget.isConnected) {
+        focusTarget.focus();
       }
     };
   });
@@ -397,10 +473,25 @@ Replace the entire `<script lang="ts">` block in `RailBentoSheet.svelte` with:
   function getFocusables(): HTMLElement[] {
     if (!sheetEl) return [];
     return Array.from(
-      sheetEl.querySelectorAll<HTMLElement>(
-        "button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])"
-      )
-    ).filter((el) => el.offsetParent !== null);
+      sheetEl.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
+    ).filter((el) => {
+      // Visible-element filter: prefer checkVisibility() (modern), fall back
+      // to offsetParent (pre-2023). The fallback misses position:fixed
+      // descendants, but the sheet's content never uses fixed positioning.
+      // A defensive try/catch around checkVisibility prevents an exotic
+      // browser bug (Edge legacy has thrown here) from collapsing the whole
+      // focus trap — a single bad element should fall back, not poison the
+      // whole filter pass.
+      const maybeCheckVisibility = (el as HTMLElement & { checkVisibility?: () => boolean }).checkVisibility;
+      if (typeof maybeCheckVisibility === "function") {
+        try {
+          return maybeCheckVisibility.call(el);
+        } catch {
+          return el.offsetParent !== null;
+        }
+      }
+      return el.offsetParent !== null;
+    });
   }
 
   function onBackdropClick() {
@@ -409,6 +500,21 @@ Replace the entire `<script lang="ts">` block in `RailBentoSheet.svelte` with:
 
   function onSheetKeydown(e: KeyboardEvent) {
     if (e.key === "Escape") {
+      // Don't swallow Escape when a native dropdown / combobox / listbox is
+      // open inside the sheet — the user is trying to close THAT, not the
+      // sheet itself. Firefox in particular bubbles Escape from open
+      // <select> elements; without this guard the sheet vanishes when the
+      // user just meant to close the dropdown.
+      //
+      // The `instanceof Element` narrow matters: composed-path events from a
+      // shadow-DOM nested component or a TextNode target would throw on
+      // `.closest`, which — without a handler — bubbles to Svelte's error
+      // boundary and freezes the sheet until remount.
+      const target = e.target;
+      if (target instanceof Element &&
+          target.closest('select, [role="combobox"], [role="listbox"], [role="dialog"], [popover]')) {
+        return;
+      }
       e.preventDefault();
       onClose();
       return;
@@ -600,23 +706,29 @@ EOF
 
 ---
 
-## Task 2: Add the pure summary helper + unit test
+## Task 2: Add the pure summary helpers + unit tests
 
 **Files:**
 - Create: `src/lib/shared/sequence-viewer/components/pill-nav/pill-summaries.ts`
 - Create: `tests/unit/pill-nav/pill-summaries.test.ts`
 
-The Display summary counts visibility flags — 7 things with clear on/off semantics: the 6 toggles exposed in `DisplayPanel` plus grid visibility. Path shape is a binary choice between two valid options (arc vs linear), not on/off, so it is shown explicitly in the summary rather than counted.
+Four of the five pill summaries have real logic: Display (count + path shape), Effects (id→label lookup with drift guard), Playback (bpm + mode), Export (resolution label per 2D/3D branch + fps + optional loop suffix). Only Effort is a passthrough of a label already computed elsewhere. Extract all four as pure functions so key renames, format regressions, and 2D/3D branch bugs are caught by unit tests instead of silently shipping.
 
-The denominator is derived from `Object.values(flags).length`, not hardcoded. Adding a future toggle requires only one change: add the field to the `DisplayFlags` interface. The `+ 1` for grid that the previous draft hardcoded is gone — grid is now a regular field in the same record.
+The Display denominator is derived from `Object.values(flags).length`, not hardcoded. Adding a future toggle requires only one change: add the field to the `DisplayFlags` interface. Grid is a regular field of that record — no hardcoded `+1`.
 
-- [ ] **Step 1: Write the failing test**
+- [ ] **Step 1: Write the failing test suite**
 
 Write `tests/unit/pill-nav/pill-summaries.test.ts`:
 
 ```ts
-import { describe, it, expect } from "vitest";
-import { computeDisplaySummary, type DisplayFlags } from "$lib/shared/sequence-viewer/components/pill-nav/pill-summaries";
+import { describe, it, expect, vi } from "vitest";
+import {
+  computeDisplaySummary,
+  computeEffectsSummary,
+  computePlaybackSummary,
+  computeExportSummary,
+  type DisplayFlags,
+} from "$lib/shared/sequence-viewer/components/pill-nav/pill-summaries";
 
 const allOff: DisplayFlags = {
   tkaGlyph: false,
@@ -668,12 +780,117 @@ describe("computeDisplaySummary", () => {
     expect(Object.keys(allOff).length).toBe(7);
   });
 });
+
+describe("computeEffectsSummary", () => {
+  const labels = { trails: "Trails", fire: "Fire", zap: "Zap" };
+
+  it("returns 'Off' when the active effect id is 'none'", () => {
+    expect(computeEffectsSummary("none", labels)).toBe("Off");
+  });
+
+  it("returns the label from the lookup table for a known id", () => {
+    expect(computeEffectsSummary("trails", labels)).toBe("Trails");
+    expect(computeEffectsSummary("fire", labels)).toBe("Fire");
+  });
+
+  it("falls back to 'Custom' for an unknown id — does NOT leak raw kebab-case", () => {
+    // This guards against silent UI regressions if EFFECT_LABELS ever drifts
+    // from the EffectType union (e.g., a new effect ships in state before its
+    // label is registered).
+    expect(computeEffectsSummary("per-tip-halation", labels)).toBe("Custom");
+  });
+
+  it("returns 'Off' for empty-string / non-string input (silent-failure guard)", () => {
+    // Upstream state corruption (getActiveEffect returning "" or undefined)
+    // must surface as a safe neutral, NOT laundered into "Custom".
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    expect(computeEffectsSummary("", labels)).toBe("Off");
+    expect(computeEffectsSummary(undefined as unknown as string, labels)).toBe("Off");
+    expect(warn).toHaveBeenCalled();
+    warn.mockRestore();
+  });
+});
+
+describe("computePlaybackSummary", () => {
+  it("reports BPM plus continuous mode as 'Cont.'", () => {
+    expect(computePlaybackSummary(120, "continuous")).toBe("120 BPM • Cont.");
+  });
+
+  it("reports BPM plus step mode as 'Step'", () => {
+    expect(computePlaybackSummary(60, "step")).toBe("60 BPM • Step");
+  });
+
+  it("preserves the bpm integer as given (no rounding or coercion)", () => {
+    expect(computePlaybackSummary(92, "continuous")).toBe("92 BPM • Cont.");
+  });
+
+  it("renders '— BPM' for NaN / 0 / negative bpm (silent-failure guard)", () => {
+    // Upstream corruption must surface as a visible "something is wrong"
+    // signal, not a literal "NaN BPM" that blends into the UI.
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    expect(computePlaybackSummary(Number.NaN, "continuous")).toBe("— BPM • Cont.");
+    expect(computePlaybackSummary(0, "step")).toBe("— BPM • Step");
+    expect(computePlaybackSummary(-1, "continuous")).toBe("— BPM • Cont.");
+    expect(warn).toHaveBeenCalled();
+    warn.mockRestore();
+  });
+});
+
+describe("computeExportSummary", () => {
+  it("formats 1080p at 60 fps in 2D mode without a loop suffix when loops === 1", () => {
+    expect(
+      computeExportSummary({ resolution: 1080, fps: 60, loopCount: 1, renderMode: "2d" }),
+    ).toBe("1080p • 60 fps");
+  });
+
+  it("uses × notation for resolution in 3D mode", () => {
+    expect(
+      computeExportSummary({ resolution: 1080, fps: 60, loopCount: 1, renderMode: "3d" }),
+    ).toBe("1080×1080 • 60 fps");
+  });
+
+  it("abbreviates 4K and 8K in 2D mode, passes through × notation in 3D mode", () => {
+    expect(
+      computeExportSummary({ resolution: 2160, fps: 30, loopCount: 1, renderMode: "2d" }),
+    ).toBe("4K • 30 fps");
+    expect(
+      computeExportSummary({ resolution: 4320, fps: 30, loopCount: 1, renderMode: "2d" }),
+    ).toBe("8K • 30 fps");
+    expect(
+      computeExportSummary({ resolution: 4320, fps: 30, loopCount: 1, renderMode: "3d" }),
+    ).toBe("4320×4320 • 30 fps");
+  });
+
+  it("appends ' • Nx' when loopCount > 1", () => {
+    expect(
+      computeExportSummary({ resolution: 720, fps: 30, loopCount: 3, renderMode: "2d" }),
+    ).toBe("720p • 30 fps • 3×");
+  });
+
+  it("returns '— • — fps' for non-canonical resolution / invalid fps (silent-failure guard)", () => {
+    // Resolutions outside {720,1080,2160,4320} are either a state bug or an
+    // untested configuration. Render a visible fallback instead of a
+    // plausible-looking "0p • 60 fps".
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    expect(
+      computeExportSummary({ resolution: 0, fps: 60, loopCount: 1, renderMode: "2d" }),
+    ).toBe("— • — fps");
+    expect(
+      computeExportSummary({ resolution: 999, fps: 60, loopCount: 1, renderMode: "2d" }),
+    ).toBe("— • — fps");
+    expect(
+      computeExportSummary({ resolution: 1080, fps: Number.NaN, loopCount: 1, renderMode: "2d" }),
+    ).toBe("— • — fps");
+    expect(warn).toHaveBeenCalled();
+    warn.mockRestore();
+  });
+});
 ```
 
 - [ ] **Step 2: Run the test to confirm it fails**
 
 ```bash
-npx vitest run tests/unit/pill-nav/pill-summaries.test.ts 2>&1 | tail -15
+npx vitest run tests/unit/pill-nav/pill-summaries.test.ts 2>&1 | tail -20
 ```
 
 Expected: FAIL — "Cannot find module '$lib/.../pill-summaries'".
@@ -684,13 +901,15 @@ Write `src/lib/shared/sequence-viewer/components/pill-nav/pill-summaries.ts`:
 
 ```ts
 /**
- * Pure helpers that turn AnimationVisibilityStateManager state into the
- * one-line summaries shown beneath each pill label.
- *
- * Only the Display summary has real logic worth testing — Effects, Effort,
- * Playback, and Export summaries are trivial template strings derived
- * inline in ExportVideoDrawer.
+ * Pure helpers that turn AnimationVisibilityStateManager and
+ * ExportOptionsStateManager state into the one-line summaries shown beneath
+ * each pill label. All four are pure: same input → same output, no
+ * closures over reactive state, fully unit-testable.
  */
+
+// ============================================================================
+// Display
+// ============================================================================
 
 /**
  * Single record of every boolean visibility flag the Display pill exposes.
@@ -713,9 +932,8 @@ export type PathShape = "arc" | "linear";
  * Returns "<n> / <total> visible · <pathShape>".
  *
  * Path shape is a binary choice between two valid options (arc vs linear),
- * not on/off, so it is surfaced explicitly rather than counted.
- *
- * The denominator is derived from the input arity — adding a new field to
+ * not on/off, so it is surfaced explicitly rather than counted. The
+ * denominator is derived from the input arity — adding a new field to
  * DisplayFlags automatically updates the "/ N" denominator.
  */
 export function computeDisplaySummary(
@@ -727,15 +945,103 @@ export function computeDisplaySummary(
   const total = values.length;
   return `${on} / ${total} visible · ${pathShape}`;
 }
+
+// ============================================================================
+// Effects
+// ============================================================================
+
+/**
+ * Returns the active effect's display name, "Off" for "none"/missing, or
+ * "Custom" if the id isn't registered in the label map (a drift guard —
+ * prevents raw kebab-case from leaking to users when a new effect ships in
+ * state before its label entry is added).
+ *
+ * Accepts the label table as a parameter rather than importing EFFECT_LABELS
+ * directly so the function stays pure and testable without module-level
+ * coupling.
+ *
+ * Silent-failure hardening: if `activeEffect` is not a non-empty string,
+ * log a warning (surfaces upstream state corruption in dev console) and
+ * return "Off" as the safe neutral. Previously an empty/undefined value
+ * would silently flow through `labels[""]` → "Custom", hiding the
+ * corruption behind a plausible-looking label.
+ */
+export function computeEffectsSummary(
+  activeEffect: string,
+  labels: Record<string, string>,
+): string {
+  if (typeof activeEffect !== "string" || activeEffect === "") {
+    console.warn("[pill-summaries] invalid activeEffect:", activeEffect);
+    return "Off";
+  }
+  if (activeEffect === "none") return "Off";
+  return labels[activeEffect] ?? "Custom";
+}
+
+// ============================================================================
+// Playback
+// ============================================================================
+
+export type PlaybackModeLike = "continuous" | "step";
+
+/**
+ * Silent-failure hardening: BPM must be finite and positive. Upstream
+ * corruption (NaN, 0, negative) would otherwise render literally as
+ * "NaN BPM" / "0 BPM" to the user, obscuring that the state store is
+ * broken. The "— BPM" fallback is a visible "something is wrong" signal,
+ * and the warn surfaces the root cause in dev tools.
+ */
+export function computePlaybackSummary(
+  bpm: number,
+  mode: PlaybackModeLike,
+): string {
+  const modeLabel = mode === "step" ? "Step" : "Cont.";
+  if (!Number.isFinite(bpm) || bpm <= 0) {
+    console.warn("[pill-summaries] invalid bpm:", bpm);
+    return `— BPM • ${modeLabel}`;
+  }
+  return `${bpm} BPM • ${modeLabel}`;
+}
+
+// ============================================================================
+// Export
+// ============================================================================
+
+export interface ExportSummaryInput {
+  resolution: number;
+  fps: number;
+  loopCount: number;
+  renderMode: "2d" | "3d";
+}
+
+/** Canonical resolutions the export pipeline supports. Any other value is
+ *  either a state bug or an untested configuration; we render a visible
+ *  "—" fallback rather than a plausible-looking garbage label. */
+const CANONICAL_RESOLUTIONS = new Set<number>([720, 1080, 2160, 4320]);
+
+export function computeExportSummary(input: ExportSummaryInput): string {
+  const { resolution: r, fps, loopCount, renderMode } = input;
+  if (!CANONICAL_RESOLUTIONS.has(r) || !Number.isFinite(fps) || fps <= 0) {
+    console.warn("[pill-summaries] invalid export input:", { resolution: r, fps });
+    return "— • — fps";
+  }
+  const resLabel = renderMode === "3d"
+    ? `${r}×${r}`
+    : r >= 4320 ? "8K" : r >= 2160 ? "4K" : `${r}p`;
+  const loopLabel = Number.isFinite(loopCount) && loopCount > 1
+    ? ` • ${loopCount}×`
+    : "";
+  return `${resLabel} • ${fps} fps${loopLabel}`;
+}
 ```
 
-- [ ] **Step 4: Run the test to confirm it passes**
+- [ ] **Step 4: Run the test to confirm all cases pass**
 
 ```bash
-npx vitest run tests/unit/pill-nav/pill-summaries.test.ts 2>&1 | tail -15
+npx vitest run tests/unit/pill-nav/pill-summaries.test.ts 2>&1 | tail -20
 ```
 
-Expected: 5 tests passed.
+Expected: 20 tests passed (6 display + 4 effects + 4 playback + 6 export). The three extra assertions guard silent-failure fallbacks added in Round 4: empty/non-string `activeEffect`, NaN/0/negative `bpm`, non-canonical `resolution` or invalid `fps`.
 
 - [ ] **Step 5: Commit**
 
@@ -743,7 +1049,13 @@ Expected: 5 tests passed.
 git add src/lib/shared/sequence-viewer/components/pill-nav/pill-summaries.ts \
         tests/unit/pill-nav/pill-summaries.test.ts
 git commit -m "$(cat <<'EOF'
-feat(pill-nav): add Display summary helper + unit tests
+feat(pill-nav): pure summary helpers for all four derived pills + tests
+
+Covers Display (count + path shape), Effects (id->label with drift guard),
+Playback (bpm + mode), and Export (2D/3D resolution branch + loop suffix).
+The Effort summary is a passthrough of an existing label and doesn't need
+its own helper. 20 unit tests total; they catch EFFECT_LABELS key renames,
+format-string regressions, and 2D/3D branch bugs before visual QA.
 
 Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
 EOF
@@ -880,14 +1192,44 @@ Write `src/lib/shared/sequence-viewer/components/pill-nav/pill-nav.css`:
 
 /* "—" placeholder when a pill has no current value. Use a single explicit
    color rather than stacking opacity on the parent (which would land at
-   3.6:1 — below AA). */
+   3.6:1 — below AA). At 0.65 alpha on the pill background this composites
+   to approximately 7.9:1 — clearing the AAA 7:1 threshold for normal text. */
 .pill-summary.empty {
-  color: rgba(255, 255, 255, 0.55);
+  color: rgba(255, 255, 255, 0.65);
 }
 
 @media (prefers-reduced-motion: reduce) {
   .pill {
     transition: none;
+  }
+}
+
+/* Respect OS-level increased-contrast settings (Windows High Contrast,
+   macOS Increase Contrast, iOS Accessibility). The pill chrome uses
+   semi-transparent rgba + backdrop-filter; under forced-contrast those
+   can render below the 3:1 non-text contrast floor. Strip transparency
+   for these users and push all label/summary foregrounds to solid white. */
+@media (prefers-contrast: more) {
+  .pill-nav {
+    background: #0d1018;
+    border-color: #ffffff;
+  }
+  .pill {
+    background: #0d1018;
+    border-color: #ffffff;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    color: #ffffff;
+  }
+  .pill[aria-pressed="true"] {
+    background: #003366;
+    border-color: #ffffff;
+    box-shadow: none;
+  }
+  .pill-label,
+  .pill-summary,
+  .pill-summary.empty {
+    color: #ffffff;
   }
 }
 ```
@@ -936,8 +1278,10 @@ Write `src/lib/shared/sequence-viewer/components/pill-nav/DownloadPillNav.svelte
   intent.
 
   Focus management: the parent gets the `navEl` reference via the
-  `onMount` callback (passed in `Props.onMount`) and can call
-  `findPillButton(id)` to restore focus to a specific pill when needed.
+  `onNavMount` callback on mount, and explicitly gets `null` on unmount so
+  it can clear any cached reference. Parent calls
+  `el.querySelector('[data-pill-id="<id>"]')` to locate a specific pill
+  button (e.g. for focus restoration after a mobile sheet closes).
 -->
 <script lang="ts">
   import type { PillId, PillSpec } from "./pill-types";
@@ -947,10 +1291,11 @@ Write `src/lib/shared/sequence-viewer/components/pill-nav/DownloadPillNav.svelte
     activeId: PillId | null;
     onSelect: (id: PillId) => void;
     variant: "mobile" | "desktop";
-    /** Optional: parent receives the nav root element on mount so it can
-     *  restore focus to a specific pill button via
-     *  `el.querySelector('[data-pill-id="<id>"]')`. */
-    onNavMount?: (el: HTMLDivElement) => void;
+    /** Optional: parent receives the nav root element on mount, and `null`
+     *  when the component unmounts. The null signal is load-bearing — after
+     *  a layout flip the parent must NOT keep a stale detached ref, or
+     *  subsequent queries hit a disconnected DOM tree. */
+    onNavMount?: (el: HTMLDivElement | null) => void;
   }
 
   const { pills, activeId, onSelect, variant, onNavMount }: Props = $props();
@@ -961,7 +1306,21 @@ Write `src/lib/shared/sequence-viewer/components/pill-nav/DownloadPillNav.svelte
   // steal focus from each other.
   let navEl: HTMLDivElement | undefined = $state();
   $effect(() => {
-    if (navEl) onNavMount?.(navEl);
+    // Only fire onNavMount once navEl is defined — bind:this writes
+    // synchronously before effects run in Svelte 5, so this gate primarily
+    // exists to suppress the undefined-first-tick case from any future
+    // refactor that causes navEl to re-enter undefined (e.g., a conditional
+    // `{#if ...}` around the nav). The cleanup below fires on unmount so
+    // the parent doesn't retain a detached reference.
+    //
+    // NOTE: do NOT call onNavMount(null) when navEl becomes undefined
+    // reactively — that path would flicker pillNavEl to null between
+    // re-evaluations of a tracked dep, and findPillButton() would return
+    // null mid-focus-restoration. The unmount cleanup is the single
+    // canonical null signal.
+    if (!navEl) return;
+    onNavMount?.(navEl);
+    return () => onNavMount?.(null);
   });
 
   function focusPillAt(idx: number) {
@@ -970,7 +1329,16 @@ Write `src/lib/shared/sequence-viewer/components/pill-nav/DownloadPillNav.svelte
     const target = navEl.querySelector<HTMLButtonElement>(
       `[data-pill-id="${pills[wrapped].id}"]`,
     );
-    target?.focus();
+    if (target) {
+      target.focus();
+      return;
+    }
+    // Fallback: the pill DOM is briefly stale (mid-layout-flip, mid-
+    // remount). Without this branch, the keyboard user's Arrow/Home/End
+    // silently no-ops and focus drifts to document.body. Anchoring to the
+    // nav root keeps focus inside the component so the next keypress works.
+    console.warn("[DownloadPillNav] pill not found:", pills[wrapped]?.id);
+    navEl.focus();
   }
 
   function handleKeydown(e: KeyboardEvent, id: PillId) {
@@ -1020,6 +1388,7 @@ Write `src/lib/shared/sequence-viewer/components/pill-nav/DownloadPillNav.svelte
   class="pill-nav variant-{variant}"
   role="group"
   aria-label="Download settings"
+  tabindex="-1"
 >
   {#each pills as pill (pill.id)}
     <button
@@ -1093,9 +1462,12 @@ Write `src/lib/shared/sequence-viewer/components/pill-nav/PillBody.svelte`:
     Sheet handles aria-modal + focus trap.
   - desktop: rendered inline in a flex-grow scrollable region between
     the pill row and the download footer. Always visible — never closes.
-    Wrapped in role="region" with aria-live="polite" so content swaps
-    are announced to screen readers (the pill itself stays focused after
-    activation; the body content changes silently otherwise).
+    Wrapped in role="region" with aria-label={title} so screen readers
+    announce a named content landmark. NO aria-live here — a live region
+    on the pill body would announce the entire newly-mounted subtree on
+    every pill switch (wall of text). Announcement duty moves to a
+    visually-hidden aria-live status line in the parent ExportVideoDrawer,
+    which updates with a terse "<title> settings" on pill change.
 
   NOT role="tabpanel" — see DownloadPillNav for the rationale (the panel
   is conditionally mounted, not a permanent DOM sibling).
@@ -1130,7 +1502,6 @@ Write `src/lib/shared/sequence-viewer/components/pill-nav/PillBody.svelte`:
     class="pill-body-inline"
     role="region"
     aria-label={title}
-    aria-live="polite"
   >
     {@render children()}
   </div>
@@ -1179,7 +1550,7 @@ EOF
 **Files:**
 - Modify: `src/lib/shared/sequence-viewer/components/ExportVideoDrawer.svelte`
 
-This task rewrites both the `<script>` block and the template in one atomic commit. The previous draft split this into two tasks, which left the working tree non-building between commits — the new agent might `/compact` mid-rewrite and lose the in-flight state. Style block follows in **Task 7**.
+This task rewrites the `<script>` block, the template, AND the `<style>` block in one atomic commit. The previous draft split this into two tasks, which left the working tree non-building between commits — the new agent might `/compact` mid-rewrite and lose the in-flight state. The style-block replacement is now **Step 7 of this task** (Round 3 item 27).
 
 - [ ] **Step 1: Replace the import block**
 
@@ -1187,11 +1558,12 @@ Open `src/lib/shared/sequence-viewer/components/ExportVideoDrawer.svelte`. Find 
 
 ```ts
   import { fade } from "svelte/transition";
-  import type {
-    ExportOptionsStateManager,
-    VideoFps,
-    VideoResolution,
-  } from "../state/export-options-state.svelte";
+  import type { ExportOptionsStateManager } from "../state/export-options-state.svelte";
+  // NOTE: VideoFps / VideoResolution are no longer imported — the new pill
+  // body calls setVideoFps(30|60|120) and setVideoResolution(720|1080|2160|4320)
+  // with literal arguments (widened automatically to the union at the call
+  // site), so the types have no remaining consumer in this file. Keeping
+  // them would surface as a `no-unused-vars` lint warning.
   import type { VideoExportProgress } from "$lib/features/compose/services/contracts/IVideoExportOrchestrator";
   import { estimateExportTime, hasDeviceMetrics } from "../state/export-timing-tracker";
   import EffectsPanel from "$lib/shared/animation-engine/components/effects-panel/EffectsPanel.svelte";
@@ -1210,7 +1582,12 @@ Open `src/lib/shared/sequence-viewer/components/ExportVideoDrawer.svelte`. Find 
   import DownloadPillNav from "./pill-nav/DownloadPillNav.svelte";
   import PillBody from "./pill-nav/PillBody.svelte";
   import { type PillId, type PillSpec, buildPillSpecs } from "./pill-nav/pill-types";
-  import { computeDisplaySummary } from "./pill-nav/pill-summaries";
+  import {
+    computeDisplaySummary,
+    computeEffectsSummary,
+    computePlaybackSummary,
+    computeExportSummary,
+  } from "./pill-nav/pill-summaries";
   import { onDestroy } from "svelte";
 ```
 
@@ -1235,34 +1612,63 @@ Replace with:
 
 ```ts
   // Mobile: null = no sheet open. Desktop: always has one pill active.
-  // Use $effect to keep activePillId in sync with the layout prop. A one-shot
-  // $state(layout === ...) initializer would only fire at component init —
-  // if the parent flips layout from "bottom" to "sidebar" without remounting,
-  // desktop would render with no active pill (empty body). The effect repairs
-  // the state on every layout change.
+  // A one-shot $state(layout === ...) initializer would only fire at
+  // component init — if the parent flips layout without remounting,
+  // desktop would render with no active pill, OR mobile would inherit an
+  // already-open sheet from a previous desktop state. The $effect below
+  // repairs both directions.
   let activePillId = $state<PillId | null>(layout === "sidebar" ? "effects" : null);
   $effect(() => {
     if (layout === "sidebar" && activePillId === null) {
       activePillId = "effects";
+    } else if (layout === "bottom" && activePillId !== null) {
+      // On a sidebar→bottom flip, close the sheet — otherwise a
+      // desktop-selected pill would pop open as a modal on mobile.
+      activePillId = null;
     }
   });
 
-  // Track each pill button so we can restore focus when the mobile sheet
-  // closes. DownloadPillNav passes its root element on mount; we querySelector
-  // for the right pill button when needed.
+  // Track the nav root + the last-activated pill ID so we can restore
+  // focus when the mobile sheet closes. We intentionally store the ID,
+  // not the HTMLButtonElement — on layout flip DownloadPillNav remounts
+  // with a fresh DOM root, and any cached element reference would point
+  // at a detached node. Re-querying via the live pillNavEl each time
+  // avoids that class of silent focus loss.
   let pillNavEl: HTMLDivElement | null = $state(null);
-  function findPillButton(id: PillId): HTMLButtonElement | null {
-    return pillNavEl?.querySelector<HTMLButtonElement>(`[data-pill-id="${id}"]`) ?? null;
+  function findPillButton(id: PillId | null): HTMLButtonElement | null {
+    if (!id || !pillNavEl) return null;
+    return pillNavEl.querySelector<HTMLButtonElement>(`[data-pill-id="${id}"]`);
   }
-  let lastActivatedPillEl: HTMLButtonElement | null = $state(null);
+  let lastActivatedPillId: PillId | null = $state(null);
+
+  // Honor prefers-reduced-motion for the panel's entrance/exit fade
+  // transitions below. Initialize synchronously in the $state initializer
+  // — transition:fade reads its options at mount time, BEFORE onMount
+  // runs. An onMount-deferred read would let the first panel entrance
+  // animate at full duration even for users who have reduced-motion on.
+  let reduceMotion = $state(
+    typeof window !== "undefined" &&
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+  );
+  $effect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const handler = (e: MediaQueryListEvent) => { reduceMotion = e.matches; };
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  });
 
   function selectPill(id: PillId): void {
     if (layout === "bottom") {
       // Mobile toggles the sheet; tapping the active pill closes it.
       const wasOpen = activePillId === id;
       activePillId = wasOpen ? null : id;
-      // Capture the activating pill button so the sheet can restore focus on close.
-      lastActivatedPillEl = wasOpen ? null : findPillButton(id);
+      // Capture the activating pill id so the sheet can restore focus on
+      // close. Do NOT null-out when closing — the sheet's unmount cleanup
+      // reads this AFTER closePill runs, and we need the id to remain
+      // valid across that gap. Overwritten on next selectPill.
+      if (!wasOpen) lastActivatedPillId = id;
     } else {
       // Desktop is always-on; tapping the active pill is a no-op.
       activePillId = id;
@@ -1272,9 +1678,9 @@ Replace with:
   function closePill(): void {
     if (layout === "bottom") {
       activePillId = null;
-      // Focus restoration happens inside RailBentoSheet via returnFocusTo,
-      // but we also clear the ref so a re-open re-captures fresh.
-      lastActivatedPillEl = null;
+      // Intentionally do NOT clear lastActivatedPillId here — the sheet's
+      // unmount cleanup reads returnFocusTo AFTER this function returns,
+      // and returnFocusTo is derived from lastActivatedPillId below.
     }
   }
 ```
@@ -1285,16 +1691,15 @@ Right after the existing `effectsCount` derivation (current line ~96–100), app
 
 ```ts
   // ── Pill summaries — recomputed when vmVersion ticks or props change ──
+  // Each helper is a pure function from pill-summaries.ts; the $derived
+  // wrapper threads the reactive inputs through it. The legacy effectsCount
+  // stat (count of non-none entries in tipEffectMap) is removed — the
+  // default map is { "*": { effect: "trails" } } so a count of 1 vs 0 never
+  // reflected any user action. Active-effect name is the truthful state.
 
-  /** Effects pill shows the active effect's display name (e.g. "Trails",
-   *  "Fire"), or "Off" when none is set. The legacy effectsCount stat was
-   *  meaningless because the default tipEffectMap is { "*": { effect: "trails" } }
-   *  so a count of 1 vs 0 didn't reflect any user action. */
   const effectsSummary = $derived.by(() => {
     void vmVersion;
-    const active = vm.getActiveEffect();
-    if (active === "none") return "Off";
-    return EFFECT_LABELS[active] ?? active;
+    return computeEffectsSummary(vm.getActiveEffect(), EFFECT_LABELS);
   });
 
   const effortSummary = $derived(activeEffort.label);
@@ -1302,8 +1707,7 @@ Right after the existing `effectsCount` derivation (current line ~96–100), app
 
   const playbackSummary = $derived.by(() => {
     void vmVersion;
-    const mode = vm.getPlaybackMode() === "step" ? "Step" : "Cont.";
-    return `${bpm} BPM • ${mode}`;
+    return computePlaybackSummary(bpm, vm.getPlaybackMode());
   });
 
   const displaySummary = $derived.by(() => {
@@ -1323,18 +1727,17 @@ Right after the existing `effectsCount` derivation (current line ~96–100), app
     );
   });
 
-  /** Export pill shows resolution + fps + loop count.
-   *  Loops live in Export because they describe the OUTPUT video, not the
-   *  preview playback (Playback pill controls in-canvas behavior only). */
-  const exportSummary = $derived.by(() => {
-    const r = exportOptions.videoResolution;
-    const resLabel = renderMode === "3d"
-      ? `${r}×${r}`
-      : (r >= 4320 ? "8K" : r >= 2160 ? "4K" : `${r}p`);
-    const loops = exportOptions.videoLoopCount;
-    const loopLabel = loops > 1 ? ` • ${loops}×` : "";
-    return `${resLabel} • ${exportOptions.videoFps} fps${loopLabel}`;
-  });
+  /** Export pill shows resolution + fps + loop count. Loops live in Export
+   *  because they describe the OUTPUT video, not the preview playback
+   *  (Playback pill controls in-canvas behavior only). */
+  const exportSummary = $derived(
+    computeExportSummary({
+      resolution: exportOptions.videoResolution,
+      fps: exportOptions.videoFps,
+      loopCount: exportOptions.videoLoopCount,
+      renderMode: renderMode === "3d" ? "3d" : "2d",
+    }),
+  );
 
   /** PillSpec map keyed by PillId. Compiler enforces every PillId has a
    *  spec — adding to PILL_ORDER without updating this object fails the
@@ -1353,7 +1756,27 @@ Right after the existing `effectsCount` derivation (current line ~96–100), app
       "export":   { label: "EXPORT",   icon: "fa-sliders",    summary: exportSummary },
     }),
   );
+
+  /** Label used by the visually-hidden aria-live announcer below.
+   *  Announces "<pill> settings" on pill change — a short, meaningful status
+   *  message, NOT the full pill body subtree. */
+  const activePillAnnouncement = $derived.by(() => {
+    if (activePillId === null) return "";
+    const spec = pills.find((p) => p.id === activePillId);
+    if (!spec) {
+      // activePillId should always be an element of PILL_ORDER (the $effect
+      // above only assigns known ids), but an HMR-introduced drift between
+      // PILL_ORDER and the local pills Record could produce this state.
+      // Warn in dev so the drift surfaces instead of the SR announcer
+      // silently going empty.
+      console.warn("[ExportVideoDrawer] no pill spec for activePillId:", activePillId);
+      return "";
+    }
+    return `${spec.label} settings`;
+  });
 ```
+
+The full set of pure-helper imports is already covered by Step 1's import block — no further import edits needed here.
 
 - [ ] **Step 3-bis: Scope `preventSpaceActivation` so it doesn't swallow Space on focused buttons / inputs**
 
@@ -1489,12 +1912,15 @@ Find the line `</script>` (around line 172). Find the matching `<style>` opener 
       {/if}
     </div>
   {:else if activePillId === "display"}
+    <!-- role="region" (not "group") — these are named content landmarks,
+         not form-control groups. NVDA/JAWS announce "region" without the
+         "grouping of form controls" connotation that "group" triggers. -->
     <div class="pill-inline-pad">
-      <div class="rt-section" role="group" aria-labelledby="display-visibility-label">
+      <div class="rt-section" role="region" aria-labelledby="display-visibility-label">
         <span class="rt-section-label" id="display-visibility-label">Visibility</span>
         <DisplayPanel />
       </div>
-      <div class="rt-section" role="group" aria-labelledby="display-paths-label">
+      <div class="rt-section" role="region" aria-labelledby="display-paths-label">
         <span class="rt-section-label" id="display-paths-label">Motion paths</span>
         <PathShapePanel />
       </div>
@@ -1616,6 +2042,15 @@ Find the line `</script>` (around line 172). Find the matching `<style>` opener 
   {/if}
 {/snippet}
 
+<!-- Visually-hidden live-region announcer. Updates to a short "<pill>
+     settings" string when the user switches pills, giving screen-reader
+     users a meaningful status message without dumping the whole new panel
+     subtree (which an aria-live on .pill-body-inline would). Mounted once
+     above the layout branches so it persists across layout flips. -->
+<span class="sr-only" aria-live="polite" aria-atomic="true">
+  {activePillAnnouncement}
+</span>
+
 {#if layout === "bottom"}
   <!-- ============================================================
        MOBILE: pill row + download button at bottom; sheet pops up
@@ -1623,7 +2058,7 @@ Find the line `</script>` (around line 172). Find the matching `<style>` opener 
        ============================================================ -->
   <div
     class="mobile-export"
-    transition:fade={{ duration: 200 }}
+    transition:fade={{ duration: reduceMotion ? 0 : 200 }}
     role="region"
     aria-label="Animation export"
   >
@@ -1663,13 +2098,18 @@ Find the line `</script>` (around line 172). Find the matching `<style>` opener 
           title={pills.find((p) => p.id === activePillId)?.label ?? ""}
           variant="mobile"
           onClose={closePill}
-          returnFocusTo={lastActivatedPillEl}
+          returnFocusTo={findPillButton(lastActivatedPillId)}
         >
           {@render pillBody()}
         </PillBody>
       {/if}
 
-      <div class="rt-zone" onkeydown={preventSpaceActivation} role="group" aria-label="Animation export">
+      <!-- Interaction wrapper — no redundant role="group"/aria-label here;
+           the enclosing .mobile-export already declares
+           role="region" aria-label="Animation export", and nesting a second
+           labelled landmark underneath produces duplicated SR announcements
+           (NVDA/JAWS read "Animation export ... Animation export"). -->
+      <div class="rt-zone" onkeydown={preventSpaceActivation}>
         <DownloadPillNav
           {pills}
           {activePillId}
@@ -1702,7 +2142,7 @@ Find the line `</script>` (around line 172). Find the matching `<style>` opener 
        ============================================================ -->
   <div
     class="export-panel sidebar"
-    transition:fade={{ duration: 200 }}
+    transition:fade={{ duration: reduceMotion ? 0 : 200 }}
     role="region"
     aria-label="Animation export settings"
   >
@@ -1794,57 +2234,9 @@ Expected: zero errors. If there are errors, fix them before proceeding. Common o
 - "openSheet is not defined" — leftover reference from Step 2's cleanup. Search the file for `openSheet`, `toggleSheet`, `closeSheet`, `SheetId` and replace any survivors.
 - "settingsSummary is not defined" — leftover template binding. Same fix.
 
-- [ ] **Step 7: Build**
+- [ ] **Step 7: Replace the `<style>` block with pill-only chrome**
 
-```bash
-npm run build 2>&1 | tail -15
-```
-
-Expected: build succeeds. Look for "built in Xs" line.
-
-- [ ] **Step 8: Commit (script + template together)**
-
-```bash
-git add src/lib/shared/sequence-viewer/components/ExportVideoDrawer.svelte
-git commit -m "$(cat <<'EOF'
-refactor(export-video): unify mobile + desktop on 5-pill nav
-
-Replaces the 4-tile mobile bento and the flat desktop sidebar with one
-shared 5-pill nav (Effects / Effort / Playback / Display / Export).
-Display + Path Shape come back into the UI (orphaned when the modal was
-nuked).
-
-- Effects pill summary shows the active effect's name (e.g. "Trails"),
-  not a meaningless count derived from the wildcard tipEffectMap entry.
-- Loops + Timing live in Export (they describe the output video).
-  Playback pill = Tempo + Mode (in-canvas preview behavior).
-- Pills use role=button + aria-pressed (not the broken role=tab pattern;
-  pill bodies are conditionally mounted, not permanent tabpanels).
-- Mobile pill carries aria-haspopup="dialog"; the bento sheet handles
-  focus trap + restoration via PillBody's returnFocusTo prop.
-- $effect keeps activePillId in sync with the layout prop so a runtime
-  layout flip doesn't leave the desktop sidebar with no active pill.
-
-Mobile keeps the slide-up sheet pattern via PillBody(variant=mobile).
-Desktop renders the active body inline in the sidebar via
-PillBody(variant=desktop). Single download button, always visible on
-both viewports.
-
-Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
-EOF
-)"
-```
-
----
-
-## Task 7: Replace dead CSS in ExportVideoDrawer with pill-only chrome
-
-**Files:**
-- Modify: `src/lib/shared/sequence-viewer/components/ExportVideoDrawer.svelte` (style block only)
-
-Task 6 leaves the old desktop chip/setting-row chrome orphaned and adds the new `.pill-inline-pad` wrapper. Replace the `<style>` block contents with the explicit final form below — no heuristic scan, no fragile class detection.
-
-- [ ] **Step 1: Replace the `<style>` block**
+The template rewrite (Step 5) leaves the old desktop chip/setting-row chrome orphaned and adds a new `.pill-inline-pad` wrapper. Replace the `<style>` block contents with the explicit final form below — no heuristic scan, no fragile class detection. This step and Step 5 MUST land in the same commit (Step 9) so the working tree never carries a half-rewritten drawer.
 
 Locate the `<style>` opener and `</style>` closer in the file. Replace **everything between them** with:
 
@@ -1913,7 +2305,12 @@ Locate the `<style>` opener and `</style>` closer in the file. Replace **everyth
     gap: 8px;
     font-size: var(--font-size-compact, 12px);
     font-weight: 500;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    /* Fallback matches the dark-theme calculator's canonical textDim (0.75α
+       — 7:1 on panel-bg). The earlier 0.5α fallback composited to ~5.2:1,
+       below AAA for 12px body text when the theme variable is briefly
+       unset (SSR first paint, a custom theme without textDim, test
+       harnesses without the theme provider). */
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.75));
     padding: 4px 0;
   }
 
@@ -1941,7 +2338,10 @@ Locate the `<style>` opener and `</style>` closer in the file. Replace **everyth
   .time-estimate {
     font-size: var(--font-size-compact, 12px);
     font-weight: 500;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    /* See .video-duration-line rationale — 0.75α matches the canonical
+       dark-theme textDim so the fallback clears AAA (7:1) instead of the
+       prior 5.2:1 when the theme variable is briefly unset. */
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.75));
   }
 
   .export-btn {
@@ -1994,7 +2394,11 @@ Locate the `<style>` opener and `</style>` closer in the file. Replace **everyth
   .progress-stage {
     font-size: var(--font-size-compact, 12px);
     font-weight: 500;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    /* 0.75α matches the dark-theme calculator's canonical textDim (7:1 on
+       panel-bg). The prior 0.6α fallback composited to ~6.5:1 — above AA
+       but below AAA for 12px body text. Raising for consistency with the
+       .video-duration-line / .time-estimate hygiene from Round 4 item 37. */
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.75));
   }
 
   .progress-pct {
@@ -2029,7 +2433,9 @@ Locate the `<style>` opener and `</style>` closer in the file. Replace **everyth
     background: transparent;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 12px;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    /* See .progress-stage — 0.75α keeps the fallback lane at AAA for
+       consistency across the panel's dimmed-text roles. */
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.75));
     font-size: var(--font-size-min, 14px);
     font-weight: 500;
     cursor: pointer;
@@ -2058,22 +2464,55 @@ Locate the `<style>` opener and `</style>` closer in the file. Replace **everyth
 
 This deletes (vs the original): `.setting-row`, `.setting-label`, `.chip-group`, `.chip`, `.chip:hover`, `.chip:active`, `.chip.active`, `.chip:focus-visible`, `.chip-badge`, `.loop-count-row`, `.loop-btn`, `.loop-btn:hover`, `.loop-btn:disabled`, `.loop-count-value`, plus removes the `.chip` references from the reduced-motion block. The new `.pill-inline-pad` rule is added globally so it applies inside `PillBody.svelte`'s `.pill-body-inline` wrapper. `.rt-zone`, `.rt-download`, `.rt-tile`, `.rt-section`, `.rt-chip`, `.rt-row`, `.rt-stepper` are inherited from `rail-tile.css` (already imported) and the global RailBentoSheet rules.
 
-- [ ] **Step 2: Type check + build**
+- [ ] **Step 8: Type check + build (post-style-replacement)**
 
 ```bash
 npm run check 2>&1 | grep -A 2 "ExportVideoDrawer" | head -10
-npm run build 2>&1 | tail -5
+npm run build 2>&1 | tail -10
 ```
 
-Expected: zero errors, build succeeds.
+Expected: zero errors. Build succeeds with "built in Xs" line.
 
-- [ ] **Step 3: Commit**
+- [ ] **Step 9: Commit (script + template + style together, atomic)**
 
 ```bash
 git add src/lib/shared/sequence-viewer/components/ExportVideoDrawer.svelte
-git diff --cached --stat
 git commit -m "$(cat <<'EOF'
-chore(export-video): replace style block with pill-only chrome
+refactor(export-video): unify mobile + desktop on 5-pill nav
+
+Replaces the 4-tile mobile bento and the flat desktop sidebar with one
+shared 5-pill nav (Effects / Effort / Playback / Display / Export).
+Display + Path Shape come back into the UI (orphaned when the modal was
+nuked).
+
+- Effects pill summary shows the active effect's name (e.g. "Trails"),
+  not a meaningless count derived from the wildcard tipEffectMap entry.
+- Loops + Timing live in Export (they describe the output video).
+  Playback pill = Tempo + Mode (in-canvas preview behavior).
+- Pills use role=button + aria-pressed (not the broken role=tab pattern;
+  pill bodies are conditionally mounted, not permanent tabpanels).
+- Mobile pill carries aria-haspopup="dialog"; the bento sheet handles
+  focus trap + focus restoration via PillBody's returnFocusTo prop.
+- $effect keeps activePillId in sync with the layout prop in BOTH
+  directions so a runtime layout flip doesn't leave the desktop sidebar
+  empty or the mobile view with an auto-opened sheet.
+- Id-based lastActivatedPillId (NOT element ref) is re-queried via
+  findPillButton on each PillBody mount so focus restoration survives
+  DownloadPillNav remounts.
+- Visually-hidden aria-live="polite" announcer replaces the dumped-
+  subtree announcement pattern on pill switch.
+- Pure summary helpers (Display / Effects / Playback / Export) live in
+  pill-summaries.ts with 20 unit tests guarding against key renames,
+  format regressions, 2D/3D branch bugs, and silent-failure fallbacks
+  (empty/non-string activeEffect, NaN/0/negative bpm, non-canonical
+  resolution or invalid fps).
+- Style block replaces the orphaned desktop chip chrome with
+  pill-inline-pad; .rt-section/.rt-chip/.rt-row inherited from the
+  (now global) rail-tile.css cascade.
+
+Mobile keeps the slide-up sheet pattern via PillBody(variant=mobile).
+Desktop renders the active body inline via PillBody(variant=desktop).
+Single download button, always visible on both viewports.
 
 Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
 EOF
@@ -2082,7 +2521,7 @@ EOF
 
 ---
 
-## Task 8: Visual QA via Chrome DevTools MCP
+## Task 7: Visual QA via Chrome DevTools MCP
 
 **Files:** none (verification only)
 
@@ -2092,7 +2531,7 @@ If the user has not granted browser permission yet, post a single message:
 
 > "Visual QA needs to drive Chrome DevTools — navigate to a viewer URL, click pills, and screenshot at two viewports. May I proceed?"
 
-Wait for an affirmative response before continuing. If the user declines, mark this task complete with a note and proceed to Task 9 with a self-check via `curl localhost:5173/...` for HTTP-200 and `npm run build` only.
+Wait for an affirmative response before continuing. If the user declines, mark this task complete with a note and proceed to Task 8 with a self-check via `curl localhost:5173/...` for HTTP-200 and `npm run build` only.
 
 - [ ] **Step 1: Verify dev server is running**
 
@@ -2186,13 +2625,13 @@ Expected: no errors related to pill-nav. Warnings are acceptable but log them.
 
 - [ ] **Step 8: Take notes**
 
-If any step revealed a visual or behavioral bug, note it. Fix in a follow-up commit before Task 9.
+If any step revealed a visual or behavioral bug, note it. Fix in a follow-up commit before Task 8.
 
 No commit needed for QA — screenshots are temp artifacts.
 
 ---
 
-## Task 9: Final cleanup + verification
+## Task 8: Final cleanup + verification
 
 **Files:** any straggling orphaned imports
 
@@ -2240,7 +2679,7 @@ Expected: success.
 npx vitest run tests/unit/pill-nav/ 2>&1 | tail -10
 ```
 
-Expected: 5 tests passed (from Task 2).
+Expected: 20 tests passed (from Task 2 — 6 Display + 4 Effects + 4 Playback + 6 Export; the final test in each non-Display block guards the silent-failure fallback added in Round 4).
 
 - [ ] **Step 5: Final commit if anything changed**
 
@@ -2267,9 +2706,9 @@ Otherwise skip.
 ## Success criteria
 
 ### Build / type / test
-- `npm run check` passes with no NEW errors (matches the 8-error pre-existing baseline noted in Task 9).
+- `npm run check` passes with no NEW errors (matches the 8-error pre-existing baseline noted in Task 8).
 - `npm run build` succeeds.
-- `npx vitest run tests/unit/pill-nav/` passes (6 tests including the arity guard).
+- `npx vitest run tests/unit/pill-nav/` passes (20 tests: 6 Display including the arity guard + 4 Effects + 4 Playback + 6 Export; the final Effects/Playback/Export test each guards the silent-failure fallback added in Round 4).
 
 ### Layout + nav
 - At 393×709, the Download Animation panel shows a 5-pill row + download button. Tapping a pill opens a sheet over the canvas.
@@ -2298,7 +2737,7 @@ Otherwise skip.
 - Pill active state uses solid white text for AAA contrast (no color-mix that drifts below 7:1).
 - Pill focus outline uses opaque accent (no 0.6 alpha that composites below 3:1).
 - `EffortPanel` and `PathShapePanel` focus outlines are opaque (Task 0h).
-- DisplayPanel + PathShapePanel are wrapped in `role="group"` with `aria-labelledby` to their section labels.
+- DisplayPanel + PathShapePanel are wrapped in `role="region"` with `aria-labelledby` to their section labels (region, not group — these are named content landmarks, not form-control groups).
 
 ---
 
@@ -2314,8 +2753,8 @@ Otherwise skip.
   - Display section (Visibility group + Motion paths group) → embedded in Task 6
   - Loops + Timing in Export pill (NOT Playback — they describe output video) → embedded in Task 6
   - Dead CSS removal via explicit replacement → Task 7
-  - Visual QA → Task 8
-  - Final verification → Task 9
+  - Visual QA → Task 7
+  - Final verification → Task 8
 - [x] **Audit Round 1 fixes applied:**
   - Effects summary: name (`EFFECT_LABELS[active]`) not misleading count
   - 120 fps + 4K + 8K resolution chips preserved
@@ -2330,25 +2769,39 @@ Otherwise skip.
   - Arrow-key `querySelector` scoped to local `bind:this` element
   - PillBody desktop variant has no padding; inline pill bodies wrap in `.pill-inline-pad`
   - Task 7 dead-CSS heuristic replaced with explicit final `<style>` block
-  - Task 8 step 5 contextmenu verification done by grep, not synthetic dispatch
+  - Task 7 step 5 contextmenu verification done by grep, not synthetic dispatch
 - [x] **Audit Round 2 fixes applied:**
   - `.rt-section` / `.rt-chip` / `.rt-row` primitives promoted from `RailBentoSheet` scope to `rail-tile.css` (Task 0e) so the desktop pill body actually gets styled
   - `.rt-step-btn` (24→44), `.bento-sheet-close` (28→44), `.rt-chip` (38→44 tall) bumped to AAA touch targets (Task 0f)
   - `RailBentoSheet` adds focus trap, focus restoration via `returnFocusTo`, and reduced-motion (Task 0g)
   - `EffortPanel` + `PathShapePanel` opaque focus outlines (Task 0h)
   - DownloadPillNav switches from `role="tab"` + `aria-selected` to `role="button"` + `aria-pressed`; mobile pills carry `aria-haspopup="dialog"`
-  - PillBody desktop uses `role="region"` + `aria-live="polite"` (NOT `role="tabpanel"`)
+  - PillBody desktop uses `role="region"` + `aria-label` (NOT `role="tabpanel"`, and NOT a live region — a dedicated sr-only `aria-live="polite"` status line in ExportVideoDrawer announces pill switches without dumping the whole new subtree; Round 3 item 25)
   - Home / End keys added; legacy `"Spacebar"` dropped
   - `activePillId` synchronized to `layout` via `$effect` (not a one-shot `$state` initializer)
-  - ExportVideoDrawer captures `pillNavEl` and `lastActivatedPillEl` so mobile sheet can restore focus on close
+  - ExportVideoDrawer captures `pillNavEl` and `lastActivatedPillId` (id-based, not element-ref) so mobile sheet restores focus on close even after a DownloadPillNav remount (Round 3 item 23)
   - `preventSpaceActivation` scoped to non-interactive event targets (does NOT swallow Space on focused buttons / inputs)
   - Tasks 6 + 7 merged into a single atomic Task 6 (no half-built intermediate tree)
   - `.pill-label` and `.pill-summary` use 12px (project floor); active text uses solid white; focus outline uses opaque accent
-  - Display pill body wraps DisplayPanel in `role="group"` "Visibility" + PathShapePanel in `role="group"` "Motion paths"
-  - Task 8 viewer-URL grep theatre dropped (asks the user); Task 3 brace-balance theatre dropped (relies on `vite build`)
-  - Task 8 step 6 includes keyboard a11y check + touch target check
+  - Display pill body wraps DisplayPanel in `role="region"` "Visibility" + PathShapePanel in `role="region"` "Motion paths" (Round 3 item 26)
+  - Task 7 viewer-URL grep theatre dropped (asks the user); Task 3 brace-balance theatre dropped (relies on `vite build`)
+  - Task 7 step 6 includes keyboard a11y check + touch target check
+- [x] **Audit Round 4 fixes applied:**
+  - `.rt-zone` no longer carries `role="group"` + duplicated `aria-label="Animation export"` under the outer `role="region"` (item 35)
+  - Mobile and desktop `transition:fade` directives gated by a synchronously-initialized `reduceMotion` `$state` in ExportVideoDrawer; matchMedia listener attached via `$effect` with cleanup (item 36)
+  - `.video-duration-line` / `.time-estimate` CSS fallbacks raised from `rgba(255,255,255,0.5)` to `rgba(255,255,255,0.75)` so the SSR / missing-token lane clears AAA (item 37)
+  - `computeEffectsSummary`, `computePlaybackSummary`, `computeExportSummary` each hardened with input validation + `console.warn` + safe visible fallback so upstream state corruption surfaces instead of shipping plausible-looking garbage (item 38)
+  - `DownloadPillNav.focusPillAt` falls back to focusing `navEl` (now `tabindex="-1"`) when the pill DOM is briefly stale, preventing silent focus loss (item 39)
+  - `DownloadPillNav` `$effect` gated with `if (!navEl) return` so `pillNavEl` never flickers to null on reactive ticks; cleanup remains the single canonical null signal (item 40)
+  - `RailBentoSheet` Escape handler narrows `target` with `instanceof Element` before `.closest` so composed-path TextNode targets can't throw into the Svelte error boundary (item 41)
+  - `getFocusables()` wraps the `checkVisibility()` invocation in try/catch so a single misbehaving element falls back to `offsetParent !== null` rather than poisoning the whole filter pass (item 42)
+  - `activePillAnnouncement` emits a `console.warn` when `pills.find` fails to match `activePillId` (item 43)
+  - Orphan `VideoFps` / `VideoResolution` imports dropped from Task 6 Step 1 (item 44)
+  - Duplicate `computeDisplaySummary` import paragraph removed from Task 6 Step 3 (item 45)
+  - Test count rises 17 → 20 (three new silent-failure assertions + `vi` import) (item 46)
+  - `.progress-stage` and `.cancel-btn` text-dim fallbacks raised to `0.75α` for AAA parity with item 37 (item 47)
 - [x] **No placeholders:** every code block is complete, no `...`, no `TBD`.
 - [x] **All file paths absolute-from-repo-root.**
 - [x] **Each step is atomic** (1–10 minutes of work).
 - [x] **Pre-flight verification (Steps 0a–0h)** confirms file structure, removes the orphan PlaybackPanel, hardens the shared primitives (CSS scoping, touch targets, focus trap, focus indicators) BEFORE the new pill-nav components consume them.
-- [x] **Permission gates** for browser commands (Task 8) per project rules — never assume browser-control consent.
+- [x] **Permission gates** for browser commands (Task 7) per project rules — never assume browser-control consent.
