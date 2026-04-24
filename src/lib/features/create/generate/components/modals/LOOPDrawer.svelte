@@ -9,7 +9,6 @@
   import SheetDragHandle from "$lib/shared/foundation/ui/SheetDragHandle.svelte";
   import LOOPExpandedOverlay from "../cards/LOOPExpandedOverlay.svelte";
   import type { LOOPType } from "$lib/features/create/generate/circular/domain/models/circular-models";
-  import { SliceSize } from "$lib/features/create/generate/circular/domain/models/circular-models";
   import type { LOOPComponent } from "$lib/features/create/generate/shared/domain/constants/loop-components";
 
   let {
@@ -19,8 +18,6 @@
     onChange,
     onClose,
     onLoopDisable,
-    sliceSize = SliceSize.HALVED,
-    onSliceSizeChange,
   }: {
     isOpen: boolean;
     currentType: LOOPType | null;
@@ -28,8 +25,6 @@
     onChange: ((loopType: LOOPType) => void) | null;
     onClose: () => void;
     onLoopDisable?: () => void;
-    sliceSize?: SliceSize;
-    onSliceSizeChange?: (size: SliceSize) => void;
   } = $props();
 </script>
 
@@ -53,8 +48,6 @@
           {onChange}
           {onClose}
           {onLoopDisable}
-          {sliceSize}
-          {onSliceSizeChange}
         />
       {/if}
     </div>
@@ -68,10 +61,25 @@
     --sheet-shadow: 0 -4px 24px rgba(0, 0, 0, 0.5);
   }
 
+  /* Hug content — don't stretch to viewport min/max */
+  :global(.drawer-content.loop-drawer-sheet[data-placement="bottom"]) {
+    min-height: 0;
+  }
+
+  :global(.drawer-content.loop-drawer-sheet[data-placement="right"]) {
+    height: auto;
+    max-height: none;
+  }
+
+  /* drawer-inner default flex: 1 1 0% makes dialog unable to auto-size
+     beyond min-height. flex-basis: auto lets content determine dialog height. */
+  :global(.drawer-content.loop-drawer-sheet) > :global(.drawer-inner) {
+    flex-basis: auto;
+  }
+
   .loop-drawer-content {
     display: flex;
     flex-direction: column;
-    height: 100%;
     padding-bottom: env(safe-area-inset-bottom, 0px);
     background: linear-gradient(
       135deg,
@@ -98,6 +106,12 @@
     border: none;
     box-shadow: none;
     background: transparent;
+  }
+
+  /* Grid takes natural height inside drawer (flex: 1 1 0% collapses
+     to 0px in an auto-height flex parent) */
+  .loop-drawer-content :global(.grid-container) {
+    flex: 0 0 auto;
   }
 
   /* Accessibility: Respect user's motion preferences */

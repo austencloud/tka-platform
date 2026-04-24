@@ -4,10 +4,6 @@
  * When multiple drawers are open simultaneously, this ensures proper
  * z-index ordering so newer drawers appear on top of older ones.
  *
- * Also manages pull-to-refresh blocking:
- * - When any drawer is open: blocks pull-to-refresh (overscroll-behavior-y: contain)
- * - When all drawers close: enables pull-to-refresh (removes the property)
- *
  * Usage is automatic - the Drawer component registers/unregisters
  * itself when opening/closing.
  */
@@ -27,23 +23,6 @@ const BASE_Z_INDEX = 200;
 
 // Z-index increment per drawer level
 const Z_INDEX_INCREMENT = 10;
-
-/**
- * Update pull-to-refresh blocking based on drawer state.
- * When any drawer is open, block pull-to-refresh to prevent conflicts with swipe-to-dismiss.
- * When all drawers are closed, pull-to-refresh works normally.
- */
-function updatePullToRefreshBlocking(): void {
-  if (typeof document === "undefined") return;
-
-  const html = document.documentElement;
-
-  if (drawerStack.length > 0) {
-    html.style.overscrollBehaviorY = "contain";
-  } else {
-    html.style.removeProperty("overscroll-behavior-y");
-  }
-}
 
 /**
  * Generate a unique ID for a drawer instance
@@ -77,9 +56,6 @@ export function registerDrawer(id: string, onDismiss?: () => void): number {
   const zIndex = BASE_Z_INDEX + (drawerStack.length - 1) * Z_INDEX_INCREMENT;
   debug.log(`registerDrawer: ${id} | stack: [${drawerStack.join(", ")}] | zIndex: ${zIndex}`);
 
-  // Block pull-to-refresh when drawer opens
-  updatePullToRefreshBlocking();
-
   return zIndex;
 }
 
@@ -92,9 +68,6 @@ export function unregisterDrawer(id: string): void {
     drawerStack.splice(index, 1);
   }
   dismissCallbacks.delete(id);
-
-  // Re-enable pull-to-refresh if no drawers are open
-  updatePullToRefreshBlocking();
 }
 
 /**

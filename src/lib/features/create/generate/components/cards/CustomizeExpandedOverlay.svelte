@@ -294,7 +294,7 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
       </button>
 
       {#if activeSection === "style"}
-        <div class="accordion-content" id="section-style" transition:slide={{ duration: 200, easing: quintOut }}>
+        <div class="accordion-content" id="section-style" transition:slide={{ duration: 200, easing: quintOut }} onintroend={(e) => (e.target as HTMLElement)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })}>
           <StyleExpandPanel
             constraintPreset={localConstraintPreset}
             handPathMode={localHandPathMode}
@@ -332,7 +332,7 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
       </button>
 
       {#if activeSection === "rhythm"}
-        <div class="accordion-content" id="section-rhythm" transition:slide={{ duration: 200, easing: quintOut }}>
+        <div class="accordion-content" id="section-rhythm" transition:slide={{ duration: 200, easing: quintOut }} onintroend={(e) => (e.target as HTMLElement)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })}>
           <div class="rhythm-templates">
             <PatternItemCard
               name="None"
@@ -383,7 +383,7 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
         </button>
 
         {#if activeSection === "startEnd"}
-          <div class="accordion-content" id="section-start-end" transition:slide={{ duration: 200, easing: quintOut }}>
+          <div class="accordion-content" id="section-start-end" transition:slide={{ duration: 200, easing: quintOut }} onintroend={(e) => (e.target as HTMLElement)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })}>
             <!-- Mode buttons: All / Classic 3 / Specific -->
             <div class="presets-row">
               <button
@@ -521,6 +521,7 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
     flex: 1;
     min-height: 0;
     overflow-y: auto;
+    overscroll-behavior: contain;
     display: flex;
     flex-direction: column;
     gap: 6px;
@@ -600,9 +601,6 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
     display: flex;
     flex-direction: column;
     gap: 10px;
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
   }
 
   /* ─── Rhythm: Template list ─── */
@@ -669,8 +667,6 @@ Only one section open at a time. All content renders inline (no drawer-hopping).
     grid-template-columns: repeat(4, 1fr);
     grid-template-rows: repeat(4, 1fr);
     gap: 6px;
-    flex: 1;
-    min-height: 0;
   }
 
   .specific-cell {
