@@ -310,9 +310,25 @@ export class AnimationRenderLoop implements IAnimationRenderLoop {
     this.consecutiveFireErrors = 0;
     this.consecutiveLedErrors = 0;
     this.consecutiveZapErrors = 0;
+    this.consecutiveSparklesErrors = 0;
+    this.consecutiveEchoErrors = 0;
+    this.consecutiveBloomErrors = 0;
+    this.consecutiveWaterErrors = 0;
+    this.consecutiveBubblesErrors = 0;
+    this.consecutivePetalsErrors = 0;
+    this.consecutiveSmokeErrors = 0;
+    this.consecutiveInkErrors = 0;
     this.fireDisabledByError = false;
     this.ledDisabledByError = false;
     this.zapDisabledByError = false;
+    this.sparklesDisabledByError = false;
+    this.echoDisabledByError = false;
+    this.bloomDisabledByError = false;
+    this.waterDisabledByError = false;
+    this.bubblesDisabledByError = false;
+    this.petalsDisabledByError = false;
+    this.smokeDisabledByError = false;
+    this.inkDisabledByError = false;
   }
 
   isRunning(): boolean {
