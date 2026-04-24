@@ -86,11 +86,11 @@ export interface MotionView {
  *      runtime values match.
  *
  *   2. **`Plane` value set disagrees.** App `Plane` has 9 values (WALL,
- *      WHEEL, FLOOR, plus 6 fusion planes). tka-types `Plane` has 3
- *      (wall, wheel, overhead). `MotionData.plane: Plane` (app) is not
- *      assignable to `Motion.plane: Plane` (tka-types) because
- *      `Plane.FLOOR` has no counterpart, and tka-types' `"overhead"` has
- *      no app counterpart.
+ *      WHEEL, FLOOR, plus 6 fusion planes). tka-types `Plane` also has 9
+ *      values now (wall, wheel, floor, plus 6 fusion planes), but
+ *      `MotionData.plane: Plane` (app enum) is still nominally distinct
+ *      from `Motion.plane: Plane` (tka-types const-as-union) due to
+ *      issue #1 above.
  *
  *   3. **Interfaces still declare `MotionData`.** Swapping an implementation
  *      without also swapping the interface triggers TS2416 "not assignable

@@ -107,8 +107,8 @@ even when Svelte recreates the component instance.
 
   // Get the glow color based on motion color
   const glowColor = $derived(
-    MOTION_COLORS[motionData.color as MotionColor.BLUE | MotionColor.RED] ??
-      MOTION_COLORS[MotionColor.BLUE]
+    MOTION_COLORS[motionData.color as "blue" | "red"] ??
+      MOTION_COLORS["blue"]
   );
 
   // White stroke for visibility against light backgrounds (when NOT in dark mode)

@@ -52,70 +52,82 @@ export function getMandalaPlacements(args: GetMandalaPlacementsArgs): GetMandala
 	if (!includeStartPosition) return EMPTY;
 	if (!blueVisible && !redVisible) return EMPTY;
 
-	// 4-count horizontal metadata row only applies when QR needs a home
-	// AND the user has selected column layout (the override reshapes the
-	// grid into a horizontal info row). In row layout the info row already
-	// spans the top, so the generic row-mode logic below handles it.
+	// 4-count horizontal metadata row: column layout only (row layout handles it generically below).
 	if (stepCount === 4 && showQRCode && startPositionLayout === "column") {
 		return buildFourCountHorizontal(blueVisible, redVisible);
 	}
 
 	if (startPositionLayout === "row") {
-		// Row layout: info cells live in row 1 between start (col 1) and QR (col `cols`).
-		// When QR is off, the trailing cell is also empty and joins the span.
+		// Info cells live in row 1 between start (col 1) and QR (col `cols`).
 		if (cols < 2) return EMPTY;
 		const leftCol = 2;
 		const rightCol = showQRCode ? cols - 1 : cols;
 		const emptyCount = rightCol - leftCol + 1;
-		if (emptyCount < 1) return EMPTY;
+		if (emptyCount < 1 || emptyCount > 3) return EMPTY;
 
-		const variants = chooseVariantSequence(emptyCount, blueVisible, redVisible);
-		if (variants.length === 0) return EMPTY;
-
-		const startCol = leftCol + Math.floor((emptyCount - variants.length) / 2);
-		const placements: MandalaPlacement[] = variants.map((variant, i) => ({
-			row: 1,
-			col: startCol + i,
-			variant,
-		}));
-		return { placements, layoutOverride: null };
+		// Anchored: blue → leftmost slot, red → rightmost slot. Never migrate when one is toggled off.
+		return { placements: buildRowPlacements(emptyCount, leftCol, rightCol, blueVisible, redVisible), layoutOverride: null };
 	}
 
 	// Column layout: col 1 runs start (row 1) → empties → QR (row `rows`).
-	// When QR is off, the bottom cell is also empty and joins the span.
 	if (rows < 2) return EMPTY;
 	const topRow = 2;
 	const bottomRow = showQRCode ? rows - 1 : rows;
 	const emptyCount = bottomRow - topRow + 1;
-	if (emptyCount < 1) return EMPTY;
+	if (emptyCount < 1 || emptyCount > 3) return EMPTY;
 
 	void cols;
 
-	const variants = chooseVariantSequence(emptyCount, blueVisible, redVisible);
-	if (variants.length === 0) return EMPTY;
-
-	const startRow = topRow + Math.floor((emptyCount - variants.length) / 2);
-	const placements: MandalaPlacement[] = variants.map((variant, i) => ({
-		row: startRow + i,
-		col: 1,
-		variant,
-	}));
-
-	return { placements, layoutOverride: null };
+	// Anchored: blue → topmost slot, red → bottommost slot. Never migrate when one is toggled off.
+	return { placements: buildColumnPlacements(emptyCount, topRow, bottomRow, blueVisible, redVisible), layoutOverride: null };
 }
 
-function chooseVariantSequence(
+function buildRowPlacements(
 	emptyCount: number,
+	leftCol: number,
+	rightCol: number,
 	blueVisible: boolean,
 	redVisible: boolean,
-): MandalaVariant[] {
-	if (!redVisible && blueVisible) return ["blue"];
-	if (!blueVisible && redVisible) return ["red"];
+): MandalaPlacement[] {
+	if (blueVisible && redVisible) {
+		if (emptyCount === 1) return [{ row: 1, col: leftCol, variant: "full" }];
+		if (emptyCount === 2) return [
+			{ row: 1, col: leftCol, variant: "blue" },
+			{ row: 1, col: rightCol, variant: "red" },
+		];
+		// emptyCount === 3
+		return [
+			{ row: 1, col: leftCol, variant: "blue" },
+			{ row: 1, col: leftCol + 1, variant: "full" },
+			{ row: 1, col: rightCol, variant: "red" },
+		];
+	}
+	if (blueVisible) return [{ row: 1, col: leftCol, variant: "blue" }];
+	return [{ row: 1, col: rightCol, variant: "red" }];
+}
 
-	if (emptyCount === 1) return ["full"];
-	if (emptyCount === 2) return ["blue", "red"];
-	if (emptyCount >= 3) return ["blue", "full", "red"];
-	return [];
+function buildColumnPlacements(
+	emptyCount: number,
+	topRow: number,
+	bottomRow: number,
+	blueVisible: boolean,
+	redVisible: boolean,
+): MandalaPlacement[] {
+	if (blueVisible && redVisible) {
+		if (emptyCount === 1) return [{ row: topRow, col: 1, variant: "full" }];
+		if (emptyCount === 2) return [
+			{ row: topRow, col: 1, variant: "blue" },
+			{ row: bottomRow, col: 1, variant: "red" },
+		];
+		// emptyCount === 3
+		return [
+			{ row: topRow, col: 1, variant: "blue" },
+			{ row: topRow + 1, col: 1, variant: "full" },
+			{ row: bottomRow, col: 1, variant: "red" },
+		];
+	}
+	if (blueVisible) return [{ row: topRow, col: 1, variant: "blue" }];
+	return [{ row: bottomRow, col: 1, variant: "red" }];
 }
 
 function buildFourCountHorizontal(
@@ -123,14 +135,9 @@ function buildFourCountHorizontal(
 	redVisible: boolean,
 ): GetMandalaPlacementsResult {
 	const placements: MandalaPlacement[] = [];
-	if (blueVisible && redVisible) {
-		placements.push({ row: 1, col: 2, variant: "blue" });
-		placements.push({ row: 1, col: 3, variant: "red" });
-	} else if (blueVisible) {
-		placements.push({ row: 1, col: 2, variant: "blue" });
-	} else if (redVisible) {
-		placements.push({ row: 1, col: 3, variant: "red" });
-	}
+	// Anchored: blue at col 2 (left/start side), red at col 3 (right/far side).
+	if (blueVisible) placements.push({ row: 1, col: 2, variant: "blue" });
+	if (redVisible) placements.push({ row: 1, col: 3, variant: "red" });
 
 	const layoutOverride: MandalaLayoutOverride = {
 		cols: 4,
