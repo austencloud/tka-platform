@@ -5,7 +5,6 @@
   import { applyThemeForBackground } from "$lib/shared/settings/utils/background-theme-calculator";
   import HeroCarouselSection from "./landing/components/HeroCarouselSection.svelte";
   import LazyHowTkaWorksSection from "./landing/components/LazyHowTkaWorksSection.svelte";
-  import WhatsHereSectionV2 from "./landing/components/WhatsHereSectionV2.svelte";
   import PlayWithItSection from "./landing/components/PlayWithItSection.svelte";
   import GuidesSection from "./landing/components/GuidesSection.svelte";
   import LandingFooter from "./landing/components/LandingFooter.svelte";
@@ -360,10 +359,6 @@
     <main id="main-content">
       <hr class="divider" />
       <LazyHowTkaWorksSection />
-      <hr class="divider" />
-      <div class="scroll-reveal">
-        <WhatsHereSectionV2 />
-      </div>
       <hr class="divider" />
       <div class="scroll-reveal">
         <PlayWithItSection />

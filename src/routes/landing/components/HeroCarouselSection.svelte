@@ -435,9 +435,7 @@
   <!-- CTA panel beside the video -->
   <div class="hero-cta">
     <p class="cta-tagline">Notation for flow arts.</p>
-    <p class="cta-desc">
-      Document, animate, and share choreography for staves, fans, clubs, hoops, and everything you spin.
-    </p>
+
 
     <div class="cta-buttons">
       <a href="/create" class="cta-btn cta-primary" data-sveltekit-reload>
@@ -581,12 +579,6 @@
     line-height: 1.3;
   }
 
-  .cta-desc {
-    font-size: 0.9rem;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
-    line-height: 1.6;
-    margin: 0 0 8px;
-  }
 
   .cta-buttons {
     display: flex;
