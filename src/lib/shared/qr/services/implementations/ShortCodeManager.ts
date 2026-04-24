@@ -2,8 +2,8 @@
  * Short Code Manager Implementation
  *
  * Manages short codes for QR code URLs using Firebase Firestore.
- * Short codes are 6-character alphanumeric strings that map to
- * encoded sequence data for compact QR codes.
+ * Short codes are 4-character base36 uppercase strings (auto-bumping
+ * to 5/6) that map to encoded sequence data for compact QR codes.
  *
  * Firebase collection: shortcodes
  *
@@ -40,11 +40,9 @@ import type {
 } from "../contracts/IShortCodeManager";
 
 const SHORTCODES_COLLECTION = "shortcodes";
-const CODE_LENGTH = 6;
+const MIN_CODE_LENGTH = 4;
 
-// Base62 alphabet for short codes (URL-safe, case-sensitive)
-const ALPHABET =
-  "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+const ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 /** Shape of a short code record from Firestore or the static snapshot */
 interface ShortCodeData {
@@ -94,9 +92,11 @@ export class ShortCodeManager implements IShortCodeManager {
   /**
    * Generate a random short code
    */
+  private codeLength = MIN_CODE_LENGTH;
+
   private generateCode(): string {
     let code = "";
-    for (let i = 0; i < CODE_LENGTH; i++) {
+    for (let i = 0; i < this.codeLength; i++) {
       code += ALPHABET[Math.floor(Math.random() * ALPHABET.length)];
     }
     return code;
@@ -106,11 +106,7 @@ export class ShortCodeManager implements IShortCodeManager {
    * Get the base URL for short code URLs
    */
   private getBaseUrl(): string {
-    if (typeof window !== "undefined") {
-      return window.location.origin;
-    }
-    // Fallback for SSR
-    return "https://tkaflowarts.com";
+    return "HTTPS://TKA.RUN";
   }
 
   /**
@@ -118,7 +114,7 @@ export class ShortCodeManager implements IShortCodeManager {
    * Props are encoded as single characters (bp=S for blue staff, rp=F for red fan).
    */
   private buildUrlWithOptions(baseUrl: string, code: string, options?: ShortCodeURLOptions): string {
-    let url = `${baseUrl}/p/${code}`;
+    let url = `${baseUrl}/${code}`;
 
     // Add prop type query params if provided
     const params = new URLSearchParams();
@@ -259,33 +255,40 @@ export class ShortCodeManager implements IShortCodeManager {
     // path. Cross-tab hash races are still theoretically possible but the
     // loser reads their code back on next createShortCode via the legacy
     // findExistingCodeByHash path above.
-    const maxAttempts = 10;
-    for (let attempts = 0; attempts < maxAttempts; attempts++) {
-      const code = this.generateCode();
-      const docRef = doc(firestore, SHORTCODES_COLLECTION, code);
+    const maxAttemptsPerLength = 10;
+    const maxCodeLength = MIN_CODE_LENGTH + 2;
 
-      try {
-        await runTransaction(firestore, async (tx) => {
-          const snap = await tx.get(docRef);
-          if (snap.exists()) {
-            throw new Error("__CODE_COLLISION__");
-          }
-          tx.set(docRef, record);
-        });
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        if (msg === "__CODE_COLLISION__") continue;
-        throw err;
+    while (this.codeLength <= maxCodeLength) {
+      for (let attempts = 0; attempts < maxAttemptsPerLength; attempts++) {
+        const code = this.generateCode();
+        const docRef = doc(firestore, SHORTCODES_COLLECTION, code);
+
+        try {
+          await runTransaction(firestore, async (tx) => {
+            const snap = await tx.get(docRef);
+            if (snap.exists()) {
+              throw new Error("__CODE_COLLISION__");
+            }
+            tx.set(docRef, record);
+          });
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          if (msg === "__CODE_COLLISION__") continue;
+          throw err;
+        }
+
+        return {
+          code,
+          url: this.buildUrlWithOptions(this.getBaseUrl(), code, options),
+          isNew: true,
+        };
       }
 
-      return {
-        code,
-        url: this.buildUrlWithOptions(this.getBaseUrl(), code, options),
-        isNew: true,
-      };
+      this.codeLength++;
+      console.warn(`[ShortCode] Exhausted ${maxAttemptsPerLength} attempts at length ${this.codeLength - 1}, bumping to ${this.codeLength}`);
     }
 
-    throw new Error("Failed to generate unique short code after max attempts");
+    throw new Error("Failed to generate unique short code after exhausting all length tiers");
   }
 
   /**

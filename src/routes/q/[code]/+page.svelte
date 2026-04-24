@@ -1,5 +1,5 @@
 <!--
-  /p/[code]/+page.svelte
+  /q/[code]/+page.svelte
 
   QR Code Resolver + Inline Viewer
 
@@ -7,7 +7,7 @@
   directly — no redirect to /sequence/[id]. This eliminates a full
   page navigation and JS reload, making QR scans feel instant.
 
-  URL format: /p/{shortCode}
+  URL format: /q/{shortCode}
 
   Flow:
   1. Resolve short code to SequenceData (Firebase or inline-encoded)

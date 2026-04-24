@@ -1,10 +1,10 @@
 /**
  * Short Code Manager Interface
  *
- * Manages short codes for QR code URLs. Short codes are 6-character
- * alphanumeric strings that map to encoded sequence data, stored in Firebase.
+ * Manages short codes for QR code URLs. Short codes are 4-character
+ * base36 uppercase strings that map to encoded sequence data, stored in Firebase.
  *
- * URL pattern: /p/{code} -> Full animation playback
+ * URL pattern: tka.run/{code} -> 302 -> tkaflowarts.com/q/{code}
  *
  * Domain: QR - URL Shortening
  */

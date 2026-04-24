@@ -10,9 +10,9 @@ TKA (The Kinetic Alphabet) is a notation system for flow arts. Flow arts means s
 
 There are two types of QR codes on the cards.
 
-**Short codes** look like `tkaflowarts.com/p/Abc123`. The six characters after `/p/` are a lookup key. When someone scans this code, the app queries a Firebase database (Firestore collection: `shortcodes`) to find the sequence data, then renders it. These codes are short and scan easily, but they need the server to work.
+**Short codes** look like `tkaflowarts.com/q/A1F8`. The characters after `/q/` are a lookup key. When someone scans this code, the app queries a Firebase database (Firestore collection: `shortcodes`) to find the sequence data, then renders it. These codes are short and scan easily, but they need the server to work. QR codes on printed cards encode `TKA.RUN/{code}` — a Cloudflare Worker redirects to the `/q/` route.
 
-**Inline codes** look like `tkaflowarts.com/p/s~z:...` where everything after `s~` is the sequence data itself, compressed. These are self-contained. No server call, no database lookup. The `s~` prefix tells the app to decode the data directly from the URL. These codes are longer (bigger QR pattern) but they survive infrastructure failures. If the server is gone, these still work with just the decoder.
+**Inline codes** look like `tkaflowarts.com/q/s~z:...` where everything after `s~` is the sequence data itself, compressed. These are self-contained. No server call, no database lookup. The `s~` prefix tells the app to decode the data directly from the URL. These codes are longer (bigger QR pattern) but they survive infrastructure failures. If the server is gone, these still work with just the decoder.
 
 The project previously used `thekineticalphabet.com` as its primary domain. That domain is still owned and redirects to `tkaflowarts.com`, so any URL with the old host resolves correctly. If you see the old domain in a screenshot or a blog post, follow it — the redirect does the right thing.
 

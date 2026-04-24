@@ -167,7 +167,7 @@ export interface ISequenceEncoder {
    * ```typescript
    * // Generate offline QR code
    * const offlineCode = sequenceEncoder.encodeForQR(mySequence);
-   * const url = `https://tkaflowarts.com/p/${offlineCode}`;
+   * const url = `https://tka.run/${offlineCode}`;
    *
    * // Or use via QRCodeGenerator (recommended)
    * const qr = await qrCodeGenerator.generateForSequence(sequence, { offline: true });

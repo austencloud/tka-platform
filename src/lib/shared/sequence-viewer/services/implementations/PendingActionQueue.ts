@@ -64,7 +64,7 @@ export class PendingActionQueue implements IPendingActionQueue {
     return this.pending;
   }
 
-  // The short-code route (/p/[code]) and the deep-link route (/sequence/[id])
+  // The short-code route (/q/[code]) and the deep-link route (/sequence/[id])
   // both carry the sequence reference in the last path segment. This lets us
   // recover the reference after a webview handoff, where only the URL survives.
   private deriveSequenceIdFromUrl(url: URL): string | null {

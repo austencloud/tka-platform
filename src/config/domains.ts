@@ -33,7 +33,7 @@ const LANDING_PATHS = new Set([
 
 const PUBLIC_PATH_PREFIXES = [
   "/embed",
-  "/p/",
+  "/q/",
   "/sequence/",
   "/profile/",
   "/demo",
